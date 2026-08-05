@@ -1,70 +1,103 @@
 @inject IStringLocalizer<PosResources> L
 
-<Section Title="@L["Catalog_Product_DetailsSection"]">
-    <Stack Gap="3">
-        <TextInput Label="@L["Catalog_Field_Name"]"
-                   Value="@Name"
-                   ValueChanged="NameChanged"
-                   Required="true"
-                   IsInvalid="@(!string.IsNullOrEmpty(NameError))"
-                   ErrorText="@NameError"
-                   Disabled="@(IsSaving || Disabled)" />
-
-        <TextArea Label="@L["Catalog_Field_Description"]"
-                  Value="@Description"
-                  ValueChanged="DescriptionChanged"
-                  Hint="@L["Catalog_DescriptionHint"]"
-                  Rows="3"
-                  Disabled="@(IsSaving || Disabled)" />
-
-        <TextInput Label="@L["Catalog_Field_Sku"]"
-                   Value="@Sku"
-                   ValueChanged="SkuChanged"
-                   Hint="@L["Catalog_SkuHint"]"
-                   IsInvalid="@(!string.IsNullOrEmpty(SkuError))"
-                   ErrorText="@SkuError"
-                   Disabled="@(IsSaving || Disabled)" />
-
-        <TextInput Label="@L["Catalog_Field_Barcode"]"
-                   Value="@Barcode"
-                   ValueChanged="BarcodeChanged"
-                   Hint="@L["Catalog_BarcodeHint"]"
-                   IsInvalid="@(!string.IsNullOrEmpty(BarcodeError))"
-                   ErrorText="@BarcodeError"
-                   Disabled="@(IsSaving || Disabled)" />
-
-        <Select Label="@L["Catalog_Field_Category"]"
-                Value="@CategoryId"
-                ValueChanged="CategoryIdChanged"
-                Options="@CatalogUiOptions.CategoryChoices(L, Categories)"
-                Hint="@L["Catalog_CategoryHint"]"
-                Disabled="@(IsSaving || Disabled)" />
-
-        <Select Label="@L["Catalog_Field_Unit"]"
-                Value="@UnitOfMeasure"
-                ValueChanged="UnitOfMeasureChanged"
-                Options="@CatalogUiOptions.UnitOfMeasures(L)"
-                Required="true"
-                Disabled="@(IsSaving || Disabled)" />
-
-        <CurrencyInput Label="@L["Catalog_Field_SellingPrice"]"
-                       Value="@SellingPrice"
-                       ValueChanged="SellingPriceChanged"
-                       CurrencyCode="PHP"
+<div class="pos-product-form">
+    <section class="pos-product-form__group" aria-labelledby="@_detailsId">
+        <h2 class="pos-product-form__group-title" id="@_detailsId">@L["Catalog_Product_DetailsSection"]</h2>
+        <div class="pos-product-form__fields">
+            <TextInput Label="@L["Catalog_Field_Name"]"
+                       Value="@Name"
+                       ValueChanged="NameChanged"
                        Required="true"
-                       Hint="@L["Catalog_PriceHint"]"
-                       IsInvalid="@(!string.IsNullOrEmpty(SellingPriceError))"
-                       ErrorText="@SellingPriceError"
+                       IsInvalid="@(!string.IsNullOrEmpty(NameError))"
+                       ErrorText="@NameError"
                        Disabled="@(IsSaving || Disabled)" />
-    </Stack>
-</Section>
 
-<FormActions>
-    <Button Variant="ButtonVariant.Secondary" Disabled="@(IsSaving || Disabled)" OnClick="OnCancel">@L["Catalog_Cancel"]</Button>
-    <Button Variant="ButtonVariant.Primary" Disabled="@Disabled" IsLoading="@IsSaving" OnClick="OnSave">@SaveLabel</Button>
-</FormActions>
+            <TextArea Label="@L["Catalog_Field_Description"]"
+                      Value="@Description"
+                      ValueChanged="DescriptionChanged"
+                      Hint="@L["Catalog_DescriptionHint"]"
+                      Rows="2"
+                      Disabled="@(IsSaving || Disabled)" />
+        </div>
+    </section>
+
+    <section class="pos-product-form__group" aria-labelledby="@_codesId">
+        <h2 class="pos-product-form__group-title" id="@_codesId">@L["Catalog_Product_CodesSection"]</h2>
+        <div class="pos-product-form__fields">
+            <TextInput Label="@L["Catalog_Field_Sku"]"
+                       Value="@Sku"
+                       ValueChanged="SkuChanged"
+                       Hint="@L["Catalog_SkuHint"]"
+                       IsInvalid="@(!string.IsNullOrEmpty(SkuError))"
+                       ErrorText="@SkuError"
+                       Disabled="@(IsSaving || Disabled)" />
+
+            <TextInput Label="@L["Catalog_Field_Barcode"]"
+                       Value="@Barcode"
+                       ValueChanged="BarcodeChanged"
+                       Hint="@L["Catalog_BarcodeHint"]"
+                       IsInvalid="@(!string.IsNullOrEmpty(BarcodeError))"
+                       ErrorText="@BarcodeError"
+                       Disabled="@(IsSaving || Disabled)" />
+        </div>
+    </section>
+
+    <section class="pos-product-form__group" aria-labelledby="@_pricingId">
+        <h2 class="pos-product-form__group-title" id="@_pricingId">@L["Catalog_Product_PricingSection"]</h2>
+        <div class="pos-product-form__fields">
+            <Select Label="@L["Catalog_Field_Category"]"
+                    Value="@CategoryId"
+                    ValueChanged="CategoryIdChanged"
+                    Options="@CatalogUiOptions.CategoryChoices(L, Categories)"
+                    Disabled="@(IsSaving || Disabled)" />
+
+            <Select Label="@L["Catalog_Field_Unit"]"
+                    Value="@UnitOfMeasure"
+                    ValueChanged="UnitOfMeasureChanged"
+                    Options="@CatalogUiOptions.UnitOfMeasures(L)"
+                    Required="true"
+                    Disabled="@(IsSaving || Disabled)" />
+
+            <CurrencyInput Label="@L["Catalog_Field_SellingPrice"]"
+                           Value="@SellingPrice"
+                           ValueChanged="SellingPriceChanged"
+                           CurrencyCode="PHP"
+                           Required="true"
+                           Hint="@L["Catalog_PriceHint"]"
+                           IsInvalid="@(!string.IsNullOrEmpty(SellingPriceError))"
+                           ErrorText="@SellingPriceError"
+                           Disabled="@(IsSaving || Disabled)" />
+        </div>
+    </section>
+
+    @if (ShowStockTracking)
+    {
+        <section class="pos-product-form__group" aria-labelledby="@_stockId">
+            <h2 class="pos-product-form__group-title" id="@_stockId">@L["Catalog_Product_StockSection"]</h2>
+            <div class="pos-product-form__fields">
+                <Switch Checked="@TrackStock"
+                        CheckedChanged="TrackStockChanged"
+                        Label="@L["Catalog_TrackStock"]"
+                        Disabled="@(IsSaving || Disabled)" />
+                <p class="pos-product-form__note">
+                    @(TrackStock ? L["Catalog_TrackStockOnHint"] : L["Catalog_TrackStockOffHint"])
+                </p>
+            </div>
+        </section>
+    }
+
+    <div class="pos-product-form__actions">
+        <Button Variant="ButtonVariant.Secondary" Disabled="@(IsSaving || Disabled)" OnClick="OnCancel">@L["Catalog_Cancel"]</Button>
+        <Button Variant="ButtonVariant.Primary" Disabled="@Disabled" IsLoading="@IsSaving" OnClick="OnSave">@SaveLabel</Button>
+    </div>
+</div>
 
 @code {
+    private readonly string _detailsId = $"pos-product-form-details-{Guid.NewGuid():N}";
+    private readonly string _codesId = $"pos-product-form-codes-{Guid.NewGuid():N}";
+    private readonly string _pricingId = $"pos-product-form-pricing-{Guid.NewGuid():N}";
+    private readonly string _stockId = $"pos-product-form-stock-{Guid.NewGuid():N}";
+
     [Parameter] public string? Name { get; set; }
     [Parameter] public EventCallback<string?> NameChanged { get; set; }
     [Parameter] public string? Description { get; set; }
@@ -86,6 +119,9 @@
     [Parameter] public string? SellingPriceError { get; set; }
     [Parameter] public bool IsSaving { get; set; }
     [Parameter] public bool Disabled { get; set; }
+    [Parameter] public bool ShowStockTracking { get; set; }
+    [Parameter] public bool TrackStock { get; set; }
+    [Parameter] public EventCallback<bool> TrackStockChanged { get; set; }
     [Parameter] public string? SaveLabel { get; set; }
     [Parameter] public EventCallback OnSave { get; set; }
     [Parameter] public EventCallback OnCancel { get; set; }

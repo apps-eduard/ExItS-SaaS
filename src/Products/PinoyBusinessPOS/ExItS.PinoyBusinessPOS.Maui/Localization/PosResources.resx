@@ -730,8 +730,8 @@
   <data name="Catalog_Field_SellingPrice" xml:space="preserve"><value>Selling price</value></data>
   <data name="Catalog_Field_Status" xml:space="preserve"><value>Status</value></data>
   <data name="Catalog_DescriptionHint" xml:space="preserve"><value>Optional. Up to 512 characters.</value></data>
-  <data name="Catalog_SkuHint" xml:space="preserve"><value>Optional. Letters, digits, and - _ . / only.</value></data>
-  <data name="Catalog_BarcodeHint" xml:space="preserve"><value>Optional. 8 to 14 digits. EAN-8, UPC-A, EAN-13, and GTIN-14 check digits are verified.</value></data>
+  <data name="Catalog_SkuHint" xml:space="preserve"><value>Optional. Letters, digits, - _ . / only.</value></data>
+  <data name="Catalog_BarcodeHint" xml:space="preserve"><value>Optional. 8 to 14 digits, check digit verified.</value></data>
   <data name="Catalog_CategoryHint" xml:space="preserve"><value>Optional. Only active categories can be assigned.</value></data>
   <data name="Catalog_PriceHint" xml:space="preserve"><value>Zero or more, up to two decimal places.</value></data>
   <data name="Catalog_NameRequired" xml:space="preserve"><value>Product name is required.</value></data>
@@ -748,6 +748,15 @@
   <data name="Catalog_Product_EditTitle" xml:space="preserve"><value>Edit product</value></data>
   <data name="Catalog_Product_DetailSubtitle" xml:space="preserve"><value>Catalog product</value></data>
   <data name="Catalog_Product_DetailsSection" xml:space="preserve"><value>Product details</value></data>
+  <data name="Catalog_Product_CodesSection" xml:space="preserve"><value>Codes</value></data>
+  <data name="Catalog_Product_PricingSection" xml:space="preserve"><value>Pricing and unit</value></data>
+  <data name="Catalog_Product_StockSection" xml:space="preserve"><value>Stock</value></data>
+  <data name="Catalog_TrackStock" xml:space="preserve"><value>Track stock for this product</value></data>
+  <data name="Catalog_TrackStockOnHint" xml:space="preserve"><value>Selling reduces the counted quantity. Set the starting count in Stock after saving.</value></data>
+  <data name="Catalog_TrackStockOffHint" xml:space="preserve"><value>Sold without counting. You can turn tracking on later in Stock.</value></data>
+  <data name="Catalog_TrackStockFailed" xml:space="preserve"><value>The product was saved, but stock tracking could not be turned on. Turn it on in Stock.</value></data>
+  <data name="Catalog_Product_CreatedTitle" xml:space="preserve"><value>Product saved</value></data>
+  <data name="Catalog_Product_View" xml:space="preserve"><value>View product</value></data>
   <data name="Catalog_Product_NoCategory" xml:space="preserve"><value>No category</value></data>
   <data name="Catalog_Product_NotFoundTitle" xml:space="preserve"><value>Product not found</value></data>
   <data name="Catalog_Product_NotFoundMessage" xml:space="preserve"><value>This product does not exist in your organization.</value></data>

@@ -2,6 +2,7 @@
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IPosCatalogClient Catalog
+@inject IPosInventoryClient Inventory
 @inject ICurrentUserContext CurrentUser
 @inject IUtangCapabilityEvaluator Capabilities
 @inject ApiStatusLocalizer ApiLocalizer
@@ -15,51 +16,66 @@
 else
 {
     var canManage = Capabilities.IsAllowed(UtangCapability.ManageCatalog);
+    var canTrackStock = Capabilities.IsAllowed(UtangCapability.ManageInventory);
 <Page>
-    <PageHeader Title="@L["Catalog_Product_CreateTitle"]" Subtitle="@L["Catalog_Product_CreateSubtitle"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Catalog_Cancel"]</Button>
-        </Actions>
-    </PageHeader>
+    <div class="pos-product-form-page">
+        <header class="pos-product-form-page__header">
+            <h1 class="pos-product-form-page__title">@L["Catalog_Product_CreateTitle"]</h1>
+            <p class="pos-product-form-page__subtitle">@L["Catalog_Product_CreateSubtitle"]</p>
+        </header>
 
-    @if (_isOffline)
-    {
-        <Alert Tone="AlertTone.Warning" Title="@L["Catalog_OfflineTitle"]" Message="@L["Catalog_OfflineMessage"]" />
-    }
-    else if (!canManage)
-    {
-        <Alert Tone="AlertTone.Warning" Title="@L["Access_RestrictedTitle"]" Message="@L["Access_RestrictedMessage"]" />
-    }
+        @if (_isOffline)
+        {
+            <Alert Tone="AlertTone.Warning" Title="@L["Catalog_OfflineTitle"]" Message="@L["Catalog_OfflineMessage"]" />
+        }
+        else if (!canManage)
+        {
+            <Alert Tone="AlertTone.Warning" Title="@L["Access_RestrictedTitle"]" Message="@L["Access_RestrictedMessage"]" />
+        }
 
-    @if (!string.IsNullOrEmpty(_formError))
-    {
-        <Alert Tone="AlertTone.Danger" Title="@L["Catalog_ErrorTitle"]" Message="@_formError" />
-    }
+        @if (!string.IsNullOrEmpty(_formError))
+        {
+            <Alert Tone="AlertTone.Danger" Title="@L["Catalog_ErrorTitle"]" Message="@_formError" />
+        }
 
-    <CatalogProductForm Name="@_name"
-                        NameChanged="v => _name = v"
-                        Description="@_description"
-                        DescriptionChanged="v => _description = v"
-                        Sku="@_sku"
-                        SkuChanged="v => _sku = v"
-                        Barcode="@_barcode"
-                        BarcodeChanged="v => _barcode = v"
-                        CategoryId="@_categoryId"
-                        CategoryIdChanged="v => _categoryId = v"
-                        UnitOfMeasure="@_unitOfMeasure"
-                        UnitOfMeasureChanged="v => _unitOfMeasure = v"
-                        SellingPrice="@_sellingPrice"
-                        SellingPriceChanged="v => _sellingPrice = v"
-                        Categories="@_categories"
-                        NameError="@_nameError"
-                        SkuError="@_skuError"
-                        BarcodeError="@_barcodeError"
-                        SellingPriceError="@_priceError"
-                        IsSaving="@_saving"
-                        Disabled="@(!canManage || _isOffline)"
-                        SaveLabel="@L["Catalog_Product_Create"]"
-                        OnSave="SaveAsync"
-                        OnCancel="GoBack" />
+        @if (_createdProductId is { } created)
+        {
+            <Alert Tone="AlertTone.Warning" Title="@L["Catalog_Product_CreatedTitle"]" Message="@L["Catalog_TrackStockFailed"]" />
+            <div class="pos-product-form__actions">
+                <Button Variant="ButtonVariant.Primary" OnClick="() => GoProduct(created)">@L["Catalog_Product_View"]</Button>
+            </div>
+        }
+        else
+        {
+            <CatalogProductForm Name="@_name"
+                                NameChanged="v => _name = v"
+                                Description="@_description"
+                                DescriptionChanged="v => _description = v"
+                                Sku="@_sku"
+                                SkuChanged="v => _sku = v"
+                                Barcode="@_barcode"
+                                BarcodeChanged="v => _barcode = v"
+                                CategoryId="@_categoryId"
+                                CategoryIdChanged="v => _categoryId = v"
+                                UnitOfMeasure="@_unitOfMeasure"
+                                UnitOfMeasureChanged="v => _unitOfMeasure = v"
+                                SellingPrice="@_sellingPrice"
+                                SellingPriceChanged="v => _sellingPrice = v"
+                                Categories="@_categories"
+                                NameError="@_nameError"
+                                SkuError="@_skuError"
+                                BarcodeError="@_barcodeError"
+                                SellingPriceError="@_priceError"
+                                IsSaving="@_saving"
+                                Disabled="@(!canManage || _isOffline)"
+                                ShowStockTracking="@(canTrackStock && !_isOffline)"
+                                TrackStock="@_trackStock"
+                                TrackStockChanged="v => _trackStock = v"
+                                SaveLabel="@L["Catalog_Product_Create"]"
+                                OnSave="SaveAsync"
+                                OnCancel="GoBack" />
+        }
+    </div>
 </Page>
 }
 
@@ -74,6 +90,8 @@ else
     private string? _categoryId;
     private string? _unitOfMeasure = PosCatalogOptions.DefaultUnitOfMeasureCode;
     private decimal? _sellingPrice;
+    private bool _trackStock;
+    private Guid? _createdProductId;
     private IReadOnlyList<PosProductCategoryDto> _categories = Array.Empty<PosProductCategoryDto>();
     private string? _nameError;
     private string? _skuError;
@@ -106,6 +124,11 @@ else
 
     private async Task SaveAsync()
     {
+        if (_saving || _createdProductId is not null)
+        {
+            return;
+        }
+
         if (!Capabilities.IsAllowed(UtangCapability.ManageCatalog))
         {
             _formError = L["Access_RestrictedMessage"];
@@ -131,30 +154,54 @@ else
         }
 
         _saving = true;
-        var result = await Catalog.CreateProductAsync(new CreatePosCatalogProductRequest(
-            _name.Trim(),
-            _unitOfMeasure ?? PosCatalogOptions.DefaultUnitOfMeasureCode,
-            _sellingPrice.Value,
-            string.IsNullOrWhiteSpace(_description) ? null : _description,
-            string.IsNullOrWhiteSpace(_sku) ? null : _sku,
-            string.IsNullOrWhiteSpace(_barcode) ? null : _barcode,
-            Guid.TryParse(_categoryId, out var categoryId) ? categoryId : null));
-        _saving = false;
-
-        if (result.IsSuccess && result.Data is not null)
+        try
         {
-            Nav.NavigateTo($"/catalog/products/{result.Data.ProductId:D}", replace: true);
-            return;
-        }
+            var result = await Catalog.CreateProductAsync(new CreatePosCatalogProductRequest(
+                _name.Trim(),
+                _unitOfMeasure ?? PosCatalogOptions.DefaultUnitOfMeasureCode,
+                _sellingPrice.Value,
+                string.IsNullOrWhiteSpace(_description) ? null : _description,
+                string.IsNullOrWhiteSpace(_sku) ? null : _sku,
+                string.IsNullOrWhiteSpace(_barcode) ? null : _barcode,
+                Guid.TryParse(_categoryId, out var categoryId) ? categoryId : null));
 
-        var mapped = CatalogErrorPresenter.Describe(result.Error?.ErrorCode, L);
-        _nameError = mapped.Name;
-        _skuError = mapped.Sku;
-        _barcodeError = mapped.Barcode;
-        _formError = mapped.Form
-            ?? result.Error?.Detail
-            ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
+            if (!result.IsSuccess || result.Data is null)
+            {
+                var mapped = CatalogErrorPresenter.Describe(result.Error?.ErrorCode, L);
+                _nameError = mapped.Name;
+                _skuError = mapped.Sku;
+                _barcodeError = mapped.Barcode;
+                _formError = mapped.Form
+                    ?? result.Error?.Detail
+                    ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
+                return;
+            }
+
+            var productId = result.Data.ProductId;
+            if (_trackStock
+                && Capabilities.IsAllowed(UtangCapability.ManageInventory)
+                && !await EnableStockTrackingAsync(productId))
+            {
+                // The product exists; keep the user here so the tracking failure is not lost.
+                _createdProductId = productId;
+                return;
+            }
+
+            GoProduct(productId);
+        }
+        finally
+        {
+            _saving = false;
+        }
     }
+
+    private async Task<bool> EnableStockTrackingAsync(Guid productId)
+    {
+        var result = await Inventory.EnableAsync(productId, new EnableInventoryTrackingRequest());
+        return result.IsSuccess;
+    }
+
+    private void GoProduct(Guid productId) => Nav.NavigateTo($"/catalog/products/{productId:D}", replace: true);
 
     private void GoBack() => Nav.NavigateTo("/catalog");
 }

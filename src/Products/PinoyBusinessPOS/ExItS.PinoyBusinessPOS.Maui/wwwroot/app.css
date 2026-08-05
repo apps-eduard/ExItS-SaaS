@@ -2063,6 +2063,88 @@ html.pos-keyboard-open .pos-content {
     flex-shrink: 0;
 }
 
+/* ============================== Catalog product form ============================== */
+
+.pos-product-form-page {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+.pos-product-form-page__header {
+    margin: 0 0 var(--exits-space-3);
+}
+
+.pos-product-form-page__title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.25;
+    color: var(--exits-text, #15201a);
+}
+
+.pos-product-form-page__subtitle {
+    margin: 0.2rem 0 0;
+    font-size: var(--exits-text-sm, 0.875rem);
+    line-height: 1.35;
+    color: var(--exits-text-muted, #5b6b62);
+}
+
+.pos-product-form__group {
+    margin: 0 0 var(--exits-space-3);
+    padding: var(--exits-space-3);
+    border: 1px solid var(--exits-border, #c9d4cd);
+    border-radius: var(--exits-radius-md, 0.5rem);
+    background: var(--exits-surface, #fff);
+}
+
+.pos-product-form__group-title {
+    margin: 0 0 var(--exits-space-2);
+    font-size: var(--exits-text-xs, 0.75rem);
+    font-weight: 650;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--exits-text-muted, #5b6b62);
+}
+
+.pos-product-form__fields {
+    display: flex;
+    flex-direction: column;
+    gap: var(--exits-space-3);
+}
+
+.pos-product-form__fields .exds-field {
+    gap: 0.2rem;
+}
+
+.pos-product-form__fields .exds-field__hint {
+    line-height: 1.3;
+}
+
+.pos-product-form__fields textarea.exds-field__control {
+    min-height: 3.75rem;
+    padding: var(--exits-space-2) var(--exits-space-3);
+}
+
+.pos-product-form__note {
+    margin: 0;
+    font-size: var(--exits-text-xs, 0.75rem);
+    line-height: 1.35;
+    color: var(--exits-text-muted, #5b6b62);
+}
+
+.pos-product-form__actions {
+    display: flex;
+    align-items: center;
+    gap: var(--exits-space-2);
+    margin: 0 0 calc(var(--exits-space-4) + env(safe-area-inset-bottom, 0px));
+}
+
+.pos-product-form__actions .exds-btn {
+    flex: 1 1 0;
+    justify-content: center;
+}
+
 /* ============================== Sales list ============================== */
 
 .pos-sales__add {

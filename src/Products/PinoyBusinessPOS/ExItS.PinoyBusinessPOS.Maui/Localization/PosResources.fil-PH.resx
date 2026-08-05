@@ -730,8 +730,8 @@
   <data name="Catalog_Field_SellingPrice" xml:space="preserve"><value>Presyong bentahan</value></data>
   <data name="Catalog_Field_Status" xml:space="preserve"><value>Status</value></data>
   <data name="Catalog_DescriptionHint" xml:space="preserve"><value>Opsyonal. Hanggang 512 karakter.</value></data>
-  <data name="Catalog_SkuHint" xml:space="preserve"><value>Opsyonal. Letra, numero, at - _ . / lamang.</value></data>
-  <data name="Catalog_BarcodeHint" xml:space="preserve"><value>Opsyonal. 8 hanggang 14 na numero. Sinusuri ang check digit ng EAN-8, UPC-A, EAN-13, at GTIN-14.</value></data>
+  <data name="Catalog_SkuHint" xml:space="preserve"><value>Opsyonal. Letra, numero, - _ . / lamang.</value></data>
+  <data name="Catalog_BarcodeHint" xml:space="preserve"><value>Opsyonal. 8 hanggang 14 na numero, sinusuri ang check digit.</value></data>
   <data name="Catalog_CategoryHint" xml:space="preserve"><value>Opsyonal. Aktibong kategorya lamang ang maaaring italaga.</value></data>
   <data name="Catalog_PriceHint" xml:space="preserve"><value>Zero pataas, hanggang dalawang decimal.</value></data>
   <data name="Catalog_NameRequired" xml:space="preserve"><value>Kailangan ang pangalan ng produkto.</value></data>
@@ -748,6 +748,15 @@
   <data name="Catalog_Product_EditTitle" xml:space="preserve"><value>I-edit ang produkto</value></data>
   <data name="Catalog_Product_DetailSubtitle" xml:space="preserve"><value>Produkto sa catalog</value></data>
   <data name="Catalog_Product_DetailsSection" xml:space="preserve"><value>Detalye ng produkto</value></data>
+  <data name="Catalog_Product_CodesSection" xml:space="preserve"><value>Mga code</value></data>
+  <data name="Catalog_Product_PricingSection" xml:space="preserve"><value>Presyo at yunit</value></data>
+  <data name="Catalog_Product_StockSection" xml:space="preserve"><value>Stock</value></data>
+  <data name="Catalog_TrackStock" xml:space="preserve"><value>Subaybayan ang stock ng produktong ito</value></data>
+  <data name="Catalog_TrackStockOnHint" xml:space="preserve"><value>Bumababa ang bilang kapag nakabenta. Itakda ang panimulang bilang sa Stock pagkatapos i-save.</value></data>
+  <data name="Catalog_TrackStockOffHint" xml:space="preserve"><value>Ibinebenta nang walang bilang. Puwede mong buksan ang tracking sa Stock mamaya.</value></data>
+  <data name="Catalog_TrackStockFailed" xml:space="preserve"><value>Na-save ang produkto, pero hindi nabuksan ang stock tracking. Buksan ito sa Stock.</value></data>
+  <data name="Catalog_Product_CreatedTitle" xml:space="preserve"><value>Na-save ang produkto</value></data>
+  <data name="Catalog_Product_View" xml:space="preserve"><value>Tingnan ang produkto</value></data>
   <data name="Catalog_Product_NoCategory" xml:space="preserve"><value>Walang kategorya</value></data>
   <data name="Catalog_Product_NotFoundTitle" xml:space="preserve"><value>Hindi nakita ang produkto</value></data>
   <data name="Catalog_Product_NotFoundMessage" xml:space="preserve"><value>Wala ang produktong ito sa organisasyon mo.</value></data>
