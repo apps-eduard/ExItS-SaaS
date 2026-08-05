@@ -46,6 +46,8 @@ Reuse existing Phase 8–18 Platform and POS APIs/screens wherever possible. Pre
 | [P19-WP07](../reports/P19-WP07-mobile-reports-authorization-navigation-and-ux-hardening.md) | Mobile Reports, Authorization, Navigation, and UX Hardening | **Code Complete** |
 | [P19-WP08](../reports/P19-WP08-end-to-end-validation-and-closeout.md) | End-to-End Validation and User Closeout Checklist | **Retest** (awaiting phone confirmation) |
 
+Supplemental delivery (Card/GCash simulated payments): [P19-card-gcash-payment-ui-and-simulation](../reports/P19-card-gcash-payment-ui-and-simulation.md) — **Code Complete**, phone **Retest**, `FakePaymentGateway` only, **not** production-ready.
+
 ## Scope notes
 
 | In scope | Out of scope / unchanged |

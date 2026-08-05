@@ -22,6 +22,7 @@ Sale checkout APIs, catalog lookup/list, cart service, shift current endpoint, p
 - SaleCheckout: open-shift requirement with CTA to open shift
 - Category filter + browse tiles (active products) + search/scan add-to-cart
 - Quantity adjust, cart review, cash tender + change preview, GCash/Utang paths retained
+- **Card / GCash (simulated):** checkout → `AwaitingPayment` → payment-attempt panel (secure checkout URL, QR/deep link, Dev simulate); see [P19-card-gcash-payment-ui-and-simulation](P19-card-gcash-payment-ui-and-simulation.md)
 - Optional cash customer selection UI (session-only; server still accepts CustomerId on Utang only)
 - Post-checkout navigation to `/sales/{id}/receipt`
 

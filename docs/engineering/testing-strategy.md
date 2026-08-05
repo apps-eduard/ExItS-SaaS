@@ -64,6 +64,7 @@
 - Advanced inventory (P10-WP03) ? reorder audit; derived stock states; stock counts (`CNT-` numbers); variance movements; reconciliation; `AddPosAdvancedInventory`; MAUI reorder/counts pages; full suite **1073 / 0 / 0**
 - Cashier shifts (P10-WP04) ? Open/close; CashIn/Out; expected cash; sales require Open shift; `AddPosCashierShifts`; full suite **1097 / 0 / 0**
 - Returns/refunds (P10-WP05) ? Completed returns; tender-matched refunds; void/return exclusion; `AddPosSaleReturns`; full suite **1110 / 0 / 0**
+- Card/GCash simulated payments (P19) ? `IPaymentGateway` / `FakePaymentGateway`; `payment_attempts` migration `AddPosPaymentAttempts`; `AwaitingPayment` checkout; signed webhook + Dev simulate; manual GCash transfer API; org isolation; Production simulate blocked; MAUI `SaleCheckout` electronic UX; **no live provider**; Testcontainers PostgreSQL integration tests (`PosPaymentAttemptApiTests`)
 - Permissions/reports (P10-WP06) ? product-local roles; role-aware operational reports; `AddPosOperationalRoles`; full suite **1138 / 0 / 0**
 - Multiple registers (P10-WP07) ? Register lifecycle; one Open/Register; sale/return linkage; `AddPosRegisters`; full suite **1142 / 0 / 0**
 - Full POS closeout (P10-WP08) ? WP01–WP07 reconciliation; Phase 10 migration-chain apply/rollback/re-apply; Full POS architecture guards; inventories; honest R-109; full suite **1147 / 0 / 0**

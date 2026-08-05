@@ -153,6 +153,7 @@ public static class MauiProgram
         // The checkout cart lives only in memory for the signed-in session and clears itself on
         // sign-out or organization switch; it is never persisted or queued.
         services.AddSingleton<SaleCartService>();
+        services.AddSingleton<MauiPendingPaymentStore>();
         // Phase marker: P8-WP02-simple-sales
     }
 }

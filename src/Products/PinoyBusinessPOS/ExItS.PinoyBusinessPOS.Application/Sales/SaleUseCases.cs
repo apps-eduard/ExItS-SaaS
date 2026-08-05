@@ -325,13 +325,14 @@ public sealed class CheckoutSale
             }
 
             var method = SalePaymentMethods.Parse(paymentMethod);
+            var isElectronic = SalePaymentMethods.IsElectronic(method);
             var isUtang = method == SalePaymentMethod.Utang;
 
             if (!isUtang && (customerId is not null || dueDate is not null || creditEntryId is not null))
             {
                 return ApplicationResult<Sale>.Failure(
                     DomainErrorCodes.SaleCashMustNotLinkCredit,
-                    "Cash and Manual GCash sales must not include customer, due date, or credit entry fields.");
+                    "Cash, Card, GCash, and Manual GCash sales must not include customer, due date, or credit entry fields.");
             }
 
             POSCustomerId? utangCustomerId = null;
@@ -488,6 +489,12 @@ public sealed class CheckoutSale
                         capturedTaxPricingMode),
                     async (createdSale, ct) =>
                     {
+                        // Electronic Card/GCash sales await payment — stock deducts only after Paid webhook.
+                        if (isElectronic)
+                        {
+                            return;
+                        }
+
                         await _saleStock
                             .DeductForSaleAsync(orgId, createdSale, productsById, capturedActorId, utcNow, ct)
                             .ConfigureAwait(false);

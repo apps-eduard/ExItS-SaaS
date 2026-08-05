@@ -370,6 +370,11 @@ public static class OfflineOperationTypes
     public const string SaleCheckout = "sale.checkout";
 
     /// <summary>
+    /// Server-side idempotency scope for electronic payment attempt create. Online-only.
+    /// </summary>
+    public const string PaymentAttemptCreate = "payment.attempt.create";
+
+    /// <summary>
     /// Server-side idempotency operation type for expense create. Expenses are online-only: no offline
     /// dispatcher, queue handler, or local projection exists for this type. It names the server
     /// idempotency scope so a retried create request replays instead of double-recording.

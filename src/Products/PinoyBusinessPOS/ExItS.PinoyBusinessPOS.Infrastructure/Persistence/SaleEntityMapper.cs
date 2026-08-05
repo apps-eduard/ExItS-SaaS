@@ -101,12 +101,13 @@ internal static class SaleEntityMapper
         };
 
     /// <summary>
-    /// Applies the only mutable part of a recorded sale: the void outcome. Financial fields, lines,
-    /// the sale number and the organization are never rewritten from the aggregate.
+    /// Applies mutable sale outcomes after checkout: void audit, awaiting→completed finalize,
+    /// and safe provider/manual payment reference. Financial lines and identity fields stay fixed.
     /// </summary>
     public static void ApplyToRecord(Sale sale, SaleRecord record)
     {
         record.Status = sale.Status.ToString();
+        record.GcashReference = sale.GCashReference;
         record.VoidedAtUtc = sale.VoidedAtUtc;
         record.VoidedBy = sale.VoidedBy;
         record.VoidReason = sale.VoidReason;

@@ -1,11 +1,16 @@
 @using ExItS.PinoyBusinessPOS.Application.OperationalSetup
+@using ExItS.PinoyBusinessPOS.Application.Payments
 @using ExItS.PinoyBusinessPOS.Domain.OperationalSetup
+@using ExItS.PinoyBusinessPOS.Domain.Payments
+@using ExItS.PinoyBusinessPOS.Maui.Services
+@using Microsoft.Maui.ApplicationModel
 @page "/sales/new"
 @implements IDisposable
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IPosCashierShiftClient ShiftClient
 @inject IPosSaleClient Sales
+@inject IPosPaymentAttemptClient PaymentAttempts
 @inject IPosCatalogClient Catalog
 @inject IPosCustomerClient Customers
 @inject IPosOperationalSetupClient OperationalSetup
@@ -15,6 +20,8 @@
 @inject IUtangCapabilityEvaluator Capabilities
 @inject ApiStatusLocalizer ApiLocalizer
 @inject IConnectivityService Connectivity
+@inject IAppInfoService AppInfo
+@inject MauiPendingPaymentStore PendingPayment
 @inject IStringLocalizer<PosResources> L
 
 @if (!_ready)
@@ -24,11 +31,15 @@
 else
 {
     var isUtang = _paymentMethod == PosSaleOptions.UtangPaymentMethod;
-    var isGCash = _paymentMethod == PosSaleOptions.ManualGCashPaymentMethod;
+    var isManualGCash = _paymentMethod == PosSaleOptions.ManualGCashPaymentMethod;
+    var isElectronic = SalesUiOptions.IsElectronicPaymentMethod(_paymentMethod);
+    var isCard = _paymentMethod == PosSaleOptions.CardPaymentMethod;
+    var isGCashElectronic = _paymentMethod == PosSaleOptions.GCashPaymentMethod;
     var canCreateCash = Capabilities.IsAllowed(UtangCapability.CreateSale);
     var canCreateUtang = canCreateCash && Capabilities.IsAllowed(UtangCapability.CreateCredit);
-    var paymentSelectBlocked = _isOffline || !canCreateCash;
-    var blocked = _isOffline || (isUtang ? !canCreateUtang : !canCreateCash) || _openShift is null;
+    var paymentSelectBlocked = _isOffline || !canCreateCash || _electronicPaymentOpen;
+    var blocked = _isOffline || (isUtang ? !canCreateUtang : !canCreateCash) || _openShift is null || _electronicPaymentOpen;
+    var checkoutBlocked = blocked || !Cart.IsCheckoutReady;
 <Page>
     <PageHeader Title="@L["Sales_Checkout_Title"]" Subtitle="@L["Sales_Checkout_Subtitle"]">
         <Actions>
@@ -58,6 +69,106 @@ else
         <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Sales_ErrorTitle"])" Message="@_errorMessage" />
     }
 
+    @if (_electronicPaymentOpen && _activeAttempt is not null)
+    {
+        <Section Title="@L["Sales_EPayment_Section"]">
+            <Stack Gap="3">
+                <div>
+                    <span class="pos-muted">@L["Sales_EPayment_Amount"]</span>
+                    <div class="pos-value-md"><MoneyDisplay Amount="@_activeAttempt.Amount" CurrencyCode="@(_activeAttempt.Currency ?? "PHP")" /></div>
+                </div>
+                <div>
+                    <span class="pos-muted">@L["Sales_Field_PaymentStatus"]</span>
+                    <div class="pos-value-md">
+                        <Badge Tone="@AttemptBadgeTone(_activeAttempt.Status)">@PaymentsUiOptions.AttemptStatusLabel(L, _activeAttempt.Status)</Badge>
+                    </div>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(_activeAttempt.ProviderReference))
+                {
+                    <div>
+                        <span class="pos-muted">@L["Sales_EPayment_ProviderReference"]</span>
+                        <div class="pos-value-md pos-wrap">@_activeAttempt.ProviderReference</div>
+                    </div>
+                }
+                @if (_activeAttempt.ExpiresAtUtc is DateTimeOffset expires && PaymentsUiOptions.IsActiveAttemptStatus(_activeAttempt.Status))
+                {
+                    <div class="pos-muted">@string.Format(L["Sales_EPayment_Countdown"], CountdownText(expires))</div>
+                }
+                @if (isCard)
+                {
+                    <Alert Tone="AlertTone.Info" Title="@L["Sales_EPayment_SecureCheckout"]" Message="@L["Sales_EPayment_OpenSecureCheckout"]" />
+                    @if (!string.IsNullOrWhiteSpace(_activeAttempt.CheckoutUrl))
+                    {
+                        <Button Variant="ButtonVariant.Primary"
+                                Disabled="@_paymentActing"
+                                OnClick="OpenSecureCheckoutAsync">@L["Sales_EPayment_OpenSecureCheckout"]</Button>
+                    }
+                    @if (_showDevSimulate)
+                    {
+                        <FormActions>
+                            <Button Variant="ButtonVariant.Secondary"
+                                    IsLoading="@_paymentActing"
+                                    Disabled="@_paymentActing"
+                                    OnClick='() => SimulateAsync("success")'>@L["Sales_EPayment_SimulateSuccess"]</Button>
+                            <Button Variant="ButtonVariant.Danger"
+                                    IsLoading="@_paymentActing"
+                                    Disabled="@_paymentActing"
+                                    OnClick='() => SimulateAsync("decline")'>@L["Sales_EPayment_SimulateDecline"]</Button>
+                        </FormActions>
+                    }
+                }
+                else if (isGCashElectronic)
+                {
+                    @if (!string.IsNullOrWhiteSpace(_activeAttempt.QrPayload))
+                    {
+                        <div>
+                            <span class="pos-muted">@L["Sales_EPayment_QrLabel"]</span>
+                            <div class="pos-epayment-qr">@_activeAttempt.QrPayload</div>
+                        </div>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(_activeAttempt.DeepLink))
+                    {
+                        <Button Variant="ButtonVariant.Primary"
+                                Disabled="@_paymentActing"
+                                OnClick="OpenGCashAsync">@L["Sales_EPayment_OpenGCash"]</Button>
+                    }
+                    <div class="pos-muted">@L["Sales_EPayment_IHavePaidHint"]</div>
+                    <Button Variant="ButtonVariant.Secondary"
+                            IsLoading="@_paymentActing"
+                            Disabled="@_paymentActing"
+                            OnClick="RefreshAttemptAsync">@L["Sales_EPayment_IHavePaid"]</Button>
+                }
+                @if (_activeAttempt.FailureMessage is not null)
+                {
+                    <Alert Tone="AlertTone.Danger" Title="@L["Sales_ErrorTitle"]" Message="@_activeAttempt.FailureMessage" />
+                }
+                @if (CanRetryAttempt(_activeAttempt.Status))
+                {
+                    <FormActions>
+                        <Button Variant="ButtonVariant.Primary"
+                                IsLoading="@_paymentActing"
+                                Disabled="@_paymentActing"
+                                OnClick="RetryPaymentAsync">@L["Sales_EPayment_Retry"]</Button>
+                        <Button Variant="ButtonVariant.Secondary"
+                                Disabled="@_paymentActing"
+                                OnClick="ChangePaymentMethodAsync">@L["Sales_EPayment_ChangeMethod"]</Button>
+                    </FormActions>
+                }
+                else if (PaymentsUiOptions.IsActiveAttemptStatus(_activeAttempt.Status))
+                {
+                    <FormActions>
+                        <Button Variant="ButtonVariant.Danger"
+                                IsLoading="@_paymentActing"
+                                Disabled="@_paymentActing"
+                                OnClick="CancelPaymentAsync">@L["Sales_EPayment_Cancel"]</Button>
+                    </FormActions>
+                }
+            </Stack>
+        </Section>
+    }
+
+    @if (!_electronicPaymentOpen)
+    {
     <Section Title="@L["Sales_Checkout_LookupSection"]">
         <Stack Gap="3">
             <Select Label="@L["Sales_Checkout_CategoryFilter"]"
@@ -176,12 +287,19 @@ else
 
     <Section Title="@L["Sales_Checkout_PaymentSection"]">
         <Stack Gap="3">
-            <Select Label="@L["Sales_Field_PaymentMethod"]"
-                    Value="@_paymentMethod"
-                    ValueChanged="OnPaymentMethodChanged"
-                    Options="@SalesUiOptions.PaymentMethods(L)"
-                    Required="true"
-                    Disabled="@paymentSelectBlocked" />
+            <span class="pos-muted">@L["Sales_Field_PaymentMethod"]</span>
+            <div class="pos-payment-method-grid">
+                @foreach (var methodCode in SalesUiOptions.CheckoutPaymentMethodCodes)
+                {
+                    var selected = string.Equals(_paymentMethod, methodCode, StringComparison.Ordinal);
+                    <button type="button"
+                            class="@($"pos-payment-method-tile{(selected ? " pos-payment-method-tile--selected" : string.Empty)}")"
+                            disabled="@paymentSelectBlocked"
+                            @onclick="() => OnPaymentMethodChanged(methodCode)">
+                        @SalesUiOptions.PaymentMethodLabel(L, methodCode)
+                    </button>
+                }
+            </div>
 
             @if (isUtang)
             {
@@ -246,7 +364,7 @@ else
                                Disabled="@blocked" />
                 }
             }
-            else if (isGCash)
+            else if (isManualGCash)
             {
                 <Alert Tone="AlertTone.Warning" Title="@L["Sales_GCash_ManualTitle"]" Message="@L["Sales_GCash_ManualWarning"]" />
                 <TextInput Label="@L["Sales_Field_GCashReference"]"
@@ -259,6 +377,62 @@ else
                 <Checkbox Value="@_gcashConfirmed"
                           ValueChanged="v => _gcashConfirmed = v"
                           Disabled="@blocked">@L["Sales_GCash_ConfirmReceived"]</Checkbox>
+            }
+            else if (isElectronic)
+            {
+                <Section Title="@L["Sales_Checkout_OptionalCustomer"]">
+                    <Stack Gap="3">
+                        <TextInput Label="@L["Sales_Checkout_CustomerSearch"]"
+                                   Value="@_customerSearch"
+                                   ValueChanged="v => _customerSearch = v"
+                                   Hint="@L["Sales_Checkout_SelectCustomer"]"
+                                   Disabled="@(blocked || _searchingCustomers)" />
+                        <FormActions>
+                            <Button Variant="ButtonVariant.Secondary"
+                                    IsLoading="@_searchingCustomers"
+                                    Disabled="@blocked"
+                                    OnClick="SearchCustomersAsync">@L["Sales_Checkout_Search"]</Button>
+                            <Button Variant="ButtonVariant.Ghost"
+                                    Disabled="@blocked"
+                                    OnClick="GoResolveCustomerExItsId">@L["Personal_AddByExItsId"]</Button>
+                            @if (_selectedCustomer is not null)
+                            {
+                                <Button Variant="ButtonVariant.Secondary"
+                                        Disabled="@blocked"
+                                        OnClick="ClearCustomerSelection">@L["Sales_Checkout_Remove"]</Button>
+                            }
+                        </FormActions>
+
+                        @if (_customerMatches.Count > 0)
+                        {
+                            <Stack Gap="2">
+                                @foreach (var match in _customerMatches)
+                                {
+                                    <div class="pos-row">
+                                        <span class="pos-value-md">@match.DisplayName</span>
+                                        <span class="pos-muted">@(string.IsNullOrWhiteSpace(match.MobileNumber) ? L["Customers_NoMobile"] : match.MobileNumber)</span>
+                                        <Button Variant="ButtonVariant.Secondary"
+                                                Disabled="@blocked"
+                                                OnClick="() => SelectCustomerAsync(match)">@L["Sales_Checkout_SelectCustomer"]</Button>
+                                    </div>
+                                }
+                            </Stack>
+                        }
+
+                        @if (_selectedCustomer is not null)
+                        {
+                            <div>
+                                <span class="pos-muted">@L["Sales_Checkout_SelectCustomer"]</span>
+                                <div class="pos-value-md">@_selectedCustomer.DisplayName</div>
+                            </div>
+                        }
+                    </Stack>
+                </Section>
+                <div>
+                    <span class="pos-muted">@L["Sales_Field_Total"]</span>
+                    <div class="pos-value-md"><MoneyDisplay Amount="@PayableTotal" CurrencyCode="PHP" /></div>
+                </div>
+                <div class="pos-muted">@(isCard ? L["Sales_EPayment_SecureCheckout"] : L["Sales_EPayment_QrLabel"])</div>
             }
             else
             {
@@ -327,14 +501,18 @@ else
             }
         </Stack>
     </Section>
+    }
 
+    @if (!_electronicPaymentOpen)
+    {
     <FormActions>
         <Button Variant="ButtonVariant.Secondary" Disabled="@_saving" OnClick="GoList">@L["Sales_Cancel"]</Button>
         <Button Variant="ButtonVariant.Primary"
                 IsLoading="@_saving"
-                Disabled="@(blocked || !Cart.IsCheckoutReady)"
+                Disabled="@checkoutBlocked"
                 OnClick="OpenConfirm">@L["Sales_Checkout_Confirm"]</Button>
     </FormActions>
+    }
 
     <ConfirmDialog Visible="@_confirm"
                    VisibleChanged="v => _confirm = v"
@@ -393,6 +571,22 @@ else
 
     /// <summary>Stable per-attempt credit entry id for Product-Based Utang checkout idempotency.</summary>
     private Guid _attemptCreditEntryId = Guid.NewGuid();
+
+    /// <summary>Stable idempotency key reused while creating or retrying a payment attempt.</summary>
+    private string _attemptPaymentIdempotencyKey = Guid.NewGuid().ToString("N");
+
+    private bool _electronicPaymentOpen;
+    private bool _paymentActing;
+    private PaymentAttemptDto? _activeAttempt;
+    private Guid? _awaitingPaymentSaleId;
+    private System.Threading.Timer? _countdownTimer;
+    private bool _showDevSimulate;
+
+    protected override void OnInitialized()
+    {
+        _showDevSimulate = !string.Equals(AppInfo.EnvironmentName, "Production", StringComparison.OrdinalIgnoreCase)
+            && !string.Equals(AppInfo.EnvironmentName, "Release", StringComparison.OrdinalIgnoreCase);
+    }
 
     /// <summary>Preview tax matching server OperationalSetupTaxCalculator (display only).</summary>
     private decimal TaxPreview
@@ -484,7 +678,64 @@ else
             await LoadOperationalSetupAsync();
             await LoadCategoriesAsync();
             await LoadBrowseProductsAsync();
+            await TryRestorePendingPaymentAsync();
         }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_ready && !_isOffline)
+        {
+            await TryRestorePendingPaymentAsync();
+        }
+    }
+
+    private async Task TryRestorePendingPaymentAsync()
+    {
+        var pending = PendingPayment.Get();
+        if (pending is null)
+        {
+            return;
+        }
+
+        var orgId = CurrentUser.Session?.OrganizationId;
+        if (orgId is not null && pending.OrganizationId is Guid storedOrg && storedOrg != orgId)
+        {
+            PendingPayment.Clear();
+            return;
+        }
+
+        _awaitingPaymentSaleId = pending.SaleId;
+        _attemptPaymentIdempotencyKey = string.IsNullOrWhiteSpace(pending.IdempotencyKey)
+            ? Guid.NewGuid().ToString("N")
+            : pending.IdempotencyKey;
+        if (!string.IsNullOrWhiteSpace(pending.PaymentMethod))
+        {
+            _paymentMethod = pending.PaymentMethod;
+        }
+
+        if (pending.AttemptId is not Guid attemptId)
+        {
+            _electronicPaymentOpen = true;
+            await CreateOrRestorePaymentAttemptAsync(pending.SaleId);
+            return;
+        }
+
+        var attemptResult = await PaymentAttempts.GetAsync(attemptId);
+        if (!attemptResult.IsSuccess || attemptResult.Data is null)
+        {
+            return;
+        }
+
+        _activeAttempt = attemptResult.Data;
+        if (PaymentsUiOptions.IsTerminalAttemptStatus(_activeAttempt.Status))
+        {
+            await HandleTerminalAttemptAsync(_activeAttempt);
+            return;
+        }
+
+        _electronicPaymentOpen = true;
+        StartCountdownTimer();
     }
 
     private async Task LoadOperationalSetupAsync()
@@ -528,6 +779,11 @@ else
         if (next == PosSaleOptions.ManualGCashPaymentMethod)
         {
             ClearCustomerSelection();
+            _amountTendered = null;
+        }
+        else if (SalesUiOptions.IsElectronicPaymentMethod(next))
+        {
+            _amountTendered = null;
         }
         else if (wasUtang && next != PosSaleOptions.UtangPaymentMethod)
         {
@@ -547,6 +803,12 @@ else
             {
                 _ = LoadSelectedCustomerOutstandingAsync();
             }
+        }
+        else if (SalesUiOptions.IsElectronicPaymentMethod(_paymentMethod))
+        {
+            _amountTendered = null;
+            _gcashReference = null;
+            _gcashConfirmed = false;
         }
         else
         {
@@ -811,6 +1073,15 @@ else
                 return;
             }
         }
+        else if (SalesUiOptions.IsElectronicPaymentMethod(_paymentMethod))
+        {
+            if (Cart.Subtotal <= 0m)
+            {
+                _errorTitle = L["Sales_ErrorTitle"];
+                _errorMessage = L["Sales_Checkout_CartEmptyMessage"];
+                return;
+            }
+        }
         else
         {
             if (_amountTendered is null)
@@ -858,7 +1129,7 @@ else
         var request = new CheckoutSaleRequest(
             Cart.ToCheckoutLines(),
             _paymentMethod,
-            isUtang || _paymentMethod == PosSaleOptions.ManualGCashPaymentMethod ? null : _amountTendered,
+            isUtang || _paymentMethod == PosSaleOptions.ManualGCashPaymentMethod || SalesUiOptions.IsElectronicPaymentMethod(_paymentMethod) ? null : _amountTendered,
             _paymentMethod == PosSaleOptions.ManualGCashPaymentMethod ? _gcashReference : null,
             _attemptSaleId,
             isUtang ? _selectedCustomer!.CustomerId : null,
@@ -871,6 +1142,15 @@ else
 
         if (result.IsSuccess && result.Data is not null)
         {
+            if (string.Equals(result.Data.Status, PosSaleOptions.AwaitingPaymentStatus, StringComparison.Ordinal))
+            {
+                _awaitingPaymentSaleId = result.Data.SaleId;
+                Cart.Clear();
+                ClearCustomerSelection();
+                await CreateOrRestorePaymentAttemptAsync(result.Data.SaleId);
+                return;
+            }
+
             Cart.Clear();
             ClearCustomerSelection();
             _attemptSaleId = Guid.NewGuid();
@@ -883,6 +1163,239 @@ else
         _errorTitle = described.Title;
         _errorMessage = result.Error?.Detail ?? described.Message;
     }
+
+    private async Task CreateOrRestorePaymentAttemptAsync(Guid saleId)
+    {
+        if (_paymentActing)
+        {
+            return;
+        }
+
+        _paymentActing = true;
+        _errorTitle = null;
+        _errorMessage = null;
+
+        var request = new CreatePaymentAttemptRequest(
+            _paymentMethod,
+            _attemptPaymentIdempotencyKey);
+
+        var result = await PaymentAttempts.CreateAsync(saleId, request);
+        _paymentActing = false;
+
+        if (!result.IsSuccess || result.Data is null)
+        {
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorTitle = described.Title;
+            _errorMessage = result.Error?.Detail ?? described.Message;
+            return;
+        }
+
+        await OpenElectronicPaymentAsync(result.Data);
+    }
+
+    private async Task OpenElectronicPaymentAsync(PaymentAttemptDto attempt)
+    {
+        _activeAttempt = attempt;
+        _awaitingPaymentSaleId = attempt.SaleId;
+        _electronicPaymentOpen = true;
+        PendingPayment.Save(new PendingPaymentState(
+            attempt.SaleId,
+            attempt.Id,
+            _attemptPaymentIdempotencyKey,
+            CurrentUser.Session?.OrganizationId,
+            _paymentMethod));
+        StartCountdownTimer();
+        await InvokeAsync(StateHasChanged);
+
+        if (PaymentsUiOptions.IsTerminalAttemptStatus(attempt.Status))
+        {
+            await HandleTerminalAttemptAsync(attempt);
+        }
+    }
+
+    private async Task RefreshAttemptAsync()
+    {
+        if (_activeAttempt is null || _paymentActing)
+        {
+            return;
+        }
+
+        _paymentActing = true;
+        var result = await PaymentAttempts.GetAsync(_activeAttempt.Id);
+        _paymentActing = false;
+
+        if (!result.IsSuccess || result.Data is null)
+        {
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorTitle = described.Title;
+            _errorMessage = result.Error?.Detail ?? described.Message;
+            return;
+        }
+
+        _activeAttempt = result.Data;
+        await HandleTerminalAttemptAsync(_activeAttempt);
+    }
+
+    private async Task CancelPaymentAsync()
+    {
+        if (_activeAttempt is null || _paymentActing)
+        {
+            return;
+        }
+
+        _paymentActing = true;
+        var result = await PaymentAttempts.CancelAsync(_activeAttempt.Id);
+        _paymentActing = false;
+
+        if (!result.IsSuccess || result.Data is null)
+        {
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorTitle = described.Title;
+            _errorMessage = result.Error?.Detail ?? described.Message;
+            return;
+        }
+
+        _activeAttempt = result.Data;
+        await HandleTerminalAttemptAsync(_activeAttempt);
+    }
+
+    private async Task SimulateAsync(string outcome)
+    {
+        if (_activeAttempt is null || _paymentActing || !_showDevSimulate)
+        {
+            return;
+        }
+
+        _paymentActing = true;
+        var result = await PaymentAttempts.SimulateAsync(
+            _activeAttempt.Id,
+            new SimulatePaymentRequest(outcome));
+        _paymentActing = false;
+
+        if (!result.IsSuccess || result.Data is null)
+        {
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorTitle = described.Title;
+            _errorMessage = result.Error?.Detail ?? described.Message;
+            return;
+        }
+
+        _activeAttempt = result.Data;
+        await HandleTerminalAttemptAsync(_activeAttempt);
+    }
+
+    private async Task RetryPaymentAsync()
+    {
+        if (_awaitingPaymentSaleId is not Guid saleId || _paymentActing)
+        {
+            return;
+        }
+
+        _attemptPaymentIdempotencyKey = Guid.NewGuid().ToString("N");
+        await CreateOrRestorePaymentAttemptAsync(saleId);
+    }
+
+    private Task ChangePaymentMethodAsync()
+    {
+        ResetElectronicPaymentState(clearPending: true);
+        _paymentMethod = PosSaleOptions.CashPaymentMethod;
+        _attemptSaleId = Guid.NewGuid();
+        return Task.CompletedTask;
+    }
+
+    private async Task HandleTerminalAttemptAsync(PaymentAttemptDto attempt)
+    {
+        if (string.Equals(attempt.Status, nameof(PaymentAttemptStatus.Paid), StringComparison.Ordinal))
+        {
+            StopCountdownTimer();
+            PendingPayment.Clear();
+            _electronicPaymentOpen = false;
+            _activeAttempt = null;
+            _awaitingPaymentSaleId = null;
+            _attemptSaleId = Guid.NewGuid();
+            _attemptCreditEntryId = Guid.NewGuid();
+            _attemptPaymentIdempotencyKey = Guid.NewGuid().ToString("N");
+            Nav.NavigateTo($"/sales/{attempt.SaleId:D}/receipt?attemptId={attempt.Id:D}");
+            return;
+        }
+
+        if (CanRetryAttempt(attempt.Status))
+        {
+            StopCountdownTimer();
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private static bool CanRetryAttempt(string? status) =>
+        status is nameof(PaymentAttemptStatus.Failed)
+            or nameof(PaymentAttemptStatus.Cancelled)
+            or nameof(PaymentAttemptStatus.Expired);
+
+    private async Task OpenSecureCheckoutAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_activeAttempt?.CheckoutUrl))
+        {
+            return;
+        }
+
+        await Launcher.Default.OpenAsync(new Uri(_activeAttempt.CheckoutUrl));
+    }
+
+    private async Task OpenGCashAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_activeAttempt?.DeepLink))
+        {
+            return;
+        }
+
+        await Launcher.Default.OpenAsync(new Uri(_activeAttempt.DeepLink));
+    }
+
+    private void StartCountdownTimer()
+    {
+        StopCountdownTimer();
+        _countdownTimer = new System.Threading.Timer(_ => _ = InvokeAsync(StateHasChanged), null, TimeSpan.Zero, TimeSpan.FromSeconds(1));
+    }
+
+    private void StopCountdownTimer()
+    {
+        _countdownTimer?.Dispose();
+        _countdownTimer = null;
+    }
+
+    private void ResetElectronicPaymentState(bool clearPending)
+    {
+        StopCountdownTimer();
+        _electronicPaymentOpen = false;
+        _activeAttempt = null;
+        _awaitingPaymentSaleId = null;
+        if (clearPending)
+        {
+            PendingPayment.Clear();
+        }
+    }
+
+    private static string CountdownText(DateTimeOffset expiresAtUtc)
+    {
+        var remaining = expiresAtUtc - DateTimeOffset.UtcNow;
+        if (remaining <= TimeSpan.Zero)
+        {
+            return "0:00";
+        }
+
+        return remaining.TotalHours >= 1d
+            ? $"{(int)remaining.TotalHours}:{remaining.Minutes:D2}:{remaining.Seconds:D2}"
+            : $"{remaining.Minutes}:{remaining.Seconds:D2}";
+    }
+
+    private static BadgeTone AttemptBadgeTone(string? status) => status switch
+    {
+        nameof(PaymentAttemptStatus.Paid) => BadgeTone.Success,
+        nameof(PaymentAttemptStatus.Failed) or nameof(PaymentAttemptStatus.Expired) => BadgeTone.Danger,
+        nameof(PaymentAttemptStatus.Cancelled) => BadgeTone.Neutral,
+        _ => BadgeTone.Warning
+    };
 
     private void GoList()
     {
@@ -899,5 +1412,9 @@ else
 
     private void GoOpenShift() => Nav.NavigateTo("/shifts/open");
 
-    public void Dispose() => Cart.Changed -= OnCartChanged;
+    public void Dispose()
+    {
+        Cart.Changed -= OnCartChanged;
+        StopCountdownTimer();
+    }
 }

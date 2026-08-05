@@ -64,6 +64,37 @@ public static class DomainErrorCodes
     public const string SaleAmountTenderedBelowTotal = "pos.sale.amount_tendered.below_total";
     public const string InvalidSaleGCashReference = "pos.sale.gcash_reference.invalid";
     public const string InvalidSaleVoidReason = "pos.sale.void_reason.invalid";
+    public const string SaleAwaitingPaymentCannotFinalize =
+        "pos.sale.awaiting_payment.cannot_finalize";
+    public const string SaleNotAwaitingPayment = "pos.sale.not_awaiting_payment";
+
+    public const string InvalidPaymentAttemptId = "pos.payment_attempt.id.invalid";
+    public const string InvalidPaymentAttemptMethod = "pos.payment_attempt.method.invalid";
+    public const string InvalidPaymentAttemptStatusTransition =
+        "pos.payment_attempt.status.invalid_transition";
+    public const string InvalidPaymentAttemptAmount = "pos.payment_attempt.amount.invalid";
+    public const string InvalidPaymentAttemptCurrency = "pos.payment_attempt.currency.invalid";
+    public const string InvalidPaymentAttemptIdempotencyKey =
+        "pos.payment_attempt.idempotency_key.invalid";
+    public const string InvalidPaymentAttemptProviderReference =
+        "pos.payment_attempt.provider_reference.invalid";
+    public const string InvalidPaymentAttemptExternalReference =
+        "pos.payment_attempt.external_reference.invalid";
+    public const string InvalidPaymentAttemptUrl = "pos.payment_attempt.url.invalid";
+    public const string InvalidPaymentAttemptQr = "pos.payment_attempt.qr.invalid";
+    public const string InvalidPaymentAttemptFailure = "pos.payment_attempt.failure.invalid";
+    public const string InvalidPaymentAttemptMetadata = "pos.payment_attempt.metadata.invalid";
+    public const string InvalidPaymentAttemptVerification =
+        "pos.payment_attempt.verification.invalid";
+    public const string InvalidPaymentAttemptActor = "pos.payment_attempt.actor.invalid";
+    public const string InvalidPaymentAttemptTime = "pos.payment_attempt.time.invalid";
+    public const string DuplicatePaymentAttemptExternalReference =
+        "pos.payment_attempt.external_reference.duplicate";
+    public const string PaymentAttemptNotFound = "pos.payment_attempt.not_found";
+    public const string PaymentWebhookSignatureInvalid =
+        "pos.payment_webhook.signature.invalid";
+    public const string PaymentSimulatorDisabled = "pos.payment_simulator.disabled";
+
     public const string InvalidSaleLineQuantity = "pos.sale_line.quantity.invalid";
     public const string InvalidSaleLineUnitPrice = "pos.sale_line.unit_price.invalid";
     public const string InvalidSaleLineNameSnapshot = "pos.sale_line.name.invalid";

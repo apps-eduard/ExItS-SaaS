@@ -18,6 +18,8 @@
 | Sale lines / inventory | Product-confidential | POS | **No** | POS | Aggregate OK; no dumps | POS |
 | RetailPayment / CreditPayment | Financial (retail) | POS | **No** as SaaSPayment | POS | Redact tender details as needed | POS |
 | POS GCash reference number | Financial / internal | POS | **No** to Platform | POS | OK (not a secret); never log PINs/OTPs | POS |
+| POS payment attempt provider / external reference | Financial / internal | POS | **No** to Platform | POS | OK (not PAN/CVV); never log wallet secrets | POS |
+| POS payment card brand / last four (post-settlement metadata) | Financial / internal | POS | **No** to Platform | POS | OK; never full PAN/CVV | POS |
 | GCash credentials / PIN / OTP / tokens | Security-sensitive | — | **Never store** | — | Never | N/A |
 | Platform SaaS GCash (future) | Financial | Platform | Admin / billing only | Platform billing | Redact instrument data | Platform |
 | CorrelationId / EventId | Internal operational | Publisher | Yes | All audit peers | OK | Publisher retention |

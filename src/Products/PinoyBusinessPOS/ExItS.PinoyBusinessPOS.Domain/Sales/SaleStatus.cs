@@ -7,5 +7,7 @@ namespace ExItS.PinoyBusinessPOS.Domain.Sales;
 public enum SaleStatus
 {
     Completed = 0,
-    Voided = 1
+    Voided = 1,
+    /// <summary>Electronic payment started; sale is not finalized and must not deduct stock yet.</summary>
+    AwaitingPayment = 2
 }

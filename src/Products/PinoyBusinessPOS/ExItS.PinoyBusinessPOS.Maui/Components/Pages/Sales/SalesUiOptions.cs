@@ -20,15 +20,34 @@ internal static class SalesUiOptions
         string.IsNullOrWhiteSpace(code) ? string.Empty : localizer[$"Sales_Payment_{code}"].Value;
 
     public static string StatusLabel(IStringLocalizer<PosResources> localizer, string? status) =>
-        string.Equals(status, PosSaleOptions.VoidedStatus, StringComparison.Ordinal)
-            ? localizer["Sales_Status_Voided"].Value
-            : localizer["Sales_Status_Completed"].Value;
+        status switch
+        {
+            _ when string.Equals(status, PosSaleOptions.VoidedStatus, StringComparison.Ordinal)
+                => localizer["Sales_Status_Voided"].Value,
+            _ when string.Equals(status, PosSaleOptions.AwaitingPaymentStatus, StringComparison.Ordinal)
+                => localizer["Sales_Status_AwaitingPayment"].Value,
+            _ => localizer["Sales_Status_Completed"].Value
+        };
 
     public static IReadOnlyList<SelectOption> StatusFilters(IStringLocalizer<PosResources> localizer) =>
     [
         new(string.Empty, localizer["Sales_Filter_AllStatuses"].Value),
         new(PosSaleOptions.CompletedStatus, localizer["Sales_Status_Completed"].Value),
+        new(PosSaleOptions.AwaitingPaymentStatus, localizer["Sales_Status_AwaitingPayment"].Value),
         new(PosSaleOptions.VoidedStatus, localizer["Sales_Status_Voided"].Value)
+    ];
+
+    public static bool IsElectronicPaymentMethod(string? code) =>
+        string.Equals(code, PosSaleOptions.CardPaymentMethod, StringComparison.Ordinal)
+        || string.Equals(code, PosSaleOptions.GCashPaymentMethod, StringComparison.Ordinal);
+
+    public static IReadOnlyList<string> CheckoutPaymentMethodCodes { get; } =
+    [
+        PosSaleOptions.CashPaymentMethod,
+        PosSaleOptions.CardPaymentMethod,
+        PosSaleOptions.GCashPaymentMethod,
+        PosSaleOptions.ManualGCashPaymentMethod,
+        PosSaleOptions.UtangPaymentMethod
     ];
 
     public static IReadOnlyList<SelectOption> PaymentMethodFilters(IStringLocalizer<PosResources> localizer)

@@ -29,6 +29,7 @@ internal static class PosApiResults
             or ApplicationErrorCodes.CategoryNotFound
             or ApplicationErrorCodes.ProductNotFound
             or ApplicationErrorCodes.SaleNotFound
+            or DomainErrorCodes.PaymentAttemptNotFound
             or ApplicationErrorCodes.InventoryAccountNotFound
             or ApplicationErrorCodes.InventoryProductNotFound
             or ApplicationErrorCodes.ExpenseCategoryNotFound
@@ -58,6 +59,7 @@ internal static class PosApiResults
             or DomainErrorCodes.ProductNotActive
             or ApplicationErrorCodes.SaleNumberConflict
             or ApplicationErrorCodes.SaleProductNotActive
+            or ApplicationErrorCodes.PaymentAttemptConflict
             or DomainErrorCodes.InvalidSaleStatusTransition
             or ApplicationErrorCodes.CreditReversalRequiresSaleVoid
             or ApplicationErrorCodes.SaleVoidBlockedBySubsequentUtangActivity

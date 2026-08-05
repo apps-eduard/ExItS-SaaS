@@ -14,14 +14,18 @@ public static class PosSaleOptions
     public static IReadOnlyList<string> SaleStatuses { get; } =
     [
         nameof(SaleStatus.Completed),
-        nameof(SaleStatus.Voided)
+        nameof(SaleStatus.Voided),
+        nameof(SaleStatus.AwaitingPayment)
     ];
 
     public const string CompletedStatus = nameof(SaleStatus.Completed);
     public const string VoidedStatus = nameof(SaleStatus.Voided);
+    public const string AwaitingPaymentStatus = nameof(SaleStatus.AwaitingPayment);
     public const string CashPaymentMethod = nameof(SalePaymentMethod.Cash);
     public const string ManualGCashPaymentMethod = nameof(SalePaymentMethod.ManualGCash);
     public const string UtangPaymentMethod = nameof(SalePaymentMethod.Utang);
+    public const string CardPaymentMethod = nameof(SalePaymentMethod.Card);
+    public const string GCashPaymentMethod = nameof(SalePaymentMethod.GCash);
 
     public const int GCashReferenceMaxLength = Sale.GCashReferenceMaxLength;
     public const int VoidReasonMaxLength = Sale.VoidReasonMaxLength;

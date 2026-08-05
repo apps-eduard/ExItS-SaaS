@@ -22,6 +22,7 @@ Complete sales history list/detail and post-sale receipt surface with next-sale 
 - Sales list with filters, paging, offline/error/retry (existing, retained)
 - Sale detail Receipt action for completed sales when ViewGenerateReceipt or ViewSales
 - New SaleReceipt page: header, lines, totals, tender/change, next sale / back
+- Card/GCash sales complete only after simulated payment attempt → receipt (AwaitingPayment interim state not receipt-eligible)
 
 ## 4. Residuals
 

@@ -815,7 +815,10 @@
   <data name="Sales_Filter_AllPayments" xml:space="preserve"><value>Lahat ng paraan ng bayad</value></data>
   <data name="Sales_Status_Completed" xml:space="preserve"><value>Tapos</value></data>
   <data name="Sales_Status_Voided" xml:space="preserve"><value>Kanselado</value></data>
+  <data name="Sales_Status_AwaitingPayment" xml:space="preserve"><value>Naghihintay ng bayad</value></data>
   <data name="Sales_Payment_Cash" xml:space="preserve"><value>Cash</value></data>
+  <data name="Sales_Payment_Card" xml:space="preserve"><value>Card</value></data>
+  <data name="Sales_Payment_GCash" xml:space="preserve"><value>GCash</value></data>
   <data name="Sales_Payment_ManualGCash" xml:space="preserve"><value>GCash (manual)</value></data>
   <data name="Sales_Payment_Utang" xml:space="preserve"><value>Utang</value></data>
   <data name="Sales_Col_SaleNumber" xml:space="preserve"><value>Numero ng benta</value></data>
@@ -862,6 +865,37 @@
   <data name="Sales_GCash_ReferenceTooLong" xml:space="preserve"><value>Masyadong mahaba ang GCash reference.</value></data>
   <data name="Sales_GCash_ConfirmReceived" xml:space="preserve"><value>Tiniyak ko na natanggap ang bayad sa GCash.</value></data>
   <data name="Sales_GCash_ConfirmRequired" xml:space="preserve"><value>Tiyakin muna na natanggap ang bayad sa GCash.</value></data>
+  <data name="Sales_EPayment_Section" xml:space="preserve"><value>Electronic payment</value></data>
+  <data name="Sales_EPayment_SecureCheckout" xml:space="preserve"><value>Secure card checkout</value></data>
+  <data name="Sales_EPayment_OpenSecureCheckout" xml:space="preserve"><value>Buksan ang secure checkout</value></data>
+  <data name="Sales_EPayment_SimulateSuccess" xml:space="preserve"><value>Simulate success</value></data>
+  <data name="Sales_EPayment_SimulateDecline" xml:space="preserve"><value>Simulate decline</value></data>
+  <data name="Sales_EPayment_OpenGCash" xml:space="preserve"><value>Buksan ang GCash</value></data>
+  <data name="Sales_EPayment_IHavePaid" xml:space="preserve"><value>Nagbayad na ako</value></data>
+  <data name="Sales_EPayment_IHavePaidHint" xml:space="preserve"><value>I-refresh ang status mula sa server. Hindi nito mina-mark ang benta bilang bayad.</value></data>
+  <data name="Sales_EPayment_QrLabel" xml:space="preserve"><value>I-scan o kopyahin ang QR payload sa GCash</value></data>
+  <data name="Sales_EPayment_ProviderReference" xml:space="preserve"><value>Provider reference</value></data>
+  <data name="Sales_EPayment_Amount" xml:space="preserve"><value>Halagang babayaran</value></data>
+  <data name="Sales_EPayment_Countdown" xml:space="preserve"><value>Mag-e-expire sa {0}</value></data>
+  <data name="Sales_EPayment_Expired" xml:space="preserve"><value>Expired na ang payment session.</value></data>
+  <data name="Sales_EPayment_Retry" xml:space="preserve"><value>Subukan muli</value></data>
+  <data name="Sales_EPayment_Cancel" xml:space="preserve"><value>Kanselahin ang bayad</value></data>
+  <data name="Sales_EPayment_ChangeMethod" xml:space="preserve"><value>Palitan ang paraan ng bayad</value></data>
+  <data name="Sales_EPayment_Status_Created" xml:space="preserve"><value>Created</value></data>
+  <data name="Sales_EPayment_Status_Pending" xml:space="preserve"><value>Pending</value></data>
+  <data name="Sales_EPayment_Status_RequiresCustomerAction" xml:space="preserve"><value>Kailangan ng aksyon</value></data>
+  <data name="Sales_EPayment_Status_Processing" xml:space="preserve"><value>Pinoproseso</value></data>
+  <data name="Sales_EPayment_Status_Paid" xml:space="preserve"><value>Bayad na</value></data>
+  <data name="Sales_EPayment_Status_Failed" xml:space="preserve"><value>Nabigo</value></data>
+  <data name="Sales_EPayment_Status_Cancelled" xml:space="preserve"><value>Kanselado</value></data>
+  <data name="Sales_EPayment_Status_Expired" xml:space="preserve"><value>Expired</value></data>
+  <data name="Sales_Field_PaymentStatus" xml:space="preserve"><value>Status ng bayad</value></data>
+  <data name="Sales_Field_Provider" xml:space="preserve"><value>Provider</value></data>
+  <data name="Sales_Field_ProviderReference" xml:space="preserve"><value>Provider reference</value></data>
+  <data name="Sales_Field_PaidAt" xml:space="preserve"><value>Oras ng bayad</value></data>
+  <data name="Sales_Field_CardBrand" xml:space="preserve"><value>Card brand</value></data>
+  <data name="Sales_Field_CardLastFour" xml:space="preserve"><value>Huling apat na digit</value></data>
+  <data name="Sales_Detail_ResumePayment" xml:space="preserve"><value>Kumpletuhin ang bayad</value></data>
   <data name="Sales_Void" xml:space="preserve"><value>Kanselahin ang benta</value></data>
   <data name="Sales_VoidTitle" xml:space="preserve"><value>Kanselahin ang bentang ito?</value></data>
   <data name="Sales_VoidMessage" xml:space="preserve"><value>Hindi na kasama sa kabuuan ang kanseladong benta. Hindi ito nagsasauli ng pera at hindi nagbabago ng stock. Maglagay ng dahilan.</value></data>

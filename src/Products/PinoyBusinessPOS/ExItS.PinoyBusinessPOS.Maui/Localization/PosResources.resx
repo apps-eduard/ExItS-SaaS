@@ -815,7 +815,10 @@
   <data name="Sales_Filter_AllPayments" xml:space="preserve"><value>All payment methods</value></data>
   <data name="Sales_Status_Completed" xml:space="preserve"><value>Completed</value></data>
   <data name="Sales_Status_Voided" xml:space="preserve"><value>Voided</value></data>
+  <data name="Sales_Status_AwaitingPayment" xml:space="preserve"><value>Awaiting payment</value></data>
   <data name="Sales_Payment_Cash" xml:space="preserve"><value>Cash</value></data>
+  <data name="Sales_Payment_Card" xml:space="preserve"><value>Card</value></data>
+  <data name="Sales_Payment_GCash" xml:space="preserve"><value>GCash</value></data>
   <data name="Sales_Payment_ManualGCash" xml:space="preserve"><value>GCash (manual)</value></data>
   <data name="Sales_Payment_Utang" xml:space="preserve"><value>Utang</value></data>
   <data name="Sales_Col_SaleNumber" xml:space="preserve"><value>Sale number</value></data>
@@ -862,6 +865,37 @@
   <data name="Sales_GCash_ReferenceTooLong" xml:space="preserve"><value>The GCash reference is too long.</value></data>
   <data name="Sales_GCash_ConfirmReceived" xml:space="preserve"><value>I confirmed the GCash payment was received.</value></data>
   <data name="Sales_GCash_ConfirmRequired" xml:space="preserve"><value>Confirm the GCash payment was received first.</value></data>
+  <data name="Sales_EPayment_Section" xml:space="preserve"><value>Electronic payment</value></data>
+  <data name="Sales_EPayment_SecureCheckout" xml:space="preserve"><value>Secure card checkout</value></data>
+  <data name="Sales_EPayment_OpenSecureCheckout" xml:space="preserve"><value>Open secure checkout</value></data>
+  <data name="Sales_EPayment_SimulateSuccess" xml:space="preserve"><value>Simulate success</value></data>
+  <data name="Sales_EPayment_SimulateDecline" xml:space="preserve"><value>Simulate decline</value></data>
+  <data name="Sales_EPayment_OpenGCash" xml:space="preserve"><value>Open GCash</value></data>
+  <data name="Sales_EPayment_IHavePaid" xml:space="preserve"><value>I have paid</value></data>
+  <data name="Sales_EPayment_IHavePaidHint" xml:space="preserve"><value>Refreshes payment status from the server. Does not mark the sale as paid.</value></data>
+  <data name="Sales_EPayment_QrLabel" xml:space="preserve"><value>Scan or copy this QR payload in GCash</value></data>
+  <data name="Sales_EPayment_ProviderReference" xml:space="preserve"><value>Provider reference</value></data>
+  <data name="Sales_EPayment_Amount" xml:space="preserve"><value>Amount due</value></data>
+  <data name="Sales_EPayment_Countdown" xml:space="preserve"><value>Expires in {0}</value></data>
+  <data name="Sales_EPayment_Expired" xml:space="preserve"><value>This payment session has expired.</value></data>
+  <data name="Sales_EPayment_Retry" xml:space="preserve"><value>Try again</value></data>
+  <data name="Sales_EPayment_Cancel" xml:space="preserve"><value>Cancel payment</value></data>
+  <data name="Sales_EPayment_ChangeMethod" xml:space="preserve"><value>Change payment method</value></data>
+  <data name="Sales_EPayment_Status_Created" xml:space="preserve"><value>Created</value></data>
+  <data name="Sales_EPayment_Status_Pending" xml:space="preserve"><value>Pending</value></data>
+  <data name="Sales_EPayment_Status_RequiresCustomerAction" xml:space="preserve"><value>Action required</value></data>
+  <data name="Sales_EPayment_Status_Processing" xml:space="preserve"><value>Processing</value></data>
+  <data name="Sales_EPayment_Status_Paid" xml:space="preserve"><value>Paid</value></data>
+  <data name="Sales_EPayment_Status_Failed" xml:space="preserve"><value>Failed</value></data>
+  <data name="Sales_EPayment_Status_Cancelled" xml:space="preserve"><value>Cancelled</value></data>
+  <data name="Sales_EPayment_Status_Expired" xml:space="preserve"><value>Expired</value></data>
+  <data name="Sales_Field_PaymentStatus" xml:space="preserve"><value>Payment status</value></data>
+  <data name="Sales_Field_Provider" xml:space="preserve"><value>Provider</value></data>
+  <data name="Sales_Field_ProviderReference" xml:space="preserve"><value>Provider reference</value></data>
+  <data name="Sales_Field_PaidAt" xml:space="preserve"><value>Paid at</value></data>
+  <data name="Sales_Field_CardBrand" xml:space="preserve"><value>Card brand</value></data>
+  <data name="Sales_Field_CardLastFour" xml:space="preserve"><value>Card last four</value></data>
+  <data name="Sales_Detail_ResumePayment" xml:space="preserve"><value>Complete payment</value></data>
   <data name="Sales_Void" xml:space="preserve"><value>Void sale</value></data>
   <data name="Sales_VoidTitle" xml:space="preserve"><value>Void this sale?</value></data>
   <data name="Sales_VoidMessage" xml:space="preserve"><value>A voided sale stops counting toward your totals. It does not refund money or change stock. Give a reason.</value></data>

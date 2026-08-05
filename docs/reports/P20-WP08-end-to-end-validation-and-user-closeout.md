@@ -56,6 +56,7 @@ Phase 19 remains **Open** (QR scenarios Retest; Not Device Verified).
 
 ### Cashier
 - [ ] Sell imported product from local tiles/search (name/SKU/barcode)
+- [ ] Card / GCash simulated checkout on imported SKU (**Retest** — [P19-card-gcash-payment-ui-and-simulation](P19-card-gcash-payment-ui-and-simulation.md); processing simulated; no live provider)
 - [ ] No global catalog import/admin nav by default
 - [ ] Platform API stopped / unreachable — selling still works from local data
 

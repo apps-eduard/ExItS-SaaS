@@ -1,7 +1,9 @@
 @page "/sales/{SaleId:guid}/receipt"
+@using ExItS.PinoyBusinessPOS.Application.Payments
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IPosSaleClient Sales
+@inject IPosPaymentAttemptClient PaymentAttempts
 @inject IUtangCapabilityEvaluator Capabilities
 @inject ApiStatusLocalizer ApiLocalizer
 @inject IConnectivityService Connectivity
@@ -62,8 +64,41 @@ else
             }
             <div>@sale.RecordedAtUtc.ToLocalTime().ToString("g")</div>
             <div>@SalesUiOptions.PaymentMethodLabel(L, sale.PaymentMethod)</div>
+            @if (_paymentAttempt is not null)
+            {
+                <div class="pos-muted">@PaymentsUiOptions.AttemptStatusLabel(L, _paymentAttempt.Status)</div>
+            }
         </Stack>
     </Section>
+
+    @if (_paymentAttempt is not null)
+    {
+        <Section Title="@L["Sales_EPayment_Section"]">
+            <Stack Gap="2">
+                <div>@L["Sales_Field_PaymentStatus"]: <strong>@PaymentsUiOptions.AttemptStatusLabel(L, _paymentAttempt.Status)</strong></div>
+                @if (!string.IsNullOrWhiteSpace(_paymentAttempt.Provider))
+                {
+                    <div>@L["Sales_Field_Provider"]: <strong>@_paymentAttempt.Provider</strong></div>
+                }
+                @if (!string.IsNullOrWhiteSpace(_paymentAttempt.ProviderReference))
+                {
+                    <div>@L["Sales_Field_ProviderReference"]: <strong>@_paymentAttempt.ProviderReference</strong></div>
+                }
+                @if (_paymentAttempt.CompletedAtUtc is DateTimeOffset paidAt)
+                {
+                    <div>@L["Sales_Field_PaidAt"]: <strong>@paidAt.ToLocalTime().ToString("g")</strong></div>
+                }
+                @if (!string.IsNullOrWhiteSpace(_paymentAttempt.CardBrand))
+                {
+                    <div>@L["Sales_Field_CardBrand"]: <strong>@_paymentAttempt.CardBrand</strong></div>
+                }
+                @if (!string.IsNullOrWhiteSpace(_paymentAttempt.CardLastFour))
+                {
+                    <div>@L["Sales_Field_CardLastFour"]: <strong>@_paymentAttempt.CardLastFour</strong></div>
+                }
+            </Stack>
+        </Section>
+    }
 
     <Section Title="@L["Sales_LinesSection"]">
         <Stack Gap="2">
@@ -106,10 +141,14 @@ else
 @code {
     [Parameter] public Guid SaleId { get; set; }
 
+    [SupplyParameterFromQuery(Name = "attemptId")]
+    public Guid? AttemptId { get; set; }
+
     private bool _ready;
     private bool _loading;
     private bool _isOffline;
     private PosSaleDto? _sale;
+    private PaymentAttemptDto? _paymentAttempt;
     private string? _errorTitle;
     private string? _errorMessage;
 
@@ -143,6 +182,13 @@ else
         if (result.IsSuccess && result.Data is not null)
         {
             _sale = result.Data;
+            if (_sale.Status != PosSaleOptions.CompletedStatus)
+            {
+                Nav.NavigateTo($"/sales/{SaleId:D}", replace: true);
+                return;
+            }
+
+            await LoadPaymentAttemptAsync();
             return;
         }
 
@@ -150,6 +196,20 @@ else
         var described = ApiLocalizer.Describe(result.Status, result.Error);
         _errorTitle = described.Title;
         _errorMessage = result.Error?.Detail ?? described.Message;
+    }
+
+    private async Task LoadPaymentAttemptAsync()
+    {
+        if (AttemptId is not Guid attemptId || attemptId == Guid.Empty)
+        {
+            return;
+        }
+
+        var attemptResult = await PaymentAttempts.GetAsync(attemptId);
+        if (attemptResult.IsSuccess && attemptResult.Data is not null && attemptResult.Data.SaleId == SaleId)
+        {
+            _paymentAttempt = attemptResult.Data;
+        }
     }
 
     private void GoDetail() => Nav.NavigateTo($"/sales/{SaleId:D}");

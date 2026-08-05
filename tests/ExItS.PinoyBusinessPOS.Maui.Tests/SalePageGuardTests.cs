@@ -27,6 +27,8 @@ public sealed class SalePageGuardTests
         Assert.Contains("Sales_GCash_ManualWarning", checkout, StringComparison.Ordinal);
         Assert.Contains("Sales_Checkout_UtangWarning", checkout, StringComparison.Ordinal);
         Assert.Contains("Sales_Field_ChangeAmount", checkout, StringComparison.Ordinal);
+        Assert.Contains("PayableTotal", checkout, StringComparison.Ordinal);
+        Assert.Contains("OperationalSetupTaxCalculator", checkout, StringComparison.Ordinal);
         Assert.Contains("ConfirmDialog", checkout, StringComparison.Ordinal);
         Assert.Contains("GetCreditSummaryAsync", checkout, StringComparison.Ordinal);
 
@@ -106,7 +108,7 @@ public sealed class SalePageGuardTests
             var text = File.ReadAllText(file);
             foreach (var forbidden in new[]
                      {
-                         "StockOnHand", "QuantityOnHand", "Reorder", "TaxRate", "DiscountRate",
+                         "StockOnHand", "QuantityOnHand", "Reorder", "DiscountRate",
                          "DiscountAmount", "SaleRefund", "RefundId", "ProcessRefund", "SplitTender", "PrintReceipt", "PaymentGateway",
                          "UtangBalance", "Installment", "IOfflineOperationQueue", "SaleCheckoutOffline"
                      })
@@ -176,11 +178,16 @@ public sealed class SalePageGuardTests
                      "Sales_OfflineMessage",
                      "Sales_Status_Completed",
                      "Sales_Status_Voided",
+                     "Sales_Status_AwaitingPayment",
                      "Sales_Payment_Cash",
+                     "Sales_Payment_Card",
+                     "Sales_Payment_GCash",
                      "Sales_Payment_ManualGCash",
                      "Sales_Payment_Utang",
                      "Sales_Field_AmountTendered",
                      "Sales_Field_ChangeAmount",
+                     "Sales_Field_Total",
+                     "Sales_Field_Tax",
                      "Sales_Field_GCashReference",
                      "Sales_GCash_ManualWarning",
                      "Sales_GCash_ConfirmReceived",

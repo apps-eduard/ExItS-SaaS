@@ -78,6 +78,12 @@ Required behavior:
 
 Selling must use local POS product data only.
 
+Payment methods at checkout (unchanged POS contracts; Phase 19 delivery):
+
+- Cash — immediate completion
+- Manual GCash — operator-confirmed reference (unverified; legacy path)
+- Card / GCash (electronic) — **simulated only** via `FakePaymentGateway`; sale enters `AwaitingPayment` until signed webhook/simulation; **Retest** on phone ([P19-card-gcash-payment-ui-and-simulation](../../reports/P19-card-gcash-payment-ui-and-simulation.md))
+
 ---
 
 ## 4. Add Products from Global Catalog

@@ -193,6 +193,19 @@ A Local Validation payment simulation requires:
 
 The API must reject test-payment simulation in Production even when a client displays or submits the action.
 
+### POS simulated retail payment (Card / GCash)
+
+Local Validation / Development only:
+
+| Action | Cashier (`CreateSale`) | Owner / Admin / Store Manager |
+|---|---:|---:|
+| Create / poll / cancel payment attempt | Yes | Yes |
+| Dev simulate outcome (`/payment-attempts/{id}/simulate`) | Yes (non-Production host) | Yes (non-Production host) |
+| Verify manual GCash transfer attempt | No | Yes |
+| Set Paid directly from client | **No** | **No** |
+
+Webhook ingress (`/payment-webhooks/{provider}`) requires valid HMAC signature; no user session. Production must reject simulate routes even if MAUI shows Dev buttons. See [P19-card-gcash-payment-ui-and-simulation](../reports/P19-card-gcash-payment-ui-and-simulation.md).
+
 ---
 
 ## 8. Product access

@@ -24,6 +24,7 @@ Deliver ManageCatalog-gated MAUI onboarding and global catalog discovery/import 
 - `/catalog/import/jobs/{id}/review` — review imported local products; edit link; opening-stock action → existing `/inventory/{id}/adjust`
 - Catalog list actions: Browse global catalog + Use business template (ManageCatalog only)
 - Cashier `/sales/new`: local name/SKU/barcode lookup, categories, tap-to-add tiles with placeholders; no global import clients
+- Payment methods on checkout: Cash, Manual GCash (legacy operator confirm), Card/GCash **simulated electronic** (`FakePaymentGateway`; Retest — [P19-card-gcash-payment-ui-and-simulation](../reports/P19-card-gcash-payment-ui-and-simulation.md))
 - Localization EN + fil-PH (`Catalog_Import_*`, `Catalog_Global_*`)
 - Guard tests: Catalog import/global routes + ManageCatalog; Personal shell excludes catalog import routes; SaleCheckout documents local-only selling
 

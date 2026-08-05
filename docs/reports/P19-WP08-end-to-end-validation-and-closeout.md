@@ -24,6 +24,7 @@ Provide the end-to-end Mobile POS ops validation checklist for physical-phone co
 | P19-WP05 Sales/receipt | Code Complete |
 | P19-WP06 Customers | Code Complete |
 | P19-WP07 Reports/nav/UX | Code Complete (**Retest** — Selling Mode / grants) |
+| Card / GCash simulated payments | Code Complete (**Retest** — see [P19-card-gcash-payment-ui-and-simulation](P19-card-gcash-payment-ui-and-simulation.md)) |
 
 ## 3. User phone checklist (Retest)
 
@@ -33,6 +34,8 @@ Provide the end-to-end Mobile POS ops validation checklist for physical-phone co
 - [ ] Registers list + Main Register; Cashier cannot administer without ManageRegisters
 - [ ] **Owner Selling Mode (role stays Owner) → Open Shift loads eligible registers → Start Shift enabled → sell → close shift with variance**
 - [ ] Cashier sell: search/category/tile → cart → cash tender/change → receipt → next sale
+- [ ] Card / GCash simulated checkout: awaiting payment → Dev simulate success/decline → receipt (**Retest** — [checklist](P19-card-gcash-payment-ui-and-simulation.md#9-phone-validation-checklist-retest--do-not-mark-device-verified))
+- [ ] Manual GCash operator-confirm path still completes immediately (legacy; unverified)
 - [ ] Sales history + receipt reopen
 - [ ] Customers list for ViewCustomersAndHistory roles; credit create gated
 - [ ] Reports hub shows only allowed report kinds for Cashier vs Owner/Manager

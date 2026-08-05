@@ -42,6 +42,7 @@ public sealed class PosDbContext : DbContext
     internal DbSet<CreditEntryRecord> CreditEntries => Set<CreditEntryRecord>();
     internal DbSet<CreditDueDateChangeRecord> CreditDueDateChanges => Set<CreditDueDateChangeRecord>();
     internal DbSet<RepaymentRecord> Repayments => Set<RepaymentRecord>();
+    internal DbSet<PaymentAttemptRecord> PaymentAttempts => Set<PaymentAttemptRecord>();
     internal DbSet<PosIdempotencyRecord> IdempotencyRecords => Set<PosIdempotencyRecord>();
     internal DbSet<ProductCategoryRecord> ProductCategories => Set<ProductCategoryRecord>();
     internal DbSet<CatalogProductRecord> CatalogProducts => Set<CatalogProductRecord>();
@@ -281,6 +282,94 @@ public sealed class PosDbContext : DbContext
                 .HasForeignKey(e => e.CustomerId)
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("fk_repayments_customers");
+        });
+
+        modelBuilder.Entity<PaymentAttemptRecord>(entity =>
+        {
+            entity.ToTable("payment_attempts", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_payment_attempts_method",
+                    "method IN ('Cash', 'Card', 'GCash', 'ManualGCashTransfer')");
+                tb.HasCheckConstraint(
+                    "ck_payment_attempts_provider",
+                    "provider IN ('None', 'Fake', 'Manual')");
+                tb.HasCheckConstraint(
+                    "ck_payment_attempts_status",
+                    "status IN ('Created', 'Pending', 'RequiresCustomerAction', 'Processing', 'Paid', 'Failed', 'Cancelled', 'Expired', 'Refunded', 'PendingManualVerification')");
+                tb.HasCheckConstraint(
+                    "ck_payment_attempts_amount_positive",
+                    "amount > 0");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.SaleId).HasColumnName("sale_id").IsRequired();
+            entity.Property(e => e.Method).HasColumnName("method").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.Provider).HasColumnName("provider").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.ProviderReference)
+                .HasColumnName("provider_reference")
+                .HasMaxLength(PaymentAttempt.ProviderReferenceMaxLength);
+            entity.Property(e => e.ExternalReference)
+                .HasColumnName("external_reference")
+                .HasMaxLength(PaymentAttempt.ExternalReferenceMaxLength);
+            entity.Property(e => e.Amount).HasColumnName("amount").HasPrecision(18, 2).IsRequired();
+            entity.Property(e => e.Currency).HasColumnName("currency").HasMaxLength(3).IsRequired();
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.CheckoutUrl)
+                .HasColumnName("checkout_url")
+                .HasMaxLength(PaymentAttempt.UrlMaxLength);
+            entity.Property(e => e.DeepLink)
+                .HasColumnName("deep_link")
+                .HasMaxLength(PaymentAttempt.UrlMaxLength);
+            entity.Property(e => e.QrPayload)
+                .HasColumnName("qr_payload")
+                .HasMaxLength(PaymentAttempt.QrPayloadMaxLength);
+            entity.Property(e => e.CardBrand).HasColumnName("card_brand").HasMaxLength(32);
+            entity.Property(e => e.CardLastFour).HasColumnName("card_last_four").HasMaxLength(4);
+            entity.Property(e => e.FailureCode)
+                .HasColumnName("failure_code")
+                .HasMaxLength(PaymentAttempt.FailureCodeMaxLength);
+            entity.Property(e => e.FailureMessage)
+                .HasColumnName("failure_message")
+                .HasMaxLength(PaymentAttempt.FailureMessageMaxLength);
+            entity.Property(e => e.IdempotencyKey)
+                .HasColumnName("idempotency_key")
+                .HasMaxLength(PaymentAttempt.IdempotencyKeyMaxLength)
+                .IsRequired();
+            entity.Property(e => e.CreatedBy).HasColumnName("created_by").IsRequired();
+            entity.Property(e => e.VerifiedBy).HasColumnName("verified_by");
+            entity.Property(e => e.VerificationReason)
+                .HasColumnName("verification_reason")
+                .HasMaxLength(PaymentAttempt.FailureMessageMaxLength);
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.ExpiresAtUtc).HasColumnName("expires_at_utc");
+            entity.Property(e => e.CompletedAtUtc).HasColumnName("completed_at_utc");
+            entity.Property(e => e.ProviderEventSequence).HasColumnName("provider_event_sequence");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.IdempotencyKey })
+                .IsUnique()
+                .HasDatabaseName("ux_payment_attempts_org_idempotency");
+            entity.HasIndex(e => new { e.Provider, e.ProviderReference })
+                .IsUnique()
+                .HasFilter("provider_reference IS NOT NULL")
+                .HasDatabaseName("ux_payment_attempts_provider_reference");
+            entity.HasIndex(e => new { e.OrganizationId, e.ExternalReference })
+                .IsUnique()
+                .HasFilter("external_reference IS NOT NULL")
+                .HasDatabaseName("ux_payment_attempts_org_external_reference");
+            entity.HasIndex(e => new { e.OrganizationId, e.SaleId, e.Status })
+                .HasDatabaseName("ix_payment_attempts_org_sale_status");
+            entity.HasIndex(e => e.OrganizationId)
+                .HasDatabaseName("ix_payment_attempts_organization_id");
+
+            entity.HasOne<SaleRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.SaleId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_payment_attempts_sales");
         });
 
         modelBuilder.Entity<PosIdempotencyRecord>(entity =>
@@ -564,22 +653,22 @@ public sealed class PosDbContext : DbContext
             {
                 tb.HasCheckConstraint(
                     "ck_sales_status",
-                    "status IN ('Completed', 'Voided')");
+                    "status IN ('Completed', 'Voided', 'AwaitingPayment')");
                 tb.HasCheckConstraint(
                     "ck_sales_payment_method",
                     $"payment_method IN ({string.Join(", ", SalePaymentMethods.Codes.Select(c => $"'{c}'"))})");
                 tb.HasCheckConstraint(
                     "ck_sales_totals_non_negative",
                     "subtotal >= 0 AND total >= 0 AND tax_amount >= 0");
-                // Voided sales must carry the full void audit; completed sales must carry none of it.
+                // Voided sales must carry the full void audit; Completed/AwaitingPayment carry none of it.
                 tb.HasCheckConstraint(
                     "ck_sales_void_consistency",
-                    "(status = 'Completed' AND voided_at_utc IS NULL AND voided_by IS NULL AND void_reason IS NULL) OR (status = 'Voided' AND voided_at_utc IS NOT NULL AND voided_by IS NOT NULL AND void_reason IS NOT NULL)");
-                // Cash: tender + change, no GCash/customer/credit. ManualGCash: no tender/change/customer/credit.
-                // Utang: no tender/change/GCash; customer + linked credit required; total > 0.
+                    "(status IN ('Completed', 'AwaitingPayment') AND voided_at_utc IS NULL AND voided_by IS NULL AND void_reason IS NULL) OR (status = 'Voided' AND voided_at_utc IS NOT NULL AND voided_by IS NOT NULL AND void_reason IS NOT NULL)");
+                // Cash: tender + change. ManualGCash / Card / GCash: no tender/change/customer/credit.
+                // Utang: customer + linked credit; total > 0.
                 tb.HasCheckConstraint(
                     "ck_sales_tender_consistency",
-                    "(payment_method = 'Cash' AND amount_tendered IS NOT NULL AND change_amount IS NOT NULL AND amount_tendered >= total AND gcash_reference IS NULL AND customer_id IS NULL AND linked_credit_entry_id IS NULL) OR (payment_method = 'ManualGCash' AND amount_tendered IS NULL AND change_amount IS NULL AND customer_id IS NULL AND linked_credit_entry_id IS NULL) OR (payment_method = 'Utang' AND amount_tendered IS NULL AND change_amount IS NULL AND gcash_reference IS NULL AND customer_id IS NOT NULL AND linked_credit_entry_id IS NOT NULL AND total > 0)");
+                    "(payment_method = 'Cash' AND amount_tendered IS NOT NULL AND change_amount IS NOT NULL AND amount_tendered >= total AND gcash_reference IS NULL AND customer_id IS NULL AND linked_credit_entry_id IS NULL) OR (payment_method = 'ManualGCash' AND amount_tendered IS NULL AND change_amount IS NULL AND customer_id IS NULL AND linked_credit_entry_id IS NULL) OR (payment_method IN ('Card', 'GCash') AND amount_tendered IS NULL AND change_amount IS NULL AND customer_id IS NULL AND linked_credit_entry_id IS NULL) OR (payment_method = 'Utang' AND amount_tendered IS NULL AND change_amount IS NULL AND gcash_reference IS NULL AND customer_id IS NOT NULL AND linked_credit_entry_id IS NOT NULL AND total > 0)");
             });
 
             entity.HasKey(e => e.Id);

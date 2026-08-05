@@ -1,18 +1,15 @@
 namespace ExItS.ArchitectureTests;
 
 /// <summary>
-/// Guards the Product-Based Utang / simple-sales boundary: sales may record Cash, ManualGCash, and
-/// online Utang checkouts (with linked credit), void them, and collaborate with basic inventory
-/// deduction/restoration — but must not introduce suppliers, warehouses, costing, offline sale
-/// capture, tax, discounts, refunds, split tender, or payment gateways.
+/// Guards the Product-Based Utang / simple-sales boundary: sales may record Cash, ManualGCash,
+/// Card, GCash, and online Utang checkouts — but must not host payment-gateway types inside the
+/// Sales slice (those live under Payments/). Still forbids suppliers, warehouses, costing, offline
+/// sale capture, tax, discounts, refunds, split tender, and real GCash APIs in Sales.
 /// </summary>
 public sealed class PosSalesScopeArchitectureTests
 {
     private static readonly string[] OutOfScopeConcepts =
     [
-        "TaxRate",
-        "VatRate",
-        "TaxAmount",
         "DiscountAmount",
         "DiscountRule",
         "RefundId",
@@ -68,6 +65,7 @@ public sealed class PosSalesScopeArchitectureTests
         Assert.Contains("\"sales\"", context, StringComparison.Ordinal);
         Assert.Contains("\"sale_lines\"", context, StringComparison.Ordinal);
         Assert.Contains("\"sale_number_sequences\"", context, StringComparison.Ordinal);
+        Assert.Contains("\"payment_attempts\"", context, StringComparison.Ordinal);
 
         foreach (var table in new[]
                  {
@@ -77,6 +75,20 @@ public sealed class PosSalesScopeArchitectureTests
         {
             Assert.DoesNotContain(table, context, StringComparison.OrdinalIgnoreCase);
         }
+    }
+
+    [Fact]
+    public void Payments_slice_owns_provider_neutral_gateway_abstraction()
+    {
+        var appPayments = Path.Combine(PosProject("ExItS.PinoyBusinessPOS.Application"), "Payments");
+        Assert.True(Directory.Exists(appPayments), appPayments);
+        var gateway = File.ReadAllText(Path.Combine(appPayments, "IPaymentGateway.cs"));
+        var fake = File.ReadAllText(Path.Combine(appPayments, "FakePaymentGateway.cs"));
+        Assert.Contains("interface IPaymentGateway", gateway, StringComparison.Ordinal);
+        Assert.Contains("PaymentWebhookEvent", gateway, StringComparison.Ordinal);
+        Assert.Contains("class FakePaymentGateway", fake, StringComparison.Ordinal);
+        Assert.DoesNotContain("Stripe", fake, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("PayMongo", fake, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

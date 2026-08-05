@@ -12,7 +12,9 @@ public enum SalePaymentMethod
 {
     Cash = 0,
     ManualGCash = 1,
-    Utang = 2
+    Utang = 2,
+    Card = 3,
+    GCash = 4
 }
 
 public static class SalePaymentMethods
@@ -24,8 +26,13 @@ public static class SalePaymentMethods
     [
         nameof(SalePaymentMethod.Cash),
         nameof(SalePaymentMethod.ManualGCash),
-        nameof(SalePaymentMethod.Utang)
+        nameof(SalePaymentMethod.Utang),
+        nameof(SalePaymentMethod.Card),
+        nameof(SalePaymentMethod.GCash)
     ];
+
+    public static bool IsElectronic(SalePaymentMethod method) =>
+        method is SalePaymentMethod.Card or SalePaymentMethod.GCash;
 
     public static string ToCode(SalePaymentMethod method) => method.ToString();
 

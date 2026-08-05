@@ -26,6 +26,10 @@ public static class ApplicationErrorCodes
     public const string CatalogConcurrencyConflict = "pos.catalog.concurrency_conflict";
 
     public const string SaleNotFound = "pos.sale.not_found";
+    public const string PaymentAttemptConflict = "pos.payment_attempt.conflict";
+    public const string ManualGCashTransferDisabled = "pos.payment.manual_gcash_transfer.disabled";
+    public const string PaymentProviderUnsupported = "pos.payment.provider.unsupported";
+    public const string PaymentSimulationOutcomeInvalid = "pos.payment.simulation.outcome.invalid";
     public const string SaleProductNotFound = "pos.sale.product.not_found";
     public const string SaleProductNotActive = "pos.sale.product.not_active";
     public const string SaleNumberConflict = "pos.sale.number.conflict";

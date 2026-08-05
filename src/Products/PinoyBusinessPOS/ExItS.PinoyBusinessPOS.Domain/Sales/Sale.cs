@@ -49,7 +49,7 @@ public sealed class Sale
     /// <summary>
     /// Optional manually typed GCash reference. Never verified against any gateway or GCash API.
     /// </summary>
-    public string? GCashReference { get; }
+    public string? GCashReference { get; private set; }
 
     /// <summary>Customer for Product-Based Utang; null for Cash and ManualGCash.</summary>
     public POSCustomerId? CustomerId { get; }
@@ -211,12 +211,15 @@ public sealed class Sale
 
         var (tendered, change) = NormalizeTender(paymentMethod, total, amountTendered);
         var reference = NormalizeGCashReference(paymentMethod, gcashReference);
+        var initialStatus = SalePaymentMethods.IsElectronic(paymentMethod)
+            ? SaleStatus.AwaitingPayment
+            : SaleStatus.Completed;
 
         return new Sale(
             saleId,
             organizationId,
             normalizedNumber,
-            SaleStatus.Completed,
+            initialStatus,
             paymentMethod,
             subtotal,
             total,
@@ -235,6 +238,55 @@ public sealed class Sale
             null,
             utcNow,
             saleLines);
+    }
+
+    /// <summary>
+    /// Completes an electronic sale after an authoritative Paid payment attempt.
+    /// Idempotent when already Completed with the same payment method.
+    /// </summary>
+    public void FinalizeAfterPayment(string? providerSafeReference, DateTimeOffset utcNow)
+    {
+        SaleMoney.EnsureUtc(utcNow);
+        if (Status == SaleStatus.Completed)
+        {
+            return;
+        }
+
+        if (Status == SaleStatus.Voided)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidSaleStatusTransition,
+                "A voided sale cannot be finalized.");
+        }
+
+        if (Status != SaleStatus.AwaitingPayment)
+        {
+            throw new DomainException(
+                DomainErrorCodes.SaleNotAwaitingPayment,
+                "Only sales awaiting payment can be finalized from a payment attempt.");
+        }
+
+        if (!SalePaymentMethods.IsElectronic(PaymentMethod)
+            && PaymentMethod != SalePaymentMethod.ManualGCash)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidSalePaymentMethod,
+                "Finalize-after-payment applies to Card, GCash, or Manual GCash sales.");
+        }
+
+        if (providerSafeReference is not null)
+        {
+            var trimmed = providerSafeReference.Trim();
+            if (trimmed.Length > GCashReferenceMaxLength)
+            {
+                trimmed = trimmed[..GCashReferenceMaxLength];
+            }
+
+            GCashReference = trimmed;
+        }
+
+        Status = SaleStatus.Completed;
+        UpdatedAtUtc = utcNow;
     }
 
     public static Sale Rehydrate(
@@ -320,15 +372,23 @@ public sealed class Sale
         decimal total,
         decimal? amountTendered)
     {
-        if (paymentMethod is SalePaymentMethod.ManualGCash or SalePaymentMethod.Utang)
+        if (paymentMethod is SalePaymentMethod.ManualGCash
+            or SalePaymentMethod.Utang
+            or SalePaymentMethod.Card
+            or SalePaymentMethod.GCash)
         {
             if (amountTendered is not null)
             {
                 throw new DomainException(
                     DomainErrorCodes.InvalidSaleAmountTendered,
-                    paymentMethod == SalePaymentMethod.Utang
-                        ? "Utang sales are recorded for the exact total and must not carry a tendered amount."
-                        : "Manual GCash sales are recorded for the exact total and must not carry a tendered amount.");
+                    paymentMethod switch
+                    {
+                        SalePaymentMethod.Utang =>
+                            "Utang sales are recorded for the exact total and must not carry a tendered amount.",
+                        SalePaymentMethod.Card or SalePaymentMethod.GCash =>
+                            "Card and GCash sales are recorded for the exact total and must not carry a tendered amount.",
+                        _ => "Manual GCash sales are recorded for the exact total and must not carry a tendered amount."
+                    });
             }
 
             return (null, null);

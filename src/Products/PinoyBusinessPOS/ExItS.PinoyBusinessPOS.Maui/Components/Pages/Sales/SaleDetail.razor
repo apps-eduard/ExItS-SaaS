@@ -1,8 +1,12 @@
 @page "/sales/{SaleId:guid}"
+@using ExItS.PinoyBusinessPOS.Application.Payments
+@using ExItS.PinoyBusinessPOS.Maui.Services
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IPosSaleClient Sales
 @inject IPosSaleReturnClient SaleReturns
+@inject IPosPaymentAttemptClient PaymentAttempts
+@inject MauiPendingPaymentStore PendingPayment
 @inject ICurrentUserContext CurrentUser
 @inject IUtangCapabilityEvaluator Capabilities
 @inject ApiStatusLocalizer ApiLocalizer
@@ -31,6 +35,7 @@ else
 {
     var sale = _sale;
     var isCompleted = sale.Status == PosSaleOptions.CompletedStatus;
+    var isAwaitingPayment = sale.Status == PosSaleOptions.AwaitingPaymentStatus;
     var isUtang = sale.PaymentMethod == PosSaleOptions.UtangPaymentMethod;
     var canVoid = Capabilities.IsAllowed(UtangCapability.VoidSale)
         && isCompleted
@@ -70,7 +75,7 @@ else
             <div>
                 <span class="pos-muted">@L["Sales_Col_Status"]</span>
                 <div class="pos-value-md">
-                    <Badge Tone="@(isCompleted ? BadgeTone.Success : BadgeTone.Neutral)">@SalesUiOptions.StatusLabel(L, sale.Status)</Badge>
+                    <Badge Tone="@(isCompleted ? BadgeTone.Success : isAwaitingPayment ? BadgeTone.Warning : BadgeTone.Neutral)">@SalesUiOptions.StatusLabel(L, sale.Status)</Badge>
                 </div>
             </div>
             <div>
@@ -150,6 +155,48 @@ else
                     <div class="pos-value-md pos-wrap">@sale.GCashReference</div>
                     <div class="pos-muted">@L["Sales_GCash_ManualWarning"]</div>
                 </div>
+            }
+            @if (_paymentAttempt is not null)
+            {
+                <div>
+                    <span class="pos-muted">@L["Sales_Field_PaymentStatus"]</span>
+                    <div class="pos-value-md">@PaymentsUiOptions.AttemptStatusLabel(L, _paymentAttempt.Status)</div>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(_paymentAttempt.Provider))
+                {
+                    <div>
+                        <span class="pos-muted">@L["Sales_Field_Provider"]</span>
+                        <div class="pos-value-md">@_paymentAttempt.Provider</div>
+                    </div>
+                }
+                @if (!string.IsNullOrWhiteSpace(_paymentAttempt.ProviderReference))
+                {
+                    <div>
+                        <span class="pos-muted">@L["Sales_Field_ProviderReference"]</span>
+                        <div class="pos-value-md pos-wrap">@_paymentAttempt.ProviderReference</div>
+                    </div>
+                }
+                @if (_paymentAttempt.CompletedAtUtc is DateTimeOffset paidAt)
+                {
+                    <div>
+                        <span class="pos-muted">@L["Sales_Field_PaidAt"]</span>
+                        <div class="pos-value-md">@paidAt.ToLocalTime().ToString("g")</div>
+                    </div>
+                }
+                @if (!string.IsNullOrWhiteSpace(_paymentAttempt.CardBrand))
+                {
+                    <div>
+                        <span class="pos-muted">@L["Sales_Field_CardBrand"]</span>
+                        <div class="pos-value-md">@_paymentAttempt.CardBrand</div>
+                    </div>
+                }
+                @if (!string.IsNullOrWhiteSpace(_paymentAttempt.CardLastFour))
+                {
+                    <div>
+                        <span class="pos-muted">@L["Sales_Field_CardLastFour"]</span>
+                        <div class="pos-value-md">@_paymentAttempt.CardLastFour</div>
+                    </div>
+                }
             }
             @if (isUtang)
             {
@@ -232,6 +279,13 @@ else
         </Section>
     }
 
+    @if (isAwaitingPayment && !_isOffline)
+    {
+        <FormActions>
+            <Button Variant="ButtonVariant.Primary" OnClick="GoResumePayment">@L["Sales_Detail_ResumePayment"]</Button>
+        </FormActions>
+    }
+
     @if (isCompleted)
     {
         <FormActions>
@@ -276,6 +330,7 @@ else
     private string? _errorMessage;
     private string? _banner;
     private List<PosSaleReturnDto> _returns = [];
+    private PaymentAttemptDto? _paymentAttempt;
 
     protected override async Task OnInitializedAsync()
     {
@@ -310,6 +365,7 @@ else
         if (result.IsSuccess && result.Data is not null)
         {
             _sale = result.Data;
+            await LoadPaymentAttemptAsync();
             if (Capabilities.IsAllowed(UtangCapability.ViewReturns))
             {
                 var returnsResult = await SaleReturns.ListReturnsAsync(saleId: SaleId);
@@ -328,6 +384,46 @@ else
         }
 
         _loading = false;
+    }
+
+    private async Task LoadPaymentAttemptAsync()
+    {
+        _paymentAttempt = null;
+        if (_sale is null || !SalesUiOptions.IsElectronicPaymentMethod(_sale.PaymentMethod))
+        {
+            return;
+        }
+
+        var pending = PendingPayment.Get();
+        if (pending is not null && pending.SaleId == _sale.SaleId && pending.AttemptId is Guid attemptId)
+        {
+            var attemptResult = await PaymentAttempts.GetAsync(attemptId);
+            if (attemptResult.IsSuccess && attemptResult.Data is not null)
+            {
+                _paymentAttempt = attemptResult.Data;
+            }
+        }
+    }
+
+    private void GoResumePayment()
+    {
+        if (_sale is null)
+        {
+            return;
+        }
+
+        var pending = PendingPayment.Get();
+        if (pending?.SaleId != _sale.SaleId)
+        {
+            PendingPayment.Save(new PendingPaymentState(
+                _sale.SaleId,
+                null,
+                Guid.NewGuid().ToString("N"),
+                CurrentUser.Session?.OrganizationId,
+                _sale.PaymentMethod));
+        }
+
+        Nav.NavigateTo("/sales/new");
     }
 
     private async Task VoidAsync()
