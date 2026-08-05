@@ -1,4 +1,5 @@
 @page "/owner"
+@using ExItS.DesignSystem.Components.Internal
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject RoleHomeResolver RoleHome
@@ -20,40 +21,88 @@ else if (!_authorized)
 }
 else
 {
-    <Page>
-        <PageHeader Title="@L["Owner_Title"]">
-            <Actions>
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoOrg">@L["Org_SummaryTitle"]</Button>
-            </Actions>
-        </PageHeader>
+    <div class="pos-dash">
+        <Page>
+            <PageHeader Title="@L["Owner_Title"]" Subtitle="@L["Owner_Subtitle"]" />
 
-        <Section Title="@L["Owner_SetupSection"]">
-            <Stack Gap="2">
-                <span class="pos-muted">@(_setupCompleted ? L["Owner_SetupComplete"] : L["Owner_SetupIncomplete"])</span>
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoSetup">@L["Nav_Setup"]</Button>
-            </Stack>
-        </Section>
+            <Section Title="@L["Owner_QuickActionsSection"]">
+                <div class="pos-action-grid" role="group" aria-label="@L["Owner_QuickActionsSection"]">
+                    <button type="button" class="pos-action-tile pos-action-tile--primary" @onclick="StartSelling">
+                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("sales")</span>
+                        <span class="pos-action-tile__label">@L["Owner_StartSelling"]</span>
+                    </button>
+                    <button type="button" class="pos-action-tile" @onclick="GoOrg">
+                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("customers")</span>
+                        <span class="pos-action-tile__label">@L["Org_SummaryTitle"]</span>
+                    </button>
+                </div>
+                <p class="pos-dash__hint pos-muted">@L["Owner_StartSellingHint"]</p>
+            </Section>
 
-        <Section Title="@L["Owner_SellingSection"]">
-            <Button Variant="ButtonVariant.Primary" OnClick="StartSelling">@L["Owner_StartSelling"]</Button>
-            <InlineMessage Tone="InlineMessageTone.Info">@L["Owner_StartSellingHint"]</InlineMessage>
-        </Section>
+            <Section Title="@L["Owner_SetupSection"]">
+                <div class="pos-action-grid pos-action-grid--single" role="group" aria-label="@L["Owner_SetupSection"]">
+                    <button type="button" class="pos-action-tile" @onclick="GoSetup">
+                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("settings")</span>
+                        <span class="pos-action-tile__label">@L["Nav_Setup"]</span>
+                    </button>
+                </div>
+                <p class="pos-dash__status @(_setupCompleted ? "pos-dash__status--ok" : "pos-dash__status--warn")">
+                    <span class="pos-dash__status-label">@L["Owner_SetupStatusLabel"]</span>
+                    <span>@(_setupCompleted ? L["Owner_SetupStatusComplete"] : L["Owner_SetupStatusIncomplete"])</span>
+                </p>
+            </Section>
 
-        <Section Title="@L["Owner_OperationsSection"]">
-            <Stack Gap="2">
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoCatalog">@L["Nav_Products"]</Button>
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoCategories">@L["Catalog_Categories"]</Button>
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoInventory">@L["Nav_Inventory"]</Button>
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoPermissions">@L["Nav_Permissions"]</Button>
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoStaff">@L["Org_StaffLink"]</Button>
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoRegisters">@L["Nav_Registers"]</Button>
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoShifts">@L["Nav_Shifts"]</Button>
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoSales">@L["Nav_Sales"]</Button>
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoReports">@L["Nav_Reports"]</Button>
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoSettings">@L["Nav_Settings"]</Button>
-            </Stack>
-        </Section>
-    </Page>
+            <Section Title="@L["Owner_OperationsSection"]">
+                <div class="pos-action-grid" role="group" aria-label="@L["Owner_OperationsSection"]">
+                    <button type="button" class="pos-action-tile" @onclick="GoCatalog">
+                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("products")</span>
+                        <span class="pos-action-tile__label">@L["Nav_Products"]</span>
+                    </button>
+                    <button type="button" class="pos-action-tile" @onclick="GoCategories">
+                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("menu")</span>
+                        <span class="pos-action-tile__label">@L["Catalog_Categories"]</span>
+                    </button>
+                    <button type="button" class="pos-action-tile" @onclick="GoInventory">
+                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("inbox")</span>
+                        <span class="pos-action-tile__label">@L["Nav_Inventory"]</span>
+                    </button>
+                    <button type="button" class="pos-action-tile" @onclick="GoStaff">
+                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("customers")</span>
+                        <span class="pos-action-tile__label">@L["Org_StaffLink"]</span>
+                    </button>
+                    <button type="button" class="pos-action-tile" @onclick="GoRegisters">
+                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("sales")</span>
+                        <span class="pos-action-tile__label">@L["Nav_Registers"]</span>
+                    </button>
+                    <button type="button" class="pos-action-tile" @onclick="GoShifts">
+                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("refresh")</span>
+                        <span class="pos-action-tile__label">@L["Nav_Shifts"]</span>
+                    </button>
+                    <button type="button" class="pos-action-tile" @onclick="GoSales">
+                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("sales")</span>
+                        <span class="pos-action-tile__label">@L["Nav_Sales"]</span>
+                    </button>
+                    <button type="button" class="pos-action-tile" @onclick="GoPermissions">
+                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("check")</span>
+                        <span class="pos-action-tile__label">@L["Nav_Permissions"]</span>
+                    </button>
+                </div>
+            </Section>
+
+            <Section Title="@L["Owner_InsightsSection"]">
+                <div class="pos-action-grid" role="group" aria-label="@L["Owner_InsightsSection"]">
+                    <button type="button" class="pos-action-tile" @onclick="GoReports">
+                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("info")</span>
+                        <span class="pos-action-tile__label">@L["Nav_Reports"]</span>
+                    </button>
+                    <button type="button" class="pos-action-tile" @onclick="GoSettings">
+                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("settings")</span>
+                        <span class="pos-action-tile__label">@L["Nav_Settings"]</span>
+                    </button>
+                </div>
+            </Section>
+        </Page>
+    </div>
 }
 
 @code {

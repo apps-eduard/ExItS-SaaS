@@ -10,32 +10,43 @@
 @if (_ready && _authenticated && (_canUsePersonal || _organizations.Count > 0))
 {
     <Section Title="@L["Context_SwitcherTitle"]">
-        <InlineMessage Tone="InlineMessageTone.Info">@(_canUsePersonal ? L["Context_SwitcherHint"] : L["Context_SwitcherHintStaff"])</InlineMessage>
-        <Stack Gap="2">
+        <p class="pos-more__hint pos-muted">@(_canUsePersonal ? L["Context_SwitcherHint"] : L["Context_SwitcherHintStaff"])</p>
+        <div class="pos-context-list" role="list">
             @if (_canUsePersonal)
             {
-                <Button Variant="@PersonalVariant" Disabled="_busy" OnClick="SwitchPersonalAsync">
-                    @L["Context_Personal"]
-                    @if (IsPersonalActive)
-                    {
-                        <span class="pos-muted"> — @L["Context_Active"]</span>
-                    }
-                </Button>
+                <button type="button"
+                        class="pos-context-row @(IsPersonalActive ? "pos-context-row--active" : null)"
+                        disabled="@_busy"
+                        role="listitem"
+                        @onclick="SwitchPersonalAsync">
+                    <span class="pos-context-row__title">@L["Context_Personal"]</span>
+                    <span class="pos-context-row__meta">
+                        @if (IsPersonalActive)
+                        {
+                            @L["Context_Active"]
+                        }
+                    </span>
+                </button>
             }
             @foreach (var org in _organizations)
             {
                 var active = CurrentUser.Session?.OrganizationId == org.OrganizationId;
-                <Button Variant="@(active ? ButtonVariant.Primary : ButtonVariant.Secondary)"
-                        Disabled="_busy"
-                        OnClick="() => SwitchOrgAsync(org.OrganizationId)">
-                    @org.DisplayName — @RoleLabel(org.MembershipRole)
-                    @if (active)
-                    {
-                        <span class="pos-muted"> — @L["Context_Active"]</span>
-                    }
-                </Button>
+                <button type="button"
+                        class="pos-context-row @(active ? "pos-context-row--active" : null)"
+                        disabled="@_busy"
+                        role="listitem"
+                        @onclick="() => SwitchOrgAsync(org.OrganizationId)">
+                    <span class="pos-context-row__title">@org.DisplayName</span>
+                    <span class="pos-context-row__meta">
+                        @RoleLabel(org.MembershipRole)
+                        @if (active)
+                        {
+                            <span> · @L["Context_Active"]</span>
+                        }
+                    </span>
+                </button>
             }
-        </Stack>
+        </div>
         @if (!string.IsNullOrEmpty(_error))
         {
             <InlineMessage Tone="InlineMessageTone.Danger">@_error</InlineMessage>
@@ -52,7 +63,6 @@
     private IReadOnlyList<EligibleOrganization> _organizations = [];
 
     private bool IsPersonalActive => CurrentUser.Session?.OrganizationId is null;
-    private ButtonVariant PersonalVariant => IsPersonalActive ? ButtonVariant.Primary : ButtonVariant.Secondary;
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
 
@@ -97,8 +107,44 @@
         _ready = true;
     }
 
-    private static string RoleLabel(string? role) =>
-        string.IsNullOrWhiteSpace(role) ? "Member" : role;
+    private string RoleLabel(string? role)
+    {
+        if (string.IsNullOrWhiteSpace(role))
+        {
+            return L["Context_RoleMember"];
+        }
+
+        if (OrganizationMembershipRoles.IsOwnerRole(role))
+        {
+            return string.Equals(role, OrganizationMembershipRoles.Administrator, StringComparison.OrdinalIgnoreCase)
+                ? L["Context_RoleAdministrator"]
+                : L["Context_RoleOwner"];
+        }
+
+        if (string.Equals(role, OrganizationMembershipRoles.Member, StringComparison.OrdinalIgnoreCase))
+        {
+            return L["Context_RoleMember"];
+        }
+
+        if (string.Equals(role, "StoreManager", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(role, "Manager", StringComparison.OrdinalIgnoreCase))
+        {
+            return L["OrgSelect_EnterManager"];
+        }
+
+        if (string.Equals(role, "Cashier", StringComparison.OrdinalIgnoreCase))
+        {
+            return L["OrgSelect_EnterCashier"];
+        }
+
+        // Never surface raw Platform membership role codes in the UI.
+        if (role.StartsWith("Organization", StringComparison.OrdinalIgnoreCase))
+        {
+            return role["Organization".Length..];
+        }
+
+        return role;
+    }
 
     private async Task SwitchPersonalAsync()
     {

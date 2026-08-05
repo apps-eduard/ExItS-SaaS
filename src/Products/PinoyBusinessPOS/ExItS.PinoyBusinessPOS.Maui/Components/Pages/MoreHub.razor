@@ -1,4 +1,5 @@
 @page "/more"
+@using ExItS.DesignSystem.Components.Internal
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject SellingModeService SellingMode
@@ -8,93 +9,115 @@
 @inject IAuthenticationService Auth
 @inject IStringLocalizer<PosResources> L
 
-<Page>
-    <PageHeader Title="@L["Nav_More"]" Subtitle="@L["More_Subtitle"]" />
+<div class="pos-dash">
+    <Page>
+        <PageHeader Title="@L["Nav_More"]" Subtitle="@L["More_Subtitle"]" />
 
-    <Section Title="@L["More_WorkspaceSection"]">
-        <Stack Gap="2">
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoRoleHome">@L["More_RoleHome"]</Button>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoOrg">@L["Org_SummaryTitle"]</Button>
-        </Stack>
-    </Section>
-
-    <AccountContextSwitcher />
-
-    @if (CurrentUser.Session?.OrganizationId is not null)
-    {
-        <Section Title="@L["Overdue_Title"]">
-            <Button Variant="ButtonVariant.Primary" OnClick="GoOverdue">@L["Overdue_OpenOrg"]</Button>
+        <Section Title="@L["More_WorkspaceSection"]">
+            <div class="pos-action-grid" role="group" aria-label="@L["More_WorkspaceSection"]">
+                <button type="button" class="pos-action-tile" @onclick="GoRoleHome">
+                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("home")</span>
+                    <span class="pos-action-tile__label">@L["More_RoleHome"]</span>
+                </button>
+                <button type="button" class="pos-action-tile" @onclick="GoOrg">
+                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("customers")</span>
+                    <span class="pos-action-tile__label">@L["Org_SummaryTitle"]</span>
+                </button>
+            </div>
         </Section>
 
-        @if (Capabilities.IsAllowed(UtangCapability.ViewInventory))
+        <AccountContextSwitcher />
+
+        @if (CurrentUser.Session?.OrganizationId is not null)
         {
-            <Section Title="@L["Inventory_Title"]">
-                <Button Variant="ButtonVariant.Primary" OnClick="GoInventory">@L["Nav_Inventory"]</Button>
+            <Section Title="@L["More_ToolsSection"]">
+                <div class="pos-action-grid" role="group" aria-label="@L["More_ToolsSection"]">
+                    <button type="button" class="pos-action-tile" @onclick="GoOverdue">
+                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("warning")</span>
+                        <span class="pos-action-tile__label">@L["Overdue_OpenOrg"]</span>
+                    </button>
+
+                    @if (Capabilities.IsAllowed(UtangCapability.ViewInventory))
+                    {
+                        <button type="button" class="pos-action-tile" @onclick="GoInventory">
+                            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("products")</span>
+                            <span class="pos-action-tile__label">@L["Nav_Inventory"]</span>
+                        </button>
+                    }
+
+                    @if (Capabilities.IsAllowed(UtangCapability.ViewExpenses))
+                    {
+                        <button type="button" class="pos-action-tile" @onclick="GoExpenses">
+                            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("sales")</span>
+                            <span class="pos-action-tile__label">@L["Nav_Expenses"]</span>
+                        </button>
+                    }
+
+                    @if (Capabilities.IsAllowed(UtangCapability.ViewSuppliers))
+                    {
+                        <button type="button" class="pos-action-tile" @onclick="GoSuppliers">
+                            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("customers")</span>
+                            <span class="pos-action-tile__label">@L["Nav_Suppliers"]</span>
+                        </button>
+                    }
+
+                    @if (Capabilities.IsAllowed(UtangCapability.ViewPurchasing))
+                    {
+                        <button type="button" class="pos-action-tile" @onclick="GoPurchasing">
+                            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("inbox")</span>
+                            <span class="pos-action-tile__label">@L["Nav_Purchasing"]</span>
+                        </button>
+                    }
+
+                    @if (Capabilities.IsAllowed(UtangCapability.ViewRegisters))
+                    {
+                        <button type="button" class="pos-action-tile" @onclick="GoRegisters">
+                            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("sales")</span>
+                            <span class="pos-action-tile__label">@L["Nav_Registers"]</span>
+                        </button>
+                    }
+
+                    @if (Capabilities.IsAllowed(UtangCapability.ManageOperationalSetup))
+                    {
+                        <button type="button" class="pos-action-tile" @onclick="GoSetup">
+                            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("settings")</span>
+                            <span class="pos-action-tile__label">@L["Nav_Setup"]</span>
+                        </button>
+                    }
+
+                    @if (Capabilities.IsAllowed(UtangCapability.ViewShifts))
+                    {
+                        <button type="button" class="pos-action-tile" @onclick="GoShifts">
+                            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("refresh")</span>
+                            <span class="pos-action-tile__label">@L["Nav_Shifts"]</span>
+                        </button>
+                    }
+
+                    @if (Capabilities.IsAllowed(UtangCapability.ViewPermissions))
+                    {
+                        <button type="button" class="pos-action-tile" @onclick="GoPermissions">
+                            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("check")</span>
+                            <span class="pos-action-tile__label">@L["Nav_Permissions"]</span>
+                        </button>
+                    }
+
+                    @if (Capabilities.IsAllowed(UtangCapability.ViewReports)
+                         || Capabilities.IsAllowed(UtangCapability.ViewDashboard))
+                    {
+                        <button type="button" class="pos-action-tile" @onclick="GoReports">
+                            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("info")</span>
+                            <span class="pos-action-tile__label">@L["Nav_Reports"]</span>
+                        </button>
+                    }
+                </div>
             </Section>
         }
 
-        @if (Capabilities.IsAllowed(UtangCapability.ViewExpenses))
-        {
-            <Section Title="@L["Expenses_Title"]">
-                <Button Variant="ButtonVariant.Primary" OnClick="GoExpenses">@L["Nav_Expenses"]</Button>
-            </Section>
-        }
-
-        @if (Capabilities.IsAllowed(UtangCapability.ViewSuppliers))
-        {
-            <Section Title="@L["Suppliers_Title"]">
-                <Button Variant="ButtonVariant.Primary" OnClick="GoSuppliers">@L["Nav_Suppliers"]</Button>
-            </Section>
-        }
-
-        @if (Capabilities.IsAllowed(UtangCapability.ViewPurchasing))
-        {
-            <Section Title="@L["Purchasing_Title"]">
-                <Button Variant="ButtonVariant.Primary" OnClick="GoPurchasing">@L["Nav_Purchasing"]</Button>
-            </Section>
-        }
-
-        @if (Capabilities.IsAllowed(UtangCapability.ViewRegisters))
-        {
-            <Section Title="@L["Registers_Title"]">
-                <Button Variant="ButtonVariant.Primary" OnClick="GoRegisters">@L["Nav_Registers"]</Button>
-            </Section>
-        }
-
-        @if (Capabilities.IsAllowed(UtangCapability.ManageOperationalSetup))
-        {
-            <Section Title="@L["Setup_Title"]">
-                <Button Variant="ButtonVariant.Primary" OnClick="GoSetup">@L["Nav_Setup"]</Button>
-            </Section>
-        }
-
-        @if (Capabilities.IsAllowed(UtangCapability.ViewShifts))
-        {
-            <Section Title="@L["Shifts_Title"]">
-                <Button Variant="ButtonVariant.Primary" OnClick="GoShifts">@L["Nav_Shifts"]</Button>
-            </Section>
-        }
-
-        @if (Capabilities.IsAllowed(UtangCapability.ViewPermissions))
-        {
-            <Section Title="@L["Permissions_Title"]">
-                <Button Variant="ButtonVariant.Primary" OnClick="GoPermissions">@L["Nav_Permissions"]</Button>
-            </Section>
-        }
-
-        @if (Capabilities.IsAllowed(UtangCapability.ViewReports)
-             || Capabilities.IsAllowed(UtangCapability.ViewDashboard))
-        {
-            <Section Title="@L["Reports_Title"]">
-                <Button Variant="ButtonVariant.Primary" OnClick="GoReports">@L["Nav_Reports"]</Button>
-            </Section>
-        }
-    }
-
-    <FormActions>
-        <Button Variant="ButtonVariant.Ghost" OnClick="LogoutAsync">@L["Auth_Logout"]</Button>
-    </FormActions>
-</Page>
+        <div class="pos-dash__footer">
+            <Button Variant="ButtonVariant.Ghost" OnClick="LogoutAsync">@L["Auth_Logout"]</Button>
+        </div>
+    </Page>
+</div>
 
 @code {
     protected override async Task OnInitializedAsync()
