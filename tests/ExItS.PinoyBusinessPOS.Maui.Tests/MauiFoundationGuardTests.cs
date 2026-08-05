@@ -203,8 +203,16 @@ public sealed class MauiFoundationGuardTests
         Assert.True(File.Exists(Path.Combine(pages, "Boot.razor")));
         Assert.True(File.Exists(Path.Combine(pages, "Welcome.razor")));
         Assert.True(File.Exists(Path.Combine(pages, "SignIn.razor")));
+        Assert.True(File.Exists(Path.Combine(pages, "ForgotPassword.razor")));
         Assert.True(File.Exists(Path.Combine(pages, "OrganizationSelect.razor")));
         Assert.True(File.Exists(Path.Combine(pages, "AccessDenied.razor")));
+
+        var signIn = File.ReadAllText(Path.Combine(pages, "SignIn.razor"));
+        Assert.Contains("SignIn_ContinueGoogle", signIn, StringComparison.Ordinal);
+        Assert.Contains("SignIn_DevelopmentAccess", signIn, StringComparison.Ordinal);
+        Assert.Contains("ContinueWithGoogleAsync", signIn, StringComparison.Ordinal);
+        Assert.Contains("SignInWithPlatformSessionTokenAsync", signIn, StringComparison.Ordinal);
+        Assert.DoesNotContain("Continue with Gmail", signIn, StringComparison.Ordinal);
 
         var secure = File.ReadAllText(Path.Combine(root, "src", "Products", "PinoyBusinessPOS",
             "ExItS.PinoyBusinessPOS.Maui", "Services", "MauiSecureTokenStore.cs"));
@@ -214,6 +222,7 @@ public sealed class MauiFoundationGuardTests
         var authService = File.ReadAllText(Path.Combine(root, "src", "Products", "PinoyBusinessPOS",
             "ExItS.PinoyBusinessPOS.Application", "Auth", "AuthenticationService.cs"));
         Assert.Contains("IsDevelopmentAuthenticationEnabled", authService, StringComparison.Ordinal);
+        Assert.Contains("SignInWithPlatformSessionTokenAsync", authService, StringComparison.Ordinal);
         Assert.DoesNotContain("Cashier", authService, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Store Manager", authService, StringComparison.OrdinalIgnoreCase);
         // Password grant is authorized (P13-WP06); passwords must never be persisted to SecureStorage.

@@ -219,7 +219,18 @@
   <data name="Onboarding_DevNoticeMessage" xml:space="preserve"><value>Ginagamit ng build na ito ang approved Development/Testing Platform identity. Hindi pa implemented ang production JWT, MFA, at SSO.</value></data>
   <data name="Onboarding_DevConfirmLabel" xml:space="preserve"><value>Naiintindihan kong Development/Testing lang ito</value></data>
   <data name="SignIn_Title" xml:space="preserve"><value>Mag-sign in</value></data>
-  <data name="SignIn_Subtitle" xml:space="preserve"><value>Mag-sign in gamit ang Platform username at password.</value></data>
+  <data name="SignIn_Subtitle" xml:space="preserve"><value>Mag-sign in upang magpatuloy sa ExItS POS.</value></data>
+  <data name="SignIn_WelcomeTitle" xml:space="preserve"><value>Maligayang pagbabalik</value></data>
+  <data name="SignIn_WelcomeSubtitle" xml:space="preserve"><value>Mag-sign in upang magpatuloy sa ExItS POS.</value></data>
+  <data name="SignIn_ContinueGoogle" xml:space="preserve"><value>Magpatuloy sa Google</value></data>
+  <data name="SignIn_GoogleHint" xml:space="preserve"><value>Gamitin ang Gmail o Google Workspace account.</value></data>
+  <data name="SignIn_OrDivider" xml:space="preserve"><value>o</value></data>
+  <data name="SignIn_RememberMe" xml:space="preserve"><value>Tandaan ako</value></data>
+  <data name="SignIn_ForgotPassword" xml:space="preserve"><value>Nakalimutan ang password?</value></data>
+  <data name="SignIn_NoAccount" xml:space="preserve"><value>Wala pang account?</value></data>
+  <data name="SignIn_ShowPassword" xml:space="preserve"><value>Ipakita ang password</value></data>
+  <data name="SignIn_HidePassword" xml:space="preserve"><value>Itago ang password</value></data>
+  <data name="SignIn_DevelopmentAccess" xml:space="preserve"><value>Development access</value></data>
   <data name="SignIn_DevTitle" xml:space="preserve"><value>Development/Testing identity</value></data>
   <data name="SignIn_DevMessage" xml:space="preserve"><value>Opsyonal na GUID fallback para sa Development/Testing lang. Mas mainam ang username at password sa itaas.</value></data>
   <data name="SignIn_FormTitle" xml:space="preserve"><value>Platform user (Dev)</value></data>
@@ -238,6 +249,15 @@
   <data name="SignIn_QuickLoginPlaceholder" xml:space="preserve"><value>Pumili ng userâ€¦</value></data>
   <data name="SignIn_QuickLoginUnavailable" xml:space="preserve"><value>Walang available na Quick Login identities</value></data>
   <data name="SignIn_AccessTokenMissing" xml:space="preserve"><value>Nakapag-sign in, pero walang na-issue na POS access token. Tingnan ang Local Validation shared password at subukan ulit.</value></data>
+  <data name="Auth_ExternalCancelled" xml:space="preserve"><value>Kinansela ang Google sign-in.</value></data>
+  <data name="Auth_ExternalFailed" xml:space="preserve"><value>Hindi nagtagumpay ang Google sign-in. Subukan ulit o gamitin ang username at password.</value></data>
+  <data name="ForgotPassword_Title" xml:space="preserve"><value>Nakalimutan ang password</value></data>
+  <data name="ForgotPassword_Subtitle" xml:space="preserve"><value>Ilagay ang username o email. Kung may eligible account, mag-i-issue ng reset.</value></data>
+  <data name="ForgotPassword_Submit" xml:space="preserve"><value>Humiling ng reset</value></data>
+  <data name="ForgotPassword_Back" xml:space="preserve"><value>Bumalik sa sign in</value></data>
+  <data name="ForgotPassword_Required" xml:space="preserve"><value>Maglagay ng username o email.</value></data>
+  <data name="ForgotPassword_Failed" xml:space="preserve"><value>Hindi makumpleto ang password reset request.</value></data>
+  <data name="ForgotPassword_Success" xml:space="preserve"><value>Kung may eligible account, na-issue ang password reset.</value></data>
   <data name="OrgSelect_Title" xml:space="preserve"><value>Pumili ng organization</value></data>
   <data name="OrgSelect_Subtitle" xml:space="preserve"><value>Mga organization lang na may active PinoyBusinessPOS commercial access ang ipinapakita.</value></data>
   <data name="OrgSelect_SubtitleOwner" xml:space="preserve"><value>Pumili ng Personal o buksan ang organisasyon na pagmamay-ari mo.</value></data>

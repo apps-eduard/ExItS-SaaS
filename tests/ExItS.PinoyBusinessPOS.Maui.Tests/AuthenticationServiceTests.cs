@@ -442,6 +442,55 @@ public sealed class AuthenticationServiceTests
     }
 
     [Fact]
+    public async Task SignIn_with_platform_session_token_hydrates_from_auth_me()
+    {
+        var userId = Guid.NewGuid();
+        var tokens = new MemorySecureTokenStore();
+        var now = DateTimeOffset.UtcNow;
+        var access = new FakeAccessClient
+        {
+            AuthMeResult = ApiResult<PlatformAuthSessionInfoDto>.Success(new PlatformAuthSessionInfoDto(
+                Guid.NewGuid(),
+                userId,
+                "owner",
+                "Owner",
+                "o@example.com",
+                now.AddHours(8),
+                now.AddHours(24),
+                now,
+                null,
+                null,
+                "none",
+                0,
+                AccountProfileId: Guid.NewGuid(),
+                AccountClass: "Personal")),
+            IssueTokenResult = ApiResult<PlatformAccessTokenIssueDto>.Success(new PlatformAccessTokenIssueDto(
+                "opaque-token",
+                "Bearer",
+                Guid.NewGuid(),
+                userId,
+                "owner",
+                "Owner",
+                "o@example.com",
+                now.AddHours(8),
+                null,
+                null,
+                null,
+                "none",
+                0,
+                null,
+                null))
+        };
+        var sut = CreateSut("Development", access, tokens);
+        var result = await sut.SignInWithPlatformSessionTokenAsync("google-session-token");
+        Assert.True(result.Succeeded);
+        Assert.Equal(userId, result.Session!.UserId);
+        Assert.Equal("opaque-token", result.Session.AccessToken);
+        Assert.Equal("google-session-token", result.Session.PlatformSessionToken);
+        Assert.Equal("google-session-token", await tokens.GetAsync(SecureTokenKeys.PlatformSessionToken));
+    }
+
+    [Fact]
     public async Task Logout_preserves_selected_organization_preference()
     {
         var userId = Guid.NewGuid();
@@ -596,6 +645,15 @@ public sealed class AuthenticationServiceTests
 
         public Task<ApiResult<PlatformLoginResultDto>> LoginAsync(PlatformLoginRequest request, CancellationToken ct = default) =>
             Task.FromResult(LoginResult);
+
+        public ApiResult<PlatformAuthSessionInfoDto> AuthMeResult { get; set; } =
+            ApiResult<PlatformAuthSessionInfoDto>.Unavailable();
+
+        public Task<ApiResult<PlatformAuthSessionInfoDto>> GetAuthMeAsync(CancellationToken ct = default) =>
+            Task.FromResult(AuthMeResult);
+
+        public Task<ApiResult<CredentialWorkflowAckDto>> ForgotPasswordAsync(ForgotPasswordRequest request, CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<CredentialWorkflowAckDto>.Unavailable());
 
         public Task<ApiResult<object>> LogoutSessionAsync(CancellationToken ct = default) =>
             Task.FromResult(ApiResult<object>.Success(new object()));

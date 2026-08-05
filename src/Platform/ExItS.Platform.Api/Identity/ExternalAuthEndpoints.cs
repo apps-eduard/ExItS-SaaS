@@ -32,7 +32,7 @@ internal static class ExternalAuthEndpoints
                     StatusCodes.Status404NotFound);
             }
 
-            var safeReturn = SanitizeReturnUrl(returnUrl, http, env);
+            var safeReturn = SanitizeReturnUrl(returnUrl, env);
             var props = new AuthenticationProperties
             {
                 RedirectUri = $"/api/v1/platform/auth/external/{provider}/complete"
@@ -110,7 +110,7 @@ internal static class ExternalAuthEndpoints
                 out var stored) == true
                 ? stored
                 : null;
-            returnUrl = SanitizeReturnUrl(returnUrl, http, env);
+            returnUrl = SanitizeReturnUrl(returnUrl, env);
             var separator = returnUrl.Contains('?', StringComparison.Ordinal) ? "&" : "?";
             var redirect = $"{returnUrl}{separator}sessionToken={Uri.EscapeDataString(result.Value.SessionToken)}";
             return Results.Redirect(redirect);
@@ -254,28 +254,10 @@ internal static class ExternalAuthEndpoints
         return new ExternalLoginIdentity(normalized, subject, email, emailVerified, displayName);
     }
 
-    private static string SanitizeReturnUrl(string? returnUrl, HttpContext http, IHostEnvironment env)
-    {
-        var fallback = "/admin/external-login-callback";
-        if (string.IsNullOrWhiteSpace(returnUrl))
-        {
-            return fallback;
-        }
-
-        if (Uri.TryCreate(returnUrl, UriKind.Relative, out _))
-        {
-            return returnUrl.StartsWith('/') ? returnUrl : fallback;
-        }
-
-        if (Uri.TryCreate(returnUrl, UriKind.Absolute, out var absolute)
-            && (env.IsDevelopment() || env.IsEnvironment("Testing"))
-            && (absolute.Host is "localhost" or "127.0.0.1"))
-        {
-            return absolute.ToString();
-        }
-
-        return fallback;
-    }
+    private static string SanitizeReturnUrl(string? returnUrl, IHostEnvironment env) =>
+        ExternalAuthReturnUrl.Sanitize(
+            returnUrl,
+            allowDevLocalhostAbsolute: env.IsDevelopment() || env.IsEnvironment("Testing"));
 
     private sealed record TestingExternalLoginRequest(
         string? Provider,

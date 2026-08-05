@@ -120,6 +120,31 @@ public sealed record PersonalRegistrationAckDto(string Message, string? DebugTok
 
 public sealed record PlatformLoginRequest(string UsernameOrEmail, string Password);
 
+public sealed record ForgotPasswordRequest(string UsernameOrEmail);
+
+public sealed record CredentialWorkflowAckDto(
+    string Message,
+    string? DebugToken,
+    DateTimeOffset? ExpiresAtUtc);
+
+/// <summary>GET /api/v1/platform/auth/me — session identity without re-issuing the opaque token.</summary>
+public sealed record PlatformAuthSessionInfoDto(
+    Guid SessionId,
+    Guid UserId,
+    string Username,
+    string DisplayName,
+    string Email,
+    DateTimeOffset ExpiresAtUtc,
+    DateTimeOffset AbsoluteExpiresAtUtc,
+    DateTimeOffset LastActivityAtUtc,
+    Guid? SelectedOrganizationId,
+    string? SelectedOrganizationDisplayName,
+    string OrganizationSelectionState,
+    int ActiveOrganizationCount,
+    Guid? AccountProfileId = null,
+    string? AccountClass = null,
+    string? AllowedScope = null);
+
 public sealed record PlatformLoginResultDto(
     string SessionToken,
     Guid SessionId,
@@ -501,6 +526,12 @@ public interface IPlatformAccessClient
 
     Task<ApiResult<PlatformLoginResultDto>> LoginAsync(
         PlatformLoginRequest request,
+        CancellationToken ct = default);
+
+    Task<ApiResult<PlatformAuthSessionInfoDto>> GetAuthMeAsync(CancellationToken ct = default);
+
+    Task<ApiResult<CredentialWorkflowAckDto>> ForgotPasswordAsync(
+        ForgotPasswordRequest request,
         CancellationToken ct = default);
 
     Task<ApiResult<object>> LogoutSessionAsync(CancellationToken ct = default);

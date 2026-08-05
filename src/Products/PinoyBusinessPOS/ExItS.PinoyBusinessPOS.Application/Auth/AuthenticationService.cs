@@ -248,6 +248,118 @@ public sealed class AuthenticationService(
         return new AuthResult(true, AuthFailureReason.None, session);
     }
 
+    public async Task<AuthResult> SignInWithPlatformSessionTokenAsync(string sessionToken, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(sessionToken))
+        {
+            events.Record("signin_failure", Dict(("reason", "invalid_session_token")));
+            return new AuthResult(false, AuthFailureReason.InvalidCredentials, SafeMessageKey: "Auth_InvalidCredentials");
+        }
+
+        var now = _clock.GetUtcNow();
+        // Seed Platform session header so /auth/me and session-grant token issue can authenticate.
+        currentUser.Set(new AuthSession(
+            Guid.Empty,
+            DisplayName: string.Empty,
+            Username: string.Empty,
+            Email: string.Empty,
+            OrganizationId: null,
+            OrganizationDisplayName: null,
+            IssuedAtUtc: now,
+            ExpiresAtUtc: now.Add(SessionLifetime),
+            HasPosAccess: false,
+            AccessReasonCode: null,
+            PlatformSessionToken: sessionToken.Trim()));
+
+        var meResult = await accessClient.GetAuthMeAsync(ct).ConfigureAwait(false);
+        if (!meResult.IsSuccess || meResult.Data is null)
+        {
+            currentUser.Clear();
+            var failure = MapTransport(meResult.Status);
+            events.Record("signin_failure", Dict(("reason", failure.FailureReason.ToString()), ("grant", "external_session")));
+            return failure;
+        }
+
+        var me = meResult.Data;
+        currentUser.Set(new AuthSession(
+            me.UserId,
+            me.DisplayName,
+            me.Username,
+            me.Email,
+            OrganizationId: me.SelectedOrganizationId,
+            OrganizationDisplayName: me.SelectedOrganizationDisplayName,
+            IssuedAtUtc: now,
+            ExpiresAtUtc: me.ExpiresAtUtc,
+            HasPosAccess: false,
+            AccessReasonCode: null,
+            PlatformSessionToken: sessionToken.Trim(),
+            AccountClass: me.AccountClass,
+            AccountProfileId: me.AccountProfileId));
+
+        var tokenResult = await accessClient
+            .IssueTokenAsync(
+                new IssuePlatformAccessTokenRequest(
+                    GrantType: "session",
+                    UsernameOrEmail: null,
+                    Password: null,
+                    OrganizationId: null,
+                    ProductCode: null),
+                ct)
+            .ConfigureAwait(false);
+
+        if (!tokenResult.IsSuccess || tokenResult.Data is null)
+        {
+            // Personal-only accounts may not receive a POS bearer; keep Platform session.
+            var personalSession = currentUser.Session!;
+            try
+            {
+                await sessionStore.SaveAsync(personalSession, Guid.NewGuid().ToString("N"), ct).ConfigureAwait(false);
+            }
+            catch
+            {
+                currentUser.Clear();
+                events.Record("secure_storage_failure", Dict(("operation", "signin_external_session_save")));
+                return new AuthResult(false, AuthFailureReason.SecureStorageFailure, SafeMessageKey: "Auth_SecureStorageFailure");
+            }
+
+            events.Record("signin_success", Dict(("userId", personalSession.UserId.ToString("D")), ("grant", "external_platform_session")));
+            return new AuthResult(true, AuthFailureReason.None, personalSession);
+        }
+
+        var issued = tokenResult.Data;
+        var marker = Guid.NewGuid().ToString("N");
+        var session = new AuthSession(
+            issued.UserId,
+            issued.DisplayName,
+            issued.Username,
+            issued.Email,
+            OrganizationId: issued.OrganizationId,
+            OrganizationDisplayName: issued.OrganizationDisplayName,
+            IssuedAtUtc: now,
+            ExpiresAtUtc: issued.ExpiresAtUtc,
+            HasPosAccess: issued.ProductAccessAllowed == true && issued.OrganizationId is not null,
+            AccessReasonCode: issued.ProductAccessReasonCode,
+            AccessToken: issued.AccessToken,
+            PlatformSessionToken: sessionToken.Trim(),
+            AccountClass: me.AccountClass,
+            AccountProfileId: me.AccountProfileId);
+
+        try
+        {
+            await sessionStore.SaveAsync(session, marker, ct).ConfigureAwait(false);
+        }
+        catch
+        {
+            currentUser.Clear();
+            events.Record("secure_storage_failure", Dict(("operation", "signin_external_token_save")));
+            return new AuthResult(false, AuthFailureReason.SecureStorageFailure, SafeMessageKey: "Auth_SecureStorageFailure");
+        }
+
+        currentUser.Set(session);
+        events.Record("signin_success", Dict(("userId", session.UserId.ToString("D")), ("grant", "external_session")));
+        return new AuthResult(true, AuthFailureReason.None, session);
+    }
+
     private async Task<AuthResult> SignInWithDevUserIdAsync(Guid platformUserId, CancellationToken ct)
     {
         if (!IsDevelopmentAuthenticationEnabled)

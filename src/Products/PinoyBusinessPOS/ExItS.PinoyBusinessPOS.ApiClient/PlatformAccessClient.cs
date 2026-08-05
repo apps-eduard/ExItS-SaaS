@@ -111,6 +111,14 @@ public sealed class PlatformAccessClient(IPosApiClient api) : IPlatformAccessCli
         CancellationToken ct = default) =>
         api.SendAsync<PlatformLoginResultDto>(HttpMethod.Post, "/api/v1/platform/auth/login", request, ct);
 
+    public Task<ApiResult<PlatformAuthSessionInfoDto>> GetAuthMeAsync(CancellationToken ct = default) =>
+        api.GetAsync<PlatformAuthSessionInfoDto>("/api/v1/platform/auth/me", ct);
+
+    public Task<ApiResult<CredentialWorkflowAckDto>> ForgotPasswordAsync(
+        ForgotPasswordRequest request,
+        CancellationToken ct = default) =>
+        api.SendAsync<CredentialWorkflowAckDto>(HttpMethod.Post, "/api/v1/platform/auth/forgot-password", request, ct);
+
     public Task<ApiResult<object>> LogoutSessionAsync(CancellationToken ct = default) =>
         api.SendAsync<object>(HttpMethod.Post, "/api/v1/platform/auth/logout", null, ct);
 

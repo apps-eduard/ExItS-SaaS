@@ -58,6 +58,13 @@ public interface IAuthenticationService
     bool IsDevelopmentAuthenticationEnabled { get; }
 
     Task<AuthResult> SignInAsync(SignInRequest request, CancellationToken ct = default);
+
+    /// <summary>
+    /// Completes sign-in from a Platform opaque session token (e.g. Google external login callback).
+    /// Hydrates identity via /auth/me and issues a POS bearer token via the session grant when possible.
+    /// </summary>
+    Task<AuthResult> SignInWithPlatformSessionTokenAsync(string sessionToken, CancellationToken ct = default);
+
     Task<AuthResult> RestoreSessionAsync(CancellationToken ct = default);
     Task<AuthResult> RefreshSessionAsync(CancellationToken ct = default);
     Task LogoutAsync(CancellationToken ct = default);

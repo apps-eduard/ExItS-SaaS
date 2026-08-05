@@ -219,7 +219,18 @@
   <data name="Onboarding_DevNoticeMessage" xml:space="preserve"><value>This build uses the approved Development/Testing Platform identity mechanism. Production JWT, MFA, and SSO are not implemented.</value></data>
   <data name="Onboarding_DevConfirmLabel" xml:space="preserve"><value>I understand this is Development/Testing only</value></data>
   <data name="SignIn_Title" xml:space="preserve"><value>Sign in</value></data>
-  <data name="SignIn_Subtitle" xml:space="preserve"><value>Sign in with your Platform username and password.</value></data>
+  <data name="SignIn_Subtitle" xml:space="preserve"><value>Sign in to continue to ExItS POS.</value></data>
+  <data name="SignIn_WelcomeTitle" xml:space="preserve"><value>Welcome back</value></data>
+  <data name="SignIn_WelcomeSubtitle" xml:space="preserve"><value>Sign in to continue to ExItS POS.</value></data>
+  <data name="SignIn_ContinueGoogle" xml:space="preserve"><value>Continue with Google</value></data>
+  <data name="SignIn_GoogleHint" xml:space="preserve"><value>Use your Gmail or Google Workspace account.</value></data>
+  <data name="SignIn_OrDivider" xml:space="preserve"><value>or</value></data>
+  <data name="SignIn_RememberMe" xml:space="preserve"><value>Remember me</value></data>
+  <data name="SignIn_ForgotPassword" xml:space="preserve"><value>Forgot password?</value></data>
+  <data name="SignIn_NoAccount" xml:space="preserve"><value>Don’t have an account?</value></data>
+  <data name="SignIn_ShowPassword" xml:space="preserve"><value>Show password</value></data>
+  <data name="SignIn_HidePassword" xml:space="preserve"><value>Hide password</value></data>
+  <data name="SignIn_DevelopmentAccess" xml:space="preserve"><value>Development access</value></data>
   <data name="SignIn_DevTitle" xml:space="preserve"><value>Development/Testing identity</value></data>
   <data name="SignIn_DevMessage" xml:space="preserve"><value>Optional GUID fallback for Development/Testing only. Prefer username and password above.</value></data>
   <data name="SignIn_FormTitle" xml:space="preserve"><value>Platform user (Dev)</value></data>
@@ -238,6 +249,15 @@
   <data name="SignIn_QuickLoginPlaceholder" xml:space="preserve"><value>Choose a userâ€¦</value></data>
   <data name="SignIn_QuickLoginUnavailable" xml:space="preserve"><value>No Quick Login identities available</value></data>
   <data name="SignIn_AccessTokenMissing" xml:space="preserve"><value>Signed in, but POS access token was not issued. Check Local Validation shared password and try again.</value></data>
+  <data name="Auth_ExternalCancelled" xml:space="preserve"><value>Google sign-in was cancelled.</value></data>
+  <data name="Auth_ExternalFailed" xml:space="preserve"><value>Google sign-in failed. Try again or use username and password.</value></data>
+  <data name="ForgotPassword_Title" xml:space="preserve"><value>Forgot password</value></data>
+  <data name="ForgotPassword_Subtitle" xml:space="preserve"><value>Enter your username or email. If an eligible account exists, a reset is issued.</value></data>
+  <data name="ForgotPassword_Submit" xml:space="preserve"><value>Request reset</value></data>
+  <data name="ForgotPassword_Back" xml:space="preserve"><value>Back to sign in</value></data>
+  <data name="ForgotPassword_Required" xml:space="preserve"><value>Enter a username or email.</value></data>
+  <data name="ForgotPassword_Failed" xml:space="preserve"><value>The password reset request could not be completed.</value></data>
+  <data name="ForgotPassword_Success" xml:space="preserve"><value>If an eligible account exists, a password reset was issued.</value></data>
   <data name="OrgSelect_Title" xml:space="preserve"><value>Select organization</value></data>
   <data name="OrgSelect_Subtitle" xml:space="preserve"><value>Only organizations with active PinoyBusinessPOS commercial access are listed.</value></data>
   <data name="OrgSelect_SubtitleOwner" xml:space="preserve"><value>Choose Personal, or open your organization as Owner, Manager, or Cashier.</value></data>

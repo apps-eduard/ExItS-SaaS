@@ -34,6 +34,14 @@ public static class PreferenceKeys
     public const string OnboardingStep = "exits-pos-onboarding-step";
     public const string SelectedOrganizationId = "exits-pos-selected-org";
     public const string DevEnvironmentConfirmed = "exits-pos-dev-env-confirmed";
+    public const string RememberMe = "exits-pos-remember-me";
+    public const string RememberedUsername = "exits-pos-remembered-username";
+}
+
+/// <summary>MAUI WebAuthenticator callback for Platform external login redirects.</summary>
+public static class PosExternalAuth
+{
+    public const string CallbackUrl = "exitspos://auth/callback";
 }
 
 public enum OnboardingStep
