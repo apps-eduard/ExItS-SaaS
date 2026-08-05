@@ -25,6 +25,7 @@ Validate the full global catalog → template → merchant import → local sell
 | WP05 | `5f68258` | `7651011` |
 | WP06 | `a849635` | `0d40ec7` |
 | WP07 | `3ea856c` | `f766ea2` |
+| WP08 | `c463f50` | — |
 
 Phase 19 remains **Open** (QR scenarios Retest; Not Device Verified).
 
