@@ -85,6 +85,13 @@ public sealed class PersonalPageGuardTests
         Assert.Contains("GetMyPublicIdentityAsync", myQr, StringComparison.Ordinal);
         Assert.Contains("LocalQrCodeRenderer", myQr, StringComparison.Ordinal);
         Assert.DoesNotContain("api.qrserver.com", myQr, StringComparison.Ordinal);
+        Assert.Contains("Personal_MyQrLoading", myQr, StringComparison.Ordinal);
+        Assert.Contains("LocalQrCodeRenderer.TryToPngDataUrl", myQr, StringComparison.Ordinal);
+        Assert.Contains("IsSafeIdentity", myQr, StringComparison.Ordinal);
+        Assert.Contains("exits://user/v1/", myQr, StringComparison.Ordinal);
+        Assert.Contains("ApiCallStatus.Unauthorized", myQr, StringComparison.Ordinal);
+        Assert.Contains("Personal_MyQrRenderErrorTitle", myQr, StringComparison.Ordinal);
+        Assert.DoesNotContain("PosBusinessApi", myQr, StringComparison.Ordinal);
 
         var resolve = File.ReadAllText(Path.Combine(personal, "PublicUserResolve.razor"));
         Assert.Contains("@page \"/personal/resolve-user\"", resolve, StringComparison.Ordinal);
@@ -103,6 +110,21 @@ public sealed class PersonalPageGuardTests
             "PlatformAccessClient.cs"));
         Assert.Contains("/api/v1/me/public-identity", client, StringComparison.Ordinal);
         Assert.Contains("/api/v1/users/resolve-public-id", client, StringComparison.Ordinal);
+
+        var sessionHandler = File.ReadAllText(Path.Combine(
+            FindRepoRoot(),
+            "src",
+            "Products",
+            "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.ApiClient",
+            "PlatformSessionHeaderHandler.cs"));
+        Assert.Contains("/api/v1/me/public-identity", sessionHandler, StringComparison.Ordinal);
+        Assert.Contains("/api/v1/users/resolve-public-id", sessionHandler, StringComparison.Ordinal);
+        Assert.Contains("PlatformSession", sessionHandler, StringComparison.Ordinal);
+
+        var renderer = File.ReadAllText(Path.Combine(MauiProject(), "Services", "LocalQrCodeRenderer.cs"));
+        Assert.Contains("TryToPngDataUrl", renderer, StringComparison.Ordinal);
+        Assert.Contains("data:image/png;base64,", renderer, StringComparison.Ordinal);
     }
 
     [Fact]

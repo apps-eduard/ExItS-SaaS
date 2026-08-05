@@ -22,7 +22,7 @@
 | I Borrowed list / create | Working / API | **Working** (I Borrowed tab) |
 | Relationship view + entries/history | API only on Web | **Working** |
 | Utang invitations | Working | **Working** (More) |
-| Profile / Settings | Working | **Working** (More) |
+| My QR / ExItS ID | Working after PlatformSession auth fix | **Working** (`/personal/my-qr`; Retest on phone) |
 | Explore Pinoy Business POS | Plan cards | **Working** (More → catalog) |
 | Explicit business onboarding | Working | **Working** (`/start-business?planKey=…`, AuthShell) |
 | Bottom tabs (Home / People / I Lent / I Borrowed / More) | N/A | **Working** (`PersonalShell`) |

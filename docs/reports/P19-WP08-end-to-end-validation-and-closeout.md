@@ -58,7 +58,8 @@ See [P18-personal-mvp-mobile-ui-completion](P18-personal-mvp-mobile-ui-completio
 - [ ] Home = Personal Utang summary + recent activity only (no PageHeader “Personal home”; no primary feature buttons)
 - [ ] Top bar contextual identity: Personal = user name/avatar; Org/POS = organization name/logo or initials; no `Development` badge; no static `ExItS POS` in authenticated shells (**Retest**)
 - [ ] More hosts My QR, Utang invitations, Profile, Settings, Explore POS, Sign out
-- [ ] My QR / ExItS ID resolve flows (People, Customers, Sale picker, Staff invite) — see [P19-user-qr-public-id-linking](P19-user-qr-public-id-linking.md); **Retest**
+- [ ] My QR / ExItS ID resolve flows (People, Customers, Sale picker, Staff invite) — see [P19-user-qr-public-id-linking](P19-user-qr-public-id-linking.md); **Retest** (auth fix: PlatformSession on `/me/public-identity`)
+- [ ] My QR shows QR + ExItS ID; decoded payload is `exits://user/v1/{id}` (**Retest**)
 - [ ] Explore Pinoy Business POS loads Platform catalog plans; Select starts explicit onboarding
 - [ ] Organization is **not** created until business details are confirmed
 - [ ] People / I Lent / I Borrowed empty → create → detail flows

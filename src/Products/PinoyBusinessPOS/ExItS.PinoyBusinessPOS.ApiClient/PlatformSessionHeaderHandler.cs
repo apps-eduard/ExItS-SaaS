@@ -37,7 +37,9 @@ public sealed class PlatformSessionHeaderHandler(ICurrentUserContext currentUser
         var path = uri.IsAbsoluteUri ? uri.AbsolutePath : uri.OriginalString;
         if (path.StartsWith("/api/v1/personal", StringComparison.OrdinalIgnoreCase)
             || path.StartsWith("/api/v1/organizations", StringComparison.OrdinalIgnoreCase)
-            || path.StartsWith("/api/v1/commercial", StringComparison.OrdinalIgnoreCase))
+            || path.StartsWith("/api/v1/commercial", StringComparison.OrdinalIgnoreCase)
+            || path.Equals("/api/v1/me/public-identity", StringComparison.OrdinalIgnoreCase)
+            || path.Equals("/api/v1/users/resolve-public-id", StringComparison.OrdinalIgnoreCase))
         {
             return true;
         }

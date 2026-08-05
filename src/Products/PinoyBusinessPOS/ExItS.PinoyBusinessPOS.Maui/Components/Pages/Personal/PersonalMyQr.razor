@@ -5,7 +5,9 @@
 @inject IPlatformAccessClient Platform
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
+@inject ApiStatusLocalizer ApiLocalizer
 @inject IJSRuntime Js
+@inject IDocumentHandoffService Handoff
 
 <Page>
     <PageHeader Title="@L["Personal_MyQrTitle"]" Subtitle="@L["Personal_MyQrSubtitle"]">
@@ -16,17 +18,25 @@
 
     @if (_loading)
     {
+        <InlineMessage Tone="InlineMessageTone.Info">@L["Personal_MyQrLoading"]</InlineMessage>
         <Spinner />
     }
     else if (!_authenticated)
     {
         <ErrorState Title="@L["Auth_SessionExpiredTitle"]" Message="@L["Auth_SessionExpired"]" RetryLabel="@L["SignIn_Submit"]" OnRetry="GoSignIn" />
     }
-    else if (_loadFailed || _identity is null)
+    else if (_identityFailure)
     {
-        <ErrorState Title="@L["Personal_MyQrErrorTitle"]" Message="@(_error ?? L["Personal_MyQrLoadFailed"])" RetryLabel="@L["Common_Retry"]" OnRetry="LoadAsync" />
+        <ErrorState Title="@_errorTitle" Message="@_error" RetryLabel="@L["Common_Retry"]" OnRetry="LoadAsync" />
     }
-    else
+    else if (_identity is not null && _renderFailure)
+    {
+        <Section Title="@_identity.DisplayName">
+            <div class="pos-value-md">@_identity.PublicUserId</div>
+            <ErrorState Title="@L["Personal_MyQrRenderErrorTitle"]" Message="@L["Personal_MyQrRenderFailed"]" RetryLabel="@L["Personal_RefreshQrVisual"]" OnRetry="RefreshVisual" />
+        </Section>
+    }
+    else if (_identity is not null)
     {
         <Section Title="@_identity.DisplayName">
             <div class="pos-qr-panel">
@@ -36,7 +46,8 @@
             </div>
             <FormActions>
                 <Button Variant="ButtonVariant.Secondary" OnClick="CopyIdAsync">@L["Personal_CopyExItsId"]</Button>
-                <Button Variant="ButtonVariant.Ghost" OnClick="RefreshVisualAsync">@L["Personal_RefreshQrVisual"]</Button>
+                <Button Variant="ButtonVariant.Ghost" OnClick="ShareIdAsync">@L["Personal_ShareExItsId"]</Button>
+                <Button Variant="ButtonVariant.Ghost" OnClick="RefreshVisual">@L["Personal_RefreshQrVisual"]</Button>
             </FormActions>
             @if (!string.IsNullOrEmpty(_copyMessage))
             {
@@ -49,7 +60,9 @@
 @code {
     private bool _loading = true;
     private bool _authenticated;
-    private bool _loadFailed;
+    private bool _identityFailure;
+    private bool _renderFailure;
+    private string _errorTitle = string.Empty;
     private string? _error;
     private string? _copyMessage;
     private string _qrDataUrl = string.Empty;
@@ -60,8 +73,13 @@
     private async Task LoadAsync()
     {
         _loading = true;
-        _loadFailed = false;
+        _identityFailure = false;
+        _renderFailure = false;
         _error = null;
+        _errorTitle = L["Personal_MyQrErrorTitle"];
+        _copyMessage = null;
+        _identity = null;
+        _qrDataUrl = string.Empty;
         try
         {
             if (!CurrentUser.IsAuthenticated)
@@ -79,17 +97,37 @@
                 return;
             }
 
+            if (string.IsNullOrWhiteSpace(CurrentUser.Session?.PlatformSessionToken)
+                && string.IsNullOrWhiteSpace(CurrentUser.Session?.AccessToken))
+            {
+                _authenticated = false;
+                return;
+            }
+
             await Auth.EnsurePersonalAccountProfileAsync();
             var result = await Platform.GetMyPublicIdentityAsync();
             if (!result.IsSuccess || result.Data is null)
             {
-                _loadFailed = true;
-                _error = result.Error?.Detail ?? L["Personal_MyQrLoadFailed"];
+                ApplyIdentityFailure(result);
+                return;
+            }
+
+            if (!IsSafeIdentity(result.Data))
+            {
+                _identityFailure = true;
+                _errorTitle = L["Personal_MyQrErrorTitle"];
+                _error = L["Personal_MyQrUnsafePayload"];
                 return;
             }
 
             _identity = result.Data;
-            RefreshVisualAsync();
+            RefreshVisual();
+        }
+        catch
+        {
+            _identityFailure = true;
+            _errorTitle = L["Personal_MyQrErrorTitle"];
+            _error = L["Personal_MyQrNetworkFailed"];
         }
         finally
         {
@@ -97,15 +135,53 @@
         }
     }
 
-    private void RefreshVisualAsync()
+    private void ApplyIdentityFailure(ApiResult<PublicIdentityDto> result)
     {
+        _identityFailure = true;
+        var described = ApiLocalizer.Describe(result.Status, result.Error);
+        (_errorTitle, _error) = result.Status switch
+        {
+            ApiCallStatus.Unauthorized => (L["Auth_SessionExpiredTitle"].Value, L["Auth_SessionExpired"].Value),
+            ApiCallStatus.Forbidden => (L["Access_DeniedTitle"].Value, described.Message),
+            ApiCallStatus.NotFound => (L["Personal_MyQrErrorTitle"].Value, L["Personal_MyQrMissingIdentity"].Value),
+            ApiCallStatus.Offline or ApiCallStatus.Timeout or ApiCallStatus.Unavailable =>
+                (L["Personal_MyQrErrorTitle"].Value, L["Personal_MyQrNetworkFailed"].Value),
+            _ => (L["Personal_MyQrErrorTitle"].Value, result.Error?.Detail ?? L["Personal_MyQrLoadFailed"].Value)
+        };
+    }
+
+    private static bool IsSafeIdentity(PublicIdentityDto identity)
+    {
+        if (string.IsNullOrWhiteSpace(identity.PublicUserId)
+            || string.IsNullOrWhiteSpace(identity.QrPayload))
+        {
+            return false;
+        }
+
+        // Payload must be the versioned public reference only.
+        var expected = "exits://user/v1/" + identity.PublicUserId.Trim();
+        return string.Equals(identity.QrPayload.Trim(), expected, StringComparison.Ordinal)
+               && !identity.QrPayload.Contains('@', StringComparison.Ordinal)
+               && !identity.QrPayload.Contains("Bearer", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void RefreshVisual()
+    {
+        _renderFailure = false;
+        _copyMessage = null;
         if (_identity is null)
         {
             return;
         }
 
-        // Local QR only — payload is exits://user/v1/EX-####-#### (no PII/tokens).
-        _qrDataUrl = LocalQrCodeRenderer.ToPngDataUrl(_identity.QrPayload);
+        if (!LocalQrCodeRenderer.TryToPngDataUrl(_identity.QrPayload, out var dataUrl))
+        {
+            _renderFailure = true;
+            _qrDataUrl = string.Empty;
+            return;
+        }
+
+        _qrDataUrl = dataUrl;
     }
 
     private async Task CopyIdAsync()
@@ -123,6 +199,28 @@
         catch
         {
             _copyMessage = _identity.PublicUserId;
+        }
+    }
+
+    private async Task ShareIdAsync()
+    {
+        if (_identity is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var result = await Handoff.ShareTextAsync(
+                L["Personal_MyQrTitle"],
+                $"{_identity.DisplayName}\n{_identity.PublicUserId}\n{_identity.QrPayload}");
+            _copyMessage = result.Initiated
+                ? L["Personal_ShareExItsIdDone"]
+                : L["Personal_ShareExItsIdUnavailable"];
+        }
+        catch
+        {
+            _copyMessage = L["Personal_ShareExItsIdUnavailable"];
         }
     }
 

@@ -59,6 +59,8 @@ Visual QR may be regenerated; the public ID itself cannot change.
 | `GET` | `/api/v1/me/public-identity` | Assigns ID if missing; returns `{ publicUserId, qrPayload, displayName, status }` |
 | `POST` | `/api/v1/users/resolve-public-id` | Body `{ publicUserIdOrQrPayload, purpose? }` · exact match only · rate limit `public-id-resolve` |
 
+**Auth:** These routes use Platform **session** authentication (`Authorization: PlatformSession …`). MAUI must attach the Platform session token (not only a POS Bearer access token). Bearer-only calls return **401**.
+
 Resolve response (minimal): `publicUserId`, `userIdentityId`, `displayName`, masked email (policy), `status`, `isSelf`.
 
 Enumeration protections:
