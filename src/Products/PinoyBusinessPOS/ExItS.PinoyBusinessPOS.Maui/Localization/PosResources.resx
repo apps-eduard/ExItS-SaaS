@@ -595,6 +595,11 @@
   <data name="SyncStatus_LastSyncedAt" xml:space="preserve"><value>Last Synced {0}</value></data>
   <data name="SyncStatus_KeyUnavailable" xml:space="preserve"><value>Local encryption key unavailable. Pending work was preserved and cannot be processed.</value></data>
   <data name="SyncStatus_RetryNow" xml:space="preserve"><value>Retry sync</value></data>
+  <data name="SyncStatus_SyncNow" xml:space="preserve"><value>Sync now</value></data>
+  <data name="SyncStatus_ConnectionLabel" xml:space="preserve"><value>Connection</value></data>
+  <data name="SyncStatus_SyncLabel" xml:space="preserve"><value>Synchronization</value></data>
+  <data name="SyncStatus_PendingCountLabel" xml:space="preserve"><value>Pending</value></data>
+  <data name="SyncStatus_FailedCountLabel" xml:space="preserve"><value>Needs attention</value></data>
   <data name="SyncStatus_SavedOnDevice" xml:space="preserve"><value>Saved on this device</value></data>
   <data name="DevOffline_Title" xml:space="preserve"><value>Offline foundation diagnostics</value></data>
   <data name="DevOffline_Subtitle" xml:space="preserve"><value>Development/Testing only. No tokens or business payloads.</value></data>

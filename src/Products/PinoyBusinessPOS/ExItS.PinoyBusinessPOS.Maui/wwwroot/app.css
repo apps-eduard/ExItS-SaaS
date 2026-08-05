@@ -201,7 +201,7 @@ button.pos-link {
 .pos-topbar__status {
     display: flex;
     align-items: center;
-    gap: var(--exits-space-2);
+    gap: var(--exits-space-1);
     flex-shrink: 0;
 }
 
@@ -213,18 +213,51 @@ button.pos-link {
     height: var(--exits-touch-target-min);
 }
 
+.pos-sync-anchor {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
 .pos-sync-status {
     display: inline-flex;
     align-items: center;
-    gap: 0.35rem;
-    min-height: var(--exits-touch-target-min);
-    max-width: 9.5rem;
-    padding: 0.2rem 0.55rem;
+    gap: 0.3rem;
+    min-height: var(--exits-touch-target-min, 3rem);
+    max-width: 7.5rem;
+    padding: 0.2rem 0.5rem;
     border: 1px solid var(--exits-border);
     border-radius: var(--exits-density-radius, var(--exits-radius-sm));
     background: var(--exits-surface);
     color: var(--exits-text);
     cursor: pointer;
+}
+
+.pos-sync-status--chip {
+    justify-content: center;
+}
+
+.pos-sync-status--quiet {
+    border-color: color-mix(in srgb, var(--exits-border) 70%, transparent);
+    background: transparent;
+    color: var(--exits-text-muted, #5b6b62);
+}
+
+.pos-sync-status--attention {
+    font-weight: 650;
+}
+
+.pos-sync-status--attention.pos-sync-status--offline,
+.pos-sync-status--attention.pos-sync-status--failed,
+.pos-sync-status--attention.pos-sync-status--recovery {
+    border-color: color-mix(in srgb, var(--exits-danger, #b42318) 35%, var(--exits-border));
+    background: color-mix(in srgb, var(--exits-danger, #b42318) 8%, var(--exits-surface));
+}
+
+.pos-sync-status--attention.pos-sync-status--pending,
+.pos-sync-status--attention.pos-sync-status--reconnect {
+    border-color: color-mix(in srgb, var(--exits-warning, #b54708) 40%, var(--exits-border));
+    background: color-mix(in srgb, var(--exits-warning, #b54708) 10%, var(--exits-surface));
 }
 
 .pos-sync-status__icon {
@@ -246,10 +279,26 @@ button.pos-link {
     text-overflow: ellipsis;
 }
 
+.pos-sync-status__badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.15rem;
+    height: 1.15rem;
+    padding: 0 0.3rem;
+    border-radius: 999px;
+    border: 1px solid var(--exits-border);
+    background: var(--exits-surface-elevated, var(--exits-surface));
+    color: var(--exits-text);
+    font-size: 0.65rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
 .pos-sync-status__marker {
     display: inline-block;
-    width: 0.55rem;
-    height: 0.55rem;
+    width: 0.5rem;
+    height: 0.5rem;
     border-radius: 50%;
     background: var(--exits-text-muted);
     flex-shrink: 0;
@@ -258,6 +307,9 @@ button.pos-link {
 
 .pos-sync-status--online .pos-sync-status__marker,
 .pos-sync-status__marker--online { background: var(--exits-success); }
+
+.pos-sync-status--synced .pos-sync-status__marker,
+.pos-sync-status__marker--synced { background: var(--exits-success); }
 
 .pos-sync-status--offline .pos-sync-status__marker,
 .pos-sync-status__marker--offline { background: var(--exits-text-muted); }
@@ -276,6 +328,104 @@ button.pos-link {
 
 .pos-sync-status--recovery .pos-sync-status__marker,
 .pos-sync-status__marker--recovery { background: var(--exits-danger); }
+
+.pos-sync-popover {
+    position: absolute;
+    top: calc(100% + var(--exits-space-1));
+    right: 0;
+    z-index: var(--exits-z-dropdown, 40);
+    width: min(18.5rem, calc(100vw - 1.5rem));
+    padding: var(--exits-space-3);
+    border: 1px solid var(--exits-border);
+    border-radius: var(--exits-density-radius, var(--exits-radius-sm));
+    background: var(--exits-surface-elevated);
+    box-shadow: var(--exits-shadow-md);
+}
+
+.pos-sync-popover__header {
+    display: flex;
+    align-items: center;
+    gap: var(--exits-space-2);
+    margin-bottom: var(--exits-space-2);
+}
+
+.pos-sync-popover__title {
+    margin: 0;
+    font-size: var(--exits-text-sm, 0.875rem);
+    line-height: 1.3;
+}
+
+.pos-sync-popover__detail {
+    margin: 0 0 var(--exits-space-3);
+    font-size: var(--exits-text-sm, 0.875rem);
+    line-height: 1.4;
+}
+
+.pos-sync-popover__facts {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    margin: 0 0 var(--exits-space-3);
+    padding: 0;
+}
+
+.pos-sync-popover__fact {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.5rem;
+    align-items: baseline;
+    margin: 0;
+}
+
+.pos-sync-popover__fact dt {
+    margin: 0;
+    font-size: var(--exits-text-xs, 0.75rem);
+    color: var(--exits-text-muted, #5b6b62);
+}
+
+.pos-sync-popover__fact dd {
+    margin: 0;
+    font-size: var(--exits-text-xs, 0.75rem);
+    font-weight: 650;
+    text-align: right;
+    color: var(--exits-text);
+}
+
+.pos-sync-popover__recovery {
+    margin: 0 0 var(--exits-space-2);
+    font-size: var(--exits-text-sm, 0.875rem);
+    color: var(--exits-danger, #b42318);
+}
+
+.pos-sync-popover__actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.pos-sync-popover__action {
+    width: 100%;
+    min-height: var(--exits-touch-target-min, 3rem);
+    margin: 0;
+    padding: 0.55rem 0.65rem;
+    border: 0;
+    border-radius: var(--exits-radius-sm);
+    background: transparent;
+    color: var(--exits-primary);
+    font: inherit;
+    font-weight: 650;
+    text-align: left;
+    cursor: pointer;
+}
+
+.pos-sync-popover__action:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.pos-sync-popover__action--primary {
+    background: color-mix(in srgb, var(--exits-primary) 10%, var(--exits-surface));
+}
 
 .pos-sync-panel {
     margin: 0 var(--exits-space-3);
@@ -315,9 +465,20 @@ button.pos-link {
 .pos-status-dot--offline { background: var(--exits-danger); }
 .pos-status-dot--unknown { background: var(--exits-text-muted); }
 
+@media (max-width: 400px) {
+    .pos-sync-status {
+        max-width: 5.75rem;
+        padding: 0.2rem 0.4rem;
+    }
+
+    .pos-sync-status--quiet {
+        max-width: 3rem;
+    }
+}
+
 @media (min-width: 768px) {
     .pos-sync-status {
-        max-width: 14rem;
+        max-width: 10rem;
     }
 }
 
@@ -1012,18 +1173,6 @@ html.pos-keyboard-open .pos-content {
 
 .pos-topbar__overflow-item--danger {
     color: var(--exits-danger, #b42318);
-}
-
-.pos-sync-status--menu {
-    max-width: none;
-    width: 100%;
-    min-height: auto;
-    height: auto;
-    padding: 0.65rem 0.75rem;
-    border: 0;
-    border-radius: var(--exits-radius-sm);
-    box-shadow: none;
-    justify-content: flex-start;
 }
 
 .pos-org-select-row {

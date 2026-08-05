@@ -595,6 +595,11 @@
   <data name="SyncStatus_LastSyncedAt" xml:space="preserve"><value>Huling Sync {0}</value></data>
   <data name="SyncStatus_KeyUnavailable" xml:space="preserve"><value>Hindi available ang local encryption key. Napanatili ang pending work at hindi mapoproseso.</value></data>
   <data name="SyncStatus_RetryNow" xml:space="preserve"><value>I-retry ang sync</value></data>
+  <data name="SyncStatus_SyncNow" xml:space="preserve"><value>I-sync ngayon</value></data>
+  <data name="SyncStatus_ConnectionLabel" xml:space="preserve"><value>Koneksyon</value></data>
+  <data name="SyncStatus_SyncLabel" xml:space="preserve"><value>Synchronization</value></data>
+  <data name="SyncStatus_PendingCountLabel" xml:space="preserve"><value>Pending</value></data>
+  <data name="SyncStatus_FailedCountLabel" xml:space="preserve"><value>Kailangan ng atensyon</value></data>
   <data name="SyncStatus_SavedOnDevice" xml:space="preserve"><value>Naka-save sa device na ito</value></data>
   <data name="DevOffline_Title" xml:space="preserve"><value>Offline foundation diagnostics</value></data>
   <data name="DevOffline_Subtitle" xml:space="preserve"><value>Development/Testing lamang. Walang token o business payload.</value></data>

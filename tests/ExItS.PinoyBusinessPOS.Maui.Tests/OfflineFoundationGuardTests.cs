@@ -10,15 +10,42 @@ public sealed class OfflineFoundationGuardTests
 
         Assert.Contains("IPosSyncStatusService", shell, StringComparison.Ordinal);
         Assert.Contains("pos-sync-status", shell, StringComparison.Ordinal);
+        Assert.Contains("pos-sync-status--chip", shell, StringComparison.Ordinal);
+        Assert.Contains("pos-topbar__status", shell, StringComparison.Ordinal);
+        Assert.Contains("pos-sync-popover", shell, StringComparison.Ordinal);
+        Assert.Contains("ShellAccountMenu", shell, StringComparison.Ordinal);
         Assert.Contains("SyncStatus_Online", shell, StringComparison.Ordinal);
         Assert.Contains("SyncStatus_Offline", shell, StringComparison.Ordinal);
         Assert.Contains("SyncStatus_Pending", shell, StringComparison.Ordinal);
         Assert.Contains("SyncStatus_Syncing", shell, StringComparison.Ordinal);
         Assert.Contains("SyncStatus_Failed", shell, StringComparison.Ordinal);
         Assert.Contains("LastSyncedAtUtc", shell, StringComparison.Ordinal);
+        Assert.Contains("OfflineQueue.GetCountsAsync", shell, StringComparison.Ordinal);
         Assert.Contains("aria-label", shell, StringComparison.Ordinal);
+        Assert.Contains("SyncStatus_ConnectionLabel", shell, StringComparison.Ordinal);
+        Assert.Contains("SyncStatus_SyncNow", shell, StringComparison.Ordinal);
+        Assert.DoesNotContain("ExtraItems", shell, StringComparison.Ordinal);
+        Assert.DoesNotContain("pos-sync-status--menu", shell, StringComparison.Ordinal);
         Assert.DoesNotContain("SyncQueue", shell, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("emoji", shell, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void PosShell_sync_chip_distinguishes_quiet_and_attention_states()
+    {
+        var shell = File.ReadAllText(Path.Combine(FindRepoRoot(), "src", "Products", "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.Maui", "Components", "Layout", "PosShell.razor"));
+        var css = File.ReadAllText(Path.Combine(FindRepoRoot(), "src", "Products", "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.Maui", "wwwroot", "app.css"));
+
+        Assert.Contains("pos-sync-status--quiet", shell, StringComparison.Ordinal);
+        Assert.Contains("pos-sync-status--attention", shell, StringComparison.Ordinal);
+        Assert.Contains("pos-sync-status__badge", shell, StringComparison.Ordinal);
+        Assert.Contains("PosSyncStatusKind.LastSynced => \"synced\"", shell, StringComparison.Ordinal);
+        Assert.Contains(".pos-sync-status--quiet", css, StringComparison.Ordinal);
+        Assert.Contains(".pos-sync-status--synced", css, StringComparison.Ordinal);
+        Assert.Contains(".pos-sync-popover", css, StringComparison.Ordinal);
+        Assert.Contains(".pos-sync-status__badge", css, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -51,7 +78,9 @@ public sealed class OfflineFoundationGuardTests
         foreach (var key in new[]
                  {
                      "SyncStatus_Online", "SyncStatus_Offline", "SyncStatus_Reconnect",
-                     "SyncStatus_ReconnectMessage", "DevOffline_Title", "Settings_DevOfflineLink"
+                     "SyncStatus_ReconnectMessage", "SyncStatus_SyncNow", "SyncStatus_ConnectionLabel",
+                     "SyncStatus_PendingCountLabel", "SyncStatus_FailedCountLabel",
+                     "DevOffline_Title", "Settings_DevOfflineLink"
                  })
         {
             Assert.Contains($"name=\"{key}\"", en, StringComparison.Ordinal);
