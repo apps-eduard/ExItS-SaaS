@@ -18,13 +18,6 @@
     <StoreHeader @ref="_storeHeader" Identity="StoreHeaderIdentity.Organization" ShowSync="true" />
 
     <main class="pos-content" id="pos-main" tabindex="-1" @onclick="CloseOverlays">
-        @if (SellingMode.IsSellingMode)
-        {
-            <div class="pos-sync-panel" role="status">
-                <strong>@L["SellingMode_Banner"]</strong>
-                <button type="button" class="pos-sync-panel__close" @onclick="ExitSellingMode">@L["SellingMode_Exit"]</button>
-            </div>
-        }
         @Body
     </main>
 
@@ -93,17 +86,36 @@
         StateHasChanged();
     }
 
-    private void ExitSellingMode()
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
-        var route = SellingMode.ReturnRoute ?? _homeHref;
-        SellingMode.Exit();
-        Nav.NavigateTo(route);
+        HeaderState.Reset();
+        TryExitSellingModeOnReturn(e.Location);
+    }
+
+    private void TryExitSellingModeOnReturn(string uri)
+    {
+        if (!SellingMode.IsSellingMode || string.IsNullOrWhiteSpace(SellingMode.ReturnRoute))
+        {
+            return;
+        }
+
+        var relative = Nav.ToBaseRelativePath(uri);
+        var path = "/" + relative.Split('?', '#')[0].Trim('/');
+        if (path == "/")
+        {
+            path = "/home";
+        }
+
+        var returnPath = SellingMode.ReturnRoute.TrimEnd('/');
+        if (string.Equals(path, returnPath, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(path, _homeHref.TrimEnd('/'), StringComparison.OrdinalIgnoreCase)
+                && string.Equals(_homeHref, SellingMode.ReturnRoute, StringComparison.OrdinalIgnoreCase))
+        {
+            SellingMode.Exit();
+        }
     }
 
     private void CloseOverlays() => _storeHeader?.CloseOverlays();
-
-    private void OnLocationChanged(object? sender, LocationChangedEventArgs e) =>
-        HeaderState.Reset();
 
     private async Task OnChangedAsync()
     {

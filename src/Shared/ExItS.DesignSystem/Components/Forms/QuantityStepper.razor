@@ -4,13 +4,13 @@
     <button type="button"
             class="exds-qty-stepper__btn"
             aria-label="@DecreaseLabel"
-            disabled="@Disabled"
+            disabled="@(Disabled || Value <= Min)"
             @onclick="OnDecrease">−</button>
     <span class="exds-qty-stepper__value" aria-live="polite">@DisplayValue</span>
     <button type="button"
             class="exds-qty-stepper__btn"
             aria-label="@IncreaseLabel"
-            disabled="@Disabled"
+            disabled="@(Disabled || !CanIncrease)"
             @onclick="OnIncrease">+</button>
 </div>
 
@@ -19,11 +19,14 @@
     [Parameter] public EventCallback<decimal> ValueChanged { get; set; }
     [Parameter] public decimal Step { get; set; } = 1m;
     [Parameter] public decimal Min { get; set; } = 0m;
+    [Parameter] public decimal? Max { get; set; }
     [Parameter] public int DecimalPlaces { get; set; }
     [Parameter] public bool Disabled { get; set; }
     [Parameter] public string AriaLabel { get; set; } = "Quantity";
     [Parameter] public string DecreaseLabel { get; set; } = "Decrease quantity";
     [Parameter] public string IncreaseLabel { get; set; } = "Increase quantity";
+
+    private bool CanIncrease => Max is null || Value < Max.Value;
 
     private string DisplayValue =>
         DecimalPlaces <= 0
@@ -47,11 +50,19 @@
     private async Task OnIncrease()
     {
         var next = Value + Step;
+        if (Max is decimal max)
+        {
+            next = Math.Min(next, max);
+        }
+
         if (DecimalPlaces >= 0)
         {
             next = Math.Round(next, DecimalPlaces, MidpointRounding.AwayFromZero);
         }
 
-        await ValueChanged.InvokeAsync(next);
+        if (next != Value)
+        {
+            await ValueChanged.InvokeAsync(next);
+        }
     }
 }

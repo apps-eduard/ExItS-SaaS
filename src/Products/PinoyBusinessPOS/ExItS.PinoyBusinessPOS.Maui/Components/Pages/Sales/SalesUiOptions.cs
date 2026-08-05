@@ -9,7 +9,7 @@ namespace ExItS.PinoyBusinessPOS.Maui.Components.Pages.Sales;
 /// Localized labels for the controlled sale option sets. Stable codes come from the Application
 /// layer; only the display text is localized here.
 /// </summary>
-internal static class SalesUiOptions
+public static class SalesUiOptions
 {
     public static IReadOnlyList<SelectOption> PaymentMethods(IStringLocalizer<PosResources> localizer) =>
         PosSaleOptions.PaymentMethodCodes
@@ -62,4 +62,52 @@ internal static class SalesUiOptions
 
     public static string UnitOfMeasureLabel(IStringLocalizer<PosResources> localizer, string? code) =>
         string.IsNullOrWhiteSpace(code) ? string.Empty : localizer[$"Catalog_Uom_{code}"].Value;
+
+    /// <summary>
+    /// Uses inventory account <c>IsTracked</c>. Untracked products
+    /// never surface In/Low/Out of stock labels.
+    /// </summary>
+    public static string StockStateLabel(
+        IStringLocalizer<PosResources> localizer,
+        bool isTracked,
+        string? stockStatus)
+    {
+        if (!isTracked)
+        {
+            return localizer["Sales_Checkout_StockNotTracked"].Value;
+        }
+
+        if (string.Equals(stockStatus, "OutOfStock", StringComparison.OrdinalIgnoreCase))
+        {
+            return localizer["Sales_Checkout_OutOfStock"].Value;
+        }
+
+        if (string.Equals(stockStatus, "LowStock", StringComparison.OrdinalIgnoreCase))
+        {
+            return localizer["Sales_Checkout_LowStock"].Value;
+        }
+
+        return localizer["Sales_Checkout_InStock"].Value;
+    }
+
+    public static string ProductRowMeta(
+        IStringLocalizer<PosResources> localizer,
+        string? unitOfMeasure,
+        bool isTracked,
+        string? stockStatus) =>
+        string.Format(
+            localizer["Sales_Checkout_UnitStock"].Value,
+            UnitOfMeasureLabel(localizer, unitOfMeasure),
+            StockStateLabel(localizer, isTracked, stockStatus));
+
+    /// <summary>
+    /// Matches <c>SaleStockService</c>: only tracked inventory enforces on-hand; untracked sells freely.
+    /// </summary>
+    public static bool CanAcceptQuantity(bool isTracked, decimal onHandQuantity, decimal requestedQuantity) =>
+        !isTracked || requestedQuantity <= onHandQuantity;
+
+    public static bool IsOutOfStock(bool isTracked, string? stockStatus, decimal onHandQuantity) =>
+        isTracked
+        && (onHandQuantity <= 0m
+            || string.Equals(stockStatus, "OutOfStock", StringComparison.OrdinalIgnoreCase));
 }

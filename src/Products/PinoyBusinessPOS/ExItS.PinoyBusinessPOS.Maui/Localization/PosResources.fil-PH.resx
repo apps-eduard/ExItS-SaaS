@@ -83,22 +83,22 @@
   <data name="Connectivity_Label" xml:space="preserve"><value>Network</value></data>
   <data name="Connectivity_Online" xml:space="preserve"><value>Online</value></data>
   <data name="Connectivity_Offline" xml:space="preserve"><value>Offline</value></data>
-  <data name="Connectivity_Unknown" xml:space="preserve"><value>Sinusuriâ€¦</value></data>
+  <data name="Connectivity_Unknown" xml:space="preserve"><value>Sinusuri…</value></data>
 
   <data name="Api_Label" xml:space="preserve"><value>API</value></data>
-  <data name="Api_Checking" xml:space="preserve"><value>Sinusuri ang APIâ€¦</value></data>
+  <data name="Api_Checking" xml:space="preserve"><value>Sinusuri ang API…</value></data>
   <data name="Api_Available" xml:space="preserve"><value>Available</value></data>
   <data name="Api_Unavailable" xml:space="preserve"><value>Hindi available</value></data>
   <data name="Api_Offline" xml:space="preserve"><value>Walang koneksyon sa network</value></data>
   <data name="Api_Retry" xml:space="preserve"><value>Subukan ulit</value></data>
   <data name="Api_TestConnection" xml:space="preserve"><value>Suriin ang koneksyon</value></data>
-  <data name="Api_Testing" xml:space="preserve"><value>Sinusuriâ€¦</value></data>
+  <data name="Api_Testing" xml:space="preserve"><value>Sinusuri…</value></data>
   <data name="Api_Environment" xml:space="preserve"><value>API environment</value></data>
   <data name="Api_TestSuccess" xml:space="preserve"><value>Nakakonekta. Status ng API: {0}</value></data>
   <data name="Api_TestFailure" xml:space="preserve"><value>Hindi ma-reach ang API.</value></data>
 
   <data name="Home_Title" xml:space="preserve"><value>ExItS PinoyBusinessPOS</value></data>
-  <data name="Home_Subtitle" xml:space="preserve"><value>Pundasyon ng point-of-sale â€” status ng koneksyon at plataporma.</value></data>
+  <data name="Home_Subtitle" xml:space="preserve"><value>Pundasyon ng point-of-sale — status ng koneksyon at plataporma.</value></data>
   <data name="Home_AppSectionTitle" xml:space="preserve"><value>App</value></data>
   <data name="Home_StatusSectionTitle" xml:space="preserve"><value>Status ng sistema</value></data>
   <data name="Home_VersionLabel" xml:space="preserve"><value>Bersyon</value></data>
@@ -141,7 +141,7 @@
   <data name="Common_Confirm" xml:space="preserve"><value>Kumpirmahin</value></data>
   <data name="Common_Search" xml:space="preserve"><value>Maghanap</value></data>
   <data name="Common_Connected" xml:space="preserve"><value>Nakakonekta</value></data>
-  <data name="Common_Loading" xml:space="preserve"><value>Naglo-loadâ€¦</value></data>
+  <data name="Common_Loading" xml:space="preserve"><value>Naglo-load…</value></data>
   <data name="Common_Success" xml:space="preserve"><value>Tagumpay</value></data>
   <data name="Common_Warning" xml:space="preserve"><value>Babala</value></data>
   <data name="Common_Error" xml:space="preserve"><value>Error</value></data>
@@ -161,7 +161,7 @@
   <data name="Format_LocalSuffix" xml:space="preserve"><value>Lokal</value></data>
 
   <data name="DevShowcase_Title" xml:space="preserve"><value>Showcase ng mga component</value></data>
-  <data name="DevShowcase_Subtitle" xml:space="preserve"><value>Development at Testing lang â€” visual QA para sa shared UI components.</value></data>
+  <data name="DevShowcase_Subtitle" xml:space="preserve"><value>Development at Testing lang — visual QA para sa shared UI components.</value></data>
   <data name="DevShowcase_UnavailableTitle" xml:space="preserve"><value>Hindi available ang showcase</value></data>
   <data name="DevShowcase_UnavailableMessage" xml:space="preserve"><value>Available lang ang component showcase sa Development o Testing builds.</value></data>
   <data name="DevShowcase_SampleNoticeTitle" xml:space="preserve"><value>Sample values lang</value></data>
@@ -199,7 +199,7 @@
   <data name="DevShowcase_AccordionBody" xml:space="preserve"><value>Maaaring ilagay ang secondary detail sa accordion nang hindi ginugulo ang pangunahing view.</value></data>
 
   <data name="Env_Testing" xml:space="preserve"><value>Testing</value></data>
-  <data name="Boot_Loading" xml:space="preserve"><value>Nagsisimulaâ€¦</value></data>
+  <data name="Boot_Loading" xml:space="preserve"><value>Nagsisimula…</value></data>
   <data name="Common_Continue" xml:space="preserve"><value>Magpatuloy</value></data>
   <data name="Common_Back" xml:space="preserve"><value>Bumalik</value></data>
   <data name="Welcome_Title" xml:space="preserve"><value>Maligayang pagdating</value></data>
@@ -246,7 +246,7 @@
   <data name="SignIn_QuickLoginTitle" xml:space="preserve"><value>Mabilis na sign-in</value></data>
   <data name="SignIn_QuickLoginLabel" xml:space="preserve"><value>Local Validation identity</value></data>
   <data name="SignIn_QuickLoginHint" xml:space="preserve"><value>Isang entry bawat user. Gumagamit ng Local Validation shared password (tulad ng Admin Quick Login).</value></data>
-  <data name="SignIn_QuickLoginPlaceholder" xml:space="preserve"><value>Pumili ng userâ€¦</value></data>
+  <data name="SignIn_QuickLoginPlaceholder" xml:space="preserve"><value>Pumili ng user…</value></data>
   <data name="SignIn_QuickLoginUnavailable" xml:space="preserve"><value>Walang available na Quick Login identities</value></data>
   <data name="SignIn_AccessTokenMissing" xml:space="preserve"><value>Nakapag-sign in, pero walang na-issue na POS access token. Tingnan ang Local Validation shared password at subukan ulit.</value></data>
   <data name="Auth_ExternalCancelled" xml:space="preserve"><value>Kinansela ang Google sign-in.</value></data>
@@ -326,11 +326,11 @@
   <data name="Settings_SwitchOrganization" xml:space="preserve"><value>Palitan ang organization</value></data>
 
   <data name="Customers_Title" xml:space="preserve"><value>Mga customer</value></data>
-  <data name="Customers_Subtitle" xml:space="preserve"><value>Mga customer profile ng organization â€” walang credit balance sa release na ito.</value></data>
+  <data name="Customers_Subtitle" xml:space="preserve"><value>Mga customer profile ng organization — walang credit balance sa release na ito.</value></data>
   <data name="Customers_Add" xml:space="preserve"><value>Magdagdag ng customer</value></data>
   <data name="Customers_Refresh" xml:space="preserve"><value>I-refresh</value></data>
   <data name="Customers_SearchPlaceholder" xml:space="preserve"><value>Maghanap ayon sa pangalan o mobile</value></data>
-  <data name="Customers_Loading" xml:space="preserve"><value>Nilo-load ang mga customerâ€¦</value></data>
+  <data name="Customers_Loading" xml:space="preserve"><value>Nilo-load ang mga customer…</value></data>
   <data name="Customers_EmptyTitle" xml:space="preserve"><value>Wala pang customer</value></data>
   <data name="Customers_EmptyMessage" xml:space="preserve"><value>Gumawa ng customer profile para sa store na ito. Darating pa ang credit at repayment.</value></data>
   <data name="Customers_Col_Name" xml:space="preserve"><value>Pangalan</value></data>
@@ -339,7 +339,7 @@
   <data name="Customers_Col_Actions" xml:space="preserve"><value>Actions</value></data>
   <data name="Customers_View" xml:space="preserve"><value>Tingnan</value></data>
   <data name="Customers_NoMobile" xml:space="preserve"><value>Walang mobile</value></data>
-  <data name="Customers_NoValue" xml:space="preserve"><value>â€”</value></data>
+  <data name="Customers_NoValue" xml:space="preserve"><value>—</value></data>
   <data name="Customers_CreateTitle" xml:space="preserve"><value>Bagong customer</value></data>
   <data name="Customers_CreateSubtitle" xml:space="preserve"><value>Kailangan ang display name. Opsiyonal ang mobile.</value></data>
   <data name="Customers_Create" xml:space="preserve"><value>Gumawa ng customer</value></data>
@@ -356,7 +356,7 @@
   <data name="Customers_Field_Status" xml:space="preserve"><value>Status</value></data>
   <data name="Customers_MobileHint" xml:space="preserve"><value>Opsiyonal. Ginagamit para maiwasan ang duplicate active customer sa organization na ito.</value></data>
   <data name="Customers_AddressHint" xml:space="preserve"><value>Opsiyonal na maikling deskripsyon ng lokasyon.</value></data>
-  <data name="Customers_NotesHint" xml:space="preserve"><value>Para sa pagkilala lang â€” hindi credit record.</value></data>
+  <data name="Customers_NotesHint" xml:space="preserve"><value>Para sa pagkilala lang — hindi credit record.</value></data>
   <data name="Customers_DisplayNameRequired" xml:space="preserve"><value>Kailangan ang display name.</value></data>
   <data name="Customers_CreditDeferredTitle" xml:space="preserve"><value>Mga susunod na Utang feature</value></data>
   <data name="Customers_CreditDeferredMessage" xml:space="preserve"><value>Hindi pa available ang interest at credit limits. Available na ang statements at repayment receipts sa customer detail.</value></data>
@@ -380,7 +380,7 @@
   <data name="Statement_PeriodEnd" xml:space="preserve"><value>Wakas ng period</value></data>
   <data name="Statement_Generate" xml:space="preserve"><value>I-preview ang statement</value></data>
   <data name="Statement_Share" xml:space="preserve"><value>I-share ang statement</value></data>
-  <data name="Statement_Loading" xml:space="preserve"><value>Naglo-load ang statementâ€¦</value></data>
+  <data name="Statement_Loading" xml:space="preserve"><value>Naglo-load ang statement…</value></data>
   <data name="Statement_ErrorTitle" xml:space="preserve"><value>Hindi nakuha ang statement</value></data>
   <data name="Statement_PeriodRequired" xml:space="preserve"><value>Piliin ang period start at period end.</value></data>
   <data name="Statement_PeriodInvalid" xml:space="preserve"><value>Dapat ang period end ay on or after ng period start.</value></data>
@@ -401,7 +401,7 @@
   <data name="Receipt_Subtitle" xml:space="preserve"><value>Preview para sa pag-share</value></data>
   <data name="Receipt_Open" xml:space="preserve"><value>Resibo</value></data>
   <data name="Receipt_Share" xml:space="preserve"><value>I-share ang receipt</value></data>
-  <data name="Receipt_Loading" xml:space="preserve"><value>Naglo-load ang receiptâ€¦</value></data>
+  <data name="Receipt_Loading" xml:space="preserve"><value>Naglo-load ang receipt…</value></data>
   <data name="Receipt_ErrorTitle" xml:space="preserve"><value>Hindi nakuha ang receipt</value></data>
   <data name="Receipt_NotFoundTitle" xml:space="preserve"><value>Hindi nahanap ang receipt</value></data>
   <data name="Receipt_NotFoundMessage" xml:space="preserve"><value>Hindi available ang repayment receipt para sa napiling organization.</value></data>
@@ -431,7 +431,7 @@
   <data name="Payment_ConfirmTitle" xml:space="preserve"><value>Itala ang bayad na ito?</value></data>
   <data name="Payment_ConfirmMessage" xml:space="preserve"><value>Idadagdag ang bayad sa immutable Utang ledger at hindi na mae-edit.</value></data>
   <data name="Payment_ErrorTitle" xml:space="preserve"><value>Hindi natuloy ang payment action</value></data>
-  <data name="Payment_Loading" xml:space="preserve"><value>Nilo-load ang bayadâ€¦</value></data>
+  <data name="Payment_Loading" xml:space="preserve"><value>Nilo-load ang bayad…</value></data>
   <data name="Payment_NotFoundTitle" xml:space="preserve"><value>Hindi nahanap ang bayad</value></data>
   <data name="Payment_NotFoundMessage" xml:space="preserve"><value>Hindi available ang repayment na ito para sa napiling organization.</value></data>
   <data name="Payment_DetailTitle" xml:space="preserve"><value>Detalye ng bayad</value></data>
@@ -448,7 +448,7 @@
   <data name="Ledger_Title" xml:space="preserve"><value>Utang ledger</value></data>
   <data name="Ledger_Subtitle" xml:space="preserve"><value>Chronological na credit at payment history</value></data>
   <data name="Ledger_HistoryTitle" xml:space="preserve"><value>Kasaysayan ng ledger</value></data>
-  <data name="Ledger_Loading" xml:space="preserve"><value>Nilo-load ang ledgerâ€¦</value></data>
+  <data name="Ledger_Loading" xml:space="preserve"><value>Nilo-load ang ledger…</value></data>
   <data name="Ledger_EmptyTitle" xml:space="preserve"><value>Wala pang ledger entry</value></data>
   <data name="Ledger_EmptyMessage" xml:space="preserve"><value>Lilitaw dito ang credit at payment activity ayon sa oras.</value></data>
   <data name="Ledger_ErrorTitle" xml:space="preserve"><value>Hindi ma-load ang ledger</value></data>
@@ -473,7 +473,7 @@
   <data name="Credit_ReversalReasonRequired" xml:space="preserve"><value>Kailangan ang dahilan ng reversal.</value></data>
   <data name="Credit_Save" xml:space="preserve"><value>Itala ang credit</value></data>
   <data name="Credit_HistoryTitle" xml:space="preserve"><value>Kasaysayan ng credit</value></data>
-  <data name="Credit_HistoryLoading" xml:space="preserve"><value>Nilo-load ang kasaysayanâ€¦</value></data>
+  <data name="Credit_HistoryLoading" xml:space="preserve"><value>Nilo-load ang kasaysayan…</value></data>
   <data name="Credit_HistoryEmptyTitle" xml:space="preserve"><value>Wala pang credit entry</value></data>
   <data name="Credit_HistoryEmptyMessage" xml:space="preserve"><value>Magtala ng credit upang magsimula ang append-only history ng customer.</value></data>
   <data name="Credit_Reverse" xml:space="preserve"><value>I-reverse</value></data>
@@ -488,7 +488,7 @@
   <data name="Credit_NotFoundMessage" xml:space="preserve"><value>Hindi available ang credit entry na ito para sa napiling organization.</value></data>
   <data name="Credit_DetailTitle" xml:space="preserve"><value>Detalye ng credit</value></data>
   <data name="Credit_DetailSubtitle" xml:space="preserve"><value>Due date at append-only credit history</value></data>
-  <data name="DueDate_Loading" xml:space="preserve"><value>Nilo-load ang creditâ€¦</value></data>
+  <data name="DueDate_Loading" xml:space="preserve"><value>Nilo-load ang credit…</value></data>
   <data name="DueDate_Status" xml:space="preserve"><value>Due status</value></data>
   <data name="DueDate_Current" xml:space="preserve"><value>Due date</value></data>
   <data name="DueDate_None" xml:space="preserve"><value>Walang due date</value></data>
@@ -504,7 +504,7 @@
   <data name="DueDate_ConfirmClearTitle" xml:space="preserve"><value>I-clear ang due date?</value></data>
   <data name="DueDate_ConfirmClearMessage" xml:space="preserve"><value>Aalisin ang due date at maitatala ang pagbabago sa history.</value></data>
   <data name="DueDate_HistoryTitle" xml:space="preserve"><value>Kasaysayan ng due date</value></data>
-  <data name="DueDate_HistoryLoading" xml:space="preserve"><value>Nilo-load ang due-date historyâ€¦</value></data>
+  <data name="DueDate_HistoryLoading" xml:space="preserve"><value>Nilo-load ang due-date history…</value></data>
   <data name="DueDate_HistoryEmptyTitle" xml:space="preserve"><value>Wala pang due-date change</value></data>
   <data name="DueDate_HistoryEmptyMessage" xml:space="preserve"><value>Mag-set o mag-clear ng due date para magsimula ang append-only history.</value></data>
   <data name="DueDate_ReasonRequired" xml:space="preserve"><value>Kailangan ang dahilan ng pagbabago.</value></data>
@@ -528,7 +528,7 @@
   <data name="Overdue_PolicyMessage" xml:space="preserve"><value>Kinukuha ang overdue amount sa pamamagitan ng paglalapat ng active repayments sa pinakamatandang active credits. Hindi sine-save ang allocation.</value></data>
   <data name="Overdue_CustomersTitle" xml:space="preserve"><value>Mga customer na overdue</value></data>
   <data name="Overdue_CreditsTitle" xml:space="preserve"><value>Mga overdue credit</value></data>
-  <data name="Overdue_Loading" xml:space="preserve"><value>Nilo-load ang overdueâ€¦</value></data>
+  <data name="Overdue_Loading" xml:space="preserve"><value>Nilo-load ang overdue…</value></data>
   <data name="Overdue_ErrorTitle" xml:space="preserve"><value>Hindi ma-load ang overdue</value></data>
   <data name="Overdue_EmptyCustomersTitle" xml:space="preserve"><value>Walang overdue customer</value></data>
   <data name="Overdue_EmptyCustomersMessage" xml:space="preserve"><value>Lilitaw dito ang customer kapag may unpaid active credit na may due date bago ang ngayon (UTC).</value></data>
@@ -641,7 +641,7 @@
   <data name="DevOffline_LastSynced" xml:space="preserve"><value>Huling sync</value></data>
   <data name="DevOffline_FailureCode" xml:space="preserve"><value>Failure code</value></data>
   <data name="Settings_DevOfflineLink" xml:space="preserve"><value>Offline foundation diagnostics</value></data>
-  <data name="Offline_SavedPendingSync" xml:space="preserve"><value>Nai-save sa device na ito â€” Pending Sync</value></data>
+  <data name="Offline_SavedPendingSync" xml:space="preserve"><value>Nai-save sa device na ito — Pending Sync</value></data>
   <data name="Offline_ConfirmedOutstanding" xml:space="preserve"><value>Kumpirmadong outstanding</value></data>
   <data name="Offline_PendingCredit" xml:space="preserve"><value>Pending na credit</value></data>
   <data name="Offline_ProjectedOutstanding" xml:space="preserve"><value>Projected outstanding</value></data>
@@ -680,7 +680,7 @@
   <data name="Catalog_Categories" xml:space="preserve"><value>Mga Kategorya</value></data>
   <data name="Catalog_BarcodeLookup" xml:space="preserve"><value>Hanapin sa barcode</value></data>
   <data name="Catalog_Refresh" xml:space="preserve"><value>I-refresh</value></data>
-  <data name="Catalog_Loading" xml:space="preserve"><value>Naglo-load ng catalogâ€¦</value></data>
+  <data name="Catalog_Loading" xml:space="preserve"><value>Naglo-load ng catalog…</value></data>
   <data name="Catalog_SearchPlaceholder" xml:space="preserve"><value>Maghanap sa pangalan, SKU, o barcode</value></data>
   <data name="Catalog_EmptyTitle" xml:space="preserve"><value>Wala pang produkto</value></data>
   <data name="Catalog_EmptyMessage" xml:space="preserve"><value>Magdagdag ng unang produkto para simulan ang catalog.</value></data>
@@ -871,7 +871,7 @@
   <data name="Sales_Refresh" xml:space="preserve"><value>I-refresh</value></data>
   <data name="Sales_Cancel" xml:space="preserve"><value>Kanselahin</value></data>
   <data name="Sales_BackToList" xml:space="preserve"><value>Bumalik sa benta</value></data>
-  <data name="Sales_Loading" xml:space="preserve"><value>Kinukuha ang bentaâ€¦</value></data>
+  <data name="Sales_Loading" xml:space="preserve"><value>Kinukuha ang benta…</value></data>
   <data name="Sales_SearchPlaceholder" xml:space="preserve"><value>Hanapin sa numero ng benta</value></data>
   <data name="Sales_FiltersTitle" xml:space="preserve"><value>Mga filter</value></data>
   <data name="Sales_ListSection" xml:space="preserve"><value>Mga benta</value></data>
@@ -904,7 +904,9 @@
   <data name="Sales_NotFoundTitle" xml:space="preserve"><value>Walang nahanap na benta</value></data>
   <data name="Sales_NotFoundMessage" xml:space="preserve"><value>Hindi available ang bentang ito para sa tindahan mo.</value></data>
   <data name="Sales_DetailSubtitle" xml:space="preserve"><value>Detalye ng benta</value></data>
-  <data name="Sales_DetailSection" xml:space="preserve"><value>Benta</value></data>
+  <data name="Sales_DetailSection" xml:space="preserve"><value>Buod ng benta</value></data>
+  <data name="Sales_Detail_OpenCredit" xml:space="preserve"><value>Buksan ang credit ledger</value></data>
+  <data name="Sales_Detail_CustomerFallback" xml:space="preserve"><value>Customer</value></data>
   <data name="Sales_Detail_LinkedCustomer" xml:space="preserve"><value>Customer</value></data>
   <data name="Sales_Detail_LinkedCredit" xml:space="preserve"><value>Naka-link na credit</value></data>
   <data name="Sales_Detail_LinkedDueDate" xml:space="preserve"><value>Due date</value></data>
@@ -970,7 +972,7 @@
   <data name="Sales_VoidMessage" xml:space="preserve"><value>Hindi na kasama sa kabuuan ang kanseladong benta. Hindi ito nagsasauli ng pera at hindi nagbabago ng stock. Maglagay ng dahilan.</value></data>
   <data name="Sales_VoidUtangMessage" xml:space="preserve"><value>Kapag kinansela ang Utang na benta, maba-reverse din ang naka-link na credit. Walang isasauling cash at hindi magbabago ang stock. Maglagay ng dahilan.</value></data>
   <data name="Sales_VoidedSuccess" xml:space="preserve"><value>Kinansela ang benta.</value></data>
-  <data name="Returns_Loading" xml:space="preserve"><value>Naglo-load ng detalye ng pagbalikâ€¦</value></data>
+  <data name="Returns_Loading" xml:space="preserve"><value>Naglo-load ng detalye ng pagbalik…</value></data>
   <data name="Returns_NotFoundTitle" xml:space="preserve"><value>Hindi maibalik ang benta</value></data>
   <data name="Returns_NotFoundMessage" xml:space="preserve"><value>Hindi ma-load ang benta para sa pagbalik.</value></data>
   <data name="Returns_BackToSale" xml:space="preserve"><value>Bumalik sa benta</value></data>
@@ -1033,7 +1035,17 @@
   <data name="Sales_Checkout_AllCategories" xml:space="preserve"><value>Lahat</value></data>
   <data name="Sales_Checkout_OptionalCustomer" xml:space="preserve"><value>Customer (opsyonal)</value></data>
   <data name="Sales_Checkout_CartFab" xml:space="preserve"><value>Cart ({0})</value></data>
-  <data name="Sales_Checkout_InStock" xml:space="preserve"><value>May stock</value></data>
+    <data name="Sales_Checkout_SellTitle" xml:space="preserve"><value>Magbenta</value></data>
+  <data name="Sales_Checkout_LookupPlaceholder" xml:space="preserve"><value>I-scan ang barcode, SKU, o pangalan ng produkto</value></data>
+  <data name="Sales_Checkout_ClearSearch" xml:space="preserve"><value>I-clear ang search</value></data>
+  <data name="Sales_Checkout_StockNotTracked" xml:space="preserve"><value>Hindi tracked ang stock</value></data>
+  <data name="Sales_Checkout_OutOfStock" xml:space="preserve"><value>Walang stock</value></data>
+  <data name="Sales_Checkout_LowStock" xml:space="preserve"><value>Kakaunti ang stock</value></data>
+  <data name="Sales_Checkout_InsufficientStockTitle" xml:space="preserve"><value>Kulang ang stock</value></data>
+  <data name="Sales_Checkout_InsufficientStock" xml:space="preserve"><value>Hindi sapat ang available stock para sa quantity na iyon.</value></data>
+  <data name="Sales_Checkout_NoProductsTitle" xml:space="preserve"><value>Walang produkto</value></data>
+  <data name="Sales_Checkout_NoProductsMessage" xml:space="preserve"><value>Walang active na produktong mabibili sa category na ito.</value></data>
+<data name="Sales_Checkout_InStock" xml:space="preserve"><value>May stock</value></data>
   <data name="Sales_Checkout_UnitStock" xml:space="preserve"><value>{0} · {1}</value></data>
   <data name="Sales_TenderExact" xml:space="preserve"><value>Exact</value></data>
   <data name="Sales_TenderQuick50" xml:space="preserve"><value>₱50</value></data>
@@ -1069,7 +1081,7 @@
   <data name="Inventory_OfflineMessage" xml:space="preserve"><value>Online-only ang imbentaryo. Mag-reconnect para makita o baguhin ang stock.</value></data>
   <data name="Inventory_EmptyTitle" xml:space="preserve"><value>Wala pang produkto</value></data>
   <data name="Inventory_EmptyMessage" xml:space="preserve"><value>Magdagdag muna ng catalog products, pagkatapos i-enable ang tracking dito.</value></data>
-  <data name="Inventory_Loading" xml:space="preserve"><value>Nilo-load ang imbentaryoâ€¦</value></data>
+  <data name="Inventory_Loading" xml:space="preserve"><value>Nilo-load ang imbentaryo…</value></data>
   <data name="Inventory_SearchPlaceholder" xml:space="preserve"><value>Maghanap ayon sa pangalan, SKU, o barcode</value></data>
   <data name="Inventory_InsufficientStockTitle" xml:space="preserve"><value>Kulang ang stock</value></data>
   <data name="Inventory_InsufficientStockMessage" xml:space="preserve"><value>Walang sapat na on-hand quantity ang isa o higit pang tracked na produkto para sa bentang ito.</value></data>
@@ -1106,7 +1118,7 @@
   <data name="Expenses_Cancel" xml:space="preserve"><value>Kanselahin</value></data>
   <data name="Expenses_Save" xml:space="preserve"><value>I-save ang gastos</value></data>
   <data name="Expenses_BackToList" xml:space="preserve"><value>Bumalik sa mga gastos</value></data>
-  <data name="Expenses_Loading" xml:space="preserve"><value>Nilo-load ang mga gastosâ€¦</value></data>
+  <data name="Expenses_Loading" xml:space="preserve"><value>Nilo-load ang mga gastos…</value></data>
   <data name="Expenses_SearchPlaceholder" xml:space="preserve"><value>Maghanap ayon sa expense number</value></data>
   <data name="Expenses_FiltersTitle" xml:space="preserve"><value>Mga filter</value></data>
   <data name="Expenses_Filter_Status" xml:space="preserve"><value>Status</value></data>
@@ -1291,7 +1303,7 @@
   <data name="Suppliers_Subtitle" xml:space="preserve"><value>Pamahalaan ang contact at reference data ng supplier (online lang).</value></data>
   <data name="Suppliers_Add" xml:space="preserve"><value>Magdagdag ng supplier</value></data>
   <data name="Suppliers_Refresh" xml:space="preserve"><value>I-refresh</value></data>
-  <data name="Suppliers_Loading" xml:space="preserve"><value>Naglo-load ng mga supplierâ€¦</value></data>
+  <data name="Suppliers_Loading" xml:space="preserve"><value>Naglo-load ng mga supplier…</value></data>
   <data name="Suppliers_SearchPlaceholder" xml:space="preserve"><value>Maghanap ayon sa pangalan o supplier code</value></data>
   <data name="Suppliers_EmptyTitle" xml:space="preserve"><value>Walang supplier pa</value></data>
   <data name="Suppliers_EmptyMessage" xml:space="preserve"><value>Magdagdag ng unang supplier para sa contact details ng vendor.</value></data>
@@ -1636,7 +1648,7 @@
   <data name="Personal_LaunchPos" xml:space="preserve"><value>Open POS</value></data>
   <data name="Personal_PosReady" xml:space="preserve"><value>POS access available</value></data>
   <data name="Personal_OrgEssentialsOnly" xml:space="preserve"><value>Organization essentials (POS not entitled yet)</value></data>
-  <data name="Personal_MembershipReady" xml:space="preserve"><value>Active membership â€” continue to open the organization or POS when entitled</value></data>
+  <data name="Personal_MembershipReady" xml:space="preserve"><value>Active membership — continue to open the organization or POS when entitled</value></data>
   <data name="Personal_DashboardSection" xml:space="preserve"><value>Personal Utang summary</value></data>
   <data name="Personal_DashboardUnavailable" xml:space="preserve"><value>Dashboard totals are temporarily unavailable.</value></data>
   <data name="Personal_Stat_People" xml:space="preserve"><value>People</value></data>
@@ -1729,7 +1741,7 @@
   <data name="Personal_ExplorePosEmptyMessage" xml:space="preserve"><value>No active Pinoy Business POS plans are published right now.</value></data>
   <data name="Personal_ExplorePosSelectHint" xml:space="preserve"><value>Select a plan to continue. You will enter business details and confirm before an organization is created.</value></data>
   <data name="Personal_ExplorePosTrialDays" xml:space="preserve"><value>{0}-day free trial available</value></data>
-  <data name="Personal_ExplorePosNoTrial" xml:space="preserve"><value>No free trial â€” subscribe to start</value></data>
+  <data name="Personal_ExplorePosNoTrial" xml:space="preserve"><value>No free trial — subscribe to start</value></data>
   <data name="Personal_ExplorePosStartTrial" xml:space="preserve"><value>Select trial</value></data>
   <data name="Personal_ExplorePosSubscribe" xml:space="preserve"><value>Select / Subscribe</value></data>
   <data name="Personal_ExplorePosBack" xml:space="preserve"><value>Back to plans</value></data>
@@ -1887,7 +1899,7 @@
   <data name="Cashier_CloseShift" xml:space="preserve"><value>Close shift</value></data>
   <data name="Cashier_HistorySection" xml:space="preserve"><value>History</value></data>
   <data name="Cashier_OwnSales" xml:space="preserve"><value>My sales history</value></data>
-  <data name="SellingMode_Banner" xml:space="preserve"><value>Selling mode â€” role unchanged</value></data>
+  <data name="SellingMode_Banner" xml:space="preserve"><value>Selling mode — hindi nagbabago ang role</value></data>
   <data name="SellingMode_Exit" xml:space="preserve"><value>Return to dashboard</value></data>
   <data name="More_Subtitle" xml:space="preserve"><value>Mga tool at organisasyon</value></data>
   <data name="More_WorkspaceSection" xml:space="preserve"><value>Workspace</value></data>

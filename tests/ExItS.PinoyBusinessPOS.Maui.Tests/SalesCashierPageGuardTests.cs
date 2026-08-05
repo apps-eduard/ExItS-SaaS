@@ -16,7 +16,7 @@ public sealed class SalesCashierPageGuardTests
         Assert.Contains("LookupBySkuAsync", checkout, StringComparison.Ordinal);
         Assert.Contains("OnBrowseProductTap", checkout, StringComparison.Ordinal);
         Assert.Contains("pos-product-row", checkout, StringComparison.Ordinal);
-        Assert.Contains("pos-sell-cart-fab", checkout, StringComparison.Ordinal);
+        Assert.Contains("pos-sell-sticky-bar", checkout, StringComparison.Ordinal);
         Assert.Contains("pos-sell-payment", checkout, StringComparison.Ordinal);
         Assert.DoesNotContain("pos-product-tile__placeholder", checkout, StringComparison.Ordinal);
         Assert.Contains("ParseCategoryFilter", checkout, StringComparison.Ordinal);
@@ -42,6 +42,9 @@ public sealed class SalesCashierPageGuardTests
         var detail = File.ReadAllText(Path.Combine(SalesPagesDirectory(), "SaleDetail.razor"));
         Assert.Contains("ViewGenerateReceipt", detail, StringComparison.Ordinal);
         Assert.Contains("/receipt", detail, StringComparison.Ordinal);
+        Assert.Contains("pos-sale-detail__summary", detail, StringComparison.Ordinal);
+        Assert.Contains("StoreHeaderState", detail, StringComparison.Ordinal);
+        Assert.DoesNotContain("Sales_BackToList", detail, StringComparison.Ordinal);
 
         var list = File.ReadAllText(Path.Combine(SalesPagesDirectory(), "SalesList.razor"));
         Assert.Contains("@page \"/sales\"", list, StringComparison.Ordinal);

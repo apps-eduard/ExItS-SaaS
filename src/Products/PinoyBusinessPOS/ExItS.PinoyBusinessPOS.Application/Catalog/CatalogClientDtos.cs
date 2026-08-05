@@ -26,7 +26,18 @@ public sealed record PosCatalogProductDto(
     string CatalogSource = "Manual",
     DateTimeOffset? CatalogImportedAt = null,
     int? CatalogSnapshotVersion = null,
-    Guid? SourceGlobalCategoryId = null);
+    Guid? SourceGlobalCategoryId = null,
+    /// <summary>
+    /// Mirrors <c>InventoryAccount.IsTracked</c>. When false, on-hand is not authoritative and
+    /// checkout must not create stock movements for the product.
+    /// </summary>
+    bool IsTracked = false,
+    decimal OnHandQuantity = 0m,
+    /// <summary>
+    /// Derived tracked stock state code (<c>InStock</c> / <c>LowStock</c> / <c>OutOfStock</c>).
+    /// Meaningful only when <see cref="IsTracked"/> is true.
+    /// </summary>
+    string StockStatus = "InStock");
 
 public sealed record CreatePosProductCategoryRequest(string Name, Guid? CategoryId = null);
 

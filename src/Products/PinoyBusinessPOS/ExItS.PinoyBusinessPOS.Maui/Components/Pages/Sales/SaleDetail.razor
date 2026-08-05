@@ -1,4 +1,5 @@
 @page "/sales/{SaleId:guid}"
+@implements IDisposable
 @using ExItS.PinoyBusinessPOS.Application.Payments
 @using ExItS.PinoyBusinessPOS.Maui.Services
 @inject NavigationManager Nav
@@ -6,11 +7,13 @@
 @inject IPosSaleClient Sales
 @inject IPosSaleReturnClient SaleReturns
 @inject IPosPaymentAttemptClient PaymentAttempts
+@inject IPlatformAccessClient Platform
 @inject MauiPendingPaymentStore PendingPayment
 @inject ICurrentUserContext CurrentUser
 @inject IUtangCapabilityEvaluator Capabilities
 @inject ApiStatusLocalizer ApiLocalizer
 @inject IConnectivityService Connectivity
+@inject StoreHeaderState HeaderState
 @inject IStringLocalizer<PosResources> L
 
 @if (!_ready)
@@ -28,12 +31,12 @@ else if (_sale is null)
                     Message="@(_errorMessage ?? L["Sales_NotFoundMessage"])"
                     RetryLabel="@L["Api_Retry"]"
                     OnRetry="LoadAsync" />
-        <Button Variant="ButtonVariant.Secondary" OnClick="GoList">@L["Sales_BackToList"]</Button>
     </Page>
 }
 else
 {
     var sale = _sale;
+    var currency = sale.CurrencyCode ?? "PHP";
     var isCompleted = sale.Status == PosSaleOptions.CompletedStatus;
     var isAwaitingPayment = sale.Status == PosSaleOptions.AwaitingPaymentStatus;
     var isUtang = sale.PaymentMethod == PosSaleOptions.UtangPaymentMethod;
@@ -48,12 +51,14 @@ else
     var canReceipt = isCompleted
         && (Capabilities.IsAllowed(UtangCapability.ViewGenerateReceipt)
             || Capabilities.IsAllowed(UtangCapability.ViewSales));
+    var registerLabel = FirstMeaningful(sale.RegisterName, sale.RegisterCode);
+    var paymentRegisterLine = BuildPaymentRegisterLine(sale.PaymentMethod, registerLabel);
+<div class="pos-sale-detail">
 <Page>
-    <PageHeader Title="@sale.SaleNumber" Subtitle="@L["Sales_DetailSubtitle"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoList">@L["Sales_BackToList"]</Button>
-        </Actions>
-    </PageHeader>
+    <header class="pos-sale-detail__header">
+        <h1 class="pos-sale-detail__title">@sale.SaleNumber</h1>
+        <p class="pos-sale-detail__subtitle">@L["Sales_DetailSubtitle"]</p>
+    </header>
 
     @if (_isOffline)
     {
@@ -70,194 +75,189 @@ else
         <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Sales_ErrorTitle"])" Message="@_errorMessage" />
     }
 
-    <Section Title="@L["Sales_DetailSection"]">
-        <Stack Gap="3">
-            <div>
-                <span class="pos-muted">@L["Sales_Col_Status"]</span>
-                <div class="pos-value-md">
-                    <Badge Tone="@(isCompleted ? BadgeTone.Success : isAwaitingPayment ? BadgeTone.Warning : BadgeTone.Neutral)">@SalesUiOptions.StatusLabel(L, sale.Status)</Badge>
-                </div>
-            </div>
-            <div>
-                <span class="pos-muted">@L["Sales_Col_RecordedAt"]</span>
-                <div class="pos-value-md">@sale.RecordedAtUtc.ToLocalTime().ToString("g")</div>
-            </div>
-            <div>
-                <span class="pos-muted">@L["Sales_Field_PaymentMethod"]</span>
-                <div class="pos-value-md">@SalesUiOptions.PaymentMethodLabel(L, sale.PaymentMethod)</div>
-            </div>
+    <section class="pos-sale-detail__summary" aria-labelledby="sale-summary-heading">
+        <h2 id="sale-summary-heading" class="pos-sale-detail__section-title">@L["Sales_DetailSection"]</h2>
+
+        <div class="pos-sale-detail__status-block">
+            <Badge Tone="@(isCompleted ? BadgeTone.Success : isAwaitingPayment ? BadgeTone.Warning : BadgeTone.Neutral)">
+                @SalesUiOptions.StatusLabel(L, sale.Status)
+            </Badge>
+            <p class="pos-sale-detail__when">@FormatRecorded(sale.RecordedAtUtc)</p>
+            @if (!string.IsNullOrWhiteSpace(paymentRegisterLine))
+            {
+                <p class="pos-sale-detail__context">@paymentRegisterLine</p>
+            }
             @if (!string.IsNullOrWhiteSpace(sale.StoreDisplayName))
             {
-                <div>
-                    <span class="pos-muted">@L["Sales_Field_Store"]</span>
-                    <div class="pos-value-md">@sale.StoreDisplayName</div>
-                </div>
+                <p class="pos-sale-detail__context pos-muted">@sale.StoreDisplayName</p>
             }
-            @if (!string.IsNullOrWhiteSpace(sale.ReceiptHeader))
+            @if (!string.IsNullOrWhiteSpace(_cashierName))
             {
-                <div>
-                    <span class="pos-muted">@L["Sales_Field_ReceiptHeader"]</span>
-                    <div class="pos-value-md pos-wrap">@sale.ReceiptHeader</div>
-                </div>
+                <p class="pos-sale-detail__context pos-muted">
+                    <span>@L["Sales_Field_Cashier"]</span>
+                    <span aria-hidden="true"> · </span>
+                    <span>@_cashierName</span>
+                </p>
             }
-            @if (!string.IsNullOrWhiteSpace(sale.BusinessAddress))
-            {
-                <div>
-                    <span class="pos-muted">@L["Sales_Field_BusinessAddress"]</span>
-                    <div class="pos-value-md pos-wrap">@sale.BusinessAddress</div>
-                </div>
-            }
-            @if (!string.IsNullOrWhiteSpace(sale.ContactPhone))
-            {
-                <div>
-                    <span class="pos-muted">@L["Sales_Field_ContactPhone"]</span>
-                    <div class="pos-value-md">@sale.ContactPhone</div>
-                </div>
-            }
-            @if (!string.IsNullOrWhiteSpace(sale.RegisterName) || !string.IsNullOrWhiteSpace(sale.RegisterCode))
-            {
-                <div>
-                    <span class="pos-muted">@L["Sales_Field_Register"]</span>
-                    <div class="pos-value-md">@(sale.RegisterName ?? sale.RegisterCode)</div>
-                </div>
-            }
-            <div>
-                <span class="pos-muted">@L["Sales_Field_Cashier"]</span>
-                <div class="pos-value-md">@sale.RecordedBy.ToString("D")</div>
+        </div>
+
+        <dl class="pos-sale-detail__totals">
+            <div class="pos-sale-detail__total-row">
+                <dt>@L["Sales_Field_Subtotal"]</dt>
+                <dd><MoneyDisplay Amount="@sale.Subtotal" CurrencyCode="@currency" /></dd>
             </div>
-            <div>
-                <span class="pos-muted">@L["Sales_Field_Subtotal"]</span>
-                <div class="pos-value-md"><MoneyDisplay Amount="@sale.Subtotal" CurrencyCode="@(sale.CurrencyCode ?? "PHP")" /></div>
+            <div class="pos-sale-detail__total-row">
+                <dt>@L["Sales_Field_Tax"]</dt>
+                <dd><MoneyDisplay Amount="@sale.TaxAmount" CurrencyCode="@currency" /></dd>
             </div>
-            <div>
-                <span class="pos-muted">@L["Sales_Field_Tax"]</span>
-                <div class="pos-value-md"><MoneyDisplay Amount="@sale.TaxAmount" CurrencyCode="@(sale.CurrencyCode ?? "PHP")" /></div>
-            </div>
-            <div>
-                <span class="pos-muted">@L["Sales_Col_Total"]</span>
-                <div class="pos-value-md"><MoneyDisplay Amount="@sale.Total" CurrencyCode="@(sale.CurrencyCode ?? "PHP")" /></div>
+            <div class="pos-sale-detail__total-row pos-sale-detail__total-row--emphasis">
+                <dt>@L["Sales_Col_Total"]</dt>
+                <dd><MoneyDisplay Amount="@sale.Total" CurrencyCode="@currency" Emphasized="true" /></dd>
             </div>
             @if (sale.AmountTendered is not null)
             {
-                <div>
-                    <span class="pos-muted">@L["Sales_Field_AmountTendered"]</span>
-                    <div class="pos-value-md"><MoneyDisplay Amount="@sale.AmountTendered.Value" CurrencyCode="@(sale.CurrencyCode ?? "PHP")" /></div>
+                <div class="pos-sale-detail__total-row">
+                    <dt>@L["Sales_Field_AmountTendered"]</dt>
+                    <dd><MoneyDisplay Amount="@sale.AmountTendered.Value" CurrencyCode="@currency" /></dd>
                 </div>
-                <div>
-                    <span class="pos-muted">@L["Sales_Field_ChangeAmount"]</span>
-                    <div class="pos-value-md"><MoneyDisplay Amount="@(sale.ChangeAmount ?? 0m)" CurrencyCode="@(sale.CurrencyCode ?? "PHP")" /></div>
+                <div class="pos-sale-detail__total-row">
+                    <dt>@L["Sales_Field_ChangeAmount"]</dt>
+                    <dd><MoneyDisplay Amount="@(sale.ChangeAmount ?? 0m)" CurrencyCode="@currency" /></dd>
                 </div>
             }
+        </dl>
+    </section>
+
+    @if (!string.IsNullOrWhiteSpace(sale.GCashReference)
+         || _paymentAttempt is not null
+         || isUtang
+         || !isCompleted
+         || !string.IsNullOrWhiteSpace(sale.ReceiptHeader)
+         || !string.IsNullOrWhiteSpace(sale.BusinessAddress)
+         || !string.IsNullOrWhiteSpace(sale.ContactPhone))
+    {
+        <section class="pos-sale-detail__extra" aria-label="@L["Sales_DetailSection"]">
             @if (!string.IsNullOrWhiteSpace(sale.GCashReference))
             {
-                <div>
+                <div class="pos-sale-detail__extra-block">
                     <span class="pos-muted">@L["Sales_Field_GCashReference"]</span>
-                    <div class="pos-value-md pos-wrap">@sale.GCashReference</div>
+                    <div class="pos-sale-detail__extra-value pos-wrap">@sale.GCashReference</div>
                     <div class="pos-muted">@L["Sales_GCash_ManualWarning"]</div>
                 </div>
             }
             @if (_paymentAttempt is not null)
             {
-                <div>
+                <div class="pos-sale-detail__extra-block">
                     <span class="pos-muted">@L["Sales_Field_PaymentStatus"]</span>
-                    <div class="pos-value-md">@PaymentsUiOptions.AttemptStatusLabel(L, _paymentAttempt.Status)</div>
+                    <div class="pos-sale-detail__extra-value">@PaymentsUiOptions.AttemptStatusLabel(L, _paymentAttempt.Status)</div>
+                    @if (!string.IsNullOrWhiteSpace(_paymentAttempt.Provider))
+                    {
+                        <div class="pos-muted">@_paymentAttempt.Provider</div>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(_paymentAttempt.ProviderReference))
+                    {
+                        <div class="pos-sale-detail__extra-value pos-wrap">@_paymentAttempt.ProviderReference</div>
+                    }
+                    @if (_paymentAttempt.CompletedAtUtc is DateTimeOffset paidAt)
+                    {
+                        <div class="pos-muted">@paidAt.ToLocalTime().ToString("g")</div>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(_paymentAttempt.CardBrand) || !string.IsNullOrWhiteSpace(_paymentAttempt.CardLastFour))
+                    {
+                        <div class="pos-muted">
+                            @_paymentAttempt.CardBrand
+                            @if (!string.IsNullOrWhiteSpace(_paymentAttempt.CardLastFour))
+                            {
+                                <span>· ···@_paymentAttempt.CardLastFour</span>
+                            }
+                        </div>
+                    }
                 </div>
-                @if (!string.IsNullOrWhiteSpace(_paymentAttempt.Provider))
-                {
-                    <div>
-                        <span class="pos-muted">@L["Sales_Field_Provider"]</span>
-                        <div class="pos-value-md">@_paymentAttempt.Provider</div>
-                    </div>
-                }
-                @if (!string.IsNullOrWhiteSpace(_paymentAttempt.ProviderReference))
-                {
-                    <div>
-                        <span class="pos-muted">@L["Sales_Field_ProviderReference"]</span>
-                        <div class="pos-value-md pos-wrap">@_paymentAttempt.ProviderReference</div>
-                    </div>
-                }
-                @if (_paymentAttempt.CompletedAtUtc is DateTimeOffset paidAt)
-                {
-                    <div>
-                        <span class="pos-muted">@L["Sales_Field_PaidAt"]</span>
-                        <div class="pos-value-md">@paidAt.ToLocalTime().ToString("g")</div>
-                    </div>
-                }
-                @if (!string.IsNullOrWhiteSpace(_paymentAttempt.CardBrand))
-                {
-                    <div>
-                        <span class="pos-muted">@L["Sales_Field_CardBrand"]</span>
-                        <div class="pos-value-md">@_paymentAttempt.CardBrand</div>
-                    </div>
-                }
-                @if (!string.IsNullOrWhiteSpace(_paymentAttempt.CardLastFour))
-                {
-                    <div>
-                        <span class="pos-muted">@L["Sales_Field_CardLastFour"]</span>
-                        <div class="pos-value-md">@_paymentAttempt.CardLastFour</div>
-                    </div>
-                }
             }
             @if (isUtang)
             {
                 @if (sale.CustomerId is not null)
                 {
-                    <div>
+                    <div class="pos-sale-detail__extra-block">
                         <span class="pos-muted">@L["Sales_Detail_LinkedCustomer"]</span>
-                        <div class="pos-value-md">
+                        <div class="pos-sale-detail__extra-value">
                             <a class="pos-link" href="@($"/customers/{sale.CustomerId.Value:D}")">
-                                @(string.IsNullOrWhiteSpace(sale.CustomerDisplayName) ? sale.CustomerId.Value.ToString("D") : sale.CustomerDisplayName)
+                                @(string.IsNullOrWhiteSpace(sale.CustomerDisplayName) ? L["Sales_Detail_CustomerFallback"] : sale.CustomerDisplayName)
                             </a>
                         </div>
                     </div>
                 }
                 @if (sale.CustomerId is not null && sale.LinkedCreditEntryId is not null)
                 {
-                    <div>
+                    <div class="pos-sale-detail__extra-block">
                         <span class="pos-muted">@L["Sales_Detail_LinkedCredit"]</span>
-                        <div class="pos-value-md">
+                        <div class="pos-sale-detail__extra-value">
                             <a class="pos-link" href="@($"/customers/{sale.CustomerId.Value:D}/credit/{sale.LinkedCreditEntryId.Value:D}")">
-                                @sale.LinkedCreditEntryId.Value.ToString("D")
+                                @L["Sales_Detail_OpenCredit"]
                             </a>
                         </div>
                     </div>
                 }
-                <div>
+                <div class="pos-sale-detail__extra-block">
                     <span class="pos-muted">@L["Sales_Detail_LinkedDueDate"]</span>
-                    <div class="pos-value-md">@(sale.LinkedCreditDueDate?.ToString("d") ?? L["DueDate_None"])</div>
+                    <div class="pos-sale-detail__extra-value">@(sale.LinkedCreditDueDate?.ToString("d") ?? L["DueDate_None"])</div>
                 </div>
                 @if (sale.CustomerOutstandingAfter is not null)
                 {
-                    <div>
+                    <div class="pos-sale-detail__extra-block">
                         <span class="pos-muted">@L["Sales_Detail_OutstandingAfter"]</span>
-                        <div class="pos-value-md"><MoneyDisplay Amount="@sale.CustomerOutstandingAfter.Value" CurrencyCode="PHP" /></div>
+                        <div class="pos-sale-detail__extra-value">
+                            <MoneyDisplay Amount="@sale.CustomerOutstandingAfter.Value" CurrencyCode="PHP" />
+                        </div>
                     </div>
                 }
             }
             @if (!isCompleted)
             {
-                <div>
+                <div class="pos-sale-detail__extra-block">
                     <span class="pos-muted">@L["Sales_Field_VoidReason"]</span>
-                    <div class="pos-value-md pos-wrap">@sale.VoidReason</div>
-                </div>
-                <div>
-                    <span class="pos-muted">@L["Sales_Field_VoidedAt"]</span>
-                    <div class="pos-value-md">@(sale.VoidedAtUtc?.ToLocalTime().ToString("g"))</div>
+                    <div class="pos-sale-detail__extra-value pos-wrap">@sale.VoidReason</div>
+                    <div class="pos-muted">@(sale.VoidedAtUtc?.ToLocalTime().ToString("g"))</div>
                 </div>
             }
-        </Stack>
-    </Section>
+            @if (!string.IsNullOrWhiteSpace(sale.ReceiptHeader)
+                 || !string.IsNullOrWhiteSpace(sale.BusinessAddress)
+                 || !string.IsNullOrWhiteSpace(sale.ContactPhone))
+            {
+                <div class="pos-sale-detail__extra-block">
+                    @if (!string.IsNullOrWhiteSpace(sale.ReceiptHeader))
+                    {
+                        <div class="pos-sale-detail__extra-value pos-wrap">@sale.ReceiptHeader</div>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(sale.BusinessAddress))
+                    {
+                        <div class="pos-muted pos-wrap">@sale.BusinessAddress</div>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(sale.ContactPhone))
+                    {
+                        <div class="pos-muted">@sale.ContactPhone</div>
+                    }
+                </div>
+            }
+        </section>
+    }
 
     <Section Title="@L["Sales_LinesSection"]">
-        <Stack Gap="3">
+        <Stack Gap="2">
             @foreach (var line in sale.Lines)
             {
-                <div class="pos-row">
-                    <span class="pos-value-md">@line.Name</span>
-                    <span class="pos-muted">@SalesUiOptions.UnitOfMeasureLabel(L, line.UnitOfMeasure)</span>
-                    <span class="pos-muted">@line.Quantity.ToString("0.###")</span>
-                    <MoneyDisplay Amount="@line.UnitPrice" CurrencyCode="PHP" />
-                    <MoneyDisplay Amount="@line.LineTotal" CurrencyCode="PHP" />
+                <div class="pos-sale-detail__line">
+                    <div class="pos-sale-detail__line-main">
+                        <span class="pos-sale-detail__line-name">@line.Name</span>
+                        <MoneyDisplay Amount="@line.LineTotal" CurrencyCode="PHP" />
+                    </div>
+                    <div class="pos-sale-detail__line-meta pos-muted">
+                        <span>@SalesUiOptions.UnitOfMeasureLabel(L, line.UnitOfMeasure)</span>
+                        <span aria-hidden="true"> · </span>
+                        <span class="pos-tabular">@line.Quantity.ToString("0.###")</span>
+                        <span aria-hidden="true"> × </span>
+                        <MoneyDisplay Amount="@line.UnitPrice" CurrencyCode="PHP" />
+                    </div>
                 </div>
             }
         </Stack>
@@ -269,10 +269,14 @@ else
             <Stack Gap="2">
                 @foreach (var ret in _returns)
                 {
-                    <div class="pos-row">
-                        <span class="pos-value-md">@ret.ReturnNumber</span>
-                        <MoneyDisplay Amount="@ret.TotalRefundAmount" CurrencyCode="PHP" />
-                        <span class="pos-muted">@ret.CreatedAtUtc.ToLocalTime().ToString("g")</span>
+                    <div class="pos-sale-detail__line">
+                        <div class="pos-sale-detail__line-main">
+                            <span class="pos-sale-detail__line-name">@ret.ReturnNumber</span>
+                            <MoneyDisplay Amount="@ret.TotalRefundAmount" CurrencyCode="PHP" />
+                        </div>
+                        <div class="pos-sale-detail__line-meta pos-muted">
+                            @ret.CreatedAtUtc.ToLocalTime().ToString("g")
+                        </div>
                     </div>
                 }
             </Stack>
@@ -314,6 +318,7 @@ else
                    IsLoading="@_acting"
                    OnConfirm="VoidAsync" />
 </Page>
+</div>
 }
 
 @code {
@@ -324,11 +329,13 @@ else
     private bool _acting;
     private bool _confirmVoid;
     private bool _isOffline;
+    private bool _headerInner;
     private PosSaleDto? _sale;
     private string? _voidReason;
     private string? _errorTitle;
     private string? _errorMessage;
     private string? _banner;
+    private string? _cashierName;
     private List<PosSaleReturnDto> _returns = [];
     private PaymentAttemptDto? _paymentAttempt;
 
@@ -340,6 +347,8 @@ else
             return;
         }
 
+        HeaderState.EnterInner("/sales");
+        _headerInner = true;
         _ready = true;
         await LoadAsync();
     }
@@ -349,6 +358,7 @@ else
         _loading = true;
         _errorTitle = null;
         _errorMessage = null;
+        _cashierName = null;
 
         // Sales are server-only, so an offline device cannot show a sale at all.
         _isOffline = !await Connectivity.IsConnectedAsync();
@@ -365,6 +375,7 @@ else
         if (result.IsSuccess && result.Data is not null)
         {
             _sale = result.Data;
+            await LoadCashierNameAsync(_sale.RecordedBy);
             await LoadPaymentAttemptAsync();
             if (Capabilities.IsAllowed(UtangCapability.ViewReturns))
             {
@@ -384,6 +395,22 @@ else
         }
 
         _loading = false;
+    }
+
+    private async Task LoadCashierNameAsync(Guid recordedBy)
+    {
+        try
+        {
+            var userResult = await Platform.GetUserAsync(recordedBy);
+            if (userResult.IsSuccess && userResult.Data is not null)
+            {
+                _cashierName = FirstMeaningful(userResult.Data.DisplayName, userResult.Data.Username, userResult.Data.Email);
+            }
+        }
+        catch
+        {
+            _cashierName = null;
+        }
     }
 
     private async Task LoadPaymentAttemptAsync()
@@ -453,9 +480,51 @@ else
         _errorMessage = result.Error?.Detail ?? described.Message;
     }
 
-    private void GoList() => Nav.NavigateTo("/sales");
-
     private void GoReturn() => Nav.NavigateTo($"/sales/{SaleId:D}/return");
 
     private void GoReceipt() => Nav.NavigateTo($"/sales/{SaleId:D}/receipt");
+
+    private string BuildPaymentRegisterLine(string? paymentMethod, string? registerLabel)
+    {
+        var payment = SalesUiOptions.PaymentMethodLabel(L, paymentMethod);
+        if (!string.IsNullOrWhiteSpace(payment) && !string.IsNullOrWhiteSpace(registerLabel))
+        {
+            return $"{payment} · {registerLabel}";
+        }
+
+        return FirstMeaningful(payment, registerLabel) ?? string.Empty;
+    }
+
+    private static string FormatRecorded(DateTimeOffset recordedAtUtc) =>
+        recordedAtUtc.ToLocalTime().ToString("MMM d, yyyy · h:mm tt");
+
+    private static string? FirstMeaningful(params string?[] values)
+    {
+        foreach (var value in values)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                continue;
+            }
+
+            var trimmed = value.Trim();
+            if (Guid.TryParse(trimmed, out _))
+            {
+                continue;
+            }
+
+            return trimmed;
+        }
+
+        return null;
+    }
+
+    public void Dispose()
+    {
+        if (_headerInner)
+        {
+            HeaderState.ExitInner();
+            _headerInner = false;
+        }
+    }
 }

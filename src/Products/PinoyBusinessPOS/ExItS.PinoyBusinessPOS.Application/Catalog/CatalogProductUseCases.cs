@@ -5,27 +5,39 @@ using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Inventory;
 
 namespace ExItS.PinoyBusinessPOS.Application.Catalog;
 
 public sealed class CatalogProductQueryService
 {
     private readonly ICatalogProductRepository _products;
+    private readonly IInventoryRepository _inventory;
 
-    public CatalogProductQueryService(ICatalogProductRepository products) => _products = products;
+    public CatalogProductQueryService(ICatalogProductRepository products, IInventoryRepository inventory)
+    {
+        _products = products;
+        _inventory = inventory;
+    }
 
     public async Task<PosCatalogProductDto?> GetByIdAsync(
         Guid organizationId,
         Guid productId,
         CancellationToken cancellationToken = default)
     {
+        var orgId = PosOrganizationId.From(organizationId);
         var product = await _products
-            .GetByIdAsync(
-                PosOrganizationId.From(organizationId),
-                CatalogProductId.From(productId),
-                cancellationToken)
+            .GetByIdAsync(orgId, CatalogProductId.From(productId), cancellationToken)
             .ConfigureAwait(false);
-        return product is null ? null : Map(product);
+        if (product is null)
+        {
+            return null;
+        }
+
+        var account = await _inventory
+            .GetByProductIdAsync(orgId, product.Id, cancellationToken)
+            .ConfigureAwait(false);
+        return Map(product, account);
     }
 
     public async Task<PagedResult<PosCatalogProductDto>> ListAsync(
@@ -35,13 +47,19 @@ public sealed class CatalogProductQueryService
         int? pageSize,
         CancellationToken cancellationToken = default)
     {
+        var orgId = PosOrganizationId.From(organizationId);
         var (skip, take) = PosPagination.Normalize(page, pageSize);
         var (items, total) = await _products
-            .ListAsync(PosOrganizationId.From(organizationId), filter, skip, take, cancellationToken)
+            .ListAsync(orgId, filter, skip, take, cancellationToken)
             .ConfigureAwait(false);
 
+        var accounts = await _inventory
+            .ListByProductIdsAsync(orgId, items.Select(p => p.Id).ToList(), cancellationToken)
+            .ConfigureAwait(false);
+        var accountsByProduct = accounts.ToDictionary(a => a.ProductId.Value);
+
         return new PagedResult<PosCatalogProductDto>(
-            items.Select(Map).ToList(),
+            items.Select(p => Map(p, accountsByProduct.GetValueOrDefault(p.Id.Value))).ToList(),
             total,
             Math.Max(page ?? 1, 1),
             take);
@@ -71,11 +89,12 @@ public sealed class CatalogProductQueryService
                 "SKU is required for lookup.");
         }
 
+        var orgId = PosOrganizationId.From(organizationId);
         var product = await _products
-            .FindByNormalizedSkuAsync(PosOrganizationId.From(organizationId), normalized, cancellationToken)
+            .FindByNormalizedSkuAsync(orgId, normalized, cancellationToken)
             .ConfigureAwait(false);
 
-        return Resolve(product, includeInactive);
+        return await ResolveAsync(orgId, product, includeInactive, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Exact barcode lookup. Active-only by default; inactive matches stay discoverable on request.</summary>
@@ -102,14 +121,19 @@ public sealed class CatalogProductQueryService
                 "Barcode is required for lookup.");
         }
 
+        var orgId = PosOrganizationId.From(organizationId);
         var product = await _products
-            .FindByBarcodeAsync(PosOrganizationId.From(organizationId), normalized, cancellationToken)
+            .FindByBarcodeAsync(orgId, normalized, cancellationToken)
             .ConfigureAwait(false);
 
-        return Resolve(product, includeInactive);
+        return await ResolveAsync(orgId, product, includeInactive, cancellationToken).ConfigureAwait(false);
     }
 
-    private static ApplicationResult<PosCatalogProductDto> Resolve(CatalogProduct? product, bool includeInactive)
+    private async Task<ApplicationResult<PosCatalogProductDto>> ResolveAsync(
+        PosOrganizationId organizationId,
+        CatalogProduct? product,
+        bool includeInactive,
+        CancellationToken cancellationToken)
     {
         if (product is null || (!includeInactive && product.Status != CatalogProductStatus.Active))
         {
@@ -118,11 +142,21 @@ public sealed class CatalogProductQueryService
                 "Product was not found.");
         }
 
-        return ApplicationResult<PosCatalogProductDto>.Success(Map(product));
+        var account = await _inventory
+            .GetByProductIdAsync(organizationId, product.Id, cancellationToken)
+            .ConfigureAwait(false);
+        return ApplicationResult<PosCatalogProductDto>.Success(Map(product, account));
     }
 
-    public static PosCatalogProductDto Map(CatalogProduct product) =>
-        new(
+    public static PosCatalogProductDto Map(CatalogProduct product, InventoryAccount? account = null)
+    {
+        var isTracked = account?.IsTracked ?? false;
+        var onHand = account?.OnHandQuantity ?? 0m;
+        var stockStatus = isTracked && account is not null
+            ? InventoryStockStatuses.ToCode(account.StockStatus)
+            : InventoryStockStatuses.ToCode(InventoryStockStatus.InStock);
+
+        return new(
             product.Id.Value,
             product.OrganizationId.Value,
             product.Name,
@@ -140,7 +174,11 @@ public sealed class CatalogProductQueryService
             product.CatalogSource.ToString(),
             product.CatalogImportedAt,
             product.CatalogSnapshotVersion,
-            product.SourceGlobalCategoryId);
+            product.SourceGlobalCategoryId,
+            isTracked,
+            onHand,
+            stockStatus);
+    }
 }
 
 public sealed class CreateCatalogProduct

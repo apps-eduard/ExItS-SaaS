@@ -83,7 +83,7 @@ public sealed class MobileProductionUiGuardTests
         Assert.Contains("<Skeleton", checkout, StringComparison.Ordinal);
         Assert.Contains("EmptyState", checkout, StringComparison.Ordinal);
         Assert.Contains("pos-product-row--in-cart", checkout, StringComparison.Ordinal);
-        Assert.Contains("pos-sell-cart-fab", checkout, StringComparison.Ordinal);
+        Assert.Contains("pos-sell-sticky-bar", checkout, StringComparison.Ordinal);
     }
 
     [Fact]

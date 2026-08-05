@@ -30,7 +30,7 @@ public sealed class SalePageGuardTests
         Assert.Contains("QuantityStepper", checkout, StringComparison.Ordinal);
         Assert.Contains("pos-sell-floor", checkout, StringComparison.Ordinal);
         Assert.Contains("pos-product-row", checkout, StringComparison.Ordinal);
-        Assert.Contains("pos-sell-cart-fab", checkout, StringComparison.Ordinal);
+        Assert.Contains("pos-sell-sticky-bar", checkout, StringComparison.Ordinal);
         Assert.Contains("pos-sell-payment", checkout, StringComparison.Ordinal);
         Assert.Contains("Sales_TenderExact", checkout, StringComparison.Ordinal);
         Assert.Contains("StoreHeaderState", checkout, StringComparison.Ordinal);
@@ -53,6 +53,13 @@ public sealed class SalePageGuardTests
 
         var detail = File.ReadAllText(Path.Combine(sales, "SaleDetail.razor"));
         Assert.Contains("@page \"/sales/{SaleId:guid}\"", detail, StringComparison.Ordinal);
+        Assert.Contains("pos-sale-detail", detail, StringComparison.Ordinal);
+        Assert.Contains("Sales_DetailSubtitle", detail, StringComparison.Ordinal);
+        Assert.Contains("Sales_DetailSection", detail, StringComparison.Ordinal);
+        Assert.Contains("StoreHeaderState", detail, StringComparison.Ordinal);
+        Assert.Contains("EnterInner(\"/sales\")", detail, StringComparison.Ordinal);
+        Assert.Contains("IPlatformAccessClient", detail, StringComparison.Ordinal);
+        Assert.Contains("GetUserAsync", detail, StringComparison.Ordinal);
         Assert.Contains("VoidSaleAsync", detail, StringComparison.Ordinal);
         Assert.Contains("ShowReason=\"true\"", detail, StringComparison.Ordinal);
         Assert.Contains("Sales_VoidUtangMessage", detail, StringComparison.Ordinal);
@@ -61,6 +68,9 @@ public sealed class SalePageGuardTests
         Assert.Contains("UtangCapability.ViewReturns", detail, StringComparison.Ordinal);
         Assert.Contains("UtangCapability.ProcessReturn", detail, StringComparison.Ordinal);
         Assert.Contains("IPosSaleReturnClient", detail, StringComparison.Ordinal);
+        Assert.DoesNotContain("Sales_BackToList", detail, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", detail, StringComparison.Ordinal);
+        Assert.DoesNotContain("RecordedBy.ToString", detail, StringComparison.Ordinal);
 
         var returnsDir = Path.Combine(MauiProject(), "Components", "Pages", "Returns");
         Assert.True(Directory.Exists(returnsDir));
@@ -232,6 +242,11 @@ public sealed class SalePageGuardTests
                      "Sales_Checkout_ViewCart",
                      "Sales_Checkout_CartFab",
                      "Sales_Checkout_CartLineCount",
+                     "Sales_Checkout_SellTitle",
+                     "Sales_Checkout_LookupPlaceholder",
+                     "Sales_Checkout_StockNotTracked",
+                     "Sales_Checkout_OutOfStock",
+                     "Sales_Checkout_LowStock",
                      "Sales_Checkout_InStock",
                      "Sales_Checkout_UnitStock",
                      "Sales_TenderExact",
@@ -243,8 +258,12 @@ public sealed class SalePageGuardTests
                      "Sales_Checkout_IncreaseQty",
                      "Sales_Checkout_ProductInCartAria",
                      "Sales_Checkout_ProductAddAria",
+                     "Sales_DetailSubtitle",
+                     "Sales_DetailSection",
                      "Sales_Detail_LinkedCustomer",
                      "Sales_Detail_LinkedCredit",
+                     "Sales_Detail_OpenCredit",
+                     "Sales_Detail_CustomerFallback",
                      "Sales_Detail_LinkedDueDate",
                      "Sales_Detail_OutstandingAfter",
                      "Returns_Title",

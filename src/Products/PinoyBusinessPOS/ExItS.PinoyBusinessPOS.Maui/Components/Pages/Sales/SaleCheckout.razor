@@ -3,6 +3,7 @@
 @using ExItS.PinoyBusinessPOS.Domain.OperationalSetup
 @using ExItS.PinoyBusinessPOS.Domain.Payments
 @using ExItS.PinoyBusinessPOS.Maui.Services
+@using ExItS.DesignSystem.Components.Internal
 @using Microsoft.Maui.ApplicationModel
 @page "/sales/new"
 @implements IDisposable
@@ -165,14 +166,35 @@ else
     @if (!_electronicPaymentOpen && !_showPayment)
     {
     <div class="pos-sell-floor pos-sell-floor--compact">
+        <header class="pos-sell-heading">
+            <h1 class="pos-sell-heading__title">@L["Sales_Checkout_SellTitle"]</h1>
+        </header>
+
         <section class="pos-sell-products" aria-label="@L["Sales_Checkout_BrowseSection"]">
-            <div class="pos-sell-search">
-                <TextInput Label="@L["Sales_Checkout_LookupLabel"]"
-                           Value="@_lookupText"
-                           ValueChanged="OnLookupTextChanged"
-                           Hint="@L["Sales_Checkout_LookupHint"]"
-                           Disabled="@(blocked || _lookingUp)" />
+            <div class="pos-sell-search" role="search">
+                <span class="pos-sell-search__icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
+                <input class="pos-sell-search__input"
+                       type="search"
+                       value="@_lookupText"
+                       placeholder="@L["Sales_Checkout_LookupPlaceholder"]"
+                       aria-label="@L["Sales_Checkout_LookupPlaceholder"]"
+                       disabled="@(blocked || _lookingUp)"
+                       autocomplete="off"
+                       @oninput="OnLookupInput" />
+                @if (!string.IsNullOrWhiteSpace(_lookupText))
+                {
+                    <button type="button"
+                            class="pos-sell-search__clear"
+                            aria-label="@L["Sales_Checkout_ClearSearch"]"
+                            disabled="@blocked"
+                            @onclick="ClearLookup">×</button>
+                }
             </div>
+
+            @if (!string.IsNullOrEmpty(_lookupHelper))
+            {
+                <p class="pos-sell-search__helper pos-muted" role="status">@_lookupHelper</p>
+            }
 
             <aside class="pos-sell-categories" aria-label="@L["Sales_Checkout_CategoryFilter"]">
                 @foreach (var opt in CatalogUiOptions.CheckoutCategoryFilters(L, _categories))
@@ -191,17 +213,7 @@ else
                 <div class="pos-product-row-list" role="list">
                     @foreach (var match in _matches)
                     {
-                        <button type="button"
-                                class="pos-product-row"
-                                disabled="@blocked"
-                                role="listitem"
-                                @onclick="() => AddToCart(match)">
-                            <div class="pos-product-row__line1">
-                                <span class="pos-product-row__name">@match.Name</span>
-                                <span class="pos-product-row__price"><MoneyDisplay Amount="@match.SellingPrice" CurrencyCode="PHP" /></span>
-                            </div>
-                            <div class="pos-product-row__line2">@ProductRowMeta(match)</div>
-                        </button>
+                        @ProductRow(match, blocked)
                     }
                 </div>
             }
@@ -214,43 +226,16 @@ else
             }
             else if (_browseProducts.Count == 0 && _matches.Count == 0)
             {
-                <EmptyState IconName="inbox" Title="@L["Sales_Checkout_NoMatchTitle"]" Message="@L["Sales_Checkout_NoMatchMessage"]" />
+                <EmptyState IconName="inbox"
+                            Title="@(string.IsNullOrWhiteSpace(_lookupText) ? L["Sales_Checkout_NoProductsTitle"] : L["Sales_Checkout_NoMatchTitle"])"
+                            Message="@(string.IsNullOrWhiteSpace(_lookupText) ? L["Sales_Checkout_NoProductsMessage"] : L["Sales_Checkout_NoMatchMessage"])" />
             }
-            else if (_browseProducts.Count > 0)
+            else if (_browseProducts.Count > 0 && _matches.Count == 0)
             {
                 <div class="pos-product-row-list" role="list">
                     @foreach (var product in _browseProducts)
                     {
-                        var qty = Cart.GetQuantity(product.ProductId);
-                        var inCart = qty > 0m;
-                        <div @key="product.ProductId"
-                             class="@($"pos-product-row{(inCart ? " pos-product-row--in-cart" : string.Empty)}")"
-                             role="listitem">
-                            <button type="button"
-                                    class="pos-product-row__hit"
-                                    disabled="@blocked"
-                                    aria-label="@ProductTileAria(product, qty)"
-                                    @onclick="() => OnBrowseProductTap(product)">
-                                <div class="pos-product-row__line1">
-                                    <span class="pos-product-row__name">@product.Name</span>
-                                    <span class="pos-product-row__price"><MoneyDisplay Amount="@product.SellingPrice" CurrencyCode="PHP" /></span>
-                                </div>
-                                <div class="pos-product-row__line2">@ProductRowMeta(product)</div>
-                            </button>
-                            @if (inCart)
-                            {
-                                <div class="pos-product-row__qty">
-                                    <QuantityStepper Value="@qty"
-                                                     ValueChanged="v => SetQuantity(product.ProductId, v)"
-                                                     Step="@(PosSaleOptions.RequiresWholeQuantity(product.UnitOfMeasure) ? 1m : 0.001m)"
-                                                     DecimalPlaces="@PosSaleOptions.MaxQuantityDecimals(product.UnitOfMeasure)"
-                                                     Disabled="@blocked"
-                                                     AriaLabel="@L["Sales_Checkout_Quantity"]"
-                                                     DecreaseLabel="@L["Sales_Checkout_DecreaseQty"]"
-                                                     IncreaseLabel="@L["Sales_Checkout_IncreaseQty"]" />
-                                </div>
-                            }
-                        </div>
+                        @ProductRow(product, blocked)
                     }
                 </div>
             }
@@ -269,13 +254,15 @@ else
 
     @if (!Cart.IsEmpty)
     {
-        <button type="button"
-                class="pos-sell-cart-fab"
-                disabled="@blocked"
-                aria-label="@string.Format(L["Sales_Checkout_CartFab"], Cart.LineCount)"
-                @onclick="EnterPaymentStep">
-            @string.Format(L["Sales_Checkout_CartFab"], Cart.LineCount)
-        </button>
+        <div class="pos-sell-sticky-bar" role="region" aria-label="@L["Sales_Checkout_CartSection"]">
+            <div class="pos-sell-sticky-bar__meta">
+                <span class="pos-sell-sticky-bar__count">@string.Format(L["Sales_Checkout_CartLineCount"], Cart.LineCount)</span>
+                <MoneyDisplay Amount="@PayableTotal" CurrencyCode="PHP" Emphasized="true" />
+            </div>
+            <Button Variant="ButtonVariant.Primary"
+                    Disabled="@blocked"
+                    OnClick="EnterPaymentStep">@L["Sales_Checkout_ViewCart"]</Button>
+        </div>
     }
     }
 
@@ -287,7 +274,7 @@ else
             {
                 <div class="pos-sell-payment__line">
                     <span class="pos-sell-payment__line-name">@item.Name</span>
-                    <span class="pos-sell-payment__line-qty pos-tabular">Ã—@item.Quantity</span>
+                    <span class="pos-sell-payment__line-qty pos-tabular">×@item.Quantity</span>
                     <span class="pos-sell-payment__line-total"><MoneyDisplay Amount="@item.LineTotal" CurrencyCode="PHP" /></span>
                 </div>
             }
@@ -321,7 +308,7 @@ else
                         aria-expanded="@_customerExpanded"
                         @onclick="() => _customerExpanded = !_customerExpanded">
                     <span>@L["Sales_Checkout_OptionalCustomer"]</span>
-                    <span aria-hidden="true">@(_customerExpanded ? "âˆ’" : "+")</span>
+                    <span aria-hidden="true">@(_customerExpanded ? "−" : "+")</span>
                 </button>
                 @if (_customerExpanded)
                 {
@@ -492,6 +479,7 @@ else
     private bool _confirm;
     private bool _gcashConfirmed;
     private string? _lookupText;
+    private string? _lookupHelper;
     private string? _customerSearch;
     private string? _categoryFilter;
     private string _paymentMethod = PosSaleOptions.CashPaymentMethod;
@@ -508,6 +496,7 @@ else
     private IReadOnlyList<PosCatalogProductDto> _browseProducts = Array.Empty<PosCatalogProductDto>();
     private IReadOnlyList<PosProductCategoryDto> _categories = Array.Empty<PosProductCategoryDto>();
     private IReadOnlyList<PosCustomerListItemDto> _customerMatches = Array.Empty<PosCustomerListItemDto>();
+    private readonly Dictionary<Guid, PosCatalogProductDto> _productById = new();
     private PosCashierShiftDto? _openShift;
     private bool _shiftRequired = true;
     private decimal _setupVatPercent;
@@ -772,10 +761,66 @@ else
         _tenderError = null;
     }
 
-    private string ProductRowMeta(PosCatalogProductDto product)
+    private RenderFragment ProductRow(PosCatalogProductDto product, bool blocked)
     {
-        var unit = SalesUiOptions.UnitOfMeasureLabel(L, product.UnitOfMeasure);
-        return string.Format(L["Sales_Checkout_UnitStock"].Value, unit, L["Sales_Checkout_InStock"].Value);
+        var qty = Cart.GetQuantity(product.ProductId);
+        var inCart = qty > 0m;
+        var outOfStock = SalesUiOptions.IsOutOfStock(product.IsTracked, product.StockStatus, product.OnHandQuantity);
+        var canAddMore = SalesUiOptions.CanAcceptQuantity(product.IsTracked, product.OnHandQuantity, qty + 1m);
+        var rowDisabled = blocked || (outOfStock && !inCart);
+        var maxQty = product.IsTracked ? product.OnHandQuantity : (decimal?)null;
+
+        return @<div @key="product.ProductId"
+                     class="@($"pos-product-row{(inCart ? " pos-product-row--in-cart" : string.Empty)}{(outOfStock ? " pos-product-row--unavailable" : string.Empty)}")"
+                     role="listitem"
+                     aria-disabled="@outOfStock">
+            <div class="pos-product-row__hit">
+                <div class="pos-product-row__line1">
+                    <span class="pos-product-row__name">@product.Name</span>
+                    <span class="pos-product-row__price"><MoneyDisplay Amount="@product.SellingPrice" CurrencyCode="PHP" /></span>
+                </div>
+                <div class="pos-product-row__line2">
+                    @SalesUiOptions.ProductRowMeta(L, product.UnitOfMeasure, product.IsTracked, product.StockStatus)
+                    @if (product.IsTracked && !outOfStock)
+                    {
+                        <span aria-hidden="true"> · </span>
+                        <span class="pos-tabular">@product.OnHandQuantity.ToString("0.###")</span>
+                    }
+                </div>
+            </div>
+            <div class="pos-product-row__qty">
+                @if (inCart)
+                {
+                    <QuantityStepper Value="@qty"
+                                     ValueChanged="v => SetQuantity(product.ProductId, v)"
+                                     Step="@StepFor(product)"
+                                     Max="@maxQty"
+                                     DecimalPlaces="@PosSaleOptions.MaxQuantityDecimals(product.UnitOfMeasure)"
+                                     Disabled="@blocked"
+                                     AriaLabel="@L["Sales_Checkout_Quantity"]"
+                                     DecreaseLabel="@L["Sales_Checkout_DecreaseQty"]"
+                                     IncreaseLabel="@L["Sales_Checkout_IncreaseQty"]" />
+                }
+                else
+                {
+                    <Button Variant="ButtonVariant.Secondary"
+                            Disabled="@(rowDisabled || !canAddMore)"
+                            aria-label="@ProductTileAria(product, qty)"
+                            OnClick="() => OnBrowseProductTap(product)">@L["Sales_Checkout_AddToCart"]</Button>
+                }
+            </div>
+        </div>;
+    }
+
+    private static decimal StepFor(PosCatalogProductDto product) =>
+        PosSaleOptions.RequiresWholeQuantity(product.UnitOfMeasure) ? 1m : 0.001m;
+
+    private void RememberProducts(IEnumerable<PosCatalogProductDto> products)
+    {
+        foreach (var product in products)
+        {
+            _productById[product.ProductId] = product;
+        }
     }
 
     private string QuantityError(string unitOfMeasure) =>
@@ -891,6 +936,7 @@ else
         _browseProducts = result.IsSuccess && result.Data is not null
             ? result.Data.Items
             : Array.Empty<PosCatalogProductDto>();
+        RememberProducts(_browseProducts);
 
         _loadingBrowse = false;
     }
@@ -911,32 +957,92 @@ else
 
     private void AddToCart(PosCatalogProductDto product)
     {
-        Cart.Add(product);
+        RememberProducts([product]);
+        const decimal addQuantity = 1m;
+        var nextQty = Cart.GetQuantity(product.ProductId) + addQuantity;
+        if (!SalesUiOptions.CanAcceptQuantity(product.IsTracked, product.OnHandQuantity, nextQty))
+        {
+            _errorTitle = L["Sales_Checkout_InsufficientStockTitle"];
+            _errorMessage = L["Sales_Checkout_InsufficientStock"];
+            return;
+        }
+
+        Cart.Add(product, addQuantity);
         _matches = Array.Empty<PosCatalogProductDto>();
         _lookupText = null;
+        _lookupHelper = null;
+        _errorTitle = null;
+        _errorMessage = null;
     }
 
-    private void SetQuantity(Guid productId, decimal quantity) =>
+    private void SetQuantity(Guid productId, decimal quantity)
+    {
+        if (_productById.TryGetValue(productId, out var product)
+            && product.IsTracked
+            && quantity > product.OnHandQuantity)
+        {
+            quantity = product.OnHandQuantity;
+            _errorTitle = L["Sales_Checkout_InsufficientStockTitle"];
+            _errorMessage = L["Sales_Checkout_InsufficientStock"];
+        }
+
         Cart.SetQuantity(productId, quantity);
+    }
 
     private void SetQuantity(Guid productId, decimal? quantity) =>
-        Cart.SetQuantity(productId, quantity ?? 0m);
+        SetQuantity(productId, quantity ?? 0m);
 
     private void OpenCartSheet() => EnterPaymentStep();
 
     private void CloseCartSheet() => ExitPaymentStep();
 
-    private void OnLookupTextChanged(string? value)
+    private void ClearLookup()
     {
-        _lookupText = value;
+        _lookupText = null;
+        _lookupHelper = null;
+        _matches = Array.Empty<PosCatalogProductDto>();
+        _lookupDebounceCts?.Cancel();
+    }
+
+    private void OnLookupInput(ChangeEventArgs args)
+    {
+        _lookupText = args.Value?.ToString();
+        _lookupHelper = null;
         _lookupDebounceCts?.Cancel();
         _lookupDebounceCts?.Dispose();
         _lookupDebounceCts = new CancellationTokenSource();
-        _ = DebouncedSearchAsync(_lookupDebounceCts.Token);
+        _ = ResolveLookupAsync(_lookupDebounceCts.Token);
     }
 
+    private async Task ResolveLookupAsync(CancellationToken cancellationToken)
+    {
+        await DebouncedSearchAsync(cancellationToken);
+    }
+
+    /// <summary>Exact barcode/SKU first, then debounced name search.</summary>
     private async Task DebouncedSearchAsync(CancellationToken cancellationToken)
     {
+        if (string.IsNullOrWhiteSpace(_lookupText))
+        {
+            _matches = Array.Empty<PosCatalogProductDto>();
+            _lookingUp = false;
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        var term = _lookupText.Trim();
+        var exactAdded = await TryExactLookupAsync(term);
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return;
+        }
+
+        if (exactAdded)
+        {
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
         try
         {
             await Task.Delay(320, cancellationToken);
@@ -957,9 +1063,36 @@ else
     private string ProductTileAria(PosCatalogProductDto product, decimal qty)
     {
         var price = $"{product.SellingPrice:0.00} PHP";
+        var stock = SalesUiOptions.StockStateLabel(L, product.IsTracked, product.StockStatus);
         return qty > 0m
             ? string.Format(L["Sales_Checkout_ProductInCartAria"], product.Name, qty, price)
-            : string.Format(L["Sales_Checkout_ProductAddAria"], product.Name, price);
+            : string.Format(L["Sales_Checkout_ProductAddAria"], product.Name, $"{price}, {stock}");
+    }
+
+    private async Task<bool> TryExactLookupAsync(string term)
+    {
+        _lookingUp = true;
+        _errorTitle = null;
+        _errorMessage = null;
+
+        var byBarcode = await Catalog.LookupByBarcodeAsync(term);
+        if (byBarcode.IsSuccess && byBarcode.Data is not null)
+        {
+            AddToCart(byBarcode.Data);
+            _lookingUp = false;
+            return true;
+        }
+
+        var bySku = await Catalog.LookupBySkuAsync(term);
+        if (bySku.IsSuccess && bySku.Data is not null)
+        {
+            AddToCart(bySku.Data);
+            _lookingUp = false;
+            return true;
+        }
+
+        _lookingUp = false;
+        return false;
     }
 
     private async Task LookupExactAsync()
@@ -969,31 +1102,10 @@ else
             return;
         }
 
-        _lookingUp = true;
-        _errorTitle = null;
-        _errorMessage = null;
-        _matches = Array.Empty<PosCatalogProductDto>();
-
-        var term = _lookupText.Trim();
-        var byBarcode = await Catalog.LookupByBarcodeAsync(term);
-        if (byBarcode.IsSuccess && byBarcode.Data is not null)
+        if (!await TryExactLookupAsync(_lookupText.Trim()))
         {
-            AddToCart(byBarcode.Data);
-            _lookingUp = false;
-            return;
+            _lookupHelper = L["Sales_Checkout_NoMatchMessage"];
         }
-
-        var bySku = await Catalog.LookupBySkuAsync(term);
-        if (bySku.IsSuccess && bySku.Data is not null)
-        {
-            AddToCart(bySku.Data);
-            _lookingUp = false;
-            return;
-        }
-
-        _errorTitle = L["Sales_Checkout_NoMatchTitle"];
-        _errorMessage = L["Sales_Checkout_NoMatchMessage"];
-        _lookingUp = false;
     }
 
     private async Task SearchAsync()
@@ -1002,6 +1114,7 @@ else
         _lookingUp = true;
         _errorTitle = null;
         _errorMessage = null;
+        _lookupHelper = null;
 
         var result = await Catalog.ListProductsAsync(
             _lookupText,
@@ -1019,10 +1132,10 @@ else
         if (result.IsSuccess && result.Data is not null)
         {
             _matches = result.Data.Items;
+            RememberProducts(_matches);
             if (_matches.Count == 0)
             {
-                _errorTitle = L["Sales_Checkout_NoMatchTitle"];
-                _errorMessage = L["Sales_Checkout_NoMatchMessage"];
+                _lookupHelper = L["Sales_Checkout_NoMatchMessage"];
             }
         }
         else
