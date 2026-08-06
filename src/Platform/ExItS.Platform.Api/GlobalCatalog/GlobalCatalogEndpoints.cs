@@ -784,6 +784,111 @@ internal static class GlobalCatalogEndpoints
             return PlatformApiResults.FromResult(result, Results.Ok);
         });
 
+        templates.MapGet("/{id:guid}/available-products", async (
+            Guid id,
+            CatalogTemplateQueryService queries,
+            PlatformAuthz authz,
+            GlobalProductStatus? status,
+            Guid? categoryId,
+            string? search,
+            string? barcode,
+            string? sku,
+            int? page,
+            int? pageSize,
+            CancellationToken ct) =>
+        {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ViewGlobalCatalog,
+                PlatformAuditActions.PlatformAccessChecked,
+                nameof(CatalogTemplate),
+                id.ToString("D"),
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            // Active is the default filter for the transfer-list available pane.
+            var effectiveStatus = status ?? GlobalProductStatus.Active;
+            var result = await queries
+                .ListAvailableProductsAsync(
+                    id,
+                    effectiveStatus,
+                    categoryId,
+                    search,
+                    barcode,
+                    sku,
+                    page,
+                    pageSize,
+                    ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
+        templates.MapPost("/{id:guid}/products/bulk", async (
+            Guid id,
+            BulkAssignCatalogTemplateProductsRequest body,
+            BulkAssignCatalogTemplateProducts useCase,
+            PlatformAuthz authz,
+            CancellationToken ct) =>
+        {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageCatalogTemplates,
+                PlatformAuditActions.CatalogTemplateCompositionChanged,
+                nameof(CatalogTemplate),
+                id.ToString("D"),
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var result = await useCase.ExecuteAsync(id, body, ct).ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                await authz.AuditSucceededAsync(
+                    PlatformAuditActions.CatalogTemplateCompositionChanged,
+                    nameof(CatalogTemplate),
+                    result.Value!.Id.ToString("D"),
+                    summary: $"Bulk-assigned {body.GlobalProductIds.Count} product(s) to template.",
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
+        templates.MapPost("/{id:guid}/products/bulk-remove", async (
+            Guid id,
+            BulkRemoveCatalogTemplateProductsRequest body,
+            BulkRemoveCatalogTemplateProducts useCase,
+            PlatformAuthz authz,
+            CancellationToken ct) =>
+        {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageCatalogTemplates,
+                PlatformAuditActions.CatalogTemplateCompositionChanged,
+                nameof(CatalogTemplate),
+                id.ToString("D"),
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var result = await useCase.ExecuteAsync(id, body, ct).ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                await authz.AuditSucceededAsync(
+                    PlatformAuditActions.CatalogTemplateCompositionChanged,
+                    nameof(CatalogTemplate),
+                    result.Value!.Id.ToString("D"),
+                    summary: $"Bulk-removed {body.GlobalProductIds.Count} product(s) from template.",
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
         templates.MapPut("/{id:guid}/products/order", async (
             Guid id,
             ReorderCatalogTemplateProductsRequest body,

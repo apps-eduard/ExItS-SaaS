@@ -88,6 +88,25 @@ internal sealed class GlobalCategoryRepository : IGlobalCategoryRepository
         return (records.Select(GlobalCatalogEntityMapper.ToDomain).ToList(), totalCount);
     }
 
+    public async Task<IReadOnlyList<GlobalCategory>> GetByIdsAsync(
+        IReadOnlyCollection<Guid> ids,
+        CancellationToken cancellationToken = default)
+    {
+        if (ids.Count == 0)
+        {
+            return [];
+        }
+
+        var idArray = ids.Distinct().ToArray();
+        var records = await _db.GlobalCategories
+            .AsNoTracking()
+            .Include(c => c.BusinessTypes)
+            .Where(c => idArray.Contains(c.Id))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return records.Select(GlobalCatalogEntityMapper.ToDomain).ToList();
+    }
+
     public async Task<IReadOnlyList<GlobalCategory>> FindByNormalizedNameAsync(
         string normalizedName,
         CancellationToken cancellationToken = default)
@@ -183,7 +202,8 @@ internal sealed class GlobalProductRepository : IGlobalProductRepository
         string? sku,
         int skip,
         int take,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        IReadOnlyCollection<Guid>? excludeProductIds = null)
     {
         var query = _db.GlobalProducts.AsNoTracking().Include(p => p.BusinessTypes).AsQueryable();
 
@@ -225,11 +245,36 @@ internal sealed class GlobalProductRepository : IGlobalProductRepository
                 || (p.Barcode != null && p.Barcode.ToLower().Contains(term)));
         }
 
+        if (excludeProductIds is { Count: > 0 })
+        {
+            var excluded = excludeProductIds.ToArray();
+            query = query.Where(p => !excluded.Contains(p.Id));
+        }
+
         query = query.OrderBy(p => p.Name).ThenBy(p => p.Id);
 
         var totalCount = await query.CountAsync(cancellationToken).ConfigureAwait(false);
         var records = await query.Skip(skip).Take(take).ToListAsync(cancellationToken).ConfigureAwait(false);
         return (records.Select(GlobalCatalogEntityMapper.ToDomain).ToList(), totalCount);
+    }
+
+    public async Task<IReadOnlyList<GlobalProduct>> GetByIdsAsync(
+        IReadOnlyCollection<Guid> ids,
+        CancellationToken cancellationToken = default)
+    {
+        if (ids.Count == 0)
+        {
+            return [];
+        }
+
+        var idArray = ids.Distinct().ToArray();
+        var records = await _db.GlobalProducts
+            .AsNoTracking()
+            .Include(p => p.BusinessTypes)
+            .Where(p => idArray.Contains(p.Id))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return records.Select(GlobalCatalogEntityMapper.ToDomain).ToList();
     }
 
     public Task AddAsync(GlobalProduct product, CancellationToken cancellationToken = default)

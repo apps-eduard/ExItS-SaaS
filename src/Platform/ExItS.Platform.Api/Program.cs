@@ -163,6 +163,8 @@ builder.Services.AddScoped<PublishCatalogTemplate>();
 builder.Services.AddScoped<UnpublishCatalogTemplate>();
 builder.Services.AddScoped<ArchiveCatalogTemplate>();
 builder.Services.AddScoped<AssignCatalogTemplateProduct>();
+builder.Services.AddScoped<BulkAssignCatalogTemplateProducts>();
+builder.Services.AddScoped<BulkRemoveCatalogTemplateProducts>();
 builder.Services.AddScoped<RemoveCatalogTemplateProduct>();
 builder.Services.AddScoped<ReorderCatalogTemplateProducts>();
 builder.Services.AddScoped<UpdateCatalogTemplateProductFlags>();

@@ -21,6 +21,10 @@ public interface IGlobalCategoryRepository
         int take,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<GlobalCategory>> GetByIdsAsync(
+        IReadOnlyCollection<Guid> ids,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<GlobalCategory>> FindByNormalizedNameAsync(
         string normalizedName,
         CancellationToken cancellationToken = default);
@@ -52,6 +56,11 @@ public interface IGlobalProductRepository
         string? sku,
         int skip,
         int take,
+        CancellationToken cancellationToken = default,
+        IReadOnlyCollection<Guid>? excludeProductIds = null);
+
+    Task<IReadOnlyList<GlobalProduct>> GetByIdsAsync(
+        IReadOnlyCollection<Guid> ids,
         CancellationToken cancellationToken = default);
 
     Task AddAsync(GlobalProduct product, CancellationToken cancellationToken = default);
