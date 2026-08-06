@@ -89,7 +89,9 @@ public sealed class GlobalCatalogNormalizationTests
             " 480123 ",
             "  BrandX  ",
             category.Id,
-            t0);
+            t0,
+            8m,
+            12m);
 
         Assert.Equal("Coke", product.Name);
         Assert.Equal("SKU-1", product.Sku);
@@ -106,13 +108,81 @@ public sealed class GlobalCatalogNormalizationTests
         var category = GlobalCategory.Create("Beverages", t0);
 
         Assert.Throws<DomainException>(() =>
-            GlobalProduct.Create("Coke", ProductUnit.Bottle, "", "480001", "Brand", category.Id, t0));
+            GlobalProduct.Create("Coke", ProductUnit.Bottle, "", "480001", "Brand", category.Id, t0, 1m, 2m));
         Assert.Throws<DomainException>(() =>
-            GlobalProduct.Create("Coke", ProductUnit.Bottle, "SKU1", "", "Brand", category.Id, t0));
+            GlobalProduct.Create("Coke", ProductUnit.Bottle, "SKU1", "", "Brand", category.Id, t0, 1m, 2m));
         Assert.Throws<DomainException>(() =>
-            GlobalProduct.Create("Coke", ProductUnit.Bottle, "SKU1", "480001", " ", category.Id, t0));
+            GlobalProduct.Create("Coke", ProductUnit.Bottle, "SKU1", "480001", " ", category.Id, t0, 1m, 2m));
         Assert.Throws<DomainException>(() =>
-            GlobalProduct.Create("Coke", ProductUnit.Bottle, "SKU1", "480001", "Brand", null!, t0));
+            GlobalProduct.Create("Coke", ProductUnit.Bottle, "SKU1", "480001", "Brand", null!, t0, 1m, 2m));
+    }
+}
+
+public sealed class GlobalCatalogPricingTests
+{
+    private static readonly DateTimeOffset T0 = new(2026, 8, 6, 0, 0, 0, TimeSpan.Zero);
+
+    [Fact]
+    public void Create_rejects_negative_cost_and_selling()
+    {
+        var category = GlobalCategory.Create("Snacks", T0);
+        var costEx = Assert.Throws<DomainException>(() =>
+            GlobalProduct.Create("Snack", ProductUnit.Pack, "SKU1", "480001", "Brand", category.Id, T0, -1m, 10m));
+        Assert.Equal(DomainErrorCodes.InvalidGlobalProductMoney, costEx.ErrorCode);
+
+        var sellEx = Assert.Throws<DomainException>(() =>
+            GlobalProduct.Create("Snack", ProductUnit.Pack, "SKU1", "480001", "Brand", category.Id, T0, 1m, -2m));
+        Assert.Equal(DomainErrorCodes.InvalidGlobalProductMoney, sellEx.ErrorCode);
+    }
+
+    [Fact]
+    public void Create_rejects_selling_below_cost()
+    {
+        var category = GlobalCategory.Create("Snacks", T0);
+        var ex = Assert.Throws<DomainException>(() =>
+            GlobalProduct.Create("Snack", ProductUnit.Pack, "SKU1", "480001", "Brand", category.Id, T0, 20m, 10m));
+        Assert.Equal(DomainErrorCodes.InvalidGlobalProductPriceRelationship, ex.ErrorCode);
+    }
+
+    [Fact]
+    public void Create_and_update_require_prices()
+    {
+        var category = GlobalCategory.Create("Snacks", T0);
+        Assert.Throws<DomainException>(() =>
+            GlobalProduct.Create("Snack", ProductUnit.Pack, "SKU1", "480001", "Brand", category.Id, T0, null, 10m));
+
+        var product = GlobalProduct.Create("Snack", ProductUnit.Pack, "SKU1", "480001", "Brand", category.Id, T0, 8m, 12m);
+        Assert.Equal(8m, product.CostPrice);
+        Assert.Equal(12m, product.SellingPrice);
+
+        Assert.Throws<DomainException>(() =>
+            product.Update("Snack", ProductUnit.Pack, "SKU1", "480001", "Brand", category.Id, T0.AddMinutes(1), null, 12m));
+    }
+
+    [Fact]
+    public void Rehydrate_preserves_null_prices_for_legacy_rows()
+    {
+        var category = GlobalCategory.Create("Snacks", T0);
+        var product = GlobalProduct.Rehydrate(
+            GlobalProductId.New(),
+            "Legacy",
+            null,
+            "SKU1",
+            "480001",
+            "Brand",
+            category.Id,
+            ProductUnit.Pack,
+            null,
+            null,
+            null,
+            GlobalProductStatus.Draft,
+            [],
+            [],
+            T0,
+            T0);
+
+        Assert.Null(product.CostPrice);
+        Assert.Null(product.SellingPrice);
     }
 }
 
@@ -128,7 +198,9 @@ public sealed class GlobalCatalogLifecycleTests
             "480001",
             "BrandX",
             GlobalCategory.Create("Snacks", T0).Id,
-            T0);
+            T0,
+            10m,
+            15m);
 
     [Fact]
     public void Category_active_inactive_archive_and_blocks_archived_edits()
@@ -169,7 +241,9 @@ public sealed class GlobalCatalogLifecycleTests
                 "480001",
                 "BrandX",
                 category.Id,
-                T0.AddMinutes(3)));
+                T0.AddMinutes(3),
+                10m,
+                15m));
         Assert.Equal(DomainErrorCodes.InvalidGlobalProductStatusTransition, ex.ErrorCode);
 
         Assert.Throws<DomainException>(() =>
@@ -212,7 +286,9 @@ public sealed class GlobalCatalogConcurrencyTests
             "A1",
             "480001",
             "BrandX",
-            category.Id.Value));
+            category.Id.Value,
+            CostPrice: 8m,
+            SellingPrice: 12m));
         Assert.True(created.IsSuccess);
 
         clock.Advance(TimeSpan.FromMinutes(1));
@@ -226,6 +302,8 @@ public sealed class GlobalCatalogConcurrencyTests
                 "480001",
                 "BrandX",
                 category.Id.Value,
+                CostPrice: 8m,
+                SellingPrice: 12m,
                 ExpectedUpdatedAtUtc: T0.AddSeconds(-1)));
 
         Assert.False(stale.IsSuccess);
@@ -276,16 +354,18 @@ public sealed class GlobalCatalogUniquenessTests
                 " sku-a ",
                 " 111 ",
                 "BrandA",
-                category.Id.Value));
+                category.Id.Value,
+                CostPrice: 8m,
+                SellingPrice: 12m));
         Assert.True(first.IsSuccess);
 
         var dupBarcode = await create.ExecuteAsync(
-            new CreateGlobalProductRequest("Two", "Piece", "SKU-B", "111", "BrandB", category.Id.Value));
+            new CreateGlobalProductRequest("Two", "Piece", "SKU-B", "111", "BrandB", category.Id.Value, CostPrice: 8m, SellingPrice: 12m));
         Assert.False(dupBarcode.IsSuccess);
         Assert.Equal(ApplicationErrorCodes.DuplicateGlobalProductBarcode, dupBarcode.ErrorCode);
 
         var dupSku = await create.ExecuteAsync(
-            new CreateGlobalProductRequest("Three", "Piece", "SKU-A", "222", "BrandC", category.Id.Value));
+            new CreateGlobalProductRequest("Three", "Piece", "SKU-A", "222", "BrandC", category.Id.Value, CostPrice: 8m, SellingPrice: 12m));
         Assert.False(dupSku.IsSuccess);
         Assert.Equal(ApplicationErrorCodes.DuplicateGlobalProductSku, dupSku.ErrorCode);
     }
@@ -303,12 +383,12 @@ public sealed class GlobalCatalogUniquenessTests
         await categories.AddAsync(category);
 
         var missingSku = await create.ExecuteAsync(
-            new CreateGlobalProductRequest("One", "Piece", "", "111", "Brand", category.Id.Value));
+            new CreateGlobalProductRequest("One", "Piece", "", "111", "Brand", category.Id.Value, CostPrice: 8m, SellingPrice: 12m));
         Assert.False(missingSku.IsSuccess);
         Assert.Equal(DomainErrorCodes.InvalidGlobalProductSku, missingSku.ErrorCode);
 
         var missingBrand = await create.ExecuteAsync(
-            new CreateGlobalProductRequest("Two", "Piece", "SKU-2", "222", " ", category.Id.Value));
+            new CreateGlobalProductRequest("Two", "Piece", "SKU-2", "222", " ", category.Id.Value, CostPrice: 8m, SellingPrice: 12m));
         Assert.False(missingBrand.IsSuccess);
         Assert.Equal(DomainErrorCodes.InvalidGlobalProductBrand, missingBrand.ErrorCode);
     }
@@ -364,7 +444,9 @@ file sealed class InMemoryGlobalCategoryRepository : IGlobalCategoryRepository
         string? search,
         int skip,
         int take,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        GlobalCategoryListSortBy sortBy = GlobalCategoryListSortBy.SortOrder,
+        bool sortDescending = false)
     {
         var items = _store.Values.AsEnumerable();
         if (status is not null)

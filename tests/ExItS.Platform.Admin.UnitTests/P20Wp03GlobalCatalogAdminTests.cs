@@ -22,6 +22,9 @@ public sealed class P20Wp03GlobalCatalogAdminTests
         var pages = Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages");
         var categories = File.ReadAllText(Path.Combine(pages, "GlobalCatalogCategories.razor"));
         var products = File.ReadAllText(Path.Combine(pages, "GlobalCatalogProducts.razor"));
+        var templates = File.ReadAllText(Path.Combine(pages, "GlobalCatalogTemplates.razor"));
+        var imports = File.ReadAllText(Path.Combine(pages, "GlobalCatalogImports.razor"));
+        var transfer = File.ReadAllText(Path.Combine(pages, "CatalogTemplateCompositionTransfer.razor"));
 
         Assert.Contains("@page \"/admin/global-catalog/categories\"", categories, StringComparison.Ordinal);
         Assert.Contains("@page \"/admin/global-catalog/categories/{Id:guid}\"", categories, StringComparison.Ordinal);
@@ -39,8 +42,21 @@ public sealed class P20Wp03GlobalCatalogAdminTests
         Assert.Contains("GetGlobalProductsAsync", products, StringComparison.Ordinal);
         Assert.Contains("GlobalProducts_Brand", products, StringComparison.Ordinal);
         Assert.Contains("AdminTableSort.ApplyChangeAsync", products, StringComparison.Ordinal);
+        Assert.Contains("Resizable", products, StringComparison.Ordinal);
+        Assert.Contains("GlobalProducts_CostPrice", products, StringComparison.Ordinal);
+        Assert.Contains("GlobalProducts_SellingPrice", products, StringComparison.Ordinal);
+        Assert.Contains("CostPrice", products, StringComparison.Ordinal);
+        Assert.Contains("SellingPrice", products, StringComparison.Ordinal);
         Assert.Contains("@implements IDisposable", products, StringComparison.Ordinal);
         Assert.DoesNotContain("/api/v1/platform/catalog/", products, StringComparison.Ordinal);
+
+        Assert.Contains("Resizable", categories, StringComparison.Ordinal);
+        Assert.Contains("AdminTableSort.ApplyChangeAsync", categories, StringComparison.Ordinal);
+        Assert.Contains("Resizable", templates, StringComparison.Ordinal);
+        Assert.Contains("AdminTableSort.ApplyChangeAsync", templates, StringComparison.Ordinal);
+        Assert.Contains("Resizable", imports, StringComparison.Ordinal);
+        Assert.Contains("Resizable", transfer, StringComparison.Ordinal);
+        Assert.Contains("AdminCurrency.FormatPhp", imports, StringComparison.Ordinal);
     }
 
     [Fact]

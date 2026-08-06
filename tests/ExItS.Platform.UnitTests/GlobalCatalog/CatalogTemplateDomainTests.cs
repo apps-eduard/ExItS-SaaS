@@ -11,7 +11,7 @@ file static class GlobalCatalogTestProducts
 {
     private static readonly DateTimeOffset T0 = new(2026, 8, 5, 12, 0, 0, TimeSpan.Zero);
 
-    public static GlobalProduct Make(string name, string sku, string barcode = "480001") =>
+    public static GlobalProduct Make(string name, string sku, string barcode = "480001", decimal cost = 10m, decimal selling = 15m) =>
         GlobalProduct.Create(
             name,
             ProductUnit.Piece,
@@ -19,7 +19,9 @@ file static class GlobalCatalogTestProducts
             barcode,
             "BrandX",
             GlobalCategory.Create("General", T0).Id,
-            T0);
+            T0,
+            cost,
+            selling);
 }
 
 public sealed class CatalogTemplateDomainTests
@@ -175,7 +177,9 @@ public sealed class CatalogTemplateUseCaseTests
             "480001",
             "BrandX",
             GlobalCategory.Create("Beverages", T0).Id,
-            T0);
+            T0,
+            8m,
+            12m);
         await products.AddAsync(product);
 
         var create = new CreateCatalogTemplate(templates, uow, clock);
@@ -306,7 +310,9 @@ file sealed class InMemoryCatalogTemplateRepository : ICatalogTemplateRepository
         string? search,
         int skip,
         int take,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        CatalogTemplateListSortBy sortBy = CatalogTemplateListSortBy.Name,
+        bool sortDescending = false)
     {
         var items = _store.Values.AsEnumerable();
         if (status is not null)

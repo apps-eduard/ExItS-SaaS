@@ -79,8 +79,8 @@ public sealed class CatalogImportCsvSchemaTests
                 "Unit",
                 "Barcode",
                 "SuggestedSku",
-                "SuggestedSellingPrice",
-                "SuggestedCostPrice",
+                "SellingPrice",
+                "CostPrice",
                 "TaxHint",
                 "Tags",
                 "BusinessTypes",
@@ -120,7 +120,7 @@ public sealed class CatalogImportCsvSchemaTests
         var rows = CatalogImportCsvParser.Parse(stream);
         Assert.Equal(3, rows.Count);
         Assert.All(rows, r => Assert.StartsWith("SAMPLE", r.Cells[CatalogImportCsvSchema.ProductName], StringComparison.Ordinal));
-        Assert.Equal("25.50", rows[0].Cells[CatalogImportCsvSchema.SuggestedSellingPrice]);
+        Assert.Equal("25.50", rows[0].Cells[CatalogImportCsvSchema.SellingPrice]);
         Assert.Contains('|', rows[0].Cells[CatalogImportCsvSchema.Tags]);
         Assert.Contains('|', rows[0].Cells[CatalogImportCsvSchema.BusinessTypes]);
     }
@@ -264,7 +264,9 @@ public sealed class CatalogImportRowMapperTests
             ["Brand"] = "TestBrand",
             ["Unit"] = "Piece",
             ["Barcode"] = $"480{Random.Shared.Next(100000, 999999)}",
-            ["SuggestedSku"] = $"SKU-{Guid.NewGuid():N}"[..12].ToUpperInvariant()
+            ["SuggestedSku"] = $"SKU-{Guid.NewGuid():N}"[..12].ToUpperInvariant(),
+            ["SellingPrice"] = "12.00",
+            ["CostPrice"] = "8.00"
         };
         customize?.Invoke(cells);
         return cells;
@@ -305,7 +307,9 @@ public sealed class CatalogImportRowMapperTests
                 ["Brand"] = "BrandA",
                 ["Category"] = "General",
                 ["SuggestedSku"] = "SKU-A",
-                ["Barcode"] = "480001"
+                ["Barcode"] = "480001",
+                ["SellingPrice"] = "12.00",
+                ["CostPrice"] = "8.00"
             }),
             new(3, new Dictionary<string, string>
             {
@@ -314,7 +318,9 @@ public sealed class CatalogImportRowMapperTests
                 ["Brand"] = "BrandB",
                 ["Category"] = "General",
                 ["SuggestedSku"] = "SKU-B",
-                ["Barcode"] = "480001"
+                ["Barcode"] = "480001",
+                ["SellingPrice"] = "12.00",
+                ["CostPrice"] = "8.00"
             })
         };
 
@@ -356,7 +362,7 @@ public sealed class CatalogImportRowMapperTests
             new(2, RequiredCells("BadUnit", c => c["Unit"] = "NotAUnit")),
             new(3, RequiredCells("BadStatus", c => c["Status"] = "Published")),
             new(4, RequiredCells("BadBiz", c => c["BusinessTypes"] = "NotAType")),
-            new(5, RequiredCells("BadPrice", c => c["SuggestedSellingPrice"] = "not-a-number"))
+            new(5, RequiredCells("BadPrice", c => c["SellingPrice"] = "not-a-number"))
         };
 
         var items = await CatalogImportRowMapper.MapRowsAsync(
@@ -405,6 +411,59 @@ public sealed class CatalogImportRowMapperTests
 
         Assert.Equal(CatalogImportItemStatus.Failed, items[0].Status);
         Assert.Equal(DomainErrorCodes.InvalidGlobalProductBrand, items[0].ErrorCode);
+    }
+
+    [Fact]
+    public async Task MapRows_fails_when_prices_missing_or_selling_below_cost()
+    {
+        var missingCost = await CatalogImportRowMapper.MapRowsAsync(
+            [new(2, RequiredCells("MissingCost", c => c.Remove("CostPrice")))],
+            new FakeCategoryRepository(),
+            new FakeProductRepository(),
+            T0);
+        Assert.Equal(CatalogImportItemStatus.Failed, missingCost[0].Status);
+        Assert.Equal(DomainErrorCodes.InvalidGlobalProductMoney, missingCost[0].ErrorCode);
+
+        var badRelation = await CatalogImportRowMapper.MapRowsAsync(
+            [new(2, RequiredCells("BadMargin", c =>
+            {
+                c["CostPrice"] = "20.00";
+                c["SellingPrice"] = "10.00";
+            }))],
+            new FakeCategoryRepository(),
+            new FakeProductRepository(),
+            T0);
+        Assert.Equal(CatalogImportItemStatus.Failed, badRelation[0].Status);
+        Assert.Equal(DomainErrorCodes.InvalidGlobalProductPriceRelationship, badRelation[0].ErrorCode);
+    }
+
+    [Fact]
+    public async Task MapRows_accepts_legacy_price_header_aliases()
+    {
+        var rows = new List<CatalogImportRawRow>
+        {
+            new(2, new Dictionary<string, string>
+            {
+                ["ProductName"] = "Legacy Price Row",
+                ["Category"] = "General",
+                ["Brand"] = "TestBrand",
+                ["Unit"] = "Piece",
+                ["Barcode"] = "4800010000999",
+                ["SuggestedSku"] = "LEG-SKU",
+                ["SuggestedSellingPrice"] = "15.00",
+                ["SuggestedCostPrice"] = "10.00"
+            })
+        };
+
+        var items = await CatalogImportRowMapper.MapRowsAsync(
+            rows,
+            new FakeCategoryRepository(),
+            new FakeProductRepository(),
+            T0);
+
+        Assert.Equal(CatalogImportItemStatus.Pending, items[0].Status);
+        Assert.Equal(15m, items[0].SellingPrice);
+        Assert.Equal(10m, items[0].CostPrice);
     }
 
     [Fact]
@@ -576,7 +635,7 @@ public sealed class CatalogImportJobLifecycleTests
     [Fact]
     public void Confirm_is_idempotent_after_queue_via_status_guard()
     {
-        var pending = CatalogImportItem.CreatePending(2, "Coke", "Bottle", barcode: "480001");
+        var pending = CatalogImportItem.CreatePending(2, "Coke", "Bottle", barcode: "480001", sellingPrice: 12m, costPrice: 8m);
         var job = CatalogImportJob.CreateValidated(
             "products.csv",
             CatalogImportFileFormat.Csv,
@@ -597,7 +656,7 @@ public sealed class CatalogImportJobLifecycleTests
     [Fact]
     public void Item_mark_imported_is_idempotent()
     {
-        var item = CatalogImportItem.CreatePending(2, "Coke", "Bottle", barcode: "480001");
+        var item = CatalogImportItem.CreatePending(2, "Coke", "Bottle", barcode: "480001", sellingPrice: 12m, costPrice: 8m);
         var productId = Guid.NewGuid();
         item.MarkImported(productId, T0);
         item.MarkImported(productId, T0.AddSeconds(1));
@@ -609,8 +668,8 @@ public sealed class CatalogImportJobLifecycleTests
     [Fact]
     public void Job_complete_with_warnings_when_skips_exist()
     {
-        var a = CatalogImportItem.CreatePending(2, "A", "Piece", barcode: "1");
-        var b = CatalogImportItem.CreatePending(3, "B", "Piece", barcode: "2");
+        var a = CatalogImportItem.CreatePending(2, "A", "Piece", barcode: "1", sellingPrice: 12m, costPrice: 8m);
+        var b = CatalogImportItem.CreatePending(3, "B", "Piece", barcode: "2", sellingPrice: 12m, costPrice: 8m);
         var job = CatalogImportJob.CreateValidated(
             "products.csv",
             CatalogImportFileFormat.Csv,
@@ -647,6 +706,8 @@ public sealed class CatalogImportCategoryCreateTests
                 sku: $"SKU-{i}",
                 barcode: $"B{i:000000}",
                 categoryName: "Rice and Staples",
+                sellingPrice: 12m,
+                costPrice: 8m,
                 searchTagsRaw: "brand:ImportBrand"))
             .ToList();
 
@@ -695,6 +756,8 @@ public sealed class CatalogImportCategoryCreateTests
             sku: "SKU-CHIPS",
             barcode: "480099",
             categoryName: "snacks",
+            sellingPrice: 12m,
+            costPrice: 8m,
             searchTagsRaw: "brand:SnackBrand");
         var job = CatalogImportJob.CreateValidated(
             "snacks.csv",
@@ -738,6 +801,8 @@ public sealed class CatalogImportCategoryCreateTests
             sku: "SKU-SOAP",
             barcode: "480001",
             categoryName: "Personal Care",
+            sellingPrice: 12m,
+            costPrice: 8m,
             searchTagsRaw: "brand:CareBrand");
         var job = CatalogImportJob.CreateValidated(
             "care.csv",
@@ -775,6 +840,8 @@ public sealed class CatalogImportCategoryCreateTests
             sku: "SKU-GOOD",
             barcode: "GOOD",
             categoryName: "Household",
+            sellingPrice: 12m,
+            costPrice: 8m,
             searchTagsRaw: "brand:HouseBrand");
         var bad = CatalogImportItem.CreatePending(
             3,
@@ -783,6 +850,8 @@ public sealed class CatalogImportCategoryCreateTests
             sku: "SKU-BAD",
             barcode: "BAD",
             categoryName: "Household",
+            sellingPrice: 12m,
+            costPrice: 8m,
             searchTagsRaw: "brand:HouseBrand");
         var job = CatalogImportJob.CreateValidated(
             "mixed.csv",
@@ -877,7 +946,9 @@ file sealed class FakeCategoryRepository : IGlobalCategoryRepository
         string? search,
         int skip,
         int take,
-        CancellationToken cancellationToken = default) =>
+        CancellationToken cancellationToken = default,
+        GlobalCategoryListSortBy sortBy = GlobalCategoryListSortBy.SortOrder,
+        bool sortDescending = false) =>
         Task.FromResult<(IReadOnlyList<GlobalCategory>, int)>((Items, Items.Count));
 
     public Task<IReadOnlyList<GlobalCategory>> GetByIdsAsync(
