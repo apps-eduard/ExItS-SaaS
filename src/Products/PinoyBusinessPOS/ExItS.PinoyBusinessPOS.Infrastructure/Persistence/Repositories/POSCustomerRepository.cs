@@ -174,12 +174,14 @@ internal sealed class PosUnitOfWork : IPosUnitOfWork
         }
         catch (DbUpdateConcurrencyException)
         {
+            _db.ChangeTracker.Clear();
             throw new PersistenceConflictException(
                 ApplicationErrorCodes.ConcurrencyConflict,
                 "The record was modified by another request. Reload and try again.");
         }
         catch (DbUpdateException ex) when (PersistenceExceptionMapper.TryMapUniqueViolation(ex, out var errorCode, out var message))
         {
+            _db.ChangeTracker.Clear();
             throw new PersistenceConflictException(errorCode, message);
         }
     }

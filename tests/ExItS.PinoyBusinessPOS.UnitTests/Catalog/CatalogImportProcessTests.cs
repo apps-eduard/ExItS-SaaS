@@ -105,6 +105,62 @@ public sealed class CatalogImportProcessTests
         Assert.True(Application.Permissions.PosRoleMatrix.Allows(PosRole.Owner, Application.Commercial.UtangCapability.ManageCatalog));
     }
 
+    [Fact]
+    public async Task Process_ReusesPendingCategoryForSameSourceGlobalCategoryId()
+    {
+        var clock = new FixedClock(DateTimeOffset.Parse("2026-08-05T00:00:00Z"));
+        var products = new FakeProductRepository();
+        var categories = new CommitOnlyCategoryRepository();
+        var imports = new FakeImportRepository();
+        var uow = new CommitUnitOfWork(categories);
+
+        var sourceCategoryId = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc");
+        var items = new[]
+        {
+            CatalogImportItemResult.CreatePending(
+                Guid.Parse("11111111-1111-1111-1111-111111111101"),
+                0,
+                "Product A",
+                "Piece",
+                10m,
+                sourceGlobalCategoryId: sourceCategoryId),
+            CatalogImportItemResult.CreatePending(
+                Guid.Parse("11111111-1111-1111-1111-111111111102"),
+                1,
+                "Product B",
+                "Piece",
+                11m,
+                sourceGlobalCategoryId: sourceCategoryId),
+            CatalogImportItemResult.CreatePending(
+                Guid.Parse("11111111-1111-1111-1111-111111111103"),
+                2,
+                "Product C",
+                "Pack",
+                12m,
+                sourceGlobalCategoryId: sourceCategoryId)
+        };
+
+        var job = CatalogImportJob.CreateQueued(
+            OrgA,
+            PosCatalogImportJobKind.SelectedProducts,
+            CatalogSource.Template,
+            "actor",
+            items,
+            clock.UtcNow);
+        await imports.AddAsync(job);
+
+        var processor = new ProcessPosCatalogImportChunk(imports, products, categories, uow, clock);
+        var worked = await processor.ExecuteOnceAsync();
+
+        Assert.True(worked);
+        Assert.Equal(1, categories.AddCount);
+        Assert.Equal(1, categories.CommittedCount);
+        var refreshed = await imports.GetByIdAsync(OrgA, job.Id);
+        Assert.Equal(PosCatalogImportJobStatus.Completed, refreshed!.Status);
+        Assert.Equal(3, refreshed.ImportedCount);
+        Assert.Equal(3, products.Count);
+    }
+
     private sealed class FixedClock(DateTimeOffset utcNow) : IClock
     {
         public DateTimeOffset UtcNow { get; } = utcNow;
@@ -118,6 +174,59 @@ public sealed class CatalogImportProcessTests
             Func<CancellationToken, Task<T>> action,
             CancellationToken cancellationToken = default) =>
             action(cancellationToken);
+    }
+
+    /// <summary>Commits pending category Adds only on SaveChanges — mirrors AsNoTracking repos.</summary>
+    private sealed class CommitUnitOfWork(CommitOnlyCategoryRepository categories) : IPosUnitOfWork
+    {
+        public Task SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            categories.CommitPending();
+            return Task.CompletedTask;
+        }
+
+        public Task<T> ExecuteInSerializableTransactionAsync<T>(
+            Func<CancellationToken, Task<T>> action,
+            CancellationToken cancellationToken = default) =>
+            action(cancellationToken);
+    }
+
+    private sealed class CommitOnlyCategoryRepository : IProductCategoryRepository
+    {
+        private readonly List<ProductCategory> _committed = [];
+        private readonly List<ProductCategory> _pending = [];
+        public int AddCount { get; private set; }
+        public int CommittedCount => _committed.Count;
+
+        public Task<ProductCategory?> GetByIdAsync(PosOrganizationId organizationId, ProductCategoryId categoryId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(_committed.FirstOrDefault(c => c.OrganizationId == organizationId && c.Id == categoryId));
+
+        public Task<ProductCategory?> FindActiveByNormalizedNameAsync(PosOrganizationId organizationId, string normalizedName, CancellationToken cancellationToken = default) =>
+            Task.FromResult(_committed.FirstOrDefault(c => c.OrganizationId == organizationId && c.NormalizedName == normalizedName && c.Status == ProductCategoryStatus.Active));
+
+        public Task<ProductCategory?> FindActiveBySourceGlobalCategoryIdAsync(PosOrganizationId organizationId, Guid sourceGlobalCategoryId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(_committed.FirstOrDefault(c => c.OrganizationId == organizationId && c.SourceGlobalCategoryId == sourceGlobalCategoryId && c.Status == ProductCategoryStatus.Active));
+
+        public Task<(IReadOnlyList<ProductCategory> Items, int TotalCount)> ListAsync(PosOrganizationId organizationId, ProductCategoryStatus? status, string? search, int skip, int take, CancellationToken cancellationToken = default) =>
+            Task.FromResult<(IReadOnlyList<ProductCategory>, int)>(([], 0));
+
+        public Task<IReadOnlyList<ProductCategory>> ListByIdsAsync(PosOrganizationId organizationId, IReadOnlyCollection<ProductCategoryId> categoryIds, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<ProductCategory>>([]);
+
+        public Task AddAsync(ProductCategory category, CancellationToken cancellationToken = default)
+        {
+            AddCount++;
+            _pending.Add(category);
+            return Task.CompletedTask;
+        }
+
+        public Task UpdateAsync(ProductCategory category, CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+        public void CommitPending()
+        {
+            _committed.AddRange(_pending);
+            _pending.Clear();
+        }
     }
 
     private sealed class FakeProductRepository : ICatalogProductRepository

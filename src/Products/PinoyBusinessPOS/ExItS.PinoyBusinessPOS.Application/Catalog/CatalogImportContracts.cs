@@ -35,21 +35,26 @@ public interface ICatalogImportJobRepository
 }
 
 /// <summary>POS → Platform merchant discovery client for published templates and active products.</summary>
+/// <remarks>
+/// Platform merchant catalog routes authenticate with <c>PlatformSession</c> (not product Bearer tokens).
+/// Callers should pass the Platform session token; the typed client also reads
+/// <c>X-ExItS-Session-Token</c> from the current POS request when present.
+/// </remarks>
 public interface IPlatformMerchantCatalogClient
 {
     Task<PlatformMerchantCatalogTemplateDto?> GetPublishedTemplateAsync(
         Guid templateId,
-        string? accessToken,
+        string? platformSessionToken,
         CancellationToken cancellationToken = default);
 
     Task<PlatformMerchantGlobalProductDto?> GetActiveProductAsync(
         Guid productId,
-        string? accessToken,
+        string? platformSessionToken,
         CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<PlatformMerchantGlobalProductDto>> GetActiveProductsAsync(
         IReadOnlyList<Guid> productIds,
-        string? accessToken,
+        string? platformSessionToken,
         CancellationToken cancellationToken = default);
 
     Task<PagedResult<PlatformMerchantGlobalProductDto>> SearchActiveProductsAsync(
@@ -60,7 +65,7 @@ public interface IPlatformMerchantCatalogClient
         string? sku,
         int? page,
         int? pageSize,
-        string? accessToken,
+        string? platformSessionToken,
         CancellationToken cancellationToken = default);
 
     Task<PagedResult<PlatformMerchantGlobalCategoryDto>> ListActiveCategoriesAsync(
@@ -69,7 +74,7 @@ public interface IPlatformMerchantCatalogClient
         Guid? parentId,
         int? page,
         int? pageSize,
-        string? accessToken,
+        string? platformSessionToken,
         CancellationToken cancellationToken = default);
 }
 

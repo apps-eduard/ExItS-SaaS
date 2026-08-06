@@ -129,7 +129,7 @@ public sealed class ImportTemplateBatch
         Guid platformTemplateId,
         int batchNumber,
         string requestedBy,
-        string? accessToken,
+        string? platformSessionToken,
         string? idempotencyKey = null,
         CancellationToken cancellationToken = default) =>
         ExecuteCoreAsync(
@@ -137,7 +137,7 @@ public sealed class ImportTemplateBatch
             platformTemplateId,
             batchNumber,
             requestedBy,
-            accessToken,
+            platformSessionToken,
             idempotencyKey,
             cancellationToken);
 
@@ -146,7 +146,7 @@ public sealed class ImportTemplateBatch
         Guid platformTemplateId,
         int batchNumber,
         string requestedBy,
-        string? accessToken,
+        string? platformSessionToken,
         string? idempotencyKey,
         CancellationToken cancellationToken)
     {
@@ -168,7 +168,7 @@ public sealed class ImportTemplateBatch
             try
             {
                 template = await _platform
-                    .GetPublishedTemplateAsync(platformTemplateId, accessToken, cancellationToken)
+                    .GetPublishedTemplateAsync(platformTemplateId, platformSessionToken, cancellationToken)
                     .ConfigureAwait(false);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
@@ -223,7 +223,7 @@ public sealed class ImportTemplateBatch
                 products = await _platform
                     .GetActiveProductsAsync(
                         remaining.Select(r => r.GlobalProductId).ToList(),
-                        accessToken,
+                        platformSessionToken,
                         cancellationToken)
                     .ConfigureAwait(false);
             }
@@ -358,7 +358,7 @@ public sealed class ImportSelectedProducts
         Guid organizationId,
         IReadOnlyList<Guid> platformGlobalProductIds,
         string requestedBy,
-        string? accessToken,
+        string? platformSessionToken,
         string? idempotencyKey = null,
         CancellationToken cancellationToken = default)
     {
@@ -392,7 +392,7 @@ public sealed class ImportSelectedProducts
             try
             {
                 products = await _platform
-                    .GetActiveProductsAsync(ids, accessToken, cancellationToken)
+                    .GetActiveProductsAsync(ids, platformSessionToken, cancellationToken)
                     .ConfigureAwait(false);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
@@ -458,6 +458,15 @@ public sealed class ProcessPosCatalogImportChunk
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
+    /// <summary>
+    /// In-chunk category memo. Repository finds use AsNoTracking and cannot see pending Adds,
+    /// so multiple items sharing a Platform source category would otherwise insert duplicate
+    /// Active names and trip <c>ux_product_categories_org_active_name</c>.
+    /// </summary>
+    private readonly Dictionary<Guid, ProductCategoryId> _categoriesBySourceId = new();
+    private readonly Dictionary<string, ProductCategoryId> _categoriesByNormalizedName =
+        new(StringComparer.Ordinal);
+
     public ProcessPosCatalogImportChunk(
         ICatalogImportJobRepository imports,
         ICatalogProductRepository products,
@@ -482,6 +491,9 @@ public sealed class ProcessPosCatalogImportChunk
         {
             return false;
         }
+
+        _categoriesBySourceId.Clear();
+        _categoriesByNormalizedName.Clear();
 
         try
         {
@@ -517,7 +529,9 @@ public sealed class ProcessPosCatalogImportChunk
                 .ConfigureAwait(false);
             if (fresh is not null && fresh.Status == PosCatalogImportJobStatus.Processing)
             {
-                fresh.Fail($"Import processing failed: {ex.GetType().Name}", _clock.UtcNow);
+                fresh.Fail(
+                    $"Import processing failed: {ex.GetType().Name}: {ex.Message}",
+                    _clock.UtcNow);
                 await _imports.UpdateAsync(fresh, cancellationToken).ConfigureAwait(false);
                 await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             }
@@ -644,11 +658,17 @@ public sealed class ProcessPosCatalogImportChunk
         string? fallbackName,
         CancellationToken cancellationToken)
     {
+        if (_categoriesBySourceId.TryGetValue(sourceGlobalCategoryId, out var cached))
+        {
+            return cached;
+        }
+
         var existing = await _categories
             .FindActiveBySourceGlobalCategoryIdAsync(organizationId, sourceGlobalCategoryId, cancellationToken)
             .ConfigureAwait(false);
         if (existing is not null)
         {
+            RememberCategory(existing.Id, existing.NormalizedName, sourceGlobalCategoryId);
             return existing.Id;
         }
 
@@ -675,11 +695,22 @@ public sealed class ProcessPosCatalogImportChunk
             return null;
         }
 
+        if (_categoriesByNormalizedName.TryGetValue(normalized, out var cachedByName))
+        {
+            if (sourceGlobalCategoryId is Guid sourceId)
+            {
+                _categoriesBySourceId[sourceId] = cachedByName;
+            }
+
+            return cachedByName;
+        }
+
         var existing = await _categories
             .FindActiveByNormalizedNameAsync(organizationId, normalized, cancellationToken)
             .ConfigureAwait(false);
         if (existing is not null)
         {
+            RememberCategory(existing.Id, existing.NormalizedName, sourceGlobalCategoryId);
             return existing.Id;
         }
 
@@ -689,6 +720,19 @@ public sealed class ProcessPosCatalogImportChunk
             _clock.UtcNow,
             sourceGlobalCategoryId: sourceGlobalCategoryId);
         await _categories.AddAsync(category, cancellationToken).ConfigureAwait(false);
+        RememberCategory(category.Id, category.NormalizedName, sourceGlobalCategoryId);
         return category.Id;
+    }
+
+    private void RememberCategory(
+        ProductCategoryId categoryId,
+        string normalizedName,
+        Guid? sourceGlobalCategoryId)
+    {
+        _categoriesByNormalizedName[normalizedName] = categoryId;
+        if (sourceGlobalCategoryId is Guid sourceId && sourceId != Guid.Empty)
+        {
+            _categoriesBySourceId[sourceId] = categoryId;
+        }
     }
 }

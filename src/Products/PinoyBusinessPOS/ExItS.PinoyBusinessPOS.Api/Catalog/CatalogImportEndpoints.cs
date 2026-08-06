@@ -30,7 +30,7 @@ internal static class CatalogImportEndpoints
                 return problem!;
             }
 
-            var accessToken = ExtractBearer(request);
+            var platformSessionToken = ExtractPlatformSessionToken(request);
             return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
                     request,
                     organizationId,
@@ -41,7 +41,7 @@ internal static class CatalogImportEndpoints
                         body.PlatformTemplateId,
                         body.BatchNumber <= 0 ? 1 : body.BatchNumber,
                         actorId.ToString("D"),
-                        accessToken,
+                        platformSessionToken,
                         body.IdempotencyKey,
                         ct2),
                     dto => dto,
@@ -68,7 +68,7 @@ internal static class CatalogImportEndpoints
                 return problem!;
             }
 
-            var accessToken = ExtractBearer(request);
+            var platformSessionToken = ExtractPlatformSessionToken(request);
             return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
                     request,
                     organizationId,
@@ -78,7 +78,7 @@ internal static class CatalogImportEndpoints
                         organizationId,
                         body.PlatformGlobalProductIds ?? [],
                         actorId.ToString("D"),
-                        accessToken,
+                        platformSessionToken,
                         body.IdempotencyKey,
                         ct2),
                     dto => dto,
@@ -107,7 +107,7 @@ internal static class CatalogImportEndpoints
             }
 
             var batchNumber = body?.BatchNumber is > 1 ? body.BatchNumber : 2;
-            var accessToken = ExtractBearer(request);
+            var platformSessionToken = ExtractPlatformSessionToken(request);
             return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
                     request,
                     organizationId,
@@ -118,7 +118,7 @@ internal static class CatalogImportEndpoints
                         templateId,
                         batchNumber,
                         actorId.ToString("D"),
-                        accessToken,
+                        platformSessionToken,
                         body?.IdempotencyKey,
                         ct2),
                     dto => dto,
@@ -196,21 +196,27 @@ internal static class CatalogImportEndpoints
         return PosCommercialScope.TryAuthorize(access, capability, out problem);
     }
 
-    private static string? ExtractBearer(HttpRequest request)
+    private static string? ExtractPlatformSessionToken(HttpRequest request)
     {
-        if (!request.Headers.TryGetValue("Authorization", out var values))
+        if (request.Headers.TryGetValue("X-ExItS-Session-Token", out var values)
+            && !string.IsNullOrWhiteSpace(values.FirstOrDefault()))
+        {
+            return values.FirstOrDefault()!.Trim();
+        }
+
+        if (!request.Headers.TryGetValue("Authorization", out var authValues))
         {
             return null;
         }
 
-        var header = values.FirstOrDefault();
+        var header = authValues.FirstOrDefault();
         if (string.IsNullOrWhiteSpace(header)
-            || !header.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+            || !header.StartsWith("PlatformSession ", StringComparison.OrdinalIgnoreCase))
         {
             return null;
         }
 
-        var token = header["Bearer ".Length..].Trim();
+        var token = header["PlatformSession ".Length..].Trim();
         return string.IsNullOrWhiteSpace(token) ? null : token;
     }
 }

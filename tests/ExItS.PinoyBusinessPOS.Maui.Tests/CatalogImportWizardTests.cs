@@ -59,6 +59,35 @@ public sealed class CatalogImportWizardTests
     }
 
     [Fact]
+    public void Import_pipeline_forwards_platform_session_not_bearer_to_merchant_catalog()
+    {
+        var root = FindRepoRoot();
+        Assert.Contains("PosPlatformSessionForwardingHandler", File.ReadAllText(Path.Combine(
+            root,
+            "src",
+            "Products",
+            "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.ApiClient",
+            "DependencyInjection.cs")), StringComparison.Ordinal);
+        Assert.Contains("PlatformSession", File.ReadAllText(Path.Combine(
+            root,
+            "src",
+            "Products",
+            "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.Api",
+            "Catalog",
+            "PlatformMerchantCatalogClient.cs")), StringComparison.Ordinal);
+        Assert.Contains("ExtractPlatformSessionToken", File.ReadAllText(Path.Combine(
+            root,
+            "src",
+            "Products",
+            "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.Api",
+            "Catalog",
+            "CatalogImportEndpoints.cs")), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Import_wizard_localization_keys_exist_in_english_and_filipino()
     {
         var root = FindRepoRoot();

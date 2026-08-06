@@ -21,11 +21,11 @@ public sealed class PlatformMerchantCatalogClient(
 
     public async Task<PlatformMerchantCatalogTemplateDto?> GetPublishedTemplateAsync(
         Guid templateId,
-        string? accessToken,
+        string? platformSessionToken,
         CancellationToken cancellationToken = default)
     {
         EnsureBaseAddress();
-        using var request = CreateRequest(HttpMethod.Get, $"api/v1/catalog/templates/{templateId:D}", accessToken);
+        using var request = CreateRequest(HttpMethod.Get, $"api/v1/catalog/templates/{templateId:D}", platformSessionToken);
         using var response = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
         if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
         {
@@ -40,11 +40,11 @@ public sealed class PlatformMerchantCatalogClient(
 
     public async Task<PlatformMerchantGlobalProductDto?> GetActiveProductAsync(
         Guid productId,
-        string? accessToken,
+        string? platformSessionToken,
         CancellationToken cancellationToken = default)
     {
         EnsureBaseAddress();
-        using var request = CreateRequest(HttpMethod.Get, $"api/v1/catalog/products/{productId:D}", accessToken);
+        using var request = CreateRequest(HttpMethod.Get, $"api/v1/catalog/products/{productId:D}", platformSessionToken);
         using var response = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
         if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
         {
@@ -59,13 +59,13 @@ public sealed class PlatformMerchantCatalogClient(
 
     public async Task<IReadOnlyList<PlatformMerchantGlobalProductDto>> GetActiveProductsAsync(
         IReadOnlyList<Guid> productIds,
-        string? accessToken,
+        string? platformSessionToken,
         CancellationToken cancellationToken = default)
     {
         var results = new List<PlatformMerchantGlobalProductDto>();
         foreach (var id in productIds.Distinct())
         {
-            var product = await GetActiveProductAsync(id, accessToken, cancellationToken).ConfigureAwait(false);
+            var product = await GetActiveProductAsync(id, platformSessionToken, cancellationToken).ConfigureAwait(false);
             if (product is not null)
             {
                 results.Add(product);
@@ -83,7 +83,7 @@ public sealed class PlatformMerchantCatalogClient(
         string? sku,
         int? page,
         int? pageSize,
-        string? accessToken,
+        string? platformSessionToken,
         CancellationToken cancellationToken = default)
     {
         EnsureBaseAddress();
@@ -124,7 +124,7 @@ public sealed class PlatformMerchantCatalogClient(
         }
 
         var path = "api/v1/catalog/products/search" + (query.Count == 0 ? string.Empty : "?" + string.Join("&", query));
-        using var request = CreateRequest(HttpMethod.Get, path, accessToken);
+        using var request = CreateRequest(HttpMethod.Get, path, platformSessionToken);
         using var response = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
         response.EnsureSuccessStatusCode();
         var result = await response.Content
@@ -139,7 +139,7 @@ public sealed class PlatformMerchantCatalogClient(
         Guid? parentId,
         int? page,
         int? pageSize,
-        string? accessToken,
+        string? platformSessionToken,
         CancellationToken cancellationToken = default)
     {
         EnsureBaseAddress();
@@ -170,7 +170,7 @@ public sealed class PlatformMerchantCatalogClient(
         }
 
         var path = "api/v1/catalog/categories" + (query.Count == 0 ? string.Empty : "?" + string.Join("&", query));
-        using var request = CreateRequest(HttpMethod.Get, path, accessToken);
+        using var request = CreateRequest(HttpMethod.Get, path, platformSessionToken);
         using var response = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
         response.EnsureSuccessStatusCode();
         var result = await response.Content
@@ -195,23 +195,25 @@ public sealed class PlatformMerchantCatalogClient(
         httpClient.BaseAddress = new Uri(baseUrl.TrimEnd('/') + "/", UriKind.Absolute);
     }
 
-    private HttpRequestMessage CreateRequest(HttpMethod method, string relativePath, string? accessToken)
+    private HttpRequestMessage CreateRequest(HttpMethod method, string relativePath, string? platformSessionToken)
     {
         var request = new HttpRequestMessage(method, relativePath);
-        var token = accessToken;
+        var token = platformSessionToken;
         if (string.IsNullOrWhiteSpace(token))
         {
-            var header = httpContextAccessor.HttpContext?.Request.Headers.Authorization.FirstOrDefault();
-            if (!string.IsNullOrWhiteSpace(header)
-                && header.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+            var header = httpContextAccessor.HttpContext?.Request.Headers["X-ExItS-Session-Token"].FirstOrDefault();
+            if (!string.IsNullOrWhiteSpace(header))
             {
-                token = header["Bearer ".Length..].Trim();
+                token = header.Trim();
             }
         }
 
+        // Merchant catalog routes (/api/v1/catalog/*) authenticate via PlatformSession only.
+        // Product access Bearer tokens are rejected with 401 by Platform session auth.
         if (!string.IsNullOrWhiteSpace(token))
         {
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            request.Headers.Authorization = new AuthenticationHeaderValue("PlatformSession", token);
+            request.Headers.TryAddWithoutValidation("X-ExItS-Session-Token", token);
         }
 
         return request;

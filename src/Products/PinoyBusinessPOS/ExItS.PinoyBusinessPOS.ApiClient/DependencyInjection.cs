@@ -34,6 +34,7 @@ public static class DependencyInjection
 
         services.AddTransient<PlatformBearerHandler>();
         services.AddTransient<PlatformSessionHeaderHandler>();
+        services.AddTransient<PosPlatformSessionForwardingHandler>();
         services.AddTransient<DevPlatformUserHeaderHandler>();
         services.AddTransient<PosOrganizationHeaderHandler>();
         services.AddTransient<PosCommercialHeaderHandler>();
@@ -88,6 +89,7 @@ public static class DependencyInjection
             .AddHttpMessageHandler<DevPlatformUserHeaderHandler>()
             .AddHttpMessageHandler<PosOrganizationHeaderHandler>()
             .AddHttpMessageHandler<PosCommercialHeaderHandler>()
+            .AddHttpMessageHandler<PosPlatformSessionForwardingHandler>()
             .AddHttpMessageHandler<PlatformBearerHandler>();
     }
 }
