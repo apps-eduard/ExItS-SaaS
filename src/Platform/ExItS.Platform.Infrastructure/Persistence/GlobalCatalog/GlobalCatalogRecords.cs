@@ -29,6 +29,7 @@ internal sealed class GlobalProductRecord
     public string? Description { get; set; }
     public string? Sku { get; set; }
     public string? Barcode { get; set; }
+    public string? Brand { get; set; }
     public Guid? GlobalCategoryId { get; set; }
     public string Unit { get; set; } = string.Empty;
     public decimal? SuggestedPrice { get; set; }

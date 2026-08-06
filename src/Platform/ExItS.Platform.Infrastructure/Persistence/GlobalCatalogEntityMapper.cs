@@ -65,6 +65,7 @@ internal static class GlobalCatalogEntityMapper
             record.Description,
             record.Sku,
             record.Barcode,
+            record.Brand,
             record.GlobalCategoryId is null ? null : GlobalCategoryId.From(record.GlobalCategoryId.Value),
             Enum.Parse<ProductUnit>(record.Unit),
             record.SuggestedPrice,
@@ -84,6 +85,7 @@ internal static class GlobalCatalogEntityMapper
             Description = product.Description,
             Sku = product.Sku,
             Barcode = product.Barcode,
+            Brand = product.Brand,
             GlobalCategoryId = product.GlobalCategoryId?.Value,
             Unit = product.Unit.ToString(),
             SuggestedPrice = product.SuggestedPrice,
@@ -108,6 +110,7 @@ internal static class GlobalCatalogEntityMapper
         record.Description = product.Description;
         record.Sku = product.Sku;
         record.Barcode = product.Barcode;
+        record.Brand = product.Brand;
         record.GlobalCategoryId = product.GlobalCategoryId?.Value;
         record.Unit = product.Unit.ToString();
         record.SuggestedPrice = product.SuggestedPrice;

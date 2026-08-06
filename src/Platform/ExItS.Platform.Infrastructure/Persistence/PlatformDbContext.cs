@@ -1659,6 +1659,7 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.Description).HasColumnName("description").HasMaxLength(2000);
             entity.Property(e => e.Sku).HasColumnName("sku").HasMaxLength(64);
             entity.Property(e => e.Barcode).HasColumnName("barcode").HasMaxLength(64);
+            entity.Property(e => e.Brand).HasColumnName("brand").HasMaxLength(120);
             entity.Property(e => e.GlobalCategoryId).HasColumnName("global_category_id");
             entity.Property(e => e.Unit).HasColumnName("unit").HasMaxLength(32).IsRequired();
             entity.Property(e => e.SuggestedPrice).HasColumnName("suggested_price").HasColumnType("decimal(18,2)");
@@ -1685,6 +1686,7 @@ public sealed class PlatformDbContext : DbContext
             entity.HasIndex(e => e.GlobalCategoryId).HasDatabaseName("ix_global_products_category_id");
             entity.HasIndex(e => e.Status).HasDatabaseName("ix_global_products_status");
             entity.HasIndex(e => e.Name).HasDatabaseName("ix_global_products_name");
+            entity.HasIndex(e => e.Brand).HasDatabaseName("ix_global_products_brand");
 
             entity.HasOne<GlobalCategoryRecord>()
                 .WithMany()

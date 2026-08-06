@@ -1,5 +1,6 @@
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.GlobalCatalog;
+using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.GlobalCatalog;
 using ExItS.Platform.Infrastructure.Persistence.GlobalCatalog;
 using Microsoft.EntityFrameworkCore;
@@ -203,7 +204,9 @@ internal sealed class GlobalProductRepository : IGlobalProductRepository
         int skip,
         int take,
         CancellationToken cancellationToken = default,
-        IReadOnlyCollection<Guid>? excludeProductIds = null)
+        IReadOnlyCollection<Guid>? excludeProductIds = null,
+        GlobalProductListSortBy sortBy = GlobalProductListSortBy.Name,
+        bool sortDescending = false)
     {
         var query = _db.GlobalProducts.AsNoTracking().Include(p => p.BusinessTypes).AsQueryable();
 
@@ -226,14 +229,26 @@ internal sealed class GlobalProductRepository : IGlobalProductRepository
 
         if (!string.IsNullOrWhiteSpace(barcode))
         {
-            var normalized = GlobalCatalogRules.NormalizeBarcode(barcode);
-            query = query.Where(p => p.Barcode == normalized);
+            var normalized = GlobalCatalogRules.NormalizeOptionalFilterCode(
+                barcode,
+                GlobalCatalogRules.BarcodeMaxLength,
+                DomainErrorCodes.InvalidGlobalProductBarcode);
+            if (normalized is not null)
+            {
+                query = query.Where(p => p.Barcode == normalized);
+            }
         }
 
         if (!string.IsNullOrWhiteSpace(sku))
         {
-            var normalized = GlobalCatalogRules.NormalizeSku(sku);
-            query = query.Where(p => p.Sku == normalized);
+            var normalized = GlobalCatalogRules.NormalizeOptionalFilterCode(
+                sku,
+                GlobalCatalogRules.SkuMaxLength,
+                DomainErrorCodes.InvalidGlobalProductSku);
+            if (normalized is not null)
+            {
+                query = query.Where(p => p.Sku == normalized);
+            }
         }
 
         if (!string.IsNullOrWhiteSpace(search))
@@ -242,7 +257,8 @@ internal sealed class GlobalProductRepository : IGlobalProductRepository
             query = query.Where(p =>
                 p.Name.ToLower().Contains(term)
                 || (p.Sku != null && p.Sku.ToLower().Contains(term))
-                || (p.Barcode != null && p.Barcode.ToLower().Contains(term)));
+                || (p.Barcode != null && p.Barcode.ToLower().Contains(term))
+                || (p.Brand != null && p.Brand.ToLower().Contains(term)));
         }
 
         if (excludeProductIds is { Count: > 0 })
@@ -251,11 +267,63 @@ internal sealed class GlobalProductRepository : IGlobalProductRepository
             query = query.Where(p => !excluded.Contains(p.Id));
         }
 
-        query = query.OrderBy(p => p.Name).ThenBy(p => p.Id);
+        query = ApplyProductSort(query, sortBy, sortDescending);
 
         var totalCount = await query.CountAsync(cancellationToken).ConfigureAwait(false);
         var records = await query.Skip(skip).Take(take).ToListAsync(cancellationToken).ConfigureAwait(false);
         return (records.Select(GlobalCatalogEntityMapper.ToDomain).ToList(), totalCount);
+    }
+
+    private IQueryable<GlobalProductRecord> ApplyProductSort(
+        IQueryable<GlobalProductRecord> query,
+        GlobalProductListSortBy sortBy,
+        bool sortDescending)
+    {
+        if (sortBy == GlobalProductListSortBy.Category)
+        {
+            var joined = query
+                .GroupJoin(
+                    _db.GlobalCategories,
+                    p => p.GlobalCategoryId,
+                    c => c.Id,
+                    (p, cats) => new { Product = p, CategoryName = cats.Select(c => c.Name).FirstOrDefault() });
+
+            return sortDescending
+                ? joined.OrderByDescending(x => x.CategoryName ?? string.Empty)
+                    .ThenBy(x => x.Product.Id)
+                    .Select(x => x.Product)
+                : joined.OrderBy(x => x.CategoryName ?? string.Empty)
+                    .ThenBy(x => x.Product.Id)
+                    .Select(x => x.Product);
+        }
+
+        return sortBy switch
+        {
+            GlobalProductListSortBy.Sku => sortDescending
+                ? query.OrderByDescending(p => p.Sku ?? string.Empty).ThenBy(p => p.Id)
+                : query.OrderBy(p => p.Sku ?? string.Empty).ThenBy(p => p.Id),
+            GlobalProductListSortBy.Barcode => sortDescending
+                ? query.OrderByDescending(p => p.Barcode ?? string.Empty).ThenBy(p => p.Id)
+                : query.OrderBy(p => p.Barcode ?? string.Empty).ThenBy(p => p.Id),
+            GlobalProductListSortBy.Brand => sortDescending
+                ? query.OrderByDescending(p => p.Brand ?? string.Empty).ThenBy(p => p.Id)
+                : query.OrderBy(p => p.Brand ?? string.Empty).ThenBy(p => p.Id),
+            GlobalProductListSortBy.Unit => sortDescending
+                ? query.OrderByDescending(p => p.Unit).ThenBy(p => p.Id)
+                : query.OrderBy(p => p.Unit).ThenBy(p => p.Id),
+            GlobalProductListSortBy.Status => sortDescending
+                ? query.OrderByDescending(p => p.Status).ThenBy(p => p.Id)
+                : query.OrderBy(p => p.Status).ThenBy(p => p.Id),
+            GlobalProductListSortBy.UpdatedAtUtc => sortDescending
+                ? query.OrderByDescending(p => p.UpdatedAtUtc).ThenBy(p => p.Id)
+                : query.OrderBy(p => p.UpdatedAtUtc).ThenBy(p => p.Id),
+            GlobalProductListSortBy.CreatedAtUtc => sortDescending
+                ? query.OrderByDescending(p => p.CreatedAtUtc).ThenBy(p => p.Id)
+                : query.OrderBy(p => p.CreatedAtUtc).ThenBy(p => p.Id),
+            _ => sortDescending
+                ? query.OrderByDescending(p => p.Name).ThenBy(p => p.Id)
+                : query.OrderBy(p => p.Name).ThenBy(p => p.Id)
+        };
     }
 
     public async Task<IReadOnlyList<GlobalProduct>> GetByIdsAsync(
