@@ -592,9 +592,11 @@ public sealed class PlatformApiClient(
         string? search = null,
         string? barcode = null,
         string? sku = null,
+        string? sortBy = null,
+        bool? sortDesc = null,
         CancellationToken ct = default) =>
         GetAsync<PagedResult<GlobalProductDto>>(
-            $"/api/v1/platform/global-catalog/templates/{id}/available-products?{Query(("page", page), ("pageSize", pageSize), ("status", status), ("categoryId", categoryId), ("search", search), ("barcode", barcode), ("sku", sku))}",
+            $"/api/v1/platform/global-catalog/templates/{id}/available-products?{Query(("page", page), ("pageSize", pageSize), ("status", status), ("categoryId", categoryId), ("search", search), ("barcode", barcode), ("sku", sku), ("sortBy", sortBy), ("sortDesc", sortDesc))}",
             ct);
 
     public Task<ApiCallResult<CatalogTemplateDto>> ReorderCatalogTemplateProductsAsync(Guid id, ReorderCatalogTemplateProductsRequest request, CancellationToken ct = default) =>

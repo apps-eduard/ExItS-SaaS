@@ -1,4 +1,5 @@
 @using AntDesign
+@using AntDesign.TableModels
 @using ExItS.Platform.Admin.Models
 @implements IDisposable
 @inject IPlatformApiClient Api
@@ -89,7 +90,8 @@
                            ScrollX="720"
                            Loading="_availableLoading"
                            HidePagination
-                           ScrollY="320">
+                           ScrollY="320"
+                           OnChange="OnAvailableTableChangeAsync">
                         <PropertyColumn Property="c => c.Id" Title="" Width="40">
                             <Checkbox Checked="@_availableSelected.Contains(context.Id)"
                                       Disabled="@Busy"
@@ -99,10 +101,10 @@
                             <div class="exits-template-transfer__name">@context.Name</div>
                             <div class="exits-template-transfer__meta">@FormatCodes(context.Sku, context.Barcode)</div>
                         </PropertyColumn>
-                        <PropertyColumn Property="c => c.GlobalCategoryId" Title="@L["GlobalProducts_Category"]" Width="120">
+                        <PropertyColumn Property="c => c.GlobalCategoryId" Title="@L["GlobalProducts_Category"]" Sortable Width="120">
                             @CategoryLabel(context.GlobalCategoryId)
                         </PropertyColumn>
-                        <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Width="90">
+                        <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Sortable Width="90">
                             <AdminStatusTag Value="@context.Status" />
                         </PropertyColumn>
                     </Table>
@@ -240,6 +242,8 @@
     private const int _availablePageSize = 20;
     private string? _availableSearch;
     private string? _availableCategoryId;
+    private string? _availableSortBy;
+    private bool _availableSortDesc;
     private bool _availableLoading;
     private bool _availableFailed;
     private string? _availableError;
@@ -348,6 +352,8 @@
                 status: "Active",
                 categoryId: categoryId,
                 search: string.IsNullOrWhiteSpace(_availableSearch) ? null : _availableSearch.Trim(),
+                sortBy: _availableSortBy,
+                sortDesc: _availableSortBy is null ? null : _availableSortDesc,
                 ct: cancellationToken);
 
             if (seq != _availableRequestSeq || cancellationToken.IsCancellationRequested)
@@ -408,6 +414,8 @@
     {
         _availableSearch = null;
         _availableCategoryId = null;
+        _availableSortBy = null;
+        _availableSortDesc = false;
         _availablePage = 1;
         await LoadAvailableAsync();
     }
@@ -417,6 +425,30 @@
         _availablePage = args.Page;
         await LoadAvailableAsync();
     }
+
+    private async Task OnAvailableTableChangeAsync(QueryModel<GlobalProductDto> queryModel)
+    {
+        var (newSortBy, newSortDesc) = AdminTableSort.Extract(queryModel, MapAvailableSortField);
+        var sortChanged = !string.Equals(_availableSortBy, newSortBy, StringComparison.Ordinal)
+            || _availableSortDesc != newSortDesc;
+        if (!sortChanged)
+        {
+            return;
+        }
+
+        _availableSortBy = newSortBy;
+        _availableSortDesc = newSortDesc;
+        _availablePage = 1;
+        await LoadAvailableAsync();
+    }
+
+    private static string? MapAvailableSortField(string? fieldName) => fieldName switch
+    {
+        "Name" => "Name",
+        "GlobalCategoryId" => "Category",
+        "Status" => "Status",
+        _ => null
+    };
 
     private async Task RetryAvailableAsync() => await LoadAvailableAsync();
 

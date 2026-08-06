@@ -98,7 +98,9 @@ public sealed class CatalogTemplateQueryService
         string? sku,
         int? page,
         int? pageSize,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        GlobalProductListSortBy sortBy = GlobalProductListSortBy.Name,
+        bool sortDescending = false)
     {
         var template = await _templates.GetByIdAsync(CatalogTemplateId.From(templateId), cancellationToken)
             .ConfigureAwait(false);
@@ -122,7 +124,9 @@ public sealed class CatalogTemplateQueryService
                 skip,
                 take,
                 cancellationToken,
-                excludeProductIds: assignedIds)
+                excludeProductIds: assignedIds,
+                sortBy: sortBy,
+                sortDescending: sortDescending)
             .ConfigureAwait(false);
 
         return ApplicationResult<PagedResult<GlobalProductDto>>.Success(

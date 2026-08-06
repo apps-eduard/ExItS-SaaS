@@ -283,6 +283,8 @@ public sealed class GlobalCatalogTemplateCompositionPersistenceTests(PostgreSqlF
                 Barcode: $"BC-{Guid.NewGuid():N}"[..20],
                 Brand: "TestBrand",
                 GlobalCategoryId: category.Value!.Id,
+                CostPrice: 10.00m,
+                SellingPrice: 15.00m,
                 BusinessTypes: ["SariSari"]));
         Assert.True(result.IsSuccess, result.ErrorMessage);
 

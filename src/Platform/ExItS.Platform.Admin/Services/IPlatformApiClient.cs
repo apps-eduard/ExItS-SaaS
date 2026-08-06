@@ -284,6 +284,8 @@ public interface IPlatformApiClient
         string? search = null,
         string? barcode = null,
         string? sku = null,
+        string? sortBy = null,
+        bool? sortDesc = null,
         CancellationToken ct = default);
     Task<ApiCallResult<CatalogTemplateDto>> ReorderCatalogTemplateProductsAsync(Guid id, ReorderCatalogTemplateProductsRequest request, CancellationToken ct = default);
     Task<ApiCallResult<CatalogTemplateDto>> UpdateCatalogTemplateProductFlagsAsync(Guid id, Guid productId, UpdateCatalogTemplateProductFlagsRequest request, CancellationToken ct = default);

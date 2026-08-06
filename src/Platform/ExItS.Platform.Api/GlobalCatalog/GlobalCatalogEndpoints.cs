@@ -873,6 +873,8 @@ internal static class GlobalCatalogEndpoints
             string? search,
             string? barcode,
             string? sku,
+            string? sortBy,
+            bool? sortDesc,
             int? page,
             int? pageSize,
             CancellationToken ct) =>
@@ -888,6 +890,21 @@ internal static class GlobalCatalogEndpoints
                 return denied;
             }
 
+            GlobalProductListSortBy effectiveSort = GlobalProductListSortBy.Name;
+            if (!string.IsNullOrWhiteSpace(sortBy))
+            {
+                if (!Enum.TryParse<GlobalProductListSortBy>(sortBy, ignoreCase: true, out var parsed)
+                    || !Enum.IsDefined(parsed))
+                {
+                    return PlatformApiResults.Problem(
+                        DomainErrorCodes.InvalidGlobalProductSortField,
+                        $"Unrecognized sort field '{sortBy}'.",
+                        StatusCodes.Status400BadRequest);
+                }
+
+                effectiveSort = parsed;
+            }
+
             // Active is the default filter for the transfer-list available pane.
             var effectiveStatus = status ?? GlobalProductStatus.Active;
             var result = await queries
@@ -900,7 +917,9 @@ internal static class GlobalCatalogEndpoints
                     sku,
                     page,
                     pageSize,
-                    ct)
+                    ct,
+                    sortBy: effectiveSort,
+                    sortDescending: sortDesc ?? false)
                 .ConfigureAwait(false);
             return PlatformApiResults.FromResult(result, Results.Ok);
         });
