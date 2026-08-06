@@ -37,6 +37,9 @@ public sealed class P20Wp03GlobalCatalogAdminTests
         Assert.Contains("ManageGlobalProducts", products, StringComparison.Ordinal);
         Assert.Contains("UnauthorizedPanel", products, StringComparison.Ordinal);
         Assert.Contains("GetGlobalProductsAsync", products, StringComparison.Ordinal);
+        Assert.Contains("GlobalProducts_Brand", products, StringComparison.Ordinal);
+        Assert.Contains("AdminTableSort.ApplyChangeAsync", products, StringComparison.Ordinal);
+        Assert.Contains("@implements IDisposable", products, StringComparison.Ordinal);
         Assert.DoesNotContain("/api/v1/platform/catalog/", products, StringComparison.Ordinal);
     }
 
@@ -70,6 +73,7 @@ public sealed class P20Wp03GlobalCatalogAdminTests
         Assert.Contains("/api/v1/platform/global-catalog/products", client, StringComparison.Ordinal);
         Assert.Contains("GetGlobalCategoriesAsync", iface, StringComparison.Ordinal);
         Assert.Contains("GetGlobalProductsAsync", iface, StringComparison.Ordinal);
+        Assert.Contains("sortBy", client, StringComparison.Ordinal);
         Assert.Contains("/api/v1/platform/catalog/products", client, StringComparison.Ordinal);
         Assert.Contains("/api/v1/platform/catalog/plans", client, StringComparison.Ordinal);
     }

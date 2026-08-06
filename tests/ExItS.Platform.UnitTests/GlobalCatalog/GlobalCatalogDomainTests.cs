@@ -12,21 +12,56 @@ public sealed class GlobalCatalogNormalizationTests
     [Theory]
     [InlineData("  abc-123  ", "ABC-123")]
     [InlineData("sku001", "SKU001")]
-    [InlineData("  ", null)]
-    [InlineData(null, null)]
-    [InlineData("", null)]
-    public void NormalizeBarcode_uppercases_trims_and_nulls_blank(string? input, string? expected)
+    public void NormalizeBarcode_uppercases_and_trims(string? input, string expected)
     {
         Assert.Equal(expected, GlobalCatalogRules.NormalizeBarcode(input));
     }
 
     [Theory]
-    [InlineData("  sku-9  ", "SKU-9")]
     [InlineData("  ", null)]
     [InlineData(null, null)]
-    public void NormalizeSku_uppercases_trims_and_nulls_blank(string? input, string? expected)
+    [InlineData("", null)]
+    public void NormalizeBarcode_rejects_blank(string? input, string? _)
+    {
+        var ex = Assert.Throws<DomainException>(() => GlobalCatalogRules.NormalizeBarcode(input));
+        Assert.Equal(DomainErrorCodes.InvalidGlobalProductBarcode, ex.ErrorCode);
+    }
+
+    [Theory]
+    [InlineData("  sku-9  ", "SKU-9")]
+    public void NormalizeSku_uppercases_and_trims(string? input, string expected)
     {
         Assert.Equal(expected, GlobalCatalogRules.NormalizeSku(input));
+    }
+
+    [Theory]
+    [InlineData("  ", null)]
+    [InlineData(null, null)]
+    public void NormalizeSku_rejects_blank(string? input, string? _)
+    {
+        var ex = Assert.Throws<DomainException>(() => GlobalCatalogRules.NormalizeSku(input));
+        Assert.Equal(DomainErrorCodes.InvalidGlobalProductSku, ex.ErrorCode);
+    }
+
+    [Theory]
+    [InlineData("  Acme Brand  ", "Acme Brand")]
+    public void NormalizeBrand_trims_and_collapses_whitespace(string? input, string expected)
+    {
+        Assert.Equal(expected, GlobalCatalogRules.NormalizeBrand(input));
+    }
+
+    [Fact]
+    public void NormalizeBrand_rejects_blank()
+    {
+        var ex = Assert.Throws<DomainException>(() => GlobalCatalogRules.NormalizeBrand("  "));
+        Assert.Equal(DomainErrorCodes.InvalidGlobalProductBrand, ex.ErrorCode);
+    }
+
+    [Fact]
+    public void RequireCategory_rejects_null()
+    {
+        var ex = Assert.Throws<DomainException>(() => GlobalCatalogRules.RequireCategory(null));
+        Assert.Equal(DomainErrorCodes.InvalidGlobalProductCategory, ex.ErrorCode);
     }
 
     [Fact]
@@ -46,23 +81,54 @@ public sealed class GlobalCatalogNormalizationTests
     public void GlobalProduct_create_applies_normalization()
     {
         var t0 = new DateTimeOffset(2026, 8, 5, 0, 0, 0, TimeSpan.Zero);
+        var category = GlobalCategory.Create("Beverages", t0);
         var product = GlobalProduct.Create(
             "  Coke  ",
             ProductUnit.Bottle,
-            t0,
-            sku: "  sku-1 ",
-            barcode: " 480123 ");
+            "  sku-1 ",
+            " 480123 ",
+            "  BrandX  ",
+            category.Id,
+            t0);
 
         Assert.Equal("Coke", product.Name);
         Assert.Equal("SKU-1", product.Sku);
         Assert.Equal("480123", product.Barcode);
+        Assert.Equal("BrandX", product.Brand);
+        Assert.Equal(category.Id, product.GlobalCategoryId);
         Assert.Equal(GlobalProductStatus.Draft, product.Status);
+    }
+
+    [Fact]
+    public void GlobalProduct_create_rejects_missing_required_fields()
+    {
+        var t0 = new DateTimeOffset(2026, 8, 5, 0, 0, 0, TimeSpan.Zero);
+        var category = GlobalCategory.Create("Beverages", t0);
+
+        Assert.Throws<DomainException>(() =>
+            GlobalProduct.Create("Coke", ProductUnit.Bottle, "", "480001", "Brand", category.Id, t0));
+        Assert.Throws<DomainException>(() =>
+            GlobalProduct.Create("Coke", ProductUnit.Bottle, "SKU1", "", "Brand", category.Id, t0));
+        Assert.Throws<DomainException>(() =>
+            GlobalProduct.Create("Coke", ProductUnit.Bottle, "SKU1", "480001", " ", category.Id, t0));
+        Assert.Throws<DomainException>(() =>
+            GlobalProduct.Create("Coke", ProductUnit.Bottle, "SKU1", "480001", "Brand", null!, t0));
     }
 }
 
 public sealed class GlobalCatalogLifecycleTests
 {
     private static readonly DateTimeOffset T0 = new(2026, 8, 5, 12, 0, 0, TimeSpan.Zero);
+
+    private static GlobalProduct CreateProduct(string name = "Snack") =>
+        GlobalProduct.Create(
+            name,
+            ProductUnit.Pack,
+            "SKU-1",
+            "480001",
+            "BrandX",
+            GlobalCategory.Create("Snacks", T0).Id,
+            T0);
 
     [Fact]
     public void Category_active_inactive_archive_and_blocks_archived_edits()
@@ -87,15 +153,23 @@ public sealed class GlobalCatalogLifecycleTests
     [Fact]
     public void Product_draft_active_archive_and_blocks_archived_updates()
     {
-        var product = GlobalProduct.Create("Snack", ProductUnit.Pack, T0);
+        var product = CreateProduct();
         product.SetStatus(GlobalProductStatus.Active, T0.AddMinutes(1));
         Assert.Equal(GlobalProductStatus.Active, product.Status);
 
         product.SetStatus(GlobalProductStatus.Archived, T0.AddMinutes(2));
         Assert.Equal(GlobalProductStatus.Archived, product.Status);
 
+        var category = GlobalCategory.Create("Snacks", T0);
         var ex = Assert.Throws<DomainException>(() =>
-            product.Update("Snack 2", ProductUnit.Pack, T0.AddMinutes(3)));
+            product.Update(
+                "Snack 2",
+                ProductUnit.Pack,
+                "SKU-1",
+                "480001",
+                "BrandX",
+                category.Id,
+                T0.AddMinutes(3)));
         Assert.Equal(DomainErrorCodes.InvalidGlobalProductStatusTransition, ex.ErrorCode);
 
         Assert.Throws<DomainException>(() =>
@@ -105,11 +179,10 @@ public sealed class GlobalCatalogLifecycleTests
     [Fact]
     public void Archive_is_soft_delete_entity_remains_addressable()
     {
-        var product = GlobalProduct.Create("Kept", ProductUnit.Piece, T0);
+        var product = CreateProduct("Kept");
         var id = product.Id;
         product.SetStatus(GlobalProductStatus.Archived, T0.AddMinutes(1));
 
-        // Soft lifecycle: identity and timestamps remain; no hard delete API exists on the aggregate.
         Assert.Equal(id, product.Id);
         Assert.Equal(GlobalProductStatus.Archived, product.Status);
         Assert.Equal(T0, product.CreatedAtUtc);
@@ -129,8 +202,17 @@ public sealed class GlobalCatalogConcurrencyTests
         var uow = new NoOpUnitOfWork();
         var clock = new FixedClock(T0);
 
+        var category = GlobalCategory.Create("General", T0);
+        await categories.AddAsync(category);
+
         var create = new CreateGlobalProduct(products, categories, uow, clock);
-        var created = await create.ExecuteAsync(new CreateGlobalProductRequest("Item", "Piece", Sku: "A1"));
+        var created = await create.ExecuteAsync(new CreateGlobalProductRequest(
+            "Item",
+            "Piece",
+            "A1",
+            "480001",
+            "BrandX",
+            category.Id.Value));
         Assert.True(created.IsSuccess);
 
         clock.Advance(TimeSpan.FromMinutes(1));
@@ -140,7 +222,10 @@ public sealed class GlobalCatalogConcurrencyTests
             new UpdateGlobalProductRequest(
                 "Item 2",
                 "Piece",
-                Sku: "A1",
+                "A1",
+                "480001",
+                "BrandX",
+                category.Id.Value,
                 ExpectedUpdatedAtUtc: T0.AddSeconds(-1)));
 
         Assert.False(stale.IsSuccess);
@@ -181,24 +266,51 @@ public sealed class GlobalCatalogUniquenessTests
         var clock = new FixedClock(T0);
         var create = new CreateGlobalProduct(products, categories, uow, clock);
 
+        var category = GlobalCategory.Create("General", T0);
+        await categories.AddAsync(category);
+
         var first = await create.ExecuteAsync(
-            new CreateGlobalProductRequest("One", "Piece", Barcode: " 111 ", Sku: " sku-a "));
+            new CreateGlobalProductRequest(
+                "One",
+                "Piece",
+                " sku-a ",
+                " 111 ",
+                "BrandA",
+                category.Id.Value));
         Assert.True(first.IsSuccess);
 
         var dupBarcode = await create.ExecuteAsync(
-            new CreateGlobalProductRequest("Two", "Piece", Barcode: "111"));
+            new CreateGlobalProductRequest("Two", "Piece", "SKU-B", "111", "BrandB", category.Id.Value));
         Assert.False(dupBarcode.IsSuccess);
         Assert.Equal(ApplicationErrorCodes.DuplicateGlobalProductBarcode, dupBarcode.ErrorCode);
 
         var dupSku = await create.ExecuteAsync(
-            new CreateGlobalProductRequest("Three", "Piece", Sku: "SKU-A"));
+            new CreateGlobalProductRequest("Three", "Piece", "SKU-A", "222", "BrandC", category.Id.Value));
         Assert.False(dupSku.IsSuccess);
         Assert.Equal(ApplicationErrorCodes.DuplicateGlobalProductSku, dupSku.ErrorCode);
+    }
 
-        var blankOk = await create.ExecuteAsync(new CreateGlobalProductRequest("Four", "Piece"));
-        Assert.True(blankOk.IsSuccess);
-        var blankOk2 = await create.ExecuteAsync(new CreateGlobalProductRequest("Five", "Piece"));
-        Assert.True(blankOk2.IsSuccess);
+    [Fact]
+    public async Task Create_rejects_missing_required_product_fields()
+    {
+        var categories = new InMemoryGlobalCategoryRepository();
+        var products = new InMemoryGlobalProductRepository();
+        var uow = new NoOpUnitOfWork();
+        var clock = new FixedClock(T0);
+        var create = new CreateGlobalProduct(products, categories, uow, clock);
+
+        var category = GlobalCategory.Create("General", T0);
+        await categories.AddAsync(category);
+
+        var missingSku = await create.ExecuteAsync(
+            new CreateGlobalProductRequest("One", "Piece", "", "111", "Brand", category.Id.Value));
+        Assert.False(missingSku.IsSuccess);
+        Assert.Equal(DomainErrorCodes.InvalidGlobalProductSku, missingSku.ErrorCode);
+
+        var missingBrand = await create.ExecuteAsync(
+            new CreateGlobalProductRequest("Two", "Piece", "SKU-2", "222", " ", category.Id.Value));
+        Assert.False(missingBrand.IsSuccess);
+        Assert.Equal(DomainErrorCodes.InvalidGlobalProductBrand, missingBrand.ErrorCode);
     }
 }
 
@@ -316,7 +428,9 @@ file sealed class InMemoryGlobalProductRepository : IGlobalProductRepository
         int skip,
         int take,
         CancellationToken cancellationToken = default,
-        IReadOnlyCollection<Guid>? excludeProductIds = null)
+        IReadOnlyCollection<Guid>? excludeProductIds = null,
+        GlobalProductListSortBy sortBy = GlobalProductListSortBy.Name,
+        bool sortDescending = false)
     {
         var list = _store.Values.Skip(skip).Take(take).ToList();
         return Task.FromResult(((IReadOnlyList<GlobalProduct>)list, _store.Count));

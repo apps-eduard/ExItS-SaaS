@@ -267,12 +267,22 @@ public sealed class GlobalCatalogTemplateCompositionPersistenceTests(PostgreSqlF
     private static async Task<Guid> CreateProductAsync(ServiceProvider provider, string name, bool activate = true)
     {
         using var scope = NewRequest(provider);
-        var result = await scope.ServiceProvider
+        var services = scope.ServiceProvider;
+
+        var category = await services
+            .GetRequiredService<CreateGlobalCategory>()
+            .ExecuteAsync(new CreateGlobalCategoryRequest($"Cat-{Guid.NewGuid():N}"[..20]));
+        Assert.True(category.IsSuccess, category.ErrorMessage);
+
+        var result = await services
             .GetRequiredService<CreateGlobalProduct>()
             .ExecuteAsync(new CreateGlobalProductRequest(
                 Name: name,
                 Unit: "Piece",
                 Sku: $"SKU-{Guid.NewGuid():N}"[..20],
+                Barcode: $"BC-{Guid.NewGuid():N}"[..20],
+                Brand: "TestBrand",
+                GlobalCategoryId: category.Value!.Id,
                 BusinessTypes: ["SariSari"]));
         Assert.True(result.IsSuccess, result.ErrorMessage);
 

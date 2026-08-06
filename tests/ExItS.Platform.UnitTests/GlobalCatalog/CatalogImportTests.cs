@@ -253,6 +253,23 @@ public sealed class CatalogImportRowMapperTests
 {
     private static readonly DateTimeOffset T0 = new(2026, 8, 5, 12, 0, 0, TimeSpan.Zero);
 
+    private static Dictionary<string, string> RequiredCells(
+        string productName,
+        Action<Dictionary<string, string>>? customize = null)
+    {
+        var cells = new Dictionary<string, string>
+        {
+            ["ProductName"] = productName,
+            ["Category"] = "General",
+            ["Brand"] = "TestBrand",
+            ["Unit"] = "Piece",
+            ["Barcode"] = $"480{Random.Shared.Next(100000, 999999)}",
+            ["SuggestedSku"] = $"SKU-{Guid.NewGuid():N}"[..12].ToUpperInvariant()
+        };
+        customize?.Invoke(cells);
+        return cells;
+    }
+
     [Fact]
     public async Task MapRows_marks_formula_injection_as_failed()
     {
@@ -285,12 +302,18 @@ public sealed class CatalogImportRowMapperTests
             {
                 ["ProductName"] = "A",
                 ["Unit"] = "Piece",
+                ["Brand"] = "BrandA",
+                ["Category"] = "General",
+                ["SuggestedSku"] = "SKU-A",
                 ["Barcode"] = "480001"
             }),
             new(3, new Dictionary<string, string>
             {
                 ["ProductName"] = "B",
                 ["Unit"] = "Piece",
+                ["Brand"] = "BrandB",
+                ["Category"] = "General",
+                ["SuggestedSku"] = "SKU-B",
                 ["Barcode"] = "480001"
             })
         };
@@ -312,12 +335,7 @@ public sealed class CatalogImportRowMapperTests
         var products = new FakeProductRepository { ExistingBarcodes = { "480099" } };
         var rows = new List<CatalogImportRawRow>
         {
-            new(2, new Dictionary<string, string>
-            {
-                ["ProductName"] = "Existing",
-                ["Unit"] = "Piece",
-                ["Barcode"] = "480099"
-            })
+            new(2, RequiredCells("Existing", c => c["Barcode"] = "480099"))
         };
 
         var items = await CatalogImportRowMapper.MapRowsAsync(
@@ -335,29 +353,10 @@ public sealed class CatalogImportRowMapperTests
     {
         var rows = new List<CatalogImportRawRow>
         {
-            new(2, new Dictionary<string, string>
-            {
-                ["ProductName"] = "BadUnit",
-                ["Unit"] = "NotAUnit"
-            }),
-            new(3, new Dictionary<string, string>
-            {
-                ["ProductName"] = "BadStatus",
-                ["Unit"] = "Piece",
-                ["Status"] = "Published"
-            }),
-            new(4, new Dictionary<string, string>
-            {
-                ["ProductName"] = "BadBiz",
-                ["Unit"] = "Piece",
-                ["BusinessTypes"] = "NotAType"
-            }),
-            new(5, new Dictionary<string, string>
-            {
-                ["ProductName"] = "BadPrice",
-                ["Unit"] = "Piece",
-                ["SuggestedSellingPrice"] = "not-a-number"
-            })
+            new(2, RequiredCells("BadUnit", c => c["Unit"] = "NotAUnit")),
+            new(3, RequiredCells("BadStatus", c => c["Status"] = "Published")),
+            new(4, RequiredCells("BadBiz", c => c["BusinessTypes"] = "NotAType")),
+            new(5, RequiredCells("BadPrice", c => c["SuggestedSellingPrice"] = "not-a-number"))
         };
 
         var items = await CatalogImportRowMapper.MapRowsAsync(
@@ -373,16 +372,60 @@ public sealed class CatalogImportRowMapperTests
     }
 
     [Fact]
+    public async Task MapRows_rejects_blank_category()
+    {
+        var rows = new List<CatalogImportRawRow>
+        {
+            new(2, RequiredCells("No Category", c => c.Remove("Category")))
+        };
+
+        var items = await CatalogImportRowMapper.MapRowsAsync(
+            rows,
+            new FakeCategoryRepository(),
+            new FakeProductRepository(),
+            T0);
+
+        Assert.Equal(CatalogImportItemStatus.Failed, items[0].Status);
+        Assert.Equal(DomainErrorCodes.InvalidGlobalProductCategory, items[0].ErrorCode);
+    }
+
+    [Fact]
+    public async Task MapRows_rejects_blank_brand()
+    {
+        var rows = new List<CatalogImportRawRow>
+        {
+            new(2, RequiredCells("No Brand", c => c["Brand"] = " "))
+        };
+
+        var items = await CatalogImportRowMapper.MapRowsAsync(
+            rows,
+            new FakeCategoryRepository(),
+            new FakeProductRepository(),
+            T0);
+
+        Assert.Equal(CatalogImportItemStatus.Failed, items[0].Status);
+        Assert.Equal(DomainErrorCodes.InvalidGlobalProductBrand, items[0].ErrorCode);
+    }
+
+    [Fact]
+    public void ExtractBrand_removes_brand_tag_and_normalizes()
+    {
+        var tags = new List<string> { "alias", "brand:Acme Co", "tax:VAT" };
+        var brand = CatalogImportRowMapper.ExtractBrand(tags);
+        Assert.Equal("Acme Co", brand);
+        Assert.DoesNotContain(tags, t => t.StartsWith("brand:", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
     public async Task MapRows_unknown_category_stays_pending_with_will_create_preview()
     {
         var rows = new List<CatalogImportRawRow>
         {
-            new(2, new Dictionary<string, string>
+            new(2, RequiredCells("Sinandomeng 25kg", c =>
             {
-                ["ProductName"] = "Sinandomeng 25kg",
-                ["Category"] = "  Rice and Staples  ",
-                ["Unit"] = "Kilogram"
-            })
+                c["Category"] = "  Rice and Staples  ";
+                c["Unit"] = "Kilogram";
+            }))
         };
 
         var items = await CatalogImportRowMapper.MapRowsAsync(
@@ -410,12 +453,11 @@ public sealed class CatalogImportRowMapperTests
 
         var rows = new List<CatalogImportRawRow>
         {
-            new(2, new Dictionary<string, string>
+            new(2, RequiredCells("Jasmine Rice", c =>
             {
-                ["ProductName"] = "Jasmine Rice",
-                ["Category"] = "rice and staples",
-                ["Unit"] = "Kilogram"
-            })
+                c["Category"] = "rice and staples";
+                c["Unit"] = "Kilogram";
+            }))
         };
 
         var items = await CatalogImportRowMapper.MapRowsAsync(
@@ -450,14 +492,12 @@ public sealed class CatalogImportRowMapperTests
             var category = categoryNames[i % 8];
             rows.Add(new CatalogImportRawRow(
                 i + 2,
-                new Dictionary<string, string>
+                RequiredCells($"Product {i + 1:000}", c =>
                 {
-                    ["ProductName"] = $"Product {i + 1:000}",
-                    ["Category"] = category,
-                    ["Unit"] = "Piece",
-                    ["Barcode"] = $"48000{i + 1:000000}",
-                    ["SuggestedSku"] = $"SKU-{i + 1:000}"
-                }));
+                    c["Category"] = category;
+                    c["Barcode"] = $"48000{i + 1:000000}";
+                    c["SuggestedSku"] = $"SKU-{i + 1:000}";
+                })));
         }
 
         var items = await CatalogImportRowMapper.MapRowsAsync(
@@ -481,12 +521,8 @@ public sealed class CatalogImportRowMapperTests
     {
         var rows = new List<CatalogImportRawRow>
         {
-            new(2, new Dictionary<string, string>
-            {
-                ["ProductName"] = "X",
-                ["Category"] = new string('x', GlobalCatalogRules.NameMaxLength + 1),
-                ["Unit"] = "Piece"
-            })
+            new(2, RequiredCells("X", c =>
+                c["Category"] = new string('x', GlobalCatalogRules.NameMaxLength + 1)))
         };
 
         var items = await CatalogImportRowMapper.MapRowsAsync(
@@ -508,18 +544,16 @@ public sealed class CatalogImportRowMapperTests
 
         var rows = new List<CatalogImportRawRow>
         {
-            new(2, new Dictionary<string, string>
+            new(2, RequiredCells("Coke", c =>
             {
-                ["ProductName"] = "Coke",
-                ["Category"] = "Beverages",
-                ["Unit"] = "Can"
-            }),
-            new(3, new Dictionary<string, string>
+                c["Category"] = "Beverages";
+                c["Unit"] = "Can";
+            })),
+            new(3, RequiredCells("Rice", c =>
             {
-                ["ProductName"] = "Rice",
-                ["Category"] = "Rice and Staples",
-                ["Unit"] = "Kilogram"
-            })
+                c["Category"] = "Rice and Staples";
+                c["Unit"] = "Kilogram";
+            }))
         };
 
         var items = await CatalogImportRowMapper.MapRowsAsync(
@@ -610,8 +644,10 @@ public sealed class CatalogImportCategoryCreateTests
                 i + 2,
                 $"Product {i}",
                 "Piece",
-                barcode: $"B{i}",
-                categoryName: "Rice and Staples"))
+                sku: $"SKU-{i}",
+                barcode: $"B{i:000000}",
+                categoryName: "Rice and Staples",
+                searchTagsRaw: "brand:ImportBrand"))
             .ToList();
 
         var job = CatalogImportJob.CreateValidated(
@@ -656,8 +692,10 @@ public sealed class CatalogImportCategoryCreateTests
             2,
             "Chips",
             "Pack",
+            sku: "SKU-CHIPS",
             barcode: "480099",
-            categoryName: "snacks");
+            categoryName: "snacks",
+            searchTagsRaw: "brand:SnackBrand");
         var job = CatalogImportJob.CreateValidated(
             "snacks.csv",
             CatalogImportFileFormat.Csv,
@@ -697,8 +735,10 @@ public sealed class CatalogImportCategoryCreateTests
             2,
             "Soap",
             "Piece",
-            barcode: "1",
-            categoryName: "Personal Care");
+            sku: "SKU-SOAP",
+            barcode: "480001",
+            categoryName: "Personal Care",
+            searchTagsRaw: "brand:CareBrand");
         var job = CatalogImportJob.CreateValidated(
             "care.csv",
             CatalogImportFileFormat.Csv,
@@ -732,14 +772,18 @@ public sealed class CatalogImportCategoryCreateTests
             2,
             "Good",
             "Piece",
+            sku: "SKU-GOOD",
             barcode: "GOOD",
-            categoryName: "Household");
+            categoryName: "Household",
+            searchTagsRaw: "brand:HouseBrand");
         var bad = CatalogImportItem.CreatePending(
             3,
             "Bad",
             "NotAUnit",
+            sku: "SKU-BAD",
             barcode: "BAD",
-            categoryName: "Household");
+            categoryName: "Household",
+            searchTagsRaw: "brand:HouseBrand");
         var job = CatalogImportJob.CreateValidated(
             "mixed.csv",
             CatalogImportFileFormat.Csv,
@@ -898,7 +942,9 @@ file sealed class FakeProductRepository : IGlobalProductRepository
         int skip,
         int take,
         CancellationToken cancellationToken = default,
-        IReadOnlyCollection<Guid>? excludeProductIds = null) =>
+        IReadOnlyCollection<Guid>? excludeProductIds = null,
+        GlobalProductListSortBy sortBy = GlobalProductListSortBy.Name,
+        bool sortDescending = false) =>
         Task.FromResult<(IReadOnlyList<GlobalProduct>, int)>(([], 0));
 
     public Task<IReadOnlyList<GlobalProduct>> GetByIdsAsync(
