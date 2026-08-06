@@ -379,6 +379,7 @@ else
         _selectedTemplateId = templateId;
         _errorTitle = null;
         _errorMessage = null;
+        StateHasChanged();
         try
         {
             _isOffline = !await Connectivity.IsConnectedAsync();
@@ -441,6 +442,7 @@ else
         _busy = true;
         _errorTitle = null;
         _errorMessage = null;
+        StateHasChanged();
         try
         {
             _isOffline = !await Connectivity.IsConnectedAsync();
