@@ -1,10 +1,11 @@
 @page "/admin/global-catalog/products"
 @page "/admin/global-catalog/products/{Id:guid}"
 @using AntDesign
+@using AntDesign.TableModels
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize]
+@implements IDisposable
 @inject IPlatformApiClient Api
-@inject IMessageService Message
 @inject IStringLocalizer<AdminResources> L
 @inject NavigationManager Nav
 @inject PlatformPermissionState Permissions
@@ -36,6 +37,11 @@ else if (Id is null)
             }
         </PageHeaderExtra>
     </PageHeader>
+
+    @if (!string.IsNullOrEmpty(_errorAlert))
+    {
+        <Alert Type="@AlertType.Error" Message="@_errorAlert" ShowIcon="true" Closable="true" OnClose="ClearErrorAlert" Style="margin-bottom:12px;" />
+    }
 
     <Space Style="margin-bottom:12px; width:100%;" Wrap>
         <Input @bind-Value="_search" Size="@InputSize.Small" Placeholder="@L["GlobalProducts_SearchPlaceholder"]" Style="width:220px;" OnPressEnter="ApplyFiltersAsync" />
@@ -76,8 +82,12 @@ else if (Id is null)
             <FormValidationSummary Title="@L["GlobalProducts_CreateFailed"]" Message="@_formError" IsConflict="_formConflict" />
             <Space Direction="SpaceDirection.Vertical" Style="width:100%; max-width:640px;">
                 <div>
-                    <label class="ant-form-item-label" for="gc-prod-name">@L["Common_Name"]</label>
+                    <label class="ant-form-item-label" for="gc-prod-name">@L["Common_Name"] *</label>
                     <Input Id="gc-prod-name" @bind-Value="_newName" Size="@InputSize.Small" Disabled="_busy" />
+                    @if (!string.IsNullOrEmpty(_newNameError))
+                    {
+                        <div class="ant-form-item-explain ant-form-item-explain-error">@_newNameError</div>
+                    }
                 </div>
                 <div>
                     <label class="ant-form-item-label" for="gc-prod-desc">@L["GlobalProducts_FieldDescription"]</label>
@@ -85,28 +95,47 @@ else if (Id is null)
                 </div>
                 <Space Wrap>
                     <div>
-                        <label class="ant-form-item-label" for="gc-prod-sku">@L["GlobalProducts_Sku"]</label>
+                        <label class="ant-form-item-label" for="gc-prod-sku">@L["GlobalProducts_Sku"] *</label>
                         <Input Id="gc-prod-sku" @bind-Value="_newSku" Size="@InputSize.Small" Disabled="_busy" Style="width:160px;" />
+                        @if (!string.IsNullOrEmpty(_newSkuError))
+                        {
+                            <div class="ant-form-item-explain ant-form-item-explain-error">@_newSkuError</div>
+                        }
                     </div>
                     <div>
-                        <label class="ant-form-item-label" for="gc-prod-barcode">@L["GlobalProducts_Barcode"]</label>
+                        <label class="ant-form-item-label" for="gc-prod-barcode">@L["GlobalProducts_Barcode"] *</label>
                         <Input Id="gc-prod-barcode" @bind-Value="_newBarcode" Size="@InputSize.Small" Disabled="_busy" Style="width:180px;" />
+                        @if (!string.IsNullOrEmpty(_newBarcodeError))
+                        {
+                            <div class="ant-form-item-explain ant-form-item-explain-error">@_newBarcodeError</div>
+                        }
+                    </div>
+                    <div>
+                        <label class="ant-form-item-label" for="gc-prod-brand">@L["GlobalProducts_Brand"] *</label>
+                        <Input Id="gc-prod-brand" @bind-Value="_newBrand" Size="@InputSize.Small" Disabled="_busy" Style="width:180px;" />
+                        @if (!string.IsNullOrEmpty(_newBrandError))
+                        {
+                            <div class="ant-form-item-explain ant-form-item-explain-error">@_newBrandError</div>
+                        }
                     </div>
                 </Space>
                 <div>
-                    <label class="ant-form-item-label">@L["GlobalProducts_Category"]</label>
-                    <Select TItemValue="string" TItem="string" @bind-Value="_newCategoryId" Size="@InputSize.Small" Style="width:100%;" AllowClear Disabled="_busy">
+                    <label class="ant-form-item-label">@L["GlobalProducts_Category"] *</label>
+                    <Select TItemValue="string" TItem="string" @bind-Value="_newCategoryId" Size="@InputSize.Small" Style="width:100%;" Disabled="_busy">
                         <SelectOptions>
-                            <SelectOption TItemValue="string" TItem="string" Value="@("")" Label="@L["GlobalProducts_Uncategorized"]" />
                             @foreach (var c in _categoryOptions)
                             {
                                 <SelectOption TItemValue="string" TItem="string" Value="@c.Id.ToString("D")" Label="@c.Name" />
                             }
                         </SelectOptions>
                     </Select>
+                    @if (!string.IsNullOrEmpty(_newCategoryError))
+                    {
+                        <div class="ant-form-item-explain ant-form-item-explain-error">@_newCategoryError</div>
+                    }
                 </div>
                 <div>
-                    <label class="ant-form-item-label">@L["GlobalProducts_Unit"]</label>
+                    <label class="ant-form-item-label">@L["GlobalProducts_Unit"] *</label>
                     <Select TItemValue="string" TItem="string" @bind-Value="_newUnit" Size="@InputSize.Small" Style="width:200px;" Disabled="_busy">
                         <SelectOptions>
                             @foreach (var u in UnitOptions)
@@ -115,6 +144,10 @@ else if (Id is null)
                             }
                         </SelectOptions>
                     </Select>
+                    @if (!string.IsNullOrEmpty(_newUnitError))
+                    {
+                        <div class="ant-form-item-explain ant-form-item-explain-error">@_newUnitError</div>
+                    }
                 </div>
                 <Space Wrap>
                     <div>
@@ -165,32 +198,23 @@ else if (Id is null)
                Loading="@(_list is null)"
                Size="@TableSize.Small"
                Bordered
-               ScrollX="1280"
+               ScrollX="1400"
                RemoteDataSource
-               OnPageIndexChange="OnPageChangedAsync">
-            <PropertyColumn Property="c => c.Name" Title="@L["Common_Name"]">
+               OnChange="OnProductsTableChangeAsync">
+            <PropertyColumn Property="c => c.Name" Title="@L["Common_Name"]" Sortable>
                 <a href="/admin/global-catalog/products/@context.Id">@context.Name</a>
             </PropertyColumn>
-            <PropertyColumn Property="c => c.Barcode" Title="@L["GlobalProducts_Barcode"]" Width="140">
-                @(context.Barcode ?? "—")
-            </PropertyColumn>
-            <PropertyColumn Property="c => c.Sku" Title="@L["GlobalProducts_Sku"]" Width="120">
-                @(context.Sku ?? "—")
-            </PropertyColumn>
-            <PropertyColumn Property="c => c.GlobalCategoryId" Title="@L["GlobalProducts_Category"]" Width="160">
+            <PropertyColumn Property="c => c.Sku" Title="@L["GlobalProducts_Sku"]" Sortable Width="120" />
+            <PropertyColumn Property="c => c.Barcode" Title="@L["GlobalProducts_Barcode"]" Sortable Width="140" />
+            <PropertyColumn Property="c => c.Brand" Title="@L["GlobalProducts_Brand"]" Sortable Width="140" />
+            <PropertyColumn Property="c => c.GlobalCategoryId" Title="@L["GlobalProducts_Category"]" Sortable Width="160">
                 @CategoryName(context.GlobalCategoryId)
             </PropertyColumn>
-            <PropertyColumn Property="c => c.Unit" Title="@L["GlobalProducts_Unit"]" Width="100" />
-            <PropertyColumn Property="c => c.SuggestedPrice" Title="@L["GlobalProducts_SuggestedPrice"]" Width="120">
-                @(context.SuggestedPrice?.ToString("0.00") ?? "—")
-            </PropertyColumn>
-            <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Width="110">
+            <PropertyColumn Property="c => c.Unit" Title="@L["GlobalProducts_Unit"]" Sortable Width="100" />
+            <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Sortable Width="110">
                 <AdminStatusTag Value="@context.Status" />
             </PropertyColumn>
-            <PropertyColumn Property="c => c.BusinessTypes" Title="@L["GlobalCatalog_BusinessTypes"]" Width="180">
-                @string.Join(", ", context.BusinessTypes)
-            </PropertyColumn>
-            <PropertyColumn Property="c => c.UpdatedAtUtc" Title="@L["Common_UpdatedUtc"]" Width="180">
+            <PropertyColumn Property="c => c.UpdatedAtUtc" Title="@L["Common_UpdatedUtc"]" Sortable Width="180">
                 <LocalTimestamp Value="@context.UpdatedAtUtc" />
             </PropertyColumn>
             <ActionColumn Title="@L["Common_Open"]" Width="80">
@@ -230,6 +254,15 @@ else
         </PageHeaderExtra>
     </PageHeader>
 
+    @if (!string.IsNullOrEmpty(_successAlert))
+    {
+        <Alert Type="@AlertType.Success" Message="@_successAlert" ShowIcon="true" Closable="true" OnClose="ClearSuccessAlert" Style="margin-bottom:12px;" />
+    }
+    @if (!string.IsNullOrEmpty(_errorAlert))
+    {
+        <Alert Type="@AlertType.Error" Message="@_errorAlert" ShowIcon="true" Closable="true" OnClose="ClearErrorAlert" Style="margin-bottom:12px;" />
+    }
+
     @if (_product is null)
     {
         <div style="padding:2rem;text-align:center;"><Spin Tip="@L["GlobalProducts_DetailLoading"]" /></div>
@@ -244,6 +277,7 @@ else
         <Descriptions Bordered Size="@DescriptionsSize.Small" Column="2" Style="margin-bottom:12px;">
             <DescriptionsItem Title="@L["Common_Status"]"><AdminStatusTag Value="@p.Status" /></DescriptionsItem>
             <DescriptionsItem Title="@L["GlobalProducts_Category"]">@CategoryName(p.GlobalCategoryId)</DescriptionsItem>
+            <DescriptionsItem Title="@L["GlobalProducts_Brand"]">@p.Brand</DescriptionsItem>
             <DescriptionsItem Title="@L["Common_CreatedUtc"]"><UtcTimestamp Value="@p.CreatedAtUtc" /></DescriptionsItem>
             <DescriptionsItem Title="@L["Common_UpdatedUtc"]"><UtcTimestamp Value="@p.UpdatedAtUtc" /></DescriptionsItem>
         </Descriptions>
@@ -254,8 +288,12 @@ else
                 <FormValidationSummary Title="@L["GlobalProducts_SaveFailed"]" Message="@_formError" IsConflict="_formConflict" />
                 <Space Direction="SpaceDirection.Vertical" Style="width:100%; max-width:640px;">
                     <div>
-                        <label class="ant-form-item-label" for="gc-prod-edit-name">@L["Common_Name"]</label>
+                        <label class="ant-form-item-label" for="gc-prod-edit-name">@L["Common_Name"] *</label>
                         <Input Id="gc-prod-edit-name" @bind-Value="_editName" Size="@InputSize.Small" Disabled="_busy" />
+                        @if (!string.IsNullOrEmpty(_editNameError))
+                        {
+                            <div class="ant-form-item-explain ant-form-item-explain-error">@_editNameError</div>
+                        }
                     </div>
                     <div>
                         <label class="ant-form-item-label" for="gc-prod-edit-desc">@L["GlobalProducts_FieldDescription"]</label>
@@ -263,28 +301,47 @@ else
                     </div>
                     <Space Wrap>
                         <div>
-                            <label class="ant-form-item-label" for="gc-prod-edit-sku">@L["GlobalProducts_Sku"]</label>
+                            <label class="ant-form-item-label" for="gc-prod-edit-sku">@L["GlobalProducts_Sku"] *</label>
                             <Input Id="gc-prod-edit-sku" @bind-Value="_editSku" Size="@InputSize.Small" Disabled="_busy" Style="width:160px;" />
+                            @if (!string.IsNullOrEmpty(_editSkuError))
+                            {
+                                <div class="ant-form-item-explain ant-form-item-explain-error">@_editSkuError</div>
+                            }
                         </div>
                         <div>
-                            <label class="ant-form-item-label" for="gc-prod-edit-barcode">@L["GlobalProducts_Barcode"]</label>
+                            <label class="ant-form-item-label" for="gc-prod-edit-barcode">@L["GlobalProducts_Barcode"] *</label>
                             <Input Id="gc-prod-edit-barcode" @bind-Value="_editBarcode" Size="@InputSize.Small" Disabled="_busy" Style="width:180px;" />
+                            @if (!string.IsNullOrEmpty(_editBarcodeError))
+                            {
+                                <div class="ant-form-item-explain ant-form-item-explain-error">@_editBarcodeError</div>
+                            }
+                        </div>
+                        <div>
+                            <label class="ant-form-item-label" for="gc-prod-edit-brand">@L["GlobalProducts_Brand"] *</label>
+                            <Input Id="gc-prod-edit-brand" @bind-Value="_editBrand" Size="@InputSize.Small" Disabled="_busy" Style="width:180px;" />
+                            @if (!string.IsNullOrEmpty(_editBrandError))
+                            {
+                                <div class="ant-form-item-explain ant-form-item-explain-error">@_editBrandError</div>
+                            }
                         </div>
                     </Space>
                     <div>
-                        <label class="ant-form-item-label">@L["GlobalProducts_Category"]</label>
-                        <Select TItemValue="string" TItem="string" @bind-Value="_editCategoryId" Size="@InputSize.Small" Style="width:100%;" AllowClear Disabled="_busy">
+                        <label class="ant-form-item-label">@L["GlobalProducts_Category"] *</label>
+                        <Select TItemValue="string" TItem="string" @bind-Value="_editCategoryId" Size="@InputSize.Small" Style="width:100%;" Disabled="_busy">
                             <SelectOptions>
-                                <SelectOption TItemValue="string" TItem="string" Value="@("")" Label="@L["GlobalProducts_Uncategorized"]" />
                                 @foreach (var c in _categoryOptions)
                                 {
                                     <SelectOption TItemValue="string" TItem="string" Value="@c.Id.ToString("D")" Label="@c.Name" />
                                 }
                             </SelectOptions>
                         </Select>
+                        @if (!string.IsNullOrEmpty(_editCategoryError))
+                        {
+                            <div class="ant-form-item-explain ant-form-item-explain-error">@_editCategoryError</div>
+                        }
                     </div>
                     <div>
-                        <label class="ant-form-item-label">@L["GlobalProducts_Unit"]</label>
+                        <label class="ant-form-item-label">@L["GlobalProducts_Unit"] *</label>
                         <Select TItemValue="string" TItem="string" @bind-Value="_editUnit" Size="@InputSize.Small" Style="width:200px;" Disabled="_busy">
                             <SelectOptions>
                                 @foreach (var u in UnitOptions)
@@ -293,6 +350,10 @@ else
                                 }
                             </SelectOptions>
                         </Select>
+                        @if (!string.IsNullOrEmpty(_editUnitError))
+                        {
+                            <div class="ant-form-item-explain ant-form-item-explain-error">@_editUnitError</div>
+                        }
                     </div>
                     <Space Wrap>
                         <div>
@@ -325,8 +386,9 @@ else
             <Descriptions Size="@DescriptionsSize.Small" Column="2">
                 <DescriptionsItem Title="@L["Common_Name"]">@p.Name</DescriptionsItem>
                 <DescriptionsItem Title="@L["GlobalProducts_Unit"]">@p.Unit</DescriptionsItem>
-                <DescriptionsItem Title="@L["GlobalProducts_Sku"]">@(p.Sku ?? "—")</DescriptionsItem>
-                <DescriptionsItem Title="@L["GlobalProducts_Barcode"]">@(p.Barcode ?? "—")</DescriptionsItem>
+                <DescriptionsItem Title="@L["GlobalProducts_Sku"]">@p.Sku</DescriptionsItem>
+                <DescriptionsItem Title="@L["GlobalProducts_Barcode"]">@p.Barcode</DescriptionsItem>
+                <DescriptionsItem Title="@L["GlobalProducts_Brand"]">@p.Brand</DescriptionsItem>
                 <DescriptionsItem Title="@L["GlobalProducts_SuggestedPrice"]">@(p.SuggestedPrice?.ToString("0.00") ?? "—")</DescriptionsItem>
                 <DescriptionsItem Title="@L["GlobalProducts_SuggestedCost"]">@(p.SuggestedCost?.ToString("0.00") ?? "—")</DescriptionsItem>
                 <DescriptionsItem Title="@L["GlobalProducts_FieldDescription"]">@(p.Description ?? "—")</DescriptionsItem>
@@ -340,6 +402,7 @@ else
 
 @code {
     [Parameter] public Guid? Id { get; set; }
+    [SupplyParameterFromQuery] public string? Alert { get; set; }
 
     private static readonly string[] BusinessTypeOptions =
     [
@@ -358,6 +421,8 @@ else
     private ApiCallResult<GlobalProductDto>? _product;
     private List<GlobalCategoryDto> _categoryOptions = [];
     private int _page = 1;
+    private string? _sortBy;
+    private bool _sortDesc;
     private string _search = "";
     private string _barcode = "";
     private string _status = "";
@@ -368,6 +433,7 @@ else
     private string _newDescription = "";
     private string _newSku = "";
     private string _newBarcode = "";
+    private string _newBrand = "";
     private string _newCategoryId = "";
     private string _newUnit = "Piece";
     private decimal? _newPrice;
@@ -379,6 +445,7 @@ else
     private string _editDescription = "";
     private string _editSku = "";
     private string _editBarcode = "";
+    private string _editBrand = "";
     private string _editCategoryId = "";
     private string _editUnit = "Piece";
     private decimal? _editPrice;
@@ -390,6 +457,22 @@ else
     private string? _formError;
     private bool _formConflict;
     private bool _busy;
+    private string? _successAlert;
+    private string? _errorAlert;
+    private CancellationTokenSource? _successAlertCts;
+    private bool _disposed;
+    private string? _newNameError;
+    private string? _newSkuError;
+    private string? _newBarcodeError;
+    private string? _newBrandError;
+    private string? _newCategoryError;
+    private string? _newUnitError;
+    private string? _editNameError;
+    private string? _editSkuError;
+    private string? _editBarcodeError;
+    private string? _editBrandError;
+    private string? _editCategoryError;
+    private string? _editUnitError;
     private readonly AdminPageLoadGate _loadGate = new();
 
     private bool CanView => Permissions.HasPermission(PlatformPermissionCodes.ViewGlobalCatalog);
@@ -418,6 +501,10 @@ else
         else if (_loadGate.ShouldLoad(Id))
         {
             await LoadDetailAsync();
+            if (string.Equals(Alert, "created", StringComparison.OrdinalIgnoreCase))
+            {
+                ShowSuccessAlert(L["GlobalProducts_Created"].Value);
+            }
         }
     }
 
@@ -445,10 +532,37 @@ else
             categoryId: categoryId,
             businessType: string.IsNullOrWhiteSpace(_businessType) ? null : _businessType,
             search: string.IsNullOrWhiteSpace(_search) ? null : _search.Trim(),
-            barcode: string.IsNullOrWhiteSpace(_barcode) ? null : _barcode.Trim());
+            barcode: string.IsNullOrWhiteSpace(_barcode) ? null : _barcode.Trim(),
+            sortBy: _sortBy,
+            sortDesc: _sortBy is null ? null : _sortDesc);
     }
 
-    private async Task OnPageChangedAsync(PaginationEventArgs _) => await LoadListAsync();
+    private async Task OnProductsTableChangeAsync(QueryModel<GlobalProductDto> queryModel)
+    {
+        await AdminTableSort.ApplyChangeAsync(
+            queryModel,
+            MapSortField,
+            () => _sortBy,
+            v => _sortBy = v,
+            () => _sortDesc,
+            v => _sortDesc = v,
+            () => _page,
+            v => _page = v,
+            LoadListAsync);
+    }
+
+    private static string? MapSortField(string? fieldName) => fieldName switch
+    {
+        "Name" => "Name",
+        "Sku" => "Sku",
+        "Barcode" => "Barcode",
+        "Brand" => "Brand",
+        "GlobalCategoryId" => "Category",
+        "Unit" => "Unit",
+        "Status" => "Status",
+        "UpdatedAtUtc" => "UpdatedAtUtc",
+        _ => null
+    };
 
     private async Task ApplyFiltersAsync()
     {
@@ -463,6 +577,8 @@ else
         _status = "";
         _categoryId = "";
         _businessType = "";
+        _sortBy = null;
+        _sortDesc = false;
         _page = 1;
         await LoadListAsync();
     }
@@ -481,8 +597,9 @@ else
     {
         _editName = p.Name;
         _editDescription = p.Description ?? "";
-        _editSku = p.Sku ?? "";
-        _editBarcode = p.Barcode ?? "";
+        _editSku = p.Sku;
+        _editBarcode = p.Barcode;
+        _editBrand = p.Brand;
         _editCategoryId = p.GlobalCategoryId?.ToString("D") ?? "";
         _editUnit = p.Unit;
         _editPrice = p.SuggestedPrice;
@@ -515,6 +632,113 @@ else
         _showCreate = false;
         _formError = null;
         _formConflict = false;
+        ClearCreateFieldErrors();
+    }
+
+    private void ClearCreateFieldErrors()
+    {
+        _newNameError = null;
+        _newSkuError = null;
+        _newBarcodeError = null;
+        _newBrandError = null;
+        _newCategoryError = null;
+        _newUnitError = null;
+    }
+
+    private void ClearEditFieldErrors()
+    {
+        _editNameError = null;
+        _editSkuError = null;
+        _editBarcodeError = null;
+        _editBrandError = null;
+        _editCategoryError = null;
+        _editUnitError = null;
+    }
+
+    private bool ValidateCreateForm()
+    {
+        ClearCreateFieldErrors();
+        var ok = true;
+        if (string.IsNullOrWhiteSpace(_newName))
+        {
+            _newNameError = L["GlobalProducts_RequiredName"];
+            ok = false;
+        }
+
+        if (string.IsNullOrWhiteSpace(_newSku))
+        {
+            _newSkuError = L["GlobalProducts_RequiredSku"];
+            ok = false;
+        }
+
+        if (string.IsNullOrWhiteSpace(_newBarcode))
+        {
+            _newBarcodeError = L["GlobalProducts_RequiredBarcode"];
+            ok = false;
+        }
+
+        if (string.IsNullOrWhiteSpace(_newBrand))
+        {
+            _newBrandError = L["GlobalProducts_RequiredBrand"];
+            ok = false;
+        }
+
+        if (!Guid.TryParse(_newCategoryId, out var categoryId) || categoryId == Guid.Empty)
+        {
+            _newCategoryError = L["GlobalProducts_RequiredCategory"];
+            ok = false;
+        }
+
+        if (string.IsNullOrWhiteSpace(_newUnit))
+        {
+            _newUnitError = L["GlobalProducts_RequiredUnit"];
+            ok = false;
+        }
+
+        return ok;
+    }
+
+    private bool ValidateEditForm()
+    {
+        ClearEditFieldErrors();
+        var ok = true;
+        if (string.IsNullOrWhiteSpace(_editName))
+        {
+            _editNameError = L["GlobalProducts_RequiredName"];
+            ok = false;
+        }
+
+        if (string.IsNullOrWhiteSpace(_editSku))
+        {
+            _editSkuError = L["GlobalProducts_RequiredSku"];
+            ok = false;
+        }
+
+        if (string.IsNullOrWhiteSpace(_editBarcode))
+        {
+            _editBarcodeError = L["GlobalProducts_RequiredBarcode"];
+            ok = false;
+        }
+
+        if (string.IsNullOrWhiteSpace(_editBrand))
+        {
+            _editBrandError = L["GlobalProducts_RequiredBrand"];
+            ok = false;
+        }
+
+        if (!Guid.TryParse(_editCategoryId, out var categoryId) || categoryId == Guid.Empty)
+        {
+            _editCategoryError = L["GlobalProducts_RequiredCategory"];
+            ok = false;
+        }
+
+        if (string.IsNullOrWhiteSpace(_editUnit))
+        {
+            _editUnitError = L["GlobalProducts_RequiredUnit"];
+            ok = false;
+        }
+
+        return ok;
     }
 
     private async Task CreateAsync()
@@ -522,29 +746,41 @@ else
         if (!CanManage || !AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
         _formError = null;
         _formConflict = false;
-        Guid? categoryId = Guid.TryParse(_newCategoryId, out var cid) ? cid : null;
-        var result = await Api.CreateGlobalProductAsync(new CreateGlobalProductRequest(
-            _newName,
-            string.IsNullOrWhiteSpace(_newUnit) ? "Piece" : _newUnit,
-            string.IsNullOrWhiteSpace(_newDescription) ? null : _newDescription.Trim(),
-            string.IsNullOrWhiteSpace(_newSku) ? null : _newSku.Trim(),
-            string.IsNullOrWhiteSpace(_newBarcode) ? null : _newBarcode.Trim(),
-            categoryId,
-            _newPrice,
-            _newCost,
-            string.IsNullOrWhiteSpace(_newImage) ? null : _newImage.Trim(),
-            ParseTags(_newTags),
-            _newBusinessTypes));
-        _busy = false;
-        if (!result.IsSuccess)
+        _errorAlert = null;
+        try
         {
-            _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
-            _formError = AdminFormErrorMapper.MapPageError(result);
-            return;
-        }
+            if (!ValidateCreateForm())
+            {
+                return;
+            }
 
-        await Message.SuccessAsync(L["GlobalProducts_Created"].Value);
-        Nav.NavigateTo($"/admin/global-catalog/products/{result.Data!.Id}");
+            var categoryId = Guid.Parse(_newCategoryId);
+            var result = await Api.CreateGlobalProductAsync(new CreateGlobalProductRequest(
+                _newName.Trim(),
+                _newUnit,
+                _newSku.Trim(),
+                _newBarcode.Trim(),
+                _newBrand.Trim(),
+                categoryId,
+                string.IsNullOrWhiteSpace(_newDescription) ? null : _newDescription.Trim(),
+                _newPrice,
+                _newCost,
+                string.IsNullOrWhiteSpace(_newImage) ? null : _newImage.Trim(),
+                ParseTags(_newTags),
+                _newBusinessTypes));
+            if (!result.IsSuccess)
+            {
+                _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
+                _formError = AdminFormErrorMapper.MapPageError(result);
+                return;
+            }
+
+            Nav.NavigateTo($"/admin/global-catalog/products/{result.Data!.Id}?alert=created");
+        }
+        finally
+        {
+            _busy = false;
+        }
     }
 
     private async Task SaveAsync()
@@ -552,31 +788,44 @@ else
         if (Id is null || !CanManage || !AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
         _formError = null;
         _formConflict = false;
-        Guid? categoryId = Guid.TryParse(_editCategoryId, out var cid) ? cid : null;
-        var result = await Api.UpdateGlobalProductAsync(Id.Value, new UpdateGlobalProductRequest(
-            _editName,
-            string.IsNullOrWhiteSpace(_editUnit) ? "Piece" : _editUnit,
-            string.IsNullOrWhiteSpace(_editDescription) ? null : _editDescription.Trim(),
-            string.IsNullOrWhiteSpace(_editSku) ? null : _editSku.Trim(),
-            string.IsNullOrWhiteSpace(_editBarcode) ? null : _editBarcode.Trim(),
-            categoryId,
-            _editPrice,
-            _editCost,
-            string.IsNullOrWhiteSpace(_editImage) ? null : _editImage.Trim(),
-            ParseTags(_editTags),
-            _editBusinessTypes,
-            _expectedUpdatedAt));
-        _busy = false;
-        if (!result.IsSuccess)
+        _errorAlert = null;
+        try
         {
-            _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
-            _formError = AdminFormErrorMapper.MapPageError(result);
-            return;
-        }
+            if (!ValidateEditForm())
+            {
+                return;
+            }
 
-        await Message.SuccessAsync(L["GlobalProducts_Saved"].Value);
-        _product = result;
-        BindEdit(result.Data!);
+            var categoryId = Guid.Parse(_editCategoryId);
+            var result = await Api.UpdateGlobalProductAsync(Id.Value, new UpdateGlobalProductRequest(
+                _editName.Trim(),
+                _editUnit,
+                _editSku.Trim(),
+                _editBarcode.Trim(),
+                _editBrand.Trim(),
+                categoryId,
+                string.IsNullOrWhiteSpace(_editDescription) ? null : _editDescription.Trim(),
+                _editPrice,
+                _editCost,
+                string.IsNullOrWhiteSpace(_editImage) ? null : _editImage.Trim(),
+                ParseTags(_editTags),
+                _editBusinessTypes,
+                _expectedUpdatedAt));
+            if (!result.IsSuccess)
+            {
+                _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
+                _formError = AdminFormErrorMapper.MapPageError(result);
+                return;
+            }
+
+            _product = result;
+            BindEdit(result.Data!);
+            ShowSuccessAlert(L["GlobalProducts_Saved"].Value);
+        }
+        finally
+        {
+            _busy = false;
+        }
     }
 
     private Task ActivateProductAsync() => SetStatusAsync("Active");
@@ -585,17 +834,68 @@ else
     private async Task SetStatusAsync(string status)
     {
         if (Id is null || _product?.Data is null || !CanManage || !AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
-        var result = await Api.SetGlobalProductStatusAsync(
-            Id.Value,
-            new SetGlobalProductStatusRequest(status, _product.Data.UpdatedAtUtc));
-        _busy = false;
-        if (!result.IsSuccess)
+        _errorAlert = null;
+        try
         {
-            await Message.ErrorAsync(AdminFormErrorMapper.MapPageError(result) ?? L["Common_Error"].Value);
-            return;
-        }
+            var result = await Api.SetGlobalProductStatusAsync(
+                Id.Value,
+                new SetGlobalProductStatusRequest(status, _product.Data.UpdatedAtUtc));
+            if (!result.IsSuccess)
+            {
+                _errorAlert = AdminFormErrorMapper.MapPageError(result) ?? L["Common_Error"].Value;
+                return;
+            }
 
-        await Message.SuccessAsync(L["GlobalProducts_StatusChanged"].Value);
-        await LoadDetailAsync();
+            _product = result;
+            BindEdit(result.Data!);
+            ShowSuccessAlert(L["GlobalProducts_StatusChanged"].Value);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void ShowSuccessAlert(string message)
+    {
+        _successAlertCts?.Cancel();
+        _successAlertCts?.Dispose();
+        _successAlertCts = new CancellationTokenSource();
+        _successAlert = message;
+        _errorAlert = null;
+        _ = AutoDismissSuccessAlertAsync(_successAlertCts.Token);
+    }
+
+    private async Task AutoDismissSuccessAlertAsync(CancellationToken ct)
+    {
+        try
+        {
+            await Task.Delay(4500, ct);
+            if (ct.IsCancellationRequested || _disposed)
+            {
+                return;
+            }
+
+            _successAlert = null;
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    private void ClearSuccessAlert()
+    {
+        _successAlertCts?.Cancel();
+        _successAlert = null;
+    }
+
+    private void ClearErrorAlert() => _errorAlert = null;
+
+    public void Dispose()
+    {
+        _disposed = true;
+        _successAlertCts?.Cancel();
+        _successAlertCts?.Dispose();
     }
 }

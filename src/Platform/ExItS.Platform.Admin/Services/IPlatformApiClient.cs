@@ -247,6 +247,8 @@ public interface IPlatformApiClient
         string? search = null,
         string? barcode = null,
         string? sku = null,
+        string? sortBy = null,
+        bool? sortDesc = null,
         CancellationToken ct = default);
     Task<ApiCallResult<GlobalProductDto>> GetGlobalProductAsync(Guid id, CancellationToken ct = default);
     Task<ApiCallResult<GlobalProductDto>> CreateGlobalProductAsync(CreateGlobalProductRequest request, CancellationToken ct = default);

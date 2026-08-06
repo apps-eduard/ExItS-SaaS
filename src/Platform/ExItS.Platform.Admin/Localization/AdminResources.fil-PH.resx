@@ -899,7 +899,7 @@
   <data name="GlobalProducts_Title" xml:space="preserve"><value>Mga global na produkto</value></data>
   <data name="GlobalProducts_Description" xml:space="preserve"><value>Mga produktong merchandise na pagmamay-ari ng Platform para sa merchant catalog onboarding.</value></data>
   <data name="GlobalProducts_Empty" xml:space="preserve"><value>Walang produktong tumutugma sa kasalukuyang filter.</value></data>
-  <data name="GlobalProducts_SearchPlaceholder" xml:space="preserve"><value>Maghanap ng pangalan, SKU, o barcode</value></data>
+  <data name="GlobalProducts_SearchPlaceholder" xml:space="preserve"><value>Maghanap ng pangalan, SKU, barcode, o brand</value></data>
   <data name="GlobalProducts_BarcodeFilter" xml:space="preserve"><value>Barcode</value></data>
   <data name="GlobalProducts_Create" xml:space="preserve"><value>Gumawa ng produkto</value></data>
   <data name="GlobalProducts_HideCreate" xml:space="preserve"><value>Itago ang create</value></data>
@@ -915,6 +915,13 @@
   <data name="GlobalProducts_FieldDescription" xml:space="preserve"><value>Paglalarawan</value></data>
   <data name="GlobalProducts_Sku" xml:space="preserve"><value>SKU</value></data>
   <data name="GlobalProducts_Barcode" xml:space="preserve"><value>Barcode</value></data>
+  <data name="GlobalProducts_Brand" xml:space="preserve"><value>Brand</value></data>
+  <data name="GlobalProducts_RequiredName" xml:space="preserve"><value>Kailangan ang pangalan.</value></data>
+  <data name="GlobalProducts_RequiredSku" xml:space="preserve"><value>Kailangan ang SKU.</value></data>
+  <data name="GlobalProducts_RequiredBarcode" xml:space="preserve"><value>Kailangan ang barcode.</value></data>
+  <data name="GlobalProducts_RequiredBrand" xml:space="preserve"><value>Kailangan ang brand.</value></data>
+  <data name="GlobalProducts_RequiredCategory" xml:space="preserve"><value>Kailangan ang kategorya.</value></data>
+  <data name="GlobalProducts_RequiredUnit" xml:space="preserve"><value>Kailangan ang yunit.</value></data>
   <data name="GlobalProducts_Category" xml:space="preserve"><value>Kategorya</value></data>
   <data name="GlobalProducts_Uncategorized" xml:space="preserve"><value>Walang kategorya</value></data>
   <data name="GlobalProducts_Unit" xml:space="preserve"><value>Yunit</value></data>

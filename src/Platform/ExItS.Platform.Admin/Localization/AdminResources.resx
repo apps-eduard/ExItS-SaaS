@@ -900,7 +900,7 @@
   <data name="GlobalProducts_Title" xml:space="preserve"><value>Global products</value></data>
   <data name="GlobalProducts_Description" xml:space="preserve"><value>Platform-owned merchandise products for merchant catalog onboarding.</value></data>
   <data name="GlobalProducts_Empty" xml:space="preserve"><value>No products match the current filters.</value></data>
-  <data name="GlobalProducts_SearchPlaceholder" xml:space="preserve"><value>Search name, SKU, or barcode</value></data>
+  <data name="GlobalProducts_SearchPlaceholder" xml:space="preserve"><value>Search name, SKU, barcode, or brand</value></data>
   <data name="GlobalProducts_BarcodeFilter" xml:space="preserve"><value>Barcode</value></data>
   <data name="GlobalProducts_Create" xml:space="preserve"><value>Create product</value></data>
   <data name="GlobalProducts_HideCreate" xml:space="preserve"><value>Hide create</value></data>
@@ -916,6 +916,13 @@
   <data name="GlobalProducts_FieldDescription" xml:space="preserve"><value>Description</value></data>
   <data name="GlobalProducts_Sku" xml:space="preserve"><value>SKU</value></data>
   <data name="GlobalProducts_Barcode" xml:space="preserve"><value>Barcode</value></data>
+  <data name="GlobalProducts_Brand" xml:space="preserve"><value>Brand</value></data>
+  <data name="GlobalProducts_RequiredName" xml:space="preserve"><value>Name is required.</value></data>
+  <data name="GlobalProducts_RequiredSku" xml:space="preserve"><value>SKU is required.</value></data>
+  <data name="GlobalProducts_RequiredBarcode" xml:space="preserve"><value>Barcode is required.</value></data>
+  <data name="GlobalProducts_RequiredBrand" xml:space="preserve"><value>Brand is required.</value></data>
+  <data name="GlobalProducts_RequiredCategory" xml:space="preserve"><value>Category is required.</value></data>
+  <data name="GlobalProducts_RequiredUnit" xml:space="preserve"><value>Unit is required.</value></data>
   <data name="GlobalProducts_Category" xml:space="preserve"><value>Category</value></data>
   <data name="GlobalProducts_Uncategorized" xml:space="preserve"><value>Uncategorized</value></data>
   <data name="GlobalProducts_Unit" xml:space="preserve"><value>Unit</value></data>
