@@ -3,6 +3,7 @@ using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.GlobalCatalog;
 using ExItS.Platform.Domain.Audit;
 using ExItS.Platform.Domain.Authorization;
+using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.GlobalCatalog;
 
 namespace ExItS.Platform.Api.GlobalCatalog;
@@ -188,6 +189,8 @@ internal static class GlobalCatalogEndpoints
             string? search,
             string? barcode,
             string? sku,
+            string? sortBy,
+            bool? sortDesc,
             int? page,
             int? pageSize,
             CancellationToken ct) =>
@@ -203,8 +206,34 @@ internal static class GlobalCatalogEndpoints
                 return denied;
             }
 
+            GlobalProductListSortBy effectiveSort = GlobalProductListSortBy.Name;
+            if (!string.IsNullOrWhiteSpace(sortBy))
+            {
+                if (!Enum.TryParse<GlobalProductListSortBy>(sortBy, ignoreCase: true, out var parsed)
+                    || !Enum.IsDefined(parsed))
+                {
+                    return PlatformApiResults.Problem(
+                        DomainErrorCodes.InvalidGlobalProductSortField,
+                        $"Unrecognized sort field '{sortBy}'.",
+                        StatusCodes.Status400BadRequest);
+                }
+
+                effectiveSort = parsed;
+            }
+
             var result = await queries
-                .ListAsync(status, categoryId, businessType, search, barcode, sku, page, pageSize, ct)
+                .ListAsync(
+                    status,
+                    categoryId,
+                    businessType,
+                    search,
+                    barcode,
+                    sku,
+                    page,
+                    pageSize,
+                    ct,
+                    sortBy: effectiveSort,
+                    sortDescending: sortDesc ?? false)
                 .ConfigureAwait(false);
             return Results.Ok(result);
         });
