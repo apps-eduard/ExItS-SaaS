@@ -1434,7 +1434,21 @@
   <data name="Purchasing_Field_Supplier" xml:space="preserve"><value>Supplier</value></data>
   <data name="Purchasing_Field_SupplierReference" xml:space="preserve"><value>Supplier reference</value></data>
   <data name="Purchasing_Field_Notes" xml:space="preserve"><value>Notes</value></data>
-  <data name="Purchasing_LineSummary" xml:space="preserve"><value>Ordered {0} Â· Received {1} Â· Outstanding {2} Â· Cost {3}</value></data>
+  <data name="Purchasing_Field_ExpectedDelivery" xml:space="preserve"><value>Expected delivery</value></data>
+  <data name="Purchasing_Field_Product" xml:space="preserve"><value>Product</value></data>
+  <data name="Purchasing_Field_OrderedQty" xml:space="preserve"><value>Ordered quantity</value></data>
+  <data name="Purchasing_Field_UnitCost" xml:space="preserve"><value>Unit purchase cost</value></data>
+  <data name="Purchasing_AddLine" xml:space="preserve"><value>Add line</value></data>
+  <data name="Purchasing_RemoveLine" xml:space="preserve"><value>Remove</value></data>
+  <data name="Purchasing_LineDraftSummary" xml:space="preserve"><value>Qty {0} · Cost {1}</value></data>
+  <data name="Purchasing_SupplierRequired" xml:space="preserve"><value>Select a supplier.</value></data>
+  <data name="Purchasing_OrderDateRequired" xml:space="preserve"><value>Enter the order date.</value></data>
+  <data name="Purchasing_LinesRequired" xml:space="preserve"><value>Add at least one product line.</value></data>
+  <data name="Purchasing_InvalidOrderedQty" xml:space="preserve"><value>Enter a positive ordered quantity.</value></data>
+  <data name="Purchasing_InvalidUnitCost" xml:space="preserve"><value>Unit purchase cost cannot be negative.</value></data>
+  <data name="Purchasing_NoSuppliersTitle" xml:space="preserve"><value>No active suppliers</value></data>
+  <data name="Purchasing_NoSuppliersMessage" xml:space="preserve"><value>Create an active supplier before starting a purchase order.</value></data>
+  <data name="Purchasing_LineSummary" xml:space="preserve"><value>Ordered {0} · Received {1} · Outstanding {2} · Cost {3}</value></data>
   <data name="Purchasing_Outstanding" xml:space="preserve"><value>Outstanding {0} {1}</value></data>
   <data name="Purchasing_ReceiveQty" xml:space="preserve"><value>Receive quantity</value></data>
   <data name="Purchasing_DeliveryReference" xml:space="preserve"><value>Delivery reference</value></data>

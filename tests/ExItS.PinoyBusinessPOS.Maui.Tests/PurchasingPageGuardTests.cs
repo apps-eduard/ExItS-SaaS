@@ -13,6 +13,13 @@ public sealed class PurchasingPageGuardTests
 
         var create = File.ReadAllText(Path.Combine(pages, "PurchasingCreate.razor"));
         Assert.Contains("@page \"/purchasing/new\"", create, StringComparison.Ordinal);
+        Assert.Contains("CreateAsync", create, StringComparison.Ordinal);
+        Assert.Contains("CreatePurchaseOrderRequest", create, StringComparison.Ordinal);
+        Assert.Contains("IPosSupplierClient", create, StringComparison.Ordinal);
+        Assert.Contains("IPosCatalogClient", create, StringComparison.Ordinal);
+        Assert.Contains("Purchasing_AddLine", create, StringComparison.Ordinal);
+        Assert.Contains("Purchasing_Field_Supplier", create, StringComparison.Ordinal);
+        Assert.Contains("/purchasing/{result.Data.PurchaseOrderId:D}", create, StringComparison.Ordinal);
 
         var detail = File.ReadAllText(Path.Combine(pages, "PurchasingDetail.razor"));
         Assert.Contains("@page \"/purchasing/{PurchaseOrderId:guid}\"", detail, StringComparison.Ordinal);
@@ -70,7 +77,11 @@ public sealed class PurchasingPageGuardTests
                      "Purchasing_OfflineMessage",
                      "Purchasing_Create",
                      "Purchasing_Submit",
-                     "Purchasing_Receive"
+                     "Purchasing_Receive",
+                     "Purchasing_AddLine",
+                     "Purchasing_SupplierRequired",
+                     "Purchasing_LinesRequired",
+                     "Purchasing_NoSuppliersMessage"
                  })
         {
             Assert.Contains($"name=\"{key}\"", en, StringComparison.Ordinal);

@@ -2,7 +2,10 @@
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IPosPurchaseOrderClient Purchasing
+@inject IPosSupplierClient Suppliers
+@inject IPosCatalogClient Catalog
 @inject IUtangCapabilityEvaluator Capabilities
+@inject ApiStatusLocalizer ApiLocalizer
 @inject IConnectivityService Connectivity
 @inject IStringLocalizer<PosResources> L
 
@@ -13,8 +16,14 @@
 else
 {
     var canManage = Capabilities.IsAllowed(UtangCapability.ManagePurchasing);
+    var blocked = _isOffline || !canManage;
 <Page>
-    <PageHeader Title="@L["Purchasing_CreateTitle"]" Subtitle="@L["Purchasing_CreateSubtitle"]" />
+    <PageHeader Title="@L["Purchasing_CreateTitle"]" Subtitle="@L["Purchasing_CreateSubtitle"]">
+        <Actions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoList">@L["Purchasing_BackToList"]</Button>
+        </Actions>
+    </PageHeader>
+
     @if (_isOffline)
     {
         <Alert Tone="AlertTone.Warning" Title="@L["Purchasing_OfflineTitle"]" Message="@L["Purchasing_OfflineMessage"]" />
@@ -23,14 +32,137 @@ else
     {
         <Alert Tone="AlertTone.Warning" Title="@L["Access_RestrictedTitle"]" Message="@L["Access_RestrictedMessage"]" />
     }
-    <Button Variant="ButtonVariant.Primary" Disabled="@(!canManage || _isOffline || _saving)" OnClick="SaveAsync">@L["Purchasing_Create"]</Button>
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Purchasing_ErrorTitle"])" Message="@_errorMessage" />
+    }
+
+    @if (!_isOffline && canManage && _suppliers.Count == 0 && !_loadingLookups)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["Purchasing_NoSuppliersTitle"]" Message="@L["Purchasing_NoSuppliersMessage"]" />
+    }
+
+    <Section Title="@L["Purchasing_DetailsSection"]">
+        <Stack Gap="3">
+            <Select Label="@L["Purchasing_Field_Supplier"]"
+                    Value="@_supplierId"
+                    ValueChanged="v => _supplierId = v"
+                    Options="@SupplierOptions"
+                    Required="true"
+                    IsInvalid="@(!string.IsNullOrEmpty(_supplierError))"
+                    ErrorText="@_supplierError"
+                    Disabled="@(blocked || _saving || _loadingLookups)" />
+            <DateInput Label="@L["Purchasing_Field_OrderDate"]"
+                       Value="@_orderDate"
+                       ValueChanged="v => _orderDate = v"
+                       Required="true"
+                       IsInvalid="@(!string.IsNullOrEmpty(_orderDateError))"
+                       ErrorText="@_orderDateError"
+                       Disabled="@(blocked || _saving)" />
+            <DateInput Label="@L["Purchasing_Field_ExpectedDelivery"]"
+                       Value="@_expectedDeliveryDate"
+                       ValueChanged="v => _expectedDeliveryDate = v"
+                       Disabled="@(blocked || _saving)" />
+            <TextInput Label="@L["Purchasing_Field_SupplierReference"]"
+                       Value="@_supplierReference"
+                       ValueChanged="v => _supplierReference = v"
+                       Disabled="@(blocked || _saving)" />
+            <TextInput Label="@L["Purchasing_Field_Notes"]"
+                       Value="@_notes"
+                       ValueChanged="v => _notes = v"
+                       Disabled="@(blocked || _saving)" />
+        </Stack>
+    </Section>
+
+    <Section Title="@L["Purchasing_LinesSection"]">
+        <Stack Gap="3">
+            <Select Label="@L["Purchasing_Field_Product"]"
+                    Value="@_selectedProductId"
+                    ValueChanged="v => _selectedProductId = v"
+                    Options="@ProductOptions"
+                    Disabled="@(blocked || _saving || _loadingLookups)" />
+            <TextInput Label="@L["Purchasing_Field_OrderedQty"]"
+                       Value="@_draftQtyText"
+                       ValueChanged="v => _draftQtyText = v"
+                       IsInvalid="@(!string.IsNullOrEmpty(_draftQtyError))"
+                       ErrorText="@_draftQtyError"
+                       Disabled="@(blocked || _saving)" />
+            <CurrencyInput Label="@L["Purchasing_Field_UnitCost"]"
+                           Value="@_draftUnitCost"
+                           ValueChanged="v => _draftUnitCost = v"
+                           CurrencyCode="PHP"
+                           IsInvalid="@(!string.IsNullOrEmpty(_draftCostError))"
+                           ErrorText="@_draftCostError"
+                           Disabled="@(blocked || _saving)" />
+            <Button Variant="ButtonVariant.Secondary"
+                    Disabled="@(blocked || _saving || string.IsNullOrEmpty(_selectedProductId))"
+                    OnClick="AddLine">@L["Purchasing_AddLine"]</Button>
+
+            @if (!string.IsNullOrEmpty(_linesError))
+            {
+                <Alert Tone="AlertTone.Danger" Title="@L["Purchasing_ErrorTitle"]" Message="@_linesError" />
+            }
+
+            @foreach (var line in _lines)
+            {
+                <div class="pos-po-line">
+                    <div class="pos-value-md">@line.Name</div>
+                    <div class="pos-muted">
+                        @L["Purchasing_LineDraftSummary", line.OrderedQty, line.UnitPurchaseCost]
+                    </div>
+                    <Button Variant="ButtonVariant.Secondary"
+                            Disabled="@(blocked || _saving)"
+                            OnClick="() => RemoveLine(line.ProductId)">@L["Purchasing_RemoveLine"]</Button>
+                </div>
+            }
+        </Stack>
+    </Section>
+
+    <FormActions>
+        <Button Variant="ButtonVariant.Secondary" Disabled="@_saving" OnClick="GoList">@L["Purchasing_BackToList"]</Button>
+        <Button Variant="ButtonVariant.Primary"
+                IsLoading="@_saving"
+                Disabled="@(blocked || _saving || _loadingLookups)"
+                OnClick="SaveAsync">@L["Purchasing_Create"]</Button>
+    </FormActions>
 </Page>
 }
 
 @code {
+    private sealed record LineEntry(Guid ProductId, string Name, decimal OrderedQty, decimal UnitPurchaseCost);
+
     private bool _ready;
     private bool _saving;
     private bool _isOffline;
+    private bool _loadingLookups;
+    private string? _supplierId;
+    private DateOnly? _orderDate = DateOnly.FromDateTime(DateTime.Today);
+    private DateOnly? _expectedDeliveryDate;
+    private string? _supplierReference;
+    private string? _notes;
+    private string _selectedProductId = string.Empty;
+    private string _draftQtyText = "1";
+    private decimal? _draftUnitCost;
+    private List<LineEntry> _lines = [];
+    private List<PosSupplierDto> _suppliers = [];
+    private List<PosCatalogProductDto> _products = [];
+    private string? _supplierError;
+    private string? _orderDateError;
+    private string? _draftQtyError;
+    private string? _draftCostError;
+    private string? _linesError;
+    private string? _errorTitle;
+    private string? _errorMessage;
+
+    private IReadOnlyList<SelectOption> SupplierOptions =>
+        _suppliers.Select(s => new SelectOption(s.SupplierId.ToString("D"), s.Name)).ToList();
+
+    private IReadOnlyList<SelectOption> ProductOptions =>
+        _products
+            .Where(p => _lines.All(l => l.ProductId != p.ProductId))
+            .Select(p => new SelectOption(p.ProductId.ToString("D"), p.Name))
+            .ToList();
 
     protected override async Task OnInitializedAsync()
     {
@@ -48,11 +180,160 @@ else
 
         _isOffline = !await Connectivity.IsConnectedAsync();
         _ready = true;
+
+        if (!_isOffline && Capabilities.IsAllowed(UtangCapability.ManagePurchasing))
+        {
+            await LoadLookupsAsync();
+        }
     }
 
-    private Task SaveAsync()
+    private async Task LoadLookupsAsync()
     {
-        _saving = true;
-        return Task.CompletedTask;
+        _loadingLookups = true;
+        _errorTitle = null;
+        _errorMessage = null;
+
+        var suppliersTask = Suppliers.ListAsync(status: "Active", page: 1, pageSize: 200);
+        var productsTask = Catalog.ListProductsAsync(pageSize: 200);
+        await Task.WhenAll(suppliersTask, productsTask);
+
+        var suppliers = await suppliersTask;
+        if (suppliers.IsSuccess && suppliers.Data is not null)
+        {
+            _suppliers = suppliers.Data.Items
+                .Where(s => string.Equals(s.Status, "Active", StringComparison.OrdinalIgnoreCase))
+                .OrderBy(s => s.Name, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+        else
+        {
+            var described = ApiLocalizer.Describe(suppliers.Status, suppliers.Error);
+            _errorTitle = L["Purchasing_ErrorTitle"];
+            _errorMessage = suppliers.Error?.Detail ?? described.Message;
+        }
+
+        var products = await productsTask;
+        if (products.IsSuccess && products.Data is not null)
+        {
+            _products = products.Data.Items
+                .Where(p => string.Equals(p.Status, "Active", StringComparison.OrdinalIgnoreCase))
+                .OrderBy(p => p.Name, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+        else if (string.IsNullOrEmpty(_errorMessage))
+        {
+            var described = ApiLocalizer.Describe(products.Status, products.Error);
+            _errorTitle = L["Purchasing_ErrorTitle"];
+            _errorMessage = products.Error?.Detail ?? described.Message;
+        }
+
+        _loadingLookups = false;
     }
+
+    private void AddLine()
+    {
+        _draftQtyError = null;
+        _draftCostError = null;
+        _linesError = null;
+
+        if (!Guid.TryParse(_selectedProductId, out var productId))
+        {
+            return;
+        }
+
+        if (_lines.Any(l => l.ProductId == productId))
+        {
+            return;
+        }
+
+        var product = _products.FirstOrDefault(p => p.ProductId == productId);
+        if (product is null)
+        {
+            return;
+        }
+
+        if (!decimal.TryParse(_draftQtyText.Trim(), NumberStyles.Number, CultureInfo.InvariantCulture, out var qty)
+            || qty <= 0m)
+        {
+            _draftQtyError = L["Purchasing_InvalidOrderedQty"];
+            return;
+        }
+
+        var unitCost = _draftUnitCost ?? 0m;
+        if (unitCost < 0m)
+        {
+            _draftCostError = L["Purchasing_InvalidUnitCost"];
+            return;
+        }
+
+        _lines.Add(new LineEntry(productId, product.Name, qty, unitCost));
+        _selectedProductId = string.Empty;
+        _draftQtyText = "1";
+        _draftUnitCost = null;
+    }
+
+    private void RemoveLine(Guid productId) =>
+        _lines.RemoveAll(l => l.ProductId == productId);
+
+    private async Task SaveAsync()
+    {
+        if (_saving || _isOffline || !Capabilities.IsAllowed(UtangCapability.ManagePurchasing))
+        {
+            return;
+        }
+
+        _supplierError = null;
+        _orderDateError = null;
+        _linesError = null;
+        _errorTitle = null;
+        _errorMessage = null;
+
+        var valid = true;
+        if (!Guid.TryParse(_supplierId, out var supplierId))
+        {
+            _supplierError = L["Purchasing_SupplierRequired"];
+            valid = false;
+        }
+
+        if (_orderDate is null)
+        {
+            _orderDateError = L["Purchasing_OrderDateRequired"];
+            valid = false;
+        }
+
+        if (_lines.Count == 0)
+        {
+            _linesError = L["Purchasing_LinesRequired"];
+            valid = false;
+        }
+
+        if (!valid)
+        {
+            return;
+        }
+
+        _saving = true;
+        var request = new CreatePurchaseOrderRequest(
+            supplierId,
+            _orderDate!.Value,
+            _lines.Select(l => new CreatePurchaseOrderLineRequest(l.ProductId, l.OrderedQty, l.UnitPurchaseCost)).ToList(),
+            ExpectedDeliveryDate: _expectedDeliveryDate,
+            SupplierReference: string.IsNullOrWhiteSpace(_supplierReference) ? null : _supplierReference.Trim(),
+            Notes: string.IsNullOrWhiteSpace(_notes) ? null : _notes.Trim());
+
+        var result = await Purchasing.CreateAsync(request);
+        _saving = false;
+
+        if (result.IsSuccess && result.Data is not null)
+        {
+            Nav.NavigateTo($"/purchasing/{result.Data.PurchaseOrderId:D}", replace: true);
+            return;
+        }
+
+        var described = ApiLocalizer.Describe(result.Status, result.Error);
+        _errorTitle = L["Purchasing_ErrorTitle"];
+        _errorMessage = result.Error?.Detail ?? described.Message;
+    }
+
+    private void GoList() => Nav.NavigateTo("/purchasing");
 }
