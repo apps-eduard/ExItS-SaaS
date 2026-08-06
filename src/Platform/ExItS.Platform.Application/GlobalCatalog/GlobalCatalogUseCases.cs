@@ -26,7 +26,9 @@ public sealed class GlobalCategoryQueryService
         string? search,
         int? page,
         int? pageSize,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        GlobalCategoryListSortBy sortBy = GlobalCategoryListSortBy.SortOrder,
+        bool sortDescending = false)
     {
         var (skip, take) = CatalogPagination.Normalize(page, pageSize);
         var (items, total) = await _categories
@@ -37,7 +39,9 @@ public sealed class GlobalCategoryQueryService
                 search,
                 skip,
                 take,
-                cancellationToken)
+                cancellationToken,
+                sortBy: sortBy,
+                sortDescending: sortDescending)
             .ConfigureAwait(false);
 
         return new PagedResult<GlobalCategoryDto>(
@@ -392,9 +396,9 @@ public sealed class CreateGlobalProduct
                 brand,
                 categoryId,
                 _clock.UtcNow,
+                request.CostPrice,
+                request.SellingPrice,
                 request.Description,
-                request.SuggestedPrice,
-                request.SuggestedCost,
                 request.ImageReference,
                 request.SearchTags,
                 GlobalCatalogUseCaseHelpers.ParseBusinessTypes(request.BusinessTypes));
@@ -509,9 +513,9 @@ public sealed class UpdateGlobalProduct
                 brand,
                 categoryId,
                 _clock.UtcNow,
+                request.CostPrice,
+                request.SellingPrice,
                 request.Description,
-                request.SuggestedPrice,
-                request.SuggestedCost,
                 request.ImageReference,
                 request.SearchTags,
                 GlobalCatalogUseCaseHelpers.ParseBusinessTypes(request.BusinessTypes));

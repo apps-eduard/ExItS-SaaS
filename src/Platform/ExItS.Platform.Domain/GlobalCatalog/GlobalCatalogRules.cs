@@ -129,6 +129,36 @@ public static class GlobalCatalogRules
         return Math.Round(amount.Value, 2, MidpointRounding.AwayFromZero);
     }
 
+    /// <summary>Requires a non-null monetary amount; rejects negative values.</summary>
+    public static decimal NormalizeRequiredMoney(decimal? amount, string fieldName)
+    {
+        if (amount is null)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidGlobalProductMoney,
+                $"{fieldName} is required.");
+        }
+
+        return NormalizeMoney(amount, fieldName)!.Value;
+    }
+
+    /// <summary>Requires both prices and enforces selling &gt;= cost.</summary>
+    public static (decimal CostPrice, decimal SellingPrice) NormalizeProductPrices(
+        decimal? costPrice,
+        decimal? sellingPrice)
+    {
+        var cost = NormalizeRequiredMoney(costPrice, "CostPrice");
+        var selling = NormalizeRequiredMoney(sellingPrice, "SellingPrice");
+        if (selling < cost)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidGlobalProductPriceRelationship,
+                "SellingPrice must be greater than or equal to CostPrice.");
+        }
+
+        return (cost, selling);
+    }
+
     public static IReadOnlyList<string> NormalizeSearchTags(IEnumerable<string>? tags)
     {
         if (tags is null)

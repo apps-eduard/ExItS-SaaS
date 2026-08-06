@@ -6,7 +6,7 @@ namespace ExItS.Platform.Domain.GlobalCatalog;
 /// Platform-owned global merchandise product. Soft lifecycle only — never hard-deleted.
 /// Barcode/SKU uniqueness is enforced by the repository / application layer.
 /// Optimistic concurrency uses <see cref="UpdatedAtUtc"/>.
-/// Required: Name, Category, Unit, SKU, Barcode, Brand.
+/// Required: Name, Category, Unit, SKU, Barcode, Brand, CostPrice, SellingPrice.
 /// </summary>
 public sealed class GlobalProduct
 {
@@ -21,8 +21,8 @@ public sealed class GlobalProduct
     public string Brand { get; private set; }
     public GlobalCategoryId? GlobalCategoryId { get; private set; }
     public ProductUnit Unit { get; private set; }
-    public decimal? SuggestedPrice { get; private set; }
-    public decimal? SuggestedCost { get; private set; }
+    public decimal? CostPrice { get; private set; }
+    public decimal? SellingPrice { get; private set; }
     public string? ImageReference { get; private set; }
     public GlobalProductStatus Status { get; private set; }
     public IReadOnlyList<string> SearchTags => _searchTags;
@@ -39,8 +39,8 @@ public sealed class GlobalProduct
         string brand,
         GlobalCategoryId? globalCategoryId,
         ProductUnit unit,
-        decimal? suggestedPrice,
-        decimal? suggestedCost,
+        decimal? costPrice,
+        decimal? sellingPrice,
         string? imageReference,
         GlobalProductStatus status,
         IEnumerable<string> searchTags,
@@ -56,8 +56,8 @@ public sealed class GlobalProduct
         Brand = brand;
         GlobalCategoryId = globalCategoryId;
         Unit = unit;
-        SuggestedPrice = suggestedPrice;
-        SuggestedCost = suggestedCost;
+        CostPrice = costPrice;
+        SellingPrice = sellingPrice;
         ImageReference = imageReference;
         Status = status;
         _searchTags.AddRange(GlobalCatalogRules.NormalizeSearchTags(searchTags));
@@ -74,9 +74,9 @@ public sealed class GlobalProduct
         string brand,
         GlobalCategoryId globalCategoryId,
         DateTimeOffset utcNow,
+        decimal? costPrice,
+        decimal? sellingPrice,
         string? description = null,
-        decimal? suggestedPrice = null,
-        decimal? suggestedCost = null,
         string? imageReference = null,
         IEnumerable<string>? searchTags = null,
         IEnumerable<BusinessType>? businessTypes = null,
@@ -85,6 +85,7 @@ public sealed class GlobalProduct
         DomainTime.EnsureUtc(utcNow);
         EnsureValidUnit(unit);
         GlobalCatalogRules.RequireCategory(globalCategoryId);
+        var (normalizedCost, normalizedSelling) = GlobalCatalogRules.NormalizeProductPrices(costPrice, sellingPrice);
 
         return new GlobalProduct(
             id ?? GlobalProductId.New(),
@@ -98,8 +99,8 @@ public sealed class GlobalProduct
             GlobalCatalogRules.NormalizeBrand(brand),
             globalCategoryId,
             unit,
-            GlobalCatalogRules.NormalizeMoney(suggestedPrice, "SuggestedPrice"),
-            GlobalCatalogRules.NormalizeMoney(suggestedCost, "SuggestedCost"),
+            normalizedCost,
+            normalizedSelling,
             GlobalCatalogRules.NormalizeOptionalText(
                 imageReference,
                 GlobalCatalogRules.ImageReferenceMaxLength,
@@ -112,7 +113,7 @@ public sealed class GlobalProduct
     }
 
     /// <summary>
-    /// Loads persisted state. Legacy rows may have blank SKU/Barcode/Brand or null category;
+    /// Loads persisted state. Legacy rows may have blank SKU/Barcode/Brand, null category, or null prices;
     /// <see cref="Update"/> requires valid values before save.
     /// </summary>
     public static GlobalProduct Rehydrate(
@@ -124,8 +125,8 @@ public sealed class GlobalProduct
         string? brand,
         GlobalCategoryId? globalCategoryId,
         ProductUnit unit,
-        decimal? suggestedPrice,
-        decimal? suggestedCost,
+        decimal? costPrice,
+        decimal? sellingPrice,
         string? imageReference,
         GlobalProductStatus status,
         IEnumerable<string> searchTags,
@@ -141,8 +142,8 @@ public sealed class GlobalProduct
             brand ?? string.Empty,
             globalCategoryId,
             unit,
-            suggestedPrice,
-            suggestedCost,
+            costPrice,
+            sellingPrice,
             imageReference,
             status,
             searchTags,
@@ -158,9 +159,9 @@ public sealed class GlobalProduct
         string brand,
         GlobalCategoryId globalCategoryId,
         DateTimeOffset utcNow,
+        decimal? costPrice,
+        decimal? sellingPrice,
         string? description = null,
-        decimal? suggestedPrice = null,
-        decimal? suggestedCost = null,
         string? imageReference = null,
         IEnumerable<string>? searchTags = null,
         IEnumerable<BusinessType>? businessTypes = null)
@@ -168,6 +169,7 @@ public sealed class GlobalProduct
         EnsureMutable(utcNow);
         EnsureValidUnit(unit);
         GlobalCatalogRules.RequireCategory(globalCategoryId);
+        var (normalizedCost, normalizedSelling) = GlobalCatalogRules.NormalizeProductPrices(costPrice, sellingPrice);
 
         Name = GlobalCatalogRules.NormalizeName(name);
         Description = GlobalCatalogRules.NormalizeOptionalText(
@@ -179,8 +181,8 @@ public sealed class GlobalProduct
         Brand = GlobalCatalogRules.NormalizeBrand(brand);
         GlobalCategoryId = globalCategoryId;
         Unit = unit;
-        SuggestedPrice = GlobalCatalogRules.NormalizeMoney(suggestedPrice, "SuggestedPrice");
-        SuggestedCost = GlobalCatalogRules.NormalizeMoney(suggestedCost, "SuggestedCost");
+        CostPrice = normalizedCost;
+        SellingPrice = normalizedSelling;
         ImageReference = GlobalCatalogRules.NormalizeOptionalText(
             imageReference,
             GlobalCatalogRules.ImageReferenceMaxLength,

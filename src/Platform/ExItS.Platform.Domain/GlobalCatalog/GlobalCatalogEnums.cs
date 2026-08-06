@@ -87,5 +87,29 @@ public enum GlobalProductListSortBy
     Unit = 5,
     Status = 6,
     UpdatedAtUtc = 7,
-    CreatedAtUtc = 8
+    CreatedAtUtc = 8,
+    CostPrice = 9,
+    SellingPrice = 10
+}
+
+/// <summary>Whitelist for global category list sorting.</summary>
+public enum GlobalCategoryListSortBy
+{
+    Name = 0,
+    SortOrder = 1,
+    Status = 2,
+    UpdatedAtUtc = 3,
+    CreatedAtUtc = 4
+}
+
+/// <summary>Whitelist for catalog template list sorting.</summary>
+public enum CatalogTemplateListSortBy
+{
+    Name = 0,
+    Slug = 1,
+    Status = 2,
+    PrimaryBusinessType = 3,
+    UpdatedAtUtc = 4,
+    CreatedAtUtc = 5,
+    ProductCount = 6
 }

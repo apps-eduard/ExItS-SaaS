@@ -14,8 +14,8 @@ public sealed class CatalogImportItem
     public Guid? GlobalCategoryId { get; private set; }
     public string? CategoryName { get; private set; }
     public string Unit { get; private set; }
-    public decimal? SuggestedPrice { get; private set; }
-    public decimal? SuggestedCost { get; private set; }
+    public decimal? SellingPrice { get; private set; }
+    public decimal? CostPrice { get; private set; }
     public string? ImageReference { get; private set; }
     public string? SearchTagsRaw { get; private set; }
     public string? BusinessTypesRaw { get; private set; }
@@ -36,8 +36,8 @@ public sealed class CatalogImportItem
         Guid? globalCategoryId,
         string? categoryName,
         string unit,
-        decimal? suggestedPrice,
-        decimal? suggestedCost,
+        decimal? sellingPrice,
+        decimal? costPrice,
         string? imageReference,
         string? searchTagsRaw,
         string? businessTypesRaw,
@@ -57,8 +57,8 @@ public sealed class CatalogImportItem
         GlobalCategoryId = globalCategoryId;
         CategoryName = categoryName;
         Unit = unit;
-        SuggestedPrice = suggestedPrice;
-        SuggestedCost = suggestedCost;
+        SellingPrice = sellingPrice;
+        CostPrice = costPrice;
         ImageReference = imageReference;
         SearchTagsRaw = searchTagsRaw;
         BusinessTypesRaw = businessTypesRaw;
@@ -79,8 +79,8 @@ public sealed class CatalogImportItem
         string? barcode = null,
         Guid? globalCategoryId = null,
         string? categoryName = null,
-        decimal? suggestedPrice = null,
-        decimal? suggestedCost = null,
+        decimal? sellingPrice = null,
+        decimal? costPrice = null,
         string? imageReference = null,
         string? searchTagsRaw = null,
         string? businessTypesRaw = null,
@@ -103,8 +103,8 @@ public sealed class CatalogImportItem
             globalCategoryId,
             categoryName,
             unit,
-            suggestedPrice,
-            suggestedCost,
+            sellingPrice,
+            costPrice,
             imageReference,
             searchTagsRaw,
             businessTypesRaw,
@@ -127,8 +127,8 @@ public sealed class CatalogImportItem
         string? barcode = null,
         Guid? globalCategoryId = null,
         string? categoryName = null,
-        decimal? suggestedPrice = null,
-        decimal? suggestedCost = null,
+        decimal? sellingPrice = null,
+        decimal? costPrice = null,
         string? imageReference = null,
         string? searchTagsRaw = null,
         string? businessTypesRaw = null,
@@ -151,8 +151,8 @@ public sealed class CatalogImportItem
             globalCategoryId,
             categoryName,
             string.IsNullOrWhiteSpace(unit) ? "Piece" : unit,
-            suggestedPrice,
-            suggestedCost,
+            sellingPrice,
+            costPrice,
             imageReference,
             searchTagsRaw,
             businessTypesRaw,
@@ -176,8 +176,8 @@ public sealed class CatalogImportItem
         string? barcode = null,
         Guid? globalCategoryId = null,
         string? categoryName = null,
-        decimal? suggestedPrice = null,
-        decimal? suggestedCost = null,
+        decimal? sellingPrice = null,
+        decimal? costPrice = null,
         string? imageReference = null,
         string? searchTagsRaw = null,
         string? businessTypesRaw = null,
@@ -192,8 +192,8 @@ public sealed class CatalogImportItem
             barcode,
             globalCategoryId,
             categoryName,
-            suggestedPrice,
-            suggestedCost,
+            sellingPrice,
+            costPrice,
             imageReference,
             searchTagsRaw,
             businessTypesRaw,
@@ -212,8 +212,8 @@ public sealed class CatalogImportItem
         Guid? globalCategoryId,
         string? categoryName,
         string unit,
-        decimal? suggestedPrice,
-        decimal? suggestedCost,
+        decimal? sellingPrice,
+        decimal? costPrice,
         string? imageReference,
         string? searchTagsRaw,
         string? businessTypesRaw,
@@ -233,8 +233,8 @@ public sealed class CatalogImportItem
             globalCategoryId,
             categoryName,
             unit,
-            suggestedPrice,
-            suggestedCost,
+            sellingPrice,
+            costPrice,
             imageReference,
             searchTagsRaw,
             businessTypesRaw,

@@ -31,6 +31,8 @@ internal static class GlobalCatalogEndpoints
             Guid? parentId,
             BusinessType? businessType,
             string? search,
+            string? sortBy,
+            bool? sortDesc,
             int? page,
             int? pageSize,
             CancellationToken ct) =>
@@ -46,8 +48,32 @@ internal static class GlobalCatalogEndpoints
                 return denied;
             }
 
+            GlobalCategoryListSortBy effectiveSort = GlobalCategoryListSortBy.SortOrder;
+            if (!string.IsNullOrWhiteSpace(sortBy))
+            {
+                if (!Enum.TryParse<GlobalCategoryListSortBy>(sortBy, ignoreCase: true, out var parsed)
+                    || !Enum.IsDefined(parsed))
+                {
+                    return PlatformApiResults.Problem(
+                        DomainErrorCodes.InvalidGlobalCategorySortField,
+                        $"Unrecognized sort field '{sortBy}'.",
+                        StatusCodes.Status400BadRequest);
+                }
+
+                effectiveSort = parsed;
+            }
+
             var result = await queries
-                .ListAsync(status, parentId, businessType, search, page, pageSize, ct)
+                .ListAsync(
+                    status,
+                    parentId,
+                    businessType,
+                    search,
+                    page,
+                    pageSize,
+                    ct,
+                    sortBy: effectiveSort,
+                    sortDescending: sortDesc ?? false)
                 .ConfigureAwait(false);
             return Results.Ok(result);
         });
@@ -573,6 +599,8 @@ internal static class GlobalCatalogEndpoints
             CatalogTemplateStatus? status,
             BusinessType? primaryBusinessType,
             string? search,
+            string? sortBy,
+            bool? sortDesc,
             int? page,
             int? pageSize,
             CancellationToken ct) =>
@@ -588,8 +616,31 @@ internal static class GlobalCatalogEndpoints
                 return denied;
             }
 
+            CatalogTemplateListSortBy effectiveSort = CatalogTemplateListSortBy.Name;
+            if (!string.IsNullOrWhiteSpace(sortBy))
+            {
+                if (!Enum.TryParse<CatalogTemplateListSortBy>(sortBy, ignoreCase: true, out var parsed)
+                    || !Enum.IsDefined(parsed))
+                {
+                    return PlatformApiResults.Problem(
+                        DomainErrorCodes.InvalidCatalogTemplateSortField,
+                        $"Unrecognized sort field '{sortBy}'.",
+                        StatusCodes.Status400BadRequest);
+                }
+
+                effectiveSort = parsed;
+            }
+
             var result = await queries
-                .ListAsync(status, primaryBusinessType, search, page, pageSize, ct)
+                .ListAsync(
+                    status,
+                    primaryBusinessType,
+                    search,
+                    page,
+                    pageSize,
+                    ct,
+                    sortBy: effectiveSort,
+                    sortDescending: sortDesc ?? false)
                 .ConfigureAwait(false);
             return Results.Ok(result);
         });

@@ -26,9 +26,9 @@ public static class CatalogImportRowMapper
     private static readonly string[] CategoryIdKeys = ["categoryid", "globalcategoryid", "category_id"];
     private static readonly string[] CategoryNameKeys = ["category", "categoryname", "category_name"];
     private static readonly string[] PriceKeys =
-        ["suggestedsellingprice", "suggestedprice", "price", "suggested_price"];
+        ["sellingprice", "suggestedsellingprice", "suggestedprice", "price", "suggested_price"];
     private static readonly string[] CostKeys =
-        ["suggestedcostprice", "suggestedcost", "cost", "suggested_cost"];
+        ["costprice", "suggestedcostprice", "suggestedcost", "cost", "suggested_cost"];
     private static readonly string[] ImageKeys = ["imagereference", "image", "image_reference", "imageurl"];
     private static readonly string[] TaxHintKeys = ["taxhint", "tax_hint"];
     private static readonly string[] TagsKeys = ["tags", "searchtags", "search_tags"];
@@ -145,10 +145,10 @@ public static class CatalogImportRowMapper
                 DomainErrorCodes.InvalidGlobalProductImage);
             var price = ParseMoney(
                 CatalogImportRules.SanitizeCell(rawPrice),
-                CatalogImportCsvSchema.SuggestedSellingPrice);
+                CatalogImportCsvSchema.SellingPrice);
             var cost = ParseMoney(
                 CatalogImportRules.SanitizeCell(rawCost),
-                CatalogImportCsvSchema.SuggestedCostPrice);
+                CatalogImportCsvSchema.CostPrice);
             description = GlobalCatalogRules.NormalizeOptionalText(
                 description,
                 GlobalCatalogRules.DescriptionMaxLength,
@@ -190,8 +190,8 @@ public static class CatalogImportRowMapper
                         sku,
                         barcode,
                         categoryName: rawCategoryNameSanitized,
-                        suggestedPrice: price,
-                        suggestedCost: cost,
+                        sellingPrice: price,
+                        costPrice: cost,
                         imageReference: image,
                         searchTagsRaw: NullIfEmpty(CatalogImportRules.SanitizeCell(rawTags)),
                         businessTypesRaw: NullIfEmpty(CatalogImportRules.SanitizeCell(rawBusinessTypes)));
@@ -212,8 +212,8 @@ public static class CatalogImportRowMapper
                         sku,
                         barcode,
                         categoryName: rawCategoryNameSanitized,
-                        suggestedPrice: price,
-                        suggestedCost: cost,
+                        sellingPrice: price,
+                        costPrice: cost,
                         imageReference: image,
                         searchTagsRaw: NullIfEmpty(CatalogImportRules.SanitizeCell(rawTags)),
                         businessTypesRaw: NullIfEmpty(CatalogImportRules.SanitizeCell(rawBusinessTypes)));
@@ -241,8 +241,8 @@ public static class CatalogImportRowMapper
                         sku,
                         barcode,
                         categoryName: rawCategoryNameSanitized,
-                        suggestedPrice: price,
-                        suggestedCost: cost,
+                        sellingPrice: price,
+                        costPrice: cost,
                         imageReference: image,
                         searchTagsRaw: NullIfEmpty(CatalogImportRules.SanitizeCell(rawTags)),
                         businessTypesRaw: NullIfEmpty(CatalogImportRules.SanitizeCell(rawBusinessTypes)));
@@ -273,8 +273,8 @@ public static class CatalogImportRowMapper
                             sku,
                             barcode,
                             categoryName: normalizedCategoryName,
-                            suggestedPrice: price,
-                            suggestedCost: cost,
+                            sellingPrice: price,
+                            costPrice: cost,
                             imageReference: image,
                             searchTagsRaw: NullIfEmpty(CatalogImportRules.SanitizeCell(rawTags)),
                             businessTypesRaw: NullIfEmpty(CatalogImportRules.SanitizeCell(rawBusinessTypes)));
@@ -295,8 +295,8 @@ public static class CatalogImportRowMapper
                     description,
                     sku,
                     barcode,
-                    suggestedPrice: price,
-                    suggestedCost: cost,
+                    sellingPrice: price,
+                    costPrice: cost,
                     imageReference: image,
                     searchTagsRaw: NullIfEmpty(CatalogImportRules.SanitizeCell(rawTags)),
                     businessTypesRaw: NullIfEmpty(CatalogImportRules.SanitizeCell(rawBusinessTypes)));
@@ -310,6 +310,30 @@ public static class CatalogImportRowMapper
             var businessTypesRaw = NullIfEmpty(CatalogImportRules.SanitizeCell(rawBusinessTypes));
             _ = GlobalCatalogRules.NormalizeSearchTags(SplitList(tagsRaw));
             _ = ParseBusinessTypes(businessTypesRaw);
+
+            try
+            {
+                GlobalCatalogRules.NormalizeProductPrices(cost, price);
+            }
+            catch (DomainException ex)
+            {
+                return CatalogImportItem.CreateFailed(
+                    row.RowNumber,
+                    name,
+                    unit.ToString(),
+                    ex.ErrorCode,
+                    ex.Message,
+                    description,
+                    sku,
+                    barcode,
+                    categoryId,
+                    categoryName,
+                    price,
+                    cost,
+                    image,
+                    tagsRaw,
+                    businessTypesRaw);
+            }
 
             if (barcodesInFile.TryGetValue(barcode, out var priorBarcodeRow))
             {

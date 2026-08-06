@@ -40,11 +40,13 @@ public sealed class CatalogTemplateQueryService
         string? search,
         int? page,
         int? pageSize,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        CatalogTemplateListSortBy sortBy = CatalogTemplateListSortBy.Name,
+        bool sortDescending = false)
     {
         var (skip, take) = CatalogPagination.Normalize(page, pageSize);
         var (items, total) = await _templates
-            .ListAsync(status, primaryBusinessType, search, skip, take, cancellationToken)
+            .ListAsync(status, primaryBusinessType, search, skip, take, cancellationToken, sortBy, sortDescending)
             .ConfigureAwait(false);
 
         return new PagedResult<CatalogTemplateSummaryDto>(

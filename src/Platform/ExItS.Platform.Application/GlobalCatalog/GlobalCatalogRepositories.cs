@@ -19,7 +19,9 @@ public interface IGlobalCategoryRepository
         string? search,
         int skip,
         int take,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default,
+        GlobalCategoryListSortBy sortBy = GlobalCategoryListSortBy.SortOrder,
+        bool sortDescending = false);
 
     Task<IReadOnlyList<GlobalCategory>> GetByIdsAsync(
         IReadOnlyCollection<Guid> ids,
@@ -84,7 +86,9 @@ public interface ICatalogTemplateRepository
         string? search,
         int skip,
         int take,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default,
+        CatalogTemplateListSortBy sortBy = CatalogTemplateListSortBy.Name,
+        bool sortDescending = false);
 
     Task AddAsync(CatalogTemplate template, CancellationToken cancellationToken = default);
     Task UpdateAsync(CatalogTemplate template, CancellationToken cancellationToken = default);

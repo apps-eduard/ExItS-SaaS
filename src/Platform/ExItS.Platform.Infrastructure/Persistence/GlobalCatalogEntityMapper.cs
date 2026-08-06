@@ -68,8 +68,8 @@ internal static class GlobalCatalogEntityMapper
             record.Brand,
             record.GlobalCategoryId is null ? null : GlobalCategoryId.From(record.GlobalCategoryId.Value),
             Enum.Parse<ProductUnit>(record.Unit),
-            record.SuggestedPrice,
-            record.SuggestedCost,
+            record.CostPrice,
+            record.SellingPrice,
             record.ImageReference,
             Enum.Parse<GlobalProductStatus>(record.Status),
             record.SearchTags ?? [],
@@ -88,8 +88,8 @@ internal static class GlobalCatalogEntityMapper
             Brand = product.Brand,
             GlobalCategoryId = product.GlobalCategoryId?.Value,
             Unit = product.Unit.ToString(),
-            SuggestedPrice = product.SuggestedPrice,
-            SuggestedCost = product.SuggestedCost,
+            SellingPrice = product.SellingPrice,
+            CostPrice = product.CostPrice,
             ImageReference = product.ImageReference,
             Status = product.Status.ToString(),
             SearchTags = product.SearchTags.ToArray(),
@@ -113,8 +113,8 @@ internal static class GlobalCatalogEntityMapper
         record.Brand = product.Brand;
         record.GlobalCategoryId = product.GlobalCategoryId?.Value;
         record.Unit = product.Unit.ToString();
-        record.SuggestedPrice = product.SuggestedPrice;
-        record.SuggestedCost = product.SuggestedCost;
+        record.SellingPrice = product.SellingPrice;
+        record.CostPrice = product.CostPrice;
         record.ImageReference = product.ImageReference;
         record.Status = product.Status.ToString();
         record.SearchTags = product.SearchTags.ToArray();
@@ -244,8 +244,8 @@ internal static class GlobalCatalogEntityMapper
             record.GlobalCategoryId,
             record.CategoryName,
             record.Unit,
-            record.SuggestedPrice,
-            record.SuggestedCost,
+            record.SellingPrice,
+            record.CostPrice,
             record.ImageReference,
             record.SearchTagsRaw,
             record.BusinessTypesRaw,
@@ -325,8 +325,8 @@ internal static class GlobalCatalogEntityMapper
             GlobalCategoryId = item.GlobalCategoryId,
             CategoryName = item.CategoryName,
             Unit = item.Unit,
-            SuggestedPrice = item.SuggestedPrice,
-            SuggestedCost = item.SuggestedCost,
+            SellingPrice = item.SellingPrice,
+            CostPrice = item.CostPrice,
             ImageReference = item.ImageReference,
             SearchTagsRaw = item.SearchTagsRaw,
             BusinessTypesRaw = item.BusinessTypesRaw,
@@ -347,8 +347,8 @@ internal static class GlobalCatalogEntityMapper
         record.GlobalCategoryId = item.GlobalCategoryId;
         record.CategoryName = item.CategoryName;
         record.Unit = item.Unit;
-        record.SuggestedPrice = item.SuggestedPrice;
-        record.SuggestedCost = item.SuggestedCost;
+        record.SellingPrice = item.SellingPrice;
+        record.CostPrice = item.CostPrice;
         record.ImageReference = item.ImageReference;
         record.SearchTagsRaw = item.SearchTagsRaw;
         record.BusinessTypesRaw = item.BusinessTypesRaw;

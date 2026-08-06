@@ -21,8 +21,8 @@ public static class CatalogImportCsvSchema
     public const string Unit = "Unit";
     public const string Barcode = "Barcode";
     public const string SuggestedSku = "SuggestedSku";
-    public const string SuggestedSellingPrice = "SuggestedSellingPrice";
-    public const string SuggestedCostPrice = "SuggestedCostPrice";
+    public const string SellingPrice = "SellingPrice";
+    public const string CostPrice = "CostPrice";
     public const string TaxHint = "TaxHint";
     public const string Tags = "Tags";
     public const string BusinessTypes = "BusinessTypes";
@@ -38,8 +38,8 @@ public static class CatalogImportCsvSchema
         Unit,
         Barcode,
         SuggestedSku,
-        SuggestedSellingPrice,
-        SuggestedCostPrice,
+        SellingPrice,
+        CostPrice,
         TaxHint,
         Tags,
         BusinessTypes,

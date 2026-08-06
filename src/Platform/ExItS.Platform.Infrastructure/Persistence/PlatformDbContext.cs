@@ -1662,8 +1662,8 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.Brand).HasColumnName("brand").HasMaxLength(120);
             entity.Property(e => e.GlobalCategoryId).HasColumnName("global_category_id");
             entity.Property(e => e.Unit).HasColumnName("unit").HasMaxLength(32).IsRequired();
-            entity.Property(e => e.SuggestedPrice).HasColumnName("suggested_price").HasColumnType("decimal(18,2)");
-            entity.Property(e => e.SuggestedCost).HasColumnName("suggested_cost").HasColumnType("decimal(18,2)");
+            entity.Property(e => e.CostPrice).HasColumnName("cost_price").HasColumnType("decimal(18,2)");
+            entity.Property(e => e.SellingPrice).HasColumnName("selling_price").HasColumnType("decimal(18,2)");
             entity.Property(e => e.ImageReference).HasColumnName("image_reference").HasMaxLength(512);
             entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
             entity.Property(e => e.SearchTags).HasColumnName("search_tags").HasColumnType("text[]");
@@ -1822,8 +1822,8 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.GlobalCategoryId).HasColumnName("global_category_id");
             entity.Property(e => e.CategoryName).HasColumnName("category_name").HasMaxLength(200);
             entity.Property(e => e.Unit).HasColumnName("unit").HasMaxLength(32).IsRequired();
-            entity.Property(e => e.SuggestedPrice).HasColumnName("suggested_price").HasColumnType("decimal(18,2)");
-            entity.Property(e => e.SuggestedCost).HasColumnName("suggested_cost").HasColumnType("decimal(18,2)");
+            entity.Property(e => e.CostPrice).HasColumnName("cost_price").HasColumnType("decimal(18,2)");
+            entity.Property(e => e.SellingPrice).HasColumnName("selling_price").HasColumnType("decimal(18,2)");
             entity.Property(e => e.ImageReference).HasColumnName("image_reference").HasMaxLength(512);
             entity.Property(e => e.SearchTagsRaw).HasColumnName("search_tags_raw").HasMaxLength(1000);
             entity.Property(e => e.BusinessTypesRaw).HasColumnName("business_types_raw").HasMaxLength(512);

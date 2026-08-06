@@ -200,11 +200,17 @@ public static class DomainErrorCodes
         "platform.global_catalog.product.description.invalid";
     public const string InvalidGlobalProductImage = "platform.global_catalog.product.image.invalid";
     public const string InvalidGlobalProductMoney = "platform.global_catalog.product.money.invalid";
+    public const string InvalidGlobalProductPriceRelationship =
+        "platform.global_catalog.product.price.relationship.invalid";
     public const string InvalidGlobalProductSearchTag =
         "platform.global_catalog.product.search_tag.invalid";
     public const string InvalidGlobalProductUnit = "platform.global_catalog.product.unit.invalid";
     public const string InvalidGlobalProductSortField =
         "platform.global_catalog.product.sort.invalid";
+    public const string InvalidGlobalCategorySortField =
+        "platform.global_catalog.category.sort.invalid";
+    public const string InvalidCatalogTemplateSortField =
+        "platform.global_catalog.template.sort.invalid";
     public const string InvalidGlobalCatalogBusinessType =
         "platform.global_catalog.business_type.invalid";
     public const string GlobalCatalogConcurrencyConflict =

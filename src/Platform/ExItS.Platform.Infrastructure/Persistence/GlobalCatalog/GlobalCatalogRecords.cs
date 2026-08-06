@@ -32,8 +32,8 @@ internal sealed class GlobalProductRecord
     public string? Brand { get; set; }
     public Guid? GlobalCategoryId { get; set; }
     public string Unit { get; set; } = string.Empty;
-    public decimal? SuggestedPrice { get; set; }
-    public decimal? SuggestedCost { get; set; }
+    public decimal? CostPrice { get; set; }
+    public decimal? SellingPrice { get; set; }
     public string? ImageReference { get; set; }
     public string Status { get; set; } = string.Empty;
     public string[] SearchTags { get; set; } = [];
@@ -119,8 +119,8 @@ internal sealed class CatalogImportItemRecord
     public Guid? GlobalCategoryId { get; set; }
     public string? CategoryName { get; set; }
     public string Unit { get; set; } = string.Empty;
-    public decimal? SuggestedPrice { get; set; }
-    public decimal? SuggestedCost { get; set; }
+    public decimal? CostPrice { get; set; }
+    public decimal? SellingPrice { get; set; }
     public string? ImageReference { get; set; }
     public string? SearchTagsRaw { get; set; }
     public string? BusinessTypesRaw { get; set; }

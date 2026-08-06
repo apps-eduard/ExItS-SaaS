@@ -55,7 +55,9 @@ internal sealed class GlobalCategoryRepository : IGlobalCategoryRepository
         string? search,
         int skip,
         int take,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        GlobalCategoryListSortBy sortBy = GlobalCategoryListSortBy.SortOrder,
+        bool sortDescending = false)
     {
         var query = _db.GlobalCategories.AsNoTracking().Include(c => c.BusinessTypes).AsQueryable();
 
@@ -82,12 +84,35 @@ internal sealed class GlobalCategoryRepository : IGlobalCategoryRepository
             query = query.Where(c => c.Name.ToLower().Contains(term));
         }
 
-        query = query.OrderBy(c => c.SortOrder).ThenBy(c => c.Name);
+        query = ApplyCategorySort(query, sortBy, sortDescending);
 
         var totalCount = await query.CountAsync(cancellationToken).ConfigureAwait(false);
         var records = await query.Skip(skip).Take(take).ToListAsync(cancellationToken).ConfigureAwait(false);
         return (records.Select(GlobalCatalogEntityMapper.ToDomain).ToList(), totalCount);
     }
+
+    private static IQueryable<GlobalCategoryRecord> ApplyCategorySort(
+        IQueryable<GlobalCategoryRecord> query,
+        GlobalCategoryListSortBy sortBy,
+        bool sortDescending) =>
+        sortBy switch
+        {
+            GlobalCategoryListSortBy.Name => sortDescending
+                ? query.OrderByDescending(c => c.Name).ThenBy(c => c.Id)
+                : query.OrderBy(c => c.Name).ThenBy(c => c.Id),
+            GlobalCategoryListSortBy.Status => sortDescending
+                ? query.OrderByDescending(c => c.Status).ThenBy(c => c.Id)
+                : query.OrderBy(c => c.Status).ThenBy(c => c.Id),
+            GlobalCategoryListSortBy.UpdatedAtUtc => sortDescending
+                ? query.OrderByDescending(c => c.UpdatedAtUtc).ThenBy(c => c.Id)
+                : query.OrderBy(c => c.UpdatedAtUtc).ThenBy(c => c.Id),
+            GlobalCategoryListSortBy.CreatedAtUtc => sortDescending
+                ? query.OrderByDescending(c => c.CreatedAtUtc).ThenBy(c => c.Id)
+                : query.OrderBy(c => c.CreatedAtUtc).ThenBy(c => c.Id),
+            _ => sortDescending
+                ? query.OrderByDescending(c => c.SortOrder).ThenByDescending(c => c.Name).ThenBy(c => c.Id)
+                : query.OrderBy(c => c.SortOrder).ThenBy(c => c.Name).ThenBy(c => c.Id)
+        };
 
     public async Task<IReadOnlyList<GlobalCategory>> GetByIdsAsync(
         IReadOnlyCollection<Guid> ids,
@@ -299,6 +324,12 @@ internal sealed class GlobalProductRepository : IGlobalProductRepository
 
         return sortBy switch
         {
+            GlobalProductListSortBy.CostPrice => sortDescending
+                ? query.OrderByDescending(p => p.CostPrice ?? decimal.MinValue).ThenBy(p => p.Id)
+                : query.OrderBy(p => p.CostPrice ?? decimal.MaxValue).ThenBy(p => p.Id),
+            GlobalProductListSortBy.SellingPrice => sortDescending
+                ? query.OrderByDescending(p => p.SellingPrice ?? decimal.MinValue).ThenBy(p => p.Id)
+                : query.OrderBy(p => p.SellingPrice ?? decimal.MaxValue).ThenBy(p => p.Id),
             GlobalProductListSortBy.Sku => sortDescending
                 ? query.OrderByDescending(p => p.Sku ?? string.Empty).ThenBy(p => p.Id)
                 : query.OrderBy(p => p.Sku ?? string.Empty).ThenBy(p => p.Id),
@@ -408,7 +439,9 @@ internal sealed class CatalogTemplateRepository : ICatalogTemplateRepository
         string? search,
         int skip,
         int take,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        CatalogTemplateListSortBy sortBy = CatalogTemplateListSortBy.Name,
+        bool sortDescending = false)
     {
         var query = _db.CatalogTemplates.AsNoTracking().Include(t => t.Products).AsQueryable();
 
@@ -432,12 +465,41 @@ internal sealed class CatalogTemplateRepository : ICatalogTemplateRepository
                 || t.Slug.ToLower().Contains(term));
         }
 
-        query = query.OrderBy(t => t.Name).ThenBy(t => t.Id);
+        query = ApplyTemplateSort(query, sortBy, sortDescending);
 
         var totalCount = await query.CountAsync(cancellationToken).ConfigureAwait(false);
         var records = await query.Skip(skip).Take(take).ToListAsync(cancellationToken).ConfigureAwait(false);
         return (records.Select(GlobalCatalogEntityMapper.ToDomain).ToList(), totalCount);
     }
+
+    private static IQueryable<CatalogTemplateRecord> ApplyTemplateSort(
+        IQueryable<CatalogTemplateRecord> query,
+        CatalogTemplateListSortBy sortBy,
+        bool sortDescending) =>
+        sortBy switch
+        {
+            CatalogTemplateListSortBy.Slug => sortDescending
+                ? query.OrderByDescending(t => t.Slug).ThenBy(t => t.Id)
+                : query.OrderBy(t => t.Slug).ThenBy(t => t.Id),
+            CatalogTemplateListSortBy.Status => sortDescending
+                ? query.OrderByDescending(t => t.Status).ThenBy(t => t.Id)
+                : query.OrderBy(t => t.Status).ThenBy(t => t.Id),
+            CatalogTemplateListSortBy.PrimaryBusinessType => sortDescending
+                ? query.OrderByDescending(t => t.PrimaryBusinessType).ThenBy(t => t.Id)
+                : query.OrderBy(t => t.PrimaryBusinessType).ThenBy(t => t.Id),
+            CatalogTemplateListSortBy.UpdatedAtUtc => sortDescending
+                ? query.OrderByDescending(t => t.UpdatedAtUtc).ThenBy(t => t.Id)
+                : query.OrderBy(t => t.UpdatedAtUtc).ThenBy(t => t.Id),
+            CatalogTemplateListSortBy.CreatedAtUtc => sortDescending
+                ? query.OrderByDescending(t => t.CreatedAtUtc).ThenBy(t => t.Id)
+                : query.OrderBy(t => t.CreatedAtUtc).ThenBy(t => t.Id),
+            CatalogTemplateListSortBy.ProductCount => sortDescending
+                ? query.OrderByDescending(t => t.Products.Count).ThenBy(t => t.Id)
+                : query.OrderBy(t => t.Products.Count).ThenBy(t => t.Id),
+            _ => sortDescending
+                ? query.OrderByDescending(t => t.Name).ThenBy(t => t.Id)
+                : query.OrderBy(t => t.Name).ThenBy(t => t.Id)
+        };
 
     public Task AddAsync(CatalogTemplate template, CancellationToken cancellationToken = default)
     {

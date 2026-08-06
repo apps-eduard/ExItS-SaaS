@@ -459,9 +459,9 @@ public sealed class ProcessCatalogImportChunk
                 brand,
                 categoryId,
                 now,
+                item.CostPrice,
+                item.SellingPrice,
                 item.Description,
-                item.SuggestedPrice,
-                item.SuggestedCost,
                 item.ImageReference,
                 tags,
                 CatalogImportRowMapper.ParseBusinessTypes(item.BusinessTypesRaw));
