@@ -10,6 +10,7 @@
 @inject IStringLocalizer<AdminResources> L
 @inject NavigationManager Nav
 @inject PlatformPermissionState Permissions
+@using ExItS.Platform.Admin.Services
 @inject IJSRuntime Js
 
 @if (!Permissions.Loaded)
@@ -56,17 +57,20 @@ else if (Id is null)
            DataSource="_jobs"
            Loading="_loading"
            Size="@TableSize.Small"
+           Bordered
+           Resizable
+           ScrollX="1200"
            HidePagination="true">
-        <PropertyColumn Property="c => c.FileName" Title="@L["GlobalImports_FileName"]">
+        <PropertyColumn Property="c => c.FileName" Title="@L["GlobalImports_FileName"]" Sortable>
             <a href="/admin/global-catalog/imports/@context.Id">@context.FileName</a>
         </PropertyColumn>
-        <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" />
-        <PropertyColumn Property="c => c.TotalCount" Title="@L["GlobalImports_Total"]" />
-        <PropertyColumn Property="c => c.ImportedCount" Title="@L["GlobalImports_Imported"]" />
-        <PropertyColumn Property="c => c.SkippedCount" Title="@L["GlobalImports_Skipped"]" />
-        <PropertyColumn Property="c => c.FailedCount" Title="@L["GlobalImports_Failed"]" />
-        <PropertyColumn Property="c => c.CreatedAtUtc" Title="@L["Common_CreatedUtc"]" Format="u" />
-        <ActionColumn Title="@L["Common_Actions"]">
+        <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Sortable Width="120" />
+        <PropertyColumn Property="c => c.TotalCount" Title="@L["GlobalImports_Total"]" Sortable Width="90" />
+        <PropertyColumn Property="c => c.ImportedCount" Title="@L["GlobalImports_Imported"]" Sortable Width="100" />
+        <PropertyColumn Property="c => c.SkippedCount" Title="@L["GlobalImports_Skipped"]" Sortable Width="100" />
+        <PropertyColumn Property="c => c.FailedCount" Title="@L["GlobalImports_Failed"]" Sortable Width="90" />
+        <PropertyColumn Property="c => c.CreatedAtUtc" Title="@L["Common_CreatedUtc"]" Sortable Width="180" Format="u" />
+        <ActionColumn Title="@L["Common_Actions"]" Width="90">
             <a class="ant-btn ant-btn-link ant-btn-sm" href="@($"/admin/global-catalog/imports/{context.Id}")">@L["Common_Open"]</a>
         </ActionColumn>
     </Table>
@@ -137,15 +141,24 @@ else
                 <Table TItem="CatalogImportItemDto"
                        DataSource="@(_job.PreviewItems ?? Array.Empty<CatalogImportItemDto>())"
                        Size="@TableSize.Small"
+                       Bordered
+                       Resizable
+                       ScrollX="1280"
                        HidePagination="true">
-                    <PropertyColumn Property="c => c.RowNumber" Title="#" />
-                    <PropertyColumn Property="c => c.Name" Title="@L["Common_Name"]" />
-                    <PropertyColumn Property="c => c.CategoryName" Title="@L["GlobalProducts_Category"]" />
-                    <PropertyColumn Property="c => c.Sku" Title="@L["GlobalProducts_Sku"]" />
-                    <PropertyColumn Property="c => c.Barcode" Title="@L["GlobalProducts_Barcode"]" />
-                    <PropertyColumn Property="c => c.Unit" Title="@L["GlobalProducts_Unit"]" />
-                    <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" />
-                    <PropertyColumn Property="c => c.ErrorMessage" Title="@L["GlobalImports_Notes"]" />
+                    <PropertyColumn Property="c => c.RowNumber" Title="#" Sortable Width="60" />
+                    <PropertyColumn Property="c => c.Name" Title="@L["Common_Name"]" Sortable />
+                    <PropertyColumn Property="c => c.CategoryName" Title="@L["GlobalProducts_Category"]" Sortable Width="140" />
+                    <PropertyColumn Property="c => c.Sku" Title="@L["GlobalProducts_Sku"]" Sortable Width="120" />
+                    <PropertyColumn Property="c => c.Barcode" Title="@L["GlobalProducts_Barcode"]" Sortable Width="140" />
+                    <PropertyColumn Property="c => c.CostPrice" Title="@L["GlobalProducts_CostPrice"]" Sortable Width="110">
+                        @AdminCurrency.FormatPhp(context.CostPrice)
+                    </PropertyColumn>
+                    <PropertyColumn Property="c => c.SellingPrice" Title="@L["GlobalProducts_SellingPrice"]" Sortable Width="110">
+                        @AdminCurrency.FormatPhp(context.SellingPrice)
+                    </PropertyColumn>
+                    <PropertyColumn Property="c => c.Unit" Title="@L["GlobalProducts_Unit"]" Sortable Width="90" />
+                    <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Sortable Width="120" />
+                    <PropertyColumn Property="c => c.ErrorMessage" Title="@L["GlobalImports_Notes"]" Sortable />
                 </Table>
             </Card>
 
@@ -158,12 +171,15 @@ else
                     <Table TItem="CatalogImportErrorDto"
                            DataSource="_errors"
                            Size="@TableSize.Small"
+                           Bordered
+                           Resizable
+                           ScrollX="960"
                            HidePagination="true">
-                        <PropertyColumn Property="c => c.RowNumber" Title="#" />
-                        <PropertyColumn Property="c => c.Name" Title="@L["Common_Name"]" />
-                        <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" />
-                        <PropertyColumn Property="c => c.ErrorCode" Title="@L["GlobalImports_ErrorCode"]" />
-                        <PropertyColumn Property="c => c.ErrorMessage" Title="@L["GlobalImports_Error"]" />
+                        <PropertyColumn Property="c => c.RowNumber" Title="#" Sortable Width="60" />
+                        <PropertyColumn Property="c => c.Name" Title="@L["Common_Name"]" Sortable />
+                        <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Sortable Width="120" />
+                        <PropertyColumn Property="c => c.ErrorCode" Title="@L["GlobalImports_ErrorCode"]" Sortable Width="180" />
+                        <PropertyColumn Property="c => c.ErrorMessage" Title="@L["GlobalImports_Error"]" Sortable />
                     </Table>
                 </Card>
             }

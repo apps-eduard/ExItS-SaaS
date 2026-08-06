@@ -925,6 +925,13 @@
   <data name="GlobalProducts_Category" xml:space="preserve"><value>Kategorya</value></data>
   <data name="GlobalProducts_Uncategorized" xml:space="preserve"><value>Walang kategorya</value></data>
   <data name="GlobalProducts_Unit" xml:space="preserve"><value>Yunit</value></data>
+  <data name="GlobalProducts_CostPrice" xml:space="preserve"><value>Presyo ng gastos</value></data>
+  <data name="GlobalProducts_SellingPrice" xml:space="preserve"><value>Presyo ng bentahan</value></data>
+  <data name="GlobalProducts_RequiredCostPrice" xml:space="preserve"><value>Kailangan ang presyo ng gastos.</value></data>
+  <data name="GlobalProducts_RequiredSellingPrice" xml:space="preserve"><value>Kailangan ang presyo ng bentahan.</value></data>
+  <data name="GlobalProducts_InvalidCostPrice" xml:space="preserve"><value>Hindi maaaring negatibo ang presyo ng gastos.</value></data>
+  <data name="GlobalProducts_InvalidSellingPrice" xml:space="preserve"><value>Hindi maaaring negatibo ang presyo ng bentahan.</value></data>
+  <data name="GlobalProducts_SellingBelowCost" xml:space="preserve"><value>Ang presyo ng bentahan ay dapat mas mataas o katumbas ng presyo ng gastos.</value></data>
   <data name="GlobalProducts_SuggestedPrice" xml:space="preserve"><value>Iminumungkahing presyo</value></data>
   <data name="GlobalProducts_SuggestedCost" xml:space="preserve"><value>Iminumungkahing gastos</value></data>
   <data name="GlobalProducts_ImageReference" xml:space="preserve"><value>Image reference</value></data>
@@ -1013,7 +1020,7 @@
   <data name="GlobalImports_DownloadTemplate" xml:space="preserve"><value>I-download ang CSV Template</value></data>
   <data name="GlobalImports_DownloadTemplateSucceeded" xml:space="preserve"><value>Na-download ang CSV template.</value></data>
   <data name="GlobalImports_DownloadTemplateFailed" xml:space="preserve"><value>Hindi ma-download ang CSV template.</value></data>
-  <data name="GlobalImports_TemplateHint" xml:space="preserve"><value>CSV columns (eksaktong order): ProductName, Category, Description, Brand, Unit, Barcode, SuggestedSku, SuggestedSellingPrice, SuggestedCostPrice, TaxHint, Tags, BusinessTypes, Status. Multi-value Tags/BusinessTypes gumamit ng |. Decimals: invariant (25.50). Max 5 MB / 5000 rows.</value></data>
+  <data name="GlobalImports_TemplateHint" xml:space="preserve"><value>CSV columns (eksaktong order): ProductName, Category, Description, Brand, Unit, Barcode, SuggestedSku, SellingPrice, CostPrice, TaxHint, Tags, BusinessTypes, Status. Multi-value Tags/BusinessTypes gumamit ng |. Decimals: invariant (25.50). Max 5 MB / 5000 rows.</value></data>
   <data name="GlobalImports_TemplateInstructions" xml:space="preserve"><value>1) I-download ang CSV template. 2) Huwag baguhin ang header names. 3) Alisin o palitan ang SAMPLE rows. 4) I-save bilang CSV UTF-8. 5) I-upload para sa validation at preview. 6) Hindi magsisimula ang import hanggang sa i-click ang Confirm. Gumamit ng | para sa Tags at BusinessTypes. Decimals: invariant (hal. 25.50).</value></data>
   <data name="GlobalImports_FileName" xml:space="preserve"><value>File</value></data>
   <data name="GlobalImports_Total" xml:space="preserve"><value>Kabuuan</value></data>

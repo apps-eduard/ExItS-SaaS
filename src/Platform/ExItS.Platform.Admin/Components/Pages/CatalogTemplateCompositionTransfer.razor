@@ -4,6 +4,7 @@
 @inject IPlatformApiClient Api
 @inject IMessageService Message
 @inject IStringLocalizer<AdminResources> L
+@using ExItS.Platform.Admin.Services
 
 <div class="exits-template-transfer">
     @if (!string.IsNullOrWhiteSpace(_error))
@@ -84,6 +85,8 @@
                            DataSource="@_availableItems"
                            Size="@TableSize.Small"
                            Bordered
+                           Resizable
+                           ScrollX="720"
                            Loading="_availableLoading"
                            HidePagination
                            ScrollY="320">
@@ -92,7 +95,7 @@
                                       Disabled="@Busy"
                                       CheckedChanged="v => ToggleAvailable(context.Id, v)" />
                         </PropertyColumn>
-                        <PropertyColumn Property="c => c.Name" Title="@L["Common_Name"]">
+                        <PropertyColumn Property="c => c.Name" Title="@L["Common_Name"]" Sortable>
                             <div class="exits-template-transfer__name">@context.Name</div>
                             <div class="exits-template-transfer__meta">@FormatCodes(context.Sku, context.Barcode)</div>
                         </PropertyColumn>
@@ -166,6 +169,8 @@
                            DataSource="@FilteredAssigned"
                            Size="@TableSize.Small"
                            Bordered
+                           Resizable
+                           ScrollX="960"
                            HidePagination
                            ScrollY="320">
                         <PropertyColumn Property="c => c.GlobalProductId" Title="" Width="40">
@@ -173,12 +178,12 @@
                                       Disabled="@Busy"
                                       CheckedChanged="v => ToggleAssigned(context.GlobalProductId, v)" />
                         </PropertyColumn>
-                        <PropertyColumn Property="c => c.SortOrder" Title="@L["GlobalTemplates_SortOrder"]" Width="60" />
-                        <PropertyColumn Property="c => c.ProductName" Title="@L["Common_Name"]">
+                        <PropertyColumn Property="c => c.SortOrder" Title="@L["GlobalTemplates_SortOrder"]" Sortable Width="60" />
+                        <PropertyColumn Property="c => c.ProductName" Title="@L["Common_Name"]" Sortable>
                             <div class="exits-template-transfer__name">@DisplayName(context)</div>
                             <div class="exits-template-transfer__meta">@FormatCodes(context.Sku, context.Barcode)</div>
                         </PropertyColumn>
-                        <PropertyColumn Property="c => c.CategoryName" Title="@L["GlobalProducts_Category"]" Width="110">
+                        <PropertyColumn Property="c => c.CategoryName" Title="@L["GlobalProducts_Category"]" Sortable Width="110">
                             @(string.IsNullOrWhiteSpace(context.CategoryName) ? "—" : context.CategoryName)
                         </PropertyColumn>
                         <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Width="90">

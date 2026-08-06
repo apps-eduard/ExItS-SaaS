@@ -1,6 +1,8 @@
 @page "/admin/global-catalog/categories"
 @page "/admin/global-catalog/categories/{Id:guid}"
 @using AntDesign
+@using AntDesign.TableModels
+@using ExItS.Platform.Admin.Services
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize]
 @inject IPlatformApiClient Api
@@ -113,30 +115,31 @@ else if (Id is null)
     {
         <Table TItem="GlobalCategoryDto"
                Class="exits-table-fit"
-               DataSource="@OrderedRows"
+               DataSource="@(_list?.Data?.Items ?? Array.Empty<GlobalCategoryDto>())"
                Total="@(_list?.Data?.TotalCount ?? 0)"
                @bind-PageIndex="_page"
                PageSize="@(_list?.Data?.PageSize ?? 50)"
                Loading="@(_list is null)"
                Size="@TableSize.Small"
                Bordered
-               ScrollX="960"
+               Resizable
+               ScrollX="1040"
                RemoteDataSource
-               OnPageIndexChange="OnPageChangedAsync">
-            <PropertyColumn Property="c => c.Name" Title="@L["Common_Name"]">
+               OnChange="OnCategoriesTableChangeAsync">
+            <PropertyColumn Property="c => c.Name" Title="@L["Common_Name"]" Sortable>
                 <a href="/admin/global-catalog/categories/@context.Id">@Indent(context)@context.Name</a>
             </PropertyColumn>
             <PropertyColumn Property="c => c.ParentId" Title="@L["GlobalCategories_Parent"]" Width="180">
                 @ParentName(context.ParentId)
             </PropertyColumn>
-            <PropertyColumn Property="c => c.SortOrder" Title="@L["GlobalCategories_SortOrder"]" Width="100" />
-            <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Width="110">
+            <PropertyColumn Property="c => c.SortOrder" Title="@L["GlobalCategories_SortOrder"]" Sortable Width="100" />
+            <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Sortable Width="110">
                 <AdminStatusTag Value="@context.Status" />
             </PropertyColumn>
             <PropertyColumn Property="c => c.BusinessTypes" Title="@L["GlobalCatalog_BusinessTypes"]" Width="200">
                 @string.Join(", ", context.BusinessTypes)
             </PropertyColumn>
-            <PropertyColumn Property="c => c.UpdatedAtUtc" Title="@L["Common_UpdatedUtc"]" Width="180">
+            <PropertyColumn Property="c => c.UpdatedAtUtc" Title="@L["Common_UpdatedUtc"]" Sortable Width="180">
                 <LocalTimestamp Value="@context.UpdatedAtUtc" />
             </PropertyColumn>
             <ActionColumn Title="@L["Common_Open"]" Width="80">
@@ -264,6 +267,8 @@ else
     private ApiCallResult<GlobalCategoryDto>? _category;
     private List<GlobalCategoryDto> _allForLookup = [];
     private int _page = 1;
+    private string? _sortBy;
+    private bool _sortDesc;
     private string _search = "";
     private string _status = "";
     private string _businessType = "";
@@ -289,19 +294,6 @@ else
 
     private IEnumerable<GlobalCategoryDto> ParentOptions =>
         _allForLookup.Where(c => c.Status != "Archived").OrderBy(c => c.SortOrder).ThenBy(c => c.Name);
-
-    private IReadOnlyList<GlobalCategoryDto> OrderedRows
-    {
-        get
-        {
-            var items = _list?.Data?.Items ?? Array.Empty<GlobalCategoryDto>();
-            return items
-                .OrderBy(c => c.ParentId.HasValue ? 1 : 0)
-                .ThenBy(c => c.SortOrder)
-                .ThenBy(c => c.Name)
-                .ToList();
-        }
-    }
 
     protected override async Task OnParametersSetAsync()
     {
@@ -349,12 +341,32 @@ else
             pageSize: 50,
             status: string.IsNullOrWhiteSpace(_status) ? null : _status,
             businessType: string.IsNullOrWhiteSpace(_businessType) ? null : _businessType,
-            search: string.IsNullOrWhiteSpace(_search) ? null : _search.Trim());
+            search: string.IsNullOrWhiteSpace(_search) ? null : _search.Trim(),
+            sortBy: _sortBy,
+            sortDesc: _sortBy is null ? null : _sortDesc);
 
-    private async Task OnPageChangedAsync(PaginationEventArgs _)
+    private async Task OnCategoriesTableChangeAsync(QueryModel<GlobalCategoryDto> queryModel)
     {
-        await LoadListAsync();
+        await AdminTableSort.ApplyChangeAsync(
+            queryModel,
+            MapSortField,
+            () => _sortBy,
+            v => _sortBy = v,
+            () => _sortDesc,
+            v => _sortDesc = v,
+            () => _page,
+            v => _page = v,
+            LoadListAsync);
     }
+
+    private static string? MapSortField(string? fieldName) => fieldName switch
+    {
+        "Name" => "Name",
+        "SortOrder" => "SortOrder",
+        "Status" => "Status",
+        "UpdatedAtUtc" => "UpdatedAtUtc",
+        _ => null
+    };
 
     private async Task ApplyFiltersAsync()
     {
@@ -367,6 +379,8 @@ else
         _search = "";
         _status = "";
         _businessType = "";
+        _sortBy = null;
+        _sortDesc = false;
         _page = 1;
         await LoadListAsync();
     }

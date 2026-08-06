@@ -9,6 +9,7 @@
 @inject IStringLocalizer<AdminResources> L
 @inject NavigationManager Nav
 @inject PlatformPermissionState Permissions
+@using ExItS.Platform.Admin.Services
 
 @if (!Permissions.Loaded)
 {
@@ -151,12 +152,20 @@ else if (Id is null)
                 </div>
                 <Space Wrap>
                     <div>
-                        <label class="ant-form-item-label">@L["GlobalProducts_SuggestedPrice"]</label>
-                        <AntDesign.InputNumber TValue="decimal?" @bind-Value="_newPrice" Min="0" Disabled="_busy" Style="width:140px;" />
+                        <label class="ant-form-item-label">@L["GlobalProducts_CostPrice"] *</label>
+                        <AntDesign.InputNumber TValue="decimal?" @bind-Value="_newCost" Min="0" Disabled="_busy" Style="width:140px;" />
+                        @if (!string.IsNullOrEmpty(_newCostError))
+                        {
+                            <div class="ant-form-item-explain ant-form-item-explain-error">@_newCostError</div>
+                        }
                     </div>
                     <div>
-                        <label class="ant-form-item-label">@L["GlobalProducts_SuggestedCost"]</label>
-                        <AntDesign.InputNumber TValue="decimal?" @bind-Value="_newCost" Min="0" Disabled="_busy" Style="width:140px;" />
+                        <label class="ant-form-item-label">@L["GlobalProducts_SellingPrice"] *</label>
+                        <AntDesign.InputNumber TValue="decimal?" @bind-Value="_newPrice" Min="0" Disabled="_busy" Style="width:140px;" />
+                        @if (!string.IsNullOrEmpty(_newPriceError))
+                        {
+                            <div class="ant-form-item-explain ant-form-item-explain-error">@_newPriceError</div>
+                        }
                     </div>
                 </Space>
                 <div>
@@ -198,7 +207,8 @@ else if (Id is null)
                Loading="@(_list is null)"
                Size="@TableSize.Small"
                Bordered
-               ScrollX="1400"
+               Resizable
+               ScrollX="1680"
                RemoteDataSource
                OnChange="OnProductsTableChangeAsync">
             <PropertyColumn Property="c => c.Name" Title="@L["Common_Name"]" Sortable>
@@ -209,6 +219,12 @@ else if (Id is null)
             <PropertyColumn Property="c => c.Brand" Title="@L["GlobalProducts_Brand"]" Sortable Width="140" />
             <PropertyColumn Property="c => c.GlobalCategoryId" Title="@L["GlobalProducts_Category"]" Sortable Width="160">
                 @CategoryName(context.GlobalCategoryId)
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.CostPrice" Title="@L["GlobalProducts_CostPrice"]" Sortable Width="120">
+                @AdminCurrency.FormatPhp(context.CostPrice)
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.SellingPrice" Title="@L["GlobalProducts_SellingPrice"]" Sortable Width="120">
+                @AdminCurrency.FormatPhp(context.SellingPrice)
             </PropertyColumn>
             <PropertyColumn Property="c => c.Unit" Title="@L["GlobalProducts_Unit"]" Sortable Width="100" />
             <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Sortable Width="110">
@@ -357,12 +373,20 @@ else
                     </div>
                     <Space Wrap>
                         <div>
-                            <label class="ant-form-item-label">@L["GlobalProducts_SuggestedPrice"]</label>
-                            <AntDesign.InputNumber TValue="decimal?" @bind-Value="_editPrice" Min="0" Disabled="_busy" Style="width:140px;" />
+                            <label class="ant-form-item-label">@L["GlobalProducts_CostPrice"] *</label>
+                            <AntDesign.InputNumber TValue="decimal?" @bind-Value="_editCost" Min="0" Disabled="_busy" Style="width:140px;" />
+                            @if (!string.IsNullOrEmpty(_editCostError))
+                            {
+                                <div class="ant-form-item-explain ant-form-item-explain-error">@_editCostError</div>
+                            }
                         </div>
                         <div>
-                            <label class="ant-form-item-label">@L["GlobalProducts_SuggestedCost"]</label>
-                            <AntDesign.InputNumber TValue="decimal?" @bind-Value="_editCost" Min="0" Disabled="_busy" Style="width:140px;" />
+                            <label class="ant-form-item-label">@L["GlobalProducts_SellingPrice"] *</label>
+                            <AntDesign.InputNumber TValue="decimal?" @bind-Value="_editPrice" Min="0" Disabled="_busy" Style="width:140px;" />
+                            @if (!string.IsNullOrEmpty(_editPriceError))
+                            {
+                                <div class="ant-form-item-explain ant-form-item-explain-error">@_editPriceError</div>
+                            }
                         </div>
                     </Space>
                     <div>
@@ -389,8 +413,8 @@ else
                 <DescriptionsItem Title="@L["GlobalProducts_Sku"]">@p.Sku</DescriptionsItem>
                 <DescriptionsItem Title="@L["GlobalProducts_Barcode"]">@p.Barcode</DescriptionsItem>
                 <DescriptionsItem Title="@L["GlobalProducts_Brand"]">@p.Brand</DescriptionsItem>
-                <DescriptionsItem Title="@L["GlobalProducts_SuggestedPrice"]">@(p.SuggestedPrice?.ToString("0.00") ?? "—")</DescriptionsItem>
-                <DescriptionsItem Title="@L["GlobalProducts_SuggestedCost"]">@(p.SuggestedCost?.ToString("0.00") ?? "—")</DescriptionsItem>
+                <DescriptionsItem Title="@L["GlobalProducts_CostPrice"]">@AdminCurrency.FormatPhp(p.CostPrice)</DescriptionsItem>
+                <DescriptionsItem Title="@L["GlobalProducts_SellingPrice"]">@AdminCurrency.FormatPhp(p.SellingPrice)</DescriptionsItem>
                 <DescriptionsItem Title="@L["GlobalProducts_FieldDescription"]">@(p.Description ?? "—")</DescriptionsItem>
                 <DescriptionsItem Title="@L["GlobalProducts_ImageReference"]">@(p.ImageReference ?? "—")</DescriptionsItem>
                 <DescriptionsItem Title="@L["GlobalProducts_SearchTags"]">@(p.SearchTags.Count == 0 ? "—" : string.Join(", ", p.SearchTags))</DescriptionsItem>
@@ -467,12 +491,16 @@ else
     private string? _newBrandError;
     private string? _newCategoryError;
     private string? _newUnitError;
+    private string? _newPriceError;
+    private string? _newCostError;
     private string? _editNameError;
     private string? _editSkuError;
     private string? _editBarcodeError;
     private string? _editBrandError;
     private string? _editCategoryError;
     private string? _editUnitError;
+    private string? _editPriceError;
+    private string? _editCostError;
     private readonly AdminPageLoadGate _loadGate = new();
 
     private bool CanView => Permissions.HasPermission(PlatformPermissionCodes.ViewGlobalCatalog);
@@ -561,6 +589,8 @@ else
         "Unit" => "Unit",
         "Status" => "Status",
         "UpdatedAtUtc" => "UpdatedAtUtc",
+        "CostPrice" => "CostPrice",
+        "SellingPrice" => "SellingPrice",
         _ => null
     };
 
@@ -602,8 +632,8 @@ else
         _editBrand = p.Brand;
         _editCategoryId = p.GlobalCategoryId?.ToString("D") ?? "";
         _editUnit = p.Unit;
-        _editPrice = p.SuggestedPrice;
-        _editCost = p.SuggestedCost;
+        _editPrice = p.SellingPrice;
+        _editCost = p.CostPrice;
         _editImage = p.ImageReference ?? "";
         _editTags = string.Join(", ", p.SearchTags);
         _editBusinessTypes = p.BusinessTypes.ToArray();
@@ -643,6 +673,8 @@ else
         _newBrandError = null;
         _newCategoryError = null;
         _newUnitError = null;
+        _newPriceError = null;
+        _newCostError = null;
     }
 
     private void ClearEditFieldErrors()
@@ -653,6 +685,8 @@ else
         _editBrandError = null;
         _editCategoryError = null;
         _editUnitError = null;
+        _editPriceError = null;
+        _editCostError = null;
     }
 
     private bool ValidateCreateForm()
@@ -692,6 +726,11 @@ else
         if (string.IsNullOrWhiteSpace(_newUnit))
         {
             _newUnitError = L["GlobalProducts_RequiredUnit"];
+            ok = false;
+        }
+
+        if (!ValidatePrices(_newCost, _newPrice, v => _newCostError = v, v => _newPriceError = v))
+        {
             ok = false;
         }
 
@@ -738,6 +777,51 @@ else
             ok = false;
         }
 
+        if (!ValidatePrices(_editCost, _editPrice, v => _editCostError = v, v => _editPriceError = v))
+        {
+            ok = false;
+        }
+
+        return ok;
+    }
+
+    private bool ValidatePrices(
+        decimal? cost,
+        decimal? selling,
+        Action<string?> setCostError,
+        Action<string?> setPriceError)
+    {
+        setCostError(null);
+        setPriceError(null);
+        var ok = true;
+        if (cost is null)
+        {
+            setCostError(L["GlobalProducts_RequiredCostPrice"]);
+            ok = false;
+        }
+        else if (cost < 0m)
+        {
+            setCostError(L["GlobalProducts_InvalidCostPrice"]);
+            ok = false;
+        }
+
+        if (selling is null)
+        {
+            setPriceError(L["GlobalProducts_RequiredSellingPrice"]);
+            ok = false;
+        }
+        else if (selling < 0m)
+        {
+            setPriceError(L["GlobalProducts_InvalidSellingPrice"]);
+            ok = false;
+        }
+
+        if (ok && cost is not null && selling is not null && selling < cost)
+        {
+            setPriceError(L["GlobalProducts_SellingBelowCost"]);
+            ok = false;
+        }
+
         return ok;
     }
 
@@ -763,8 +847,8 @@ else
                 _newBrand.Trim(),
                 categoryId,
                 string.IsNullOrWhiteSpace(_newDescription) ? null : _newDescription.Trim(),
-                _newPrice,
                 _newCost,
+                _newPrice,
                 string.IsNullOrWhiteSpace(_newImage) ? null : _newImage.Trim(),
                 ParseTags(_newTags),
                 _newBusinessTypes));
@@ -805,8 +889,8 @@ else
                 _editBrand.Trim(),
                 categoryId,
                 string.IsNullOrWhiteSpace(_editDescription) ? null : _editDescription.Trim(),
-                _editPrice,
                 _editCost,
+                _editPrice,
                 string.IsNullOrWhiteSpace(_editImage) ? null : _editImage.Trim(),
                 ParseTags(_editTags),
                 _editBusinessTypes,

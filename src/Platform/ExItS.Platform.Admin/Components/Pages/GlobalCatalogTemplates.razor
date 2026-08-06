@@ -1,7 +1,9 @@
 @page "/admin/global-catalog/templates"
 @page "/admin/global-catalog/templates/{Id:guid}"
 @using AntDesign
+@using AntDesign.TableModels
 @using ExItS.Platform.Admin.Forms
+@using ExItS.Platform.Admin.Services
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize]
 @inject IPlatformApiClient Api
@@ -120,19 +122,21 @@ else if (Id is null)
                Loading="@(_list is null)"
                Size="@TableSize.Small"
                Bordered
-               ScrollX="1040"
+               Resizable
+               ScrollX="1120"
                RemoteDataSource
-               OnPageIndexChange="OnPageChangedAsync">
-            <PropertyColumn Property="c => c.Name" Title="@L["Common_Name"]">
+               OnChange="OnTemplatesTableChangeAsync">
+            <PropertyColumn Property="c => c.Name" Title="@L["Common_Name"]" Sortable>
                 <a href="/admin/global-catalog/templates/@context.Id">@context.Name</a>
             </PropertyColumn>
-            <PropertyColumn Property="c => c.PrimaryBusinessType" Title="@L["GlobalCatalog_BusinessType"]" Width="140" />
-            <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Width="110">
+            <PropertyColumn Property="c => c.Slug" Title="@L["GlobalTemplates_Slug"]" Sortable Width="160" />
+            <PropertyColumn Property="c => c.PrimaryBusinessType" Title="@L["GlobalCatalog_BusinessType"]" Sortable Width="140" />
+            <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Sortable Width="110">
                 <AdminStatusTag Value="@context.Status" />
             </PropertyColumn>
-            <PropertyColumn Property="c => c.ProductCount" Title="@L["GlobalTemplates_ProductCount"]" Width="100" />
+            <PropertyColumn Property="c => c.ProductCount" Title="@L["GlobalTemplates_ProductCount"]" Sortable Width="100" />
             <PropertyColumn Property="c => c.FirstBatchCount" Title="@L["GlobalTemplates_FirstBatchCount"]" Width="110" />
-            <PropertyColumn Property="c => c.PublishedAtUtc" Title="@L["GlobalTemplates_PublishedAt"]" Width="180">
+            <PropertyColumn Property="c => c.PublishedAtUtc" Title="@L["GlobalTemplates_PublishedAt"]" Sortable Width="180">
                 @if (context.PublishedAtUtc is DateTimeOffset published)
                 {
                     <LocalTimestamp Value="@published" />
@@ -258,9 +262,11 @@ else
                            DataSource="@detail.Products.OrderBy(p => p.SortOrder).ToList()"
                            Size="@TableSize.Small"
                            Bordered
+                           Resizable
+                           ScrollX="960"
                            HidePagination>
-                        <PropertyColumn Property="c => c.SortOrder" Title="@L["GlobalTemplates_SortOrder"]" Width="80" />
-                        <PropertyColumn Property="c => c.ProductName" Title="@L["Common_Name"]">
+                        <PropertyColumn Property="c => c.SortOrder" Title="@L["GlobalTemplates_SortOrder"]" Sortable Width="80" />
+                        <PropertyColumn Property="c => c.ProductName" Title="@L["Common_Name"]" Sortable>
                             <div>@(string.IsNullOrWhiteSpace(context.ProductName) ? "Unavailable product" : context.ProductName)</div>
                             <div style="font-size:12px; opacity:.75;">
                                 @if (!string.IsNullOrWhiteSpace(context.Sku)) { <span>SKU @context.Sku</span> }
@@ -270,10 +276,10 @@ else
                                 }
                             </div>
                         </PropertyColumn>
-                        <PropertyColumn Property="c => c.CategoryName" Title="@L["GlobalProducts_Category"]" Width="140">
+                        <PropertyColumn Property="c => c.CategoryName" Title="@L["GlobalProducts_Category"]" Sortable Width="140">
                             @(string.IsNullOrWhiteSpace(context.CategoryName) ? "—" : context.CategoryName)
                         </PropertyColumn>
-                        <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Width="100">
+                        <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Sortable Width="100">
                             @if (!string.IsNullOrWhiteSpace(context.Status))
                             {
                                 <AdminStatusTag Value="@context.Status" />
@@ -321,6 +327,8 @@ else
     private ApiCallResult<CatalogTemplateDto>? _template;
 
     private int _page = 1;
+    private string? _sortBy;
+    private bool _sortDesc;
     private string? _search;
     private string? _status;
     private string? _businessType;
@@ -367,8 +375,35 @@ else
             pageSize: 20,
             status: string.IsNullOrWhiteSpace(_status) ? null : _status,
             primaryBusinessType: string.IsNullOrWhiteSpace(_businessType) ? null : _businessType,
-            search: string.IsNullOrWhiteSpace(_search) ? null : _search);
+            search: string.IsNullOrWhiteSpace(_search) ? null : _search,
+            sortBy: _sortBy,
+            sortDesc: _sortBy is null ? null : _sortDesc);
     }
+
+    private async Task OnTemplatesTableChangeAsync(QueryModel<CatalogTemplateSummaryDto> queryModel)
+    {
+        await AdminTableSort.ApplyChangeAsync(
+            queryModel,
+            MapSortField,
+            () => _sortBy,
+            v => _sortBy = v,
+            () => _sortDesc,
+            v => _sortDesc = v,
+            () => _page,
+            v => _page = v,
+            LoadListAsync);
+    }
+
+    private static string? MapSortField(string? fieldName) => fieldName switch
+    {
+        "Name" => "Name",
+        "Slug" => "Slug",
+        "Status" => "Status",
+        "PrimaryBusinessType" => "PrimaryBusinessType",
+        "ProductCount" => "ProductCount",
+        "PublishedAtUtc" => "UpdatedAtUtc",
+        _ => null
+    };
 
     private async Task LoadDetailAsync()
     {
@@ -437,12 +472,9 @@ else
         _search = null;
         _status = null;
         _businessType = null;
+        _sortBy = null;
+        _sortDesc = false;
         _page = 1;
-        await LoadListAsync();
-    }
-
-    private async Task OnPageChangedAsync(PaginationEventArgs _)
-    {
         await LoadListAsync();
     }
 

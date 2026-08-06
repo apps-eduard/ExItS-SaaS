@@ -232,6 +232,8 @@ public interface IPlatformApiClient
         Guid? parentId = null,
         string? businessType = null,
         string? search = null,
+        string? sortBy = null,
+        bool? sortDesc = null,
         CancellationToken ct = default);
     Task<ApiCallResult<GlobalCategoryDto>> GetGlobalCategoryAsync(Guid id, CancellationToken ct = default);
     Task<ApiCallResult<GlobalCategoryDto>> CreateGlobalCategoryAsync(CreateGlobalCategoryRequest request, CancellationToken ct = default);
@@ -261,6 +263,8 @@ public interface IPlatformApiClient
         string? status = null,
         string? primaryBusinessType = null,
         string? search = null,
+        string? sortBy = null,
+        bool? sortDesc = null,
         CancellationToken ct = default);
     Task<ApiCallResult<CatalogTemplateDto>> GetCatalogTemplateAsync(Guid id, CancellationToken ct = default);
     Task<ApiCallResult<CatalogTemplateDto>> CreateCatalogTemplateAsync(CreateCatalogTemplateRequest request, CancellationToken ct = default);

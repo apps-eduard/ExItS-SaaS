@@ -496,9 +496,11 @@ public sealed class PlatformApiClient(
         Guid? parentId = null,
         string? businessType = null,
         string? search = null,
+        string? sortBy = null,
+        bool? sortDesc = null,
         CancellationToken ct = default) =>
         GetAsync<PagedResult<GlobalCategoryDto>>(
-            $"/api/v1/platform/global-catalog/categories?{Query(("page", page), ("pageSize", pageSize), ("status", status), ("parentId", parentId), ("businessType", businessType), ("search", search))}",
+            $"/api/v1/platform/global-catalog/categories?{Query(("page", page), ("pageSize", pageSize), ("status", status), ("parentId", parentId), ("businessType", businessType), ("search", search), ("sortBy", sortBy), ("sortDesc", sortDesc))}",
             ct);
 
     public Task<ApiCallResult<GlobalCategoryDto>> GetGlobalCategoryAsync(Guid id, CancellationToken ct = default) =>
@@ -547,9 +549,11 @@ public sealed class PlatformApiClient(
         string? status = null,
         string? primaryBusinessType = null,
         string? search = null,
+        string? sortBy = null,
+        bool? sortDesc = null,
         CancellationToken ct = default) =>
         GetAsync<PagedResult<CatalogTemplateSummaryDto>>(
-            $"/api/v1/platform/global-catalog/templates?{Query(("page", page), ("pageSize", pageSize), ("status", status), ("primaryBusinessType", primaryBusinessType), ("search", search))}",
+            $"/api/v1/platform/global-catalog/templates?{Query(("page", page), ("pageSize", pageSize), ("status", status), ("primaryBusinessType", primaryBusinessType), ("search", search), ("sortBy", sortBy), ("sortDesc", sortDesc))}",
             ct);
 
     public Task<ApiCallResult<CatalogTemplateDto>> GetCatalogTemplateAsync(Guid id, CancellationToken ct = default) =>
