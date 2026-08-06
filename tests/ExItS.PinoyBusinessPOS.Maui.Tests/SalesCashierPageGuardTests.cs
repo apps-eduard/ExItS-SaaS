@@ -20,8 +20,27 @@ public sealed class SalesCashierPageGuardTests
         Assert.Contains("pos-sell-payment", checkout, StringComparison.Ordinal);
         Assert.Contains("_paymentMethodExpanded", checkout, StringComparison.Ordinal);
         Assert.Contains("pos-sell-payment-method__toggle", checkout, StringComparison.Ordinal);
+        Assert.Contains("pos-sell-shift-cta", checkout, StringComparison.Ordinal);
+        Assert.Contains("Sales_Checkout_Reset", checkout, StringComparison.Ordinal);
+        Assert.Contains("NavigationLock", checkout, StringComparison.Ordinal);
         Assert.DoesNotContain("pos-product-tile__placeholder", checkout, StringComparison.Ordinal);
+        Assert.Contains("CheckoutPaymentMethodLabel", checkout, StringComparison.Ordinal);
+        Assert.Contains("Sales_Checkout_AddCustomer", checkout, StringComparison.Ordinal);
+        Assert.Contains("Sales_Checkout_AddCustomerWithExItsId", checkout, StringComparison.Ordinal);
+        Assert.Contains("IsCartPreservingSideTrip", checkout, StringComparison.Ordinal);
+        Assert.Contains("TryApplyCheckoutResumeAsync", checkout, StringComparison.Ordinal);
+        Assert.Contains("Sales_GCash_ReferenceRequired", checkout, StringComparison.Ordinal);
         Assert.Contains("ParseCategoryFilter", checkout, StringComparison.Ordinal);
+
+        var uiOptions = File.ReadAllText(Path.Combine(SalesPagesDirectory(), "SalesUiOptions.cs"));
+        var checkoutCodesStart = uiOptions.IndexOf("CheckoutPaymentMethodCodes", StringComparison.Ordinal);
+        Assert.True(checkoutCodesStart >= 0);
+        var checkoutCodesBlock = uiOptions.Substring(checkoutCodesStart, Math.Min(400, uiOptions.Length - checkoutCodesStart));
+        Assert.Contains("CashPaymentMethod", checkoutCodesBlock, StringComparison.Ordinal);
+        Assert.Contains("ManualGCashPaymentMethod", checkoutCodesBlock, StringComparison.Ordinal);
+        Assert.Contains("UtangPaymentMethod", checkoutCodesBlock, StringComparison.Ordinal);
+        Assert.DoesNotContain("CardPaymentMethod", checkoutCodesBlock, StringComparison.Ordinal);
+        Assert.DoesNotContain("PosSaleOptions.GCashPaymentMethod", checkoutCodesBlock, StringComparison.Ordinal);
         Assert.Contains("Sales_Field_AmountTendered", checkout, StringComparison.Ordinal);
         Assert.Contains("ChangePreview", checkout, StringComparison.Ordinal);
         Assert.Contains("/receipt", checkout, StringComparison.Ordinal);

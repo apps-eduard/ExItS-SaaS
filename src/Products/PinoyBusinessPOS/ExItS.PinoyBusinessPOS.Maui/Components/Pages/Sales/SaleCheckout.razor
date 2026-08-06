@@ -43,12 +43,13 @@ else
     var blocked = _isOffline || (isUtang ? !canCreateUtang : !canCreateCash) || _openShift is null || _electronicPaymentOpen;
     var checkoutBlocked = blocked || !Cart.IsCheckoutReady;
 <Page class="pos-sell-page">
+    <NavigationLock OnBeforeInternalNavigation="OnBeforeLeaveSell" />
     @if (_shiftRequired && _openShift is null && !_isOffline && canCreateCash)
     {
-        <Alert Tone="AlertTone.Warning" Title="@L["Shifts_RequiredTitle"]" Message="@L["Shifts_RequiredMessage"]" />
-        <FormActions>
+        <div class="pos-sell-shift-cta" role="region" aria-label="@L["Shifts_RequiredTitle"]">
+            <Alert Tone="AlertTone.Warning" Title="@L["Shifts_RequiredTitle"]" Message="@L["Shifts_RequiredMessage"]" />
             <Button Variant="ButtonVariant.Primary" OnClick="GoOpenShift">@L["Shifts_Open"]</Button>
-        </FormActions>
+        </div>
     }
 
     @if (_isOffline)
@@ -168,6 +169,11 @@ else
     <div class="pos-sell-floor pos-sell-floor--compact">
         <header class="pos-sell-heading">
             <h1 class="pos-sell-heading__title">@L["Sales_Checkout_SellTitle"]</h1>
+            <div class="pos-sell-heading__reset">
+                <Button Variant="ButtonVariant.Secondary"
+                        Disabled="@(blocked || Cart.IsEmpty)"
+                        OnClick="RequestResetSale">@L["Sales_Checkout_Reset"]</Button>
+            </div>
         </header>
 
         <section class="pos-sell-products" aria-label="@L["Sales_Checkout_BrowseSection"]">
@@ -290,7 +296,7 @@ else
                         disabled="@paymentSelectBlocked"
                         aria-expanded="@_paymentMethodExpanded"
                         @onclick="() => _paymentMethodExpanded = !_paymentMethodExpanded">
-                    <span>@L["Sales_Field_PaymentMethod"] · @SalesUiOptions.PaymentMethodLabel(L, _paymentMethod)</span>
+                    <span>@L["Sales_Field_PaymentMethod"] · @SalesUiOptions.CheckoutPaymentMethodLabel(L, _paymentMethod)</span>
                     <span aria-hidden="true">@(_paymentMethodExpanded ? "−" : "+")</span>
                 </button>
                 @if (_paymentMethodExpanded)
@@ -304,7 +310,7 @@ else
                                     disabled="@paymentSelectBlocked"
                                     aria-pressed="@selected"
                                     @onclick="() => OnPaymentMethodChanged(methodCode)">
-                                @SalesUiOptions.PaymentMethodLabel(L, methodCode)
+                                @SalesUiOptions.CheckoutPaymentMethodLabel(L, methodCode)
                             </button>
                         }
                     </div>
@@ -317,7 +323,7 @@ else
                         disabled="@blocked"
                         aria-expanded="@_customerExpanded"
                         @onclick="() => _customerExpanded = !_customerExpanded">
-                    <span>@L["Sales_Checkout_OptionalCustomer"]</span>
+                    <span>@(isUtang ? L["Sales_Checkout_RequiredCustomer"] : L["Sales_Checkout_OptionalCustomer"])</span>
                     <span aria-hidden="true">@(_customerExpanded ? "−" : "+")</span>
                 </button>
                 @if (_customerExpanded)
@@ -337,9 +343,12 @@ else
                                     IsLoading="@_searchingCustomers"
                                     Disabled="@blocked"
                                     OnClick="SearchCustomersAsync">@L["Sales_Checkout_Search"]</Button>
+                            <Button Variant="ButtonVariant.Secondary"
+                                    Disabled="@blocked"
+                                    OnClick="GoAddCustomerWithoutExItsId">@L["Sales_Checkout_AddCustomer"]</Button>
                             <Button Variant="ButtonVariant.Ghost"
                                     Disabled="@blocked"
-                                    OnClick="GoResolveCustomerExItsId">@L["Personal_AddByExItsId"]</Button>
+                                    OnClick="GoAddCustomerWithExItsId">@L["Sales_Checkout_AddCustomerWithExItsId"]</Button>
                             @if (_selectedCustomer is not null)
                             {
                                 <Button Variant="ButtonVariant.Secondary"
@@ -395,6 +404,7 @@ else
                            Value="@_gcashReference"
                            ValueChanged="v => _gcashReference = v"
                            Hint="@L["Sales_GCash_ReferenceHint"]"
+                           Required="true"
                            IsInvalid="@(!string.IsNullOrEmpty(_gcashError))"
                            ErrorText="@_gcashError"
                            Disabled="@blocked" />
@@ -471,6 +481,24 @@ else
                    ConfirmLabel="@L["Sales_Checkout_Confirm"]"
                    IsLoading="@_saving"
                    OnConfirm="CheckoutAsync" />
+
+    <ConfirmDialog Visible="@_confirmReset"
+                   VisibleChanged="OnResetDialogVisibleChanged"
+                   Title="@L["Sales_Checkout_ResetTitle"]"
+                   Message="@L["Sales_Checkout_DiscardMessage"]"
+                   ConfirmLabel="@L["Sales_Checkout_ResetConfirm"]"
+                   Danger="true"
+                   OnConfirm="ConfirmResetSale"
+                   OnCancel="CancelResetSale" />
+
+    <ConfirmDialog Visible="@_confirmLeave"
+                   VisibleChanged="OnLeaveDialogVisibleChanged"
+                   Title="@L["Sales_Checkout_LeaveTitle"]"
+                   Message="@L["Sales_Checkout_DiscardMessage"]"
+                   ConfirmLabel="@L["Sales_Checkout_LeaveConfirm"]"
+                   Danger="true"
+                   OnConfirm="ConfirmLeaveSaleAsync"
+                   OnCancel="CancelLeaveSale" />
 </Page>
 }
 @code {
@@ -480,6 +508,15 @@ else
     [SupplyParameterFromQuery(Name = "publicUserId")]
     public string? ResolvedPublicUserId { get; set; }
 
+    [SupplyParameterFromQuery(Name = "customerId")]
+    public string? ResumeCustomerId { get; set; }
+
+    [SupplyParameterFromQuery(Name = "resumePayment")]
+    public string? ResumePayment { get; set; }
+
+    [SupplyParameterFromQuery(Name = "paymentMethod")]
+    public string? ResumePaymentMethod { get; set; }
+
     private bool _ready;
     private bool _isOffline;
     private bool _lookingUp;
@@ -487,6 +524,10 @@ else
     private bool _searchingCustomers;
     private bool _saving;
     private bool _confirm;
+    private bool _confirmReset;
+    private bool _confirmLeave;
+    private bool _bypassLeaveGuard;
+    private string? _pendingLeaveUri;
     private bool _gcashConfirmed;
     private string? _lookupText;
     private string? _lookupHelper;
@@ -531,6 +572,7 @@ else
     private bool _customerExpanded;
     private bool _paymentMethodExpanded;
     private bool _paymentHeaderActive;
+    private bool _checkoutResumeApplied;
     private CancellationTokenSource? _lookupDebounceCts;
     private int _searchGeneration;
     private bool _paymentActing;
@@ -636,6 +678,7 @@ else
             await LoadCategoriesAsync();
             await LoadBrowseProductsAsync();
             await TryRestorePendingPaymentAsync();
+            await TryApplyCheckoutResumeAsync();
         }
     }
 
@@ -644,8 +687,71 @@ else
         if (_ready && !_isOffline)
         {
             await TryRestorePendingPaymentAsync();
+            await TryApplyCheckoutResumeAsync();
         }
     }
+
+    private async Task TryApplyCheckoutResumeAsync()
+    {
+        if (_checkoutResumeApplied || _isOffline)
+        {
+            return;
+        }
+
+        var hasCustomer = Guid.TryParse(ResumeCustomerId, out var customerId);
+        var resumePayment = string.Equals(ResumePayment, "1", StringComparison.Ordinal)
+            || string.Equals(ResumePayment, "true", StringComparison.OrdinalIgnoreCase);
+        var hasPaymentMethod = !string.IsNullOrWhiteSpace(ResumePaymentMethod);
+
+        if (!hasCustomer && !resumePayment && !hasPaymentMethod)
+        {
+            return;
+        }
+
+        _checkoutResumeApplied = true;
+
+        if (hasPaymentMethod
+            && SalesUiOptions.CheckoutPaymentMethodCodes.Contains(ResumePaymentMethod!, StringComparer.Ordinal))
+        {
+            _paymentMethod = ResumePaymentMethod!;
+            if (_paymentMethod == PosSaleOptions.UtangPaymentMethod)
+            {
+                _customerExpanded = true;
+                _amountTendered = null;
+            }
+            else if (_paymentMethod == PosSaleOptions.ManualGCashPaymentMethod)
+            {
+                _amountTendered = null;
+            }
+        }
+
+        if (hasCustomer)
+        {
+            var result = await Customers.GetAsync(customerId);
+            if (result.IsSuccess && result.Data is not null)
+            {
+                await SelectCustomerAsync(ToListItem(result.Data));
+                _customerExpanded = true;
+            }
+        }
+
+        if (resumePayment && !Cart.IsEmpty)
+        {
+            EnterPaymentStep();
+        }
+    }
+
+    private static PosCustomerListItemDto ToListItem(PosCustomerDetailDto detail) =>
+        new(
+            detail.CustomerId,
+            detail.OrganizationId,
+            detail.DisplayName,
+            detail.MobileNumber,
+            detail.Address,
+            detail.Notes,
+            detail.Status,
+            detail.CreatedAtUtc,
+            detail.UpdatedAtUtc);
 
     private async Task TryRestorePendingPaymentAsync()
     {
@@ -880,7 +986,6 @@ else
 
         if (next == PosSaleOptions.ManualGCashPaymentMethod)
         {
-            ClearCustomerSelection();
             _amountTendered = null;
         }
         else if (SalesUiOptions.IsElectronicPaymentMethod(next))
@@ -1223,8 +1328,18 @@ else
         _searchingCustomers = false;
     }
 
-    private void GoResolveCustomerExItsId() =>
-        Nav.NavigateTo("/personal/resolve-user?purpose=sale-customer&return=/sales/new");
+    private void GoAddCustomerWithoutExItsId() =>
+        Nav.NavigateTo($"/customers/new?return={Uri.EscapeDataString(BuildSaleResumeReturn())}");
+
+    private void GoAddCustomerWithExItsId()
+    {
+        var customerCreate = $"/customers/new?return={Uri.EscapeDataString(BuildSaleResumeReturn())}";
+        Nav.NavigateTo(
+            $"/personal/resolve-user?purpose=sale-customer&return={Uri.EscapeDataString(customerCreate)}");
+    }
+
+    private string BuildSaleResumeReturn() =>
+        $"/sales/new?resumePayment=1&paymentMethod={Uri.EscapeDataString(_paymentMethod)}";
 
     private async Task SelectCustomerAsync(PosCustomerListItemDto customer)
     {
@@ -1294,7 +1409,13 @@ else
                 return;
             }
 
-            if (_gcashReference?.Trim().Length > PosSaleOptions.GCashReferenceMaxLength)
+            if (string.IsNullOrWhiteSpace(_gcashReference))
+            {
+                _gcashError = L["Sales_GCash_ReferenceRequired"];
+                return;
+            }
+
+            if (_gcashReference.Trim().Length > PosSaleOptions.GCashReferenceMaxLength)
             {
                 _gcashError = L["Sales_GCash_ReferenceTooLong"];
                 return;
@@ -1382,7 +1503,16 @@ else
             ClearCustomerSelection();
             _attemptSaleId = Guid.NewGuid();
             _attemptCreditEntryId = Guid.NewGuid();
-            Nav.NavigateTo($"/sales/{result.Data.SaleId:D}/receipt");
+            _bypassLeaveGuard = true;
+            try
+            {
+                Nav.NavigateTo($"/sales/{result.Data.SaleId:D}/receipt");
+            }
+            finally
+            {
+                _bypassLeaveGuard = false;
+            }
+
             return;
         }
 
@@ -1542,7 +1672,16 @@ else
             _attemptSaleId = Guid.NewGuid();
             _attemptCreditEntryId = Guid.NewGuid();
             _attemptPaymentIdempotencyKey = Guid.NewGuid().ToString("N");
-            Nav.NavigateTo($"/sales/{attempt.SaleId:D}/receipt?attemptId={attempt.Id:D}");
+            _bypassLeaveGuard = true;
+            try
+            {
+                Nav.NavigateTo($"/sales/{attempt.SaleId:D}/receipt?attemptId={attempt.Id:D}");
+            }
+            finally
+            {
+                _bypassLeaveGuard = false;
+            }
+
             return;
         }
 
@@ -1624,17 +1763,212 @@ else
         _ => BadgeTone.Warning
     };
 
+    private bool HasUnfinishedSale =>
+        !Cart.IsEmpty || _electronicPaymentOpen;
+
+    private void OnBeforeLeaveSell(LocationChangingContext context)
+    {
+        if (_bypassLeaveGuard || !HasUnfinishedSale)
+        {
+            return;
+        }
+
+        if (IsCartPreservingSideTrip(context.TargetLocation))
+        {
+            return;
+        }
+
+        // Stay on Sell until cashier confirms discard — unfinished carts must not linger silently.
+        context.PreventNavigation();
+        _pendingLeaveUri = context.TargetLocation;
+        _confirmLeave = true;
+        _confirmReset = false;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private static bool IsCartPreservingSideTrip(string? targetLocation)
+    {
+        if (string.IsNullOrWhiteSpace(targetLocation))
+        {
+            return false;
+        }
+
+        var pathAndQuery = targetLocation;
+        if (Uri.TryCreate(targetLocation, UriKind.Absolute, out var absolute))
+        {
+            pathAndQuery = absolute.PathAndQuery;
+        }
+        else
+        {
+            var q = targetLocation.IndexOf('?', StringComparison.Ordinal);
+            var h = targetLocation.IndexOf('#', StringComparison.Ordinal);
+            var cut = targetLocation.Length;
+            if (q >= 0)
+            {
+                cut = Math.Min(cut, q);
+            }
+
+            if (h >= 0)
+            {
+                cut = Math.Min(cut, h);
+            }
+
+            pathAndQuery = targetLocation[..cut];
+            if (pathAndQuery.StartsWith("./", StringComparison.Ordinal))
+            {
+                pathAndQuery = pathAndQuery[1..];
+            }
+        }
+
+        var path = pathAndQuery;
+        var queryIndex = path.IndexOf('?', StringComparison.Ordinal);
+        if (queryIndex >= 0)
+        {
+            path = path[..queryIndex];
+        }
+
+        return path.Equals("/customers/new", StringComparison.OrdinalIgnoreCase)
+            || path.Equals("/personal/resolve-user", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void RequestResetSale()
+    {
+        if (Cart.IsEmpty || _electronicPaymentOpen)
+        {
+            return;
+        }
+
+        _confirmReset = true;
+        _confirmLeave = false;
+    }
+
+    private Task OnResetDialogVisibleChanged(bool visible)
+    {
+        _confirmReset = visible;
+        return Task.CompletedTask;
+    }
+
+    private Task OnLeaveDialogVisibleChanged(bool visible)
+    {
+        _confirmLeave = visible;
+        if (!visible)
+        {
+            _pendingLeaveUri = null;
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private void CancelResetSale() => _confirmReset = false;
+
+    private void CancelLeaveSale()
+    {
+        _confirmLeave = false;
+        _pendingLeaveUri = null;
+    }
+
+    private void ConfirmResetSale()
+    {
+        _confirmReset = false;
+        DiscardUnfinishedSale();
+    }
+
+    private async Task ConfirmLeaveSaleAsync()
+    {
+        var target = _pendingLeaveUri;
+        _confirmLeave = false;
+        _pendingLeaveUri = null;
+        DiscardUnfinishedSale();
+
+        if (SellingMode.IsSellingMode)
+        {
+            SellingMode.Exit();
+        }
+
+        if (string.IsNullOrWhiteSpace(target))
+        {
+            return;
+        }
+
+        _bypassLeaveGuard = true;
+        try
+        {
+            Nav.NavigateTo(target);
+        }
+        finally
+        {
+            _bypassLeaveGuard = false;
+        }
+
+        await Task.CompletedTask;
+    }
+
+    private void DiscardUnfinishedSale()
+    {
+        Cart.Clear();
+        ClearCustomerSelection();
+        _amountTendered = null;
+        _gcashReference = null;
+        _gcashConfirmed = false;
+        _tenderError = null;
+        _gcashError = null;
+        _errorTitle = null;
+        _errorMessage = null;
+        _paymentMethod = PosSaleOptions.CashPaymentMethod;
+        _paymentMethodExpanded = false;
+        _customerExpanded = false;
+        _attemptSaleId = Guid.NewGuid();
+        _attemptCreditEntryId = Guid.NewGuid();
+        _attemptPaymentIdempotencyKey = Guid.NewGuid().ToString("N");
+
+        if (_electronicPaymentOpen)
+        {
+            ResetElectronicPaymentState(clearPending: true);
+        }
+
+        if (_showPayment)
+        {
+            ExitPaymentStep();
+        }
+    }
+
     private void GoList()
     {
+        if (HasUnfinishedSale)
+        {
+            _pendingLeaveUri = SellingMode.IsSellingMode
+                ? (SellingMode.ReturnRoute ?? "/owner")
+                : "/sales";
+            _confirmLeave = true;
+            return;
+        }
+
         if (SellingMode.IsSellingMode)
         {
             var returnRoute = SellingMode.ReturnRoute ?? "/owner";
             SellingMode.Exit();
-            Nav.NavigateTo(returnRoute);
+            _bypassLeaveGuard = true;
+            try
+            {
+                Nav.NavigateTo(returnRoute);
+            }
+            finally
+            {
+                _bypassLeaveGuard = false;
+            }
+
             return;
         }
 
-        Nav.NavigateTo("/sales");
+        _bypassLeaveGuard = true;
+        try
+        {
+            Nav.NavigateTo("/sales");
+        }
+        finally
+        {
+            _bypassLeaveGuard = false;
+        }
     }
 
     private void GoOpenShift() => Nav.NavigateTo("/shifts/open");

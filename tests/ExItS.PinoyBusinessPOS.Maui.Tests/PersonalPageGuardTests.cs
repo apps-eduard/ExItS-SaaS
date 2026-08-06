@@ -99,8 +99,25 @@ public sealed class PersonalPageGuardTests
         Assert.Contains("ResolvePublicUserIdAsync", resolve, StringComparison.Ordinal);
         Assert.Contains("Personal_ResolveConfirm", resolve, StringComparison.Ordinal);
         Assert.Contains("IsSelf", resolve, StringComparison.Ordinal);
+        Assert.Contains("IQrCodeScanService", resolve, StringComparison.Ordinal);
+        Assert.Contains("Personal_ScanQr", resolve, StringComparison.Ordinal);
+        Assert.Contains("ScanQrAsync", resolve, StringComparison.Ordinal);
+        Assert.DoesNotContain("Personal_ResolveCameraDeferred", resolve, StringComparison.Ordinal);
         Assert.Contains("purpose=utang-people",
             File.ReadAllText(Path.Combine(personal, "PersonalPeople.razor")), StringComparison.Ordinal);
+
+        var create = File.ReadAllText(Path.Combine(
+            MauiProject(), "Components", "Pages", "Customers", "CustomerCreate.razor"));
+        Assert.Contains("GoScanExItsQr", create, StringComparison.Ordinal);
+        Assert.Contains("scan=1", create, StringComparison.Ordinal);
+        Assert.Contains("Personal_ScanQr", create, StringComparison.Ordinal);
+        Assert.Contains("IsSaleCheckoutReturn", create, StringComparison.Ordinal);
+        Assert.Contains("SupplyParameterFromQuery(Name = \"return\")", create, StringComparison.Ordinal);
+
+        var qrScan = File.ReadAllText(Path.Combine(MauiProject(), "Services", "MauiQrCodeScanService.cs"));
+        Assert.Contains("CapturePhotoAsync", qrScan, StringComparison.Ordinal);
+        Assert.Contains("BarcodeReaderGeneric", qrScan, StringComparison.Ordinal);
+        Assert.Contains("BarcodeFormat.QR_CODE", qrScan, StringComparison.Ordinal);
 
         var client = File.ReadAllText(Path.Combine(
             FindRepoRoot(),

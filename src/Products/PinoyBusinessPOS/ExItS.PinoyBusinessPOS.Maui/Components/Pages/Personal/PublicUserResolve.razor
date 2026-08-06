@@ -2,6 +2,7 @@
 @inject IAuthenticationService Auth
 @inject ICurrentUserContext CurrentUser
 @inject IPlatformAccessClient Platform
+@inject IQrCodeScanService QrScan
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
@@ -28,9 +29,11 @@
             <TextInput Label="@L["Personal_ExItsIdLabel"]" Hint="@L["Personal_ExItsIdHint"]" @bind-Value="_input" Disabled="_busy" />
         </FormGroup>
         <FormActions>
+            <Button Variant="ButtonVariant.Primary" IsLoading="_busy" Disabled="_busy" OnClick="ScanQrAsync">@L["Personal_ScanQr"]</Button>
+            <Button Variant="ButtonVariant.Secondary" Disabled="_busy" OnClick="PickQrImageAsync">@L["Personal_PickQrImage"]</Button>
             <Button IsLoading="_busy" Disabled="_busy" OnClick="ResolveAsync">@L["Personal_ResolveLookup"]</Button>
         </FormActions>
-        <InlineMessage Tone="InlineMessageTone.Warning">@L["Personal_ResolveCameraDeferred"]</InlineMessage>
+        <InlineMessage Tone="InlineMessageTone.Info">@L["Personal_ScanQrHint"]</InlineMessage>
     }
     else
     {
@@ -64,9 +67,13 @@
     [SupplyParameterFromQuery(Name = "return")]
     public string? ReturnPath { get; set; }
 
+    [SupplyParameterFromQuery(Name = "scan")]
+    public string? AutoScan { get; set; }
+
     private bool _loadingSession = true;
     private bool _authenticated;
     private bool _busy;
+    private bool _autoScanStarted;
     private string? _input;
     private List<string> _errors = [];
     private ResolvedPublicUserDto? _resolved;
@@ -84,6 +91,51 @@
         }
 
         _loadingSession = false;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || _autoScanStarted || !_authenticated || _resolved is not null)
+        {
+            return;
+        }
+
+        if (!string.Equals(AutoScan, "1", StringComparison.Ordinal)
+            && !string.Equals(AutoScan, "true", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        _autoScanStarted = true;
+        await ScanQrAsync();
+    }
+
+    private async Task ScanQrAsync()
+    {
+        await ApplyScanResultAsync(await QrScan.CaptureAsync());
+    }
+
+    private async Task PickQrImageAsync()
+    {
+        await ApplyScanResultAsync(await QrScan.PickFromGalleryAsync());
+    }
+
+    private async Task ApplyScanResultAsync(QrScanResult scan)
+    {
+        _errors = [];
+        if (!scan.Succeeded)
+        {
+            if (!string.IsNullOrWhiteSpace(scan.ErrorKey)
+                && !string.Equals(scan.ErrorKey, "Personal_ScanCancelled", StringComparison.Ordinal))
+            {
+                _errors.Add(L[scan.ErrorKey]);
+            }
+
+            return;
+        }
+
+        _input = scan.Payload;
+        await ResolveAsync();
     }
 
     private async Task ResolveAsync()

@@ -965,7 +965,8 @@
   <data name="Sales_TenderBelowTotal" xml:space="preserve"><value>Amount tendered must be at least the total.</value></data>
   <data name="Sales_GCash_ManualTitle" xml:space="preserve"><value>Manual GCash entry</value></data>
   <data name="Sales_GCash_ManualWarning" xml:space="preserve"><value>This reference is typed by you and is never verified with GCash. Confirm the payment in your own GCash app before recording the sale.</value></data>
-  <data name="Sales_GCash_ReferenceHint" xml:space="preserve"><value>Optional. Copy the reference from your GCash app.</value></data>
+  <data name="Sales_GCash_ReferenceHint" xml:space="preserve"><value>Required. Copy the reference from your GCash app.</value></data>
+  <data name="Sales_GCash_ReferenceRequired" xml:space="preserve"><value>Enter the GCash reference before recording the sale.</value></data>
   <data name="Sales_GCash_ReferenceTooLong" xml:space="preserve"><value>The GCash reference is too long.</value></data>
   <data name="Sales_GCash_ConfirmReceived" xml:space="preserve"><value>I confirmed the GCash payment was received.</value></data>
   <data name="Sales_GCash_ConfirmRequired" xml:space="preserve"><value>Confirm the GCash payment was received first.</value></data>
@@ -1066,8 +1067,17 @@
   <data name="Sales_Checkout_ProductAddAria" xml:space="preserve"><value>Add {0}, {1}</value></data>
   <data name="Sales_Checkout_AllCategories" xml:space="preserve"><value>All</value></data>
   <data name="Sales_Checkout_OptionalCustomer" xml:space="preserve"><value>Customer (optional)</value></data>
+  <data name="Sales_Checkout_RequiredCustomer" xml:space="preserve"><value>Customer *</value></data>
+  <data name="Sales_Checkout_AddCustomer" xml:space="preserve"><value>New customer</value></data>
+  <data name="Sales_Checkout_AddCustomerWithExItsId" xml:space="preserve"><value>Add with ExItS ID</value></data>
   <data name="Sales_Checkout_CartFab" xml:space="preserve"><value>Cart ({0})</value></data>
     <data name="Sales_Checkout_SellTitle" xml:space="preserve"><value>Sell</value></data>
+  <data name="Sales_Checkout_Reset" xml:space="preserve"><value>Reset</value></data>
+  <data name="Sales_Checkout_ResetTitle" xml:space="preserve"><value>Reset this sale?</value></data>
+  <data name="Sales_Checkout_LeaveTitle" xml:space="preserve"><value>Leave this sale?</value></data>
+  <data name="Sales_Checkout_DiscardMessage" xml:space="preserve"><value>Your current cart and unsaved sale details will be cleared.</value></data>
+  <data name="Sales_Checkout_LeaveConfirm" xml:space="preserve"><value>Leave and clear</value></data>
+  <data name="Sales_Checkout_ResetConfirm" xml:space="preserve"><value>Clear cart</value></data>
   <data name="Sales_Checkout_LookupPlaceholder" xml:space="preserve"><value>Scan barcode, SKU, or product name</value></data>
   <data name="Sales_Checkout_ClearSearch" xml:space="preserve"><value>Clear search</value></data>
   <data name="Sales_Checkout_StockNotTracked" xml:space="preserve"><value>Stock not tracked</value></data>
@@ -2018,6 +2028,15 @@
   <data name="Personal_ResolveUserManualHint" xml:space="preserve"><value>Enter the ExItS ID exactly. Partial search is not supported.</value></data>
   <data name="Personal_ResolveLookup" xml:space="preserve"><value>Look up</value></data>
   <data name="Personal_ResolveCameraDeferred" xml:space="preserve"><value>Camera scan is not available in this build - use manual ExItS ID entry.</value></data>
+  <data name="Personal_ScanQr" xml:space="preserve"><value>Scan QR</value></data>
+  <data name="Personal_PickQrImage" xml:space="preserve"><value>Choose QR image</value></data>
+  <data name="Personal_ScanQrHint" xml:space="preserve"><value>Scan or choose a photo of an ExItS QR code. You can still type an ExItS ID manually.</value></data>
+  <data name="Personal_ScanCameraDenied" xml:space="preserve"><value>Camera permission is required to scan a QR code.</value></data>
+  <data name="Personal_ScanCameraUnavailable" xml:space="preserve"><value>Camera capture is unavailable on this device.</value></data>
+  <data name="Personal_ScanGalleryUnavailable" xml:space="preserve"><value>Photo library access is unavailable on this device.</value></data>
+  <data name="Personal_ScanCancelled" xml:space="preserve"><value>QR scan cancelled.</value></data>
+  <data name="Personal_ScanNoQrFound" xml:space="preserve"><value>No QR code found in that image. Try again or enter the ExItS ID.</value></data>
+  <data name="Personal_ScanDecodeFailed" xml:space="preserve"><value>Could not read that QR image. Try again or enter the ExItS ID.</value></data>
   <data name="Personal_ResolveConfirmTitle" xml:space="preserve"><value>Confirm identity</value></data>
   <data name="Personal_ResolveConfirmHint" xml:space="preserve"><value>Nothing is linked until you confirm. Membership and roles are never granted from a scan alone.</value></data>
   <data name="Personal_ResolveConfirm" xml:space="preserve"><value>Confirm</value></data>

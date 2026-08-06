@@ -44,11 +44,16 @@ public static class SalesUiOptions
     public static IReadOnlyList<string> CheckoutPaymentMethodCodes { get; } =
     [
         PosSaleOptions.CashPaymentMethod,
-        PosSaleOptions.CardPaymentMethod,
-        PosSaleOptions.GCashPaymentMethod,
+        // Manual GCash (reference required). Electronic Card / GCash are not checkout options.
         PosSaleOptions.ManualGCashPaymentMethod,
         PosSaleOptions.UtangPaymentMethod
     ];
+
+    /// <summary>Checkout tile label — ManualGCash is shown as plain "GCash".</summary>
+    public static string CheckoutPaymentMethodLabel(IStringLocalizer<PosResources> localizer, string? code) =>
+        string.Equals(code, PosSaleOptions.ManualGCashPaymentMethod, StringComparison.Ordinal)
+            ? localizer["Sales_Payment_GCash"].Value
+            : PaymentMethodLabel(localizer, code);
 
     public static IReadOnlyList<SelectOption> PaymentMethodFilters(IStringLocalizer<PosResources> localizer)
     {

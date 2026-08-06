@@ -173,7 +173,7 @@ P18-WP06 ? Cashier Selling Experience
         ?
 P18-WP07 ? Mobile Security, Resilience, and Localization
         ?
-P18-WP08 ? End-to-End Validation and Closeout (Complete ù closeout recorded; partial phone validation; Phase 18 Complete (implementation/scope); Not Device Verified)
+P18-WP08 ? End-to-End Validation and Closeout (Complete ÔøΩ closeout recorded; partial phone validation; Phase 18 Complete (implementation/scope); Not Device Verified)
         ?
 P19-WP01 ? Mobile Inventory UI (Code Complete)
         ?
@@ -189,7 +189,7 @@ P19-WP06 ? Mobile Customers UI (Code Complete)
         ?
 P19-WP07 ? Mobile Reports, Authorization, Navigation, and UX Hardening (Code Complete)
         ?
-P19-WP08 ? End-to-End Validation and User Closeout Checklist (Retest ù awaiting phone confirmation; Phase 19 Open; Not Device Verified)
+P19-WP08 ? End-to-End Validation and User Closeout Checklist (Retest ÔøΩ awaiting phone confirmation; Phase 19 Open; Not Device Verified)
 ```
 
 ## Phase progress
@@ -214,8 +214,8 @@ P19-WP08 ? End-to-End Validation and User Closeout Checklist (Retest ù awaiting 
 | 15 | Ant Design Platform Administration | **Complete** | 7 | 7 | 100% | [Open](phases/phase-15-ant-design-platform-admin.md) |
 | 16 | Isolated Account Profiles, Personal Utang, Business Upgrade | **Complete with documented residuals** | 10 | 10 | 100% | [Open](phases/phase-16-isolated-account-profiles-personal-utang-and-business-upgrade.md) |
 | 17 | POS MVP Operational Onboarding and First Sale | **Complete with documented residuals** | 8 | 8 | 100% | [Open](phases/phase-17-pos-mvp-operational-onboarding-and-first-sale.md) |
-| 18 | Mobile Personal, Organization, and POS Experience | **Complete (implementation/scope)** ù partial phone validation; Not Device Verified | 8 | 8 | 100% | [Open](phases/phase-18-mobile-personal-organization-and-pos-experience.md) |
-| 19 | Mobile POS Operations and Cashier Experience Completion | **Open** (WP01ùWP07 Code Complete; WP08 Retest) | 7 | 8 |  -  | [Open](phases/phase-19-mobile-pos-operations-and-cashier-experience.md) |
+| 18 | Mobile Personal, Organization, and POS Experience | **Complete (implementation/scope)** ÔøΩ partial phone validation; Not Device Verified | 8 | 8 | 100% | [Open](phases/phase-18-mobile-personal-organization-and-pos-experience.md) |
+| 19 | Mobile POS Operations and Cashier Experience Completion | **Open** (WP01ÔøΩWP07 Code Complete; WP08 Retest) | 7 | 8 |  -  | [Open](phases/phase-19-mobile-pos-operations-and-cashier-experience.md) |
 
 **MVP phases 0-9:** 52 / 52 = **100%** (with documented risks; not Production-ready).
 **Phase 10 Full POS:** 8 / 8 = **100%** (with documented risks; not Production-ready).
@@ -226,8 +226,8 @@ P19-WP08 ? End-to-End Validation and User Closeout Checklist (Retest ù awaiting 
 **Phase 15 Ant Design Platform Admin:** 7 / 7 WPs complete (closeout [P15-WP07](reports/P15-WP07-phase-15-closeout.md); Fluent UI direction cancelled/superseded).
 **Phase 16 Account Profiles / Personal Utang:** 10 / 10 WPs complete (closeout [P16-WP10](reports/P16-WP10-phase-16-closeout.md); Phase 14 unchanged; not Production-ready).
 **Phase 17 POS MVP Operational Onboarding:** 8 / 8 WPs complete (closeout [P17-WP08](reports/P17-WP08-reports-hardening-and-closeout.md); Phase 14 unchanged; not Production-ready).
-**Phase 18 Mobile Personal / Org / POS Experience:** **Complete (implementation/scope)** ù WP01ùWP08 closed ([checklist](reports/P18-WP08-end-to-end-validation-and-closeout.md)); Products/Categories phone-validated; Quick Login pending final retest; PhysicalDevice Tailscale APK delivered; **Not Device Verified**; Inventory/Registers/Shifts/Sales/Customers/Reports/full Cashier UI ? Phase 19; Phase 14 unchanged; not Production-ready.
-**Phase 19 Mobile POS Operations / Cashier Experience:** **Open** ([phase](phases/phase-19-mobile-pos-operations-and-cashier-experience.md); [P19-WP08](reports/P19-WP08-end-to-end-validation-and-closeout.md)) ù WP01ùWP07 Code Complete; WP08 Retest awaiting phone confirmation; Phase 14 unchanged; not Production-ready; **Not Device Verified**; **Not Complete**.
+**Phase 18 Mobile Personal / Org / POS Experience:** **Complete (implementation/scope)** ÔøΩ WP01ÔøΩWP08 closed ([checklist](reports/P18-WP08-end-to-end-validation-and-closeout.md)); Products/Categories phone-validated; Quick Login pending final retest; PhysicalDevice Tailscale APK delivered; **Not Device Verified**; Inventory/Registers/Shifts/Sales/Customers/Reports/full Cashier UI ? Phase 19; Phase 14 unchanged; not Production-ready.
+**Phase 19 Mobile POS Operations / Cashier Experience:** **Open** ([phase](phases/phase-19-mobile-pos-operations-and-cashier-experience.md); [P19-WP08](reports/P19-WP08-end-to-end-validation-and-closeout.md)) ÔøΩ WP01ÔøΩWP07 Code Complete; WP08 Retest awaiting phone confirmation; Phase 14 unchanged; not Production-ready; **Not Device Verified**; **Not Complete**.
 
 ## Phase 19 work packages
 

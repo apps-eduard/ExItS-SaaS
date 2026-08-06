@@ -33,6 +33,8 @@ public sealed class MobileProductionUiGuardTests
         Assert.Contains(".pos-sell-payment", css, StringComparison.Ordinal);
         Assert.Contains(".pos-sell-payment-method", css, StringComparison.Ordinal);
         Assert.Contains(".pos-sell-page.exds-page", css, StringComparison.Ordinal);
+        Assert.Contains("padding-inline: 0.625rem", css, StringComparison.Ordinal);
+        Assert.Contains(".pos-sell-heading__reset", css, StringComparison.Ordinal);
         Assert.Contains(".pos-cart-line", css, StringComparison.Ordinal);
         Assert.Contains("min-width: 900px", css, StringComparison.Ordinal);
         Assert.Contains("orientation: landscape", css, StringComparison.Ordinal);
@@ -94,6 +96,11 @@ public sealed class MobileProductionUiGuardTests
         Assert.Contains("_paymentMethodExpanded", checkout, StringComparison.Ordinal);
         Assert.Contains("pos-sell-payment-method__toggle", checkout, StringComparison.Ordinal);
         Assert.Contains("PosSaleOptions.CashPaymentMethod", checkout, StringComparison.Ordinal);
+        // Unfinished sale: Reset + leave confirmation clears cart.
+        Assert.Contains("NavigationLock", checkout, StringComparison.Ordinal);
+        Assert.Contains("Sales_Checkout_Reset", checkout, StringComparison.Ordinal);
+        Assert.Contains("Sales_Checkout_DiscardMessage", checkout, StringComparison.Ordinal);
+        Assert.Contains("DiscardUnfinishedSale", checkout, StringComparison.Ordinal);
     }
 
     [Fact]

@@ -74,6 +74,7 @@
     <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.2" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.0" />
     <PackageReference Include="QRCoder" Version="1.6.0" />
+    <PackageReference Include="ZXing.Net" Version="0.16.11" />
   </ItemGroup>
 
   <ItemGroup>
@@ -100,8 +101,7 @@
 
   <!-- PhysicalDevice Debug only: Tailscale/LAN Local Validation endpoints (never Release). -->
   <ItemGroup Condition="'$(Configuration)' == 'Debug' AND '$(PosLocalValidationTarget)' == 'PhysicalDevice'">
-    <EmbeddedResource Include="wwwroot\appsettings.LocalValidation.PhysicalDevice.json"
-                      LogicalName="appsettings.LocalValidation.PhysicalDevice.json" />
+    <EmbeddedResource Include="wwwroot\appsettings.LocalValidation.PhysicalDevice.json" LogicalName="appsettings.LocalValidation.PhysicalDevice.json" />
   </ItemGroup>
 
   <!-- Release: HTTPS-only cleartext policy (do not package the Release XML as an extra resource in Debug). -->

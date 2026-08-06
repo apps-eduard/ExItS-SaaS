@@ -49,6 +49,7 @@ else
             <InlineMessage Tone="InlineMessageTone.Info">@L["Customers_ResolveConfirmedHint"]</InlineMessage>
         }
         <FormActions>
+            <Button Variant="ButtonVariant.Primary" Disabled="@(!canCreate || _saving)" OnClick="GoScanExItsQr">@L["Personal_ScanQr"]</Button>
             <Button Variant="ButtonVariant.Secondary" Disabled="@(!canCreate || _saving)" OnClick="GoResolveExItsId">@L["Personal_AddByExItsId"]</Button>
         </FormActions>
     </Section>
@@ -80,6 +81,9 @@ else
 
     [SupplyParameterFromQuery(Name = "userId")]
     public string? ResolvedUserId { get; set; }
+
+    [SupplyParameterFromQuery(Name = "return")]
+    public string? ReturnPath { get; set; }
 
     private bool _ready;
     private bool _saving;
@@ -152,6 +156,15 @@ else
 
         if (result.Succeeded && result.Customer is not null)
         {
+            if (IsSaleCheckoutReturn(ReturnPath))
+            {
+                var sep = ReturnPath!.Contains('?', StringComparison.Ordinal) ? "&" : "?";
+                Nav.NavigateTo(
+                    $"{ReturnPath}{sep}customerId={result.Customer.CustomerId:D}",
+                    replace: true);
+                return;
+            }
+
             var route = result.PendingLocal
                 ? $"/customers/{result.Customer.CustomerId:D}?pending=1"
                 : $"/customers/{result.Customer.CustomerId:D}";
@@ -176,8 +189,29 @@ else
         _saving = false;
     }
 
-    private void GoResolveExItsId() =>
-        Nav.NavigateTo("/personal/resolve-user?purpose=customer&return=/customers/new");
+    private string BuildCustomerCreateReturn() =>
+        string.IsNullOrWhiteSpace(ReturnPath)
+            ? "/customers/new"
+            : $"/customers/new?return={Uri.EscapeDataString(ReturnPath)}";
 
-    private void GoBack() => Nav.NavigateTo("/customers");
+    private void GoScanExItsQr() =>
+        Nav.NavigateTo($"/personal/resolve-user?purpose=customer&return={Uri.EscapeDataString(BuildCustomerCreateReturn())}&scan=1");
+
+    private void GoResolveExItsId() =>
+        Nav.NavigateTo($"/personal/resolve-user?purpose=customer&return={Uri.EscapeDataString(BuildCustomerCreateReturn())}");
+
+    private void GoBack()
+    {
+        if (!string.IsNullOrWhiteSpace(ReturnPath) && ReturnPath.StartsWith("/", StringComparison.Ordinal))
+        {
+            Nav.NavigateTo(ReturnPath);
+            return;
+        }
+
+        Nav.NavigateTo("/customers");
+    }
+
+    private static bool IsSaleCheckoutReturn(string? returnPath) =>
+        !string.IsNullOrWhiteSpace(returnPath)
+        && returnPath.StartsWith("/sales/new", StringComparison.OrdinalIgnoreCase);
 }

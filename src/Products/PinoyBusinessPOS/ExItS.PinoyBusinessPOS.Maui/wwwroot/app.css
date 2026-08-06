@@ -1082,6 +1082,10 @@ html.pos-keyboard-open .pos-content {
 }
 
 .pos-sell-heading {
+    align-items: center;
+    display: flex;
+    gap: var(--exits-space-2);
+    justify-content: space-between;
     margin: 0 0 var(--exits-space-1);
 }
 
@@ -1091,6 +1095,10 @@ html.pos-keyboard-open .pos-content {
     font-weight: 700;
     line-height: 1.25;
     color: var(--pos-text-primary, var(--exits-text));
+}
+
+.pos-sell-heading__reset {
+    flex-shrink: 0;
 }
 
 .pos-sell-search {
@@ -1289,8 +1297,20 @@ html.pos-keyboard-open .pos-content {
 }
 
 .pos-sell-page.exds-page {
-    /* Keep sell / payment content inset from shell edges (with Page class merge). */
-    padding-inline: max(var(--exits-page-padding, 1rem), 1.25rem);
+    /* Half of prior sell inset (~1.25rem → ~0.625rem) for denser cashier layout. */
+    padding-inline: 0.625rem;
+}
+
+.pos-sell-shift-cta {
+    display: flex;
+    flex-direction: column;
+    gap: var(--exits-space-3);
+    margin: 0 0 var(--exits-space-3);
+}
+
+.pos-sell-shift-cta .exds-btn {
+    min-height: var(--exits-touch-target-min, 3rem);
+    width: 100%;
 }
 
 .pos-sell-payment {
