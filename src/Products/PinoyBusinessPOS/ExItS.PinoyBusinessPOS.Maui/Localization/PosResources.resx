@@ -831,7 +831,19 @@
   <data name="Catalog_Import_Continue" xml:space="preserve"><value>Continue</value></data>
   <data name="Catalog_Import_ConfirmTitle" xml:space="preserve"><value>Confirm first-batch import</value></data>
   <data name="Catalog_Import_ConfirmDefaultsTitle" xml:space="preserve"><value>Import defaults</value></data>
-  <data name="Catalog_Import_ConfirmDefaultsMessage" xml:space="preserve"><value>Initial stock starts at 0. Suggested prices copy as editable starting values. Duplicates are skipped. Opening stock uses the existing inventory adjust flow.</value></data>
+  <data name="Catalog_Import_ConfirmDefaultsMessage" xml:space="preserve"><value>Initial stock starts at 0. Selling prices copy as editable starting values. Duplicates are skipped. Opening stock uses the existing inventory adjust flow.</value></data>
+  <data name="Catalog_Import_ConfirmAcknowledge" xml:space="preserve"><value>I understand these products will be added to my local catalog with stock 0 and that duplicates will be skipped.</value></data>
+  <data name="Catalog_Import_Selected" xml:space="preserve"><value>Selected</value></data>
+  <data name="Catalog_Import_PreviewSearch" xml:space="preserve"><value>Search preview products</value></data>
+  <data name="Catalog_Import_UnavailableProduct" xml:space="preserve"><value>Unavailable product</value></data>
+  <data name="Catalog_Import_UnavailableProductCount" xml:space="preserve"><value>{0} product(s) could not be resolved from Platform and may fail import.</value></data>
+  <data name="Catalog_Import_GoToProducts" xml:space="preserve"><value>Go to Products</value></data>
+  <data name="Catalog_Import_CostPrice" xml:space="preserve"><value>Cost</value></data>
+  <data name="Catalog_Import_SellingPrice" xml:space="preserve"><value>Selling price</value></data>
+  <data name="Catalog_Import_Brand" xml:space="preserve"><value>Brand</value></data>
+  <data name="Catalog_Import_Category" xml:space="preserve"><value>Category</value></data>
+  <data name="Catalog_Import_Unit" xml:space="preserve"><value>Unit</value></data>
+  <data name="Catalog_Import_Description" xml:space="preserve"><value>Description</value></data>
   <data name="Catalog_Import_Start" xml:space="preserve"><value>Start import</value></data>
   <data name="Catalog_Import_ProgressTitle" xml:space="preserve"><value>Import progress</value></data>
   <data name="Catalog_Import_ProgressSubtitle" xml:space="preserve"><value>You can leave this screen; the job continues in the background.</value></data>

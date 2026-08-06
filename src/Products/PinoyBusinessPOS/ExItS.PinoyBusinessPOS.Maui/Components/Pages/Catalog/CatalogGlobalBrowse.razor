@@ -196,7 +196,7 @@ else
                                     }
                                 </span>
                                 <span class="pos-global__row-side">
-                                    @if (product.SuggestedPrice is decimal price)
+                                    @if (product.SellingPrice is decimal price)
                                     {
                                         <span class="pos-global__row-price">
                                             <MoneyDisplay Amount="@price" CurrencyCode="PHP" />

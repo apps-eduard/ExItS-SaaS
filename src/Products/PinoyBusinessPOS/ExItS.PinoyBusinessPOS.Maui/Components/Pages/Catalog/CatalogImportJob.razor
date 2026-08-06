@@ -49,6 +49,7 @@ else
         else if (_job is not null)
         {
             var terminal = IsTerminal(_job.Status);
+            var successTerminal = IsSuccessTerminal(_job.Status);
             <Section Title="@L["Catalog_Import_StatusSection"]">
                 <Stack Gap="3">
                     <Badge Tone="@StatusTone(_job.Status)">@StatusLabel(_job.Status)</Badge>
@@ -85,7 +86,11 @@ else
                         <Button Variant="ButtonVariant.Secondary" IsLoading="@_loading" OnClick="LoadAsync">@L["Catalog_Refresh"]</Button>
                         @if (terminal)
                         {
-                            <Button Variant="ButtonVariant.Primary" OnClick="GoReview">@L["Catalog_Import_Review"]</Button>
+                            @if (successTerminal)
+                            {
+                                <Button Variant="ButtonVariant.Primary" OnClick="GoCatalog">@L["Catalog_Import_GoToProducts"]</Button>
+                            }
+                            <Button Variant="@(successTerminal ? ButtonVariant.Secondary : ButtonVariant.Primary)" OnClick="GoReview">@L["Catalog_Import_Review"]</Button>
                         }
                     </FormActions>
                 </Stack>
@@ -105,16 +110,18 @@ else
     private bool _canManage;
     private bool _loading;
     private bool _isOffline;
+    private bool _autoNavigateScheduled;
     private PosCatalogImportJobDto? _job;
     private string? _errorTitle;
     private string? _errorMessage;
     private CancellationTokenSource? _pollCts;
+    private CancellationTokenSource? _autoNavigateCts;
 
     protected override async Task OnParametersSetAsync()
     {
         if (!Gate.CanEnterProtectedShell || CurrentUser.Session?.OrganizationId is null)
         {
-            Nav.NavigateTo(await Gate.ResolveStartRouteAsync().ConfigureAwait(false), replace: true);
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
             return;
         }
 
@@ -125,7 +132,7 @@ else
             return;
         }
 
-        await LoadAsync().ConfigureAwait(false);
+        await LoadAsync();
     }
 
     private async Task LoadAsync()
@@ -133,29 +140,35 @@ else
         _loading = true;
         _errorTitle = null;
         _errorMessage = null;
-        _isOffline = !await Connectivity.IsConnectedAsync().ConfigureAwait(false);
-        if (_isOffline)
+        try
+        {
+            _isOffline = !await Connectivity.IsConnectedAsync();
+            if (_isOffline)
+            {
+                return;
+            }
+
+            var result = await Imports.GetJobAsync(JobId);
+            if (result.IsSuccess && result.Data is not null)
+            {
+                _job = result.Data;
+                SchedulePollIfNeeded();
+                ScheduleAutoNavigateIfNeeded();
+            }
+            else
+            {
+                _job = null;
+                var described = ApiLocalizer.Describe(result.Status, result.Error);
+                _errorTitle = described.Title;
+                _errorMessage = described.Message;
+                StopPolling();
+            }
+        }
+        finally
         {
             _loading = false;
-            return;
+            StateHasChanged();
         }
-
-        var result = await Imports.GetJobAsync(JobId).ConfigureAwait(false);
-        if (result.IsSuccess && result.Data is not null)
-        {
-            _job = result.Data;
-            SchedulePollIfNeeded();
-        }
-        else
-        {
-            _job = null;
-            var described = ApiLocalizer.Describe(result.Status, result.Error);
-            _errorTitle = described.Title;
-            _errorMessage = described.Message;
-            StopPolling();
-        }
-
-        _loading = false;
     }
 
     private void SchedulePollIfNeeded()
@@ -172,14 +185,40 @@ else
         _ = PollLoopAsync(token);
     }
 
+    private void ScheduleAutoNavigateIfNeeded()
+    {
+        if (_job is null || !IsSuccessTerminal(_job.Status) || _autoNavigateScheduled)
+        {
+            return;
+        }
+
+        _autoNavigateScheduled = true;
+        _autoNavigateCts?.Cancel();
+        _autoNavigateCts = new CancellationTokenSource();
+        var token = _autoNavigateCts.Token;
+        _ = AutoNavigateAfterDelayAsync(token);
+    }
+
+    private async Task AutoNavigateAfterDelayAsync(CancellationToken token)
+    {
+        try
+        {
+            await Task.Delay(1500, token);
+            await InvokeAsync(() => Nav.NavigateTo("/catalog"));
+        }
+        catch (TaskCanceledException)
+        {
+        }
+    }
+
     private async Task PollLoopAsync(CancellationToken token)
     {
         try
         {
             while (!token.IsCancellationRequested)
             {
-                await Task.Delay(2000, token).ConfigureAwait(false);
-                var result = await Imports.GetJobAsync(JobId, token).ConfigureAwait(false);
+                await Task.Delay(2000, token);
+                var result = await Imports.GetJobAsync(JobId, token);
                 if (!result.IsSuccess || result.Data is null)
                 {
                     continue;
@@ -188,8 +227,9 @@ else
                 await InvokeAsync(() =>
                 {
                     _job = result.Data;
+                    ScheduleAutoNavigateIfNeeded();
                     StateHasChanged();
-                }).ConfigureAwait(false);
+                });
 
                 if (IsTerminal(result.Data.Status))
                 {
@@ -204,6 +244,9 @@ else
 
     private static bool IsTerminal(string status) =>
         status is "Completed" or "CompletedWithWarnings" or "Failed" or "Cancelled";
+
+    private static bool IsSuccessTerminal(string status) =>
+        status is "Completed" or "CompletedWithWarnings";
 
     private string StatusLabel(string status) => status switch
     {
@@ -235,5 +278,10 @@ else
     private void GoCatalog() => Nav.NavigateTo("/catalog");
     private void GoReview() => Nav.NavigateTo($"/catalog/import/jobs/{JobId:D}/review");
 
-    public void Dispose() => StopPolling();
+    public void Dispose()
+    {
+        StopPolling();
+        _autoNavigateCts?.Cancel();
+        _autoNavigateCts?.Dispose();
+    }
 }

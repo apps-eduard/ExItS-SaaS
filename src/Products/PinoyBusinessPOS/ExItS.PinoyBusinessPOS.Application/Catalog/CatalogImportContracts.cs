@@ -78,7 +78,17 @@ public sealed record PlatformMerchantCatalogTemplateProductDto(
     Guid GlobalProductId,
     int SortOrder,
     bool IsFeatured,
-    bool IsFirstBatch);
+    bool IsFirstBatch,
+    string? ProductName = null,
+    string? Sku = null,
+    string? Barcode = null,
+    string? Brand = null,
+    Guid? CategoryId = null,
+    string? CategoryName = null,
+    string? Status = null,
+    string? Unit = null,
+    decimal? CostPrice = null,
+    decimal? SellingPrice = null);
 
 public sealed record PlatformMerchantCatalogTemplateSummaryDto(
     Guid Id,
@@ -119,9 +129,11 @@ public sealed record PlatformMerchantGlobalProductDto(
     string? Description,
     string? Sku,
     string? Barcode,
+    string? Brand,
     Guid? GlobalCategoryId,
     string Unit,
-    decimal? SuggestedPrice,
+    decimal? CostPrice,
+    decimal? SellingPrice,
     string? ImageReference,
     string Status,
     DateTimeOffset CreatedAtUtc,

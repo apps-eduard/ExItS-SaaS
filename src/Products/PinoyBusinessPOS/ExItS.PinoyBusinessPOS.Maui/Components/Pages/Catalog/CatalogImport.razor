@@ -54,7 +54,7 @@ else
                 <Stack Gap="3">
                     <SearchToolbar SearchText="@_search" SearchTextChanged="OnSearchChanged" Placeholder="@L["Catalog_Import_SearchTemplates"]">
                         <Actions>
-                            <Button Variant="ButtonVariant.Secondary" IsLoading="@_loading" Disabled="@_isOffline" OnClick="ReloadTemplatesAsync">@L["Catalog_Refresh"]</Button>
+                            <Button Variant="ButtonVariant.Secondary" IsLoading="@_loading" Disabled="@(_isOffline || _busy)" OnClick="ReloadTemplatesAsync">@L["Catalog_Refresh"]</Button>
                         </Actions>
                     </SearchToolbar>
 
@@ -71,10 +71,17 @@ else
                         <Stack Gap="2">
                             @foreach (var template in _templates)
                             {
-                                <div class="pos-row">
+                                var selected = _selectedTemplateId == template.Id;
+                                <div class="pos-row @(selected ? "pos-row--selected" : null)">
                                     <div class="pos-product-tile__placeholder" aria-hidden="true"></div>
                                     <div>
-                                        <div class="pos-value-md">@template.Name</div>
+                                        <div class="pos-value-md">
+                                            @template.Name
+                                            @if (selected)
+                                            {
+                                                <Badge Tone="BadgeTone.Info">@L["Catalog_Import_Selected"]</Badge>
+                                            }
+                                        </div>
                                         <div class="pos-muted">@template.PrimaryBusinessType · @string.Format(L["Catalog_Import_FirstBatchCount"].Value, template.FirstBatchCount)</div>
                                         @if (!string.IsNullOrWhiteSpace(template.Description))
                                         {
@@ -82,7 +89,8 @@ else
                                         }
                                     </div>
                                     <Button Variant="ButtonVariant.Primary"
-                                            Disabled="@_isOffline"
+                                            IsLoading="@(_busy && selected)"
+                                            Disabled="@(_isOffline || _busy)"
                                             OnClick="() => SelectTemplateAsync(template.Id)">@L["Catalog_Import_Select"]</Button>
                                 </div>
                             }
@@ -104,38 +112,90 @@ else
                         <span class="pos-muted">@L["Catalog_Import_BusinessType"]</span>
                         <div class="pos-value-md">@_selected.PrimaryBusinessType</div>
                     </div>
+                    @if (!string.IsNullOrWhiteSpace(_selected.Description))
+                    {
+                        <div>
+                            <span class="pos-muted">@L["Catalog_Import_Description"]</span>
+                            <div class="pos-value-md pos-wrap">@_selected.Description</div>
+                        </div>
+                    }
                     <div>
                         <span class="pos-muted">@L["Catalog_Import_FirstBatchLabel"]</span>
-                        <div class="pos-value-md">@_selected.FirstBatchCount</div>
+                        <div class="pos-value-md">@_previewProducts.Count</div>
                     </div>
                     <div>
                         <span class="pos-muted">@L["Catalog_Import_TotalProducts"]</span>
                         <div class="pos-value-md">@_selected.ProductCount</div>
                     </div>
 
+                    @if (_unavailableCount > 0)
+                    {
+                        <Alert Tone="AlertTone.Warning"
+                               Title="@L["Catalog_Import_UnavailableProduct"]"
+                               Message="@string.Format(L["Catalog_Import_UnavailableProductCount"].Value, _unavailableCount)" />
+                    }
+
                     <Section Title="@L["Catalog_Import_SampleProducts"]">
-                        @if (_samples.Count == 0)
+                        @if (_previewProducts.Count == 0)
                         {
                             <EmptyState IconName="inbox" Title="@L["Catalog_Import_NoSamplesTitle"]" Message="@L["Catalog_Import_NoSamplesMessage"]" />
                         }
                         else
                         {
-                            <Stack Gap="2">
-                                @foreach (var sample in _samples)
-                                {
-                                    <div class="pos-row">
-                                        <div class="pos-product-tile__placeholder" aria-hidden="true"></div>
-                                        <div>
-                                            <div class="pos-value-md">@sample.Name</div>
-                                            <div class="pos-muted">@(string.IsNullOrWhiteSpace(sample.Sku) ? L["Catalog_NoValue"] : sample.Sku)</div>
+                            <SearchToolbar SearchText="@_previewSearch"
+                                           SearchTextChanged="OnPreviewSearchChanged"
+                                           Placeholder="@L["Catalog_Import_PreviewSearch"]" />
+                            @if (FilteredPreviewProducts.Count == 0)
+                            {
+                                <EmptyState IconName="search" Title="@L["Catalog_Global_NoMatchTitle"]" Message="@L["Catalog_Global_NoMatchMessage"]" />
+                            }
+                            else
+                            {
+                                <Stack Gap="2">
+                                    @foreach (var product in FilteredPreviewProducts)
+                                    {
+                                        var name = DisplayName(product);
+                                        var unavailable = IsUnavailable(product);
+                                        <div class="pos-row">
+                                            <div class="pos-product-tile__placeholder" aria-hidden="true"></div>
+                                            <div>
+                                                <div class="pos-value-md">@name</div>
+                                                @if (!string.IsNullOrWhiteSpace(product.Brand))
+                                                {
+                                                    <div class="pos-muted">@L["Catalog_Import_Brand"]: @product.Brand</div>
+                                                }
+                                                <div class="pos-muted">
+                                                    @BuildIdentity(product)
+                                                </div>
+                                                @if (!string.IsNullOrWhiteSpace(product.CategoryName))
+                                                {
+                                                    <div class="pos-muted">@L["Catalog_Import_Category"]: @product.CategoryName</div>
+                                                }
+                                                @if (!string.IsNullOrWhiteSpace(product.Unit))
+                                                {
+                                                    <div class="pos-muted">@L["Catalog_Import_Unit"]: @product.Unit</div>
+                                                }
+                                                @if (unavailable)
+                                                {
+                                                    <Badge Tone="BadgeTone.Warning">@L["Catalog_Import_UnavailableProduct"]</Badge>
+                                                }
+                                            </div>
+                                            <Stack Gap="1">
+                                                @if (product.CostPrice is decimal cost)
+                                                {
+                                                    <div class="pos-muted">@L["Catalog_Import_CostPrice"]</div>
+                                                    <MoneyDisplay Amount="@cost" CurrencyCode="PHP" />
+                                                }
+                                                @if (product.SellingPrice is decimal selling)
+                                                {
+                                                    <div class="pos-muted">@L["Catalog_Import_SellingPrice"]</div>
+                                                    <MoneyDisplay Amount="@selling" CurrencyCode="PHP" />
+                                                }
+                                            </Stack>
                                         </div>
-                                        @if (sample.SuggestedPrice is decimal price)
-                                        {
-                                            <MoneyDisplay Amount="@price" CurrencyCode="PHP" />
-                                        }
-                                    </div>
-                                }
-                            </Stack>
+                                    }
+                                </Stack>
+                            }
                         }
                     </Section>
 
@@ -157,13 +217,16 @@ else
                     </div>
                     <div>
                         <span class="pos-muted">@L["Catalog_Import_FirstBatchLabel"]</span>
-                        <div class="pos-value-md">@_selected.FirstBatchCount</div>
+                        <div class="pos-value-md">@_previewProducts.Count</div>
                     </div>
+                    <Checkbox Value="@_confirmAcknowledged"
+                              ValueChanged="OnConfirmAcknowledgedChanged"
+                              Disabled="@_busy">@L["Catalog_Import_ConfirmAcknowledge"]</Checkbox>
                     <FormActions>
                         <Button Variant="ButtonVariant.Secondary" Disabled="@_busy" OnClick="() => _step = WizardStep.Preview">@L["Catalog_Import_Back"]</Button>
                         <Button Variant="ButtonVariant.Primary"
                                 IsLoading="@_busy"
-                                Disabled="@(_isOffline || _busy)"
+                                Disabled="@(_isOffline || _busy || !_confirmAcknowledged)"
                                 OnClick="ConfirmImportAsync">@L["Catalog_Import_Start"]</Button>
                     </FormActions>
                 </Stack>
@@ -180,20 +243,45 @@ else
     private bool _loading;
     private bool _busy;
     private bool _isOffline;
+    private bool _confirmAcknowledged;
     private WizardStep _step = WizardStep.Choose;
     private string? _search;
+    private string? _previewSearch;
+    private Guid? _selectedTemplateId;
+    private string? _confirmIdempotencyKey;
     private IReadOnlyList<PlatformMerchantCatalogTemplateSummaryDto> _templates = Array.Empty<PlatformMerchantCatalogTemplateSummaryDto>();
     private PlatformMerchantCatalogTemplateDto? _selected;
-    private IReadOnlyList<PlatformMerchantGlobalProductDto> _samples = Array.Empty<PlatformMerchantGlobalProductDto>();
+    private IReadOnlyList<PlatformMerchantCatalogTemplateProductDto> _previewProducts = Array.Empty<PlatformMerchantCatalogTemplateProductDto>();
+    private int _unavailableCount;
     private string? _errorTitle;
     private string? _errorMessage;
     private CancellationTokenSource? _searchCts;
+
+    private IReadOnlyList<PlatformMerchantCatalogTemplateProductDto> FilteredPreviewProducts
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(_previewSearch))
+            {
+                return _previewProducts;
+            }
+
+            var term = _previewSearch.Trim();
+            return _previewProducts
+                .Where(p =>
+                    Contains(p.ProductName, term)
+                    || Contains(p.Sku, term)
+                    || Contains(p.Barcode, term)
+                    || Contains(p.Brand, term))
+                .ToList();
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
         if (!Gate.CanEnterProtectedShell || CurrentUser.Session?.OrganizationId is null)
         {
-            Nav.NavigateTo(await Gate.ResolveStartRouteAsync().ConfigureAwait(false), replace: true);
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
             return;
         }
 
@@ -204,23 +292,43 @@ else
             return;
         }
 
-        _isOffline = !await Connectivity.IsConnectedAsync().ConfigureAwait(false);
+        _isOffline = !await Connectivity.IsConnectedAsync();
         if (!_isOffline)
         {
-            await ReloadTemplatesAsync().ConfigureAwait(false);
+            await ReloadTemplatesAsync();
         }
     }
 
-    private async Task OnSearchChanged(string? value)
+    private Task OnSearchChanged(string? value)
     {
         _search = value;
         _searchCts?.Cancel();
         _searchCts = new CancellationTokenSource();
         var token = _searchCts.Token;
+        _ = DebouncedReloadTemplatesAsync(token);
+        return Task.CompletedTask;
+    }
+
+    private Task OnPreviewSearchChanged(string? value)
+    {
+        _previewSearch = value;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private Task OnConfirmAcknowledgedChanged(bool value)
+    {
+        _confirmAcknowledged = value;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private async Task DebouncedReloadTemplatesAsync(CancellationToken token)
+    {
         try
         {
-            await Task.Delay(300, token).ConfigureAwait(false);
-            await ReloadTemplatesAsync().ConfigureAwait(false);
+            await Task.Delay(300, token);
+            await ReloadTemplatesAsync();
         }
         catch (TaskCanceledException)
         {
@@ -232,77 +340,100 @@ else
         _loading = true;
         _errorTitle = null;
         _errorMessage = null;
-        _isOffline = !await Connectivity.IsConnectedAsync().ConfigureAwait(false);
-        if (_isOffline)
+        try
+        {
+            _isOffline = !await Connectivity.IsConnectedAsync();
+            if (_isOffline)
+            {
+                return;
+            }
+
+            var result = await Discovery.ListPublishedTemplatesAsync(search: _search, page: 1, pageSize: 50);
+            if (result.IsSuccess && result.Data is not null)
+            {
+                _templates = result.Data.Items;
+            }
+            else
+            {
+                _templates = Array.Empty<PlatformMerchantCatalogTemplateSummaryDto>();
+                var described = ApiLocalizer.Describe(result.Status, result.Error);
+                _errorTitle = described.Title;
+                _errorMessage = described.Message;
+            }
+        }
+        finally
         {
             _loading = false;
-            return;
+            StateHasChanged();
         }
-
-        var result = await Discovery.ListPublishedTemplatesAsync(search: _search, page: 1, pageSize: 50).ConfigureAwait(false);
-        if (result.IsSuccess && result.Data is not null)
-        {
-            _templates = result.Data.Items;
-        }
-        else
-        {
-            _templates = Array.Empty<PlatformMerchantCatalogTemplateSummaryDto>();
-            var described = ApiLocalizer.Describe(result.Status, result.Error);
-            _errorTitle = described.Title;
-            _errorMessage = described.Message;
-        }
-
-        _loading = false;
     }
 
     private async Task SelectTemplateAsync(Guid templateId)
     {
-        _busy = true;
-        _errorTitle = null;
-        _errorMessage = null;
-        var result = await Discovery.GetPublishedTemplateAsync(templateId).ConfigureAwait(false);
-        if (!result.IsSuccess || result.Data is null)
+        if (_busy)
         {
-            var described = ApiLocalizer.Describe(result.Status, result.Error);
-            _errorTitle = described.Title;
-            _errorMessage = described.Message;
-            _busy = false;
             return;
         }
 
-        _selected = result.Data;
-        var links = result.Data.Products
-            .Where(p => p.IsFirstBatch)
-            .OrderBy(p => p.SortOrder)
-            .Take(12)
-            .ToList();
-        var samples = new List<PlatformMerchantGlobalProductDto>();
-        foreach (var link in links)
+        _busy = true;
+        _selectedTemplateId = templateId;
+        _errorTitle = null;
+        _errorMessage = null;
+        try
         {
-            var product = await Discovery.GetActiveProductAsync(link.GlobalProductId).ConfigureAwait(false);
-            if (product.IsSuccess && product.Data is not null)
+            _isOffline = !await Connectivity.IsConnectedAsync();
+            if (_isOffline)
             {
-                samples.Add(product.Data);
+                return;
             }
-        }
 
-        _samples = samples;
-        _step = WizardStep.Preview;
-        _busy = false;
+            var result = await Discovery.GetPublishedTemplateAsync(templateId);
+            if (!result.IsSuccess || result.Data is null)
+            {
+                var described = ApiLocalizer.Describe(result.Status, result.Error);
+                _errorTitle = described.Title;
+                _errorMessage = described.Message;
+                return;
+            }
+
+            _selected = result.Data;
+            _previewProducts = result.Data.Products
+                .Where(p => p.IsFirstBatch)
+                .OrderBy(p => p.SortOrder)
+                .ToList();
+            _unavailableCount = _previewProducts.Count(IsUnavailable);
+            _previewSearch = null;
+            _step = WizardStep.Preview;
+        }
+        finally
+        {
+            _busy = false;
+            StateHasChanged();
+        }
     }
 
     private void BackToChoose()
     {
         _selected = null;
-        _samples = Array.Empty<PlatformMerchantGlobalProductDto>();
+        _selectedTemplateId = null;
+        _previewProducts = Array.Empty<PlatformMerchantCatalogTemplateProductDto>();
+        _previewSearch = null;
+        _unavailableCount = 0;
+        _confirmAcknowledged = false;
+        _confirmIdempotencyKey = null;
         _step = WizardStep.Choose;
     }
 
-    private void GoConfirm() => _step = WizardStep.Confirm;
+    private void GoConfirm()
+    {
+        _confirmAcknowledged = false;
+        _confirmIdempotencyKey ??= Guid.NewGuid().ToString("N");
+        _step = WizardStep.Confirm;
+    }
 
     private async Task ConfirmImportAsync()
     {
-        if (_selected is null || _busy)
+        if (_selected is null || _busy || !_confirmAcknowledged)
         {
             return;
         }
@@ -310,22 +441,63 @@ else
         _busy = true;
         _errorTitle = null;
         _errorMessage = null;
-        var request = new ImportTemplateBatchRequest(
-            _selected.Id,
-            BatchNumber: 1,
-            IdempotencyKey: Guid.NewGuid().ToString("N"));
-        var result = await Imports.ImportTemplateBatchAsync(request).ConfigureAwait(false);
-        if (!result.IsSuccess || result.Data is null)
+        try
         {
-            var described = ApiLocalizer.Describe(result.Status, result.Error);
-            _errorTitle = described.Title;
-            _errorMessage = described.Message;
+            _isOffline = !await Connectivity.IsConnectedAsync();
+            if (_isOffline)
+            {
+                return;
+            }
+
+            _confirmIdempotencyKey ??= Guid.NewGuid().ToString("N");
+            var request = new ImportTemplateBatchRequest(
+                _selected.Id,
+                BatchNumber: 1,
+                IdempotencyKey: _confirmIdempotencyKey);
+            var result = await Imports.ImportTemplateBatchAsync(request);
+            if (!result.IsSuccess || result.Data is null)
+            {
+                var described = ApiLocalizer.Describe(result.Status, result.Error);
+                _errorTitle = described.Title;
+                _errorMessage = described.Message;
+                return;
+            }
+
+            Nav.NavigateTo($"/catalog/import/jobs/{result.Data.JobId:D}");
+        }
+        finally
+        {
             _busy = false;
-            return;
+            StateHasChanged();
+        }
+    }
+
+    private static bool IsUnavailable(PlatformMerchantCatalogTemplateProductDto product) =>
+        string.IsNullOrWhiteSpace(product.ProductName)
+        || string.Equals(product.ProductName, "Unavailable product", StringComparison.OrdinalIgnoreCase);
+
+    private string DisplayName(PlatformMerchantCatalogTemplateProductDto product) =>
+        IsUnavailable(product) ? L["Catalog_Import_UnavailableProduct"] : product.ProductName!;
+
+    private static string BuildIdentity(PlatformMerchantCatalogTemplateProductDto product)
+    {
+        var parts = new List<string>();
+        if (!string.IsNullOrWhiteSpace(product.Sku))
+        {
+            parts.Add(product.Sku);
         }
 
-        Nav.NavigateTo($"/catalog/import/jobs/{result.Data.JobId:D}");
+        if (!string.IsNullOrWhiteSpace(product.Barcode))
+        {
+            parts.Add(product.Barcode);
+        }
+
+        return parts.Count == 0 ? "—" : string.Join(" · ", parts);
     }
+
+    private static bool Contains(string? value, string term) =>
+        !string.IsNullOrWhiteSpace(value)
+        && value.Contains(term, StringComparison.OrdinalIgnoreCase);
 
     private void GoCatalog() => Nav.NavigateTo("/catalog");
     private void GoGlobal() => Nav.NavigateTo("/catalog/global");

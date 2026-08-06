@@ -951,6 +951,13 @@ html.pos-keyboard-open .pos-content {
     width: 2.75rem;
 }
 
+.pos-row--selected {
+    background: color-mix(in srgb, var(--exits-primary) 8%, transparent);
+    margin-inline: calc(-1 * var(--exits-space-2));
+    padding-inline: var(--exits-space-2);
+    border-radius: var(--exits-radius-sm, 0.35rem);
+}
+
 .pos-cart-line {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
