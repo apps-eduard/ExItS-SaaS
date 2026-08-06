@@ -221,12 +221,14 @@ else
                     </div>
                     <Checkbox Value="@_confirmAcknowledged"
                               ValueChanged="OnConfirmAcknowledgedChanged"
-                              Disabled="@_busy">@L["Catalog_Import_ConfirmAcknowledge"]</Checkbox>
+                              Disabled="@_busy"
+                              IsInvalid="@(!string.IsNullOrEmpty(_confirmError))"
+                              ErrorText="@_confirmError">@L["Catalog_Import_ConfirmAcknowledge"]</Checkbox>
                     <FormActions>
-                        <Button Variant="ButtonVariant.Secondary" Disabled="@_busy" OnClick="() => _step = WizardStep.Preview">@L["Catalog_Import_Back"]</Button>
+                        <Button Variant="ButtonVariant.Secondary" Disabled="@_busy" OnClick="BackToPreview">@L["Catalog_Import_Back"]</Button>
                         <Button Variant="ButtonVariant.Primary"
                                 IsLoading="@_busy"
-                                Disabled="@(_isOffline || _busy || !_confirmAcknowledged)"
+                                Disabled="@(_isOffline || _busy)"
                                 OnClick="ConfirmImportAsync">@L["Catalog_Import_Start"]</Button>
                     </FormActions>
                 </Stack>
@@ -244,6 +246,7 @@ else
     private bool _busy;
     private bool _isOffline;
     private bool _confirmAcknowledged;
+    private string? _confirmError;
     private WizardStep _step = WizardStep.Choose;
     private string? _search;
     private string? _previewSearch;
@@ -319,8 +322,21 @@ else
     private Task OnConfirmAcknowledgedChanged(bool value)
     {
         _confirmAcknowledged = value;
+        if (value)
+        {
+            _confirmError = null;
+        }
+
         StateHasChanged();
         return Task.CompletedTask;
+    }
+
+    private void BackToPreview()
+    {
+        _confirmError = null;
+        _errorTitle = null;
+        _errorMessage = null;
+        _step = WizardStep.Preview;
     }
 
     private async Task DebouncedReloadTemplatesAsync(CancellationToken token)
@@ -421,6 +437,7 @@ else
         _previewSearch = null;
         _unavailableCount = 0;
         _confirmAcknowledged = false;
+        _confirmError = null;
         _confirmIdempotencyKey = null;
         _step = WizardStep.Choose;
     }
@@ -428,17 +445,30 @@ else
     private void GoConfirm()
     {
         _confirmAcknowledged = false;
+        _confirmError = null;
+        _errorTitle = null;
+        _errorMessage = null;
         _confirmIdempotencyKey ??= Guid.NewGuid().ToString("N");
         _step = WizardStep.Confirm;
     }
 
     private async Task ConfirmImportAsync()
     {
-        if (_selected is null || _busy || !_confirmAcknowledged)
+        if (_selected is null || _busy)
         {
             return;
         }
 
+        if (!_confirmAcknowledged)
+        {
+            _confirmError = L["Catalog_Import_ConfirmRequired"];
+            _errorTitle = null;
+            _errorMessage = null;
+            StateHasChanged();
+            return;
+        }
+
+        _confirmError = null;
         _busy = true;
         _errorTitle = null;
         _errorMessage = null;
@@ -462,6 +492,7 @@ else
                 var described = ApiLocalizer.Describe(result.Status, result.Error);
                 _errorTitle = described.Title;
                 _errorMessage = described.Message;
+                // Keep confirmation and selected template after recoverable API errors.
                 return;
             }
 

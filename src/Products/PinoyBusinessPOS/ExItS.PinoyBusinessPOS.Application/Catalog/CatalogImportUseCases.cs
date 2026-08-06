@@ -213,7 +213,7 @@ public sealed class ImportTemplateBatch
             if (remaining.Count == 0)
             {
                 return ApplicationResult<PosCatalogImportJobDto>.Failure(
-                    ApplicationErrorCodes.CatalogImportNoProducts,
+                    ApplicationErrorCodes.CatalogImportProductAlreadyImported,
                     "All selected template products are already imported.");
             }
 
@@ -239,22 +239,28 @@ public sealed class ImportTemplateBatch
             var sort = 0;
             foreach (var link in remaining.OrderBy(r => r.SortOrder))
             {
-                if (!byId.TryGetValue(link.GlobalProductId, out var product))
+                if (byId.TryGetValue(link.GlobalProductId, out var product))
                 {
+                    items.Add(CatalogImportItemResult.CreatePending(
+                        product.Id,
+                        sort++,
+                        product.Name,
+                        product.Unit,
+                        product.SellingPrice ?? 0m,
+                        product.Description,
+                        product.Sku,
+                        product.Barcode,
+                        product.GlobalCategoryId,
+                        sourceCategoryName: null));
                     continue;
                 }
 
-                items.Add(CatalogImportItemResult.CreatePending(
-                    product.Id,
-                    sort++,
-                    product.Name,
-                    product.Unit,
-                    product.SellingPrice ?? 0m,
-                    product.Description,
-                    product.Sku,
-                    product.Barcode,
-                    product.GlobalCategoryId,
-                    sourceCategoryName: null));
+                // Fall back to enriched template snapshot when live product GET misses an active row.
+                if (TryCreatePendingFromTemplateLink(link, sort, out var snapshot))
+                {
+                    items.Add(snapshot!);
+                    sort++;
+                }
             }
 
             if (items.Count == 0)
@@ -299,6 +305,33 @@ public sealed class ImportTemplateBatch
         }
 
         return template.Products.Where(p => !p.IsFirstBatch).OrderBy(p => p.SortOrder).ToList();
+    }
+
+    private static bool TryCreatePendingFromTemplateLink(
+        PlatformMerchantCatalogTemplateProductDto link,
+        int sortOrder,
+        out CatalogImportItemResult? item)
+    {
+        item = null;
+        if (link.GlobalProductId == Guid.Empty
+            || string.IsNullOrWhiteSpace(link.ProductName)
+            || string.Equals(link.ProductName, "Unavailable product", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        item = CatalogImportItemResult.CreatePending(
+            link.GlobalProductId,
+            sortOrder,
+            link.ProductName!,
+            string.IsNullOrWhiteSpace(link.Unit) ? "Piece" : link.Unit!,
+            link.SellingPrice ?? 0m,
+            description: null,
+            sku: link.Sku,
+            barcode: link.Barcode,
+            sourceGlobalCategoryId: link.CategoryId,
+            sourceCategoryName: link.CategoryName);
+        return true;
     }
 }
 

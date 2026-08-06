@@ -833,6 +833,7 @@
   <data name="Catalog_Import_ConfirmDefaultsTitle" xml:space="preserve"><value>Default ng import</value></data>
   <data name="Catalog_Import_ConfirmDefaultsMessage" xml:space="preserve"><value>Nagsisimula sa stock 0. Kinokopya ang selling price bilang editable na panimula. Nilalaktawan ang mga duplicate. Gamitin ang inventory adjust para sa opening stock.</value></data>
   <data name="Catalog_Import_ConfirmAcknowledge" xml:space="preserve"><value>Nauunawaan ko na idadagdag ang mga produktong ito sa aking lokal na catalog na may stock 0 at lalaktawan ang mga duplicate.</value></data>
+  <data name="Catalog_Import_ConfirmRequired" xml:space="preserve"><value>Kumpirmahin na nauunawaan mo bago simulan ang import.</value></data>
   <data name="Catalog_Import_Selected" xml:space="preserve"><value>Napili</value></data>
   <data name="Catalog_Import_PreviewSearch" xml:space="preserve"><value>Maghanap sa preview ng produkto</value></data>
   <data name="Catalog_Import_UnavailableProduct" xml:space="preserve"><value>Hindi available na produkto</value></data>

@@ -168,6 +168,24 @@ public sealed class ReusableMvpComponentTests
     }
 
     [Fact]
+    public void Checkbox_parses_html_on_value_and_does_not_mutate_parameter_value()
+    {
+        var checkbox = File.ReadAllText(Path.Combine(
+            FindRepoRoot(),
+            "src",
+            "Shared",
+            "ExItS.DesignSystem",
+            "Components",
+            "Forms",
+            "Checkbox.razor"));
+
+        Assert.Contains("ParseChecked", checkbox, StringComparison.Ordinal);
+        Assert.Contains("string.Equals(s, \"on\"", checkbox, StringComparison.Ordinal);
+        Assert.Contains("ValueChanged.InvokeAsync(next)", checkbox, StringComparison.Ordinal);
+        Assert.DoesNotContain("Value = args.Value", checkbox, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void DesignSystem_resources_include_mvp_component_keys_in_both_cultures()
     {
         var root = FindRepoRoot();

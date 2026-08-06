@@ -26,9 +26,22 @@
 
     private async Task HandleChange(ChangeEventArgs args)
     {
-        Value = args.Value is bool b
-            ? b
-            : bool.TryParse(args.Value?.ToString(), out var parsed) && parsed;
-        if (ValueChanged.HasDelegate) await ValueChanged.InvokeAsync(Value);
+        // Parent owns the model. Do not mutate [Parameter] Value here — that desyncs
+        // checked UI from the bound boolean on MAUI WebView after re-renders.
+        var next = ParseChecked(args.Value);
+        if (ValueChanged.HasDelegate)
+        {
+            await ValueChanged.InvokeAsync(next);
+        }
     }
+
+    internal static bool ParseChecked(object? raw) => raw switch
+    {
+        bool b => b,
+        string s when bool.TryParse(s, out var parsed) => parsed,
+        // HTML checkbox change events often report the default value "on" when checked.
+        string s when string.Equals(s, "on", StringComparison.OrdinalIgnoreCase) => true,
+        null => false,
+        _ => false
+    };
 }

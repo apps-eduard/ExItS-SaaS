@@ -32,10 +32,64 @@ public sealed class CatalogImportWizardTests
         var import = ReadCatalogPage("CatalogImport.razor");
 
         Assert.Contains("_confirmAcknowledged", import, StringComparison.Ordinal);
+        Assert.Contains("_confirmError", import, StringComparison.Ordinal);
         Assert.Contains("Catalog_Import_ConfirmAcknowledge", import, StringComparison.Ordinal);
+        Assert.Contains("Catalog_Import_ConfirmRequired", import, StringComparison.Ordinal);
         Assert.Contains("_confirmIdempotencyKey", import, StringComparison.Ordinal);
         Assert.Contains("ImportTemplateBatchAsync", import, StringComparison.Ordinal);
-        Assert.Contains("!_confirmAcknowledged", import, StringComparison.Ordinal);
+        Assert.Contains("IsInvalid=\"@(!string.IsNullOrEmpty(_confirmError))\"", import, StringComparison.Ordinal);
+        Assert.Contains("ErrorText=\"@_confirmError\"", import, StringComparison.Ordinal);
+        Assert.Contains("Disabled=\"@(_isOffline || _busy)\"", import, StringComparison.Ordinal);
+        Assert.DoesNotContain("Disabled=\"@(_isOffline || _busy || !_confirmAcknowledged)\"", import, StringComparison.Ordinal);
+
+        var confirmMethod = ExtractMethod(import, "ConfirmImportAsync");
+        Assert.Contains("if (!_confirmAcknowledged)", confirmMethod, StringComparison.Ordinal);
+        Assert.Contains("Catalog_Import_ConfirmRequired", confirmMethod, StringComparison.Ordinal);
+        Assert.Contains("ImportTemplateBatchAsync", confirmMethod, StringComparison.Ordinal);
+        Assert.Contains("finally", confirmMethod, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Confirm_ack_toggle_clears_stale_field_error()
+    {
+        var import = ReadCatalogPage("CatalogImport.razor");
+        var handler = ExtractMethod(import, "OnConfirmAcknowledgedChanged");
+        Assert.Contains("_confirmAcknowledged = value", handler, StringComparison.Ordinal);
+        Assert.Contains("_confirmError = null", handler, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Import_wizard_localization_keys_exist_in_english_and_filipino()
+    {
+        var root = FindRepoRoot();
+        var loc = Path.Combine(root, "src", "Products", "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.Maui", "Localization");
+        var en = File.ReadAllText(Path.Combine(loc, "PosResources.resx"));
+        var fil = File.ReadAllText(Path.Combine(loc, "PosResources.fil-PH.resx"));
+
+        foreach (var key in new[]
+                 {
+                     "Catalog_Import_ConfirmAcknowledge",
+                     "Catalog_Import_ConfirmRequired",
+                     "Catalog_Import_Selected",
+                     "Catalog_Import_PreviewSearch",
+                     "Catalog_Import_UnavailableProduct",
+                     "Catalog_Import_UnavailableProductCount",
+                     "Catalog_Import_GoToProducts",
+                     "Catalog_Import_CostPrice",
+                     "Catalog_Import_SellingPrice",
+                     "Catalog_Import_Brand",
+                     "Catalog_Import_Category",
+                     "Catalog_Import_Unit",
+                     "Catalog_Import_Description"
+                 })
+        {
+            Assert.Contains($"name=\"{key}\"", en, StringComparison.Ordinal);
+            Assert.Contains($"name=\"{key}\"", fil, StringComparison.Ordinal);
+        }
+
+        Assert.Contains("Confirm that you understand before starting the import.", en, StringComparison.Ordinal);
+        Assert.Contains("Kumpirmahin na nauunawaan mo bago simulan ang import.", fil, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -91,36 +145,6 @@ public sealed class CatalogImportWizardTests
         Assert.Contains("Brand", templateBlock, StringComparison.Ordinal);
         Assert.Contains("CostPrice", templateBlock, StringComparison.Ordinal);
         Assert.Contains("SellingPrice", templateBlock, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void Import_wizard_localization_keys_exist_in_english_and_filipino()
-    {
-        var root = FindRepoRoot();
-        var loc = Path.Combine(root, "src", "Products", "PinoyBusinessPOS",
-            "ExItS.PinoyBusinessPOS.Maui", "Localization");
-        var en = File.ReadAllText(Path.Combine(loc, "PosResources.resx"));
-        var fil = File.ReadAllText(Path.Combine(loc, "PosResources.fil-PH.resx"));
-
-        foreach (var key in new[]
-                 {
-                     "Catalog_Import_ConfirmAcknowledge",
-                     "Catalog_Import_Selected",
-                     "Catalog_Import_PreviewSearch",
-                     "Catalog_Import_UnavailableProduct",
-                     "Catalog_Import_UnavailableProductCount",
-                     "Catalog_Import_GoToProducts",
-                     "Catalog_Import_CostPrice",
-                     "Catalog_Import_SellingPrice",
-                     "Catalog_Import_Brand",
-                     "Catalog_Import_Category",
-                     "Catalog_Import_Unit",
-                     "Catalog_Import_Description"
-                 })
-        {
-            Assert.Contains($"name=\"{key}\"", en, StringComparison.Ordinal);
-            Assert.Contains($"name=\"{key}\"", fil, StringComparison.Ordinal);
-        }
     }
 
     private static string ReadCatalogPage(string fileName) =>

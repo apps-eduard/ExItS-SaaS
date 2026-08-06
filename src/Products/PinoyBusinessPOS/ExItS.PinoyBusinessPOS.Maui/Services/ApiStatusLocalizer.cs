@@ -27,7 +27,10 @@ public sealed class ApiStatusLocalizer(
             ApiCallStatus.Unavailable => (errors["Unavailable_Title"], errors["Unavailable_Message"], diagnostic),
             ApiCallStatus.Unauthorized => (errors["Unauthorized_Title"], errors["Unauthorized_Message"], diagnostic),
             ApiCallStatus.Forbidden => (errors["Forbidden_Title"], errors["Forbidden_Message"], diagnostic),
-            ApiCallStatus.Validation => (errors["Validation_Title"], errors["Validation_Message"], diagnostic),
+            ApiCallStatus.Validation => (
+                PreferText(error?.Title, errors["Validation_Title"]),
+                PreferText(error?.Detail, errors["Validation_Message"]),
+                diagnostic),
             ApiCallStatus.NotFound => (pos["NotFound_Title"], pos["NotFound_Message"], diagnostic),
             ApiCallStatus.Cancelled => (errors["Unexpected_Title"], design["Error_DefaultMessage"], diagnostic),
             ApiCallStatus.Conflict => DescribeConflict(error, diagnostic),
@@ -45,8 +48,20 @@ public sealed class ApiStatusLocalizer(
             return (pos["Inventory_InsufficientStockTitle"], pos["Inventory_InsufficientStockMessage"], diagnostic);
         }
 
+        if (!string.IsNullOrWhiteSpace(error?.ErrorCode)
+            && error.ErrorCode.StartsWith("pos.catalog_import.", StringComparison.OrdinalIgnoreCase))
+        {
+            return (
+                PreferText(error.Title, errors["Unexpected_Title"]),
+                PreferText(error.Detail, design["Error_DefaultMessage"]),
+                diagnostic);
+        }
+
         return (errors["Unexpected_Title"], design["Error_DefaultMessage"], diagnostic);
     }
+
+    private static string PreferText(string? preferred, LocalizedString fallback) =>
+        string.IsNullOrWhiteSpace(preferred) ? fallback : preferred.Trim();
 
     public string PreferenceSaveFailed => pos["Preference_SaveFailed"];
 }

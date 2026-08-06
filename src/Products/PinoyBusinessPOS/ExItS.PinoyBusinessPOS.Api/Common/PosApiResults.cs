@@ -108,6 +108,8 @@ internal static class PosApiResults
 
         ApplicationErrorCodes.SaleProductNotFound => StatusCodes.Status400BadRequest,
 
+        ApplicationErrorCodes.CatalogImportProductAlreadyImported => StatusCodes.Status409Conflict,
+
         ApplicationErrorCodes.OrganizationRequired
             or ApplicationErrorCodes.ActorRequired
             or ApplicationErrorCodes.StatementInvalidPeriod
