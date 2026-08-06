@@ -264,6 +264,14 @@ file sealed class InMemoryGlobalCategoryRepository : IGlobalCategoryRepository
         return Task.FromResult(((IReadOnlyList<GlobalCategory>)list, _store.Count));
     }
 
+    public Task<IReadOnlyList<GlobalCategory>> GetByIdsAsync(
+        IReadOnlyCollection<Guid> ids,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult((IReadOnlyList<GlobalCategory>)ids
+            .Where(id => _store.ContainsKey(id))
+            .Select(id => _store[id])
+            .ToList());
+
     public Task AddAsync(GlobalCategory category, CancellationToken cancellationToken = default)
     {
         _store[category.Id.Value] = category;
@@ -307,11 +315,20 @@ file sealed class InMemoryGlobalProductRepository : IGlobalProductRepository
         string? sku,
         int skip,
         int take,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        IReadOnlyCollection<Guid>? excludeProductIds = null)
     {
         var list = _store.Values.Skip(skip).Take(take).ToList();
         return Task.FromResult(((IReadOnlyList<GlobalProduct>)list, _store.Count));
     }
+
+    public Task<IReadOnlyList<GlobalProduct>> GetByIdsAsync(
+        IReadOnlyCollection<Guid> ids,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult((IReadOnlyList<GlobalProduct>)ids
+            .Where(id => _store.ContainsKey(id))
+            .Select(id => _store[id])
+            .ToList());
 
     public Task AddAsync(GlobalProduct product, CancellationToken cancellationToken = default)
     {

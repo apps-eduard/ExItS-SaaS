@@ -19,18 +19,22 @@ internal static class GlobalCatalogTestServices
 
         var services = new ServiceCollection();
         services.AddPlatformPersistence(configuration);
-        services.AddScoped<CreateGlobalProduct>();
-        services.AddScoped<UpdateGlobalProduct>();
-        services.AddScoped<CreateGlobalCategory>();
-        services.AddScoped<UpdateGlobalCategory>();
-        services.AddScoped<CreateCatalogTemplate>();
-        services.AddScoped<CatalogTemplateQueryService>();
-        services.AddScoped<GlobalProductQueryService>();
         services.AddScoped<AssignCatalogTemplateProduct>();
+        services.AddScoped<BulkAssignCatalogTemplateProducts>();
+        services.AddScoped<BulkRemoveCatalogTemplateProducts>();
         services.AddScoped<RemoveCatalogTemplateProduct>();
         services.AddScoped<ReorderCatalogTemplateProducts>();
         services.AddScoped<UpdateCatalogTemplateProductFlags>();
         services.AddScoped<PublishCatalogTemplate>();
+        services.AddScoped<GlobalCategoryQueryService>();
+        services.AddScoped<CreateGlobalCategory>();
+        services.AddScoped<UpdateGlobalCategory>();
+        services.AddScoped<SetGlobalProductStatus>();
+        services.AddScoped<CreateGlobalProduct>();
+        services.AddScoped<UpdateGlobalProduct>();
+        services.AddScoped<CreateCatalogTemplate>();
+        services.AddScoped<CatalogTemplateQueryService>();
+        services.AddScoped<GlobalProductQueryService>();
         services.AddSingleton<MutableClock>(new MutableClock(new DateTimeOffset(2026, 8, 6, 9, 0, 0, TimeSpan.Zero)));
         services.AddSingleton<IClock>(sp => sp.GetRequiredService<MutableClock>());
 

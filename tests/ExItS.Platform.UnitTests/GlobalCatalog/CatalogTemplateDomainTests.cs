@@ -176,6 +176,69 @@ public sealed class CatalogTemplateUseCaseTests
     }
 
     [Fact]
+    public async Task Bulk_assign_is_transactional_all_or_nothing()
+    {
+        var templates = new InMemoryCatalogTemplateRepository();
+        var products = new InMemoryGlobalProductRepository();
+        var clock = new FixedClock(T0);
+        var uow = new NoOpUnitOfWork();
+
+        var a = GlobalProduct.Create("Product A", ProductUnit.Piece, T0);
+        var b = GlobalProduct.Create("Product B", ProductUnit.Piece, T0);
+        await products.AddAsync(a);
+        await products.AddAsync(b);
+
+        var created = await new CreateCatalogTemplate(templates, uow, clock)
+            .ExecuteAsync(new CreateCatalogTemplateRequest("Bulk Pack", nameof(BusinessType.SariSari)));
+        Assert.True(created.IsSuccess);
+
+        var bulk = new BulkAssignCatalogTemplateProducts(templates, products, uow, clock);
+        var result = await bulk.ExecuteAsync(
+            created.Value!.Id,
+            new BulkAssignCatalogTemplateProductsRequest(
+                [a.Id.Value, b.Id.Value],
+                IsFeatured: false,
+                IsFirstBatch: true));
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.Equal(2, result.Value!.ProductCount);
+        Assert.Equal(2, result.Value.FirstBatchCount);
+
+        var duplicate = await bulk.ExecuteAsync(
+            created.Value.Id,
+            new BulkAssignCatalogTemplateProductsRequest([a.Id.Value], ExpectedUpdatedAtUtc: result.Value.UpdatedAtUtc));
+        Assert.False(duplicate.IsSuccess);
+        Assert.Equal(DomainErrorCodes.CatalogTemplateProductDuplicate, duplicate.ErrorCode);
+    }
+
+    [Fact]
+    public async Task Bulk_remove_clears_selected_products()
+    {
+        var templates = new InMemoryCatalogTemplateRepository();
+        var products = new InMemoryGlobalProductRepository();
+        var clock = new FixedClock(T0);
+        var uow = new NoOpUnitOfWork();
+
+        var keep = GlobalProduct.Create("Keep", ProductUnit.Piece, T0);
+        var drop = GlobalProduct.Create("Drop", ProductUnit.Piece, T0);
+        await products.AddAsync(keep);
+        await products.AddAsync(drop);
+
+        var created = await new CreateCatalogTemplate(templates, uow, clock)
+            .ExecuteAsync(new CreateCatalogTemplateRequest("Remove Pack", nameof(BusinessType.SariSari)));
+        var assigned = await new BulkAssignCatalogTemplateProducts(templates, products, uow, clock)
+            .ExecuteAsync(created.Value!.Id, new BulkAssignCatalogTemplateProductsRequest([keep.Id.Value, drop.Id.Value]));
+        Assert.True(assigned.IsSuccess);
+
+        var removed = await new BulkRemoveCatalogTemplateProducts(templates, uow, clock)
+            .ExecuteAsync(
+                created.Value.Id,
+                new BulkRemoveCatalogTemplateProductsRequest([drop.Id.Value], assigned.Value!.UpdatedAtUtc));
+        Assert.True(removed.IsSuccess, removed.ErrorMessage);
+        Assert.Single(removed.Value!.Products);
+        Assert.Equal(keep.Id.Value, removed.Value.Products[0].GlobalProductId);
+    }
+
+    [Fact]
     public async Task Create_rejects_duplicate_slug()
     {
         var templates = new InMemoryCatalogTemplateRepository();
@@ -285,8 +348,17 @@ file sealed class InMemoryGlobalProductRepository : IGlobalProductRepository
         string? sku,
         int skip,
         int take,
-        CancellationToken cancellationToken = default) =>
+        CancellationToken cancellationToken = default,
+        IReadOnlyCollection<Guid>? excludeProductIds = null) =>
         Task.FromResult(((IReadOnlyList<GlobalProduct>)_store.Values.ToList(), _store.Count));
+
+    public Task<IReadOnlyList<GlobalProduct>> GetByIdsAsync(
+        IReadOnlyCollection<Guid> ids,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult((IReadOnlyList<GlobalProduct>)ids
+            .Where(id => _store.ContainsKey(id))
+            .Select(id => _store[id])
+            .ToList());
 
     public Task AddAsync(GlobalProduct product, CancellationToken cancellationToken = default)
     {

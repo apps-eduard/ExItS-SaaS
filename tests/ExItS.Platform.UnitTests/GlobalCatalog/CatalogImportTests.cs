@@ -836,6 +836,12 @@ file sealed class FakeCategoryRepository : IGlobalCategoryRepository
         CancellationToken cancellationToken = default) =>
         Task.FromResult<(IReadOnlyList<GlobalCategory>, int)>((Items, Items.Count));
 
+    public Task<IReadOnlyList<GlobalCategory>> GetByIdsAsync(
+        IReadOnlyCollection<Guid> ids,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<GlobalCategory>>(
+            Items.Where(c => ids.Contains(c.Id.Value)).ToList());
+
     public Task UpdateAsync(GlobalCategory category, CancellationToken cancellationToken = default) =>
         Task.CompletedTask;
 }
@@ -891,8 +897,14 @@ file sealed class FakeProductRepository : IGlobalProductRepository
         string? sku,
         int skip,
         int take,
-        CancellationToken cancellationToken = default) =>
+        CancellationToken cancellationToken = default,
+        IReadOnlyCollection<Guid>? excludeProductIds = null) =>
         Task.FromResult<(IReadOnlyList<GlobalProduct>, int)>(([], 0));
+
+    public Task<IReadOnlyList<GlobalProduct>> GetByIdsAsync(
+        IReadOnlyCollection<Guid> ids,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<GlobalProduct>>([]);
 
     public Task UpdateAsync(GlobalProduct product, CancellationToken cancellationToken = default) =>
         Task.CompletedTask;

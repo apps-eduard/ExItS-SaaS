@@ -157,6 +157,92 @@ public sealed class GlobalCatalogTemplateCompositionPersistenceTests(PostgreSqlF
         Assert.Equal(ApplicationErrorCodes.ConcurrencyConflict, stale.ErrorCode);
     }
 
+    [Fact]
+    public async Task GetById_enriches_assigned_products_with_names_not_guids()
+    {
+        await using var provider = GlobalCatalogTestServices.Build(fixture.ConnectionString);
+        var template = await CreateTemplateAsync(provider, "Enrich Pack");
+        var productId = await CreateProductAsync(provider, "Lucky Me Instant Noodles");
+
+        var assigned = await AssignAsync(provider, template.Id, productId, template.UpdatedAtUtc, isFirstBatch: true);
+        Assert.True(assigned.IsSuccess, assigned.ErrorMessage);
+
+        var reloaded = await GetTemplateAsync(provider, template.Id);
+        var row = Assert.Single(reloaded.Products);
+        Assert.Equal("Lucky Me Instant Noodles", row.ProductName);
+        Assert.False(string.IsNullOrWhiteSpace(row.Status));
+        Assert.DoesNotContain(row.ProductName!, row.GlobalProductId.ToString("D"), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Available_products_exclude_already_assigned_and_default_to_active()
+    {
+        await using var provider = GlobalCatalogTestServices.Build(fixture.ConnectionString);
+        var template = await CreateTemplateAsync(provider, "Available Pack");
+        var assigned = await CreateProductAsync(provider, "Assigned Only Product XYZ");
+        var free = await CreateProductAsync(provider, "Free Only Product XYZ");
+
+        var afterAssign = await AssignAsync(provider, template.Id, assigned, template.UpdatedAtUtc);
+        Assert.True(afterAssign.IsSuccess, afterAssign.ErrorMessage);
+
+        using var scope = provider.CreateScope();
+        var available = await scope.ServiceProvider
+            .GetRequiredService<CatalogTemplateQueryService>()
+            .ListAvailableProductsAsync(
+                template.Id,
+                status: ExItS.Platform.Domain.GlobalCatalog.GlobalProductStatus.Active,
+                categoryId: null,
+                search: "Only Product XYZ",
+                barcode: null,
+                sku: null,
+                page: 1,
+                pageSize: 50);
+        Assert.True(available.IsSuccess, available.ErrorMessage);
+        Assert.DoesNotContain(available.Value!.Items, p => p.Id == assigned);
+        Assert.Contains(available.Value.Items, p => p.Id == free);
+        Assert.All(available.Value.Items, p => Assert.Equal("Active", p.Status));
+    }
+
+    [Fact]
+    public async Task Bulk_assign_and_remove_persist_through_fresh_scopes()
+    {
+        await using var provider = GlobalCatalogTestServices.Build(fixture.ConnectionString);
+        var template = await CreateTemplateAsync(provider, "Bulk Persist");
+        var a = await CreateProductAsync(provider, "Bulk Persist A");
+        var b = await CreateProductAsync(provider, "Bulk Persist B");
+        var c = await CreateProductAsync(provider, "Bulk Persist C");
+
+        using (var scope = NewRequest(provider))
+        {
+            var result = await scope.ServiceProvider
+                .GetRequiredService<BulkAssignCatalogTemplateProducts>()
+                .ExecuteAsync(template.Id, new BulkAssignCatalogTemplateProductsRequest(
+                    [a, b, c],
+                    IsFirstBatch: true,
+                    ExpectedUpdatedAtUtc: template.UpdatedAtUtc));
+            Assert.True(result.IsSuccess, result.ErrorMessage);
+            template = result.Value!;
+        }
+
+        var afterAssign = await GetTemplateAsync(provider, template.Id);
+        Assert.Equal(3, afterAssign.Products.Count);
+
+        using (var scope = NewRequest(provider))
+        {
+            var result = await scope.ServiceProvider
+                .GetRequiredService<BulkRemoveCatalogTemplateProducts>()
+                .ExecuteAsync(template.Id, new BulkRemoveCatalogTemplateProductsRequest(
+                    [b],
+                    ExpectedUpdatedAtUtc: afterAssign.UpdatedAtUtc));
+            Assert.True(result.IsSuccess, result.ErrorMessage);
+        }
+
+        var afterRemove = await GetTemplateAsync(provider, template.Id);
+        Assert.Equal(2, afterRemove.Products.Count);
+        Assert.DoesNotContain(afterRemove.Products, p => p.GlobalProductId == b);
+        Assert.Equal("Bulk Persist A", afterRemove.Products.Single(p => p.GlobalProductId == a).ProductName);
+    }
+
     private static IServiceScope NewRequest(ServiceProvider provider)
     {
         provider.GetRequiredService<GlobalCatalogTestServices.MutableClock>().Advance(TimeSpan.FromSeconds(5));
@@ -178,7 +264,7 @@ public sealed class GlobalCatalogTemplateCompositionPersistenceTests(PostgreSqlF
         return result.Value!;
     }
 
-    private static async Task<Guid> CreateProductAsync(ServiceProvider provider, string name)
+    private static async Task<Guid> CreateProductAsync(ServiceProvider provider, string name, bool activate = true)
     {
         using var scope = NewRequest(provider);
         var result = await scope.ServiceProvider
@@ -189,6 +275,16 @@ public sealed class GlobalCatalogTemplateCompositionPersistenceTests(PostgreSqlF
                 Sku: $"SKU-{Guid.NewGuid():N}"[..20],
                 BusinessTypes: ["SariSari"]));
         Assert.True(result.IsSuccess, result.ErrorMessage);
+
+        if (activate)
+        {
+            var activated = await scope.ServiceProvider
+                .GetRequiredService<SetGlobalProductStatus>()
+                .ExecuteAsync(result.Value!.Id, new SetGlobalProductStatusRequest("Active", result.Value.UpdatedAtUtc));
+            Assert.True(activated.IsSuccess, activated.ErrorMessage);
+            return activated.Value!.Id;
+        }
+
         return result.Value!.Id;
     }
 
