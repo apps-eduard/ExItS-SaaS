@@ -1088,7 +1088,14 @@ public sealed record CatalogTemplateProductDto(
     Guid GlobalProductId,
     int SortOrder,
     bool IsFeatured,
-    bool IsFirstBatch);
+    bool IsFirstBatch,
+    string? ProductName = null,
+    string? Sku = null,
+    string? Barcode = null,
+    Guid? CategoryId = null,
+    string? CategoryName = null,
+    string? Status = null,
+    string? Unit = null);
 
 public sealed record CatalogTemplateSummaryDto(
     Guid Id,
@@ -1147,6 +1154,16 @@ public sealed record AssignCatalogTemplateProductRequest(
     bool IsFeatured = false,
     bool IsFirstBatch = false,
     int? SortOrder = null,
+    DateTimeOffset? ExpectedUpdatedAtUtc = null);
+
+public sealed record BulkAssignCatalogTemplateProductsRequest(
+    IReadOnlyList<Guid> GlobalProductIds,
+    bool IsFeatured = false,
+    bool IsFirstBatch = false,
+    DateTimeOffset? ExpectedUpdatedAtUtc = null);
+
+public sealed record BulkRemoveCatalogTemplateProductsRequest(
+    IReadOnlyList<Guid> GlobalProductIds,
     DateTimeOffset? ExpectedUpdatedAtUtc = null);
 
 public sealed record ReorderCatalogTemplateProductsRequest(

@@ -970,6 +970,32 @@
   <data name="GlobalTemplates_ProductAssigned" xml:space="preserve"><value>Na-assign ang produkto.</value></data>
   <data name="GlobalTemplates_ProductRemoved" xml:space="preserve"><value>Inalis ang produkto.</value></data>
   <data name="GlobalTemplates_PosIsolationNote" xml:space="preserve"><value>Ang pag-publish o pag-edit ng template ay hindi nagbabago ng mga produktong na-import na sa POS. Lokal na snapshot/ref lang ang tinatago ng POS.</value></data>
+  <data name="GlobalTemplates_AvailablePane" xml:space="preserve"><value>Mga available na produkto</value></data>
+  <data name="GlobalTemplates_AssignedPane" xml:space="preserve"><value>Mga produkto sa template</value></data>
+  <data name="GlobalTemplates_AvailableSearchPlaceholder" xml:space="preserve"><value>Maghanap ng pangalan, SKU, o barcode</value></data>
+  <data name="GlobalTemplates_AssignedSearchPlaceholder" xml:space="preserve"><value>Maghanap sa naka-assign</value></data>
+  <data name="GlobalTemplates_AvailableLoading" xml:space="preserve"><value>Naglo-load ng available products…</value></data>
+  <data name="GlobalTemplates_AssignedLoading" xml:space="preserve"><value>Naglo-load ng assigned products…</value></data>
+  <data name="GlobalTemplates_AvailableEmpty" xml:space="preserve"><value>Walang tumutugmang available products.</value></data>
+  <data name="GlobalTemplates_AvailableLoadFailed" xml:space="preserve"><value>Hindi ma-load ang available products.</value></data>
+  <data name="GlobalTemplates_AssignedNoMatches" xml:space="preserve"><value>Walang assigned product na tumutugma sa search.</value></data>
+  <data name="GlobalTemplates_Selected" xml:space="preserve"><value>napili</value></data>
+  <data name="GlobalTemplates_Total" xml:space="preserve"><value>kabuuan</value></data>
+  <data name="GlobalTemplates_MoveRight" xml:space="preserve"><value>I-assign ang napili sa template</value></data>
+  <data name="GlobalTemplates_MoveLeft" xml:space="preserve"><value>Alisin ang napili mula sa template</value></data>
+  <data name="GlobalTemplates_DefaultFeatured" xml:space="preserve"><value>Featured bilang default</value></data>
+  <data name="GlobalTemplates_DefaultFirstBatch" xml:space="preserve"><value>Unang batch bilang default</value></data>
+  <data name="GlobalTemplates_AssignDefaultsHint" xml:space="preserve"><value>Ang defaults ay para sa bagong assigned products. I-edit ang flags sa assigned rows pagkatapos.</value></data>
+  <data name="GlobalTemplates_ProductsAssigned" xml:space="preserve"><value>Na-assign ang mga produkto sa template.</value></data>
+  <data name="GlobalTemplates_ProductsRemoved" xml:space="preserve"><value>Inalis ang mga produkto mula sa template.</value></data>
+  <data name="GlobalTemplates_AssignFailed" xml:space="preserve"><value>Hindi ma-assign ang mga napiling produkto.</value></data>
+  <data name="GlobalTemplates_RemoveFailed" xml:space="preserve"><value>Hindi maalis ang mga napiling produkto.</value></data>
+  <data name="GlobalTemplates_FlagUpdateFailed" xml:space="preserve"><value>Hindi ma-update ang product flags.</value></data>
+  <data name="GlobalTemplates_PublishChecklistTitle" xml:space="preserve"><value>Mga kailangan sa publish</value></data>
+  <data name="GlobalTemplates_PublishNeedName" xml:space="preserve"><value>Kailangan ang pangalan ng template</value></data>
+  <data name="GlobalTemplates_PublishNeedProducts" xml:space="preserve"><value>Mag-assign ng kahit isang produkto</value></data>
+  <data name="GlobalTemplates_PublishNeedActiveProducts" xml:space="preserve"><value>Dapat Active ang lahat ng assigned products</value></data>
+  <data name="GlobalTemplates_PublishNeedBatchSize" xml:space="preserve"><value>Ang default batch size ay dapat hindi bababa sa 1</value></data>
   <data name="GlobalImports_Title" xml:space="preserve"><value>Mga catalog import</value></data>
   <data name="GlobalImports_Description" xml:space="preserve"><value>Mag-upload ng CSV o XLSX, i-validate at i-preview, pagkatapos i-confirm ang background import sa global product catalog.</value></data>
   <data name="GlobalImports_DetailSubtitle" xml:space="preserve"><value>Preview, confirm, at subaybayan ang progreso.</value></data>

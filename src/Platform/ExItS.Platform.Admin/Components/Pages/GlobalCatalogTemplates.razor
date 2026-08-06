@@ -157,25 +157,35 @@ else
             @if (_template?.IsSuccess == true && CanPublish)
             {
                 var t = _template.Data!;
-                <Space>
-                    @if (t.Status == "Draft")
+                <Space Direction="SpaceDirection.Vertical" Align="AntDesign.SpaceAlign.End">
+                    @if (t.Status == "Draft" && _publishChecklist.Count > 0)
                     {
-                        <Popconfirm Title="@L["GlobalTemplates_ConfirmPublish"]" OnConfirm="PublishAsync" OkText="@L["Common_Confirm"]" CancelText="@L["Common_Cancel"]">
-                            <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy">@L["GlobalTemplates_Publish"]</Button>
-                        </Popconfirm>
+                        <Alert Type="@AlertType.Warning"
+                               ShowIcon="true"
+                               Style="max-width:360px; text-align:left;"
+                               Message="@L["GlobalTemplates_PublishChecklistTitle"]"
+                               Description="@string.Join(" · ", _publishChecklist)" />
                     }
-                    @if (t.Status == "Published")
-                    {
-                        <Popconfirm Title="@L["GlobalTemplates_ConfirmUnpublish"]" OnConfirm="UnpublishAsync" OkText="@L["Common_Confirm"]" CancelText="@L["Common_Cancel"]">
-                            <Button Size="@ButtonSize.Small" Loading="_busy">@L["GlobalTemplates_Unpublish"]</Button>
-                        </Popconfirm>
-                    }
-                    @if (t.Status is "Draft" or "Published")
-                    {
-                        <Popconfirm Title="@L["GlobalTemplates_ConfirmArchive"]" OnConfirm="ArchiveAsync" OkText="@L["Common_Confirm"]" CancelText="@L["Common_Cancel"]">
-                            <Button Size="@ButtonSize.Small" Danger Loading="_busy">@L["GlobalTemplates_Archive"]</Button>
-                        </Popconfirm>
-                    }
+                    <Space>
+                        @if (t.Status == "Draft")
+                        {
+                            <Popconfirm Title="@L["GlobalTemplates_ConfirmPublish"]" OnConfirm="PublishAsync" OkText="@L["Common_Confirm"]" CancelText="@L["Common_Cancel"]">
+                                <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" Disabled="_publishChecklist.Count > 0">@L["GlobalTemplates_Publish"]</Button>
+                            </Popconfirm>
+                        }
+                        @if (t.Status == "Published")
+                        {
+                            <Popconfirm Title="@L["GlobalTemplates_ConfirmUnpublish"]" OnConfirm="UnpublishAsync" OkText="@L["Common_Confirm"]" CancelText="@L["Common_Cancel"]">
+                                <Button Size="@ButtonSize.Small" Loading="_busy">@L["GlobalTemplates_Unpublish"]</Button>
+                            </Popconfirm>
+                        }
+                        @if (t.Status is "Draft" or "Published")
+                        {
+                            <Popconfirm Title="@L["GlobalTemplates_ConfirmArchive"]" OnConfirm="ArchiveAsync" OkText="@L["Common_Confirm"]" CancelText="@L["Common_Cancel"]">
+                                <Button Size="@ButtonSize.Small" Danger Loading="_busy">@L["GlobalTemplates_Archive"]</Button>
+                            </Popconfirm>
+                        }
+                    </Space>
                 </Space>
             }
         </PageHeaderExtra>
@@ -228,28 +238,15 @@ else
             </Card>
 
             <Card Size="@CardSize.Small" Title="@L["GlobalTemplates_CompositionSection"]" Style="margin-bottom:12px;">
-                <Space Style="margin-bottom:12px; width:100%;" Wrap>
-                    <Select TItemValue="string"
-                            TItem="string"
-                            @bind-Value="_assignProductId"
-                            Size="@InputSize.Small"
-                            Style="width:320px;"
-                            Placeholder="@L["GlobalTemplates_AssignProduct"]"
-                            Disabled="_busy"
-                            ShowSearch
-                            AllowClear>
-                        <SelectOptions>
-                            @foreach (var p in _productOptions)
-                            {
-                                <SelectOption TItemValue="string" TItem="string" Value="@p.Id.ToString("D")" Label="@($"{p.Name} ({p.Status})")" />
-                            }
-                        </SelectOptions>
-                    </Select>
-                    <Checkbox @bind-Checked="_assignFeatured" Disabled="_busy">@L["GlobalTemplates_Featured"]</Checkbox>
-                    <Checkbox @bind-Checked="_assignFirstBatch" Disabled="_busy">@L["GlobalTemplates_FirstBatch"]</Checkbox>
-                    <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="AssignProductAsync">@L["GlobalTemplates_Assign"]</Button>
-                </Space>
-
+                <CatalogTemplateCompositionTransfer TemplateId="@detail.Id"
+                                                   Template="@detail"
+                                                   CanManage="@CanManage"
+                                                   TemplateChanged="OnCompositionChangedAsync" />
+            </Card>
+        }
+        else if (detail.Status == "Archived" || !CanManage)
+        {
+            <Card Size="@CardSize.Small" Title="@L["GlobalTemplates_CompositionSection"]" Style="margin-bottom:12px;">
                 @if (detail.Products.Count == 0)
                 {
                     <Empty Description="@L["GlobalTemplates_CompositionEmpty"].Value" />
@@ -263,26 +260,27 @@ else
                            Bordered
                            HidePagination>
                         <PropertyColumn Property="c => c.SortOrder" Title="@L["GlobalTemplates_SortOrder"]" Width="80" />
-                        <PropertyColumn Property="c => c.GlobalProductId" Title="@L["GlobalTemplates_ProductId"]">
-                            @ProductLabel(context.GlobalProductId)
+                        <PropertyColumn Property="c => c.ProductName" Title="@L["Common_Name"]">
+                            <div>@(string.IsNullOrWhiteSpace(context.ProductName) ? "Unavailable product" : context.ProductName)</div>
+                            <div style="font-size:12px; opacity:.75;">
+                                @if (!string.IsNullOrWhiteSpace(context.Sku)) { <span>SKU @context.Sku</span> }
+                                @if (!string.IsNullOrWhiteSpace(context.Barcode))
+                                {
+                                    <span>@(string.IsNullOrWhiteSpace(context.Sku) ? context.Barcode : $" · {context.Barcode}")</span>
+                                }
+                            </div>
                         </PropertyColumn>
-                        <PropertyColumn Property="c => c.IsFeatured" Title="@L["GlobalTemplates_Featured"]" Width="100">
-                            <Checkbox Checked="@context.IsFeatured" Disabled="_busy"
-                                      CheckedChanged="async v => await ToggleFlagsAsync(context, isFeatured: v, isFirstBatch: null)" />
+                        <PropertyColumn Property="c => c.CategoryName" Title="@L["GlobalProducts_Category"]" Width="140">
+                            @(string.IsNullOrWhiteSpace(context.CategoryName) ? "—" : context.CategoryName)
                         </PropertyColumn>
-                        <PropertyColumn Property="c => c.IsFirstBatch" Title="@L["GlobalTemplates_FirstBatch"]" Width="110">
-                            <Checkbox Checked="@context.IsFirstBatch" Disabled="_busy"
-                                      CheckedChanged="async v => await ToggleFlagsAsync(context, isFeatured: null, isFirstBatch: v)" />
+                        <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Width="100">
+                            @if (!string.IsNullOrWhiteSpace(context.Status))
+                            {
+                                <AdminStatusTag Value="@context.Status" />
+                            }
                         </PropertyColumn>
-                        <ActionColumn Title="@L["Common_Actions"]" Width="160">
-                            <Space>
-                                <Button Size="@ButtonSize.Small" Disabled="_busy || context.SortOrder == 0" OnClick="() => MoveAsync(context, -1)">↑</Button>
-                                <Button Size="@ButtonSize.Small" Disabled="_busy || context.SortOrder >= detail.Products.Count - 1" OnClick="() => MoveAsync(context, 1)">↓</Button>
-                                <Popconfirm Title="@L["GlobalTemplates_ConfirmRemoveProduct"]" OnConfirm="() => RemoveProductAsync(context)" OkText="@L["Common_Confirm"]" CancelText="@L["Common_Cancel"]">
-                                    <Button Size="@ButtonSize.Small" Danger Disabled="_busy">@L["Common_Remove"]</Button>
-                                </Popconfirm>
-                            </Space>
-                        </ActionColumn>
+                        <PropertyColumn Property="c => c.IsFeatured" Title="@L["GlobalTemplates_Featured"]" Width="100" />
+                        <PropertyColumn Property="c => c.IsFirstBatch" Title="@L["GlobalTemplates_FirstBatch"]" Width="110" />
                     </Table>
                 }
             </Card>
@@ -321,7 +319,6 @@ else
 
     private ApiCallResult<PagedResult<CatalogTemplateSummaryDto>>? _list;
     private ApiCallResult<CatalogTemplateDto>? _template;
-    private List<GlobalProductDto> _productOptions = [];
 
     private int _page = 1;
     private string? _search;
@@ -331,6 +328,7 @@ else
     private bool _busy;
     private string? _formError;
     private bool _formConflict;
+    private readonly List<string> _publishChecklist = [];
 
     private string _newName = "";
     private string? _newSlug;
@@ -343,10 +341,6 @@ else
     private string _editBusinessType = "SariSari";
     private int _editBatchSize = 50;
     private string? _editDescription;
-
-    private string? _assignProductId;
-    private bool _assignFeatured;
-    private bool _assignFirstBatch = true;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -363,7 +357,6 @@ else
         else
         {
             await LoadDetailAsync();
-            await LoadProductOptionsAsync();
         }
     }
 
@@ -388,15 +381,8 @@ else
         if (_template is { IsSuccess: true, Data: { } t })
         {
             BindEdit(t);
+            RefreshPublishChecklist(t);
         }
-    }
-
-    private async Task LoadProductOptionsAsync()
-    {
-        var result = await Api.GetGlobalProductsAsync(page: 1, pageSize: 200);
-        _productOptions = result.IsSuccess
-            ? result.Data!.Items.Where(p => p.Status != "Archived").OrderBy(p => p.Name).ToList()
-            : [];
     }
 
     private void BindEdit(CatalogTemplateDto t)
@@ -406,12 +392,38 @@ else
         _editBusinessType = t.PrimaryBusinessType;
         _editBatchSize = t.DefaultBatchSize;
         _editDescription = t.Description;
+        RefreshPublishChecklist(t);
     }
 
-    private string ProductLabel(Guid productId)
+    private void RefreshPublishChecklist(CatalogTemplateDto t)
     {
-        var match = _productOptions.FirstOrDefault(p => p.Id == productId);
-        return match is null ? productId.ToString("D") : match.Name;
+        _publishChecklist.Clear();
+        if (string.IsNullOrWhiteSpace(t.Name))
+        {
+            _publishChecklist.Add(L["GlobalTemplates_PublishNeedName"].Value);
+        }
+
+        if (t.ProductCount == 0 || t.Products.Count == 0)
+        {
+            _publishChecklist.Add(L["GlobalTemplates_PublishNeedProducts"].Value);
+        }
+
+        if (t.Products.Any(p => !string.Equals(p.Status, "Active", StringComparison.OrdinalIgnoreCase)
+                                && !string.IsNullOrWhiteSpace(p.Status)))
+        {
+            _publishChecklist.Add(L["GlobalTemplates_PublishNeedActiveProducts"].Value);
+        }
+
+        if (t.DefaultBatchSize < 1)
+        {
+            _publishChecklist.Add(L["GlobalTemplates_PublishNeedBatchSize"].Value);
+        }
+    }
+
+    private async Task OnCompositionChangedAsync(CatalogTemplateDto _)
+    {
+        // Reload enriched composition (mutation responses are identity-only).
+        await LoadDetailAsync();
     }
 
     private async Task ApplyFiltersAsync()
@@ -533,128 +545,6 @@ else
             _template = result;
             BindEdit(result.Data!);
             await Message.SuccessAsync(L["GlobalTemplates_StatusChanged"].Value);
-        }
-        finally
-        {
-            _busy = false;
-        }
-    }
-
-    private async Task AssignProductAsync()
-    {
-        if (_template?.Data is not { } t || !Guid.TryParse(_assignProductId, out var productId))
-        {
-            return;
-        }
-
-        _busy = true;
-        try
-        {
-            var result = await Api.AssignCatalogTemplateProductAsync(t.Id, new AssignCatalogTemplateProductRequest(
-                productId,
-                _assignFeatured,
-                _assignFirstBatch,
-                ExpectedUpdatedAtUtc: t.UpdatedAtUtc));
-            if (!result.IsSuccess)
-            {
-                await Message.ErrorAsync(result.Error?.Detail ?? result.Error?.Title ?? L["Common_Error"].Value);
-                return;
-            }
-
-            _template = result;
-            _assignProductId = null;
-            await Message.SuccessAsync(L["GlobalTemplates_ProductAssigned"].Value);
-        }
-        finally
-        {
-            _busy = false;
-        }
-    }
-
-    private async Task ToggleFlagsAsync(CatalogTemplateProductDto row, bool? isFeatured, bool? isFirstBatch)
-    {
-        if (_template?.Data is not { } t)
-        {
-            return;
-        }
-
-        _busy = true;
-        try
-        {
-            var result = await Api.UpdateCatalogTemplateProductFlagsAsync(
-                t.Id,
-                row.GlobalProductId,
-                new UpdateCatalogTemplateProductFlagsRequest(isFeatured, isFirstBatch, t.UpdatedAtUtc));
-            if (!result.IsSuccess)
-            {
-                await Message.ErrorAsync(result.Error?.Detail ?? result.Error?.Title ?? L["Common_Error"].Value);
-                return;
-            }
-
-            _template = result;
-        }
-        finally
-        {
-            _busy = false;
-        }
-    }
-
-    private async Task MoveAsync(CatalogTemplateProductDto row, int delta)
-    {
-        if (_template?.Data is not { } t)
-        {
-            return;
-        }
-
-        var ordered = t.Products.OrderBy(p => p.SortOrder).Select(p => p.GlobalProductId).ToList();
-        var index = ordered.IndexOf(row.GlobalProductId);
-        var target = index + delta;
-        if (index < 0 || target < 0 || target >= ordered.Count)
-        {
-            return;
-        }
-
-        (ordered[index], ordered[target]) = (ordered[target], ordered[index]);
-
-        _busy = true;
-        try
-        {
-            var result = await Api.ReorderCatalogTemplateProductsAsync(
-                t.Id,
-                new ReorderCatalogTemplateProductsRequest(ordered, t.UpdatedAtUtc));
-            if (!result.IsSuccess)
-            {
-                await Message.ErrorAsync(result.Error?.Detail ?? result.Error?.Title ?? L["Common_Error"].Value);
-                return;
-            }
-
-            _template = result;
-        }
-        finally
-        {
-            _busy = false;
-        }
-    }
-
-    private async Task RemoveProductAsync(CatalogTemplateProductDto row)
-    {
-        if (_template?.Data is not { } t)
-        {
-            return;
-        }
-
-        _busy = true;
-        try
-        {
-            var result = await Api.RemoveCatalogTemplateProductAsync(t.Id, row.GlobalProductId, t.UpdatedAtUtc);
-            if (!result.IsSuccess)
-            {
-                await Message.ErrorAsync(result.Error?.Detail ?? result.Error?.Title ?? L["Common_Error"].Value);
-                return;
-            }
-
-            _template = result;
-            await Message.SuccessAsync(L["GlobalTemplates_ProductRemoved"].Value);
         }
         finally
         {

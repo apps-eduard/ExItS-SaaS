@@ -571,6 +571,26 @@ public sealed class PlatformApiClient(
     public Task<ApiCallResult<CatalogTemplateDto>> AssignCatalogTemplateProductAsync(Guid id, AssignCatalogTemplateProductRequest request, CancellationToken ct = default) =>
         SendAsync<CatalogTemplateDto>(HttpMethod.Post, $"/api/v1/platform/global-catalog/templates/{id}/products", request, ct);
 
+    public Task<ApiCallResult<CatalogTemplateDto>> BulkAssignCatalogTemplateProductsAsync(Guid id, BulkAssignCatalogTemplateProductsRequest request, CancellationToken ct = default) =>
+        SendAsync<CatalogTemplateDto>(HttpMethod.Post, $"/api/v1/platform/global-catalog/templates/{id}/products/bulk", request, ct);
+
+    public Task<ApiCallResult<CatalogTemplateDto>> BulkRemoveCatalogTemplateProductsAsync(Guid id, BulkRemoveCatalogTemplateProductsRequest request, CancellationToken ct = default) =>
+        SendAsync<CatalogTemplateDto>(HttpMethod.Post, $"/api/v1/platform/global-catalog/templates/{id}/products/bulk-remove", request, ct);
+
+    public Task<ApiCallResult<PagedResult<GlobalProductDto>>> GetCatalogTemplateAvailableProductsAsync(
+        Guid id,
+        int page = 1,
+        int pageSize = 20,
+        string? status = null,
+        Guid? categoryId = null,
+        string? search = null,
+        string? barcode = null,
+        string? sku = null,
+        CancellationToken ct = default) =>
+        GetAsync<PagedResult<GlobalProductDto>>(
+            $"/api/v1/platform/global-catalog/templates/{id}/available-products?{Query(("page", page), ("pageSize", pageSize), ("status", status), ("categoryId", categoryId), ("search", search), ("barcode", barcode), ("sku", sku))}",
+            ct);
+
     public Task<ApiCallResult<CatalogTemplateDto>> ReorderCatalogTemplateProductsAsync(Guid id, ReorderCatalogTemplateProductsRequest request, CancellationToken ct = default) =>
         SendAsync<CatalogTemplateDto>(HttpMethod.Put, $"/api/v1/platform/global-catalog/templates/{id}/products/order", request, ct);
 

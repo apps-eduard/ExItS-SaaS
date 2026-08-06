@@ -1,0 +1,619 @@
+@using AntDesign
+@using ExItS.Platform.Admin.Models
+@implements IDisposable
+@inject IPlatformApiClient Api
+@inject IMessageService Message
+@inject IStringLocalizer<AdminResources> L
+
+<div class="exits-template-transfer">
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <Alert Style="margin-bottom:12px;"
+               Type="@AlertType.Error"
+               ShowIcon="true"
+               Closable
+               OnClose="ClearError"
+               Message="@_error" />
+    }
+
+    <Space Style="margin-bottom:12px; width:100%;" Wrap>
+        <Checkbox @bind-Checked="_defaultFeatured" Disabled="@Busy">@L["GlobalTemplates_DefaultFeatured"]</Checkbox>
+        <Checkbox @bind-Checked="_defaultFirstBatch" Disabled="@Busy">@L["GlobalTemplates_DefaultFirstBatch"]</Checkbox>
+        <span class="exits-template-transfer__hint">@L["GlobalTemplates_AssignDefaultsHint"]</span>
+    </Space>
+
+    <div class="exits-template-transfer__panes">
+        <Card Size="@CardSize.Small" Class="exits-template-transfer__pane">
+            <TitleTemplate>
+                <span>@L["GlobalTemplates_AvailablePane"]</span>
+                <span class="exits-template-transfer__counts">
+                    @_availableSelected.Count @L["GlobalTemplates_Selected"] · @_availableTotal @L["GlobalTemplates_Total"]
+                </span>
+            </TitleTemplate>
+            <ChildContent>
+                <Space Style="margin-bottom:8px; width:100%;" Wrap>
+                    <Input @bind-Value="_availableSearch"
+                           Size="@InputSize.Small"
+                           Placeholder="@L["GlobalTemplates_AvailableSearchPlaceholder"]"
+                           Style="width:220px;"
+                           Disabled="@Busy"
+                           OnInput="OnAvailableSearchInputAsync"
+                           OnPressEnter="ApplyAvailableFiltersAsync" />
+                    <Select TItemValue="string"
+                            TItem="string"
+                            @bind-Value="_availableCategoryId"
+                            Size="@InputSize.Small"
+                            Style="width:180px;"
+                            Placeholder="@L["GlobalProducts_Category"]"
+                            AllowClear
+                            Disabled="@Busy">
+                        <SelectOptions>
+                            <SelectOption TItemValue="string" TItem="string" Value="@("")" Label="@L["Common_All"]" />
+                            @foreach (var c in _categories)
+                            {
+                                <SelectOption TItemValue="string" TItem="string" Value="@c.Id.ToString("D")" Label="@c.Name" />
+                            }
+                        </SelectOptions>
+                    </Select>
+                    <Button Size="@ButtonSize.Small" Disabled="@Busy" OnClick="ApplyAvailableFiltersAsync">@L["Common_Apply"]</Button>
+                    <Button Size="@ButtonSize.Small" Disabled="@Busy" OnClick="ClearAvailableFiltersAsync">@L["Common_Reset"]</Button>
+                </Space>
+
+                @if (_availableLoading && _availableItems.Count == 0)
+                {
+                    <Spin Tip="@L["GlobalTemplates_AvailableLoading"]" />
+                }
+                else if (_availableFailed)
+                {
+                    <Result Status="@ResultStatus.Error"
+                            Title="@L["Common_Error"]"
+                            SubTitle="@(_availableError ?? L["GlobalTemplates_AvailableLoadFailed"])">
+                        <Extra>
+                            <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" OnClick="RetryAvailableAsync">@L["Common_Retry"]</Button>
+                        </Extra>
+                    </Result>
+                }
+                else if (_availableItems.Count == 0)
+                {
+                    <Empty Description="@L["GlobalTemplates_AvailableEmpty"].Value" />
+                }
+                else
+                {
+                    <Table TItem="GlobalProductDto"
+                           Class="exits-table-fit exits-template-transfer__table"
+                           DataSource="@_availableItems"
+                           Size="@TableSize.Small"
+                           Bordered
+                           Loading="_availableLoading"
+                           HidePagination
+                           ScrollY="320">
+                        <PropertyColumn Property="c => c.Id" Title="" Width="40">
+                            <Checkbox Checked="@_availableSelected.Contains(context.Id)"
+                                      Disabled="@Busy"
+                                      CheckedChanged="v => ToggleAvailable(context.Id, v)" />
+                        </PropertyColumn>
+                        <PropertyColumn Property="c => c.Name" Title="@L["Common_Name"]">
+                            <div class="exits-template-transfer__name">@context.Name</div>
+                            <div class="exits-template-transfer__meta">@FormatCodes(context.Sku, context.Barcode)</div>
+                        </PropertyColumn>
+                        <PropertyColumn Property="c => c.GlobalCategoryId" Title="@L["GlobalProducts_Category"]" Width="120">
+                            @CategoryLabel(context.GlobalCategoryId)
+                        </PropertyColumn>
+                        <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Width="90">
+                            <AdminStatusTag Value="@context.Status" />
+                        </PropertyColumn>
+                    </Table>
+
+                    <div class="exits-template-transfer__pager">
+                        <Pagination Current="_availablePage"
+                                    Total="_availableTotal"
+                                    PageSize="_availablePageSize"
+                                    Size="@PaginationSize.Small"
+                                    Disabled="@Busy"
+                                    OnChange="OnAvailablePageChangedAsync" />
+                    </div>
+                }
+            </ChildContent>
+        </Card>
+
+        <div class="exits-template-transfer__actions">
+            <Tooltip Title="@L["GlobalTemplates_MoveRight"].Value">
+                <Button Type="@ButtonType.Primary"
+                        Size="@ButtonSize.Small"
+                        Disabled="@(Busy || _availableSelected.Count == 0 || !CanManage)"
+                        Loading="_busyAssign"
+                        OnClick="MoveRightAsync"
+                        AriaLabel="@L["GlobalTemplates_MoveRight"]">
+                    →
+                </Button>
+            </Tooltip>
+            <Tooltip Title="@L["GlobalTemplates_MoveLeft"].Value">
+                <Button Danger
+                        Size="@ButtonSize.Small"
+                        Disabled="@(Busy || _assignedSelected.Count == 0 || !CanManage)"
+                        Loading="_busyRemove"
+                        OnClick="MoveLeftAsync"
+                        AriaLabel="@L["GlobalTemplates_MoveLeft"]">
+                    ←
+                </Button>
+            </Tooltip>
+        </div>
+
+        <Card Size="@CardSize.Small" Class="exits-template-transfer__pane">
+            <TitleTemplate>
+                <span>@L["GlobalTemplates_AssignedPane"]</span>
+                <span class="exits-template-transfer__counts">
+                    @_assignedSelected.Count @L["GlobalTemplates_Selected"] · @AssignedProducts.Count @L["GlobalTemplates_Total"]
+                </span>
+            </TitleTemplate>
+            <ChildContent>
+                <Space Style="margin-bottom:8px; width:100%;" Wrap>
+                    <Input @bind-Value="_assignedSearch"
+                           Size="@InputSize.Small"
+                           Placeholder="@L["GlobalTemplates_AssignedSearchPlaceholder"]"
+                           Style="width:220px;"
+                           Disabled="@Busy" />
+                </Space>
+
+                @if (FilteredAssigned.Count == 0)
+                {
+                    <Empty Description="@(AssignedProducts.Count == 0 ? L["GlobalTemplates_CompositionEmpty"].Value : L["GlobalTemplates_AssignedNoMatches"].Value)" />
+                }
+                else
+                {
+                    <Table TItem="CatalogTemplateProductDto"
+                           Class="exits-table-fit exits-template-transfer__table"
+                           DataSource="@FilteredAssigned"
+                           Size="@TableSize.Small"
+                           Bordered
+                           HidePagination
+                           ScrollY="320">
+                        <PropertyColumn Property="c => c.GlobalProductId" Title="" Width="40">
+                            <Checkbox Checked="@_assignedSelected.Contains(context.GlobalProductId)"
+                                      Disabled="@Busy"
+                                      CheckedChanged="v => ToggleAssigned(context.GlobalProductId, v)" />
+                        </PropertyColumn>
+                        <PropertyColumn Property="c => c.SortOrder" Title="@L["GlobalTemplates_SortOrder"]" Width="60" />
+                        <PropertyColumn Property="c => c.ProductName" Title="@L["Common_Name"]">
+                            <div class="exits-template-transfer__name">@DisplayName(context)</div>
+                            <div class="exits-template-transfer__meta">@FormatCodes(context.Sku, context.Barcode)</div>
+                        </PropertyColumn>
+                        <PropertyColumn Property="c => c.CategoryName" Title="@L["GlobalProducts_Category"]" Width="110">
+                            @(string.IsNullOrWhiteSpace(context.CategoryName) ? "—" : context.CategoryName)
+                        </PropertyColumn>
+                        <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Width="90">
+                            @if (!string.IsNullOrWhiteSpace(context.Status))
+                            {
+                                <AdminStatusTag Value="@context.Status" />
+                            }
+                            else
+                            {
+                                <span>—</span>
+                            }
+                        </PropertyColumn>
+                        <PropertyColumn Property="c => c.IsFeatured" Title="@L["GlobalTemplates_Featured"]" Width="90">
+                            <Checkbox Checked="@context.IsFeatured"
+                                      Disabled="@(Busy || !CanManage)"
+                                      CheckedChanged="async v => await ToggleFlagsAsync(context, isFeatured: v, isFirstBatch: null)" />
+                        </PropertyColumn>
+                        <PropertyColumn Property="c => c.IsFirstBatch" Title="@L["GlobalTemplates_FirstBatch"]" Width="100">
+                            <Checkbox Checked="@context.IsFirstBatch"
+                                      Disabled="@(Busy || !CanManage)"
+                                      CheckedChanged="async v => await ToggleFlagsAsync(context, isFeatured: null, isFirstBatch: v)" />
+                        </PropertyColumn>
+                        <ActionColumn Title="@L["Common_Actions"]" Width="100">
+                            <Space>
+                                <Button Size="@ButtonSize.Small"
+                                        Disabled="@(Busy || !CanManage || context.SortOrder == 0)"
+                                        OnClick="() => MoveOrderAsync(context, -1)">↑</Button>
+                                <Button Size="@ButtonSize.Small"
+                                        Disabled="@(Busy || !CanManage || context.SortOrder >= AssignedProducts.Count - 1)"
+                                        OnClick="() => MoveOrderAsync(context, 1)">↓</Button>
+                            </Space>
+                        </ActionColumn>
+                    </Table>
+                }
+            </ChildContent>
+        </Card>
+    </div>
+</div>
+
+@code {
+    [Parameter] public Guid TemplateId { get; set; }
+    [Parameter] public CatalogTemplateDto? Template { get; set; }
+    [Parameter] public bool CanManage { get; set; }
+    [Parameter] public EventCallback<CatalogTemplateDto> TemplateChanged { get; set; }
+
+    private readonly HashSet<Guid> _availableSelected = [];
+    private readonly HashSet<Guid> _assignedSelected = [];
+    private readonly Dictionary<Guid, string> _categoryNames = new();
+
+    private List<GlobalCategoryDto> _categories = [];
+    private List<GlobalProductDto> _availableItems = [];
+    private int _availableTotal;
+    private int _availablePage = 1;
+    private const int _availablePageSize = 20;
+    private string? _availableSearch;
+    private string? _availableCategoryId;
+    private bool _availableLoading;
+    private bool _availableFailed;
+    private string? _availableError;
+    private string? _assignedSearch;
+    private bool _defaultFeatured;
+    private bool _defaultFirstBatch = true;
+    private bool _busyAssign;
+    private bool _busyRemove;
+    private bool _busyFlags;
+    private bool _busyReorder;
+    private string? _error;
+    private int _availableRequestSeq;
+    private CancellationTokenSource? _searchDebounceCts;
+
+    private bool Busy => _busyAssign || _busyRemove || _busyFlags || _busyReorder;
+
+    private IReadOnlyList<CatalogTemplateProductDto> AssignedProducts =>
+        Template?.Products.OrderBy(p => p.SortOrder).ThenBy(p => p.ProductName).ToList()
+        ?? (IReadOnlyList<CatalogTemplateProductDto>)Array.Empty<CatalogTemplateProductDto>();
+
+    private IReadOnlyList<CatalogTemplateProductDto> FilteredAssigned
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(_assignedSearch))
+            {
+                return AssignedProducts;
+            }
+
+            var term = _assignedSearch.Trim();
+            return AssignedProducts
+                .Where(p =>
+                    (p.ProductName?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false)
+                    || (p.Sku?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false)
+                    || (p.Barcode?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false)
+                    || (p.CategoryName?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false))
+                .ToList();
+        }
+    }
+
+    private Guid _loadedTemplateId;
+    private DateTimeOffset? _loadedUpdatedAt;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (TemplateId == Guid.Empty)
+        {
+            return;
+        }
+
+        if (_categories.Count == 0)
+        {
+            await LoadCategoriesAsync();
+        }
+
+        var templateChanged = _loadedTemplateId != TemplateId;
+        var needsReload = templateChanged || Template?.UpdatedAtUtc != _loadedUpdatedAt;
+        if (needsReload)
+        {
+            if (templateChanged)
+            {
+                _availablePage = 1;
+                _availableSelected.Clear();
+                _assignedSelected.Clear();
+            }
+
+            _loadedTemplateId = TemplateId;
+            _loadedUpdatedAt = Template?.UpdatedAtUtc;
+            await LoadAvailableAsync();
+        }
+    }
+
+    public async Task RefreshAsync()
+    {
+        await LoadAvailableAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task LoadCategoriesAsync()
+    {
+        var result = await Api.GetGlobalCategoriesAsync(page: 1, pageSize: 100, status: "Active");
+        if (result is { IsSuccess: true, Data: not null })
+        {
+            _categories = result.Data.Items.OrderBy(c => c.SortOrder).ThenBy(c => c.Name).ToList();
+            _categoryNames.Clear();
+            foreach (var c in _categories)
+            {
+                _categoryNames[c.Id] = c.Name;
+            }
+        }
+    }
+
+    private async Task LoadAvailableAsync(CancellationToken cancellationToken = default)
+    {
+        var seq = ++_availableRequestSeq;
+        _availableLoading = true;
+        _availableFailed = false;
+        _availableError = null;
+        try
+        {
+            Guid? categoryId = Guid.TryParse(_availableCategoryId, out var cid) ? cid : null;
+            var result = await Api.GetCatalogTemplateAvailableProductsAsync(
+                TemplateId,
+                page: _availablePage,
+                pageSize: _availablePageSize,
+                status: "Active",
+                categoryId: categoryId,
+                search: string.IsNullOrWhiteSpace(_availableSearch) ? null : _availableSearch.Trim(),
+                ct: cancellationToken);
+
+            if (seq != _availableRequestSeq || cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+
+            if (!result.IsSuccess)
+            {
+                _availableFailed = true;
+                _availableError = result.Error?.Detail ?? result.Error?.Title;
+                _availableItems = [];
+                _availableTotal = 0;
+                return;
+            }
+
+            _availableItems = result.Data!.Items.ToList();
+            _availableTotal = result.Data.TotalCount;
+            // Cross-page selections are retained; drop only products that are now assigned.
+            _availableSelected.RemoveWhere(id => AssignedProducts.Any(a => a.GlobalProductId == id));
+        }
+        finally
+        {
+            if (seq == _availableRequestSeq)
+            {
+                _availableLoading = false;
+            }
+        }
+    }
+
+    private async Task OnAvailableSearchInputAsync(ChangeEventArgs e)
+    {
+        _availableSearch = e.Value?.ToString();
+        _searchDebounceCts?.Cancel();
+        _searchDebounceCts?.Dispose();
+        _searchDebounceCts = new CancellationTokenSource();
+        var token = _searchDebounceCts.Token;
+        try
+        {
+            await Task.Delay(300, token);
+            _availablePage = 1;
+            await LoadAvailableAsync(token);
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (OperationCanceledException)
+        {
+            // newer keystroke superseded this search
+        }
+    }
+
+    private async Task ApplyAvailableFiltersAsync()
+    {
+        _availablePage = 1;
+        await LoadAvailableAsync();
+    }
+
+    private async Task ClearAvailableFiltersAsync()
+    {
+        _availableSearch = null;
+        _availableCategoryId = null;
+        _availablePage = 1;
+        await LoadAvailableAsync();
+    }
+
+    private async Task OnAvailablePageChangedAsync(PaginationEventArgs args)
+    {
+        _availablePage = args.Page;
+        await LoadAvailableAsync();
+    }
+
+    private async Task RetryAvailableAsync() => await LoadAvailableAsync();
+
+    private void ToggleAvailable(Guid id, bool selected)
+    {
+        if (selected)
+        {
+            _availableSelected.Add(id);
+        }
+        else
+        {
+            _availableSelected.Remove(id);
+        }
+    }
+
+    private void ToggleAssigned(Guid id, bool selected)
+    {
+        if (selected)
+        {
+            _assignedSelected.Add(id);
+        }
+        else
+        {
+            _assignedSelected.Remove(id);
+        }
+    }
+
+    private async Task MoveRightAsync()
+    {
+        if (Template is null || _availableSelected.Count == 0 || _busyAssign)
+        {
+            return;
+        }
+
+        var ids = _availableSelected.ToList();
+        _busyAssign = true;
+        _error = null;
+        try
+        {
+            var result = await Api.BulkAssignCatalogTemplateProductsAsync(
+                TemplateId,
+                new BulkAssignCatalogTemplateProductsRequest(
+                    ids,
+                    _defaultFeatured,
+                    _defaultFirstBatch,
+                    Template.UpdatedAtUtc));
+            if (!result.IsSuccess)
+            {
+                _error = result.Error?.Detail ?? result.Error?.Title ?? L["GlobalTemplates_AssignFailed"].Value;
+                await Message.ErrorAsync(_error);
+                return;
+            }
+
+            _availableSelected.Clear();
+            await TemplateChanged.InvokeAsync(result.Data!);
+            await Message.SuccessAsync(L["GlobalTemplates_ProductsAssigned"].Value);
+        }
+        finally
+        {
+            _busyAssign = false;
+        }
+    }
+
+    private async Task MoveLeftAsync()
+    {
+        if (Template is null || _assignedSelected.Count == 0 || _busyRemove)
+        {
+            return;
+        }
+
+        var ids = _assignedSelected.ToList();
+        _busyRemove = true;
+        _error = null;
+        try
+        {
+            var result = await Api.BulkRemoveCatalogTemplateProductsAsync(
+                TemplateId,
+                new BulkRemoveCatalogTemplateProductsRequest(ids, Template.UpdatedAtUtc));
+            if (!result.IsSuccess)
+            {
+                _error = result.Error?.Detail ?? result.Error?.Title ?? L["GlobalTemplates_RemoveFailed"].Value;
+                await Message.ErrorAsync(_error);
+                return;
+            }
+
+            _assignedSelected.Clear();
+            await TemplateChanged.InvokeAsync(result.Data!);
+            await Message.SuccessAsync(L["GlobalTemplates_ProductsRemoved"].Value);
+        }
+        finally
+        {
+            _busyRemove = false;
+        }
+    }
+
+    private async Task ToggleFlagsAsync(CatalogTemplateProductDto row, bool? isFeatured, bool? isFirstBatch)
+    {
+        if (Template is null || _busyFlags)
+        {
+            return;
+        }
+
+        _busyFlags = true;
+        _error = null;
+        try
+        {
+            var result = await Api.UpdateCatalogTemplateProductFlagsAsync(
+                TemplateId,
+                row.GlobalProductId,
+                new UpdateCatalogTemplateProductFlagsRequest(isFeatured, isFirstBatch, Template.UpdatedAtUtc));
+            if (!result.IsSuccess)
+            {
+                _error = result.Error?.Detail ?? result.Error?.Title ?? L["GlobalTemplates_FlagUpdateFailed"].Value;
+                await Message.ErrorAsync(_error);
+                return;
+            }
+
+            await TemplateChanged.InvokeAsync(result.Data!);
+        }
+        finally
+        {
+            _busyFlags = false;
+        }
+    }
+
+    private async Task MoveOrderAsync(CatalogTemplateProductDto row, int delta)
+    {
+        if (Template is null || _busyReorder)
+        {
+            return;
+        }
+
+        var ordered = AssignedProducts.Select(p => p.GlobalProductId).ToList();
+        var index = ordered.IndexOf(row.GlobalProductId);
+        var target = index + delta;
+        if (index < 0 || target < 0 || target >= ordered.Count)
+        {
+            return;
+        }
+
+        (ordered[index], ordered[target]) = (ordered[target], ordered[index]);
+
+        _busyReorder = true;
+        _error = null;
+        try
+        {
+            var result = await Api.ReorderCatalogTemplateProductsAsync(
+                TemplateId,
+                new ReorderCatalogTemplateProductsRequest(ordered, Template.UpdatedAtUtc));
+            if (!result.IsSuccess)
+            {
+                _error = result.Error?.Detail ?? result.Error?.Title ?? L["Common_Error"].Value;
+                await Message.ErrorAsync(_error);
+                return;
+            }
+
+            await TemplateChanged.InvokeAsync(result.Data!);
+        }
+        finally
+        {
+            _busyReorder = false;
+        }
+    }
+
+    private void ClearError() => _error = null;
+
+    private static string DisplayName(CatalogTemplateProductDto row) =>
+        string.IsNullOrWhiteSpace(row.ProductName) ? "Unavailable product" : row.ProductName!;
+
+    private static string FormatCodes(string? sku, string? barcode)
+    {
+        if (!string.IsNullOrWhiteSpace(sku) && !string.IsNullOrWhiteSpace(barcode))
+        {
+            return $"SKU {sku} · {barcode}";
+        }
+
+        if (!string.IsNullOrWhiteSpace(sku))
+        {
+            return $"SKU {sku}";
+        }
+
+        if (!string.IsNullOrWhiteSpace(barcode))
+        {
+            return barcode;
+        }
+
+        return string.Empty;
+    }
+
+    private string CategoryLabel(Guid? categoryId)
+    {
+        if (categoryId is null)
+        {
+            return "—";
+        }
+
+        return _categoryNames.TryGetValue(categoryId.Value, out var name) ? name : "—";
+    }
+
+    public void Dispose()
+    {
+        _searchDebounceCts?.Cancel();
+        _searchDebounceCts?.Dispose();
+    }
+}

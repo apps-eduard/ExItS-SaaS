@@ -971,6 +971,32 @@
   <data name="GlobalTemplates_ProductAssigned" xml:space="preserve"><value>Product assigned.</value></data>
   <data name="GlobalTemplates_ProductRemoved" xml:space="preserve"><value>Product removed.</value></data>
   <data name="GlobalTemplates_PosIsolationNote" xml:space="preserve"><value>Publishing or editing a template does not change products already imported into POS organizations. POS keeps local snapshots and refs only.</value></data>
+  <data name="GlobalTemplates_AvailablePane" xml:space="preserve"><value>Available products</value></data>
+  <data name="GlobalTemplates_AssignedPane" xml:space="preserve"><value>Template products</value></data>
+  <data name="GlobalTemplates_AvailableSearchPlaceholder" xml:space="preserve"><value>Search name, SKU, or barcode</value></data>
+  <data name="GlobalTemplates_AssignedSearchPlaceholder" xml:space="preserve"><value>Search assigned products</value></data>
+  <data name="GlobalTemplates_AvailableLoading" xml:space="preserve"><value>Loading available products…</value></data>
+  <data name="GlobalTemplates_AssignedLoading" xml:space="preserve"><value>Loading assigned products…</value></data>
+  <data name="GlobalTemplates_AvailableEmpty" xml:space="preserve"><value>No matching available products.</value></data>
+  <data name="GlobalTemplates_AvailableLoadFailed" xml:space="preserve"><value>Could not load available products.</value></data>
+  <data name="GlobalTemplates_AssignedNoMatches" xml:space="preserve"><value>No assigned products match this search.</value></data>
+  <data name="GlobalTemplates_Selected" xml:space="preserve"><value>selected</value></data>
+  <data name="GlobalTemplates_Total" xml:space="preserve"><value>total</value></data>
+  <data name="GlobalTemplates_MoveRight" xml:space="preserve"><value>Assign selected to template</value></data>
+  <data name="GlobalTemplates_MoveLeft" xml:space="preserve"><value>Remove selected from template</value></data>
+  <data name="GlobalTemplates_DefaultFeatured" xml:space="preserve"><value>Featured by default</value></data>
+  <data name="GlobalTemplates_DefaultFirstBatch" xml:space="preserve"><value>First batch by default</value></data>
+  <data name="GlobalTemplates_AssignDefaultsHint" xml:space="preserve"><value>Defaults apply to newly assigned products. Edit flags on assigned rows afterward.</value></data>
+  <data name="GlobalTemplates_ProductsAssigned" xml:space="preserve"><value>Products assigned to the template.</value></data>
+  <data name="GlobalTemplates_ProductsRemoved" xml:space="preserve"><value>Products removed from the template.</value></data>
+  <data name="GlobalTemplates_AssignFailed" xml:space="preserve"><value>Could not assign the selected products.</value></data>
+  <data name="GlobalTemplates_RemoveFailed" xml:space="preserve"><value>Could not remove the selected products.</value></data>
+  <data name="GlobalTemplates_FlagUpdateFailed" xml:space="preserve"><value>Could not update product flags.</value></data>
+  <data name="GlobalTemplates_PublishChecklistTitle" xml:space="preserve"><value>Publish requirements</value></data>
+  <data name="GlobalTemplates_PublishNeedName" xml:space="preserve"><value>Template name is required</value></data>
+  <data name="GlobalTemplates_PublishNeedProducts" xml:space="preserve"><value>Assign at least one product</value></data>
+  <data name="GlobalTemplates_PublishNeedActiveProducts" xml:space="preserve"><value>All assigned products must be Active</value></data>
+  <data name="GlobalTemplates_PublishNeedBatchSize" xml:space="preserve"><value>Default batch size must be at least 1</value></data>
   <data name="GlobalImports_Title" xml:space="preserve"><value>Catalog imports</value></data>
   <data name="GlobalImports_Description" xml:space="preserve"><value>Upload CSV or XLSX, validate and preview, then confirm background import into the global product catalog.</value></data>
   <data name="GlobalImports_DetailSubtitle" xml:space="preserve"><value>Preview, confirm, and monitor import progress.</value></data>

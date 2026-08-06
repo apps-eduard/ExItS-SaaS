@@ -267,6 +267,18 @@ public interface IPlatformApiClient
     Task<ApiCallResult<CatalogTemplateDto>> UnpublishCatalogTemplateAsync(Guid id, CatalogTemplateLifecycleRequest? request = null, CancellationToken ct = default);
     Task<ApiCallResult<CatalogTemplateDto>> ArchiveCatalogTemplateAsync(Guid id, CatalogTemplateLifecycleRequest? request = null, CancellationToken ct = default);
     Task<ApiCallResult<CatalogTemplateDto>> AssignCatalogTemplateProductAsync(Guid id, AssignCatalogTemplateProductRequest request, CancellationToken ct = default);
+    Task<ApiCallResult<CatalogTemplateDto>> BulkAssignCatalogTemplateProductsAsync(Guid id, BulkAssignCatalogTemplateProductsRequest request, CancellationToken ct = default);
+    Task<ApiCallResult<CatalogTemplateDto>> BulkRemoveCatalogTemplateProductsAsync(Guid id, BulkRemoveCatalogTemplateProductsRequest request, CancellationToken ct = default);
+    Task<ApiCallResult<PagedResult<GlobalProductDto>>> GetCatalogTemplateAvailableProductsAsync(
+        Guid id,
+        int page = 1,
+        int pageSize = 20,
+        string? status = null,
+        Guid? categoryId = null,
+        string? search = null,
+        string? barcode = null,
+        string? sku = null,
+        CancellationToken ct = default);
     Task<ApiCallResult<CatalogTemplateDto>> ReorderCatalogTemplateProductsAsync(Guid id, ReorderCatalogTemplateProductsRequest request, CancellationToken ct = default);
     Task<ApiCallResult<CatalogTemplateDto>> UpdateCatalogTemplateProductFlagsAsync(Guid id, Guid productId, UpdateCatalogTemplateProductFlagsRequest request, CancellationToken ct = default);
     Task<ApiCallResult<CatalogTemplateDto>> RemoveCatalogTemplateProductAsync(Guid id, Guid productId, DateTimeOffset? expectedUpdatedAtUtc = null, CancellationToken ct = default);
