@@ -1,12 +1,51 @@
 @namespace ExItS.DesignSystem.Components.Layout
 
 <div class="exds-root">
-    <div class="exds-page" @attributes="AdditionalAttributes">
+    <div class="@CssClass" @attributes="OtherAttributes">
         @ChildContent
     </div>
 </div>
 
 @code {
     [Parameter] public RenderFragment? ChildContent { get; set; }
-    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+
+    [Parameter(CaptureUnmatchedValues = true)]
+    public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private string CssClass { get; set; } = "exds-page";
+    private Dictionary<string, object>? OtherAttributes { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        // Keep exds-page when callers pass class="…" — attribute splatting would otherwise replace it
+        // and drop page padding/max-width (flush edge content on Sell / payment).
+        if (AdditionalAttributes is null || AdditionalAttributes.Count == 0)
+        {
+            CssClass = "exds-page";
+            OtherAttributes = null;
+            return;
+        }
+
+        string? extraClass = null;
+        Dictionary<string, object>? others = null;
+        foreach (var pair in AdditionalAttributes)
+        {
+            if (string.Equals(pair.Key, "class", StringComparison.OrdinalIgnoreCase))
+            {
+                extraClass = pair.Value?.ToString();
+                continue;
+            }
+
+            others ??= new Dictionary<string, object>(AdditionalAttributes.Count, StringComparer.OrdinalIgnoreCase);
+            if (pair.Value is not null)
+            {
+                others[pair.Key] = pair.Value;
+            }
+        }
+
+        CssClass = string.IsNullOrWhiteSpace(extraClass)
+            ? "exds-page"
+            : $"exds-page {extraClass.Trim()}";
+        OtherAttributes = others;
+    }
 }

@@ -18,6 +18,8 @@ public sealed class SalesCashierPageGuardTests
         Assert.Contains("pos-product-row", checkout, StringComparison.Ordinal);
         Assert.Contains("pos-sell-sticky-bar", checkout, StringComparison.Ordinal);
         Assert.Contains("pos-sell-payment", checkout, StringComparison.Ordinal);
+        Assert.Contains("_paymentMethodExpanded", checkout, StringComparison.Ordinal);
+        Assert.Contains("pos-sell-payment-method__toggle", checkout, StringComparison.Ordinal);
         Assert.DoesNotContain("pos-product-tile__placeholder", checkout, StringComparison.Ordinal);
         Assert.Contains("ParseCategoryFilter", checkout, StringComparison.Ordinal);
         Assert.Contains("Sales_Field_AmountTendered", checkout, StringComparison.Ordinal);

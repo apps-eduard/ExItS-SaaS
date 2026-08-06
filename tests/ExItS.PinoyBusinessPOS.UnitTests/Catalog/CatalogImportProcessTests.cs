@@ -161,6 +161,50 @@ public sealed class CatalogImportProcessTests
         Assert.Equal(3, products.Count);
     }
 
+    [Fact]
+    public async Task Process_RenamesImportedPlaceholderCategory_WhenRealNameAvailable()
+    {
+        var clock = new FixedClock(DateTimeOffset.Parse("2026-08-05T00:00:00Z"));
+        var products = new FakeProductRepository();
+        var categories = new FakeCategoryRepository();
+        var imports = new FakeImportRepository();
+        var uow = new FakeUnitOfWork();
+
+        var sourceCategoryId = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd");
+        // Historically truncated placeholder (Imported- is 9 chars; old code used [..40]).
+        var legacyPlaceholder = $"Imported-{sourceCategoryId:N}"[..40];
+        var placeholder = ProductCategory.Create(
+            OrgA,
+            legacyPlaceholder,
+            clock.UtcNow,
+            sourceGlobalCategoryId: sourceCategoryId);
+        await categories.AddAsync(placeholder);
+
+        var item = CatalogImportItemResult.CreatePending(
+            Guid.Parse("11111111-1111-1111-1111-111111111201"),
+            0,
+            "Coffee",
+            "Pack",
+            35m,
+            sourceGlobalCategoryId: sourceCategoryId,
+            sourceCategoryName: "Beverages");
+        var job = CatalogImportJob.CreateQueued(
+            OrgA,
+            PosCatalogImportJobKind.SelectedProducts,
+            CatalogSource.Template,
+            "actor",
+            [item],
+            clock.UtcNow);
+        await imports.AddAsync(job);
+
+        var processor = new ProcessPosCatalogImportChunk(imports, products, categories, uow, clock);
+        await processor.ExecuteOnceAsync();
+
+        var renamed = await categories.FindActiveBySourceGlobalCategoryIdAsync(OrgA, sourceCategoryId);
+        Assert.Equal("Beverages", renamed!.Name);
+        Assert.Equal(1, products.Count);
+    }
+
     private sealed class FixedClock(DateTimeOffset utcNow) : IClock
     {
         public DateTimeOffset UtcNow { get; } = utcNow;

@@ -178,17 +178,15 @@ else
                        value="@_lookupText"
                        placeholder="@L["Sales_Checkout_LookupPlaceholder"]"
                        aria-label="@L["Sales_Checkout_LookupPlaceholder"]"
-                       disabled="@(blocked || _lookingUp)"
+                       disabled="@blocked"
                        autocomplete="off"
                        @oninput="OnLookupInput" />
-                @if (!string.IsNullOrWhiteSpace(_lookupText))
-                {
-                    <button type="button"
-                            class="pos-sell-search__clear"
-                            aria-label="@L["Sales_Checkout_ClearSearch"]"
-                            disabled="@blocked"
-                            @onclick="ClearLookup">×</button>
-                }
+                <button type="button"
+                        class="pos-sell-search__clear"
+                        aria-label="@L["Sales_Checkout_ClearSearch"]"
+                        disabled="@blocked"
+                        hidden="@(string.IsNullOrWhiteSpace(_lookupText))"
+                        @onclick="ClearLookup">×</button>
             </div>
 
             @if (!string.IsNullOrEmpty(_lookupHelper))
@@ -286,18 +284,30 @@ else
 
         <div class="pos-sell-payment__methods">
         <Stack Gap="2">
-            <span class="pos-muted">@L["Sales_Field_PaymentMethod"]</span>
-            <div class="pos-payment-method-grid pos-payment-method-grid--checkout">
-                @foreach (var methodCode in SalesUiOptions.CheckoutPaymentMethodCodes)
+            <div class="pos-sell-payment-method">
+                <button type="button"
+                        class="pos-sell-payment-method__toggle"
+                        disabled="@paymentSelectBlocked"
+                        aria-expanded="@_paymentMethodExpanded"
+                        @onclick="() => _paymentMethodExpanded = !_paymentMethodExpanded">
+                    <span>@L["Sales_Field_PaymentMethod"] · @SalesUiOptions.PaymentMethodLabel(L, _paymentMethod)</span>
+                    <span aria-hidden="true">@(_paymentMethodExpanded ? "−" : "+")</span>
+                </button>
+                @if (_paymentMethodExpanded)
                 {
-                    var selected = string.Equals(_paymentMethod, methodCode, StringComparison.Ordinal);
-                    <button type="button"
-                            class="@($"pos-payment-method-tile{(selected ? " pos-payment-method-tile--selected" : string.Empty)}")"
-                            disabled="@paymentSelectBlocked"
-                            aria-pressed="@selected"
-                            @onclick="() => OnPaymentMethodChanged(methodCode)">
-                        @SalesUiOptions.PaymentMethodLabel(L, methodCode)
-                    </button>
+                    <div class="pos-payment-method-grid pos-payment-method-grid--checkout">
+                        @foreach (var methodCode in SalesUiOptions.CheckoutPaymentMethodCodes)
+                        {
+                            var selected = string.Equals(_paymentMethod, methodCode, StringComparison.Ordinal);
+                            <button type="button"
+                                    class="@($"pos-payment-method-tile{(selected ? " pos-payment-method-tile--selected" : string.Empty)}")"
+                                    disabled="@paymentSelectBlocked"
+                                    aria-pressed="@selected"
+                                    @onclick="() => OnPaymentMethodChanged(methodCode)">
+                                @SalesUiOptions.PaymentMethodLabel(L, methodCode)
+                            </button>
+                        }
+                    </div>
                 }
             </div>
 
@@ -519,6 +529,7 @@ else
     private bool _electronicPaymentOpen;
     private bool _showPayment;
     private bool _customerExpanded;
+    private bool _paymentMethodExpanded;
     private bool _paymentHeaderActive;
     private CancellationTokenSource? _lookupDebounceCts;
     private int _searchGeneration;
@@ -724,6 +735,11 @@ else
         }
 
         _showPayment = true;
+        _paymentMethodExpanded = false;
+        if (string.IsNullOrWhiteSpace(_paymentMethod))
+        {
+            _paymentMethod = PosSaleOptions.CashPaymentMethod;
+        }
         if (!_paymentHeaderActive)
         {
             HeaderState.EnterInner(backHandler: () =>
@@ -740,6 +756,7 @@ else
     private void ExitPaymentStep()
     {
         _showPayment = false;
+        _paymentMethodExpanded = false;
         if (_paymentHeaderActive)
         {
             HeaderState.ExitInner();
@@ -901,6 +918,8 @@ else
             _gcashReference = null;
             _gcashConfirmed = false;
         }
+
+        _paymentMethodExpanded = false;
     }
 
     private void ClearUtangFields()
@@ -1042,9 +1061,23 @@ else
         await DebouncedSearchAsync(cancellationToken);
     }
 
-    /// <summary>Exact barcode/SKU first, then debounced name search.</summary>
+    /// <summary>Exact barcode/SKU first (after debounce), then name search. Never disables the search field.</summary>
     private async Task DebouncedSearchAsync(CancellationToken cancellationToken)
     {
+        try
+        {
+            await Task.Delay(320, cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return;
+        }
+
         if (string.IsNullOrWhiteSpace(_lookupText))
         {
             _matches = Array.Empty<PosCatalogProductDto>();
@@ -1063,15 +1096,6 @@ else
         if (exactAdded)
         {
             await InvokeAsync(StateHasChanged);
-            return;
-        }
-
-        try
-        {
-            await Task.Delay(320, cancellationToken);
-        }
-        catch (OperationCanceledException)
-        {
             return;
         }
 

@@ -250,8 +250,8 @@ public sealed class ImportTemplateBatch
                         product.Description,
                         product.Sku,
                         product.Barcode,
-                        product.GlobalCategoryId,
-                        sourceCategoryName: null));
+                        product.GlobalCategoryId ?? link.CategoryId,
+                        sourceCategoryName: FirstNonBlank(link.CategoryName)));
                     continue;
                 }
 
@@ -333,6 +333,9 @@ public sealed class ImportTemplateBatch
             sourceCategoryName: link.CategoryName);
         return true;
     }
+
+    private static string? FirstNonBlank(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }
 
 public sealed class ImportSelectedProducts
@@ -409,6 +412,14 @@ public sealed class ImportSelectedProducts
                     "No active Platform products were found for the requested ids.");
             }
 
+            var categoryNames = await LoadCategoryNamesAsync(
+                    products
+                        .Where(p => p.GlobalCategoryId is Guid)
+                        .Select(p => p.GlobalCategoryId!.Value),
+                    platformSessionToken,
+                    cancellationToken)
+                .ConfigureAwait(false);
+
             var items = products
                 .Select((p, index) => CatalogImportItemResult.CreatePending(
                     p.Id,
@@ -420,7 +431,10 @@ public sealed class ImportSelectedProducts
                     p.Sku,
                     p.Barcode,
                     p.GlobalCategoryId,
-                    sourceCategoryName: null))
+                    sourceCategoryName: p.GlobalCategoryId is Guid cid
+                        && categoryNames.TryGetValue(cid, out var categoryName)
+                        ? categoryName
+                        : null))
                 .ToList();
 
             var job = CatalogImportJob.CreateQueued(
@@ -446,6 +460,52 @@ public sealed class ImportSelectedProducts
         {
             return ApplicationResult<PosCatalogImportJobDto>.Failure(ex.ErrorCode, ex.Message);
         }
+    }
+
+    private async Task<Dictionary<Guid, string>> LoadCategoryNamesAsync(
+        IEnumerable<Guid> categoryIds,
+        string? platformSessionToken,
+        CancellationToken cancellationToken)
+    {
+        var wanted = categoryIds.Where(id => id != Guid.Empty).Distinct().ToHashSet();
+        if (wanted.Count == 0)
+        {
+            return new Dictionary<Guid, string>();
+        }
+
+        var found = new Dictionary<Guid, string>();
+        var page = 1;
+        const int pageSize = 100;
+        while (found.Count < wanted.Count && page <= 20)
+        {
+            var batch = await _platform
+                .ListActiveCategoriesAsync(
+                    search: null,
+                    businessType: null,
+                    parentId: null,
+                    page: page,
+                    pageSize: pageSize,
+                    platformSessionToken,
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+            foreach (var category in batch.Items)
+            {
+                if (wanted.Contains(category.Id) && !string.IsNullOrWhiteSpace(category.Name))
+                {
+                    found[category.Id] = category.Name.Trim();
+                }
+            }
+
+            if (batch.Items.Count < pageSize)
+            {
+                break;
+            }
+
+            page++;
+        }
+
+        return found;
     }
 }
 
@@ -668,15 +728,51 @@ public sealed class ProcessPosCatalogImportChunk
             .ConfigureAwait(false);
         if (existing is not null)
         {
+            if (!string.IsNullOrWhiteSpace(fallbackName)
+                && IsImportedPlaceholderName(existing.Name, sourceGlobalCategoryId))
+            {
+                try
+                {
+                    existing.Rename(fallbackName, _clock.UtcNow);
+                    await _categories.UpdateAsync(existing, cancellationToken).ConfigureAwait(false);
+                }
+                catch (DomainException)
+                {
+                    // Keep the placeholder name if rename conflicts or is invalid.
+                }
+            }
+
             RememberCategory(existing.Id, existing.NormalizedName, sourceGlobalCategoryId);
             return existing.Id;
         }
 
         var name = string.IsNullOrWhiteSpace(fallbackName)
-            ? $"Imported-{sourceGlobalCategoryId:N}"[..Math.Min(ProductCategory.NameMaxLength, 8 + 32)]
+            ? ImportedPlaceholderName(sourceGlobalCategoryId)
             : fallbackName;
         return await EnsureCategoryByNameAsync(organizationId, name, cancellationToken, sourceGlobalCategoryId)
             .ConfigureAwait(false);
+    }
+
+    /// <summary>Legacy / last-resort category label when Platform did not supply a name.</summary>
+    internal static string ImportedPlaceholderName(Guid sourceGlobalCategoryId)
+    {
+        var raw = $"Imported-{sourceGlobalCategoryId:N}";
+        return raw.Length <= ProductCategory.NameMaxLength
+            ? raw
+            : raw[..ProductCategory.NameMaxLength];
+    }
+
+    private static bool IsImportedPlaceholderName(string name, Guid sourceGlobalCategoryId)
+    {
+        if (string.Equals(name, ImportedPlaceholderName(sourceGlobalCategoryId), StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        // Match historically truncated "Imported-{guid:N}"[..40] labels (8+32 miscount of "Imported-").
+        var legacy = $"Imported-{sourceGlobalCategoryId:N}";
+        var legacyTruncated = legacy[..Math.Min(40, legacy.Length)];
+        return string.Equals(name, legacyTruncated, StringComparison.OrdinalIgnoreCase);
     }
 
     private async Task<ProductCategoryId?> EnsureCategoryByNameAsync(

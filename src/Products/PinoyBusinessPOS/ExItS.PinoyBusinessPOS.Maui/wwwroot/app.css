@@ -761,9 +761,6 @@ html.pos-keyboard-open .pos-content {
 .pos-product-row-list {
     display: flex;
     flex-direction: column;
-    /* Bleed past the 16px page padding so dividers and press feedback run edge to edge
-       while each row keeps its own 16px inner padding. */
-    margin-inline: calc(var(--exits-page-padding, var(--exits-space-4)) * -1);
     min-width: 0;
 }
 
@@ -1154,6 +1151,11 @@ html.pos-keyboard-open .pos-content {
     min-width: var(--exits-touch-target-min, 3rem);
 }
 
+.pos-sell-search__clear[hidden] {
+    visibility: hidden;
+    pointer-events: none;
+}
+
 .pos-sell-search__helper {
     margin: 0.35rem 0 0;
     font-size: var(--exits-type-helper, 0.75rem);
@@ -1166,7 +1168,7 @@ html.pos-keyboard-open .pos-content {
     margin-top: var(--exits-space-2);
     overflow-x: auto;
     padding-bottom: 0.15rem;
-    padding-inline-end: var(--exits-space-4);
+    padding-inline: 0 var(--exits-space-2);
     -webkit-overflow-scrolling: touch;
     scrollbar-width: thin;
 }
@@ -1286,6 +1288,11 @@ html.pos-keyboard-open .pos-content {
     outline-offset: 2px;
 }
 
+.pos-sell-page.exds-page {
+    /* Keep sell / payment content inset from shell edges (with Page class merge). */
+    padding-inline: max(var(--exits-page-padding, 1rem), 1.25rem);
+}
+
 .pos-sell-payment {
     display: flex;
     flex-direction: column;
@@ -1300,7 +1307,7 @@ html.pos-keyboard-open .pos-content {
     display: flex;
     flex-direction: column;
     gap: 0.35rem;
-    padding: var(--exits-space-2) var(--exits-space-3);
+    padding: var(--exits-space-3);
 }
 
 .pos-sell-payment__line {
@@ -1332,6 +1339,7 @@ html.pos-keyboard-open .pos-content {
     padding-top: 0.45rem;
 }
 
+.pos-sell-payment-method,
 .pos-sell-customer {
     border: 1px solid var(--pos-border-subtle);
     border-radius: var(--exits-radius-md);
@@ -1341,6 +1349,7 @@ html.pos-keyboard-open .pos-content {
     padding: var(--exits-space-2);
 }
 
+.pos-sell-payment-method__toggle,
 .pos-sell-customer__toggle {
     appearance: none;
     background: transparent;
@@ -1355,6 +1364,11 @@ html.pos-keyboard-open .pos-content {
     padding: 0;
     text-align: start;
     width: 100%;
+}
+
+.pos-sell-payment-method__toggle:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
 }
 
 .pos-sell-customer__summary {

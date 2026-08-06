@@ -31,6 +31,8 @@ public sealed class MobileProductionUiGuardTests
         Assert.Contains(".pos-product-row", css, StringComparison.Ordinal);
         Assert.Contains(".pos-product-tile", css, StringComparison.Ordinal);
         Assert.Contains(".pos-sell-payment", css, StringComparison.Ordinal);
+        Assert.Contains(".pos-sell-payment-method", css, StringComparison.Ordinal);
+        Assert.Contains(".pos-sell-page.exds-page", css, StringComparison.Ordinal);
         Assert.Contains(".pos-cart-line", css, StringComparison.Ordinal);
         Assert.Contains("min-width: 900px", css, StringComparison.Ordinal);
         Assert.Contains("orientation: landscape", css, StringComparison.Ordinal);
@@ -68,6 +70,10 @@ public sealed class MobileProductionUiGuardTests
         Assert.Contains("DebouncedSearchAsync", checkout, StringComparison.Ordinal);
         Assert.Contains("_searchGeneration", checkout, StringComparison.Ordinal);
         Assert.Contains("@key=\"product.ProductId\"", checkout, StringComparison.Ordinal);
+        // Search must stay enabled while lookups run — disabling drops Android WebView focus after 1 char.
+        Assert.Contains("disabled=\"@blocked\"", checkout, StringComparison.Ordinal);
+        Assert.DoesNotContain("disabled=\"@(blocked || _lookingUp)\"", checkout, StringComparison.Ordinal);
+        Assert.Contains("hidden=\"@(string.IsNullOrWhiteSpace(_lookupText))\"", checkout, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -84,6 +90,10 @@ public sealed class MobileProductionUiGuardTests
         Assert.Contains("EmptyState", checkout, StringComparison.Ordinal);
         Assert.Contains("pos-product-row--in-cart", checkout, StringComparison.Ordinal);
         Assert.Contains("pos-sell-sticky-bar", checkout, StringComparison.Ordinal);
+        // Payment method collapses like Customer; Cash remains default.
+        Assert.Contains("_paymentMethodExpanded", checkout, StringComparison.Ordinal);
+        Assert.Contains("pos-sell-payment-method__toggle", checkout, StringComparison.Ordinal);
+        Assert.Contains("PosSaleOptions.CashPaymentMethod", checkout, StringComparison.Ordinal);
     }
 
     [Fact]
