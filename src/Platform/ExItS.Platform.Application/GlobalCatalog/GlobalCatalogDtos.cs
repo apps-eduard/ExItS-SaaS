@@ -93,10 +93,13 @@ public sealed record CatalogTemplateProductDto(
     string? ProductName = null,
     string? Sku = null,
     string? Barcode = null,
+    string? Brand = null,
     Guid? CategoryId = null,
     string? CategoryName = null,
     string? Status = null,
-    string? Unit = null);
+    string? Unit = null,
+    decimal? CostPrice = null,
+    decimal? SellingPrice = null);
 
 public sealed record CatalogTemplateDto(
     Guid Id,

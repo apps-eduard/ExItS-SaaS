@@ -177,10 +177,13 @@ public sealed class CatalogTemplateQueryService
                 ProductName = product.Name,
                 Sku = product.Sku,
                 Barcode = product.Barcode,
+                Brand = product.Brand,
                 CategoryId = product.GlobalCategoryId?.Value,
                 CategoryName = categoryName,
                 Status = product.Status.ToString(),
-                Unit = product.Unit.ToString()
+                Unit = product.Unit.ToString(),
+                CostPrice = product.CostPrice,
+                SellingPrice = product.SellingPrice
             };
         }).ToList();
 

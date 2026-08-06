@@ -284,6 +284,43 @@ public sealed class CatalogTemplateUseCaseTests
         Assert.False(second.IsSuccess);
         Assert.Equal(ApplicationErrorCodes.DuplicateCatalogTemplateSlug, second.ErrorCode);
     }
+
+    [Fact]
+    public async Task EnrichAsync_includes_brand_and_prices()
+    {
+        var templates = new InMemoryCatalogTemplateRepository();
+        var products = new InMemoryGlobalProductRepository();
+        var categories = new InMemoryGlobalCategoryRepository();
+        var clock = new FixedClock(T0);
+
+        var category = GlobalCategory.Create("Beverages", T0);
+        await categories.AddAsync(category);
+        var product = GlobalProduct.Create(
+            "Coke",
+            ProductUnit.Piece,
+            "COKE-1",
+            "480001",
+            "BrandX",
+            category.Id,
+            T0,
+            8m,
+            12m);
+        await products.AddAsync(product);
+
+        var template = CatalogTemplate.Create("Sari Starter", BusinessType.SariSari, T0);
+        template.AssignProduct(product.Id, T0.AddMinutes(1), isFirstBatch: true);
+        await templates.AddAsync(template);
+
+        var service = new CatalogTemplateQueryService(templates, products, categories);
+        var enriched = await service.GetByIdAsync(template.Id.Value);
+        Assert.NotNull(enriched);
+        var row = Assert.Single(enriched!.Products);
+        Assert.Equal("Coke", row.ProductName);
+        Assert.Equal("BrandX", row.Brand);
+        Assert.Equal(8m, row.CostPrice);
+        Assert.Equal(12m, row.SellingPrice);
+        Assert.Equal("Beverages", row.CategoryName);
+    }
 }
 
 file sealed class InMemoryCatalogTemplateRepository : ICatalogTemplateRepository
@@ -399,6 +436,58 @@ file sealed class InMemoryGlobalProductRepository : IGlobalProductRepository
     public Task UpdateAsync(GlobalProduct product, CancellationToken cancellationToken = default)
     {
         _store[product.Id.Value] = product;
+        return Task.CompletedTask;
+    }
+}
+
+file sealed class InMemoryGlobalCategoryRepository : IGlobalCategoryRepository
+{
+    private readonly Dictionary<Guid, GlobalCategory> _store = new();
+
+    public Task<GlobalCategory?> GetByIdAsync(GlobalCategoryId id, CancellationToken cancellationToken = default) =>
+        Task.FromResult(_store.TryGetValue(id.Value, out var c) ? c : null);
+
+    public Task<bool> ExistsWithNameUnderParentAsync(
+        string name,
+        GlobalCategoryId? parentId,
+        GlobalCategoryId? excludingId = null,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(false);
+
+    public Task<(IReadOnlyList<GlobalCategory> Items, int TotalCount)> ListAsync(
+        GlobalCategoryStatus? status,
+        GlobalCategoryId? parentId,
+        BusinessType? businessType,
+        string? search,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default,
+        GlobalCategoryListSortBy sortBy = GlobalCategoryListSortBy.SortOrder,
+        bool sortDescending = false) =>
+        Task.FromResult(((IReadOnlyList<GlobalCategory>)_store.Values.ToList(), _store.Count));
+
+    public Task<IReadOnlyList<GlobalCategory>> GetByIdsAsync(
+        IReadOnlyCollection<Guid> ids,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult((IReadOnlyList<GlobalCategory>)ids
+            .Where(id => _store.ContainsKey(id))
+            .Select(id => _store[id])
+            .ToList());
+
+    public Task<IReadOnlyList<GlobalCategory>> FindByNormalizedNameAsync(
+        string normalizedName,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult((IReadOnlyList<GlobalCategory>)[]);
+
+    public Task AddAsync(GlobalCategory category, CancellationToken cancellationToken = default)
+    {
+        _store[category.Id.Value] = category;
+        return Task.CompletedTask;
+    }
+
+    public Task UpdateAsync(GlobalCategory category, CancellationToken cancellationToken = default)
+    {
+        _store[category.Id.Value] = category;
         return Task.CompletedTask;
     }
 }
