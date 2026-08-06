@@ -57,7 +57,9 @@ public interface IGlobalProductRepository
         int skip,
         int take,
         CancellationToken cancellationToken = default,
-        IReadOnlyCollection<Guid>? excludeProductIds = null);
+        IReadOnlyCollection<Guid>? excludeProductIds = null,
+        GlobalProductListSortBy sortBy = GlobalProductListSortBy.Name,
+        bool sortDescending = false);
 
     Task<IReadOnlyList<GlobalProduct>> GetByIdsAsync(
         IReadOnlyCollection<Guid> ids,

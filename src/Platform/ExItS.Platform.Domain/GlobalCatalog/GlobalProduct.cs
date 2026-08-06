@@ -6,6 +6,7 @@ namespace ExItS.Platform.Domain.GlobalCatalog;
 /// Platform-owned global merchandise product. Soft lifecycle only — never hard-deleted.
 /// Barcode/SKU uniqueness is enforced by the repository / application layer.
 /// Optimistic concurrency uses <see cref="UpdatedAtUtc"/>.
+/// Required: Name, Category, Unit, SKU, Barcode, Brand.
 /// </summary>
 public sealed class GlobalProduct
 {
@@ -15,8 +16,9 @@ public sealed class GlobalProduct
     public GlobalProductId Id { get; }
     public string Name { get; private set; }
     public string? Description { get; private set; }
-    public string? Sku { get; private set; }
-    public string? Barcode { get; private set; }
+    public string Sku { get; private set; }
+    public string Barcode { get; private set; }
+    public string Brand { get; private set; }
     public GlobalCategoryId? GlobalCategoryId { get; private set; }
     public ProductUnit Unit { get; private set; }
     public decimal? SuggestedPrice { get; private set; }
@@ -32,8 +34,9 @@ public sealed class GlobalProduct
         GlobalProductId id,
         string name,
         string? description,
-        string? sku,
-        string? barcode,
+        string sku,
+        string barcode,
+        string brand,
         GlobalCategoryId? globalCategoryId,
         ProductUnit unit,
         decimal? suggestedPrice,
@@ -50,6 +53,7 @@ public sealed class GlobalProduct
         Description = description;
         Sku = sku;
         Barcode = barcode;
+        Brand = brand;
         GlobalCategoryId = globalCategoryId;
         Unit = unit;
         SuggestedPrice = suggestedPrice;
@@ -65,11 +69,12 @@ public sealed class GlobalProduct
     public static GlobalProduct Create(
         string name,
         ProductUnit unit,
+        string sku,
+        string barcode,
+        string brand,
+        GlobalCategoryId globalCategoryId,
         DateTimeOffset utcNow,
         string? description = null,
-        string? sku = null,
-        string? barcode = null,
-        GlobalCategoryId? globalCategoryId = null,
         decimal? suggestedPrice = null,
         decimal? suggestedCost = null,
         string? imageReference = null,
@@ -79,6 +84,7 @@ public sealed class GlobalProduct
     {
         DomainTime.EnsureUtc(utcNow);
         EnsureValidUnit(unit);
+        GlobalCatalogRules.RequireCategory(globalCategoryId);
 
         return new GlobalProduct(
             id ?? GlobalProductId.New(),
@@ -89,6 +95,7 @@ public sealed class GlobalProduct
                 DomainErrorCodes.InvalidGlobalProductDescription),
             GlobalCatalogRules.NormalizeSku(sku),
             GlobalCatalogRules.NormalizeBarcode(barcode),
+            GlobalCatalogRules.NormalizeBrand(brand),
             globalCategoryId,
             unit,
             GlobalCatalogRules.NormalizeMoney(suggestedPrice, "SuggestedPrice"),
@@ -104,12 +111,17 @@ public sealed class GlobalProduct
             utcNow);
     }
 
+    /// <summary>
+    /// Loads persisted state. Legacy rows may have blank SKU/Barcode/Brand or null category;
+    /// <see cref="Update"/> requires valid values before save.
+    /// </summary>
     public static GlobalProduct Rehydrate(
         GlobalProductId id,
         string name,
         string? description,
         string? sku,
         string? barcode,
+        string? brand,
         GlobalCategoryId? globalCategoryId,
         ProductUnit unit,
         decimal? suggestedPrice,
@@ -124,8 +136,9 @@ public sealed class GlobalProduct
             id,
             name,
             description,
-            sku,
-            barcode,
+            sku ?? string.Empty,
+            barcode ?? string.Empty,
+            brand ?? string.Empty,
             globalCategoryId,
             unit,
             suggestedPrice,
@@ -140,11 +153,12 @@ public sealed class GlobalProduct
     public void Update(
         string name,
         ProductUnit unit,
+        string sku,
+        string barcode,
+        string brand,
+        GlobalCategoryId globalCategoryId,
         DateTimeOffset utcNow,
         string? description = null,
-        string? sku = null,
-        string? barcode = null,
-        GlobalCategoryId? globalCategoryId = null,
         decimal? suggestedPrice = null,
         decimal? suggestedCost = null,
         string? imageReference = null,
@@ -153,6 +167,7 @@ public sealed class GlobalProduct
     {
         EnsureMutable(utcNow);
         EnsureValidUnit(unit);
+        GlobalCatalogRules.RequireCategory(globalCategoryId);
 
         Name = GlobalCatalogRules.NormalizeName(name);
         Description = GlobalCatalogRules.NormalizeOptionalText(
@@ -161,6 +176,7 @@ public sealed class GlobalProduct
             DomainErrorCodes.InvalidGlobalProductDescription);
         Sku = GlobalCatalogRules.NormalizeSku(sku);
         Barcode = GlobalCatalogRules.NormalizeBarcode(barcode);
+        Brand = GlobalCatalogRules.NormalizeBrand(brand);
         GlobalCategoryId = globalCategoryId;
         Unit = unit;
         SuggestedPrice = GlobalCatalogRules.NormalizeMoney(suggestedPrice, "SuggestedPrice");

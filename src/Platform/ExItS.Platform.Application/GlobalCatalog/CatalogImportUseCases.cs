@@ -397,11 +397,21 @@ public sealed class ProcessCatalogImportChunk
                 return;
             }
 
-            GlobalCategoryId? categoryId;
+            GlobalCategoryId categoryId;
             try
             {
-                categoryId = await ResolveOrCreateCategoryAsync(job, item, now, cancellationToken)
+                var resolvedCategoryId = await ResolveOrCreateCategoryAsync(job, item, now, cancellationToken)
                     .ConfigureAwait(false);
+                if (resolvedCategoryId is null)
+                {
+                    item.MarkFailed(
+                        DomainErrorCodes.InvalidGlobalProductCategory,
+                        "Category is required.",
+                        now);
+                    return;
+                }
+
+                categoryId = resolvedCategoryId;
             }
             catch (DomainException ex)
             {
@@ -409,8 +419,16 @@ public sealed class ProcessCatalogImportChunk
                 return;
             }
 
-            if (item.Barcode is not null
-                && await _products.ExistsWithBarcodeAsync(item.Barcode, excludingId: null, cancellationToken)
+            if (string.IsNullOrWhiteSpace(item.Sku) || string.IsNullOrWhiteSpace(item.Barcode))
+            {
+                item.MarkFailed(
+                    DomainErrorCodes.CatalogImportRowInvalid,
+                    "SKU and barcode are required.",
+                    now);
+                return;
+            }
+
+            if (await _products.ExistsWithBarcodeAsync(item.Barcode, excludingId: null, cancellationToken)
                     .ConfigureAwait(false))
             {
                 item.MarkSkipped(
@@ -420,8 +438,7 @@ public sealed class ProcessCatalogImportChunk
                 return;
             }
 
-            if (item.Sku is not null
-                && await _products.ExistsWithSkuAsync(item.Sku, excludingId: null, cancellationToken)
+            if (await _products.ExistsWithSkuAsync(item.Sku, excludingId: null, cancellationToken)
                     .ConfigureAwait(false))
             {
                 item.MarkSkipped(
@@ -431,15 +448,18 @@ public sealed class ProcessCatalogImportChunk
                 return;
             }
 
-            var (tags, targetStatus) = CatalogImportRowMapper.SplitTagsAndStatus(item.SearchTagsRaw);
+            var (rawTags, targetStatus) = CatalogImportRowMapper.SplitTagsAndStatus(item.SearchTagsRaw);
+            var tags = rawTags.ToList();
+            var brand = CatalogImportRowMapper.ExtractBrand(tags);
             var product = GlobalProduct.Create(
                 item.Name,
                 unit,
-                now,
-                item.Description,
                 item.Sku,
                 item.Barcode,
+                brand,
                 categoryId,
+                now,
+                item.Description,
                 item.SuggestedPrice,
                 item.SuggestedCost,
                 item.ImageReference,

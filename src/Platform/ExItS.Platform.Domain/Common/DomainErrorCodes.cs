@@ -193,6 +193,9 @@ public static class DomainErrorCodes
         "platform.global_catalog.product.status.invalid_transition";
     public const string InvalidGlobalProductBarcode = "platform.global_catalog.product.barcode.invalid";
     public const string InvalidGlobalProductSku = "platform.global_catalog.product.sku.invalid";
+    public const string InvalidGlobalProductBrand = "platform.global_catalog.product.brand.invalid";
+    public const string InvalidGlobalProductCategory =
+        "platform.global_catalog.product.category.required";
     public const string InvalidGlobalProductDescription =
         "platform.global_catalog.product.description.invalid";
     public const string InvalidGlobalProductImage = "platform.global_catalog.product.image.invalid";
@@ -200,6 +203,8 @@ public static class DomainErrorCodes
     public const string InvalidGlobalProductSearchTag =
         "platform.global_catalog.product.search_tag.invalid";
     public const string InvalidGlobalProductUnit = "platform.global_catalog.product.unit.invalid";
+    public const string InvalidGlobalProductSortField =
+        "platform.global_catalog.product.sort.invalid";
     public const string InvalidGlobalCatalogBusinessType =
         "platform.global_catalog.business_type.invalid";
     public const string GlobalCatalogConcurrencyConflict =

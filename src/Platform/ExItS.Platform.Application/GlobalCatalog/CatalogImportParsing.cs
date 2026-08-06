@@ -138,6 +138,7 @@ public static class CatalogImportRowMapper
             var description = NullIfEmpty(CatalogImportRules.SanitizeCell(rawDescription));
             var sku = GlobalCatalogRules.NormalizeSku(CatalogImportRules.SanitizeCell(rawSku));
             var barcode = GlobalCatalogRules.NormalizeBarcode(CatalogImportRules.SanitizeCell(rawBarcode));
+            var brand = GlobalCatalogRules.NormalizeBrand(CatalogImportRules.SanitizeCell(rawBrand));
             var image = GlobalCatalogRules.NormalizeOptionalText(
                 CatalogImportRules.SanitizeCell(rawImage),
                 GlobalCatalogRules.ImageReferenceMaxLength,
@@ -153,7 +154,6 @@ public static class CatalogImportRowMapper
                 GlobalCatalogRules.DescriptionMaxLength,
                 DomainErrorCodes.InvalidGlobalProductDescription);
 
-            var brand = NullIfEmpty(CatalogImportRules.SanitizeCell(rawBrand));
             var taxHint = NullIfEmpty(CatalogImportRules.SanitizeCell(rawTaxHint));
 
             GlobalProductStatus productStatus = GlobalProductStatus.Draft;
@@ -284,7 +284,23 @@ public static class CatalogImportRowMapper
                     categoryName = resolved.Name;
                 }
             }
-            // else: blank category is allowed (product without category)
+            else
+            {
+                return CatalogImportItem.CreateFailed(
+                    row.RowNumber,
+                    name,
+                    unit.ToString(),
+                    DomainErrorCodes.InvalidGlobalProductCategory,
+                    "Category is required.",
+                    description,
+                    sku,
+                    barcode,
+                    suggestedPrice: price,
+                    suggestedCost: cost,
+                    imageReference: image,
+                    searchTagsRaw: NullIfEmpty(CatalogImportRules.SanitizeCell(rawTags)),
+                    businessTypesRaw: NullIfEmpty(CatalogImportRules.SanitizeCell(rawBusinessTypes)));
+            }
 
             var tagsRaw = ComposeTagsRaw(
                 NullIfEmpty(CatalogImportRules.SanitizeCell(rawTags)),
@@ -295,98 +311,92 @@ public static class CatalogImportRowMapper
             _ = GlobalCatalogRules.NormalizeSearchTags(SplitList(tagsRaw));
             _ = ParseBusinessTypes(businessTypesRaw);
 
-            if (barcode is not null)
+            if (barcodesInFile.TryGetValue(barcode, out var priorBarcodeRow))
             {
-                if (barcodesInFile.TryGetValue(barcode, out var priorRow))
-                {
-                    return CatalogImportItem.CreateFailed(
-                        row.RowNumber,
-                        name,
-                        unit.ToString(),
-                        DomainErrorCodes.CatalogImportDuplicateInFile,
-                        $"Duplicate barcode '{barcode}' also appears on row {priorRow}.",
-                        description,
-                        sku,
-                        barcode,
-                        categoryId,
-                        categoryName,
-                        price,
-                        cost,
-                        image,
-                        tagsRaw,
-                        businessTypesRaw);
-                }
-
-                barcodesInFile[barcode] = row.RowNumber;
-
-                if (await products.ExistsWithBarcodeAsync(barcode, excludingId: null, cancellationToken)
-                        .ConfigureAwait(false))
-                {
-                    return CatalogImportItem.CreateSkipped(
-                        row.RowNumber,
-                        name,
-                        unit.ToString(),
-                        ApplicationErrorCodes.DuplicateGlobalProductBarcode,
-                        $"Barcode '{barcode}' already exists in the global catalog.",
-                        utcNow,
-                        description,
-                        sku,
-                        barcode,
-                        categoryId,
-                        categoryName,
-                        price,
-                        cost,
-                        image,
-                        tagsRaw,
-                        businessTypesRaw);
-                }
+                return CatalogImportItem.CreateFailed(
+                    row.RowNumber,
+                    name,
+                    unit.ToString(),
+                    DomainErrorCodes.CatalogImportDuplicateInFile,
+                    $"Duplicate barcode '{barcode}' also appears on row {priorBarcodeRow}.",
+                    description,
+                    sku,
+                    barcode,
+                    categoryId,
+                    categoryName,
+                    price,
+                    cost,
+                    image,
+                    tagsRaw,
+                    businessTypesRaw);
             }
 
-            if (sku is not null)
+            barcodesInFile[barcode] = row.RowNumber;
+
+            if (await products.ExistsWithBarcodeAsync(barcode, excludingId: null, cancellationToken)
+                    .ConfigureAwait(false))
             {
-                if (skusInFile.TryGetValue(sku, out var priorRow))
-                {
-                    return CatalogImportItem.CreateFailed(
-                        row.RowNumber,
-                        name,
-                        unit.ToString(),
-                        DomainErrorCodes.CatalogImportDuplicateInFile,
-                        $"Duplicate SKU '{sku}' also appears on row {priorRow}.",
-                        description,
-                        sku,
-                        barcode,
-                        categoryId,
-                        categoryName,
-                        price,
-                        cost,
-                        image,
-                        tagsRaw,
-                        businessTypesRaw);
-                }
+                return CatalogImportItem.CreateSkipped(
+                    row.RowNumber,
+                    name,
+                    unit.ToString(),
+                    ApplicationErrorCodes.DuplicateGlobalProductBarcode,
+                    $"Barcode '{barcode}' already exists in the global catalog.",
+                    utcNow,
+                    description,
+                    sku,
+                    barcode,
+                    categoryId,
+                    categoryName,
+                    price,
+                    cost,
+                    image,
+                    tagsRaw,
+                    businessTypesRaw);
+            }
 
-                skusInFile[sku] = row.RowNumber;
+            if (skusInFile.TryGetValue(sku, out var priorSkuRow))
+            {
+                return CatalogImportItem.CreateFailed(
+                    row.RowNumber,
+                    name,
+                    unit.ToString(),
+                    DomainErrorCodes.CatalogImportDuplicateInFile,
+                    $"Duplicate SKU '{sku}' also appears on row {priorSkuRow}.",
+                    description,
+                    sku,
+                    barcode,
+                    categoryId,
+                    categoryName,
+                    price,
+                    cost,
+                    image,
+                    tagsRaw,
+                    businessTypesRaw);
+            }
 
-                if (await products.ExistsWithSkuAsync(sku, excludingId: null, cancellationToken)
-                        .ConfigureAwait(false))
-                {
-                    return CatalogImportItem.CreateSkipped(
-                        row.RowNumber,
-                        name,
-                        unit.ToString(),
-                        ApplicationErrorCodes.DuplicateGlobalProductSku,
-                        $"SKU '{sku}' already exists in the global catalog.",
-                        utcNow,
-                        description,
-                        sku,
-                        barcode,
-                        categoryId,
-                        categoryName,
-                        price,
-                        cost,
-                        image,
-                        tagsRaw,
-                        businessTypesRaw);
-                }
+            skusInFile[sku] = row.RowNumber;
+
+            if (await products.ExistsWithSkuAsync(sku, excludingId: null, cancellationToken)
+                    .ConfigureAwait(false))
+            {
+                return CatalogImportItem.CreateSkipped(
+                    row.RowNumber,
+                    name,
+                    unit.ToString(),
+                    ApplicationErrorCodes.DuplicateGlobalProductSku,
+                    $"SKU '{sku}' already exists in the global catalog.",
+                    utcNow,
+                    description,
+                    sku,
+                    barcode,
+                    categoryId,
+                    categoryName,
+                    price,
+                    cost,
+                    image,
+                    tagsRaw,
+                    businessTypesRaw);
             }
 
             return CatalogImportItem.CreatePending(
@@ -464,6 +474,22 @@ public static class CatalogImportRowMapper
         }
 
         return (tags, status);
+    }
+
+    /// <summary>Removes <see cref="BrandTagPrefix"/> entries from tags and returns normalized brand.</summary>
+    public static string ExtractBrand(List<string> tags)
+    {
+        string? brand = null;
+        for (var i = tags.Count - 1; i >= 0; i--)
+        {
+            if (tags[i].StartsWith(BrandTagPrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                brand = tags[i][BrandTagPrefix.Length..];
+                tags.RemoveAt(i);
+            }
+        }
+
+        return GlobalCatalogRules.NormalizeBrand(brand);
     }
 
     /// <summary>

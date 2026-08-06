@@ -70,7 +70,9 @@ public sealed class GlobalProductQueryService
         string? sku,
         int? page,
         int? pageSize,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        GlobalProductListSortBy sortBy = GlobalProductListSortBy.Name,
+        bool sortDescending = false)
     {
         var (skip, take) = CatalogPagination.Normalize(page, pageSize);
         var (items, total) = await _products
@@ -83,7 +85,9 @@ public sealed class GlobalProductQueryService
                 sku,
                 skip,
                 take,
-                cancellationToken)
+                cancellationToken,
+                sortBy: sortBy,
+                sortDescending: sortDescending)
             .ConfigureAwait(false);
 
         return new PagedResult<GlobalProductDto>(
@@ -342,25 +346,29 @@ public sealed class CreateGlobalProduct
                     $"Unrecognized product unit '{request.Unit}'.");
             }
 
-            var categoryId = request.GlobalCategoryId is null
-                ? null
-                : GlobalCategoryId.From(request.GlobalCategoryId.Value);
-            if (categoryId is not null)
+            GlobalCategoryId categoryId;
+            try
             {
-                var category = await _categories.GetByIdAsync(categoryId, cancellationToken).ConfigureAwait(false);
-                if (category is null)
-                {
-                    return ApplicationResult<GlobalProductDto>.Failure(
-                        ApplicationErrorCodes.GlobalCategoryNotFound,
-                        "Category was not found.");
-                }
+                categoryId = GlobalCatalogRules.RequireCategory(GlobalCategoryId.From(request.GlobalCategoryId));
+            }
+            catch (DomainException ex)
+            {
+                return ApplicationResult<GlobalProductDto>.Failure(ex.ErrorCode, ex.Message);
+            }
+
+            var category = await _categories.GetByIdAsync(categoryId, cancellationToken).ConfigureAwait(false);
+            if (category is null)
+            {
+                return ApplicationResult<GlobalProductDto>.Failure(
+                    ApplicationErrorCodes.GlobalCategoryNotFound,
+                    "Category was not found.");
             }
 
             var barcode = GlobalCatalogRules.NormalizeBarcode(request.Barcode);
             var sku = GlobalCatalogRules.NormalizeSku(request.Sku);
+            var brand = GlobalCatalogRules.NormalizeBrand(request.Brand);
 
-            if (barcode is not null
-                && await _products.ExistsWithBarcodeAsync(barcode, excludingId: null, cancellationToken)
+            if (await _products.ExistsWithBarcodeAsync(barcode, excludingId: null, cancellationToken)
                     .ConfigureAwait(false))
             {
                 return ApplicationResult<GlobalProductDto>.Failure(
@@ -368,8 +376,7 @@ public sealed class CreateGlobalProduct
                     "A product with this barcode already exists.");
             }
 
-            if (sku is not null
-                && await _products.ExistsWithSkuAsync(sku, excludingId: null, cancellationToken)
+            if (await _products.ExistsWithSkuAsync(sku, excludingId: null, cancellationToken)
                     .ConfigureAwait(false))
             {
                 return ApplicationResult<GlobalProductDto>.Failure(
@@ -380,11 +387,12 @@ public sealed class CreateGlobalProduct
             var product = GlobalProduct.Create(
                 request.Name,
                 unit,
-                _clock.UtcNow,
-                request.Description,
                 sku,
                 barcode,
+                brand,
                 categoryId,
+                _clock.UtcNow,
+                request.Description,
                 request.SuggestedPrice,
                 request.SuggestedCost,
                 request.ImageReference,
@@ -455,25 +463,29 @@ public sealed class UpdateGlobalProduct
                     $"Unrecognized product unit '{request.Unit}'.");
             }
 
-            var categoryId = request.GlobalCategoryId is null
-                ? null
-                : GlobalCategoryId.From(request.GlobalCategoryId.Value);
-            if (categoryId is not null)
+            GlobalCategoryId categoryId;
+            try
             {
-                var category = await _categories.GetByIdAsync(categoryId, cancellationToken).ConfigureAwait(false);
-                if (category is null)
-                {
-                    return ApplicationResult<GlobalProductDto>.Failure(
-                        ApplicationErrorCodes.GlobalCategoryNotFound,
-                        "Category was not found.");
-                }
+                categoryId = GlobalCatalogRules.RequireCategory(GlobalCategoryId.From(request.GlobalCategoryId));
+            }
+            catch (DomainException ex)
+            {
+                return ApplicationResult<GlobalProductDto>.Failure(ex.ErrorCode, ex.Message);
+            }
+
+            var category = await _categories.GetByIdAsync(categoryId, cancellationToken).ConfigureAwait(false);
+            if (category is null)
+            {
+                return ApplicationResult<GlobalProductDto>.Failure(
+                    ApplicationErrorCodes.GlobalCategoryNotFound,
+                    "Category was not found.");
             }
 
             var barcode = GlobalCatalogRules.NormalizeBarcode(request.Barcode);
             var sku = GlobalCatalogRules.NormalizeSku(request.Sku);
+            var brand = GlobalCatalogRules.NormalizeBrand(request.Brand);
 
-            if (barcode is not null
-                && await _products.ExistsWithBarcodeAsync(barcode, product.Id, cancellationToken)
+            if (await _products.ExistsWithBarcodeAsync(barcode, product.Id, cancellationToken)
                     .ConfigureAwait(false))
             {
                 return ApplicationResult<GlobalProductDto>.Failure(
@@ -481,8 +493,7 @@ public sealed class UpdateGlobalProduct
                     "A product with this barcode already exists.");
             }
 
-            if (sku is not null
-                && await _products.ExistsWithSkuAsync(sku, product.Id, cancellationToken)
+            if (await _products.ExistsWithSkuAsync(sku, product.Id, cancellationToken)
                     .ConfigureAwait(false))
             {
                 return ApplicationResult<GlobalProductDto>.Failure(
@@ -493,11 +504,12 @@ public sealed class UpdateGlobalProduct
             product.Update(
                 request.Name,
                 unit,
-                _clock.UtcNow,
-                request.Description,
                 sku,
                 barcode,
+                brand,
                 categoryId,
+                _clock.UtcNow,
+                request.Description,
                 request.SuggestedPrice,
                 request.SuggestedCost,
                 request.ImageReference,

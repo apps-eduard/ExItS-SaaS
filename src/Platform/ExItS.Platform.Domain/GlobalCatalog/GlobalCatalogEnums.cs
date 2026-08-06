@@ -75,3 +75,17 @@ public enum CatalogImportFileFormat
     Csv = 0,
     Xlsx = 1
 }
+
+/// <summary>Whitelist for global product list sorting. Never map arbitrary client strings into SQL.</summary>
+public enum GlobalProductListSortBy
+{
+    Name = 0,
+    Sku = 1,
+    Barcode = 2,
+    Brand = 3,
+    Category = 4,
+    Unit = 5,
+    Status = 6,
+    UpdatedAtUtc = 7,
+    CreatedAtUtc = 8
+}

@@ -10,6 +10,7 @@ public static class GlobalCatalogRules
     public const int DescriptionMaxLength = 2000;
     public const int BarcodeMaxLength = 64;
     public const int SkuMaxLength = 64;
+    public const int BrandMaxLength = 120;
     public const int IconReferenceMaxLength = 512;
     public const int ImageReferenceMaxLength = 512;
     public const int SearchTagMaxLength = 64;
@@ -40,13 +41,60 @@ public static class GlobalCatalogRules
         return trimmed;
     }
 
-    /// <summary>Uppercase + trim; blank becomes null.</summary>
-    public static string? NormalizeBarcode(string? barcode) =>
-        NormalizeOptionalCode(barcode, BarcodeMaxLength, DomainErrorCodes.InvalidGlobalProductBarcode);
+    /// <summary>Uppercase + trim; blank/whitespace rejected.</summary>
+    public static string NormalizeBarcode(string? barcode) =>
+        NormalizeRequiredCode(barcode, BarcodeMaxLength, DomainErrorCodes.InvalidGlobalProductBarcode, "Barcode");
 
-    /// <summary>Uppercase + trim; blank becomes null.</summary>
-    public static string? NormalizeSku(string? sku) =>
-        NormalizeOptionalCode(sku, SkuMaxLength, DomainErrorCodes.InvalidGlobalProductSku);
+    /// <summary>Uppercase + trim; blank/whitespace rejected.</summary>
+    public static string NormalizeSku(string? sku) =>
+        NormalizeRequiredCode(sku, SkuMaxLength, DomainErrorCodes.InvalidGlobalProductSku, "SKU");
+
+    /// <summary>Trim collapsed whitespace; blank/whitespace rejected.</summary>
+    public static string NormalizeBrand(string? brand)
+    {
+        if (string.IsNullOrWhiteSpace(brand))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidGlobalProductBrand,
+                "Brand cannot be blank.");
+        }
+
+        var trimmed = System.Text.RegularExpressions.Regex.Replace(brand.Trim(), @"\s+", " ");
+        if (trimmed.Length > BrandMaxLength)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidGlobalProductBrand,
+                $"Brand must be at most {BrandMaxLength} characters.");
+        }
+
+        return trimmed;
+    }
+
+    /// <summary>Category is required for create/update.</summary>
+    public static GlobalCategoryId RequireCategory(GlobalCategoryId? categoryId)
+    {
+        if (categoryId is null)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidGlobalProductCategory,
+                "Category is required.");
+        }
+
+        return categoryId;
+    }
+
+    /// <summary>
+    /// Optional filter/search code: blank becomes null; otherwise same rules as required codes.
+    /// </summary>
+    public static string? NormalizeOptionalFilterCode(string? value, int maxLength, string errorCode)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        return NormalizeRequiredCode(value, maxLength, errorCode, "Value");
+    }
 
     public static string? NormalizeOptionalText(string? value, int maxLength, string errorCode)
     {
@@ -226,23 +274,23 @@ public static class GlobalCatalogRules
         return type;
     }
 
-    private static string? NormalizeOptionalCode(string? value, int maxLength, string errorCode)
+    private static string NormalizeRequiredCode(string? value, int maxLength, string errorCode, string fieldLabel)
     {
         if (string.IsNullOrWhiteSpace(value))
         {
-            return null;
+            throw new DomainException(errorCode, $"{fieldLabel} cannot be blank.");
         }
 
         var normalized = value.Trim().ToUpperInvariant();
         if (normalized.Length > maxLength)
         {
-            throw new DomainException(errorCode, $"Value exceeds maximum length of {maxLength}.");
+            throw new DomainException(errorCode, $"{fieldLabel} exceeds maximum length of {maxLength}.");
         }
 
         // Reject control characters / whitespace inside the code after trim.
         if (normalized.Any(char.IsWhiteSpace))
         {
-            throw new DomainException(errorCode, "Value cannot contain whitespace.");
+            throw new DomainException(errorCode, $"{fieldLabel} cannot contain whitespace.");
         }
 
         return normalized;
