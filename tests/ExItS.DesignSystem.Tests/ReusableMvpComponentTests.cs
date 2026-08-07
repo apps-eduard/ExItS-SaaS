@@ -81,6 +81,35 @@ public sealed class ReusableMvpComponentTests
     }
 
     [Fact]
+    public void Select_and_multi_select_use_shared_compact_mobile_option_styles()
+    {
+        var root = FindRepoRoot();
+        var select = File.ReadAllText(Path.Combine(root, "src", "Shared", "ExItS.DesignSystem",
+            "Components", "Primitives", "Select.razor"));
+        Assert.Contains("exds-select-option", select, StringComparison.Ordinal);
+        Assert.Contains("exds-select-option__indicator--radio", select, StringComparison.Ordinal);
+        Assert.Contains("role=\"listbox\"", select, StringComparison.Ordinal);
+        Assert.DoesNotContain("Value = args.Value", select, StringComparison.Ordinal);
+
+        var multi = File.ReadAllText(Path.Combine(root, "src", "Shared", "ExItS.DesignSystem",
+            "Components", "Primitives", "MultiSelect.razor"));
+        Assert.Contains("exds-select-option", multi, StringComparison.Ordinal);
+        Assert.Contains("exds-select-option__indicator--check", multi, StringComparison.Ordinal);
+        Assert.Contains("aria-multiselectable=\"true\"", multi, StringComparison.Ordinal);
+        Assert.Contains("Action_Done", multi, StringComparison.Ordinal);
+
+        var css = File.ReadAllText(Path.Combine(root, "src", "Shared", "ExItS.DesignSystem",
+            "wwwroot", "exits-design-system.css"));
+        Assert.Contains("--exits-select-option-font-size", css, StringComparison.Ordinal);
+        Assert.Contains("--exits-select-option-min-height: 2.75rem", css, StringComparison.Ordinal);
+        Assert.Contains("--exits-select-option-line-height: 1.25", css, StringComparison.Ordinal);
+        Assert.Contains("--exits-select-option-indicator: 1.125rem", css, StringComparison.Ordinal);
+        Assert.Contains("-webkit-line-clamp: 2", css, StringComparison.Ordinal);
+        Assert.Contains("@media (max-width: 767px)", css, StringComparison.Ordinal);
+        Assert.Contains(".exds-select-option", css, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Responsive_data_css_switches_table_and_mobile_cards()
     {
         var css = File.ReadAllText(Path.Combine(FindRepoRoot(), "src", "Shared", "ExItS.DesignSystem",
@@ -197,7 +226,10 @@ public sealed class ReusableMvpComponentTests
                  {
                      "Validation_SummaryTitle", "Confirm_ReasonLabel", "Data_TableLabel",
                      "Data_ListLabel", "Data_SortLabel", "Data_PaginationLabel",
-                     "Data_Previous", "Data_Next", "Data_PaginationSummary", "Money_Unavailable"
+                     "Data_Previous", "Data_Next", "Data_PaginationSummary", "Money_Unavailable",
+                     "Select_Placeholder", "Select_PickerTitle", "Select_Empty",
+                     "MultiSelect_Placeholder", "MultiSelect_PickerTitle", "MultiSelect_SelectedCount",
+                     "Action_Done"
                  })
         {
             Assert.Contains($"name=\"{key}\"", en, StringComparison.Ordinal);

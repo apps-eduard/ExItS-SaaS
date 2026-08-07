@@ -102,8 +102,29 @@
   <data name="Action_Cancel" xml:space="preserve">
     <value>Kanselahin</value>
   </data>
+  <data name="Action_Done" xml:space="preserve">
+    <value>Tapos</value>
+  </data>
   <data name="Action_Confirm" xml:space="preserve">
     <value>Kumpirmahin</value>
+  </data>
+  <data name="Select_Placeholder" xml:space="preserve">
+    <value>Pumili…</value>
+  </data>
+  <data name="Select_PickerTitle" xml:space="preserve">
+    <value>Pumili ng opsyon</value>
+  </data>
+  <data name="Select_Empty" xml:space="preserve">
+    <value>Walang available na opsyon</value>
+  </data>
+  <data name="MultiSelect_Placeholder" xml:space="preserve">
+    <value>Pumili ng mga opsyon…</value>
+  </data>
+  <data name="MultiSelect_PickerTitle" xml:space="preserve">
+    <value>Pumili ng mga opsyon</value>
+  </data>
+  <data name="MultiSelect_SelectedCount" xml:space="preserve">
+    <value>{0} ang napili</value>
   </data>
   <data name="Action_Retry" xml:space="preserve">
     <value>Subukan muli</value>

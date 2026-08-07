@@ -102,8 +102,29 @@
   <data name="Action_Cancel" xml:space="preserve">
     <value>Cancel</value>
   </data>
+  <data name="Action_Done" xml:space="preserve">
+    <value>Done</value>
+  </data>
   <data name="Action_Confirm" xml:space="preserve">
     <value>Confirm</value>
+  </data>
+  <data name="Select_Placeholder" xml:space="preserve">
+    <value>Select…</value>
+  </data>
+  <data name="Select_PickerTitle" xml:space="preserve">
+    <value>Select an option</value>
+  </data>
+  <data name="Select_Empty" xml:space="preserve">
+    <value>No options available</value>
+  </data>
+  <data name="MultiSelect_Placeholder" xml:space="preserve">
+    <value>Select options…</value>
+  </data>
+  <data name="MultiSelect_PickerTitle" xml:space="preserve">
+    <value>Select options</value>
+  </data>
+  <data name="MultiSelect_SelectedCount" xml:space="preserve">
+    <value>{0} selected</value>
   </data>
   <data name="Action_Retry" xml:space="preserve">
     <value>Retry</value>

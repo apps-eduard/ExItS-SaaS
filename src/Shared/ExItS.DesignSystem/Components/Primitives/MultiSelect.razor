@@ -8,35 +8,18 @@
     {
         <Label For="@_id" Required="@Required">@Label</Label>
     }
-
-    @if (Options is not null)
-    {
-        <button id="@_id"
-                type="button"
-                class="exds-field__control exds-select-trigger"
-                disabled="@Disabled"
-                aria-haspopup="listbox"
-                aria-expanded="@_open"
-                aria-invalid="@(IsInvalid ? "true" : "false")"
-                @onclick="OpenPicker"
-                @attributes="AdditionalAttributes">
-            <span class="exds-select-trigger__value">@DisplayText</span>
-            <span class="exds-select-trigger__icon" aria-hidden="true">▾</span>
-        </button>
-    }
-    else
-    {
-        <select id="@_id"
-                class="exds-field__control"
-                disabled="@Disabled"
-                value="@Value"
-                aria-invalid="@(IsInvalid ? "true" : "false")"
-                @onchange="HandleNativeChange"
-                @attributes="AdditionalAttributes">
-            @ChildContent
-        </select>
-    }
-
+    <button id="@_id"
+            type="button"
+            class="exds-field__control exds-select-trigger"
+            disabled="@Disabled"
+            aria-haspopup="listbox"
+            aria-expanded="@_open"
+            aria-invalid="@(IsInvalid ? "true" : "false")"
+            @onclick="OpenPicker"
+            @attributes="AdditionalAttributes">
+        <span class="exds-select-trigger__value">@DisplayText</span>
+        <span class="exds-select-trigger__icon" aria-hidden="true">▾</span>
+    </button>
     @if (IsInvalid && !string.IsNullOrEmpty(ErrorText))
     {
         <span class="exds-field__error" role="alert">@ErrorText</span>
@@ -47,24 +30,24 @@
     }
 </div>
 
-@if (_open && Options is not null)
+@if (_open)
 {
     <div class="exds-select-picker__backdrop" @onclick="ClosePicker">
         <div class="exds-select-picker"
              role="dialog"
              aria-modal="true"
-             aria-label="@(Label ?? L["Select_PickerTitle"].Value)"
+             aria-label="@(Label ?? L["MultiSelect_PickerTitle"].Value)"
              @onclick:stopPropagation="true"
              @onkeydown="OnPickerKeyDown">
             <div class="exds-select-picker__header">
-                <div class="exds-select-picker__title">@(Label ?? L["Select_PickerTitle"].Value)</div>
+                <div class="exds-select-picker__title">@(Label ?? L["MultiSelect_PickerTitle"].Value)</div>
                 <button type="button"
                         class="exds-select-picker__close"
                         aria-label="@L["Action_Close"]"
                         @onclick="ClosePicker">×</button>
             </div>
-            <div class="exds-select-picker__list" role="listbox" aria-labelledby="@_id">
-                @if (Options.Count == 0)
+            <div class="exds-select-picker__list" role="listbox" aria-multiselectable="true" aria-labelledby="@_id">
+                @if (Options is null || Options.Count == 0)
                 {
                     <div class="exds-select-picker__empty">@L["Select_Empty"]</div>
                 }
@@ -72,31 +55,33 @@
                 {
                     @foreach (var option in Options)
                     {
-                        var selected = string.Equals(Value, option.Value, StringComparison.Ordinal);
+                        var selected = IsSelected(option.Value);
                         <button type="button"
                                 class="@($"exds-select-option{(selected ? " exds-select-option--selected" : string.Empty)}")"
                                 role="option"
                                 aria-selected="@selected"
-                                @onclick="() => ChooseAsync(option.Value)">
+                                @onclick="() => ToggleAsync(option.Value)">
+                            <span class="exds-select-option__indicator exds-select-option__indicator--check" aria-hidden="true"></span>
                             <span class="exds-select-option__label">@option.Text</span>
-                            <span class="exds-select-option__indicator exds-select-option__indicator--radio" aria-hidden="true"></span>
                         </button>
                     }
                 }
+            </div>
+            <div class="exds-select-picker__actions" role="group">
+                <button type="button" class="exds-btn exds-btn--primary exds-btn--md" @onclick="ClosePicker">@L["Action_Done"]</button>
             </div>
         </div>
     </div>
 }
 
 @code {
-    private readonly string _id = $"exds-select-{Guid.NewGuid():N}";
+    private readonly string _id = $"exds-multiselect-{Guid.NewGuid():N}";
     private bool _open;
 
     [Parameter] public string? Label { get; set; }
-    [Parameter] public string? Value { get; set; }
-    [Parameter] public EventCallback<string?> ValueChanged { get; set; }
+    [Parameter] public IReadOnlyList<string>? Values { get; set; }
+    [Parameter] public EventCallback<IReadOnlyList<string>> ValuesChanged { get; set; }
     [Parameter] public IReadOnlyList<SelectOption>? Options { get; set; }
-    [Parameter] public RenderFragment? ChildContent { get; set; }
     [Parameter] public bool IsInvalid { get; set; }
     [Parameter] public string? ErrorText { get; set; }
     [Parameter] public string? Hint { get; set; }
@@ -108,24 +93,42 @@
     {
         get
         {
-            if (Options is null)
+            var selected = Values ?? Array.Empty<string>();
+            if (selected.Count == 0)
             {
-                return L["Select_Placeholder"];
+                return L["MultiSelect_Placeholder"];
             }
 
-            var match = Options.FirstOrDefault(o => string.Equals(o.Value, Value, StringComparison.Ordinal));
-            if (match is not null)
+            if (Options is null || Options.Count == 0)
             {
-                return match.Text;
+                return L["MultiSelect_SelectedCount", selected.Count];
             }
 
-            return string.IsNullOrEmpty(Value) ? L["Select_Placeholder"] : Value;
+            var labels = Options
+                .Where(o => selected.Contains(o.Value, StringComparer.Ordinal))
+                .Select(o => o.Text)
+                .ToList();
+
+            if (labels.Count == 0)
+            {
+                return L["MultiSelect_SelectedCount", selected.Count];
+            }
+
+            if (labels.Count <= 2)
+            {
+                return string.Join(", ", labels);
+            }
+
+            return L["MultiSelect_SelectedCount", labels.Count];
         }
     }
 
+    private bool IsSelected(string value) =>
+        Values is not null && Values.Contains(value, StringComparer.Ordinal);
+
     private void OpenPicker()
     {
-        if (Disabled || Options is null)
+        if (Disabled)
         {
             return;
         }
@@ -135,20 +138,21 @@
 
     private void ClosePicker() => _open = false;
 
-    private async Task ChooseAsync(string value)
+    private async Task ToggleAsync(string value)
     {
-        _open = false;
-        if (ValueChanged.HasDelegate)
+        var next = Values?.ToList() ?? [];
+        if (next.Contains(value, StringComparer.Ordinal))
         {
-            await ValueChanged.InvokeAsync(value);
+            next.RemoveAll(v => string.Equals(v, value, StringComparison.Ordinal));
         }
-    }
-
-    private async Task HandleNativeChange(ChangeEventArgs args)
-    {
-        if (ValueChanged.HasDelegate)
+        else
         {
-            await ValueChanged.InvokeAsync(args.Value?.ToString());
+            next.Add(value);
+        }
+
+        if (ValuesChanged.HasDelegate)
+        {
+            await ValuesChanged.InvokeAsync(next);
         }
     }
 

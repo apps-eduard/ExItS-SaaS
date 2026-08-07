@@ -9,7 +9,7 @@ namespace ExItS.DesignSystem.Localization;
 /// <remarks>
 /// Keys: Empty_*, Error_*, Loading_*, Search_*, Offline_*, ApiUnavailable_*, Timeout_*,
 /// Action_*, Status_*, Empty_NoRecords, Loading_BusyAria, Validation_SummaryTitle,
-/// Confirm_ReasonLabel, Data_*, Money_Unavailable.
+/// Confirm_ReasonLabel, Data_*, Money_Unavailable, Select_*, MultiSelect_*.
 /// </remarks>
 public sealed class DesignSystemResources
 {

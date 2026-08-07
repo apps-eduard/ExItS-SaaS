@@ -430,6 +430,205 @@
 textarea.exds-field__control { min-height: 5.5rem; padding: var(--exits-space-3); resize: vertical; }
 select.exds-field__control { appearance: none; padding-right: var(--exits-space-8); background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%235f6b76' stroke-width='1.6'%3E%3Cpath d='M5 7.5l5 5 5-5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right var(--exits-space-3) center; background-size: 1rem; }
 
+/* Shared select / multi-select option sizing tokens (desktop defaults). */
+:root {
+  --exits-select-option-font-size: var(--exits-density-font-size);
+  --exits-select-option-min-height: var(--exits-density-row-height);
+  --exits-select-option-padding-y: 0.625rem;
+  --exits-select-option-padding-x: var(--exits-space-3);
+  --exits-select-option-line-height: 1.35;
+  --exits-select-option-indicator: 1.25rem;
+  --exits-select-option-gap: var(--exits-space-3);
+}
+
+/* Mobile: denser option rows while keeping a comfortable ~44px touch target. */
+@media (max-width: 767px) {
+  :root {
+    --exits-select-option-font-size: 0.9375rem; /* 15px */
+    --exits-select-option-min-height: 2.75rem;   /* 44px */
+    --exits-select-option-padding-y: 0.4rem;
+    --exits-select-option-padding-x: var(--exits-space-3);
+    --exits-select-option-line-height: 1.25;
+    --exits-select-option-indicator: 1.125rem;  /* 18px */
+    --exits-select-option-gap: var(--exits-space-2);
+  }
+}
+
+/* Custom select / multi-select (replaces native OS option chrome on mobile WebView). */
+button.exds-select-trigger.exds-field__control {
+  align-items: center;
+  appearance: none;
+  cursor: pointer;
+  display: inline-flex;
+  gap: var(--exits-space-2);
+  justify-content: space-between;
+  text-align: start;
+}
+button.exds-select-trigger.exds-field__control:disabled { cursor: not-allowed; }
+.exds-select-trigger__value {
+  flex: 1 1 auto;
+  line-height: 1.25;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.exds-select-trigger__icon {
+  color: var(--exits-text-muted);
+  flex: 0 0 auto;
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.exds-select-picker__backdrop {
+  align-items: center;
+  background: rgba(15, 23, 32, 0.45);
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  left: 0;
+  padding: var(--exits-space-4);
+  position: fixed;
+  right: 0;
+  top: 0;
+  z-index: var(--exits-z-dialog);
+}
+.exds-select-picker {
+  background: var(--exits-surface);
+  border-radius: var(--exits-radius-lg, var(--exits-density-radius));
+  box-shadow: 0 12px 40px rgba(15, 23, 32, 0.28);
+  display: flex;
+  flex-direction: column;
+  max-height: min(85vh, 36rem);
+  max-width: 28rem;
+  overflow: hidden;
+  width: min(100%, 28rem);
+}
+.exds-select-picker__header {
+  align-items: center;
+  border-bottom: 1px solid var(--exits-border);
+  display: flex;
+  gap: var(--exits-space-2);
+  justify-content: space-between;
+  padding: var(--exits-space-3) var(--exits-space-3) var(--exits-space-3) var(--exits-space-4);
+}
+.exds-select-picker__title {
+  flex: 1 1 auto;
+  font-size: var(--exits-text-md);
+  font-weight: 700;
+  line-height: 1.25;
+  min-width: 0;
+}
+.exds-select-picker__close {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  border-radius: var(--exits-density-radius);
+  color: var(--exits-text-muted);
+  cursor: pointer;
+  flex: 0 0 auto;
+  font-size: 1.5rem;
+  height: var(--exits-touch-target-min);
+  line-height: 1;
+  width: var(--exits-touch-target-min);
+}
+.exds-select-picker__list {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.exds-select-picker__empty {
+  color: var(--exits-text-muted);
+  font-size: var(--exits-text-sm);
+  padding: var(--exits-space-5) var(--exits-space-4);
+  text-align: center;
+}
+.exds-select-picker__actions {
+  border-top: 1px solid var(--exits-border);
+  display: flex;
+  gap: var(--exits-space-2);
+  justify-content: center;
+  padding: var(--exits-space-3);
+}
+.exds-select-picker__actions > .exds-btn {
+  flex: 1 1 0;
+  justify-content: center;
+  min-width: 0;
+}
+
+.exds-select-option {
+  align-items: center;
+  appearance: none;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--exits-border);
+  color: var(--exits-text);
+  cursor: pointer;
+  display: flex;
+  gap: var(--exits-select-option-gap);
+  justify-content: space-between;
+  min-height: var(--exits-select-option-min-height);
+  padding: var(--exits-select-option-padding-y) var(--exits-select-option-padding-x);
+  text-align: start;
+  width: 100%;
+}
+.exds-select-option:last-child { border-bottom: 0; }
+.exds-select-option--selected { background: color-mix(in srgb, var(--exits-primary) 8%, transparent); }
+.exds-select-option__label {
+  display: -webkit-box;
+  flex: 1 1 auto;
+  font-size: var(--exits-select-option-font-size);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-height: var(--exits-select-option-line-height);
+  min-width: 0;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  word-break: break-word;
+}
+.exds-select-option__indicator {
+  border: 1.5px solid var(--exits-border);
+  background: var(--exits-surface);
+  box-sizing: border-box;
+  flex: 0 0 auto;
+  height: var(--exits-select-option-indicator);
+  width: var(--exits-select-option-indicator);
+}
+.exds-select-option__indicator--radio { border-radius: 50%; order: 2; }
+.exds-select-option__indicator--check { border-radius: var(--exits-radius-sm); order: 0; }
+.exds-select-option--selected .exds-select-option__indicator--radio {
+  border-color: var(--exits-primary);
+  box-shadow: inset 0 0 0 0.28rem var(--exits-primary);
+}
+.exds-select-option--selected .exds-select-option__indicator--check {
+  background: var(--exits-primary);
+  border-color: var(--exits-primary);
+  box-shadow: inset 0 0 0 2px var(--exits-surface);
+}
+.exds-select-option:focus-visible {
+  outline: 3px solid var(--exits-focus);
+  outline-offset: -3px;
+}
+
+@media (max-width: 767px) {
+  .exds-select-picker__backdrop {
+    align-items: flex-end;
+    padding: 0;
+  }
+  .exds-select-picker {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    max-height: min(88vh, 40rem);
+    max-width: 100%;
+    width: 100%;
+  }
+}
+
 .exds-field--invalid .exds-field__control { border-color: var(--exits-danger); }
 .exds-field--invalid .exds-field__control:focus-visible,
 .exds-field--invalid .exds-field__control:focus { box-shadow: 0 0 0 3px var(--exits-danger-bg); }

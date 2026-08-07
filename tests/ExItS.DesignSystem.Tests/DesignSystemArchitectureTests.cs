@@ -74,7 +74,7 @@ public sealed class DesignSystemArchitectureTests
         var required = new[]
         {
             "Primitives/Button.razor", "Primitives/IconButton.razor", "Primitives/TextInput.razor",
-            "Primitives/Select.razor", "Primitives/Switch.razor", "Primitives/Label.razor",
+            "Primitives/Select.razor", "Primitives/MultiSelect.razor", "Primitives/Switch.razor", "Primitives/Label.razor",
             "Primitives/Badge.razor", "Primitives/Avatar.razor", "Primitives/Spinner.razor",
             "Primitives/Skeleton.razor", "Primitives/Divider.razor",
             "Layout/Stack.razor", "Layout/Grid.razor", "Layout/Card.razor", "Layout/Surface.razor",
