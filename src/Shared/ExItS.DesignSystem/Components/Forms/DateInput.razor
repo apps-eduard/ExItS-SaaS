@@ -1,19 +1,27 @@
 ﻿@namespace ExItS.DesignSystem.Components.Forms
+@using System.Globalization
 @using ExItS.DesignSystem.Components.Primitives
+@using ExItS.DesignSystem.Localization
+@using Microsoft.Extensions.Localization
+@inject IStringLocalizer<DesignSystemResources> L
 
 <div class="exds-field @(IsInvalid ? "exds-field--invalid" : null)">
     @if (!string.IsNullOrEmpty(Label))
     {
         <Label For="@_id" Required="@Required">@Label</Label>
     }
-    <input id="@_id"
-           type="date"
-           class="exds-field__control"
-           disabled="@Disabled"
-           value="@Format(Value)"
-           aria-invalid="@(IsInvalid ? "true" : "false")"
-           @onchange="HandleChange"
-           @attributes="AdditionalAttributes" />
+    <button id="@_id"
+            type="button"
+            class="exds-field__control exds-date-trigger"
+            disabled="@Disabled"
+            aria-haspopup="dialog"
+            aria-expanded="@_open"
+            aria-invalid="@(IsInvalid ? "true" : "false")"
+            @onclick="OpenPicker"
+            @attributes="AdditionalAttributes">
+        <span class="exds-date-trigger__value">@(Value is null ? L["Date_Placeholder"].Value : FormatDisplay(Value.Value))</span>
+        <span class="exds-date-trigger__icon" aria-hidden="true">▾</span>
+    </button>
     @if (IsInvalid && !string.IsNullOrEmpty(ErrorText))
     {
         <span class="exds-field__error" role="alert">@ErrorText</span>
@@ -24,8 +32,68 @@
     }
 </div>
 
+@if (_open)
+{
+    <div class="exds-date-picker__backdrop" @onclick="CancelPicker">
+        <div class="exds-date-picker"
+             role="dialog"
+             aria-modal="true"
+             aria-label="@L["Date_PickerTitle"]"
+             @onclick:stopPropagation="true">
+            <div class="exds-date-picker__header">
+                <div class="exds-date-picker__year">@_draft.Year</div>
+                <div class="exds-date-picker__selected">@FormatHeader(_draft)</div>
+            </div>
+
+            <div class="exds-date-picker__nav">
+                <button type="button" class="exds-date-picker__nav-btn" aria-label="@L["Date_PreviousMonth"]" @onclick="PrevMonth">‹</button>
+                <div class="exds-date-picker__month">@_viewMonth.ToString("MMMM yyyy", CultureInfo.CurrentUICulture)</div>
+                <button type="button" class="exds-date-picker__nav-btn" aria-label="@L["Date_NextMonth"]" @onclick="NextMonth">›</button>
+            </div>
+
+            <div class="exds-date-picker__weekdays" aria-hidden="true">
+                @foreach (var day in WeekdayLabels())
+                {
+                    <span>@day</span>
+                }
+            </div>
+
+            <div class="exds-date-picker__grid" role="grid">
+                @foreach (var cell in BuildMonthCells())
+                {
+                    if (cell is null)
+                    {
+                        <span class="exds-date-picker__day exds-date-picker__day--empty"></span>
+                    }
+                    else
+                    {
+                        var day = cell.Value;
+                        var selected = day == _draft;
+                        <button type="button"
+                                class="@($"exds-date-picker__day{(selected ? " exds-date-picker__day--selected" : string.Empty)}")"
+                                aria-pressed="@selected"
+                                @onclick="() => SelectDay(day)">
+                            @day.Day
+                        </button>
+                    }
+                }
+            </div>
+
+            <div class="exds-date-picker__actions" role="group">
+                <button type="button" class="exds-btn exds-btn--primary exds-btn--md" @onclick="ConfirmPicker">@L["Action_Set"]</button>
+                <button type="button" class="exds-btn exds-btn--secondary exds-btn--md" @onclick="CancelPicker">@L["Action_Cancel"]</button>
+                <button type="button" class="exds-btn exds-btn--ghost exds-btn--md" @onclick="ClearPicker">@L["Action_Clear"]</button>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     private readonly string _id = $"exds-date-{Guid.NewGuid():N}";
+    private bool _open;
+    private DateOnly _draft;
+    private DateOnly _viewMonth;
+
     [Parameter] public string? Label { get; set; }
     [Parameter] public DateOnly? Value { get; set; }
     [Parameter] public EventCallback<DateOnly?> ValueChanged { get; set; }
@@ -36,12 +104,76 @@
     [Parameter] public bool Required { get; set; }
     [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
 
-    private static string Format(DateOnly? value) => value?.ToString("yyyy-MM-dd") ?? string.Empty;
+    private static string FormatDisplay(DateOnly value) =>
+        value.ToString("d", CultureInfo.CurrentUICulture);
 
-    private async Task HandleChange(ChangeEventArgs args)
+    private static string FormatHeader(DateOnly value) =>
+        value.ToString("ddd, MMM d", CultureInfo.CurrentUICulture);
+
+    private void OpenPicker()
     {
-        var text = args.Value?.ToString();
-        Value = DateOnly.TryParse(text, out var parsed) ? parsed : null;
-        if (ValueChanged.HasDelegate) await ValueChanged.InvokeAsync(Value);
+        if (Disabled)
+        {
+            return;
+        }
+
+        _draft = Value ?? DateOnly.FromDateTime(DateTime.Today);
+        _viewMonth = new DateOnly(_draft.Year, _draft.Month, 1);
+        _open = true;
+    }
+
+    private void SelectDay(DateOnly day) => _draft = day;
+
+    private async Task ConfirmPicker()
+    {
+        Value = _draft;
+        _open = false;
+        if (ValueChanged.HasDelegate)
+        {
+            await ValueChanged.InvokeAsync(Value);
+        }
+    }
+
+    private void CancelPicker() => _open = false;
+
+    private async Task ClearPicker()
+    {
+        Value = null;
+        _open = false;
+        if (ValueChanged.HasDelegate)
+        {
+            await ValueChanged.InvokeAsync(null);
+        }
+    }
+
+    private void PrevMonth() => _viewMonth = _viewMonth.AddMonths(-1);
+
+    private void NextMonth() => _viewMonth = _viewMonth.AddMonths(1);
+
+    private static IEnumerable<string> WeekdayLabels()
+    {
+        var culture = CultureInfo.CurrentUICulture;
+        // Sunday-first grid to match common mobile calendars.
+        for (var i = 0; i < 7; i++)
+        {
+            var day = (DayOfWeek)i;
+            yield return culture.DateTimeFormat.GetShortestDayName(day);
+        }
+    }
+
+    private IEnumerable<DateOnly?> BuildMonthCells()
+    {
+        var first = _viewMonth;
+        var daysInMonth = DateTime.DaysInMonth(first.Year, first.Month);
+        var leading = (int)first.DayOfWeek; // Sunday = 0
+        for (var i = 0; i < leading; i++)
+        {
+            yield return null;
+        }
+
+        for (var day = 1; day <= daysInMonth; day++)
+        {
+            yield return new DateOnly(first.Year, first.Month, day);
+        }
     }
 }

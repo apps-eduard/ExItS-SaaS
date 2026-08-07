@@ -1,4 +1,5 @@
 @page "/catalog/barcode-lookup"
+@using ExItS.DesignSystem.Components.Internal
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IPosCatalogClient Catalog
@@ -13,86 +14,119 @@
 }
 else
 {
-<Page>
-    <PageHeader Title="@L["Catalog_Lookup_Title"]" Subtitle="@L["Catalog_Lookup_Subtitle"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoCatalog">@L["Catalog_BackToList"]</Button>
-        </Actions>
-    </PageHeader>
+<div class="pos-barcode-lookup">
+    <Page>
+        <PageHeader Title="@L["Catalog_Lookup_Title"]" Subtitle="@L["Catalog_Lookup_Subtitle"]" />
 
-    @if (_isOffline)
-    {
-        <Alert Tone="AlertTone.Warning" Title="@L["Catalog_OfflineTitle"]" Message="@L["Catalog_OfflineMessage"]" />
-    }
+        <div class="pos-action-grid pos-action-grid--single pos-barcode-lookup__nav" role="group">
+            <button type="button"
+                    class="pos-action-tile"
+                    @onclick="GoCatalog">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("back")</span>
+                <span class="pos-action-tile__label">@L["Catalog_BackToList"]</span>
+            </button>
+        </div>
 
-    <Section Title="@L["Catalog_Lookup_FormTitle"]">
-        <Stack Gap="3">
-            <TextInput Label="@L["Catalog_Lookup_Barcode"]"
-                       Value="@_barcode"
-                       ValueChanged="v => _barcode = v"
-                       Hint="@L["Catalog_BarcodeHint"]"
-                       Disabled="@(_searching || _isOffline)" />
-            <TextInput Label="@L["Catalog_Lookup_Sku"]"
-                       Value="@_sku"
-                       ValueChanged="v => _sku = v"
-                       Hint="@L["Catalog_SkuHint"]"
-                       Disabled="@(_searching || _isOffline)" />
-            <Checkbox Value="@_includeInactive"
-                      ValueChanged="v => _includeInactive = v"
-                      Disabled="@(_searching || _isOffline)">
-                @L["Catalog_Lookup_IncludeInactive"]
-            </Checkbox>
-            <FormActions>
-                <Button Variant="ButtonVariant.Secondary" Disabled="@_searching" OnClick="Clear">@L["Catalog_Lookup_Clear"]</Button>
-                <Button Variant="ButtonVariant.Primary" Disabled="@_isOffline" IsLoading="@_searching" OnClick="SearchAsync">@L["Catalog_Lookup_Search"]</Button>
-            </FormActions>
-        </Stack>
-    </Section>
+        @if (_isOffline)
+        {
+            <Alert Tone="AlertTone.Warning" Title="@L["Catalog_OfflineTitle"]" Message="@L["Catalog_OfflineMessage"]" />
+        }
 
-    @if (!string.IsNullOrEmpty(_message))
-    {
-        <Alert Tone="AlertTone.Warning" Title="@L["Catalog_Lookup_NoMatchTitle"]" Message="@_message" />
-    }
+        <Section Title="@L["Catalog_Lookup_FormTitle"]">
+            <Stack Gap="2">
+                <TextInput Label="@L["Catalog_Lookup_Barcode"]"
+                           Value="@_barcode"
+                           ValueChanged="v => _barcode = v"
+                           Hint="@L["Catalog_BarcodeHint"]"
+                           Disabled="@(_searching || _isOffline)" />
+                <TextInput Label="@L["Catalog_Lookup_Sku"]"
+                           Value="@_sku"
+                           ValueChanged="v => _sku = v"
+                           Hint="@L["Catalog_SkuHint"]"
+                           Disabled="@(_searching || _isOffline)" />
+                <Checkbox Value="@_includeInactive"
+                          ValueChanged="v => _includeInactive = v"
+                          Disabled="@(_searching || _isOffline)">
+                    @L["Catalog_Lookup_IncludeInactive"]
+                </Checkbox>
 
-    @if (_product is not null)
-    {
-        <Section Title="@L["Catalog_Lookup_ResultTitle"]">
-            <Stack Gap="3">
-                <div>
-                    <span class="pos-muted">@L["Catalog_Field_Name"]</span>
-                    <div class="pos-value-md">@_product.Name</div>
+                <div class="pos-action-grid pos-action-grid--two pos-barcode-lookup__actions" role="group" aria-label="@L["Catalog_Lookup_FormTitle"]">
+                    <button type="button"
+                            class="pos-action-tile"
+                            disabled="@_searching"
+                            @onclick="Clear">
+                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("close")</span>
+                        <span class="pos-action-tile__label">@L["Catalog_Lookup_Clear"]</span>
+                    </button>
+                    <button type="button"
+                            class="pos-action-tile pos-action-tile--primary"
+                            disabled="@(_isOffline || _searching)"
+                            @onclick="SearchAsync">
+                        @if (_searching)
+                        {
+                            <Spinner />
+                        }
+                        else
+                        {
+                            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
+                        }
+                        <span class="pos-action-tile__label">@L["Catalog_Lookup_Search"]</span>
+                    </button>
                 </div>
-                <div>
-                    <span class="pos-muted">@L["Catalog_Field_Sku"]</span>
-                    <div class="pos-value-md">@(string.IsNullOrWhiteSpace(_product.Sku) ? L["Catalog_NoValue"] : _product.Sku)</div>
-                </div>
-                <div>
-                    <span class="pos-muted">@L["Catalog_Field_Barcode"]</span>
-                    <div class="pos-value-md">@(string.IsNullOrWhiteSpace(_product.Barcode) ? L["Catalog_NoValue"] : _product.Barcode)</div>
-                </div>
-                <div>
-                    <span class="pos-muted">@L["Catalog_Field_Unit"]</span>
-                    <div class="pos-value-md">@CatalogUiOptions.UnitOfMeasureLabel(L, _product.UnitOfMeasure)</div>
-                </div>
-                <div>
-                    <span class="pos-muted">@L["Catalog_Field_SellingPrice"]</span>
-                    <div class="pos-value-md">
-                        <MoneyDisplay Amount="@_product.SellingPrice" CurrencyCode="PHP" />
-                    </div>
-                </div>
-                <div>
-                    <span class="pos-muted">@L["Catalog_Field_Status"]</span>
-                    <Badge Tone="@(_product.Status == PosCatalogOptions.ActiveStatus ? BadgeTone.Success : BadgeTone.Neutral)">
-                        @CatalogUiOptions.StatusLabel(L, _product.Status)
-                    </Badge>
-                </div>
-                <FormActions>
-                    <Button Variant="ButtonVariant.Primary" OnClick="GoProduct">@L["Catalog_Lookup_OpenProduct"]</Button>
-                </FormActions>
             </Stack>
         </Section>
-    }
-</Page>
+
+        @if (!string.IsNullOrEmpty(_message))
+        {
+            <Alert Tone="AlertTone.Warning" Title="@L["Catalog_Lookup_NoMatchTitle"]" Message="@_message" />
+        }
+
+        @if (_product is not null)
+        {
+            <Section Title="@L["Catalog_Lookup_ResultTitle"]">
+                <div class="pos-barcode-lookup__result">
+                    <div class="pos-barcode-lookup__fact">
+                        <span class="pos-muted">@L["Catalog_Field_Name"]</span>
+                        <span class="pos-barcode-lookup__fact-value">@_product.Name</span>
+                    </div>
+                    <div class="pos-barcode-lookup__fact">
+                        <span class="pos-muted">@L["Catalog_Field_Sku"]</span>
+                        <span class="pos-barcode-lookup__fact-value">@(string.IsNullOrWhiteSpace(_product.Sku) ? L["Catalog_NoValue"] : _product.Sku)</span>
+                    </div>
+                    <div class="pos-barcode-lookup__fact">
+                        <span class="pos-muted">@L["Catalog_Field_Barcode"]</span>
+                        <span class="pos-barcode-lookup__fact-value">@(string.IsNullOrWhiteSpace(_product.Barcode) ? L["Catalog_NoValue"] : _product.Barcode)</span>
+                    </div>
+                    <div class="pos-barcode-lookup__fact">
+                        <span class="pos-muted">@L["Catalog_Field_Unit"]</span>
+                        <span class="pos-barcode-lookup__fact-value">@CatalogUiOptions.UnitOfMeasureLabel(L, _product.UnitOfMeasure)</span>
+                    </div>
+                    <div class="pos-barcode-lookup__fact">
+                        <span class="pos-muted">@L["Catalog_Field_SellingPrice"]</span>
+                        <span class="pos-barcode-lookup__fact-value">
+                            <MoneyDisplay Amount="@_product.SellingPrice" CurrencyCode="PHP" />
+                        </span>
+                    </div>
+                    <div class="pos-barcode-lookup__fact">
+                        <span class="pos-muted">@L["Catalog_Field_Status"]</span>
+                        <Badge Tone="@(_product.Status == PosCatalogOptions.ActiveStatus ? BadgeTone.Success : BadgeTone.Neutral)">
+                            @CatalogUiOptions.StatusLabel(L, _product.Status)
+                        </Badge>
+                    </div>
+                </div>
+
+                <div class="pos-action-grid pos-action-grid--single pos-barcode-lookup__open">
+                    <button type="button"
+                            class="pos-action-tile pos-action-tile--primary"
+                            @onclick="GoProduct">
+                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("products")</span>
+                        <span class="pos-action-tile__label">@L["Catalog_Lookup_OpenProduct"]</span>
+                    </button>
+                </div>
+            </Section>
+        }
+    </Page>
+</div>
 }
 
 @code {
@@ -146,20 +180,26 @@ else
         }
 
         _searching = true;
-        var result = hasBarcode
-            ? await Catalog.LookupByBarcodeAsync(_barcode!.Trim(), _includeInactive)
-            : await Catalog.LookupBySkuAsync(_sku!.Trim(), _includeInactive);
-        _searching = false;
-
-        if (result.IsSuccess && result.Data is not null)
+        try
         {
-            _product = result.Data;
-            return;
-        }
+            var result = hasBarcode
+                ? await Catalog.LookupByBarcodeAsync(_barcode!.Trim(), _includeInactive)
+                : await Catalog.LookupBySkuAsync(_sku!.Trim(), _includeInactive);
 
-        _message = result.Status == ApiCallStatus.NotFound
-            ? L["Catalog_Lookup_NoMatchMessage"]
-            : result.Error?.Detail ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
+            if (result.IsSuccess && result.Data is not null)
+            {
+                _product = result.Data;
+                return;
+            }
+
+            _message = result.Status == ApiCallStatus.NotFound
+                ? L["Catalog_Lookup_NoMatchMessage"]
+                : result.Error?.Detail ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
+        }
+        finally
+        {
+            _searching = false;
+        }
     }
 
     private void GoCatalog() => Nav.NavigateTo("/catalog");

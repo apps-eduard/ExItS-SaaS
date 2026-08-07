@@ -74,7 +74,9 @@ internal sealed class POSCustomerRepository : IPOSCustomerRepository
                     && c.NormalizedMobile != null
                     && (c.NormalizedMobile.Contains(normalizedDigits)
                         || (phCanonical != null && c.NormalizedMobile.Contains(phCanonical))))
-                || (c.MobileNumber != null && c.MobileNumber.ToLower().Contains(term)));
+                || (c.MobileNumber != null && c.MobileNumber.ToLower().Contains(term))
+                // ExItS ID is tagged in notes as "exits-id:EX-####-####" on create-from-resolve.
+                || (c.Notes != null && c.Notes.ToLower().Contains(term)));
         }
 
         var total = await query.CountAsync(cancellationToken).ConfigureAwait(false);

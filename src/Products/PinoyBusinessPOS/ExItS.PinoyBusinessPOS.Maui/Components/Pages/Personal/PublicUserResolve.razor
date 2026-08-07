@@ -1,64 +1,138 @@
 @page "/personal/resolve-user"
+@using ExItS.DesignSystem.Components.Internal
 @inject IAuthenticationService Auth
 @inject ICurrentUserContext CurrentUser
 @inject IPlatformAccessClient Platform
 @inject IQrCodeScanService QrScan
+@inject ApiStatusLocalizer ApiLocalizer
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
-<Page>
-    <PageHeader Title="@L["Personal_ResolveUserTitle"]" Subtitle="@L["Personal_ResolveUserSubtitle"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Common_Back"]</Button>
-        </Actions>
-    </PageHeader>
+<div class="pos-resolve">
+    <Page>
+        <PageHeader Title="@L["Personal_ResolveUserTitle"]" Subtitle="@L["Personal_ResolveUserSubtitle"]" />
 
-    @if (_loadingSession)
-    {
-        <Spinner />
-    }
-    else if (!_authenticated)
-    {
-        <ErrorState Title="@L["Auth_SessionExpiredTitle"]" Message="@L["Auth_SessionExpired"]" RetryLabel="@L["SignIn_Submit"]" OnRetry="GoSignIn" />
-    }
-    else if (_resolved is null)
-    {
-        <InlineMessage Tone="InlineMessageTone.Info">@L["Personal_ResolveUserManualHint"]</InlineMessage>
-        <FormValidationSummary Messages="_errors" />
-        <FormGroup>
-            <TextInput Label="@L["Personal_ExItsIdLabel"]" Hint="@L["Personal_ExItsIdHint"]" @bind-Value="_input" Disabled="_busy" />
-        </FormGroup>
-        <FormActions>
-            <Button Variant="ButtonVariant.Primary" IsLoading="_busy" Disabled="_busy" OnClick="ScanQrAsync">@L["Personal_ScanQr"]</Button>
-            <Button Variant="ButtonVariant.Secondary" Disabled="_busy" OnClick="PickQrImageAsync">@L["Personal_PickQrImage"]</Button>
-            <Button IsLoading="_busy" Disabled="_busy" OnClick="ResolveAsync">@L["Personal_ResolveLookup"]</Button>
-        </FormActions>
-        <InlineMessage Tone="InlineMessageTone.Info">@L["Personal_ScanQrHint"]</InlineMessage>
-    }
-    else
-    {
-        <Section Title="@L["Personal_ResolveConfirmTitle"]">
-            <Stack Gap="1">
-                <span class="pos-value-md">@_resolved.DisplayName</span>
-                <span class="pos-muted">@_resolved.PublicUserId</span>
-                @if (!string.IsNullOrWhiteSpace(_resolved.MaskedEmail))
-                {
-                    <span class="pos-muted">@_resolved.MaskedEmail</span>
-                }
+        @if (_loadingSession)
+        {
+            <Stack Align="StackAlign.Center" Gap="2">
+                <Spinner />
+            </Stack>
+        }
+        else if (!_authenticated)
+        {
+            <ErrorState Title="@L["Auth_SessionExpiredTitle"]"
+                        Message="@L["Auth_SessionExpired"]"
+                        RetryLabel="@L["SignIn_Submit"]"
+                        OnRetry="GoSignIn" />
+        }
+        else if (_resolved is null)
+        {
+            <Alert Tone="AlertTone.Info"
+                   Title="@L["Personal_ResolveUserManualHint"]"
+                   Message="@L["Personal_ScanQrHint"]" />
+
+            <FormValidationSummary Messages="_errors" />
+
+            <FormGroup>
+                <TextInput Label="@L["Personal_ExItsIdLabel"]"
+                           Hint="@L["Personal_ExItsIdHint"]"
+                           @bind-Value="_input"
+                           Disabled="_busy" />
+            </FormGroup>
+
+            <div class="pos-action-grid pos-action-grid--three pos-resolve-actions"
+                 role="group"
+                 aria-label="@L["Personal_ResolveUserTitle"]">
+                <button type="button"
+                        class="pos-action-tile pos-action-tile--primary"
+                        disabled="@_busy"
+                        @onclick="ScanQrAsync">
+                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("qr")</span>
+                    <span class="pos-action-tile__label">@L["Personal_ScanQr"]</span>
+                </button>
+                <button type="button"
+                        class="pos-action-tile"
+                        disabled="@_busy"
+                        @onclick="PickQrImageAsync">
+                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("image")</span>
+                    <span class="pos-action-tile__label">@L["Personal_PickQrImage"]</span>
+                </button>
+                <button type="button"
+                        class="pos-action-tile pos-action-tile--primary"
+                        disabled="@_busy"
+                        @onclick="ResolveAsync">
+                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
+                    <span class="pos-action-tile__label">@L["Personal_ResolveLookup"]</span>
+                </button>
+            </div>
+
+            @if (_busy)
+            {
+                <div class="pos-resolve__busy" role="status" aria-live="polite">
+                    <Spinner />
+                    <span class="pos-muted">@L["Common_Loading"]</span>
+                </div>
+            }
+
+            <div class="pos-resolve__nav">
+                <button type="button"
+                        class="pos-action-tile pos-resolve__back"
+                        disabled="@_busy"
+                        @onclick="GoBack">
+                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("back")</span>
+                    <span class="pos-action-tile__label">@L["Common_Back"]</span>
+                </button>
+            </div>
+        }
+        else
+        {
+            <Section Title="@L["Personal_ResolveConfirmTitle"]">
+                <div class="pos-resolve__identity" role="group" aria-label="@L["Personal_ResolveConfirmTitle"]">
+                    <span class="pos-resolve__identity-name">@_resolved.DisplayName</span>
+                    <span class="pos-resolve__identity-id">@_resolved.PublicUserId</span>
+                    @if (!string.IsNullOrWhiteSpace(_resolved.MaskedEmail))
+                    {
+                        <span class="pos-muted">@_resolved.MaskedEmail</span>
+                    }
+                </div>
+
                 @if (_resolved.IsSelf)
                 {
-                    <InlineMessage Tone="InlineMessageTone.Warning">@L["Personal_ResolveSelf"]</InlineMessage>
+                    <Alert Tone="AlertTone.Warning" Message="@L["Personal_ResolveSelf"]" />
                 }
-            </Stack>
-            <InlineMessage Tone="InlineMessageTone.Info">@L["Personal_ResolveConfirmHint"]</InlineMessage>
-            <FormActions>
-                <Button Variant="ButtonVariant.Primary" Disabled="@(_resolved.IsSelf || _busy)" IsLoading="_busy" OnClick="ConfirmAsync">@L["Personal_ResolveConfirm"]</Button>
-                <Button Variant="ButtonVariant.Ghost" Disabled="_busy" OnClick="ClearResolved">@L["Common_Cancel"]</Button>
-            </FormActions>
-            <FormValidationSummary Messages="_errors" />
-        </Section>
-    }
-</Page>
+
+                <Alert Tone="AlertTone.Info" Message="@L["Personal_ResolveConfirmHint"]" />
+
+                <FormValidationSummary Messages="_errors" />
+
+                <div class="pos-action-grid pos-action-grid--two pos-resolve-actions" role="group">
+                    <button type="button"
+                            class="pos-action-tile"
+                            disabled="@_busy"
+                            @onclick="ClearResolved">
+                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("close")</span>
+                        <span class="pos-action-tile__label">@L["Common_Cancel"]</span>
+                    </button>
+                    <button type="button"
+                            class="pos-action-tile pos-action-tile--primary"
+                            disabled="@(_resolved.IsSelf || _busy)"
+                            @onclick="ConfirmAsync">
+                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("check")</span>
+                        <span class="pos-action-tile__label">@L["Personal_ResolveConfirm"]</span>
+                    </button>
+                </div>
+
+                @if (_busy)
+                {
+                    <div class="pos-resolve__busy" role="status" aria-live="polite">
+                        <Spinner />
+                        <span class="pos-muted">@L["Common_Loading"]</span>
+                    </div>
+                }
+            </Section>
+        }
+    </Page>
+</div>
 
 @code {
     [SupplyParameterFromQuery(Name = "purpose")]
@@ -147,15 +221,34 @@
             return;
         }
 
+        if (!await EnsurePlatformSessionAsync())
+        {
+            return;
+        }
+
         _busy = true;
         try
         {
             var result = await Platform.ResolvePublicUserIdAsync(new ResolvePublicUserIdRequest(
                 _input.Trim(),
                 Purpose ?? "manual"));
+
+            // Empty 401 bodies were previously shown as "No active user matched" — retry once after restore.
+            if ((!result.IsSuccess || result.Data is null)
+                && result.Status == ApiCallStatus.Unauthorized)
+            {
+                var restore = await Auth.RestoreSessionAsync();
+                if (restore.Succeeded && !string.IsNullOrWhiteSpace(CurrentUser.Session?.PlatformSessionToken))
+                {
+                    result = await Platform.ResolvePublicUserIdAsync(new ResolvePublicUserIdRequest(
+                        _input.Trim(),
+                        Purpose ?? "manual"));
+                }
+            }
+
             if (!result.IsSuccess || result.Data is null)
             {
-                _errors.Add(result.Error?.Detail ?? L["Personal_ResolveNotFound"]);
+                _errors.Add(DescribeResolveFailure(result));
                 return;
             }
 
@@ -165,6 +258,46 @@
         {
             _busy = false;
         }
+    }
+
+    private async Task<bool> EnsurePlatformSessionAsync()
+    {
+        if (!string.IsNullOrWhiteSpace(CurrentUser.Session?.PlatformSessionToken))
+        {
+            return true;
+        }
+
+        var restore = await Auth.RestoreSessionAsync();
+        if (restore.Succeeded && !string.IsNullOrWhiteSpace(CurrentUser.Session?.PlatformSessionToken))
+        {
+            return true;
+        }
+
+        _errors.Add(L["Personal_ResolveSessionRequired"]);
+        return false;
+    }
+
+    private string DescribeResolveFailure(ApiResult<ResolvedPublicUserDto> result)
+    {
+        if (result.Status == ApiCallStatus.NotFound)
+        {
+            return string.IsNullOrWhiteSpace(result.Error?.Detail)
+                ? L["Personal_ResolveNotFound"]
+                : result.Error.Detail!;
+        }
+
+        if (result.Status is ApiCallStatus.Unauthorized or ApiCallStatus.Forbidden)
+        {
+            return L["Personal_ResolveSessionRequired"];
+        }
+
+        if (!string.IsNullOrWhiteSpace(result.Error?.Detail))
+        {
+            return result.Error.Detail!;
+        }
+
+        var described = ApiLocalizer.Describe(result.Status, result.Error);
+        return described.Message;
     }
 
     private async Task ConfirmAsync()

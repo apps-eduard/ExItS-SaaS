@@ -105,6 +105,12 @@
   <data name="Action_Done" xml:space="preserve">
     <value>Done</value>
   </data>
+  <data name="Action_Set" xml:space="preserve">
+    <value>Set</value>
+  </data>
+  <data name="Action_Clear" xml:space="preserve">
+    <value>Clear</value>
+  </data>
   <data name="Action_Confirm" xml:space="preserve">
     <value>Confirm</value>
   </data>
@@ -125,6 +131,18 @@
   </data>
   <data name="MultiSelect_SelectedCount" xml:space="preserve">
     <value>{0} selected</value>
+  </data>
+  <data name="Date_Placeholder" xml:space="preserve">
+    <value>Select date</value>
+  </data>
+  <data name="Date_PickerTitle" xml:space="preserve">
+    <value>Select date</value>
+  </data>
+  <data name="Date_PreviousMonth" xml:space="preserve">
+    <value>Previous month</value>
+  </data>
+  <data name="Date_NextMonth" xml:space="preserve">
+    <value>Next month</value>
   </data>
   <data name="Action_Retry" xml:space="preserve">
     <value>Retry</value>

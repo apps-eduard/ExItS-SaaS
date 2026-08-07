@@ -39,8 +39,9 @@ public sealed class CatalogImportWizardTests
         Assert.Contains("ImportTemplateBatchAsync", import, StringComparison.Ordinal);
         Assert.Contains("IsInvalid=\"@(!string.IsNullOrEmpty(_confirmError))\"", import, StringComparison.Ordinal);
         Assert.Contains("ErrorText=\"@_confirmError\"", import, StringComparison.Ordinal);
-        Assert.Contains("Disabled=\"@(_isOffline || _busy)\"", import, StringComparison.Ordinal);
+        Assert.Contains("disabled=\"@(_isOffline || _busy)\"", import, StringComparison.Ordinal);
         Assert.DoesNotContain("Disabled=\"@(_isOffline || _busy || !_confirmAcknowledged)\"", import, StringComparison.Ordinal);
+        Assert.DoesNotContain("disabled=\"@(_isOffline || _busy || !_confirmAcknowledged)\"", import, StringComparison.Ordinal);
 
         var confirmMethod = ExtractMethod(import, "ConfirmImportAsync");
         Assert.Contains("if (!_confirmAcknowledged)", confirmMethod, StringComparison.Ordinal);
@@ -128,9 +129,13 @@ public sealed class CatalogImportWizardTests
 
         Assert.Contains("_selectedTemplateId", import, StringComparison.Ordinal);
         Assert.Contains("pos-row--selected", import, StringComparison.Ordinal);
+        Assert.Contains("pos-catalog-import__template", import, StringComparison.Ordinal);
         Assert.Contains("Catalog_Import_Selected", import, StringComparison.Ordinal);
         Assert.Contains("if (_busy)", import, StringComparison.Ordinal);
-        Assert.Contains("Disabled=\"@(_isOffline || _busy)\"", import, StringComparison.Ordinal);
+        Assert.Contains("disabled=\"@(_isOffline || _busy)\"", import, StringComparison.Ordinal);
+        Assert.Contains("pos-action-grid--two", import, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"products\")", import, StringComparison.Ordinal);
+        Assert.Contains("pos-catalog-import__steps", import, StringComparison.Ordinal);
     }
 
     [Fact]

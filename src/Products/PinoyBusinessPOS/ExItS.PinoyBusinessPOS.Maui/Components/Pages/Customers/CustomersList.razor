@@ -1,4 +1,5 @@
 @page "/customers"
+@using ExItS.DesignSystem.Components.Internal
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IPosCustomerClient Customers
@@ -18,46 +19,114 @@
 else
 {
     var canCreate = Capabilities.IsAllowed(UtangCapability.CreateCustomer);
-<Page>
-    <PageHeader Title="@L["Customers_Title"]" Subtitle="@L["Customers_Subtitle"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" Disabled="@(!canCreate)" OnClick="GoResolveExItsId">@L["Personal_AddByExItsId"]</Button>
-            <Button Variant="ButtonVariant.Primary" Disabled="@(!canCreate)" OnClick="GoNew">@L["Customers_Add"]</Button>
-        </Actions>
-    </PageHeader>
+<div class="pos-customers">
+    <Page>
+        <PageHeader Title="@L["Customers_Title"]" Subtitle="@L["Customers_Subtitle"]" />
 
-    <Alert Tone="AlertTone.Info" Title="@L["Customers_CreditDeferredTitle"]" Message="@L["Customers_CreditDeferredMessage"]" />
+        <div class="pos-action-grid pos-action-grid--three pos-customers__actions" role="group" aria-label="@L["Customers_Title"]">
+            <button type="button"
+                    class="pos-action-tile"
+                    disabled="@(!canCreate)"
+                    @onclick="GoResolveExItsId">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
+                <span class="pos-action-tile__label">@L["Personal_AddByExItsId"]</span>
+            </button>
+            <button type="button"
+                    class="pos-action-tile pos-action-tile--primary"
+                    disabled="@(!canCreate)"
+                    @onclick="GoNew">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("plus")</span>
+                <span class="pos-action-tile__label">@L["Customers_Add"]</span>
+            </button>
+            <button type="button"
+                    class="pos-action-tile"
+                    disabled="@_loading"
+                    @onclick="ReloadAsync">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("refresh")</span>
+                <span class="pos-action-tile__label">@L["Customers_Refresh"]</span>
+            </button>
+        </div>
 
-    @if (_fromLocal)
-    {
-        <Alert Tone="AlertTone.Info" Title="@L["SyncStatus_Offline"]" Message="@L["SyncStatus_OfflineDetail"]" />
-    }
+        <Alert Tone="AlertTone.Info" Title="@L["Customers_CreditDeferredTitle"]" Message="@L["Customers_CreditDeferredMessage"]" />
 
-    <SearchToolbar SearchText="@_search" SearchTextChanged="OnSearchChanged" Placeholder="@L["Customers_SearchPlaceholder"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" IsLoading="@_loading" OnClick="ReloadAsync">@L["Customers_Refresh"]</Button>
-        </Actions>
-    </SearchToolbar>
+        @if (_fromLocal)
+        {
+            <Alert Tone="AlertTone.Info" Title="@L["SyncStatus_Offline"]" Message="@L["SyncStatus_OfflineDetail"]" />
+        }
 
-    <ResponsiveDataList TItem="PosCustomerListItemDto"
-                        Items="@_items"
-                        Columns="@Columns"
-                        CellTemplate="@CellTemplate"
-                        IsLoading="@_loading"
-                        LoadingLabel="@L["Customers_Loading"]"
-                        EmptyTitle="@L["Customers_EmptyTitle"]"
-                        EmptyMessage="@L["Customers_EmptyMessage"]"
-                        ErrorTitle="@_errorTitle"
-                        ErrorMessage="@_errorMessage"
-                        RetryLabel="@L["Api_Retry"]"
-                        OnRetry="ReloadAsync"
-                        AriaLabel="@L["Customers_Title"]" />
+        <div class="pos-customers__toolbar">
+            <div class="pos-customers__search">
+                <span class="pos-customers__search-icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
+                <input class="pos-customers__search-input"
+                       type="search"
+                       value="@_search"
+                       placeholder="@L["Customers_SearchPlaceholder"]"
+                       disabled="@_loading"
+                       @oninput="OnSearchInputAsync" />
+            </div>
+        </div>
 
-    @if (!_loading && _totalCount > 0)
-    {
-        <Pagination Page="@_page" PageSize="@_pageSize" TotalCount="@_totalCount" PageChanged="OnPageChanged" />
-    }
-</Page>
+        <Section Title="@L["Customers_ListSection"]">
+            @if (_loading)
+            {
+                <Stack Align="StackAlign.Center" Gap="2">
+                    <Spinner />
+                    <span class="pos-muted">@L["Customers_Loading"]</span>
+                </Stack>
+            }
+            else if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <ErrorState Title="@(_errorTitle ?? L["Customers_Title"])"
+                            Message="@_errorMessage"
+                            RetryLabel="@L["Api_Retry"]"
+                            OnRetry="ReloadAsync" />
+            }
+            else if (_items.Count == 0)
+            {
+                <EmptyState IconName="customers"
+                            Title="@L["Customers_EmptyTitle"]"
+                            Message="@L["Customers_EmptyMessage"]" />
+            }
+            else
+            {
+                <div class="pos-customers__list" role="list" aria-label="@L["Customers_Title"]">
+                    @foreach (var item in _items)
+                    {
+                        <a class="pos-customers__row"
+                           role="listitem"
+                           href="@($"/customers/{item.CustomerId:D}")">
+                            <div class="pos-customers__row-main">
+                                <span class="pos-customers__row-name">@item.DisplayName</span>
+                                <span class="pos-customers__row-meta">
+                                    @(string.IsNullOrWhiteSpace(item.MobileNumber) ? L["Customers_NoMobile"] : item.MobileNumber)
+                                </span>
+                                <div class="pos-customers__row-badges">
+                                    <Badge Tone="@(item.Status == "Active" ? BadgeTone.Success : BadgeTone.Neutral)">
+                                        @item.Status
+                                    </Badge>
+                                    @if (_fromLocal
+                                        && _entityStates.TryGetValue(item.CustomerId, out var state)
+                                        && OfflineCustomerCreditUiHelpers.EntityBadge(state) is { } badge)
+                                    {
+                                        <Badge Tone="@badge.Tone">@L[badge.LabelKey]</Badge>
+                                    }
+                                </div>
+                            </div>
+                            <div class="pos-customers__row-side">
+                                <span class="pos-customers__view">@L["Customers_View"]</span>
+                            </div>
+                        </a>
+                    }
+                </div>
+            }
+        </Section>
+
+        @if (!_loading && _totalCount > 0)
+        {
+            <Pagination Page="@_page" PageSize="@_pageSize" TotalCount="@_totalCount" PageChanged="OnPageChanged" />
+        }
+    </Page>
+</div>
 }
 
 @code {
@@ -72,56 +141,7 @@ else
     private Dictionary<Guid, LocalEntitySyncState> _entityStates = new();
     private string? _errorTitle;
     private string? _errorMessage;
-
-    private IReadOnlyList<DataColumnDefinition> Columns =>
-    [
-        new("name", L["Customers_Col_Name"], Primary: true, Width: "32%"),
-        new("mobile", L["Customers_Col_Mobile"], Width: "24%"),
-        new("status", L["Customers_Col_Status"], Width: "16%"),
-        new("actions", L["Customers_Col_Actions"], Width: "28%"),
-    ];
-
-    private RenderFragment<(PosCustomerListItemDto Item, DataColumnDefinition Column)> CellTemplate => context => builder =>
-    {
-        switch (context.Column.Key)
-        {
-            case "name":
-                builder.OpenElement(0, "a");
-                builder.AddAttribute(1, "class", "pos-link");
-                builder.AddAttribute(2, "href", $"/customers/{context.Item.CustomerId:D}");
-                builder.AddContent(3, context.Item.DisplayName);
-                builder.CloseElement();
-                break;
-            case "mobile":
-                builder.AddContent(0, string.IsNullOrWhiteSpace(context.Item.MobileNumber)
-                    ? L["Customers_NoMobile"].Value
-                    : context.Item.MobileNumber);
-                break;
-            case "status":
-                builder.OpenComponent<Badge>(0);
-                builder.AddAttribute(1, "Tone", context.Item.Status == "Active" ? BadgeTone.Success : BadgeTone.Neutral);
-                builder.AddAttribute(2, "ChildContent", (RenderFragment)(b => b.AddContent(0, context.Item.Status)));
-                builder.CloseComponent();
-                if (_fromLocal
-                    && _entityStates.TryGetValue(context.Item.CustomerId, out var state)
-                    && OfflineCustomerCreditUiHelpers.EntityBadge(state) is { } badge)
-                {
-                    builder.OpenComponent<Badge>(3);
-                    builder.AddAttribute(4, "Tone", badge.Tone);
-                    builder.AddAttribute(5, "ChildContent", (RenderFragment)(b => b.AddContent(0, L[badge.LabelKey].Value)));
-                    builder.CloseComponent();
-                }
-                break;
-            default:
-                builder.OpenComponent<Button>(0);
-                builder.AddAttribute(1, "Variant", ButtonVariant.Ghost);
-                builder.AddAttribute(2, "Size", ButtonSize.Sm);
-                builder.AddAttribute(3, "OnClick", EventCallback.Factory.Create<MouseEventArgs>(this, _ => GoDetail(context.Item.CustomerId)));
-                builder.AddAttribute(4, "ChildContent", (RenderFragment)(b => b.AddContent(0, L["Customers_View"].Value)));
-                builder.CloseComponent();
-                break;
-        }
-    };
+    private CancellationTokenSource? _searchCts;
 
     protected override async Task OnInitializedAsync()
     {
@@ -141,11 +161,23 @@ else
         await ReloadAsync();
     }
 
-    private async Task OnSearchChanged(string? value)
+    private async Task OnSearchInputAsync(ChangeEventArgs e)
     {
-        _search = value;
+        _search = e.Value?.ToString();
         _page = 1;
-        await ReloadAsync();
+        _searchCts?.Cancel();
+        _searchCts?.Dispose();
+        _searchCts = new CancellationTokenSource();
+        var token = _searchCts.Token;
+        try
+        {
+            await Task.Delay(250, token);
+            await ReloadAsync();
+        }
+        catch (TaskCanceledException)
+        {
+            // Newer keystroke superseded this search.
+        }
     }
 
     private async Task OnPageChanged(int page)
@@ -231,5 +263,4 @@ else
     private void GoNew() => Nav.NavigateTo("/customers/new");
     private void GoResolveExItsId() =>
         Nav.NavigateTo("/personal/resolve-user?purpose=customer&return=/customers/new");
-    private void GoDetail(Guid id) => Nav.NavigateTo($"/customers/{id:D}");
 }

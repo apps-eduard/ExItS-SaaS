@@ -1,4 +1,5 @@
 @page "/inventory"
+@using ExItS.DesignSystem.Components.Internal
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject ICurrentUserContext CurrentUser
@@ -24,49 +25,117 @@ else if (!_allowed)
 else
 {
     var canManage = Capabilities.IsAllowed(UtangCapability.ManageInventory);
-<Page>
-    <PageHeader Title="@L["Inventory_Title"]" Subtitle="@L["Inventory_Subtitle"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoLowStock">@L["Inventory_OpenLowStock"]</Button>
-            @if (canManage)
+<div class="pos-inventory">
+    <Page>
+        <PageHeader Title="@L["Inventory_Title"]" Subtitle="@L["Inventory_Subtitle"]" />
+
+        @if (_isOffline)
+        {
+            <Alert Tone="AlertTone.Warning" Title="@L["Inventory_OfflineTitle"]" Message="@L["Inventory_OfflineMessage"]" />
+        }
+
+        <div class="pos-action-grid pos-action-grid--three pos-inventory__actions" role="group" aria-label="@L["Inventory_Title"]">
+            <button type="button"
+                    class="pos-action-tile"
+                    disabled="@_isOffline"
+                    @onclick="GoLowStock">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("warning")</span>
+                <span class="pos-action-tile__label">@L["Inventory_OpenLowStock"]</span>
+            </button>
+            <button type="button"
+                    class="pos-action-tile"
+                    disabled="@(!canManage || _isOffline)"
+                    @onclick="GoCounts">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("check")</span>
+                <span class="pos-action-tile__label">@L["Inventory_OpenCounts"]</span>
+            </button>
+            <button type="button"
+                    class="pos-action-tile"
+                    disabled="@(_loading || _isOffline)"
+                    @onclick="ReloadAsync">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("refresh")</span>
+                <span class="pos-action-tile__label">@L["Inventory_Refresh"]</span>
+            </button>
+        </div>
+
+        <div class="pos-inventory__toolbar">
+            <div class="pos-inventory__search">
+                <span class="pos-inventory__search-icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
+                <input class="pos-inventory__search-input"
+                       type="search"
+                       value="@_search"
+                       placeholder="@L["Inventory_SearchPlaceholder"]"
+                       disabled="@(_loading || _isOffline)"
+                       @oninput="OnSearchInputAsync" />
+            </div>
+        </div>
+
+        <Section Title="@L["Inventory_ListSection"]">
+            @if (_loading)
             {
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoCounts">@L["Inventory_OpenCounts"]</Button>
+                <Stack Align="StackAlign.Center" Gap="2">
+                    <Spinner />
+                    <span class="pos-muted">@L["Inventory_Loading"]</span>
+                </Stack>
             }
-            <Button Variant="ButtonVariant.Secondary" IsLoading="@_loading" OnClick="ReloadAsync">@L["Inventory_Refresh"]</Button>
-        </Actions>
-    </PageHeader>
+            else if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <ErrorState Title="@(_errorTitle ?? L["Inventory_Title"])"
+                            Message="@_errorMessage"
+                            RetryLabel="@L["Api_Retry"]"
+                            OnRetry="ReloadAsync" />
+            }
+            else if (_items.Count == 0)
+            {
+                <EmptyState IconName="products"
+                            Title="@L["Inventory_EmptyTitle"]"
+                            Message="@L["Inventory_EmptyMessage"]" />
+            }
+            else
+            {
+                <div class="pos-inventory__list" role="list" aria-label="@L["Inventory_Title"]">
+                    @foreach (var item in _items)
+                    {
+                        <a class="pos-inventory__row @(item.IsLowStock ? "pos-inventory__row--low" : null)"
+                           role="listitem"
+                           href="@($"/inventory/{item.ProductId:D}")">
+                            <div class="pos-inventory__row-main">
+                                <span class="pos-inventory__row-name">@item.Name</span>
+                                <span class="pos-inventory__row-meta">
+                                    @item.UnitOfMeasure
+                                    ·
+                                    @(item.IsTracked ? L["Inventory_Tracked"] : L["Inventory_NotTracked"])
+                                    @if (item.IsTracked && item.ReorderLevel is not null)
+                                    {
+                                        <text> · @L["Inventory_ReorderLevel"] @item.ReorderLevel.Value.ToString("0.###", CultureInfo.InvariantCulture)</text>
+                                    }
+                                </span>
+                                <div class="pos-inventory__row-badges">
+                                    <Badge Tone="@(item.ProductStatus == "Active" ? BadgeTone.Success : BadgeTone.Neutral)">
+                                        @item.ProductStatus
+                                    </Badge>
+                                    @if (item.IsTracked)
+                                    {
+                                        <Badge Tone="@StockBadgeTone(item)">@StockStatusLabel(item)</Badge>
+                                    }
+                                </div>
+                            </div>
+                            <div class="pos-inventory__row-side">
+                                <span class="pos-inventory__on-hand">@item.OnHandQuantity.ToString("0.###", CultureInfo.InvariantCulture)</span>
+                                <span class="pos-inventory__on-hand-label">@L["Inventory_OnHand"]</span>
+                            </div>
+                        </a>
+                    }
+                </div>
+            }
+        </Section>
 
-    @if (_isOffline)
-    {
-        <Alert Tone="AlertTone.Warning" Title="@L["Inventory_OfflineTitle"]" Message="@L["Inventory_OfflineMessage"]" />
-    }
-
-    <SearchToolbar SearchText="@_search" SearchTextChanged="OnSearchChanged" Placeholder="@L["Inventory_SearchPlaceholder"]" />
-
-    @if (!string.IsNullOrEmpty(_errorMessage))
-    {
-        <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Inventory_Title"])" Message="@_errorMessage" />
-    }
-
-    <ResponsiveDataList TItem="PosInventoryAccountDto"
-                        Items="@_items"
-                        Columns="@Columns"
-                        CellTemplate="@CellTemplate"
-                        IsLoading="@_loading"
-                        LoadingLabel="@L["Inventory_Loading"]"
-                        EmptyTitle="@L["Inventory_EmptyTitle"]"
-                        EmptyMessage="@L["Inventory_EmptyMessage"]"
-                        ErrorTitle="@_errorTitle"
-                        ErrorMessage="@_errorMessage"
-                        RetryLabel="@L["Api_Retry"]"
-                        OnRetry="ReloadAsync"
-                        AriaLabel="@L["Inventory_Title"]" />
-
-    @if (!_loading && _totalCount > 0)
-    {
-        <Pagination Page="@_page" PageSize="@_pageSize" TotalCount="@_totalCount" PageChanged="OnPageChanged" />
-    }
-</Page>
+        @if (!_loading && _totalCount > 0)
+        {
+            <Pagination Page="@_page" PageSize="@_pageSize" TotalCount="@_totalCount" PageChanged="OnPageChanged" />
+        }
+    </Page>
+</div>
 }
 
 @code {
@@ -81,37 +150,7 @@ else
     private IReadOnlyList<PosInventoryAccountDto> _items = Array.Empty<PosInventoryAccountDto>();
     private string? _errorTitle;
     private string? _errorMessage;
-
-    private IReadOnlyList<DataColumnDefinition> Columns =>
-    [
-        new("name", L["Catalog_Col_Name"], Primary: true, Width: "36%"),
-        new("onHand", L["Inventory_OnHand"], Width: "22%"),
-        new("tracked", L["Inventory_Tracked"], Width: "22%"),
-        new("status", L["Catalog_Filter_Status"], Width: "20%")
-    ];
-
-    private RenderFragment<(PosInventoryAccountDto Item, DataColumnDefinition Column)> CellTemplate => context => builder =>
-    {
-        switch (context.Column.Key)
-        {
-            case "name":
-                builder.OpenElement(0, "a");
-                builder.AddAttribute(1, "class", "pos-link");
-                builder.AddAttribute(2, "href", $"/inventory/{context.Item.ProductId:D}");
-                builder.AddContent(3, context.Item.Name);
-                builder.CloseElement();
-                break;
-            case "onHand":
-                builder.AddContent(0, context.Item.OnHandQuantity.ToString("0.###", CultureInfo.InvariantCulture));
-                break;
-            case "tracked":
-                builder.AddContent(0, context.Item.IsTracked ? L["Inventory_Tracked"].Value : L["Inventory_NotTracked"].Value);
-                break;
-            default:
-                builder.AddContent(0, context.Item.ProductStatus);
-                break;
-        }
-    };
+    private CancellationTokenSource? _searchCts;
 
     protected override async Task OnInitializedAsync()
     {
@@ -172,11 +211,23 @@ else
         _loading = false;
     }
 
-    private async Task OnSearchChanged(string value)
+    private async Task OnSearchInputAsync(ChangeEventArgs e)
     {
-        _search = value;
+        _search = e.Value?.ToString() ?? string.Empty;
         _page = 1;
-        await ReloadAsync();
+        _searchCts?.Cancel();
+        _searchCts?.Dispose();
+        _searchCts = new CancellationTokenSource();
+        var token = _searchCts.Token;
+        try
+        {
+            await Task.Delay(250, token);
+            await ReloadAsync();
+        }
+        catch (TaskCanceledException)
+        {
+            // Newer keystroke superseded this search.
+        }
     }
 
     private async Task OnPageChanged(int page)
@@ -187,4 +238,20 @@ else
 
     private void GoLowStock() => Nav.NavigateTo("/inventory/low-stock");
     private void GoCounts() => Nav.NavigateTo("/inventory/counts");
+
+    private static BadgeTone StockBadgeTone(PosInventoryAccountDto item) =>
+        item.StockStatus switch
+        {
+            "OutOfStock" => BadgeTone.Danger,
+            "LowStock" => BadgeTone.Warning,
+            _ => BadgeTone.Success
+        };
+
+    private string StockStatusLabel(PosInventoryAccountDto item) =>
+        item.StockStatus switch
+        {
+            "OutOfStock" => L["Inventory_StockStatus_OutOfStock"],
+            "LowStock" => L["Inventory_StockStatus_LowStock"],
+            _ => L["Inventory_StockStatus_InStock"]
+        };
 }

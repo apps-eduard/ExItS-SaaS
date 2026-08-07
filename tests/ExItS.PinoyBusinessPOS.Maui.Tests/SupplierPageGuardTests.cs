@@ -9,8 +9,11 @@ public sealed class SupplierPageGuardTests
 
         var list = File.ReadAllText(Path.Combine(suppliers, "SuppliersList.razor"));
         Assert.Contains("@page \"/suppliers\"", list, StringComparison.Ordinal);
-        Assert.Contains("ResponsiveDataList", list, StringComparison.Ordinal);
+        Assert.Contains("pos-suppliers__row", list, StringComparison.Ordinal);
         Assert.Contains("IPosSupplierClient", list, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"plus\")", list, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"refresh\")", list, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"search\")", list, StringComparison.Ordinal);
 
         var create = File.ReadAllText(Path.Combine(suppliers, "SupplierCreate.razor"));
         Assert.Contains("@page \"/suppliers/new\"", create, StringComparison.Ordinal);

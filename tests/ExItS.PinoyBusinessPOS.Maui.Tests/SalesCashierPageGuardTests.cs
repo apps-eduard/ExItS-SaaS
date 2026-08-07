@@ -25,11 +25,25 @@ public sealed class SalesCashierPageGuardTests
         Assert.Contains("NavigationLock", checkout, StringComparison.Ordinal);
         Assert.DoesNotContain("pos-product-tile__placeholder", checkout, StringComparison.Ordinal);
         Assert.Contains("CheckoutPaymentMethodLabel", checkout, StringComparison.Ordinal);
-        Assert.Contains("Sales_Checkout_AddCustomer", checkout, StringComparison.Ordinal);
-        Assert.Contains("Sales_Checkout_AddCustomerWithExItsId", checkout, StringComparison.Ordinal);
+        Assert.Contains("Sales_Checkout_AddCustomerShort", checkout, StringComparison.Ordinal);
+        Assert.Contains("Sales_Checkout_ExItsIdShort", checkout, StringComparison.Ordinal);
+        Assert.Contains("Sales_Checkout_ChooseCustomer", checkout, StringComparison.Ordinal);
+        Assert.Contains("NavigatePreservingCart", checkout, StringComparison.Ordinal);
+        Assert.Contains("_customerPickerOpen", checkout, StringComparison.Ordinal);
+        Assert.Contains("pos-sell-customer__actions", checkout, StringComparison.Ordinal);
         Assert.Contains("IsCartPreservingSideTrip", checkout, StringComparison.Ordinal);
         Assert.Contains("TryApplyCheckoutResumeAsync", checkout, StringComparison.Ordinal);
         Assert.Contains("Sales_GCash_ReferenceRequired", checkout, StringComparison.Ordinal);
+        Assert.Contains("Sales_Checkout_CustomerSearchEmpty", checkout, StringComparison.Ordinal);
+        Assert.Contains("c.Notes", File.ReadAllText(Path.Combine(
+            FindRepoRoot(),
+            "src",
+            "Products",
+            "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.Infrastructure",
+            "Persistence",
+            "Repositories",
+            "POSCustomerRepository.cs")), StringComparison.Ordinal);
         Assert.Contains("ParseCategoryFilter", checkout, StringComparison.Ordinal);
 
         var uiOptions = File.ReadAllText(Path.Combine(SalesPagesDirectory(), "SalesUiOptions.cs"));

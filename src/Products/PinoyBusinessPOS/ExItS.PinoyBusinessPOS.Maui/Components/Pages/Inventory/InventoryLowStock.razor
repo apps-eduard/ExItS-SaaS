@@ -1,4 +1,6 @@
 @page "/inventory/low-stock"
+@using System.Globalization
+@using ExItS.DesignSystem.Components.Internal
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IPosInventoryClient Inventory
@@ -13,34 +15,82 @@
 }
 else
 {
-<Page>
-    <PageHeader Title="@L["Inventory_LowStockTitle"]" Subtitle="@L["Inventory_LowStockSubtitle"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Inventory_Title"]</Button>
-            <Button Variant="ButtonVariant.Secondary" IsLoading="@_loading" OnClick="ReloadAsync">@L["Inventory_Refresh"]</Button>
-        </Actions>
-    </PageHeader>
+<div class="pos-low-stock">
+    <Page>
+        <PageHeader Title="@L["Inventory_LowStockTitle"]" Subtitle="@L["Inventory_LowStockSubtitle"]" />
 
-    @if (_isOffline)
-    {
-        <Alert Tone="AlertTone.Warning" Title="@L["Inventory_OfflineTitle"]" Message="@L["Inventory_OfflineMessage"]" />
-    }
+        @if (_isOffline)
+        {
+            <Alert Tone="AlertTone.Warning" Title="@L["Inventory_OfflineTitle"]" Message="@L["Inventory_OfflineMessage"]" />
+        }
 
-    @if (!string.IsNullOrEmpty(_errorMessage))
-    {
-        <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Inventory_LowStockTitle"])" Message="@_errorMessage" />
-    }
+        <div class="pos-action-grid pos-action-grid--two pos-low-stock__actions" role="group" aria-label="@L["Inventory_LowStockTitle"]">
+            <button type="button"
+                    class="pos-action-tile"
+                    @onclick="GoInventory">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("products")</span>
+                <span class="pos-action-tile__label">@L["Inventory_Title"]</span>
+            </button>
+            <button type="button"
+                    class="pos-action-tile pos-action-tile--primary"
+                    disabled="@(_loading || _isOffline)"
+                    @onclick="ReloadAsync">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("refresh")</span>
+                <span class="pos-action-tile__label">@L["Inventory_Refresh"]</span>
+            </button>
+        </div>
 
-    <ResponsiveDataList TItem="PosInventoryAccountDto"
-                        Items="@_items"
-                        Columns="@Columns"
-                        CellTemplate="@CellTemplate"
-                        IsLoading="@_loading"
-                        LoadingLabel="@L["Inventory_Loading"]"
-                        EmptyTitle="@L["Inventory_EmptyTitle"]"
-                        EmptyMessage="@L["Inventory_EmptyMessage"]"
-                        AriaLabel="@L["Inventory_LowStockTitle"]" />
-</Page>
+        <Section Title="@L["Inventory_LowStockTitle"]">
+            @if (_loading)
+            {
+                <Stack Align="StackAlign.Center" Gap="2">
+                    <Spinner />
+                    <span class="pos-muted">@L["Inventory_Loading"]</span>
+                </Stack>
+            }
+            else if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <ErrorState Title="@(_errorTitle ?? L["Inventory_LowStockTitle"])"
+                            Message="@_errorMessage"
+                            RetryLabel="@L["Api_Retry"]"
+                            OnRetry="ReloadAsync" />
+            }
+            else if (_items.Count == 0)
+            {
+                <EmptyState IconName="warning"
+                            Title="@L["Inventory_LowStockEmptyTitle"]"
+                            Message="@L["Inventory_LowStockEmptyMessage"]" />
+            }
+            else
+            {
+                <div class="pos-low-stock__list" role="list" aria-label="@L["Inventory_LowStockTitle"]">
+                    @foreach (var item in _items)
+                    {
+                        <a class="pos-inventory__row pos-inventory__row--low"
+                           role="listitem"
+                           href="@($"/inventory/{item.ProductId:D}")">
+                            <div class="pos-inventory__row-main">
+                                <span class="pos-inventory__row-name">@item.Name</span>
+                                <span class="pos-inventory__row-meta">
+                                    @item.UnitOfMeasure
+                                    · @L["Inventory_ReorderLevel"]
+                                    @(item.ReorderLevel?.ToString("0.###", CultureInfo.InvariantCulture) ?? "—")
+                                </span>
+                                <div class="pos-inventory__row-badges">
+                                    <Badge Tone="BadgeTone.Warning">@L["Inventory_StockStatus_LowStock"]</Badge>
+                                </div>
+                            </div>
+                            <div class="pos-inventory__row-side">
+                                <span class="pos-inventory__on-hand">@item.OnHandQuantity.ToString("0.###", CultureInfo.InvariantCulture)</span>
+                                <span class="pos-inventory__on-hand-label">@L["Inventory_OnHand"]</span>
+                            </div>
+                        </a>
+                    }
+                </div>
+            }
+        </Section>
+    </Page>
+</div>
 }
 
 @code {
@@ -50,33 +100,6 @@ else
     private IReadOnlyList<PosInventoryAccountDto> _items = Array.Empty<PosInventoryAccountDto>();
     private string? _errorTitle;
     private string? _errorMessage;
-
-    private IReadOnlyList<DataColumnDefinition> Columns =>
-    [
-        new("name", L["Catalog_Col_Name"], Primary: true, Width: "40%"),
-        new("onHand", L["Inventory_OnHand"], Width: "30%"),
-        new("reorder", L["Inventory_ReorderLevel"], Width: "30%")
-    ];
-
-    private RenderFragment<(PosInventoryAccountDto Item, DataColumnDefinition Column)> CellTemplate => context => builder =>
-    {
-        switch (context.Column.Key)
-        {
-            case "name":
-                builder.OpenElement(0, "a");
-                builder.AddAttribute(1, "class", "pos-link");
-                builder.AddAttribute(2, "href", $"/inventory/{context.Item.ProductId:D}");
-                builder.AddContent(3, context.Item.Name);
-                builder.CloseElement();
-                break;
-            case "onHand":
-                builder.AddContent(0, context.Item.OnHandQuantity.ToString("0.###", CultureInfo.InvariantCulture));
-                break;
-            default:
-                builder.AddContent(0, context.Item.ReorderLevel?.ToString("0.###", CultureInfo.InvariantCulture) ?? "—");
-                break;
-        }
-    };
 
     protected override async Task OnInitializedAsync()
     {
@@ -119,5 +142,5 @@ else
         _loading = false;
     }
 
-    private void GoBack() => Nav.NavigateTo("/inventory");
+    private void GoInventory() => Nav.NavigateTo("/inventory");
 }

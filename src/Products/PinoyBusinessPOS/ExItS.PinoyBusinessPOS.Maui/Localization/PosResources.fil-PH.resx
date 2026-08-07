@@ -333,6 +333,7 @@
   <data name="Customers_Loading" xml:space="preserve"><value>Nilo-load ang mga customer…</value></data>
   <data name="Customers_EmptyTitle" xml:space="preserve"><value>Wala pang customer</value></data>
   <data name="Customers_EmptyMessage" xml:space="preserve"><value>Gumawa ng customer profile para sa store na ito. Darating pa ang credit at repayment.</value></data>
+  <data name="Customers_ListSection" xml:space="preserve"><value>Mga customer</value></data>
   <data name="Customers_Col_Name" xml:space="preserve"><value>Pangalan</value></data>
   <data name="Customers_Col_Mobile" xml:space="preserve"><value>Mobile</value></data>
   <data name="Customers_Col_Status" xml:space="preserve"><value>Status</value></data>
@@ -363,7 +364,7 @@
   <data name="Customers_RepaymentDeferredTitle" xml:space="preserve"><value>Mga susunod na Utang feature</value></data>
   <data name="Customers_RepaymentDeferredMessage" xml:space="preserve"><value>Hindi pa available ang interest at credit limits. Available na ang payments, ledger, statements, at receipts sa customer detail.</value></data>
   <data name="Utang_DeferredTitle" xml:space="preserve"><value>Mga susunod na Utang feature</value></data>
-  <data name="Utang_DeferredMessage" xml:space="preserve"><value>Hindi available sa work package na ito ang interest at credit limits. Available na ang statements at repayment receipts.</value></data>
+  <data name="Utang_DeferredMessage" xml:space="preserve"><value>Hindi pa available ang interest at credit limits. Available dito ang payments, ledger, statements, at receipts.</value></data>
   <data name="Access_RestrictedTitle" xml:space="preserve"><value>Restricted ang access</value></data>
   <data name="Access_RestrictedMessage" xml:space="preserve"><value>Hindi pinapayagan ng kasalukuyang subscription o feature grants ang aksyong ito.</value></data>
   <data name="Access_Restricted" xml:space="preserve"><value>Pinaghihigpitan</value></data>
@@ -524,6 +525,7 @@
   <data name="DueDate_Badge_NoDueDate" xml:space="preserve"><value>Walang due date</value></data>
   <data name="Overdue_Title" xml:space="preserve"><value>Overdue monitoring</value></data>
   <data name="Overdue_Subtitle" xml:space="preserve"><value>Mga overdue customer at credit ng organization</value></data>
+  <data name="Overdue_Refresh" xml:space="preserve"><value>I-refresh</value></data>
   <data name="Overdue_PolicyTitle" xml:space="preserve"><value>FIFO aging</value></data>
   <data name="Overdue_PolicyMessage" xml:space="preserve"><value>Kinukuha ang overdue amount sa pamamagitan ng paglalapat ng active repayments sa pinakamatandang active credits. Hindi sine-save ang allocation.</value></data>
   <data name="Overdue_CustomersTitle" xml:space="preserve"><value>Mga customer na overdue</value></data>
@@ -558,7 +560,10 @@
   <data name="Customers_NotFoundTitle" xml:space="preserve"><value>Hindi nahanap ang customer</value></data>
   <data name="Customers_NotFoundMessage" xml:space="preserve"><value>Hindi available ang customer na ito para sa napiling organization.</value></data>
   <data name="Customers_BackToList" xml:space="preserve"><value>Bumalik sa mga customer</value></data>
+  <data name="Customers_Back" xml:space="preserve"><value>Bumalik</value></data>
   <data name="Customers_BackToDetail" xml:space="preserve"><value>Bumalik sa customer</value></data>
+  <data name="Customers_NoExItsId" xml:space="preserve"><value>Hindi naka-link</value></data>
+  <data name="Customers_AccountSection" xml:space="preserve"><value>Account</value></data>
   <data name="Customers_Deactivate" xml:space="preserve"><value>I-deactivate</value></data>
   <data name="Customers_Reactivate" xml:space="preserve"><value>I-reactivate</value></data>
   <data name="Customers_DeactivateTitle" xml:space="preserve"><value>I-deactivate ang customer?</value></data>
@@ -1047,8 +1052,8 @@
   <data name="Sales_Checkout_ConfirmTitle" xml:space="preserve"><value>Itala ang bentang ito?</value></data>
   <data name="Sales_Checkout_ConfirmMessage" xml:space="preserve"><value>{0} item para sa preview na kabuuang PHP {1}. Ang server ang kumukumpirma ng huling kabuuan.</value></data>
   <data name="Sales_Checkout_ConfirmUtangMessage" xml:space="preserve"><value>{0} item na PHP {1} ang idadagdag bilang Utang kay {2}. Tutugma ang naka-link na credit sa kabuuan ng benta. Walang kinokolektang cash.</value></data>
-  <data name="Sales_Checkout_UtangSection" xml:space="preserve"><value>Utang checkout</value></data>
-  <data name="Sales_Checkout_UtangWarning" xml:space="preserve"><value>Idadagdag ng Utang ang kabuuan ng benta sa outstanding ng customer. Walang cash o GCash na kinokolekta sa checkout.</value></data>
+  <data name="Sales_Checkout_UtangSection" xml:space="preserve"><value>Napiling Utang</value></data>
+  <data name="Sales_Checkout_UtangWarning" xml:space="preserve"><value>Kailangan ang customer. Maghanap ng existing customer, o magdagdag ng bago. Idadagdag ang kabuuan ng benta sa outstanding nila — walang cash o GCash na kinokolekta sa checkout.</value></data>
   <data name="Sales_Checkout_SelectCustomer" xml:space="preserve"><value>Pumili ng customer</value></data>
   <data name="Sales_Checkout_CustomerSearch" xml:space="preserve"><value>Maghanap ng customer</value></data>
   <data name="Sales_Checkout_Outstanding" xml:space="preserve"><value>Kasalukuyang outstanding</value></data>
@@ -1070,6 +1075,15 @@
   <data name="Sales_Checkout_RequiredCustomer" xml:space="preserve"><value>Customer *</value></data>
   <data name="Sales_Checkout_AddCustomer" xml:space="preserve"><value>Bagong customer</value></data>
   <data name="Sales_Checkout_AddCustomerWithExItsId" xml:space="preserve"><value>Idagdag gamit ang ExItS ID</value></data>
+  <data name="Sales_Checkout_AddCustomerShort" xml:space="preserve"><value>Bago</value></data>
+  <data name="Sales_Checkout_ExItsIdShort" xml:space="preserve"><value>ExItS ID</value></data>
+  <data name="Sales_Checkout_ChooseCustomer" xml:space="preserve"><value>Pumili ng customer</value></data>
+  <data name="Sales_Checkout_ChangeCustomer" xml:space="preserve"><value>Palitan</value></data>
+  <data name="Sales_Checkout_CustomerPickerTitle" xml:space="preserve"><value>Pumili ng customer</value></data>
+  <data name="Sales_Checkout_CustomerPickerHint" xml:space="preserve"><value>Maghanap gamit ang pangalan, mobile, o ExItS ID. O magdagdag ng bago — mananatili ang cart mo.</value></data>
+  <data name="Sales_Checkout_CustomerSearchHint" xml:space="preserve"><value>Pangalan, mobile, o ExItS ID (EX-####-####)</value></data>
+  <data name="Sales_Checkout_CustomerSearchEmpty" xml:space="preserve"><value>Walang tumugmang active customer. Subukan ang ibang search, o magdagdag ng bago.</value></data>
+  <data name="Sales_Checkout_CustomerSearchRequired" xml:space="preserve"><value>Maglagay ng pangalan, mobile, o ExItS ID para maghanap.</value></data>
   <data name="Sales_Checkout_CartFab" xml:space="preserve"><value>Cart ({0})</value></data>
     <data name="Sales_Checkout_SellTitle" xml:space="preserve"><value>Magbenta</value></data>
   <data name="Sales_Checkout_Reset" xml:space="preserve"><value>I-reset</value></data>
@@ -1100,6 +1114,8 @@
   <data name="Inventory_Subtitle" xml:space="preserve"><value>Subaybayan ang on-hand stock ng mga produkto (online lamang).</value></data>
   <data name="Inventory_LowStockTitle" xml:space="preserve"><value>Kulang na stock</value></data>
   <data name="Inventory_LowStockSubtitle" xml:space="preserve"><value>Mga tracked na produkto na nasa o mas mababa sa reorder level.</value></data>
+  <data name="Inventory_LowStockEmptyTitle" xml:space="preserve"><value>Walang low-stock item</value></data>
+  <data name="Inventory_LowStockEmptyMessage" xml:space="preserve"><value>Lalabas dito ang produkto kapag ang on-hand ay nasa o mas mababa sa reorder level.</value></data>
   <data name="Inventory_DetailTitle" xml:space="preserve"><value>Detalye ng stock</value></data>
   <data name="Inventory_AdjustTitle" xml:space="preserve"><value>I-adjust ang stock</value></data>
   <data name="Inventory_Enable" xml:space="preserve"><value>I-enable ang tracking</value></data>
@@ -1130,6 +1146,10 @@
   <data name="Inventory_ReorderTitle" xml:space="preserve"><value>Reorder settings</value></data>
   <data name="Inventory_ReorderQuantity" xml:space="preserve"><value>Reorder quantity</value></data>
   <data name="Inventory_StockStatus" xml:space="preserve"><value>Stock status</value></data>
+  <data name="Inventory_StockStatus_InStock" xml:space="preserve"><value>May stock</value></data>
+  <data name="Inventory_StockStatus_LowStock" xml:space="preserve"><value>Kulang</value></data>
+  <data name="Inventory_StockStatus_OutOfStock" xml:space="preserve"><value>Walang stock</value></data>
+  <data name="Inventory_ListSection" xml:space="preserve"><value>Mga produkto</value></data>
   <data name="Inventory_SaveReorder" xml:space="preserve"><value>I-save ang reorder settings</value></data>
   <data name="Inventory_OpenCounts" xml:space="preserve"><value>Stock counts</value></data>
   <data name="Inventory_CountsTitle" xml:space="preserve"><value>Stock counts</value></data>
@@ -1142,6 +1162,15 @@
   <data name="Inventory_CountsDraft" xml:space="preserve"><value>Draft count</value></data>
   <data name="Inventory_CountsCreateTitle" xml:space="preserve"><value>Gumawa ng stock count</value></data>
   <data name="Inventory_CountsAddLine" xml:space="preserve"><value>Magdagdag ng produkto</value></data>
+  <data name="Inventory_CountsProduct" xml:space="preserve"><value>Produkto</value></data>
+  <data name="Inventory_CountsProductSection" xml:space="preserve"><value>Magdagdag ng produkto</value></data>
+  <data name="Inventory_CountsLinesEmpty" xml:space="preserve"><value>Magdagdag ng kahit isang produkto para gumawa ng draft count.</value></data>
+  <data name="Inventory_CountsLinesCount" xml:space="preserve"><value>{0} (na) produkto</value></data>
+  <data name="Inventory_CountsRemoveLine" xml:space="preserve"><value>Alisin</value></data>
+  <data name="Inventory_CountsReset" xml:space="preserve"><value>I-reset</value></data>
+  <data name="Inventory_CountsResetTitle" xml:space="preserve"><value>I-reset ang stock count?</value></data>
+  <data name="Inventory_CountsResetMessage" xml:space="preserve"><value>Mabubura ang listahan ng produkto at mga tala.</value></data>
+  <data name="Inventory_CountsNotesHint" xml:space="preserve"><value>Opsyonal na tala para sa count na ito.</value></data>
   <data name="Inventory_CountsNotes" xml:space="preserve"><value>Notes</value></data>
   <data name="Inventory_CountsCreate" xml:space="preserve"><value>Gumawa ng draft</value></data>
   <data name="Inventory_CountsStart" xml:space="preserve"><value>Simulan ang count</value></data>
@@ -1163,6 +1192,7 @@
   <data name="Expenses_Loading" xml:space="preserve"><value>Nilo-load ang mga gastos…</value></data>
   <data name="Expenses_SearchPlaceholder" xml:space="preserve"><value>Maghanap ayon sa expense number</value></data>
   <data name="Expenses_FiltersTitle" xml:space="preserve"><value>Mga filter</value></data>
+  <data name="Expenses_ListSection" xml:space="preserve"><value>Mga gastos</value></data>
   <data name="Expenses_Filter_Status" xml:space="preserve"><value>Status</value></data>
   <data name="Expenses_Filter_Payment" xml:space="preserve"><value>Paraan ng bayad</value></data>
   <data name="Expenses_Filter_FromDate" xml:space="preserve"><value>Mula sa petsa</value></data>
@@ -1350,6 +1380,7 @@
   <data name="Suppliers_EmptyTitle" xml:space="preserve"><value>Walang supplier pa</value></data>
   <data name="Suppliers_EmptyMessage" xml:space="preserve"><value>Magdagdag ng unang supplier para sa contact details ng vendor.</value></data>
   <data name="Suppliers_FiltersTitle" xml:space="preserve"><value>Mga Filter</value></data>
+  <data name="Suppliers_ListSection" xml:space="preserve"><value>Mga supplier</value></data>
   <data name="Suppliers_Filter_Status" xml:space="preserve"><value>Status</value></data>
   <data name="Suppliers_Filter_AllStatuses" xml:space="preserve"><value>Lahat ng status</value></data>
   <data name="Suppliers_Status_Active" xml:space="preserve"><value>Aktibo</value></data>
@@ -1455,7 +1486,17 @@
   <data name="Purchasing_OrderDateRequired" xml:space="preserve"><value>Ilagay ang petsa ng order.</value></data>
   <data name="Purchasing_LinesRequired" xml:space="preserve"><value>Magdagdag ng kahit isang linya ng produkto.</value></data>
   <data name="Purchasing_InvalidOrderedQty" xml:space="preserve"><value>Maglagay ng positibong dami.</value></data>
-  <data name="Purchasing_InvalidUnitCost" xml:space="preserve"><value>Hindi maaaring negatibo ang unit cost.</value></data>
+  <data name="Purchasing_InvalidUnitCost" xml:space="preserve"><value>Masyadong malaki ang unit cost.</value></data>
+  <data name="Purchasing_UnitCostRequired" xml:space="preserve"><value>Maglagay ng unit cost na higit sa zero.</value></data>
+  <data name="Purchasing_UnitCostHint" xml:space="preserve"><value>Kinakailangan. Dapat higit sa zero.</value></data>
+  <data name="Purchasing_ProductRequired" xml:space="preserve"><value>Pumili ng produkto.</value></data>
+  <data name="Purchasing_LinesEmptyHint" xml:space="preserve"><value>Magdagdag ng kahit isang linya na may dami at unit cost.</value></data>
+  <data name="Purchasing_LinesCount" xml:space="preserve"><value>{0} (na) linya</value></data>
+  <data name="Purchasing_LinesTotal" xml:space="preserve"><value>Kabuuan</value></data>
+  <data name="Purchasing_Reset" xml:space="preserve"><value>I-reset</value></data>
+  <data name="Purchasing_ResetTitle" xml:space="preserve"><value>I-reset ang purchase order?</value></data>
+  <data name="Purchasing_ResetMessage" xml:space="preserve"><value>Mabubura ang supplier, mga tala, at lahat ng draft na linya.</value></data>
+  <data name="Purchasing_CreateSupplier" xml:space="preserve"><value>Gumawa ng supplier</value></data>
   <data name="Purchasing_NoSuppliersTitle" xml:space="preserve"><value>Walang aktibong supplier</value></data>
   <data name="Purchasing_NoSuppliersMessage" xml:space="preserve"><value>Gumawa muna ng aktibong supplier bago mag-start ng purchase order.</value></data>
   <data name="Purchasing_LineSummary" xml:space="preserve"><value>Inorder {0} · Natanggap {1} · Natitira {2} · Presyo {3}</value></data>
@@ -1569,6 +1610,7 @@
   <data name="Permissions_Assign" xml:space="preserve"><value>Mag-assign ng role</value></data>
   <data name="Permissions_AssignSubtitle" xml:space="preserve"><value>Mag-assign ng org-scoped POS role</value></data>
   <data name="Permissions_MyAccess" xml:space="preserve"><value>Aking access</value></data>
+  <data name="Permissions_Refresh" xml:space="preserve"><value>I-refresh</value></data>
   <data name="Permissions_MyAccessSubtitle" xml:space="preserve"><value>Epektibong role at feature codes</value></data>
   <data name="Permissions_AssignmentsSection" xml:space="preserve"><value>Mga assignment</value></data>
   <data name="Permissions_EffectiveSection" xml:space="preserve"><value>Epektibong permiso</value></data>
@@ -2042,6 +2084,7 @@
   <data name="Personal_ResolveConfirm" xml:space="preserve"><value>Confirm</value></data>
   <data name="Personal_ResolveSelf" xml:space="preserve"><value>That is your own ExItS ID.</value></data>
   <data name="Personal_ResolveNotFound" xml:space="preserve"><value>No active user matched that ExItS ID.</value></data>
+  <data name="Personal_ResolveSessionRequired" xml:space="preserve"><value>Wala o expired ang Platform session mo. Mag-sign out, mag-sign in ulit, tapos subukan muli ang ExItS ID lookup.</value></data>
   <data name="Personal_AddByExItsId" xml:space="preserve"><value>Add by ExItS ID</value></data>
   <data name="Personal_PeopleAddByIdTitle" xml:space="preserve"><value>Add by ExItS ID / QR</value></data>
   <data name="Personal_PeopleAddByIdHint" xml:space="preserve"><value>Resolve a user, confirm identity, then create a contact. Debt links still require acceptance when rules require it.</value></data>

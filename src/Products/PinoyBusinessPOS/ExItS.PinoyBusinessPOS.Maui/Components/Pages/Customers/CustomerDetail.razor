@@ -33,10 +33,16 @@ else
     var canCreateCredit = Capabilities.IsAllowed(UtangCapability.CreateCredit);
     var canReverseCredit = Capabilities.IsAllowed(UtangCapability.ReverseCredit);
     var canStatement = Capabilities.IsAllowed(UtangCapability.ViewGenerateStatement);
-<Page>
+    var canRepay = Capabilities.IsAllowed(UtangCapability.RecordRepayment);
+    var outstanding = _utang?.OutstandingAmount ?? _localBalance?.ProjectedOutstanding ?? 0m;
+    var canRecordPayment = (!_isOffline || Sync.CanMutateOffline)
+        && (_utang is not null || _showLocalBalance)
+        && outstanding > 0m
+        && canRepay;
+<Page class="pos-customer-detail">
     <PageHeader Title="@customer.DisplayName" Subtitle="@L["Customers_DetailSubtitle"]">
         <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoList">@L["Customers_BackToList"]</Button>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoList">@L["Customers_Back"]</Button>
             @if (customer.Status == "Active")
             {
                 <Button Variant="ButtonVariant.Primary" Disabled="@(!canEdit)" OnClick="GoEdit">@L["Customers_Edit"]</Button>
@@ -57,9 +63,9 @@ else
     @if (_entityState == LocalEntitySyncState.Conflict)
     {
         <Alert Tone="AlertTone.Warning" Title="@L["Offline_ConflictTitle"]" Message="@L["Offline_ConflictMessage"]" />
-        <FormActions>
+        <div class="pos-customer-detail__toolbar">
             <Button Variant="ButtonVariant.Primary" OnClick="GoEdit">@L["Customers_Edit"]</Button>
-        </FormActions>
+        </div>
     }
 
     @if (!string.IsNullOrEmpty(_errorMessage))
@@ -72,19 +78,24 @@ else
         <Alert Tone="AlertTone.Warning" Title="@L["Access_RestrictedTitle"]" Message="@L["Access_RestrictedMessage"]" />
     }
 
-    <Alert Tone="AlertTone.Info" Title="@L["Utang_DeferredTitle"]" Message="@L["Utang_DeferredMessage"]" />
+    <InlineMessage Tone="InlineMessageTone.Info">@L["Utang_DeferredMessage"]</InlineMessage>
 
     <Section Title="@L["Customers_ProfileSection"]">
         <Stack Gap="3">
+            <div class="pos-customer-detail__status-row">
+                <Badge Tone="@(customer.Status == "Active" ? BadgeTone.Success : BadgeTone.Neutral)">@customer.Status</Badge>
+                @if (_entityState is { } state && OfflineCustomerCreditUiHelpers.EntityBadge(state) is { } badge)
+                {
+                    <Badge Tone="@badge.Tone">@L[badge.LabelKey]</Badge>
+                }
+            </div>
             <div>
                 <span class="pos-muted">@L["Customers_Field_DisplayName"]</span>
-                <div class="pos-value-md">
-                    @customer.DisplayName
-                    @if (_entityState is { } state && OfflineCustomerCreditUiHelpers.EntityBadge(state) is { } badge)
-                    {
-                        <Badge Tone="@badge.Tone">@L[badge.LabelKey]</Badge>
-                    }
-                </div>
+                <div class="pos-value-md">@customer.DisplayName</div>
+            </div>
+            <div>
+                <span class="pos-muted">@L["Personal_ExItsIdLabel"]</span>
+                <div class="pos-value-md pos-wrap">@(string.IsNullOrWhiteSpace(_exItsId) ? L["Customers_NoExItsId"] : _exItsId)</div>
             </div>
             <div>
                 <span class="pos-muted">@L["Customers_Field_Mobile"]</span>
@@ -96,11 +107,7 @@ else
             </div>
             <div>
                 <span class="pos-muted">@L["Customers_Field_Notes"]</span>
-                <div class="pos-value-md pos-wrap">@(string.IsNullOrWhiteSpace(customer.Notes) ? L["Customers_NoValue"] : customer.Notes)</div>
-            </div>
-            <div>
-                <span class="pos-muted">@L["Customers_Field_Status"]</span>
-                <Badge Tone="@(customer.Status == "Active" ? BadgeTone.Success : BadgeTone.Neutral)">@customer.Status</Badge>
+                <div class="pos-value-md pos-wrap">@(string.IsNullOrWhiteSpace(_notesDisplay) ? L["Customers_NoValue"] : _notesDisplay)</div>
             </div>
         </Stack>
     </Section>
@@ -109,75 +116,62 @@ else
         <Stack Gap="3">
             @if (_showLocalBalance && _localBalance is not null)
             {
-                <div>
-                    <span class="pos-muted">@L["Offline_ConfirmedOutstanding"]</span>
-                    <div class="pos-value-md">
-                        <MoneyDisplay Amount="@_localBalance.ConfirmedOutstanding" CurrencyCode="PHP" />
-                    </div>
-                </div>
-                <div>
-                    <span class="pos-muted">@L["Offline_PendingCredit"]</span>
-                    <div class="pos-value-md">
-                        <MoneyDisplay Amount="@_localBalance.PendingCredit" CurrencyCode="PHP" />
-                    </div>
-                </div>
-                <div>
-                    <span class="pos-muted">@L["Offline_PendingRepayment"]</span>
-                    <div class="pos-value-md">
-                        <MoneyDisplay Amount="@_localBalance.PendingRepayment" CurrencyCode="PHP" />
-                    </div>
-                </div>
-                <div>
+                <div class="pos-customer-detail__balance">
                     <span class="pos-muted">@L["Offline_ProjectedOutstanding"]</span>
-                    <div class="pos-value-md">
-                        <MoneyDisplay Amount="@_localBalance.ProjectedOutstanding" CurrencyCode="PHP" />
+                    <div class="pos-customer-detail__balance-value">
+                        <MoneyDisplay Amount="@_localBalance.ProjectedOutstanding" CurrencyCode="PHP" Emphasized="true" />
                     </div>
+                </div>
+                <div class="pos-customer-detail__balance-meta pos-muted">
+                    @L["Offline_ConfirmedOutstanding"]: <MoneyDisplay Amount="@_localBalance.ConfirmedOutstanding" CurrencyCode="PHP" />
+                    · @L["Offline_PendingCredit"]: <MoneyDisplay Amount="@_localBalance.PendingCredit" CurrencyCode="PHP" />
+                    · @L["Offline_PendingRepayment"]: <MoneyDisplay Amount="@_localBalance.PendingRepayment" CurrencyCode="PHP" />
                 </div>
             }
             else
             {
-                <div>
+                <div class="pos-customer-detail__balance">
                     <span class="pos-muted">@L["Credit_Outstanding"]</span>
-                    <div class="pos-value-md">
+                    <div class="pos-customer-detail__balance-value">
                         @if (_utang is null)
                         {
                             <Spinner />
                         }
                         else
                         {
-                            <MoneyDisplay Amount="@_utang.OutstandingAmount" CurrencyCode="PHP" />
+                            <MoneyDisplay Amount="@_utang.OutstandingAmount" CurrencyCode="PHP" Emphasized="true" />
                         }
                     </div>
                 </div>
                 @if (_utang is not null)
                 {
-                    <div class="pos-muted">
+                    <div class="pos-customer-detail__balance-meta pos-muted">
                         @L["Utang_CreditsTotal"] <MoneyDisplay Amount="@_utang.ActiveCreditTotal" CurrencyCode="PHP" />
                         · @L["Utang_PaymentsTotal"] <MoneyDisplay Amount="@_utang.ActiveRepaymentTotal" CurrencyCode="PHP" />
                     </div>
-                    <div class="pos-muted">
+                    <div class="pos-customer-detail__balance-meta pos-muted">
                         @L["Overdue_Amount"]: <MoneyDisplay Amount="@_utang.OverdueAmount" CurrencyCode="PHP" />
                         · @L["Overdue_Count"]: @_utang.OverdueCreditCount
                         · @L["Overdue_NoDueDateCount"]: @_utang.CreditsWithoutDueDateCount
                     </div>
-                    <div class="pos-muted">
+                    <div class="pos-customer-detail__balance-meta pos-muted">
                         @L["Overdue_Earliest"]: @(_utang.EarliestOverdueDate?.ToString("d") ?? L["Customers_NoValue"])
                         · @L["Overdue_NextDue"]: @(_utang.NextUpcomingDueDate?.ToString("d") ?? L["Customers_NoValue"])
                     </div>
                 }
             }
-            <FormActions>
+            <div class="pos-customer-detail__actions" role="group" aria-label="@L["Utang_SectionTitle"]">
                 @if (customer.Status == "Active")
                 {
                     <Button Variant="ButtonVariant.Secondary" Disabled="@(!canCreateCredit)" OnClick="GoAddCredit">@L["Credit_Add"]</Button>
                 }
                 <Button Variant="ButtonVariant.Primary"
-                        Disabled="@((!Sync.CanMutateOffline && _isOffline) || (_utang is null && !_showLocalBalance) || (_utang?.OutstandingAmount ?? _localBalance?.ProjectedOutstanding ?? 0m) <= 0m || !Capabilities.IsAllowed(UtangCapability.RecordRepayment))"
+                        Disabled="@(!canRecordPayment)"
                         OnClick="GoAddPayment">@L["Payment_Record"]</Button>
                 <Button Variant="ButtonVariant.Secondary" Disabled="@_isOffline" OnClick="GoLedger">@L["Ledger_Open"]</Button>
-                <Button Variant="ButtonVariant.Secondary" Disabled="@_isOffline" OnClick="GoOverdue">@L["Overdue_OpenDetail"]</Button>
-                <Button Variant="ButtonVariant.Secondary" Disabled="@(!canStatement || _isOffline)" OnClick="GoStatement">@L["Statement_Open"]</Button>
-            </FormActions>
+                <Button Variant="ButtonVariant.Ghost" Disabled="@_isOffline" OnClick="GoOverdue">@L["Overdue_OpenDetail"]</Button>
+                <Button Variant="ButtonVariant.Ghost" Disabled="@(!canStatement || _isOffline)" OnClick="GoStatement">@L["Statement_Open"]</Button>
+            </div>
             @if (_isOffline && !Sync.CanMutateOffline)
             {
                 <Alert Tone="AlertTone.Info" Title="@L["SyncStatus_Offline"]" Message="@L["Offline_MutationsUnavailable"]" />
@@ -312,16 +306,18 @@ else
         </Section>
     }
 
-    <FormActions>
-        @if (customer.Status == "Active")
-        {
-            <Button Variant="ButtonVariant.Danger" Disabled="@_isOffline" OnClick="() => _confirmDeactivate = true">@L["Customers_Deactivate"]</Button>
-        }
-        else
-        {
-            <Button Variant="ButtonVariant.Primary" Disabled="@_isOffline" OnClick="() => _confirmReactivate = true">@L["Customers_Reactivate"]</Button>
-        }
-    </FormActions>
+    <Section Title="@L["Customers_AccountSection"]">
+        <div class="pos-customer-detail__toolbar">
+            @if (customer.Status == "Active")
+            {
+                <Button Variant="ButtonVariant.Danger" Disabled="@_isOffline" OnClick="() => _confirmDeactivate = true">@L["Customers_Deactivate"]</Button>
+            }
+            else
+            {
+                <Button Variant="ButtonVariant.Primary" Disabled="@_isOffline" OnClick="() => _confirmReactivate = true">@L["Customers_Reactivate"]</Button>
+            }
+        </div>
+    </Section>
 
     @if (_isOffline && !Sync.CanMutateOffline)
     {
@@ -390,6 +386,8 @@ else
     private string? _errorTitle;
     private string? _errorMessage;
     private string? _banner;
+    private string? _exItsId;
+    private string? _notesDisplay;
 
     protected override async Task OnInitializedAsync()
     {
@@ -430,6 +428,7 @@ else
             if (result.IsSuccess && result.Data is not null)
             {
                 _customer = result.Data;
+                ApplyProfileNotes(result.Data.Notes);
                 if (OfflineCustomerCreditUiHelpers.IsLocalContextReady(LocalContext))
                 {
                     var local = await LocalStore.GetCustomerAsync(CustomerId);
@@ -445,6 +444,7 @@ else
             else
             {
                 _customer = null;
+                ClearProfileNotes();
                 var described = ApiLocalizer.Describe(result.Status, result.Error);
                 _errorTitle = described.Title;
                 _errorMessage = result.Error?.Detail ?? described.Message;
@@ -457,6 +457,7 @@ else
         else
         {
             _customer = null;
+            ClearProfileNotes();
             _errorTitle = L["SyncStatus_Offline"];
             _errorMessage = L["Api_Offline"];
         }
@@ -470,12 +471,14 @@ else
         if (local is null)
         {
             _customer = null;
+            ClearProfileNotes();
             _errorTitle = L["Customers_NotFoundTitle"];
             _errorMessage = L["Customers_NotFoundMessage"];
             return;
         }
 
         _customer = OfflineCustomerCreditUiHelpers.ToDetail(local);
+        ApplyProfileNotes(local.Notes);
         _entityState = local.EntityState;
         _localBalance = await LocalStore.GetBalanceAsync(CustomerId);
         _showLocalBalance = true;
@@ -550,6 +553,7 @@ else
         if (result.IsSuccess && result.Data is not null)
         {
             _customer = result.Data;
+            ApplyProfileNotes(result.Data.Notes);
             _banner = L["Customers_DeactivatedSuccess"];
         }
         else
@@ -573,6 +577,7 @@ else
         if (result.IsSuccess && result.Data is not null)
         {
             _customer = result.Data;
+            ApplyProfileNotes(result.Data.Notes);
             _banner = L["Customers_ReactivatedSuccess"];
         }
         else if (result.Status == ApiCallStatus.Conflict)
@@ -641,6 +646,53 @@ else
             _errorTitle = L["Credit_ErrorTitle"];
             _errorMessage = result.Error?.Detail ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
         }
+    }
+
+    private void ApplyProfileNotes(string? notes)
+    {
+        SplitExItsIdFromNotes(notes, out _exItsId, out _notesDisplay);
+    }
+
+    private void ClearProfileNotes()
+    {
+        _exItsId = null;
+        _notesDisplay = null;
+    }
+
+    /// <summary>
+    /// Customer create stores <c>exits-id:EX-####-####</c> in notes — surface it as its own field.
+    /// </summary>
+    internal static void SplitExItsIdFromNotes(string? notes, out string? exItsId, out string? cleanedNotes)
+    {
+        exItsId = null;
+        cleanedNotes = null;
+        if (string.IsNullOrWhiteSpace(notes))
+        {
+            return;
+        }
+
+        var kept = new List<string>();
+        foreach (var raw in notes.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n'))
+        {
+            var line = raw.Trim();
+            if (line.StartsWith("exits-id:", StringComparison.OrdinalIgnoreCase))
+            {
+                var id = line["exits-id:".Length..].Trim();
+                if (!string.IsNullOrWhiteSpace(id))
+                {
+                    exItsId = id.ToUpperInvariant();
+                }
+
+                continue;
+            }
+
+            if (!string.IsNullOrWhiteSpace(line))
+            {
+                kept.Add(line);
+            }
+        }
+
+        cleanedNotes = kept.Count == 0 ? null : string.Join('\n', kept);
     }
 
     private void GoList() => Nav.NavigateTo("/customers");

@@ -19,6 +19,11 @@ public sealed class PurchasingPageGuardTests
         Assert.Contains("IPosCatalogClient", create, StringComparison.Ordinal);
         Assert.Contains("Purchasing_AddLine", create, StringComparison.Ordinal);
         Assert.Contains("Purchasing_Field_Supplier", create, StringComparison.Ordinal);
+        Assert.Contains("Purchasing_Reset", create, StringComparison.Ordinal);
+        Assert.Contains("Purchasing_UnitCostRequired", create, StringComparison.Ordinal);
+        Assert.Contains("Required=\"true\"", create, StringComparison.Ordinal);
+        Assert.Contains("_draftUnitCost is null", create, StringComparison.Ordinal);
+        Assert.Contains("_draftUnitCost.Value <= 0m", create, StringComparison.Ordinal);
         Assert.Contains("/purchasing/{result.Data.PurchaseOrderId:D}", create, StringComparison.Ordinal);
 
         var detail = File.ReadAllText(Path.Combine(pages, "PurchasingDetail.razor"));
@@ -81,7 +86,13 @@ public sealed class PurchasingPageGuardTests
                      "Purchasing_AddLine",
                      "Purchasing_SupplierRequired",
                      "Purchasing_LinesRequired",
-                     "Purchasing_NoSuppliersMessage"
+                     "Purchasing_NoSuppliersMessage",
+                     "Purchasing_Reset",
+                     "Purchasing_ResetTitle",
+                     "Purchasing_ResetMessage",
+                     "Purchasing_UnitCostRequired",
+                     "Purchasing_UnitCostHint",
+                     "Purchasing_CreateSupplier"
                  })
         {
             Assert.Contains($"name=\"{key}\"", en, StringComparison.Ordinal);

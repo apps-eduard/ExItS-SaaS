@@ -635,6 +635,145 @@ button.exds-select-trigger.exds-field__control:disabled { cursor: not-allowed; }
 .exds-field__error { font-size: var(--exits-text-xs); color: var(--exits-danger); }
 .exds-field__hint { font-size: var(--exits-text-xs); color: var(--exits-text-muted); }
 
+/* Custom date field + picker (replaces native OS calendar chrome on mobile WebView). */
+button.exds-date-trigger.exds-field__control {
+  align-items: center;
+  appearance: none;
+  cursor: pointer;
+  display: inline-flex;
+  gap: var(--exits-space-2);
+  justify-content: space-between;
+  text-align: start;
+}
+button.exds-date-trigger.exds-field__control:disabled { cursor: not-allowed; }
+.exds-date-trigger__value {
+  flex: 1 1 auto;
+  line-height: 1.25;
+  min-width: 0;
+}
+.exds-date-trigger__icon {
+  color: var(--exits-text-muted);
+  flex: 0 0 auto;
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.exds-date-picker__backdrop {
+  align-items: center;
+  background: rgba(15, 23, 32, 0.45);
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  left: 0;
+  padding: var(--exits-space-4);
+  position: fixed;
+  right: 0;
+  top: 0;
+  z-index: 1200;
+}
+.exds-date-picker {
+  background: var(--exits-surface);
+  border-radius: var(--exits-radius-lg, var(--exits-density-radius));
+  box-shadow: 0 12px 40px rgba(15, 23, 32, 0.28);
+  display: flex;
+  flex-direction: column;
+  max-width: 22rem;
+  overflow: hidden;
+  width: min(100%, 22rem);
+}
+.exds-date-picker__header {
+  background: var(--exits-primary);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  justify-content: center;
+  min-height: 5.25rem;
+  padding: var(--exits-space-4) var(--exits-space-5);
+  text-align: start;
+}
+.exds-date-picker__year {
+  font-size: var(--exits-text-sm);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  opacity: 0.92;
+}
+.exds-date-picker__selected {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.exds-date-picker__nav {
+  align-items: center;
+  display: flex;
+  gap: var(--exits-space-2);
+  justify-content: space-between;
+  padding: var(--exits-space-3) var(--exits-space-3) var(--exits-space-2);
+}
+.exds-date-picker__month {
+  flex: 1 1 auto;
+  font-weight: 700;
+  text-align: center;
+}
+.exds-date-picker__nav-btn {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  border-radius: var(--exits-density-radius);
+  color: inherit;
+  cursor: pointer;
+  font-size: 1.35rem;
+  height: var(--exits-touch-target-min);
+  line-height: 1;
+  width: var(--exits-touch-target-min);
+}
+.exds-date-picker__weekdays,
+.exds-date-picker__grid {
+  display: grid;
+  gap: 0.2rem;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  padding: 0 var(--exits-space-3);
+}
+.exds-date-picker__weekdays {
+  color: var(--exits-text-muted);
+  font-size: var(--exits-text-xs);
+  font-weight: 600;
+  padding-bottom: var(--exits-space-1);
+  text-align: center;
+}
+.exds-date-picker__day {
+  appearance: none;
+  aspect-ratio: 1;
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  min-height: 2.5rem;
+}
+.exds-date-picker__day--empty { visibility: hidden; pointer-events: none; }
+.exds-date-picker__day--selected {
+  background: var(--exits-primary);
+  color: #fff;
+}
+.exds-date-picker__actions {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: var(--exits-space-2);
+  justify-content: center;
+  padding: var(--exits-space-3) var(--exits-space-3) var(--exits-space-4);
+  width: 100%;
+}
+.exds-date-picker__actions > .exds-btn {
+  flex: 1 1 0;
+  justify-content: center;
+  min-width: 0;
+  padding-inline: 0.35rem;
+}
+
 /* Switch */
 .exds-switch { display: inline-flex; align-items: center; gap: var(--exits-space-2); cursor: pointer; min-height: var(--exits-touch-target-min); }
 .exds-switch input { position: absolute; width: 1px; height: 1px; opacity: 0; }

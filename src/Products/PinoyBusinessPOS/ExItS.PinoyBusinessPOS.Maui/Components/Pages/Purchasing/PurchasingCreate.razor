@@ -1,4 +1,5 @@
 @page "/purchasing/new"
+@using ExItS.PinoyBusinessPOS.Domain.Purchasing
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IPosPurchaseOrderClient Purchasing
@@ -17,10 +18,12 @@ else
 {
     var canManage = Capabilities.IsAllowed(UtangCapability.ManagePurchasing);
     var blocked = _isOffline || !canManage;
-<Page>
+    var hasDraft = HasUnsavedDraft;
+<Page class="pos-purchasing-create">
     <PageHeader Title="@L["Purchasing_CreateTitle"]" Subtitle="@L["Purchasing_CreateSubtitle"]">
         <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoList">@L["Purchasing_BackToList"]</Button>
+            <Button Variant="ButtonVariant.Secondary" Disabled="@_saving" OnClick="GoList">@L["Purchasing_BackToList"]</Button>
+            <Button Variant="ButtonVariant.Ghost" Disabled="@(_saving || !hasDraft)" OnClick="RequestReset">@L["Purchasing_Reset"]</Button>
         </Actions>
     </PageHeader>
 
@@ -41,6 +44,9 @@ else
     @if (!_isOffline && canManage && _suppliers.Count == 0 && !_loadingLookups)
     {
         <Alert Tone="AlertTone.Warning" Title="@L["Purchasing_NoSuppliersTitle"]" Message="@L["Purchasing_NoSuppliersMessage"]" />
+        <div class="pos-purchasing-create__toolbar">
+            <Button Variant="ButtonVariant.Primary" OnClick="GoCreateSupplier">@L["Purchasing_CreateSupplier"]</Button>
+        </div>
     }
 
     <Section Title="@L["Purchasing_DetailsSection"]">
@@ -52,7 +58,7 @@ else
                     Required="true"
                     IsInvalid="@(!string.IsNullOrEmpty(_supplierError))"
                     ErrorText="@_supplierError"
-                    Disabled="@(blocked || _saving || _loadingLookups)" />
+                    Disabled="@(blocked || _saving || _loadingLookups || _suppliers.Count == 0)" />
             <DateInput Label="@L["Purchasing_Field_OrderDate"]"
                        Value="@_orderDate"
                        ValueChanged="v => _orderDate = v"
@@ -79,12 +85,14 @@ else
         <Stack Gap="3">
             <Select Label="@L["Purchasing_Field_Product"]"
                     Value="@_selectedProductId"
-                    ValueChanged="v => _selectedProductId = v"
+                    ValueChanged="OnProductChanged"
                     Options="@ProductOptions"
-                    Disabled="@(blocked || _saving || _loadingLookups)" />
+                    Required="true"
+                    Disabled="@(blocked || _saving || _loadingLookups || _products.Count == 0)" />
             <TextInput Label="@L["Purchasing_Field_OrderedQty"]"
                        Value="@_draftQtyText"
                        ValueChanged="v => _draftQtyText = v"
+                       Required="true"
                        IsInvalid="@(!string.IsNullOrEmpty(_draftQtyError))"
                        ErrorText="@_draftQtyError"
                        Disabled="@(blocked || _saving)" />
@@ -92,26 +100,45 @@ else
                            Value="@_draftUnitCost"
                            ValueChanged="v => _draftUnitCost = v"
                            CurrencyCode="PHP"
+                           Required="true"
+                           Hint="@L["Purchasing_UnitCostHint"]"
                            IsInvalid="@(!string.IsNullOrEmpty(_draftCostError))"
                            ErrorText="@_draftCostError"
                            Disabled="@(blocked || _saving)" />
-            <Button Variant="ButtonVariant.Secondary"
-                    Disabled="@(blocked || _saving || string.IsNullOrEmpty(_selectedProductId))"
-                    OnClick="AddLine">@L["Purchasing_AddLine"]</Button>
+            <div class="pos-purchasing-create__line-actions">
+                <Button Variant="ButtonVariant.Primary"
+                        Disabled="@(blocked || _saving || string.IsNullOrEmpty(_selectedProductId))"
+                        OnClick="AddLine">@L["Purchasing_AddLine"]</Button>
+            </div>
 
             @if (!string.IsNullOrEmpty(_linesError))
             {
                 <Alert Tone="AlertTone.Danger" Title="@L["Purchasing_ErrorTitle"]" Message="@_linesError" />
             }
 
+            @if (_lines.Count == 0)
+            {
+                <InlineMessage Tone="InlineMessageTone.Info">@L["Purchasing_LinesEmptyHint"]</InlineMessage>
+            }
+            else
+            {
+                <div class="pos-purchasing-create__lines-summary pos-muted">
+                    @L["Purchasing_LinesCount", _lines.Count]
+                    · @L["Purchasing_LinesTotal"]
+                    <MoneyDisplay Amount="@LinesTotal" CurrencyCode="PHP" />
+                </div>
+            }
+
             @foreach (var line in _lines)
             {
                 <div class="pos-po-line">
-                    <div class="pos-value-md">@line.Name</div>
-                    <div class="pos-muted">
-                        @L["Purchasing_LineDraftSummary", line.OrderedQty, line.UnitPurchaseCost]
+                    <div class="pos-po-line__main">
+                        <div class="pos-value-md">@line.Name</div>
+                        <div class="pos-muted">
+                            @L["Purchasing_LineDraftSummary", line.OrderedQty, line.UnitPurchaseCost]
+                        </div>
                     </div>
-                    <Button Variant="ButtonVariant.Secondary"
+                    <Button Variant="ButtonVariant.Ghost"
                             Disabled="@(blocked || _saving)"
                             OnClick="() => RemoveLine(line.ProductId)">@L["Purchasing_RemoveLine"]</Button>
                 </div>
@@ -119,13 +146,23 @@ else
         </Stack>
     </Section>
 
-    <FormActions>
+    <FormActions class="pos-purchasing-create__footer">
         <Button Variant="ButtonVariant.Secondary" Disabled="@_saving" OnClick="GoList">@L["Purchasing_BackToList"]</Button>
+        <Button Variant="ButtonVariant.Ghost" Disabled="@(_saving || !hasDraft)" OnClick="RequestReset">@L["Purchasing_Reset"]</Button>
         <Button Variant="ButtonVariant.Primary"
                 IsLoading="@_saving"
-                Disabled="@(blocked || _saving || _loadingLookups)"
+                Disabled="@(blocked || _saving || _loadingLookups || _suppliers.Count == 0)"
                 OnClick="SaveAsync">@L["Purchasing_Create"]</Button>
     </FormActions>
+
+    <ConfirmDialog Visible="@_confirmReset"
+                   VisibleChanged="v => _confirmReset = v"
+                   Title="@L["Purchasing_ResetTitle"]"
+                   Message="@L["Purchasing_ResetMessage"]"
+                   ConfirmLabel="@L["Purchasing_Reset"]"
+                   Danger="true"
+                   OnConfirm="ConfirmReset"
+                   OnCancel="() => _confirmReset = false" />
 </Page>
 }
 
@@ -136,6 +173,7 @@ else
     private bool _saving;
     private bool _isOffline;
     private bool _loadingLookups;
+    private bool _confirmReset;
     private string? _supplierId;
     private DateOnly? _orderDate = DateOnly.FromDateTime(DateTime.Today);
     private DateOnly? _expectedDeliveryDate;
@@ -163,6 +201,20 @@ else
             .Where(p => _lines.All(l => l.ProductId != p.ProductId))
             .Select(p => new SelectOption(p.ProductId.ToString("D"), p.Name))
             .ToList();
+
+    private decimal LinesTotal =>
+        _lines.Sum(l => PosSaleOptions.RoundMoney(l.OrderedQty * l.UnitPurchaseCost));
+
+    private bool HasUnsavedDraft =>
+        !string.IsNullOrWhiteSpace(_supplierId)
+        || _expectedDeliveryDate is not null
+        || !string.IsNullOrWhiteSpace(_supplierReference)
+        || !string.IsNullOrWhiteSpace(_notes)
+        || !string.IsNullOrWhiteSpace(_selectedProductId)
+        || _draftUnitCost is not null
+        || _lines.Count > 0
+        || (!string.IsNullOrWhiteSpace(_draftQtyText) && _draftQtyText != "1")
+        || (_orderDate is not null && _orderDate != DateOnly.FromDateTime(DateTime.Today));
 
     protected override async Task OnInitializedAsync()
     {
@@ -230,6 +282,13 @@ else
         _loadingLookups = false;
     }
 
+    private void OnProductChanged(string? value)
+    {
+        _selectedProductId = value ?? string.Empty;
+        _draftCostError = null;
+        _draftQtyError = null;
+    }
+
     private void AddLine()
     {
         _draftQtyError = null;
@@ -238,6 +297,7 @@ else
 
         if (!Guid.TryParse(_selectedProductId, out var productId))
         {
+            _linesError = L["Purchasing_ProductRequired"];
             return;
         }
 
@@ -259,13 +319,25 @@ else
             return;
         }
 
-        var unitCost = _draftUnitCost ?? 0m;
-        if (unitCost < 0m)
+        if (_draftUnitCost is null)
+        {
+            _draftCostError = L["Purchasing_UnitCostRequired"];
+            return;
+        }
+
+        if (_draftUnitCost.Value <= 0m)
+        {
+            _draftCostError = L["Purchasing_UnitCostRequired"];
+            return;
+        }
+
+        if (_draftUnitCost.Value > PurchaseOrderLine.MaxUnitPurchaseCost)
         {
             _draftCostError = L["Purchasing_InvalidUnitCost"];
             return;
         }
 
+        var unitCost = PosSaleOptions.RoundMoney(_draftUnitCost.Value);
         _lines.Add(new LineEntry(productId, product.Name, qty, unitCost));
         _selectedProductId = string.Empty;
         _draftQtyText = "1";
@@ -274,6 +346,42 @@ else
 
     private void RemoveLine(Guid productId) =>
         _lines.RemoveAll(l => l.ProductId == productId);
+
+    private void RequestReset()
+    {
+        if (!HasUnsavedDraft)
+        {
+            return;
+        }
+
+        _confirmReset = true;
+    }
+
+    private void ConfirmReset()
+    {
+        _confirmReset = false;
+        ResetForm();
+    }
+
+    private void ResetForm()
+    {
+        _supplierId = null;
+        _orderDate = DateOnly.FromDateTime(DateTime.Today);
+        _expectedDeliveryDate = null;
+        _supplierReference = null;
+        _notes = null;
+        _selectedProductId = string.Empty;
+        _draftQtyText = "1";
+        _draftUnitCost = null;
+        _lines = [];
+        _supplierError = null;
+        _orderDateError = null;
+        _draftQtyError = null;
+        _draftCostError = null;
+        _linesError = null;
+        _errorTitle = null;
+        _errorMessage = null;
+    }
 
     private async Task SaveAsync()
     {
@@ -306,6 +414,11 @@ else
             _linesError = L["Purchasing_LinesRequired"];
             valid = false;
         }
+        else if (_lines.Any(l => l.UnitPurchaseCost <= 0m))
+        {
+            _linesError = L["Purchasing_UnitCostRequired"];
+            valid = false;
+        }
 
         if (!valid)
         {
@@ -336,4 +449,6 @@ else
     }
 
     private void GoList() => Nav.NavigateTo("/purchasing");
+
+    private void GoCreateSupplier() => Nav.NavigateTo("/suppliers/new");
 }

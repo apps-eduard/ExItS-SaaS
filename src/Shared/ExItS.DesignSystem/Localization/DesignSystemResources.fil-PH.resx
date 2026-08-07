@@ -105,6 +105,12 @@
   <data name="Action_Done" xml:space="preserve">
     <value>Tapos</value>
   </data>
+  <data name="Action_Set" xml:space="preserve">
+    <value>Itakda</value>
+  </data>
+  <data name="Action_Clear" xml:space="preserve">
+    <value>I-clear</value>
+  </data>
   <data name="Action_Confirm" xml:space="preserve">
     <value>Kumpirmahin</value>
   </data>
@@ -125,6 +131,18 @@
   </data>
   <data name="MultiSelect_SelectedCount" xml:space="preserve">
     <value>{0} ang napili</value>
+  </data>
+  <data name="Date_Placeholder" xml:space="preserve">
+    <value>Pumili ng petsa</value>
+  </data>
+  <data name="Date_PickerTitle" xml:space="preserve">
+    <value>Pumili ng petsa</value>
+  </data>
+  <data name="Date_PreviousMonth" xml:space="preserve">
+    <value>Nakaraang buwan</value>
+  </data>
+  <data name="Date_NextMonth" xml:space="preserve">
+    <value>Susunod na buwan</value>
   </data>
   <data name="Action_Retry" xml:space="preserve">
     <value>Subukan muli</value>

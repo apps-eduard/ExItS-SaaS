@@ -1,4 +1,5 @@
 @page "/catalog/import"
+@using ExItS.DesignSystem.Components.Internal
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IMerchantCatalogDiscoveryClient Discovery
@@ -17,18 +18,35 @@ else if (!_canManage)
 {
     <Page>
         <Alert Tone="AlertTone.Warning" Title="@L["Access_RestrictedTitle"]" Message="@L["Access_RestrictedMessage"]" />
-        <Button Variant="ButtonVariant.Secondary" OnClick="GoCatalog">@L["Catalog_Title"]</Button>
+        <div class="pos-action-grid pos-action-grid--single pos-catalog-import__actions">
+            <button type="button" class="pos-action-tile" @onclick="GoCatalog">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("products")</span>
+                <span class="pos-action-tile__label">@L["Catalog_Title"]</span>
+            </button>
+        </div>
     </Page>
 }
 else
 {
+<div class="pos-catalog-import">
     <Page>
-        <PageHeader Title="@L["Catalog_Import_Title"]" Subtitle="@L["Catalog_Import_Subtitle"]">
-            <Actions>
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoCatalog">@L["Catalog_Title"]</Button>
-                <Button Variant="ButtonVariant.Secondary" Disabled="@_isOffline" OnClick="GoGlobal">@L["Catalog_Global_Browse"]</Button>
-            </Actions>
-        </PageHeader>
+        <PageHeader Title="@L["Catalog_Import_Title"]" Subtitle="@L["Catalog_Import_Subtitle"]" />
+
+        <div class="pos-action-grid pos-action-grid--two pos-catalog-import__actions" role="group" aria-label="@L["Catalog_Import_Title"]">
+            <button type="button"
+                    class="pos-action-tile"
+                    @onclick="GoCatalog">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("products")</span>
+                <span class="pos-action-tile__label">@L["Catalog_Title"]</span>
+            </button>
+            <button type="button"
+                    class="pos-action-tile"
+                    disabled="@_isOffline"
+                    @onclick="GoGlobal">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
+                <span class="pos-action-tile__label">@L["Catalog_Global_Browse"]</span>
+            </button>
+        </div>
 
         @if (_isOffline)
         {
@@ -41,62 +59,97 @@ else
         }
 
         <Section Title="@L["Catalog_Import_StepsTitle"]">
-            <Stack Gap="2">
-                <Badge Tone="@(_step == WizardStep.Choose ? BadgeTone.Success : BadgeTone.Neutral)">1. @L["Catalog_Import_Step_Choose"]</Badge>
-                <Badge Tone="@(_step == WizardStep.Preview ? BadgeTone.Success : BadgeTone.Neutral)">2. @L["Catalog_Import_Step_Preview"]</Badge>
-                <Badge Tone="@(_step == WizardStep.Confirm ? BadgeTone.Success : BadgeTone.Neutral)">3. @L["Catalog_Import_Step_Confirm"]</Badge>
-            </Stack>
+            <ol class="pos-catalog-import__steps" aria-label="@L["Catalog_Import_StepsTitle"]">
+                <li class="pos-catalog-import__step @StepClass(WizardStep.Choose)">
+                    <span class="pos-catalog-import__step-num" aria-hidden="true">1</span>
+                    <span class="pos-catalog-import__step-label">@L["Catalog_Import_Step_Choose"]</span>
+                </li>
+                <li class="pos-catalog-import__step @StepClass(WizardStep.Preview)">
+                    <span class="pos-catalog-import__step-num" aria-hidden="true">2</span>
+                    <span class="pos-catalog-import__step-label">@L["Catalog_Import_Step_Preview"]</span>
+                </li>
+                <li class="pos-catalog-import__step @StepClass(WizardStep.Confirm)">
+                    <span class="pos-catalog-import__step-num" aria-hidden="true">3</span>
+                    <span class="pos-catalog-import__step-label">@L["Catalog_Import_Step_Confirm"]</span>
+                </li>
+            </ol>
         </Section>
 
         @if (_step == WizardStep.Choose)
         {
             <Section Title="@L["Catalog_Import_ChooseTitle"]">
-                <Stack Gap="3">
-                    <SearchToolbar SearchText="@_search" SearchTextChanged="OnSearchChanged" Placeholder="@L["Catalog_Import_SearchTemplates"]">
-                        <Actions>
-                            <Button Variant="ButtonVariant.Secondary" IsLoading="@_loading" Disabled="@(_isOffline || _busy)" OnClick="ReloadTemplatesAsync">@L["Catalog_Refresh"]</Button>
-                        </Actions>
-                    </SearchToolbar>
+                <div class="pos-catalog-import__toolbar">
+                    <div class="pos-catalog-import__search">
+                        <span class="pos-catalog-import__search-icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
+                        <input class="pos-catalog-import__search-input"
+                               type="search"
+                               value="@_search"
+                               placeholder="@L["Catalog_Import_SearchTemplates"]"
+                               disabled="@(_loading || _isOffline || _busy)"
+                               @oninput="OnSearchInputAsync" />
+                    </div>
+                    <button type="button"
+                            class="pos-action-tile pos-catalog-import__refresh"
+                            disabled="@(_loading || _isOffline || _busy)"
+                            @onclick="ReloadTemplatesAsync">
+                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("refresh")</span>
+                        <span class="pos-action-tile__label">@L["Catalog_Refresh"]</span>
+                    </button>
+                </div>
 
-                    @if (_loading)
-                    {
+                @if (_loading)
+                {
+                    <Stack Align="StackAlign.Center" Gap="2">
                         <Spinner />
-                    }
-                    else if (_templates.Count == 0)
-                    {
-                        <EmptyState IconName="inbox" Title="@L["Catalog_Import_EmptyTitle"]" Message="@L["Catalog_Import_EmptyMessage"]" />
-                    }
-                    else
-                    {
-                        <Stack Gap="2">
-                            @foreach (var template in _templates)
-                            {
-                                var selected = _selectedTemplateId == template.Id;
-                                <div class="pos-row @(selected ? "pos-row--selected" : null)">
-                                    <div class="pos-product-tile__placeholder" aria-hidden="true"></div>
-                                    <div>
-                                        <div class="pos-value-md">
-                                            @template.Name
-                                            @if (selected)
-                                            {
-                                                <Badge Tone="BadgeTone.Info">@L["Catalog_Import_Selected"]</Badge>
-                                            }
-                                        </div>
-                                        <div class="pos-muted">@template.PrimaryBusinessType · @string.Format(L["Catalog_Import_FirstBatchCount"].Value, template.FirstBatchCount)</div>
-                                        @if (!string.IsNullOrWhiteSpace(template.Description))
+                        <span class="pos-muted">@L["Common_Loading"]</span>
+                    </Stack>
+                }
+                else if (_templates.Count == 0)
+                {
+                    <EmptyState IconName="inbox" Title="@L["Catalog_Import_EmptyTitle"]" Message="@L["Catalog_Import_EmptyMessage"]" />
+                }
+                else
+                {
+                    <div class="pos-catalog-import__list" role="list" aria-label="@L["Catalog_Import_ChooseTitle"]">
+                        @foreach (var template in _templates)
+                        {
+                            var selected = _selectedTemplateId == template.Id;
+                            <div class="pos-catalog-import__template @(selected ? "pos-row--selected" : null)"
+                                 role="listitem">
+                                <div class="pos-catalog-import__template-main">
+                                    <div class="pos-catalog-import__template-name">
+                                        <span class="pos-catalog-import__template-title">@template.Name</span>
+                                        @if (selected)
                                         {
-                                            <div class="pos-muted pos-wrap">@template.Description</div>
+                                            <Badge Tone="BadgeTone.Info">@L["Catalog_Import_Selected"]</Badge>
                                         }
                                     </div>
-                                    <Button Variant="ButtonVariant.Primary"
-                                            IsLoading="@(_busy && selected)"
-                                            Disabled="@(_isOffline || _busy)"
-                                            OnClick="() => SelectTemplateAsync(template.Id)">@L["Catalog_Import_Select"]</Button>
+                                    <span class="pos-catalog-import__template-meta">
+                                        @template.PrimaryBusinessType · @string.Format(L["Catalog_Import_FirstBatchCount"].Value, template.FirstBatchCount)
+                                    </span>
+                                    @if (!string.IsNullOrWhiteSpace(template.Description))
+                                    {
+                                        <span class="pos-catalog-import__template-desc">@template.Description</span>
+                                    }
                                 </div>
-                            }
-                        </Stack>
-                    }
-                </Stack>
+                                <button type="button"
+                                        class="pos-action-tile pos-action-tile--primary pos-catalog-import__select"
+                                        disabled="@(_isOffline || _busy)"
+                                        @onclick="() => SelectTemplateAsync(template.Id)">
+                                    @if (_busy && selected)
+                                    {
+                                        <Spinner />
+                                    }
+                                    else
+                                    {
+                                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("check")</span>
+                                    }
+                                    <span class="pos-action-tile__label">@L["Catalog_Import_Select"]</span>
+                                </button>
+                            </div>
+                        }
+                    </div>
+                }
             </Section>
         }
         else if (_step == WizardStep.Preview && _selected is not null)
@@ -104,28 +157,30 @@ else
             <Section Title="@L["Catalog_Import_PreviewTitle"]">
                 <Stack Gap="3">
                     <Alert Tone="AlertTone.Info" Title="@L["Catalog_Import_OwnershipTitle"]" Message="@L["Catalog_Import_OwnershipMessage"]" />
-                    <div>
-                        <span class="pos-muted">@L["Catalog_Import_TemplateName"]</span>
-                        <div class="pos-value-md">@_selected.Name</div>
-                    </div>
-                    <div>
-                        <span class="pos-muted">@L["Catalog_Import_BusinessType"]</span>
-                        <div class="pos-value-md">@_selected.PrimaryBusinessType</div>
-                    </div>
-                    @if (!string.IsNullOrWhiteSpace(_selected.Description))
-                    {
-                        <div>
-                            <span class="pos-muted">@L["Catalog_Import_Description"]</span>
-                            <div class="pos-value-md pos-wrap">@_selected.Description</div>
+                    <div class="pos-catalog-import__facts">
+                        <div class="pos-catalog-import__fact">
+                            <span class="pos-muted">@L["Catalog_Import_TemplateName"]</span>
+                            <span class="pos-catalog-import__fact-value">@_selected.Name</span>
                         </div>
-                    }
-                    <div>
-                        <span class="pos-muted">@L["Catalog_Import_FirstBatchLabel"]</span>
-                        <div class="pos-value-md">@_previewProducts.Count</div>
-                    </div>
-                    <div>
-                        <span class="pos-muted">@L["Catalog_Import_TotalProducts"]</span>
-                        <div class="pos-value-md">@_selected.ProductCount</div>
+                        <div class="pos-catalog-import__fact">
+                            <span class="pos-muted">@L["Catalog_Import_BusinessType"]</span>
+                            <span class="pos-catalog-import__fact-value">@_selected.PrimaryBusinessType</span>
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(_selected.Description))
+                        {
+                            <div class="pos-catalog-import__fact">
+                                <span class="pos-muted">@L["Catalog_Import_Description"]</span>
+                                <span class="pos-catalog-import__fact-value pos-wrap">@_selected.Description</span>
+                            </div>
+                        }
+                        <div class="pos-catalog-import__fact">
+                            <span class="pos-muted">@L["Catalog_Import_FirstBatchLabel"]</span>
+                            <span class="pos-catalog-import__fact-value">@_previewProducts.Count</span>
+                        </div>
+                        <div class="pos-catalog-import__fact">
+                            <span class="pos-muted">@L["Catalog_Import_TotalProducts"]</span>
+                            <span class="pos-catalog-import__fact-value">@_selected.ProductCount</span>
+                        </div>
                     </div>
 
                     @if (_unavailableCount > 0)
@@ -142,67 +197,77 @@ else
                         }
                         else
                         {
-                            <SearchToolbar SearchText="@_previewSearch"
-                                           SearchTextChanged="OnPreviewSearchChanged"
-                                           Placeholder="@L["Catalog_Import_PreviewSearch"]" />
+                            <div class="pos-catalog-import__toolbar">
+                                <div class="pos-catalog-import__search">
+                                    <span class="pos-catalog-import__search-icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
+                                    <input class="pos-catalog-import__search-input"
+                                           type="search"
+                                           value="@_previewSearch"
+                                           placeholder="@L["Catalog_Import_PreviewSearch"]"
+                                           @oninput="OnPreviewSearchInputAsync" />
+                                </div>
+                            </div>
                             @if (FilteredPreviewProducts.Count == 0)
                             {
                                 <EmptyState IconName="search" Title="@L["Catalog_Global_NoMatchTitle"]" Message="@L["Catalog_Global_NoMatchMessage"]" />
                             }
                             else
                             {
-                                <Stack Gap="2">
+                                <div class="pos-catalog-import__list" role="list">
                                     @foreach (var product in FilteredPreviewProducts)
                                     {
                                         var name = DisplayName(product);
                                         var unavailable = IsUnavailable(product);
-                                        <div class="pos-row">
-                                            <div class="pos-product-tile__placeholder" aria-hidden="true"></div>
-                                            <div>
-                                                <div class="pos-value-md">@name</div>
+                                        <div class="pos-catalog-import__product" role="listitem">
+                                            <div class="pos-catalog-import__template-main">
+                                                <span class="pos-catalog-import__template-name">@name</span>
                                                 @if (!string.IsNullOrWhiteSpace(product.Brand))
                                                 {
-                                                    <div class="pos-muted">@L["Catalog_Import_Brand"]: @product.Brand</div>
+                                                    <span class="pos-catalog-import__template-meta">@L["Catalog_Import_Brand"]: @product.Brand</span>
                                                 }
-                                                <div class="pos-muted">
-                                                    @BuildIdentity(product)
-                                                </div>
+                                                <span class="pos-catalog-import__template-meta">@BuildIdentity(product)</span>
                                                 @if (!string.IsNullOrWhiteSpace(product.CategoryName))
                                                 {
-                                                    <div class="pos-muted">@L["Catalog_Import_Category"]: @product.CategoryName</div>
+                                                    <span class="pos-catalog-import__template-meta">@L["Catalog_Import_Category"]: @product.CategoryName</span>
                                                 }
                                                 @if (!string.IsNullOrWhiteSpace(product.Unit))
                                                 {
-                                                    <div class="pos-muted">@L["Catalog_Import_Unit"]: @product.Unit</div>
+                                                    <span class="pos-catalog-import__template-meta">@L["Catalog_Import_Unit"]: @product.Unit</span>
                                                 }
                                                 @if (unavailable)
                                                 {
                                                     <Badge Tone="BadgeTone.Warning">@L["Catalog_Import_UnavailableProduct"]</Badge>
                                                 }
                                             </div>
-                                            <Stack Gap="1">
+                                            <div class="pos-catalog-import__prices">
                                                 @if (product.CostPrice is decimal cost)
                                                 {
-                                                    <div class="pos-muted">@L["Catalog_Import_CostPrice"]</div>
+                                                    <span class="pos-muted">@L["Catalog_Import_CostPrice"]</span>
                                                     <MoneyDisplay Amount="@cost" CurrencyCode="PHP" />
                                                 }
                                                 @if (product.SellingPrice is decimal selling)
                                                 {
-                                                    <div class="pos-muted">@L["Catalog_Import_SellingPrice"]</div>
+                                                    <span class="pos-muted">@L["Catalog_Import_SellingPrice"]</span>
                                                     <MoneyDisplay Amount="@selling" CurrencyCode="PHP" />
                                                 }
-                                            </Stack>
+                                            </div>
                                         </div>
                                     }
-                                </Stack>
+                                </div>
                             }
                         }
                     </Section>
 
-                    <FormActions>
-                        <Button Variant="ButtonVariant.Secondary" OnClick="BackToChoose">@L["Catalog_Import_Back"]</Button>
-                        <Button Variant="ButtonVariant.Primary" OnClick="GoConfirm">@L["Catalog_Import_Continue"]</Button>
-                    </FormActions>
+                    <div class="pos-action-grid pos-action-grid--two pos-catalog-import__footer" role="group">
+                        <button type="button" class="pos-action-tile" @onclick="BackToChoose">
+                            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("back")</span>
+                            <span class="pos-action-tile__label">@L["Catalog_Import_Back"]</span>
+                        </button>
+                        <button type="button" class="pos-action-tile pos-action-tile--primary" @onclick="GoConfirm">
+                            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("check")</span>
+                            <span class="pos-action-tile__label">@L["Catalog_Import_Continue"]</span>
+                        </button>
+                    </div>
                 </Stack>
             </Section>
         }
@@ -211,30 +276,46 @@ else
             <Section Title="@L["Catalog_Import_ConfirmTitle"]">
                 <Stack Gap="3">
                     <Alert Tone="AlertTone.Info" Title="@L["Catalog_Import_ConfirmDefaultsTitle"]" Message="@L["Catalog_Import_ConfirmDefaultsMessage"]" />
-                    <div>
-                        <span class="pos-muted">@L["Catalog_Import_TemplateName"]</span>
-                        <div class="pos-value-md">@_selected.Name</div>
-                    </div>
-                    <div>
-                        <span class="pos-muted">@L["Catalog_Import_FirstBatchLabel"]</span>
-                        <div class="pos-value-md">@_previewProducts.Count</div>
+                    <div class="pos-catalog-import__facts">
+                        <div class="pos-catalog-import__fact">
+                            <span class="pos-muted">@L["Catalog_Import_TemplateName"]</span>
+                            <span class="pos-catalog-import__fact-value">@_selected.Name</span>
+                        </div>
+                        <div class="pos-catalog-import__fact">
+                            <span class="pos-muted">@L["Catalog_Import_FirstBatchLabel"]</span>
+                            <span class="pos-catalog-import__fact-value">@_previewProducts.Count</span>
+                        </div>
                     </div>
                     <Checkbox Value="@_confirmAcknowledged"
                               ValueChanged="OnConfirmAcknowledgedChanged"
                               Disabled="@_busy"
                               IsInvalid="@(!string.IsNullOrEmpty(_confirmError))"
                               ErrorText="@_confirmError">@L["Catalog_Import_ConfirmAcknowledge"]</Checkbox>
-                    <FormActions>
-                        <Button Variant="ButtonVariant.Secondary" Disabled="@_busy" OnClick="BackToPreview">@L["Catalog_Import_Back"]</Button>
-                        <Button Variant="ButtonVariant.Primary"
-                                IsLoading="@_busy"
-                                Disabled="@(_isOffline || _busy)"
-                                OnClick="ConfirmImportAsync">@L["Catalog_Import_Start"]</Button>
-                    </FormActions>
+                    <div class="pos-action-grid pos-action-grid--two pos-catalog-import__footer" role="group">
+                        <button type="button" class="pos-action-tile" disabled="@_busy" @onclick="BackToPreview">
+                            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("back")</span>
+                            <span class="pos-action-tile__label">@L["Catalog_Import_Back"]</span>
+                        </button>
+                        <button type="button"
+                                class="pos-action-tile pos-action-tile--primary"
+                                disabled="@(_isOffline || _busy)"
+                                @onclick="ConfirmImportAsync">
+                            @if (_busy)
+                            {
+                                <Spinner />
+                            }
+                            else
+                            {
+                                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("check")</span>
+                            }
+                            <span class="pos-action-tile__label">@L["Catalog_Import_Start"]</span>
+                        </button>
+                    </div>
                 </Stack>
             </Section>
         }
     </Page>
+</div>
 }
 
 @code {
@@ -312,11 +393,31 @@ else
         return Task.CompletedTask;
     }
 
+    private Task OnSearchInputAsync(ChangeEventArgs e)
+    {
+        return OnSearchChanged(e.Value?.ToString());
+    }
+
     private Task OnPreviewSearchChanged(string? value)
     {
         _previewSearch = value;
         StateHasChanged();
         return Task.CompletedTask;
+    }
+
+    private Task OnPreviewSearchInputAsync(ChangeEventArgs e)
+    {
+        return OnPreviewSearchChanged(e.Value?.ToString());
+    }
+
+    private string? StepClass(WizardStep step)
+    {
+        if (_step == step)
+        {
+            return "pos-catalog-import__step--active";
+        }
+
+        return _step > step ? "pos-catalog-import__step--done" : null;
     }
 
     private Task OnConfirmAcknowledgedChanged(bool value)

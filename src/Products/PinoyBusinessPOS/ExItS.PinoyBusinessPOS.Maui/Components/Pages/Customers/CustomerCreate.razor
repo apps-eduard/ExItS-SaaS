@@ -1,4 +1,5 @@
 @page "/customers/new"
+@using ExItS.DesignSystem.Components.Internal
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject ICurrentUserContext CurrentUser
@@ -14,62 +15,75 @@
 else
 {
     var canCreate = Capabilities.IsAllowed(UtangCapability.CreateCustomer);
-<Page>
-    <PageHeader Title="@L["Customers_CreateTitle"]" Subtitle="@L["Customers_CreateSubtitle"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Customers_Cancel"]</Button>
-        </Actions>
-    </PageHeader>
+<div class="pos-customer-create">
+    <Page>
+        <PageHeader Title="@L["Customers_CreateTitle"]" Subtitle="@L["Customers_CreateSubtitle"]" />
 
-    <Alert Tone="AlertTone.Info" Title="@L["Customers_RepaymentDeferredTitle"]" Message="@L["Customers_RepaymentDeferredMessage"]" />
+        <Alert Tone="AlertTone.Info" Title="@L["Customers_RepaymentDeferredTitle"]" Message="@L["Customers_RepaymentDeferredMessage"]" />
 
-    @if (!canCreate)
-    {
-        <Alert Tone="AlertTone.Warning" Title="@L["Access_RestrictedTitle"]" Message="@L["Access_RestrictedMessage"]" />
-    }
-
-    @if (!string.IsNullOrEmpty(_formError))
-    {
-        <Alert Tone="AlertTone.Danger" Title="@L["Customers_ErrorTitle"]" Message="@_formError" />
-    }
-
-    @if (!string.IsNullOrEmpty(_pendingMessage))
-    {
-        <Alert Tone="AlertTone.Success" Title="@L["Customers_SuccessTitle"]" Message="@_pendingMessage" />
-    }
-
-    <Section Title="@L["Personal_PeopleAddByIdTitle"]">
-        <InlineMessage Tone="InlineMessageTone.Info">@L["Customers_ResolveExItsIdHint"]</InlineMessage>
-        @if (!string.IsNullOrWhiteSpace(_resolvedPublicUserId))
+        @if (!canCreate)
         {
-            <Stack Gap="1">
-                <span class="pos-muted">@L["Personal_ExItsIdLabel"]</span>
-                <span class="pos-value-md">@_resolvedPublicUserId</span>
-            </Stack>
-            <InlineMessage Tone="InlineMessageTone.Info">@L["Customers_ResolveConfirmedHint"]</InlineMessage>
+            <Alert Tone="AlertTone.Warning" Title="@L["Access_RestrictedTitle"]" Message="@L["Access_RestrictedMessage"]" />
         }
-        <FormActions>
-            <Button Variant="ButtonVariant.Primary" Disabled="@(!canCreate || _saving)" OnClick="GoScanExItsQr">@L["Personal_ScanQr"]</Button>
-            <Button Variant="ButtonVariant.Secondary" Disabled="@(!canCreate || _saving)" OnClick="GoResolveExItsId">@L["Personal_AddByExItsId"]</Button>
-        </FormActions>
-    </Section>
 
-    <CustomerForm DisplayName="@_displayName"
-                  DisplayNameChanged="v => _displayName = v"
-                  MobileNumber="@_mobile"
-                  MobileNumberChanged="v => _mobile = v"
-                  Address="@_address"
-                  AddressChanged="v => _address = v"
-                  Notes="@_notes"
-                  NotesChanged="v => _notes = v"
-                  DisplayNameError="@_displayNameError"
-                  MobileError="@_mobileError"
-                  IsSaving="@_saving"
-                  Disabled="@(!canCreate)"
-                  SaveLabel="@L["Customers_Create"]"
-                  OnSave="SaveAsync"
-                  OnCancel="GoBack" />
-</Page>
+        @if (!string.IsNullOrEmpty(_formError))
+        {
+            <Alert Tone="AlertTone.Danger" Title="@L["Customers_ErrorTitle"]" Message="@_formError" />
+        }
+
+        @if (!string.IsNullOrEmpty(_pendingMessage))
+        {
+            <Alert Tone="AlertTone.Success" Title="@L["Customers_SuccessTitle"]" Message="@_pendingMessage" />
+        }
+
+        <Section Title="@L["Personal_PeopleAddByIdTitle"]">
+            <p class="pos-customer-create__hint pos-muted">@L["Customers_ResolveExItsIdHint"]</p>
+
+            @if (!string.IsNullOrWhiteSpace(_resolvedPublicUserId))
+            {
+                <div class="pos-customer-create__resolved" role="status">
+                    <span class="pos-customer-create__resolved-label">@L["Personal_ExItsIdLabel"]</span>
+                    <span class="pos-customer-create__resolved-value">@_resolvedPublicUserId</span>
+                    <span class="pos-customer-create__resolved-note pos-muted">@L["Customers_ResolveConfirmedHint"]</span>
+                </div>
+            }
+
+            <div class="pos-action-grid pos-action-grid--two pos-customer-create__actions" role="group" aria-label="@L["Personal_PeopleAddByIdTitle"]">
+                <button type="button"
+                        class="pos-action-tile pos-action-tile--primary"
+                        disabled="@(!canCreate || _saving)"
+                        @onclick="GoScanExItsQr">
+                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("qr")</span>
+                    <span class="pos-action-tile__label">@L["Personal_ScanQr"]</span>
+                </button>
+                <button type="button"
+                        class="pos-action-tile"
+                        disabled="@(!canCreate || _saving)"
+                        @onclick="GoResolveExItsId">
+                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
+                    <span class="pos-action-tile__label">@L["Personal_AddByExItsId"]</span>
+                </button>
+            </div>
+        </Section>
+
+        <CustomerForm DisplayName="@_displayName"
+                      DisplayNameChanged="v => _displayName = v"
+                      MobileNumber="@_mobile"
+                      MobileNumberChanged="v => _mobile = v"
+                      Address="@_address"
+                      AddressChanged="v => _address = v"
+                      Notes="@_notes"
+                      NotesChanged="v => _notes = v"
+                      DisplayNameError="@_displayNameError"
+                      MobileError="@_mobileError"
+                      IsSaving="@_saving"
+                      Disabled="@(!canCreate)"
+                      SaveLabel="@L["Customers_Create"]"
+                      FormActionsClass="pos-customer-create__footer"
+                      OnSave="SaveAsync"
+                      OnCancel="GoBack" />
+    </Page>
+</div>
 }
 
 @code {

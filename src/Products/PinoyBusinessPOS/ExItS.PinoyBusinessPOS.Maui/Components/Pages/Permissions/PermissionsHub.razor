@@ -22,27 +22,35 @@ else if (!Capabilities.IsAllowed(UtangCapability.ViewPermissions))
 else
 {
     var canManage = Capabilities.IsAllowed(UtangCapability.ManagePermissions);
+    var actionGridClass = canManage ? "pos-action-grid--three" : "pos-action-grid--two";
 <div class="pos-permissions">
     <Page>
-        <header class="pos-permissions__header">
-            <div class="pos-permissions__heading">
-                <h1 class="pos-permissions__title">@L["Permissions_Title"]</h1>
-                <p class="pos-permissions__subtitle">@L["Permissions_Subtitle"]</p>
-            </div>
-        </header>
+        <PageHeader Title="@L["Permissions_Title"]" Subtitle="@L["Permissions_Subtitle"]" />
 
-        <div class="pos-permissions__actions" role="group" aria-label="@L["Permissions_Title"]">
+        <div class="pos-action-grid @actionGridClass pos-permissions__actions" role="group" aria-label="@L["Permissions_Title"]">
             @if (canManage)
             {
-                <Button Variant="ButtonVariant.Primary"
-                        Disabled="@_isOffline"
-                        OnClick="GoNew">@L["Permissions_Assign"]</Button>
+                <button type="button"
+                        class="pos-action-tile pos-action-tile--primary"
+                        disabled="@_isOffline"
+                        @onclick="GoNew">
+                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("plus")</span>
+                    <span class="pos-action-tile__label">@L["Permissions_Assign"]</span>
+                </button>
             }
             <button type="button"
-                    class="pos-permissions__secondary"
+                    class="pos-action-tile"
                     disabled="@_isOffline"
                     @onclick="GoMyAccess">
-                @L["Permissions_MyAccess"]
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("customers")</span>
+                <span class="pos-action-tile__label">@L["Permissions_MyAccess"]</span>
+            </button>
+            <button type="button"
+                    class="pos-action-tile"
+                    disabled="@(_loading || _isOffline)"
+                    @onclick="LoadAsync">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("refresh")</span>
+                <span class="pos-action-tile__label">@L["Permissions_Refresh"]</span>
             </button>
         </div>
 
@@ -74,7 +82,9 @@ else
             }
             else if (_items.Count == 0)
             {
-                <EmptyState Title="@L["Permissions_EmptyTitle"]" Message="@L["Permissions_EmptyMessage"]">
+                <EmptyState IconName="customers"
+                            Title="@L["Permissions_EmptyTitle"]"
+                            Message="@L["Permissions_EmptyMessage"]">
                     <Actions>
                         @if (canManage && !_isOffline)
                         {
@@ -96,23 +106,23 @@ else
                                 role="listitem"
                                 aria-label="@RowAriaLabel(item, identity)"
                                 @onclick="() => GoDetail(item.AssignmentId)">
-                            <span class="pos-permissions__row-body">
-                                <span class="pos-permissions__row-top">
-                                    <span class="pos-permissions__row-name">@identity.Primary</span>
-                                    <span class="pos-permissions__badge pos-permissions__badge--@StatusTone(item.Status)"
-                                          aria-label="@($"{L["Permissions_Status"]}: {StatusLabel(item.Status)}")">
-                                        @StatusLabel(item.Status)
-                                    </span>
-                                </span>
+                            <span class="pos-permissions__row-main">
+                                <span class="pos-permissions__row-name">@identity.Primary</span>
+                                <span class="pos-permissions__row-role">@item.RoleDisplayName</span>
                                 @if (!string.IsNullOrWhiteSpace(identity.Secondary))
                                 {
                                     <span class="pos-permissions__row-meta pos-muted">@identity.Secondary</span>
                                 }
-                                <span class="pos-permissions__row-role">@item.RoleDisplayName</span>
                             </span>
-                            <span class="pos-permissions__open">
-                                <span class="visually-hidden">@L["Permissions_Open"]</span>
-                                <span class="pos-permissions__chevron" aria-hidden="true">›</span>
+                            <span class="pos-permissions__row-side">
+                                <span class="pos-permissions__badge pos-permissions__badge--@StatusTone(item.Status)"
+                                      aria-label="@($"{L["Permissions_Status"]}: {StatusLabel(item.Status)}")">
+                                    @StatusLabel(item.Status)
+                                </span>
+                                <span class="pos-permissions__open">
+                                    <span class="visually-hidden">@L["Permissions_Open"]</span>
+                                    <span class="pos-permissions__chevron" aria-hidden="true">›</span>
+                                </span>
                             </span>
                         </button>
                     }

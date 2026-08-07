@@ -1,9 +1,11 @@
 @page "/inventory/counts"
+@using ExItS.DesignSystem.Components.Internal
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IPosInventoryClient Inventory
 @inject IUtangCapabilityEvaluator Capabilities
 @inject IConnectivityService Connectivity
+@inject ApiStatusLocalizer ApiLocalizer
 @inject IStringLocalizer<PosResources> L
 
 @if (!_ready)
@@ -13,62 +15,95 @@
 else
 {
     var canManage = Capabilities.IsAllowed(UtangCapability.ManageInventory);
-<Page>
-    <PageHeader Title="@L["Inventory_CountsTitle"]" Subtitle="@L["Inventory_CountsSubtitle"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Primary" Disabled="@(!canManage || _isOffline)" OnClick="GoNew">@L["Inventory_CountsAdd"]</Button>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoInventory">@L["Inventory_Title"]</Button>
-        </Actions>
-    </PageHeader>
+<div class="pos-stock-counts">
+    <Page>
+        <PageHeader Title="@L["Inventory_CountsTitle"]" Subtitle="@L["Inventory_CountsSubtitle"]" />
 
-    @if (_isOffline)
-    {
-        <Alert Tone="AlertTone.Warning" Title="@L["Inventory_OfflineTitle"]" Message="@L["Inventory_OfflineMessage"]" />
-    }
+        @if (_isOffline)
+        {
+            <Alert Tone="AlertTone.Warning" Title="@L["Inventory_OfflineTitle"]" Message="@L["Inventory_OfflineMessage"]" />
+        }
 
-    <ResponsiveDataList TItem="PosStockCountDto"
-                        Items="@_items"
-                        Columns="@Columns"
-                        CellTemplate="@CellTemplate"
-                        IsLoading="@_loading"
-                        EmptyTitle="@L["Inventory_CountsEmptyTitle"]"
-                        EmptyMessage="@L["Inventory_CountsEmptyMessage"]"
-                        AriaLabel="@L["Inventory_CountsTitle"]" />
-</Page>
+        <div class="pos-action-grid pos-action-grid--three pos-stock-counts__actions" role="group" aria-label="@L["Inventory_CountsTitle"]">
+            <button type="button"
+                    class="pos-action-tile pos-action-tile--primary"
+                    disabled="@(!canManage || _isOffline)"
+                    @onclick="GoNew">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("plus")</span>
+                <span class="pos-action-tile__label">@L["Inventory_CountsAdd"]</span>
+            </button>
+            <button type="button"
+                    class="pos-action-tile"
+                    @onclick="GoInventory">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("products")</span>
+                <span class="pos-action-tile__label">@L["Inventory_Title"]</span>
+            </button>
+            <button type="button"
+                    class="pos-action-tile"
+                    disabled="@(_loading || _isOffline)"
+                    @onclick="ReloadAsync">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("refresh")</span>
+                <span class="pos-action-tile__label">@L["Inventory_Refresh"]</span>
+            </button>
+        </div>
+
+        <Section Title="@L["Inventory_CountsTitle"]">
+            @if (_loading)
+            {
+                <Stack Align="StackAlign.Center" Gap="2">
+                    <Spinner />
+                    <span class="pos-muted">@L["Inventory_Loading"]</span>
+                </Stack>
+            }
+            else if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <ErrorState Title="@(_errorTitle ?? L["Inventory_CountsTitle"])"
+                            Message="@_errorMessage"
+                            RetryLabel="@L["Api_Retry"]"
+                            OnRetry="ReloadAsync" />
+            }
+            else if (_items.Count == 0)
+            {
+                <EmptyState IconName="check"
+                            Title="@L["Inventory_CountsEmptyTitle"]"
+                            Message="@L["Inventory_CountsEmptyMessage"]" />
+            }
+            else
+            {
+                <div class="pos-stock-counts__list" role="list" aria-label="@L["Inventory_CountsTitle"]">
+                    @foreach (var item in _items)
+                    {
+                        <a class="pos-stock-counts__row"
+                           role="listitem"
+                           href="@($"/inventory/counts/{item.StockCountId:D}")">
+                            <div class="pos-stock-counts__row-main">
+                                <span class="pos-stock-counts__row-name">
+                                    @(item.CountNumber ?? L["Inventory_CountsDraft"])
+                                </span>
+                                <span class="pos-stock-counts__row-meta">
+                                    @item.Status
+                                    · @item.UpdatedAtUtc.UtcDateTime.ToString("u")
+                                </span>
+                            </div>
+                            <div class="pos-stock-counts__row-side">
+                                <span class="pos-stock-counts__view">@L["Customers_View"]</span>
+                            </div>
+                        </a>
+                    }
+                </div>
+            }
+        </Section>
+    </Page>
+</div>
 }
 
 @code {
     private bool _ready;
     private bool _loading;
     private bool _isOffline;
+    private string? _errorTitle;
+    private string? _errorMessage;
     private IReadOnlyList<PosStockCountDto> _items = Array.Empty<PosStockCountDto>();
-
-    private IReadOnlyList<DataColumnDefinition> Columns =>
-    [
-        new("number", L["Inventory_CountsNumber"], Primary: true, Width: "40%"),
-        new("status", L["Catalog_Filter_Status"], Width: "30%"),
-        new("updated", L["Inventory_CountsUpdated"], Width: "30%")
-    ];
-
-    private RenderFragment<(PosStockCountDto Item, DataColumnDefinition Column)> CellTemplate => context => builder =>
-    {
-        switch (context.Column.Key)
-        {
-            case "number":
-                builder.OpenElement(0, "a");
-                builder.AddAttribute(1, "class", "pos-link");
-                builder.AddAttribute(2, "href", $"/inventory/counts/{context.Item.StockCountId:D}");
-                builder.AddContent(3, context.Item.CountNumber ?? L["Inventory_CountsDraft"].Value);
-                builder.CloseElement();
-                break;
-            case "status":
-                builder.AddContent(0, context.Item.Status);
-                break;
-            default:
-                builder.AddContent(0, context.Item.UpdatedAtUtc.UtcDateTime.ToString("u"));
-                break;
-        }
-    };
 
     protected override async Task OnInitializedAsync()
     {
@@ -85,19 +120,35 @@ else
 
     private async Task ReloadAsync()
     {
+        _errorTitle = null;
+        _errorMessage = null;
+
         if (_isOffline)
         {
+            _items = Array.Empty<PosStockCountDto>();
             return;
         }
 
         _loading = true;
-        var result = await Inventory.ListStockCountsAsync();
-        if (result.IsSuccess && result.Data is not null)
+        try
         {
-            _items = result.Data.Items;
+            var result = await Inventory.ListStockCountsAsync();
+            if (result.IsSuccess && result.Data is not null)
+            {
+                _items = result.Data.Items;
+            }
+            else
+            {
+                _items = Array.Empty<PosStockCountDto>();
+                var described = ApiLocalizer.Describe(result.Status, result.Error);
+                _errorTitle = described.Title;
+                _errorMessage = result.Error?.Detail ?? described.Message;
+            }
         }
-
-        _loading = false;
+        finally
+        {
+            _loading = false;
+        }
     }
 
     private void GoNew() => Nav.NavigateTo("/inventory/counts/new");

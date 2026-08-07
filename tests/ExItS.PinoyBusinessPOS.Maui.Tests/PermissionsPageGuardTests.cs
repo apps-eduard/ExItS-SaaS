@@ -10,11 +10,16 @@ public sealed class PermissionsPageGuardTests
         Assert.Contains("Permissions_Title", page, StringComparison.Ordinal);
         Assert.Contains("Permissions_Subtitle", page, StringComparison.Ordinal);
         Assert.Contains("Permissions_Assign", page, StringComparison.Ordinal);
-        Assert.Contains("ButtonVariant.Primary", page, StringComparison.Ordinal);
-        Assert.Contains("pos-permissions__secondary", page, StringComparison.Ordinal);
+        Assert.Contains("pos-action-grid", page, StringComparison.Ordinal);
+        Assert.Contains("pos-action-tile--primary", page, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"plus\")", page, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"customers\")", page, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"refresh\")", page, StringComparison.Ordinal);
         Assert.Contains("Permissions_MyAccess", page, StringComparison.Ordinal);
+        Assert.Contains("Permissions_Refresh", page, StringComparison.Ordinal);
         Assert.Contains("pos-permissions__row", page, StringComparison.Ordinal);
         Assert.Contains("pos-permissions__row-name", page, StringComparison.Ordinal);
+        Assert.Contains("pos-permissions__row-side", page, StringComparison.Ordinal);
         Assert.Contains("RoleDisplayName", page, StringComparison.Ordinal);
         Assert.Contains("GetUserAsync", page, StringComparison.Ordinal);
         Assert.Contains("ResolveIdentitiesAsync", page, StringComparison.Ordinal);
@@ -111,7 +116,8 @@ public sealed class PermissionsPageGuardTests
         Assert.Contains(".pos-permissions__row", css, StringComparison.Ordinal);
         Assert.Contains(".pos-permissions__row-name", css, StringComparison.Ordinal);
         Assert.Contains(".pos-permissions__badge--active", css, StringComparison.Ordinal);
-        Assert.Contains(".pos-permissions__secondary", css, StringComparison.Ordinal);
+        Assert.Contains(".pos-permissions__actions", css, StringComparison.Ordinal);
+        Assert.Contains(".pos-permissions__row-side", css, StringComparison.Ordinal);
         Assert.Contains(".pos-permissions__facts", css, StringComparison.Ordinal);
 
         var loc = Path.Combine(root, "src", "Products", "PinoyBusinessPOS",
@@ -127,6 +133,7 @@ public sealed class PermissionsPageGuardTests
                      "Permissions_Status_Active",
                      "Permissions_Status_Revoked",
                      "Permissions_Cancel",
+                     "Permissions_Refresh",
                      "Permissions_RevokeConfirmTitle",
                      "Permissions_RevokeConfirmMessage",
                      "Permissions_AssignmentIdLabel",

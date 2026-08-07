@@ -45,6 +45,11 @@ public sealed class CatalogPageGuardTests
         Assert.Contains("@page \"/catalog/barcode-lookup\"", lookup, StringComparison.Ordinal);
         Assert.Contains("LookupByBarcodeAsync", lookup, StringComparison.Ordinal);
         Assert.Contains("LookupBySkuAsync", lookup, StringComparison.Ordinal);
+        Assert.Contains("pos-barcode-lookup", lookup, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"search\")", lookup, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"close\")", lookup, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"back\")", lookup, StringComparison.Ordinal);
+        Assert.Contains("pos-action-grid--two", lookup, StringComparison.Ordinal);
 
         Assert.True(File.Exists(Path.Combine(catalog, "CatalogProductForm.razor")));
     }

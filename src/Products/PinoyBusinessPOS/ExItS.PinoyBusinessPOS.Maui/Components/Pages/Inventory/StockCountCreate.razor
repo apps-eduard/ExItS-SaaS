@@ -1,4 +1,5 @@
 @page "/inventory/counts/new"
+@using ExItS.DesignSystem.Components.Internal
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IPosInventoryClient Inventory
@@ -14,36 +15,115 @@
 }
 else
 {
-<Page>
-    <PageHeader Title="@L["Inventory_CountsCreateTitle"]" Subtitle="@L["Inventory_CountsSubtitle"]" />
+    var blocked = _isOffline || _busy;
+    var hasDraft = HasUnsavedDraft;
+<div class="pos-stock-count-create">
+    <Page>
+        <PageHeader Title="@L["Inventory_CountsCreateTitle"]" Subtitle="@L["Inventory_CountsSubtitle"]">
+            <Actions>
+                <Button Variant="ButtonVariant.Secondary" Disabled="@_busy" OnClick="GoBack">
+                    <span class="pos-btn-icon" aria-hidden="true">@IconGlyphs.Get("back")</span>
+                    @L["Inventory_CountsTitle"]
+                </Button>
+                <Button Variant="ButtonVariant.Ghost" Disabled="@(_busy || !hasDraft)" OnClick="RequestReset">
+                    <span class="pos-btn-icon" aria-hidden="true">@IconGlyphs.Get("refresh")</span>
+                    @L["Inventory_CountsReset"]
+                </Button>
+            </Actions>
+        </PageHeader>
 
-    @if (_isOffline)
-    {
-        <Alert Tone="AlertTone.Warning" Title="@L["Inventory_OfflineTitle"]" Message="@L["Inventory_OfflineMessage"]" />
-    }
+        @if (_isOffline)
+        {
+            <Alert Tone="AlertTone.Warning" Title="@L["Inventory_OfflineTitle"]" Message="@L["Inventory_OfflineMessage"]" />
+        }
 
-    @if (!string.IsNullOrEmpty(_errorMessage))
-    {
-        <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Inventory_CountsCreateTitle"])" Message="@_errorMessage" />
-    }
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Inventory_CountsCreateTitle"])" Message="@_errorMessage" />
+        }
 
-    <Section Title="@L["Inventory_CountsCreateTitle"]">
-        <Stack Gap="3">
-            <Select Label="@L["Catalog_Col_Name"]"
-                    Value="@_selectedProductId"
-                    ValueChanged="OnProductChanged"
-                    Options="@ProductOptions" />
-            <Button Variant="ButtonVariant.Secondary" Disabled="@(_isOffline || string.IsNullOrEmpty(_selectedProductId))" OnClick="AddLine">@L["Inventory_CountsAddLine"]</Button>
-            @foreach (var line in _lines)
+        <Section Title="@L["Inventory_CountsProductSection"]">
+            <Stack Gap="3">
+                <Select Label="@L["Inventory_CountsProduct"]"
+                        Value="@_selectedProductId"
+                        ValueChanged="OnProductChanged"
+                        Options="@ProductOptions"
+                        Required="true"
+                        Disabled="@(blocked || _products.Count == 0)" />
+                <button type="button"
+                        class="pos-action-tile pos-action-tile--primary pos-stock-count-create__add"
+                        disabled="@(blocked || string.IsNullOrEmpty(_selectedProductId))"
+                        @onclick="AddLine">
+                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("products")</span>
+                    <span class="pos-action-tile__label">@L["Inventory_CountsAddLine"]</span>
+                </button>
+            </Stack>
+        </Section>
+
+        <Section Title="@L["Inventory_CountsLines"]">
+            @if (_lines.Count == 0)
             {
-                <div>@line.Name</div>
+                <InlineMessage Tone="InlineMessageTone.Info">@L["Inventory_CountsLinesEmpty"]</InlineMessage>
             }
-            <TextInput Label="@L["Inventory_CountsNotes"]" Value="@_notes" ValueChanged="v => _notes = v" />
-            <Button Variant="ButtonVariant.Primary" Disabled="@(_isOffline || _busy || _lines.Count == 0)" IsLoading="@_busy" OnClick="CreateAsync">@L["Inventory_CountsCreate"]</Button>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Inventory_CountsTitle"]</Button>
-        </Stack>
-    </Section>
-</Page>
+            else
+            {
+                <div class="pos-stock-count-create__summary pos-muted">
+                    @L["Inventory_CountsLinesCount", _lines.Count]
+                </div>
+                <div class="pos-stock-count-create__lines" role="list">
+                    @foreach (var line in _lines)
+                    {
+                        <div class="pos-stock-count-create__line" role="listitem">
+                            <div class="pos-stock-count-create__line-main">
+                                <span class="pos-stock-count-create__line-name">@line.Name</span>
+                            </div>
+                            <Button Variant="ButtonVariant.Ghost"
+                                    Disabled="@blocked"
+                                    OnClick="() => RemoveLine(line.ProductId)">
+                                <span class="pos-btn-icon" aria-hidden="true">@IconGlyphs.Get("close")</span>
+                                @L["Inventory_CountsRemoveLine"]
+                            </Button>
+                        </div>
+                    }
+                </div>
+            }
+        </Section>
+
+        <Section Title="@L["Inventory_CountsNotes"]">
+            <TextInput Value="@_notes"
+                       ValueChanged="v => _notes = v"
+                       Disabled="@blocked"
+                       Hint="@L["Inventory_CountsNotesHint"]" />
+        </Section>
+
+        <FormActions class="pos-stock-count-create__footer">
+            <Button Variant="ButtonVariant.Secondary" Disabled="@_busy" OnClick="GoBack">
+                <span class="pos-btn-icon" aria-hidden="true">@IconGlyphs.Get("back")</span>
+                @L["Inventory_CountsTitle"]
+            </Button>
+            <Button Variant="ButtonVariant.Ghost" Disabled="@(_busy || !hasDraft)" OnClick="RequestReset">
+                <span class="pos-btn-icon" aria-hidden="true">@IconGlyphs.Get("refresh")</span>
+                @L["Inventory_CountsReset"]
+            </Button>
+            <Button Variant="ButtonVariant.Primary"
+                    IsLoading="@_busy"
+                    Disabled="@(blocked || _lines.Count == 0)"
+                    OnClick="CreateAsync">
+                <span class="pos-btn-icon" aria-hidden="true">@IconGlyphs.Get("check")</span>
+                @L["Inventory_CountsCreate"]
+            </Button>
+        </FormActions>
+
+        <ConfirmDialog Visible="@_confirmReset"
+                       VisibleChanged="v => _confirmReset = v"
+                       Title="@L["Inventory_CountsResetTitle"]"
+                       Message="@L["Inventory_CountsResetMessage"]"
+                       ConfirmLabel="@L["Inventory_CountsReset"]"
+                       Danger="true"
+                       OnConfirm="ConfirmReset"
+                       OnCancel="() => _confirmReset = false" />
+    </Page>
+</div>
 }
 
 @code {
@@ -52,6 +132,7 @@ else
     private bool _ready;
     private bool _busy;
     private bool _isOffline;
+    private bool _confirmReset;
     private string _selectedProductId = string.Empty;
     private string _notes = string.Empty;
     private List<LineEntry> _lines = [];
@@ -60,7 +141,16 @@ else
     private string? _errorMessage;
 
     private IReadOnlyList<SelectOption> ProductOptions =>
-        _products.Select(p => new SelectOption(p.ProductId.ToString("D"), p.Name)).ToList();
+        _products
+            .Where(p => _lines.All(l => l.ProductId != p.ProductId))
+            .OrderBy(p => p.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(p => new SelectOption(p.ProductId.ToString("D"), p.Name))
+            .ToList();
+
+    private bool HasUnsavedDraft =>
+        _lines.Count > 0
+        || !string.IsNullOrWhiteSpace(_notes)
+        || !string.IsNullOrWhiteSpace(_selectedProductId);
 
     protected override async Task OnParametersSetAsync()
     {
@@ -80,11 +170,19 @@ else
         var products = await Catalog.ListProductsAsync(pageSize: 200);
         if (products.IsSuccess && products.Data is not null)
         {
-            _products = products.Data.Items.Where(p => string.Equals(p.Status, "Active", StringComparison.OrdinalIgnoreCase)).ToList();
+            _products = products.Data.Items
+                .Where(p => string.Equals(p.Status, "Active", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+        else
+        {
+            var described = ApiLocalizer.Describe(products.Status, products.Error);
+            _errorTitle = described.Title;
+            _errorMessage = products.Error?.Detail ?? described.Message;
         }
     }
 
-    private void OnProductChanged(string value) => _selectedProductId = value;
+    private void OnProductChanged(string? value) => _selectedProductId = value ?? string.Empty;
 
     private void AddLine()
     {
@@ -105,11 +203,42 @@ else
         }
 
         _lines.Add(new LineEntry(productId, product.Name));
+        _selectedProductId = string.Empty;
+    }
+
+    private void RemoveLine(Guid productId) =>
+        _lines.RemoveAll(l => l.ProductId == productId);
+
+    private void RequestReset()
+    {
+        if (!HasUnsavedDraft)
+        {
+            return;
+        }
+
+        _confirmReset = true;
+    }
+
+    private void ConfirmReset()
+    {
+        _confirmReset = false;
+        _selectedProductId = string.Empty;
+        _notes = string.Empty;
+        _lines = [];
+        _errorTitle = null;
+        _errorMessage = null;
     }
 
     private async Task CreateAsync()
     {
+        if (_busy || _isOffline || _lines.Count == 0)
+        {
+            return;
+        }
+
         _busy = true;
+        _errorTitle = null;
+        _errorMessage = null;
         var request = new CreateStockCountRequest(
             _lines.Select(l => new CreateStockCountLineRequest(l.ProductId)).ToList(),
             Notes: string.IsNullOrWhiteSpace(_notes) ? null : _notes.Trim());

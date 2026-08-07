@@ -14,6 +14,11 @@ public sealed class InventoryPageGuardTests
         Assert.Contains("!_allowed", list, StringComparison.Ordinal);
         Assert.Contains("Access_RestrictedTitle", list, StringComparison.Ordinal);
         Assert.Contains("Access_RestrictedMessage", list, StringComparison.Ordinal);
+        Assert.Contains("pos-action-grid--three", list, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"warning\")", list, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"check\")", list, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"refresh\")", list, StringComparison.Ordinal);
+        Assert.Contains("pos-inventory__row", list, StringComparison.Ordinal);
 
         var detail = File.ReadAllText(Path.Combine(pages, "InventoryDetail.razor"));
         Assert.Contains("@page \"/inventory/{ProductId:guid}\"", detail, StringComparison.Ordinal);
@@ -25,12 +30,36 @@ public sealed class InventoryPageGuardTests
 
         var low = File.ReadAllText(Path.Combine(pages, "InventoryLowStock.razor"));
         Assert.Contains("@page \"/inventory/low-stock\"", low, StringComparison.Ordinal);
+        Assert.Contains("pos-action-grid--two", low, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"products\")", low, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"refresh\")", low, StringComparison.Ordinal);
+        Assert.Contains("pos-inventory__row--low", low, StringComparison.Ordinal);
+        Assert.Contains("Inventory_LowStockEmptyTitle", low, StringComparison.Ordinal);
+        Assert.DoesNotContain("ResponsiveDataList", low, StringComparison.Ordinal);
+
+        var create = File.ReadAllText(Path.Combine(pages, "StockCountCreate.razor"));
+        Assert.Contains("@page \"/inventory/counts/new\"", create, StringComparison.Ordinal);
+        Assert.Contains("CreateStockCountAsync", create, StringComparison.Ordinal);
+        Assert.Contains("Inventory_CountsReset", create, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"products\")", create, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"check\")", create, StringComparison.Ordinal);
+        Assert.Contains("pos-stock-count-create__line", create, StringComparison.Ordinal);
+        Assert.Contains("ConfirmDialog", create, StringComparison.Ordinal);
+
+        var counts = File.ReadAllText(Path.Combine(pages, "StockCountsList.razor"));
+        Assert.Contains("@page \"/inventory/counts\"", counts, StringComparison.Ordinal);
+        Assert.Contains("pos-stock-counts__row", counts, StringComparison.Ordinal);
+        Assert.Contains("pos-action-grid--three", counts, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"plus\")", counts, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"products\")", counts, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"refresh\")", counts, StringComparison.Ordinal);
+        Assert.DoesNotContain("ResponsiveDataList", counts, StringComparison.Ordinal);
     }
 
     [Fact]
     public void Inventory_pages_guard_entry_and_gate_view_capability()
     {
-        foreach (var name in new[] { "InventoryList.razor", "InventoryDetail.razor", "InventoryLowStock.razor" })
+        foreach (var name in new[] { "InventoryList.razor", "InventoryDetail.razor", "InventoryLowStock.razor", "StockCountsList.razor" })
         {
             var text = File.ReadAllText(Path.Combine(InventoryPagesDirectory(), name));
             Assert.Contains("Gate.CanEnterProtectedShell", text, StringComparison.Ordinal);

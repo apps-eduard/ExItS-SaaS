@@ -97,13 +97,26 @@ public sealed class MauiFoundationGuardTests
         var list = File.ReadAllText(Path.Combine(customers, "CustomersList.razor"));
         Assert.Contains("@page \"/customers\"", list, StringComparison.Ordinal);
         Assert.Contains("Customers_CreditDeferred", list, StringComparison.Ordinal);
-        Assert.Contains("ResponsiveDataList", list, StringComparison.Ordinal);
+        Assert.Contains("pos-customers__row", list, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"plus\")", list, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"search\")", list, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"refresh\")", list, StringComparison.Ordinal);
+        Assert.Contains("pos-action-grid--three", list, StringComparison.Ordinal);
 
         var create = File.ReadAllText(Path.Combine(customers, "CustomerCreate.razor"));
         Assert.Contains("@page \"/customers/new\"", create, StringComparison.Ordinal);
+        Assert.Contains("pos-customer-create", create, StringComparison.Ordinal);
+        Assert.Contains("pos-action-grid--two", create, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"qr\")", create, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"search\")", create, StringComparison.Ordinal);
+        Assert.Contains("FormActionsClass", create, StringComparison.Ordinal);
+        Assert.DoesNotContain("<Actions>", create, StringComparison.Ordinal);
 
         var detail = File.ReadAllText(Path.Combine(customers, "CustomerDetail.razor"));
         Assert.Contains("@page \"/customers/{CustomerId:guid}\"", detail, StringComparison.Ordinal);
+        Assert.Contains("pos-customer-detail", detail, StringComparison.Ordinal);
+        Assert.Contains("SplitExItsIdFromNotes", detail, StringComparison.Ordinal);
+        Assert.Contains("pos-customer-detail__actions", detail, StringComparison.Ordinal);
         Assert.Contains("Deactivate", detail, StringComparison.Ordinal);
         Assert.Contains("Reactivate", detail, StringComparison.Ordinal);
         Assert.Contains("GetUtangSummaryAsync", detail, StringComparison.Ordinal);
@@ -139,6 +152,11 @@ public sealed class MauiFoundationGuardTests
 
         var overdue = File.ReadAllText(Path.Combine(customers, "OverdueList.razor"));
         Assert.Contains("@page \"/overdue\"", overdue, StringComparison.Ordinal);
+        Assert.Contains("pos-overdue__row", overdue, StringComparison.Ordinal);
+        Assert.Contains("pos-action-grid--two", overdue, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"refresh\")", overdue, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"customers\")", overdue, StringComparison.Ordinal);
+        Assert.Contains("Overdue_Refresh", overdue, StringComparison.Ordinal);
 
         var customerOverdue = File.ReadAllText(Path.Combine(customers, "CustomerOverdue.razor"));
         Assert.Contains("@page \"/customers/{CustomerId:guid}/overdue\"", customerOverdue, StringComparison.Ordinal);
@@ -160,6 +178,8 @@ public sealed class MauiFoundationGuardTests
         Assert.Contains("DueDate_Badge_Overdue", fil, StringComparison.Ordinal);
         Assert.Contains("Overdue_Title", en, StringComparison.Ordinal);
         Assert.Contains("Overdue_Title", fil, StringComparison.Ordinal);
+        Assert.Contains("Overdue_Refresh", en, StringComparison.Ordinal);
+        Assert.Contains("Overdue_Refresh", fil, StringComparison.Ordinal);
         Assert.Contains("Utang_DeferredMessage", en, StringComparison.Ordinal);
         Assert.Contains("Utang_DeferredMessage", fil, StringComparison.Ordinal);
         Assert.Contains("Statement_Title", en, StringComparison.Ordinal);

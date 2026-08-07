@@ -110,6 +110,25 @@ public sealed class ReusableMvpComponentTests
     }
 
     [Fact]
+    public void Date_input_uses_custom_centered_picker_actions()
+    {
+        var root = FindRepoRoot();
+        var date = File.ReadAllText(Path.Combine(root, "src", "Shared", "ExItS.DesignSystem",
+            "Components", "Forms", "DateInput.razor"));
+        Assert.Contains("exds-date-picker__actions", date, StringComparison.Ordinal);
+        Assert.Contains("Action_Set", date, StringComparison.Ordinal);
+        Assert.Contains("Action_Cancel", date, StringComparison.Ordinal);
+        Assert.Contains("Action_Clear", date, StringComparison.Ordinal);
+        Assert.DoesNotContain("type=\"date\"", date, StringComparison.Ordinal);
+
+        var css = File.ReadAllText(Path.Combine(root, "src", "Shared", "ExItS.DesignSystem",
+            "wwwroot", "exits-design-system.css"));
+        Assert.Contains(".exds-date-picker__actions", css, StringComparison.Ordinal);
+        Assert.Contains("justify-content: center", css, StringComparison.Ordinal);
+        Assert.Contains(".exds-date-trigger__value", css, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Responsive_data_css_switches_table_and_mobile_cards()
     {
         var css = File.ReadAllText(Path.Combine(FindRepoRoot(), "src", "Shared", "ExItS.DesignSystem",

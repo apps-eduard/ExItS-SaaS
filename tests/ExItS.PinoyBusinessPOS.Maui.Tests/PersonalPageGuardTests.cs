@@ -97,6 +97,14 @@ public sealed class PersonalPageGuardTests
         var resolve = File.ReadAllText(Path.Combine(personal, "PublicUserResolve.razor"));
         Assert.Contains("@page \"/personal/resolve-user\"", resolve, StringComparison.Ordinal);
         Assert.Contains("ResolvePublicUserIdAsync", resolve, StringComparison.Ordinal);
+        Assert.Contains("pos-resolve-actions", resolve, StringComparison.Ordinal);
+        Assert.Contains("pos-action-grid--three", resolve, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"qr\")", resolve, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"image\")", resolve, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"search\")", resolve, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"check\")", resolve, StringComparison.Ordinal);
+        Assert.Contains("EnsurePlatformSessionAsync", resolve, StringComparison.Ordinal);
+        Assert.Contains("Personal_ResolveSessionRequired", resolve, StringComparison.Ordinal);
         Assert.Contains("Personal_ResolveConfirm", resolve, StringComparison.Ordinal);
         Assert.Contains("IsSelf", resolve, StringComparison.Ordinal);
         Assert.Contains("IQrCodeScanService", resolve, StringComparison.Ordinal);

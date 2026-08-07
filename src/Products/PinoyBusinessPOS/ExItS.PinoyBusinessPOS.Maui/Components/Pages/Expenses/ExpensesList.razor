@@ -1,4 +1,5 @@
 @page "/expenses"
+@using ExItS.DesignSystem.Components.Internal
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IPosExpenseClient Expenses
@@ -14,70 +15,156 @@
 else
 {
     var canManage = Capabilities.IsAllowed(UtangCapability.ManageExpenses);
-<Page>
-    <PageHeader Title="@L["Expenses_Title"]" Subtitle="@L["Expenses_Subtitle"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Primary" Disabled="@(!canManage || _isOffline)" OnClick="GoNew">@L["Expenses_New"]</Button>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoCategories">@L["Expenses_OpenCategories"]</Button>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoSummary">@L["Expenses_OpenSummary"]</Button>
-        </Actions>
-    </PageHeader>
+<div class="pos-expenses">
+    <Page>
+        <PageHeader Title="@L["Expenses_Title"]" Subtitle="@L["Expenses_Subtitle"]" />
 
-    @if (_isOffline)
-    {
-        <Alert Tone="AlertTone.Warning" Title="@L["Expenses_OfflineTitle"]" Message="@L["Expenses_OfflineMessage"]" />
-    }
+        @if (_isOffline)
+        {
+            <Alert Tone="AlertTone.Warning" Title="@L["Expenses_OfflineTitle"]" Message="@L["Expenses_OfflineMessage"]" />
+        }
 
-    <SearchToolbar SearchText="@_expenseNumber" SearchTextChanged="OnExpenseNumberChanged" Placeholder="@L["Expenses_SearchPlaceholder"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" IsLoading="@_loading" OnClick="ReloadAsync">@L["Expenses_Refresh"]</Button>
-        </Actions>
-    </SearchToolbar>
+        <div class="pos-action-grid pos-action-grid--three pos-expenses__actions" role="group" aria-label="@L["Expenses_Title"]">
+            <button type="button"
+                    class="pos-action-tile pos-action-tile--primary"
+                    disabled="@(!canManage || _isOffline)"
+                    @onclick="GoNew">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("plus")</span>
+                <span class="pos-action-tile__label">@L["Expenses_New"]</span>
+            </button>
+            <button type="button"
+                    class="pos-action-tile"
+                    @onclick="GoCategories">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("menu")</span>
+                <span class="pos-action-tile__label">@L["Expenses_OpenCategories"]</span>
+            </button>
+            <button type="button"
+                    class="pos-action-tile"
+                    @onclick="GoSummary">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("sales")</span>
+                <span class="pos-action-tile__label">@L["Expenses_OpenSummary"]</span>
+            </button>
+        </div>
 
-    <Section Title="@L["Expenses_FiltersTitle"]">
-        <Stack Gap="3">
-            <Select Label="@L["Expenses_Filter_Status"]"
-                    Value="@_statusFilter"
-                    ValueChanged="OnStatusFilterChanged"
-                    Options="@ExpensesUiOptions.StatusFilters(L)" />
-            <Select Label="@L["Expenses_Filter_Payment"]"
-                    Value="@_paymentFilter"
-                    ValueChanged="OnPaymentFilterChanged"
-                    Options="@ExpensesUiOptions.PaymentMethodFilters(L)" />
-            <DateInput Label="@L["Expenses_Filter_FromDate"]"
-                       Value="@_fromDate"
-                       ValueChanged="OnFromDateChanged" />
-            <DateInput Label="@L["Expenses_Filter_ToDate"]"
-                       Value="@_toDate"
-                       ValueChanged="OnToDateChanged" />
-        </Stack>
-    </Section>
+        <div class="pos-expenses__toolbar">
+            <div class="pos-expenses__search">
+                <span class="pos-expenses__search-icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
+                <input class="pos-expenses__search-input"
+                       type="search"
+                       value="@_expenseNumber"
+                       placeholder="@L["Expenses_SearchPlaceholder"]"
+                       disabled="@(_loading || _isOffline)"
+                       @oninput="OnSearchInputAsync" />
+            </div>
+            <button type="button"
+                    class="pos-expenses__toolbar-btn"
+                    disabled="@(_loading || _isOffline)"
+                    title="@L["Expenses_Refresh"]"
+                    @onclick="ReloadAsync">
+                <span class="pos-expenses__toolbar-icon" aria-hidden="true">@IconGlyphs.Get("refresh")</span>
+                <span class="pos-expenses__toolbar-label">@L["Expenses_Refresh"]</span>
+            </button>
+            <button type="button"
+                    class="pos-expenses__toolbar-btn @(_filtersOpen ? "pos-expenses__toolbar-btn--open" : null)"
+                    aria-expanded="@_filtersOpen"
+                    aria-controls="expenses-filters"
+                    title="@L["Expenses_FiltersTitle"]"
+                    @onclick="ToggleFilters">
+                <span class="pos-expenses__toolbar-icon" aria-hidden="true">@IconGlyphs.Get("menu")</span>
+                <span class="pos-expenses__toolbar-label">@L["Expenses_FiltersTitle"]</span>
+            </button>
+        </div>
 
-    <ResponsiveDataList TItem="PosExpenseDto"
-                        Items="@_items"
-                        Columns="@Columns"
-                        CellTemplate="@CellTemplate"
-                        IsLoading="@_loading"
-                        LoadingLabel="@L["Expenses_Loading"]"
-                        EmptyTitle="@L["Expenses_EmptyTitle"]"
-                        EmptyMessage="@L["Expenses_EmptyMessage"]"
-                        ErrorTitle="@_errorTitle"
-                        ErrorMessage="@_errorMessage"
-                        RetryLabel="@L["Api_Retry"]"
-                        OnRetry="ReloadAsync"
-                        AriaLabel="@L["Expenses_Title"]" />
+        @if (_filtersOpen)
+        {
+            <Section Title="@L["Expenses_FiltersTitle"]" id="expenses-filters">
+                <Stack Gap="3">
+                    <Select Label="@L["Expenses_Filter_Status"]"
+                            Value="@_statusFilter"
+                            ValueChanged="OnStatusFilterChanged"
+                            Options="@ExpensesUiOptions.StatusFilters(L)"
+                            Disabled="@(_loading || _isOffline)" />
+                    <Select Label="@L["Expenses_Filter_Payment"]"
+                            Value="@_paymentFilter"
+                            ValueChanged="OnPaymentFilterChanged"
+                            Options="@ExpensesUiOptions.PaymentMethodFilters(L)"
+                            Disabled="@(_loading || _isOffline)" />
+                    <DateInput Label="@L["Expenses_Filter_FromDate"]"
+                               Value="@_fromDate"
+                               ValueChanged="OnFromDateChanged"
+                               Disabled="@(_loading || _isOffline)" />
+                    <DateInput Label="@L["Expenses_Filter_ToDate"]"
+                               Value="@_toDate"
+                               ValueChanged="OnToDateChanged"
+                               Disabled="@(_loading || _isOffline)" />
+                </Stack>
+            </Section>
+        }
 
-    @if (!_loading && _totalCount > 0)
-    {
-        <Pagination Page="@_page" PageSize="@_pageSize" TotalCount="@_totalCount" PageChanged="OnPageChanged" />
-    }
-</Page>
+        <Section Title="@L["Expenses_ListSection"]">
+            @if (_loading)
+            {
+                <Stack Align="StackAlign.Center" Gap="2">
+                    <Spinner />
+                    <span class="pos-muted">@L["Expenses_Loading"]</span>
+                </Stack>
+            }
+            else if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <ErrorState Title="@(_errorTitle ?? L["Expenses_Title"])"
+                            Message="@_errorMessage"
+                            RetryLabel="@L["Api_Retry"]"
+                            OnRetry="ReloadAsync" />
+            }
+            else if (_items.Count == 0)
+            {
+                <EmptyState IconName="inbox"
+                            Title="@L["Expenses_EmptyTitle"]"
+                            Message="@L["Expenses_EmptyMessage"]" />
+            }
+            else
+            {
+                <div class="pos-expenses__list" role="list" aria-label="@L["Expenses_Title"]">
+                    @foreach (var item in _items)
+                    {
+                        <a class="pos-expenses__row @(item.Status == PosExpenseOptions.VoidedStatus ? "pos-expenses__row--voided" : null)"
+                           role="listitem"
+                           href="@($"/expenses/{item.ExpenseId:D}")">
+                            <div class="pos-expenses__row-main">
+                                <span class="pos-expenses__row-name">@item.ExpenseNumber</span>
+                                <span class="pos-expenses__row-meta">
+                                    @item.ExpenseDate.ToString("d")
+                                    · @(string.IsNullOrWhiteSpace(item.CategoryName) ? "—" : item.CategoryName)
+                                    · @ExpensesUiOptions.PaymentMethodLabel(L, item.PaymentMethod)
+                                </span>
+                                <div class="pos-expenses__row-badges">
+                                    <Badge Tone="@(item.Status == PosExpenseOptions.RecordedStatus ? BadgeTone.Success : BadgeTone.Neutral)">
+                                        @ExpensesUiOptions.StatusLabel(L, item.Status)
+                                    </Badge>
+                                </div>
+                            </div>
+                            <div class="pos-expenses__row-side">
+                                <MoneyDisplay Amount="@item.Amount" CurrencyCode="PHP" />
+                            </div>
+                        </a>
+                    }
+                </div>
+            }
+        </Section>
+
+        @if (!_loading && _totalCount > 0)
+        {
+            <Pagination Page="@_page" PageSize="@_pageSize" TotalCount="@_totalCount" PageChanged="OnPageChanged" />
+        }
+    </Page>
+</div>
 }
 
 @code {
     private bool _ready;
     private bool _loading;
     private bool _isOffline;
+    private bool _filtersOpen;
     private string? _expenseNumber;
     private string? _statusFilter;
     private string? _paymentFilter;
@@ -89,56 +176,7 @@ else
     private IReadOnlyList<PosExpenseDto> _items = Array.Empty<PosExpenseDto>();
     private string? _errorTitle;
     private string? _errorMessage;
-
-    private IReadOnlyList<DataColumnDefinition> Columns =>
-    [
-        new("expenseNumber", L["Expenses_Col_ExpenseNumber"], Primary: true, Width: "22%"),
-        new("date", L["Expenses_Col_Date"], Width: "16%"),
-        new("category", L["Expenses_Col_Category"], Width: "18%"),
-        new("payment", L["Expenses_Col_Payment"], Width: "14%"),
-        new("amount", L["Expenses_Col_Amount"], Width: "14%"),
-        new("status", L["Expenses_Col_Status"], Width: "16%"),
-    ];
-
-    private RenderFragment<(PosExpenseDto Item, DataColumnDefinition Column)> CellTemplate => context => builder =>
-    {
-        switch (context.Column.Key)
-        {
-            case "expenseNumber":
-                builder.OpenElement(0, "a");
-                builder.AddAttribute(1, "class", "pos-link");
-                builder.AddAttribute(2, "href", $"/expenses/{context.Item.ExpenseId:D}");
-                builder.AddContent(3, context.Item.ExpenseNumber);
-                builder.CloseElement();
-                break;
-            case "date":
-                builder.AddContent(0, context.Item.ExpenseDate.ToString("d"));
-                break;
-            case "category":
-                builder.AddContent(0, string.IsNullOrWhiteSpace(context.Item.CategoryName)
-                    ? context.Item.CategoryId.ToString("D")
-                    : context.Item.CategoryName);
-                break;
-            case "payment":
-                builder.AddContent(0, ExpensesUiOptions.PaymentMethodLabel(L, context.Item.PaymentMethod));
-                break;
-            case "amount":
-                builder.OpenComponent<MoneyDisplay>(0);
-                builder.AddAttribute(1, "Amount", context.Item.Amount);
-                builder.AddAttribute(2, "CurrencyCode", "PHP");
-                builder.CloseComponent();
-                break;
-            default:
-                builder.OpenComponent<Badge>(0);
-                builder.AddAttribute(1, "Tone", context.Item.Status == PosExpenseOptions.RecordedStatus
-                    ? BadgeTone.Success
-                    : BadgeTone.Neutral);
-                builder.AddAttribute(2, "ChildContent", (RenderFragment)(b =>
-                    b.AddContent(0, ExpensesUiOptions.StatusLabel(L, context.Item.Status))));
-                builder.CloseComponent();
-                break;
-        }
-    };
+    private CancellationTokenSource? _searchCts;
 
     protected override async Task OnInitializedAsync()
     {
@@ -158,11 +196,25 @@ else
         await ReloadAsync();
     }
 
-    private async Task OnExpenseNumberChanged(string? value)
+    private void ToggleFilters() => _filtersOpen = !_filtersOpen;
+
+    private async Task OnSearchInputAsync(ChangeEventArgs e)
     {
-        _expenseNumber = value;
+        _expenseNumber = e.Value?.ToString();
         _page = 1;
-        await ReloadAsync();
+        _searchCts?.Cancel();
+        _searchCts?.Dispose();
+        _searchCts = new CancellationTokenSource();
+        var token = _searchCts.Token;
+        try
+        {
+            await Task.Delay(250, token);
+            await ReloadAsync();
+        }
+        catch (TaskCanceledException)
+        {
+            // Newer keystroke superseded this search.
+        }
     }
 
     private async Task OnStatusFilterChanged(string? value)

@@ -333,6 +333,7 @@
   <data name="Customers_Loading" xml:space="preserve"><value>Loading customers…</value></data>
   <data name="Customers_EmptyTitle" xml:space="preserve"><value>No customers yet</value></data>
   <data name="Customers_EmptyMessage" xml:space="preserve"><value>Create a customer profile for this store. Credit and repayments come later.</value></data>
+  <data name="Customers_ListSection" xml:space="preserve"><value>Customers</value></data>
   <data name="Customers_Col_Name" xml:space="preserve"><value>Name</value></data>
   <data name="Customers_Col_Mobile" xml:space="preserve"><value>Mobile</value></data>
   <data name="Customers_Col_Status" xml:space="preserve"><value>Status</value></data>
@@ -363,7 +364,7 @@
   <data name="Customers_RepaymentDeferredTitle" xml:space="preserve"><value>Later Utang features</value></data>
   <data name="Customers_RepaymentDeferredMessage" xml:space="preserve"><value>Interest and credit limits are not available yet. Payments, ledger, statements, and receipts are available on the customer detail page.</value></data>
   <data name="Utang_DeferredTitle" xml:space="preserve"><value>Later Utang features</value></data>
-  <data name="Utang_DeferredMessage" xml:space="preserve"><value>Interest and credit limits are not available in this work package. Statements and repayment receipts are available.</value></data>
+  <data name="Utang_DeferredMessage" xml:space="preserve"><value>Interest and credit limits are not available yet. Payments, ledger, statements, and receipts are available here.</value></data>
   <data name="Access_RestrictedTitle" xml:space="preserve"><value>Access restricted</value></data>
   <data name="Access_RestrictedMessage" xml:space="preserve"><value>Your current subscription or feature grants do not allow this action.</value></data>
   <data name="Access_Restricted" xml:space="preserve"><value>Restricted</value></data>
@@ -524,6 +525,7 @@
   <data name="DueDate_Badge_NoDueDate" xml:space="preserve"><value>No due date</value></data>
   <data name="Overdue_Title" xml:space="preserve"><value>Overdue monitoring</value></data>
   <data name="Overdue_Subtitle" xml:space="preserve"><value>Organization overdue customers and credits</value></data>
+  <data name="Overdue_Refresh" xml:space="preserve"><value>Refresh</value></data>
   <data name="Overdue_PolicyTitle" xml:space="preserve"><value>FIFO aging</value></data>
   <data name="Overdue_PolicyMessage" xml:space="preserve"><value>Overdue amounts are derived by applying active repayments to active credits oldest-first. Allocations are not stored.</value></data>
   <data name="Overdue_CustomersTitle" xml:space="preserve"><value>Customers with overdue</value></data>
@@ -558,7 +560,10 @@
   <data name="Customers_NotFoundTitle" xml:space="preserve"><value>Customer not found</value></data>
   <data name="Customers_NotFoundMessage" xml:space="preserve"><value>This customer is not available for the selected organization.</value></data>
   <data name="Customers_BackToList" xml:space="preserve"><value>Back to customers</value></data>
+  <data name="Customers_Back" xml:space="preserve"><value>Back</value></data>
   <data name="Customers_BackToDetail" xml:space="preserve"><value>Back to customer</value></data>
+  <data name="Customers_NoExItsId" xml:space="preserve"><value>Not linked</value></data>
+  <data name="Customers_AccountSection" xml:space="preserve"><value>Account</value></data>
   <data name="Customers_Deactivate" xml:space="preserve"><value>Deactivate</value></data>
   <data name="Customers_Reactivate" xml:space="preserve"><value>Reactivate</value></data>
   <data name="Customers_DeactivateTitle" xml:space="preserve"><value>Deactivate customer?</value></data>
@@ -1047,8 +1052,8 @@
   <data name="Sales_Checkout_ConfirmTitle" xml:space="preserve"><value>Record this sale?</value></data>
   <data name="Sales_Checkout_ConfirmMessage" xml:space="preserve"><value>{0} item(s) for a preview total of PHP {1}. The server confirms the final total.</value></data>
   <data name="Sales_Checkout_ConfirmUtangMessage" xml:space="preserve"><value>{0} item(s) for PHP {1} will be added as Utang for {2}. The linked credit will match the sale total. No cash is collected.</value></data>
-  <data name="Sales_Checkout_UtangSection" xml:space="preserve"><value>Utang checkout</value></data>
-  <data name="Sales_Checkout_UtangWarning" xml:space="preserve"><value>Utang adds the sale total to the customer's outstanding balance. No cash or GCash is collected at checkout.</value></data>
+  <data name="Sales_Checkout_UtangSection" xml:space="preserve"><value>Utang Selected</value></data>
+  <data name="Sales_Checkout_UtangWarning" xml:space="preserve"><value>A customer is required. Search for an existing customer, or add a new one. The sale total is added to their outstanding balance — no cash or GCash is collected at checkout.</value></data>
   <data name="Sales_Checkout_SelectCustomer" xml:space="preserve"><value>Select customer</value></data>
   <data name="Sales_Checkout_CustomerSearch" xml:space="preserve"><value>Search customer</value></data>
   <data name="Sales_Checkout_Outstanding" xml:space="preserve"><value>Current outstanding</value></data>
@@ -1070,6 +1075,15 @@
   <data name="Sales_Checkout_RequiredCustomer" xml:space="preserve"><value>Customer *</value></data>
   <data name="Sales_Checkout_AddCustomer" xml:space="preserve"><value>New customer</value></data>
   <data name="Sales_Checkout_AddCustomerWithExItsId" xml:space="preserve"><value>Add with ExItS ID</value></data>
+  <data name="Sales_Checkout_AddCustomerShort" xml:space="preserve"><value>New</value></data>
+  <data name="Sales_Checkout_ExItsIdShort" xml:space="preserve"><value>ExItS ID</value></data>
+  <data name="Sales_Checkout_ChooseCustomer" xml:space="preserve"><value>Choose customer</value></data>
+  <data name="Sales_Checkout_ChangeCustomer" xml:space="preserve"><value>Change</value></data>
+  <data name="Sales_Checkout_CustomerPickerTitle" xml:space="preserve"><value>Select customer</value></data>
+  <data name="Sales_Checkout_CustomerPickerHint" xml:space="preserve"><value>Search by name, mobile, or ExItS ID. Or add a new customer — your cart stays open.</value></data>
+  <data name="Sales_Checkout_CustomerSearchHint" xml:space="preserve"><value>Name, mobile, or ExItS ID (EX-####-####)</value></data>
+  <data name="Sales_Checkout_CustomerSearchEmpty" xml:space="preserve"><value>No active customer matched. Try another search, or add a new customer.</value></data>
+  <data name="Sales_Checkout_CustomerSearchRequired" xml:space="preserve"><value>Enter a name, mobile, or ExItS ID to search.</value></data>
   <data name="Sales_Checkout_CartFab" xml:space="preserve"><value>Cart ({0})</value></data>
     <data name="Sales_Checkout_SellTitle" xml:space="preserve"><value>Sell</value></data>
   <data name="Sales_Checkout_Reset" xml:space="preserve"><value>Reset</value></data>
@@ -1100,6 +1114,8 @@
   <data name="Inventory_Subtitle" xml:space="preserve"><value>Track on-hand stock for catalog products (online only).</value></data>
   <data name="Inventory_LowStockTitle" xml:space="preserve"><value>Low stock</value></data>
   <data name="Inventory_LowStockSubtitle" xml:space="preserve"><value>Tracked products at or below their reorder level.</value></data>
+  <data name="Inventory_LowStockEmptyTitle" xml:space="preserve"><value>No low-stock items</value></data>
+  <data name="Inventory_LowStockEmptyMessage" xml:space="preserve"><value>Products appear here when on-hand is at or below the reorder level.</value></data>
   <data name="Inventory_DetailTitle" xml:space="preserve"><value>Stock detail</value></data>
   <data name="Inventory_AdjustTitle" xml:space="preserve"><value>Adjust stock</value></data>
   <data name="Inventory_Enable" xml:space="preserve"><value>Enable tracking</value></data>
@@ -1130,6 +1146,10 @@
   <data name="Inventory_ReorderTitle" xml:space="preserve"><value>Reorder settings</value></data>
   <data name="Inventory_ReorderQuantity" xml:space="preserve"><value>Reorder quantity</value></data>
   <data name="Inventory_StockStatus" xml:space="preserve"><value>Stock status</value></data>
+  <data name="Inventory_StockStatus_InStock" xml:space="preserve"><value>In stock</value></data>
+  <data name="Inventory_StockStatus_LowStock" xml:space="preserve"><value>Low stock</value></data>
+  <data name="Inventory_StockStatus_OutOfStock" xml:space="preserve"><value>Out of stock</value></data>
+  <data name="Inventory_ListSection" xml:space="preserve"><value>Products</value></data>
   <data name="Inventory_SaveReorder" xml:space="preserve"><value>Save reorder settings</value></data>
   <data name="Inventory_OpenCounts" xml:space="preserve"><value>Stock counts</value></data>
   <data name="Inventory_CountsTitle" xml:space="preserve"><value>Stock counts</value></data>
@@ -1142,6 +1162,15 @@
   <data name="Inventory_CountsDraft" xml:space="preserve"><value>Draft count</value></data>
   <data name="Inventory_CountsCreateTitle" xml:space="preserve"><value>Create stock count</value></data>
   <data name="Inventory_CountsAddLine" xml:space="preserve"><value>Add product</value></data>
+  <data name="Inventory_CountsProduct" xml:space="preserve"><value>Product</value></data>
+  <data name="Inventory_CountsProductSection" xml:space="preserve"><value>Add products</value></data>
+  <data name="Inventory_CountsLinesEmpty" xml:space="preserve"><value>Add at least one product to create a draft count.</value></data>
+  <data name="Inventory_CountsLinesCount" xml:space="preserve"><value>{0} product(s)</value></data>
+  <data name="Inventory_CountsRemoveLine" xml:space="preserve"><value>Remove</value></data>
+  <data name="Inventory_CountsReset" xml:space="preserve"><value>Reset</value></data>
+  <data name="Inventory_CountsResetTitle" xml:space="preserve"><value>Reset stock count?</value></data>
+  <data name="Inventory_CountsResetMessage" xml:space="preserve"><value>This clears the product list and notes.</value></data>
+  <data name="Inventory_CountsNotesHint" xml:space="preserve"><value>Optional notes for this count session.</value></data>
   <data name="Inventory_CountsNotes" xml:space="preserve"><value>Notes</value></data>
   <data name="Inventory_CountsCreate" xml:space="preserve"><value>Create draft</value></data>
   <data name="Inventory_CountsStart" xml:space="preserve"><value>Start count</value></data>
@@ -1163,6 +1192,7 @@
   <data name="Expenses_Loading" xml:space="preserve"><value>Loading expenses…</value></data>
   <data name="Expenses_SearchPlaceholder" xml:space="preserve"><value>Search by expense number</value></data>
   <data name="Expenses_FiltersTitle" xml:space="preserve"><value>Filters</value></data>
+  <data name="Expenses_ListSection" xml:space="preserve"><value>Expenses</value></data>
   <data name="Expenses_Filter_Status" xml:space="preserve"><value>Status</value></data>
   <data name="Expenses_Filter_Payment" xml:space="preserve"><value>Payment method</value></data>
   <data name="Expenses_Filter_FromDate" xml:space="preserve"><value>From date</value></data>
@@ -1350,6 +1380,7 @@
   <data name="Suppliers_EmptyTitle" xml:space="preserve"><value>No suppliers yet</value></data>
   <data name="Suppliers_EmptyMessage" xml:space="preserve"><value>Add your first supplier to keep vendor contact details on file.</value></data>
   <data name="Suppliers_FiltersTitle" xml:space="preserve"><value>Filters</value></data>
+  <data name="Suppliers_ListSection" xml:space="preserve"><value>Suppliers</value></data>
   <data name="Suppliers_Filter_Status" xml:space="preserve"><value>Status</value></data>
   <data name="Suppliers_Filter_AllStatuses" xml:space="preserve"><value>All statuses</value></data>
   <data name="Suppliers_Status_Active" xml:space="preserve"><value>Active</value></data>
@@ -1455,7 +1486,17 @@
   <data name="Purchasing_OrderDateRequired" xml:space="preserve"><value>Enter the order date.</value></data>
   <data name="Purchasing_LinesRequired" xml:space="preserve"><value>Add at least one product line.</value></data>
   <data name="Purchasing_InvalidOrderedQty" xml:space="preserve"><value>Enter a positive ordered quantity.</value></data>
-  <data name="Purchasing_InvalidUnitCost" xml:space="preserve"><value>Unit purchase cost cannot be negative.</value></data>
+  <data name="Purchasing_InvalidUnitCost" xml:space="preserve"><value>Unit purchase cost is too large.</value></data>
+  <data name="Purchasing_UnitCostRequired" xml:space="preserve"><value>Enter a unit purchase cost greater than zero.</value></data>
+  <data name="Purchasing_UnitCostHint" xml:space="preserve"><value>Required. Must be greater than zero.</value></data>
+  <data name="Purchasing_ProductRequired" xml:space="preserve"><value>Select a product.</value></data>
+  <data name="Purchasing_LinesEmptyHint" xml:space="preserve"><value>Add at least one product line with quantity and unit cost.</value></data>
+  <data name="Purchasing_LinesCount" xml:space="preserve"><value>{0} line(s)</value></data>
+  <data name="Purchasing_LinesTotal" xml:space="preserve"><value>Total</value></data>
+  <data name="Purchasing_Reset" xml:space="preserve"><value>Reset</value></data>
+  <data name="Purchasing_ResetTitle" xml:space="preserve"><value>Reset purchase order?</value></data>
+  <data name="Purchasing_ResetMessage" xml:space="preserve"><value>This clears the supplier, notes, and all draft lines.</value></data>
+  <data name="Purchasing_CreateSupplier" xml:space="preserve"><value>Create supplier</value></data>
   <data name="Purchasing_NoSuppliersTitle" xml:space="preserve"><value>No active suppliers</value></data>
   <data name="Purchasing_NoSuppliersMessage" xml:space="preserve"><value>Create an active supplier before starting a purchase order.</value></data>
   <data name="Purchasing_LineSummary" xml:space="preserve"><value>Ordered {0} · Received {1} · Outstanding {2} · Cost {3}</value></data>
@@ -1569,6 +1610,7 @@
   <data name="Permissions_Assign" xml:space="preserve"><value>Assign role</value></data>
   <data name="Permissions_AssignSubtitle" xml:space="preserve"><value>Assign an organization-scoped POS role</value></data>
   <data name="Permissions_MyAccess" xml:space="preserve"><value>My access</value></data>
+  <data name="Permissions_Refresh" xml:space="preserve"><value>Refresh</value></data>
   <data name="Permissions_MyAccessSubtitle" xml:space="preserve"><value>Effective role and feature codes</value></data>
   <data name="Permissions_AssignmentsSection" xml:space="preserve"><value>Assignments</value></data>
   <data name="Permissions_EffectiveSection" xml:space="preserve"><value>Effective permissions</value></data>
@@ -2042,6 +2084,7 @@
   <data name="Personal_ResolveConfirm" xml:space="preserve"><value>Confirm</value></data>
   <data name="Personal_ResolveSelf" xml:space="preserve"><value>That is your own ExItS ID.</value></data>
   <data name="Personal_ResolveNotFound" xml:space="preserve"><value>No active user matched that ExItS ID.</value></data>
+  <data name="Personal_ResolveSessionRequired" xml:space="preserve"><value>Your Platform sign-in session is missing or expired. Sign out, sign in again, then retry the ExItS ID lookup.</value></data>
   <data name="Personal_AddByExItsId" xml:space="preserve"><value>Add by ExItS ID</value></data>
   <data name="Personal_PeopleAddByIdTitle" xml:space="preserve"><value>Add by ExItS ID / QR</value></data>
   <data name="Personal_PeopleAddByIdHint" xml:space="preserve"><value>Resolve a user, confirm identity, then create a contact. Debt links still require acceptance when rules require it.</value></data>

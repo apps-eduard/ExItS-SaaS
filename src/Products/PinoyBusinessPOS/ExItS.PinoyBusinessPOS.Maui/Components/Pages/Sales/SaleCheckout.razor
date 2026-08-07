@@ -333,43 +333,46 @@ else
                         <Alert Tone="AlertTone.Warning" Title="@L["Sales_Checkout_UtangSection"]" Message="@L["Sales_Checkout_UtangWarning"]" />
                     }
                     <Stack Gap="2">
-                        <TextInput Label="@L["Sales_Checkout_CustomerSearch"]"
-                                   Value="@_customerSearch"
-                                   ValueChanged="v => _customerSearch = v"
-                                   Hint="@L["Sales_Checkout_SelectCustomer"]"
-                                   Disabled="@(blocked || _searchingCustomers)" />
-                        <FormActions>
-                            <Button Variant="ButtonVariant.Secondary"
-                                    IsLoading="@_searchingCustomers"
+                        @if (isUtang && _selectedCustomer is null)
+                        {
+                            <Button Variant="ButtonVariant.Primary"
                                     Disabled="@blocked"
-                                    OnClick="SearchCustomersAsync">@L["Sales_Checkout_Search"]</Button>
-                            <Button Variant="ButtonVariant.Secondary"
-                                    Disabled="@blocked"
-                                    OnClick="GoAddCustomerWithoutExItsId">@L["Sales_Checkout_AddCustomer"]</Button>
-                            <Button Variant="ButtonVariant.Ghost"
-                                    Disabled="@blocked"
-                                    OnClick="GoAddCustomerWithExItsId">@L["Sales_Checkout_AddCustomerWithExItsId"]</Button>
-                            @if (_selectedCustomer is not null)
-                            {
+                                    OnClick="OpenCustomerPicker">@L["Sales_Checkout_ChooseCustomer"]</Button>
+                        }
+                        else
+                        {
+                            <TextInput Label="@L["Sales_Checkout_CustomerSearch"]"
+                                       Value="@_customerSearch"
+                                       ValueChanged="v => _customerSearch = v"
+                                       Hint="@L["Sales_Checkout_SelectCustomer"]"
+                                       Disabled="@(blocked || _searchingCustomers)" />
+                            <div class="pos-sell-customer__actions" role="group" aria-label="@L["Sales_Checkout_CustomerSearch"]">
+                                <Button Variant="ButtonVariant.Secondary"
+                                        IsLoading="@_searchingCustomers"
+                                        Disabled="@blocked"
+                                        OnClick="SearchCustomersAsync">@L["Sales_Checkout_Search"]</Button>
                                 <Button Variant="ButtonVariant.Secondary"
                                         Disabled="@blocked"
-                                        OnClick="ClearCustomerSelection">@L["Sales_Checkout_Remove"]</Button>
+                                        OnClick="GoAddCustomerWithoutExItsId">@L["Sales_Checkout_AddCustomerShort"]</Button>
+                                <Button Variant="ButtonVariant.Ghost"
+                                        Disabled="@blocked"
+                                        OnClick="GoAddCustomerWithExItsId">@L["Sales_Checkout_ExItsIdShort"]</Button>
+                            </div>
+                            @if (_customerMatches.Count > 0)
+                            {
+                                <Stack Gap="1">
+                                    @foreach (var match in _customerMatches)
+                                    {
+                                        <div class="pos-row">
+                                            <span class="pos-value-md">@match.DisplayName</span>
+                                            <span class="pos-muted">@(string.IsNullOrWhiteSpace(match.MobileNumber) ? L["Customers_NoMobile"] : match.MobileNumber)</span>
+                                            <Button Variant="ButtonVariant.Secondary"
+                                                    Disabled="@blocked"
+                                                    OnClick="() => SelectCustomerAsync(match)">@L["Sales_Checkout_SelectCustomer"]</Button>
+                                        </div>
+                                    }
+                                </Stack>
                             }
-                        </FormActions>
-                        @if (_customerMatches.Count > 0)
-                        {
-                            <Stack Gap="1">
-                                @foreach (var match in _customerMatches)
-                                {
-                                    <div class="pos-row">
-                                        <span class="pos-value-md">@match.DisplayName</span>
-                                        <span class="pos-muted">@(string.IsNullOrWhiteSpace(match.MobileNumber) ? L["Customers_NoMobile"] : match.MobileNumber)</span>
-                                        <Button Variant="ButtonVariant.Secondary"
-                                                Disabled="@blocked"
-                                                OnClick="() => SelectCustomerAsync(match)">@L["Sales_Checkout_SelectCustomer"]</Button>
-                                    </div>
-                                }
-                            </Stack>
                         }
                         @if (_selectedCustomer is not null)
                         {
@@ -380,6 +383,17 @@ else
                                 {
                                     <div class="pos-muted">@L["Sales_Checkout_Outstanding"]: <MoneyDisplay Amount="@_selectedOutstanding.Value" CurrencyCode="PHP" /></div>
                                 }
+                            </div>
+                            <div class="pos-sell-customer__actions" role="group">
+                                @if (isUtang)
+                                {
+                                    <Button Variant="ButtonVariant.Secondary"
+                                            Disabled="@blocked"
+                                            OnClick="OpenCustomerPicker">@L["Sales_Checkout_ChangeCustomer"]</Button>
+                                }
+                                <Button Variant="ButtonVariant.Ghost"
+                                        Disabled="@blocked"
+                                        OnClick="ClearCustomerSelection">@L["Sales_Checkout_Remove"]</Button>
                             </div>
                         }
                         @if (isUtang)
@@ -499,6 +513,50 @@ else
                    Danger="true"
                    OnConfirm="ConfirmLeaveSaleAsync"
                    OnCancel="CancelLeaveSale" />
+
+    <Dialog Visible="@_customerPickerOpen"
+            Title="@L["Sales_Checkout_CustomerPickerTitle"]"
+            OnClose="CloseCustomerPicker">
+        <Stack Gap="2">
+            <InlineMessage Tone="InlineMessageTone.Info">@L["Sales_Checkout_CustomerPickerHint"]</InlineMessage>
+            <TextInput Label="@L["Sales_Checkout_CustomerSearch"]"
+                       Value="@_customerSearch"
+                       ValueChanged="OnCustomerSearchChanged"
+                       Hint="@L["Sales_Checkout_CustomerSearchHint"]"
+                       Disabled="@_searchingCustomers" />
+            <div class="pos-sell-customer__actions" role="group" aria-label="@L["Sales_Checkout_CustomerSearch"]">
+                <Button Variant="ButtonVariant.Secondary"
+                        IsLoading="@_searchingCustomers"
+                        OnClick="SearchCustomersAsync">@L["Sales_Checkout_Search"]</Button>
+                <Button Variant="ButtonVariant.Secondary"
+                        OnClick="GoAddCustomerWithoutExItsId">@L["Sales_Checkout_AddCustomerShort"]</Button>
+                <Button Variant="ButtonVariant.Ghost"
+                        OnClick="GoAddCustomerWithExItsId">@L["Sales_Checkout_ExItsIdShort"]</Button>
+            </div>
+            @if (!string.IsNullOrEmpty(_customerPickerMessage))
+            {
+                <InlineMessage Tone="InlineMessageTone.Warning">@_customerPickerMessage</InlineMessage>
+            }
+            @if (_customerMatches.Count > 0)
+            {
+                <Stack Gap="1">
+                    @foreach (var match in _customerMatches)
+                    {
+                        <div class="pos-row">
+                            <span class="pos-value-md">@match.DisplayName</span>
+                            <span class="pos-muted">@(string.IsNullOrWhiteSpace(match.MobileNumber) ? L["Customers_NoMobile"] : match.MobileNumber)</span>
+                            <Button Variant="ButtonVariant.Primary"
+                                    OnClick="() => SelectCustomerFromPickerAsync(match)">@L["Sales_Checkout_SelectCustomer"]</Button>
+                        </div>
+                    }
+                </Stack>
+            }
+            else if (_customerSearchAttempted && !_searchingCustomers && string.IsNullOrEmpty(_customerPickerMessage))
+            {
+                <InlineMessage Tone="InlineMessageTone.Warning">@L["Sales_Checkout_CustomerSearchEmpty"]</InlineMessage>
+            }
+        </Stack>
+    </Dialog>
 </Page>
 }
 @code {
@@ -573,6 +631,9 @@ else
     private bool _paymentMethodExpanded;
     private bool _paymentHeaderActive;
     private bool _checkoutResumeApplied;
+    private bool _customerPickerOpen;
+    private bool _customerSearchAttempted;
+    private string? _customerPickerMessage;
     private CancellationTokenSource? _lookupDebounceCts;
     private int _searchGeneration;
     private bool _paymentActing;
@@ -1011,6 +1072,10 @@ else
             {
                 _ = LoadSelectedCustomerOutstandingAsync();
             }
+            else
+            {
+                _customerPickerOpen = true;
+            }
         }
         else if (SalesUiOptions.IsElectronicPaymentMethod(_paymentMethod))
         {
@@ -1304,8 +1369,18 @@ else
     private async Task SearchCustomersAsync()
     {
         _searchingCustomers = true;
+        _customerSearchAttempted = true;
+        _customerPickerMessage = null;
         _errorTitle = null;
         _errorMessage = null;
+
+        if (string.IsNullOrWhiteSpace(_customerSearch))
+        {
+            _customerMatches = Array.Empty<PosCustomerListItemDto>();
+            _customerPickerMessage = L["Sales_Checkout_CustomerSearchRequired"];
+            _searchingCustomers = false;
+            return;
+        }
 
         var result = await Customers.ListAsync(_customerSearch, "Active", page: 1, pageSize: 10);
         if (result.IsSuccess && result.Data is not null)
@@ -1313,33 +1388,89 @@ else
             _customerMatches = result.Data.Items;
             if (_customerMatches.Count == 0)
             {
-                _errorTitle = L["Sales_Checkout_CustomerRequired"];
-                _errorMessage = L["Sales_Checkout_SelectCustomer"];
+                _customerPickerMessage = L["Sales_Checkout_CustomerSearchEmpty"];
+                // Keep page-level error only when the picker is closed.
+                if (!_customerPickerOpen)
+                {
+                    _errorTitle = L["Sales_Checkout_CustomerRequired"];
+                    _errorMessage = L["Sales_Checkout_CustomerSearchEmpty"];
+                }
             }
         }
         else
         {
             _customerMatches = Array.Empty<PosCustomerListItemDto>();
             var described = ApiLocalizer.Describe(result.Status, result.Error);
-            _errorTitle = described.Title;
-            _errorMessage = result.Error?.Detail ?? described.Message;
+            _customerPickerMessage = result.Error?.Detail ?? described.Message;
+            if (!_customerPickerOpen)
+            {
+                _errorTitle = described.Title;
+                _errorMessage = _customerPickerMessage;
+            }
         }
 
         _searchingCustomers = false;
     }
 
+    private void OnCustomerSearchChanged(string? value)
+    {
+        _customerSearch = value;
+        _customerSearchAttempted = false;
+        _customerPickerMessage = null;
+    }
+
+    private void OpenCustomerPicker()
+    {
+        _customerPickerOpen = true;
+        _customerExpanded = true;
+        _customerSearchAttempted = false;
+        _customerPickerMessage = null;
+        _confirmLeave = false;
+        _pendingLeaveUri = null;
+    }
+
+    private Task CloseCustomerPicker()
+    {
+        _customerPickerOpen = false;
+        _customerSearchAttempted = false;
+        _customerPickerMessage = null;
+        return Task.CompletedTask;
+    }
+
     private void GoAddCustomerWithoutExItsId() =>
-        Nav.NavigateTo($"/customers/new?return={Uri.EscapeDataString(BuildSaleResumeReturn())}");
+        NavigatePreservingCart($"/customers/new?return={Uri.EscapeDataString(BuildSaleResumeReturn())}");
 
     private void GoAddCustomerWithExItsId()
     {
         var customerCreate = $"/customers/new?return={Uri.EscapeDataString(BuildSaleResumeReturn())}";
-        Nav.NavigateTo(
+        NavigatePreservingCart(
             $"/personal/resolve-user?purpose=sale-customer&return={Uri.EscapeDataString(customerCreate)}");
+    }
+
+    private void NavigatePreservingCart(string uri)
+    {
+        _customerPickerOpen = false;
+        _confirmLeave = false;
+        _pendingLeaveUri = null;
+        _bypassLeaveGuard = true;
+        try
+        {
+            Nav.NavigateTo(uri);
+        }
+        finally
+        {
+            _bypassLeaveGuard = false;
+        }
     }
 
     private string BuildSaleResumeReturn() =>
         $"/sales/new?resumePayment=1&paymentMethod={Uri.EscapeDataString(_paymentMethod)}";
+
+    private async Task SelectCustomerFromPickerAsync(PosCustomerListItemDto customer)
+    {
+        await SelectCustomerAsync(customer);
+        _customerPickerOpen = false;
+    }
 
     private async Task SelectCustomerAsync(PosCustomerListItemDto customer)
     {
@@ -1389,6 +1520,8 @@ else
         {
             if (_selectedCustomer is null)
             {
+                _customerExpanded = true;
+                _customerPickerOpen = true;
                 _errorTitle = L["Sales_ErrorTitle"];
                 _errorMessage = L["Sales_Checkout_CustomerRequired"];
                 return;
@@ -1793,41 +1926,28 @@ else
             return false;
         }
 
-        var pathAndQuery = targetLocation;
+        string path;
         if (Uri.TryCreate(targetLocation, UriKind.Absolute, out var absolute))
         {
-            pathAndQuery = absolute.PathAndQuery;
+            path = absolute.AbsolutePath;
         }
         else
         {
-            var q = targetLocation.IndexOf('?', StringComparison.Ordinal);
-            var h = targetLocation.IndexOf('#', StringComparison.Ordinal);
-            var cut = targetLocation.Length;
-            if (q >= 0)
-            {
-                cut = Math.Min(cut, q);
-            }
-
-            if (h >= 0)
-            {
-                cut = Math.Min(cut, h);
-            }
-
-            pathAndQuery = targetLocation[..cut];
-            if (pathAndQuery.StartsWith("./", StringComparison.Ordinal))
-            {
-                pathAndQuery = pathAndQuery[1..];
-            }
+            var relative = targetLocation.Trim();
+            var q = relative.IndexOfAny(['?', '#']);
+            path = q >= 0 ? relative[..q] : relative;
         }
 
-        var path = pathAndQuery;
-        var queryIndex = path.IndexOf('?', StringComparison.Ordinal);
-        if (queryIndex >= 0)
+        path = path.Trim();
+        if (!path.StartsWith("/", StringComparison.Ordinal))
         {
-            path = path[..queryIndex];
+            path = "/" + path.TrimStart('/');
         }
 
-        return path.Equals("/customers/new", StringComparison.OrdinalIgnoreCase)
+        // MAUI/WebView hosts sometimes include a base path prefix — match on suffix segments.
+        return path.EndsWith("/customers/new", StringComparison.OrdinalIgnoreCase)
+            || path.Equals("/customers/new", StringComparison.OrdinalIgnoreCase)
+            || path.EndsWith("/personal/resolve-user", StringComparison.OrdinalIgnoreCase)
             || path.Equals("/personal/resolve-user", StringComparison.OrdinalIgnoreCase);
     }
 
