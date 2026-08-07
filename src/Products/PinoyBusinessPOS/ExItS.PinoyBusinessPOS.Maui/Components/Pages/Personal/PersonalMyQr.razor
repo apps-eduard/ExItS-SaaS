@@ -1,5 +1,6 @@
 @page "/personal/my-qr"
 @layout Layout.PersonalShell
+@using ExItS.DesignSystem.Components.Internal
 @inject IAuthenticationService Auth
 @inject ICurrentUserContext CurrentUser
 @inject IPlatformAccessClient Platform
@@ -9,55 +10,85 @@
 @inject IJSRuntime Js
 @inject IDocumentHandoffService Handoff
 
-<Page>
-    <PageHeader Title="@L["Personal_MyQrTitle"]" Subtitle="@L["Personal_MyQrSubtitle"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoMore">@L["Personal_BackMore"]</Button>
-        </Actions>
-    </PageHeader>
+<div class="pos-my-qr">
+    <Page>
+        <PageHeader Title="@L["Personal_MyQrTitle"]" Subtitle="@L["Personal_MyQrSubtitle"]" />
 
-    @if (_loading)
-    {
-        <InlineMessage Tone="InlineMessageTone.Info">@L["Personal_MyQrLoading"]</InlineMessage>
-        <Spinner />
-    }
-    else if (!_authenticated)
-    {
-        <ErrorState Title="@L["Auth_SessionExpiredTitle"]" Message="@L["Auth_SessionExpired"]" RetryLabel="@L["SignIn_Submit"]" OnRetry="GoSignIn" />
-    }
-    else if (_identityFailure)
-    {
-        <ErrorState Title="@_errorTitle" Message="@_error" RetryLabel="@L["Common_Retry"]" OnRetry="LoadAsync" />
-    }
-    else if (_identity is not null && _renderFailure)
-    {
-        <Section Title="@_identity.DisplayName">
-            <div class="pos-value-md">@_identity.PublicUserId</div>
-            <ErrorState Title="@L["Personal_MyQrRenderErrorTitle"]" Message="@L["Personal_MyQrRenderFailed"]" RetryLabel="@L["Personal_RefreshQrVisual"]" OnRetry="RefreshVisual" />
-        </Section>
-    }
-    else if (_identity is not null)
-    {
-        <Section Title="@_identity.DisplayName">
-            <div class="pos-qr-panel">
-                <img class="pos-qr-image" src="@_qrDataUrl" alt="@L["Personal_MyQrTitle"]" width="220" height="220" />
-                <div class="pos-value-md">@_identity.PublicUserId</div>
-                <span class="pos-muted">@L["Personal_MyQrHint"]</span>
-            </div>
-            <FormActions>
-                <Button Variant="ButtonVariant.Secondary" OnClick="CopyIdAsync">@L["Personal_CopyExItsId"]</Button>
-                <Button Variant="ButtonVariant.Ghost" OnClick="ShareIdAsync">@L["Personal_ShareExItsId"]</Button>
-                <Button Variant="ButtonVariant.Ghost" OnClick="RefreshVisual">@L["Personal_RefreshQrVisual"]</Button>
-            </FormActions>
-            @if (!string.IsNullOrEmpty(_copyMessage))
-            {
-                <InlineMessage Tone="InlineMessageTone.Info">@_copyMessage</InlineMessage>
-            }
-        </Section>
-    }
-</Page>
+        <div class="pos-action-grid pos-action-grid--single pos-my-qr__nav" role="group">
+            <button type="button" class="pos-action-tile" @onclick="GoBack">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("back")</span>
+                <span class="pos-action-tile__label">@BackLabel</span>
+            </button>
+        </div>
+
+        @if (_loading)
+        {
+            <Stack Align="StackAlign.Center" Gap="2">
+                <Spinner />
+                <span class="pos-muted">@L["Personal_MyQrLoading"]</span>
+            </Stack>
+        }
+        else if (!_authenticated)
+        {
+            <ErrorState Title="@L["Auth_SessionExpiredTitle"]"
+                        Message="@L["Auth_SessionExpired"]"
+                        RetryLabel="@L["SignIn_Submit"]"
+                        OnRetry="GoSignIn" />
+        }
+        else if (_identityFailure)
+        {
+            <ErrorState Title="@_errorTitle"
+                        Message="@_error"
+                        RetryLabel="@L["Common_Retry"]"
+                        OnRetry="LoadAsync" />
+        }
+        else if (_identity is not null && _renderFailure)
+        {
+            <Section Title="@_identity.DisplayName">
+                <div class="pos-my-qr__id">@_identity.PublicUserId</div>
+                <ErrorState Title="@L["Personal_MyQrRenderErrorTitle"]"
+                            Message="@L["Personal_MyQrRenderFailed"]"
+                            RetryLabel="@L["Personal_RefreshQrVisual"]"
+                            OnRetry="RefreshVisual" />
+            </Section>
+        }
+        else if (_identity is not null)
+        {
+            <Section Title="@_identity.DisplayName">
+                <div class="pos-qr-panel pos-my-qr__panel">
+                    <img class="pos-qr-image" src="@_qrDataUrl" alt="@L["Personal_MyQrTitle"]" width="220" height="220" />
+                    <div class="pos-my-qr__id">@_identity.PublicUserId</div>
+                    <span class="pos-muted">@L["Personal_MyQrHint"]</span>
+                </div>
+
+                <div class="pos-action-grid pos-action-grid--three pos-my-qr__actions" role="group" aria-label="@L["Personal_MyQrTitle"]">
+                    <button type="button" class="pos-action-tile" @onclick="CopyIdAsync">
+                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("check")</span>
+                        <span class="pos-action-tile__label">@L["Personal_CopyExItsId"]</span>
+                    </button>
+                    <button type="button" class="pos-action-tile" @onclick="ShareIdAsync">
+                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("lent")</span>
+                        <span class="pos-action-tile__label">@L["Personal_ShareExItsId"]</span>
+                    </button>
+                    <button type="button" class="pos-action-tile" @onclick="RefreshVisual">
+                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("refresh")</span>
+                        <span class="pos-action-tile__label">@L["Personal_RefreshQrVisual"]</span>
+                    </button>
+                </div>
+
+                @if (!string.IsNullOrEmpty(_copyMessage))
+                {
+                    <Alert Tone="AlertTone.Info" Message="@_copyMessage" />
+                }
+            </Section>
+        }
+    </Page>
+</div>
 
 @code {
+    [SupplyParameterFromQuery(Name = "return")]
+    public string? ReturnPath { get; set; }
+
     private bool _loading = true;
     private bool _authenticated;
     private bool _identityFailure;
@@ -67,6 +98,15 @@
     private string? _copyMessage;
     private string _qrDataUrl = string.Empty;
     private PublicIdentityDto? _identity;
+
+    private string BackLabel =>
+        IsOrgReturn
+            ? L["Common_Back"]
+            : L["Personal_BackMore"];
+
+    private bool IsOrgReturn =>
+        !string.IsNullOrWhiteSpace(ReturnPath)
+        && ReturnPath.StartsWith("/org", StringComparison.OrdinalIgnoreCase);
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
 
@@ -97,15 +137,37 @@
                 return;
             }
 
-            if (string.IsNullOrWhiteSpace(CurrentUser.Session?.PlatformSessionToken)
-                && string.IsNullOrWhiteSpace(CurrentUser.Session?.AccessToken))
+            if (!await EnsurePlatformSessionAsync())
             {
                 _authenticated = false;
                 return;
             }
 
-            await Auth.EnsurePersonalAccountProfileAsync();
+            // Public identity uses PlatformSession — do not switch away from org context first.
             var result = await Platform.GetMyPublicIdentityAsync();
+            if ((!result.IsSuccess || result.Data is null)
+                && result.Status == ApiCallStatus.Unauthorized)
+            {
+                var restore = await Auth.RestoreSessionAsync();
+                if (restore.Succeeded && await EnsurePlatformSessionAsync())
+                {
+                    result = await Platform.GetMyPublicIdentityAsync();
+                }
+            }
+
+            if (!result.IsSuccess || result.Data is null)
+            {
+                // Optional personal-profile bind, then one more attempt.
+                if (result.Status is ApiCallStatus.Unauthorized or ApiCallStatus.Forbidden)
+                {
+                    var personal = await Auth.EnsurePersonalAccountProfileAsync();
+                    if (personal.Succeeded)
+                    {
+                        result = await Platform.GetMyPublicIdentityAsync();
+                    }
+                }
+            }
+
             if (!result.IsSuccess || result.Data is null)
             {
                 ApplyIdentityFailure(result);
@@ -135,6 +197,20 @@
         }
     }
 
+    private async Task<bool> EnsurePlatformSessionAsync()
+    {
+        if (!string.IsNullOrWhiteSpace(CurrentUser.Session?.PlatformSessionToken)
+            || !string.IsNullOrWhiteSpace(CurrentUser.Session?.AccessToken))
+        {
+            return true;
+        }
+
+        var restore = await Auth.RestoreSessionAsync();
+        return restore.Succeeded
+               && (!string.IsNullOrWhiteSpace(CurrentUser.Session?.PlatformSessionToken)
+                   || !string.IsNullOrWhiteSpace(CurrentUser.Session?.AccessToken));
+    }
+
     private void ApplyIdentityFailure(ApiResult<PublicIdentityDto> result)
     {
         _identityFailure = true;
@@ -158,7 +234,6 @@
             return false;
         }
 
-        // Payload must be the versioned public reference only.
         var expected = "exits://user/v1/" + identity.PublicUserId.Trim();
         return string.Equals(identity.QrPayload.Trim(), expected, StringComparison.Ordinal)
                && !identity.QrPayload.Contains('@', StringComparison.Ordinal)
@@ -224,6 +299,16 @@
         }
     }
 
-    private void GoMore() => Nav.NavigateTo("/personal/more");
+    private void GoBack()
+    {
+        if (!string.IsNullOrWhiteSpace(ReturnPath) && ReturnPath.StartsWith("/", StringComparison.Ordinal))
+        {
+            Nav.NavigateTo(ReturnPath!);
+            return;
+        }
+
+        Nav.NavigateTo("/personal/more");
+    }
+
     private void GoSignIn() => Nav.NavigateTo("/signin");
 }

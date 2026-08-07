@@ -1,37 +1,62 @@
 @page "/org/profile"
+@using ExItS.DesignSystem.Components.Internal
 @inject ICurrentUserContext CurrentUser
 @inject IPlatformAccessClient Platform
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
-<Page>
-    <PageHeader Title="@L["Org_ProfileTitle"]" Subtitle="@L["Org_ProfileSubtitle"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Common_Back"]</Button>
-        </Actions>
-    </PageHeader>
+<div class="pos-org-profile">
+    <Page>
+        <PageHeader Title="@L["Org_ProfileTitle"]" Subtitle="@L["Org_ProfileSubtitle"]" />
 
-    @if (_loading)
-    {
-        <Spinner />
-    }
-    else if (CurrentUser.Session?.OrganizationId is null)
-    {
-        <ErrorState Title="@L["Org_MissingTitle"]" Message="@L["Org_MissingMessage"]" />
-    }
-    else
-    {
-        <FormValidationSummary Messages="_errors" />
-        <FormGroup Title="@L["Org_ProfileForm"]">
-            <TextInput Label="@L["StartBusiness_DisplayName"]" @bind-Value="_displayName" Disabled="_busy" />
-            <TextInput Label="@L["StartBusiness_Slug"]" @bind-Value="_slug" Disabled="_busy" />
-        </FormGroup>
-        <FormActions>
-            <Button IsLoading="_busy" Disabled="_busy" OnClick="SaveAsync">@L["Common_Save"]</Button>
-        </FormActions>
-        <InlineMessage Tone="InlineMessageTone.Info">@L["Org_WebAdminReminder"]</InlineMessage>
-    }
-</Page>
+        <div class="pos-action-grid pos-action-grid--single pos-org-profile__nav" role="group">
+            <button type="button" class="pos-action-tile" @onclick="GoBack">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("back")</span>
+                <span class="pos-action-tile__label">@L["Common_Back"]</span>
+            </button>
+        </div>
+
+        @if (_loading)
+        {
+            <Stack Align="StackAlign.Center" Gap="2">
+                <Spinner />
+            </Stack>
+        }
+        else if (CurrentUser.Session?.OrganizationId is null)
+        {
+            <ErrorState Title="@L["Org_MissingTitle"]" Message="@L["Org_MissingMessage"]" />
+        }
+        else
+        {
+            <FormValidationSummary Messages="_errors" />
+            <Section Title="@L["Org_ProfileForm"]">
+                <Stack Gap="2">
+                    <TextInput Label="@L["StartBusiness_DisplayName"]" @bind-Value="_displayName" Disabled="_busy" />
+                    <TextInput Label="@L["StartBusiness_Slug"]" @bind-Value="_slug" Disabled="_busy" />
+                </Stack>
+            </Section>
+
+            <div class="pos-action-grid pos-action-grid--single pos-org-profile__save">
+                <button type="button"
+                        class="pos-action-tile pos-action-tile--primary"
+                        disabled="@_busy"
+                        @onclick="SaveAsync">
+                    @if (_busy)
+                    {
+                        <Spinner />
+                    }
+                    else
+                    {
+                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("check")</span>
+                    }
+                    <span class="pos-action-tile__label">@L["Common_Save"]</span>
+                </button>
+            </div>
+
+            <Alert Tone="AlertTone.Info" Message="@L["Org_WebAdminReminder"]" />
+        }
+    </Page>
+</div>
 
 @code {
     private bool _loading = true;

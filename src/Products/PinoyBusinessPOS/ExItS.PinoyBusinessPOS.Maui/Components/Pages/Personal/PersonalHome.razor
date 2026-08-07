@@ -1,87 +1,91 @@
 @page "/personal"
 @layout Layout.PersonalShell
+@using ExItS.DesignSystem.Components.Internal
 @inject IAuthenticationService Auth
 @inject ICurrentUserContext CurrentUser
 @inject IPlatformAccessClient Platform
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
-<Page>
-    @if (_loading)
-    {
-        <Spinner />
-    }
-    else if (!_authenticated)
-    {
-        <ErrorState Title="@L["Auth_SessionExpiredTitle"]" Message="@L["Auth_SessionExpired"]" RetryLabel="@L["SignIn_Submit"]" OnRetry="GoSignIn" />
-    }
-    else if (_loadFailed)
-    {
-        <ErrorState Title="@L["Personal_LoadErrorTitle"]" Message="@(_error ?? L["Personal_LoadErrorMessage"])" RetryLabel="@L["Common_Retry"]" OnRetry="LoadAsync" />
-    }
-    else
-    {
-        <Section Title="@L["Personal_DashboardSection"]">
-            @if (_dashboard is null)
-            {
-                <InlineMessage Tone="InlineMessageTone.Warning">@L["Personal_DashboardUnavailable"]</InlineMessage>
-            }
-            else
-            {
-                <div class="pos-status-grid">
-                    <div>
-                        <span class="pos-muted">@L["Personal_Stat_People"]</span>
-                        <div class="pos-value-md">@_dashboard.ContactCount</div>
-                    </div>
-                    <div>
-                        <span class="pos-muted">@L["Personal_Stat_ActiveRelationships"]</span>
-                        <div class="pos-value-md">@_dashboard.ActiveRelationshipCount</div>
-                    </div>
-                    <div>
-                        <span class="pos-muted">@L["Personal_Stat_Lent"]</span>
-                        <div class="pos-value-md">@_dashboard.TotalLentBalance.ToString("N2")</div>
-                    </div>
-                    <div>
-                        <span class="pos-muted">@L["Personal_Stat_Borrowed"]</span>
-                        <div class="pos-value-md">@_dashboard.TotalBorrowedBalance.ToString("N2")</div>
-                    </div>
-                </div>
-            }
-        </Section>
-
-        <Section Title="@L["Personal_RecentActivitySection"]">
-            @if (_recent.Count == 0)
-            {
-                <EmptyState Title="@L["Personal_RecentActivityEmptyTitle"]" Message="@L["Personal_RecentActivityEmptyMessage"]" />
-            }
-            else
-            {
-                <Stack Gap="3">
-                    @foreach (var item in _recent)
-                    {
-                        <div class="pos-personal-org">
-                            <Stack Gap="1">
-                                <span class="pos-value-md">@PerspectiveLabel(item.Perspective)</span>
-                                <span class="pos-muted">
-                                    @item.CurrentBalance.ToString("N2") @item.CurrencyCode
-                                    · @item.UpdatedAtUtc.LocalDateTime.ToString("g")
-                                </span>
-                            </Stack>
-                            <FormActions>
-                                <Button Variant="ButtonVariant.Secondary" OnClick="() => GoRelationship(item.Id)">@L["Personal_OpenRelationship"]</Button>
-                            </FormActions>
-                        </div>
-                    }
-                </Stack>
-            }
-        </Section>
-
-        @if (!string.IsNullOrEmpty(_error))
+<div class="pos-personal-home">
+    <Page>
+        @if (_loading)
         {
-            <InlineMessage Tone="InlineMessageTone.Danger">@_error</InlineMessage>
+            <Spinner />
         }
-    }
-</Page>
+        else if (!_authenticated)
+        {
+            <ErrorState Title="@L["Auth_SessionExpiredTitle"]" Message="@L["Auth_SessionExpired"]" RetryLabel="@L["SignIn_Submit"]" OnRetry="GoSignIn" />
+        }
+        else if (_loadFailed)
+        {
+            <ErrorState Title="@L["Personal_LoadErrorTitle"]" Message="@(_error ?? L["Personal_LoadErrorMessage"])" RetryLabel="@L["Common_Retry"]" OnRetry="LoadAsync" />
+        }
+        else
+        {
+            <Section Title="@L["Personal_DashboardSection"]">
+                @if (_dashboard is null)
+                {
+                    <InlineMessage Tone="InlineMessageTone.Warning">@L["Personal_DashboardUnavailable"]</InlineMessage>
+                }
+                else
+                {
+                    <div class="pos-personal-stats" role="list">
+                        <div class="pos-personal-stat" role="listitem">
+                            <span class="pos-personal-stat__label">@L["Personal_Stat_People"]</span>
+                            <span class="pos-personal-stat__value">@_dashboard.ContactCount</span>
+                        </div>
+                        <div class="pos-personal-stat" role="listitem">
+                            <span class="pos-personal-stat__label">@L["Personal_Stat_ActiveRelationships"]</span>
+                            <span class="pos-personal-stat__value">@_dashboard.ActiveRelationshipCount</span>
+                        </div>
+                        <div class="pos-personal-stat" role="listitem">
+                            <span class="pos-personal-stat__label">@L["Personal_Stat_Lent"]</span>
+                            <span class="pos-personal-stat__value">@_dashboard.TotalLentBalance.ToString("N2")</span>
+                        </div>
+                        <div class="pos-personal-stat" role="listitem">
+                            <span class="pos-personal-stat__label">@L["Personal_Stat_Borrowed"]</span>
+                            <span class="pos-personal-stat__value">@_dashboard.TotalBorrowedBalance.ToString("N2")</span>
+                        </div>
+                    </div>
+                }
+            </Section>
+
+            <Section Title="@L["Personal_RecentActivitySection"]">
+                @if (_recent.Count == 0)
+                {
+                    <EmptyState Title="@L["Personal_RecentActivityEmptyTitle"]" Message="@L["Personal_RecentActivityEmptyMessage"]" />
+                }
+                else
+                {
+                    <div class="pos-personal-list" role="list">
+                        @foreach (var item in _recent)
+                        {
+                            <button type="button"
+                                    class="pos-personal-row"
+                                    role="listitem"
+                                    @onclick="() => GoRelationship(item.Id)">
+                                <span class="pos-personal-row__body">
+                                    <span class="pos-personal-row__title">@PerspectiveLabel(item.Perspective)</span>
+                                    <span class="pos-personal-row__meta">
+                                        @item.CurrentBalance.ToString("N2") @item.CurrencyCode
+                                        · @item.UpdatedAtUtc.LocalDateTime.ToString("g")
+                                    </span>
+                                </span>
+                                <span class="pos-personal-row__chevron" aria-hidden="true">›</span>
+                            </button>
+                        }
+                    </div>
+                }
+            </Section>
+
+            @if (!string.IsNullOrEmpty(_error))
+            {
+                <InlineMessage Tone="InlineMessageTone.Danger">@_error</InlineMessage>
+            }
+        }
+    </Page>
+</div>
 
 @code {
     private bool _loading = true;

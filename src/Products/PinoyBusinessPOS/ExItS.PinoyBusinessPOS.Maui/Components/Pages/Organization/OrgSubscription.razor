@@ -1,44 +1,81 @@
 @page "/org/subscription"
+@using ExItS.DesignSystem.Components.Internal
 @inject ICurrentUserContext CurrentUser
 @inject IPlatformAccessClient Platform
+@inject IAuthenticationService Auth
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
-<Page>
-    <PageHeader Title="@L["Org_SubscriptionTitle"]" Subtitle="@L["Org_SubscriptionSubtitle"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Common_Back"]</Button>
-        </Actions>
-    </PageHeader>
+<div class="pos-org-subscription">
+    <Page>
+        <PageHeader Title="@L["Org_SubscriptionTitle"]" Subtitle="@L["Org_SubscriptionSubtitle"]" />
 
-    @if (_loading)
-    {
-        <Spinner />
-    }
-    else if (!string.IsNullOrEmpty(_error))
-    {
-        <ErrorState Title="@L["Org_ErrorTitle"]" Message="@_error" RetryLabel="@L["Common_Retry"]" OnRetry="LoadAsync" />
-    }
-    else
-    {
-        <Section Title="@L["Org_Subscription"]">
-            <Stack Gap="2">
-                <div><span class="pos-muted">@L["Org_Status"]</span><div class="pos-value-md">@(_subscription?.Status ?? "—")</div></div>
-                <div><span class="pos-muted">@L["Org_Plan"]</span><div class="pos-value-md">@(_subscription?.PlanDisplayName ?? _subscription?.PlanKey ?? "—")</div></div>
-                <div><span class="pos-muted">@L["Org_TrialEnd"]</span><div class="pos-value-md">@Format(_subscription?.TrialEndUtc)</div></div>
-                <div><span class="pos-muted">@L["Org_PeriodEnd"]</span><div class="pos-value-md">@Format(_subscription?.CurrentPeriodEndUtc)</div></div>
+        <div class="pos-action-grid pos-action-grid--two pos-org-subscription__actions" role="group" aria-label="@L["Org_SubscriptionTitle"]">
+            <button type="button" class="pos-action-tile" @onclick="GoBack">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("back")</span>
+                <span class="pos-action-tile__label">@L["Common_Back"]</span>
+            </button>
+            <button type="button"
+                    class="pos-action-tile"
+                    disabled="@_loading"
+                    @onclick="LoadAsync">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("refresh")</span>
+                <span class="pos-action-tile__label">@L["Common_Retry"]</span>
+            </button>
+        </div>
+
+        @if (_loading)
+        {
+            <Stack Align="StackAlign.Center" Gap="2">
+                <Spinner />
             </Stack>
-        </Section>
-        <Section Title="@L["Org_Entitlement"]">
-            <Stack Gap="2">
-                <div><span class="pos-muted">@L["Org_Status"]</span><div class="pos-value-md">@(_entitlement?.SubscriptionStatus ?? "—")</div></div>
-                <div><span class="pos-muted">@L["Org_SnapshotVersion"]</span><div class="pos-value-md">@(_entitlement?.SnapshotVersion.ToString() ?? "—")</div></div>
-                <div><span class="pos-muted">@L["Org_Plan"]</span><div class="pos-value-md">@(_entitlement?.PlanCode ?? "—")</div></div>
-            </Stack>
-        </Section>
-        <InlineMessage Tone="InlineMessageTone.Info">@L["Org_WebAdminReminder"]</InlineMessage>
-    }
-</Page>
+        }
+        else if (!string.IsNullOrEmpty(_error))
+        {
+            <ErrorState Title="@L["Org_ErrorTitle"]" Message="@_error" RetryLabel="@L["Common_Retry"]" OnRetry="LoadAsync" />
+        }
+        else
+        {
+            <Section Title="@L["Org_Subscription"]">
+                <div class="pos-org-subscription__facts">
+                    <div class="pos-org-subscription__fact">
+                        <span class="pos-muted">@L["Org_Status"]</span>
+                        <span class="pos-org-subscription__value">@(_subscription?.Status ?? "—")</span>
+                    </div>
+                    <div class="pos-org-subscription__fact">
+                        <span class="pos-muted">@L["Org_Plan"]</span>
+                        <span class="pos-org-subscription__value">@(_subscription?.PlanDisplayName ?? _subscription?.PlanKey ?? "—")</span>
+                    </div>
+                    <div class="pos-org-subscription__fact">
+                        <span class="pos-muted">@L["Org_TrialEnd"]</span>
+                        <span class="pos-org-subscription__value">@Format(_subscription?.TrialEndUtc)</span>
+                    </div>
+                    <div class="pos-org-subscription__fact">
+                        <span class="pos-muted">@L["Org_PeriodEnd"]</span>
+                        <span class="pos-org-subscription__value">@Format(_subscription?.CurrentPeriodEndUtc)</span>
+                    </div>
+                </div>
+            </Section>
+            <Section Title="@L["Org_Entitlement"]">
+                <div class="pos-org-subscription__facts">
+                    <div class="pos-org-subscription__fact">
+                        <span class="pos-muted">@L["Org_Status"]</span>
+                        <span class="pos-org-subscription__value">@(_entitlement?.SubscriptionStatus ?? "—")</span>
+                    </div>
+                    <div class="pos-org-subscription__fact">
+                        <span class="pos-muted">@L["Org_SnapshotVersion"]</span>
+                        <span class="pos-org-subscription__value">@(_entitlement?.SnapshotVersion.ToString() ?? "—")</span>
+                    </div>
+                    <div class="pos-org-subscription__fact">
+                        <span class="pos-muted">@L["Org_Plan"]</span>
+                        <span class="pos-org-subscription__value">@(_entitlement?.PlanCode ?? "—")</span>
+                    </div>
+                </div>
+            </Section>
+            <Alert Tone="AlertTone.Info" Message="@L["Org_WebAdminReminder"]" />
+        }
+    </Page>
+</div>
 
 @code {
     private bool _loading = true;
@@ -54,6 +91,11 @@
         _error = null;
         try
         {
+            if (CurrentUser.Session?.OrganizationId is null)
+            {
+                await Auth.RestoreSessionAsync();
+            }
+
             var orgId = CurrentUser.Session?.OrganizationId;
             if (orgId is null)
             {

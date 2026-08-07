@@ -32,6 +32,8 @@ public sealed class OrgSummaryUiGuardTests
         Assert.Contains("Org_StaffLink", page, StringComparison.Ordinal);
         Assert.Contains("Org_SubscriptionLink", page, StringComparison.Ordinal);
         Assert.Contains("Personal_MyQrLink", page, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"qr\")", page, StringComparison.Ordinal);
+        Assert.Contains("/personal/my-qr?return=/org", page, StringComparison.Ordinal);
         Assert.Contains("/org/profile", page, StringComparison.Ordinal);
         Assert.Contains("/org/staff", page, StringComparison.Ordinal);
         Assert.Contains("/org/subscription", page, StringComparison.Ordinal);

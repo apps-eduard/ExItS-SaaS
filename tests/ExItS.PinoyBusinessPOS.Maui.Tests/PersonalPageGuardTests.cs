@@ -41,6 +41,8 @@ public sealed class PersonalPageGuardTests
         Assert.Contains("GetPersonalDashboardAsync", home, StringComparison.Ordinal);
         Assert.Contains("Personal_Stat_People", home, StringComparison.Ordinal);
         Assert.Contains("Personal_RecentActivitySection", home, StringComparison.Ordinal);
+        Assert.Contains("pos-personal-stats", home, StringComparison.Ordinal);
+        Assert.Contains("pos-personal-row", home, StringComparison.Ordinal);
         Assert.Contains("EnsurePersonalAccountProfileAsync", home, StringComparison.Ordinal);
         Assert.Contains("Personal_DashboardSection", home, StringComparison.Ordinal);
         Assert.DoesNotContain("PageHeader", home, StringComparison.Ordinal);
@@ -72,7 +74,9 @@ public sealed class PersonalPageGuardTests
         Assert.Contains("Personal_ProfileLink", more, StringComparison.Ordinal);
         Assert.Contains("Personal_SettingsLink", more, StringComparison.Ordinal);
         Assert.Contains("Personal_ExplorePos", more, StringComparison.Ordinal);
-        Assert.Contains("Auth_Logout", more, StringComparison.Ordinal);
+        Assert.DoesNotContain("Auth_Logout", more, StringComparison.Ordinal);
+        Assert.Contains("pos-settings__nav", more, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"qr\")", more, StringComparison.Ordinal);
         Assert.DoesNotContain("AccountContextSwitcher", more, StringComparison.Ordinal);
         Assert.DoesNotContain("/sales", more, StringComparison.Ordinal);
     }
@@ -91,6 +95,9 @@ public sealed class PersonalPageGuardTests
         Assert.Contains("IsSafeIdentity", myQr, StringComparison.Ordinal);
         Assert.Contains("exits://user/v1/", myQr, StringComparison.Ordinal);
         Assert.Contains("ApiCallStatus.Unauthorized", myQr, StringComparison.Ordinal);
+        Assert.Contains("EnsurePlatformSessionAsync", myQr, StringComparison.Ordinal);
+        Assert.Contains("pos-my-qr", myQr, StringComparison.Ordinal);
+        Assert.Contains("pos-action-grid--three", myQr, StringComparison.Ordinal);
         Assert.Contains("Personal_MyQrRenderErrorTitle", myQr, StringComparison.Ordinal);
         Assert.DoesNotContain("PosBusinessApi", myQr, StringComparison.Ordinal);
 
@@ -192,6 +199,11 @@ public sealed class PersonalPageGuardTests
         var settings = File.ReadAllText(Path.Combine(PersonalPagesDirectory(), "PersonalSettings.razor"));
         Assert.Contains("AccountContextSwitcher", settings, StringComparison.Ordinal);
         Assert.Contains("Settings_SwitchOrganization", settings, StringComparison.Ordinal);
+        Assert.Contains("pos-settings", settings, StringComparison.Ordinal);
+        Assert.Contains("pos-settings__panel", settings, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"back\")", settings, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"customers\")", settings, StringComparison.Ordinal);
+        Assert.DoesNotContain("Auth_Logout", settings, StringComparison.Ordinal);
 
         var orgSelect = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Pages", "OrganizationSelect.razor"));
         Assert.Contains("/personal/explore-pos", orgSelect, StringComparison.Ordinal);

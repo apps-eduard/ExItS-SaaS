@@ -1,92 +1,106 @@
 @page "/personal/settings"
 @layout Layout.PersonalShell
 @implements IDisposable
+@using ExItS.DesignSystem.Components.Internal
 @inject ThemeController ThemeCtl
 @inject DensityController DensityCtl
 @inject CultureController CultureCtl
 @inject IAppInfoService AppInfo
 @inject IAuthenticationService Auth
 @inject ICurrentUserContext CurrentUser
-@inject IOfflineOperationQueue OfflineQueue
 @inject ApiStatusLocalizer ApiLocalizer
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
-<Page>
-    <PageHeader Title="@L["Personal_SettingsTitle"]" Subtitle="@L["Personal_SettingsSubtitle"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoMore">@L["Personal_BackMore"]</Button>
-        </Actions>
-    </PageHeader>
+<div class="pos-settings pos-personal-settings">
+    <Page>
+        <PageHeader Title="@L["Personal_SettingsTitle"]" Subtitle="@L["Personal_SettingsSubtitle"]" />
 
-    @if (!_ready)
-    {
-        <Spinner />
-    }
-    else if (!_authenticated)
-    {
-        <ErrorState Title="@L["Auth_SessionExpiredTitle"]" Message="@L["Auth_SessionExpired"]" RetryLabel="@L["SignIn_Submit"]" OnRetry="GoSignIn" />
-    }
-    else
-    {
-        <Section Title="@L["Settings_SessionSectionTitle"]">
-            <Stack Gap="3">
-                <Stack Direction="StackDirection.Row" Justify="StackJustify.Between" Align="StackAlign.Center" Wrap="true" Gap="2">
-                    <span>@L["AccessConfirm_UserLabel"]</span>
-                    <span class="pos-muted pos-wrap">@(CurrentUser.Session?.DisplayName)</span>
-                </Stack>
-                <Stack Direction="StackDirection.Row" Justify="StackJustify.Between" Align="StackAlign.Center" Wrap="true" Gap="2">
-                    <span>@L["Personal_AccountClass"]</span>
-                    <span class="pos-muted pos-wrap">@(CurrentUser.Session?.AccountClass ?? L["Personal_AccountClassDefault"])</span>
-                </Stack>
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoOrganizationSelect">@L["Settings_SwitchOrganization"]</Button>
-                <Button Variant="ButtonVariant.Danger" OnClick="OpenLogoutAsync">@L["Auth_Logout"]</Button>
-            </Stack>
-            <ConfirmDialog @bind-Visible="_logoutOpen"
-                           Title="@L["Auth_LogoutConfirmTitle"]"
-                           Message="@_logoutMessage"
-                           Danger="true"
-                           IsLoading="_logoutBusy"
-                           OnConfirm="LogoutAsync"
-                           OnCancel="() => _logoutOpen = false" />
-        </Section>
+        <div class="pos-action-grid pos-action-grid--single pos-personal-settings__nav" role="group">
+            <button type="button" class="pos-action-tile" @onclick="GoMore">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("back")</span>
+                <span class="pos-action-tile__label">@L["Personal_BackMore"]</span>
+            </button>
+        </div>
 
-        <AccountContextSwitcher />
-
-        @if (_preferenceError is not null)
+        @if (!_ready)
         {
-            <InlineMessage Tone="InlineMessageTone.Danger">@_preferenceError</InlineMessage>
+            <Stack Align="StackAlign.Center" Gap="2">
+                <Spinner />
+            </Stack>
         }
+        else if (!_authenticated)
+        {
+            <ErrorState Title="@L["Auth_SessionExpiredTitle"]"
+                        Message="@L["Auth_SessionExpired"]"
+                        RetryLabel="@L["SignIn_Submit"]"
+                        OnRetry="GoSignIn" />
+        }
+        else
+        {
+            <Section Title="@L["Settings_SessionSectionTitle"]">
+                <div class="pos-settings__panel">
+                    <div class="pos-settings__kv">
+                        <span class="pos-settings__kv-label">@L["AccessConfirm_UserLabel"]</span>
+                        <span class="pos-settings__kv-value">@(CurrentUser.Session?.DisplayName)</span>
+                    </div>
+                    <div class="pos-settings__kv">
+                        <span class="pos-settings__kv-label">@L["Personal_AccountClass"]</span>
+                        <span class="pos-settings__kv-value">@(CurrentUser.Session?.AccountClass ?? L["Personal_AccountClassDefault"])</span>
+                    </div>
+                    <button type="button" class="pos-settings__nav" @onclick="GoOrganizationSelect">
+                        <span class="pos-settings__nav-icon" aria-hidden="true">@IconGlyphs.Get("customers")</span>
+                        <span class="pos-settings__nav-label">@L["Settings_SwitchOrganization"]</span>
+                        <span class="pos-settings__chevron" aria-hidden="true">›</span>
+                    </button>
+                </div>
+            </Section>
 
-        <Section Title="@L["Settings_AppearanceSectionTitle"]">
-            <Stack Gap="5">
-                <Select Label="@L["Settings_ThemeLabel"]" Value="@ThemeCtl.Current.ToString()" ValueChanged="OnThemeChangedAsync" Options="ThemeOptions" />
-                <Select Label="@L["Settings_DensityLabel"]" Value="@DensityCtl.Current.ToString()" ValueChanged="OnDensityChangedAsync" Options="DensityOptions" />
-                <Select Label="@L["Settings_LanguageLabel"]" Value="@CultureCtl.Current" ValueChanged="OnCultureChangedAsync" Options="CultureOptions" />
-            </Stack>
-        </Section>
+            <AccountContextSwitcher />
 
-        <Section Title="@L["Settings_AboutSectionTitle"]">
-            <Stack Gap="3">
-                <Stack Direction="StackDirection.Row" Justify="StackJustify.Between" Align="StackAlign.Center" Wrap="true" Gap="2">
-                    <span>@L["Settings_AppVersionLabel"]</span>
-                    <span class="pos-muted">@AppInfo.Version</span>
-                </Stack>
-                <Stack Direction="StackDirection.Row" Justify="StackJustify.Between" Align="StackAlign.Center" Wrap="true" Gap="2">
-                    <span>@L["Home_EnvironmentLabel"]</span>
-                    <span class="pos-muted">@EnvironmentLabel</span>
-                </Stack>
-            </Stack>
-        </Section>
-    }
-</Page>
+            @if (_preferenceError is not null)
+            {
+                <Alert Tone="AlertTone.Danger" Message="@_preferenceError" />
+            }
+
+            <Section Title="@L["Settings_AppearanceSectionTitle"]">
+                <div class="pos-settings__panel">
+                    <Stack Gap="2">
+                        <Select Label="@L["Settings_ThemeLabel"]"
+                                Value="@ThemeCtl.Current.ToString()"
+                                ValueChanged="OnThemeChangedAsync"
+                                Options="ThemeOptions" />
+                        <Select Label="@L["Settings_DensityLabel"]"
+                                Value="@DensityCtl.Current.ToString()"
+                                ValueChanged="OnDensityChangedAsync"
+                                Options="DensityOptions" />
+                        <Select Label="@L["Settings_LanguageLabel"]"
+                                Value="@CultureCtl.Current"
+                                ValueChanged="OnCultureChangedAsync"
+                                Options="CultureOptions" />
+                    </Stack>
+                </div>
+            </Section>
+
+            <Section Title="@L["Settings_AboutSectionTitle"]">
+                <div class="pos-settings__panel">
+                    <div class="pos-settings__kv">
+                        <span class="pos-settings__kv-label">@L["Settings_AppVersionLabel"]</span>
+                        <span class="pos-settings__kv-value">@AppInfo.Version</span>
+                    </div>
+                    <div class="pos-settings__kv">
+                        <span class="pos-settings__kv-label">@L["Home_EnvironmentLabel"]</span>
+                        <span class="pos-settings__kv-value">@EnvironmentLabel</span>
+                    </div>
+                </div>
+            </Section>
+        }
+    </Page>
+</div>
 
 @code {
     private bool _ready;
     private bool _authenticated;
-    private bool _logoutOpen;
-    private bool _logoutBusy;
-    private string _logoutMessage = string.Empty;
     private string? _preferenceError;
 
     private IReadOnlyList<SelectOption> ThemeOptions =>
@@ -137,39 +151,6 @@
     private void GoMore() => Nav.NavigateTo("/personal/more");
     private void GoSignIn() => Nav.NavigateTo("/signin");
     private void GoOrganizationSelect() => Nav.NavigateTo("/organization-select");
-
-    private async Task OpenLogoutAsync()
-    {
-        _logoutMessage = L["Auth_LogoutConfirmMessage"];
-        try
-        {
-            if (await OfflineQueue.HasUnsyncedWorkAsync())
-            {
-                _logoutMessage = $"{L["Auth_LogoutConfirmMessage"]} {L["Offline_LogoutUnsyncedWarning"]}";
-            }
-        }
-        catch
-        {
-            // Keep default logout message when queue is unavailable.
-        }
-
-        _logoutOpen = true;
-    }
-
-    private async Task LogoutAsync()
-    {
-        _logoutBusy = true;
-        try
-        {
-            await Auth.LogoutAsync();
-            Nav.NavigateTo("/signin", replace: true);
-        }
-        finally
-        {
-            _logoutBusy = false;
-            _logoutOpen = false;
-        }
-    }
 
     private async Task OnThemeChangedAsync(string? value)
     {

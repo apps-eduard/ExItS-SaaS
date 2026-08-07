@@ -1,44 +1,62 @@
 @page "/personal/more"
 @layout Layout.PersonalShell
+@using ExItS.DesignSystem.Components.Internal
 @inject IAuthenticationService Auth
 @inject ICurrentUserContext CurrentUser
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
-<Page>
-    <PageHeader Title="@L["Nav_More"]" Subtitle="@L["Personal_MoreSubtitle"]" />
+<div class="pos-settings pos-personal-more">
+    <Page>
+        <PageHeader Title="@L["Nav_More"]" Subtitle="@L["Personal_MoreSubtitle"]" />
 
-    @if (_loading)
-    {
-        <Spinner />
-    }
-    else if (!_authenticated)
-    {
-        <ErrorState Title="@L["Auth_SessionExpiredTitle"]" Message="@L["Auth_SessionExpired"]" RetryLabel="@L["SignIn_Submit"]" OnRetry="GoSignIn" />
-    }
-    else
-    {
-        <Section Title="@L["Personal_MoreAccountSection"]">
-            <Stack Gap="2">
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoMyQr">@L["Personal_MyQrLink"]</Button>
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoUtangInvitations">@L["Personal_Nav_UtangInvitations"]</Button>
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoProfile">@L["Personal_ProfileLink"]</Button>
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoSettings">@L["Personal_SettingsLink"]</Button>
-            </Stack>
-        </Section>
+        @if (_loading)
+        {
+            <Spinner />
+        }
+        else if (!_authenticated)
+        {
+            <ErrorState Title="@L["Auth_SessionExpiredTitle"]" Message="@L["Auth_SessionExpired"]" RetryLabel="@L["SignIn_Submit"]" OnRetry="GoSignIn" />
+        }
+        else
+        {
+            <Section Title="@L["Personal_MoreAccountSection"]">
+                <div class="pos-settings__panel">
+                    <button type="button" class="pos-settings__nav" @onclick="GoMyQr">
+                        <span class="pos-settings__nav-icon" aria-hidden="true">@IconGlyphs.Get("qr")</span>
+                        <span class="pos-settings__nav-label">@L["Personal_MyQrLink"]</span>
+                        <span class="pos-settings__chevron" aria-hidden="true">›</span>
+                    </button>
+                    <button type="button" class="pos-settings__nav" @onclick="GoUtangInvitations">
+                        <span class="pos-settings__nav-icon" aria-hidden="true">@IconGlyphs.Get("inbox")</span>
+                        <span class="pos-settings__nav-label">@L["Personal_Nav_UtangInvitations"]</span>
+                        <span class="pos-settings__chevron" aria-hidden="true">›</span>
+                    </button>
+                    <button type="button" class="pos-settings__nav" @onclick="GoProfile">
+                        <span class="pos-settings__nav-icon" aria-hidden="true">@IconGlyphs.Get("customers")</span>
+                        <span class="pos-settings__nav-label">@L["Personal_ProfileLink"]</span>
+                        <span class="pos-settings__chevron" aria-hidden="true">›</span>
+                    </button>
+                    <button type="button" class="pos-settings__nav" @onclick="GoSettings">
+                        <span class="pos-settings__nav-icon" aria-hidden="true">@IconGlyphs.Get("settings")</span>
+                        <span class="pos-settings__nav-label">@L["Personal_SettingsLink"]</span>
+                        <span class="pos-settings__chevron" aria-hidden="true">›</span>
+                    </button>
+                </div>
+            </Section>
 
-        <Section Title="@L["Personal_ExplorePosSection"]">
-            <InlineMessage Tone="InlineMessageTone.Info">@L["Personal_ExplorePosHint"]</InlineMessage>
-            <FormActions>
-                <Button Variant="ButtonVariant.Primary" OnClick="GoExplorePos">@L["Personal_ExplorePos"]</Button>
-            </FormActions>
-        </Section>
-
-        <FormActions>
-            <Button Variant="ButtonVariant.Danger" OnClick="LogoutAsync">@L["Auth_Logout"]</Button>
-        </FormActions>
-    }
-</Page>
+            <Section Title="@L["Personal_ExplorePosSection"]">
+                <InlineMessage Tone="InlineMessageTone.Info">@L["Personal_ExplorePosHint"]</InlineMessage>
+                <div class="pos-action-grid pos-action-grid--single pos-personal-more__explore" role="group">
+                    <button type="button" class="pos-action-tile pos-action-tile--primary" @onclick="GoExplorePos">
+                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("products")</span>
+                        <span class="pos-action-tile__label">@L["Personal_ExplorePos"]</span>
+                    </button>
+                </div>
+            </Section>
+        }
+    </Page>
+</div>
 
 @code {
     private bool _loading = true;
@@ -70,10 +88,4 @@
     private void GoSettings() => Nav.NavigateTo("/personal/settings");
     private void GoExplorePos() => Nav.NavigateTo("/personal/explore-pos");
     private void GoSignIn() => Nav.NavigateTo("/signin");
-
-    private async Task LogoutAsync()
-    {
-        await Auth.LogoutAsync();
-        Nav.NavigateTo("/signin", replace: true);
-    }
 }

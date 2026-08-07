@@ -1,4 +1,5 @@
 @page "/cashier"
+@using ExItS.DesignSystem.Components.Internal
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject RoleHomeResolver RoleHome
@@ -21,45 +22,78 @@ else if (!_authorized)
 }
 else
 {
-    <Page>
-        <PageHeader Title="@L["Cashier_Title"]" />
+    <div class="pos-dash pos-cashier">
+        <Page>
+            <PageHeader Title="@L["Cashier_Title"]" />
 
-        @if (_isOffline)
-        {
-            <Alert Tone="AlertTone.Warning" Title="@L["Shifts_OfflineTitle"]" Message="@L["Shifts_OfflineMessage"]" />
-        }
-
-        <Section Title="@L["Cashier_RegisterSection"]">
-            <Stack Gap="2">
-                <span class="pos-muted">@L["Cashier_CurrentRegister"]</span>
-                <span class="pos-value-md">@(_registerLabel ?? L["Cashier_NoRegister"])</span>
-            </Stack>
-        </Section>
-
-        <Section Title="@L["Cashier_ShiftSection"]">
-            @if (_openShift is null)
+            @if (_isOffline)
             {
-                <EmptyState Title="@L["Cashier_NoShiftTitle"]" Message="@L["Cashier_NoShiftMessage"]" />
-                <FormActions>
-                    <Button Variant="ButtonVariant.Primary" Disabled="_isOffline" OnClick="GoOpenShift">@L["Shifts_Open"]</Button>
-                </FormActions>
+                <Alert Tone="AlertTone.Warning" Title="@L["Shifts_OfflineTitle"]" Message="@L["Shifts_OfflineMessage"]" />
             }
-            else
-            {
-                <Stack Gap="2">
-                    <span class="pos-value-md">@_openShift.Status</span>
-                    <span class="pos-muted">@_openShift.ShiftId.ToString("D")[..8]</span>
-                    <Button Variant="ButtonVariant.Secondary" OnClick="GoContinueShift">@L["Cashier_ContinueShift"]</Button>
-                    <Button Variant="ButtonVariant.Primary" OnClick="GoNewSale">@L["Cashier_NewSale"]</Button>
-                    <Button Variant="ButtonVariant.Ghost" OnClick="GoCloseShift">@L["Cashier_CloseShift"]</Button>
-                </Stack>
-            }
-        </Section>
 
-        <Section Title="@L["Cashier_HistorySection"]">
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoSales">@L["Cashier_OwnSales"]</Button>
-        </Section>
-    </Page>
+            <Section Title="@L["Cashier_RegisterSection"]">
+                <div class="pos-settings__panel">
+                    <div class="pos-settings__kv">
+                        <span class="pos-settings__kv-label">@L["Cashier_CurrentRegister"]</span>
+                        <span class="pos-settings__kv-value">@(_registerLabel ?? L["Cashier_NoRegister"])</span>
+                    </div>
+                </div>
+            </Section>
+
+            <Section Title="@L["Cashier_ShiftSection"]">
+                @if (_openShift is null)
+                {
+                    <EmptyState Title="@L["Cashier_NoShiftTitle"]" Message="@L["Cashier_NoShiftMessage"]" />
+                    <div class="pos-action-grid pos-action-grid--single pos-cashier__actions" role="group" aria-label="@L["Cashier_ShiftSection"]">
+                        <button type="button"
+                                class="pos-action-tile pos-action-tile--primary"
+                                disabled="@_isOffline"
+                                @onclick="GoOpenShift">
+                            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("check")</span>
+                            <span class="pos-action-tile__label">@L["Shifts_Open"]</span>
+                        </button>
+                    </div>
+                }
+                else
+                {
+                    <div class="pos-settings__panel pos-cashier__shift-panel">
+                        <div class="pos-settings__kv">
+                            <span class="pos-settings__kv-label">@L["Cashier_ShiftSection"]</span>
+                            <span class="pos-settings__kv-value pos-cashier__shift-status">@_openShift.Status</span>
+                        </div>
+                        <div class="pos-settings__kv">
+                            <span class="pos-settings__kv-label">@L["Cashier_ShiftIdLabel"]</span>
+                            <span class="pos-settings__kv-value">@_openShift.ShiftId.ToString("D")[..8]</span>
+                        </div>
+                    </div>
+
+                    <div class="pos-action-grid pos-action-grid--three pos-cashier__actions" role="group" aria-label="@L["Cashier_ShiftSection"]">
+                        <button type="button" class="pos-action-tile" @onclick="GoContinueShift">
+                            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("refresh")</span>
+                            <span class="pos-action-tile__label">@L["Cashier_ContinueShift"]</span>
+                        </button>
+                        <button type="button" class="pos-action-tile pos-action-tile--primary" @onclick="GoNewSale">
+                            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("plus")</span>
+                            <span class="pos-action-tile__label">@L["Cashier_NewSale"]</span>
+                        </button>
+                        <button type="button" class="pos-action-tile" @onclick="GoCloseShift">
+                            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("close")</span>
+                            <span class="pos-action-tile__label">@L["Cashier_CloseShift"]</span>
+                        </button>
+                    </div>
+                }
+            </Section>
+
+            <Section Title="@L["Cashier_HistorySection"]">
+                <div class="pos-action-grid pos-action-grid--single pos-cashier__actions" role="group" aria-label="@L["Cashier_HistorySection"]">
+                    <button type="button" class="pos-action-tile" @onclick="GoSales">
+                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("sales")</span>
+                        <span class="pos-action-tile__label">@L["Cashier_OwnSales"]</span>
+                    </button>
+                </div>
+            </Section>
+        </Page>
+    </div>
 }
 
 @code {

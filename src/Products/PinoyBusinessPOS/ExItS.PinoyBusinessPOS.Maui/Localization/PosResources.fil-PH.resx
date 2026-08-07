@@ -2036,6 +2036,7 @@
   <data name="Cashier_ContinueShift" xml:space="preserve"><value>Continue shift</value></data>
   <data name="Cashier_NewSale" xml:space="preserve"><value>New Sale</value></data>
   <data name="Cashier_CloseShift" xml:space="preserve"><value>Close shift</value></data>
+  <data name="Cashier_ShiftIdLabel" xml:space="preserve"><value>Shift ID</value></data>
   <data name="Cashier_HistorySection" xml:space="preserve"><value>History</value></data>
   <data name="Cashier_OwnSales" xml:space="preserve"><value>My sales history</value></data>
   <data name="SellingMode_Banner" xml:space="preserve"><value>Selling mode — hindi nagbabago ang role</value></data>

@@ -29,7 +29,7 @@ public sealed class MoreHubUiGuardTests
         Assert.Contains("UtangCapability.ViewReports", more, StringComparison.Ordinal);
         Assert.Contains("/overdue", more, StringComparison.Ordinal);
         Assert.Contains("/inventory", more, StringComparison.Ordinal);
-        Assert.Contains("Auth_Logout", more, StringComparison.Ordinal);
+        Assert.DoesNotContain("Auth_Logout", more, StringComparison.Ordinal);
 
         Assert.Contains(".pos-action-grid", css, StringComparison.Ordinal);
         Assert.Contains(".pos-dash .exds-page-header", css, StringComparison.Ordinal);

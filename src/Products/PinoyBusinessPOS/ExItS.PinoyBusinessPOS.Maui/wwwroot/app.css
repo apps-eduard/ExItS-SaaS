@@ -6643,3 +6643,255 @@ html.pos-keyboard-open .pos-content {
 }
 
 
+
+/* My QR */
+.pos-my-qr__nav {
+    margin: 0 0 var(--exits-space-3);
+}
+
+.pos-my-qr__nav .pos-action-tile {
+    flex-direction: row;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.pos-my-qr__panel {
+    margin-bottom: var(--exits-space-3);
+    padding: var(--exits-space-3);
+    border: 1px solid var(--exits-border);
+    border-radius: var(--exits-radius-md, 0.5rem);
+    background: var(--exits-surface);
+}
+
+.pos-my-qr__id {
+    font-size: var(--exits-text-sm);
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    word-break: break-all;
+}
+
+.pos-my-qr__actions {
+    margin: 0 0 var(--exits-space-2);
+}
+
+.pos-my-qr__actions .pos-action-tile {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    min-height: 4.35rem;
+    padding: var(--exits-space-2) 0.35rem;
+    text-align: center;
+}
+
+.pos-my-qr__actions .pos-action-tile__label {
+    font-size: var(--exits-text-xs, 0.75rem);
+    line-height: 1.15;
+    white-space: normal;
+    text-align: center;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Org profile */
+.pos-org-profile__nav,
+.pos-org-profile__save {
+    margin: 0 0 var(--exits-space-3);
+}
+
+.pos-org-profile__nav .pos-action-tile,
+.pos-org-profile__save .pos-action-tile {
+    flex-direction: row;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+/* Org subscription */
+.pos-org-subscription__actions {
+    margin: 0 0 var(--exits-space-3);
+}
+
+.pos-org-subscription__actions .pos-action-tile {
+    flex-direction: row;
+    justify-content: center;
+    gap: 0.45rem;
+}
+
+.pos-org-subscription__facts {
+    display: flex;
+    flex-direction: column;
+    gap: var(--exits-space-2);
+    padding: var(--exits-space-3);
+    border: 1px solid var(--exits-border);
+    border-radius: var(--exits-radius-md, 0.5rem);
+    background: var(--exits-surface);
+}
+
+.pos-org-subscription__fact {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.pos-org-subscription__value {
+    font-size: var(--exits-text-sm);
+    font-weight: 650;
+    line-height: 1.3;
+}
+
+/* Staff action bar */
+.pos-staff__actions-bar {
+    margin: 0 0 var(--exits-space-3);
+}
+
+.pos-staff__actions-bar .pos-action-tile {
+    flex-direction: row;
+    justify-content: center;
+    gap: 0.45rem;
+}
+
+/* Personal settings */
+.pos-personal-settings__nav {
+    margin: 0 0 var(--exits-space-3);
+}
+
+.pos-personal-settings__nav .pos-action-tile {
+    flex-direction: row;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.pos-personal-settings .pos-context-list {
+    gap: var(--exits-space-2);
+}
+
+.pos-personal-settings .pos-more__hint {
+    margin: 0 0 var(--exits-space-2);
+}
+
+/* Personal home / utang denser UI */
+.pos-personal-stats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--exits-space-2);
+}
+
+.pos-personal-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding: var(--exits-space-2) var(--exits-space-3);
+    border: 1px solid var(--exits-border);
+    border-radius: var(--exits-radius-md, 0.5rem);
+    background: var(--exits-surface);
+}
+
+.pos-personal-stat__label {
+    font-size: var(--exits-text-xs);
+    color: var(--exits-text-muted);
+    line-height: 1.3;
+}
+
+.pos-personal-stat__value {
+    font-size: var(--exits-text-md);
+    font-weight: 700;
+    color: var(--exits-text);
+    line-height: 1.25;
+}
+
+.pos-personal-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin: 0 0 var(--exits-space-3);
+    border: 1px solid var(--exits-border);
+    border-radius: var(--exits-radius-md, 0.5rem);
+    background: var(--exits-surface);
+    overflow: hidden;
+}
+
+.pos-personal-row {
+    display: flex;
+    align-items: center;
+    gap: var(--exits-space-2);
+    width: 100%;
+    min-height: var(--exits-touch-target-min, 3rem);
+    padding: var(--exits-space-2) var(--exits-space-3);
+    border: 0;
+    border-bottom: 1px solid var(--exits-border);
+    background: transparent;
+    color: var(--exits-text);
+    text-align: left;
+    cursor: pointer;
+}
+
+.pos-personal-row:last-child {
+    border-bottom: 0;
+}
+
+.pos-personal-row__body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.pos-personal-row__title {
+    font-size: var(--exits-text-sm);
+    font-weight: 600;
+    line-height: 1.25;
+}
+
+.pos-personal-row__meta {
+    font-size: var(--exits-text-xs);
+    color: var(--exits-text-muted);
+    line-height: 1.3;
+}
+
+.pos-personal-row__chevron {
+    flex-shrink: 0;
+    font-size: 1.25rem;
+    line-height: 1;
+    color: var(--exits-text-muted);
+}
+
+.pos-personal-people__actions,
+.pos-personal-utang__actions,
+.pos-personal-more__explore {
+    margin-top: var(--exits-space-2);
+}
+
+.pos-personal-people__actions .pos-action-tile,
+.pos-personal-utang__actions .pos-action-tile,
+.pos-personal-more__explore .pos-action-tile {
+    flex-direction: row;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.pos-personal-more .pos-settings__nav:first-child {
+    border-top: 0;
+}
+
+/* Cashier home */
+.pos-cashier__actions {
+    margin-top: var(--exits-space-2);
+}
+
+.pos-cashier__actions.pos-action-grid--single .pos-action-tile {
+    flex-direction: row;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.pos-cashier__shift-panel {
+    margin-bottom: var(--exits-space-2);
+}
+
+.pos-cashier__shift-status {
+    font-weight: 700;
+    color: var(--exits-text);
+}

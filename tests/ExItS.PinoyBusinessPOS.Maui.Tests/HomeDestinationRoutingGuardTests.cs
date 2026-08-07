@@ -108,6 +108,23 @@ public sealed class HomeDestinationRoutingGuardTests
     }
 
     [Fact]
+    public void Cashier_home_uses_icon_action_tiles()
+    {
+        var text = File.ReadAllText(Path.Combine(
+            MauiProject(), "Components", "Pages", "Dashboards", "CashierHome.razor"));
+
+        Assert.Contains("pos-cashier", text, StringComparison.Ordinal);
+        Assert.Contains("pos-action-grid--three", text, StringComparison.Ordinal);
+        Assert.Contains("pos-action-tile--primary", text, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"plus\")", text, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"refresh\")", text, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"close\")", text, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"sales\")", text, StringComparison.Ordinal);
+        Assert.Contains("Cashier_ShiftIdLabel", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("Auth_Logout", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Access_denied_offers_organization_overview_without_a_navigation_loop()
     {
         var denied = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Pages", "AccessDenied.razor"));

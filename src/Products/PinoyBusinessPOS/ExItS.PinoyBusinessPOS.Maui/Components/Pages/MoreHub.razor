@@ -2,11 +2,9 @@
 @using ExItS.DesignSystem.Components.Internal
 @inject NavigationManager Nav
 @inject NavigationGate Gate
-@inject SellingModeService SellingMode
 @inject RoleHomeResolver RoleHome
 @inject ICurrentUserContext CurrentUser
 @inject IUtangCapabilityEvaluator Capabilities
-@inject IAuthenticationService Auth
 @inject IStringLocalizer<PosResources> L
 
 <div class="pos-dash">
@@ -116,9 +114,6 @@
             </Section>
         }
 
-        <div class="pos-dash__footer">
-            <Button Variant="ButtonVariant.Ghost" OnClick="LogoutAsync">@L["Auth_Logout"]</Button>
-        </div>
     </Page>
 </div>
 
@@ -156,11 +151,4 @@
     private void GoShifts() => Nav.NavigateTo("/shifts");
     private void GoPermissions() => Nav.NavigateTo("/permissions");
     private void GoReports() => Nav.NavigateTo("/reports");
-
-    private async Task LogoutAsync()
-    {
-        SellingMode.Clear();
-        await Auth.LogoutAsync();
-        Nav.NavigateTo("/signin");
-    }
 }
