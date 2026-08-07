@@ -18,9 +18,12 @@ else
 <StoreHeaderBack Href="@HeaderBackHref" />
 <div class="pos-customer-create">
     <Page>
-        <PageHeader Title="@L["Customers_CreateTitle"]" Subtitle="@L["Customers_CreateSubtitle"]" />
+        <header class="pos-customer-create__header">
+            <h1 class="pos-customer-create__title">@L["Customers_CreateTitle"]</h1>
+            <p class="pos-customer-create__subtitle">@L["Customers_CreateSubtitle"]</p>
+        </header>
 
-        <Alert Tone="AlertTone.Info" Title="@L["Customers_RepaymentDeferredTitle"]" Message="@L["Customers_RepaymentDeferredMessage"]" />
+        <p class="pos-customer-create__note">@L["Customers_RepaymentDeferredMessage"]</p>
 
         @if (!canCreate)
         {
@@ -37,7 +40,8 @@ else
             <Alert Tone="AlertTone.Success" Title="@L["Customers_SuccessTitle"]" Message="@_pendingMessage" />
         }
 
-        <Section Title="@L["Personal_PeopleAddByIdTitle"]">
+        <section class="pos-customer-create__panel" aria-labelledby="customer-create-resolve-heading">
+            <h2 id="customer-create-resolve-heading" class="pos-customer-create__section-title">@L["Personal_PeopleAddByIdTitle"]</h2>
             <p class="pos-customer-create__hint pos-muted">@L["Customers_ResolveExItsIdHint"]</p>
 
             @if (!string.IsNullOrWhiteSpace(_resolvedPublicUserId))
@@ -65,7 +69,7 @@ else
                     <span class="pos-action-tile__label">@L["Personal_AddByExItsId"]</span>
                 </button>
             </div>
-        </Section>
+        </section>
 
         <CustomerForm DisplayName="@_displayName"
                       DisplayNameChanged="v => _displayName = v"

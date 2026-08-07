@@ -21,7 +21,10 @@ else
     var canCreate = Capabilities.IsAllowed(UtangCapability.CreateCustomer);
 <div class="pos-customers">
     <Page>
-        <PageHeader Title="@L["Customers_Title"]" Subtitle="@L["Customers_Subtitle"]" />
+        <header class="pos-customers__header">
+            <h1 class="pos-customers__title">@L["Customers_Title"]</h1>
+            <p class="pos-customers__subtitle">@L["Customers_Subtitle"]</p>
+        </header>
 
         <div class="pos-action-grid pos-action-grid--three pos-customers__actions" role="group" aria-label="@L["Customers_Title"]">
             <button type="button"
@@ -47,11 +50,11 @@ else
             </button>
         </div>
 
-        <Alert Tone="AlertTone.Info" Title="@L["Customers_CreditDeferredTitle"]" Message="@L["Customers_CreditDeferredMessage"]" />
+        <p class="pos-customers__note">@L["Customers_CreditDeferredMessage"]</p>
 
         @if (_fromLocal)
         {
-            <Alert Tone="AlertTone.Info" Title="@L["SyncStatus_Offline"]" Message="@L["SyncStatus_OfflineDetail"]" />
+            <p class="pos-customers__note">@L["SyncStatus_OfflineDetail"]</p>
         }
 
         <div class="pos-customers__toolbar">
@@ -66,13 +69,11 @@ else
             </div>
         </div>
 
-        <Section Title="@L["Customers_ListSection"]">
+        <section class="pos-customers__panel" aria-labelledby="customers-list-heading">
+            <h2 id="customers-list-heading" class="pos-customers__section-title">@L["Customers_ListSection"]</h2>
             @if (_loading)
             {
-                <Stack Align="StackAlign.Center" Gap="2">
-                    <Spinner />
-                    <span class="pos-muted">@L["Customers_Loading"]</span>
-                </Stack>
+                <div class="pos-customers__loading"><Spinner /><span>@L["Customers_Loading"]</span></div>
             }
             else if (!string.IsNullOrEmpty(_errorMessage))
             {
@@ -96,30 +97,30 @@ else
                            role="listitem"
                            href="@($"/customers/{item.CustomerId:D}")">
                             <div class="pos-customers__row-main">
-                                <span class="pos-customers__row-name">@item.DisplayName</span>
+                                <div class="pos-customers__row-top">
+                                    <span class="pos-customers__row-name">@item.DisplayName</span>
+                                    <div class="pos-customers__row-badges">
+                                        <Badge Tone="@(item.Status == "Active" ? BadgeTone.Success : BadgeTone.Neutral)">
+                                            @item.Status
+                                        </Badge>
+                                        @if (_fromLocal
+                                            && _entityStates.TryGetValue(item.CustomerId, out var state)
+                                            && OfflineCustomerCreditUiHelpers.EntityBadge(state) is { } badge)
+                                        {
+                                            <Badge Tone="@badge.Tone">@L[badge.LabelKey]</Badge>
+                                        }
+                                    </div>
+                                </div>
                                 <span class="pos-customers__row-meta">
                                     @(string.IsNullOrWhiteSpace(item.MobileNumber) ? L["Customers_NoMobile"] : item.MobileNumber)
                                 </span>
-                                <div class="pos-customers__row-badges">
-                                    <Badge Tone="@(item.Status == "Active" ? BadgeTone.Success : BadgeTone.Neutral)">
-                                        @item.Status
-                                    </Badge>
-                                    @if (_fromLocal
-                                        && _entityStates.TryGetValue(item.CustomerId, out var state)
-                                        && OfflineCustomerCreditUiHelpers.EntityBadge(state) is { } badge)
-                                    {
-                                        <Badge Tone="@badge.Tone">@L[badge.LabelKey]</Badge>
-                                    }
-                                </div>
                             </div>
-                            <div class="pos-customers__row-side">
-                                <span class="pos-customers__view">@L["Customers_View"]</span>
-                            </div>
+                            <span class="pos-customers__view">@L["Customers_View"]</span>
                         </a>
                     }
                 </div>
             }
-        </Section>
+        </section>
 
         @if (!_loading && _totalCount > 0)
         {

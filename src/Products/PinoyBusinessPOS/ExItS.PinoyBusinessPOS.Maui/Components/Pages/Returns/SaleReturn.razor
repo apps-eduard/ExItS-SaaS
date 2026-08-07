@@ -29,8 +29,12 @@ else if (_refundable is null)
 }
 else
 {
+<div class="pos-sale-return">
 <Page>
-    <PageHeader Title="@L["Returns_Title"]" Subtitle="@_refundable.SaleNumber" />
+    <header class="pos-sale-return__header">
+        <h1 class="pos-sale-return__title">@L["Returns_Title"]</h1>
+        <p class="pos-sale-return__subtitle">@_refundable.SaleNumber</p>
+    </header>
 
     @if (_isOffline)
     {
@@ -42,40 +46,49 @@ else
         <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Returns_ErrorTitle"])" Message="@_errorMessage" />
     }
 
-    <Section Title="@L["Returns_LinesSection"]">
-        <Stack Gap="3">
+    <section class="pos-sale-return__panel" aria-labelledby="returns-lines-heading">
+        <h2 id="returns-lines-heading" class="pos-sale-return__section-title">@L["Returns_LinesSection"]</h2>
+        <div class="pos-sale-return__list" role="list">
             @foreach (var line in _refundable.Lines)
             {
                 var qty = GetQuantity(line.SaleLineId);
-                <div class="pos-row">
-                    <span class="pos-value-md">@line.ProductNameSnapshot</span>
-                    <span class="pos-muted">@L["Returns_RefundableQty", line.RefundableQuantity.ToString("0.###")]</span>
-                    <NumberInput Value="@qty"
-                                 ValueChanged="v => SetQuantity(line.SaleLineId, v)"
-                                 Min="0"
-                                 Max="@line.RefundableQuantity"
-                                 Step="1" />
-                    <select class="pos-input" value="@GetDisposition(line.SaleLineId)" @onchange="e => SetDisposition(line.SaleLineId, e)">
-                        <option value="ReturnToStock">@L["Returns_Restock"]</option>
-                        <option value="DoNotRestock">@L["Returns_NoRestock"]</option>
-                    </select>
-                </div>
+                <article class="pos-sale-return__entry" role="listitem">
+                    <div class="pos-sale-return__entry-top">
+                        <span class="pos-sale-return__entry-name">@line.ProductNameSnapshot</span>
+                        <span class="pos-sale-return__entry-meta">@L["Returns_RefundableQty", line.RefundableQuantity.ToString("0.###")]</span>
+                    </div>
+                    <div class="pos-sale-return__entry-controls">
+                        <NumberInput Value="@qty"
+                                     ValueChanged="v => SetQuantity(line.SaleLineId, v)"
+                                     Min="0"
+                                     Max="@line.RefundableQuantity"
+                                     Step="1" />
+                        <select class="pos-input" value="@GetDisposition(line.SaleLineId)" @onchange="e => SetDisposition(line.SaleLineId, e)">
+                            <option value="ReturnToStock">@L["Returns_Restock"]</option>
+                            <option value="DoNotRestock">@L["Returns_NoRestock"]</option>
+                        </select>
+                    </div>
+                </article>
             }
-        </Stack>
-    </Section>
+        </div>
+    </section>
 
-    <Section Title="@L["Returns_ReasonSection"]">
-        <TextInput Label="@L["Returns_ReasonLabel"]" @bind-Value="_reason" Required="true" />
-        <TextInput Label="@L["Returns_NotesLabel"]" @bind-Value="_notes" />
-    </Section>
+    <section class="pos-sale-return__panel" aria-labelledby="returns-reason-heading">
+        <h2 id="returns-reason-heading" class="pos-sale-return__section-title">@L["Returns_ReasonSection"]</h2>
+        <div class="pos-sale-return__form">
+            <TextInput Label="@L["Returns_ReasonLabel"]" @bind-Value="_reason" Required="true" />
+            <TextInput Label="@L["Returns_NotesLabel"]" @bind-Value="_notes" />
+        </div>
+    </section>
 
-    <FormActions>
+    <FormActions class="pos-customer-create__footer">
         <Button Variant="ButtonVariant.Primary"
                 Disabled="@(!CanSubmit)"
                 IsLoading="@_acting"
                 OnClick="SubmitAsync">@L["Returns_Submit"]</Button>
     </FormActions>
 </Page>
+</div>
 }
 
 @code {

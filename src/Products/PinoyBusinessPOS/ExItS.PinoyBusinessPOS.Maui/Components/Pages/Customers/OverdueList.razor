@@ -15,33 +15,35 @@ else
 {
 <div class="pos-overdue">
     <Page>
-        <PageHeader Title="@L["Overdue_Title"]" Subtitle="@L["Overdue_Subtitle"]" />
+        <header class="pos-overdue__header">
+            <div class="pos-overdue__title-row">
+                <h1 class="pos-overdue__title">@L["Overdue_Title"]</h1>
+                <div class="pos-overdue__header-actions">
+                    <button type="button"
+                            class="pos-overdue__header-btn"
+                            @onclick="GoCustomers">
+                        <span class="pos-overdue__header-icon" aria-hidden="true">@IconGlyphs.Get("customers")</span>
+                        <span>@L["Customers_Title"]</span>
+                    </button>
+                    <button type="button"
+                            class="pos-overdue__header-btn pos-overdue__header-btn--primary"
+                            disabled="@(_loading || _creditsLoading)"
+                            @onclick="ReloadAsync">
+                        <span class="pos-overdue__header-icon" aria-hidden="true">@IconGlyphs.Get("refresh")</span>
+                        <span>@L["Overdue_Refresh"]</span>
+                    </button>
+                </div>
+            </div>
+            <p class="pos-overdue__subtitle">@L["Overdue_Subtitle"]</p>
+        </header>
 
-        <div class="pos-action-grid pos-action-grid--two pos-overdue__actions" role="group" aria-label="@L["Overdue_Title"]">
-            <button type="button"
-                    class="pos-action-tile"
-                    @onclick="GoCustomers">
-                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("customers")</span>
-                <span class="pos-action-tile__label">@L["Customers_Title"]</span>
-            </button>
-            <button type="button"
-                    class="pos-action-tile pos-action-tile--primary"
-                    disabled="@(_loading || _creditsLoading)"
-                    @onclick="ReloadAsync">
-                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("refresh")</span>
-                <span class="pos-action-tile__label">@L["Overdue_Refresh"]</span>
-            </button>
-        </div>
+        <p class="pos-overdue__note">@L["Overdue_PolicyMessage"]</p>
 
-        <Alert Tone="AlertTone.Info" Title="@L["Overdue_PolicyTitle"]" Message="@L["Overdue_PolicyMessage"]" />
-
-        <Section Title="@L["Overdue_CustomersTitle"]">
+        <section class="pos-overdue__panel" aria-labelledby="overdue-customers-heading">
+            <h2 id="overdue-customers-heading" class="pos-overdue__section-title">@L["Overdue_CustomersTitle"]</h2>
             @if (_loading)
             {
-                <Stack Align="StackAlign.Center" Gap="2">
-                    <Spinner />
-                    <span class="pos-muted">@L["Overdue_Loading"]</span>
-                </Stack>
+                <div class="pos-overdue__loading"><Spinner /><span>@L["Overdue_Loading"]</span></div>
             }
             else if (!string.IsNullOrEmpty(_errorMessage))
             {
@@ -66,7 +68,10 @@ else
                                 role="listitem"
                                 @onclick="() => GoCustomerOverdue(item.CustomerId)">
                             <div class="pos-overdue__row-main">
-                                <span class="pos-overdue__row-name">@item.DisplayName</span>
+                                <div class="pos-overdue__row-top">
+                                    <span class="pos-overdue__row-name">@item.DisplayName</span>
+                                    <Badge Tone="BadgeTone.Danger">@L["DueDate_Badge_Overdue"]</Badge>
+                                </div>
                                 <span class="pos-overdue__row-meta">
                                     @L["Overdue_Amount"]: <MoneyDisplay Amount="@item.OverdueAmount" CurrencyCode="PHP" />
                                     · @L["Overdue_Count"]: @item.OverdueCreditCount
@@ -75,26 +80,19 @@ else
                                         <text> · @L["Overdue_Earliest"]: @item.EarliestOverdueDate.Value.ToString("d")</text>
                                     }
                                 </span>
-                                <div class="pos-overdue__row-badges">
-                                    <Badge Tone="BadgeTone.Danger">@L["DueDate_Badge_Overdue"]</Badge>
-                                </div>
                             </div>
-                            <div class="pos-overdue__row-side">
-                                <span class="pos-overdue__view">@L["Overdue_OpenDetail"]</span>
-                            </div>
+                            <span class="pos-overdue__view">@L["Overdue_OpenDetail"]</span>
                         </button>
                     }
                 </div>
             }
-        </Section>
+        </section>
 
-        <Section Title="@L["Overdue_CreditsTitle"]">
+        <section class="pos-overdue__panel" aria-labelledby="overdue-credits-heading">
+            <h2 id="overdue-credits-heading" class="pos-overdue__section-title">@L["Overdue_CreditsTitle"]</h2>
             @if (_creditsLoading)
             {
-                <Stack Align="StackAlign.Center" Gap="2">
-                    <Spinner />
-                    <span class="pos-muted">@L["Overdue_Loading"]</span>
-                </Stack>
+                <div class="pos-overdue__loading"><Spinner /><span>@L["Overdue_Loading"]</span></div>
             }
             else if (_credits.Count == 0)
             {
@@ -112,9 +110,12 @@ else
                                 role="listitem"
                                 @onclick="() => GoCredit(credit.CustomerId, credit.CreditEntryId)">
                             <div class="pos-overdue__row-main">
-                                <span class="pos-overdue__row-name">
-                                    <MoneyDisplay Amount="@credit.RemainingUnpaidAmount" CurrencyCode="PHP" />
-                                </span>
+                                <div class="pos-overdue__row-top">
+                                    <span class="pos-overdue__row-name">
+                                        <MoneyDisplay Amount="@credit.RemainingUnpaidAmount" CurrencyCode="PHP" />
+                                    </span>
+                                    <Badge Tone="BadgeTone.Danger">@L["DueDate_Badge_Overdue"]</Badge>
+                                </div>
                                 @if (!string.IsNullOrWhiteSpace(credit.Remarks))
                                 {
                                     <span class="pos-overdue__row-meta">@credit.Remarks</span>
@@ -122,18 +123,13 @@ else
                                 <span class="pos-overdue__row-meta">
                                     @L["DueDate_Current"]: @(credit.CurrentDueDate?.ToString("d") ?? L["DueDate_None"])
                                 </span>
-                                <div class="pos-overdue__row-badges">
-                                    <Badge Tone="BadgeTone.Danger">@L["DueDate_Badge_Overdue"]</Badge>
-                                </div>
                             </div>
-                            <div class="pos-overdue__row-side">
-                                <span class="pos-overdue__view">@L["Customers_View"]</span>
-                            </div>
+                            <span class="pos-overdue__view">@L["Customers_View"]</span>
                         </button>
                     }
                 </div>
             }
-        </Section>
+        </section>
     </Page>
 </div>
 }

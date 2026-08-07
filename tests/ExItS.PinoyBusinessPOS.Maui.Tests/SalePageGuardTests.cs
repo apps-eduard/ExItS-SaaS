@@ -12,6 +12,7 @@ public sealed class SalePageGuardTests
         Assert.Contains("IPosSaleClient", list, StringComparison.Ordinal);
         Assert.Contains("pos-sales__row", list, StringComparison.Ordinal);
         Assert.Contains("pos-sales__toolbar", list, StringComparison.Ordinal);
+        Assert.Contains("pos-sales__header", list, StringComparison.Ordinal);
         Assert.Contains("Sales_ListSection", list, StringComparison.Ordinal);
         Assert.Contains("Sales_Filter_Status", list, StringComparison.Ordinal);
         Assert.Contains("Sales_Filter_Payment", list, StringComparison.Ordinal);
@@ -19,6 +20,7 @@ public sealed class SalePageGuardTests
         Assert.Contains("ListSalesAsync", list, StringComparison.Ordinal);
         Assert.Contains("Pagination", list, StringComparison.Ordinal);
         Assert.DoesNotContain("ResponsiveDataList", list, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", list, StringComparison.Ordinal);
 
         var checkout = File.ReadAllText(Path.Combine(sales, "SaleCheckout.razor"));
         Assert.Contains("@page \"/sales/new\"", checkout, StringComparison.Ordinal);
@@ -77,7 +79,9 @@ public sealed class SalePageGuardTests
         Assert.Contains("@page \"/sales/{SaleId:guid}/return\"", returnPage, StringComparison.Ordinal);
         Assert.Contains("StoreHeaderBack Href=", returnPage, StringComparison.Ordinal);
         Assert.Contains("Returns_OfflineMessage", returnPage, StringComparison.Ordinal);
+        Assert.Contains("pos-sale-return", returnPage, StringComparison.Ordinal);
         Assert.DoesNotContain("Returns_BackToSale", returnPage, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", returnPage, StringComparison.Ordinal);
 
         Assert.True(File.Exists(Path.Combine(sales, "SalesUiOptions.cs")));
     }

@@ -1222,8 +1222,61 @@ button.exds-date-trigger.exds-field__control:disabled { cursor: not-allowed; }
 .exds-search-toolbar__actions { display: flex; gap: var(--exits-space-2); flex-wrap: wrap; }
 .exds-filter-bar { display: flex; flex-wrap: wrap; gap: var(--exits-space-2); align-items: flex-end; margin-bottom: var(--exits-space-3); }
 .exds-sort-control { min-width: 10rem; }
-.exds-pagination { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--exits-space-2); margin-top: var(--exits-space-3); }
-.exds-pagination-summary { margin: 0; color: var(--exits-text-muted); font-size: var(--exits-text-sm); }
+.exds-pagination {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--exits-space-2);
+  margin-top: var(--exits-space-3);
+  padding: 0.35rem;
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-surface-muted);
+}
+.exds-pagination__btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-surface);
+  color: var(--exits-text);
+  cursor: pointer;
+}
+.exds-pagination__btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+.exds-pagination__btn:not(:disabled):active {
+  opacity: 0.85;
+}
+.exds-pagination__icon {
+  display: inline-flex;
+  width: 1.15rem;
+  height: 1.15rem;
+  color: var(--exits-primary);
+}
+.exds-pagination__icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.exds-pagination__icon--next {
+  transform: scaleX(-1);
+}
+.exds-pagination-summary {
+  margin: 0;
+  color: var(--exits-text-muted);
+  font-size: var(--exits-text-xs);
+  line-height: 1.3;
+  text-align: center;
+  min-width: 0;
+}
 
 .exds-money { font-family: var(--exits-font-tabular); font-variant-numeric: tabular-nums; font-weight: var(--exits-font-weight-semibold); font-size: var(--exits-type-monetary); color: var(--exits-text); white-space: nowrap; }
 .exds-money--negative { color: var(--exits-danger); }

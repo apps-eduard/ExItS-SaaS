@@ -1,4 +1,5 @@
 @page "/customers/{CustomerId:guid}/repayments/{RepaymentId:guid}"
+@using ExItS.DesignSystem.Components.Internal
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IPosCustomerClient Customers
@@ -36,13 +37,36 @@ else
         && Sync.CanMutateOffline
         && _entityState == LocalEntitySyncState.ServerConfirmed;
     var canReceipt = Capabilities.IsAllowed(UtangCapability.ViewGenerateReceipt) && !_fromLocal;
+<div class="pos-repayment-detail">
 <Page>
-    <PageHeader Title="@L["Payment_DetailTitle"]" Subtitle="@L["Payment_DetailSubtitle"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoLedger">@L["Ledger_Open"]</Button>
-            <Button Variant="ButtonVariant.Secondary" Disabled="@(!canReceipt)" OnClick="GoReceipt">@L["Receipt_Open"]</Button>
-        </Actions>
-    </PageHeader>
+    <header class="pos-repayment-detail__header">
+        <div class="pos-repayment-detail__title-row">
+            <h1 class="pos-repayment-detail__title">@L["Payment_DetailTitle"]</h1>
+            <div class="pos-repayment-detail__header-actions">
+                <button type="button"
+                        class="pos-repayment-detail__header-btn"
+                        @onclick="GoLedger">
+                    <span class="pos-repayment-detail__header-icon" aria-hidden="true">@IconGlyphs.Get("list")</span>
+                    <span>@L["Ledger_Open"]</span>
+                </button>
+                <button type="button"
+                        class="pos-repayment-detail__header-btn"
+                        disabled="@(!canReceipt)"
+                        @onclick="GoReceipt">
+                    <span class="pos-repayment-detail__header-icon" aria-hidden="true">@IconGlyphs.Get("receipt")</span>
+                    <span>@L["Receipt_Open"]</span>
+                </button>
+            </div>
+        </div>
+        <p class="pos-repayment-detail__subtitle">@L["Payment_DetailSubtitle"]</p>
+        <div class="pos-repayment-detail__status-row">
+            <Badge Tone="@(repayment.Status == "Active" ? BadgeTone.Success : BadgeTone.Neutral)">@repayment.Status</Badge>
+            @if (_entityState is { } state && OfflineCustomerCreditUiHelpers.EntityBadge(state) is { } badge)
+            {
+                <Badge Tone="@badge.Tone">@L[badge.LabelKey]</Badge>
+            }
+        </div>
+    </header>
 
     @if (!string.IsNullOrEmpty(_banner))
     {
@@ -59,45 +83,44 @@ else
         <Alert Tone="AlertTone.Warning" Title="@L["Access_RestrictedTitle"]" Message="@L["Access_RestrictedMessage"]" />
     }
 
-    <Section Title="@L["Payment_EntrySection"]">
-        <Stack Gap="3">
-            <div>
-                <span class="pos-muted">@L["Payment_Field_Amount"]</span>
-                <div class="pos-value-md">
-                    <MoneyDisplay Amount="@repayment.Amount" CurrencyCode="PHP" />
-                    @if (_entityState is { } state && OfflineCustomerCreditUiHelpers.EntityBadge(state) is { } badge)
-                    {
-                        <Badge Tone="@badge.Tone">@L[badge.LabelKey]</Badge>
-                    }
-                </div>
+    <section class="pos-repayment-detail__panel" aria-labelledby="payment-entry-heading">
+        <h2 id="payment-entry-heading" class="pos-repayment-detail__section-title">@L["Payment_EntrySection"]</h2>
+        <div class="pos-repayment-detail__amount">
+            <span class="pos-repayment-detail__amount-label">@L["Payment_Field_Amount"]</span>
+            <div class="pos-repayment-detail__amount-value">
+                <MoneyDisplay Amount="@repayment.Amount" CurrencyCode="PHP" Emphasized="true" />
             </div>
-            <div>
-                <span class="pos-muted">@L["Customers_Field_Status"]</span>
-                <Badge Tone="@(repayment.Status == "Active" ? BadgeTone.Success : BadgeTone.Neutral)">@repayment.Status</Badge>
+        </div>
+        <dl class="pos-repayment-detail__facts">
+            <div class="pos-repayment-detail__fact">
+                <dt>@L["Payment_Field_Remarks"]</dt>
+                <dd class="pos-wrap">@(string.IsNullOrWhiteSpace(repayment.Remarks) ? L["Customers_NoValue"] : repayment.Remarks)</dd>
             </div>
-            <div>
-                <span class="pos-muted">@L["Payment_Field_Remarks"]</span>
-                <div class="pos-value-md pos-wrap">@(string.IsNullOrWhiteSpace(repayment.Remarks) ? L["Customers_NoValue"] : repayment.Remarks)</div>
-            </div>
-            <div>
-                <span class="pos-muted">@L["Payment_RecordedAt"]</span>
-                <div class="pos-value-md">@repayment.RecordedAtUtc.ToLocalTime().ToString("g")</div>
+            <div class="pos-repayment-detail__fact">
+                <dt>@L["Payment_RecordedAt"]</dt>
+                <dd>@repayment.RecordedAtUtc.ToLocalTime().ToString("g")</dd>
             </div>
             @if (repayment.Status == "Reversed")
             {
-                <div>
-                    <span class="pos-muted">@L["Credit_ReversalReason"]</span>
-                    <div class="pos-value-md pos-wrap">@repayment.ReversalReason</div>
+                <div class="pos-repayment-detail__fact">
+                    <dt>@L["Credit_ReversalReason"]</dt>
+                    <dd class="pos-wrap">@repayment.ReversalReason</dd>
                 </div>
             }
-        </Stack>
-    </Section>
+        </dl>
+    </section>
 
     @if (repayment.Status == "Active")
     {
-        <FormActions>
-            <Button Variant="ButtonVariant.Danger" Disabled="@(!canReverse)" OnClick="() => _confirmReverse = true">@L["Payment_Reverse"]</Button>
-        </FormActions>
+        <div class="pos-action-grid pos-action-grid--single pos-repayment-detail__actions" role="group">
+            <button type="button"
+                    class="pos-action-tile"
+                    disabled="@(!canReverse)"
+                    @onclick="() => _confirmReverse = true">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("warning")</span>
+                <span class="pos-action-tile__label">@L["Payment_Reverse"]</span>
+            </button>
+        </div>
     }
 
     <ConfirmDialog Visible="@_confirmReverse"
@@ -113,6 +136,7 @@ else
                    IsLoading="@_acting"
                    OnConfirm="ReverseAsync" />
 </Page>
+</div>
 }
 }
 

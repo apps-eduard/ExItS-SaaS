@@ -1,4 +1,5 @@
 @page "/customers/{CustomerId:guid}/overdue"
+@using ExItS.DesignSystem.Components.Internal
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IPosCustomerClient Customers
@@ -26,52 +27,68 @@ else if (_summary is null)
 else
 {
     var summary = _summary;
+<div class="pos-customer-overdue">
 <Page>
-    <PageHeader Title="@L["Overdue_CustomerTitle"]" Subtitle="@L["Overdue_CustomerSubtitle"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoOrgOverdue">@L["Overdue_OpenOrg"]</Button>
-        </Actions>
-    </PageHeader>
+    <header class="pos-customer-overdue__header">
+        <h1 class="pos-customer-overdue__title">@L["Overdue_CustomerTitle"]</h1>
+        <p class="pos-customer-overdue__subtitle">@L["Overdue_CustomerSubtitle"]</p>
+        <button type="button"
+                class="pos-customer-overdue__org"
+                aria-label="@L["Overdue_OpenOrg"]"
+                @onclick="GoOrgOverdue">
+            <span class="pos-customer-overdue__org-icon" aria-hidden="true">@IconGlyphs.Get("warning")</span>
+            <span class="pos-customer-overdue__org-label">@L["Overdue_OpenOrg"]</span>
+        </button>
+    </header>
 
     @if (!string.IsNullOrEmpty(_errorMessage))
     {
         <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Overdue_ErrorTitle"])" Message="@_errorMessage" />
     }
 
-    <Section Title="@L["Overdue_SummaryTitle"]">
-        <Stack Gap="3">
-            <div>
-                <span class="pos-muted">@L["Credit_Outstanding"]</span>
-                <div class="pos-value-md"><MoneyDisplay Amount="@summary.OutstandingAmount" CurrencyCode="PHP" /></div>
+    <section class="pos-customer-overdue__panel" aria-labelledby="overdue-summary-heading">
+        <h2 id="overdue-summary-heading" class="pos-customer-overdue__section-title">@L["Overdue_SummaryTitle"]</h2>
+        <div class="pos-customer-overdue__balance">
+            <span class="pos-customer-overdue__balance-label">@L["Overdue_Amount"]</span>
+            <div class="pos-customer-overdue__balance-value">
+                <MoneyDisplay Amount="@summary.OverdueAmount" CurrencyCode="PHP" Emphasized="true" />
             </div>
-            <div>
-                <span class="pos-muted">@L["Overdue_Amount"]</span>
-                <div class="pos-value-md"><MoneyDisplay Amount="@summary.OverdueAmount" CurrencyCode="PHP" /></div>
+        </div>
+        <div class="pos-customer-overdue__stats" role="list">
+            <div class="pos-customer-overdue__stat" role="listitem">
+                <span class="pos-customer-overdue__stat-label">@L["Credit_Outstanding"]</span>
+                <span class="pos-customer-overdue__stat-value"><MoneyDisplay Amount="@summary.OutstandingAmount" CurrencyCode="PHP" /></span>
             </div>
-            <div class="pos-muted">
-                @L["Overdue_Count"]: @summary.OverdueCreditCount
-                · @L["Overdue_NoDueDateCount"]: @summary.CreditsWithoutDueDateCount
+            <div class="pos-customer-overdue__stat" role="listitem">
+                <span class="pos-customer-overdue__stat-label">@L["Overdue_Count"]</span>
+                <span class="pos-customer-overdue__stat-value">@summary.OverdueCreditCount</span>
             </div>
-            <div class="pos-muted">
-                @L["Overdue_Earliest"]: @(summary.EarliestOverdueDate?.ToString("d") ?? L["Customers_NoValue"])
-                · @L["Overdue_NextDue"]: @(summary.NextUpcomingDueDate?.ToString("d") ?? L["Customers_NoValue"])
+            <div class="pos-customer-overdue__stat" role="listitem">
+                <span class="pos-customer-overdue__stat-label">@L["Overdue_Earliest"]</span>
+                <span class="pos-customer-overdue__stat-value">@(summary.EarliestOverdueDate?.ToString("d") ?? L["Customers_NoValue"])</span>
             </div>
-        </Stack>
-    </Section>
+            <div class="pos-customer-overdue__stat" role="listitem">
+                <span class="pos-customer-overdue__stat-label">@L["Overdue_NextDue"]</span>
+                <span class="pos-customer-overdue__stat-value">@(summary.NextUpcomingDueDate?.ToString("d") ?? L["Customers_NoValue"])</span>
+            </div>
+        </div>
+    </section>
 
-    <Section Title="@L["Overdue_FilterTitle"]">
-            <FormActions>
-                <Button Variant="@FilterVariantAll" OnClick="SetFilterAllAsync">@L["Overdue_Filter_All"]</Button>
-                <Button Variant="@FilterVariantOverdue" OnClick="SetFilterOverdueAsync">@L["Overdue_Filter_Overdue"]</Button>
-                <Button Variant="@FilterVariantDueSoon" OnClick="SetFilterDueSoonAsync">@L["Overdue_Filter_DueSoon"]</Button>
-                <Button Variant="@FilterVariantNoDueDate" OnClick="SetFilterNoDueDateAsync">@L["Overdue_Filter_NoDueDate"]</Button>
-            </FormActions>
-    </Section>
+    <section class="pos-customer-overdue__panel" aria-labelledby="overdue-filter-heading">
+        <h2 id="overdue-filter-heading" class="pos-customer-overdue__section-title">@L["Overdue_FilterTitle"]</h2>
+        <div class="pos-customer-overdue__filters" role="group" aria-label="@L["Overdue_FilterTitle"]">
+            <button type="button" class="@FilterClass("all")" @onclick="SetFilterAllAsync">@L["Overdue_Filter_All"]</button>
+            <button type="button" class="@FilterClass("overdue")" @onclick="SetFilterOverdueAsync">@L["Overdue_Filter_Overdue"]</button>
+            <button type="button" class="@FilterClass("duesoon")" @onclick="SetFilterDueSoonAsync">@L["Overdue_Filter_DueSoon"]</button>
+            <button type="button" class="@FilterClass("noduedate")" @onclick="SetFilterNoDueDateAsync">@L["Overdue_Filter_NoDueDate"]</button>
+        </div>
+    </section>
 
-    <Section Title="@L["Overdue_CreditsTitle"]">
+    <section class="pos-customer-overdue__panel" aria-labelledby="overdue-credits-heading">
+        <h2 id="overdue-credits-heading" class="pos-customer-overdue__section-title">@L["Overdue_CreditsTitle"]</h2>
         @if (_creditsLoading)
         {
-            <Spinner /><span>@L["Overdue_Loading"]</span>
+            <div class="pos-customer-overdue__loading"><Spinner /><span>@L["Overdue_Loading"]</span></div>
         }
         else if (_credits.Count == 0)
         {
@@ -79,25 +96,33 @@ else
         }
         else
         {
-            <Stack Gap="3">
+            <div class="pos-customer-overdue__list" role="list">
                 @foreach (var credit in _credits)
                 {
-                    <div class="pos-credit-entry">
-                        <div class="pos-value-md">
-                            <MoneyDisplay Amount="@credit.RemainingUnpaidAmount" CurrencyCode="PHP" />
+                    <article class="pos-customer-overdue__entry" role="listitem">
+                        <div class="pos-customer-overdue__entry-top">
+                            <span class="pos-customer-overdue__entry-amount">
+                                <MoneyDisplay Amount="@credit.RemainingUnpaidAmount" CurrencyCode="PHP" />
+                            </span>
                             <Badge Tone="@DueStatusTone(credit.DueStatus)">@DueStatusLabel(credit.DueStatus)</Badge>
                         </div>
-                        <div class="pos-wrap">@credit.Remarks</div>
-                        <div class="pos-muted">
+                        @if (!string.IsNullOrWhiteSpace(credit.Remarks))
+                        {
+                            <p class="pos-customer-overdue__entry-remarks pos-wrap">@credit.Remarks</p>
+                        }
+                        <p class="pos-customer-overdue__entry-meta">
                             @L["DueDate_Current"]: @(credit.CurrentDueDate?.ToString("d") ?? L["DueDate_None"])
+                        </p>
+                        <div class="pos-customer-overdue__entry-actions">
+                            <Button Variant="ButtonVariant.Secondary" OnClick="() => GoCredit(credit.CreditEntryId)">@L["DueDate_OpenCredit"]</Button>
                         </div>
-                        <Button Variant="ButtonVariant.Secondary" OnClick="() => GoCredit(credit.CreditEntryId)">@L["DueDate_OpenCredit"]</Button>
-                    </div>
+                    </article>
                 }
-            </Stack>
+            </div>
         }
-    </Section>
+    </section>
 </Page>
+</div>
 }
 }
 
@@ -178,15 +203,10 @@ else
         _creditsLoading = false;
     }
 
-    private ButtonVariant FilterVariantAll => FilterVariant("all");
-    private ButtonVariant FilterVariantOverdue => FilterVariant("overdue");
-    private ButtonVariant FilterVariantDueSoon => FilterVariant("duesoon");
-    private ButtonVariant FilterVariantNoDueDate => FilterVariant("noduedate");
-
-    private ButtonVariant FilterVariant(string filter) =>
+    private string FilterClass(string filter) =>
         string.Equals(_filter, filter, StringComparison.OrdinalIgnoreCase)
-            ? ButtonVariant.Primary
-            : ButtonVariant.Secondary;
+            ? "pos-customer-overdue__chip pos-customer-overdue__chip--active"
+            : "pos-customer-overdue__chip";
 
     private string DueStatusLabel(string status) => status switch
     {

@@ -1,4 +1,5 @@
 @page "/customers/{CustomerId:guid}/repayments/{RepaymentId:guid}/receipt"
+@using ExItS.DesignSystem.Components.Internal
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IPosCustomerClient Customers
@@ -18,7 +19,10 @@ else
 @if (!_canView)
 {
     <Page>
-        <PageHeader Title="@L["Receipt_Title"]" Subtitle="@L["Receipt_Subtitle"]" />
+        <header class="pos-receipt__header">
+            <h1 class="pos-receipt__title">@L["Receipt_Title"]</h1>
+            <p class="pos-receipt__subtitle">@L["Receipt_Subtitle"]</p>
+        </header>
         <Alert Tone="AlertTone.Warning" Title="@L["Access_RestrictedTitle"]" Message="@L["Access_RestrictedMessage"]" />
     </Page>
 }
@@ -35,12 +39,23 @@ else if (_receipt is null)
 else
 {
     var receipt = _receipt;
+<div class="pos-receipt">
 <Page>
-    <PageHeader Title="@L["Receipt_Title"]" Subtitle="@L["Receipt_Subtitle"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoPayment">@L["Payment_View"]</Button>
-        </Actions>
-    </PageHeader>
+    <header class="pos-receipt__header">
+        <div class="pos-receipt__title-row">
+            <h1 class="pos-receipt__title">@L["Receipt_Title"]</h1>
+            <button type="button"
+                    class="pos-receipt__header-btn"
+                    @onclick="GoPayment">
+                <span class="pos-receipt__header-icon" aria-hidden="true">@IconGlyphs.Get("check")</span>
+                <span>@L["Payment_View"]</span>
+            </button>
+        </div>
+        <p class="pos-receipt__subtitle">@L["Receipt_Subtitle"]</p>
+        <div class="pos-receipt__status-row">
+            <Badge Tone="@(receipt.IsReversed ? BadgeTone.Warning : BadgeTone.Success)">@receipt.Status</Badge>
+        </div>
+    </header>
 
     @if (!string.IsNullOrEmpty(_banner))
     {
@@ -54,57 +69,63 @@ else
 
     @if (receipt.IsReversed)
     {
-        <Alert Tone="AlertTone.Warning" Title="@L["Receipt_ReversedTitle"]" Message="@L["Receipt_ReversedMessage"]" />
+        <p class="pos-receipt__note">@L["Receipt_ReversedMessage"]</p>
     }
 
-    <Section Title="@L["Receipt_PreviewTitle"]">
-        <Stack Gap="3">
-            <div>
-                <span class="pos-muted">@L["Receipt_Reference"]</span>
-                <div class="pos-value-md">@receipt.ReceiptReference</div>
+    <section class="pos-receipt__panel" aria-labelledby="receipt-preview-heading">
+        <h2 id="receipt-preview-heading" class="pos-receipt__section-title">@L["Receipt_PreviewTitle"]</h2>
+        <div class="pos-receipt__amount">
+            <span class="pos-receipt__amount-label">@L["Payment_Field_Amount"]</span>
+            <div class="pos-receipt__amount-value">
+                <MoneyDisplay Amount="@receipt.Amount" CurrencyCode="@receipt.CurrencyCode" Emphasized="true" />
             </div>
-            <div>
-                <span class="pos-muted">@L["Statement_Customer"]</span>
-                <div class="pos-value-md">@receipt.CustomerDisplayName</div>
+        </div>
+        <dl class="pos-receipt__facts">
+            <div class="pos-receipt__fact">
+                <dt>@L["Receipt_Reference"]</dt>
+                <dd>@receipt.ReceiptReference</dd>
             </div>
-            <div>
-                <span class="pos-muted">@L["Payment_Field_Amount"]</span>
-                <div class="pos-value-md"><MoneyDisplay Amount="@receipt.Amount" CurrencyCode="@receipt.CurrencyCode" /></div>
+            <div class="pos-receipt__fact">
+                <dt>@L["Statement_Customer"]</dt>
+                <dd>@receipt.CustomerDisplayName</dd>
             </div>
-            <div>
-                <span class="pos-muted">@L["Customers_Field_Status"]</span>
-                <Badge Tone="@(receipt.IsReversed ? BadgeTone.Warning : BadgeTone.Success)">@receipt.Status</Badge>
+            <div class="pos-receipt__fact">
+                <dt>@L["Payment_RecordedAt"]</dt>
+                <dd>@receipt.RecordedAtUtc.ToLocalTime().ToString("g")</dd>
             </div>
-            <div>
-                <span class="pos-muted">@L["Payment_RecordedAt"]</span>
-                <div class="pos-value-md">@receipt.RecordedAtUtc.ToLocalTime().ToString("g")</div>
-            </div>
-            <div>
-                <span class="pos-muted">@L["Payment_Field_Remarks"]</span>
-                <div class="pos-value-md pos-wrap">@(string.IsNullOrWhiteSpace(receipt.Remarks) ? L["Customers_NoValue"] : receipt.Remarks)</div>
+            <div class="pos-receipt__fact">
+                <dt>@L["Payment_Field_Remarks"]</dt>
+                <dd class="pos-wrap">@(string.IsNullOrWhiteSpace(receipt.Remarks) ? L["Customers_NoValue"] : receipt.Remarks)</dd>
             </div>
             @if (receipt.OutstandingAfterRepayment is decimal after)
             {
-                <div>
-                    <span class="pos-muted">@L["Receipt_OutstandingAfter"]</span>
-                    <div class="pos-value-md"><MoneyDisplay Amount="@after" CurrencyCode="@receipt.CurrencyCode" /></div>
+                <div class="pos-receipt__fact">
+                    <dt>@L["Receipt_OutstandingAfter"]</dt>
+                    <dd><MoneyDisplay Amount="@after" CurrencyCode="@receipt.CurrencyCode" /></dd>
                 </div>
             }
             @if (receipt.IsReversed)
             {
-                <div>
-                    <span class="pos-muted">@L["Credit_ReversalReason"]</span>
-                    <div class="pos-value-md pos-wrap">@(receipt.ReversalReason ?? L["Customers_NoValue"])</div>
+                <div class="pos-receipt__fact">
+                    <dt>@L["Credit_ReversalReason"]</dt>
+                    <dd class="pos-wrap">@(receipt.ReversalReason ?? L["Customers_NoValue"])</dd>
                 </div>
             }
-            <div class="pos-muted pos-wrap">@L["Receipt_Disclaimer"]: @L["Receipt_DisclaimerBody"]</div>
-        </Stack>
-    </Section>
+        </dl>
+        <p class="pos-receipt__disclaimer">@L["Receipt_Disclaimer"]: @L["Receipt_DisclaimerBody"]</p>
+    </section>
 
-    <FormActions>
-        <Button Variant="ButtonVariant.Primary" IsLoading="@_sharing" OnClick="ShareAsync">@L["Receipt_Share"]</Button>
-    </FormActions>
+    <div class="pos-action-grid pos-action-grid--single pos-receipt__actions" role="group">
+        <button type="button"
+                class="pos-action-tile pos-action-tile--primary"
+                disabled="@_sharing"
+                @onclick="ShareAsync">
+            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("share")</span>
+            <span class="pos-action-tile__label">@L["Receipt_Share"]</span>
+        </button>
+    </div>
 </Page>
+</div>
 }
 }
 

@@ -1,4 +1,5 @@
 @page "/customers/{CustomerId:guid}/statement"
+@using ExItS.DesignSystem.Components.Internal
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IPosCustomerClient Customers
@@ -18,14 +19,21 @@ else
 @if (!_canView)
 {
     <Page>
-        <PageHeader Title="@L["Statement_Title"]" Subtitle="@L["Statement_Subtitle"]" />
+        <header class="pos-statement__header">
+            <h1 class="pos-statement__title">@L["Statement_Title"]</h1>
+            <p class="pos-statement__subtitle">@L["Statement_Subtitle"]</p>
+        </header>
         <Alert Tone="AlertTone.Warning" Title="@L["Access_RestrictedTitle"]" Message="@L["Access_RestrictedMessage"]" />
     </Page>
 }
 else
 {
+<div class="pos-statement">
 <Page>
-    <PageHeader Title="@L["Statement_Title"]" Subtitle="@L["Statement_Subtitle"]" />
+    <header class="pos-statement__header">
+        <h1 class="pos-statement__title">@L["Statement_Title"]</h1>
+        <p class="pos-statement__subtitle">@L["Statement_Subtitle"]</p>
+    </header>
 
     @if (!string.IsNullOrEmpty(_banner))
     {
@@ -37,8 +45,9 @@ else
         <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Statement_ErrorTitle"])" Message="@_errorMessage" />
     }
 
-    <Section Title="@L["Statement_PeriodTitle"]">
-        <Stack Gap="3">
+    <section class="pos-statement__panel" aria-labelledby="statement-period-heading">
+        <h2 id="statement-period-heading" class="pos-statement__section-title">@L["Statement_PeriodTitle"]</h2>
+        <div class="pos-statement__form">
             <DateInput Label="@L["Statement_PeriodStart"]"
                        Value="@_periodStart"
                        ValueChanged="v => _periodStart = v"
@@ -47,79 +56,103 @@ else
                        Value="@_periodEnd"
                        ValueChanged="v => _periodEnd = v"
                        Required="true" />
-            <FormActions>
-                <Button Variant="ButtonVariant.Primary" IsLoading="@_loading" OnClick="LoadStatementAsync">@L["Statement_Generate"]</Button>
-                <Button Variant="ButtonVariant.Secondary"
-                        Disabled="@(_statement is null || _sharing)"
-                        IsLoading="@_sharing"
-                        OnClick="ShareAsync">@L["Statement_Share"]</Button>
-            </FormActions>
-        </Stack>
-    </Section>
+        </div>
+        <div class="pos-action-grid pos-action-grid--two pos-statement__actions" role="group" aria-label="@L["Statement_PeriodTitle"]">
+            <button type="button"
+                    class="pos-action-tile pos-action-tile--primary"
+                    disabled="@_loading"
+                    @onclick="LoadStatementAsync">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("check")</span>
+                <span class="pos-action-tile__label">@L["Statement_Generate"]</span>
+            </button>
+            <button type="button"
+                    class="pos-action-tile"
+                    disabled="@(_statement is null || _sharing)"
+                    @onclick="ShareAsync">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("share")</span>
+                <span class="pos-action-tile__label">@L["Statement_Share"]</span>
+            </button>
+        </div>
+    </section>
 
     @if (_loading)
     {
-        <Spinner /><span>@L["Statement_Loading"]</span>
+        <div class="pos-statement__loading"><Spinner /><span>@L["Statement_Loading"]</span></div>
     }
     else if (_statement is not null)
     {
         var statement = _statement;
-        <Section Title="@L["Statement_SummaryTitle"]">
-            <Stack Gap="3">
-                <div>
-                    <span class="pos-muted">@L["Statement_Customer"]</span>
-                    <div class="pos-value-md">@statement.CustomerDisplayName</div>
+        <section class="pos-statement__panel" aria-labelledby="statement-summary-heading">
+            <h2 id="statement-summary-heading" class="pos-statement__section-title">@L["Statement_SummaryTitle"]</h2>
+            <div class="pos-statement__balance">
+                <span class="pos-statement__balance-label">@L["Credit_Outstanding"]</span>
+                <div class="pos-statement__balance-value">
+                    <MoneyDisplay Amount="@statement.OutstandingBalance" CurrencyCode="@statement.CurrencyCode" Emphasized="true" />
                 </div>
-                <div>
-                    <span class="pos-muted">@L["Statement_OpeningBalance"]</span>
-                    <div class="pos-value-md"><MoneyDisplay Amount="@statement.OpeningBalance" CurrencyCode="@statement.CurrencyCode" /></div>
+            </div>
+            <dl class="pos-statement__facts">
+                <div class="pos-statement__fact">
+                    <dt>@L["Statement_Customer"]</dt>
+                    <dd>@statement.CustomerDisplayName</dd>
                 </div>
-                <div>
-                    <span class="pos-muted">@L["Statement_ClosingBalance"]</span>
-                    <div class="pos-value-md"><MoneyDisplay Amount="@statement.ClosingBalance" CurrencyCode="@statement.CurrencyCode" /></div>
+                <div class="pos-statement__fact">
+                    <dt>@L["Statement_OpeningBalance"]</dt>
+                    <dd><MoneyDisplay Amount="@statement.OpeningBalance" CurrencyCode="@statement.CurrencyCode" /></dd>
                 </div>
-                <div>
-                    <span class="pos-muted">@L["Credit_Outstanding"]</span>
-                    <div class="pos-value-md"><MoneyDisplay Amount="@statement.OutstandingBalance" CurrencyCode="@statement.CurrencyCode" /></div>
+                <div class="pos-statement__fact">
+                    <dt>@L["Statement_ClosingBalance"]</dt>
+                    <dd><MoneyDisplay Amount="@statement.ClosingBalance" CurrencyCode="@statement.CurrencyCode" /></dd>
                 </div>
-                <div class="pos-muted">
-                    @L["Statement_PeriodCredits"] <MoneyDisplay Amount="@statement.PeriodCreditTotal" CurrencyCode="@statement.CurrencyCode" />
-                    · @L["Statement_PeriodRepayments"] <MoneyDisplay Amount="@statement.PeriodRepaymentTotal" CurrencyCode="@statement.CurrencyCode" />
+            </dl>
+            <div class="pos-statement__stats" role="list">
+                <div class="pos-statement__stat" role="listitem">
+                    <span class="pos-statement__stat-label">@L["Statement_PeriodCredits"]</span>
+                    <span class="pos-statement__stat-value"><MoneyDisplay Amount="@statement.PeriodCreditTotal" CurrencyCode="@statement.CurrencyCode" /></span>
                 </div>
-            </Stack>
-        </Section>
+                <div class="pos-statement__stat" role="listitem">
+                    <span class="pos-statement__stat-label">@L["Statement_PeriodRepayments"]</span>
+                    <span class="pos-statement__stat-value"><MoneyDisplay Amount="@statement.PeriodRepaymentTotal" CurrencyCode="@statement.CurrencyCode" /></span>
+                </div>
+            </div>
+        </section>
 
-        <Section Title="@L["Statement_LinesTitle"]">
+        <section class="pos-statement__panel" aria-labelledby="statement-lines-heading">
+            <h2 id="statement-lines-heading" class="pos-statement__section-title">@L["Statement_LinesTitle"]</h2>
             @if (statement.Lines.Count == 0)
             {
                 <EmptyState Title="@L["Statement_EmptyTitle"]" Message="@L["Statement_EmptyMessage"]" />
             }
             else
             {
-                <Stack Gap="3">
+                <div class="pos-statement__list" role="list">
                     @foreach (var line in statement.Lines)
                     {
-                        <div class="pos-credit-entry">
-                            <div class="pos-value-md">
-                                <MoneyDisplay Amount="@line.Amount" CurrencyCode="@statement.CurrencyCode" />
-                                <Badge Tone="@(line.IsReversed ? BadgeTone.Neutral : BadgeTone.Success)">@line.EntryType</Badge>
-                                @if (line.IsReversed)
-                                {
-                                    <Badge Tone="BadgeTone.Neutral">@line.Status</Badge>
-                                }
+                        <article class="pos-statement__entry" role="listitem">
+                            <div class="pos-statement__entry-top">
+                                <span class="pos-statement__entry-amount">
+                                    <MoneyDisplay Amount="@line.Amount" CurrencyCode="@statement.CurrencyCode" />
+                                </span>
+                                <div class="pos-statement__entry-badges">
+                                    <Badge Tone="@(line.IsReversed ? BadgeTone.Neutral : BadgeTone.Success)">@line.EntryType</Badge>
+                                    @if (line.IsReversed)
+                                    {
+                                        <Badge Tone="BadgeTone.Neutral">@line.Status</Badge>
+                                    }
+                                </div>
                             </div>
-                            <div class="pos-wrap">@(string.IsNullOrWhiteSpace(line.Remarks) ? L["Customers_NoValue"] : line.Remarks)</div>
-                            <div class="pos-muted">
+                            <p class="pos-statement__entry-remarks pos-wrap">@(string.IsNullOrWhiteSpace(line.Remarks) ? L["Customers_NoValue"] : line.Remarks)</p>
+                            <p class="pos-statement__entry-meta">
                                 @line.RecordedAtUtc.ToLocalTime().ToString("g")
                                 · @L["Ledger_RunningBalance"] <MoneyDisplay Amount="@line.RunningBalance" CurrencyCode="@statement.CurrencyCode" />
-                            </div>
-                        </div>
+                            </p>
+                        </article>
                     }
-                </Stack>
+                </div>
             }
-        </Section>
+        </section>
     }
 </Page>
+</div>
 }
 }
 

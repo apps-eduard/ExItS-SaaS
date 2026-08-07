@@ -46,6 +46,8 @@ public sealed class CustomersReportsNavPageGuardTests
             "CustomerDetail.razor"));
         Assert.Contains("StoreHeaderBack", detail, StringComparison.Ordinal);
         Assert.Contains("Href=\"/customers\"", detail, StringComparison.Ordinal);
+        Assert.Contains("pos-customer-detail__facts", detail, StringComparison.Ordinal);
+        Assert.Contains("pos-action-tile--primary", detail, StringComparison.Ordinal);
         Assert.DoesNotContain("Customers_BackToList", detail, StringComparison.Ordinal);
         Assert.DoesNotContain("Customers_Back\"", detail, StringComparison.Ordinal);
     }

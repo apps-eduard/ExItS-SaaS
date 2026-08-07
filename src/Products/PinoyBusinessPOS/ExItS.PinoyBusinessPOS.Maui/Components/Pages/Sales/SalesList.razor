@@ -19,7 +19,19 @@ else
     var canCreate = Capabilities.IsAllowed(UtangCapability.CreateSale);
 <div class="pos-dash pos-sales">
     <Page>
-        <PageHeader Title="@L["Sales_Title"]" Subtitle="@L["Sales_Subtitle"]" />
+        <header class="pos-sales__header">
+            <div class="pos-sales__title-row">
+                <h1 class="pos-sales__title">@L["Sales_Title"]</h1>
+                <button type="button"
+                        class="pos-sales__new"
+                        disabled="@(!canCreate || _isOffline)"
+                        @onclick="GoNew">
+                    <span class="pos-sales__new-icon" aria-hidden="true">@IconGlyphs.Get("plus")</span>
+                    <span>@L["Sales_New"]</span>
+                </button>
+            </div>
+            <p class="pos-sales__subtitle">@L["Sales_Subtitle"]</p>
+        </header>
 
         @if (_isOffline)
         {
@@ -29,12 +41,6 @@ else
         {
             <Alert Tone="AlertTone.Warning" Title="@L["Access_RestrictedTitle"]" Message="@L["Access_RestrictedMessage"]" />
         }
-
-        <div class="pos-sales__add">
-            <Button Variant="ButtonVariant.Primary"
-                    Disabled="@(!canCreate || _isOffline)"
-                    OnClick="GoNew">@L["Sales_New"]</Button>
-        </div>
 
         <div class="pos-sales__toolbar">
             <div class="pos-sales__search">
@@ -69,8 +75,9 @@ else
 
         @if (_filtersOpen)
         {
-            <Section Title="@L["Sales_FiltersTitle"]" id="sales-filters">
-                <Stack Gap="2">
+            <section class="pos-sales__panel" id="sales-filters" aria-labelledby="sales-filters-heading">
+                <h2 id="sales-filters-heading" class="pos-sales__section-title">@L["Sales_FiltersTitle"]</h2>
+                <div class="pos-sales__form">
                     <Select Label="@L["Sales_Filter_Status"]"
                             Value="@_statusFilter"
                             ValueChanged="OnStatusFilterChanged"
@@ -85,20 +92,22 @@ else
                     <DateInput Label="@L["Sales_Filter_ToDate"]"
                                Value="@_toDate"
                                ValueChanged="OnToDateChanged" />
-                    <FormActions>
-                        <Button Variant="ButtonVariant.Ghost" IsLoading="@_loading" OnClick="ReloadAsync">@L["Sales_Refresh"]</Button>
-                    </FormActions>
-                </Stack>
-            </Section>
+                    <button type="button"
+                            class="pos-sales__refresh"
+                            disabled="@_loading"
+                            @onclick="ReloadAsync">
+                        <span class="pos-sales__refresh-icon" aria-hidden="true">@IconGlyphs.Get("refresh")</span>
+                        <span>@L["Sales_Refresh"]</span>
+                    </button>
+                </div>
+            </section>
         }
 
-        <Section Title="@L["Sales_ListSection"]">
+        <section class="pos-sales__panel" aria-labelledby="sales-list-heading">
+            <h2 id="sales-list-heading" class="pos-sales__section-title">@L["Sales_ListSection"]</h2>
             @if (_loading)
             {
-                <Stack Align="StackAlign.Center" Gap="2">
-                    <Spinner />
-                    <span class="pos-muted">@L["Sales_Loading"]</span>
-                </Stack>
+                <div class="pos-sales__loading"><Spinner /><span>@L["Sales_Loading"]</span></div>
             }
             else if (!string.IsNullOrEmpty(_errorMessage))
             {
@@ -120,24 +129,26 @@ else
                            role="listitem"
                            href="@($"/sales/{item.SaleId:D}")">
                             <div class="pos-sales__row-main">
-                                <span class="pos-sales__row-name">@item.SaleNumber</span>
+                                <div class="pos-sales__row-top">
+                                    <span class="pos-sales__row-name">@item.SaleNumber</span>
+                                    <Badge Tone="@(item.Status == PosSaleOptions.CompletedStatus ? BadgeTone.Success : BadgeTone.Neutral)">
+                                        @SalesUiOptions.StatusLabel(L, item.Status)
+                                    </Badge>
+                                </div>
                                 <span class="pos-sales__row-meta">
                                     @SalesUiOptions.PaymentMethodLabel(L, item.PaymentMethod)
                                     ·
                                     @item.RecordedAtUtc.ToLocalTime().ToString("g")
                                 </span>
                             </div>
-                            <div class="pos-sales__row-side">
+                            <span class="pos-sales__row-total">
                                 <MoneyDisplay Amount="@item.Total" CurrencyCode="PHP" />
-                                <Badge Tone="@(item.Status == PosSaleOptions.CompletedStatus ? BadgeTone.Success : BadgeTone.Neutral)">
-                                    @SalesUiOptions.StatusLabel(L, item.Status)
-                                </Badge>
-                            </div>
+                            </span>
                         </a>
                     }
                 </div>
             }
-        </Section>
+        </section>
 
         @if (!_loading && _totalCount > 0)
         {

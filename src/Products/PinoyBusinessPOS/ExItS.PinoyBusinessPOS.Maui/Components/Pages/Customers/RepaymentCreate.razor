@@ -19,8 +19,12 @@ else
 {
     var canRecord = Capabilities.IsAllowed(UtangCapability.RecordRepayment);
 <StoreHeaderBack Href="@($"/customers/{CustomerId:D}")" />
+<div class="pos-repayment-create">
 <Page>
-    <PageHeader Title="@L["Payment_AddTitle"]" Subtitle="@L["Payment_AddSubtitle"]" />
+    <header class="pos-repayment-create__header">
+        <h1 class="pos-repayment-create__title">@L["Payment_AddTitle"]</h1>
+        <p class="pos-repayment-create__subtitle">@L["Payment_AddSubtitle"]</p>
+    </header>
 
     @if (!canRecord)
     {
@@ -29,32 +33,41 @@ else
 
     @if (_showLocalBalance && _localBalance is not null)
     {
-        <Section Title="@L["Payment_OutstandingSection"]">
-            <Stack Gap="3">
-                <div>
-                    <span class="pos-muted">@L["Offline_ConfirmedOutstanding"]</span>
-                    <div class="pos-value-md"><MoneyDisplay Amount="@_localBalance.ConfirmedOutstanding" CurrencyCode="PHP" /></div>
+        <section class="pos-repayment-create__panel" aria-labelledby="payment-outstanding-heading">
+            <h2 id="payment-outstanding-heading" class="pos-repayment-create__section-title">@L["Payment_OutstandingSection"]</h2>
+            <div class="pos-repayment-create__balance">
+                <span class="pos-repayment-create__balance-label">@L["Offline_ProjectedOutstanding"]</span>
+                <div class="pos-repayment-create__balance-value">
+                    <MoneyDisplay Amount="@_localBalance.ProjectedOutstanding" CurrencyCode="PHP" Emphasized="true" />
                 </div>
-                <div>
-                    <span class="pos-muted">@L["Offline_PendingCredit"]</span>
-                    <div class="pos-value-md"><MoneyDisplay Amount="@_localBalance.PendingCredit" CurrencyCode="PHP" /></div>
+            </div>
+            <div class="pos-repayment-create__stats" role="list">
+                <div class="pos-repayment-create__stat" role="listitem">
+                    <span class="pos-repayment-create__stat-label">@L["Offline_ConfirmedOutstanding"]</span>
+                    <span class="pos-repayment-create__stat-value"><MoneyDisplay Amount="@_localBalance.ConfirmedOutstanding" CurrencyCode="PHP" /></span>
                 </div>
-                <div>
-                    <span class="pos-muted">@L["Offline_PendingRepayment"]</span>
-                    <div class="pos-value-md"><MoneyDisplay Amount="@_localBalance.PendingRepayment" CurrencyCode="PHP" /></div>
+                <div class="pos-repayment-create__stat" role="listitem">
+                    <span class="pos-repayment-create__stat-label">@L["Offline_PendingCredit"]</span>
+                    <span class="pos-repayment-create__stat-value"><MoneyDisplay Amount="@_localBalance.PendingCredit" CurrencyCode="PHP" /></span>
                 </div>
-                <div>
-                    <span class="pos-muted">@L["Offline_ProjectedOutstanding"]</span>
-                    <div class="pos-value-md"><MoneyDisplay Amount="@_localBalance.ProjectedOutstanding" CurrencyCode="PHP" /></div>
+                <div class="pos-repayment-create__stat" role="listitem">
+                    <span class="pos-repayment-create__stat-label">@L["Offline_PendingRepayment"]</span>
+                    <span class="pos-repayment-create__stat-value"><MoneyDisplay Amount="@_localBalance.PendingRepayment" CurrencyCode="PHP" /></span>
                 </div>
-            </Stack>
-        </Section>
+            </div>
+        </section>
     }
     else if (_utang is not null)
     {
-        <Section Title="@L["Payment_OutstandingSection"]">
-            <div class="pos-value-md"><MoneyDisplay Amount="@_utang.OutstandingAmount" CurrencyCode="PHP" /></div>
-        </Section>
+        <section class="pos-repayment-create__panel" aria-labelledby="payment-outstanding-heading">
+            <h2 id="payment-outstanding-heading" class="pos-repayment-create__section-title">@L["Payment_OutstandingSection"]</h2>
+            <div class="pos-repayment-create__balance">
+                <span class="pos-repayment-create__balance-label">@L["Credit_Outstanding"]</span>
+                <div class="pos-repayment-create__balance-value">
+                    <MoneyDisplay Amount="@_utang.OutstandingAmount" CurrencyCode="PHP" Emphasized="true" />
+                </div>
+            </div>
+        </section>
     }
 
     @if (!string.IsNullOrEmpty(_errorMessage))
@@ -62,8 +75,9 @@ else
         <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Payment_ErrorTitle"])" Message="@_errorMessage" />
     }
 
-    <Section Title="@L["Payment_EntrySection"]">
-        <Stack Gap="3">
+    <section class="pos-repayment-create__panel" aria-labelledby="payment-entry-heading">
+        <h2 id="payment-entry-heading" class="pos-repayment-create__section-title">@L["Payment_EntrySection"]</h2>
+        <div class="pos-repayment-create__form">
             <TextInput Label="@L["Payment_Field_Amount"]"
                        Value="@_amountText"
                        ValueChanged="v => _amountText = v"
@@ -79,10 +93,10 @@ else
                       Hint="@L["Payment_RemarksHint"]"
                       Rows="3"
                       Disabled="@(_saving || !canRecord)" />
-        </Stack>
-    </Section>
+        </div>
+    </section>
 
-    <FormActions>
+    <FormActions class="pos-customer-create__footer">
         <Button Variant="ButtonVariant.Secondary" Disabled="@_saving" OnClick="GoBack">@L["Customers_Cancel"]</Button>
         <Button Variant="ButtonVariant.Primary"
                 IsLoading="@_saving"
@@ -98,6 +112,7 @@ else
                    IsLoading="@_saving"
                    OnConfirm="SaveAsync" />
 </Page>
+</div>
 }
 
 @code {

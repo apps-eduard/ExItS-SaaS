@@ -1,4 +1,5 @@
 @page "/customers/{CustomerId:guid}/ledger"
+@using ExItS.DesignSystem.Components.Internal
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IPosCustomerClient Customers
@@ -12,23 +13,38 @@
 }
 else
 {
+    var canRecordPayment = _utang is not null && _utang.OutstandingAmount > 0m;
 <StoreHeaderBack Href="@($"/customers/{CustomerId:D}")" />
+<div class="pos-ledger">
 <Page>
-    <PageHeader Title="@L["Ledger_Title"]" Subtitle="@L["Ledger_Subtitle"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Primary"
-                    Disabled="@(_utang is null || _utang.OutstandingAmount <= 0m)"
-                    OnClick="GoAddPayment">@L["Payment_Record"]</Button>
-        </Actions>
-    </PageHeader>
+    <header class="pos-ledger__header">
+        <div class="pos-ledger__title-row">
+            <h1 class="pos-ledger__title">@L["Ledger_Title"]</h1>
+            <button type="button"
+                    class="pos-ledger__pay"
+                    disabled="@(!canRecordPayment)"
+                    aria-label="@L["Payment_Record"]"
+                    @onclick="GoAddPayment">
+                <span class="pos-ledger__pay-icon" aria-hidden="true">@IconGlyphs.Get("check")</span>
+                <span>@L["Payment_Record"]</span>
+            </button>
+        </div>
+        <p class="pos-ledger__subtitle">@L["Ledger_Subtitle"]</p>
+    </header>
 
-    <Alert Tone="AlertTone.Info" Title="@L["Utang_DeferredTitle"]" Message="@L["Utang_DeferredMessage"]" />
+    <p class="pos-ledger__note">@L["Utang_DeferredMessage"]</p>
 
     @if (_utang is not null)
     {
-        <Section Title="@L["Credit_Outstanding"]">
-            <div class="pos-value-md"><MoneyDisplay Amount="@_utang.OutstandingAmount" CurrencyCode="PHP" /></div>
-        </Section>
+        <section class="pos-ledger__panel" aria-labelledby="ledger-outstanding-heading">
+            <h2 id="ledger-outstanding-heading" class="pos-ledger__section-title">@L["Credit_Outstanding"]</h2>
+            <div class="pos-ledger__balance">
+                <span class="pos-ledger__balance-label">@L["Credit_Outstanding"]</span>
+                <div class="pos-ledger__balance-value">
+                    <MoneyDisplay Amount="@_utang.OutstandingAmount" CurrencyCode="PHP" Emphasized="true" />
+                </div>
+            </div>
+        </section>
     }
 
     @if (!string.IsNullOrEmpty(_errorMessage))
@@ -36,10 +52,11 @@ else
         <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Ledger_ErrorTitle"])" Message="@_errorMessage" />
     }
 
-    <Section Title="@L["Ledger_HistoryTitle"]">
+    <section class="pos-ledger__panel" aria-labelledby="ledger-history-heading">
+        <h2 id="ledger-history-heading" class="pos-ledger__section-title">@L["Ledger_HistoryTitle"]</h2>
         @if (_loading)
         {
-            <Spinner /><span>@L["Ledger_Loading"]</span>
+            <div class="pos-ledger__loading"><Spinner /><span>@L["Ledger_Loading"]</span></div>
         }
         else if (_entries.Count == 0)
         {
@@ -47,37 +64,45 @@ else
         }
         else
         {
-            <Stack Gap="3">
+            <div class="pos-ledger__list" role="list">
                 @foreach (var entry in _entries)
                 {
-                    <div class="pos-ledger-entry">
-                        <div class="pos-value-md">
-                            <Badge Tone="@(entry.EntryType == "Credit" ? BadgeTone.Info : BadgeTone.Success)">
-                                @(entry.EntryType == "Credit" ? L["Ledger_TypeCredit"] : L["Ledger_TypePayment"])
-                            </Badge>
-                            <MoneyDisplay Amount="@entry.Amount" CurrencyCode="PHP" />
-                            <Badge Tone="@(entry.Status == "Active" ? BadgeTone.Success : BadgeTone.Neutral)">@entry.Status</Badge>
+                    <article class="pos-ledger__entry" role="listitem">
+                        <div class="pos-ledger__entry-top">
+                            <span class="pos-ledger__entry-amount"><MoneyDisplay Amount="@entry.Amount" CurrencyCode="PHP" /></span>
+                            <div class="pos-ledger__entry-badges">
+                                <Badge Tone="@(entry.EntryType == "Credit" ? BadgeTone.Info : BadgeTone.Success)">
+                                    @(entry.EntryType == "Credit" ? L["Ledger_TypeCredit"] : L["Ledger_TypePayment"])
+                                </Badge>
+                                <Badge Tone="@(entry.Status == "Active" ? BadgeTone.Success : BadgeTone.Neutral)">@entry.Status</Badge>
+                            </div>
                         </div>
-                        <div class="pos-wrap">@(string.IsNullOrWhiteSpace(entry.Remarks) ? L["Customers_NoValue"] : entry.Remarks)</div>
-                        <div class="pos-muted">@entry.RecordedAtUtc.ToLocalTime().ToString("g")</div>
+                        <p class="pos-ledger__entry-remarks pos-wrap">@(string.IsNullOrWhiteSpace(entry.Remarks) ? L["Customers_NoValue"] : entry.Remarks)</p>
+                        <p class="pos-ledger__entry-meta">@entry.RecordedAtUtc.ToLocalTime().ToString("g")</p>
                         @if (entry.RunningBalance is not null)
                         {
-                            <div class="pos-muted">@L["Ledger_RunningBalance"]: <MoneyDisplay Amount="@entry.RunningBalance.Value" CurrencyCode="PHP" /></div>
+                            <p class="pos-ledger__entry-meta">
+                                @L["Ledger_RunningBalance"]:
+                                <MoneyDisplay Amount="@entry.RunningBalance.Value" CurrencyCode="PHP" />
+                            </p>
                         }
                         @if (entry.Status == "Reversed")
                         {
-                            <div class="pos-muted pos-wrap">@L["Credit_ReversalReason"]: @entry.ReversalReason</div>
+                            <p class="pos-ledger__entry-meta pos-wrap">@L["Credit_ReversalReason"]: @entry.ReversalReason</p>
                         }
                         else if (entry.EntryType == "Repayment")
                         {
-                            <Button Variant="ButtonVariant.Secondary" OnClick="() => GoRepayment(entry.EntryId)">@L["Payment_View"]</Button>
+                            <div class="pos-ledger__entry-actions">
+                                <Button Variant="ButtonVariant.Secondary" OnClick="() => GoRepayment(entry.EntryId)">@L["Payment_View"]</Button>
+                            </div>
                         }
-                    </div>
+                    </article>
                 }
-            </Stack>
+            </div>
         }
-    </Section>
+    </section>
 </Page>
+</div>
 }
 
 @code {

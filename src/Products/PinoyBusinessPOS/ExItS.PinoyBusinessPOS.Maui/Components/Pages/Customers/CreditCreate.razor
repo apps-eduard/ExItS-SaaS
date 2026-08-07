@@ -14,18 +14,23 @@
 else
 {
 <StoreHeaderBack Href="@($"/customers/{CustomerId:D}")" />
+<div class="pos-credit-create">
 <Page>
-    <PageHeader Title="@L["Credit_AddTitle"]" Subtitle="@L["Credit_AddSubtitle"]" />
+    <header class="pos-credit-create__header">
+        <h1 class="pos-credit-create__title">@L["Credit_AddTitle"]</h1>
+        <p class="pos-credit-create__subtitle">@L["Credit_AddSubtitle"]</p>
+    </header>
 
-    <Alert Tone="AlertTone.Info" Title="@L["Customers_RepaymentDeferredTitle"]" Message="@L["Customers_RepaymentDeferredMessage"]" />
+    <p class="pos-credit-create__note">@L["Customers_RepaymentDeferredMessage"]</p>
 
     @if (!string.IsNullOrEmpty(_errorMessage))
     {
         <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Credit_ErrorTitle"])" Message="@_errorMessage" />
     }
 
-    <Section Title="@L["Credit_EntrySection"]">
-        <Stack Gap="3">
+    <section class="pos-credit-create__panel" aria-labelledby="credit-create-heading">
+        <h2 id="credit-create-heading" class="pos-credit-create__section-title">@L["Credit_EntrySection"]</h2>
+        <div class="pos-credit-create__form">
             <TextInput Label="@L["Credit_Field_Amount"]"
                        Value="@_amountText"
                        ValueChanged="v => _amountText = v"
@@ -44,14 +49,15 @@ else
                       ErrorText="@_remarksError"
                       Rows="4"
                       Disabled="@_saving" />
-        </Stack>
-    </Section>
+        </div>
+    </section>
 
-    <FormActions>
+    <FormActions class="pos-customer-create__footer">
         <Button Variant="ButtonVariant.Secondary" Disabled="@_saving" OnClick="GoBack">@L["Customers_Cancel"]</Button>
         <Button Variant="ButtonVariant.Primary" IsLoading="@_saving" OnClick="SaveAsync">@L["Credit_Save"]</Button>
     </FormActions>
 </Page>
+</div>
 }
 
 @code {

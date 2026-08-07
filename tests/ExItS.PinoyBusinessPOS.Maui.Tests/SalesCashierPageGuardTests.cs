@@ -74,7 +74,9 @@ public sealed class SalesCashierPageGuardTests
         Assert.Contains("StoreHeaderBack Href=\"/sales\"", receipt, StringComparison.Ordinal);
         Assert.Contains("UtangCapability.ViewSales", receipt, StringComparison.Ordinal);
         Assert.Contains("GoNextSale", receipt, StringComparison.Ordinal);
+        Assert.Contains("pos-sale-receipt", receipt, StringComparison.Ordinal);
         Assert.DoesNotContain("Sales_BackToList", receipt, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", receipt, StringComparison.Ordinal);
 
         var detail = File.ReadAllText(Path.Combine(SalesPagesDirectory(), "SaleDetail.razor"));
         Assert.Contains("ViewGenerateReceipt", detail, StringComparison.Ordinal);

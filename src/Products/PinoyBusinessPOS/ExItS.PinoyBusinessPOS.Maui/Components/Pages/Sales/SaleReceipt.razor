@@ -1,4 +1,5 @@
 @page "/sales/{SaleId:guid}/receipt"
+@using ExItS.DesignSystem.Components.Internal
 @using ExItS.PinoyBusinessPOS.Application.Payments
 @inject NavigationManager Nav
 @inject NavigationGate Gate
@@ -31,12 +32,20 @@ else if (_sale is null)
 else
 {
     var sale = _sale;
+<div class="pos-sale-receipt">
 <Page>
-    <PageHeader Title="@L["Sales_DetailSubtitle"]" Subtitle="@sale.SaleNumber">
-        <Actions>
-            <Button Variant="ButtonVariant.Primary" OnClick="GoNextSale">@L["Sales_New"]</Button>
-        </Actions>
-    </PageHeader>
+    <header class="pos-sale-receipt__header">
+        <div class="pos-sale-receipt__title-row">
+            <h1 class="pos-sale-receipt__title">@L["Sales_DetailSubtitle"]</h1>
+            <button type="button"
+                    class="pos-sale-receipt__new"
+                    @onclick="GoNextSale">
+                <span class="pos-sale-receipt__new-icon" aria-hidden="true">@IconGlyphs.Get("plus")</span>
+                <span>@L["Sales_New"]</span>
+            </button>
+        </div>
+        <p class="pos-sale-receipt__subtitle">@sale.SaleNumber</p>
+    </header>
 
     @if (_isOffline)
     {
@@ -48,93 +57,162 @@ else
         <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Sales_ErrorTitle"])" Message="@_errorMessage" />
     }
 
-    <Section Title="@L["Sales_Field_ReceiptHeader"]">
-        <Stack Gap="2">
+    <section class="pos-sale-receipt__panel" aria-labelledby="sale-receipt-header-heading">
+        <h2 id="sale-receipt-header-heading" class="pos-sale-receipt__section-title">@L["Sales_Field_ReceiptHeader"]</h2>
+        <div class="pos-sale-receipt__amount">
+            <span class="pos-sale-receipt__amount-label">@L["Sales_Col_Total"]</span>
+            <div class="pos-sale-receipt__amount-value">
+                <MoneyDisplay Amount="@sale.Total" CurrencyCode="@(sale.CurrencyCode ?? "PHP")" Emphasized="true" />
+            </div>
+        </div>
+        <dl class="pos-sale-receipt__facts">
             @if (!string.IsNullOrWhiteSpace(sale.StoreDisplayName))
             {
-                <div class="pos-value-md">@sale.StoreDisplayName</div>
+                <div class="pos-sale-receipt__fact">
+                    <dt>@L["Sales_Field_Store"]</dt>
+                    <dd>@sale.StoreDisplayName</dd>
+                </div>
             }
             @if (!string.IsNullOrWhiteSpace(sale.ReceiptHeader))
             {
-                <div class="pos-muted pos-wrap">@sale.ReceiptHeader</div>
+                <div class="pos-sale-receipt__fact">
+                    <dt>@L["Sales_Field_ReceiptHeader"]</dt>
+                    <dd class="pos-wrap">@sale.ReceiptHeader</dd>
+                </div>
             }
             @if (!string.IsNullOrWhiteSpace(sale.BusinessAddress))
             {
-                <div class="pos-muted pos-wrap">@sale.BusinessAddress</div>
+                <div class="pos-sale-receipt__fact">
+                    <dt>@L["Sales_Field_BusinessAddress"]</dt>
+                    <dd class="pos-wrap">@sale.BusinessAddress</dd>
+                </div>
             }
-            <div>@sale.RecordedAtUtc.ToLocalTime().ToString("g")</div>
-            <div>@SalesUiOptions.PaymentMethodLabel(L, sale.PaymentMethod)</div>
+            <div class="pos-sale-receipt__fact">
+                <dt>@L["Payment_RecordedAt"]</dt>
+                <dd>@sale.RecordedAtUtc.ToLocalTime().ToString("g")</dd>
+            </div>
+            <div class="pos-sale-receipt__fact">
+                <dt>@L["Sales_Field_PaymentMethod"]</dt>
+                <dd>@SalesUiOptions.PaymentMethodLabel(L, sale.PaymentMethod)</dd>
+            </div>
             @if (_paymentAttempt is not null)
             {
-                <div class="pos-muted">@PaymentsUiOptions.AttemptStatusLabel(L, _paymentAttempt.Status)</div>
+                <div class="pos-sale-receipt__fact">
+                    <dt>@L["Sales_Field_PaymentStatus"]</dt>
+                    <dd>@PaymentsUiOptions.AttemptStatusLabel(L, _paymentAttempt.Status)</dd>
+                </div>
             }
-        </Stack>
-    </Section>
+        </dl>
+    </section>
 
     @if (_paymentAttempt is not null)
     {
-        <Section Title="@L["Sales_EPayment_Section"]">
-            <Stack Gap="2">
-                <div>@L["Sales_Field_PaymentStatus"]: <strong>@PaymentsUiOptions.AttemptStatusLabel(L, _paymentAttempt.Status)</strong></div>
+        <section class="pos-sale-receipt__panel" aria-labelledby="sale-receipt-epay-heading">
+            <h2 id="sale-receipt-epay-heading" class="pos-sale-receipt__section-title">@L["Sales_EPayment_Section"]</h2>
+            <dl class="pos-sale-receipt__facts">
+                <div class="pos-sale-receipt__fact">
+                    <dt>@L["Sales_Field_PaymentStatus"]</dt>
+                    <dd>@PaymentsUiOptions.AttemptStatusLabel(L, _paymentAttempt.Status)</dd>
+                </div>
                 @if (!string.IsNullOrWhiteSpace(_paymentAttempt.Provider))
                 {
-                    <div>@L["Sales_Field_Provider"]: <strong>@_paymentAttempt.Provider</strong></div>
+                    <div class="pos-sale-receipt__fact">
+                        <dt>@L["Sales_Field_Provider"]</dt>
+                        <dd>@_paymentAttempt.Provider</dd>
+                    </div>
                 }
                 @if (!string.IsNullOrWhiteSpace(_paymentAttempt.ProviderReference))
                 {
-                    <div>@L["Sales_Field_ProviderReference"]: <strong>@_paymentAttempt.ProviderReference</strong></div>
+                    <div class="pos-sale-receipt__fact">
+                        <dt>@L["Sales_Field_ProviderReference"]</dt>
+                        <dd class="pos-wrap">@_paymentAttempt.ProviderReference</dd>
+                    </div>
                 }
                 @if (_paymentAttempt.CompletedAtUtc is DateTimeOffset paidAt)
                 {
-                    <div>@L["Sales_Field_PaidAt"]: <strong>@paidAt.ToLocalTime().ToString("g")</strong></div>
+                    <div class="pos-sale-receipt__fact">
+                        <dt>@L["Sales_Field_PaidAt"]</dt>
+                        <dd>@paidAt.ToLocalTime().ToString("g")</dd>
+                    </div>
                 }
                 @if (!string.IsNullOrWhiteSpace(_paymentAttempt.CardBrand))
                 {
-                    <div>@L["Sales_Field_CardBrand"]: <strong>@_paymentAttempt.CardBrand</strong></div>
+                    <div class="pos-sale-receipt__fact">
+                        <dt>@L["Sales_Field_CardBrand"]</dt>
+                        <dd>@_paymentAttempt.CardBrand</dd>
+                    </div>
                 }
                 @if (!string.IsNullOrWhiteSpace(_paymentAttempt.CardLastFour))
                 {
-                    <div>@L["Sales_Field_CardLastFour"]: <strong>@_paymentAttempt.CardLastFour</strong></div>
+                    <div class="pos-sale-receipt__fact">
+                        <dt>@L["Sales_Field_CardLastFour"]</dt>
+                        <dd>@_paymentAttempt.CardLastFour</dd>
+                    </div>
                 }
-            </Stack>
-        </Section>
+            </dl>
+        </section>
     }
 
-    <Section Title="@L["Sales_LinesSection"]">
-        <Stack Gap="2">
+    <section class="pos-sale-receipt__panel" aria-labelledby="sale-receipt-lines-heading">
+        <h2 id="sale-receipt-lines-heading" class="pos-sale-receipt__section-title">@L["Sales_LinesSection"]</h2>
+        <div class="pos-sale-receipt__list" role="list">
             @foreach (var line in sale.Lines.OrderBy(l => l.LineNumber))
             {
-                <div>
-                    <strong>@line.Name</strong>
-                    <div class="pos-muted">@line.Quantity.ToString("0.###") × @line.UnitPrice.ToString("N2") = @line.LineTotal.ToString("N2")</div>
-                </div>
+                <article class="pos-sale-receipt__entry" role="listitem">
+                    <div class="pos-sale-receipt__entry-top">
+                        <span class="pos-sale-receipt__entry-name">@line.Name</span>
+                        <span class="pos-sale-receipt__entry-amount">@line.LineTotal.ToString("N2")</span>
+                    </div>
+                    <p class="pos-sale-receipt__entry-meta">
+                        @line.Quantity.ToString("0.###") × @line.UnitPrice.ToString("N2")
+                    </p>
+                </article>
             }
-        </Stack>
-    </Section>
+        </div>
+    </section>
 
-    <Section Title="@L["Sales_DetailSection"]">
-        <Stack Gap="2">
-            <div>@L["Sales_Field_Subtotal"]: <strong>@sale.Subtotal.ToString("N2")</strong></div>
-            <div>@L["Sales_Col_Total"]: <strong>@sale.Total.ToString("N2")</strong></div>
+    <section class="pos-sale-receipt__panel" aria-labelledby="sale-receipt-totals-heading">
+        <h2 id="sale-receipt-totals-heading" class="pos-sale-receipt__section-title">@L["Sales_DetailSection"]</h2>
+        <dl class="pos-sale-receipt__facts">
+            <div class="pos-sale-receipt__fact">
+                <dt>@L["Sales_Field_Subtotal"]</dt>
+                <dd>@sale.Subtotal.ToString("N2")</dd>
+            </div>
+            <div class="pos-sale-receipt__fact">
+                <dt>@L["Sales_Col_Total"]</dt>
+                <dd>@sale.Total.ToString("N2")</dd>
+            </div>
             @if (sale.AmountTendered is decimal tendered)
             {
-                <div>@L["Sales_Field_AmountTendered"]: <strong>@tendered.ToString("N2")</strong></div>
+                <div class="pos-sale-receipt__fact">
+                    <dt>@L["Sales_Field_AmountTendered"]</dt>
+                    <dd>@tendered.ToString("N2")</dd>
+                </div>
             }
             @if (sale.ChangeAmount is decimal change)
             {
-                <div>@L["Sales_Field_ChangeAmount"]: <strong>@change.ToString("N2")</strong></div>
+                <div class="pos-sale-receipt__fact">
+                    <dt>@L["Sales_Field_ChangeAmount"]</dt>
+                    <dd>@change.ToString("N2")</dd>
+                </div>
             }
-            @if (!string.IsNullOrWhiteSpace(sale.ReceiptFooter))
-            {
-                <div class="pos-muted pos-wrap">@sale.ReceiptFooter</div>
-            }
-        </Stack>
-    </Section>
+        </dl>
+        @if (!string.IsNullOrWhiteSpace(sale.ReceiptFooter))
+        {
+            <p class="pos-sale-receipt__footer pos-wrap">@sale.ReceiptFooter</p>
+        }
+    </section>
 
-    <FormActions>
-        <Button Variant="ButtonVariant.Primary" OnClick="GoNextSale">@L["Sales_New"]</Button>
-    </FormActions>
+    <div class="pos-action-grid pos-action-grid--single pos-sale-receipt__actions" role="group">
+        <button type="button"
+                class="pos-action-tile pos-action-tile--primary"
+                @onclick="GoNextSale">
+            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("plus")</span>
+            <span class="pos-action-tile__label">@L["Sales_New"]</span>
+        </button>
+    </div>
 </Page>
+</div>
 }
 
 @code {

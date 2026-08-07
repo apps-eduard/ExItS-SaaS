@@ -1,11 +1,23 @@
 ﻿@namespace ExItS.DesignSystem.Components.Data
-@using ExItS.DesignSystem.Components.Primitives
+@using ExItS.DesignSystem.Components.Internal
 @inject IStringLocalizer<DesignSystemResources> L
 
 <nav class="exds-pagination" aria-label="@(AriaLabel ?? L["Data_PaginationLabel"])">
-    <Button Variant="ButtonVariant.Ghost" Size="ButtonSize.Sm" Disabled="@(Disabled || Page <= 1)" OnClick="() => GoAsync(Page - 1)">@L["Data_Previous"]</Button>
+    <button type="button"
+            class="exds-pagination__btn"
+            disabled="@(Disabled || Page <= 1)"
+            aria-label="@L["Data_Previous"]"
+            @onclick="() => GoAsync(Page - 1)">
+        <span class="exds-pagination__icon" aria-hidden="true">@IconGlyphs.Get("back")</span>
+    </button>
     <PaginationSummary Page="Page" PageSize="PageSize" TotalCount="TotalCount" />
-    <Button Variant="ButtonVariant.Ghost" Size="ButtonSize.Sm" Disabled="@(Disabled || Page >= TotalPages)" OnClick="() => GoAsync(Page + 1)">@L["Data_Next"]</Button>
+    <button type="button"
+            class="exds-pagination__btn"
+            disabled="@(Disabled || Page >= TotalPages)"
+            aria-label="@L["Data_Next"]"
+            @onclick="() => GoAsync(Page + 1)">
+        <span class="exds-pagination__icon exds-pagination__icon--next" aria-hidden="true">@IconGlyphs.Get("back")</span>
+    </button>
 </nav>
 
 @code {

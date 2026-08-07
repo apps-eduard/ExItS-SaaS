@@ -151,6 +151,8 @@ public sealed class ReusableMvpComponentTests
         Assert.Contains("Data_Previous", pagination, StringComparison.Ordinal);
         Assert.Contains("Data_Next", pagination, StringComparison.Ordinal);
         Assert.Contains("PageChanged", pagination, StringComparison.Ordinal);
+        Assert.Contains("exds-pagination__btn", pagination, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"back\")", pagination, StringComparison.Ordinal);
 
         var summary = File.ReadAllText(Path.Combine(root, "src", "Shared", "ExItS.DesignSystem",
             "Components", "Data", "PaginationSummary.razor"));

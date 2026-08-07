@@ -1,4 +1,5 @@
 @page "/customers/{CustomerId:guid}"
+@using ExItS.DesignSystem.Components.Internal
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IPosCustomerClient Customers
@@ -41,15 +42,33 @@ else
         && (_utang is not null || _showLocalBalance)
         && outstanding > 0m
         && canRepay;
-<Page class="pos-customer-detail">
-    <PageHeader Title="@customer.DisplayName" Subtitle="@L["Customers_DetailSubtitle"]">
-        <Actions>
-            @if (customer.Status == "Active")
+    var isActive = customer.Status == "Active";
+<div class="pos-customer-detail">
+<Page>
+    <header class="pos-customer-detail__header">
+        <div class="pos-customer-detail__title-row">
+            <h1 class="pos-customer-detail__title">@customer.DisplayName</h1>
+            @if (isActive)
             {
-                <Button Variant="ButtonVariant.Primary" Disabled="@(!canEdit)" OnClick="GoEdit">@L["Customers_Edit"]</Button>
+                <button type="button"
+                        class="pos-customer-detail__edit"
+                        disabled="@(!canEdit)"
+                        aria-label="@L["Customers_Edit"]"
+                        @onclick="GoEdit">
+                    <span class="pos-customer-detail__edit-icon" aria-hidden="true">@IconGlyphs.Get("edit")</span>
+                    <span>@L["Customers_Edit"]</span>
+                </button>
             }
-        </Actions>
-    </PageHeader>
+        </div>
+        <p class="pos-customer-detail__subtitle">@L["Customers_DetailSubtitle"]</p>
+        <div class="pos-customer-detail__status-row">
+            <Badge Tone="@(isActive ? BadgeTone.Success : BadgeTone.Neutral)">@customer.Status</Badge>
+            @if (_entityState is { } state && OfflineCustomerCreditUiHelpers.EntityBadge(state) is { } badge)
+            {
+                <Badge Tone="@badge.Tone">@L[badge.LabelKey]</Badge>
+            }
+        </div>
+    </header>
 
     @if (!string.IsNullOrEmpty(_banner))
     {
@@ -64,8 +83,11 @@ else
     @if (_entityState == LocalEntitySyncState.Conflict)
     {
         <Alert Tone="AlertTone.Warning" Title="@L["Offline_ConflictTitle"]" Message="@L["Offline_ConflictMessage"]" />
-        <div class="pos-customer-detail__toolbar">
-            <Button Variant="ButtonVariant.Primary" OnClick="GoEdit">@L["Customers_Edit"]</Button>
+        <div class="pos-action-grid pos-action-grid--single pos-customer-detail__conflict">
+            <button type="button" class="pos-action-tile pos-action-tile--primary" @onclick="GoEdit">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("edit")</span>
+                <span class="pos-action-tile__label">@L["Customers_Edit"]</span>
+            </button>
         </div>
     }
 
@@ -79,115 +101,150 @@ else
         <Alert Tone="AlertTone.Warning" Title="@L["Access_RestrictedTitle"]" Message="@L["Access_RestrictedMessage"]" />
     }
 
-    <InlineMessage Tone="InlineMessageTone.Info">@L["Utang_DeferredMessage"]</InlineMessage>
+    <p class="pos-customer-detail__note">@L["Utang_DeferredMessage"]</p>
 
-    <Section Title="@L["Customers_ProfileSection"]">
-        <Stack Gap="3">
-            <div class="pos-customer-detail__status-row">
-                <Badge Tone="@(customer.Status == "Active" ? BadgeTone.Success : BadgeTone.Neutral)">@customer.Status</Badge>
-                @if (_entityState is { } state && OfflineCustomerCreditUiHelpers.EntityBadge(state) is { } badge)
-                {
-                    <Badge Tone="@badge.Tone">@L[badge.LabelKey]</Badge>
-                }
+    <section class="pos-customer-detail__panel" aria-labelledby="customer-profile-heading">
+        <h2 id="customer-profile-heading" class="pos-customer-detail__section-title">@L["Customers_ProfileSection"]</h2>
+        <dl class="pos-customer-detail__facts">
+            <div class="pos-customer-detail__fact">
+                <dt>@L["Customers_Field_DisplayName"]</dt>
+                <dd>@customer.DisplayName</dd>
             </div>
-            <div>
-                <span class="pos-muted">@L["Customers_Field_DisplayName"]</span>
-                <div class="pos-value-md">@customer.DisplayName</div>
+            <div class="pos-customer-detail__fact">
+                <dt>@L["Personal_ExItsIdLabel"]</dt>
+                <dd class="pos-wrap">@(string.IsNullOrWhiteSpace(_exItsId) ? L["Customers_NoExItsId"] : _exItsId)</dd>
             </div>
-            <div>
-                <span class="pos-muted">@L["Personal_ExItsIdLabel"]</span>
-                <div class="pos-value-md pos-wrap">@(string.IsNullOrWhiteSpace(_exItsId) ? L["Customers_NoExItsId"] : _exItsId)</div>
+            <div class="pos-customer-detail__fact">
+                <dt>@L["Customers_Field_Mobile"]</dt>
+                <dd>@(string.IsNullOrWhiteSpace(customer.MobileNumber) ? L["Customers_NoMobile"] : customer.MobileNumber)</dd>
             </div>
-            <div>
-                <span class="pos-muted">@L["Customers_Field_Mobile"]</span>
-                <div class="pos-value-md">@(string.IsNullOrWhiteSpace(customer.MobileNumber) ? L["Customers_NoMobile"] : customer.MobileNumber)</div>
+            <div class="pos-customer-detail__fact">
+                <dt>@L["Customers_Field_Address"]</dt>
+                <dd class="pos-wrap">@(string.IsNullOrWhiteSpace(customer.Address) ? L["Customers_NoValue"] : customer.Address)</dd>
             </div>
-            <div>
-                <span class="pos-muted">@L["Customers_Field_Address"]</span>
-                <div class="pos-value-md pos-wrap">@(string.IsNullOrWhiteSpace(customer.Address) ? L["Customers_NoValue"] : customer.Address)</div>
+            <div class="pos-customer-detail__fact">
+                <dt>@L["Customers_Field_Notes"]</dt>
+                <dd class="pos-wrap">@(string.IsNullOrWhiteSpace(_notesDisplay) ? L["Customers_NoValue"] : _notesDisplay)</dd>
             </div>
-            <div>
-                <span class="pos-muted">@L["Customers_Field_Notes"]</span>
-                <div class="pos-value-md pos-wrap">@(string.IsNullOrWhiteSpace(_notesDisplay) ? L["Customers_NoValue"] : _notesDisplay)</div>
-            </div>
-        </Stack>
-    </Section>
+        </dl>
+    </section>
 
-    <Section Title="@L["Utang_SectionTitle"]">
-        <Stack Gap="3">
-            @if (_showLocalBalance && _localBalance is not null)
+    <section class="pos-customer-detail__panel" aria-labelledby="customer-utang-heading">
+        <h2 id="customer-utang-heading" class="pos-customer-detail__section-title">@L["Utang_SectionTitle"]</h2>
+
+        @if (_showLocalBalance && _localBalance is not null)
+        {
+            <div class="pos-customer-detail__balance">
+                <span class="pos-customer-detail__balance-label">@L["Offline_ProjectedOutstanding"]</span>
+                <div class="pos-customer-detail__balance-value">
+                    <MoneyDisplay Amount="@_localBalance.ProjectedOutstanding" CurrencyCode="PHP" Emphasized="true" />
+                </div>
+            </div>
+            <div class="pos-customer-detail__stats" role="list">
+                <div class="pos-customer-detail__stat" role="listitem">
+                    <span class="pos-customer-detail__stat-label">@L["Offline_ConfirmedOutstanding"]</span>
+                    <span class="pos-customer-detail__stat-value"><MoneyDisplay Amount="@_localBalance.ConfirmedOutstanding" CurrencyCode="PHP" /></span>
+                </div>
+                <div class="pos-customer-detail__stat" role="listitem">
+                    <span class="pos-customer-detail__stat-label">@L["Offline_PendingCredit"]</span>
+                    <span class="pos-customer-detail__stat-value"><MoneyDisplay Amount="@_localBalance.PendingCredit" CurrencyCode="PHP" /></span>
+                </div>
+                <div class="pos-customer-detail__stat" role="listitem">
+                    <span class="pos-customer-detail__stat-label">@L["Offline_PendingRepayment"]</span>
+                    <span class="pos-customer-detail__stat-value"><MoneyDisplay Amount="@_localBalance.PendingRepayment" CurrencyCode="PHP" /></span>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="pos-customer-detail__balance">
+                <span class="pos-customer-detail__balance-label">@L["Credit_Outstanding"]</span>
+                <div class="pos-customer-detail__balance-value">
+                    @if (_utang is null)
+                    {
+                        <Spinner />
+                    }
+                    else
+                    {
+                        <MoneyDisplay Amount="@_utang.OutstandingAmount" CurrencyCode="PHP" Emphasized="true" />
+                    }
+                </div>
+            </div>
+            @if (_utang is not null)
             {
-                <div class="pos-customer-detail__balance">
-                    <span class="pos-muted">@L["Offline_ProjectedOutstanding"]</span>
-                    <div class="pos-customer-detail__balance-value">
-                        <MoneyDisplay Amount="@_localBalance.ProjectedOutstanding" CurrencyCode="PHP" Emphasized="true" />
+                <div class="pos-customer-detail__stats" role="list">
+                    <div class="pos-customer-detail__stat" role="listitem">
+                        <span class="pos-customer-detail__stat-label">@L["Utang_CreditsTotal"]</span>
+                        <span class="pos-customer-detail__stat-value"><MoneyDisplay Amount="@_utang.ActiveCreditTotal" CurrencyCode="PHP" /></span>
+                    </div>
+                    <div class="pos-customer-detail__stat" role="listitem">
+                        <span class="pos-customer-detail__stat-label">@L["Utang_PaymentsTotal"]</span>
+                        <span class="pos-customer-detail__stat-value"><MoneyDisplay Amount="@_utang.ActiveRepaymentTotal" CurrencyCode="PHP" /></span>
+                    </div>
+                    <div class="pos-customer-detail__stat" role="listitem">
+                        <span class="pos-customer-detail__stat-label">@L["Overdue_Amount"]</span>
+                        <span class="pos-customer-detail__stat-value"><MoneyDisplay Amount="@_utang.OverdueAmount" CurrencyCode="PHP" /></span>
+                    </div>
+                    <div class="pos-customer-detail__stat" role="listitem">
+                        <span class="pos-customer-detail__stat-label">@L["Overdue_Count"]</span>
+                        <span class="pos-customer-detail__stat-value">@_utang.OverdueCreditCount</span>
+                    </div>
+                    <div class="pos-customer-detail__stat" role="listitem">
+                        <span class="pos-customer-detail__stat-label">@L["Overdue_Earliest"]</span>
+                        <span class="pos-customer-detail__stat-value">@(_utang.EarliestOverdueDate?.ToString("d") ?? L["Customers_NoValue"])</span>
+                    </div>
+                    <div class="pos-customer-detail__stat" role="listitem">
+                        <span class="pos-customer-detail__stat-label">@L["Overdue_NextDue"]</span>
+                        <span class="pos-customer-detail__stat-value">@(_utang.NextUpcomingDueDate?.ToString("d") ?? L["Customers_NoValue"])</span>
                     </div>
                 </div>
-                <div class="pos-customer-detail__balance-meta pos-muted">
-                    @L["Offline_ConfirmedOutstanding"]: <MoneyDisplay Amount="@_localBalance.ConfirmedOutstanding" CurrencyCode="PHP" />
-                    · @L["Offline_PendingCredit"]: <MoneyDisplay Amount="@_localBalance.PendingCredit" CurrencyCode="PHP" />
-                    · @L["Offline_PendingRepayment"]: <MoneyDisplay Amount="@_localBalance.PendingRepayment" CurrencyCode="PHP" />
-                </div>
             }
-            else
-            {
-                <div class="pos-customer-detail__balance">
-                    <span class="pos-muted">@L["Credit_Outstanding"]</span>
-                    <div class="pos-customer-detail__balance-value">
-                        @if (_utang is null)
-                        {
-                            <Spinner />
-                        }
-                        else
-                        {
-                            <MoneyDisplay Amount="@_utang.OutstandingAmount" CurrencyCode="PHP" Emphasized="true" />
-                        }
-                    </div>
-                </div>
-                @if (_utang is not null)
-                {
-                    <div class="pos-customer-detail__balance-meta pos-muted">
-                        @L["Utang_CreditsTotal"] <MoneyDisplay Amount="@_utang.ActiveCreditTotal" CurrencyCode="PHP" />
-                        · @L["Utang_PaymentsTotal"] <MoneyDisplay Amount="@_utang.ActiveRepaymentTotal" CurrencyCode="PHP" />
-                    </div>
-                    <div class="pos-customer-detail__balance-meta pos-muted">
-                        @L["Overdue_Amount"]: <MoneyDisplay Amount="@_utang.OverdueAmount" CurrencyCode="PHP" />
-                        · @L["Overdue_Count"]: @_utang.OverdueCreditCount
-                        · @L["Overdue_NoDueDateCount"]: @_utang.CreditsWithoutDueDateCount
-                    </div>
-                    <div class="pos-customer-detail__balance-meta pos-muted">
-                        @L["Overdue_Earliest"]: @(_utang.EarliestOverdueDate?.ToString("d") ?? L["Customers_NoValue"])
-                        · @L["Overdue_NextDue"]: @(_utang.NextUpcomingDueDate?.ToString("d") ?? L["Customers_NoValue"])
-                    </div>
-                }
-            }
-            <div class="pos-customer-detail__actions" role="group" aria-label="@L["Utang_SectionTitle"]">
-                @if (customer.Status == "Active")
-                {
-                    <Button Variant="ButtonVariant.Secondary" Disabled="@(!canCreateCredit)" OnClick="GoAddCredit">@L["Credit_Add"]</Button>
-                }
-                <Button Variant="ButtonVariant.Primary"
-                        Disabled="@(!canRecordPayment)"
-                        OnClick="GoAddPayment">@L["Payment_Record"]</Button>
-                <Button Variant="ButtonVariant.Secondary" Disabled="@_isOffline" OnClick="GoLedger">@L["Ledger_Open"]</Button>
-                <Button Variant="ButtonVariant.Ghost" Disabled="@_isOffline" OnClick="GoOverdue">@L["Overdue_OpenDetail"]</Button>
-                <Button Variant="ButtonVariant.Ghost" Disabled="@(!canStatement || _isOffline)" OnClick="GoStatement">@L["Statement_Open"]</Button>
-            </div>
-            @if (_isOffline && !Sync.CanMutateOffline)
-            {
-                <Alert Tone="AlertTone.Info" Title="@L["SyncStatus_Offline"]" Message="@L["Offline_MutationsUnavailable"]" />
-            }
-            @if (customer.Status != "Active")
-            {
-                <Alert Tone="AlertTone.Info" Title="@L["Payment_InactiveAllowedTitle"]" Message="@L["Payment_InactiveAllowedMessage"]" />
-            }
-        </Stack>
-    </Section>
+        }
 
-    <Section Title="@L["Credit_HistoryTitle"]">
+        <div class="pos-action-grid pos-action-grid--two pos-customer-detail__actions" role="group" aria-label="@L["Utang_SectionTitle"]">
+            @if (isActive)
+            {
+                <button type="button" class="pos-action-tile" disabled="@(!canCreateCredit)" @onclick="GoAddCredit">
+                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("plus")</span>
+                    <span class="pos-action-tile__label">@L["Credit_Add"]</span>
+                </button>
+            }
+            <button type="button"
+                    class="pos-action-tile pos-action-tile--primary"
+                    disabled="@(!canRecordPayment)"
+                    @onclick="GoAddPayment">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("check")</span>
+                <span class="pos-action-tile__label">@L["Payment_Record"]</span>
+            </button>
+            <button type="button" class="pos-action-tile" disabled="@_isOffline" @onclick="GoLedger">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("sales")</span>
+                <span class="pos-action-tile__label">@L["Ledger_Open"]</span>
+            </button>
+            <button type="button" class="pos-action-tile" disabled="@_isOffline" @onclick="GoOverdue">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("warning")</span>
+                <span class="pos-action-tile__label">@L["Overdue_OpenDetail"]</span>
+            </button>
+            <button type="button" class="pos-action-tile" disabled="@(!canStatement || _isOffline)" @onclick="GoStatement">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("inbox")</span>
+                <span class="pos-action-tile__label">@L["Statement_Open"]</span>
+            </button>
+        </div>
+
+        @if (_isOffline && !Sync.CanMutateOffline)
+        {
+            <Alert Tone="AlertTone.Info" Title="@L["SyncStatus_Offline"]" Message="@L["Offline_MutationsUnavailable"]" />
+        }
+        @if (!isActive)
+        {
+            <Alert Tone="AlertTone.Info" Title="@L["Payment_InactiveAllowedTitle"]" Message="@L["Payment_InactiveAllowedMessage"]" />
+        }
+    </section>
+
+    <section class="pos-customer-detail__panel" aria-labelledby="customer-credit-heading">
+        <h2 id="customer-credit-heading" class="pos-customer-detail__section-title">@L["Credit_HistoryTitle"]</h2>
         @if (_entriesLoading)
         {
-            <Spinner /><span>@L["Credit_HistoryLoading"]</span>
+            <div class="pos-customer-detail__loading"><Spinner /><span>@L["Credit_HistoryLoading"]</span></div>
         }
         else if (_entries.Count == 0 && _localCreditEntries.Count == 0)
         {
@@ -195,87 +252,97 @@ else
         }
         else if (_isOffline || _fromLocalCredits)
         {
-            <Stack Gap="3">
+            <div class="pos-customer-detail__list" role="list">
                 @foreach (var entry in _localCreditEntries)
                 {
-                    <div class="pos-credit-entry">
-                        <div class="pos-value-md">
-                            <MoneyDisplay Amount="@entry.Amount" CurrencyCode="PHP" />
-                            <Badge Tone="@(entry.Status == "Active" ? BadgeTone.Success : BadgeTone.Neutral)">@entry.Status</Badge>
-                            @if (OfflineCustomerCreditUiHelpers.EntityBadge(entry.EntityState) is { } badge)
-                            {
-                                <Badge Tone="@badge.Tone">@L[badge.LabelKey]</Badge>
-                            }
+                    <article class="pos-customer-detail__entry" role="listitem">
+                        <div class="pos-customer-detail__entry-top">
+                            <span class="pos-customer-detail__entry-amount"><MoneyDisplay Amount="@entry.Amount" CurrencyCode="PHP" /></span>
+                            <div class="pos-customer-detail__entry-badges">
+                                <Badge Tone="@(entry.Status == "Active" ? BadgeTone.Success : BadgeTone.Neutral)">@entry.Status</Badge>
+                                @if (OfflineCustomerCreditUiHelpers.EntityBadge(entry.EntityState) is { } entryBadge)
+                                {
+                                    <Badge Tone="@entryBadge.Tone">@L[entryBadge.LabelKey]</Badge>
+                                }
+                            </div>
                         </div>
-                        <div class="pos-wrap">@entry.Remarks</div>
-                        <div class="pos-muted">@entry.CreatedAtUtc.ToLocalTime().ToString("g")</div>
+                        @if (!string.IsNullOrWhiteSpace(entry.Remarks))
+                        {
+                            <p class="pos-customer-detail__entry-remarks pos-wrap">@entry.Remarks</p>
+                        }
+                        <p class="pos-customer-detail__entry-meta">@entry.CreatedAtUtc.ToLocalTime().ToString("g")</p>
                         @if (entry.Status == "Active")
                         {
-                            <FormActions>
+                            <div class="pos-customer-detail__entry-actions">
                                 <Button Variant="ButtonVariant.Secondary" OnClick="() => GoCreditDetail(entry.CreditEntryId)">@L["DueDate_OpenCredit"]</Button>
-                            </FormActions>
+                            </div>
                         }
-                    </div>
+                    </article>
                 }
-            </Stack>
+            </div>
         }
         else
         {
-            <Stack Gap="3">
+            <div class="pos-customer-detail__list" role="list">
                 @foreach (var entry in _entries)
                 {
-                    <div class="pos-credit-entry">
-                        <div class="pos-value-md">
-                            <MoneyDisplay Amount="@entry.Amount" CurrencyCode="PHP" />
-                            <Badge Tone="@(entry.Status == "Active" ? BadgeTone.Success : BadgeTone.Neutral)">@entry.Status</Badge>
-                            @if (entry.CurrentDueDate is null)
-                            {
-                                <Badge Tone="BadgeTone.Neutral">@L["DueDate_Badge_NoDueDate"]</Badge>
-                            }
-                            else
-                            {
-                                <Badge Tone="BadgeTone.Warning">@L["DueDate_Current"]: @entry.CurrentDueDate.Value.ToString("d")</Badge>
-                            }
+                    <article class="pos-customer-detail__entry" role="listitem">
+                        <div class="pos-customer-detail__entry-top">
+                            <span class="pos-customer-detail__entry-amount"><MoneyDisplay Amount="@entry.Amount" CurrencyCode="PHP" /></span>
+                            <div class="pos-customer-detail__entry-badges">
+                                <Badge Tone="@(entry.Status == "Active" ? BadgeTone.Success : BadgeTone.Neutral)">@entry.Status</Badge>
+                                @if (entry.CurrentDueDate is null)
+                                {
+                                    <Badge Tone="BadgeTone.Neutral">@L["DueDate_Badge_NoDueDate"]</Badge>
+                                }
+                                else
+                                {
+                                    <Badge Tone="BadgeTone.Warning">@L["DueDate_Current"]: @entry.CurrentDueDate.Value.ToString("d")</Badge>
+                                }
+                            </div>
                         </div>
-                        <div class="pos-wrap">@entry.Remarks</div>
-                        <div class="pos-muted">@entry.CreatedAtUtc.ToLocalTime().ToString("g")</div>
+                        @if (!string.IsNullOrWhiteSpace(entry.Remarks))
+                        {
+                            <p class="pos-customer-detail__entry-remarks pos-wrap">@entry.Remarks</p>
+                        }
+                        <p class="pos-customer-detail__entry-meta">@entry.CreatedAtUtc.ToLocalTime().ToString("g")</p>
                         @if (entry.SourceSaleId is not null)
                         {
-                            <div class="pos-muted">
-                                @L["Credit_LinkedSale"]:
-                                <a class="pos-link" href="@($"/sales/{entry.SourceSaleId.Value:D}")">@entry.SourceSaleId.Value.ToString("D")</a>
-                            </div>
+                            <p class="pos-customer-detail__entry-meta">
+                                <a class="pos-link" href="@($"/sales/{entry.SourceSaleId.Value:D}")">@L["Credit_LinkedSale"]</a>
+                            </p>
                         }
                         @if (entry.Status == "Reversed")
                         {
-                            <div class="pos-muted pos-wrap">@L["Credit_ReversalReason"]: @entry.ReversalReason</div>
+                            <p class="pos-customer-detail__entry-meta pos-wrap">@L["Credit_ReversalReason"]: @entry.ReversalReason</p>
                         }
                         else
                         {
-                            <FormActions>
+                            <div class="pos-customer-detail__entry-actions">
                                 <Button Variant="ButtonVariant.Secondary" OnClick="() => GoCreditDetail(entry.CreditEntryId)">@L["DueDate_OpenCredit"]</Button>
                                 @if (entry.SourceSaleId is null)
                                 {
                                     <Button Variant="ButtonVariant.Danger" Disabled="@(!canReverseCredit)" OnClick="() => BeginReverseCredit(entry)">@L["Credit_Reverse"]</Button>
                                 }
-                            </FormActions>
+                            </div>
                             @if (entry.SourceSaleId is not null)
                             {
-                                <Alert Tone="AlertTone.Info" Title="@L["Credit_Reverse"]" Message="@L["Credit_ReverseViaSaleVoid"]" />
+                                <p class="pos-customer-detail__entry-hint">@L["Credit_ReverseViaSaleVoid"]</p>
                             }
                         }
-                    </div>
+                    </article>
                 }
-            </Stack>
+            </div>
         }
-    </Section>
+    </section>
 
     @if (_isOffline || _localRepayments.Count > 0)
     {
-        <Section Title="@L["Utang_PaymentsTotal"]">
+        <section class="pos-customer-detail__panel" aria-labelledby="customer-payments-heading">
+            <h2 id="customer-payments-heading" class="pos-customer-detail__section-title">@L["Utang_PaymentsTotal"]</h2>
             @if (_repaymentsLoading)
             {
-                <Spinner /><span>@L["Payment_Loading"]</span>
+                <div class="pos-customer-detail__loading"><Spinner /><span>@L["Payment_Loading"]</span></div>
             }
             else if (_localRepayments.Count == 0)
             {
@@ -283,33 +350,36 @@ else
             }
             else
             {
-                <Stack Gap="3">
+                <div class="pos-customer-detail__list" role="list">
                     @foreach (var repayment in _localRepayments)
                     {
-                        <div class="pos-credit-entry">
-                            <div class="pos-value-md">
-                                <MoneyDisplay Amount="@repayment.Amount" CurrencyCode="PHP" />
-                                <Badge Tone="@(repayment.Status == "Active" ? BadgeTone.Success : BadgeTone.Neutral)">@repayment.Status</Badge>
-                                @if (OfflineCustomerCreditUiHelpers.EntityBadge(repayment.EntityState) is { } badge)
-                                {
-                                    <Badge Tone="@badge.Tone">@L[badge.LabelKey]</Badge>
-                                }
+                        <article class="pos-customer-detail__entry" role="listitem">
+                            <div class="pos-customer-detail__entry-top">
+                                <span class="pos-customer-detail__entry-amount"><MoneyDisplay Amount="@repayment.Amount" CurrencyCode="PHP" /></span>
+                                <div class="pos-customer-detail__entry-badges">
+                                    <Badge Tone="@(repayment.Status == "Active" ? BadgeTone.Success : BadgeTone.Neutral)">@repayment.Status</Badge>
+                                    @if (OfflineCustomerCreditUiHelpers.EntityBadge(repayment.EntityState) is { } repaymentBadge)
+                                    {
+                                        <Badge Tone="@repaymentBadge.Tone">@L[repaymentBadge.LabelKey]</Badge>
+                                    }
+                                </div>
                             </div>
-                            <div class="pos-wrap">@(string.IsNullOrWhiteSpace(repayment.Remarks) ? L["Customers_NoValue"] : repayment.Remarks)</div>
-                            <div class="pos-muted">@repayment.RecordedAtUtc.ToLocalTime().ToString("g")</div>
-                            <FormActions>
+                            <p class="pos-customer-detail__entry-remarks pos-wrap">@(string.IsNullOrWhiteSpace(repayment.Remarks) ? L["Customers_NoValue"] : repayment.Remarks)</p>
+                            <p class="pos-customer-detail__entry-meta">@repayment.RecordedAtUtc.ToLocalTime().ToString("g")</p>
+                            <div class="pos-customer-detail__entry-actions">
                                 <Button Variant="ButtonVariant.Secondary" OnClick="() => GoRepaymentDetail(repayment.RepaymentId)">@L["Payment_View"]</Button>
-                            </FormActions>
-                        </div>
+                            </div>
+                        </article>
                     }
-                </Stack>
+                </div>
             }
-        </Section>
+        </section>
     }
 
-    <Section Title="@L["Customers_AccountSection"]">
-        <div class="pos-customer-detail__toolbar">
-            @if (customer.Status == "Active")
+    <section class="pos-customer-detail__panel" aria-labelledby="customer-account-heading">
+        <h2 id="customer-account-heading" class="pos-customer-detail__section-title">@L["Customers_AccountSection"]</h2>
+        <div class="pos-customer-detail__account">
+            @if (isActive)
             {
                 <Button Variant="ButtonVariant.Danger" Disabled="@_isOffline" OnClick="() => _confirmDeactivate = true">@L["Customers_Deactivate"]</Button>
             }
@@ -318,7 +388,7 @@ else
                 <Button Variant="ButtonVariant.Primary" Disabled="@_isOffline" OnClick="() => _confirmReactivate = true">@L["Customers_Reactivate"]</Button>
             }
         </div>
-    </Section>
+    </section>
 
     @if (_isOffline && !Sync.CanMutateOffline)
     {
@@ -355,6 +425,7 @@ else
                    IsLoading="@_acting"
                    OnConfirm="ReverseCreditAsync" />
 </Page>
+</div>
 }
 }
 

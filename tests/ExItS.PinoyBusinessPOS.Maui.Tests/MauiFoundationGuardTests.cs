@@ -98,25 +98,36 @@ public sealed class MauiFoundationGuardTests
         Assert.Contains("@page \"/customers\"", list, StringComparison.Ordinal);
         Assert.Contains("Customers_CreditDeferred", list, StringComparison.Ordinal);
         Assert.Contains("pos-customers__row", list, StringComparison.Ordinal);
+        Assert.Contains("pos-customers__header", list, StringComparison.Ordinal);
+        Assert.Contains("pos-customers__note", list, StringComparison.Ordinal);
         Assert.Contains("IconGlyphs.Get(\"plus\")", list, StringComparison.Ordinal);
         Assert.Contains("IconGlyphs.Get(\"search\")", list, StringComparison.Ordinal);
         Assert.Contains("IconGlyphs.Get(\"refresh\")", list, StringComparison.Ordinal);
         Assert.Contains("pos-action-grid--three", list, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", list, StringComparison.Ordinal);
 
         var create = File.ReadAllText(Path.Combine(customers, "CustomerCreate.razor"));
         Assert.Contains("@page \"/customers/new\"", create, StringComparison.Ordinal);
         Assert.Contains("pos-customer-create", create, StringComparison.Ordinal);
+        Assert.Contains("pos-customer-create__header", create, StringComparison.Ordinal);
+        Assert.Contains("pos-customer-create__note", create, StringComparison.Ordinal);
         Assert.Contains("pos-action-grid--two", create, StringComparison.Ordinal);
         Assert.Contains("IconGlyphs.Get(\"qr\")", create, StringComparison.Ordinal);
         Assert.Contains("IconGlyphs.Get(\"search\")", create, StringComparison.Ordinal);
         Assert.Contains("FormActionsClass", create, StringComparison.Ordinal);
         Assert.DoesNotContain("<Actions>", create, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", create, StringComparison.Ordinal);
 
         var detail = File.ReadAllText(Path.Combine(customers, "CustomerDetail.razor"));
         Assert.Contains("@page \"/customers/{CustomerId:guid}\"", detail, StringComparison.Ordinal);
         Assert.Contains("pos-customer-detail", detail, StringComparison.Ordinal);
         Assert.Contains("SplitExItsIdFromNotes", detail, StringComparison.Ordinal);
         Assert.Contains("pos-customer-detail__actions", detail, StringComparison.Ordinal);
+        Assert.Contains("pos-customer-detail__facts", detail, StringComparison.Ordinal);
+        Assert.Contains("pos-customer-detail__stats", detail, StringComparison.Ordinal);
+        Assert.Contains("pos-action-tile", detail, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"edit\")", detail, StringComparison.Ordinal);
+        Assert.Contains("pos-customer-detail__edit", detail, StringComparison.Ordinal);
         Assert.Contains("Deactivate", detail, StringComparison.Ordinal);
         Assert.Contains("Reactivate", detail, StringComparison.Ordinal);
         Assert.Contains("GetUtangSummaryAsync", detail, StringComparison.Ordinal);
@@ -125,44 +136,83 @@ public sealed class MauiFoundationGuardTests
         Assert.Contains("GoOverdue", detail, StringComparison.Ordinal);
         Assert.Contains("GoStatement", detail, StringComparison.Ordinal);
         Assert.Contains("CurrentDueDate", detail, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", detail, StringComparison.Ordinal);
+        Assert.DoesNotContain("InlineMessage", detail, StringComparison.Ordinal);
 
         var edit = File.ReadAllText(Path.Combine(customers, "CustomerEdit.razor"));
         Assert.Contains("@page \"/customers/{CustomerId:guid}/edit\"", edit, StringComparison.Ordinal);
+        Assert.Contains("pos-customer-edit", edit, StringComparison.Ordinal);
+        Assert.Contains("StoreHeaderBack", edit, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", edit, StringComparison.Ordinal);
 
         var ledger = File.ReadAllText(Path.Combine(customers, "CustomerLedger.razor"));
         Assert.Contains("@page \"/customers/{CustomerId:guid}/ledger\"", ledger, StringComparison.Ordinal);
+        Assert.Contains("pos-ledger", ledger, StringComparison.Ordinal);
+        Assert.Contains("StoreHeaderBack", ledger, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", ledger, StringComparison.Ordinal);
 
         var creditDetail = File.ReadAllText(Path.Combine(customers, "CreditDetail.razor"));
         Assert.Contains("@page \"/customers/{CustomerId:guid}/credit/{CreditEntryId:guid}\"", creditDetail, StringComparison.Ordinal);
         Assert.Contains("SetCreditDueDateAsync", creditDetail, StringComparison.Ordinal);
         Assert.Contains("DueDate_HistoryTitle", creditDetail, StringComparison.Ordinal);
+        Assert.Contains("pos-credit-detail", creditDetail, StringComparison.Ordinal);
+        Assert.Contains("pos-credit-detail__facts", creditDetail, StringComparison.Ordinal);
+        Assert.Contains("pos-action-tile", creditDetail, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", creditDetail, StringComparison.Ordinal);
+
+        var creditCreate = File.ReadAllText(Path.Combine(customers, "CreditCreate.razor"));
+        Assert.Contains("pos-credit-create", creditCreate, StringComparison.Ordinal);
+        Assert.Contains("StoreHeaderBack", creditCreate, StringComparison.Ordinal);
+        Assert.Contains("Customers_Cancel", creditCreate, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", creditCreate, StringComparison.Ordinal);
+
+        var customerOverdue = File.ReadAllText(Path.Combine(customers, "CustomerOverdue.razor"));
+        Assert.Contains("@page \"/customers/{CustomerId:guid}/overdue\"", customerOverdue, StringComparison.Ordinal);
+        Assert.Contains("pos-customer-overdue", customerOverdue, StringComparison.Ordinal);
+        Assert.Contains("pos-customer-overdue__chip", customerOverdue, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", customerOverdue, StringComparison.Ordinal);
 
         var statement = File.ReadAllText(Path.Combine(customers, "CustomerStatement.razor"));
         Assert.Contains("@page \"/customers/{CustomerId:guid}/statement\"", statement, StringComparison.Ordinal);
         Assert.Contains("GetStatementAsync", statement, StringComparison.Ordinal);
         Assert.Contains("IDocumentHandoffService", statement, StringComparison.Ordinal);
+        Assert.Contains("pos-statement", statement, StringComparison.Ordinal);
+        Assert.Contains("pos-statement__facts", statement, StringComparison.Ordinal);
+        Assert.Contains("StoreHeaderBack", statement, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", statement, StringComparison.Ordinal);
 
         var receipt = File.ReadAllText(Path.Combine(customers, "RepaymentReceipt.razor"));
         Assert.Contains("@page \"/customers/{CustomerId:guid}/repayments/{RepaymentId:guid}/receipt\"", receipt, StringComparison.Ordinal);
         Assert.Contains("GetRepaymentReceiptAsync", receipt, StringComparison.Ordinal);
         Assert.Contains("Receipt_Reversed", receipt, StringComparison.Ordinal);
+        Assert.Contains("pos-receipt", receipt, StringComparison.Ordinal);
+        Assert.Contains("pos-receipt__facts", receipt, StringComparison.Ordinal);
+        Assert.Contains("StoreHeaderBack", receipt, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", receipt, StringComparison.Ordinal);
 
         var repaymentDetail = File.ReadAllText(Path.Combine(customers, "RepaymentDetail.razor"));
         Assert.Contains("GoReceipt", repaymentDetail, StringComparison.Ordinal);
+        Assert.Contains("pos-repayment-detail", repaymentDetail, StringComparison.Ordinal);
+        Assert.Contains("pos-repayment-detail__facts", repaymentDetail, StringComparison.Ordinal);
+        Assert.Contains("StoreHeaderBack", repaymentDetail, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", repaymentDetail, StringComparison.Ordinal);
 
         var overdue = File.ReadAllText(Path.Combine(customers, "OverdueList.razor"));
         Assert.Contains("@page \"/overdue\"", overdue, StringComparison.Ordinal);
         Assert.Contains("pos-overdue__row", overdue, StringComparison.Ordinal);
-        Assert.Contains("pos-action-grid--two", overdue, StringComparison.Ordinal);
+        Assert.Contains("pos-overdue__header", overdue, StringComparison.Ordinal);
+        Assert.Contains("pos-overdue__note", overdue, StringComparison.Ordinal);
         Assert.Contains("IconGlyphs.Get(\"refresh\")", overdue, StringComparison.Ordinal);
         Assert.Contains("IconGlyphs.Get(\"customers\")", overdue, StringComparison.Ordinal);
         Assert.Contains("Overdue_Refresh", overdue, StringComparison.Ordinal);
-
-        var customerOverdue = File.ReadAllText(Path.Combine(customers, "CustomerOverdue.razor"));
-        Assert.Contains("@page \"/customers/{CustomerId:guid}/overdue\"", customerOverdue, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", overdue, StringComparison.Ordinal);
+        Assert.DoesNotContain("pos-action-grid--two", overdue, StringComparison.Ordinal);
 
         var repaymentCreate = File.ReadAllText(Path.Combine(customers, "RepaymentCreate.razor"));
         Assert.Contains("@page \"/customers/{CustomerId:guid}/repayments/new\"", repaymentCreate, StringComparison.Ordinal);
+        Assert.Contains("pos-repayment-create", repaymentCreate, StringComparison.Ordinal);
+        Assert.Contains("StoreHeaderBack", repaymentCreate, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", repaymentCreate, StringComparison.Ordinal);
 
         var en = File.ReadAllText(Path.Combine(root, "src", "Products", "PinoyBusinessPOS",
             "ExItS.PinoyBusinessPOS.Maui", "Localization", "PosResources.resx"));

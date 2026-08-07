@@ -31,8 +31,12 @@ else if (_customer is null)
 else
 {
     var canEdit = Capabilities.IsAllowed(UtangCapability.EditCustomer);
+<div class="pos-customer-edit">
 <Page>
-    <PageHeader Title="@L["Customers_EditTitle"]" Subtitle="@_customer.DisplayName" />
+    <header class="pos-customer-edit__header">
+        <h1 class="pos-customer-edit__title">@L["Customers_EditTitle"]</h1>
+        <p class="pos-customer-edit__subtitle">@_customer.DisplayName</p>
+    </header>
 
     @if (_entityState == LocalEntitySyncState.Conflict || _showConflictAlert)
     {
@@ -52,23 +56,26 @@ else
         <Alert Tone="AlertTone.Danger" Title="@L["Customers_ErrorTitle"]" Message="@_formError" />
     }
 
-    <CustomerForm DisplayName="@_displayName"
-                  DisplayNameChanged="v => _displayName = v"
-                  MobileNumber="@_mobile"
-                  MobileNumberChanged="v => _mobile = v"
-                  Address="@_address"
-                  AddressChanged="v => _address = v"
-                  Notes="@_notes"
-                  NotesChanged="v => _notes = v"
-                  DisplayNameError="@_displayNameError"
-                  MobileError="@_mobileError"
-                  IsSaving="@_saving"
-                  Disabled="@(!canEdit)"
-                  SaveLabel="@L["Customers_Save"]"
-                  FormActionsClass="pos-customer-create__footer"
-                  OnSave="SaveAsync"
-                  OnCancel="GoDetail" />
+    <section class="pos-customer-edit__panel" aria-label="@L["Customers_EditTitle"]">
+        <CustomerForm DisplayName="@_displayName"
+                      DisplayNameChanged="v => _displayName = v"
+                      MobileNumber="@_mobile"
+                      MobileNumberChanged="v => _mobile = v"
+                      Address="@_address"
+                      AddressChanged="v => _address = v"
+                      Notes="@_notes"
+                      NotesChanged="v => _notes = v"
+                      DisplayNameError="@_displayNameError"
+                      MobileError="@_mobileError"
+                      IsSaving="@_saving"
+                      Disabled="@(!canEdit)"
+                      SaveLabel="@L["Customers_Save"]"
+                      FormActionsClass="pos-customer-create__footer"
+                      OnSave="SaveAsync"
+                      OnCancel="GoDetail" />
+    </section>
 </Page>
+</div>
 }
 }
 

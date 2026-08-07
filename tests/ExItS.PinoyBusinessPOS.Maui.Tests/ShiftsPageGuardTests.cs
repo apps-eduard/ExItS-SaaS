@@ -90,11 +90,13 @@ public sealed class ShiftsPageGuardTests
         Assert.Contains("UtangCapability.ManageShifts", open, StringComparison.Ordinal);
         Assert.Contains("ListAsync", open, StringComparison.Ordinal);
         Assert.Contains("Shifts_NoRegisterTitle", open, StringComparison.Ordinal);
+        Assert.Contains("pos-shift-open", open, StringComparison.Ordinal);
         Assert.DoesNotContain("_available.Count == 0 && !_loadingRegisters", open, StringComparison.Ordinal);
         Assert.Contains("GetCurrentAsync", open, StringComparison.Ordinal);
         Assert.Contains("finally", open, StringComparison.Ordinal);
         Assert.Contains("_saving = false", open, StringComparison.Ordinal);
         Assert.DoesNotContain("Shifts_BackToList", open, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", open, StringComparison.Ordinal);
 
         var detail = File.ReadAllText(Path.Combine(ShiftsPagesDirectory(), "ShiftDetail.razor"));
         Assert.Contains("@page \"/shifts/{ShiftId:guid}\"", detail, StringComparison.Ordinal);

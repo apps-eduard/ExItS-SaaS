@@ -17,7 +17,10 @@ else
     var canManage = Capabilities.IsAllowed(UtangCapability.ManageExpenses);
 <div class="pos-expenses">
     <Page>
-        <PageHeader Title="@L["Expenses_Title"]" Subtitle="@L["Expenses_Subtitle"]" />
+        <header class="pos-expenses__header">
+            <h1 class="pos-expenses__title">@L["Expenses_Title"]</h1>
+            <p class="pos-expenses__subtitle">@L["Expenses_Subtitle"]</p>
+        </header>
 
         @if (_isOffline)
         {
@@ -77,8 +80,9 @@ else
 
         @if (_filtersOpen)
         {
-            <Section Title="@L["Expenses_FiltersTitle"]" id="expenses-filters">
-                <Stack Gap="3">
+            <section class="pos-expenses__panel" id="expenses-filters" aria-labelledby="expenses-filters-heading">
+                <h2 id="expenses-filters-heading" class="pos-expenses__section-title">@L["Expenses_FiltersTitle"]</h2>
+                <div class="pos-expenses__form">
                     <Select Label="@L["Expenses_Filter_Status"]"
                             Value="@_statusFilter"
                             ValueChanged="OnStatusFilterChanged"
@@ -97,17 +101,15 @@ else
                                Value="@_toDate"
                                ValueChanged="OnToDateChanged"
                                Disabled="@(_loading || _isOffline)" />
-                </Stack>
-            </Section>
+                </div>
+            </section>
         }
 
-        <Section Title="@L["Expenses_ListSection"]">
+        <section class="pos-expenses__panel" aria-labelledby="expenses-list-heading">
+            <h2 id="expenses-list-heading" class="pos-expenses__section-title">@L["Expenses_ListSection"]</h2>
             @if (_loading)
             {
-                <Stack Align="StackAlign.Center" Gap="2">
-                    <Spinner />
-                    <span class="pos-muted">@L["Expenses_Loading"]</span>
-                </Stack>
+                <div class="pos-expenses__loading"><Spinner /><span>@L["Expenses_Loading"]</span></div>
             }
             else if (!string.IsNullOrEmpty(_errorMessage))
             {
@@ -131,26 +133,26 @@ else
                            role="listitem"
                            href="@($"/expenses/{item.ExpenseId:D}")">
                             <div class="pos-expenses__row-main">
-                                <span class="pos-expenses__row-name">@item.ExpenseNumber</span>
+                                <div class="pos-expenses__row-top">
+                                    <span class="pos-expenses__row-name">@item.ExpenseNumber</span>
+                                    <Badge Tone="@(item.Status == PosExpenseOptions.RecordedStatus ? BadgeTone.Success : BadgeTone.Neutral)">
+                                        @ExpensesUiOptions.StatusLabel(L, item.Status)
+                                    </Badge>
+                                </div>
                                 <span class="pos-expenses__row-meta">
                                     @item.ExpenseDate.ToString("d")
                                     · @(string.IsNullOrWhiteSpace(item.CategoryName) ? "—" : item.CategoryName)
                                     · @ExpensesUiOptions.PaymentMethodLabel(L, item.PaymentMethod)
                                 </span>
-                                <div class="pos-expenses__row-badges">
-                                    <Badge Tone="@(item.Status == PosExpenseOptions.RecordedStatus ? BadgeTone.Success : BadgeTone.Neutral)">
-                                        @ExpensesUiOptions.StatusLabel(L, item.Status)
-                                    </Badge>
-                                </div>
                             </div>
-                            <div class="pos-expenses__row-side">
+                            <span class="pos-expenses__row-amount">
                                 <MoneyDisplay Amount="@item.Amount" CurrencyCode="PHP" />
-                            </div>
+                            </span>
                         </a>
                     }
                 </div>
             }
-        </Section>
+        </section>
 
         @if (!_loading && _totalCount > 0)
         {

@@ -1,4 +1,5 @@
 @page "/customers/{CustomerId:guid}/credit/{CreditEntryId:guid}"
+@using ExItS.DesignSystem.Components.Internal
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IPosCustomerClient Customers
@@ -33,8 +34,21 @@ else
     var entry = _entry;
     var canMutateDueDate = Capabilities.IsAllowed(UtangCapability.MutateDueDate) && Sync.CanMutateOffline;
     var canReverseCredit = Capabilities.IsAllowed(UtangCapability.ReverseCredit) && Sync.CanMutateOffline;
+    var isActive = entry.Status == "Active";
+<div class="pos-credit-detail">
 <Page>
-    <PageHeader Title="@L["Credit_DetailTitle"]" Subtitle="@L["Credit_DetailSubtitle"]" />
+    <header class="pos-credit-detail__header">
+        <h1 class="pos-credit-detail__title">@L["Credit_DetailTitle"]</h1>
+        <p class="pos-credit-detail__subtitle">@L["Credit_DetailSubtitle"]</p>
+        <div class="pos-credit-detail__status-row">
+            <Badge Tone="@(isActive ? BadgeTone.Success : BadgeTone.Neutral)">@entry.Status</Badge>
+            <Badge Tone="@DueStatusTone(_dueStatus)">@_dueStatusLabel</Badge>
+            @if (_entityState is { } state && OfflineCustomerCreditUiHelpers.EntityBadge(state) is { } entityBadge)
+            {
+                <Badge Tone="@entityBadge.Tone">@L[entityBadge.LabelKey]</Badge>
+            }
+        </div>
+    </header>
 
     @if (!string.IsNullOrEmpty(_banner))
     {
@@ -44,10 +58,16 @@ else
     @if (_entityState == LocalEntitySyncState.Conflict)
     {
         <Alert Tone="AlertTone.Warning" Title="@L["Offline_DueDateConflictTitle"]" Message="@L["Offline_DueDateConflictMessage"]" />
-        <FormActions>
-            <Button Variant="ButtonVariant.Primary" IsLoading="@_refreshing" OnClick="RefreshFromServerAsync">@L["Offline_RefreshFromServer"]</Button>
-            <Button Variant="ButtonVariant.Danger" IsLoading="@_discarding" OnClick="DiscardLocalDueDateAsync">@L["Offline_DiscardLocalRequest"]</Button>
-        </FormActions>
+        <div class="pos-action-grid pos-action-grid--two pos-credit-detail__conflict" role="group">
+            <button type="button" class="pos-action-tile pos-action-tile--primary" disabled="@_refreshing" @onclick="RefreshFromServerAsync">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("refresh")</span>
+                <span class="pos-action-tile__label">@L["Offline_RefreshFromServer"]</span>
+            </button>
+            <button type="button" class="pos-action-tile" disabled="@_discarding" @onclick="DiscardLocalDueDateAsync">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("close")</span>
+                <span class="pos-action-tile__label">@L["Offline_DiscardLocalRequest"]</span>
+            </button>
+        </div>
     }
 
     @if (!string.IsNullOrEmpty(_errorMessage))
@@ -60,35 +80,24 @@ else
         <Alert Tone="AlertTone.Warning" Title="@L["Access_RestrictedTitle"]" Message="@L["Access_RestrictedMessage"]" />
     }
 
-    <Section Title="@L["Credit_EntrySection"]">
-        <Stack Gap="3">
-            <div>
-                <span class="pos-muted">@L["Credit_Field_Amount"]</span>
-                <div class="pos-value-md">
-                    <MoneyDisplay Amount="@entry.Amount" CurrencyCode="PHP" />
-                    @if (_entityState is { } state && OfflineCustomerCreditUiHelpers.EntityBadge(state) is { } badge)
-                    {
-                        <Badge Tone="@badge.Tone">@L[badge.LabelKey]</Badge>
-                    }
-                </div>
+    <section class="pos-credit-detail__panel" aria-labelledby="credit-entry-heading">
+        <h2 id="credit-entry-heading" class="pos-credit-detail__section-title">@L["Credit_EntrySection"]</h2>
+        <div class="pos-credit-detail__amount">
+            <span class="pos-credit-detail__amount-label">@L["Credit_Field_Amount"]</span>
+            <div class="pos-credit-detail__amount-value">
+                <MoneyDisplay Amount="@entry.Amount" CurrencyCode="PHP" Emphasized="true" />
             </div>
-            <div>
-                <span class="pos-muted">@L["Customers_Field_Status"]</span>
-                <Badge Tone="@(entry.Status == "Active" ? BadgeTone.Success : BadgeTone.Neutral)">@entry.Status</Badge>
-            </div>
-            <div>
-                <span class="pos-muted">@L["DueDate_Status"]</span>
-                <Badge Tone="@DueStatusTone(_dueStatus)">@_dueStatusLabel</Badge>
-            </div>
-            <div>
-                <span class="pos-muted">@L["DueDate_Current"]</span>
-                <div class="pos-value-md">@(entry.CurrentDueDate is null ? L["DueDate_None"] : FormatDate(entry.CurrentDueDate.Value))</div>
+        </div>
+        <dl class="pos-credit-detail__facts">
+            <div class="pos-credit-detail__fact">
+                <dt>@L["DueDate_Current"]</dt>
+                <dd>@(entry.CurrentDueDate is null ? L["DueDate_None"] : FormatDate(entry.CurrentDueDate.Value))</dd>
             </div>
             @if (_hasPendingDueDateChange)
             {
-                <div>
-                    <span class="pos-muted">@L["Offline_EntityPending"]</span>
-                    <div class="pos-value-md">
+                <div class="pos-credit-detail__fact">
+                    <dt>@L["Offline_EntityPending"]</dt>
+                    <dd>
                         @if (_pendingDueDateClear)
                         {
                             @L["DueDate_Clear"]
@@ -97,38 +106,37 @@ else
                         {
                             @FormatDate(_pendingDueDate.Value)
                         }
-                    </div>
+                    </dd>
                 </div>
             }
-            <div>
-                <span class="pos-muted">@L["Credit_Field_Remarks"]</span>
-                <div class="pos-value-md pos-wrap">@entry.Remarks</div>
+            <div class="pos-credit-detail__fact">
+                <dt>@L["Credit_Field_Remarks"]</dt>
+                <dd class="pos-wrap">@(string.IsNullOrWhiteSpace(entry.Remarks) ? L["Customers_NoValue"] : entry.Remarks)</dd>
             </div>
             @if (entry.SourceSaleId is not null)
             {
-                <div>
-                    <span class="pos-muted">@L["Credit_LinkedSale"]</span>
-                    <div class="pos-value-md">
-                        <a class="pos-link" href="@($"/sales/{entry.SourceSaleId.Value:D}")">@entry.SourceSaleId.Value.ToString("D")</a>
-                    </div>
+                <div class="pos-credit-detail__fact">
+                    <dt>@L["Credit_LinkedSale"]</dt>
+                    <dd><a class="pos-link" href="@($"/sales/{entry.SourceSaleId.Value:D}")">@L["Credit_LinkedSale"]</a></dd>
                 </div>
             }
-            <div>
-                <span class="pos-muted">@L["Payment_RecordedAt"]</span>
-                <div class="pos-value-md">@entry.CreatedAtUtc.ToLocalTime().ToString("g")</div>
+            <div class="pos-credit-detail__fact">
+                <dt>@L["Payment_RecordedAt"]</dt>
+                <dd>@entry.CreatedAtUtc.ToLocalTime().ToString("g")</dd>
             </div>
-        </Stack>
-    </Section>
+        </dl>
+    </section>
 
-    @if (entry.SourceSaleId is not null && entry.Status == "Active")
+    @if (entry.SourceSaleId is not null && isActive)
     {
-        <Alert Tone="AlertTone.Warning" Title="@L["Credit_Reverse"]" Message="@L["Credit_ReverseViaSaleVoid"]" />
+        <p class="pos-credit-detail__note">@L["Credit_ReverseViaSaleVoid"]</p>
     }
 
-    @if (entry.Status == "Active" && _entityState != LocalEntitySyncState.PendingReversal)
+    @if (isActive && _entityState != LocalEntitySyncState.PendingReversal)
     {
-        <Section Title="@L["DueDate_ActionsTitle"]">
-            <Stack Gap="3">
+        <section class="pos-credit-detail__panel" aria-labelledby="credit-actions-heading">
+            <h2 id="credit-actions-heading" class="pos-credit-detail__section-title">@L["DueDate_ActionsTitle"]</h2>
+            <div class="pos-credit-detail__form">
                 <DateInput Label="@L["DueDate_Field_Date"]"
                            Value="@_dueDate"
                            ValueChanged="v => _dueDate = v"
@@ -141,27 +149,46 @@ else
                           Hint="@L["DueDate_ReasonHint"]"
                           Rows="3"
                           Disabled="@(!canMutateDueDate || _acting)" />
-                <FormActions>
-                    <Button Variant="ButtonVariant.Primary" Disabled="@(!canMutateDueDate || _acting)" OnClick="() => _confirmSet = true">@L["DueDate_Set"]</Button>
-                    @if (entry.CurrentDueDate is not null)
-                    {
-                        <Button Variant="ButtonVariant.Secondary" Disabled="@(!canMutateDueDate || _acting)" OnClick="() => _confirmClear = true">@L["DueDate_Clear"]</Button>
-                    }
-                    @if (entry.SourceSaleId is null)
-                    {
-                        <Button Variant="ButtonVariant.Danger" Disabled="@(!canReverseCredit || _acting)" OnClick="() => _confirmReverse = true">@L["Credit_Reverse"]</Button>
-                    }
-                </FormActions>
-            </Stack>
-        </Section>
+            </div>
+            <div class="pos-action-grid pos-action-grid--two pos-credit-detail__actions" role="group" aria-label="@L["DueDate_ActionsTitle"]">
+                <button type="button"
+                        class="pos-action-tile pos-action-tile--primary"
+                        disabled="@(!canMutateDueDate || _acting)"
+                        @onclick="() => _confirmSet = true">
+                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("check")</span>
+                    <span class="pos-action-tile__label">@L["DueDate_Set"]</span>
+                </button>
+                @if (entry.CurrentDueDate is not null)
+                {
+                    <button type="button"
+                            class="pos-action-tile"
+                            disabled="@(!canMutateDueDate || _acting)"
+                            @onclick="() => _confirmClear = true">
+                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("close")</span>
+                        <span class="pos-action-tile__label">@L["DueDate_Clear"]</span>
+                    </button>
+                }
+                @if (entry.SourceSaleId is null)
+                {
+                    <button type="button"
+                            class="pos-action-tile"
+                            disabled="@(!canReverseCredit || _acting)"
+                            @onclick="() => _confirmReverse = true">
+                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("warning")</span>
+                        <span class="pos-action-tile__label">@L["Credit_Reverse"]</span>
+                    </button>
+                }
+            </div>
+        </section>
     }
 
     @if (!_fromLocal)
     {
-        <Section Title="@L["DueDate_HistoryTitle"]">
+        <section class="pos-credit-detail__panel" aria-labelledby="credit-history-heading">
+            <h2 id="credit-history-heading" class="pos-credit-detail__section-title">@L["DueDate_HistoryTitle"]</h2>
             @if (_historyLoading)
             {
-                <Spinner /><span>@L["DueDate_HistoryLoading"]</span>
+                <div class="pos-credit-detail__loading"><Spinner /><span>@L["DueDate_HistoryLoading"]</span></div>
             }
             else if (_history.Count == 0)
             {
@@ -169,22 +196,25 @@ else
             }
             else
             {
-                <Stack Gap="3">
+                <div class="pos-credit-detail__list" role="list">
                     @foreach (var change in _history)
                     {
-                        <div class="pos-credit-entry">
-                            <div class="pos-value-md">
+                        <article class="pos-credit-detail__entry" role="listitem">
+                            <p class="pos-credit-detail__entry-amount">
                                 @(change.PreviousDueDate is null ? L["DueDate_None"] : FormatDate(change.PreviousDueDate.Value))
                                 →
                                 @(change.NewDueDate is null ? L["DueDate_None"] : FormatDate(change.NewDueDate.Value))
-                            </div>
-                            <div class="pos-wrap">@change.Reason</div>
-                            <div class="pos-muted">@change.ChangedAtUtc.ToLocalTime().ToString("g")</div>
-                        </div>
+                            </p>
+                            @if (!string.IsNullOrWhiteSpace(change.Reason))
+                            {
+                                <p class="pos-credit-detail__entry-remarks pos-wrap">@change.Reason</p>
+                            }
+                            <p class="pos-credit-detail__entry-meta">@change.ChangedAtUtc.ToLocalTime().ToString("g")</p>
+                        </article>
                     }
-                </Stack>
+                </div>
             }
-        </Section>
+        </section>
     }
 
     <ConfirmDialog Visible="@_confirmSet"
@@ -217,6 +247,7 @@ else
                    IsLoading="@_acting"
                    OnConfirm="ReverseCreditAsync" />
 </Page>
+</div>
 }
 }
 
