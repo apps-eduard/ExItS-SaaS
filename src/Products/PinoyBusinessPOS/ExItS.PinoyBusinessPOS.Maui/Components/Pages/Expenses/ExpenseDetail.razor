@@ -7,6 +7,8 @@
 @inject IConnectivityService Connectivity
 @inject IStringLocalizer<PosResources> L
 
+<StoreHeaderBack Href="/expenses" />
+
 @if (!_ready)
 {
     <Page><Spinner /></Page>
@@ -22,7 +24,6 @@ else if (_expense is null)
                     Message="@(_errorMessage ?? L["Expenses_NotFoundMessage"])"
                     RetryLabel="@L["Api_Retry"]"
                     OnRetry="LoadAsync" />
-        <Button Variant="ButtonVariant.Secondary" OnClick="GoList">@L["Expenses_BackToList"]</Button>
     </Page>
 }
 else
@@ -33,11 +34,7 @@ else
         && isRecorded
         && !_isOffline;
 <Page>
-    <PageHeader Title="@expense.ExpenseNumber" Subtitle="@L["Expenses_DetailTitle"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoList">@L["Expenses_BackToList"]</Button>
-        </Actions>
-    </PageHeader>
+    <PageHeader Title="@expense.ExpenseNumber" Subtitle="@L["Expenses_DetailTitle"]" />
 
     @if (_isOffline)
     {
@@ -227,6 +224,4 @@ else
         _errorTitle = described.Title;
         _errorMessage = result.Error?.Detail ?? described.Message;
     }
-
-    private void GoList() => Nav.NavigateTo("/expenses");
 }

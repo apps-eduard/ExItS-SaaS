@@ -9,10 +9,16 @@
 @inject IUtangCapabilityEvaluator Capabilities
 @inject IConnectivityService Connectivity
 @inject ApiStatusLocalizer ApiLocalizer
-@inject StoreHeaderState HeaderState
 @inject IStringLocalizer<PosResources> L
 
-@if (!_ready || (_loading && _shift is null))
+@if (!_ready)
+{
+    <Page><Spinner /><span class="pos-muted">@L["Shifts_DetailLoading"]</span></Page>
+}
+else
+{
+<StoreHeaderBack Href="/shifts" />
+@if (_loading && _shift is null)
 {
     <Page><Spinner /><span class="pos-muted">@L["Shifts_DetailLoading"]</span></Page>
 }
@@ -361,6 +367,7 @@ else
                    OnConfirm="ConfirmCancelAsync" />
 </div>
 }
+}
 
 @code {
     [Parameter] public Guid ShiftId { get; set; }
@@ -368,7 +375,6 @@ else
     private bool _ready;
     private bool _loading;
     private bool _isOffline;
-    private bool _headerInner;
     private bool _recording;
     private bool _closing;
     private bool _cancelling;
@@ -449,8 +455,6 @@ else
             return;
         }
 
-        HeaderState.EnterInner("/shifts");
-        _headerInner = true;
         Connectivity.ConnectivityChanged += OnConnectivityChanged;
         _isOffline = !await Connectivity.IsConnectedAsync();
         _ready = true;
@@ -843,10 +847,5 @@ else
     public void Dispose()
     {
         Connectivity.ConnectivityChanged -= OnConnectivityChanged;
-        if (_headerInner)
-        {
-            HeaderState.ExitInner();
-            _headerInner = false;
-        }
     }
 }

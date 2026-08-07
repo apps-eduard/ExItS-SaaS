@@ -9,6 +9,8 @@
 @inject IConnectivityService Connectivity
 @inject IStringLocalizer<PosResources> L
 
+<StoreHeaderBack Href="/sales" />
+
 @if (!_ready)
 {
     <Page><Spinner /></Page>
@@ -24,7 +26,6 @@ else if (_sale is null)
                     Message="@(_errorMessage ?? L["Sales_NotFoundMessage"])"
                     RetryLabel="@L["Api_Retry"]"
                     OnRetry="LoadAsync" />
-        <Button Variant="ButtonVariant.Secondary" OnClick="GoDetail">@L["Sales_BackToList"]</Button>
     </Page>
 }
 else
@@ -33,7 +34,6 @@ else
 <Page>
     <PageHeader Title="@L["Sales_DetailSubtitle"]" Subtitle="@sale.SaleNumber">
         <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoDetail">@L["Sales_DetailSubtitle"]</Button>
             <Button Variant="ButtonVariant.Primary" OnClick="GoNextSale">@L["Sales_New"]</Button>
         </Actions>
     </PageHeader>
@@ -133,7 +133,6 @@ else
 
     <FormActions>
         <Button Variant="ButtonVariant.Primary" OnClick="GoNextSale">@L["Sales_New"]</Button>
-        <Button Variant="ButtonVariant.Secondary" OnClick="GoList">@L["Sales_BackToList"]</Button>
     </FormActions>
 </Page>
 }
@@ -212,7 +211,5 @@ else
         }
     }
 
-    private void GoDetail() => Nav.NavigateTo($"/sales/{SaleId:D}");
-    private void GoList() => Nav.NavigateTo("/sales");
     private void GoNextSale() => Nav.NavigateTo("/sales/new");
 }

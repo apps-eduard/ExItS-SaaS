@@ -10,7 +10,8 @@ public sealed class OrgStaffInviteUiGuardTests
         var fil = File.ReadAllText(Path.Combine(MauiProject(), "Localization", "PosResources.fil-PH.resx"));
 
         Assert.Contains("@page \"/org/staff/invite\"", page, StringComparison.Ordinal);
-        Assert.Contains("pos-invite__back", page, StringComparison.Ordinal);
+        Assert.Contains("StoreHeaderBack Href=\"/org/staff\"", page, StringComparison.Ordinal);
+        Assert.DoesNotContain("pos-invite__back", page, StringComparison.Ordinal);
         Assert.Contains("Org_InviteFindHeading", page, StringComparison.Ordinal);
         Assert.Contains("Org_InviteResolveHint", page, StringComparison.Ordinal);
         Assert.Contains("Personal_AddByExItsId", page, StringComparison.Ordinal);

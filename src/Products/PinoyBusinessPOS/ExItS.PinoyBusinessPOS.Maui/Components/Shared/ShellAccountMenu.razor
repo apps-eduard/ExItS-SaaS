@@ -1,13 +1,16 @@
 @implements IDisposable
+@using ExItS.DesignSystem.Components.Internal
+@using ExItS.PinoyBusinessPOS.Application.Commercial
 @inject IAuthenticationService Auth
 @inject ICurrentUserContext CurrentUser
 @inject IOfflineOperationQueue OfflineQueue
+@inject IUtangCapabilityEvaluator Capabilities
 @inject SellingModeService SellingMode
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
 <div class="pos-topbar__overflow" @onclick:stopPropagation="true">
-    <IconButton IconName="more"
+    <IconButton IconName="menu"
                 AriaLabel="@L["Shell_AccountMenuAria"]"
                 OnClick="ToggleAsync" />
     @if (_open)
@@ -20,25 +23,36 @@
             @if (ShowSettings)
             {
                 <button type="button" class="pos-topbar__overflow-item" role="menuitem" @onclick="GoSettingsAsync">
-                    @L["Nav_Settings"]
+                    <span class="pos-topbar__overflow-icon" aria-hidden="true">@IconGlyphs.Get("settings")</span>
+                    <span>@L["Nav_Settings"]</span>
                 </button>
             }
-            @if (ShowSwitchOrganization)
+            @if (ShowDashboardItem)
+            {
+                <button type="button" class="pos-topbar__overflow-item" role="menuitem" @onclick="GoDashboardAsync">
+                    <span class="pos-topbar__overflow-icon" aria-hidden="true">@IconGlyphs.Get("sales")</span>
+                    <span>@L["Nav_Dashboard"]</span>
+                </button>
+            }
+            @if (ShowOrganizationSwitcherItem)
             {
                 <button type="button" class="pos-topbar__overflow-item" role="menuitem" @onclick="GoSwitchOrgAsync">
-                    @L["Settings_SwitchOrganization"]
+                    <span class="pos-topbar__overflow-icon" aria-hidden="true">@IconGlyphs.Get("customers")</span>
+                    <span>@OrganizationSwitcherLabel</span>
                 </button>
             }
             @if (ShowPersonalHome)
             {
                 <button type="button" class="pos-topbar__overflow-item" role="menuitem" @onclick="GoPersonalAsync">
-                    @L["Personal_HomeTitle"]
+                    <span class="pos-topbar__overflow-icon" aria-hidden="true">@IconGlyphs.Get("home")</span>
+                    <span>@L["Personal_HomeTitle"]</span>
                 </button>
             }
             @if (ShowSignOut)
             {
                 <button type="button" class="pos-topbar__overflow-item pos-topbar__overflow-item--danger" role="menuitem" @onclick="OpenLogoutAsync">
-                    @L["Auth_Logout"]
+                    <span class="pos-topbar__overflow-icon" aria-hidden="true">@IconGlyphs.Get("close")</span>
+                    <span>@L["Auth_Logout"]</span>
                 </button>
             }
         </div>
@@ -69,21 +83,52 @@
     private bool _logoutBusy;
     private string _logoutMessage = string.Empty;
 
+    private bool IsPersonalSession => CurrentUser.Session?.OrganizationId is null;
+
+    private bool IsOnOrganizationSelect
+    {
+        get
+        {
+            var path = "/" + Nav.ToBaseRelativePath(Nav.Uri).Split('?', '#')[0].Trim('/');
+            return path.StartsWith("/organization-select", StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    /// <summary>
+    /// Hide while already choosing an organization — the page itself is that flow.
+    /// </summary>
+    private bool ShowOrganizationSwitcherItem =>
+        ShowSwitchOrganization && !IsOnOrganizationSelect;
+
+    private bool ShowDashboardItem =>
+        !IsPersonalSession
+        && CurrentUser.HasPosAccess
+        && Capabilities.IsAllowed(UtangCapability.ViewDashboard);
+
+    private string OrganizationSwitcherLabel =>
+        IsPersonalSession ? L["OrgSelect_Title"] : L["Shell_ChangeOrganization"];
+
+    public bool IsOpen => _open;
+
     protected override void OnInitialized() => Nav.LocationChanged += OnLocationChanged;
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e) => _ = CloseAsync();
 
     private async Task ToggleAsync()
     {
-        _open = !_open;
-        if (_open && OnOpened.HasDelegate)
+        if (_open)
+        {
+            await CloseAsync();
+            return;
+        }
+
+        // Close the sync popover first so only one top-bar overlay is visible.
+        if (OnOpened.HasDelegate)
         {
             await OnOpened.InvokeAsync();
         }
-        else if (!_open && OnClosed.HasDelegate)
-        {
-            await OnClosed.InvokeAsync();
-        }
+
+        _open = true;
     }
 
     public async Task CloseAsync()
@@ -105,8 +150,13 @@
     private async Task GoSettingsAsync()
     {
         await CloseAsync();
-        var personal = CurrentUser.Session?.OrganizationId is null;
-        Nav.NavigateTo(personal ? "/personal/settings" : "/settings");
+        Nav.NavigateTo(IsPersonalSession ? "/personal/settings" : "/settings");
+    }
+
+    private async Task GoDashboardAsync()
+    {
+        await CloseAsync();
+        Nav.NavigateTo("/dashboard");
     }
 
     private async Task GoSwitchOrgAsync()

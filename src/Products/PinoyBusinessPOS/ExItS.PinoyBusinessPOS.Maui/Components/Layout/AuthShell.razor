@@ -11,9 +11,11 @@
 <div class="exds-root pos-shell pos-shell--auth" data-layout="phone" @key="_cultureEpoch">
     @if (CurrentUser.IsAuthenticated)
     {
-        <StoreHeader Identity="StoreHeaderIdentity.Organization"
+        var usePersonalIdentity = !HasOrganizationIdentity;
+        <StoreHeader Identity="@(usePersonalIdentity ? StoreHeaderIdentity.Personal : StoreHeaderIdentity.Organization)"
                      ShowSync="true"
-                     ShowPersonalHome="true"
+                     ShowPersonalHome="@(!usePersonalIdentity)"
+                     ShowSwitchOrganization="true"
                      OrganizationIdOverride="@EffectiveOrgId"
                      OrganizationNameOverride="@EffectiveOrgName" />
     }
@@ -36,6 +38,14 @@
 
     private string? EffectiveOrgName =>
         IdentityState.OrganizationName ?? CurrentUser.Session?.OrganizationDisplayName;
+
+    /// <summary>
+    /// Personal-only sessions (and org-select with no preview) must keep the personal
+    /// identity on the left so sync/account controls stay on the right.
+    /// </summary>
+    private bool HasOrganizationIdentity =>
+        EffectiveOrgId is not null
+        || !string.IsNullOrWhiteSpace(EffectiveOrgName);
 
     protected override void OnInitialized()
     {

@@ -7,6 +7,8 @@
 @inject IConnectivityService Connectivity
 @inject IStringLocalizer<PosResources> L
 
+<StoreHeaderBack Href="/expenses" />
+
 @if (!_ready)
 {
     <Page><Spinner /></Page>
@@ -16,7 +18,6 @@ else
 <Page>
     <PageHeader Title="@L["Expenses_SummaryTitle"]" Subtitle="@L["Expenses_SummarySubtitle"]">
         <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoExpenses">@L["Expenses_BackToList"]</Button>
             <Button Variant="ButtonVariant.Secondary" IsLoading="@_loading" OnClick="ReloadAsync">@L["Expenses_Refresh"]</Button>
         </Actions>
     </PageHeader>
@@ -188,6 +189,4 @@ else
 
         _loading = false;
     }
-
-    private void GoExpenses() => Nav.NavigateTo("/expenses");
 }

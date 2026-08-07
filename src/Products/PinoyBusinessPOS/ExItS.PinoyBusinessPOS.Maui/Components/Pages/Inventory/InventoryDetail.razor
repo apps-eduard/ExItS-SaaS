@@ -7,6 +7,8 @@
 @inject IConnectivityService Connectivity
 @inject IStringLocalizer<PosResources> L
 
+<StoreHeaderBack Href="/inventory" />
+
 @if (!_ready)
 {
     <Page><Spinner /></Page>
@@ -15,7 +17,6 @@ else if (_account is null)
 {
     <Page>
         <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Inventory_DetailTitle"])" Message="@(_errorMessage ?? L["NotFound_Message"])" />
-        <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Inventory_Title"]</Button>
     </Page>
 }
 else
@@ -37,7 +38,6 @@ else
                     <Button Variant="ButtonVariant.Secondary" IsLoading="@_busy" OnClick="DisableAsync">@L["Inventory_Disable"]</Button>
                 }
             }
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Inventory_Title"]</Button>
         </Actions>
     </PageHeader>
 
@@ -171,5 +171,4 @@ else
 
     private void GoAdjust() => Nav.NavigateTo($"/inventory/{ProductId:D}/adjust");
     private void GoReorder() => Nav.NavigateTo($"/inventory/{ProductId:D}/reorder");
-    private void GoBack() => Nav.NavigateTo("/inventory");
 }

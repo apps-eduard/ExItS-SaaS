@@ -7,12 +7,10 @@
 @inject IConnectivityService Connectivity
 @inject IStringLocalizer<PosResources> L
 
+<StoreHeaderBack Href="/permissions" />
+
 <Page>
-    <PageHeader Title="@L["Permissions_MyAccess"]" Subtitle="@L["Permissions_MyAccessSubtitle"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Permissions_Back"]</Button>
-        </Actions>
-    </PageHeader>
+    <PageHeader Title="@L["Permissions_MyAccess"]" Subtitle="@L["Permissions_MyAccessSubtitle"]" />
 
     @if (_loading)
     {
@@ -64,6 +62,4 @@
 
         _loading = false;
     }
-
-    private void GoBack() => Nav.NavigateTo("/permissions");
 }

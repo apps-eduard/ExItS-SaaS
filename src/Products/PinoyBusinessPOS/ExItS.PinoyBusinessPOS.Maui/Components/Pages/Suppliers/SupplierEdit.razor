@@ -8,6 +8,8 @@
 @inject IConnectivityService Connectivity
 @inject IStringLocalizer<PosResources> L
 
+<StoreHeaderBack Href="/suppliers" />
+
 @if (!_ready)
 {
     <Page><Spinner /></Page>
@@ -23,7 +25,6 @@ else if (_supplier is null)
                     Message="@(_errorMessage ?? L["Suppliers_NotFoundMessage"])"
                     RetryLabel="@L["Api_Retry"]"
                     OnRetry="LoadAsync" />
-        <Button Variant="ButtonVariant.Secondary" OnClick="GoList">@L["Suppliers_BackToList"]</Button>
     </Page>
 }
 else
@@ -241,6 +242,5 @@ else
     private static string? NullIfWhiteSpace(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
-    private void GoList() => Nav.NavigateTo("/suppliers");
     private void GoDetail() => Nav.NavigateTo($"/suppliers/{SupplierId:D}");
 }

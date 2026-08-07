@@ -30,6 +30,24 @@ public sealed class CustomersReportsNavPageGuardTests
             "Customers",
             "CreditCreate.razor"));
         Assert.Contains("UtangCapability.CreateCredit", credit, StringComparison.Ordinal);
+        Assert.Contains("StoreHeaderBack", credit, StringComparison.Ordinal);
+        Assert.Contains("Customers_Cancel", credit, StringComparison.Ordinal);
+        Assert.DoesNotContain("Customers_BackToDetail", credit, StringComparison.Ordinal);
+
+        var detail = File.ReadAllText(Path.Combine(
+            FindRepoRoot(),
+            "src",
+            "Products",
+            "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.Maui",
+            "Components",
+            "Pages",
+            "Customers",
+            "CustomerDetail.razor"));
+        Assert.Contains("StoreHeaderBack", detail, StringComparison.Ordinal);
+        Assert.Contains("Href=\"/customers\"", detail, StringComparison.Ordinal);
+        Assert.DoesNotContain("Customers_BackToList", detail, StringComparison.Ordinal);
+        Assert.DoesNotContain("Customers_Back\"", detail, StringComparison.Ordinal);
     }
 
     [Fact]

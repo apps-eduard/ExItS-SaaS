@@ -11,70 +11,69 @@
 {
     <Page><Spinner /></Page>
 }
-else if (_loading)
-{
-    <Page><Spinner /></Page>
-}
-else if (_po is null)
-{
-    <Page>
-        <ErrorState Title="@(_errorTitle ?? L["Purchasing_NotFoundTitle"])"
-                    Message="@(_errorMessage ?? L["Purchasing_NotFoundMessage"])"
-                    RetryLabel="@L["Api_Retry"]"
-                    OnRetry="LoadAsync" />
-        <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Purchasing_BackToDetail"]</Button>
-    </Page>
-}
 else
 {
-    var canManage = Capabilities.IsAllowed(UtangCapability.ManagePurchasing);
-    var canReceive = canManage && !_isOffline
-        && (_po.Status == "Ordered" || _po.Status == "PartiallyReceived")
-        && _lines.Any(l => l.OutstandingQty > 0m);
-<Page>
-    <PageHeader Title="@L["Purchasing_ReceiveTitle"]" Subtitle="@(_po.PoNumber ?? L["Purchasing_ReceiveSubtitle"])">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Purchasing_BackToDetail"]</Button>
-        </Actions>
-    </PageHeader>
-
-    @if (_isOffline)
+    <StoreHeaderBack Href="@($"/purchasing/{PurchaseOrderId:D}")" />
+    @if (_loading)
     {
-        <Alert Tone="AlertTone.Warning" Title="@L["Purchasing_OfflineTitle"]" Message="@L["Purchasing_OfflineMessage"]" />
+        <Page><Spinner /></Page>
     }
-
-    @if (!string.IsNullOrEmpty(_errorMessage))
+    else if (_po is null)
     {
-        <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Purchasing_ErrorTitle"])" Message="@_errorMessage" />
+        <Page>
+            <ErrorState Title="@(_errorTitle ?? L["Purchasing_NotFoundTitle"])"
+                        Message="@(_errorMessage ?? L["Purchasing_NotFoundMessage"])"
+                        RetryLabel="@L["Api_Retry"]"
+                        OnRetry="LoadAsync" />
+        </Page>
     }
+    else
+    {
+        var canManage = Capabilities.IsAllowed(UtangCapability.ManagePurchasing);
+        var canReceive = canManage && !_isOffline
+            && (_po.Status == "Ordered" || _po.Status == "PartiallyReceived")
+            && _lines.Any(l => l.OutstandingQty > 0m);
+        <Page>
+            <PageHeader Title="@L["Purchasing_ReceiveTitle"]" Subtitle="@(_po.PoNumber ?? L["Purchasing_ReceiveSubtitle"])" />
 
-    <Section Title="@L["Purchasing_ReceiveLinesSection"]">
-        <Stack Gap="3">
-            @foreach (var line in _lines)
+            @if (_isOffline)
             {
-                <div>
-                    <div class="pos-value-md">@(line.NameSnapshot ?? line.ProductId.ToString("D"))</div>
-                    <div class="pos-muted">@L["Purchasing_Outstanding", line.OutstandingQty, line.UomSnapshot ?? ""]</div>
-                    @if (canReceive && line.OutstandingQty > 0m)
+                <Alert Tone="AlertTone.Warning" Title="@L["Purchasing_OfflineTitle"]" Message="@L["Purchasing_OfflineMessage"]" />
+            }
+
+            @if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Purchasing_ErrorTitle"])" Message="@_errorMessage" />
+            }
+
+            <Section Title="@L["Purchasing_ReceiveLinesSection"]">
+                <Stack Gap="3">
+                    @foreach (var line in _lines)
                     {
-                        <TextInput Label="@L["Purchasing_ReceiveQty"]"
-                                   Value="@line.QtyText"
-                                   ValueChanged="v => line.QtyText = v" />
+                        <div>
+                            <div class="pos-value-md">@(line.NameSnapshot ?? line.ProductId.ToString("D"))</div>
+                            <div class="pos-muted">@L["Purchasing_Outstanding", line.OutstandingQty, line.UomSnapshot ?? ""]</div>
+                            @if (canReceive && line.OutstandingQty > 0m)
+                            {
+                                <TextInput Label="@L["Purchasing_ReceiveQty"]"
+                                           Value="@line.QtyText"
+                                           ValueChanged="v => line.QtyText = v" />
+                            }
+                        </div>
                     }
-                </div>
-            }
-            @if (canReceive)
-            {
-                <TextInput Label="@L["Purchasing_DeliveryReference"]" Value="@_deliveryReference" ValueChanged="v => _deliveryReference = v" />
-                <TextInput Label="@L["Purchasing_ReceiveNotes"]" Value="@_notes" ValueChanged="v => _notes = v" />
-            }
-            <Button Variant="ButtonVariant.Primary"
-                    Disabled="@(!canReceive || _busy)"
-                    IsLoading="@_busy"
-                    OnClick="ReceiveAsync">@L["Purchasing_Receive"]</Button>
-        </Stack>
-    </Section>
-</Page>
+                    @if (canReceive)
+                    {
+                        <TextInput Label="@L["Purchasing_DeliveryReference"]" Value="@_deliveryReference" ValueChanged="v => _deliveryReference = v" />
+                        <TextInput Label="@L["Purchasing_ReceiveNotes"]" Value="@_notes" ValueChanged="v => _notes = v" />
+                    }
+                    <Button Variant="ButtonVariant.Primary"
+                            Disabled="@(!canReceive || _busy)"
+                            IsLoading="@_busy"
+                            OnClick="ReceiveAsync">@L["Purchasing_Receive"]</Button>
+                </Stack>
+            </Section>
+        </Page>
+    }
 }
 
 @code {
@@ -206,8 +205,6 @@ else
         _errorMessage = result.Error?.Detail ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
         _busy = false;
     }
-
-    private void GoBack() => Nav.NavigateTo($"/purchasing/{PurchaseOrderId:D}");
 
     private sealed class ReceiveLineEdit
     {

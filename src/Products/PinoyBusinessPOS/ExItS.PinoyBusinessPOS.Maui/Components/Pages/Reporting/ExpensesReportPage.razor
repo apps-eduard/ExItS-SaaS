@@ -1,4 +1,5 @@
 @page "/reports/expenses"
+@using ExItS.DesignSystem.Components.Internal
 @using ExItS.PinoyBusinessPOS.Application.Commercial
 @using ExItS.PinoyBusinessPOS.Application.Reporting
 @inject NavigationManager Nav
@@ -15,13 +16,17 @@
 }
 else
 {
+<div class="pos-report">
+<StoreHeaderBack Href="/reports" />
 <Page>
-    <PageHeader Title="@L["Reports_Expenses"]" Subtitle="@L["Reports_ExpensesSubtitle"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoHub">@L["Reports_Back"]</Button>
-            <Button Variant="ButtonVariant.Secondary" IsLoading="@_loading" OnClick="ReloadAsync">@L["Dashboard_Refresh"]</Button>
-        </Actions>
-    </PageHeader>
+    <PageHeader Title="@L["Reports_Expenses"]" Subtitle="@L["Reports_ExpensesSubtitle"]" />
+
+    <div class="pos-action-grid pos-action-grid--single pos-report__actions" role="group">
+        <button type="button" class="pos-action-tile" disabled="@_loading" @onclick="ReloadAsync">
+            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("refresh")</span>
+            <span class="pos-action-tile__label">@L["Dashboard_Refresh"]</span>
+        </button>
+    </div>
 
     @if (_isOffline)
     {
@@ -34,60 +39,66 @@ else
     }
 
     <Section Title="@L["Dashboard_FiltersTitle"]">
-        <Stack Gap="3">
-            <DateInput Label="@L["Dashboard_FromDate"]" Value="@_fromDate" ValueChanged="OnFromDateChanged" />
-            <DateInput Label="@L["Dashboard_ToDate"]" Value="@_toDate" ValueChanged="OnToDateChanged" />
-        </Stack>
+        <div class="pos-settings__panel">
+            <Stack Gap="2">
+                <DateInput Label="@L["Dashboard_FromDate"]" Value="@_fromDate" ValueChanged="OnFromDateChanged" Disabled="@_loading" />
+                <DateInput Label="@L["Dashboard_ToDate"]" Value="@_toDate" ValueChanged="OnToDateChanged" Disabled="@_loading" />
+            </Stack>
+        </div>
     </Section>
 
     @if (_report is not null)
     {
         <Section Title="@L["Reports_SummaryTitle"]">
-            <Stack Gap="3">
-                <div>
-                    <span class="pos-muted">@L["Reports_ActiveExpenses"]</span>
-                    <div class="pos-value-md"><MoneyDisplay Amount="@_report.ActiveExpenseTotal" CurrencyCode="PHP" /></div>
-                    <div class="pos-muted">@_report.ActiveExpenseCount</div>
+            <div class="pos-dashboard__stats" role="list">
+                <div class="pos-dashboard__stat" role="listitem">
+                    <span class="pos-dashboard__stat-label">@L["Reports_ActiveExpenses"]</span>
+                    <span class="pos-dashboard__stat-value"><MoneyDisplay Amount="@_report.ActiveExpenseTotal" CurrencyCode="PHP" /></span>
+                    <span class="pos-dashboard__stat-meta">@_report.ActiveExpenseCount</span>
                 </div>
-                <div>
-                    <span class="pos-muted">@L["Reports_VoidedExpenses"]</span>
-                    <div class="pos-value-md"><MoneyDisplay Amount="@_report.VoidedExpenseTotal" CurrencyCode="PHP" /></div>
-                    <div class="pos-muted">@_report.VoidedExpenseCount</div>
+                <div class="pos-dashboard__stat" role="listitem">
+                    <span class="pos-dashboard__stat-label">@L["Reports_VoidedExpenses"]</span>
+                    <span class="pos-dashboard__stat-value"><MoneyDisplay Amount="@_report.VoidedExpenseTotal" CurrencyCode="PHP" /></span>
+                    <span class="pos-dashboard__stat-meta">@_report.VoidedExpenseCount</span>
                 </div>
-            </Stack>
+            </div>
         </Section>
 
         <Section Title="@L["Reports_ByCategory"]">
-            <Stack Gap="3">
+            <div class="pos-dashboard__list" role="list">
                 @foreach (var row in _report.ByCategory)
                 {
-                    <div class="pos-row">
-                        <span class="pos-value-md">@(row.CategoryName ?? row.CategoryId.ToString("D"))</span>
-                        <span class="pos-muted">@row.Count</span>
-                        <MoneyDisplay Amount="@row.TotalAmount" CurrencyCode="PHP" />
+                    <div class="pos-dashboard__row" role="listitem">
+                        <span class="pos-dashboard__row-title">@(row.CategoryName ?? row.CategoryId.ToString("D"))</span>
+                        <span class="pos-dashboard__row-meta">@row.Count</span>
+                        <span class="pos-dashboard__row-value"><MoneyDisplay Amount="@row.TotalAmount" CurrencyCode="PHP" /></span>
                     </div>
                 }
-            </Stack>
+            </div>
         </Section>
 
         <Section Title="@L["Reports_ExpenseDetails"]">
-            <Stack Gap="3">
+            <div class="pos-dashboard__list" role="list">
                 @foreach (var row in _report.Details.Take(50))
                 {
-                    <div class="pos-row" @onclick="() => GoExpense(row.ExpenseId)">
-                        <span class="pos-value-md">@row.ExpenseNumber</span>
-                        <span class="pos-muted">@row.Status</span>
-                        <MoneyDisplay Amount="@row.Amount" CurrencyCode="PHP" />
-                    </div>
+                    <button type="button" class="pos-dashboard__row pos-dashboard__row--action" role="listitem" @onclick="() => GoExpense(row.ExpenseId)">
+                        <span class="pos-dashboard__row-title">@row.ExpenseNumber</span>
+                        <span class="pos-dashboard__row-meta">@row.Status</span>
+                        <span class="pos-dashboard__row-value"><MoneyDisplay Amount="@row.Amount" CurrencyCode="PHP" /></span>
+                    </button>
                 }
-            </Stack>
+            </div>
         </Section>
     }
     else if (_loading)
     {
-        <Spinner /><span>@L["Dashboard_Loading"]</span>
+        <Stack Align="StackAlign.Center" Gap="2">
+            <Spinner />
+            <span class="pos-muted">@L["Dashboard_Loading"]</span>
+        </Stack>
     }
 </Page>
+</div>
 }
 
 @code {
@@ -138,6 +149,5 @@ else
         _loading = false;
     }
 
-    private void GoHub() => Nav.NavigateTo("/reports");
     private void GoExpense(Guid expenseId) => Nav.NavigateTo($"/expenses/{expenseId:D}");
 }

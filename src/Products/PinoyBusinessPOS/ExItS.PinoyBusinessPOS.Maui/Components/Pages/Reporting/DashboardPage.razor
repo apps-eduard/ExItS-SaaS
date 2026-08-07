@@ -1,4 +1,5 @@
 @page "/dashboard"
+@using ExItS.DesignSystem.Components.Internal
 @using ExItS.PinoyBusinessPOS.Application.Commercial
 @using ExItS.PinoyBusinessPOS.Application.Reporting
 @inject NavigationManager Nav
@@ -15,13 +16,20 @@
 }
 else
 {
+<div class="pos-dashboard">
 <Page>
-    <PageHeader Title="@L["Dashboard_Title"]" Subtitle="@L["Dashboard_Subtitle"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoReports">@L["Nav_Reports"]</Button>
-            <Button Variant="ButtonVariant.Secondary" IsLoading="@_loading" OnClick="ReloadAsync">@L["Dashboard_Refresh"]</Button>
-        </Actions>
-    </PageHeader>
+    <PageHeader Title="@L["Dashboard_Title"]" Subtitle="@L["Dashboard_Subtitle"]" />
+
+    <div class="pos-action-grid pos-action-grid--two pos-dashboard__actions" role="group" aria-label="@L["Dashboard_Title"]">
+        <button type="button" class="pos-action-tile" @onclick="GoReports">
+            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("info")</span>
+            <span class="pos-action-tile__label">@L["Nav_Reports"]</span>
+        </button>
+        <button type="button" class="pos-action-tile" disabled="@_loading" @onclick="ReloadAsync">
+            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("refresh")</span>
+            <span class="pos-action-tile__label">@L["Dashboard_Refresh"]</span>
+        </button>
+    </div>
 
     @if (_isOffline)
     {
@@ -34,96 +42,98 @@ else
     }
 
     <Section Title="@L["Dashboard_FiltersTitle"]">
-        <Stack Gap="3">
-            <DateInput Label="@L["Dashboard_FromDate"]" Value="@_fromDate" ValueChanged="OnFromDateChanged" />
-            <DateInput Label="@L["Dashboard_ToDate"]" Value="@_toDate" ValueChanged="OnToDateChanged" />
-        </Stack>
+        <div class="pos-settings__panel">
+            <Stack Gap="2">
+                <DateInput Label="@L["Dashboard_FromDate"]" Value="@_fromDate" ValueChanged="OnFromDateChanged" Disabled="@_loading" />
+                <DateInput Label="@L["Dashboard_ToDate"]" Value="@_toDate" ValueChanged="OnToDateChanged" Disabled="@_loading" />
+            </Stack>
+        </div>
     </Section>
 
     @if (_dashboard is not null)
     {
         <Section Title="@L["Dashboard_KpisTitle"]">
-            <Stack Gap="3">
-                <div>
-                    <span class="pos-muted">@L["Dashboard_CompletedSales"]</span>
-                    <div class="pos-value-md"><MoneyDisplay Amount="@_dashboard.CompletedSalesTotal" CurrencyCode="PHP" /></div>
-                    <div class="pos-muted">@_dashboard.CompletedSaleCount</div>
+            <div class="pos-dashboard__stats" role="list">
+                <div class="pos-dashboard__stat" role="listitem">
+                    <span class="pos-dashboard__stat-label">@L["Dashboard_CompletedSales"]</span>
+                    <span class="pos-dashboard__stat-value"><MoneyDisplay Amount="@_dashboard.CompletedSalesTotal" CurrencyCode="PHP" /></span>
+                    <span class="pos-dashboard__stat-meta">@_dashboard.CompletedSaleCount</span>
                 </div>
-                <div>
-                    <span class="pos-muted">@L["Dashboard_CashSales"]</span>
-                    <div class="pos-value-md"><MoneyDisplay Amount="@_dashboard.CashSalesTotal" CurrencyCode="PHP" /></div>
+                <div class="pos-dashboard__stat" role="listitem">
+                    <span class="pos-dashboard__stat-label">@L["Dashboard_CashSales"]</span>
+                    <span class="pos-dashboard__stat-value"><MoneyDisplay Amount="@_dashboard.CashSalesTotal" CurrencyCode="PHP" /></span>
                 </div>
-                <div>
-                    <span class="pos-muted">@L["Dashboard_GCashSales"]</span>
-                    <div class="pos-value-md"><MoneyDisplay Amount="@_dashboard.ManualGCashSalesTotal" CurrencyCode="PHP" /></div>
+                <div class="pos-dashboard__stat" role="listitem">
+                    <span class="pos-dashboard__stat-label">@L["Dashboard_GCashSales"]</span>
+                    <span class="pos-dashboard__stat-value"><MoneyDisplay Amount="@_dashboard.ManualGCashSalesTotal" CurrencyCode="PHP" /></span>
                 </div>
-                <div>
-                    <span class="pos-muted">@L["Dashboard_UtangSales"]</span>
-                    <div class="pos-value-md"><MoneyDisplay Amount="@_dashboard.UtangSalesTotal" CurrencyCode="PHP" /></div>
+                <div class="pos-dashboard__stat" role="listitem">
+                    <span class="pos-dashboard__stat-label">@L["Dashboard_UtangSales"]</span>
+                    <span class="pos-dashboard__stat-value"><MoneyDisplay Amount="@_dashboard.UtangSalesTotal" CurrencyCode="PHP" /></span>
                 </div>
-                <div>
-                    <span class="pos-muted">@L["Dashboard_UtangOutstanding"]</span>
-                    <div class="pos-value-md"><MoneyDisplay Amount="@_dashboard.ActiveCustomerUtangOutstanding" CurrencyCode="PHP" /></div>
+                <div class="pos-dashboard__stat" role="listitem">
+                    <span class="pos-dashboard__stat-label">@L["Dashboard_UtangOutstanding"]</span>
+                    <span class="pos-dashboard__stat-value"><MoneyDisplay Amount="@_dashboard.ActiveCustomerUtangOutstanding" CurrencyCode="PHP" /></span>
                 </div>
-                <div>
-                    <span class="pos-muted">@L["Dashboard_OverdueUtang"]</span>
-                    <div class="pos-value-md"><MoneyDisplay Amount="@_dashboard.OverdueUtangAmount" CurrencyCode="PHP" /></div>
+                <div class="pos-dashboard__stat" role="listitem">
+                    <span class="pos-dashboard__stat-label">@L["Dashboard_OverdueUtang"]</span>
+                    <span class="pos-dashboard__stat-value"><MoneyDisplay Amount="@_dashboard.OverdueUtangAmount" CurrencyCode="PHP" /></span>
                 </div>
-                <div>
-                    <span class="pos-muted">@L["Dashboard_Expenses"]</span>
-                    <div class="pos-value-md"><MoneyDisplay Amount="@_dashboard.RecordedExpenseTotal" CurrencyCode="PHP" /></div>
+                <div class="pos-dashboard__stat" role="listitem">
+                    <span class="pos-dashboard__stat-label">@L["Dashboard_Expenses"]</span>
+                    <span class="pos-dashboard__stat-value"><MoneyDisplay Amount="@_dashboard.RecordedExpenseTotal" CurrencyCode="PHP" /></span>
                 </div>
-                <div class="pos-row">
-                    <span class="pos-muted">@L["Dashboard_LowStock"]</span>
-                    <span class="pos-value-md">@_dashboard.LowStockProductCount</span>
+                <div class="pos-dashboard__stat" role="listitem">
+                    <span class="pos-dashboard__stat-label">@L["Dashboard_LowStock"]</span>
+                    <span class="pos-dashboard__stat-value">@_dashboard.LowStockProductCount</span>
                 </div>
-                <div class="pos-row">
-                    <span class="pos-muted">@L["Dashboard_VoidedSales"]</span>
-                    <span class="pos-value-md">@_dashboard.VoidedSaleCount</span>
+                <div class="pos-dashboard__stat" role="listitem">
+                    <span class="pos-dashboard__stat-label">@L["Dashboard_VoidedSales"]</span>
+                    <span class="pos-dashboard__stat-value">@_dashboard.VoidedSaleCount</span>
                 </div>
-                <div class="pos-row">
-                    <span class="pos-muted">@L["Dashboard_VoidedExpenses"]</span>
-                    <span class="pos-value-md">@_dashboard.VoidedExpenseCount</span>
+                <div class="pos-dashboard__stat" role="listitem">
+                    <span class="pos-dashboard__stat-label">@L["Dashboard_VoidedExpenses"]</span>
+                    <span class="pos-dashboard__stat-value">@_dashboard.VoidedExpenseCount</span>
                 </div>
-            </Stack>
+            </div>
         </Section>
 
         @if (_dashboard.SalesTotalComparison is not null)
         {
             <Section Title="@L["Dashboard_ComparisonTitle"]">
-                <Stack Gap="3">
-                    <div>
-                        <span class="pos-muted">@L["Dashboard_SalesChange"]</span>
-                        <div class="pos-value-md">
+                <div class="pos-settings__panel">
+                    <div class="pos-settings__kv">
+                        <span class="pos-settings__kv-label">@L["Dashboard_SalesChange"]</span>
+                        <span class="pos-settings__kv-value @ComparisonToneClass(_dashboard.SalesTotalComparison)">
                             <MoneyDisplay Amount="@_dashboard.SalesTotalComparison.AbsoluteChange.GetValueOrDefault()" CurrencyCode="PHP" />
                             @if (_dashboard.SalesTotalComparison.PercentageAvailable)
                             {
-                                <span class="pos-muted"> (@_dashboard.SalesTotalComparison.PercentageChange!.Value.ToString("0.##")%)</span>
+                                <span> (@_dashboard.SalesTotalComparison.PercentageChange!.Value.ToString("0.##")%)</span>
                             }
                             else
                             {
-                                <span class="pos-muted"> (@L["Dashboard_PctNotAvailable"])</span>
+                                <span> (@L["Dashboard_PctNotAvailable"])</span>
                             }
-                        </div>
+                        </span>
                     </div>
                     @if (_dashboard.ExpenseTotalComparison is not null)
                     {
-                        <div>
-                            <span class="pos-muted">@L["Dashboard_ExpenseChange"]</span>
-                            <div class="pos-value-md">
+                        <div class="pos-settings__kv">
+                            <span class="pos-settings__kv-label">@L["Dashboard_ExpenseChange"]</span>
+                            <span class="pos-settings__kv-value @ComparisonToneClass(_dashboard.ExpenseTotalComparison)">
                                 <MoneyDisplay Amount="@_dashboard.ExpenseTotalComparison.AbsoluteChange.GetValueOrDefault()" CurrencyCode="PHP" />
                                 @if (_dashboard.ExpenseTotalComparison.PercentageAvailable)
                                 {
-                                    <span class="pos-muted"> (@_dashboard.ExpenseTotalComparison.PercentageChange!.Value.ToString("0.##")%)</span>
+                                    <span> (@_dashboard.ExpenseTotalComparison.PercentageChange!.Value.ToString("0.##")%)</span>
                                 }
                                 else
                                 {
-                                    <span class="pos-muted"> (@L["Dashboard_PctNotAvailable"])</span>
+                                    <span> (@L["Dashboard_PctNotAvailable"])</span>
                                 }
-                            </div>
+                            </span>
                         </div>
                     }
-                </Stack>
+                </div>
             </Section>
         }
 
@@ -134,50 +144,74 @@ else
             }
             else
             {
-                <Stack Gap="3">
+                <div class="pos-dashboard__list" role="list">
                     @foreach (var row in _dashboard.PaymentMethodBreakdown)
                     {
-                        <div class="pos-row">
-                            <span class="pos-value-md">@row.PaymentMethod</span>
-                            <span class="pos-muted">@row.Count</span>
-                            <MoneyDisplay Amount="@row.Amount" CurrencyCode="PHP" />
+                        <div class="pos-dashboard__row" role="listitem">
+                            <span class="pos-dashboard__row-title">@row.PaymentMethod</span>
+                            <span class="pos-dashboard__row-meta">@row.Count</span>
+                            <span class="pos-dashboard__row-value"><MoneyDisplay Amount="@row.Amount" CurrencyCode="PHP" /></span>
                         </div>
                     }
-                </Stack>
+                </div>
             }
         </Section>
 
         <Section Title="@L["Dashboard_SalesByDay"]">
-            <Stack Gap="2">
-                @foreach (var row in _dashboard.SalesByDay.Where(i => i.Count > 0 || i.Amount > 0m).Take(14))
-                {
-                    <div class="pos-row">
-                        <span class="pos-muted">@row.Date.ToString("yyyy-MM-dd")</span>
-                        <span class="pos-muted">@row.Count</span>
-                        <MoneyDisplay Amount="@row.Amount" CurrencyCode="PHP" />
-                    </div>
-                }
-            </Stack>
+            @{
+                var salesDays = _dashboard.SalesByDay.Where(i => i.Count > 0 || i.Amount > 0m).Take(14).ToList();
+            }
+            @if (salesDays.Count == 0)
+            {
+                <InlineMessage Tone="InlineMessageTone.Info">@L["Dashboard_EmptyMessage"]</InlineMessage>
+            }
+            else
+            {
+                <div class="pos-dashboard__list" role="list">
+                    @foreach (var row in salesDays)
+                    {
+                        <div class="pos-dashboard__row" role="listitem">
+                            <span class="pos-dashboard__row-title">@row.Date.ToString("yyyy-MM-dd")</span>
+                            <span class="pos-dashboard__row-meta">@row.Count</span>
+                            <span class="pos-dashboard__row-value"><MoneyDisplay Amount="@row.Amount" CurrencyCode="PHP" /></span>
+                        </div>
+                    }
+                </div>
+            }
         </Section>
 
         <Section Title="@L["Dashboard_ExpensesByDay"]">
-            <Stack Gap="2">
-                @foreach (var row in _dashboard.ExpensesByDay.Where(i => i.Count > 0 || i.Amount > 0m).Take(14))
-                {
-                    <div class="pos-row">
-                        <span class="pos-muted">@row.Date.ToString("yyyy-MM-dd")</span>
-                        <span class="pos-muted">@row.Count</span>
-                        <MoneyDisplay Amount="@row.Amount" CurrencyCode="PHP" />
-                    </div>
-                }
-            </Stack>
+            @{
+                var expenseDays = _dashboard.ExpensesByDay.Where(i => i.Count > 0 || i.Amount > 0m).Take(14).ToList();
+            }
+            @if (expenseDays.Count == 0)
+            {
+                <InlineMessage Tone="InlineMessageTone.Info">@L["Dashboard_EmptyMessage"]</InlineMessage>
+            }
+            else
+            {
+                <div class="pos-dashboard__list" role="list">
+                    @foreach (var row in expenseDays)
+                    {
+                        <div class="pos-dashboard__row" role="listitem">
+                            <span class="pos-dashboard__row-title">@row.Date.ToString("yyyy-MM-dd")</span>
+                            <span class="pos-dashboard__row-meta">@row.Count</span>
+                            <span class="pos-dashboard__row-value"><MoneyDisplay Amount="@row.Amount" CurrencyCode="PHP" /></span>
+                        </div>
+                    }
+                </div>
+            }
         </Section>
     }
     else if (_loading)
     {
-        <Spinner /><span>@L["Dashboard_Loading"]</span>
+        <Stack Align="StackAlign.Center" Gap="2">
+            <Spinner />
+            <span class="pos-muted">@L["Dashboard_Loading"]</span>
+        </Stack>
     }
 </Page>
+</div>
 }
 
 @code {
@@ -243,6 +277,22 @@ else
         }
 
         _loading = false;
+    }
+
+    private static string ComparisonToneClass(ReportPeriodComparisonDto comparison)
+    {
+        var change = comparison.AbsoluteChange.GetValueOrDefault();
+        if (change < 0m)
+        {
+            return "pos-dashboard__delta--down";
+        }
+
+        if (change > 0m)
+        {
+            return "pos-dashboard__delta--up";
+        }
+
+        return string.Empty;
     }
 
     private void GoReports() => Nav.NavigateTo("/reports");

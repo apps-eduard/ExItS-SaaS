@@ -1,4 +1,5 @@
 @page "/reports/sales"
+@using ExItS.DesignSystem.Components.Internal
 @using ExItS.PinoyBusinessPOS.Application.Commercial
 @using ExItS.PinoyBusinessPOS.Application.Reporting
 @inject NavigationManager Nav
@@ -15,13 +16,17 @@
 }
 else
 {
+<div class="pos-report">
+<StoreHeaderBack Href="/reports" />
 <Page>
-    <PageHeader Title="@L["Reports_Sales"]" Subtitle="@L["Reports_SalesSubtitle"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoHub">@L["Reports_Back"]</Button>
-            <Button Variant="ButtonVariant.Secondary" IsLoading="@_loading" OnClick="ReloadAsync">@L["Dashboard_Refresh"]</Button>
-        </Actions>
-    </PageHeader>
+    <PageHeader Title="@L["Reports_Sales"]" Subtitle="@L["Reports_SalesSubtitle"]" />
+
+    <div class="pos-action-grid pos-action-grid--single pos-report__actions" role="group">
+        <button type="button" class="pos-action-tile" disabled="@_loading" @onclick="ReloadAsync">
+            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("refresh")</span>
+            <span class="pos-action-tile__label">@L["Dashboard_Refresh"]</span>
+        </button>
+    </div>
 
     @if (_isOffline)
     {
@@ -34,78 +39,84 @@ else
     }
 
     <Section Title="@L["Dashboard_FiltersTitle"]">
-        <Stack Gap="3">
-            <DateInput Label="@L["Dashboard_FromDate"]" Value="@_fromDate" ValueChanged="OnFromDateChanged" />
-            <DateInput Label="@L["Dashboard_ToDate"]" Value="@_toDate" ValueChanged="OnToDateChanged" />
-        </Stack>
+        <div class="pos-settings__panel">
+            <Stack Gap="2">
+                <DateInput Label="@L["Dashboard_FromDate"]" Value="@_fromDate" ValueChanged="OnFromDateChanged" Disabled="@_loading" />
+                <DateInput Label="@L["Dashboard_ToDate"]" Value="@_toDate" ValueChanged="OnToDateChanged" Disabled="@_loading" />
+            </Stack>
+        </div>
     </Section>
 
     @if (_report is not null)
     {
         <Section Title="@L["Reports_SummaryTitle"]">
-            <Stack Gap="3">
-                <div>
-                    <span class="pos-muted">@L["Dashboard_CompletedSales"]</span>
-                    <div class="pos-value-md"><MoneyDisplay Amount="@_report.CompletedSalesTotal" CurrencyCode="PHP" /></div>
-                    <div class="pos-muted">@_report.CompletedSaleCount</div>
+            <div class="pos-dashboard__stats" role="list">
+                <div class="pos-dashboard__stat" role="listitem">
+                    <span class="pos-dashboard__stat-label">@L["Dashboard_CompletedSales"]</span>
+                    <span class="pos-dashboard__stat-value"><MoneyDisplay Amount="@_report.CompletedSalesTotal" CurrencyCode="PHP" /></span>
+                    <span class="pos-dashboard__stat-meta">@_report.CompletedSaleCount</span>
                 </div>
-                <div>
-                    <span class="pos-muted">@L["Reports_VoidedSales"]</span>
-                    <div class="pos-value-md"><MoneyDisplay Amount="@_report.VoidedSalesTotal" CurrencyCode="PHP" /></div>
-                    <div class="pos-muted">@_report.VoidedSaleCount</div>
+                <div class="pos-dashboard__stat" role="listitem">
+                    <span class="pos-dashboard__stat-label">@L["Reports_VoidedSales"]</span>
+                    <span class="pos-dashboard__stat-value"><MoneyDisplay Amount="@_report.VoidedSalesTotal" CurrencyCode="PHP" /></span>
+                    <span class="pos-dashboard__stat-meta">@_report.VoidedSaleCount</span>
                 </div>
-                <div>
-                    <span class="pos-muted">@L["Dashboard_UtangSales"]</span>
-                    <div class="pos-value-md"><MoneyDisplay Amount="@_report.UtangSalesTotal" CurrencyCode="PHP" /></div>
-                    <div class="pos-muted">@_report.UtangSaleCount</div>
+                <div class="pos-dashboard__stat" role="listitem">
+                    <span class="pos-dashboard__stat-label">@L["Dashboard_UtangSales"]</span>
+                    <span class="pos-dashboard__stat-value"><MoneyDisplay Amount="@_report.UtangSalesTotal" CurrencyCode="PHP" /></span>
+                    <span class="pos-dashboard__stat-meta">@_report.UtangSaleCount</span>
                 </div>
-            </Stack>
+            </div>
         </Section>
 
         <Section Title="@L["Dashboard_PaymentBreakdown"]">
-            <Stack Gap="3">
+            <div class="pos-dashboard__list" role="list">
                 @foreach (var row in _report.ByPaymentMethod)
                 {
-                    <div class="pos-row">
-                        <span class="pos-value-md">@row.PaymentMethod</span>
-                        <span class="pos-muted">@row.Count</span>
-                        <MoneyDisplay Amount="@row.Amount" CurrencyCode="PHP" />
+                    <div class="pos-dashboard__row" role="listitem">
+                        <span class="pos-dashboard__row-title">@row.PaymentMethod</span>
+                        <span class="pos-dashboard__row-meta">@row.Count</span>
+                        <span class="pos-dashboard__row-value"><MoneyDisplay Amount="@row.Amount" CurrencyCode="PHP" /></span>
                     </div>
                 }
-            </Stack>
+            </div>
         </Section>
 
         <Section Title="@L["Reports_TopProductsAmount"]">
-            <Stack Gap="3">
+            <div class="pos-dashboard__list" role="list">
                 @foreach (var row in _report.TopProductsBySalesAmount)
                 {
-                    <div class="pos-row" @onclick="() => GoProduct(row.ProductId)">
-                        <span class="pos-value-md">@row.NameSnapshot</span>
-                        <span class="pos-muted">@row.Quantity @row.UnitOfMeasure</span>
-                        <MoneyDisplay Amount="@row.SalesAmount" CurrencyCode="PHP" />
-                    </div>
+                    <button type="button" class="pos-dashboard__row pos-dashboard__row--action" role="listitem" @onclick="() => GoProduct(row.ProductId)">
+                        <span class="pos-dashboard__row-title">@row.NameSnapshot</span>
+                        <span class="pos-dashboard__row-meta">@row.Quantity @row.UnitOfMeasure</span>
+                        <span class="pos-dashboard__row-value"><MoneyDisplay Amount="@row.SalesAmount" CurrencyCode="PHP" /></span>
+                    </button>
                 }
-            </Stack>
+            </div>
         </Section>
 
         <Section Title="@L["Reports_ByCategory"]">
-            <Stack Gap="3">
+            <div class="pos-dashboard__list" role="list">
                 @foreach (var row in _report.ByCategory)
                 {
-                    <div class="pos-row">
-                        <span class="pos-value-md">@row.CategoryName</span>
-                        <span class="pos-muted">@row.LineCount</span>
-                        <MoneyDisplay Amount="@row.SalesAmount" CurrencyCode="PHP" />
+                    <div class="pos-dashboard__row" role="listitem">
+                        <span class="pos-dashboard__row-title">@row.CategoryName</span>
+                        <span class="pos-dashboard__row-meta">@row.LineCount</span>
+                        <span class="pos-dashboard__row-value"><MoneyDisplay Amount="@row.SalesAmount" CurrencyCode="PHP" /></span>
                     </div>
                 }
-            </Stack>
+            </div>
         </Section>
     }
     else if (_loading)
     {
-        <Spinner /><span>@L["Dashboard_Loading"]</span>
+        <Stack Align="StackAlign.Center" Gap="2">
+            <Spinner />
+            <span class="pos-muted">@L["Dashboard_Loading"]</span>
+        </Stack>
     }
 </Page>
+</div>
 }
 
 @code {
@@ -156,6 +167,5 @@ else
         _loading = false;
     }
 
-    private void GoHub() => Nav.NavigateTo("/reports");
     private void GoProduct(Guid productId) => Nav.NavigateTo($"/catalog/products/{productId:D}");
 }

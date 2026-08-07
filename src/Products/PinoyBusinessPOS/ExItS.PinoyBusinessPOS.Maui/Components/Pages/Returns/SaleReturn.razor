@@ -8,6 +8,8 @@
 @inject ICurrentUserContext CurrentUser
 @inject IStringLocalizer<PosResources> L
 
+<StoreHeaderBack Href="@($"/sales/{SaleId:D}")" />
+
 @if (!_ready)
 {
     <Page><Spinner /></Page>
@@ -23,17 +25,12 @@ else if (_refundable is null)
                     Message="@(_errorMessage ?? L["Returns_NotFoundMessage"])"
                     RetryLabel="@L["Api_Retry"]"
                     OnRetry="LoadAsync" />
-        <Button Variant="ButtonVariant.Secondary" OnClick="GoDetail">@L["Returns_BackToSale"]</Button>
     </Page>
 }
 else
 {
 <Page>
-    <PageHeader Title="@L["Returns_Title"]" Subtitle="@_refundable.SaleNumber">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoDetail">@L["Returns_BackToSale"]</Button>
-        </Actions>
-    </PageHeader>
+    <PageHeader Title="@L["Returns_Title"]" Subtitle="@_refundable.SaleNumber" />
 
     @if (_isOffline)
     {
@@ -202,6 +199,4 @@ else
         _errorTitle = described.Title;
         _errorMessage = result.Error?.Detail ?? described.Message;
     }
-
-    private void GoDetail() => Nav.NavigateTo($"/sales/{SaleId:D}");
 }

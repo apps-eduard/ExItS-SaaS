@@ -7,14 +7,11 @@
 @inject IStringLocalizer<PosResources> L
 
 <div class="pos-org-subscription">
+    <StoreHeaderBack Href="/org" />
     <Page>
         <PageHeader Title="@L["Org_SubscriptionTitle"]" Subtitle="@L["Org_SubscriptionSubtitle"]" />
 
-        <div class="pos-action-grid pos-action-grid--two pos-org-subscription__actions" role="group" aria-label="@L["Org_SubscriptionTitle"]">
-            <button type="button" class="pos-action-tile" @onclick="GoBack">
-                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("back")</span>
-                <span class="pos-action-tile__label">@L["Common_Back"]</span>
-            </button>
+        <div class="pos-action-grid pos-action-grid--single pos-org-subscription__actions" role="group" aria-label="@L["Org_SubscriptionTitle"]">
             <button type="button"
                     class="pos-action-tile"
                     disabled="@_loading"
@@ -128,6 +125,4 @@
 
     private static string Format(DateTimeOffset? value) =>
         value is null ? "—" : value.Value.ToLocalTime().ToString("g");
-
-    private void GoBack() => Nav.NavigateTo("/org");
 }

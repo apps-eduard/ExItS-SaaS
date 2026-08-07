@@ -15,7 +15,10 @@
 {
     <Page><Spinner /></Page>
 }
-else if (_loading)
+else
+{
+<StoreHeaderBack Href="/customers" />
+@if (_loading)
 {
     <Page><Spinner /><span>@L["Customers_Loading"]</span></Page>
 }
@@ -23,7 +26,6 @@ else if (_customer is null)
 {
     <Page>
         <ErrorState Title="@(_errorTitle ?? L["Customers_NotFoundTitle"])" Message="@(_errorMessage ?? L["Customers_NotFoundMessage"])" RetryLabel="@L["Api_Retry"]" OnRetry="LoadAsync" />
-        <Button Variant="ButtonVariant.Secondary" OnClick="GoList">@L["Customers_BackToList"]</Button>
     </Page>
 }
 else
@@ -42,7 +44,6 @@ else
 <Page class="pos-customer-detail">
     <PageHeader Title="@customer.DisplayName" Subtitle="@L["Customers_DetailSubtitle"]">
         <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoList">@L["Customers_Back"]</Button>
             @if (customer.Status == "Active")
             {
                 <Button Variant="ButtonVariant.Primary" Disabled="@(!canEdit)" OnClick="GoEdit">@L["Customers_Edit"]</Button>
@@ -354,6 +355,7 @@ else
                    IsLoading="@_acting"
                    OnConfirm="ReverseCreditAsync" />
 </Page>
+}
 }
 
 @code {
@@ -695,7 +697,6 @@ else
         cleanedNotes = kept.Count == 0 ? null : string.Join('\n', kept);
     }
 
-    private void GoList() => Nav.NavigateTo("/customers");
     private void GoEdit() => Nav.NavigateTo($"/customers/{CustomerId:D}/edit");
     private void GoAddCredit() => Nav.NavigateTo($"/customers/{CustomerId:D}/credit/new");
     private void GoAddPayment() => Nav.NavigateTo($"/customers/{CustomerId:D}/repayments/new");

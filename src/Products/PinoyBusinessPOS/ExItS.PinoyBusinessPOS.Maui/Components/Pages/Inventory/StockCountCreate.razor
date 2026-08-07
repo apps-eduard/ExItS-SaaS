@@ -9,6 +9,8 @@
 @inject IConnectivityService Connectivity
 @inject IStringLocalizer<PosResources> L
 
+<StoreHeaderBack Href="/inventory/counts" />
+
 @if (!_ready)
 {
     <Page><Spinner /></Page>
@@ -21,10 +23,6 @@ else
     <Page>
         <PageHeader Title="@L["Inventory_CountsCreateTitle"]" Subtitle="@L["Inventory_CountsSubtitle"]">
             <Actions>
-                <Button Variant="ButtonVariant.Secondary" Disabled="@_busy" OnClick="GoBack">
-                    <span class="pos-btn-icon" aria-hidden="true">@IconGlyphs.Get("back")</span>
-                    @L["Inventory_CountsTitle"]
-                </Button>
                 <Button Variant="ButtonVariant.Ghost" Disabled="@(_busy || !hasDraft)" OnClick="RequestReset">
                     <span class="pos-btn-icon" aria-hidden="true">@IconGlyphs.Get("refresh")</span>
                     @L["Inventory_CountsReset"]
@@ -97,10 +95,6 @@ else
         </Section>
 
         <FormActions class="pos-stock-count-create__footer">
-            <Button Variant="ButtonVariant.Secondary" Disabled="@_busy" OnClick="GoBack">
-                <span class="pos-btn-icon" aria-hidden="true">@IconGlyphs.Get("back")</span>
-                @L["Inventory_CountsTitle"]
-            </Button>
             <Button Variant="ButtonVariant.Ghost" Disabled="@(_busy || !hasDraft)" OnClick="RequestReset">
                 <span class="pos-btn-icon" aria-hidden="true">@IconGlyphs.Get("refresh")</span>
                 @L["Inventory_CountsReset"]
@@ -254,6 +248,4 @@ else
         _errorTitle = described.Title;
         _errorMessage = result.Error?.Detail ?? described.Message;
     }
-
-    private void GoBack() => Nav.NavigateTo("/inventory/counts");
 }

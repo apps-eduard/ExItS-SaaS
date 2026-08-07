@@ -22,16 +22,22 @@ public sealed class CatalogPageGuardTests
 
         var create = File.ReadAllText(Path.Combine(catalog, "CatalogProductCreate.razor"));
         Assert.Contains("@page \"/catalog/products/new\"", create, StringComparison.Ordinal);
+        Assert.Contains("StoreHeaderBack Href=\"/catalog\"", create, StringComparison.Ordinal);
+        Assert.Contains("OnCancel=\"GoBack\"", create, StringComparison.Ordinal);
 
         var detail = File.ReadAllText(Path.Combine(catalog, "CatalogProductDetail.razor"));
         Assert.Contains("@page \"/catalog/products/{ProductId:guid}\"", detail, StringComparison.Ordinal);
+        Assert.Contains("StoreHeaderBack Href=\"/catalog\"", detail, StringComparison.Ordinal);
         Assert.Contains("DeactivateProductAsync", detail, StringComparison.Ordinal);
         Assert.Contains("ReactivateProductAsync", detail, StringComparison.Ordinal);
+        Assert.DoesNotContain("Catalog_BackToList", detail, StringComparison.Ordinal);
 
         var edit = File.ReadAllText(Path.Combine(catalog, "CatalogProductEdit.razor"));
         Assert.Contains("@page \"/catalog/products/{ProductId:guid}/edit\"", edit, StringComparison.Ordinal);
+        Assert.Contains("StoreHeaderBack Href=", edit, StringComparison.Ordinal);
         Assert.Contains("UpdateProductAsync", edit, StringComparison.Ordinal);
         Assert.Contains("_product.UpdatedAtUtc", edit, StringComparison.Ordinal);
+        Assert.DoesNotContain("Catalog_BackToList", edit, StringComparison.Ordinal);
 
         var categories = File.ReadAllText(Path.Combine(catalog, "CatalogCategories.razor"));
         Assert.Contains("@page \"/catalog/categories\"", categories, StringComparison.Ordinal);
@@ -46,10 +52,12 @@ public sealed class CatalogPageGuardTests
         Assert.Contains("LookupByBarcodeAsync", lookup, StringComparison.Ordinal);
         Assert.Contains("LookupBySkuAsync", lookup, StringComparison.Ordinal);
         Assert.Contains("pos-barcode-lookup", lookup, StringComparison.Ordinal);
+        Assert.Contains("StoreHeaderBack Href=\"/catalog\"", lookup, StringComparison.Ordinal);
         Assert.Contains("IconGlyphs.Get(\"search\")", lookup, StringComparison.Ordinal);
         Assert.Contains("IconGlyphs.Get(\"close\")", lookup, StringComparison.Ordinal);
-        Assert.Contains("IconGlyphs.Get(\"back\")", lookup, StringComparison.Ordinal);
         Assert.Contains("pos-action-grid--two", lookup, StringComparison.Ordinal);
+        Assert.DoesNotContain("Catalog_BackToList", lookup, StringComparison.Ordinal);
+        Assert.DoesNotContain("GoCatalog", lookup, StringComparison.Ordinal);
 
         Assert.True(File.Exists(Path.Combine(catalog, "CatalogProductForm.razor")));
     }

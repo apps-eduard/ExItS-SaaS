@@ -80,6 +80,7 @@
     public void CloseOverlays()
     {
         _syncStatus?.Close();
+        _ = _accountMenu?.CloseAsync();
     }
 
     private async Task OnSyncPanelOpenedAsync()

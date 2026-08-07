@@ -7,6 +7,8 @@
 @inject IConnectivityService Connectivity
 @inject IStringLocalizer<PosResources> L
 
+<StoreHeaderBack Href="@($"/inventory/{ProductId:D}")" />
+
 @if (!_ready)
 {
     <Page><Spinner /></Page>
@@ -38,7 +40,6 @@ else
                     Disabled="@(_isOffline || _busy)"
                     IsLoading="@_busy"
                     OnClick="SaveAsync">@L["Inventory_SaveAdjustment"]</Button>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Inventory_DetailTitle"]</Button>
         </Stack>
     </Section>
 </Page>
@@ -130,6 +131,4 @@ else
         _errorTitle = described.Title;
         _errorMessage = result.Error?.Detail ?? described.Message;
     }
-
-    private void GoBack() => Nav.NavigateTo($"/inventory/{ProductId:D}");
 }

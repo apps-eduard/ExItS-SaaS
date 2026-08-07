@@ -12,10 +12,10 @@
 }
 else
 {
+<StoreHeaderBack Href="@($"/customers/{CustomerId:D}")" />
 <Page>
     <PageHeader Title="@L["Ledger_Title"]" Subtitle="@L["Ledger_Subtitle"]">
         <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Customers_BackToDetail"]</Button>
             <Button Variant="ButtonVariant.Primary"
                     Disabled="@(_utang is null || _utang.OutstandingAmount <= 0m)"
                     OnClick="GoAddPayment">@L["Payment_Record"]</Button>
@@ -125,7 +125,6 @@ else
         _loading = false;
     }
 
-    private void GoBack() => Nav.NavigateTo($"/customers/{CustomerId:D}");
     private void GoAddPayment() => Nav.NavigateTo($"/customers/{CustomerId:D}/repayments/new");
     private void GoRepayment(Guid repaymentId) => Nav.NavigateTo($"/customers/{CustomerId:D}/repayments/{repaymentId:D}");
 }

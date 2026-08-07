@@ -6,12 +6,9 @@
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
+<StoreHeaderBack Handler="GoBackListAsync" />
 <Page>
-    <PageHeader Title="@L["Personal_RelationshipTitle"]" Subtitle="@L["Personal_RelationshipSubtitle"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoBackList">@L["Personal_RelationshipBack"]</Button>
-        </Actions>
-    </PageHeader>
+    <PageHeader Title="@L["Personal_RelationshipTitle"]" Subtitle="@L["Personal_RelationshipSubtitle"]" />
 
     @if (_loading)
     {
@@ -185,6 +182,12 @@
         {
             _busy = false;
         }
+    }
+
+    private Task GoBackListAsync()
+    {
+        GoBackList();
+        return Task.CompletedTask;
     }
 
     private void GoBackList()

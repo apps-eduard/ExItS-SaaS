@@ -26,12 +26,19 @@
     }
     else if (_organizations.Count == 0)
     {
-        <EmptyState Title="@L["OrgSelect_NoneTitle"]" Message="@L["OrgSelect_NoneEligible"]" />
-        <FormActions>
-            <Button Variant="ButtonVariant.Primary" OnClick="GoExplorePos">@L["Personal_ExplorePos"]</Button>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoPersonalAsync">@L["Personal_HomeTitle"]</Button>
-            <Button Variant="ButtonVariant.Ghost" OnClick="LogoutAsync">@L["Auth_Logout"]</Button>
-        </FormActions>
+        <div class="pos-org-select-empty">
+            <EmptyState Title="@L["OrgSelect_NoneTitle"]" Message="@L["OrgSelect_NoneEligible"]" />
+            <div class="pos-action-grid pos-action-grid--single pos-org-select-empty__actions" role="group">
+                <button type="button" class="pos-action-tile pos-action-tile--primary" disabled="@_busy" @onclick="GoExplorePos">
+                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("products")</span>
+                    <span class="pos-action-tile__label">@L["Personal_ExplorePos"]</span>
+                </button>
+                <button type="button" class="pos-action-tile" disabled="@_busy" @onclick="GoPersonalAsync">
+                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("home")</span>
+                    <span class="pos-action-tile__label">@L["Personal_HomeTitle"]</span>
+                </button>
+            </div>
+        </div>
     }
     else if (_focusOrg is not null && OrganizationMembershipRoles.IsOwnerRole(_focusOrg.MembershipRole))
     {
@@ -176,9 +183,6 @@
                 </button>
             }
         </Stack>
-        <FormActions>
-            <Button Variant="ButtonVariant.Ghost" OnClick="LogoutAsync">@L["Auth_Logout"]</Button>
-        </FormActions>
         @if (!string.IsNullOrEmpty(_error))
         {
             <InlineMessage Tone="InlineMessageTone.Danger">@_error</InlineMessage>
@@ -522,13 +526,5 @@
         {
             Nav.NavigateTo("/personal", replace: true);
         }
-    }
-
-    private async Task LogoutAsync()
-    {
-        SellingMode.Clear();
-        IdentityState.Clear();
-        await Auth.LogoutAsync();
-        Nav.NavigateTo("/signin");
     }
 }

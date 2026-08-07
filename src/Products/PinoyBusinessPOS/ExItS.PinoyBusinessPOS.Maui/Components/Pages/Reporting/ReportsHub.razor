@@ -8,19 +8,17 @@
 
 <div class="pos-reports">
     <Page>
-        <header class="pos-reports__header">
-            <div class="pos-reports__heading">
-                <h1 class="pos-reports__title">@L["Reports_Title"]</h1>
-                <p class="pos-reports__subtitle">@L["Reports_Subtitle"]</p>
-            </div>
-            @if (_canViewDashboard)
-            {
-                <button type="button" class="pos-reports__dashboard" @onclick="GoDashboard">
-                    @L["Nav_Dashboard"]
-                    <span aria-hidden="true">›</span>
+        <PageHeader Title="@L["Reports_Title"]" Subtitle="@L["Reports_Subtitle"]" />
+
+        @if (_canViewDashboard)
+        {
+            <div class="pos-action-grid pos-action-grid--single pos-reports__actions" role="group">
+                <button type="button" class="pos-action-tile" @onclick="GoDashboard">
+                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("sales")</span>
+                    <span class="pos-action-tile__label">@L["Nav_Dashboard"]</span>
                 </button>
-            }
-        </header>
+            </div>
+        }
 
         @if (_showOperationalMenu || _canViewReports)
         {
@@ -53,12 +51,14 @@
                     {
                         <div class="pos-reports__group">
                             <h3 class="pos-reports__group-title">@group.Title</h3>
-                            <div class="pos-reports__list">
+                            <div class="pos-reports__list" role="list">
                                 @foreach (var item in group.Items)
                                 {
                                     <button type="button"
                                             class="pos-reports__row"
+                                            role="listitem"
                                             @onclick="() => Go(item.Path)">
+                                        <span class="pos-reports__row-icon" aria-hidden="true">@IconGlyphs.Get(group.Icon)</span>
                                         <span class="pos-reports__row-body">
                                             <span class="pos-reports__row-title">@item.Title</span>
                                         </span>
@@ -87,12 +87,14 @@
                 }
                 else
                 {
-                    <div class="pos-reports__list">
+                    <div class="pos-reports__list" role="list">
                         @foreach (var item in classicItems)
                         {
                             <button type="button"
                                     class="pos-reports__row"
+                                    role="listitem"
                                     @onclick="() => Go(item.Path)">
+                                <span class="pos-reports__row-icon" aria-hidden="true">@IconGlyphs.Get(item.Icon)</span>
                                 <span class="pos-reports__row-body">
                                     <span class="pos-reports__row-title">@item.Title</span>
                                     @if (!string.IsNullOrWhiteSpace(item.Subtitle))
@@ -116,8 +118,8 @@
 </div>
 
 @code {
-    private sealed record ReportLink(string Title, string Path, string? Subtitle = null);
-    private sealed record ReportGroup(string Title, IReadOnlyList<ReportLink> Items);
+    private sealed record ReportLink(string Title, string Path, string Icon, string? Subtitle = null);
+    private sealed record ReportGroup(string Title, string Icon, IReadOnlyList<ReportLink> Items);
 
     private bool _canViewReports;
     private bool _canViewShifts;
@@ -130,7 +132,7 @@
 
     private IEnumerable<ReportGroup> FilteredOperationalGroups =>
         BuildOperationalGroups()
-            .Select(g => new ReportGroup(g.Title, g.Items.Where(MatchesQuery).ToList()))
+            .Select(g => new ReportGroup(g.Title, g.Icon, g.Items.Where(MatchesQuery).ToList()))
             .Where(g => g.Items.Count > 0);
 
     private IEnumerable<ReportLink> FilteredClassicItems =>
@@ -185,68 +187,68 @@
     {
         if (_canViewReports)
         {
-            yield return new ReportGroup(L["Reports_GroupSales"],
+            yield return new ReportGroup(L["Reports_GroupSales"], "sales",
             [
-                new ReportLink(L["Reports_Overview"], "/reports/operational/overview"),
-                new ReportLink(L["Reports_SalesSummary"], "/reports/operational/sales-summary"),
-                new ReportLink(L["Reports_SalesByPayment"], "/reports/operational/sales-by-payment"),
-                new ReportLink(L["Reports_SalesByProduct"], "/reports/operational/sales-by-product"),
-                new ReportLink(L["Reports_Returns"], "/reports/operational/returns")
+                new ReportLink(L["Reports_Overview"], "/reports/operational/overview", "sales"),
+                new ReportLink(L["Reports_SalesSummary"], "/reports/operational/sales-summary", "sales"),
+                new ReportLink(L["Reports_SalesByPayment"], "/reports/operational/sales-by-payment", "sales"),
+                new ReportLink(L["Reports_SalesByProduct"], "/reports/operational/sales-by-product", "products"),
+                new ReportLink(L["Reports_Returns"], "/reports/operational/returns", "refresh")
             ]);
         }
 
         if (_canViewReports || _canViewShifts)
         {
-            yield return new ReportGroup(L["Reports_GroupShifts"],
+            yield return new ReportGroup(L["Reports_GroupShifts"], "refresh",
             [
-                new ReportLink(L["Reports_ShiftSummary"], "/reports/operational/shifts"),
-                new ReportLink(L["Reports_CashVariance"], "/reports/operational/cash-variance")
+                new ReportLink(L["Reports_ShiftSummary"], "/reports/operational/shifts", "refresh"),
+                new ReportLink(L["Reports_CashVariance"], "/reports/operational/cash-variance", "warning")
             ]);
         }
 
         if (_canViewReports || _canViewInventory)
         {
-            yield return new ReportGroup(L["Reports_GroupInventory"],
+            yield return new ReportGroup(L["Reports_GroupInventory"], "inbox",
             [
-                new ReportLink(L["Reports_InventoryStatus"], "/reports/operational/inventory-status"),
-                new ReportLink(L["Reports_InventoryMovements"], "/reports/operational/inventory-movements"),
-                new ReportLink(L["Reports_StockCountVariance"], "/reports/operational/stock-count-variance")
+                new ReportLink(L["Reports_InventoryStatus"], "/reports/operational/inventory-status", "inbox"),
+                new ReportLink(L["Reports_InventoryMovements"], "/reports/operational/inventory-movements", "inbox"),
+                new ReportLink(L["Reports_StockCountVariance"], "/reports/operational/stock-count-variance", "check")
             ]);
         }
 
         if (_canViewReports || _canViewPurchasing)
         {
-            yield return new ReportGroup(L["Reports_GroupPurchasing"],
+            yield return new ReportGroup(L["Reports_GroupPurchasing"], "products",
             [
-                new ReportLink(L["Reports_PurchasingSummary"], "/reports/operational/purchasing-summary"),
-                new ReportLink(L["Reports_PurchaseOutstanding"], "/reports/operational/purchase-outstanding"),
-                new ReportLink(L["Reports_SupplierPurchasing"], "/reports/operational/supplier-purchasing")
+                new ReportLink(L["Reports_PurchasingSummary"], "/reports/operational/purchasing-summary", "products"),
+                new ReportLink(L["Reports_PurchaseOutstanding"], "/reports/operational/purchase-outstanding", "warning"),
+                new ReportLink(L["Reports_SupplierPurchasing"], "/reports/operational/supplier-purchasing", "customers")
             ]);
         }
 
         if (_canViewReports || _canViewExpenses)
         {
-            yield return new ReportGroup(L["Reports_GroupExpenses"],
+            yield return new ReportGroup(L["Reports_GroupExpenses"], "sales",
             [
-                new ReportLink(L["Reports_ExpenseSummary"], "/reports/operational/expenses-summary")
+                new ReportLink(L["Reports_ExpenseSummary"], "/reports/operational/expenses-summary", "sales")
             ]);
         }
 
         if (_canViewReports)
         {
-            yield return new ReportGroup(L["Reports_GroupUtang"],
+            yield return new ReportGroup(L["Reports_GroupUtang"], "customers",
             [
-                new ReportLink(L["Reports_UtangByProduct"], "/reports/operational/utang-by-product")
+                new ReportLink(L["Reports_UtangByProduct"], "/reports/operational/utang-by-product", "customers")
             ]);
         }
     }
 
     private IEnumerable<ReportLink> BuildClassicItems() =>
     [
-        new ReportLink(L["Reports_Sales"], "/reports/sales", L["Reports_SalesSubtitle"]),
-        new ReportLink(L["Reports_Utang"], "/reports/utang", L["Reports_UtangSubtitle"]),
-        new ReportLink(L["Reports_Inventory"], "/reports/inventory", L["Reports_InventorySubtitle"]),
-        new ReportLink(L["Reports_Expenses"], "/reports/expenses", L["Reports_ExpensesSubtitle"])
+        new ReportLink(L["Reports_Sales"], "/reports/sales", "sales", L["Reports_SalesSubtitle"]),
+        new ReportLink(L["Reports_Utang"], "/reports/utang", "customers", L["Reports_UtangSubtitle"]),
+        new ReportLink(L["Reports_Inventory"], "/reports/inventory", "inbox", L["Reports_InventorySubtitle"]),
+        new ReportLink(L["Reports_Expenses"], "/reports/expenses", "sales", L["Reports_ExpensesSubtitle"])
     ];
 
     private void GoDashboard() => Nav.NavigateTo("/dashboard");

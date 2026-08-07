@@ -18,12 +18,9 @@
 else
 {
     var canRecord = Capabilities.IsAllowed(UtangCapability.RecordRepayment);
+<StoreHeaderBack Href="@($"/customers/{CustomerId:D}")" />
 <Page>
-    <PageHeader Title="@L["Payment_AddTitle"]" Subtitle="@L["Payment_AddSubtitle"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Customers_BackToDetail"]</Button>
-        </Actions>
-    </PageHeader>
+    <PageHeader Title="@L["Payment_AddTitle"]" Subtitle="@L["Payment_AddSubtitle"]" />
 
     @if (!canRecord)
     {

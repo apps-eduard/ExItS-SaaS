@@ -7,6 +7,8 @@
 @inject IConnectivityService Connectivity
 @inject IStringLocalizer<PosResources> L
 
+<StoreHeaderBack Href="/expenses" />
+
 @if (!_ready)
 {
     <Page><Spinner /></Page>
@@ -17,11 +19,7 @@ else
     var isGCash = _paymentMethod == PosExpenseOptions.ManualGCashPaymentMethod;
     var blocked = _isOffline || !canManage;
 <Page>
-    <PageHeader Title="@L["Expenses_CreateTitle"]" Subtitle="@L["Expenses_Subtitle"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoList">@L["Expenses_BackToList"]</Button>
-        </Actions>
-    </PageHeader>
+    <PageHeader Title="@L["Expenses_CreateTitle"]" Subtitle="@L["Expenses_Subtitle"]" />
 
     @if (_isOffline)
     {

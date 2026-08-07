@@ -13,12 +13,9 @@
 }
 else
 {
+<StoreHeaderBack Href="@($"/customers/{CustomerId:D}")" />
 <Page>
-    <PageHeader Title="@L["Credit_AddTitle"]" Subtitle="@L["Credit_AddSubtitle"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Customers_BackToDetail"]</Button>
-        </Actions>
-    </PageHeader>
+    <PageHeader Title="@L["Credit_AddTitle"]" Subtitle="@L["Credit_AddSubtitle"]" />
 
     <Alert Tone="AlertTone.Info" Title="@L["Customers_RepaymentDeferredTitle"]" Message="@L["Customers_RepaymentDeferredMessage"]" />
 

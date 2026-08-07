@@ -15,7 +15,10 @@
 {
     <Page><Spinner /></Page>
 }
-else if (_loading)
+else
+{
+<StoreHeaderBack Href="@($"/customers/{CustomerId:D}")" />
+@if (_loading)
 {
     <Page><Spinner /><span>@L["DueDate_Loading"]</span></Page>
 }
@@ -23,7 +26,6 @@ else if (_entry is null)
 {
     <Page>
         <ErrorState Title="@(_errorTitle ?? L["Credit_NotFoundTitle"])" Message="@(_errorMessage ?? L["Credit_NotFoundMessage"])" RetryLabel="@L["Api_Retry"]" OnRetry="LoadAsync" />
-        <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Customers_BackToDetail"]</Button>
     </Page>
 }
 else
@@ -32,11 +34,7 @@ else
     var canMutateDueDate = Capabilities.IsAllowed(UtangCapability.MutateDueDate) && Sync.CanMutateOffline;
     var canReverseCredit = Capabilities.IsAllowed(UtangCapability.ReverseCredit) && Sync.CanMutateOffline;
 <Page>
-    <PageHeader Title="@L["Credit_DetailTitle"]" Subtitle="@L["Credit_DetailSubtitle"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Customers_BackToDetail"]</Button>
-        </Actions>
-    </PageHeader>
+    <PageHeader Title="@L["Credit_DetailTitle"]" Subtitle="@L["Credit_DetailSubtitle"]" />
 
     @if (!string.IsNullOrEmpty(_banner))
     {
@@ -219,6 +217,7 @@ else
                    IsLoading="@_acting"
                    OnConfirm="ReverseCreditAsync" />
 </Page>
+}
 }
 
 @code {
@@ -616,5 +615,4 @@ else
         _ => BadgeTone.Neutral
     };
 
-    private void GoBack() => Nav.NavigateTo($"/customers/{CustomerId:D}");
 }

@@ -1,4 +1,5 @@
 @page "/purchasing/new"
+@using ExItS.DesignSystem.Components.Internal
 @using ExItS.PinoyBusinessPOS.Domain.Purchasing
 @inject NavigationManager Nav
 @inject NavigationGate Gate
@@ -19,13 +20,17 @@ else
     var canManage = Capabilities.IsAllowed(UtangCapability.ManagePurchasing);
     var blocked = _isOffline || !canManage;
     var hasDraft = HasUnsavedDraft;
-<Page class="pos-purchasing-create">
-    <PageHeader Title="@L["Purchasing_CreateTitle"]" Subtitle="@L["Purchasing_CreateSubtitle"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" Disabled="@_saving" OnClick="GoList">@L["Purchasing_BackToList"]</Button>
-            <Button Variant="ButtonVariant.Ghost" Disabled="@(_saving || !hasDraft)" OnClick="RequestReset">@L["Purchasing_Reset"]</Button>
-        </Actions>
-    </PageHeader>
+<div class="pos-purchasing-create">
+<StoreHeaderBack Href="/purchasing" />
+<Page>
+    <PageHeader Title="@L["Purchasing_CreateTitle"]" Subtitle="@L["Purchasing_CreateSubtitle"]" />
+
+    <div class="pos-action-grid pos-action-grid--single pos-purchasing-create__nav" role="group" aria-label="@L["Purchasing_CreateTitle"]">
+        <button type="button" class="pos-action-tile" disabled="@(_saving || !hasDraft)" @onclick="RequestReset">
+            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("refresh")</span>
+            <span class="pos-action-tile__label">@L["Purchasing_Reset"]</span>
+        </button>
+    </div>
 
     @if (_isOffline)
     {
@@ -44,116 +49,137 @@ else
     @if (!_isOffline && canManage && _suppliers.Count == 0 && !_loadingLookups)
     {
         <Alert Tone="AlertTone.Warning" Title="@L["Purchasing_NoSuppliersTitle"]" Message="@L["Purchasing_NoSuppliersMessage"]" />
-        <div class="pos-purchasing-create__toolbar">
-            <Button Variant="ButtonVariant.Primary" OnClick="GoCreateSupplier">@L["Purchasing_CreateSupplier"]</Button>
+        <div class="pos-action-grid pos-action-grid--single pos-purchasing-create__toolbar" role="group">
+            <button type="button" class="pos-action-tile pos-action-tile--primary" @onclick="GoCreateSupplier">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("plus")</span>
+                <span class="pos-action-tile__label">@L["Purchasing_CreateSupplier"]</span>
+            </button>
         </div>
     }
 
     <Section Title="@L["Purchasing_DetailsSection"]">
-        <Stack Gap="3">
-            <Select Label="@L["Purchasing_Field_Supplier"]"
-                    Value="@_supplierId"
-                    ValueChanged="v => _supplierId = v"
-                    Options="@SupplierOptions"
-                    Required="true"
-                    IsInvalid="@(!string.IsNullOrEmpty(_supplierError))"
-                    ErrorText="@_supplierError"
-                    Disabled="@(blocked || _saving || _loadingLookups || _suppliers.Count == 0)" />
-            <DateInput Label="@L["Purchasing_Field_OrderDate"]"
-                       Value="@_orderDate"
-                       ValueChanged="v => _orderDate = v"
-                       Required="true"
-                       IsInvalid="@(!string.IsNullOrEmpty(_orderDateError))"
-                       ErrorText="@_orderDateError"
-                       Disabled="@(blocked || _saving)" />
-            <DateInput Label="@L["Purchasing_Field_ExpectedDelivery"]"
-                       Value="@_expectedDeliveryDate"
-                       ValueChanged="v => _expectedDeliveryDate = v"
-                       Disabled="@(blocked || _saving)" />
-            <TextInput Label="@L["Purchasing_Field_SupplierReference"]"
-                       Value="@_supplierReference"
-                       ValueChanged="v => _supplierReference = v"
-                       Disabled="@(blocked || _saving)" />
-            <TextInput Label="@L["Purchasing_Field_Notes"]"
-                       Value="@_notes"
-                       ValueChanged="v => _notes = v"
-                       Disabled="@(blocked || _saving)" />
-        </Stack>
+        <div class="pos-settings__panel">
+            <Stack Gap="2">
+                <Select Label="@L["Purchasing_Field_Supplier"]"
+                        Value="@_supplierId"
+                        ValueChanged="v => _supplierId = v"
+                        Options="@SupplierOptions"
+                        Required="true"
+                        IsInvalid="@(!string.IsNullOrEmpty(_supplierError))"
+                        ErrorText="@_supplierError"
+                        Disabled="@(blocked || _saving || _loadingLookups || _suppliers.Count == 0)" />
+                <DateInput Label="@L["Purchasing_Field_OrderDate"]"
+                           Value="@_orderDate"
+                           ValueChanged="v => _orderDate = v"
+                           Required="true"
+                           IsInvalid="@(!string.IsNullOrEmpty(_orderDateError))"
+                           ErrorText="@_orderDateError"
+                           Disabled="@(blocked || _saving)" />
+                <DateInput Label="@L["Purchasing_Field_ExpectedDelivery"]"
+                           Value="@_expectedDeliveryDate"
+                           ValueChanged="v => _expectedDeliveryDate = v"
+                           Disabled="@(blocked || _saving)" />
+                <TextInput Label="@L["Purchasing_Field_SupplierReference"]"
+                           Value="@_supplierReference"
+                           ValueChanged="v => _supplierReference = v"
+                           Disabled="@(blocked || _saving)" />
+                <TextInput Label="@L["Purchasing_Field_Notes"]"
+                           Value="@_notes"
+                           ValueChanged="v => _notes = v"
+                           Disabled="@(blocked || _saving)" />
+            </Stack>
+        </div>
     </Section>
 
     <Section Title="@L["Purchasing_LinesSection"]">
-        <Stack Gap="3">
-            <Select Label="@L["Purchasing_Field_Product"]"
-                    Value="@_selectedProductId"
-                    ValueChanged="OnProductChanged"
-                    Options="@ProductOptions"
-                    Required="true"
-                    Disabled="@(blocked || _saving || _loadingLookups || _products.Count == 0)" />
-            <TextInput Label="@L["Purchasing_Field_OrderedQty"]"
-                       Value="@_draftQtyText"
-                       ValueChanged="v => _draftQtyText = v"
-                       Required="true"
-                       IsInvalid="@(!string.IsNullOrEmpty(_draftQtyError))"
-                       ErrorText="@_draftQtyError"
-                       Disabled="@(blocked || _saving)" />
-            <CurrencyInput Label="@L["Purchasing_Field_UnitCost"]"
-                           Value="@_draftUnitCost"
-                           ValueChanged="v => _draftUnitCost = v"
-                           CurrencyCode="PHP"
+        <div class="pos-settings__panel">
+            <Stack Gap="2">
+                <Select Label="@L["Purchasing_Field_Product"]"
+                        Value="@_selectedProductId"
+                        ValueChanged="OnProductChanged"
+                        Options="@ProductOptions"
+                        Required="true"
+                        Disabled="@(blocked || _saving || _loadingLookups || _products.Count == 0)" />
+                <TextInput Label="@L["Purchasing_Field_OrderedQty"]"
+                           Value="@_draftQtyText"
+                           ValueChanged="v => _draftQtyText = v"
                            Required="true"
-                           Hint="@L["Purchasing_UnitCostHint"]"
-                           IsInvalid="@(!string.IsNullOrEmpty(_draftCostError))"
-                           ErrorText="@_draftCostError"
+                           IsInvalid="@(!string.IsNullOrEmpty(_draftQtyError))"
+                           ErrorText="@_draftQtyError"
                            Disabled="@(blocked || _saving)" />
-            <div class="pos-purchasing-create__line-actions">
-                <Button Variant="ButtonVariant.Primary"
-                        Disabled="@(blocked || _saving || string.IsNullOrEmpty(_selectedProductId))"
-                        OnClick="AddLine">@L["Purchasing_AddLine"]</Button>
-            </div>
-
-            @if (!string.IsNullOrEmpty(_linesError))
-            {
-                <Alert Tone="AlertTone.Danger" Title="@L["Purchasing_ErrorTitle"]" Message="@_linesError" />
-            }
-
-            @if (_lines.Count == 0)
-            {
-                <InlineMessage Tone="InlineMessageTone.Info">@L["Purchasing_LinesEmptyHint"]</InlineMessage>
-            }
-            else
-            {
-                <div class="pos-purchasing-create__lines-summary pos-muted">
-                    @L["Purchasing_LinesCount", _lines.Count]
-                    · @L["Purchasing_LinesTotal"]
-                    <MoneyDisplay Amount="@LinesTotal" CurrencyCode="PHP" />
+                <CurrencyInput Label="@L["Purchasing_Field_UnitCost"]"
+                               Value="@_draftUnitCost"
+                               ValueChanged="v => _draftUnitCost = v"
+                               CurrencyCode="PHP"
+                               Required="true"
+                               Hint="@L["Purchasing_UnitCostHint"]"
+                               IsInvalid="@(!string.IsNullOrEmpty(_draftCostError))"
+                               ErrorText="@_draftCostError"
+                               Disabled="@(blocked || _saving)" />
+                <div class="pos-action-grid pos-action-grid--single pos-purchasing-create__line-actions" role="group">
+                    <button type="button"
+                            class="pos-action-tile pos-action-tile--primary"
+                            disabled="@(blocked || _saving || string.IsNullOrEmpty(_selectedProductId))"
+                            @onclick="AddLine">
+                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("plus")</span>
+                        <span class="pos-action-tile__label">@L["Purchasing_AddLine"]</span>
+                    </button>
                 </div>
-            }
 
-            @foreach (var line in _lines)
-            {
-                <div class="pos-po-line">
-                    <div class="pos-po-line__main">
-                        <div class="pos-value-md">@line.Name</div>
-                        <div class="pos-muted">
-                            @L["Purchasing_LineDraftSummary", line.OrderedQty, line.UnitPurchaseCost]
-                        </div>
+                @if (!string.IsNullOrEmpty(_linesError))
+                {
+                    <Alert Tone="AlertTone.Danger" Title="@L["Purchasing_ErrorTitle"]" Message="@_linesError" />
+                }
+
+                @if (_lines.Count == 0)
+                {
+                    <InlineMessage Tone="InlineMessageTone.Info">@L["Purchasing_LinesEmptyHint"]</InlineMessage>
+                }
+                else
+                {
+                    <div class="pos-purchasing-create__lines-summary pos-muted">
+                        @L["Purchasing_LinesCount", _lines.Count]
+                        · @L["Purchasing_LinesTotal"]
+                        <MoneyDisplay Amount="@LinesTotal" CurrencyCode="PHP" />
                     </div>
-                    <Button Variant="ButtonVariant.Ghost"
-                            Disabled="@(blocked || _saving)"
-                            OnClick="() => RemoveLine(line.ProductId)">@L["Purchasing_RemoveLine"]</Button>
-                </div>
-            }
-        </Stack>
+                    <div class="pos-purchasing-create__lines" role="list">
+                        @foreach (var line in _lines)
+                        {
+                            <div class="pos-po-line" role="listitem">
+                                <div class="pos-po-line__main">
+                                    <div class="pos-po-line__title">@line.Name</div>
+                                    <div class="pos-po-line__meta pos-muted">
+                                        @L["Purchasing_LineDraftSummary", line.OrderedQty, line.UnitPurchaseCost]
+                                    </div>
+                                </div>
+                                <button type="button"
+                                        class="pos-po-line__remove"
+                                        disabled="@(blocked || _saving)"
+                                        aria-label="@L["Purchasing_RemoveLine"]"
+                                        @onclick="() => RemoveLine(line.ProductId)">
+                                    <span aria-hidden="true">@IconGlyphs.Get("close")</span>
+                                </button>
+                            </div>
+                        }
+                    </div>
+                }
+            </Stack>
+        </div>
     </Section>
 
-    <FormActions class="pos-purchasing-create__footer">
-        <Button Variant="ButtonVariant.Secondary" Disabled="@_saving" OnClick="GoList">@L["Purchasing_BackToList"]</Button>
-        <Button Variant="ButtonVariant.Ghost" Disabled="@(_saving || !hasDraft)" OnClick="RequestReset">@L["Purchasing_Reset"]</Button>
-        <Button Variant="ButtonVariant.Primary"
-                IsLoading="@_saving"
-                Disabled="@(blocked || _saving || _loadingLookups || _suppliers.Count == 0)"
-                OnClick="SaveAsync">@L["Purchasing_Create"]</Button>
-    </FormActions>
+    <div class="pos-action-grid pos-action-grid--two pos-purchasing-create__footer" role="group" aria-label="@L["Purchasing_Create"]">
+        <button type="button" class="pos-action-tile" disabled="@(_saving || !hasDraft)" @onclick="RequestReset">
+            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("refresh")</span>
+            <span class="pos-action-tile__label">@L["Purchasing_Reset"]</span>
+        </button>
+        <button type="button"
+                class="pos-action-tile pos-action-tile--primary"
+                disabled="@(blocked || _saving || _loadingLookups || _suppliers.Count == 0)"
+                @onclick="SaveAsync">
+            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("check")</span>
+            <span class="pos-action-tile__label">@L["Purchasing_Create"]</span>
+        </button>
+    </div>
 
     <ConfirmDialog Visible="@_confirmReset"
                    VisibleChanged="v => _confirmReset = v"
@@ -164,6 +190,7 @@ else
                    OnConfirm="ConfirmReset"
                    OnCancel="() => _confirmReset = false" />
 </Page>
+</div>
 }
 
 @code {
@@ -447,8 +474,6 @@ else
         _errorTitle = L["Purchasing_ErrorTitle"];
         _errorMessage = result.Error?.Detail ?? described.Message;
     }
-
-    private void GoList() => Nav.NavigateTo("/purchasing");
 
     private void GoCreateSupplier() => Nav.NavigateTo("/suppliers/new");
 }

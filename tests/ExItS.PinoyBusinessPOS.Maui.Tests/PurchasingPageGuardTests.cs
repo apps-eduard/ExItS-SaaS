@@ -20,6 +20,14 @@ public sealed class PurchasingPageGuardTests
         Assert.Contains("Purchasing_AddLine", create, StringComparison.Ordinal);
         Assert.Contains("Purchasing_Field_Supplier", create, StringComparison.Ordinal);
         Assert.Contains("Purchasing_Reset", create, StringComparison.Ordinal);
+        Assert.Contains("<StoreHeaderBack Href=\"/purchasing\" />", create, StringComparison.Ordinal);
+        Assert.Contains("pos-action-grid--single", create, StringComparison.Ordinal);
+        Assert.Contains("pos-action-grid--two", create, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"refresh\")", create, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"plus\")", create, StringComparison.Ordinal);
+        Assert.DoesNotContain("IconGlyphs.Get(\"back\")", create, StringComparison.Ordinal);
+        Assert.Contains("pos-settings__panel", create, StringComparison.Ordinal);
+        Assert.DoesNotContain("<Actions>", create, StringComparison.Ordinal);
         Assert.Contains("Purchasing_UnitCostRequired", create, StringComparison.Ordinal);
         Assert.Contains("Required=\"true\"", create, StringComparison.Ordinal);
         Assert.Contains("_draftUnitCost is null", create, StringComparison.Ordinal);
@@ -28,15 +36,19 @@ public sealed class PurchasingPageGuardTests
 
         var detail = File.ReadAllText(Path.Combine(pages, "PurchasingDetail.razor"));
         Assert.Contains("@page \"/purchasing/{PurchaseOrderId:guid}\"", detail, StringComparison.Ordinal);
+        Assert.Contains("<StoreHeaderBack Href=\"/purchasing\" />", detail, StringComparison.Ordinal);
         Assert.Contains("SubmitAsync", detail, StringComparison.Ordinal);
         Assert.Contains("CancelAsync", detail, StringComparison.Ordinal);
+        Assert.DoesNotContain("Purchasing_BackToList", detail, StringComparison.Ordinal);
 
         var receive = File.ReadAllText(Path.Combine(pages, "PurchasingReceive.razor"));
         Assert.Contains("@page \"/purchasing/{PurchaseOrderId:guid}/receive\"", receive, StringComparison.Ordinal);
+        Assert.Contains("StoreHeaderBack Href=\"@($\"/purchasing/{PurchaseOrderId:D}\")\"", receive, StringComparison.Ordinal);
         Assert.Contains("ReceiveAsync", receive, StringComparison.Ordinal);
         Assert.DoesNotContain(".AsTask()", receive, StringComparison.Ordinal);
         Assert.Contains("ReceivePurchaseOrderRequest", receive, StringComparison.Ordinal);
         Assert.Contains("OutstandingQty", receive, StringComparison.Ordinal);
+        Assert.DoesNotContain("Purchasing_BackToDetail", receive, StringComparison.Ordinal);
     }
 
     [Fact]

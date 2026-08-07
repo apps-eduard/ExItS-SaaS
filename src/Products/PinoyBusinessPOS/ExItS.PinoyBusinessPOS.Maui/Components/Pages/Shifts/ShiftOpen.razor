@@ -8,6 +8,8 @@
 @inject ApiStatusLocalizer ApiLocalizer
 @inject IStringLocalizer<PosResources> L
 
+<StoreHeaderBack Href="/shifts" />
+
 @if (!_ready)
 {
     <Page><Spinner /></Page>
@@ -16,11 +18,7 @@ else
 {
     var blocked = _isOffline || !Capabilities.IsAllowed(UtangCapability.ManageShifts);
 <Page>
-    <PageHeader Title="@L["Shifts_OpenTitle"]" Subtitle="@L["Shifts_OpenSubtitle"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoList">@L["Shifts_BackToList"]</Button>
-        </Actions>
-    </PageHeader>
+    <PageHeader Title="@L["Shifts_OpenTitle"]" Subtitle="@L["Shifts_OpenSubtitle"]" />
 
     @if (_isOffline)
     {
@@ -250,6 +248,4 @@ else
             _saving = false;
         }
     }
-
-    private void GoList() => Nav.NavigateTo("/shifts");
 }

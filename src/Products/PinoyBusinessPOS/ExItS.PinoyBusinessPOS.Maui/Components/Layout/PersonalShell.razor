@@ -6,7 +6,6 @@
 @inject DensityController DensityCtl
 @inject CultureController CultureCtl
 @inject NavigationManager Nav
-@inject StoreHeaderState HeaderState
 @inject IStringLocalizer<PosResources> L
 
 <a class="skip-link" href="#pos-main">@L["Nav_SkipToContent"]</a>
@@ -89,7 +88,6 @@
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
-        HeaderState.Reset();
         RefreshPath();
         _ = InvokeAsync(StateHasChanged);
     }

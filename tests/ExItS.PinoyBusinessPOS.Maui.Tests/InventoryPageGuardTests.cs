@@ -22,11 +22,15 @@ public sealed class InventoryPageGuardTests
 
         var detail = File.ReadAllText(Path.Combine(pages, "InventoryDetail.razor"));
         Assert.Contains("@page \"/inventory/{ProductId:guid}\"", detail, StringComparison.Ordinal);
+        Assert.Contains("StoreHeaderBack Href=\"/inventory\"", detail, StringComparison.Ordinal);
         Assert.Contains("ListMovementsAsync", detail, StringComparison.Ordinal);
+        Assert.DoesNotContain("OnClick=\"GoBack\"", detail, StringComparison.Ordinal);
 
         var adjust = File.ReadAllText(Path.Combine(pages, "InventoryAdjust.razor"));
         Assert.Contains("@page \"/inventory/{ProductId:guid}/adjust\"", adjust, StringComparison.Ordinal);
+        Assert.Contains("StoreHeaderBack Href=", adjust, StringComparison.Ordinal);
         Assert.Contains("UtangCapability.ManageInventory", adjust, StringComparison.Ordinal);
+        Assert.DoesNotContain("OnClick=\"GoBack\"", adjust, StringComparison.Ordinal);
 
         var low = File.ReadAllText(Path.Combine(pages, "InventoryLowStock.razor"));
         Assert.Contains("@page \"/inventory/low-stock\"", low, StringComparison.Ordinal);
@@ -39,12 +43,14 @@ public sealed class InventoryPageGuardTests
 
         var create = File.ReadAllText(Path.Combine(pages, "StockCountCreate.razor"));
         Assert.Contains("@page \"/inventory/counts/new\"", create, StringComparison.Ordinal);
+        Assert.Contains("StoreHeaderBack Href=\"/inventory/counts\"", create, StringComparison.Ordinal);
         Assert.Contains("CreateStockCountAsync", create, StringComparison.Ordinal);
         Assert.Contains("Inventory_CountsReset", create, StringComparison.Ordinal);
         Assert.Contains("IconGlyphs.Get(\"products\")", create, StringComparison.Ordinal);
         Assert.Contains("IconGlyphs.Get(\"check\")", create, StringComparison.Ordinal);
         Assert.Contains("pos-stock-count-create__line", create, StringComparison.Ordinal);
         Assert.Contains("ConfirmDialog", create, StringComparison.Ordinal);
+        Assert.DoesNotContain("OnClick=\"GoBack\"", create, StringComparison.Ordinal);
 
         var counts = File.ReadAllText(Path.Combine(pages, "StockCountsList.razor"));
         Assert.Contains("@page \"/inventory/counts\"", counts, StringComparison.Ordinal);

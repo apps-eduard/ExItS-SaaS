@@ -7,6 +7,8 @@
 @inject IConnectivityService Connectivity
 @inject IStringLocalizer<PosResources> L
 
+<StoreHeaderBack Href="/expenses" />
+
 @if (!_ready)
 {
     <Page><Spinner /></Page>
@@ -15,11 +17,7 @@ else
 {
     var canManage = Capabilities.IsAllowed(UtangCapability.ManageExpenses);
 <Page>
-    <PageHeader Title="@L["Expenses_CategoriesTitle"]" Subtitle="@L["Expenses_CategoriesSubtitle"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoExpenses">@L["Expenses_BackToList"]</Button>
-        </Actions>
-    </PageHeader>
+    <PageHeader Title="@L["Expenses_CategoriesTitle"]" Subtitle="@L["Expenses_CategoriesSubtitle"]" />
 
     @if (_isOffline)
     {
@@ -398,6 +396,4 @@ else
         _formError = result.Error?.Detail
             ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
     }
-
-    private void GoExpenses() => Nav.NavigateTo("/expenses");
 }

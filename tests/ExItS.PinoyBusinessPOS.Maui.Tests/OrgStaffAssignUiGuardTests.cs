@@ -10,7 +10,8 @@ public sealed class OrgStaffAssignUiGuardTests
         var fil = File.ReadAllText(Path.Combine(MauiProject(), "Localization", "PosResources.fil-PH.resx"));
 
         Assert.Contains("@page \"/org/staff/assign\"", page, StringComparison.Ordinal);
-        Assert.Contains("pos-assign__back", page, StringComparison.Ordinal);
+        Assert.Contains("StoreHeaderBack Href=\"/org/staff\"", page, StringComparison.Ordinal);
+        Assert.DoesNotContain("pos-assign__back", page, StringComparison.Ordinal);
         Assert.Contains("Org_AssignTitle", page, StringComparison.Ordinal);
         Assert.Contains("Org_AssignUserSection", page, StringComparison.Ordinal);
         Assert.Contains("GetUserAsync", page, StringComparison.Ordinal);

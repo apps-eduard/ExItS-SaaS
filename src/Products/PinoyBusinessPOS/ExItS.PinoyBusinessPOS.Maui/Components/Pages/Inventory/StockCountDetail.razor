@@ -7,6 +7,8 @@
 @inject IConnectivityService Connectivity
 @inject IStringLocalizer<PosResources> L
 
+<StoreHeaderBack Href="/inventory/counts" />
+
 @if (!_ready)
 {
     <Page><Spinner /></Page>
@@ -15,7 +17,6 @@ else if (_count is null)
 {
     <Page>
         <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Inventory_CountsTitle"])" Message="@(_errorMessage ?? L["NotFound_Message"])" />
-        <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Inventory_CountsTitle"]</Button>
     </Page>
 }
 else
@@ -41,7 +42,6 @@ else
                     <Button Variant="ButtonVariant.Secondary" IsLoading="@_busy" OnClick="CancelAsync">@L["Inventory_CountsCancel"]</Button>
                 }
             }
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Inventory_CountsTitle"]</Button>
         </Actions>
     </PageHeader>
 
@@ -218,6 +218,4 @@ else
         _errorTitle = described.Title;
         _errorMessage = result.Error?.Detail ?? described.Message;
     }
-
-    private void GoBack() => Nav.NavigateTo("/inventory/counts");
 }

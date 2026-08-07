@@ -56,8 +56,7 @@ public sealed class SalePageGuardTests
         Assert.Contains("pos-sale-detail", detail, StringComparison.Ordinal);
         Assert.Contains("Sales_DetailSubtitle", detail, StringComparison.Ordinal);
         Assert.Contains("Sales_DetailSection", detail, StringComparison.Ordinal);
-        Assert.Contains("StoreHeaderState", detail, StringComparison.Ordinal);
-        Assert.Contains("EnterInner(\"/sales\")", detail, StringComparison.Ordinal);
+        Assert.Contains("StoreHeaderBack Href=\"/sales\"", detail, StringComparison.Ordinal);
         Assert.Contains("IPlatformAccessClient", detail, StringComparison.Ordinal);
         Assert.Contains("GetUserAsync", detail, StringComparison.Ordinal);
         Assert.Contains("VoidSaleAsync", detail, StringComparison.Ordinal);
@@ -76,7 +75,9 @@ public sealed class SalePageGuardTests
         Assert.True(Directory.Exists(returnsDir));
         var returnPage = File.ReadAllText(Path.Combine(returnsDir, "SaleReturn.razor"));
         Assert.Contains("@page \"/sales/{SaleId:guid}/return\"", returnPage, StringComparison.Ordinal);
+        Assert.Contains("StoreHeaderBack Href=", returnPage, StringComparison.Ordinal);
         Assert.Contains("Returns_OfflineMessage", returnPage, StringComparison.Ordinal);
+        Assert.DoesNotContain("Returns_BackToSale", returnPage, StringComparison.Ordinal);
 
         Assert.True(File.Exists(Path.Combine(sales, "SalesUiOptions.cs")));
     }

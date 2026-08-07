@@ -10,7 +10,10 @@
 {
     <Page><Spinner /></Page>
 }
-else if (_loading)
+else
+{
+<StoreHeaderBack Href="@($"/customers/{CustomerId:D}")" />
+@if (_loading)
 {
     <Page><Spinner /><span>@L["Overdue_Loading"]</span></Page>
 }
@@ -18,7 +21,6 @@ else if (_summary is null)
 {
     <Page>
         <ErrorState Title="@(_errorTitle ?? L["Customers_NotFoundTitle"])" Message="@(_errorMessage ?? L["Customers_NotFoundMessage"])" RetryLabel="@L["Api_Retry"]" OnRetry="LoadAsync" />
-        <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Customers_BackToDetail"]</Button>
     </Page>
 }
 else
@@ -27,7 +29,6 @@ else
 <Page>
     <PageHeader Title="@L["Overdue_CustomerTitle"]" Subtitle="@L["Overdue_CustomerSubtitle"]">
         <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Customers_BackToDetail"]</Button>
             <Button Variant="ButtonVariant.Secondary" OnClick="GoOrgOverdue">@L["Overdue_OpenOrg"]</Button>
         </Actions>
     </PageHeader>
@@ -97,6 +98,7 @@ else
         }
     </Section>
 </Page>
+}
 }
 
 @code {
@@ -207,7 +209,6 @@ else
         _ => BadgeTone.Neutral
     };
 
-    private void GoBack() => Nav.NavigateTo($"/customers/{CustomerId:D}");
     private void GoOrgOverdue() => Nav.NavigateTo("/overdue");
     private void GoCredit(Guid creditId) => Nav.NavigateTo($"/customers/{CustomerId:D}/credit/{creditId:D}");
 }

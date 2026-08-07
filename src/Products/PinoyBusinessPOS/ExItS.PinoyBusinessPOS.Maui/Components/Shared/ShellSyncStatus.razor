@@ -144,21 +144,35 @@
         StateHasChanged();
     }
 
-    public void Close() => _syncPanelOpen = false;
+    public void Close()
+    {
+        if (!_syncPanelOpen)
+        {
+            return;
+        }
+
+        _syncPanelOpen = false;
+        _ = InvokeAsync(StateHasChanged);
+    }
 
     public bool IsOpen => _syncPanelOpen;
 
     private async Task ToggleSyncPanelAsync()
     {
-        _syncPanelOpen = !_syncPanelOpen;
         if (_syncPanelOpen)
         {
-            await RefreshQueueIndicatorsAsync();
-            if (OnPanelOpened.HasDelegate)
-            {
-                await OnPanelOpened.InvokeAsync();
-            }
+            Close();
+            return;
         }
+
+        // Close the account menu first so only one top-bar overlay is visible.
+        if (OnPanelOpened.HasDelegate)
+        {
+            await OnPanelOpened.InvokeAsync();
+        }
+
+        _syncPanelOpen = true;
+        await RefreshQueueIndicatorsAsync();
     }
 
     private async Task RefreshQueueIndicatorsAsync()

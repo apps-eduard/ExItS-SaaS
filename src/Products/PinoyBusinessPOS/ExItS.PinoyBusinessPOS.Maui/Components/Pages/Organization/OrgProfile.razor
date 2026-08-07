@@ -6,15 +6,9 @@
 @inject IStringLocalizer<PosResources> L
 
 <div class="pos-org-profile">
+    <StoreHeaderBack Href="/org" />
     <Page>
         <PageHeader Title="@L["Org_ProfileTitle"]" Subtitle="@L["Org_ProfileSubtitle"]" />
-
-        <div class="pos-action-grid pos-action-grid--single pos-org-profile__nav" role="group">
-            <button type="button" class="pos-action-tile" @onclick="GoBack">
-                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("back")</span>
-                <span class="pos-action-tile__label">@L["Common_Back"]</span>
-            </button>
-        </div>
 
         @if (_loading)
         {
@@ -113,6 +107,4 @@
             _busy = false;
         }
     }
-
-    private void GoBack() => Nav.NavigateTo("/org");
 }

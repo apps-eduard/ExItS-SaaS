@@ -25,7 +25,40 @@ public sealed class ShellContextIdentityGuardTests
         Assert.Contains("ShellOrganizationIdentity", File.ReadAllText(Path.Combine(MauiProject(), "Components", "Shared", "StoreHeader.razor")), StringComparison.Ordinal);
         Assert.Contains("ShellAccountMenu", File.ReadAllText(Path.Combine(MauiProject(), "Components", "Shared", "StoreHeader.razor")), StringComparison.Ordinal);
         Assert.DoesNotContain("ShellUserIdentity", pos, StringComparison.Ordinal);
-        Assert.Contains("IconName=\"more\"", File.ReadAllText(Path.Combine(MauiProject(), "Components", "Shared", "ShellAccountMenu.razor")), StringComparison.Ordinal);
+        Assert.Contains("IconName=\"menu\"", File.ReadAllText(Path.Combine(MauiProject(), "Components", "Shared", "ShellAccountMenu.razor")), StringComparison.Ordinal);
+        var accountMenu = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Shared", "ShellAccountMenu.razor"));
+        Assert.Contains("ShowOrganizationSwitcherItem", accountMenu, StringComparison.Ordinal);
+        Assert.Contains("ShowDashboardItem", accountMenu, StringComparison.Ordinal);
+        Assert.Contains("Shell_ChangeOrganization", accountMenu, StringComparison.Ordinal);
+        Assert.Contains("GoDashboardAsync", accountMenu, StringComparison.Ordinal);
+        Assert.Contains("IsOnOrganizationSelect", accountMenu, StringComparison.Ordinal);
+
+        var syncStatus = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Shared", "ShellSyncStatus.razor"));
+        Assert.Contains("InvokeAsync(StateHasChanged)", syncStatus, StringComparison.Ordinal);
+        Assert.Contains("OnPanelOpened.HasDelegate", syncStatus, StringComparison.Ordinal);
+
+        var header = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Shared", "StoreHeader.razor"));
+        Assert.Contains("_accountMenu?.CloseAsync()", header, StringComparison.Ordinal);
+        Assert.Contains("pos-topbar__back", header, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"back\")", header, StringComparison.Ordinal);
+
+        var headerBack = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Shared", "StoreHeaderBack.razor"));
+        Assert.Contains("HeaderState.SetBack", headerBack, StringComparison.Ordinal);
+        Assert.Contains("HeaderState.ReleaseBack", headerBack, StringComparison.Ordinal);
+
+        var headerState = File.ReadAllText(Path.Combine(MauiProject(), "Services", "StoreHeaderState.cs"));
+        Assert.Contains("void ReleaseBack(", headerState, StringComparison.Ordinal);
+        Assert.Contains("int SetBack(", headerState, StringComparison.Ordinal);
+        Assert.Contains("_activeClaim", headerState, StringComparison.Ordinal);
+
+        var posShell = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Layout", "PosShell.razor"));
+        Assert.DoesNotContain("HeaderState.Reset()", posShell, StringComparison.Ordinal);
+
+        var personalShell = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Layout", "PersonalShell.razor"));
+        Assert.DoesNotContain("HeaderState.Reset()", personalShell, StringComparison.Ordinal);
+
+        var authShell = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Layout", "AuthShell.razor"));
+        Assert.DoesNotContain("HeaderState.Reset()", authShell, StringComparison.Ordinal);
         Assert.DoesNotContain("Brand_Name", pos, StringComparison.Ordinal);
         Assert.DoesNotContain("Env_Development", pos, StringComparison.Ordinal);
         Assert.DoesNotContain("Badge Tone", pos, StringComparison.Ordinal);
@@ -65,6 +98,8 @@ public sealed class ShellContextIdentityGuardTests
         Assert.Contains("ShellAccountMenu", header, StringComparison.Ordinal);
         Assert.DoesNotContain("ShellUserIdentity", auth, StringComparison.Ordinal);
         Assert.Contains("AuthShellIdentityState", auth, StringComparison.Ordinal);
+        Assert.Contains("StoreHeaderIdentity.Personal", auth, StringComparison.Ordinal);
+        Assert.Contains("HasOrganizationIdentity", auth, StringComparison.Ordinal);
         Assert.DoesNotContain("Env_Development", auth, StringComparison.Ordinal);
         Assert.DoesNotContain("Badge Tone", auth, StringComparison.Ordinal);
         Assert.DoesNotContain("IAppInfoService", auth, StringComparison.Ordinal);
@@ -87,6 +122,8 @@ public sealed class ShellContextIdentityGuardTests
         Assert.Contains("FriendlyMembershipRole", orgSelect, StringComparison.Ordinal);
         Assert.Contains("OrgSelect_EnterOwner", orgSelect, StringComparison.Ordinal);
         Assert.Contains("SelectOrganizationAsync", orgSelect, StringComparison.Ordinal);
+        Assert.DoesNotContain("Auth_Logout", orgSelect, StringComparison.Ordinal);
+        Assert.Contains("pos-org-select-empty", orgSelect, StringComparison.Ordinal);
 
         // Accepted org-select polish keeps section headers for owner role bind and staff list.
         Assert.Contains("PageHeader", orgSelect, StringComparison.Ordinal);

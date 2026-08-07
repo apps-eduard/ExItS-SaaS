@@ -85,6 +85,7 @@ public sealed class ShiftsPageGuardTests
     {
         var open = File.ReadAllText(Path.Combine(ShiftsPagesDirectory(), "ShiftOpen.razor"));
         Assert.Contains("@page \"/shifts/open\"", open, StringComparison.Ordinal);
+        Assert.Contains("StoreHeaderBack Href=\"/shifts\"", open, StringComparison.Ordinal);
         Assert.Contains("ListAvailableForShiftAsync", open, StringComparison.Ordinal);
         Assert.Contains("UtangCapability.ManageShifts", open, StringComparison.Ordinal);
         Assert.Contains("ListAsync", open, StringComparison.Ordinal);
@@ -93,6 +94,7 @@ public sealed class ShiftsPageGuardTests
         Assert.Contains("GetCurrentAsync", open, StringComparison.Ordinal);
         Assert.Contains("finally", open, StringComparison.Ordinal);
         Assert.Contains("_saving = false", open, StringComparison.Ordinal);
+        Assert.DoesNotContain("Shifts_BackToList", open, StringComparison.Ordinal);
 
         var detail = File.ReadAllText(Path.Combine(ShiftsPagesDirectory(), "ShiftDetail.razor"));
         Assert.Contains("@page \"/shifts/{ShiftId:guid}\"", detail, StringComparison.Ordinal);
@@ -100,8 +102,7 @@ public sealed class ShiftsPageGuardTests
         Assert.Contains("ConfirmCloseAsync", detail, StringComparison.Ordinal);
         Assert.Contains("GetSummaryAsync", detail, StringComparison.Ordinal);
         Assert.Contains("ExpectedCashAmount", detail, StringComparison.Ordinal);
-        Assert.Contains("StoreHeaderState", detail, StringComparison.Ordinal);
-        Assert.Contains("EnterInner(\"/shifts\")", detail, StringComparison.Ordinal);
+        Assert.Contains("StoreHeaderBack Href=\"/shifts\"", detail, StringComparison.Ordinal);
         Assert.DoesNotContain("Shifts_BackToList", detail, StringComparison.Ordinal);
         Assert.DoesNotContain("Shifts_RegisterLabel", detail, StringComparison.Ordinal);
         Assert.Contains("Shifts_Register", detail, StringComparison.Ordinal);

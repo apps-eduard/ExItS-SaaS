@@ -6,12 +6,9 @@
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
+<StoreHeaderBack Href="/personal/utang/people" />
 <Page>
-    <PageHeader Title="@L["Personal_PeopleDetailTitle"]" Subtitle="@L["Personal_PeopleSubtitle"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoList">@L["Personal_PeopleBack"]</Button>
-        </Actions>
-    </PageHeader>
+    <PageHeader Title="@L["Personal_PeopleDetailTitle"]" Subtitle="@L["Personal_PeopleSubtitle"]" />
 
     @if (_loading)
     {
@@ -93,7 +90,6 @@
         }
     }
 
-    private void GoList() => Nav.NavigateTo("/personal/utang/people");
     private void GoLentCreate() => Nav.NavigateTo($"/personal/utang/lent?contactId={ContactId:D}");
     private void GoBorrowedCreate() => Nav.NavigateTo($"/personal/utang/borrowed?contactId={ContactId:D}");
     private void GoSignIn() => Nav.NavigateTo("/signin");

@@ -8,8 +8,8 @@ public sealed class ShiftDetailUiTests
         var detail = ReadDetail();
         Assert.DoesNotContain("Shifts_BackToList", detail, StringComparison.Ordinal);
         Assert.DoesNotContain("GoList", detail, StringComparison.Ordinal);
-        Assert.Contains("HeaderState.EnterInner(\"/shifts\")", detail, StringComparison.Ordinal);
-        Assert.Contains("HeaderState.ExitInner()", detail, StringComparison.Ordinal);
+        Assert.Contains("StoreHeaderBack Href=\"/shifts\"", detail, StringComparison.Ordinal);
+        Assert.DoesNotContain("HeaderState.EnterInner", detail, StringComparison.Ordinal);
         Assert.Contains("IDisposable", detail, StringComparison.Ordinal);
     }
 

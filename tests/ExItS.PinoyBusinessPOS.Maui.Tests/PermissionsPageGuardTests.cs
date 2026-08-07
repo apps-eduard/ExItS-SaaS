@@ -41,6 +41,16 @@ public sealed class PermissionsPageGuardTests
     }
 
     [Fact]
+    public void MyAccess_uses_header_back_without_content_back()
+    {
+        var page = Read("MyAccess.razor");
+        Assert.Contains("@page \"/permissions/my-access\"", page, StringComparison.Ordinal);
+        Assert.Contains("StoreHeaderBack Href=\"/permissions\"", page, StringComparison.Ordinal);
+        Assert.DoesNotContain("Permissions_Back", page, StringComparison.Ordinal);
+        Assert.DoesNotContain("GoBack", page, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Assign_role_removes_content_back_and_guards_submit()
     {
         var page = Read("AssignmentCreate.razor");

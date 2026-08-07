@@ -11,15 +11,9 @@
 @inject IDocumentHandoffService Handoff
 
 <div class="pos-my-qr">
+    <StoreHeaderBack Handler="GoBackAsync" />
     <Page>
         <PageHeader Title="@L["Personal_MyQrTitle"]" Subtitle="@L["Personal_MyQrSubtitle"]" />
-
-        <div class="pos-action-grid pos-action-grid--single pos-my-qr__nav" role="group">
-            <button type="button" class="pos-action-tile" @onclick="GoBack">
-                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("back")</span>
-                <span class="pos-action-tile__label">@BackLabel</span>
-            </button>
-        </div>
 
         @if (_loading)
         {
@@ -98,15 +92,6 @@
     private string? _copyMessage;
     private string _qrDataUrl = string.Empty;
     private PublicIdentityDto? _identity;
-
-    private string BackLabel =>
-        IsOrgReturn
-            ? L["Common_Back"]
-            : L["Personal_BackMore"];
-
-    private bool IsOrgReturn =>
-        !string.IsNullOrWhiteSpace(ReturnPath)
-        && ReturnPath.StartsWith("/org", StringComparison.OrdinalIgnoreCase);
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
 
@@ -297,6 +282,12 @@
         {
             _copyMessage = L["Personal_ShareExItsIdUnavailable"];
         }
+    }
+
+    private Task GoBackAsync()
+    {
+        GoBack();
+        return Task.CompletedTask;
     }
 
     private void GoBack()

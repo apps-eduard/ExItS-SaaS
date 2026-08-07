@@ -15,17 +15,24 @@ public sealed class RegistersPageGuardTests
 
         var detail = File.ReadAllText(Path.Combine(pages, "RegisterDetail.razor"));
         Assert.Contains("@page \"/registers/{RegisterId:guid}\"", detail, StringComparison.Ordinal);
+        Assert.Contains("StoreHeaderBack Href=\"/registers\"", detail, StringComparison.Ordinal);
         Assert.Contains("GetActivityAsync", detail, StringComparison.Ordinal);
         Assert.Contains("ActivateAsync", detail, StringComparison.Ordinal);
         Assert.Contains("DeactivateAsync", detail, StringComparison.Ordinal);
+        Assert.DoesNotContain("Registers_BackToList", detail, StringComparison.Ordinal);
 
         var create = File.ReadAllText(Path.Combine(pages, "RegisterCreate.razor"));
         Assert.Contains("@page \"/registers/new\"", create, StringComparison.Ordinal);
+        Assert.Contains("StoreHeaderBack Href=\"/registers\"", create, StringComparison.Ordinal);
         Assert.Contains("UtangCapability.ManageRegisters", create, StringComparison.Ordinal);
+        Assert.Contains("Registers_Cancel", create, StringComparison.Ordinal);
 
         var edit = File.ReadAllText(Path.Combine(pages, "RegisterEdit.razor"));
         Assert.Contains("@page \"/registers/{RegisterId:guid}/edit\"", edit, StringComparison.Ordinal);
+        Assert.Contains("StoreHeaderBack Href=\"/registers\"", edit, StringComparison.Ordinal);
         Assert.Contains("UtangCapability.ManageRegisters", edit, StringComparison.Ordinal);
+        Assert.Contains("Registers_Cancel", edit, StringComparison.Ordinal);
+        Assert.DoesNotContain("Registers_BackToList", edit, StringComparison.Ordinal);
     }
 
     [Fact]

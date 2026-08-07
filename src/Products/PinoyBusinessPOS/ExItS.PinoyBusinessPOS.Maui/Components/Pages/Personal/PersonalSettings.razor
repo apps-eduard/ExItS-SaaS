@@ -13,15 +13,9 @@
 @inject IStringLocalizer<PosResources> L
 
 <div class="pos-settings pos-personal-settings">
+    <StoreHeaderBack Href="/personal/more" />
     <Page>
         <PageHeader Title="@L["Personal_SettingsTitle"]" Subtitle="@L["Personal_SettingsSubtitle"]" />
-
-        <div class="pos-action-grid pos-action-grid--single pos-personal-settings__nav" role="group">
-            <button type="button" class="pos-action-tile" @onclick="GoMore">
-                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("back")</span>
-                <span class="pos-action-tile__label">@L["Personal_BackMore"]</span>
-            </button>
-        </div>
 
         @if (!_ready)
         {
@@ -148,7 +142,6 @@
         _ready = true;
     }
 
-    private void GoMore() => Nav.NavigateTo("/personal/more");
     private void GoSignIn() => Nav.NavigateTo("/signin");
     private void GoOrganizationSelect() => Nav.NavigateTo("/organization-select");
 

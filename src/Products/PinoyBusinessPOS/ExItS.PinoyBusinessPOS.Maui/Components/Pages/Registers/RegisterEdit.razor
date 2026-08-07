@@ -7,6 +7,8 @@
 @inject IConnectivityService Connectivity
 @inject IStringLocalizer<PosResources> L
 
+<StoreHeaderBack Href="/registers" />
+
 @if (!_ready)
 {
     <Page><Spinner /></Page>
@@ -15,7 +17,6 @@ else if (_register is null)
 {
     <Page>
         <Alert Tone="AlertTone.Danger" Title="@L["Registers_ErrorTitle"]" Message="@(_errorMessage ?? L["Registers_NotFound"])" />
-        <Button Variant="ButtonVariant.Secondary" OnClick="GoList">@L["Registers_BackToList"]</Button>
     </Page>
 }
 else
@@ -23,11 +24,7 @@ else
     var canManage = Capabilities.IsAllowed(UtangCapability.ManageRegisters);
     var blocked = !canManage || _isOffline;
 <Page>
-    <PageHeader Title="@L["Registers_EditTitle"]" Subtitle="@_register.RegisterCode">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoDetail">@L["Registers_Cancel"]</Button>
-        </Actions>
-    </PageHeader>
+    <PageHeader Title="@L["Registers_EditTitle"]" Subtitle="@_register.RegisterCode" />
 
     @if (_isOffline)
     {
@@ -43,6 +40,7 @@ else
         <TextInput Label="@L["Registers_Name"]" Value="@_name" ValueChanged="v => _name = v" Disabled="@blocked" />
         <TextInput Label="@L["Registers_Description"]" Value="@_description" ValueChanged="v => _description = v" Disabled="@blocked" />
         <FormActions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoDetail">@L["Registers_Cancel"]</Button>
             <Button Variant="ButtonVariant.Primary" IsLoading="@_saving" Disabled="@blocked" OnClick="SaveAsync">@L["Registers_Save"]</Button>
         </FormActions>
     </Section>
@@ -116,6 +114,5 @@ else
         _formError = result.Error?.Detail ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
     }
 
-    private void GoList() => Nav.NavigateTo("/registers");
     private void GoDetail() => Nav.NavigateTo($"/registers/{RegisterId:D}");
 }

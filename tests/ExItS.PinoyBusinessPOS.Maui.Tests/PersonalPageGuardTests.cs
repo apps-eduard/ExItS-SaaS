@@ -174,6 +174,10 @@ public sealed class PersonalPageGuardTests
         var start = File.ReadAllText(Path.Combine(personal, "StartBusiness.razor"));
         Assert.Contains("@page \"/start-business\"", start, StringComparison.Ordinal);
         Assert.Contains("@layout Layout.AuthShell", start, StringComparison.Ordinal);
+        Assert.Contains("StoreHeaderBack", start, StringComparison.Ordinal);
+        Assert.Contains("Href=\"/personal\"", start, StringComparison.Ordinal);
+        Assert.DoesNotContain("Personal_BackHome", start, StringComparison.Ordinal);
+        Assert.DoesNotContain("Personal_ExplorePosBack", start, StringComparison.Ordinal);
         Assert.Contains("StartBusiness_PlanRequired", start, StringComparison.Ordinal);
         Assert.Contains("StartBusiness_ConfirmSubmit", start, StringComparison.Ordinal);
         Assert.Contains("StartBusinessAsync", start, StringComparison.Ordinal);
@@ -201,13 +205,18 @@ public sealed class PersonalPageGuardTests
         Assert.Contains("Settings_SwitchOrganization", settings, StringComparison.Ordinal);
         Assert.Contains("pos-settings", settings, StringComparison.Ordinal);
         Assert.Contains("pos-settings__panel", settings, StringComparison.Ordinal);
-        Assert.Contains("IconGlyphs.Get(\"back\")", settings, StringComparison.Ordinal);
+        Assert.Contains("StoreHeaderBack", settings, StringComparison.Ordinal);
+        Assert.Contains("Href=\"/personal/more\"", settings, StringComparison.Ordinal);
         Assert.Contains("IconGlyphs.Get(\"customers\")", settings, StringComparison.Ordinal);
+        Assert.DoesNotContain("Personal_BackMore", settings, StringComparison.Ordinal);
         Assert.DoesNotContain("Auth_Logout", settings, StringComparison.Ordinal);
 
         var orgSelect = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Pages", "OrganizationSelect.razor"));
         Assert.Contains("/personal/explore-pos", orgSelect, StringComparison.Ordinal);
         Assert.DoesNotContain("GoStartBusiness", orgSelect, StringComparison.Ordinal);
+        Assert.DoesNotContain("Auth_Logout", orgSelect, StringComparison.Ordinal);
+        Assert.Contains("pos-org-select-empty", orgSelect, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"home\")", orgSelect, StringComparison.Ordinal);
     }
 
     [Fact]

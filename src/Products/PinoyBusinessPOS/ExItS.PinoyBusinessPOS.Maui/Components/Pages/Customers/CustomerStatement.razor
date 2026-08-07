@@ -12,25 +12,20 @@
 {
     <Page><Spinner /></Page>
 }
-else if (!_canView)
+else
+{
+<StoreHeaderBack Href="@($"/customers/{CustomerId:D}")" />
+@if (!_canView)
 {
     <Page>
-        <PageHeader Title="@L["Statement_Title"]" Subtitle="@L["Statement_Subtitle"]">
-            <Actions>
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Customers_BackToDetail"]</Button>
-            </Actions>
-        </PageHeader>
+        <PageHeader Title="@L["Statement_Title"]" Subtitle="@L["Statement_Subtitle"]" />
         <Alert Tone="AlertTone.Warning" Title="@L["Access_RestrictedTitle"]" Message="@L["Access_RestrictedMessage"]" />
     </Page>
 }
 else
 {
 <Page>
-    <PageHeader Title="@L["Statement_Title"]" Subtitle="@L["Statement_Subtitle"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Customers_BackToDetail"]</Button>
-        </Actions>
-    </PageHeader>
+    <PageHeader Title="@L["Statement_Title"]" Subtitle="@L["Statement_Subtitle"]" />
 
     @if (!string.IsNullOrEmpty(_banner))
     {
@@ -125,6 +120,7 @@ else
         </Section>
     }
 </Page>
+}
 }
 
 @code {
@@ -246,5 +242,4 @@ else
         return sb.ToString();
     }
 
-    private void GoBack() => Nav.NavigateTo($"/customers/{CustomerId:D}");
 }

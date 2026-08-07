@@ -9,6 +9,7 @@
 @inject IStringLocalizer<PosResources> L
 
 <div class="pos-resolve">
+    <StoreHeaderBack Handler="GoBackAsync" />
     <Page>
         <PageHeader Title="@L["Personal_ResolveUserTitle"]" Subtitle="@L["Personal_ResolveUserSubtitle"]" />
 
@@ -73,16 +74,6 @@
                     <span class="pos-muted">@L["Common_Loading"]</span>
                 </div>
             }
-
-            <div class="pos-resolve__nav">
-                <button type="button"
-                        class="pos-action-tile pos-resolve__back"
-                        disabled="@_busy"
-                        @onclick="GoBack">
-                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("back")</span>
-                    <span class="pos-action-tile__label">@L["Common_Back"]</span>
-                </button>
-            </div>
         }
         else
         {
@@ -342,6 +333,12 @@
     }
 
     private void ClearResolved() => _resolved = null;
+
+    private Task GoBackAsync()
+    {
+        GoBack();
+        return Task.CompletedTask;
+    }
 
     private void GoBack()
     {

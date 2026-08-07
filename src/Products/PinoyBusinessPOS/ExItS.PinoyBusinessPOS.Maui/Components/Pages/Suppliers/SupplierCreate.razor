@@ -8,6 +8,8 @@
 @inject IConnectivityService Connectivity
 @inject IStringLocalizer<PosResources> L
 
+<StoreHeaderBack Href="/suppliers" />
+
 @if (!_ready)
 {
     <Page><Spinner /></Page>
@@ -16,11 +18,7 @@ else
 {
     var canManage = Capabilities.IsAllowed(UtangCapability.ManageSuppliers);
 <Page>
-    <PageHeader Title="@L["Suppliers_CreateTitle"]" Subtitle="@L["Suppliers_CreateSubtitle"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Suppliers_Cancel"]</Button>
-        </Actions>
-    </PageHeader>
+    <PageHeader Title="@L["Suppliers_CreateTitle"]" Subtitle="@L["Suppliers_CreateSubtitle"]" />
 
     @if (_isOffline)
     {

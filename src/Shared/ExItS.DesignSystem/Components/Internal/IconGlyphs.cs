@@ -14,7 +14,8 @@ public static class IconGlyphs
 
     private static readonly Dictionary<string, string> Paths = new(StringComparer.OrdinalIgnoreCase)
     {
-        ["back"] = "<path d=\"M15 6 9 12l6 6\"/>",
+        // Chevron-left (‹): familiar hierarchical back affordance for top-bar / navigation.
+        ["back"] = "<path d=\"M14.5 5.5 8.5 12l6 6.5\"/>",
         ["home"] = "<path d=\"M3 11.5 12 4l9 7.5\"/><path d=\"M5.5 10v9a1 1 0 0 0 1 1H9a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1h2.5a1 1 0 0 0 1-1v-9\"/>",
         ["products"] = "<path d=\"M21 8 12 3 3 8l9 5 9-5Z\"/><path d=\"M3 8v8l9 5 9-5V8\"/><path d=\"M12 13v8\"/>",
         ["sales"] = "<path d=\"M3 3v16a2 2 0 0 0 2 2h16\"/><path d=\"M7 15l4-4 3 3 6-7\"/>",

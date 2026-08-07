@@ -6,12 +6,9 @@
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
+<StoreHeaderBack Href="/personal/more" />
 <Page>
-    <PageHeader Title="@L["Personal_UtangInvitationsTitle"]" Subtitle="@L["Personal_UtangInvitationsSubtitle"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoMore">@L["Personal_BackMore"]</Button>
-        </Actions>
-    </PageHeader>
+    <PageHeader Title="@L["Personal_UtangInvitationsTitle"]" Subtitle="@L["Personal_UtangInvitationsSubtitle"]" />
 
     @if (_loading)
     {
@@ -173,6 +170,5 @@
         }
     }
 
-    private void GoMore() => Nav.NavigateTo("/personal/more");
     private void GoSignIn() => Nav.NavigateTo("/signin");
 }

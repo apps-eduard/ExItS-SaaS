@@ -8,6 +8,8 @@
 @inject IConnectivityService Connectivity
 @inject IStringLocalizer<PosResources> L
 
+<StoreHeaderBack Href="@($"/catalog/products/{ProductId:D}")" />
+
 @if (!_ready)
 {
     <Page><Spinner /></Page>
@@ -23,7 +25,6 @@ else if (_product is null)
                     Message="@(_errorMessage ?? L["Catalog_Product_NotFoundMessage"])"
                     RetryLabel="@L["Api_Retry"]"
                     OnRetry="LoadAsync" />
-        <Button Variant="ButtonVariant.Secondary" OnClick="GoList">@L["Catalog_BackToList"]</Button>
     </Page>
 }
 else
@@ -226,6 +227,5 @@ else
             ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
     }
 
-    private void GoList() => Nav.NavigateTo("/catalog");
     private void GoDetail() => Nav.NavigateTo($"/catalog/products/{ProductId:D}");
 }

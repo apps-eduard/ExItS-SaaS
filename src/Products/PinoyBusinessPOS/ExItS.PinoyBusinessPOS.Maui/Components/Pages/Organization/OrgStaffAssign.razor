@@ -6,15 +6,9 @@
 @inject IStringLocalizer<PosResources> L
 
 <div class="pos-assign">
+    <StoreHeaderBack Href="/org/staff" />
     <Page>
         <header class="pos-assign__header">
-            <button type="button"
-                    class="pos-assign__back"
-                    disabled="@_busy"
-                    @onclick="GoBack">
-                <span aria-hidden="true">‹</span>
-                <span>@L["Common_Back"]</span>
-            </button>
             <h1 class="pos-assign__title">@L["Org_AssignTitle"]</h1>
             <p class="pos-assign__subtitle">@L["Org_AssignSubtitle"]</p>
             @if (!string.IsNullOrWhiteSpace(CurrentUser.Session?.OrganizationDisplayName))
@@ -123,12 +117,6 @@
 <style>
     .pos-assign { width: 100%; }
     .pos-assign__header { margin-bottom: var(--exits-space-3, 0.75rem); }
-    .pos-assign__back {
-        display: inline-flex; align-items: center; gap: 0.15rem;
-        margin: 0 0 0.35rem; padding: 0.15rem 0; border: 0; background: transparent;
-        color: var(--exits-accent, #1f6b4a); font-size: 0.875rem; font-weight: 600; cursor: pointer;
-    }
-    .pos-assign__back:disabled { opacity: 0.45; cursor: not-allowed; }
     .pos-assign__title {
         margin: 0; font-size: 1.25rem; font-weight: 700; line-height: 1.25;
         color: var(--exits-text, #15201a);
@@ -435,8 +423,6 @@
 
         return string.IsNullOrWhiteSpace(code) ? L["Org_NoPosRoles"] : code!;
     }
-
-    private void GoBack() => Nav.NavigateTo("/org/staff");
 
     private sealed record RoleOption(string Code, string Label, string Description);
 }

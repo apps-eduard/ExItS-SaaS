@@ -15,7 +15,10 @@
 {
     <Page><Spinner /></Page>
 }
-else if (_loading)
+else
+{
+<StoreHeaderBack Href="@($"/customers/{CustomerId:D}")" />
+@if (_loading)
 {
     <Page><Spinner /></Page>
 }
@@ -23,18 +26,13 @@ else if (_customer is null)
 {
     <Page>
         <ErrorState Title="@(_errorTitle ?? L["Customers_NotFoundTitle"])" Message="@(_errorMessage ?? L["Customers_NotFoundMessage"])" />
-        <Button Variant="ButtonVariant.Secondary" OnClick="GoDetail">@L["Customers_BackToDetail"]</Button>
     </Page>
 }
 else
 {
     var canEdit = Capabilities.IsAllowed(UtangCapability.EditCustomer);
 <Page>
-    <PageHeader Title="@L["Customers_EditTitle"]" Subtitle="@_customer.DisplayName">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoDetail">@L["Customers_Cancel"]</Button>
-        </Actions>
-    </PageHeader>
+    <PageHeader Title="@L["Customers_EditTitle"]" Subtitle="@_customer.DisplayName" />
 
     @if (_entityState == LocalEntitySyncState.Conflict || _showConflictAlert)
     {
@@ -71,6 +69,7 @@ else
                   OnSave="SaveAsync"
                   OnCancel="GoDetail" />
 </Page>
+}
 }
 
 @code {

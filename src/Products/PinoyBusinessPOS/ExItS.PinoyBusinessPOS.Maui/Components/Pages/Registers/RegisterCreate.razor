@@ -7,6 +7,8 @@
 @inject IConnectivityService Connectivity
 @inject IStringLocalizer<PosResources> L
 
+<StoreHeaderBack Href="/registers" />
+
 @if (!_ready)
 {
     <Page><Spinner /></Page>
@@ -16,11 +18,7 @@ else
     var canManage = Capabilities.IsAllowed(UtangCapability.ManageRegisters);
     var blocked = !canManage || _isOffline;
 <Page>
-    <PageHeader Title="@L["Registers_CreateTitle"]" Subtitle="@L["Registers_CreateSubtitle"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Registers_Cancel"]</Button>
-        </Actions>
-    </PageHeader>
+    <PageHeader Title="@L["Registers_CreateTitle"]" Subtitle="@L["Registers_CreateSubtitle"]" />
 
     @if (_isOffline)
     {
@@ -40,6 +38,7 @@ else
         <TextInput Label="@L["Registers_Name"]" Value="@_name" ValueChanged="v => _name = v" Disabled="@blocked" />
         <TextInput Label="@L["Registers_Description"]" Value="@_description" ValueChanged="v => _description = v" Disabled="@blocked" />
         <FormActions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Registers_Cancel"]</Button>
             <Button Variant="ButtonVariant.Primary" IsLoading="@_saving" Disabled="@blocked" OnClick="SaveAsync">@L["Registers_Save"]</Button>
         </FormActions>
     </Section>

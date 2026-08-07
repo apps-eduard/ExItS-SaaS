@@ -12,14 +12,13 @@
 {
     <Page><Spinner /></Page>
 }
-else if (!_canView)
+else
+{
+<StoreHeaderBack Href="@($"/customers/{CustomerId:D}")" />
+@if (!_canView)
 {
     <Page>
-        <PageHeader Title="@L["Receipt_Title"]" Subtitle="@L["Receipt_Subtitle"]">
-            <Actions>
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Customers_BackToDetail"]</Button>
-            </Actions>
-        </PageHeader>
+        <PageHeader Title="@L["Receipt_Title"]" Subtitle="@L["Receipt_Subtitle"]" />
         <Alert Tone="AlertTone.Warning" Title="@L["Access_RestrictedTitle"]" Message="@L["Access_RestrictedMessage"]" />
     </Page>
 }
@@ -31,7 +30,6 @@ else if (_receipt is null)
 {
     <Page>
         <ErrorState Title="@(_errorTitle ?? L["Receipt_NotFoundTitle"])" Message="@(_errorMessage ?? L["Receipt_NotFoundMessage"])" RetryLabel="@L["Api_Retry"]" OnRetry="LoadAsync" />
-        <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Customers_BackToDetail"]</Button>
     </Page>
 }
 else
@@ -41,7 +39,6 @@ else
     <PageHeader Title="@L["Receipt_Title"]" Subtitle="@L["Receipt_Subtitle"]">
         <Actions>
             <Button Variant="ButtonVariant.Secondary" OnClick="GoPayment">@L["Payment_View"]</Button>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Customers_BackToDetail"]</Button>
         </Actions>
     </PageHeader>
 
@@ -108,6 +105,7 @@ else
         <Button Variant="ButtonVariant.Primary" IsLoading="@_sharing" OnClick="ShareAsync">@L["Receipt_Share"]</Button>
     </FormActions>
 </Page>
+}
 }
 
 @code {
@@ -218,6 +216,5 @@ else
         return sb.ToString();
     }
 
-    private void GoBack() => Nav.NavigateTo($"/customers/{CustomerId:D}");
     private void GoPayment() => Nav.NavigateTo($"/customers/{CustomerId:D}/repayments/{RepaymentId:D}");
 }

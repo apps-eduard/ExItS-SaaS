@@ -7,6 +7,8 @@
 @inject IConnectivityService Connectivity
 @inject IStringLocalizer<PosResources> L
 
+<StoreHeaderBack Href="/registers" />
+
 @if (!_ready)
 {
     <Page><Spinner /></Page>
@@ -16,7 +18,6 @@ else if (_register is null)
     <Page>
         <PageHeader Title="@L["Registers_Title"]" />
         <Alert Tone="AlertTone.Danger" Title="@L["Registers_ErrorTitle"]" Message="@(_errorMessage ?? L["Registers_NotFound"])" />
-        <Button Variant="ButtonVariant.Secondary" OnClick="GoList">@L["Registers_BackToList"]</Button>
     </Page>
 }
 else
@@ -26,7 +27,6 @@ else
 <Page>
     <PageHeader Title="@_register.Name" Subtitle="@_register.RegisterCode">
         <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoList">@L["Registers_BackToList"]</Button>
             @if (canManage)
             {
                 <Button Variant="ButtonVariant.Secondary" Disabled="@blocked" OnClick="GoEdit">@L["Registers_Edit"]</Button>
@@ -224,7 +224,6 @@ else
     private bool blockedAction() =>
         _isOffline || !Capabilities.IsAllowed(UtangCapability.ManageRegisters);
 
-    private void GoList() => Nav.NavigateTo("/registers");
     private void GoEdit() => Nav.NavigateTo($"/registers/{RegisterId:D}/edit");
 
     private static bool IsMainRegister(PosRegisterDto register) =>

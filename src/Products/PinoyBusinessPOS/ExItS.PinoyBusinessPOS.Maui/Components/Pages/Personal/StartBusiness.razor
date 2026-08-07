@@ -7,13 +7,9 @@
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
+<StoreHeaderBack Href="/personal" />
 <Page>
-    <PageHeader Title="@L["StartBusiness_Title"]" Subtitle="@L["StartBusiness_Subtitle"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Ghost" OnClick="GoExplore">@L["Personal_ExplorePosBack"]</Button>
-            <Button Variant="ButtonVariant.Ghost" OnClick="GoPersonal">@L["Personal_BackHome"]</Button>
-        </Actions>
-    </PageHeader>
+    <PageHeader Title="@L["StartBusiness_Title"]" Subtitle="@L["StartBusiness_Subtitle"]" />
 
     @if (!_ready)
     {
@@ -193,6 +189,5 @@
     }
 
     private void GoExplore() => Nav.NavigateTo("/personal/explore-pos");
-    private void GoPersonal() => Nav.NavigateTo("/personal");
     private void GoSignIn() => Nav.NavigateTo("/signin");
 }

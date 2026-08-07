@@ -7,14 +7,11 @@
 @inject IStringLocalizer<PosResources> L
 
 <div class="pos-staff">
+    <StoreHeaderBack Href="/org" />
     <Page>
         <PageHeader Title="@L["Org_StaffTitle"]" Subtitle="@L["Org_StaffSubtitle"]" />
 
-        <div class="pos-action-grid pos-action-grid--two pos-staff__actions-bar" role="group" aria-label="@L["Org_StaffTitle"]">
-            <button type="button" class="pos-action-tile pos-staff__back" @onclick="GoBack">
-                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("back")</span>
-                <span class="pos-action-tile__label">@L["Common_Back"]</span>
-            </button>
+        <div class="pos-action-grid pos-action-grid--single pos-staff__actions-bar" role="group" aria-label="@L["Org_StaffTitle"]">
             <button type="button"
                     class="pos-action-tile pos-action-tile--primary"
                     @onclick="GoInvite">
@@ -431,6 +428,4 @@
 
         Nav.NavigateTo($"/org/staff/assign?{qs}");
     }
-
-    private void GoBack() => Nav.NavigateTo("/org");
 }

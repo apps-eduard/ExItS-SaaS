@@ -1,0 +1,68 @@
+@implements IDisposable
+@inject StoreHeaderState HeaderState
+
+@*
+  Invisible helper: enables the standard top-bar ‹ back control for nested pages.
+  Place once per page (outside mutually exclusive branches when possible).
+  Prefer an explicit parent Href over relying on URL-segment fallback.
+*@
+
+@code {
+    /// <summary>Parent route for hierarchical back (e.g. "/reports", "/customers/{id}").</summary>
+    [Parameter] public string? Href { get; set; }
+
+    /// <summary>Optional custom back action (wizard steps, dynamic parents). Wins over Href.</summary>
+    [Parameter] public Func<Task>? Handler { get; set; }
+
+    private int _claim;
+    private bool _active;
+    private string? _appliedHref;
+    private Func<Task>? _appliedHandler;
+
+    protected override void OnParametersSet()
+    {
+        if (!_active)
+        {
+            return;
+        }
+
+        if (ReferenceEquals(_appliedHandler, Handler)
+            && string.Equals(_appliedHref, Href, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        Apply();
+    }
+
+    protected override void OnInitialized() => Apply();
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        // Re-assert after first paint in case lifecycle ordering raced with shell navigation.
+        if (firstRender && _active)
+        {
+            Apply();
+        }
+    }
+
+    private void Apply()
+    {
+        _claim = HeaderState.SetBack(Href, Handler);
+        _appliedHref = Href;
+        _appliedHandler = Handler;
+        _active = true;
+    }
+
+    public void Dispose()
+    {
+        if (!_active)
+        {
+            return;
+        }
+
+        HeaderState.ReleaseBack(_claim);
+        _active = false;
+        _claim = 0;
+    }
+}

@@ -15,7 +15,10 @@
 {
     <Page><Spinner /></Page>
 }
-else if (_loading)
+else
+{
+<StoreHeaderBack Href="@($"/customers/{CustomerId:D}")" />
+@if (_loading)
 {
     <Page><Spinner /><span>@L["Payment_Loading"]</span></Page>
 }
@@ -38,7 +41,6 @@ else
         <Actions>
             <Button Variant="ButtonVariant.Secondary" OnClick="GoLedger">@L["Ledger_Open"]</Button>
             <Button Variant="ButtonVariant.Secondary" Disabled="@(!canReceipt)" OnClick="GoReceipt">@L["Receipt_Open"]</Button>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoBack">@L["Customers_BackToDetail"]</Button>
         </Actions>
     </PageHeader>
 
@@ -111,6 +113,7 @@ else
                    IsLoading="@_acting"
                    OnConfirm="ReverseAsync" />
 </Page>
+}
 }
 
 @code {
@@ -248,7 +251,6 @@ else
         }
     }
 
-    private void GoBack() => Nav.NavigateTo($"/customers/{CustomerId:D}");
     private void GoLedger() => Nav.NavigateTo($"/customers/{CustomerId:D}/ledger");
     private void GoReceipt() => Nav.NavigateTo($"/customers/{CustomerId:D}/repayments/{RepaymentId:D}/receipt");
 }

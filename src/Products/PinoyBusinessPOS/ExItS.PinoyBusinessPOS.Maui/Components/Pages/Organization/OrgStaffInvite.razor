@@ -5,15 +5,9 @@
 @inject IStringLocalizer<PosResources> L
 
 <div class="pos-invite">
+    <StoreHeaderBack Href="/org/staff" />
     <Page>
         <header class="pos-invite__header">
-            <button type="button"
-                    class="pos-invite__back"
-                    disabled="@_busy"
-                    @onclick="GoBack">
-                <span aria-hidden="true">‹</span>
-                <span>@L["Common_Back"]</span>
-            </button>
             <h1 class="pos-invite__title">@L["Org_InviteTitle"]</h1>
             <p class="pos-invite__subtitle">@L["Org_InviteSubtitle"]</p>
             @if (!string.IsNullOrWhiteSpace(CurrentUser.Session?.OrganizationDisplayName))
@@ -99,12 +93,6 @@
 <style>
     .pos-invite { width: 100%; }
     .pos-invite__header { margin-bottom: var(--exits-space-3, 0.75rem); }
-    .pos-invite__back {
-        display: inline-flex; align-items: center; gap: 0.15rem;
-        margin: 0 0 0.35rem; padding: 0.15rem 0; border: 0; background: transparent;
-        color: var(--exits-accent, #1f6b4a); font-size: 0.875rem; font-weight: 600; cursor: pointer;
-    }
-    .pos-invite__back:disabled { opacity: 0.45; cursor: not-allowed; }
     .pos-invite__title {
         margin: 0; font-size: 1.25rem; font-weight: 700; line-height: 1.25;
         color: var(--exits-text, #15201a);
@@ -241,6 +229,4 @@
 
     private void GoResolveExItsId() =>
         Nav.NavigateTo("/personal/resolve-user?purpose=staff-invite&return=/org/staff/invite");
-
-    private void GoBack() => Nav.NavigateTo("/org/staff");
 }

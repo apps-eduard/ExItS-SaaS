@@ -15,6 +15,7 @@
 else
 {
     var canCreate = Capabilities.IsAllowed(UtangCapability.CreateCustomer);
+<StoreHeaderBack Href="@HeaderBackHref" />
 <div class="pos-customer-create">
     <Page>
         <PageHeader Title="@L["Customers_CreateTitle"]" Subtitle="@L["Customers_CreateSubtitle"]" />
@@ -213,6 +214,11 @@ else
 
     private void GoResolveExItsId() =>
         Nav.NavigateTo($"/personal/resolve-user?purpose=customer&return={Uri.EscapeDataString(BuildCustomerCreateReturn())}");
+
+    private string HeaderBackHref =>
+        !string.IsNullOrWhiteSpace(ReturnPath) && ReturnPath.StartsWith("/", StringComparison.Ordinal)
+            ? ReturnPath!
+            : "/customers";
 
     private void GoBack()
     {

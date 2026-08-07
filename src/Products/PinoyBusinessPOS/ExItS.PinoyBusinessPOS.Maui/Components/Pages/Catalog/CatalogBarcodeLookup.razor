@@ -8,6 +8,8 @@
 @inject IConnectivityService Connectivity
 @inject IStringLocalizer<PosResources> L
 
+<StoreHeaderBack Href="/catalog" />
+
 @if (!_ready)
 {
     <Page><Spinner /></Page>
@@ -17,15 +19,6 @@ else
 <div class="pos-barcode-lookup">
     <Page>
         <PageHeader Title="@L["Catalog_Lookup_Title"]" Subtitle="@L["Catalog_Lookup_Subtitle"]" />
-
-        <div class="pos-action-grid pos-action-grid--single pos-barcode-lookup__nav" role="group">
-            <button type="button"
-                    class="pos-action-tile"
-                    @onclick="GoCatalog">
-                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("back")</span>
-                <span class="pos-action-tile__label">@L["Catalog_BackToList"]</span>
-            </button>
-        </div>
 
         @if (_isOffline)
         {
@@ -201,8 +194,6 @@ else
             _searching = false;
         }
     }
-
-    private void GoCatalog() => Nav.NavigateTo("/catalog");
 
     private void GoProduct()
     {

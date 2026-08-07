@@ -1,5 +1,4 @@
 @page "/sales/{SaleId:guid}"
-@implements IDisposable
 @using ExItS.PinoyBusinessPOS.Application.Payments
 @using ExItS.PinoyBusinessPOS.Maui.Services
 @inject NavigationManager Nav
@@ -13,14 +12,16 @@
 @inject IUtangCapabilityEvaluator Capabilities
 @inject ApiStatusLocalizer ApiLocalizer
 @inject IConnectivityService Connectivity
-@inject StoreHeaderState HeaderState
 @inject IStringLocalizer<PosResources> L
 
 @if (!_ready)
 {
     <Page><Spinner /></Page>
 }
-else if (_loading)
+else
+{
+<StoreHeaderBack Href="/sales" />
+@if (_loading)
 {
     <Page><Spinner /><span>@L["Sales_Loading"]</span></Page>
 }
@@ -320,6 +321,7 @@ else
 </Page>
 </div>
 }
+}
 
 @code {
     [Parameter] public Guid SaleId { get; set; }
@@ -329,7 +331,6 @@ else
     private bool _acting;
     private bool _confirmVoid;
     private bool _isOffline;
-    private bool _headerInner;
     private PosSaleDto? _sale;
     private string? _voidReason;
     private string? _errorTitle;
@@ -347,8 +348,6 @@ else
             return;
         }
 
-        HeaderState.EnterInner("/sales");
-        _headerInner = true;
         _ready = true;
         await LoadAsync();
     }
@@ -517,14 +516,5 @@ else
         }
 
         return null;
-    }
-
-    public void Dispose()
-    {
-        if (_headerInner)
-        {
-            HeaderState.ExitInner();
-            _headerInner = false;
-        }
     }
 }

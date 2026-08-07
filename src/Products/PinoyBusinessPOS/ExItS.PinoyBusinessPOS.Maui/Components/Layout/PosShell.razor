@@ -10,13 +10,15 @@
 @inject SellingModeService SellingMode
 @inject RoleHomeResolver RoleHome
 @inject ICurrentUserContext CurrentUser
-@inject StoreHeaderState HeaderState
 @inject IStringLocalizer<PosResources> L
 
 <a class="skip-link" href="#pos-main">@L["Nav_SkipToContent"]</a>
 
 <div class="exds-root pos-shell" data-layout="phone" @key="_cultureEpoch">
-    <StoreHeader @ref="_storeHeader" Identity="StoreHeaderIdentity.Organization" ShowSync="true" />
+    <StoreHeader @ref="_storeHeader"
+                 Identity="StoreHeaderIdentity.Organization"
+                 ShowSync="true"
+                 ShowPersonalHome="true" />
 
     <main class="pos-content" id="pos-main" tabindex="-1" @onclick="CloseOverlays">
         @Body
@@ -109,7 +111,6 @@
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
-        HeaderState.Reset();
         TryExitSellingModeOnReturn(e.Location);
 
         // Cheap guard: only re-resolve when effective POS access actually flipped.
