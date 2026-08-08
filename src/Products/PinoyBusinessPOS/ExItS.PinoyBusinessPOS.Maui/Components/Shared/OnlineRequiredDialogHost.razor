@@ -1,24 +1,50 @@
 @implements IDisposable
 @inject OnlineRequiredGuard Guard
+@inject IPosSyncStatusService SyncStatus
 @inject IStringLocalizer<PosResources> L
 
 <Dialog Visible="@Guard.IsDialogVisible"
-        Title="@L["OnlineRequired_Title"]"
+        Title="@TitleText"
         OnClose="DismissAsync">
     <ChildContent>
-        <p>@L["OnlineRequired_Message"]</p>
+        <p>@MessageText</p>
     </ChildContent>
     <Footer>
+        @if (Guard.ShowRetryAction)
+        {
+            <Button Variant="ButtonVariant.Secondary" OnClick="RetryAsync">@L["SyncStatus_RetryConnection"]</Button>
+        }
         <Button Variant="ButtonVariant.Primary" OnClick="DismissAsync">@L["Common_OK"]</Button>
     </Footer>
 </Dialog>
 
 @code {
+    private string TitleText => L[Guard.DialogTitleKey];
+
+    private string MessageText
+    {
+        get
+        {
+            var localized = L[Guard.DialogMessageKey].Value;
+            return string.IsNullOrWhiteSpace(Guard.DialogMessageArg)
+                ? localized
+                : string.Format(localized, Guard.DialogMessageArg);
+        }
+    }
+
     protected override void OnInitialized() => Guard.Changed += OnChangedAsync;
 
     private Task OnChangedAsync() => InvokeAsync(StateHasChanged);
 
     private async Task DismissAsync() => await Guard.DismissAsync();
+
+    private async Task RetryAsync()
+    {
+        if (await Guard.RetryConnectionAsync())
+        {
+            SyncStatus.Refresh();
+        }
+    }
 
     public void Dispose() => Guard.Changed -= OnChangedAsync;
 }

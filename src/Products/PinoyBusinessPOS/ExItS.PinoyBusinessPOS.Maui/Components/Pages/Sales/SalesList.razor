@@ -24,7 +24,7 @@ else
                 <h1 class="pos-sales__title">@L["Sales_Title"]</h1>
                 <button type="button"
                         class="pos-sales__new"
-                        disabled="@(!canCreate || _isOffline)"
+                        disabled="@(!canCreate)"
                         @onclick="GoNew">
                     <span class="pos-sales__new-icon" aria-hidden="true">@IconGlyphs.Get("plus")</span>
                     <span>@L["Sales_New"]</span>

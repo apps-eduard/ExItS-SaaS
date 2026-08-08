@@ -469,7 +469,7 @@ else
         _errorMessage = null;
         try
         {
-            if (!await OnlineRequired.EnsureOnlineAsync())
+            if (!await OnlineRequired.EnsureOnlineForActionAsync(PosOfflineActionKeys.CatalogImport))
             {
                 _isOffline = true;
                 return;

@@ -12,6 +12,7 @@
 @inject IAuthenticationService Auth
 @inject NavigationGate Gate
 @inject NavigationManager Nav
+@inject OnlineRequiredGuard OnlineRequired
 @inject IUtangCapabilityEvaluator Capabilities
 @inject IStringLocalizer<PosResources> L
 
@@ -251,7 +252,18 @@
         }
     }
 
-    private void GoSwitchOrg() => Nav.NavigateTo("/organization-select");
+    private async Task GoSwitchOrg()
+    {
+        var orgName = CurrentUser.Session?.OrganizationDisplayName;
+        if (!await OnlineRequired.EnsureOnlineForActionAsync(
+                PosOfflineActionKeys.SwitchOrganization,
+                orgName))
+        {
+            return;
+        }
+
+        Nav.NavigateTo("/organization-select");
+    }
 
     private void GoDevOffline() => Nav.NavigateTo("/dev/offline-foundation");
 

@@ -2,6 +2,7 @@
 @using ExItS.DesignSystem.Components.Internal
 @inject NavigationManager Nav
 @inject NavigationGate Gate
+@inject OfflineAwareNavigation OfflineNav
 @inject IPosCustomerClient Customers
 @inject ICurrentUserContext CurrentUser
 @inject IUtangCapabilityEvaluator Capabilities
@@ -771,9 +772,15 @@ else
     private void GoEdit() => Nav.NavigateTo($"/customers/{CustomerId:D}/edit");
     private void GoAddCredit() => Nav.NavigateTo($"/customers/{CustomerId:D}/credit/new");
     private void GoAddPayment() => Nav.NavigateTo($"/customers/{CustomerId:D}/repayments/new");
-    private void GoLedger() => Nav.NavigateTo($"/customers/{CustomerId:D}/ledger");
-    private void GoOverdue() => Nav.NavigateTo($"/customers/{CustomerId:D}/overdue");
-    private void GoStatement() => Nav.NavigateTo($"/customers/{CustomerId:D}/statement");
+    private Task GoLedger() => OfflineNav.NavigateForActionAsync(
+        PosOfflineActionKeys.CustomerLedger,
+        $"/customers/{CustomerId:D}/ledger");
+    private Task GoOverdue() => OfflineNav.NavigateForActionAsync(
+        PosOfflineActionKeys.CustomerOverdue,
+        $"/customers/{CustomerId:D}/overdue");
+    private Task GoStatement() => OfflineNav.NavigateForActionAsync(
+        PosOfflineActionKeys.CustomerStatement,
+        $"/customers/{CustomerId:D}/statement");
     private void GoCreditDetail(Guid entryId) => Nav.NavigateTo($"/customers/{CustomerId:D}/credit/{entryId:D}");
     private void GoRepaymentDetail(Guid repaymentId) => Nav.NavigateTo($"/customers/{CustomerId:D}/repayments/{repaymentId:D}");
 }

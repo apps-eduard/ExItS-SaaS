@@ -163,7 +163,7 @@ else
 
     private async Task GoNewAsync()
     {
-        if (!await OnlineRequired.EnsureOnlineAsync())
+        if (!await OnlineRequired.EnsureOnlineForActionAsync(PosOfflineActionKeys.PermissionsManage))
         {
             return;
         }

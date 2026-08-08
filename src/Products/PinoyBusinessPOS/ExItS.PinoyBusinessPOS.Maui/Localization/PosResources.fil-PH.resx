@@ -249,6 +249,7 @@
   <data name="Offline_WorkingContinue" xml:space="preserve"><value>Magpatuloy offline</value></data>
   <data name="OnlineRequired_Title" xml:space="preserve"><value>Kailangan ng internet</value></data>
   <data name="OnlineRequired_Message" xml:space="preserve"><value>Offline ka ngayon. Kailangan ng internet ang aksyong ito. Ligtas ang offline work mo at magsi-sync kapag online na ulit.</value></data>
+  <data name="OnlineRequired_OrgSwitchMessage" xml:space="preserve"><value>Offline ka ngayon sa {0}. Kumonekta muna sa internet bago magpalit ng organization para ma-verify ang access at ma-synchronize ang tamang organization data.</value></data>
   <data name="SyncStatus_OfflineWaiting" xml:space="preserve"><value>Offline • {0} waiting to sync</value></data>
   <data name="SyncStatus_OfflineDeviceStored" xml:space="preserve"><value>Naka-store sa device na ito ang offline work mo.</value></data>
   <data name="SyncStatus_RetryConnection" xml:space="preserve"><value>Subukan ulit ang connection</value></data>

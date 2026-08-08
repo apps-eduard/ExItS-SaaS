@@ -10,6 +10,7 @@
 @inject SellingModeService SellingMode
 @inject RoleHomeResolver RoleHome
 @inject ICurrentUserContext CurrentUser
+@inject OfflineAwareNavigation OfflineNav
 @inject IStringLocalizer<PosResources> L
 
 <a class="skip-link" href="#pos-main">@L["Nav_SkipToContent"]</a>
@@ -34,10 +35,13 @@
         </NavLink>
         @if (_hasPosAccess)
         {
-            <NavLink class="pos-nav-item" ActiveClass="pos-nav-item--active" href="/catalog">
+            <a class="pos-nav-item @(IsCatalogActive ? "pos-nav-item--active" : null)"
+               href="/catalog"
+               @onclick="GoCatalogAsync"
+               @onclick:preventDefault>
                 <span class="pos-nav-item__icon" aria-hidden="true">@IconGlyphs.Get("products")</span>
                 <span class="pos-nav-item__label">@L["Nav_Products"]</span>
-            </NavLink>
+            </a>
             <NavLink class="pos-nav-item" ActiveClass="pos-nav-item--active" href="/sales">
                 <span class="pos-nav-item__icon" aria-hidden="true">@IconGlyphs.Get("sales")</span>
                 <span class="pos-nav-item__label">@L["Nav_Sales"]</span>
@@ -62,6 +66,17 @@
     private bool _hasPosAccess = true;
     private StoreHeader? _storeHeader;
 
+    private bool IsCatalogActive
+    {
+        get
+        {
+            var path = "/" + Nav.ToBaseRelativePath(Nav.Uri).Split('?', '#')[0].Trim('/');
+            return path.Equals("/catalog", StringComparison.OrdinalIgnoreCase)
+                   || path.StartsWith("/catalog/", StringComparison.OrdinalIgnoreCase)
+                   || path.Equals("/products", StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
     protected override void OnInitialized()
     {
         ThemeCtl.Changed += OnChangedAsync;
@@ -74,6 +89,8 @@
         Nav.LocationChanged += OnLocationChanged;
         _hasPosAccess = CurrentUser.HasPosAccess;
     }
+
+    private Task GoCatalogAsync() => OfflineNav.NavigateAsync("/catalog");
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -120,6 +137,10 @@
         if (_hasPosAccess != CurrentUser.HasPosAccess)
         {
             _ = RefreshHomeDestinationAsync();
+        }
+        else
+        {
+            _ = InvokeAsync(StateHasChanged);
         }
     }
 

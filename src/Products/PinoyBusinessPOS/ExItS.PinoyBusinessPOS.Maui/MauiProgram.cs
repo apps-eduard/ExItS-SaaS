@@ -124,7 +124,9 @@ public static class MauiProgram
         services.AddSingleton<IOfflineOperatingGrantStore, OfflineOperatingGrantStore>();
         services.AddSingleton<IOfflineOperatingGrantService, OfflineOperatingGrantService>();
         services.AddSingleton<OfflineSessionUxState>();
+        services.AddSingleton<IPosOfflineCapabilityPolicy, PosOfflineCapabilityPolicy>();
         services.AddSingleton<OnlineRequiredGuard>();
+        services.AddSingleton<OfflineAwareNavigation>();
         services.AddPinoyBusinessPosLocalStore();
         services.AddSingleton<ProtectedShellAccessPolicy>();
         services.AddSingleton<IProtectedShellAccessPolicy>(sp => sp.GetRequiredService<ProtectedShellAccessPolicy>());

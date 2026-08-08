@@ -1076,7 +1076,7 @@ else
         if (_isOffline
             && !string.Equals(next, PosSaleOptions.CashPaymentMethod, StringComparison.OrdinalIgnoreCase))
         {
-            await OnlineRequired.EnsureOnlineAsync();
+            await OnlineRequired.EnsureOnlineForActionAsync(PosOfflineActionKeys.SaleNonCashPayment);
             return;
         }
 

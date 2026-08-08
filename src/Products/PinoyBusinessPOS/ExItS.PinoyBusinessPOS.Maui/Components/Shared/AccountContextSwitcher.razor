@@ -5,6 +5,7 @@
 @inject IPlatformAccessClient Platform
 @inject SellingModeService SellingMode
 @inject NavigationManager Nav
+@inject OnlineRequiredGuard OnlineRequired
 @inject IStringLocalizer<PosResources> L
 
 @if (_ready && _authenticated && (_canUsePersonal || _organizations.Count > 0))
@@ -154,6 +155,14 @@
             return;
         }
 
+        var orgName = CurrentUser.Session?.OrganizationDisplayName;
+        if (!await OnlineRequired.EnsureOnlineForActionAsync(
+                PosOfflineActionKeys.SwitchToPersonal,
+                orgName))
+        {
+            return;
+        }
+
         _busy = true;
         _error = null;
         try
@@ -179,6 +188,11 @@
         // Personal → Organization always goes through Select Organization (role / workspace chooser).
         if (IsPersonalActive)
         {
+            if (!await OnlineRequired.EnsureOnlineForActionAsync(PosOfflineActionKeys.SwitchOrganization))
+            {
+                return;
+            }
+
             SellingMode.Clear();
             Nav.NavigateTo("/organization-select", replace: true);
             return;
@@ -187,6 +201,14 @@
         if (CurrentUser.Session?.OrganizationId == organizationId)
         {
             Nav.NavigateTo(CurrentUser.HasPosAccess ? "/" : "/org");
+            return;
+        }
+
+        var orgName = CurrentUser.Session?.OrganizationDisplayName;
+        if (!await OnlineRequired.EnsureOnlineForActionAsync(
+                PosOfflineActionKeys.SwitchOrganization,
+                orgName))
+        {
             return;
         }
 

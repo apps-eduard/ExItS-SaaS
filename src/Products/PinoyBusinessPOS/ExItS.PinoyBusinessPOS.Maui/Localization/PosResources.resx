@@ -249,6 +249,7 @@
   <data name="Offline_WorkingContinue" xml:space="preserve"><value>Continue offline</value></data>
   <data name="OnlineRequired_Title" xml:space="preserve"><value>Internet required</value></data>
   <data name="OnlineRequired_Message" xml:space="preserve"><value>You're currently offline. This action requires an internet connection. Your offline work is safe and will sync when you're back online.</value></data>
+  <data name="OnlineRequired_OrgSwitchMessage" xml:space="preserve"><value>You're currently working offline in {0}. Connect to the internet before switching organizations so ExItS can verify your access and synchronize the correct organization data.</value></data>
   <data name="SyncStatus_OfflineWaiting" xml:space="preserve"><value>Offline • {0} waiting to sync</value></data>
   <data name="SyncStatus_OfflineDeviceStored" xml:space="preserve"><value>Your offline work is stored on this device.</value></data>
   <data name="SyncStatus_RetryConnection" xml:space="preserve"><value>Retry connection</value></data>

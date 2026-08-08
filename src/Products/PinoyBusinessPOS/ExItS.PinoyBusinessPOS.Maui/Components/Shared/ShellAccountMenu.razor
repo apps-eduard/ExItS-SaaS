@@ -7,6 +7,8 @@
 @inject IUtangCapabilityEvaluator Capabilities
 @inject SellingModeService SellingMode
 @inject NavigationManager Nav
+@inject OfflineAwareNavigation OfflineNav
+@inject OnlineRequiredGuard OnlineRequired
 @inject IStringLocalizer<PosResources> L
 
 <div class="pos-topbar__overflow" @onclick:stopPropagation="true">
@@ -195,12 +197,20 @@
     private async Task GoDashboardAsync()
     {
         await CloseAsync();
-        Nav.NavigateTo("/dashboard");
+        await OfflineNav.NavigateAsync("/dashboard");
     }
 
     private async Task GoSwitchOrgAsync()
     {
         await CloseAsync();
+        var orgName = CurrentUser.Session?.OrganizationDisplayName;
+        if (!await OnlineRequired.EnsureOnlineForActionAsync(
+                PosOfflineActionKeys.SwitchOrganization,
+                orgName))
+        {
+            return;
+        }
+
         SellingMode.Clear();
         Nav.NavigateTo("/organization-select");
     }
@@ -208,6 +218,14 @@
     private async Task GoPersonalAsync()
     {
         await CloseAsync();
+        var orgName = CurrentUser.Session?.OrganizationDisplayName;
+        if (!await OnlineRequired.EnsureOnlineForActionAsync(
+                PosOfflineActionKeys.SwitchToPersonal,
+                orgName))
+        {
+            return;
+        }
+
         SellingMode.Clear();
         var result = await Auth.SwitchToPersonalAsync();
         if (result.Succeeded)
