@@ -71,13 +71,19 @@ UI: Settings (online) for optional PIN change; `/offline-pin-setup` for **mandat
 | Existing-user migration | Existing users who never enrolled a PIN are gated the same way on next online POS entry |
 | Use PIN on Sign-in | Shown only when enrolled PIN + usable offline operate grant/session identity exist on this device |
 | Offline Sign-in | Use PIN is primary; username/password and Google/Facebook placeholders show Internet-required messaging (do not fake auth) |
+| Progressive online boot/login | Device reports **no network** → never wait on online restore; offer PIN immediately when eligible. Device reports network → start online restore/login with normal loading; after **~3s** without response show **Still connecting…** + **Continue waiting** + **Use PIN instead** (PIN only if eligible). Hard timeout uses `PosApi:TimeoutSeconds` (typically **15s**). Choosing PIN cancels/ignores the pending online attempt (no race). Soft prompt does **not** declare the device offline. |
+| Unreachable vs denied | Transport/timeout/unavailable → PIN fallback when eligible. Explicit auth/access denial / invalid credentials → normal error path; do **not** auto offline unlock. |
 | Offline warning | Once per unlocked offline session: “You're working offline” + device-data warning → Continue offline |
 | Top-bar sync | `ShellSyncStatus`: Offline • N waiting; panel shows device storage copy + Retry connection; Syncing… then Online / All changes synced |
 | Online-required guard | Shared `OnlineRequiredGuard` + dialog; stays in context; does **not** destroy offline session or bounce to Reconnect for ordinary online-only actions |
 | Lock vs Sign out | **Lock** keeps grant + PIN, returns to PIN unlock. **Sign out** clears operate grant (PIN verifier may remain); next auth requires internet |
 | Google / Facebook | UI-ready placeholders only (shared provider button style + icons). **Real OAuth is not implemented** and is explicitly deferred |
 
+**Root cause of prior endless Boot spinner:** `/` (`Boot.razor`) awaited `NavigationGate.ResolveStartRouteAsync` → `RestoreSessionAsync` HTTP introspect with no progressive UI when the server was slow/unreachable while the OS still reported connectivity.
+
 PIN remains per **user on this device**, not per organization. Offline grant/context still determines org, role, permissions, and expiry.
+
+Physical Android validation of this progressive login UX: **not completed** in this change (Device Verified remains **No**).
 
 ## 7. Device / org / permission binding
 
@@ -159,6 +165,7 @@ Staff/org admin, billing, global catalog import / business-template import, supp
 |---|---|
 | Grant / PIN / cold-start auth | `OfflineOperatingGrantServiceTests`, cold-start cases in `AuthenticationServiceTests` |
 | Auth UX layer (enrollment / Use PIN / Lock / warning / guard) | `AuthOfflineUxLayerTests` |
+| Progressive online login / Boot soft prompt / PIN race | `OnlineLoginProgressControllerTests` |
 | Offline home without permissions HTTP | `RoleHomeResolverTests` (grant snapshot; zero `GetEffective` calls) |
 | Local cash sale | `LocalCashSaleOfflineStoreTests` (persist, idempotency, restart, sync-failure survival) |
 | Sales offline architecture | `PosSalesScopeArchitectureTests` (cash offline path allowed) |
