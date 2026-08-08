@@ -356,6 +356,10 @@ public sealed class RoleHomeResolverTests
 
         public Task ClearAsync(CancellationToken ct = default) => Task.CompletedTask;
 
+        public void LockThisProcess()
+        {
+        }
+
         public Task<bool> HasPinConfiguredAsync(CancellationToken ct = default) => Task.FromResult(true);
 
         public Task<OfflinePinSetupResult> SetPinAsync(string pin, CancellationToken ct = default) =>

@@ -61,7 +61,23 @@ Durable grant (`OfflineOperatingGrant`) in secure storage:
 | Lockout | Temporary `LockedUntilUtc`; does **not** delete or extend the operate grant |
 | Success | Resets attempt counter; unlock is process-scoped (`IsUnlockedThisProcess`) |
 
-UI: Settings (online) for PIN setup; `/offline-pin` for unlock; Reconnect surfaces PIN offer when grant is valid.
+UI: Settings (online) for optional PIN change; `/offline-pin-setup` for **mandatory** enrollment after online auth + setup when no PIN exists; `/offline-pin` for unlock; Sign-in surfaces **Use PIN** when eligible; Reconnect surfaces PIN offer when grant is valid.
+
+## 6b. Auth UX layer (mandatory PIN + login readiness)
+
+| Topic | Behavior |
+|---|---|
+| Mandatory PIN enrollment | After successful online auth and Personal/Org/setup completion, if this device has no PIN and a valid operate grant exists → force `/offline-pin-setup` (no Skip / Maybe later) |
+| Existing-user migration | Existing users who never enrolled a PIN are gated the same way on next online POS entry |
+| Use PIN on Sign-in | Shown only when enrolled PIN + usable offline operate grant/session identity exist on this device |
+| Offline Sign-in | Use PIN is primary; username/password and Google/Facebook placeholders show Internet-required messaging (do not fake auth) |
+| Offline warning | Once per unlocked offline session: “You're working offline” + device-data warning → Continue offline |
+| Top-bar sync | `ShellSyncStatus`: Offline • N waiting; panel shows device storage copy + Retry connection; Syncing… then Online / All changes synced |
+| Online-required guard | Shared `OnlineRequiredGuard` + dialog; stays in context; does **not** destroy offline session or bounce to Reconnect for ordinary online-only actions |
+| Lock vs Sign out | **Lock** keeps grant + PIN, returns to PIN unlock. **Sign out** clears operate grant (PIN verifier may remain); next auth requires internet |
+| Google / Facebook | UI-ready placeholders only (shared provider button style + icons). **Real OAuth is not implemented** and is explicitly deferred |
+
+PIN remains per **user on this device**, not per organization. Offline grant/context still determines org, role, permissions, and expiry.
 
 ## 7. Device / org / permission binding
 
@@ -132,7 +148,8 @@ Staff/org admin, billing, global catalog import / business-template import, supp
 | Event | Effect |
 |---|---|
 | Explicit server access denial / inactive | Clear operate grant; protected shell denied |
-| Logout | Clear grant (PIN verifier may remain for reuse after next online establish) |
+| Logout | Clear grant (PIN verifier may remain for reuse after next online establish); next authentication requires internet |
+| Lock | Keep grant + PIN; clear process unlock; return to PIN unlock |
 | Grant expiry | PIN unlock denied (`Offline_GrantExpired`) |
 | Device id mismatch | PIN unlock denied |
 
@@ -141,10 +158,13 @@ Staff/org admin, billing, global catalog import / business-template import, supp
 | Area | Evidence |
 |---|---|
 | Grant / PIN / cold-start auth | `OfflineOperatingGrantServiceTests`, cold-start cases in `AuthenticationServiceTests` |
+| Auth UX layer (enrollment / Use PIN / Lock / warning / guard) | `AuthOfflineUxLayerTests` |
 | Offline home without permissions HTTP | `RoleHomeResolverTests` (grant snapshot; zero `GetEffective` calls) |
 | Local cash sale | `LocalCashSaleOfflineStoreTests` (persist, idempotency, restart, sync-failure survival) |
 | Sales offline architecture | `PosSalesScopeArchitectureTests` (cash offline path allowed) |
 | Maui offline/auth filter (prior run) | Focused Maui suite green during implementation |
+
+Physical Android A–S remains **incomplete** — do not mark complete from this auth UX layer alone.
 
 Full-solution Release totals are not re-stated here; re-run before push per repository workflow.
 
