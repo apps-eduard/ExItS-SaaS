@@ -518,15 +518,23 @@ An email may already belong to a User Identity.
 
 The system must not create a duplicate identity.
 
-### 9.1 Existing Personal Identity Invited to an Organization
+### 9.1 Organization staff invitation (org-scoped staff identity)
+
+Organization staff invitations create a **distinct** org-scoped staff PlatformUser. They do **not** attach membership to an existing Personal/Owner identity.
 
 ```text
-Existing identity
-→ explicit Organization invitation
-→ user accepts
-→ Organization Account profile is added if needed
-→ membership is added to the inviting organization only
+Owner/admin invites contact email
+→ pending OrganizationInvitation (org + contact email + token)
+→ invitee accepts with token + password
+→ new PlatformUser staff login: local@ORG###### (NormalizedEmail)
+→ NormalizedContactEmail = invited contact email
+→ HomeOrganizationId = inviting organization (immutable)
+→ Organization account profile + membership (+ optional product role)
 ```
+
+The same contact email may correspond to multiple staff logins across employers. Personal/Owner identity (`maria@gmail.com`) remains separate. See [P19-organization-scoped-staff-identities](../reports/P19-organization-scoped-staff-identities.md).
+
+Legacy personal-email users that already hold memberships continue to authenticate until explicitly converted; new invites always create org-scoped staff logins.
 
 ### 9.2 Existing Identity Invited to Platform Staff
 

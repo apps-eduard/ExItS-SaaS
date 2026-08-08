@@ -55,6 +55,8 @@ Supplemental delivery (offline operability foundation): [P19-offline-operability
 
 Supplemental delivery (connectivity / offline capability matrix): [P19-offline-connectivity-capability-matrix](../reports/P19-offline-connectivity-capability-matrix.md) — central `OfflineCapable` / `Queueable` / `OnlineRequired` policy + shared Internet-required dialog; physical validation **incomplete**.
 
+Supplemental delivery (organization-scoped staff identities): [P19-organization-scoped-staff-identities](../reports/P19-organization-scoped-staff-identities.md) — staff login `local@ORG######` separate from Personal/Owner; physical validation **not performed**.
+
 ## Scope notes
 
 | In scope | Out of scope / unchanged |

@@ -1,6 +1,8 @@
 # P16-WP11 Defect Log — Platform and Organization staff creation flows
 
-**Status:** Open (P16-WP11 In Progress)  
+**Status:** Open (P16-WP11 In Progress)
+
+> **Related (staff login model):** [P19-organization-scoped-staff-identities](P19-organization-scoped-staff-identities.md) — org-scoped staff logins (`local@ORG######`) are separate from Personal/Owner identity.  
 **Phase:** Phase 16 — Implementation Complete, Under Validation  
 **Work package:** P16-WP11 — Validation, Stabilization, and User Acceptance  
 **Date:** 2026-07-29
