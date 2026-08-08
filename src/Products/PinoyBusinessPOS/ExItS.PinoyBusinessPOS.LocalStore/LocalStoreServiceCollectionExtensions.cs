@@ -20,6 +20,9 @@ public static class LocalStoreServiceCollectionExtensions
         services.AddSingleton<ILocalPayloadProtector, AesGcmLocalPayloadProtector>();
         services.AddSingleton<IOfflineOperationQueue, OfflineOperationQueue>();
         services.AddSingleton<ILocalCustomerCreditStore, LocalEncryptedCustomerCreditStore>();
+        services.AddSingleton<LocalSellingCatalogAndCashSaleStore>();
+        services.AddSingleton<ILocalSellingCatalogStore>(sp => sp.GetRequiredService<LocalSellingCatalogAndCashSaleStore>());
+        services.AddSingleton<ILocalCashSaleStore>(sp => sp.GetRequiredService<LocalSellingCatalogAndCashSaleStore>());
         services.AddSingleton<IOfflineRetryClassifier, OfflineRetryClassifier>();
         services.AddSingleton<IOfflineAccessRevalidator, OfflineAccessRevalidator>();
         services.AddSingleton<IOfflineQueueProcessor, OfflineQueueProcessor>();

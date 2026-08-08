@@ -4,7 +4,8 @@ using ExItS.PinoyBusinessPOS.Application.Abstractions;
 namespace ExItS.PinoyBusinessPOS.LocalStore;
 
 /// <summary>
-/// Local schema migrations. v1 foundation metadata; v2 generic encrypted outbox; v3 encrypted business cache; v4 payment projections.
+/// Local schema migrations. v1 foundation metadata; v2 generic encrypted outbox; v3 encrypted business cache;
+/// v4 payment projections; v5 selling-catalog cache + local cash-sale outbox support.
 /// </summary>
 public sealed class LocalDatabaseMigrator(TimeProvider? timeProvider = null) : ILocalDatabaseMigrator
 {
@@ -12,10 +13,11 @@ public sealed class LocalDatabaseMigrator(TimeProvider? timeProvider = null) : I
     public const int QueueSchemaVersion = 2;
     public const int BusinessCacheSchemaVersion = 3;
     public const int PaymentCacheSchemaVersion = 4;
+    public const int CatalogSaleSchemaVersion = 5;
 
     private readonly TimeProvider _clock = timeProvider ?? TimeProvider.System;
 
-    public int CurrentSchemaVersion => PaymentCacheSchemaVersion;
+    public int CurrentSchemaVersion => CatalogSaleSchemaVersion;
 
     public async Task<LocalMigrationResult> MigrateAsync(
         ILocalDatabaseConnection connection,
@@ -292,6 +294,112 @@ public sealed class LocalDatabaseMigrator(TimeProvider? timeProvider = null) : I
                 current = PaymentCacheSchemaVersion;
             }
 
+            if (current < CatalogSaleSchemaVersion)
+            {
+                await connection.ExecuteAsync(
+                    """
+                    CREATE TABLE IF NOT EXISTS local_catalog_category (
+                        category_id TEXT NOT NULL PRIMARY KEY,
+                        organization_id TEXT NOT NULL,
+                        name TEXT NOT NULL,
+                        status TEXT NOT NULL,
+                        updated_utc TEXT NOT NULL
+                    );
+                    """,
+                    ct).ConfigureAwait(false);
+
+                await connection.ExecuteAsync(
+                    """
+                    CREATE TABLE IF NOT EXISTS local_catalog_product (
+                        product_id TEXT NOT NULL PRIMARY KEY,
+                        organization_id TEXT NOT NULL,
+                        name TEXT NOT NULL,
+                        description TEXT NULL,
+                        sku TEXT NULL,
+                        barcode TEXT NULL,
+                        category_id TEXT NULL,
+                        unit_of_measure TEXT NOT NULL,
+                        selling_price TEXT NOT NULL,
+                        status TEXT NOT NULL,
+                        is_tracked INTEGER NOT NULL DEFAULT 0,
+                        on_hand_quantity TEXT NOT NULL DEFAULT '0',
+                        stock_status TEXT NOT NULL DEFAULT 'InStock',
+                        updated_utc TEXT NOT NULL
+                    );
+                    """,
+                    ct).ConfigureAwait(false);
+
+                await connection.ExecuteAsync(
+                    """
+                    CREATE INDEX IF NOT EXISTS ix_local_catalog_product_name
+                    ON local_catalog_product(name);
+                    """,
+                    ct).ConfigureAwait(false);
+                await connection.ExecuteAsync(
+                    """
+                    CREATE INDEX IF NOT EXISTS ix_local_catalog_product_sku
+                    ON local_catalog_product(sku);
+                    """,
+                    ct).ConfigureAwait(false);
+                await connection.ExecuteAsync(
+                    """
+                    CREATE INDEX IF NOT EXISTS ix_local_catalog_product_barcode
+                    ON local_catalog_product(barcode);
+                    """,
+                    ct).ConfigureAwait(false);
+
+                await connection.ExecuteAsync(
+                    """
+                    CREATE TABLE IF NOT EXISTS local_open_shift_snapshot (
+                        organization_id TEXT NOT NULL PRIMARY KEY,
+                        shift_json TEXT NOT NULL,
+                        captured_utc TEXT NOT NULL
+                    );
+                    """,
+                    ct).ConfigureAwait(false);
+
+                await connection.ExecuteAsync(
+                    """
+                    CREATE TABLE IF NOT EXISTS local_cash_sale (
+                        sale_id TEXT NOT NULL PRIMARY KEY,
+                        organization_id TEXT NOT NULL,
+                        sale_number TEXT NOT NULL,
+                        shift_id TEXT NULL,
+                        payment_method TEXT NOT NULL,
+                        subtotal TEXT NOT NULL,
+                        total TEXT NOT NULL,
+                        amount_tendered TEXT NULL,
+                        change_amount TEXT NULL,
+                        recorded_at_utc TEXT NOT NULL,
+                        recorded_by TEXT NOT NULL,
+                        entity_state INTEGER NOT NULL,
+                        pending_operation_id TEXT NULL,
+                        idempotency_key TEXT NOT NULL,
+                        server_reference TEXT NULL,
+                        receipt_json TEXT NOT NULL,
+                        safe_failure_code TEXT NULL,
+                        created_utc TEXT NOT NULL,
+                        updated_utc TEXT NOT NULL
+                    );
+                    """,
+                    ct).ConfigureAwait(false);
+
+                await connection.ExecuteAsync(
+                    """
+                    CREATE UNIQUE INDEX IF NOT EXISTS ux_local_cash_sale_idempotency
+                    ON local_cash_sale(idempotency_key);
+                    """,
+                    ct).ConfigureAwait(false);
+
+                await connection.ExecuteAsync(
+                    $"""
+                    INSERT INTO local_schema_info (schema_version, applied_at_utc)
+                    VALUES ({CatalogSaleSchemaVersion}, '{now}');
+                    """,
+                    ct).ConfigureAwait(false);
+                current = CatalogSaleSchemaVersion;
+            }
+
             var existing = await connection
                 .QueryScalarAsync<long>(
                     $"""
@@ -344,7 +452,7 @@ public sealed class LocalDatabaseMigrator(TimeProvider? timeProvider = null) : I
                 return new LocalMigrationResult(false, (int)current, "forbidden_tables_present");
             }
 
-            return new LocalMigrationResult(true, PaymentCacheSchemaVersion);
+            return new LocalMigrationResult(true, CatalogSaleSchemaVersion);
         }
         catch (OperationCanceledException)
         {

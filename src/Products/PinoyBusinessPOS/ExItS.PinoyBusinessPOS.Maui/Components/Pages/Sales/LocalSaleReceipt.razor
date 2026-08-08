@@ -1,0 +1,129 @@
+@page "/sales/local/{SaleId:guid}/receipt"
+@using ExItS.DesignSystem.Components.Internal
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject ILocalCashSaleStore LocalCashSales
+@inject IStringLocalizer<PosResources> L
+
+<StoreHeaderBack Href="/sales" />
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else if (_sale is null)
+{
+    <Page>
+        <ErrorState Title="@L["Sales_NotFoundTitle"]"
+                    Message="@L["Sales_NotFoundMessage"]"
+                    RetryLabel="@L["Api_Retry"]"
+                    OnRetry="LoadAsync" />
+    </Page>
+}
+else
+{
+    var sale = _sale;
+<div class="pos-sale-receipt">
+<Page>
+    <header class="pos-sale-receipt__header">
+        <div class="pos-sale-receipt__title-row">
+            <h1 class="pos-sale-receipt__title">@L["Offline_SalePendingSync"]</h1>
+            <button type="button"
+                    class="pos-sale-receipt__new"
+                    @onclick="GoNextSale">
+                <span class="pos-sale-receipt__new-icon" aria-hidden="true">@IconGlyphs.Get("plus")</span>
+                <span>@L["Sales_New"]</span>
+            </button>
+        </div>
+        <p class="pos-sale-receipt__subtitle">@sale.SaleNumber</p>
+    </header>
+
+    <Alert Tone="AlertTone.Info" Title="@L["Offline_SalePendingSync"]" Message="@L["Offline_Banner"]" />
+
+    <section class="pos-sale-receipt__panel">
+        <div class="pos-sale-receipt__amount">
+            <span class="pos-sale-receipt__amount-label">@L["Sales_Col_Total"]</span>
+            <div class="pos-sale-receipt__amount-value">
+                <MoneyDisplay Amount="@sale.Total" CurrencyCode="PHP" Emphasized="true" />
+            </div>
+        </div>
+        <dl class="pos-sale-receipt__facts">
+            <div class="pos-sale-receipt__fact">
+                <dt>@L["Sales_Field_PaymentMethod"]</dt>
+                <dd>@sale.PaymentMethod</dd>
+            </div>
+            @if (sale.AmountTendered is decimal tendered)
+            {
+                <div class="pos-sale-receipt__fact">
+                    <dt>@L["Sales_Field_AmountTendered"]</dt>
+                    <dd><MoneyDisplay Amount="@tendered" CurrencyCode="PHP" /></dd>
+                </div>
+            }
+            @if (sale.ChangeAmount is decimal change)
+            {
+                <div class="pos-sale-receipt__fact">
+                    <dt>@L["Sales_Field_ChangeAmount"]</dt>
+                    <dd><MoneyDisplay Amount="@change" CurrencyCode="PHP" /></dd>
+                </div>
+            }
+            <div class="pos-sale-receipt__fact">
+                <dt>@L["Sales_Col_RecordedAt"]</dt>
+                <dd>@sale.RecordedAtUtc.ToLocalTime().ToString("g")</dd>
+            </div>
+        </dl>
+    </section>
+
+    <section class="pos-sale-receipt__panel">
+        <h2 class="pos-sale-receipt__section-title">@L["Sales_DetailSubtitle"]</h2>
+        <ul class="pos-sale-receipt__lines">
+            @foreach (var line in sale.Lines)
+            {
+                <li class="pos-sale-receipt__line">
+                    <div class="pos-sale-receipt__line-main">
+                        <span class="pos-sale-receipt__line-name">@line.Name</span>
+                        <span class="pos-sale-receipt__line-qty">@line.Quantity @line.UnitOfMeasure × @line.UnitPrice.ToString("N2")</span>
+                    </div>
+                    <div class="pos-sale-receipt__line-total">
+                        <MoneyDisplay Amount="@line.LineTotal" CurrencyCode="PHP" />
+                    </div>
+                </li>
+            }
+        </ul>
+    </section>
+
+    <FormActions>
+        <Button Variant="ButtonVariant.Primary" OnClick="GoNextSale">@L["Sales_New"]</Button>
+        <Button Variant="ButtonVariant.Secondary" OnClick="GoSalesList">@L["Sales_ListSection"]</Button>
+    </FormActions>
+</Page>
+</div>
+}
+
+@code {
+    [Parameter]
+    public Guid SaleId { get; set; }
+
+    private bool _ready;
+    private LocalCashSaleProjection? _sale;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        _ready = true;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _sale = await LocalCashSales.GetBySaleIdAsync(SaleId);
+    }
+
+    private void GoNextSale() => Nav.NavigateTo("/sales/new");
+
+    private void GoSalesList() => Nav.NavigateTo("/sales");
+}

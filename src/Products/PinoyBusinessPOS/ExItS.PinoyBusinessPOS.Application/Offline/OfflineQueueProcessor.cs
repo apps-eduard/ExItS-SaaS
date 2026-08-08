@@ -345,6 +345,12 @@ public sealed class OfflineAccessRevalidator(
             return true;
         }
 
+        if (string.Equals(operationType, OfflineOperationTypes.SaleCheckout, StringComparison.Ordinal))
+        {
+            capability = UtangCapability.CreateSale;
+            return true;
+        }
+
         return false;
     }
 }
@@ -363,9 +369,8 @@ public static class OfflineOperationTypes
     public const string CreditDueDateClear = "credit.due-date.clear";
 
     /// <summary>
-    /// Server-side idempotency operation type for sale checkout. Sales are online-only: no offline
-    /// dispatcher, queue handler, or local projection exists for this type. It names the server
-    /// idempotency scope so a retried checkout request replays instead of double-recording.
+    /// Cash sale checkout — used for server idempotency online and for encrypted outbox dispatch
+    /// of offline cash sales. Non-cash payment methods must not be queued.
     /// </summary>
     public const string SaleCheckout = "sale.checkout";
 

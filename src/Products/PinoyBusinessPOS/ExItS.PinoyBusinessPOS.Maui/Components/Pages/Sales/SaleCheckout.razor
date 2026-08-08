@@ -24,6 +24,11 @@
 @inject IAppInfoService AppInfo
 @inject MauiPendingPaymentStore PendingPayment
 @inject StoreHeaderState HeaderState
+@inject IProtectedShellAccessPolicy AccessPolicy
+@inject ILocalSellingCatalogStore LocalCatalog
+@inject ILocalCashSaleStore LocalCashSales
+@inject ILocalSellingCatalogSyncService CatalogSync
+@inject IPosSyncStatusService SyncStatus
 @inject IStringLocalizer<PosResources> L
 
 @if (!_ready)
@@ -39,8 +44,12 @@ else
     var isGCashElectronic = _paymentMethod == PosSaleOptions.GCashPaymentMethod;
     var canCreateCash = Capabilities.IsAllowed(UtangCapability.CreateSale);
     var canCreateUtang = canCreateCash && Capabilities.IsAllowed(UtangCapability.CreateCredit);
-    var paymentSelectBlocked = _isOffline || !canCreateCash || _electronicPaymentOpen;
-    var blocked = _isOffline || (isUtang ? !canCreateUtang : !canCreateCash) || _openShift is null || _electronicPaymentOpen;
+    var offlineCashReady = CanUseOfflineCashCheckout && !isUtang && !isManualGCash && !isCard && !isGCashElectronic;
+    var paymentSelectBlocked = (_isOffline && !CanUseOfflineCashCheckout) || !canCreateCash || _electronicPaymentOpen;
+    var blocked = (!offlineCashReady && _isOffline)
+                  || (isUtang ? !canCreateUtang : !canCreateCash)
+                  || _openShift is null
+                  || _electronicPaymentOpen;
     var checkoutBlocked = blocked || !Cart.IsCheckoutReady;
 <Page class="pos-sell-page">
     <NavigationLock OnBeforeInternalNavigation="OnBeforeLeaveSell" />
@@ -54,7 +63,9 @@ else
 
     @if (_isOffline)
     {
-        <Alert Tone="AlertTone.Warning" Title="@L["Sales_OfflineTitle"]" Message="@L["Sales_Checkout_OfflineMessage"]" />
+        <Alert Tone="AlertTone.Warning"
+               Title="@(CanUseOfflineCashCheckout ? L["Offline_Banner"] : L["Sales_OfflineTitle"])"
+               Message="@(CanUseOfflineCashCheckout ? L["Sales_Checkout_OfflineCashMessage"] : L["Sales_Checkout_OfflineMessage"])" />
     }
     else if (isUtang ? !canCreateUtang : !canCreateCash)
     {
@@ -727,17 +738,40 @@ else
         }
 
         _ = ResolvedPublicUserId;
-        if (!_isOffline)
+        if (_isOffline)
+        {
+            _openShift = await LocalCatalog.LoadOpenShiftSnapshotAsync();
+            await LoadCategoriesAsync();
+            await LoadBrowseProductsAsync();
+        }
+        else
         {
             var shiftResult = await ShiftClient.GetCurrentAsync();
             if (shiftResult.IsSuccess)
             {
                 _openShift = shiftResult.Data;
+                if (_openShift is not null)
+                {
+                    await LocalCatalog.SaveOpenShiftSnapshotAsync(_openShift);
+                }
+                else
+                {
+                    await LocalCatalog.ClearOpenShiftSnapshotAsync();
+                }
             }
 
             await LoadOperationalSetupAsync();
             await LoadCategoriesAsync();
             await LoadBrowseProductsAsync();
+            try
+            {
+                await CatalogSync.RefreshFromServerAsync();
+            }
+            catch
+            {
+                // Cache refresh is best-effort; checkout remains online-capable.
+            }
+
             await TryRestorePendingPaymentAsync();
             await TryApplyCheckoutResumeAsync();
         }
@@ -1117,6 +1151,12 @@ else
 
     private async Task LoadCategoriesAsync()
     {
+        if (_isOffline)
+        {
+            _categories = await LocalCatalog.ListCategoriesAsync();
+            return;
+        }
+
         var result = await Catalog.ListCategoriesAsync(
             status: PosCatalogOptions.ActiveStatus,
             page: 1,
@@ -1124,18 +1164,27 @@ else
         _categories = result.IsSuccess && result.Data is not null
             ? result.Data.Items
             : Array.Empty<PosProductCategoryDto>();
+        if (_categories.Count > 0)
+        {
+            await LocalCatalog.UpsertCategoriesAsync(_categories);
+        }
     }
 
     private async Task LoadBrowseProductsAsync()
     {
-        if (_isOffline)
-        {
-            _browseProducts = Array.Empty<PosCatalogProductDto>();
-            return;
-        }
-
         _loadingBrowse = true;
         StateHasChanged();
+
+        if (_isOffline)
+        {
+            _browseProducts = await LocalCatalog.SearchProductsAsync(
+                search: null,
+                ParseCategoryFilter(),
+                BrowsePageSize);
+            RememberProducts(_browseProducts);
+            _loadingBrowse = false;
+            return;
+        }
 
         var result = await Catalog.ListProductsAsync(
             search: null,
@@ -1149,6 +1198,10 @@ else
             ? result.Data.Items
             : Array.Empty<PosCatalogProductDto>();
         RememberProducts(_browseProducts);
+        if (_browseProducts.Count > 0)
+        {
+            await LocalCatalog.UpsertProductsAsync(_browseProducts);
+        }
 
         _loadingBrowse = false;
     }
@@ -1158,7 +1211,10 @@ else
         var isUtang = _paymentMethod == PosSaleOptions.UtangPaymentMethod;
         var canCreateCash = Capabilities.IsAllowed(UtangCapability.CreateSale);
         var canCreateUtang = canCreateCash && Capabilities.IsAllowed(UtangCapability.CreateCredit);
-        var blocked = _isOffline || (isUtang ? !canCreateUtang : !canCreateCash) || _openShift is null;
+        var offlineCashReady = CanUseOfflineCashCheckout && !isUtang;
+        var blocked = (!offlineCashReady && _isOffline)
+                      || (isUtang ? !canCreateUtang : !canCreateCash)
+                      || _openShift is null;
         if (blocked)
         {
             return;
@@ -1166,6 +1222,11 @@ else
 
         AddToCart(product);
     }
+
+    private bool CanUseOfflineCashCheckout =>
+        _isOffline
+        && AccessPolicy.AllowsOfflineMutation
+        && Capabilities.IsAllowed(UtangCapability.CreateSale);
 
     private void AddToCart(PosCatalogProductDto product)
     {
@@ -1292,6 +1353,28 @@ else
         _errorTitle = null;
         _errorMessage = null;
 
+        if (_isOffline)
+        {
+            var localBarcode = await LocalCatalog.FindByBarcodeAsync(term);
+            if (localBarcode is not null)
+            {
+                AddToCart(localBarcode);
+                _lookingUp = false;
+                return true;
+            }
+
+            var localSku = await LocalCatalog.FindBySkuAsync(term);
+            if (localSku is not null)
+            {
+                AddToCart(localSku);
+                _lookingUp = false;
+                return true;
+            }
+
+            _lookingUp = false;
+            return false;
+        }
+
         var byBarcode = await Catalog.LookupByBarcodeAsync(term);
         if (byBarcode.IsSuccess && byBarcode.Data is not null)
         {
@@ -1332,6 +1415,27 @@ else
         _errorTitle = null;
         _errorMessage = null;
         _lookupHelper = null;
+
+        if (_isOffline)
+        {
+            _matches = await LocalCatalog.SearchProductsAsync(
+                _lookupText,
+                ParseCategoryFilter(),
+                take: 20);
+            if (generation != _searchGeneration)
+            {
+                return;
+            }
+
+            RememberProducts(_matches);
+            if (_matches.Count == 0)
+            {
+                _lookupHelper = L["Sales_Checkout_NoMatchMessage"];
+            }
+
+            _lookingUp = false;
+            return;
+        }
 
         var result = await Catalog.ListProductsAsync(
             _lookupText,
@@ -1590,14 +1694,25 @@ else
             return;
         }
 
-        // Checkout is online-only: no sale is ever queued or stored locally.
         _isOffline = !await Connectivity.IsConnectedAsync();
         var isUtang = _paymentMethod == PosSaleOptions.UtangPaymentMethod;
         var canCreate = isUtang
             ? Capabilities.IsAllowed(UtangCapability.CreateSale) && Capabilities.IsAllowed(UtangCapability.CreateCredit)
             : Capabilities.IsAllowed(UtangCapability.CreateSale);
-        if (_isOffline || !canCreate || !Cart.IsCheckoutReady || _openShift is null)
+        if (!canCreate || !Cart.IsCheckoutReady || _openShift is null)
         {
+            return;
+        }
+
+        // Offline: cash only via local atomic commit + outbox. Utang/GCash/card stay online-only.
+        if (_isOffline)
+        {
+            if (_paymentMethod != PosSaleOptions.CashPaymentMethod || !AccessPolicy.AllowsOfflineMutation)
+            {
+                return;
+            }
+
+            await CommitOfflineCashSaleAsync();
             return;
         }
 
@@ -1652,6 +1767,92 @@ else
         var described = ApiLocalizer.Describe(result.Status, result.Error);
         _errorTitle = described.Title;
         _errorMessage = result.Error?.Detail ?? described.Message;
+    }
+
+    private async Task CommitOfflineCashSaleAsync()
+    {
+        if (_openShift is null || CurrentUser.Session is null)
+        {
+            return;
+        }
+
+        _saving = true;
+        _errorTitle = null;
+        _errorMessage = null;
+
+        try
+        {
+            var saleId = _attemptSaleId == Guid.Empty ? Guid.NewGuid() : _attemptSaleId;
+            var operationId = Guid.NewGuid();
+            var tendered = _amountTendered ?? PayableTotal;
+            var change = PosSaleOptions.RoundMoney(Math.Max(0m, tendered - PayableTotal));
+            var lines = Cart.Items
+                .Select(i =>
+                {
+                    var tracked = _productById.TryGetValue(i.ProductId, out var p) && p.IsTracked;
+                    return new LocalCashSaleLineSnapshot(
+                        i.ProductId,
+                        i.Name,
+                        i.Sku,
+                        i.UnitOfMeasure,
+                        i.UnitPrice,
+                        i.Quantity,
+                        i.LineTotal,
+                        tracked);
+                })
+                .ToList();
+
+            var request = new CheckoutSaleRequest(
+                Cart.ToCheckoutLines(),
+                PosSaleOptions.CashPaymentMethod,
+                tendered,
+                GCashReference: null,
+                saleId,
+                CustomerId: null,
+                DueDate: null,
+                CreditEntryId: null,
+                _openShift.ShiftId);
+
+            var saleNumber = $"OFF-{DateTime.UtcNow:yyMMdd}-{saleId.ToString("N")[..8].ToUpperInvariant()}";
+            await LocalCashSales.PersistCashSaleAndEnqueueAsync(
+                new LocalCashSaleCommitCommand(
+                    saleId,
+                    operationId,
+                    saleId.ToString("N"),
+                    saleNumber,
+                    _openShift.ShiftId,
+                    Cart.Subtotal,
+                    PayableTotal,
+                    tendered,
+                    change,
+                    CurrentUser.Session.UserId,
+                    lines,
+                    request));
+
+            SyncStatus.Refresh();
+            Cart.Clear();
+            ClearCustomerSelection();
+            _attemptSaleId = Guid.NewGuid();
+            _attemptCreditEntryId = Guid.NewGuid();
+            _bypassLeaveGuard = true;
+            try
+            {
+                Nav.NavigateTo($"/sales/local/{saleId:D}/receipt");
+            }
+            finally
+            {
+                _bypassLeaveGuard = false;
+            }
+        }
+        catch (Exception)
+        {
+            _errorTitle = L["Sales_ErrorTitle"];
+            _errorMessage = L["Sales_Checkout_OfflineCommitFailed"];
+        }
+        finally
+        {
+            _saving = false;
+        }
     }
 
     private async Task CreateOrRestorePaymentAttemptAsync(Guid saleId)

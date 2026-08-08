@@ -3,8 +3,9 @@ namespace ExItS.ArchitectureTests;
 /// <summary>
 /// Guards the Product-Based Utang / simple-sales boundary: sales may record Cash, ManualGCash,
 /// Card, GCash, and online Utang checkouts — but must not host payment-gateway types inside the
-/// Sales slice (those live under Payments/). Still forbids suppliers, warehouses, costing, offline
-/// sale capture, tax, discounts, refunds, split tender, and real GCash APIs in Sales.
+/// Sales slice (those live under Payments/). Still forbids suppliers, warehouses, costing,
+/// tax, discounts, refunds, split tender, and real GCash APIs in Sales. Offline cash capture lives
+/// in LocalStore/Maui outbox — not in Domain/Application Sales use cases.
 /// </summary>
 public sealed class PosSalesScopeArchitectureTests
 {
@@ -107,7 +108,7 @@ public sealed class PosSalesScopeArchitectureTests
     }
 
     [Fact]
-    public void Sales_have_no_offline_queue_dispatcher_or_local_projection()
+    public void Sales_domain_application_api_have_no_offline_queue_or_sqlite()
     {
         foreach (var file in SalesSourceFiles())
         {
@@ -117,25 +118,21 @@ public sealed class PosSalesScopeArchitectureTests
             Assert.DoesNotContain("LocalStore", text, StringComparison.Ordinal);
             Assert.DoesNotContain("SQLite", text, StringComparison.OrdinalIgnoreCase);
         }
+    }
 
-        var localStore = PosProject("ExItS.PinoyBusinessPOS.LocalStore");
-        Assert.True(Directory.Exists(localStore), localStore);
-        foreach (var file in Directory.EnumerateFiles(localStore, "*.cs", SearchOption.AllDirectories))
-        {
-            var text = File.ReadAllText(file);
-            foreach (var forbidden in new[]
-                     {
-                         "sale.checkout", "SaleCheckout", "LocalSale", "sale_lines", "local_sales", "SaleRecord"
-                     })
-            {
-                Assert.DoesNotContain(forbidden, text, StringComparison.OrdinalIgnoreCase);
-            }
-        }
+    [Fact]
+    public void Offline_cash_sale_foundation_is_registered_outside_sales_use_cases()
+    {
+        var localStore = File.ReadAllText(Path.Combine(
+            PosProject("ExItS.PinoyBusinessPOS.LocalStore"),
+            "LocalSellingCatalogAndCashSaleStore.cs"));
+        Assert.Contains("local_cash_sale", localStore, StringComparison.Ordinal);
+        Assert.Contains("OfflineOperationTypes.SaleCheckout", localStore, StringComparison.Ordinal);
+        Assert.Contains("PosSaleOptions.CashPaymentMethod", localStore, StringComparison.Ordinal);
 
         var mauiProgram = File.ReadAllText(Path.Combine(
             PosProject("ExItS.PinoyBusinessPOS.Maui"), "MauiProgram.cs"));
-        Assert.DoesNotContain("SaleCheckoutOfflineDispatcher", mauiProgram, StringComparison.Ordinal);
-        Assert.DoesNotContain("SaleOfflineDispatcher", mauiProgram, StringComparison.Ordinal);
+        Assert.Contains("SaleCheckoutOfflineDispatcher", mauiProgram, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -158,8 +155,8 @@ public sealed class PosSalesScopeArchitectureTests
             "SaleCheckout.razor"));
         Assert.Contains("PosSaleOptions.UtangPaymentMethod", checkout, StringComparison.Ordinal);
         Assert.DoesNotContain("IOfflineOperationQueue", checkout, StringComparison.Ordinal);
-        Assert.DoesNotContain("Enqueue", checkout, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("online-only", checkout, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Utang/GCash/card stay online-only", checkout, StringComparison.Ordinal);
+        Assert.Contains("CommitOfflineCashSaleAsync", checkout, StringComparison.Ordinal);
     }
 
     private static IEnumerable<string> SalesSourceFiles()

@@ -156,7 +156,9 @@ public static class MauiProgram
         services.AddSingleton<IOfflineOperationDispatcher, RepaymentReverseOfflineDispatcher>();
         services.AddSingleton<IOfflineOperationDispatcher, CreditReverseOfflineDispatcher>();
         services.AddSingleton<IOfflineOperationDispatcher, CreditDueDateSetOfflineDispatcher>();
+        services.AddSingleton<IOfflineOperationDispatcher, SaleCheckoutOfflineDispatcher>();
         services.AddSingleton<ICustomerCreditOfflineSyncService, CustomerCreditOfflineSyncService>();
+        services.AddSingleton<ILocalSellingCatalogSyncService, LocalSellingCatalogSyncService>();
         services.AddSingleton<PosStatusState>();
         // The checkout cart lives only in memory for the signed-in session and clears itself on
         // sign-out or organization switch; it is never persisted or queued.
