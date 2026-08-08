@@ -6,7 +6,7 @@
 | Phase | [Phase 19](../phases/phase-19-mobile-pos-operations-and-cashier-experience.md) — **Open** |
 | Related | [P19-offline-operability-foundation](P19-offline-operability-foundation.md) |
 | Date | 2026-08-08 |
-| Feature commits | `61a2bf8` (policy + guards), `tests/docs` recorded in follow-up commits |
+| Feature commits | `61a2bf8` (policy + guards), `9d725bd` (tests), `5412e4b` (matrix docs) |
 | Device Verified | **No** |
 | Production Ready | **No** |
 
