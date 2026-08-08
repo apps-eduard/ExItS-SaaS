@@ -449,6 +449,13 @@ A Personal Account must not:
 - access unrelated personal records
 - convert personal debt into business credit automatically
 
+## 6.3a Personal Offline / Local-First (Mobile)
+
+Personal Utang local-first offline (grant scope, path-isolated SQLite, outbox sync) is documented in
+[P19-personal-scope-offline-operability](../reports/P19-personal-scope-offline-operability.md).
+Personal local databases must remain separate from Organization POS local databases; invitations /
+public-id resolve / start-business remain online-required.
+
 ## 6.4 Personal Utang Relationship Roles
 
 Do not create permanent global Lender or Borrower roles.

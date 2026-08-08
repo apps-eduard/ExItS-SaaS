@@ -4,7 +4,7 @@
 |---|---|
 | Status | **Code Complete** (policy + nav/action guards) · Physical offline validation **Incomplete** |
 | Phase | [Phase 19](../phases/phase-19-mobile-pos-operations-and-cashier-experience.md) — **Open** |
-| Related | [P19-offline-operability-foundation](P19-offline-operability-foundation.md) |
+| Related | [P19-offline-operability-foundation](P19-offline-operability-foundation.md), [P19-personal-scope-offline-operability](P19-personal-scope-offline-operability.md) |
 | Date | 2026-08-08 |
 | Feature commits | `61a2bf8` (policy + guards), `9d725bd` (tests), `5412e4b` + `829fcd8` (matrix docs) |
 | Device Verified | **No** |
