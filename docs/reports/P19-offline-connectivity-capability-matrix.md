@@ -6,7 +6,7 @@
 | Phase | [Phase 19](../phases/phase-19-mobile-pos-operations-and-cashier-experience.md) — **Open** |
 | Related | [P19-offline-operability-foundation](P19-offline-operability-foundation.md) |
 | Date | 2026-08-08 |
-| Feature commits | `61a2bf8` (policy + guards), `9d725bd` (tests), `5412e4b` (matrix docs) |
+| Feature commits | `61a2bf8` (policy + guards), `9d725bd` (tests), `5412e4b` + `829fcd8` (matrix docs) |
 | Device Verified | **No** |
 | Production Ready | **No** |
 
@@ -121,4 +121,4 @@ Physical-device validation of this matrix: **not completed**.
 
 ## 10. Git
 
-Record feature commit SHA(s) in the foundation report after landing. **Not pushed** until validation gates agree.
+Feature commits: `61a2bf8`, `9d725bd`, `5412e4b`. **Not pushed** (physical offline matrix validation incomplete).
