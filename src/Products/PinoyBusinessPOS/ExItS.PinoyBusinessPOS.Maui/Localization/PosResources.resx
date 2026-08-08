@@ -232,6 +232,10 @@
   <data name="SignIn_OfflineMessage" xml:space="preserve"><value>Use your PIN to continue with the last authorized account on this device.</value></data>
   <data name="SignIn_OnlineRequiresInternet" xml:space="preserve"><value>Online sign-in requires an internet connection.</value></data>
   <data name="SignIn_InternetRequired" xml:space="preserve"><value>This action requires an internet connection.</value></data>
+  <data name="SignIn_StillConnecting" xml:space="preserve"><value>Still connecting...</value></data>
+  <data name="SignIn_ContinueWaiting" xml:space="preserve"><value>Continue waiting</value></data>
+  <data name="SignIn_UsePinInstead" xml:space="preserve"><value>Use PIN instead</value></data>
+  <data name="SignIn_ServerUnreachablePinHint" xml:space="preserve"><value>Server is unreachable. You can use your PIN to continue with the last authorized account on this device.</value></data>
   <data name="Common_OK" xml:space="preserve"><value>OK</value></data>
   <data name="Auth_Lock" xml:space="preserve"><value>Lock</value></data>
   <data name="Offline_PinEnrollTitle" xml:space="preserve"><value>Set up your offline PIN</value></data>

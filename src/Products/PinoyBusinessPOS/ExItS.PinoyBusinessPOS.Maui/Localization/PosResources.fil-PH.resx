@@ -232,6 +232,10 @@
   <data name="SignIn_OfflineMessage" xml:space="preserve"><value>Gamitin ang PIN para magpatuloy sa huling authorized account sa device na ito.</value></data>
   <data name="SignIn_OnlineRequiresInternet" xml:space="preserve"><value>Kailangan ng internet ang online sign-in.</value></data>
   <data name="SignIn_InternetRequired" xml:space="preserve"><value>Kailangan ng internet connection ang aksyong ito.</value></data>
+  <data name="SignIn_StillConnecting" xml:space="preserve"><value>Kumokonekta pa...</value></data>
+  <data name="SignIn_ContinueWaiting" xml:space="preserve"><value>Maghintay pa</value></data>
+  <data name="SignIn_UsePinInstead" xml:space="preserve"><value>Gamitin ang PIN na lang</value></data>
+  <data name="SignIn_ServerUnreachablePinHint" xml:space="preserve"><value>Hindi maabot ang server. Puwede mong gamitin ang PIN para magpatuloy sa huling authorized account sa device na ito.</value></data>
   <data name="Common_OK" xml:space="preserve"><value>OK</value></data>
   <data name="Auth_Lock" xml:space="preserve"><value>I-lock</value></data>
   <data name="Offline_PinEnrollTitle" xml:space="preserve"><value>I-set up ang offline PIN</value></data>

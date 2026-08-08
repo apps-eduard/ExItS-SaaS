@@ -1,20 +1,149 @@
 @page "/"
 @layout Layout.AuthShell
+@using ExItS.PinoyBusinessPOS.Application.Options
+@using Microsoft.Extensions.Options
 @inject NavigationGate Gate
+@inject IAuthenticationService Auth
+@inject IConnectivityService Connectivity
+@inject IOptions<PosApiOptions> PosApi
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
 <Page>
     <Stack Align="StackAlign.Center" Gap="4">
-        <Spinner Size="SpinnerSize.Lg" />
-        <p class="pos-muted">@L["Boot_Loading"]</p>
+        @if (_deviceOffline)
+        {
+            <header class="pos-boot-offline">
+                <h1 class="pos-boot-offline__title">@L["SignIn_OfflineTitle"]</h1>
+                <p class="pos-muted">@L["SignIn_OfflineMessage"]</p>
+            </header>
+            @if (_canUsePin)
+            {
+                <Button Variant="ButtonVariant.Primary" OnClick="GoPinAsync">@L["SignIn_UsePin"]</Button>
+            }
+            else
+            {
+                <InlineMessage Tone="InlineMessageTone.Warning">@L["SignIn_OnlineRequiresInternet"]</InlineMessage>
+                <Button Variant="ButtonVariant.Secondary" OnClick="GoSignInAsync">@L["SignIn_Title"]</Button>
+            }
+        }
+        else if (_showSlowPrompt)
+        {
+            <Spinner Size="SpinnerSize.Lg" />
+            <p class="pos-muted">@L["SignIn_StillConnecting"]</p>
+            <FormActions>
+                <Button Variant="ButtonVariant.Secondary" Disabled="_navigating" OnClick="ContinueWaitingAsync">
+                    @L["SignIn_ContinueWaiting"]
+                </Button>
+                @if (_canUsePin)
+                {
+                    <Button Variant="ButtonVariant.Primary" Disabled="_navigating" OnClick="UsePinInsteadAsync">
+                        @L["SignIn_UsePinInstead"]
+                    </Button>
+                }
+            </FormActions>
+        }
+        else
+        {
+            <Spinner Size="SpinnerSize.Lg" />
+            <p class="pos-muted">@L["Boot_Loading"]</p>
+            @if (_hardTimedOut && _canUsePin)
+            {
+                <InlineMessage Tone="InlineMessageTone.Warning">@L["SignIn_ServerUnreachablePinHint"]</InlineMessage>
+                <Button Variant="ButtonVariant.Primary" OnClick="GoPinAsync">@L["SignIn_UsePin"]</Button>
+            }
+            else if (_hardTimedOut)
+            {
+                <InlineMessage Tone="InlineMessageTone.Warning">@L["SignIn_OnlineRequiresInternet"]</InlineMessage>
+                <Button Variant="ButtonVariant.Secondary" OnClick="GoSignInAsync">@L["SignIn_Title"]</Button>
+            }
+        }
     </Stack>
 </Page>
 
 @code {
+    private readonly OnlineLoginProgressController _progress = new();
+    private bool _deviceOffline;
+    private bool _canUsePin;
+    private bool _showSlowPrompt;
+    private bool _hardTimedOut;
+    private bool _navigating;
+
     protected override async Task OnInitializedAsync()
     {
-        var route = await Gate.ResolveStartRouteAsync();
-        Nav.NavigateTo(route, replace: true);
+        var offer = await Auth.EvaluateOfflineColdStartOfferAsync();
+        _canUsePin = offer.CanOfferPinUnlock;
+
+        var connected = await Connectivity.IsConnectedAsync();
+        if (!connected)
+        {
+            // No network: never wait on online restore.
+            _deviceOffline = true;
+            if (_canUsePin)
+            {
+                Nav.NavigateTo("/offline-pin", replace: true);
+            }
+
+            return;
+        }
+
+        var hardSeconds = Math.Clamp(PosApi.Value.TimeoutSeconds, 10, 30);
+        _progress.BeginOnlineAttempt(TimeSpan.FromSeconds(hardSeconds));
+
+        var result = await _progress.RunAsync(
+            ct => Gate.ResolveStartRouteAsync(ct),
+            onSoftPrompt: () =>
+            {
+                _showSlowPrompt = true;
+                _ = InvokeAsync(StateHasChanged);
+            });
+
+        if (result.Outcome == OnlineLoginProgressOutcome.PinSelected)
+        {
+            Nav.NavigateTo("/offline-pin", replace: true);
+            return;
+        }
+
+        if (result.Outcome == OnlineLoginProgressOutcome.HardTimedOut)
+        {
+            _showSlowPrompt = false;
+            _hardTimedOut = true;
+            if (_canUsePin)
+            {
+                // Unreachable (not denial): offer PIN when eligible.
+                Nav.NavigateTo("/offline-pin", replace: true);
+                return;
+            }
+
+            return;
+        }
+
+        if (result.Outcome == OnlineLoginProgressOutcome.Completed
+            && !string.IsNullOrWhiteSpace(result.Value))
+        {
+            Nav.NavigateTo(result.Value!, replace: true);
+        }
     }
+
+    private void ContinueWaitingAsync()
+    {
+        _progress.ContinueWaiting();
+        // Keep soft prompt visible; do not declare offline.
+    }
+
+    private void UsePinInsteadAsync()
+    {
+        if (_navigating || !_canUsePin)
+        {
+            return;
+        }
+
+        _navigating = true;
+        _progress.ChoosePinInstead();
+        Nav.NavigateTo("/offline-pin", replace: true);
+    }
+
+    private void GoPinAsync() => Nav.NavigateTo("/offline-pin", replace: true);
+
+    private void GoSignInAsync() => Nav.NavigateTo("/signin", replace: true);
 }

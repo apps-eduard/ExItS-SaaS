@@ -5454,6 +5454,23 @@ html.pos-keyboard-open .pos-content {
     margin: 0 0 0.75rem;
 }
 
+.pos-signin__slow-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin: 0 0 0.75rem;
+}
+
+.pos-boot-offline {
+    text-align: center;
+}
+
+.pos-boot-offline__title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
 .pos-signin__use-pin .exds-button,
 .pos-signin__use-pin button {
     width: 100%;

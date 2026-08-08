@@ -10,6 +10,7 @@
 @inject IPlatformAccessClient Platform
 @inject IConnectivityService Connectivity
 @inject IOptions<LocalValidationClientOptions> LocalValidationOptions
+@inject IOptions<PosApiOptions> PosApi
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
@@ -21,10 +22,26 @@
 
     <FormValidationSummary Messages="_errors" />
 
+    @if (_showSlowPrompt)
+    {
+        <InlineMessage Tone="InlineMessageTone.Info">@L["SignIn_StillConnecting"]</InlineMessage>
+        <div class="pos-signin__slow-actions">
+            <Button Variant="ButtonVariant.Secondary" Disabled="false" OnClick="ContinueWaitingAsync">
+                @L["SignIn_ContinueWaiting"]
+            </Button>
+            @if (_canUsePin)
+            {
+                <Button Variant="ButtonVariant.Primary" OnClick="UsePinInsteadAsync">
+                    @L["SignIn_UsePinInstead"]
+                </Button>
+            }
+        </div>
+    }
+
     @if (_canUsePin)
     {
         <div class="pos-signin__use-pin">
-            <Button Variant="ButtonVariant.Primary" Disabled="_busy" OnClick="UsePinAsync">
+            <Button Variant="ButtonVariant.Primary" Disabled="_busy && !_showSlowPrompt" OnClick="UsePinInsteadAsync">
                 @L["SignIn_UsePin"]
             </Button>
         </div>
@@ -152,6 +169,7 @@
 </div>
 
 @code {
+    private readonly OnlineLoginProgressController _progress = new();
     private string? _username;
     private string? _password;
     private bool _busy;
@@ -160,6 +178,7 @@
     private bool _rememberMe;
     private bool _isOffline;
     private bool _canUsePin;
+    private bool _showSlowPrompt;
     private List<string> _errors = [];
 
     private bool _quickLoginAvailable;
@@ -336,7 +355,18 @@
         return Task.CompletedTask;
     }
 
-    private void UsePinAsync() => Nav.NavigateTo("/offline-pin", replace: true);
+    private void ContinueWaitingAsync() => _progress.ContinueWaiting();
+
+    private void UsePinInsteadAsync()
+    {
+        if (!_canUsePin)
+        {
+            return;
+        }
+
+        _progress.ChoosePinInstead();
+        Nav.NavigateTo("/offline-pin", replace: true);
+    }
 
     private async Task SignInPasswordAsync()
     {
@@ -357,6 +387,7 @@
     {
         _errors = [];
         _invalid = false;
+        _showSlowPrompt = false;
         if (_isOffline)
         {
             _errors.Add(L["SignIn_InternetRequired"]);
@@ -373,13 +404,62 @@
         _busy = true;
         try
         {
-            var result = await Auth.SignInAsync(new SignInRequest(
-                username.Trim(),
-                password,
-                AccountProfileId: accountProfileId));
+            var hardSeconds = Math.Clamp(PosApi.Value.TimeoutSeconds, 10, 30);
+            _progress.BeginOnlineAttempt(TimeSpan.FromSeconds(hardSeconds));
+
+            var progress = await _progress.RunAsync(
+                ct => Auth.SignInAsync(
+                    new SignInRequest(username.Trim(), password, AccountProfileId: accountProfileId),
+                    ct),
+                onSoftPrompt: () =>
+                {
+                    _showSlowPrompt = true;
+                    _ = InvokeAsync(StateHasChanged);
+                });
+
+            if (progress.Outcome == OnlineLoginProgressOutcome.PinSelected)
+            {
+                // Online result discarded — PIN unlock owns the flow.
+                return;
+            }
+
+            if (progress.Outcome == OnlineLoginProgressOutcome.HardTimedOut)
+            {
+                _showSlowPrompt = false;
+                // Unreachable / timeout — not an access denial.
+                if (_canUsePin)
+                {
+                    _errors = [L["SignIn_ServerUnreachablePinHint"].Value];
+                    return;
+                }
+
+                _errors = [L["SignIn_InternetRequired"].Value];
+                return;
+            }
+
+            if (progress.Outcome != OnlineLoginProgressOutcome.Completed || progress.Value is null)
+            {
+                return;
+            }
+
+            var result = progress.Value;
             if (!result.Succeeded || result.Session is null)
             {
-                _invalid = true;
+                _showSlowPrompt = false;
+                // Explicit denial / invalid credentials — do not treat as offline PIN fallback.
+                if (result.FailureReason is AuthFailureReason.Offline or AuthFailureReason.Timeout or AuthFailureReason.ApiUnavailable)
+                {
+                    if (_canUsePin)
+                    {
+                        _errors = [L["SignIn_ServerUnreachablePinHint"].Value];
+                        return;
+                    }
+
+                    _errors = [L["SignIn_InternetRequired"].Value];
+                    return;
+                }
+
+                _invalid = result.FailureReason is AuthFailureReason.InvalidCredentials;
                 _errors.Add(L[result.SafeMessageKey ?? "Auth_InvalidCredentials"]);
                 return;
             }
@@ -403,6 +483,8 @@
         finally
         {
             _busy = false;
+            _showSlowPrompt = false;
+            _progress.CancelOnlineAttempt();
         }
     }
 
