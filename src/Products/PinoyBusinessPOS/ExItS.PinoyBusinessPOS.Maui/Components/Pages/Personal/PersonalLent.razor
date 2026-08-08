@@ -4,6 +4,10 @@
 @inject IAuthenticationService Auth
 @inject ICurrentUserContext CurrentUser
 @inject IPlatformAccessClient Platform
+@inject ILocalPersonalUtangStore LocalStore
+@inject IPersonalOfflineSyncService PersonalSync
+@inject IConnectivityService Connectivity
+@inject OfflineAwareNavigation OfflineNav
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
@@ -28,6 +32,13 @@
         }
         else
         {
+            @if (_pendingSync > 0)
+            {
+                <Alert Tone="AlertTone.Info"
+                       Title="@L["Offline_SavedPendingSync"]"
+                       Message="@string.Format(L["SyncStatus_PendingItems"].Value, _pendingSync)" />
+            }
+
             @if (_items.Count == 0)
             {
                 <EmptyState Title="@L["Personal_LentEmptyTitle"]" Message="@L["Personal_LentEmptyMessage"]" />
@@ -42,8 +53,8 @@
                                 role="listitem"
                                 @onclick="() => GoDetail(item.Id)">
                             <span class="pos-personal-row__body">
-                                <span class="pos-personal-row__title">@item.CurrentBalance.ToString("N2") @item.CurrencyCode</span>
-                                <span class="pos-personal-row__meta">@item.Status · @item.UpdatedAtUtc.LocalDateTime.ToString("g")</span>
+                                <span class="pos-personal-row__title">@item.Outstanding.ToString("N2") @item.Currency</span>
+                                <span class="pos-personal-row__meta">@item.SyncStatus · @item.UpdatedAtUtc.LocalDateTime.ToString("g")</span>
                             </span>
                             <span class="pos-personal-row__chevron" aria-hidden="true">›</span>
                         </button>
@@ -91,9 +102,10 @@
     private string? _amount;
     private string? _notes;
     private List<string> _errors = [];
-    private IReadOnlyList<PersonalDebtRelationshipSummaryDto> _items = [];
+    private IReadOnlyList<LocalPersonalRelationship> _items = [];
     private IReadOnlyList<SelectOption> _contactOptions = [];
     private Guid? _userId;
+    private int _pendingSync;
 
     protected override async Task OnInitializedAsync()
     {
@@ -144,24 +156,57 @@
             }
 
             _userId = CurrentUser.Session?.UserId;
-            var contacts = await Platform.GetPersonalContactsAsync();
-            _contactOptions = contacts.IsSuccess && contacts.Data is not null
-                ? contacts.Data.Select(c => new SelectOption(c.Id.ToString("D"), c.DisplayName)).ToArray()
-                : [];
-
-            var result = await Platform.GetPersonalUtangLentAsync();
-            if (!result.IsSuccess || result.Data is null)
+            await LocalStore.EnsurePersonalContextAsync();
+            if (await Connectivity.IsConnectedAsync())
             {
-                _loadFailed = true;
-                _error = result.Error?.Detail ?? L["Personal_LentLoadFailed"];
-                return;
+                await HydrateLentFromServerAsync();
+                await PersonalSync.TrySyncPendingAsync();
             }
 
-            _items = result.Data;
+            var contacts = await LocalStore.ListContactsAsync();
+            _contactOptions = contacts.Select(c => new SelectOption(c.Id.ToString("D"), c.DisplayName)).ToArray();
+            _items = await LocalStore.ListRelationshipsAsync(LocalPersonalDirection.Lent);
+            _pendingSync = await PersonalSync.GetPendingCountAsync();
+        }
+        catch
+        {
+            _loadFailed = true;
+            _error = L["Personal_LentLoadFailed"];
         }
         finally
         {
             _loading = false;
+        }
+    }
+
+    private async Task HydrateLentFromServerAsync()
+    {
+        if (_userId is null)
+        {
+            return;
+        }
+
+        var result = await Platform.GetPersonalUtangLentAsync();
+        if (!result.IsSuccess || result.Data is null)
+        {
+            return;
+        }
+
+        foreach (var item in result.Data)
+        {
+            var contactId = item.DebtorContactId ?? item.CreditorContactId ?? Guid.Empty;
+            await LocalStore.UpsertServerRelationshipAsync(new LocalPersonalRelationship(
+                item.Id,
+                _userId.Value,
+                contactId,
+                LocalPersonalDirection.Lent,
+                item.CurrentBalance,
+                item.CurrencyCode,
+                LocalPersonalSyncStatus.Synced,
+                item.Id,
+                item.Version,
+                item.UpdatedAtUtc,
+                null));
         }
     }
 
@@ -195,22 +240,28 @@
         _busy = true;
         try
         {
-            var created = await Platform.CreatePersonalDebtRelationshipAsync(new CreatePersonalDebtRelationshipRequest(
-                CreditorUserIdentityId: _userId,
-                CreditorContactId: null,
-                DebtorUserIdentityId: null,
-                DebtorContactId: contactId,
-                CurrencyCode: "PHP",
-                DueDateUtc: null,
-                InitialLoanAmount: amount,
-                InitialLoanNotes: string.IsNullOrWhiteSpace(_notes) ? null : _notes.Trim()));
-            if (!created.IsSuccess || created.Data is null)
+            var relationshipId = Guid.NewGuid();
+            var operationId = Guid.NewGuid();
+            await LocalStore.PersistRelationshipAndEnqueueAsync(new LocalPersonalRelationshipCreateCommand(
+                relationshipId,
+                operationId,
+                operationId.ToString("N"),
+                contactId,
+                LocalPersonalDirection.Lent,
+                amount ?? 0m,
+                "PHP",
+                string.IsNullOrWhiteSpace(_notes) ? null : _notes.Trim()));
+
+            if (await Connectivity.IsConnectedAsync())
             {
-                _errors.Add(created.Error?.Detail ?? L["Personal_LentCreateFailed"]);
-                return;
+                await PersonalSync.TrySyncPendingAsync();
             }
 
-            Nav.NavigateTo($"/personal/utang/relationships/{created.Data.Id:D}");
+            Nav.NavigateTo($"/personal/utang/relationships/{relationshipId:D}");
+        }
+        catch
+        {
+            _errors.Add(L["Personal_LentCreateFailed"]);
         }
         finally
         {
@@ -220,6 +271,6 @@
 
     private void GoDetail(Guid id) => Nav.NavigateTo($"/personal/utang/relationships/{id:D}");
     private void GoResolveExItsId() =>
-        Nav.NavigateTo("/personal/resolve-user?purpose=utang-people&return=/personal/utang/people");
+        _ = OfflineNav.NavigateAsync("/personal/resolve-user?purpose=utang-people&return=/personal/utang/people");
     private void GoSignIn() => Nav.NavigateTo("/signin");
 }

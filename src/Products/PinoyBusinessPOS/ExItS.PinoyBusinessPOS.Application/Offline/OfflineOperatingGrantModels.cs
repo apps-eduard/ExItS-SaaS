@@ -1,13 +1,21 @@
 namespace ExItS.PinoyBusinessPOS.Application.Offline;
 
+/// <summary>Scope of a durable offline operate grant.</summary>
+public enum OfflineGrantScopeKind
+{
+    Organization = 0,
+    Personal = 1
+}
+
 /// <summary>
-/// Durable offline operate grant established only after successful online org/role validation.
+/// Durable offline operate grant established only after successful online validation.
 /// Does not contain passwords or access tokens. PIN unlock cannot create or extend this grant.
+/// Schema v1 grants (OrganizationId required, no ScopeKind) are accepted as Organization scope.
 /// </summary>
 public sealed record OfflineOperatingGrant(
     int SchemaVersion,
     Guid UserId,
-    Guid OrganizationId,
+    Guid? OrganizationId,
     string OrganizationDisplayName,
     string DeviceId,
     string? RoleCode,
@@ -18,11 +26,37 @@ public sealed record OfflineOperatingGrant(
     string? Email,
     DateTimeOffset IssuedAtUtc,
     DateTimeOffset LastOnlineValidatedAtUtc,
-    DateTimeOffset ExpiresAtUtc)
+    DateTimeOffset ExpiresAtUtc,
+    OfflineGrantScopeKind ScopeKind = OfflineGrantScopeKind.Organization)
 {
-    public const int CurrentSchemaVersion = 1;
+    public const int LegacySchemaVersion = 1;
+    public const int CurrentSchemaVersion = 2;
 
     public bool IsExpired(DateTimeOffset utcNow) => utcNow >= ExpiresAtUtc;
+
+    public bool IsOrganizationScope =>
+        ScopeKind == OfflineGrantScopeKind.Organization && OrganizationId is not null;
+
+    public bool IsPersonalScope =>
+        ScopeKind == OfflineGrantScopeKind.Personal && OrganizationId is null;
+
+    /// <summary>Normalizes legacy v1 grants (missing ScopeKind → Organization) for cold-start evaluation.</summary>
+    public OfflineOperatingGrant NormalizeForEvaluation()
+    {
+        if (SchemaVersion == LegacySchemaVersion)
+        {
+            return this with
+            {
+                SchemaVersion = CurrentSchemaVersion,
+                ScopeKind = OfflineGrantScopeKind.Organization
+            };
+        }
+
+        return this;
+    }
+
+    public static bool IsSupportedSchemaVersion(int schemaVersion) =>
+        schemaVersion is LegacySchemaVersion or CurrentSchemaVersion;
 }
 
 public sealed record OfflinePinVerifier(
@@ -44,7 +78,8 @@ public enum OfflinePinUnlockStatus
     OrgMismatch = 6,
     UserMismatch = 7,
     PinNotConfigured = 8,
-    InvalidPinFormat = 9
+    InvalidPinFormat = 9,
+    ScopeMismatch = 10
 }
 
 public sealed record OfflinePinUnlockResult(

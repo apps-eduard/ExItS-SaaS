@@ -254,9 +254,17 @@ public sealed class OfflineAccessRevalidator(
             return new OfflineAccessRevalidationResult(false, "offline");
         }
 
-        if (!currentUser.IsAuthenticated
-            || currentUser.Session?.OrganizationId is null
-            || !currentUser.HasPosAccess)
+        if (!currentUser.IsAuthenticated)
+        {
+            return new OfflineAccessRevalidationResult(false, "access_denied");
+        }
+
+        if (IsPersonalSession(currentUser.Session))
+        {
+            return new OfflineAccessRevalidationResult(true, null);
+        }
+
+        if (currentUser.Session?.OrganizationId is null || !currentUser.HasPosAccess)
         {
             return new OfflineAccessRevalidationResult(false, "access_denied");
         }
@@ -279,6 +287,17 @@ public sealed class OfflineAccessRevalidator(
             return baseAccess;
         }
 
+        if (PersonalLocalScope.IsPersonalOperationType(operationType))
+        {
+            // Personal ops must never run under an organization POS session.
+            if (!IsPersonalSession(currentUser.Session))
+            {
+                return new OfflineAccessRevalidationResult(false, "personal_scope_required");
+            }
+
+            return baseAccess;
+        }
+
         if (capabilities is null
             || string.Equals(operationType, OfflineOperationTypes.DevOfflineProbe, StringComparison.Ordinal))
         {
@@ -298,6 +317,11 @@ public sealed class OfflineAccessRevalidator(
 
         return new OfflineAccessRevalidationResult(true, null);
     }
+
+    private static bool IsPersonalSession(Auth.AuthSession? session) =>
+        session is not null
+        && session.OrganizationId is null
+        && string.Equals(session.AccountClass, "Personal", StringComparison.OrdinalIgnoreCase);
 
     private static bool TryMapCapability(string operationType, out UtangCapability capability)
     {
@@ -407,4 +431,13 @@ public static class OfflineOperationTypes
 
     /// <summary>Server-side idempotency for POS role revocation. Online-only.</summary>
     public const string PosRoleRevoke = "pos_role.revoke";
+
+    /// <summary>Personal Utang contact upsert — Platform Personal API only.</summary>
+    public const string PersonalContactUpsert = "personal.contact.upsert";
+
+    /// <summary>Personal Utang relationship create — Platform Personal API only.</summary>
+    public const string PersonalRelationshipCreate = "personal.relationship.create";
+
+    /// <summary>Personal Utang entry/payment record — Platform Personal API only.</summary>
+    public const string PersonalEntryRecord = "personal.entry.record";
 }

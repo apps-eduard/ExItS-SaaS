@@ -3,6 +3,7 @@
 @inject IAuthenticationService Auth
 @inject ICurrentUserContext CurrentUser
 @inject IPlatformAccessClient Platform
+@inject OnlineRequiredGuard OnlineRequired
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
@@ -100,6 +101,13 @@
             {
                 _loadFailed = true;
                 _error = L[personal.SafeMessageKey ?? "Access_Denied"];
+                return;
+            }
+
+            if (!await OnlineRequired.EnsureOnlineForRouteAsync("/personal/utang/invitations"))
+            {
+                _loadFailed = true;
+                _error = L["OnlineRequired_Message"];
                 return;
             }
 

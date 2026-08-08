@@ -3,6 +3,10 @@
 @inject IAuthenticationService Auth
 @inject ICurrentUserContext CurrentUser
 @inject IPlatformAccessClient Platform
+@inject ILocalPersonalUtangStore LocalStore
+@inject IPersonalOfflineSyncService PersonalSync
+@inject IConnectivityService Connectivity
+@inject OnlineRequiredGuard OnlineRequired
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
@@ -28,10 +32,17 @@
     }
     else
     {
+        @if (_pendingSync > 0)
+        {
+            <Alert Tone="AlertTone.Info"
+                   Title="@L["Offline_SavedPendingSync"]"
+                   Message="@string.Format(L["SyncStatus_PendingItems"].Value, _pendingSync)" />
+        }
+
         <Section Title="@L["Personal_BalanceSection"]">
             <Stack Gap="2">
-                <div class="pos-value-md">@_relationship.CurrentBalance.ToString("N2") @_relationship.CurrencyCode</div>
-                <span class="pos-muted">@_relationship.Perspective · @_relationship.Status · v@_relationship.Version</span>
+                <div class="pos-value-md">@_relationship.Outstanding.ToString("N2") @_relationship.Currency</div>
+                <span class="pos-muted">@_relationship.Direction · @_relationship.SyncStatus · v@_relationship.Version</span>
             </Stack>
         </Section>
 
@@ -44,6 +55,7 @@
             </FormGroup>
             <FormActions>
                 <Button IsLoading="_busy" Disabled="_busy" OnClick="RecordAsync">@L["Personal_RecordEntry"]</Button>
+                <Button Variant="ButtonVariant.Secondary" Disabled="_busy" OnClick="InviteAsync">@L["Personal_Nav_UtangInvitations"]</Button>
             </FormActions>
         </Section>
 
@@ -60,10 +72,10 @@
                         <div class="pos-personal-org">
                             <Stack Gap="1">
                                 <span class="pos-value-md">@e.EntryType · @e.Amount.ToString("N2")</span>
-                                <span class="pos-muted">@L["Personal_BalanceAfter"]: @e.BalanceAfter.ToString("N2") · @e.CreatedAtUtc.LocalDateTime.ToString("g")</span>
-                                @if (!string.IsNullOrWhiteSpace(e.Notes))
+                                <span class="pos-muted">@e.OccurredAtUtc.LocalDateTime.ToString("g") · @e.SyncStatus</span>
+                                @if (!string.IsNullOrWhiteSpace(e.Note))
                                 {
-                                    <span class="pos-muted">@e.Notes</span>
+                                    <span class="pos-muted">@e.Note</span>
                                 }
                             </Stack>
                         </div>
@@ -87,8 +99,9 @@
     private string? _amount;
     private string? _notes;
     private List<string> _errors = [];
-    private PersonalDebtRelationshipSummaryDto? _relationship;
-    private IReadOnlyList<PersonalUtangEntryDto> _history = [];
+    private LocalPersonalRelationship? _relationship;
+    private IReadOnlyList<LocalPersonalEntry> _history = [];
+    private int _pendingSync;
 
     private IReadOnlyList<SelectOption> _entryOptions =>
     [
@@ -129,17 +142,52 @@
                 return;
             }
 
-            var rel = await Platform.GetPersonalDebtRelationshipAsync(RelationshipId);
-            if (!rel.IsSuccess || rel.Data is null)
+            await LocalStore.EnsurePersonalContextAsync();
+            if (await Connectivity.IsConnectedAsync())
+            {
+                await PersonalSync.TrySyncPendingAsync();
+            }
+
+            _relationship = await LocalStore.GetRelationshipAsync(RelationshipId);
+            if (_relationship is null && await Connectivity.IsConnectedAsync())
+            {
+                var rel = await Platform.GetPersonalDebtRelationshipAsync(RelationshipId);
+                if (rel.IsSuccess && rel.Data is not null && CurrentUser.Session is not null)
+                {
+                    var contactId = rel.Data.DebtorContactId ?? rel.Data.CreditorContactId ?? Guid.Empty;
+                    var direction = string.Equals(rel.Data.Perspective, "Borrowed", StringComparison.OrdinalIgnoreCase)
+                        ? LocalPersonalDirection.Borrowed
+                        : LocalPersonalDirection.Lent;
+                    await LocalStore.UpsertServerRelationshipAsync(new LocalPersonalRelationship(
+                        rel.Data.Id,
+                        CurrentUser.Session.UserId,
+                        contactId,
+                        direction,
+                        rel.Data.CurrentBalance,
+                        rel.Data.CurrencyCode,
+                        LocalPersonalSyncStatus.Synced,
+                        rel.Data.Id,
+                        rel.Data.Version,
+                        rel.Data.UpdatedAtUtc,
+                        null));
+                    _relationship = await LocalStore.GetRelationshipAsync(RelationshipId);
+                }
+            }
+
+            if (_relationship is null)
             {
                 _loadFailed = true;
-                _error = rel.Error?.Detail ?? L["Personal_RelationshipLoadFailed"];
+                _error = L["Personal_RelationshipLoadFailed"];
                 return;
             }
 
-            _relationship = rel.Data;
-            var history = await Platform.GetPersonalUtangHistoryAsync(RelationshipId);
-            _history = history.IsSuccess && history.Data is not null ? history.Data : [];
+            _history = await LocalStore.ListEntriesAsync(RelationshipId);
+            _pendingSync = await PersonalSync.GetPendingCountAsync();
+        }
+        catch
+        {
+            _loadFailed = true;
+            _error = L["Personal_RelationshipLoadFailed"];
         }
         finally
         {
@@ -165,28 +213,43 @@
         _busy = true;
         try
         {
-            var recorded = await Platform.RecordPersonalUtangEntryAsync(
+            var entryId = Guid.NewGuid();
+            var operationId = Guid.NewGuid();
+            await LocalStore.PersistEntryAndEnqueueAsync(new LocalPersonalEntryRecordCommand(
+                entryId,
+                operationId,
+                operationId.ToString("N"),
                 RelationshipId,
-                new RecordPersonalUtangEntryRequest(
-                    _entryType,
-                    amount,
-                    AdjustmentDelta: string.Equals(_entryType, "Adjustment", StringComparison.OrdinalIgnoreCase) ? amount : null,
-                    ExpectedVersion: _relationship?.Version,
-                    Notes: string.IsNullOrWhiteSpace(_notes) ? null : _notes.Trim(),
-                    DueDateUtc: null));
-            if (!recorded.IsSuccess)
+                _entryType,
+                amount,
+                string.IsNullOrWhiteSpace(_notes) ? null : _notes.Trim()));
+
+            if (await Connectivity.IsConnectedAsync())
             {
-                _errors.Add(recorded.Error?.Detail ?? L["Personal_RecordEntryFailed"]);
-                return;
+                await PersonalSync.TrySyncPendingAsync();
             }
 
             _amount = _notes = null;
             await LoadAsync();
         }
+        catch
+        {
+            _errors.Add(L["Personal_RecordEntryFailed"]);
+        }
         finally
         {
             _busy = false;
         }
+    }
+
+    private async Task InviteAsync()
+    {
+        if (!await OnlineRequired.EnsureOnlineForActionAsync(PosOfflineActionKeys.PersonalInvite))
+        {
+            return;
+        }
+
+        Nav.NavigateTo("/personal/utang/invitations");
     }
 
     private Task GoBackListAsync()
@@ -197,7 +260,7 @@
 
     private void GoBackList()
     {
-        var path = string.Equals(_relationship?.Perspective, "Borrowed", StringComparison.OrdinalIgnoreCase)
+        var path = string.Equals(_relationship?.Direction, LocalPersonalDirection.Borrowed, StringComparison.OrdinalIgnoreCase)
             ? "/personal/utang/borrowed"
             : "/personal/utang/lent";
         Nav.NavigateTo(path);

@@ -4,6 +4,9 @@
 @inject IAuthenticationService Auth
 @inject ICurrentUserContext CurrentUser
 @inject IPlatformAccessClient Platform
+@inject ILocalPersonalUtangStore LocalStore
+@inject IPersonalOfflineSyncService PersonalSync
+@inject IConnectivityService Connectivity
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
@@ -23,8 +26,15 @@
         }
         else
         {
+            @if (_pendingSync > 0)
+            {
+                <Alert Tone="AlertTone.Info"
+                       Title="@L["Offline_SavedPendingSync"]"
+                       Message="@string.Format(L["SyncStatus_PendingItems"].Value, _pendingSync)" />
+            }
+
             <Section Title="@L["Personal_DashboardSection"]">
-                @if (_dashboard is null)
+                @if (_aggregates is null && _dashboard is null)
                 {
                     <InlineMessage Tone="InlineMessageTone.Warning">@L["Personal_DashboardUnavailable"]</InlineMessage>
                 }
@@ -33,19 +43,19 @@
                     <div class="pos-personal-stats" role="list">
                         <div class="pos-personal-stat" role="listitem">
                             <span class="pos-personal-stat__label">@L["Personal_Stat_People"]</span>
-                            <span class="pos-personal-stat__value">@_dashboard.ContactCount</span>
+                            <span class="pos-personal-stat__value">@(_aggregates?.ContactCount ?? _dashboard!.ContactCount)</span>
                         </div>
                         <div class="pos-personal-stat" role="listitem">
                             <span class="pos-personal-stat__label">@L["Personal_Stat_ActiveRelationships"]</span>
-                            <span class="pos-personal-stat__value">@_dashboard.ActiveRelationshipCount</span>
+                            <span class="pos-personal-stat__value">@(_aggregates?.ActiveRelationshipCount ?? _dashboard!.ActiveRelationshipCount)</span>
                         </div>
                         <div class="pos-personal-stat" role="listitem">
                             <span class="pos-personal-stat__label">@L["Personal_Stat_Lent"]</span>
-                            <span class="pos-personal-stat__value">@_dashboard.TotalLentBalance.ToString("N2")</span>
+                            <span class="pos-personal-stat__value">@((_aggregates?.TotalLentBalance ?? _dashboard!.TotalLentBalance).ToString("N2"))</span>
                         </div>
                         <div class="pos-personal-stat" role="listitem">
                             <span class="pos-personal-stat__label">@L["Personal_Stat_Borrowed"]</span>
-                            <span class="pos-personal-stat__value">@_dashboard.TotalBorrowedBalance.ToString("N2")</span>
+                            <span class="pos-personal-stat__value">@((_aggregates?.TotalBorrowedBalance ?? _dashboard!.TotalBorrowedBalance).ToString("N2"))</span>
                         </div>
                     </div>
                 }
@@ -66,9 +76,9 @@
                                     role="listitem"
                                     @onclick="() => GoRelationship(item.Id)">
                                 <span class="pos-personal-row__body">
-                                    <span class="pos-personal-row__title">@PerspectiveLabel(item.Perspective)</span>
+                                    <span class="pos-personal-row__title">@PerspectiveLabel(item.Direction)</span>
                                     <span class="pos-personal-row__meta">
-                                        @item.CurrentBalance.ToString("N2") @item.CurrencyCode
+                                        @item.Outstanding.ToString("N2") @item.Currency
                                         · @item.UpdatedAtUtc.LocalDateTime.ToString("g")
                                     </span>
                                 </span>
@@ -93,7 +103,9 @@
     private bool _loadFailed;
     private string? _error;
     private PersonalDashboardDto? _dashboard;
-    private IReadOnlyList<PersonalDebtRelationshipSummaryDto> _recent = [];
+    private LocalPersonalAggregates? _aggregates;
+    private IReadOnlyList<LocalPersonalRelationship> _recent = [];
+    private int _pendingSync;
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
 
@@ -128,26 +140,24 @@
                 return;
             }
 
-            var dash = await Platform.GetPersonalDashboardAsync();
-            _dashboard = dash.IsSuccess ? dash.Data : null;
-
-            var lent = await Platform.GetPersonalUtangLentAsync();
-            var borrowed = await Platform.GetPersonalUtangBorrowedAsync();
-            var combined = new List<PersonalDebtRelationshipSummaryDto>();
-            if (lent.IsSuccess && lent.Data is not null)
-            {
-                combined.AddRange(lent.Data);
-            }
-
-            if (borrowed.IsSuccess && borrowed.Data is not null)
-            {
-                combined.AddRange(borrowed.Data);
-            }
-
-            _recent = combined
+            await LocalStore.EnsurePersonalContextAsync();
+            _aggregates = await LocalStore.GetAggregatesAsync();
+            var lent = await LocalStore.ListRelationshipsAsync(LocalPersonalDirection.Lent);
+            var borrowed = await LocalStore.ListRelationshipsAsync(LocalPersonalDirection.Borrowed);
+            _recent = lent.Concat(borrowed)
                 .OrderByDescending(x => x.UpdatedAtUtc)
                 .Take(8)
                 .ToArray();
+            _pendingSync = await PersonalSync.GetPendingCountAsync();
+
+            if (await Connectivity.IsConnectedAsync())
+            {
+                var dash = await Platform.GetPersonalDashboardAsync();
+                _dashboard = dash.IsSuccess ? dash.Data : null;
+                await PersonalSync.TrySyncPendingAsync();
+                _aggregates = await LocalStore.GetAggregatesAsync();
+                _pendingSync = await PersonalSync.GetPendingCountAsync();
+            }
         }
         catch
         {
@@ -161,9 +171,11 @@
     }
 
     private string PerspectiveLabel(string perspective) =>
-        string.Equals(perspective, "Lent", StringComparison.OrdinalIgnoreCase)
+        string.Equals(perspective, LocalPersonalDirection.Lent, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(perspective, "Lent", StringComparison.OrdinalIgnoreCase)
             ? L["Personal_Stat_Lent"]
-            : string.Equals(perspective, "Borrowed", StringComparison.OrdinalIgnoreCase)
+            : string.Equals(perspective, LocalPersonalDirection.Borrowed, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(perspective, "Borrowed", StringComparison.OrdinalIgnoreCase)
                 ? L["Personal_Stat_Borrowed"]
                 : perspective;
 

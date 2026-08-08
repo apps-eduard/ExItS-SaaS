@@ -4,6 +4,7 @@
 @inject ICurrentUserContext CurrentUser
 @inject IPlatformAccessClient Platform
 @inject IOnboardingPreferenceStore Prefs
+@inject OnlineRequiredGuard OnlineRequired
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
@@ -84,6 +85,12 @@
         else
         {
             _authenticated = true;
+        }
+
+        if (_authenticated
+            && !await OnlineRequired.EnsureOnlineForActionAsync(PosOfflineActionKeys.PersonalStartBusiness))
+        {
+            _authenticated = false;
         }
 
         ParseQuery();

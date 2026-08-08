@@ -23,4 +23,12 @@ public static class PosOfflineActionKeys
     public const string CustomerStatement = "customers.statement";
     public const string CustomerOverdue = "customers.overdue";
     public const string SaleHistory = "sales.history";
+
+    public const string PersonalInvite = "personal.invite";
+    public const string PersonalLinkUser = "personal.link_user";
+    public const string PersonalStartBusiness = "personal.start_business";
+    public const string PersonalContactCreate = "personal.contact.create";
+    public const string PersonalLentCreate = "personal.lent.create";
+    public const string PersonalBorrowedCreate = "personal.borrowed.create";
+    public const string PersonalEntryRecord = "personal.entry.record";
 }

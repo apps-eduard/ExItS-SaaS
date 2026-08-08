@@ -1,8 +1,10 @@
 @page "/personal/explore-pos"
 @layout Layout.PersonalShell
+@using ExItS.DesignSystem.Components.Internal
 @inject IAuthenticationService Auth
 @inject ICurrentUserContext CurrentUser
 @inject IPlatformAccessClient Platform
+@inject OnlineRequiredGuard OnlineRequired
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
@@ -32,47 +34,67 @@
     }
     else
     {
-        <InlineMessage Tone="InlineMessageTone.Info">@L["Personal_ExplorePosSelectHint"]</InlineMessage>
-        <Stack Gap="4">
+        <p class="pos-personal-explore__hint">@L["Personal_ExplorePosSelectHint"]</p>
+
+        <div class="pos-explore-plans" role="list">
             @foreach (var plan in _plans.OrderBy(p => p.SortOrder))
             {
-                <div class="pos-personal-org">
-                    <Stack Gap="2">
-                        <span class="pos-value-md">@plan.DisplayName</span>
-                        <span class="pos-muted">
-                            @plan.MonthlyPrice.ToString("N2") @plan.CurrencyCode / @L["Personal_Billing_Month"]
-                            · @plan.AnnualPrice.ToString("N2") @plan.CurrencyCode / @L["Personal_Billing_Year"]
-                        </span>
-                        @if (plan.TrialAllowed && plan.DefaultTrialDays > 0)
+                var trialAvailable = plan.TrialAllowed && plan.DefaultTrialDays > 0;
+                <article class="pos-explore-plan" role="listitem">
+                    <header class="pos-explore-plan__header">
+                        <h2 class="pos-explore-plan__name">@plan.DisplayName</h2>
+                        @if (trialAvailable)
                         {
-                            <span class="pos-muted">@string.Format(L["Personal_ExplorePosTrialDays"].Value, plan.DefaultTrialDays)</span>
+                            <span class="pos-explore-plan__badge">@string.Format(L["Personal_ExplorePosTrialDays"].Value, plan.DefaultTrialDays)</span>
                         }
                         else
                         {
-                            <span class="pos-muted">@L["Personal_ExplorePosNoTrial"]</span>
+                            <span class="pos-explore-plan__badge pos-explore-plan__badge--muted">@L["Personal_ExplorePosNoTrial"]</span>
                         }
-                        <Stack Gap="1">
-                            @foreach (var line in FeatureLines(plan))
-                            {
-                                <span class="pos-muted">· @line</span>
-                            }
-                        </Stack>
-                        <FormActions>
-                            @if (plan.TrialAllowed && plan.DefaultTrialDays > 0)
-                            {
-                                <Button OnClick="() => SelectPlan(plan, startAsTrial: true, payNow: false)">
-                                    @L["Personal_ExplorePosStartTrial"]
-                                </Button>
-                            }
-                            <Button Variant="@(plan.TrialAllowed ? ButtonVariant.Secondary : ButtonVariant.Primary)"
+                    </header>
+
+                    <div class="pos-explore-plan__pricing">
+                        <p class="pos-explore-plan__price">
+                            <span class="pos-explore-plan__amount">@plan.MonthlyPrice.ToString("N0")</span>
+                            <span class="pos-explore-plan__currency">@plan.CurrencyCode</span>
+                            <span class="pos-explore-plan__period">/ @L["Personal_Billing_Month"]</span>
+                        </p>
+                        <p class="pos-explore-plan__annual">
+                            @plan.AnnualPrice.ToString("N0") @plan.CurrencyCode / @L["Personal_Billing_Year"]
+                        </p>
+                    </div>
+
+                    <ul class="pos-explore-plan__features">
+                        @foreach (var line in FeatureLines(plan))
+                        {
+                            <li class="pos-explore-plan__feature">
+                                <span class="pos-explore-plan__check" aria-hidden="true">@IconGlyphs.Get("check")</span>
+                                <span>@line</span>
+                            </li>
+                        }
+                    </ul>
+
+                    <div class="pos-explore-plan__actions">
+                        @if (trialAvailable)
+                        {
+                            <Button OnClick="() => SelectPlan(plan, startAsTrial: true, payNow: false)">
+                                @L["Personal_ExplorePosStartTrial"]
+                            </Button>
+                            <Button Variant="ButtonVariant.Secondary"
                                     OnClick="() => SelectPlan(plan, startAsTrial: false, payNow: true)">
                                 @L["Personal_ExplorePosSubscribe"]
                             </Button>
-                        </FormActions>
-                    </Stack>
-                </div>
+                        }
+                        else
+                        {
+                            <Button OnClick="() => SelectPlan(plan, startAsTrial: false, payNow: true)">
+                                @L["Personal_ExplorePosSubscribe"]
+                            </Button>
+                        }
+                    </div>
+                </article>
             }
-        </Stack>
+        </div>
     }
 </Page>
 </div>
@@ -109,6 +131,13 @@
             }
 
             await Auth.EnsurePersonalAccountProfileAsync();
+            if (!await OnlineRequired.EnsureOnlineForRouteAsync("/personal/explore-pos"))
+            {
+                _loadFailed = true;
+                _error = L["OnlineRequired_Message"];
+                return;
+            }
+
             var result = await Platform.GetCommercialPlansAsync(PosProductCodes.PinoyBusinessPos);
             if (!result.IsSuccess || result.Data is null)
             {
@@ -127,23 +156,23 @@
         }
     }
 
-    private static IEnumerable<string> FeatureLines(CommercialPlanDto plan)
+    private IEnumerable<string> FeatureLines(CommercialPlanDto plan)
     {
-        yield return $"Branches: {plan.MaxBranches}";
-        yield return $"Active staff: {plan.MaxActiveStaff}";
+        yield return string.Format(L["Personal_ExplorePosFeatureBranches"].Value, plan.MaxBranches);
+        yield return string.Format(L["Personal_ExplorePosFeatureStaff"].Value, plan.MaxActiveStaff);
         if (plan.CustomerCreditEnabled)
         {
-            yield return "Customer credit";
+            yield return L["Personal_ExplorePosFeatureCredit"];
         }
 
         if (plan.AdvancedReportsEnabled)
         {
-            yield return "Advanced reports";
+            yield return L["Personal_ExplorePosFeatureReports"];
         }
 
         if (plan.ExportEnabled)
         {
-            yield return "Export";
+            yield return L["Personal_ExplorePosFeatureExport"];
         }
 
         if (!string.IsNullOrWhiteSpace(plan.Description))

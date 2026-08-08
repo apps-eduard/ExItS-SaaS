@@ -584,19 +584,14 @@ public sealed class AuthenticationService(
             && active.UserId == shell.UserId
             && !active.IsExpired(_clock.GetUtcNow()))
         {
-            var unlocked = shell with
-            {
-                OrganizationId = active.OrganizationId,
-                OrganizationDisplayName = active.OrganizationDisplayName,
-                DisplayName = string.IsNullOrWhiteSpace(shell.DisplayName) ? active.DisplayName ?? shell.DisplayName : shell.DisplayName,
-                HasPosAccess = true,
-                AccessReasonCode = "offline_grant",
-                SubscriptionStatus = active.SubscriptionStatus ?? shell.SubscriptionStatus,
-                EnabledFeatureCodes = active.EnabledFeatureCodes.Count > 0 ? active.EnabledFeatureCodes : shell.EnabledFeatureCodes
-            };
+            var unlocked = BuildSessionFromGrant(shell, active);
             currentUser.Set(unlocked);
-            await OpenLocalContextAsync(unlocked.UserId, active.OrganizationId, ct).ConfigureAwait(false);
-            _accessPolicy?.NotifyOfflineUnlock(unlocked.UserId, active.OrganizationId);
+            await OpenLocalContextForGrantAsync(unlocked.UserId, active, ct).ConfigureAwait(false);
+            if (active.IsOrganizationScope && active.OrganizationId is Guid unlockedOrg)
+            {
+                _accessPolicy?.NotifyOfflineUnlock(unlocked.UserId, unlockedOrg);
+            }
+
             return new AuthResult(true, AuthFailureReason.None, unlocked);
         }
 
@@ -605,32 +600,38 @@ public sealed class AuthenticationService(
             var offer = await _offlineGrant.EvaluateColdStartOfferAsync(ct).ConfigureAwait(false);
             if (offer.CanOfferPinUnlock && offer.Grant is not null)
             {
-                if (orgId is Guid boundOrg && offer.Grant.OrganizationId != boundOrg)
+                if (offer.Grant.UserId != shell.UserId)
+                {
+                    offer = offer with { CanOfferPinUnlock = false, DenialReasonCode = "offline_user_mismatch" };
+                }
+                else if (offer.Grant.IsOrganizationScope
+                         && orgId is Guid boundOrg
+                         && offer.Grant.OrganizationId != boundOrg)
                 {
                     // Preference/org mismatch — fail closed to reconnect.
                     offer = offer with { CanOfferPinUnlock = false, DenialReasonCode = "offline_org_mismatch" };
                 }
-                else if (offer.Grant.UserId != shell.UserId)
+                else if (offer.Grant.IsPersonalScope
+                         && orgId is not null
+                         && string.Equals(shell.AccountClass, "Organization", StringComparison.OrdinalIgnoreCase))
                 {
-                    offer = offer with { CanOfferPinUnlock = false, DenialReasonCode = "offline_user_mismatch" };
+                    // Do not offer a personal grant while the shell is org-bound.
+                    offer = offer with { CanOfferPinUnlock = false, DenialReasonCode = "offline_scope_mismatch" };
                 }
             }
 
             if (offer is { CanOfferPinUnlock: true, Grant: not null })
             {
-                var pinPending = shell with
+                var pinPending = BuildSessionFromGrant(shell, offer.Grant) with
                 {
-                    OrganizationId = offer.Grant.OrganizationId,
-                    OrganizationDisplayName = offer.Grant.OrganizationDisplayName,
                     HasPosAccess = false,
-                    AccessReasonCode = "offline_pin_required",
-                    SubscriptionStatus = offer.Grant.SubscriptionStatus,
-                    EnabledFeatureCodes = offer.Grant.EnabledFeatureCodes
+                    AccessReasonCode = "offline_pin_required"
                 };
                 currentUser.Set(pinPending);
                 events.Record("offline_pin_required", Dict(
                     ("userId", shell.UserId.ToString("D")),
-                    ("organizationId", offer.Grant.OrganizationId.ToString("D"))));
+                    ("organizationId", offer.Grant.OrganizationId?.ToString("D") ?? string.Empty),
+                    ("scopeKind", offer.Grant.ScopeKind.ToString())));
                 return new AuthResult(
                     false,
                     AuthFailureReason.Offline,
@@ -667,6 +668,11 @@ public sealed class AuthenticationService(
         }
 
         var grant = unlock.Grant;
+        if (!grant.IsOrganizationScope && !grant.IsPersonalScope)
+        {
+            return new AuthResult(false, AuthFailureReason.AccessDenied, SafeMessageKey: "Offline_GrantMissing");
+        }
+
         var shell = currentUser.Session;
         AuthSession? markerSession = null;
         string? marker = null;
@@ -685,18 +691,15 @@ public sealed class AuthenticationService(
             return new AuthResult(false, AuthFailureReason.SessionExpired, SafeMessageKey: "Auth_SessionExpired");
         }
 
-        var restored = baseSession with
+        // Reject cross-use: personal grant must not unlock while the shell is org-bound.
+        if (grant.IsPersonalScope
+            && baseSession.OrganizationId is not null
+            && string.Equals(baseSession.AccountClass, "Organization", StringComparison.OrdinalIgnoreCase))
         {
-            OrganizationId = grant.OrganizationId,
-            OrganizationDisplayName = grant.OrganizationDisplayName,
-            DisplayName = grant.DisplayName ?? baseSession.DisplayName,
-            Username = grant.Username ?? baseSession.Username,
-            Email = grant.Email ?? baseSession.Email,
-            HasPosAccess = true,
-            AccessReasonCode = "offline_grant",
-            SubscriptionStatus = grant.SubscriptionStatus ?? baseSession.SubscriptionStatus,
-            EnabledFeatureCodes = grant.EnabledFeatureCodes
-        };
+            return new AuthResult(false, AuthFailureReason.AccessDenied, SafeMessageKey: "Offline_GrantMissing");
+        }
+
+        var restored = BuildSessionFromGrant(baseSession, grant);
 
         try
         {
@@ -710,13 +713,23 @@ public sealed class AuthenticationService(
         }
 
         currentUser.Set(restored);
-        await preferences.SetSelectedOrganizationIdAsync(grant.OrganizationId, ct).ConfigureAwait(false);
-        await OpenLocalContextAsync(restored.UserId, grant.OrganizationId, ct).ConfigureAwait(false);
-        _accessPolicy?.NotifyOfflineUnlock(restored.UserId, grant.OrganizationId);
+        if (grant.IsOrganizationScope && grant.OrganizationId is Guid orgId)
+        {
+            await preferences.SetSelectedOrganizationIdAsync(orgId, ct).ConfigureAwait(false);
+            await OpenLocalContextAsync(restored.UserId, orgId, ct).ConfigureAwait(false);
+            _accessPolicy?.NotifyOfflineUnlock(restored.UserId, orgId);
+        }
+        else
+        {
+            await preferences.SetSelectedOrganizationIdAsync(null, ct).ConfigureAwait(false);
+            await OpenPersonalLocalContextAsync(restored.UserId, ct).ConfigureAwait(false);
+        }
+
         _offlineSessionUx?.NotifyOfflinePinUnlocked();
         events.Record("offline_pin_unlock_succeeded", Dict(
             ("userId", restored.UserId.ToString("D")),
-            ("organizationId", grant.OrganizationId.ToString("D"))));
+            ("organizationId", grant.OrganizationId?.ToString("D") ?? string.Empty),
+            ("scopeKind", grant.ScopeKind.ToString())));
         return new AuthResult(true, AuthFailureReason.None, restored);
     }
 
@@ -906,6 +919,8 @@ public sealed class AuthenticationService(
         if (string.Equals(session.AccountClass, "Personal", StringComparison.OrdinalIgnoreCase)
             && session.OrganizationId is null)
         {
+            await EstablishPersonalOfflineGrantAsync(session, ct).ConfigureAwait(false);
+            await OpenPersonalLocalContextAsync(session.UserId, ct).ConfigureAwait(false);
             return new AuthResult(true, AuthFailureReason.None, session);
         }
 
@@ -922,6 +937,8 @@ public sealed class AuthenticationService(
                 AccountClass = "Personal"
             };
             currentUser.Set(localOnly);
+            await EstablishPersonalOfflineGrantAsync(localOnly, ct).ConfigureAwait(false);
+            await OpenPersonalLocalContextAsync(localOnly.UserId, ct).ConfigureAwait(false);
             return new AuthResult(true, AuthFailureReason.None, localOnly);
         }
 
@@ -987,6 +1004,8 @@ public sealed class AuthenticationService(
         }
 
         currentUser.Set(updated);
+        await EstablishPersonalOfflineGrantAsync(updated, ct).ConfigureAwait(false);
+        await OpenPersonalLocalContextAsync(updated.UserId, ct).ConfigureAwait(false);
         events.Record("ensured_personal_profile", Dict(("userId", session.UserId.ToString("D"))));
         return new AuthResult(true, AuthFailureReason.None, updated);
     }
@@ -1653,6 +1672,12 @@ public sealed class AuthenticationService(
             return;
         }
 
+        if (organizationId == PersonalLocalScope.PathIsolationMarker)
+        {
+            await OpenPersonalLocalContextAsync(userId, ct).ConfigureAwait(false);
+            return;
+        }
+
         try
         {
             await _localContext
@@ -1665,6 +1690,95 @@ public sealed class AuthenticationService(
                 ("userId", userId.ToString("D")),
                 ("organizationId", organizationId.ToString("D"))));
         }
+    }
+
+    private async Task OpenPersonalLocalContextAsync(Guid userId, CancellationToken ct)
+    {
+        if (_localContext is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await _localContext.OpenPersonalAsync(userId, ct).ConfigureAwait(false);
+        }
+        catch
+        {
+            events.Record("local_context_open_failure", Dict(
+                ("userId", userId.ToString("D")),
+                ("organizationId", string.Empty),
+                ("scopeKind", nameof(OfflineGrantScopeKind.Personal))));
+        }
+    }
+
+    private async Task OpenLocalContextForGrantAsync(
+        Guid userId,
+        OfflineOperatingGrant grant,
+        CancellationToken ct)
+    {
+        if (grant.IsPersonalScope)
+        {
+            await OpenPersonalLocalContextAsync(userId, ct).ConfigureAwait(false);
+            return;
+        }
+
+        if (grant.OrganizationId is Guid orgId)
+        {
+            await OpenLocalContextAsync(userId, orgId, ct).ConfigureAwait(false);
+        }
+    }
+
+    private async Task EstablishPersonalOfflineGrantAsync(AuthSession session, CancellationToken ct)
+    {
+        if (_offlineGrant is null)
+        {
+            return;
+        }
+
+        var deviceId = _deviceIdentity is null
+            ? string.Empty
+            : await _deviceIdentity.GetOrCreateDeviceIdAsync(ct).ConfigureAwait(false);
+        await _offlineGrant
+            .EstablishFromOnlineSessionAsync(session, deviceId, roleCode: null, ct)
+            .ConfigureAwait(false);
+        _offlineSessionUx?.ResetSession();
+    }
+
+    private static AuthSession BuildSessionFromGrant(AuthSession baseSession, OfflineOperatingGrant grant)
+    {
+        if (grant.IsPersonalScope)
+        {
+            return baseSession with
+            {
+                OrganizationId = null,
+                OrganizationDisplayName = PersonalLocalScope.DisplayName,
+                DisplayName = grant.DisplayName ?? baseSession.DisplayName,
+                Username = grant.Username ?? baseSession.Username,
+                Email = grant.Email ?? baseSession.Email,
+                HasPosAccess = false,
+                AccessReasonCode = "offline_grant",
+                SubscriptionStatus = null,
+                EnabledFeatureCodes = null,
+                AccountClass = "Personal"
+            };
+        }
+
+        return baseSession with
+        {
+            OrganizationId = grant.OrganizationId,
+            OrganizationDisplayName = grant.OrganizationDisplayName,
+            DisplayName = grant.DisplayName ?? baseSession.DisplayName,
+            Username = grant.Username ?? baseSession.Username,
+            Email = grant.Email ?? baseSession.Email,
+            HasPosAccess = true,
+            AccessReasonCode = "offline_grant",
+            SubscriptionStatus = grant.SubscriptionStatus ?? baseSession.SubscriptionStatus,
+            EnabledFeatureCodes = grant.EnabledFeatureCodes.Count > 0
+                ? grant.EnabledFeatureCodes
+                : baseSession.EnabledFeatureCodes,
+            AccountClass = "Organization"
+        };
     }
 
     private async Task CloseLocalContextAsync(CancellationToken ct)

@@ -102,9 +102,11 @@ public sealed class ProtectedShellAccessPolicy : IProtectedShellAccessPolicy, ID
         _validatedOrganizationId = _currentUser.Session.OrganizationId;
     }
 
-    public void NotifyOfflineUnlock(Guid userId, Guid organizationId)
+    public void NotifyOfflineUnlock(Guid userId, Guid? organizationId)
     {
-        if (!HasValidatedSessionAccess
+        // Organization POS unlock only — Personal scope does not enter the protected POS shell.
+        if (organizationId is null
+            || !HasValidatedSessionAccess
             || _currentUser.Session?.UserId != userId
             || _currentUser.Session?.OrganizationId != organizationId)
         {

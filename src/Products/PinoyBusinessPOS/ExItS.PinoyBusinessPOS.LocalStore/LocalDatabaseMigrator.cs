@@ -5,7 +5,8 @@ namespace ExItS.PinoyBusinessPOS.LocalStore;
 
 /// <summary>
 /// Local schema migrations. v1 foundation metadata; v2 generic encrypted outbox; v3 encrypted business cache;
-/// v4 payment projections; v5 selling-catalog cache + local cash-sale outbox support.
+/// v4 payment projections; v5 selling-catalog cache + local cash-sale outbox support;
+/// v6 Personal Utang local-first tables (user_id owner; no organization_id on personal rows).
 /// </summary>
 public sealed class LocalDatabaseMigrator(TimeProvider? timeProvider = null) : ILocalDatabaseMigrator
 {
@@ -14,10 +15,11 @@ public sealed class LocalDatabaseMigrator(TimeProvider? timeProvider = null) : I
     public const int BusinessCacheSchemaVersion = 3;
     public const int PaymentCacheSchemaVersion = 4;
     public const int CatalogSaleSchemaVersion = 5;
+    public const int PersonalUtangSchemaVersion = 6;
 
     private readonly TimeProvider _clock = timeProvider ?? TimeProvider.System;
 
-    public int CurrentSchemaVersion => CatalogSaleSchemaVersion;
+    public int CurrentSchemaVersion => PersonalUtangSchemaVersion;
 
     public async Task<LocalMigrationResult> MigrateAsync(
         ILocalDatabaseConnection connection,
@@ -400,6 +402,99 @@ public sealed class LocalDatabaseMigrator(TimeProvider? timeProvider = null) : I
                 current = CatalogSaleSchemaVersion;
             }
 
+            if (current < PersonalUtangSchemaVersion)
+            {
+                await connection.ExecuteAsync(
+                    """
+                    CREATE TABLE IF NOT EXISTS local_personal_contact (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        user_id TEXT NOT NULL,
+                        display_name TEXT NOT NULL,
+                        phone TEXT NULL,
+                        notes TEXT NULL,
+                        sync_status TEXT NOT NULL,
+                        server_id TEXT NULL,
+                        updated_at TEXT NOT NULL,
+                        operation_id TEXT NULL
+                    );
+                    """,
+                    ct).ConfigureAwait(false);
+
+                await connection.ExecuteAsync(
+                    """
+                    CREATE INDEX IF NOT EXISTS ix_local_personal_contact_user
+                    ON local_personal_contact(user_id);
+                    """,
+                    ct).ConfigureAwait(false);
+
+                await connection.ExecuteAsync(
+                    """
+                    CREATE TABLE IF NOT EXISTS local_personal_relationship (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        user_id TEXT NOT NULL,
+                        contact_id TEXT NOT NULL,
+                        direction TEXT NOT NULL,
+                        outstanding TEXT NOT NULL,
+                        currency TEXT NOT NULL,
+                        sync_status TEXT NOT NULL,
+                        server_id TEXT NULL,
+                        version INTEGER NOT NULL DEFAULT 0,
+                        updated_at TEXT NOT NULL,
+                        operation_id TEXT NULL
+                    );
+                    """,
+                    ct).ConfigureAwait(false);
+
+                await connection.ExecuteAsync(
+                    """
+                    CREATE INDEX IF NOT EXISTS ix_local_personal_rel_user_dir
+                    ON local_personal_relationship(user_id, direction);
+                    """,
+                    ct).ConfigureAwait(false);
+
+                await connection.ExecuteAsync(
+                    """
+                    CREATE TABLE IF NOT EXISTS local_personal_entry (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        relationship_id TEXT NOT NULL,
+                        entry_type TEXT NOT NULL,
+                        amount TEXT NOT NULL,
+                        note TEXT NULL,
+                        occurred_at TEXT NOT NULL,
+                        sync_status TEXT NOT NULL,
+                        server_id TEXT NULL,
+                        operation_id TEXT NULL,
+                        created_at TEXT NOT NULL
+                    );
+                    """,
+                    ct).ConfigureAwait(false);
+
+                await connection.ExecuteAsync(
+                    """
+                    CREATE INDEX IF NOT EXISTS ix_local_personal_entry_rel
+                    ON local_personal_entry(relationship_id, occurred_at);
+                    """,
+                    ct).ConfigureAwait(false);
+
+                await connection.ExecuteAsync(
+                    """
+                    CREATE TABLE IF NOT EXISTS local_personal_sync_state (
+                        user_id TEXT NOT NULL PRIMARY KEY,
+                        cursor_version TEXT NOT NULL,
+                        last_sync_utc TEXT NULL
+                    );
+                    """,
+                    ct).ConfigureAwait(false);
+
+                await connection.ExecuteAsync(
+                    $"""
+                    INSERT INTO local_schema_info (schema_version, applied_at_utc)
+                    VALUES ({PersonalUtangSchemaVersion}, '{now}');
+                    """,
+                    ct).ConfigureAwait(false);
+                current = PersonalUtangSchemaVersion;
+            }
+
             var existing = await connection
                 .QueryScalarAsync<long>(
                     $"""
@@ -452,7 +547,7 @@ public sealed class LocalDatabaseMigrator(TimeProvider? timeProvider = null) : I
                 return new LocalMigrationResult(false, (int)current, "forbidden_tables_present");
             }
 
-            return new LocalMigrationResult(true, CatalogSaleSchemaVersion);
+            return new LocalMigrationResult(true, PersonalUtangSchemaVersion);
         }
         catch (OperationCanceledException)
         {

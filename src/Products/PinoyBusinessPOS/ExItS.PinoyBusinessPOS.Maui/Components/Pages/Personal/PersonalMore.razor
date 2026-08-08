@@ -4,6 +4,7 @@
 @inject IAuthenticationService Auth
 @inject ICurrentUserContext CurrentUser
 @inject NavigationManager Nav
+@inject OfflineAwareNavigation OfflineNav
 @inject IStringLocalizer<PosResources> L
 
 <div class="pos-settings pos-personal-more">
@@ -85,10 +86,10 @@
         _loading = false;
     }
 
-    private void GoMyQr() => Nav.NavigateTo("/personal/my-qr");
-    private void GoUtangInvitations() => Nav.NavigateTo("/personal/utang/invitations");
-    private void GoProfile() => Nav.NavigateTo("/personal/profile");
-    private void GoSettings() => Nav.NavigateTo("/personal/settings");
-    private void GoExplorePos() => Nav.NavigateTo("/personal/explore-pos");
+    private void GoMyQr() => _ = OfflineNav.NavigateAsync("/personal/my-qr");
+    private void GoUtangInvitations() => _ = OfflineNav.NavigateAsync("/personal/utang/invitations");
+    private void GoProfile() => _ = OfflineNav.NavigateAsync("/personal/profile");
+    private void GoSettings() => _ = OfflineNav.NavigateAsync("/personal/settings");
+    private void GoExplorePos() => _ = OfflineNav.NavigateAsync("/personal/explore-pos");
     private void GoSignIn() => Nav.NavigateTo("/signin");
 }

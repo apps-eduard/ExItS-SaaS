@@ -6,6 +6,7 @@
 @inject DensityController DensityCtl
 @inject CultureController CultureCtl
 @inject NavigationManager Nav
+@inject OfflineAwareNavigation OfflineNav
 @inject IStringLocalizer<PosResources> L
 
 <a class="skip-link" href="#pos-main">@L["Nav_SkipToContent"]</a>
@@ -128,17 +129,15 @@
         || _path.StartsWith("/personal/explore-pos", StringComparison.OrdinalIgnoreCase)
         || _path.StartsWith("/personal/utang/invitations", StringComparison.OrdinalIgnoreCase);
 
-    private void GoHome() => NavigateTab("/personal");
-    private void GoPeople() => NavigateTab("/personal/utang/people");
-    private void GoLent() => NavigateTab("/personal/utang/lent");
-    private void GoBorrowed() => NavigateTab("/personal/utang/borrowed");
-    private void GoMore() => NavigateTab("/personal/more");
+    private void GoHome() => _ = NavigateTabAsync("/personal");
+    private void GoPeople() => _ = NavigateTabAsync("/personal/utang/people");
+    private void GoLent() => _ = NavigateTabAsync("/personal/utang/lent");
+    private void GoBorrowed() => _ = NavigateTabAsync("/personal/utang/borrowed");
+    private void GoMore() => _ = NavigateTabAsync("/personal/more");
 
-    private void NavigateTab(string href)
-    {
+    private Task NavigateTabAsync(string href) =>
         // replace:true keeps Android back from walking every tab visit.
-        Nav.NavigateTo(href, replace: true);
-    }
+        OfflineNav.NavigateAsync(href, replace: true);
 
     private async Task OnChangedAsync()
     {

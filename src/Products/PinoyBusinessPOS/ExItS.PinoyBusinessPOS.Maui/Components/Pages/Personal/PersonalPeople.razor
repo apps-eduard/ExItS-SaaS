@@ -4,6 +4,10 @@
 @inject IAuthenticationService Auth
 @inject ICurrentUserContext CurrentUser
 @inject IPlatformAccessClient Platform
+@inject ILocalPersonalUtangStore LocalStore
+@inject IPersonalOfflineSyncService PersonalSync
+@inject IConnectivityService Connectivity
+@inject OfflineAwareNavigation OfflineNav
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
@@ -28,6 +32,13 @@
         }
         else
         {
+            @if (_pendingSync > 0)
+            {
+                <Alert Tone="AlertTone.Info"
+                       Title="@L["Offline_SavedPendingSync"]"
+                       Message="@string.Format(L["SyncStatus_PendingItems"].Value, _pendingSync)" />
+            }
+
             @if (_contacts.Count == 0)
             {
                 <EmptyState Title="@L["Personal_PeopleEmptyTitle"]" Message="@L["Personal_PeopleEmptyMessage"]" />
@@ -43,7 +54,13 @@
                                 @onclick="() => GoDetail(c.Id)">
                             <span class="pos-personal-row__body">
                                 <span class="pos-personal-row__title">@c.DisplayName</span>
-                                <span class="pos-personal-row__meta">@(c.Email ?? c.Phone ?? c.Status)</span>
+                                <span class="pos-personal-row__meta">
+                                    @(c.Phone ?? c.SyncStatus)
+                                    @if (string.Equals(c.SyncStatus, LocalPersonalSyncStatus.Pending, StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        <Badge Tone="BadgeTone.Warning">@L["Offline_SavedPendingSync"]</Badge>
+                                    }
+                                </span>
                             </span>
                             <span class="pos-personal-row__chevron" aria-hidden="true">›</span>
                         </button>
@@ -94,7 +111,8 @@
     private string? _email;
     private string? _phone;
     private List<string> _errors = [];
-    private IReadOnlyList<PersonalContactDto> _contacts = [];
+    private IReadOnlyList<LocalPersonalContact> _contacts = [];
+    private int _pendingSync;
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
 
@@ -128,19 +146,53 @@
                 return;
             }
 
-            var result = await Platform.GetPersonalContactsAsync();
-            if (!result.IsSuccess || result.Data is null)
+            await LocalStore.EnsurePersonalContextAsync();
+
+            if (await Connectivity.IsConnectedAsync())
             {
-                _loadFailed = true;
-                _error = result.Error?.Detail ?? L["Personal_PeopleLoadFailed"];
-                return;
+                await TryHydrateFromServerAsync();
+                await PersonalSync.TrySyncPendingAsync();
             }
 
-            _contacts = result.Data;
+            _contacts = await LocalStore.ListContactsAsync();
+            _pendingSync = await PersonalSync.GetPendingCountAsync();
+            if (_contacts.Count == 0 && !await Connectivity.IsConnectedAsync())
+            {
+                // Offline with empty local cache is a valid empty state, not a load failure.
+            }
+        }
+        catch
+        {
+            _loadFailed = true;
+            _error = L["Personal_PeopleLoadFailed"];
         }
         finally
         {
             _loading = false;
+        }
+    }
+
+    private async Task TryHydrateFromServerAsync()
+    {
+        var result = await Platform.GetPersonalContactsAsync();
+        if (!result.IsSuccess || result.Data is null || CurrentUser.Session is null)
+        {
+            return;
+        }
+
+        var userId = CurrentUser.Session.UserId;
+        foreach (var c in result.Data)
+        {
+            await LocalStore.UpsertServerContactAsync(new LocalPersonalContact(
+                c.Id,
+                userId,
+                c.DisplayName,
+                c.Phone,
+                c.Email,
+                LocalPersonalSyncStatus.Synced,
+                c.Id,
+                c.CreatedAtUtc,
+                null));
         }
     }
 
@@ -156,18 +208,28 @@
         _busy = true;
         try
         {
-            var created = await Platform.CreatePersonalContactAsync(new CreatePersonalContactRequest(
+            var contactId = Guid.NewGuid();
+            var operationId = Guid.NewGuid();
+            var notes = string.IsNullOrWhiteSpace(_email) ? null : _email.Trim();
+            await LocalStore.PersistContactAndEnqueueAsync(new LocalPersonalContactUpsertCommand(
+                contactId,
+                operationId,
+                operationId.ToString("N"),
                 _name.Trim(),
                 string.IsNullOrWhiteSpace(_phone) ? null : _phone.Trim(),
-                string.IsNullOrWhiteSpace(_email) ? null : _email.Trim()));
-            if (!created.IsSuccess)
-            {
-                _errors.Add(created.Error?.Detail ?? L["Personal_PeopleCreateFailed"]);
-                return;
-            }
+                notes));
 
             _name = _email = _phone = null;
+            if (await Connectivity.IsConnectedAsync())
+            {
+                await PersonalSync.TrySyncPendingAsync();
+            }
+
             await LoadAsync();
+        }
+        catch
+        {
+            _errors.Add(L["Personal_PeopleCreateFailed"]);
         }
         finally
         {
@@ -177,6 +239,6 @@
 
     private void GoDetail(Guid id) => Nav.NavigateTo($"/personal/utang/people/{id:D}");
     private void GoResolveExItsId() =>
-        Nav.NavigateTo("/personal/resolve-user?purpose=utang-people&return=/personal/utang/people");
+        _ = OfflineNav.NavigateAsync("/personal/resolve-user?purpose=utang-people&return=/personal/utang/people");
     private void GoSignIn() => Nav.NavigateTo("/signin");
 }

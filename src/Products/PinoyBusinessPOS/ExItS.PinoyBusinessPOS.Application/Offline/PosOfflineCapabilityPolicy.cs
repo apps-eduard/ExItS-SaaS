@@ -29,8 +29,15 @@ public sealed class PosOfflineCapabilityPolicy : IPosOfflineCapabilityPolicy
             ["/personal"] = PosConnectivityRequirement.OfflineCapable,
             ["/personal/more"] = PosConnectivityRequirement.OfflineCapable,
             ["/personal/settings"] = PosConnectivityRequirement.OfflineCapable,
+            ["/personal/profile"] = PosConnectivityRequirement.OfflineCapable,
 
-            // Queueable / local-first operational
+            // Queueable / local-first Personal Utang (longer prefixes beat blanket /personal/utang)
+            ["/personal/utang/people"] = PosConnectivityRequirement.Queueable,
+            ["/personal/utang/lent"] = PosConnectivityRequirement.Queueable,
+            ["/personal/utang/borrowed"] = PosConnectivityRequirement.Queueable,
+            ["/personal/utang/relationships"] = PosConnectivityRequirement.Queueable,
+
+            // Queueable / local-first operational (org POS)
             ["/sales/new"] = PosConnectivityRequirement.Queueable,
             ["/sales/local"] = PosConnectivityRequirement.OfflineCapable,
             ["/customers"] = PosConnectivityRequirement.Queueable,
@@ -66,9 +73,16 @@ public sealed class PosOfflineCapabilityPolicy : IPosOfflineCapabilityPolicy
             ["/reports"] = PosConnectivityRequirement.OnlineRequired,
             ["/dashboard"] = PosConnectivityRequirement.OnlineRequired,
             ["/overdue"] = PosConnectivityRequirement.OnlineRequired,
-            ["/personal/utang"] = PosConnectivityRequirement.OnlineRequired,
+            ["/personal/utang/invitations"] = PosConnectivityRequirement.OnlineRequired,
             ["/personal/explore-pos"] = PosConnectivityRequirement.OnlineRequired,
             ["/personal/start-business"] = PosConnectivityRequirement.OnlineRequired,
+            ["/start-business"] = PosConnectivityRequirement.OnlineRequired,
+            ["/personal/resolve-user"] = PosConnectivityRequirement.OnlineRequired,
+            ["/personal/my-qr"] = PosConnectivityRequirement.OnlineRequired,
+            ["/personal/invitations/accept"] = PosConnectivityRequirement.OnlineRequired,
+            // Remaining /personal/utang/* (if any unclassified) stays online-required via fail-closed
+            // unless matched by longer Queueable prefixes above.
+            ["/personal/utang"] = PosConnectivityRequirement.OnlineRequired,
         };
 
     private static readonly Dictionary<string, PosConnectivityRequirement> Actions =
@@ -94,6 +108,9 @@ public sealed class PosOfflineCapabilityPolicy : IPosOfflineCapabilityPolicy
             [PosOfflineActionKeys.CustomerStatement] = PosConnectivityRequirement.OnlineRequired,
             [PosOfflineActionKeys.CustomerOverdue] = PosConnectivityRequirement.OnlineRequired,
             [PosOfflineActionKeys.SaleHistory] = PosConnectivityRequirement.OnlineRequired,
+            [PosOfflineActionKeys.PersonalInvite] = PosConnectivityRequirement.OnlineRequired,
+            [PosOfflineActionKeys.PersonalLinkUser] = PosConnectivityRequirement.OnlineRequired,
+            [PosOfflineActionKeys.PersonalStartBusiness] = PosConnectivityRequirement.OnlineRequired,
 
             // Explicit local/queueable actions (coverage + mixed pages)
             ["sale.checkout.cash"] = PosConnectivityRequirement.Queueable,
@@ -103,6 +120,10 @@ public sealed class PosOfflineCapabilityPolicy : IPosOfflineCapabilityPolicy
             ["repayment.create"] = PosConnectivityRequirement.Queueable,
             ["offline.pin.unlock"] = PosConnectivityRequirement.OfflineCapable,
             ["offline.pin.enroll"] = PosConnectivityRequirement.OfflineCapable,
+            [PosOfflineActionKeys.PersonalContactCreate] = PosConnectivityRequirement.Queueable,
+            [PosOfflineActionKeys.PersonalLentCreate] = PosConnectivityRequirement.Queueable,
+            [PosOfflineActionKeys.PersonalBorrowedCreate] = PosConnectivityRequirement.Queueable,
+            [PosOfflineActionKeys.PersonalEntryRecord] = PosConnectivityRequirement.Queueable,
         };
 
     // Longer prefixes first for nested routes (e.g. /catalog/import before /catalog).

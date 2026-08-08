@@ -28,7 +28,16 @@ public sealed class OfflineOperationQueue(
         var active = RequireActiveContext();
         var session = currentUser.Session
             ?? throw new InvalidOperationException("session_required");
-        if (session.OrganizationId is not Guid orgId || orgId != active.Identity.OrganizationId)
+        if (PersonalLocalScope.IsPersonalContext(active.Identity.OrganizationId, active.Identity.ProductCode))
+        {
+            if (session.OrganizationId is not null
+                || !string.Equals(session.AccountClass, "Personal", StringComparison.OrdinalIgnoreCase)
+                || session.UserId != active.Identity.UserId)
+            {
+                throw new InvalidOperationException("personal_context_mismatch");
+            }
+        }
+        else if (session.OrganizationId is not Guid orgId || orgId != active.Identity.OrganizationId)
         {
             throw new InvalidOperationException("organization_mismatch");
         }

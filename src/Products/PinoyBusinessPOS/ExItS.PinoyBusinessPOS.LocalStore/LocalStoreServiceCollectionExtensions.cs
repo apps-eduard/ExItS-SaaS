@@ -20,6 +20,7 @@ public static class LocalStoreServiceCollectionExtensions
         services.AddSingleton<ILocalPayloadProtector, AesGcmLocalPayloadProtector>();
         services.AddSingleton<IOfflineOperationQueue, OfflineOperationQueue>();
         services.AddSingleton<ILocalCustomerCreditStore, LocalEncryptedCustomerCreditStore>();
+        services.AddSingleton<ILocalPersonalUtangStore, LocalPersonalUtangStore>();
         services.AddSingleton<LocalSellingCatalogAndCashSaleStore>();
         services.AddSingleton<ILocalSellingCatalogStore>(sp => sp.GetRequiredService<LocalSellingCatalogAndCashSaleStore>());
         services.AddSingleton<ILocalCashSaleStore>(sp => sp.GetRequiredService<LocalSellingCatalogAndCashSaleStore>());

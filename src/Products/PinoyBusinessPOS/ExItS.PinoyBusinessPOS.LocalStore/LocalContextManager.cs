@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using ExItS.PinoyBusinessPOS.Application.Abstractions;
 using ExItS.PinoyBusinessPOS.Application.Auth;
+using ExItS.PinoyBusinessPOS.Application.Offline;
 
 namespace ExItS.PinoyBusinessPOS.LocalStore;
 
@@ -22,16 +23,44 @@ public sealed class LocalContextManager(
 
     public LocalContextSnapshot? ActiveContext => _active;
 
-    public async Task<LocalContextOpenResult> OpenAsync(
+    public Task<LocalContextOpenResult> OpenPersonalAsync(Guid userId, CancellationToken ct = default) =>
+        OpenCoreAsync(
+            userId,
+            PersonalLocalScope.PathIsolationMarker,
+            PersonalLocalScope.ProductCode,
+            allowPersonalMarker: true,
+            ct);
+
+    public Task<LocalContextOpenResult> OpenAsync(
         Guid userId,
         Guid organizationId,
         string productCode,
         CancellationToken ct = default)
     {
+        if (organizationId == PersonalLocalScope.PathIsolationMarker)
+        {
+            return Task.FromResult(new LocalContextOpenResult(false, ErrorCode: "use_open_personal"));
+        }
+
+        return OpenCoreAsync(userId, organizationId, productCode, allowPersonalMarker: false, ct);
+    }
+
+    private async Task<LocalContextOpenResult> OpenCoreAsync(
+        Guid userId,
+        Guid organizationId,
+        string productCode,
+        bool allowPersonalMarker,
+        CancellationToken ct)
+    {
         ArgumentException.ThrowIfNullOrWhiteSpace(productCode);
         if (userId == Guid.Empty || organizationId == Guid.Empty)
         {
             return new LocalContextOpenResult(false, ErrorCode: "invalid_context");
+        }
+
+        if (!allowPersonalMarker && organizationId == PersonalLocalScope.PathIsolationMarker)
+        {
+            return new LocalContextOpenResult(false, ErrorCode: "use_open_personal");
         }
 
         var normalizedProduct = string.IsNullOrWhiteSpace(productCode)

@@ -65,11 +65,20 @@ public interface ILocalContextManager
     /// <summary>
     /// Opens (or switches to) the isolated database after online access validation.
     /// Closes any previous active context first.
+    /// Rejects <see cref="Offline.PersonalLocalScope.PathIsolationMarker"/> — use
+    /// <see cref="OpenPersonalAsync"/> for Personal scope.
     /// </summary>
     Task<LocalContextOpenResult> OpenAsync(
         Guid userId,
         Guid organizationId,
         string productCode,
+        CancellationToken ct = default);
+
+    /// <summary>
+    /// Opens the Personal-scope local database for the user (path-isolated from org POS DBs).
+    /// </summary>
+    Task<LocalContextOpenResult> OpenPersonalAsync(
+        Guid userId,
         CancellationToken ct = default);
 
     /// <summary>Closes the active connection and clears in-memory context. Does not delete the file.</summary>

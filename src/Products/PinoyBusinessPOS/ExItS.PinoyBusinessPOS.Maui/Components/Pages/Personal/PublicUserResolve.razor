@@ -5,6 +5,7 @@
 @inject IPlatformAccessClient Platform
 @inject IQrCodeScanService QrScan
 @inject ApiStatusLocalizer ApiLocalizer
+@inject OnlineRequiredGuard OnlineRequired
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
@@ -156,6 +157,12 @@
         else
         {
             _authenticated = true;
+        }
+
+        if (_authenticated
+            && !await OnlineRequired.EnsureOnlineForActionAsync(PosOfflineActionKeys.PersonalLinkUser))
+        {
+            _authenticated = false;
         }
 
         _loadingSession = false;
