@@ -6,9 +6,13 @@
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
+<div class="pos-personal-explore">
 <StoreHeaderBack Href="/personal/more" />
 <Page>
-    <PageHeader Title="@L["Personal_ExplorePosTitle"]" Subtitle="@L["Personal_ExplorePosSubtitle"]" />
+    <header class="pos-personal-explore__header">
+        <h1 class="pos-personal-explore__title">@L["Personal_ExplorePosTitle"]</h1>
+        <p class="pos-personal-explore__subtitle">@L["Personal_ExplorePosSubtitle"]</p>
+    </header>
 
     @if (_loading)
     {
@@ -71,6 +75,7 @@
         </Stack>
     }
 </Page>
+</div>
 
 @code {
     private bool _loading = true;

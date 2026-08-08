@@ -6,8 +6,12 @@
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
+<div class="pos-onboarding">
 <Page>
-    <PageHeader Title="@L["Onboarding_DensityTitle"]" Subtitle="@L["Onboarding_DensitySubtitle"]" />
+    <header class="pos-onboarding__header">
+        <h1 class="pos-onboarding__title">@L["Onboarding_DensityTitle"]</h1>
+        <p class="pos-onboarding__subtitle">@L["Onboarding_DensitySubtitle"]</p>
+    </header>
     <FormGroup>
         <Select Label="@L["Settings_DensityLabel"]"
                 Value="@_density"
@@ -19,6 +23,7 @@
         <Button OnClick="ContinueAsync">@L["Common_Continue"]</Button>
     </FormActions>
 </Page>
+</div>
 
 @code {
     private string? _density = "compact";

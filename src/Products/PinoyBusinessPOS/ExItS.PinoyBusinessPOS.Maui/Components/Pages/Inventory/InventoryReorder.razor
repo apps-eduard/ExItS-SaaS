@@ -15,8 +15,12 @@
 }
 else
 {
+<div class="pos-inventory-reorder">
 <Page>
-    <PageHeader Title="@L["Inventory_ReorderTitle"]" Subtitle="@(_account?.Name ?? L["Inventory_Title"])" />
+    <header class="pos-inventory-reorder__header">
+        <h1 class="pos-inventory-reorder__title">@L["Inventory_ReorderTitle"]</h1>
+        <p class="pos-inventory-reorder__subtitle">@(_account?.Name ?? L["Inventory_Title"])</p>
+    </header>
 
     @if (_isOffline)
     {
@@ -28,18 +32,35 @@ else
         <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Inventory_ReorderTitle"])" Message="@_errorMessage" />
     }
 
-    <Section Title="@L["Inventory_ReorderTitle"]">
-        <Stack Gap="3">
-            <TextInput Label="@L["Inventory_ReorderLevel"]" Value="@_reorderLevelText" ValueChanged="v => _reorderLevelText = v" />
-            <TextInput Label="@L["Inventory_ReorderQuantity"]" Value="@_reorderQuantityText" ValueChanged="v => _reorderQuantityText = v" />
-            <TextInput Label="@L["Inventory_Reason"]" Value="@_reason" ValueChanged="v => _reason = v" />
-            <Button Variant="ButtonVariant.Primary"
-                    Disabled="@(_isOffline || _busy)"
-                    IsLoading="@_busy"
-                    OnClick="SaveAsync">@L["Inventory_SaveReorder"]</Button>
-        </Stack>
-    </Section>
+    <section class="pos-inventory-reorder__panel" aria-labelledby="inventory-reorder-heading">
+        <h2 id="inventory-reorder-heading" class="pos-inventory-reorder__section-title">@L["Inventory_ReorderTitle"]</h2>
+        <div class="pos-inventory-reorder__form">
+            <TextInput Label="@L["Inventory_ReorderLevel"]"
+                       Value="@_reorderLevelText"
+                       ValueChanged="v => _reorderLevelText = v"
+                       Disabled="@(_isOffline || _busy)" />
+            <TextInput Label="@L["Inventory_ReorderQuantity"]"
+                       Value="@_reorderQuantityText"
+                       ValueChanged="v => _reorderQuantityText = v"
+                       Disabled="@(_isOffline || _busy)" />
+            <TextInput Label="@L["Inventory_Reason"]"
+                       Value="@_reason"
+                       ValueChanged="v => _reason = v"
+                       Disabled="@(_isOffline || _busy)" />
+        </div>
+    </section>
+
+    <FormActions>
+        <Button Variant="ButtonVariant.Secondary"
+                Disabled="@_busy"
+                OnClick="Cancel">@L["Common_Cancel"]</Button>
+        <Button Variant="ButtonVariant.Primary"
+                Disabled="@(_isOffline || _busy)"
+                IsLoading="@_busy"
+                OnClick="SaveAsync">@L["Inventory_SaveReorder"]</Button>
+    </FormActions>
 </Page>
+</div>
 }
 
 @code {
@@ -78,6 +99,8 @@ else
             _reorderQuantityText = _account.ReorderQuantity?.ToString("0.###") ?? string.Empty;
         }
     }
+
+    private void Cancel() => Nav.NavigateTo($"/inventory/{ProductId:D}");
 
     private async Task SaveAsync()
     {

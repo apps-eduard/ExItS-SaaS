@@ -30,6 +30,9 @@ public sealed class OwnerDashboardUiGuardTests
         Assert.Contains("GoReports", owner, StringComparison.Ordinal);
         Assert.Contains("GoSettings", owner, StringComparison.Ordinal);
         Assert.Contains("Owner_SetupStatusComplete", owner, StringComparison.Ordinal);
+        Assert.Contains("pos-dash__header", owner, StringComparison.Ordinal);
+        Assert.Contains("pos-dash__title", owner, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", owner, StringComparison.Ordinal);
         Assert.DoesNotContain("InlineMessage", owner, StringComparison.Ordinal);
         Assert.DoesNotContain("OrganizationDisplayName", owner, StringComparison.Ordinal);
 
@@ -37,10 +40,13 @@ public sealed class OwnerDashboardUiGuardTests
         Assert.Contains("More_ToolsSection", more, StringComparison.Ordinal);
         Assert.Contains("UtangCapability.ViewInventory", more, StringComparison.Ordinal);
         Assert.Contains("AccountContextSwitcher", more, StringComparison.Ordinal);
+        Assert.Contains("pos-more__header", more, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", more, StringComparison.Ordinal);
 
         Assert.Contains(".pos-action-grid", css, StringComparison.Ordinal);
         Assert.Contains(".pos-action-tile--primary", css, StringComparison.Ordinal);
-        Assert.Contains(".pos-dash .exds-page-header", css, StringComparison.Ordinal);
+        Assert.Contains(".pos-dash__header", css, StringComparison.Ordinal);
+        Assert.Contains(".pos-dash__title", css, StringComparison.Ordinal);
 
         Assert.Contains("name=\"Owner_QuickActionsSection\"", en, StringComparison.Ordinal);
         Assert.Contains("name=\"Owner_InsightsSection\"", en, StringComparison.Ordinal);
@@ -59,6 +65,7 @@ public sealed class OwnerDashboardUiGuardTests
         Assert.Contains("Manager_QuickActionsSection", manager, StringComparison.Ordinal);
         Assert.Contains("Manager_OperationsSection", manager, StringComparison.Ordinal);
         Assert.Contains("Manager_Subtitle", manager, StringComparison.Ordinal);
+        Assert.Contains("pos-dash__header", manager, StringComparison.Ordinal);
         Assert.Contains("StartSelling", manager, StringComparison.Ordinal);
         Assert.Contains("/sales/new", manager, StringComparison.Ordinal);
         Assert.Contains("GoCatalog", manager, StringComparison.Ordinal);
@@ -67,6 +74,7 @@ public sealed class OwnerDashboardUiGuardTests
         Assert.Contains("GoShifts", manager, StringComparison.Ordinal);
         Assert.Contains("GoSales", manager, StringComparison.Ordinal);
         Assert.Contains("GoReports", manager, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", manager, StringComparison.Ordinal);
         Assert.DoesNotContain("InlineMessage", manager, StringComparison.Ordinal);
         Assert.DoesNotContain("OrganizationDisplayName", manager, StringComparison.Ordinal);
         Assert.DoesNotContain("GoReturns", manager, StringComparison.Ordinal);

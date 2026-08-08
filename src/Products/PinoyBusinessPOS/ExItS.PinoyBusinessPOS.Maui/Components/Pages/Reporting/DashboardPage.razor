@@ -18,7 +18,10 @@ else
 {
 <div class="pos-dashboard">
 <Page>
-    <PageHeader Title="@L["Dashboard_Title"]" Subtitle="@L["Dashboard_Subtitle"]" />
+    <header class="pos-dashboard__header">
+        <h1 class="pos-dashboard__title">@L["Dashboard_Title"]</h1>
+        <p class="pos-dashboard__subtitle">@L["Dashboard_Subtitle"]</p>
+    </header>
 
     <div class="pos-action-grid pos-action-grid--two pos-dashboard__actions" role="group" aria-label="@L["Dashboard_Title"]">
         <button type="button" class="pos-action-tile" @onclick="GoReports">
@@ -41,18 +44,18 @@ else
         <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Dashboard_ErrorTitle"])" Message="@_errorMessage" />
     }
 
-    <Section Title="@L["Dashboard_FiltersTitle"]">
-        <div class="pos-settings__panel">
-            <Stack Gap="2">
-                <DateInput Label="@L["Dashboard_FromDate"]" Value="@_fromDate" ValueChanged="OnFromDateChanged" Disabled="@_loading" />
-                <DateInput Label="@L["Dashboard_ToDate"]" Value="@_toDate" ValueChanged="OnToDateChanged" Disabled="@_loading" />
-            </Stack>
+    <section class="pos-dashboard__panel" aria-labelledby="dashboard-filters-heading">
+        <h2 id="dashboard-filters-heading" class="pos-dashboard__section-title">@L["Dashboard_FiltersTitle"]</h2>
+        <div class="pos-dashboard__form">
+            <DateInput Label="@L["Dashboard_FromDate"]" Value="@_fromDate" ValueChanged="OnFromDateChanged" Disabled="@_loading" />
+            <DateInput Label="@L["Dashboard_ToDate"]" Value="@_toDate" ValueChanged="OnToDateChanged" Disabled="@_loading" />
         </div>
-    </Section>
+    </section>
 
     @if (_dashboard is not null)
     {
-        <Section Title="@L["Dashboard_KpisTitle"]">
+        <section class="pos-dashboard__panel" aria-labelledby="dashboard-kpis-heading">
+            <h2 id="dashboard-kpis-heading" class="pos-dashboard__section-title">@L["Dashboard_KpisTitle"]</h2>
             <div class="pos-dashboard__stats" role="list">
                 <div class="pos-dashboard__stat" role="listitem">
                     <span class="pos-dashboard__stat-label">@L["Dashboard_CompletedSales"]</span>
@@ -96,15 +99,16 @@ else
                     <span class="pos-dashboard__stat-value">@_dashboard.VoidedExpenseCount</span>
                 </div>
             </div>
-        </Section>
+        </section>
 
         @if (_dashboard.SalesTotalComparison is not null)
         {
-            <Section Title="@L["Dashboard_ComparisonTitle"]">
-                <div class="pos-settings__panel">
-                    <div class="pos-settings__kv">
-                        <span class="pos-settings__kv-label">@L["Dashboard_SalesChange"]</span>
-                        <span class="pos-settings__kv-value @ComparisonToneClass(_dashboard.SalesTotalComparison)">
+            <section class="pos-dashboard__panel" aria-labelledby="dashboard-comparison-heading">
+                <h2 id="dashboard-comparison-heading" class="pos-dashboard__section-title">@L["Dashboard_ComparisonTitle"]</h2>
+                <dl class="pos-dashboard__facts">
+                    <div class="pos-dashboard__fact">
+                        <dt>@L["Dashboard_SalesChange"]</dt>
+                        <dd class="@ComparisonToneClass(_dashboard.SalesTotalComparison)">
                             <MoneyDisplay Amount="@_dashboard.SalesTotalComparison.AbsoluteChange.GetValueOrDefault()" CurrencyCode="PHP" />
                             @if (_dashboard.SalesTotalComparison.PercentageAvailable)
                             {
@@ -114,13 +118,13 @@ else
                             {
                                 <span> (@L["Dashboard_PctNotAvailable"])</span>
                             }
-                        </span>
+                        </dd>
                     </div>
                     @if (_dashboard.ExpenseTotalComparison is not null)
                     {
-                        <div class="pos-settings__kv">
-                            <span class="pos-settings__kv-label">@L["Dashboard_ExpenseChange"]</span>
-                            <span class="pos-settings__kv-value @ComparisonToneClass(_dashboard.ExpenseTotalComparison)">
+                        <div class="pos-dashboard__fact">
+                            <dt>@L["Dashboard_ExpenseChange"]</dt>
+                            <dd class="@ComparisonToneClass(_dashboard.ExpenseTotalComparison)">
                                 <MoneyDisplay Amount="@_dashboard.ExpenseTotalComparison.AbsoluteChange.GetValueOrDefault()" CurrencyCode="PHP" />
                                 @if (_dashboard.ExpenseTotalComparison.PercentageAvailable)
                                 {
@@ -130,14 +134,15 @@ else
                                 {
                                     <span> (@L["Dashboard_PctNotAvailable"])</span>
                                 }
-                            </span>
+                            </dd>
                         </div>
                     }
-                </div>
-            </Section>
+                </dl>
+            </section>
         }
 
-        <Section Title="@L["Dashboard_PaymentBreakdown"]">
+        <section class="pos-dashboard__panel" aria-labelledby="dashboard-payment-heading">
+            <h2 id="dashboard-payment-heading" class="pos-dashboard__section-title">@L["Dashboard_PaymentBreakdown"]</h2>
             @if (_dashboard.PaymentMethodBreakdown.Count == 0)
             {
                 <EmptyState IconName="inbox" Title="@L["Dashboard_EmptyTitle"]" Message="@L["Dashboard_EmptyMessage"]" />
@@ -155,9 +160,10 @@ else
                     }
                 </div>
             }
-        </Section>
+        </section>
 
-        <Section Title="@L["Dashboard_SalesByDay"]">
+        <section class="pos-dashboard__panel" aria-labelledby="dashboard-sales-day-heading">
+            <h2 id="dashboard-sales-day-heading" class="pos-dashboard__section-title">@L["Dashboard_SalesByDay"]</h2>
             @{
                 var salesDays = _dashboard.SalesByDay.Where(i => i.Count > 0 || i.Amount > 0m).Take(14).ToList();
             }
@@ -178,9 +184,10 @@ else
                     }
                 </div>
             }
-        </Section>
+        </section>
 
-        <Section Title="@L["Dashboard_ExpensesByDay"]">
+        <section class="pos-dashboard__panel" aria-labelledby="dashboard-expenses-day-heading">
+            <h2 id="dashboard-expenses-day-heading" class="pos-dashboard__section-title">@L["Dashboard_ExpensesByDay"]</h2>
             @{
                 var expenseDays = _dashboard.ExpensesByDay.Where(i => i.Count > 0 || i.Amount > 0m).Take(14).ToList();
             }
@@ -201,7 +208,7 @@ else
                     }
                 </div>
             }
-        </Section>
+        </section>
     }
     else if (_loading)
     {

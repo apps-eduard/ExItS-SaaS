@@ -18,7 +18,10 @@ else
     var canManage = Capabilities.IsAllowed(UtangCapability.ManageSuppliers);
 <div class="pos-suppliers">
     <Page>
-        <PageHeader Title="@L["Suppliers_Title"]" Subtitle="@L["Suppliers_Subtitle"]" />
+        <header class="pos-suppliers__header">
+            <h1 class="pos-suppliers__title">@L["Suppliers_Title"]</h1>
+            <p class="pos-suppliers__subtitle">@L["Suppliers_Subtitle"]</p>
+        </header>
 
         @if (_isOffline)
         {
@@ -69,22 +72,23 @@ else
 
         @if (_filtersOpen)
         {
-            <Section Title="@L["Suppliers_FiltersTitle"]" id="suppliers-filters">
-                <Select Label="@L["Suppliers_Filter_Status"]"
-                        Value="@_statusFilter"
-                        ValueChanged="OnStatusFilterChanged"
-                        Options="@SupplierUiOptions.StatusFilters(L)"
-                        Disabled="@(_loading || _isOffline)" />
-            </Section>
+            <section class="pos-suppliers__panel" id="suppliers-filters" aria-labelledby="suppliers-filters-heading">
+                <h2 id="suppliers-filters-heading" class="pos-suppliers__section-title">@L["Suppliers_FiltersTitle"]</h2>
+                <div class="pos-suppliers__filters">
+                    <Select Label="@L["Suppliers_Filter_Status"]"
+                            Value="@_statusFilter"
+                            ValueChanged="OnStatusFilterChanged"
+                            Options="@SupplierUiOptions.StatusFilters(L)"
+                            Disabled="@(_loading || _isOffline)" />
+                </div>
+            </section>
         }
 
-        <Section Title="@L["Suppliers_ListSection"]">
+        <section class="pos-suppliers__panel" aria-labelledby="suppliers-list-heading">
+            <h2 id="suppliers-list-heading" class="pos-suppliers__section-title">@L["Suppliers_ListSection"]</h2>
             @if (_loading)
             {
-                <Stack Align="StackAlign.Center" Gap="2">
-                    <Spinner />
-                    <span class="pos-muted">@L["Suppliers_Loading"]</span>
-                </Stack>
+                <div class="pos-suppliers__loading"><Spinner /><span>@L["Suppliers_Loading"]</span></div>
             }
             else if (!string.IsNullOrEmpty(_errorMessage))
             {
@@ -108,7 +112,14 @@ else
                            role="listitem"
                            href="@($"/suppliers/{item.SupplierId:D}")">
                             <div class="pos-suppliers__row-main">
-                                <span class="pos-suppliers__row-name">@item.Name</span>
+                                <div class="pos-suppliers__row-top">
+                                    <span class="pos-suppliers__row-name">@item.Name</span>
+                                    <div class="pos-suppliers__row-side">
+                                        <Badge Tone="@(item.Status == SupplierUiOptions.ActiveStatus ? BadgeTone.Success : BadgeTone.Neutral)">
+                                            @SupplierUiOptions.StatusLabel(L, item.Status)
+                                        </Badge>
+                                    </div>
+                                </div>
                                 <span class="pos-suppliers__row-meta">
                                     @item.SupplierCode
                                     @if (!string.IsNullOrWhiteSpace(item.ContactPerson))
@@ -121,16 +132,11 @@ else
                                     }
                                 </span>
                             </div>
-                            <div class="pos-suppliers__row-side">
-                                <Badge Tone="@(item.Status == SupplierUiOptions.ActiveStatus ? BadgeTone.Success : BadgeTone.Neutral)">
-                                    @SupplierUiOptions.StatusLabel(L, item.Status)
-                                </Badge>
-                            </div>
                         </a>
                     }
                 </div>
             }
-        </Section>
+        </section>
 
         @if (!_loading && _totalCount > 0)
         {

@@ -4,8 +4,12 @@
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
+<div class="pos-activate">
 <Page>
-    <PageHeader Title="@L["Activate_Title"]" Subtitle="@L["Activate_Subtitle"]" />
+    <header class="pos-activate__header">
+        <h1 class="pos-activate__title">@L["Activate_Title"]</h1>
+        <p class="pos-activate__subtitle">@L["Activate_Subtitle"]</p>
+    </header>
 
     <FormValidationSummary Messages="_errors" />
     <FormGroup Title="@L["Activate_FormTitle"]">
@@ -18,6 +22,7 @@
         <Button Variant="ButtonVariant.Ghost" Disabled="_busy" OnClick="GoSignIn">@L["SignIn_Submit"]</Button>
     </FormActions>
 </Page>
+</div>
 
 @code {
     [SupplyParameterFromQuery] public string? token { get; set; }

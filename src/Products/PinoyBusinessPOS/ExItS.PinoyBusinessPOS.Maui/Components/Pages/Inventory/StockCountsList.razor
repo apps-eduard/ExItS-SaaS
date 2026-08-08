@@ -17,7 +17,10 @@ else
     var canManage = Capabilities.IsAllowed(UtangCapability.ManageInventory);
 <div class="pos-stock-counts">
     <Page>
-        <PageHeader Title="@L["Inventory_CountsTitle"]" Subtitle="@L["Inventory_CountsSubtitle"]" />
+        <header class="pos-stock-counts__header">
+            <h1 class="pos-stock-counts__title">@L["Inventory_CountsTitle"]</h1>
+            <p class="pos-stock-counts__subtitle">@L["Inventory_CountsSubtitle"]</p>
+        </header>
 
         @if (_isOffline)
         {
@@ -47,13 +50,11 @@ else
             </button>
         </div>
 
-        <Section Title="@L["Inventory_CountsTitle"]">
+        <section class="pos-stock-counts__panel" aria-labelledby="stock-counts-list-heading">
+            <h2 id="stock-counts-list-heading" class="pos-stock-counts__section-title">@L["Inventory_CountsTitle"]</h2>
             @if (_loading)
             {
-                <Stack Align="StackAlign.Center" Gap="2">
-                    <Spinner />
-                    <span class="pos-muted">@L["Inventory_Loading"]</span>
-                </Stack>
+                <div class="pos-stock-counts__loading"><Spinner /><span>@L["Inventory_Loading"]</span></div>
             }
             else if (!string.IsNullOrEmpty(_errorMessage))
             {
@@ -92,7 +93,7 @@ else
                     }
                 </div>
             }
-        </Section>
+        </section>
     </Page>
 </div>
 }

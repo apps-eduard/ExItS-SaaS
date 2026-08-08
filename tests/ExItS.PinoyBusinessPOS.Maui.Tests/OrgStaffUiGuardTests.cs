@@ -26,6 +26,9 @@ public sealed class OrgStaffUiGuardTests
         Assert.Contains("RevokeMembershipAsync", page, StringComparison.Ordinal);
         Assert.Contains("RevokeProductLocalRoleAsync", page, StringComparison.Ordinal);
         Assert.Contains("StoreHeaderBack Href=\"/org\"", page, StringComparison.Ordinal);
+        Assert.Contains("pos-staff__header", page, StringComparison.Ordinal);
+        Assert.Contains("pos-staff__title", page, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", page, StringComparison.Ordinal);
         Assert.DoesNotContain("pos-staff__back", page, StringComparison.Ordinal);
         Assert.Contains("pos-staff__actions-bar", page, StringComparison.Ordinal);
         Assert.Contains("IconGlyphs.Get(\"plus\")", page, StringComparison.Ordinal);

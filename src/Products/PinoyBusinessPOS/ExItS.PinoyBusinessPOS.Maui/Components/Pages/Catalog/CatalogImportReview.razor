@@ -1,4 +1,5 @@
 @page "/catalog/import/jobs/{JobId:guid}/review"
+@using ExItS.DesignSystem.Components.Internal
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IPosCatalogImportClient Imports
@@ -14,20 +15,41 @@
 }
 else if (!_canManage)
 {
+<div class="pos-catalog-import-review">
     <Page>
+        <header class="pos-catalog-import-review__header">
+            <h1 class="pos-catalog-import-review__title">@L["Catalog_Import_ReviewTitle"]</h1>
+            <p class="pos-catalog-import-review__subtitle">@L["Catalog_Import_ReviewSubtitle"]</p>
+        </header>
         <Alert Tone="AlertTone.Warning" Title="@L["Access_RestrictedTitle"]" Message="@L["Access_RestrictedMessage"]" />
-        <Button Variant="ButtonVariant.Secondary" OnClick="GoCatalog">@L["Catalog_Title"]</Button>
+        <div class="pos-action-grid pos-action-grid--single pos-catalog-import-review__actions">
+            <button type="button" class="pos-action-tile" @onclick="GoCatalog">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("products")</span>
+                <span class="pos-action-tile__label">@L["Catalog_Title"]</span>
+            </button>
+        </div>
     </Page>
+</div>
 }
 else
 {
+<div class="pos-catalog-import-review">
     <Page>
-        <PageHeader Title="@L["Catalog_Import_ReviewTitle"]" Subtitle="@L["Catalog_Import_ReviewSubtitle"]">
-            <Actions>
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoProgress">@L["Catalog_Import_ProgressTitle"]</Button>
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoCatalog">@L["Catalog_Title"]</Button>
-            </Actions>
-        </PageHeader>
+        <header class="pos-catalog-import-review__header">
+            <h1 class="pos-catalog-import-review__title">@L["Catalog_Import_ReviewTitle"]</h1>
+            <p class="pos-catalog-import-review__subtitle">@L["Catalog_Import_ReviewSubtitle"]</p>
+        </header>
+
+        <div class="pos-action-grid pos-action-grid--two pos-catalog-import-review__actions" role="group" aria-label="@L["Catalog_Import_ReviewTitle"]">
+            <button type="button" class="pos-action-tile" @onclick="GoProgress">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("refresh")</span>
+                <span class="pos-action-tile__label">@L["Catalog_Import_ProgressTitle"]</span>
+            </button>
+            <button type="button" class="pos-action-tile" @onclick="GoCatalog">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("products")</span>
+                <span class="pos-action-tile__label">@L["Catalog_Title"]</span>
+            </button>
+        </div>
 
         @if (_isOffline)
         {
@@ -41,16 +63,19 @@ else
             <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Catalog_ErrorTitle"])" Message="@_errorMessage" />
         }
 
-        <Section Title="@L["Catalog_FiltersTitle"]">
-            <Select Label="@L["Catalog_Filter_Status"]"
-                    Value="@_statusFilter"
-                    ValueChanged="OnStatusFilterChanged"
-                    Options="@StatusOptions" />
-        </Section>
+        <section class="pos-catalog-import-review__panel" aria-labelledby="catalog-import-review-filters">
+            <h2 id="catalog-import-review-filters" class="pos-catalog-import-review__section-title">@L["Catalog_FiltersTitle"]</h2>
+            <div class="pos-catalog-import-review__form">
+                <Select Label="@L["Catalog_Filter_Status"]"
+                        Value="@_statusFilter"
+                        ValueChanged="OnStatusFilterChanged"
+                        Options="@StatusOptions" />
+            </div>
+        </section>
 
         @if (_loading)
         {
-            <Spinner />
+            <div class="pos-catalog-import-review__loading"><Spinner /><span>@L["Common_Loading"]</span></div>
         }
         else if (_items.Count == 0)
         {
@@ -58,40 +83,58 @@ else
         }
         else
         {
-            <Stack Gap="2">
+            <div class="pos-catalog-import-review__list" role="list" aria-label="@L["Catalog_Import_ReviewTitle"]">
                 @foreach (var item in _items)
                 {
-                    <div class="pos-row">
-                        <div class="pos-product-tile__placeholder" aria-hidden="true"></div>
-                        <div>
-                            <div class="pos-value-md">@item.Name</div>
-                            <div class="pos-muted">
+                    <div class="pos-catalog-import-review__row" role="listitem">
+                        <div class="pos-catalog-import-review__row-main">
+                            <div class="pos-catalog-import-review__row-top">
+                                <span class="pos-catalog-import-review__row-name">@item.Name</span>
+                                <Badge Tone="@ItemTone(item.Status)">@item.Status</Badge>
+                            </div>
+                            <span class="pos-catalog-import-review__row-meta">
                                 @(string.IsNullOrWhiteSpace(item.Sku) ? L["Catalog_NoValue"] : item.Sku)
                                 ·
                                 @(string.IsNullOrWhiteSpace(item.Barcode) ? L["Catalog_NoValue"] : item.Barcode)
+                            </span>
+                            <div class="pos-catalog-import-review__row-price">
+                                <MoneyDisplay Amount="@item.SuggestedPrice" CurrencyCode="PHP" />
                             </div>
-                            <MoneyDisplay Amount="@item.SuggestedPrice" CurrencyCode="PHP" />
-                            <Badge Tone="@ItemTone(item.Status)">@item.Status</Badge>
                             @if (!string.IsNullOrWhiteSpace(item.ErrorMessage))
                             {
-                                <div class="pos-muted pos-wrap">@item.ErrorMessage</div>
+                                <span class="pos-catalog-import-review__row-error">@item.ErrorMessage</span>
                             }
                         </div>
                         @if (item.LocalProductId is Guid localId)
                         {
-                            <Button Variant="ButtonVariant.Secondary" OnClick="() => GoEdit(localId)">@L["Catalog_Product_Edit"]</Button>
-                            <Button Variant="ButtonVariant.Primary" OnClick="() => GoOpeningStock(localId)">@L["Catalog_Import_OpeningStockAction"]</Button>
+                            <div class="pos-action-grid pos-action-grid--two pos-catalog-import-review__row-actions" role="group">
+                                <button type="button"
+                                        class="pos-action-tile"
+                                        @onclick="() => GoEdit(localId)">
+                                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("products")</span>
+                                    <span class="pos-action-tile__label">@L["Catalog_Product_Edit"]</span>
+                                </button>
+                                <button type="button"
+                                        class="pos-action-tile pos-action-tile--primary"
+                                        @onclick="() => GoOpeningStock(localId)">
+                                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("plus")</span>
+                                    <span class="pos-action-tile__label">@L["Catalog_Import_OpeningStockAction"]</span>
+                                </button>
+                            </div>
                         }
                     </div>
                 }
-            </Stack>
+            </div>
 
             @if (_totalCount > 0)
             {
-                <Pagination Page="@_page" PageSize="@_pageSize" TotalCount="@_totalCount" PageChanged="OnPageChanged" />
+                <div class="pos-catalog-import-review__pager">
+                    <Pagination Page="@_page" PageSize="@_pageSize" TotalCount="@_totalCount" PageChanged="OnPageChanged" />
+                </div>
             }
         }
     </Page>
+</div>
 }
 
 @code {

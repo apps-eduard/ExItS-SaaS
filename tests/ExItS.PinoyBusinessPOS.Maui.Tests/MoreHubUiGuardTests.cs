@@ -13,6 +13,8 @@ public sealed class MoreHubUiGuardTests
         Assert.Contains("@page \"/more\"", more, StringComparison.Ordinal);
         Assert.Contains("pos-action-grid", more, StringComparison.Ordinal);
         Assert.Contains("pos-action-tile", more, StringComparison.Ordinal);
+        Assert.Contains("pos-more__header", more, StringComparison.Ordinal);
+        Assert.Contains("pos-more__title", more, StringComparison.Ordinal);
         Assert.Contains("More_WorkspaceSection", more, StringComparison.Ordinal);
         Assert.Contains("More_ToolsSection", more, StringComparison.Ordinal);
         Assert.Contains("GoRoleHome", more, StringComparison.Ordinal);
@@ -29,10 +31,12 @@ public sealed class MoreHubUiGuardTests
         Assert.Contains("UtangCapability.ViewReports", more, StringComparison.Ordinal);
         Assert.Contains("/overdue", more, StringComparison.Ordinal);
         Assert.Contains("/inventory", more, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", more, StringComparison.Ordinal);
         Assert.DoesNotContain("Auth_Logout", more, StringComparison.Ordinal);
 
         Assert.Contains(".pos-action-grid", css, StringComparison.Ordinal);
-        Assert.Contains(".pos-dash .exds-page-header", css, StringComparison.Ordinal);
+        Assert.Contains(".pos-more__header", css, StringComparison.Ordinal);
+        Assert.Contains(".pos-more__title", css, StringComparison.Ordinal);
         Assert.Contains("border-bottom: none", css, StringComparison.Ordinal);
 
         Assert.Contains("Context_RoleOwner", switcher, StringComparison.Ordinal);

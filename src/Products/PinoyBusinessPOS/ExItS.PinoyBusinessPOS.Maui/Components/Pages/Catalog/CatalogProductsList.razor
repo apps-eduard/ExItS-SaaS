@@ -16,9 +16,12 @@
 else
 {
     var canManage = Capabilities.IsAllowed(UtangCapability.ManageCatalog);
-<div class="pos-dash pos-catalog">
+<div class="pos-catalog">
     <Page>
-        <PageHeader Title="@L["Catalog_Title"]" Subtitle="@L["Catalog_Subtitle"]" />
+        <header class="pos-catalog__header">
+            <h1 class="pos-catalog__title">@L["Catalog_Title"]</h1>
+            <p class="pos-catalog__subtitle">@L["Catalog_Subtitle"]</p>
+        </header>
 
         @if (_isOffline)
         {
@@ -29,34 +32,33 @@ else
             <Alert Tone="AlertTone.Warning" Title="@L["Access_RestrictedTitle"]" Message="@L["Access_RestrictedMessage"]" />
         }
 
-        <Section Title="@L["Catalog_QuickActionsSection"]">
-            <div class="pos-action-grid" role="group" aria-label="@L["Catalog_QuickActionsSection"]">
-                <button type="button" class="pos-action-tile" @onclick="GoCategories">
-                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("menu")</span>
-                    <span class="pos-action-tile__label">@L["Catalog_Categories"]</span>
+        <div class="pos-action-grid pos-catalog__actions" role="group" aria-label="@L["Catalog_QuickActionsSection"]">
+            @if (canManage)
+            {
+                <button type="button" class="pos-action-tile pos-action-tile--primary" disabled="@_isOffline" @onclick="GoNew">
+                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("plus")</span>
+                    <span class="pos-action-tile__label">@L["Catalog_Product_Add"]</span>
                 </button>
-                <button type="button" class="pos-action-tile" @onclick="GoBarcodeLookup">
-                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
-                    <span class="pos-action-tile__label">@L["Catalog_Quick_Barcode"]</span>
+            }
+            <button type="button" class="pos-action-tile" @onclick="GoCategories">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("menu")</span>
+                <span class="pos-action-tile__label">@L["Catalog_Categories"]</span>
+            </button>
+            <button type="button" class="pos-action-tile" @onclick="GoBarcodeLookup">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
+                <span class="pos-action-tile__label">@L["Catalog_Quick_Barcode"]</span>
+            </button>
+            @if (canManage)
+            {
+                <button type="button" class="pos-action-tile" disabled="@_isOffline" @onclick="GoGlobal">
+                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("inbox")</span>
+                    <span class="pos-action-tile__label">@L["Catalog_Quick_Global"]</span>
                 </button>
-                @if (canManage)
-                {
-                    <button type="button" class="pos-action-tile" disabled="@_isOffline" @onclick="GoGlobal">
-                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("inbox")</span>
-                        <span class="pos-action-tile__label">@L["Catalog_Quick_Global"]</span>
-                    </button>
-                    <button type="button" class="pos-action-tile" disabled="@_isOffline" @onclick="GoImport">
-                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("products")</span>
-                        <span class="pos-action-tile__label">@L["Catalog_Quick_Template"]</span>
-                    </button>
-                }
-            </div>
-        </Section>
-
-        <div class="pos-catalog__add">
-            <Button Variant="ButtonVariant.Primary"
-                    Disabled="@(!canManage || _isOffline)"
-                    OnClick="GoNew">@L["Catalog_Product_Add"]</Button>
+                <button type="button" class="pos-action-tile" disabled="@_isOffline" @onclick="GoImport">
+                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("products")</span>
+                    <span class="pos-action-tile__label">@L["Catalog_Quick_Template"]</span>
+                </button>
+            }
         </div>
 
         <div class="pos-catalog__toolbar">
@@ -92,8 +94,9 @@ else
 
         @if (_filtersOpen)
         {
-            <Section Title="@L["Catalog_FiltersTitle"]" id="catalog-filters">
-                <Stack Gap="2">
+            <section class="pos-catalog__panel" id="catalog-filters" aria-labelledby="catalog-filters-heading">
+                <h2 id="catalog-filters-heading" class="pos-catalog__section-title">@L["Catalog_FiltersTitle"]</h2>
+                <div class="pos-catalog__form">
                     <Select Label="@L["Catalog_Filter_Status"]"
                             Value="@_statusFilter"
                             ValueChanged="OnStatusFilterChanged"
@@ -109,17 +112,18 @@ else
                     <FormActions>
                         <Button Variant="ButtonVariant.Ghost" IsLoading="@_loading" OnClick="ReloadAsync">@L["Catalog_Refresh"]</Button>
                     </FormActions>
-                </Stack>
-            </Section>
+                </div>
+            </section>
         }
 
-        <Section Title="@L["Catalog_ProductListSection"]">
+        <section class="pos-catalog__panel" aria-labelledby="catalog-list-heading">
+            <h2 id="catalog-list-heading" class="pos-catalog__section-title">@L["Catalog_ProductListSection"]</h2>
             @if (_loading)
             {
-                <Stack Align="StackAlign.Center" Gap="2">
+                <div class="pos-catalog__loading" role="status" aria-live="polite">
                     <Spinner />
-                    <span class="pos-muted">@L["Catalog_Loading"]</span>
-                </Stack>
+                    <span>@L["Catalog_Loading"]</span>
+                </div>
             }
             else if (!string.IsNullOrEmpty(_errorMessage))
             {
@@ -162,7 +166,7 @@ else
                     }
                 </div>
             }
-        </Section>
+        </section>
 
         @if (!_loading && _totalCount > 0)
         {

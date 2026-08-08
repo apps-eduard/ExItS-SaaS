@@ -10,10 +10,13 @@
 @inject IJSRuntime Js
 @inject IDocumentHandoffService Handoff
 
-<div class="pos-my-qr">
+<div class="pos-my-qr pos-personal-my-qr">
     <StoreHeaderBack Handler="GoBackAsync" />
     <Page>
-        <PageHeader Title="@L["Personal_MyQrTitle"]" Subtitle="@L["Personal_MyQrSubtitle"]" />
+        <header class="pos-personal-my-qr__header">
+            <h1 class="pos-personal-my-qr__title">@L["Personal_MyQrTitle"]</h1>
+            <p class="pos-personal-my-qr__subtitle">@L["Personal_MyQrSubtitle"]</p>
+        </header>
 
         @if (_loading)
         {

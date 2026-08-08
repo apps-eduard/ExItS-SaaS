@@ -1,4 +1,5 @@
 @page "/purchasing/{PurchaseOrderId:guid}"
+@using ExItS.DesignSystem.Components.Internal
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IPosPurchaseOrderClient Purchasing
@@ -33,8 +34,16 @@ else
         var canSubmit = canManage && !_isOffline && _po.Status == "Draft";
         var canCancel = canManage && !_isOffline && (_po.Status == "Draft" || _po.Status == "Ordered");
         var canReceive = canManage && !_isOffline && (_po.Status == "Ordered" || _po.Status == "PartiallyReceived");
+        var actionCount = (canSubmit ? 1 : 0) + (canReceive ? 1 : 0) + (canCancel ? 1 : 0);
+<div class="pos-purchasing-detail">
         <Page>
-            <PageHeader Title="@(_po.PoNumber ?? L["Purchasing_DetailTitle"])" Subtitle="@L["Purchasing_DetailSubtitle"]" />
+            <header class="pos-purchasing-detail__header">
+                <h1 class="pos-purchasing-detail__title">@(_po.PoNumber ?? L["Purchasing_DetailTitle"])</h1>
+                <p class="pos-purchasing-detail__subtitle">@L["Purchasing_DetailSubtitle"]</p>
+                <div class="pos-purchasing-detail__status-row">
+                    <Badge Tone="@StatusTone(_po.Status)">@_po.Status</Badge>
+                </div>
+            </header>
 
             @if (_isOffline)
             {
@@ -51,69 +60,107 @@ else
                 <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Purchasing_ErrorTitle"])" Message="@_errorMessage" />
             }
 
-            <Section Title="@L["Purchasing_DetailsSection"]">
-                <Stack Gap="3">
-                    <div>
-                        <span class="pos-muted">@L["Purchasing_Field_Status"]</span>
-                        <div class="pos-value-md">@_po.Status</div>
+            <section class="pos-purchasing-detail__panel" aria-labelledby="purchasing-detail-heading">
+                <h2 id="purchasing-detail-heading" class="pos-purchasing-detail__section-title">@L["Purchasing_DetailsSection"]</h2>
+                <dl class="pos-purchasing-detail__facts">
+                    <div class="pos-purchasing-detail__fact">
+                        <dt>@L["Purchasing_Field_Status"]</dt>
+                        <dd>@_po.Status</dd>
                     </div>
-                    <div>
-                        <span class="pos-muted">@L["Purchasing_Field_OrderDate"]</span>
-                        <div class="pos-value-md">@_po.OrderDate</div>
+                    <div class="pos-purchasing-detail__fact">
+                        <dt>@L["Purchasing_Field_OrderDate"]</dt>
+                        <dd>@_po.OrderDate.ToString("d")</dd>
                     </div>
-                    <div>
-                        <span class="pos-muted">@L["Purchasing_Field_Supplier"]</span>
-                        <div class="pos-value-md">@_po.SupplierId</div>
+                    <div class="pos-purchasing-detail__fact">
+                        <dt>@L["Purchasing_Field_Supplier"]</dt>
+                        <dd class="pos-wrap">@_po.SupplierId</dd>
                     </div>
+                    @if (_po.ExpectedDeliveryDate is { } expected)
+                    {
+                        <div class="pos-purchasing-detail__fact">
+                            <dt>@L["Purchasing_Field_ExpectedDelivery"]</dt>
+                            <dd>@expected.ToString("d")</dd>
+                        </div>
+                    }
                     @if (!string.IsNullOrWhiteSpace(_po.SupplierReference))
                     {
-                        <div>
-                            <span class="pos-muted">@L["Purchasing_Field_SupplierReference"]</span>
-                            <div class="pos-value-md">@_po.SupplierReference</div>
+                        <div class="pos-purchasing-detail__fact">
+                            <dt>@L["Purchasing_Field_SupplierReference"]</dt>
+                            <dd class="pos-wrap">@_po.SupplierReference</dd>
                         </div>
                     }
                     @if (!string.IsNullOrWhiteSpace(_po.Notes))
                     {
-                        <div>
-                            <span class="pos-muted">@L["Purchasing_Field_Notes"]</span>
-                            <div class="pos-value-md pos-wrap">@_po.Notes</div>
+                        <div class="pos-purchasing-detail__fact">
+                            <dt>@L["Purchasing_Field_Notes"]</dt>
+                            <dd class="pos-wrap">@_po.Notes</dd>
                         </div>
                     }
-                </Stack>
-            </Section>
+                </dl>
+            </section>
 
-            <Section Title="@L["Purchasing_LinesSection"]">
-                <Stack Gap="3">
-                    @foreach (var line in _po.Lines.OrderBy(l => l.LineNumber))
-                    {
-                        <div>
-                            <div class="pos-value-md">@(line.NameSnapshot ?? line.ProductId.ToString("D"))</div>
-                            <div class="pos-muted">
-                                @L["Purchasing_LineSummary", line.OrderedQty, line.ReceivedQty, line.OutstandingQty, line.UnitPurchaseCost]
+            <section class="pos-purchasing-detail__panel" aria-labelledby="purchasing-lines-heading">
+                <h2 id="purchasing-lines-heading" class="pos-purchasing-detail__section-title">@L["Purchasing_LinesSection"]</h2>
+                @if (_po.Lines.Count == 0)
+                {
+                    <p class="pos-purchasing-detail__empty">—</p>
+                }
+                else
+                {
+                    <div class="pos-purchasing-detail__list" role="list">
+                        @foreach (var line in _po.Lines.OrderBy(l => l.LineNumber))
+                        {
+                            <div class="pos-purchasing-detail__entry" role="listitem">
+                                <div class="pos-purchasing-detail__entry-top">
+                                    <span class="pos-purchasing-detail__entry-name">@(line.NameSnapshot ?? line.ProductId.ToString("D"))</span>
+                                </div>
+                                <p class="pos-purchasing-detail__entry-meta">
+                                    @L["Purchasing_LineSummary", line.OrderedQty, line.ReceivedQty, line.OutstandingQty, line.UnitPurchaseCost]
+                                </p>
                             </div>
-                        </div>
-                    }
-                </Stack>
-            </Section>
+                        }
+                    </div>
+                }
+            </section>
 
-            @if (canSubmit || canCancel || canReceive)
+            @if (actionCount > 0)
             {
-                <FormActions>
+                <div class="pos-action-grid @(actionCount == 1 ? "pos-action-grid--single" : actionCount == 2 ? "pos-action-grid--two" : "pos-action-grid--three") pos-purchasing-detail__actions"
+                     role="group">
                     @if (canSubmit)
                     {
-                        <Button Variant="ButtonVariant.Primary" Disabled="@_busy" IsLoading="@_busy" OnClick="SubmitAsync">@L["Purchasing_Submit"]</Button>
+                        <button type="button"
+                                class="pos-action-tile pos-action-tile--primary"
+                                disabled="@_busy"
+                                @onclick="SubmitAsync">
+                            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("check")</span>
+                            <span class="pos-action-tile__label">@L["Purchasing_Submit"]</span>
+                        </button>
                     }
                     @if (canReceive)
                     {
-                        <Button Variant="ButtonVariant.Primary" OnClick="GoReceive">@L["Purchasing_Receive"]</Button>
+                        <button type="button"
+                                class="pos-action-tile pos-action-tile--primary"
+                                disabled="@_busy"
+                                @onclick="GoReceive">
+                            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("products")</span>
+                            <span class="pos-action-tile__label">@L["Purchasing_Receive"]</span>
+                        </button>
                     }
                     @if (canCancel)
                     {
-                        <Button Variant="ButtonVariant.Secondary" Disabled="@_busy" OnClick="CancelAsync">@L["Purchasing_Cancel"]</Button>
+                        <button type="button"
+                                class="pos-action-tile"
+                                disabled="@_busy"
+                                @onclick="CancelAsync">
+                            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("close")</span>
+                            <span class="pos-action-tile__label">@L["Purchasing_Cancel"]</span>
+                        </button>
                     }
-                </FormActions>
+                </div>
             }
         </Page>
+</div>
     }
 }
 
@@ -146,6 +193,16 @@ else
         _ready = true;
         await LoadAsync();
     }
+
+    private static BadgeTone StatusTone(string status) =>
+        status switch
+        {
+            "Ordered" => BadgeTone.Primary,
+            "PartiallyReceived" => BadgeTone.Warning,
+            "Received" => BadgeTone.Success,
+            "Cancelled" => BadgeTone.Neutral,
+            _ => BadgeTone.Neutral
+        };
 
     private async Task LoadAsync()
     {

@@ -1,5 +1,6 @@
 @page "/catalog/import/jobs/{JobId:guid}"
 @implements IDisposable
+@using ExItS.DesignSystem.Components.Internal
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IPosCatalogImportClient Imports
@@ -15,19 +16,37 @@
 }
 else if (!_canManage)
 {
+<div class="pos-catalog-import-job">
     <Page>
+        <header class="pos-catalog-import-job__header">
+            <h1 class="pos-catalog-import-job__title">@L["Catalog_Import_ProgressTitle"]</h1>
+            <p class="pos-catalog-import-job__subtitle">@L["Catalog_Import_ProgressSubtitle"]</p>
+        </header>
         <Alert Tone="AlertTone.Warning" Title="@L["Access_RestrictedTitle"]" Message="@L["Access_RestrictedMessage"]" />
-        <Button Variant="ButtonVariant.Secondary" OnClick="GoCatalog">@L["Catalog_Title"]</Button>
+        <div class="pos-action-grid pos-action-grid--single pos-catalog-import-job__actions">
+            <button type="button" class="pos-action-tile" @onclick="GoCatalog">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("products")</span>
+                <span class="pos-action-tile__label">@L["Catalog_Title"]</span>
+            </button>
+        </div>
     </Page>
+</div>
 }
 else
 {
+<div class="pos-catalog-import-job">
     <Page>
-        <PageHeader Title="@L["Catalog_Import_ProgressTitle"]" Subtitle="@L["Catalog_Import_ProgressSubtitle"]">
-            <Actions>
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoCatalog">@L["Catalog_Title"]</Button>
-            </Actions>
-        </PageHeader>
+        <header class="pos-catalog-import-job__header">
+            <h1 class="pos-catalog-import-job__title">@L["Catalog_Import_ProgressTitle"]</h1>
+            <p class="pos-catalog-import-job__subtitle">@L["Catalog_Import_ProgressSubtitle"]</p>
+        </header>
+
+        <div class="pos-action-grid pos-action-grid--single pos-catalog-import-job__actions" role="group" aria-label="@L["Catalog_Import_ProgressTitle"]">
+            <button type="button" class="pos-action-tile" @onclick="GoCatalog">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("products")</span>
+                <span class="pos-action-tile__label">@L["Catalog_Title"]</span>
+            </button>
+        </div>
 
         @if (_isOffline)
         {
@@ -50,57 +69,94 @@ else
         {
             var terminal = IsTerminal(_job.Status);
             var successTerminal = IsSuccessTerminal(_job.Status);
-            <Section Title="@L["Catalog_Import_StatusSection"]">
-                <Stack Gap="3">
+            <section class="pos-catalog-import-job__panel" aria-labelledby="catalog-import-job-heading">
+                <h2 id="catalog-import-job-heading" class="pos-catalog-import-job__section-title">@L["Catalog_Import_StatusSection"]</h2>
+                <div class="pos-catalog-import-job__status-row">
                     <Badge Tone="@StatusTone(_job.Status)">@StatusLabel(_job.Status)</Badge>
-                    @if (!string.IsNullOrWhiteSpace(_job.CurrentStage))
-                    {
-                        <div class="pos-muted">@_job.CurrentStage</div>
-                    }
-                    <div>
-                        <span class="pos-muted">@L["Catalog_Import_Processed"]</span>
-                        <div class="pos-value-md">@_job.ProcessedCount / @_job.TotalCount</div>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(_job.CurrentStage))
+                {
+                    <p class="pos-catalog-import-job__stage">@_job.CurrentStage</p>
+                }
+                <dl class="pos-catalog-import-job__facts">
+                    <div class="pos-catalog-import-job__fact">
+                        <dt>@L["Catalog_Import_Processed"]</dt>
+                        <dd>@_job.ProcessedCount / @_job.TotalCount</dd>
                     </div>
-                    <div>
-                        <span class="pos-muted">@L["Catalog_Import_Imported"]</span>
-                        <div class="pos-value-md">@_job.ImportedCount</div>
+                    <div class="pos-catalog-import-job__fact">
+                        <dt>@L["Catalog_Import_Imported"]</dt>
+                        <dd>@_job.ImportedCount</dd>
                     </div>
-                    <div>
-                        <span class="pos-muted">@L["Catalog_Import_Skipped"]</span>
-                        <div class="pos-value-md">@_job.SkippedCount</div>
+                    <div class="pos-catalog-import-job__fact">
+                        <dt>@L["Catalog_Import_Skipped"]</dt>
+                        <dd>@_job.SkippedCount</dd>
                     </div>
-                    <div>
-                        <span class="pos-muted">@L["Catalog_Import_Failed"]</span>
-                        <div class="pos-value-md">@_job.FailedCount</div>
+                    <div class="pos-catalog-import-job__fact">
+                        <dt>@L["Catalog_Import_Failed"]</dt>
+                        <dd>@_job.FailedCount</dd>
                     </div>
-                    @if (!string.IsNullOrWhiteSpace(_job.ErrorSummary))
-                    {
-                        <Alert Tone="AlertTone.Warning" Title="@L["Catalog_Import_WarningsTitle"]" Message="@_job.ErrorSummary" />
-                    }
-                    @if (!terminal)
-                    {
+                </dl>
+                @if (!string.IsNullOrWhiteSpace(_job.ErrorSummary))
+                {
+                    <Alert Tone="AlertTone.Warning" Title="@L["Catalog_Import_WarningsTitle"]" Message="@_job.ErrorSummary" />
+                }
+                @if (!terminal)
+                {
+                    <div class="pos-catalog-import-job__polling">
                         <Spinner />
-                        <div class="pos-muted">@L["Catalog_Import_Polling"]</div>
-                    }
-                    <FormActions>
-                        <Button Variant="ButtonVariant.Secondary" IsLoading="@_loading" OnClick="LoadAsync">@L["Catalog_Refresh"]</Button>
-                        @if (terminal)
+                        <span class="pos-muted">@L["Catalog_Import_Polling"]</span>
+                    </div>
+                }
+                @{
+                    var actionCount = 1 + (terminal ? 1 : 0) + (terminal && successTerminal ? 1 : 0);
+                    var actionGridClass = actionCount >= 3
+                        ? "pos-action-grid pos-action-grid--three"
+                        : actionCount == 2
+                            ? "pos-action-grid pos-action-grid--two"
+                            : "pos-action-grid pos-action-grid--single";
+                }
+                <div class="@actionGridClass pos-catalog-import-job__footer" role="group">
+                    <button type="button"
+                            class="pos-action-tile"
+                            disabled="@_loading"
+                            @onclick="LoadAsync">
+                        @if (_loading)
                         {
-                            @if (successTerminal)
-                            {
-                                <Button Variant="ButtonVariant.Primary" OnClick="GoCatalog">@L["Catalog_Import_GoToProducts"]</Button>
-                            }
-                            <Button Variant="@(successTerminal ? ButtonVariant.Secondary : ButtonVariant.Primary)" OnClick="GoReview">@L["Catalog_Import_Review"]</Button>
+                            <Spinner />
                         }
-                    </FormActions>
-                </Stack>
-            </Section>
+                        else
+                        {
+                            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("refresh")</span>
+                        }
+                        <span class="pos-action-tile__label">@L["Catalog_Refresh"]</span>
+                    </button>
+                    @if (terminal)
+                    {
+                        @if (successTerminal)
+                        {
+                            <button type="button"
+                                    class="pos-action-tile pos-action-tile--primary"
+                                    @onclick="GoCatalog">
+                                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("products")</span>
+                                <span class="pos-action-tile__label">@L["Catalog_Import_GoToProducts"]</span>
+                            </button>
+                        }
+                        <button type="button"
+                                class="@(successTerminal ? "pos-action-tile" : "pos-action-tile pos-action-tile--primary")"
+                                @onclick="GoReview">
+                            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
+                            <span class="pos-action-tile__label">@L["Catalog_Import_Review"]</span>
+                        </button>
+                    }
+                </div>
+            </section>
         }
         else
         {
             <Spinner />
         }
     </Page>
+</div>
 }
 
 @code {

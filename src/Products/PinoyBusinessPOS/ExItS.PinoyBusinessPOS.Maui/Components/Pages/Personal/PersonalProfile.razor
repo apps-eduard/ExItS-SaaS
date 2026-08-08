@@ -6,9 +6,13 @@
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
+<div class="pos-personal-profile">
 <StoreHeaderBack Href="/personal/more" />
 <Page>
-    <PageHeader Title="@L["Personal_ProfileTitle"]" Subtitle="@L["Personal_ProfileSubtitle"]" />
+    <header class="pos-personal-profile__header">
+        <h1 class="pos-personal-profile__title">@L["Personal_ProfileTitle"]</h1>
+        <p class="pos-personal-profile__subtitle">@L["Personal_ProfileSubtitle"]</p>
+    </header>
 
     @if (!_ready)
     {
@@ -42,6 +46,7 @@
         </Section>
     }
 </Page>
+</div>
 
 @code {
     private bool _ready;

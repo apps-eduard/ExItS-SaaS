@@ -8,7 +8,10 @@
 
 <div class="pos-settings pos-personal-more">
     <Page>
-        <PageHeader Title="@L["Nav_More"]" Subtitle="@L["Personal_MoreSubtitle"]" />
+        <header class="pos-personal-more__header">
+            <h1 class="pos-personal-more__title">@L["Nav_More"]</h1>
+            <p class="pos-personal-more__subtitle">@L["Personal_MoreSubtitle"]</p>
+        </header>
 
         @if (_loading)
         {

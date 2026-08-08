@@ -9,8 +9,14 @@
 
 <StoreHeaderBack Href="/permissions" />
 
+<div class="pos-permissions">
 <Page>
-    <PageHeader Title="@L["Permissions_MyAccess"]" Subtitle="@L["Permissions_MyAccessSubtitle"]" />
+    <header class="pos-permissions__header">
+        <div class="pos-permissions__heading">
+            <h1 class="pos-permissions__title">@L["Permissions_MyAccess"]</h1>
+            <p class="pos-permissions__subtitle">@L["Permissions_MyAccessSubtitle"]</p>
+        </div>
+    </header>
 
     @if (_loading)
     {
@@ -29,6 +35,7 @@
         </Section>
     }
 </Page>
+</div>
 
 @code {
     private bool _loading = true;

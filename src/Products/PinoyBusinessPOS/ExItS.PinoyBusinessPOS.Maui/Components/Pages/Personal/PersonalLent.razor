@@ -9,7 +9,10 @@
 
 <div class="pos-personal-utang">
     <Page>
-        <PageHeader Title="@L["Personal_LentTitle"]" Subtitle="@L["Personal_LentSubtitle"]" />
+        <header class="pos-personal-utang__header">
+            <h1 class="pos-personal-utang__title">@L["Personal_LentTitle"]</h1>
+            <p class="pos-personal-utang__subtitle">@L["Personal_LentSubtitle"]</p>
+        </header>
 
         @if (_loading)
         {

@@ -8,10 +8,13 @@
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
-<div class="pos-resolve">
+<div class="pos-resolve pos-personal-resolve">
     <StoreHeaderBack Handler="GoBackAsync" />
     <Page>
-        <PageHeader Title="@L["Personal_ResolveUserTitle"]" Subtitle="@L["Personal_ResolveUserSubtitle"]" />
+        <header class="pos-personal-resolve__header">
+            <h1 class="pos-personal-resolve__title">@L["Personal_ResolveUserTitle"]</h1>
+            <p class="pos-personal-resolve__subtitle">@L["Personal_ResolveUserSubtitle"]</p>
+        </header>
 
         @if (_loadingSession)
         {

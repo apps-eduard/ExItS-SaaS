@@ -33,8 +33,12 @@ else
         var canReceive = canManage && !_isOffline
             && (_po.Status == "Ordered" || _po.Status == "PartiallyReceived")
             && _lines.Any(l => l.OutstandingQty > 0m);
+<div class="pos-purchasing-receive">
         <Page>
-            <PageHeader Title="@L["Purchasing_ReceiveTitle"]" Subtitle="@(_po.PoNumber ?? L["Purchasing_ReceiveSubtitle"])" />
+            <header class="pos-purchasing-receive__header">
+                <h1 class="pos-purchasing-receive__title">@L["Purchasing_ReceiveTitle"]</h1>
+                <p class="pos-purchasing-receive__subtitle">@(_po.PoNumber ?? L["Purchasing_ReceiveSubtitle"])</p>
+            </header>
 
             @if (_isOffline)
             {
@@ -46,33 +50,44 @@ else
                 <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Purchasing_ErrorTitle"])" Message="@_errorMessage" />
             }
 
-            <Section Title="@L["Purchasing_ReceiveLinesSection"]">
-                <Stack Gap="3">
+            <section class="pos-purchasing-receive__panel" aria-labelledby="purchasing-receive-heading">
+                <h2 id="purchasing-receive-heading" class="pos-purchasing-receive__section-title">@L["Purchasing_ReceiveLinesSection"]</h2>
+                <div class="pos-purchasing-receive__list" role="list">
                     @foreach (var line in _lines)
                     {
-                        <div>
-                            <div class="pos-value-md">@(line.NameSnapshot ?? line.ProductId.ToString("D"))</div>
-                            <div class="pos-muted">@L["Purchasing_Outstanding", line.OutstandingQty, line.UomSnapshot ?? ""]</div>
+                        <div class="pos-purchasing-receive__entry" role="listitem">
+                            <div class="pos-purchasing-receive__entry-top">
+                                <span class="pos-purchasing-receive__entry-name">@(line.NameSnapshot ?? line.ProductId.ToString("D"))</span>
+                            </div>
+                            <p class="pos-purchasing-receive__entry-meta">@L["Purchasing_Outstanding", line.OutstandingQty, line.UomSnapshot ?? ""]</p>
                             @if (canReceive && line.OutstandingQty > 0m)
                             {
-                                <TextInput Label="@L["Purchasing_ReceiveQty"]"
-                                           Value="@line.QtyText"
-                                           ValueChanged="v => line.QtyText = v" />
+                                <div class="pos-purchasing-receive__entry-field">
+                                    <TextInput Label="@L["Purchasing_ReceiveQty"]"
+                                               Value="@line.QtyText"
+                                               ValueChanged="v => line.QtyText = v" />
+                                </div>
                             }
                         </div>
                     }
-                    @if (canReceive)
-                    {
+                </div>
+                @if (canReceive)
+                {
+                    <div class="pos-purchasing-receive__form">
                         <TextInput Label="@L["Purchasing_DeliveryReference"]" Value="@_deliveryReference" ValueChanged="v => _deliveryReference = v" />
                         <TextInput Label="@L["Purchasing_ReceiveNotes"]" Value="@_notes" ValueChanged="v => _notes = v" />
-                    }
-                    <Button Variant="ButtonVariant.Primary"
-                            Disabled="@(!canReceive || _busy)"
-                            IsLoading="@_busy"
-                            OnClick="ReceiveAsync">@L["Purchasing_Receive"]</Button>
-                </Stack>
-            </Section>
+                    </div>
+                }
+            </section>
+
+            <FormActions>
+                <Button Variant="ButtonVariant.Primary"
+                        Disabled="@(!canReceive || _busy)"
+                        IsLoading="@_busy"
+                        OnClick="ReceiveAsync">@L["Purchasing_Receive"]</Button>
+            </FormActions>
         </Page>
+</div>
     }
 }
 

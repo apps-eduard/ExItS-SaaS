@@ -1,4 +1,5 @@
 @page "/expenses/{ExpenseId:guid}"
+@using ExItS.DesignSystem.Components.Internal
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IPosExpenseClient Expenses
@@ -33,8 +34,15 @@ else
     var canVoid = Capabilities.IsAllowed(UtangCapability.ManageExpenses)
         && isRecorded
         && !_isOffline;
+<div class="pos-expense-detail">
 <Page>
-    <PageHeader Title="@expense.ExpenseNumber" Subtitle="@L["Expenses_DetailTitle"]" />
+    <header class="pos-expense-detail__header">
+        <h1 class="pos-expense-detail__title">@expense.ExpenseNumber</h1>
+        <p class="pos-expense-detail__subtitle">@L["Expenses_DetailTitle"]</p>
+        <div class="pos-expense-detail__status-row">
+            <Badge Tone="@(isRecorded ? BadgeTone.Success : BadgeTone.Neutral)">@ExpensesUiOptions.StatusLabel(L, expense.Status)</Badge>
+        </div>
+    </header>
 
     @if (_isOffline)
     {
@@ -51,72 +59,75 @@ else
         <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Expenses_ErrorTitle"])" Message="@_errorMessage" />
     }
 
-    <Section Title="@L["Expenses_DetailSection"]">
-        <Stack Gap="3">
-            <div>
-                <span class="pos-muted">@L["Expenses_Col_Status"]</span>
-                <div class="pos-value-md">
-                    <Badge Tone="@(isRecorded ? BadgeTone.Success : BadgeTone.Neutral)">@ExpensesUiOptions.StatusLabel(L, expense.Status)</Badge>
-                </div>
+    <section class="pos-expense-detail__panel" aria-labelledby="expense-detail-heading">
+        <h2 id="expense-detail-heading" class="pos-expense-detail__section-title">@L["Expenses_DetailSection"]</h2>
+        <div class="pos-expense-detail__amount">
+            <span class="pos-expense-detail__amount-label">@L["Expenses_Amount"]</span>
+            <div class="pos-expense-detail__amount-value">
+                <MoneyDisplay Amount="@expense.Amount" CurrencyCode="PHP" Emphasized="true" />
             </div>
-            <div>
-                <span class="pos-muted">@L["Expenses_ExpenseDate"]</span>
-                <div class="pos-value-md">@expense.ExpenseDate.ToString("d")</div>
+        </div>
+        <dl class="pos-expense-detail__facts">
+            <div class="pos-expense-detail__fact">
+                <dt>@L["Expenses_ExpenseDate"]</dt>
+                <dd>@expense.ExpenseDate.ToString("d")</dd>
             </div>
-            <div>
-                <span class="pos-muted">@L["Expenses_Category"]</span>
-                <div class="pos-value-md">@(string.IsNullOrWhiteSpace(expense.CategoryName) ? expense.CategoryId.ToString("D") : expense.CategoryName)</div>
+            <div class="pos-expense-detail__fact">
+                <dt>@L["Expenses_Category"]</dt>
+                <dd>@(string.IsNullOrWhiteSpace(expense.CategoryName) ? L["Customers_NoValue"] : expense.CategoryName)</dd>
             </div>
-            <div>
-                <span class="pos-muted">@L["Expenses_Payment"]</span>
-                <div class="pos-value-md">@ExpensesUiOptions.PaymentMethodLabel(L, expense.PaymentMethod)</div>
+            <div class="pos-expense-detail__fact">
+                <dt>@L["Expenses_Payment"]</dt>
+                <dd>@ExpensesUiOptions.PaymentMethodLabel(L, expense.PaymentMethod)</dd>
             </div>
-            <div>
-                <span class="pos-muted">@L["Expenses_Amount"]</span>
-                <div class="pos-value-md"><MoneyDisplay Amount="@expense.Amount" CurrencyCode="PHP" /></div>
-            </div>
-            <div>
-                <span class="pos-muted">@L["Expenses_Description"]</span>
-                <div class="pos-value-md pos-wrap">@expense.Description</div>
+            <div class="pos-expense-detail__fact">
+                <dt>@L["Expenses_Description"]</dt>
+                <dd class="pos-wrap">@expense.Description</dd>
             </div>
             @if (!string.IsNullOrWhiteSpace(expense.Payee))
             {
-                <div>
-                    <span class="pos-muted">@L["Expenses_Payee"]</span>
-                    <div class="pos-value-md pos-wrap">@expense.Payee</div>
+                <div class="pos-expense-detail__fact">
+                    <dt>@L["Expenses_Payee"]</dt>
+                    <dd class="pos-wrap">@expense.Payee</dd>
                 </div>
             }
             @if (!string.IsNullOrWhiteSpace(expense.GCashReference))
             {
-                <div>
-                    <span class="pos-muted">@L["Expenses_GCashReference"]</span>
-                    <div class="pos-value-md pos-wrap">@expense.GCashReference</div>
-                    <div class="pos-muted">@L["Expenses_GCash_ManualWarning"]</div>
+                <div class="pos-expense-detail__fact">
+                    <dt>@L["Expenses_GCashReference"]</dt>
+                    <dd class="pos-wrap">@expense.GCashReference</dd>
                 </div>
+                <p class="pos-expense-detail__note">@L["Expenses_GCash_ManualWarning"]</p>
             }
-            <div>
-                <span class="pos-muted">@L["Expenses_RecordedAt"]</span>
-                <div class="pos-value-md">@expense.RecordedAtUtc.ToLocalTime().ToString("g")</div>
+            <div class="pos-expense-detail__fact">
+                <dt>@L["Expenses_RecordedAt"]</dt>
+                <dd>@expense.RecordedAtUtc.ToLocalTime().ToString("g")</dd>
             </div>
             @if (!isRecorded)
             {
-                <div>
-                    <span class="pos-muted">@L["Expenses_VoidReason"]</span>
-                    <div class="pos-value-md pos-wrap">@expense.VoidReason</div>
+                <div class="pos-expense-detail__fact">
+                    <dt>@L["Expenses_VoidReason"]</dt>
+                    <dd class="pos-wrap">@expense.VoidReason</dd>
                 </div>
-                <div>
-                    <span class="pos-muted">@L["Expenses_VoidedAt"]</span>
-                    <div class="pos-value-md">@(expense.VoidedAtUtc?.ToLocalTime().ToString("g"))</div>
+                <div class="pos-expense-detail__fact">
+                    <dt>@L["Expenses_VoidedAt"]</dt>
+                    <dd>@(expense.VoidedAtUtc?.ToLocalTime().ToString("g") ?? L["Customers_NoValue"])</dd>
                 </div>
             }
-        </Stack>
-    </Section>
+        </dl>
+    </section>
 
     @if (isRecorded)
     {
-        <FormActions>
-            <Button Variant="ButtonVariant.Danger" Disabled="@(!canVoid)" OnClick="() => _confirmVoid = true">@L["Expenses_Void"]</Button>
-        </FormActions>
+        <div class="pos-action-grid pos-action-grid--single pos-expense-detail__actions" role="group">
+            <button type="button"
+                    class="pos-action-tile"
+                    disabled="@(!canVoid)"
+                    @onclick="() => _confirmVoid = true">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("warning")</span>
+                <span class="pos-action-tile__label">@L["Expenses_Void"]</span>
+            </button>
+        </div>
     }
 
     <ConfirmDialog Visible="@_confirmVoid"
@@ -132,6 +143,7 @@ else
                    IsLoading="@_acting"
                    OnConfirm="VoidAsync" />
 </Page>
+</div>
 }
 
 @code {

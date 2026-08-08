@@ -56,6 +56,9 @@ public sealed class SalePageGuardTests
         var detail = File.ReadAllText(Path.Combine(sales, "SaleDetail.razor"));
         Assert.Contains("@page \"/sales/{SaleId:guid}\"", detail, StringComparison.Ordinal);
         Assert.Contains("pos-sale-detail", detail, StringComparison.Ordinal);
+        Assert.Contains("pos-sale-detail__actions", detail, StringComparison.Ordinal);
+        Assert.Contains("pos-action-grid--three", detail, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"receipt\")", detail, StringComparison.Ordinal);
         Assert.Contains("Sales_DetailSubtitle", detail, StringComparison.Ordinal);
         Assert.Contains("Sales_DetailSection", detail, StringComparison.Ordinal);
         Assert.Contains("StoreHeaderBack Href=\"/sales\"", detail, StringComparison.Ordinal);

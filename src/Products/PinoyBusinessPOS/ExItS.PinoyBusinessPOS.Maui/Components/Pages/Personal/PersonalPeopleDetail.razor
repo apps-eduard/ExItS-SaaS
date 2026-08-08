@@ -6,9 +6,13 @@
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
+<div class="pos-personal-people-detail">
 <StoreHeaderBack Href="/personal/utang/people" />
 <Page>
-    <PageHeader Title="@L["Personal_PeopleDetailTitle"]" Subtitle="@L["Personal_PeopleSubtitle"]" />
+    <header class="pos-personal-people-detail__header">
+        <h1 class="pos-personal-people-detail__title">@L["Personal_PeopleDetailTitle"]</h1>
+        <p class="pos-personal-people-detail__subtitle">@L["Personal_PeopleSubtitle"]</p>
+    </header>
 
     @if (_loading)
     {
@@ -37,6 +41,7 @@
         </FormActions>
     }
 </Page>
+</div>
 
 @code {
     [Parameter] public Guid ContactId { get; set; }

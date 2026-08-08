@@ -11,8 +11,12 @@
 }
 else
 {
+    <div class="pos-dev-showcase">
     <Page>
-        <PageHeader Title="@L["DevShowcase_Title"]" Subtitle="@L["DevShowcase_Subtitle"]" />
+        <header class="pos-dev-showcase__header">
+            <h1 class="pos-dev-showcase__title">@L["DevShowcase_Title"]</h1>
+            <p class="pos-dev-showcase__subtitle">@L["DevShowcase_Subtitle"]</p>
+        </header>
         <Alert Tone="AlertTone.Info" Title="@L["DevShowcase_SampleNoticeTitle"]" Message="@L["DevShowcase_SampleNoticeMessage"]" />
 
         <SectionHeader Title="@L["DevShowcase_FormsTitle"]" Subtitle="@L["DevShowcase_FormsSubtitle"]" />
@@ -76,6 +80,7 @@ else
             <p>@L["DevShowcase_AccordionBody"]</p>
         </Accordion>
     </Page>
+    </div>
 }
 
 @code {

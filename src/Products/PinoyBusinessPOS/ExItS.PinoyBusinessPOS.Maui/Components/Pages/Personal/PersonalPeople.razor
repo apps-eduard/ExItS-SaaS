@@ -9,7 +9,10 @@
 
 <div class="pos-personal-people">
     <Page>
-        <PageHeader Title="@L["Personal_PeopleTitle"]" Subtitle="@L["Personal_PeopleSubtitle"]" />
+        <header class="pos-personal-people__header">
+            <h1 class="pos-personal-people__title">@L["Personal_PeopleTitle"]</h1>
+            <p class="pos-personal-people__subtitle">@L["Personal_PeopleSubtitle"]</p>
+        </header>
 
         @if (_loading)
         {

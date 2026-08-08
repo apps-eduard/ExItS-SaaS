@@ -15,7 +15,10 @@
 <div class="pos-settings pos-personal-settings">
     <StoreHeaderBack Href="/personal/more" />
     <Page>
-        <PageHeader Title="@L["Personal_SettingsTitle"]" Subtitle="@L["Personal_SettingsSubtitle"]" />
+        <header class="pos-personal-settings__header">
+            <h1 class="pos-personal-settings__title">@L["Personal_SettingsTitle"]</h1>
+            <p class="pos-personal-settings__subtitle">@L["Personal_SettingsSubtitle"]</p>
+        </header>
 
         @if (!_ready)
         {

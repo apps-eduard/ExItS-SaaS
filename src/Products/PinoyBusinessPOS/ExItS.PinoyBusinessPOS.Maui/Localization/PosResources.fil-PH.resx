@@ -1270,8 +1270,13 @@
   <data name="Expenses_Category_Deactivate" xml:space="preserve"><value>I-deactivate</value></data>
   <data name="Expenses_Category_Reactivate" xml:space="preserve"><value>I-reactivate</value></data>
   <data name="Expenses_Category_SearchPlaceholder" xml:space="preserve"><value>Maghanap ng kategorya</value></data>
+  <data name="Expenses_Category_ClearSearch" xml:space="preserve"><value>I-clear ang paghahanap</value></data>
+  <data name="Expenses_Category_MoreActions" xml:space="preserve"><value>Mga aksyon sa kategorya</value></data>
+  <data name="Expenses_Category_Filter_All" xml:space="preserve"><value>Lahat</value></data>
   <data name="Expenses_Category_EmptyTitle" xml:space="preserve"><value>Wala pang kategorya</value></data>
   <data name="Expenses_Category_EmptyMessage" xml:space="preserve"><value>Magdagdag muna ng kategorya bago magtala ng gastos.</value></data>
+  <data name="Expenses_Category_NoMatchTitle" xml:space="preserve"><value>Walang tumutugmang kategorya</value></data>
+  <data name="Expenses_Category_NoMatchMessage" xml:space="preserve"><value>Subukan ang ibang paghahanap o filter ng status.</value></data>
   <data name="Expenses_Category_NameRequired" xml:space="preserve"><value>Kailangan ang pangalan ng kategorya.</value></data>
   <data name="Expenses_Category_CreatedSuccess" xml:space="preserve"><value>Nagawa ang kategorya.</value></data>
   <data name="Expenses_Category_UpdatedSuccess" xml:space="preserve"><value>Na-update ang kategorya.</value></data>

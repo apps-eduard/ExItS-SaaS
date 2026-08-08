@@ -21,14 +21,20 @@ else
     var hasDraft = HasUnsavedDraft;
 <div class="pos-stock-count-create">
     <Page>
-        <PageHeader Title="@L["Inventory_CountsCreateTitle"]" Subtitle="@L["Inventory_CountsSubtitle"]">
-            <Actions>
-                <Button Variant="ButtonVariant.Ghost" Disabled="@(_busy || !hasDraft)" OnClick="RequestReset">
-                    <span class="pos-btn-icon" aria-hidden="true">@IconGlyphs.Get("refresh")</span>
-                    @L["Inventory_CountsReset"]
-                </Button>
-            </Actions>
-        </PageHeader>
+        <header class="pos-stock-count-create__header">
+            <div class="pos-stock-count-create__heading">
+                <h1 class="pos-stock-count-create__title">@L["Inventory_CountsCreateTitle"]</h1>
+                <p class="pos-stock-count-create__subtitle">@L["Inventory_CountsSubtitle"]</p>
+            </div>
+            <button type="button"
+                    class="pos-stock-count-create__reset"
+                    disabled="@(_busy || !hasDraft)"
+                    title="@L["Inventory_CountsReset"]"
+                    aria-label="@L["Inventory_CountsReset"]"
+                    @onclick="RequestReset">
+                <span aria-hidden="true">@IconGlyphs.Get("refresh")</span>
+            </button>
+        </header>
 
         @if (_isOffline)
         {
@@ -40,8 +46,9 @@ else
             <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Inventory_CountsCreateTitle"])" Message="@_errorMessage" />
         }
 
-        <Section Title="@L["Inventory_CountsProductSection"]">
-            <Stack Gap="3">
+        <section class="pos-stock-count-create__panel" aria-labelledby="stock-count-product-heading">
+            <h2 id="stock-count-product-heading" class="pos-stock-count-create__section-title">@L["Inventory_CountsProductSection"]</h2>
+            <div class="pos-stock-count-create__form">
                 <Select Label="@L["Inventory_CountsProduct"]"
                         Value="@_selectedProductId"
                         ValueChanged="OnProductChanged"
@@ -55,10 +62,11 @@ else
                     <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("products")</span>
                     <span class="pos-action-tile__label">@L["Inventory_CountsAddLine"]</span>
                 </button>
-            </Stack>
-        </Section>
+            </div>
+        </section>
 
-        <Section Title="@L["Inventory_CountsLines"]">
+        <section class="pos-stock-count-create__panel" aria-labelledby="stock-count-lines-heading">
+            <h2 id="stock-count-lines-heading" class="pos-stock-count-create__section-title">@L["Inventory_CountsLines"]</h2>
             @if (_lines.Count == 0)
             {
                 <InlineMessage Tone="InlineMessageTone.Info">@L["Inventory_CountsLinesEmpty"]</InlineMessage>
@@ -85,14 +93,17 @@ else
                     }
                 </div>
             }
-        </Section>
+        </section>
 
-        <Section Title="@L["Inventory_CountsNotes"]">
-            <TextInput Value="@_notes"
-                       ValueChanged="v => _notes = v"
-                       Disabled="@blocked"
-                       Hint="@L["Inventory_CountsNotesHint"]" />
-        </Section>
+        <section class="pos-stock-count-create__panel" aria-labelledby="stock-count-notes-heading">
+            <h2 id="stock-count-notes-heading" class="pos-stock-count-create__section-title">@L["Inventory_CountsNotes"]</h2>
+            <div class="pos-stock-count-create__form">
+                <TextInput Value="@_notes"
+                           ValueChanged="v => _notes = v"
+                           Disabled="@blocked"
+                           Hint="@L["Inventory_CountsNotesHint"]" />
+            </div>
+        </section>
 
         <FormActions class="pos-stock-count-create__footer">
             <Button Variant="ButtonVariant.Ghost" Disabled="@(_busy || !hasDraft)" OnClick="RequestReset">

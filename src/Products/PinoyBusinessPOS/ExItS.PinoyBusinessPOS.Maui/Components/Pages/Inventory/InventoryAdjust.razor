@@ -15,8 +15,12 @@
 }
 else
 {
+<div class="pos-inventory-adjust">
 <Page>
-    <PageHeader Title="@L["Inventory_AdjustTitle"]" Subtitle="@(_account?.Name ?? L["Inventory_Title"])" />
+    <header class="pos-inventory-adjust__header">
+        <h1 class="pos-inventory-adjust__title">@L["Inventory_AdjustTitle"]</h1>
+        <p class="pos-inventory-adjust__subtitle">@(_account?.Name ?? L["Inventory_Title"])</p>
+    </header>
 
     @if (_isOffline)
     {
@@ -28,21 +32,36 @@ else
         <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Inventory_AdjustTitle"])" Message="@_errorMessage" />
     }
 
-    <Section Title="@L["Inventory_AdjustTitle"]">
-        <Stack Gap="3">
+    <section class="pos-inventory-adjust__panel" aria-labelledby="inventory-adjust-heading">
+        <h2 id="inventory-adjust-heading" class="pos-inventory-adjust__section-title">@L["Inventory_AdjustTitle"]</h2>
+        <div class="pos-inventory-adjust__form">
             <Select Label="@L["Inventory_Direction"]"
                     Value="@_direction"
                     ValueChanged="OnDirectionChanged"
-                    Options="@DirectionOptions" />
-            <TextInput Label="@L["Inventory_Quantity"]" Value="@_quantityText" ValueChanged="v => _quantityText = v" />
-            <TextInput Label="@L["Inventory_Reason"]" Value="@_reason" ValueChanged="v => _reason = v" />
-            <Button Variant="ButtonVariant.Primary"
-                    Disabled="@(_isOffline || _busy)"
-                    IsLoading="@_busy"
-                    OnClick="SaveAsync">@L["Inventory_SaveAdjustment"]</Button>
-        </Stack>
-    </Section>
+                    Options="@DirectionOptions"
+                    Disabled="@(_isOffline || _busy)" />
+            <TextInput Label="@L["Inventory_Quantity"]"
+                       Value="@_quantityText"
+                       ValueChanged="v => _quantityText = v"
+                       Disabled="@(_isOffline || _busy)" />
+            <TextInput Label="@L["Inventory_Reason"]"
+                       Value="@_reason"
+                       ValueChanged="v => _reason = v"
+                       Disabled="@(_isOffline || _busy)" />
+        </div>
+    </section>
+
+    <FormActions>
+        <Button Variant="ButtonVariant.Secondary"
+                Disabled="@_busy"
+                OnClick="Cancel">@L["Common_Cancel"]</Button>
+        <Button Variant="ButtonVariant.Primary"
+                Disabled="@(_isOffline || _busy)"
+                IsLoading="@_busy"
+                OnClick="SaveAsync">@L["Inventory_SaveAdjustment"]</Button>
+    </FormActions>
 </Page>
+</div>
 }
 
 @code {
@@ -92,6 +111,8 @@ else
         _direction = value;
         return Task.CompletedTask;
     }
+
+    private void Cancel() => Nav.NavigateTo($"/inventory/{ProductId:D}");
 
     private async Task SaveAsync()
     {

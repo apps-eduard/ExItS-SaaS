@@ -18,8 +18,12 @@ else
     var canManage = Capabilities.IsAllowed(UtangCapability.ManageExpenses);
     var isGCash = _paymentMethod == PosExpenseOptions.ManualGCashPaymentMethod;
     var blocked = _isOffline || !canManage;
+<div class="pos-expense-create">
 <Page>
-    <PageHeader Title="@L["Expenses_CreateTitle"]" Subtitle="@L["Expenses_Subtitle"]" />
+    <header class="pos-expense-create__header">
+        <h1 class="pos-expense-create__title">@L["Expenses_CreateTitle"]</h1>
+        <p class="pos-expense-create__subtitle">@L["Expenses_Subtitle"]</p>
+    </header>
 
     @if (_isOffline)
     {
@@ -35,8 +39,9 @@ else
         <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Expenses_ErrorTitle"])" Message="@_errorMessage" />
     }
 
-    <Section Title="@L["Expenses_CreateTitle"]">
-        <Stack Gap="3">
+    <section class="pos-expense-create__panel" aria-labelledby="expense-create-heading">
+        <h2 id="expense-create-heading" class="pos-expense-create__section-title">@L["Expenses_CreateTitle"]</h2>
+        <div class="pos-expense-create__form">
             <Select Label="@L["Expenses_Category"]"
                     Value="@_categoryId"
                     ValueChanged="v => _categoryId = v"
@@ -81,7 +86,7 @@ else
                        Disabled="@blocked" />
             @if (isGCash)
             {
-                <Alert Tone="AlertTone.Warning" Title="@L["Expenses_GCash_ManualTitle"]" Message="@L["Expenses_GCash_ManualWarning"]" />
+                <p class="pos-expense-create__note">@L["Expenses_GCash_ManualWarning"]</p>
                 <TextInput Label="@L["Expenses_GCashReference"]"
                            Value="@_gcashReference"
                            ValueChanged="v => _gcashReference = v"
@@ -90,10 +95,10 @@ else
                            ErrorText="@_gcashError"
                            Disabled="@blocked" />
             }
-        </Stack>
-    </Section>
+        </div>
+    </section>
 
-    <FormActions>
+    <FormActions class="pos-customer-create__footer">
         <Button Variant="ButtonVariant.Secondary" Disabled="@_saving" OnClick="GoList">@L["Expenses_Cancel"]</Button>
         <Button Variant="ButtonVariant.Primary"
                 IsLoading="@_saving"
@@ -101,6 +106,7 @@ else
                 OnClick="SaveAsync">@L["Expenses_Save"]</Button>
     </FormActions>
 </Page>
+</div>
 }
 
 @code {

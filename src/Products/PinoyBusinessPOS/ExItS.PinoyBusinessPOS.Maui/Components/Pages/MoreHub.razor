@@ -7,9 +7,12 @@
 @inject IUtangCapabilityEvaluator Capabilities
 @inject IStringLocalizer<PosResources> L
 
-<div class="pos-dash">
+<div class="pos-dash pos-more">
     <Page>
-        <PageHeader Title="@L["Nav_More"]" Subtitle="@L["More_Subtitle"]" />
+        <header class="pos-more__header">
+            <h1 class="pos-more__title">@L["Nav_More"]</h1>
+            <p class="pos-more__subtitle">@L["More_Subtitle"]</p>
+        </header>
 
         <Section Title="@L["More_WorkspaceSection"]">
             <div class="pos-action-grid" role="group" aria-label="@L["More_WorkspaceSection"]">

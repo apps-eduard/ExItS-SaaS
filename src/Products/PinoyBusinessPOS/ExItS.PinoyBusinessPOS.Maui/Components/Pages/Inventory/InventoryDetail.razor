@@ -1,4 +1,5 @@
 @page "/inventory/{ProductId:guid}"
+@using ExItS.DesignSystem.Components.Internal
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IPosInventoryClient Inventory
@@ -22,24 +23,19 @@ else if (_account is null)
 else
 {
     var canManage = Capabilities.IsAllowed(UtangCapability.ManageInventory);
+    var manageOnline = canManage && !_isOffline;
+<div class="pos-inventory-detail">
 <Page>
-    <PageHeader Title="@_account.Name" Subtitle="@L["Inventory_DetailTitle"]">
-        <Actions>
-            @if (canManage && !_isOffline)
-            {
-                @if (!_account.IsTracked)
-                {
-                    <Button Variant="ButtonVariant.Primary" IsLoading="@_busy" OnClick="EnableAsync">@L["Inventory_Enable"]</Button>
-                }
-                else
-                {
-                    <Button Variant="ButtonVariant.Secondary" OnClick="GoAdjust">@L["Inventory_Adjust"]</Button>
-                    <Button Variant="ButtonVariant.Secondary" OnClick="GoReorder">@L["Inventory_ReorderTitle"]</Button>
-                    <Button Variant="ButtonVariant.Secondary" IsLoading="@_busy" OnClick="DisableAsync">@L["Inventory_Disable"]</Button>
-                }
-            }
-        </Actions>
-    </PageHeader>
+    <header class="pos-inventory-detail__header">
+        <h1 class="pos-inventory-detail__title">@_account.Name</h1>
+        <p class="pos-inventory-detail__subtitle">@L["Inventory_DetailTitle"]</p>
+        <div class="pos-inventory-detail__status-row">
+            <Badge Tone="@StatusTone(_account)">@StatusLabel(_account)</Badge>
+            <Badge Tone="@(_account.IsTracked ? BadgeTone.Success : BadgeTone.Neutral)">
+                @(_account.IsTracked ? L["Inventory_Tracked"] : L["Inventory_NotTracked"])
+            </Badge>
+        </div>
+    </header>
 
     @if (_isOffline)
     {
@@ -51,36 +47,106 @@ else
         <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Inventory_DetailTitle"])" Message="@_errorMessage" />
     }
 
-    <Section Title="@L["Inventory_DetailTitle"]">
-        <Stack Gap="2">
-            <div>@L["Inventory_OnHand"]: <strong>@_account.OnHandQuantity.ToString("0.###") @_account.UnitOfMeasure</strong></div>
-            <div>@(_account.IsTracked ? L["Inventory_Tracked"] : L["Inventory_NotTracked"])</div>
-            <div>@L["Inventory_ReorderLevel"]: @(_account.ReorderLevel?.ToString("0.###") ?? "—")</div>
-            <div>@L["Inventory_ReorderQuantity"]: @(_account.ReorderQuantity?.ToString("0.###") ?? "—")</div>
-            <div>@L["Inventory_StockStatus"]: @_account.StockStatus</div>
-            @if (_account.IsLowStock)
-            {
-                <Alert Tone="AlertTone.Warning" Title="@L["Inventory_LowStockTitle"]" Message="@L["Inventory_LowStockSubtitle"]" />
-            }
-        </Stack>
-    </Section>
-
-    <Section Title="@L["Inventory_Movements"]">
-        @if (_movements.Count == 0)
+    <section class="pos-inventory-detail__panel" aria-labelledby="inventory-detail-heading">
+        <h2 id="inventory-detail-heading" class="pos-inventory-detail__section-title">@L["Inventory_DetailTitle"]</h2>
+        <div class="pos-inventory-detail__amount">
+            <span class="pos-inventory-detail__amount-label">@L["Inventory_OnHand"]</span>
+            <div class="pos-inventory-detail__amount-value">
+                @_account.OnHandQuantity.ToString("0.###") @_account.UnitOfMeasure
+            </div>
+        </div>
+        <dl class="pos-inventory-detail__facts">
+            <div class="pos-inventory-detail__fact">
+                <dt>@L["Inventory_ReorderLevel"]</dt>
+                <dd>@(_account.ReorderLevel?.ToString("0.###") ?? "—")</dd>
+            </div>
+            <div class="pos-inventory-detail__fact">
+                <dt>@L["Inventory_ReorderQuantity"]</dt>
+                <dd>@(_account.ReorderQuantity?.ToString("0.###") ?? "—")</dd>
+            </div>
+            <div class="pos-inventory-detail__fact">
+                <dt>@L["Inventory_StockStatus"]</dt>
+                <dd>@StatusLabel(_account)</dd>
+            </div>
+        </dl>
+        @if (_account.IsLowStock)
         {
-            <div class="pos-muted">—</div>
+            <p class="pos-inventory-detail__note">@L["Inventory_LowStockSubtitle"]</p>
+        }
+    </section>
+
+    @if (manageOnline)
+    {
+        @if (!_account.IsTracked)
+        {
+            <div class="pos-action-grid pos-action-grid--single pos-inventory-detail__actions" role="group">
+                <button type="button"
+                        class="pos-action-tile pos-action-tile--primary"
+                        disabled="@_busy"
+                        @onclick="EnableAsync">
+                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("check")</span>
+                    <span class="pos-action-tile__label">@L["Inventory_Enable"]</span>
+                </button>
+            </div>
         }
         else
         {
-            <Stack Gap="2">
+            <div class="pos-action-grid pos-action-grid--three pos-inventory-detail__actions" role="group">
+                <button type="button"
+                        class="pos-action-tile"
+                        disabled="@_busy"
+                        @onclick="GoAdjust">
+                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("edit")</span>
+                    <span class="pos-action-tile__label">@L["Inventory_Adjust"]</span>
+                </button>
+                <button type="button"
+                        class="pos-action-tile"
+                        disabled="@_busy"
+                        @onclick="GoReorder">
+                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("settings")</span>
+                    <span class="pos-action-tile__label">@L["Inventory_ReorderTitle"]</span>
+                </button>
+                <button type="button"
+                        class="pos-action-tile"
+                        disabled="@_busy"
+                        @onclick="DisableAsync">
+                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("close")</span>
+                    <span class="pos-action-tile__label">@L["Inventory_Disable"]</span>
+                </button>
+            </div>
+        }
+    }
+
+    <section class="pos-inventory-detail__panel" aria-labelledby="inventory-movements-heading">
+        <h2 id="inventory-movements-heading" class="pos-inventory-detail__section-title">@L["Inventory_Movements"]</h2>
+        @if (_movements.Count == 0)
+        {
+            <p class="pos-inventory-detail__empty">—</p>
+        }
+        else
+        {
+            <div class="pos-inventory-detail__list" role="list">
                 @foreach (var m in _movements)
                 {
-                    <div>@m.RecordedAtUtc.UtcDateTime.ToString("u") · @m.MovementType · @m.QuantityEffect.ToString("+0.###;-0.###") · @m.Reason</div>
+                    <div class="pos-inventory-detail__entry" role="listitem">
+                        <div class="pos-inventory-detail__entry-top">
+                            <span class="pos-inventory-detail__entry-name">@m.MovementType</span>
+                            <span class="pos-inventory-detail__entry-amount">@m.QuantityEffect.ToString("+0.###;-0.###")</span>
+                        </div>
+                        <p class="pos-inventory-detail__entry-meta">
+                            @m.RecordedAtUtc.UtcDateTime.ToString("u")
+                            @if (!string.IsNullOrWhiteSpace(m.Reason))
+                            {
+                                <text> · @m.Reason</text>
+                            }
+                        </p>
+                    </div>
                 }
-            </Stack>
+            </div>
         }
-    </Section>
+    </section>
 </Page>
+</div>
 }
 
 @code {
@@ -105,6 +171,22 @@ else
         _ready = true;
         await ReloadAsync();
     }
+
+    private static BadgeTone StatusTone(PosInventoryAccountDto account) =>
+        account.StockStatus switch
+        {
+            "OutOfStock" => BadgeTone.Danger,
+            "LowStock" => BadgeTone.Warning,
+            _ => BadgeTone.Success
+        };
+
+    private string StatusLabel(PosInventoryAccountDto account) =>
+        account.StockStatus switch
+        {
+            "OutOfStock" => L["Inventory_StockStatus_OutOfStock"],
+            "LowStock" => L["Inventory_StockStatus_LowStock"],
+            _ => L["Inventory_StockStatus_InStock"]
+        };
 
     private async Task ReloadAsync()
     {

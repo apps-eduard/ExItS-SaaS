@@ -1,4 +1,5 @@
 @page "/catalog/products/{ProductId:guid}"
+@using ExItS.DesignSystem.Components.Internal
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IPosCatalogClient Catalog
@@ -32,12 +33,16 @@ else
     var product = _product;
     var canManage = Capabilities.IsAllowed(UtangCapability.ManageCatalog);
     var isActive = product.Status == PosCatalogOptions.ActiveStatus;
+    var manageOnline = canManage && !_isOffline;
+<div class="pos-catalog-product-detail">
 <Page>
-    <PageHeader Title="@product.Name" Subtitle="@L["Catalog_Product_DetailSubtitle"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Primary" Disabled="@(!canManage || _isOffline)" OnClick="GoEdit">@L["Catalog_Product_Edit"]</Button>
-        </Actions>
-    </PageHeader>
+    <header class="pos-catalog-product-detail__header">
+        <h1 class="pos-catalog-product-detail__title">@product.Name</h1>
+        <p class="pos-catalog-product-detail__subtitle">@L["Catalog_Product_DetailSubtitle"]</p>
+        <div class="pos-catalog-product-detail__status-row">
+            <Badge Tone="@(isActive ? BadgeTone.Success : BadgeTone.Neutral)">@CatalogUiOptions.StatusLabel(L, product.Status)</Badge>
+        </div>
+    </header>
 
     @if (_isOffline)
     {
@@ -54,55 +59,77 @@ else
         <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Catalog_ErrorTitle"])" Message="@_errorMessage" />
     }
 
-    <Section Title="@L["Catalog_Product_DetailsSection"]">
-        <Stack Gap="3">
-            <div>
-                <span class="pos-muted">@L["Catalog_Field_Name"]</span>
-                <div class="pos-value-md">@product.Name</div>
+    <section class="pos-catalog-product-detail__panel" aria-labelledby="catalog-product-detail-heading">
+        <h2 id="catalog-product-detail-heading" class="pos-catalog-product-detail__section-title">@L["Catalog_Product_DetailsSection"]</h2>
+        <div class="pos-catalog-product-detail__amount">
+            <span class="pos-catalog-product-detail__amount-label">@L["Catalog_Field_SellingPrice"]</span>
+            <div class="pos-catalog-product-detail__amount-value">
+                <MoneyDisplay Amount="@product.SellingPrice" CurrencyCode="PHP" Emphasized="true" />
             </div>
-            <div>
-                <span class="pos-muted">@L["Catalog_Field_Description"]</span>
-                <div class="pos-value-md pos-wrap">@(string.IsNullOrWhiteSpace(product.Description) ? L["Catalog_NoValue"] : product.Description)</div>
+        </div>
+        <dl class="pos-catalog-product-detail__facts">
+            <div class="pos-catalog-product-detail__fact">
+                <dt>@L["Catalog_Field_Name"]</dt>
+                <dd>@product.Name</dd>
             </div>
-            <div>
-                <span class="pos-muted">@L["Catalog_Field_Sku"]</span>
-                <div class="pos-value-md">@(string.IsNullOrWhiteSpace(product.Sku) ? L["Catalog_NoValue"] : product.Sku)</div>
+            <div class="pos-catalog-product-detail__fact">
+                <dt>@L["Catalog_Field_Description"]</dt>
+                <dd class="pos-wrap">@(string.IsNullOrWhiteSpace(product.Description) ? L["Catalog_NoValue"] : product.Description)</dd>
             </div>
-            <div>
-                <span class="pos-muted">@L["Catalog_Field_Barcode"]</span>
-                <div class="pos-value-md">@(string.IsNullOrWhiteSpace(product.Barcode) ? L["Catalog_NoValue"] : product.Barcode)</div>
+            <div class="pos-catalog-product-detail__fact">
+                <dt>@L["Catalog_Field_Sku"]</dt>
+                <dd>@(string.IsNullOrWhiteSpace(product.Sku) ? L["Catalog_NoValue"] : product.Sku)</dd>
             </div>
-            <div>
-                <span class="pos-muted">@L["Catalog_Field_Category"]</span>
-                <div class="pos-value-md">@(string.IsNullOrWhiteSpace(_categoryName) ? L["Catalog_Product_NoCategory"] : _categoryName)</div>
+            <div class="pos-catalog-product-detail__fact">
+                <dt>@L["Catalog_Field_Barcode"]</dt>
+                <dd>@(string.IsNullOrWhiteSpace(product.Barcode) ? L["Catalog_NoValue"] : product.Barcode)</dd>
             </div>
-            <div>
-                <span class="pos-muted">@L["Catalog_Field_Unit"]</span>
-                <div class="pos-value-md">@CatalogUiOptions.UnitOfMeasureLabel(L, product.UnitOfMeasure)</div>
+            <div class="pos-catalog-product-detail__fact">
+                <dt>@L["Catalog_Field_Category"]</dt>
+                <dd>@(string.IsNullOrWhiteSpace(_categoryName) ? L["Catalog_Product_NoCategory"] : _categoryName)</dd>
             </div>
-            <div>
-                <span class="pos-muted">@L["Catalog_Field_SellingPrice"]</span>
-                <div class="pos-value-md">
-                    <MoneyDisplay Amount="@product.SellingPrice" CurrencyCode="PHP" />
-                </div>
+            <div class="pos-catalog-product-detail__fact">
+                <dt>@L["Catalog_Field_Unit"]</dt>
+                <dd>@CatalogUiOptions.UnitOfMeasureLabel(L, product.UnitOfMeasure)</dd>
             </div>
-            <div>
-                <span class="pos-muted">@L["Catalog_Field_Status"]</span>
-                <Badge Tone="@(isActive ? BadgeTone.Success : BadgeTone.Neutral)">@CatalogUiOptions.StatusLabel(L, product.Status)</Badge>
+            <div class="pos-catalog-product-detail__fact">
+                <dt>@L["Catalog_Field_Status"]</dt>
+                <dd>
+                    <Badge Tone="@(isActive ? BadgeTone.Success : BadgeTone.Neutral)">@CatalogUiOptions.StatusLabel(L, product.Status)</Badge>
+                </dd>
             </div>
-        </Stack>
-    </Section>
+        </dl>
+    </section>
 
-    <FormActions>
+    <div class="pos-action-grid pos-action-grid--two pos-catalog-product-detail__actions" role="group">
+        <button type="button"
+                class="pos-action-tile pos-action-tile--primary"
+                disabled="@(!manageOnline)"
+                @onclick="GoEdit">
+            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("edit")</span>
+            <span class="pos-action-tile__label">@L["Catalog_Product_Edit"]</span>
+        </button>
         @if (isActive)
         {
-            <Button Variant="ButtonVariant.Danger" Disabled="@(!canManage || _isOffline)" OnClick="() => _confirmDeactivate = true">@L["Catalog_Deactivate"]</Button>
+            <button type="button"
+                    class="pos-action-tile"
+                    disabled="@(!manageOnline)"
+                    @onclick="() => _confirmDeactivate = true">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("close")</span>
+                <span class="pos-action-tile__label">@L["Catalog_Deactivate"]</span>
+            </button>
         }
         else
         {
-            <Button Variant="ButtonVariant.Primary" Disabled="@(!canManage || _isOffline)" OnClick="() => _confirmReactivate = true">@L["Catalog_Reactivate"]</Button>
+            <button type="button"
+                    class="pos-action-tile"
+                    disabled="@(!manageOnline)"
+                    @onclick="() => _confirmReactivate = true">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("check")</span>
+                <span class="pos-action-tile__label">@L["Catalog_Reactivate"]</span>
+            </button>
         }
-    </FormActions>
+    </div>
 
     <ConfirmDialog Visible="@_confirmDeactivate"
                    VisibleChanged="v => _confirmDeactivate = v"
@@ -121,6 +148,7 @@ else
                    IsLoading="@_acting"
                    OnConfirm="ReactivateAsync" />
 </Page>
+</div>
 }
 
 @code {

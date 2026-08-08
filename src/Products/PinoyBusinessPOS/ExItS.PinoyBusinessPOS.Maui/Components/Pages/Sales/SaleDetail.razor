@@ -1,4 +1,5 @@
 @page "/sales/{SaleId:guid}"
+@using ExItS.DesignSystem.Components.Internal
 @using ExItS.PinoyBusinessPOS.Application.Payments
 @using ExItS.PinoyBusinessPOS.Maui.Services
 @inject NavigationManager Nav
@@ -293,17 +294,36 @@ else
 
     @if (isCompleted)
     {
-        <FormActions>
+        var actionCount = (canReceipt ? 1 : 0) + (canReturn ? 1 : 0) + 1;
+        <div class="pos-action-grid @(actionCount == 1 ? "pos-action-grid--single" : actionCount == 2 ? "pos-action-grid--two" : "pos-action-grid--three") pos-sale-detail__actions"
+             role="group"
+             aria-label="@L["Sales_DetailSubtitle"]">
             @if (canReceipt)
             {
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoReceipt">@L["Receipt_Open"]</Button>
+                <button type="button"
+                        class="pos-action-tile"
+                        @onclick="GoReceipt">
+                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("receipt")</span>
+                    <span class="pos-action-tile__label">@L["Receipt_Open"]</span>
+                </button>
             }
             @if (canReturn)
             {
-                <Button Variant="ButtonVariant.Primary" OnClick="GoReturn">@L["Returns_StartReturn"]</Button>
+                <button type="button"
+                        class="pos-action-tile pos-action-tile--primary"
+                        @onclick="GoReturn">
+                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("borrowed")</span>
+                    <span class="pos-action-tile__label">@L["Returns_StartReturn"]</span>
+                </button>
             }
-            <Button Variant="ButtonVariant.Danger" Disabled="@(!canVoid)" OnClick="() => _confirmVoid = true">@L["Sales_Void"]</Button>
-        </FormActions>
+            <button type="button"
+                    class="pos-action-tile pos-action-tile--danger"
+                    disabled="@(!canVoid)"
+                    @onclick="() => _confirmVoid = true">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("warning")</span>
+                <span class="pos-action-tile__label">@L["Sales_Void"]</span>
+            </button>
+        </div>
     }
 
     <ConfirmDialog Visible="@_confirmVoid"

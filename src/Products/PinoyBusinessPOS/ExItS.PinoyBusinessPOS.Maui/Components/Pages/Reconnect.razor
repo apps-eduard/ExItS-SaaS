@@ -7,14 +7,19 @@
 @inject IProtectedShellAccessPolicy AccessPolicy
 @inject ICustomerCreditOfflineSyncService Sync
 
+<div class="pos-reconnect">
 <Page>
-    <PageHeader Title="@L["SyncStatus_ReconnectTitle"]" Subtitle="@L["SyncStatus_ReconnectMessage"]" />
+    <header class="pos-reconnect__header">
+        <h1 class="pos-reconnect__title">@L["SyncStatus_ReconnectTitle"]</h1>
+        <p class="pos-reconnect__subtitle">@L["SyncStatus_ReconnectMessage"]</p>
+    </header>
     <Alert Tone="AlertTone.Warning" Title="@L["SyncStatus_Reconnect"]" Message="@L["SyncStatus_ReconnectMessage"]" />
     <FormActions>
         <Button OnClick="RetryAsync" Disabled="_busy">@L["Common_Retry"]</Button>
         <Button Variant="ButtonVariant.Ghost" OnClick="SignOutAsync" Disabled="_busy">@L["Auth_Logout"]</Button>
     </FormActions>
 </Page>
+</div>
 
 @code {
     private bool _busy;

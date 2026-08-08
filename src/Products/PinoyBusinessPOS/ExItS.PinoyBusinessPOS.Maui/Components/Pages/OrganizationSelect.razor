@@ -43,7 +43,10 @@
     else if (_focusOrg is not null && OrganizationMembershipRoles.IsOwnerRole(_focusOrg.MembershipRole))
     {
         <div class="pos-org-role">
-            <PageHeader Title="@L["OrgSelect_RoleTitle"]" Subtitle="@RoleSubtitle" />
+            <header class="pos-org-role__header">
+                <h1 class="pos-org-role__title">@L["OrgSelect_RoleTitle"]</h1>
+                <p class="pos-org-role__subtitle">@RoleSubtitle</p>
+            </header>
 
             @if (_organizations.Count > 1)
             {
@@ -144,15 +147,6 @@
                 }
             </Section>
 
-            <button type="button" class="pos-org-role__row pos-org-role__row--personal" disabled="@_busy" @onclick="GoPersonalAsync">
-                <span class="pos-org-role__row-icon" aria-hidden="true">@IconGlyphs.Get("home")</span>
-                <span class="pos-org-role__row-body">
-                    <span class="pos-org-role__row-title">@L["OrgSelect_PersonalLabel"]</span>
-                    <span class="pos-org-role__row-desc pos-muted">@L["OrgSelect_PersonalDesc"]</span>
-                </span>
-                <span class="pos-org-role__chevron" aria-hidden="true">›</span>
-            </button>
-
             @if (!string.IsNullOrEmpty(_error))
             {
                 <InlineMessage Tone="InlineMessageTone.Danger">@_error</InlineMessage>
@@ -161,7 +155,10 @@
     }
     else
     {
-        <PageHeader Title="@L["OrgSelect_Title"]" Subtitle="@L["OrgSelect_SubtitleStaff"]" />
+        <header class="pos-org-role__header">
+            <h1 class="pos-org-role__title">@L["OrgSelect_Title"]</h1>
+            <p class="pos-org-role__subtitle">@L["OrgSelect_SubtitleStaff"]</p>
+        </header>
         <Stack Gap="3">
             @foreach (var org in _organizations)
             {
@@ -372,28 +369,41 @@
                              ?? grants.FirstOrDefault(g => g.UserIdentityId == m.UserId)?.RoleCode)))
             {
                 var grant = grants.FirstOrDefault(g => g.UserIdentityId == member.UserId);
-                string displayName = !string.IsNullOrWhiteSpace(grant?.UserDisplayName)
-                    ? grant!.UserDisplayName!
-                    : member.UserId.ToString("D")[..8];
-                string email = string.Empty;
+                var displayName = FirstMeaningful(
+                    member.DisplayName,
+                    grant?.UserDisplayName,
+                    member.Username,
+                    member.Email);
+                var email = member.Email ?? string.Empty;
+
                 // Avoid a GetUser storm on org-select (burns Platform rate limits before Owner bind).
-                if (string.IsNullOrWhiteSpace(grant?.UserDisplayName))
+                if (string.IsNullOrWhiteSpace(displayName) || string.IsNullOrWhiteSpace(email))
                 {
                     try
                     {
                         var userResult = await Platform.GetUserAsync(member.UserId);
                         if (userResult.IsSuccess && userResult.Data is not null)
                         {
-                            displayName = string.IsNullOrWhiteSpace(userResult.Data.DisplayName)
-                                ? userResult.Data.Username
-                                : userResult.Data.DisplayName;
-                            email = userResult.Data.Email ?? string.Empty;
+                            displayName = FirstMeaningful(
+                                displayName,
+                                userResult.Data.DisplayName,
+                                userResult.Data.Username,
+                                userResult.Data.Email);
+                            if (string.IsNullOrWhiteSpace(email))
+                            {
+                                email = userResult.Data.Email ?? string.Empty;
+                            }
                         }
                     }
                     catch
                     {
-                        // Keep truncated id fallback.
+                        // Keep membership / grant fallbacks below.
                     }
+                }
+
+                if (string.IsNullOrWhiteSpace(displayName))
+                {
+                    displayName = L["Org_StaffUnknownName"];
                 }
 
                 var roleLabel = FriendlyPosOrMembershipRole(
@@ -516,6 +526,19 @@
 
     private void GoSignIn() => Nav.NavigateTo("/signin");
     private void GoExplorePos() => Nav.NavigateTo("/personal/explore-pos");
+
+    private static string? FirstMeaningful(params string?[] values)
+    {
+        foreach (var value in values)
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                return value.Trim();
+            }
+        }
+
+        return null;
+    }
 
     private async Task GoPersonalAsync()
     {

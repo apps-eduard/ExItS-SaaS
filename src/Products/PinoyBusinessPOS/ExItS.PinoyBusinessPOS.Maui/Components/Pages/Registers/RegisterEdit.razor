@@ -1,4 +1,5 @@
 @page "/registers/{RegisterId:guid}/edit"
+@using ExItS.DesignSystem.Components.Internal
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IPosRegisterClient Registers
@@ -23,8 +24,12 @@ else
 {
     var canManage = Capabilities.IsAllowed(UtangCapability.ManageRegisters);
     var blocked = !canManage || _isOffline;
+<div class="pos-register-edit">
 <Page>
-    <PageHeader Title="@L["Registers_EditTitle"]" Subtitle="@_register.RegisterCode" />
+    <header class="pos-register-edit__header">
+        <h1 class="pos-register-edit__title">@L["Registers_EditTitle"]</h1>
+        <p class="pos-register-edit__subtitle">@_register.RegisterCode</p>
+    </header>
 
     @if (_isOffline)
     {
@@ -36,15 +41,39 @@ else
         <Alert Tone="AlertTone.Danger" Title="@L["Registers_ErrorTitle"]" Message="@_formError" />
     }
 
-    <Section Title="@L["Registers_FormSection"]">
-        <TextInput Label="@L["Registers_Name"]" Value="@_name" ValueChanged="v => _name = v" Disabled="@blocked" />
-        <TextInput Label="@L["Registers_Description"]" Value="@_description" ValueChanged="v => _description = v" Disabled="@blocked" />
-        <FormActions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoDetail">@L["Registers_Cancel"]</Button>
-            <Button Variant="ButtonVariant.Primary" IsLoading="@_saving" Disabled="@blocked" OnClick="SaveAsync">@L["Registers_Save"]</Button>
-        </FormActions>
-    </Section>
+    <section class="pos-register-edit__panel" aria-labelledby="register-edit-heading">
+        <h2 id="register-edit-heading" class="pos-register-edit__section-title">@L["Registers_FormSection"]</h2>
+        <div class="pos-register-edit__form">
+            <TextInput Label="@L["Registers_Name"]" Value="@_name" ValueChanged="v => _name = v" Disabled="@blocked" />
+            <TextInput Label="@L["Registers_Description"]" Value="@_description" ValueChanged="v => _description = v" Disabled="@blocked" />
+        </div>
+    </section>
+
+    <div class="pos-action-grid pos-action-grid--two pos-register-edit__actions" role="group">
+        <button type="button"
+                class="pos-action-tile"
+                disabled="@_saving"
+                @onclick="GoDetail">
+            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("close")</span>
+            <span class="pos-action-tile__label">@L["Registers_Cancel"]</span>
+        </button>
+        <button type="button"
+                class="pos-action-tile pos-action-tile--primary"
+                disabled="@(blocked || _saving)"
+                @onclick="SaveAsync">
+            @if (_saving)
+            {
+                <Spinner Size="SpinnerSize.Sm" />
+            }
+            else
+            {
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("check")</span>
+            }
+            <span class="pos-action-tile__label">@L["Registers_Save"]</span>
+        </button>
+    </div>
 </Page>
+</div>
 }
 
 @code {

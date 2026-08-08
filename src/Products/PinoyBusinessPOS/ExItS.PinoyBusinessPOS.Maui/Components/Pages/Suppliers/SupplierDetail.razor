@@ -1,4 +1,5 @@
 @page "/suppliers/{SupplierId:guid}"
+@using ExItS.DesignSystem.Components.Internal
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IPosSupplierClient Suppliers
@@ -32,12 +33,15 @@ else
     var supplier = _supplier;
     var canManage = Capabilities.IsAllowed(UtangCapability.ManageSuppliers);
     var isActive = supplier.Status == SupplierUiOptions.ActiveStatus;
+<div class="pos-supplier-detail">
 <Page>
-    <PageHeader Title="@supplier.Name" Subtitle="@L["Suppliers_DetailSubtitle"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Primary" Disabled="@(!canManage || _isOffline)" OnClick="GoEdit">@L["Suppliers_Edit"]</Button>
-        </Actions>
-    </PageHeader>
+    <header class="pos-supplier-detail__header">
+        <h1 class="pos-supplier-detail__title">@supplier.Name</h1>
+        <p class="pos-supplier-detail__subtitle">@L["Suppliers_DetailSubtitle"]</p>
+        <div class="pos-supplier-detail__status-row">
+            <Badge Tone="@(isActive ? BadgeTone.Success : BadgeTone.Neutral)">@SupplierUiOptions.StatusLabel(L, supplier.Status)</Badge>
+        </div>
+    </header>
 
     @if (_isOffline)
     {
@@ -54,77 +58,97 @@ else
         <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Suppliers_ErrorTitle"])" Message="@_errorMessage" />
     }
 
-    <Section Title="@L["Suppliers_DetailsSection"]">
-        <Stack Gap="3">
-            <div>
-                <span class="pos-muted">@L["Suppliers_Field_Code"]</span>
-                <div class="pos-value-md">@supplier.SupplierCode</div>
+    <section class="pos-supplier-detail__panel" aria-labelledby="supplier-detail-heading">
+        <h2 id="supplier-detail-heading" class="pos-supplier-detail__section-title">@L["Suppliers_DetailsSection"]</h2>
+        <dl class="pos-supplier-detail__facts">
+            <div class="pos-supplier-detail__fact">
+                <dt>@L["Suppliers_Field_Code"]</dt>
+                <dd>@supplier.SupplierCode</dd>
             </div>
-            <div>
-                <span class="pos-muted">@L["Suppliers_Field_Name"]</span>
-                <div class="pos-value-md">@supplier.Name</div>
+            <div class="pos-supplier-detail__fact">
+                <dt>@L["Suppliers_Field_Name"]</dt>
+                <dd class="pos-wrap">@supplier.Name</dd>
             </div>
-            <div>
-                <span class="pos-muted">@L["Suppliers_Field_ContactPerson"]</span>
-                <div class="pos-value-md">@(string.IsNullOrWhiteSpace(supplier.ContactPerson) ? L["Suppliers_NoValue"] : supplier.ContactPerson)</div>
+            <div class="pos-supplier-detail__fact">
+                <dt>@L["Suppliers_Field_ContactPerson"]</dt>
+                <dd>@(string.IsNullOrWhiteSpace(supplier.ContactPerson) ? L["Suppliers_NoValue"] : supplier.ContactPerson)</dd>
             </div>
-            <div>
-                <span class="pos-muted">@L["Suppliers_Field_Mobile"]</span>
-                <div class="pos-value-md">@(string.IsNullOrWhiteSpace(supplier.MobileNumber) ? L["Suppliers_NoValue"] : supplier.MobileNumber)</div>
+            <div class="pos-supplier-detail__fact">
+                <dt>@L["Suppliers_Field_Mobile"]</dt>
+                <dd>@(string.IsNullOrWhiteSpace(supplier.MobileNumber) ? L["Suppliers_NoValue"] : supplier.MobileNumber)</dd>
             </div>
-            <div>
-                <span class="pos-muted">@L["Suppliers_Field_Telephone"]</span>
-                <div class="pos-value-md">@(string.IsNullOrWhiteSpace(supplier.TelephoneNumber) ? L["Suppliers_NoValue"] : supplier.TelephoneNumber)</div>
+            <div class="pos-supplier-detail__fact">
+                <dt>@L["Suppliers_Field_Telephone"]</dt>
+                <dd>@(string.IsNullOrWhiteSpace(supplier.TelephoneNumber) ? L["Suppliers_NoValue"] : supplier.TelephoneNumber)</dd>
             </div>
-            <div>
-                <span class="pos-muted">@L["Suppliers_Field_Email"]</span>
-                <div class="pos-value-md">@(string.IsNullOrWhiteSpace(supplier.Email) ? L["Suppliers_NoValue"] : supplier.Email)</div>
+            <div class="pos-supplier-detail__fact">
+                <dt>@L["Suppliers_Field_Email"]</dt>
+                <dd class="pos-wrap">@(string.IsNullOrWhiteSpace(supplier.Email) ? L["Suppliers_NoValue"] : supplier.Email)</dd>
             </div>
-            <div>
-                <span class="pos-muted">@L["Suppliers_Field_AddressLine1"]</span>
-                <div class="pos-value-md pos-wrap">@(string.IsNullOrWhiteSpace(supplier.AddressLine1) ? L["Suppliers_NoValue"] : supplier.AddressLine1)</div>
+            <div class="pos-supplier-detail__fact">
+                <dt>@L["Suppliers_Field_AddressLine1"]</dt>
+                <dd class="pos-wrap">@(string.IsNullOrWhiteSpace(supplier.AddressLine1) ? L["Suppliers_NoValue"] : supplier.AddressLine1)</dd>
             </div>
-            <div>
-                <span class="pos-muted">@L["Suppliers_Field_AddressLine2"]</span>
-                <div class="pos-value-md pos-wrap">@(string.IsNullOrWhiteSpace(supplier.AddressLine2) ? L["Suppliers_NoValue"] : supplier.AddressLine2)</div>
+            <div class="pos-supplier-detail__fact">
+                <dt>@L["Suppliers_Field_AddressLine2"]</dt>
+                <dd class="pos-wrap">@(string.IsNullOrWhiteSpace(supplier.AddressLine2) ? L["Suppliers_NoValue"] : supplier.AddressLine2)</dd>
             </div>
-            <div>
-                <span class="pos-muted">@L["Suppliers_Field_City"]</span>
-                <div class="pos-value-md">@(string.IsNullOrWhiteSpace(supplier.CityMunicipality) ? L["Suppliers_NoValue"] : supplier.CityMunicipality)</div>
+            <div class="pos-supplier-detail__fact">
+                <dt>@L["Suppliers_Field_City"]</dt>
+                <dd>@(string.IsNullOrWhiteSpace(supplier.CityMunicipality) ? L["Suppliers_NoValue"] : supplier.CityMunicipality)</dd>
             </div>
-            <div>
-                <span class="pos-muted">@L["Suppliers_Field_Province"]</span>
-                <div class="pos-value-md">@(string.IsNullOrWhiteSpace(supplier.Province) ? L["Suppliers_NoValue"] : supplier.Province)</div>
+            <div class="pos-supplier-detail__fact">
+                <dt>@L["Suppliers_Field_Province"]</dt>
+                <dd>@(string.IsNullOrWhiteSpace(supplier.Province) ? L["Suppliers_NoValue"] : supplier.Province)</dd>
             </div>
-            <div>
-                <span class="pos-muted">@L["Suppliers_Field_PostalCode"]</span>
-                <div class="pos-value-md">@(string.IsNullOrWhiteSpace(supplier.PostalCode) ? L["Suppliers_NoValue"] : supplier.PostalCode)</div>
+            <div class="pos-supplier-detail__fact">
+                <dt>@L["Suppliers_Field_PostalCode"]</dt>
+                <dd>@(string.IsNullOrWhiteSpace(supplier.PostalCode) ? L["Suppliers_NoValue"] : supplier.PostalCode)</dd>
             </div>
-            <div>
-                <span class="pos-muted">@L["Suppliers_Field_TaxNumber"]</span>
-                <div class="pos-value-md">@(string.IsNullOrWhiteSpace(supplier.TaxOrRegistrationNumber) ? L["Suppliers_NoValue"] : supplier.TaxOrRegistrationNumber)</div>
+            <div class="pos-supplier-detail__fact">
+                <dt>@L["Suppliers_Field_TaxNumber"]</dt>
+                <dd>@(string.IsNullOrWhiteSpace(supplier.TaxOrRegistrationNumber) ? L["Suppliers_NoValue"] : supplier.TaxOrRegistrationNumber)</dd>
             </div>
-            <div>
-                <span class="pos-muted">@L["Suppliers_Field_Notes"]</span>
-                <div class="pos-value-md pos-wrap">@(string.IsNullOrWhiteSpace(supplier.Notes) ? L["Suppliers_NoValue"] : supplier.Notes)</div>
+            <div class="pos-supplier-detail__fact">
+                <dt>@L["Suppliers_Field_Notes"]</dt>
+                <dd class="pos-wrap">@(string.IsNullOrWhiteSpace(supplier.Notes) ? L["Suppliers_NoValue"] : supplier.Notes)</dd>
             </div>
-            <div>
-                <span class="pos-muted">@L["Suppliers_Field_Status"]</span>
-                <Badge Tone="@(isActive ? BadgeTone.Success : BadgeTone.Neutral)">@SupplierUiOptions.StatusLabel(L, supplier.Status)</Badge>
+            <div class="pos-supplier-detail__fact">
+                <dt>@L["Suppliers_Field_Status"]</dt>
+                <dd>@SupplierUiOptions.StatusLabel(L, supplier.Status)</dd>
             </div>
-        </Stack>
-    </Section>
+        </dl>
+    </section>
 
-    <FormActions>
+    <div class="pos-action-grid pos-action-grid--two pos-supplier-detail__actions" role="group">
+        <button type="button"
+                class="pos-action-tile pos-action-tile--primary"
+                disabled="@(!canManage || _isOffline)"
+                @onclick="GoEdit">
+            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("edit")</span>
+            <span class="pos-action-tile__label">@L["Suppliers_Edit"]</span>
+        </button>
         @if (isActive)
         {
-            <Button Variant="ButtonVariant.Danger" Disabled="@(!canManage || _isOffline)" OnClick="() => _confirmDeactivate = true">@L["Suppliers_Deactivate"]</Button>
+            <button type="button"
+                    class="pos-action-tile"
+                    disabled="@(!canManage || _isOffline)"
+                    @onclick="() => _confirmDeactivate = true">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("warning")</span>
+                <span class="pos-action-tile__label">@L["Suppliers_Deactivate"]</span>
+            </button>
         }
         else
         {
-            <Button Variant="ButtonVariant.Primary" Disabled="@(!canManage || _isOffline)" OnClick="() => _confirmReactivate = true">@L["Suppliers_Reactivate"]</Button>
+            <button type="button"
+                    class="pos-action-tile pos-action-tile--primary"
+                    disabled="@(!canManage || _isOffline)"
+                    @onclick="() => _confirmReactivate = true">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("check")</span>
+                <span class="pos-action-tile__label">@L["Suppliers_Reactivate"]</span>
+            </button>
         }
-    </FormActions>
+    </div>
 
     <ConfirmDialog Visible="@_confirmDeactivate"
                    VisibleChanged="v => _confirmDeactivate = v"
@@ -143,6 +167,7 @@ else
                    IsLoading="@_acting"
                    OnConfirm="ReactivateAsync" />
 </Page>
+</div>
 }
 
 @code {

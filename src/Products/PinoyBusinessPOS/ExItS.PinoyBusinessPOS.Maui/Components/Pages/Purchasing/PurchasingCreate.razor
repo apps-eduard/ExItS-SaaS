@@ -23,14 +23,20 @@ else
 <div class="pos-purchasing-create">
 <StoreHeaderBack Href="/purchasing" />
 <Page>
-    <PageHeader Title="@L["Purchasing_CreateTitle"]" Subtitle="@L["Purchasing_CreateSubtitle"]" />
-
-    <div class="pos-action-grid pos-action-grid--single pos-purchasing-create__nav" role="group" aria-label="@L["Purchasing_CreateTitle"]">
-        <button type="button" class="pos-action-tile" disabled="@(_saving || !hasDraft)" @onclick="RequestReset">
-            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("refresh")</span>
-            <span class="pos-action-tile__label">@L["Purchasing_Reset"]</span>
+    <header class="pos-purchasing-create__header">
+        <div class="pos-purchasing-create__heading">
+            <h1 class="pos-purchasing-create__title">@L["Purchasing_CreateTitle"]</h1>
+            <p class="pos-purchasing-create__subtitle">@L["Purchasing_CreateSubtitle"]</p>
+        </div>
+        <button type="button"
+                class="pos-purchasing-create__reset"
+                disabled="@(_saving || !hasDraft)"
+                title="@L["Purchasing_Reset"]"
+                aria-label="@L["Purchasing_Reset"]"
+                @onclick="RequestReset">
+            <span aria-hidden="true">@IconGlyphs.Get("refresh")</span>
         </button>
-    </div>
+    </header>
 
     @if (_isOffline)
     {
@@ -57,9 +63,9 @@ else
         </div>
     }
 
-    <Section Title="@L["Purchasing_DetailsSection"]">
-        <div class="pos-settings__panel">
-            <Stack Gap="2">
+    <section class="pos-purchasing-create__panel" aria-labelledby="purchasing-details-heading">
+        <h2 id="purchasing-details-heading" class="pos-purchasing-create__section-title">@L["Purchasing_DetailsSection"]</h2>
+        <div class="pos-purchasing-create__form pos-settings__panel">
                 <Select Label="@L["Purchasing_Field_Supplier"]"
                         Value="@_supplierId"
                         ValueChanged="v => _supplierId = v"
@@ -87,13 +93,12 @@ else
                            Value="@_notes"
                            ValueChanged="v => _notes = v"
                            Disabled="@(blocked || _saving)" />
-            </Stack>
         </div>
-    </Section>
+    </section>
 
-    <Section Title="@L["Purchasing_LinesSection"]">
-        <div class="pos-settings__panel">
-            <Stack Gap="2">
+    <section class="pos-purchasing-create__panel" aria-labelledby="purchasing-lines-heading">
+        <h2 id="purchasing-lines-heading" class="pos-purchasing-create__section-title">@L["Purchasing_LinesSection"]</h2>
+        <div class="pos-purchasing-create__form pos-settings__panel">
                 <Select Label="@L["Purchasing_Field_Product"]"
                         Value="@_selectedProductId"
                         ValueChanged="OnProductChanged"
@@ -163,9 +168,8 @@ else
                         }
                     </div>
                 }
-            </Stack>
         </div>
-    </Section>
+    </section>
 
     <div class="pos-action-grid pos-action-grid--two pos-purchasing-create__footer" role="group" aria-label="@L["Purchasing_Create"]">
         <button type="button" class="pos-action-tile" disabled="@(_saving || !hasDraft)" @onclick="RequestReset">

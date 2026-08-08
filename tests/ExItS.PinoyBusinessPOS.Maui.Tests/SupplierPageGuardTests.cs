@@ -9,17 +9,23 @@ public sealed class SupplierPageGuardTests
 
         var list = File.ReadAllText(Path.Combine(suppliers, "SuppliersList.razor"));
         Assert.Contains("@page \"/suppliers\"", list, StringComparison.Ordinal);
+        Assert.Contains("pos-suppliers__header", list, StringComparison.Ordinal);
         Assert.Contains("pos-suppliers__row", list, StringComparison.Ordinal);
+        Assert.Contains("pos-suppliers__list", list, StringComparison.Ordinal);
         Assert.Contains("IPosSupplierClient", list, StringComparison.Ordinal);
         Assert.Contains("IconGlyphs.Get(\"plus\")", list, StringComparison.Ordinal);
         Assert.Contains("IconGlyphs.Get(\"refresh\")", list, StringComparison.Ordinal);
         Assert.Contains("IconGlyphs.Get(\"search\")", list, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", list, StringComparison.Ordinal);
 
         var create = File.ReadAllText(Path.Combine(suppliers, "SupplierCreate.razor"));
         Assert.Contains("@page \"/suppliers/new\"", create, StringComparison.Ordinal);
         Assert.Contains("StoreHeaderBack Href=\"/suppliers\"", create, StringComparison.Ordinal);
         Assert.Contains("CreateAsync", create, StringComparison.Ordinal);
         Assert.Contains("OnCancel=\"GoBack\"", create, StringComparison.Ordinal);
+        Assert.Contains("pos-supplier-create__header", create, StringComparison.Ordinal);
+        Assert.Contains("pos-supplier-create__form", create, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", create, StringComparison.Ordinal);
         Assert.DoesNotContain("OnClick=\"GoBack\"", create, StringComparison.Ordinal);
 
         var detail = File.ReadAllText(Path.Combine(suppliers, "SupplierDetail.razor"));
@@ -27,6 +33,12 @@ public sealed class SupplierPageGuardTests
         Assert.Contains("StoreHeaderBack Href=\"/suppliers\"", detail, StringComparison.Ordinal);
         Assert.Contains("DeactivateAsync", detail, StringComparison.Ordinal);
         Assert.Contains("ReactivateAsync", detail, StringComparison.Ordinal);
+        Assert.Contains("pos-supplier-detail__header", detail, StringComparison.Ordinal);
+        Assert.Contains("pos-supplier-detail__facts", detail, StringComparison.Ordinal);
+        Assert.Contains("pos-action-grid--two", detail, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"edit\")", detail, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", detail, StringComparison.Ordinal);
+        Assert.DoesNotContain("<Actions>", detail, StringComparison.Ordinal);
         Assert.DoesNotContain("Suppliers_BackToList", detail, StringComparison.Ordinal);
 
         var edit = File.ReadAllText(Path.Combine(suppliers, "SupplierEdit.razor"));
@@ -34,9 +46,16 @@ public sealed class SupplierPageGuardTests
         Assert.Contains("StoreHeaderBack Href=\"/suppliers\"", edit, StringComparison.Ordinal);
         Assert.Contains("UpdateAsync", edit, StringComparison.Ordinal);
         Assert.Contains("_supplier.UpdatedAtUtc", edit, StringComparison.Ordinal);
+        Assert.Contains("pos-supplier-edit__header", edit, StringComparison.Ordinal);
+        Assert.Contains("pos-supplier-edit__form", edit, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", edit, StringComparison.Ordinal);
+        Assert.DoesNotContain("<Actions>", edit, StringComparison.Ordinal);
         Assert.DoesNotContain("Suppliers_BackToList", edit, StringComparison.Ordinal);
 
-        Assert.True(File.Exists(Path.Combine(suppliers, "SupplierForm.razor")));
+        var form = File.ReadAllText(Path.Combine(suppliers, "SupplierForm.razor"));
+        Assert.Contains("FormActions", form, StringComparison.Ordinal);
+        Assert.Contains("FormClass", form, StringComparison.Ordinal);
+        Assert.DoesNotContain("<Section", form, StringComparison.Ordinal);
     }
 
     [Fact]

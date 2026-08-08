@@ -1,4 +1,6 @@
 @page "/expenses/categories"
+@implements IDisposable
+@using ExItS.DesignSystem.Components.Internal
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IPosExpenseClient Expenses
@@ -16,8 +18,27 @@
 else
 {
     var canManage = Capabilities.IsAllowed(UtangCapability.ManageExpenses);
+    var canView = Capabilities.IsAllowed(UtangCapability.ViewExpenses);
+    var onlineActionsEnabled = !_isOffline && !_loading;
+    var showEmptyAdd = canManage && !_isOffline && string.IsNullOrWhiteSpace(_search);
+<div class="pos-expense-categories">
 <Page>
-    <PageHeader Title="@L["Expenses_CategoriesTitle"]" Subtitle="@L["Expenses_CategoriesSubtitle"]" />
+    <header class="pos-expense-categories__header">
+        <div class="pos-expense-categories__heading">
+            <h1 class="pos-expense-categories__title">@L["Expenses_CategoriesTitle"]</h1>
+            <p class="pos-expense-categories__subtitle">@L["Expenses_CategoriesSubtitle"]</p>
+        </div>
+        @if (canManage)
+        {
+            <button type="button"
+                    class="pos-expense-categories__add"
+                    disabled="@(_isOffline || _saving || _formOpen)"
+                    @onclick="BeginCreate">
+                <span class="pos-expense-categories__add-icon" aria-hidden="true">@IconGlyphs.Get("plus")</span>
+                <span>@L["Expenses_Category"]</span>
+            </button>
+        }
+    </header>
 
     @if (_isOffline)
     {
@@ -38,57 +59,201 @@ else
         <Alert Tone="AlertTone.Danger" Title="@L["Expenses_ErrorTitle"]" Message="@_formError" />
     }
 
-    <Section Title="@(_editingId is null ? L["Expenses_Category_AddTitle"] : L["Expenses_Category_EditTitle"])">
-        <Stack Gap="3">
-            <TextInput Label="@L["Expenses_CategoryName"]"
-                       Value="@_name"
-                       ValueChanged="v => _name = v"
-                       Required="true"
-                       IsInvalid="@(!string.IsNullOrEmpty(_nameError))"
-                       ErrorText="@_nameError"
-                       Disabled="@(!canManage || _isOffline || _saving)" />
-            <FormActions>
-                @if (_editingId is not null)
-                {
-                    <Button Variant="ButtonVariant.Secondary" Disabled="@_saving" OnClick="CancelEdit">@L["Expenses_Cancel"]</Button>
-                }
+    @if (_formOpen)
+    {
+        <section class="pos-expense-categories__panel" aria-labelledby="expense-category-form-heading">
+            <h2 id="expense-category-form-heading" class="pos-expense-categories__section-title">@(_editingId is null ? L["Expenses_Category_AddTitle"] : L["Expenses_Category_EditTitle"])</h2>
+            <div class="pos-expense-categories__form">
+                <TextInput Label="@L["Expenses_CategoryName"]"
+                           Value="@_name"
+                           ValueChanged="v => _name = v"
+                           Required="true"
+                           IsInvalid="@(!string.IsNullOrEmpty(_nameError))"
+                           ErrorText="@_nameError"
+                           Disabled="@(!canManage || _isOffline || _saving)" />
+            </div>
+            <FormActions class="pos-customer-create__footer">
+                <Button Variant="ButtonVariant.Secondary" Disabled="@_saving" OnClick="CancelForm">@L["Expenses_Cancel"]</Button>
                 <Button Variant="ButtonVariant.Primary"
                         Disabled="@(!canManage || _isOffline)"
                         IsLoading="@_saving"
                         OnClick="SaveAsync">@(_editingId is null ? L["Expenses_Category_Add"] : L["Expenses_Save"])</Button>
             </FormActions>
-        </Stack>
-    </Section>
+        </section>
+    }
 
-    <SearchToolbar SearchText="@_search" SearchTextChanged="OnSearchChanged" Placeholder="@L["Expenses_Category_SearchPlaceholder"]">
-        <Actions>
-            <Select Value="@_statusFilter"
-                    ValueChanged="OnStatusFilterChanged"
-                    Options="@ExpensesUiOptions.CategoryStatusFilters(L)"
-                    aria-label="@L["Expenses_Filter_Status"]" />
-            <Button Variant="ButtonVariant.Secondary" IsLoading="@_loading" OnClick="ReloadWithLoadingAsync">@L["Expenses_Refresh"]</Button>
-        </Actions>
-    </SearchToolbar>
+    <div class="pos-expense-categories__toolbar" role="search">
+        <div class="pos-expense-categories__search">
+            <span class="pos-expense-categories__search-icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
+            <input class="pos-expense-categories__search-input"
+                   type="search"
+                   value="@_search"
+                   placeholder="@L["Expenses_Category_SearchPlaceholder"]"
+                   aria-label="@L["Expenses_Category_SearchPlaceholder"]"
+                   disabled="@(!canView || (_loading && string.IsNullOrWhiteSpace(_search)))"
+                   @oninput="OnSearchInputAsync" />
+            @if (!string.IsNullOrWhiteSpace(_search))
+            {
+                <button type="button"
+                        class="pos-expense-categories__search-clear"
+                        aria-label="@L["Expenses_Category_ClearSearch"]"
+                        disabled="@_isOffline"
+                        @onclick="ClearSearchAsync">
+                    <span aria-hidden="true">@IconGlyphs.Get("close")</span>
+                </button>
+            }
+        </div>
+        <label class="pos-expense-categories__status">
+            <span class="visually-hidden">@L["Expenses_Filter_Status"]</span>
+            <select class="pos-expense-categories__status-select"
+                    value="@(_statusFilter ?? string.Empty)"
+                    disabled="@(_isOffline || !canView)"
+                    @onchange="OnStatusSelectChanged">
+                @foreach (var option in ExpensesUiOptions.CategoryStatusFilters(L))
+                {
+                    <option value="@option.Value">@option.Text</option>
+                }
+            </select>
+        </label>
+        <button type="button"
+                class="pos-expense-categories__refresh"
+                title="@L["Expenses_Refresh"]"
+                aria-label="@L["Expenses_Refresh"]"
+                disabled="@(!onlineActionsEnabled || !canView)"
+                @onclick="ReloadWithLoadingAsync">
+            @if (_loading)
+            {
+                <Spinner Size="SpinnerSize.Sm" />
+            }
+            else
+            {
+                <span aria-hidden="true">@IconGlyphs.Get("refresh")</span>
+            }
+        </button>
+    </div>
 
-    <ResponsiveDataList TItem="PosExpenseCategoryDto"
-                        Items="@_items"
-                        Columns="@Columns"
-                        CellTemplate="@CellTemplate"
-                        IsLoading="@_loading"
-                        LoadingLabel="@L["Expenses_Loading"]"
-                        EmptyTitle="@L["Expenses_Category_EmptyTitle"]"
-                        EmptyMessage="@L["Expenses_Category_EmptyMessage"]"
-                        ErrorTitle="@_errorTitle"
-                        ErrorMessage="@_errorMessage"
+    <section class="pos-expense-categories__list-section"
+             aria-labelledby="expense-categories-list-heading"
+             aria-busy="@_loading">
+        <h2 id="expense-categories-list-heading" class="visually-hidden">@L["Expenses_CategoriesTitle"]</h2>
+
+        @if (_loading && _items.Count == 0 && string.IsNullOrEmpty(_errorTitle))
+        {
+            <div class="pos-expense-categories__loading" role="status" aria-live="polite">
+                <Spinner />
+                <span>@L["Expenses_Loading"]</span>
+            </div>
+        }
+        else if (!string.IsNullOrEmpty(_errorTitle))
+        {
+            <ErrorState Title="@_errorTitle"
+                        Message="@(_errorMessage ?? L["Expenses_Category_EmptyMessage"])"
                         RetryLabel="@L["Api_Retry"]"
-                        OnRetry="ReloadWithLoadingAsync"
-                        AriaLabel="@L["Expenses_CategoriesTitle"]" />
+                        OnRetry="ReloadWithLoadingAsync" />
+        }
+        else if (_items.Count == 0)
+        {
+            <EmptyState IconName="inbox"
+                        Title="@(HasListQuery ? L["Expenses_Category_NoMatchTitle"] : L["Expenses_Category_EmptyTitle"])"
+                        Message="@(HasListQuery ? L["Expenses_Category_NoMatchMessage"] : L["Expenses_Category_EmptyMessage"])">
+                <Actions>
+                    @if (showEmptyAdd)
+                    {
+                        <Button Variant="ButtonVariant.Primary"
+                                Size="ButtonSize.Sm"
+                                Disabled="@(_saving || _formOpen)"
+                                OnClick="BeginCreate">
+                            @L["Expenses_Category_Add"]
+                        </Button>
+                    }
+                </Actions>
+            </EmptyState>
+        }
+        else
+        {
+            @if (_menuCategoryId is not null)
+            {
+                <NavigationLock OnBeforeInternalNavigation="OnMenuBackNavigation" />
+                <div class="pos-expense-categories__menu-backdrop"
+                     role="presentation"
+                     aria-hidden="true"
+                     @onclick="CloseMenu"
+                     @onkeydown="OnMenuKeyDown"></div>
+            }
+            <div class="pos-expense-categories__list" role="list" aria-label="@L["Expenses_CategoriesTitle"]">
+                @foreach (var item in _items)
+                {
+                    var isActive = item.Status == ExpensesUiOptions.ActiveCategoryStatus;
+                    var menuOpen = _menuCategoryId == item.CategoryId;
+                    var rowBusy = _busyCategoryId == item.CategoryId;
+                    <article class="pos-expense-categories__row" role="listitem">
+                        <div class="pos-expense-categories__row-body">
+                            <div class="pos-expense-categories__row-top">
+                                <span class="pos-expense-categories__row-name">@item.Name</span>
+                                <Badge Tone="@(isActive ? BadgeTone.Success : BadgeTone.Neutral)">
+                                    @ExpensesUiOptions.CategoryStatusLabel(L, item.Status)
+                                </Badge>
+                            </div>
+                        </div>
+                        @if (canManage)
+                        {
+                            <div class="pos-expense-categories__menu @(menuOpen ? "pos-expense-categories__menu--open" : null)"
+                                 @onclick:stopPropagation="true">
+                                <button type="button"
+                                        class="pos-expense-categories__menu-trigger"
+                                        aria-label="@L["Expenses_Category_MoreActions"]"
+                                        aria-haspopup="menu"
+                                        aria-expanded="@menuOpen"
+                                        disabled="@(_isOffline || _saving || rowBusy)"
+                                        @onclick="() => ToggleMenu(item.CategoryId)">
+                                    @if (rowBusy)
+                                    {
+                                        <Spinner Size="SpinnerSize.Sm" />
+                                    }
+                                    else
+                                    {
+                                        <span aria-hidden="true">@IconGlyphs.Get("more")</span>
+                                    }
+                                </button>
+                                @if (menuOpen)
+                                {
+                                    <div class="pos-expense-categories__menu-panel" role="menu">
+                                        <button type="button"
+                                                class="pos-expense-categories__menu-item"
+                                                role="menuitem"
+                                                disabled="@(_isOffline || _saving || rowBusy)"
+                                                @onclick="() => BeginRename(item)">
+                                            @L["Expenses_Category_Rename"]
+                                        </button>
+                                        <button type="button"
+                                                class="pos-expense-categories__menu-item @(isActive ? "pos-expense-categories__menu-item--danger" : null)"
+                                                role="menuitem"
+                                                disabled="@(_isOffline || _saving || rowBusy)"
+                                                @onclick="() => ToggleStatusFromMenuAsync(item)">
+                                            @(isActive ? L["Expenses_Category_Deactivate"] : L["Expenses_Category_Reactivate"])
+                                        </button>
+                                        <button type="button"
+                                                class="pos-expense-categories__menu-item pos-expense-categories__menu-item--cancel"
+                                                role="menuitem"
+                                                @onclick="CloseMenu">
+                                            @L["Expenses_Cancel"]
+                                        </button>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </article>
+                }
+            </div>
+        }
+    </section>
 
     @if (!_loading && _totalCount > 0)
     {
         <Pagination Page="@_page" PageSize="@_pageSize" TotalCount="@_totalCount" PageChanged="OnPageChanged" />
     }
 </Page>
+</div>
 }
 
 @code {
@@ -96,6 +261,7 @@ else
     private bool _loading;
     private bool _saving;
     private bool _isOffline;
+    private bool _formOpen;
     private string? _search;
     private string? _statusFilter = ExpensesUiOptions.ActiveCategoryStatus;
     private int _page = 1;
@@ -104,57 +270,17 @@ else
     private IReadOnlyList<PosExpenseCategoryDto> _items = Array.Empty<PosExpenseCategoryDto>();
     private Guid? _editingId;
     private DateTimeOffset? _editingUpdatedAtUtc;
+    private Guid? _menuCategoryId;
+    private Guid? _busyCategoryId;
     private string? _name;
     private string? _nameError;
     private string? _formError;
     private string? _banner;
     private string? _errorTitle;
     private string? _errorMessage;
+    private CancellationTokenSource? _searchCts;
 
-    private IReadOnlyList<DataColumnDefinition> Columns =>
-    [
-        new("name", L["Expenses_CategoryName"], Primary: true, Width: "48%"),
-        new("status", L["Expenses_Col_Status"], Width: "22%"),
-        new("actions", L["Expenses_Col_Actions"], Width: "30%"),
-    ];
-
-    private RenderFragment<(PosExpenseCategoryDto Item, DataColumnDefinition Column)> CellTemplate => context => builder =>
-    {
-        switch (context.Column.Key)
-        {
-            case "name":
-                builder.AddContent(0, context.Item.Name);
-                break;
-            case "status":
-                builder.OpenComponent<Badge>(0);
-                builder.AddAttribute(1, "Tone", context.Item.Status == ExpensesUiOptions.ActiveCategoryStatus
-                    ? BadgeTone.Success
-                    : BadgeTone.Neutral);
-                builder.AddAttribute(2, "ChildContent", (RenderFragment)(b =>
-                    b.AddContent(0, ExpensesUiOptions.CategoryStatusLabel(L, context.Item.Status))));
-                builder.CloseComponent();
-                break;
-            default:
-                var item = context.Item;
-                builder.OpenComponent<Button>(0);
-                builder.AddAttribute(1, "Variant", ButtonVariant.Ghost);
-                builder.AddAttribute(2, "Size", ButtonSize.Sm);
-                builder.AddAttribute(3, "OnClick", EventCallback.Factory.Create<MouseEventArgs>(this, _ => BeginEdit(item)));
-                builder.AddAttribute(4, "ChildContent", (RenderFragment)(b => b.AddContent(0, L["Expenses_Category_Rename"].Value)));
-                builder.CloseComponent();
-
-                var isActive = item.Status == ExpensesUiOptions.ActiveCategoryStatus;
-                builder.OpenComponent<Button>(5);
-                builder.AddAttribute(6, "Variant", isActive ? ButtonVariant.Danger : ButtonVariant.Secondary);
-                builder.AddAttribute(7, "Size", ButtonSize.Sm);
-                builder.AddAttribute(8, "OnClick", EventCallback.Factory.Create<MouseEventArgs>(this, _ => ToggleStatusAsync(item)));
-                builder.AddAttribute(9, "ChildContent", (RenderFragment)(b => b.AddContent(
-                    0,
-                    isActive ? L["Expenses_Category_Deactivate"].Value : L["Expenses_Category_Reactivate"].Value)));
-                builder.CloseComponent();
-                break;
-        }
-    };
+    private bool HasListQuery => !string.IsNullOrWhiteSpace(_search);
 
     protected override async Task OnInitializedAsync()
     {
@@ -174,26 +300,66 @@ else
         await ReloadWithLoadingAsync();
     }
 
-    private Task ReloadWithLoadingAsync() => ReloadAsync(showLoading: true);
-
-    private async Task OnSearchChanged(string? value)
+    public void Dispose()
     {
-        _search = value;
-        _page = 1;
-        await ReloadAsync();
+        _searchCts?.Cancel();
+        _searchCts?.Dispose();
     }
 
-    private async Task OnStatusFilterChanged(string? value)
+    private Task ReloadWithLoadingAsync() => ReloadAsync(showLoading: true);
+
+    private async Task OnSearchInputAsync(ChangeEventArgs args)
     {
-        _statusFilter = value;
+        _search = args.Value?.ToString();
         _page = 1;
-        await ReloadAsync();
+        _menuCategoryId = null;
+        _searchCts?.Cancel();
+        _searchCts?.Dispose();
+        _searchCts = new CancellationTokenSource();
+        var token = _searchCts.Token;
+        try
+        {
+            await Task.Delay(250, token);
+            await ReloadAsync(showLoading: true);
+        }
+        catch (OperationCanceledException)
+        {
+            // superseded by newer keystrokes
+        }
+    }
+
+    private async Task ClearSearchAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_search))
+        {
+            return;
+        }
+
+        _search = null;
+        _page = 1;
+        _menuCategoryId = null;
+        await ReloadAsync(showLoading: true);
+    }
+
+    private async Task OnStatusSelectChanged(ChangeEventArgs args)
+    {
+        var next = args.Value?.ToString() ?? string.Empty;
+        if (string.Equals(next, _statusFilter ?? string.Empty, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        _statusFilter = next;
+        _page = 1;
+        _menuCategoryId = null;
+        await ReloadAsync(showLoading: true);
     }
 
     private async Task OnPageChanged(int page)
     {
         _page = page;
-        await ReloadAsync();
+        _menuCategoryId = null;
+        await ReloadAsync(showLoading: true);
     }
 
     private async Task ReloadAsync(bool showLoading = true)
@@ -262,8 +428,22 @@ else
         }
     }
 
-    private void BeginEdit(PosExpenseCategoryDto category)
+    private void BeginCreate()
     {
+        _formOpen = true;
+        _editingId = null;
+        _editingUpdatedAtUtc = null;
+        _name = null;
+        _nameError = null;
+        _formError = null;
+        _banner = null;
+        _menuCategoryId = null;
+    }
+
+    private void BeginRename(PosExpenseCategoryDto category)
+    {
+        _menuCategoryId = null;
+        _formOpen = true;
         _editingId = category.CategoryId;
         _editingUpdatedAtUtc = category.UpdatedAtUtc;
         _name = category.Name;
@@ -272,12 +452,46 @@ else
         _banner = null;
     }
 
-    private void CancelEdit()
+    private void CancelForm()
     {
+        _formOpen = false;
         _editingId = null;
         _editingUpdatedAtUtc = null;
         _name = null;
         _nameError = null;
+    }
+
+    private void ToggleMenu(Guid categoryId)
+    {
+        _menuCategoryId = _menuCategoryId == categoryId ? null : categoryId;
+    }
+
+    private void CloseMenu() => _menuCategoryId = null;
+
+    private Task OnMenuBackNavigation(LocationChangingContext context)
+    {
+        if (_menuCategoryId is null)
+        {
+            return Task.CompletedTask;
+        }
+
+        context.PreventNavigation();
+        CloseMenu();
+        return Task.CompletedTask;
+    }
+
+    private void OnMenuKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key is "Escape" or "Esc")
+        {
+            CloseMenu();
+        }
+    }
+
+    private async Task ToggleStatusFromMenuAsync(PosExpenseCategoryDto category)
+    {
+        CloseMenu();
+        await ToggleStatusAsync(category);
     }
 
     private async Task SaveAsync()
@@ -313,7 +527,7 @@ else
                 _banner = editingId is null
                     ? L["Expenses_Category_CreatedSuccess"]
                     : L["Expenses_Category_UpdatedSuccess"];
-                CancelEdit();
+                CancelForm();
                 UpsertLocalCategory(result.Data);
                 _saving = false;
                 StateHasChanged();
@@ -374,26 +588,35 @@ else
 
         _formError = null;
         _banner = null;
+        _busyCategoryId = category.CategoryId;
+        StateHasChanged();
 
-        var result = category.Status == ExpensesUiOptions.ActiveCategoryStatus
-            ? await Expenses.DeactivateCategoryAsync(category.CategoryId)
-            : await Expenses.ReactivateCategoryAsync(category.CategoryId);
-
-        if (result.IsSuccess)
+        try
         {
-            _banner = category.Status == ExpensesUiOptions.ActiveCategoryStatus
-                ? L["Expenses_Category_DeactivatedSuccess"]
-                : L["Expenses_Category_ReactivatedSuccess"];
-            if (result.Data is not null)
+            var result = category.Status == ExpensesUiOptions.ActiveCategoryStatus
+                ? await Expenses.DeactivateCategoryAsync(category.CategoryId)
+                : await Expenses.ReactivateCategoryAsync(category.CategoryId);
+
+            if (result.IsSuccess)
             {
-                UpsertLocalCategory(result.Data);
+                _banner = category.Status == ExpensesUiOptions.ActiveCategoryStatus
+                    ? L["Expenses_Category_DeactivatedSuccess"]
+                    : L["Expenses_Category_ReactivatedSuccess"];
+                if (result.Data is not null)
+                {
+                    UpsertLocalCategory(result.Data);
+                }
+
+                await ReloadAsync(showLoading: false);
+                return;
             }
 
-            await ReloadAsync(showLoading: false);
-            return;
+            _formError = result.Error?.Detail
+                ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
         }
-
-        _formError = result.Error?.Detail
-            ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
+        finally
+        {
+            _busyCategoryId = null;
+        }
     }
 }

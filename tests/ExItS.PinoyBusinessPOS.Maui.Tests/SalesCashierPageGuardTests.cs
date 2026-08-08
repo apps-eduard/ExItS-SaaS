@@ -82,6 +82,7 @@ public sealed class SalesCashierPageGuardTests
         Assert.Contains("ViewGenerateReceipt", detail, StringComparison.Ordinal);
         Assert.Contains("/receipt", detail, StringComparison.Ordinal);
         Assert.Contains("pos-sale-detail__summary", detail, StringComparison.Ordinal);
+        Assert.Contains("pos-sale-detail__actions", detail, StringComparison.Ordinal);
         Assert.Contains("StoreHeaderBack Href=\"/sales\"", detail, StringComparison.Ordinal);
         Assert.DoesNotContain("Sales_BackToList", detail, StringComparison.Ordinal);
 

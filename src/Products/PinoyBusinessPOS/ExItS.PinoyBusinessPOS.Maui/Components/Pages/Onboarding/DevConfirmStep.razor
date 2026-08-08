@@ -4,8 +4,12 @@
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
+<div class="pos-onboarding">
 <Page>
-    <PageHeader Title="@L["Onboarding_DevTitle"]" Subtitle="@L["Onboarding_DevSubtitle"]" />
+    <header class="pos-onboarding__header">
+        <h1 class="pos-onboarding__title">@L["Onboarding_DevTitle"]</h1>
+        <p class="pos-onboarding__subtitle">@L["Onboarding_DevSubtitle"]</p>
+    </header>
     <Alert Tone="AlertTone.Warning" Title="@L["Onboarding_DevNoticeTitle"]" Message="@L["Onboarding_DevNoticeMessage"]" />
     <Checkbox @bind-Value="_confirmed">@L["Onboarding_DevConfirmLabel"]</Checkbox>
     <FormActions>
@@ -13,6 +17,7 @@
         <Button Disabled="!_confirmed" OnClick="ContinueAsync">@L["Common_Continue"]</Button>
     </FormActions>
 </Page>
+</div>
 
 @code {
     private bool _confirmed;

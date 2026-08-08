@@ -27,7 +27,10 @@ else
     var canManage = Capabilities.IsAllowed(UtangCapability.ManageInventory);
 <div class="pos-inventory">
     <Page>
-        <PageHeader Title="@L["Inventory_Title"]" Subtitle="@L["Inventory_Subtitle"]" />
+        <header class="pos-inventory__header">
+            <h1 class="pos-inventory__title">@L["Inventory_Title"]</h1>
+            <p class="pos-inventory__subtitle">@L["Inventory_Subtitle"]</p>
+        </header>
 
         @if (_isOffline)
         {
@@ -70,13 +73,11 @@ else
             </div>
         </div>
 
-        <Section Title="@L["Inventory_ListSection"]">
+        <section class="pos-inventory__panel" aria-labelledby="inventory-list-heading">
+            <h2 id="inventory-list-heading" class="pos-inventory__section-title">@L["Inventory_ListSection"]</h2>
             @if (_loading)
             {
-                <Stack Align="StackAlign.Center" Gap="2">
-                    <Spinner />
-                    <span class="pos-muted">@L["Inventory_Loading"]</span>
-                </Stack>
+                <div class="pos-inventory__loading"><Spinner /><span>@L["Inventory_Loading"]</span></div>
             }
             else if (!string.IsNullOrEmpty(_errorMessage))
             {
@@ -100,7 +101,18 @@ else
                            role="listitem"
                            href="@($"/inventory/{item.ProductId:D}")">
                             <div class="pos-inventory__row-main">
-                                <span class="pos-inventory__row-name">@item.Name</span>
+                                <div class="pos-inventory__row-top">
+                                    <span class="pos-inventory__row-name">@item.Name</span>
+                                    <div class="pos-inventory__row-badges">
+                                        <Badge Tone="@(item.ProductStatus == "Active" ? BadgeTone.Success : BadgeTone.Neutral)">
+                                            @item.ProductStatus
+                                        </Badge>
+                                        @if (item.IsTracked)
+                                        {
+                                            <Badge Tone="@StockBadgeTone(item)">@StockStatusLabel(item)</Badge>
+                                        }
+                                    </div>
+                                </div>
                                 <span class="pos-inventory__row-meta">
                                     @item.UnitOfMeasure
                                     ·
@@ -110,15 +122,6 @@ else
                                         <text> · @L["Inventory_ReorderLevel"] @item.ReorderLevel.Value.ToString("0.###", CultureInfo.InvariantCulture)</text>
                                     }
                                 </span>
-                                <div class="pos-inventory__row-badges">
-                                    <Badge Tone="@(item.ProductStatus == "Active" ? BadgeTone.Success : BadgeTone.Neutral)">
-                                        @item.ProductStatus
-                                    </Badge>
-                                    @if (item.IsTracked)
-                                    {
-                                        <Badge Tone="@StockBadgeTone(item)">@StockStatusLabel(item)</Badge>
-                                    }
-                                </div>
                             </div>
                             <div class="pos-inventory__row-side">
                                 <span class="pos-inventory__on-hand">@item.OnHandQuantity.ToString("0.###", CultureInfo.InvariantCulture)</span>
@@ -128,7 +131,7 @@ else
                     }
                 </div>
             }
-        </Section>
+        </section>
 
         @if (!_loading && _totalCount > 0)
         {

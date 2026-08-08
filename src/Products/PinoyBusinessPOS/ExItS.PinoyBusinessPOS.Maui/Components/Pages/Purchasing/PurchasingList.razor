@@ -1,8 +1,10 @@
 @page "/purchasing"
+@using ExItS.DesignSystem.Components.Internal
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IPosPurchaseOrderClient Purchasing
 @inject IUtangCapabilityEvaluator Capabilities
+@inject ApiStatusLocalizer ApiLocalizer
 @inject IConnectivityService Connectivity
 @inject IStringLocalizer<PosResources> L
 
@@ -13,25 +15,85 @@
 else
 {
     var canManage = Capabilities.IsAllowed(UtangCapability.ManagePurchasing);
-<Page>
-    <PageHeader Title="@L["Purchasing_Title"]" Subtitle="@L["Purchasing_Subtitle"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Primary" Disabled="@(!canManage || _isOffline)" OnClick="GoNew">@L["Purchasing_Add"]</Button>
-        </Actions>
-    </PageHeader>
+<div class="pos-purchasing">
+    <Page>
+        <header class="pos-purchasing__header">
+            <div class="pos-purchasing__heading">
+                <h1 class="pos-purchasing__title">@L["Purchasing_Title"]</h1>
+                <p class="pos-purchasing__subtitle">@L["Purchasing_Subtitle"]</p>
+            </div>
+            @if (canManage)
+            {
+                <button type="button"
+                        class="pos-purchasing__add"
+                        disabled="@_isOffline"
+                        @onclick="GoNew">
+                    <span class="pos-purchasing__add-icon" aria-hidden="true">@IconGlyphs.Get("plus")</span>
+                    <span>@L["Purchasing_Add"]</span>
+                </button>
+            }
+        </header>
 
-    @if (_isOffline)
-    {
-        <Alert Tone="AlertTone.Warning" Title="@L["Purchasing_OfflineTitle"]" Message="@L["Purchasing_OfflineMessage"]" />
-    }
+        @if (_isOffline)
+        {
+            <Alert Tone="AlertTone.Warning" Title="@L["Purchasing_OfflineTitle"]" Message="@L["Purchasing_OfflineMessage"]" />
+        }
 
-    <ResponsiveDataList TItem="PosPurchaseOrderDto"
-                        Items="@_items"
-                        IsLoading="@_loading"
-                        EmptyTitle="@L["Purchasing_EmptyTitle"]"
-                        EmptyMessage="@L["Purchasing_EmptyMessage"]"
-                        AriaLabel="@L["Purchasing_Title"]" />
-</Page>
+        <div class="pos-action-grid pos-action-grid--single pos-purchasing__actions" role="group" aria-label="@L["Purchasing_Title"]">
+            <button type="button"
+                    class="pos-action-tile"
+                    disabled="@(_loading || _isOffline)"
+                    @onclick="ReloadAsync">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("refresh")</span>
+                <span class="pos-action-tile__label">@L["Inventory_Refresh"]</span>
+            </button>
+        </div>
+
+        <section class="pos-purchasing__panel" aria-labelledby="purchasing-list-heading">
+            <h2 id="purchasing-list-heading" class="pos-purchasing__section-title">@L["Purchasing_Title"]</h2>
+            @if (_loading)
+            {
+                <div class="pos-purchasing__loading"><Spinner /><span>@L["Inventory_Loading"]</span></div>
+            }
+            else if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <ErrorState Title="@(_errorTitle ?? L["Purchasing_Title"])"
+                            Message="@_errorMessage"
+                            RetryLabel="@L["Api_Retry"]"
+                            OnRetry="ReloadAsync" />
+            }
+            else if (_items.Count == 0)
+            {
+                <EmptyState IconName="inbox"
+                            Title="@L["Purchasing_EmptyTitle"]"
+                            Message="@L["Purchasing_EmptyMessage"]" />
+            }
+            else
+            {
+                <div class="pos-purchasing__list" role="list" aria-label="@L["Purchasing_Title"]">
+                    @foreach (var item in _items)
+                    {
+                        <a class="pos-purchasing__row"
+                           role="listitem"
+                           href="@($"/purchasing/{item.PurchaseOrderId:D}")">
+                            <div class="pos-purchasing__row-main">
+                                <div class="pos-purchasing__row-top">
+                                    <span class="pos-purchasing__row-name">@(item.PoNumber ?? L["Purchasing_DetailTitle"])</span>
+                                    <Badge Tone="@StatusTone(item.Status)">@item.Status</Badge>
+                                </div>
+                                <span class="pos-purchasing__row-meta">
+                                    @item.OrderDate.ToString("d")
+                                    · @L["Purchasing_LinesCount", item.Lines.Count]
+                                </span>
+                            </div>
+                            <span class="pos-purchasing__view">@L["Customers_View"]</span>
+                        </a>
+                    }
+                </div>
+            }
+        </section>
+    </Page>
+</div>
 }
 
 @code {
@@ -39,6 +101,8 @@ else
     private bool _loading;
     private bool _isOffline;
     private IReadOnlyList<PosPurchaseOrderDto> _items = Array.Empty<PosPurchaseOrderDto>();
+    private string? _errorTitle;
+    private string? _errorMessage;
 
     protected override async Task OnInitializedAsync()
     {
@@ -59,21 +123,47 @@ else
         await ReloadAsync();
     }
 
+    private static BadgeTone StatusTone(string status) =>
+        status switch
+        {
+            "Ordered" => BadgeTone.Primary,
+            "PartiallyReceived" => BadgeTone.Warning,
+            "Received" => BadgeTone.Success,
+            "Cancelled" => BadgeTone.Neutral,
+            _ => BadgeTone.Neutral
+        };
+
     private async Task ReloadAsync()
     {
+        _errorTitle = null;
+        _errorMessage = null;
+        _isOffline = !await Connectivity.IsConnectedAsync();
         if (_isOffline)
         {
+            _items = Array.Empty<PosPurchaseOrderDto>();
             return;
         }
 
         _loading = true;
-        var result = await Purchasing.ListAsync();
-        if (result.IsSuccess && result.Data is not null)
+        try
         {
-            _items = result.Data.Items;
+            var result = await Purchasing.ListAsync();
+            if (result.IsSuccess && result.Data is not null)
+            {
+                _items = result.Data.Items;
+            }
+            else
+            {
+                _items = Array.Empty<PosPurchaseOrderDto>();
+                var described = ApiLocalizer.Describe(result.Status, result.Error);
+                _errorTitle = described.Title;
+                _errorMessage = result.Error?.Detail ?? described.Message;
+            }
         }
-
-        _loading = false;
+        finally
+        {
+            _loading = false;
+        }
     }
 
     private void GoNew() => Nav.NavigateTo("/purchasing/new");

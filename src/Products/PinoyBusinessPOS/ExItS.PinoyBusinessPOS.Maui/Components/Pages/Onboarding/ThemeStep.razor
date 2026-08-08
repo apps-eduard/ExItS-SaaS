@@ -5,8 +5,12 @@
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
+<div class="pos-onboarding">
 <Page>
-    <PageHeader Title="@L["Onboarding_ThemeTitle"]" Subtitle="@L["Onboarding_ThemeSubtitle"]" />
+    <header class="pos-onboarding__header">
+        <h1 class="pos-onboarding__title">@L["Onboarding_ThemeTitle"]</h1>
+        <p class="pos-onboarding__subtitle">@L["Onboarding_ThemeSubtitle"]</p>
+    </header>
     <FormGroup>
         <Select Label="@L["Settings_ThemeLabel"]"
                 Value="@_theme"
@@ -18,6 +22,7 @@
         <Button OnClick="ContinueAsync">@L["Common_Continue"]</Button>
     </FormActions>
 </Page>
+</div>
 
 @code {
     private string? _theme = "system";

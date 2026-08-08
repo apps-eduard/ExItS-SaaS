@@ -9,6 +9,8 @@ public sealed class PermissionsPageGuardTests
         Assert.Contains("@page \"/permissions\"", page, StringComparison.Ordinal);
         Assert.Contains("Permissions_Title", page, StringComparison.Ordinal);
         Assert.Contains("Permissions_Subtitle", page, StringComparison.Ordinal);
+        Assert.Contains("pos-permissions__header", page, StringComparison.Ordinal);
+        Assert.Contains("pos-permissions__title", page, StringComparison.Ordinal);
         Assert.Contains("Permissions_Assign", page, StringComparison.Ordinal);
         Assert.Contains("pos-action-grid", page, StringComparison.Ordinal);
         Assert.Contains("pos-action-tile--primary", page, StringComparison.Ordinal);
@@ -31,6 +33,7 @@ public sealed class PermissionsPageGuardTests
         Assert.Contains("OnRetry", page, StringComparison.Ordinal);
         Assert.Contains("UtangCapability.ViewPermissions", page, StringComparison.Ordinal);
         Assert.Contains("UtangCapability.ManagePermissions", page, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", page, StringComparison.Ordinal);
         Assert.DoesNotContain("ResponsiveDataList", page, StringComparison.Ordinal);
         Assert.DoesNotContain("class=\"pos-link\"", page, StringComparison.Ordinal);
         Assert.DoesNotContain("ActorId.ToString", page, StringComparison.Ordinal);
@@ -46,6 +49,9 @@ public sealed class PermissionsPageGuardTests
         var page = Read("MyAccess.razor");
         Assert.Contains("@page \"/permissions/my-access\"", page, StringComparison.Ordinal);
         Assert.Contains("StoreHeaderBack Href=\"/permissions\"", page, StringComparison.Ordinal);
+        Assert.Contains("pos-permissions__header", page, StringComparison.Ordinal);
+        Assert.Contains("pos-permissions__title", page, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", page, StringComparison.Ordinal);
         Assert.DoesNotContain("Permissions_Back", page, StringComparison.Ordinal);
         Assert.DoesNotContain("GoBack", page, StringComparison.Ordinal);
     }

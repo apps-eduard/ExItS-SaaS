@@ -3,10 +3,15 @@
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
-<Page>
-    <PageHeader Title="@L["NotFound_Title"]" Subtitle="@L["NotFound_Message"]" />
-    <Button Variant="ButtonVariant.Secondary" OnClick="GoHome">@L["NotFound_BackToHome"]</Button>
-</Page>
+<div class="pos-not-found">
+    <Page>
+        <header class="pos-not-found__header">
+            <h1 class="pos-not-found__title">@L["NotFound_Title"]</h1>
+            <p class="pos-not-found__subtitle">@L["NotFound_Message"]</p>
+        </header>
+        <Button Variant="ButtonVariant.Secondary" OnClick="GoHome">@L["NotFound_BackToHome"]</Button>
+    </Page>
+</div>
 
 @code {
     private void GoHome() => Nav.NavigateTo("/home");

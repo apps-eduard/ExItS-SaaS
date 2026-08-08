@@ -16,17 +16,21 @@
 }
 else
 {
-<div class="pos-barcode-lookup">
+<div class="pos-catalog-lookup">
     <Page>
-        <PageHeader Title="@L["Catalog_Lookup_Title"]" Subtitle="@L["Catalog_Lookup_Subtitle"]" />
+        <header class="pos-catalog-lookup__header">
+            <h1 class="pos-catalog-lookup__title">@L["Catalog_Lookup_Title"]</h1>
+            <p class="pos-catalog-lookup__subtitle">@L["Catalog_Lookup_Subtitle"]</p>
+        </header>
 
         @if (_isOffline)
         {
             <Alert Tone="AlertTone.Warning" Title="@L["Catalog_OfflineTitle"]" Message="@L["Catalog_OfflineMessage"]" />
         }
 
-        <Section Title="@L["Catalog_Lookup_FormTitle"]">
-            <Stack Gap="2">
+        <section class="pos-catalog-lookup__panel" aria-labelledby="catalog-lookup-form-heading">
+            <h2 id="catalog-lookup-form-heading" class="pos-catalog-lookup__section-title">@L["Catalog_Lookup_FormTitle"]</h2>
+            <div class="pos-catalog-lookup__form">
                 <TextInput Label="@L["Catalog_Lookup_Barcode"]"
                            Value="@_barcode"
                            ValueChanged="v => _barcode = v"
@@ -42,32 +46,32 @@ else
                           Disabled="@(_searching || _isOffline)">
                     @L["Catalog_Lookup_IncludeInactive"]
                 </Checkbox>
+            </div>
 
-                <div class="pos-action-grid pos-action-grid--two pos-barcode-lookup__actions" role="group" aria-label="@L["Catalog_Lookup_FormTitle"]">
-                    <button type="button"
-                            class="pos-action-tile"
-                            disabled="@_searching"
-                            @onclick="Clear">
-                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("close")</span>
-                        <span class="pos-action-tile__label">@L["Catalog_Lookup_Clear"]</span>
-                    </button>
-                    <button type="button"
-                            class="pos-action-tile pos-action-tile--primary"
-                            disabled="@(_isOffline || _searching)"
-                            @onclick="SearchAsync">
-                        @if (_searching)
-                        {
-                            <Spinner />
-                        }
-                        else
-                        {
-                            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
-                        }
-                        <span class="pos-action-tile__label">@L["Catalog_Lookup_Search"]</span>
-                    </button>
-                </div>
-            </Stack>
-        </Section>
+            <div class="pos-action-grid pos-action-grid--two pos-catalog-lookup__actions" role="group" aria-label="@L["Catalog_Lookup_FormTitle"]">
+                <button type="button"
+                        class="pos-action-tile"
+                        disabled="@_searching"
+                        @onclick="Clear">
+                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("close")</span>
+                    <span class="pos-action-tile__label">@L["Catalog_Lookup_Clear"]</span>
+                </button>
+                <button type="button"
+                        class="pos-action-tile pos-action-tile--primary"
+                        disabled="@(_isOffline || _searching)"
+                        @onclick="SearchAsync">
+                    @if (_searching)
+                    {
+                        <Spinner />
+                    }
+                    else
+                    {
+                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
+                    }
+                    <span class="pos-action-tile__label">@L["Catalog_Lookup_Search"]</span>
+                </button>
+            </div>
+        </section>
 
         @if (!string.IsNullOrEmpty(_message))
         {
@@ -76,39 +80,42 @@ else
 
         @if (_product is not null)
         {
-            <Section Title="@L["Catalog_Lookup_ResultTitle"]">
-                <div class="pos-barcode-lookup__result">
-                    <div class="pos-barcode-lookup__fact">
-                        <span class="pos-muted">@L["Catalog_Field_Name"]</span>
-                        <span class="pos-barcode-lookup__fact-value">@_product.Name</span>
+            <section class="pos-catalog-lookup__panel" aria-labelledby="catalog-lookup-result-heading">
+                <h2 id="catalog-lookup-result-heading" class="pos-catalog-lookup__section-title">@L["Catalog_Lookup_ResultTitle"]</h2>
+                <dl class="pos-catalog-lookup__facts">
+                    <div class="pos-catalog-lookup__fact">
+                        <dt>@L["Catalog_Field_Name"]</dt>
+                        <dd>@_product.Name</dd>
                     </div>
-                    <div class="pos-barcode-lookup__fact">
-                        <span class="pos-muted">@L["Catalog_Field_Sku"]</span>
-                        <span class="pos-barcode-lookup__fact-value">@(string.IsNullOrWhiteSpace(_product.Sku) ? L["Catalog_NoValue"] : _product.Sku)</span>
+                    <div class="pos-catalog-lookup__fact">
+                        <dt>@L["Catalog_Field_Sku"]</dt>
+                        <dd>@(string.IsNullOrWhiteSpace(_product.Sku) ? L["Catalog_NoValue"] : _product.Sku)</dd>
                     </div>
-                    <div class="pos-barcode-lookup__fact">
-                        <span class="pos-muted">@L["Catalog_Field_Barcode"]</span>
-                        <span class="pos-barcode-lookup__fact-value">@(string.IsNullOrWhiteSpace(_product.Barcode) ? L["Catalog_NoValue"] : _product.Barcode)</span>
+                    <div class="pos-catalog-lookup__fact">
+                        <dt>@L["Catalog_Field_Barcode"]</dt>
+                        <dd>@(string.IsNullOrWhiteSpace(_product.Barcode) ? L["Catalog_NoValue"] : _product.Barcode)</dd>
                     </div>
-                    <div class="pos-barcode-lookup__fact">
-                        <span class="pos-muted">@L["Catalog_Field_Unit"]</span>
-                        <span class="pos-barcode-lookup__fact-value">@CatalogUiOptions.UnitOfMeasureLabel(L, _product.UnitOfMeasure)</span>
+                    <div class="pos-catalog-lookup__fact">
+                        <dt>@L["Catalog_Field_Unit"]</dt>
+                        <dd>@CatalogUiOptions.UnitOfMeasureLabel(L, _product.UnitOfMeasure)</dd>
                     </div>
-                    <div class="pos-barcode-lookup__fact">
-                        <span class="pos-muted">@L["Catalog_Field_SellingPrice"]</span>
-                        <span class="pos-barcode-lookup__fact-value">
+                    <div class="pos-catalog-lookup__fact">
+                        <dt>@L["Catalog_Field_SellingPrice"]</dt>
+                        <dd>
                             <MoneyDisplay Amount="@_product.SellingPrice" CurrencyCode="PHP" />
-                        </span>
+                        </dd>
                     </div>
-                    <div class="pos-barcode-lookup__fact">
-                        <span class="pos-muted">@L["Catalog_Field_Status"]</span>
-                        <Badge Tone="@(_product.Status == PosCatalogOptions.ActiveStatus ? BadgeTone.Success : BadgeTone.Neutral)">
-                            @CatalogUiOptions.StatusLabel(L, _product.Status)
-                        </Badge>
+                    <div class="pos-catalog-lookup__fact">
+                        <dt>@L["Catalog_Field_Status"]</dt>
+                        <dd>
+                            <Badge Tone="@(_product.Status == PosCatalogOptions.ActiveStatus ? BadgeTone.Success : BadgeTone.Neutral)">
+                                @CatalogUiOptions.StatusLabel(L, _product.Status)
+                            </Badge>
+                        </dd>
                     </div>
-                </div>
+                </dl>
 
-                <div class="pos-action-grid pos-action-grid--single pos-barcode-lookup__open">
+                <div class="pos-action-grid pos-action-grid--single pos-catalog-lookup__open" role="group">
                     <button type="button"
                             class="pos-action-tile pos-action-tile--primary"
                             @onclick="GoProduct">
@@ -116,7 +123,7 @@ else
                         <span class="pos-action-tile__label">@L["Catalog_Lookup_OpenProduct"]</span>
                     </button>
                 </div>
-            </Section>
+            </section>
         }
     </Page>
 </div>

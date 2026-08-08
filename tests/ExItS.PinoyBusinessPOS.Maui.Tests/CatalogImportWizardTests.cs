@@ -127,6 +127,9 @@ public sealed class CatalogImportWizardTests
     {
         var import = ReadCatalogPage("CatalogImport.razor");
 
+        Assert.DoesNotContain("PageHeader", import, StringComparison.Ordinal);
+        Assert.Contains("pos-catalog-import__header", import, StringComparison.Ordinal);
+        Assert.Contains("pos-catalog-import__title", import, StringComparison.Ordinal);
         Assert.Contains("_selectedTemplateId", import, StringComparison.Ordinal);
         Assert.Contains("pos-row--selected", import, StringComparison.Ordinal);
         Assert.Contains("pos-catalog-import__template", import, StringComparison.Ordinal);
@@ -136,6 +139,7 @@ public sealed class CatalogImportWizardTests
         Assert.Contains("pos-action-grid--two", import, StringComparison.Ordinal);
         Assert.Contains("IconGlyphs.Get(\"products\")", import, StringComparison.Ordinal);
         Assert.Contains("pos-catalog-import__steps", import, StringComparison.Ordinal);
+        Assert.Contains("pos-action-tile", import, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -143,11 +147,29 @@ public sealed class CatalogImportWizardTests
     {
         var job = ReadCatalogPage("CatalogImportJob.razor");
 
+        Assert.DoesNotContain("PageHeader", job, StringComparison.Ordinal);
+        Assert.Contains("pos-catalog-import-job__header", job, StringComparison.Ordinal);
+        Assert.Contains("pos-catalog-import-job__facts", job, StringComparison.Ordinal);
+        Assert.Contains("pos-action-tile", job, StringComparison.Ordinal);
         Assert.Contains("Catalog_Import_GoToProducts", job, StringComparison.Ordinal);
         Assert.Contains("Nav.NavigateTo(\"/catalog\")", job, StringComparison.Ordinal);
         Assert.Contains("IsSuccessTerminal", job, StringComparison.Ordinal);
         Assert.Contains("Task.Delay(1500", job, StringComparison.Ordinal);
         Assert.Contains("GoReview", job, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Import_review_page_uses_compact_header_and_action_tiles()
+    {
+        var review = ReadCatalogPage("CatalogImportReview.razor");
+
+        Assert.DoesNotContain("PageHeader", review, StringComparison.Ordinal);
+        Assert.Contains("pos-catalog-import-review__header", review, StringComparison.Ordinal);
+        Assert.Contains("pos-catalog-import-review__list", review, StringComparison.Ordinal);
+        Assert.Contains("pos-action-tile", review, StringComparison.Ordinal);
+        Assert.Contains("GoOpeningStock", review, StringComparison.Ordinal);
+        Assert.Contains("GoEdit", review, StringComparison.Ordinal);
+        Assert.Contains("GoProgress", review, StringComparison.Ordinal);
     }
 
     [Fact]

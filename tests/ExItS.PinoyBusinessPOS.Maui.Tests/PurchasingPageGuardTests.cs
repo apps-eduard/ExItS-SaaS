@@ -10,6 +10,10 @@ public sealed class PurchasingPageGuardTests
         var list = File.ReadAllText(Path.Combine(pages, "PurchasingList.razor"));
         Assert.Contains("@page \"/purchasing\"", list, StringComparison.Ordinal);
         Assert.Contains("IPosPurchaseOrderClient", list, StringComparison.Ordinal);
+        Assert.Contains("pos-purchasing__header", list, StringComparison.Ordinal);
+        Assert.Contains("pos-purchasing__row", list, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", list, StringComparison.Ordinal);
+        Assert.DoesNotContain("ResponsiveDataList", list, StringComparison.Ordinal);
 
         var create = File.ReadAllText(Path.Combine(pages, "PurchasingCreate.razor"));
         Assert.Contains("@page \"/purchasing/new\"", create, StringComparison.Ordinal);
@@ -27,6 +31,8 @@ public sealed class PurchasingPageGuardTests
         Assert.Contains("IconGlyphs.Get(\"plus\")", create, StringComparison.Ordinal);
         Assert.DoesNotContain("IconGlyphs.Get(\"back\")", create, StringComparison.Ordinal);
         Assert.Contains("pos-settings__panel", create, StringComparison.Ordinal);
+        Assert.Contains("pos-purchasing-create__header", create, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", create, StringComparison.Ordinal);
         Assert.DoesNotContain("<Actions>", create, StringComparison.Ordinal);
         Assert.Contains("Purchasing_UnitCostRequired", create, StringComparison.Ordinal);
         Assert.Contains("Required=\"true\"", create, StringComparison.Ordinal);
@@ -39,6 +45,9 @@ public sealed class PurchasingPageGuardTests
         Assert.Contains("<StoreHeaderBack Href=\"/purchasing\" />", detail, StringComparison.Ordinal);
         Assert.Contains("SubmitAsync", detail, StringComparison.Ordinal);
         Assert.Contains("CancelAsync", detail, StringComparison.Ordinal);
+        Assert.Contains("pos-purchasing-detail__header", detail, StringComparison.Ordinal);
+        Assert.Contains("pos-purchasing-detail__facts", detail, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", detail, StringComparison.Ordinal);
         Assert.DoesNotContain("Purchasing_BackToList", detail, StringComparison.Ordinal);
 
         var receive = File.ReadAllText(Path.Combine(pages, "PurchasingReceive.razor"));
@@ -48,6 +57,10 @@ public sealed class PurchasingPageGuardTests
         Assert.DoesNotContain(".AsTask()", receive, StringComparison.Ordinal);
         Assert.Contains("ReceivePurchaseOrderRequest", receive, StringComparison.Ordinal);
         Assert.Contains("OutstandingQty", receive, StringComparison.Ordinal);
+        Assert.Contains("pos-purchasing-receive__header", receive, StringComparison.Ordinal);
+        Assert.Contains("pos-purchasing-receive__list", receive, StringComparison.Ordinal);
+        Assert.Contains("FormActions", receive, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", receive, StringComparison.Ordinal);
         Assert.DoesNotContain("Purchasing_BackToDetail", receive, StringComparison.Ordinal);
     }
 

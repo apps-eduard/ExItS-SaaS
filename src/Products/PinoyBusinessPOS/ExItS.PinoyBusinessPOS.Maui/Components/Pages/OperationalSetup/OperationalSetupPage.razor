@@ -15,15 +15,22 @@ else
 {
     var canManage = Capabilities.IsAllowed(UtangCapability.ManageOperationalSetup);
     var readOnly = !canManage || _isOffline;
+<div class="pos-setup">
 <Page>
-    <PageHeader Title="@L["Setup_Title"]" Subtitle="@L["Setup_Subtitle"]">
-        <Actions>
-            @if (_setup?.IsCompleted == true)
-            {
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoHome">@L["Setup_BackToHome"]</Button>
-            }
-        </Actions>
-    </PageHeader>
+    <header class="pos-setup__header">
+        <div class="pos-setup__heading">
+            <h1 class="pos-setup__title">@L["Setup_Title"]</h1>
+            <p class="pos-setup__subtitle">@L["Setup_Subtitle"]</p>
+        </div>
+        @if (_setup?.IsCompleted == true)
+        {
+            <button type="button"
+                    class="pos-setup__home"
+                    @onclick="GoHome">
+                @L["Setup_BackToHome"]
+            </button>
+        }
+    </header>
 
     @if (_isOffline)
     {
@@ -69,6 +76,7 @@ else
         </FormActions>
     }
 </Page>
+</div>
 }
 
 @code {

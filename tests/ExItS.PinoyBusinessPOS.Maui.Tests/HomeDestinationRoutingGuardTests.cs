@@ -114,6 +114,8 @@ public sealed class HomeDestinationRoutingGuardTests
             MauiProject(), "Components", "Pages", "Dashboards", "CashierHome.razor"));
 
         Assert.Contains("pos-cashier", text, StringComparison.Ordinal);
+        Assert.Contains("pos-dash__header", text, StringComparison.Ordinal);
+        Assert.Contains("pos-dash__title", text, StringComparison.Ordinal);
         Assert.Contains("pos-action-grid--three", text, StringComparison.Ordinal);
         Assert.Contains("pos-action-tile--primary", text, StringComparison.Ordinal);
         Assert.Contains("IconGlyphs.Get(\"plus\")", text, StringComparison.Ordinal);
@@ -121,6 +123,7 @@ public sealed class HomeDestinationRoutingGuardTests
         Assert.Contains("IconGlyphs.Get(\"close\")", text, StringComparison.Ordinal);
         Assert.Contains("IconGlyphs.Get(\"sales\")", text, StringComparison.Ordinal);
         Assert.Contains("Cashier_ShiftIdLabel", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", text, StringComparison.Ordinal);
         Assert.DoesNotContain("Auth_Logout", text, StringComparison.Ordinal);
     }
 

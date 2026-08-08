@@ -7,9 +7,13 @@
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
+<div class="pos-personal-start-business">
 <StoreHeaderBack Href="/personal" />
 <Page>
-    <PageHeader Title="@L["StartBusiness_Title"]" Subtitle="@L["StartBusiness_Subtitle"]" />
+    <header class="pos-personal-start-business__header">
+        <h1 class="pos-personal-start-business__title">@L["StartBusiness_Title"]</h1>
+        <p class="pos-personal-start-business__subtitle">@L["StartBusiness_Subtitle"]</p>
+    </header>
 
     @if (!_ready)
     {
@@ -50,6 +54,7 @@
         </FormActions>
     }
 </Page>
+</div>
 
 @code {
     private bool _ready;

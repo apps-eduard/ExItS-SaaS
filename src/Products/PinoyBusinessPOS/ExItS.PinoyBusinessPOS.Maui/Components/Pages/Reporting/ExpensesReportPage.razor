@@ -19,7 +19,10 @@ else
 <div class="pos-report">
 <StoreHeaderBack Href="/reports" />
 <Page>
-    <PageHeader Title="@L["Reports_Expenses"]" Subtitle="@L["Reports_ExpensesSubtitle"]" />
+    <header class="pos-report__header">
+        <h1 class="pos-report__title">@L["Reports_Expenses"]</h1>
+        <p class="pos-report__subtitle">@L["Reports_ExpensesSubtitle"]</p>
+    </header>
 
     <div class="pos-action-grid pos-action-grid--single pos-report__actions" role="group">
         <button type="button" class="pos-action-tile" disabled="@_loading" @onclick="ReloadAsync">
@@ -38,18 +41,18 @@ else
         <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Dashboard_ErrorTitle"])" Message="@_errorMessage" />
     }
 
-    <Section Title="@L["Dashboard_FiltersTitle"]">
-        <div class="pos-settings__panel">
-            <Stack Gap="2">
-                <DateInput Label="@L["Dashboard_FromDate"]" Value="@_fromDate" ValueChanged="OnFromDateChanged" Disabled="@_loading" />
-                <DateInput Label="@L["Dashboard_ToDate"]" Value="@_toDate" ValueChanged="OnToDateChanged" Disabled="@_loading" />
-            </Stack>
+    <section class="pos-report__panel" aria-labelledby="expenses-report-filters-heading">
+        <h2 id="expenses-report-filters-heading" class="pos-report__section-title">@L["Dashboard_FiltersTitle"]</h2>
+        <div class="pos-report__form">
+            <DateInput Label="@L["Dashboard_FromDate"]" Value="@_fromDate" ValueChanged="OnFromDateChanged" Disabled="@_loading" />
+            <DateInput Label="@L["Dashboard_ToDate"]" Value="@_toDate" ValueChanged="OnToDateChanged" Disabled="@_loading" />
         </div>
-    </Section>
+    </section>
 
     @if (_report is not null)
     {
-        <Section Title="@L["Reports_SummaryTitle"]">
+        <section class="pos-report__panel" aria-labelledby="expenses-report-summary-heading">
+            <h2 id="expenses-report-summary-heading" class="pos-report__section-title">@L["Reports_SummaryTitle"]</h2>
             <div class="pos-dashboard__stats" role="list">
                 <div class="pos-dashboard__stat" role="listitem">
                     <span class="pos-dashboard__stat-label">@L["Reports_ActiveExpenses"]</span>
@@ -62,9 +65,10 @@ else
                     <span class="pos-dashboard__stat-meta">@_report.VoidedExpenseCount</span>
                 </div>
             </div>
-        </Section>
+        </section>
 
-        <Section Title="@L["Reports_ByCategory"]">
+        <section class="pos-report__panel" aria-labelledby="expenses-report-category-heading">
+            <h2 id="expenses-report-category-heading" class="pos-report__section-title">@L["Reports_ByCategory"]</h2>
             <div class="pos-dashboard__list" role="list">
                 @foreach (var row in _report.ByCategory)
                 {
@@ -75,9 +79,10 @@ else
                     </div>
                 }
             </div>
-        </Section>
+        </section>
 
-        <Section Title="@L["Reports_ExpenseDetails"]">
+        <section class="pos-report__panel" aria-labelledby="expenses-report-details-heading">
+            <h2 id="expenses-report-details-heading" class="pos-report__section-title">@L["Reports_ExpenseDetails"]</h2>
             <div class="pos-dashboard__list" role="list">
                 @foreach (var row in _report.Details.Take(50))
                 {
@@ -88,7 +93,7 @@ else
                     </button>
                 }
             </div>
-        </Section>
+        </section>
     }
     else if (_loading)
     {

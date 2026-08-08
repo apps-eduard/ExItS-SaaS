@@ -122,11 +122,14 @@ public sealed class ShellContextIdentityGuardTests
         Assert.Contains("FriendlyMembershipRole", orgSelect, StringComparison.Ordinal);
         Assert.Contains("OrgSelect_EnterOwner", orgSelect, StringComparison.Ordinal);
         Assert.Contains("SelectOrganizationAsync", orgSelect, StringComparison.Ordinal);
+        Assert.Contains("Org_StaffUnknownName", orgSelect, StringComparison.Ordinal);
+        Assert.DoesNotContain("pos-org-role__row--personal", orgSelect, StringComparison.Ordinal);
         Assert.DoesNotContain("Auth_Logout", orgSelect, StringComparison.Ordinal);
         Assert.Contains("pos-org-select-empty", orgSelect, StringComparison.Ordinal);
 
-        // Accepted org-select polish keeps section headers for owner role bind and staff list.
-        Assert.Contains("PageHeader", orgSelect, StringComparison.Ordinal);
+        // Accepted org-select polish keeps densified section headers for owner role bind and staff list.
+        Assert.DoesNotContain("PageHeader", orgSelect, StringComparison.Ordinal);
+        Assert.Contains("pos-org-role__header", orgSelect, StringComparison.Ordinal);
         Assert.Contains("OrgSelect_RoleTitle", orgSelect, StringComparison.Ordinal);
         Assert.Contains("OrgSelect_Title", orgSelect, StringComparison.Ordinal);
         Assert.Contains("OrgSelect_SubtitleStaff", orgSelect, StringComparison.Ordinal);

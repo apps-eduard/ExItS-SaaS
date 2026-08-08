@@ -30,12 +30,12 @@ else if (_product is null)
 else
 {
     var canManage = Capabilities.IsAllowed(UtangCapability.ManageCatalog);
+<div class="pos-catalog-product-edit">
 <Page>
-    <PageHeader Title="@L["Catalog_Product_EditTitle"]" Subtitle="@_product.Name">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoDetail">@L["Catalog_Cancel"]</Button>
-        </Actions>
-    </PageHeader>
+    <header class="pos-catalog-product-edit__header">
+        <h1 class="pos-catalog-product-edit__title">@L["Catalog_Product_EditTitle"]</h1>
+        <p class="pos-catalog-product-edit__subtitle">@_product.Name</p>
+    </header>
 
     @if (_isOffline)
     {
@@ -51,31 +51,36 @@ else
         <Alert Tone="AlertTone.Danger" Title="@L["Catalog_ErrorTitle"]" Message="@_formError" />
     }
 
-    <CatalogProductForm Name="@_name"
-                        NameChanged="v => _name = v"
-                        Description="@_description"
-                        DescriptionChanged="v => _description = v"
-                        Sku="@_sku"
-                        SkuChanged="v => _sku = v"
-                        Barcode="@_barcode"
-                        BarcodeChanged="v => _barcode = v"
-                        CategoryId="@_categoryId"
-                        CategoryIdChanged="v => _categoryId = v"
-                        UnitOfMeasure="@_unitOfMeasure"
-                        UnitOfMeasureChanged="v => _unitOfMeasure = v"
-                        SellingPrice="@_sellingPrice"
-                        SellingPriceChanged="v => _sellingPrice = v"
-                        Categories="@_categories"
-                        NameError="@_nameError"
-                        SkuError="@_skuError"
-                        BarcodeError="@_barcodeError"
-                        SellingPriceError="@_priceError"
-                        IsSaving="@_saving"
-                        Disabled="@(!canManage || _isOffline)"
-                        SaveLabel="@L["Catalog_Save"]"
-                        OnSave="SaveAsync"
-                        OnCancel="GoDetail" />
+    <section class="pos-catalog-product-edit__panel" aria-label="@L["Catalog_Product_EditTitle"]">
+        <div class="pos-catalog-product-edit__form">
+            <CatalogProductForm Name="@_name"
+                                NameChanged="v => _name = v"
+                                Description="@_description"
+                                DescriptionChanged="v => _description = v"
+                                Sku="@_sku"
+                                SkuChanged="v => _sku = v"
+                                Barcode="@_barcode"
+                                BarcodeChanged="v => _barcode = v"
+                                CategoryId="@_categoryId"
+                                CategoryIdChanged="v => _categoryId = v"
+                                UnitOfMeasure="@_unitOfMeasure"
+                                UnitOfMeasureChanged="v => _unitOfMeasure = v"
+                                SellingPrice="@_sellingPrice"
+                                SellingPriceChanged="v => _sellingPrice = v"
+                                Categories="@_categories"
+                                NameError="@_nameError"
+                                SkuError="@_skuError"
+                                BarcodeError="@_barcodeError"
+                                SellingPriceError="@_priceError"
+                                IsSaving="@_saving"
+                                Disabled="@(!canManage || _isOffline)"
+                                SaveLabel="@L["Catalog_Save"]"
+                                OnSave="SaveAsync"
+                                OnCancel="GoDetail" />
+        </div>
+    </section>
 </Page>
+</div>
 }
 
 @code {

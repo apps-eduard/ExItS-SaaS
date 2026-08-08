@@ -1,4 +1,5 @@
 @page "/registers/{RegisterId:guid}"
+@using ExItS.DesignSystem.Components.Internal
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IPosRegisterClient Registers
@@ -16,7 +17,9 @@
 else if (_register is null)
 {
     <Page>
-        <PageHeader Title="@L["Registers_Title"]" />
+        <header class="pos-register-detail__header">
+            <h1 class="pos-register-detail__title">@L["Registers_Title"]</h1>
+        </header>
         <Alert Tone="AlertTone.Danger" Title="@L["Registers_ErrorTitle"]" Message="@(_errorMessage ?? L["Registers_NotFound"])" />
     </Page>
 }
@@ -24,15 +27,20 @@ else
 {
     var canManage = Capabilities.IsAllowed(UtangCapability.ManageRegisters);
     var blocked = !canManage || _isOffline;
+    var isActive = string.Equals(_register.Status, "Active", StringComparison.OrdinalIgnoreCase);
+<div class="pos-register-detail">
 <Page>
-    <PageHeader Title="@_register.Name" Subtitle="@_register.RegisterCode">
-        <Actions>
-            @if (canManage)
+    <header class="pos-register-detail__header">
+        <h1 class="pos-register-detail__title">@_register.Name</h1>
+        <p class="pos-register-detail__subtitle">@_register.RegisterCode</p>
+        <div class="pos-register-detail__status-row">
+            <Badge Tone="@(isActive ? BadgeTone.Success : BadgeTone.Neutral)">@_register.Status</Badge>
+            @if (IsMainRegister(_register))
             {
-                <Button Variant="ButtonVariant.Secondary" Disabled="@blocked" OnClick="GoEdit">@L["Registers_Edit"]</Button>
+                <Badge Tone="BadgeTone.Success">@L["Registers_MainBadge"]</Badge>
             }
-        </Actions>
-    </PageHeader>
+        </div>
+    </header>
 
     @if (_isOffline)
     {
@@ -44,50 +52,77 @@ else
         <Alert Tone="AlertTone.Danger" Title="@L["Registers_ErrorTitle"]" Message="@_actionError" />
     }
 
-    <Section Title="@L["Registers_DetailSection"]">
-        <Stack Gap="3">
-            @if (IsMainRegister(_register))
-            {
-                <div>
-                    <Badge Tone="BadgeTone.Success">@L["Registers_MainBadge"]</Badge>
-                </div>
-            }
-            <div>
-                <span class="pos-muted">@L["Registers_Col_Code"]</span>
-                <div class="pos-value-md">@_register.RegisterCode</div>
+    <section class="pos-register-detail__panel" aria-labelledby="register-detail-heading">
+        <h2 id="register-detail-heading" class="pos-register-detail__section-title">@L["Registers_DetailSection"]</h2>
+        <dl class="pos-register-detail__facts">
+            <div class="pos-register-detail__fact">
+                <dt>@L["Registers_Col_Code"]</dt>
+                <dd>@_register.RegisterCode</dd>
             </div>
-            <div>
-                <span class="pos-muted">@L["Registers_Col_Status"]</span>
-                <div class="pos-value-md">@_register.Status</div>
+            <div class="pos-register-detail__fact">
+                <dt>@L["Registers_Col_Status"]</dt>
+                <dd>@_register.Status</dd>
             </div>
-            <div>
-                <span class="pos-muted">@L["Registers_Col_OpenShift"]</span>
-                <div class="pos-value-md">@(_register.HasOpenShift ? L["Registers_Yes"] : L["Registers_No"])</div>
+            <div class="pos-register-detail__fact">
+                <dt>@L["Registers_Col_OpenShift"]</dt>
+                <dd>@(_register.HasOpenShift ? L["Registers_Yes"] : L["Registers_No"])</dd>
             </div>
-            <div>
-                <span class="pos-muted">@L["Registers_Description"]</span>
-                <div class="pos-value-md">@(string.IsNullOrWhiteSpace(_register.Description) ? "—" : _register.Description)</div>
+            <div class="pos-register-detail__fact">
+                <dt>@L["Registers_Description"]</dt>
+                <dd class="pos-wrap">@(string.IsNullOrWhiteSpace(_register.Description) ? "—" : _register.Description)</dd>
             </div>
-        </Stack>
-    </Section>
+        </dl>
+    </section>
 
     @if (canManage)
     {
-        <Section Title="@L["Registers_LifecycleSection"]">
-            <FormActions>
-                @if (_register.Status == "Active")
-                {
-                    <Button Variant="ButtonVariant.Danger" IsLoading="@_acting" Disabled="@blocked" OnClick="DeactivateAsync">@L["Registers_Deactivate"]</Button>
-                }
-                else
-                {
-                    <Button Variant="ButtonVariant.Primary" IsLoading="@_acting" Disabled="@blocked" OnClick="ActivateAsync">@L["Registers_Activate"]</Button>
-                }
-            </FormActions>
-        </Section>
+        <div class="pos-action-grid pos-action-grid--two pos-register-detail__actions" role="group">
+            <button type="button"
+                    class="pos-action-tile pos-action-tile--primary"
+                    disabled="@blocked"
+                    @onclick="GoEdit">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("edit")</span>
+                <span class="pos-action-tile__label">@L["Registers_Edit"]</span>
+            </button>
+            @if (isActive)
+            {
+                <button type="button"
+                        class="pos-action-tile"
+                        disabled="@(blocked || _acting)"
+                        @onclick="DeactivateAsync">
+                    @if (_acting)
+                    {
+                        <Spinner Size="SpinnerSize.Sm" />
+                    }
+                    else
+                    {
+                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("warning")</span>
+                    }
+                    <span class="pos-action-tile__label">@L["Registers_Deactivate"]</span>
+                </button>
+            }
+            else
+            {
+                <button type="button"
+                        class="pos-action-tile pos-action-tile--primary"
+                        disabled="@(blocked || _acting)"
+                        @onclick="ActivateAsync">
+                    @if (_acting)
+                    {
+                        <Spinner Size="SpinnerSize.Sm" />
+                    }
+                    else
+                    {
+                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("check")</span>
+                    }
+                    <span class="pos-action-tile__label">@L["Registers_Activate"]</span>
+                </button>
+            }
+        </div>
     }
 
-    <Section Title="@L["Registers_ActivitySection"]">
+    <section class="pos-register-detail__panel" aria-labelledby="register-activity-heading">
+        <h2 id="register-activity-heading" class="pos-register-detail__section-title">@L["Registers_ActivitySection"]</h2>
         @if (_activityLoading)
         {
             <Spinner />
@@ -102,15 +137,28 @@ else
         }
         else
         {
-            <Stack Gap="2">
-                <div>@L["Registers_Col_OpenShift"]: <strong>@_activity.OpenShiftCount</strong></div>
-                <div>@L["Shifts_Title"]: <strong>@_activity.ClosedShiftCount</strong></div>
-                <div>@L["Nav_Sales"]: <strong>@_activity.CompletedSaleCount</strong></div>
-                <div>@L["Reports_Title"]: <strong>@_activity.GrossSalesTotal.ToString("N2")</strong></div>
-            </Stack>
+            <dl class="pos-register-detail__facts">
+                <div class="pos-register-detail__fact">
+                    <dt>@L["Registers_Col_OpenShift"]</dt>
+                    <dd>@_activity.OpenShiftCount</dd>
+                </div>
+                <div class="pos-register-detail__fact">
+                    <dt>@L["Shifts_Title"]</dt>
+                    <dd>@_activity.ClosedShiftCount</dd>
+                </div>
+                <div class="pos-register-detail__fact">
+                    <dt>@L["Nav_Sales"]</dt>
+                    <dd>@_activity.CompletedSaleCount</dd>
+                </div>
+                <div class="pos-register-detail__fact">
+                    <dt>@L["Reports_Title"]</dt>
+                    <dd>@_activity.GrossSalesTotal.ToString("N2")</dd>
+                </div>
+            </dl>
         }
-    </Section>
+    </section>
 </Page>
+</div>
 }
 
 @code {

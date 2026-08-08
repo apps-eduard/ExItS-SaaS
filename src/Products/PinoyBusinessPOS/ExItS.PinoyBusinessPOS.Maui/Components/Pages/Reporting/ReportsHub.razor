@@ -8,7 +8,10 @@
 
 <div class="pos-reports">
     <Page>
-        <PageHeader Title="@L["Reports_Title"]" Subtitle="@L["Reports_Subtitle"]" />
+        <header class="pos-reports__header">
+            <h1 class="pos-reports__title">@L["Reports_Title"]</h1>
+            <p class="pos-reports__subtitle">@L["Reports_Subtitle"]</p>
+        </header>
 
         @if (_canViewDashboard)
         {

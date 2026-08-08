@@ -8,7 +8,10 @@
 <div class="pos-org-profile">
     <StoreHeaderBack Href="/org" />
     <Page>
-        <PageHeader Title="@L["Org_ProfileTitle"]" Subtitle="@L["Org_ProfileSubtitle"]" />
+        <header class="pos-org-profile__header">
+            <h1 class="pos-org-profile__title">@L["Org_ProfileTitle"]</h1>
+            <p class="pos-org-profile__subtitle">@L["Org_ProfileSubtitle"]</p>
+        </header>
 
         @if (_loading)
         {

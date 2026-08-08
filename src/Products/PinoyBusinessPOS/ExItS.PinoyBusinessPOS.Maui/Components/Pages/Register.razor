@@ -4,8 +4,12 @@
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
+<div class="pos-register">
 <Page>
-    <PageHeader Title="@L["Register_Title"]" Subtitle="@L["Register_Subtitle"]" />
+    <header class="pos-register__header">
+        <h1 class="pos-register__title">@L["Register_Title"]</h1>
+        <p class="pos-register__subtitle">@L["Register_Subtitle"]</p>
+    </header>
 
     <FormValidationSummary Messages="_errors" />
     <FormGroup Title="@L["Register_FormTitle"]">
@@ -26,6 +30,7 @@
         </FormActions>
     }
 </Page>
+</div>
 
 @code {
     private string? _displayName;

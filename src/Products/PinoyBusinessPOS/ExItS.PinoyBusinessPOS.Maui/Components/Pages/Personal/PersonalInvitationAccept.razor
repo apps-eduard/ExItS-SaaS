@@ -6,12 +6,13 @@
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
+<div class="pos-personal-invitation-accept">
+<StoreHeaderBack Href="/personal" />
 <Page>
-    <PageHeader Title="@L["Personal_AcceptInvitationTitle"]" Subtitle="@L["Personal_AcceptInvitationSubtitle"]">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoHome">@L["Personal_BackHome"]</Button>
-        </Actions>
-    </PageHeader>
+    <header class="pos-personal-invitation-accept__header">
+        <h1 class="pos-personal-invitation-accept__title">@L["Personal_AcceptInvitationTitle"]</h1>
+        <p class="pos-personal-invitation-accept__subtitle">@L["Personal_AcceptInvitationSubtitle"]</p>
+    </header>
 
     @if (!_ready)
     {
@@ -40,6 +41,7 @@
         </FormActions>
     }
 </Page>
+</div>
 
 @code {
     private bool _ready;

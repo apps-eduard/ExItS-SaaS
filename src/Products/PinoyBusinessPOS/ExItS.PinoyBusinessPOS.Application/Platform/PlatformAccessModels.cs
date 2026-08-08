@@ -41,7 +41,10 @@ public sealed record PlatformMembershipDto(
     DateTimeOffset? SuspendedAtUtc,
     DateTimeOffset? RemovedAtUtc,
     string? Reason,
-    string? ActorReference);
+    string? ActorReference,
+    string? Username = null,
+    string? DisplayName = null,
+    string? Email = null);
 
 public sealed record PlatformMembershipLifecycleRequest(string? Reason = null, string? ActorReference = null);
 

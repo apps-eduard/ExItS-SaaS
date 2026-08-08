@@ -7,8 +7,12 @@
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
+<div class="pos-onboarding">
 <Page>
-    <PageHeader Title="@L["AccessConfirm_Title"]" Subtitle="@L["AccessConfirm_Subtitle"]" />
+    <header class="pos-onboarding__header">
+        <h1 class="pos-onboarding__title">@L["AccessConfirm_Title"]</h1>
+        <p class="pos-onboarding__subtitle">@L["AccessConfirm_Subtitle"]</p>
+    </header>
 
     @if (CurrentUser.Session is null || !CurrentUser.HasPosAccess)
     {
@@ -31,6 +35,7 @@
         </FormActions>
     }
 </Page>
+</div>
 
 @code {
     private void GoOrgSelect() => Nav.NavigateTo("/organization-select");

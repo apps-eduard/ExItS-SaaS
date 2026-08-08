@@ -1,4 +1,5 @@
 @page "/inventory/counts/{StockCountId:guid}"
+@using ExItS.DesignSystem.Components.Internal
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IPosInventoryClient Inventory
@@ -24,26 +25,16 @@ else
     var canManage = Capabilities.IsAllowed(UtangCapability.ManageInventory);
     var inProgress = string.Equals(_count.Status, "InProgress", StringComparison.OrdinalIgnoreCase);
     var draft = string.Equals(_count.Status, "Draft", StringComparison.OrdinalIgnoreCase);
+    var manageOnline = canManage && !_isOffline;
+<div class="pos-stock-count-detail">
 <Page>
-    <PageHeader Title="@(_count.CountNumber ?? L["Inventory_CountsDraft"])" Subtitle="@_count.Status">
-        <Actions>
-            @if (canManage && !_isOffline)
-            {
-                @if (draft)
-                {
-                    <Button Variant="ButtonVariant.Primary" IsLoading="@_busy" OnClick="StartAsync">@L["Inventory_CountsStart"]</Button>
-                }
-                @if (inProgress)
-                {
-                    <Button Variant="ButtonVariant.Primary" IsLoading="@_busy" OnClick="CompleteAsync">@L["Inventory_CountsComplete"]</Button>
-                }
-                @if (draft || inProgress)
-                {
-                    <Button Variant="ButtonVariant.Secondary" IsLoading="@_busy" OnClick="CancelAsync">@L["Inventory_CountsCancel"]</Button>
-                }
-            }
-        </Actions>
-    </PageHeader>
+    <header class="pos-stock-count-detail__header">
+        <h1 class="pos-stock-count-detail__title">@(_count.CountNumber ?? L["Inventory_CountsDraft"])</h1>
+        <p class="pos-stock-count-detail__subtitle">@L["Inventory_CountsTitle"]</p>
+        <div class="pos-stock-count-detail__status-row">
+            <Badge Tone="@StatusTone(_count.Status)">@_count.Status</Badge>
+        </div>
+    </header>
 
     @if (_isOffline)
     {
@@ -55,31 +46,91 @@ else
         <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Inventory_CountsTitle"])" Message="@_errorMessage" />
     }
 
-    <Section Title="@L["Inventory_CountsLines"]">
-        <Stack Gap="2">
-            @foreach (var line in _count.Lines)
+    @if (manageOnline && (draft || inProgress))
+    {
+        <div class="pos-action-grid pos-action-grid--two pos-stock-count-detail__actions"
+             role="group">
+            @if (draft)
             {
-                <div>
-                    @line.ProductName · @L["Inventory_OnHand"]: @(line.SystemOnHandSnapshot?.ToString("0.###") ?? "—")
-                    @if (inProgress && canManage)
-                    {
-                        <TextInput Label="@L["Inventory_CountsCounted"]"
-                                   Value="@GetCountedText(line.LineId)"
-                                   ValueChanged="v => SetCountedText(line.LineId, v)" />
-                    }
-                    else if (line.CountedQuantity is not null)
-                    {
-                        <span> · @L["Inventory_CountsCounted"]: @line.CountedQuantity.Value.ToString("0.###") · @L["Inventory_CountsVariance"]: @(line.Variance?.ToString("+0.###;-0.###") ?? "—")</span>
-                    }
-                </div>
+                <button type="button"
+                        class="pos-action-tile pos-action-tile--primary"
+                        disabled="@_busy"
+                        @onclick="StartAsync">
+                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("check")</span>
+                    <span class="pos-action-tile__label">@L["Inventory_CountsStart"]</span>
+                </button>
             }
-        </Stack>
+            @if (inProgress)
+            {
+                <button type="button"
+                        class="pos-action-tile pos-action-tile--primary"
+                        disabled="@_busy"
+                        @onclick="CompleteAsync">
+                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("check")</span>
+                    <span class="pos-action-tile__label">@L["Inventory_CountsComplete"]</span>
+                </button>
+            }
+            <button type="button"
+                    class="pos-action-tile"
+                    disabled="@_busy"
+                    @onclick="CancelAsync">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("close")</span>
+                <span class="pos-action-tile__label">@L["Inventory_CountsCancel"]</span>
+            </button>
+        </div>
+    }
+
+    <section class="pos-stock-count-detail__panel" aria-labelledby="stock-count-lines-heading">
+        <h2 id="stock-count-lines-heading" class="pos-stock-count-detail__section-title">@L["Inventory_CountsLines"]</h2>
+        @if (_count.Lines.Count == 0)
+        {
+            <p class="pos-stock-count-detail__empty">—</p>
+        }
+        else
+        {
+            <div class="pos-stock-count-detail__list" role="list">
+                @foreach (var line in _count.Lines)
+                {
+                    <div class="pos-stock-count-detail__entry" role="listitem">
+                        <div class="pos-stock-count-detail__entry-top">
+                            <span class="pos-stock-count-detail__entry-name">@line.ProductName</span>
+                        </div>
+                        <p class="pos-stock-count-detail__entry-meta">
+                            @L["Inventory_OnHand"]: @(line.SystemOnHandSnapshot?.ToString("0.###") ?? "—")
+                            @if (!inProgress && line.CountedQuantity is not null)
+                            {
+                                <text>
+                                    · @L["Inventory_CountsCounted"]: @line.CountedQuantity.Value.ToString("0.###")
+                                    · @L["Inventory_CountsVariance"]: @(line.Variance?.ToString("+0.###;-0.###") ?? "—")
+                                </text>
+                            }
+                        </p>
+                        @if (inProgress && canManage)
+                        {
+                            <div class="pos-stock-count-detail__line-form">
+                                <TextInput Label="@L["Inventory_CountsCounted"]"
+                                           Value="@GetCountedText(line.LineId)"
+                                           ValueChanged="v => SetCountedText(line.LineId, v)"
+                                           Disabled="@(_isOffline || _busy)" />
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+
         @if (inProgress && canManage)
         {
-            <Button Variant="ButtonVariant.Secondary" IsLoading="@_busy" OnClick="SaveLinesAsync">@L["Inventory_CountsSaveLines"]</Button>
+            <div class="pos-stock-count-detail__save">
+                <Button Variant="ButtonVariant.Secondary"
+                        Disabled="@(_isOffline || _busy)"
+                        IsLoading="@_busy"
+                        OnClick="SaveLinesAsync">@L["Inventory_CountsSaveLines"]</Button>
+            </div>
         }
-    </Section>
+    </section>
 </Page>
+</div>
 }
 
 @code {
@@ -104,6 +155,15 @@ else
         _ready = true;
         await ReloadAsync();
     }
+
+    private static BadgeTone StatusTone(string status) =>
+        status switch
+        {
+            "Completed" => BadgeTone.Success,
+            "Cancelled" => BadgeTone.Neutral,
+            "InProgress" => BadgeTone.Warning,
+            _ => BadgeTone.Neutral
+        };
 
     private async Task ReloadAsync()
     {

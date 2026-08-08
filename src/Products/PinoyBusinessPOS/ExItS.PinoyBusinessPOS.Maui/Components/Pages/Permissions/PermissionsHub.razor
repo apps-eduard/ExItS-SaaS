@@ -25,7 +25,12 @@ else
     var actionGridClass = canManage ? "pos-action-grid--three" : "pos-action-grid--two";
 <div class="pos-permissions">
     <Page>
-        <PageHeader Title="@L["Permissions_Title"]" Subtitle="@L["Permissions_Subtitle"]" />
+        <header class="pos-permissions__header">
+            <div class="pos-permissions__heading">
+                <h1 class="pos-permissions__title">@L["Permissions_Title"]</h1>
+                <p class="pos-permissions__subtitle">@L["Permissions_Subtitle"]</p>
+            </div>
+        </header>
 
         <div class="pos-action-grid @actionGridClass pos-permissions__actions" role="group" aria-label="@L["Permissions_Title"]">
             @if (canManage)

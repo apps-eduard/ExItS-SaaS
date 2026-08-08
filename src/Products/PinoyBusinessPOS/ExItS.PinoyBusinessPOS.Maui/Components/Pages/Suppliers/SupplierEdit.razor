@@ -30,12 +30,12 @@ else if (_supplier is null)
 else
 {
     var canManage = Capabilities.IsAllowed(UtangCapability.ManageSuppliers);
+<div class="pos-supplier-edit">
 <Page>
-    <PageHeader Title="@L["Suppliers_EditTitle"]" Subtitle="@_supplier.Name">
-        <Actions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoDetail">@L["Suppliers_Cancel"]</Button>
-        </Actions>
-    </PageHeader>
+    <header class="pos-supplier-edit__header">
+        <h1 class="pos-supplier-edit__title">@L["Suppliers_EditTitle"]</h1>
+        <p class="pos-supplier-edit__subtitle">@_supplier.Name</p>
+    </header>
 
     @if (_isOffline)
     {
@@ -51,40 +51,45 @@ else
         <Alert Tone="AlertTone.Danger" Title="@L["Suppliers_ErrorTitle"]" Message="@_formError" />
     }
 
-    <SupplierForm Name="@_name"
-                  NameChanged="v => _name = v"
-                  ContactPerson="@_contactPerson"
-                  ContactPersonChanged="v => _contactPerson = v"
-                  MobileNumber="@_mobileNumber"
-                  MobileNumberChanged="v => _mobileNumber = v"
-                  TelephoneNumber="@_telephoneNumber"
-                  TelephoneNumberChanged="v => _telephoneNumber = v"
-                  Email="@_email"
-                  EmailChanged="v => _email = v"
-                  AddressLine1="@_addressLine1"
-                  AddressLine1Changed="v => _addressLine1 = v"
-                  AddressLine2="@_addressLine2"
-                  AddressLine2Changed="v => _addressLine2 = v"
-                  CityMunicipality="@_cityMunicipality"
-                  CityMunicipalityChanged="v => _cityMunicipality = v"
-                  Province="@_province"
-                  ProvinceChanged="v => _province = v"
-                  PostalCode="@_postalCode"
-                  PostalCodeChanged="v => _postalCode = v"
-                  TaxOrRegistrationNumber="@_taxOrRegistrationNumber"
-                  TaxOrRegistrationNumberChanged="v => _taxOrRegistrationNumber = v"
-                  Notes="@_notes"
-                  NotesChanged="v => _notes = v"
-                  NameError="@_nameError"
-                  EmailError="@_emailError"
-                  MobileError="@_mobileError"
-                  TaxNumberError="@_taxNumberError"
-                  IsSaving="@_saving"
-                  Disabled="@(!canManage || _isOffline)"
-                  SaveLabel="@L["Suppliers_Save"]"
-                  OnSave="SaveAsync"
-                  OnCancel="GoDetail" />
+    <section class="pos-supplier-edit__panel" aria-labelledby="supplier-edit-heading">
+        <h2 id="supplier-edit-heading" class="pos-supplier-edit__section-title">@L["Suppliers_DetailsSection"]</h2>
+        <SupplierForm Name="@_name"
+                      NameChanged="v => _name = v"
+                      ContactPerson="@_contactPerson"
+                      ContactPersonChanged="v => _contactPerson = v"
+                      MobileNumber="@_mobileNumber"
+                      MobileNumberChanged="v => _mobileNumber = v"
+                      TelephoneNumber="@_telephoneNumber"
+                      TelephoneNumberChanged="v => _telephoneNumber = v"
+                      Email="@_email"
+                      EmailChanged="v => _email = v"
+                      AddressLine1="@_addressLine1"
+                      AddressLine1Changed="v => _addressLine1 = v"
+                      AddressLine2="@_addressLine2"
+                      AddressLine2Changed="v => _addressLine2 = v"
+                      CityMunicipality="@_cityMunicipality"
+                      CityMunicipalityChanged="v => _cityMunicipality = v"
+                      Province="@_province"
+                      ProvinceChanged="v => _province = v"
+                      PostalCode="@_postalCode"
+                      PostalCodeChanged="v => _postalCode = v"
+                      TaxOrRegistrationNumber="@_taxOrRegistrationNumber"
+                      TaxOrRegistrationNumberChanged="v => _taxOrRegistrationNumber = v"
+                      Notes="@_notes"
+                      NotesChanged="v => _notes = v"
+                      NameError="@_nameError"
+                      EmailError="@_emailError"
+                      MobileError="@_mobileError"
+                      TaxNumberError="@_taxNumberError"
+                      IsSaving="@_saving"
+                      Disabled="@(!canManage || _isOffline)"
+                      FormClass="pos-supplier-edit__form"
+                      SaveLabel="@L["Suppliers_Save"]"
+                      OnSave="SaveAsync"
+                      OnCancel="GoDetail" />
+    </section>
 </Page>
+</div>
 }
 
 @code {

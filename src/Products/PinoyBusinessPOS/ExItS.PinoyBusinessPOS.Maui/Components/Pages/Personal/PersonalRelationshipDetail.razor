@@ -6,9 +6,13 @@
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
+<div class="pos-personal-relationship">
 <StoreHeaderBack Handler="GoBackListAsync" />
 <Page>
-    <PageHeader Title="@L["Personal_RelationshipTitle"]" Subtitle="@L["Personal_RelationshipSubtitle"]" />
+    <header class="pos-personal-relationship__header">
+        <h1 class="pos-personal-relationship__title">@L["Personal_RelationshipTitle"]</h1>
+        <p class="pos-personal-relationship__subtitle">@L["Personal_RelationshipSubtitle"]</p>
+    </header>
 
     @if (_loading)
     {
@@ -69,6 +73,7 @@
         </Section>
     }
 </Page>
+</div>
 
 @code {
     [Parameter] public Guid RelationshipId { get; set; }

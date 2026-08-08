@@ -51,7 +51,7 @@ internal static class ExpensesUiOptions
 
     public static IReadOnlyList<SelectOption> CategoryStatusFilters(IStringLocalizer<PosResources> localizer) =>
     [
-        new(string.Empty, localizer["Expenses_Filter_AllStatuses"].Value),
+        new(string.Empty, localizer["Expenses_Category_Filter_All"].Value),
         new(ActiveCategoryStatus, localizer["Expenses_CategoryStatus_Active"].Value),
         new(InactiveCategoryStatus, localizer["Expenses_CategoryStatus_Inactive"].Value)
     ];

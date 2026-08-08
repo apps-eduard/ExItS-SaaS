@@ -19,6 +19,12 @@ public sealed class RegistersPageGuardTests
         Assert.Contains("GetActivityAsync", detail, StringComparison.Ordinal);
         Assert.Contains("ActivateAsync", detail, StringComparison.Ordinal);
         Assert.Contains("DeactivateAsync", detail, StringComparison.Ordinal);
+        Assert.Contains("pos-register-detail__header", detail, StringComparison.Ordinal);
+        Assert.Contains("pos-register-detail__facts", detail, StringComparison.Ordinal);
+        Assert.Contains("pos-action-grid--two", detail, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"edit\")", detail, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", detail, StringComparison.Ordinal);
+        Assert.DoesNotContain("<Actions>", detail, StringComparison.Ordinal);
         Assert.DoesNotContain("Registers_BackToList", detail, StringComparison.Ordinal);
 
         var create = File.ReadAllText(Path.Combine(pages, "RegisterCreate.razor"));
@@ -26,13 +32,23 @@ public sealed class RegistersPageGuardTests
         Assert.Contains("StoreHeaderBack Href=\"/registers\"", create, StringComparison.Ordinal);
         Assert.Contains("UtangCapability.ManageRegisters", create, StringComparison.Ordinal);
         Assert.Contains("Registers_Cancel", create, StringComparison.Ordinal);
+        Assert.Contains("pos-register-create__header", create, StringComparison.Ordinal);
+        Assert.Contains("pos-register-create__form", create, StringComparison.Ordinal);
+        Assert.Contains("pos-action-tile--primary", create, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", create, StringComparison.Ordinal);
+        Assert.DoesNotContain("<Section", create, StringComparison.Ordinal);
 
         var edit = File.ReadAllText(Path.Combine(pages, "RegisterEdit.razor"));
         Assert.Contains("@page \"/registers/{RegisterId:guid}/edit\"", edit, StringComparison.Ordinal);
         Assert.Contains("StoreHeaderBack Href=\"/registers\"", edit, StringComparison.Ordinal);
         Assert.Contains("UtangCapability.ManageRegisters", edit, StringComparison.Ordinal);
         Assert.Contains("Registers_Cancel", edit, StringComparison.Ordinal);
+        Assert.Contains("pos-register-edit__header", edit, StringComparison.Ordinal);
+        Assert.Contains("pos-register-edit__form", edit, StringComparison.Ordinal);
+        Assert.Contains("pos-action-tile--primary", edit, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", edit, StringComparison.Ordinal);
         Assert.DoesNotContain("Registers_BackToList", edit, StringComparison.Ordinal);
+        Assert.DoesNotContain("<Section", edit, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -120,6 +136,9 @@ public sealed class RegistersPageGuardTests
         Assert.Contains(".pos-registers__row", css, StringComparison.Ordinal);
         Assert.Contains(".pos-registers__badge--active", css, StringComparison.Ordinal);
         Assert.Contains(".pos-registers__pager", css, StringComparison.Ordinal);
+        Assert.Contains(".pos-register-create__header", css, StringComparison.Ordinal);
+        Assert.Contains(".pos-register-edit__form", css, StringComparison.Ordinal);
+        Assert.Contains(".pos-register-detail__facts", css, StringComparison.Ordinal);
 
         var loc = Path.Combine(root, "src", "Products", "PinoyBusinessPOS",
             "ExItS.PinoyBusinessPOS.Maui", "Localization");

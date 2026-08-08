@@ -16,7 +16,12 @@
 }
 else if (!_canManage)
 {
+<div class="pos-catalog-import">
     <Page>
+        <header class="pos-catalog-import__header">
+            <h1 class="pos-catalog-import__title">@L["Catalog_Import_Title"]</h1>
+            <p class="pos-catalog-import__subtitle">@L["Catalog_Import_Subtitle"]</p>
+        </header>
         <Alert Tone="AlertTone.Warning" Title="@L["Access_RestrictedTitle"]" Message="@L["Access_RestrictedMessage"]" />
         <div class="pos-action-grid pos-action-grid--single pos-catalog-import__actions">
             <button type="button" class="pos-action-tile" @onclick="GoCatalog">
@@ -25,12 +30,16 @@ else if (!_canManage)
             </button>
         </div>
     </Page>
+</div>
 }
 else
 {
 <div class="pos-catalog-import">
     <Page>
-        <PageHeader Title="@L["Catalog_Import_Title"]" Subtitle="@L["Catalog_Import_Subtitle"]" />
+        <header class="pos-catalog-import__header">
+            <h1 class="pos-catalog-import__title">@L["Catalog_Import_Title"]</h1>
+            <p class="pos-catalog-import__subtitle">@L["Catalog_Import_Subtitle"]</p>
+        </header>
 
         <div class="pos-action-grid pos-action-grid--two pos-catalog-import__actions" role="group" aria-label="@L["Catalog_Import_Title"]">
             <button type="button"

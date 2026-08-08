@@ -12,8 +12,12 @@
 }
 else
 {
+    <div class="pos-dev-offline">
     <Page>
-        <PageHeader Title="@L["DevOffline_Title"]" Subtitle="@L["DevOffline_Subtitle"]" />
+        <header class="pos-dev-offline__header">
+            <h1 class="pos-dev-offline__title">@L["DevOffline_Title"]</h1>
+            <p class="pos-dev-offline__subtitle">@L["DevOffline_Subtitle"]</p>
+        </header>
         <Alert Tone="AlertTone.Info" Title="@L["DevOffline_NoticeTitle"]" Message="@L["DevOffline_NoticeMessage"]" />
 
         @if (_snapshot is null)
@@ -78,6 +82,7 @@ else
             <Button OnClick="RefreshAsync">@L["Customers_Refresh"]</Button>
         </FormActions>
     </Page>
+    </div>
 }
 
 @code {

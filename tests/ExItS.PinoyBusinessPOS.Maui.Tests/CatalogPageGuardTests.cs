@@ -9,8 +9,11 @@ public sealed class CatalogPageGuardTests
 
         var list = File.ReadAllText(Path.Combine(catalog, "CatalogProductsList.razor"));
         Assert.Contains("@page \"/catalog\"", list, StringComparison.Ordinal);
+        Assert.Contains("pos-catalog__header", list, StringComparison.Ordinal);
         Assert.Contains("pos-catalog__row", list, StringComparison.Ordinal);
+        Assert.Contains("pos-catalog__list", list, StringComparison.Ordinal);
         Assert.Contains("pos-action-grid", list, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"plus\")", list, StringComparison.Ordinal);
         Assert.Contains("IPosCatalogClient", list, StringComparison.Ordinal);
         Assert.Contains("/catalog/global", list, StringComparison.Ordinal);
         Assert.Contains("/catalog/import", list, StringComparison.Ordinal);
@@ -19,6 +22,8 @@ public sealed class CatalogPageGuardTests
         Assert.Contains("Catalog_FiltersTitle", list, StringComparison.Ordinal);
         Assert.Contains("ListProductsAsync", list, StringComparison.Ordinal);
         Assert.Contains("Pagination", list, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", list, StringComparison.Ordinal);
+        Assert.DoesNotContain("ResponsiveDataList", list, StringComparison.Ordinal);
 
         var create = File.ReadAllText(Path.Combine(catalog, "CatalogProductCreate.razor"));
         Assert.Contains("@page \"/catalog/products/new\"", create, StringComparison.Ordinal);
@@ -30,6 +35,10 @@ public sealed class CatalogPageGuardTests
         Assert.Contains("StoreHeaderBack Href=\"/catalog\"", detail, StringComparison.Ordinal);
         Assert.Contains("DeactivateProductAsync", detail, StringComparison.Ordinal);
         Assert.Contains("ReactivateProductAsync", detail, StringComparison.Ordinal);
+        Assert.Contains("pos-catalog-product-detail__header", detail, StringComparison.Ordinal);
+        Assert.Contains("pos-catalog-product-detail__facts", detail, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"edit\")", detail, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", detail, StringComparison.Ordinal);
         Assert.DoesNotContain("Catalog_BackToList", detail, StringComparison.Ordinal);
 
         var edit = File.ReadAllText(Path.Combine(catalog, "CatalogProductEdit.razor"));
@@ -37,6 +46,9 @@ public sealed class CatalogPageGuardTests
         Assert.Contains("StoreHeaderBack Href=", edit, StringComparison.Ordinal);
         Assert.Contains("UpdateProductAsync", edit, StringComparison.Ordinal);
         Assert.Contains("_product.UpdatedAtUtc", edit, StringComparison.Ordinal);
+        Assert.Contains("pos-catalog-product-edit__header", edit, StringComparison.Ordinal);
+        Assert.Contains("pos-catalog-product-edit__panel", edit, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", edit, StringComparison.Ordinal);
         Assert.DoesNotContain("Catalog_BackToList", edit, StringComparison.Ordinal);
 
         var categories = File.ReadAllText(Path.Combine(catalog, "CatalogCategories.razor"));
@@ -51,11 +63,14 @@ public sealed class CatalogPageGuardTests
         Assert.Contains("@page \"/catalog/barcode-lookup\"", lookup, StringComparison.Ordinal);
         Assert.Contains("LookupByBarcodeAsync", lookup, StringComparison.Ordinal);
         Assert.Contains("LookupBySkuAsync", lookup, StringComparison.Ordinal);
-        Assert.Contains("pos-barcode-lookup", lookup, StringComparison.Ordinal);
+        Assert.Contains("pos-catalog-lookup", lookup, StringComparison.Ordinal);
+        Assert.Contains("pos-catalog-lookup__header", lookup, StringComparison.Ordinal);
+        Assert.Contains("pos-catalog-lookup__facts", lookup, StringComparison.Ordinal);
         Assert.Contains("StoreHeaderBack Href=\"/catalog\"", lookup, StringComparison.Ordinal);
         Assert.Contains("IconGlyphs.Get(\"search\")", lookup, StringComparison.Ordinal);
         Assert.Contains("IconGlyphs.Get(\"close\")", lookup, StringComparison.Ordinal);
         Assert.Contains("pos-action-grid--two", lookup, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", lookup, StringComparison.Ordinal);
         Assert.DoesNotContain("Catalog_BackToList", lookup, StringComparison.Ordinal);
         Assert.DoesNotContain("GoCatalog", lookup, StringComparison.Ordinal);
 

@@ -19,17 +19,24 @@ public sealed class InventoryPageGuardTests
         Assert.Contains("IconGlyphs.Get(\"check\")", list, StringComparison.Ordinal);
         Assert.Contains("IconGlyphs.Get(\"refresh\")", list, StringComparison.Ordinal);
         Assert.Contains("pos-inventory__row", list, StringComparison.Ordinal);
+        Assert.Contains("pos-inventory__header", list, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", list, StringComparison.Ordinal);
 
         var detail = File.ReadAllText(Path.Combine(pages, "InventoryDetail.razor"));
         Assert.Contains("@page \"/inventory/{ProductId:guid}\"", detail, StringComparison.Ordinal);
         Assert.Contains("StoreHeaderBack Href=\"/inventory\"", detail, StringComparison.Ordinal);
         Assert.Contains("ListMovementsAsync", detail, StringComparison.Ordinal);
+        Assert.Contains("pos-inventory-detail__header", detail, StringComparison.Ordinal);
+        Assert.Contains("pos-inventory-detail__facts", detail, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", detail, StringComparison.Ordinal);
         Assert.DoesNotContain("OnClick=\"GoBack\"", detail, StringComparison.Ordinal);
 
         var adjust = File.ReadAllText(Path.Combine(pages, "InventoryAdjust.razor"));
         Assert.Contains("@page \"/inventory/{ProductId:guid}/adjust\"", adjust, StringComparison.Ordinal);
         Assert.Contains("StoreHeaderBack Href=", adjust, StringComparison.Ordinal);
         Assert.Contains("UtangCapability.ManageInventory", adjust, StringComparison.Ordinal);
+        Assert.Contains("pos-inventory-adjust__header", adjust, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", adjust, StringComparison.Ordinal);
         Assert.DoesNotContain("OnClick=\"GoBack\"", adjust, StringComparison.Ordinal);
 
         var low = File.ReadAllText(Path.Combine(pages, "InventoryLowStock.razor"));
@@ -38,7 +45,9 @@ public sealed class InventoryPageGuardTests
         Assert.Contains("IconGlyphs.Get(\"products\")", low, StringComparison.Ordinal);
         Assert.Contains("IconGlyphs.Get(\"refresh\")", low, StringComparison.Ordinal);
         Assert.Contains("pos-inventory__row--low", low, StringComparison.Ordinal);
+        Assert.Contains("pos-low-stock__header", low, StringComparison.Ordinal);
         Assert.Contains("Inventory_LowStockEmptyTitle", low, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", low, StringComparison.Ordinal);
         Assert.DoesNotContain("ResponsiveDataList", low, StringComparison.Ordinal);
 
         var create = File.ReadAllText(Path.Combine(pages, "StockCountCreate.razor"));
@@ -49,17 +58,35 @@ public sealed class InventoryPageGuardTests
         Assert.Contains("IconGlyphs.Get(\"products\")", create, StringComparison.Ordinal);
         Assert.Contains("IconGlyphs.Get(\"check\")", create, StringComparison.Ordinal);
         Assert.Contains("pos-stock-count-create__line", create, StringComparison.Ordinal);
+        Assert.Contains("pos-stock-count-create__header", create, StringComparison.Ordinal);
         Assert.Contains("ConfirmDialog", create, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", create, StringComparison.Ordinal);
         Assert.DoesNotContain("OnClick=\"GoBack\"", create, StringComparison.Ordinal);
+
+        var reorder = File.ReadAllText(Path.Combine(pages, "InventoryReorder.razor"));
+        Assert.Contains("@page \"/inventory/{ProductId:guid}/reorder\"", reorder, StringComparison.Ordinal);
+        Assert.Contains("StoreHeaderBack Href=", reorder, StringComparison.Ordinal);
+        Assert.Contains("pos-inventory-reorder__header", reorder, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", reorder, StringComparison.Ordinal);
+        Assert.DoesNotContain("OnClick=\"GoBack\"", reorder, StringComparison.Ordinal);
 
         var counts = File.ReadAllText(Path.Combine(pages, "StockCountsList.razor"));
         Assert.Contains("@page \"/inventory/counts\"", counts, StringComparison.Ordinal);
         Assert.Contains("pos-stock-counts__row", counts, StringComparison.Ordinal);
+        Assert.Contains("pos-stock-counts__header", counts, StringComparison.Ordinal);
         Assert.Contains("pos-action-grid--three", counts, StringComparison.Ordinal);
         Assert.Contains("IconGlyphs.Get(\"plus\")", counts, StringComparison.Ordinal);
         Assert.Contains("IconGlyphs.Get(\"products\")", counts, StringComparison.Ordinal);
         Assert.Contains("IconGlyphs.Get(\"refresh\")", counts, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", counts, StringComparison.Ordinal);
         Assert.DoesNotContain("ResponsiveDataList", counts, StringComparison.Ordinal);
+
+        var countDetail = File.ReadAllText(Path.Combine(pages, "StockCountDetail.razor"));
+        Assert.Contains("@page \"/inventory/counts/{StockCountId:guid}\"", countDetail, StringComparison.Ordinal);
+        Assert.Contains("StoreHeaderBack Href=\"/inventory/counts\"", countDetail, StringComparison.Ordinal);
+        Assert.Contains("pos-stock-count-detail__header", countDetail, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", countDetail, StringComparison.Ordinal);
+        Assert.DoesNotContain("OnClick=\"GoBack\"", countDetail, StringComparison.Ordinal);
     }
 
     [Fact]

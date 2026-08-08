@@ -20,7 +20,10 @@ else
     <div class="pos-report">
         <StoreHeaderBack Href="/reports" />
         <Page>
-            <PageHeader Title="@_title" Subtitle="@L["Reports_OperationalSubtitle"]" />
+            <header class="pos-report__header">
+                <h1 class="pos-report__title">@_title</h1>
+                <p class="pos-report__subtitle">@L["Reports_OperationalSubtitle"]</p>
+            </header>
 
             <div class="pos-action-grid pos-action-grid--single pos-report__actions" role="group" aria-label="@_title">
                 <button type="button" class="pos-action-tile" disabled="@_loading" @onclick="ReloadAsync">
@@ -39,14 +42,13 @@ else
                 <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Dashboard_ErrorTitle"])" Message="@_errorMessage" />
             }
 
-            <Section Title="@L["Dashboard_FiltersTitle"]">
-                <div class="pos-settings__panel">
-                    <Stack Gap="2">
-                        <DateInput Label="@L["Dashboard_FromDate"]" Value="@_fromDate" ValueChanged="OnFromDateChanged" Disabled="@_loading" />
-                        <DateInput Label="@L["Dashboard_ToDate"]" Value="@_toDate" ValueChanged="OnToDateChanged" Disabled="@_loading" />
-                    </Stack>
+            <section class="pos-report__panel" aria-labelledby="operational-report-filters-heading">
+                <h2 id="operational-report-filters-heading" class="pos-report__section-title">@L["Dashboard_FiltersTitle"]</h2>
+                <div class="pos-report__form">
+                    <DateInput Label="@L["Dashboard_FromDate"]" Value="@_fromDate" ValueChanged="OnFromDateChanged" Disabled="@_loading" />
+                    <DateInput Label="@L["Dashboard_ToDate"]" Value="@_toDate" ValueChanged="OnToDateChanged" Disabled="@_loading" />
                 </div>
-            </Section>
+            </section>
 
             @if (_loading)
             {
@@ -57,7 +59,8 @@ else
             }
             else if (_lines.Count > 0)
             {
-                <Section Title="@L["Reports_ResultsTitle"]">
+                <section class="pos-report__panel" aria-labelledby="operational-report-results-heading">
+                    <h2 id="operational-report-results-heading" class="pos-report__section-title">@L["Reports_ResultsTitle"]</h2>
                     <div class="pos-report__list" role="list">
                         @foreach (var line in _lines)
                         {
@@ -67,7 +70,7 @@ else
                             </div>
                         }
                     </div>
-                </Section>
+                </section>
             }
             else if (!_isOffline && string.IsNullOrEmpty(_errorMessage))
             {

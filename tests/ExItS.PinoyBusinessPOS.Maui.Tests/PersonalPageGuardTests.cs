@@ -76,7 +76,9 @@ public sealed class PersonalPageGuardTests
         Assert.Contains("Personal_ExplorePos", more, StringComparison.Ordinal);
         Assert.DoesNotContain("Auth_Logout", more, StringComparison.Ordinal);
         Assert.Contains("pos-settings__nav", more, StringComparison.Ordinal);
+        Assert.Contains("pos-personal-more__header", more, StringComparison.Ordinal);
         Assert.Contains("IconGlyphs.Get(\"qr\")", more, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", more, StringComparison.Ordinal);
         Assert.DoesNotContain("AccountContextSwitcher", more, StringComparison.Ordinal);
         Assert.DoesNotContain("/sales", more, StringComparison.Ordinal);
     }
@@ -97,14 +99,18 @@ public sealed class PersonalPageGuardTests
         Assert.Contains("ApiCallStatus.Unauthorized", myQr, StringComparison.Ordinal);
         Assert.Contains("EnsurePlatformSessionAsync", myQr, StringComparison.Ordinal);
         Assert.Contains("pos-my-qr", myQr, StringComparison.Ordinal);
+        Assert.Contains("pos-personal-my-qr__header", myQr, StringComparison.Ordinal);
         Assert.Contains("pos-action-grid--three", myQr, StringComparison.Ordinal);
         Assert.Contains("Personal_MyQrRenderErrorTitle", myQr, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", myQr, StringComparison.Ordinal);
         Assert.DoesNotContain("PosBusinessApi", myQr, StringComparison.Ordinal);
 
         var resolve = File.ReadAllText(Path.Combine(personal, "PublicUserResolve.razor"));
         Assert.Contains("@page \"/personal/resolve-user\"", resolve, StringComparison.Ordinal);
         Assert.Contains("ResolvePublicUserIdAsync", resolve, StringComparison.Ordinal);
+        Assert.Contains("pos-personal-resolve__header", resolve, StringComparison.Ordinal);
         Assert.Contains("pos-resolve-actions", resolve, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", resolve, StringComparison.Ordinal);
         Assert.Contains("pos-action-grid--three", resolve, StringComparison.Ordinal);
         Assert.Contains("IconGlyphs.Get(\"qr\")", resolve, StringComparison.Ordinal);
         Assert.Contains("IconGlyphs.Get(\"image\")", resolve, StringComparison.Ordinal);
@@ -169,6 +175,8 @@ public sealed class PersonalPageGuardTests
         Assert.Contains("GetCommercialPlansAsync", explore, StringComparison.Ordinal);
         Assert.Contains("PosProductCodes.PinoyBusinessPos", explore, StringComparison.Ordinal);
         Assert.Contains("/start-business?planKey=", explore, StringComparison.Ordinal);
+        Assert.Contains("pos-personal-explore__header", explore, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", explore, StringComparison.Ordinal);
         Assert.DoesNotContain("StartBusinessAsync", explore, StringComparison.Ordinal);
 
         var start = File.ReadAllText(Path.Combine(personal, "StartBusiness.razor"));
@@ -176,6 +184,8 @@ public sealed class PersonalPageGuardTests
         Assert.Contains("@layout Layout.AuthShell", start, StringComparison.Ordinal);
         Assert.Contains("StoreHeaderBack", start, StringComparison.Ordinal);
         Assert.Contains("Href=\"/personal\"", start, StringComparison.Ordinal);
+        Assert.Contains("pos-personal-start-business__header", start, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", start, StringComparison.Ordinal);
         Assert.DoesNotContain("Personal_BackHome", start, StringComparison.Ordinal);
         Assert.DoesNotContain("Personal_ExplorePosBack", start, StringComparison.Ordinal);
         Assert.Contains("StartBusiness_PlanRequired", start, StringComparison.Ordinal);
@@ -205,9 +215,11 @@ public sealed class PersonalPageGuardTests
         Assert.Contains("Settings_SwitchOrganization", settings, StringComparison.Ordinal);
         Assert.Contains("pos-settings", settings, StringComparison.Ordinal);
         Assert.Contains("pos-settings__panel", settings, StringComparison.Ordinal);
+        Assert.Contains("pos-personal-settings__header", settings, StringComparison.Ordinal);
         Assert.Contains("StoreHeaderBack", settings, StringComparison.Ordinal);
         Assert.Contains("Href=\"/personal/more\"", settings, StringComparison.Ordinal);
         Assert.Contains("IconGlyphs.Get(\"customers\")", settings, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", settings, StringComparison.Ordinal);
         Assert.DoesNotContain("Personal_BackMore", settings, StringComparison.Ordinal);
         Assert.DoesNotContain("Auth_Logout", settings, StringComparison.Ordinal);
 
@@ -217,6 +229,10 @@ public sealed class PersonalPageGuardTests
         Assert.DoesNotContain("Auth_Logout", orgSelect, StringComparison.Ordinal);
         Assert.Contains("pos-org-select-empty", orgSelect, StringComparison.Ordinal);
         Assert.Contains("IconGlyphs.Get(\"home\")", orgSelect, StringComparison.Ordinal);
+        Assert.Contains("Org_StaffUnknownName", orgSelect, StringComparison.Ordinal);
+        Assert.DoesNotContain("pos-org-role__row--personal", orgSelect, StringComparison.Ordinal);
+        Assert.DoesNotContain("OrgSelect_PersonalLabel", orgSelect, StringComparison.Ordinal);
+        Assert.DoesNotContain("UserId.ToString(\"D\")[..8]", orgSelect, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -224,25 +240,35 @@ public sealed class PersonalPageGuardTests
     {
         var personal = PersonalPagesDirectory();
 
-        Assert.Contains("@page \"/personal/utang/people\"",
-            File.ReadAllText(Path.Combine(personal, "PersonalPeople.razor")), StringComparison.Ordinal);
-        Assert.Contains("CreatePersonalContactAsync",
-            File.ReadAllText(Path.Combine(personal, "PersonalPeople.razor")), StringComparison.Ordinal);
+        var people = File.ReadAllText(Path.Combine(personal, "PersonalPeople.razor"));
+        Assert.Contains("@page \"/personal/utang/people\"", people, StringComparison.Ordinal);
+        Assert.Contains("CreatePersonalContactAsync", people, StringComparison.Ordinal);
+        Assert.Contains("pos-personal-people__header", people, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", people, StringComparison.Ordinal);
 
-        Assert.Contains("@page \"/personal/utang/lent\"",
-            File.ReadAllText(Path.Combine(personal, "PersonalLent.razor")), StringComparison.Ordinal);
-        Assert.Contains("@page \"/personal/utang/borrowed\"",
-            File.ReadAllText(Path.Combine(personal, "PersonalBorrowed.razor")), StringComparison.Ordinal);
+        var lent = File.ReadAllText(Path.Combine(personal, "PersonalLent.razor"));
+        Assert.Contains("@page \"/personal/utang/lent\"", lent, StringComparison.Ordinal);
+        Assert.Contains("pos-personal-utang__header", lent, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", lent, StringComparison.Ordinal);
+
+        var borrowed = File.ReadAllText(Path.Combine(personal, "PersonalBorrowed.razor"));
+        Assert.Contains("@page \"/personal/utang/borrowed\"", borrowed, StringComparison.Ordinal);
+        Assert.Contains("pos-personal-utang__header", borrowed, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", borrowed, StringComparison.Ordinal);
 
         var detail = File.ReadAllText(Path.Combine(personal, "PersonalRelationshipDetail.razor"));
         Assert.Contains("@page \"/personal/utang/relationships/{RelationshipId:guid}\"", detail, StringComparison.Ordinal);
         Assert.Contains("RecordPersonalUtangEntryAsync", detail, StringComparison.Ordinal);
+        Assert.Contains("pos-personal-relationship__header", detail, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", detail, StringComparison.Ordinal);
 
         var invites = File.ReadAllText(Path.Combine(personal, "PersonalUtangInvitations.razor"));
         Assert.Contains("@page \"/personal/utang/invitations\"", invites, StringComparison.Ordinal);
         Assert.Contains("Personal_NoUtangInvitationsTitle", invites, StringComparison.Ordinal);
+        Assert.Contains("pos-personal-invitations__header", invites, StringComparison.Ordinal);
         Assert.Contains("ErrorState", invites, StringComparison.Ordinal);
         Assert.Contains("Common_Retry", invites, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", invites, StringComparison.Ordinal);
 
         var resx = File.ReadAllText(Path.Combine(MauiProject(), "Localization", "PosResources.resx"));
         Assert.Contains("<value>No pending Utang invitations</value>", resx, StringComparison.Ordinal);
@@ -268,8 +294,19 @@ public sealed class PersonalPageGuardTests
 
         Assert.Contains("@layout Layout.AuthShell",
             File.ReadAllText(Path.Combine(PersonalPagesDirectory(), "StartBusiness.razor")), StringComparison.Ordinal);
-        Assert.Contains("@layout Layout.AuthShell",
-            File.ReadAllText(Path.Combine(PersonalPagesDirectory(), "PersonalInvitationAccept.razor")), StringComparison.Ordinal);
+        var accept = File.ReadAllText(Path.Combine(PersonalPagesDirectory(), "PersonalInvitationAccept.razor"));
+        Assert.Contains("@layout Layout.AuthShell", accept, StringComparison.Ordinal);
+        Assert.Contains("StoreHeaderBack", accept, StringComparison.Ordinal);
+        Assert.Contains("pos-personal-invitation-accept__header", accept, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", accept, StringComparison.Ordinal);
+
+        var profile = File.ReadAllText(Path.Combine(PersonalPagesDirectory(), "PersonalProfile.razor"));
+        Assert.Contains("pos-personal-profile__header", profile, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", profile, StringComparison.Ordinal);
+
+        var peopleDetail = File.ReadAllText(Path.Combine(PersonalPagesDirectory(), "PersonalPeopleDetail.razor"));
+        Assert.Contains("pos-personal-people-detail__header", peopleDetail, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", peopleDetail, StringComparison.Ordinal);
 
         foreach (var name in new[]
                  {

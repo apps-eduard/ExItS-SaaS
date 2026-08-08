@@ -17,7 +17,10 @@ else
 {
 <div class="pos-low-stock">
     <Page>
-        <PageHeader Title="@L["Inventory_LowStockTitle"]" Subtitle="@L["Inventory_LowStockSubtitle"]" />
+        <header class="pos-low-stock__header">
+            <h1 class="pos-low-stock__title">@L["Inventory_LowStockTitle"]</h1>
+            <p class="pos-low-stock__subtitle">@L["Inventory_LowStockSubtitle"]</p>
+        </header>
 
         @if (_isOffline)
         {
@@ -40,13 +43,11 @@ else
             </button>
         </div>
 
-        <Section Title="@L["Inventory_LowStockTitle"]">
+        <section class="pos-low-stock__panel" aria-labelledby="low-stock-list-heading">
+            <h2 id="low-stock-list-heading" class="pos-low-stock__section-title">@L["Inventory_LowStockTitle"]</h2>
             @if (_loading)
             {
-                <Stack Align="StackAlign.Center" Gap="2">
-                    <Spinner />
-                    <span class="pos-muted">@L["Inventory_Loading"]</span>
-                </Stack>
+                <div class="pos-low-stock__loading"><Spinner /><span>@L["Inventory_Loading"]</span></div>
             }
             else if (!string.IsNullOrEmpty(_errorMessage))
             {
@@ -88,7 +89,7 @@ else
                     }
                 </div>
             }
-        </Section>
+        </section>
     </Page>
 </div>
 }

@@ -6,9 +6,13 @@
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
+<div class="pos-personal-invitations">
 <StoreHeaderBack Href="/personal/more" />
 <Page>
-    <PageHeader Title="@L["Personal_UtangInvitationsTitle"]" Subtitle="@L["Personal_UtangInvitationsSubtitle"]" />
+    <header class="pos-personal-invitations__header">
+        <h1 class="pos-personal-invitations__title">@L["Personal_UtangInvitationsTitle"]</h1>
+        <p class="pos-personal-invitations__subtitle">@L["Personal_UtangInvitationsSubtitle"]</p>
+    </header>
 
     @if (_loading)
     {
@@ -55,6 +59,7 @@
         </Section>
     }
 </Page>
+</div>
 
 @code {
     private bool _loading = true;

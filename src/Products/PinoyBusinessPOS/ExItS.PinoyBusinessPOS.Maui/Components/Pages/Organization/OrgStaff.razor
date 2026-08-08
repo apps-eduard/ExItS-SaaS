@@ -9,7 +9,12 @@
 <div class="pos-staff">
     <StoreHeaderBack Href="/org" />
     <Page>
-        <PageHeader Title="@L["Org_StaffTitle"]" Subtitle="@L["Org_StaffSubtitle"]" />
+        <header class="pos-staff__header">
+            <div class="pos-staff__heading">
+                <h1 class="pos-staff__title">@L["Org_StaffTitle"]</h1>
+                <p class="pos-staff__subtitle">@L["Org_StaffSubtitle"]</p>
+            </div>
+        </header>
 
         <div class="pos-action-grid pos-action-grid--single pos-staff__actions-bar" role="group" aria-label="@L["Org_StaffTitle"]">
             <button type="button"
@@ -182,29 +187,38 @@
                          .ThenBy(m => m.CreatedAtUtc))
             {
                 var displayName = string.Empty;
-                var email = string.Empty;
+                var email = member.Email ?? string.Empty;
                 var grantName = grants
                     .FirstOrDefault(g => g.UserIdentityId == member.UserId)?.UserDisplayName;
 
+                displayName = FirstMeaningful(
+                    member.DisplayName,
+                    grantName,
+                    member.Username,
+                    member.Email) ?? string.Empty;
+
                 try
                 {
-                    var userResult = await Platform.GetUserAsync(member.UserId);
-                    if (userResult.IsSuccess && userResult.Data is not null)
+                    if (string.IsNullOrWhiteSpace(displayName) || string.IsNullOrWhiteSpace(email))
                     {
-                        displayName = string.IsNullOrWhiteSpace(userResult.Data.DisplayName)
-                            ? userResult.Data.Username
-                            : userResult.Data.DisplayName;
-                        email = userResult.Data.Email ?? string.Empty;
+                        var userResult = await Platform.GetUserAsync(member.UserId);
+                        if (userResult.IsSuccess && userResult.Data is not null)
+                        {
+                            displayName = FirstMeaningful(
+                                displayName,
+                                userResult.Data.DisplayName,
+                                userResult.Data.Username,
+                                userResult.Data.Email) ?? string.Empty;
+                            if (string.IsNullOrWhiteSpace(email))
+                            {
+                                email = userResult.Data.Email ?? string.Empty;
+                            }
+                        }
                     }
                 }
                 catch
                 {
-                    // Fall through to grant name / username fallbacks.
-                }
-
-                if (string.IsNullOrWhiteSpace(displayName) && !string.IsNullOrWhiteSpace(grantName))
-                {
-                    displayName = grantName!;
+                    // Fall through to unknown-name fallback.
                 }
 
                 if (string.IsNullOrWhiteSpace(displayName))
@@ -411,6 +425,19 @@
     }
 
     private void GoInvite() => Nav.NavigateTo("/org/staff/invite");
+
+    private static string? FirstMeaningful(params string?[] values)
+    {
+        foreach (var value in values)
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                return value.Trim();
+            }
+        }
+
+        return null;
+    }
 
     private void GoAssign(StaffRow row)
     {
