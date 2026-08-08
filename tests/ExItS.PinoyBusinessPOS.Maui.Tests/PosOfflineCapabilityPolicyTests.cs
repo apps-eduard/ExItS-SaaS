@@ -24,6 +24,45 @@ public sealed class PosOfflineCapabilityPolicyTests
         Assert.Equal(expected, _policy.GetRouteRequirement(route));
     }
 
+    [Theory]
+    [InlineData("/personal", PosConnectivityRequirement.OfflineCapable)]
+    [InlineData("/personal/more", PosConnectivityRequirement.OfflineCapable)]
+    [InlineData("/personal/settings", PosConnectivityRequirement.OfflineCapable)]
+    [InlineData("/personal/profile", PosConnectivityRequirement.OfflineCapable)]
+    [InlineData("/personal/utang/people", PosConnectivityRequirement.Queueable)]
+    [InlineData("/personal/utang/lent", PosConnectivityRequirement.Queueable)]
+    [InlineData("/personal/utang/borrowed", PosConnectivityRequirement.Queueable)]
+    [InlineData("/personal/utang/relationships/11111111-1111-1111-1111-111111111111", PosConnectivityRequirement.Queueable)]
+    [InlineData("/personal/utang/invitations", PosConnectivityRequirement.OnlineRequired)]
+    [InlineData("/personal/explore-pos", PosConnectivityRequirement.OnlineRequired)]
+    [InlineData("/start-business", PosConnectivityRequirement.OnlineRequired)]
+    [InlineData("/personal/resolve-user", PosConnectivityRequirement.OnlineRequired)]
+    [InlineData("/personal/my-qr", PosConnectivityRequirement.OnlineRequired)]
+    public void Personal_routes_have_expected_classification(string route, PosConnectivityRequirement expected)
+    {
+        Assert.Equal(expected, _policy.GetRouteRequirement(route));
+    }
+
+    [Fact]
+    public void Personal_actions_are_classified()
+    {
+        Assert.Equal(
+            PosConnectivityRequirement.OnlineRequired,
+            _policy.GetActionRequirement(PosOfflineActionKeys.PersonalInvite));
+        Assert.Equal(
+            PosConnectivityRequirement.OnlineRequired,
+            _policy.GetActionRequirement(PosOfflineActionKeys.PersonalLinkUser));
+        Assert.Equal(
+            PosConnectivityRequirement.OnlineRequired,
+            _policy.GetActionRequirement(PosOfflineActionKeys.PersonalStartBusiness));
+        Assert.Equal(
+            PosConnectivityRequirement.Queueable,
+            _policy.GetActionRequirement(PosOfflineActionKeys.PersonalContactCreate));
+        Assert.Equal(
+            PosConnectivityRequirement.Queueable,
+            _policy.GetActionRequirement(PosOfflineActionKeys.PersonalEntryRecord));
+    }
+
     [Fact]
     public void Nested_online_required_routes_inherit_prefix()
     {

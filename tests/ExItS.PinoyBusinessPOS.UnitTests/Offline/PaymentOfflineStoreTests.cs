@@ -566,7 +566,7 @@ public sealed class PaymentOfflineStoreTests
         {
             versionCmd.CommandText = "SELECT MAX(schema_version) FROM local_schema_info;";
             var version = Convert.ToInt64(await versionCmd.ExecuteScalarAsync(), CultureInfo.InvariantCulture);
-            Assert.Equal(4, version);
+            Assert.Equal(LocalDatabaseMigrator.PersonalUtangSchemaVersion, version);
         }
 
         await using (var tablesCmd = sqlite.CreateCommand())

@@ -55,7 +55,7 @@ public sealed class LocalDatabaseIsolationTests
         var org = Guid.NewGuid();
         var open = await manager.OpenAsync(user, org, PosProductCodes.PinoyBusinessPos);
         Assert.True(open.Succeeded);
-        Assert.Equal(4, open.Context!.SchemaVersion);
+        Assert.Equal(LocalDatabaseMigrator.PersonalUtangSchemaVersion, open.Context!.SchemaVersion);
         Assert.Equal(LocalContextInitStatus.Ready, open.Context.Status);
 
         var path = new LocalDatabasePathResolver(root).ResolveDatabasePath(user, org, PosProductCodes.PinoyBusinessPos);
@@ -82,7 +82,7 @@ public sealed class LocalDatabaseIsolationTests
     }
 
     [Fact]
-    public async Task Clean_init_reaches_schema_v4()
+    public async Task Clean_init_reaches_current_schema()
     {
         var root = new TempRoot();
         await using var manager = new LocalContextManager(
@@ -92,7 +92,7 @@ public sealed class LocalDatabaseIsolationTests
 
         var open = await manager.OpenAsync(Guid.NewGuid(), Guid.NewGuid(), PosProductCodes.PinoyBusinessPos);
         Assert.True(open.Succeeded);
-        Assert.Equal(LocalDatabaseMigrator.PaymentCacheSchemaVersion, open.Context!.SchemaVersion);
+        Assert.Equal(LocalDatabaseMigrator.PersonalUtangSchemaVersion, open.Context!.SchemaVersion);
         root.Dispose();
     }
 
@@ -115,12 +115,12 @@ public sealed class LocalDatabaseIsolationTests
         var migrator = new LocalDatabaseMigrator();
         var result = await migrator.MigrateAsync(connection, identity);
         Assert.True(result.Succeeded);
-        Assert.Equal(4, result.SchemaVersion);
+        Assert.Equal(LocalDatabaseMigrator.PersonalUtangSchemaVersion, result.SchemaVersion);
 
         var versions = await connection.QueryRowsAsync(
             "SELECT schema_version FROM local_schema_info ORDER BY schema_version;");
         var versionNums = versions.Select(r => Convert.ToInt32(r["schema_version"])).ToArray();
-        Assert.Equal([1, 2, 3, 4], versionNums);
+        Assert.Equal([1, 2, 3, 4, 5, 6], versionNums);
 
         var tables = await connection.QueryRowsAsync(
             "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;");
@@ -130,6 +130,7 @@ public sealed class LocalDatabaseIsolationTests
         Assert.Contains("local_credit_projection", names); // v3
         Assert.Contains("local_customer_balance", names); // v3
         Assert.Contains("local_repayment_projection", names); // v4
+        Assert.Contains("local_personal_contact", names); // v6
         Assert.DoesNotContain("customers", names);
         root.Dispose();
     }
@@ -159,7 +160,7 @@ public sealed class LocalDatabaseIsolationTests
 
         var result = await new LocalDatabaseMigrator().MigrateAsync(connection, identity);
         Assert.True(result.Succeeded);
-        Assert.Equal(4, result.SchemaVersion);
+        Assert.Equal(LocalDatabaseMigrator.PersonalUtangSchemaVersion, result.SchemaVersion);
 
         var after = await connection.QueryRowsAsync(
             "SELECT name FROM sqlite_master WHERE type='table';");
@@ -167,6 +168,7 @@ public sealed class LocalDatabaseIsolationTests
         Assert.Contains("local_customer_projection", afterNames);
         Assert.Contains("local_credit_projection", afterNames);
         Assert.Contains("local_repayment_projection", afterNames);
+        Assert.Contains("local_personal_contact", afterNames);
         root.Dispose();
     }
 
@@ -194,16 +196,18 @@ public sealed class LocalDatabaseIsolationTests
 
         var result = await new LocalDatabaseMigrator().MigrateAsync(connection, identity);
         Assert.True(result.Succeeded);
-        Assert.Equal(4, result.SchemaVersion);
+        Assert.Equal(LocalDatabaseMigrator.PersonalUtangSchemaVersion, result.SchemaVersion);
 
         var after = await connection.QueryRowsAsync(
             "SELECT name FROM sqlite_master WHERE type='table';");
         var afterNames = after.Select(r => Convert.ToString(r["name"])!).ToHashSet(StringComparer.OrdinalIgnoreCase);
         Assert.Contains("local_repayment_projection", afterNames);
+        Assert.Contains("local_personal_contact", afterNames);
 
         var versions = await connection.QueryRowsAsync(
             "SELECT schema_version FROM local_schema_info ORDER BY schema_version;");
         Assert.Contains(versions, r => Convert.ToInt32(r["schema_version"]) == 4);
+        Assert.Contains(versions, r => Convert.ToInt32(r["schema_version"]) == 6);
         root.Dispose();
     }
 

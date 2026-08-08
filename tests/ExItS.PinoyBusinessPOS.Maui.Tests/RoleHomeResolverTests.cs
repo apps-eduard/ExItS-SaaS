@@ -349,7 +349,8 @@ public sealed class RoleHomeResolverTests
             Email: "test@example.com",
             IssuedAtUtc: DateTimeOffset.UtcNow,
             LastOnlineValidatedAtUtc: DateTimeOffset.UtcNow,
-            ExpiresAtUtc: DateTimeOffset.UtcNow.AddHours(12));
+            ExpiresAtUtc: DateTimeOffset.UtcNow.AddHours(12),
+            ScopeKind: OfflineGrantScopeKind.Organization);
 
         public Task EstablishFromOnlineSessionAsync(AuthSession session, string deviceId, string? roleCode, CancellationToken ct = default) =>
             Task.CompletedTask;

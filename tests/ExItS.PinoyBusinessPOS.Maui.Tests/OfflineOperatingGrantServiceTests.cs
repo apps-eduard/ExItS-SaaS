@@ -119,6 +119,113 @@ public sealed class OfflineOperatingGrantServiceTests
         Assert.NotNull(await harness.Store.LoadPinVerifierAsync());
     }
 
+    [Fact]
+    public async Task Personal_session_establishes_personal_grant_without_organization()
+    {
+        var clock = new FakeClock(DateTimeOffset.Parse("2026-08-08T00:00:00Z"));
+        var options = CreateOptions(24);
+        var store = new MemoryOfflineGrantStore();
+        var device = new FakeDevice("device-a");
+        var sut = new OfflineOperatingGrantService(store, device, options, clock);
+
+        await sut.EstablishFromOnlineSessionAsync(PersonalSession(), device.DeviceId, roleCode: null);
+        var grant = await store.LoadGrantAsync();
+        Assert.NotNull(grant);
+        Assert.Equal(OfflineOperatingGrant.CurrentSchemaVersion, grant.SchemaVersion);
+        Assert.True(grant.IsPersonalScope);
+        Assert.Null(grant.OrganizationId);
+        Assert.Equal(OfflineGrantScopeKind.Personal, grant.ScopeKind);
+    }
+
+    [Fact]
+    public async Task Organization_grant_still_requires_org_and_pos_access()
+    {
+        var clock = new FakeClock(DateTimeOffset.Parse("2026-08-08T00:00:00Z"));
+        var options = CreateOptions(24);
+        var store = new MemoryOfflineGrantStore();
+        var device = new FakeDevice("device-a");
+        var sut = new OfflineOperatingGrantService(store, device, options, clock);
+
+        var noAccess = OnlineSession() with { HasPosAccess = false };
+        await sut.EstablishFromOnlineSessionAsync(noAccess, device.DeviceId, "Cashier");
+        Assert.Null(await store.LoadGrantAsync());
+
+        var noOrg = OnlineSession() with { OrganizationId = null, HasPosAccess = true };
+        await sut.EstablishFromOnlineSessionAsync(noOrg, device.DeviceId, "Cashier");
+        Assert.Null(await store.LoadGrantAsync());
+    }
+
+    [Fact]
+    public async Task Staff_org_locked_session_does_not_establish_personal_grant()
+    {
+        var clock = new FakeClock(DateTimeOffset.Parse("2026-08-08T00:00:00Z"));
+        var options = CreateOptions(24);
+        var store = new MemoryOfflineGrantStore();
+        var device = new FakeDevice("device-a");
+        var sut = new OfflineOperatingGrantService(store, device, options, clock);
+
+        var locked = PersonalSession() with
+        {
+            OrganizationContextLocked = true,
+            OrganizationId = Guid.Parse("22222222-2222-2222-2222-222222222222")
+        };
+        await sut.EstablishFromOnlineSessionAsync(locked, device.DeviceId, null);
+        Assert.Null(await store.LoadGrantAsync());
+    }
+
+    [Fact]
+    public async Task Cold_start_accepts_legacy_schema_version_1_as_organization()
+    {
+        var clock = new FakeClock(DateTimeOffset.Parse("2026-08-08T00:00:00Z"));
+        var harness = await SeedAsync(clock);
+        var existing = (await harness.Store.LoadGrantAsync())!;
+        await harness.Store.SaveGrantAsync(existing with
+        {
+            SchemaVersion = OfflineOperatingGrant.LegacySchemaVersion,
+            ScopeKind = OfflineGrantScopeKind.Organization
+        });
+        Assert.True((await harness.OnlineService.SetPinAsync("123456")).Succeeded);
+
+        var cold = harness.CreateColdStartService();
+        var offer = await cold.EvaluateColdStartOfferAsync();
+        Assert.True(offer.CanOfferPinUnlock);
+        Assert.NotNull(offer.Grant);
+        Assert.True(offer.Grant.IsOrganizationScope);
+    }
+
+    [Fact]
+    public async Task Personal_and_organization_grants_are_scope_isolated_helpers()
+    {
+        var org = new OfflineOperatingGrant(
+            OfflineOperatingGrant.CurrentSchemaVersion,
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "Org",
+            "d",
+            "Cashier",
+            Array.Empty<string>(),
+            "Active",
+            "A",
+            "a",
+            "a@example.com",
+            DateTimeOffset.UtcNow,
+            DateTimeOffset.UtcNow,
+            DateTimeOffset.UtcNow.AddHours(1),
+            OfflineGrantScopeKind.Organization);
+        var personal = org with
+        {
+            OrganizationId = null,
+            OrganizationDisplayName = PersonalLocalScope.DisplayName,
+            ScopeKind = OfflineGrantScopeKind.Personal,
+            RoleCode = null
+        };
+
+        Assert.True(org.IsOrganizationScope);
+        Assert.False(org.IsPersonalScope);
+        Assert.True(personal.IsPersonalScope);
+        Assert.False(personal.IsOrganizationScope);
+    }
+
     private static async Task<Harness> SeedAsync(FakeClock clock, int durationHours = 24)
     {
         var options = CreateOptions(durationHours);
@@ -154,7 +261,22 @@ public sealed class OfflineOperatingGrantServiceTests
             HasPosAccess: true,
             AccessReasonCode: "allowed",
             SubscriptionStatus: "Active",
-            EnabledFeatureCodes: ["pos.sell"]);
+            EnabledFeatureCodes: ["pos.sell"],
+            AccountClass: "Organization");
+
+    private static AuthSession PersonalSession() =>
+        new(
+            Guid.Parse("11111111-1111-1111-1111-111111111111"),
+            "Personal One",
+            "personal1",
+            "personal@example.com",
+            OrganizationId: null,
+            OrganizationDisplayName: null,
+            DateTimeOffset.Parse("2026-08-08T00:00:00Z"),
+            DateTimeOffset.Parse("2026-08-09T00:00:00Z"),
+            HasPosAccess: false,
+            AccessReasonCode: null,
+            AccountClass: "Personal");
 
     private sealed record Harness(
         OfflineOperatingGrantService OnlineService,

@@ -17,6 +17,8 @@ public sealed class PersonalPageGuardTests
         Assert.Contains("href=\"/personal/utang/lent\"", shell, StringComparison.Ordinal);
         Assert.Contains("href=\"/personal/utang/borrowed\"", shell, StringComparison.Ordinal);
         Assert.Contains("href=\"/personal/more\"", shell, StringComparison.Ordinal);
+        Assert.Contains("OfflineAwareNavigation", shell, StringComparison.Ordinal);
+        Assert.Contains("OfflineNav.NavigateAsync", shell, StringComparison.Ordinal);
         Assert.Contains("replace: true", shell, StringComparison.Ordinal);
         Assert.DoesNotContain("/sales", shell, StringComparison.Ordinal);
         Assert.DoesNotContain("/catalog", shell, StringComparison.Ordinal);
@@ -74,6 +76,8 @@ public sealed class PersonalPageGuardTests
         Assert.Contains("Personal_ProfileLink", more, StringComparison.Ordinal);
         Assert.Contains("Personal_SettingsLink", more, StringComparison.Ordinal);
         Assert.Contains("Personal_ExplorePos", more, StringComparison.Ordinal);
+        Assert.Contains("OfflineAwareNavigation", more, StringComparison.Ordinal);
+        Assert.Contains("OfflineNav.NavigateAsync", more, StringComparison.Ordinal);
         Assert.DoesNotContain("Auth_Logout", more, StringComparison.Ordinal);
         Assert.Contains("pos-settings__nav", more, StringComparison.Ordinal);
         Assert.Contains("pos-personal-more__header", more, StringComparison.Ordinal);
@@ -242,28 +246,34 @@ public sealed class PersonalPageGuardTests
 
         var people = File.ReadAllText(Path.Combine(personal, "PersonalPeople.razor"));
         Assert.Contains("@page \"/personal/utang/people\"", people, StringComparison.Ordinal);
-        Assert.Contains("CreatePersonalContactAsync", people, StringComparison.Ordinal);
+        Assert.Contains("ILocalPersonalUtangStore", people, StringComparison.Ordinal);
+        Assert.Contains("PersistContactAndEnqueueAsync", people, StringComparison.Ordinal);
         Assert.Contains("pos-personal-people__header", people, StringComparison.Ordinal);
         Assert.DoesNotContain("PageHeader", people, StringComparison.Ordinal);
 
         var lent = File.ReadAllText(Path.Combine(personal, "PersonalLent.razor"));
         Assert.Contains("@page \"/personal/utang/lent\"", lent, StringComparison.Ordinal);
+        Assert.Contains("PersistRelationshipAndEnqueueAsync", lent, StringComparison.Ordinal);
         Assert.Contains("pos-personal-utang__header", lent, StringComparison.Ordinal);
         Assert.DoesNotContain("PageHeader", lent, StringComparison.Ordinal);
 
         var borrowed = File.ReadAllText(Path.Combine(personal, "PersonalBorrowed.razor"));
         Assert.Contains("@page \"/personal/utang/borrowed\"", borrowed, StringComparison.Ordinal);
+        Assert.Contains("PersistRelationshipAndEnqueueAsync", borrowed, StringComparison.Ordinal);
         Assert.Contains("pos-personal-utang__header", borrowed, StringComparison.Ordinal);
         Assert.DoesNotContain("PageHeader", borrowed, StringComparison.Ordinal);
 
         var detail = File.ReadAllText(Path.Combine(personal, "PersonalRelationshipDetail.razor"));
         Assert.Contains("@page \"/personal/utang/relationships/{RelationshipId:guid}\"", detail, StringComparison.Ordinal);
-        Assert.Contains("RecordPersonalUtangEntryAsync", detail, StringComparison.Ordinal);
+        Assert.Contains("PersistEntryAndEnqueueAsync", detail, StringComparison.Ordinal);
+        Assert.Contains("PosOfflineActionKeys.PersonalInvite", detail, StringComparison.Ordinal);
         Assert.Contains("pos-personal-relationship__header", detail, StringComparison.Ordinal);
         Assert.DoesNotContain("PageHeader", detail, StringComparison.Ordinal);
 
         var invites = File.ReadAllText(Path.Combine(personal, "PersonalUtangInvitations.razor"));
         Assert.Contains("@page \"/personal/utang/invitations\"", invites, StringComparison.Ordinal);
+        Assert.Contains("OnlineRequiredGuard", invites, StringComparison.Ordinal);
+        Assert.Contains("EnsureOnlineForRouteAsync", invites, StringComparison.Ordinal);
         Assert.Contains("Personal_NoUtangInvitationsTitle", invites, StringComparison.Ordinal);
         Assert.Contains("pos-personal-invitations__header", invites, StringComparison.Ordinal);
         Assert.Contains("ErrorState", invites, StringComparison.Ordinal);
