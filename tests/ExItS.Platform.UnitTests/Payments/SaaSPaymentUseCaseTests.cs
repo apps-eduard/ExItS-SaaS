@@ -10,6 +10,7 @@ using ExItS.Platform.Domain.Products;
 using ExItS.Platform.Domain.Subscriptions;
 using ExItS.Platform.UnitTests.Support;
 
+using ExItS.Platform.UnitTests.TestSupport;
 namespace ExItS.Platform.UnitTests.Payments;
 
 public sealed class SaaSPaymentUseCaseTests
@@ -29,7 +30,7 @@ public sealed class SaaSPaymentUseCaseTests
         public InMemorySaaSPaymentRepository Payments { get; } = new();
 
         public async Task<PlatformOrganization> CreateOrganizationAsync(string name = "Acme", string slug = "acme") =>
-            (await new CreatePlatformOrganization(Organizations, UnitOfWork, Clock).ExecuteAsync(name, slug)).Value!;
+            (await new CreatePlatformOrganization(Organizations, new FakePublicOrganizationIdGenerator(), UnitOfWork, Clock).ExecuteAsync(name, slug)).Value!;
 
         public async Task<ProductCode> CreateProductAsync()
         {

@@ -223,13 +223,14 @@ public sealed class PlatformAccessClient(IPosApiClient api) : IPlatformAccessCli
             "/api/v1/platform/auth/organization-invitations/pending",
             ct);
 
-    public Task<ApiResult<PlatformMembershipDto>> AcceptOrganizationInvitationAsync(
+    public Task<ApiResult<AcceptOrganizationInvitationResultDto>> AcceptOrganizationInvitationAsync(
         string token,
+        string password,
         CancellationToken ct = default) =>
-        api.SendAsync<PlatformMembershipDto>(
+        api.SendAsync<AcceptOrganizationInvitationResultDto>(
             HttpMethod.Post,
             "/api/v1/platform/auth/organization-invitations/accept",
-            new AcceptOrganizationInvitationRequest(token),
+            new AcceptOrganizationInvitationRequest(token, password),
             ct);
 
     public Task<ApiResult<PlatformMembershipDto>> AcceptOrganizationInvitationByIdAsync(

@@ -163,7 +163,9 @@ public sealed record PlatformLoginResultDto(
     int ActiveOrganizationCount,
     Guid? AccountProfileId = null,
     string? AccountClass = null,
-    string? AllowedScope = null);
+    string? AllowedScope = null,
+    Guid? HomeOrganizationId = null,
+    bool OrganizationContextLocked = false);
 
 public sealed record SelectAccountProfileRequest(Guid AccountProfileId);
 
@@ -314,7 +316,16 @@ public sealed record PendingOrganizationInvitationDto(
     DateTimeOffset ExpiresAtUtc,
     string Status);
 
-public sealed record AcceptOrganizationInvitationRequest(string Token);
+public sealed record AcceptOrganizationInvitationRequest(string Token, string Password);
+
+public sealed record AcceptOrganizationInvitationResultDto(
+    Guid UserId,
+    string StaffLogin,
+    string ContactEmail,
+    string OrganizationDisplayName,
+    Guid OrganizationId,
+    Guid MembershipId,
+    string Role);
 
 public sealed record PersonalDashboardDto(
     Guid UserIdentityId,
@@ -592,8 +603,9 @@ public interface IPlatformAccessClient
     Task<ApiResult<IReadOnlyList<PendingOrganizationInvitationDto>>> GetPendingOrganizationInvitationsAsync(
         CancellationToken ct = default);
 
-    Task<ApiResult<PlatformMembershipDto>> AcceptOrganizationInvitationAsync(
+    Task<ApiResult<AcceptOrganizationInvitationResultDto>> AcceptOrganizationInvitationAsync(
         string token,
+        string password,
         CancellationToken ct = default);
 
     Task<ApiResult<PlatformMembershipDto>> AcceptOrganizationInvitationByIdAsync(

@@ -11,6 +11,7 @@ using ExItS.Platform.Domain.Products;
 using ExItS.Platform.Domain.Subscriptions;
 using ExItS.Platform.UnitTests.Support;
 
+using ExItS.Platform.UnitTests.TestSupport;
 namespace ExItS.Platform.UnitTests.Application;
 
 public sealed class EntitlementUseCaseTests
@@ -47,7 +48,7 @@ public sealed class EntitlementUseCaseTests
         var snapshots = new InMemoryEntitlementSnapshotRepository();
         var refreshPolicy = new ProvisionalEntitlementRefreshPolicy();
 
-        var org = (await new CreatePlatformOrganization(orgs, uow, clock)
+        var org = (await new CreatePlatformOrganization(orgs, new FakePublicOrganizationIdGenerator(), uow, clock)
             .ExecuteAsync("Acme Group", "acme-group-" + Guid.NewGuid().ToString("N")[..8])).Value!;
 
         var productCode = ProductCode.Create(ProductCode.PinoyBusinessPos);

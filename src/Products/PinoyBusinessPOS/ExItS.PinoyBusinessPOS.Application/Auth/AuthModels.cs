@@ -101,7 +101,8 @@ public sealed record AuthSession(
     string? AccessToken = null,
     string? PlatformSessionToken = null,
     string? AccountClass = null,
-    Guid? AccountProfileId = null);
+    Guid? AccountProfileId = null,
+    bool OrganizationContextLocked = false);
 
 public sealed record EligibleOrganization(
     Guid OrganizationId,

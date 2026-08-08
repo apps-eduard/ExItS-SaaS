@@ -1,12 +1,53 @@
+using ExItS.Platform.Application.Organizations;
 using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Identity;
 using ExItS.Platform.Domain.Organizations;
+using ExItS.Platform.UnitTests.Support;
+using ExItS.Platform.UnitTests.TestSupport;
 
 namespace ExItS.Platform.UnitTests.Organizations;
 
 public sealed class OrganizationInvitationTests
 {
     private static readonly DateTimeOffset T0 = new(2026, 8, 1, 8, 0, 0, TimeSpan.Zero);
+
+    [Fact]
+    public async Task CreateOrganizationInvitation_does_not_provision_a_user()
+    {
+        var clock = new FixedClock(T0);
+        var uow = new NoOpUnitOfWork();
+        var users = new InMemoryPlatformUserRepository();
+        var orgs = new InMemoryPlatformOrganizationRepository();
+        var invitations = new InMemoryOrganizationInvitationRepository();
+        var messages = new CapturingAuthOutboundMessageSink();
+
+        var org = (await new CreatePlatformOrganization(orgs, new FakePublicOrganizationIdGenerator(), uow, clock)
+            .ExecuteAsync("Invite Org", "invite-org")).Value!;
+        var usersBefore = users.AddCount;
+
+        var create = new CreateOrganizationInvitation(
+            orgs,
+            invitations,
+            users,
+            new FakePublicOrganizationIdGenerator(),
+            messages,
+            uow,
+            clock);
+
+        var result = await create.ExecuteAsync(
+            org.Id,
+            "new.staff@example.com",
+            OrganizationRole.OrganizationMember,
+            invitedByUserId: null,
+            actorMembershipRole: OrganizationRole.OrganizationOwner,
+            actorHasPlatformManageMemberships: true);
+
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.Equal(usersBefore, users.AddCount);
+        Assert.NotNull(result.Value!.AcceptToken);
+        Assert.Equal(InvitationStatus.Pending.ToString(), result.Value.Status);
+        Assert.Null(await users.GetByNormalizedEmailAsync("new.staff@example.com"));
+    }
 
     [Fact]
     public void Create_resend_accept_is_single_use_and_email_bound()

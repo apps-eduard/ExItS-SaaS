@@ -12,6 +12,7 @@ using ExItS.Platform.Domain.Products;
 using ExItS.Platform.Domain.Subscriptions;
 using ExItS.Platform.UnitTests.Support;
 
+using ExItS.Platform.UnitTests.TestSupport;
 namespace ExItS.Platform.UnitTests.Access;
 
 public sealed class ProductAuthorizationAndDiscoveryTests
@@ -246,7 +247,7 @@ public sealed class ProductAuthorizationAndDiscoveryTests
     public async Task Cross_organization_product_role_assignment_is_blocked()
     {
         var harness = await AuthHarness.CreateAsync();
-        var otherOrg = (await new CreatePlatformOrganization(harness.Organizations, harness.UnitOfWork, harness.Clock)
+        var otherOrg = (await new CreatePlatformOrganization(harness.Organizations, new FakePublicOrganizationIdGenerator(), harness.UnitOfWork, harness.Clock)
             .ExecuteAsync("XYZ Store", "xyz-store")).Value!;
 
         var assigned = await harness.AssignRole.ExecuteAsync(
@@ -399,7 +400,7 @@ public sealed class ProductAuthorizationAndDiscoveryTests
 
             var user = (await new CreatePlatformUser(users, uow, clock, new SequentialPublicUserIdGenerator())
                 .ExecuteAsync("owner", "Org Owner", "owner@example.com")).Value!;
-            var org = (await new CreatePlatformOrganization(orgs, uow, clock)
+            var org = (await new CreatePlatformOrganization(orgs, new FakePublicOrganizationIdGenerator(), uow, clock)
                 .ExecuteAsync("Launch Co", "launch-co")).Value!;
             _ = (await new AddOrganizationMembership(users, orgs, memberships, new EnsureAccountProfilesForUser(new InMemoryAccountProfileRepository(), new InMemoryPlatformRoleAssignmentRepository(), memberships, uow, clock), uow, clock)
                 .ExecuteAsync(org.Id, user.Id, OrganizationRole.OrganizationOwner)).Value!;

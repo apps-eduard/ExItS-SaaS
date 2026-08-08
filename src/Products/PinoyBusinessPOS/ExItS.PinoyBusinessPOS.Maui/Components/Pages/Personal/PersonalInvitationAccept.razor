@@ -1,32 +1,29 @@
 @page "/personal/invitations/accept"
 @layout Layout.AuthShell
-@inject IAuthenticationService Auth
-@inject ICurrentUserContext CurrentUser
 @inject IPlatformAccessClient Platform
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
 <div class="pos-personal-invitation-accept">
-<StoreHeaderBack Href="/personal" />
+<StoreHeaderBack Href="/signin" />
 <Page>
     <header class="pos-personal-invitation-accept__header">
-        <h1 class="pos-personal-invitation-accept__title">@L["Personal_AcceptInvitationTitle"]</h1>
-        <p class="pos-personal-invitation-accept__subtitle">@L["Personal_AcceptInvitationSubtitle"]</p>
+        <h1 class="pos-personal-invitation-accept__title">@L["StaffInvite_AcceptTitle"]</h1>
+        <p class="pos-personal-invitation-accept__subtitle">@L["StaffInvite_AcceptSubtitle"]</p>
     </header>
 
     @if (!_ready)
     {
         <Spinner />
     }
-    else if (!_authenticated)
-    {
-        <ErrorState Title="@L["Auth_SessionExpiredTitle"]" Message="@L["Auth_SessionExpired"]" RetryLabel="@L["SignIn_Submit"]" OnRetry="GoSignIn" />
-    }
     else if (_done)
     {
-        <InlineMessage Tone="InlineMessageTone.Success">@L["Personal_AcceptInvitationSuccess"]</InlineMessage>
+        <InlineMessage Tone="InlineMessageTone.Success">@L["StaffInvite_ReadyTitle"]</InlineMessage>
+        <p class="pos-muted">@L["StaffInvite_OrganizationLabel"]: @_organizationName</p>
+        <p class="pos-muted">@L["StaffInvite_ContactEmailLabel"]: @_contactEmail</p>
+        <p class="pos-value-md">@L["StaffInvite_StaffLoginLabel"]: @_staffLogin</p>
         <FormActions>
-            <Button Variant="ButtonVariant.Primary" OnClick="GoHome">@L["Personal_BackHome"]</Button>
+            <Button Variant="ButtonVariant.Primary" OnClick="GoSignIn">@L["SignIn_Submit"]</Button>
         </FormActions>
     }
     else
@@ -34,10 +31,10 @@
         <FormValidationSummary Messages="_errors" />
         <FormGroup Title="@L["Personal_InvitationTokenLabel"]">
             <TextInput Label="@L["Personal_InvitationTokenLabel"]" Hint="@L["Personal_InvitationTokenHint"]" @bind-Value="_token" Disabled="_busy" />
+            <TextInput Label="@L["StaffInvite_PasswordLabel"]" Hint="@L["StaffInvite_PasswordHint"]" @bind-Value="_password" Disabled="_busy" Type="@("password")" />
         </FormGroup>
-        <InlineMessage Tone="InlineMessageTone.Info">@L["Personal_DeclineDeferredHint"]</InlineMessage>
         <FormActions>
-            <Button IsLoading="_busy" Disabled="_busy || string.IsNullOrWhiteSpace(_token)" OnClick="AcceptAsync">@L["Personal_AcceptInvitation"]</Button>
+            <Button IsLoading="_busy" Disabled="_busy || string.IsNullOrWhiteSpace(_token) || string.IsNullOrWhiteSpace(_password)" OnClick="AcceptAsync">@L["StaffInvite_AcceptAction"]</Button>
         </FormActions>
     }
 </Page>
@@ -45,24 +42,17 @@
 
 @code {
     private bool _ready;
-    private bool _authenticated;
     private bool _busy;
     private bool _done;
     private string _token = string.Empty;
+    private string _password = string.Empty;
+    private string? _staffLogin;
+    private string? _contactEmail;
+    private string? _organizationName;
     private List<string> _errors = [];
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
-        if (!CurrentUser.IsAuthenticated)
-        {
-            var restore = await Auth.RestoreSessionAsync();
-            _authenticated = restore.Succeeded;
-        }
-        else
-        {
-            _authenticated = true;
-        }
-
         var uri = Nav.ToAbsoluteUri(Nav.Uri);
         var query = uri.Query.TrimStart('?');
         foreach (var part in query.Split('&', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
@@ -95,17 +85,25 @@
             return;
         }
 
+        if (string.IsNullOrWhiteSpace(_password))
+        {
+            _errors.Add(L["StaffInvite_PasswordRequired"]);
+            return;
+        }
+
         _busy = true;
         try
         {
-            var result = await Platform.AcceptOrganizationInvitationAsync(_token.Trim());
-            if (!result.IsSuccess)
+            var result = await Platform.AcceptOrganizationInvitationAsync(_token.Trim(), _password);
+            if (!result.IsSuccess || result.Data is null)
             {
                 _errors.Add(result.Error?.Detail ?? L["Personal_AcceptInvitationFailed"]);
                 return;
             }
 
-            await Auth.EnsureOrganizationAccountProfileAsync();
+            _staffLogin = result.Data.StaffLogin;
+            _contactEmail = result.Data.ContactEmail;
+            _organizationName = result.Data.OrganizationDisplayName;
             _done = true;
         }
         finally
@@ -114,6 +112,5 @@
         }
     }
 
-    private void GoHome() => Nav.NavigateTo("/personal");
     private void GoSignIn() => Nav.NavigateTo("/signin");
 }

@@ -12,6 +12,7 @@ using ExItS.Platform.Domain.Products;
 using ExItS.Platform.Domain.Subscriptions;
 using ExItS.Platform.UnitTests.Support;
 
+using ExItS.Platform.UnitTests.TestSupport;
 namespace ExItS.Platform.UnitTests.Access;
 
 public sealed class ProductAccessUseCaseTests
@@ -407,7 +408,7 @@ public sealed class ProductAccessUseCaseTests
 
             var user = (await new CreatePlatformUser(users, uow, clock, new SequentialPublicUserIdGenerator())
                 .ExecuteAsync("ada", "Ada Lovelace", "ada@example.com")).Value!;
-            var org = (await new CreatePlatformOrganization(orgs, uow, clock)
+            var org = (await new CreatePlatformOrganization(orgs, new FakePublicOrganizationIdGenerator(), uow, clock)
                 .ExecuteAsync("Acme Group", "acme-access")).Value!;
             var membership = (await new AddOrganizationMembership(users, orgs, memberships, new EnsureAccountProfilesForUser(new InMemoryAccountProfileRepository(), new InMemoryPlatformRoleAssignmentRepository(), memberships, uow, clock), uow, clock)
                 .ExecuteAsync(org.Id, user.Id, OrganizationRole.OrganizationMember)).Value!;

@@ -1,6 +1,7 @@
 using ExItS.Platform.Application.Identity;
 using ExItS.Platform.Domain.Authorization;
 using ExItS.Platform.Domain.Identity;
+using ExItS.Platform.Domain.Organizations;
 
 namespace ExItS.Platform.UnitTests.Support;
 
@@ -49,6 +50,30 @@ internal sealed class InMemoryPlatformUserRepository : IPlatformUserRepository
         }
 
         return Task.FromResult<PlatformUser?>(null);
+    }
+
+    public Task<PlatformUser?> FindActiveStaffByHomeOrgAndContactEmailAsync(
+        PlatformOrganizationId homeOrganizationId,
+        string normalizedContactEmail,
+        CancellationToken cancellationToken = default)
+    {
+        var match = _byId.Values.FirstOrDefault(u =>
+            u.Status == AccountStatus.Active
+            && u.HomeOrganizationId == homeOrganizationId
+            && string.Equals(u.NormalizedContactEmail, normalizedContactEmail, StringComparison.Ordinal));
+        return Task.FromResult(match);
+    }
+
+    public Task<IReadOnlyList<PlatformUser>> ListByNormalizedContactEmailAsync(
+        string normalizedContactEmail,
+        CancellationToken cancellationToken = default)
+    {
+        IReadOnlyList<PlatformUser> matches = _byId.Values
+            .Where(u => string.Equals(u.NormalizedContactEmail, normalizedContactEmail, StringComparison.Ordinal))
+            .OrderBy(u => u.NormalizedUsername, StringComparer.Ordinal)
+            .ThenBy(u => u.Id.Value)
+            .ToList();
+        return Task.FromResult(matches);
     }
 
     public Task<(IReadOnlyList<PlatformUser> Items, int TotalCount)> ListAsync(

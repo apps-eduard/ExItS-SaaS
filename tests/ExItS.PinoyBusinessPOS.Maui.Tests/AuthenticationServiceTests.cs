@@ -960,8 +960,11 @@ public sealed class AuthenticationServiceTests
             Task.FromResult(ApiResult<IReadOnlyList<PendingOrganizationInvitationDto>>.Success(
                 Array.Empty<PendingOrganizationInvitationDto>()));
 
-        public Task<ApiResult<PlatformMembershipDto>> AcceptOrganizationInvitationAsync(string token, CancellationToken ct = default) =>
-            Task.FromResult(ApiResult<PlatformMembershipDto>.Unavailable());
+        public Task<ApiResult<AcceptOrganizationInvitationResultDto>> AcceptOrganizationInvitationAsync(
+            string token,
+            string password,
+            CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<AcceptOrganizationInvitationResultDto>.Unavailable());
 
         public Task<ApiResult<PlatformMembershipDto>> AcceptOrganizationInvitationByIdAsync(Guid invitationId, CancellationToken ct = default) =>
             Task.FromResult(ApiResult<PlatformMembershipDto>.Unavailable());

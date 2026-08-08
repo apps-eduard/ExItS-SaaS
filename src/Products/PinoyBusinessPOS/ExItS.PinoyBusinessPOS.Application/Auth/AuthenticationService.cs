@@ -159,7 +159,8 @@ public sealed class AuthenticationService(
                 AccessToken: null,
                 PlatformSessionToken: platformSessionToken,
                 AccountClass: accountClass,
-                AccountProfileId: accountProfileId));
+                AccountProfileId: accountProfileId,
+                OrganizationContextLocked: loginResult.Data.OrganizationContextLocked));
 
             tokenResult = await accessClient
                 .IssueTokenAsync(
@@ -194,7 +195,8 @@ public sealed class AuthenticationService(
                     AccessToken: null,
                     PlatformSessionToken: login.SessionToken,
                     AccountClass: login.AccountClass,
-                    AccountProfileId: login.AccountProfileId);
+                    AccountProfileId: login.AccountProfileId,
+                    OrganizationContextLocked: login.OrganizationContextLocked);
 
                 try
                 {
@@ -238,7 +240,8 @@ public sealed class AuthenticationService(
             AccessToken: issued.AccessToken,
             PlatformSessionToken: platformSessionToken,
             AccountClass: accountClass,
-            AccountProfileId: accountProfileId);
+            AccountProfileId: accountProfileId,
+            OrganizationContextLocked: loginResult.Data?.OrganizationContextLocked == true);
 
         try
         {

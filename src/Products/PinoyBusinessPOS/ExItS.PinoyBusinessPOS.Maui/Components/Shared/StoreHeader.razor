@@ -2,6 +2,7 @@
 @using ExItS.DesignSystem.Components.Internal
 @inject StoreHeaderState HeaderState
 @inject NavigationManager Nav
+@inject ICurrentUserContext CurrentUser
 @inject IStringLocalizer<PosResources> L
 
 <header class="pos-topbar">
@@ -43,8 +44,8 @@
         {
             <ShellAccountMenu @ref="_accountMenu"
                              ShowSettings="@ShowSettings"
-                             ShowSwitchOrganization="@ShowSwitchOrganization"
-                             ShowPersonalHome="@ShowPersonalHome"
+                             ShowSwitchOrganization="@EffectiveShowSwitchOrganization"
+                             ShowPersonalHome="@EffectiveShowPersonalHome"
                              ShowSignOut="@ShowSignOut"
                              OnOpened="OnAccountMenuOpenedAsync" />
         }
@@ -70,6 +71,12 @@
 
     private bool EffectiveShowBack =>
         ShowBack || HeaderState.ShowBack;
+
+    private bool EffectiveShowSwitchOrganization =>
+        ShowSwitchOrganization && CurrentUser.Session?.OrganizationContextLocked != true;
+
+    private bool EffectiveShowPersonalHome =>
+        ShowPersonalHome && CurrentUser.Session?.OrganizationContextLocked != true;
 
     protected override void OnInitialized()
     {

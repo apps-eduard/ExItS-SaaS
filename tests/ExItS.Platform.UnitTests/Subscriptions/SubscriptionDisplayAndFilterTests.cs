@@ -11,6 +11,7 @@ using ExItS.Platform.Domain.Products;
 using ExItS.Platform.Domain.Subscriptions;
 using ExItS.Platform.UnitTests.Support;
 
+using ExItS.Platform.UnitTests.TestSupport;
 namespace ExItS.Platform.UnitTests.Subscriptions;
 
 public sealed class SubscriptionDisplayAndFilterTests
@@ -258,9 +259,9 @@ public sealed class SubscriptionDisplayAndFilterTests
             var trials = new InMemoryTrialDefinitionRepository();
             var subscriptions = new InMemorySubscriptionRepository();
 
-            var orgA = (await new CreatePlatformOrganization(orgs, uow, clock)
+            var orgA = (await new CreatePlatformOrganization(orgs, new FakePublicOrganizationIdGenerator(), uow, clock)
                 .ExecuteAsync("Acme Retail Group", "acme-retail")).Value!;
-            var orgB = (await new CreatePlatformOrganization(orgs, uow, clock)
+            var orgB = (await new CreatePlatformOrganization(orgs, new FakePublicOrganizationIdGenerator(), uow, clock)
                 .ExecuteAsync("Beta Shop", "beta-shop")).Value!;
 
             await products.AddAsync(Product.Create(

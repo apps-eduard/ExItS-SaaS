@@ -11,6 +11,7 @@ using ExItS.Platform.Domain.Products;
 using ExItS.Platform.Domain.Subscriptions;
 using ExItS.Platform.UnitTests.Support;
 
+using ExItS.Platform.UnitTests.TestSupport;
 namespace ExItS.Platform.UnitTests.Application;
 
 public sealed class CommercialUseCaseTests
@@ -28,7 +29,7 @@ public sealed class CommercialUseCaseTests
         var trials = new InMemoryTrialDefinitionRepository();
         var subscriptions = new InMemorySubscriptionRepository();
 
-        var org = (await new CreatePlatformOrganization(orgs, uow, clock)
+        var org = (await new CreatePlatformOrganization(orgs, new FakePublicOrganizationIdGenerator(), uow, clock)
             .ExecuteAsync("Acme Group", "acme-inactive-plan")).Value!;
         var product = (await new CreateProduct(products, uow, clock)
             .ExecuteAsync(ProductCode.PinoyBusinessPos, "Pinoy Business POS")).Value!;
@@ -62,7 +63,7 @@ public sealed class CommercialUseCaseTests
         var plans = new InMemoryPlanRepository();
         var subscriptions = new InMemorySubscriptionRepository();
 
-        var org = (await new CreatePlatformOrganization(orgs, uow, clock)
+        var org = (await new CreatePlatformOrganization(orgs, new FakePublicOrganizationIdGenerator(), uow, clock)
             .ExecuteAsync("Acme Group", "acme-paid-plan")).Value!;
         await new CreateProduct(products, uow, clock).ExecuteAsync(ProductCode.PinoyBusinessPos, "POS");
 
@@ -107,7 +108,7 @@ public sealed class CommercialUseCaseTests
         var trials = new InMemoryTrialDefinitionRepository();
         var subscriptions = new InMemorySubscriptionRepository();
 
-        var org = (await new CreatePlatformOrganization(orgs, uow, clock)
+        var org = (await new CreatePlatformOrganization(orgs, new FakePublicOrganizationIdGenerator(), uow, clock)
             .ExecuteAsync("Acme Group", "acme-retired-plan")).Value!;
         var product = (await new CreateProduct(products, uow, clock)
             .ExecuteAsync("retired-plan-prod", "Retired Plan Product")).Value!;
@@ -145,7 +146,7 @@ public sealed class CommercialUseCaseTests
         var snapshots = new InMemoryEntitlementSnapshotRepository();
         var refreshPolicy = new ProvisionalEntitlementRefreshPolicy();
 
-        var org = (await new CreatePlatformOrganization(orgs, uow, clock)
+        var org = (await new CreatePlatformOrganization(orgs, new FakePublicOrganizationIdGenerator(), uow, clock)
             .ExecuteAsync("Acme Group", "acme-group")).Value!;
 
         var productResult = await new CreateProduct(products, uow, clock)
@@ -233,7 +234,7 @@ public sealed class CommercialUseCaseTests
         var trials = new InMemoryTrialDefinitionRepository();
         var subscriptions = new InMemorySubscriptionRepository();
 
-        var org = (await new CreatePlatformOrganization(orgs, uow, clock)
+        var org = (await new CreatePlatformOrganization(orgs, new FakePublicOrganizationIdGenerator(), uow, clock)
             .ExecuteAsync("Acme Group", "acme-group")).Value!;
 
         await new CreateProduct(products, uow, clock).ExecuteAsync(ProductCode.PinoyBusinessPos, "POS");
@@ -290,7 +291,7 @@ public sealed class CommercialUseCaseTests
         var missingOrg = await startTrial.ExecuteAsync(PlatformOrganizationId.New(), plan.Id, version.Id, trial.Id);
         Assert.Equal(ApplicationErrorCodes.OrganizationNotFound, missingOrg.ErrorCode);
 
-        var org = (await new CreatePlatformOrganization(orgs, uow, clock)
+        var org = (await new CreatePlatformOrganization(orgs, new FakePublicOrganizationIdGenerator(), uow, clock)
             .ExecuteAsync("Acme Group", "acme-group")).Value!;
         org.Suspend(clock.UtcNow);
         await orgs.UpdateAsync(org);
@@ -312,7 +313,7 @@ public sealed class CommercialUseCaseTests
         var trials = new InMemoryTrialDefinitionRepository();
         var subscriptions = new InMemorySubscriptionRepository();
 
-        var org = (await new CreatePlatformOrganization(orgs, uow, clock)
+        var org = (await new CreatePlatformOrganization(orgs, new FakePublicOrganizationIdGenerator(), uow, clock)
             .ExecuteAsync("Acme Group", "acme-group")).Value!;
         await new CreateProduct(products, uow, clock).ExecuteAsync(ProductCode.PinoyBusinessPos, "POS");
         var pc = ProductCode.Create(ProductCode.PinoyBusinessPos);
@@ -349,7 +350,7 @@ public sealed class CommercialUseCaseTests
         var fc = FeatureCode.Create(FeatureCode.CustomerCreditCreate);
         await features.AddAsync(FeatureDefinition.Create(pc, fc, "Create", FeatureValueType.Boolean, T0));
 
-        var org = (await new CreatePlatformOrganization(orgs, uow, clock)
+        var org = (await new CreatePlatformOrganization(orgs, new FakePublicOrganizationIdGenerator(), uow, clock)
             .ExecuteAsync("Acme Group", "acme-group")).Value!;
 
         var revokedBy = PlatformUserId.New();

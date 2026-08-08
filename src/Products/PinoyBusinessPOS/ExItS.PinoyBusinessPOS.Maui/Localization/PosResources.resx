@@ -267,7 +267,17 @@
   <data name="SignIn_FormTitle" xml:space="preserve"><value>Platform user (Dev)</value></data>
   <data name="SignIn_PasswordFormTitle" xml:space="preserve"><value>Platform credentials</value></data>
   <data name="SignIn_UsernameLabel" xml:space="preserve"><value>Username or email</value></data>
-  <data name="SignIn_UsernameHint" xml:space="preserve"><value>Platform account username or email</value></data>
+  <data name="SignIn_UsernameHint" xml:space="preserve"><value>Personal email or staff login (e.g. maria@ORG001842)</value></data>
+  <data name="StaffInvite_AcceptTitle" xml:space="preserve"><value>Accept staff invitation</value></data>
+  <data name="StaffInvite_AcceptSubtitle" xml:space="preserve"><value>Set a password to create your organization staff login.</value></data>
+  <data name="StaffInvite_AcceptAction" xml:space="preserve"><value>Create staff account</value></data>
+  <data name="StaffInvite_ReadyTitle" xml:space="preserve"><value>Your staff account is ready</value></data>
+  <data name="StaffInvite_OrganizationLabel" xml:space="preserve"><value>Organization</value></data>
+  <data name="StaffInvite_ContactEmailLabel" xml:space="preserve"><value>Contact email</value></data>
+  <data name="StaffInvite_StaffLoginLabel" xml:space="preserve"><value>Staff login</value></data>
+  <data name="StaffInvite_PasswordLabel" xml:space="preserve"><value>Password</value></data>
+  <data name="StaffInvite_PasswordHint" xml:space="preserve"><value>This password is for your staff login, not your personal email.</value></data>
+  <data name="StaffInvite_PasswordRequired" xml:space="preserve"><value>Password is required.</value></data>
   <data name="SignIn_PasswordLabel" xml:space="preserve"><value>Password</value></data>
   <data name="SignIn_PasswordHint" xml:space="preserve"><value>Password is never stored on device</value></data>
   <data name="SignIn_UserIdLabel" xml:space="preserve"><value>Platform User Id</value></data>

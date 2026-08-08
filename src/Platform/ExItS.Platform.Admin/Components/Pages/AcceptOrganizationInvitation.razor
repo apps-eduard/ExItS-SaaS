@@ -3,7 +3,7 @@
 @using AntDesign
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.WebUtilities
-@attribute [Authorize]
+@attribute [AllowAnonymous]
 @inject IPlatformApiClient Api
 @inject IStringLocalizer<AdminResources> L
 @inject NavigationManager Nav
@@ -27,29 +27,53 @@
 
             @if (_done)
             {
-                <Alert Type="@AlertType.Success" Message="Invitation accepted. You can open Organization Staff for your organization." ShowIcon="true" Style="margin-bottom: 1rem;" />
-                <Button Type="@ButtonType.Primary" Block Size="@ButtonSize.Small" OnClick="@(() => Nav.NavigateTo("/admin"))">
-                    Continue
+                <Alert Type="@AlertType.Success" Message="Your staff account is ready" ShowIcon="true" Style="margin-bottom: 1rem;" />
+                <Paragraph>Organization: <strong>@_organizationName</strong></Paragraph>
+                <Paragraph>Contact email: <strong>@_contactEmail</strong></Paragraph>
+                <Paragraph>Staff login: <strong>@_staffLogin</strong></Paragraph>
+                <Button Type="@ButtonType.Primary" Block Size="@ButtonSize.Small" OnClick="@(() => Nav.NavigateTo("/admin/login"))">
+                    Continue to sign in
                 </Button>
             }
             else
             {
                 <Paragraph Type="@TextElementType.Secondary">
-                    Accept the organization staff invitation for the signed-in account.
+                    Create your organization staff password to accept the invitation. You will sign in with a staff login name shown after acceptance.
                 </Paragraph>
-                <Button Type="@ButtonType.Primary" Block Size="@ButtonSize.Small" Loading="_busy" Disabled="_busy || string.IsNullOrWhiteSpace(_token)" OnClick="AcceptAsync">
-                    Accept invitation
-                </Button>
+                <Form Model="_model" OnFinish="AcceptAsync" Layout="@FormLayout.Vertical">
+                    <FormItem Label="Password">
+                        <InputPassword @bind-Value="_model.Password" Size="@InputSize.Small" Placeholder="Choose a password" />
+                    </FormItem>
+                    <FormItem>
+                        <Button Type="@ButtonType.Primary"
+                                HtmlType="submit"
+                                Block
+                                Size="@ButtonSize.Small"
+                                Loading="_busy"
+                                Disabled="_busy || string.IsNullOrWhiteSpace(_token)">
+                            Accept invitation
+                        </Button>
+                    </FormItem>
+                </Form>
             }
         </Body>
     </Card>
 </div>
 
 @code {
+    private readonly AcceptFormModel _model = new();
     private string _token = "";
     private string? _error;
     private bool _busy;
     private bool _done;
+    private string? _staffLogin;
+    private string? _contactEmail;
+    private string? _organizationName;
+
+    private sealed class AcceptFormModel
+    {
+        public string Password { get; set; } = "";
+    }
 
     protected override void OnInitialized()
     {
@@ -68,7 +92,7 @@
             return;
         }
 
-        var result = await Api.AcceptOrganizationInvitationAsync(_token);
+        var result = await Api.AcceptOrganizationInvitationAsync(_token, _model.Password);
         _busy = false;
         if (!result.IsSuccess)
         {
@@ -76,7 +100,10 @@
             return;
         }
 
+        _staffLogin = result.Data?.StaffLogin;
+        _contactEmail = result.Data?.ContactEmail;
+        _organizationName = result.Data?.OrganizationDisplayName;
         _done = true;
-        await Message.SuccessAsync("Invitation accepted.");
+        await Message.SuccessAsync("Your staff account is ready.");
     }
 }

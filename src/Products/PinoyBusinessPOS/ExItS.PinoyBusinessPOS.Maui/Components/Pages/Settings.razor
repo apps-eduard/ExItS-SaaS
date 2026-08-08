@@ -40,11 +40,14 @@
                         <span class="pos-settings__kv-label">@L["AccessConfirm_OrgLabel"]</span>
                         <span class="pos-settings__kv-value">@CurrentUser.Session.OrganizationDisplayName</span>
                     </div>
-                    <button type="button" class="pos-settings__nav" @onclick="GoSwitchOrg">
-                        <span class="pos-settings__nav-icon" aria-hidden="true">@IconGlyphs.Get("customers")</span>
-                        <span class="pos-settings__nav-label">@L["Settings_SwitchOrganization"]</span>
-                        <span class="pos-settings__chevron" aria-hidden="true">›</span>
-                    </button>
+                    @if (CurrentUser.Session?.OrganizationContextLocked != true)
+                    {
+                        <button type="button" class="pos-settings__nav" @onclick="GoSwitchOrg">
+                            <span class="pos-settings__nav-icon" aria-hidden="true">@IconGlyphs.Get("customers")</span>
+                            <span class="pos-settings__nav-label">@L["Settings_SwitchOrganization"]</span>
+                            <span class="pos-settings__chevron" aria-hidden="true">›</span>
+                        </button>
+                    }
                 </div>
             </Section>
 

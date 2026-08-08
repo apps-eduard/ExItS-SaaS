@@ -233,8 +233,18 @@ public sealed class PlatformApiClient(
         SendAsync<OrganizationInvitationDto>(HttpMethod.Post, $"/api/v1/platform/invitations/{invitationId}/resend", null, ct);
     public Task<ApiCallResult<OrganizationInvitationDto>> RevokeOrganizationInvitationAsync(Guid invitationId, CancellationToken ct = default) =>
         SendAsync<OrganizationInvitationDto>(HttpMethod.Post, $"/api/v1/platform/invitations/{invitationId}/revoke", null, ct);
-    public Task<ApiCallResult<OrganizationMembershipDto>> AcceptOrganizationInvitationAsync(string token, CancellationToken ct = default) =>
-        SendAsync<OrganizationMembershipDto>(HttpMethod.Post, "/api/v1/platform/invitations/accept", new { token }, ct);
+    public Task<ApiCallResult<AcceptOrganizationInvitationResultDto>> AcceptOrganizationInvitationAsync(
+        string token,
+        string password,
+        string? displayName = null,
+        string? firstName = null,
+        string? lastName = null,
+        CancellationToken ct = default) =>
+        SendAsync<AcceptOrganizationInvitationResultDto>(
+            HttpMethod.Post,
+            "/api/v1/platform/invitations/accept",
+            new { token, password, displayName, firstName, lastName },
+            ct);
 
     public Task<ApiCallResult<PagedResult<ProductAccessAssignmentDto>>> GetOrganizationProductAccessAsync(Guid organizationId, int page = 1, int pageSize = 20, string? status = null, CancellationToken ct = default) =>
         GetAsync<PagedResult<ProductAccessAssignmentDto>>($"/api/v1/platform/organizations/{organizationId}/product-access?{Query(("page", page), ("pageSize", pageSize), ("status", status))}", ct);

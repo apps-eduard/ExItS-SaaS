@@ -12,6 +12,7 @@ using ExItS.Platform.Domain.Products;
 using ExItS.Platform.Domain.Subscriptions;
 using ExItS.Platform.UnitTests.Support;
 
+using ExItS.Platform.UnitTests.TestSupport;
 namespace ExItS.Platform.UnitTests.Application;
 
 public sealed class Wp11PricingPaymentsPlanChangeTests
@@ -723,7 +724,7 @@ public sealed class Wp11PricingPaymentsPlanChangeTests
         public static async Task<Wp11CommercialHarness> CreateAsync(DateTimeOffset utcNow)
         {
             var ctx = new Wp11CommercialHarness(utcNow);
-            ctx.Organization = (await new CreatePlatformOrganization(ctx.Organizations, ctx.UnitOfWork, ctx.Clock)
+            ctx.Organization = (await new CreatePlatformOrganization(ctx.Organizations, new FakePublicOrganizationIdGenerator(), ctx.UnitOfWork, ctx.Clock)
                 .ExecuteAsync("ABC Store", "abc-store")).Value!;
             await new CreateProduct(ctx.Products, ctx.UnitOfWork, ctx.Clock)
                 .ExecuteAsync(ProductCode.PinoyBusinessPos, "Pinoy Business POS");

@@ -509,6 +509,15 @@ public sealed record CreateInvitationRequest(
     string? ProductRole = null,
     bool RequireEmailVerification = true);
 
+public sealed record AcceptOrganizationInvitationResultDto(
+    Guid UserId,
+    string StaffLogin,
+    string ContactEmail,
+    string OrganizationDisplayName,
+    Guid OrganizationId,
+    Guid MembershipId,
+    string Role);
+
 public sealed record ProductAccessAssignmentDto(
     Guid Id,
     Guid UserId,
