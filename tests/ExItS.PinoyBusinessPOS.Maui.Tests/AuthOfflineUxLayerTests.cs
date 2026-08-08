@@ -94,7 +94,7 @@ public sealed class AuthOfflineUxLayerTests
     public async Task Online_required_guard_shows_dialog_when_offline_and_preserves_callback_only()
     {
         var connectivity = new FakeConnectivity(connected: false);
-        var guard = new OnlineRequiredGuard(connectivity);
+        var guard = new OnlineRequiredGuard(connectivity, new PosOfflineCapabilityPolicy());
         Assert.False(await guard.EnsureOnlineAsync());
         Assert.True(guard.IsDialogVisible);
         await guard.DismissAsync();

@@ -119,11 +119,22 @@ public sealed class SalePageGuardTests
     }
 
     [Fact]
-    public void Sales_pages_require_reconnect_and_never_read_local_storage()
+    public void Server_sales_pages_check_connectivity_and_never_read_customer_credit_local_storage()
     {
-        foreach (var file in Directory.EnumerateFiles(SalesPagesDirectory(), "*.razor"))
+        // Local pending receipt is OfflineCapable (local cash sale store only).
+        var localReceipt = File.ReadAllText(Path.Combine(SalesPagesDirectory(), "LocalSaleReceipt.razor"));
+        Assert.Contains("ILocalCashSaleStore", localReceipt, StringComparison.Ordinal);
+        Assert.DoesNotContain("Connectivity.IsConnectedAsync", localReceipt, StringComparison.Ordinal);
+
+        string[] serverBacked =
+        [
+            "SalesList.razor",
+            "SaleDetail.razor",
+            "SaleReceipt.razor",
+        ];
+        foreach (var name in serverBacked)
         {
-            var text = File.ReadAllText(file);
+            var text = File.ReadAllText(Path.Combine(SalesPagesDirectory(), name));
             Assert.Contains("Connectivity.IsConnectedAsync", text, StringComparison.Ordinal);
             Assert.Contains("Sales_Offline", text, StringComparison.Ordinal);
             Assert.DoesNotContain("ILocalCustomerCreditStore", text, StringComparison.Ordinal);
@@ -132,9 +143,15 @@ public sealed class SalePageGuardTests
             Assert.DoesNotContain("SQLite", text, StringComparison.OrdinalIgnoreCase);
         }
 
-        // Checkout must re-check connectivity at the moment of recording, not only on load.
+        // Checkout: offline cash via local store; non-cash uses central OnlineRequiredGuard (no /reconnect bounce).
         var checkout = File.ReadAllText(Path.Combine(SalesPagesDirectory(), "SaleCheckout.razor"));
+        Assert.Contains("Connectivity.IsConnectedAsync", checkout, StringComparison.Ordinal);
         Assert.Contains("Sales_Checkout_OfflineMessage", checkout, StringComparison.Ordinal);
+        Assert.Contains("OnlineRequired.EnsureOnlineForActionAsync", checkout, StringComparison.Ordinal);
+        Assert.Contains("PosOfflineActionKeys.SaleNonCashPayment", checkout, StringComparison.Ordinal);
+        Assert.Contains("ILocalCashSaleStore", checkout, StringComparison.Ordinal);
+        Assert.DoesNotContain("ILocalCustomerCreditStore", checkout, StringComparison.Ordinal);
+        Assert.DoesNotContain("/reconnect", checkout, StringComparison.Ordinal);
     }
 
     [Fact]
