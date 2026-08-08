@@ -377,6 +377,7 @@ public sealed class BindPlatformAccessTokenProductContext
     private readonly IPlatformOrganizationRepository _organizations;
     private readonly IProductLocalRoleGrantRepository _roleGrants;
     private readonly EvaluateProductAuthorization _authorize;
+    private readonly GrantProductAccess _grantProductAccess;
     private readonly IPlatformSessionTokenService _tokenService;
     private readonly IAuditWriter _auditWriter;
     private readonly IPlatformUnitOfWork _unitOfWork;
@@ -392,6 +393,7 @@ public sealed class BindPlatformAccessTokenProductContext
         IPlatformOrganizationRepository organizations,
         IProductLocalRoleGrantRepository roleGrants,
         EvaluateProductAuthorization authorize,
+        GrantProductAccess grantProductAccess,
         IPlatformSessionTokenService tokenService,
         IAuditWriter auditWriter,
         IPlatformUnitOfWork unitOfWork,
@@ -406,6 +408,7 @@ public sealed class BindPlatformAccessTokenProductContext
         _organizations = organizations;
         _roleGrants = roleGrants;
         _authorize = authorize;
+        _grantProductAccess = grantProductAccess;
         _tokenService = tokenService;
         _auditWriter = auditWriter;
         _unitOfWork = unitOfWork;
@@ -498,6 +501,48 @@ public sealed class BindPlatformAccessTokenProductContext
             access = await _authorize
                 .ExecuteAsync(user.Id, orgId, productCode, cancellationToken)
                 .ConfigureAwait(false);
+        }
+
+        // Staff with an active product-local role but no ProductAccessAssignment cannot bind
+        // (Home + More only). Bootstrap commercial assignment on bind — same gap as historical
+        // Mobile/invite flows that assigned Manager/Cashier without granting product access.
+        if (!access.CanOperate
+            && access.ReasonCode == EffectiveAccessReasonCodes.ProductAssignmentMissing)
+        {
+            var existingRole = await _roleGrants
+                .FindActiveByUserOrganizationProductAsync(orgId, user.Id, access.ProductCode, cancellationToken)
+                .ConfigureAwait(false);
+            if (existingRole is not null)
+            {
+                var accessGrant = await _grantProductAccess
+                    .ExecuteAsync(
+                        orgId,
+                        user.Id,
+                        access.ProductCode,
+                        grantedByActor: $"platform-user:{user.Id.Value:D}",
+                        reason: "Product access granted on bind for staff with an active product-local role.",
+                        cancellationToken: cancellationToken,
+                        ensureExisting: true)
+                    .ConfigureAwait(false);
+                if (accessGrant.IsSuccess)
+                {
+                    await _auditWriter.WriteAsync(
+                        $"platform-user:{user.Id.Value:D}",
+                        AuditActorType.PlatformUser,
+                        PlatformAuditActions.ProductAccessGranted,
+                        "ProductAccessAssignment",
+                        accessGrant.Value!.Id.Value.ToString("D"),
+                        AuditOutcome.Succeeded,
+                        organizationId: orgId,
+                        productCode: ProductCode.Create(access.ProductCode),
+                        summary: "POS product access granted on bind for staff with product-local role.",
+                        cancellationToken: cancellationToken).ConfigureAwait(false);
+
+                    access = await _authorize
+                        .ExecuteAsync(user.Id, orgId, productCode, cancellationToken)
+                        .ConfigureAwait(false);
+                }
+            }
         }
 
         if (!access.CanOperate)

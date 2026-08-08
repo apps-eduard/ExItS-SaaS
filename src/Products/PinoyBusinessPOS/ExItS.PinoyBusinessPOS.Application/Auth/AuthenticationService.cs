@@ -517,6 +517,11 @@ public sealed class AuthenticationService(
                 }
 
                 currentUser.Set(restored);
+                if (orgId is Guid restoredOrg)
+                {
+                    await AlignPlatformOrganizationContextAsync(restored, restoredOrg, ct).ConfigureAwait(false);
+                }
+
                 if (hasAccess && orgId is Guid validatedOrg)
                 {
                     await OpenLocalContextAsync(restored.UserId, validatedOrg, ct).ConfigureAwait(false);
@@ -1213,6 +1218,7 @@ public sealed class AuthenticationService(
         }
 
         currentUser.Set(updated);
+        await AlignPlatformOrganizationContextAsync(updated, organizationId, ct).ConfigureAwait(false);
         await OpenLocalContextAsync(updated.UserId, organizationId, ct).ConfigureAwait(false);
         // SelectOrganization clears process validation first; re-arm once POS access is bound.
         _accessPolicy?.NotifySessionAccessChanged();
@@ -1220,6 +1226,32 @@ public sealed class AuthenticationService(
             ("userId", previous.UserId.ToString("D")),
             ("organizationId", organizationId.ToString("D"))));
         return new AuthResult(true, AuthFailureReason.None, updated);
+    }
+
+    /// <summary>
+    /// Keeps Platform session SelectedOrganizationId aligned with Mobile's bound org so
+    /// PlatformSession-authenticated org/subscription/entitlement reads authorize correctly.
+    /// </summary>
+    private async Task AlignPlatformOrganizationContextAsync(
+        AuthSession session,
+        Guid? organizationId,
+        CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(session.PlatformSessionToken))
+        {
+            return;
+        }
+
+        try
+        {
+            await accessClient
+                .SetOrganizationContextAsync(new SetOrganizationContextRequest(organizationId), ct)
+                .ConfigureAwait(false);
+        }
+        catch
+        {
+            // Best-effort; membership-based view auth remains the fallback.
+        }
     }
 
     private async Task<AuthResult> RebuildSessionAsync(

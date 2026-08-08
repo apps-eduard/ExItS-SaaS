@@ -419,40 +419,33 @@
     {
         var orgs = await Access.ListEligibleOrganizationsAsync(session.UserId);
 
+        // No org membership → Personal workspace.
         if (orgs.Count == 0)
         {
             Nav.NavigateTo("/personal", replace: true);
             return;
         }
 
-        if (OrganizationMembershipRoles.HasOrganizationOwner(orgs))
+        // Own org + other memberships (or any multi-org set) → choose workspace.
+        if (orgs.Count > 1)
         {
             Nav.NavigateTo("/organization-select", replace: true);
             return;
         }
 
-        var last = await Prefs.GetSelectedOrganizationIdAsync();
-        var targetOrgId = last is Guid lastId && orgs.Any(o => o.OrganizationId == lastId)
-            ? lastId
-            : orgs.Count == 1
-                ? orgs[0].OrganizationId
-                : (Guid?)null;
-
-        if (targetOrgId is Guid orgId)
+        // Exactly one org (owned or assigned staff membership) → enter it directly.
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+        try
         {
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(20));
-            try
+            var selected = await Auth.SelectOrganizationAsync(orgs[0].OrganizationId, cts.Token);
+            if (selected.Succeeded)
             {
-                var selected = await Auth.SelectOrganizationAsync(orgId, cts.Token);
-                if (selected.Succeeded)
-                {
-                    Nav.NavigateTo("/", replace: true);
-                    return;
-                }
+                Nav.NavigateTo("/", replace: true);
+                return;
             }
-            catch (OperationCanceledException)
-            {
-            }
+        }
+        catch (OperationCanceledException)
+        {
         }
 
         Nav.NavigateTo("/organization-select", replace: true);

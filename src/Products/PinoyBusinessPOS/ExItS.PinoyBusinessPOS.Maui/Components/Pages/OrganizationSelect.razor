@@ -269,12 +269,15 @@
             ResolveFocusOrganization();
             PublishTopBarPreview();
 
-            // Staff with exactly one org: enter assigned role UI immediately (no Personal / role chooser).
-            if (!_isOwner
-                && _organizations.Count == 1
-                && CurrentUser.Session.OrganizationId is null)
+            // Exactly one org (owned or assigned) and not already bound: enter it directly.
+            // Multi-org users stay on this chooser (including Personal → Organization switches).
+            if (_organizations.Count == 1 && CurrentUser.Session.OrganizationId is null)
             {
-                await SelectAsAsync(_organizations[0].OrganizationId, preferredHome: null);
+                var only = _organizations[0];
+                var preferred = OrganizationMembershipRoles.IsOwnerRole(only.MembershipRole)
+                    ? RoleHomeResolver.OwnerHome
+                    : null;
+                await SelectAsAsync(only.OrganizationId, preferred);
                 return;
             }
 

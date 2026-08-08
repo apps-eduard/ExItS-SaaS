@@ -40,11 +40,19 @@ internal sealed class PlatformOrganizationAuthz(
         Guid organizationId,
         CancellationToken cancellationToken = default)
     {
+        // Read paths allow any active membership in the target org. Do not require the Platform
+        // session's SelectedOrganizationId to already match — Mobile binds product context via
+        // Bearer first, and Org Summary then loads details with PlatformSession. Requiring a
+        // pre-selected org context made membership-only sessions see "Could not load organization".
         if (await HasPlatformPermissionAsync(PlatformPermission.ViewPortfolio, organizationId, cancellationToken)
                 .ConfigureAwait(false)
             || await HasPlatformPermissionAsync(PlatformPermission.ManageOrganizations, organizationId, cancellationToken)
                 .ConfigureAwait(false)
-            || await HasTrustedActiveMembershipAsync(organizationId, governingAdminOnly: false, cancellationToken)
+            || await HasTrustedActiveMembershipAsync(
+                    organizationId,
+                    governingAdminOnly: false,
+                    requireSelectedOrganization: false,
+                    cancellationToken)
                 .ConfigureAwait(false))
         {
             return null;
@@ -76,7 +84,11 @@ internal sealed class PlatformOrganizationAuthz(
             return (null, true);
         }
 
-        if (await HasTrustedActiveMembershipAsync(organizationId, governingAdminOnly: true, cancellationToken)
+        if (await HasTrustedActiveMembershipAsync(
+                    organizationId,
+                    governingAdminOnly: true,
+                    requireSelectedOrganization: true,
+                    cancellationToken)
                 .ConfigureAwait(false))
         {
             return (null, false);
@@ -118,7 +130,11 @@ internal sealed class PlatformOrganizationAuthz(
             return null;
         }
 
-        if (await HasTrustedActiveMembershipAsync(organizationId, governingAdminOnly: true, cancellationToken)
+        if (await HasTrustedActiveMembershipAsync(
+                    organizationId,
+                    governingAdminOnly: true,
+                    requireSelectedOrganization: true,
+                    cancellationToken)
                 .ConfigureAwait(false))
         {
             return null;
@@ -130,12 +146,19 @@ internal sealed class PlatformOrganizationAuthz(
     private async Task<bool> HasTrustedActiveMembershipAsync(
         Guid organizationId,
         bool governingAdminOnly,
+        bool requireSelectedOrganization,
         CancellationToken cancellationToken)
     {
         var actor = authz.CurrentActor;
-        if (actor.PlatformUserId is null
-            || actor.OrganizationId is null
-            || actor.OrganizationId.Value != organizationId)
+        if (actor.PlatformUserId is null)
+        {
+            return false;
+        }
+
+        // Mutations stay scoped to the selected organization context. Reads may authorize from
+        // membership alone so Mobile Org Summary can load after product bind.
+        if (requireSelectedOrganization
+            && (actor.OrganizationId is null || actor.OrganizationId.Value != organizationId))
         {
             return false;
         }

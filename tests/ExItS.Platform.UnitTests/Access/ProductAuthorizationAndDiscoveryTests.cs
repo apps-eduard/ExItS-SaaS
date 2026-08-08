@@ -137,7 +137,7 @@ public sealed class ProductAuthorizationAndDiscoveryTests
     }
 
     [Fact]
-    public async Task Role_assignment_does_not_create_entitlement_or_commercial_assignment()
+    public async Task Role_assignment_ensures_commercial_product_access_so_staff_can_operate()
     {
         var harness = await AuthHarness.CreateAsync();
         Assert.True((await harness.AssignRole.ExecuteAsync(
@@ -152,9 +152,36 @@ public sealed class ProductAuthorizationAndDiscoveryTests
             harness.Organization.Id,
             harness.Product.Code.Value);
         Assert.True(auth.ProductLocalRoleGranted);
-        Assert.False(auth.ProductAccessAssigned);
-        Assert.False(auth.EntitlementAllowed);
-        Assert.False(auth.CanOperate);
+        Assert.True(auth.ProductAccessAssigned);
+        Assert.True(auth.EntitlementAllowed);
+        Assert.True(auth.CanOperate);
+        Assert.Equal(ProductLocalRoleCodes.Cashier, auth.ProductLocalRoleCode);
+    }
+
+    [Fact]
+    public async Task Reassigning_the_same_role_is_idempotent_and_keeps_operate_access()
+    {
+        var harness = await AuthHarness.CreateAsync();
+        Assert.True((await harness.AssignRole.ExecuteAsync(
+            harness.Organization.Id,
+            harness.User.Id,
+            harness.Product.Code.Value,
+            ProductLocalRoleCodes.Manager,
+            harness.User.Id)).IsSuccess);
+
+        Assert.True((await harness.AssignRole.ExecuteAsync(
+            harness.Organization.Id,
+            harness.User.Id,
+            harness.Product.Code.Value,
+            ProductLocalRoleCodes.Manager,
+            harness.User.Id)).IsSuccess);
+
+        var auth = await harness.Authorize.ExecuteAsync(
+            harness.User.Id,
+            harness.Organization.Id,
+            harness.Product.Code.Value);
+        Assert.True(auth.CanOperate);
+        Assert.Equal(ProductLocalRoleCodes.Manager, auth.ProductLocalRoleCode);
     }
 
     [Fact]
@@ -427,7 +454,7 @@ public sealed class ProductAuthorizationAndDiscoveryTests
                 users, orgs, memberships, products, assignments, subscriptions, snapshots, generateSnapshot, clock);
             var authorize = new EvaluateProductAuthorization(commercial, roleGrants, clock);
             var discover = new DiscoverEnabledProducts(memberships, subscriptions, products, authorize);
-            var assignRole = new AssignProductLocalRole(users, orgs, memberships, products, roleGrants, uow, clock);
+            var assignRole = new AssignProductLocalRole(users, orgs, memberships, products, roleGrants, grantAccess, uow, clock);
             var revokeRole = new RevokeProductLocalRole(roleGrants, uow, clock);
 
             return new AuthHarness

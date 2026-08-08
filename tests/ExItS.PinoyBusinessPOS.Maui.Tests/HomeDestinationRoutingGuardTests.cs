@@ -164,6 +164,27 @@ public sealed class HomeDestinationRoutingGuardTests
     }
 
     [Fact]
+    public void Selecting_organization_aligns_platform_session_org_context()
+    {
+        var auth = File.ReadAllText(Path.Combine(ApplicationProject(), "Auth", "AuthenticationService.cs"));
+        var orgAuthz = File.ReadAllText(Path.Combine(
+            FindRepoRoot(),
+            "src",
+            "Platform",
+            "ExItS.Platform.Api",
+            "Common",
+            "PlatformOrganizationAuthz.cs"));
+
+        Assert.Contains("AlignPlatformOrganizationContextAsync", auth, StringComparison.Ordinal);
+        Assert.Contains("SetOrganizationContextAsync", auth, StringComparison.Ordinal);
+        Assert.Contains("PersistOrganizationSelectionAsync", auth, StringComparison.Ordinal);
+
+        // View org details must not require SelectedOrganizationId (Mobile Org Summary).
+        Assert.Contains("requireSelectedOrganization: false", orgAuthz, StringComparison.Ordinal);
+        Assert.Contains("EnsureCanViewOrganizationAsync", orgAuthz, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Context_switcher_clears_working_as_when_bound_organization_has_no_pos_access()
     {
         var switcher = File.ReadAllText(Path.Combine(
@@ -172,6 +193,42 @@ public sealed class HomeDestinationRoutingGuardTests
         Assert.Contains("result.Session is not { HasPosAccess: true }", switcher, StringComparison.Ordinal);
         Assert.Contains("SellingMode.Clear();", switcher, StringComparison.Ordinal);
         Assert.Contains("RoleHomeResolver.OrgEssentials", switcher, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Org_workspace_routing_uses_count_not_owner_flag_and_personal_switch_goes_to_select()
+    {
+        var signIn = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Pages", "SignIn.razor"));
+        var orgSelect = File.ReadAllText(Path.Combine(
+            MauiProject(), "Components", "Pages", "OrganizationSelect.razor"));
+        var switcher = File.ReadAllText(Path.Combine(
+            MauiProject(), "Components", "Shared", "AccountContextSwitcher.razor"));
+
+        // Login: 0 → personal, >1 → select, 1 → auto-enter. Owners with a single org no longer
+        // always land on the role chooser.
+        Assert.Contains("NavigateAfterSignInAsync", signIn, StringComparison.Ordinal);
+        Assert.Contains("if (orgs.Count == 0)", signIn, StringComparison.Ordinal);
+        Assert.Contains("if (orgs.Count > 1)", signIn, StringComparison.Ordinal);
+        Assert.Contains("SelectOrganizationAsync(orgs[0].OrganizationId", signIn, StringComparison.Ordinal);
+        Assert.DoesNotContain(
+            "if (OrganizationMembershipRoles.HasOrganizationOwner(orgs))",
+            signIn,
+            StringComparison.Ordinal);
+
+        // Organization-select auto-enters any unbound single-org user (owner or staff).
+        Assert.Contains("_organizations.Count == 1 && CurrentUser.Session.OrganizationId is null", orgSelect, StringComparison.Ordinal);
+        Assert.DoesNotContain("!_isOwner\n                && _organizations.Count == 1", orgSelect, StringComparison.Ordinal);
+
+        // Personal → Organization always opens Select Organization.
+        Assert.Contains("if (IsPersonalActive)", switcher, StringComparison.Ordinal);
+        Assert.Contains("Nav.NavigateTo(\"/organization-select\", replace: true)", switcher, StringComparison.Ordinal);
+        var personalGate = switcher.IndexOf("if (IsPersonalActive)", StringComparison.Ordinal);
+        var selectNav = switcher.IndexOf(
+            "Nav.NavigateTo(\"/organization-select\", replace: true)",
+            personalGate,
+            StringComparison.Ordinal);
+        var bind = switcher.IndexOf("SelectOrganizationAsync(organizationId)", personalGate, StringComparison.Ordinal);
+        Assert.InRange(selectNav, 0, bind);
     }
 
     [Fact]

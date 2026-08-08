@@ -176,6 +176,14 @@
 
     private async Task SwitchOrgAsync(Guid organizationId)
     {
+        // Personal → Organization always goes through Select Organization (role / workspace chooser).
+        if (IsPersonalActive)
+        {
+            SellingMode.Clear();
+            Nav.NavigateTo("/organization-select", replace: true);
+            return;
+        }
+
         if (CurrentUser.Session?.OrganizationId == organizationId)
         {
             Nav.NavigateTo(CurrentUser.HasPosAccess ? "/" : "/org");

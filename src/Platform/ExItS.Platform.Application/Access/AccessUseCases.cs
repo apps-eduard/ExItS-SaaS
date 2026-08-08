@@ -214,7 +214,8 @@ public sealed class GrantProductAccess
         string productCode,
         string grantedByActor,
         string? reason = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        bool ensureExisting = false)
     {
         try
         {
@@ -317,6 +318,12 @@ public sealed class GrantProductAccess
                 .ConfigureAwait(false);
             if (existing is not null)
             {
+                // Role assignment / bind bootstrap call sites need idempotent "ensure" semantics.
+                if (ensureExisting)
+                {
+                    return ApplicationResult<ProductAccessAssignment>.Success(existing);
+                }
+
                 return ApplicationResult<ProductAccessAssignment>.Failure(
                     ApplicationErrorCodes.ProductAccessConflict,
                     "An active product-access assignment already exists for this user, organization, and product.");
@@ -861,6 +868,7 @@ public sealed class AssignProductLocalRole
     private readonly IOrganizationMembershipRepository _memberships;
     private readonly IProductRepository _products;
     private readonly IProductLocalRoleGrantRepository _grants;
+    private readonly GrantProductAccess _grantProductAccess;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
@@ -870,6 +878,7 @@ public sealed class AssignProductLocalRole
         IOrganizationMembershipRepository memberships,
         IProductRepository products,
         IProductLocalRoleGrantRepository grants,
+        GrantProductAccess grantProductAccess,
         IPlatformUnitOfWork unitOfWork,
         IClock clock)
     {
@@ -878,6 +887,7 @@ public sealed class AssignProductLocalRole
         _memberships = memberships;
         _products = products;
         _grants = grants;
+        _grantProductAccess = grantProductAccess;
         _unitOfWork = unitOfWork;
         _clock = clock;
     }
@@ -943,9 +953,27 @@ public sealed class AssignProductLocalRole
         {
             if (string.Equals(existing.RoleCode, ProductLocalRoleCodes.EnsureKnown(roleCode), StringComparison.Ordinal))
             {
-                return ApplicationResult<ProductLocalRoleGrant>.Failure(
-                    ApplicationErrorCodes.ProductLocalRoleGrantConflict,
-                    "An active product-local role grant already exists for this user and product.");
+                // Role already correct — still ensure commercial assignment so re-assign / invite
+                // retries unstick staff who previously received only a product-local role.
+                var ensureAccess = await _grantProductAccess
+                    .ExecuteAsync(
+                        organizationId,
+                        userIdentityId,
+                        code.Value,
+                        grantedByActor: $"platform-user:{grantedByUserIdentityId.Value:D}",
+                        reason: reason ?? "Ensured with existing product-local role assignment.",
+                        cancellationToken: cancellationToken,
+                        ensureExisting: true)
+                    .ConfigureAwait(false);
+                if (!ensureAccess.IsSuccess)
+                {
+                    return ApplicationResult<ProductLocalRoleGrant>.Failure(
+                        ensureAccess.ErrorCode!,
+                        ensureAccess.ErrorMessage
+                        ?? "Product-local role already exists, but commercial product access could not be granted.");
+                }
+
+                return ApplicationResult<ProductLocalRoleGrant>.Success(existing);
             }
 
             try
@@ -971,6 +999,28 @@ public sealed class AssignProductLocalRole
                 ProductLocalRoleGrant.AssignmentSource);
             await _grants.AddAsync(grant, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+            // POS operate requires commercial ProductAccessAssignment + product-local role.
+            // Mobile Org Staff assign / invitations historically granted only the role, which left
+            // staff on membership-only shells (Home + More). Ensure assignment with the role.
+            var accessResult = await _grantProductAccess
+                .ExecuteAsync(
+                    organizationId,
+                    userIdentityId,
+                    code.Value,
+                    grantedByActor: $"platform-user:{grantedByUserIdentityId.Value:D}",
+                    reason: reason ?? "Granted with product-local role assignment.",
+                    cancellationToken: cancellationToken,
+                    ensureExisting: true)
+                .ConfigureAwait(false);
+            if (!accessResult.IsSuccess)
+            {
+                return ApplicationResult<ProductLocalRoleGrant>.Failure(
+                    accessResult.ErrorCode!,
+                    accessResult.ErrorMessage
+                    ?? "Product-local role was assigned, but commercial product access could not be granted.");
+            }
+
             return ApplicationResult<ProductLocalRoleGrant>.Success(grant);
         }
         catch (DomainException ex)

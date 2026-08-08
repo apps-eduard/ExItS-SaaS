@@ -302,6 +302,7 @@ else
     /// <summary>Reloads organization, subscription, entitlement, POS access and POS role state.</summary>
     private async Task LoadAccessStateAsync(Guid organizationId)
     {
+        _error = null;
         var orgResult = await Platform.GetOrganizationAsync(organizationId);
         if (orgResult.IsSuccess)
         {
