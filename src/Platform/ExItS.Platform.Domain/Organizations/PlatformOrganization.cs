@@ -22,6 +22,8 @@ public sealed class PlatformOrganization
     public PlatformOrganizationId Id { get; }
     public string DisplayName { get; private set; }
     public string Slug { get; private set; }
+    /// <summary>Immutable public id (ORG######) used in staff login hosts. Not a secret.</summary>
+    public string? PublicOrganizationId { get; private set; }
     public OrganizationStatus Status { get; private set; }
     public OrganizationProfile Profile { get; private set; }
     public OrganizationBranding Branding { get; private set; }
@@ -32,6 +34,7 @@ public sealed class PlatformOrganization
         PlatformOrganizationId id,
         string displayName,
         string slug,
+        string? publicOrganizationId,
         OrganizationStatus status,
         OrganizationProfile profile,
         OrganizationBranding branding,
@@ -41,6 +44,7 @@ public sealed class PlatformOrganization
         Id = id;
         DisplayName = displayName;
         Slug = slug;
+        PublicOrganizationId = publicOrganizationId;
         Status = status;
         Profile = profile;
         Branding = branding;
@@ -62,6 +66,7 @@ public sealed class PlatformOrganization
             id ?? PlatformOrganizationId.New(),
             name,
             normalizedSlug,
+            publicOrganizationId: null,
             OrganizationStatus.Active,
             OrganizationProfile.Empty,
             OrganizationBranding.Empty,
@@ -73,12 +78,34 @@ public sealed class PlatformOrganization
         PlatformOrganizationId id,
         string displayName,
         string slug,
+        string? publicOrganizationId,
         OrganizationStatus status,
         OrganizationProfile profile,
         OrganizationBranding branding,
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc) =>
-        new(id, displayName, slug, status, profile, branding, createdAtUtc, updatedAtUtc);
+        new(id, displayName, slug, publicOrganizationId, status, profile, branding, createdAtUtc, updatedAtUtc);
+
+    /// <summary>Assigns the immutable public organization ID once.</summary>
+    public void AssignPublicOrganizationId(string publicOrganizationId, DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        var normalized = PublicOrganizationIdRules.Normalize(publicOrganizationId);
+        if (PublicOrganizationId is not null)
+        {
+            if (!string.Equals(PublicOrganizationId, normalized, StringComparison.Ordinal))
+            {
+                throw new DomainException(
+                    DomainErrorCodes.PublicOrganizationIdImmutable,
+                    "Public organization ID cannot be changed once assigned.");
+            }
+
+            return;
+        }
+
+        PublicOrganizationId = normalized;
+        UpdatedAtUtc = utcNow;
+    }
 
     public void Rename(string displayName, DateTimeOffset utcNow)
     {

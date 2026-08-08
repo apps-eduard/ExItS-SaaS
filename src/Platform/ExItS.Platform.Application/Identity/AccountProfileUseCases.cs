@@ -271,7 +271,8 @@ public sealed class SelectAccountProfileSession
                     _unitOfWork,
                     cancellationToken,
                     _orgPreferences,
-                    utcNow)
+                    utcNow,
+                    user.HomeOrganizationId)
                 .ConfigureAwait(false);
         }
 
@@ -302,7 +303,9 @@ public sealed class SelectAccountProfileSession
             Mfa: null,
             AccountProfileId: profile.Id.Value,
             AccountClass: profile.AccountClass.ToString(),
-            AllowedScope: session.AllowedScope.ToString()));
+            AllowedScope: session.AllowedScope.ToString(),
+            HomeOrganizationId: user.HomeOrganizationId?.Value,
+            OrganizationContextLocked: user.IsOrganizationScopedStaff));
     }
 
     private static string? HashUserAgent(string? userAgent)

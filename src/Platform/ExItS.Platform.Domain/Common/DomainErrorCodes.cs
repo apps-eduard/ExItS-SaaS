@@ -27,6 +27,12 @@ public static class DomainErrorCodes
     public const string InvalidPublicUserId = "platform.public_user_id.invalid";
     public const string PublicUserIdImmutable = "platform.public_user_id.immutable";
     public const string PublicUserIdRequired = "platform.public_user_id.required";
+    public const string InvalidPublicOrganizationId = "platform.public_organization_id.invalid";
+    public const string PublicOrganizationIdImmutable = "platform.public_organization_id.immutable";
+    public const string PublicOrganizationIdRequired = "platform.public_organization_id.required";
+    public const string HomeOrganizationImmutable = "platform.user.home_organization.immutable";
+    public const string HomeOrganizationRequired = "platform.user.home_organization.required";
+    public const string StaffOrganizationSwitchDenied = "platform.user.staff_organization_switch_denied";
     public const string InvalidOrganizationSlug = "platform.organization.slug.invalid";
     public const string InvalidOrganizationProfile = "platform.organization.profile.invalid";
     public const string InvalidOrganizationBranding = "platform.organization.branding.invalid";

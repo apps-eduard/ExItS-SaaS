@@ -1,6 +1,7 @@
 using System.Net.Mail;
 using System.Text.RegularExpressions;
 using ExItS.Platform.Domain.Common;
+using ExItS.Platform.Domain.Organizations;
 
 namespace ExItS.Platform.Domain.Identity;
 
@@ -26,7 +27,12 @@ public sealed class PlatformUser
     public string Username { get; private set; }
     public string NormalizedUsername { get; private set; }
     public string DisplayName { get; private set; }
+    /// <summary>Unique login key (personal email or org-scoped staff login such as maria@org001842).</summary>
     public string NormalizedEmail { get; private set; }
+    /// <summary>Real contact/invitation/recovery email for staff identities. Not an authorization key.</summary>
+    public string? NormalizedContactEmail { get; private set; }
+    /// <summary>When set, this identity is permanently scoped to one organization (org staff login).</summary>
+    public PlatformOrganizationId? HomeOrganizationId { get; private set; }
     public string? FirstName { get; private set; }
     public string? LastName { get; private set; }
     public string? Phone { get; private set; }
@@ -40,12 +46,16 @@ public sealed class PlatformUser
     public DateTimeOffset? SuspendedAtUtc { get; private set; }
     public string? SuspensionReason { get; private set; }
 
+    public bool IsOrganizationScopedStaff => HomeOrganizationId is not null;
+
     private PlatformUser(
         PlatformUserId id,
         string username,
         string normalizedUsername,
         string displayName,
         string normalizedEmail,
+        string? normalizedContactEmail,
+        PlatformOrganizationId? homeOrganizationId,
         string? firstName,
         string? lastName,
         string? phone,
@@ -64,6 +74,8 @@ public sealed class PlatformUser
         NormalizedUsername = normalizedUsername;
         DisplayName = displayName;
         NormalizedEmail = normalizedEmail;
+        NormalizedContactEmail = normalizedContactEmail;
+        HomeOrganizationId = homeOrganizationId;
         FirstName = firstName;
         LastName = lastName;
         Phone = phone;
@@ -96,6 +108,8 @@ public sealed class PlatformUser
             normalizedUsername,
             normalizedName,
             normalizedEmail,
+            normalizedContactEmail: null,
+            homeOrganizationId: null,
             firstName: null,
             lastName: null,
             phone: null,
@@ -129,6 +143,8 @@ public sealed class PlatformUser
             normalizedUsername,
             normalizedName,
             normalizedEmail,
+            normalizedContactEmail: null,
+            homeOrganizationId: null,
             firstName: null,
             lastName: null,
             phone: null,
@@ -174,6 +190,8 @@ public sealed class PlatformUser
             normalizedUsername,
             normalizedName,
             normalizedEmail,
+            normalizedContactEmail: null,
+            homeOrganizationId: null,
             normalizedFirstName,
             normalizedLastName,
             normalizedPhone,
@@ -188,6 +206,53 @@ public sealed class PlatformUser
             null);
     }
 
+    /// <summary>
+    /// Organization-scoped staff identity. Login is a system name (local@ORG######);
+    /// contact email is for invitation/recovery only and is not unique.
+    /// </summary>
+    public static PlatformUser CreateOrganizationStaff(
+        string username,
+        string staffLogin,
+        string contactEmail,
+        PlatformOrganizationId homeOrganizationId,
+        string displayName,
+        DateTimeOffset utcNow,
+        string? firstName = null,
+        string? lastName = null,
+        string? phone = null,
+        string? employeeCode = null,
+        PlatformUserId? createdByUserId = null,
+        PlatformUserId? id = null)
+    {
+        EnsureUtc(utcNow);
+        ArgumentNullException.ThrowIfNull(homeOrganizationId);
+        var (displayUsername, normalizedUsername) = NormalizeUsername(username);
+        var login = NormalizeEmail(staffLogin);
+        var contact = NormalizeEmail(contactEmail);
+        var normalizedName = NormalizeDisplayName(displayName);
+
+        return new PlatformUser(
+            id ?? PlatformUserId.New(),
+            displayUsername,
+            normalizedUsername,
+            normalizedName,
+            login,
+            contact,
+            homeOrganizationId,
+            NormalizeOptionalName(firstName, nameof(firstName)),
+            NormalizeOptionalName(lastName, nameof(lastName)),
+            NormalizeOptionalPhone(phone),
+            NormalizeOptionalEmployeeCode(employeeCode),
+            staffNumber: null,
+            publicUserId: null,
+            createdByUserId,
+            AccountStatus.Active,
+            utcNow,
+            utcNow,
+            null,
+            null);
+    }
+
     /// <summary>Rehydrate from persistence.</summary>
     public static PlatformUser Rehydrate(
         PlatformUserId id,
@@ -195,6 +260,8 @@ public sealed class PlatformUser
         string normalizedUsername,
         string displayName,
         string normalizedEmail,
+        string? normalizedContactEmail,
+        PlatformOrganizationId? homeOrganizationId,
         string? firstName,
         string? lastName,
         string? phone,
@@ -213,6 +280,8 @@ public sealed class PlatformUser
             normalizedUsername,
             displayName,
             normalizedEmail,
+            normalizedContactEmail,
+            homeOrganizationId,
             firstName,
             lastName,
             phone,

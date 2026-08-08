@@ -10,6 +10,7 @@ internal static class OrganizationEntityMapper
             PlatformOrganizationId.From(record.Id),
             record.DisplayName,
             record.Slug,
+            record.PublicOrganizationId,
             Enum.Parse<OrganizationStatus>(record.Status),
             OrganizationProfile.Create(
                 record.LegalName,
@@ -38,6 +39,7 @@ internal static class OrganizationEntityMapper
             Id = organization.Id.Value,
             DisplayName = organization.DisplayName,
             Slug = organization.Slug,
+            PublicOrganizationId = organization.PublicOrganizationId,
             Status = organization.Status.ToString(),
             LegalName = organization.Profile.LegalName,
             ContactEmail = organization.Profile.ContactEmail,
@@ -63,6 +65,7 @@ internal static class OrganizationEntityMapper
     {
         record.DisplayName = organization.DisplayName;
         record.Slug = organization.Slug;
+        record.PublicOrganizationId = organization.PublicOrganizationId;
         record.Status = organization.Status.ToString();
         record.LegalName = organization.Profile.LegalName;
         record.ContactEmail = organization.Profile.ContactEmail;

@@ -224,6 +224,13 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.DisplayName).HasColumnName("display_name").HasMaxLength(256).IsRequired();
             entity.Property(e => e.Slug).HasColumnName("slug").HasMaxLength(64).IsRequired();
             entity.HasIndex(e => e.Slug).IsUnique();
+            entity.Property(e => e.PublicOrganizationId)
+                .HasColumnName("public_organization_id")
+                .HasMaxLength(16);
+            entity.HasIndex(e => e.PublicOrganizationId)
+                .IsUnique()
+                .HasFilter("public_organization_id IS NOT NULL")
+                .HasDatabaseName("ux_organizations_public_organization_id");
             entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
             entity.Property(e => e.LegalName).HasColumnName("legal_name").HasMaxLength(100);
             entity.Property(e => e.ContactEmail).HasColumnName("contact_email").HasMaxLength(320);
@@ -511,6 +518,14 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.DisplayName).HasColumnName("display_name").HasMaxLength(100).IsRequired();
             entity.Property(e => e.NormalizedEmail).HasColumnName("normalized_email").HasMaxLength(320).IsRequired();
             entity.HasIndex(e => e.NormalizedEmail).IsUnique().HasDatabaseName("ux_platform_users_normalized_email");
+            entity.Property(e => e.NormalizedContactEmail)
+                .HasColumnName("normalized_contact_email")
+                .HasMaxLength(320);
+            entity.HasIndex(e => e.NormalizedContactEmail)
+                .HasDatabaseName("ix_platform_users_normalized_contact_email");
+            entity.Property(e => e.HomeOrganizationId).HasColumnName("home_organization_id");
+            entity.HasIndex(e => e.HomeOrganizationId)
+                .HasDatabaseName("ix_platform_users_home_organization_id");
             entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
             entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
             entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");

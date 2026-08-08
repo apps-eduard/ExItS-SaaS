@@ -91,7 +91,7 @@ internal sealed class SmtpPlatformAuthOutboundMessageSink(
                 $"""
                  <p>You have been invited to join an organization as staff on ExItS.</p>
                  <p><a href="{baseUrl}/admin/accept-organization-invitation?token={encodedToken}">Accept invitation</a></p>
-                 <p>Sign in with the invited email address if prompted.</p>
+                 <p>Open the link, set your password, and you will receive a staff login name for sign-in.</p>
                  <p>This link expires at {message.ExpiresAtUtc:u} (UTC).</p>
                  """),
             PlatformAuthOutboundMessageKinds.PasswordReset => (

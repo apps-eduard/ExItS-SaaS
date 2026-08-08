@@ -7,6 +7,8 @@ internal sealed class PlatformUserRecord
     public string NormalizedUsername { get; set; } = string.Empty;
     public string DisplayName { get; set; } = string.Empty;
     public string NormalizedEmail { get; set; } = string.Empty;
+    public string? NormalizedContactEmail { get; set; }
+    public Guid? HomeOrganizationId { get; set; }
     public string Status { get; set; } = string.Empty;
     public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset UpdatedAtUtc { get; set; }

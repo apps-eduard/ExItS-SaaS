@@ -115,6 +115,7 @@ public sealed class SetSessionOrganizationContext
     private readonly IPlatformSessionTokenService _tokens;
     private readonly IOrganizationMembershipRepository _memberships;
     private readonly IPlatformOrganizationRepository _organizations;
+    private readonly IPlatformUserRepository _users;
     private readonly IOrganizationContextPreferenceRepository _preferences;
     private readonly IAuditWriter _auditWriter;
     private readonly IPlatformUnitOfWork _unitOfWork;
@@ -126,6 +127,7 @@ public sealed class SetSessionOrganizationContext
         IPlatformSessionTokenService tokens,
         IOrganizationMembershipRepository memberships,
         IPlatformOrganizationRepository organizations,
+        IPlatformUserRepository users,
         IOrganizationContextPreferenceRepository preferences,
         IAuditWriter auditWriter,
         IPlatformUnitOfWork unitOfWork,
@@ -136,6 +138,7 @@ public sealed class SetSessionOrganizationContext
         _tokens = tokens;
         _memberships = memberships;
         _organizations = organizations;
+        _users = users;
         _preferences = preferences;
         _auditWriter = auditWriter;
         _unitOfWork = unitOfWork;
@@ -170,6 +173,31 @@ public sealed class SetSessionOrganizationContext
             return ApplicationResult<OrganizationContextResultDto>.Failure(
                 ApplicationErrorCodes.AccountScopeDenied,
                 "Organization context requires an Organization account session.");
+        }
+
+        var user = await _users.GetByIdAsync(session.UserId, cancellationToken).ConfigureAwait(false);
+        if (user is null)
+        {
+            return ApplicationResult<OrganizationContextResultDto>.Failure(
+                ApplicationErrorCodes.UserNotFound,
+                "Platform User was not found.");
+        }
+
+        if (user.HomeOrganizationId is not null)
+        {
+            if (organizationId is null)
+            {
+                return ApplicationResult<OrganizationContextResultDto>.Failure(
+                    DomainErrorCodes.StaffOrganizationSwitchDenied,
+                    "Organization-scoped staff cannot clear organization context.");
+            }
+
+            if (organizationId.Value != user.HomeOrganizationId.Value)
+            {
+                return ApplicationResult<OrganizationContextResultDto>.Failure(
+                    DomainErrorCodes.StaffOrganizationSwitchDenied,
+                    "Organization-scoped staff cannot switch to another organization.");
+            }
         }
 
         if (organizationId is null)
@@ -298,7 +326,8 @@ public static class OrganizationContextResolver
         IPlatformUnitOfWork unitOfWork,
         CancellationToken cancellationToken,
         IOrganizationContextPreferenceRepository? preferences = null,
-        DateTimeOffset? utcNow = null)
+        DateTimeOffset? utcNow = null,
+        PlatformOrganizationId? homeOrganizationId = null)
     {
         var (activeMemberships, _) = await memberships
             .ListByUserAsync(session.UserId, MembershipStatus.Active, skip: 0, take: 200, cancellationToken)
@@ -319,7 +348,15 @@ public static class OrganizationContextResolver
         }
 
         var changed = false;
-        if (session.SelectedOrganizationId is not null)
+        if (homeOrganizationId is not null && eligible.Any(x => x.Id == homeOrganizationId))
+        {
+            if (session.SelectedOrganizationId != homeOrganizationId)
+            {
+                session.SelectOrganization(homeOrganizationId);
+                changed = true;
+            }
+        }
+        else if (session.SelectedOrganizationId is not null)
         {
             var stillEligible = eligible.Any(x => x.Id == session.SelectedOrganizationId);
             if (!stillEligible)

@@ -47,6 +47,35 @@ internal sealed class PlatformUserRepository : IPlatformUserRepository
         return record is null ? null : IdentityAccessEntityMapper.ToDomain(record);
     }
 
+    public async Task<PlatformUser?> FindActiveStaffByHomeOrgAndContactEmailAsync(
+        PlatformOrganizationId homeOrganizationId,
+        string normalizedContactEmail,
+        CancellationToken cancellationToken = default)
+    {
+        var active = nameof(AccountStatus.Active);
+        var record = await _db.PlatformUsers.AsNoTracking()
+            .FirstOrDefaultAsync(
+                u => u.HomeOrganizationId == homeOrganizationId.Value
+                    && u.NormalizedContactEmail == normalizedContactEmail
+                    && u.Status == active,
+                cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : IdentityAccessEntityMapper.ToDomain(record);
+    }
+
+    public async Task<IReadOnlyList<PlatformUser>> ListByNormalizedContactEmailAsync(
+        string normalizedContactEmail,
+        CancellationToken cancellationToken = default)
+    {
+        var records = await _db.PlatformUsers.AsNoTracking()
+            .Where(u => u.NormalizedContactEmail == normalizedContactEmail)
+            .OrderBy(u => u.NormalizedUsername)
+            .ThenBy(u => u.Id)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return records.Select(IdentityAccessEntityMapper.ToDomain).ToList();
+    }
+
     public async Task<(IReadOnlyList<PlatformUser> Items, int TotalCount)> ListAsync(
         AccountStatus? status,
         string? search,

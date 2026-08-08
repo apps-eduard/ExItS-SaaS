@@ -10,15 +10,18 @@ namespace ExItS.Platform.Application.Organizations;
 public sealed class CreatePlatformOrganization
 {
     private readonly IPlatformOrganizationRepository _organizations;
+    private readonly IPublicOrganizationIdGenerator _publicOrganizationIds;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
     public CreatePlatformOrganization(
         IPlatformOrganizationRepository organizations,
+        IPublicOrganizationIdGenerator publicOrganizationIds,
         IPlatformUnitOfWork unitOfWork,
         IClock clock)
     {
         _organizations = organizations;
+        _publicOrganizationIds = publicOrganizationIds;
         _unitOfWork = unitOfWork;
         _clock = clock;
     }
@@ -39,6 +42,10 @@ public sealed class CreatePlatformOrganization
                     ApplicationErrorCodes.SlugConflict,
                     "A Platform Organization with this slug already exists.");
             }
+
+            var publicOrgId = await _publicOrganizationIds.GenerateUniqueAsync(cancellationToken)
+                .ConfigureAwait(false);
+            organization.AssignPublicOrganizationId(publicOrgId, _clock.UtcNow);
 
             await _organizations.AddAsync(organization, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);

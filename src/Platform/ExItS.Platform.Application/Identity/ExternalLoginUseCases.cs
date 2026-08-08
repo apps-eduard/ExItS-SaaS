@@ -243,7 +243,8 @@ public sealed class CompleteExternalLogin
                     _unitOfWork,
                     cancellationToken,
                     _orgPreferences,
-                    utcNow)
+                    utcNow,
+                    user.HomeOrganizationId)
                 .ConfigureAwait(false);
         }
 
@@ -279,7 +280,9 @@ public sealed class CompleteExternalLogin
             mfa,
             profile.Id.Value,
             profile.AccountClass.ToString(),
-            session.AllowedScope.ToString()));
+            session.AllowedScope.ToString(),
+            user.HomeOrganizationId?.Value,
+            OrganizationContextLocked: user.IsOrganizationScopedStaff));
     }
 
     private async Task<string> AllocateUsernameAsync(string normalizedEmail, CancellationToken cancellationToken)

@@ -224,7 +224,8 @@ public sealed class LoginPlatformUser
                     _unitOfWork,
                     cancellationToken,
                     _orgPreferences,
-                    utcNow)
+                    utcNow,
+                    user.HomeOrganizationId)
                 .ConfigureAwait(false);
         }
 
@@ -256,7 +257,9 @@ public sealed class LoginPlatformUser
             mfa,
             profile.Id.Value,
             profile.AccountClass.ToString(),
-            session.AllowedScope.ToString()));
+            session.AllowedScope.ToString(),
+            user.HomeOrganizationId?.Value,
+            OrganizationContextLocked: user.IsOrganizationScopedStaff));
     }
 
     private static ApplicationResult<PlatformLoginResultDto> LoginFailedResult() =>
@@ -472,7 +475,8 @@ public sealed class ValidateAndRenewPlatformSession
                     _unitOfWork,
                     cancellationToken,
                     _orgPreferences,
-                    utcNow)
+                    utcNow,
+                    user.HomeOrganizationId)
                 .ConfigureAwait(false);
         }
 

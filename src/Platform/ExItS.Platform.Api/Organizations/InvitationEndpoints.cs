@@ -10,7 +10,8 @@ namespace ExItS.Platform.Api.Organizations;
 /// <summary>
 /// Organization Staff Invitation lifecycle (<see cref="InvitationKinds.OrganizationStaffInvitation"/>).
 /// Tokens are returned once on create/resend for delivery channels; list/get DTOs never include token hashes.
-/// Accept creates Organization membership + staff role only — never Business Customer or Customer Link.
+/// Accept (token + password) creates an org-scoped staff identity, membership, and optional product role —
+/// never Business Customer or Customer Link.
 /// </summary>
 internal static class InvitationEndpoints
 {
@@ -205,34 +206,20 @@ internal static class InvitationEndpoints
         app.MapPost("/api/v1/platform/invitations/accept", async (
             AcceptInvitationRequest body,
             AcceptOrganizationInvitation useCase,
-            PlatformMembershipAuthz membershipAuthz,
             CancellationToken ct) =>
         {
-            var actor = membershipAuthz.Inner.CurrentActor;
-            if (actor.PlatformUserId is null)
-            {
-                return PlatformApiResults.Problem(
-                    DomainErrorCodes.AuthorizationDenied,
-                    "Accepting an invitation requires an authenticated Platform User.",
-                    StatusCodes.Status401Unauthorized);
-            }
-
             var result = await useCase
-                .ExecuteAsync(body.Token ?? string.Empty, actor.PlatformUserId, ct)
+                .ExecuteAsync(
+                    body.Token ?? string.Empty,
+                    body.Password ?? string.Empty,
+                    body.DisplayName,
+                    body.FirstName,
+                    body.LastName,
+                    ct)
                 .ConfigureAwait(false);
-            if (result.IsSuccess)
-            {
-                await membershipAuthz.Inner.AuditSucceededAsync(
-                    PlatformAuditActions.InvitationAccepted,
-                    nameof(OrganizationInvitation),
-                    result.Value!.Id.Value.ToString("D"),
-                    result.Value.OrganizationId.Value,
-                    summary: "Accepted organization invitation.",
-                    cancellationToken: ct).ConfigureAwait(false);
-            }
-
-            return PlatformApiResults.FromResult(result, m => Results.Ok(MembershipQueryService.Map(m)));
-        });
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        })
+        .AllowAnonymous();
 
         return app;
     }
@@ -287,4 +274,9 @@ internal sealed record CreateInvitationRequest(
     string? Branch = null,
     string? ProductRole = null,
     bool? RequireEmailVerification = null);
-internal sealed record AcceptInvitationRequest(string? Token);
+internal sealed record AcceptInvitationRequest(
+    string? Token,
+    string? Password,
+    string? DisplayName = null,
+    string? FirstName = null,
+    string? LastName = null);

@@ -216,7 +216,10 @@ public sealed class RequestPasswordReset
             return ApplicationResult<CredentialWorkflowAckDto>.Success(ack);
         }
 
-        var deliveryEmail = user.NormalizedEmail;
+        // Prefer real contact email for org-scoped staff (login is synthetic local@ORG######).
+        var deliveryEmail = !string.IsNullOrWhiteSpace(user.NormalizedContactEmail)
+            ? user.NormalizedContactEmail!
+            : user.NormalizedEmail;
         if (matchedViaRecoveryEmail
             && !string.IsNullOrWhiteSpace(credential.RecoveryNormalizedEmail)
             && credential.HasVerifiedRecoveryEmail)
@@ -283,6 +286,19 @@ public sealed class RequestPasswordReset
                 if (byPrimary is not null)
                 {
                     return (byPrimary, false);
+                }
+
+                // Contact email is not unique. Resolve only when exactly one active match exists
+                // (prefer exact staff-login primary match already handled above).
+                var byContact = await _users
+                    .ListByNormalizedContactEmailAsync(normalizedEmail, cancellationToken)
+                    .ConfigureAwait(false);
+                var activeByContact = byContact
+                    .Where(u => u.Status == AccountStatus.Active)
+                    .ToList();
+                if (activeByContact.Count == 1)
+                {
+                    return (activeByContact[0], false);
                 }
 
                 var recoveryUserId = await _credentials

@@ -435,34 +435,20 @@ internal static class AuthEndpoints
         app.MapPost("/api/v1/platform/auth/organization-invitations/accept", async (
             AcceptInvitationTokenRequest body,
             AcceptOrganizationInvitation useCase,
-            PlatformMembershipAuthz membershipAuthz,
             CancellationToken ct) =>
         {
-            var actor = membershipAuthz.Inner.CurrentActor;
-            if (actor.PlatformUserId is null)
-            {
-                return PlatformApiResults.Problem(
-                    DomainErrorCodes.AuthorizationDenied,
-                    "Accepting an invitation requires an authenticated Platform User.",
-                    StatusCodes.Status401Unauthorized);
-            }
-
             var result = await useCase
-                .ExecuteAsync(body.Token ?? string.Empty, actor.PlatformUserId, ct)
+                .ExecuteAsync(
+                    body.Token ?? string.Empty,
+                    body.Password ?? string.Empty,
+                    body.DisplayName,
+                    body.FirstName,
+                    body.LastName,
+                    ct)
                 .ConfigureAwait(false);
-            if (result.IsSuccess)
-            {
-                await membershipAuthz.Inner.AuditSucceededAsync(
-                    PlatformAuditActions.InvitationAccepted,
-                    nameof(OrganizationInvitation),
-                    result.Value!.Id.Value.ToString("D"),
-                    result.Value.OrganizationId.Value,
-                    summary: "Accepted organization invitation (auth).",
-                    cancellationToken: ct).ConfigureAwait(false);
-            }
-
-            return PlatformApiResults.FromResult(result, m => Results.Ok(MembershipQueryService.Map(m)));
-        });
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        })
+        .AllowAnonymous();
 
         app.MapPost("/api/v1/platform/auth/organization-invitations/{invitationId:guid}/accept", async (
             Guid invitationId,
@@ -501,7 +487,12 @@ internal static class AuthEndpoints
 
     private sealed record SelectAccountProfileRequest(Guid AccountProfileId);
 
-    private sealed record AcceptInvitationTokenRequest(string? Token);
+    private sealed record AcceptInvitationTokenRequest(
+        string? Token,
+        string? Password,
+        string? DisplayName = null,
+        string? FirstName = null,
+        string? LastName = null);
 
     private static string? ExtractBearerToken(HttpContext http)
     {

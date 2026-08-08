@@ -16,6 +16,7 @@ using ExItS.Platform.Infrastructure.Authorization;
 using ExItS.Platform.Infrastructure.GlobalCatalog;
 using ExItS.Platform.Infrastructure.Identity;
 using ExItS.Platform.Infrastructure.LocalValidation;
+using ExItS.Platform.Infrastructure.Organizations;
 using ExItS.Platform.Infrastructure.Persistence;
 using ExItS.Platform.Infrastructure.Payments;
 using ExItS.Platform.Infrastructure.Persistence.Repositories;
@@ -58,6 +59,8 @@ public static class DependencyInjection
         services.AddScoped<IPlatformUserRepository, PlatformUserRepository>();
         services.AddScoped<IStaffNumberGenerator, EfStaffNumberGenerator>();
         services.AddScoped<IPublicUserIdGenerator, EfPublicUserIdGenerator>();
+        services.AddScoped<IPublicOrganizationIdGenerator, EfPublicOrganizationIdGenerator>();
+        services.AddScoped<IStaffLoginNameAllocator, EfStaffLoginNameAllocator>();
         services.AddScoped<IPlatformUserCredentialRepository, PlatformUserCredentialRepository>();
         services.AddScoped<IPlatformAuthSessionRepository, PlatformAuthSessionRepository>();
         services.AddScoped<IAccountProfileRepository, AccountProfileRepository>();

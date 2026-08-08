@@ -16,6 +16,10 @@ internal static class IdentityAccessEntityMapper
             record.NormalizedUsername,
             record.DisplayName,
             record.NormalizedEmail,
+            record.NormalizedContactEmail,
+            record.HomeOrganizationId is null
+                ? null
+                : PlatformOrganizationId.From(record.HomeOrganizationId.Value),
             record.FirstName,
             record.LastName,
             record.Phone,
@@ -37,6 +41,8 @@ internal static class IdentityAccessEntityMapper
             NormalizedUsername = user.NormalizedUsername,
             DisplayName = user.DisplayName,
             NormalizedEmail = user.NormalizedEmail,
+            NormalizedContactEmail = user.NormalizedContactEmail,
+            HomeOrganizationId = user.HomeOrganizationId?.Value,
             FirstName = user.FirstName,
             LastName = user.LastName,
             Phone = user.Phone,
@@ -57,6 +63,8 @@ internal static class IdentityAccessEntityMapper
         record.NormalizedUsername = user.NormalizedUsername;
         record.DisplayName = user.DisplayName;
         record.NormalizedEmail = user.NormalizedEmail;
+        record.NormalizedContactEmail = user.NormalizedContactEmail;
+        record.HomeOrganizationId = user.HomeOrganizationId?.Value;
         record.FirstName = user.FirstName;
         record.LastName = user.LastName;
         record.Phone = user.Phone;
