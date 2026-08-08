@@ -223,6 +223,9 @@ Physical-device validation remains **pending / incomplete**. Remaining blockers 
 | `e3c1093` | `feat(pos): add Lock semantics, PIN enrollment gate, and online-required guard` |
 | `e3a251f` | `feat(pos): prepare login providers and mandatory PIN enrollment UX` |
 | `8cccb8c` | `test(pos): cover auth UX layer and document PIN enrollment` |
+| `dd171ae` | `docs(p19): record auth UX layer commit hashes` |
+| `bed4655` | `feat(pos): progressive offline-first boot and login UX` |
+| `c85dd78` | `test(pos): cover progressive login timing and document boot fallback` |
 
 **Not pushed** until validation gates agreed. Do not force-push. Google/Facebook OAuth remains **not implemented**.
 
