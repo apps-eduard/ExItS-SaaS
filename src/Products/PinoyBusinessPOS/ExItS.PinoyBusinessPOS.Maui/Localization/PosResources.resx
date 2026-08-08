@@ -224,6 +224,31 @@
   <data name="SignIn_WelcomeTitle" xml:space="preserve"><value>Welcome back</value></data>
   <data name="SignIn_WelcomeSubtitle" xml:space="preserve"><value>Sign in to continue to ExItS POS.</value></data>
   <data name="SignIn_ContinueGoogle" xml:space="preserve"><value>Continue with Google</value></data>
+  <data name="SignIn_ContinueFacebook" xml:space="preserve"><value>Continue with Facebook</value></data>
+  <data name="SignIn_ProvidersLabel" xml:space="preserve"><value>External sign-in</value></data>
+  <data name="SignIn_ProviderPlaceholder" xml:space="preserve"><value>External provider sign-in is not available yet.</value></data>
+  <data name="SignIn_UsePin" xml:space="preserve"><value>Use PIN</value></data>
+  <data name="SignIn_OfflineTitle" xml:space="preserve"><value>You're offline</value></data>
+  <data name="SignIn_OfflineMessage" xml:space="preserve"><value>Use your PIN to continue with the last authorized account on this device.</value></data>
+  <data name="SignIn_OnlineRequiresInternet" xml:space="preserve"><value>Online sign-in requires an internet connection.</value></data>
+  <data name="SignIn_InternetRequired" xml:space="preserve"><value>This action requires an internet connection.</value></data>
+  <data name="Common_OK" xml:space="preserve"><value>OK</value></data>
+  <data name="Auth_Lock" xml:space="preserve"><value>Lock</value></data>
+  <data name="Offline_PinEnrollTitle" xml:space="preserve"><value>Set up your offline PIN</value></data>
+  <data name="Offline_PinEnrollMessage" xml:space="preserve"><value>Create a PIN so you can continue using important ExItS features when your internet connection is unavailable. Your offline work will be saved on this device and synced when you're back online.</value></data>
+  <data name="Offline_PinConfirmLabel" xml:space="preserve"><value>Confirm PIN</value></data>
+  <data name="Offline_PinEnrollAction" xml:space="preserve"><value>Set up PIN</value></data>
+  <data name="Offline_PinConfirmMismatch" xml:space="preserve"><value>PIN and confirmation do not match.</value></data>
+  <data name="Offline_WorkingTitle" xml:space="preserve"><value>You're working offline</value></data>
+  <data name="Offline_WorkingMessage" xml:space="preserve"><value>Your transactions and changes will be saved on this device and synced when an internet connection is available. Until they are synced, this data exists only on this device.</value></data>
+  <data name="Offline_WorkingWarning" xml:space="preserve"><value>Keep the app installed and avoid clearing app data or resetting this phone until your pending changes are synced.</value></data>
+  <data name="Offline_WorkingContinue" xml:space="preserve"><value>Continue offline</value></data>
+  <data name="OnlineRequired_Title" xml:space="preserve"><value>Internet required</value></data>
+  <data name="OnlineRequired_Message" xml:space="preserve"><value>You're currently offline. This action requires an internet connection. Your offline work is safe and will sync when you're back online.</value></data>
+  <data name="SyncStatus_OfflineWaiting" xml:space="preserve"><value>Offline • {0} waiting to sync</value></data>
+  <data name="SyncStatus_OfflineDeviceStored" xml:space="preserve"><value>Your offline work is stored on this device.</value></data>
+  <data name="SyncStatus_RetryConnection" xml:space="preserve"><value>Retry connection</value></data>
+  <data name="SyncStatus_AllChangesSynced" xml:space="preserve"><value>Online / All changes synced</value></data>
   <data name="SignIn_GoogleHint" xml:space="preserve"><value>Use your Gmail or Google Workspace account.</value></data>
   <data name="SignIn_OrDivider" xml:space="preserve"><value>or</value></data>
   <data name="SignIn_RememberMe" xml:space="preserve"><value>Remember me</value></data>

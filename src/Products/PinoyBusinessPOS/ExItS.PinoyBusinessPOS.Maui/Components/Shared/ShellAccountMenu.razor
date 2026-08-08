@@ -48,6 +48,13 @@
                     <span>@L["Personal_HomeTitle"]</span>
                 </button>
             }
+            @if (ShowLock)
+            {
+                <button type="button" class="pos-topbar__overflow-item" role="menuitem" @onclick="LockAsync">
+                    <span class="pos-topbar__overflow-icon" aria-hidden="true">@IconGlyphs.Get("lock")</span>
+                    <span>@L["Auth_Lock"]</span>
+                </button>
+            }
             @if (ShowSignOut)
             {
                 <button type="button" class="pos-topbar__overflow-item pos-topbar__overflow-item--danger" role="menuitem" @onclick="OpenLogoutAsync">
@@ -81,6 +88,8 @@
     private bool _open;
     private bool _logoutOpen;
     private bool _logoutBusy;
+    private bool _lockBusy;
+    private bool _canLock;
     private string _logoutMessage = string.Empty;
 
     private bool IsPersonalSession => CurrentUser.Session?.OrganizationId is null;
@@ -105,12 +114,42 @@
         && CurrentUser.HasPosAccess
         && Capabilities.IsAllowed(UtangCapability.ViewDashboard);
 
+    /// <summary>
+    /// Lock keeps the offline operate grant and returns to PIN unlock. Sign out clears grant trust.
+    /// </summary>
+    private bool ShowLock =>
+        ShowSignOut
+        && !IsPersonalSession
+        && _canLock
+        && CurrentUser.IsAuthenticated;
+
     private string OrganizationSwitcherLabel =>
         IsPersonalSession ? L["OrgSelect_Title"] : L["Shell_ChangeOrganization"];
 
     public bool IsOpen => _open;
 
     protected override void OnInitialized() => Nav.LocationChanged += OnLocationChanged;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        try
+        {
+            var offer = await Auth.EvaluateOfflineColdStartOfferAsync();
+            _canLock = offer.CanOfferPinUnlock
+                       || await Auth.HasOfflinePinConfiguredAsync();
+        }
+        catch
+        {
+            _canLock = false;
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e) => _ = CloseAsync();
 
@@ -194,6 +233,27 @@
         }
 
         _logoutOpen = true;
+    }
+
+    private async Task LockAsync()
+    {
+        if (_lockBusy)
+        {
+            return;
+        }
+
+        _lockBusy = true;
+        try
+        {
+            await CloseAsync();
+            SellingMode.Clear();
+            await Auth.LockAsync();
+            Nav.NavigateTo("/offline-pin", replace: true);
+        }
+        finally
+        {
+            _lockBusy = false;
+        }
     }
 
     private async Task LogoutAsync()

@@ -1,0 +1,29 @@
+@implements IDisposable
+@inject OfflineSessionUxState OfflineUx
+@inject IStringLocalizer<PosResources> L
+
+<Dialog Visible="@OfflineUx.PendingOfflineWorkingWarning"
+        Title="@L["Offline_WorkingTitle"]"
+        OnClose="ContinueAsync">
+    <ChildContent>
+        <p>@L["Offline_WorkingMessage"]</p>
+        <p class="pos-muted"><strong>@L["Offline_WorkingWarning"]</strong></p>
+    </ChildContent>
+    <Footer>
+        <Button Variant="ButtonVariant.Primary" OnClick="ContinueAsync">@L["Offline_WorkingContinue"]</Button>
+    </Footer>
+</Dialog>
+
+@code {
+    protected override void OnInitialized() => OfflineUx.Changed += OnChangedAsync;
+
+    private Task OnChangedAsync() => InvokeAsync(StateHasChanged);
+
+    private Task ContinueAsync()
+    {
+        OfflineUx.AcknowledgeOfflineWorkingWarning();
+        return Task.CompletedTask;
+    }
+
+    public void Dispose() => OfflineUx.Changed -= OnChangedAsync;
+}

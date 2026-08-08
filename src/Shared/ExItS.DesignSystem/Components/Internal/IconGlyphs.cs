@@ -41,6 +41,7 @@ public static class IconGlyphs
         ["inbox"] = "<path d=\"M3 12h4.5l2 3h5l2-3H21\"/><path d=\"M5.4 5h13.2l2.4 7v6a1.5 1.5 0 0 1-1.5 1.5H4.5A1.5 1.5 0 0 1 3 18v-6l2.4-7Z\"/>",
         ["error"] = "<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"m9.5 9.5 5 5\"/><path d=\"m14.5 9.5-5 5\"/>",
         ["cloud-off"] = "<path d=\"M17.5 19H9a6 6 0 1 1 0.5-12 6.5 6.5 0 0 1 11.3 3.2\"/><path d=\"M22 17a3 3 0 0 0-3.5-2.9\"/><path d=\"m2 2 20 20\"/>",
+        ["lock"] = "<rect x=\"5\" y=\"11\" width=\"14\" height=\"10\" rx=\"2\"/><path d=\"M8 11V8a4 4 0 0 1 8 0v3\"/>",
     };
 
     private const string Fallback = "<circle cx=\"12\" cy=\"12\" r=\"2\" fill=\"currentColor\" stroke=\"none\"/>";

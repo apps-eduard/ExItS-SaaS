@@ -8,6 +8,7 @@
 @inject IUtangCapabilityEvaluator Capabilities
 @inject ApiStatusLocalizer ApiLocalizer
 @inject IConnectivityService Connectivity
+@inject OnlineRequiredGuard OnlineRequired
 @inject IStringLocalizer<PosResources> L
 
 @if (!_ready)
@@ -468,11 +469,13 @@ else
         _errorMessage = null;
         try
         {
-            _isOffline = !await Connectivity.IsConnectedAsync();
-            if (_isOffline)
+            if (!await OnlineRequired.EnsureOnlineAsync())
             {
+                _isOffline = true;
                 return;
             }
+
+            _isOffline = false;
 
             var result = await Discovery.ListPublishedTemplatesAsync(search: _search, page: 1, pageSize: 50);
             if (result.IsSuccess && result.Data is not null)

@@ -1,0 +1,112 @@
+@page "/offline-pin-setup"
+@layout Layout.AuthShell
+@inject IAuthenticationService Auth
+@inject RoleHomeResolver RoleHome
+@inject NavigationGate Gate
+@inject NavigationManager Nav
+@inject IStringLocalizer<PosResources> L
+
+<div class="pos-offline-pin">
+    <Page>
+        <header class="pos-offline-pin__header">
+            <h1 class="pos-offline-pin__title">@L["Offline_PinEnrollTitle"]</h1>
+            <p class="pos-offline-pin__subtitle">@L["Offline_PinEnrollMessage"]</p>
+        </header>
+
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <InlineMessage Tone="InlineMessageTone.Danger">@_error</InlineMessage>
+        }
+
+        <div class="pos-offline-pin__field">
+            <label for="offline-pin-enroll">@L["Offline_PinLabel"]</label>
+            <input id="offline-pin-enroll"
+                   type="password"
+                   inputmode="numeric"
+                   autocomplete="new-password"
+                   maxlength="12"
+                   class="pos-offline-pin__input"
+                   disabled="@_busy"
+                   @bind="_pin"
+                   @bind:event="oninput" />
+        </div>
+
+        <div class="pos-offline-pin__field">
+            <label for="offline-pin-confirm">@L["Offline_PinConfirmLabel"]</label>
+            <input id="offline-pin-confirm"
+                   type="password"
+                   inputmode="numeric"
+                   autocomplete="new-password"
+                   maxlength="12"
+                   class="pos-offline-pin__input"
+                   disabled="@_busy"
+                   @bind="_confirm"
+                   @bind:event="oninput" />
+        </div>
+
+        <FormActions>
+            <Button Variant="ButtonVariant.Primary" IsLoading="_busy" Disabled="_busy" OnClick="SaveAsync">
+                @L["Offline_PinEnrollAction"]
+            </Button>
+        </FormActions>
+    </Page>
+</div>
+
+<style>
+    .pos-offline-pin__header { margin-bottom: 0.75rem; }
+    .pos-offline-pin__title { margin: 0; font-size: 1.25rem; font-weight: 700; }
+    .pos-offline-pin__subtitle { margin: 0.35rem 0 0; font-size: 0.875rem; color: var(--exits-text-muted, #5b6b62); }
+    .pos-offline-pin__field { display: flex; flex-direction: column; gap: 0.35rem; margin: 0.85rem 0; }
+    .pos-offline-pin__input {
+        min-height: 2.75rem; padding: 0.55rem 0.75rem; font-size: 1.25rem; letter-spacing: 0.2em;
+        border: 1px solid var(--exits-border, #c9d4cd); border-radius: var(--exits-radius-md, 0.5rem);
+    }
+</style>
+
+@code {
+    private string _pin = string.Empty;
+    private string _confirm = string.Empty;
+    private string? _error;
+    private bool _busy;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Already enrolled → continue to normal start route (enrollment itself has no deferral control).
+        if (await Auth.HasOfflinePinConfiguredAsync())
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        if (_busy)
+        {
+            return;
+        }
+
+        _error = null;
+        if (!string.Equals(_pin, _confirm, StringComparison.Ordinal))
+        {
+            _error = L["Offline_PinConfirmMismatch"];
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var result = await Auth.SetOfflinePinAsync(_pin);
+            if (!result.Succeeded)
+            {
+                _error = L[result.SafeMessageKey ?? "Offline_PinInvalidFormat"];
+                return;
+            }
+
+            Nav.NavigateTo(await RoleHome.ResolvePosHomeAsync(), replace: true);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

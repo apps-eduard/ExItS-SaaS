@@ -1,0 +1,24 @@
+@implements IDisposable
+@inject OnlineRequiredGuard Guard
+@inject IStringLocalizer<PosResources> L
+
+<Dialog Visible="@Guard.IsDialogVisible"
+        Title="@L["OnlineRequired_Title"]"
+        OnClose="DismissAsync">
+    <ChildContent>
+        <p>@L["OnlineRequired_Message"]</p>
+    </ChildContent>
+    <Footer>
+        <Button Variant="ButtonVariant.Primary" OnClick="DismissAsync">@L["Common_OK"]</Button>
+    </Footer>
+</Dialog>
+
+@code {
+    protected override void OnInitialized() => Guard.Changed += OnChangedAsync;
+
+    private Task OnChangedAsync() => InvokeAsync(StateHasChanged);
+
+    private async Task DismissAsync() => await Guard.DismissAsync();
+
+    public void Dispose() => Guard.Changed -= OnChangedAsync;
+}

@@ -21,6 +21,7 @@
 @inject IUtangCapabilityEvaluator Capabilities
 @inject ApiStatusLocalizer ApiLocalizer
 @inject IConnectivityService Connectivity
+@inject OnlineRequiredGuard OnlineRequired
 @inject IAppInfoService AppInfo
 @inject MauiPendingPaymentStore PendingPayment
 @inject StoreHeaderState HeaderState
@@ -320,7 +321,7 @@ else
                                     class="@($"pos-payment-method-tile{(selected ? " pos-payment-method-tile--selected" : string.Empty)}")"
                                     disabled="@paymentSelectBlocked"
                                     aria-pressed="@selected"
-                                    @onclick="() => OnPaymentMethodChanged(methodCode)">
+                                    @onclick="() => OnPaymentMethodChangedAsync(methodCode)">
                                 @SalesUiOptions.CheckoutPaymentMethodLabel(L, methodCode)
                             </button>
                         }
@@ -1068,6 +1069,19 @@ else
         PosSaleOptions.RequiresWholeQuantity(unitOfMeasure)
             ? L["Sales_Checkout_QuantityWhole"]
             : L["Sales_Checkout_QuantityPrecision"];
+
+    private async Task OnPaymentMethodChangedAsync(string? value)
+    {
+        var next = string.IsNullOrWhiteSpace(value) ? PosSaleOptions.CashPaymentMethod : value;
+        if (_isOffline
+            && !string.Equals(next, PosSaleOptions.CashPaymentMethod, StringComparison.OrdinalIgnoreCase))
+        {
+            await OnlineRequired.EnsureOnlineAsync();
+            return;
+        }
+
+        OnPaymentMethodChanged(next);
+    }
 
     private void OnPaymentMethodChanged(string? value)
     {

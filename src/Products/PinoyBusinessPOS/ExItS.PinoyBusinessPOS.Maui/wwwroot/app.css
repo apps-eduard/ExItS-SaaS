@@ -5427,12 +5427,46 @@ html.pos-keyboard-open .pos-content {
     cursor: pointer;
 }
 
-.pos-signin__google:disabled {
+.pos-signin__providers {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.pos-signin__provider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.625rem;
+    width: 100%;
+    min-height: 2.75rem;
+    padding: 0.625rem 1rem;
+    border: 1px solid var(--exits-border, #c9d4cd);
+    border-radius: var(--exits-radius-md, 0.5rem);
+    background: var(--exits-surface, #fff);
+    color: var(--exits-text, #15201a);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.pos-signin__use-pin {
+    margin: 0 0 0.75rem;
+}
+
+.pos-signin__use-pin .exds-button,
+.pos-signin__use-pin button {
+    width: 100%;
+}
+
+.pos-signin__google:disabled,
+.pos-signin__provider:disabled {
     opacity: 0.6;
     cursor: not-allowed;
 }
 
-.pos-signin__google-icon {
+.pos-signin__google-icon,
+.pos-signin__provider-icon {
     display: inline-flex;
     flex-shrink: 0;
 }

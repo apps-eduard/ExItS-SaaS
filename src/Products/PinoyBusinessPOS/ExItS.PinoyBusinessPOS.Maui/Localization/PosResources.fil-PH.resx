@@ -224,6 +224,31 @@
   <data name="SignIn_WelcomeTitle" xml:space="preserve"><value>Maligayang pagbabalik</value></data>
   <data name="SignIn_WelcomeSubtitle" xml:space="preserve"><value>Mag-sign in upang magpatuloy sa ExItS POS.</value></data>
   <data name="SignIn_ContinueGoogle" xml:space="preserve"><value>Magpatuloy sa Google</value></data>
+  <data name="SignIn_ContinueFacebook" xml:space="preserve"><value>Magpatuloy sa Facebook</value></data>
+  <data name="SignIn_ProvidersLabel" xml:space="preserve"><value>External na pag-sign-in</value></data>
+  <data name="SignIn_ProviderPlaceholder" xml:space="preserve"><value>Hindi pa available ang external provider sign-in.</value></data>
+  <data name="SignIn_UsePin" xml:space="preserve"><value>Gamitin ang PIN</value></data>
+  <data name="SignIn_OfflineTitle" xml:space="preserve"><value>Offline ka</value></data>
+  <data name="SignIn_OfflineMessage" xml:space="preserve"><value>Gamitin ang PIN para magpatuloy sa huling authorized account sa device na ito.</value></data>
+  <data name="SignIn_OnlineRequiresInternet" xml:space="preserve"><value>Kailangan ng internet ang online sign-in.</value></data>
+  <data name="SignIn_InternetRequired" xml:space="preserve"><value>Kailangan ng internet connection ang aksyong ito.</value></data>
+  <data name="Common_OK" xml:space="preserve"><value>OK</value></data>
+  <data name="Auth_Lock" xml:space="preserve"><value>I-lock</value></data>
+  <data name="Offline_PinEnrollTitle" xml:space="preserve"><value>I-set up ang offline PIN</value></data>
+  <data name="Offline_PinEnrollMessage" xml:space="preserve"><value>Gumawa ng PIN para makapagpatuloy sa mahahalagang ExItS features kapag walang internet. Mase-save ang offline work sa device na ito at magsi-sync kapag online na ulit.</value></data>
+  <data name="Offline_PinConfirmLabel" xml:space="preserve"><value>Kumpirmahin ang PIN</value></data>
+  <data name="Offline_PinEnrollAction" xml:space="preserve"><value>I-set up ang PIN</value></data>
+  <data name="Offline_PinConfirmMismatch" xml:space="preserve"><value>Hindi tugma ang PIN at confirmation.</value></data>
+  <data name="Offline_WorkingTitle" xml:space="preserve"><value>Offline kang nagtatrabaho</value></data>
+  <data name="Offline_WorkingMessage" xml:space="preserve"><value>Mase-save ang transactions at changes sa device na ito at magsi-sync kapag may internet. Hangga't hindi naka-sync, nasa device lang ang data na ito.</value></data>
+  <data name="Offline_WorkingWarning" xml:space="preserve"><value>Panatilihing naka-install ang app at iwasan ang pag-clear ng app data o pag-reset ng phone hanggang ma-sync ang pending changes.</value></data>
+  <data name="Offline_WorkingContinue" xml:space="preserve"><value>Magpatuloy offline</value></data>
+  <data name="OnlineRequired_Title" xml:space="preserve"><value>Kailangan ng internet</value></data>
+  <data name="OnlineRequired_Message" xml:space="preserve"><value>Offline ka ngayon. Kailangan ng internet ang aksyong ito. Ligtas ang offline work mo at magsi-sync kapag online na ulit.</value></data>
+  <data name="SyncStatus_OfflineWaiting" xml:space="preserve"><value>Offline • {0} waiting to sync</value></data>
+  <data name="SyncStatus_OfflineDeviceStored" xml:space="preserve"><value>Naka-store sa device na ito ang offline work mo.</value></data>
+  <data name="SyncStatus_RetryConnection" xml:space="preserve"><value>Subukan ulit ang connection</value></data>
+  <data name="SyncStatus_AllChangesSynced" xml:space="preserve"><value>Online / Lahat ng changes naka-sync</value></data>
   <data name="SignIn_GoogleHint" xml:space="preserve"><value>Gamitin ang Gmail o Google Workspace account.</value></data>
   <data name="SignIn_OrDivider" xml:space="preserve"><value>o</value></data>
   <data name="SignIn_RememberMe" xml:space="preserve"><value>Tandaan ako</value></data>

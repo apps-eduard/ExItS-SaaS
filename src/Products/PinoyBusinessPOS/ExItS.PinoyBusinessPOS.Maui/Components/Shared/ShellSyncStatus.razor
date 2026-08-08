@@ -247,6 +247,8 @@
 
     private string SyncChipLabel => SyncKind switch
     {
+        PosSyncStatusKind.Offline when PendingWaitingCount > 0 =>
+            string.Format(L["SyncStatus_OfflineWaiting"].Value, PendingWaitingCount),
         PosSyncStatusKind.Offline => L["SyncStatus_OfflineShort"],
         PosSyncStatusKind.ReconnectRequired => L["SyncStatus_ReconnectShort"],
         PosSyncStatusKind.Syncing => L["SyncStatus_SyncingEllipsis"],
@@ -277,7 +279,7 @@
     private string ConnectionSubtitle => SyncKind switch
     {
         PosSyncStatusKind.ReconnectRequired => L["SyncStatus_ConnectionReconnecting"],
-        PosSyncStatusKind.Offline => L["SyncStatus_ConnectionOfflineDetail"],
+        PosSyncStatusKind.Offline => L["SyncStatus_OfflineDeviceStored"],
         _ when _isConnected => L["SyncStatus_ConnectionOnlineDetail"],
         _ => L["SyncStatus_ConnectionOfflineDetail"],
     };
@@ -299,13 +301,15 @@
             var pending = PendingDisplayCount;
             return SyncKind switch
             {
-                PosSyncStatusKind.Online or PosSyncStatusKind.LastSynced => L["SyncStatus_LastSyncedShort"],
+                PosSyncStatusKind.Online or PosSyncStatusKind.LastSynced => L["SyncStatus_AllChangesSynced"],
                 PosSyncStatusKind.PendingSync => string.Format(L["SyncStatus_PendingItems"].Value, pending),
                 PosSyncStatusKind.Syncing when _queueSyncing > 0 && SyncingQueueTotal > 0 =>
                     string.Format(L["SyncStatus_SyncingProgress"].Value, _queueSyncing, SyncingQueueTotal),
                 PosSyncStatusKind.Syncing => L["SyncStatus_SyncingEllipsis"],
                 PosSyncStatusKind.SyncFailed => L["SyncStatus_Failed"],
                 PosSyncStatusKind.RecoveryRequired => L["SyncStatus_RecoveryRequired"],
+                PosSyncStatusKind.Offline or PosSyncStatusKind.ReconnectRequired when pending > 0 =>
+                    string.Format(L["SyncStatus_WaitingWithPending"].Value, pending),
                 PosSyncStatusKind.Offline or PosSyncStatusKind.ReconnectRequired => L["SyncStatus_WaitingForConnection"],
                 _ => L["SyncStatus_WaitingForConnection"],
             };
@@ -346,12 +350,16 @@
         SyncKind is PosSyncStatusKind.PendingSync
             or PosSyncStatusKind.SyncFailed
             or PosSyncStatusKind.RecoveryRequired
-            or PosSyncStatusKind.Syncing;
+            or PosSyncStatusKind.Syncing
+            or PosSyncStatusKind.Offline
+            or PosSyncStatusKind.ReconnectRequired;
 
     private string RetryActionLabel =>
-        SyncKind is PosSyncStatusKind.SyncFailed or PosSyncStatusKind.RecoveryRequired
-            ? L["SyncStatus_RetryNow"]
-            : L["SyncStatus_SyncNow"];
+        SyncKind is PosSyncStatusKind.Offline or PosSyncStatusKind.ReconnectRequired
+            ? L["SyncStatus_RetryConnection"]
+            : SyncKind is PosSyncStatusKind.SyncFailed or PosSyncStatusKind.RecoveryRequired
+                ? L["SyncStatus_RetryNow"]
+                : L["SyncStatus_SyncNow"];
 
     private async Task RefreshFromServerAsync()
     {
