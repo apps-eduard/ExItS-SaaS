@@ -31,6 +31,7 @@ Sale checkout APIs, catalog lookup/list, cart service, shift current endpoint, p
 
 - Cash sale CustomerId not accepted by existing backend contract — optional cash customer is UI-only until a future API decision
 - Hardware barcode scanners rely on keyboard wedge into lookup field
+- Offline cash checkout / cold-start PIN is documented separately: [P19-offline-operability-foundation](P19-offline-operability-foundation.md) (physical A–S incomplete; Not Device Verified)
 
 ## 5. Tests
 

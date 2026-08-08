@@ -10,12 +10,15 @@ Phase 19 completes the Mobile POS operational and Cashier experience that remain
 
 The application remains **not production-ready**. Phase 14 remains **In Progress**. Do **not** start P14-WP03 under this phase. **Not Device Verified.** **Not Complete.**
 
+Offline operability (cold-start PIN unlock + offline cash sale foundation) is **Code Complete** with physical Android A–S **incomplete** — see [P19-offline-operability-foundation](../reports/P19-offline-operability-foundation.md). Do **not** treat offline physical validation as Device Verified.
+
 | Field | Value |
 |---|---|
 | Phase | 19 — **Open** |
 | Production-ready | **No** |
 | Device Verified | **No** |
 | User mobile validation | Pending (after P19-WP08) |
+| Offline physical A–S | **Incomplete** ([report](../reports/P19-offline-operability-foundation.md)) |
 | Predecessor | [Phase 18](phase-18-mobile-personal-organization-and-pos-experience.md) — Complete (implementation/scope); partial phone validation |
 
 ## Objective
@@ -48,6 +51,8 @@ Reuse existing Phase 8–18 Platform and POS APIs/screens wherever possible. Pre
 
 Supplemental delivery (Card/GCash simulated payments): [P19-card-gcash-payment-ui-and-simulation](../reports/P19-card-gcash-payment-ui-and-simulation.md) — **Code Complete**, phone **Retest**, `FakePaymentGateway` only, **not** production-ready.
 
+Supplemental delivery (offline operability foundation): [P19-offline-operability-foundation](../reports/P19-offline-operability-foundation.md) — **Code Complete**; physical Android A–S **incomplete** (pending sync confirmation + PIN lockout + user confirmation); **Not Device Verified**.
+
 ## Scope notes
 
 | In scope | Out of scope / unchanged |
@@ -56,6 +61,7 @@ Supplemental delivery (Card/GCash simulated payments): [P19-card-gcash-payment-u
 | Reuse of existing Phase 8–18 APIs and screens | Starting P14-WP03 or other Phase 14 production work |
 | Phone validation and closeout checklist in WP08 | Production readiness claims |
 | Auth / nav / UX hardening for Mobile ops | Platform Admin Web redesign; cross-product PHI |
+| Offline cold-start PIN + offline cash sale foundation (supplemental) | Marking offline physical A–S complete before full checklist + user confirmation |
 
 ## Approved client boundaries (unchanged)
 
@@ -70,3 +76,5 @@ Supplemental delivery (Card/GCash simulated payments): [P19-card-gcash-payment-u
 ## Closure rule
 
 Do **not** mark Phase 19 Complete, close P19-WP08 as Device Verified, or claim production readiness without the user’s explicit phone confirmation after mobile validation. Phase stays **Open** until that confirmation.
+
+Offline operability does **not** change this rule: physical Android A–S for cold-start PIN / offline cash / outbox sync must remain **incomplete** until the checklist in [P19-offline-operability-foundation](../reports/P19-offline-operability-foundation.md) §12 and P19-WP08 pass with explicit user confirmation.

@@ -25,6 +25,7 @@ Provide the end-to-end Mobile POS ops validation checklist for physical-phone co
 | P19-WP06 Customers | Code Complete |
 | P19-WP07 Reports/nav/UX | Code Complete (**Retest** — Selling Mode / grants) |
 | Card / GCash simulated payments | Code Complete (**Retest** — see [P19-card-gcash-payment-ui-and-simulation](P19-card-gcash-payment-ui-and-simulation.md)) |
+| Offline operability foundation | Code Complete; physical A–S **incomplete** — see [P19-offline-operability-foundation](P19-offline-operability-foundation.md) |
 
 ## 3. User phone checklist (Retest)
 
@@ -70,6 +71,20 @@ See [P18-personal-mvp-mobile-ui-completion](P18-personal-mvp-mobile-ui-completio
 - [ ] Samsung layout: PersonalShell bottom tabs without clipping
 - [ ] Global safe-area: status bar / cutout clear on Sign-in, Personal, Owner/Manager/Cashier, Products, Sales, Shifts, Reports, Settings (no double top gap; bottom nav still inset)
 
+### Offline operability (PhysicalDevice) — Incomplete / Retest
+
+Full detail: [P19-offline-operability-foundation](P19-offline-operability-foundation.md). **Do not mark Device Verified** from partial A52 evidence alone.
+
+- [ ] Online: establish POS session, set offline PIN (Settings), open shift, warm catalog (Sell)
+- [ ] Airplane / unreachable: force-stop → cold start → offline PIN unlock (not `/reconnect` only)
+- [ ] Offline Sell: cached catalog + open-shift snapshot; cash checkout → pending local receipt
+- [ ] Restart still offline: pending sync count retained
+- [ ] Restore network: sync once; pending clears; no duplicate sale/stock
+- [ ] Wrong PIN lockout without clearing/damaging the operate grant
+- [ ] Explicit online denial clears grant (optional negative)
+
+Partial Galaxy A52 evidence (2026-08-08): Quick Login, PIN setup, cold-start unlock, offline cash `OFF-260808-6D34859D`, pending retained after restart. **Not completed:** network restore sync confirmation; wrong-PIN lockout. Commits `f476172`, `cc64ba3`, `10a1fc5`.
+
 Phase 19 remains **Open** until the user confirms phone validation.
 
 ## 4. Explicit non-claims
@@ -111,4 +126,4 @@ Restart Local Validation APIs after this fix so POS bearer commercial merge is l
 
 ## 6. Status
 
-**Retest.** Phase 19 remains **Open** until explicit user phone confirmation of the Owner Selling Mode → Open Shift registers scenario.
+**Retest.** Phase 19 remains **Open** until explicit user phone confirmation of the Owner Selling Mode → Open Shift registers scenario **and** offline operability physical checklist items that remain open (sync + PIN lockout). **Not Device Verified.**
