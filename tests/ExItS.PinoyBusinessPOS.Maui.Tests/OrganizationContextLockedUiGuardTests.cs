@@ -36,7 +36,10 @@ public sealed class OrganizationContextLockedUiGuardTests
             "OfflineOperatingGrantModels.cs"));
 
         Assert.Contains("Guid UserId", model, StringComparison.Ordinal);
-        Assert.Contains("Guid OrganizationId", model, StringComparison.Ordinal);
+        // Organization grants remain org-bound; Personal grants intentionally use nullable OrganizationId.
+        Assert.Contains("Guid? OrganizationId", model, StringComparison.Ordinal);
+        Assert.Contains("IsOrganizationScope", model, StringComparison.Ordinal);
+        Assert.Contains("OfflineGrantScopeKind.Organization", model, StringComparison.Ordinal);
         Assert.Contains("public sealed record OfflineOperatingGrant(", model, StringComparison.Ordinal);
     }
 
