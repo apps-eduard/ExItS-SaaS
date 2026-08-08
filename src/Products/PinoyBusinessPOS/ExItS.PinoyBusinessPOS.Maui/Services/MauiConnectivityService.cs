@@ -46,9 +46,10 @@ public sealed class MauiConnectivityService : IConnectivityService, IDisposable
             return true;
         }
 
-#if DEBUG
-        // Debug APKs target Local Validation (emulator reverse or PhysicalDevice Tailscale).
-        // Prefer attempting the HTTP call over trusting Android's coarse NetworkAccess=None.
+#if DEBUG && !POS_LOCAL_VALIDATION_PHYSICAL_DEVICE
+        // Emulator Local Validation only: adb reverse / 10.0.2.2 can work while OS reports None.
+        // PhysicalDevice Debug (Tailscale/LAN) must treat None as offline — otherwise offline PIN
+        // unlock hangs waiting on permissions HTTP against an unreachable host.
         return access is NetworkAccess.None;
 #else
         return false;

@@ -79,7 +79,9 @@ public sealed class SellingModeService
 public sealed class RoleHomeResolver(
     IPosPermissionClient permissions,
     SellingModeService sellingMode,
-    ICurrentUserContext currentUser)
+    ICurrentUserContext currentUser,
+    IOfflineOperatingGrantService? offlineGrant = null,
+    IConnectivityService? connectivity = null)
 {
     public const string OwnerHome = "/owner";
     public const string ManagerHome = "/manager";
@@ -101,6 +103,13 @@ public sealed class RoleHomeResolver(
         if (!currentUser.HasPosAccess)
         {
             return OrgEssentials;
+        }
+
+        // Offline PIN unlock / cold start: never block on permissions HTTP. Use grant role snapshot
+        // and Owner working-as preference already held in-process.
+        if (await ShouldResolveFromOfflineGrantSnapshotAsync(ct).ConfigureAwait(false))
+        {
+            return ResolveFromOfflineGrantSnapshot();
         }
 
         var effective = await permissions.GetEffectiveAsync(ct).ConfigureAwait(false);
@@ -172,4 +181,54 @@ public sealed class RoleHomeResolver(
             or ApiCallStatus.RateLimited
             or ApiCallStatus.Failed
             or ApiCallStatus.Cancelled;
+
+    private async Task<bool> ShouldResolveFromOfflineGrantSnapshotAsync(CancellationToken ct)
+    {
+        if (offlineGrant is { IsUnlockedThisProcess: true, ActiveUnlockedGrant: not null })
+        {
+            return true;
+        }
+
+        // Connectivity may report online incorrectly on some Debug emulator paths; when it
+        // correctly reports offline, skip the permissions round-trip.
+        if (connectivity is null)
+        {
+            return false;
+        }
+
+        try
+        {
+            return !await connectivity.IsConnectedAsync(ct).ConfigureAwait(false);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Maps the durable offline grant role (and Owner working-as preference) without network I/O.
+    /// </summary>
+    public string ResolveFromOfflineGrantSnapshot()
+    {
+        var preferred = sellingMode.PreferredHomeRoute;
+        var roleCode = offlineGrant?.ActiveUnlockedGrant?.RoleCode;
+        if (!string.IsNullOrWhiteSpace(roleCode) && PosRoleCodes.TryParse(roleCode, out var role))
+        {
+            if (role is PosRole.Owner or PosRole.Admin && !string.IsNullOrWhiteSpace(preferred))
+            {
+                return preferred!;
+            }
+
+            return role switch
+            {
+                PosRole.Owner or PosRole.Admin => OwnerHome,
+                PosRole.StoreManager => ManagerHome,
+                PosRole.Cashier => CashierHome,
+                _ => !string.IsNullOrWhiteSpace(preferred) ? preferred! : OwnerHome
+            };
+        }
+
+        return !string.IsNullOrWhiteSpace(preferred) ? preferred! : OwnerHome;
+    }
 }

@@ -90,7 +90,8 @@
             SyncStatus.SetReconnectRequired(false);
             SyncStatus.Refresh();
             // Do not call ResolveStartRouteAsync — it would RestoreSession and re-hit introspect offline.
-            Nav.NavigateTo(await RoleHome.ResolvePosHomeAsync(), replace: true);
+            // Prefer grant-snapshot home so unlock never waits on permissions HTTP while unreachable.
+            Nav.NavigateTo(RoleHome.ResolveFromOfflineGrantSnapshot(), replace: true);
         }
         finally
         {

@@ -85,28 +85,43 @@ public sealed class PosPermissionClient(HttpClient httpClient, IConnectivityServ
             return ApiResult<TResponse>.Offline(new ApiError("Offline", "Reconnect required.", "offline", null, null));
         }
 
-        using var request = new HttpRequestMessage(method, path);
-        if (body is not null)
+        try
         {
-            request.Content = JsonContent.Create(body, options: JsonOptions);
-        }
+            using var request = new HttpRequestMessage(method, path);
+            if (body is not null)
+            {
+                request.Content = JsonContent.Create(body, options: JsonOptions);
+            }
 
-        using var response = await httpClient.SendAsync(request, ct).ConfigureAwait(false);
-        if (response.IsSuccessStatusCode)
-        {
-            var data = await response.Content.ReadFromJsonAsync<TResponse>(JsonOptions, ct).ConfigureAwait(false);
-            return ApiResult<TResponse>.Success(data!);
-        }
+            using var response = await httpClient.SendAsync(request, ct).ConfigureAwait(false);
+            if (response.IsSuccessStatusCode)
+            {
+                var data = await response.Content.ReadFromJsonAsync<TResponse>(JsonOptions, ct).ConfigureAwait(false);
+                return ApiResult<TResponse>.Success(data!);
+            }
 
-        var detail = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
-        var error = new ApiError(response.ReasonPhrase, detail, null, null, (int)response.StatusCode);
-        return response.StatusCode switch
+            var detail = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+            var error = new ApiError(response.ReasonPhrase, detail, null, null, (int)response.StatusCode);
+            return response.StatusCode switch
+            {
+                HttpStatusCode.Forbidden => ApiResult<TResponse>.Forbidden(error),
+                HttpStatusCode.NotFound => ApiResult<TResponse>.NotFound(error),
+                HttpStatusCode.Conflict => ApiResult<TResponse>.Conflict(error),
+                HttpStatusCode.BadRequest => ApiResult<TResponse>.Validation(error),
+                _ => ApiResult<TResponse>.Failed(error)
+            };
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
-            HttpStatusCode.Forbidden => ApiResult<TResponse>.Forbidden(error),
-            HttpStatusCode.NotFound => ApiResult<TResponse>.NotFound(error),
-            HttpStatusCode.Conflict => ApiResult<TResponse>.Conflict(error),
-            HttpStatusCode.BadRequest => ApiResult<TResponse>.Validation(error),
-            _ => ApiResult<TResponse>.Failed(error)
-        };
+            return ApiResult<TResponse>.Cancelled(new ApiError("Cancelled", "Request cancelled.", "cancelled", null, null));
+        }
+        catch (TaskCanceledException)
+        {
+            return ApiResult<TResponse>.Timeout(new ApiError("Timeout", "The request timed out.", "timeout", null, null));
+        }
+        catch (HttpRequestException ex)
+        {
+            return ApiResult<TResponse>.Unavailable(new ApiError("Unavailable", ex.Message, "unavailable", null, null));
+        }
     }
 }

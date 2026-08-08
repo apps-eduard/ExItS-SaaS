@@ -1,6 +1,7 @@
 using ExItS.PinoyBusinessPOS.Application.Abstractions;
 using ExItS.PinoyBusinessPOS.Application.Auth;
 using ExItS.PinoyBusinessPOS.Application.Common;
+using ExItS.PinoyBusinessPOS.Application.Offline;
 using ExItS.PinoyBusinessPOS.Application.Permissions;
 
 namespace ExItS.PinoyBusinessPOS.Maui.Tests;
@@ -192,6 +193,24 @@ public sealed class RoleHomeResolverTests
         Assert.Null(mode.PreferredHomeRoute);
     }
 
+    [Fact]
+    public async Task ResolvePosHome_uses_offline_grant_snapshot_without_permissions_call()
+    {
+        var permissions = FakePermissions.Unavailable();
+        var grant = new FakeOfflineGrant("Cashier");
+        var sut = new RoleHomeResolver(permissions, new SellingModeService(), FakeUser.WithOrg(), grant);
+        Assert.Equal(RoleHomeResolver.CashierHome, await sut.ResolvePosHomeAsync());
+        Assert.Equal(0, permissions.GetEffectiveCalls);
+    }
+
+    [Fact]
+    public void ResolveFromOfflineGrantSnapshot_defaults_to_owner_when_role_missing()
+    {
+        var grant = new FakeOfflineGrant(roleCode: null);
+        var sut = new RoleHomeResolver(FakePermissions.Unavailable(), new SellingModeService(), FakeUser.WithOrg(), grant);
+        Assert.Equal(RoleHomeResolver.OwnerHome, sut.ResolveFromOfflineGrantSnapshot());
+    }
+
     private sealed class FakeUser : ICurrentUserContext
     {
         private FakeUser(AuthSession? session) => Session = session;
@@ -281,8 +300,11 @@ public sealed class RoleHomeResolverTests
         public Task<ApiResult<PosRoleAssignmentDto>> RevokeAsync(Guid assignmentId, RevokePosRoleRequest? request = null, CancellationToken ct = default) =>
             Task.FromResult(ApiResult<PosRoleAssignmentDto>.Unavailable());
 
+        public int GetEffectiveCalls { get; private set; }
+
         public Task<ApiResult<PosEffectivePermissionsDto>> GetEffectiveAsync(CancellationToken ct = default)
         {
+            GetEffectiveCalls++;
             if (unavailable)
             {
                 return Task.FromResult(ApiResult<PosEffectivePermissionsDto>.Unavailable());
@@ -307,5 +329,42 @@ public sealed class RoleHomeResolverTests
 
         public Task<ApiResult<PosEffectivePermissionsDto>> GetActorEffectiveAsync(Guid actorId, CancellationToken ct = default) =>
             GetEffectiveAsync(ct);
+    }
+
+    private sealed class FakeOfflineGrant(string? roleCode) : IOfflineOperatingGrantService
+    {
+        public bool IsUnlockedThisProcess => true;
+
+        public OfflineOperatingGrant? ActiveUnlockedGrant { get; } = new(
+            SchemaVersion: OfflineOperatingGrant.CurrentSchemaVersion,
+            UserId: Guid.NewGuid(),
+            OrganizationId: Guid.NewGuid(),
+            OrganizationDisplayName: "Org",
+            DeviceId: "device",
+            RoleCode: roleCode,
+            EnabledFeatureCodes: Array.Empty<string>(),
+            SubscriptionStatus: "Active",
+            DisplayName: "Test",
+            Username: "test",
+            Email: "test@example.com",
+            IssuedAtUtc: DateTimeOffset.UtcNow,
+            LastOnlineValidatedAtUtc: DateTimeOffset.UtcNow,
+            ExpiresAtUtc: DateTimeOffset.UtcNow.AddHours(12));
+
+        public Task EstablishFromOnlineSessionAsync(AuthSession session, string deviceId, string? roleCode, CancellationToken ct = default) =>
+            Task.CompletedTask;
+
+        public Task ClearAsync(CancellationToken ct = default) => Task.CompletedTask;
+
+        public Task<bool> HasPinConfiguredAsync(CancellationToken ct = default) => Task.FromResult(true);
+
+        public Task<OfflinePinSetupResult> SetPinAsync(string pin, CancellationToken ct = default) =>
+            Task.FromResult(new OfflinePinSetupResult(true));
+
+        public Task<OfflineColdStartOffer> EvaluateColdStartOfferAsync(CancellationToken ct = default) =>
+            Task.FromResult(new OfflineColdStartOffer(true, ActiveUnlockedGrant, null));
+
+        public Task<OfflinePinUnlockResult> UnlockWithPinAsync(string pin, CancellationToken ct = default) =>
+            Task.FromResult(new OfflinePinUnlockResult(OfflinePinUnlockStatus.Succeeded, ActiveUnlockedGrant));
     }
 }
