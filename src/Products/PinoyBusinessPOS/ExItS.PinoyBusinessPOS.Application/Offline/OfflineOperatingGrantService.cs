@@ -256,6 +256,9 @@ public sealed class OfflineOperatingGrantService(
         return new OfflinePinUnlockResult(OfflinePinUnlockStatus.Succeeded, offer.Grant);
     }
 
+    public Task<OfflineOperatingGrant?> PeekStoredGrantAsync(CancellationToken ct = default) =>
+        LoadNormalizedGrantAsync(ct);
+
     private async Task<OfflineOperatingGrant?> LoadNormalizedGrantAsync(CancellationToken ct)
     {
         var grant = await store.LoadGrantAsync(ct).ConfigureAwait(false);

@@ -14,7 +14,9 @@
 @inject NavigationManager Nav
 @inject OnlineRequiredGuard OnlineRequired
 @inject IUtangCapabilityEvaluator Capabilities
+@inject ISupportDiagnosticsService SupportDiagnostics
 @inject IStringLocalizer<PosResources> L
+@using ExItS.PinoyBusinessPOS.Application.Support
 
 <div class="pos-dash pos-settings">
     <Page>
@@ -136,6 +138,20 @@
             </Section>
         }
 
+        @if (_canViewSupportDiagnostics)
+        {
+            <Section Title="@L["Support_SectionTitle"]">
+                <button type="button" class="pos-settings__nav pos-settings__nav--block" @onclick="GoSupportDiagnostics">
+                    <span class="pos-settings__nav-icon" aria-hidden="true">@IconGlyphs.Get("info")</span>
+                    <span class="pos-settings__nav-body">
+                        <span class="pos-settings__nav-label">@L["Support_DiagnosticsLink"]</span>
+                        <span class="pos-settings__nav-meta">@L["Support_DiagnosticsLinkHint"]</span>
+                    </span>
+                    <span class="pos-settings__chevron" aria-hidden="true">›</span>
+                </button>
+            </Section>
+        }
+
         <Section Title="@L["Settings_AboutSectionTitle"]">
             <div class="pos-settings__panel">
                 <div class="pos-settings__kv">
@@ -168,6 +184,7 @@
     private bool _pinConfigured;
     private bool _pinSucceeded;
     private string? _pinMessage;
+    private bool _canViewSupportDiagnostics;
 
     private IReadOnlyList<SelectOption> ThemeOptions =>
     [
@@ -225,7 +242,11 @@
         }
 
         _pinConfigured = await Auth.HasOfflinePinConfiguredAsync();
+        _canViewSupportDiagnostics = await SupportDiagnostics.EvaluateAccessForCurrentSessionAsync()
+            == SupportDiagnosticsAccessKind.Allowed;
     }
+
+    private void GoSupportDiagnostics() => Nav.NavigateTo("/settings/support/diagnostics");
 
     private async Task SaveOfflinePinAsync()
     {

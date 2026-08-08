@@ -371,5 +371,8 @@ public sealed class RoleHomeResolverTests
 
         public Task<OfflinePinUnlockResult> UnlockWithPinAsync(string pin, CancellationToken ct = default) =>
             Task.FromResult(new OfflinePinUnlockResult(OfflinePinUnlockStatus.Succeeded, ActiveUnlockedGrant));
+
+        public Task<OfflineOperatingGrant?> PeekStoredGrantAsync(CancellationToken ct = default) =>
+            Task.FromResult(ActiveUnlockedGrant);
     }
 }

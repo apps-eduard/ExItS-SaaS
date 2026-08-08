@@ -26,9 +26,11 @@ public sealed class PosOfflineCapabilityPolicy : IPosOfflineCapabilityPolicy
             ["/cashier"] = PosConnectivityRequirement.OfflineCapable,
             ["/more"] = PosConnectivityRequirement.OfflineCapable,
             ["/settings"] = PosConnectivityRequirement.OfflineCapable,
+            ["/settings/support/diagnostics"] = PosConnectivityRequirement.OfflineCapable,
             ["/personal"] = PosConnectivityRequirement.OfflineCapable,
             ["/personal/more"] = PosConnectivityRequirement.OfflineCapable,
             ["/personal/settings"] = PosConnectivityRequirement.OfflineCapable,
+            ["/personal/settings/support/diagnostics"] = PosConnectivityRequirement.OfflineCapable,
             ["/personal/profile"] = PosConnectivityRequirement.OfflineCapable,
 
             // Queueable / local-first Personal Utang (longer prefixes beat blanket /personal/utang)

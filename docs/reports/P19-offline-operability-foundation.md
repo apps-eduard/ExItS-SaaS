@@ -11,6 +11,7 @@
 | Feature commits | `f476172` (grant + PIN cold-start), `cc64ba3` (local catalog + offline cash), `10a1fc5` (PhysicalDevice unlock hang fix) |
 | Connectivity matrix | [P19-offline-connectivity-capability-matrix](P19-offline-connectivity-capability-matrix.md) (`61a2bf8`+) |
 | Personal offline | [P19-personal-scope-offline-operability](P19-personal-scope-offline-operability.md) — Personal Utang local-first (separate grant scope + DB) |
+| Support diagnostics | [P19-support-diagnostics](P19-support-diagnostics.md) — shared Personal/Organization device-local diagnostics |
 | Staff identities | [P19-organization-scoped-staff-identities](P19-organization-scoped-staff-identities.md) — offline grant remains UserId + OrganizationId + device |
 
 ## 1. Objective

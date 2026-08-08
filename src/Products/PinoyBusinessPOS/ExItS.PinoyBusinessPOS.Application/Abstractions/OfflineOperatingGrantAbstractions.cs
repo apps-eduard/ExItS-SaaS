@@ -50,4 +50,9 @@ public interface IOfflineOperatingGrantService
     bool IsUnlockedThisProcess { get; }
 
     OfflineOperatingGrant? ActiveUnlockedGrant { get; }
+
+    /// <summary>
+    /// Loads the durable grant for safe metadata (status/expiry/scope) without unlocking or exposing PIN.
+    /// </summary>
+    Task<OfflineOperatingGrant?> PeekStoredGrantAsync(CancellationToken ct = default);
 }

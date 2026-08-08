@@ -4,7 +4,7 @@
 |---|---|
 | Status | **Code Complete** · Physical device validation **Incomplete** |
 | Phase | [Phase 19](../phases/phase-19-mobile-pos-operations-and-cashier-experience.md) — **Open** |
-| Related | [P19-offline-operability-foundation](P19-offline-operability-foundation.md), [P19-offline-connectivity-capability-matrix](P19-offline-connectivity-capability-matrix.md) |
+| Related | [P19-offline-operability-foundation](P19-offline-operability-foundation.md), [P19-offline-connectivity-capability-matrix](P19-offline-connectivity-capability-matrix.md), [P19-support-diagnostics](P19-support-diagnostics.md) |
 | Architecture | [saas-scopes-users-boundaries-navigation](../architecture/saas-scopes-users-boundaries-navigation.md) |
 | Date | 2026-08-09 |
 | Device Verified | **No** |

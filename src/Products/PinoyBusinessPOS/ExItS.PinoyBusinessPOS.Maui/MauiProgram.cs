@@ -7,6 +7,7 @@ using ExItS.PinoyBusinessPOS.Application.Auth;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Offline;
 using ExItS.PinoyBusinessPOS.Application.Options;
+using ExItS.PinoyBusinessPOS.Application.Support;
 using ExItS.PinoyBusinessPOS.LocalStore;
 using ExItS.PinoyBusinessPOS.Maui.Services;
 using Microsoft.Extensions.Configuration;
@@ -145,6 +146,13 @@ public static class MauiProgram
         services.AddSingleton<RoleHomeResolver>();
         services.AddSingleton<NavigationGate>();
         services.AddSingleton<OfflineFoundationDiagnostics>();
+        services.AddSingleton<IOrganizationOwnerProbe, PlatformOrganizationOwnerProbe>();
+        services.AddSingleton<IPersonalDiagnosticsSyncRetry, PersonalDiagnosticsSyncRetry>();
+        services.AddSingleton<IOrganizationDiagnosticsSyncRetry, OrganizationDiagnosticsSyncRetry>();
+        services.AddSingleton<ISupportDiagnosticsRoleReader, PosEffectiveRoleReader>();
+        services.AddSingleton<ISupportDiagnosticsProvider, PersonalSupportDiagnosticsProvider>();
+        services.AddSingleton<ISupportDiagnosticsProvider, OrganizationSupportDiagnosticsProvider>();
+        services.AddSingleton<ISupportDiagnosticsService, SupportDiagnosticsService>();
 
         services.AddSingleton<ThemeController>();
         services.AddSingleton<DensityController>();

@@ -57,6 +57,8 @@ Supplemental delivery (connectivity / offline capability matrix): [P19-offline-c
 
 Supplemental delivery (Personal-scope offline): [P19-personal-scope-offline-operability](../reports/P19-personal-scope-offline-operability.md) — Personal Utang local-first grant/store/policy separate from Organization POS; physical validation **incomplete**.
 
+Supplemental delivery (support diagnostics): [P19-support-diagnostics](../reports/P19-support-diagnostics.md) — shared Personal/Organization Settings → Support → Diagnostics (device-local, Owner-gated for org); physical validation **incomplete**.
+
 Supplemental delivery (organization-scoped staff identities): [P19-organization-scoped-staff-identities](../reports/P19-organization-scoped-staff-identities.md) — staff login `local@ORG######` separate from Personal/Owner; physical validation **not performed**.
 
 ## Scope notes

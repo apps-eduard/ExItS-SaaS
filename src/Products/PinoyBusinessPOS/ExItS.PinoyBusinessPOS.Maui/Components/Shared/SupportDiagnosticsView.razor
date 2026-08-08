@@ -1,0 +1,287 @@
+@using ExItS.DesignSystem.Components.Internal
+@using ExItS.PinoyBusinessPOS.Application.Support
+@inject ISupportDiagnosticsService Diagnostics
+@inject ICurrentUserContext CurrentUser
+@inject IAuthenticationService Auth
+@inject OnlineRequiredGuard OnlineRequired
+@inject IPosSyncStatusService SyncStatus
+@inject PosStatusState Status
+@inject NavigationManager Nav
+@inject IJSRuntime Js
+@inject IStringLocalizer<PosResources> L
+
+<div class="pos-support-diagnostics">
+    @if (_loading)
+    {
+        <Stack Align="StackAlign.Center" Gap="2">
+            <Spinner />
+        </Stack>
+    }
+    else if (_access != SupportDiagnosticsAccessKind.Allowed || _snapshot is null)
+    {
+        <ErrorState Title="@DeniedTitle"
+                    Message="@DeniedMessage"
+                    RetryLabel="@L["Deferred_BackToHome"]"
+                    OnRetry="GoBack" />
+    }
+    else
+    {
+        <header class="pos-settings__header">
+            <h1 class="pos-settings__title">@L["Support_DiagnosticsTitle"]</h1>
+            <p class="pos-settings__subtitle">@L["Support_DiagnosticsSubtitle"]</p>
+        </header>
+
+        <Alert Tone="AlertTone.Info"
+               Title="@L["Support_DiagnosticsNoticeTitle"]"
+               Message="@L["Support_DiagnosticsNoticeMessage"]" />
+
+        <Section Title="@L["Support_Section_Device"]">
+            <div class="pos-settings__panel">
+                <div class="pos-settings__kv"><span class="pos-settings__kv-label">@L["Support_Field_Scope"]</span><span class="pos-settings__kv-value">@ScopeLabel</span></div>
+                <div class="pos-settings__kv"><span class="pos-settings__kv-label">@L["Support_Field_Connection"]</span><span class="pos-settings__kv-value">@_snapshot.ConnectionState</span></div>
+                <div class="pos-settings__kv"><span class="pos-settings__kv-label">@L["Support_Field_DeviceId"]</span><span class="pos-settings__kv-value">@_snapshot.DeviceIdShort</span></div>
+                <div class="pos-settings__kv"><span class="pos-settings__kv-label">@L["Support_Field_AppVersion"]</span><span class="pos-settings__kv-value">@_snapshot.AppVersion</span></div>
+                <div class="pos-settings__kv"><span class="pos-settings__kv-label">@L["Support_Field_ApiStatus"]</span><span class="pos-settings__kv-value">@ApiStatusDisplay</span></div>
+                <div class="pos-settings__kv"><span class="pos-settings__kv-label">@L["Support_Field_Schema"]</span><span class="pos-settings__kv-value">@(_snapshot.LocalSchemaVersion?.ToString() ?? "—")</span></div>
+            </div>
+        </Section>
+
+        <Section Title="@L["Support_Section_Sync"]">
+            <div class="pos-settings__panel">
+                <div class="pos-settings__kv"><span class="pos-settings__kv-label">@L["Support_Field_LastSync"]</span><span class="pos-settings__kv-value">@FormatTime(_snapshot.LastSuccessfulSyncUtc)</span></div>
+                <div class="pos-settings__kv"><span class="pos-settings__kv-label">@L["Support_Field_Pending"]</span><span class="pos-settings__kv-value">@_snapshot.PendingSyncCount</span></div>
+                <div class="pos-settings__kv"><span class="pos-settings__kv-label">@L["Support_Field_Failed"]</span><span class="pos-settings__kv-value">@_snapshot.FailedSyncCount</span></div>
+                <div class="pos-settings__kv"><span class="pos-settings__kv-label">@L["Support_Field_LastServer"]</span><span class="pos-settings__kv-value">@FormatTime(_snapshot.LastServerContactUtc)</span></div>
+            </div>
+        </Section>
+
+        <Section Title="@L["Support_Section_OfflineGrant"]">
+            <div class="pos-settings__panel">
+                <div class="pos-settings__kv"><span class="pos-settings__kv-label">@L["Support_Field_GrantStatus"]</span><span class="pos-settings__kv-value">@_snapshot.OfflineGrantStatus</span></div>
+                <div class="pos-settings__kv"><span class="pos-settings__kv-label">@L["Support_Field_GrantExpiry"]</span><span class="pos-settings__kv-value">@FormatTime(_snapshot.OfflineGrantExpiresAtUtc)</span></div>
+                <div class="pos-settings__kv"><span class="pos-settings__kv-label">@L["Support_Field_PinConfigured"]</span><span class="pos-settings__kv-value">@(_snapshot.OfflinePinConfigured ? L["Support_Yes"] : L["Support_No"])</span></div>
+            </div>
+        </Section>
+
+        <Section Title="@L["Support_Section_Identity"]">
+            <div class="pos-settings__panel">
+                <div class="pos-settings__kv"><span class="pos-settings__kv-label">@L["Support_Field_UserId"]</span><span class="pos-settings__kv-value">@_snapshot.UserId.ToString("D")</span></div>
+                @if (_snapshot.Scope == SupportDiagnosticsScope.Personal)
+                {
+                    <div class="pos-settings__kv"><span class="pos-settings__kv-label">@L["Support_Field_ProfileId"]</span><span class="pos-settings__kv-value">@(_snapshot.PersonalProfileId?.ToString("D") ?? "—")</span></div>
+                }
+                else
+                {
+                    <div class="pos-settings__kv"><span class="pos-settings__kv-label">@L["Support_Field_OrganizationId"]</span><span class="pos-settings__kv-value">@(_snapshot.OrganizationId?.ToString("D") ?? "—")</span></div>
+                    <div class="pos-settings__kv"><span class="pos-settings__kv-label">@L["Support_Field_PublicOrgId"]</span><span class="pos-settings__kv-value">@(_snapshot.PublicOrganizationId ?? "—")</span></div>
+                    <div class="pos-settings__kv"><span class="pos-settings__kv-label">@L["Support_Field_OrgName"]</span><span class="pos-settings__kv-value">@(_snapshot.OrganizationDisplayName ?? "—")</span></div>
+                    <div class="pos-settings__kv"><span class="pos-settings__kv-label">@L["Support_Field_Role"]</span><span class="pos-settings__kv-value">@(_snapshot.CurrentRole ?? "—")</span></div>
+                }
+            </div>
+        </Section>
+
+        <Section Title="@L["Support_Section_Actions"]">
+            <div class="pos-settings__panel">
+                <div class="pos-settings__actions" style="flex-wrap: wrap; gap: 0.5rem;">
+                    <Button Variant="ButtonVariant.Secondary"
+                            IsLoading="_retryConnectionBusy"
+                            Disabled="_retryConnectionBusy || _retrySyncBusy"
+                            OnClick="RetryConnectionAsync">
+                        @L["SyncStatus_RetryConnection"]
+                    </Button>
+                    <Button Variant="ButtonVariant.Secondary"
+                            IsLoading="_retrySyncBusy"
+                            Disabled="_retryConnectionBusy || _retrySyncBusy"
+                            OnClick="RetrySyncAsync">
+                        @L["SyncStatus_RetryNow"]
+                    </Button>
+                    <Button Variant="ButtonVariant.Secondary"
+                            Disabled="_retryConnectionBusy || _retrySyncBusy"
+                            OnClick="CopyReportAsync">
+                        @L["Support_CopyReport"]
+                    </Button>
+                </div>
+                @if (!string.IsNullOrEmpty(_actionMessage))
+                {
+                    <Alert Tone="@_actionTone" Message="@_actionMessage" />
+                }
+            </div>
+        </Section>
+    }
+</div>
+
+@code {
+    [Parameter] public string BackHref { get; set; } = "/settings";
+
+    private bool _loading = true;
+    private SupportDiagnosticsAccessKind _access = SupportDiagnosticsAccessKind.NotAuthenticated;
+    private SupportDiagnosticsSnapshot? _snapshot;
+    private bool _retryConnectionBusy;
+    private bool _retrySyncBusy;
+    private string? _actionMessage;
+    private AlertTone _actionTone = AlertTone.Info;
+
+    private string ScopeLabel =>
+        _snapshot?.Scope == SupportDiagnosticsScope.Personal
+            ? L["Support_Scope_Personal"]
+            : L["Support_Scope_Organization"];
+
+    private string ApiStatusDisplay =>
+        !string.IsNullOrWhiteSpace(Status.ApiHealthText)
+            ? Status.ApiHealthText!
+            : (_snapshot?.ApiServerStatus ?? "—");
+
+    private string DeniedTitle => _access switch
+    {
+        SupportDiagnosticsAccessKind.NotAuthenticated => L["Auth_SessionExpiredTitle"],
+        _ => L["Support_AccessDeniedTitle"]
+    };
+
+    private string DeniedMessage => _access switch
+    {
+        SupportDiagnosticsAccessKind.NotAuthenticated => L["Auth_SessionExpired"],
+        SupportDiagnosticsAccessKind.WrongScope => L["Support_AccessWrongScope"],
+        _ => L["Support_AccessDeniedMessage"]
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!CurrentUser.IsAuthenticated)
+        {
+            var restore = await Auth.RestoreSessionAsync();
+            if (!restore.Succeeded)
+            {
+                _access = SupportDiagnosticsAccessKind.NotAuthenticated;
+                _loading = false;
+                return;
+            }
+        }
+
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        _loading = true;
+        _actionMessage = null;
+        try
+        {
+            var result = await Diagnostics.CaptureForCurrentSessionAsync();
+            _access = result.Access;
+            _snapshot = result.Snapshot;
+            if (_snapshot is not null && !string.IsNullOrWhiteSpace(Status.ApiHealthText))
+            {
+                _snapshot = _snapshot with { ApiServerStatus = Status.ApiHealthText };
+            }
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task RetryConnectionAsync()
+    {
+        if (_retryConnectionBusy)
+        {
+            return;
+        }
+
+        _retryConnectionBusy = true;
+        _actionMessage = null;
+        try
+        {
+            if (!await OnlineRequired.EnsureOnlineAsync())
+            {
+                return;
+            }
+
+            await OnlineRequired.RetryConnectionAsync();
+            await Status.RefreshApiHealthAsync();
+            SyncStatus.Refresh();
+            await ReloadAsync();
+            _actionTone = AlertTone.Success;
+            _actionMessage = L["Support_RetryConnectionDone"];
+        }
+        finally
+        {
+            _retryConnectionBusy = false;
+        }
+    }
+
+    private async Task RetrySyncAsync()
+    {
+        if (_retrySyncBusy)
+        {
+            return;
+        }
+
+        _retrySyncBusy = true;
+        _actionMessage = null;
+        try
+        {
+            if (!await OnlineRequired.EnsureOnlineAsync())
+            {
+                return;
+            }
+
+            await Diagnostics.RetrySyncForCurrentSessionAsync();
+            SyncStatus.Refresh();
+            await ReloadAsync();
+            _actionTone = AlertTone.Success;
+            _actionMessage = L["Support_RetrySyncDone"];
+        }
+        finally
+        {
+            _retrySyncBusy = false;
+        }
+    }
+
+    private async Task CopyReportAsync()
+    {
+        if (_snapshot is null)
+        {
+            return;
+        }
+
+        var report = Diagnostics.FormatReport(
+            _snapshot with
+            {
+                ApiServerStatus = ApiStatusDisplay == "—" ? _snapshot.ApiServerStatus : ApiStatusDisplay
+            });
+
+        if (ContainsForbidden(report))
+        {
+            _actionTone = AlertTone.Danger;
+            _actionMessage = L["Support_CopyBlocked"];
+            return;
+        }
+
+        try
+        {
+            await Js.InvokeVoidAsync("navigator.clipboard.writeText", report);
+            _actionTone = AlertTone.Success;
+            _actionMessage = L["Support_CopyDone"];
+        }
+        catch
+        {
+            _actionTone = AlertTone.Info;
+            _actionMessage = L["Support_CopyFallback"];
+        }
+    }
+
+    private static bool ContainsForbidden(string report)
+    {
+        string[] markers =
+        [
+            "refresh_token", "access_token", "Bearer ",
+            "PinVerifier", "HashBase64", "SaltBase64", "password=", "pwd="
+        ];
+        return markers.Any(m => report.Contains(m, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private void GoBack() => Nav.NavigateTo(BackHref);
+
+    private static string FormatTime(DateTimeOffset? value) =>
+        value is null ? "—" : value.Value.ToLocalTime().ToString("g");
+}
