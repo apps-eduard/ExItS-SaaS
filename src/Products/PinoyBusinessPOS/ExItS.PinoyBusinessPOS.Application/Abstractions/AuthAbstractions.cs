@@ -69,6 +69,13 @@ public interface IAuthenticationService
     Task<AuthResult> RestoreSessionAsync(CancellationToken ct = default);
     Task<AuthResult> RefreshSessionAsync(CancellationToken ct = default);
     Task LogoutAsync(CancellationToken ct = default);
+
+    /// <summary>
+    /// Locks the device into PIN unlock while preserving the durable offline operate grant.
+    /// Unlike <see cref="LogoutAsync"/>, Lock does not clear local offline trust.
+    /// </summary>
+    Task LockAsync(CancellationToken ct = default);
+
     Task<AuthResult> SelectOrganizationAsync(Guid organizationId, CancellationToken ct = default);
 
     /// <summary>

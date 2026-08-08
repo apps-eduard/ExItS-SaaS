@@ -96,6 +96,18 @@ public sealed class NavigationGate(
             }
         }
 
+        // Mandatory offline PIN enrollment after online auth + setup (no Skip).
+        if (!await auth.HasOfflinePinConfiguredAsync(ct).ConfigureAwait(false))
+        {
+            var offer = await auth.EvaluateOfflineColdStartOfferAsync(ct).ConfigureAwait(false);
+            // Valid grant with missing PIN, or grant present after online establish.
+            if (offer.Grant is not null
+                || string.Equals(offer.DenialReasonCode, "offline_pin_not_configured", StringComparison.Ordinal))
+            {
+                return "/offline-pin-setup";
+            }
+        }
+
         return await roleHome.ResolvePosHomeAsync(ct).ConfigureAwait(false);
     }
 

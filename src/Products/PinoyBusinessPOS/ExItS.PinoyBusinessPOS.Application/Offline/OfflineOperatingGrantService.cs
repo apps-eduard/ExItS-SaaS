@@ -72,6 +72,13 @@ public sealed class OfflineOperatingGrantService(
         ActiveUnlockedGrant = null;
     }
 
+    public void LockThisProcess()
+    {
+        // Keep durable grant + PIN; only revoke process unlock so Lock ≠ Sign out.
+        IsUnlockedThisProcess = false;
+        ActiveUnlockedGrant = null;
+    }
+
     public async Task<bool> HasPinConfiguredAsync(CancellationToken ct = default)
     {
         var verifier = await store.LoadPinVerifierAsync(ct).ConfigureAwait(false);

@@ -22,7 +22,8 @@ public sealed class AuthenticationService(
     IProtectedShellAccessPolicy? accessPolicy = null,
     TimeProvider? timeProvider = null,
     IOfflineOperatingGrantService? offlineGrant = null,
-    IDeviceIdentityProvider? deviceIdentity = null) : IAuthenticationService
+    IDeviceIdentityProvider? deviceIdentity = null,
+    OfflineSessionUxState? offlineSessionUx = null) : IAuthenticationService
 {
     private static readonly TimeSpan SessionLifetime = TimeSpan.FromHours(12);
     private readonly TimeProvider _clock = timeProvider ?? TimeProvider.System;
@@ -30,6 +31,7 @@ public sealed class AuthenticationService(
     private readonly IProtectedShellAccessPolicy? _accessPolicy = accessPolicy;
     private readonly IOfflineOperatingGrantService? _offlineGrant = offlineGrant;
     private readonly IDeviceIdentityProvider? _deviceIdentity = deviceIdentity;
+    private readonly OfflineSessionUxState? _offlineSessionUx = offlineSessionUx;
 
     public bool IsDevelopmentAuthenticationEnabled =>
         string.Equals(appInfo.EnvironmentName, "Development", StringComparison.OrdinalIgnoreCase)
@@ -539,6 +541,7 @@ public sealed class AuthenticationService(
                         await _offlineGrant
                             .EstablishFromOnlineSessionAsync(restored, deviceId, roleCode: null, ct)
                             .ConfigureAwait(false);
+                        _offlineSessionUx?.ResetSession();
                     }
                 }
                 else
@@ -707,6 +710,7 @@ public sealed class AuthenticationService(
         await preferences.SetSelectedOrganizationIdAsync(grant.OrganizationId, ct).ConfigureAwait(false);
         await OpenLocalContextAsync(restored.UserId, grant.OrganizationId, ct).ConfigureAwait(false);
         _accessPolicy?.NotifyOfflineUnlock(restored.UserId, grant.OrganizationId);
+        _offlineSessionUx?.NotifyOfflinePinUnlocked();
         events.Record("offline_pin_unlock_succeeded", Dict(
             ("userId", restored.UserId.ToString("D")),
             ("organizationId", grant.OrganizationId.ToString("D"))));
@@ -799,6 +803,41 @@ public sealed class AuthenticationService(
         }
 
         await ClearLocalAsync(ct).ConfigureAwait(false);
+    }
+
+    public async Task LockAsync(CancellationToken ct = default)
+    {
+        events.Record("lock", Dict(("userId", currentUser.Session?.UserId.ToString("D"))));
+        _offlineGrant?.LockThisProcess();
+        _accessPolicy?.ClearProcessValidation();
+        _offlineSessionUx?.ResetSession();
+
+        var session = currentUser.Session;
+        if (session is null)
+        {
+            return;
+        }
+
+        var locked = session with
+        {
+            HasPosAccess = false,
+            AccessReasonCode = "offline_pin_required"
+        };
+
+        try
+        {
+            var (_, marker) = await sessionStore.LoadAsync(ct).ConfigureAwait(false);
+            marker ??= Guid.NewGuid().ToString("N");
+            await sessionStore.SaveAsync(locked, marker, ct).ConfigureAwait(false);
+        }
+        catch
+        {
+            events.Record("secure_storage_failure", Dict(("operation", "lock_save")));
+        }
+
+        currentUser.Set(locked);
+        // Do not clear grant, PIN verifier, or durable session identity — Lock ≠ Sign out.
+        await Task.CompletedTask.ConfigureAwait(false);
     }
 
     public async Task<AuthResult> SwitchToPersonalAsync(CancellationToken ct = default)
@@ -1406,6 +1445,7 @@ public sealed class AuthenticationService(
             await _offlineGrant
                 .EstablishFromOnlineSessionAsync(updated, deviceId, roleCode: null, ct)
                 .ConfigureAwait(false);
+            _offlineSessionUx?.ResetSession();
         }
 
         events.Record("organization_selected", Dict(
@@ -1712,15 +1752,18 @@ public sealed class AuthenticationService(
     {
         await CloseLocalContextAsync(ct).ConfigureAwait(false);
         _accessPolicy?.ClearProcessValidation();
+        _offlineSessionUx?.ResetSession();
         if (_offlineGrant is not null)
         {
             try
             {
+                // Sign out clears the operate grant so the next auth requires internet.
+                // PIN verifier is retained for reuse after the next online establish.
                 await _offlineGrant.ClearAsync(ct).ConfigureAwait(false);
             }
             catch
             {
-                // Best-effort grant/PIN clear.
+                // Best-effort grant clear.
             }
         }
 

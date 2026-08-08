@@ -123,6 +123,8 @@ public static class MauiProgram
             configuration.GetSection(OfflineOperatingGrantOptions.SectionName));
         services.AddSingleton<IOfflineOperatingGrantStore, OfflineOperatingGrantStore>();
         services.AddSingleton<IOfflineOperatingGrantService, OfflineOperatingGrantService>();
+        services.AddSingleton<OfflineSessionUxState>();
+        services.AddSingleton<OnlineRequiredGuard>();
         services.AddPinoyBusinessPosLocalStore();
         services.AddSingleton<ProtectedShellAccessPolicy>();
         services.AddSingleton<IProtectedShellAccessPolicy>(sp => sp.GetRequiredService<ProtectedShellAccessPolicy>());

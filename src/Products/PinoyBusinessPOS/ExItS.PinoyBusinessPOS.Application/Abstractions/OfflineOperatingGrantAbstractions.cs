@@ -32,6 +32,12 @@ public interface IOfflineOperatingGrantService
 
     Task ClearAsync(CancellationToken ct = default);
 
+    /// <summary>
+    /// Ends the current unlocked process session without clearing the durable grant or PIN.
+    /// Next access requires PIN unlock (or online revalidation).
+    /// </summary>
+    void LockThisProcess();
+
     Task<bool> HasPinConfiguredAsync(CancellationToken ct = default);
 
     Task<OfflinePinSetupResult> SetPinAsync(string pin, CancellationToken ct = default);
