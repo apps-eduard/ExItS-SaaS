@@ -579,7 +579,26 @@
   <data name="SyncStatus_OnlineDetail" xml:space="preserve"><value>May koneksyon. Na-verify ang access</value></data>
   <data name="SyncStatus_Offline" xml:space="preserve"><value>Offline</value></data>
   <data name="SyncStatus_OfflineShort" xml:space="preserve"><value>Offline</value></data>
-  <data name="SyncStatus_OfflineDetail" xml:space="preserve"><value>Walang internet connection</value></data>
+  <data name="SyncStatus_OfflineDetail" xml:space="preserve"><value>Offline — magsi-sync ang mga pagbabago kapag may connection</value></data>
+  <data name="Offline_Banner" xml:space="preserve"><value>Offline — magsi-sync ang mga pagbabago kapag may connection</value></data>
+  <data name="Offline_PinTitle" xml:space="preserve"><value>I-unlock ang offline POS</value></data>
+  <data name="Offline_PinSubtitle" xml:space="preserve"><value>Ilagay ang offline PIN para magpatuloy sa pagbebenta kahit walang network.</value></data>
+  <data name="Offline_PinLabel" xml:space="preserve"><value>Offline PIN</value></data>
+  <data name="Offline_PinUnlock" xml:space="preserve"><value>I-unlock gamit ang PIN</value></data>
+  <data name="Offline_PinRequired" xml:space="preserve"><value>Kailangan ang offline PIN</value></data>
+  <data name="Offline_PinAvailableHint" xml:space="preserve"><value>May valid offline grant sa device na ito. Puwede kang mag-unlock gamit ang PIN kahit walang network.</value></data>
+  <data name="Offline_PinWrong" xml:space="preserve"><value>Maling PIN.</value></data>
+  <data name="Offline_PinLocked" xml:space="preserve"><value>Masyadong maraming attempts. Subukan ulit mamaya.</value></data>
+  <data name="Offline_PinInvalidFormat" xml:space="preserve"><value>Dapat hindi bababa sa 6 digits ang PIN.</value></data>
+  <data name="Offline_PinNotConfigured" xml:space="preserve"><value>Mag-set muna ng offline PIN habang online bago gamitin ang offline unlock.</value></data>
+  <data name="Offline_GrantMissing" xml:space="preserve"><value>Walang offline grant sa device na ito. Mag-reconnect online sandali.</value></data>
+  <data name="Offline_GrantExpired" xml:space="preserve"><value>Nag-expire ang offline grant. Mag-reconnect online para i-refresh.</value></data>
+  <data name="Offline_DeviceMismatch" xml:space="preserve"><value>Ang offline grant na ito ay para sa ibang device.</value></data>
+  <data name="Offline_PinSetupTitle" xml:space="preserve"><value>Offline PIN</value></data>
+  <data name="Offline_PinSetupHint" xml:space="preserve"><value>Gumawa ng 6+ digit PIN para ma-unlock ang POS sa device na ito kapag may outage.</value></data>
+  <data name="Offline_PinSetupSave" xml:space="preserve"><value>I-save ang offline PIN</value></data>
+  <data name="Offline_PinSetupSaved" xml:space="preserve"><value>Na-save ang offline PIN.</value></data>
+  <data name="Offline_SalePendingSync" xml:space="preserve"><value>Tapos na ang sale — pending sync</value></data>
   <data name="SyncStatus_ConnectionOnlineDetail" xml:space="preserve"><value>May koneksyon. Na-verify ang access</value></data>
   <data name="SyncStatus_ConnectionOfflineDetail" xml:space="preserve"><value>Walang internet connection</value></data>
   <data name="SyncStatus_ConnectionReconnecting" xml:space="preserve"><value>Reconnecting…</value></data>
@@ -587,7 +606,7 @@
   <data name="SyncStatus_Reconnect" xml:space="preserve"><value>Mag-reconnect para i-verify ang access</value></data>
   <data name="SyncStatus_ReconnectShort" xml:space="preserve"><value>Reconnect</value></data>
   <data name="SyncStatus_ReconnectTitle" xml:space="preserve"><value>Kailangan mag-reconnect</value></data>
-  <data name="SyncStatus_ReconnectMessage" xml:space="preserve"><value>Mag-reconnect para i-verify ang access bago magpatuloy. Hindi sapat ang local data para i-unlock ang POS.</value></data>
+  <data name="SyncStatus_ReconnectMessage" xml:space="preserve"><value>Mag-reconnect online upang i-verify ang access, o mag-unlock gamit ang offline PIN kung may valid grant sa device na ito.</value></data>
   <data name="SyncStatus_Pending" xml:space="preserve"><value>Pending sync ({0})</value></data>
   <data name="SyncStatus_PendingShort" xml:space="preserve"><value>Pending ({0})</value></data>
   <data name="SyncStatus_PendingItems" xml:space="preserve"><value>Pending sync ({0} items)</value></data>
@@ -1062,7 +1081,9 @@
   <data name="Sales_Checkout_DueDateOptional" xml:space="preserve"><value>Due date (opsyonal)</value></data>
   <data name="Sales_Checkout_CustomerRequired" xml:space="preserve"><value>Pumili muna ng active customer bago magtala ng Utang.</value></data>
   <data name="Sales_Checkout_ZeroTotalUtang" xml:space="preserve"><value>Hindi pwedeng magtala ng Utang kung zero ang kabuuan. Magdagdag muna ng produkto.</value></data>
-  <data name="Sales_Checkout_OfflineMessage" xml:space="preserve"><value>Kailangan ng koneksyon ang checkout. Mag-reconnect bago magtala ng benta.</value></data>
+  <data name="Sales_Checkout_OfflineMessage" xml:space="preserve"><value>Kailangan ng koneksyon ang non-cash checkout. Maaaring magpatuloy ang cash sale offline kung may active na offline PIN grant.</value></data>
+  <data name="Sales_Checkout_OfflineCashMessage" xml:space="preserve"><value>Available ang cash checkout offline. Naka-save ang benta sa device at magsi-sync kapag may koneksyon.</value></data>
+  <data name="Sales_Checkout_OfflineCommitFailed" xml:space="preserve"><value>Hindi ma-save ang benta sa device. Subukan ulit.</value></data>
   <data name="Sales_Checkout_CategoryFilter" xml:space="preserve"><value>Kategorya</value></data>
   <data name="Sales_Checkout_BrowseSection" xml:space="preserve"><value>Mag-browse ng produkto</value></data>
   <data name="Sales_Checkout_ViewCart" xml:space="preserve"><value>Tingnan ang cart</value></data>

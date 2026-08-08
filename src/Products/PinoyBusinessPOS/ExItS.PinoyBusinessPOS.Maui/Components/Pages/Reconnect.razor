@@ -14,8 +14,18 @@
         <p class="pos-reconnect__subtitle">@L["SyncStatus_ReconnectMessage"]</p>
     </header>
     <Alert Tone="AlertTone.Warning" Title="@L["SyncStatus_Reconnect"]" Message="@L["SyncStatus_ReconnectMessage"]" />
+    @if (_canOfflinePin)
+    {
+        <InlineMessage Tone="InlineMessageTone.Info">@L["Offline_PinAvailableHint"]</InlineMessage>
+    }
     <FormActions>
         <Button OnClick="RetryAsync" Disabled="_busy">@L["Common_Retry"]</Button>
+        @if (_canOfflinePin)
+        {
+            <Button Variant="ButtonVariant.Secondary" Disabled="_busy" OnClick="GoOfflinePin">
+                @L["Offline_PinUnlock"]
+            </Button>
+        }
         <Button Variant="ButtonVariant.Ghost" OnClick="SignOutAsync" Disabled="_busy">@L["Auth_Logout"]</Button>
     </FormActions>
 </Page>
@@ -23,13 +33,18 @@
 
 @code {
     private bool _busy;
+    private bool _canOfflinePin;
 
     protected override async Task OnInitializedAsync()
     {
         await AccessPolicy.InitializeAsync();
-        SyncStatus.SetReconnectRequired(true);
+        var offer = await Auth.EvaluateOfflineColdStartOfferAsync();
+        _canOfflinePin = offer.CanOfferPinUnlock;
+        SyncStatus.SetReconnectRequired(!_canOfflinePin);
         SyncStatus.Refresh();
     }
+
+    private void GoOfflinePin() => Nav.NavigateTo("/offline-pin", replace: true);
 
     private async Task RetryAsync()
     {

@@ -1,0 +1,109 @@
+@page "/offline-pin"
+@layout Layout.AuthShell
+@inject IAuthenticationService Auth
+@inject ICurrentUserContext CurrentUser
+@inject RoleHomeResolver RoleHome
+@inject IPosSyncStatusService SyncStatus
+@inject NavigationManager Nav
+@inject IStringLocalizer<PosResources> L
+
+<div class="pos-offline-pin">
+    <Page>
+        <header class="pos-offline-pin__header">
+            <h1 class="pos-offline-pin__title">@L["Offline_PinTitle"]</h1>
+            <p class="pos-offline-pin__subtitle">@L["Offline_PinSubtitle"]</p>
+            @if (!string.IsNullOrWhiteSpace(CurrentUser.Session?.OrganizationDisplayName))
+            {
+                <p class="pos-muted">@CurrentUser.Session!.OrganizationDisplayName</p>
+            }
+        </header>
+
+        <InlineMessage Tone="InlineMessageTone.Warning">@L["Offline_Banner"]</InlineMessage>
+
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <InlineMessage Tone="InlineMessageTone.Danger">@_error</InlineMessage>
+        }
+
+        <div class="pos-offline-pin__field">
+            <label for="offline-pin">@L["Offline_PinLabel"]</label>
+            <input id="offline-pin"
+                   type="password"
+                   inputmode="numeric"
+                   autocomplete="one-time-code"
+                   maxlength="12"
+                   class="pos-offline-pin__input"
+                   disabled="@_busy"
+                   @bind="_pin"
+                   @bind:event="oninput" />
+        </div>
+
+        <FormActions>
+            <Button Variant="ButtonVariant.Primary" IsLoading="_busy" Disabled="_busy" OnClick="UnlockAsync">
+                @L["Offline_PinUnlock"]
+            </Button>
+            <Button Variant="ButtonVariant.Ghost" Disabled="_busy" OnClick="GoReconnectAsync">
+                @L["SyncStatus_ReconnectShort"]
+            </Button>
+            <Button Variant="ButtonVariant.Ghost" Disabled="_busy" OnClick="SignOutAsync">
+                @L["Auth_Logout"]
+            </Button>
+        </FormActions>
+    </Page>
+</div>
+
+<style>
+    .pos-offline-pin__header { margin-bottom: 0.75rem; }
+    .pos-offline-pin__title { margin: 0; font-size: 1.25rem; font-weight: 700; }
+    .pos-offline-pin__subtitle { margin: 0.35rem 0 0; font-size: 0.875rem; color: var(--exits-text-muted, #5b6b62); }
+    .pos-offline-pin__field { display: flex; flex-direction: column; gap: 0.35rem; margin: 0.85rem 0; }
+    .pos-offline-pin__input {
+        min-height: 2.75rem; padding: 0.55rem 0.75rem; font-size: 1.25rem; letter-spacing: 0.2em;
+        border: 1px solid var(--exits-border, #c9d4cd); border-radius: var(--exits-radius-md, 0.5rem);
+    }
+</style>
+
+@code {
+    private string _pin = string.Empty;
+    private string? _error;
+    private bool _busy;
+
+    private async Task UnlockAsync()
+    {
+        if (_busy)
+        {
+            return;
+        }
+
+        _busy = true;
+        _error = null;
+        try
+        {
+            var result = await Auth.UnlockOfflineWithPinAsync(_pin);
+            if (!result.Succeeded)
+            {
+                _error = L[result.SafeMessageKey ?? "Offline_PinWrong"];
+                _pin = string.Empty;
+                return;
+            }
+
+            SyncStatus.SetReconnectRequired(false);
+            SyncStatus.Refresh();
+            // Do not call ResolveStartRouteAsync — it would RestoreSession and re-hit introspect offline.
+            Nav.NavigateTo(await RoleHome.ResolvePosHomeAsync(), replace: true);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void GoReconnectAsync() => Nav.NavigateTo("/reconnect", replace: true);
+
+    private async Task SignOutAsync()
+    {
+        await Auth.LogoutAsync();
+        SyncStatus.SetReconnectRequired(false);
+        Nav.NavigateTo("/signin", replace: true);
+    }
+}

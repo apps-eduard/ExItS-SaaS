@@ -68,4 +68,10 @@ public interface IProtectedShellAccessPolicy
     /// Re-evaluates process validation after org bind / session update while online.
     /// </summary>
     void NotifySessionAccessChanged();
+
+    /// <summary>
+    /// Marks this process as validated from a PIN-unlocked offline operate grant (cold start).
+    /// Does not extend grant expiry; only restores continuous offline mutation rights.
+    /// </summary>
+    void NotifyOfflineUnlock(Guid userId, Guid organizationId);
 }

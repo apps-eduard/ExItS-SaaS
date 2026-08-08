@@ -39,8 +39,25 @@ public sealed class NavigationGate(
         var restore = await auth.RestoreSessionAsync(ct).ConfigureAwait(false);
         syncStatus.Refresh();
 
+        // Cold-start offline with a valid grant: collect PIN before treating as reconnect wall.
+        if (!restore.Succeeded
+            && restore.FailureReason == AuthFailureReason.Offline
+            && string.Equals(restore.SafeMessageKey, "Offline_PinRequired", StringComparison.Ordinal))
+        {
+            syncStatus.SetReconnectRequired(false);
+            return "/offline-pin";
+        }
+
         if (accessPolicy.RequiresReconnectToVerifyAccess)
         {
+            // Still offer PIN unlock when a grant exists (e.g. restore partially succeeded).
+            var offer = await auth.EvaluateOfflineColdStartOfferAsync(ct).ConfigureAwait(false);
+            if (offer.CanOfferPinUnlock)
+            {
+                syncStatus.SetReconnectRequired(false);
+                return "/offline-pin";
+            }
+
             syncStatus.SetReconnectRequired(true);
             return "/reconnect";
         }

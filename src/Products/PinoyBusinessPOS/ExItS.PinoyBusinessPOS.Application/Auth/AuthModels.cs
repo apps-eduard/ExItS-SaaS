@@ -26,6 +26,16 @@ public static class SecureTokenKeys
     /// AES-GCM key for offline queue payloads. Survives logout; never stored in SQLite.
     /// </summary>
     public const string LocalPayloadEncryptionKey = "pos.local.payload.key";
+
+    /// <summary>
+    /// Offline operate grant (no tokens/passwords). Cleared on logout; replaced on online bind.
+    /// </summary>
+    public const string OfflineOperatingGrant = "pos.offline.operatingGrant";
+
+    /// <summary>
+    /// Salted PIN verifier for unlocking an existing offline grant. Cleared on logout.
+    /// </summary>
+    public const string OfflinePinVerifier = "pos.offline.pinVerifier";
 }
 
 public static class PreferenceKeys

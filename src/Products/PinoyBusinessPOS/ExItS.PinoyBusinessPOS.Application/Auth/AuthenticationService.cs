@@ -2,6 +2,7 @@ using ExItS.PinoyBusinessPOS.Application.Abstractions;
 using ExItS.PinoyBusinessPOS.Application.Auth;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
+using ExItS.PinoyBusinessPOS.Application.Offline;
 using ExItS.PinoyBusinessPOS.Application.Platform;
 
 namespace ExItS.PinoyBusinessPOS.Application.Auth;
@@ -19,12 +20,16 @@ public sealed class AuthenticationService(
     IAuthEventSink events,
     ILocalContextManager? localContext = null,
     IProtectedShellAccessPolicy? accessPolicy = null,
-    TimeProvider? timeProvider = null) : IAuthenticationService
+    TimeProvider? timeProvider = null,
+    IOfflineOperatingGrantService? offlineGrant = null,
+    IDeviceIdentityProvider? deviceIdentity = null) : IAuthenticationService
 {
     private static readonly TimeSpan SessionLifetime = TimeSpan.FromHours(12);
     private readonly TimeProvider _clock = timeProvider ?? TimeProvider.System;
     private readonly ILocalContextManager? _localContext = localContext;
     private readonly IProtectedShellAccessPolicy? _accessPolicy = accessPolicy;
+    private readonly IOfflineOperatingGrantService? _offlineGrant = offlineGrant;
+    private readonly IDeviceIdentityProvider? _deviceIdentity = deviceIdentity;
 
     public bool IsDevelopmentAuthenticationEnabled =>
         string.Equals(appInfo.EnvironmentName, "Development", StringComparison.OrdinalIgnoreCase)
@@ -525,10 +530,25 @@ public sealed class AuthenticationService(
                 if (hasAccess && orgId is Guid validatedOrg)
                 {
                     await OpenLocalContextAsync(restored.UserId, validatedOrg, ct).ConfigureAwait(false);
+                    _accessPolicy?.NotifySessionAccessChanged();
+                    if (_offlineGrant is not null)
+                    {
+                        var deviceId = _deviceIdentity is null
+                            ? string.Empty
+                            : await _deviceIdentity.GetOrCreateDeviceIdAsync(ct).ConfigureAwait(false);
+                        await _offlineGrant
+                            .EstablishFromOnlineSessionAsync(restored, deviceId, roleCode: null, ct)
+                            .ConfigureAwait(false);
+                    }
                 }
                 else
                 {
                     await CloseLocalContextAsync(ct).ConfigureAwait(false);
+                    // Explicit server denial of product access — do not keep a stale offline grant.
+                    if (_offlineGrant is not null && !hasAccess)
+                    {
+                        await _offlineGrant.ClearAsync(ct).ConfigureAwait(false);
+                    }
                 }
 
                 return new AuthResult(true, AuthFailureReason.None, restored);
@@ -536,14 +556,86 @@ public sealed class AuthenticationService(
         }
         catch
         {
-            // Fall through to expiry-only restore when introspect is unreachable.
+            // Fall through: server unreachable is not an authorization denial.
         }
 
-        // Offline / introspect unavailable: keep durable bearer session shell (expiry already checked).
+        // Introspect unavailable / transport failure — attempt offline grant fallback.
+        // Explicit Active:false above already logged out; do not treat network failure as revoke.
+        return await RestoreOfflineOperatingFallbackAsync(shell, ct).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Cold-start path when Platform introspect is unreachable. Offers PIN unlock when a valid
+    /// offline grant exists; otherwise keeps the shell and requires reconnect (not a hard revoke).
+    /// </summary>
+    private async Task<AuthResult> RestoreOfflineOperatingFallbackAsync(AuthSession shell, CancellationToken ct)
+    {
         var selectedOrg = await preferences.GetSelectedOrganizationIdAsync(ct).ConfigureAwait(false);
+        var orgId = selectedOrg ?? shell.OrganizationId;
+
+        // Already unlocked with PIN in this process — restore operate context without re-prompt.
+        if (_offlineGrant is { IsUnlockedThisProcess: true, ActiveUnlockedGrant: { } active }
+            && active.UserId == shell.UserId
+            && !active.IsExpired(_clock.GetUtcNow()))
+        {
+            var unlocked = shell with
+            {
+                OrganizationId = active.OrganizationId,
+                OrganizationDisplayName = active.OrganizationDisplayName,
+                DisplayName = string.IsNullOrWhiteSpace(shell.DisplayName) ? active.DisplayName ?? shell.DisplayName : shell.DisplayName,
+                HasPosAccess = true,
+                AccessReasonCode = "offline_grant",
+                SubscriptionStatus = active.SubscriptionStatus ?? shell.SubscriptionStatus,
+                EnabledFeatureCodes = active.EnabledFeatureCodes.Count > 0 ? active.EnabledFeatureCodes : shell.EnabledFeatureCodes
+            };
+            currentUser.Set(unlocked);
+            await OpenLocalContextAsync(unlocked.UserId, active.OrganizationId, ct).ConfigureAwait(false);
+            _accessPolicy?.NotifyOfflineUnlock(unlocked.UserId, active.OrganizationId);
+            return new AuthResult(true, AuthFailureReason.None, unlocked);
+        }
+
+        if (_offlineGrant is not null)
+        {
+            var offer = await _offlineGrant.EvaluateColdStartOfferAsync(ct).ConfigureAwait(false);
+            if (offer.CanOfferPinUnlock && offer.Grant is not null)
+            {
+                if (orgId is Guid boundOrg && offer.Grant.OrganizationId != boundOrg)
+                {
+                    // Preference/org mismatch — fail closed to reconnect.
+                    offer = offer with { CanOfferPinUnlock = false, DenialReasonCode = "offline_org_mismatch" };
+                }
+                else if (offer.Grant.UserId != shell.UserId)
+                {
+                    offer = offer with { CanOfferPinUnlock = false, DenialReasonCode = "offline_user_mismatch" };
+                }
+            }
+
+            if (offer is { CanOfferPinUnlock: true, Grant: not null })
+            {
+                var pinPending = shell with
+                {
+                    OrganizationId = offer.Grant.OrganizationId,
+                    OrganizationDisplayName = offer.Grant.OrganizationDisplayName,
+                    HasPosAccess = false,
+                    AccessReasonCode = "offline_pin_required",
+                    SubscriptionStatus = offer.Grant.SubscriptionStatus,
+                    EnabledFeatureCodes = offer.Grant.EnabledFeatureCodes
+                };
+                currentUser.Set(pinPending);
+                events.Record("offline_pin_required", Dict(
+                    ("userId", shell.UserId.ToString("D")),
+                    ("organizationId", offer.Grant.OrganizationId.ToString("D"))));
+                return new AuthResult(
+                    false,
+                    AuthFailureReason.Offline,
+                    pinPending,
+                    SafeMessageKey: "Offline_PinRequired");
+            }
+        }
+
         var offlineShell = shell with
         {
-            OrganizationId = selectedOrg ?? shell.OrganizationId,
+            OrganizationId = orgId,
             HasPosAccess = false,
             AccessReasonCode = "reconnect_required"
         };
@@ -551,6 +643,90 @@ public sealed class AuthenticationService(
         await CloseLocalContextAsync(ct).ConfigureAwait(false);
         return new AuthResult(false, AuthFailureReason.Offline, offlineShell, SafeMessageKey: "SyncStatus_Reconnect");
     }
+
+    public async Task<AuthResult> UnlockOfflineWithPinAsync(string pin, CancellationToken ct = default)
+    {
+        if (_offlineGrant is null)
+        {
+            return new AuthResult(false, AuthFailureReason.AccessDenied, SafeMessageKey: "Offline_GrantMissing");
+        }
+
+        var unlock = await _offlineGrant.UnlockWithPinAsync(pin, ct).ConfigureAwait(false);
+        if (unlock.Status != OfflinePinUnlockStatus.Succeeded || unlock.Grant is null)
+        {
+            return new AuthResult(
+                false,
+                AuthFailureReason.AccessDenied,
+                SafeMessageKey: unlock.SafeMessageKey ?? "Offline_PinWrong");
+        }
+
+        var grant = unlock.Grant;
+        var shell = currentUser.Session;
+        AuthSession? markerSession = null;
+        string? marker = null;
+        try
+        {
+            (markerSession, marker) = await sessionStore.LoadAsync(ct).ConfigureAwait(false);
+        }
+        catch
+        {
+            // Fall through with in-memory shell.
+        }
+
+        var baseSession = shell ?? markerSession;
+        if (baseSession is null || baseSession.UserId != grant.UserId)
+        {
+            return new AuthResult(false, AuthFailureReason.SessionExpired, SafeMessageKey: "Auth_SessionExpired");
+        }
+
+        var restored = baseSession with
+        {
+            OrganizationId = grant.OrganizationId,
+            OrganizationDisplayName = grant.OrganizationDisplayName,
+            DisplayName = grant.DisplayName ?? baseSession.DisplayName,
+            Username = grant.Username ?? baseSession.Username,
+            Email = grant.Email ?? baseSession.Email,
+            HasPosAccess = true,
+            AccessReasonCode = "offline_grant",
+            SubscriptionStatus = grant.SubscriptionStatus ?? baseSession.SubscriptionStatus,
+            EnabledFeatureCodes = grant.EnabledFeatureCodes
+        };
+
+        try
+        {
+            marker ??= Guid.NewGuid().ToString("N");
+            await sessionStore.SaveAsync(restored, marker, ct).ConfigureAwait(false);
+        }
+        catch
+        {
+            events.Record("secure_storage_failure", Dict(("operation", "offline_unlock_save")));
+            return new AuthResult(false, AuthFailureReason.SecureStorageFailure, SafeMessageKey: "Auth_SecureStorageFailure");
+        }
+
+        currentUser.Set(restored);
+        await preferences.SetSelectedOrganizationIdAsync(grant.OrganizationId, ct).ConfigureAwait(false);
+        await OpenLocalContextAsync(restored.UserId, grant.OrganizationId, ct).ConfigureAwait(false);
+        _accessPolicy?.NotifyOfflineUnlock(restored.UserId, grant.OrganizationId);
+        events.Record("offline_pin_unlock_succeeded", Dict(
+            ("userId", restored.UserId.ToString("D")),
+            ("organizationId", grant.OrganizationId.ToString("D"))));
+        return new AuthResult(true, AuthFailureReason.None, restored);
+    }
+
+    public Task<OfflinePinSetupResult> SetOfflinePinAsync(string pin, CancellationToken ct = default) =>
+        _offlineGrant is null
+            ? Task.FromResult(new OfflinePinSetupResult(false, "Offline_GrantMissing"))
+            : _offlineGrant.SetPinAsync(pin, ct);
+
+    public Task<bool> HasOfflinePinConfiguredAsync(CancellationToken ct = default) =>
+        _offlineGrant is null
+            ? Task.FromResult(false)
+            : _offlineGrant.HasPinConfiguredAsync(ct);
+
+    public Task<OfflineColdStartOffer> EvaluateOfflineColdStartOfferAsync(CancellationToken ct = default) =>
+        _offlineGrant is null
+            ? Task.FromResult(new OfflineColdStartOffer(false, null, "offline_grant_missing"))
+            : _offlineGrant.EvaluateColdStartOfferAsync(ct);
 
     public async Task<AuthResult> RefreshSessionAsync(CancellationToken ct = default)
     {
@@ -1222,6 +1398,16 @@ public sealed class AuthenticationService(
         await OpenLocalContextAsync(updated.UserId, organizationId, ct).ConfigureAwait(false);
         // SelectOrganization clears process validation first; re-arm once POS access is bound.
         _accessPolicy?.NotifySessionAccessChanged();
+        if (updated.HasPosAccess && _offlineGrant is not null)
+        {
+            var deviceId = _deviceIdentity is null
+                ? string.Empty
+                : await _deviceIdentity.GetOrCreateDeviceIdAsync(ct).ConfigureAwait(false);
+            await _offlineGrant
+                .EstablishFromOnlineSessionAsync(updated, deviceId, roleCode: null, ct)
+                .ConfigureAwait(false);
+        }
+
         events.Record("organization_selected", Dict(
             ("userId", previous.UserId.ToString("D")),
             ("organizationId", organizationId.ToString("D"))));
@@ -1526,6 +1712,17 @@ public sealed class AuthenticationService(
     {
         await CloseLocalContextAsync(ct).ConfigureAwait(false);
         _accessPolicy?.ClearProcessValidation();
+        if (_offlineGrant is not null)
+        {
+            try
+            {
+                await _offlineGrant.ClearAsync(ct).ConfigureAwait(false);
+            }
+            catch
+            {
+                // Best-effort grant/PIN clear.
+            }
+        }
 
         try
         {

@@ -9,6 +9,7 @@
 @inject IOptions<PosApiOptions> ApiOptions
 @inject ApiStatusLocalizer ApiLocalizer
 @inject ICurrentUserContext CurrentUser
+@inject IAuthenticationService Auth
 @inject NavigationGate Gate
 @inject NavigationManager Nav
 @inject IUtangCapabilityEvaluator Capabilities
@@ -45,6 +46,39 @@
                     </button>
                 </div>
             </Section>
+
+            @if (CurrentUser.HasPosAccess)
+            {
+                <Section Title="@L["Offline_PinSetupTitle"]">
+                    <div class="pos-settings__panel">
+                        <p class="pos-muted">@L["Offline_PinSetupHint"]</p>
+                        @if (_pinConfigured)
+                        {
+                            <p class="pos-muted">@L["Offline_PinSetupSaved"]</p>
+                        }
+                        <input type="password"
+                               inputmode="numeric"
+                               maxlength="12"
+                               class="pos-offline-pin__input"
+                               disabled="@_pinBusy"
+                               @bind="_offlinePin"
+                               @bind:event="oninput"
+                               aria-label="@L["Offline_PinLabel"]" />
+                        <div class="pos-settings__actions">
+                            <Button Variant="ButtonVariant.Secondary"
+                                    IsLoading="_pinBusy"
+                                    Disabled="_pinBusy"
+                                    OnClick="SaveOfflinePinAsync">
+                                @L["Offline_PinSetupSave"]
+                            </Button>
+                        </div>
+                        @if (!string.IsNullOrEmpty(_pinMessage))
+                        {
+                            <Alert Tone="@(_pinSucceeded ? AlertTone.Success : AlertTone.Danger)" Message="@_pinMessage" />
+                        }
+                    </div>
+                </Section>
+            }
         }
 
         @if (_preferenceError is not null)
@@ -125,6 +159,11 @@
     private bool _testSucceeded;
     private string? _testResultMessage;
     private string? _preferenceError;
+    private string _offlinePin = string.Empty;
+    private bool _pinBusy;
+    private bool _pinConfigured;
+    private bool _pinSucceeded;
+    private string? _pinMessage;
 
     private IReadOnlyList<SelectOption> ThemeOptions =>
     [
@@ -179,6 +218,36 @@
             {
                 Nav.NavigateTo(route, replace: true);
             }
+        }
+
+        _pinConfigured = await Auth.HasOfflinePinConfiguredAsync();
+    }
+
+    private async Task SaveOfflinePinAsync()
+    {
+        if (_pinBusy)
+        {
+            return;
+        }
+
+        _pinBusy = true;
+        _pinMessage = null;
+        try
+        {
+            var result = await Auth.SetOfflinePinAsync(_offlinePin);
+            _pinSucceeded = result.Succeeded;
+            _pinMessage = result.Succeeded
+                ? L["Offline_PinSetupSaved"]
+                : L[result.SafeMessageKey ?? "Offline_PinInvalidFormat"];
+            if (result.Succeeded)
+            {
+                _pinConfigured = true;
+                _offlinePin = string.Empty;
+            }
+        }
+        finally
+        {
+            _pinBusy = false;
         }
     }
 

@@ -118,6 +118,11 @@ public static class MauiProgram
         services.AddSingleton<IAuthEventSink, LoggingAuthEventSink>();
         services.AddSingleton<IProductAccessResolver, ProductAccessResolver>();
         services.AddSingleton<ILocalStoreRootPathProvider, MauiLocalStoreRootPathProvider>();
+        services.AddSingleton(TimeProvider.System);
+        services.Configure<OfflineOperatingGrantOptions>(
+            configuration.GetSection(OfflineOperatingGrantOptions.SectionName));
+        services.AddSingleton<IOfflineOperatingGrantStore, OfflineOperatingGrantStore>();
+        services.AddSingleton<IOfflineOperatingGrantService, OfflineOperatingGrantService>();
         services.AddPinoyBusinessPosLocalStore();
         services.AddSingleton<ProtectedShellAccessPolicy>();
         services.AddSingleton<IProtectedShellAccessPolicy>(sp => sp.GetRequiredService<ProtectedShellAccessPolicy>());

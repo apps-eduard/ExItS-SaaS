@@ -3,9 +3,9 @@ using ExItS.PinoyBusinessPOS.Application.Abstractions;
 namespace ExItS.PinoyBusinessPOS.Application.Offline;
 
 /// <summary>
-/// Protected shell: online validation required to unlock. Mid-session offline mutations are allowed
-/// only after this process lifetime has validated access online (P7-WP03). Cold start / restart
-/// while offline never unlocks from cache alone (no time-based entitlement grace).
+/// Protected shell: online validation or PIN-unlocked offline grant unlocks the process session.
+/// Mid-session / cold-start offline mutations are allowed only while that continuous session remains
+/// active. Explicit server denial still fails closed; network unavailability alone does not.
 /// </summary>
 public sealed class ProtectedShellAccessPolicy : IProtectedShellAccessPolicy, IDisposable
 {
@@ -13,7 +13,7 @@ public sealed class ProtectedShellAccessPolicy : IProtectedShellAccessPolicy, ID
     private readonly IConnectivityService _connectivity;
     private ConnectivityStatus _status = ConnectivityStatus.Unknown;
     private bool _statusKnown;
-    private bool _validatedOnlineThisProcess;
+    private bool _validatedThisProcess;
     private Guid? _validatedUserId;
     private Guid? _validatedOrganizationId;
 
@@ -36,7 +36,7 @@ public sealed class ProtectedShellAccessPolicy : IProtectedShellAccessPolicy, ID
                 return false;
             }
 
-            // Authenticated but never validated online in this process (e.g. restart offline).
+            // Authenticated but never validated in this process (online bind or offline PIN unlock).
             if (!IsOnline && !HasContinuousValidatedSession)
             {
                 return true;
@@ -50,7 +50,7 @@ public sealed class ProtectedShellAccessPolicy : IProtectedShellAccessPolicy, ID
     public bool AllowsOfflineMutation => HasValidatedSessionAccess && HasContinuousValidatedSession;
 
     private bool HasContinuousValidatedSession =>
-        _validatedOnlineThisProcess
+        _validatedThisProcess
         && _validatedUserId == _currentUser.Session?.UserId
         && _validatedOrganizationId == _currentUser.Session?.OrganizationId
         && HasValidatedSessionAccess;
@@ -74,7 +74,7 @@ public sealed class ProtectedShellAccessPolicy : IProtectedShellAccessPolicy, ID
     /// <summary>Clears process-lifetime validation (logout / user or organization switch).</summary>
     public void ClearProcessValidation()
     {
-        _validatedOnlineThisProcess = false;
+        _validatedThisProcess = false;
         _validatedUserId = null;
         _validatedOrganizationId = null;
     }
@@ -97,9 +97,28 @@ public sealed class ProtectedShellAccessPolicy : IProtectedShellAccessPolicy, ID
             _statusKnown = true;
         }
 
-        _validatedOnlineThisProcess = true;
+        _validatedThisProcess = true;
         _validatedUserId = _currentUser.Session!.UserId;
         _validatedOrganizationId = _currentUser.Session.OrganizationId;
+    }
+
+    public void NotifyOfflineUnlock(Guid userId, Guid organizationId)
+    {
+        if (!HasValidatedSessionAccess
+            || _currentUser.Session?.UserId != userId
+            || _currentUser.Session?.OrganizationId != organizationId)
+        {
+            return;
+        }
+
+        _validatedThisProcess = true;
+        _validatedUserId = userId;
+        _validatedOrganizationId = organizationId;
+        if (!_statusKnown)
+        {
+            _status = ConnectivityStatus.Offline;
+            _statusKnown = true;
+        }
     }
 
     private void OnConnectivityChanged(object? sender, ConnectivityStatus status)
@@ -116,7 +135,7 @@ public sealed class ProtectedShellAccessPolicy : IProtectedShellAccessPolicy, ID
             return;
         }
 
-        _validatedOnlineThisProcess = true;
+        _validatedThisProcess = true;
         _validatedUserId = _currentUser.Session!.UserId;
         _validatedOrganizationId = _currentUser.Session.OrganizationId;
     }

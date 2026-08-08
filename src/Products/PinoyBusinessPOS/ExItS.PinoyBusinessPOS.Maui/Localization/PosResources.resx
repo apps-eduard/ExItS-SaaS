@@ -579,7 +579,26 @@
   <data name="SyncStatus_OnlineDetail" xml:space="preserve"><value>Connected. Access verified</value></data>
   <data name="SyncStatus_Offline" xml:space="preserve"><value>Offline</value></data>
   <data name="SyncStatus_OfflineShort" xml:space="preserve"><value>Offline</value></data>
-  <data name="SyncStatus_OfflineDetail" xml:space="preserve"><value>No internet connection</value></data>
+  <data name="SyncStatus_OfflineDetail" xml:space="preserve"><value>Offline — changes will sync when connected</value></data>
+  <data name="Offline_Banner" xml:space="preserve"><value>Offline — changes will sync when connected</value></data>
+  <data name="Offline_PinTitle" xml:space="preserve"><value>Unlock offline POS</value></data>
+  <data name="Offline_PinSubtitle" xml:space="preserve"><value>Enter your offline PIN to continue selling while the network is unavailable.</value></data>
+  <data name="Offline_PinLabel" xml:space="preserve"><value>Offline PIN</value></data>
+  <data name="Offline_PinUnlock" xml:space="preserve"><value>Unlock with PIN</value></data>
+  <data name="Offline_PinRequired" xml:space="preserve"><value>Offline PIN required</value></data>
+  <data name="Offline_PinAvailableHint" xml:space="preserve"><value>A valid offline grant is available on this device. You can unlock with your PIN without waiting for the network.</value></data>
+  <data name="Offline_PinWrong" xml:space="preserve"><value>Incorrect PIN.</value></data>
+  <data name="Offline_PinLocked" xml:space="preserve"><value>Too many attempts. Try again later.</value></data>
+  <data name="Offline_PinInvalidFormat" xml:space="preserve"><value>PIN must be at least 6 digits.</value></data>
+  <data name="Offline_PinNotConfigured" xml:space="preserve"><value>Set an offline PIN while online before using offline unlock.</value></data>
+  <data name="Offline_GrantMissing" xml:space="preserve"><value>No offline grant on this device. Reconnect online once.</value></data>
+  <data name="Offline_GrantExpired" xml:space="preserve"><value>Offline grant expired. Reconnect online to refresh access.</value></data>
+  <data name="Offline_DeviceMismatch" xml:space="preserve"><value>This offline grant belongs to a different device.</value></data>
+  <data name="Offline_PinSetupTitle" xml:space="preserve"><value>Offline PIN</value></data>
+  <data name="Offline_PinSetupHint" xml:space="preserve"><value>Create a 6+ digit PIN so this device can unlock POS during outages.</value></data>
+  <data name="Offline_PinSetupSave" xml:space="preserve"><value>Save offline PIN</value></data>
+  <data name="Offline_PinSetupSaved" xml:space="preserve"><value>Offline PIN saved.</value></data>
+  <data name="Offline_SalePendingSync" xml:space="preserve"><value>Sale completed — pending sync</value></data>
   <data name="SyncStatus_ConnectionOnlineDetail" xml:space="preserve"><value>Connected. Access verified</value></data>
   <data name="SyncStatus_ConnectionOfflineDetail" xml:space="preserve"><value>No internet connection</value></data>
   <data name="SyncStatus_ConnectionReconnecting" xml:space="preserve"><value>Reconnecting…</value></data>
@@ -587,7 +606,7 @@
   <data name="SyncStatus_Reconnect" xml:space="preserve"><value>Reconnect to verify access</value></data>
   <data name="SyncStatus_ReconnectShort" xml:space="preserve"><value>Reconnect</value></data>
   <data name="SyncStatus_ReconnectTitle" xml:space="preserve"><value>Reconnect required</value></data>
-  <data name="SyncStatus_ReconnectMessage" xml:space="preserve"><value>Reconnect to verify access before continuing. Local data alone cannot unlock the POS.</value></data>
+  <data name="SyncStatus_ReconnectMessage" xml:space="preserve"><value>Reconnect online to verify access, or unlock with your offline PIN if a valid grant exists on this device.</value></data>
   <data name="SyncStatus_Pending" xml:space="preserve"><value>Pending sync ({0})</value></data>
   <data name="SyncStatus_PendingShort" xml:space="preserve"><value>Pending ({0})</value></data>
   <data name="SyncStatus_PendingItems" xml:space="preserve"><value>Pending sync ({0} items)</value></data>
@@ -1062,7 +1081,9 @@
   <data name="Sales_Checkout_DueDateOptional" xml:space="preserve"><value>Due date (optional)</value></data>
   <data name="Sales_Checkout_CustomerRequired" xml:space="preserve"><value>Select an active customer before recording Utang.</value></data>
   <data name="Sales_Checkout_ZeroTotalUtang" xml:space="preserve"><value>Utang cannot be recorded for a zero total. Add products first.</value></data>
-  <data name="Sales_Checkout_OfflineMessage" xml:space="preserve"><value>Checkout needs a connection. Reconnect before recording a sale.</value></data>
+  <data name="Sales_Checkout_OfflineMessage" xml:space="preserve"><value>Non-cash checkout needs a connection. Cash sales can continue offline when an offline PIN grant is active.</value></data>
+  <data name="Sales_Checkout_OfflineCashMessage" xml:space="preserve"><value>Cash checkout is available offline. Sales are saved on this device and sync when connected.</value></data>
+  <data name="Sales_Checkout_OfflineCommitFailed" xml:space="preserve"><value>Could not save the sale on this device. Try again.</value></data>
   <data name="Sales_Checkout_CategoryFilter" xml:space="preserve"><value>Category</value></data>
   <data name="Sales_Checkout_BrowseSection" xml:space="preserve"><value>Browse products</value></data>
   <data name="Sales_Checkout_ViewCart" xml:space="preserve"><value>View cart</value></data>

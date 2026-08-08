@@ -1,4 +1,5 @@
 using ExItS.PinoyBusinessPOS.Application.Auth;
+using ExItS.PinoyBusinessPOS.Application.Offline;
 using ExItS.PinoyBusinessPOS.Application.Platform;
 
 namespace ExItS.PinoyBusinessPOS.Application.Abstractions;
@@ -94,6 +95,19 @@ public interface IAuthenticationService
     Task<AuthResult> ContinueAfterStartBusinessAsync(
         StartBusinessResultDto result,
         CancellationToken ct = default);
+
+    /// <summary>
+    /// Unlocks a previously established offline operate grant with the local PIN after cold-start
+    /// when the server is unreachable. Never creates or extends authorization.
+    /// </summary>
+    Task<AuthResult> UnlockOfflineWithPinAsync(string pin, CancellationToken ct = default);
+
+    /// <summary>Sets or replaces the local offline PIN while an online-validated grant exists.</summary>
+    Task<OfflinePinSetupResult> SetOfflinePinAsync(string pin, CancellationToken ct = default);
+
+    Task<bool> HasOfflinePinConfiguredAsync(CancellationToken ct = default);
+
+    Task<OfflineColdStartOffer> EvaluateOfflineColdStartOfferAsync(CancellationToken ct = default);
 }
 
 /// <summary>Local security-event sink. Does not replace Platform audit authority.</summary>
