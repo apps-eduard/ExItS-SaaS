@@ -75,4 +75,4 @@ External OAuth linking for synthetic staff logins is out of scope. Future provid
 
 ## 11. Git
 
-Feature commits recorded after landing. **Not pushed** until validation gates agree.
+Feature commits: `bdf3232` (platform model/auth), `a2cd391` (UI + tests), `01af206` (docs). **Not pushed.**
