@@ -26,6 +26,7 @@ Provide the end-to-end Mobile POS ops validation checklist for physical-phone co
 | P19-WP07 Reports/nav/UX | Code Complete (**Retest** — Selling Mode / grants) |
 | Card / GCash simulated payments | Code Complete (**Retest** — see [P19-card-gcash-payment-ui-and-simulation](P19-card-gcash-payment-ui-and-simulation.md)) |
 | Offline operability foundation | Code Complete; physical A–S **incomplete** — see [P19-offline-operability-foundation](P19-offline-operability-foundation.md) |
+| Offline connectivity capability matrix | Code Complete; physical validation **incomplete** — see [P19-offline-connectivity-capability-matrix](P19-offline-connectivity-capability-matrix.md) |
 
 ## 3. User phone checklist (Retest)
 

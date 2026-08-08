@@ -53,6 +53,8 @@ Supplemental delivery (Card/GCash simulated payments): [P19-card-gcash-payment-u
 
 Supplemental delivery (offline operability foundation): [P19-offline-operability-foundation](../reports/P19-offline-operability-foundation.md) — **Code Complete**; physical Android A–S **incomplete** (pending sync confirmation + PIN lockout + user confirmation); **Not Device Verified**.
 
+Supplemental delivery (connectivity / offline capability matrix): [P19-offline-connectivity-capability-matrix](../reports/P19-offline-connectivity-capability-matrix.md) — central `OfflineCapable` / `Queueable` / `OnlineRequired` policy + shared Internet-required dialog; physical validation **incomplete**.
+
 ## Scope notes
 
 | In scope | Out of scope / unchanged |
