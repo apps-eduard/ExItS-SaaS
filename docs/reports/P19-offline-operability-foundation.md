@@ -213,8 +213,11 @@ Physical-device validation remains **pending / incomplete**. Remaining blockers 
 | `f476172` | `feat(pos): add offline operate grant and PIN cold-start unlock` |
 | `cc64ba3` | `feat(pos): enable offline cash checkout with local catalog cache` |
 | `10a1fc5` | `fix(pos): stop offline PIN unlock hanging on permissions HTTP` |
+| `e3c1093` | `feat(pos): add Lock semantics, PIN enrollment gate, and online-required guard` |
+| `e3a251f` | `feat(pos): prepare login providers and mandatory PIN enrollment UX` |
+| `8cccb8c` | `test(pos): cover auth UX layer and document PIN enrollment` |
 
-**Not pushed** until validation gates agreed. Do not force-push.
+**Not pushed** until validation gates agreed. Do not force-push. Google/Facebook OAuth remains **not implemented**.
 
 ## 20. Status
 
