@@ -64,7 +64,11 @@ internal static class PlatformIntegrationTestUsers
         return (userId, email, password);
     }
 
-    internal static async Task<(Guid UserId, string Email, string Password, Guid OrganizationId)> SeedOrgMemberViaInvitationAsync(
+    /// <summary>
+    /// Creates an organization and accepts a staff invite via token + password,
+    /// yielding a distinct org-scoped staff identity (never attaches to a Personal user).
+    /// </summary>
+    internal static async Task<(Guid UserId, string ContactEmail, string StaffLogin, string Password, Guid OrganizationId)> SeedOrgMemberViaInvitationAsync(
         HttpClient admin,
         HttpClient client,
         string prefix,
@@ -78,42 +82,32 @@ internal static class PlatformIntegrationTestUsers
         var organizationId = (await org.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
 
         var emailLocal = Unique(prefix);
-        var email = $"{emailLocal}@example.com";
+        var contactEmail = $"{emailLocal}@example.com";
         var invite = await admin.PostAsJsonAsync(
             $"/api/v1/platform/organizations/{organizationId}/invitations",
-            new { email, role, requireEmailVerification = false });
+            new { email = contactEmail, role, requireEmailVerification = false });
         invite.EnsureSuccessStatusCode();
         var inviteBody = await invite.Content.ReadFromJsonAsync<JsonElement>();
         var acceptToken = inviteBody.GetProperty("acceptToken").GetString();
         Xunit.Assert.False(string.IsNullOrWhiteSpace(acceptToken));
 
-        var list = await admin.GetAsync($"/api/v1/platform/users?search={emailLocal}&pageSize=5");
-        list.EnsureSuccessStatusCode();
-        var userId = (await list.Content.ReadFromJsonAsync<JsonElement>())
-            .GetProperty("items")[0]
-            .GetProperty("id")
-            .GetGuid();
+        // Invite must not provision a PlatformUser before accept.
+        var preAcceptUsers = await admin.GetAsync($"/api/v1/platform/users?search={emailLocal}&pageSize=5");
+        preAcceptUsers.EnsureSuccessStatusCode();
+        Xunit.Assert.Equal(0, (await preAcceptUsers.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("items").GetArrayLength());
 
         var password = "Correct-Horse-9!";
-        (await admin.PutAsJsonAsync(
-            $"/api/v1/platform/users/{userId}/credentials/password",
-            new { password })).EnsureSuccessStatusCode();
-
-        var login = await client.PostAsJsonAsync(
-            "/api/v1/platform/auth/login",
-            new { usernameOrEmail = email, password });
-        login.EnsureSuccessStatusCode();
-        var sessionToken = (await login.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("sessionToken").GetString();
-        Xunit.Assert.False(string.IsNullOrWhiteSpace(sessionToken));
-
-        using var acceptRequest = new HttpRequestMessage(HttpMethod.Post, "/api/v1/platform/invitations/accept")
-        {
-            Content = JsonContent.Create(new { token = acceptToken })
-        };
-        acceptRequest.Headers.Add("X-ExItS-Session-Token", sessionToken);
-        var accept = await client.SendAsync(acceptRequest);
+        var accept = await client.PostAsJsonAsync(
+            "/api/v1/platform/invitations/accept",
+            new { token = acceptToken, password });
         accept.EnsureSuccessStatusCode();
+        var acceptBody = await accept.Content.ReadFromJsonAsync<JsonElement>();
+        var userId = acceptBody.GetProperty("userId").GetGuid();
+        var staffLogin = acceptBody.GetProperty("staffLogin").GetString();
+        Xunit.Assert.False(string.IsNullOrWhiteSpace(staffLogin));
+        Xunit.Assert.Contains("@ORG", staffLogin, StringComparison.OrdinalIgnoreCase);
 
-        return (userId, email, password, organizationId);
+        return (userId, contactEmail, staffLogin!, password, organizationId);
     }
 }

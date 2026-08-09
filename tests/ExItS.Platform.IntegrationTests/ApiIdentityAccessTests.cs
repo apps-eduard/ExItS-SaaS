@@ -339,8 +339,8 @@ public sealed class ApiIdentityAccessTests(PostgreSqlFixture fixture) : IAsyncLi
         orgResponse.EnsureSuccessStatusCode();
         var organizationId = (await orgResponse.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
 
-        var inviteeUsername = UniqueToken("invitee");
-        var inviteeEmail = $"{inviteeUsername}@example.com";
+        var inviteeLocal = UniqueToken("invitee");
+        var inviteeEmail = $"{inviteeLocal}@example.com";
 
         var createInvite = await _client.PostAsJsonAsync(
             $"/api/v1/platform/organizations/{organizationId}/invitations",
@@ -352,12 +352,11 @@ public sealed class ApiIdentityAccessTests(PostgreSqlFixture fixture) : IAsyncLi
         Assert.False(string.IsNullOrWhiteSpace(acceptToken));
         Assert.False(inviteBody.TryGetProperty("tokenHash", out _));
 
-        var userList = await _client.GetAsync($"/api/v1/platform/users?search={inviteeUsername}&pageSize=5");
+        // Invite must not create a PlatformUser before accept.
+        var userList = await _client.GetAsync($"/api/v1/platform/users?search={inviteeLocal}&pageSize=5");
         userList.EnsureSuccessStatusCode();
-        var inviteeId = (await userList.Content.ReadFromJsonAsync<JsonElement>())
-            .GetProperty("items")[0]
-            .GetProperty("id")
-            .GetGuid();
+        Assert.Equal(0, (await userList.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("items").GetArrayLength());
 
         var list = await _client.GetAsync($"/api/v1/platform/organizations/{organizationId}/invitations");
         Assert.Equal(HttpStatusCode.OK, list.StatusCode);
@@ -369,40 +368,31 @@ public sealed class ApiIdentityAccessTests(PostgreSqlFixture fixture) : IAsyncLi
             Assert.False(item.TryGetProperty("tokenHash", out _));
         }
 
-        var accept = await _client.PostAsJsonAsync(
+        var password = "Invitee-Accept-1!";
+        var acceptMissingPassword = await _client.PostAsJsonAsync(
             "/api/v1/platform/invitations/accept",
             new { token = acceptToken });
-        // DevelopmentOperator cannot accept — requires Platform User principal.
-        Assert.Equal(HttpStatusCode.Unauthorized, accept.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, acceptMissingPassword.StatusCode);
 
-        var password = "Invitee-Accept-1!";
-        (await _client.PutAsJsonAsync(
-            $"/api/v1/platform/users/{inviteeId}/credentials/password",
-            new { password })).EnsureSuccessStatusCode();
-        (await _client.PostAsync($"/api/v1/platform/users/{inviteeId}/reactivate", null)).EnsureSuccessStatusCode();
+        var accept = await _client.PostAsJsonAsync(
+            "/api/v1/platform/invitations/accept",
+            new { token = acceptToken, password });
+        Assert.Equal(HttpStatusCode.OK, accept.StatusCode);
+        var acceptBody = await accept.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("OrganizationMember", acceptBody.GetProperty("role").GetString());
+        var staffLogin = acceptBody.GetProperty("staffLogin").GetString();
+        Assert.False(string.IsNullOrWhiteSpace(staffLogin));
+        Assert.Contains("@ORG", staffLogin, StringComparison.OrdinalIgnoreCase);
 
         var login = await _client.PostAsJsonAsync(
             "/api/v1/platform/auth/login",
-            new { usernameOrEmail = inviteeEmail, password });
+            new { usernameOrEmail = staffLogin, password });
         Assert.Equal(HttpStatusCode.OK, login.StatusCode);
-        var sessionToken = (await login.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("sessionToken").GetString();
-        Assert.False(string.IsNullOrWhiteSpace(sessionToken));
+        Assert.Equal("Organization", (await login.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("accountClass").GetString());
 
-        using var acceptRequest = new HttpRequestMessage(HttpMethod.Post, "/api/v1/platform/invitations/accept")
-        {
-            Content = JsonContent.Create(new { token = acceptToken })
-        };
-        acceptRequest.Headers.Add("X-ExItS-Session-Token", sessionToken);
-        var acceptAsUser = await _client.SendAsync(acceptRequest);
-        Assert.Equal(HttpStatusCode.OK, acceptAsUser.StatusCode);
-        Assert.Equal("OrganizationMember", (await acceptAsUser.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("role").GetString());
-
-        using var reuseRequest = new HttpRequestMessage(HttpMethod.Post, "/api/v1/platform/invitations/accept")
-        {
-            Content = JsonContent.Create(new { token = acceptToken })
-        };
-        reuseRequest.Headers.Add("X-ExItS-Session-Token", sessionToken);
-        var reuse = await _client.SendAsync(reuseRequest);
+        var reuse = await _client.PostAsJsonAsync(
+            "/api/v1/platform/invitations/accept",
+            new { token = acceptToken, password });
         Assert.True(reuse.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.Conflict or HttpStatusCode.BadRequest);
 
         var secondEmail = $"{UniqueToken("pending")}@example.com";

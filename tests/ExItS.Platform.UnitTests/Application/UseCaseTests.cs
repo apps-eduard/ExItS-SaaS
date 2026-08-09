@@ -135,9 +135,24 @@ public sealed class UseCaseTests
         Assert.True(first.IsSuccess);
         Assert.Equal(1, memberships.AddCount);
 
-        var conflict = await add.ExecuteAsync(org.Id, user.Id, OrganizationRole.OrganizationMember);
-        Assert.Equal(ApplicationErrorCodes.MembershipConflict, conflict.ErrorCode);
+        // Personal identities cannot receive Staff membership (org-scoped staff required).
+        var personalAsStaff = await add.ExecuteAsync(org.Id, user.Id, OrganizationRole.OrganizationMember);
+        Assert.Equal(DomainErrorCodes.HomeOrganizationRequired, personalAsStaff.ErrorCode);
         Assert.Equal(1, memberships.AddCount);
+
+        var staff = PlatformUser.CreateOrganizationStaff(
+            "ada_staff",
+            $"ada@{org.PublicOrganizationId}",
+            "ada@example.com",
+            org.Id,
+            "Ada Staff",
+            T0);
+        await users.AddAsync(staff);
+        var staffMembership = await add.ExecuteAsync(org.Id, staff.Id, OrganizationRole.OrganizationMember);
+        Assert.True(staffMembership.IsSuccess);
+        var conflict = await add.ExecuteAsync(org.Id, staff.Id, OrganizationRole.OrganizationMember);
+        Assert.Equal(ApplicationErrorCodes.MembershipConflict, conflict.ErrorCode);
+        Assert.Equal(2, memberships.AddCount);
     }
 
     [Fact]
@@ -166,14 +181,21 @@ public sealed class UseCaseTests
         var uow = new NoOpUnitOfWork();
         var clock = new FixedClock(T0);
 
-        var user = (await new CreatePlatformUser(users, uow, clock, new SequentialPublicUserIdGenerator()).ExecuteAsync("ada", "Ada Lovelace", "ada@example.com")).Value!;
         var owner = (await new CreatePlatformUser(users, uow, clock, new SequentialPublicUserIdGenerator()).ExecuteAsync("owner", "Org Owner", "owner@example.com")).Value!;
         var org = (await new CreatePlatformOrganization(orgs, new FakePublicOrganizationIdGenerator(), uow, clock).ExecuteAsync("Acme Group", "acme-group")).Value!;
+        var staff = PlatformUser.CreateOrganizationStaff(
+            "ada_staff",
+            $"ada@{org.PublicOrganizationId}",
+            "ada@example.com",
+            org.Id,
+            "Ada Lovelace",
+            T0);
+        await users.AddAsync(staff);
         var ownerMembership = await new AddOrganizationMembership(users, orgs, memberships, new EnsureAccountProfilesForUser(new InMemoryAccountProfileRepository(), new InMemoryPlatformRoleAssignmentRepository(), memberships, uow, clock), uow, clock)
             .ExecuteAsync(org.Id, owner.Id, OrganizationRole.OrganizationOwner);
         Assert.True(ownerMembership.IsSuccess);
         var membership = (await new AddOrganizationMembership(users, orgs, memberships, new EnsureAccountProfilesForUser(new InMemoryAccountProfileRepository(), new InMemoryPlatformRoleAssignmentRepository(), memberships, uow, clock), uow, clock)
-            .ExecuteAsync(org.Id, user.Id, OrganizationRole.OrganizationMember)).Value!;
+            .ExecuteAsync(org.Id, staff.Id, OrganizationRole.OrganizationMember)).Value!;
 
         clock.UtcNow = T0.AddMinutes(1);
         var roleChanged = await new ChangeOrganizationRole(memberships, uow, clock)

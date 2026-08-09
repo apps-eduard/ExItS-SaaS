@@ -277,12 +277,13 @@ public sealed class ApiPhase16CloseoutSecurityTests(PostgreSqlFixture fixture) :
             ApplicationErrorCodes.CustomerLinkRequestNotFound,
             (await customerWrong.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("errorCode").GetString());
 
-        using var correctAccept = Authed(
-            HttpMethod.Post,
+        var correctAccept = await _client.PostAsJsonAsync(
             "/api/v1/platform/invitations/accept",
-            inviteeToken,
-            new { token = staffAcceptToken });
-        Assert.Equal(HttpStatusCode.OK, (await _client.SendAsync(correctAccept)).StatusCode);
+            new { token = staffAcceptToken, password = "Correct-Horse-9!" });
+        Assert.Equal(HttpStatusCode.OK, correctAccept.StatusCode);
+        var acceptBody = await correctAccept.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Contains("@ORG", acceptBody.GetProperty("staffLogin").GetString(), StringComparison.OrdinalIgnoreCase);
+        _ = inviteeToken;
     }
 
     [Fact]

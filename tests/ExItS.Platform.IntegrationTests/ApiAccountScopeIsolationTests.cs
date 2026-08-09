@@ -40,10 +40,14 @@ public sealed class ApiAccountScopeIsolationTests(PostgreSqlFixture fixture) : I
     private async Task<(Guid UserId, string Email, string Password)> SeedPersonalUserAsync(string prefix) =>
         await PlatformIntegrationTestUsers.RegisterPersonalWithPasswordAsync(_client, prefix);
 
-    private async Task<(Guid UserId, string Email, string Password, Guid OrganizationId)> SeedOrgMemberAsync(
+    private async Task<(Guid UserId, string StaffLogin, string Password, Guid OrganizationId)> SeedOrgMemberAsync(
         string prefix,
-        string role = "OrganizationMember") =>
-        await PlatformIntegrationTestUsers.SeedOrgMemberViaInvitationAsync(_admin, _client, prefix, role);
+        string role = "OrganizationMember")
+    {
+        var (userId, _, staffLogin, password, organizationId) =
+            await PlatformIntegrationTestUsers.SeedOrgMemberViaInvitationAsync(_admin, _client, prefix, role);
+        return (userId, staffLogin, password, organizationId);
+    }
 
     private async Task<JsonElement> LoginAsync(string username, string password)
     {
@@ -112,9 +116,9 @@ public sealed class ApiAccountScopeIsolationTests(PostgreSqlFixture fixture) : I
     [Fact]
     public async Task Organization_session_cannot_call_platform_or_personal_apis()
     {
-        var (userId, email, password, _) = await SeedOrgMemberAsync("orgs");
+        var (userId, staffLogin, password, _) = await SeedOrgMemberAsync("orgs");
         _ = userId;
-        var login = await LoginAsync(email, password);
+        var login = await LoginAsync(staffLogin, password);
         Assert.Equal("Organization", login.GetProperty("accountClass").GetString());
         var token = login.GetProperty("sessionToken").GetString()!;
 
@@ -135,8 +139,8 @@ public sealed class ApiAccountScopeIsolationTests(PostgreSqlFixture fixture) : I
         var personalToken = (await LoginAsync(personalEmail, personalPassword))
             .GetProperty("sessionToken").GetString()!;
 
-        var (_, orgEmail, orgPassword, _) = await SeedOrgMemberAsync("catorg");
-        var orgToken = (await LoginAsync(orgEmail, orgPassword))
+        var (_, orgStaffLogin, orgPassword, _) = await SeedOrgMemberAsync("catorg");
+        var orgToken = (await LoginAsync(orgStaffLogin, orgPassword))
             .GetProperty("sessionToken").GetString()!;
 
         var (platformUserId, platformUsername, platformPassword) = await SeedUserAsync("catplat");
@@ -200,9 +204,19 @@ public sealed class ApiAccountScopeIsolationTests(PostgreSqlFixture fixture) : I
     }
 
     [Fact]
-    public async Task Organization_session_can_resolve_empty_authorization_me_but_not_platform_users()
+    public async Task Organization_owner_session_can_resolve_empty_authorization_me_but_not_platform_users()
     {
-        var (userId, email, password, organizationId) = await SeedOrgMemberAsync("orgz", "OrganizationOwner");
+        // Owner remains a Personal identity with org membership (not invite-created staff).
+        var (userId, email, password) = await SeedPersonalUserAsync("orgz");
+        var org = await _admin.PostAsJsonAsync(
+            "/api/v1/platform/organizations",
+            new { displayName = "Owner Org", slug = Unique("orgzo") });
+        org.EnsureSuccessStatusCode();
+        var organizationId = (await org.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+        (await _admin.PostAsJsonAsync(
+            $"/api/v1/platform/organizations/{organizationId}/members",
+            new { userId, role = "OrganizationOwner", reason = "integration-test-owner-link" }))
+            .EnsureSuccessStatusCode();
 
         var login = await LoginAsync(email, password);
         Assert.Equal("Organization", login.GetProperty("accountClass").GetString());

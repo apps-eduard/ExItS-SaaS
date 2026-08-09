@@ -534,7 +534,7 @@ Owner/admin invites contact email
 
 The same contact email may correspond to multiple staff logins across employers. Personal/Owner identity (`maria@gmail.com`) remains separate. See [P19-organization-scoped-staff-identities](../reports/P19-organization-scoped-staff-identities.md).
 
-Legacy personal-email users that already hold memberships continue to authenticate until explicitly converted; new invites always create org-scoped staff logins.
+Obsolete pre-production compatibility that attached org staff membership to an existing Personal identity was intentionally removed before production. New invites always create org-scoped staff logins. Owner Start-a-Business membership on a Personal identity remains the target Owner model.
 
 ### 9.2 Existing Identity Invited to Platform Staff
 

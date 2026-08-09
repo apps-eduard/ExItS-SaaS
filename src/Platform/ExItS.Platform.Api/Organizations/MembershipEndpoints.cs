@@ -97,13 +97,15 @@ internal static class MembershipEndpoints
                 return denied;
             }
 
-            // Platform support may still seed legacy Administrator in tests; Owner UI assigns Owner/Staff only.
-            if (!OrganizationRoleDisplay.IsAssignableOrganizationStaffRole(role)
-                && role is not OrganizationRole.OrganizationAdministrator)
+            // Platform support GUID link: Owner (Personal identity) or Staff (org-scoped staff identity).
+            // OrganizationAdministrator remains test/legacy-only.
+            if (role is not OrganizationRole.OrganizationOwner
+                and not OrganizationRole.OrganizationMember
+                and not OrganizationRole.OrganizationAdministrator)
             {
                 return PlatformApiResults.Problem(
                     DomainErrorCodes.InvalidOrganizationRole,
-                    "Organization staff roles are Owner and Staff only.",
+                    "Organization membership roles are Owner and Staff only.",
                     StatusCodes.Status400BadRequest);
             }
 

@@ -25,6 +25,7 @@ public sealed class InitializeLocalValidationDataset
 {
     private readonly LocalValidationOptions _options;
     private readonly CreatePlatformOrganization _createOrg;
+    private readonly IPublicOrganizationIdGenerator _publicOrganizationIds;
     private readonly IPlatformOrganizationRepository _organizations;
     private readonly CreateProduct _createProduct;
     private readonly IProductRepository _products;
@@ -34,6 +35,7 @@ public sealed class InitializeLocalValidationDataset
     private readonly GenerateEntitlementSnapshot _generateSnapshot;
     private readonly CreatePlatformUser _createUser;
     private readonly IPlatformUserRepository _users;
+    private readonly IStaffLoginNameAllocator _staffLoginNames;
     private readonly SetPlatformUserPassword _setPassword;
     private readonly MarkPlatformUserEmailVerified _markEmailVerified;
     private readonly EnsureAccountProfilesForUser _ensureProfiles;
@@ -64,6 +66,7 @@ public sealed class InitializeLocalValidationDataset
     public InitializeLocalValidationDataset(
         IOptions<LocalValidationOptions> options,
         CreatePlatformOrganization createOrg,
+        IPublicOrganizationIdGenerator publicOrganizationIds,
         IPlatformOrganizationRepository organizations,
         CreateProduct createProduct,
         IProductRepository products,
@@ -73,6 +76,7 @@ public sealed class InitializeLocalValidationDataset
         GenerateEntitlementSnapshot generateSnapshot,
         CreatePlatformUser createUser,
         IPlatformUserRepository users,
+        IStaffLoginNameAllocator staffLoginNames,
         SetPlatformUserPassword setPassword,
         MarkPlatformUserEmailVerified markEmailVerified,
         EnsureAccountProfilesForUser ensureProfiles,
@@ -102,6 +106,7 @@ public sealed class InitializeLocalValidationDataset
     {
         _options = options.Value;
         _createOrg = createOrg;
+        _publicOrganizationIds = publicOrganizationIds;
         _organizations = organizations;
         _createProduct = createProduct;
         _products = products;
@@ -111,6 +116,7 @@ public sealed class InitializeLocalValidationDataset
         _generateSnapshot = generateSnapshot;
         _createUser = createUser;
         _users = users;
+        _staffLoginNames = staffLoginNames;
         _setPassword = setPassword;
         _markEmailVerified = markEmailVerified;
         _ensureProfiles = ensureProfiles;
@@ -200,7 +206,20 @@ public sealed class InitializeLocalValidationDataset
         var usersByKey = new Dictionary<string, PlatformUser>(StringComparer.OrdinalIgnoreCase);
         foreach (var identity in identities)
         {
-            var user = await EnsureUserAsync(identity, cancellationToken).ConfigureAwait(false);
+            PlatformUser user;
+            if (IsOrgScopedStaffIdentity(identity)
+                && isFullSeed
+                && !string.IsNullOrWhiteSpace(identity.OrganizationSlug)
+                && organizations.TryGetValue(identity.OrganizationSlug, out var homeOrg))
+            {
+                user = await EnsureOrganizationStaffUserAsync(identity, homeOrg, cancellationToken)
+                    .ConfigureAwait(false);
+            }
+            else
+            {
+                user = await EnsureUserAsync(identity, cancellationToken).ConfigureAwait(false);
+            }
+
             usersByKey[identity.Key] = user;
             await EnsurePasswordAsync(user.Id.Value, cancellationToken).ConfigureAwait(false);
             await ReconcilePlatformRolesAsync(user.Id, identity, cancellationToken).ConfigureAwait(false);
@@ -458,6 +477,11 @@ public sealed class InitializeLocalValidationDataset
         }
     }
 
+    private static bool IsOrgScopedStaffIdentity(LocalValidationIdentityDefinition identity) =>
+        identity.HasOrganizationMembership
+        && identity.OrganizationRole is OrganizationMembershipValidationRole.OrganizationMember
+            or OrganizationMembershipValidationRole.OrganizationAdministrator;
+
     private async Task EnsureDesiredOrganizationAccessAsync(
         PlatformUserId userId,
         LocalValidationIdentityDefinition identity,
@@ -609,7 +633,7 @@ public sealed class InitializeLocalValidationDataset
         var existing = await _organizations.GetBySlugAsync(orgDef.Slug, ct).ConfigureAwait(false);
         if (existing is not null)
         {
-            return existing;
+            return await EnsurePublicOrganizationIdAsync(existing, ct).ConfigureAwait(false);
         }
 
         var created = await _createOrg
@@ -620,7 +644,7 @@ public sealed class InitializeLocalValidationDataset
             existing = await _organizations.GetBySlugAsync(orgDef.Slug, ct).ConfigureAwait(false);
             if (existing is not null)
             {
-                return existing;
+                return await EnsurePublicOrganizationIdAsync(existing, ct).ConfigureAwait(false);
             }
 
             throw new InvalidOperationException(
@@ -628,6 +652,22 @@ public sealed class InitializeLocalValidationDataset
         }
 
         return created.Value;
+    }
+
+    private async Task<PlatformOrganization> EnsurePublicOrganizationIdAsync(
+        PlatformOrganization organization,
+        CancellationToken ct)
+    {
+        if (!string.IsNullOrWhiteSpace(organization.PublicOrganizationId))
+        {
+            return organization;
+        }
+
+        var publicOrgId = await _publicOrganizationIds.GenerateUniqueAsync(ct).ConfigureAwait(false);
+        organization.AssignPublicOrganizationId(publicOrgId, _clock.UtcNow);
+        await _organizations.UpdateAsync(organization, ct).ConfigureAwait(false);
+        await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
+        return organization;
     }
 
     private async Task EnsureReferenceCatalogAsync(string productCode, CancellationToken ct)
@@ -795,6 +835,72 @@ public sealed class InitializeLocalValidationDataset
         }
 
         return created.Value;
+    }
+
+    private async Task<PlatformUser> EnsureOrganizationStaffUserAsync(
+        LocalValidationIdentityDefinition identity,
+        PlatformOrganization organization,
+        CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(organization.PublicOrganizationId))
+        {
+            throw new InvalidOperationException(
+                $"Local validation organization '{organization.Slug}' is missing PublicOrganizationId.");
+        }
+
+        var contactEmail = PlatformUser.NormalizeEmail(identity.Email);
+        var existingStaff = await _users
+            .FindActiveStaffByHomeOrgAndContactEmailAsync(organization.Id, contactEmail, ct)
+            .ConfigureAwait(false);
+        if (existingStaff is not null)
+        {
+            return existingStaff;
+        }
+
+        var staffLogin = await _staffLoginNames
+            .AllocateAsync(contactEmail, organization.PublicOrganizationId, ct)
+            .ConfigureAwait(false);
+
+        var preferredUsername = identity.Username;
+        var (_, preferredNormalized) = PlatformUser.NormalizeUsername(preferredUsername);
+        var usernameConflict = await _users
+            .GetByNormalizedUsernameAsync(preferredNormalized, ct)
+            .ConfigureAwait(false);
+        var username = usernameConflict is null
+            ? preferredUsername
+            : await AllocateUniqueStaffUsernameAsync(staffLogin, ct).ConfigureAwait(false);
+
+        var staffUser = PlatformUser.CreateOrganizationStaff(
+            username,
+            staffLogin,
+            contactEmail,
+            organization.Id,
+            identity.DisplayName,
+            _clock.UtcNow);
+        await _users.AddAsync(staffUser, ct).ConfigureAwait(false);
+        await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
+        return staffUser;
+    }
+
+    private async Task<string> AllocateUniqueStaffUsernameAsync(string staffLogin, CancellationToken ct)
+    {
+        var usernameBase = StaffLoginNameRules.DeriveUsername(staffLogin);
+        for (var attempt = 0; attempt < 8; attempt++)
+        {
+            var username = attempt == 0 ? usernameBase : $"{usernameBase}{attempt + 1}";
+            if (username.Length > 64)
+            {
+                username = username[..64];
+            }
+
+            var (_, normalized) = PlatformUser.NormalizeUsername(username);
+            if (await _users.GetByNormalizedUsernameAsync(normalized, ct).ConfigureAwait(false) is null)
+            {
+                return username;
+            }
+        }
+
+        throw new InvalidOperationException("Unable to allocate a unique Local Validation staff username.");
     }
 
     private async Task EnsurePasswordAsync(Guid userId, CancellationToken ct)

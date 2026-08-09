@@ -691,21 +691,7 @@ public sealed class AcceptOrganizationInvitation
     }
 }
 
-/// <summary>
-/// Legacy personal-activation hook. Organization staff must accept via invite token + password;
-/// personal identities must not receive organization memberships from pending invites.
-/// </summary>
-public sealed class AcceptPendingOrganizationInvitationsForUser
-{
-    public Task ExecuteAsync(PlatformUser user, CancellationToken cancellationToken = default)
-    {
-        _ = user;
-        _ = cancellationToken;
-        return Task.CompletedTask;
-    }
-}
-
-/// <summary>Pending Organization Staff invitations for the signed-in invitee (Personal or Organization session).</summary>
+/// <summary>Pending Organization Staff invitations for an org-scoped staff identity (membership repair surface).</summary>
 public sealed record PendingOrganizationInvitationForUserDto(
     Guid Id,
     Guid OrganizationId,
@@ -746,15 +732,27 @@ public sealed class ListPendingOrganizationInvitationsForUser
                 "Listing invitations requires an active Platform User.");
         }
 
-        // Personal identities list by contact/login email; org staff list by contact email.
-        var lookupEmail = user.NormalizedContactEmail ?? user.NormalizedEmail;
+        // Personal identities never list/attach org staff invites — accept is token + password only.
+        if (!user.IsOrganizationScopedStaff
+            || user.HomeOrganizationId is null
+            || string.IsNullOrWhiteSpace(user.NormalizedContactEmail))
+        {
+            return ApplicationResult<IReadOnlyList<PendingOrganizationInvitationForUserDto>>.Success(
+                Array.Empty<PendingOrganizationInvitationForUserDto>());
+        }
+
         var pending = await _invitations
-            .ListPendingByNormalizedEmailAsync(lookupEmail, cancellationToken)
+            .ListPendingByNormalizedEmailAsync(user.NormalizedContactEmail, cancellationToken)
             .ConfigureAwait(false);
         var now = _clock.UtcNow;
         var list = new List<PendingOrganizationInvitationForUserDto>();
         foreach (var invitation in pending)
         {
+            if (invitation.OrganizationId != user.HomeOrganizationId)
+            {
+                continue;
+            }
+
             if (invitation.IsExpired(now))
             {
                 invitation.MarkExpired(now);

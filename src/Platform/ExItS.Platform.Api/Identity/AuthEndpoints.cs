@@ -412,7 +412,7 @@ internal static class AuthEndpoints
             return Results.Ok(result.Value);
         });
 
-        // Identity-bound organization staff invitation surfaces for Personal Mobile MVP.
+        // Org-scoped staff membership-repair surfaces (Personal identities never list/attach staff invites).
         app.MapGet("/api/v1/platform/auth/organization-invitations/pending", async (
             HttpContext http,
             ListPendingOrganizationInvitationsForUser useCase,

@@ -83,6 +83,16 @@ public sealed class AddOrganizationMembership
                 "Membership can only be added for an active Platform User.");
         }
 
+        // Staff/Administrator seats require an org-scoped staff identity for this organization.
+        // OrganizationOwner may remain on a Personal identity (Start a Business / owner path).
+        if (role is OrganizationRole.OrganizationMember or OrganizationRole.OrganizationAdministrator
+            && (!user.IsOrganizationScopedStaff || user.HomeOrganizationId != organizationId))
+        {
+            return ApplicationResult<OrganizationMembership>.Failure(
+                DomainErrorCodes.HomeOrganizationRequired,
+                "Organization staff membership requires an org-scoped staff identity for this organization. Use Invite Staff.");
+        }
+
         var existing = await _memberships
             .FindCurrentByUserAndOrganizationAsync(userId, organizationId, cancellationToken)
             .ConfigureAwait(false);

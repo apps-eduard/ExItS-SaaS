@@ -189,8 +189,14 @@ public sealed class ProductAuthorizationAndDiscoveryTests
     public async Task Entitlement_does_not_grant_all_staff_product_access()
     {
         var harness = await AuthHarness.CreateAsync();
-        var staff = (await new CreatePlatformUser(harness.Users, harness.UnitOfWork, harness.Clock, new SequentialPublicUserIdGenerator())
-            .ExecuteAsync("carlo", "Carlo Reyes", "carlo@example.com")).Value!;
+        var staff = PlatformUser.CreateOrganizationStaff(
+            "carlo_staff",
+            $"carlo@{harness.Organization.PublicOrganizationId}",
+            "carlo@example.com",
+            harness.Organization.Id,
+            "Carlo Reyes",
+            harness.Clock.UtcNow);
+        await harness.Users.AddAsync(staff);
         _ = (await new AddOrganizationMembership(
                 harness.Users,
                 harness.Organizations,

@@ -241,13 +241,13 @@ public sealed class ApiOrganizationStaffCustomerSeparationTests(PostgreSqlFixtur
         var (ownerId, _, _, _, ownerToken) = await SeedOrgOwnerAsync("inv");
         _ = ownerId;
         var organizationId = await ResolveSelectedOrganizationAsync(ownerToken);
-        var (staffUserId, staffEmail, staffToken) = await SeedPersonalUserAsync("staf");
+        var (personalUserId, contactEmail, _) = await SeedPersonalUserAsync("staf");
 
         using var staffInvite = Authed(
             HttpMethod.Post,
             $"/api/v1/organizations/{organizationId}/staff-invitations",
             ownerToken,
-            new { email = staffEmail, role = "OrganizationMember" });
+            new { email = contactEmail, role = "OrganizationMember" });
         var inviteResponse = await _client.SendAsync(staffInvite);
         Assert.Equal(HttpStatusCode.Created, inviteResponse.StatusCode);
         var inviteBody = await inviteResponse.Content.ReadFromJsonAsync<JsonElement>();
@@ -256,13 +256,14 @@ public sealed class ApiOrganizationStaffCustomerSeparationTests(PostgreSqlFixtur
             inviteBody.GetProperty("invitationType").GetString());
         var token = inviteBody.GetProperty("acceptToken").GetString();
 
-        using var acceptStaff = Authed(
-            HttpMethod.Post,
+        var acceptResponse = await _client.PostAsJsonAsync(
             "/api/v1/platform/invitations/accept",
-            staffToken,
-            new { token });
-        var acceptResponse = await _client.SendAsync(acceptStaff);
+            new { token, password = "Correct-Horse-9!" });
         Assert.Equal(HttpStatusCode.OK, acceptResponse.StatusCode);
+        var acceptBody = await acceptResponse.Content.ReadFromJsonAsync<JsonElement>();
+        var staffUserId = acceptBody.GetProperty("userId").GetGuid();
+        Assert.NotEqual(personalUserId, staffUserId);
+        Assert.Contains("@ORG", acceptBody.GetProperty("staffLogin").GetString(), StringComparison.OrdinalIgnoreCase);
 
         var membersAdmin = await _admin.GetAsync(
             $"/api/v1/platform/organizations/{organizationId}/members?page=1&pageSize=50");
@@ -272,6 +273,7 @@ public sealed class ApiOrganizationStaffCustomerSeparationTests(PostgreSqlFixtur
             .Select(i => i.GetProperty("userId").GetGuid())
             .ToList();
         Assert.Contains(staffUserId, memberIds);
+        Assert.DoesNotContain(personalUserId, memberIds);
 
         using var createCustomer = Authed(
             HttpMethod.Post,

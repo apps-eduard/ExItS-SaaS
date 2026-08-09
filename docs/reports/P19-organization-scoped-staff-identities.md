@@ -49,12 +49,13 @@ Disabling/removing Org A staff affects only that staff PlatformUser (status/memb
 
 Offline operate grant remains bound to `UserId` + `OrganizationId` + device after successful online staff auth. PIN unlock restores that staff/org context only. No offline org switching.
 
-## 7. Migration / backward compatibility
+## 7. Migration / pre-production cleanup
 
 - Migration `AddOrgScopedStaffIdentities` adds `public_organization_id`, `normalized_contact_email`, `home_organization_id` and backfills public org ids.
-- Existing personal-email users with memberships continue to authenticate; they are not silently duplicated.
-- **New** org staff invites always create org-scoped staff logins.
-- Automatic conversion of legacy multi-membership personal identities is deferred (unsafe without operator confirmation).
+- **New** org staff invites always create org-scoped staff logins via token + password; they never attach membership to an existing Personal identity.
+- Application-level compatibility for the obsolete personal-email-as-org-staff model was **intentionally removed before production** (no auto-accept on personal activation; Staff membership requires `HomeOrganizationId`; Local Validation staff seeds as org-scoped identities).
+- Disposable local/test databases should be reset/reseeded rather than carrying obsolete personal-as-staff rows.
+- Owner via Start a Business remains a Personal identity with org membership (`HomeOrganizationId` null) — that is the target Owner model, not legacy staff compatibility.
 
 ## 8. Security invariants
 

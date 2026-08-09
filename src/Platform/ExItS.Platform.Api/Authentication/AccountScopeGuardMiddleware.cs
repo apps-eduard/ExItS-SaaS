@@ -115,8 +115,9 @@ public sealed class AccountScopeGuardMiddleware(RequestDelegate next)
             return true;
         }
 
-        // Invitation accept is an identity-bound action available before Organization profile selection (WP06 remaps).
-        if (path.Equals("/api/v1/platform/invitations/accept", StringComparison.OrdinalIgnoreCase))
+        // Anonymous staff invite accept (token + password) creates a new org-scoped staff identity.
+        if (path.Equals("/api/v1/platform/invitations/accept", StringComparison.OrdinalIgnoreCase)
+            || path.Equals("/api/v1/platform/auth/organization-invitations/accept", StringComparison.OrdinalIgnoreCase))
         {
             return true;
         }

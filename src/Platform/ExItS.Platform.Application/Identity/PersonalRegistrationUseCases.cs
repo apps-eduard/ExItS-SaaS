@@ -1,7 +1,6 @@
 using ExItS.Platform.Application.Audit;
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Common;
-using ExItS.Platform.Application.Organizations;
 using ExItS.Platform.Domain.Abstractions;
 using ExItS.Platform.Domain.Audit;
 using ExItS.Platform.Domain.Common;
@@ -214,7 +213,6 @@ public sealed class ActivatePersonalAccountRegistration
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
     private readonly PlatformPasswordOptions _passwordOptions;
-    private readonly AcceptPendingOrganizationInvitationsForUser? _acceptOrgInvitations;
 
     public ActivatePersonalAccountRegistration(
         IPlatformUserRepository users,
@@ -225,8 +223,7 @@ public sealed class ActivatePersonalAccountRegistration
         IAuditWriter auditWriter,
         IPlatformUnitOfWork unitOfWork,
         IClock clock,
-        IOptions<PlatformPasswordOptions> passwordOptions,
-        AcceptPendingOrganizationInvitationsForUser? acceptOrgInvitations = null)
+        IOptions<PlatformPasswordOptions> passwordOptions)
     {
         _users = users;
         _credentials = credentials;
@@ -237,7 +234,6 @@ public sealed class ActivatePersonalAccountRegistration
         _unitOfWork = unitOfWork;
         _clock = clock;
         _passwordOptions = passwordOptions.Value;
-        _acceptOrgInvitations = acceptOrgInvitations;
     }
 
     public async Task<ApplicationResult<PlatformCredentialStatusDto>> ExecuteAsync(
@@ -318,11 +314,6 @@ public sealed class ActivatePersonalAccountRegistration
                 AuditOutcome.Succeeded,
                 summary: "Account activated after email verification and password setup (token/password not recorded).",
                 cancellationToken: cancellationToken).ConfigureAwait(false);
-
-            if (_acceptOrgInvitations is not null)
-            {
-                await _acceptOrgInvitations.ExecuteAsync(user, cancellationToken).ConfigureAwait(false);
-            }
 
             return await new GetPlatformCredentialStatus(_users, _credentials, _clock)
                 .ExecuteAsync(user.Id.Value, cancellationToken)
