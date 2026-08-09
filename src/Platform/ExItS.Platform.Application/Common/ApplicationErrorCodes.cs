@@ -176,4 +176,9 @@ public static class ApplicationErrorCodes
     public const string CatalogImportHeadersInvalid = "application.global_catalog.import.headers.invalid";
     public const string CatalogImportCategoryWillCreate =
         "application.global_catalog.import.category.will_create";
+
+    public const string ComplianceRequirementNotFound =
+        "application.privacy_compliance.requirement.not_found";
+    public const string ProcessingSystemNotFound =
+        "application.privacy_compliance.processing_system.not_found";
 }

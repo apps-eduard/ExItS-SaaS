@@ -1,0 +1,228 @@
+@page "/admin/privacy-compliance/pias"
+@page "/admin/privacy-compliance/data-inventory"
+@page "/admin/privacy-compliance/retention"
+@page "/admin/privacy-compliance/incidents"
+@page "/admin/privacy-compliance/vendors"
+@page "/admin/privacy-compliance/dpo-npc"
+@attribute [Authorize]
+@inject IPlatformApiClient Api
+@inject IStringLocalizer<AdminResources> L
+@inject PlatformPermissionState Permissions
+@inject NavigationManager Nav
+
+@if (!Permissions.Loaded)
+{
+    <LoadingState />
+}
+else if (!CanView)
+{
+    <UnauthorizedPanel RequiredPermission="@PlatformPermissionCodes.ViewPrivacyCompliance" />
+}
+else
+{
+    <AdminPageHeader Title="@PageTitle"
+                     Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_PrivacyCompliance"]} / {NavLabel}")"
+                     Description="@PageDescription" />
+
+    <Alert Type="@AlertType.Warning"
+           ShowIcon="true"
+           Message="@L["PrivacyCompliance_DisclaimerTitle"]"
+           Description="@L["PrivacyCompliance_DisclaimerMessage"]"
+           Style="margin-bottom:16px;" />
+
+    @if (_items is null)
+    {
+        <LoadingState />
+    }
+    else if (!_items.IsSuccess)
+    {
+        <ErrorState Detail="@_items.Error?.Detail" CorrelationId="@_items.Error?.CorrelationId" Unavailable="@(_items.Status == ApiCallStatus.Unavailable)" />
+    }
+    else if (_filtered.Count == 0)
+    {
+        <Empty Description="@L["PrivacyCompliance_NoRequirements"].Value" />
+    }
+    else
+    {
+        <Table TItem="ComplianceRequirementDto"
+               DataSource="_filtered"
+               Bordered
+               Size="@TableSize.Small"
+               HidePagination
+               ScrollX="1100">
+            <Column TData="string" Title="@L["PrivacyCompliance_ColumnCode"]" DataIndex="Code">@context.Code</Column>
+            <Column TData="string" Title="@L["Common_Name"]" DataIndex="Title">@context.Title</Column>
+            <Column TData="string" Title="@L["PrivacyCompliance_ColumnCategory"]">
+                @CategoryLabel(context.Category)
+            </Column>
+            <Column TData="string" Title="@L["PrivacyCompliance_ColumnLevel"]">
+                <PrivacyComplianceStatusTag Value="@context.RequirementLevel" />
+            </Column>
+            <Column TData="string" Title="@L["Common_Status"]">
+                <PrivacyComplianceStatusTag Value="@context.Status" />
+            </Column>
+            <Column TData="int" Title="@L["PrivacyCompliance_ColumnEvidence"]" DataIndex="EvidenceCount">@context.EvidenceCount</Column>
+            <ActionColumn Title="@L["Common_Actions"]">
+                <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" OnClick="() => OpenDrawer(context.Id)">@L["Common_ViewDetails"]</Button>
+            </ActionColumn>
+        </Table>
+    }
+
+    <PrivacyComplianceRequirementDrawer Visible="_drawerOpen"
+                                        RequirementId="_selectedId"
+                                        CanManage="CanManage"
+                                        OnClose="CloseDrawer"
+                                        OnUpdated="OnRequirementUpdated" />
+}
+
+@code {
+    private ApiCallResult<IReadOnlyList<ComplianceRequirementDto>>? _items;
+    private IReadOnlyList<ComplianceRequirementDto> _filtered = Array.Empty<ComplianceRequirementDto>();
+    private bool _drawerOpen;
+    private Guid? _selectedId;
+
+    private bool CanView => Permissions.HasPermission(PlatformPermissionCodes.ViewPrivacyCompliance);
+    private bool CanManage => Permissions.HasPermission(PlatformPermissionCodes.ManagePrivacyCompliance);
+
+    private string RouteSegment
+    {
+        get
+        {
+            var path = new Uri(Nav.Uri).AbsolutePath.TrimEnd('/');
+            var idx = path.LastIndexOf('/');
+            return idx >= 0 ? path[(idx + 1)..] : path;
+        }
+    }
+
+    private string PageTitle => RouteSegment switch
+    {
+        "pias" => L["PrivacyCompliance_PiasTitle"],
+        "data-inventory" => L["PrivacyCompliance_DataInventoryTitle"],
+        "retention" => L["PrivacyCompliance_RetentionTitle"],
+        "incidents" => L["PrivacyCompliance_IncidentsTitle"],
+        "vendors" => L["PrivacyCompliance_VendorsTitle"],
+        "dpo-npc" => L["PrivacyCompliance_DpoNpcTitle"],
+        _ => L["Nav_PrivacyCompliance"]
+    };
+
+    private string PageDescription => RouteSegment switch
+    {
+        "pias" => L["PrivacyCompliance_PiasDescription"],
+        "data-inventory" => L["PrivacyCompliance_DataInventoryDescription"],
+        "retention" => L["PrivacyCompliance_RetentionDescription"],
+        "incidents" => L["PrivacyCompliance_IncidentsDescription"],
+        "vendors" => L["PrivacyCompliance_VendorsDescription"],
+        "dpo-npc" => L["PrivacyCompliance_DpoNpcDescription"],
+        _ => L["PrivacyCompliance_OverviewDescription"]
+    };
+
+    private string NavLabel => RouteSegment switch
+    {
+        "pias" => L["Nav_PrivacyCompliancePias"],
+        "data-inventory" => L["Nav_PrivacyComplianceDataInventory"],
+        "retention" => L["Nav_PrivacyComplianceRetention"],
+        "incidents" => L["Nav_PrivacyComplianceIncidents"],
+        "vendors" => L["Nav_PrivacyComplianceVendors"],
+        "dpo-npc" => L["Nav_PrivacyComplianceDpoNpc"],
+        _ => L["Nav_PrivacyCompliance"]
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Permissions.EnsureLoadedAsync();
+        if (!CanView)
+        {
+            return;
+        }
+
+        await LoadAsync();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!CanView)
+        {
+            return;
+        }
+
+        ApplyFilter();
+        await Task.CompletedTask;
+    }
+
+    private async Task LoadAsync()
+    {
+        _items = await Api.ListPrivacyComplianceRequirementsAsync();
+        ApplyFilter();
+    }
+
+    private void ApplyFilter()
+    {
+        if (_items is not { IsSuccess: true, Data: not null })
+        {
+            _filtered = Array.Empty<ComplianceRequirementDto>();
+            return;
+        }
+
+        Func<ComplianceRequirementDto, bool> predicate = RouteSegment switch
+        {
+            "pias" => PrivacyComplianceFilters.MatchesPias,
+            "data-inventory" => PrivacyComplianceFilters.MatchesDataInventory,
+            "retention" => PrivacyComplianceFilters.MatchesRetention,
+            "incidents" => PrivacyComplianceFilters.MatchesIncidents,
+            "vendors" => PrivacyComplianceFilters.MatchesVendors,
+            "dpo-npc" => PrivacyComplianceFilters.MatchesDpoNpc,
+            _ => _ => true
+        };
+
+        _filtered = _items.Data
+            .Where(predicate)
+            .OrderBy(r => r.Code, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    private void OpenDrawer(Guid id)
+    {
+        _selectedId = id;
+        _drawerOpen = true;
+    }
+
+    private Task CloseDrawer()
+    {
+        _drawerOpen = false;
+        _selectedId = null;
+        return Task.CompletedTask;
+    }
+
+    private async Task OnRequirementUpdated(ComplianceRequirementDto updated)
+    {
+        if (_items is not { IsSuccess: true, Data: not null })
+        {
+            return;
+        }
+
+        var list = _items.Data.ToList();
+        var index = list.FindIndex(r => r.Id == updated.Id);
+        if (index >= 0)
+        {
+            list[index] = updated;
+            _items = ApiCallResult<IReadOnlyList<ComplianceRequirementDto>>.Success(list);
+            ApplyFilter();
+        }
+
+        await Task.CompletedTask;
+    }
+
+    private string CategoryLabel(string category) => category switch
+    {
+        "CustomerFacing" => L["PrivacyCompliance_Category_CustomerFacing"],
+        "Internal" => L["PrivacyCompliance_Category_Internal"],
+        "RegulatoryReadiness" => L["PrivacyCompliance_Category_RegulatoryReadiness"],
+        "PrivacyImpactAssessment" => L["PrivacyCompliance_Category_PrivacyImpactAssessment"],
+        "DataInventory" => L["PrivacyCompliance_Category_DataInventory"],
+        "Retention" => L["PrivacyCompliance_Category_Retention"],
+        "IncidentBreach" => L["PrivacyCompliance_Category_IncidentBreach"],
+        "VendorProcessor" => L["PrivacyCompliance_Category_VendorProcessor"],
+        "DpoNpc" => L["PrivacyCompliance_Category_DpoNpc"],
+        _ => category
+    };
+}

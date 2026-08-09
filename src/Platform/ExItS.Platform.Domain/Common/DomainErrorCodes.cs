@@ -256,4 +256,21 @@ public static class DomainErrorCodes
         "platform.global_catalog.import.no_confirmable_rows";
     public const string InvalidGlobalProductStatus =
         "platform.global_catalog.product.status.invalid";
+
+    public const string InvalidComplianceStatusTransition =
+        "platform.privacy_compliance.status.invalid_transition";
+    public const string InvalidComplianceRequirementCode =
+        "platform.privacy_compliance.requirement.code.invalid";
+    public const string InvalidComplianceRequirementField =
+        "platform.privacy_compliance.requirement.field.invalid";
+    public const string InvalidComplianceEvidence =
+        "platform.privacy_compliance.evidence.invalid";
+    public const string InvalidProcessingSystemCode =
+        "platform.privacy_compliance.processing_system.code.invalid";
+    public const string InvalidProcessingSystemField =
+        "platform.privacy_compliance.processing_system.field.invalid";
+    public const string ComplianceRequirementNotFound =
+        "platform.privacy_compliance.requirement.not_found";
+    public const string ProcessingSystemNotFound =
+        "platform.privacy_compliance.processing_system.not_found";
 }

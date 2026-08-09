@@ -1,0 +1,34 @@
+@inject IStringLocalizer<AdminResources> L
+
+<Tag Color="@Color">@DisplayValue</Tag>
+
+@code {
+    [Parameter, EditorRequired] public string Value { get; set; } = "";
+
+    private string DisplayValue => Value switch
+    {
+        "NotStarted" => L["PrivacyCompliance_Status_NotStarted"],
+        "InProgress" => L["PrivacyCompliance_Status_InProgress"],
+        "ReadyForReview" => L["PrivacyCompliance_Status_ReadyForReview"],
+        "Approved" => L["PrivacyCompliance_Status_Approved"],
+        "NeedsUpdate" => L["PrivacyCompliance_Status_NeedsUpdate"],
+        "NotApplicable" => L["PrivacyCompliance_Status_NotApplicable"],
+        "Required" => L["PrivacyCompliance_Level_Required"],
+        "Conditional" => L["PrivacyCompliance_Level_Conditional"],
+        "Optional" => L["PrivacyCompliance_Level_Optional"],
+        _ => Value
+    };
+
+    private string Color => Value switch
+    {
+        "Approved" => "success",
+        "InProgress" or "ReadyForReview" => "processing",
+        "NeedsUpdate" => "warning",
+        "NotStarted" => "default",
+        "Required" => "error",
+        "Conditional" => "gold",
+        "Optional" => "default",
+        "NotApplicable" => "default",
+        _ => "default"
+    };
+}

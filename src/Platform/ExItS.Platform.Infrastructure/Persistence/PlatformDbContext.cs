@@ -8,6 +8,7 @@ using ExItS.Platform.Infrastructure.Persistence.Identity;
 using ExItS.Platform.Infrastructure.Persistence.Organizations;
 using ExItS.Platform.Infrastructure.Persistence.Payments;
 using ExItS.Platform.Infrastructure.Persistence.Personal;
+using ExItS.Platform.Infrastructure.Persistence.PrivacyCompliance;
 using ExItS.Platform.Infrastructure.Persistence.Subscriptions;
 using Microsoft.EntityFrameworkCore;
 
@@ -88,6 +89,9 @@ public sealed class PlatformDbContext : DbContext
     internal DbSet<PersonalNotificationDeliveryRecord> PersonalNotificationDeliveries => Set<PersonalNotificationDeliveryRecord>();
     internal DbSet<PersonalUtangMigrationBatchRecord> PersonalUtangMigrationBatches => Set<PersonalUtangMigrationBatchRecord>();
     internal DbSet<PersonalUtangMigrationItemRecord> PersonalUtangMigrationItems => Set<PersonalUtangMigrationItemRecord>();
+    internal DbSet<ComplianceRequirementRecord> ComplianceRequirements => Set<ComplianceRequirementRecord>();
+    internal DbSet<ComplianceEvidenceRecord> ComplianceEvidence => Set<ComplianceEvidenceRecord>();
+    internal DbSet<ProcessingSystemRecordEntity> ProcessingSystems => Set<ProcessingSystemRecordEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -1857,6 +1861,69 @@ public sealed class PlatformDbContext : DbContext
                 .HasDatabaseName("ix_catalog_import_items_job_row");
             entity.HasIndex(e => new { e.CatalogImportJobId, e.Status })
                 .HasDatabaseName("ix_catalog_import_items_job_status");
+        });
+
+        modelBuilder.Entity<ComplianceRequirementRecord>(entity =>
+        {
+            entity.ToTable("privacy_compliance_requirements");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Code).HasColumnName("code").HasMaxLength(64).IsRequired();
+            entity.HasIndex(e => e.Code).IsUnique();
+            entity.Property(e => e.Title).HasColumnName("title").HasMaxLength(200).IsRequired();
+            entity.Property(e => e.Category).HasColumnName("category").HasMaxLength(64).IsRequired();
+            entity.Property(e => e.Description).HasColumnName("description").HasMaxLength(4000).IsRequired();
+            entity.Property(e => e.RequirementLevel).HasColumnName("requirement_level").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.OwnerRole).HasColumnName("owner_role").HasMaxLength(120).IsRequired();
+            entity.Property(e => e.Version).HasColumnName("version").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.EffectiveDate).HasColumnName("effective_date");
+            entity.Property(e => e.LastReviewedDate).HasColumnName("last_reviewed_date");
+            entity.Property(e => e.NextReviewDate).HasColumnName("next_review_date");
+            entity.Property(e => e.Notes).HasColumnName("notes").HasMaxLength(4000);
+            entity.Property(e => e.SourceReference).HasColumnName("source_reference").HasMaxLength(500);
+            entity.Property(e => e.RequiresDpoLegalVerification).HasColumnName("requires_dpo_legal_verification");
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+        });
+
+        modelBuilder.Entity<ComplianceEvidenceRecord>(entity =>
+        {
+            entity.ToTable("privacy_compliance_evidence");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.RequirementId).HasColumnName("requirement_id");
+            entity.Property(e => e.Kind).HasColumnName("kind").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.Label).HasColumnName("label").HasMaxLength(200).IsRequired();
+            entity.Property(e => e.ReferencePath).HasColumnName("reference_path").HasMaxLength(500).IsRequired();
+            entity.Property(e => e.Notes).HasColumnName("notes").HasMaxLength(1000);
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.HasIndex(e => e.RequirementId).HasDatabaseName("ix_privacy_compliance_evidence_requirement_id");
+            entity.HasIndex(e => new { e.RequirementId, e.ReferencePath })
+                .IsUnique()
+                .HasDatabaseName("ux_privacy_compliance_evidence_requirement_path");
+        });
+
+        modelBuilder.Entity<ProcessingSystemRecordEntity>(entity =>
+        {
+            entity.ToTable("privacy_compliance_processing_systems");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Code).HasColumnName("code").HasMaxLength(64).IsRequired();
+            entity.HasIndex(e => e.Code).IsUnique();
+            entity.Property(e => e.SystemName).HasColumnName("system_name").HasMaxLength(200).IsRequired();
+            entity.Property(e => e.Purpose).HasColumnName("purpose").HasMaxLength(2000).IsRequired();
+            entity.Property(e => e.DataSubjects).HasColumnName("data_subjects").HasMaxLength(1000).IsRequired();
+            entity.Property(e => e.PersonalDataCategories).HasColumnName("personal_data_categories").HasMaxLength(2000).IsRequired();
+            entity.Property(e => e.SensitiveDataCategories).HasColumnName("sensitive_data_categories").HasMaxLength(2000);
+            entity.Property(e => e.StorageLocation).HasColumnName("storage_location").HasMaxLength(500).IsRequired();
+            entity.Property(e => e.RecipientsProcessors).HasColumnName("recipients_processors").HasMaxLength(1000);
+            entity.Property(e => e.RetentionSummary).HasColumnName("retention_summary").HasMaxLength(1000);
+            entity.Property(e => e.SecurityControls).HasColumnName("security_controls").HasMaxLength(2000);
+            entity.Property(e => e.Owner).HasColumnName("owner").HasMaxLength(120).IsRequired();
+            entity.Property(e => e.PiaStatus).HasColumnName("pia_status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
         });
     }
 }

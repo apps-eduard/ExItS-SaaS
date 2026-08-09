@@ -1,0 +1,202 @@
+@page "/admin/privacy-compliance/documents"
+@attribute [Authorize]
+@inject IPlatformApiClient Api
+@inject IStringLocalizer<AdminResources> L
+@inject PlatformPermissionState Permissions
+@inject NavigationManager Nav
+
+@if (!Permissions.Loaded)
+{
+    <LoadingState />
+}
+else if (!CanView)
+{
+    <UnauthorizedPanel RequiredPermission="@PlatformPermissionCodes.ViewPrivacyCompliance" />
+}
+else
+{
+    <AdminPageHeader Title="@L["PrivacyCompliance_DocumentsTitle"]"
+                     Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_PrivacyCompliance"]} / {L["Nav_PrivacyComplianceDocuments"]}")"
+                     Description="@L["PrivacyCompliance_DocumentsDescription"]" />
+
+    <Alert Type="@AlertType.Warning"
+           ShowIcon="true"
+           Message="@L["PrivacyCompliance_DisclaimerTitle"]"
+           Description="@L["PrivacyCompliance_DisclaimerMessage"]"
+           Style="margin-bottom:16px;" />
+
+    <Space Style="margin-bottom:12px;" Wrap>
+        <Select TItemValue="string" TItem="string" @bind-Value="_category" Style="width:220px;" AllowClear Placeholder="@L["PrivacyCompliance_FilterCategory"]">
+            <SelectOptions>
+                <SelectOption TItemValue="string" TItem="string" Value="@("")" Label="@L["Common_All"]" />
+                <SelectOption TItemValue="string" TItem="string" Value="@("CustomerFacing")" Label="@L["PrivacyCompliance_Category_CustomerFacing"]" />
+                <SelectOption TItemValue="string" TItem="string" Value="@("Internal")" Label="@L["PrivacyCompliance_Category_Internal"]" />
+                <SelectOption TItemValue="string" TItem="string" Value="@("RegulatoryReadiness")" Label="@L["PrivacyCompliance_Category_RegulatoryReadiness"]" />
+            </SelectOptions>
+        </Select>
+        <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" OnClick="ApplyFilterAsync">@L["Common_Apply"]</Button>
+        <Button Size="@ButtonSize.Small" OnClick="ClearFilterAsync">@L["Common_Reset"]</Button>
+    </Space>
+
+    @if (_items is null)
+    {
+        <LoadingState />
+    }
+    else if (!_items.IsSuccess)
+    {
+        <ErrorState Detail="@_items.Error?.Detail" CorrelationId="@_items.Error?.CorrelationId" Unavailable="@(_items.Status == ApiCallStatus.Unavailable)" />
+    }
+    else if (_filtered.Count == 0)
+    {
+        <Empty Description="@L["PrivacyCompliance_NoRequirements"].Value" />
+    }
+    else
+    {
+        <Table TItem="ComplianceRequirementDto"
+               DataSource="_filtered"
+               Bordered
+               Size="@TableSize.Small"
+               HidePagination
+               ScrollX="1100">
+            <Column TData="string" Title="@L["PrivacyCompliance_ColumnCode"]" DataIndex="Code">@context.Code</Column>
+            <Column TData="string" Title="@L["Common_Name"]" DataIndex="Title">@context.Title</Column>
+            <Column TData="string" Title="@L["PrivacyCompliance_ColumnCategory"]">
+                @CategoryLabel(context.Category)
+            </Column>
+            <Column TData="string" Title="@L["PrivacyCompliance_ColumnLevel"]">
+                <PrivacyComplianceStatusTag Value="@context.RequirementLevel" />
+            </Column>
+            <Column TData="string" Title="@L["Common_Status"]">
+                <PrivacyComplianceStatusTag Value="@context.Status" />
+            </Column>
+            <Column TData="int" Title="@L["PrivacyCompliance_ColumnEvidence"]" DataIndex="EvidenceCount">@context.EvidenceCount</Column>
+            <ActionColumn Title="@L["Common_Actions"]">
+                <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" OnClick="() => OpenDrawer(context.Id)">@L["Common_ViewDetails"]</Button>
+            </ActionColumn>
+        </Table>
+    }
+
+    <PrivacyComplianceRequirementDrawer Visible="_drawerOpen"
+                                        RequirementId="_selectedId"
+                                        CanManage="CanManage"
+                                        OnClose="CloseDrawer"
+                                        OnUpdated="OnRequirementUpdated" />
+}
+
+@code {
+    [SupplyParameterFromQuery(Name = "category")]
+    public string? CategoryQuery { get; set; }
+
+    private ApiCallResult<IReadOnlyList<ComplianceRequirementDto>>? _items;
+    private IReadOnlyList<ComplianceRequirementDto> _filtered = Array.Empty<ComplianceRequirementDto>();
+    private string? _category;
+    private bool _drawerOpen;
+    private Guid? _selectedId;
+
+    private bool CanView => Permissions.HasPermission(PlatformPermissionCodes.ViewPrivacyCompliance);
+    private bool CanManage => Permissions.HasPermission(PlatformPermissionCodes.ManagePrivacyCompliance);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Permissions.EnsureLoadedAsync();
+        if (!CanView)
+        {
+            return;
+        }
+
+        _category = CategoryQuery;
+        await LoadAsync();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!CanView)
+        {
+            return;
+        }
+
+        if (!string.Equals(_category, CategoryQuery, StringComparison.Ordinal))
+        {
+            _category = CategoryQuery;
+            ApplyFilter();
+        }
+    }
+
+    private async Task LoadAsync()
+    {
+        _items = await Api.ListPrivacyComplianceRequirementsAsync();
+        ApplyFilter();
+    }
+
+    private void ApplyFilter()
+    {
+        if (_items is not { IsSuccess: true, Data: not null })
+        {
+            _filtered = Array.Empty<ComplianceRequirementDto>();
+            return;
+        }
+
+        _filtered = _items.Data
+            .Where(r => PrivacyComplianceFilters.MatchesDocuments(r, string.IsNullOrWhiteSpace(_category) ? null : _category))
+            .OrderBy(r => r.Code, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    private async Task ApplyFilterAsync()
+    {
+        var uri = string.IsNullOrWhiteSpace(_category)
+            ? "/admin/privacy-compliance/documents"
+            : $"/admin/privacy-compliance/documents?category={Uri.EscapeDataString(_category)}";
+        Nav.NavigateTo(uri);
+        ApplyFilter();
+        await Task.CompletedTask;
+    }
+
+    private async Task ClearFilterAsync()
+    {
+        _category = null;
+        Nav.NavigateTo("/admin/privacy-compliance/documents");
+        ApplyFilter();
+        await Task.CompletedTask;
+    }
+
+    private void OpenDrawer(Guid id)
+    {
+        _selectedId = id;
+        _drawerOpen = true;
+    }
+
+    private Task CloseDrawer()
+    {
+        _drawerOpen = false;
+        _selectedId = null;
+        return Task.CompletedTask;
+    }
+
+    private async Task OnRequirementUpdated(ComplianceRequirementDto updated)
+    {
+        if (_items is not { IsSuccess: true, Data: not null })
+        {
+            return;
+        }
+
+        var list = _items.Data.ToList();
+        var index = list.FindIndex(r => r.Id == updated.Id);
+        if (index >= 0)
+        {
+            list[index] = updated;
+            _items = ApiCallResult<IReadOnlyList<ComplianceRequirementDto>>.Success(list);
+            ApplyFilter();
+        }
+
+        await Task.CompletedTask;
+    }
+
+    private string CategoryLabel(string category) => category switch
+    {
+        "CustomerFacing" => L["PrivacyCompliance_Category_CustomerFacing"],
+        "Internal" => L["PrivacyCompliance_Category_Internal"],
+        "RegulatoryReadiness" => L["PrivacyCompliance_Category_RegulatoryReadiness"],
+        _ => category
+    };
+}

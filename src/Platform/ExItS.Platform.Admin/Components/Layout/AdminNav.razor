@@ -115,6 +115,42 @@
             </SubMenu>
         }
 
+        @if (CanView(PlatformPermissionCodes.ViewPrivacyCompliance))
+        {
+            <SubMenu Key="privacy-compliance" TitleTemplate="@PrivacyComplianceTitle">
+                <MenuItem Key="privacy-overview" RouterLink="/admin/privacy-compliance" RouterMatch="NavLinkMatch.All" Icon="dashboard">
+                    @L["Nav_PrivacyComplianceOverview"]
+                </MenuItem>
+                <MenuItem Key="privacy-documents" RouterLink="/admin/privacy-compliance/documents" Icon="file-text">
+                    @L["Nav_PrivacyComplianceDocuments"]
+                </MenuItem>
+                <MenuItem Key="privacy-systems" RouterLink="/admin/privacy-compliance/systems" Icon="cluster">
+                    @L["Nav_PrivacyComplianceSystems"]
+                </MenuItem>
+                <MenuItem Key="privacy-pias" RouterLink="/admin/privacy-compliance/pias" Icon="audit">
+                    @L["Nav_PrivacyCompliancePias"]
+                </MenuItem>
+                <MenuItem Key="privacy-data-inventory" RouterLink="/admin/privacy-compliance/data-inventory" Icon="database">
+                    @L["Nav_PrivacyComplianceDataInventory"]
+                </MenuItem>
+                <MenuItem Key="privacy-retention" RouterLink="/admin/privacy-compliance/retention" Icon="history">
+                    @L["Nav_PrivacyComplianceRetention"]
+                </MenuItem>
+                <MenuItem Key="privacy-incidents" RouterLink="/admin/privacy-compliance/incidents" Icon="alert">
+                    @L["Nav_PrivacyComplianceIncidents"]
+                </MenuItem>
+                <MenuItem Key="privacy-vendors" RouterLink="/admin/privacy-compliance/vendors" Icon="shop">
+                    @L["Nav_PrivacyComplianceVendors"]
+                </MenuItem>
+                <MenuItem Key="privacy-dpo-npc" RouterLink="/admin/privacy-compliance/dpo-npc" Icon="solution">
+                    @L["Nav_PrivacyComplianceDpoNpc"]
+                </MenuItem>
+                <MenuItem Key="privacy-evidence" RouterLink="/admin/privacy-compliance/evidence" Icon="paper-clip">
+                    @L["Nav_PrivacyComplianceEvidence"]
+                </MenuItem>
+            </SubMenu>
+        }
+
         <SubMenu Key="operations" TitleTemplate="@OperationsTitle">
             @if (CanView(PlatformPermissionCodes.ManagePlatformUsers))
             {
@@ -322,11 +358,12 @@
 
     private bool _ready;
     private string[] _selected = ["dashboard"];
-    private string[] _openKeys = ["accounts", "commercial", "product-catalog", "operations", "settings", "people", "org-products", "subscription", "security", "utang"];
+    private string[] _openKeys = ["accounts", "commercial", "product-catalog", "privacy-compliance", "operations", "settings", "people", "org-products", "subscription", "security", "utang"];
 
     private RenderFragment AccountsTitle => b => { b.OpenElement(0, "span"); b.AddContent(1, L["Nav_Accounts"]); b.CloseElement(); };
     private RenderFragment CommercialTitle => b => { b.OpenElement(0, "span"); b.AddContent(1, L["Nav_SectionCommercial"]); b.CloseElement(); };
     private RenderFragment ProductCatalogTitle => b => { b.OpenElement(0, "span"); b.AddContent(1, L["Nav_ProductCatalog"]); b.CloseElement(); };
+    private RenderFragment PrivacyComplianceTitle => b => { b.OpenElement(0, "span"); b.AddContent(1, L["Nav_PrivacyCompliance"]); b.CloseElement(); };
     private RenderFragment OperationsTitle => b => { b.OpenElement(0, "span"); b.AddContent(1, L["Nav_SectionOperations"]); b.CloseElement(); };
     private RenderFragment SettingsTitle => b => { b.OpenElement(0, "span"); b.AddContent(1, L["Nav_SectionSettings"]); b.CloseElement(); };
     private RenderFragment PeopleTitle => b => { b.OpenElement(0, "span"); b.AddContent(1, L["Nav_People"]); b.CloseElement(); };
@@ -429,6 +466,16 @@
             var p when p.StartsWith("/admin/global-catalog/imports", StringComparison.Ordinal) => ["global-imports"],
             var p when p.StartsWith("/admin/global-catalog/products", StringComparison.Ordinal) => ["global-products"],
             var p when p.StartsWith("/admin/global-catalog/templates", StringComparison.Ordinal) => ["global-templates"],
+            "/admin/privacy-compliance" => ["privacy-overview"],
+            var p when p.StartsWith("/admin/privacy-compliance/documents", StringComparison.Ordinal) => ["privacy-documents"],
+            var p when p.StartsWith("/admin/privacy-compliance/systems", StringComparison.Ordinal) => ["privacy-systems"],
+            var p when p.StartsWith("/admin/privacy-compliance/pias", StringComparison.Ordinal) => ["privacy-pias"],
+            var p when p.StartsWith("/admin/privacy-compliance/data-inventory", StringComparison.Ordinal) => ["privacy-data-inventory"],
+            var p when p.StartsWith("/admin/privacy-compliance/retention", StringComparison.Ordinal) => ["privacy-retention"],
+            var p when p.StartsWith("/admin/privacy-compliance/incidents", StringComparison.Ordinal) => ["privacy-incidents"],
+            var p when p.StartsWith("/admin/privacy-compliance/vendors", StringComparison.Ordinal) => ["privacy-vendors"],
+            var p when p.StartsWith("/admin/privacy-compliance/dpo-npc", StringComparison.Ordinal) => ["privacy-dpo-npc"],
+            var p when p.StartsWith("/admin/privacy-compliance/evidence", StringComparison.Ordinal) => ["privacy-evidence"],
             var p when p.StartsWith("/admin/products", StringComparison.Ordinal) => ["products"],
             var p when p.StartsWith("/admin/plans", StringComparison.Ordinal) => ["plans"],
             var p when p.StartsWith("/admin/subscriptions", StringComparison.Ordinal) => ["subscriptions"],

@@ -711,6 +711,103 @@ public sealed class PlatformApiClient(
             $"/api/v1/platform/global-catalog/products/imports/{jobId}/errors?{Query(("page", page), ("pageSize", pageSize))}",
             ct);
 
+    public Task<ApiCallResult<PrivacyComplianceOverviewDto>> GetPrivacyComplianceOverviewAsync(CancellationToken ct = default) =>
+        GetAsync<PrivacyComplianceOverviewDto>("/api/v1/platform/privacy-compliance/overview", ct);
+
+    public Task<ApiCallResult<IReadOnlyList<ComplianceRequirementDto>>> ListPrivacyComplianceRequirementsAsync(string? category = null, CancellationToken ct = default) =>
+        GetAsync<IReadOnlyList<ComplianceRequirementDto>>(
+            $"/api/v1/platform/privacy-compliance/requirements?{Query(("category", category))}",
+            ct);
+
+    public Task<ApiCallResult<ComplianceRequirementDto>> GetPrivacyComplianceRequirementAsync(Guid id, CancellationToken ct = default) =>
+        GetAsync<ComplianceRequirementDto>($"/api/v1/platform/privacy-compliance/requirements/{id}", ct);
+
+    public Task<ApiCallResult<ComplianceRequirementDto>> UpdatePrivacyComplianceRequirementStatusAsync(
+        Guid id,
+        UpdateComplianceRequirementStatusRequest request,
+        CancellationToken ct = default) =>
+        SendAsync<ComplianceRequirementDto>(
+            HttpMethod.Patch,
+            $"/api/v1/platform/privacy-compliance/requirements/{id}/status",
+            request,
+            ct);
+
+    public Task<ApiCallResult<ComplianceRequirementDto>> UpdatePrivacyComplianceRequirementDetailsAsync(
+        Guid id,
+        UpdateComplianceRequirementDetailsRequest request,
+        CancellationToken ct = default) =>
+        SendAsync<ComplianceRequirementDto>(
+            HttpMethod.Patch,
+            $"/api/v1/platform/privacy-compliance/requirements/{id}",
+            request,
+            ct);
+
+    public Task<ApiCallResult<IReadOnlyList<ComplianceEvidenceDto>>> ListPrivacyComplianceEvidenceAsync(Guid requirementId, CancellationToken ct = default) =>
+        GetAsync<IReadOnlyList<ComplianceEvidenceDto>>(
+            $"/api/v1/platform/privacy-compliance/requirements/{requirementId}/evidence",
+            ct);
+
+    public Task<ApiCallResult<ComplianceEvidenceDto>> AddPrivacyComplianceEvidenceAsync(AddComplianceEvidenceRequest request, CancellationToken ct = default) =>
+        SendAsync<ComplianceEvidenceDto>(HttpMethod.Post, "/api/v1/platform/privacy-compliance/evidence", request, ct);
+
+    public Task<ApiCallResult<IReadOnlyList<ProcessingSystemDto>>> ListPrivacyComplianceSystemsAsync(CancellationToken ct = default) =>
+        GetAsync<IReadOnlyList<ProcessingSystemDto>>("/api/v1/platform/privacy-compliance/systems", ct);
+
+    public Task<ApiCallResult<EnsurePrivacyComplianceCatalogResultDto>> EnsurePrivacyComplianceCatalogAsync(CancellationToken ct = default) =>
+        SendAsync<EnsurePrivacyComplianceCatalogResultDto>(
+            HttpMethod.Post,
+            "/api/v1/platform/privacy-compliance/ensure-catalog",
+            new { },
+            ct);
+
+    public async Task<ApiCallResult<byte[]>> ExportPrivacyComplianceRequirementPdfAsync(
+        Guid requirementId,
+        string? companyName = null,
+        CancellationToken ct = default)
+    {
+        try
+        {
+            using var request = new HttpRequestMessage(
+                HttpMethod.Get,
+                $"/api/v1/platform/privacy-compliance/requirements/{requirementId}/export.pdf?{Query(("companyName", companyName))}");
+
+            var sessionToken = await ResolveSessionTokenAsync();
+            if (!string.IsNullOrWhiteSpace(sessionToken)
+                && !request.Headers.Contains(SessionTokenHeader))
+            {
+                request.Headers.TryAddWithoutValidation(SessionTokenHeader, sessionToken);
+            }
+
+            using var response = await httpClient.SendAsync(request, ct);
+            if (response.IsSuccessStatusCode)
+            {
+                var bytes = await response.Content.ReadAsByteArrayAsync(ct);
+                return ApiCallResult<byte[]>.Success(bytes);
+            }
+
+            var error = await ToExceptionAsync(response, ct);
+            return response.StatusCode switch
+            {
+                HttpStatusCode.NotFound => ApiCallResult<byte[]>.NotFound(error),
+                HttpStatusCode.BadRequest or HttpStatusCode.UnprocessableEntity => ApiCallResult<byte[]>.Validation(error),
+                HttpStatusCode.Forbidden or HttpStatusCode.Unauthorized => ApiCallResult<byte[]>.Failed(error),
+                _ => ApiCallResult<byte[]>.Failed(error)
+            };
+        }
+        catch (HttpRequestException ex)
+        {
+            return ApiCallResult<byte[]>.Unavailable(new PlatformApiException(null, "Platform API unavailable", ex.Message, innerException: ex));
+        }
+        catch (TaskCanceledException ex) when (!ct.IsCancellationRequested)
+        {
+            return ApiCallResult<byte[]>.Unavailable(new PlatformApiException(null, "Platform API timed out", ex.Message, innerException: ex));
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+    }
+
     public async Task<ApiCallResult<byte[]>> DownloadCatalogImportTemplateAsync(CancellationToken ct = default)
     {
         try

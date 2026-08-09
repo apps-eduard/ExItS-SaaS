@@ -1044,4 +1044,103 @@
   <data name="GlobalImports_Error" xml:space="preserve"><value>Error</value></data>
   <data name="GlobalImports_ErrorCode" xml:space="preserve"><value>Code</value></data>
   <data name="GlobalImports_Polling" xml:space="preserve"><value>Processing in the background… this page refreshes automatically.</value></data>
+
+  <data name="Nav_PrivacyCompliance" xml:space="preserve"><value>Privacy Compliance</value></data>
+  <data name="Nav_PrivacyComplianceOverview" xml:space="preserve"><value>Overview</value></data>
+  <data name="Nav_PrivacyComplianceDocuments" xml:space="preserve"><value>Documents</value></data>
+  <data name="Nav_PrivacyComplianceSystems" xml:space="preserve"><value>Processing Systems</value></data>
+  <data name="Nav_PrivacyCompliancePias" xml:space="preserve"><value>PIAs</value></data>
+  <data name="Nav_PrivacyComplianceDataInventory" xml:space="preserve"><value>Data Inventory</value></data>
+  <data name="Nav_PrivacyComplianceRetention" xml:space="preserve"><value>Retention</value></data>
+  <data name="Nav_PrivacyComplianceIncidents" xml:space="preserve"><value>Incidents</value></data>
+  <data name="Nav_PrivacyComplianceVendors" xml:space="preserve"><value>Vendors</value></data>
+  <data name="Nav_PrivacyComplianceDpoNpc" xml:space="preserve"><value>DPO / NPC</value></data>
+  <data name="Nav_PrivacyComplianceEvidence" xml:space="preserve"><value>Evidence</value></data>
+
+  <data name="PrivacyCompliance_OverviewTitle" xml:space="preserve"><value>Privacy compliance overview</value></data>
+  <data name="PrivacyCompliance_OverviewDescription" xml:space="preserve"><value>Track privacy readiness requirements, processing systems, and supporting evidence across the platform portfolio.</value></data>
+  <data name="PrivacyCompliance_DocumentsTitle" xml:space="preserve"><value>Privacy documents</value></data>
+  <data name="PrivacyCompliance_DocumentsDescription" xml:space="preserve"><value>Customer-facing, internal, and regulatory readiness document requirements.</value></data>
+  <data name="PrivacyCompliance_SystemsTitle" xml:space="preserve"><value>Processing systems</value></data>
+  <data name="PrivacyCompliance_SystemsDescription" xml:space="preserve"><value>Systems that process personal data, including PIA readiness status.</value></data>
+  <data name="PrivacyCompliance_EvidenceTitle" xml:space="preserve"><value>Compliance evidence</value></data>
+  <data name="PrivacyCompliance_EvidenceDescription" xml:space="preserve"><value>Evidence references linked to privacy compliance requirements.</value></data>
+  <data name="PrivacyCompliance_PiasTitle" xml:space="preserve"><value>Privacy impact assessments</value></data>
+  <data name="PrivacyCompliance_PiasDescription" xml:space="preserve"><value>PIA requirements and related assessment readiness items.</value></data>
+  <data name="PrivacyCompliance_DataInventoryTitle" xml:space="preserve"><value>Data inventory</value></data>
+  <data name="PrivacyCompliance_DataInventoryDescription" xml:space="preserve"><value>Data inventory and mapping requirements.</value></data>
+  <data name="PrivacyCompliance_RetentionTitle" xml:space="preserve"><value>Retention</value></data>
+  <data name="PrivacyCompliance_RetentionDescription" xml:space="preserve"><value>Retention schedule and disposal readiness requirements.</value></data>
+  <data name="PrivacyCompliance_IncidentsTitle" xml:space="preserve"><value>Incidents and breaches</value></data>
+  <data name="PrivacyCompliance_IncidentsDescription" xml:space="preserve"><value>Incident response and breach notification readiness requirements.</value></data>
+  <data name="PrivacyCompliance_VendorsTitle" xml:space="preserve"><value>Vendors and processors</value></data>
+  <data name="PrivacyCompliance_VendorsDescription" xml:space="preserve"><value>Third-party vendor and processor compliance requirements.</value></data>
+  <data name="PrivacyCompliance_DpoNpcTitle" xml:space="preserve"><value>DPO and NPC readiness</value></data>
+  <data name="PrivacyCompliance_DpoNpcDescription" xml:space="preserve"><value>Data protection officer and NPC registration readiness requirements.</value></data>
+  <data name="PrivacyCompliance_DisclaimerTitle" xml:space="preserve"><value>Readiness tooling only</value></data>
+  <data name="PrivacyCompliance_DisclaimerMessage" xml:space="preserve"><value>This module helps track internal privacy readiness. It does not constitute legal advice, regulatory certification, or proof of legal compliance. Consult qualified legal counsel for DPO/legal verification.</value></data>
+  <data name="PrivacyCompliance_LoadingOverview" xml:space="preserve"><value>Loading privacy compliance overview…</value></data>
+  <data name="PrivacyCompliance_LoadFailed" xml:space="preserve"><value>Could not load privacy compliance data.</value></data>
+  <data name="PrivacyCompliance_TotalRequirements" xml:space="preserve"><value>Requirements</value></data>
+  <data name="PrivacyCompliance_TotalSystems" xml:space="preserve"><value>Processing systems</value></data>
+  <data name="PrivacyCompliance_TotalEvidence" xml:space="preserve"><value>Evidence items</value></data>
+  <data name="PrivacyCompliance_LastUpdated" xml:space="preserve"><value>Last updated</value></data>
+  <data name="PrivacyCompliance_RequirementsByStatus" xml:space="preserve"><value>Requirements by status</value></data>
+  <data name="PrivacyCompliance_RequirementsByCategory" xml:space="preserve"><value>Requirements by category</value></data>
+  <data name="PrivacyCompliance_ImportantGaps" xml:space="preserve"><value>Important gaps (Required + Not started / Needs update)</value></data>
+  <data name="PrivacyCompliance_NoData" xml:space="preserve"><value>No data yet.</value></data>
+  <data name="PrivacyCompliance_NoGaps" xml:space="preserve"><value>No important gaps found.</value></data>
+  <data name="PrivacyCompliance_NoRequirements" xml:space="preserve"><value>No requirements match this view.</value></data>
+  <data name="PrivacyCompliance_NoSystems" xml:space="preserve"><value>No processing systems found.</value></data>
+  <data name="PrivacyCompliance_NoEvidence" xml:space="preserve"><value>No evidence found.</value></data>
+  <data name="PrivacyCompliance_FilterCategory" xml:space="preserve"><value>Filter by category</value></data>
+  <data name="PrivacyCompliance_FilterRequirement" xml:space="preserve"><value>Filter by requirement</value></data>
+  <data name="PrivacyCompliance_RequirementDetail" xml:space="preserve"><value>Requirement detail</value></data>
+  <data name="PrivacyCompliance_RequirementNotFound" xml:space="preserve"><value>Requirement not found.</value></data>
+  <data name="PrivacyCompliance_UpdateStatus" xml:space="preserve"><value>Update status</value></data>
+  <data name="PrivacyCompliance_SaveSucceeded" xml:space="preserve"><value>Requirement updated.</value></data>
+  <data name="PrivacyCompliance_SaveFailed" xml:space="preserve"><value>Could not update requirement.</value></data>
+  <data name="PrivacyCompliance_DownloadPdf" xml:space="preserve"><value>Download PDF</value></data>
+  <data name="PrivacyCompliance_DownloadPdfFailed" xml:space="preserve"><value>Could not download PDF.</value></data>
+  <data name="PrivacyCompliance_ColumnCode" xml:space="preserve"><value>Code</value></data>
+  <data name="PrivacyCompliance_ColumnCategory" xml:space="preserve"><value>Category</value></data>
+  <data name="PrivacyCompliance_ColumnLevel" xml:space="preserve"><value>Level</value></data>
+  <data name="PrivacyCompliance_ColumnEvidence" xml:space="preserve"><value>Evidence</value></data>
+  <data name="PrivacyCompliance_ColumnOwner" xml:space="preserve"><value>Owner</value></data>
+  <data name="PrivacyCompliance_ColumnVersion" xml:space="preserve"><value>Version</value></data>
+  <data name="PrivacyCompliance_ColumnSystemName" xml:space="preserve"><value>System</value></data>
+  <data name="PrivacyCompliance_ColumnPurpose" xml:space="preserve"><value>Purpose</value></data>
+  <data name="PrivacyCompliance_ColumnDataSubjects" xml:space="preserve"><value>Data subjects</value></data>
+  <data name="PrivacyCompliance_ColumnPersonalData" xml:space="preserve"><value>Personal data</value></data>
+  <data name="PrivacyCompliance_ColumnStorage" xml:space="preserve"><value>Storage</value></data>
+  <data name="PrivacyCompliance_ColumnPiaStatus" xml:space="preserve"><value>PIA status</value></data>
+  <data name="PrivacyCompliance_ColumnRequirement" xml:space="preserve"><value>Requirement</value></data>
+  <data name="PrivacyCompliance_ColumnEvidenceKind" xml:space="preserve"><value>Kind</value></data>
+  <data name="PrivacyCompliance_ColumnReference" xml:space="preserve"><value>Reference</value></data>
+  <data name="Common_Count" xml:space="preserve"><value>Count</value></data>
+  <data name="PrivacyCompliance_Status_NotStarted" xml:space="preserve"><value>Not started</value></data>
+  <data name="PrivacyCompliance_Status_InProgress" xml:space="preserve"><value>In progress</value></data>
+  <data name="PrivacyCompliance_Status_ReadyForReview" xml:space="preserve"><value>Ready for review</value></data>
+  <data name="PrivacyCompliance_Status_Approved" xml:space="preserve"><value>Approved</value></data>
+  <data name="PrivacyCompliance_Status_NeedsUpdate" xml:space="preserve"><value>Needs update</value></data>
+  <data name="PrivacyCompliance_Status_NotApplicable" xml:space="preserve"><value>Not applicable</value></data>
+  <data name="PrivacyCompliance_Level_Required" xml:space="preserve"><value>Required</value></data>
+  <data name="PrivacyCompliance_Level_Conditional" xml:space="preserve"><value>Conditional</value></data>
+  <data name="PrivacyCompliance_Level_Optional" xml:space="preserve"><value>Optional</value></data>
+  <data name="PrivacyCompliance_Category_CustomerFacing" xml:space="preserve"><value>Customer-facing</value></data>
+  <data name="PrivacyCompliance_Category_Internal" xml:space="preserve"><value>Internal</value></data>
+  <data name="PrivacyCompliance_Category_RegulatoryReadiness" xml:space="preserve"><value>Regulatory readiness</value></data>
+  <data name="PrivacyCompliance_Category_PrivacyImpactAssessment" xml:space="preserve"><value>Privacy impact assessment</value></data>
+  <data name="PrivacyCompliance_Category_DataInventory" xml:space="preserve"><value>Data inventory</value></data>
+  <data name="PrivacyCompliance_Category_Retention" xml:space="preserve"><value>Retention</value></data>
+  <data name="PrivacyCompliance_Category_IncidentBreach" xml:space="preserve"><value>Incident / breach</value></data>
+  <data name="PrivacyCompliance_Category_VendorProcessor" xml:space="preserve"><value>Vendor / processor</value></data>
+  <data name="PrivacyCompliance_Category_DpoNpc" xml:space="preserve"><value>DPO / NPC</value></data>
+  <data name="PrivacyCompliance_EvidenceKind_PhaseDoc" xml:space="preserve"><value>Phase document</value></data>
+  <data name="PrivacyCompliance_EvidenceKind_ArchitectureDoc" xml:space="preserve"><value>Architecture document</value></data>
+  <data name="PrivacyCompliance_EvidenceKind_Report" xml:space="preserve"><value>Report</value></data>
+  <data name="PrivacyCompliance_EvidenceKind_Test" xml:space="preserve"><value>Test</value></data>
+  <data name="PrivacyCompliance_EvidenceKind_SecurityControl" xml:space="preserve"><value>Security control</value></data>
+  <data name="PrivacyCompliance_EvidenceKind_Implementation" xml:space="preserve"><value>Implementation</value></data>
+  <data name="PrivacyCompliance_EvidenceKind_Other" xml:space="preserve"><value>Other</value></data>
 </root>

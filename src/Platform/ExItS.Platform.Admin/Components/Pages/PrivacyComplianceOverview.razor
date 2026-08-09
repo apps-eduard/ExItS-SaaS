@@ -1,0 +1,189 @@
+@page "/admin/privacy-compliance"
+@attribute [Authorize]
+@inject IPlatformApiClient Api
+@inject IStringLocalizer<AdminResources> L
+@inject PlatformPermissionState Permissions
+@inject NavigationManager Nav
+
+@if (!Permissions.Loaded)
+{
+    <LoadingState />
+}
+else if (!CanView)
+{
+    <UnauthorizedPanel RequiredPermission="@PlatformPermissionCodes.ViewPrivacyCompliance" />
+}
+else
+{
+    <AdminPageHeader Title="@L["PrivacyCompliance_OverviewTitle"]"
+                     Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_PrivacyCompliance"]}")"
+                     Description="@L["PrivacyCompliance_OverviewDescription"]" />
+
+    <Alert Type="@AlertType.Warning"
+           ShowIcon="true"
+           Message="@L["PrivacyCompliance_DisclaimerTitle"]"
+           Description="@L["PrivacyCompliance_DisclaimerMessage"]"
+           Style="margin-bottom:16px;" />
+
+    @if (_overview is null)
+    {
+        <LoadingState Message="@L["PrivacyCompliance_LoadingOverview"]" />
+    }
+    else if (!_overview.IsSuccess)
+    {
+        <ErrorState Detail="@_overview.Error?.Detail" CorrelationId="@_overview.Error?.CorrelationId" Unavailable="@(_overview.Status == ApiCallStatus.Unavailable)" />
+    }
+    else
+    {
+        var data = _overview.Data!;
+        <Row Gutter="(12, 12)" Style="margin-bottom:16px;">
+            <AntDesign.Col Xs="24" Sm="12" Md="8">
+                <AdminSummaryCard Label="@L["PrivacyCompliance_TotalRequirements"]">@data.TotalRequirements</AdminSummaryCard>
+            </AntDesign.Col>
+            <AntDesign.Col Xs="24" Sm="12" Md="8">
+                <AdminSummaryCard Label="@L["PrivacyCompliance_TotalSystems"]">@data.TotalSystems</AdminSummaryCard>
+            </AntDesign.Col>
+            <AntDesign.Col Xs="24" Sm="12" Md="8">
+                <AdminSummaryCard Label="@L["PrivacyCompliance_TotalEvidence"]">@data.TotalEvidence</AdminSummaryCard>
+            </AntDesign.Col>
+        </Row>
+
+        @if (data.LastUpdatedUtc is DateTimeOffset updated)
+        {
+            <p class="muted" style="margin-bottom:16px;">@L["PrivacyCompliance_LastUpdated"]: <UtcTimestamp Value="@updated" /></p>
+        }
+
+        <Row Gutter="(12, 12)" Style="margin-bottom:16px;">
+            <AntDesign.Col Xs="24" Md="12">
+                <Card Title="@L["PrivacyCompliance_RequirementsByStatus"]" Size="@CardSize.Small">
+                    @if (data.RequirementsByStatus.Count == 0)
+                    {
+                        <Empty Description="@L["PrivacyCompliance_NoData"].Value" />
+                    }
+                    else
+                    {
+                        <Table TItem="KeyValuePair<string, int>"
+                               DataSource="@StatusRows(data.RequirementsByStatus)"
+                               HidePagination
+                               Bordered
+                               Size="@TableSize.Small">
+                            <Column TData="string" Title="@L["Common_Status"]">
+                                <PrivacyComplianceStatusTag Value="@context.Key" />
+                            </Column>
+                            <Column TData="int" Title="@L["Common_Count"]" DataIndex="Value">
+                                @context.Value
+                            </Column>
+                        </Table>
+                    }
+                </Card>
+            </AntDesign.Col>
+            <AntDesign.Col Xs="24" Md="12">
+                <Card Title="@L["PrivacyCompliance_RequirementsByCategory"]" Size="@CardSize.Small">
+                    @if (data.RequirementsByCategory.Count == 0)
+                    {
+                        <Empty Description="@L["PrivacyCompliance_NoData"].Value" />
+                    }
+                    else
+                    {
+                        <Table TItem="KeyValuePair<string, int>"
+                               DataSource="@CategoryRows(data.RequirementsByCategory)"
+                               HidePagination
+                               Bordered
+                               Size="@TableSize.Small">
+                            <Column TData="string" Title="@L["PrivacyCompliance_ColumnCategory"]" DataIndex="Key">
+                                @CategoryLabel(context.Key)
+                            </Column>
+                            <Column TData="int" Title="@L["Common_Count"]" DataIndex="Value">
+                                @context.Value
+                            </Column>
+                        </Table>
+                    }
+                </Card>
+            </AntDesign.Col>
+        </Row>
+
+        <Card Title="@L["PrivacyCompliance_ImportantGaps"]" Size="@CardSize.Small">
+            @if (_gaps is null)
+            {
+                <Spin />
+            }
+            else if (_gaps.Count == 0)
+            {
+                <Empty Description="@L["PrivacyCompliance_NoGaps"].Value" />
+            }
+            else
+            {
+                <Table TItem="ComplianceRequirementDto"
+                       DataSource="_gaps"
+                       HidePagination
+                       Bordered
+                       Size="@TableSize.Small"
+                       ScrollX="960">
+                    <Column TData="string" Title="@L["PrivacyCompliance_ColumnCode"]" DataIndex="Code">@context.Code</Column>
+                    <Column TData="string" Title="@L["Common_Name"]" DataIndex="Title">@context.Title</Column>
+                    <Column TData="string" Title="@L["Common_Status"]">
+                        <PrivacyComplianceStatusTag Value="@context.Status" />
+                    </Column>
+                    <ActionColumn Title="@L["Common_Actions"]">
+                        <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" OnClick='() => Nav.NavigateTo("/admin/privacy-compliance/documents")'>
+                            @L["Common_ViewDetails"]
+                        </Button>
+                    </ActionColumn>
+                </Table>
+            }
+        </Card>
+    }
+}
+
+@code {
+    private ApiCallResult<PrivacyComplianceOverviewDto>? _overview;
+    private IReadOnlyList<ComplianceRequirementDto>? _gaps;
+
+    private bool CanView => Permissions.HasPermission(PlatformPermissionCodes.ViewPrivacyCompliance);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Permissions.EnsureLoadedAsync();
+        if (!CanView)
+        {
+            return;
+        }
+
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _overview = await Api.GetPrivacyComplianceOverviewAsync();
+        if (!_overview.IsSuccess)
+        {
+            return;
+        }
+
+        var requirements = await Api.ListPrivacyComplianceRequirementsAsync();
+        if (requirements.IsSuccess && requirements.Data is not null)
+        {
+            _gaps = requirements.Data.Where(PrivacyComplianceFilters.IsImportantGap).ToList();
+        }
+    }
+
+    private static List<KeyValuePair<string, int>> StatusRows(IReadOnlyDictionary<string, int> source) =>
+        source.OrderBy(x => x.Key, StringComparer.OrdinalIgnoreCase).ToList();
+
+    private static List<KeyValuePair<string, int>> CategoryRows(IReadOnlyDictionary<string, int> source) =>
+        source.OrderBy(x => x.Key, StringComparer.OrdinalIgnoreCase).ToList();
+
+    private string CategoryLabel(string category) => category switch
+    {
+        "CustomerFacing" => L["PrivacyCompliance_Category_CustomerFacing"],
+        "Internal" => L["PrivacyCompliance_Category_Internal"],
+        "RegulatoryReadiness" => L["PrivacyCompliance_Category_RegulatoryReadiness"],
+        "PrivacyImpactAssessment" => L["PrivacyCompliance_Category_PrivacyImpactAssessment"],
+        "DataInventory" => L["PrivacyCompliance_Category_DataInventory"],
+        "Retention" => L["PrivacyCompliance_Category_Retention"],
+        "IncidentBreach" => L["PrivacyCompliance_Category_IncidentBreach"],
+        "VendorProcessor" => L["PrivacyCompliance_Category_VendorProcessor"],
+        "DpoNpc" => L["PrivacyCompliance_Category_DpoNpc"],
+        _ => category
+    };
+}

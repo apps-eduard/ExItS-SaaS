@@ -26,6 +26,9 @@ public static class PlatformPermissionCodes
     public const string ManageCatalogTemplates = "platform.permission.manage_catalog_templates";
     public const string PublishCatalogTemplates = "platform.permission.publish_catalog_templates";
 
+    public const string ViewPrivacyCompliance = "platform.permission.view_privacy_compliance";
+    public const string ManagePrivacyCompliance = "platform.permission.manage_privacy_compliance";
+
     public static readonly IReadOnlyList<string> All =
     [
         ViewPortfolio,
@@ -43,6 +46,8 @@ public static class PlatformPermissionCodes
         ManageGlobalProducts,
         ImportGlobalProducts,
         ManageCatalogTemplates,
-        PublishCatalogTemplates
+        PublishCatalogTemplates,
+        ViewPrivacyCompliance,
+        ManagePrivacyCompliance
     ];
 }

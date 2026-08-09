@@ -1,0 +1,250 @@
+@inject IPlatformApiClient Api
+@inject IStringLocalizer<AdminResources> L
+@inject IJSRuntime Js
+
+<Drawer Visible="Visible"
+        Title="@(_requirement?.Title ?? L["PrivacyCompliance_RequirementDetail"])"
+        Width="520"
+        Placement="DrawerPlacement.Right"
+        OnClose="CloseAsync">
+    @if (_loading)
+    {
+        <Spin />
+    }
+    else if (_requirement is null)
+    {
+        <Empty Description="@L["PrivacyCompliance_RequirementNotFound"].Value" />
+    }
+    else
+    {
+        var r = _requirement;
+        <Descriptions Bordered Size="@DescriptionsSize.Small" Column="1">
+            <DescriptionsItem Title="@L["PrivacyCompliance_ColumnCode"]">@r.Code</DescriptionsItem>
+            <DescriptionsItem Title="@L["PrivacyCompliance_ColumnCategory"]">@CategoryLabel(r.Category)</DescriptionsItem>
+            <DescriptionsItem Title="@L["PrivacyCompliance_ColumnLevel"]"><PrivacyComplianceStatusTag Value="@r.RequirementLevel" /></DescriptionsItem>
+            <DescriptionsItem Title="@L["Common_Status"]"><PrivacyComplianceStatusTag Value="@r.Status" /></DescriptionsItem>
+            <DescriptionsItem Title="@L["PrivacyCompliance_ColumnOwner"]">@r.OwnerRole</DescriptionsItem>
+            <DescriptionsItem Title="@L["PrivacyCompliance_ColumnEvidence"]">@r.EvidenceCount</DescriptionsItem>
+            <DescriptionsItem Title="@L["PrivacyCompliance_ColumnVersion"]">@r.Version</DescriptionsItem>
+        </Descriptions>
+
+        <Divider>@L["Common_Description"]</Divider>
+        <p>@r.Description</p>
+
+        @if (CanManage)
+        {
+            <Divider>@L["PrivacyCompliance_UpdateStatus"]</Divider>
+            <Select TItemValue="string" TItem="string" @bind-Value="_editStatus" Style="width:100%; margin-bottom:12px;" Disabled="_busy">
+                <SelectOptions>
+                    @foreach (var status in StatusOptions)
+                    {
+                        <SelectOption TItemValue="string" TItem="string" Value="@status" Label="@StatusLabel(status)" />
+                    }
+                </SelectOptions>
+            </Select>
+
+            <Divider>@L["GlobalImports_Notes"]</Divider>
+            <TextArea @bind-Value="_editNotes" Rows="4" Disabled="_busy" />
+
+            <Space Style="margin-top:16px;">
+                <Button Type="@ButtonType.Primary" Loading="_busy" OnClick="SaveAsync">@L["Common_Save"]</Button>
+                <Button Loading="_downloadBusy" OnClick="DownloadPdfAsync">@L["PrivacyCompliance_DownloadPdf"]</Button>
+            </Space>
+        }
+        else
+        {
+            <Divider>@L["GlobalImports_Notes"]</Divider>
+            <p>@(string.IsNullOrWhiteSpace(r.Notes) ? "—" : r.Notes)</p>
+            <Button Style="margin-top:12px;" Loading="_downloadBusy" OnClick="DownloadPdfAsync">@L["PrivacyCompliance_DownloadPdf"]</Button>
+        }
+
+        @if (!string.IsNullOrWhiteSpace(_message))
+        {
+            <Alert Type="@_messageType" Message="@_message" ShowIcon="true" Style="margin-top:12px;" />
+        }
+    }
+</Drawer>
+
+@code {
+    [Parameter] public bool Visible { get; set; }
+    [Parameter] public Guid? RequirementId { get; set; }
+    [Parameter] public bool CanManage { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback<ComplianceRequirementDto> OnUpdated { get; set; }
+
+    private ComplianceRequirementDto? _requirement;
+    private bool _loading;
+    private bool _busy;
+    private bool _downloadBusy;
+    private string? _editStatus;
+    private string? _editNotes;
+    private string? _message;
+    private AlertType _messageType = AlertType.Info;
+    private Guid? _loadedId;
+
+    private static readonly string[] StatusOptions =
+    [
+        "NotStarted",
+        "InProgress",
+        "ReadyForReview",
+        "Approved",
+        "NeedsUpdate"
+    ];
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!Visible || RequirementId is null)
+        {
+            return;
+        }
+
+        if (_loadedId == RequirementId && _requirement is not null)
+        {
+            return;
+        }
+
+        await LoadAsync(RequirementId.Value);
+    }
+
+    private async Task LoadAsync(Guid id)
+    {
+        _loading = true;
+        _message = null;
+        try
+        {
+            var result = await Api.GetPrivacyComplianceRequirementAsync(id);
+            if (!result.IsSuccess || result.Data is null)
+            {
+                _requirement = null;
+                return;
+            }
+
+            _requirement = result.Data;
+            _loadedId = id;
+            _editStatus = _requirement.Status;
+            _editNotes = _requirement.Notes;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        if (_requirement is null || string.IsNullOrWhiteSpace(_editStatus))
+        {
+            return;
+        }
+
+        _busy = true;
+        _message = null;
+        try
+        {
+            var statusChanged = !string.Equals(_editStatus, _requirement.Status, StringComparison.OrdinalIgnoreCase);
+            var notesChanged = !string.Equals(_editNotes ?? "", _requirement.Notes ?? "", StringComparison.Ordinal);
+
+            ComplianceRequirementDto? updated = _requirement;
+            if (statusChanged)
+            {
+                var statusResult = await Api.UpdatePrivacyComplianceRequirementStatusAsync(
+                    _requirement.Id,
+                    new UpdateComplianceRequirementStatusRequest(_editStatus));
+                if (!statusResult.IsSuccess || statusResult.Data is null)
+                {
+                    _message = statusResult.Error?.Detail ?? L["PrivacyCompliance_SaveFailed"].Value;
+                    _messageType = AlertType.Error;
+                    return;
+                }
+
+                updated = statusResult.Data;
+            }
+
+            if (notesChanged)
+            {
+                var detailsResult = await Api.UpdatePrivacyComplianceRequirementDetailsAsync(
+                    _requirement.Id,
+                    new UpdateComplianceRequirementDetailsRequest(Notes: _editNotes));
+                if (!detailsResult.IsSuccess || detailsResult.Data is null)
+                {
+                    _message = detailsResult.Error?.Detail ?? L["PrivacyCompliance_SaveFailed"].Value;
+                    _messageType = AlertType.Error;
+                    return;
+                }
+
+                updated = detailsResult.Data;
+            }
+
+            _requirement = updated;
+            _editStatus = _requirement.Status;
+            _editNotes = _requirement.Notes;
+            _message = L["PrivacyCompliance_SaveSucceeded"].Value;
+            _messageType = AlertType.Success;
+            await OnUpdated.InvokeAsync(_requirement);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task DownloadPdfAsync()
+    {
+        if (_requirement is null)
+        {
+            return;
+        }
+
+        _downloadBusy = true;
+        try
+        {
+            var result = await Api.ExportPrivacyComplianceRequirementPdfAsync(_requirement.Id);
+            if (!result.IsSuccess || result.Data is null || result.Data.Length == 0)
+            {
+                _message = result.Error?.Detail ?? L["PrivacyCompliance_DownloadPdfFailed"].Value;
+                _messageType = AlertType.Error;
+                return;
+            }
+
+            var fileName = $"{_requirement.Code.ToLowerInvariant()}-privacy-compliance.pdf";
+            var base64 = Convert.ToBase64String(result.Data);
+            await Js.InvokeVoidAsync("exitsDownloadBase64", fileName, base64, "application/pdf");
+        }
+        finally
+        {
+            _downloadBusy = false;
+        }
+    }
+
+    private async Task CloseAsync()
+    {
+        _loadedId = null;
+        _requirement = null;
+        _message = null;
+        await OnClose.InvokeAsync();
+    }
+
+    private string CategoryLabel(string category) => category switch
+    {
+        "CustomerFacing" => L["PrivacyCompliance_Category_CustomerFacing"],
+        "Internal" => L["PrivacyCompliance_Category_Internal"],
+        "RegulatoryReadiness" => L["PrivacyCompliance_Category_RegulatoryReadiness"],
+        "PrivacyImpactAssessment" => L["PrivacyCompliance_Category_PrivacyImpactAssessment"],
+        "DataInventory" => L["PrivacyCompliance_Category_DataInventory"],
+        "Retention" => L["PrivacyCompliance_Category_Retention"],
+        "IncidentBreach" => L["PrivacyCompliance_Category_IncidentBreach"],
+        "VendorProcessor" => L["PrivacyCompliance_Category_VendorProcessor"],
+        "DpoNpc" => L["PrivacyCompliance_Category_DpoNpc"],
+        _ => category
+    };
+
+    private string StatusLabel(string status) => status switch
+    {
+        "NotStarted" => L["PrivacyCompliance_Status_NotStarted"],
+        "InProgress" => L["PrivacyCompliance_Status_InProgress"],
+        "ReadyForReview" => L["PrivacyCompliance_Status_ReadyForReview"],
+        "Approved" => L["PrivacyCompliance_Status_Approved"],
+        "NeedsUpdate" => L["PrivacyCompliance_Status_NeedsUpdate"],
+        _ => status
+    };
+}

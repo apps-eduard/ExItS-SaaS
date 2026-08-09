@@ -190,4 +190,13 @@ public static class PlatformAuditActions
     public const string EnabledProductsDiscovered = "platform.enabled_products.discovered";
     public const string ProductAuthorizationChecked = "platform.product_authorization.checked";
     public const string ProductLaunched = "platform.product.launched";
+
+    public const string PrivacyComplianceCatalogEnsured = "platform.privacy_compliance.catalog.ensured";
+    public const string PrivacyComplianceRequirementStatusUpdated =
+        "platform.privacy_compliance.requirement.status_updated";
+    public const string PrivacyComplianceRequirementDetailsUpdated =
+        "platform.privacy_compliance.requirement.details_updated";
+    public const string PrivacyComplianceEvidenceAdded = "platform.privacy_compliance.evidence.added";
+    public const string PrivacyComplianceRequirementExported =
+        "platform.privacy_compliance.requirement.exported";
 }

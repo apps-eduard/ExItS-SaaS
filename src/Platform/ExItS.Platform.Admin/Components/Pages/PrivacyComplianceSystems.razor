@@ -1,0 +1,76 @@
+@page "/admin/privacy-compliance/systems"
+@attribute [Authorize]
+@inject IPlatformApiClient Api
+@inject IStringLocalizer<AdminResources> L
+@inject PlatformPermissionState Permissions
+
+@if (!Permissions.Loaded)
+{
+    <LoadingState />
+}
+else if (!CanView)
+{
+    <UnauthorizedPanel RequiredPermission="@PlatformPermissionCodes.ViewPrivacyCompliance" />
+}
+else
+{
+    <AdminPageHeader Title="@L["PrivacyCompliance_SystemsTitle"]"
+                     Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_PrivacyCompliance"]} / {L["Nav_PrivacyComplianceSystems"]}")"
+                     Description="@L["PrivacyCompliance_SystemsDescription"]" />
+
+    <Alert Type="@AlertType.Warning"
+           ShowIcon="true"
+           Message="@L["PrivacyCompliance_DisclaimerTitle"]"
+           Description="@L["PrivacyCompliance_DisclaimerMessage"]"
+           Style="margin-bottom:16px;" />
+
+    @if (_systems is null)
+    {
+        <LoadingState />
+    }
+    else if (!_systems.IsSuccess)
+    {
+        <ErrorState Detail="@_systems.Error?.Detail" CorrelationId="@_systems.Error?.CorrelationId" Unavailable="@(_systems.Status == ApiCallStatus.Unavailable)" />
+    }
+    else if (_systems.Data!.Count == 0)
+    {
+        <Empty Description="@L["PrivacyCompliance_NoSystems"].Value" />
+    }
+    else
+    {
+        <Table TItem="ProcessingSystemDto"
+               DataSource="_systems.Data"
+               Bordered
+               Size="@TableSize.Small"
+               HidePagination
+               ScrollX="1400">
+            <Column TData="string" Title="@L["PrivacyCompliance_ColumnCode"]" DataIndex="Code">@context.Code</Column>
+            <Column TData="string" Title="@L["PrivacyCompliance_ColumnSystemName"]" DataIndex="SystemName">@context.SystemName</Column>
+            <Column TData="string" Title="@L["PrivacyCompliance_ColumnPurpose"]" DataIndex="Purpose">@context.Purpose</Column>
+            <Column TData="string" Title="@L["PrivacyCompliance_ColumnDataSubjects"]" DataIndex="DataSubjects">@context.DataSubjects</Column>
+            <Column TData="string" Title="@L["PrivacyCompliance_ColumnPersonalData"]" DataIndex="PersonalDataCategories">@context.PersonalDataCategories</Column>
+            <Column TData="string" Title="@L["PrivacyCompliance_ColumnStorage"]" DataIndex="StorageLocation">@context.StorageLocation</Column>
+            <Column TData="string" Title="@L["PrivacyCompliance_ColumnOwner"]" DataIndex="Owner">@context.Owner</Column>
+            <Column TData="string" Title="@L["PrivacyCompliance_ColumnPiaStatus"]">
+                <PrivacyComplianceStatusTag Value="@context.PiaStatus" />
+            </Column>
+        </Table>
+    }
+}
+
+@code {
+    private ApiCallResult<IReadOnlyList<ProcessingSystemDto>>? _systems;
+
+    private bool CanView => Permissions.HasPermission(PlatformPermissionCodes.ViewPrivacyCompliance);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Permissions.EnsureLoadedAsync();
+        if (!CanView)
+        {
+            return;
+        }
+
+        _systems = await Api.ListPrivacyComplianceSystemsAsync();
+    }
+}

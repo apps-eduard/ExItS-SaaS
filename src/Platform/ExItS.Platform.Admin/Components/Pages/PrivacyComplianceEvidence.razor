@@ -1,0 +1,225 @@
+@page "/admin/privacy-compliance/evidence"
+@attribute [Authorize]
+@inject IPlatformApiClient Api
+@inject IStringLocalizer<AdminResources> L
+@inject PlatformPermissionState Permissions
+@inject NavigationManager Nav
+
+@if (!Permissions.Loaded)
+{
+    <LoadingState />
+}
+else if (!CanView)
+{
+    <UnauthorizedPanel RequiredPermission="@PlatformPermissionCodes.ViewPrivacyCompliance" />
+}
+else
+{
+    <AdminPageHeader Title="@L["PrivacyCompliance_EvidenceTitle"]"
+                     Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_PrivacyCompliance"]} / {L["Nav_PrivacyComplianceEvidence"]}")"
+                     Description="@L["PrivacyCompliance_EvidenceDescription"]" />
+
+    <Alert Type="@AlertType.Warning"
+           ShowIcon="true"
+           Message="@L["PrivacyCompliance_DisclaimerTitle"]"
+           Description="@L["PrivacyCompliance_DisclaimerMessage"]"
+           Style="margin-bottom:16px;" />
+
+    <Space Style="margin-bottom:12px;" Wrap>
+        <Select TItemValue="string" TItem="string" @bind-Value="_requirementFilter" Style="width:320px;" AllowClear Placeholder="@L["PrivacyCompliance_FilterRequirement"]">
+            <SelectOptions>
+                <SelectOption TItemValue="string" TItem="string" Value="@("")" Label="@L["Common_All"]" />
+                @if (_requirements is not null)
+                {
+                    @foreach (var req in _requirements.OrderBy(r => r.Code, StringComparer.OrdinalIgnoreCase))
+                    {
+                        <SelectOption TItemValue="string" TItem="string" Value="@req.Id.ToString("D")" Label="@($"{req.Code} — {req.Title}")" />
+                    }
+                }
+            </SelectOptions>
+        </Select>
+        <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" OnClick="ApplyFilterAsync">@L["Common_Apply"]</Button>
+        <Button Size="@ButtonSize.Small" OnClick="ClearFilterAsync">@L["Common_Reset"]</Button>
+    </Space>
+
+    @if (_loading)
+    {
+        <LoadingState />
+    }
+    else if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <ErrorState Detail="@_error" />
+    }
+    else if (_rows.Count == 0)
+    {
+        <Empty Description="@L["PrivacyCompliance_NoEvidence"].Value" />
+    }
+    else
+    {
+        <Table TItem="PrivacyComplianceEvidenceRow"
+               DataSource="_rows"
+               Bordered
+               Size="@TableSize.Small"
+               HidePagination
+               ScrollX="1200">
+            <Column TData="string" Title="@L["PrivacyCompliance_ColumnRequirement"]">
+                @context.RequirementCode — @context.RequirementTitle
+            </Column>
+            <Column TData="string" Title="@L["PrivacyCompliance_ColumnEvidenceKind"]">
+                @EvidenceKindLabel(context.Evidence.Kind)
+            </Column>
+            <Column TData="string" Title="@L["Common_Name"]">
+                @context.Evidence.Label
+            </Column>
+            <Column TData="string" Title="@L["PrivacyCompliance_ColumnReference"]">
+                @context.Evidence.ReferencePath
+            </Column>
+            <Column TData="DateTimeOffset" Title="@L["Common_CreatedUtc"]">
+                <UtcTimestamp Value="@context.Evidence.CreatedAtUtc" />
+            </Column>
+        </Table>
+    }
+}
+
+@code {
+    [SupplyParameterFromQuery(Name = "requirementId")]
+    public Guid? RequirementQuery { get; set; }
+
+    private IReadOnlyList<ComplianceRequirementDto>? _requirements;
+    private readonly List<PrivacyComplianceEvidenceRow> _rows = [];
+    private string? _requirementFilter;
+    private bool _loading = true;
+    private string? _error;
+
+    private bool CanView => Permissions.HasPermission(PlatformPermissionCodes.ViewPrivacyCompliance);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Permissions.EnsureLoadedAsync();
+        if (!CanView)
+        {
+            return;
+        }
+
+        _requirementFilter = RequirementQuery?.ToString("D");
+        await LoadAsync();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!CanView)
+        {
+            return;
+        }
+
+        var next = RequirementQuery?.ToString("D");
+        if (!string.Equals(_requirementFilter, next, StringComparison.Ordinal))
+        {
+            _requirementFilter = next;
+            await LoadEvidenceAsync();
+        }
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+        try
+        {
+            var requirements = await Api.ListPrivacyComplianceRequirementsAsync();
+            if (!requirements.IsSuccess || requirements.Data is null)
+            {
+                _error = requirements.Error?.Detail ?? L["PrivacyCompliance_LoadFailed"].Value;
+                return;
+            }
+
+            _requirements = requirements.Data;
+            await LoadEvidenceAsync();
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task LoadEvidenceAsync()
+    {
+        if (_requirements is null)
+        {
+            return;
+        }
+
+        _rows.Clear();
+        _error = null;
+
+        var targets = string.IsNullOrWhiteSpace(_requirementFilter)
+            ? _requirements
+            : _requirements.Where(r => string.Equals(r.Id.ToString("D"), _requirementFilter, StringComparison.OrdinalIgnoreCase)).ToList();
+
+        foreach (var requirement in targets)
+        {
+            var evidence = await Api.ListPrivacyComplianceEvidenceAsync(requirement.Id);
+            if (!evidence.IsSuccess)
+            {
+                _error = evidence.Error?.Detail ?? L["PrivacyCompliance_LoadFailed"].Value;
+                return;
+            }
+
+            if (evidence.Data is null)
+            {
+                continue;
+            }
+
+            foreach (var item in evidence.Data)
+            {
+                _rows.Add(new PrivacyComplianceEvidenceRow(item, requirement.Code, requirement.Title));
+            }
+        }
+
+        _rows.Sort((a, b) => string.Compare(a.RequirementCode, b.RequirementCode, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private async Task ApplyFilterAsync()
+    {
+        var uri = string.IsNullOrWhiteSpace(_requirementFilter)
+            ? "/admin/privacy-compliance/evidence"
+            : $"/admin/privacy-compliance/evidence?requirementId={Uri.EscapeDataString(_requirementFilter)}";
+        Nav.NavigateTo(uri);
+        _loading = true;
+        try
+        {
+            await LoadEvidenceAsync();
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task ClearFilterAsync()
+    {
+        _requirementFilter = null;
+        Nav.NavigateTo("/admin/privacy-compliance/evidence");
+        _loading = true;
+        try
+        {
+            await LoadEvidenceAsync();
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private string EvidenceKindLabel(string kind) => kind switch
+    {
+        "PhaseDoc" => L["PrivacyCompliance_EvidenceKind_PhaseDoc"],
+        "ArchitectureDoc" => L["PrivacyCompliance_EvidenceKind_ArchitectureDoc"],
+        "Report" => L["PrivacyCompliance_EvidenceKind_Report"],
+        "Test" => L["PrivacyCompliance_EvidenceKind_Test"],
+        "SecurityControl" => L["PrivacyCompliance_EvidenceKind_SecurityControl"],
+        "Implementation" => L["PrivacyCompliance_EvidenceKind_Implementation"],
+        "Other" => L["PrivacyCompliance_EvidenceKind_Other"],
+        _ => kind
+    };
+}

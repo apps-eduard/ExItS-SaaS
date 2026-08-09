@@ -316,4 +316,15 @@ public interface IPlatformApiClient
         int pageSize = 100,
         CancellationToken ct = default);
     Task<ApiCallResult<byte[]>> DownloadCatalogImportTemplateAsync(CancellationToken ct = default);
+
+    Task<ApiCallResult<PrivacyComplianceOverviewDto>> GetPrivacyComplianceOverviewAsync(CancellationToken ct = default);
+    Task<ApiCallResult<IReadOnlyList<ComplianceRequirementDto>>> ListPrivacyComplianceRequirementsAsync(string? category = null, CancellationToken ct = default);
+    Task<ApiCallResult<ComplianceRequirementDto>> GetPrivacyComplianceRequirementAsync(Guid id, CancellationToken ct = default);
+    Task<ApiCallResult<ComplianceRequirementDto>> UpdatePrivacyComplianceRequirementStatusAsync(Guid id, UpdateComplianceRequirementStatusRequest request, CancellationToken ct = default);
+    Task<ApiCallResult<ComplianceRequirementDto>> UpdatePrivacyComplianceRequirementDetailsAsync(Guid id, UpdateComplianceRequirementDetailsRequest request, CancellationToken ct = default);
+    Task<ApiCallResult<IReadOnlyList<ComplianceEvidenceDto>>> ListPrivacyComplianceEvidenceAsync(Guid requirementId, CancellationToken ct = default);
+    Task<ApiCallResult<ComplianceEvidenceDto>> AddPrivacyComplianceEvidenceAsync(AddComplianceEvidenceRequest request, CancellationToken ct = default);
+    Task<ApiCallResult<IReadOnlyList<ProcessingSystemDto>>> ListPrivacyComplianceSystemsAsync(CancellationToken ct = default);
+    Task<ApiCallResult<EnsurePrivacyComplianceCatalogResultDto>> EnsurePrivacyComplianceCatalogAsync(CancellationToken ct = default);
+    Task<ApiCallResult<byte[]>> ExportPrivacyComplianceRequirementPdfAsync(Guid requirementId, string? companyName = null, CancellationToken ct = default);
 }
