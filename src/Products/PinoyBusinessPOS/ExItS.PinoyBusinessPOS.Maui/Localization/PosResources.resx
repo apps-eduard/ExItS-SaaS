@@ -347,7 +347,8 @@
   <data name="Auth_LogoutConfirmMessage" xml:space="preserve"><value>You'll be signed out of the cloud on this device. Offline PIN unlock stays available for limited use without internet.</value></data>
   <data name="Auth_ProductionUnavailable" xml:space="preserve"><value>Production authentication is not available in this build.</value></data>
   <data name="Auth_ProductionUnavailableTitle" xml:space="preserve"><value>Sign-in unavailable</value></data>
-  <data name="Auth_InvalidCredentials" xml:space="preserve"><value>The Platform user could not be signed in.</value></data>
+  <data name="Auth_InvalidCredentials" xml:space="preserve"><value>Incorrect username or password. Check your details and try again.</value></data>
+  <data name="SignIn_CredentialsRequired" xml:space="preserve"><value>Enter your username or email and password.</value></data>
   <data name="Auth_Offline" xml:space="preserve"><value>You appear to be offline. Sign-in requires connectivity.</value></data>
   <data name="Auth_Timeout" xml:space="preserve"><value>The sign-in request timed out.</value></data>
   <data name="Auth_ApiUnavailable" xml:space="preserve"><value>The Platform API is unavailable.</value></data>

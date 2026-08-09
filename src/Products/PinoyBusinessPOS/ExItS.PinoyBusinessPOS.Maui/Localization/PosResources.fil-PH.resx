@@ -347,7 +347,8 @@
   <data name="Auth_LogoutConfirmMessage" xml:space="preserve"><value>Magsi-sign out ka sa cloud sa device na ito. Mananatiling available ang offline PIN unlock para sa limited use kahit walang internet.</value></data>
   <data name="Auth_ProductionUnavailable" xml:space="preserve"><value>Hindi available ang production authentication sa build na ito.</value></data>
   <data name="Auth_ProductionUnavailableTitle" xml:space="preserve"><value>Hindi available ang sign-in</value></data>
-  <data name="Auth_InvalidCredentials" xml:space="preserve"><value>Hindi ma-sign in ang Platform user.</value></data>
+  <data name="Auth_InvalidCredentials" xml:space="preserve"><value>Mali ang username o password. Suriin ang detalye at subukan ulit.</value></data>
+  <data name="SignIn_CredentialsRequired" xml:space="preserve"><value>Ilagay ang username o email at password.</value></data>
   <data name="Auth_Offline" xml:space="preserve"><value>Offline ka. Kailangan ng connectivity para mag-sign in.</value></data>
   <data name="Auth_Timeout" xml:space="preserve"><value>Nag-timeout ang sign-in request.</value></data>
   <data name="Auth_ApiUnavailable" xml:space="preserve"><value>Hindi available ang Platform API.</value></data>

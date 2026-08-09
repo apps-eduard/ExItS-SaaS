@@ -111,6 +111,25 @@ public sealed class AuthOfflineUxLayerTests
     }
 
     [Fact]
+    public void SignIn_maps_credential_and_offline_failures_to_distinct_copy()
+    {
+        var signIn = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Pages", "SignIn.razor"));
+        var en = File.ReadAllText(Path.Combine(MauiProject(), "Localization", "PosResources.resx"));
+        var fil = File.ReadAllText(Path.Combine(MauiProject(), "Localization", "PosResources.fil-PH.resx"));
+
+        Assert.Contains("SignIn_CredentialsRequired", signIn, StringComparison.Ordinal);
+        Assert.Contains("Auth_InvalidCredentials", signIn, StringComparison.Ordinal);
+        Assert.Contains("AuthFailureReason.Offline", signIn, StringComparison.Ordinal);
+        Assert.Contains("SignIn_ServerUnreachablePinHint", signIn, StringComparison.Ordinal);
+
+        Assert.Contains("Incorrect username or password", en, StringComparison.Ordinal);
+        Assert.DoesNotContain("The Platform user could not be signed in.", en, StringComparison.Ordinal);
+        Assert.Contains("name=\"SignIn_CredentialsRequired\"", en, StringComparison.Ordinal);
+        Assert.Contains("name=\"SignIn_CredentialsRequired\"", fil, StringComparison.Ordinal);
+        Assert.Contains("Mali ang username o password", fil, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void SignIn_use_pin_and_provider_placeholders_are_wired()
     {
         var signIn = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Pages", "SignIn.razor"));
