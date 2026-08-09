@@ -113,6 +113,4 @@ Without PIN enrollment, cold-start cannot unlock the Personal grant — the app 
 | Commit | Summary |
 |---|---|
 | `f3d87be` | Personal offline sync recovery, contact-id remap, email uniqueness, PIN settings UX |
-| _(docs tip)_ | This report + portfolio / phase hash record |
-
-Feature commit hash recorded; docs tip filled after the documentation commit.
+| `4e09005` | This report + portfolio / phase hash record |
