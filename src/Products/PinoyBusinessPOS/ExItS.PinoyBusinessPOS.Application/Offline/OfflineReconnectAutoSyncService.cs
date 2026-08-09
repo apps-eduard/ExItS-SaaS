@@ -298,13 +298,21 @@ public sealed class OfflineReconnectAutoSyncService : IOfflineReconnectAutoSync
         }
 
         // Organization POS context → credit/sale outbox + incremental download.
-        if (!isPersonal && _currentUser.Session?.OrganizationId is not null)
+        // Skip when membership exists but POS operate access is not active (Org essentials).
+        if (!isPersonal
+            && _currentUser.Session?.OrganizationId is not null
+            && _currentUser.HasPosAccess)
         {
             await _customerCreditSync.ReconcileOnReconnectAsync(ct).ConfigureAwait(false);
         }
-        else if (!isPersonal && active?.Status == LocalContextInitStatus.Ready)
+        else if (!isPersonal && active?.Status == LocalContextInitStatus.Ready && _currentUser.HasPosAccess)
         {
             await _queueProcessor.ProcessAvailableAsync(ct).ConfigureAwait(false);
+        }
+        else if (!isPersonal && _currentUser.IsAuthenticated && !_currentUser.HasPosAccess)
+        {
+            // Online Org essentials: keep chip truthful (Online), never Reconnect.
+            _syncStatus.SetReconnectRequired(false);
         }
 
         _syncStatus.Refresh();

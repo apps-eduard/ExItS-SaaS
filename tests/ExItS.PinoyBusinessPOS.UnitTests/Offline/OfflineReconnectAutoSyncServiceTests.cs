@@ -82,6 +82,47 @@ public sealed class OfflineReconnectAutoSyncServiceTests
     }
 
     [Fact]
+    public async Task Organization_without_pos_access_clears_reconnect_and_skips_credit_reconcile()
+    {
+        var connectivity = new FakeConnectivity(online: true);
+        var personal = new FakePersonalSync();
+        var credit = new FakeCreditSync();
+        var sync = new FakeSyncStatus();
+        var current = new CurrentUserContext();
+        current.Set(new AuthSession(
+            Guid.NewGuid(), "Staff", "staff1", "staff1@ORG000001.exits.local",
+            Guid.NewGuid(), "Romel Store",
+            DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddHours(1),
+            HasPosAccess: false,
+            AccessReasonCode: "product_local_role_missing",
+            AccountClass: "Organization",
+            OrganizationContextLocked: true));
+
+        var service = new OfflineReconnectAutoSyncService(
+            connectivity,
+            current,
+            new FakeContextManager(),
+            new FakeQueue(),
+            personal,
+            credit,
+            new FakeQueueProcessor(),
+            sync,
+            timeProvider: null,
+            debounceDelay: Timeout.InfiniteTimeSpan,
+            startupCatchUpDelay: Timeout.InfiniteTimeSpan);
+
+        await using var _ = new Harness(service);
+        sync.SetReconnectRequired(true);
+
+        await service.TrySyncNowAsync();
+
+        Assert.Equal(0, credit.Calls);
+        Assert.Equal(0, personal.Calls);
+        Assert.False(sync.ReconnectRequired);
+        Assert.Equal(PosSyncStatusKind.Online, sync.Current.Kind);
+    }
+
+    [Fact]
     public async Task Unauthenticated_skips_sync()
     {
         var connectivity = new FakeConnectivity(online: true);
@@ -305,11 +346,14 @@ public sealed class OfflineReconnectAutoSyncServiceTests
     private sealed class FakeSyncStatus : IPosSyncStatusService
     {
         public PosSyncStatusSnapshot Current { get; private set; } = new(PosSyncStatusKind.Offline);
+        public bool ReconnectRequired { get; private set; }
         public event Func<Task>? Changed;
         public Task InitializeAsync(CancellationToken ct = default) => Task.CompletedTask;
-        public void SetReconnectRequired(bool required) { }
+        public void SetReconnectRequired(bool required) => ReconnectRequired = required;
         public void SetRecoveryRequired(bool required) { }
-        public void Refresh() => Current = new PosSyncStatusSnapshot(PosSyncStatusKind.Online);
+        public void Refresh() =>
+            Current = new PosSyncStatusSnapshot(
+                ReconnectRequired ? PosSyncStatusKind.ReconnectRequired : PosSyncStatusKind.Online);
     }
 
     private sealed class FakeContextManager : ILocalContextManager

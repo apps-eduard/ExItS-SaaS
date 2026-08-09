@@ -63,9 +63,17 @@ public sealed class OfflineQueueProcessor(
                 blocked++;
             }
 
-            syncStatus.SetReconnectRequired(true);
+            // Only connectivity / shell-verify failures are Reconnect. Missing POS role
+            // (access_denied) must not flip the header while the device is online.
+            var needsReconnect = string.Equals(access.ReasonCode, "reconnect_required", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(access.ReasonCode, "offline", StringComparison.OrdinalIgnoreCase);
+            syncStatus.SetReconnectRequired(needsReconnect);
             syncStatus.Refresh();
-            return new OfflineProcessBatchResult(blocked, 0, blocked, "SyncStatus_Reconnect");
+            return new OfflineProcessBatchResult(
+                blocked,
+                0,
+                blocked,
+                needsReconnect ? "SyncStatus_Reconnect" : "SyncStatus_Offline");
         }
 
         // Access restored: return previously blocked work to Pending (never discard).

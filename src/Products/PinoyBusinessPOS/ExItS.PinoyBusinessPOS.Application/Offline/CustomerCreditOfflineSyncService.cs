@@ -62,9 +62,20 @@ public sealed class CustomerCreditOfflineSyncService(
     {
         var access = accessPolicy;
         await access.InitializeAsync(ct).ConfigureAwait(false);
-        if (!access.CanEnterProtectedShell)
+
+        // Reconnect chip = need network to verify operate access — not "no POS role yet".
+        // Invited staff / owners on Org essentials are online with membership but without
+        // HasPosAccess; that must not paint the header as Reconnect.
+        if (access.RequiresReconnectToVerifyAccess)
         {
             syncStatus.SetReconnectRequired(true);
+            syncStatus.Refresh();
+            return;
+        }
+
+        if (!access.CanEnterProtectedShell)
+        {
+            syncStatus.SetReconnectRequired(false);
             syncStatus.Refresh();
             return;
         }
