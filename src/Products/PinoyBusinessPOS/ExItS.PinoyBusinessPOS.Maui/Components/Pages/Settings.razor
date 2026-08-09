@@ -227,17 +227,27 @@
         Status.Changed += OnChangedAsync;
         if (!Gate.CanEnterProtectedShell)
         {
-            // Personal sessions use AuthShell settings, not the POS protected shell.
+            // Personal sessions use Personal settings, not the POS protected shell.
             if (CurrentUser.IsAuthenticated && CurrentUser.Session?.OrganizationId is null)
             {
                 Nav.NavigateTo("/personal/settings", replace: true);
                 return;
             }
 
-            var route = await Gate.ResolveStartRouteAsync();
-            if (!string.Equals(route, "/settings", StringComparison.OrdinalIgnoreCase))
+            // Org membership without POS operate access (Org essentials): allow appearance /
+            // session settings — do not bounce back to /org.
+            if (CurrentUser.IsAuthenticated && CurrentUser.Session?.OrganizationId is not null)
             {
-                Nav.NavigateTo(route, replace: true);
+                // Stay on /settings.
+            }
+            else
+            {
+                var route = await Gate.ResolveStartRouteAsync();
+                if (!string.Equals(route, "/settings", StringComparison.OrdinalIgnoreCase))
+                {
+                    Nav.NavigateTo(route, replace: true);
+                    return;
+                }
             }
         }
 

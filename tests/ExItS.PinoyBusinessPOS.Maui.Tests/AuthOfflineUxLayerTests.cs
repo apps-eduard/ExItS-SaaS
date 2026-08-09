@@ -155,6 +155,19 @@ public sealed class AuthOfflineUxLayerTests
         Assert.Contains("Auth_Lock", menu, StringComparison.Ordinal);
         Assert.Contains("LockAsync", menu, StringComparison.Ordinal);
         Assert.Contains("LogoutAsync", menu, StringComparison.Ordinal);
+        // Lock is POS-operate only — Org essentials (no POS) must not offer Lock.
+        Assert.Contains("CurrentUser.HasPosAccess", menu, StringComparison.Ordinal);
+        var showLock = menu.IndexOf("private bool ShowLock", StringComparison.Ordinal);
+        var hasPos = menu.IndexOf("CurrentUser.HasPosAccess", showLock, StringComparison.Ordinal);
+        Assert.InRange(hasPos, showLock, showLock + 400);
+
+        var settings = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Pages", "Settings.razor"));
+        // Org essentials members must keep Settings (appearance) without bouncing to /org.
+        Assert.Contains("OrganizationId is not null", settings, StringComparison.Ordinal);
+        var gate = settings.IndexOf("if (!Gate.CanEnterProtectedShell)", StringComparison.Ordinal);
+        var orgStay = settings.IndexOf("OrganizationId is not null", gate, StringComparison.Ordinal);
+        var bounce = settings.IndexOf("ResolveStartRouteAsync", gate, StringComparison.Ordinal);
+        Assert.InRange(orgStay, gate, bounce);
     }
 
     [Fact]

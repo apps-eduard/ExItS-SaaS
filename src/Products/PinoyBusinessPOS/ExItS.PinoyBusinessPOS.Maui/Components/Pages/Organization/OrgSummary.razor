@@ -35,6 +35,15 @@ else
                 <Alert Tone="AlertTone.Danger" Title="@L["Org_ErrorTitle"]" Message="@_error" />
             }
 
+            @if (!CurrentUser.HasPosAccess && !_isOrganizationOwner)
+            {
+                <div class="pos-org__awaiting" role="status">
+                    <Alert Tone="AlertTone.Warning"
+                           Title="@L["Org_MemberAwaitingRoleTitle"]"
+                           Message="@L["Org_MemberAwaitingRoleMessage"]" />
+                </div>
+            }
+
             <section class="pos-org__summary" aria-labelledby="org-access-heading">
                 <h2 id="org-access-heading" class="pos-org__section-title">@L["Org_AccessSection"]</h2>
                 <dl class="pos-org__status-list">
@@ -105,11 +114,9 @@ else
                         @L["Org_EnablePos"]
                     </Button>
                 }
-                else
+                else if (!string.IsNullOrWhiteSpace(_posAccessHint))
                 {
-                    <p class="pos-org__pos-blocked pos-muted" role="status">
-                        @(_posAccessHint ?? L["Org_PosAccessNo"].Value)
-                    </p>
+                    <p class="pos-org__pos-blocked pos-muted" role="status">@_posAccessHint</p>
                 }
             </div>
 
@@ -152,6 +159,7 @@ else
 <style>
     .pos-org { width: 100%; }
     .pos-org__header { margin-bottom: var(--exits-space-3, 0.75rem); }
+    .pos-org__awaiting { margin-bottom: var(--exits-space-3, 0.75rem); }
     .pos-org__title {
         margin: 0; font-size: 1.25rem; font-weight: 700; line-height: 1.25;
         color: var(--exits-text, #15201a);

@@ -39,6 +39,15 @@ public sealed class OrgSummaryUiGuardTests
         Assert.DoesNotContain("Personal_MyQrLink", page, StringComparison.Ordinal);
         Assert.DoesNotContain("/personal/my-qr", page, StringComparison.Ordinal);
         Assert.DoesNotContain("GoMyQr", page, StringComparison.Ordinal);
+
+        // Non-owner members without POS get a clear awaiting-role callout.
+        Assert.Contains("Org_MemberAwaitingRoleTitle", page, StringComparison.Ordinal);
+        Assert.Contains("Org_MemberAwaitingRoleMessage", page, StringComparison.Ordinal);
+        Assert.Contains("AlertTone.Warning", page, StringComparison.Ordinal);
+        Assert.Contains("name=\"Org_MemberAwaitingRoleTitle\"", en, StringComparison.Ordinal);
+        Assert.Contains("name=\"Org_MemberAwaitingRoleMessage\"", en, StringComparison.Ordinal);
+        Assert.Contains("name=\"Org_MemberAwaitingRoleTitle\"", fil, StringComparison.Ordinal);
+        Assert.Contains("name=\"Org_MemberAwaitingRoleMessage\"", fil, StringComparison.Ordinal);
         Assert.Contains("pos-org__footnote", page, StringComparison.Ordinal);
         Assert.Contains("_isOrganizationOwner", page, StringComparison.Ordinal);
         Assert.Contains("ListEligibleOrganizationsAsync", page, StringComparison.Ordinal);

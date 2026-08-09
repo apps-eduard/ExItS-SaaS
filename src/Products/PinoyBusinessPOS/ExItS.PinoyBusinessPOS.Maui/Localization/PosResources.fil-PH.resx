@@ -2024,6 +2024,8 @@
   <data name="Org_EnablePos" xml:space="preserve"><value>I-enable ang POS access</value></data>
   <data name="Org_OverviewLink" xml:space="preserve"><value>Buod ng organization</value></data>
   <data name="Org_PosRoleRequired" xml:space="preserve"><value>Aktibo ang POS access, ngunit wala pang nakatalagang POS role. Magtalaga ng POS role para makabukas ng dashboard.</value></data>
+  <data name="Org_MemberAwaitingRoleTitle" xml:space="preserve"><value>Miyembro ka na ng organisasyong ito</value></data>
+  <data name="Org_MemberAwaitingRoleMessage" xml:space="preserve"><value>Wala pang nakatalagang POS role, kaya hindi mo pa mabubuksan ang POS. Makipag-ugnayan sa organization owner para ma-assign ang role mo.</value></data>
   <data name="Org_WebAdminReminder" xml:space="preserve"><value>For full organization administration, use the Web application.</value></data>
   <data name="Org_LoadFailed" xml:space="preserve"><value>Could not load organization details.</value></data>
   <data name="Org_ProfileTitle" xml:space="preserve"><value>Organization profile</value></data>

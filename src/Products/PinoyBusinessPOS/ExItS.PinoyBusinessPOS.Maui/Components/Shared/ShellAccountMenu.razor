@@ -118,10 +118,12 @@
 
     /// <summary>
     /// Lock keeps the offline operate grant and returns to PIN unlock. Sign out clears grant trust.
+    /// Only for active POS operate sessions — Org essentials (membership without POS) must not show Lock.
     /// </summary>
     private bool ShowLock =>
         ShowSignOut
         && !IsPersonalSession
+        && CurrentUser.HasPosAccess
         && _canLock
         && CurrentUser.IsAuthenticated;
 

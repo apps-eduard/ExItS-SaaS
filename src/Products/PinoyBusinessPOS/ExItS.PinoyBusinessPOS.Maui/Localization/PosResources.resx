@@ -2024,6 +2024,8 @@
   <data name="Org_EnablePos" xml:space="preserve"><value>Enable POS access</value></data>
   <data name="Org_OverviewLink" xml:space="preserve"><value>Organization overview</value></data>
   <data name="Org_PosRoleRequired" xml:space="preserve"><value>POS access is active, but no POS role is assigned yet. Assign a POS role to open a dashboard.</value></data>
+  <data name="Org_MemberAwaitingRoleTitle" xml:space="preserve"><value>You are a member of this organization</value></data>
+  <data name="Org_MemberAwaitingRoleMessage" xml:space="preserve"><value>No POS role is assigned yet, so you cannot open POS features. Please contact the organization owner to assign your role.</value></data>
   <data name="Org_WebAdminReminder" xml:space="preserve"><value>For full organization administration, use the Web application.</value></data>
   <data name="Org_LoadFailed" xml:space="preserve"><value>Could not load organization details.</value></data>
   <data name="Org_ProfileTitle" xml:space="preserve"><value>Organization profile</value></data>
