@@ -321,7 +321,9 @@ public sealed class OfflineAccessRevalidator(
     private static bool IsPersonalSession(Auth.AuthSession? session) =>
         session is not null
         && session.OrganizationId is null
-        && string.Equals(session.AccountClass, "Personal", StringComparison.OrdinalIgnoreCase);
+        && !session.HasPosAccess
+        && (string.IsNullOrWhiteSpace(session.AccountClass)
+            || string.Equals(session.AccountClass, "Personal", StringComparison.OrdinalIgnoreCase));
 
     private static bool TryMapCapability(string operationType, out UtangCapability capability)
     {

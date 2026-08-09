@@ -106,6 +106,15 @@ public static class PersistenceExceptionMapper
             return true;
         }
 
+        if (detail.Contains("ux_personal_contacts_owner_active_email", StringComparison.OrdinalIgnoreCase)
+            || (detail.Contains("personal_contacts", StringComparison.OrdinalIgnoreCase)
+                && detail.Contains("email", StringComparison.OrdinalIgnoreCase)))
+        {
+            errorCode = ApplicationErrorCodes.PersonalContactEmailConflict;
+            message = "An active personal contact with this email already exists.";
+            return true;
+        }
+
         if (detail.Contains("ux_platform_role_assignments", StringComparison.OrdinalIgnoreCase)
             || detail.Contains("platform_role_assignments", StringComparison.OrdinalIgnoreCase))
         {

@@ -95,8 +95,9 @@ public sealed class OfflineOperatingGrantService(
 
     public async Task ClearAsync(CancellationToken ct = default)
     {
-        // Drop the operate grant on logout / explicit server denial. Keep the PIN verifier so the
-        // same device user can reuse their PIN after the next online establish.
+        // Hard clear (server denial / inactive user / remove-from-device). Sign out does NOT call
+        // this — it only LockThisProcess so offline PIN unlock remains available. PIN verifier is
+        // retained for reuse after the next online establish when the grant is cleared.
         await store.ClearGrantAsync(ct).ConfigureAwait(false);
         IsUnlockedThisProcess = false;
         ActiveUnlockedGrant = null;

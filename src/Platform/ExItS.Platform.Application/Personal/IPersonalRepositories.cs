@@ -21,6 +21,14 @@ public interface IPersonalContactRepository
         PlatformUserId ownerUserIdentityId,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Active contact for this owner with the given already-normalized email, or null.
+    /// </summary>
+    Task<PersonalContact?> FindActiveByOwnerAndNormalizedEmailAsync(
+        PlatformUserId ownerUserIdentityId,
+        string normalizedEmail,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(PersonalContact contact, CancellationToken cancellationToken = default);
 
     Task UpdateAsync(PersonalContact contact, CancellationToken cancellationToken = default);

@@ -158,7 +158,8 @@ public sealed class PersonalContact
         return trimmed;
     }
 
-    private static string? NormalizeOptionalEmail(string? email)
+    /// <summary>Trims and uppercases email for storage/lookup; null when blank.</summary>
+    public static string? NormalizeOptionalEmail(string? email)
     {
         if (string.IsNullOrWhiteSpace(email))
         {

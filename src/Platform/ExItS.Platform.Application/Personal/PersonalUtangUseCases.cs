@@ -164,6 +164,23 @@ public sealed class CreatePersonalContact
                 request.Phone,
                 request.Email,
                 _clock.UtcNow);
+
+            if (contact.Email is not null)
+            {
+                var existing = await _contacts
+                    .FindActiveByOwnerAndNormalizedEmailAsync(
+                        ownerUserIdentityId,
+                        contact.Email,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+                if (existing is not null)
+                {
+                    return ApplicationResult<PersonalContactDto>.Failure(
+                        ApplicationErrorCodes.PersonalContactEmailConflict,
+                        "An active personal contact with this email already exists.");
+                }
+            }
+
             await _contacts.AddAsync(contact, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
@@ -178,6 +195,10 @@ public sealed class CreatePersonalContact
                 cancellationToken: cancellationToken).ConfigureAwait(false);
 
             return ApplicationResult<PersonalContactDto>.Success(ToDto(contact));
+        }
+        catch (PersistenceConflictException ex)
+        {
+            return ApplicationResult<PersonalContactDto>.Failure(ex.ErrorCode, ex.Message);
         }
         catch (DomainException ex)
         {

@@ -1,4 +1,5 @@
 @page "/personal/resolve-user"
+@layout Layout.PersonalShell
 @using ExItS.DesignSystem.Components.Internal
 @inject IAuthenticationService Auth
 @inject ICurrentUserContext CurrentUser
@@ -63,7 +64,7 @@
                     <span class="pos-action-tile__label">@L["Personal_PickQrImage"]</span>
                 </button>
                 <button type="button"
-                        class="pos-action-tile pos-action-tile--primary"
+                        class="pos-action-tile"
                         disabled="@_busy"
                         @onclick="ResolveAsync">
                     <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("search")</span>

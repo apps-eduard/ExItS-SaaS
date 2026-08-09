@@ -178,7 +178,9 @@ public sealed class PosOfflineCapabilityPolicyTests
         Assert.Contains("SyncStatus_RetryConnection", dialog, StringComparison.Ordinal);
         Assert.DoesNotContain("/reconnect", dialog, StringComparison.Ordinal);
         Assert.Contains("IPosOfflineCapabilityPolicy", mauiProgram, StringComparison.Ordinal);
-        Assert.Contains("OfflineAwareNavigation", mauiProgram, StringComparison.Ordinal);
+        Assert.Contains("AddScoped<OfflineAwareNavigation>", mauiProgram, StringComparison.Ordinal);
+        Assert.Contains("IOfflineReconnectAutoSync", mauiProgram, StringComparison.Ordinal);
+        Assert.Contains("OfflineReconnectAutoSyncService", mauiProgram, StringComparison.Ordinal);
     }
 
     [Fact]

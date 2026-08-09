@@ -6,6 +6,7 @@ namespace ExItS.PinoyBusinessPOS.Maui.Services;
 /// <summary>
 /// Navigates only when the destination is allowed offline, otherwise shows the shared Internet-required dialog.
 /// Never clears session/org and never redirects to /reconnect for ordinary OnlineRequired features.
+/// Must be scoped so it uses the BlazorWebView <see cref="NavigationManager"/> instance.
 /// </summary>
 public sealed class OfflineAwareNavigation(
     NavigationManager navigation,
@@ -16,7 +17,7 @@ public sealed class OfflineAwareNavigation(
     {
         var path = PosOfflineCapabilityPolicy.Normalize(ToRelativePath(uri));
         if (policy.RequiresOnlineForRoute(path)
-            && !await onlineRequired.EnsureOnlineForRouteAsync(path, ct).ConfigureAwait(false))
+            && !await onlineRequired.EnsureOnlineForRouteAsync(path, ct))
         {
             return;
         }
@@ -42,9 +43,7 @@ public sealed class OfflineAwareNavigation(
         bool replace = false,
         CancellationToken ct = default)
     {
-        if (!await onlineRequired
-                .EnsureOnlineForActionAsync(actionKey, currentOrganizationDisplayName, ct)
-                .ConfigureAwait(false))
+        if (!await onlineRequired.EnsureOnlineForActionAsync(actionKey, currentOrganizationDisplayName, ct))
         {
             return;
         }

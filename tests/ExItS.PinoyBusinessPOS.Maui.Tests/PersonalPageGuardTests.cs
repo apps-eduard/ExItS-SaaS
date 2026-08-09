@@ -20,6 +20,7 @@ public sealed class PersonalPageGuardTests
         Assert.Contains("OfflineAwareNavigation", shell, StringComparison.Ordinal);
         Assert.Contains("OfflineNav.NavigateAsync", shell, StringComparison.Ordinal);
         Assert.Contains("replace: true", shell, StringComparison.Ordinal);
+        Assert.Contains("CloseOverlays", shell, StringComparison.Ordinal);
         Assert.DoesNotContain("/sales", shell, StringComparison.Ordinal);
         Assert.DoesNotContain("/catalog", shell, StringComparison.Ordinal);
         Assert.DoesNotContain("/catalog/global", shell, StringComparison.Ordinal);
@@ -47,8 +48,9 @@ public sealed class PersonalPageGuardTests
         Assert.Contains("pos-personal-row", home, StringComparison.Ordinal);
         Assert.Contains("EnsurePersonalAccountProfileAsync", home, StringComparison.Ordinal);
         Assert.Contains("Personal_DashboardSection", home, StringComparison.Ordinal);
+        Assert.Contains("Personal_HomeTitle", home, StringComparison.Ordinal);
+        Assert.Contains("pos-personal-home__header", home, StringComparison.Ordinal);
         Assert.DoesNotContain("PageHeader", home, StringComparison.Ordinal);
-        Assert.DoesNotContain("Personal_HomeTitle", home, StringComparison.Ordinal);
 
         Assert.DoesNotContain("Personal_Nav_People", home, StringComparison.Ordinal);
         Assert.DoesNotContain("Personal_Nav_Lent", home, StringComparison.Ordinal);
@@ -111,6 +113,7 @@ public sealed class PersonalPageGuardTests
 
         var resolve = File.ReadAllText(Path.Combine(personal, "PublicUserResolve.razor"));
         Assert.Contains("@page \"/personal/resolve-user\"", resolve, StringComparison.Ordinal);
+        Assert.Contains("@layout Layout.PersonalShell", resolve, StringComparison.Ordinal);
         Assert.Contains("ResolvePublicUserIdAsync", resolve, StringComparison.Ordinal);
         Assert.Contains("pos-personal-resolve__header", resolve, StringComparison.Ordinal);
         Assert.Contains("pos-resolve-actions", resolve, StringComparison.Ordinal);
@@ -217,6 +220,8 @@ public sealed class PersonalPageGuardTests
         var settings = File.ReadAllText(Path.Combine(PersonalPagesDirectory(), "PersonalSettings.razor"));
         Assert.Contains("AccountContextSwitcher", settings, StringComparison.Ordinal);
         Assert.Contains("Settings_SwitchOrganization", settings, StringComparison.Ordinal);
+        Assert.Contains("Offline_PinSetupTitle", settings, StringComparison.Ordinal);
+        Assert.Contains("/offline-pin-setup?mode=", settings, StringComparison.Ordinal);
         Assert.Contains("pos-settings", settings, StringComparison.Ordinal);
         Assert.Contains("pos-settings__panel", settings, StringComparison.Ordinal);
         Assert.Contains("pos-personal-settings__header", settings, StringComparison.Ordinal);
@@ -248,6 +253,8 @@ public sealed class PersonalPageGuardTests
         Assert.Contains("@page \"/personal/utang/people\"", people, StringComparison.Ordinal);
         Assert.Contains("ILocalPersonalUtangStore", people, StringComparison.Ordinal);
         Assert.Contains("PersistContactAndEnqueueAsync", people, StringComparison.Ordinal);
+        Assert.Contains("Personal_PeopleEmailConflict", people, StringComparison.Ordinal);
+        Assert.Contains("LocalPersonalStoreErrors.EmailConflict", people, StringComparison.Ordinal);
         Assert.Contains("pos-personal-people__header", people, StringComparison.Ordinal);
         Assert.DoesNotContain("PageHeader", people, StringComparison.Ordinal);
 
@@ -292,7 +299,8 @@ public sealed class PersonalPageGuardTests
                      "PersonalHome.razor", "PersonalMore.razor", "PersonalPeople.razor", "PersonalLent.razor",
                      "PersonalBorrowed.razor", "PersonalRelationshipDetail.razor", "PersonalUtangInvitations.razor",
                      "PersonalProfile.razor", "PersonalSettings.razor", "PersonalExplorePos.razor",
-                     "PersonalPeopleDetail.razor", "PersonalMyQr.razor"
+                     "PersonalPeopleDetail.razor", "PersonalMyQr.razor", "PublicUserResolve.razor",
+                     "PersonalSupportDiagnosticsPage.razor"
                  })
         {
             var text = File.ReadAllText(Path.Combine(PersonalPagesDirectory(), name));
@@ -316,6 +324,8 @@ public sealed class PersonalPageGuardTests
 
         var peopleDetail = File.ReadAllText(Path.Combine(PersonalPagesDirectory(), "PersonalPeopleDetail.razor"));
         Assert.Contains("pos-personal-people-detail__header", peopleDetail, StringComparison.Ordinal);
+        Assert.Contains("ILocalPersonalUtangStore", peopleDetail, StringComparison.Ordinal);
+        Assert.Contains("GetContactAsync", peopleDetail, StringComparison.Ordinal);
         Assert.DoesNotContain("PageHeader", peopleDetail, StringComparison.Ordinal);
 
         foreach (var name in new[]
@@ -371,6 +381,8 @@ public sealed class PersonalPageGuardTests
         Assert.Contains("OrganizationId is null", gate, StringComparison.Ordinal);
         Assert.Contains("RoleHomeResolver.PersonalHome", gate, StringComparison.Ordinal);
         Assert.Contains("RestoreSessionAsync", gate, StringComparison.Ordinal);
+        Assert.Contains("EnsurePersonalAccountProfileAsync", gate, StringComparison.Ordinal);
+        Assert.Contains("/offline-pin-setup", gate, StringComparison.Ordinal);
 
         var policy = File.ReadAllText(Path.Combine(
             FindRepoRoot(),

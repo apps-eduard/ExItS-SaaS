@@ -28,12 +28,13 @@ public static class SecureTokenKeys
     public const string LocalPayloadEncryptionKey = "pos.local.payload.key";
 
     /// <summary>
-    /// Offline operate grant (no tokens/passwords). Cleared on logout; replaced on online bind.
+    /// Offline operate grant (no tokens/passwords). Kept across Sign out for PIN unlock;
+    /// cleared on hard revoke (server denial) / remove-from-device; replaced on online bind.
     /// </summary>
     public const string OfflineOperatingGrant = "pos.offline.operatingGrant";
 
     /// <summary>
-    /// Salted PIN verifier for unlocking an existing offline grant. Cleared on logout.
+    /// Salted PIN verifier for unlocking an existing offline grant. Survives Sign out.
     /// </summary>
     public const string OfflinePinVerifier = "pos.offline.pinVerifier";
 }

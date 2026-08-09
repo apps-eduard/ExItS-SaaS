@@ -53,41 +53,64 @@
                                 role="listitem"
                                 @onclick="() => GoDetail(item.Id)">
                             <span class="pos-personal-row__body">
-                                <span class="pos-personal-row__title">@item.Outstanding.ToString("N2") @item.Currency</span>
-                                <span class="pos-personal-row__meta">@item.SyncStatus · @item.UpdatedAtUtc.LocalDateTime.ToString("g")</span>
+                                <span class="pos-personal-row__title">@ContactName(item.ContactId)</span>
+                                <span class="pos-personal-row__meta">
+                                    @item.UpdatedAtUtc.LocalDateTime.ToString("g")
+                                    @if (IsPending(item.SyncStatus))
+                                    {
+                                        <span class="pos-personal-row__chip">@L["SyncStatus_PendingCountLabel"]</span>
+                                    }
+                                </span>
                             </span>
+                            <span class="pos-personal-row__amount">@item.Outstanding.ToString("N2") <span class="pos-personal-row__currency">@item.Currency</span></span>
                             <span class="pos-personal-row__chevron" aria-hidden="true">›</span>
                         </button>
                     }
                 </div>
             }
 
-            <Section Title="@L["Personal_BorrowedCreateTitle"]">
-                <div class="pos-settings__panel">
-                    <InlineMessage Tone="InlineMessageTone.Info">@L["Personal_LentAddPersonHint"]</InlineMessage>
-                    <div class="pos-action-grid pos-action-grid--single pos-personal-utang__actions" role="group">
-                        <button type="button" class="pos-action-tile" disabled="@_busy" @onclick="GoResolveExItsId">
-                            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("qr")</span>
-                            <span class="pos-action-tile__label">@L["Personal_AddByExItsId"]</span>
-                        </button>
-                    </div>
-                    <FormValidationSummary Messages="_errors" />
-                    <Stack Gap="2">
-                        <Select Label="@L["Personal_ContactLabel"]" Value="@_contactId" ValueChanged="OnContactChanged" Options="_contactOptions" Disabled="_busy" />
-                        <TextInput Label="@L["Personal_InitialAmount"]" @bind-Value="_amount" Disabled="_busy" />
-                        <TextInput Label="@L["Personal_NotesLabel"]" @bind-Value="_notes" Disabled="_busy" />
-                    </Stack>
-                    <div class="pos-action-grid pos-action-grid--single pos-personal-utang__actions" role="group">
-                        <button type="button"
-                                class="pos-action-tile pos-action-tile--primary"
-                                disabled="@(_busy || string.IsNullOrWhiteSpace(_contactId))"
-                                @onclick="CreateAsync">
-                            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("plus")</span>
-                            <span class="pos-action-tile__label">@L["Personal_BorrowedCreate"]</span>
-                        </button>
-                    </div>
+            @if (_items.Count > 0)
+            {
+                <div class="pos-personal-create-toggle">
+                    <button type="button"
+                            class="pos-action-tile @(_showCreate ? null : "pos-action-tile--primary")"
+                            disabled="@_busy"
+                            @onclick="ToggleCreate">
+                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get(_showCreate ? "close" : "plus")</span>
+                        <span class="pos-action-tile__label">@(_showCreate ? L["Common_Cancel"] : L["Personal_BorrowedCreate"])</span>
+                    </button>
                 </div>
-            </Section>
+            }
+
+            @if (_showCreate)
+            {
+                <Section Title="@L["Personal_BorrowedCreateTitle"]">
+                    <div class="pos-settings__panel">
+                        <InlineMessage Tone="InlineMessageTone.Info">@L["Personal_LentAddPersonHint"]</InlineMessage>
+                        <div class="pos-action-grid pos-action-grid--single pos-personal-utang__actions" role="group">
+                            <button type="button" class="pos-action-tile" disabled="@_busy" @onclick="GoResolveExItsId">
+                                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("qr")</span>
+                                <span class="pos-action-tile__label">@L["Personal_AddByExItsId"]</span>
+                            </button>
+                        </div>
+                        <FormValidationSummary Messages="_errors" />
+                        <Stack Gap="2">
+                            <Select Label="@L["Personal_ContactLabel"]" Value="@_contactId" ValueChanged="OnContactChanged" Options="_contactOptions" Disabled="_busy" />
+                            <TextInput Label="@L["Personal_InitialAmount"]" @bind-Value="_amount" Disabled="_busy" />
+                            <TextInput Label="@L["Personal_NotesLabel"]" @bind-Value="_notes" Disabled="_busy" />
+                        </Stack>
+                        <div class="pos-action-grid pos-action-grid--single pos-personal-utang__actions" role="group">
+                            <button type="button"
+                                    class="pos-action-tile pos-action-tile--primary"
+                                    disabled="@(_busy || string.IsNullOrWhiteSpace(_contactId))"
+                                    @onclick="CreateAsync">
+                                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("plus")</span>
+                                <span class="pos-action-tile__label">@L["Personal_BorrowedCreate"]</span>
+                            </button>
+                        </div>
+                    </div>
+                </Section>
+            }
         }
     </Page>
 </div>
@@ -97,6 +120,7 @@
     private bool _authenticated;
     private bool _loadFailed;
     private bool _busy;
+    private bool _showCreate;
     private string? _error;
     private string? _contactId;
     private string? _amount;
@@ -104,6 +128,7 @@
     private List<string> _errors = [];
     private IReadOnlyList<LocalPersonalRelationship> _items = [];
     private IReadOnlyList<SelectOption> _contactOptions = [];
+    private Dictionary<Guid, string> _contactNames = new();
     private Guid? _userId;
     private int _pendingSync;
 
@@ -164,9 +189,11 @@
             }
 
             var contacts = await LocalStore.ListContactsAsync();
+            _contactNames = contacts.ToDictionary(c => c.Id, c => c.DisplayName);
             _contactOptions = contacts.Select(c => new SelectOption(c.Id.ToString("D"), c.DisplayName)).ToArray();
             _items = await LocalStore.ListRelationshipsAsync(LocalPersonalDirection.Borrowed);
             _pendingSync = await PersonalSync.GetPendingCountAsync();
+            _showCreate = _items.Count == 0 || !string.IsNullOrWhiteSpace(_contactId);
         }
         catch
         {
@@ -178,6 +205,16 @@
             _loading = false;
         }
     }
+
+    private string ContactName(Guid contactId) =>
+        _contactNames.TryGetValue(contactId, out var name) && !string.IsNullOrWhiteSpace(name)
+            ? name
+            : L["Personal_UnknownContact"];
+
+    private static bool IsPending(string? syncStatus) =>
+        string.Equals(syncStatus, LocalPersonalSyncStatus.Pending, StringComparison.OrdinalIgnoreCase);
+
+    private void ToggleCreate() => _showCreate = !_showCreate;
 
     private async Task HydrateBorrowedFromServerAsync()
     {

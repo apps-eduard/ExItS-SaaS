@@ -12,6 +12,11 @@
 
 <div class="pos-personal-home">
     <Page>
+        <header class="pos-personal-home__header">
+            <h1 class="pos-personal-home__title">@L["Personal_HomeTitle"]</h1>
+            <p class="pos-personal-home__subtitle">@L["Personal_HomeSubtitle"]</p>
+        </header>
+
         @if (_loading)
         {
             <Spinner />
@@ -41,22 +46,22 @@
                 else
                 {
                     <div class="pos-personal-stats" role="list">
-                        <div class="pos-personal-stat" role="listitem">
+                        <button type="button" class="pos-personal-stat pos-personal-stat--link" role="listitem" @onclick="GoPeople">
                             <span class="pos-personal-stat__label">@L["Personal_Stat_People"]</span>
                             <span class="pos-personal-stat__value">@(_aggregates?.ContactCount ?? _dashboard!.ContactCount)</span>
-                        </div>
+                        </button>
                         <div class="pos-personal-stat" role="listitem">
                             <span class="pos-personal-stat__label">@L["Personal_Stat_ActiveRelationships"]</span>
                             <span class="pos-personal-stat__value">@(_aggregates?.ActiveRelationshipCount ?? _dashboard!.ActiveRelationshipCount)</span>
                         </div>
-                        <div class="pos-personal-stat" role="listitem">
+                        <button type="button" class="pos-personal-stat pos-personal-stat--link" role="listitem" @onclick="GoLent">
                             <span class="pos-personal-stat__label">@L["Personal_Stat_Lent"]</span>
                             <span class="pos-personal-stat__value">@((_aggregates?.TotalLentBalance ?? _dashboard!.TotalLentBalance).ToString("N2"))</span>
-                        </div>
-                        <div class="pos-personal-stat" role="listitem">
+                        </button>
+                        <button type="button" class="pos-personal-stat pos-personal-stat--link" role="listitem" @onclick="GoBorrowed">
                             <span class="pos-personal-stat__label">@L["Personal_Stat_Borrowed"]</span>
                             <span class="pos-personal-stat__value">@((_aggregates?.TotalBorrowedBalance ?? _dashboard!.TotalBorrowedBalance).ToString("N2"))</span>
-                        </div>
+                        </button>
                     </div>
                 }
             </Section>
@@ -76,12 +81,14 @@
                                     role="listitem"
                                     @onclick="() => GoRelationship(item.Id)">
                                 <span class="pos-personal-row__body">
-                                    <span class="pos-personal-row__title">@PerspectiveLabel(item.Direction)</span>
+                                    <span class="pos-personal-row__title">@ContactName(item.ContactId)</span>
                                     <span class="pos-personal-row__meta">
-                                        @item.Outstanding.ToString("N2") @item.Currency
+                                        @PerspectiveLabel(item.Direction)
+                                        · @item.Outstanding.ToString("N2") @item.Currency
                                         · @item.UpdatedAtUtc.LocalDateTime.ToString("g")
                                     </span>
                                 </span>
+                                <span class="pos-personal-row__amount">@item.Outstanding.ToString("N2")</span>
                                 <span class="pos-personal-row__chevron" aria-hidden="true">›</span>
                             </button>
                         }
@@ -105,6 +112,7 @@
     private PersonalDashboardDto? _dashboard;
     private LocalPersonalAggregates? _aggregates;
     private IReadOnlyList<LocalPersonalRelationship> _recent = [];
+    private Dictionary<Guid, string> _contactNames = new();
     private int _pendingSync;
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
@@ -140,7 +148,21 @@
                 return;
             }
 
+            // Defense: deep-link/sign-in shortcuts to /personal must still enroll offline PIN.
+            if (!await Auth.HasOfflinePinConfiguredAsync())
+            {
+                var offer = await Auth.EvaluateOfflineColdStartOfferAsync();
+                if (offer.Grant is not null
+                    || string.Equals(offer.DenialReasonCode, "offline_pin_not_configured", StringComparison.Ordinal))
+                {
+                    Nav.NavigateTo("/offline-pin-setup", replace: true);
+                    return;
+                }
+            }
+
             await LocalStore.EnsurePersonalContextAsync();
+            var contacts = await LocalStore.ListContactsAsync();
+            _contactNames = contacts.ToDictionary(c => c.Id, c => c.DisplayName);
             _aggregates = await LocalStore.GetAggregatesAsync();
             var lent = await LocalStore.ListRelationshipsAsync(LocalPersonalDirection.Lent);
             var borrowed = await LocalStore.ListRelationshipsAsync(LocalPersonalDirection.Borrowed);
@@ -170,6 +192,11 @@
         }
     }
 
+    private string ContactName(Guid contactId) =>
+        _contactNames.TryGetValue(contactId, out var name) && !string.IsNullOrWhiteSpace(name)
+            ? name
+            : L["Personal_UnknownContact"];
+
     private string PerspectiveLabel(string perspective) =>
         string.Equals(perspective, LocalPersonalDirection.Lent, StringComparison.OrdinalIgnoreCase)
             || string.Equals(perspective, "Lent", StringComparison.OrdinalIgnoreCase)
@@ -180,5 +207,8 @@
                 : perspective;
 
     private void GoRelationship(Guid id) => Nav.NavigateTo($"/personal/utang/relationships/{id:D}");
+    private void GoPeople() => Nav.NavigateTo("/personal/utang/people");
+    private void GoLent() => Nav.NavigateTo("/personal/utang/lent");
+    private void GoBorrowed() => Nav.NavigateTo("/personal/utang/borrowed");
     private void GoSignIn() => Nav.NavigateTo("/signin");
 }

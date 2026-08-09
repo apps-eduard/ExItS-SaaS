@@ -1,7 +1,6 @@
 @page "/offline-pin-setup"
 @layout Layout.AuthShell
 @inject IAuthenticationService Auth
-@inject RoleHomeResolver RoleHome
 @inject NavigationGate Gate
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
@@ -9,8 +8,8 @@
 <div class="pos-offline-pin">
     <Page>
         <header class="pos-offline-pin__header">
-            <h1 class="pos-offline-pin__title">@L["Offline_PinEnrollTitle"]</h1>
-            <p class="pos-offline-pin__subtitle">@L["Offline_PinEnrollMessage"]</p>
+            <h1 class="pos-offline-pin__title">@(_isChange ? L["Offline_PinChangeTitle"] : L["Offline_PinEnrollTitle"])</h1>
+            <p class="pos-offline-pin__subtitle">@(_isChange ? L["Offline_PinChangeMessage"] : L["Offline_PinEnrollMessage"])</p>
         </header>
 
         @if (!string.IsNullOrEmpty(_error))
@@ -46,8 +45,14 @@
 
         <FormActions>
             <Button Variant="ButtonVariant.Primary" IsLoading="_busy" Disabled="_busy" OnClick="SaveAsync">
-                @L["Offline_PinEnrollAction"]
+                @(_isChange ? L["Offline_PinChangeAction"] : L["Offline_PinEnrollAction"])
             </Button>
+            @if (_isChange)
+            {
+                <Button Variant="ButtonVariant.Secondary" Disabled="_busy" OnClick="GoBack">
+                    @L["Common_Cancel"]
+                </Button>
+            }
         </FormActions>
     </Page>
 </div>
@@ -68,13 +73,30 @@
     private string _confirm = string.Empty;
     private string? _error;
     private bool _busy;
+    private bool _isChange;
+    private string? _returnPath;
 
     protected override async Task OnInitializedAsync()
     {
-        // Already enrolled → continue to normal start route (enrollment itself has no deferral control).
-        if (await Auth.HasOfflinePinConfiguredAsync())
+        var uri = Nav.ToAbsoluteUri(Nav.Uri);
+        _isChange = TryGetQueryValue(uri, "mode", out var mode)
+                    && string.Equals(mode, "change", StringComparison.OrdinalIgnoreCase);
+        if (TryGetQueryValue(uri, "return", out var ret) && !string.IsNullOrWhiteSpace(ret) && ret.StartsWith("/", StringComparison.Ordinal))
         {
+            _returnPath = ret;
+        }
+
+        var hasPin = await Auth.HasOfflinePinConfiguredAsync();
+        if (hasPin && !_isChange)
+        {
+            // Mandatory first-time enrollment path — already done.
             Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        if (!hasPin)
+        {
+            _isChange = false;
         }
     }
 
@@ -102,11 +124,55 @@
                 return;
             }
 
-            Nav.NavigateTo(await RoleHome.ResolvePosHomeAsync(), replace: true);
+            if (!string.IsNullOrWhiteSpace(_returnPath))
+            {
+                Nav.NavigateTo(_returnPath!, replace: true);
+                return;
+            }
+
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
         }
         finally
         {
             _busy = false;
         }
+    }
+
+    private void GoBack()
+    {
+        if (!string.IsNullOrWhiteSpace(_returnPath))
+        {
+            Nav.NavigateTo(_returnPath!, replace: true);
+            return;
+        }
+
+        Nav.NavigateTo("/personal/settings", replace: true);
+    }
+
+    private static bool TryGetQueryValue(Uri uri, string key, out string value)
+    {
+        value = string.Empty;
+        var query = uri.Query;
+        if (string.IsNullOrEmpty(query) || query.Length < 2)
+        {
+            return false;
+        }
+
+        foreach (var part in query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var eq = part.IndexOf('=');
+            var rawKey = eq >= 0 ? part[..eq] : part;
+            if (!string.Equals(Uri.UnescapeDataString(rawKey), key, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            value = eq >= 0
+                ? Uri.UnescapeDataString(part[(eq + 1)..].Replace('+', ' '))
+                : string.Empty;
+            return true;
+        }
+
+        return false;
     }
 }

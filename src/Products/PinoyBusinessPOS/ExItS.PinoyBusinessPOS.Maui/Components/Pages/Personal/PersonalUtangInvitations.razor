@@ -1,5 +1,6 @@
 @page "/personal/utang/invitations"
 @layout Layout.PersonalShell
+@using ExItS.DesignSystem.Components.Internal
 @inject IAuthenticationService Auth
 @inject ICurrentUserContext CurrentUser
 @inject IPlatformAccessClient Platform
@@ -35,28 +36,30 @@
         }
         else
         {
-            <Stack Gap="3">
+            <div class="pos-personal-list" role="list">
                 @foreach (var invite in _invitations)
                 {
-                    <div class="pos-personal-org">
-                        <Stack Gap="1">
-                            <span class="pos-value-md">@(invite.InviteTargetEmailMasked ?? invite.Id.ToString("D")[..8])</span>
-                            <span class="pos-muted">@invite.Status · @invite.ExpiresAtUtc.LocalDateTime.ToString("g")</span>
-                        </Stack>
+                    <div class="pos-personal-row pos-personal-row--static" role="listitem">
+                        <span class="pos-personal-row__body">
+                            <span class="pos-personal-row__title">@(invite.InviteTargetEmailMasked ?? invite.Id.ToString("D")[..8])</span>
+                            <span class="pos-personal-row__meta">@invite.Status · @invite.ExpiresAtUtc.LocalDateTime.ToString("g")</span>
+                        </span>
                     </div>
                 }
-            </Stack>
+            </div>
         }
 
         <Section Title="@L["Personal_UtangInvitationTokenSection"]">
-            <FormValidationSummary Messages="_errors" />
-            <FormGroup>
-                <TextInput Label="@L["Personal_InvitationTokenLabel"]" @bind-Value="_token" Disabled="_busy" />
-            </FormGroup>
-            <FormActions>
-                <Button IsLoading="_busy" Disabled="_busy || string.IsNullOrWhiteSpace(_token)" OnClick="AcceptAsync">@L["Personal_AcceptInvitation"]</Button>
-                <Button Variant="ButtonVariant.Secondary" IsLoading="_busy" Disabled="_busy || string.IsNullOrWhiteSpace(_token)" OnClick="DeclineAsync">@L["Personal_DeclineInvitation"]</Button>
-            </FormActions>
+            <div class="pos-settings__panel">
+                <FormValidationSummary Messages="_errors" />
+                <Stack Gap="2">
+                    <TextInput Label="@L["Personal_InvitationTokenLabel"]" @bind-Value="_token" Disabled="_busy" />
+                </Stack>
+                <div class="pos-personal-invitations__actions">
+                    <Button IsLoading="_busy" Disabled="_busy || string.IsNullOrWhiteSpace(_token)" OnClick="AcceptAsync">@L["Personal_AcceptInvitation"]</Button>
+                    <Button Variant="ButtonVariant.Secondary" IsLoading="_busy" Disabled="_busy || string.IsNullOrWhiteSpace(_token)" OnClick="DeclineAsync">@L["Personal_DeclineInvitation"]</Button>
+                </div>
+            </div>
         </Section>
     }
 </Page>

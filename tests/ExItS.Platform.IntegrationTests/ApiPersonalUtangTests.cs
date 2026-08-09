@@ -220,6 +220,29 @@ public sealed class ApiPersonalUtangTests(PostgreSqlFixture fixture) : IAsyncLif
         Assert.Equal(ApplicationErrorCodes.ConcurrencyConflict, body.GetProperty("errorCode").GetString());
     }
 
+    [Fact]
+    public async Task Duplicate_active_contact_email_returns_conflict()
+    {
+        var (token, _) = await SeedPersonalUserAsync("emdup");
+
+        using var first = Authed(
+            HttpMethod.Post,
+            "/api/v1/personal/utang/contacts",
+            token,
+            new { displayName = "First", email = "twin@example.com" });
+        Assert.Equal(HttpStatusCode.Created, (await _client.SendAsync(first)).StatusCode);
+
+        using var second = Authed(
+            HttpMethod.Post,
+            "/api/v1/personal/utang/contacts",
+            token,
+            new { displayName = "Second", email = "Twin@Example.com" });
+        var response = await _client.SendAsync(second);
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(ApplicationErrorCodes.PersonalContactEmailConflict, body.GetProperty("errorCode").GetString());
+    }
+
     private static async Task<JsonElement> contactResponse(HttpResponseMessage response)
     {
         response.EnsureSuccessStatusCode();

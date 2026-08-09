@@ -1,46 +1,69 @@
 @page "/personal/utang/people/{ContactId:guid}"
 @layout Layout.PersonalShell
+@using ExItS.DesignSystem.Components.Internal
 @inject IAuthenticationService Auth
 @inject ICurrentUserContext CurrentUser
 @inject IPlatformAccessClient Platform
+@inject ILocalPersonalUtangStore LocalStore
+@inject IConnectivityService Connectivity
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
-<div class="pos-personal-people-detail">
-<StoreHeaderBack Href="/personal/utang/people" />
-<Page>
-    <header class="pos-personal-people-detail__header">
-        <h1 class="pos-personal-people-detail__title">@L["Personal_PeopleDetailTitle"]</h1>
-        <p class="pos-personal-people-detail__subtitle">@L["Personal_PeopleSubtitle"]</p>
-    </header>
+<div class="pos-settings pos-personal-people-detail">
+    <StoreHeaderBack Href="/personal/utang/people" />
+    <Page>
+        <header class="pos-personal-people-detail__header">
+            <h1 class="pos-personal-people-detail__title">@(_contact?.DisplayName ?? L["Personal_PeopleDetailTitle"])</h1>
+            <p class="pos-personal-people-detail__subtitle">@L["Personal_PeopleDetailSubtitle"]</p>
+        </header>
 
-    @if (_loading)
-    {
-        <Spinner />
-    }
-    else if (!_authenticated)
-    {
-        <ErrorState Title="@L["Auth_SessionExpiredTitle"]" Message="@L["Auth_SessionExpired"]" RetryLabel="@L["SignIn_Submit"]" OnRetry="GoSignIn" />
-    }
-    else if (_contact is null)
-    {
-        <ErrorState Title="@L["Personal_PeopleErrorTitle"]" Message="@(_error ?? L["Personal_PeopleNotFound"])" RetryLabel="@L["Common_Retry"]" OnRetry="LoadAsync" />
-    }
-    else
-    {
-        <Section Title="@_contact.DisplayName">
-            <Stack Gap="2">
-                <div><span class="pos-muted">@L["Register_Email"]</span><div class="pos-value-md">@(_contact.Email ?? "—")</div></div>
-                <div><span class="pos-muted">@L["Personal_PhoneLabel"]</span><div class="pos-value-md">@(_contact.Phone ?? "—")</div></div>
-                <div><span class="pos-muted">@L["Personal_StatusLabel"]</span><div class="pos-value-md">@_contact.Status</div></div>
-            </Stack>
-        </Section>
-        <FormActions>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoLentCreate">@L["Personal_PeopleCreateLent"]</Button>
-            <Button Variant="ButtonVariant.Secondary" OnClick="GoBorrowedCreate">@L["Personal_PeopleCreateBorrowed"]</Button>
-        </FormActions>
-    }
-</Page>
+        @if (_loading)
+        {
+            <Spinner />
+        }
+        else if (!_authenticated)
+        {
+            <ErrorState Title="@L["Auth_SessionExpiredTitle"]" Message="@L["Auth_SessionExpired"]" RetryLabel="@L["SignIn_Submit"]" OnRetry="GoSignIn" />
+        }
+        else if (_contact is null)
+        {
+            <ErrorState Title="@L["Personal_PeopleErrorTitle"]" Message="@(_error ?? L["Personal_PeopleNotFound"])" RetryLabel="@L["Common_Retry"]" OnRetry="LoadAsync" />
+        }
+        else
+        {
+            <Section Title="@L["Personal_ProfileSection"]">
+                <div class="pos-settings__panel">
+                    <div class="pos-settings__kv">
+                        <span class="pos-settings__kv-label">@L["Register_DisplayName"]</span>
+                        <span class="pos-settings__kv-value">@_contact.DisplayName</span>
+                    </div>
+                    <div class="pos-settings__kv">
+                        <span class="pos-settings__kv-label">@L["Register_Email"]</span>
+                        <span class="pos-settings__kv-value">@(_contact.Email ?? "—")</span>
+                    </div>
+                    <div class="pos-settings__kv">
+                        <span class="pos-settings__kv-label">@L["Personal_PhoneLabel"]</span>
+                        <span class="pos-settings__kv-value">@(_contact.Phone ?? "—")</span>
+                    </div>
+                    <div class="pos-settings__kv">
+                        <span class="pos-settings__kv-label">@L["Personal_StatusLabel"]</span>
+                        <span class="pos-settings__kv-value">@_contact.Status</span>
+                    </div>
+                </div>
+            </Section>
+
+            <div class="pos-action-grid pos-action-grid--two pos-personal-people-detail__actions" role="group">
+                <button type="button" class="pos-action-tile pos-action-tile--primary" @onclick="GoLentCreate">
+                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("plus")</span>
+                    <span class="pos-action-tile__label">@L["Personal_PeopleCreateLent"]</span>
+                </button>
+                <button type="button" class="pos-action-tile" @onclick="GoBorrowedCreate">
+                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("plus")</span>
+                    <span class="pos-action-tile__label">@L["Personal_PeopleCreateBorrowed"]</span>
+                </button>
+            </div>
+        }
+    </Page>
 </div>
 
 @code {
@@ -76,14 +99,55 @@
             }
 
             await Auth.EnsurePersonalAccountProfileAsync();
-            var result = await Platform.GetPersonalContactsAsync();
-            if (!result.IsSuccess || result.Data is null)
+            await LocalStore.EnsurePersonalContextAsync();
+
+            var local = await LocalStore.GetContactAsync(ContactId);
+            if (local is not null)
             {
-                _error = result.Error?.Detail ?? L["Personal_PeopleLoadFailed"];
-                return;
+                // Email is persisted in local Notes (no dedicated email column yet).
+                _contact = new PersonalContactDto(
+                    local.Id,
+                    local.DisplayName,
+                    local.Phone,
+                    Email: local.Notes,
+                    LinkedUserIdentityId: null,
+                    Status: local.SyncStatus,
+                    CreatedAtUtc: local.UpdatedAtUtc);
             }
 
-            _contact = result.Data.FirstOrDefault(c => c.Id == ContactId);
+            if (await Connectivity.IsConnectedAsync())
+            {
+                var result = await Platform.GetPersonalContactsAsync();
+                if (result.IsSuccess && result.Data is not null)
+                {
+                    var match = result.Data.FirstOrDefault(c =>
+                        c.Id == ContactId
+                        || (local?.ServerId is Guid sid && c.Id == sid)
+                        || (local is not null && c.Id == local.Id));
+                    if (match is not null)
+                    {
+                        // Prefer server email; keep local Notes when server never received email.
+                        var email = FirstNonEmpty(match.Email, local?.Notes);
+                        _contact = match with { Email = email };
+                        await LocalStore.UpsertServerContactAsync(new LocalPersonalContact(
+                            match.Id,
+                            CurrentUser.Session!.UserId,
+                            match.DisplayName,
+                            match.Phone,
+                            Notes: email,
+                            LocalPersonalSyncStatus.Synced,
+                            match.Id,
+                            match.CreatedAtUtc,
+                            OperationId: null));
+                    }
+                }
+                else if (_contact is null)
+                {
+                    _error = result.Error?.Detail ?? L["Personal_PeopleLoadFailed"];
+                    return;
+                }
+            }
+
             if (_contact is null)
             {
                 _error = L["Personal_PeopleNotFound"];
@@ -98,4 +162,17 @@
     private void GoLentCreate() => Nav.NavigateTo($"/personal/utang/lent?contactId={ContactId:D}");
     private void GoBorrowedCreate() => Nav.NavigateTo($"/personal/utang/borrowed?contactId={ContactId:D}");
     private void GoSignIn() => Nav.NavigateTo("/signin");
+
+    private static string? FirstNonEmpty(params string?[] values)
+    {
+        foreach (var value in values)
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                return value.Trim();
+            }
+        }
+
+        return null;
+    }
 }

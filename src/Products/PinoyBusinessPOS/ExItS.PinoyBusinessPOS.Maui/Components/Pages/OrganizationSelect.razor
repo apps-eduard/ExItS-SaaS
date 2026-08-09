@@ -10,6 +10,7 @@
 @inject SellingModeService SellingMode
 @inject AuthShellIdentityState IdentityState
 @inject NavigationManager Nav
+@inject NavigationGate Gate
 @inject IStringLocalizer<PosResources> L
 
 <Page>
@@ -550,7 +551,7 @@
         var result = await Auth.SwitchToPersonalAsync();
         if (result.Succeeded)
         {
-            Nav.NavigateTo("/personal", replace: true);
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
         }
     }
 }

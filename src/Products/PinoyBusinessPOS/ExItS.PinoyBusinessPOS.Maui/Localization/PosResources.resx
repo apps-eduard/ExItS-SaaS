@@ -229,13 +229,16 @@
   <data name="SignIn_ProviderPlaceholder" xml:space="preserve"><value>External provider sign-in is not available yet.</value></data>
   <data name="SignIn_UsePin" xml:space="preserve"><value>Use PIN</value></data>
   <data name="SignIn_OfflineTitle" xml:space="preserve"><value>You're offline</value></data>
-  <data name="SignIn_OfflineMessage" xml:space="preserve"><value>Use your PIN to continue with the last authorized account on this device.</value></data>
+  <data name="SignIn_OfflineMessage" xml:space="preserve"><value>No internet. Use your PIN for limited offline use on this device. Changes sync when you're back online.</value></data>
+  <data name="SignIn_OfflineLimitedHint" xml:space="preserve"><value>Offline access is limited to previously authorized features on this device. Any changes will sync once you're online.</value></data>
+  <data name="SignIn_ContinueOffline" xml:space="preserve"><value>Continue offline</value></data>
+  <data name="SignIn_OfflineNoPinMessage" xml:space="preserve"><value>You're offline and offline unlock isn't available on this device yet. Connect once to sign in and set up your PIN, then you can use limited offline features later.</value></data>
   <data name="SignIn_OnlineRequiresInternet" xml:space="preserve"><value>Online sign-in requires an internet connection.</value></data>
   <data name="SignIn_InternetRequired" xml:space="preserve"><value>This action requires an internet connection.</value></data>
   <data name="SignIn_StillConnecting" xml:space="preserve"><value>Still connecting...</value></data>
   <data name="SignIn_ContinueWaiting" xml:space="preserve"><value>Continue waiting</value></data>
   <data name="SignIn_UsePinInstead" xml:space="preserve"><value>Use PIN instead</value></data>
-  <data name="SignIn_ServerUnreachablePinHint" xml:space="preserve"><value>Server is unreachable. You can use your PIN to continue with the last authorized account on this device.</value></data>
+  <data name="SignIn_ServerUnreachablePinHint" xml:space="preserve"><value>Server is unreachable. Use your PIN for limited offline use on this device. Changes sync when you're back online.</value></data>
   <data name="Common_OK" xml:space="preserve"><value>OK</value></data>
   <data name="Auth_Lock" xml:space="preserve"><value>Lock</value></data>
   <data name="Offline_PinEnrollTitle" xml:space="preserve"><value>Set up your offline PIN</value></data>
@@ -243,6 +246,10 @@
   <data name="Offline_PinConfirmLabel" xml:space="preserve"><value>Confirm PIN</value></data>
   <data name="Offline_PinEnrollAction" xml:space="preserve"><value>Set up PIN</value></data>
   <data name="Offline_PinConfirmMismatch" xml:space="preserve"><value>PIN and confirmation do not match.</value></data>
+  <data name="Offline_PinChangeTitle" xml:space="preserve"><value>Change offline PIN</value></data>
+  <data name="Offline_PinChangeMessage" xml:space="preserve"><value>Enter a new PIN for unlocking this device offline. Your existing offline work stays on this device.</value></data>
+  <data name="Offline_PinChangeAction" xml:space="preserve"><value>Change PIN</value></data>
+  <data name="Offline_PinChangeHint" xml:space="preserve"><value>Update the PIN used to unlock Personal and POS when offline.</value></data>
   <data name="Offline_WorkingTitle" xml:space="preserve"><value>You're working offline</value></data>
   <data name="Offline_WorkingMessage" xml:space="preserve"><value>Your transactions and changes will be saved on this device and synced when an internet connection is available. Until they are synced, this data exists only on this device.</value></data>
   <data name="Offline_WorkingWarning" xml:space="preserve"><value>Keep the app installed and avoid clearing app data or resetting this phone until your pending changes are synced.</value></data>
@@ -337,7 +344,7 @@
   <data name="Access_UnauthorizedTitle" xml:space="preserve"><value>Unauthorized for POS</value></data>
   <data name="Auth_Logout" xml:space="preserve"><value>Sign out</value></data>
   <data name="Auth_LogoutConfirmTitle" xml:space="preserve"><value>Sign out?</value></data>
-  <data name="Auth_LogoutConfirmMessage" xml:space="preserve"><value>Secure session data on this device will be cleared.</value></data>
+  <data name="Auth_LogoutConfirmMessage" xml:space="preserve"><value>You'll be signed out of the cloud on this device. Offline PIN unlock stays available for limited use without internet.</value></data>
   <data name="Auth_ProductionUnavailable" xml:space="preserve"><value>Production authentication is not available in this build.</value></data>
   <data name="Auth_ProductionUnavailableTitle" xml:space="preserve"><value>Sign-in unavailable</value></data>
   <data name="Auth_InvalidCredentials" xml:space="preserve"><value>The Platform user could not be signed in.</value></data>
@@ -622,7 +629,7 @@
   <data name="SyncStatus_OfflineDetail" xml:space="preserve"><value>Offline — changes will sync when connected</value></data>
   <data name="Offline_Banner" xml:space="preserve"><value>Offline — changes will sync when connected</value></data>
   <data name="Offline_PinTitle" xml:space="preserve"><value>Unlock offline POS</value></data>
-  <data name="Offline_PinSubtitle" xml:space="preserve"><value>Enter your offline PIN to continue selling while the network is unavailable.</value></data>
+  <data name="Offline_PinSubtitle" xml:space="preserve"><value>Enter your offline PIN to continue with limited offline use. Changes sync when you're back online.</value></data>
   <data name="Offline_PinLabel" xml:space="preserve"><value>Offline PIN</value></data>
   <data name="Offline_PinUnlock" xml:space="preserve"><value>Unlock with PIN</value></data>
   <data name="Offline_PinRequired" xml:space="preserve"><value>Offline PIN required</value></data>
@@ -1878,6 +1885,7 @@
   <data name="Personal_PeopleCreate" xml:space="preserve"><value>Add person</value></data>
   <data name="Personal_PeopleCreateFailed" xml:space="preserve"><value>Could not create the contact.</value></data>
   <data name="Personal_PeopleNameRequired" xml:space="preserve"><value>Display name is required.</value></data>
+  <data name="Personal_PeopleEmailConflict" xml:space="preserve"><value>A contact with this email already exists.</value></data>
   <data name="Personal_PeopleDetailTitle" xml:space="preserve"><value>Person</value></data>
   <data name="Personal_PeopleBack" xml:space="preserve"><value>Back to people</value></data>
   <data name="Personal_PeopleNotFound" xml:space="preserve"><value>Contact was not found.</value></data>
@@ -2210,4 +2218,6 @@
   <data name="Support_AccessDeniedTitle" xml:space="preserve"><value>Diagnostics unavailable</value></data>
   <data name="Support_AccessDeniedMessage" xml:space="preserve"><value>Only the organization owner can open Organization diagnostics on this device.</value></data>
   <data name="Support_AccessWrongScope" xml:space="preserve"><value>This diagnostics page does not match your current account scope.</value></data>
+  <data name="Personal_UnknownContact" xml:space="preserve"><value>Unknown contact</value></data>
+  <data name="Personal_PeopleDetailSubtitle" xml:space="preserve"><value>Contact details and Utang shortcuts.</value></data>
 </root>

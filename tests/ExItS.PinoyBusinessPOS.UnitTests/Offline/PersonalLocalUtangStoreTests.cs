@@ -108,6 +108,174 @@ public sealed class PersonalLocalUtangStoreTests
     }
 
     [Fact]
+    public async Task Upsert_server_contact_after_mark_synced_does_not_create_second_row()
+    {
+        await using var harness = await Harness.CreateAsync();
+        var localId = Guid.NewGuid();
+        var serverId = Guid.NewGuid();
+        var op = Guid.NewGuid();
+        await harness.Store.PersistContactAndEnqueueAsync(new LocalPersonalContactUpsertCommand(
+            localId, op, op.ToString("N"), "Juan Luna", "12345678910", null));
+        await harness.Store.MarkContactSyncedAsync(localId, serverId);
+
+        await harness.Store.UpsertServerContactAsync(new LocalPersonalContact(
+            serverId,
+            harness.UserId,
+            "Juan Luna",
+            "12345678910",
+            Notes: null,
+            LocalPersonalSyncStatus.Synced,
+            serverId,
+            DateTimeOffset.UtcNow,
+            OperationId: null));
+
+        var contacts = await harness.Store.ListContactsAsync();
+        Assert.Single(contacts);
+        Assert.Equal(localId, contacts[0].Id);
+        Assert.Equal(serverId, contacts[0].ServerId);
+    }
+
+    [Fact]
+    public async Task Upsert_server_contact_preserves_local_notes_when_server_email_null()
+    {
+        await using var harness = await Harness.CreateAsync();
+        var localId = Guid.NewGuid();
+        var serverId = Guid.NewGuid();
+        var op = Guid.NewGuid();
+        await harness.Store.PersistContactAndEnqueueAsync(new LocalPersonalContactUpsertCommand(
+            localId, op, op.ToString("N"), "Juan Luna", "12345678910", "juan@example.com"));
+        await harness.Store.MarkContactSyncedAsync(localId, serverId);
+
+        await harness.Store.UpsertServerContactAsync(new LocalPersonalContact(
+            serverId,
+            harness.UserId,
+            "Juan Luna",
+            "12345678910",
+            Notes: null,
+            LocalPersonalSyncStatus.Synced,
+            serverId,
+            DateTimeOffset.UtcNow,
+            OperationId: null));
+
+        var contact = await harness.Store.GetContactAsync(localId);
+        Assert.NotNull(contact);
+        Assert.Equal("JUAN@EXAMPLE.COM", contact!.Notes);
+    }
+
+    [Fact]
+    public async Task Mark_relationship_synced_clears_pending_initial_loan_entries()
+    {
+        await using var harness = await Harness.CreateAsync();
+        var contactId = Guid.NewGuid();
+        var contactOp = Guid.NewGuid();
+        var relationshipId = Guid.NewGuid();
+        var relOp = Guid.NewGuid();
+        await harness.Store.PersistContactAndEnqueueAsync(new LocalPersonalContactUpsertCommand(
+            contactId, contactOp, contactOp.ToString("N"), "Borrower", null, null));
+        await harness.Store.PersistRelationshipAndEnqueueAsync(new LocalPersonalRelationshipCreateCommand(
+            relationshipId, relOp, relOp.ToString("N"), contactId, LocalPersonalDirection.Lent,
+            100m, "PHP", "test loan", contactOp));
+
+        var before = await harness.Store.ListEntriesAsync(relationshipId);
+        Assert.Contains(before, e => e.SyncStatus == LocalPersonalSyncStatus.Pending);
+
+        var serverRelId = Guid.NewGuid();
+        await harness.Store.MarkRelationshipSyncedAsync(relationshipId, serverRelId, version: 1);
+
+        var rel = await harness.Store.GetRelationshipAsync(relationshipId);
+        Assert.NotNull(rel);
+        Assert.Equal(LocalPersonalSyncStatus.Synced, rel!.SyncStatus);
+        Assert.Equal(serverRelId, rel.ServerId);
+
+        var after = await harness.Store.ListEntriesAsync(relationshipId);
+        Assert.All(after, e => Assert.Equal(LocalPersonalSyncStatus.Synced, e.SyncStatus));
+    }
+
+    [Fact]
+    public async Task Persist_contact_rejects_duplicate_email_case_insensitive()
+    {
+        await using var harness = await Harness.CreateAsync();
+        var firstOp = Guid.NewGuid();
+        await harness.Store.PersistContactAndEnqueueAsync(new LocalPersonalContactUpsertCommand(
+            Guid.NewGuid(), firstOp, firstOp.ToString("N"), "Ana", null, "friend@example.com"));
+
+        var secondOp = Guid.NewGuid();
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            harness.Store.PersistContactAndEnqueueAsync(new LocalPersonalContactUpsertCommand(
+                Guid.NewGuid(), secondOp, secondOp.ToString("N"), "Ana Twin", null, "Friend@Example.com")));
+
+        Assert.Equal(LocalPersonalStoreErrors.EmailConflict, ex.Message);
+        Assert.Single(await harness.Store.ListContactsAsync());
+    }
+
+    [Fact]
+    public async Task Persist_contact_allows_multiple_contacts_without_email()
+    {
+        await using var harness = await Harness.CreateAsync();
+        var firstOp = Guid.NewGuid();
+        var secondOp = Guid.NewGuid();
+        await harness.Store.PersistContactAndEnqueueAsync(new LocalPersonalContactUpsertCommand(
+            Guid.NewGuid(), firstOp, firstOp.ToString("N"), "One", null, null));
+        await harness.Store.PersistContactAndEnqueueAsync(new LocalPersonalContactUpsertCommand(
+            Guid.NewGuid(), secondOp, secondOp.ToString("N"), "Two", null, "   "));
+
+        Assert.Equal(2, (await harness.Store.ListContactsAsync()).Count);
+    }
+
+    [Fact]
+    public async Task Upsert_server_contact_merges_local_row_by_server_id_without_duplicate()
+    {
+        await using var harness = await Harness.CreateAsync();
+        var localId = Guid.NewGuid();
+        var serverId = Guid.NewGuid();
+        var op = Guid.NewGuid();
+        await harness.Store.PersistContactAndEnqueueAsync(new LocalPersonalContactUpsertCommand(
+            localId, op, op.ToString("N"), "Juan Luna", "12345678910", null));
+        await harness.Store.MarkContactSyncedAsync(localId, serverId);
+
+        // Simulate a hydrate that previously inserted a second PK under the server id.
+        await using (var raw = new SqliteConnection($"Data Source={harness.DbPath}"))
+        {
+            await raw.OpenAsync();
+            await using var insert = raw.CreateCommand();
+            insert.CommandText =
+                """
+                INSERT INTO local_personal_contact (
+                    id, user_id, display_name, phone, notes, sync_status, server_id, updated_at, operation_id)
+                VALUES ($id, $user, 'Juan Luna', '12345678910', NULL, 'Synced', $server, $updated, NULL);
+                """;
+            insert.Parameters.AddWithValue("$id", serverId.ToString("D"));
+            insert.Parameters.AddWithValue("$user", harness.UserId.ToString("D"));
+            insert.Parameters.AddWithValue("$server", serverId.ToString("D"));
+            insert.Parameters.AddWithValue("$updated", DateTimeOffset.UtcNow.ToString("O"));
+            await insert.ExecuteNonQueryAsync();
+        }
+
+        Assert.Equal(2, (await harness.Store.ListContactsAsync()).Count);
+
+        await harness.Store.UpsertServerContactAsync(new LocalPersonalContact(
+            serverId,
+            harness.UserId,
+            "Juan Luna",
+            "12345678910",
+            Notes: null,
+            LocalPersonalSyncStatus.Synced,
+            serverId,
+            DateTimeOffset.UtcNow,
+            OperationId: null));
+
+        var contacts = await harness.Store.ListContactsAsync();
+        Assert.Single(contacts);
+        Assert.Equal(localId, contacts[0].Id);
+        Assert.Equal(serverId, contacts[0].ServerId);
+        Assert.Equal(LocalPersonalSyncStatus.Synced, contacts[0].SyncStatus);
+
+        var byServer = await harness.Store.GetContactAsync(serverId);
+        Assert.NotNull(byServer);
+        Assert.Equal(localId, byServer!.Id);
+    }
+
+    [Fact]
     public async Task OpenAsync_rejects_personal_isolation_marker_and_personal_db_is_separate()
     {
         var root = new TempRoot();
@@ -142,6 +310,7 @@ public sealed class PersonalLocalUtangStoreTests
         public required LocalPersonalUtangStore Store { get; init; }
         public required string DbPath { get; init; }
         public required LocalContextManager Manager { get; init; }
+        public required Guid UserId { get; init; }
 
         public static async Task<Harness> CreateAsync()
         {
@@ -179,6 +348,7 @@ public sealed class PersonalLocalUtangStoreTests
                 Root = root,
                 Store = store,
                 Manager = manager,
+                UserId = userId,
                 DbPath = resolver.ResolveDatabasePath(
                     userId,
                     PersonalLocalScope.PathIsolationMarker,

@@ -72,6 +72,14 @@ public sealed class NavigationGate(
         // Personal Mobile area when no organization is bound yet.
         if (currentUser.Session.OrganizationId is null)
         {
+            // Establish Personal grant before PIN check so enrollment can persist the verifier.
+            await auth.EnsurePersonalAccountProfileAsync(ct).ConfigureAwait(false);
+
+            if (await RequiresOfflinePinSetupAsync(ct).ConfigureAwait(false))
+            {
+                return "/offline-pin-setup";
+            }
+
             return RoleHomeResolver.PersonalHome;
         }
 
@@ -96,19 +104,29 @@ public sealed class NavigationGate(
             }
         }
 
-        // Mandatory offline PIN enrollment after online auth + setup (no Skip).
-        if (!await auth.HasOfflinePinConfiguredAsync(ct).ConfigureAwait(false))
+        if (await RequiresOfflinePinSetupAsync(ct).ConfigureAwait(false))
         {
-            var offer = await auth.EvaluateOfflineColdStartOfferAsync(ct).ConfigureAwait(false);
-            // Valid grant with missing PIN, or grant present after online establish.
-            if (offer.Grant is not null
-                || string.Equals(offer.DenialReasonCode, "offline_pin_not_configured", StringComparison.Ordinal))
-            {
-                return "/offline-pin-setup";
-            }
+            return "/offline-pin-setup";
         }
 
         return await roleHome.ResolvePosHomeAsync(ct).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Mandatory offline PIN enrollment after online auth (Personal Utang and Organization POS).
+    /// Without a PIN, cold-start cannot unlock the offline grant and the app is forced online.
+    /// </summary>
+    private async Task<bool> RequiresOfflinePinSetupAsync(CancellationToken ct)
+    {
+        if (await auth.HasOfflinePinConfiguredAsync(ct).ConfigureAwait(false))
+        {
+            return false;
+        }
+
+        var offer = await auth.EvaluateOfflineColdStartOfferAsync(ct).ConfigureAwait(false);
+        // Valid grant with missing PIN, or grant present after online establish.
+        return offer.Grant is not null
+               || string.Equals(offer.DenialReasonCode, "offline_pin_not_configured", StringComparison.Ordinal);
     }
 
     public bool CanEnterProtectedShell => accessPolicy.CanEnterProtectedShell;

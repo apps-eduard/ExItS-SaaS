@@ -191,4 +191,14 @@ public sealed class PersonalUtangDomainTests
         pending.Revoke(now);
         Assert.Equal(PersonalUtangInvitationStatus.Revoked, pending.Status);
     }
+
+    [Fact]
+    public void Contact_email_is_normalized_uppercase()
+    {
+        var user = PlatformUserId.New();
+        var contact = PersonalContact.Create(user, "Friend", null, "Friend@Example.com", DateTimeOffset.UtcNow);
+        Assert.Equal("FRIEND@EXAMPLE.COM", contact.Email);
+        Assert.Equal("FRIEND@EXAMPLE.COM", PersonalContact.NormalizeOptionalEmail(" friend@example.com "));
+        Assert.Null(PersonalContact.NormalizeOptionalEmail("  "));
+    }
 }

@@ -1,5 +1,6 @@
 @page "/signin"
 @layout Layout.AuthShell
+@implements IDisposable
 @using ExItS.DesignSystem.Components.Primitives
 @using ExItS.PinoyBusinessPOS.Application.Options
 @using ExItS.PinoyBusinessPOS.Application.Platform
@@ -12,6 +13,7 @@
 @inject IOptions<LocalValidationClientOptions> LocalValidationOptions
 @inject IOptions<PosApiOptions> PosApi
 @inject NavigationManager Nav
+@inject NavigationGate Gate
 @inject IStringLocalizer<PosResources> L
 
 <div class="pos-signin">
@@ -21,6 +23,34 @@
     </header>
 
     <FormValidationSummary Messages="_errors" />
+
+    @if (_isOffline)
+    {
+        <div class="pos-signin__offline-panel" role="region" aria-label="@L["SignIn_OfflineTitle"]">
+            @if (_canUsePin)
+            {
+                <InlineMessage Tone="InlineMessageTone.Info">@L["SignIn_OfflineLimitedHint"]</InlineMessage>
+                <div class="pos-signin__use-pin">
+                    <Button Variant="ButtonVariant.Primary" Disabled="_busy" OnClick="UsePinInsteadAsync">
+                        @L["SignIn_ContinueOffline"]
+                    </Button>
+                </div>
+            }
+            else
+            {
+                <InlineMessage Tone="InlineMessageTone.Warning">@L["SignIn_OfflineNoPinMessage"]</InlineMessage>
+            }
+        </div>
+    }
+    else if (_canUsePin)
+    {
+        <InlineMessage Tone="InlineMessageTone.Info">@L["SignIn_OfflineLimitedHint"]</InlineMessage>
+        <div class="pos-signin__use-pin">
+            <Button Variant="ButtonVariant.Secondary" Disabled="_busy && !_showSlowPrompt" OnClick="UsePinInsteadAsync">
+                @L["SignIn_UsePin"]
+            </Button>
+        </div>
+    }
 
     @if (_showSlowPrompt)
     {
@@ -35,15 +65,6 @@
                     @L["SignIn_UsePinInstead"]
                 </Button>
             }
-        </div>
-    }
-
-    @if (_canUsePin)
-    {
-        <div class="pos-signin__use-pin">
-            <Button Variant="ButtonVariant.Primary" Disabled="_busy && !_showSlowPrompt" OnClick="UsePinInsteadAsync">
-                @L["SignIn_UsePin"]
-            </Button>
         </div>
     }
 
@@ -79,11 +100,6 @@
     <div class="pos-signin__divider" role="separator">
         <span>@L["SignIn_OrDivider"]</span>
     </div>
-
-    @if (_isOffline)
-    {
-        <InlineMessage Tone="InlineMessageTone.Warning">@L["SignIn_OnlineRequiresInternet"]</InlineMessage>
-    }
 
     <div class="pos-signin__form">
         <TextInput Label="@L["SignIn_UsernameLabel"]"
@@ -190,6 +206,8 @@
 
     protected override async Task OnInitializedAsync()
     {
+        Connectivity.ConnectivityChanged += OnConnectivityChanged;
+
         _rememberMe = Preferences.Default.Get(PreferenceKeys.RememberMe, false);
         if (_rememberMe)
         {
@@ -200,9 +218,7 @@
             }
         }
 
-        _isOffline = !await Connectivity.IsConnectedAsync();
-        var offer = await Auth.EvaluateOfflineColdStartOfferAsync();
-        _canUsePin = offer.CanOfferPinUnlock;
+        await RefreshOfflineStateAsync();
 
         var options = LocalValidationOptions.Value;
         _quickLoginAvailable = Auth.IsDevelopmentAuthenticationEnabled && options.IsQuickLoginAvailable;
@@ -213,6 +229,29 @@
 
         await LoadQuickLoginIdentitiesAsync();
     }
+
+    private async Task RefreshOfflineStateAsync()
+    {
+        _isOffline = !await Connectivity.IsConnectedAsync();
+        var offer = await Auth.EvaluateOfflineColdStartOfferAsync();
+        _canUsePin = offer.CanOfferPinUnlock;
+    }
+
+    private async void OnConnectivityChanged(object? sender, ConnectivityStatus status)
+    {
+        await InvokeAsync(async () =>
+        {
+            await RefreshOfflineStateAsync();
+            if (!_isOffline && _quickLoginAvailable && _quickLoginOptions.Count == 0)
+            {
+                await LoadQuickLoginIdentitiesAsync();
+            }
+
+            StateHasChanged();
+        });
+    }
+
+    public void Dispose() => Connectivity.ConnectivityChanged -= OnConnectivityChanged;
 
     private void TogglePasswordVisibility() => _showPassword = !_showPassword;
 
@@ -370,9 +409,12 @@
 
     private async Task SignInPasswordAsync()
     {
+        await RefreshOfflineStateAsync();
         if (_isOffline)
         {
-            _errors = [L["SignIn_InternetRequired"].Value];
+            _errors = _canUsePin
+                ? [L["SignIn_ServerUnreachablePinHint"].Value]
+                : [L["SignIn_OfflineNoPinMessage"].Value];
             return;
         }
 
@@ -388,9 +430,12 @@
         _errors = [];
         _invalid = false;
         _showSlowPrompt = false;
+        await RefreshOfflineStateAsync();
         if (_isOffline)
         {
-            _errors.Add(L["SignIn_InternetRequired"]);
+            _errors.Add(_canUsePin
+                ? L["SignIn_ServerUnreachablePinHint"].Value
+                : L["SignIn_OfflineNoPinMessage"].Value);
             return;
         }
 
@@ -426,14 +471,11 @@
             if (progress.Outcome == OnlineLoginProgressOutcome.HardTimedOut)
             {
                 _showSlowPrompt = false;
+                await RefreshOfflineStateAsync();
                 // Unreachable / timeout — not an access denial.
-                if (_canUsePin)
-                {
-                    _errors = [L["SignIn_ServerUnreachablePinHint"].Value];
-                    return;
-                }
-
-                _errors = [L["SignIn_InternetRequired"].Value];
+                _errors = _canUsePin
+                    ? [L["SignIn_ServerUnreachablePinHint"].Value]
+                    : [L["SignIn_OfflineNoPinMessage"].Value];
                 return;
             }
 
@@ -449,13 +491,10 @@
                 // Explicit denial / invalid credentials — do not treat as offline PIN fallback.
                 if (result.FailureReason is AuthFailureReason.Offline or AuthFailureReason.Timeout or AuthFailureReason.ApiUnavailable)
                 {
-                    if (_canUsePin)
-                    {
-                        _errors = [L["SignIn_ServerUnreachablePinHint"].Value];
-                        return;
-                    }
-
-                    _errors = [L["SignIn_InternetRequired"].Value];
+                    await RefreshOfflineStateAsync();
+                    _errors = _canUsePin
+                        ? [L["SignIn_ServerUnreachablePinHint"].Value]
+                        : [L["SignIn_OfflineNoPinMessage"].Value];
                     return;
                 }
 
@@ -477,7 +516,7 @@
             }
             catch
             {
-                Nav.NavigateTo("/personal", replace: true);
+                Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
             }
         }
         finally
@@ -492,10 +531,10 @@
     {
         var orgs = await Access.ListEligibleOrganizationsAsync(session.UserId);
 
-        // No org membership → Personal workspace.
+        // No org membership → Personal workspace (may force offline PIN enrollment first).
         if (orgs.Count == 0)
         {
-            Nav.NavigateTo("/personal", replace: true);
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
             return;
         }
 

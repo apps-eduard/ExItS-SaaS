@@ -1103,6 +1103,10 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
             entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
             entity.HasIndex(e => e.OwnerUserIdentityId);
+            entity.HasIndex(e => new { e.OwnerUserIdentityId, e.Email })
+                .IsUnique()
+                .HasFilter("email IS NOT NULL AND status = 'Active'")
+                .HasDatabaseName("ux_personal_contacts_owner_active_email");
             entity.Property(e => e.Xmin)
                 .HasColumnName("xmin")
                 .HasColumnType("xid")

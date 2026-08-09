@@ -37,7 +37,7 @@ internal static class PersonalOfflinePayloads
 /// <summary>Dispatches personal.contact.upsert to Platform Personal APIs only.</summary>
 public sealed class PersonalContactUpsertOfflineDispatcher(
     IPlatformAccessClient platform,
-    ILocalPersonalUtangStore? localStore = null) : IOfflineOperationDispatcher
+    ILocalPersonalUtangStore localStore) : IOfflineOperationDispatcher
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -78,20 +78,18 @@ public sealed class PersonalContactUpsertOfflineDispatcher(
                 false, OfflineFailureClass.Permanent, "personal_scope_required", null, null);
         }
 
+        // Create form stores email in Notes until a dedicated local email column exists.
         var result = await platform
             .CreatePersonalContactAsync(
-                new CreatePersonalContactRequest(payload.DisplayName, payload.Phone, null),
+                new CreatePersonalContactRequest(payload.DisplayName, payload.Phone, payload.Notes),
                 ct)
             .ConfigureAwait(false);
 
         if (result.IsSuccess && result.Data is not null)
         {
-            if (localStore is not null)
-            {
-                await localStore
-                    .MarkContactSyncedAsync(payload.ContactId, result.Data.Id, ct)
-                    .ConfigureAwait(false);
-            }
+            await localStore
+                .MarkContactSyncedAsync(payload.ContactId, result.Data.Id, ct)
+                .ConfigureAwait(false);
 
             return new OfflineDispatchResult(
                 true, OfflineFailureClass.None, null, null, result.Data.Id.ToString("D"));
@@ -103,8 +101,17 @@ public sealed class PersonalContactUpsertOfflineDispatcher(
     private static OfflineDispatchResult MapFailure(ApiCallStatus status, string? code) =>
         status switch
         {
-            ApiCallStatus.Offline or ApiCallStatus.Timeout or ApiCallStatus.Cancelled =>
+            ApiCallStatus.Offline
+                or ApiCallStatus.Timeout
+                or ApiCallStatus.Cancelled
+                or ApiCallStatus.Unavailable
+                or ApiCallStatus.RateLimited
+                or ApiCallStatus.Failed =>
                 new OfflineDispatchResult(false, OfflineFailureClass.Transient, code ?? "transient", null, null),
+            ApiCallStatus.Unauthorized or ApiCallStatus.Forbidden =>
+                new OfflineDispatchResult(false, OfflineFailureClass.AccessBlocked, code ?? "access_blocked", null, null),
+            ApiCallStatus.Conflict =>
+                new OfflineDispatchResult(false, OfflineFailureClass.Conflict, code ?? "conflict", null, null),
             _ => new OfflineDispatchResult(false, OfflineFailureClass.Permanent, code ?? "dispatch_failed", null, null)
         };
 }
@@ -112,7 +119,7 @@ public sealed class PersonalContactUpsertOfflineDispatcher(
 /// <summary>Dispatches personal.relationship.create to Platform Personal APIs only.</summary>
 public sealed class PersonalRelationshipCreateOfflineDispatcher(
     IPlatformAccessClient platform,
-    ILocalPersonalUtangStore? localStore = null) : IOfflineOperationDispatcher
+    ILocalPersonalUtangStore localStore) : IOfflineOperationDispatcher
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -159,12 +166,22 @@ public sealed class PersonalRelationshipCreateOfflineDispatcher(
             return new OfflineDispatchResult(false, OfflineFailureClass.Transient, "profile_unavailable", null, null);
         }
 
+        // Outbox payloads keep the local contact PK; Platform requires the server contact id.
+        var serverContactId = await ResolveServerContactIdAsync(localStore, payload.ContactId, ct)
+            .ConfigureAwait(false);
+        if (serverContactId is null)
+        {
+            // Contact create has not finished / marked synced yet — retry after dependency catches up.
+            return new OfflineDispatchResult(
+                false, OfflineFailureClass.Transient, "contact_pending_sync", null, null);
+        }
+
         var isLent = string.Equals(payload.Direction, LocalPersonalDirection.Lent, StringComparison.OrdinalIgnoreCase);
         var request = new CreatePersonalDebtRelationshipRequest(
             CreditorUserIdentityId: isLent ? me.Data.UserIdentityId : null,
-            CreditorContactId: isLent ? null : payload.ContactId,
+            CreditorContactId: isLent ? null : serverContactId,
             DebtorUserIdentityId: isLent ? null : me.Data.UserIdentityId,
-            DebtorContactId: isLent ? payload.ContactId : null,
+            DebtorContactId: isLent ? serverContactId : null,
             CurrencyCode: payload.Currency,
             DueDateUtc: null,
             InitialLoanAmount: payload.InitialAmount > 0 ? payload.InitialAmount : null,
@@ -173,16 +190,13 @@ public sealed class PersonalRelationshipCreateOfflineDispatcher(
         var result = await platform.CreatePersonalDebtRelationshipAsync(request, ct).ConfigureAwait(false);
         if (result.IsSuccess && result.Data is not null)
         {
-            if (localStore is not null)
-            {
-                await localStore
-                    .MarkRelationshipSyncedAsync(
-                        payload.RelationshipId,
-                        result.Data.Id,
-                        result.Data.Version,
-                        ct)
-                    .ConfigureAwait(false);
-            }
+            await localStore
+                .MarkRelationshipSyncedAsync(
+                    payload.RelationshipId,
+                    result.Data.Id,
+                    result.Data.Version,
+                    ct)
+                .ConfigureAwait(false);
 
             return new OfflineDispatchResult(
                 true, OfflineFailureClass.None, null, null, result.Data.Id.ToString("D"));
@@ -191,16 +205,54 @@ public sealed class PersonalRelationshipCreateOfflineDispatcher(
         return statusFailure(result.Status, result.Error?.ErrorCode);
     }
 
+    public static async Task<Guid?> ResolveServerContactIdAsync(
+        ILocalPersonalUtangStore localStore,
+        Guid localOrServerContactId,
+        CancellationToken ct)
+    {
+        var contact = await localStore.GetContactAsync(localOrServerContactId, ct).ConfigureAwait(false);
+        if (contact is null)
+        {
+            return null;
+        }
+
+        if (contact.ServerId is Guid serverId)
+        {
+            return serverId;
+        }
+
+        // Hydrated contacts often use id == server id with ServerId also set; if only Id is present
+        // and already synced, Id is the Platform contact id.
+        if (string.Equals(contact.SyncStatus, LocalPersonalSyncStatus.Synced, StringComparison.OrdinalIgnoreCase))
+        {
+            return contact.Id;
+        }
+
+        return null;
+    }
+
     private static OfflineDispatchResult statusFailure(ApiCallStatus status, string? code) =>
-        status is ApiCallStatus.Offline or ApiCallStatus.Timeout or ApiCallStatus.Cancelled
-            ? new OfflineDispatchResult(false, OfflineFailureClass.Transient, code ?? "transient", null, null)
-            : new OfflineDispatchResult(false, OfflineFailureClass.Permanent, code ?? "dispatch_failed", null, null);
+        status switch
+        {
+            ApiCallStatus.Offline
+                or ApiCallStatus.Timeout
+                or ApiCallStatus.Cancelled
+                or ApiCallStatus.Unavailable
+                or ApiCallStatus.RateLimited
+                or ApiCallStatus.Failed =>
+                new OfflineDispatchResult(false, OfflineFailureClass.Transient, code ?? "transient", null, null),
+            ApiCallStatus.Unauthorized or ApiCallStatus.Forbidden =>
+                new OfflineDispatchResult(false, OfflineFailureClass.AccessBlocked, code ?? "access_blocked", null, null),
+            ApiCallStatus.Conflict =>
+                new OfflineDispatchResult(false, OfflineFailureClass.Conflict, code ?? "conflict", null, null),
+            _ => new OfflineDispatchResult(false, OfflineFailureClass.Permanent, code ?? "dispatch_failed", null, null)
+        };
 }
 
 /// <summary>Dispatches personal.entry.record to Platform Personal APIs only.</summary>
 public sealed class PersonalEntryRecordOfflineDispatcher(
     IPlatformAccessClient platform,
-    ILocalPersonalUtangStore? localStore = null) : IOfflineOperationDispatcher
+    ILocalPersonalUtangStore localStore) : IOfflineOperationDispatcher
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -242,14 +294,26 @@ public sealed class PersonalEntryRecordOfflineDispatcher(
         }
 
         // Prefer server relationship id when local row was already synced.
-        var relationshipId = payload.RelationshipId;
-        if (localStore is not null)
+        var local = await localStore.GetRelationshipAsync(payload.RelationshipId, ct).ConfigureAwait(false);
+        if (local is null)
         {
-            var local = await localStore.GetRelationshipAsync(payload.RelationshipId, ct).ConfigureAwait(false);
-            if (local?.ServerId is Guid serverRel)
-            {
-                relationshipId = serverRel;
-            }
+            return new OfflineDispatchResult(
+                false, OfflineFailureClass.Permanent, "relationship_missing", null, null);
+        }
+
+        Guid relationshipId;
+        if (local.ServerId is Guid serverRel)
+        {
+            relationshipId = serverRel;
+        }
+        else if (string.Equals(local.SyncStatus, LocalPersonalSyncStatus.Synced, StringComparison.OrdinalIgnoreCase))
+        {
+            relationshipId = local.Id;
+        }
+        else
+        {
+            return new OfflineDispatchResult(
+                false, OfflineFailureClass.Transient, "relationship_pending_sync", null, null);
         }
 
         var result = await platform
@@ -267,19 +331,31 @@ public sealed class PersonalEntryRecordOfflineDispatcher(
 
         if (result.IsSuccess && result.Data is not null)
         {
-            if (localStore is not null)
-            {
-                await localStore
-                    .MarkEntrySyncedAsync(payload.EntryId, result.Data.Id, ct)
-                    .ConfigureAwait(false);
-            }
+            await localStore
+                .MarkEntrySyncedAsync(payload.EntryId, result.Data.Id, ct)
+                .ConfigureAwait(false);
 
             return new OfflineDispatchResult(
                 true, OfflineFailureClass.None, null, null, result.Data.Id.ToString("D"));
         }
 
-        return result.Status is ApiCallStatus.Offline or ApiCallStatus.Timeout or ApiCallStatus.Cancelled
-            ? new OfflineDispatchResult(false, OfflineFailureClass.Transient, result.Error?.ErrorCode ?? "transient", null, null)
-            : new OfflineDispatchResult(false, OfflineFailureClass.Permanent, result.Error?.ErrorCode ?? "dispatch_failed", null, null);
+        return MapEntryFailure(result.Status, result.Error?.ErrorCode);
     }
+
+    private static OfflineDispatchResult MapEntryFailure(ApiCallStatus status, string? code) =>
+        status switch
+        {
+            ApiCallStatus.Offline
+                or ApiCallStatus.Timeout
+                or ApiCallStatus.Cancelled
+                or ApiCallStatus.Unavailable
+                or ApiCallStatus.RateLimited
+                or ApiCallStatus.Failed =>
+                new OfflineDispatchResult(false, OfflineFailureClass.Transient, code ?? "transient", null, null),
+            ApiCallStatus.Unauthorized or ApiCallStatus.Forbidden =>
+                new OfflineDispatchResult(false, OfflineFailureClass.AccessBlocked, code ?? "access_blocked", null, null),
+            ApiCallStatus.Conflict =>
+                new OfflineDispatchResult(false, OfflineFailureClass.Conflict, code ?? "conflict", null, null),
+            _ => new OfflineDispatchResult(false, OfflineFailureClass.Permanent, code ?? "dispatch_failed", null, null)
+        };
 }

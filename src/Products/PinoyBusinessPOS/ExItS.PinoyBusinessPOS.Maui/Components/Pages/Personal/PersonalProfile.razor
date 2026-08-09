@@ -1,51 +1,76 @@
 @page "/personal/profile"
 @layout Layout.PersonalShell
+@using ExItS.DesignSystem.Components.Internal
 @inject IAuthenticationService Auth
 @inject ICurrentUserContext CurrentUser
 @inject IPlatformAccessClient Platform
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
-<div class="pos-personal-profile">
-<StoreHeaderBack Href="/personal/more" />
-<Page>
-    <header class="pos-personal-profile__header">
-        <h1 class="pos-personal-profile__title">@L["Personal_ProfileTitle"]</h1>
-        <p class="pos-personal-profile__subtitle">@L["Personal_ProfileSubtitle"]</p>
-    </header>
+<div class="pos-settings pos-personal-profile">
+    <StoreHeaderBack Href="/personal/more" />
+    <Page>
+        <header class="pos-personal-profile__header">
+            <h1 class="pos-personal-profile__title">@L["Personal_ProfileTitle"]</h1>
+            <p class="pos-personal-profile__subtitle">@L["Personal_ProfileSubtitle"]</p>
+        </header>
 
-    @if (!_ready)
-    {
-        <Spinner />
-    }
-    else if (!_authenticated)
-    {
-        <ErrorState Title="@L["Auth_SessionExpiredTitle"]" Message="@L["Auth_SessionExpired"]" RetryLabel="@L["SignIn_Submit"]" OnRetry="GoSignIn" />
-    }
-    else if (_loadFailed)
-    {
-        <ErrorState Title="@L["Personal_ProfileErrorTitle"]" Message="@(_error ?? L["Personal_LoadErrorMessage"])" RetryLabel="@L["Common_Retry"]" OnRetry="LoadAsync" />
-    }
-    else
-    {
-        <Section Title="@L["Personal_ProfileSection"]">
-            <Stack Gap="2">
-                <div><span class="pos-muted">@L["Register_DisplayName"]</span><div class="pos-value-md">@(_profile?.DisplayName ?? CurrentUser.Session?.DisplayName)</div></div>
-                <div><span class="pos-muted">@L["SignIn_UsernameLabel"]</span><div class="pos-value-md">@(_profile?.Username ?? CurrentUser.Session?.Username)</div></div>
-                <div><span class="pos-muted">@L["Register_Email"]</span><div class="pos-value-md">@(_profile?.Email ?? CurrentUser.Session?.Email)</div></div>
-                @if (!string.IsNullOrWhiteSpace(_profile?.PublicUserId))
-                {
-                    <div><span class="pos-muted">@L["Personal_ExItsIdLabel"]</span><div class="pos-value-md">@_profile.PublicUserId</div></div>
-                }
-                <div><span class="pos-muted">@L["Personal_AccountClass"]</span><div class="pos-value-md">@(_profile?.AccountClass ?? CurrentUser.Session?.AccountClass ?? "—")</div></div>
-                <div><span class="pos-muted">@L["Personal_StatusLabel"]</span><div class="pos-value-md">@(_profile?.Status ?? "—")</div></div>
-            </Stack>
-            <FormActions>
-                <Button Variant="ButtonVariant.Secondary" OnClick="GoMyQr">@L["Personal_MyQrLink"]</Button>
-            </FormActions>
-        </Section>
-    }
-</Page>
+        @if (!_ready)
+        {
+            <Spinner />
+        }
+        else if (!_authenticated)
+        {
+            <ErrorState Title="@L["Auth_SessionExpiredTitle"]" Message="@L["Auth_SessionExpired"]" RetryLabel="@L["SignIn_Submit"]" OnRetry="GoSignIn" />
+        }
+        else if (_loadFailed)
+        {
+            <ErrorState Title="@L["Personal_ProfileErrorTitle"]" Message="@(_error ?? L["Personal_LoadErrorMessage"])" RetryLabel="@L["Common_Retry"]" OnRetry="LoadAsync" />
+        }
+        else
+        {
+            <Section Title="@L["Personal_ProfileSection"]">
+                <div class="pos-settings__panel">
+                    <div class="pos-settings__kv">
+                        <span class="pos-settings__kv-label">@L["Register_DisplayName"]</span>
+                        <span class="pos-settings__kv-value">@(_profile?.DisplayName ?? CurrentUser.Session?.DisplayName)</span>
+                    </div>
+                    <div class="pos-settings__kv">
+                        <span class="pos-settings__kv-label">@L["SignIn_UsernameLabel"]</span>
+                        <span class="pos-settings__kv-value">@(_profile?.Username ?? CurrentUser.Session?.Username)</span>
+                    </div>
+                    <div class="pos-settings__kv">
+                        <span class="pos-settings__kv-label">@L["Register_Email"]</span>
+                        <span class="pos-settings__kv-value">@(_profile?.Email ?? CurrentUser.Session?.Email)</span>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(_profile?.PublicUserId))
+                    {
+                        <div class="pos-settings__kv">
+                            <span class="pos-settings__kv-label">@L["Personal_ExItsIdLabel"]</span>
+                            <span class="pos-settings__kv-value">@_profile.PublicUserId</span>
+                        </div>
+                    }
+                    <div class="pos-settings__kv">
+                        <span class="pos-settings__kv-label">@L["Personal_AccountClass"]</span>
+                        <span class="pos-settings__kv-value">@(_profile?.AccountClass ?? CurrentUser.Session?.AccountClass ?? "—")</span>
+                    </div>
+                    <div class="pos-settings__kv">
+                        <span class="pos-settings__kv-label">@L["Personal_StatusLabel"]</span>
+                        <span class="pos-settings__kv-value">@(_profile?.Status ?? "—")</span>
+                    </div>
+                    <button type="button" class="pos-settings__nav" @onclick="GoMyQr">
+                        <span class="pos-settings__nav-icon" aria-hidden="true">@IconGlyphs.Get("qr")</span>
+                        <span class="pos-settings__nav-label">@L["Personal_MyQrLink"]</span>
+                        <span class="pos-settings__chevron" aria-hidden="true">›</span>
+                    </button>
+                </div>
+            </Section>
+            @if (!string.IsNullOrEmpty(_error))
+            {
+                <InlineMessage Tone="InlineMessageTone.Info">@_error</InlineMessage>
+            }
+        }
+    </Page>
 </div>
 
 @code {
@@ -87,7 +112,6 @@
             }
             else
             {
-                // Session fallback is still useful; do not hard-fail the page.
                 _error = result.Error?.Detail;
             }
         }

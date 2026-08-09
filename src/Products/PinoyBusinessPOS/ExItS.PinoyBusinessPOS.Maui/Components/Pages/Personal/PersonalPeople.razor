@@ -55,10 +55,10 @@
                             <span class="pos-personal-row__body">
                                 <span class="pos-personal-row__title">@c.DisplayName</span>
                                 <span class="pos-personal-row__meta">
-                                    @(c.Phone ?? c.SyncStatus)
+                                    @(string.IsNullOrWhiteSpace(c.Phone) ? "—" : c.Phone)
                                     @if (string.Equals(c.SyncStatus, LocalPersonalSyncStatus.Pending, StringComparison.OrdinalIgnoreCase))
                                     {
-                                        <Badge Tone="BadgeTone.Warning">@L["Offline_SavedPendingSync"]</Badge>
+                                        <span class="pos-personal-row__chip">@L["SyncStatus_PendingCountLabel"]</span>
                                     }
                                 </span>
                             </span>
@@ -68,35 +68,54 @@
                 </div>
             }
 
-            <Section Title="@L["Personal_PeopleAddByIdTitle"]">
-                <InlineMessage Tone="InlineMessageTone.Info">@L["Personal_PeopleAddByIdHint"]</InlineMessage>
-                <div class="pos-action-grid pos-action-grid--single pos-personal-people__actions" role="group">
-                    <button type="button" class="pos-action-tile" disabled="@_busy" @onclick="GoResolveExItsId">
-                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("qr")</span>
-                        <span class="pos-action-tile__label">@L["Personal_AddByExItsId"]</span>
+            @* Toggle only when a contact list exists; empty state already opens the form. *@
+            @if (_contacts.Count > 0)
+            {
+                <div class="pos-personal-create-toggle">
+                    <button type="button"
+                            class="pos-action-tile @(_showCreate ? null : "pos-action-tile--primary")"
+                            disabled="@_busy"
+                            @onclick="ToggleCreate">
+                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get(_showCreate ? "close" : "plus")</span>
+                        <span class="pos-action-tile__label">@(_showCreate ? L["Common_Cancel"] : L["Personal_PeopleCreate"])</span>
                     </button>
                 </div>
-            </Section>
+            }
 
-            <Section Title="@L["Personal_PeopleCreateTitle"]">
-                <div class="pos-settings__panel">
-                    <FormValidationSummary Messages="_errors" />
-                    <Stack Gap="2">
-                        <TextInput Label="@L["Register_DisplayName"]" @bind-Value="_name" Disabled="_busy" />
-                        <TextInput Label="@L["Register_Email"]" @bind-Value="_email" Disabled="_busy" />
-                        <TextInput Label="@L["Personal_PhoneLabel"]" @bind-Value="_phone" Disabled="_busy" />
-                    </Stack>
-                    <div class="pos-action-grid pos-action-grid--single pos-personal-people__actions" role="group">
-                        <button type="button"
-                                class="pos-action-tile pos-action-tile--primary"
-                                disabled="@_busy"
-                                @onclick="CreateAsync">
-                            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("plus")</span>
-                            <span class="pos-action-tile__label">@L["Personal_PeopleCreate"]</span>
-                        </button>
+            @if (_showCreate)
+            {
+                <Section Title="@L["Personal_PeopleAddByIdTitle"]">
+                    <div class="pos-settings__panel">
+                        <InlineMessage Tone="InlineMessageTone.Info">@L["Personal_PeopleAddByIdHint"]</InlineMessage>
+                        <div class="pos-action-grid pos-action-grid--single pos-personal-people__actions" role="group">
+                            <button type="button" class="pos-action-tile" disabled="@_busy" @onclick="GoResolveExItsId">
+                                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("qr")</span>
+                                <span class="pos-action-tile__label">@L["Personal_AddByExItsId"]</span>
+                            </button>
+                        </div>
                     </div>
-                </div>
-            </Section>
+                </Section>
+
+                <Section Title="@L["Personal_PeopleCreateTitle"]">
+                    <div class="pos-settings__panel">
+                        <FormValidationSummary Messages="_errors" />
+                        <Stack Gap="2">
+                            <TextInput Label="@L["Register_DisplayName"]" @bind-Value="_name" Disabled="_busy" />
+                            <TextInput Label="@L["Register_Email"]" @bind-Value="_email" Disabled="_busy" />
+                            <TextInput Label="@L["Personal_PhoneLabel"]" @bind-Value="_phone" Disabled="_busy" />
+                        </Stack>
+                        <div class="pos-action-grid pos-action-grid--single pos-personal-people__actions" role="group">
+                            <button type="button"
+                                    class="pos-action-tile pos-action-tile--primary"
+                                    disabled="@_busy"
+                                    @onclick="CreateAsync">
+                                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("plus")</span>
+                                <span class="pos-action-tile__label">@L["Personal_PeopleCreate"]</span>
+                            </button>
+                        </div>
+                    </div>
+                </Section>
+            }
         }
     </Page>
 </div>
@@ -106,6 +125,7 @@
     private bool _authenticated;
     private bool _loadFailed;
     private bool _busy;
+    private bool _showCreate;
     private string? _error;
     private string? _name;
     private string? _email;
@@ -156,10 +176,7 @@
 
             _contacts = await LocalStore.ListContactsAsync();
             _pendingSync = await PersonalSync.GetPendingCountAsync();
-            if (_contacts.Count == 0 && !await Connectivity.IsConnectedAsync())
-            {
-                // Offline with empty local cache is a valid empty state, not a load failure.
-            }
+            _showCreate = _contacts.Count == 0;
         }
         catch
         {
@@ -172,6 +189,8 @@
         }
     }
 
+    private void ToggleCreate() => _showCreate = !_showCreate;
+
     private async Task TryHydrateFromServerAsync()
     {
         var result = await Platform.GetPersonalContactsAsync();
@@ -183,6 +202,7 @@
         var userId = CurrentUser.Session.UserId;
         foreach (var c in result.Data)
         {
+            // COALESCE in Upsert keeps local Notes (email) when server Email is null.
             await LocalStore.UpsertServerContactAsync(new LocalPersonalContact(
                 c.Id,
                 userId,
@@ -226,6 +246,10 @@
             }
 
             await LoadAsync();
+        }
+        catch (InvalidOperationException ex) when (ex.Message == LocalPersonalStoreErrors.EmailConflict)
+        {
+            _errors.Add(L["Personal_PeopleEmailConflict"]);
         }
         catch
         {

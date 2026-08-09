@@ -1,5 +1,6 @@
 @page "/personal/utang/relationships/{RelationshipId:guid}"
 @layout Layout.PersonalShell
+@using ExItS.DesignSystem.Components.Internal
 @inject IAuthenticationService Auth
 @inject ICurrentUserContext CurrentUser
 @inject IPlatformAccessClient Platform
@@ -40,23 +41,34 @@
         }
 
         <Section Title="@L["Personal_BalanceSection"]">
-            <Stack Gap="2">
-                <div class="pos-value-md">@_relationship.Outstanding.ToString("N2") @_relationship.Currency</div>
-                <span class="pos-muted">@_relationship.Direction · @_relationship.SyncStatus · v@_relationship.Version</span>
-            </Stack>
+            <div class="pos-personal-balance">
+                <span class="pos-personal-balance__amount">@_relationship.Outstanding.ToString("N2")</span>
+                <span class="pos-personal-balance__currency">@_relationship.Currency</span>
+                <span class="pos-personal-balance__meta">
+                    @PerspectiveLabel(_relationship.Direction)
+                    @if (string.Equals(_relationship.SyncStatus, LocalPersonalSyncStatus.Pending, StringComparison.OrdinalIgnoreCase))
+                    {
+                        <span class="pos-personal-row__chip">@L["SyncStatus_PendingCountLabel"]</span>
+                    }
+                </span>
+            </div>
         </Section>
 
         <Section Title="@L["Personal_RecordEntryTitle"]">
-            <FormValidationSummary Messages="_errors" />
-            <FormGroup>
-                <Select Label="@L["Personal_EntryType"]" Value="@_entryType" ValueChanged="OnEntryTypeChanged" Options="_entryOptions" Disabled="_busy" />
-                <TextInput Label="@L["Personal_InitialAmount"]" @bind-Value="_amount" Disabled="_busy" />
-                <TextInput Label="@L["Personal_NotesLabel"]" @bind-Value="_notes" Disabled="_busy" />
-            </FormGroup>
-            <FormActions>
-                <Button IsLoading="_busy" Disabled="_busy" OnClick="RecordAsync">@L["Personal_RecordEntry"]</Button>
-                <Button Variant="ButtonVariant.Secondary" Disabled="_busy" OnClick="InviteAsync">@L["Personal_Nav_UtangInvitations"]</Button>
-            </FormActions>
+            <div class="pos-settings__panel">
+                <FormValidationSummary Messages="_errors" />
+                <Stack Gap="2">
+                    <Select Label="@L["Personal_EntryType"]" Value="@_entryType" ValueChanged="OnEntryTypeChanged" Options="_entryOptions" Disabled="_busy" />
+                    <TextInput Label="@L["Personal_InitialAmount"]" @bind-Value="_amount" Disabled="_busy" />
+                    <TextInput Label="@L["Personal_NotesLabel"]" @bind-Value="_notes" Disabled="_busy" />
+                </Stack>
+                <div class="pos-personal-utang__actions">
+                    <Button IsLoading="_busy" Disabled="_busy" OnClick="RecordAsync">@L["Personal_RecordEntry"]</Button>
+                </div>
+                <button type="button" class="pos-personal-link-action" disabled="@_busy" @onclick="InviteAsync">
+                    @L["Personal_Nav_UtangInvitations"]
+                </button>
+            </div>
         </Section>
 
         <Section Title="@L["Personal_HistorySection"]">
@@ -66,21 +78,28 @@
             }
             else
             {
-                <Stack Gap="2">
+                <div class="pos-personal-list" role="list">
                     @foreach (var e in _history)
                     {
-                        <div class="pos-personal-org">
-                            <Stack Gap="1">
-                                <span class="pos-value-md">@e.EntryType · @e.Amount.ToString("N2")</span>
-                                <span class="pos-muted">@e.OccurredAtUtc.LocalDateTime.ToString("g") · @e.SyncStatus</span>
-                                @if (!string.IsNullOrWhiteSpace(e.Note))
-                                {
-                                    <span class="pos-muted">@e.Note</span>
-                                }
-                            </Stack>
+                        <div class="pos-personal-row pos-personal-row--static" role="listitem">
+                            <span class="pos-personal-row__body">
+                                <span class="pos-personal-row__title">@EntryTypeLabel(e.EntryType)</span>
+                                <span class="pos-personal-row__meta">
+                                    @e.OccurredAtUtc.LocalDateTime.ToString("g")
+                                    @if (!string.IsNullOrWhiteSpace(e.Note))
+                                    {
+                                        <text> · @e.Note</text>
+                                    }
+                                    @if (string.Equals(e.SyncStatus, LocalPersonalSyncStatus.Pending, StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        <span class="pos-personal-row__chip">@L["SyncStatus_PendingCountLabel"]</span>
+                                    }
+                                </span>
+                            </span>
+                            <span class="pos-personal-row__amount">@e.Amount.ToString("N2")</span>
                         </div>
                     }
-                </Stack>
+                </div>
             }
         </Section>
     }
@@ -265,6 +284,23 @@
             : "/personal/utang/lent";
         Nav.NavigateTo(path);
     }
+
+    private string PerspectiveLabel(string perspective) =>
+        string.Equals(perspective, LocalPersonalDirection.Lent, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(perspective, "Lent", StringComparison.OrdinalIgnoreCase)
+            ? L["Personal_Stat_Lent"]
+            : string.Equals(perspective, LocalPersonalDirection.Borrowed, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(perspective, "Borrowed", StringComparison.OrdinalIgnoreCase)
+                ? L["Personal_Stat_Borrowed"]
+                : perspective;
+
+    private string EntryTypeLabel(string entryType) => entryType switch
+    {
+        "Payment" => L["Personal_Entry_Payment"],
+        "Loan" => L["Personal_Entry_Loan"],
+        "Adjustment" => L["Personal_Entry_Adjustment"],
+        _ => entryType
+    };
 
     private void GoSignIn() => Nav.NavigateTo("/signin");
 }

@@ -3311,6 +3311,11 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("OwnerUserIdentityId");
 
+                    b.HasIndex("OwnerUserIdentityId", "Email")
+                        .IsUnique()
+                        .HasDatabaseName("ux_personal_contacts_owner_active_email")
+                        .HasFilter("email IS NOT NULL AND status = 'Active'");
+
                     b.ToTable("personal_contacts", "platform");
                 });
 

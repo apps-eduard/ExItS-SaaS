@@ -123,6 +123,7 @@ public static class DomainErrorCodes
 
     public const string InvalidPersonalContactId = "platform.personal.contact.id.invalid";
     public const string InvalidPersonalContactDisplayName = "platform.personal.contact.display_name.invalid";
+    public const string PersonalContactEmailConflict = "platform.personal.contact.email.conflict";
     public const string InvalidPersonalDebtRelationshipId = "platform.personal.debt_relationship.id.invalid";
     public const string InvalidPersonalDebtRelationship = "platform.personal.debt_relationship.invalid";
     public const string InvalidPersonalUtangEntryId = "platform.personal.utang_entry.id.invalid";

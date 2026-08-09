@@ -543,6 +543,143 @@ button.pos-link {
     border-bottom: 0;
 }
 
+/* Explore POS commercial plans */
+.pos-personal-explore__hint {
+    margin: 0 0 var(--exits-space-4, 1rem);
+    padding: 0;
+    color: var(--pos-text-secondary, var(--exits-text-muted, #5b6b62));
+    font-size: var(--exits-text-sm, 0.875rem);
+    line-height: 1.4;
+}
+
+.pos-explore-plans {
+    display: flex;
+    flex-direction: column;
+    gap: var(--exits-space-3, 0.75rem);
+}
+
+.pos-explore-plan {
+    display: flex;
+    flex-direction: column;
+    gap: var(--exits-space-3, 0.75rem);
+    padding: var(--exits-space-4, 1rem);
+    background: var(--pos-surface-raised, var(--exits-surface, #fff));
+    border: 1px solid var(--pos-border-subtle, var(--exits-border, #d5ddd8));
+    border-radius: var(--exits-radius-md, 0.5rem);
+}
+
+.pos-explore-plan__header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem 0.75rem;
+}
+
+.pos-explore-plan__name {
+    margin: 0;
+    color: var(--pos-text-primary, var(--exits-text, #15201a));
+    font-size: 1.125rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.pos-explore-plan__badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--pos-accent, var(--exits-primary, #1f6b4a)) 12%, transparent);
+    color: var(--pos-accent, var(--exits-primary, #1f6b4a));
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.pos-explore-plan__badge--muted {
+    background: var(--exits-bg-muted, #eef2ef);
+    color: var(--pos-text-secondary, var(--exits-text-muted, #5b6b62));
+    font-weight: 500;
+}
+
+.pos-explore-plan__pricing {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.pos-explore-plan__price {
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.3rem;
+    color: var(--pos-text-primary, var(--exits-text, #15201a));
+}
+
+.pos-explore-plan__amount {
+    font-size: 1.75rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1;
+}
+
+.pos-explore-plan__currency,
+.pos-explore-plan__period {
+    color: var(--pos-text-secondary, var(--exits-text-muted, #5b6b62));
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.pos-explore-plan__annual {
+    margin: 0;
+    color: var(--pos-text-secondary, var(--exits-text-muted, #5b6b62));
+    font-size: var(--exits-text-sm, 0.875rem);
+    line-height: 1.3;
+}
+
+.pos-explore-plan__features {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+
+.pos-explore-plan__feature {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    color: var(--pos-text-primary, var(--exits-text, #15201a));
+    font-size: 0.9375rem;
+    line-height: 1.35;
+}
+
+.pos-explore-plan__check {
+    flex: 0 0 auto;
+    margin-top: 0.1rem;
+    color: var(--pos-accent, var(--exits-primary, #1f6b4a));
+    font-size: 0.95rem;
+    line-height: 1;
+}
+
+.pos-explore-plan__actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    margin-top: 0.15rem;
+}
+
+.pos-explore-plan__actions > * {
+    width: 100%;
+}
+
+.pos-explore-plan__actions button {
+    width: 100%;
+}
+
 .pos-qr-panel {
     display: flex;
     flex-direction: column;
@@ -575,7 +712,8 @@ html.pos-keyboard-open .pos-content {
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: var(--exits-z-nav, 30);
+    /* Above scroll content / sticky bars; stay below dialogs (1200) and drawers (1100). */
+    z-index: 50;
     display: flex;
     background: var(--exits-surface-elevated);
     border-top: 1px solid var(--exits-border);
@@ -5450,6 +5588,13 @@ html.pos-keyboard-open .pos-content {
     cursor: pointer;
 }
 
+.pos-signin__offline-panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--exits-space-3, 0.75rem);
+    margin: 0 0 var(--exits-space-4, 1rem);
+}
+
 .pos-signin__use-pin {
     margin: 0 0 0.75rem;
 }
@@ -10291,6 +10436,7 @@ html.pos-keyboard-open .pos-content {
 }
 
 /* Personal densify page headers */
+.pos-personal-home__header,
 .pos-personal-more__header,
 .pos-personal-settings__header,
 .pos-personal-profile__header,
@@ -10309,6 +10455,7 @@ html.pos-keyboard-open .pos-content {
     margin-bottom: var(--exits-space-3, 0.75rem);
 }
 
+.pos-personal-home__title,
 .pos-personal-more__title,
 .pos-personal-settings__title,
 .pos-personal-profile__title,
@@ -10331,6 +10478,7 @@ html.pos-keyboard-open .pos-content {
     margin: 0;
 }
 
+.pos-personal-home__subtitle,
 .pos-personal-more__subtitle,
 .pos-personal-settings__subtitle,
 .pos-personal-profile__subtitle,
@@ -10386,6 +10534,19 @@ html.pos-keyboard-open .pos-content {
     border: 1px solid var(--exits-border);
     border-radius: var(--exits-radius-md, 0.5rem);
     background: var(--exits-surface);
+}
+
+.pos-personal-stat--link {
+    width: 100%;
+    margin: 0;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+    font: inherit;
+}
+
+.pos-personal-stat--link:active {
+    background: color-mix(in srgb, var(--exits-surface) 88%, var(--exits-primary, #1b7a3d) 12%);
 }
 
 .pos-personal-stat__label {
@@ -10446,9 +10607,44 @@ html.pos-keyboard-open .pos-content {
 }
 
 .pos-personal-row__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
     font-size: var(--exits-text-xs);
     color: var(--exits-text-muted);
     line-height: 1.3;
+}
+
+.pos-personal-row__amount {
+    flex-shrink: 0;
+    font-size: var(--exits-text-sm);
+    font-weight: 700;
+    color: var(--exits-text);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+}
+
+.pos-personal-row__currency {
+    font-size: var(--exits-text-xs);
+    font-weight: 600;
+    color: var(--exits-text-muted);
+}
+
+.pos-personal-row__chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.1rem 0.4rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--exits-warning, #c47b1a) 18%, transparent);
+    color: var(--exits-warning, #9a5f10);
+    font-size: 0.7rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.pos-personal-row--static {
+    cursor: default;
 }
 
 .pos-personal-row__chevron {
@@ -10456,6 +10652,86 @@ html.pos-keyboard-open .pos-content {
     font-size: 1.25rem;
     line-height: 1;
     color: var(--exits-text-muted);
+}
+
+.pos-personal-create-toggle {
+    margin: var(--exits-space-2) 0 var(--exits-space-3);
+}
+
+.pos-personal-create-toggle .pos-action-tile {
+    flex-direction: row;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.pos-personal-balance {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: var(--exits-space-3);
+    border: 1px solid var(--exits-border);
+    border-radius: var(--exits-radius-md, 0.5rem);
+    background: var(--exits-surface);
+}
+
+.pos-personal-balance__amount {
+    font-size: 1.75rem;
+    font-weight: 750;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+    color: var(--exits-text);
+}
+
+.pos-personal-balance__currency {
+    font-size: var(--exits-text-sm);
+    font-weight: 600;
+    color: var(--exits-text-muted);
+}
+
+.pos-personal-balance__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+    margin-top: 0.15rem;
+    font-size: var(--exits-text-xs);
+    color: var(--exits-text-muted);
+}
+
+.pos-personal-link-action {
+    display: inline-flex;
+    align-self: flex-start;
+    margin-top: var(--exits-space-2);
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--exits-primary, #1b7a3d);
+    font: inherit;
+    font-size: var(--exits-text-sm);
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
+}
+
+.pos-personal-link-action:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.pos-personal-people-detail__actions,
+.pos-personal-invitations__actions {
+    margin-top: var(--exits-space-3);
+}
+
+.pos-personal-invitations__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--exits-space-2);
+}
+
+.pos-personal-utang__actions .exds-btn {
+    width: 100%;
 }
 
 .pos-personal-people__actions,

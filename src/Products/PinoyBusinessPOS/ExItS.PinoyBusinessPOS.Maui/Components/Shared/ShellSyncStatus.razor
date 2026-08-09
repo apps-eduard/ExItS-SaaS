@@ -1,8 +1,7 @@
 @implements IDisposable
 @using ExItS.DesignSystem.Components.Internal
 @inject IPosSyncStatusService SyncStatus
-@inject IOfflineQueueProcessor QueueProcessor
-@inject ICustomerCreditOfflineSyncService CustomerCreditSync
+@inject IOfflineReconnectAutoSync ReconnectAutoSync
 @inject IOfflineOperationQueue OfflineQueue
 @inject IConnectivityService Connectivity
 @inject IStringLocalizer<PosResources> L
@@ -373,7 +372,7 @@
         {
             if (await Connectivity.IsConnectedAsync())
             {
-                await CustomerCreditSync.ReconcileOnReconnectAsync();
+                await ReconnectAutoSync.TrySyncNowAsync();
             }
 
             SyncStatus.Refresh();
@@ -395,14 +394,8 @@
         _retryBusy = true;
         try
         {
-            if (await Connectivity.IsConnectedAsync())
-            {
-                await CustomerCreditSync.ReconcileOnReconnectAsync();
-            }
-            else
-            {
-                await QueueProcessor.ProcessAvailableAsync();
-            }
+            // Personal + org: reclaim stuck permanent/conflict rows, then flush outbox.
+            await ReconnectAutoSync.RetryIncludingFailedAsync();
 
             SyncStatus.Refresh();
             await RefreshQueueIndicatorsAsync();

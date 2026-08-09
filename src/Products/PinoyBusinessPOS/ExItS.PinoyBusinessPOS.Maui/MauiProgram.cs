@@ -51,7 +51,10 @@ public static class MauiProgram
         builder.Logging.AddDebug();
 #endif
 
-        return builder.Build();
+        var app = builder.Build();
+        // Start reconnect auto-sync as soon as the DI container is live.
+        app.Services.GetRequiredService<IOfflineReconnectAutoSync>().Start();
+        return app;
     }
 
     private static void ConfigureAppConfiguration(ConfigurationManager configuration)
@@ -127,7 +130,9 @@ public static class MauiProgram
         services.AddSingleton<OfflineSessionUxState>();
         services.AddSingleton<IPosOfflineCapabilityPolicy, PosOfflineCapabilityPolicy>();
         services.AddSingleton<OnlineRequiredGuard>();
-        services.AddSingleton<OfflineAwareNavigation>();
+        // Scoped: captures BlazorWebView NavigationManager (scoped). Singleton would keep a
+        // stale/uninitialized manager and Personal/POS tab clicks would appear dead.
+        services.AddScoped<OfflineAwareNavigation>();
         services.AddPinoyBusinessPosLocalStore();
         services.AddSingleton<ProtectedShellAccessPolicy>();
         services.AddSingleton<IProtectedShellAccessPolicy>(sp => sp.GetRequiredService<ProtectedShellAccessPolicy>());
@@ -174,6 +179,7 @@ public static class MauiProgram
         services.AddSingleton<IOfflineOperationDispatcher, PersonalEntryRecordOfflineDispatcher>();
         services.AddSingleton<ICustomerCreditOfflineSyncService, CustomerCreditOfflineSyncService>();
         services.AddSingleton<IPersonalOfflineSyncService, PersonalOfflineSyncService>();
+        services.AddSingleton<IOfflineReconnectAutoSync, OfflineReconnectAutoSyncService>();
         services.AddSingleton<ILocalSellingCatalogSyncService, LocalSellingCatalogSyncService>();
         services.AddSingleton<PosStatusState>();
         // The checkout cart lives only in memory for the signed-in session and clears itself on

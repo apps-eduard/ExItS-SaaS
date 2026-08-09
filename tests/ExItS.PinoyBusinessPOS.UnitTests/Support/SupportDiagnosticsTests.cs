@@ -377,6 +377,7 @@ public sealed class SupportDiagnosticsTests
         public Task EnqueueAsync(OfflineEnqueueRequest request, CancellationToken ct = default) => Task.CompletedTask;
         public Task RecoverAbandonedSyncingAsync(CancellationToken ct = default) => Task.CompletedTask;
         public Task ReclaimBlockedByAccessAsync(CancellationToken ct = default) => Task.CompletedTask;
+        public Task ReclaimFailedForManualRetryAsync(CancellationToken ct = default) => Task.CompletedTask;
         public Task<OfflineOperationEnvelope?> TryClaimNextAsync(string claimToken, CancellationToken ct = default) =>
             Task.FromResult<OfflineOperationEnvelope?>(null);
         public Task MarkSucceededAsync(Guid operationId, string? serverReference, CancellationToken ct = default) => Task.CompletedTask;
@@ -427,6 +428,8 @@ public sealed class SupportDiagnosticsTests
         public Task<IReadOnlyList<LocalPersonalContact>> ListContactsAsync(CancellationToken ct = default) =>
             Task.FromResult<IReadOnlyList<LocalPersonalContact>>([]);
         public Task<LocalPersonalContact?> GetContactAsync(Guid contactId, CancellationToken ct = default) =>
+            Task.FromResult<LocalPersonalContact?>(null);
+        public Task<LocalPersonalContact?> FindContactByNormalizedEmailAsync(string normalizedEmail, CancellationToken ct = default) =>
             Task.FromResult<LocalPersonalContact?>(null);
         public Task<IReadOnlyList<LocalPersonalRelationship>> ListRelationshipsAsync(string direction, CancellationToken ct = default) =>
             Task.FromResult<IReadOnlyList<LocalPersonalRelationship>>([]);

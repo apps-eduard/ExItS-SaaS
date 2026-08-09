@@ -85,6 +85,11 @@ public sealed record LocalPersonalAggregates(
     decimal TotalLentBalance,
     decimal TotalBorrowedBalance);
 
+public static class LocalPersonalStoreErrors
+{
+    public const string EmailConflict = "email_conflict";
+}
+
 /// <summary>Local-first Personal Utang store with transactional outbox enqueue.</summary>
 public interface ILocalPersonalUtangStore
 {
@@ -93,6 +98,13 @@ public interface ILocalPersonalUtangStore
     Task<IReadOnlyList<LocalPersonalContact>> ListContactsAsync(CancellationToken ct = default);
 
     Task<LocalPersonalContact?> GetContactAsync(Guid contactId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Finds a contact whose Notes (email) matches the normalized email (case-insensitive).
+    /// </summary>
+    Task<LocalPersonalContact?> FindContactByNormalizedEmailAsync(
+        string normalizedEmail,
+        CancellationToken ct = default);
 
     Task<IReadOnlyList<LocalPersonalRelationship>> ListRelationshipsAsync(
         string direction,

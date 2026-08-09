@@ -12,12 +12,13 @@
 <a class="skip-link" href="#pos-main">@L["Nav_SkipToContent"]</a>
 
 <div class="exds-root pos-shell pos-shell--personal" data-layout="phone" @key="_cultureEpoch">
-    <StoreHeader Identity="StoreHeaderIdentity.Personal"
+    <StoreHeader @ref="_storeHeader"
+                 Identity="StoreHeaderIdentity.Personal"
                  ShowSync="true"
                  ShowPersonalHome="false"
                  ShowSwitchOrganization="true" />
 
-    <main class="pos-content" id="pos-main" tabindex="-1">
+    <main class="pos-content" id="pos-main" tabindex="-1" @onclick="CloseOverlays">
         @Body
     </main>
 
@@ -65,6 +66,7 @@
 @code {
     private int _cultureEpoch;
     private string _path = "/personal";
+    private StoreHeader? _storeHeader;
 
     protected override void OnInitialized()
     {
@@ -74,6 +76,8 @@
         Nav.LocationChanged += OnLocationChanged;
         RefreshPath();
     }
+
+    private void CloseOverlays() => _storeHeader?.CloseOverlays();
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -129,11 +133,11 @@
         || _path.StartsWith("/personal/explore-pos", StringComparison.OrdinalIgnoreCase)
         || _path.StartsWith("/personal/utang/invitations", StringComparison.OrdinalIgnoreCase);
 
-    private void GoHome() => _ = NavigateTabAsync("/personal");
-    private void GoPeople() => _ = NavigateTabAsync("/personal/utang/people");
-    private void GoLent() => _ = NavigateTabAsync("/personal/utang/lent");
-    private void GoBorrowed() => _ = NavigateTabAsync("/personal/utang/borrowed");
-    private void GoMore() => _ = NavigateTabAsync("/personal/more");
+    private Task GoHome() => NavigateTabAsync("/personal");
+    private Task GoPeople() => NavigateTabAsync("/personal/utang/people");
+    private Task GoLent() => NavigateTabAsync("/personal/utang/lent");
+    private Task GoBorrowed() => NavigateTabAsync("/personal/utang/borrowed");
+    private Task GoMore() => NavigateTabAsync("/personal/more");
 
     private Task NavigateTabAsync(string href) =>
         // replace:true keeps Android back from walking every tab visit.

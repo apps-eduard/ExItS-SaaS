@@ -229,13 +229,16 @@
   <data name="SignIn_ProviderPlaceholder" xml:space="preserve"><value>Hindi pa available ang external provider sign-in.</value></data>
   <data name="SignIn_UsePin" xml:space="preserve"><value>Gamitin ang PIN</value></data>
   <data name="SignIn_OfflineTitle" xml:space="preserve"><value>Offline ka</value></data>
-  <data name="SignIn_OfflineMessage" xml:space="preserve"><value>Gamitin ang PIN para magpatuloy sa huling authorized account sa device na ito.</value></data>
+  <data name="SignIn_OfflineMessage" xml:space="preserve"><value>Walang internet. Gamitin ang PIN para sa limited offline use sa device na ito. Magsi-sync ang mga pagbabago kapag online na.</value></data>
+  <data name="SignIn_OfflineLimitedHint" xml:space="preserve"><value>Limited ang offline access sa mga dating authorized na feature sa device na ito. Magsi-sync ang mga pagbabago kapag online na.</value></data>
+  <data name="SignIn_ContinueOffline" xml:space="preserve"><value>Magpatuloy offline</value></data>
+  <data name="SignIn_OfflineNoPinMessage" xml:space="preserve"><value>Offline ka at hindi pa available ang offline unlock sa device na ito. Kumonekta muna para mag-sign in at mag-set ng PIN, saka mo magagamit ang limited offline features.</value></data>
   <data name="SignIn_OnlineRequiresInternet" xml:space="preserve"><value>Kailangan ng internet ang online sign-in.</value></data>
   <data name="SignIn_InternetRequired" xml:space="preserve"><value>Kailangan ng internet connection ang aksyong ito.</value></data>
   <data name="SignIn_StillConnecting" xml:space="preserve"><value>Kumokonekta pa...</value></data>
   <data name="SignIn_ContinueWaiting" xml:space="preserve"><value>Maghintay pa</value></data>
   <data name="SignIn_UsePinInstead" xml:space="preserve"><value>Gamitin ang PIN na lang</value></data>
-  <data name="SignIn_ServerUnreachablePinHint" xml:space="preserve"><value>Hindi maabot ang server. Puwede mong gamitin ang PIN para magpatuloy sa huling authorized account sa device na ito.</value></data>
+  <data name="SignIn_ServerUnreachablePinHint" xml:space="preserve"><value>Hindi maabot ang server. Gamitin ang PIN para sa limited offline use sa device na ito. Magsi-sync ang mga pagbabago kapag online na.</value></data>
   <data name="Common_OK" xml:space="preserve"><value>OK</value></data>
   <data name="Auth_Lock" xml:space="preserve"><value>I-lock</value></data>
   <data name="Offline_PinEnrollTitle" xml:space="preserve"><value>I-set up ang offline PIN</value></data>
@@ -243,6 +246,10 @@
   <data name="Offline_PinConfirmLabel" xml:space="preserve"><value>Kumpirmahin ang PIN</value></data>
   <data name="Offline_PinEnrollAction" xml:space="preserve"><value>I-set up ang PIN</value></data>
   <data name="Offline_PinConfirmMismatch" xml:space="preserve"><value>Hindi tugma ang PIN at confirmation.</value></data>
+  <data name="Offline_PinChangeTitle" xml:space="preserve"><value>Palitan ang offline PIN</value></data>
+  <data name="Offline_PinChangeMessage" xml:space="preserve"><value>Maglagay ng bagong PIN para ma-unlock ang device na ito offline. Nananatili sa device ang existing offline work.</value></data>
+  <data name="Offline_PinChangeAction" xml:space="preserve"><value>Palitan ang PIN</value></data>
+  <data name="Offline_PinChangeHint" xml:space="preserve"><value>I-update ang PIN para ma-unlock ang Personal at POS kapag offline.</value></data>
   <data name="Offline_WorkingTitle" xml:space="preserve"><value>Offline kang nagtatrabaho</value></data>
   <data name="Offline_WorkingMessage" xml:space="preserve"><value>Mase-save ang transactions at changes sa device na ito at magsi-sync kapag may internet. Hangga't hindi naka-sync, nasa device lang ang data na ito.</value></data>
   <data name="Offline_WorkingWarning" xml:space="preserve"><value>Panatilihing naka-install ang app at iwasan ang pag-clear ng app data o pag-reset ng phone hanggang ma-sync ang pending changes.</value></data>
@@ -337,7 +344,7 @@
   <data name="Access_UnauthorizedTitle" xml:space="preserve"><value>Hindi awtorisado para sa POS</value></data>
   <data name="Auth_Logout" xml:space="preserve"><value>Mag-sign out</value></data>
   <data name="Auth_LogoutConfirmTitle" xml:space="preserve"><value>Mag-sign out?</value></data>
-  <data name="Auth_LogoutConfirmMessage" xml:space="preserve"><value>Maki-clear ang secure session data sa device na ito.</value></data>
+  <data name="Auth_LogoutConfirmMessage" xml:space="preserve"><value>Magsi-sign out ka sa cloud sa device na ito. Mananatiling available ang offline PIN unlock para sa limited use kahit walang internet.</value></data>
   <data name="Auth_ProductionUnavailable" xml:space="preserve"><value>Hindi available ang production authentication sa build na ito.</value></data>
   <data name="Auth_ProductionUnavailableTitle" xml:space="preserve"><value>Hindi available ang sign-in</value></data>
   <data name="Auth_InvalidCredentials" xml:space="preserve"><value>Hindi ma-sign in ang Platform user.</value></data>
@@ -622,7 +629,7 @@
   <data name="SyncStatus_OfflineDetail" xml:space="preserve"><value>Offline — magsi-sync ang mga pagbabago kapag may connection</value></data>
   <data name="Offline_Banner" xml:space="preserve"><value>Offline — magsi-sync ang mga pagbabago kapag may connection</value></data>
   <data name="Offline_PinTitle" xml:space="preserve"><value>I-unlock ang offline POS</value></data>
-  <data name="Offline_PinSubtitle" xml:space="preserve"><value>Ilagay ang offline PIN para magpatuloy sa pagbebenta kahit walang network.</value></data>
+  <data name="Offline_PinSubtitle" xml:space="preserve"><value>Ilagay ang offline PIN para magpatuloy sa limited offline use. Magsi-sync ang mga pagbabago kapag online na.</value></data>
   <data name="Offline_PinLabel" xml:space="preserve"><value>Offline PIN</value></data>
   <data name="Offline_PinUnlock" xml:space="preserve"><value>I-unlock gamit ang PIN</value></data>
   <data name="Offline_PinRequired" xml:space="preserve"><value>Kailangan ang offline PIN</value></data>
@@ -1876,8 +1883,9 @@
   <data name="Personal_PeopleLoadFailed" xml:space="preserve"><value>People could not be loaded.</value></data>
   <data name="Personal_PeopleCreateTitle" xml:space="preserve"><value>Add person</value></data>
   <data name="Personal_PeopleCreate" xml:space="preserve"><value>Add person</value></data>
-  <data name="Personal_PeopleCreateFailed" xml:space="preserve"><value>Could not create the contact.</value></data>
-  <data name="Personal_PeopleNameRequired" xml:space="preserve"><value>Display name is required.</value></data>
+  <data name="Personal_PeopleCreateFailed" xml:space="preserve"><value>Hindi magawa ang contact.</value></data>
+  <data name="Personal_PeopleNameRequired" xml:space="preserve"><value>Kailangan ang display name.</value></data>
+  <data name="Personal_PeopleEmailConflict" xml:space="preserve"><value>May contact na may ganitong email.</value></data>
   <data name="Personal_PeopleDetailTitle" xml:space="preserve"><value>Person</value></data>
   <data name="Personal_PeopleBack" xml:space="preserve"><value>Back to people</value></data>
   <data name="Personal_PeopleNotFound" xml:space="preserve"><value>Contact was not found.</value></data>
@@ -2210,4 +2218,6 @@
   <data name="Support_AccessDeniedTitle" xml:space="preserve"><value>Diagnostics unavailable</value></data>
   <data name="Support_AccessDeniedMessage" xml:space="preserve"><value>Only the organization owner can open Organization diagnostics on this device.</value></data>
   <data name="Support_AccessWrongScope" xml:space="preserve"><value>This diagnostics page does not match your current account scope.</value></data>
+  <data name="Personal_UnknownContact" xml:space="preserve"><value>Unknown contact</value></data>
+  <data name="Personal_PeopleDetailSubtitle" xml:space="preserve"><value>Contact details and Utang shortcuts.</value></data>
 </root>

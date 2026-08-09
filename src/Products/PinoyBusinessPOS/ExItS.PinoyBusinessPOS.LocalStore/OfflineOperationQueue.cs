@@ -161,12 +161,51 @@ public sealed class OfflineOperationQueue(
                     claimed_by = NULL,
                     claimed_utc = NULL,
                     next_attempt_utc = $now,
+                    attempt_count = 0,
                     failure_code = NULL,
                     failure_summary = NULL
                 WHERE queue_state = $blocked;
                 """;
             cmd.Parameters.AddWithValue("$pending", nameof(OfflineQueueState.Pending));
             cmd.Parameters.AddWithValue("$blocked", nameof(OfflineQueueState.BlockedByAccess));
+            cmd.Parameters.AddWithValue("$now", now);
+            await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
+    public async Task ReclaimFailedForManualRetryAsync(CancellationToken ct = default)
+    {
+        var active = contextManager.ActiveContext;
+        if (active is null || active.Status != LocalContextInitStatus.Ready)
+        {
+            return;
+        }
+
+        await _gate.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            await using var connection = await OpenConnectionAsync(active, ct).ConfigureAwait(false);
+            await using var cmd = connection.CreateCommand();
+            var now = _clock.GetUtcNow().UtcDateTime.ToString("O", CultureInfo.InvariantCulture);
+            cmd.CommandText =
+                """
+                UPDATE offline_operations
+                SET queue_state = $pending,
+                    claimed_by = NULL,
+                    claimed_utc = NULL,
+                    next_attempt_utc = $now,
+                    attempt_count = 0,
+                    failure_code = NULL,
+                    failure_summary = NULL
+                WHERE queue_state IN ($permanent, $conflict);
+                """;
+            cmd.Parameters.AddWithValue("$pending", nameof(OfflineQueueState.Pending));
+            cmd.Parameters.AddWithValue("$permanent", nameof(OfflineQueueState.PermanentFailure));
+            cmd.Parameters.AddWithValue("$conflict", nameof(OfflineQueueState.Conflict));
             cmd.Parameters.AddWithValue("$now", now);
             await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
         }

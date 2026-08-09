@@ -35,7 +35,10 @@ public sealed class AuthOfflineUxLayerTests
         var page = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Pages", "OfflinePinEnrollment.razor"));
         Assert.Contains("Offline_PinEnrollTitle", page, StringComparison.Ordinal);
         Assert.Contains("Offline_PinEnrollAction", page, StringComparison.Ordinal);
+        Assert.Contains("Offline_PinChangeTitle", page, StringComparison.Ordinal);
+        Assert.Contains("Offline_PinChangeAction", page, StringComparison.Ordinal);
         Assert.Contains("Offline_PinConfirmLabel", page, StringComparison.Ordinal);
+        Assert.Contains("mode", page, StringComparison.Ordinal);
         Assert.DoesNotContain("Maybe later", page, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Offline_PinEnrollSkip", page, StringComparison.Ordinal);
         Assert.DoesNotContain("OnClick=\"Skip", page, StringComparison.OrdinalIgnoreCase);
@@ -53,19 +56,21 @@ public sealed class AuthOfflineUxLayerTests
     }
 
     [Fact]
-    public async Task Lock_keeps_grant_and_pin_while_sign_out_clears_grant()
+    public async Task Lock_keeps_grant_and_pin_hard_clear_drops_grant_only()
     {
         var clock = new FakeClock(DateTimeOffset.Parse("2026-08-08T00:00:00Z"));
         var harness = await SeedAsync(clock);
         Assert.Equal(OfflinePinUnlockStatus.Succeeded, (await harness.Service.UnlockWithPinAsync("123456")).Status);
         Assert.True(harness.Service.IsUnlockedThisProcess);
 
+        // Lock / Sign out path: process unlock drops, durable grant + PIN remain.
         harness.Service.LockThisProcess();
         Assert.False(harness.Service.IsUnlockedThisProcess);
         Assert.NotNull(await harness.Store.LoadGrantAsync());
         Assert.NotNull(await harness.Store.LoadPinVerifierAsync());
         Assert.True((await harness.Service.EvaluateColdStartOfferAsync()).CanOfferPinUnlock);
 
+        // Hard clear (server denial / remove-from-device): grant gone, PIN verifier retained.
         await harness.Service.ClearAsync();
         Assert.Null(await harness.Store.LoadGrantAsync());
         Assert.NotNull(await harness.Store.LoadPinVerifierAsync());
@@ -114,6 +119,10 @@ public sealed class AuthOfflineUxLayerTests
         Assert.Contains("ContinueWithGooglePlaceholderAsync", signIn, StringComparison.Ordinal);
         Assert.Contains("ContinueWithFacebookPlaceholderAsync", signIn, StringComparison.Ordinal);
         Assert.Contains("SignIn_UsePin", signIn, StringComparison.Ordinal);
+        Assert.Contains("SignIn_ContinueOffline", signIn, StringComparison.Ordinal);
+        Assert.Contains("SignIn_OfflineNoPinMessage", signIn, StringComparison.Ordinal);
+        Assert.Contains("SignIn_OfflineLimitedHint", signIn, StringComparison.Ordinal);
+        Assert.Contains("RefreshOfflineStateAsync", signIn, StringComparison.Ordinal);
         Assert.Contains("EvaluateOfflineColdStartOfferAsync", signIn, StringComparison.Ordinal);
         Assert.Contains("SignIn_InternetRequired", signIn, StringComparison.Ordinal);
         Assert.DoesNotContain("WebAuthenticator", signIn, StringComparison.Ordinal);
@@ -127,6 +136,12 @@ public sealed class AuthOfflineUxLayerTests
         Assert.Contains("/offline-pin-setup", gate, StringComparison.Ordinal);
         Assert.Contains("HasOfflinePinConfiguredAsync", gate, StringComparison.Ordinal);
         Assert.Contains("offline_pin_not_configured", gate, StringComparison.Ordinal);
+        Assert.Contains("RequiresOfflinePinSetupAsync", gate, StringComparison.Ordinal);
+        // Personal path must enroll PIN before PersonalHome (not only Organization POS).
+        var personalBranch = gate.IndexOf("OrganizationId is null", StringComparison.Ordinal);
+        var personalPin = gate.IndexOf("RequiresOfflinePinSetupAsync", personalBranch, StringComparison.Ordinal);
+        var personalHome = gate.IndexOf("RoleHomeResolver.PersonalHome", personalBranch, StringComparison.Ordinal);
+        Assert.InRange(personalPin, personalBranch, personalHome);
     }
 
     [Fact]
@@ -150,6 +165,8 @@ public sealed class AuthOfflineUxLayerTests
         Assert.Contains("SyncStatus_OfflineDeviceStored", sync, StringComparison.Ordinal);
         Assert.Contains("SyncStatus_RetryConnection", sync, StringComparison.Ordinal);
         Assert.Contains("SyncStatus_AllChangesSynced", sync, StringComparison.Ordinal);
+        Assert.Contains("IOfflineReconnectAutoSync", sync, StringComparison.Ordinal);
+        Assert.Contains("RetryIncludingFailedAsync", sync, StringComparison.Ordinal);
     }
 
     [Fact]

@@ -107,6 +107,12 @@ public interface IOfflineOperationQueue
     /// </summary>
     Task ReclaimBlockedByAccessAsync(CancellationToken ct = default);
 
+    /// <summary>
+    /// Moves PermanentFailure (and Conflict) rows back to Pending for an explicit user Retry.
+    /// Does not delete operations. Auto-sync must not call this — only manual recovery.
+    /// </summary>
+    Task ReclaimFailedForManualRetryAsync(CancellationToken ct = default);
+
     Task<OfflineOperationEnvelope?> TryClaimNextAsync(string claimToken, CancellationToken ct = default);
 
     Task MarkSucceededAsync(Guid operationId, string? serverReference, CancellationToken ct = default);

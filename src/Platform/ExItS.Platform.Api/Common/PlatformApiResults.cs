@@ -134,6 +134,7 @@ internal static class PlatformApiResults
             or DomainErrorCodes.InvitationExpired
             or DomainErrorCodes.PersonalUtangInvitationExpired
             or ApplicationErrorCodes.PersonalUtangInvitationConflict
+            or ApplicationErrorCodes.PersonalContactEmailConflict
             or ApplicationErrorCodes.CreditCustomerConflict
             or ApplicationErrorCodes.CustomerLinkRequestConflict
             or DomainErrorCodes.CustomerLinkRequestExpired

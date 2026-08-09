@@ -90,6 +90,22 @@ internal sealed class PersonalContactRepository(PlatformDbContext db) : IPersona
         return records.Select(ToDomain).ToList();
     }
 
+    public async Task<PersonalContact?> FindActiveByOwnerAndNormalizedEmailAsync(
+        PlatformUserId ownerUserIdentityId,
+        string normalizedEmail,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(normalizedEmail);
+        var record = await db.PersonalContacts.AsNoTracking()
+            .FirstOrDefaultAsync(
+                x => x.OwnerUserIdentityId == ownerUserIdentityId.Value
+                     && x.Email == normalizedEmail
+                     && x.Status == nameof(PersonalContactStatus.Active),
+                cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : ToDomain(record);
+    }
+
     public Task AddAsync(PersonalContact contact, CancellationToken cancellationToken = default)
     {
         db.PersonalContacts.Add(ToRecord(contact));

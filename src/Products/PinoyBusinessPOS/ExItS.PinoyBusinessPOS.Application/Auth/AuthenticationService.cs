@@ -682,11 +682,16 @@ public sealed class AuthenticationService(
         }
         catch
         {
-            // Fall through with in-memory shell.
+            // Fall through with in-memory / grant-built shell.
         }
 
         var baseSession = shell ?? markerSession;
-        if (baseSession is null || baseSession.UserId != grant.UserId)
+        if (baseSession is null)
+        {
+            // Sign out clears the secure session; rebuild a token-less shell from the durable grant.
+            baseSession = BuildShellFromGrant(grant);
+        }
+        else if (baseSession.UserId != grant.UserId)
         {
             return new AuthResult(false, AuthFailureReason.SessionExpired, SafeMessageKey: "Auth_SessionExpired");
         }
@@ -818,7 +823,9 @@ public sealed class AuthenticationService(
             }
         }
 
-        await ClearLocalAsync(ct).ConfigureAwait(false);
+        // Sign out clears cloud/session trust but keeps durable offline grant + PIN so the same
+        // device can reopen limited offline work without internet.
+        await ClearLocalSessionAsync(clearOfflineGrant: false, ct).ConfigureAwait(false);
     }
 
     public async Task LockAsync(CancellationToken ct = default)
@@ -949,7 +956,8 @@ public sealed class AuthenticationService(
             {
                 OrganizationId = null,
                 OrganizationDisplayName = null,
-                HasPosAccess = false
+                HasPosAccess = false,
+                AccountClass = "Personal"
             });
         }
 
@@ -962,7 +970,8 @@ public sealed class AuthenticationService(
             {
                 OrganizationId = null,
                 OrganizationDisplayName = null,
-                HasPosAccess = false
+                HasPosAccess = false,
+                AccountClass = "Personal"
             });
         }
 
@@ -1745,6 +1754,49 @@ public sealed class AuthenticationService(
         _offlineSessionUx?.ResetSession();
     }
 
+    private static AuthSession BuildShellFromGrant(OfflineOperatingGrant grant)
+    {
+        var display = string.IsNullOrWhiteSpace(grant.DisplayName)
+            ? (grant.Username ?? "User")
+            : grant.DisplayName!;
+        var username = string.IsNullOrWhiteSpace(grant.Username)
+            ? grant.UserId.ToString("D")
+            : grant.Username!;
+
+        if (grant.IsPersonalScope)
+        {
+            return new AuthSession(
+                grant.UserId,
+                display,
+                username,
+                grant.Email ?? string.Empty,
+                OrganizationId: null,
+                OrganizationDisplayName: PersonalLocalScope.DisplayName,
+                IssuedAtUtc: grant.IssuedAtUtc,
+                ExpiresAtUtc: grant.ExpiresAtUtc,
+                HasPosAccess: false,
+                AccessReasonCode: "offline_pin_required",
+                SubscriptionStatus: null,
+                EnabledFeatureCodes: null,
+                AccountClass: "Personal");
+        }
+
+        return new AuthSession(
+            grant.UserId,
+            display,
+            username,
+            grant.Email ?? string.Empty,
+            OrganizationId: grant.OrganizationId,
+            OrganizationDisplayName: grant.OrganizationDisplayName,
+            IssuedAtUtc: grant.IssuedAtUtc,
+            ExpiresAtUtc: grant.ExpiresAtUtc,
+            HasPosAccess: false,
+            AccessReasonCode: "offline_pin_required",
+            SubscriptionStatus: grant.SubscriptionStatus,
+            EnabledFeatureCodes: grant.EnabledFeatureCodes,
+            AccountClass: "Organization");
+    }
+
     private static AuthSession BuildSessionFromGrant(AuthSession baseSession, OfflineOperatingGrant grant)
     {
         if (grant.IsPersonalScope)
@@ -1760,6 +1812,8 @@ public sealed class AuthenticationService(
                 AccessReasonCode = "offline_grant",
                 SubscriptionStatus = null,
                 EnabledFeatureCodes = null,
+                AccessToken = null,
+                PlatformSessionToken = null,
                 AccountClass = "Personal"
             };
         }
@@ -1772,6 +1826,8 @@ public sealed class AuthenticationService(
             Username = grant.Username ?? baseSession.Username,
             Email = grant.Email ?? baseSession.Email,
             HasPosAccess = true,
+            AccessToken = null,
+            PlatformSessionToken = null,
             AccessReasonCode = "offline_grant",
             SubscriptionStatus = grant.SubscriptionStatus ?? baseSession.SubscriptionStatus,
             EnabledFeatureCodes = grant.EnabledFeatureCodes.Count > 0
@@ -1865,7 +1921,14 @@ public sealed class AuthenticationService(
         return new AuthResult(true, AuthFailureReason.None, updated);
     }
 
-    private async Task ClearLocalAsync(CancellationToken ct)
+    private Task ClearLocalAsync(CancellationToken ct) =>
+        ClearLocalSessionAsync(clearOfflineGrant: true, ct);
+
+    /// <param name="clearOfflineGrant">
+    /// True for hard revoke (server denial / inactive user). False for Sign out — keep grant + PIN
+    /// so cold-start PIN unlock remains available offline.
+    /// </param>
+    private async Task ClearLocalSessionAsync(bool clearOfflineGrant, CancellationToken ct)
     {
         await CloseLocalContextAsync(ct).ConfigureAwait(false);
         _accessPolicy?.ClearProcessValidation();
@@ -1874,13 +1937,21 @@ public sealed class AuthenticationService(
         {
             try
             {
-                // Sign out clears the operate grant so the next auth requires internet.
-                // PIN verifier is retained for reuse after the next online establish.
-                await _offlineGrant.ClearAsync(ct).ConfigureAwait(false);
+                if (clearOfflineGrant)
+                {
+                    // Hard clear: next offline reopen requires a fresh online establish.
+                    // PIN verifier is still retained for reuse after the next online establish.
+                    await _offlineGrant.ClearAsync(ct).ConfigureAwait(false);
+                }
+                else
+                {
+                    // Sign out: drop process unlock only; durable grant + PIN stay on device.
+                    _offlineGrant.LockThisProcess();
+                }
             }
             catch
             {
-                // Best-effort grant clear.
+                // Best-effort grant handling.
             }
         }
 

@@ -649,6 +649,45 @@ public sealed class AuthenticationServiceTests
     }
 
     [Fact]
+    public async Task Logout_keeps_offline_grant_and_pin_for_cold_start()
+    {
+        var harness = await SeedOfflineGrantHarnessAsync();
+        Assert.NotNull(await harness.GrantStore.LoadGrantAsync());
+        Assert.NotNull(await harness.GrantStore.LoadPinVerifierAsync());
+
+        // Restore online session into Current so Logout has a session to clear.
+        harness.Access.IntrospectResult = ApiResult<PlatformAccessTokenIntrospectionDto>.Success(
+            new PlatformAccessTokenIntrospectionDto(
+                Active: true,
+                TokenId: Guid.NewGuid(),
+                UserId: harness.UserId,
+                Username: "cashier1",
+                DisplayName: "Cashier",
+                OrganizationId: harness.OrgId,
+                OrganizationDisplayName: "Store",
+                ProductCode: PosProductCodes.PinoyBusinessPos,
+                ExpiresAtUtc: DateTimeOffset.UtcNow.AddHours(1),
+                ProductAccessAllowed: true,
+                ProductAccessReasonCode: null,
+                SubscriptionStatus: "Active",
+                EnabledFeatureCodes: ["pos.sell"]));
+        Assert.True((await harness.Auth.RestoreSessionAsync()).Succeeded);
+
+        await harness.Auth.LogoutAsync();
+        Assert.False(harness.Current.IsAuthenticated);
+        Assert.NotNull(await harness.GrantStore.LoadGrantAsync());
+        Assert.NotNull(await harness.GrantStore.LoadPinVerifierAsync());
+        Assert.True((await harness.Auth.EvaluateOfflineColdStartOfferAsync()).CanOfferPinUnlock);
+
+        // PIN unlock must work with no leftover secure session (post Sign out).
+        var unlock = await harness.Auth.UnlockOfflineWithPinAsync("123456");
+        Assert.True(unlock.Succeeded);
+        Assert.True(harness.Current.IsAuthenticated);
+        Assert.Null(unlock.Session!.AccessToken);
+        Assert.Equal("offline_grant", unlock.Session.AccessReasonCode);
+    }
+
+    [Fact]
     public async Task Offline_pin_unlock_restores_permission_snapshot()
     {
         var harness = await SeedOfflineGrantHarnessAsync();

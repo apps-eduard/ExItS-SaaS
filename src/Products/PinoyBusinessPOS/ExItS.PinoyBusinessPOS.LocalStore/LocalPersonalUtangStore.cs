@@ -97,11 +97,45 @@ public sealed class LocalPersonalUtangStore(
                 """
                 SELECT id, user_id, display_name, phone, notes, sync_status, server_id, updated_at, operation_id
                 FROM local_personal_contact
-                WHERE user_id = $user AND id = $id
+                WHERE user_id = $user AND (id = $id OR server_id = $id)
+                ORDER BY CASE WHEN id = $id THEN 0 ELSE 1 END
                 LIMIT 1;
                 """;
             cmd.Parameters.AddWithValue("$user", active.Identity.UserId.ToString("D"));
             cmd.Parameters.AddWithValue("$id", contactId.ToString("D"));
+            await using var reader = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
+            return await reader.ReadAsync(ct).ConfigureAwait(false) ? ReadContact(reader) : null;
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
+    public async Task<LocalPersonalContact?> FindContactByNormalizedEmailAsync(
+        string normalizedEmail,
+        CancellationToken ct = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(normalizedEmail);
+        var needle = normalizedEmail.Trim().ToUpperInvariant();
+        var active = await RequirePersonalContextAsync(ct).ConfigureAwait(false);
+        await _gate.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            await using var connection = await OpenConnectionAsync(active, ct).ConfigureAwait(false);
+            await using var cmd = connection.CreateCommand();
+            cmd.CommandText =
+                """
+                SELECT id, user_id, display_name, phone, notes, sync_status, server_id, updated_at, operation_id
+                FROM local_personal_contact
+                WHERE user_id = $user
+                  AND notes IS NOT NULL
+                  AND upper(trim(notes)) = $email
+                ORDER BY updated_at DESC, id
+                LIMIT 1;
+                """;
+            cmd.Parameters.AddWithValue("$user", active.Identity.UserId.ToString("D"));
+            cmd.Parameters.AddWithValue("$email", needle);
             await using var reader = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
             return await reader.ReadAsync(ct).ConfigureAwait(false) ? ReadContact(reader) : null;
         }
@@ -232,13 +266,14 @@ public sealed class LocalPersonalUtangStore(
         var active = await RequirePersonalContextAsync(ct).ConfigureAwait(false);
         await EnsureEncryptionKeyAsync(ct).ConfigureAwait(false);
         var now = _clock.GetUtcNow();
+        var normalizedEmail = NormalizeOptionalEmail(command.Notes);
         var payload = JsonSerializer.SerializeToUtf8Bytes(
             new PersonalContactPayload(
                 OfflineGrantScopeKind.Personal,
                 command.ContactId,
                 command.DisplayName,
                 command.Phone,
-                command.Notes),
+                normalizedEmail),
             JsonOptions);
 
         await PersistWithQueueAsync(
@@ -261,6 +296,29 @@ public sealed class LocalPersonalUtangStore(
                     return; // idempotent by operation_id
                 }
 
+                if (normalizedEmail is not null)
+                {
+                    await using var dup = connection.CreateCommand();
+                    dup.Transaction = tx;
+                    dup.CommandText =
+                        """
+                        SELECT id FROM local_personal_contact
+                        WHERE user_id = $user
+                          AND notes IS NOT NULL
+                          AND upper(trim(notes)) = $email
+                          AND id != $id
+                        LIMIT 1;
+                        """;
+                    dup.Parameters.AddWithValue("$user", active.Identity.UserId.ToString("D"));
+                    dup.Parameters.AddWithValue("$email", normalizedEmail);
+                    dup.Parameters.AddWithValue("$id", command.ContactId.ToString("D"));
+                    var conflictingId = (string?)await dup.ExecuteScalarAsync(ct).ConfigureAwait(false);
+                    if (conflictingId is not null)
+                    {
+                        throw new InvalidOperationException(LocalPersonalStoreErrors.EmailConflict);
+                    }
+                }
+
                 await using var cmd = connection.CreateCommand();
                 cmd.Transaction = tx;
                 cmd.CommandText =
@@ -280,7 +338,7 @@ public sealed class LocalPersonalUtangStore(
                 cmd.Parameters.AddWithValue("$user", active.Identity.UserId.ToString("D"));
                 cmd.Parameters.AddWithValue("$name", command.DisplayName.Trim());
                 cmd.Parameters.AddWithValue("$phone", (object?)command.Phone ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("$notes", (object?)command.Notes ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("$notes", (object?)normalizedEmail ?? DBNull.Value);
                 cmd.Parameters.AddWithValue("$status", LocalPersonalSyncStatus.Pending);
                 cmd.Parameters.AddWithValue("$updated", FormatUtc(now));
                 cmd.Parameters.AddWithValue("$op", command.OperationId.ToString("D"));
@@ -481,37 +539,103 @@ public sealed class LocalPersonalUtangStore(
             throw new InvalidOperationException("user_mismatch");
         }
 
+        var serverKey = (contact.ServerId ?? contact.Id).ToString("D");
+        var userKey = contact.UserId.ToString("D");
+
         await _gate.WaitAsync(ct).ConfigureAwait(false);
         try
         {
             await using var connection = await OpenConnectionAsync(active, ct).ConfigureAwait(false);
-            await using var cmd = connection.CreateCommand();
-            cmd.CommandText =
-                """
-                INSERT INTO local_personal_contact (
-                    id, user_id, display_name, phone, notes, sync_status, server_id, updated_at, operation_id)
-                VALUES ($id, $user, $name, $phone, $notes, $status, $server, $updated, NULL)
-                ON CONFLICT(id) DO UPDATE SET
-                    display_name = excluded.display_name,
-                    phone = excluded.phone,
-                    notes = excluded.notes,
-                    sync_status = excluded.sync_status,
-                    server_id = excluded.server_id,
-                    updated_at = excluded.updated_at,
-                    operation_id = NULL
-                WHERE local_personal_contact.sync_status != 'Pending';
-                """;
-            cmd.Parameters.AddWithValue("$id", contact.Id.ToString("D"));
-            cmd.Parameters.AddWithValue("$user", contact.UserId.ToString("D"));
-            cmd.Parameters.AddWithValue("$name", contact.DisplayName);
-            cmd.Parameters.AddWithValue("$phone", (object?)contact.Phone ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("$notes", (object?)contact.Notes ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("$status", LocalPersonalSyncStatus.Synced);
-            cmd.Parameters.AddWithValue(
-                "$server",
-                (contact.ServerId ?? contact.Id).ToString("D"));
-            cmd.Parameters.AddWithValue("$updated", FormatUtc(contact.UpdatedAtUtc));
-            await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+            await using var tx = (SqliteTransaction)await connection.BeginTransactionAsync(ct).ConfigureAwait(false);
+
+            // Merge by server_id (or id) so a post-sync hydrate does not insert a second row
+            // when the local PK is still the client-generated Guid.
+            string? existingId = null;
+            await using (var find = connection.CreateCommand())
+            {
+                find.Transaction = tx;
+                find.CommandText =
+                    """
+                    SELECT id FROM local_personal_contact
+                    WHERE user_id = $user AND (id = $server OR server_id = $server)
+                    ORDER BY CASE
+                        WHEN server_id = $server AND id != $server THEN 0
+                        WHEN id = $server THEN 1
+                        ELSE 2
+                    END
+                    LIMIT 1;
+                    """;
+                find.Parameters.AddWithValue("$user", userKey);
+                find.Parameters.AddWithValue("$server", serverKey);
+                existingId = (string?)await find.ExecuteScalarAsync(ct).ConfigureAwait(false);
+            }
+
+            if (existingId is not null)
+            {
+                await using var update = connection.CreateCommand();
+                update.Transaction = tx;
+                update.CommandText =
+                    """
+                    UPDATE local_personal_contact
+                    SET display_name = $name,
+                        phone = $phone,
+                        notes = COALESCE($notes, notes),
+                        sync_status = $status,
+                        server_id = $server,
+                        updated_at = $updated,
+                        operation_id = NULL
+                    WHERE id = $id AND user_id = $user
+                      AND sync_status != 'Pending';
+                    """;
+                // Empty/whitespace Notes → DBNull so COALESCE keeps any prior local email.
+                var notes = NormalizeOptionalEmail(contact.Notes);
+                update.Parameters.AddWithValue("$id", existingId);
+                update.Parameters.AddWithValue("$user", userKey);
+                update.Parameters.AddWithValue("$name", contact.DisplayName);
+                update.Parameters.AddWithValue("$phone", (object?)contact.Phone ?? DBNull.Value);
+                update.Parameters.AddWithValue("$notes", (object?)notes ?? DBNull.Value);
+                update.Parameters.AddWithValue("$status", LocalPersonalSyncStatus.Synced);
+                update.Parameters.AddWithValue("$server", serverKey);
+                update.Parameters.AddWithValue("$updated", FormatUtc(contact.UpdatedAtUtc));
+                await update.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+
+                // Drop orphan hydrate duplicates (same server identity, different local PK).
+                await using var cleanup = connection.CreateCommand();
+                cleanup.Transaction = tx;
+                cleanup.CommandText =
+                    """
+                    DELETE FROM local_personal_contact
+                    WHERE user_id = $user
+                      AND id != $keep
+                      AND (id = $server OR server_id = $server);
+                    """;
+                cleanup.Parameters.AddWithValue("$user", userKey);
+                cleanup.Parameters.AddWithValue("$keep", existingId);
+                cleanup.Parameters.AddWithValue("$server", serverKey);
+                await cleanup.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+            }
+            else
+            {
+                await using var insert = connection.CreateCommand();
+                insert.Transaction = tx;
+                insert.CommandText =
+                    """
+                    INSERT INTO local_personal_contact (
+                        id, user_id, display_name, phone, notes, sync_status, server_id, updated_at, operation_id)
+                    VALUES ($id, $user, $name, $phone, $notes, $status, $server, $updated, NULL);
+                    """;
+                insert.Parameters.AddWithValue("$id", serverKey);
+                insert.Parameters.AddWithValue("$user", userKey);
+                insert.Parameters.AddWithValue("$name", contact.DisplayName);
+                insert.Parameters.AddWithValue("$phone", (object?)contact.Phone ?? DBNull.Value);
+                insert.Parameters.AddWithValue("$notes", (object?)NormalizeOptionalEmail(contact.Notes) ?? DBNull.Value);
+                insert.Parameters.AddWithValue("$status", LocalPersonalSyncStatus.Synced);
+                insert.Parameters.AddWithValue("$server", serverKey);
+                insert.Parameters.AddWithValue("$updated", FormatUtc(contact.UpdatedAtUtc));
+                await insert.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+            }
+
+            await tx.CommitAsync(ct).ConfigureAwait(false);
         }
         finally
         {
@@ -530,45 +654,130 @@ public sealed class LocalPersonalUtangStore(
             throw new InvalidOperationException("user_mismatch");
         }
 
+        var serverKey = (relationship.ServerId ?? relationship.Id).ToString("D");
+        var userKey = relationship.UserId.ToString("D");
+
         await _gate.WaitAsync(ct).ConfigureAwait(false);
         try
         {
             await using var connection = await OpenConnectionAsync(active, ct).ConfigureAwait(false);
-            await using var cmd = connection.CreateCommand();
-            cmd.CommandText =
-                """
-                INSERT INTO local_personal_relationship (
-                    id, user_id, contact_id, direction, outstanding, currency, sync_status,
-                    server_id, version, updated_at, operation_id)
-                VALUES ($id, $user, $contact, $direction, $outstanding, $currency, $status,
-                    $server, $version, $updated, NULL)
-                ON CONFLICT(id) DO UPDATE SET
-                    contact_id = excluded.contact_id,
-                    direction = excluded.direction,
-                    outstanding = excluded.outstanding,
-                    currency = excluded.currency,
-                    sync_status = excluded.sync_status,
-                    server_id = excluded.server_id,
-                    version = excluded.version,
-                    updated_at = excluded.updated_at,
-                    operation_id = NULL
-                WHERE local_personal_relationship.sync_status != 'Pending';
-                """;
-            cmd.Parameters.AddWithValue("$id", relationship.Id.ToString("D"));
-            cmd.Parameters.AddWithValue("$user", relationship.UserId.ToString("D"));
-            cmd.Parameters.AddWithValue("$contact", relationship.ContactId.ToString("D"));
-            cmd.Parameters.AddWithValue("$direction", relationship.Direction);
-            cmd.Parameters.AddWithValue(
-                "$outstanding",
-                relationship.Outstanding.ToString(CultureInfo.InvariantCulture));
-            cmd.Parameters.AddWithValue("$currency", relationship.Currency);
-            cmd.Parameters.AddWithValue("$status", LocalPersonalSyncStatus.Synced);
-            cmd.Parameters.AddWithValue(
-                "$server",
-                (relationship.ServerId ?? relationship.Id).ToString("D"));
-            cmd.Parameters.AddWithValue("$version", relationship.Version);
-            cmd.Parameters.AddWithValue("$updated", FormatUtc(relationship.UpdatedAtUtc));
-            await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+            await using var tx = (SqliteTransaction)await connection.BeginTransactionAsync(ct).ConfigureAwait(false);
+
+            string? existingId = null;
+            await using (var find = connection.CreateCommand())
+            {
+                find.Transaction = tx;
+                find.CommandText =
+                    """
+                    SELECT id FROM local_personal_relationship
+                    WHERE user_id = $user AND (id = $server OR server_id = $server)
+                    ORDER BY CASE
+                        WHEN server_id = $server AND id != $server THEN 0
+                        WHEN id = $server THEN 1
+                        ELSE 2
+                    END
+                    LIMIT 1;
+                    """;
+                find.Parameters.AddWithValue("$user", userKey);
+                find.Parameters.AddWithValue("$server", serverKey);
+                existingId = (string?)await find.ExecuteScalarAsync(ct).ConfigureAwait(false);
+            }
+
+            // Prefer local contact row id when the server contact id was stored as server_id.
+            var contactKey = relationship.ContactId.ToString("D");
+            await using (var resolveContact = connection.CreateCommand())
+            {
+                resolveContact.Transaction = tx;
+                resolveContact.CommandText =
+                    """
+                    SELECT id FROM local_personal_contact
+                    WHERE user_id = $user AND (id = $contact OR server_id = $contact)
+                    ORDER BY CASE WHEN id = $contact THEN 0 ELSE 1 END
+                    LIMIT 1;
+                    """;
+                resolveContact.Parameters.AddWithValue("$user", userKey);
+                resolveContact.Parameters.AddWithValue("$contact", contactKey);
+                if (await resolveContact.ExecuteScalarAsync(ct).ConfigureAwait(false) is string resolved)
+                {
+                    contactKey = resolved;
+                }
+            }
+
+            if (existingId is not null)
+            {
+                await using var update = connection.CreateCommand();
+                update.Transaction = tx;
+                update.CommandText =
+                    """
+                    UPDATE local_personal_relationship
+                    SET contact_id = $contact,
+                        direction = $direction,
+                        outstanding = $outstanding,
+                        currency = $currency,
+                        sync_status = $status,
+                        server_id = $server,
+                        version = $version,
+                        updated_at = $updated,
+                        operation_id = NULL
+                    WHERE id = $id AND user_id = $user
+                      AND sync_status != 'Pending';
+                    """;
+                update.Parameters.AddWithValue("$id", existingId);
+                update.Parameters.AddWithValue("$user", userKey);
+                update.Parameters.AddWithValue("$contact", contactKey);
+                update.Parameters.AddWithValue("$direction", relationship.Direction);
+                update.Parameters.AddWithValue(
+                    "$outstanding",
+                    relationship.Outstanding.ToString(CultureInfo.InvariantCulture));
+                update.Parameters.AddWithValue("$currency", relationship.Currency);
+                update.Parameters.AddWithValue("$status", LocalPersonalSyncStatus.Synced);
+                update.Parameters.AddWithValue("$server", serverKey);
+                update.Parameters.AddWithValue("$version", relationship.Version);
+                update.Parameters.AddWithValue("$updated", FormatUtc(relationship.UpdatedAtUtc));
+                await update.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+
+                await using var cleanup = connection.CreateCommand();
+                cleanup.Transaction = tx;
+                cleanup.CommandText =
+                    """
+                    DELETE FROM local_personal_relationship
+                    WHERE user_id = $user
+                      AND id != $keep
+                      AND (id = $server OR server_id = $server);
+                    """;
+                cleanup.Parameters.AddWithValue("$user", userKey);
+                cleanup.Parameters.AddWithValue("$keep", existingId);
+                cleanup.Parameters.AddWithValue("$server", serverKey);
+                await cleanup.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+            }
+            else
+            {
+                await using var insert = connection.CreateCommand();
+                insert.Transaction = tx;
+                insert.CommandText =
+                    """
+                    INSERT INTO local_personal_relationship (
+                        id, user_id, contact_id, direction, outstanding, currency, sync_status,
+                        server_id, version, updated_at, operation_id)
+                    VALUES ($id, $user, $contact, $direction, $outstanding, $currency, $status,
+                        $server, $version, $updated, NULL);
+                    """;
+                insert.Parameters.AddWithValue("$id", serverKey);
+                insert.Parameters.AddWithValue("$user", userKey);
+                insert.Parameters.AddWithValue("$contact", contactKey);
+                insert.Parameters.AddWithValue("$direction", relationship.Direction);
+                insert.Parameters.AddWithValue(
+                    "$outstanding",
+                    relationship.Outstanding.ToString(CultureInfo.InvariantCulture));
+                insert.Parameters.AddWithValue("$currency", relationship.Currency);
+                insert.Parameters.AddWithValue("$status", LocalPersonalSyncStatus.Synced);
+                insert.Parameters.AddWithValue("$server", serverKey);
+                insert.Parameters.AddWithValue("$version", relationship.Version);
+                insert.Parameters.AddWithValue("$updated", FormatUtc(relationship.UpdatedAtUtc));
+                await insert.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+            }
+
+            await tx.CommitAsync(ct).ConfigureAwait(false);
         }
         finally
         {
@@ -590,7 +799,8 @@ public sealed class LocalPersonalUtangStore(
                 WHERE organization_id = $org
                   AND product_code = $product
                   AND operation_type LIKE 'personal.%'
-                  AND queue_state IN ('Pending', 'RetryableFailure', 'Syncing', 'BlockedByAccess');
+                  AND queue_state IN ('Pending', 'RetryableFailure', 'Syncing', 'BlockedByAccess',
+                                      'PermanentFailure', 'Conflict');
                 """;
             cmd.Parameters.AddWithValue("$org", PersonalLocalScope.PathIsolationMarker.ToString("D"));
             cmd.Parameters.AddWithValue("$product", PersonalLocalScope.ProductCode);
@@ -611,17 +821,59 @@ public sealed class LocalPersonalUtangStore(
             version: null,
             ct);
 
-    public Task MarkRelationshipSyncedAsync(
+    public async Task MarkRelationshipSyncedAsync(
         Guid relationshipId,
         Guid serverId,
         int version,
-        CancellationToken ct = default) =>
-        MarkEntitySyncedAsync(
-            "local_personal_relationship",
-            relationshipId,
-            serverId,
-            version,
-            ct);
+        CancellationToken ct = default)
+    {
+        var active = await RequirePersonalContextAsync(ct).ConfigureAwait(false);
+        await _gate.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            await using var connection = await OpenConnectionAsync(active, ct).ConfigureAwait(false);
+            await using var tx = (SqliteTransaction)await connection.BeginTransactionAsync(ct).ConfigureAwait(false);
+
+            await using (var rel = connection.CreateCommand())
+            {
+                rel.Transaction = tx;
+                rel.CommandText =
+                    """
+                    UPDATE local_personal_relationship
+                    SET sync_status = $status, server_id = $server, version = $version, operation_id = NULL
+                    WHERE id = $id;
+                    """;
+                rel.Parameters.AddWithValue("$status", LocalPersonalSyncStatus.Synced);
+                rel.Parameters.AddWithValue("$server", serverId.ToString("D"));
+                rel.Parameters.AddWithValue("$version", version);
+                rel.Parameters.AddWithValue("$id", relationshipId.ToString("D"));
+                await rel.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+            }
+
+            // Initial loan rows are created locally with the relationship op — clear pending without a
+            // separate entry.record outbox item (server already recorded InitialLoanAmount).
+            await using (var entries = connection.CreateCommand())
+            {
+                entries.Transaction = tx;
+                entries.CommandText =
+                    """
+                    UPDATE local_personal_entry
+                    SET sync_status = $status, operation_id = NULL
+                    WHERE relationship_id = $rel AND sync_status = $pending;
+                    """;
+                entries.Parameters.AddWithValue("$status", LocalPersonalSyncStatus.Synced);
+                entries.Parameters.AddWithValue("$rel", relationshipId.ToString("D"));
+                entries.Parameters.AddWithValue("$pending", LocalPersonalSyncStatus.Pending);
+                await entries.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+            }
+
+            await tx.CommitAsync(ct).ConfigureAwait(false);
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
 
     public Task MarkEntrySyncedAsync(Guid entryId, Guid serverId, CancellationToken ct = default) =>
         MarkEntitySyncedAsync(
@@ -792,6 +1044,18 @@ public sealed class LocalPersonalUtangStore(
 
     private static string FormatUtc(DateTimeOffset value) =>
         value.UtcDateTime.ToString("O", CultureInfo.InvariantCulture);
+
+    /// <summary>Email is stored in Notes; normalize like Platform PersonalContact.</summary>
+    private static string? NormalizeOptionalEmail(string? email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            return null;
+        }
+
+        var trimmed = email.Trim();
+        return trimmed.Length == 0 ? null : trimmed.ToUpperInvariant();
+    }
 
     private static LocalPersonalContact ReadContact(SqliteDataReader reader) =>
         new(

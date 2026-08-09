@@ -230,6 +230,44 @@ public sealed class OfflineQueueEncryptionAndOrderingTests
 
         var again = await harness.Queue.TryClaimNextAsync("claim-after-reclaim");
         Assert.Equal(opId, again!.OperationId);
+        Assert.Equal(1, again.AttemptCount); // reclaim reset to 0, claim increments to 1
+    }
+
+    [Fact]
+    public async Task ReclaimFailedForManualRetry_resets_attempt_count()
+    {
+        await using var harness = await Harness.CreateAsync();
+        var opId = Guid.NewGuid();
+        await harness.Queue.EnqueueAsync(new OfflineEnqueueRequest(
+            opId,
+            OfflineOperationTypes.DevOfflineProbe,
+            1,
+            "reclaim-failed",
+            Encoding.UTF8.GetBytes("x")));
+
+        var claimed = await harness.Queue.TryClaimNextAsync("claim-fail");
+        Assert.NotNull(claimed);
+        await harness.Queue.MarkFailureAsync(
+            opId,
+            OfflineFailureClass.Permanent,
+            "too_many_attempts",
+            "Exhausted",
+            nextAttemptUtc: harness.Clock.GetUtcNow().AddMinutes(5),
+            attemptCount: 12);
+
+        var failed = await harness.Queue.GetCountsAsync();
+        Assert.Equal(1, failed.PermanentFailure);
+        Assert.Equal(0, failed.Pending);
+
+        await harness.Queue.ReclaimFailedForManualRetryAsync();
+
+        var reclaimed = await harness.Queue.GetCountsAsync();
+        Assert.Equal(0, reclaimed.PermanentFailure);
+        Assert.Equal(1, reclaimed.Pending);
+
+        var again = await harness.Queue.TryClaimNextAsync("claim-after-failed-reclaim");
+        Assert.Equal(opId, again!.OperationId);
+        Assert.Equal(1, again.AttemptCount);
     }
 
     [Fact]
