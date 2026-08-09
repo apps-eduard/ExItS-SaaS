@@ -134,23 +134,13 @@ else
                             <span class="pos-org__nav-label">@L["Org_SubscriptionLink"]</span>
                             <span class="pos-org__nav-chevron" aria-hidden="true">›</span>
                         </button>
-                        <button type="button" class="pos-org__nav-row" role="listitem" @onclick="GoMyQr">
-                            <span class="pos-org__nav-icon" aria-hidden="true">@IconGlyphs.Get("qr")</span>
-                            <span class="pos-org__nav-label">@L["Personal_MyQrLink"]</span>
-                            <span class="pos-org__nav-chevron" aria-hidden="true">›</span>
-                        </button>
                     </div>
                 }
                 else
                 {
+                    @* My QR stays in Personal workspace only — opening it from Org shell
+                       switches to Personal tabs and traps org-locked members. *@
                     <p class="pos-org__hint pos-muted">@L["Org_EssentialsOwnerOnly"]</p>
-                    <div class="pos-org__nav" role="list">
-                        <button type="button" class="pos-org__nav-row" role="listitem" @onclick="GoMyQr">
-                            <span class="pos-org__nav-icon" aria-hidden="true">@IconGlyphs.Get("qr")</span>
-                            <span class="pos-org__nav-label">@L["Personal_MyQrLink"]</span>
-                            <span class="pos-org__nav-chevron" aria-hidden="true">›</span>
-                        </button>
-                    </div>
                 }
             </section>
 
@@ -504,6 +494,5 @@ else
     private void GoProfile() => Nav.NavigateTo("/org/profile");
     private void GoStaff() => Nav.NavigateTo("/org/staff");
     private void GoSubscription() => Nav.NavigateTo("/org/subscription");
-    private void GoMyQr() => Nav.NavigateTo("/personal/my-qr?return=/org");
     private void GoSelect() => Nav.NavigateTo("/organization-select");
 }
