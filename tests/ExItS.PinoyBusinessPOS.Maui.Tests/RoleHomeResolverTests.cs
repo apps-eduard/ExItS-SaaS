@@ -31,6 +31,26 @@ public sealed class RoleHomeResolverTests
     }
 
     [Fact]
+    public async Task ResolvePosHome_personal_default_ignores_forged_organization_id()
+    {
+        var sut = new RoleHomeResolver(
+            new FakePermissions("Owner", status: "Active"),
+            new SellingModeService(),
+            FakeUser.PersonalWithForgedOrganization());
+        Assert.Equal(RoleHomeResolver.PersonalHome, await sut.ResolvePosHomeAsync());
+    }
+
+    [Fact]
+    public async Task ResolvePosHome_org_scoped_staff_still_routes_to_org_essentials_without_pos()
+    {
+        var sut = new RoleHomeResolver(
+            new FakePermissions("Cashier", status: "Active"),
+            new SellingModeService(),
+            FakeUser.OrgScopedStaffNoPosAccess());
+        Assert.Equal(RoleHomeResolver.OrgEssentials, await sut.ResolvePosHomeAsync());
+    }
+
+    [Fact]
     public async Task ResolvePosHome_denies_inactive_assignment()
     {
         var sut = new RoleHomeResolver(new FakePermissions("Owner", status: "Revoked"), new SellingModeService(), FakeUser.WithOrg());
@@ -265,7 +285,37 @@ public sealed class RoleHomeResolverTests
             IssuedAtUtc: DateTimeOffset.UtcNow,
             ExpiresAtUtc: DateTimeOffset.UtcNow.AddHours(1),
             HasPosAccess: false,
-            AccessReasonCode: null));
+            AccessReasonCode: null,
+            AccountClass: "Personal",
+            OrganizationContextLocked: false));
+
+        public static FakeUser PersonalWithForgedOrganization() => new(new AuthSession(
+            UserId: Guid.NewGuid(),
+            DisplayName: "Test",
+            Username: "test",
+            Email: "test@example.com",
+            OrganizationId: Guid.NewGuid(),
+            OrganizationDisplayName: "Stale Org",
+            IssuedAtUtc: DateTimeOffset.UtcNow,
+            ExpiresAtUtc: DateTimeOffset.UtcNow.AddHours(1),
+            HasPosAccess: false,
+            AccessReasonCode: null,
+            AccountClass: "Personal",
+            OrganizationContextLocked: false));
+
+        public static FakeUser OrgScopedStaffNoPosAccess() => new(new AuthSession(
+            UserId: Guid.NewGuid(),
+            DisplayName: "Staff",
+            Username: "staff1",
+            Email: "staff1@ORG000001.exits.local",
+            OrganizationId: Guid.NewGuid(),
+            OrganizationDisplayName: "Store",
+            IssuedAtUtc: DateTimeOffset.UtcNow,
+            ExpiresAtUtc: DateTimeOffset.UtcNow.AddHours(1),
+            HasPosAccess: false,
+            AccessReasonCode: "assignment_missing",
+            AccountClass: "Organization",
+            OrganizationContextLocked: true));
 
         public AuthSession? Session { get; private set; }
         public bool IsAuthenticated => Session is not null;

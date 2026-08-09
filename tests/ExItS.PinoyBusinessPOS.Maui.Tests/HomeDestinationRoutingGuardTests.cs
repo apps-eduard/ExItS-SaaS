@@ -35,6 +35,36 @@ public sealed class HomeDestinationRoutingGuardTests
     }
 
     [Fact]
+    public void Personal_default_routing_ignores_stale_organization_context()
+    {
+        var gate = File.ReadAllText(Path.Combine(MauiProject(), "Services", "NavigationGate.cs"));
+        var resolver = File.ReadAllText(Path.Combine(
+            ApplicationProject(), "Auth", "RoleRoutingServices.cs"));
+        var auth = File.ReadAllText(Path.Combine(ApplicationProject(), "Auth", "AuthenticationService.cs"));
+        var models = File.ReadAllText(Path.Combine(ApplicationProject(), "Auth", "AuthModels.cs"));
+
+        Assert.Contains("class AuthSessionWorkspace", models, StringComparison.Ordinal);
+        Assert.Contains("IsPersonalDefault", models, StringComparison.Ordinal);
+        Assert.Contains("AuthSessionWorkspace.IsPersonalDefault", gate, StringComparison.Ordinal);
+        Assert.Contains("AuthSessionWorkspace.IsPersonalDefault", resolver, StringComparison.Ordinal);
+        Assert.Contains("NormalizePersonalDefaultSessionAsync", auth, StringComparison.Ordinal);
+        Assert.Contains("ClearOrganizationPreferenceAsync", auth, StringComparison.Ordinal);
+
+        var sessionStore = File.ReadAllText(Path.Combine(ApplicationProject(), "Auth", "SecureSessionStore.cs"));
+        Assert.Contains("SecureTokenKeys.AccountClass", sessionStore, StringComparison.Ordinal);
+        Assert.Contains("SecureTokenKeys.OrganizationContextLocked", sessionStore, StringComparison.Ordinal);
+
+        var mauiStore = File.ReadAllText(Path.Combine(MauiProject(), "Services", "MauiSecureTokenStore.cs"));
+        Assert.Contains("SecureTokenKeys.AccountClass", mauiStore, StringComparison.Ordinal);
+        Assert.Contains("SecureTokenKeys.OrganizationContextLocked", mauiStore, StringComparison.Ordinal);
+
+        // Personal default must be evaluated before the org-essentials / POS-access branch.
+        var personalGate = gate.IndexOf("AuthSessionWorkspace.IsPersonalDefault", StringComparison.Ordinal);
+        var orgEssentials = gate.IndexOf("RoleHomeResolver.OrgEssentials", StringComparison.Ordinal);
+        Assert.InRange(personalGate, 0, orgEssentials);
+    }
+
+    [Fact]
     public void Pos_shell_home_tab_uses_centralized_resolver_and_reacts_to_access_changes()
     {
         var shell = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Layout", "PosShell.razor"));

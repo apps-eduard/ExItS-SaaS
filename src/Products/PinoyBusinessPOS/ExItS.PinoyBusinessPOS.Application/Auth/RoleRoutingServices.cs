@@ -92,8 +92,9 @@ public sealed class RoleHomeResolver(
 
     public async Task<string> ResolvePosHomeAsync(CancellationToken ct = default)
     {
-        // Personal Mobile area — never resolve Owner/Manager/Cashier homes without an org bind.
-        if (currentUser.Session?.OrganizationId is null)
+        // Personal default workspace — never treat a stale/forged OrganizationId as org bind.
+        if (AuthSessionWorkspace.IsPersonalDefault(currentUser.Session)
+            || currentUser.Session?.OrganizationId is null)
         {
             return PersonalHome;
         }

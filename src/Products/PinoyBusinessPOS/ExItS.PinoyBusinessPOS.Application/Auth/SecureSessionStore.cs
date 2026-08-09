@@ -55,6 +55,33 @@ public sealed class SecureSessionStore(ISecureTokenStore tokens) : ISessionStore
                 await tokens.SetAsync(SecureTokenKeys.FeatureGrants, grants, ct).ConfigureAwait(false);
             }
         }
+
+        if (string.IsNullOrWhiteSpace(session.AccountClass))
+        {
+            await tokens.ClearAsync(SecureTokenKeys.AccountClass, ct).ConfigureAwait(false);
+        }
+        else
+        {
+            await tokens.SetAsync(SecureTokenKeys.AccountClass, session.AccountClass.Trim(), ct).ConfigureAwait(false);
+        }
+
+        if (session.AccountProfileId is Guid profileId && profileId != Guid.Empty)
+        {
+            await tokens.SetAsync(SecureTokenKeys.AccountProfileId, profileId.ToString("D"), ct).ConfigureAwait(false);
+        }
+        else
+        {
+            await tokens.ClearAsync(SecureTokenKeys.AccountProfileId, ct).ConfigureAwait(false);
+        }
+
+        if (session.OrganizationContextLocked)
+        {
+            await tokens.SetAsync(SecureTokenKeys.OrganizationContextLocked, "true", ct).ConfigureAwait(false);
+        }
+        else
+        {
+            await tokens.ClearAsync(SecureTokenKeys.OrganizationContextLocked, ct).ConfigureAwait(false);
+        }
     }
 
     public async Task<(AuthSession? Session, string? Marker)> LoadAsync(CancellationToken ct = default)
@@ -79,6 +106,9 @@ public sealed class SecureSessionStore(ISecureTokenStore tokens) : ISessionStore
             var platformSessionToken = await tokens.GetAsync(SecureTokenKeys.PlatformSessionToken, ct).ConfigureAwait(false);
             var subscriptionStatus = await tokens.GetAsync(SecureTokenKeys.SubscriptionStatus, ct).ConfigureAwait(false);
             var grantsText = await tokens.GetAsync(SecureTokenKeys.FeatureGrants, ct).ConfigureAwait(false);
+            var accountClass = await tokens.GetAsync(SecureTokenKeys.AccountClass, ct).ConfigureAwait(false);
+            var accountProfileText = await tokens.GetAsync(SecureTokenKeys.AccountProfileId, ct).ConfigureAwait(false);
+            var orgLockedText = await tokens.GetAsync(SecureTokenKeys.OrganizationContextLocked, ct).ConfigureAwait(false);
             IReadOnlyList<string>? grants = null;
             if (!string.IsNullOrWhiteSpace(grantsText))
             {
@@ -87,6 +117,14 @@ public sealed class SecureSessionStore(ISecureTokenStore tokens) : ISessionStore
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToArray();
             }
+
+            Guid? accountProfileId = null;
+            if (Guid.TryParse(accountProfileText, out var parsedProfile) && parsedProfile != Guid.Empty)
+            {
+                accountProfileId = parsedProfile;
+            }
+
+            var organizationContextLocked = string.Equals(orgLockedText, "true", StringComparison.OrdinalIgnoreCase);
 
             // Partial session shell — display fields filled by AuthenticationService after restore.
             var shell = new AuthSession(
@@ -103,7 +141,10 @@ public sealed class SecureSessionStore(ISecureTokenStore tokens) : ISessionStore
                 SubscriptionStatus: string.IsNullOrWhiteSpace(subscriptionStatus) ? null : subscriptionStatus.Trim(),
                 EnabledFeatureCodes: grants,
                 AccessToken: string.IsNullOrWhiteSpace(accessToken) ? null : accessToken,
-                PlatformSessionToken: string.IsNullOrWhiteSpace(platformSessionToken) ? null : platformSessionToken);
+                PlatformSessionToken: string.IsNullOrWhiteSpace(platformSessionToken) ? null : platformSessionToken,
+                AccountClass: string.IsNullOrWhiteSpace(accountClass) ? null : accountClass.Trim(),
+                AccountProfileId: accountProfileId,
+                OrganizationContextLocked: organizationContextLocked);
 
             return (shell, marker);
         }

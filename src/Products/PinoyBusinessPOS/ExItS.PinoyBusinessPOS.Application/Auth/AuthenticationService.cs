@@ -198,6 +198,7 @@ public sealed class AuthenticationService(
                     AccountProfileId: login.AccountProfileId,
                     OrganizationContextLocked: login.OrganizationContextLocked);
 
+                personalSession = await NormalizePersonalDefaultSessionAsync(personalSession, ct).ConfigureAwait(false);
                 try
                 {
                     await sessionStore.SaveAsync(personalSession, Guid.NewGuid().ToString("N"), ct).ConfigureAwait(false);
@@ -243,6 +244,7 @@ public sealed class AuthenticationService(
             AccountProfileId: accountProfileId,
             OrganizationContextLocked: loginResult.Data?.OrganizationContextLocked == true);
 
+        session = await NormalizePersonalDefaultSessionAsync(session, ct).ConfigureAwait(false);
         try
         {
             await sessionStore.SaveAsync(session, marker, ct).ConfigureAwait(false);
@@ -320,7 +322,8 @@ public sealed class AuthenticationService(
         if (!tokenResult.IsSuccess || tokenResult.Data is null)
         {
             // Personal-only accounts may not receive a POS bearer; keep Platform session.
-            var personalSession = currentUser.Session!;
+            var personalSession = await NormalizePersonalDefaultSessionAsync(currentUser.Session!, ct)
+                .ConfigureAwait(false);
             try
             {
                 await sessionStore.SaveAsync(personalSession, Guid.NewGuid().ToString("N"), ct).ConfigureAwait(false);
@@ -332,6 +335,7 @@ public sealed class AuthenticationService(
                 return new AuthResult(false, AuthFailureReason.SecureStorageFailure, SafeMessageKey: "Auth_SecureStorageFailure");
             }
 
+            currentUser.Set(personalSession);
             events.Record("signin_success", Dict(("userId", personalSession.UserId.ToString("D")), ("grant", "external_platform_session")));
             return new AuthResult(true, AuthFailureReason.None, personalSession);
         }
@@ -354,6 +358,7 @@ public sealed class AuthenticationService(
             AccountClass: me.AccountClass,
             AccountProfileId: me.AccountProfileId);
 
+        session = await NormalizePersonalDefaultSessionAsync(session, ct).ConfigureAwait(false);
         try
         {
             await sessionStore.SaveAsync(session, marker, ct).ConfigureAwait(false);
@@ -482,7 +487,19 @@ public sealed class AuthenticationService(
 
             if (introspect.IsSuccess && introspect.Data is { Active: true } active)
             {
-                var orgId = active.OrganizationId ?? await preferences.GetSelectedOrganizationIdAsync(ct).ConfigureAwait(false);
+                // Personal default must not inherit a device-level SelectedOrganizationId from a
+                // previous Organization/staff session (logout intentionally keeps that preference).
+                Guid? orgId;
+                if (AuthSessionWorkspace.IsPersonalDefault(shell))
+                {
+                    orgId = active.OrganizationId;
+                    await preferences.ClearOrganizationPreferenceAsync(ct).ConfigureAwait(false);
+                }
+                else
+                {
+                    orgId = active.OrganizationId ?? await preferences.GetSelectedOrganizationIdAsync(ct).ConfigureAwait(false);
+                }
+
                 var hasAccess = active.ProductAccessAllowed == true && orgId is not null;
                 var subscriptionStatus = active.SubscriptionStatus;
                 var enabledFeatureCodes = active.EnabledFeatureCodes;
@@ -512,7 +529,8 @@ public sealed class AuthenticationService(
                     shell.AccessToken,
                     shell.PlatformSessionToken,
                     shell.AccountClass,
-                    shell.AccountProfileId);
+                    shell.AccountProfileId,
+                    shell.OrganizationContextLocked);
 
                 try
                 {
@@ -527,7 +545,7 @@ public sealed class AuthenticationService(
                 }
 
                 currentUser.Set(restored);
-                if (orgId is Guid restoredOrg)
+                if (orgId is Guid restoredOrg && !AuthSessionWorkspace.IsPersonalDefault(restored))
                 {
                     await AlignPlatformOrganizationContextAsync(restored, restoredOrg, ct).ConfigureAwait(false);
                 }
@@ -576,8 +594,17 @@ public sealed class AuthenticationService(
     /// </summary>
     private async Task<AuthResult> RestoreOfflineOperatingFallbackAsync(AuthSession shell, CancellationToken ct)
     {
-        var selectedOrg = await preferences.GetSelectedOrganizationIdAsync(ct).ConfigureAwait(false);
-        var orgId = selectedOrg ?? shell.OrganizationId;
+        Guid? orgId;
+        if (AuthSessionWorkspace.IsPersonalDefault(shell))
+        {
+            orgId = null;
+            await preferences.ClearOrganizationPreferenceAsync(ct).ConfigureAwait(false);
+        }
+        else
+        {
+            var selectedOrg = await preferences.GetSelectedOrganizationIdAsync(ct).ConfigureAwait(false);
+            orgId = selectedOrg ?? shell.OrganizationId;
+        }
 
         // Already unlocked with PIN in this process — restore operate context without re-prompt.
         if (_offlineGrant is { IsUnlockedThisProcess: true, ActiveUnlockedGrant: { } active }
@@ -1548,14 +1575,25 @@ public sealed class AuthenticationService(
             return new AuthResult(false, AuthFailureReason.UserInactive, SafeMessageKey: "Access_UserInactive");
         }
 
-        var selectedOrg = await preferences.GetSelectedOrganizationIdAsync(ct).ConfigureAwait(false);
-        Guid? organizationId = selectedOrg;
+        var existingShell = await sessionStore.LoadAsync(ct).ConfigureAwait(false);
+        var personalDefault = AuthSessionWorkspace.IsPersonalDefault(existingShell.Session);
+
+        Guid? organizationId = null;
         string? organizationName = null;
         var hasAccess = false;
         string? reason = null;
 
         string? subscriptionStatus = null;
         IReadOnlyList<string>? enabledFeatureCodes = null;
+
+        if (personalDefault)
+        {
+            await preferences.ClearOrganizationPreferenceAsync(ct).ConfigureAwait(false);
+        }
+        else
+        {
+            organizationId = await preferences.GetSelectedOrganizationIdAsync(ct).ConfigureAwait(false);
+        }
 
         if (organizationId is Guid orgId)
         {
@@ -1589,7 +1627,6 @@ public sealed class AuthenticationService(
             }
         }
 
-        var existingShell = await sessionStore.LoadAsync(ct).ConfigureAwait(false);
         var session = new AuthSession(
             userResult.Data.Id,
             userResult.Data.DisplayName,
@@ -1606,7 +1643,8 @@ public sealed class AuthenticationService(
             accessToken,
             existingShell.Session?.PlatformSessionToken,
             existingShell.Session?.AccountClass,
-            existingShell.Session?.AccountProfileId);
+            existingShell.Session?.AccountProfileId,
+            existingShell.Session?.OrganizationContextLocked == true);
 
         try
         {
@@ -1650,13 +1688,27 @@ public sealed class AuthenticationService(
                     DisplayName: string.Empty,
                     Username: string.Empty,
                     Email: string.Empty,
-                    OrganizationId: await preferences.GetSelectedOrganizationIdAsync(ct).ConfigureAwait(false),
+                    OrganizationId: null,
                     OrganizationDisplayName: null,
                     issuedAt,
                     expiresAt,
                     HasPosAccess: false,
                     AccessReasonCode: "reconnect_required",
                     AccessToken: accessToken);
+            }
+
+            if (AuthSessionWorkspace.IsPersonalDefault(shell))
+            {
+                return shell with
+                {
+                    OrganizationId = null,
+                    OrganizationDisplayName = null,
+                    HasPosAccess = false,
+                    AccessReasonCode = "reconnect_required",
+                    SubscriptionStatus = null,
+                    EnabledFeatureCodes = null,
+                    AccessToken = accessToken ?? shell.AccessToken
+                };
             }
 
             return shell with
@@ -1964,9 +2016,37 @@ public sealed class AuthenticationService(
             events.Record("secure_storage_failure", Dict(("operation", "clear")));
         }
 
-        // Keep SelectedOrganizationId so the next successful sign-in can safely restore
-        // the last valid organization context (or fall through to Personal / chooser).
+        // Keep SelectedOrganizationId so the next Organization/staff sign-in can restore
+        // the last valid organization context. Personal default sign-in/restore clears it.
         currentUser.Clear();
+    }
+
+    /// <summary>
+    /// Personal default accounts never inherit a device-level SelectedOrganizationId or a forged
+    /// OrganizationId. Organization Owners / staff bind org context explicitly (or via staff lock).
+    /// </summary>
+    private async Task<AuthSession> NormalizePersonalDefaultSessionAsync(AuthSession session, CancellationToken ct)
+    {
+        if (!AuthSessionWorkspace.IsPersonalDefault(session))
+        {
+            return session;
+        }
+
+        await preferences.ClearOrganizationPreferenceAsync(ct).ConfigureAwait(false);
+        if (session.OrganizationId is null && !session.HasPosAccess)
+        {
+            return session;
+        }
+
+        return session with
+        {
+            OrganizationId = null,
+            OrganizationDisplayName = null,
+            HasPosAccess = false,
+            AccessReasonCode = null,
+            SubscriptionStatus = null,
+            EnabledFeatureCodes = null
+        };
     }
 
     private static AuthResult MapTransport(ApiCallStatus status) => status switch

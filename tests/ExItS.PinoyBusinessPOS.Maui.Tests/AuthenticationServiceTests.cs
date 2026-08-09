@@ -503,6 +503,211 @@ public sealed class AuthenticationServiceTests
     }
 
     [Fact]
+    public async Task SignIn_personal_registration_clears_stale_device_organization_preference()
+    {
+        var userId = Guid.NewGuid();
+        var staleOrgId = Guid.NewGuid();
+        var tokens = new MemorySecureTokenStore();
+        var prefs = new MemoryOnboardingStore();
+        await prefs.SetSelectedOrganizationIdAsync(staleOrgId);
+        var current = new CurrentUserContext();
+        var access = new FakeAccessClient
+        {
+            LoginResult = ApiResult<PlatformLoginResultDto>.Success(new PlatformLoginResultDto(
+                "platform-session",
+                Guid.NewGuid(),
+                userId,
+                "newuser",
+                "New User",
+                "new@example.com",
+                DateTimeOffset.UtcNow.AddHours(8),
+                DateTimeOffset.UtcNow.AddHours(24),
+                null,
+                null,
+                "none",
+                0,
+                AccountProfileId: Guid.NewGuid(),
+                AccountClass: "Personal",
+                AllowedScope: "Personal",
+                OrganizationContextLocked: false)),
+            IssueTokenResult = ApiResult<PlatformAccessTokenIssueDto>.Success(new PlatformAccessTokenIssueDto(
+                "opaque-token",
+                "Bearer",
+                Guid.NewGuid(),
+                userId,
+                "newuser",
+                "New User",
+                "new@example.com",
+                DateTimeOffset.UtcNow.AddHours(8),
+                null,
+                null,
+                null,
+                "none",
+                0,
+                null,
+                null))
+        };
+
+        var sut = CreateSut("Production", access, tokens, prefs, current);
+        var result = await sut.SignInAsync(new SignInRequest("new@example.com", "secret"));
+
+        Assert.True(result.Succeeded);
+        Assert.Equal("Personal", result.Session!.AccountClass);
+        Assert.Null(result.Session.OrganizationId);
+        Assert.False(result.Session.OrganizationContextLocked);
+        Assert.False(result.Session.HasPosAccess);
+        Assert.Null(await prefs.GetSelectedOrganizationIdAsync());
+    }
+
+    [Fact]
+    public async Task Restore_personal_session_ignores_stale_organization_preference()
+    {
+        var userId = Guid.NewGuid();
+        var staleOrgId = Guid.NewGuid();
+        var tokens = new MemorySecureTokenStore();
+        var prefs = new MemoryOnboardingStore();
+        var current = new CurrentUserContext();
+        var access = new FakeAccessClient
+        {
+            LoginResult = ApiResult<PlatformLoginResultDto>.Success(new PlatformLoginResultDto(
+                "platform-session",
+                Guid.NewGuid(),
+                userId,
+                "newuser",
+                "New User",
+                "new@example.com",
+                DateTimeOffset.UtcNow.AddHours(8),
+                DateTimeOffset.UtcNow.AddHours(24),
+                null,
+                null,
+                "none",
+                0,
+                AccountProfileId: Guid.NewGuid(),
+                AccountClass: "Personal",
+                AllowedScope: "Personal",
+                OrganizationContextLocked: false)),
+            IssueTokenResult = ApiResult<PlatformAccessTokenIssueDto>.Success(new PlatformAccessTokenIssueDto(
+                "opaque-token",
+                "Bearer",
+                Guid.NewGuid(),
+                userId,
+                "newuser",
+                "New User",
+                "new@example.com",
+                DateTimeOffset.UtcNow.AddHours(8),
+                null,
+                null,
+                null,
+                "none",
+                0,
+                null,
+                null)),
+            IntrospectResult = ApiResult<PlatformAccessTokenIntrospectionDto>.Success(
+                new PlatformAccessTokenIntrospectionDto(
+                    Active: true,
+                    TokenId: Guid.NewGuid(),
+                    UserId: userId,
+                    Username: "newuser",
+                    DisplayName: "New User",
+                    OrganizationId: null,
+                    OrganizationDisplayName: null,
+                    ProductCode: null,
+                    ExpiresAtUtc: DateTimeOffset.UtcNow.AddHours(1),
+                    ProductAccessAllowed: false,
+                    ProductAccessReasonCode: null,
+                    SubscriptionStatus: null,
+                    EnabledFeatureCodes: null))
+        };
+
+        var sut = CreateSut("Production", access, tokens, prefs, current);
+        Assert.True((await sut.SignInAsync(new SignInRequest("new@example.com", "secret"))).Succeeded);
+
+        // Simulate leftover device preference from a prior Organization/staff session on the handset.
+        await prefs.SetSelectedOrganizationIdAsync(staleOrgId);
+
+        var restore = await sut.RestoreSessionAsync();
+        Assert.True(restore.Succeeded);
+        Assert.Equal("Personal", restore.Session!.AccountClass);
+        Assert.Null(restore.Session.OrganizationId);
+        Assert.False(restore.Session.HasPosAccess);
+        Assert.Null(await prefs.GetSelectedOrganizationIdAsync());
+    }
+
+    [Fact]
+    public async Task Restore_organization_staff_still_restores_selected_organization()
+    {
+        var userId = Guid.NewGuid();
+        var orgId = Guid.NewGuid();
+        var tokens = new MemorySecureTokenStore();
+        var prefs = new MemoryOnboardingStore();
+        await prefs.SetSelectedOrganizationIdAsync(orgId);
+        var current = new CurrentUserContext();
+        var access = new FakeAccessClient
+        {
+            LoginResult = ApiResult<PlatformLoginResultDto>.Success(new PlatformLoginResultDto(
+                "platform-session",
+                Guid.NewGuid(),
+                userId,
+                "staff1",
+                "Staff",
+                "staff1@ORG000001.exits.local",
+                DateTimeOffset.UtcNow.AddHours(8),
+                DateTimeOffset.UtcNow.AddHours(24),
+                orgId,
+                "Store One",
+                "Single",
+                1,
+                AccountProfileId: Guid.NewGuid(),
+                AccountClass: "Organization",
+                AllowedScope: "Organization",
+                HomeOrganizationId: orgId,
+                OrganizationContextLocked: true)),
+            IssueTokenResult = ApiResult<PlatformAccessTokenIssueDto>.Success(new PlatformAccessTokenIssueDto(
+                "opaque-token",
+                "Bearer",
+                Guid.NewGuid(),
+                userId,
+                "staff1",
+                "Staff",
+                "staff1@ORG000001.exits.local",
+                DateTimeOffset.UtcNow.AddHours(8),
+                orgId,
+                "Store One",
+                PosProductCodes.PinoyBusinessPos,
+                "Single",
+                1,
+                true,
+                "allowed")),
+            IntrospectResult = ApiResult<PlatformAccessTokenIntrospectionDto>.Success(
+                new PlatformAccessTokenIntrospectionDto(
+                    Active: true,
+                    TokenId: Guid.NewGuid(),
+                    UserId: userId,
+                    Username: "staff1",
+                    DisplayName: "Staff",
+                    OrganizationId: null,
+                    OrganizationDisplayName: null,
+                    ProductCode: PosProductCodes.PinoyBusinessPos,
+                    ExpiresAtUtc: DateTimeOffset.UtcNow.AddHours(1),
+                    ProductAccessAllowed: true,
+                    ProductAccessReasonCode: "allowed",
+                    SubscriptionStatus: "Active",
+                    EnabledFeatureCodes: ["pos-sell"]))
+        };
+
+        var sut = CreateSut("Production", access, tokens, prefs, current);
+        var signIn = await sut.SignInAsync(new SignInRequest("staff1@ORG000001.exits.local", "secret"));
+        Assert.True(signIn.Succeeded);
+        Assert.True(signIn.Session!.OrganizationContextLocked);
+
+        var restore = await sut.RestoreSessionAsync();
+        Assert.True(restore.Succeeded);
+        Assert.Equal(orgId, restore.Session!.OrganizationId);
+        Assert.True(restore.Session.OrganizationContextLocked);
+        Assert.Equal(orgId, await prefs.GetSelectedOrganizationIdAsync());
+    }
+
+    [Fact]
     public async Task SignIn_with_platform_session_token_hydrates_from_auth_me()
     {
         var userId = Guid.NewGuid();

@@ -540,6 +540,7 @@
         var orgs = await Access.ListEligibleOrganizationsAsync(session.UserId);
 
         // No org membership → Personal workspace (may force offline PIN enrollment first).
+        // Personal default sessions also clear any stale device org preference on sign-in/restore.
         if (orgs.Count == 0)
         {
             Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);

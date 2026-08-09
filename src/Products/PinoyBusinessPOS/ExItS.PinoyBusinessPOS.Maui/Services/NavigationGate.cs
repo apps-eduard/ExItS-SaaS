@@ -69,8 +69,10 @@ public sealed class NavigationGate(
             return "/signin";
         }
 
-        // Personal Mobile area when no organization is bound yet.
-        if (currentUser.Session.OrganizationId is null)
+        // Personal default (AccountClass Personal, unlocked): never land on Organization essentials
+        // because of a leftover device SelectedOrganizationId / forged OrganizationId.
+        if (AuthSessionWorkspace.IsPersonalDefault(currentUser.Session)
+            || currentUser.Session.OrganizationId is null)
         {
             // Establish Personal grant before PIN check so enrollment can persist the verifier.
             await auth.EnsurePersonalAccountProfileAsync(ct).ConfigureAwait(false);

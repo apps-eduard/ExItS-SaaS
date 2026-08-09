@@ -16,6 +16,9 @@ public static class SecureTokenKeys
     public const string FeatureGrants = "pos.session.featureGrants";
     public const string AccessToken = "pos.session.accessToken";
     public const string PlatformSessionToken = "pos.session.platformSessionToken";
+    public const string AccountClass = "pos.session.accountClass";
+    public const string AccountProfileId = "pos.session.accountProfileId";
+    public const string OrganizationContextLocked = "pos.session.organizationContextLocked";
 
     /// <summary>
     /// Durable installation DeviceId. Not a session key — must survive logout and ClearAllSessionKeysAsync.
@@ -113,6 +116,21 @@ public sealed record EligibleOrganization(
     bool AccessAllowed,
     string AccessReasonCode,
     string? MembershipRole = null);
+
+/// <summary>
+/// Workspace routing helpers for Mobile post-login / cold-start destinations.
+/// </summary>
+public static class AuthSessionWorkspace
+{
+    /// <summary>
+    /// Personal default workspace: Personal account class, not org-locked staff.
+    /// Stale/forged OrganizationId must not convert this into an Organization session.
+    /// </summary>
+    public static bool IsPersonalDefault(AuthSession? session) =>
+        session is not null
+        && !session.OrganizationContextLocked
+        && string.Equals(session.AccountClass, "Personal", StringComparison.OrdinalIgnoreCase);
+}
 
 /// <summary>
 /// Platform membership roles used for Mobile post-login routing.
