@@ -55,8 +55,24 @@ Longer Queueable prefixes override the blanket `/personal/utang` OnlineRequired 
 
 - Operation types: `personal.contact.upsert`, `personal.relationship.create`, `personal.entry.record`
 - `ILocalPersonalUtangStore` persists rows + outbox in one SQLite transaction (idempotent by `operation_id`)
+- Local-first create: contact / lent / borrowed always write local SQLite + enqueue (online or offline)
 - `IPersonalOfflineSyncService` / shared `OfflineQueueProcessor` + Personal dispatchers flush when online
-- Pending count is queryable per personal context for UI badges
+- `IOfflineReconnectAutoSync` (`OfflineReconnectAutoSyncService`): best-effort flush on Offline→Online, login-while-online, and startup catch-up (debounced, single-flight)
+- Shell **Retry sync** uses `RetryIncludingFailedAsync` (reclaim Permanent/Conflict/BlockedByAccess, reset `attempt_count`, then process) — Personal and Organization
+- Relationship dispatch remaps local contact PK → Platform `server_id` before `CreatePersonalDebtRelationship` (fixes People synced / Lent stuck Recovery)
+- Pending count is queryable per personal context for UI badges (includes permanent/conflict for recovery visibility)
+
+### Contact email uniqueness
+
+- Email optional; when present → trim + upper-case; unique per owner among **Active** contacts
+- Local reject: `LocalPersonalStoreErrors.EmailConflict` → UI `Personal_PeopleEmailConflict`
+- Platform: `ApplicationErrorCodes.PersonalContactEmailConflict` (409) + filtered unique index migration `20260809120000_AddPersonalContactOwnerActiveEmailUnique`
+
+### Known residuals (polish later)
+
+- Auto reconnect may attempt sync without always clearing Recovery; **manual Retry sync** is the supported recovery path for now
+- Full bidirectional Personal conflict UX remains deferred
+- Physical Android A–S / Device Verified not claimed
 
 ## 6. Device checklist (incomplete)
 
@@ -68,8 +84,21 @@ Longer Queueable prefixes override the blanket `/personal/utang` OnlineRequired 
 | OnlineRequired dialog on invitations / explore-pos / resolve | Code complete · device incomplete |
 | Org POS offline grant cannot read personal rows (and reverse) | Code complete · device incomplete |
 | Cold-start PIN unlock for Personal grant | Code complete · device incomplete |
+| Mandatory offline PIN enrollment after Personal online login (same as Org POS) | Code complete · device incomplete |
+| Sign out keeps grant + PIN; offline Sign In offers limited PIN unlock | Code complete · device incomplete |
+| Change/Set Offline PIN from Personal Settings | Code complete · device incomplete |
+| Manual Retry clears stuck Personal Recovery after contact-id remap | Code complete · device incomplete |
+| Unique email when provided (local + server) | Code complete · device incomplete |
 
 Do **not** mark Device Verified until physical Android confirmation is recorded.
+
+### Offline-capable Personal surfaces (reminder)
+
+Without PIN enrollment, cold-start cannot unlock the Personal grant — the app is forced online. These surfaces are classified for offline / queueable use once PIN + grant exist:
+
+- OfflineCapable: `/personal`, `/personal/more`, `/personal/settings`, `/personal/profile`, support diagnostics
+- Queueable: `/personal/utang/people`, `/lent`, `/borrowed`, `/relationships…` (+ local-first create actions)
+- OnlineRequired: invitations, explore-pos, start-business, resolve-user, my-qr
 
 ## 7. Explicit exclusions
 
@@ -77,3 +106,13 @@ Do **not** mark Device Verified until physical Android confirmation is recorded.
 - No second dialog stack
 - No PHI / org POS data in Personal DB
 - Full bidirectional server conflict UX for Personal is deferred
+- Auto-sync polish (always clear Recovery without manual Retry) deferred
+
+## 8. Git evidence
+
+| Commit | Summary |
+|---|---|
+| `f3d87be` | Personal offline sync recovery, contact-id remap, email uniqueness, PIN settings UX |
+| _(docs tip)_ | This report + portfolio / phase hash record |
+
+Feature commit hash recorded; docs tip filled after the documentation commit.

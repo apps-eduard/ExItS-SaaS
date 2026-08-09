@@ -227,7 +227,7 @@ P19-WP08 ? End-to-End Validation and User Closeout Checklist (Retest � awaitin
 **Phase 16 Account Profiles / Personal Utang:** 10 / 10 WPs complete (closeout [P16-WP10](reports/P16-WP10-phase-16-closeout.md); Phase 14 unchanged; not Production-ready).
 **Phase 17 POS MVP Operational Onboarding:** 8 / 8 WPs complete (closeout [P17-WP08](reports/P17-WP08-reports-hardening-and-closeout.md); Phase 14 unchanged; not Production-ready).
 **Phase 18 Mobile Personal / Org / POS Experience:** **Complete (implementation/scope)** � WP01�WP08 closed ([checklist](reports/P18-WP08-end-to-end-validation-and-closeout.md)); Products/Categories phone-validated; Quick Login pending final retest; PhysicalDevice Tailscale APK delivered; **Not Device Verified**; Inventory/Registers/Shifts/Sales/Customers/Reports/full Cashier UI ? Phase 19; Phase 14 unchanged; not Production-ready.
-**Phase 19 Mobile POS Operations / Cashier Experience:** **Open** ([phase](phases/phase-19-mobile-pos-operations-and-cashier-experience.md); [P19-WP08](reports/P19-WP08-end-to-end-validation-and-closeout.md)) — WP01–WP07 Code Complete; WP08 Retest awaiting phone confirmation; offline operability foundation Code Complete with physical A–S incomplete ([report](reports/P19-offline-operability-foundation.md); commits `f476172`, `cc64ba3`, `10a1fc5`); Phase 14 unchanged; not Production-ready; **Not Device Verified**; **Not Complete**.
+**Phase 19 Mobile POS Operations / Cashier Experience:** **Open** ([phase](phases/phase-19-mobile-pos-operations-and-cashier-experience.md); [P19-WP08](reports/P19-WP08-end-to-end-validation-and-closeout.md)) — WP01–WP07 Code Complete; WP08 Retest awaiting phone confirmation; offline operability foundation Code Complete with physical A–S incomplete ([report](reports/P19-offline-operability-foundation.md); commits `f476172`, `cc64ba3`, `10a1fc5`); Personal-scope offline sync hardening Code Complete ([report](reports/P19-personal-scope-offline-operability.md); tip `f3d87be`); Phase 14 unchanged; not Production-ready; **Not Device Verified**; **Not Complete**.
 
 ## Phase 19 work packages
 
@@ -242,6 +242,7 @@ P19-WP08 ? End-to-End Validation and User Closeout Checklist (Retest � awaitin
 | P19-WP07  -  Mobile Reports, Authorization, Navigation, and UX Hardening | **Code Complete** | `1dad55a`  -  [report](reports/P19-WP07-mobile-reports-authorization-navigation-and-ux-hardening.md) |
 | P19-WP08  -  End-to-End Validation and User Closeout Checklist | **Retest** | `817e72c`  -  [report](reports/P19-WP08-end-to-end-validation-and-closeout.md) |
 | Supplemental — Offline operability foundation | **Code Complete**; physical A–S **incomplete** | `10a1fc5` (tip) / `f476172` / `cc64ba3` — [report](reports/P19-offline-operability-foundation.md) |
+| Supplemental — Personal-scope offline operability | **Code Complete**; device incomplete; manual Retry supported | `f3d87be` — [report](reports/P19-personal-scope-offline-operability.md) |
 
 ## Phase 18 work packages
 

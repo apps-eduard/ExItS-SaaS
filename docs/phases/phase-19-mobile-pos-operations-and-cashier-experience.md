@@ -55,7 +55,7 @@ Supplemental delivery (offline operability foundation): [P19-offline-operability
 
 Supplemental delivery (connectivity / offline capability matrix): [P19-offline-connectivity-capability-matrix](../reports/P19-offline-connectivity-capability-matrix.md) — central `OfflineCapable` / `Queueable` / `OnlineRequired` policy + shared Internet-required dialog; physical validation **incomplete**.
 
-Supplemental delivery (Personal-scope offline): [P19-personal-scope-offline-operability](../reports/P19-personal-scope-offline-operability.md) — Personal Utang local-first grant/store/policy separate from Organization POS; physical validation **incomplete**.
+Supplemental delivery (Personal-scope offline): [P19-personal-scope-offline-operability](../reports/P19-personal-scope-offline-operability.md) — Personal Utang local-first grant/store/policy separate from Organization POS; sync recovery + email uniqueness tip `f3d87be`; physical validation **incomplete**.
 
 Supplemental delivery (support diagnostics): [P19-support-diagnostics](../reports/P19-support-diagnostics.md) — shared Personal/Organization Settings → Support → Diagnostics (device-local, Owner-gated for org); physical validation **incomplete**.
 
