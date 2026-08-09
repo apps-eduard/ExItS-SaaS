@@ -1969,7 +1969,16 @@
   <data name="StartBusiness_FormTitle" xml:space="preserve"><value>Business details</value></data>
   <data name="StartBusiness_DisplayName" xml:space="preserve"><value>Business name</value></data>
   <data name="StartBusiness_Slug" xml:space="preserve"><value>URL slug</value></data>
-  <data name="StartBusiness_SlugHint" xml:space="preserve"><value>Lowercase letters, numbers, and hyphens.</value></data>
+  <data name="StartBusiness_SlugHint" xml:space="preserve"><value>Awtomatikong napunan mula sa pangalan ng negosyo — puwede mong baguhin. Gumamit ng lowercase letters, numbers, at hyphens.</value></data>
+  <data name="StartBusiness_SlugPlaceholder" xml:space="preserve"><value>my-store</value></data>
+  <data name="StartBusiness_DisplayNamePlaceholder" xml:space="preserve"><value>My Store</value></data>
+  <data name="StartBusiness_SlugInvalid" xml:space="preserve"><value>Ang URL slug ay dapat 2–64 characters: lowercase letters, numbers, at hyphens lang.</value></data>
+  <data name="StartBusiness_ChangePlan" xml:space="preserve"><value>Palitan ang plan</value></data>
+  <data name="StartBusiness_LoadingPlan" xml:space="preserve"><value>Kinakarga ang presyo ng plan…</value></data>
+  <data name="StartBusiness_TrialDays" xml:space="preserve"><value>{0}-araw na libreng trial</value></data>
+  <data name="StartBusiness_Then" xml:space="preserve"><value>Pagkatapos</value></data>
+  <data name="StartBusiness_MonthlyEquivalent" xml:space="preserve"><value>Halos {0} {1} / buwan</value></data>
+  <data name="StartBusiness_AnnualOption" xml:space="preserve"><value>O {0} {1} / taon</value></data>
   <data name="StartBusiness_TrialHint" xml:space="preserve"><value>Starts a POS trial and assigns you as Organization Owner and first POS Owner when entitlement activates.</value></data>
   <data name="StartBusiness_Submit" xml:space="preserve"><value>Create organization</value></data>
   <data name="StartBusiness_ConfirmSubmit" xml:space="preserve"><value>Confirm and create organization</value></data>

@@ -1969,7 +1969,16 @@
   <data name="StartBusiness_FormTitle" xml:space="preserve"><value>Business details</value></data>
   <data name="StartBusiness_DisplayName" xml:space="preserve"><value>Business name</value></data>
   <data name="StartBusiness_Slug" xml:space="preserve"><value>URL slug</value></data>
-  <data name="StartBusiness_SlugHint" xml:space="preserve"><value>Lowercase letters, numbers, and hyphens.</value></data>
+  <data name="StartBusiness_SlugHint" xml:space="preserve"><value>Filled from your business name — you can edit it. Use lowercase letters, numbers, and hyphens.</value></data>
+  <data name="StartBusiness_SlugPlaceholder" xml:space="preserve"><value>my-store</value></data>
+  <data name="StartBusiness_DisplayNamePlaceholder" xml:space="preserve"><value>My Store</value></data>
+  <data name="StartBusiness_SlugInvalid" xml:space="preserve"><value>URL slug must be 2–64 characters: lowercase letters, numbers, and hyphens only.</value></data>
+  <data name="StartBusiness_ChangePlan" xml:space="preserve"><value>Change plan</value></data>
+  <data name="StartBusiness_LoadingPlan" xml:space="preserve"><value>Loading plan price…</value></data>
+  <data name="StartBusiness_TrialDays" xml:space="preserve"><value>{0}-day free trial</value></data>
+  <data name="StartBusiness_Then" xml:space="preserve"><value>Then</value></data>
+  <data name="StartBusiness_MonthlyEquivalent" xml:space="preserve"><value>About {0} {1} / month</value></data>
+  <data name="StartBusiness_AnnualOption" xml:space="preserve"><value>Or {0} {1} / year</value></data>
   <data name="StartBusiness_TrialHint" xml:space="preserve"><value>Starts a POS trial and assigns you as Organization Owner and first POS Owner when entitlement activates.</value></data>
   <data name="StartBusiness_Submit" xml:space="preserve"><value>Create organization</value></data>
   <data name="StartBusiness_ConfirmSubmit" xml:space="preserve"><value>Confirm and create organization</value></data>

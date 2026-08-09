@@ -190,8 +190,12 @@ public sealed class PersonalPageGuardTests
         Assert.Contains("@page \"/start-business\"", start, StringComparison.Ordinal);
         Assert.Contains("@layout Layout.AuthShell", start, StringComparison.Ordinal);
         Assert.Contains("StoreHeaderBack", start, StringComparison.Ordinal);
-        Assert.Contains("Href=\"/personal\"", start, StringComparison.Ordinal);
+        Assert.Contains("Href=\"/personal/explore-pos\"", start, StringComparison.Ordinal);
         Assert.Contains("pos-personal-start-business__header", start, StringComparison.Ordinal);
+        Assert.Contains("pos-start-business-plan", start, StringComparison.Ordinal);
+        Assert.Contains("OrganizationSlug.SuggestFromDisplayName", start, StringComparison.Ordinal);
+        Assert.Contains("GetCommercialPlansAsync", start, StringComparison.Ordinal);
+        Assert.Contains("SelectedPrice", start, StringComparison.Ordinal);
         Assert.DoesNotContain("PageHeader", start, StringComparison.Ordinal);
         Assert.DoesNotContain("Personal_BackHome", start, StringComparison.Ordinal);
         Assert.DoesNotContain("Personal_ExplorePosBack", start, StringComparison.Ordinal);

@@ -1,5 +1,6 @@
 @page "/start-business"
 @layout Layout.AuthShell
+@using ExItS.PinoyBusinessPOS.Application.Commercial
 @inject IAuthenticationService Auth
 @inject ICurrentUserContext CurrentUser
 @inject IPlatformAccessClient Platform
@@ -9,7 +10,7 @@
 @inject IStringLocalizer<PosResources> L
 
 <div class="pos-personal-start-business">
-<StoreHeaderBack Href="/personal" />
+<StoreHeaderBack Href="/personal/explore-pos" />
 <Page>
     <header class="pos-personal-start-business__header">
         <h1 class="pos-personal-start-business__title">@L["StartBusiness_Title"]</h1>
@@ -33,26 +34,97 @@
     }
     else
     {
-        <Section Title="@L["StartBusiness_SelectedPlan"]">
-            <Stack Gap="1">
-                <span class="pos-value-md">@_planKey</span>
-                <span class="pos-muted">
-                    @(_startAsTrial ? L["StartBusiness_ModeTrial"] : L["StartBusiness_ModeSubscribe"])
-                    · @_billingCycle
-                </span>
-            </Stack>
-        </Section>
-
         <FormValidationSummary Messages="_errors" />
-        <FormGroup Title="@L["StartBusiness_FormTitle"]">
-            <TextInput Label="@L["StartBusiness_DisplayName"]" @bind-Value="_displayName" Disabled="_busy" />
-            <TextInput Label="@L["StartBusiness_Slug"]" Hint="@L["StartBusiness_SlugHint"]" @bind-Value="_slug" Disabled="_busy" />
-            <Select Label="@L["StartBusiness_BillingCycle"]" Value="@_billingCycle" ValueChanged="OnBillingChanged" Options="_billingOptions" Disabled="_busy" />
-        </FormGroup>
+
+        <section class="pos-start-business-plan" aria-labelledby="start-business-plan-heading">
+            <div class="pos-start-business-plan__top">
+                <div>
+                    <p class="pos-start-business-plan__eyebrow" id="start-business-plan-heading">@L["StartBusiness_SelectedPlan"]</p>
+                    <h2 class="pos-start-business-plan__name">@PlanDisplayName</h2>
+                    <p class="pos-start-business-plan__mode">
+                        @(_startAsTrial ? L["StartBusiness_ModeTrial"] : L["StartBusiness_ModeSubscribe"])
+                        · @BillingCycleLabel
+                    </p>
+                </div>
+                <button type="button" class="pos-start-business-plan__change" disabled="@_busy" @onclick="GoExplore">
+                    @L["StartBusiness_ChangePlan"]
+                </button>
+            </div>
+
+            @if (_planLoading)
+            {
+                <p class="pos-start-business-plan__loading">@L["StartBusiness_LoadingPlan"]</p>
+            }
+            else if (_plan is not null)
+            {
+                <div class="pos-start-business-plan__price-block">
+                    @if (_startAsTrial)
+                    {
+                        <p class="pos-start-business-plan__trial">
+                            @string.Format(L["StartBusiness_TrialDays"].Value, _plan.DefaultTrialDays)
+                        </p>
+                        <p class="pos-start-business-plan__price-caption">@L["StartBusiness_Then"]</p>
+                    }
+                    <p class="pos-start-business-plan__price">
+                        <span class="pos-start-business-plan__amount">@SelectedPrice.ToString("N0")</span>
+                        <span class="pos-start-business-plan__currency">@_plan.CurrencyCode</span>
+                        <span class="pos-start-business-plan__period">/ @BillingPeriodLabel</span>
+                    </p>
+                    @if (string.Equals(_billingCycle, "Annual", StringComparison.Ordinal)
+                         && _plan.MonthlyPrice > 0)
+                    {
+                        <p class="pos-start-business-plan__alt">
+                            @string.Format(
+                                L["StartBusiness_MonthlyEquivalent"].Value,
+                                (_plan.AnnualPrice / 12m).ToString("N0"),
+                                _plan.CurrencyCode)
+                        </p>
+                    }
+                    else if (string.Equals(_billingCycle, "Monthly", StringComparison.Ordinal)
+                             && _plan.AnnualPrice > 0)
+                    {
+                        <p class="pos-start-business-plan__alt">
+                            @string.Format(
+                                L["StartBusiness_AnnualOption"].Value,
+                                _plan.AnnualPrice.ToString("N0"),
+                                _plan.CurrencyCode)
+                        </p>
+                    }
+                </div>
+            }
+
+            <div class="pos-start-business-plan__billing">
+                <Select Label="@L["StartBusiness_BillingCycle"]"
+                        Value="@_billingCycle"
+                        ValueChanged="OnBillingChanged"
+                        Options="_billingOptions"
+                        Disabled="_busy" />
+            </div>
+        </section>
+
+        <section class="pos-start-business-form" aria-labelledby="start-business-form-heading">
+            <h2 class="pos-start-business-form__title" id="start-business-form-heading">@L["StartBusiness_FormTitle"]</h2>
+            <Stack Gap="3">
+                <TextInput Label="@L["StartBusiness_DisplayName"]"
+                           Value="@_displayName"
+                           ValueChanged="OnDisplayNameChanged"
+                           Placeholder="@L["StartBusiness_DisplayNamePlaceholder"]"
+                           Disabled="_busy"
+                           Required="true" />
+                <TextInput Label="@L["StartBusiness_Slug"]"
+                           Value="@_slug"
+                           ValueChanged="OnSlugChanged"
+                           Hint="@L["StartBusiness_SlugHint"]"
+                           Placeholder="@L["StartBusiness_SlugPlaceholder"]"
+                           Disabled="_busy"
+                           Required="true" />
+            </Stack>
+        </section>
+
         <InlineMessage Tone="InlineMessageTone.Info">@L["StartBusiness_ConfirmHint"]</InlineMessage>
-        <FormActions>
+        <div class="pos-start-business-actions">
             <Button IsLoading="_busy" Disabled="_busy" OnClick="SubmitAsync">@L["StartBusiness_ConfirmSubmit"]</Button>
-        </FormActions>
+        </div>
     }
 </Page>
 </div>
@@ -61,12 +133,15 @@
     private bool _ready;
     private bool _authenticated;
     private bool _busy;
+    private bool _planLoading;
+    private bool _slugTouched;
     private string? _displayName;
     private string? _slug;
     private string _planKey = string.Empty;
     private string _billingCycle = "Monthly";
     private bool _startAsTrial = true;
     private bool _payNow;
+    private CommercialPlanDto? _plan;
     private List<string> _errors = [];
 
     private IReadOnlyList<SelectOption> _billingOptions =>
@@ -74,6 +149,25 @@
         new("Monthly", L["Personal_Billing_Month"]),
         new("Annual", L["Personal_Billing_Year"]),
     ];
+
+    private string PlanDisplayName =>
+        !string.IsNullOrWhiteSpace(_plan?.DisplayName) ? _plan!.DisplayName
+        : !string.IsNullOrWhiteSpace(_planKey) ? _planKey
+        : L["StartBusiness_SelectedPlan"];
+
+    private string BillingCycleLabel =>
+        string.Equals(_billingCycle, "Annual", StringComparison.Ordinal)
+            ? L["Personal_Billing_Year"]
+            : L["Personal_Billing_Month"];
+
+    private string BillingPeriodLabel => BillingCycleLabel;
+
+    private decimal SelectedPrice =>
+        _plan is null
+            ? 0m
+            : string.Equals(_billingCycle, "Annual", StringComparison.Ordinal)
+                ? _plan.AnnualPrice
+                : _plan.MonthlyPrice;
 
     protected override async Task OnInitializedAsync()
     {
@@ -94,6 +188,11 @@
         }
 
         ParseQuery();
+        if (_authenticated && !string.IsNullOrWhiteSpace(_planKey))
+        {
+            await LoadSelectedPlanAsync();
+        }
+
         _ready = true;
     }
 
@@ -130,6 +229,45 @@
         }
     }
 
+    private async Task LoadSelectedPlanAsync()
+    {
+        _planLoading = true;
+        try
+        {
+            var result = await Platform.GetCommercialPlansAsync(PosProductCodes.PinoyBusinessPos);
+            if (!result.IsSuccess || result.Data is null)
+            {
+                return;
+            }
+
+            _plan = result.Data.FirstOrDefault(p =>
+                string.Equals(p.PlanKey, _planKey, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(p.Code, _planKey, StringComparison.OrdinalIgnoreCase));
+        }
+        finally
+        {
+            _planLoading = false;
+        }
+    }
+
+    private Task OnDisplayNameChanged(string? value)
+    {
+        _displayName = value;
+        if (!_slugTouched)
+        {
+            _slug = OrganizationSlug.SuggestFromDisplayName(value);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private Task OnSlugChanged(string? value)
+    {
+        _slug = value;
+        _slugTouched = true;
+        return Task.CompletedTask;
+    }
+
     private Task OnBillingChanged(string? value)
     {
         if (value is "Monthly" or "Annual")
@@ -143,9 +281,20 @@
     private async Task SubmitAsync()
     {
         _errors = [];
+        if (!_slugTouched && string.IsNullOrWhiteSpace(_slug) && !string.IsNullOrWhiteSpace(_displayName))
+        {
+            _slug = OrganizationSlug.SuggestFromDisplayName(_displayName);
+        }
+
         if (string.IsNullOrWhiteSpace(_displayName) || string.IsNullOrWhiteSpace(_slug))
         {
             _errors.Add(L["StartBusiness_ValidationRequired"]);
+            return;
+        }
+
+        if (!OrganizationSlug.IsValidFormat(_slug))
+        {
+            _errors.Add(L["StartBusiness_SlugInvalid"]);
             return;
         }
 

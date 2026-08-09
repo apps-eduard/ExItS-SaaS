@@ -10500,6 +10500,156 @@ html.pos-keyboard-open .pos-content {
     margin: 0.2rem 0 0;
 }
 
+.pos-personal-start-business .pos-start-business-plan {
+    display: flex;
+    flex-direction: column;
+    gap: var(--exits-space-3, 0.75rem);
+    margin: 0 0 var(--exits-space-4, 1rem);
+    padding: var(--exits-space-4, 1rem);
+    border: 1px solid var(--pos-border-subtle, var(--exits-border, #d5ddd8));
+    border-radius: var(--exits-radius-md, 0.5rem);
+    background:
+        linear-gradient(
+            165deg,
+            color-mix(in srgb, var(--pos-accent, var(--exits-primary, #1f6b4a)) 8%, transparent) 0%,
+            var(--pos-surface-raised, var(--exits-surface, #fff)) 42%);
+}
+
+.pos-start-business-plan__top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.pos-start-business-plan__eyebrow {
+    margin: 0;
+    color: var(--pos-text-secondary, var(--exits-text-muted, #5b6b62));
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.pos-start-business-plan__name {
+    margin: 0.2rem 0 0;
+    color: var(--pos-text-primary, var(--exits-text, #15201a));
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.pos-start-business-plan__mode {
+    margin: 0.25rem 0 0;
+    color: var(--pos-text-secondary, var(--exits-text-muted, #5b6b62));
+    font-size: var(--exits-text-sm, 0.875rem);
+}
+
+.pos-start-business-plan__change {
+    flex: 0 0 auto;
+    margin: 0;
+    padding: 0.35rem 0.55rem;
+    border: 1px solid var(--pos-border-subtle, var(--exits-border, #d5ddd8));
+    border-radius: var(--exits-radius-sm, 0.375rem);
+    background: var(--pos-surface-raised, var(--exits-surface, #fff));
+    color: var(--pos-accent, var(--exits-primary, #1f6b4a));
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1.2;
+    cursor: pointer;
+}
+
+.pos-start-business-plan__change:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.pos-start-business-plan__loading {
+    margin: 0;
+    color: var(--pos-text-secondary, var(--exits-text-muted, #5b6b62));
+    font-size: var(--exits-text-sm, 0.875rem);
+}
+
+.pos-start-business-plan__price-block {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.pos-start-business-plan__trial {
+    margin: 0;
+    color: var(--pos-accent, var(--exits-primary, #1f6b4a));
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.pos-start-business-plan__price-caption {
+    margin: 0;
+    color: var(--pos-text-secondary, var(--exits-text-muted, #5b6b62));
+    font-size: 0.8125rem;
+}
+
+.pos-start-business-plan__price {
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.3rem;
+    color: var(--pos-text-primary, var(--exits-text, #15201a));
+}
+
+.pos-start-business-plan__amount {
+    font-size: 1.85rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1;
+}
+
+.pos-start-business-plan__currency,
+.pos-start-business-plan__period {
+    color: var(--pos-text-secondary, var(--exits-text-muted, #5b6b62));
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+.pos-start-business-plan__alt {
+    margin: 0.15rem 0 0;
+    color: var(--pos-text-secondary, var(--exits-text-muted, #5b6b62));
+    font-size: var(--exits-text-sm, 0.875rem);
+}
+
+.pos-start-business-plan__billing {
+    margin-top: 0.15rem;
+}
+
+.pos-start-business-form {
+    margin: 0 0 var(--exits-space-3, 0.75rem);
+    padding: var(--exits-space-4, 1rem);
+    border: 1px solid var(--pos-border-subtle, var(--exits-border, #d5ddd8));
+    border-radius: var(--exits-radius-md, 0.5rem);
+    background: var(--pos-surface-raised, var(--exits-surface, #fff));
+}
+
+.pos-start-business-form__title {
+    margin: 0 0 var(--exits-space-3, 0.75rem);
+    color: var(--pos-text-primary, var(--exits-text, #15201a));
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.25;
+}
+
+.pos-start-business-actions {
+    margin-top: var(--exits-space-3, 0.75rem);
+}
+
+.pos-start-business-actions > * {
+    width: 100%;
+}
+
+.pos-start-business-actions button {
+    width: 100%;
+}
+
 /* Personal settings */
 .pos-personal-settings__nav {
     margin: 0 0 var(--exits-space-3);
