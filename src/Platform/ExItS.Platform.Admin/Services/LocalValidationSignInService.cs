@@ -33,6 +33,7 @@ public sealed class LocalValidationSignInService(
         return list
             .Select(i =>
             {
+                // Prefer API ListLabel (includes org-scoped staff login display when present).
                 var label = !string.IsNullOrWhiteSpace(i.ListLabel)
                     ? i.ListLabel!
                     : i.DisplayName ?? i.Username ?? i.Email ?? string.Empty;

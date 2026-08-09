@@ -33,7 +33,11 @@ public sealed record PlatformAuthOutboundMessage(
     Guid UserId,
     string Email,
     string OpaqueToken,
-    DateTimeOffset ExpiresAtUtc);
+    DateTimeOffset ExpiresAtUtc,
+    string? OrganizationName = null,
+    string? RoleDisplay = null,
+    string? ContactEmail = null,
+    string? StaffLogin = null);
 
 public sealed record CredentialWorkflowAckDto(
     string Message,
@@ -46,4 +50,5 @@ public static class PlatformAuthOutboundMessageKinds
     public const string EmailVerification = "email_verification";
     public const string RecoveryEmailVerification = "recovery_email_verification";
     public const string OrganizationStaffInvitation = "organization_staff_invitation";
+    public const string OrganizationStaffInvitationAccepted = "organization_staff_invitation_accepted";
 }

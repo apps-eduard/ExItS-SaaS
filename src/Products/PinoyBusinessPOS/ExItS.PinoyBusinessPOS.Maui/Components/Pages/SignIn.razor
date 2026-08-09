@@ -338,13 +338,21 @@
 
     private static string FormatQuickLoginLabel(LocalValidationQuickLoginIdentityDto identity)
     {
+        if (!string.IsNullOrWhiteSpace(identity.ListLabel))
+        {
+            return identity.ListLabel;
+        }
+
         var name = string.IsNullOrWhiteSpace(identity.DisplayName)
             ? identity.Username
             : identity.DisplayName;
         if (string.Equals(identity.AccountClass, "Organization", StringComparison.OrdinalIgnoreCase)
             && !string.IsNullOrWhiteSpace(identity.OrganizationName))
         {
-            return $"{name} · {identity.OrganizationName}";
+            var login = string.IsNullOrWhiteSpace(identity.Email) ? identity.Username : identity.Email;
+            return string.IsNullOrWhiteSpace(login)
+                ? $"{name} — {identity.OrganizationName}"
+                : $"{name} — {identity.OrganizationName} · {login}";
         }
 
         return name;

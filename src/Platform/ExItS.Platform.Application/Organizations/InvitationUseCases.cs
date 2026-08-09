@@ -280,7 +280,10 @@ public sealed class CreateOrganizationInvitation
                     Guid.Empty,
                     normalizedContactEmail,
                     acceptToken,
-                    invitation.ExpiresAtUtc),
+                    invitation.ExpiresAtUtc,
+                    OrganizationName: organization.DisplayName,
+                    RoleDisplay: OrganizationRoleDisplay.ToDisplayLabel(role),
+                    ContactEmail: normalizedContactEmail),
                 cancellationToken).ConfigureAwait(false);
 
             return ApplicationResult<OrganizationInvitationDto>.Success(
@@ -321,17 +324,20 @@ public sealed class CreateOrganizationInvitation
 public sealed class ResendOrganizationInvitation
 {
     private readonly IOrganizationInvitationRepository _invitations;
+    private readonly IPlatformOrganizationRepository _organizations;
     private readonly IPlatformAuthOutboundMessageSink _messages;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
     public ResendOrganizationInvitation(
         IOrganizationInvitationRepository invitations,
+        IPlatformOrganizationRepository organizations,
         IPlatformAuthOutboundMessageSink messages,
         IPlatformUnitOfWork unitOfWork,
         IClock clock)
     {
         _invitations = invitations;
+        _organizations = organizations;
         _messages = messages;
         _unitOfWork = unitOfWork;
         _clock = clock;
@@ -365,13 +371,20 @@ public sealed class ResendOrganizationInvitation
             await _invitations.UpdateAsync(invitation, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
+            var organization = await _organizations
+                .GetByIdAsync(invitation.OrganizationId, cancellationToken)
+                .ConfigureAwait(false);
+
             await _messages.PublishAsync(
                 new PlatformAuthOutboundMessage(
                     PlatformAuthOutboundMessageKinds.OrganizationStaffInvitation,
                     Guid.Empty,
                     invitation.NormalizedEmail,
                     acceptToken,
-                    invitation.ExpiresAtUtc),
+                    invitation.ExpiresAtUtc,
+                    OrganizationName: organization?.DisplayName,
+                    RoleDisplay: OrganizationRoleDisplay.ToDisplayLabel(invitation.Role),
+                    ContactEmail: invitation.NormalizedEmail),
                 cancellationToken).ConfigureAwait(false);
 
             return ApplicationResult<OrganizationInvitationDto>.Success(
@@ -439,6 +452,7 @@ public sealed class AcceptOrganizationInvitation
     private readonly EnsureAccountProfilesForUser _ensureProfiles;
     private readonly AddOrganizationMembership _addMembership;
     private readonly AssignProductLocalRole _assignProductLocalRole;
+    private readonly IPlatformAuthOutboundMessageSink _messages;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
     private readonly PlatformPasswordOptions _passwordOptions;
@@ -454,6 +468,7 @@ public sealed class AcceptOrganizationInvitation
         EnsureAccountProfilesForUser ensureProfiles,
         AddOrganizationMembership addMembership,
         AssignProductLocalRole assignProductLocalRole,
+        IPlatformAuthOutboundMessageSink messages,
         IPlatformUnitOfWork unitOfWork,
         IClock clock,
         IOptions<PlatformPasswordOptions> passwordOptions)
@@ -468,6 +483,7 @@ public sealed class AcceptOrganizationInvitation
         _ensureProfiles = ensureProfiles;
         _addMembership = addMembership;
         _assignProductLocalRole = assignProductLocalRole;
+        _messages = messages;
         _unitOfWork = unitOfWork;
         _clock = clock;
         _passwordOptions = passwordOptions.Value;
@@ -632,10 +648,24 @@ public sealed class AcceptOrganizationInvitation
             await _invitations.UpdateAsync(invitation, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
+            var staffLoginDisplay = StaffLoginNameRules.FormatForDisplay(staffUser.NormalizedEmail);
+            await _messages.PublishAsync(
+                new PlatformAuthOutboundMessage(
+                    PlatformAuthOutboundMessageKinds.OrganizationStaffInvitationAccepted,
+                    staffUser.Id.Value,
+                    contactEmail,
+                    OpaqueToken: string.Empty,
+                    ExpiresAtUtc: utcNow,
+                    OrganizationName: organization.DisplayName,
+                    RoleDisplay: OrganizationRoleDisplay.ToDisplayLabel(invitation.Role),
+                    ContactEmail: contactEmail,
+                    StaffLogin: staffLoginDisplay),
+                cancellationToken).ConfigureAwait(false);
+
             return ApplicationResult<AcceptOrganizationInvitationResultDto>.Success(
                 new AcceptOrganizationInvitationResultDto(
                     staffUser.Id.Value,
-                    StaffLoginNameRules.FormatForDisplay(staffUser.NormalizedEmail),
+                    staffLoginDisplay,
                     contactEmail,
                     organization.DisplayName,
                     organization.Id.Value,

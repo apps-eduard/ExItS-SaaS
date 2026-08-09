@@ -1,3 +1,4 @@
+using ExItS.Platform.Application.Identity;
 using ExItS.Platform.Application.Organizations;
 using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Identity;
@@ -47,6 +48,14 @@ public sealed class OrganizationInvitationTests
         Assert.NotNull(result.Value!.AcceptToken);
         Assert.Equal(InvitationStatus.Pending.ToString(), result.Value.Status);
         Assert.Null(await users.GetByNormalizedEmailAsync("new.staff@example.com"));
+
+        var outbound = messages.LastOfKind(PlatformAuthOutboundMessageKinds.OrganizationStaffInvitation);
+        Assert.NotNull(outbound);
+        Assert.Equal("new.staff@example.com", outbound!.ContactEmail);
+        Assert.Equal("Invite Org", outbound.OrganizationName);
+        Assert.Equal("Staff", outbound.RoleDisplay);
+        Assert.Equal(result.Value.AcceptToken, outbound.OpaqueToken);
+        Assert.Null(outbound.StaffLogin);
     }
 
     [Fact]

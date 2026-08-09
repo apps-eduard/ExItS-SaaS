@@ -81,10 +81,15 @@ public sealed class ListLocalValidationIdentities
                              ?? LocalValidationOrganizationCatalog.FindBySlug(identity.OrganizationSlug)?.DisplayName;
             }
 
+            var loginDisplay = user.IsOrganizationScopedStaff
+                ? StaffLoginNameRules.FormatForDisplay(user.NormalizedEmail)
+                : user.NormalizedEmail;
             var listLabel = identity.PreferredAccountClass switch
             {
                 AccountClass.Platform => $"Platform - {user.DisplayName}",
                 AccountClass.Personal => $"Personal - {user.DisplayName}",
+                AccountClass.Organization when user.IsOrganizationScopedStaff =>
+                    $"{user.DisplayName} — {orgDisplay ?? "Organization"} · {loginDisplay}",
                 AccountClass.Organization => $"{orgDisplay ?? "Organization"} - {user.DisplayName}",
                 _ => user.DisplayName
             };
@@ -93,7 +98,7 @@ public sealed class ListLocalValidationIdentities
                 identity.Key,
                 user.Username,
                 user.DisplayName,
-                user.NormalizedEmail,
+                loginDisplay,
                 user.Id.Value,
                 orgId,
                 identity.Summary,
@@ -202,12 +207,19 @@ public sealed class ListLocalValidationQuickLoginIdentities
                         organizationName: null,
                         organizationRole: null,
                         scopeLabel: "Platform Administration",
-                        listLabel: $"{user.DisplayName} — Platform Administration"));
+                        listLabel: $"{user.DisplayName} — Platform Administration",
+                        loginDisplay: user.NormalizedEmail));
                     continue;
                 }
 
                 if (profile.AccountClass is AccountClass.Personal)
                 {
+                    // Org-scoped staff never expose a Personal quick-login entry.
+                    if (user.IsOrganizationScopedStaff)
+                    {
+                        continue;
+                    }
+
                     list.Add(CreateEntry(
                         user,
                         profile,
@@ -215,7 +227,8 @@ public sealed class ListLocalValidationQuickLoginIdentities
                         organizationName: null,
                         organizationRole: null,
                         scopeLabel: "Personal",
-                        listLabel: $"{user.DisplayName} — Personal"));
+                        listLabel: $"{user.DisplayName} — Personal",
+                        loginDisplay: user.NormalizedEmail));
                     continue;
                 }
 
@@ -230,6 +243,14 @@ public sealed class ListLocalValidationQuickLoginIdentities
 
                 foreach (var membership in memberships)
                 {
+                    // Org-scoped staff are permanently bound to HomeOrganizationId.
+                    if (user.IsOrganizationScopedStaff
+                        && user.HomeOrganizationId is not null
+                        && membership.OrganizationId != user.HomeOrganizationId)
+                    {
+                        continue;
+                    }
+
                     var org = await _organizations.GetByIdAsync(membership.OrganizationId, cancellationToken)
                         .ConfigureAwait(false);
                     if (org is null)
@@ -238,14 +259,23 @@ public sealed class ListLocalValidationQuickLoginIdentities
                     }
 
                     var roleLabel = OrganizationRoleDisplay.ToDisplayLabel(membership.Role);
+                    var loginDisplay = user.IsOrganizationScopedStaff
+                        ? StaffLoginNameRules.FormatForDisplay(user.NormalizedEmail)
+                        : user.NormalizedEmail;
+                    var listLabel = user.IsOrganizationScopedStaff
+                        ? $"{user.DisplayName} — {org.DisplayName} · {loginDisplay}"
+                        : $"{user.DisplayName} — Organization Administration · {org.DisplayName} · {roleLabel}";
                     list.Add(CreateEntry(
                         user,
                         profile,
                         organizationId: org.Id.Value,
                         organizationName: org.DisplayName,
                         organizationRole: membership.Role.ToString(),
-                        scopeLabel: "Organization Administration",
-                        listLabel: $"{user.DisplayName} — Organization Administration · {org.DisplayName} · {roleLabel}"));
+                        scopeLabel: user.IsOrganizationScopedStaff
+                            ? "Organization Staff"
+                            : "Organization Administration",
+                        listLabel: listLabel,
+                        loginDisplay: loginDisplay));
                 }
             }
         }
@@ -271,7 +301,8 @@ public sealed class ListLocalValidationQuickLoginIdentities
         string? organizationName,
         string? organizationRole,
         string scopeLabel,
-        string listLabel)
+        string listLabel,
+        string loginDisplay)
     {
         var key = organizationId is Guid orgId
             ? $"ql:{user.Id.Value:N}:{profile.Id.Value:N}:{orgId:N}"
@@ -281,7 +312,7 @@ public sealed class ListLocalValidationQuickLoginIdentities
             key,
             user.Username,
             user.DisplayName,
-            user.NormalizedEmail,
+            loginDisplay,
             user.Id.Value,
             profile.Id.Value,
             profile.AccountClass.ToString(),

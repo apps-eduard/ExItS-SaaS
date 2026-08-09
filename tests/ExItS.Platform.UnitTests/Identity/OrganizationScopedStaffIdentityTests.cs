@@ -131,6 +131,14 @@ public sealed class OrganizationScopedStaffIdentityTests
         Assert.StartsWith("ana@", accept.Value.StaffLogin, StringComparison.OrdinalIgnoreCase);
         Assert.Contains(harness.OrgA.PublicOrganizationId!, accept.Value.StaffLogin, StringComparison.OrdinalIgnoreCase);
         Assert.True(staff.IsOrganizationScopedStaff);
+
+        var acceptedMail = harness.Messages.LastOfKind(
+            PlatformAuthOutboundMessageKinds.OrganizationStaffInvitationAccepted);
+        Assert.NotNull(acceptedMail);
+        Assert.Equal(accept.Value.StaffLogin, acceptedMail!.StaffLogin);
+        Assert.Equal("ana@example.com", acceptedMail.ContactEmail);
+        Assert.Equal(harness.OrgA.DisplayName, acceptedMail.OrganizationName);
+        Assert.True(string.IsNullOrEmpty(acceptedMail.OpaqueToken));
     }
 
     [Fact]
@@ -370,6 +378,7 @@ public sealed class OrganizationScopedStaffIdentityTests
         public PlatformOrganization? OrgB { get; init; }
         public required CreateOrganizationInvitation CreateInvitation { get; init; }
         public required AcceptOrganizationInvitation AcceptInvitation { get; init; }
+        public required CapturingAuthOutboundMessageSink Messages { get; init; }
 
         public static async Task<StaffInviteHarness> CreateAsync(bool createOrgB = false)
         {
@@ -415,12 +424,13 @@ public sealed class OrganizationScopedStaffIdentityTests
                 _ = await addMembership.ExecuteAsync(orgB.Id, owner.Id, OrganizationRole.OrganizationOwner);
             }
 
+            var messages = new CapturingAuthOutboundMessageSink();
             var createInvitation = new CreateOrganizationInvitation(
                 orgs,
                 invitations,
                 users,
                 publicOrgIds,
-                new CapturingAuthOutboundMessageSink(),
+                messages,
                 uow,
                 clock);
 
@@ -435,6 +445,7 @@ public sealed class OrganizationScopedStaffIdentityTests
                 ensure,
                 addMembership,
                 assignRole,
+                messages,
                 uow,
                 clock,
                 Options.Create(new PlatformPasswordOptions()));
@@ -455,7 +466,8 @@ public sealed class OrganizationScopedStaffIdentityTests
                 OrgA = orgA,
                 OrgB = orgB,
                 CreateInvitation = createInvitation,
-                AcceptInvitation = acceptInvitation
+                AcceptInvitation = acceptInvitation,
+                Messages = messages
             };
         }
     }

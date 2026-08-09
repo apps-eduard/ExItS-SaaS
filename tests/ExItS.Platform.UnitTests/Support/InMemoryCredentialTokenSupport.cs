@@ -41,11 +41,18 @@ internal sealed class InMemoryPlatformCredentialTokenRepository : IPlatformCrede
 
 internal sealed class CapturingAuthOutboundMessageSink : IPlatformAuthOutboundMessageSink
 {
-    public PlatformAuthOutboundMessage? Last { get; private set; }
+    private readonly List<PlatformAuthOutboundMessage> _messages = [];
+
+    public PlatformAuthOutboundMessage? Last => _messages.Count == 0 ? null : _messages[^1];
+
+    public IReadOnlyList<PlatformAuthOutboundMessage> Messages => _messages;
 
     public Task PublishAsync(PlatformAuthOutboundMessage message, CancellationToken cancellationToken = default)
     {
-        Last = message;
+        _messages.Add(message);
         return Task.CompletedTask;
     }
+
+    public PlatformAuthOutboundMessage? LastOfKind(string kind) =>
+        _messages.LastOrDefault(m => string.Equals(m.Kind, kind, StringComparison.Ordinal));
 }

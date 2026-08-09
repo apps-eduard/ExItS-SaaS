@@ -30,9 +30,12 @@ Public organization id `ORG######` is immutable and used as the staff-login host
 
 1. Owner/admin enters **contact email** + role/permissions.
 2. Pending invitation stores org + contact email + hashed token + expiry (no PlatformUser stub).
-3. Accept (anonymous token + password) allocates staff login, creates staff PlatformUser + credential + Organization account profile + membership (+ optional product role).
-4. Confirmation shows organization name, contact email, and staff login.
-5. Auto-accept-into-personal-identity is disabled for org staff invites.
+3. Invitation email (contact address) includes organization name, contact email, role, accept link/expiry, and states that the organization-specific staff username is created only on accept — contact email is **not** the login.
+4. Accept (anonymous token + password) allocates staff login, creates staff PlatformUser + credential + Organization account profile + membership (+ optional product role).
+5. Post-acceptance email to the contact address includes organization name, the **actual** generated StaffLogin, and contact/recovery email. Never includes password, invitation token, or session secrets.
+6. UI confirmation shows organization name, contact email, and staff login.
+7. Auto-accept-into-personal-identity is disabled for org staff invites.
+8. Development/Testing Quick Login (Admin + MAUI) lists accepted Active org-scoped staff using the persisted StaffLogin (e.g. `Maria — ABC Store · maria@ORG001842`). Pending invitations never appear. Production Quick Login remains disabled.
 
 ## 4. Authentication / authorization
 
