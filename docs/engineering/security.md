@@ -58,3 +58,23 @@
 52. **P14-WP01:** Authoritative Production deployment architecture (customer on-prem; Platform + one PostgreSQL per product; reverse-proxy HTTPS) and Production readiness audit. Pilot packaging remains non-production. **No Docker/Compose/TLS/CI implementation in WP01.** Production remains blocked (TLS-PROD, MAUI-HTTPS, R-109, R-129, …). Evaluator drift (still cites R-091) recorded for P14-WP06.
 53. **Public ExItS ID / QR:** Platform-owned immutable `EX-####-####`; QR payload `exits://user/v1/…` only; exact-match resolve rate-limited and audited; generic not-found; scan never grants membership/role. Spec: [public-user-id-and-qr](../specs/identity/public-user-id-and-qr.md).
 54. **P19 Card/GCash (simulated):** POS electronic Card/GCash uses `FakePaymentGateway` only — **no live provider**, no card numbers, CVV, OTP, PIN, or wallet credentials stored or accepted from clients. Paid state is webhook-authoritative (`ProcessPaymentWebhook` / HMAC); Dev `simulate` endpoints are **404 in Production/Release**. `payment_attempts` stores safe metadata only (`cardBrand`, `cardLastFour`, provider/external references). Manual GCash **sale** path remains operator-confirmed and unverified; optional `ManualGCashTransfer` payment-attempt fallback is config-gated (`PosPayments:EnableManualGCashTransfer`). Report: [P19-card-gcash-payment-ui-and-simulation](../reports/P19-card-gcash-payment-ui-and-simulation.md). **Not production-ready.**
+55. **P21 Privacy Compliance workspace:** Platform-only readiness tooling (`platform.permission.view_privacy_compliance` / `manage_privacy_compliance`). Records and PDFs document readiness — they do **not** certify legal/NPC compliance. Never show “Compliant” merely because registry rows exist. PDF exports must mark **DRAFT / NOT APPROVED** unless status is Approved; never export secrets, tokens, credentials, or raw customer records. Phase: [phase-21-privacy-compliance-and-regulatory-readiness](../phases/phase-21-privacy-compliance-and-regulatory-readiness.md).
+
+## Privacy Impact (standing engineering rule)
+
+Every future phase or work package that **introduces or changes personal-data processing** must include a **Privacy Impact** section covering, where applicable:
+
+- personal data affected
+- purpose of processing
+- data subjects
+- Personal / Organization / Platform ownership
+- access roles
+- local / offline storage
+- external sharing / processors
+- retention / deletion
+- security controls
+- audit / logging
+- data-subject rights impact
+- PIA required or updated: **Yes / No**
+
+This rule supports readiness documentation only; it is not legal certification. Uncertain NPC/DPA interpretations must be tracked as requirements marked **Requires DPO/legal verification**.

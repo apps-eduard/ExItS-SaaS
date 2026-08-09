@@ -77,7 +77,11 @@ Optional later roles may include Billing Administrator, Platform Auditor, and Pl
 | `platform.test-payments.view` | Local Validation only | Local Validation only |
 | `platform.test-payments.simulate` | Local Validation only | No by default |
 | `platform.audit.view` | Yes | Yes |
+| `platform.permission.view_privacy_compliance` | Yes (Admin + Auditor) | No |
+| `platform.permission.manage_privacy_compliance` | Yes (Admin only) | No |
 | `platform.support-session.start` | According to explicit permission | According to explicit permission |
+
+Canonical codes (Domain source of truth): `platform.permission.view_privacy_compliance`, `platform.permission.manage_privacy_compliance`. Privacy Compliance Admin is **Platform shell only** — never Personal, Organization, or POS. See [Phase 21](../phases/phase-21-privacy-compliance-and-regulatory-readiness.md).
 
 `platform.test-payments.*` must not exist as an effective Production permission.
 

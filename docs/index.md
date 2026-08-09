@@ -49,6 +49,7 @@
 - [Public User ID and QR](specs/identity/public-user-id-and-qr.md)
 - [Phase 20 product catalog specs](specs/product-catalog/phase-20-global-product-catalog-and-business-template-onboarding.md)
 - [Phase 20](phases/phase-20-global-product-catalog-and-business-template-onboarding.md)
+- [Phase 21 — Privacy, Compliance, and Regulatory Readiness](phases/phase-21-privacy-compliance-and-regulatory-readiness.md)
 - [Production deployment architecture](engineering/production-deployment-architecture.md)
 - [Production readiness audit](engineering/production-readiness-audit.md)
 - [Authorization](engineering/authorization-matrix.md)

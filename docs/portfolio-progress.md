@@ -11,9 +11,9 @@
 | Portfolio | ExITS SaaS |
 | Existing product | Historical HealthCare SaaS MVP (separate product; **not** in this workspace ? do not restore) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
-| Current phase | Phase 19 **Open** (phone Retest); Phase 20 **Open** (Implementation Complete ? Validation Pending); Phase 14 still open |
-| Current work package | **P20-WP08** In Progress ? User Physical-Device Validation Pending; P20-WP01?WP07 Code Complete; **P19-WP08** Retest (QR + Personal MVP phone scenarios); do not close Phase 19 or 20 without user approval; **do not start P14-WP03** under Phase 19/20 |
-| Overall status | **Phase 19 Open** + **Phase 20 Open** ([P20 phase](phases/phase-20-global-product-catalog-and-business-template-onboarding.md); [P20 final](reports/P20-final-implementation-report.md); [P19-WP08](reports/P19-WP08-end-to-end-validation-and-closeout.md)). Phase 20 overall: Implementation Complete ? Validation Pending. **Not Device Verified**. **Not Complete**. Production remains **Blocked**. **Not production-ready.** |
+| Current phase | Phase 19 **Open** (phone Retest); Phase 20 **Open** (Implementation Complete ? Validation Pending); Phase 21 **Open** (Privacy Compliance foundation); Phase 14 still open |
+| Current work package | **P21** foundation Code Complete (readiness tooling); **P20-WP08** In Progress ? User Physical-Device Validation Pending; **P19-WP08** Retest; do not close Phase 19/20/21 without user approval; **do not start P14-WP03** under Phase 19/20/21 |
+| Overall status | **Phase 19 Open** + **Phase 20 Open** + **Phase 21 Open** ([P21 phase](phases/phase-21-privacy-compliance-and-regulatory-readiness.md); [P20 phase](phases/phase-20-global-product-catalog-and-business-template-onboarding.md); [P19-WP08](reports/P19-WP08-end-to-end-validation-and-closeout.md)). Phase 21 is compliance **readiness tooling**, not legal/NPC certification. **Not Device Verified**. Production remains **Blocked**. **Not production-ready.** |
 | Latest verified commit | Phase 20 WP07 tip `f766ea2` (Phase 19 and 20 remain Open; Not Device Verified) |
 | Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA enforcement deferred; Phase 19 phone validation pending; Phase 20 phone validation pending; Personal MVP / QR phone Retest |
 | Last updated | 2026-08-05 |
@@ -228,6 +228,14 @@ P19-WP08 ? End-to-End Validation and User Closeout Checklist (Retest � awaitin
 **Phase 17 POS MVP Operational Onboarding:** 8 / 8 WPs complete (closeout [P17-WP08](reports/P17-WP08-reports-hardening-and-closeout.md); Phase 14 unchanged; not Production-ready).
 **Phase 18 Mobile Personal / Org / POS Experience:** **Complete (implementation/scope)** � WP01�WP08 closed ([checklist](reports/P18-WP08-end-to-end-validation-and-closeout.md)); Products/Categories phone-validated; Quick Login pending final retest; PhysicalDevice Tailscale APK delivered; **Not Device Verified**; Inventory/Registers/Shifts/Sales/Customers/Reports/full Cashier UI ? Phase 19; Phase 14 unchanged; not Production-ready.
 **Phase 19 Mobile POS Operations / Cashier Experience:** **Open** ([phase](phases/phase-19-mobile-pos-operations-and-cashier-experience.md); [P19-WP08](reports/P19-WP08-end-to-end-validation-and-closeout.md)) — WP01–WP07 Code Complete; WP08 Retest awaiting phone confirmation; offline operability foundation Code Complete with physical A–S incomplete ([report](reports/P19-offline-operability-foundation.md); commits `f476172`, `cc64ba3`, `10a1fc5`); Personal-scope offline sync hardening Code Complete ([report](reports/P19-personal-scope-offline-operability.md); tip `f3d87be`); Phase 14 unchanged; not Production-ready; **Not Device Verified**; **Not Complete**.
+**Phase 21 Privacy, Compliance, and Regulatory Readiness:** **Open** ([phase](phases/phase-21-privacy-compliance-and-regulatory-readiness.md); [foundation report](reports/P21-foundation-privacy-compliance-workspace.md)) — Platform-only readiness workspace foundation Code Complete; **not** legal/NPC certification; DPO/legal review required; Phase 14/19/20 unchanged.
+
+## Phase 21 work packages
+
+| WP | Status | Key commit |
+|---|---|---|
+| P21 foundation (WP01–WP10 slice) | **Code Complete** (readiness tooling) | `7f6795b` (feat), `26ec821` (test) — [report](reports/P21-foundation-privacy-compliance-workspace.md) |
+| P21-WP01 Requirements & privacy inventory | **Code Complete** | `7f6795b` — [report](reports/P21-WP01-requirements-and-privacy-inventory.md) |
 
 ## Phase 19 work packages
 

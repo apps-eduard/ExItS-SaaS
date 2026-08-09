@@ -1419,6 +1419,10 @@ Audit at minimum:
 - entitlement versus role separation
 - POS boundary preservation
 
+## Standing rule — Privacy Impact (Phase 21+)
+
+Any future phase/work package that introduces or changes personal-data processing must document a **Privacy Impact** section (see [security.md](../engineering/security.md)). Platform Privacy & Compliance Admin (`/admin/privacy-compliance`) is readiness tooling only — not legal/NPC certification. See [Phase 21](../phases/phase-21-privacy-compliance-and-regulatory-readiness.md).
+
 ## WP10 — Security, Privacy, UX Hardening, and Closeout
 
 - cross-account-class tests
