@@ -1,0 +1,41 @@
+---
+description: Authoritative Platform identity model (Personal/Owner, org staff, Platform Admin)
+alwaysApply: true
+---
+
+# ExItS Identity Model (Authoritative)
+
+Do **not** reintroduce legacy behavior that conflicts with this model.
+
+## Personal / Owner
+
+- Real email is the login key (`NormalizedEmail`)
+- `HomeOrganizationId` = **null**
+- May own organization(s) via membership on the same Personal identity (Start a Business)
+- Must **never** receive organization **Staff** membership through invite attach or personal-activation auto-accept
+
+## Organization staff
+
+- Separate `PlatformUser` from Personal/Owner
+- Generated login: `<local>@ORG######` (system login, not a mailbox)
+- Real email is **contact/recovery only** (`NormalizedContactEmail`) — not unique, not an authorization key
+- `HomeOrganizationId` = exactly one organization (immutable after create)
+- No Personal profile, no create-org, no switch-org (`OrganizationContextLocked`)
+- New staff invites: token + password → create staff identity; **never** attach membership to an existing Personal identity
+
+## Platform Admin
+
+- Unchanged Platform shell / Platform roles model
+- Do not convert Personal or Organization staff identities into Platform staff silently
+
+## Forbidden (removed pre-production)
+
+- Personal-email-as-org-staff login
+- Auto-accepting org invites onto Personal activation
+- Staff/`OrganizationMember` membership without matching `HomeOrganizationId`
+- Treating contact email as a unique login or org-authorization key
+
+## Canonical docs
+
+- [P19 organization-scoped staff identities](docs/reports/P19-organization-scoped-staff-identities.md)
+- [User creation flow §9.1](docs/architecture/user-creation-flow-and-account-scope-rules.md)
