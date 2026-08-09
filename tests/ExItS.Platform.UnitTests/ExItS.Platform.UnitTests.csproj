@@ -10,6 +10,7 @@
   <ItemGroup>
     <PackageReference Include="coverlet.collector" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="QuestPDF" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" />
   </ItemGroup>
@@ -17,6 +18,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Platform\ExItS.Platform.Application\ExItS.Platform.Application.csproj" />
     <ProjectReference Include="..\..\src\Platform\ExItS.Platform.Domain\ExItS.Platform.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Platform\ExItS.Platform.Infrastructure\ExItS.Platform.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>
