@@ -114,6 +114,10 @@ else
             {
                 <Space>
                     <a class="ant-btn ant-btn-sm" href="@($"/admin/organizations/{Id}/branding")">@L["Nav_Branding"]</a>
+                    @if (CanManageLifecycle)
+                    {
+                        <a class="ant-btn ant-btn-sm" href="@($"/admin/organizations/{Id}/catalog")">@L["Organizations_OpenCatalog"]</a>
+                    }
                     @if (CanManageLifecycle && _org.Data!.Status == "Active")
                     {
                         <Popconfirm Title="@L["Organizations_ConfirmSuspend"]" OnConfirm="SuspendAsync" OkText="@L["Common_Confirm"]" CancelText="@L["Common_Cancel"]">
@@ -255,6 +259,12 @@ else
             <TabPane Key="members" Tab="@L["Organizations_TabMembers"]">
                 <Paragraph>
                     <a href="@($"/admin/organizations/{Id}/members")">@L["Organizations_OpenMembers"]</a>
+                </Paragraph>
+            </TabPane>
+
+            <TabPane Key="catalog" Tab="@L["Organizations_TabCatalog"]">
+                <Paragraph>
+                    <a href="@($"/admin/organizations/{Id}/catalog")">@L["Organizations_OpenCatalog"]</a>
                 </Paragraph>
             </TabPane>
 

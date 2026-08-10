@@ -401,6 +401,33 @@ internal static class OrganizationEndpoints
             }
         });
 
+        organizations.MapGet("/{organizationId:guid}/catalog", async (
+            Guid organizationId,
+            int? page,
+            int? pageSize,
+            string? search,
+            GetOrganizationCatalogVisibility useCase,
+            PlatformAuthz authz,
+            CancellationToken ct) =>
+        {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageOrganizations,
+                "platform.organization.catalog_viewed",
+                nameof(PlatformOrganization),
+                organizationId.ToString("D"),
+                organizationId,
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var result = await useCase
+                .ExecuteAsync(organizationId, page, pageSize, search, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
         return app;
     }
 }

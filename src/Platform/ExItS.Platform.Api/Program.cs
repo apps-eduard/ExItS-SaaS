@@ -25,6 +25,7 @@ using ExItS.Platform.Application.Commercial;
 using ExItS.Platform.Application.Entitlements;
 using ExItS.Platform.Application.GlobalCatalog;
 using ExItS.Platform.Application.Identity;
+using ExItS.Platform.Application.Integration.Pos;
 using ExItS.Platform.Application.Organizations;
 using ExItS.Platform.Application.Payments;
 using ExItS.Platform.Application.Personal;
@@ -32,9 +33,11 @@ using ExItS.Platform.Application.PrivacyCompliance;
 using ExItS.Platform.Application.Subscriptions;
 using ExItS.Platform.Infrastructure;
 using ExItS.Platform.Infrastructure.GlobalCatalog;
+using ExItS.Platform.Infrastructure.Integration.Pos;
 using ExItS.Platform.Infrastructure.Payments;
 using ExItS.Platform.Infrastructure.LocalValidation;
 using ExItS.Platform.Infrastructure.Health;
+using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.Authentication.Facebook;
 using Microsoft.AspNetCore.Authentication.Google;
 
@@ -184,6 +187,18 @@ builder.Services.AddScoped<ClosePlatformOrganization>();
 builder.Services.AddScoped<UpdateOrganizationProfile>();
 builder.Services.AddScoped<UpdateOrganizationPlatformFields>();
 builder.Services.AddScoped<UpdateOrganizationBranding>();
+builder.Services.Configure<PosProductApiOptions>(builder.Configuration.GetSection(PosProductApiOptions.SectionName));
+builder.Services.AddHttpClient<IPosOrganizationCatalogReadClient, PosOrganizationCatalogReadClient>((sp, client) =>
+{
+    var opts = sp.GetRequiredService<IOptions<PosProductApiOptions>>().Value;
+    if (!string.IsNullOrWhiteSpace(opts.BaseUrl))
+    {
+        client.BaseAddress = new Uri(opts.BaseUrl.TrimEnd('/') + "/", UriKind.Absolute);
+    }
+
+    client.Timeout = TimeSpan.FromSeconds(15);
+});
+builder.Services.AddScoped<GetOrganizationCatalogVisibility>();
 
 builder.Services.AddScoped<PlatformUserQueryService>();
 builder.Services.AddScoped<CreatePlatformUser>();
