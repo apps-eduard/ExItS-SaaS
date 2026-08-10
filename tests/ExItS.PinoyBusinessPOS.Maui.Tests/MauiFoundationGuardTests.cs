@@ -57,9 +57,12 @@ public sealed class MauiFoundationGuardTests
         Assert.Contains("pos-settings__header", settings, StringComparison.Ordinal);
         Assert.Contains("pos-settings__title", settings, StringComparison.Ordinal);
         Assert.Contains("Settings_DevNoticeTitle", settings, StringComparison.Ordinal);
+        Assert.Contains("Offline_PinSetupTitle", settings, StringComparison.Ordinal);
         Assert.DoesNotContain("PageHeader", settings, StringComparison.Ordinal);
         Assert.DoesNotContain("Auth_Logout", settings, StringComparison.Ordinal);
-        Assert.DoesNotContain("password", settings, StringComparison.OrdinalIgnoreCase);
+        // Offline PIN change uses type=password; forbid sign-in credential fields on Settings.
+        Assert.DoesNotContain("SignInPassword", settings, StringComparison.Ordinal);
+        Assert.DoesNotContain("ContinueWithGoogle", settings, StringComparison.Ordinal);
     }
 
     [Fact]

@@ -111,6 +111,23 @@ public sealed class AuthOfflineUxLayerTests
     }
 
     [Fact]
+    public void Offline_pin_unlock_ui_is_stacked_and_not_duplicating_org_name()
+    {
+        var unlock = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Pages", "OfflinePinUnlock.razor"));
+        var css = File.ReadAllText(Path.Combine(MauiProject(), "wwwroot", "app.css"));
+
+        Assert.Contains("pos-offline-pin__badge", unlock, StringComparison.Ordinal);
+        Assert.Contains("pos-offline-pin__actions", unlock, StringComparison.Ordinal);
+        Assert.Contains("pos-offline-pin__signout", unlock, StringComparison.Ordinal);
+        Assert.Contains("Offline_PinShow", unlock, StringComparison.Ordinal);
+        Assert.DoesNotContain("OrganizationDisplayName", unlock, StringComparison.Ordinal);
+        Assert.DoesNotContain("InlineMessageTone.Warning", unlock, StringComparison.Ordinal);
+
+        Assert.Contains(".pos-offline-pin__actions", css, StringComparison.Ordinal);
+        Assert.Contains("flex-direction: column", css, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void SignIn_maps_credential_and_offline_failures_to_distinct_copy()
     {
         var signIn = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Pages", "SignIn.razor"));
@@ -161,6 +178,18 @@ public sealed class AuthOfflineUxLayerTests
         var personalPin = gate.IndexOf("RequiresOfflinePinSetupAsync", personalBranch, StringComparison.Ordinal);
         var personalHome = gate.IndexOf("RoleHomeResolver.PersonalHome", personalBranch, StringComparison.Ordinal);
         Assert.InRange(personalPin, personalBranch, personalHome);
+
+        // Org POS: PIN before optional template, then sell-critical setup.
+        var orgPosPin = gate.IndexOf("HasOfflinePinConfiguredAsync", personalHome, StringComparison.Ordinal);
+        var templateRoute = gate.IndexOf("/catalog/import?onboarding=1", orgPosPin, StringComparison.Ordinal);
+        var setupRoute = gate.IndexOf("return \"/setup\"", templateRoute, StringComparison.Ordinal);
+        Assert.InRange(orgPosPin, personalHome, templateRoute);
+        Assert.InRange(templateRoute, orgPosPin, setupRoute);
+        Assert.Contains("GetBusinessTemplatePromptPendingAsync", gate, StringComparison.Ordinal);
+        Assert.Contains("EnsureOfflineOperateGrantAsync", gate, StringComparison.Ordinal);
+        // Template prompt must not require ManageCatalog (trial feature hydration lag).
+        var templateBlock = gate.Substring(templateRoute - 200, Math.Min(400, gate.Length - (templateRoute - 200)));
+        Assert.DoesNotContain("ManageCatalog", templateBlock, StringComparison.Ordinal);
     }
 
     [Fact]

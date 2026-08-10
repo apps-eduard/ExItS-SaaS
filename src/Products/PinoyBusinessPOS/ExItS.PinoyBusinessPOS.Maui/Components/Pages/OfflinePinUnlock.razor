@@ -1,5 +1,6 @@
 @page "/offline-pin"
 @layout Layout.AuthShell
+@using ExItS.DesignSystem.Components.Internal
 @inject IAuthenticationService Auth
 @inject ICurrentUserContext CurrentUser
 @inject RoleHomeResolver RoleHome
@@ -10,15 +11,11 @@
 <div class="pos-offline-pin">
     <Page>
         <header class="pos-offline-pin__header">
+            <div class="pos-offline-pin__badge" aria-hidden="true">@IconGlyphs.Get("lock")</div>
             <h1 class="pos-offline-pin__title">@L["Offline_PinTitle"]</h1>
             <p class="pos-offline-pin__subtitle">@L["Offline_PinSubtitle"]</p>
-            @if (!string.IsNullOrWhiteSpace(CurrentUser.Session?.OrganizationDisplayName))
-            {
-                <p class="pos-muted">@CurrentUser.Session!.OrganizationDisplayName</p>
-            }
+            <p class="pos-offline-pin__status" role="status">@L["Offline_Banner"]</p>
         </header>
-
-        <InlineMessage Tone="InlineMessageTone.Warning">@L["Offline_Banner"]</InlineMessage>
 
         @if (!string.IsNullOrEmpty(_error))
         {
@@ -26,51 +23,70 @@
         }
 
         <div class="pos-offline-pin__field">
-            <label for="offline-pin">@L["Offline_PinLabel"]</label>
-            <input id="offline-pin"
-                   type="password"
-                   inputmode="numeric"
-                   autocomplete="one-time-code"
-                   maxlength="12"
-                   class="pos-offline-pin__input"
-                   disabled="@_busy"
-                   @bind="_pin"
-                   @bind:event="oninput" />
+            <label class="pos-offline-pin__label" for="offline-pin">@L["Offline_PinLabel"]</label>
+            <div class="pos-offline-pin__input-wrap">
+                <input id="offline-pin"
+                       type="@(_showPin ? "text" : "password")"
+                       inputmode="numeric"
+                       pattern="[0-9]*"
+                       autocomplete="one-time-code"
+                       maxlength="12"
+                       class="pos-offline-pin__input"
+                       disabled="@_busy"
+                       aria-invalid="@(!string.IsNullOrEmpty(_error))"
+                       @bind="_pin"
+                       @bind:event="oninput"
+                       @onkeydown="OnPinKeyDownAsync" />
+                <button type="button"
+                        class="pos-offline-pin__toggle"
+                        disabled="@_busy"
+                        aria-pressed="@_showPin"
+                        aria-label="@(_showPin ? L["Offline_PinHide"] : L["Offline_PinShow"])"
+                        @onclick="TogglePinVisibility">
+                    @(_showPin ? L["Offline_PinHide"] : L["Offline_PinShow"])
+                </button>
+            </div>
         </div>
 
-        <FormActions>
-            <Button Variant="ButtonVariant.Primary" IsLoading="_busy" Disabled="_busy" OnClick="UnlockAsync">
+        <div class="pos-offline-pin__actions" role="group" aria-label="@L["Offline_PinTitle"]">
+            <Button Variant="ButtonVariant.Primary"
+                    IsLoading="_busy"
+                    Disabled="_busy || string.IsNullOrWhiteSpace(_pin)"
+                    OnClick="UnlockAsync">
                 @L["Offline_PinUnlock"]
             </Button>
-            <Button Variant="ButtonVariant.Ghost" Disabled="_busy" OnClick="GoReconnectAsync">
+            <Button Variant="ButtonVariant.Secondary" Disabled="_busy" OnClick="GoReconnectAsync">
                 @L["SyncStatus_ReconnectShort"]
             </Button>
-            <Button Variant="ButtonVariant.Ghost" Disabled="_busy" OnClick="SignOutAsync">
+            <button type="button"
+                    class="pos-offline-pin__signout"
+                    disabled="@_busy"
+                    @onclick="SignOutAsync">
                 @L["Auth_Logout"]
-            </Button>
-        </FormActions>
+            </button>
+        </div>
     </Page>
 </div>
-
-<style>
-    .pos-offline-pin__header { margin-bottom: 0.75rem; }
-    .pos-offline-pin__title { margin: 0; font-size: 1.25rem; font-weight: 700; }
-    .pos-offline-pin__subtitle { margin: 0.35rem 0 0; font-size: 0.875rem; color: var(--exits-text-muted, #5b6b62); }
-    .pos-offline-pin__field { display: flex; flex-direction: column; gap: 0.35rem; margin: 0.85rem 0; }
-    .pos-offline-pin__input {
-        min-height: 2.75rem; padding: 0.55rem 0.75rem; font-size: 1.25rem; letter-spacing: 0.2em;
-        border: 1px solid var(--exits-border, #c9d4cd); border-radius: var(--exits-radius-md, 0.5rem);
-    }
-</style>
 
 @code {
     private string _pin = string.Empty;
     private string? _error;
     private bool _busy;
+    private bool _showPin;
+
+    private void TogglePinVisibility() => _showPin = !_showPin;
+
+    private async Task OnPinKeyDownAsync(KeyboardEventArgs e)
+    {
+        if (e.Key is "Enter" or "NumpadEnter")
+        {
+            await UnlockAsync();
+        }
+    }
 
     private async Task UnlockAsync()
     {
-        if (_busy)
+        if (_busy || string.IsNullOrWhiteSpace(_pin))
         {
             return;
         }

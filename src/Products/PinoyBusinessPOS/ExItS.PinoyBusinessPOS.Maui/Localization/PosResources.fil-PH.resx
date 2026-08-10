@@ -632,6 +632,8 @@
   <data name="Offline_PinTitle" xml:space="preserve"><value>I-unlock ang offline POS</value></data>
   <data name="Offline_PinSubtitle" xml:space="preserve"><value>Ilagay ang offline PIN para magpatuloy sa limited offline use. Magsi-sync ang mga pagbabago kapag online na.</value></data>
   <data name="Offline_PinLabel" xml:space="preserve"><value>Offline PIN</value></data>
+  <data name="Offline_PinShow" xml:space="preserve"><value>Ipakita</value></data>
+  <data name="Offline_PinHide" xml:space="preserve"><value>Itago</value></data>
   <data name="Offline_PinUnlock" xml:space="preserve"><value>I-unlock gamit ang PIN</value></data>
   <data name="Offline_PinRequired" xml:space="preserve"><value>Kailangan ang offline PIN</value></data>
   <data name="Offline_PinAvailableHint" xml:space="preserve"><value>May valid offline grant sa device na ito. Puwede kang mag-unlock gamit ang PIN kahit walang network.</value></data>
@@ -877,6 +879,8 @@
   <data name="Catalog_Lookup_OpenProduct" xml:space="preserve"><value>Buksan ang produkto</value></data>
   <data name="Catalog_Import_Title" xml:space="preserve"><value>Gamitin ang business template</value></data>
   <data name="Catalog_Import_Subtitle" xml:space="preserve"><value>Mag-import ng unang batch ng karaniwang produkto bilang editable na local catalog.</value></data>
+  <data name="Catalog_Import_OnboardingSubtitle" xml:space="preserve"><value>Opsyonal: mag-load ng starter products para sa uri ng tindahan (sari-sari, bakery, at iba pa). Puwedeng i-skip at magdagdag mamaya.</value></data>
+  <data name="Catalog_Import_Skip" xml:space="preserve"><value>Laktawan muna</value></data>
   <data name="Catalog_Import_UseTemplate" xml:space="preserve"><value>Gamitin ang business template</value></data>
   <data name="Catalog_Import_OfflineMessage" xml:space="preserve"><value>Kailangan ng koneksyon sa Platform at POS para mag-import. Mananatiling available ang lokal na pagbebenta kapag nakakonekta muli.</value></data>
   <data name="Catalog_Import_StepsTitle" xml:space="preserve"><value>Mga hakbang sa onboarding</value></data>
@@ -888,6 +892,13 @@
   <data name="Catalog_Import_EmptyTitle" xml:space="preserve"><value>Walang published na template</value></data>
   <data name="Catalog_Import_EmptyMessage" xml:space="preserve"><value>Wala pang published na business template. Maaari mong i-browse ang global catalog o magdagdag nang manual.</value></data>
   <data name="Catalog_Import_Select" xml:space="preserve"><value>Piliin</value></data>
+  <data name="Catalog_Import_LoadNextBatch" xml:space="preserve"><value>I-load ang susunod na batch</value></data>
+  <data name="Catalog_Import_AlreadyImported" xml:space="preserve"><value>Nai-import na</value></data>
+  <data name="Catalog_Import_AlreadyImportedHint" xml:space="preserve"><value>Lahat ng produkto mula sa template na ito ay nasa catalog mo na.</value></data>
+  <data name="Catalog_Import_NextBatchReady" xml:space="preserve"><value>Handa ang susunod na batch</value></data>
+  <data name="Catalog_Import_NextBatchHint" xml:space="preserve"><value>Handa nang i-download ang humigit-kumulang {0} pa ({1} natitira).</value></data>
+  <data name="Catalog_Import_NextBatchLabel" xml:space="preserve"><value>Bilang ng susunod na batch</value></data>
+  <data name="Catalog_Import_MoreBatchesCount" xml:space="preserve"><value>{0} pa sa susunod na batch</value></data>
   <data name="Catalog_Import_FirstBatchCount" xml:space="preserve"><value>{0} produkto sa unang batch</value></data>
   <data name="Catalog_Import_PreviewTitle" xml:space="preserve"><value>Preview ng template</value></data>
   <data name="Catalog_Import_OwnershipTitle" xml:space="preserve"><value>Lokal na pagmamay-ari</value></data>
@@ -1764,8 +1775,11 @@
   <data name="Registers_NotFound" xml:space="preserve"><value>Register was not found.</value></data>
   <data name="Setup_Title" xml:space="preserve"><value>Operational setup</value></data>
   <data name="Setup_Subtitle" xml:space="preserve"><value>I-configure ang store identity, tax, at receipt details bago ang daily operations.</value></data>
+  <data name="Setup_FirstRunHint" xml:space="preserve"><value>Kailangan isang beses bago magbenta</value></data>
   <data name="Setup_StoreSection" xml:space="preserve"><value>Store at tax</value></data>
+  <data name="Setup_StoreSectionHint" xml:space="preserve"><value>Paano lalabas ang pangalan ng store at tax sa sales at reports.</value></data>
   <data name="Setup_ReceiptSection" xml:space="preserve"><value>Receipt at contact</value></data>
+  <data name="Setup_ReceiptSectionHint" xml:space="preserve"><value>Lalabas sa receipt. Puwede mong ayusin mamaya sa Settings.</value></data>
   <data name="Setup_StoreDisplayName" xml:space="preserve"><value>Store display name</value></data>
   <data name="Setup_CurrencyCode" xml:space="preserve"><value>Currency code</value></data>
   <data name="Setup_TaxPricingMode" xml:space="preserve"><value>Tax pricing mode</value></data>

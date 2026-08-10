@@ -780,6 +780,32 @@ public sealed class AuthenticationService(
             ? Task.FromResult(new OfflineColdStartOffer(false, null, "offline_grant_missing"))
             : _offlineGrant.EvaluateColdStartOfferAsync(ct);
 
+    public async Task EnsureOfflineOperateGrantAsync(CancellationToken ct = default)
+    {
+        var session = currentUser.Session;
+        if (session is null || _offlineGrant is null)
+        {
+            return;
+        }
+
+        if (session.HasPosAccess && session.OrganizationId is not null)
+        {
+            var deviceId = _deviceIdentity is null
+                ? string.Empty
+                : await _deviceIdentity.GetOrCreateDeviceIdAsync(ct).ConfigureAwait(false);
+            await _offlineGrant
+                .EstablishFromOnlineSessionAsync(session, deviceId, roleCode: null, ct)
+                .ConfigureAwait(false);
+            _offlineSessionUx?.ResetSession();
+            return;
+        }
+
+        if (AuthSessionWorkspace.IsPersonalDefault(session) || session.OrganizationId is null)
+        {
+            await EstablishPersonalOfflineGrantAsync(session, ct).ConfigureAwait(false);
+        }
+    }
+
     public async Task<AuthResult> RefreshSessionAsync(CancellationToken ct = default)
     {
         var existing = currentUser.Session;

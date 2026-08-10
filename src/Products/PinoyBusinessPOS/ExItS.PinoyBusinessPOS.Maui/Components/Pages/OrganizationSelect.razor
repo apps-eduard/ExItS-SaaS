@@ -520,7 +520,9 @@
 
             await Prefs.SetOnboardingStepAsync(nameof(OnboardingStep.AccessConfirm));
             await Prefs.SetOnboardingCompletedAsync(true);
-            Nav.NavigateTo(string.IsNullOrWhiteSpace(preferredHome) ? "/" : preferredHome, replace: true);
+            // Always resolve through the gate so missing PIN / incomplete setup are forced before role homes.
+            // SellingMode.EnterWorkingAs (preferredHome) is already set for ResolvePosHomeAsync.
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
         }
         finally
         {

@@ -50,6 +50,9 @@ public static class PreferenceKeys
     public const string DevEnvironmentConfirmed = "exits-pos-dev-env-confirmed";
     public const string RememberMe = "exits-pos-remember-me";
     public const string RememberedUsername = "exits-pos-remembered-username";
+
+    /// <summary>Prefix for per-organization one-time business template onboarding prompt flags.</summary>
+    public const string BusinessTemplatePromptPendingPrefix = "exits-pos-template-prompt-pending-";
 }
 
 /// <summary>MAUI WebAuthenticator callback for Platform external login redirects.</summary>

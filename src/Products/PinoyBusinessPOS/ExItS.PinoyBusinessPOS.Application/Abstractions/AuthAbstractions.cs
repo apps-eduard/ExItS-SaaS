@@ -28,6 +28,14 @@ public interface IOnboardingPreferenceStore
     Task<bool> GetDevEnvironmentConfirmedAsync(CancellationToken ct = default);
     Task SetDevEnvironmentConfirmedAsync(bool confirmed, CancellationToken ct = default);
     Task ClearOrganizationPreferenceAsync(CancellationToken ct = default);
+
+    /// <summary>
+    /// True when Start Business / trial should offer a one-time skippable business-template prompt
+    /// for this organization before landing on the POS home.
+    /// </summary>
+    Task<bool> GetBusinessTemplatePromptPendingAsync(Guid organizationId, CancellationToken ct = default);
+
+    Task SetBusinessTemplatePromptPendingAsync(Guid organizationId, bool pending, CancellationToken ct = default);
 }
 
 public interface ISessionStore
@@ -115,6 +123,12 @@ public interface IAuthenticationService
     Task<bool> HasOfflinePinConfiguredAsync(CancellationToken ct = default);
 
     Task<OfflineColdStartOffer> EvaluateOfflineColdStartOfferAsync(CancellationToken ct = default);
+
+    /// <summary>
+    /// Ensures a durable offline operate grant exists for the current online session
+    /// (Organization POS or Personal) so mandatory PIN enrollment can succeed.
+    /// </summary>
+    Task EnsureOfflineOperateGrantAsync(CancellationToken ct = default);
 }
 
 /// <summary>Local security-event sink. Does not replace Platform audit authority.</summary>

@@ -102,6 +102,86 @@ public sealed class CatalogImportQueryService
             item.ProcessedAtUtc);
 }
 
+/// <summary>
+/// Computes whether an organization can import batch 1, a subsequent chunk, or has nothing left.
+/// </summary>
+public sealed class GetTemplateImportStatus(
+    ICatalogProductRepository products,
+    IPlatformMerchantCatalogClient platform)
+{
+    public async Task<ApplicationResult<PosTemplateImportStatusDto>> ExecuteAsync(
+        Guid organizationId,
+        Guid platformTemplateId,
+        string? platformSessionToken,
+        CancellationToken cancellationToken = default)
+    {
+        PlatformMerchantCatalogTemplateDto? template;
+        try
+        {
+            template = await platform
+                .GetPublishedTemplateAsync(platformTemplateId, platformSessionToken, cancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            return ApplicationResult<PosTemplateImportStatusDto>.Failure(
+                ApplicationErrorCodes.CatalogImportPlatformUnavailable,
+                "Platform catalog is temporarily unavailable. Existing POS selling is unaffected.");
+        }
+
+        if (template is null || !string.Equals(template.Status, "Published", StringComparison.OrdinalIgnoreCase))
+        {
+            return ApplicationResult<PosTemplateImportStatusDto>.Failure(
+                ApplicationErrorCodes.CatalogImportTemplateNotFound,
+                "Published template was not found.");
+        }
+
+        var firstBatch = template.Products
+            .Where(p => p.IsFirstBatch && p.GlobalProductId != Guid.Empty)
+            .Select(p => p.GlobalProductId)
+            .Distinct()
+            .ToList();
+        var subsequent = template.Products
+            .Where(p => !p.IsFirstBatch && p.GlobalProductId != Guid.Empty)
+            .Select(p => p.GlobalProductId)
+            .Distinct()
+            .ToList();
+
+        var allIds = firstBatch.Concat(subsequent).Distinct().ToList();
+        IReadOnlySet<Guid> already = allIds.Count == 0
+            ? new HashSet<Guid>()
+            : await products
+                .ListPlatformGlobalProductIdsAsync(
+                    PosOrganizationId.From(organizationId),
+                    allIds,
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+        var firstImported = firstBatch.Count(already.Contains);
+        var subsequentImported = subsequent.Count(already.Contains);
+        var subsequentRemaining = subsequent.Count - subsequentImported;
+        var firstComplete = firstBatch.Count == 0 || firstImported >= firstBatch.Count;
+        var hasSubsequent = subsequent.Count > 0;
+        var defaultBatchSize = Math.Max(1, template.DefaultBatchSize);
+        var nextBatchEstimate = Math.Min(defaultBatchSize, Math.Max(0, subsequentRemaining));
+
+        return ApplicationResult<PosTemplateImportStatusDto>.Success(new PosTemplateImportStatusDto(
+            PlatformTemplateId: platformTemplateId,
+            FirstBatchTotal: firstBatch.Count,
+            FirstBatchImportedCount: firstImported,
+            FirstBatchComplete: firstComplete,
+            SubsequentTotal: subsequent.Count,
+            SubsequentImportedCount: subsequentImported,
+            SubsequentRemainingCount: subsequentRemaining,
+            HasSubsequentBatches: hasSubsequent,
+            CanImportFirstBatch: firstBatch.Count > 0 && !firstComplete,
+            CanImportNextBatch: firstComplete && subsequentRemaining > 0,
+            SuggestedNextBatchNumber: firstComplete ? 2 : 1,
+            NextBatchSizeEstimate: nextBatchEstimate,
+            DefaultBatchSize: defaultBatchSize));
+    }
+}
+
 public sealed class ImportTemplateBatch
 {
     private readonly ICatalogImportJobRepository _imports;

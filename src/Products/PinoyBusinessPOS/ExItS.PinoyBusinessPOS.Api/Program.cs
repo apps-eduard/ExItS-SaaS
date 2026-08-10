@@ -103,6 +103,7 @@ builder.Services.AddScoped<ReactivateCatalogProduct>();
 builder.Services.AddScoped<GetOrganizationCatalogForPlatformSupport>();
 builder.Services.Configure<PlatformSupportOptions>(builder.Configuration.GetSection(PlatformSupportOptions.SectionName));
 builder.Services.AddScoped<CatalogImportQueryService>();
+builder.Services.AddScoped<GetTemplateImportStatus>();
 builder.Services.AddScoped<ImportTemplateBatch>();
 builder.Services.AddScoped<ImportSelectedProducts>();
 builder.Services.AddScoped<ProcessPosCatalogImportChunk>();

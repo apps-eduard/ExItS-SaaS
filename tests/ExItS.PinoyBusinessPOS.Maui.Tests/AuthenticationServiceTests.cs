@@ -1312,6 +1312,7 @@ public sealed class AuthenticationServiceTests
         private string? _step;
         private Guid? _org;
         private bool _devConfirmed;
+        private readonly HashSet<Guid> _templatePromptPending = [];
 
         public string? PeekSecretLeak() => null;
 
@@ -1324,6 +1325,21 @@ public sealed class AuthenticationServiceTests
         public Task<bool> GetDevEnvironmentConfirmedAsync(CancellationToken ct = default) => Task.FromResult(_devConfirmed);
         public Task SetDevEnvironmentConfirmedAsync(bool confirmed, CancellationToken ct = default) { _devConfirmed = confirmed; return Task.CompletedTask; }
         public Task ClearOrganizationPreferenceAsync(CancellationToken ct = default) { _org = null; return Task.CompletedTask; }
+        public Task<bool> GetBusinessTemplatePromptPendingAsync(Guid organizationId, CancellationToken ct = default) =>
+            Task.FromResult(_templatePromptPending.Contains(organizationId));
+        public Task SetBusinessTemplatePromptPendingAsync(Guid organizationId, bool pending, CancellationToken ct = default)
+        {
+            if (pending)
+            {
+                _templatePromptPending.Add(organizationId);
+            }
+            else
+            {
+                _templatePromptPending.Remove(organizationId);
+            }
+
+            return Task.CompletedTask;
+        }
     }
 
     private sealed class FakeTimeProvider(DateTimeOffset start) : TimeProvider

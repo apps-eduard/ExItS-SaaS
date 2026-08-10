@@ -22,6 +22,10 @@ public interface IPosCatalogImportClient
         ImportTemplateBatchRequest? request = null,
         CancellationToken ct = default);
 
+    Task<ApiResult<PosTemplateImportStatusDto>> GetTemplateImportStatusAsync(
+        Guid templateId,
+        CancellationToken ct = default);
+
     Task<ApiResult<PosCatalogImportJobDto>> GetJobAsync(
         Guid jobId,
         CancellationToken ct = default);

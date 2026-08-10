@@ -632,6 +632,8 @@
   <data name="Offline_PinTitle" xml:space="preserve"><value>Unlock offline POS</value></data>
   <data name="Offline_PinSubtitle" xml:space="preserve"><value>Enter your offline PIN to continue with limited offline use. Changes sync when you're back online.</value></data>
   <data name="Offline_PinLabel" xml:space="preserve"><value>Offline PIN</value></data>
+  <data name="Offline_PinShow" xml:space="preserve"><value>Show</value></data>
+  <data name="Offline_PinHide" xml:space="preserve"><value>Hide</value></data>
   <data name="Offline_PinUnlock" xml:space="preserve"><value>Unlock with PIN</value></data>
   <data name="Offline_PinRequired" xml:space="preserve"><value>Offline PIN required</value></data>
   <data name="Offline_PinAvailableHint" xml:space="preserve"><value>A valid offline grant is available on this device. You can unlock with your PIN without waiting for the network.</value></data>
@@ -877,6 +879,8 @@
   <data name="Catalog_Lookup_OpenProduct" xml:space="preserve"><value>Open product</value></data>
   <data name="Catalog_Import_Title" xml:space="preserve"><value>Use business template</value></data>
   <data name="Catalog_Import_Subtitle" xml:space="preserve"><value>Import a first batch of common products as editable local catalog items.</value></data>
+  <data name="Catalog_Import_OnboardingSubtitle" xml:space="preserve"><value>Optional: load starter products for your store type (sari-sari, bakery, and more). You can skip and add products later.</value></data>
+  <data name="Catalog_Import_Skip" xml:space="preserve"><value>Skip for now</value></data>
   <data name="Catalog_Import_UseTemplate" xml:space="preserve"><value>Use business template</value></data>
   <data name="Catalog_Import_OfflineMessage" xml:space="preserve"><value>Catalog import needs a connection to Platform and POS. Local selling stays available when reconnecting.</value></data>
   <data name="Catalog_Import_StepsTitle" xml:space="preserve"><value>Onboarding steps</value></data>
@@ -888,6 +892,13 @@
   <data name="Catalog_Import_EmptyTitle" xml:space="preserve"><value>No published templates</value></data>
   <data name="Catalog_Import_EmptyMessage" xml:space="preserve"><value>No published business templates are available yet. You can still browse the global catalog or add products manually.</value></data>
   <data name="Catalog_Import_Select" xml:space="preserve"><value>Select</value></data>
+  <data name="Catalog_Import_LoadNextBatch" xml:space="preserve"><value>Load next batch</value></data>
+  <data name="Catalog_Import_AlreadyImported" xml:space="preserve"><value>Already imported</value></data>
+  <data name="Catalog_Import_AlreadyImportedHint" xml:space="preserve"><value>All products from this template are already in your catalog.</value></data>
+  <data name="Catalog_Import_NextBatchReady" xml:space="preserve"><value>Next batch ready</value></data>
+  <data name="Catalog_Import_NextBatchHint" xml:space="preserve"><value>Ready to download about {0} more ({1} remaining).</value></data>
+  <data name="Catalog_Import_NextBatchLabel" xml:space="preserve"><value>Next batch count</value></data>
+  <data name="Catalog_Import_MoreBatchesCount" xml:space="preserve"><value>{0} more in later batches</value></data>
   <data name="Catalog_Import_FirstBatchCount" xml:space="preserve"><value>{0} first-batch products</value></data>
   <data name="Catalog_Import_PreviewTitle" xml:space="preserve"><value>Template preview</value></data>
   <data name="Catalog_Import_OwnershipTitle" xml:space="preserve"><value>Local ownership</value></data>
@@ -1764,8 +1775,11 @@
   <data name="Registers_NotFound" xml:space="preserve"><value>Register was not found.</value></data>
   <data name="Setup_Title" xml:space="preserve"><value>Operational setup</value></data>
   <data name="Setup_Subtitle" xml:space="preserve"><value>Configure store identity, tax, and receipt details before daily operations.</value></data>
+  <data name="Setup_FirstRunHint" xml:space="preserve"><value>Required once before selling</value></data>
   <data name="Setup_StoreSection" xml:space="preserve"><value>Store and tax</value></data>
+  <data name="Setup_StoreSectionHint" xml:space="preserve"><value>How your store name and tax appear on sales and reports.</value></data>
   <data name="Setup_ReceiptSection" xml:space="preserve"><value>Receipt and contact</value></data>
+  <data name="Setup_ReceiptSectionHint" xml:space="preserve"><value>Printed on receipts. You can refine these later in Settings.</value></data>
   <data name="Setup_StoreDisplayName" xml:space="preserve"><value>Store display name</value></data>
   <data name="Setup_CurrencyCode" xml:space="preserve"><value>Currency code</value></data>
   <data name="Setup_TaxPricingMode" xml:space="preserve"><value>Tax pricing mode</value></data>

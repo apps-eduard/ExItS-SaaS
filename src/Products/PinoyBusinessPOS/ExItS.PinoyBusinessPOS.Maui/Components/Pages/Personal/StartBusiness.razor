@@ -6,6 +6,7 @@
 @inject IPlatformAccessClient Platform
 @inject IOnboardingPreferenceStore Prefs
 @inject OnlineRequiredGuard OnlineRequired
+@inject NavigationGate Gate
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
@@ -341,7 +342,9 @@
 
             await Prefs.SetOnboardingCompletedAsync(true);
             await Prefs.SetOnboardingStepAsync(nameof(OnboardingStep.Complete));
-            Nav.NavigateTo("/org", replace: true);
+            // One-time skippable template suggest after PIN + sell-critical setup (NavigationGate).
+            await Prefs.SetBusinessTemplatePromptPendingAsync(created.Data.OrganizationId, pending: true);
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
         }
         finally
         {

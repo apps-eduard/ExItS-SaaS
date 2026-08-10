@@ -5,6 +5,7 @@
 @inject IMerchantCatalogDiscoveryClient Discovery
 @inject IPosCatalogImportClient Imports
 @inject ICurrentUserContext CurrentUser
+@inject IOnboardingPreferenceStore Prefs
 @inject IUtangCapabilityEvaluator Capabilities
 @inject ApiStatusLocalizer ApiLocalizer
 @inject IConnectivityService Connectivity
@@ -15,7 +16,7 @@
 {
     <Page><Spinner /></Page>
 }
-else if (!_canManage)
+else if (!_canManage && !_isOnboarding)
 {
 <div class="pos-catalog-import">
     <Page>
@@ -39,24 +40,39 @@ else
     <Page>
         <header class="pos-catalog-import__header">
             <h1 class="pos-catalog-import__title">@L["Catalog_Import_Title"]</h1>
-            <p class="pos-catalog-import__subtitle">@L["Catalog_Import_Subtitle"]</p>
+            <p class="pos-catalog-import__subtitle">@(_isOnboarding ? L["Catalog_Import_OnboardingSubtitle"] : L["Catalog_Import_Subtitle"])</p>
         </header>
 
-        <div class="pos-action-grid pos-action-grid--two pos-catalog-import__actions" role="group" aria-label="@L["Catalog_Import_Title"]">
-            <button type="button"
-                    class="pos-action-tile"
-                    @onclick="GoCatalog">
-                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("products")</span>
-                <span class="pos-action-tile__label">@L["Catalog_Title"]</span>
-            </button>
-            <button type="button"
-                    class="pos-action-tile"
-                    disabled="@_isOffline"
-                    @onclick="GoGlobal">
-                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
-                <span class="pos-action-tile__label">@L["Catalog_Global_Browse"]</span>
-            </button>
-        </div>
+        @if (_isOnboarding)
+        {
+            <div class="pos-action-grid pos-action-grid--single pos-catalog-import__actions" role="group" aria-label="@L["Catalog_Import_Title"]">
+                <button type="button"
+                        class="pos-action-tile"
+                        disabled="@_busy"
+                        @onclick="SkipOnboardingAsync">
+                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("close")</span>
+                    <span class="pos-action-tile__label">@L["Catalog_Import_Skip"]</span>
+                </button>
+            </div>
+        }
+        else
+        {
+            <div class="pos-action-grid pos-action-grid--two pos-catalog-import__actions" role="group" aria-label="@L["Catalog_Import_Title"]">
+                <button type="button"
+                        class="pos-action-tile"
+                        @onclick="GoCatalog">
+                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("products")</span>
+                    <span class="pos-action-tile__label">@L["Catalog_Title"]</span>
+                </button>
+                <button type="button"
+                        class="pos-action-tile"
+                        disabled="@_isOffline"
+                        @onclick="GoGlobal">
+                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
+                    <span class="pos-action-tile__label">@L["Catalog_Global_Browse"]</span>
+                </button>
+            </div>
+        }
 
         @if (_isOffline)
         {
@@ -124,19 +140,41 @@ else
                         @foreach (var template in _templates)
                         {
                             var selected = _selectedTemplateId == template.Id;
-                            <div class="pos-catalog-import__template @(selected ? "pos-row--selected" : null)"
+                            var status = StatusFor(template.Id);
+                            var fullyImported = IsFullyImported(status);
+                            var nextBatchReady = status?.CanImportNextBatch == true;
+                            var selectDisabled = _isOffline || _busy || fullyImported;
+                            <div class="pos-catalog-import__template @(selected ? "pos-row--selected" : null) @(fullyImported ? "pos-catalog-import__template--done" : null)"
                                  role="listitem">
                                 <div class="pos-catalog-import__template-main">
                                     <div class="pos-catalog-import__template-name">
                                         <span class="pos-catalog-import__template-title">@template.Name</span>
-                                        @if (selected)
+                                        @if (fullyImported)
+                                        {
+                                            <Badge Tone="BadgeTone.Success">@L["Catalog_Import_AlreadyImported"]</Badge>
+                                        }
+                                        else if (nextBatchReady)
+                                        {
+                                            <Badge Tone="BadgeTone.Info">@L["Catalog_Import_NextBatchReady"]</Badge>
+                                        }
+                                        else if (selected)
                                         {
                                             <Badge Tone="BadgeTone.Info">@L["Catalog_Import_Selected"]</Badge>
                                         }
                                     </div>
                                     <span class="pos-catalog-import__template-meta">
                                         @template.PrimaryBusinessType · @string.Format(L["Catalog_Import_FirstBatchCount"].Value, template.FirstBatchCount)
+                                        @if (template.ProductCount > template.FirstBatchCount)
+                                        {
+                                            <text> · @string.Format(L["Catalog_Import_MoreBatchesCount"].Value, template.ProductCount - template.FirstBatchCount)</text>
+                                        }
                                     </span>
+                                    @if (nextBatchReady && status is not null)
+                                    {
+                                        <span class="pos-catalog-import__template-batch-hint">
+                                            @string.Format(L["Catalog_Import_NextBatchHint"].Value, status.NextBatchSizeEstimate, status.SubsequentRemainingCount)
+                                        </span>
+                                    }
                                     @if (!string.IsNullOrWhiteSpace(template.Description))
                                     {
                                         <span class="pos-catalog-import__template-desc">@template.Description</span>
@@ -144,7 +182,8 @@ else
                                 </div>
                                 <button type="button"
                                         class="pos-action-tile pos-action-tile--primary pos-catalog-import__select"
-                                        disabled="@(_isOffline || _busy)"
+                                        disabled="@selectDisabled"
+                                        title="@(fullyImported ? L["Catalog_Import_AlreadyImportedHint"].Value : null)"
                                         @onclick="() => SelectTemplateAsync(template.Id)">
                                     @if (_busy && selected)
                                     {
@@ -152,9 +191,9 @@ else
                                     }
                                     else
                                     {
-                                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("check")</span>
+                                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get(nextBatchReady ? "plus" : "check")</span>
                                     }
-                                    <span class="pos-action-tile__label">@L["Catalog_Import_Select"]</span>
+                                    <span class="pos-action-tile__label">@(nextBatchReady ? L["Catalog_Import_LoadNextBatch"] : L["Catalog_Import_Select"])</span>
                                 </button>
                             </div>
                         }
@@ -184,7 +223,7 @@ else
                             </div>
                         }
                         <div class="pos-catalog-import__fact">
-                            <span class="pos-muted">@L["Catalog_Import_FirstBatchLabel"]</span>
+                            <span class="pos-muted">@(_importingNextBatch ? L["Catalog_Import_NextBatchLabel"] : L["Catalog_Import_FirstBatchLabel"])</span>
                             <span class="pos-catalog-import__fact-value">@_previewProducts.Count</span>
                         </div>
                         <div class="pos-catalog-import__fact">
@@ -292,7 +331,7 @@ else
                             <span class="pos-catalog-import__fact-value">@_selected.Name</span>
                         </div>
                         <div class="pos-catalog-import__fact">
-                            <span class="pos-muted">@L["Catalog_Import_FirstBatchLabel"]</span>
+                            <span class="pos-muted">@(_importingNextBatch ? L["Catalog_Import_NextBatchLabel"] : L["Catalog_Import_FirstBatchLabel"])</span>
                             <span class="pos-catalog-import__fact-value">@_previewProducts.Count</span>
                         </div>
                     </div>
@@ -333,6 +372,7 @@ else
 
     private bool _ready;
     private bool _canManage;
+    private bool _isOnboarding;
     private bool _loading;
     private bool _busy;
     private bool _isOffline;
@@ -343,7 +383,9 @@ else
     private string? _previewSearch;
     private Guid? _selectedTemplateId;
     private string? _confirmIdempotencyKey;
+    private bool _importingNextBatch;
     private IReadOnlyList<PlatformMerchantCatalogTemplateSummaryDto> _templates = Array.Empty<PlatformMerchantCatalogTemplateSummaryDto>();
+    private readonly Dictionary<Guid, PosTemplateImportStatusDto> _statuses = new();
     private PlatformMerchantCatalogTemplateDto? _selected;
     private IReadOnlyList<PlatformMerchantCatalogTemplateProductDto> _previewProducts = Array.Empty<PlatformMerchantCatalogTemplateProductDto>();
     private int _unavailableCount;
@@ -379,15 +421,20 @@ else
             return;
         }
 
+        _isOnboarding = IsOnboardingQuery(Nav.ToAbsoluteUri(Nav.Uri));
         _canManage = Capabilities.IsAllowed(UtangCapability.ManageCatalog);
-        _ready = true;
-        if (!_canManage)
+        // First-run template prompt must remain visible even when ManageCatalog feature codes
+        // have not hydrated yet — user can skip; import API still enforces manage rights.
+        if (!_isOnboarding && !_canManage)
         {
+            _ready = true;
             return;
         }
 
+        _ready = true;
+
         _isOffline = !await Connectivity.IsConnectedAsync();
-        if (!_isOffline)
+        if (!_isOffline && (_canManage || _isOnboarding))
         {
             await ReloadTemplatesAsync();
         }
@@ -481,10 +528,12 @@ else
             if (result.IsSuccess && result.Data is not null)
             {
                 _templates = result.Data.Items;
+                await RefreshStatusesAsync(_templates.Select(t => t.Id).ToList());
             }
             else
             {
                 _templates = Array.Empty<PlatformMerchantCatalogTemplateSummaryDto>();
+                _statuses.Clear();
                 var described = ApiLocalizer.Describe(result.Status, result.Error);
                 _errorTitle = described.Title;
                 _errorMessage = described.Message;
@@ -497,9 +546,45 @@ else
         }
     }
 
+    private async Task RefreshStatusesAsync(IReadOnlyList<Guid> templateIds)
+    {
+        _statuses.Clear();
+        if (templateIds.Count == 0)
+        {
+            return;
+        }
+
+        var tasks = templateIds.Select(async id =>
+        {
+            var status = await Imports.GetTemplateImportStatusAsync(id);
+            return (id, status);
+        });
+        var results = await Task.WhenAll(tasks);
+        foreach (var (id, status) in results)
+        {
+            if (status.IsSuccess && status.Data is not null)
+            {
+                _statuses[id] = status.Data;
+            }
+        }
+    }
+
+    private PosTemplateImportStatusDto? StatusFor(Guid templateId) =>
+        _statuses.TryGetValue(templateId, out var status) ? status : null;
+
+    private static bool IsFullyImported(PosTemplateImportStatusDto? status) =>
+        status is { FirstBatchComplete: true, CanImportNextBatch: false }
+        && (status.FirstBatchTotal > 0 || status.SubsequentTotal > 0);
+
     private async Task SelectTemplateAsync(Guid templateId)
     {
         if (_busy)
+        {
+            return;
+        }
+
+        var existingStatus = StatusFor(templateId);
+        if (IsFullyImported(existingStatus))
         {
             return;
         }
@@ -517,6 +602,16 @@ else
                 return;
             }
 
+            var statusResult = await Imports.GetTemplateImportStatusAsync(templateId);
+            if (statusResult.IsSuccess && statusResult.Data is not null)
+            {
+                _statuses[templateId] = statusResult.Data;
+                if (IsFullyImported(statusResult.Data))
+                {
+                    return;
+                }
+            }
+
             var result = await Discovery.GetPublishedTemplateAsync(templateId);
             if (!result.IsSuccess || result.Data is null)
             {
@@ -527,10 +622,25 @@ else
             }
 
             _selected = result.Data;
-            _previewProducts = result.Data.Products
-                .Where(p => p.IsFirstBatch)
-                .OrderBy(p => p.SortOrder)
-                .ToList();
+            var status = StatusFor(templateId);
+            _importingNextBatch = status?.CanImportNextBatch == true;
+            if (_importingNextBatch)
+            {
+                var take = Math.Max(1, status?.DefaultBatchSize ?? result.Data.DefaultBatchSize);
+                _previewProducts = result.Data.Products
+                    .Where(p => !p.IsFirstBatch)
+                    .OrderBy(p => p.SortOrder)
+                    .Take(take)
+                    .ToList();
+            }
+            else
+            {
+                _previewProducts = result.Data.Products
+                    .Where(p => p.IsFirstBatch)
+                    .OrderBy(p => p.SortOrder)
+                    .ToList();
+            }
+
             _unavailableCount = _previewProducts.Count(IsUnavailable);
             _previewSearch = null;
             _step = WizardStep.Preview;
@@ -552,6 +662,7 @@ else
         _confirmAcknowledged = false;
         _confirmError = null;
         _confirmIdempotencyKey = null;
+        _importingNextBatch = false;
         _step = WizardStep.Choose;
     }
 
@@ -595,11 +706,25 @@ else
             }
 
             _confirmIdempotencyKey ??= Guid.NewGuid().ToString("N");
-            var request = new ImportTemplateBatchRequest(
-                _selected.Id,
-                BatchNumber: 1,
-                IdempotencyKey: _confirmIdempotencyKey);
-            var result = await Imports.ImportTemplateBatchAsync(request);
+            ApiResult<PosCatalogImportJobDto> result;
+            if (_importingNextBatch)
+            {
+                result = await Imports.ImportTemplateNextBatchAsync(
+                    _selected.Id,
+                    new ImportTemplateBatchRequest(
+                        _selected.Id,
+                        BatchNumber: 2,
+                        IdempotencyKey: _confirmIdempotencyKey));
+            }
+            else
+            {
+                var request = new ImportTemplateBatchRequest(
+                    _selected.Id,
+                    BatchNumber: 1,
+                    IdempotencyKey: _confirmIdempotencyKey);
+                result = await Imports.ImportTemplateBatchAsync(request);
+            }
+
             if (!result.IsSuccess || result.Data is null)
             {
                 var described = ApiLocalizer.Describe(result.Status, result.Error);
@@ -609,6 +734,7 @@ else
                 return;
             }
 
+            await ClearTemplatePromptAsync();
             Nav.NavigateTo($"/catalog/import/jobs/{result.Data.JobId:D}");
         }
         finally
@@ -616,6 +742,60 @@ else
             _busy = false;
             StateHasChanged();
         }
+    }
+
+    private async Task SkipOnboardingAsync()
+    {
+        if (_busy || !_isOnboarding)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            await ClearTemplatePromptAsync();
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task ClearTemplatePromptAsync()
+    {
+        if (CurrentUser.Session?.OrganizationId is Guid organizationId)
+        {
+            await Prefs.SetBusinessTemplatePromptPendingAsync(organizationId, pending: false);
+        }
+    }
+
+    private static bool IsOnboardingQuery(Uri uri)
+    {
+        var query = uri.Query;
+        if (string.IsNullOrEmpty(query) || query.Length < 2)
+        {
+            return false;
+        }
+
+        foreach (var part in query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var eq = part.IndexOf('=');
+            var rawKey = eq >= 0 ? part[..eq] : part;
+            if (!string.Equals(Uri.UnescapeDataString(rawKey), "onboarding", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            var value = eq >= 0
+                ? Uri.UnescapeDataString(part[(eq + 1)..].Replace('+', ' '))
+                : "1";
+            return string.Equals(value, "1", StringComparison.OrdinalIgnoreCase)
+                   || string.Equals(value, "true", StringComparison.OrdinalIgnoreCase);
+        }
+
+        return false;
     }
 
     private static bool IsUnavailable(PlatformMerchantCatalogTemplateProductDto product) =>

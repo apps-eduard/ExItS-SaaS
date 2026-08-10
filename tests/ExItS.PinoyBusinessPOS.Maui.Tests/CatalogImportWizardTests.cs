@@ -60,6 +60,63 @@ public sealed class CatalogImportWizardTests
     }
 
     [Fact]
+    public void Onboarding_mode_offers_skip_and_clears_pending_prompt()
+    {
+        var import = ReadCatalogPage("CatalogImport.razor");
+        Assert.Contains("IsOnboardingQuery", import, StringComparison.Ordinal);
+        Assert.Contains("\"onboarding\"", import, StringComparison.Ordinal);
+        Assert.Contains("Catalog_Import_Skip", import, StringComparison.Ordinal);
+        Assert.Contains("Catalog_Import_OnboardingSubtitle", import, StringComparison.Ordinal);
+        Assert.Contains("SkipOnboardingAsync", import, StringComparison.Ordinal);
+        Assert.Contains("SetBusinessTemplatePromptPendingAsync", import, StringComparison.Ordinal);
+
+        var en = File.ReadAllText(Path.Combine(
+            FindRepoRoot(),
+            "src",
+            "Products",
+            "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.Maui",
+            "Localization",
+            "PosResources.resx"));
+        var fil = File.ReadAllText(Path.Combine(
+            FindRepoRoot(),
+            "src",
+            "Products",
+            "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.Maui",
+            "Localization",
+            "PosResources.fil-PH.resx"));
+        Assert.Contains("name=\"Catalog_Import_Skip\"", en, StringComparison.Ordinal);
+        Assert.Contains("name=\"Catalog_Import_OnboardingSubtitle\"", en, StringComparison.Ordinal);
+        Assert.Contains("name=\"Catalog_Import_Skip\"", fil, StringComparison.Ordinal);
+        Assert.Contains("name=\"Catalog_Import_OnboardingSubtitle\"", fil, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Choose_step_disables_select_when_fully_imported_and_offers_next_batch()
+    {
+        var import = ReadCatalogPage("CatalogImport.razor");
+        Assert.Contains("GetTemplateImportStatusAsync", import, StringComparison.Ordinal);
+        Assert.Contains("ImportTemplateNextBatchAsync", import, StringComparison.Ordinal);
+        Assert.Contains("Catalog_Import_AlreadyImported", import, StringComparison.Ordinal);
+        Assert.Contains("Catalog_Import_NextBatchReady", import, StringComparison.Ordinal);
+        Assert.Contains("Catalog_Import_LoadNextBatch", import, StringComparison.Ordinal);
+        Assert.Contains("IsFullyImported", import, StringComparison.Ordinal);
+        Assert.Contains("CanImportNextBatch", import, StringComparison.Ordinal);
+
+        var endpoints = File.ReadAllText(Path.Combine(
+            FindRepoRoot(),
+            "src",
+            "Products",
+            "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.Api",
+            "Catalog",
+            "CatalogImportEndpoints.cs"));
+        Assert.Contains("/templates/{templateId:guid}/status", endpoints, StringComparison.Ordinal);
+        Assert.Contains("GetTemplateImportStatus", endpoints, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Import_pipeline_forwards_platform_session_not_bearer_to_merchant_catalog()
     {
         var root = FindRepoRoot();

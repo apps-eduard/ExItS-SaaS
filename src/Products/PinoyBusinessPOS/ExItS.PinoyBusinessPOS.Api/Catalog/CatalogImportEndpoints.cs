@@ -12,6 +12,25 @@ internal static class CatalogImportEndpoints
     {
         var group = app.MapGroup("/api/v1/pos/catalog-imports");
 
+        group.MapGet("/templates/{templateId:guid}/status", async (
+            HttpRequest request,
+            Guid templateId,
+            GetTemplateImportStatus useCase,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!TryAuthorize(request, access, UtangCapability.ViewCatalog, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            var platformSessionToken = ExtractPlatformSessionToken(request);
+            var result = await useCase
+                .ExecuteAsync(organizationId, templateId, platformSessionToken, ct)
+                .ConfigureAwait(false);
+            return PosApiResults.FromResult(result, Results.Ok);
+        });
+
         group.MapPost("/template", async (
             HttpRequest request,
             ImportTemplateBatchRequest body,

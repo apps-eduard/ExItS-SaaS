@@ -8622,6 +8622,19 @@ html.pos-keyboard-open .pos-content {
     background: color-mix(in srgb, var(--exits-primary) 8%, var(--exits-surface));
 }
 
+.pos-catalog-import__template--done {
+    opacity: 0.78;
+}
+
+.pos-catalog-import__template-batch-hint {
+    display: block;
+    margin-top: 0.15rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--exits-primary, #1b7a3d);
+    line-height: 1.35;
+}
+
 .pos-catalog-import__template-main {
     display: flex;
     flex-direction: column;
@@ -11113,34 +11126,67 @@ html.pos-keyboard-open .pos-content {
 /* Operational setup */
 .pos-setup {
     width: 100%;
+    max-width: 28rem;
+    margin: 0 auto;
+    padding-bottom: 5.5rem;
 }
 
 .pos-setup__header {
     align-items: flex-start;
     display: flex;
+    flex-wrap: wrap;
     gap: var(--exits-space-3, 0.75rem);
-    justify-content: space-between;
-    margin-bottom: var(--exits-space-3, 0.75rem);
+    margin-bottom: 1.15rem;
+}
+
+.pos-setup__badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    flex: 0 0 auto;
+    border-radius: var(--exits-radius-md, 0.5rem);
+    background: color-mix(in srgb, var(--exits-brand, #1f6b45) 12%, transparent);
+    color: var(--exits-brand, #1f6b45);
+}
+
+.pos-setup__badge svg {
+    width: 1.35rem;
+    height: 1.35rem;
 }
 
 .pos-setup__heading {
-    flex: 1 1 auto;
+    flex: 1 1 12rem;
     min-width: 0;
 }
 
 .pos-setup__title {
     color: var(--exits-text, #15201a);
-    font-size: 1.25rem;
+    font-size: 1.5rem;
     font-weight: 700;
-    line-height: 1.25;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
     margin: 0;
 }
 
 .pos-setup__subtitle {
     color: var(--exits-text-muted, #5b6b62);
-    font-size: var(--exits-text-sm, 0.875rem);
+    font-size: 0.9375rem;
+    line-height: 1.4;
+    margin: 0.35rem 0 0;
+}
+
+.pos-setup__progress {
+    display: inline-flex;
+    margin: 0.65rem 0 0;
+    padding: 0.35rem 0.7rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--exits-brand, #1f6b45) 12%, transparent);
+    color: var(--exits-brand, #1f6b45);
+    font-size: 0.8125rem;
+    font-weight: 600;
     line-height: 1.3;
-    margin: 0.2rem 0 0;
 }
 
 .pos-setup__home {
@@ -11167,6 +11213,68 @@ html.pos-keyboard-open .pos-content {
 .pos-setup__home:focus-visible {
     border-color: var(--exits-primary, #1b7a3d);
     outline: none;
+}
+
+.pos-setup__panel {
+    background: var(--exits-surface, #fff);
+    border: 1px solid var(--exits-border, #c9d4cd);
+    border-radius: var(--exits-radius-lg, 0.75rem);
+    margin: 0 0 0.85rem;
+    padding: 0.95rem 0.95rem 1rem;
+}
+
+.pos-setup__panel-head {
+    margin: 0 0 0.85rem;
+}
+
+.pos-setup__panel-title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--exits-text, #15201a);
+}
+
+.pos-setup__panel-hint {
+    margin: 0.3rem 0 0;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    color: var(--exits-text-muted, #5b6b62);
+}
+
+.pos-setup__fields {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.pos-setup__row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.65rem;
+}
+
+.pos-setup__footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 4;
+    margin: 1rem -0.25rem -0.25rem;
+    padding: 0.75rem 0.25rem calc(0.75rem + env(safe-area-inset-bottom, 0px));
+    background: linear-gradient(
+        to top,
+        var(--exits-bg, #f3f6f4) 65%,
+        color-mix(in srgb, var(--exits-bg, #f3f6f4) 70%, transparent));
+}
+
+.pos-setup__footer .exds-button,
+.pos-setup__footer button.exds-button {
+    width: 100%;
+    min-height: 2.9rem;
+}
+
+@media (max-width: 22rem) {
+    .pos-setup__row {
+        grid-template-columns: 1fr;
+    }
 }
 
 /* Auth / onboarding / dev densify page headers */
@@ -11202,4 +11310,172 @@ html.pos-keyboard-open .pos-content {
     font-size: var(--exits-text-sm, 0.875rem);
     line-height: 1.3;
     margin: 0.2rem 0 0;
+}
+
+/* ========== Offline PIN unlock / enroll ========================== */
+.pos-offline-pin {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 24rem;
+    margin: 0 auto;
+    padding: var(--exits-space-3, 0.75rem) 0 var(--exits-space-5, 1.5rem);
+}
+
+.pos-offline-pin__header {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin: 0 0 1.25rem;
+}
+
+.pos-offline-pin__badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    height: 3rem;
+    border-radius: var(--exits-radius-md, 0.5rem);
+    background: color-mix(in srgb, var(--exits-brand, #1f6b45) 12%, transparent);
+    color: var(--exits-brand, #1f6b45);
+}
+
+.pos-offline-pin__badge svg {
+    width: 1.5rem;
+    height: 1.5rem;
+}
+
+.pos-offline-pin__title {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--exits-text, #15201a);
+    letter-spacing: -0.02em;
+}
+
+.pos-offline-pin__subtitle {
+    margin: 0;
+    font-size: 0.9375rem;
+    line-height: 1.45;
+    color: var(--exits-text-muted, #5b6b62);
+}
+
+.pos-offline-pin__status {
+    margin: 0.25rem 0 0;
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+    padding: 0.35rem 0.7rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, #b45309 12%, transparent);
+    color: #8a4b08;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.pos-offline-pin__field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin: 0 0 1rem;
+}
+
+.pos-offline-pin__label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--exits-text, #15201a);
+}
+
+.pos-offline-pin__input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.pos-offline-pin__input {
+    width: 100%;
+    min-height: 3.25rem;
+    padding: 0.7rem 5.5rem 0.7rem 1rem;
+    border: 1.5px solid var(--exits-border, #c9d4cd);
+    border-radius: var(--exits-radius-md, 0.5rem);
+    background: var(--exits-surface, #fff);
+    color: var(--exits-text, #15201a);
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: 0.35em;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+
+.pos-offline-pin__input:focus {
+    outline: none;
+    border-color: var(--exits-brand, #1f6b45);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--exits-brand, #1f6b45) 22%, transparent);
+}
+
+.pos-offline-pin__input:disabled {
+    opacity: 0.65;
+}
+
+.pos-offline-pin__input[aria-invalid="true"] {
+    border-color: var(--exits-danger, #b42318);
+}
+
+.pos-offline-pin__toggle {
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    border: 0;
+    background: transparent;
+    color: var(--exits-brand, #1f6b45);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    padding: 0.35rem 0.5rem;
+    cursor: pointer;
+}
+
+.pos-offline-pin__toggle:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.pos-offline-pin__actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    margin-top: 0.5rem;
+}
+
+.pos-offline-pin__actions .exds-button,
+.pos-offline-pin__actions button.exds-button {
+    width: 100%;
+    min-height: 2.85rem;
+}
+
+.pos-offline-pin__signout {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: var(--exits-text-muted, #5b6b62);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    min-height: 2.5rem;
+    padding: 0.5rem;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
+}
+
+.pos-offline-pin__signout:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.pos-offline-pin__signout:not(:disabled):hover,
+.pos-offline-pin__signout:not(:disabled):focus-visible {
+    color: var(--exits-text, #15201a);
 }

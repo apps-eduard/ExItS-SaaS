@@ -1,5 +1,6 @@
 @page "/offline-pin-setup"
 @layout Layout.AuthShell
+@using ExItS.DesignSystem.Components.Internal
 @inject IAuthenticationService Auth
 @inject NavigationGate Gate
 @inject NavigationManager Nav
@@ -8,6 +9,7 @@
 <div class="pos-offline-pin">
     <Page>
         <header class="pos-offline-pin__header">
+            <div class="pos-offline-pin__badge" aria-hidden="true">@IconGlyphs.Get("lock")</div>
             <h1 class="pos-offline-pin__title">@(_isChange ? L["Offline_PinChangeTitle"] : L["Offline_PinEnrollTitle"])</h1>
             <p class="pos-offline-pin__subtitle">@(_isChange ? L["Offline_PinChangeMessage"] : L["Offline_PinEnrollMessage"])</p>
         </header>
@@ -18,32 +20,48 @@
         }
 
         <div class="pos-offline-pin__field">
-            <label for="offline-pin-enroll">@L["Offline_PinLabel"]</label>
-            <input id="offline-pin-enroll"
-                   type="password"
-                   inputmode="numeric"
-                   autocomplete="new-password"
-                   maxlength="12"
-                   class="pos-offline-pin__input"
-                   disabled="@_busy"
-                   @bind="_pin"
-                   @bind:event="oninput" />
+            <label class="pos-offline-pin__label" for="offline-pin-enroll">@L["Offline_PinLabel"]</label>
+            <div class="pos-offline-pin__input-wrap">
+                <input id="offline-pin-enroll"
+                       type="@(_showPin ? "text" : "password")"
+                       inputmode="numeric"
+                       pattern="[0-9]*"
+                       autocomplete="new-password"
+                       maxlength="12"
+                       class="pos-offline-pin__input"
+                       disabled="@_busy"
+                       aria-invalid="@(!string.IsNullOrEmpty(_error))"
+                       @bind="_pin"
+                       @bind:event="oninput" />
+                <button type="button"
+                        class="pos-offline-pin__toggle"
+                        disabled="@_busy"
+                        aria-pressed="@_showPin"
+                        aria-label="@(_showPin ? L["Offline_PinHide"] : L["Offline_PinShow"])"
+                        @onclick="TogglePinVisibility">
+                    @(_showPin ? L["Offline_PinHide"] : L["Offline_PinShow"])
+                </button>
+            </div>
         </div>
 
         <div class="pos-offline-pin__field">
-            <label for="offline-pin-confirm">@L["Offline_PinConfirmLabel"]</label>
-            <input id="offline-pin-confirm"
-                   type="password"
-                   inputmode="numeric"
-                   autocomplete="new-password"
-                   maxlength="12"
-                   class="pos-offline-pin__input"
-                   disabled="@_busy"
-                   @bind="_confirm"
-                   @bind:event="oninput" />
+            <label class="pos-offline-pin__label" for="offline-pin-confirm">@L["Offline_PinConfirmLabel"]</label>
+            <div class="pos-offline-pin__input-wrap">
+                <input id="offline-pin-confirm"
+                       type="@(_showPin ? "text" : "password")"
+                       inputmode="numeric"
+                       pattern="[0-9]*"
+                       autocomplete="new-password"
+                       maxlength="12"
+                       class="pos-offline-pin__input"
+                       disabled="@_busy"
+                       @bind="_confirm"
+                       @bind:event="oninput"
+                       @onkeydown="OnConfirmKeyDownAsync" />
+            </div>
         </div>
 
-        <FormActions>
+        <div class="pos-offline-pin__actions" role="group">
             <Button Variant="ButtonVariant.Primary" IsLoading="_busy" Disabled="_busy" OnClick="SaveAsync">
                 @(_isChange ? L["Offline_PinChangeAction"] : L["Offline_PinEnrollAction"])
             </Button>
@@ -53,20 +71,9 @@
                     @L["Common_Cancel"]
                 </Button>
             }
-        </FormActions>
+        </div>
     </Page>
 </div>
-
-<style>
-    .pos-offline-pin__header { margin-bottom: 0.75rem; }
-    .pos-offline-pin__title { margin: 0; font-size: 1.25rem; font-weight: 700; }
-    .pos-offline-pin__subtitle { margin: 0.35rem 0 0; font-size: 0.875rem; color: var(--exits-text-muted, #5b6b62); }
-    .pos-offline-pin__field { display: flex; flex-direction: column; gap: 0.35rem; margin: 0.85rem 0; }
-    .pos-offline-pin__input {
-        min-height: 2.75rem; padding: 0.55rem 0.75rem; font-size: 1.25rem; letter-spacing: 0.2em;
-        border: 1px solid var(--exits-border, #c9d4cd); border-radius: var(--exits-radius-md, 0.5rem);
-    }
-</style>
 
 @code {
     private string _pin = string.Empty;
@@ -74,7 +81,10 @@
     private string? _error;
     private bool _busy;
     private bool _isChange;
+    private bool _showPin;
     private string? _returnPath;
+
+    private void TogglePinVisibility() => _showPin = !_showPin;
 
     protected override async Task OnInitializedAsync()
     {
@@ -97,6 +107,14 @@
         if (!hasPin)
         {
             _isChange = false;
+        }
+    }
+
+    private async Task OnConfirmKeyDownAsync(KeyboardEventArgs e)
+    {
+        if (e.Key is "Enter" or "NumpadEnter")
+        {
+            await SaveAsync();
         }
     }
 

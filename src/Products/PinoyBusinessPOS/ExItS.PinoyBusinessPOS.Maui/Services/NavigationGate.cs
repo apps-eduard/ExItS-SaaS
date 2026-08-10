@@ -97,6 +97,23 @@ public sealed class NavigationGate(
             return "/reconnect";
         }
 
+        // PIN before template / sell-critical setup so offline unlock is ready immediately after
+        // Start Business, trial, or first POS-role entry on this device.
+        await auth.EnsureOfflineOperateGrantAsync(ct).ConfigureAwait(false);
+        if (!await auth.HasOfflinePinConfiguredAsync(ct).ConfigureAwait(false))
+        {
+            return "/offline-pin-setup";
+        }
+
+        // One-time skippable starter-products suggest (Start Business / trial). Do not require
+        // ManageCatalog here — trial sessions may reach setup before feature codes hydrate;
+        // CatalogImport still enforces manage rights for the actual import API.
+        if (currentUser.Session.OrganizationId is Guid organizationId
+            && await preferences.GetBusinessTemplatePromptPendingAsync(organizationId, ct).ConfigureAwait(false))
+        {
+            return "/catalog/import?onboarding=1";
+        }
+
         if (capabilities.IsAllowed(UtangCapability.ManageOperationalSetup))
         {
             var setupResult = await operationalSetup.GetAsync(ct).ConfigureAwait(false);
@@ -104,11 +121,6 @@ public sealed class NavigationGate(
             {
                 return "/setup";
             }
-        }
-
-        if (await RequiresOfflinePinSetupAsync(ct).ConfigureAwait(false))
-        {
-            return "/offline-pin-setup";
         }
 
         return await roleHome.ResolvePosHomeAsync(ct).ConfigureAwait(false);
@@ -120,13 +132,22 @@ public sealed class NavigationGate(
     /// </summary>
     private async Task<bool> RequiresOfflinePinSetupAsync(CancellationToken ct)
     {
+        await auth.EnsureOfflineOperateGrantAsync(ct).ConfigureAwait(false);
         if (await auth.HasOfflinePinConfiguredAsync(ct).ConfigureAwait(false))
         {
             return false;
         }
 
+        // Online Personal/POS operate: always enroll when missing (do not depend only on cold-start offer).
+        if (currentUser.Session is not null
+            && (currentUser.HasPosAccess
+                || AuthSessionWorkspace.IsPersonalDefault(currentUser.Session)
+                || currentUser.Session.OrganizationId is null))
+        {
+            return true;
+        }
+
         var offer = await auth.EvaluateOfflineColdStartOfferAsync(ct).ConfigureAwait(false);
-        // Valid grant with missing PIN, or grant present after online establish.
         return offer.Grant is not null
                || string.Equals(offer.DenialReasonCode, "offline_pin_not_configured", StringComparison.Ordinal);
     }

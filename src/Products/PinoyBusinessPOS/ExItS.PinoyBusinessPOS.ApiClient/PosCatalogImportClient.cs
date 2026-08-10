@@ -43,6 +43,15 @@ public sealed class PosCatalogImportClient(HttpClient httpClient, IConnectivityS
             request,
             ct);
 
+    public Task<ApiResult<PosTemplateImportStatusDto>> GetTemplateImportStatusAsync(
+        Guid templateId,
+        CancellationToken ct = default) =>
+        SendAsync<PosTemplateImportStatusDto>(
+            HttpMethod.Get,
+            $"{ImportsPath}/templates/{templateId:D}/status",
+            null,
+            ct);
+
     public Task<ApiResult<PosCatalogImportJobDto>> GetJobAsync(Guid jobId, CancellationToken ct = default) =>
         SendAsync<PosCatalogImportJobDto>(HttpMethod.Get, $"{ImportsPath}/{jobId:D}", null, ct);
 

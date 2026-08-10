@@ -159,6 +159,24 @@ public sealed record ImportTemplateBatchRequest(
     int BatchNumber = 1,
     string? IdempotencyKey = null);
 
+/// <summary>
+/// Org-scoped import progress for a published Platform template (first batch vs subsequent chunks).
+/// </summary>
+public sealed record PosTemplateImportStatusDto(
+    Guid PlatformTemplateId,
+    int FirstBatchTotal,
+    int FirstBatchImportedCount,
+    bool FirstBatchComplete,
+    int SubsequentTotal,
+    int SubsequentImportedCount,
+    int SubsequentRemainingCount,
+    bool HasSubsequentBatches,
+    bool CanImportFirstBatch,
+    bool CanImportNextBatch,
+    int SuggestedNextBatchNumber,
+    int NextBatchSizeEstimate,
+    int DefaultBatchSize);
+
 public sealed record ImportSelectedProductsRequest(
     IReadOnlyList<Guid> PlatformGlobalProductIds,
     string? IdempotencyKey = null);
