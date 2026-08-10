@@ -97,6 +97,9 @@
         @if (CanView(PlatformPermissionCodes.ViewGlobalCatalog))
         {
             <SubMenu Key="product-catalog" TitleTemplate="@ProductCatalogTitle">
+                <MenuItem Key="global-business-types" RouterLink="/admin/global-catalog/business-types" Icon="tags">
+                    @L["Nav_GlobalBusinessTypes"]
+                </MenuItem>
                 <MenuItem Key="global-categories" RouterLink="/admin/global-catalog/categories" Icon="apartment">
                     @L["Nav_GlobalCategories"]
                 </MenuItem>

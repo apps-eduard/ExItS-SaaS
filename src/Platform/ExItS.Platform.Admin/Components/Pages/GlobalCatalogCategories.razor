@@ -49,12 +49,12 @@ else if (Id is null)
                 <SelectOption TItemValue="string" TItem="string" Value="@("Archived")" Label="@L["Status_Archived"]" />
             </SelectOptions>
         </Select>
-        <Select TItemValue="string" TItem="string" @bind-Value="_businessType" Size="@InputSize.Small" Placeholder="@L["GlobalCatalog_BusinessType"]" Style="width:160px;" AllowClear>
+        <Select TItemValue="string" TItem="string" @bind-Value="_businessTypeCode" Size="@InputSize.Small" Placeholder="@L["GlobalCatalog_BusinessType"]" Style="width:180px;" AllowClear>
             <SelectOptions>
                 <SelectOption TItemValue="string" TItem="string" Value="@("")" Label="@L["Common_All"]" />
-                @foreach (var bt in BusinessTypeOptions)
+                @foreach (var bt in _activeBusinessTypes)
                 {
-                    <SelectOption TItemValue="string" TItem="string" Value="@bt" Label="@bt" />
+                    <SelectOption TItemValue="string" TItem="string" Value="@bt.Code" Label="@($"{bt.Name} ({bt.Code})")" />
                 }
             </SelectOptions>
         </Select>
@@ -93,12 +93,44 @@ else if (Id is null)
                 </div>
                 <div>
                     <label class="ant-form-item-label">@L["GlobalCatalog_BusinessTypes"]</label>
-                    <CheckboxGroup @bind-Value="_newBusinessTypes" Options="@_businessTypeCheckboxOptions" Disabled="_busy" />
+                    <CheckboxGroup @bind-Value="_newBusinessTypeIds" Options="@_businessTypeCheckboxOptions" Disabled="_busy" />
                 </div>
                 <Space>
                     <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="CreateAsync">@L["Common_Create"]</Button>
                     <Button Size="@ButtonSize.Small" OnClick="HideCreate" Disabled="_busy">@L["Common_Cancel"]</Button>
                 </Space>
+            </Space>
+        </Card>
+    }
+
+    @if (CanManage && _selectedIds.Count > 0)
+    {
+        <Card Size="@CardSize.Small" Title="@L["GlobalCategories_BulkAssignTitle"]" Style="margin-bottom:12px;">
+            <Space Wrap Style="width:100%;">
+                <span>@string.Format(L["GlobalCategories_BulkSelected"].Value, _selectedIds.Count)</span>
+                <Select TItemValue="string" TItem="string"
+                        Mode="@SelectMode.Multiple"
+                        @bind-Values="_bulkBusinessTypeIds"
+                        Size="@InputSize.Small"
+                        Style="min-width:260px;"
+                        Placeholder="@L["GlobalCatalog_BusinessTypes"]"
+                        Disabled="_busy">
+                    <SelectOptions>
+                        @foreach (var bt in _activeBusinessTypes)
+                        {
+                            <SelectOption TItemValue="string" TItem="string" Value="@bt.Id.ToString("D")" Label="@($"{bt.Name} ({bt.Code})")" />
+                        }
+                    </SelectOptions>
+                </Select>
+                <Select TItemValue="string" TItem="string" @bind-Value="_bulkMode" Size="@InputSize.Small" Style="width:140px;" Disabled="_busy">
+                    <SelectOptions>
+                        <SelectOption TItemValue="string" TItem="string" Value="@("Add")" Label="@L["GlobalCategories_BulkModeAdd"]" />
+                        <SelectOption TItemValue="string" TItem="string" Value="@("Remove")" Label="@L["GlobalCategories_BulkModeRemove"]" />
+                        <SelectOption TItemValue="string" TItem="string" Value="@("Replace")" Label="@L["GlobalCategories_BulkModeReplace"]" />
+                    </SelectOptions>
+                </Select>
+                <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="BulkAssignAsync">@L["GlobalCategories_BulkAssign"]</Button>
+                <Button Size="@ButtonSize.Small" OnClick="ClearSelection" Disabled="_busy">@L["Common_Reset"]</Button>
             </Space>
         </Card>
     }
@@ -123,9 +155,16 @@ else if (Id is null)
                Size="@TableSize.Small"
                Bordered
                Resizable
-               ScrollX="1040"
+               ScrollX="1120"
                RemoteDataSource
                OnChange="OnCategoriesTableChangeAsync">
+            @if (CanManage)
+            {
+                <PropertyColumn Property="c => c.Id" Title=" " Width="48" Sortable="false">
+                    <Checkbox Checked="@_selectedIds.Contains(context.Id)"
+                              CheckedChanged="isChecked => ToggleSelected(context.Id, isChecked)" />
+                </PropertyColumn>
+            }
             <PropertyColumn Property="c => c.Name" Title="@L["Common_Name"]" Sortable>
                 <a href="/admin/global-catalog/categories/@context.Id">@Indent(context)@context.Name</a>
             </PropertyColumn>
@@ -136,8 +175,18 @@ else if (Id is null)
             <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Sortable Width="110">
                 <AdminStatusTag Value="@context.Status" />
             </PropertyColumn>
-            <PropertyColumn Property="c => c.BusinessTypes" Title="@L["GlobalCatalog_BusinessTypes"]" Width="200">
-                @string.Join(", ", context.BusinessTypes)
+            <PropertyColumn Property="c => c.BusinessTypes" Title="@L["GlobalCatalog_BusinessTypes"]" Width="220">
+                @if (context.BusinessTypes.Count == 0)
+                {
+                    <span>—</span>
+                }
+                else
+                {
+                    @foreach (var typeCode in context.BusinessTypes)
+                    {
+                        <Tag Style="margin-bottom:2px;">@typeCode</Tag>
+                    }
+                }
             </PropertyColumn>
             <PropertyColumn Property="c => c.UpdatedAtUtc" Title="@L["Common_UpdatedUtc"]" Sortable Width="180">
                 <LocalTimestamp Value="@context.UpdatedAtUtc" />
@@ -201,6 +250,19 @@ else
             <DescriptionsItem Title="@L["GlobalCategories_Parent"]">@ParentName(c.ParentId)</DescriptionsItem>
             <DescriptionsItem Title="@L["Common_CreatedUtc"]"><UtcTimestamp Value="@c.CreatedAtUtc" /></DescriptionsItem>
             <DescriptionsItem Title="@L["Common_UpdatedUtc"]"><UtcTimestamp Value="@c.UpdatedAtUtc" /></DescriptionsItem>
+            <DescriptionsItem Title="@L["GlobalCatalog_BusinessTypes"]">
+                @if (c.BusinessTypes.Count == 0)
+                {
+                    <span>—</span>
+                }
+                else
+                {
+                    @foreach (var typeCode in c.BusinessTypes)
+                    {
+                        <Tag>@typeCode</Tag>
+                    }
+                }
+            </DescriptionsItem>
         </Descriptions>
 
         @if (CanManage && c.Status != "Archived")
@@ -234,7 +296,7 @@ else
                     </div>
                     <div>
                         <label class="ant-form-item-label">@L["GlobalCatalog_BusinessTypes"]</label>
-                        <CheckboxGroup @bind-Value="_editBusinessTypes" Options="@_businessTypeCheckboxOptions" Disabled="_busy" />
+                        <CheckboxGroup @bind-Value="_editBusinessTypeIds" Options="@_businessTypeCheckboxOptions" Disabled="_busy" />
                     </div>
                     <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="SaveAsync">@L["Common_Save"]</Button>
                 </Space>
@@ -246,7 +308,9 @@ else
                 <DescriptionsItem Title="@L["Common_Name"]">@c.Name</DescriptionsItem>
                 <DescriptionsItem Title="@L["GlobalCategories_IconReference"]">@(c.IconReference ?? "—")</DescriptionsItem>
                 <DescriptionsItem Title="@L["GlobalCategories_SortOrder"]">@c.SortOrder</DescriptionsItem>
-                <DescriptionsItem Title="@L["GlobalCatalog_BusinessTypes"]">@string.Join(", ", c.BusinessTypes)</DescriptionsItem>
+                <DescriptionsItem Title="@L["GlobalCatalog_BusinessTypes"]">
+                    @(c.BusinessTypes.Count == 0 ? "—" : string.Join(", ", c.BusinessTypes))
+                </DescriptionsItem>
             </Descriptions>
         }
     }
@@ -255,34 +319,32 @@ else
 @code {
     [Parameter] public Guid? Id { get; set; }
 
-    private static readonly string[] BusinessTypeOptions =
-    [
-        "SariSari", "MiniGrocery", "Bakery", "Cafe", "Pharmacy", "GeneralRetail"
-    ];
-
-    private readonly CheckboxOption<string>[] _businessTypeCheckboxOptions =
-        BusinessTypeOptions.Select(v => new CheckboxOption<string> { Label = v, Value = v }).ToArray();
+    private CheckboxOption<string>[] _businessTypeCheckboxOptions = [];
+    private List<BusinessTypeDto> _activeBusinessTypes = [];
 
     private ApiCallResult<PagedResult<GlobalCategoryDto>>? _list;
     private ApiCallResult<GlobalCategoryDto>? _category;
     private List<GlobalCategoryDto> _allForLookup = [];
+    private readonly HashSet<Guid> _selectedIds = [];
+    private IEnumerable<string> _bulkBusinessTypeIds = Array.Empty<string>();
+    private string _bulkMode = "Add";
     private int _page = 1;
     private string? _sortBy;
     private bool _sortDesc;
     private string _search = "";
     private string _status = "";
-    private string _businessType = "";
+    private string _businessTypeCode = "";
     private bool _showCreate;
     private string _newName = "";
     private string _newParentId = "";
     private string _newIcon = "";
     private int _newSortOrder;
-    private string[] _newBusinessTypes = [];
+    private string[] _newBusinessTypeIds = [];
     private string _editName = "";
     private string _editParentId = "";
     private string _editIcon = "";
     private int _editSortOrder;
-    private string[] _editBusinessTypes = [];
+    private string[] _editBusinessTypeIds = [];
     private DateTimeOffset? _expectedUpdatedAt;
     private string? _formError;
     private bool _formConflict;
@@ -304,7 +366,7 @@ else
             return;
         }
 
-        await EnsureLookupAsync();
+        await EnsureLookupsAsync();
 
         if (Id is null)
         {
@@ -321,17 +383,31 @@ else
         }
     }
 
-    private async Task EnsureLookupAsync()
+    private async Task EnsureLookupsAsync()
     {
-        if (_allForLookup.Count > 0)
+        if (_allForLookup.Count == 0)
         {
-            return;
+            var result = await Api.GetGlobalCategoriesAsync(page: 1, pageSize: 200);
+            if (result is { IsSuccess: true, Data: not null })
+            {
+                _allForLookup = result.Data.Items.ToList();
+            }
         }
 
-        var result = await Api.GetGlobalCategoriesAsync(page: 1, pageSize: 200);
-        if (result is { IsSuccess: true, Data: not null })
+        if (_activeBusinessTypes.Count == 0)
         {
-            _allForLookup = result.Data.Items.ToList();
+            var types = await Api.GetBusinessTypesAsync(page: 1, pageSize: 200, status: "Active", sortBy: "SortOrder");
+            if (types is { IsSuccess: true, Data: not null })
+            {
+                _activeBusinessTypes = types.Data.Items.ToList();
+                _businessTypeCheckboxOptions = _activeBusinessTypes
+                    .Select(bt => new CheckboxOption<string>
+                    {
+                        Label = $"{bt.Name} ({bt.Code})",
+                        Value = bt.Id.ToString("D")
+                    })
+                    .ToArray();
+            }
         }
     }
 
@@ -340,7 +416,7 @@ else
             page: _page,
             pageSize: 50,
             status: string.IsNullOrWhiteSpace(_status) ? null : _status,
-            businessType: string.IsNullOrWhiteSpace(_businessType) ? null : _businessType,
+            businessTypeCode: string.IsNullOrWhiteSpace(_businessTypeCode) ? null : _businessTypeCode,
             search: string.IsNullOrWhiteSpace(_search) ? null : _search.Trim(),
             sortBy: _sortBy,
             sortDesc: _sortBy is null ? null : _sortDesc);
@@ -371,6 +447,7 @@ else
     private async Task ApplyFiltersAsync()
     {
         _page = 1;
+        ClearSelection();
         await LoadListAsync();
     }
 
@@ -378,10 +455,79 @@ else
     {
         _search = "";
         _status = "";
-        _businessType = "";
+        _businessTypeCode = "";
         _sortBy = null;
         _sortDesc = false;
         _page = 1;
+        ClearSelection();
+        await LoadListAsync();
+    }
+
+    private void ToggleSelected(Guid id, bool selected)
+    {
+        if (selected)
+        {
+            _selectedIds.Add(id);
+        }
+        else
+        {
+            _selectedIds.Remove(id);
+        }
+    }
+
+    private void ClearSelection()
+    {
+        _selectedIds.Clear();
+        _bulkBusinessTypeIds = Array.Empty<string>();
+    }
+
+    private async Task BulkAssignAsync()
+    {
+        if (!CanManage || _selectedIds.Count == 0 || !AdminFormErrorMapper.TryBeginSubmit(ref _busy))
+        {
+            return;
+        }
+
+        var ids = _bulkBusinessTypeIds
+            .Where(v => Guid.TryParse(v, out _))
+            .Select(Guid.Parse)
+            .ToList();
+        if (ids.Count == 0 && !string.Equals(_bulkMode, "Replace", StringComparison.OrdinalIgnoreCase))
+        {
+            _busy = false;
+            await Message.WarningAsync(L["GlobalCategories_BulkNeedTypes"].Value);
+            return;
+        }
+
+        var failures = 0;
+        foreach (var categoryId in _selectedIds.ToList())
+        {
+            var category = _list?.Data?.Items.FirstOrDefault(c => c.Id == categoryId);
+            var result = await Api.BulkAssignCategoryBusinessTypesAsync(
+                categoryId,
+                new BulkAssignCategoryBusinessTypesRequest(
+                    _bulkMode,
+                    BusinessTypeIds: ids,
+                    ExpectedUpdatedAtUtc: category?.UpdatedAtUtc));
+            if (!result.IsSuccess)
+            {
+                failures++;
+            }
+        }
+
+        _busy = false;
+        if (failures > 0)
+        {
+            await Message.ErrorAsync(string.Format(L["GlobalCategories_BulkPartialFail"].Value, failures));
+        }
+        else
+        {
+            await Message.SuccessAsync(L["GlobalCategories_BulkAssigned"].Value);
+        }
+
+        ClearSelection();
+        _allForLookup.Clear();
+        await EnsureLookupsAsync();
         await LoadListAsync();
     }
 
@@ -401,7 +547,7 @@ else
         _editParentId = c.ParentId?.ToString("D") ?? "";
         _editIcon = c.IconReference ?? "";
         _editSortOrder = c.SortOrder;
-        _editBusinessTypes = c.BusinessTypes.ToArray();
+        _editBusinessTypeIds = c.BusinessTypeIds.Select(id => id.ToString("D")).ToArray();
         _expectedUpdatedAt = c.UpdatedAtUtc;
     }
 
@@ -424,6 +570,11 @@ else
         _formConflict = false;
     }
 
+    private static IReadOnlyList<Guid>? ParseIds(string[] values) =>
+        values.Length == 0
+            ? null
+            : values.Where(v => Guid.TryParse(v, out _)).Select(Guid.Parse).ToList();
+
     private async Task CreateAsync()
     {
         if (!CanManage || !AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
@@ -435,7 +586,7 @@ else
             parentId,
             string.IsNullOrWhiteSpace(_newIcon) ? null : _newIcon.Trim(),
             _newSortOrder,
-            _newBusinessTypes));
+            BusinessTypeIds: ParseIds(_newBusinessTypeIds)));
         _busy = false;
         if (!result.IsSuccess)
         {
@@ -460,8 +611,8 @@ else
             parentId,
             string.IsNullOrWhiteSpace(_editIcon) ? null : _editIcon.Trim(),
             _editSortOrder,
-            _editBusinessTypes,
-            _expectedUpdatedAt));
+            BusinessTypeIds: ParseIds(_editBusinessTypeIds) ?? Array.Empty<Guid>(),
+            ExpectedUpdatedAtUtc: _expectedUpdatedAt));
         _busy = false;
         if (!result.IsSuccess)
         {

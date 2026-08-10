@@ -64,12 +64,12 @@ else if (Id is null)
                 }
             </SelectOptions>
         </Select>
-        <Select TItemValue="string" TItem="string" @bind-Value="_businessType" Size="@InputSize.Small" Placeholder="@L["GlobalCatalog_BusinessType"]" Style="width:160px;" AllowClear>
+        <Select TItemValue="string" TItem="string" @bind-Value="_businessTypeCode" Size="@InputSize.Small" Placeholder="@L["GlobalCatalog_BusinessType"]" Style="width:180px;" AllowClear>
             <SelectOptions>
                 <SelectOption TItemValue="string" TItem="string" Value="@("")" Label="@L["Common_All"]" />
-                @foreach (var bt in BusinessTypeOptions)
+                @foreach (var bt in _activeBusinessTypes)
                 {
-                    <SelectOption TItemValue="string" TItem="string" Value="@bt" Label="@bt" />
+                    <SelectOption TItemValue="string" TItem="string" Value="@bt.Code" Label="@($"{bt.Name} ({bt.Code})")" />
                 }
             </SelectOptions>
         </Select>
@@ -178,7 +178,7 @@ else if (Id is null)
                 </div>
                 <div>
                     <label class="ant-form-item-label">@L["GlobalCatalog_BusinessTypes"]</label>
-                    <CheckboxGroup @bind-Value="_newBusinessTypes" Options="@_businessTypeCheckboxOptions" Disabled="_busy" />
+                    <CheckboxGroup @bind-Value="_newBusinessTypeIds" Options="@_businessTypeCheckboxOptions" Disabled="_busy" />
                 </div>
                 <Space>
                     <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="CreateAsync">@L["Common_Create"]</Button>
@@ -208,7 +208,7 @@ else if (Id is null)
                Size="@TableSize.Small"
                Bordered
                Resizable
-               ScrollX="1680"
+               ScrollX="1880"
                RemoteDataSource
                OnChange="OnProductsTableChangeAsync">
             <PropertyColumn Property="c => c.Name" Title="@L["Common_Name"]" Sortable>
@@ -229,6 +229,19 @@ else if (Id is null)
             <PropertyColumn Property="c => c.Unit" Title="@L["GlobalProducts_Unit"]" Sortable Width="100" />
             <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Sortable Width="110">
                 <AdminStatusTag Value="@context.Status" />
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.BusinessTypes" Title="@L["GlobalCatalog_BusinessTypes"]" Width="200">
+                @if (context.BusinessTypes.Count == 0)
+                {
+                    <span>—</span>
+                }
+                else
+                {
+                    @foreach (var typeCode in context.BusinessTypes)
+                    {
+                        <Tag Style="margin-bottom:2px;">@typeCode</Tag>
+                    }
+                }
             </PropertyColumn>
             <PropertyColumn Property="c => c.UpdatedAtUtc" Title="@L["Common_UpdatedUtc"]" Sortable Width="180">
                 <LocalTimestamp Value="@context.UpdatedAtUtc" />
@@ -399,7 +412,7 @@ else
                     </div>
                     <div>
                         <label class="ant-form-item-label">@L["GlobalCatalog_BusinessTypes"]</label>
-                        <CheckboxGroup @bind-Value="_editBusinessTypes" Options="@_businessTypeCheckboxOptions" Disabled="_busy" />
+                        <CheckboxGroup @bind-Value="_editBusinessTypeIds" Options="@_businessTypeCheckboxOptions" Disabled="_busy" />
                     </div>
                     <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="SaveAsync">@L["Common_Save"]</Button>
                 </Space>
@@ -418,7 +431,9 @@ else
                 <DescriptionsItem Title="@L["GlobalProducts_FieldDescription"]">@(p.Description ?? "—")</DescriptionsItem>
                 <DescriptionsItem Title="@L["GlobalProducts_ImageReference"]">@(p.ImageReference ?? "—")</DescriptionsItem>
                 <DescriptionsItem Title="@L["GlobalProducts_SearchTags"]">@(p.SearchTags.Count == 0 ? "—" : string.Join(", ", p.SearchTags))</DescriptionsItem>
-                <DescriptionsItem Title="@L["GlobalCatalog_BusinessTypes"]">@string.Join(", ", p.BusinessTypes)</DescriptionsItem>
+                <DescriptionsItem Title="@L["GlobalCatalog_BusinessTypes"]">
+                    @(p.BusinessTypes.Count == 0 ? "—" : string.Join(", ", p.BusinessTypes))
+                </DescriptionsItem>
             </Descriptions>
         }
     }
@@ -428,18 +443,13 @@ else
     [Parameter] public Guid? Id { get; set; }
     [SupplyParameterFromQuery] public string? Alert { get; set; }
 
-    private static readonly string[] BusinessTypeOptions =
-    [
-        "SariSari", "MiniGrocery", "Bakery", "Cafe", "Pharmacy", "GeneralRetail"
-    ];
-
     private static readonly string[] UnitOptions =
     [
         "Piece", "Pack", "Box", "Bottle", "Can", "Sachet", "Kilogram", "Gram", "Liter", "Milliliter"
     ];
 
-    private readonly CheckboxOption<string>[] _businessTypeCheckboxOptions =
-        BusinessTypeOptions.Select(v => new CheckboxOption<string> { Label = v, Value = v }).ToArray();
+    private CheckboxOption<string>[] _businessTypeCheckboxOptions = [];
+    private List<BusinessTypeDto> _activeBusinessTypes = [];
 
     private ApiCallResult<PagedResult<GlobalProductDto>>? _list;
     private ApiCallResult<GlobalProductDto>? _product;
@@ -451,7 +461,7 @@ else
     private string _barcode = "";
     private string _status = "";
     private string _categoryId = "";
-    private string _businessType = "";
+    private string _businessTypeCode = "";
     private bool _showCreate;
     private string _newName = "";
     private string _newDescription = "";
@@ -464,7 +474,7 @@ else
     private decimal? _newCost;
     private string _newImage = "";
     private string _newTags = "";
-    private string[] _newBusinessTypes = [];
+    private string[] _newBusinessTypeIds = [];
     private string _editName = "";
     private string _editDescription = "";
     private string _editSku = "";
@@ -476,7 +486,7 @@ else
     private decimal? _editCost;
     private string _editImage = "";
     private string _editTags = "";
-    private string[] _editBusinessTypes = [];
+    private string[] _editBusinessTypeIds = [];
     private DateTimeOffset? _expectedUpdatedAt;
     private string? _formError;
     private bool _formConflict;
@@ -516,6 +526,7 @@ else
         }
 
         await EnsureCategoriesAsync();
+        await EnsureBusinessTypesAsync();
 
         if (Id is null)
         {
@@ -550,6 +561,27 @@ else
         }
     }
 
+    private async Task EnsureBusinessTypesAsync()
+    {
+        if (_activeBusinessTypes.Count > 0)
+        {
+            return;
+        }
+
+        var types = await Api.GetBusinessTypesAsync(page: 1, pageSize: 200, status: "Active", sortBy: "SortOrder");
+        if (types is { IsSuccess: true, Data: not null })
+        {
+            _activeBusinessTypes = types.Data.Items.ToList();
+            _businessTypeCheckboxOptions = _activeBusinessTypes
+                .Select(bt => new CheckboxOption<string>
+                {
+                    Label = $"{bt.Name} ({bt.Code})",
+                    Value = bt.Id.ToString("D")
+                })
+                .ToArray();
+        }
+    }
+
     private async Task LoadListAsync()
     {
         Guid? categoryId = Guid.TryParse(_categoryId, out var cid) ? cid : null;
@@ -558,7 +590,7 @@ else
             pageSize: 20,
             status: string.IsNullOrWhiteSpace(_status) ? null : _status,
             categoryId: categoryId,
-            businessType: string.IsNullOrWhiteSpace(_businessType) ? null : _businessType,
+            businessTypeCode: string.IsNullOrWhiteSpace(_businessTypeCode) ? null : _businessTypeCode,
             search: string.IsNullOrWhiteSpace(_search) ? null : _search.Trim(),
             barcode: string.IsNullOrWhiteSpace(_barcode) ? null : _barcode.Trim(),
             sortBy: _sortBy,
@@ -606,7 +638,7 @@ else
         _barcode = "";
         _status = "";
         _categoryId = "";
-        _businessType = "";
+        _businessTypeCode = "";
         _sortBy = null;
         _sortDesc = false;
         _page = 1;
@@ -636,7 +668,7 @@ else
         _editCost = p.CostPrice;
         _editImage = p.ImageReference ?? "";
         _editTags = string.Join(", ", p.SearchTags);
-        _editBusinessTypes = p.BusinessTypes.ToArray();
+        _editBusinessTypeIds = p.BusinessTypeIds.Select(id => id.ToString("D")).ToArray();
         _expectedUpdatedAt = p.UpdatedAtUtc;
     }
 
@@ -654,6 +686,11 @@ else
             .Where(t => t.Length > 0)
             .ToList();
     }
+
+    private static IReadOnlyList<Guid>? ParseBusinessTypeIds(string[] values) =>
+        values.Length == 0
+            ? null
+            : values.Where(v => Guid.TryParse(v, out _)).Select(Guid.Parse).ToList();
 
     private void ToggleCreate() => _showCreate = !_showCreate;
 
@@ -851,7 +888,7 @@ else
                 _newPrice,
                 string.IsNullOrWhiteSpace(_newImage) ? null : _newImage.Trim(),
                 ParseTags(_newTags),
-                _newBusinessTypes));
+                BusinessTypeIds: ParseBusinessTypeIds(_newBusinessTypeIds)));
             if (!result.IsSuccess)
             {
                 _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
@@ -893,8 +930,8 @@ else
                 _editPrice,
                 string.IsNullOrWhiteSpace(_editImage) ? null : _editImage.Trim(),
                 ParseTags(_editTags),
-                _editBusinessTypes,
-                _expectedUpdatedAt));
+                BusinessTypeIds: ParseBusinessTypeIds(_editBusinessTypeIds) ?? Array.Empty<Guid>(),
+                ExpectedUpdatedAtUtc: _expectedUpdatedAt));
             if (!result.IsSuccess)
             {
                 _formConflict = AdminFormErrorMapper.IsConflict(result.Error);

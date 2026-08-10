@@ -1043,6 +1043,41 @@ public sealed record PersonalInAppNotificationDto(
 
 // --- Global merchandise catalog (Phase 20; distinct from commercial SaaS ProductDto/PlanDto) ---
 
+public sealed record BusinessTypeDto(
+    Guid Id,
+    string Code,
+    string Name,
+    string? Description,
+    string Status,
+    int SortOrder,
+    string? IconReference,
+    DateTimeOffset CreatedAtUtc,
+    DateTimeOffset UpdatedAtUtc);
+
+public sealed record CreateBusinessTypeRequest(
+    string Code,
+    string Name,
+    string? Description = null,
+    int SortOrder = 0,
+    string? IconReference = null);
+
+public sealed record UpdateBusinessTypeRequest(
+    string Name,
+    string? Description = null,
+    int SortOrder = 0,
+    string? IconReference = null,
+    DateTimeOffset? ExpectedUpdatedAtUtc = null);
+
+public sealed record SetBusinessTypeStatusRequest(
+    string Status,
+    DateTimeOffset? ExpectedUpdatedAtUtc = null);
+
+public sealed record BulkAssignCategoryBusinessTypesRequest(
+    string Mode = "Replace",
+    IReadOnlyList<string>? BusinessTypes = null,
+    IReadOnlyList<Guid>? BusinessTypeIds = null,
+    DateTimeOffset? ExpectedUpdatedAtUtc = null);
+
 public sealed record GlobalCategoryDto(
     Guid Id,
     string Name,
@@ -1051,6 +1086,7 @@ public sealed record GlobalCategoryDto(
     int SortOrder,
     string Status,
     IReadOnlyList<string> BusinessTypes,
+    IReadOnlyList<Guid> BusinessTypeIds,
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset UpdatedAtUtc);
 
@@ -1069,6 +1105,7 @@ public sealed record GlobalProductDto(
     string Status,
     IReadOnlyList<string> SearchTags,
     IReadOnlyList<string> BusinessTypes,
+    IReadOnlyList<Guid> BusinessTypeIds,
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset UpdatedAtUtc);
 
@@ -1077,7 +1114,8 @@ public sealed record CreateGlobalCategoryRequest(
     Guid? ParentId = null,
     string? IconReference = null,
     int SortOrder = 0,
-    IReadOnlyList<string>? BusinessTypes = null);
+    IReadOnlyList<string>? BusinessTypes = null,
+    IReadOnlyList<Guid>? BusinessTypeIds = null);
 
 public sealed record UpdateGlobalCategoryRequest(
     string Name,
@@ -1085,6 +1123,7 @@ public sealed record UpdateGlobalCategoryRequest(
     string? IconReference = null,
     int SortOrder = 0,
     IReadOnlyList<string>? BusinessTypes = null,
+    IReadOnlyList<Guid>? BusinessTypeIds = null,
     DateTimeOffset? ExpectedUpdatedAtUtc = null);
 
 public sealed record SetGlobalCategoryStatusRequest(
@@ -1103,7 +1142,8 @@ public sealed record CreateGlobalProductRequest(
     decimal? SellingPrice = null,
     string? ImageReference = null,
     IReadOnlyList<string>? SearchTags = null,
-    IReadOnlyList<string>? BusinessTypes = null);
+    IReadOnlyList<string>? BusinessTypes = null,
+    IReadOnlyList<Guid>? BusinessTypeIds = null);
 
 public sealed record UpdateGlobalProductRequest(
     string Name,
@@ -1118,6 +1158,7 @@ public sealed record UpdateGlobalProductRequest(
     string? ImageReference = null,
     IReadOnlyList<string>? SearchTags = null,
     IReadOnlyList<string>? BusinessTypes = null,
+    IReadOnlyList<Guid>? BusinessTypeIds = null,
     DateTimeOffset? ExpectedUpdatedAtUtc = null);
 
 public sealed record SetGlobalProductStatusRequest(
@@ -1148,6 +1189,7 @@ public sealed record CatalogTemplateSummaryDto(
     string? Description,
     string? IconReference,
     string PrimaryBusinessType,
+    Guid PrimaryBusinessTypeId,
     string Status,
     int DefaultBatchSize,
     string SelectionMode,
@@ -1164,6 +1206,7 @@ public sealed record CatalogTemplateDto(
     string? Description,
     string? IconReference,
     string PrimaryBusinessType,
+    Guid PrimaryBusinessTypeId,
     string Status,
     int DefaultBatchSize,
     string SelectionMode,
@@ -1176,7 +1219,8 @@ public sealed record CatalogTemplateDto(
 
 public sealed record CreateCatalogTemplateRequest(
     string Name,
-    string PrimaryBusinessType,
+    string? PrimaryBusinessType = null,
+    Guid? PrimaryBusinessTypeId = null,
     string? Slug = null,
     string? Description = null,
     string? IconReference = null,
@@ -1185,7 +1229,8 @@ public sealed record CreateCatalogTemplateRequest(
 
 public sealed record UpdateCatalogTemplateRequest(
     string Name,
-    string PrimaryBusinessType,
+    string? PrimaryBusinessType = null,
+    Guid? PrimaryBusinessTypeId = null,
     string? Slug = null,
     string? Description = null,
     string? IconReference = null,

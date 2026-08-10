@@ -1,0 +1,419 @@
+@page "/admin/global-catalog/business-types"
+@page "/admin/global-catalog/business-types/{Id:guid}"
+@using AntDesign
+@using AntDesign.TableModels
+@using ExItS.Platform.Admin.Services
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject IPlatformApiClient Api
+@inject IMessageService Message
+@inject IStringLocalizer<AdminResources> L
+@inject NavigationManager Nav
+@inject PlatformPermissionState Permissions
+
+@if (!Permissions.Loaded)
+{
+    <Spin />
+}
+else if (!CanView)
+{
+    <UnauthorizedPanel RequiredPermission="@PlatformPermissionCodes.ViewGlobalCatalog" />
+}
+else if (Id is null)
+{
+    <PageHeader Class="exits-page-header" Title="@L["GlobalBusinessTypes_Title"]" SubTitle="@L["GlobalBusinessTypes_Description"]">
+        <PageHeaderBreadcrumb>
+            <Breadcrumb>
+                <BreadcrumbItem>@L["Brand_Name"]</BreadcrumbItem>
+                <BreadcrumbItem>@L["Nav_ProductCatalog"]</BreadcrumbItem>
+                <BreadcrumbItem>@L["Nav_GlobalBusinessTypes"]</BreadcrumbItem>
+            </Breadcrumb>
+        </PageHeaderBreadcrumb>
+        <PageHeaderExtra>
+            @if (CanManage)
+            {
+                <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" OnClick="ToggleCreate">
+                    @(_showCreate ? L["GlobalBusinessTypes_HideCreate"] : L["GlobalBusinessTypes_Create"])
+                </Button>
+            }
+        </PageHeaderExtra>
+    </PageHeader>
+
+    <Space Style="margin-bottom:12px; width:100%;" Wrap>
+        <Input @bind-Value="_search" Size="@InputSize.Small" Placeholder="@L["GlobalBusinessTypes_SearchPlaceholder"]" Style="width:220px;" OnPressEnter="ApplyFiltersAsync" />
+        <Select TItemValue="string" TItem="string" @bind-Value="_status" Size="@InputSize.Small" Placeholder="@L["Common_Status"]" Style="width:140px;" AllowClear>
+            <SelectOptions>
+                <SelectOption TItemValue="string" TItem="string" Value="@("")" Label="@L["Common_All"]" />
+                <SelectOption TItemValue="string" TItem="string" Value="@("Active")" Label="@L["Status_Active"]" />
+                <SelectOption TItemValue="string" TItem="string" Value="@("Inactive")" Label="@L["Status_Inactive"]" />
+                <SelectOption TItemValue="string" TItem="string" Value="@("Archived")" Label="@L["Status_Archived"]" />
+            </SelectOptions>
+        </Select>
+        <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" OnClick="ApplyFiltersAsync">@L["Common_Apply"]</Button>
+        <Button Size="@ButtonSize.Small" OnClick="ClearFiltersAsync">@L["Common_Reset"]</Button>
+    </Space>
+
+    @if (_showCreate && CanManage)
+    {
+        <Card Size="@CardSize.Small" Title="@L["GlobalBusinessTypes_CreateSection"]" Style="margin-bottom:12px;">
+            <FormValidationSummary Title="@L["GlobalBusinessTypes_CreateFailed"]" Message="@_formError" IsConflict="_formConflict" />
+            <Space Direction="SpaceDirection.Vertical" Style="width:100%; max-width:560px;">
+                <div>
+                    <label class="ant-form-item-label" for="gc-bt-code">@L["GlobalBusinessTypes_Code"]</label>
+                    <Input Id="gc-bt-code" @bind-Value="_newCode" Size="@InputSize.Small" Disabled="_busy" Placeholder="SariSari" />
+                </div>
+                <div>
+                    <label class="ant-form-item-label" for="gc-bt-name">@L["Common_Name"]</label>
+                    <Input Id="gc-bt-name" @bind-Value="_newName" Size="@InputSize.Small" Disabled="_busy" />
+                </div>
+                <div>
+                    <label class="ant-form-item-label" for="gc-bt-desc">@L["Common_Description"]</label>
+                    <TextArea Id="gc-bt-desc" @bind-Value="_newDescription" Rows="2" Disabled="_busy" />
+                </div>
+                <div>
+                    <label class="ant-form-item-label" for="gc-bt-sort">@L["GlobalBusinessTypes_SortOrder"]</label>
+                    <AntDesign.InputNumber Id="gc-bt-sort" TValue="int" @bind-Value="_newSortOrder" Min="0" Disabled="_busy" Style="width:120px;" />
+                </div>
+                <div>
+                    <label class="ant-form-item-label" for="gc-bt-icon">@L["GlobalBusinessTypes_IconReference"]</label>
+                    <Input Id="gc-bt-icon" @bind-Value="_newIcon" Size="@InputSize.Small" Disabled="_busy" />
+                </div>
+                <Space>
+                    <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="CreateAsync">@L["Common_Create"]</Button>
+                    <Button Size="@ButtonSize.Small" OnClick="HideCreate" Disabled="_busy">@L["Common_Cancel"]</Button>
+                </Space>
+            </Space>
+        </Card>
+    }
+
+    @if (_list is { IsSuccess: false })
+    {
+        <Result Status="@ResultStatus.Error" Title="@(_list.Error?.Title ?? L["Common_Error"])" SubTitle="@_list.Error?.Detail" />
+    }
+    else if (_list is { IsSuccess: true, Data.Items.Count: 0 })
+    {
+        <Empty Description="@L["GlobalBusinessTypes_Empty"].Value" />
+    }
+    else
+    {
+        <Table TItem="BusinessTypeDto"
+               Class="exits-table-fit"
+               DataSource="@(_list?.Data?.Items ?? Array.Empty<BusinessTypeDto>())"
+               Total="@(_list?.Data?.TotalCount ?? 0)"
+               @bind-PageIndex="_page"
+               PageSize="@(_list?.Data?.PageSize ?? 50)"
+               Loading="@(_list is null)"
+               Size="@TableSize.Small"
+               Bordered
+               Resizable
+               ScrollX="960"
+               RemoteDataSource
+               OnChange="OnTableChangeAsync">
+            <PropertyColumn Property="c => c.Code" Title="@L["GlobalBusinessTypes_Code"]" Sortable Width="140">
+                <a href="/admin/global-catalog/business-types/@context.Id">@context.Code</a>
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.Name" Title="@L["Common_Name"]" Sortable />
+            <PropertyColumn Property="c => c.SortOrder" Title="@L["GlobalBusinessTypes_SortOrder"]" Sortable Width="100" />
+            <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Sortable Width="110">
+                <AdminStatusTag Value="@context.Status" />
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.UpdatedAtUtc" Title="@L["Common_UpdatedUtc"]" Sortable Width="180">
+                <LocalTimestamp Value="@context.UpdatedAtUtc" />
+            </PropertyColumn>
+            <ActionColumn Title="@L["Common_Open"]" Width="80">
+                <a class="ant-btn ant-btn-link ant-btn-sm" href="@($"/admin/global-catalog/business-types/{context.Id}")">@L["Common_Open"]</a>
+            </ActionColumn>
+        </Table>
+    }
+}
+else
+{
+    <PageHeader Class="exits-page-header" Title="@(_item?.Data?.Name ?? L["GlobalBusinessTypes_DetailTitle"])" SubTitle="@L["GlobalBusinessTypes_DetailDescription"]">
+        <PageHeaderBreadcrumb>
+            <Breadcrumb>
+                <BreadcrumbItem Href="/admin/global-catalog/business-types">@L["Nav_GlobalBusinessTypes"]</BreadcrumbItem>
+                <BreadcrumbItem>@L["Common_Detail"]</BreadcrumbItem>
+            </Breadcrumb>
+        </PageHeaderBreadcrumb>
+        <PageHeaderExtra>
+            @if (_item?.IsSuccess == true && CanManage)
+            {
+                var bt = _item.Data!;
+                <Space>
+                    @if (bt.Status is "Inactive" or "Archived")
+                    {
+                        <Popconfirm Title="@L["GlobalBusinessTypes_ConfirmActivate"]" OnConfirm="ActivateAsync" OkText="@L["Common_Confirm"]" CancelText="@L["Common_Cancel"]">
+                            <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy">@L["GlobalBusinessTypes_Activate"]</Button>
+                        </Popconfirm>
+                    }
+                    @if (bt.Status == "Active")
+                    {
+                        <Popconfirm Title="@L["GlobalBusinessTypes_ConfirmDeactivate"]" OnConfirm="DeactivateAsync" OkText="@L["Common_Confirm"]" CancelText="@L["Common_Cancel"]">
+                            <Button Size="@ButtonSize.Small" Loading="_busy">@L["GlobalBusinessTypes_Deactivate"]</Button>
+                        </Popconfirm>
+                    }
+                    @if (bt.Status is "Active" or "Inactive")
+                    {
+                        <Popconfirm Title="@L["GlobalBusinessTypes_ConfirmArchive"]" OnConfirm="ArchiveAsync" OkText="@L["Common_Confirm"]" CancelText="@L["Common_Cancel"]">
+                            <Button Size="@ButtonSize.Small" Danger Loading="_busy">@L["GlobalBusinessTypes_Archive"]</Button>
+                        </Popconfirm>
+                    }
+                </Space>
+            }
+        </PageHeaderExtra>
+    </PageHeader>
+
+    @if (_item is null)
+    {
+        <div style="padding:2rem;text-align:center;"><Spin Tip="@L["GlobalBusinessTypes_DetailLoading"]" /></div>
+    }
+    else if (!_item.IsSuccess)
+    {
+        <Result Status="@ResultStatus.Error" Title="@(_item.Error?.Title ?? L["Common_Error"])" SubTitle="@_item.Error?.Detail" />
+    }
+    else
+    {
+        var bt = _item.Data!;
+        <Descriptions Bordered Size="@DescriptionsSize.Small" Column="2" Style="margin-bottom:12px;">
+            <DescriptionsItem Title="@L["GlobalBusinessTypes_Code"]">@bt.Code</DescriptionsItem>
+            <DescriptionsItem Title="@L["Common_Status"]"><AdminStatusTag Value="@bt.Status" /></DescriptionsItem>
+            <DescriptionsItem Title="@L["Common_CreatedUtc"]"><UtcTimestamp Value="@bt.CreatedAtUtc" /></DescriptionsItem>
+            <DescriptionsItem Title="@L["Common_UpdatedUtc"]"><UtcTimestamp Value="@bt.UpdatedAtUtc" /></DescriptionsItem>
+        </Descriptions>
+
+        @if (CanManage && bt.Status != "Archived")
+        {
+            <Card Size="@CardSize.Small" Title="@L["GlobalBusinessTypes_EditSection"]">
+                <FormValidationSummary Title="@L["GlobalBusinessTypes_SaveFailed"]" Message="@_formError" IsConflict="_formConflict" />
+                <Space Direction="SpaceDirection.Vertical" Style="width:100%; max-width:560px;">
+                    <div>
+                        <label class="ant-form-item-label" for="gc-bt-edit-name">@L["Common_Name"]</label>
+                        <Input Id="gc-bt-edit-name" @bind-Value="_editName" Size="@InputSize.Small" Disabled="_busy" />
+                    </div>
+                    <div>
+                        <label class="ant-form-item-label" for="gc-bt-edit-desc">@L["Common_Description"]</label>
+                        <TextArea Id="gc-bt-edit-desc" @bind-Value="_editDescription" Rows="2" Disabled="_busy" />
+                    </div>
+                    <div>
+                        <label class="ant-form-item-label" for="gc-bt-edit-sort">@L["GlobalBusinessTypes_SortOrder"]</label>
+                        <AntDesign.InputNumber Id="gc-bt-edit-sort" TValue="int" @bind-Value="_editSortOrder" Min="0" Disabled="_busy" Style="width:120px;" />
+                    </div>
+                    <div>
+                        <label class="ant-form-item-label" for="gc-bt-edit-icon">@L["GlobalBusinessTypes_IconReference"]</label>
+                        <Input Id="gc-bt-edit-icon" @bind-Value="_editIcon" Size="@InputSize.Small" Disabled="_busy" />
+                    </div>
+                    <Alert Type="@AlertType.Info" ShowIcon="true" Message="@L["GlobalBusinessTypes_CodeImmutableNote"]" Style="margin-bottom:8px;" />
+                    <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="SaveAsync">@L["Common_Save"]</Button>
+                </Space>
+            </Card>
+        }
+        else
+        {
+            <Descriptions Size="@DescriptionsSize.Small" Column="1">
+                <DescriptionsItem Title="@L["Common_Name"]">@bt.Name</DescriptionsItem>
+                <DescriptionsItem Title="@L["Common_Description"]">@(bt.Description ?? "—")</DescriptionsItem>
+                <DescriptionsItem Title="@L["GlobalBusinessTypes_SortOrder"]">@bt.SortOrder</DescriptionsItem>
+                <DescriptionsItem Title="@L["GlobalBusinessTypes_IconReference"]">@(bt.IconReference ?? "—")</DescriptionsItem>
+            </Descriptions>
+        }
+    }
+}
+
+@code {
+    [Parameter] public Guid? Id { get; set; }
+
+    private ApiCallResult<PagedResult<BusinessTypeDto>>? _list;
+    private ApiCallResult<BusinessTypeDto>? _item;
+    private int _page = 1;
+    private string? _sortBy;
+    private bool _sortDesc;
+    private string _search = "";
+    private string _status = "";
+    private bool _showCreate;
+    private string _newCode = "";
+    private string _newName = "";
+    private string _newDescription = "";
+    private int _newSortOrder;
+    private string _newIcon = "";
+    private string _editName = "";
+    private string _editDescription = "";
+    private int _editSortOrder;
+    private string _editIcon = "";
+    private DateTimeOffset? _expectedUpdatedAt;
+    private string? _formError;
+    private bool _formConflict;
+    private bool _busy;
+    private readonly AdminPageLoadGate _loadGate = new();
+
+    private bool CanView => Permissions.HasPermission(PlatformPermissionCodes.ViewGlobalCatalog);
+    private bool CanManage => Permissions.HasPermission(PlatformPermissionCodes.ManageGlobalCategories);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _formError = null;
+        _formConflict = false;
+        if (!CanView)
+        {
+            return;
+        }
+
+        if (Id is null)
+        {
+            if (!_loadGate.ShouldLoad("list"))
+            {
+                return;
+            }
+
+            await LoadListAsync();
+        }
+        else if (_loadGate.ShouldLoad(Id))
+        {
+            await LoadDetailAsync();
+        }
+    }
+
+    private async Task LoadListAsync() =>
+        _list = await Api.GetBusinessTypesAsync(
+            page: _page,
+            pageSize: 50,
+            status: string.IsNullOrWhiteSpace(_status) ? null : _status,
+            search: string.IsNullOrWhiteSpace(_search) ? null : _search.Trim(),
+            sortBy: _sortBy,
+            sortDesc: _sortBy is null ? null : _sortDesc);
+
+    private async Task OnTableChangeAsync(QueryModel<BusinessTypeDto> queryModel)
+    {
+        await AdminTableSort.ApplyChangeAsync(
+            queryModel,
+            MapSortField,
+            () => _sortBy,
+            v => _sortBy = v,
+            () => _sortDesc,
+            v => _sortDesc = v,
+            () => _page,
+            v => _page = v,
+            LoadListAsync);
+    }
+
+    private static string? MapSortField(string? fieldName) => fieldName switch
+    {
+        "Code" => "Code",
+        "Name" => "Name",
+        "SortOrder" => "SortOrder",
+        "Status" => "Status",
+        "UpdatedAtUtc" => "UpdatedAtUtc",
+        _ => null
+    };
+
+    private async Task ApplyFiltersAsync()
+    {
+        _page = 1;
+        await LoadListAsync();
+    }
+
+    private async Task ClearFiltersAsync()
+    {
+        _search = "";
+        _status = "";
+        _sortBy = null;
+        _sortDesc = false;
+        _page = 1;
+        await LoadListAsync();
+    }
+
+    private async Task LoadDetailAsync()
+    {
+        if (Id is null) return;
+        _item = await Api.GetBusinessTypeAsync(Id.Value);
+        if (_item is { IsSuccess: true, Data: not null })
+        {
+            BindEdit(_item.Data);
+        }
+    }
+
+    private void BindEdit(BusinessTypeDto bt)
+    {
+        _editName = bt.Name;
+        _editDescription = bt.Description ?? "";
+        _editSortOrder = bt.SortOrder;
+        _editIcon = bt.IconReference ?? "";
+        _expectedUpdatedAt = bt.UpdatedAtUtc;
+    }
+
+    private void ToggleCreate() => _showCreate = !_showCreate;
+
+    private void HideCreate()
+    {
+        _showCreate = false;
+        _formError = null;
+        _formConflict = false;
+    }
+
+    private async Task CreateAsync()
+    {
+        if (!CanManage || !AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
+        _formError = null;
+        _formConflict = false;
+        var result = await Api.CreateBusinessTypeAsync(new CreateBusinessTypeRequest(
+            _newCode,
+            _newName,
+            string.IsNullOrWhiteSpace(_newDescription) ? null : _newDescription.Trim(),
+            _newSortOrder,
+            string.IsNullOrWhiteSpace(_newIcon) ? null : _newIcon.Trim()));
+        _busy = false;
+        if (!result.IsSuccess)
+        {
+            _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
+            _formError = AdminFormErrorMapper.MapPageError(result);
+            return;
+        }
+
+        await Message.SuccessAsync(L["GlobalBusinessTypes_Created"].Value);
+        Nav.NavigateTo($"/admin/global-catalog/business-types/{result.Data!.Id}");
+    }
+
+    private async Task SaveAsync()
+    {
+        if (Id is null || !CanManage || !AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
+        _formError = null;
+        _formConflict = false;
+        var result = await Api.UpdateBusinessTypeAsync(Id.Value, new UpdateBusinessTypeRequest(
+            _editName,
+            string.IsNullOrWhiteSpace(_editDescription) ? null : _editDescription.Trim(),
+            _editSortOrder,
+            string.IsNullOrWhiteSpace(_editIcon) ? null : _editIcon.Trim(),
+            _expectedUpdatedAt));
+        _busy = false;
+        if (!result.IsSuccess)
+        {
+            _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
+            _formError = AdminFormErrorMapper.MapPageError(result);
+            return;
+        }
+
+        await Message.SuccessAsync(L["GlobalBusinessTypes_Saved"].Value);
+        _item = result;
+        BindEdit(result.Data!);
+    }
+
+    private Task ActivateAsync() => SetStatusAsync("Active");
+    private Task DeactivateAsync() => SetStatusAsync("Inactive");
+    private Task ArchiveAsync() => SetStatusAsync("Archived");
+
+    private async Task SetStatusAsync(string status)
+    {
+        if (Id is null || _item?.Data is null || !CanManage || !AdminFormErrorMapper.TryBeginSubmit(ref _busy)) return;
+        var result = await Api.SetBusinessTypeStatusAsync(
+            Id.Value,
+            new SetBusinessTypeStatusRequest(status, _item.Data.UpdatedAtUtc));
+        _busy = false;
+        if (!result.IsSuccess)
+        {
+            await Message.ErrorAsync(AdminFormErrorMapper.MapPageError(result) ?? L["Common_Error"].Value);
+            return;
+        }
+
+        await Message.SuccessAsync(L["GlobalBusinessTypes_StatusChanged"].Value);
+        await LoadDetailAsync();
+    }
+}

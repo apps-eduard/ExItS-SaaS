@@ -508,18 +508,43 @@ public sealed class PlatformApiClient(
     public Task<ApiCallResult<AccessTokenIntrospectionDto>> IntrospectAccessTokenAsync(IntrospectAccessTokenRequest request, CancellationToken ct = default) =>
         SendAsync<AccessTokenIntrospectionDto>(HttpMethod.Post, "/api/v1/platform/auth/introspect", request, ct);
 
+    public Task<ApiCallResult<PagedResult<BusinessTypeDto>>> GetBusinessTypesAsync(
+        int page = 1,
+        int pageSize = 50,
+        string? status = null,
+        string? search = null,
+        string? sortBy = null,
+        bool? sortDesc = null,
+        CancellationToken ct = default) =>
+        GetAsync<PagedResult<BusinessTypeDto>>(
+            $"/api/v1/platform/global-catalog/business-types?{Query(("page", page), ("pageSize", pageSize), ("status", status), ("search", search), ("sortBy", sortBy), ("sortDesc", sortDesc))}",
+            ct);
+
+    public Task<ApiCallResult<BusinessTypeDto>> GetBusinessTypeAsync(Guid id, CancellationToken ct = default) =>
+        GetAsync<BusinessTypeDto>($"/api/v1/platform/global-catalog/business-types/{id}", ct);
+
+    public Task<ApiCallResult<BusinessTypeDto>> CreateBusinessTypeAsync(CreateBusinessTypeRequest request, CancellationToken ct = default) =>
+        SendAsync<BusinessTypeDto>(HttpMethod.Post, "/api/v1/platform/global-catalog/business-types", request, ct);
+
+    public Task<ApiCallResult<BusinessTypeDto>> UpdateBusinessTypeAsync(Guid id, UpdateBusinessTypeRequest request, CancellationToken ct = default) =>
+        SendAsync<BusinessTypeDto>(HttpMethod.Put, $"/api/v1/platform/global-catalog/business-types/{id}", request, ct);
+
+    public Task<ApiCallResult<BusinessTypeDto>> SetBusinessTypeStatusAsync(Guid id, SetBusinessTypeStatusRequest request, CancellationToken ct = default) =>
+        SendAsync<BusinessTypeDto>(HttpMethod.Post, $"/api/v1/platform/global-catalog/business-types/{id}/status", request, ct);
+
     public Task<ApiCallResult<PagedResult<GlobalCategoryDto>>> GetGlobalCategoriesAsync(
         int page = 1,
         int pageSize = 50,
         string? status = null,
         Guid? parentId = null,
-        string? businessType = null,
+        string? businessTypeCode = null,
+        Guid? businessTypeId = null,
         string? search = null,
         string? sortBy = null,
         bool? sortDesc = null,
         CancellationToken ct = default) =>
         GetAsync<PagedResult<GlobalCategoryDto>>(
-            $"/api/v1/platform/global-catalog/categories?{Query(("page", page), ("pageSize", pageSize), ("status", status), ("parentId", parentId), ("businessType", businessType), ("search", search), ("sortBy", sortBy), ("sortDesc", sortDesc))}",
+            $"/api/v1/platform/global-catalog/categories?{Query(("page", page), ("pageSize", pageSize), ("status", status), ("parentId", parentId), ("businessTypeCode", businessTypeCode), ("businessTypeId", businessTypeId), ("search", search), ("sortBy", sortBy), ("sortDesc", sortDesc))}",
             ct);
 
     public Task<ApiCallResult<GlobalCategoryDto>> GetGlobalCategoryAsync(Guid id, CancellationToken ct = default) =>
@@ -534,12 +559,19 @@ public sealed class PlatformApiClient(
     public Task<ApiCallResult<GlobalCategoryDto>> SetGlobalCategoryStatusAsync(Guid id, SetGlobalCategoryStatusRequest request, CancellationToken ct = default) =>
         SendAsync<GlobalCategoryDto>(HttpMethod.Patch, $"/api/v1/platform/global-catalog/categories/{id}/status", request, ct);
 
+    public Task<ApiCallResult<GlobalCategoryDto>> BulkAssignCategoryBusinessTypesAsync(
+        Guid id,
+        BulkAssignCategoryBusinessTypesRequest request,
+        CancellationToken ct = default) =>
+        SendAsync<GlobalCategoryDto>(HttpMethod.Post, $"/api/v1/platform/global-catalog/categories/{id}/business-types", request, ct);
+
     public Task<ApiCallResult<PagedResult<GlobalProductDto>>> GetGlobalProductsAsync(
         int page = 1,
         int pageSize = 20,
         string? status = null,
         Guid? categoryId = null,
-        string? businessType = null,
+        string? businessTypeCode = null,
+        Guid? businessTypeId = null,
         string? search = null,
         string? barcode = null,
         string? sku = null,
@@ -547,7 +579,7 @@ public sealed class PlatformApiClient(
         bool? sortDesc = null,
         CancellationToken ct = default) =>
         GetAsync<PagedResult<GlobalProductDto>>(
-            $"/api/v1/platform/global-catalog/products?{Query(("page", page), ("pageSize", pageSize), ("status", status), ("categoryId", categoryId), ("businessType", businessType), ("search", search), ("barcode", barcode), ("sku", sku), ("sortBy", sortBy), ("sortDesc", sortDesc))}",
+            $"/api/v1/platform/global-catalog/products?{Query(("page", page), ("pageSize", pageSize), ("status", status), ("categoryId", categoryId), ("businessTypeCode", businessTypeCode), ("businessTypeId", businessTypeId), ("search", search), ("barcode", barcode), ("sku", sku), ("sortBy", sortBy), ("sortDesc", sortDesc))}",
             ct);
 
     public Task<ApiCallResult<GlobalProductDto>> GetGlobalProductAsync(Guid id, CancellationToken ct = default) =>
@@ -566,13 +598,14 @@ public sealed class PlatformApiClient(
         int page = 1,
         int pageSize = 20,
         string? status = null,
-        string? primaryBusinessType = null,
+        string? primaryBusinessTypeCode = null,
+        Guid? primaryBusinessTypeId = null,
         string? search = null,
         string? sortBy = null,
         bool? sortDesc = null,
         CancellationToken ct = default) =>
         GetAsync<PagedResult<CatalogTemplateSummaryDto>>(
-            $"/api/v1/platform/global-catalog/templates?{Query(("page", page), ("pageSize", pageSize), ("status", status), ("primaryBusinessType", primaryBusinessType), ("search", search), ("sortBy", sortBy), ("sortDesc", sortDesc))}",
+            $"/api/v1/platform/global-catalog/templates?{Query(("page", page), ("pageSize", pageSize), ("status", status), ("primaryBusinessTypeCode", primaryBusinessTypeCode), ("primaryBusinessTypeId", primaryBusinessTypeId), ("search", search), ("sortBy", sortBy), ("sortDesc", sortDesc))}",
             ct);
 
     public Task<ApiCallResult<CatalogTemplateDto>> GetCatalogTemplateAsync(Guid id, CancellationToken ct = default) =>

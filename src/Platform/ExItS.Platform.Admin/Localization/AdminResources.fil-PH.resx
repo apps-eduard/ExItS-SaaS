@@ -80,6 +80,7 @@
   <data name="Nav_GlobalProducts" xml:space="preserve"><value>Mga Produktong Catalog</value></data>
   <data name="Nav_GlobalTemplates" xml:space="preserve"><value>Mga Template</value></data>
   <data name="Nav_GlobalImports" xml:space="preserve"><value>Mga Import</value></data>
+  <data name="Nav_GlobalBusinessTypes" xml:space="preserve"><value>Mga uri ng negosyo</value></data>
   <data name="Nav_ProductEntry" xml:space="preserve"><value>Product entry</value></data>
   <data name="Nav_Organizations" xml:space="preserve"><value>Mga Organisasyon</value></data>
   <data name="Nav_Subscriptions" xml:space="preserve"><value>Mga Subscription</value></data>
@@ -887,6 +888,43 @@
 
   <data name="GlobalCatalog_BusinessType" xml:space="preserve"><value>Uri ng negosyo</value></data>
   <data name="GlobalCatalog_BusinessTypes" xml:space="preserve"><value>Mga uri ng negosyo</value></data>
+  <data name="GlobalBusinessTypes_Title" xml:space="preserve"><value>Mga uri ng negosyo</value></data>
+  <data name="GlobalBusinessTypes_Description" xml:space="preserve"><value>Dynamic na klasipikasyon ng uri ng negosyo para sa catalog targeting.</value></data>
+  <data name="GlobalBusinessTypes_Empty" xml:space="preserve"><value>Walang uri ng negosyo na tumutugma sa kasalukuyang filter.</value></data>
+  <data name="GlobalBusinessTypes_SearchPlaceholder" xml:space="preserve"><value>Maghanap ng code o pangalan</value></data>
+  <data name="GlobalBusinessTypes_Create" xml:space="preserve"><value>Gumawa ng uri ng negosyo</value></data>
+  <data name="GlobalBusinessTypes_HideCreate" xml:space="preserve"><value>Itago ang create</value></data>
+  <data name="GlobalBusinessTypes_CreateSection" xml:space="preserve"><value>Gumawa ng uri ng negosyo</value></data>
+  <data name="GlobalBusinessTypes_CreateFailed" xml:space="preserve"><value>Hindi nagawa ang uri ng negosyo</value></data>
+  <data name="GlobalBusinessTypes_Created" xml:space="preserve"><value>Nagawa ang uri ng negosyo.</value></data>
+  <data name="GlobalBusinessTypes_DetailTitle" xml:space="preserve"><value>Detalye ng uri ng negosyo</value></data>
+  <data name="GlobalBusinessTypes_DetailDescription" xml:space="preserve"><value>I-edit ang metadata at i-archive o i-reactivate ang uri ng negosyo.</value></data>
+  <data name="GlobalBusinessTypes_DetailLoading" xml:space="preserve"><value>Naglo-load ang uri ng negosyo…</value></data>
+  <data name="GlobalBusinessTypes_EditSection" xml:space="preserve"><value>I-edit ang uri ng negosyo</value></data>
+  <data name="GlobalBusinessTypes_SaveFailed" xml:space="preserve"><value>Hindi na-save ang uri ng negosyo</value></data>
+  <data name="GlobalBusinessTypes_Saved" xml:space="preserve"><value>Na-save ang uri ng negosyo.</value></data>
+  <data name="GlobalBusinessTypes_Code" xml:space="preserve"><value>Code</value></data>
+  <data name="GlobalBusinessTypes_SortOrder" xml:space="preserve"><value>Sort order</value></data>
+  <data name="GlobalBusinessTypes_IconReference" xml:space="preserve"><value>Icon reference</value></data>
+  <data name="GlobalBusinessTypes_Activate" xml:space="preserve"><value>I-activate</value></data>
+  <data name="GlobalBusinessTypes_Deactivate" xml:space="preserve"><value>I-deactivate</value></data>
+  <data name="GlobalBusinessTypes_Archive" xml:space="preserve"><value>I-archive</value></data>
+  <data name="GlobalBusinessTypes_ConfirmActivate" xml:space="preserve"><value>I-activate ang uri ng negosyong ito?</value></data>
+  <data name="GlobalBusinessTypes_ConfirmDeactivate" xml:space="preserve"><value>I-deactivate ang uri ng negosyong ito?</value></data>
+  <data name="GlobalBusinessTypes_ConfirmArchive" xml:space="preserve"><value>I-archive ang uri ng negosyong ito? Mas mainam ang archive kaysa delete kung may reference pa.</value></data>
+  <data name="GlobalBusinessTypes_StatusChanged" xml:space="preserve"><value>Na-update ang status ng uri ng negosyo.</value></data>
+  <data name="GlobalBusinessTypes_CodeImmutableNote" xml:space="preserve"><value>Hindi na mababago ang code pagkatapos gumawa. I-archive at gumawa ng kapalit kung kailangang baguhin ang code.</value></data>
+  <data name="GlobalBusinessTypes_ArchivedReference" xml:space="preserve"><value>naka-archive</value></data>
+  <data name="GlobalBusinessTypes_HistoricalTypeNote" xml:space="preserve"><value>Ang kasalukuyang reference na “{0}” ay hindi Active. Pumili ng Active na uri para palitan, o panatilihin ang historical selection.</value></data>
+  <data name="GlobalCategories_BulkAssignTitle" xml:space="preserve"><value>Bulk assign ng mga uri ng negosyo</value></data>
+  <data name="GlobalCategories_BulkSelected" xml:space="preserve"><value>{0} kategoryang napili</value></data>
+  <data name="GlobalCategories_BulkAssign" xml:space="preserve"><value>I-assign</value></data>
+  <data name="GlobalCategories_BulkModeAdd" xml:space="preserve"><value>Idagdag</value></data>
+  <data name="GlobalCategories_BulkModeRemove" xml:space="preserve"><value>Alisin</value></data>
+  <data name="GlobalCategories_BulkModeReplace" xml:space="preserve"><value>Palitan</value></data>
+  <data name="GlobalCategories_BulkNeedTypes" xml:space="preserve"><value>Pumili ng kahit isang uri ng negosyo para sa Add o Remove.</value></data>
+  <data name="GlobalCategories_BulkAssigned" xml:space="preserve"><value>Na-assign ang mga uri ng negosyo sa mga napiling kategorya.</value></data>
+  <data name="GlobalCategories_BulkPartialFail" xml:space="preserve"><value>{0} kategorya ang hindi na-update.</value></data>
 
   <data name="GlobalCategories_Title" xml:space="preserve"><value>Mga global na kategorya</value></data>
   <data name="GlobalCategories_Description" xml:space="preserve"><value>Hierarchy ng kategorya ng merchandise na pagmamay-ari ng Platform para sa POS onboarding.</value></data>

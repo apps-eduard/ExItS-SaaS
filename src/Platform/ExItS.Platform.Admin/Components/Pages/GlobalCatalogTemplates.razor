@@ -50,12 +50,12 @@ else if (Id is null)
                 <SelectOption TItemValue="string" TItem="string" Value="@("Archived")" Label="@L["Status_Archived"]" />
             </SelectOptions>
         </Select>
-        <Select TItemValue="string" TItem="string" @bind-Value="_businessType" Size="@InputSize.Small" Placeholder="@L["GlobalCatalog_BusinessType"]" Style="width:160px;" AllowClear>
+        <Select TItemValue="string" TItem="string" @bind-Value="_businessTypeCode" Size="@InputSize.Small" Placeholder="@L["GlobalCatalog_BusinessType"]" Style="width:180px;" AllowClear>
             <SelectOptions>
                 <SelectOption TItemValue="string" TItem="string" Value="@("")" Label="@L["Common_All"]" />
-                @foreach (var bt in BusinessTypeOptions)
+                @foreach (var bt in _activeBusinessTypes)
                 {
-                    <SelectOption TItemValue="string" TItem="string" Value="@bt" Label="@bt" />
+                    <SelectOption TItemValue="string" TItem="string" Value="@bt.Code" Label="@($"{bt.Name} ({bt.Code})")" />
                 }
             </SelectOptions>
         </Select>
@@ -78,11 +78,11 @@ else if (Id is null)
                 </div>
                 <div>
                     <label class="ant-form-item-label">@L["GlobalCatalog_BusinessType"]</label>
-                    <Select TItemValue="string" TItem="string" @bind-Value="_newBusinessType" Size="@InputSize.Small" Style="width:100%;" Disabled="_busy">
+                    <Select TItemValue="string" TItem="string" @bind-Value="_newBusinessTypeId" Size="@InputSize.Small" Style="width:100%;" Disabled="_busy">
                         <SelectOptions>
-                            @foreach (var bt in BusinessTypeOptions)
+                            @foreach (var bt in _activeBusinessTypes)
                             {
-                                <SelectOption TItemValue="string" TItem="string" Value="@bt" Label="@bt" />
+                                <SelectOption TItemValue="string" TItem="string" Value="@bt.Id.ToString("D")" Label="@($"{bt.Name} ({bt.Code})")" />
                             }
                         </SelectOptions>
                     </Select>
@@ -220,14 +220,18 @@ else
                     </div>
                     <div>
                         <label class="ant-form-item-label">@L["GlobalCatalog_BusinessType"]</label>
-                        <Select TItemValue="string" TItem="string" @bind-Value="_editBusinessType" Size="@InputSize.Small" Style="width:100%;" Disabled="_busy">
+                        <Select TItemValue="string" TItem="string" @bind-Value="_editBusinessTypeId" Size="@InputSize.Small" Style="width:100%;" Disabled="_busy">
                             <SelectOptions>
-                                @foreach (var bt in BusinessTypeOptions)
+                                @foreach (var opt in PrimaryBusinessTypeSelectOptions)
                                 {
-                                    <SelectOption TItemValue="string" TItem="string" Value="@bt" Label="@bt" />
+                                    <SelectOption TItemValue="string" TItem="string" Value="@opt.Value" Label="@opt.Label" />
                                 }
                             </SelectOptions>
                         </Select>
+                        @if (!string.IsNullOrWhiteSpace(_historicalBusinessTypeNote))
+                        {
+                            <div style="font-size:12px; opacity:.75; margin-top:4px;">@_historicalBusinessTypeNote</div>
+                        }
                     </div>
                     <div>
                         <label class="ant-form-item-label" for="gc-tpl-edit-batch">@L["GlobalTemplates_DefaultBatchSize"]</label>
@@ -296,7 +300,9 @@ else
             <Descriptions Bordered Size="@DescriptionsSize.Small" Column="2">
                 <DescriptionsItem Title="@L["Common_Status"]"><AdminStatusTag Value="@detail.Status" /></DescriptionsItem>
                 <DescriptionsItem Title="@L["GlobalTemplates_Slug"]">@detail.Slug</DescriptionsItem>
-                <DescriptionsItem Title="@L["GlobalCatalog_BusinessType"]">@detail.PrimaryBusinessType</DescriptionsItem>
+                <DescriptionsItem Title="@L["GlobalCatalog_BusinessType"]">
+                    @FormatPrimaryBusinessType(detail.PrimaryBusinessType, detail.PrimaryBusinessTypeId)
+                </DescriptionsItem>
                 <DescriptionsItem Title="@L["GlobalTemplates_DefaultBatchSize"]">@detail.DefaultBatchSize</DescriptionsItem>
                 <DescriptionsItem Title="@L["GlobalTemplates_ProductCount"]">@detail.ProductCount</DescriptionsItem>
                 <DescriptionsItem Title="@L["GlobalTemplates_FirstBatchCount"]">@detail.FirstBatchCount</DescriptionsItem>
@@ -314,24 +320,20 @@ else
 @code {
     [Parameter] public Guid? Id { get; set; }
 
-    private static readonly string[] BusinessTypeOptions =
-    [
-        "SariSari", "MiniGrocery", "Bakery", "Cafe", "Pharmacy", "GeneralRetail"
-    ];
-
     private bool CanView => Permissions.HasPermission(PlatformPermissionCodes.ViewGlobalCatalog);
     private bool CanManage => Permissions.HasPermission(PlatformPermissionCodes.ManageCatalogTemplates);
     private bool CanPublish => Permissions.HasPermission(PlatformPermissionCodes.PublishCatalogTemplates);
 
     private ApiCallResult<PagedResult<CatalogTemplateSummaryDto>>? _list;
     private ApiCallResult<CatalogTemplateDto>? _template;
+    private List<BusinessTypeDto> _activeBusinessTypes = [];
 
     private int _page = 1;
     private string? _sortBy;
     private bool _sortDesc;
     private string? _search;
     private string? _status;
-    private string? _businessType;
+    private string? _businessTypeCode;
     private bool _showCreate;
     private bool _busy;
     private string? _formError;
@@ -340,15 +342,38 @@ else
 
     private string _newName = "";
     private string? _newSlug;
-    private string _newBusinessType = "SariSari";
+    private string _newBusinessTypeId = "";
     private int _newBatchSize = 50;
     private string? _newDescription;
 
     private string _editName = "";
     private string _editSlug = "";
-    private string _editBusinessType = "SariSari";
+    private string _editBusinessTypeId = "";
+    private string? _historicalBusinessTypeNote;
     private int _editBatchSize = 50;
     private string? _editDescription;
+
+    private IEnumerable<(string Value, string Label)> PrimaryBusinessTypeSelectOptions
+    {
+        get
+        {
+            foreach (var bt in _activeBusinessTypes)
+            {
+                yield return (bt.Id.ToString("D"), $"{bt.Name} ({bt.Code})");
+            }
+
+            if (!string.IsNullOrWhiteSpace(_editBusinessTypeId)
+                && _activeBusinessTypes.All(bt => !string.Equals(bt.Id.ToString("D"), _editBusinessTypeId, StringComparison.OrdinalIgnoreCase))
+                && _template?.Data is { } detail
+                && string.Equals(detail.PrimaryBusinessTypeId.ToString("D"), _editBusinessTypeId, StringComparison.OrdinalIgnoreCase))
+            {
+                var label = string.IsNullOrWhiteSpace(detail.PrimaryBusinessType)
+                    ? detail.PrimaryBusinessTypeId.ToString("D")
+                    : $"{detail.PrimaryBusinessType} ({L["GlobalBusinessTypes_ArchivedReference"].Value})";
+                yield return (_editBusinessTypeId, label);
+            }
+        }
+    }
 
     protected override async Task OnParametersSetAsync()
     {
@@ -357,6 +382,8 @@ else
         {
             return;
         }
+
+        await EnsureBusinessTypesAsync();
 
         if (Id is null)
         {
@@ -368,13 +395,31 @@ else
         }
     }
 
+    private async Task EnsureBusinessTypesAsync()
+    {
+        if (_activeBusinessTypes.Count > 0)
+        {
+            return;
+        }
+
+        var types = await Api.GetBusinessTypesAsync(page: 1, pageSize: 200, status: "Active", sortBy: "SortOrder");
+        if (types is { IsSuccess: true, Data: not null })
+        {
+            _activeBusinessTypes = types.Data.Items.ToList();
+            if (string.IsNullOrWhiteSpace(_newBusinessTypeId) && _activeBusinessTypes.Count > 0)
+            {
+                _newBusinessTypeId = _activeBusinessTypes[0].Id.ToString("D");
+            }
+        }
+    }
+
     private async Task LoadListAsync()
     {
         _list = await Api.GetCatalogTemplatesAsync(
             page: _page,
             pageSize: 20,
             status: string.IsNullOrWhiteSpace(_status) ? null : _status,
-            primaryBusinessType: string.IsNullOrWhiteSpace(_businessType) ? null : _businessType,
+            primaryBusinessTypeCode: string.IsNullOrWhiteSpace(_businessTypeCode) ? null : _businessTypeCode,
             search: string.IsNullOrWhiteSpace(_search) ? null : _search,
             sortBy: _sortBy,
             sortDesc: _sortBy is null ? null : _sortDesc);
@@ -424,10 +469,32 @@ else
     {
         _editName = t.Name;
         _editSlug = t.Slug;
-        _editBusinessType = t.PrimaryBusinessType;
+        _editBusinessTypeId = t.PrimaryBusinessTypeId.ToString("D");
         _editBatchSize = t.DefaultBatchSize;
         _editDescription = t.Description;
+        var isActive = _activeBusinessTypes.Any(bt => bt.Id == t.PrimaryBusinessTypeId);
+        _historicalBusinessTypeNote = isActive
+            ? null
+            : string.Format(
+                L["GlobalBusinessTypes_HistoricalTypeNote"].Value,
+                string.IsNullOrWhiteSpace(t.PrimaryBusinessType) ? t.PrimaryBusinessTypeId.ToString("D") : t.PrimaryBusinessType);
         RefreshPublishChecklist(t);
+    }
+
+    private string FormatPrimaryBusinessType(string code, Guid id)
+    {
+        var match = _activeBusinessTypes.FirstOrDefault(bt => bt.Id == id);
+        if (match is not null)
+        {
+            return $"{match.Name} ({match.Code})";
+        }
+
+        if (!string.IsNullOrWhiteSpace(code))
+        {
+            return $"{code} ({L["GlobalBusinessTypes_ArchivedReference"].Value})";
+        }
+
+        return id.ToString("D");
     }
 
     private void RefreshPublishChecklist(CatalogTemplateDto t)
@@ -471,7 +538,7 @@ else
     {
         _search = null;
         _status = null;
-        _businessType = null;
+        _businessTypeCode = null;
         _sortBy = null;
         _sortDesc = false;
         _page = 1;
@@ -493,11 +560,12 @@ else
         _formConflict = false;
         try
         {
+            Guid? primaryId = Guid.TryParse(_newBusinessTypeId, out var pid) ? pid : null;
             var result = await Api.CreateCatalogTemplateAsync(new CreateCatalogTemplateRequest(
                 _newName,
-                _newBusinessType,
-                string.IsNullOrWhiteSpace(_newSlug) ? null : _newSlug,
-                _newDescription,
+                PrimaryBusinessTypeId: primaryId,
+                Slug: string.IsNullOrWhiteSpace(_newSlug) ? null : _newSlug,
+                Description: _newDescription,
                 DefaultBatchSize: _newBatchSize,
                 SelectionMode: "Curated"));
             if (!result.IsSuccess)
@@ -528,11 +596,12 @@ else
         _formConflict = false;
         try
         {
+            Guid? primaryId = Guid.TryParse(_editBusinessTypeId, out var pid) ? pid : null;
             var result = await Api.UpdateCatalogTemplateAsync(t.Id, new UpdateCatalogTemplateRequest(
                 _editName,
-                _editBusinessType,
-                _editSlug,
-                _editDescription,
+                PrimaryBusinessTypeId: primaryId,
+                Slug: _editSlug,
+                Description: _editDescription,
                 DefaultBatchSize: _editBatchSize,
                 SelectionMode: t.SelectionMode,
                 ExpectedUpdatedAtUtc: t.UpdatedAtUtc));

@@ -80,6 +80,7 @@
   <data name="Nav_GlobalProducts" xml:space="preserve"><value>Catalog Products</value></data>
   <data name="Nav_GlobalTemplates" xml:space="preserve"><value>Templates</value></data>
   <data name="Nav_GlobalImports" xml:space="preserve"><value>Imports</value></data>
+  <data name="Nav_GlobalBusinessTypes" xml:space="preserve"><value>Business types</value></data>
   <data name="Nav_ProductEntry" xml:space="preserve"><value>Product entry</value></data>
   <data name="Nav_Organizations" xml:space="preserve"><value>Organizations</value></data>
   <data name="Nav_Subscriptions" xml:space="preserve"><value>Subscriptions</value></data>
@@ -888,6 +889,43 @@
 
   <data name="GlobalCatalog_BusinessType" xml:space="preserve"><value>Business type</value></data>
   <data name="GlobalCatalog_BusinessTypes" xml:space="preserve"><value>Business types</value></data>
+  <data name="GlobalBusinessTypes_Title" xml:space="preserve"><value>Business types</value></data>
+  <data name="GlobalBusinessTypes_Description" xml:space="preserve"><value>Platform-owned dynamic business-type classifications for catalog targeting.</value></data>
+  <data name="GlobalBusinessTypes_Empty" xml:space="preserve"><value>No business types match the current filters.</value></data>
+  <data name="GlobalBusinessTypes_SearchPlaceholder" xml:space="preserve"><value>Search code or name</value></data>
+  <data name="GlobalBusinessTypes_Create" xml:space="preserve"><value>Create business type</value></data>
+  <data name="GlobalBusinessTypes_HideCreate" xml:space="preserve"><value>Hide create</value></data>
+  <data name="GlobalBusinessTypes_CreateSection" xml:space="preserve"><value>Create business type</value></data>
+  <data name="GlobalBusinessTypes_CreateFailed" xml:space="preserve"><value>Business type create failed</value></data>
+  <data name="GlobalBusinessTypes_Created" xml:space="preserve"><value>Business type created.</value></data>
+  <data name="GlobalBusinessTypes_DetailTitle" xml:space="preserve"><value>Business type detail</value></data>
+  <data name="GlobalBusinessTypes_DetailDescription" xml:space="preserve"><value>Edit metadata and archive or reactivate this business type.</value></data>
+  <data name="GlobalBusinessTypes_DetailLoading" xml:space="preserve"><value>Loading business type…</value></data>
+  <data name="GlobalBusinessTypes_EditSection" xml:space="preserve"><value>Edit business type</value></data>
+  <data name="GlobalBusinessTypes_SaveFailed" xml:space="preserve"><value>Business type save failed</value></data>
+  <data name="GlobalBusinessTypes_Saved" xml:space="preserve"><value>Business type saved.</value></data>
+  <data name="GlobalBusinessTypes_Code" xml:space="preserve"><value>Code</value></data>
+  <data name="GlobalBusinessTypes_SortOrder" xml:space="preserve"><value>Sort order</value></data>
+  <data name="GlobalBusinessTypes_IconReference" xml:space="preserve"><value>Icon reference</value></data>
+  <data name="GlobalBusinessTypes_Activate" xml:space="preserve"><value>Activate</value></data>
+  <data name="GlobalBusinessTypes_Deactivate" xml:space="preserve"><value>Deactivate</value></data>
+  <data name="GlobalBusinessTypes_Archive" xml:space="preserve"><value>Archive</value></data>
+  <data name="GlobalBusinessTypes_ConfirmActivate" xml:space="preserve"><value>Activate this business type?</value></data>
+  <data name="GlobalBusinessTypes_ConfirmDeactivate" xml:space="preserve"><value>Deactivate this business type?</value></data>
+  <data name="GlobalBusinessTypes_ConfirmArchive" xml:space="preserve"><value>Archive this business type? Prefer archive over delete when it is still referenced.</value></data>
+  <data name="GlobalBusinessTypes_StatusChanged" xml:space="preserve"><value>Business type status updated.</value></data>
+  <data name="GlobalBusinessTypes_CodeImmutableNote" xml:space="preserve"><value>Code is immutable after create. Archive and create a replacement if the code must change.</value></data>
+  <data name="GlobalBusinessTypes_ArchivedReference" xml:space="preserve"><value>archived</value></data>
+  <data name="GlobalBusinessTypes_HistoricalTypeNote" xml:space="preserve"><value>Current reference “{0}” is not Active. Choose an Active type to replace it, or keep the historical selection.</value></data>
+  <data name="GlobalCategories_BulkAssignTitle" xml:space="preserve"><value>Bulk assign business types</value></data>
+  <data name="GlobalCategories_BulkSelected" xml:space="preserve"><value>{0} categories selected</value></data>
+  <data name="GlobalCategories_BulkAssign" xml:space="preserve"><value>Assign</value></data>
+  <data name="GlobalCategories_BulkModeAdd" xml:space="preserve"><value>Add</value></data>
+  <data name="GlobalCategories_BulkModeRemove" xml:space="preserve"><value>Remove</value></data>
+  <data name="GlobalCategories_BulkModeReplace" xml:space="preserve"><value>Replace</value></data>
+  <data name="GlobalCategories_BulkNeedTypes" xml:space="preserve"><value>Select at least one business type for Add or Remove.</value></data>
+  <data name="GlobalCategories_BulkAssigned" xml:space="preserve"><value>Business types assigned to selected categories.</value></data>
+  <data name="GlobalCategories_BulkPartialFail" xml:space="preserve"><value>{0} categories failed to update.</value></data>
 
   <data name="GlobalCategories_Title" xml:space="preserve"><value>Global categories</value></data>
   <data name="GlobalCategories_Description" xml:space="preserve"><value>Platform-owned merchandise category hierarchy for POS onboarding.</value></data>
