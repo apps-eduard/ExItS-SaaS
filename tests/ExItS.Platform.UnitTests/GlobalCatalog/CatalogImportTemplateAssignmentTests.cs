@@ -36,7 +36,7 @@ public sealed class CatalogImportTemplateAssignmentTests
     [Fact]
     public async Task Import_plus_template_links_successful_products()
     {
-        var template = CatalogTemplate.Create("Bakery", BusinessType.Bakery, T0);
+        var template = CatalogTemplate.Create("Bakery", BusinessTypeId.From(LegacyBusinessTypeSeeds.BakeryId), T0);
         var templates = new TemplateAssignFakeTemplateRepository();
         templates.Seed(template);
 
@@ -59,7 +59,7 @@ public sealed class CatalogImportTemplateAssignmentTests
     [Fact]
     public async Task Failed_rows_are_not_linked()
     {
-        var template = CatalogTemplate.Create("Bakery", BusinessType.Bakery, T0);
+        var template = CatalogTemplate.Create("Bakery", BusinessTypeId.From(LegacyBusinessTypeSeeds.BakeryId), T0);
         var templates = new TemplateAssignFakeTemplateRepository();
         templates.Seed(template);
 
@@ -91,7 +91,7 @@ public sealed class CatalogImportTemplateAssignmentTests
     [Fact]
     public async Task Skipped_existing_product_is_resolved_and_linked()
     {
-        var template = CatalogTemplate.Create("Bakery", BusinessType.Bakery, T0);
+        var template = CatalogTemplate.Create("Bakery", BusinessTypeId.From(LegacyBusinessTypeSeeds.BakeryId), T0);
         var templates = new TemplateAssignFakeTemplateRepository();
         templates.Seed(template);
 
@@ -128,7 +128,7 @@ public sealed class CatalogImportTemplateAssignmentTests
     [Fact]
     public async Task Duplicate_confirm_and_reprocess_remain_idempotent()
     {
-        var template = CatalogTemplate.Create("Bakery", BusinessType.Bakery, T0);
+        var template = CatalogTemplate.Create("Bakery", BusinessTypeId.From(LegacyBusinessTypeSeeds.BakeryId), T0);
         var templates = new TemplateAssignFakeTemplateRepository();
         templates.Seed(template);
 
@@ -138,13 +138,7 @@ public sealed class CatalogImportTemplateAssignmentTests
 
         var products = new TemplateAssignFakeProductRepo { CaptureAdds = true };
         var imports = new TemplateAssignFakeImportRepo(job);
-        var processor = new ProcessCatalogImportChunk(
-            imports,
-            products,
-            new TemplateAssignFakeCategoryRepo(),
-            new TemplateAssignFakeUow(),
-            new TemplateAssignFixedClock(T0.AddMinutes(2)),
-            new TemplateAssignNoopAudit(),
+        var processor = new ProcessCatalogImportChunk(imports, products, new TemplateAssignFakeCategoryRepo(), new FakeBusinessTypeRepository(), new TemplateAssignFakeUow(), new TemplateAssignFixedClock(T0.AddMinutes(2)), new TemplateAssignNoopAudit(),
             templates);
 
         Assert.True(await processor.ExecuteOnceAsync());
@@ -170,7 +164,7 @@ public sealed class CatalogImportTemplateAssignmentTests
     [Fact]
     public async Task Duplicate_template_membership_is_noop()
     {
-        var template = CatalogTemplate.Create("Bakery", BusinessType.Bakery, T0);
+        var template = CatalogTemplate.Create("Bakery", BusinessTypeId.From(LegacyBusinessTypeSeeds.BakeryId), T0);
         var productId = GlobalProductId.New();
         template.AssignProduct(productId, T0);
         var templates = new TemplateAssignFakeTemplateRepository();
@@ -253,6 +247,7 @@ public sealed class CatalogImportTemplateAssignmentTests
             new TemplateAssignFakeImportRepo(job),
             products,
             new TemplateAssignFakeCategoryRepo(),
+            new FakeBusinessTypeRepository(),
             new TemplateAssignFakeUow(),
             new TemplateAssignFixedClock(T0.AddMinutes(2)),
             new TemplateAssignNoopAudit(),
@@ -277,7 +272,8 @@ file sealed class TemplateAssignFakeTemplateRepository : ICatalogTemplateReposit
 
     public Task<(IReadOnlyList<CatalogTemplate> Items, int TotalCount)> ListAsync(
         CatalogTemplateStatus? status,
-        BusinessType? primaryBusinessType,
+        Guid? primaryBusinessTypeId,
+        string? primaryBusinessTypeCode,
         string? search,
         int skip,
         int take,
@@ -350,7 +346,8 @@ file sealed class TemplateAssignFakeProductRepo : IGlobalProductRepository
     public Task<(IReadOnlyList<GlobalProduct> Items, int TotalCount)> ListAsync(
         GlobalProductStatus? status,
         GlobalCategoryId? categoryId,
-        BusinessType? businessType,
+        Guid? businessTypeId,
+        string? businessTypeCode,
         string? search,
         string? barcode,
         string? sku,
@@ -414,7 +411,8 @@ file sealed class TemplateAssignFakeCategoryRepo : IGlobalCategoryRepository
     public Task<(IReadOnlyList<GlobalCategory> Items, int TotalCount)> ListAsync(
         GlobalCategoryStatus? status,
         GlobalCategoryId? parentId,
-        BusinessType? businessType,
+        Guid? businessTypeId,
+        string? businessTypeCode,
         string? search,
         int skip,
         int take,

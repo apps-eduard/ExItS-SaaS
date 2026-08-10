@@ -131,10 +131,7 @@ public sealed class CatalogImportCsvSchemaTests
         using var stream = new MemoryStream(CatalogImportCsvSchema.GenerateTemplateUtf8Bytes());
         var rows = CatalogImportCsvParser.Parse(stream);
         var items = await CatalogImportRowMapper.MapRowsAsync(
-            rows,
-            new FakeCategoryRepository(),
-            new FakeProductRepository(),
-            new DateTimeOffset(2026, 8, 5, 12, 0, 0, TimeSpan.Zero));
+            rows, new FakeCategoryRepository(), new FakeProductRepository(), new FakeBusinessTypeRepository(), new DateTimeOffset(2026, 8, 5, 12, 0, 0, TimeSpan.Zero));
 
         Assert.Equal(3, items.Count);
         // Category names in samples may not exist — still a successful validate path (Failed/Pending, not throw).
@@ -285,10 +282,7 @@ public sealed class CatalogImportRowMapperTests
         };
 
         var items = await CatalogImportRowMapper.MapRowsAsync(
-            rows,
-            new FakeCategoryRepository(),
-            new FakeProductRepository(),
-            T0);
+            rows, new FakeCategoryRepository(), new FakeProductRepository(), new FakeBusinessTypeRepository(), T0);
 
         Assert.Single(items);
         Assert.Equal(CatalogImportItemStatus.Failed, items[0].Status);
@@ -325,10 +319,7 @@ public sealed class CatalogImportRowMapperTests
         };
 
         var items = await CatalogImportRowMapper.MapRowsAsync(
-            rows,
-            new FakeCategoryRepository(),
-            new FakeProductRepository(),
-            T0);
+            rows, new FakeCategoryRepository(), new FakeProductRepository(), new FakeBusinessTypeRepository(), T0);
 
         Assert.Equal(CatalogImportItemStatus.Pending, items[0].Status);
         Assert.Equal(CatalogImportItemStatus.Failed, items[1].Status);
@@ -345,10 +336,7 @@ public sealed class CatalogImportRowMapperTests
         };
 
         var items = await CatalogImportRowMapper.MapRowsAsync(
-            rows,
-            new FakeCategoryRepository(),
-            products,
-            T0);
+            rows, new FakeCategoryRepository(), products, new FakeBusinessTypeRepository(), T0);
 
         Assert.Equal(CatalogImportItemStatus.Skipped, items[0].Status);
         Assert.Equal(ApplicationErrorCodes.DuplicateGlobalProductBarcode, items[0].ErrorCode);
@@ -366,10 +354,7 @@ public sealed class CatalogImportRowMapperTests
         };
 
         var items = await CatalogImportRowMapper.MapRowsAsync(
-            rows,
-            new FakeCategoryRepository(),
-            new FakeProductRepository(),
-            T0);
+            rows, new FakeCategoryRepository(), new FakeProductRepository(), new FakeBusinessTypeRepository(), T0);
 
         Assert.Equal(DomainErrorCodes.InvalidGlobalProductUnit, items[0].ErrorCode);
         Assert.Equal(DomainErrorCodes.InvalidGlobalProductStatus, items[1].ErrorCode);
@@ -386,10 +371,7 @@ public sealed class CatalogImportRowMapperTests
         };
 
         var items = await CatalogImportRowMapper.MapRowsAsync(
-            rows,
-            new FakeCategoryRepository(),
-            new FakeProductRepository(),
-            T0);
+            rows, new FakeCategoryRepository(), new FakeProductRepository(), new FakeBusinessTypeRepository(), T0);
 
         Assert.Equal(CatalogImportItemStatus.Failed, items[0].Status);
         Assert.Equal(DomainErrorCodes.InvalidGlobalProductCategory, items[0].ErrorCode);
@@ -404,10 +386,7 @@ public sealed class CatalogImportRowMapperTests
         };
 
         var items = await CatalogImportRowMapper.MapRowsAsync(
-            rows,
-            new FakeCategoryRepository(),
-            new FakeProductRepository(),
-            T0);
+            rows, new FakeCategoryRepository(), new FakeProductRepository(), new FakeBusinessTypeRepository(), T0);
 
         Assert.Equal(CatalogImportItemStatus.Failed, items[0].Status);
         Assert.Equal(DomainErrorCodes.InvalidGlobalProductBrand, items[0].ErrorCode);
@@ -417,9 +396,8 @@ public sealed class CatalogImportRowMapperTests
     public async Task MapRows_fails_when_prices_missing_or_selling_below_cost()
     {
         var missingCost = await CatalogImportRowMapper.MapRowsAsync(
-            [new(2, RequiredCells("MissingCost", c => c.Remove("CostPrice")))],
-            new FakeCategoryRepository(),
-            new FakeProductRepository(),
+            [new(2, RequiredCells("MissingCost", c => c.Remove("CostPrice")))], new FakeCategoryRepository(),
+            new FakeProductRepository(), new FakeBusinessTypeRepository(),
             T0);
         Assert.Equal(CatalogImportItemStatus.Failed, missingCost[0].Status);
         Assert.Equal(DomainErrorCodes.InvalidGlobalProductMoney, missingCost[0].ErrorCode);
@@ -429,9 +407,8 @@ public sealed class CatalogImportRowMapperTests
             {
                 c["CostPrice"] = "20.00";
                 c["SellingPrice"] = "10.00";
-            }))],
-            new FakeCategoryRepository(),
-            new FakeProductRepository(),
+            }))], new FakeCategoryRepository(),
+            new FakeProductRepository(), new FakeBusinessTypeRepository(),
             T0);
         Assert.Equal(CatalogImportItemStatus.Failed, badRelation[0].Status);
         Assert.Equal(DomainErrorCodes.InvalidGlobalProductPriceRelationship, badRelation[0].ErrorCode);
@@ -456,10 +433,7 @@ public sealed class CatalogImportRowMapperTests
         };
 
         var items = await CatalogImportRowMapper.MapRowsAsync(
-            rows,
-            new FakeCategoryRepository(),
-            new FakeProductRepository(),
-            T0);
+            rows, new FakeCategoryRepository(), new FakeProductRepository(), new FakeBusinessTypeRepository(), T0);
 
         Assert.Equal(CatalogImportItemStatus.Pending, items[0].Status);
         Assert.Equal(15m, items[0].SellingPrice);
@@ -488,10 +462,7 @@ public sealed class CatalogImportRowMapperTests
         };
 
         var items = await CatalogImportRowMapper.MapRowsAsync(
-            rows,
-            new FakeCategoryRepository(),
-            new FakeProductRepository(),
-            T0);
+            rows, new FakeCategoryRepository(), new FakeProductRepository(), new FakeBusinessTypeRepository(), T0);
 
         Assert.Single(items);
         Assert.Equal(CatalogImportItemStatus.Pending, items[0].Status);
@@ -520,10 +491,7 @@ public sealed class CatalogImportRowMapperTests
         };
 
         var items = await CatalogImportRowMapper.MapRowsAsync(
-            rows,
-            categories,
-            new FakeProductRepository(),
-            T0);
+            rows, categories, new FakeProductRepository(), new FakeBusinessTypeRepository(), T0);
 
         Assert.Equal(CatalogImportItemStatus.Pending, items[0].Status);
         Assert.Equal(existing.Id.Value, items[0].GlobalCategoryId);
@@ -560,10 +528,7 @@ public sealed class CatalogImportRowMapperTests
         }
 
         var items = await CatalogImportRowMapper.MapRowsAsync(
-            rows,
-            new FakeCategoryRepository(),
-            new FakeProductRepository(),
-            T0);
+            rows, new FakeCategoryRepository(), new FakeProductRepository(), new FakeBusinessTypeRepository(), T0);
 
         Assert.Equal(80, items.Count);
         Assert.All(items, i => Assert.Equal(CatalogImportItemStatus.Pending, i.Status));
@@ -585,10 +550,7 @@ public sealed class CatalogImportRowMapperTests
         };
 
         var items = await CatalogImportRowMapper.MapRowsAsync(
-            rows,
-            new FakeCategoryRepository(),
-            new FakeProductRepository(),
-            T0);
+            rows, new FakeCategoryRepository(), new FakeProductRepository(), new FakeBusinessTypeRepository(), T0);
 
         Assert.Equal(CatalogImportItemStatus.Failed, items[0].Status);
         Assert.Equal(DomainErrorCodes.InvalidGlobalCatalogName, items[0].ErrorCode);
@@ -616,10 +578,7 @@ public sealed class CatalogImportRowMapperTests
         };
 
         var items = await CatalogImportRowMapper.MapRowsAsync(
-            rows,
-            categories,
-            new FakeProductRepository(),
-            T0);
+            rows, categories, new FakeProductRepository(), new FakeBusinessTypeRepository(), T0);
 
         var summary = CatalogImportRowMapper.BuildPreviewSummary(items);
         Assert.Equal(2, summary.ValidProductCount);
@@ -728,7 +687,7 @@ public sealed class CatalogImportCategoryCreateTests
         var audit = new FakeAuditWriter();
         var clock = new FakeClock(T0.AddMinutes(2));
 
-        var processor = new ProcessCatalogImportChunk(imports, products, categories, uow, clock, audit);
+        var processor = new ProcessCatalogImportChunk(imports, products, categories, new FakeBusinessTypeRepository(), uow, clock, audit);
         Assert.True(await processor.ExecuteOnceAsync());
 
         Assert.Single(categories.Items);
@@ -771,13 +730,7 @@ public sealed class CatalogImportCategoryCreateTests
 
         var products = new FakeProductRepository { CaptureAdds = true };
         var imports = new FakeImportRepository(job);
-        var processor = new ProcessCatalogImportChunk(
-            imports,
-            products,
-            categories,
-            new FakeUnitOfWork(),
-            new FakeClock(T0.AddMinutes(2)),
-            new FakeAuditWriter());
+        var processor = new ProcessCatalogImportChunk(imports, products, categories, new FakeBusinessTypeRepository(), new FakeUnitOfWork(), new FakeClock(T0.AddMinutes(2)), new FakeAuditWriter());
 
         Assert.True(await processor.ExecuteOnceAsync());
         Assert.Single(categories.Items);
@@ -815,13 +768,7 @@ public sealed class CatalogImportCategoryCreateTests
         job.Confirm(T0.AddMinutes(1));
 
         var products = new FakeProductRepository { CaptureAdds = true };
-        var processor = new ProcessCatalogImportChunk(
-            new FakeImportRepository(job),
-            products,
-            categories,
-            new FakeUnitOfWork(),
-            new FakeClock(T0.AddMinutes(2)),
-            new FakeAuditWriter());
+        var processor = new ProcessCatalogImportChunk(new FakeImportRepository(job), products, categories, new FakeBusinessTypeRepository(), new FakeUnitOfWork(), new FakeClock(T0.AddMinutes(2)), new FakeAuditWriter());
 
         Assert.True(await processor.ExecuteOnceAsync());
         Assert.Single(categories.Items);
@@ -864,13 +811,7 @@ public sealed class CatalogImportCategoryCreateTests
         job.Confirm(T0.AddMinutes(1));
 
         var products = new FakeProductRepository { CaptureAdds = true };
-        var processor = new ProcessCatalogImportChunk(
-            new FakeImportRepository(job),
-            products,
-            categories,
-            new FakeUnitOfWork(),
-            new FakeClock(T0.AddMinutes(2)),
-            new FakeAuditWriter());
+        var processor = new ProcessCatalogImportChunk(new FakeImportRepository(job), products, categories, new FakeBusinessTypeRepository(), new FakeUnitOfWork(), new FakeClock(T0.AddMinutes(2)), new FakeAuditWriter());
 
         Assert.True(await processor.ExecuteOnceAsync());
         Assert.Single(categories.Items);
@@ -942,7 +883,8 @@ file sealed class FakeCategoryRepository : IGlobalCategoryRepository
     public Task<(IReadOnlyList<GlobalCategory> Items, int TotalCount)> ListAsync(
         GlobalCategoryStatus? status,
         GlobalCategoryId? parentId,
-        BusinessType? businessType,
+        Guid? businessTypeId,
+        string? businessTypeCode,
         string? search,
         int skip,
         int take,
@@ -1006,7 +948,8 @@ file sealed class FakeProductRepository : IGlobalProductRepository
     public Task<(IReadOnlyList<GlobalProduct> Items, int TotalCount)> ListAsync(
         GlobalProductStatus? status,
         GlobalCategoryId? categoryId,
-        BusinessType? businessType,
+        Guid? businessTypeId,
+        string? businessTypeCode,
         string? search,
         string? barcode,
         string? sku,

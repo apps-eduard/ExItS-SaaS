@@ -33,7 +33,7 @@ public sealed class CatalogTemplateDomainTests
     {
         var template = CatalogTemplate.Create(
             "  Sari Sari Starter  ",
-            BusinessType.SariSari,
+            BusinessTypeId.From(LegacyBusinessTypeSeeds.SariSariId),
             T0,
             slug: "Sari Sari Starter");
 
@@ -48,7 +48,7 @@ public sealed class CatalogTemplateDomainTests
     [Fact]
     public void Publish_requires_products_and_sets_published_at()
     {
-        var template = CatalogTemplate.Create("Mini Grocery", BusinessType.MiniGrocery, T0);
+        var template = CatalogTemplate.Create("Mini Grocery", BusinessTypeId.From(LegacyBusinessTypeSeeds.MiniGroceryId), T0);
         var ex = Assert.Throws<DomainException>(() => template.Publish(T0.AddMinutes(1)));
         Assert.Equal(DomainErrorCodes.CatalogTemplatePublishRequiresProducts, ex.ErrorCode);
 
@@ -64,7 +64,7 @@ public sealed class CatalogTemplateDomainTests
     [Fact]
     public void Unpublish_and_archive_lifecycle()
     {
-        var template = CatalogTemplate.Create("Cafe Starter", BusinessType.Cafe, T0);
+        var template = CatalogTemplate.Create("Cafe Starter", BusinessTypeId.From(LegacyBusinessTypeSeeds.CafeId), T0);
         template.AssignProduct(GlobalProductId.New(), T0.AddMinutes(1));
         template.Publish(T0.AddMinutes(2));
         template.Unpublish(T0.AddMinutes(3));
@@ -82,7 +82,7 @@ public sealed class CatalogTemplateDomainTests
     [Fact]
     public void AssignProduct_enforces_unique_global_product()
     {
-        var template = CatalogTemplate.Create("Dup Check", BusinessType.GeneralRetail, T0);
+        var template = CatalogTemplate.Create("Dup Check", BusinessTypeId.From(LegacyBusinessTypeSeeds.GeneralRetailId), T0);
         var productId = GlobalProductId.New();
         template.AssignProduct(productId, T0.AddMinutes(1));
 
@@ -94,7 +94,7 @@ public sealed class CatalogTemplateDomainTests
     [Fact]
     public void TryAssignProduct_is_idempotent_noop_on_duplicate()
     {
-        var template = CatalogTemplate.Create("Bakery", BusinessType.Bakery, T0);
+        var template = CatalogTemplate.Create("Bakery", BusinessTypeId.From(LegacyBusinessTypeSeeds.BakeryId), T0);
         var productId = GlobalProductId.New();
         Assert.True(template.TryAssignProduct(productId, T0.AddMinutes(1)));
         Assert.False(template.TryAssignProduct(productId, T0.AddMinutes(2)));
@@ -104,7 +104,7 @@ public sealed class CatalogTemplateDomainTests
     [Fact]
     public void ReorderProducts_updates_sort_order()
     {
-        var template = CatalogTemplate.Create("Order Check", BusinessType.Bakery, T0);
+        var template = CatalogTemplate.Create("Order Check", BusinessTypeId.From(LegacyBusinessTypeSeeds.BakeryId), T0);
         var a = GlobalProductId.New();
         var b = GlobalProductId.New();
         var c = GlobalProductId.New();
@@ -121,7 +121,7 @@ public sealed class CatalogTemplateDomainTests
     [Fact]
     public void ReorderProducts_rejects_incomplete_list()
     {
-        var template = CatalogTemplate.Create("Order Bad", BusinessType.Pharmacy, T0);
+        var template = CatalogTemplate.Create("Order Bad", BusinessTypeId.From(LegacyBusinessTypeSeeds.PharmacyId), T0);
         var a = GlobalProductId.New();
         var b = GlobalProductId.New();
         template.AssignProduct(a, T0.AddMinutes(1));
@@ -135,7 +135,7 @@ public sealed class CatalogTemplateDomainTests
     [Fact]
     public void Published_template_composition_edits_remain_allowed()
     {
-        var template = CatalogTemplate.Create("Live Edit", BusinessType.SariSari, T0);
+        var template = CatalogTemplate.Create("Live Edit", BusinessTypeId.From(LegacyBusinessTypeSeeds.SariSariId), T0);
         var first = GlobalProductId.New();
         template.AssignProduct(first, T0.AddMinutes(1), isFeatured: true, isFirstBatch: true);
         template.Publish(T0.AddMinutes(2));
@@ -160,10 +160,10 @@ public sealed class CatalogTemplateUseCaseTests
     {
         var templates = new InMemoryCatalogTemplateRepository();
         var clock = new FixedClock(T0);
-        var create = new CreateCatalogTemplate(templates, new NoOpUnitOfWork(), clock);
+        var create = new CreateCatalogTemplate(templates, new FakeBusinessTypeRepository(), new NoOpUnitOfWork(), clock);
         var created = await create.ExecuteAsync(new CreateCatalogTemplateRequest(
             "Empty Starter",
-            nameof(BusinessType.SariSari)));
+            LegacyBusinessTypeSeeds.SariSariCode));
         Assert.True(created.IsSuccess);
 
         var publish = new PublishCatalogTemplate(templates, new NoOpUnitOfWork(), clock);
@@ -192,10 +192,10 @@ public sealed class CatalogTemplateUseCaseTests
             12m);
         await products.AddAsync(product);
 
-        var create = new CreateCatalogTemplate(templates, uow, clock);
+        var create = new CreateCatalogTemplate(templates, new FakeBusinessTypeRepository(), uow, clock);
         var created = await create.ExecuteAsync(new CreateCatalogTemplateRequest(
             "Sari Starter",
-            nameof(BusinessType.SariSari)));
+            LegacyBusinessTypeSeeds.SariSariCode));
         Assert.True(created.IsSuccess);
 
         var assign = new AssignCatalogTemplateProduct(templates, products, uow, clock);
@@ -224,8 +224,8 @@ public sealed class CatalogTemplateUseCaseTests
         await products.AddAsync(a);
         await products.AddAsync(b);
 
-        var created = await new CreateCatalogTemplate(templates, uow, clock)
-            .ExecuteAsync(new CreateCatalogTemplateRequest("Bulk Pack", nameof(BusinessType.SariSari)));
+        var created = await new CreateCatalogTemplate(templates, new FakeBusinessTypeRepository(), uow, clock)
+            .ExecuteAsync(new CreateCatalogTemplateRequest("Bulk Pack", LegacyBusinessTypeSeeds.SariSariCode));
         Assert.True(created.IsSuccess);
 
         var bulk = new BulkAssignCatalogTemplateProducts(templates, products, uow, clock);
@@ -259,8 +259,8 @@ public sealed class CatalogTemplateUseCaseTests
         await products.AddAsync(keep);
         await products.AddAsync(drop);
 
-        var created = await new CreateCatalogTemplate(templates, uow, clock)
-            .ExecuteAsync(new CreateCatalogTemplateRequest("Remove Pack", nameof(BusinessType.SariSari)));
+        var created = await new CreateCatalogTemplate(templates, new FakeBusinessTypeRepository(), uow, clock)
+            .ExecuteAsync(new CreateCatalogTemplateRequest("Remove Pack", LegacyBusinessTypeSeeds.SariSariCode));
         var assigned = await new BulkAssignCatalogTemplateProducts(templates, products, uow, clock)
             .ExecuteAsync(created.Value!.Id, new BulkAssignCatalogTemplateProductsRequest([keep.Id.Value, drop.Id.Value]));
         Assert.True(assigned.IsSuccess);
@@ -279,17 +279,17 @@ public sealed class CatalogTemplateUseCaseTests
     {
         var templates = new InMemoryCatalogTemplateRepository();
         var clock = new FixedClock(T0);
-        var create = new CreateCatalogTemplate(templates, new NoOpUnitOfWork(), clock);
+        var create = new CreateCatalogTemplate(templates, new FakeBusinessTypeRepository(), new NoOpUnitOfWork(), clock);
 
         var first = await create.ExecuteAsync(new CreateCatalogTemplateRequest(
             "Mini Grocery",
-            nameof(BusinessType.MiniGrocery),
+            LegacyBusinessTypeSeeds.MiniGroceryCode,
             Slug: "mini-grocery"));
         Assert.True(first.IsSuccess);
 
         var second = await create.ExecuteAsync(new CreateCatalogTemplateRequest(
             "Mini Grocery 2",
-            nameof(BusinessType.MiniGrocery),
+            LegacyBusinessTypeSeeds.MiniGroceryCode,
             Slug: "mini-grocery"));
         Assert.False(second.IsSuccess);
         Assert.Equal(ApplicationErrorCodes.DuplicateCatalogTemplateSlug, second.ErrorCode);
@@ -317,11 +317,11 @@ public sealed class CatalogTemplateUseCaseTests
             12m);
         await products.AddAsync(product);
 
-        var template = CatalogTemplate.Create("Sari Starter", BusinessType.SariSari, T0);
+        var template = CatalogTemplate.Create("Sari Starter", BusinessTypeId.From(LegacyBusinessTypeSeeds.SariSariId), T0);
         template.AssignProduct(product.Id, T0.AddMinutes(1), isFirstBatch: true);
         await templates.AddAsync(template);
 
-        var service = new CatalogTemplateQueryService(templates, products, categories);
+        var service = new CatalogTemplateQueryService(templates, products, categories, new FakeBusinessTypeRepository());
         var enriched = await service.GetByIdAsync(template.Id.Value);
         Assert.NotNull(enriched);
         var row = Assert.Single(enriched!.Products);
@@ -353,7 +353,8 @@ file sealed class InMemoryCatalogTemplateRepository : ICatalogTemplateRepository
 
     public Task<(IReadOnlyList<CatalogTemplate> Items, int TotalCount)> ListAsync(
         CatalogTemplateStatus? status,
-        BusinessType? primaryBusinessType,
+        Guid? primaryBusinessTypeId,
+        string? primaryBusinessTypeCode,
         string? search,
         int skip,
         int take,
@@ -417,7 +418,8 @@ file sealed class InMemoryGlobalProductRepository : IGlobalProductRepository
     public Task<(IReadOnlyList<GlobalProduct> Items, int TotalCount)> ListAsync(
         GlobalProductStatus? status,
         GlobalCategoryId? categoryId,
-        BusinessType? businessType,
+        Guid? businessTypeId,
+        string? businessTypeCode,
         string? search,
         string? barcode,
         string? sku,
@@ -467,7 +469,8 @@ file sealed class InMemoryGlobalCategoryRepository : IGlobalCategoryRepository
     public Task<(IReadOnlyList<GlobalCategory> Items, int TotalCount)> ListAsync(
         GlobalCategoryStatus? status,
         GlobalCategoryId? parentId,
-        BusinessType? businessType,
+        Guid? businessTypeId,
+        string? businessTypeCode,
         string? search,
         int skip,
         int take,

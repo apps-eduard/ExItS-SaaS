@@ -279,7 +279,7 @@ public sealed class GlobalCatalogConcurrencyTests
         var category = GlobalCategory.Create("General", T0);
         await categories.AddAsync(category);
 
-        var create = new CreateGlobalProduct(products, categories, uow, clock);
+        var create = new CreateGlobalProduct(products, categories, new FakeBusinessTypeRepository(), uow, clock);
         var created = await create.ExecuteAsync(new CreateGlobalProductRequest(
             "Item",
             "Piece",
@@ -292,7 +292,7 @@ public sealed class GlobalCatalogConcurrencyTests
         Assert.True(created.IsSuccess);
 
         clock.Advance(TimeSpan.FromMinutes(1));
-        var update = new UpdateGlobalProduct(products, categories, uow, clock);
+        var update = new UpdateGlobalProduct(products, categories, new FakeBusinessTypeRepository(), uow, clock);
         var stale = await update.ExecuteAsync(
             created.Value!.Id,
             new UpdateGlobalProductRequest(
@@ -321,7 +321,7 @@ public sealed class GlobalCatalogUniquenessTests
         var categories = new InMemoryGlobalCategoryRepository();
         var uow = new NoOpUnitOfWork();
         var clock = new FixedClock(T0);
-        var create = new CreateGlobalCategory(categories, uow, clock);
+        var create = new CreateGlobalCategory(categories, new FakeBusinessTypeRepository(), uow, clock);
 
         var first = await create.ExecuteAsync(new CreateGlobalCategoryRequest("Drinks"));
         Assert.True(first.IsSuccess);
@@ -342,7 +342,7 @@ public sealed class GlobalCatalogUniquenessTests
         var products = new InMemoryGlobalProductRepository();
         var uow = new NoOpUnitOfWork();
         var clock = new FixedClock(T0);
-        var create = new CreateGlobalProduct(products, categories, uow, clock);
+        var create = new CreateGlobalProduct(products, categories, new FakeBusinessTypeRepository(), uow, clock);
 
         var category = GlobalCategory.Create("General", T0);
         await categories.AddAsync(category);
@@ -377,7 +377,7 @@ public sealed class GlobalCatalogUniquenessTests
         var products = new InMemoryGlobalProductRepository();
         var uow = new NoOpUnitOfWork();
         var clock = new FixedClock(T0);
-        var create = new CreateGlobalProduct(products, categories, uow, clock);
+        var create = new CreateGlobalProduct(products, categories, new FakeBusinessTypeRepository(), uow, clock);
 
         var category = GlobalCategory.Create("General", T0);
         await categories.AddAsync(category);
@@ -440,7 +440,8 @@ file sealed class InMemoryGlobalCategoryRepository : IGlobalCategoryRepository
     public Task<(IReadOnlyList<GlobalCategory> Items, int TotalCount)> ListAsync(
         GlobalCategoryStatus? status,
         GlobalCategoryId? parentId,
-        BusinessType? businessType,
+        Guid? businessTypeId,
+        string? businessTypeCode,
         string? search,
         int skip,
         int take,
@@ -503,7 +504,8 @@ file sealed class InMemoryGlobalProductRepository : IGlobalProductRepository
     public Task<(IReadOnlyList<GlobalProduct> Items, int TotalCount)> ListAsync(
         GlobalProductStatus? status,
         GlobalCategoryId? categoryId,
-        BusinessType? businessType,
+        Guid? businessTypeId,
+        string? businessTypeCode,
         string? search,
         string? barcode,
         string? sku,

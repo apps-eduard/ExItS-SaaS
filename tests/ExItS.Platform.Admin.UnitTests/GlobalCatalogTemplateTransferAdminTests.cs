@@ -15,9 +15,10 @@ public sealed class GlobalCatalogTemplateTransferAdminTests
 
         Assert.Contains("CatalogTemplateCompositionTransfer", page, StringComparison.Ordinal);
         Assert.DoesNotContain("LoadProductOptionsAsync", page, StringComparison.Ordinal);
-        Assert.DoesNotContain("pageSize: 200", page, StringComparison.Ordinal);
+        Assert.DoesNotContain("GetGlobalProductsAsync", page, StringComparison.Ordinal);
         Assert.DoesNotContain("_assignProductId", page, StringComparison.Ordinal);
         Assert.DoesNotContain("GlobalTemplates_AssignProduct", page, StringComparison.Ordinal);
+        Assert.Contains("GetBusinessTypesAsync", page, StringComparison.Ordinal);
 
         Assert.Contains("GetCatalogTemplateAvailableProductsAsync", transfer, StringComparison.Ordinal);
         Assert.Contains("BulkAssignCatalogTemplateProductsAsync", transfer, StringComparison.Ordinal);
