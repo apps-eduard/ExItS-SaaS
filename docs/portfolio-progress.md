@@ -11,12 +11,12 @@
 | Portfolio | ExITS SaaS |
 | Existing product | Historical HealthCare SaaS MVP (separate product; **not** in this workspace ? do not restore) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
-| Current phase | Phase 19 **Open** (phone Retest); Phase 20 **Open** (Implementation Complete ? Validation Pending); Phase 21 **Open** (Privacy Compliance foundation); Phase 14 still open |
-| Current work package | **P21** foundation Code Complete (readiness tooling); **P20-WP08** In Progress — User Physical-Device Validation Pending (+ [template-aware import / org catalog visibility](reports/P20-template-aware-import-and-org-catalog-visibility.md) Code Complete); **P19-WP08** Retest; do not close Phase 19/20/21 without user approval; **do not start P14-WP03** under Phase 19/20/21 |
-| Overall status | **Phase 19 Open** + **Phase 20 Open** + **Phase 21 Open** ([P21 phase](phases/phase-21-privacy-compliance-and-regulatory-readiness.md); [P20 phase](phases/phase-20-global-product-catalog-and-business-template-onboarding.md); [P19-WP08](reports/P19-WP08-end-to-end-validation-and-closeout.md)). Phase 21 is compliance **readiness tooling**, not legal/NPC certification. **Not Device Verified**. Production remains **Blocked**. **Not production-ready.** |
-| Latest verified commit | Phase 20 WP07 tip `f766ea2` (Phase 19 and 20 remain Open; Not Device Verified) |
-| Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA enforcement deferred; Phase 19 phone validation pending; Phase 20 phone validation pending; Personal MVP / QR phone Retest |
-| Last updated | 2026-08-05 |
+| Current phase | Phase 22 **Open** (Production Readiness); Phase 19/20/21 remain Open; Phase 14 still open |
+| Current work package | **P22** In Progress ([phase](phases/phase-22-production-readiness-release-and-operational-hardening.md); [WP01 baseline](reports/P22-WP01-readiness-baseline.md)). Prior: P21 foundation; P20 validation pending; P19 Retest. Do not claim Production Ready / Device Verified without evidence. |
+| Overall status | **Phase 22 Open** + Phase 19/20/21 Open. Phase 22 hardens org business type, branches, plan capacity, registered POS devices, and transaction authorization. **Not Device Verified**. Production remains **Blocked**. **Not production-ready.** |
+| Latest verified commit | See Phase 22 closeout (updated as WPs land) |
+| Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA deferred; Phase 19/20/22 physical validation pending |
+| Last updated | 2026-08-10 |
 
 ## Delivery sequence
 

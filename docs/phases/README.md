@@ -26,3 +26,4 @@
 | 19 | Mobile POS Operations and Cashier Experience Completion | **Open** (Phase 14 unchanged; not Device Verified) | [Open](phase-19-mobile-pos-operations-and-cashier-experience.md) |
 | 20 | Global Product Catalog and Business Template Onboarding | **Open** (Implementation → Validation Pending; not Device Verified) | [Open](phase-20-global-product-catalog-and-business-template-onboarding.md) |
 | 21 | Privacy, Compliance, and Regulatory Readiness | **Open** (Foundation Code Complete — readiness tooling; not legally compliant) | [Open](phase-21-privacy-compliance-and-regulatory-readiness.md) |
+| 22 | Production Readiness, Release & Operational Hardening | **Open** (In Progress; not Device Verified; not Production Ready) | [Open](phase-22-production-readiness-release-and-operational-hardening.md) |
