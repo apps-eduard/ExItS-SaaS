@@ -17,6 +17,7 @@ public sealed class MerchantCatalogDiscoveryClient(IPosApiClient api) : IMerchan
         string? search = null,
         int page = 1,
         int pageSize = 20,
+        Guid? primaryBusinessTypeId = null,
         CancellationToken ct = default)
     {
         var path = new StringBuilder("/api/v1/catalog/templates?");
@@ -24,6 +25,10 @@ public sealed class MerchantCatalogDiscoveryClient(IPosApiClient api) : IMerchan
         path.Append("&pageSize=").Append(pageSize.ToString(CultureInfo.InvariantCulture));
         AppendOptional(path, "businessType", businessType);
         AppendOptional(path, "search", search);
+        if (primaryBusinessTypeId is { } businessTypeId && businessTypeId != Guid.Empty)
+        {
+            path.Append("&primaryBusinessTypeId=").Append(businessTypeId.ToString("D"));
+        }
         return api.GetAsync<PlatformPagedResult<PlatformMerchantCatalogTemplateSummaryDto>>(path.ToString(), ct);
     }
 

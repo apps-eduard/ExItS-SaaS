@@ -104,9 +104,13 @@ internal static class PosSecurityPipeline
 
         app.Use(async (context, next) =>
         {
+            var correlationId = context.Request.Headers["X-Correlation-Id"].FirstOrDefault();
+            correlationId = string.IsNullOrWhiteSpace(correlationId) ? context.TraceIdentifier : correlationId.Trim();
+            context.Items["CorrelationId"] = correlationId;
             context.Response.OnStarting(() =>
             {
                 var headers = context.Response.Headers;
+                headers["X-Correlation-Id"] = correlationId;
                 headers.TryAdd("X-Content-Type-Options", "nosniff");
                 headers.TryAdd("X-Frame-Options", "DENY");
                 headers.TryAdd("Referrer-Policy", "no-referrer");

@@ -15,6 +15,7 @@ public interface IMerchantCatalogDiscoveryClient
         string? search = null,
         int page = 1,
         int pageSize = 20,
+        Guid? primaryBusinessTypeId = null,
         CancellationToken ct = default);
 
     Task<ApiResult<PlatformMerchantCatalogTemplateDto>> GetPublishedTemplateAsync(
