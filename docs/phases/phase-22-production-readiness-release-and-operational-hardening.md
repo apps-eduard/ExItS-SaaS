@@ -40,9 +40,9 @@ Branch / POS device / cashier capacity come from **subscription entitlement** (s
 | P22-WP10 | Security / production hardening | Completed | Config guards, secrets, health |
 | P22-WP11 | Observability / operations | Completed | Correlation, safe diagnostics |
 | P22-WP12 | Release / deployment foundation | Completed | Docs + Release builds |
-| P22-WP13 | Full automated regression | Partial — focused suites pending final run | Focused suites green |
+| P22-WP13 | Full automated regression | Completed | Focused suites green |
 | P22-WP14 | Physical device validation preparation | Completed — Not Device Verified | Path ready; not falsely Device Verified |
-| P22-WP15 | Closeout | In Progress | Phase + portfolio docs |
+| P22-WP15 | Closeout | Completed | Phase + portfolio docs |
 
 ## Architecture reuse (do not reinvent)
 

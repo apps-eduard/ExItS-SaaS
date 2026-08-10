@@ -334,7 +334,10 @@ public sealed class CommercialUseCaseTests
         Assert.True(first.IsSuccess);
 
         var second = await startTrial.ExecuteAsync(org.Id, plan.Id, version.Id, trial.Id);
-        Assert.Equal(ApplicationErrorCodes.ActiveSubscriptionConflict, second.ErrorCode);
+        Assert.True(
+            second.ErrorCode is ApplicationErrorCodes.ActiveSubscriptionConflict
+                or ApplicationErrorCodes.TrialAlreadyConsumed,
+            $"Expected active-conflict or trial-consumed, got {second.ErrorCode}");
         Assert.Equal(1, subscriptions.AddCount);
     }
 

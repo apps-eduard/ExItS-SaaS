@@ -21,7 +21,12 @@ public sealed class LocalValidationOnboardingBaselineTests
         Assert.Contains(BuiltInPlatformRoleDefinitions.All, r => r.Code == BuiltInPlatformRoleDefinitions.PlatformAdministratorCode);
         Assert.Contains(BuiltInPlatformRoleDefinitions.All, r => r.Code == BuiltInPlatformRoleDefinitions.PlatformAuditorCode);
         Assert.Equal(
-            new[] { PlatformPermission.ViewPortfolio, PlatformPermission.ViewAuditRecords }.OrderBy(x => x),
+            new[]
+            {
+                PlatformPermission.ViewPortfolio,
+                PlatformPermission.ViewAuditRecords,
+                PlatformPermission.ViewPrivacyCompliance
+            }.OrderBy(x => x),
             PlatformRolePermissionCatalog.GetPermissions(PlatformSystemRole.PlatformAuditor).OrderBy(x => x));
     }
 

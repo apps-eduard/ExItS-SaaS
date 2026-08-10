@@ -179,11 +179,13 @@ public sealed class AuthOfflineUxLayerTests
         var personalHome = gate.IndexOf("RoleHomeResolver.PersonalHome", personalBranch, StringComparison.Ordinal);
         Assert.InRange(personalPin, personalBranch, personalHome);
 
-        // Org POS: PIN before optional template, then sell-critical setup.
-        var orgPosPin = gate.IndexOf("HasOfflinePinConfiguredAsync", personalHome, StringComparison.Ordinal);
+        // Org POS: device registration before PIN, optional template, then sell-critical setup.
+        var deviceRoute = gate.IndexOf("/devices/register", personalHome, StringComparison.Ordinal);
+        var orgPosPin = gate.IndexOf("HasOfflinePinConfiguredAsync", deviceRoute, StringComparison.Ordinal);
         var templateRoute = gate.IndexOf("/catalog/import?onboarding=1", orgPosPin, StringComparison.Ordinal);
         var setupRoute = gate.IndexOf("return \"/setup\"", templateRoute, StringComparison.Ordinal);
-        Assert.InRange(orgPosPin, personalHome, templateRoute);
+        Assert.InRange(deviceRoute, personalHome, orgPosPin);
+        Assert.InRange(orgPosPin, deviceRoute, templateRoute);
         Assert.InRange(templateRoute, orgPosPin, setupRoute);
         Assert.Contains("GetBusinessTemplatePromptPendingAsync", gate, StringComparison.Ordinal);
         Assert.Contains("EnsureOfflineOperateGrantAsync", gate, StringComparison.Ordinal);
@@ -284,7 +286,9 @@ public sealed class AuthOfflineUxLayerTests
             HasPosAccess: true,
             AccessReasonCode: "allowed",
             SubscriptionStatus: "Active",
-            EnabledFeatureCodes: ["pos.sell"]);
+            EnabledFeatureCodes: ["pos.sell"],
+            BranchId: Guid.Parse("33333333-3333-3333-3333-333333333333"),
+            PosDeviceId: Guid.Parse("44444444-4444-4444-4444-444444444444"));
 
     private static string MauiProject()
     {

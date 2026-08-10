@@ -355,12 +355,16 @@ public sealed class SaleDomainTests
     [Fact]
     public void Payment_method_codes_are_stable_and_parseable()
     {
-        Assert.Equal(new[] { "Cash", "ManualGCash", "Utang" }, SalePaymentMethods.Codes.ToArray());
+        Assert.Equal(new[] { "Cash", "ManualGCash", "Utang", "Card", "GCash" }, SalePaymentMethods.Codes.ToArray());
         Assert.Equal("Cash", SalePaymentMethods.ToCode(SalePaymentMethod.Cash));
         Assert.Equal("ManualGCash", SalePaymentMethods.ToCode(SalePaymentMethod.ManualGCash));
         Assert.Equal("Utang", SalePaymentMethods.ToCode(SalePaymentMethod.Utang));
+        Assert.Equal("Card", SalePaymentMethods.ToCode(SalePaymentMethod.Card));
+        Assert.Equal("GCash", SalePaymentMethods.ToCode(SalePaymentMethod.GCash));
         Assert.Equal(SalePaymentMethod.ManualGCash, SalePaymentMethods.Parse("manualgcash"));
         Assert.Equal(SalePaymentMethod.Utang, SalePaymentMethods.Parse("utang"));
+        Assert.Equal(SalePaymentMethod.Card, SalePaymentMethods.Parse("card"));
+        Assert.Equal(SalePaymentMethod.GCash, SalePaymentMethods.Parse("gcash"));
 
         var error = Assert.Throws<DomainException>(() => SalePaymentMethods.Parse("SplitTender"));
         Assert.Equal(DomainErrorCodes.InvalidSalePaymentMethod, error.ErrorCode);

@@ -211,13 +211,17 @@ public sealed class OfflineOperatingGrantServiceTests
             DateTimeOffset.UtcNow,
             DateTimeOffset.UtcNow,
             DateTimeOffset.UtcNow.AddHours(1),
-            OfflineGrantScopeKind.Organization);
+            OfflineGrantScopeKind.Organization,
+            BranchId: Guid.NewGuid(),
+            PosDeviceId: Guid.NewGuid());
         var personal = org with
         {
             OrganizationId = null,
             OrganizationDisplayName = PersonalLocalScope.DisplayName,
             ScopeKind = OfflineGrantScopeKind.Personal,
-            RoleCode = null
+            RoleCode = null,
+            BranchId = null,
+            PosDeviceId = null
         };
 
         Assert.True(org.IsOrganizationScope);
@@ -248,6 +252,9 @@ public sealed class OfflineOperatingGrantServiceTests
             PinHashIterations = 10_000
         });
 
+    private static readonly Guid TestBranchId = Guid.Parse("33333333-3333-3333-3333-333333333333");
+    private static readonly Guid TestPosDeviceId = Guid.Parse("44444444-4444-4444-4444-444444444444");
+
     private static AuthSession OnlineSession() =>
         new(
             Guid.Parse("11111111-1111-1111-1111-111111111111"),
@@ -262,8 +269,9 @@ public sealed class OfflineOperatingGrantServiceTests
             AccessReasonCode: "allowed",
             SubscriptionStatus: "Active",
             EnabledFeatureCodes: ["pos.sell"],
-            AccountClass: "Organization");
-
+            AccountClass: "Organization",
+            BranchId: TestBranchId,
+            PosDeviceId: TestPosDeviceId);
     private static AuthSession PersonalSession() =>
         new(
             Guid.Parse("11111111-1111-1111-1111-111111111111"),

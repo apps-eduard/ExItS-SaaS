@@ -201,7 +201,8 @@ public sealed class SupportDiagnosticsTests
         var ownerGrant = new OfflineOperatingGrant(
             OfflineOperatingGrant.CurrentSchemaVersion, userId, orgId, "Shop", "device",
             PosRoleCodes.Owner, Array.Empty<string>(), null, "Name", "user", "user@example.com",
-            now, now, now.AddDays(1), OfflineGrantScopeKind.Organization);
+            now, now, now.AddDays(1), OfflineGrantScopeKind.Organization,
+            BranchId: Guid.NewGuid(), PosDeviceId: Guid.NewGuid());
         var cashierGrant = ownerGrant with { RoleCode = PosRoleCodes.Cashier };
 
         Assert.True(PlatformOrganizationOwnerProbe.MatchesOfflineOwnerGrant(ownerGrant, session, orgId, now));

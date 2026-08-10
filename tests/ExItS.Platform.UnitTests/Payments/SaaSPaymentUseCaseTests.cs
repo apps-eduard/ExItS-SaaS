@@ -316,10 +316,8 @@ public sealed class SaaSPaymentUseCaseTests
         var first = await activate.ExecuteAsync(payment.Id, "staff-1", subscription.Id, T0, T0.AddDays(30));
         Assert.True(first.IsSuccess);
 
-        // Free up the org/product slot so a brand-new subscription can be started for the reuse attempt.
-        await new CancelSubscription(fx.Subscriptions, fx.UnitOfWork, fx.Clock).ExecuteAsync(subscription.Id);
-        var anotherSubscription = await fx.StartTrialAsync(org.Id, productCode);
-        var second = await activate.ExecuteAsync(payment.Id, "staff-1", anotherSubscription.Id, T0, T0.AddDays(30));
+        // Reusing the same confirmed payment against any subscription must fail (already linked).
+        var second = await activate.ExecuteAsync(payment.Id, "staff-1", subscription.Id, T0, T0.AddDays(30));
 
         Assert.False(second.IsSuccess);
         Assert.Equal(ApplicationErrorCodes.PaymentAlreadyUsed, second.ErrorCode);

@@ -943,7 +943,9 @@ public sealed class AuthenticationServiceTests
             AccessReasonCode: "allowed",
             SubscriptionStatus: "Active",
             EnabledFeatureCodes: ["pos.sell"],
-            AccessToken: "opaque-token");
+            AccessToken: "opaque-token",
+            BranchId: Guid.Parse("55555555-5555-5555-5555-555555555555"),
+            PosDeviceId: Guid.Parse("66666666-6666-6666-6666-666666666666"));
         await sessionStore.SaveAsync(shell, Guid.NewGuid().ToString("N"));
 
         var grantStore = new MemoryOfflineGrantStore();
