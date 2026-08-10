@@ -577,6 +577,12 @@ public sealed class AuthenticationService(
 
                 return new AuthResult(true, AuthFailureReason.None, restored);
             }
+
+            if (IsExplicitOfflineGrantRevocation(introspect.Error?.ErrorCode))
+            {
+                await ClearOfflineGrantForExplicitRejectionAsync(ct).ConfigureAwait(false);
+                events.Record("offline_grant_cleared", Dict(("reason", introspect.Error?.ErrorCode)));
+            }
         }
         catch
         {
@@ -2001,6 +2007,40 @@ public sealed class AuthenticationService(
 
     private Task ClearLocalAsync(CancellationToken ct) =>
         ClearLocalSessionAsync(clearOfflineGrant: true, ct);
+
+    private async Task ClearOfflineGrantForExplicitRejectionAsync(CancellationToken ct)
+    {
+        if (_offlineGrant is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await _offlineGrant.ClearAsync(ct).ConfigureAwait(false);
+        }
+        catch
+        {
+            // The server rejection remains authoritative; secure-storage failure is handled by the
+            // normal next-session path and must not be treated as a network fallback.
+        }
+    }
+
+    private static bool IsExplicitOfflineGrantRevocation(string? errorCode)
+    {
+        if (string.IsNullOrWhiteSpace(errorCode))
+        {
+            return false;
+        }
+
+        return errorCode.Equals("application.pos_device.revoked", StringComparison.OrdinalIgnoreCase)
+            || errorCode.Equals("application.pos_device.not_authorized", StringComparison.OrdinalIgnoreCase)
+            || errorCode.Equals("device_revoked", StringComparison.OrdinalIgnoreCase)
+            || errorCode.Equals("PosDeviceNotAuthorized", StringComparison.OrdinalIgnoreCase)
+            || errorCode.Contains("membership", StringComparison.OrdinalIgnoreCase)
+                && (errorCode.Contains("removed", StringComparison.OrdinalIgnoreCase)
+                    || errorCode.Contains("revoked", StringComparison.OrdinalIgnoreCase));
+    }
 
     /// <param name="clearOfflineGrant">
     /// True for hard revoke (server denial / inactive user). False for Sign out — keep grant + PIN
