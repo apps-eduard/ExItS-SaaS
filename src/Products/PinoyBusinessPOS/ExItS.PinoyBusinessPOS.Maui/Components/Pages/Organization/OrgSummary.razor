@@ -136,6 +136,11 @@ else
                             <span class="pos-org__nav-label">@L["Org_StaffLink"]</span>
                             <span class="pos-org__nav-chevron" aria-hidden="true">›</span>
                         </button>
+                        <button type="button" class="pos-org__nav-row" role="listitem" @onclick="GoDevices">
+                            <span class="pos-org__nav-icon" aria-hidden="true">@IconGlyphs.Get("settings")</span>
+                            <span class="pos-org__nav-label">POS devices</span>
+                            <span class="pos-org__nav-chevron" aria-hidden="true">›</span>
+                        </button>
                         <button type="button" class="pos-org__nav-row" role="listitem" @onclick="GoSubscription">
                             <span class="pos-org__nav-icon" aria-hidden="true">@IconGlyphs.Get("inbox")</span>
                             <span class="pos-org__nav-label">@L["Org_SubscriptionLink"]</span>
@@ -501,6 +506,7 @@ else
 
     private void GoProfile() => Nav.NavigateTo("/org/profile");
     private void GoStaff() => Nav.NavigateTo("/org/staff");
+    private void GoDevices() => Nav.NavigateTo("/organization/devices");
     private void GoSubscription() => Nav.NavigateTo("/org/subscription");
     private void GoSelect() => Nav.NavigateTo("/organization-select");
 }

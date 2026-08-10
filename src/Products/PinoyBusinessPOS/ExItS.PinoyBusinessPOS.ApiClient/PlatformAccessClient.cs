@@ -17,6 +17,33 @@ public sealed class PlatformAccessClient(IPosApiClient api) : IPlatformAccessCli
         CancellationToken ct = default) =>
         api.SendAsync<PlatformOrganizationDto>(HttpMethod.Put, $"/api/v1/platform/organizations/{organizationId:D}", request, ct);
 
+    public Task<ApiResult<IReadOnlyList<OrganizationBranchDto>>> GetBranchesAsync(Guid organizationId, CancellationToken ct = default) =>
+        api.GetAsync<IReadOnlyList<OrganizationBranchDto>>($"/api/v1/platform/organizations/{organizationId:D}/branches", ct);
+
+    public Task<ApiResult<BranchCapacityDto>> GetBranchCapacityAsync(Guid organizationId, CancellationToken ct = default) =>
+        api.GetAsync<BranchCapacityDto>($"/api/v1/platform/organizations/{organizationId:D}/branches/capacity", ct);
+
+    public Task<ApiResult<OrganizationBranchDto>> CreateBranchAsync(Guid organizationId, CreateBranchRequest request, CancellationToken ct = default) =>
+        api.SendAsync<OrganizationBranchDto>(HttpMethod.Post, $"/api/v1/platform/organizations/{organizationId:D}/branches", request, ct);
+
+    public Task<ApiResult<IReadOnlyList<PosDeviceDto>>> GetPosDevicesAsync(Guid organizationId, CancellationToken ct = default) =>
+        api.GetAsync<IReadOnlyList<PosDeviceDto>>($"/api/v1/platform/organizations/{organizationId:D}/pos-devices", ct);
+
+    public Task<ApiResult<PosDeviceCapacityDto>> GetPosDeviceCapacityAsync(Guid organizationId, CancellationToken ct = default) =>
+        api.GetAsync<PosDeviceCapacityDto>($"/api/v1/platform/organizations/{organizationId:D}/pos-devices/capacity", ct);
+
+    public Task<ApiResult<PosDeviceDto>> RegisterCurrentDeviceAsync(Guid organizationId, RegisterPosDeviceRequest request, CancellationToken ct = default) =>
+        api.SendAsync<PosDeviceDto>(HttpMethod.Post, $"/api/v1/platform/organizations/{organizationId:D}/pos-devices/register", request, ct);
+
+    public Task<ApiResult<PosDeviceDto>> RenamePosDeviceAsync(Guid organizationId, Guid deviceId, string friendlyName, CancellationToken ct = default) =>
+        api.SendAsync<PosDeviceDto>(HttpMethod.Put, $"/api/v1/platform/organizations/{organizationId:D}/pos-devices/{deviceId:D}", new { friendlyName }, ct);
+
+    public Task<ApiResult<PosDeviceDto>> RevokePosDeviceAsync(Guid organizationId, Guid deviceId, CancellationToken ct = default) =>
+        api.SendAsync<PosDeviceDto>(HttpMethod.Post, $"/api/v1/platform/organizations/{organizationId:D}/pos-devices/{deviceId:D}/revoke", null, ct);
+
+    public Task<ApiResult<PosDeviceAuthorizationDto>> AuthorizePosDeviceAsync(Guid organizationId, AuthorizePosDeviceRequest request, CancellationToken ct = default) =>
+        api.SendAsync<PosDeviceAuthorizationDto>(HttpMethod.Post, $"/api/v1/platform/organizations/{organizationId:D}/pos-devices/authorize", request, ct);
+
     public Task<ApiResult<PlatformPagedResult<PlatformMembershipDto>>> GetUserMembershipsAsync(Guid userId, CancellationToken ct = default) =>
         api.GetAsync<PlatformPagedResult<PlatformMembershipDto>>(
             $"/api/v1/platform/users/{userId:D}/memberships?page=1&pageSize=100&status=Active",

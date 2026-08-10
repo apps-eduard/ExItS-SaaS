@@ -41,7 +41,10 @@ public sealed class OfflineOperatingGrantService(
 
         deviceId = deviceId.Trim();
 
-        if (session.HasPosAccess && session.OrganizationId is Guid orgId)
+        if (session.HasPosAccess
+            && session.OrganizationId is Guid orgId
+            && session.BranchId is Guid branchId
+            && session.PosDeviceId is Guid posDeviceId)
         {
             // Organization / POS operate grant — requires org + POS access.
             grant = new OfflineOperatingGrant(
@@ -59,7 +62,9 @@ public sealed class OfflineOperatingGrantService(
                 IssuedAtUtc: now,
                 LastOnlineValidatedAtUtc: now,
                 ExpiresAtUtc: now.Add(duration),
-                ScopeKind: OfflineGrantScopeKind.Organization);
+                ScopeKind: OfflineGrantScopeKind.Organization,
+                BranchId: branchId,
+                PosDeviceId: posDeviceId);
         }
         else if (IsPersonalEligible(session))
         {

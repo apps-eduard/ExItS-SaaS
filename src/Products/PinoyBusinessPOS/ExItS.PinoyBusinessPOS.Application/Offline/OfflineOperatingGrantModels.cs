@@ -10,7 +10,8 @@ public enum OfflineGrantScopeKind
 /// <summary>
 /// Durable offline operate grant established only after successful online validation.
 /// Does not contain passwords or access tokens. PIN unlock cannot create or extend this grant.
-/// Schema v1 grants (OrganizationId required, no ScopeKind) are accepted as Organization scope.
+/// Schema v1/v2 grants are retained for deserialization but cannot unlock POS after device binding
+/// became mandatory in v3.
 /// </summary>
 public sealed record OfflineOperatingGrant(
     int SchemaVersion,
@@ -27,20 +28,24 @@ public sealed record OfflineOperatingGrant(
     DateTimeOffset IssuedAtUtc,
     DateTimeOffset LastOnlineValidatedAtUtc,
     DateTimeOffset ExpiresAtUtc,
-    OfflineGrantScopeKind ScopeKind = OfflineGrantScopeKind.Organization)
+    OfflineGrantScopeKind ScopeKind = OfflineGrantScopeKind.Organization,
+    Guid? BranchId = null,
+    Guid? PosDeviceId = null)
 {
     public const int LegacySchemaVersion = 1;
-    public const int CurrentSchemaVersion = 2;
+    public const int PreviousSchemaVersion = 2;
+    public const int CurrentSchemaVersion = 3;
 
     public bool IsExpired(DateTimeOffset utcNow) => utcNow >= ExpiresAtUtc;
 
     public bool IsOrganizationScope =>
-        ScopeKind == OfflineGrantScopeKind.Organization && OrganizationId is not null;
+        ScopeKind == OfflineGrantScopeKind.Organization && OrganizationId is not null
+        && BranchId is not null && PosDeviceId is not null;
 
     public bool IsPersonalScope =>
         ScopeKind == OfflineGrantScopeKind.Personal && OrganizationId is null;
 
-    /// <summary>Normalizes legacy v1 grants (missing ScopeKind → Organization) for cold-start evaluation.</summary>
+    /// <summary>Normalizes legacy v1 grants (missing ScopeKind → Organization) for inspection only.</summary>
     public OfflineOperatingGrant NormalizeForEvaluation()
     {
         if (SchemaVersion == LegacySchemaVersion)
@@ -56,7 +61,7 @@ public sealed record OfflineOperatingGrant(
     }
 
     public static bool IsSupportedSchemaVersion(int schemaVersion) =>
-        schemaVersion is LegacySchemaVersion or CurrentSchemaVersion;
+        schemaVersion is LegacySchemaVersion or PreviousSchemaVersion or CurrentSchemaVersion;
 }
 
 public sealed record OfflinePinVerifier(

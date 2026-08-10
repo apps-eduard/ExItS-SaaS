@@ -1,0 +1,82 @@
+@page "/organization/devices"
+@page "/org/devices"
+@using ExItS.DesignSystem.Components.Internal
+@inject ICurrentUserContext CurrentUser
+@inject IPlatformAccessClient Platform
+@inject NavigationManager Nav
+
+<Page>
+    <StoreHeaderBack Href="/org" />
+    <h1>POS devices</h1>
+    <p class="pos-muted">WP06 notice: revoking a device immediately blocks new online transactions. It does not erase locally queued work; reconnect is required to resolve it.</p>
+    @if (_loading)
+    {
+        <Spinner />
+    }
+    else if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <Alert Tone="AlertTone.Danger" Title="Could not load devices" Message="@_error" />
+    }
+    else
+    {
+        <p class="pos-muted">@_used of @_allowed active device slots used.</p>
+        @foreach (var device in _devices)
+        {
+            <article class="pos-staff__row">
+                <div class="pos-staff__body">
+                    <strong>@device.FriendlyName</strong>
+                    <p class="pos-muted">@device.Platform · @device.Status · @device.LastSeenAtUtc.LocalDateTime</p>
+                    @if (string.Equals(device.Status, "Active", StringComparison.OrdinalIgnoreCase))
+                    {
+                        <button type="button" disabled="@_busy" @onclick="() => RevokeAsync(device.Id)">Revoke device</button>
+                    }
+                </div>
+            </article>
+        }
+    }
+</Page>
+
+@code {
+    private IReadOnlyList<PosDeviceDto> _devices = [];
+    private int _used;
+    private int _allowed;
+    private bool _loading = true;
+    private bool _busy;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (CurrentUser.Session?.OrganizationId is not Guid orgId)
+        {
+            Nav.NavigateTo("/organization-select", replace: true);
+            return;
+        }
+        var devices = await Platform.GetPosDevicesAsync(orgId);
+        var capacity = await Platform.GetPosDeviceCapacityAsync(orgId);
+        if (!devices.IsSuccess || devices.Data is null || !capacity.IsSuccess || capacity.Data is null)
+        {
+            _error = "Reconnect and try again.";
+        }
+        else
+        {
+            _devices = devices.Data;
+            _used = capacity.Data.Used;
+            _allowed = capacity.Data.Allowed;
+        }
+        _loading = false;
+    }
+
+    private async Task RevokeAsync(Guid deviceId)
+    {
+        if (CurrentUser.Session?.OrganizationId is not Guid orgId) return;
+        _busy = true;
+        try
+        {
+            var result = await Platform.RevokePosDeviceAsync(orgId, deviceId);
+            if (!result.IsSuccess) { _error = "The device could not be revoked."; return; }
+            _devices = _devices.Select(x => x.Id == deviceId ? x with { Status = "Revoked" } : x).ToList();
+            _used = Math.Max(0, _used - 1);
+        }
+        finally { _busy = false; }
+    }
+}

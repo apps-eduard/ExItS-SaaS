@@ -1,0 +1,107 @@
+@page "/devices/register"
+@using ExItS.DesignSystem.Components.Internal
+@inject ICurrentUserContext CurrentUser
+@inject IPlatformAccessClient Platform
+@inject IDeviceIdentityProvider DeviceIdentity
+@inject ISessionStore SessionStore
+@inject IAuthenticationService Auth
+@inject NavigationGate Gate
+@inject NavigationManager Nav
+
+<Page>
+    <StoreHeaderBack Href="/org" />
+    <h1>Register this POS device</h1>
+    <p class="pos-muted">This device must be registered before it can create or change business transactions.</p>
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <Alert Tone="AlertTone.Danger" Title="Registration failed" Message="@_error" />
+    }
+    @if (_loading)
+    {
+        <Spinner />
+    }
+    else if (_branches.Count == 0)
+    {
+        <Alert Tone="AlertTone.Warning" Title="No active branch" Message="Ask an organization owner to create or reactivate a branch." />
+    }
+    else
+    {
+        <label for="device-branch">Branch</label>
+        <select id="device-branch" @bind="_branchId">
+            @foreach (var branch in _branches)
+            {
+                <option value="@branch.Id">@branch.Name (@branch.Code)</option>
+            }
+        </select>
+        <label for="device-name">Device name</label>
+        <input id="device-name" @bind="_friendlyName" maxlength="128" />
+        <Button Variant="ButtonVariant.Primary" IsLoading="_saving" Disabled="_saving" OnClick="RegisterAsync">Register device</Button>
+    }
+</Page>
+
+@code {
+    private readonly List<OrganizationBranchDto> _branches = [];
+    private Guid _branchId;
+    private string _friendlyName = Environment.MachineName;
+    private bool _loading = true;
+    private bool _saving;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var orgId = CurrentUser.Session?.OrganizationId;
+        if (orgId is null)
+        {
+            Nav.NavigateTo("/organization-select", replace: true);
+            return;
+        }
+
+        var result = await Platform.GetBranchesAsync(orgId.Value);
+        if (!result.IsSuccess || result.Data is null)
+        {
+            _error = "Branches could not be loaded. Reconnect and try again.";
+        }
+        else
+        {
+            _branches.AddRange(result.Data.Where(x => string.Equals(x.Status, "Active", StringComparison.OrdinalIgnoreCase)));
+            _branchId = _branches.FirstOrDefault(x => x.IsPrimary)?.Id ?? _branches.FirstOrDefault()?.Id ?? Guid.Empty;
+        }
+        _loading = false;
+    }
+
+    private async Task RegisterAsync()
+    {
+        var session = CurrentUser.Session;
+        if (session?.OrganizationId is not Guid orgId || _branchId == Guid.Empty)
+        {
+            _error = "Select an active branch.";
+            return;
+        }
+
+        _saving = true;
+        _error = null;
+        try
+        {
+            var installationId = await DeviceIdentity.GetOrCreateDeviceIdAsync();
+            var result = await Platform.RegisterCurrentDeviceAsync(orgId,
+                new RegisterPosDeviceRequest(_branchId, installationId, string.IsNullOrWhiteSpace(_friendlyName) ? "POS device" : _friendlyName.Trim(),
+                    OperatingSystem.IsAndroid() ? "Android" : OperatingSystem.IsWindows() ? "Windows" : "MAUI"));
+            if (!result.IsSuccess || result.Data is null)
+            {
+                _error = "The device could not be registered. Check the plan capacity and try again.";
+                return;
+            }
+
+            var updated = session with { BranchId = result.Data.BranchId, PosDeviceId = result.Data.Id };
+            var (_, marker) = await SessionStore.LoadAsync();
+            await SessionStore.SaveAsync(updated, marker ?? Guid.NewGuid().ToString("N"));
+            CurrentUser.Set(updated);
+            await Auth.EnsureOfflineOperateGrantAsync();
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}

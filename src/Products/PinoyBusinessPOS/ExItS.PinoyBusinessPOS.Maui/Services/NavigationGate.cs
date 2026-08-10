@@ -97,6 +97,13 @@ public sealed class NavigationGate(
             return "/reconnect";
         }
 
+        // A POS grant is device-bound. Do this after online/PIN access has been validated but
+        // before catalog/setup routes so an owner cannot enter selling workflows unregistered.
+        if (currentUser.Session.PosDeviceId is null || currentUser.Session.BranchId is null)
+        {
+            return "/devices/register";
+        }
+
         // PIN before template / sell-critical setup so offline unlock is ready immediately after
         // Start Business, trial, or first POS-role entry on this device.
         await auth.EnsureOfflineOperateGrantAsync(ct).ConfigureAwait(false);

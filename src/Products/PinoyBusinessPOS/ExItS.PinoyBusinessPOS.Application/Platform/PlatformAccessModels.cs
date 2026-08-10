@@ -26,7 +26,23 @@ public sealed record PlatformOrganizationDto(
     string Status,
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset UpdatedAtUtc,
-    PlatformOrganizationBrandingDto? Branding = null);
+    PlatformOrganizationBrandingDto? Branding = null,
+    Guid? PrimaryBusinessTypeId = null);
+
+public sealed record OrganizationBranchDto(Guid Id, Guid OrganizationId, string Code, string Name,
+    bool IsPrimary, string Status, string? AddressLine1 = null, string? AddressLine2 = null,
+    string? City = null, string? Region = null, string? PostalCode = null, string? CountryCode = null);
+public sealed record BranchCapacityDto(int Used, int Allowed);
+public sealed record CreateBranchRequest(string Code, string Name, string? AddressLine1 = null, string? AddressLine2 = null,
+    string? City = null, string? Region = null, string? PostalCode = null, string? CountryCode = null);
+public sealed record PosDeviceDto(Guid Id, Guid OrganizationId, Guid BranchId, string InstallationDeviceId, string FriendlyName,
+    string? Platform, string? Model, string? AppVersion, string Status, DateTimeOffset RegisteredAtUtc, DateTimeOffset LastSeenAtUtc,
+    DateTimeOffset? RevokedAtUtc = null);
+public sealed record PosDeviceCapacityDto(int Used, int Allowed);
+public sealed record RegisterPosDeviceRequest(Guid BranchId, string InstallationDeviceId, string FriendlyName,
+    string? Platform = null, string? Model = null, string? AppVersion = null);
+public sealed record AuthorizePosDeviceRequest(string InstallationDeviceId, Guid? BranchId = null);
+public sealed record PosDeviceAuthorizationDto(Guid PosDeviceId, Guid BranchId, string InstallationDeviceId);
 
 public sealed record UpdatePlatformOrganizationRequest(string DisplayName, string? Slug = null);
 
@@ -508,6 +524,15 @@ public interface IPlatformAccessClient
         Guid organizationId,
         UpdatePlatformOrganizationRequest request,
         CancellationToken ct = default);
+    Task<ApiResult<IReadOnlyList<OrganizationBranchDto>>> GetBranchesAsync(Guid organizationId, CancellationToken ct = default);
+    Task<ApiResult<BranchCapacityDto>> GetBranchCapacityAsync(Guid organizationId, CancellationToken ct = default);
+    Task<ApiResult<OrganizationBranchDto>> CreateBranchAsync(Guid organizationId, CreateBranchRequest request, CancellationToken ct = default);
+    Task<ApiResult<IReadOnlyList<PosDeviceDto>>> GetPosDevicesAsync(Guid organizationId, CancellationToken ct = default);
+    Task<ApiResult<PosDeviceCapacityDto>> GetPosDeviceCapacityAsync(Guid organizationId, CancellationToken ct = default);
+    Task<ApiResult<PosDeviceDto>> RegisterCurrentDeviceAsync(Guid organizationId, RegisterPosDeviceRequest request, CancellationToken ct = default);
+    Task<ApiResult<PosDeviceDto>> RenamePosDeviceAsync(Guid organizationId, Guid deviceId, string friendlyName, CancellationToken ct = default);
+    Task<ApiResult<PosDeviceDto>> RevokePosDeviceAsync(Guid organizationId, Guid deviceId, CancellationToken ct = default);
+    Task<ApiResult<PosDeviceAuthorizationDto>> AuthorizePosDeviceAsync(Guid organizationId, AuthorizePosDeviceRequest request, CancellationToken ct = default);
     Task<ApiResult<PlatformPagedResult<PlatformMembershipDto>>> GetUserMembershipsAsync(Guid userId, CancellationToken ct = default);
     Task<ApiResult<PlatformPagedResult<PlatformMembershipDto>>> GetOrganizationMembersAsync(
         Guid organizationId,
