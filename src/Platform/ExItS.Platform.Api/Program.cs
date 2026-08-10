@@ -192,6 +192,18 @@ builder.Services.AddScoped<ClosePlatformOrganization>();
 builder.Services.AddScoped<UpdateOrganizationProfile>();
 builder.Services.AddScoped<UpdateOrganizationPlatformFields>();
 builder.Services.AddScoped<UpdateOrganizationBranding>();
+builder.Services.AddScoped<ListBranches>();
+builder.Services.AddScoped<CreateBranch>();
+builder.Services.AddScoped<UpdateBranch>();
+builder.Services.AddScoped<ArchiveBranch>();
+builder.Services.AddScoped<GetBranchCapacity>();
+builder.Services.AddScoped<EnsureMainBranchExists>();
+builder.Services.AddScoped<ListDevices>();
+builder.Services.AddScoped<RegisterCurrentDevice>();
+builder.Services.AddScoped<RenameDevice>();
+builder.Services.AddScoped<RevokeDevice>();
+builder.Services.AddScoped<GetDeviceCapacity>();
+builder.Services.AddScoped<AuthorizeForTransactions>();
 builder.Services.Configure<PosProductApiOptions>(builder.Configuration.GetSection(PosProductApiOptions.SectionName));
 builder.Services.AddHttpClient<IPosOrganizationCatalogReadClient, PosOrganizationCatalogReadClient>((sp, client) =>
 {
@@ -419,6 +431,7 @@ app.MapGlobalCatalogEndpoints();
 app.MapMerchantCatalogDiscoveryEndpoints();
 app.MapCommercialEndpoints();
 app.MapOrganizationEndpoints();
+app.MapBranchAndDeviceEndpoints();
 app.MapIdentityEndpoints();
 app.MapPublicIdentityEndpoints();
 app.MapCredentialEndpoints();

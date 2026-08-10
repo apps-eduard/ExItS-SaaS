@@ -56,6 +56,20 @@ public sealed class PosDevice
         if (Status == PosDeviceStatus.Revoked) return;
         Status = PosDeviceStatus.Revoked; RevokedAtUtc = utcNow; RevokedByUserId = userId;
     }
+    public void Reactivate(DateTimeOffset utcNow)
+    {
+        DomainTime.EnsureUtc(utcNow);
+        if (Status == PosDeviceStatus.Active)
+        {
+            TouchLastSeen(utcNow);
+            return;
+        }
+
+        Status = PosDeviceStatus.Active;
+        RevokedAtUtc = null;
+        RevokedByUserId = null;
+        LastSeenAtUtc = utcNow;
+    }
     public void EnsureActive() { if (Status != PosDeviceStatus.Active) throw new DomainException(DomainErrorCodes.PosDeviceNotActive, "POS device is not active."); }
     public static string NormalizeInstallationDeviceId(string value) =>
         string.IsNullOrWhiteSpace(value) ? throw new DomainException(DomainErrorCodes.InvalidPosDeviceInstallationId, "Installation device ID cannot be blank.") : value.Trim();

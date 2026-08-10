@@ -156,6 +156,13 @@ public static class ApplicationErrorCodes
     public const string ProductLocalRoleGrantNotFound = "application.product_local_role.not_found";
     public const string ProductLocalRoleMissing = "application.product_local_role.missing";
     public const string StartBusinessOwnerRequired = "application.start_business.owner_required";
+    public const string BranchNotFound = "application.branch.not_found";
+    public const string BranchCapacityExceeded = "application.branch.capacity_exceeded";
+    public const string BranchCodeConflict = "application.branch.code_conflict";
+    public const string PosDeviceNotFound = "application.pos_device.not_found";
+    public const string PosDeviceCapacityExceeded = "application.pos_device.capacity_exceeded";
+    public const string PosDeviceNotAuthorized = "application.pos_device.not_authorized";
+    public const string PosDeviceRevoked = "application.pos_device.revoked";
 
     public const string GlobalCategoryNotFound = "application.global_catalog.category.not_found";
     public const string GlobalProductNotFound = "application.global_catalog.product.not_found";
