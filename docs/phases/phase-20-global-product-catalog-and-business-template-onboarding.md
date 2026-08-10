@@ -32,6 +32,7 @@ Platform-owned global merchandise catalog (categories, products, business templa
 | Item | Status |
 |---|---|
 | [Template-aware bulk import + Organization catalog visibility](../reports/P20-template-aware-import-and-org-catalog-visibility.md) | **Code Complete** — Validation Pending; Device Verified **No** |
+| [Dynamic Business Types & catalog classification](../reports/P20-dynamic-business-types-and-catalog-classification.md) | **Code Complete** — Validation Pending; Device Verified **No** |
 
 ## Authoritative specs
 

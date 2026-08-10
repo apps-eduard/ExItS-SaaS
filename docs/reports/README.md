@@ -89,3 +89,4 @@ The dashboard links to the latest accepted report.
 | [P12-WP05-product-bootstrap-prompt.md](P12-WP05-product-bootstrap-prompt.md) | P12-WP05 Product Bootstrap Prompt | Complete |
 | [P12-WP06-reference-product-dry-run.md](P12-WP06-reference-product-dry-run.md) | P12-WP06 Reference Product Dry Run | Complete |
 | [P20-template-aware-import-and-org-catalog-visibility.md](P20-template-aware-import-and-org-catalog-visibility.md) | P20 supplemental — template-aware import + org catalog visibility | Code Complete (Validation Pending) |
+| [P20-dynamic-business-types-and-catalog-classification.md](P20-dynamic-business-types-and-catalog-classification.md) | P20 supplemental — dynamic Business Types + catalog classification | Code Complete (Validation Pending) |
