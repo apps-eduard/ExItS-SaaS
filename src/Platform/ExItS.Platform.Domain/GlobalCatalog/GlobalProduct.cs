@@ -10,7 +10,7 @@ namespace ExItS.Platform.Domain.GlobalCatalog;
 /// </summary>
 public sealed class GlobalProduct
 {
-    private readonly List<BusinessType> _businessTypes = [];
+    private readonly List<BusinessTypeId> _businessTypeIds = [];
     private readonly List<string> _searchTags = [];
 
     public GlobalProductId Id { get; }
@@ -26,7 +26,7 @@ public sealed class GlobalProduct
     public string? ImageReference { get; private set; }
     public GlobalProductStatus Status { get; private set; }
     public IReadOnlyList<string> SearchTags => _searchTags;
-    public IReadOnlyList<BusinessType> BusinessTypes => _businessTypes;
+    public IReadOnlyList<BusinessTypeId> BusinessTypeIds => _businessTypeIds;
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
 
@@ -44,7 +44,7 @@ public sealed class GlobalProduct
         string? imageReference,
         GlobalProductStatus status,
         IEnumerable<string> searchTags,
-        IEnumerable<BusinessType> businessTypes,
+        IEnumerable<BusinessTypeId> businessTypeIds,
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc)
     {
@@ -61,7 +61,7 @@ public sealed class GlobalProduct
         ImageReference = imageReference;
         Status = status;
         _searchTags.AddRange(GlobalCatalogRules.NormalizeSearchTags(searchTags));
-        _businessTypes.AddRange(GlobalCatalogRules.NormalizeBusinessTypes(businessTypes));
+        _businessTypeIds.AddRange(GlobalCatalogRules.NormalizeBusinessTypeIds(businessTypeIds));
         CreatedAtUtc = createdAtUtc;
         UpdatedAtUtc = updatedAtUtc;
     }
@@ -79,7 +79,7 @@ public sealed class GlobalProduct
         string? description = null,
         string? imageReference = null,
         IEnumerable<string>? searchTags = null,
-        IEnumerable<BusinessType>? businessTypes = null,
+        IEnumerable<BusinessTypeId>? businessTypeIds = null,
         GlobalProductId? id = null)
     {
         DomainTime.EnsureUtc(utcNow);
@@ -107,7 +107,7 @@ public sealed class GlobalProduct
                 DomainErrorCodes.InvalidGlobalProductImage),
             GlobalProductStatus.Draft,
             searchTags ?? Array.Empty<string>(),
-            businessTypes ?? Array.Empty<BusinessType>(),
+            businessTypeIds ?? Array.Empty<BusinessTypeId>(),
             utcNow,
             utcNow);
     }
@@ -130,7 +130,7 @@ public sealed class GlobalProduct
         string? imageReference,
         GlobalProductStatus status,
         IEnumerable<string> searchTags,
-        IEnumerable<BusinessType> businessTypes,
+        IEnumerable<BusinessTypeId> businessTypeIds,
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc) =>
         new(
@@ -147,7 +147,7 @@ public sealed class GlobalProduct
             imageReference,
             status,
             searchTags,
-            businessTypes,
+            businessTypeIds,
             createdAtUtc,
             updatedAtUtc);
 
@@ -164,7 +164,7 @@ public sealed class GlobalProduct
         string? description = null,
         string? imageReference = null,
         IEnumerable<string>? searchTags = null,
-        IEnumerable<BusinessType>? businessTypes = null)
+        IEnumerable<BusinessTypeId>? businessTypeIds = null)
     {
         EnsureMutable(utcNow);
         EnsureValidUnit(unit);
@@ -190,9 +190,34 @@ public sealed class GlobalProduct
 
         _searchTags.Clear();
         _searchTags.AddRange(GlobalCatalogRules.NormalizeSearchTags(searchTags));
-        _businessTypes.Clear();
-        _businessTypes.AddRange(GlobalCatalogRules.NormalizeBusinessTypes(businessTypes));
+        _businessTypeIds.Clear();
+        _businessTypeIds.AddRange(GlobalCatalogRules.NormalizeBusinessTypeIds(businessTypeIds));
 
+        UpdatedAtUtc = utcNow;
+    }
+
+    public void AssignBusinessTypes(IEnumerable<BusinessTypeId> businessTypeIds, DateTimeOffset utcNow)
+    {
+        EnsureMutable(utcNow);
+        _businessTypeIds.Clear();
+        _businessTypeIds.AddRange(GlobalCatalogRules.NormalizeBusinessTypeIds(businessTypeIds));
+        UpdatedAtUtc = utcNow;
+    }
+
+    public void AddBusinessTypes(IEnumerable<BusinessTypeId> businessTypeIds, DateTimeOffset utcNow)
+    {
+        EnsureMutable(utcNow);
+        var merged = _businessTypeIds.Concat(businessTypeIds ?? Array.Empty<BusinessTypeId>());
+        _businessTypeIds.Clear();
+        _businessTypeIds.AddRange(GlobalCatalogRules.NormalizeBusinessTypeIds(merged));
+        UpdatedAtUtc = utcNow;
+    }
+
+    public void RemoveBusinessTypes(IEnumerable<BusinessTypeId> businessTypeIds, DateTimeOffset utcNow)
+    {
+        EnsureMutable(utcNow);
+        var remove = new HashSet<Guid>((businessTypeIds ?? Array.Empty<BusinessTypeId>()).Select(i => i.Value));
+        _businessTypeIds.RemoveAll(i => remove.Contains(i.Value));
         UpdatedAtUtc = utcNow;
     }
 

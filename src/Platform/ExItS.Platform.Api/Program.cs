@@ -153,9 +153,14 @@ builder.Services.AddScoped<CommercialCatalogQueryService>();
 builder.Services.AddScoped<OrganizationCurrentPlanQueryService>();
 builder.Services.AddScoped<StartOrganizationCommercialSubscription>();
 
+builder.Services.AddScoped<BusinessTypeQueryService>();
 builder.Services.AddScoped<GlobalCategoryQueryService>();
 builder.Services.AddScoped<GlobalProductQueryService>();
 builder.Services.AddScoped<CatalogTemplateQueryService>();
+builder.Services.AddScoped<CreateBusinessType>();
+builder.Services.AddScoped<UpdateBusinessType>();
+builder.Services.AddScoped<SetBusinessTypeStatus>();
+builder.Services.AddScoped<BulkAssignCategoryBusinessTypes>();
 builder.Services.AddScoped<CreateGlobalCategory>();
 builder.Services.AddScoped<UpdateGlobalCategory>();
 builder.Services.AddScoped<SetGlobalCategoryStatus>();

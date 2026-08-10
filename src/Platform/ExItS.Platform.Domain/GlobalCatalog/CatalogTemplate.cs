@@ -17,7 +17,7 @@ public sealed class CatalogTemplate
     public string Slug { get; private set; }
     public string? Description { get; private set; }
     public string? IconReference { get; private set; }
-    public BusinessType PrimaryBusinessType { get; private set; }
+    public BusinessTypeId PrimaryBusinessTypeId { get; private set; }
     public CatalogTemplateStatus Status { get; private set; }
     public int DefaultBatchSize { get; private set; }
     public SelectionMode SelectionMode { get; private set; }
@@ -35,7 +35,7 @@ public sealed class CatalogTemplate
         string slug,
         string? description,
         string? iconReference,
-        BusinessType primaryBusinessType,
+        BusinessTypeId primaryBusinessTypeId,
         CatalogTemplateStatus status,
         int defaultBatchSize,
         SelectionMode selectionMode,
@@ -49,7 +49,7 @@ public sealed class CatalogTemplate
         Slug = slug;
         Description = description;
         IconReference = iconReference;
-        PrimaryBusinessType = primaryBusinessType;
+        PrimaryBusinessTypeId = primaryBusinessTypeId;
         Status = status;
         DefaultBatchSize = defaultBatchSize;
         SelectionMode = selectionMode;
@@ -61,7 +61,7 @@ public sealed class CatalogTemplate
 
     public static CatalogTemplate Create(
         string name,
-        BusinessType primaryBusinessType,
+        BusinessTypeId primaryBusinessTypeId,
         DateTimeOffset utcNow,
         string? slug = null,
         string? description = null,
@@ -84,7 +84,7 @@ public sealed class CatalogTemplate
                 iconReference,
                 GlobalCatalogRules.IconReferenceMaxLength,
                 DomainErrorCodes.InvalidGlobalCategoryIcon),
-            GlobalCatalogRules.NormalizePrimaryBusinessType(primaryBusinessType),
+            GlobalCatalogRules.NormalizePrimaryBusinessTypeId(primaryBusinessTypeId),
             CatalogTemplateStatus.Draft,
             GlobalCatalogRules.NormalizeDefaultBatchSize(defaultBatchSize),
             GlobalCatalogRules.NormalizeSelectionMode(selectionMode),
@@ -100,7 +100,7 @@ public sealed class CatalogTemplate
         string slug,
         string? description,
         string? iconReference,
-        BusinessType primaryBusinessType,
+        BusinessTypeId primaryBusinessTypeId,
         CatalogTemplateStatus status,
         int defaultBatchSize,
         SelectionMode selectionMode,
@@ -114,7 +114,7 @@ public sealed class CatalogTemplate
             slug,
             description,
             iconReference,
-            primaryBusinessType,
+            primaryBusinessTypeId,
             status,
             defaultBatchSize,
             selectionMode,
@@ -125,7 +125,7 @@ public sealed class CatalogTemplate
 
     public void Update(
         string name,
-        BusinessType primaryBusinessType,
+        BusinessTypeId primaryBusinessTypeId,
         DateTimeOffset utcNow,
         string? slug = null,
         string? description = null,
@@ -145,7 +145,7 @@ public sealed class CatalogTemplate
             iconReference,
             GlobalCatalogRules.IconReferenceMaxLength,
             DomainErrorCodes.InvalidGlobalCategoryIcon);
-        PrimaryBusinessType = GlobalCatalogRules.NormalizePrimaryBusinessType(primaryBusinessType);
+        PrimaryBusinessTypeId = GlobalCatalogRules.NormalizePrimaryBusinessTypeId(primaryBusinessTypeId);
         DefaultBatchSize = GlobalCatalogRules.NormalizeDefaultBatchSize(defaultBatchSize ?? DefaultBatchSize);
         if (selectionMode is not null)
         {

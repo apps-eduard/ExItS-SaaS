@@ -171,7 +171,7 @@ public static class CatalogImportCsvSchema
             costPrice: 18.25m,
             taxHint: "VAT",
             tags: "beverage|cola|sample",
-            businessTypes: $"{nameof(BusinessType.SariSari)}|{nameof(BusinessType.MiniGrocery)}",
+            businessTypes: $"{LegacyBusinessTypeSeeds.SariSariCode}|{LegacyBusinessTypeSeeds.MiniGroceryCode}",
             status: nameof(GlobalProductStatus.Draft));
 
         AppendSampleRow(
@@ -187,7 +187,7 @@ public static class CatalogImportCsvSchema
             costPrice: 8.50m,
             taxHint: "VAT",
             tags: "snack|sample",
-            businessTypes: nameof(BusinessType.SariSari),
+            businessTypes: LegacyBusinessTypeSeeds.SariSariCode,
             status: nameof(GlobalProductStatus.Active));
 
         AppendSampleRow(
@@ -203,7 +203,7 @@ public static class CatalogImportCsvSchema
             costPrice: 22.00m,
             taxHint: "VAT-EXEMPT",
             tags: "bakery|bread|sample",
-            businessTypes: $"{nameof(BusinessType.Bakery)}|{nameof(BusinessType.Cafe)}",
+            businessTypes: $"{LegacyBusinessTypeSeeds.BakeryCode}|{LegacyBusinessTypeSeeds.CafeCode}",
             status: nameof(GlobalProductStatus.Draft));
 
         return sb.ToString();

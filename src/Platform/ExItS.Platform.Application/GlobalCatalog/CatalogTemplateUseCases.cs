@@ -11,15 +11,18 @@ public sealed class CatalogTemplateQueryService
     private readonly ICatalogTemplateRepository _templates;
     private readonly IGlobalProductRepository _products;
     private readonly IGlobalCategoryRepository _categories;
+    private readonly IBusinessTypeRepository _businessTypes;
 
     public CatalogTemplateQueryService(
         ICatalogTemplateRepository templates,
         IGlobalProductRepository products,
-        IGlobalCategoryRepository categories)
+        IGlobalCategoryRepository categories,
+        IBusinessTypeRepository businessTypes)
     {
         _templates = templates;
         _products = products;
         _categories = categories;
+        _businessTypes = businessTypes;
     }
 
     public async Task<CatalogTemplateDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
@@ -31,12 +34,16 @@ public sealed class CatalogTemplateQueryService
             return null;
         }
 
-        return await EnrichAsync(GlobalCatalogDtoMaps.Map(template), cancellationToken).ConfigureAwait(false);
+        var codes = await BusinessTypeResolver
+            .LoadCodeLookupAsync(_businessTypes, [template.PrimaryBusinessTypeId], cancellationToken)
+            .ConfigureAwait(false);
+        return await EnrichAsync(GlobalCatalogDtoMaps.Map(template, codes), cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<PagedResult<CatalogTemplateSummaryDto>> ListAsync(
         CatalogTemplateStatus? status,
-        BusinessType? primaryBusinessType,
+        Guid? primaryBusinessTypeId,
+        string? primaryBusinessTypeCode,
         string? search,
         int? page,
         int? pageSize,
@@ -46,25 +53,39 @@ public sealed class CatalogTemplateQueryService
     {
         var (skip, take) = CatalogPagination.Normalize(page, pageSize);
         var (items, total) = await _templates
-            .ListAsync(status, primaryBusinessType, search, skip, take, cancellationToken, sortBy, sortDescending)
+            .ListAsync(
+                status,
+                primaryBusinessTypeId,
+                primaryBusinessTypeCode,
+                search,
+                skip,
+                take,
+                cancellationToken,
+                sortBy,
+                sortDescending)
             .ConfigureAwait(false);
 
+        var codes = await BusinessTypeResolver
+            .LoadCodeLookupAsync(_businessTypes, items.Select(i => i.PrimaryBusinessTypeId), cancellationToken)
+            .ConfigureAwait(false);
         return new PagedResult<CatalogTemplateSummaryDto>(
-            items.Select(GlobalCatalogDtoMaps.MapSummary).ToList(),
+            items.Select(i => GlobalCatalogDtoMaps.MapSummary(i, codes)).ToList(),
             total,
             Math.Max(page ?? 1, 1),
             take);
     }
 
     public async Task<PagedResult<CatalogTemplateSummaryDto>> ListPublishedForMerchantsAsync(
-        BusinessType? primaryBusinessType,
+        Guid? primaryBusinessTypeId,
+        string? primaryBusinessTypeCode,
         string? search,
         int? page,
         int? pageSize,
         CancellationToken cancellationToken = default) =>
         await ListAsync(
                 CatalogTemplateStatus.Published,
-                primaryBusinessType,
+                primaryBusinessTypeId,
+                primaryBusinessTypeCode,
                 search,
                 page,
                 pageSize,
@@ -82,7 +103,10 @@ public sealed class CatalogTemplateQueryService
             return null;
         }
 
-        return await EnrichAsync(GlobalCatalogDtoMaps.Map(template), cancellationToken).ConfigureAwait(false);
+        var codes = await BusinessTypeResolver
+            .LoadCodeLookupAsync(_businessTypes, [template.PrimaryBusinessTypeId], cancellationToken)
+            .ConfigureAwait(false);
+        return await EnrichAsync(GlobalCatalogDtoMaps.Map(template, codes), cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -117,7 +141,8 @@ public sealed class CatalogTemplateQueryService
             .ListAsync(
                 status,
                 categoryId is null ? null : GlobalCategoryId.From(categoryId.Value),
-                businessType: null,
+                businessTypeId: null,
+                businessTypeCode: null,
                 search,
                 barcode,
                 sku,
@@ -131,7 +156,7 @@ public sealed class CatalogTemplateQueryService
 
         return ApplicationResult<PagedResult<GlobalProductDto>>.Success(
             new PagedResult<GlobalProductDto>(
-                items.Select(GlobalCatalogDtoMaps.Map).ToList(),
+                items.Select(i => GlobalCatalogDtoMaps.Map(i)).ToList(),
                 total,
                 Math.Max(page ?? 1, 1),
                 take));
@@ -194,15 +219,18 @@ public sealed class CatalogTemplateQueryService
 public sealed class CreateCatalogTemplate
 {
     private readonly ICatalogTemplateRepository _templates;
+    private readonly IBusinessTypeRepository _businessTypes;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
     public CreateCatalogTemplate(
         ICatalogTemplateRepository templates,
+        IBusinessTypeRepository businessTypes,
         IPlatformUnitOfWork unitOfWork,
         IClock clock)
     {
         _templates = templates;
+        _businessTypes = businessTypes;
         _unitOfWork = unitOfWork;
         _clock = clock;
     }
@@ -213,7 +241,13 @@ public sealed class CreateCatalogTemplate
     {
         try
         {
-            var businessType = CatalogTemplateUseCaseHelpers.ParseBusinessType(request.PrimaryBusinessType);
+            var businessTypeId = await BusinessTypeResolver
+                .ResolvePrimaryAsync(
+                    _businessTypes,
+                    request.PrimaryBusinessTypeId,
+                    request.PrimaryBusinessType,
+                    cancellationToken)
+                .ConfigureAwait(false);
             var selectionMode = CatalogTemplateUseCaseHelpers.ParseSelectionMode(
                 request.SelectionMode,
                 SelectionMode.Curated);
@@ -229,7 +263,7 @@ public sealed class CreateCatalogTemplate
 
             var template = CatalogTemplate.Create(
                 request.Name,
-                businessType,
+                businessTypeId,
                 _clock.UtcNow,
                 slug,
                 request.Description,
@@ -239,7 +273,10 @@ public sealed class CreateCatalogTemplate
 
             await _templates.AddAsync(template, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-            return ApplicationResult<CatalogTemplateDto>.Success(GlobalCatalogDtoMaps.Map(template));
+            var codes = await BusinessTypeResolver
+                .LoadCodeLookupAsync(_businessTypes, [template.PrimaryBusinessTypeId], cancellationToken)
+                .ConfigureAwait(false);
+            return ApplicationResult<CatalogTemplateDto>.Success(GlobalCatalogDtoMaps.Map(template, codes));
         }
         catch (DomainException ex)
         {
@@ -255,15 +292,18 @@ public sealed class CreateCatalogTemplate
 public sealed class UpdateCatalogTemplate
 {
     private readonly ICatalogTemplateRepository _templates;
+    private readonly IBusinessTypeRepository _businessTypes;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
     public UpdateCatalogTemplate(
         ICatalogTemplateRepository templates,
+        IBusinessTypeRepository businessTypes,
         IPlatformUnitOfWork unitOfWork,
         IClock clock)
     {
         _templates = templates;
+        _businessTypes = businessTypes;
         _unitOfWork = unitOfWork;
         _clock = clock;
     }
@@ -291,7 +331,13 @@ public sealed class UpdateCatalogTemplate
 
         try
         {
-            var businessType = CatalogTemplateUseCaseHelpers.ParseBusinessType(request.PrimaryBusinessType);
+            var businessTypeId = await BusinessTypeResolver
+                .ResolvePrimaryAsync(
+                    _businessTypes,
+                    request.PrimaryBusinessTypeId,
+                    request.PrimaryBusinessType,
+                    cancellationToken)
+                .ConfigureAwait(false);
             SelectionMode? selectionMode = null;
             if (!string.IsNullOrWhiteSpace(request.SelectionMode))
             {
@@ -312,7 +358,7 @@ public sealed class UpdateCatalogTemplate
 
             template.Update(
                 request.Name,
-                businessType,
+                businessTypeId,
                 _clock.UtcNow,
                 slug,
                 request.Description,
@@ -882,18 +928,6 @@ internal static class CatalogTemplateLifecycleHelper
 
 internal static class CatalogTemplateUseCaseHelpers
 {
-    public static BusinessType ParseBusinessType(string value)
-    {
-        if (!Enum.TryParse<BusinessType>(value, ignoreCase: true, out var type))
-        {
-            throw new DomainException(
-                DomainErrorCodes.InvalidGlobalCatalogBusinessType,
-                $"Unrecognized business type '{value}'.");
-        }
-
-        return GlobalCatalogRules.NormalizePrimaryBusinessType(type);
-    }
-
     public static SelectionMode ParseSelectionMode(string? value, SelectionMode fallback)
     {
         if (string.IsNullOrWhiteSpace(value))

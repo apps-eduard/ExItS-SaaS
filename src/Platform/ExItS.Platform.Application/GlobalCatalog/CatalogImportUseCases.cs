@@ -68,6 +68,7 @@ public sealed class CreateCatalogImport
     private readonly ICatalogImportFileParser _parser;
     private readonly IGlobalCategoryRepository _categories;
     private readonly IGlobalProductRepository _products;
+    private readonly IBusinessTypeRepository _businessTypes;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
     private readonly IPlatformActorAccessor _actor;
@@ -77,6 +78,7 @@ public sealed class CreateCatalogImport
         ICatalogImportFileParser parser,
         IGlobalCategoryRepository categories,
         IGlobalProductRepository products,
+        IBusinessTypeRepository businessTypes,
         IPlatformUnitOfWork unitOfWork,
         IClock clock,
         IPlatformActorAccessor actor)
@@ -85,6 +87,7 @@ public sealed class CreateCatalogImport
         _parser = parser;
         _categories = categories;
         _products = products;
+        _businessTypes = businessTypes;
         _unitOfWork = unitOfWork;
         _clock = clock;
         _actor = actor;
@@ -178,7 +181,7 @@ public sealed class CreateCatalogImport
 
             var now = _clock.UtcNow;
             var items = await CatalogImportRowMapper
-                .MapRowsAsync(rows, _categories, _products, now, cancellationToken)
+                .MapRowsAsync(rows, _categories, _products, _businessTypes, now, cancellationToken)
                 .ConfigureAwait(false);
 
             var actor = _actor.GetCurrent().ActorIdentifier;
@@ -339,6 +342,7 @@ public sealed class ProcessCatalogImportChunk
     private readonly ICatalogImportJobRepository _imports;
     private readonly IGlobalProductRepository _products;
     private readonly IGlobalCategoryRepository _categories;
+    private readonly IBusinessTypeRepository _businessTypes;
     private readonly ICatalogTemplateRepository _templates;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
@@ -350,6 +354,7 @@ public sealed class ProcessCatalogImportChunk
         ICatalogImportJobRepository imports,
         IGlobalProductRepository products,
         IGlobalCategoryRepository categories,
+        IBusinessTypeRepository businessTypes,
         IPlatformUnitOfWork unitOfWork,
         IClock clock,
         IAuditWriter auditWriter,
@@ -358,6 +363,7 @@ public sealed class ProcessCatalogImportChunk
         _imports = imports;
         _products = products;
         _categories = categories;
+        _businessTypes = businessTypes;
         _templates = templates ?? new NullCatalogTemplateRepository();
         _unitOfWork = unitOfWork;
         _clock = clock;
@@ -571,7 +577,9 @@ public sealed class ProcessCatalogImportChunk
                 item.Description,
                 item.ImageReference,
                 tags,
-                CatalogImportRowMapper.ParseBusinessTypes(item.BusinessTypesRaw));
+                await CatalogImportRowMapper
+                    .ParseBusinessTypesAsync(_businessTypes, item.BusinessTypesRaw, cancellationToken)
+                    .ConfigureAwait(false));
 
             if (targetStatus != GlobalProductStatus.Draft)
             {
@@ -715,7 +723,8 @@ public sealed class ProcessCatalogImportChunk
             .ListAsync(
                 status: null,
                 categoryId: null,
-                businessType: null,
+                businessTypeId: null,
+                businessTypeCode: null,
                 search: null,
                 barcode: barcode,
                 sku: sku,
@@ -746,7 +755,8 @@ file sealed class NullCatalogTemplateRepository : ICatalogTemplateRepository
 
     public Task<(IReadOnlyList<CatalogTemplate> Items, int TotalCount)> ListAsync(
         CatalogTemplateStatus? status,
-        BusinessType? primaryBusinessType,
+        Guid? primaryBusinessTypeId,
+        string? primaryBusinessTypeCode,
         string? search,
         int skip,
         int take,

@@ -200,27 +200,71 @@ public static class GlobalCatalogRules
         return normalized;
     }
 
-    public static IReadOnlyList<BusinessType> NormalizeBusinessTypes(IEnumerable<BusinessType>? types)
+    public static IReadOnlyList<BusinessTypeId> NormalizeBusinessTypeIds(IEnumerable<BusinessTypeId>? ids)
     {
-        if (types is null)
+        if (ids is null)
         {
-            return Array.Empty<BusinessType>();
+            return Array.Empty<BusinessTypeId>();
         }
 
-        var set = new SortedSet<BusinessType>();
-        foreach (var type in types)
+        var set = new SortedSet<Guid>();
+        var result = new List<BusinessTypeId>();
+        foreach (var id in ids)
         {
-            if (!Enum.IsDefined(type))
+            if (id is null || id.Value == Guid.Empty)
             {
                 throw new DomainException(
                     DomainErrorCodes.InvalidGlobalCatalogBusinessType,
-                    $"Unrecognized business type '{type}'.");
+                    "Business type id cannot be empty.");
             }
 
-            set.Add(type);
+            if (set.Add(id.Value))
+            {
+                result.Add(id);
+            }
         }
 
-        return set.ToList();
+        return result.OrderBy(i => i.Value).ToList();
+    }
+
+    public static BusinessTypeId NormalizePrimaryBusinessTypeId(BusinessTypeId id)
+    {
+        if (id is null || id.Value == Guid.Empty)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidGlobalCatalogBusinessType,
+                "Primary business type is required.");
+        }
+
+        return id;
+    }
+
+    /// <summary>Stable business-type code: trim, PascalCase alphanumeric (no spaces).</summary>
+    public static string NormalizeBusinessTypeCode(string? code)
+    {
+        if (string.IsNullOrWhiteSpace(code))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidGlobalCatalogBusinessType,
+                "Business type code cannot be blank.");
+        }
+
+        var trimmed = code.Trim();
+        if (trimmed.Length > 64)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidGlobalCatalogBusinessType,
+                "Business type code must be at most 64 characters.");
+        }
+
+        if (!System.Text.RegularExpressions.Regex.IsMatch(trimmed, @"^[A-Za-z][A-Za-z0-9]*$"))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidGlobalCatalogBusinessType,
+                "Business type code must be alphanumeric and start with a letter (e.g. SariSari).");
+        }
+
+        return trimmed;
     }
 
     /// <summary>Lowercase kebab-case slug from name or explicit slug text.</summary>
@@ -290,18 +334,6 @@ public static class GlobalCatalogRules
         }
 
         return mode;
-    }
-
-    public static BusinessType NormalizePrimaryBusinessType(BusinessType type)
-    {
-        if (!Enum.IsDefined(type))
-        {
-            throw new DomainException(
-                DomainErrorCodes.InvalidGlobalCatalogBusinessType,
-                $"Unrecognized business type '{type}'.");
-        }
-
-        return type;
     }
 
     private static string NormalizeRequiredCode(string? value, int maxLength, string errorCode, string fieldLabel)

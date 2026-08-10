@@ -39,6 +39,7 @@ public static class CatalogImportRowMapper
         IReadOnlyList<CatalogImportRawRow> rows,
         IGlobalCategoryRepository categories,
         IGlobalProductRepository products,
+        IBusinessTypeRepository businessTypes,
         DateTimeOffset utcNow,
         CancellationToken cancellationToken = default)
     {
@@ -52,6 +53,7 @@ public static class CatalogImportRowMapper
                     row,
                     categories,
                     products,
+                    businessTypes,
                     barcodesInFile,
                     skusInFile,
                     utcNow,
@@ -66,6 +68,7 @@ public static class CatalogImportRowMapper
         CatalogImportRawRow row,
         IGlobalCategoryRepository categories,
         IGlobalProductRepository products,
+        IBusinessTypeRepository businessTypes,
         Dictionary<string, int> barcodesInFile,
         Dictionary<string, int> skusInFile,
         DateTimeOffset utcNow,
@@ -309,7 +312,30 @@ public static class CatalogImportRowMapper
                 productStatus);
             var businessTypesRaw = NullIfEmpty(CatalogImportRules.SanitizeCell(rawBusinessTypes));
             _ = GlobalCatalogRules.NormalizeSearchTags(SplitList(tagsRaw));
-            _ = ParseBusinessTypes(businessTypesRaw);
+            try
+            {
+                _ = await ParseBusinessTypesAsync(businessTypes, businessTypesRaw, cancellationToken)
+                    .ConfigureAwait(false);
+            }
+            catch (DomainException ex)
+            {
+                return CatalogImportItem.CreateFailed(
+                    row.RowNumber,
+                    name,
+                    unit.ToString(),
+                    ex.ErrorCode,
+                    ex.Message,
+                    description,
+                    sku,
+                    barcode,
+                    categoryId,
+                    categoryName,
+                    price,
+                    cost,
+                    image,
+                    tagsRaw,
+                    businessTypesRaw);
+            }
 
             try
             {
@@ -598,29 +624,20 @@ public static class CatalogImportRowMapper
             string.Join(" · ", parts));
     }
 
-    public static IReadOnlyList<BusinessType> ParseBusinessTypes(string? raw)
+    public static async Task<IReadOnlyList<BusinessTypeId>> ParseBusinessTypesAsync(
+        IBusinessTypeRepository businessTypes,
+        string? raw,
+        CancellationToken cancellationToken = default)
     {
         var parts = SplitList(raw);
         if (parts.Count == 0)
         {
-            return Array.Empty<BusinessType>();
+            return Array.Empty<BusinessTypeId>();
         }
 
-        var parsed = new List<BusinessType>(parts.Count);
-        foreach (var part in parts)
-        {
-            if (!Enum.TryParse<BusinessType>(part, ignoreCase: true, out var type)
-                || !Enum.IsDefined(type))
-            {
-                throw new DomainException(
-                    DomainErrorCodes.InvalidGlobalCatalogBusinessType,
-                    $"Unrecognized business type '{part}'.");
-            }
-
-            parsed.Add(type);
-        }
-
-        return GlobalCatalogRules.NormalizeBusinessTypes(parsed);
+        return await BusinessTypeResolver
+            .ResolveManyAsync(businessTypes, parts, ids: null, cancellationToken)
+            .ConfigureAwait(false);
     }
 
     private static string? ComposeTagsRaw(

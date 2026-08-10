@@ -159,6 +159,10 @@ public static class ApplicationErrorCodes
 
     public const string GlobalCategoryNotFound = "application.global_catalog.category.not_found";
     public const string GlobalProductNotFound = "application.global_catalog.product.not_found";
+    public const string BusinessTypeNotFound = "application.global_catalog.business_type.not_found";
+    public const string DuplicateBusinessTypeCode = "application.global_catalog.business_type.code_conflict";
+    public const string DuplicateBusinessTypeName = "application.global_catalog.business_type.name_conflict";
+    public const string BusinessTypeInUse = "application.global_catalog.business_type.in_use";
     public const string DuplicateGlobalCategoryName = "application.global_catalog.category.name_conflict";
     public const string DuplicateGlobalProductBarcode = "application.global_catalog.product.barcode_conflict";
     public const string DuplicateGlobalProductSku = "application.global_catalog.product.sku_conflict";

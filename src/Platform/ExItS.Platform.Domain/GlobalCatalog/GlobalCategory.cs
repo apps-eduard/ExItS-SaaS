@@ -8,7 +8,7 @@ namespace ExItS.Platform.Domain.GlobalCatalog;
 /// </summary>
 public sealed class GlobalCategory
 {
-    private readonly List<BusinessType> _businessTypes = [];
+    private readonly List<BusinessTypeId> _businessTypeIds = [];
 
     public GlobalCategoryId Id { get; }
     public string Name { get; private set; }
@@ -16,7 +16,7 @@ public sealed class GlobalCategory
     public string? IconReference { get; private set; }
     public int SortOrder { get; private set; }
     public GlobalCategoryStatus Status { get; private set; }
-    public IReadOnlyList<BusinessType> BusinessTypes => _businessTypes;
+    public IReadOnlyList<BusinessTypeId> BusinessTypeIds => _businessTypeIds;
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
 
@@ -27,7 +27,7 @@ public sealed class GlobalCategory
         string? iconReference,
         int sortOrder,
         GlobalCategoryStatus status,
-        IEnumerable<BusinessType> businessTypes,
+        IEnumerable<BusinessTypeId> businessTypeIds,
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc)
     {
@@ -37,7 +37,7 @@ public sealed class GlobalCategory
         IconReference = iconReference;
         SortOrder = sortOrder;
         Status = status;
-        _businessTypes.AddRange(GlobalCatalogRules.NormalizeBusinessTypes(businessTypes));
+        _businessTypeIds.AddRange(GlobalCatalogRules.NormalizeBusinessTypeIds(businessTypeIds));
         CreatedAtUtc = createdAtUtc;
         UpdatedAtUtc = updatedAtUtc;
     }
@@ -48,7 +48,7 @@ public sealed class GlobalCategory
         GlobalCategoryId? parentId = null,
         string? iconReference = null,
         int sortOrder = 0,
-        IEnumerable<BusinessType>? businessTypes = null,
+        IEnumerable<BusinessTypeId>? businessTypeIds = null,
         GlobalCategoryId? id = null)
     {
         DomainTime.EnsureUtc(utcNow);
@@ -65,7 +65,7 @@ public sealed class GlobalCategory
                 DomainErrorCodes.InvalidGlobalCategoryIcon),
             sortOrder,
             GlobalCategoryStatus.Active,
-            businessTypes ?? Array.Empty<BusinessType>(),
+            businessTypeIds ?? Array.Empty<BusinessTypeId>(),
             utcNow,
             utcNow);
     }
@@ -77,7 +77,7 @@ public sealed class GlobalCategory
         string? iconReference,
         int sortOrder,
         GlobalCategoryStatus status,
-        IEnumerable<BusinessType> businessTypes,
+        IEnumerable<BusinessTypeId> businessTypeIds,
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc) =>
         new(
@@ -87,7 +87,7 @@ public sealed class GlobalCategory
             iconReference,
             sortOrder,
             status,
-            businessTypes,
+            businessTypeIds,
             createdAtUtc,
             updatedAtUtc);
 
@@ -150,11 +150,33 @@ public sealed class GlobalCategory
         UpdatedAtUtc = utcNow;
     }
 
-    public void AssignBusinessTypes(IEnumerable<BusinessType> businessTypes, DateTimeOffset utcNow)
+    /// <summary>Replaces the full business-type set (explicit Replace semantics).</summary>
+    public void AssignBusinessTypes(IEnumerable<BusinessTypeId> businessTypeIds, DateTimeOffset utcNow)
     {
         EnsureMutable(utcNow);
-        _businessTypes.Clear();
-        _businessTypes.AddRange(GlobalCatalogRules.NormalizeBusinessTypes(businessTypes));
+        _businessTypeIds.Clear();
+        _businessTypeIds.AddRange(GlobalCatalogRules.NormalizeBusinessTypeIds(businessTypeIds));
+        UpdatedAtUtc = utcNow;
+    }
+
+    /// <summary>Idempotent add of business types (union).</summary>
+    public void AddBusinessTypes(IEnumerable<BusinessTypeId> businessTypeIds, DateTimeOffset utcNow)
+    {
+        EnsureMutable(utcNow);
+        var merged = _businessTypeIds
+            .Concat(businessTypeIds ?? Array.Empty<BusinessTypeId>())
+            .ToList();
+        _businessTypeIds.Clear();
+        _businessTypeIds.AddRange(GlobalCatalogRules.NormalizeBusinessTypeIds(merged));
+        UpdatedAtUtc = utcNow;
+    }
+
+    /// <summary>Idempotent remove of business types.</summary>
+    public void RemoveBusinessTypes(IEnumerable<BusinessTypeId> businessTypeIds, DateTimeOffset utcNow)
+    {
+        EnsureMutable(utcNow);
+        var remove = new HashSet<Guid>((businessTypeIds ?? Array.Empty<BusinessTypeId>()).Select(i => i.Value));
+        _businessTypeIds.RemoveAll(i => remove.Contains(i.Value));
         UpdatedAtUtc = utcNow;
     }
 

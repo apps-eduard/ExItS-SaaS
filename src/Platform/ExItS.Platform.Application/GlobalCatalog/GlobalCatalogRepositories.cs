@@ -2,6 +2,45 @@ using ExItS.Platform.Domain.GlobalCatalog;
 
 namespace ExItS.Platform.Application.GlobalCatalog;
 
+public interface IBusinessTypeRepository
+{
+    Task<BusinessType?> GetByIdAsync(BusinessTypeId id, CancellationToken cancellationToken = default);
+
+    Task<BusinessType?> GetByCodeAsync(string code, CancellationToken cancellationToken = default);
+
+    Task<BusinessType?> FindByNormalizedNameAsync(
+        string normalizedName,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> ExistsWithCodeAsync(
+        string code,
+        BusinessTypeId? excludingId = null,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> ExistsWithNameAsync(
+        string name,
+        BusinessTypeId? excludingId = null,
+        CancellationToken cancellationToken = default);
+
+    Task<(IReadOnlyList<BusinessType> Items, int TotalCount)> ListAsync(
+        BusinessTypeStatus? status,
+        string? search,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default,
+        BusinessTypeListSortBy sortBy = BusinessTypeListSortBy.SortOrder,
+        bool sortDescending = false);
+
+    Task<IReadOnlyList<BusinessType>> GetByIdsAsync(
+        IReadOnlyCollection<Guid> ids,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> IsReferencedAsync(BusinessTypeId id, CancellationToken cancellationToken = default);
+
+    Task AddAsync(BusinessType businessType, CancellationToken cancellationToken = default);
+    Task UpdateAsync(BusinessType businessType, CancellationToken cancellationToken = default);
+}
+
 public interface IGlobalCategoryRepository
 {
     Task<GlobalCategory?> GetByIdAsync(GlobalCategoryId id, CancellationToken cancellationToken = default);
@@ -15,7 +54,8 @@ public interface IGlobalCategoryRepository
     Task<(IReadOnlyList<GlobalCategory> Items, int TotalCount)> ListAsync(
         GlobalCategoryStatus? status,
         GlobalCategoryId? parentId,
-        BusinessType? businessType,
+        Guid? businessTypeId,
+        string? businessTypeCode,
         string? search,
         int skip,
         int take,
@@ -52,7 +92,8 @@ public interface IGlobalProductRepository
     Task<(IReadOnlyList<GlobalProduct> Items, int TotalCount)> ListAsync(
         GlobalProductStatus? status,
         GlobalCategoryId? categoryId,
-        BusinessType? businessType,
+        Guid? businessTypeId,
+        string? businessTypeCode,
         string? search,
         string? barcode,
         string? sku,
@@ -82,7 +123,8 @@ public interface ICatalogTemplateRepository
 
     Task<(IReadOnlyList<CatalogTemplate> Items, int TotalCount)> ListAsync(
         CatalogTemplateStatus? status,
-        BusinessType? primaryBusinessType,
+        Guid? primaryBusinessTypeId,
+        string? primaryBusinessTypeCode,
         string? search,
         int skip,
         int take,

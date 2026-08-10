@@ -15,10 +15,26 @@ internal static class MerchantCatalogDiscoveryEndpoints
     {
         var root = app.MapGroup("/api/v1/catalog").RequireAuthorization();
 
+        root.MapGet("/business-types", async (
+            HttpContext http,
+            BusinessTypeQueryService queries,
+            CancellationToken ct) =>
+        {
+            var denied = EnsureAuthenticated(http);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var items = await queries.ListActiveForMerchantsAsync(ct).ConfigureAwait(false);
+            return Results.Ok(items);
+        });
+
         root.MapGet("/templates", async (
             HttpContext http,
             CatalogTemplateQueryService queries,
-            BusinessType? businessType,
+            Guid? businessTypeId,
+            string? businessTypeCode,
             string? search,
             int? page,
             int? pageSize,
@@ -31,7 +47,7 @@ internal static class MerchantCatalogDiscoveryEndpoints
             }
 
             var result = await queries
-                .ListPublishedForMerchantsAsync(businessType, search, page, pageSize, ct)
+                .ListPublishedForMerchantsAsync(businessTypeId, businessTypeCode, search, page, pageSize, ct)
                 .ConfigureAwait(false);
             return Results.Ok(result);
         });
@@ -85,7 +101,8 @@ internal static class MerchantCatalogDiscoveryEndpoints
             HttpContext http,
             GlobalProductQueryService queries,
             string? q,
-            BusinessType? businessType,
+            Guid? businessTypeId,
+            string? businessTypeCode,
             Guid? categoryId,
             string? barcode,
             string? sku,
@@ -103,7 +120,8 @@ internal static class MerchantCatalogDiscoveryEndpoints
                 .ListAsync(
                     GlobalProductStatus.Active,
                     categoryId,
-                    businessType,
+                    businessTypeId,
+                    businessTypeCode,
                     q,
                     barcode,
                     sku,
@@ -142,7 +160,8 @@ internal static class MerchantCatalogDiscoveryEndpoints
         root.MapGet("/categories", async (
             HttpContext http,
             GlobalCategoryQueryService queries,
-            BusinessType? businessType,
+            Guid? businessTypeId,
+            string? businessTypeCode,
             Guid? parentId,
             string? search,
             int? page,
@@ -159,7 +178,8 @@ internal static class MerchantCatalogDiscoveryEndpoints
                 .ListAsync(
                     GlobalCategoryStatus.Active,
                     parentId,
-                    businessType,
+                    businessTypeId,
+                    businessTypeCode,
                     search,
                     page,
                     pageSize,

@@ -7,6 +7,205 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ExItS.Platform.Infrastructure.Persistence.Repositories;
 
+internal sealed class BusinessTypeRepository : IBusinessTypeRepository
+{
+    private readonly PlatformDbContext _db;
+
+    public BusinessTypeRepository(PlatformDbContext db) => _db = db;
+
+    public async Task<BusinessType?> GetByIdAsync(
+        BusinessTypeId id,
+        CancellationToken cancellationToken = default)
+    {
+        var record = await _db.BusinessTypes
+            .AsNoTracking()
+            .FirstOrDefaultAsync(b => b.Id == id.Value, cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : GlobalCatalogEntityMapper.ToDomain(record);
+    }
+
+    public async Task<BusinessType?> GetByCodeAsync(
+        string code,
+        CancellationToken cancellationToken = default)
+    {
+        var normalized = code.Trim();
+        var record = await _db.BusinessTypes
+            .AsNoTracking()
+            .FirstOrDefaultAsync(b => b.Code.ToLower() == normalized.ToLower(), cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : GlobalCatalogEntityMapper.ToDomain(record);
+    }
+
+    public async Task<BusinessType?> FindByNormalizedNameAsync(
+        string normalizedName,
+        CancellationToken cancellationToken = default)
+    {
+        var record = await _db.BusinessTypes
+            .AsNoTracking()
+            .FirstOrDefaultAsync(b => b.NormalizedName == normalizedName, cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : GlobalCatalogEntityMapper.ToDomain(record);
+    }
+
+    public async Task<bool> ExistsWithCodeAsync(
+        string code,
+        BusinessTypeId? excludingId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var normalized = code.Trim();
+        var query = _db.BusinessTypes.AsNoTracking()
+            .Where(b => b.Code.ToLower() == normalized.ToLower());
+        if (excludingId is not null)
+        {
+            query = query.Where(b => b.Id != excludingId.Value);
+        }
+
+        return await query.AnyAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<bool> ExistsWithNameAsync(
+        string name,
+        BusinessTypeId? excludingId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var normalized = name.Trim().ToUpperInvariant();
+        var query = _db.BusinessTypes.AsNoTracking()
+            .Where(b => b.NormalizedName == normalized);
+        if (excludingId is not null)
+        {
+            query = query.Where(b => b.Id != excludingId.Value);
+        }
+
+        return await query.AnyAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<(IReadOnlyList<BusinessType> Items, int TotalCount)> ListAsync(
+        BusinessTypeStatus? status,
+        string? search,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default,
+        BusinessTypeListSortBy sortBy = BusinessTypeListSortBy.SortOrder,
+        bool sortDescending = false)
+    {
+        var query = _db.BusinessTypes.AsNoTracking().AsQueryable();
+
+        if (status is not null)
+        {
+            var statusText = status.Value.ToString();
+            query = query.Where(b => b.Status == statusText);
+        }
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim().ToLowerInvariant();
+            query = query.Where(b =>
+                b.Name.ToLower().Contains(term)
+                || b.Code.ToLower().Contains(term));
+        }
+
+        query = ApplySort(query, sortBy, sortDescending);
+
+        var totalCount = await query.CountAsync(cancellationToken).ConfigureAwait(false);
+        var records = await query.Skip(skip).Take(take).ToListAsync(cancellationToken).ConfigureAwait(false);
+        return (records.Select(GlobalCatalogEntityMapper.ToDomain).ToList(), totalCount);
+    }
+
+    private static IQueryable<BusinessTypeRecord> ApplySort(
+        IQueryable<BusinessTypeRecord> query,
+        BusinessTypeListSortBy sortBy,
+        bool sortDescending) =>
+        sortBy switch
+        {
+            BusinessTypeListSortBy.Name => sortDescending
+                ? query.OrderByDescending(b => b.Name).ThenBy(b => b.Id)
+                : query.OrderBy(b => b.Name).ThenBy(b => b.Id),
+            BusinessTypeListSortBy.Code => sortDescending
+                ? query.OrderByDescending(b => b.Code).ThenBy(b => b.Id)
+                : query.OrderBy(b => b.Code).ThenBy(b => b.Id),
+            BusinessTypeListSortBy.Status => sortDescending
+                ? query.OrderByDescending(b => b.Status).ThenBy(b => b.Id)
+                : query.OrderBy(b => b.Status).ThenBy(b => b.Id),
+            BusinessTypeListSortBy.UpdatedAtUtc => sortDescending
+                ? query.OrderByDescending(b => b.UpdatedAtUtc).ThenBy(b => b.Id)
+                : query.OrderBy(b => b.UpdatedAtUtc).ThenBy(b => b.Id),
+            BusinessTypeListSortBy.CreatedAtUtc => sortDescending
+                ? query.OrderByDescending(b => b.CreatedAtUtc).ThenBy(b => b.Id)
+                : query.OrderBy(b => b.CreatedAtUtc).ThenBy(b => b.Id),
+            _ => sortDescending
+                ? query.OrderByDescending(b => b.SortOrder).ThenByDescending(b => b.Name).ThenBy(b => b.Id)
+                : query.OrderBy(b => b.SortOrder).ThenBy(b => b.Name).ThenBy(b => b.Id)
+        };
+
+    public async Task<IReadOnlyList<BusinessType>> GetByIdsAsync(
+        IReadOnlyCollection<Guid> ids,
+        CancellationToken cancellationToken = default)
+    {
+        if (ids.Count == 0)
+        {
+            return [];
+        }
+
+        var idArray = ids.Distinct().ToArray();
+        var records = await _db.BusinessTypes
+            .AsNoTracking()
+            .Where(b => idArray.Contains(b.Id))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return records.Select(GlobalCatalogEntityMapper.ToDomain).ToList();
+    }
+
+    public async Task<bool> IsReferencedAsync(
+        BusinessTypeId id,
+        CancellationToken cancellationToken = default)
+    {
+        var usedByCategory = await _db.GlobalCategoryBusinessTypes
+            .AsNoTracking()
+            .AnyAsync(b => b.BusinessTypeId == id.Value, cancellationToken)
+            .ConfigureAwait(false);
+        if (usedByCategory)
+        {
+            return true;
+        }
+
+        var usedByProduct = await _db.GlobalProductBusinessTypes
+            .AsNoTracking()
+            .AnyAsync(b => b.BusinessTypeId == id.Value, cancellationToken)
+            .ConfigureAwait(false);
+        if (usedByProduct)
+        {
+            return true;
+        }
+
+        return await _db.CatalogTemplates
+            .AsNoTracking()
+            .AnyAsync(t => t.PrimaryBusinessTypeId == id.Value, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    public Task AddAsync(BusinessType businessType, CancellationToken cancellationToken = default)
+    {
+        _db.BusinessTypes.Add(GlobalCatalogEntityMapper.ToRecord(businessType));
+        return Task.CompletedTask;
+    }
+
+    public async Task UpdateAsync(BusinessType businessType, CancellationToken cancellationToken = default)
+    {
+        var record = await _db.BusinessTypes
+            .FirstOrDefaultAsync(b => b.Id == businessType.Id.Value, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (record is null)
+        {
+            throw new PersistenceConflictException(
+                ApplicationErrorCodes.BusinessTypeNotFound,
+                "Business type was not found.");
+        }
+
+        GlobalCatalogEntityMapper.ApplyToRecord(businessType, record);
+    }
+}
+
 internal sealed class GlobalCategoryRepository : IGlobalCategoryRepository
 {
     private readonly PlatformDbContext _db;
@@ -51,7 +250,8 @@ internal sealed class GlobalCategoryRepository : IGlobalCategoryRepository
     public async Task<(IReadOnlyList<GlobalCategory> Items, int TotalCount)> ListAsync(
         GlobalCategoryStatus? status,
         GlobalCategoryId? parentId,
-        BusinessType? businessType,
+        Guid? businessTypeId,
+        string? businessTypeCode,
         string? search,
         int skip,
         int take,
@@ -72,11 +272,8 @@ internal sealed class GlobalCategoryRepository : IGlobalCategoryRepository
             query = query.Where(c => c.ParentId == parentId.Value);
         }
 
-        if (businessType is not null)
-        {
-            var typeText = businessType.Value.ToString();
-            query = query.Where(c => c.BusinessTypes.Any(b => b.BusinessType == typeText));
-        }
+        query = await ApplyBusinessTypeFilterAsync(query, businessTypeId, businessTypeCode, cancellationToken)
+            .ConfigureAwait(false);
 
         if (!string.IsNullOrWhiteSpace(search))
         {
@@ -89,6 +286,36 @@ internal sealed class GlobalCategoryRepository : IGlobalCategoryRepository
         var totalCount = await query.CountAsync(cancellationToken).ConfigureAwait(false);
         var records = await query.Skip(skip).Take(take).ToListAsync(cancellationToken).ConfigureAwait(false);
         return (records.Select(GlobalCatalogEntityMapper.ToDomain).ToList(), totalCount);
+    }
+
+    private async Task<IQueryable<GlobalCategoryRecord>> ApplyBusinessTypeFilterAsync(
+        IQueryable<GlobalCategoryRecord> query,
+        Guid? businessTypeId,
+        string? businessTypeCode,
+        CancellationToken cancellationToken)
+    {
+        Guid? resolvedId = businessTypeId;
+        if (resolvedId is null && !string.IsNullOrWhiteSpace(businessTypeCode))
+        {
+            var code = businessTypeCode.Trim();
+            resolvedId = await _db.BusinessTypes.AsNoTracking()
+                .Where(b => b.Code.ToLower() == code.ToLower())
+                .Select(b => (Guid?)b.Id)
+                .FirstOrDefaultAsync(cancellationToken)
+                .ConfigureAwait(false);
+            if (resolvedId is null)
+            {
+                return query.Where(_ => false);
+            }
+        }
+
+        if (resolvedId is not null)
+        {
+            var id = resolvedId.Value;
+            query = query.Where(c => c.BusinessTypes.Any(b => b.BusinessTypeId == id));
+        }
+
+        return query;
     }
 
     private static IQueryable<GlobalCategoryRecord> ApplyCategorySort(
@@ -222,7 +449,8 @@ internal sealed class GlobalProductRepository : IGlobalProductRepository
     public async Task<(IReadOnlyList<GlobalProduct> Items, int TotalCount)> ListAsync(
         GlobalProductStatus? status,
         GlobalCategoryId? categoryId,
-        BusinessType? businessType,
+        Guid? businessTypeId,
+        string? businessTypeCode,
         string? search,
         string? barcode,
         string? sku,
@@ -246,11 +474,8 @@ internal sealed class GlobalProductRepository : IGlobalProductRepository
             query = query.Where(p => p.GlobalCategoryId == categoryId.Value);
         }
 
-        if (businessType is not null)
-        {
-            var typeText = businessType.Value.ToString();
-            query = query.Where(p => p.BusinessTypes.Any(b => b.BusinessType == typeText));
-        }
+        query = await ApplyBusinessTypeFilterAsync(query, businessTypeId, businessTypeCode, cancellationToken)
+            .ConfigureAwait(false);
 
         if (!string.IsNullOrWhiteSpace(barcode))
         {
@@ -297,6 +522,36 @@ internal sealed class GlobalProductRepository : IGlobalProductRepository
         var totalCount = await query.CountAsync(cancellationToken).ConfigureAwait(false);
         var records = await query.Skip(skip).Take(take).ToListAsync(cancellationToken).ConfigureAwait(false);
         return (records.Select(GlobalCatalogEntityMapper.ToDomain).ToList(), totalCount);
+    }
+
+    private async Task<IQueryable<GlobalProductRecord>> ApplyBusinessTypeFilterAsync(
+        IQueryable<GlobalProductRecord> query,
+        Guid? businessTypeId,
+        string? businessTypeCode,
+        CancellationToken cancellationToken)
+    {
+        Guid? resolvedId = businessTypeId;
+        if (resolvedId is null && !string.IsNullOrWhiteSpace(businessTypeCode))
+        {
+            var code = businessTypeCode.Trim();
+            resolvedId = await _db.BusinessTypes.AsNoTracking()
+                .Where(b => b.Code.ToLower() == code.ToLower())
+                .Select(b => (Guid?)b.Id)
+                .FirstOrDefaultAsync(cancellationToken)
+                .ConfigureAwait(false);
+            if (resolvedId is null)
+            {
+                return query.Where(_ => false);
+            }
+        }
+
+        if (resolvedId is not null)
+        {
+            var id = resolvedId.Value;
+            query = query.Where(p => p.BusinessTypes.Any(b => b.BusinessTypeId == id));
+        }
+
+        return query;
     }
 
     private IQueryable<GlobalProductRecord> ApplyProductSort(
@@ -435,7 +690,8 @@ internal sealed class CatalogTemplateRepository : ICatalogTemplateRepository
 
     public async Task<(IReadOnlyList<CatalogTemplate> Items, int TotalCount)> ListAsync(
         CatalogTemplateStatus? status,
-        BusinessType? primaryBusinessType,
+        Guid? primaryBusinessTypeId,
+        string? primaryBusinessTypeCode,
         string? search,
         int skip,
         int take,
@@ -451,10 +707,25 @@ internal sealed class CatalogTemplateRepository : ICatalogTemplateRepository
             query = query.Where(t => t.Status == statusText);
         }
 
-        if (primaryBusinessType is not null)
+        Guid? resolvedId = primaryBusinessTypeId;
+        if (resolvedId is null && !string.IsNullOrWhiteSpace(primaryBusinessTypeCode))
         {
-            var typeText = primaryBusinessType.Value.ToString();
-            query = query.Where(t => t.PrimaryBusinessType == typeText);
+            var code = primaryBusinessTypeCode.Trim();
+            resolvedId = await _db.BusinessTypes.AsNoTracking()
+                .Where(b => b.Code.ToLower() == code.ToLower())
+                .Select(b => (Guid?)b.Id)
+                .FirstOrDefaultAsync(cancellationToken)
+                .ConfigureAwait(false);
+            if (resolvedId is null)
+            {
+                query = query.Where(_ => false);
+            }
+        }
+
+        if (resolvedId is not null)
+        {
+            var id = resolvedId.Value;
+            query = query.Where(t => t.PrimaryBusinessTypeId == id);
         }
 
         if (!string.IsNullOrWhiteSpace(search))
@@ -485,8 +756,8 @@ internal sealed class CatalogTemplateRepository : ICatalogTemplateRepository
                 ? query.OrderByDescending(t => t.Status).ThenBy(t => t.Id)
                 : query.OrderBy(t => t.Status).ThenBy(t => t.Id),
             CatalogTemplateListSortBy.PrimaryBusinessType => sortDescending
-                ? query.OrderByDescending(t => t.PrimaryBusinessType).ThenBy(t => t.Id)
-                : query.OrderBy(t => t.PrimaryBusinessType).ThenBy(t => t.Id),
+                ? query.OrderByDescending(t => t.PrimaryBusinessTypeId).ThenBy(t => t.Id)
+                : query.OrderBy(t => t.PrimaryBusinessTypeId).ThenBy(t => t.Id),
             CatalogTemplateListSortBy.UpdatedAtUtc => sortDescending
                 ? query.OrderByDescending(t => t.UpdatedAtUtc).ThenBy(t => t.Id)
                 : query.OrderBy(t => t.UpdatedAtUtc).ThenBy(t => t.Id),

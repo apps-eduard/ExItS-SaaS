@@ -13,11 +13,190 @@ internal static class GlobalCatalogEndpoints
     public static IEndpointRouteBuilder MapGlobalCatalogEndpoints(this IEndpointRouteBuilder app)
     {
         var root = app.MapGroup("/api/v1/platform/global-catalog");
+        MapBusinessTypeEndpoints(root);
         MapCategoryEndpoints(root);
         MapProductEndpoints(root);
         MapImportEndpoints(root);
         MapTemplateEndpoints(root);
         return app;
+    }
+
+    private static void MapBusinessTypeEndpoints(RouteGroupBuilder root)
+    {
+        var types = root.MapGroup("/business-types");
+
+        types.MapGet("/", async (
+            BusinessTypeQueryService queries,
+            PlatformAuthz authz,
+            BusinessTypeStatus? status,
+            string? search,
+            string? sortBy,
+            bool? sortDesc,
+            int? page,
+            int? pageSize,
+            CancellationToken ct) =>
+        {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ViewGlobalCatalog,
+                PlatformAuditActions.PlatformAccessChecked,
+                nameof(BusinessType),
+                "list",
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            BusinessTypeListSortBy effectiveSort = BusinessTypeListSortBy.SortOrder;
+            if (!string.IsNullOrWhiteSpace(sortBy))
+            {
+                if (!Enum.TryParse<BusinessTypeListSortBy>(sortBy, ignoreCase: true, out var parsed)
+                    || !Enum.IsDefined(parsed))
+                {
+                    return PlatformApiResults.Problem(
+                        DomainErrorCodes.InvalidGlobalCatalogBusinessType,
+                        $"Unrecognized sort field '{sortBy}'.",
+                        StatusCodes.Status400BadRequest);
+                }
+
+                effectiveSort = parsed;
+            }
+
+            var result = await queries
+                .ListAsync(
+                    status,
+                    search,
+                    page,
+                    pageSize,
+                    ct,
+                    sortBy: effectiveSort,
+                    sortDescending: sortDesc ?? false)
+                .ConfigureAwait(false);
+            return Results.Ok(result);
+        });
+
+        types.MapGet("/{id:guid}", async (
+            Guid id,
+            BusinessTypeQueryService queries,
+            PlatformAuthz authz,
+            CancellationToken ct) =>
+        {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ViewGlobalCatalog,
+                PlatformAuditActions.PlatformAccessChecked,
+                nameof(BusinessType),
+                id.ToString("D"),
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var entity = await queries.GetByIdAsync(id, ct).ConfigureAwait(false);
+            return entity is null
+                ? PlatformApiResults.Problem(
+                    ApplicationErrorCodes.BusinessTypeNotFound,
+                    "Business type was not found.",
+                    StatusCodes.Status404NotFound)
+                : Results.Ok(entity);
+        });
+
+        types.MapPost("/", async (
+            CreateBusinessTypeRequest body,
+            CreateBusinessType useCase,
+            PlatformAuthz authz,
+            CancellationToken ct) =>
+        {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageGlobalCategories,
+                PlatformAuditActions.BusinessTypeCreated,
+                nameof(BusinessType),
+                body.Code,
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var result = await useCase.ExecuteAsync(body, ct).ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                await authz.AuditSucceededAsync(
+                    PlatformAuditActions.BusinessTypeCreated,
+                    nameof(BusinessType),
+                    result.Value!.Id.ToString("D"),
+                    summary: $"Created business type {result.Value.Code}.",
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
+            return PlatformApiResults.FromResult(
+                result,
+                b => Results.Created($"/api/v1/platform/global-catalog/business-types/{b.Id}", b));
+        });
+
+        types.MapPut("/{id:guid}", async (
+            Guid id,
+            UpdateBusinessTypeRequest body,
+            UpdateBusinessType useCase,
+            PlatformAuthz authz,
+            CancellationToken ct) =>
+        {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageGlobalCategories,
+                PlatformAuditActions.BusinessTypeUpdated,
+                nameof(BusinessType),
+                id.ToString("D"),
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var result = await useCase.ExecuteAsync(id, body, ct).ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                await authz.AuditSucceededAsync(
+                    PlatformAuditActions.BusinessTypeUpdated,
+                    nameof(BusinessType),
+                    id.ToString("D"),
+                    summary: $"Updated business type {result.Value!.Code}.",
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
+        types.MapPost("/{id:guid}/status", async (
+            Guid id,
+            SetBusinessTypeStatusRequest body,
+            SetBusinessTypeStatus useCase,
+            PlatformAuthz authz,
+            CancellationToken ct) =>
+        {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageGlobalCategories,
+                PlatformAuditActions.BusinessTypeStatusChanged,
+                nameof(BusinessType),
+                id.ToString("D"),
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var result = await useCase.ExecuteAsync(id, body, ct).ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                await authz.AuditSucceededAsync(
+                    PlatformAuditActions.BusinessTypeStatusChanged,
+                    nameof(BusinessType),
+                    id.ToString("D"),
+                    summary: $"Changed business type status to {result.Value!.Status}.",
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
     }
 
     private static void MapCategoryEndpoints(RouteGroupBuilder root)
@@ -29,7 +208,8 @@ internal static class GlobalCatalogEndpoints
             PlatformAuthz authz,
             GlobalCategoryStatus? status,
             Guid? parentId,
-            BusinessType? businessType,
+            Guid? businessTypeId,
+            string? businessTypeCode,
             string? search,
             string? sortBy,
             bool? sortDesc,
@@ -67,7 +247,8 @@ internal static class GlobalCatalogEndpoints
                 .ListAsync(
                     status,
                     parentId,
-                    businessType,
+                    businessTypeId,
+                    businessTypeCode,
                     search,
                     page,
                     pageSize,
@@ -200,6 +381,38 @@ internal static class GlobalCatalogEndpoints
 
             return PlatformApiResults.FromResult(result, Results.Ok);
         });
+
+        categories.MapPost("/{id:guid}/business-types", async (
+            Guid id,
+            BulkAssignCategoryBusinessTypesRequest body,
+            BulkAssignCategoryBusinessTypes useCase,
+            PlatformAuthz authz,
+            CancellationToken ct) =>
+        {
+            var denied = await authz.EnsureAsync(
+                PlatformPermission.ManageGlobalCategories,
+                PlatformAuditActions.GlobalCategoryUpdated,
+                nameof(GlobalCategory),
+                id.ToString("D"),
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var result = await useCase.ExecuteAsync(id, body, ct).ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                await authz.AuditSucceededAsync(
+                    PlatformAuditActions.GlobalCategoryUpdated,
+                    nameof(GlobalCategory),
+                    id.ToString("D"),
+                    summary: $"Bulk-assigned business types ({body.Mode}).",
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
     }
 
     private static void MapProductEndpoints(RouteGroupBuilder root)
@@ -211,7 +424,8 @@ internal static class GlobalCatalogEndpoints
             PlatformAuthz authz,
             GlobalProductStatus? status,
             Guid? categoryId,
-            BusinessType? businessType,
+            Guid? businessTypeId,
+            string? businessTypeCode,
             string? search,
             string? barcode,
             string? sku,
@@ -251,7 +465,8 @@ internal static class GlobalCatalogEndpoints
                 .ListAsync(
                     status,
                     categoryId,
-                    businessType,
+                    businessTypeId,
+                    businessTypeCode,
                     search,
                     barcode,
                     sku,
@@ -614,7 +829,8 @@ internal static class GlobalCatalogEndpoints
             CatalogTemplateQueryService queries,
             PlatformAuthz authz,
             CatalogTemplateStatus? status,
-            BusinessType? primaryBusinessType,
+            Guid? primaryBusinessTypeId,
+            string? primaryBusinessTypeCode,
             string? search,
             string? sortBy,
             bool? sortDesc,
@@ -651,7 +867,8 @@ internal static class GlobalCatalogEndpoints
             var result = await queries
                 .ListAsync(
                     status,
-                    primaryBusinessType,
+                    primaryBusinessTypeId,
+                    primaryBusinessTypeCode,
                     search,
                     page,
                     pageSize,

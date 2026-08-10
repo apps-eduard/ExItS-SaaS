@@ -122,6 +122,9 @@ public static class PlatformAuditActions
     public const string GlobalProductCreated = "platform.global_catalog.product.created";
     public const string GlobalProductUpdated = "platform.global_catalog.product.updated";
     public const string GlobalProductStatusChanged = "platform.global_catalog.product.status_changed";
+    public const string BusinessTypeCreated = "platform.global_catalog.business_type.created";
+    public const string BusinessTypeUpdated = "platform.global_catalog.business_type.updated";
+    public const string BusinessTypeStatusChanged = "platform.global_catalog.business_type.status_changed";
     public const string CatalogTemplateCreated = "platform.global_catalog.template.created";
     public const string CatalogTemplateUpdated = "platform.global_catalog.template.updated";
     public const string CatalogTemplatePublished = "platform.global_catalog.template.published";

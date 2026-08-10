@@ -9,20 +9,36 @@ namespace ExItS.Platform.Application.GlobalCatalog;
 public sealed class GlobalCategoryQueryService
 {
     private readonly IGlobalCategoryRepository _categories;
+    private readonly IBusinessTypeRepository _businessTypes;
 
-    public GlobalCategoryQueryService(IGlobalCategoryRepository categories) => _categories = categories;
+    public GlobalCategoryQueryService(
+        IGlobalCategoryRepository categories,
+        IBusinessTypeRepository businessTypes)
+    {
+        _categories = categories;
+        _businessTypes = businessTypes;
+    }
 
     public async Task<GlobalCategoryDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var category = await _categories.GetByIdAsync(GlobalCategoryId.From(id), cancellationToken)
             .ConfigureAwait(false);
-        return category is null ? null : GlobalCatalogDtoMaps.Map(category);
+        if (category is null)
+        {
+            return null;
+        }
+
+        var codes = await BusinessTypeResolver
+            .LoadCodeLookupAsync(_businessTypes, category.BusinessTypeIds, cancellationToken)
+            .ConfigureAwait(false);
+        return GlobalCatalogDtoMaps.Map(category, codes);
     }
 
     public async Task<PagedResult<GlobalCategoryDto>> ListAsync(
         GlobalCategoryStatus? status,
         Guid? parentId,
-        BusinessType? businessType,
+        Guid? businessTypeId,
+        string? businessTypeCode,
         string? search,
         int? page,
         int? pageSize,
@@ -35,7 +51,8 @@ public sealed class GlobalCategoryQueryService
             .ListAsync(
                 status,
                 parentId is null ? null : GlobalCategoryId.From(parentId.Value),
-                businessType,
+                businessTypeId,
+                businessTypeCode,
                 search,
                 skip,
                 take,
@@ -44,8 +61,11 @@ public sealed class GlobalCategoryQueryService
                 sortDescending: sortDescending)
             .ConfigureAwait(false);
 
+        var codes = await BusinessTypeResolver
+            .LoadCodeLookupAsync(_businessTypes, items.SelectMany(i => i.BusinessTypeIds), cancellationToken)
+            .ConfigureAwait(false);
         return new PagedResult<GlobalCategoryDto>(
-            items.Select(GlobalCatalogDtoMaps.Map).ToList(),
+            items.Select(i => GlobalCatalogDtoMaps.Map(i, codes)).ToList(),
             total,
             Math.Max(page ?? 1, 1),
             take);
@@ -55,20 +75,36 @@ public sealed class GlobalCategoryQueryService
 public sealed class GlobalProductQueryService
 {
     private readonly IGlobalProductRepository _products;
+    private readonly IBusinessTypeRepository _businessTypes;
 
-    public GlobalProductQueryService(IGlobalProductRepository products) => _products = products;
+    public GlobalProductQueryService(
+        IGlobalProductRepository products,
+        IBusinessTypeRepository businessTypes)
+    {
+        _products = products;
+        _businessTypes = businessTypes;
+    }
 
     public async Task<GlobalProductDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var product = await _products.GetByIdAsync(GlobalProductId.From(id), cancellationToken)
             .ConfigureAwait(false);
-        return product is null ? null : GlobalCatalogDtoMaps.Map(product);
+        if (product is null)
+        {
+            return null;
+        }
+
+        var codes = await BusinessTypeResolver
+            .LoadCodeLookupAsync(_businessTypes, product.BusinessTypeIds, cancellationToken)
+            .ConfigureAwait(false);
+        return GlobalCatalogDtoMaps.Map(product, codes);
     }
 
     public async Task<PagedResult<GlobalProductDto>> ListAsync(
         GlobalProductStatus? status,
         Guid? categoryId,
-        BusinessType? businessType,
+        Guid? businessTypeId,
+        string? businessTypeCode,
         string? search,
         string? barcode,
         string? sku,
@@ -83,7 +119,8 @@ public sealed class GlobalProductQueryService
             .ListAsync(
                 status,
                 categoryId is null ? null : GlobalCategoryId.From(categoryId.Value),
-                businessType,
+                businessTypeId,
+                businessTypeCode,
                 search,
                 barcode,
                 sku,
@@ -94,8 +131,11 @@ public sealed class GlobalProductQueryService
                 sortDescending: sortDescending)
             .ConfigureAwait(false);
 
+        var codes = await BusinessTypeResolver
+            .LoadCodeLookupAsync(_businessTypes, items.SelectMany(i => i.BusinessTypeIds), cancellationToken)
+            .ConfigureAwait(false);
         return new PagedResult<GlobalProductDto>(
-            items.Select(GlobalCatalogDtoMaps.Map).ToList(),
+            items.Select(i => GlobalCatalogDtoMaps.Map(i, codes)).ToList(),
             total,
             Math.Max(page ?? 1, 1),
             take);
@@ -105,15 +145,18 @@ public sealed class GlobalProductQueryService
 public sealed class CreateGlobalCategory
 {
     private readonly IGlobalCategoryRepository _categories;
+    private readonly IBusinessTypeRepository _businessTypes;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
     public CreateGlobalCategory(
         IGlobalCategoryRepository categories,
+        IBusinessTypeRepository businessTypes,
         IPlatformUnitOfWork unitOfWork,
         IClock clock)
     {
         _categories = categories;
+        _businessTypes = businessTypes;
         _unitOfWork = unitOfWork;
         _clock = clock;
     }
@@ -136,7 +179,9 @@ public sealed class CreateGlobalCategory
                 }
             }
 
-            var businessTypes = GlobalCatalogUseCaseHelpers.ParseBusinessTypes(request.BusinessTypes);
+            var businessTypes = await BusinessTypeResolver
+                .ResolveManyAsync(_businessTypes, request.BusinessTypes, request.BusinessTypeIds, cancellationToken)
+                .ConfigureAwait(false);
             var name = GlobalCatalogRules.NormalizeName(request.Name);
             if (await _categories
                     .ExistsWithNameUnderParentAsync(name, parentId, excludingId: null, cancellationToken)
@@ -157,7 +202,10 @@ public sealed class CreateGlobalCategory
 
             await _categories.AddAsync(category, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-            return ApplicationResult<GlobalCategoryDto>.Success(GlobalCatalogDtoMaps.Map(category));
+            var codes = await BusinessTypeResolver
+                .LoadCodeLookupAsync(_businessTypes, category.BusinessTypeIds, cancellationToken)
+                .ConfigureAwait(false);
+            return ApplicationResult<GlobalCategoryDto>.Success(GlobalCatalogDtoMaps.Map(category, codes));
         }
         catch (DomainException ex)
         {
@@ -173,15 +221,18 @@ public sealed class CreateGlobalCategory
 public sealed class UpdateGlobalCategory
 {
     private readonly IGlobalCategoryRepository _categories;
+    private readonly IBusinessTypeRepository _businessTypes;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
     public UpdateGlobalCategory(
         IGlobalCategoryRepository categories,
+        IBusinessTypeRepository businessTypes,
         IPlatformUnitOfWork unitOfWork,
         IClock clock)
     {
         _categories = categories;
+        _businessTypes = businessTypes;
         _unitOfWork = unitOfWork;
         _clock = clock;
     }
@@ -226,7 +277,11 @@ public sealed class UpdateGlobalCategory
             category.SetParent(parentId, now);
             category.SetSortOrder(request.SortOrder, now);
             category.SetIcon(request.IconReference, now);
-            category.AssignBusinessTypes(GlobalCatalogUseCaseHelpers.ParseBusinessTypes(request.BusinessTypes), now);
+            category.AssignBusinessTypes(
+                await BusinessTypeResolver
+                    .ResolveManyAsync(_businessTypes, request.BusinessTypes, request.BusinessTypeIds, cancellationToken)
+                    .ConfigureAwait(false),
+                now);
 
             if (await _categories
                     .ExistsWithNameUnderParentAsync(category.Name, category.ParentId, category.Id, cancellationToken)
@@ -239,7 +294,10 @@ public sealed class UpdateGlobalCategory
 
             await _categories.UpdateAsync(category, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-            return ApplicationResult<GlobalCategoryDto>.Success(GlobalCatalogDtoMaps.Map(category));
+            var codes = await BusinessTypeResolver
+                .LoadCodeLookupAsync(_businessTypes, category.BusinessTypeIds, cancellationToken)
+                .ConfigureAwait(false);
+            return ApplicationResult<GlobalCategoryDto>.Success(GlobalCatalogDtoMaps.Map(category, codes));
         }
         catch (DomainException ex)
         {
@@ -322,17 +380,20 @@ public sealed class CreateGlobalProduct
 {
     private readonly IGlobalProductRepository _products;
     private readonly IGlobalCategoryRepository _categories;
+    private readonly IBusinessTypeRepository _businessTypes;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
     public CreateGlobalProduct(
         IGlobalProductRepository products,
         IGlobalCategoryRepository categories,
+        IBusinessTypeRepository businessTypes,
         IPlatformUnitOfWork unitOfWork,
         IClock clock)
     {
         _products = products;
         _categories = categories;
+        _businessTypes = businessTypes;
         _unitOfWork = unitOfWork;
         _clock = clock;
     }
@@ -401,11 +462,16 @@ public sealed class CreateGlobalProduct
                 request.Description,
                 request.ImageReference,
                 request.SearchTags,
-                GlobalCatalogUseCaseHelpers.ParseBusinessTypes(request.BusinessTypes));
+                await BusinessTypeResolver
+                    .ResolveManyAsync(_businessTypes, request.BusinessTypes, request.BusinessTypeIds, cancellationToken)
+                    .ConfigureAwait(false));
 
             await _products.AddAsync(product, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-            return ApplicationResult<GlobalProductDto>.Success(GlobalCatalogDtoMaps.Map(product));
+            var codes = await BusinessTypeResolver
+                .LoadCodeLookupAsync(_businessTypes, product.BusinessTypeIds, cancellationToken)
+                .ConfigureAwait(false);
+            return ApplicationResult<GlobalProductDto>.Success(GlobalCatalogDtoMaps.Map(product, codes));
         }
         catch (DomainException ex)
         {
@@ -422,17 +488,20 @@ public sealed class UpdateGlobalProduct
 {
     private readonly IGlobalProductRepository _products;
     private readonly IGlobalCategoryRepository _categories;
+    private readonly IBusinessTypeRepository _businessTypes;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
     public UpdateGlobalProduct(
         IGlobalProductRepository products,
         IGlobalCategoryRepository categories,
+        IBusinessTypeRepository businessTypes,
         IPlatformUnitOfWork unitOfWork,
         IClock clock)
     {
         _products = products;
         _categories = categories;
+        _businessTypes = businessTypes;
         _unitOfWork = unitOfWork;
         _clock = clock;
     }
@@ -518,11 +587,16 @@ public sealed class UpdateGlobalProduct
                 request.Description,
                 request.ImageReference,
                 request.SearchTags,
-                GlobalCatalogUseCaseHelpers.ParseBusinessTypes(request.BusinessTypes));
+                await BusinessTypeResolver
+                    .ResolveManyAsync(_businessTypes, request.BusinessTypes, request.BusinessTypeIds, cancellationToken)
+                    .ConfigureAwait(false));
 
             await _products.UpdateAsync(product, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-            return ApplicationResult<GlobalProductDto>.Success(GlobalCatalogDtoMaps.Map(product));
+            var codes = await BusinessTypeResolver
+                .LoadCodeLookupAsync(_businessTypes, product.BusinessTypeIds, cancellationToken)
+                .ConfigureAwait(false);
+            return ApplicationResult<GlobalProductDto>.Success(GlobalCatalogDtoMaps.Map(product, codes));
         }
         catch (DomainException ex)
         {
@@ -601,28 +675,3 @@ public sealed class SetGlobalProductStatus
     }
 }
 
-internal static class GlobalCatalogUseCaseHelpers
-{
-    public static IReadOnlyList<BusinessType> ParseBusinessTypes(IReadOnlyList<string>? values)
-    {
-        if (values is null || values.Count == 0)
-        {
-            return Array.Empty<BusinessType>();
-        }
-
-        var parsed = new List<BusinessType>(values.Count);
-        foreach (var value in values)
-        {
-            if (!Enum.TryParse<BusinessType>(value, ignoreCase: true, out var type))
-            {
-                throw new DomainException(
-                    DomainErrorCodes.InvalidGlobalCatalogBusinessType,
-                    $"Unrecognized business type '{value}'.");
-            }
-
-            parsed.Add(type);
-        }
-
-        return GlobalCatalogRules.NormalizeBusinessTypes(parsed);
-    }
-}

@@ -3,6 +3,41 @@ using ExItS.Platform.Domain.GlobalCatalog;
 
 namespace ExItS.Platform.Application.GlobalCatalog;
 
+public sealed record BusinessTypeDto(
+    Guid Id,
+    string Code,
+    string Name,
+    string? Description,
+    string Status,
+    int SortOrder,
+    string? IconReference,
+    DateTimeOffset CreatedAtUtc,
+    DateTimeOffset UpdatedAtUtc);
+
+public sealed record CreateBusinessTypeRequest(
+    string Code,
+    string Name,
+    string? Description = null,
+    int SortOrder = 0,
+    string? IconReference = null);
+
+public sealed record UpdateBusinessTypeRequest(
+    string Name,
+    string? Description = null,
+    int SortOrder = 0,
+    string? IconReference = null,
+    DateTimeOffset? ExpectedUpdatedAtUtc = null);
+
+public sealed record SetBusinessTypeStatusRequest(
+    string Status,
+    DateTimeOffset? ExpectedUpdatedAtUtc = null);
+
+public sealed record BulkAssignCategoryBusinessTypesRequest(
+    string Mode = "Replace",
+    IReadOnlyList<string>? BusinessTypes = null,
+    IReadOnlyList<Guid>? BusinessTypeIds = null,
+    DateTimeOffset? ExpectedUpdatedAtUtc = null);
+
 public sealed record GlobalCategoryDto(
     Guid Id,
     string Name,
@@ -11,6 +46,7 @@ public sealed record GlobalCategoryDto(
     int SortOrder,
     string Status,
     IReadOnlyList<string> BusinessTypes,
+    IReadOnlyList<Guid> BusinessTypeIds,
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset UpdatedAtUtc);
 
@@ -29,6 +65,7 @@ public sealed record GlobalProductDto(
     string Status,
     IReadOnlyList<string> SearchTags,
     IReadOnlyList<string> BusinessTypes,
+    IReadOnlyList<Guid> BusinessTypeIds,
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset UpdatedAtUtc);
 
@@ -37,7 +74,8 @@ public sealed record CreateGlobalCategoryRequest(
     Guid? ParentId = null,
     string? IconReference = null,
     int SortOrder = 0,
-    IReadOnlyList<string>? BusinessTypes = null);
+    IReadOnlyList<string>? BusinessTypes = null,
+    IReadOnlyList<Guid>? BusinessTypeIds = null);
 
 public sealed record UpdateGlobalCategoryRequest(
     string Name,
@@ -45,6 +83,7 @@ public sealed record UpdateGlobalCategoryRequest(
     string? IconReference = null,
     int SortOrder = 0,
     IReadOnlyList<string>? BusinessTypes = null,
+    IReadOnlyList<Guid>? BusinessTypeIds = null,
     DateTimeOffset? ExpectedUpdatedAtUtc = null);
 
 public sealed record SetGlobalCategoryStatusRequest(
@@ -63,7 +102,8 @@ public sealed record CreateGlobalProductRequest(
     decimal? SellingPrice = null,
     string? ImageReference = null,
     IReadOnlyList<string>? SearchTags = null,
-    IReadOnlyList<string>? BusinessTypes = null);
+    IReadOnlyList<string>? BusinessTypes = null,
+    IReadOnlyList<Guid>? BusinessTypeIds = null);
 
 public sealed record UpdateGlobalProductRequest(
     string Name,
@@ -78,6 +118,7 @@ public sealed record UpdateGlobalProductRequest(
     string? ImageReference = null,
     IReadOnlyList<string>? SearchTags = null,
     IReadOnlyList<string>? BusinessTypes = null,
+    IReadOnlyList<Guid>? BusinessTypeIds = null,
     DateTimeOffset? ExpectedUpdatedAtUtc = null);
 
 public sealed record SetGlobalProductStatusRequest(
@@ -108,6 +149,7 @@ public sealed record CatalogTemplateDto(
     string? Description,
     string? IconReference,
     string PrimaryBusinessType,
+    Guid PrimaryBusinessTypeId,
     string Status,
     int DefaultBatchSize,
     string SelectionMode,
@@ -125,6 +167,7 @@ public sealed record CatalogTemplateSummaryDto(
     string? Description,
     string? IconReference,
     string PrimaryBusinessType,
+    Guid PrimaryBusinessTypeId,
     string Status,
     int DefaultBatchSize,
     string SelectionMode,
@@ -136,7 +179,8 @@ public sealed record CatalogTemplateSummaryDto(
 
 public sealed record CreateCatalogTemplateRequest(
     string Name,
-    string PrimaryBusinessType,
+    string? PrimaryBusinessType = null,
+    Guid? PrimaryBusinessTypeId = null,
     string? Slug = null,
     string? Description = null,
     string? IconReference = null,
@@ -145,7 +189,8 @@ public sealed record CreateCatalogTemplateRequest(
 
 public sealed record UpdateCatalogTemplateRequest(
     string Name,
-    string PrimaryBusinessType,
+    string? PrimaryBusinessType = null,
+    Guid? PrimaryBusinessTypeId = null,
     string? Slug = null,
     string? Description = null,
     string? IconReference = null,
@@ -270,7 +315,21 @@ public sealed record CatalogImportRawRow(
 
 internal static class GlobalCatalogDtoMaps
 {
-    public static GlobalCategoryDto Map(GlobalCategory category) =>
+    public static BusinessTypeDto Map(BusinessType businessType) =>
+        new(
+            businessType.Id.Value,
+            businessType.Code,
+            businessType.Name,
+            businessType.Description,
+            businessType.Status.ToString(),
+            businessType.SortOrder,
+            businessType.IconReference,
+            businessType.CreatedAtUtc,
+            businessType.UpdatedAtUtc);
+
+    public static GlobalCategoryDto Map(
+        GlobalCategory category,
+        IReadOnlyDictionary<Guid, string>? codeLookup = null) =>
         new(
             category.Id.Value,
             category.Name,
@@ -278,11 +337,14 @@ internal static class GlobalCatalogDtoMaps
             category.IconReference,
             category.SortOrder,
             category.Status.ToString(),
-            category.BusinessTypes.Select(t => t.ToString()).ToList(),
+            MapCodes(category.BusinessTypeIds, codeLookup),
+            category.BusinessTypeIds.Select(i => i.Value).ToList(),
             category.CreatedAtUtc,
             category.UpdatedAtUtc);
 
-    public static GlobalProductDto Map(GlobalProduct product) =>
+    public static GlobalProductDto Map(
+        GlobalProduct product,
+        IReadOnlyDictionary<Guid, string>? codeLookup = null) =>
         new(
             product.Id.Value,
             product.Name,
@@ -297,7 +359,8 @@ internal static class GlobalCatalogDtoMaps
             product.ImageReference,
             product.Status.ToString(),
             product.SearchTags.ToList(),
-            product.BusinessTypes.Select(t => t.ToString()).ToList(),
+            MapCodes(product.BusinessTypeIds, codeLookup),
+            product.BusinessTypeIds.Select(i => i.Value).ToList(),
             product.CreatedAtUtc,
             product.UpdatedAtUtc);
 
@@ -309,14 +372,17 @@ internal static class GlobalCatalogDtoMaps
             product.IsFeatured,
             product.IsFirstBatch);
 
-    public static CatalogTemplateDto Map(CatalogTemplate template) =>
+    public static CatalogTemplateDto Map(
+        CatalogTemplate template,
+        IReadOnlyDictionary<Guid, string>? codeLookup = null) =>
         new(
             template.Id.Value,
             template.Name,
             template.Slug,
             template.Description,
             template.IconReference,
-            template.PrimaryBusinessType.ToString(),
+            ResolveCode(template.PrimaryBusinessTypeId, codeLookup),
+            template.PrimaryBusinessTypeId.Value,
             template.Status.ToString(),
             template.DefaultBatchSize,
             template.SelectionMode.ToString(),
@@ -327,14 +393,17 @@ internal static class GlobalCatalogDtoMaps
             template.CreatedAtUtc,
             template.UpdatedAtUtc);
 
-    public static CatalogTemplateSummaryDto MapSummary(CatalogTemplate template) =>
+    public static CatalogTemplateSummaryDto MapSummary(
+        CatalogTemplate template,
+        IReadOnlyDictionary<Guid, string>? codeLookup = null) =>
         new(
             template.Id.Value,
             template.Name,
             template.Slug,
             template.Description,
             template.IconReference,
-            template.PrimaryBusinessType.ToString(),
+            ResolveCode(template.PrimaryBusinessTypeId, codeLookup),
+            template.PrimaryBusinessTypeId.Value,
             template.Status.ToString(),
             template.DefaultBatchSize,
             template.SelectionMode.ToString(),
@@ -343,6 +412,31 @@ internal static class GlobalCatalogDtoMaps
             template.FirstBatchCount,
             template.CreatedAtUtc,
             template.UpdatedAtUtc);
+
+    private static IReadOnlyList<string> MapCodes(
+        IReadOnlyList<BusinessTypeId> ids,
+        IReadOnlyDictionary<Guid, string>? codeLookup)
+    {
+        if (ids.Count == 0)
+        {
+            return Array.Empty<string>();
+        }
+
+        if (codeLookup is null)
+        {
+            return ids.Select(i => i.Value.ToString("D")).ToList();
+        }
+
+        return ids.Select(i => codeLookup.TryGetValue(i.Value, out var code) ? code : i.Value.ToString("D"))
+            .ToList();
+    }
+
+    private static string ResolveCode(
+        BusinessTypeId id,
+        IReadOnlyDictionary<Guid, string>? codeLookup) =>
+        codeLookup is not null && codeLookup.TryGetValue(id.Value, out var code)
+            ? code
+            : id.Value.ToString("D");
 
     public static CatalogImportJobDto Map(
         CatalogImportJob job,

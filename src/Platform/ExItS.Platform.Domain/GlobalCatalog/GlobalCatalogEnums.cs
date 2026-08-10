@@ -14,16 +14,6 @@ public enum GlobalCategoryStatus
     Archived = 2
 }
 
-public enum BusinessType
-{
-    SariSari = 0,
-    MiniGrocery = 1,
-    Bakery = 2,
-    Cafe = 3,
-    Pharmacy = 4,
-    GeneralRetail = 5
-}
-
 public enum ProductUnit
 {
     Piece = 0,
@@ -112,4 +102,23 @@ public enum CatalogTemplateListSortBy
     UpdatedAtUtc = 4,
     CreatedAtUtc = 5,
     ProductCount = 6
+}
+
+/// <summary>Whitelist for dynamic business-type list sorting.</summary>
+public enum BusinessTypeListSortBy
+{
+    SortOrder = 0,
+    Name = 1,
+    Code = 2,
+    Status = 3,
+    UpdatedAtUtc = 4,
+    CreatedAtUtc = 5
+}
+
+/// <summary>Bulk assignment mode for category/product business-type membership.</summary>
+public enum BusinessTypeAssignmentMode
+{
+    Add = 0,
+    Remove = 1,
+    Replace = 2
 }

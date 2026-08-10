@@ -46,6 +46,7 @@ public static class DependencyInjection
         services.AddScoped<IFeatureDefinitionRepository, FeatureDefinitionRepository>();
         services.AddScoped<IPlanRepository, PlanRepository>();
         services.AddScoped<ITrialDefinitionRepository, TrialDefinitionRepository>();
+        services.AddScoped<IBusinessTypeRepository, BusinessTypeRepository>();
         services.AddScoped<IGlobalCategoryRepository, GlobalCategoryRepository>();
         services.AddScoped<IGlobalProductRepository, GlobalProductRepository>();
         services.AddScoped<ICatalogTemplateRepository, CatalogTemplateRepository>();

@@ -1,5 +1,20 @@
 namespace ExItS.Platform.Infrastructure.Persistence.GlobalCatalog;
 
+internal sealed class BusinessTypeRecord
+{
+    public Guid Id { get; set; }
+    public string Code { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string NormalizedName { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public int SortOrder { get; set; }
+    public string? IconReference { get; set; }
+    public DateTimeOffset CreatedAtUtc { get; set; }
+    public DateTimeOffset UpdatedAtUtc { get; set; }
+    public uint Xmin { get; set; }
+}
+
 internal sealed class GlobalCategoryRecord
 {
     public Guid Id { get; set; }
@@ -19,7 +34,7 @@ internal sealed class GlobalCategoryRecord
 internal sealed class GlobalCategoryBusinessTypeRecord
 {
     public Guid CategoryId { get; set; }
-    public string BusinessType { get; set; } = string.Empty;
+    public Guid BusinessTypeId { get; set; }
 }
 
 internal sealed class GlobalProductRecord
@@ -47,7 +62,7 @@ internal sealed class GlobalProductRecord
 internal sealed class GlobalProductBusinessTypeRecord
 {
     public Guid ProductId { get; set; }
-    public string BusinessType { get; set; } = string.Empty;
+    public Guid BusinessTypeId { get; set; }
 }
 
 internal sealed class CatalogTemplateRecord
@@ -57,7 +72,7 @@ internal sealed class CatalogTemplateRecord
     public string Slug { get; set; } = string.Empty;
     public string? Description { get; set; }
     public string? IconReference { get; set; }
-    public string PrimaryBusinessType { get; set; } = string.Empty;
+    public Guid PrimaryBusinessTypeId { get; set; }
     public string Status { get; set; } = string.Empty;
     public int DefaultBatchSize { get; set; }
     public string SelectionMode { get; set; } = string.Empty;

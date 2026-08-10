@@ -5,6 +5,45 @@ namespace ExItS.Platform.Infrastructure.Persistence;
 
 internal static class GlobalCatalogEntityMapper
 {
+    public static BusinessType ToDomain(BusinessTypeRecord record) =>
+        BusinessType.Rehydrate(
+            BusinessTypeId.From(record.Id),
+            record.Code,
+            record.Name,
+            record.Description,
+            Enum.Parse<BusinessTypeStatus>(record.Status),
+            record.SortOrder,
+            record.IconReference,
+            record.CreatedAtUtc,
+            record.UpdatedAtUtc);
+
+    public static BusinessTypeRecord ToRecord(BusinessType businessType) =>
+        new()
+        {
+            Id = businessType.Id.Value,
+            Code = businessType.Code,
+            Name = businessType.Name,
+            NormalizedName = businessType.Name.ToUpperInvariant(),
+            Description = businessType.Description,
+            Status = businessType.Status.ToString(),
+            SortOrder = businessType.SortOrder,
+            IconReference = businessType.IconReference,
+            CreatedAtUtc = businessType.CreatedAtUtc,
+            UpdatedAtUtc = businessType.UpdatedAtUtc
+        };
+
+    public static void ApplyToRecord(BusinessType businessType, BusinessTypeRecord record)
+    {
+        record.Code = businessType.Code;
+        record.Name = businessType.Name;
+        record.NormalizedName = businessType.Name.ToUpperInvariant();
+        record.Description = businessType.Description;
+        record.Status = businessType.Status.ToString();
+        record.SortOrder = businessType.SortOrder;
+        record.IconReference = businessType.IconReference;
+        record.UpdatedAtUtc = businessType.UpdatedAtUtc;
+    }
+
     public static GlobalCategory ToDomain(GlobalCategoryRecord record) =>
         GlobalCategory.Rehydrate(
             GlobalCategoryId.From(record.Id),
@@ -13,7 +52,7 @@ internal static class GlobalCatalogEntityMapper
             record.IconReference,
             record.SortOrder,
             Enum.Parse<GlobalCategoryStatus>(record.Status),
-            record.BusinessTypes.Select(b => Enum.Parse<BusinessType>(b.BusinessType)),
+            record.BusinessTypes.Select(b => BusinessTypeId.From(b.BusinessTypeId)),
             record.CreatedAtUtc,
             record.UpdatedAtUtc);
 
@@ -29,11 +68,11 @@ internal static class GlobalCatalogEntityMapper
             Status = category.Status.ToString(),
             CreatedAtUtc = category.CreatedAtUtc,
             UpdatedAtUtc = category.UpdatedAtUtc,
-            BusinessTypes = category.BusinessTypes
+            BusinessTypes = category.BusinessTypeIds
                 .Select(t => new GlobalCategoryBusinessTypeRecord
                 {
                     CategoryId = category.Id.Value,
-                    BusinessType = t.ToString()
+                    BusinessTypeId = t.Value
                 })
                 .ToList()
         };
@@ -48,12 +87,12 @@ internal static class GlobalCatalogEntityMapper
         record.Status = category.Status.ToString();
         record.UpdatedAtUtc = category.UpdatedAtUtc;
         record.BusinessTypes.Clear();
-        foreach (var type in category.BusinessTypes)
+        foreach (var typeId in category.BusinessTypeIds)
         {
             record.BusinessTypes.Add(new GlobalCategoryBusinessTypeRecord
             {
                 CategoryId = category.Id.Value,
-                BusinessType = type.ToString()
+                BusinessTypeId = typeId.Value
             });
         }
     }
@@ -73,7 +112,7 @@ internal static class GlobalCatalogEntityMapper
             record.ImageReference,
             Enum.Parse<GlobalProductStatus>(record.Status),
             record.SearchTags ?? [],
-            record.BusinessTypes.Select(b => Enum.Parse<BusinessType>(b.BusinessType)),
+            record.BusinessTypes.Select(b => BusinessTypeId.From(b.BusinessTypeId)),
             record.CreatedAtUtc,
             record.UpdatedAtUtc);
 
@@ -95,11 +134,11 @@ internal static class GlobalCatalogEntityMapper
             SearchTags = product.SearchTags.ToArray(),
             CreatedAtUtc = product.CreatedAtUtc,
             UpdatedAtUtc = product.UpdatedAtUtc,
-            BusinessTypes = product.BusinessTypes
+            BusinessTypes = product.BusinessTypeIds
                 .Select(t => new GlobalProductBusinessTypeRecord
                 {
                     ProductId = product.Id.Value,
-                    BusinessType = t.ToString()
+                    BusinessTypeId = t.Value
                 })
                 .ToList()
         };
@@ -120,12 +159,12 @@ internal static class GlobalCatalogEntityMapper
         record.SearchTags = product.SearchTags.ToArray();
         record.UpdatedAtUtc = product.UpdatedAtUtc;
         record.BusinessTypes.Clear();
-        foreach (var type in product.BusinessTypes)
+        foreach (var typeId in product.BusinessTypeIds)
         {
             record.BusinessTypes.Add(new GlobalProductBusinessTypeRecord
             {
                 ProductId = product.Id.Value,
-                BusinessType = type.ToString()
+                BusinessTypeId = typeId.Value
             });
         }
     }
@@ -137,7 +176,7 @@ internal static class GlobalCatalogEntityMapper
             record.Slug,
             record.Description,
             record.IconReference,
-            Enum.Parse<BusinessType>(record.PrimaryBusinessType),
+            BusinessTypeId.From(record.PrimaryBusinessTypeId),
             Enum.Parse<CatalogTemplateStatus>(record.Status),
             record.DefaultBatchSize,
             Enum.Parse<SelectionMode>(record.SelectionMode),
@@ -159,7 +198,7 @@ internal static class GlobalCatalogEntityMapper
             Slug = template.Slug,
             Description = template.Description,
             IconReference = template.IconReference,
-            PrimaryBusinessType = template.PrimaryBusinessType.ToString(),
+            PrimaryBusinessTypeId = template.PrimaryBusinessTypeId.Value,
             Status = template.Status.ToString(),
             DefaultBatchSize = template.DefaultBatchSize,
             SelectionMode = template.SelectionMode.ToString(),
@@ -182,7 +221,7 @@ internal static class GlobalCatalogEntityMapper
         record.Slug = template.Slug;
         record.Description = template.Description;
         record.IconReference = template.IconReference;
-        record.PrimaryBusinessType = template.PrimaryBusinessType.ToString();
+        record.PrimaryBusinessTypeId = template.PrimaryBusinessTypeId.Value;
         record.Status = template.Status.ToString();
         record.DefaultBatchSize = template.DefaultBatchSize;
         record.SelectionMode = template.SelectionMode.ToString();
