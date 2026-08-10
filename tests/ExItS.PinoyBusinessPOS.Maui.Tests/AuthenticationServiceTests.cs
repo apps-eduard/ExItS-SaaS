@@ -1105,6 +1105,33 @@ public sealed class AuthenticationServiceTests
         public Task<ApiResult<PlatformOrganizationDto>> GetOrganizationAsync(Guid organizationId, CancellationToken ct = default) =>
             Task.FromResult(OrganizationResult);
 
+        public Task<ApiResult<IReadOnlyList<OrganizationBranchDto>>> GetBranchesAsync(Guid organizationId, CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<IReadOnlyList<OrganizationBranchDto>>.Success([]));
+
+        public Task<ApiResult<BranchCapacityDto>> GetBranchCapacityAsync(Guid organizationId, CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<BranchCapacityDto>.Unavailable());
+
+        public Task<ApiResult<OrganizationBranchDto>> CreateBranchAsync(Guid organizationId, CreateBranchRequest request, CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<OrganizationBranchDto>.Unavailable());
+
+        public Task<ApiResult<IReadOnlyList<PosDeviceDto>>> GetPosDevicesAsync(Guid organizationId, CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<IReadOnlyList<PosDeviceDto>>.Success([]));
+
+        public Task<ApiResult<PosDeviceCapacityDto>> GetPosDeviceCapacityAsync(Guid organizationId, CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<PosDeviceCapacityDto>.Unavailable());
+
+        public Task<ApiResult<PosDeviceDto>> RegisterCurrentDeviceAsync(Guid organizationId, RegisterPosDeviceRequest request, CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<PosDeviceDto>.Unavailable());
+
+        public Task<ApiResult<PosDeviceDto>> RenamePosDeviceAsync(Guid organizationId, Guid deviceId, string friendlyName, CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<PosDeviceDto>.Unavailable());
+
+        public Task<ApiResult<PosDeviceDto>> RevokePosDeviceAsync(Guid organizationId, Guid deviceId, CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<PosDeviceDto>.Unavailable());
+
+        public Task<ApiResult<PosDeviceAuthorizationDto>> AuthorizePosDeviceAsync(Guid organizationId, AuthorizePosDeviceRequest request, CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<PosDeviceAuthorizationDto>.Unavailable());
+
         public Task<ApiResult<PlatformPagedResult<PlatformMembershipDto>>> GetUserMembershipsAsync(Guid userId, CancellationToken ct = default) =>
             Task.FromResult(ApiResult<PlatformPagedResult<PlatformMembershipDto>>.Success(
                 new PlatformPagedResult<PlatformMembershipDto>([], 0, 1, 100)));
