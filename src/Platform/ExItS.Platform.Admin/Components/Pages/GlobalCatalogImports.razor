@@ -93,7 +93,11 @@ else
             <Button Size="@ButtonSize.Small" OnClick="RefreshDetailAsync" Loading="_busy">@L["Common_Retry"]</Button>
             @if (_job?.Status == "Validated")
             {
-                <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="ConfirmAsync">
+                <Button Size="@ButtonSize.Small"
+                        Type="@ButtonType.Primary"
+                        Loading="_busy"
+                        Disabled="@ConfirmDisabled"
+                        OnClick="ConfirmAsync">
                     @L["GlobalImports_Confirm"]
                 </Button>
             }
@@ -124,6 +128,66 @@ else
             @if (!string.IsNullOrWhiteSpace(_job.PreviewSummary))
             {
                 <Alert Type="@AlertType.Info" ShowIcon="true" Message="@_job.PreviewSummary" />
+            }
+
+            @if (_job.Status == "Validated")
+            {
+                <Card Size="@CardSize.Small" Title="@L["GlobalImports_Destination"]" Style="max-width:720px;">
+                    <Space Direction="SpaceDirection.Vertical" Style="width:100%;">
+                        <RadioGroup TValue="string" @bind-Value="_destinationMode" Disabled="_busy">
+                            <Radio Value="@DestinationGlobalOnly">@L["GlobalImports_GlobalOnly"]</Radio>
+                            <Radio Value="@DestinationGlobalPlusTemplate">@L["GlobalImports_GlobalPlusTemplate"]</Radio>
+                        </RadioGroup>
+
+                        @if (LinkToTemplate)
+                        {
+                            <div>
+                                <div style="margin-bottom:4px;">@L["GlobalImports_Template"]</div>
+                                <Select TItemValue="string"
+                                        TItem="string"
+                                        @bind-Value="_selectedTemplateId"
+                                        Size="@InputSize.Small"
+                                        Style="width:100%; max-width:480px;"
+                                        Placeholder="@L["GlobalImports_Template"]"
+                                        AllowClear
+                                        Disabled="_busy"
+                                        Loading="_templatesLoading">
+                                    <SelectOptions>
+                                        @foreach (var template in _templates)
+                                        {
+                                            <SelectOption TItemValue="string"
+                                                          TItem="string"
+                                                          Value="@template.Id.ToString("D")"
+                                                          Label="@($"{template.Name} ({template.ProductCount})")" />
+                                        }
+                                    </SelectOptions>
+                                </Select>
+                            </div>
+                        }
+
+                        <Card Size="@CardSize.Small" Title="@L["GlobalImports_ConfirmPreview"]">
+                            <Descriptions Bordered Size="@DescriptionsSize.Small" Column="1">
+                                <DescriptionsItem Title="@L["GlobalImports_ValidProducts"]">@_job.ValidProductCount</DescriptionsItem>
+                                <DescriptionsItem Title="@L["GlobalImports_Failed"]">@_job.FailedCount</DescriptionsItem>
+                                <DescriptionsItem Title="@L["GlobalImports_Skipped"]">@_job.SkippedCount</DescriptionsItem>
+                                @if (LinkToTemplate)
+                                {
+                                    <DescriptionsItem Title="@L["GlobalImports_Template"]">@(SelectedTemplateName ?? "—")</DescriptionsItem>
+                                    <DescriptionsItem Title="@L["GlobalImports_EstimatedToAdd"]">@EstimatedProductsToAdd</DescriptionsItem>
+                                    <DescriptionsItem Title="@L["GlobalImports_AlreadyInTemplate"]">@ProductsAlreadyInTemplate</DescriptionsItem>
+                                }
+                            </Descriptions>
+                        </Card>
+
+                        <Button Type="@ButtonType.Primary"
+                                Size="@ButtonSize.Small"
+                                Loading="_busy"
+                                Disabled="@ConfirmDisabled"
+                                OnClick="ConfirmAsync">
+                            @L["GlobalImports_Confirm"]
+                        </Button>
+                    </Space>
+                </Card>
             }
 
             @if (_job.Status is "Queued" or "Processing")
@@ -190,19 +254,51 @@ else
 @code {
     [Parameter] public Guid? Id { get; set; }
 
+    private const string DestinationGlobalOnly = "global";
+    private const string DestinationGlobalPlusTemplate = "template";
+    private const string TemplateFileName = "exits-global-product-import-template.csv";
+
     private bool CanImport => Permissions.HasPermission(PlatformPermissionCodes.ImportGlobalProducts);
     private bool _loading;
     private bool _busy;
     private bool _downloadBusy;
+    private bool _templatesLoading;
     private string? _uploadError;
     private string? _selectedFileName;
     private IBrowserFile? _selectedFile;
     private IReadOnlyList<CatalogImportJobDto> _jobs = [];
     private CatalogImportJobDto? _job;
     private IReadOnlyList<CatalogImportErrorDto> _errors = [];
+    private IReadOnlyList<CatalogTemplateSummaryDto> _templates = [];
+    private string _destinationMode = DestinationGlobalOnly;
+    private string? _selectedTemplateId;
     private CancellationTokenSource? _pollCts;
 
-    private const string TemplateFileName = "exits-global-product-import-template.csv";
+    private bool LinkToTemplate => _destinationMode == DestinationGlobalPlusTemplate;
+
+    private bool ConfirmDisabled =>
+        _busy || (LinkToTemplate && string.IsNullOrWhiteSpace(_selectedTemplateId));
+
+    private CatalogTemplateSummaryDto? SelectedTemplate =>
+        Guid.TryParse(_selectedTemplateId, out var id)
+            ? _templates.FirstOrDefault(t => t.Id == id)
+            : null;
+
+    private string? SelectedTemplateName =>
+        SelectedTemplate?.Name
+        ?? _job?.TargetTemplateName;
+
+    private int EstimatedProductsToAdd =>
+        _job is null
+            ? 0
+            : (_job.EstimatedTemplateLinks
+               ?? (_job.ValidProductCount > 0 ? _job.ValidProductCount : _job.PendingCount));
+
+    private int ProductsAlreadyInTemplate =>
+        _job?.ProductsAlreadyInTemplate
+        ?? _job?.TargetTemplateProductCount
+        ?? SelectedTemplate?.ProductCount
+        ?? 0;
 
     private int ProgressPercent =>
         _job is null || _job.TotalCount <= 0
@@ -219,11 +315,18 @@ else
 
         if (Id is null)
         {
+            _destinationMode = DestinationGlobalOnly;
+            _selectedTemplateId = null;
             await LoadListAsync();
         }
         else
         {
             await RefreshDetailAsync();
+            if (_job?.Status == "Validated")
+            {
+                await EnsureTemplatesLoadedAsync();
+            }
+
             MaybeStartPolling();
         }
     }
@@ -316,6 +419,11 @@ else
         {
             var result = await Api.GetCatalogImportAsync(Id.Value);
             _job = result.Data;
+            if (_job?.TargetTemplateId is Guid templateId)
+            {
+                _destinationMode = DestinationGlobalPlusTemplate;
+                _selectedTemplateId = templateId.ToString("D");
+            }
         }
         finally
         {
@@ -323,17 +431,47 @@ else
         }
     }
 
-    private async Task ConfirmAsync()
+    private async Task EnsureTemplatesLoadedAsync()
     {
-        if (Id is null)
+        if (_templates.Count > 0 || _templatesLoading)
         {
             return;
+        }
+
+        _templatesLoading = true;
+        try
+        {
+            var result = await Api.GetCatalogTemplatesAsync(page: 1, pageSize: 200);
+            _templates = result.Data?.Items ?? [];
+        }
+        finally
+        {
+            _templatesLoading = false;
+        }
+    }
+
+    private async Task ConfirmAsync()
+    {
+        if (Id is null || ConfirmDisabled)
+        {
+            return;
+        }
+
+        Guid? targetTemplateId = null;
+        if (LinkToTemplate)
+        {
+            if (!Guid.TryParse(_selectedTemplateId, out var parsed))
+            {
+                return;
+            }
+
+            targetTemplateId = parsed;
         }
 
         _busy = true;
         try
         {
-            var result = await Api.ConfirmCatalogImportAsync(Id.Value);
+            var result = await Api.ConfirmCatalogImportAsync(Id.Value, targetTemplateId);
             if (!result.IsSuccess || result.Data is null)
             {
                 await Message.ErrorAsync(result.Error?.Message ?? L["GlobalImports_ConfirmFailed"].Value);

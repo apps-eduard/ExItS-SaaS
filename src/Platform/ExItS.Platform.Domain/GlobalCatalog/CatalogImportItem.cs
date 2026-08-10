@@ -275,7 +275,11 @@ public sealed class CatalogImportItem
         ProcessedAtUtc = utcNow;
     }
 
-    public void MarkSkipped(string errorCode, string errorMessage, DateTimeOffset utcNow)
+    public void MarkSkipped(
+        string errorCode,
+        string errorMessage,
+        DateTimeOffset utcNow,
+        Guid? resolvedGlobalProductId = null)
     {
         DomainTime.EnsureUtc(utcNow);
         if (Status is CatalogImportItemStatus.Imported or CatalogImportItemStatus.Skipped)
@@ -286,6 +290,11 @@ public sealed class CatalogImportItem
         Status = CatalogImportItemStatus.Skipped;
         ErrorCode = errorCode;
         ErrorMessage = CatalogImportRules.NormalizeOptionalError(errorMessage);
+        if (resolvedGlobalProductId is Guid id && id != Guid.Empty)
+        {
+            CreatedGlobalProductId = id;
+        }
+
         AttemptCount++;
         ProcessedAtUtc = utcNow;
     }

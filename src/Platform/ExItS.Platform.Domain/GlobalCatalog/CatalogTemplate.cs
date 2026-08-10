@@ -243,6 +243,27 @@ public sealed class CatalogTemplate
         return row;
     }
 
+    /// <summary>
+    /// Idempotent membership link used by bulk import. Returns false when the product is already assigned.
+    /// </summary>
+    public bool TryAssignProduct(
+        GlobalProductId globalProductId,
+        DateTimeOffset utcNow,
+        bool isFeatured = false,
+        bool isFirstBatch = false,
+        int? sortOrder = null)
+    {
+        EnsureMutable(utcNow);
+
+        if (_products.Any(p => p.GlobalProductId == globalProductId))
+        {
+            return false;
+        }
+
+        AssignProduct(globalProductId, utcNow, isFeatured, isFirstBatch, sortOrder);
+        return true;
+    }
+
     public void RemoveProduct(GlobalProductId globalProductId, DateTimeOffset utcNow)
     {
         EnsureMutable(utcNow);

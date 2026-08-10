@@ -102,6 +102,7 @@ internal sealed class CatalogImportJobRecord
     public DateTimeOffset? StartedAtUtc { get; set; }
     public DateTimeOffset? CompletedAtUtc { get; set; }
     public DateTimeOffset? LastHeartbeatAtUtc { get; set; }
+    public Guid? TargetTemplateId { get; set; }
     public uint Xmin { get; set; }
 
     public List<CatalogImportItemRecord> Items { get; set; } = [];

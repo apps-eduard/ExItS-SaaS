@@ -505,6 +505,7 @@ internal static class GlobalCatalogEndpoints
 
         imports.MapPost("/{jobId:guid}/confirm", async (
             Guid jobId,
+            ConfirmCatalogImportRequest? body,
             ConfirmCatalogImport useCase,
             PlatformAuthz authz,
             CancellationToken ct) =>
@@ -520,14 +521,30 @@ internal static class GlobalCatalogEndpoints
                 return denied;
             }
 
-            var result = await useCase.ExecuteAsync(jobId, ct).ConfigureAwait(false);
+            if (body?.TargetTemplateId is not null)
+            {
+                var templateDenied = await authz.EnsureAsync(
+                    PlatformPermission.ManageCatalogTemplates,
+                    PlatformAuditActions.CatalogImportConfirmed,
+                    nameof(CatalogTemplate),
+                    body.TargetTemplateId.Value.ToString("D"),
+                    cancellationToken: ct).ConfigureAwait(false);
+                if (templateDenied is not null)
+                {
+                    return templateDenied;
+                }
+            }
+
+            var result = await useCase.ExecuteAsync(jobId, body, ct).ConfigureAwait(false);
             if (result.IsSuccess)
             {
                 await authz.AuditSucceededAsync(
                     PlatformAuditActions.CatalogImportConfirmed,
                     nameof(CatalogImportJob),
                     result.Value!.Id.ToString("D"),
-                    summary: $"Confirmed catalog import {result.Value.Id:D}.",
+                    summary: result.Value.TargetTemplateId is Guid tid
+                        ? $"Confirmed catalog import {result.Value.Id:D} with template {tid:D}."
+                        : $"Confirmed catalog import {result.Value.Id:D}.",
                     cancellationToken: ct).ConfigureAwait(false);
             }
 

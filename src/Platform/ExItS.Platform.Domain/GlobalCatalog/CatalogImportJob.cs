@@ -31,6 +31,13 @@ public sealed class CatalogImportJob
     public DateTimeOffset? StartedAtUtc { get; private set; }
     public DateTimeOffset? CompletedAtUtc { get; private set; }
     public DateTimeOffset? LastHeartbeatAtUtc { get; private set; }
+
+    /// <summary>
+    /// Optional catalog template to receive membership links for successfully imported/resolved global products.
+    /// Product records stay in the global catalog; the template only references them.
+    /// </summary>
+    public Guid? TargetTemplateId { get; private set; }
+
     public IReadOnlyList<CatalogImportItem> Items => _items;
 
     private CatalogImportJob(
@@ -55,6 +62,7 @@ public sealed class CatalogImportJob
         DateTimeOffset? startedAtUtc,
         DateTimeOffset? completedAtUtc,
         DateTimeOffset? lastHeartbeatAtUtc,
+        Guid? targetTemplateId,
         IEnumerable<CatalogImportItem> items)
     {
         Id = id;
@@ -78,6 +86,7 @@ public sealed class CatalogImportJob
         StartedAtUtc = startedAtUtc;
         CompletedAtUtc = completedAtUtc;
         LastHeartbeatAtUtc = lastHeartbeatAtUtc;
+        TargetTemplateId = targetTemplateId;
         _items.AddRange(items.OrderBy(i => i.RowNumber).ThenBy(i => i.Id.Value));
     }
 
@@ -156,6 +165,7 @@ public sealed class CatalogImportJob
             startedAtUtc: null,
             completedAtUtc: null,
             lastHeartbeatAtUtc: null,
+            targetTemplateId: null,
             items);
     }
 
@@ -181,7 +191,8 @@ public sealed class CatalogImportJob
         DateTimeOffset? startedAtUtc,
         DateTimeOffset? completedAtUtc,
         DateTimeOffset? lastHeartbeatAtUtc,
-        IEnumerable<CatalogImportItem> items) =>
+        IEnumerable<CatalogImportItem> items,
+        Guid? targetTemplateId = null) =>
         new(
             id,
             fileName,
@@ -204,11 +215,12 @@ public sealed class CatalogImportJob
             startedAtUtc,
             completedAtUtc,
             lastHeartbeatAtUtc,
+            targetTemplateId,
             items);
 
     public int PendingCount => _items.Count(i => i.Status == CatalogImportItemStatus.Pending);
 
-    public void Confirm(DateTimeOffset utcNow)
+    public void Confirm(DateTimeOffset utcNow, Guid? targetTemplateId = null)
     {
         DomainTime.EnsureUtc(utcNow);
         if (Status is not CatalogImportJobStatus.Validated)
@@ -225,6 +237,14 @@ public sealed class CatalogImportJob
                 "No valid rows are available to import.");
         }
 
+        if (targetTemplateId == Guid.Empty)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCatalogTemplateId,
+                "Target template id cannot be empty.");
+        }
+
+        TargetTemplateId = targetTemplateId;
         Status = CatalogImportJobStatus.Queued;
         CurrentStage = "Queued";
         UpdatedAtUtc = utcNow;

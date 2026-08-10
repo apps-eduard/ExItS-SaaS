@@ -210,7 +210,12 @@ public sealed record CatalogImportJobDto(
     DateTimeOffset? StartedAtUtc,
     DateTimeOffset? CompletedAtUtc,
     DateTimeOffset? LastHeartbeatAtUtc,
-    IReadOnlyList<CatalogImportItemDto>? PreviewItems);
+    IReadOnlyList<CatalogImportItemDto>? PreviewItems,
+    Guid? TargetTemplateId = null,
+    string? TargetTemplateName = null,
+    int? TargetTemplateProductCount = null,
+    int? EstimatedTemplateLinks = null,
+    int? ProductsAlreadyInTemplate = null);
 
 public sealed record CatalogImportItemDto(
     Guid Id,
@@ -256,7 +261,8 @@ public sealed record CatalogImportErrorDto(
     string? ErrorMessage);
 
 public sealed record ConfirmCatalogImportRequest(
-    string? IdempotencyKey = null);
+    string? IdempotencyKey = null,
+    Guid? TargetTemplateId = null);
 
 public sealed record CatalogImportRawRow(
     int RowNumber,
@@ -338,7 +344,11 @@ internal static class GlobalCatalogDtoMaps
             template.CreatedAtUtc,
             template.UpdatedAtUtc);
 
-    public static CatalogImportJobDto Map(CatalogImportJob job, bool includePreviewItems)
+    public static CatalogImportJobDto Map(
+        CatalogImportJob job,
+        bool includePreviewItems,
+        CatalogTemplate? targetTemplate = null,
+        int? productsAlreadyInTemplate = null)
     {
         IReadOnlyList<CatalogImportItemDto>? preview = null;
         if (includePreviewItems)
@@ -350,6 +360,11 @@ internal static class GlobalCatalogDtoMaps
         }
 
         var summary = CatalogImportRowMapper.BuildPreviewSummary(job.Items);
+        var estimatedLinks = job.TargetTemplateId is null
+            ? (int?)null
+            : job.Items.Count(i =>
+                i.Status is CatalogImportItemStatus.Pending or CatalogImportItemStatus.Imported
+                || (i.Status == CatalogImportItemStatus.Skipped && i.CreatedGlobalProductId is not null));
 
         return new CatalogImportJobDto(
             job.Id.Value,
@@ -379,7 +394,12 @@ internal static class GlobalCatalogDtoMaps
             job.StartedAtUtc,
             job.CompletedAtUtc,
             job.LastHeartbeatAtUtc,
-            preview);
+            preview,
+            job.TargetTemplateId,
+            targetTemplate?.Name,
+            targetTemplate?.ProductCount,
+            estimatedLinks,
+            productsAlreadyInTemplate);
     }
 
     public static CatalogImportItemDto Map(CatalogImportItem item)

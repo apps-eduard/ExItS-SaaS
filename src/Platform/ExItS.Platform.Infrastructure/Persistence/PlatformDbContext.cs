@@ -1812,6 +1812,7 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.StartedAtUtc).HasColumnName("started_at_utc");
             entity.Property(e => e.CompletedAtUtc).HasColumnName("completed_at_utc");
             entity.Property(e => e.LastHeartbeatAtUtc).HasColumnName("last_heartbeat_at_utc");
+            entity.Property(e => e.TargetTemplateId).HasColumnName("target_template_id");
             entity.Property(e => e.Xmin)
                 .HasColumnName("xmin")
                 .HasColumnType("xid")
@@ -1824,6 +1825,13 @@ public sealed class PlatformDbContext : DbContext
                 .IsUnique()
                 .HasFilter("idempotency_key IS NOT NULL")
                 .HasDatabaseName("ux_catalog_import_jobs_idempotency_key");
+            entity.HasIndex(e => e.TargetTemplateId)
+                .HasDatabaseName("ix_catalog_import_jobs_target_template_id");
+
+            entity.HasOne<CatalogTemplateRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.TargetTemplateId)
+                .OnDelete(DeleteBehavior.SetNull);
 
             entity.HasMany(e => e.Items)
                 .WithOne()

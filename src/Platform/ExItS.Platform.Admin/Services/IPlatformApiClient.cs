@@ -47,6 +47,12 @@ public interface IPlatformApiClient
         bool? sortDesc = null,
         CancellationToken ct = default);
     Task<ApiCallResult<OrganizationDto>> GetOrganizationAsync(Guid id, CancellationToken ct = default);
+    Task<ApiCallResult<OrganizationCatalogVisibilityDto>> GetOrganizationCatalogAsync(
+        Guid organizationId,
+        int page = 1,
+        int pageSize = 20,
+        string? search = null,
+        CancellationToken ct = default);
     Task<ApiCallResult<OrganizationDto>> CreateOrganizationAsync(CreateOrganizationRequest request, CancellationToken ct = default);
     Task<ApiCallResult<OrganizationDto>> UpdateOrganizationAsync(Guid id, UpdateOrganizationRequest request, CancellationToken ct = default);
     Task<ApiCallResult<OrganizationDto>> UpdateOrganizationBrandingAsync(Guid id, UpdateOrganizationBrandingRequest request, CancellationToken ct = default);
@@ -309,7 +315,10 @@ public interface IPlatformApiClient
         string? contentType,
         string? idempotencyKey = null,
         CancellationToken ct = default);
-    Task<ApiCallResult<CatalogImportJobDto>> ConfirmCatalogImportAsync(Guid jobId, CancellationToken ct = default);
+    Task<ApiCallResult<CatalogImportJobDto>> ConfirmCatalogImportAsync(
+        Guid jobId,
+        Guid? targetTemplateId = null,
+        CancellationToken ct = default);
     Task<ApiCallResult<PagedResult<CatalogImportErrorDto>>> GetCatalogImportErrorsAsync(
         Guid jobId,
         int page = 1,

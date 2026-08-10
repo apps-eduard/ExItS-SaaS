@@ -88,6 +88,15 @@ public sealed class PlatformApiClient(
             ct);
     public Task<ApiCallResult<OrganizationDto>> GetOrganizationAsync(Guid id, CancellationToken ct = default) =>
         GetAsync<OrganizationDto>($"/api/v1/platform/organizations/{id}", ct);
+    public Task<ApiCallResult<OrganizationCatalogVisibilityDto>> GetOrganizationCatalogAsync(
+        Guid organizationId,
+        int page = 1,
+        int pageSize = 20,
+        string? search = null,
+        CancellationToken ct = default) =>
+        GetAsync<OrganizationCatalogVisibilityDto>(
+            $"/api/v1/platform/organizations/{organizationId}/catalog?{Query(("page", page), ("pageSize", pageSize), ("search", search))}",
+            ct);
     public Task<ApiCallResult<OrganizationDto>> CreateOrganizationAsync(CreateOrganizationRequest request, CancellationToken ct = default) =>
         SendAsync<OrganizationDto>(HttpMethod.Post, "/api/v1/platform/organizations", request, ct);
     public Task<ApiCallResult<OrganizationDto>> UpdateOrganizationAsync(Guid id, UpdateOrganizationRequest request, CancellationToken ct = default) =>
@@ -699,8 +708,20 @@ public sealed class PlatformApiClient(
         }
     }
 
-    public Task<ApiCallResult<CatalogImportJobDto>> ConfirmCatalogImportAsync(Guid jobId, CancellationToken ct = default) =>
-        SendAsync<CatalogImportJobDto>(HttpMethod.Post, $"/api/v1/platform/global-catalog/products/imports/{jobId}/confirm", new { }, ct);
+    public Task<ApiCallResult<CatalogImportJobDto>> ConfirmCatalogImportAsync(
+        Guid jobId,
+        Guid? targetTemplateId = null,
+        CancellationToken ct = default)
+    {
+        object body = targetTemplateId is null
+            ? new { }
+            : new { targetTemplateId };
+        return SendAsync<CatalogImportJobDto>(
+            HttpMethod.Post,
+            $"/api/v1/platform/global-catalog/products/imports/{jobId}/confirm",
+            body,
+            ct);
+    }
 
     public Task<ApiCallResult<PagedResult<CatalogImportErrorDto>>> GetCatalogImportErrorsAsync(
         Guid jobId,

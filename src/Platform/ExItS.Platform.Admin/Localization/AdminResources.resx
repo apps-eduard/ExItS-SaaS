@@ -499,13 +499,32 @@
   <data name="Organizations_TabOverview" xml:space="preserve"><value>Overview</value></data>
   <data name="Organizations_TabProfile" xml:space="preserve"><value>Profile / settings</value></data>
   <data name="Organizations_TabMembers" xml:space="preserve"><value>Staff</value></data>
+  <data name="Organizations_TabCatalog" xml:space="preserve"><value>POS catalog</value></data>
   <data name="Organizations_TabSubscriptions" xml:space="preserve"><value>Subscriptions</value></data>
   <data name="Organizations_TabProductAccess" xml:space="preserve"><value>Product access</value></data>
   <data name="Organizations_TabAudit" xml:space="preserve"><value>Audit</value></data>
   <data name="Organizations_OpenMembers" xml:space="preserve"><value>Open members and invitations</value></data>
+  <data name="Organizations_OpenCatalog" xml:space="preserve"><value>View POS catalog</value></data>
   <data name="Organizations_OpenProductAccess" xml:space="preserve"><value>Open product access</value></data>
   <data name="Organizations_OpenAudit" xml:space="preserve"><value>Open organization audit</value></data>
   <data name="Organizations_AuditHint" xml:space="preserve"><value>Platform audit records for this organization (create, profile, branding, lifecycle).</value></data>
+  <data name="OrgCatalog_Title" xml:space="preserve"><value>Organization POS catalog</value></data>
+  <data name="OrgCatalog_Description" xml:space="preserve"><value>Read-only Platform support view of this organization's POS products and provenance. No merchant mutations.</value></data>
+  <data name="OrgCatalog_BackToOrganization" xml:space="preserve"><value>Back to organization</value></data>
+  <data name="OrgCatalog_Loading" xml:space="preserve"><value>Loading organization catalog…</value></data>
+  <data name="OrgCatalog_SearchPlaceholder" xml:space="preserve"><value>Search name, SKU, or barcode</value></data>
+  <data name="OrgCatalog_BusinessType" xml:space="preserve"><value>Business type</value></data>
+  <data name="OrgCatalog_BusinessTypeUnknown" xml:space="preserve"><value>Unknown</value></data>
+  <data name="OrgCatalog_ProductCount" xml:space="preserve"><value>Product count</value></data>
+  <data name="OrgCatalog_SourceBreakdown" xml:space="preserve"><value>Source breakdown</value></data>
+  <data name="OrgCatalog_Sku" xml:space="preserve"><value>SKU</value></data>
+  <data name="OrgCatalog_Barcode" xml:space="preserve"><value>Barcode</value></data>
+  <data name="OrgCatalog_Category" xml:space="preserve"><value>Category</value></data>
+  <data name="OrgCatalog_Price" xml:space="preserve"><value>Price</value></data>
+  <data name="OrgCatalog_SourceType" xml:space="preserve"><value>Provenance</value></data>
+  <data name="OrgCatalog_CatalogSource" xml:space="preserve"><value>Catalog source</value></data>
+  <data name="OrgCatalog_Tracked" xml:space="preserve"><value>Tracked</value></data>
+  <data name="OrgCatalog_OnHand" xml:space="preserve"><value>On hand</value></data>
   <data name="Organizations_LegalName" xml:space="preserve"><value>Legal name</value></data>
   <data name="Organizations_Phone" xml:space="preserve"><value>Phone</value></data>
   <data name="Organizations_Address1" xml:space="preserve"><value>Address line 1</value></data>
@@ -1038,6 +1057,13 @@
   <data name="GlobalImports_Confirm" xml:space="preserve"><value>Confirm import</value></data>
   <data name="GlobalImports_ConfirmFailed" xml:space="preserve"><value>Confirm failed</value></data>
   <data name="GlobalImports_ConfirmSucceeded" xml:space="preserve"><value>Import queued for background processing.</value></data>
+  <data name="GlobalImports_Destination" xml:space="preserve"><value>Destination</value></data>
+  <data name="GlobalImports_GlobalOnly" xml:space="preserve"><value>Global catalog only</value></data>
+  <data name="GlobalImports_GlobalPlusTemplate" xml:space="preserve"><value>Global catalog + template</value></data>
+  <data name="GlobalImports_Template" xml:space="preserve"><value>Template</value></data>
+  <data name="GlobalImports_ConfirmPreview" xml:space="preserve"><value>Confirm preview</value></data>
+  <data name="GlobalImports_EstimatedToAdd" xml:space="preserve"><value>Estimated products to add</value></data>
+  <data name="GlobalImports_AlreadyInTemplate" xml:space="preserve"><value>Products already in template</value></data>
   <data name="GlobalImports_Preview" xml:space="preserve"><value>Preview rows</value></data>
   <data name="GlobalImports_Errors" xml:space="preserve"><value>Skipped / failed rows</value></data>
   <data name="GlobalImports_LoadErrors" xml:space="preserve"><value>Load error report</value></data>

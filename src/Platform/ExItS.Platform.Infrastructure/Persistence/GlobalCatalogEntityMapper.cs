@@ -231,7 +231,8 @@ internal static class GlobalCatalogEntityMapper
             record.StartedAtUtc,
             record.CompletedAtUtc,
             record.LastHeartbeatAtUtc,
-            (record.Items ?? []).Select(ToDomain));
+            (record.Items ?? []).Select(ToDomain),
+            record.TargetTemplateId);
 
     public static CatalogImportItem ToDomain(CatalogImportItemRecord record) =>
         CatalogImportItem.Rehydrate(
@@ -280,6 +281,7 @@ internal static class GlobalCatalogEntityMapper
             StartedAtUtc = job.StartedAtUtc,
             CompletedAtUtc = job.CompletedAtUtc,
             LastHeartbeatAtUtc = job.LastHeartbeatAtUtc,
+            TargetTemplateId = job.TargetTemplateId,
             Items = job.Items.Select(i => ToItemRecord(job.Id.Value, i)).ToList()
         };
 
@@ -297,6 +299,7 @@ internal static class GlobalCatalogEntityMapper
         record.StartedAtUtc = job.StartedAtUtc;
         record.CompletedAtUtc = job.CompletedAtUtc;
         record.LastHeartbeatAtUtc = job.LastHeartbeatAtUtc;
+        record.TargetTemplateId = job.TargetTemplateId;
 
         var byId = record.Items.ToDictionary(i => i.Id);
         foreach (var item in job.Items)

@@ -143,6 +143,35 @@ public sealed record OrganizationDto(
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset UpdatedAtUtc);
 
+public sealed record OrganizationCatalogVisibilityDto(
+    Guid OrganizationId,
+    string OrganizationDisplayName,
+    string OrganizationStatus,
+    string? BusinessType,
+    int ProductCount,
+    IReadOnlyDictionary<string, int> SourceBreakdown,
+    IReadOnlyList<OrganizationCatalogProductDto> Products,
+    int Page,
+    int PageSize,
+    int TotalCount);
+
+public sealed record OrganizationCatalogProductDto(
+    Guid ProductId,
+    string Name,
+    string? Sku,
+    string? Barcode,
+    Guid? CategoryId,
+    string? CategoryName,
+    decimal SellingPrice,
+    bool IsTracked,
+    decimal? OnHandQuantity,
+    string Status,
+    string SourceType,
+    Guid? PlatformGlobalProductId,
+    Guid? PlatformTemplateId,
+    DateTimeOffset? CatalogImportedAt,
+    string CatalogSource);
+
 public sealed record CreateOrganizationRequest(string DisplayName, string Slug);
 
 public sealed record UpdateOrganizationRequest(
@@ -1221,7 +1250,16 @@ public sealed record CatalogImportJobDto(
     DateTimeOffset? StartedAtUtc = null,
     DateTimeOffset? CompletedAtUtc = null,
     DateTimeOffset? LastHeartbeatAtUtc = null,
-    IReadOnlyList<CatalogImportItemDto>? PreviewItems = null);
+    IReadOnlyList<CatalogImportItemDto>? PreviewItems = null,
+    Guid? TargetTemplateId = null,
+    string? TargetTemplateName = null,
+    int? TargetTemplateProductCount = null,
+    int? EstimatedTemplateLinks = null,
+    int? ProductsAlreadyInTemplate = null);
+
+public sealed record ConfirmCatalogImportRequest(
+    string? IdempotencyKey = null,
+    Guid? TargetTemplateId = null);
 
 public sealed record CatalogImportItemDto(
     Guid Id,

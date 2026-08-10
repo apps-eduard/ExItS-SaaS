@@ -228,21 +228,30 @@ public sealed class CreateCatalogImport
 public sealed class ConfirmCatalogImport
 {
     private readonly ICatalogImportJobRepository _imports;
+    private readonly ICatalogTemplateRepository _templates;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
     public ConfirmCatalogImport(
         ICatalogImportJobRepository imports,
+        ICatalogTemplateRepository templates,
         IPlatformUnitOfWork unitOfWork,
         IClock clock)
     {
         _imports = imports;
+        _templates = templates;
         _unitOfWork = unitOfWork;
         _clock = clock;
     }
 
+    public Task<ApplicationResult<CatalogImportJobDto>> ExecuteAsync(
+        Guid id,
+        CancellationToken cancellationToken = default) =>
+        ExecuteAsync(id, request: null, cancellationToken);
+
     public async Task<ApplicationResult<CatalogImportJobDto>> ExecuteAsync(
         Guid id,
+        ConfirmCatalogImportRequest? request,
         CancellationToken cancellationToken = default)
     {
         try
@@ -263,14 +272,36 @@ public sealed class ConfirmCatalogImport
             {
                 // Idempotent confirm / re-fetch.
                 return ApplicationResult<CatalogImportJobDto>.Success(
-                    GlobalCatalogDtoMaps.Map(job, includePreviewItems: true));
+                    await MapWithTemplateAsync(job, cancellationToken).ConfigureAwait(false));
             }
 
-            job.Confirm(_clock.UtcNow);
+            CatalogTemplate? targetTemplate = null;
+            var targetTemplateId = request?.TargetTemplateId;
+            if (targetTemplateId is Guid templateId)
+            {
+                targetTemplate = await _templates
+                    .GetByIdAsync(CatalogTemplateId.From(templateId), cancellationToken)
+                    .ConfigureAwait(false);
+                if (targetTemplate is null)
+                {
+                    return ApplicationResult<CatalogImportJobDto>.Failure(
+                        ApplicationErrorCodes.CatalogTemplateNotFound,
+                        "Target catalog template was not found.");
+                }
+
+                if (targetTemplate.Status == CatalogTemplateStatus.Archived)
+                {
+                    return ApplicationResult<CatalogImportJobDto>.Failure(
+                        DomainErrorCodes.InvalidCatalogTemplateStatusTransition,
+                        "An archived CatalogTemplate cannot receive import assignments.");
+                }
+            }
+
+            job.Confirm(_clock.UtcNow, targetTemplateId);
             await _imports.UpdateAsync(job, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             return ApplicationResult<CatalogImportJobDto>.Success(
-                GlobalCatalogDtoMaps.Map(job, includePreviewItems: true));
+                GlobalCatalogDtoMaps.Map(job, includePreviewItems: true, targetTemplate));
         }
         catch (DomainException ex)
         {
@@ -285,6 +316,21 @@ public sealed class ConfirmCatalogImport
             return ApplicationResult<CatalogImportJobDto>.Failure(ex.ErrorCode, ex.Message);
         }
     }
+
+    private async Task<CatalogImportJobDto> MapWithTemplateAsync(
+        CatalogImportJob job,
+        CancellationToken cancellationToken)
+    {
+        CatalogTemplate? template = null;
+        if (job.TargetTemplateId is Guid templateId)
+        {
+            template = await _templates
+                .GetByIdAsync(CatalogTemplateId.From(templateId), cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        return GlobalCatalogDtoMaps.Map(job, includePreviewItems: true, template);
+    }
 }
 
 /// <summary>Processes one claimed import job in chunks. Invoked by the hosted worker.</summary>
@@ -293,6 +339,7 @@ public sealed class ProcessCatalogImportChunk
     private readonly ICatalogImportJobRepository _imports;
     private readonly IGlobalProductRepository _products;
     private readonly IGlobalCategoryRepository _categories;
+    private readonly ICatalogTemplateRepository _templates;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
     private readonly IAuditWriter _auditWriter;
@@ -305,11 +352,13 @@ public sealed class ProcessCatalogImportChunk
         IGlobalCategoryRepository categories,
         IPlatformUnitOfWork unitOfWork,
         IClock clock,
-        IAuditWriter auditWriter)
+        IAuditWriter auditWriter,
+        ICatalogTemplateRepository? templates = null)
     {
         _imports = imports;
         _products = products;
         _categories = categories;
+        _templates = templates ?? new NullCatalogTemplateRepository();
         _unitOfWork = unitOfWork;
         _clock = clock;
         _auditWriter = auditWriter;
@@ -346,11 +395,14 @@ public sealed class ProcessCatalogImportChunk
                     await ProcessItemAsync(job, item, cancellationToken).ConfigureAwait(false);
                 }
 
+                await LinkResolvedProductsToTemplateAsync(job, cancellationToken).ConfigureAwait(false);
+
                 job.RecalculateProgress(_clock.UtcNow);
                 await _imports.UpdateAsync(job, cancellationToken).ConfigureAwait(false);
                 await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             }
 
+            await LinkResolvedProductsToTemplateAsync(job, cancellationToken).ConfigureAwait(false);
             job.Complete(_clock.UtcNow);
             await _imports.UpdateAsync(job, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
@@ -370,6 +422,49 @@ public sealed class ProcessCatalogImportChunk
             }
 
             return true;
+        }
+    }
+
+    private async Task LinkResolvedProductsToTemplateAsync(
+        CatalogImportJob job,
+        CancellationToken cancellationToken)
+    {
+        if (job.TargetTemplateId is not Guid templateId)
+        {
+            return;
+        }
+
+        var productIds = job.Items
+            .Where(i => i.CreatedGlobalProductId is Guid)
+            .Select(i => i.CreatedGlobalProductId!.Value)
+            .Distinct()
+            .ToList();
+        if (productIds.Count == 0)
+        {
+            return;
+        }
+
+        var template = await _templates
+            .GetByIdAsync(CatalogTemplateId.From(templateId), cancellationToken)
+            .ConfigureAwait(false);
+        if (template is null || template.Status == CatalogTemplateStatus.Archived)
+        {
+            return;
+        }
+
+        var linkNow = _clock.UtcNow;
+        var linkedAny = false;
+        foreach (var productId in productIds)
+        {
+            if (template.TryAssignProduct(GlobalProductId.From(productId), linkNow))
+            {
+                linkedAny = true;
+            }
+        }
+
+        if (linkedAny)
+        {
+            await _templates.UpdateAsync(template, cancellationToken).ConfigureAwait(false);
         }
     }
 
@@ -431,20 +526,32 @@ public sealed class ProcessCatalogImportChunk
             if (await _products.ExistsWithBarcodeAsync(item.Barcode, excludingId: null, cancellationToken)
                     .ConfigureAwait(false))
             {
+                var existingId = await ResolveExistingProductIdAsync(
+                        barcode: item.Barcode,
+                        sku: null,
+                        cancellationToken)
+                    .ConfigureAwait(false);
                 item.MarkSkipped(
                     ApplicationErrorCodes.DuplicateGlobalProductBarcode,
                     $"Barcode '{item.Barcode}' already exists in the global catalog.",
-                    now);
+                    now,
+                    existingId);
                 return;
             }
 
             if (await _products.ExistsWithSkuAsync(item.Sku, excludingId: null, cancellationToken)
                     .ConfigureAwait(false))
             {
+                var existingId = await ResolveExistingProductIdAsync(
+                        barcode: null,
+                        sku: item.Sku,
+                        cancellationToken)
+                    .ConfigureAwait(false);
                 item.MarkSkipped(
                     ApplicationErrorCodes.DuplicateGlobalProductSku,
                     $"SKU '{item.Sku}' already exists in the global catalog.",
-                    now);
+                    now,
+                    existingId);
                 return;
             }
 
@@ -599,9 +706,58 @@ public sealed class ProcessCatalogImportChunk
         return resolved;
     }
 
+    private async Task<Guid?> ResolveExistingProductIdAsync(
+        string? barcode,
+        string? sku,
+        CancellationToken cancellationToken)
+    {
+        var (items, _) = await _products
+            .ListAsync(
+                status: null,
+                categoryId: null,
+                businessType: null,
+                search: null,
+                barcode: barcode,
+                sku: sku,
+                skip: 0,
+                take: 1,
+                cancellationToken)
+            .ConfigureAwait(false);
+        return items.Count > 0 ? items[0].Id.Value : null;
+    }
+
     private static bool IsTransient(Exception ex) =>
         ex is TimeoutException
             or OperationCanceledException
             || ex.GetType().Name.Contains("Timeout", StringComparison.OrdinalIgnoreCase)
             || ex.InnerException is not null && IsTransient(ex.InnerException);
+}
+
+file sealed class NullCatalogTemplateRepository : ICatalogTemplateRepository
+{
+    public Task<CatalogTemplate?> GetByIdAsync(CatalogTemplateId id, CancellationToken cancellationToken = default) =>
+        Task.FromResult<CatalogTemplate?>(null);
+
+    public Task<bool> ExistsWithSlugAsync(
+        string slug,
+        CatalogTemplateId? excludingId = null,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(false);
+
+    public Task<(IReadOnlyList<CatalogTemplate> Items, int TotalCount)> ListAsync(
+        CatalogTemplateStatus? status,
+        BusinessType? primaryBusinessType,
+        string? search,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default,
+        CatalogTemplateListSortBy sortBy = CatalogTemplateListSortBy.Name,
+        bool sortDescending = false) =>
+        Task.FromResult<(IReadOnlyList<CatalogTemplate>, int)>(([], 0));
+
+    public Task AddAsync(CatalogTemplate template, CancellationToken cancellationToken = default) =>
+        Task.CompletedTask;
+
+    public Task UpdateAsync(CatalogTemplate template, CancellationToken cancellationToken = default) =>
+        Task.CompletedTask;
 }
