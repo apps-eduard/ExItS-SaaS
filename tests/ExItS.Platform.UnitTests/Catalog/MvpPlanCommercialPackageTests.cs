@@ -61,6 +61,24 @@ public sealed class MvpPlanCommercialPackageTests
     }
 
     [Fact]
+    public void Plan_validates_active_pos_device_limit()
+    {
+        var exception = Assert.Throws<DomainException>(() => Plan.CreateDraft(
+            ProductCode.Create(ProductCode.PinoyBusinessPos),
+            PlanCode.Create(MvpPosPlanCodes.Starter),
+            "Starter",
+            T0,
+            maxActivePosDevices: 0));
+
+        Assert.Equal(DomainErrorCodes.InvalidPlanStatusTransition, exception.ErrorCode);
+        Assert.Equal(1, Plan.CreateDraft(
+            ProductCode.Create(ProductCode.PinoyBusinessPos),
+            PlanCode.Create("starter-2"),
+            "Starter",
+            T0).MaxActivePosDevices);
+    }
+
+    [Fact]
     public void Plan_accepts_new_subscriptions_only_when_active()
     {
         var plan = Plan.CreateDraft(

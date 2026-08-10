@@ -74,6 +74,7 @@ internal static class CatalogEntityMapper
             record.Description,
             record.MaxBranches <= 0 ? 1 : record.MaxBranches,
             record.MaxActiveStaff <= 0 ? 3 : record.MaxActiveStaff,
+            record.MaxActivePosDevices <= 0 ? 1 : record.MaxActivePosDevices,
             record.CustomerCreditEnabled,
             record.AdvancedReportsEnabled,
             record.ExportEnabled,
@@ -95,6 +96,7 @@ internal static class CatalogEntityMapper
             Status = plan.Status.ToString(),
             MaxBranches = plan.MaxBranches,
             MaxActiveStaff = plan.MaxActiveStaff,
+            MaxActivePosDevices = plan.MaxActivePosDevices,
             CustomerCreditEnabled = plan.CustomerCreditEnabled,
             AdvancedReportsEnabled = plan.AdvancedReportsEnabled,
             ExportEnabled = plan.ExportEnabled,
@@ -115,6 +117,7 @@ internal static class CatalogEntityMapper
         record.Status = plan.Status.ToString();
         record.MaxBranches = plan.MaxBranches;
         record.MaxActiveStaff = plan.MaxActiveStaff;
+        record.MaxActivePosDevices = plan.MaxActivePosDevices;
         record.CustomerCreditEnabled = plan.CustomerCreditEnabled;
         record.AdvancedReportsEnabled = plan.AdvancedReportsEnabled;
         record.ExportEnabled = plan.ExportEnabled;

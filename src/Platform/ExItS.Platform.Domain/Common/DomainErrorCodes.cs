@@ -34,6 +34,7 @@ public static class DomainErrorCodes
     public const string HomeOrganizationRequired = "platform.user.home_organization.required";
     public const string StaffOrganizationSwitchDenied = "platform.user.staff_organization_switch_denied";
     public const string InvalidOrganizationSlug = "platform.organization.slug.invalid";
+    public const string PrimaryBusinessTypeImmutable = "platform.organization.primary_business_type.immutable";
     public const string InvalidOrganizationProfile = "platform.organization.profile.invalid";
     public const string InvalidOrganizationBranding = "platform.organization.branding.invalid";
     public const string InvalidProductCode = "platform.product_code.invalid";
@@ -41,6 +42,14 @@ public static class DomainErrorCodes
 
     public const string InvalidAccountStatusTransition = "platform.user.status.invalid_transition";
     public const string InvalidOrganizationStatusTransition = "platform.organization.status.invalid_transition";
+    public const string InvalidOrganizationBranchId = "platform.organization_branch.id.invalid";
+    public const string InvalidOrganizationBranchCode = "platform.organization_branch.code.invalid";
+    public const string InvalidOrganizationBranchStatusTransition = "platform.organization_branch.status.invalid_transition";
+    public const string OrganizationBranchNotActive = "platform.organization_branch.not_active";
+    public const string OrganizationBranchPrimaryRequired = "platform.organization_branch.primary.required";
+    public const string InvalidPosDeviceId = "platform.pos_device.id.invalid";
+    public const string InvalidPosDeviceInstallationId = "platform.pos_device.installation_id.invalid";
+    public const string PosDeviceNotActive = "platform.pos_device.not_active";
     public const string InvalidMembershipStatusTransition = "platform.membership.status.invalid_transition";
 
     public const string UserNotActive = "platform.user.not_active";

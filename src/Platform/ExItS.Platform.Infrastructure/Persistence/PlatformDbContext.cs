@@ -50,6 +50,8 @@ public sealed class PlatformDbContext : DbContext
     internal DbSet<CatalogImportJobRecord> CatalogImportJobs => Set<CatalogImportJobRecord>();
     internal DbSet<CatalogImportItemRecord> CatalogImportItems => Set<CatalogImportItemRecord>();
     internal DbSet<PlatformOrganizationRecord> Organizations => Set<PlatformOrganizationRecord>();
+    internal DbSet<OrganizationBranchRecord> OrganizationBranches => Set<OrganizationBranchRecord>();
+    internal DbSet<PosDeviceRecord> PosDevices => Set<PosDeviceRecord>();
     internal DbSet<SubscriptionRecord> Subscriptions => Set<SubscriptionRecord>();
     internal DbSet<SaaSPaymentRecord> SaaSPayments => Set<SaaSPaymentRecord>();
     internal DbSet<ProviderPaymentRecord> ProviderPayments => Set<ProviderPaymentRecord>();
@@ -142,6 +144,7 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
             entity.Property(e => e.MaxBranches).HasColumnName("max_branches").HasDefaultValue(1);
             entity.Property(e => e.MaxActiveStaff).HasColumnName("max_active_staff").HasDefaultValue(3);
+            entity.Property(e => e.MaxActivePosDevices).HasColumnName("max_active_pos_devices").HasDefaultValue(1);
             entity.Property(e => e.CustomerCreditEnabled).HasColumnName("customer_credit_enabled").HasDefaultValue(false);
             entity.Property(e => e.AdvancedReportsEnabled).HasColumnName("advanced_reports_enabled").HasDefaultValue(false);
             entity.Property(e => e.ExportEnabled).HasColumnName("export_enabled").HasDefaultValue(false);
@@ -236,6 +239,12 @@ public sealed class PlatformDbContext : DbContext
                 .IsUnique()
                 .HasFilter("public_organization_id IS NOT NULL")
                 .HasDatabaseName("ux_organizations_public_organization_id");
+            entity.Property(e => e.PrimaryBusinessTypeId).HasColumnName("primary_business_type_id");
+            entity.HasIndex(e => e.PrimaryBusinessTypeId).HasDatabaseName("ix_organizations_primary_business_type_id");
+            entity.HasOne<BusinessTypeRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.PrimaryBusinessTypeId)
+                .OnDelete(DeleteBehavior.Restrict);
             entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
             entity.Property(e => e.LegalName).HasColumnName("legal_name").HasMaxLength(100);
             entity.Property(e => e.ContactEmail).HasColumnName("contact_email").HasMaxLength(320);
@@ -260,6 +269,54 @@ public sealed class PlatformDbContext : DbContext
                 .HasColumnType("xid")
                 .ValueGeneratedOnAddOrUpdate()
                 .IsConcurrencyToken();
+        });
+
+        modelBuilder.Entity<OrganizationBranchRecord>(entity =>
+        {
+            entity.ToTable("organization_branches");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.Code).HasColumnName("code").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.Name).HasColumnName("name").HasMaxLength(100).IsRequired();
+            entity.Property(e => e.AddressLine1).HasColumnName("address_line1").HasMaxLength(200);
+            entity.Property(e => e.AddressLine2).HasColumnName("address_line2").HasMaxLength(200);
+            entity.Property(e => e.City).HasColumnName("city").HasMaxLength(100);
+            entity.Property(e => e.Region).HasColumnName("region").HasMaxLength(100);
+            entity.Property(e => e.PostalCode).HasColumnName("postal_code").HasMaxLength(32);
+            entity.Property(e => e.CountryCode).HasColumnName("country_code").HasMaxLength(2);
+            entity.Property(e => e.IsPrimary).HasColumnName("is_primary");
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(16).IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.HasIndex(e => new { e.OrganizationId, e.Code }).IsUnique();
+            entity.HasIndex(e => e.Status);
+            entity.HasOne<PlatformOrganizationRecord>().WithMany().HasForeignKey(e => e.OrganizationId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<PosDeviceRecord>(entity =>
+        {
+            entity.ToTable("pos_devices");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.BranchId).HasColumnName("branch_id");
+            entity.Property(e => e.InstallationDeviceId).HasColumnName("installation_device_id").HasMaxLength(128).IsRequired();
+            entity.Property(e => e.FriendlyName).HasColumnName("friendly_name").HasMaxLength(128).IsRequired();
+            entity.Property(e => e.Platform).HasColumnName("platform").HasMaxLength(64);
+            entity.Property(e => e.Model).HasColumnName("model").HasMaxLength(128);
+            entity.Property(e => e.AppVersion).HasColumnName("app_version").HasMaxLength(64);
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(16).IsRequired();
+            entity.Property(e => e.RegisteredAtUtc).HasColumnName("registered_at_utc");
+            entity.Property(e => e.LastSeenAtUtc).HasColumnName("last_seen_at_utc");
+            entity.Property(e => e.RevokedAtUtc).HasColumnName("revoked_at_utc");
+            entity.Property(e => e.RevokedByUserId).HasColumnName("revoked_by_user_id");
+            entity.HasIndex(e => new { e.OrganizationId, e.InstallationDeviceId }).IsUnique();
+            entity.HasIndex(e => e.BranchId);
+            entity.HasIndex(e => e.Status);
+            entity.HasOne<PlatformOrganizationRecord>().WithMany().HasForeignKey(e => e.OrganizationId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<OrganizationBranchRecord>().WithMany().HasForeignKey(e => e.BranchId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<PlatformUserRecord>().WithMany().HasForeignKey(e => e.RevokedByUserId).OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<SubscriptionRecord>(entity =>

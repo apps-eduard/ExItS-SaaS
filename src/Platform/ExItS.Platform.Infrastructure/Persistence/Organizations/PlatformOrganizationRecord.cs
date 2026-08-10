@@ -6,6 +6,7 @@ internal sealed class PlatformOrganizationRecord
     public string DisplayName { get; set; } = string.Empty;
     public string Slug { get; set; } = string.Empty;
     public string? PublicOrganizationId { get; set; }
+    public Guid? PrimaryBusinessTypeId { get; set; }
     public string Status { get; set; } = string.Empty;
     public string? LegalName { get; set; }
     public string? ContactEmail { get; set; }

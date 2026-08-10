@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using ExItS.Platform.Domain.Common;
+using ExItS.Platform.Domain.GlobalCatalog;
 using ExItS.Platform.Domain.Identity;
 
 namespace ExItS.Platform.Domain.Organizations;
@@ -24,6 +25,7 @@ public sealed class PlatformOrganization
     public string Slug { get; private set; }
     /// <summary>Immutable public id (ORG######) used in staff login hosts. Not a secret.</summary>
     public string? PublicOrganizationId { get; private set; }
+    public BusinessTypeId? PrimaryBusinessTypeId { get; private set; }
     public OrganizationStatus Status { get; private set; }
     public OrganizationProfile Profile { get; private set; }
     public OrganizationBranding Branding { get; private set; }
@@ -35,6 +37,7 @@ public sealed class PlatformOrganization
         string displayName,
         string slug,
         string? publicOrganizationId,
+        BusinessTypeId? primaryBusinessTypeId,
         OrganizationStatus status,
         OrganizationProfile profile,
         OrganizationBranding branding,
@@ -45,6 +48,7 @@ public sealed class PlatformOrganization
         DisplayName = displayName;
         Slug = slug;
         PublicOrganizationId = publicOrganizationId;
+        PrimaryBusinessTypeId = primaryBusinessTypeId;
         Status = status;
         Profile = profile;
         Branding = branding;
@@ -67,6 +71,7 @@ public sealed class PlatformOrganization
             name,
             normalizedSlug,
             publicOrganizationId: null,
+            primaryBusinessTypeId: null,
             OrganizationStatus.Active,
             OrganizationProfile.Empty,
             OrganizationBranding.Empty,
@@ -79,12 +84,13 @@ public sealed class PlatformOrganization
         string displayName,
         string slug,
         string? publicOrganizationId,
+        BusinessTypeId? primaryBusinessTypeId,
         OrganizationStatus status,
         OrganizationProfile profile,
         OrganizationBranding branding,
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc) =>
-        new(id, displayName, slug, publicOrganizationId, status, profile, branding, createdAtUtc, updatedAtUtc);
+        new(id, displayName, slug, publicOrganizationId, primaryBusinessTypeId, status, profile, branding, createdAtUtc, updatedAtUtc);
 
     /// <summary>Assigns the immutable public organization ID once.</summary>
     public void AssignPublicOrganizationId(string publicOrganizationId, DateTimeOffset utcNow)
@@ -104,6 +110,27 @@ public sealed class PlatformOrganization
         }
 
         PublicOrganizationId = normalized;
+        UpdatedAtUtc = utcNow;
+    }
+
+    /// <summary>Assigns the immutable primary catalog business type once.</summary>
+    public void AssignPrimaryBusinessType(BusinessTypeId id, DateTimeOffset utcNow)
+    {
+        ArgumentNullException.ThrowIfNull(id);
+        EnsureUtc(utcNow);
+        if (PrimaryBusinessTypeId is not null)
+        {
+            if (PrimaryBusinessTypeId != id)
+            {
+                throw new DomainException(
+                    DomainErrorCodes.PrimaryBusinessTypeImmutable,
+                    "Primary business type cannot be changed once assigned.");
+            }
+
+            return;
+        }
+
+        PrimaryBusinessTypeId = id;
         UpdatedAtUtc = utcNow;
     }
 

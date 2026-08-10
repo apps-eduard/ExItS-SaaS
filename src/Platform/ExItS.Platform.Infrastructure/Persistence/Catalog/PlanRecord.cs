@@ -10,6 +10,7 @@ internal sealed class PlanRecord
     public string Status { get; set; } = string.Empty;
     public int MaxBranches { get; set; } = 1;
     public int MaxActiveStaff { get; set; } = 3;
+    public int MaxActivePosDevices { get; set; } = 1;
     public bool CustomerCreditEnabled { get; set; }
     public bool AdvancedReportsEnabled { get; set; }
     public bool ExportEnabled { get; set; }

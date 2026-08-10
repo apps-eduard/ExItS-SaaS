@@ -90,6 +90,7 @@
                 <Space Wrap>
                     <AntDesign.InputNumber TValue="int" @bind-Value="_newMaxBranches" Min="1" Placeholder="Max branches" Disabled="_busy" Style="width:140px;" />
                     <AntDesign.InputNumber TValue="int" @bind-Value="_newMaxStaff" Min="1" Placeholder="Max active staff" Disabled="_busy" Style="width:140px;" />
+                    <AntDesign.InputNumber TValue="int" @bind-Value="_newMaxPosDevices" Min="1" Placeholder="Max POS devices" Disabled="_busy" Style="width:140px;" />
                     <AntDesign.InputNumber TValue="int" @bind-Value="_newTrialDays" Min="0" Placeholder="Default trial days" Disabled="_busy" Style="width:140px;" />
                     <AntDesign.InputNumber TValue="int" @bind-Value="_newSortOrder" Min="0" Placeholder="Display order" Disabled="_busy" Style="width:120px;" />
                 </Space>
@@ -154,7 +155,7 @@
                 @(context.TrialAllowed ? $"{context.DefaultTrialDays}d" : "—")
             </PropertyColumn>
             <PropertyColumn Property="c => c.MaxBranches" Title="Limits" Width="140">
-                @context.MaxBranches branches · @context.MaxActiveStaff staff
+                @context.MaxBranches branches · @context.MaxActiveStaff staff · @context.MaxActivePosDevices devices
             </PropertyColumn>
             <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Sortable Width="110">
                 <AdminStatusTag Value="@context.Status" />
@@ -247,6 +248,7 @@ else
                     <DescriptionsItem Title="Currency">@pl.CurrencyCode</DescriptionsItem>
                     <DescriptionsItem Title="Max branches">@pl.MaxBranches</DescriptionsItem>
                     <DescriptionsItem Title="Max active staff">@pl.MaxActiveStaff</DescriptionsItem>
+                    <DescriptionsItem Title="Max active POS devices">@pl.MaxActivePosDevices</DescriptionsItem>
                     <DescriptionsItem Title="Customer credit">@(pl.CustomerCreditEnabled ? "Enabled" : "Disabled")</DescriptionsItem>
                     <DescriptionsItem Title="Advanced reports">@(pl.AdvancedReportsEnabled ? "Enabled" : "Disabled")</DescriptionsItem>
                     <DescriptionsItem Title="Export">@(pl.ExportEnabled ? "Enabled" : "Disabled")</DescriptionsItem>
@@ -273,6 +275,7 @@ else
                             <Space Wrap>
                                 <AntDesign.InputNumber TValue="int" @bind-Value="_editMaxBranches" Min="1" Placeholder="Max branches" Disabled="_busy" Style="width:140px;" />
                                 <AntDesign.InputNumber TValue="int" @bind-Value="_editMaxStaff" Min="1" Placeholder="Max active staff" Disabled="_busy" Style="width:140px;" />
+                                <AntDesign.InputNumber TValue="int" @bind-Value="_editMaxPosDevices" Min="1" Placeholder="Max POS devices" Disabled="_busy" Style="width:140px;" />
                                 <AntDesign.InputNumber TValue="int" @bind-Value="_editTrialDays" Min="0" Placeholder="Default trial days" Disabled="_busy" Style="width:140px;" />
                                 <AntDesign.InputNumber TValue="int" @bind-Value="_editSortOrder" Min="0" Placeholder="Display order" Disabled="_busy" Style="width:120px;" />
                             </Space>
@@ -355,6 +358,7 @@ else
     private string _newDescription = "";
     private int _newMaxBranches = 1;
     private int _newMaxStaff = 3;
+    private int _newMaxPosDevices = 1;
     private int _newTrialDays = 14;
     private int _newSortOrder = 100;
     private decimal _newMonthlyPrice;
@@ -368,6 +372,7 @@ else
     private string _editDescription = "";
     private int _editMaxBranches = 1;
     private int _editMaxStaff = 3;
+    private int _editMaxPosDevices = 1;
     private int _editTrialDays = 14;
     private int _editSortOrder = 100;
     private decimal _editMonthlyPrice;
@@ -496,6 +501,7 @@ else
         _editDescription = plan.Description ?? "";
         _editMaxBranches = plan.MaxBranches;
         _editMaxStaff = plan.MaxActiveStaff;
+        _editMaxPosDevices = plan.MaxActivePosDevices;
         _editTrialDays = plan.DefaultTrialDays;
         _editSortOrder = plan.SortOrder;
         _editMonthlyPrice = plan.MonthlyPrice;
@@ -530,6 +536,7 @@ else
                 _newDescription,
                 _newMaxBranches,
                 _newMaxStaff,
+                _newMaxPosDevices,
                 _newCustomerCredit,
                 _newAdvancedReports,
                 _newExport,
@@ -565,6 +572,7 @@ else
                 _editDescription,
                 _editMaxBranches,
                 _editMaxStaff,
+                _editMaxPosDevices,
                 _editCustomerCredit,
                 _editAdvancedReports,
                 _editExport,

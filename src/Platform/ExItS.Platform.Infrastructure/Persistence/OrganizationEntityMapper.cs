@@ -1,4 +1,5 @@
 using ExItS.Platform.Domain.Organizations;
+using ExItS.Platform.Domain.GlobalCatalog;
 using ExItS.Platform.Infrastructure.Persistence.Organizations;
 
 namespace ExItS.Platform.Infrastructure.Persistence;
@@ -11,6 +12,7 @@ internal static class OrganizationEntityMapper
             record.DisplayName,
             record.Slug,
             record.PublicOrganizationId,
+            record.PrimaryBusinessTypeId is null ? null : BusinessTypeId.From(record.PrimaryBusinessTypeId.Value),
             Enum.Parse<OrganizationStatus>(record.Status),
             OrganizationProfile.Create(
                 record.LegalName,
@@ -40,6 +42,7 @@ internal static class OrganizationEntityMapper
             DisplayName = organization.DisplayName,
             Slug = organization.Slug,
             PublicOrganizationId = organization.PublicOrganizationId,
+            PrimaryBusinessTypeId = organization.PrimaryBusinessTypeId?.Value,
             Status = organization.Status.ToString(),
             LegalName = organization.Profile.LegalName,
             ContactEmail = organization.Profile.ContactEmail,
@@ -66,6 +69,7 @@ internal static class OrganizationEntityMapper
         record.DisplayName = organization.DisplayName;
         record.Slug = organization.Slug;
         record.PublicOrganizationId = organization.PublicOrganizationId;
+        record.PrimaryBusinessTypeId = organization.PrimaryBusinessTypeId?.Value;
         record.Status = organization.Status.ToString();
         record.LegalName = organization.Profile.LegalName;
         record.ContactEmail = organization.Profile.ContactEmail;

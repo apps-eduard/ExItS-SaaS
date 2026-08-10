@@ -351,6 +351,7 @@ public sealed class CreatePlan
             description: null,
             maxBranches: 1,
             maxActiveStaff: 3,
+            maxActivePosDevices: 1,
             customerCreditEnabled: false,
             advancedReportsEnabled: false,
             exportEnabled: false,
@@ -369,6 +370,7 @@ public sealed class CreatePlan
         string? description,
         int maxBranches,
         int maxActiveStaff,
+        int maxActivePosDevices,
         bool customerCreditEnabled,
         bool advancedReportsEnabled,
         bool exportEnabled,
@@ -406,6 +408,7 @@ public sealed class CreatePlan
                 description: description,
                 maxBranches: maxBranches,
                 maxActiveStaff: maxActiveStaff,
+                maxActivePosDevices: maxActivePosDevices,
                 customerCreditEnabled: customerCreditEnabled,
                 advancedReportsEnabled: advancedReportsEnabled,
                 exportEnabled: exportEnabled,
@@ -428,6 +431,26 @@ public sealed class CreatePlan
             return ApplicationResult<Plan>.Failure(ex.ErrorCode, ex.Message);
         }
     }
+
+    public Task<ApplicationResult<Plan>> ExecuteAsync(
+        string productCode,
+        string planCode,
+        string displayName,
+        string? description,
+        int maxBranches,
+        int maxActiveStaff,
+        bool customerCreditEnabled,
+        bool advancedReportsEnabled,
+        bool exportEnabled,
+        bool trialAllowed,
+        int defaultTrialDays,
+        int sortOrder,
+        decimal monthlyPrice,
+        decimal annualPrice,
+        string currencyCode,
+        CancellationToken cancellationToken = default) =>
+        ExecuteAsync(productCode, planCode, displayName, description, maxBranches, maxActiveStaff, 1, customerCreditEnabled,
+            advancedReportsEnabled, exportEnabled, trialAllowed, defaultTrialDays, sortOrder, monthlyPrice, annualPrice, currencyCode, cancellationToken);
 }
 
 public sealed class RenamePlan
@@ -575,6 +598,7 @@ public sealed class UpdatePlanCommercialPackage
         string? description,
         int maxBranches,
         int maxActiveStaff,
+        int maxActivePosDevices,
         bool customerCreditEnabled,
         bool advancedReportsEnabled,
         bool exportEnabled,
@@ -607,6 +631,7 @@ public sealed class UpdatePlanCommercialPackage
                 description,
                 maxBranches,
                 maxActiveStaff,
+                maxActivePosDevices,
                 customerCreditEnabled,
                 advancedReportsEnabled,
                 exportEnabled,
@@ -626,6 +651,26 @@ public sealed class UpdatePlanCommercialPackage
             return ApplicationResult<Plan>.Failure(ex.ErrorCode, ex.Message);
         }
     }
+
+    public Task<ApplicationResult<Plan>> ExecuteAsync(
+        PlanId id,
+        string displayName,
+        string? description,
+        int maxBranches,
+        int maxActiveStaff,
+        bool customerCreditEnabled,
+        bool advancedReportsEnabled,
+        bool exportEnabled,
+        bool trialAllowed,
+        int defaultTrialDays,
+        int sortOrder,
+        decimal monthlyPrice,
+        decimal annualPrice,
+        string currencyCode,
+        DateTimeOffset? expectedUpdatedAtUtc = null,
+        CancellationToken cancellationToken = default) =>
+        ExecuteAsync(id, displayName, description, maxBranches, maxActiveStaff, 1, customerCreditEnabled, advancedReportsEnabled,
+            exportEnabled, trialAllowed, defaultTrialDays, sortOrder, monthlyPrice, annualPrice, currencyCode, expectedUpdatedAtUtc, cancellationToken);
 }
 
 public sealed class RetirePlan

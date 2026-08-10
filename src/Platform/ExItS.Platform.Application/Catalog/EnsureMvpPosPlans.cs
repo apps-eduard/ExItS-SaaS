@@ -23,6 +23,7 @@ public sealed class EnsureMvpPosPlans
     [
         (FeatureCode.PlanMaxBranches, FeatureValueType.QuantityLimit),
         (FeatureCode.PlanMaxActiveStaff, FeatureValueType.QuantityLimit),
+        (FeatureCode.PlanMaxActivePosDevices, FeatureValueType.QuantityLimit),
         (FeatureCode.StoreAdvancedReports, FeatureValueType.Boolean),
         (FeatureCode.StoreExport, FeatureValueType.Boolean),
         (FeatureCode.CustomerCreditCreate, FeatureValueType.Boolean),
@@ -203,6 +204,7 @@ public sealed class EnsureMvpPosPlans
                     spec.Description,
                     spec.MaxBranches,
                     spec.MaxActiveStaff,
+                    spec.MaxActivePosDevices,
                     spec.CustomerCreditEnabled,
                     spec.AdvancedReportsEnabled,
                     spec.ExportEnabled,
@@ -238,6 +240,7 @@ public sealed class EnsureMvpPosPlans
                     spec.Description,
                     spec.MaxBranches,
                     spec.MaxActiveStaff,
+                    spec.MaxActivePosDevices,
                     spec.CustomerCreditEnabled,
                     spec.AdvancedReportsEnabled,
                     spec.ExportEnabled,
@@ -450,6 +453,7 @@ public sealed class EnsureMvpPosPlans
         || !string.Equals(plan.Description ?? string.Empty, spec.Description ?? string.Empty, StringComparison.Ordinal)
         || plan.MaxBranches != spec.MaxBranches
         || plan.MaxActiveStaff != spec.MaxActiveStaff
+        || plan.MaxActivePosDevices != spec.MaxActivePosDevices
         || plan.CustomerCreditEnabled != spec.CustomerCreditEnabled
         || plan.AdvancedReportsEnabled != spec.AdvancedReportsEnabled
         || plan.ExportEnabled != spec.ExportEnabled
@@ -466,6 +470,7 @@ public sealed class EnsureMvpPosPlans
         {
             FeatureGrantSpec.Limit(FeatureCode.Create(FeatureCode.PlanMaxBranches), spec.MaxBranches),
             FeatureGrantSpec.Limit(FeatureCode.Create(FeatureCode.PlanMaxActiveStaff), spec.MaxActiveStaff),
+            FeatureGrantSpec.Limit(FeatureCode.Create(FeatureCode.PlanMaxActivePosDevices), spec.MaxActivePosDevices),
             FeatureGrantSpec.Boolean(FeatureCode.Create(FeatureCode.CustomerCreditCreate), spec.CustomerCreditEnabled),
             FeatureGrantSpec.Boolean(FeatureCode.Create(FeatureCode.CustomerCreditView), spec.CustomerCreditEnabled),
             FeatureGrantSpec.Boolean(FeatureCode.Create(FeatureCode.CustomerCreditRepay), spec.CustomerCreditEnabled),

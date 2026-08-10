@@ -196,6 +196,7 @@ public sealed record CommercialPlanDto(
     string? Description = null,
     int MaxBranches = 1,
     int MaxActiveStaff = 3,
+    int MaxActivePosDevices = 1,
     bool CustomerCreditEnabled = false,
     bool AdvancedReportsEnabled = false,
     bool ExportEnabled = false,
