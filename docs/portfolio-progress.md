@@ -11,12 +11,12 @@
 | Portfolio | ExITS SaaS |
 | Existing product | Historical HealthCare SaaS MVP (separate product; **not** in this workspace ? do not restore) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
-| Current phase | Phase 22 **Open** (Production Readiness); Phase 19/20/21 remain Open; Phase 14 still open |
-| Current work package | **P22** In Progress ([phase](phases/phase-22-production-readiness-release-and-operational-hardening.md); [WP01 baseline](reports/P22-WP01-readiness-baseline.md)). Prior: P21 foundation; P20 validation pending; P19 Retest. Do not claim Production Ready / Device Verified without evidence. |
-| Overall status | **Phase 22 Open** + Phase 19/20/21 Open. Phase 22 hardens org business type, branches, plan capacity, registered POS devices, and transaction authorization. **Not Device Verified**. Production remains **Blocked**. **Not production-ready.** |
-| Latest verified commit | See Phase 22 closeout (updated as WPs land) |
+| Current phase | Phase 22 **Open — implementation closeout** (Production Readiness); Phase 19/20/21 remain Open; Phase 14 still open |
+| Current work package | **P22-WP15** closeout ([phase](phases/phase-22-production-readiness-release-and-operational-hardening.md); [report](reports/P22-final-implementation-report.md)). Prior: P21 foundation; P20 validation pending; P19 Retest. Do not claim Production Ready / Device Verified without evidence. |
+| Overall status | **Phase 22 implementation complete / validation pending** + Phase 19/20/21 Open. Phase 22 hardens business type, branches, capacity, devices, transaction authorization, and operational release documentation. **Not Device Verified**. Production remains **Blocked**. |
+| Latest verified commit | `8624491` (device-bound transaction authorization); see Phase 22 closeout for subsequent documentation commits |
 | Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA deferred; Phase 19/20/22 physical validation pending |
-| Last updated | 2026-08-10 |
+| Last updated | 2026-08-11 |
 
 ## Delivery sequence
 

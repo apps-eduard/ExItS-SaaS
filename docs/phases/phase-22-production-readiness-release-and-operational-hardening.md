@@ -4,8 +4,8 @@
 
 | Field | Value |
 |---|---|
-| Status | **Open** |
-| Overall | **In Progress** |
+| Status | **Open — implementation closeout recorded; physical validation and external setup remain** |
+| Overall | **Implementation Complete / Validation Pending** |
 | Device Verified | **No** |
 | Production Ready | **No — not claimed** |
 | Physical validation | **Pending** |
@@ -26,23 +26,23 @@ Branch / POS device / cashier capacity come from **subscription entitlement** (s
 
 ## Work packages
 
-| WP | Name | Target |
-|---|---|---|
-| P22-WP01 | Readiness baseline | Docs + dependency map |
-| P22-WP02 | Organization Business Type + setup flow | Org.PrimaryBusinessTypeId; Start Business type picker |
-| P22-WP03 | Organization Branches | Main Branch auto-create; CRUD; isolation |
-| P22-WP04 | Plan capacity entitlements | MaxBranches, MaxActivePosDevices, MaxActiveStaff |
-| P22-WP05 | Registered POS devices | Server registry bound to installation DeviceId |
-| P22-WP06 | Owner device management + lost device | List/rename/revoke/replace |
-| P22-WP07 | Cashier / transaction device authorization | Registered Active device required for money ops |
-| P22-WP08 | Offline grant/PIN integration | Bind grant to registered device; server reject ≠ unreachable |
-| P22-WP09 | Clean database baseline | Preserve 2 Platform admins + catalog/plans/types/templates |
-| P22-WP10 | Security / production hardening | Config guards, secrets, health |
-| P22-WP11 | Observability / operations | Correlation, safe diagnostics |
-| P22-WP12 | Release / deployment foundation | Docs + Release builds |
-| P22-WP13 | Full automated regression | Focused suites green |
-| P22-WP14 | Physical device validation preparation | Path ready; not falsely Device Verified |
-| P22-WP15 | Closeout | Phase + portfolio docs |
+| WP | Name | Status | Target |
+|---|---|---|---|
+| P22-WP01 | Readiness baseline | Completed | Docs + dependency map |
+| P22-WP02 | Organization Business Type + setup flow | Completed | Org.PrimaryBusinessTypeId; Start Business type picker |
+| P22-WP03 | Organization Branches | Completed | Main Branch auto-create; CRUD; isolation |
+| P22-WP04 | Plan capacity entitlements | Completed | MaxBranches, MaxActivePosDevices, MaxActiveStaff |
+| P22-WP05 | Registered POS devices | Completed | Server registry bound to installation DeviceId |
+| P22-WP06 | Owner device management + lost device | Completed | List/rename/revoke/replace |
+| P22-WP07 | Cashier / transaction device authorization | Completed | Registered Active device required for money ops |
+| P22-WP08 | Offline grant/PIN integration | Completed | Bind grant to registered device; server reject ≠ unreachable |
+| P22-WP09 | Clean database baseline | Completed | Preserve 2 Platform admins + catalog/plans/types/templates |
+| P22-WP10 | Security / production hardening | Completed | Config guards, secrets, health |
+| P22-WP11 | Observability / operations | Completed | Correlation, safe diagnostics |
+| P22-WP12 | Release / deployment foundation | Completed | Docs + Release builds |
+| P22-WP13 | Full automated regression | Partial — focused suites pending final run | Focused suites green |
+| P22-WP14 | Physical device validation preparation | Completed — Not Device Verified | Path ready; not falsely Device Verified |
+| P22-WP15 | Closeout | In Progress | Phase + portfolio docs |
 
 ## Architecture reuse (do not reinvent)
 
