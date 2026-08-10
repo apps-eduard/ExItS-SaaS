@@ -141,9 +141,10 @@ public sealed class ShellContextIdentityGuardTests
         var home = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Pages", "Personal", "PersonalHome.razor"));
         Assert.Contains("Personal_DashboardSection", home, StringComparison.Ordinal);
         Assert.Contains("Personal_RecentActivitySection", home, StringComparison.Ordinal);
+        Assert.Contains("pos-personal-home__title", home, StringComparison.Ordinal);
+        Assert.Contains("Personal_HomeTitle", home, StringComparison.Ordinal);
+        // Ant Design PageHeader is forbidden; native personal-home header is allowed.
         Assert.DoesNotContain("PageHeader", home, StringComparison.Ordinal);
-        Assert.DoesNotContain("Personal_HomeTitle", home, StringComparison.Ordinal);
-        Assert.DoesNotContain("Personal_HomeSubtitle", home, StringComparison.Ordinal);
 
         var en = File.ReadAllText(Path.Combine(MauiProject(), "Localization", "PosResources.resx"));
         Assert.Contains("Personal Utang summary", en, StringComparison.Ordinal);
