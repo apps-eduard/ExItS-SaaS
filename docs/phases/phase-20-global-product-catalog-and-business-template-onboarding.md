@@ -27,6 +27,12 @@ Platform-owned global merchandise catalog (categories, products, business templa
 | P20-WP07 | MAUI catalog and cashier integration | **Code Complete** |
 | P20-WP08 | End-to-end validation and user closeout | **In Progress — User Physical-Device Validation Pending** |
 
+### Supplemental (does not close Phase 20)
+
+| Item | Status |
+|---|---|
+| [Template-aware bulk import + Organization catalog visibility](../reports/P20-template-aware-import-and-org-catalog-visibility.md) | **Code Complete** — Validation Pending; Device Verified **No** |
+
 ## Authoritative specs
 
 All files under `docs/specs/product-catalog/`.
