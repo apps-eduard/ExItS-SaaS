@@ -62,6 +62,7 @@ internal static class SaleEndpoints
             CheckoutSale useCase,
             IPosIdempotencyService idempotency,
             IPosCommercialAccessAccessor access,
+            IPosDeviceTransactionAuthorizer deviceAuthorization,
             CancellationToken ct) =>
         {
             var isUtang = SalePaymentMethods.TryParse(body.PaymentMethod, out var method)
@@ -79,6 +80,9 @@ internal static class SaleEndpoints
                 {
                     return problem!;
                 }
+
+                var deviceDenied = await deviceAuthorization.EnsureAuthorizedAsync(request, organizationId, ct).ConfigureAwait(false);
+                if (deviceDenied is not null) return deviceDenied;
 
                 return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
                         request,
@@ -113,6 +117,9 @@ internal static class SaleEndpoints
             {
                 return cashProblem!;
             }
+
+            var cashDeviceDenied = await deviceAuthorization.EnsureAuthorizedAsync(request, cashOrgId, ct).ConfigureAwait(false);
+            if (cashDeviceDenied is not null) return cashDeviceDenied;
 
             return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
                     request,
@@ -166,6 +173,7 @@ internal static class SaleEndpoints
             VoidSale useCase,
             SaleQueryService queries,
             IPosCommercialAccessAccessor access,
+            IPosDeviceTransactionAuthorizer deviceAuthorization,
             CancellationToken ct) =>
         {
             if (!TryAuthorize(request, access, UtangCapability.VoidSale, out var organizationId, out var problem))
@@ -177,6 +185,9 @@ internal static class SaleEndpoints
             {
                 return problem!;
             }
+
+            var deviceDenied = await deviceAuthorization.EnsureAuthorizedAsync(request, organizationId, ct).ConfigureAwait(false);
+            if (deviceDenied is not null) return deviceDenied;
 
             // Peek payment method under VoidSale auth so Utang voids can require ReverseCredit too.
             var existing = await queries.GetByIdAsync(organizationId, saleId, ct).ConfigureAwait(false);

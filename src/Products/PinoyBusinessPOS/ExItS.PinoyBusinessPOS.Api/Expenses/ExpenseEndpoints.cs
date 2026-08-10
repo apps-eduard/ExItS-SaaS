@@ -227,6 +227,7 @@ internal static class ExpenseEndpoints
             RecordExpense useCase,
             IPosIdempotencyService idempotency,
             IPosCommercialAccessAccessor access,
+            IPosDeviceTransactionAuthorizer deviceAuthorization,
             CancellationToken ct) =>
         {
             if (!TryAuthorize(request, access, UtangCapability.ManageExpenses, out var organizationId, out var problem))
@@ -238,6 +239,9 @@ internal static class ExpenseEndpoints
             {
                 return problem!;
             }
+
+            var deviceDenied = await deviceAuthorization.EnsureAuthorizedAsync(request, organizationId, ct).ConfigureAwait(false);
+            if (deviceDenied is not null) return deviceDenied;
 
             return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
                     request,
@@ -289,6 +293,7 @@ internal static class ExpenseEndpoints
             VoidExpenseRequest body,
             VoidExpense useCase,
             IPosCommercialAccessAccessor access,
+            IPosDeviceTransactionAuthorizer deviceAuthorization,
             CancellationToken ct) =>
         {
             if (!TryAuthorize(request, access, UtangCapability.ManageExpenses, out var organizationId, out var problem))
@@ -300,6 +305,9 @@ internal static class ExpenseEndpoints
             {
                 return problem!;
             }
+
+            var deviceDenied = await deviceAuthorization.EnsureAuthorizedAsync(request, organizationId, ct).ConfigureAwait(false);
+            if (deviceDenied is not null) return deviceDenied;
 
             var result = await useCase
                 .ExecuteAsync(organizationId, expenseId, body.Reason, actorId, ct)

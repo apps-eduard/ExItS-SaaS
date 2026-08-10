@@ -37,6 +37,7 @@ public static class DependencyInjection
         services.AddTransient<PosPlatformSessionForwardingHandler>();
         services.AddTransient<DevPlatformUserHeaderHandler>();
         services.AddTransient<PosOrganizationHeaderHandler>();
+        services.AddTransient<PosInstallationDeviceHeaderHandler>();
         services.AddTransient<PosCommercialHeaderHandler>();
 
         services.AddHttpClient<IPosApiClient, PosApiClient>((provider, client) =>
@@ -88,6 +89,7 @@ public static class DependencyInjection
             })
             .AddHttpMessageHandler<DevPlatformUserHeaderHandler>()
             .AddHttpMessageHandler<PosOrganizationHeaderHandler>()
+            .AddHttpMessageHandler<PosInstallationDeviceHeaderHandler>()
             .AddHttpMessageHandler<PosCommercialHeaderHandler>()
             .AddHttpMessageHandler<PosPlatformSessionForwardingHandler>()
             .AddHttpMessageHandler<PlatformBearerHandler>();

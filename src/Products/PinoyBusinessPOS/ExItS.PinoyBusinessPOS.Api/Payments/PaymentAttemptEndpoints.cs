@@ -26,6 +26,7 @@ internal static class PaymentAttemptEndpoints
             CreatePaymentAttemptRequest body,
             CreatePaymentAttempt useCase,
             IPosCommercialAccessAccessor access,
+            IPosDeviceTransactionAuthorizer deviceAuthorization,
             CancellationToken ct) =>
         {
             if (!TryAuthorizeCashier(request, access, out var organizationId, out var problem)
@@ -33,6 +34,9 @@ internal static class PaymentAttemptEndpoints
             {
                 return problem!;
             }
+
+            var deviceDenied = await deviceAuthorization.EnsureAuthorizedAsync(request, organizationId, ct).ConfigureAwait(false);
+            if (deviceDenied is not null) return deviceDenied;
 
             var result = await useCase
                 .ExecuteAsync(organizationId, saleId, body, actorId, ct)
@@ -64,6 +68,7 @@ internal static class PaymentAttemptEndpoints
             Guid id,
             CancelPaymentAttempt useCase,
             IPosCommercialAccessAccessor access,
+            IPosDeviceTransactionAuthorizer deviceAuthorization,
             CancellationToken ct) =>
         {
             if (!TryAuthorizeCashier(request, access, out var organizationId, out var problem)
@@ -71,6 +76,9 @@ internal static class PaymentAttemptEndpoints
             {
                 return problem!;
             }
+
+            var deviceDenied = await deviceAuthorization.EnsureAuthorizedAsync(request, organizationId, ct).ConfigureAwait(false);
+            if (deviceDenied is not null) return deviceDenied;
 
             var result = await useCase.ExecuteAsync(organizationId, id, actorId, ct).ConfigureAwait(false);
             return PosApiResults.FromResult(result, Results.Ok);
@@ -82,6 +90,7 @@ internal static class PaymentAttemptEndpoints
             VerifyManualGCashRequest body,
             VerifyManualGCashTransfer useCase,
             IPosCommercialAccessAccessor access,
+            IPosDeviceTransactionAuthorizer deviceAuthorization,
             CancellationToken ct) =>
         {
             if (!TryAuthorizeCashier(request, access, out var organizationId, out var problem)
@@ -89,6 +98,9 @@ internal static class PaymentAttemptEndpoints
             {
                 return problem!;
             }
+
+            var deviceDenied = await deviceAuthorization.EnsureAuthorizedAsync(request, organizationId, ct).ConfigureAwait(false);
+            if (deviceDenied is not null) return deviceDenied;
 
             if (!CanVerifyManualTransfer(out problem))
             {
@@ -108,6 +120,7 @@ internal static class PaymentAttemptEndpoints
             SimulatePaymentOutcome useCase,
             IWebHostEnvironment env,
             IPosCommercialAccessAccessor access,
+            IPosDeviceTransactionAuthorizer deviceAuthorization,
             CancellationToken ct) =>
         {
             if (env.IsProduction() || string.Equals(env.EnvironmentName, "Release", StringComparison.OrdinalIgnoreCase))
@@ -122,6 +135,9 @@ internal static class PaymentAttemptEndpoints
             {
                 return problem!;
             }
+
+            var deviceDenied = await deviceAuthorization.EnsureAuthorizedAsync(request, organizationId, ct).ConfigureAwait(false);
+            if (deviceDenied is not null) return deviceDenied;
 
             var result = await useCase
                 .ExecuteAsync(organizationId, id, body.Outcome, ct)

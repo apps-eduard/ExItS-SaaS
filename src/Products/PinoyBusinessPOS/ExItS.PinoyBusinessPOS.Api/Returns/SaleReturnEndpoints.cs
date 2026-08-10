@@ -75,6 +75,7 @@ internal static class SaleReturnEndpoints
             ProcessSaleReturn useCase,
             IPosIdempotencyService idempotency,
             IPosCommercialAccessAccessor access,
+            IPosDeviceTransactionAuthorizer deviceAuthorization,
             CancellationToken ct) =>
         {
             if (!TryAuthorize(request, access, UtangCapability.ProcessReturn, out var organizationId, out var problem))
@@ -86,6 +87,9 @@ internal static class SaleReturnEndpoints
             {
                 return problem!;
             }
+
+            var deviceDenied = await deviceAuthorization.EnsureAuthorizedAsync(request, organizationId, ct).ConfigureAwait(false);
+            if (deviceDenied is not null) return deviceDenied;
 
             return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
                     request,

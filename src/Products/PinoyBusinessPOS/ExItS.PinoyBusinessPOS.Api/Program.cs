@@ -56,6 +56,16 @@ builder.Services.AddPosPersistence(builder.Configuration);
 
 builder.Services.AddScoped<IPosCommercialAccessAccessor, PosCommercialAccessAccessor>();
 builder.Services.Configure<PlatformAuthOptions>(builder.Configuration.GetSection(PlatformAuthOptions.SectionName));
+builder.Services.AddHttpClient<IPosDeviceTransactionAuthorizer, PosDeviceTransactionAuthorizer>((provider, client) =>
+{
+    var options = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<PlatformAuthOptions>>().Value;
+    if (!string.IsNullOrWhiteSpace(options.BaseUrl))
+    {
+        client.BaseAddress = new Uri(options.BaseUrl.TrimEnd('/') + "/", UriKind.Absolute);
+    }
+
+    client.Timeout = TimeSpan.FromSeconds(3);
+});
 builder.Services.AddHttpClient<IPlatformTokenIntrospectionClient, PlatformTokenIntrospectionClient>((provider, client) =>
 {
     var options = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<PlatformAuthOptions>>().Value;
