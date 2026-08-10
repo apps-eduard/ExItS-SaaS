@@ -92,6 +92,16 @@ public sealed class CatalogTemplateDomainTests
     }
 
     [Fact]
+    public void TryAssignProduct_is_idempotent_noop_on_duplicate()
+    {
+        var template = CatalogTemplate.Create("Bakery", BusinessType.Bakery, T0);
+        var productId = GlobalProductId.New();
+        Assert.True(template.TryAssignProduct(productId, T0.AddMinutes(1)));
+        Assert.False(template.TryAssignProduct(productId, T0.AddMinutes(2)));
+        Assert.Equal(1, template.ProductCount);
+    }
+
+    [Fact]
     public void ReorderProducts_updates_sort_order()
     {
         var template = CatalogTemplate.Create("Order Check", BusinessType.Bakery, T0);

@@ -1015,8 +1015,24 @@ file sealed class FakeProductRepository : IGlobalProductRepository
         CancellationToken cancellationToken = default,
         IReadOnlyCollection<Guid>? excludeProductIds = null,
         GlobalProductListSortBy sortBy = GlobalProductListSortBy.Name,
-        bool sortDescending = false) =>
-        Task.FromResult<(IReadOnlyList<GlobalProduct>, int)>(([], 0));
+        bool sortDescending = false)
+    {
+        IEnumerable<GlobalProduct> query = Added;
+        if (!string.IsNullOrWhiteSpace(barcode))
+        {
+            query = query.Where(p =>
+                string.Equals(p.Barcode, barcode, StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (!string.IsNullOrWhiteSpace(sku))
+        {
+            query = query.Where(p =>
+                string.Equals(p.Sku, sku, StringComparison.OrdinalIgnoreCase));
+        }
+
+        var matched = query.Skip(skip).Take(take).ToList();
+        return Task.FromResult<(IReadOnlyList<GlobalProduct>, int)>((matched, matched.Count));
+    }
 
     public Task<IReadOnlyList<GlobalProduct>> GetByIdsAsync(
         IReadOnlyCollection<Guid> ids,
