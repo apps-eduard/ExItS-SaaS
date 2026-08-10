@@ -25,35 +25,35 @@ public sealed class MembershipStaffUsageReader
     }
 }
 
-public sealed class UnresolvedProductBranchUsageReader
+public sealed class OrganizationBranchUsageReader
 {
-    public const string UnavailableReason =
-        "Platform does not yet receive active branch counts from Pinoy Business POS across the product boundary; pass activeBranchCount query override for Local Validation or wire product-owned usage later.";
+    private readonly IOrganizationBranchRepository _branches;
 
-    public Task<OrganizationProductUsageSnapshot> GetUsageAsync(
+    public OrganizationBranchUsageReader(IOrganizationBranchRepository branches) => _branches = branches;
+
+    public async Task<OrganizationProductUsageSnapshot> GetUsageAsync(
         PlatformOrganizationId organizationId,
         ProductCode productCode,
         CancellationToken cancellationToken = default)
     {
-        _ = organizationId;
+        var activeBranchCount = await _branches.CountActiveAsync(organizationId, cancellationToken).ConfigureAwait(false);
         _ = productCode;
-        _ = cancellationToken;
-        return Task.FromResult(new OrganizationProductUsageSnapshot(
+        return new OrganizationProductUsageSnapshot(
             ActiveStaffCount: 0,
-            ActiveBranchCount: null,
-            BranchCountAvailable: false,
-            BranchCountUnavailableReason: UnavailableReason));
+            ActiveBranchCount: activeBranchCount,
+            BranchCountAvailable: true,
+            BranchCountUnavailableReason: null);
     }
 }
 
 public sealed class CompositeOrganizationProductUsageReader : IOrganizationProductUsageReader
 {
     private readonly MembershipStaffUsageReader _staff;
-    private readonly UnresolvedProductBranchUsageReader _branches;
+    private readonly OrganizationBranchUsageReader _branches;
 
     public CompositeOrganizationProductUsageReader(
         MembershipStaffUsageReader staff,
-        UnresolvedProductBranchUsageReader branches)
+        OrganizationBranchUsageReader branches)
     {
         _staff = staff;
         _branches = branches;

@@ -132,6 +132,10 @@ public sealed class PlatformAccessClient(IPosApiClient api) : IPlatformAccessCli
         CancellationToken ct = default) =>
         api.SendAsync<StartBusinessResultDto>(HttpMethod.Post, "/api/v1/personal/start-business", request, ct);
 
+    public Task<ApiResult<IReadOnlyList<BusinessTypeDto>>> GetActiveBusinessTypesAsync(
+        CancellationToken ct = default) =>
+        api.GetAsync<IReadOnlyList<BusinessTypeDto>>("/api/v1/catalog/business-types", ct);
+
     public Task<ApiResult<IReadOnlyList<CommercialPlanDto>>> GetCommercialPlansAsync(
         string? productCode = null,
         CancellationToken ct = default)

@@ -3,6 +3,7 @@ using ExItS.Platform.Application.Audit;
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Entitlements;
+using ExItS.Platform.Application.GlobalCatalog;
 using ExItS.Platform.Application.Identity;
 using ExItS.Platform.Application.Organizations;
 using ExItS.Platform.Application.Payments;
@@ -11,6 +12,7 @@ using ExItS.Platform.Domain.Abstractions;
 using ExItS.Platform.Domain.Audit;
 using ExItS.Platform.Domain.Catalog;
 using ExItS.Platform.Domain.Common;
+using ExItS.Platform.Domain.GlobalCatalog;
 using ExItS.Platform.Domain.Identity;
 using ExItS.Platform.Domain.Organizations;
 using ExItS.Platform.Domain.Payments;
@@ -22,6 +24,7 @@ namespace ExItS.Platform.Application.Personal;
 public sealed record StartBusinessRequest(
     string DisplayName,
     string Slug,
+    Guid PrimaryBusinessTypeId,
     string? ProductCode = null,
     Guid? PlanId = null,
     Guid? PlanVersionId = null,
@@ -51,7 +54,9 @@ public sealed record StartBusinessResultDto(
     bool OrganizationOwnerGranted,
     bool PosEntitlementActivated,
     bool PosOwnerRoleGranted,
-    string ProductCode);
+    string ProductCode,
+    Guid? PrimaryBusinessTypeId = null,
+    Guid? PrimaryBranchId = null);
 
 public sealed class StartBusinessForPersonalUser
 {
@@ -116,6 +121,8 @@ public sealed class StartBusinessForPersonalUser
     private readonly IEntitlementSnapshotRepository _entitlementSnapshots;
     private readonly IProductAccessAssignmentRepository _accessAssignments;
     private readonly IProductLocalRoleGrantRepository _roleGrants;
+    private readonly IBusinessTypeRepository _businessTypes;
+    private readonly IOrganizationBranchRepository _branches;
     private readonly IAuditWriter _auditWriter;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
@@ -150,6 +157,8 @@ public sealed class StartBusinessForPersonalUser
         IEntitlementSnapshotRepository entitlementSnapshots,
         IProductAccessAssignmentRepository accessAssignments,
         IProductLocalRoleGrantRepository roleGrants,
+        IBusinessTypeRepository businessTypes,
+        IOrganizationBranchRepository branches,
         IAuditWriter auditWriter,
         IPlatformUnitOfWork unitOfWork,
         IClock clock)
@@ -183,6 +192,8 @@ public sealed class StartBusinessForPersonalUser
         _entitlementSnapshots = entitlementSnapshots;
         _accessAssignments = accessAssignments;
         _roleGrants = roleGrants;
+        _businessTypes = businessTypes;
+        _branches = branches;
         _auditWriter = auditWriter;
         _unitOfWork = unitOfWork;
         _clock = clock;
@@ -202,6 +213,23 @@ public sealed class StartBusinessForPersonalUser
         var productCode = string.IsNullOrWhiteSpace(request.ProductCode)
             ? ProductCode.PinoyBusinessPos
             : request.ProductCode.Trim().ToLowerInvariant();
+
+        if (request.PrimaryBusinessTypeId == Guid.Empty)
+        {
+            return ApplicationResult<StartBusinessResultDto>.Failure(
+                ApplicationErrorCodes.BusinessTypeNotFound,
+                "Select an active business type before starting a business.");
+        }
+
+        var businessType = await _businessTypes
+            .GetByIdAsync(BusinessTypeId.From(request.PrimaryBusinessTypeId), cancellationToken)
+            .ConfigureAwait(false);
+        if (businessType is null || businessType.Status != BusinessTypeStatus.Active)
+        {
+            return ApplicationResult<StartBusinessResultDto>.Failure(
+                ApplicationErrorCodes.BusinessTypeNotFound,
+                "The selected business type was not found or is no longer active.");
+        }
 
         await _auditWriter.WriteAsync(
             $"platform-user:{userId.Value:D}",
@@ -263,6 +291,13 @@ public sealed class StartBusinessForPersonalUser
         }
 
         var organization = orgResult.Value;
+        organization.AssignPrimaryBusinessType(businessType.Id, _clock.UtcNow);
+        await _organizations.UpdateAsync(organization, cancellationToken).ConfigureAwait(false);
+
+        var mainBranch = OrganizationBranch.CreateMainBranch(organization.Id, _clock.UtcNow);
+        await _branches.AddAsync(mainBranch, cancellationToken).ConfigureAwait(false);
+        await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
         var membershipResult = await _addMembership
             .ExecuteAsync(
                 organization.Id,
@@ -594,7 +629,9 @@ public sealed class StartBusinessForPersonalUser
             OrganizationOwnerGranted: true,
             PosEntitlementActivated: entitlementActivated,
             PosOwnerRoleGranted: ownerRoleGranted,
-            ProductCode: productCode));
+            ProductCode: productCode,
+            PrimaryBusinessTypeId: organization.PrimaryBusinessTypeId?.Value,
+            PrimaryBranchId: mainBranch.Id.Value));
     }
 
     private async Task<ApplicationResult<StartBusinessResultDto>> ResumeExistingStartBusinessAsync(
@@ -705,7 +742,9 @@ public sealed class StartBusinessForPersonalUser
             OrganizationOwnerGranted: true,
             PosEntitlementActivated: entitlementActivated,
             PosOwnerRoleGranted: ownerRoleGranted,
-            ProductCode: productCode));
+            ProductCode: productCode,
+            PrimaryBusinessTypeId: organization.PrimaryBusinessTypeId?.Value,
+            PrimaryBranchId: (await _branches.GetPrimaryAsync(organization.Id, cancellationToken).ConfigureAwait(false))?.Id.Value));
     }
 
     private sealed record CatalogSelection(PlanId PlanId, PlanVersionId PlanVersionId, TrialDefinitionId? TrialDefinitionId);

@@ -119,6 +119,11 @@
                            Placeholder="@L["StartBusiness_SlugPlaceholder"]"
                            Disabled="_busy"
                            Required="true" />
+                <Select Label="Business Type"
+                        Value="@_primaryBusinessTypeId"
+                        ValueChanged="OnBusinessTypeChanged"
+                        Options="_businessTypeOptions"
+                        Disabled="_busy || _businessTypesLoading" />
             </Stack>
         </section>
 
@@ -138,11 +143,13 @@
     private bool _slugTouched;
     private string? _displayName;
     private string? _slug;
+    private string? _primaryBusinessTypeId;
     private string _planKey = string.Empty;
     private string _billingCycle = "Monthly";
     private bool _startAsTrial = true;
     private bool _payNow;
     private CommercialPlanDto? _plan;
+    private IReadOnlyList<BusinessTypeDto> _businessTypes = [];
     private List<string> _errors = [];
 
     private IReadOnlyList<SelectOption> _billingOptions =>
@@ -150,6 +157,11 @@
         new("Monthly", L["Personal_Billing_Month"]),
         new("Annual", L["Personal_Billing_Year"]),
     ];
+
+    private IReadOnlyList<SelectOption> _businessTypeOptions =>
+        _businessTypes
+            .Select(type => new SelectOption(type.Id.ToString("D"), type.Name))
+            .ToList();
 
     private string PlanDisplayName =>
         !string.IsNullOrWhiteSpace(_plan?.DisplayName) ? _plan!.DisplayName
@@ -192,6 +204,7 @@
         if (_authenticated && !string.IsNullOrWhiteSpace(_planKey))
         {
             await LoadSelectedPlanAsync();
+            await LoadBusinessTypesAsync();
         }
 
         _ready = true;
@@ -251,6 +264,25 @@
         }
     }
 
+    private bool _businessTypesLoading;
+
+    private async Task LoadBusinessTypesAsync()
+    {
+        _businessTypesLoading = true;
+        try
+        {
+            var result = await Platform.GetActiveBusinessTypesAsync();
+            if (result.IsSuccess && result.Data is not null)
+            {
+                _businessTypes = result.Data;
+            }
+        }
+        finally
+        {
+            _businessTypesLoading = false;
+        }
+    }
+
     private Task OnDisplayNameChanged(string? value)
     {
         _displayName = value;
@@ -276,6 +308,12 @@
             _billingCycle = value;
         }
 
+        return Task.CompletedTask;
+    }
+
+    private Task OnBusinessTypeChanged(string? value)
+    {
+        _primaryBusinessTypeId = value;
         return Task.CompletedTask;
     }
 
@@ -305,6 +343,13 @@
             return;
         }
 
+        if (!Guid.TryParse(_primaryBusinessTypeId, out var primaryBusinessTypeId)
+            || primaryBusinessTypeId == Guid.Empty)
+        {
+            _errors.Add("Select a business type.");
+            return;
+        }
+
         if (string.IsNullOrWhiteSpace(CurrentUser.Session?.PlatformSessionToken))
         {
             _errors.Add(L["StartBusiness_SessionRequired"]);
@@ -318,6 +363,7 @@
             var created = await Platform.StartBusinessAsync(new StartBusinessRequest(
                 DisplayName: _displayName.Trim(),
                 Slug: _slug.Trim().ToLowerInvariant(),
+                PrimaryBusinessTypeId: primaryBusinessTypeId,
                 ProductCode: PosProductCodes.PinoyBusinessPos,
                 PlanKey: _planKey.Trim(),
                 BillingCycle: _billingCycle,

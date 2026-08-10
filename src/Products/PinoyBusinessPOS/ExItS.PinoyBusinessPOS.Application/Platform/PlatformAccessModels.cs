@@ -172,6 +172,7 @@ public sealed record SelectAccountProfileRequest(Guid AccountProfileId);
 public sealed record StartBusinessRequest(
     string DisplayName,
     string Slug,
+    Guid PrimaryBusinessTypeId,
     string? ProductCode = null,
     string? PlanKey = null,
     string? BillingCycle = null,
@@ -224,7 +225,17 @@ public sealed record StartBusinessResultDto(
     bool OrganizationOwnerGranted,
     bool PosEntitlementActivated,
     bool PosOwnerRoleGranted,
-    string ProductCode);
+    string ProductCode,
+    Guid? PrimaryBusinessTypeId = null,
+    Guid? PrimaryBranchId = null);
+
+public sealed record BusinessTypeDto(
+    Guid Id,
+    string Code,
+    string Name,
+    string? Description,
+    string Status,
+    int SortOrder);
 
 public sealed record CreateInvitationRequest(
     string Email,
@@ -557,6 +568,9 @@ public interface IPlatformAccessClient
 
     Task<ApiResult<StartBusinessResultDto>> StartBusinessAsync(
         StartBusinessRequest request,
+        CancellationToken ct = default);
+
+    Task<ApiResult<IReadOnlyList<BusinessTypeDto>>> GetActiveBusinessTypesAsync(
         CancellationToken ct = default);
 
     Task<ApiResult<IReadOnlyList<CommercialPlanDto>>> GetCommercialPlansAsync(

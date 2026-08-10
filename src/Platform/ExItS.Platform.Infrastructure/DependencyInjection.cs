@@ -115,7 +115,7 @@ public static class DependencyInjection
         services.AddScoped<ILocalValidationBaselinePurge, LocalValidationBaselinePurge>();
 
         services.AddScoped<MembershipStaffUsageReader>();
-        services.AddScoped<UnresolvedProductBranchUsageReader>();
+        services.AddScoped<OrganizationBranchUsageReader>();
         services.AddScoped<IOrganizationProductUsageReader, CompositeOrganizationProductUsageReader>();
 
         services.Configure<PlatformPasswordOptions>(config.GetSection(PlatformPasswordOptions.SectionName));
