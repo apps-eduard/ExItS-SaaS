@@ -127,7 +127,11 @@
 
     @if (_list is { IsSuccess: false })
     {
-        <Result Status="@ResultStatus.Error" Title="@(_list.Error?.Title ?? L["Common_Error"])" SubTitle="@_list.Error?.Detail" />
+        <Result Status="@ResultStatus.Error" Title="@(_list.Error?.Title ?? L["Common_Error"])" SubTitle="@_list.Error?.Detail">
+            <Extra>
+                <Button Type="@ButtonType.Primary" OnClick="RetryListAsync">@L["Common_Retry"]</Button>
+            </Extra>
+        </Result>
     }
     else if (_list is { IsSuccess: true, Data.Items.Count: 0 })
     {
@@ -452,6 +456,12 @@ else
             sortBy: _sortBy ?? "UpdatedAtUtc",
             sortDesc: _sortBy is null ? true : _sortDesc,
             page: _page);
+    }
+
+    private async Task RetryListAsync()
+    {
+        _loadGate.Reset();
+        await LoadListAsync();
     }
 
     private async Task OnSubscriptionsTableChangeAsync(QueryModel<SubscriptionDto> queryModel)

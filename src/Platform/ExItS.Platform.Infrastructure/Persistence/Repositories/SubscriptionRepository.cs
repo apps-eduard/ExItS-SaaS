@@ -74,7 +74,7 @@ internal sealed class SubscriptionRepository : ISubscriptionRepository
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        return (records.Select(SubscriptionEntityMapper.ToDomain).ToList(), totalCount);
+        return (MapDomainList(records), totalCount);
     }
 
     public async Task<(IReadOnlyList<Subscription> Items, int TotalCount)> ListByProductAsync(
@@ -98,7 +98,7 @@ internal sealed class SubscriptionRepository : ISubscriptionRepository
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        return (records.Select(SubscriptionEntityMapper.ToDomain).ToList(), totalCount);
+        return (MapDomainList(records), totalCount);
     }
 
     public async Task<(IReadOnlyList<Subscription> Items, int TotalCount)> ListExpiringTrialsAsync(
@@ -122,7 +122,7 @@ internal sealed class SubscriptionRepository : ISubscriptionRepository
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        return (records.Select(SubscriptionEntityMapper.ToDomain).ToList(), totalCount);
+        return (MapDomainList(records), totalCount);
     }
 
     public async Task<(IReadOnlyList<Subscription> Items, int TotalCount)> ListByStatusAsync(
@@ -141,7 +141,7 @@ internal sealed class SubscriptionRepository : ISubscriptionRepository
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        return (records.Select(SubscriptionEntityMapper.ToDomain).ToList(), totalCount);
+        return (MapDomainList(records), totalCount);
     }
 
     public async Task<(IReadOnlyList<Subscription> Items, int TotalCount)> ListAsync(
@@ -252,7 +252,7 @@ internal sealed class SubscriptionRepository : ISubscriptionRepository
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        return (records.Select(SubscriptionEntityMapper.ToDomain).ToList(), totalCount);
+        return (MapDomainList(records), totalCount);
     }
 
     public Task<bool> ExistsActiveLikeAsync(
@@ -292,7 +292,7 @@ internal sealed class SubscriptionRepository : ISubscriptionRepository
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        return records.Select(SubscriptionEntityMapper.ToDomain).ToList();
+        return MapDomainList(records);
     }
 
     public Task AddAsync(Subscription subscription, CancellationToken cancellationToken = default)
@@ -315,5 +315,20 @@ internal sealed class SubscriptionRepository : ISubscriptionRepository
         }
 
         SubscriptionEntityMapper.ApplyToRecord(subscription, record);
+    }
+
+    private static IReadOnlyList<Subscription> MapDomainList(IEnumerable<SubscriptionRecord> records)
+    {
+        var items = new List<Subscription>();
+        foreach (var record in records)
+        {
+            var domain = SubscriptionEntityMapper.TryToDomain(record);
+            if (domain is not null)
+            {
+                items.Add(domain);
+            }
+        }
+
+        return items;
     }
 }

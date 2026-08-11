@@ -8,15 +8,34 @@ namespace ExItS.Platform.Infrastructure.Persistence;
 
 internal static class SubscriptionEntityMapper
 {
-    public static Subscription ToDomain(SubscriptionRecord record) =>
-        Subscription.Rehydrate(
+    public static Subscription? TryToDomain(SubscriptionRecord record)
+    {
+        try
+        {
+            return ToDomain(record);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public static Subscription ToDomain(SubscriptionRecord record)
+    {
+        if (!Enum.TryParse<SubscriptionStatus>(record.Status, ignoreCase: true, out var status))
+        {
+            throw new InvalidOperationException(
+                $"Invalid subscription status '{record.Status}' for subscription {record.Id}.");
+        }
+
+        return Subscription.Rehydrate(
             SubscriptionId.From(record.Id),
             PlatformOrganizationId.From(record.OrganizationId),
             ProductCode.Create(record.ProductCode),
             PlanId.From(record.PlanId),
             PlanVersionId.From(record.PlanVersionId),
             record.TrialDefinitionId is null ? null : TrialDefinitionId.From(record.TrialDefinitionId.Value),
-            Enum.Parse<SubscriptionStatus>(record.Status),
+            status,
             record.TrialStartUtc,
             record.TrialEndUtc,
             record.PaidPeriodStartUtc,
@@ -35,6 +54,7 @@ internal static class SubscriptionEntityMapper
             record.CreatedAtUtc,
             record.UpdatedAtUtc,
             record.AggregateVersion);
+    }
 
     public static SubscriptionRecord ToRecord(Subscription subscription) =>
         new()
@@ -90,6 +110,18 @@ internal static class SubscriptionEntityMapper
         record.AggregateVersion = subscription.Version;
     }
 
-    private static BillingCycle? ParseBillingCycle(string? value) =>
-        string.IsNullOrWhiteSpace(value) ? null : Enum.Parse<BillingCycle>(value);
+    private static BillingCycle? ParseBillingCycle(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        if (!Enum.TryParse<BillingCycle>(value, ignoreCase: true, out var cycle))
+        {
+            throw new InvalidOperationException($"Invalid billing cycle '{value}'.");
+        }
+
+        return cycle;
+    }
 }

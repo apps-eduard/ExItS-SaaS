@@ -1,5 +1,9 @@
 using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace ExItS.Platform.Api.Common;
 
@@ -254,13 +258,31 @@ internal static class PlatformSecurityPipeline
         {
             exceptionApp.Run(async context =>
             {
+                var error = context.Features.Get<IExceptionHandlerFeature>()?.Error;
+                var logger = context.RequestServices
+                    .GetService<ILoggerFactory>()
+                    ?.CreateLogger("ExItS.Platform.Api.UnhandledException");
+                if (error is not null)
+                {
+                    logger?.LogError(
+                        error,
+                        "Unhandled platform exception. TraceId={TraceId} Path={Path}",
+                        context.TraceIdentifier,
+                        context.Request.Path.Value);
+                }
+
+                var env = context.RequestServices.GetService<IHostEnvironment>();
+                var detail = env?.IsDevelopment() == true && error is not null
+                    ? $"{error.GetType().Name}: {error.Message}"
+                    : "An unexpected error occurred.";
+
                 context.Response.StatusCode = StatusCodes.Status500InternalServerError;
                 context.Response.ContentType = "application/problem+json";
                 await context.Response.WriteAsJsonAsync(new
                 {
                     title = "An unexpected error occurred.",
                     status = StatusCodes.Status500InternalServerError,
-                    detail = "An unexpected error occurred.",
+                    detail,
                     errorCode = "platform.internal_error",
                     traceId = context.TraceIdentifier
                 }).ConfigureAwait(false);
