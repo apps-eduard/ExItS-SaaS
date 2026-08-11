@@ -117,7 +117,7 @@ Unchanged Phase 19 semantics: permanent/conflict failures mark local sale failed
 
 ## Known gaps deferred (WP09+)
 
-- WP09 weighted MAUI entry UX (kg/g keypad)
+- WP09 weighted MAUI entry UX (kg/g keypad) — **done** ([P23-WP09](P23-WP09-weighted-sale-maui-ux.md))
 - WP10 Today’s Prices; WP11 onboarding
 - Legacy outbox v1 rows still live-reprice until drained
 - Physical device validation

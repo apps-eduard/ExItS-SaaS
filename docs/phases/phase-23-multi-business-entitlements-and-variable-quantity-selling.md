@@ -4,7 +4,7 @@
 
 | Field | Value |
 |---|---|
-| Status | **Open** — WP01 ✓ · WP02 ✓ · WP03 ✓ · WP04 ✓ · WP05 ✓ · WP06 ✓ · WP07 ✓ · **WP08 Implemented** (offline sale snapshot fidelity) · WP09+ not started |
+| Status | **Open** — WP01 ✓ · WP02 ✓ · WP03 ✓ · WP04 ✓ · WP05 ✓ · WP06 ✓ · WP07 ✓ · WP08 ✓ · **WP09 Implemented** (weighted MAUI sale UX) · WP10+ not started |
 | Branch / HEAD at open | `main` @ `c03894f` (WP01 docs later @ `4e5cb99`) |
 | Physical device target | `R58R61E3CAZ` (validation not in WP01–WP03) |
 
@@ -179,7 +179,7 @@ Register → Personal → Start Business → plan + **required** Business Type �
 | **WP06** | Decimal quantity foundation across sales/inventory | **Done** — [P23-WP06](../reports/P23-WP06-sales-inventory-decimal-propagation.md) |
 | **WP07** | Purchasing/returns/reporting propagation | **Done** — [P23-WP07](../reports/P23-WP07-purchasing-returns-reporting.md) |
 | **WP08** | SQLite/offline/outbox/sync compatibility | **Done** — [P23-WP08](../reports/P23-WP08-offline-sale-snapshot-fidelity.md) |
-| **WP09** | Weighted-sale MAUI UX | Weight/grams entry; mixed cart |
+| **WP09** | Weighted-sale MAUI UX | **Done** — [P23-WP09](../reports/P23-WP09-weighted-sale-maui-ux.md) |
 | **WP10** | Today’s Prices workflow | Bulk current-price update |
 | **WP11** | Onboarding multi-BT entitlement UX | Activate allowed add-on types |
 | **WP12** | Regression/security/edge-case tests | Matrix below |
