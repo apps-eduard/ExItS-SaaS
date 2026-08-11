@@ -1,5 +1,5 @@
 @using ExItS.PinoyBusinessPOS.Application.Sales
-@using ExItS.PinoyBusinessPOS.Maui.Services
+@using ExItS.PinoyBusinessPOS.Maui.Components.Pages.Sales
 @inject SaleCartService Cart
 @inject IStringLocalizer<PosResources> L
 
@@ -12,26 +12,44 @@ else
     <Stack Gap="3">
         @foreach (var item in Cart.Items)
         {
+            var byWeight = SalesUiOptions.IsByWeight(item.SellingMode);
             <div class="pos-cart-line">
                 <div>
                     <div class="pos-cart-line__name">@item.Name</div>
                     <div class="pos-cart-line__meta">
                         <MoneyDisplay Amount="@item.UnitPrice" CurrencyCode="PHP" />
+                        @if (byWeight)
+                        {
+                            <span> @L["Sales_Checkout_PricePerKg"]</span>
+                        }
                         <span> × </span>
-                        <span class="pos-tabular">@item.Quantity</span>
+                        <span class="pos-tabular">
+                            @SalesUiOptions.FormatCartQuantity(L, item.Quantity, item.UnitOfMeasure, item.SellingMode)
+                        </span>
                         <span> · </span>
                         <MoneyDisplay Amount="@item.LineTotal" CurrencyCode="PHP" />
                     </div>
                 </div>
                 <div class="pos-cart-line__actions">
-                    <QuantityStepper Value="@item.Quantity"
-                                     ValueChanged="v => OnQuantityChanged(item.ProductId, v)"
-                                     Step="@(PosSaleOptions.RequiresWholeQuantity(item.UnitOfMeasure) ? 1m : 0.001m)"
-                                     DecimalPlaces="@PosSaleOptions.MaxQuantityDecimals(item.UnitOfMeasure)"
-                                     Disabled="@Disabled"
-                                     AriaLabel="@L["Sales_Checkout_Quantity"]"
-                                     DecreaseLabel="@L["Sales_Checkout_DecreaseQty"]"
-                                     IncreaseLabel="@L["Sales_Checkout_IncreaseQty"]" />
+                    @if (byWeight)
+                    {
+                        <Button Variant="ButtonVariant.Secondary"
+                                Disabled="@Disabled"
+                                OnClick="() => OnEditWeight(item.ProductId)">
+                            @L["Sales_Checkout_WeightEdit"]
+                        </Button>
+                    }
+                    else
+                    {
+                        <QuantityStepper Value="@item.Quantity"
+                                         ValueChanged="v => OnQuantityChanged(item.ProductId, v)"
+                                         Step="@(PosSaleOptions.RequiresWholeQuantity(item.UnitOfMeasure, item.SellingMode) ? 1m : 0.001m)"
+                                         DecimalPlaces="@PosSaleOptions.MaxQuantityDecimals(item.UnitOfMeasure, item.SellingMode)"
+                                         Disabled="@Disabled"
+                                         AriaLabel="@L["Sales_Checkout_Quantity"]"
+                                         DecreaseLabel="@L["Sales_Checkout_DecreaseQty"]"
+                                         IncreaseLabel="@L["Sales_Checkout_IncreaseQty"]" />
+                    }
                     <Button Variant="ButtonVariant.Ghost"
                             Disabled="@Disabled"
                             OnClick="() => Cart.Remove(item.ProductId)">@L["Sales_Checkout_Remove"]</Button>
@@ -68,6 +86,7 @@ else
     [Parameter] public decimal TaxPreview { get; set; }
     [Parameter] public decimal PayableTotal { get; set; }
     [Parameter] public EventCallback<Guid> QuantityChanged { get; set; }
+    [Parameter] public EventCallback<Guid> EditWeight { get; set; }
 
     private Task OnQuantityChanged(Guid productId, decimal quantity)
     {
@@ -76,4 +95,9 @@ else
             ? QuantityChanged.InvokeAsync(productId)
             : Task.CompletedTask;
     }
+
+    private Task OnEditWeight(Guid productId) =>
+        EditWeight.HasDelegate
+            ? EditWeight.InvokeAsync(productId)
+            : Task.CompletedTask;
 }

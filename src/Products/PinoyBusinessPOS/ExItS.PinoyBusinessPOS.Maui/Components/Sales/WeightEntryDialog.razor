@@ -1,0 +1,159 @@
+@using ExItS.DesignSystem.Components.Forms
+@using ExItS.DesignSystem.Components.Overlay
+@using ExItS.DesignSystem.Components.Primitives
+@using ExItS.PinoyBusinessPOS.Application.Catalog
+@using ExItS.PinoyBusinessPOS.Application.Sales
+@inject IStringLocalizer<PosResources> L
+
+<Dialog Visible="@Visible"
+        Title="@DialogTitle"
+        OnClose="CancelAsync">
+    <Stack Gap="3">
+        @if (Product is not null)
+        {
+            <div>
+                <div class="pos-value-md">@Product.Name</div>
+                <div class="pos-type-helper">
+                    <MoneyDisplay Amount="@Product.SellingPrice" CurrencyCode="PHP" />
+                    <span> @L["Sales_Checkout_PricePerKg"]</span>
+                </div>
+            </div>
+        }
+
+        <NumberInput Label="@L["Sales_Checkout_WeightQuantity"]"
+                     Value="@_rawValue"
+                     ValueChanged="OnValueChanged"
+                     DecimalPlaces="@(_unitCode == WeightEntry.UnitGram ? 0 : 3)"
+                     Required="true"
+                     IsInvalid="@(!string.IsNullOrEmpty(_error))"
+                     ErrorText="@_error"
+                     Hint="@L["Sales_Checkout_WeightHint"]" />
+
+        <RadioGroup Label="@L["Sales_Checkout_WeightUnit"]"
+                    Value="@_unitCode"
+                    ValueChanged="OnUnitChanged"
+                    Options="@_unitOptions" />
+    </Stack>
+    <Footer>
+        <FormActions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="CancelAsync">@L["Sales_Cancel"]</Button>
+            <Button Variant="ButtonVariant.Primary" OnClick="ConfirmAsync">@ConfirmLabel</Button>
+        </FormActions>
+    </Footer>
+</Dialog>
+
+@code {
+    [Parameter] public bool Visible { get; set; }
+    [Parameter] public EventCallback<bool> VisibleChanged { get; set; }
+    [Parameter] public PosCatalogProductDto? Product { get; set; }
+    /// <summary>When editing an existing line, pass the current cart kilograms.</summary>
+    [Parameter] public decimal? InitialKilograms { get; set; }
+    [Parameter] public EventCallback<decimal> Confirmed { get; set; }
+    [Parameter] public EventCallback Cancelled { get; set; }
+
+    private decimal? _rawValue;
+    private string _unitCode = WeightEntry.UnitGram;
+    private string? _error;
+    private string _sessionUnit = WeightEntry.UnitGram;
+    private List<RadioOption> _unitOptions = [];
+    private bool _opened;
+
+    private string DialogTitle =>
+        InitialKilograms is > 0m
+            ? L["Sales_Checkout_WeightEditTitle"]
+            : L["Sales_Checkout_WeightAddTitle"];
+
+    private string ConfirmLabel =>
+        InitialKilograms is > 0m
+            ? L["Sales_Checkout_WeightUpdate"]
+            : L["Sales_Checkout_WeightAdd"];
+
+    protected override void OnParametersSet()
+    {
+        _unitOptions =
+        [
+            new RadioOption(WeightEntry.UnitGram, L["Sales_Checkout_WeightUnitG"]),
+            new RadioOption(WeightEntry.UnitKilogram, L["Sales_Checkout_WeightUnitKg"])
+        ];
+
+        if (Visible && !_opened)
+        {
+            _opened = true;
+            _error = null;
+            _unitCode = _sessionUnit;
+            if (InitialKilograms is > 0m kg)
+            {
+                if (_unitCode == WeightEntry.UnitGram)
+                {
+                    _rawValue = kg * 1000m;
+                }
+                else
+                {
+                    _rawValue = kg;
+                }
+            }
+            else
+            {
+                _rawValue = null;
+            }
+        }
+        else if (!Visible)
+        {
+            _opened = false;
+        }
+    }
+
+    private void OnValueChanged(decimal? value)
+    {
+        _rawValue = value;
+        _error = null;
+    }
+
+    private void OnUnitChanged(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return;
+        }
+
+        _unitCode = value;
+        _sessionUnit = value;
+        _error = null;
+    }
+
+    private async Task ConfirmAsync()
+    {
+        if (!WeightEntry.TryNormalize(_rawValue, _unitCode, out var kilograms, out var errorCode))
+        {
+            _error = errorCode switch
+            {
+                "zero" => L["Sales_Checkout_WeightInvalidZero"],
+                "precision" => L["Sales_Checkout_WeightInvalidPrecision"],
+                "unit" => L["Sales_Checkout_WeightInvalidUnit"],
+                _ => L["Sales_Checkout_WeightInvalid"]
+            };
+            return;
+        }
+
+        await Confirmed.InvokeAsync(kilograms);
+        await SetVisibleAsync(false);
+    }
+
+    private async Task CancelAsync()
+    {
+        if (Cancelled.HasDelegate)
+        {
+            await Cancelled.InvokeAsync();
+        }
+
+        await SetVisibleAsync(false);
+    }
+
+    private async Task SetVisibleAsync(bool visible)
+    {
+        if (VisibleChanged.HasDelegate)
+        {
+            await VisibleChanged.InvokeAsync(visible);
+        }
+    }
+}

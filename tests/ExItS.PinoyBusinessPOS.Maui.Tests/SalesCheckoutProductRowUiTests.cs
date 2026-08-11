@@ -20,7 +20,7 @@ public sealed class SalesCheckoutProductRowUiTests
     {
         var checkout = ReadCheckout();
 
-        Assert.Contains("@if (inCart)", checkout, StringComparison.Ordinal);
+        Assert.Contains("@if (inCart && !byWeight)", checkout, StringComparison.Ordinal);
         Assert.Contains("pos-product-row__stepper", checkout, StringComparison.Ordinal);
         Assert.Contains("@onclick:stopPropagation=\"true\"", checkout, StringComparison.Ordinal);
         Assert.Contains("@onkeydown:stopPropagation=\"true\"", checkout, StringComparison.Ordinal);
@@ -32,7 +32,7 @@ public sealed class SalesCheckoutProductRowUiTests
     {
         var checkout = ReadCheckout();
 
-        Assert.Contains("var tapDisabled = blocked || outOfStock || !canAddMore;", checkout, StringComparison.Ordinal);
+        Assert.Contains("var tapDisabled = blocked || outOfStock || (!byWeight && !canAddMore) || (byWeight && !inCart && !canAddMore);", checkout, StringComparison.Ordinal);
         Assert.Contains("pos-product-row--unavailable", checkout, StringComparison.Ordinal);
     }
 

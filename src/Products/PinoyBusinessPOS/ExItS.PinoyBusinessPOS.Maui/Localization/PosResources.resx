@@ -1128,6 +1128,22 @@
   <data name="Sales_Checkout_Quantity" xml:space="preserve"><value>Quantity</value></data>
   <data name="Sales_Checkout_QuantityWhole" xml:space="preserve"><value>This unit is sold in whole numbers only.</value></data>
   <data name="Sales_Checkout_QuantityPrecision" xml:space="preserve"><value>Use a quantity greater than zero with at most 3 decimal places.</value></data>
+  <data name="Sales_Checkout_PricePerKg" xml:space="preserve"><value>/ kg</value></data>
+  <data name="Sales_Checkout_QuantityKg" xml:space="preserve"><value>{0} kg</value></data>
+  <data name="Sales_Checkout_WeightAddTitle" xml:space="preserve"><value>Enter weight</value></data>
+  <data name="Sales_Checkout_WeightEditTitle" xml:space="preserve"><value>Edit weight</value></data>
+  <data name="Sales_Checkout_WeightQuantity" xml:space="preserve"><value>Weight</value></data>
+  <data name="Sales_Checkout_WeightUnit" xml:space="preserve"><value>Unit</value></data>
+  <data name="Sales_Checkout_WeightUnitKg" xml:space="preserve"><value>kg</value></data>
+  <data name="Sales_Checkout_WeightUnitG" xml:space="preserve"><value>g</value></data>
+  <data name="Sales_Checkout_WeightHint" xml:space="preserve"><value>Grams convert to kilograms automatically (350 g = 0.350 kg).</value></data>
+  <data name="Sales_Checkout_WeightAdd" xml:space="preserve"><value>Add</value></data>
+  <data name="Sales_Checkout_WeightUpdate" xml:space="preserve"><value>Update</value></data>
+  <data name="Sales_Checkout_WeightEdit" xml:space="preserve"><value>Edit weight</value></data>
+  <data name="Sales_Checkout_WeightInvalidZero" xml:space="preserve"><value>Enter a weight greater than zero.</value></data>
+  <data name="Sales_Checkout_WeightInvalidPrecision" xml:space="preserve"><value>Weight in kilograms may have at most 3 decimal places.</value></data>
+  <data name="Sales_Checkout_WeightInvalidUnit" xml:space="preserve"><value>Choose kilograms or grams.</value></data>
+  <data name="Sales_Checkout_WeightInvalid" xml:space="preserve"><value>That weight is not valid.</value></data>
   <data name="Sales_Checkout_Remove" xml:space="preserve"><value>Remove</value></data>
   <data name="Sales_Checkout_ClearCart" xml:space="preserve"><value>Clear cart</value></data>
   <data name="Sales_Checkout_PaymentSection" xml:space="preserve"><value>Payment</value></data>

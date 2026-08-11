@@ -30,6 +30,9 @@ public sealed class SalePageGuardTests
         Assert.Contains("Cart.SetQuantity", checkout, StringComparison.Ordinal);
         Assert.Contains("SaleCartPanel", checkout, StringComparison.Ordinal);
         Assert.Contains("QuantityStepper", checkout, StringComparison.Ordinal);
+        Assert.Contains("WeightEntryDialog", checkout, StringComparison.Ordinal);
+        Assert.Contains("OpenWeightEntry", checkout, StringComparison.Ordinal);
+        Assert.Contains("SalesUiOptions.IsByWeight", checkout, StringComparison.Ordinal);
         Assert.Contains("pos-sell-floor", checkout, StringComparison.Ordinal);
         Assert.Contains("pos-product-row", checkout, StringComparison.Ordinal);
         Assert.Contains("pos-sell-sticky-bar", checkout, StringComparison.Ordinal);
@@ -52,6 +55,9 @@ public sealed class SalePageGuardTests
         Assert.Contains("Cart.Remove", cartPanel, StringComparison.Ordinal);
         Assert.Contains("QuantityStepper", cartPanel, StringComparison.Ordinal);
         Assert.Contains("Cart.SetQuantity", cartPanel, StringComparison.Ordinal);
+        Assert.Contains("EditWeight", cartPanel, StringComparison.Ordinal);
+        Assert.Contains("Sales_Checkout_PricePerKg", cartPanel, StringComparison.Ordinal);
+        Assert.Contains("SalesUiOptions.IsByWeight", cartPanel, StringComparison.Ordinal);
 
         var detail = File.ReadAllText(Path.Combine(sales, "SaleDetail.razor"));
         Assert.Contains("@page \"/sales/{SaleId:guid}\"", detail, StringComparison.Ordinal);
@@ -277,6 +283,22 @@ public sealed class SalePageGuardTests
                      "Sales_Checkout_CustomerRequired",
                      "Sales_Checkout_ZeroTotalUtang",
                      "Sales_Checkout_QuantityWhole",
+                     "Sales_Checkout_PricePerKg",
+                     "Sales_Checkout_QuantityKg",
+                     "Sales_Checkout_WeightAddTitle",
+                     "Sales_Checkout_WeightEditTitle",
+                     "Sales_Checkout_WeightQuantity",
+                     "Sales_Checkout_WeightUnit",
+                     "Sales_Checkout_WeightUnitKg",
+                     "Sales_Checkout_WeightUnitG",
+                     "Sales_Checkout_WeightHint",
+                     "Sales_Checkout_WeightAdd",
+                     "Sales_Checkout_WeightUpdate",
+                     "Sales_Checkout_WeightEdit",
+                     "Sales_Checkout_WeightInvalidZero",
+                     "Sales_Checkout_WeightInvalidPrecision",
+                     "Sales_Checkout_WeightInvalidUnit",
+                     "Sales_Checkout_WeightInvalid",
                      "Sales_Checkout_OfflineMessage",
                      "Sales_Checkout_ViewCart",
                      "Sales_Checkout_CartFab",

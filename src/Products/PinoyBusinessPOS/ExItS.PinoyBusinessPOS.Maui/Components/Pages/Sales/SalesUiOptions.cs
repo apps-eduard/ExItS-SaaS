@@ -105,6 +105,31 @@ public static class SalesUiOptions
             UnitOfMeasureLabel(localizer, unitOfMeasure),
             StockStateLabel(localizer, isTracked, stockStatus));
 
+    public static bool IsByWeight(string? sellingMode) =>
+        WeightEntry.IsByWeight(sellingMode);
+
+    public static string PriceUnitSuffix(IStringLocalizer<PosResources> localizer, string? sellingMode) =>
+        IsByWeight(sellingMode) ? localizer["Sales_Checkout_PricePerKg"].Value : string.Empty;
+
+    public static string FormatCartQuantity(
+        IStringLocalizer<PosResources> localizer,
+        decimal quantity,
+        string? unitOfMeasure,
+        string? sellingMode)
+    {
+        if (IsByWeight(sellingMode))
+        {
+            return string.Format(
+                localizer["Sales_Checkout_QuantityKg"].Value,
+                WeightEntry.FormatKilograms(quantity));
+        }
+
+        var uom = UnitOfMeasureLabel(localizer, unitOfMeasure);
+        return string.IsNullOrWhiteSpace(uom)
+            ? quantity.ToString("0.###")
+            : $"{quantity.ToString("0.###")} {uom}";
+    }
+
     /// <summary>
     /// Matches <c>SaleStockService</c>: only tracked inventory enforces on-hand; untracked sells freely.
     /// </summary>

@@ -258,7 +258,10 @@ else
         </section>
 
         <aside class="pos-sell-cart pos-sell-cart--landscape-only" aria-label="@L["Sales_Checkout_CartSection"]">
-            <SaleCartPanel Disabled="@blocked" TaxPreview="@TaxPreview" PayableTotal="@PayableTotal" />
+            <SaleCartPanel Disabled="@blocked"
+                           TaxPreview="@TaxPreview"
+                           PayableTotal="@PayableTotal"
+                           EditWeight="OnCartEditWeight" />
             @if (!Cart.IsEmpty)
             {
                 <FormActions>
@@ -569,6 +572,13 @@ else
             }
         </Stack>
     </Dialog>
+
+    <WeightEntryDialog Visible="@_weightDialogOpen"
+                       VisibleChanged="v => { if (!v) CloseWeightEntry(); else _weightDialogOpen = v; }"
+                       Product="@_weightProduct"
+                       InitialKilograms="@_weightInitialKg"
+                       Confirmed="OnWeightConfirmed"
+                       Cancelled="CloseWeightEntry" />
 </Page>
 }
 @code {
@@ -644,6 +654,9 @@ else
     private bool _paymentHeaderActive;
     private bool _checkoutResumeApplied;
     private bool _customerPickerOpen;
+    private bool _weightDialogOpen;
+    private PosCatalogProductDto? _weightProduct;
+    private decimal? _weightInitialKg;
     private bool _customerSearchAttempted;
     private string? _customerPickerMessage;
     private CancellationTokenSource? _lookupDebounceCts;
@@ -984,12 +997,16 @@ else
     {
         var qty = Cart.GetQuantity(product.ProductId);
         var inCart = qty > 0m;
+        var byWeight = SalesUiOptions.IsByWeight(product.SellingMode);
         var outOfStock = SalesUiOptions.IsOutOfStock(product.IsTracked, product.StockStatus, product.OnHandQuantity);
-        var canAddMore = SalesUiOptions.CanAcceptQuantity(product.IsTracked, product.OnHandQuantity, qty + 1m);
-        // Tapping the row adds one unit. The stepper stays live for cart lines so an item that
-        // ran out of stock after it was added can still be reduced or removed.
-        var tapDisabled = blocked || outOfStock || !canAddMore;
+        // PerItem: tap adds +1. ByWeight: tap opens weight entry (any remaining stock > 0).
+        var canAddMore = byWeight
+            ? SalesUiOptions.CanAcceptQuantity(product.IsTracked, product.OnHandQuantity, 0.001m)
+            : SalesUiOptions.CanAcceptQuantity(product.IsTracked, product.OnHandQuantity, qty + 1m);
+        // ByWeight lines already in cart remain tappable to edit weight even when stock is tight.
+        var tapDisabled = blocked || outOfStock || (!byWeight && !canAddMore) || (byWeight && !inCart && !canAddMore);
         var maxQty = product.IsTracked ? product.OnHandQuantity : (decimal?)null;
+        var priceSuffix = SalesUiOptions.PriceUnitSuffix(L, product.SellingMode);
 
         return @<div @key="product.ProductId"
                      class="@($"pos-product-row{(inCart ? " pos-product-row--in-cart" : string.Empty)}{(outOfStock ? " pos-product-row--unavailable" : string.Empty)}")"
@@ -1009,12 +1026,22 @@ else
                         {
                             <span aria-hidden="true"> · </span>
                             <span class="pos-tabular">@product.OnHandQuantity.ToString("0.###")</span>
+                            @if (byWeight)
+                            {
+                                <span> @L["Sales_Checkout_WeightUnitKg"]</span>
+                            }
                         }
                     </span>
                 </div>
                 <div class="pos-product-row__side">
-                    <span class="pos-product-row__price"><MoneyDisplay Amount="@product.SellingPrice" CurrencyCode="PHP" /></span>
-                    @if (inCart)
+                    <span class="pos-product-row__price">
+                        <MoneyDisplay Amount="@product.SellingPrice" CurrencyCode="PHP" />
+                        @if (!string.IsNullOrEmpty(priceSuffix))
+                        {
+                            <span class="pos-type-helper"> @priceSuffix</span>
+                        }
+                    </span>
+                    @if (inCart && !byWeight)
                     {
                         <div class="pos-product-row__stepper"
                              @onclick:stopPropagation="true"
@@ -1023,12 +1050,24 @@ else
                                              ValueChanged="v => SetQuantity(product.ProductId, v)"
                                              Step="@StepFor(product)"
                                              Max="@maxQty"
-                                             DecimalPlaces="@PosSaleOptions.MaxQuantityDecimals(product.UnitOfMeasure)"
+                                             DecimalPlaces="@PosSaleOptions.MaxQuantityDecimals(product.UnitOfMeasure, product.SellingMode)"
                                              Disabled="@blocked"
                                              Compact="true"
                                              AriaLabel="@L["Sales_Checkout_Quantity"]"
                                              DecreaseLabel="@L["Sales_Checkout_DecreaseQty"]"
                                              IncreaseLabel="@L["Sales_Checkout_IncreaseQty"]" />
+                        </div>
+                    }
+                    else if (inCart && byWeight)
+                    {
+                        <div class="pos-product-row__stepper"
+                             @onclick:stopPropagation="true"
+                             @onkeydown:stopPropagation="true">
+                            <Button Variant="ButtonVariant.Secondary"
+                                    Disabled="@blocked"
+                                    OnClick="() => OpenWeightEntry(product, qty)">
+                                @string.Format(L["Sales_Checkout_QuantityKg"].Value, WeightEntry.FormatKilograms(qty))
+                            </Button>
                         </div>
                     }
                 </div>
@@ -1055,7 +1094,7 @@ else
     }
 
     private static decimal StepFor(PosCatalogProductDto product) =>
-        PosSaleOptions.RequiresWholeQuantity(product.UnitOfMeasure) ? 1m : 0.001m;
+        PosSaleOptions.RequiresWholeQuantity(product.UnitOfMeasure, product.SellingMode) ? 1m : 0.001m;
 
     private void RememberProducts(IEnumerable<PosCatalogProductDto> products)
     {
@@ -1065,10 +1104,83 @@ else
         }
     }
 
-    private string QuantityError(string unitOfMeasure) =>
-        PosSaleOptions.RequiresWholeQuantity(unitOfMeasure)
+    private string QuantityError(string unitOfMeasure, string? sellingMode = null) =>
+        PosSaleOptions.RequiresWholeQuantity(unitOfMeasure, sellingMode)
             ? L["Sales_Checkout_QuantityWhole"]
             : L["Sales_Checkout_QuantityPrecision"];
+
+    private void OpenWeightEntry(PosCatalogProductDto product, decimal? existingKilograms = null)
+    {
+        RememberProducts([product]);
+        _weightProduct = product;
+        _weightInitialKg = existingKilograms is > 0m ? existingKilograms : null;
+        _weightDialogOpen = true;
+        _errorTitle = null;
+        _errorMessage = null;
+    }
+
+    private void OnCartEditWeight(Guid productId)
+    {
+        if (!_productById.TryGetValue(productId, out var product))
+        {
+            return;
+        }
+
+        var qty = Cart.GetQuantity(productId);
+        if (qty <= 0m || !SalesUiOptions.IsByWeight(product.SellingMode))
+        {
+            return;
+        }
+
+        OpenWeightEntry(product, qty);
+    }
+
+    private void CloseWeightEntry()
+    {
+        _weightDialogOpen = false;
+        _weightProduct = null;
+        _weightInitialKg = null;
+    }
+
+    private void OnWeightConfirmed(decimal kilograms)
+    {
+        if (_weightProduct is null)
+        {
+            CloseWeightEntry();
+            return;
+        }
+
+        var product = _weightProduct;
+        CloseWeightEntry();
+        ApplyWeightedQuantity(product, kilograms);
+    }
+
+    private void ApplyWeightedQuantity(PosCatalogProductDto product, decimal kilograms)
+    {
+        RememberProducts([product]);
+        if (!SalesUiOptions.CanAcceptQuantity(product.IsTracked, product.OnHandQuantity, kilograms))
+        {
+            _errorTitle = L["Sales_Checkout_InsufficientStockTitle"];
+            _errorMessage = L["Sales_Checkout_InsufficientStock"];
+            return;
+        }
+
+        var existing = Cart.GetQuantity(product.ProductId);
+        if (existing > 0m)
+        {
+            Cart.SetQuantity(product.ProductId, kilograms);
+        }
+        else
+        {
+            Cart.Add(product, kilograms);
+        }
+
+        _matches = Array.Empty<PosCatalogProductDto>();
+        _lookupText = null;
+        _lookupHelper = null;
+        _errorTitle = null;
+        _errorMessage = null;
+    }
 
     private async Task OnPaymentMethodChangedAsync(string? value)
     {
@@ -1245,6 +1357,13 @@ else
     private void AddToCart(PosCatalogProductDto product)
     {
         RememberProducts([product]);
+        if (SalesUiOptions.IsByWeight(product.SellingMode))
+        {
+            var existing = Cart.GetQuantity(product.ProductId);
+            OpenWeightEntry(product, existing > 0m ? existing : null);
+            return;
+        }
+
         const decimal addQuantity = 1m;
         var nextQty = Cart.GetQuantity(product.ProductId) + addQuantity;
         if (!SalesUiOptions.CanAcceptQuantity(product.IsTracked, product.OnHandQuantity, nextQty))

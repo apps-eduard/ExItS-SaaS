@@ -1,0 +1,68 @@
+namespace ExItS.PinoyBusinessPOS.Maui.Tests;
+
+public sealed class WeightedSaleCheckoutUiTests
+{
+    [Fact]
+    public void ByWeight_add_opens_weight_dialog_instead_of_adding_one_kilogram()
+    {
+        var checkout = ReadCheckout();
+        Assert.Contains("SalesUiOptions.IsByWeight(product.SellingMode)", checkout, StringComparison.Ordinal);
+        Assert.Contains("OpenWeightEntry", checkout, StringComparison.Ordinal);
+        Assert.Contains("WeightEntryDialog", checkout, StringComparison.Ordinal);
+        Assert.Contains("ApplyWeightedQuantity", checkout, StringComparison.Ordinal);
+        Assert.Contains("const decimal addQuantity = 1m;", checkout, StringComparison.Ordinal);
+        // ByWeight path must open dialog before any Cart.Add of a default 1 kg.
+        Assert.Contains("OpenWeightEntry(product, existing > 0m ? existing : null);", checkout, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Weight_dialog_component_reuses_WeightQuantities_via_WeightEntry()
+    {
+        var dialog = File.ReadAllText(Path.Combine(
+            MauiProject(), "Components", "Sales", "WeightEntryDialog.razor"));
+        Assert.Contains("WeightEntry.TryNormalize", dialog, StringComparison.Ordinal);
+        Assert.Contains("WeightEntry.UnitGram", dialog, StringComparison.Ordinal);
+        Assert.Contains("WeightEntry.UnitKilogram", dialog, StringComparison.Ordinal);
+        Assert.Contains("NumberInput", dialog, StringComparison.Ordinal);
+        Assert.Contains("RadioGroup", dialog, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Cart_panel_shows_price_per_kg_and_edit_weight_for_ByWeight()
+    {
+        var panel = File.ReadAllText(Path.Combine(
+            MauiProject(), "Components", "Sales", "SaleCartPanel.razor"));
+        Assert.Contains("Sales_Checkout_PricePerKg", panel, StringComparison.Ordinal);
+        Assert.Contains("Sales_Checkout_WeightEdit", panel, StringComparison.Ordinal);
+        Assert.Contains("FormatCartQuantity", panel, StringComparison.Ordinal);
+        Assert.Contains("EditWeight", panel, StringComparison.Ordinal);
+    }
+
+    private static string ReadCheckout() =>
+        File.ReadAllText(Path.Combine(
+            MauiProject(), "Components", "Pages", "Sales", "SaleCheckout.razor"));
+
+    private static string MauiProject() =>
+        Path.Combine(
+            FindRepoRoot(),
+            "src",
+            "Products",
+            "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.Maui");
+
+    private static string FindRepoRoot()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null)
+        {
+            if (File.Exists(Path.Combine(dir.FullName, "ExItS.slnx")))
+            {
+                return dir.FullName;
+            }
+
+            dir = dir.Parent;
+        }
+
+        throw new InvalidOperationException("Repository root not found.");
+    }
+}
