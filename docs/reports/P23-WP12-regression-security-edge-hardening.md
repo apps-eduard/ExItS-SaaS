@@ -25,6 +25,7 @@ WP13+ **not started**. WP12 remains **in progress** until the remaining regressi
 | 4 | Today’s Prices | High | Omitting `ExpectedUpdatedAtUtc` treated as non-stale → last-write-wins / silent overwrite. |
 | 5 | Online checkout + snapshots | High | Client could send trusted line snapshots without offline `SaleId` and undercharge vs live catalog. |
 | 6 | Platform Admin refresh/nav | **Critical** | Hard refresh on Organizations/Subscriptions showed API ProblemDetails title “An unexpected error occurred.”; Plans/Subscriptions navigation often collapsed sidebar to Dashboard-only until multiple refreshes. |
+| 7 | Platform Admin shell stuck + catalog Spin | **Critical** | After ae0fb73, Payments refresh left sidenav on Spin+Retry; Product Catalog (Business Types/Categories/Products/Imports) showed content Spin only; Test Payments showed unauthorized — shell `Loaded=false` blocked nav while pages that never called `Permissions.EnsureLoadedAsync()` never left Spin. |
 
 ## Fixes made
 
@@ -34,6 +35,7 @@ WP13+ **not started**. WP12 remains **in progress** until the remaining regressi
 4. **`CatalogConcurrency.IsStaleOrMissing`** — Today’s Prices requires expected token; null fails closed with concurrency conflict.
 5. **Trusted snapshots require `SaleId`** — online carts must omit snapshot fields; incomplete offline provenance rejected as `pos.sale.snapshot.invalid`.
 6. **Admin shell/nav/page mount hardening** — see section below.
+7. **Admin shell recovery + catalog permission load** — generation-safe shell loads; recover Platform/Org/Personal mode from `/authorization/me` when `/auth/me` fails; tolerant `AuthSessionInfoDto` (+ `Mfa`); catalog/Test Payments call `Permissions.EnsureLoadedAsync()`; AdminNav retries shell on navigation when not ready.
 
 ## Platform Admin refresh / navigation (bug #6)
 
@@ -71,6 +73,18 @@ WP13+ **not started**. WP12 remains **in progress** until the remaining regressi
 | Direct URL `/admin/plans` | Flaky nav | Deterministic shell after auth restore |
 
 Manual browser validation after this fix: perform on local Admin once `dotnet watch` picks up changes (Device Verified still **No**).
+
+### Follow-up (Payments / catalog / Test Payments)
+
+Observed after ae0fb73: Payments content could load while sidenav stayed on Spin+Retry; catalog pages spun forever; Test Payments unauthorized.
+
+Additional root causes:
+
+1. `/auth/me` could still fail (DTO shape / concurrent load races) while other Platform APIs succeeded with the same session — shell stayed `Loaded=false`.
+2. Global catalog Business Types / Categories / Products / Imports gated on `Permissions.Loaded` but **never called** `EnsureLoadedAsync` (relied on shell completing first).
+3. Test Payments checked permissions before they were loaded.
+
+Fix commit stamps below include recovery via `/authorization/me` ActorType, generation-safe loads, MFA-tolerant session DTO, and explicit permission loads on those pages.
 
 ### Legacy plan rows (WP10B secondary)
 
@@ -197,6 +211,7 @@ Broader Platform integration filter (`BusinessType|Entitlement|CatalogTemplate|G
 | Initial WP12 hardening (BT lock / prices / snapshots) | `1c3be320d3fc85d7e1dbabc0e0d842e1f52f85da` |
 | Docs stamp (initial) | `5164dcccd137636580aeec4d77cf617bf9874679` |
 | Admin refresh/nav stabilization | `ae0fb7339ed7f47411ce088670a7f21b6b6ca6fa` |
+| Admin shell recovery + catalog permission load | `82ac36fb00b3e8232d234e966496650b511d0455` |
 
 ## Explicit stop
 
