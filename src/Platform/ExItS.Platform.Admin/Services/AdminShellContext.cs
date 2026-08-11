@@ -51,6 +51,13 @@ public sealed class AdminShellContext(
     public bool IsOrganizationShell => Mode == AdminShellMode.Organization;
     public bool IsPersonalShell => Mode == AdminShellMode.Personal;
 
+    /// <summary>
+    /// Fired when <see cref="Loaded"/> / shell identity fields change.
+    /// AdminNav must re-sync <c>_ready</c> from this — Permissions.Changed alone is not enough
+    /// when shell recovers after an earlier failed nav load (header Platform, sidenav Spin+Retry).
+    /// </summary>
+    public event Action? Changed;
+
     public Task EnsureLoadedAsync()
     {
         lock (_gate)
@@ -77,6 +84,7 @@ public sealed class AdminShellContext(
             load = _loadTask;
         }
 
+        RaiseChanged();
         await load;
     }
 
@@ -102,6 +110,7 @@ public sealed class AdminShellContext(
             Mode = AdminShellMode.Limited;
             Loaded = false;
             ClearTaskIfCurrent(generation);
+            RaiseChanged();
             throw;
         }
     }
@@ -149,6 +158,7 @@ public sealed class AdminShellContext(
             RoleLabel = "Signed in";
             Loaded = false;
             ClearTaskIfCurrent(generation);
+            RaiseChanged();
             return;
         }
 
@@ -310,6 +320,12 @@ public sealed class AdminShellContext(
         }
 
         Loaded = true;
+        RaiseChanged();
+    }
+
+    private void RaiseChanged()
+    {
+        Changed?.Invoke();
     }
 
     private bool IsCurrentGeneration(int generation)

@@ -168,6 +168,7 @@
     {
         Nav.LocationChanged += OnLocationChanged;
         SessionExpiry.SessionExpired += OnSessionExpired;
+        Shell.Changed += OnShellChanged;
         UpdatePageTitle();
     }
 
@@ -201,13 +202,38 @@
             // Shell chrome must not crash the page if API is briefly unavailable.
         }
 
+        ApplyShellReadyFromContext();
+    }
+
+    private void ApplyShellReadyFromContext()
+    {
         if (!Shell.Loaded)
         {
             return;
         }
 
+        if (_shellReady)
+        {
+            return;
+        }
+
         _shellReady = true;
-        await InvokeAsync(StateHasChanged);
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private void OnShellChanged()
+    {
+        if (Shell.Loaded)
+        {
+            ApplyShellReadyFromContext();
+            return;
+        }
+
+        if (_shellReady)
+        {
+            _shellReady = false;
+            _ = InvokeAsync(StateHasChanged);
+        }
     }
 
     private void OnSessionExpired()
@@ -290,5 +316,6 @@
     {
         Nav.LocationChanged -= OnLocationChanged;
         SessionExpiry.SessionExpired -= OnSessionExpired;
+        Shell.Changed -= OnShellChanged;
     }
 }

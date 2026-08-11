@@ -795,7 +795,12 @@ internal sealed class CatalogTemplateRepository : ICatalogTemplateRepository
 
         var totalCount = await query.CountAsync(cancellationToken).ConfigureAwait(false);
         var records = await query.Skip(skip).Take(take).ToListAsync(cancellationToken).ConfigureAwait(false);
-        return (records.Select(GlobalCatalogEntityMapper.ToDomain).ToList(), totalCount);
+        var items = records
+            .Select(GlobalCatalogEntityMapper.TryToDomain)
+            .Where(t => t is not null)
+            .Cast<CatalogTemplate>()
+            .ToList();
+        return (items, totalCount);
     }
 
     private static IQueryable<CatalogTemplateRecord> ApplyTemplateSort(

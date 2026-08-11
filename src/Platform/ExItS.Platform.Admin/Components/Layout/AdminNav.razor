@@ -404,6 +404,7 @@
     protected override async Task OnInitializedAsync()
     {
         Permissions.Changed += OnPermissionsChanged;
+        Shell.Changed += OnShellChanged;
         Nav.LocationChanged += OnLocationChanged;
         // New circuit/session: reset selection so a prior account-class menu cannot linger.
         _selected = ["dashboard"];
@@ -434,6 +435,11 @@
             // Keep Spin + Retry instead of painting a false Dashboard-only menu.
         }
 
+        await ApplyNavReadyFromShellAsync();
+    }
+
+    private async Task ApplyNavReadyFromShellAsync()
+    {
         if (!Shell.Loaded)
         {
             _shellLoadFailed = true;
@@ -461,7 +467,33 @@
         await InvokeAsync(StateHasChanged);
     }
 
-    private void OnPermissionsChanged() => _ = InvokeAsync(StateHasChanged);
+    private void OnPermissionsChanged()
+    {
+        if (Shell.Loaded && !_ready)
+        {
+            _ = ApplyNavReadyFromShellAsync();
+            return;
+        }
+
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private void OnShellChanged()
+    {
+        if (Shell.Loaded && !_ready)
+        {
+            _ = ApplyNavReadyFromShellAsync();
+            return;
+        }
+
+        if (!Shell.Loaded && _ready)
+        {
+            _ready = false;
+            _shellLoadFailed = true;
+        }
+
+        _ = InvokeAsync(StateHasChanged);
+    }
 
     private async Task OnMenuItemClicked(MenuItem item)
     {
@@ -576,6 +608,7 @@
     public void Dispose()
     {
         Permissions.Changed -= OnPermissionsChanged;
+        Shell.Changed -= OnShellChanged;
         Nav.LocationChanged -= OnLocationChanged;
     }
 }

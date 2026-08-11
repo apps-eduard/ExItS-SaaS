@@ -174,17 +174,32 @@ internal static class GlobalCatalogEntityMapper
         }
     }
 
-    public static CatalogTemplate ToDomain(CatalogTemplateRecord record) =>
-        CatalogTemplate.Rehydrate(
+    public static CatalogTemplate ToDomain(CatalogTemplateRecord record)
+    {
+        if (!Enum.TryParse<CatalogTemplateStatus>(record.Status, ignoreCase: true, out var status)
+            || !Enum.IsDefined(status))
+        {
+            throw new InvalidOperationException(
+                $"Invalid catalog template status '{record.Status}' for template {record.Id}.");
+        }
+
+        if (!Enum.TryParse<SelectionMode>(record.SelectionMode, ignoreCase: true, out var selectionMode)
+            || !Enum.IsDefined(selectionMode))
+        {
+            throw new InvalidOperationException(
+                $"Invalid catalog template selection mode '{record.SelectionMode}' for template {record.Id}.");
+        }
+
+        return CatalogTemplate.Rehydrate(
             CatalogTemplateId.From(record.Id),
             record.Name,
             record.Slug,
             record.Description,
             record.IconReference,
             BusinessTypeId.From(record.PrimaryBusinessTypeId),
-            Enum.Parse<CatalogTemplateStatus>(record.Status),
+            status,
             record.DefaultBatchSize,
-            Enum.Parse<SelectionMode>(record.SelectionMode),
+            selectionMode,
             record.PublishedAtUtc,
             (record.Products ?? []).Select(p => CatalogTemplateProduct.Rehydrate(
                 p.Id,
@@ -194,6 +209,22 @@ internal static class GlobalCatalogEntityMapper
                 p.IsFirstBatch)),
             record.CreatedAtUtc,
             record.UpdatedAtUtc);
+    }
+
+    /// <summary>
+    /// List-safe mapping: skip corrupt rows instead of failing the entire catalog template list (500).
+    /// </summary>
+    public static CatalogTemplate? TryToDomain(CatalogTemplateRecord record)
+    {
+        try
+        {
+            return ToDomain(record);
+        }
+        catch
+        {
+            return null;
+        }
+    }
 
     public static CatalogTemplateRecord ToRecord(CatalogTemplate template) =>
         new()

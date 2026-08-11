@@ -11,8 +11,9 @@
 @inject IStringLocalizer<AdminResources> L
 @inject NavigationManager Nav
 @inject PlatformPermissionState Permissions
+@inject AdminShellContext Shell
 
-@if (!Permissions.Loaded)
+@if (!_pageReady)
 {
     <Spin />
 }
@@ -338,7 +339,10 @@ else
     private bool _busy;
     private string? _formError;
     private bool _formConflict;
+    private bool _pageReady;
+    private bool _suppressInitialTableChange = true;
     private readonly List<string> _publishChecklist = [];
+    private readonly AdminPageLoadGate _loadGate = new();
 
     private string _newName = "";
     private string? _newSlug;
@@ -377,21 +381,51 @@ else
 
     protected override async Task OnParametersSetAsync()
     {
-        await Permissions.EnsureLoadedAsync();
+        await Shell.EnsureLoadedAsync();
+        if (!Shell.Loaded)
+        {
+            await Shell.RefreshAsync();
+        }
+
+        if (Shell.IsPlatformShell)
+        {
+            await Permissions.EnsureLoadedAsync();
+        }
+
         if (!CanView)
         {
+            _pageReady = true;
             return;
         }
 
-        await EnsureBusinessTypesAsync();
-
-        if (Id is null)
+        object mode = Id is null ? "list" : Id;
+        if (!_loadGate.ShouldLoad(mode))
         {
-            await LoadListAsync();
+            _pageReady = true;
+            return;
         }
-        else
+
+        _pageReady = false;
+        try
         {
-            await LoadDetailAsync();
+            await EnsureBusinessTypesAsync();
+
+            if (Id is null)
+            {
+                _suppressInitialTableChange = true;
+                _page = 1;
+                _list = null;
+                await LoadListAsync();
+                _suppressInitialTableChange = false;
+            }
+            else
+            {
+                await LoadDetailAsync();
+            }
+        }
+        finally
+        {
+            _pageReady = true;
         }
     }
 
@@ -427,6 +461,11 @@ else
 
     private async Task OnTemplatesTableChangeAsync(QueryModel<CatalogTemplateSummaryDto> queryModel)
     {
+        if (_suppressInitialTableChange)
+        {
+            return;
+        }
+
         await AdminTableSort.ApplyChangeAsync(
             queryModel,
             MapSortField,

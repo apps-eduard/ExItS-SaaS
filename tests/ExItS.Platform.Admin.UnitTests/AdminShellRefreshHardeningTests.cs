@@ -73,6 +73,27 @@ public sealed class AdminShellRefreshHardeningTests
     }
 
     [Fact]
+    public async Task Shell_changed_fires_when_authorization_recovery_loads_platform()
+    {
+        var api = CreateApiProxy(out var state);
+        state.FailMe = true;
+        state.AuthorizationActorType = "Platform";
+
+        var env = new HostingEnvironment { EnvironmentName = Environments.Development };
+        var permissions = new PlatformPermissionState(api, env);
+        var shell = new AdminShellContext(api, permissions);
+
+        var changed = 0;
+        shell.Changed += () => changed++;
+
+        await shell.EnsureLoadedAsync();
+
+        Assert.True(shell.Loaded);
+        Assert.True(shell.IsPlatformShell);
+        Assert.True(changed >= 1);
+    }
+
+    [Fact]
     public void Commercial_list_pages_and_nav_use_shell_ready_hardening()
     {
         var root = FindRepoRoot();
@@ -94,6 +115,7 @@ public sealed class AdminShellRefreshHardeningTests
         foreach (var relative in new[]
                  {
                      Path.Combine("src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "GlobalCatalogBusinessTypes.razor"),
+                     Path.Combine("src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "GlobalCatalogTemplates.razor"),
                      Path.Combine("src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "GlobalCatalogCategories.razor"),
                      Path.Combine("src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "GlobalCatalogProducts.razor"),
                      Path.Combine("src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "GlobalCatalogImports.razor"),
@@ -104,17 +126,43 @@ public sealed class AdminShellRefreshHardeningTests
             Assert.Contains("Permissions.EnsureLoadedAsync()", text, StringComparison.Ordinal);
         }
 
+        foreach (var relative in new[]
+                 {
+                     Path.Combine("src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "GlobalCatalogBusinessTypes.razor"),
+                     Path.Combine("src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "GlobalCatalogTemplates.razor")
+                 })
+        {
+            var text = File.ReadAllText(Path.Combine(root, relative));
+            Assert.Contains("AdminShellContext Shell", text, StringComparison.Ordinal);
+            Assert.Contains("Shell.EnsureLoadedAsync()", text, StringComparison.Ordinal);
+            Assert.Contains("_pageReady", text, StringComparison.Ordinal);
+            Assert.Contains("_suppressInitialTableChange", text, StringComparison.Ordinal);
+        }
+
         var nav = File.ReadAllText(Path.Combine(
             root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Layout", "AdminNav.razor"));
         Assert.Contains("!Shell.Loaded", nav, StringComparison.Ordinal);
         Assert.Contains("RetryShellAsync", nav, StringComparison.Ordinal);
         Assert.Contains("_shellLoadFailed", nav, StringComparison.Ordinal);
         Assert.Contains("if (!_ready)", nav, StringComparison.Ordinal);
+        Assert.Contains("Shell.Changed += OnShellChanged", nav, StringComparison.Ordinal);
+        Assert.Contains("ApplyNavReadyFromShellAsync", nav, StringComparison.Ordinal);
+
+        var layout = File.ReadAllText(Path.Combine(
+            root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Layout", "MainLayout.razor"));
+        Assert.Contains("Shell.Changed += OnShellChanged", layout, StringComparison.Ordinal);
+
+        Assert.Contains("TryToDomain", File.ReadAllText(Path.Combine(
+            root, "src", "Platform", "ExItS.Platform.Infrastructure", "Persistence", "GlobalCatalogEntityMapper.cs")), StringComparison.Ordinal);
+        Assert.Contains("TryToDomain", File.ReadAllText(Path.Combine(
+            root, "src", "Platform", "ExItS.Platform.Infrastructure", "Persistence", "Repositories", "GlobalCatalogRepositories.cs")), StringComparison.Ordinal);
 
         var shell = File.ReadAllText(Path.Combine(
             root, "src", "Platform", "ExItS.Platform.Admin", "Services", "AdminShellContext.cs"));
         Assert.Contains("TryRecoverFromAuthorizationAsync", shell, StringComparison.Ordinal);
         Assert.Contains("_loadGeneration", shell, StringComparison.Ordinal);
+        Assert.Contains("event Action? Changed", shell, StringComparison.Ordinal);
+        Assert.Contains("RaiseChanged()", shell, StringComparison.Ordinal);
     }
 
     private static string FindRepoRoot()

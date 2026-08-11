@@ -10,8 +10,9 @@
 @inject IStringLocalizer<AdminResources> L
 @inject NavigationManager Nav
 @inject PlatformPermissionState Permissions
+@inject AdminShellContext Shell
 
-@if (!Permissions.Loaded)
+@if (!_pageReady)
 {
     <Spin />
 }
@@ -243,6 +244,8 @@ else
     private string? _formError;
     private bool _formConflict;
     private bool _busy;
+    private bool _pageReady;
+    private bool _suppressInitialTableChange = true;
     private readonly AdminPageLoadGate _loadGate = new();
 
     private bool CanView => Permissions.HasPermission(PlatformPermissionCodes.ViewGlobalCatalog);
@@ -252,24 +255,49 @@ else
     {
         _formError = null;
         _formConflict = false;
-        await Permissions.EnsureLoadedAsync();
+
+        await Shell.EnsureLoadedAsync();
+        if (!Shell.Loaded)
+        {
+            await Shell.RefreshAsync();
+        }
+
+        if (Shell.IsPlatformShell)
+        {
+            await Permissions.EnsureLoadedAsync();
+        }
+
         if (!CanView)
         {
+            _pageReady = true;
             return;
         }
 
-        if (Id is null)
+        object mode = Id is null ? "list" : Id;
+        if (!_loadGate.ShouldLoad(mode))
         {
-            if (!_loadGate.ShouldLoad("list"))
-            {
-                return;
-            }
-
-            await LoadListAsync();
+            _pageReady = true;
+            return;
         }
-        else if (_loadGate.ShouldLoad(Id))
+
+        _pageReady = false;
+        try
         {
-            await LoadDetailAsync();
+            if (Id is null)
+            {
+                _suppressInitialTableChange = true;
+                _list = null;
+                await LoadListAsync();
+                _suppressInitialTableChange = false;
+            }
+            else
+            {
+                await LoadDetailAsync();
+            }
+        }
+        finally
+        {
+            _pageReady = true;
         }
     }
 
@@ -284,6 +312,11 @@ else
 
     private async Task OnTableChangeAsync(QueryModel<BusinessTypeDto> queryModel)
     {
+        if (_suppressInitialTableChange)
+        {
+            return;
+        }
+
         await AdminTableSort.ApplyChangeAsync(
             queryModel,
             MapSortField,
