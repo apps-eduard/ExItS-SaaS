@@ -132,4 +132,4 @@ Quantity columns: **no schema migration required**; existing `numeric(18,3)` is 
 
 ## Implementation commit hash
 
-_pending — filled by docs hash-stamp commit_
+`7cef45ff8dd530527b5731b7395470e92d68a16e`
