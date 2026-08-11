@@ -938,6 +938,8 @@
   <data name="Catalog_Import_Skipped" xml:space="preserve"><value>Skipped</value></data>
   <data name="Catalog_Import_Failed" xml:space="preserve"><value>Failed</value></data>
   <data name="Catalog_Import_WarningsTitle" xml:space="preserve"><value>Import notes</value></data>
+  <data name="Catalog_Import_ZeroImportedTitle" xml:space="preserve"><value>No products imported</value></data>
+  <data name="Catalog_Import_ZeroImportedMessage" xml:space="preserve"><value>This batch finished without adding products. Open Review to see skipped or failed items, then try again.</value></data>
   <data name="Catalog_Import_Polling" xml:space="preserve"><value>Import is still running…</value></data>
   <data name="Catalog_Import_Review" xml:space="preserve"><value>Review local products</value></data>
   <data name="Catalog_Import_JobNotFoundTitle" xml:space="preserve"><value>Import job not found</value></data>

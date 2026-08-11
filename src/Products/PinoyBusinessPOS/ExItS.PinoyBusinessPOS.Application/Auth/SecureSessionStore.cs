@@ -82,6 +82,24 @@ public sealed class SecureSessionStore(ISecureTokenStore tokens) : ISessionStore
         {
             await tokens.ClearAsync(SecureTokenKeys.OrganizationContextLocked, ct).ConfigureAwait(false);
         }
+
+        if (session.BranchId is Guid branchId && branchId != Guid.Empty)
+        {
+            await tokens.SetAsync(SecureTokenKeys.BranchId, branchId.ToString("D"), ct).ConfigureAwait(false);
+        }
+        else
+        {
+            await tokens.ClearAsync(SecureTokenKeys.BranchId, ct).ConfigureAwait(false);
+        }
+
+        if (session.PosDeviceId is Guid posDeviceId && posDeviceId != Guid.Empty)
+        {
+            await tokens.SetAsync(SecureTokenKeys.PosDeviceId, posDeviceId.ToString("D"), ct).ConfigureAwait(false);
+        }
+        else
+        {
+            await tokens.ClearAsync(SecureTokenKeys.PosDeviceId, ct).ConfigureAwait(false);
+        }
     }
 
     public async Task<(AuthSession? Session, string? Marker)> LoadAsync(CancellationToken ct = default)
@@ -126,6 +144,20 @@ public sealed class SecureSessionStore(ISecureTokenStore tokens) : ISessionStore
 
             var organizationContextLocked = string.Equals(orgLockedText, "true", StringComparison.OrdinalIgnoreCase);
 
+            Guid? branchId = null;
+            var branchText = await tokens.GetAsync(SecureTokenKeys.BranchId, ct).ConfigureAwait(false);
+            if (Guid.TryParse(branchText, out var parsedBranch) && parsedBranch != Guid.Empty)
+            {
+                branchId = parsedBranch;
+            }
+
+            Guid? posDeviceId = null;
+            var posDeviceText = await tokens.GetAsync(SecureTokenKeys.PosDeviceId, ct).ConfigureAwait(false);
+            if (Guid.TryParse(posDeviceText, out var parsedDevice) && parsedDevice != Guid.Empty)
+            {
+                posDeviceId = parsedDevice;
+            }
+
             // Partial session shell — display fields filled by AuthenticationService after restore.
             var shell = new AuthSession(
                 userId,
@@ -144,7 +176,9 @@ public sealed class SecureSessionStore(ISecureTokenStore tokens) : ISessionStore
                 PlatformSessionToken: string.IsNullOrWhiteSpace(platformSessionToken) ? null : platformSessionToken,
                 AccountClass: string.IsNullOrWhiteSpace(accountClass) ? null : accountClass.Trim(),
                 AccountProfileId: accountProfileId,
-                OrganizationContextLocked: organizationContextLocked);
+                OrganizationContextLocked: organizationContextLocked,
+                BranchId: branchId,
+                PosDeviceId: posDeviceId);
 
             return (shell, marker);
         }

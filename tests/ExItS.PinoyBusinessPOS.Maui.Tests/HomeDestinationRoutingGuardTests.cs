@@ -53,10 +53,14 @@ public sealed class HomeDestinationRoutingGuardTests
         var sessionStore = File.ReadAllText(Path.Combine(ApplicationProject(), "Auth", "SecureSessionStore.cs"));
         Assert.Contains("SecureTokenKeys.AccountClass", sessionStore, StringComparison.Ordinal);
         Assert.Contains("SecureTokenKeys.OrganizationContextLocked", sessionStore, StringComparison.Ordinal);
+        Assert.Contains("SecureTokenKeys.BranchId", sessionStore, StringComparison.Ordinal);
+        Assert.Contains("SecureTokenKeys.PosDeviceId", sessionStore, StringComparison.Ordinal);
 
         var mauiStore = File.ReadAllText(Path.Combine(MauiProject(), "Services", "MauiSecureTokenStore.cs"));
         Assert.Contains("SecureTokenKeys.AccountClass", mauiStore, StringComparison.Ordinal);
         Assert.Contains("SecureTokenKeys.OrganizationContextLocked", mauiStore, StringComparison.Ordinal);
+        Assert.Contains("SecureTokenKeys.BranchId", mauiStore, StringComparison.Ordinal);
+        Assert.Contains("SecureTokenKeys.PosDeviceId", mauiStore, StringComparison.Ordinal);
 
         // Personal default must be evaluated before the org-essentials / POS-access branch.
         var personalGate = gate.IndexOf("AuthSessionWorkspace.IsPersonalDefault", StringComparison.Ordinal);

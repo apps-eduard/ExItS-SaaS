@@ -7,6 +7,7 @@
 @inject PosStatusState Status
 @inject IPosSyncStatusService SyncStatus
 @inject NavigationManager Nav
+@inject NavigationGate Gate
 @inject SellingModeService SellingMode
 @inject RoleHomeResolver RoleHome
 @inject ICurrentUserContext CurrentUser
@@ -15,7 +16,7 @@
 
 <a class="skip-link" href="#pos-main">@L["Nav_SkipToContent"]</a>
 
-<div class="exds-root pos-shell" data-layout="phone" @key="_cultureEpoch">
+<div class="@($"exds-root pos-shell{(_showBottomNav ? string.Empty : " pos-shell--auth")}")" data-layout="phone" @key="_cultureEpoch">
     <StoreHeader @ref="_storeHeader"
                  Identity="StoreHeaderIdentity.Organization"
                  ShowSync="true"
@@ -28,42 +29,47 @@
     <OnlineRequiredDialogHost />
     <OfflineWorkingWarningHost />
 
-    <nav class="pos-bottom-nav" aria-label="@L["Nav_Primary"]">
-        <NavLink class="pos-nav-item" ActiveClass="pos-nav-item--active" href="@_homeHref" Match="NavLinkMatch.All">
-            <span class="pos-nav-item__icon" aria-hidden="true">@IconGlyphs.Get("home")</span>
-            <span class="pos-nav-item__label">@L["Nav_Home"]</span>
-        </NavLink>
-        @if (_hasPosAccess)
-        {
-            <a class="pos-nav-item @(IsCatalogActive ? "pos-nav-item--active" : null)"
-               href="/catalog"
-               @onclick="GoCatalogAsync"
-               @onclick:preventDefault>
-                <span class="pos-nav-item__icon" aria-hidden="true">@IconGlyphs.Get("products")</span>
-                <span class="pos-nav-item__label">@L["Nav_Products"]</span>
-            </a>
-            <NavLink class="pos-nav-item" ActiveClass="pos-nav-item--active" href="/sales">
-                <span class="pos-nav-item__icon" aria-hidden="true">@IconGlyphs.Get("sales")</span>
-                <span class="pos-nav-item__label">@L["Nav_Sales"]</span>
+    @if (_showBottomNav)
+    {
+        <nav class="pos-bottom-nav" aria-label="@L["Nav_Primary"]">
+            <NavLink class="pos-nav-item" ActiveClass="pos-nav-item--active" href="@_homeHref" Match="NavLinkMatch.All">
+                <span class="pos-nav-item__icon" aria-hidden="true">@IconGlyphs.Get("home")</span>
+                <span class="pos-nav-item__label">@L["Nav_Home"]</span>
             </NavLink>
-            <NavLink class="pos-nav-item" ActiveClass="pos-nav-item--active" href="/customers">
-                <span class="pos-nav-item__icon" aria-hidden="true">@IconGlyphs.Get("customers")</span>
-                <span class="pos-nav-item__label">@L["Nav_Customers"]</span>
+            @if (_hasPosAccess)
+            {
+                <a class="pos-nav-item @(IsCatalogActive ? "pos-nav-item--active" : null)"
+                   href="/catalog"
+                   @onclick="GoCatalogAsync"
+                   @onclick:preventDefault>
+                    <span class="pos-nav-item__icon" aria-hidden="true">@IconGlyphs.Get("products")</span>
+                    <span class="pos-nav-item__label">@L["Nav_Products"]</span>
+                </a>
+                <NavLink class="pos-nav-item" ActiveClass="pos-nav-item--active" href="/sales">
+                    <span class="pos-nav-item__icon" aria-hidden="true">@IconGlyphs.Get("sales")</span>
+                    <span class="pos-nav-item__label">@L["Nav_Sales"]</span>
+                </NavLink>
+                <NavLink class="pos-nav-item" ActiveClass="pos-nav-item--active" href="/customers">
+                    <span class="pos-nav-item__icon" aria-hidden="true">@IconGlyphs.Get("customers")</span>
+                    <span class="pos-nav-item__label">@L["Nav_Customers"]</span>
+                </NavLink>
+            }
+            @* POS access not active: Home already resolves to the Organization overview, so the bar
+               keeps only Home and More instead of repeating the same destination. *@
+            <NavLink class="pos-nav-item" ActiveClass="pos-nav-item--active" href="/more">
+                <span class="pos-nav-item__icon" aria-hidden="true">@IconGlyphs.Get("more")</span>
+                <span class="pos-nav-item__label">@L["Nav_More"]</span>
             </NavLink>
-        }
-        @* POS access not active: Home already resolves to the Organization overview, so the bar
-           keeps only Home and More instead of repeating the same destination. *@
-        <NavLink class="pos-nav-item" ActiveClass="pos-nav-item--active" href="/more">
-            <span class="pos-nav-item__icon" aria-hidden="true">@IconGlyphs.Get("more")</span>
-            <span class="pos-nav-item__label">@L["Nav_More"]</span>
-        </NavLink>
-    </nav>
+        </nav>
+    }
 </div>
 
 @code {
     private int _cultureEpoch;
     private string _homeHref = "/home";
     private bool _hasPosAccess = true;
+    private bool _showBottomNav = true;
+    private bool _setupChromeReady;
     private StoreHeader? _storeHeader;
 
     private bool IsCatalogActive
@@ -106,6 +112,7 @@
         await Status.InitializeAsync();
         await SyncStatus.InitializeAsync();
         await RefreshHomeDestinationAsync();
+        await RefreshFirstTimeSetupChromeAsync();
     }
 
     /// <summary>
@@ -127,7 +134,42 @@
         await InvokeAsync(StateHasChanged);
     }
 
-    private async Task OnAccessChangedAsync() => await RefreshHomeDestinationAsync();
+    private async Task RefreshFirstTimeSetupChromeAsync()
+    {
+        var incomplete = false;
+        try
+        {
+            incomplete = await Gate.IsOrgPosFirstTimeSetupIncompleteAsync();
+        }
+        catch
+        {
+            incomplete = false;
+        }
+
+        _showBottomNav = !incomplete;
+        _setupChromeReady = true;
+
+        if (incomplete && !NavigationGate.IsOrgFirstTimeSetupRoute(Nav.Uri))
+        {
+            try
+            {
+                Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), forceLoad: false, replace: true);
+                return;
+            }
+            catch
+            {
+                // Keep chrome hidden; page guards still bounce via ResolveStartRouteAsync.
+            }
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task OnAccessChangedAsync()
+    {
+        await RefreshHomeDestinationAsync();
+        await RefreshFirstTimeSetupChromeAsync();
+    }
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
@@ -136,7 +178,11 @@
         // Cheap guard: only re-resolve when effective POS access actually flipped.
         if (_hasPosAccess != CurrentUser.HasPosAccess)
         {
-            _ = RefreshHomeDestinationAsync();
+            _ = OnAccessChangedAsync();
+        }
+        else if (_setupChromeReady)
+        {
+            _ = RefreshFirstTimeSetupChromeAsync();
         }
         else
         {

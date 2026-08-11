@@ -1,51 +1,112 @@
 @page "/devices/register"
+@layout Layout.AuthShell
 @using ExItS.DesignSystem.Components.Internal
+@using Microsoft.Maui.Devices
 @inject ICurrentUserContext CurrentUser
 @inject IPlatformAccessClient Platform
 @inject IDeviceIdentityProvider DeviceIdentity
 @inject ISessionStore SessionStore
 @inject IAuthenticationService Auth
+@inject IAppInfoService AppInfo
 @inject NavigationGate Gate
 @inject NavigationManager Nav
 
+<div class="pos-device-register">
 <Page>
     <StoreHeaderBack Href="/org" />
-    <h1>Register this POS device</h1>
-    <p class="pos-muted">This device must be registered before it can create or change business transactions.</p>
+
+    <header class="pos-device-register__header">
+        <h1 class="pos-device-register__title">Register this POS device</h1>
+    </header>
+
     @if (!string.IsNullOrWhiteSpace(_error))
     {
         <Alert Tone="AlertTone.Danger" Title="Registration failed" Message="@_error" />
     }
+
+    <section class="pos-device-register__info" aria-label="Device information">
+        <div class="pos-settings__kv">
+            <span class="pos-settings__kv-label">Device</span>
+            <span class="pos-settings__kv-value">@_deviceLabel</span>
+        </div>
+        <div class="pos-settings__kv">
+            <span class="pos-settings__kv-label">Platform</span>
+            <span class="pos-settings__kv-value">@_platformLabel</span>
+        </div>
+        <div class="pos-settings__kv">
+            <span class="pos-settings__kv-label">App version</span>
+            <span class="pos-settings__kv-value">@AppInfo.Version</span>
+        </div>
+    </section>
+
     @if (_loading)
     {
-        <Spinner />
+        <Stack Align="StackAlign.Center" Gap="2">
+            <Spinner />
+            <span class="pos-muted">Loading branches…</span>
+        </Stack>
     }
     else if (_branches.Count == 0)
     {
-        <Alert Tone="AlertTone.Warning" Title="No active branch" Message="Ask an organization owner to create or reactivate a branch." />
+        <Alert Tone="AlertTone.Warning"
+               Title="No active branch"
+               Message="Ask an organization owner to create or reactivate a branch." />
     }
     else
     {
-        <label for="device-branch">Branch</label>
-        <select id="device-branch" @bind="_branchId">
-            @foreach (var branch in _branches)
-            {
-                <option value="@branch.Id">@branch.Name (@branch.Code)</option>
-            }
-        </select>
-        <label for="device-name">Device name</label>
-        <input id="device-name" @bind="_friendlyName" maxlength="128" />
-        <Button Variant="ButtonVariant.Primary" IsLoading="_saving" Disabled="_saving" OnClick="RegisterAsync">Register device</Button>
+        <FormGroup>
+            <Select Label="Branch"
+                    Value="@_branchIdText"
+                    ValueChanged="OnBranchChanged"
+                    Options="_branchOptions"
+                    Disabled="_saving"
+                    Required="true" />
+            <TextInput Label="Device name"
+                       Value="@_friendlyName"
+                       ValueChanged="OnFriendlyNameChanged"
+                       Placeholder="e.g. Counter 1"
+                       Disabled="_saving"
+                       Required="true"
+                       maxlength="128" />
+        </FormGroup>
+
+        <p class="pos-device-register__note pos-muted">
+            This device will be authorized to perform POS transactions.
+        </p>
+
+        <div class="pos-device-register__actions">
+            <Button Variant="ButtonVariant.Primary"
+                    IsLoading="_saving"
+                    Disabled="_saving || !CanSubmit"
+                    OnClick="RegisterAsync">
+                Register device
+            </Button>
+        </div>
     }
 </Page>
+</div>
 
 @code {
     private readonly List<OrganizationBranchDto> _branches = [];
-    private Guid _branchId;
-    private string _friendlyName = Environment.MachineName;
+    private IReadOnlyList<SelectOption> _branchOptions = [];
+    private string? _branchIdText;
+    private string _deviceLabel = "This device";
+    private string _platformLabel = "Unknown";
+    private string? _model;
+    private string? _friendlyName;
     private bool _loading = true;
     private bool _saving;
     private string? _error;
+
+    private bool CanSubmit =>
+        Guid.TryParse(_branchIdText, out _)
+        && !string.IsNullOrWhiteSpace(_friendlyName);
+
+    protected override void OnInitialized()
+    {
+        (_deviceLabel, _platformLabel, _model) = ResolveDeviceInfo();
+        _friendlyName = _deviceLabel;
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -64,17 +125,43 @@
         else
         {
             _branches.AddRange(result.Data.Where(x => string.Equals(x.Status, "Active", StringComparison.OrdinalIgnoreCase)));
-            _branchId = _branches.FirstOrDefault(x => x.IsPrimary)?.Id ?? _branches.FirstOrDefault()?.Id ?? Guid.Empty;
+            _branchOptions = _branches
+                .Select(b => new SelectOption(b.Id.ToString("D"), b.Name))
+                .ToList();
+            var selected = _branches.FirstOrDefault(x => x.IsPrimary) ?? _branches.FirstOrDefault();
+            _branchIdText = selected?.Id.ToString("D");
         }
+
         _loading = false;
+    }
+
+    private Task OnBranchChanged(string? value)
+    {
+        _branchIdText = value;
+        return Task.CompletedTask;
+    }
+
+    private Task OnFriendlyNameChanged(string? value)
+    {
+        _friendlyName = value;
+        return Task.CompletedTask;
     }
 
     private async Task RegisterAsync()
     {
         var session = CurrentUser.Session;
-        if (session?.OrganizationId is not Guid orgId || _branchId == Guid.Empty)
+        if (session?.OrganizationId is not Guid orgId
+            || !Guid.TryParse(_branchIdText, out var branchId)
+            || branchId == Guid.Empty)
         {
             _error = "Select an active branch.";
+            return;
+        }
+
+        var name = _friendlyName?.Trim();
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            _error = "Enter a device name.";
             return;
         }
 
@@ -83,12 +170,20 @@
         try
         {
             var installationId = await DeviceIdentity.GetOrCreateDeviceIdAsync();
-            var result = await Platform.RegisterCurrentDeviceAsync(orgId,
-                new RegisterPosDeviceRequest(_branchId, installationId, string.IsNullOrWhiteSpace(_friendlyName) ? "POS device" : _friendlyName.Trim(),
-                    OperatingSystem.IsAndroid() ? "Android" : OperatingSystem.IsWindows() ? "Windows" : "MAUI"));
+            var result = await Platform.RegisterCurrentDeviceAsync(
+                orgId,
+                new RegisterPosDeviceRequest(
+                    branchId,
+                    installationId,
+                    name,
+                    Platform: _platformLabel,
+                    Model: _model ?? _deviceLabel,
+                    AppVersion: AppInfo.Version));
             if (!result.IsSuccess || result.Data is null)
             {
-                _error = "The device could not be registered. Check the plan capacity and try again.";
+                _error = string.IsNullOrWhiteSpace(result.Error?.Detail)
+                    ? "The device could not be registered. Check the plan capacity and try again."
+                    : result.Error!.Detail;
                 return;
             }
 
@@ -97,11 +192,82 @@
             await SessionStore.SaveAsync(updated, marker ?? Guid.NewGuid().ToString("N"));
             CurrentUser.Set(updated);
             await Auth.EnsureOfflineOperateGrantAsync();
-            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+
+            var next = await Gate.ResolveStartRouteAsync();
+            // Persistence/restore must keep PosDeviceId; if we still bounce here, force boot routing.
+            if (string.Equals(next, "/devices/register", StringComparison.OrdinalIgnoreCase)
+                && CurrentUser.Session?.PosDeviceId is not null)
+            {
+                next = "/";
+            }
+
+            Nav.NavigateTo(next, replace: true);
+        }
+        catch (Exception ex)
+        {
+            _error = string.IsNullOrWhiteSpace(ex.Message)
+                ? "The device could not be registered. Try again."
+                : ex.Message;
         }
         finally
         {
             _saving = false;
         }
     }
+
+    private static (string DeviceLabel, string PlatformLabel, string? Model) ResolveDeviceInfo()
+    {
+        try
+        {
+            var info = DeviceInfo.Current;
+            var manufacturer = info.Manufacturer?.Trim();
+            var model = info.Model?.Trim();
+            var name = info.Name?.Trim();
+
+            string label;
+            if (IsUsableLabel(name))
+            {
+                label = name!;
+            }
+            else if (IsUsableLabel(manufacturer) && IsUsableLabel(model))
+            {
+                label = $"{ToTitleCase(manufacturer!)} {model}";
+            }
+            else if (IsUsableLabel(model))
+            {
+                label = model!;
+            }
+            else
+            {
+                label = "This device";
+            }
+
+            var platform = info.Platform == DevicePlatform.Unknown
+                ? FallbackPlatform()
+                : info.Platform.ToString();
+
+            return (label, platform, model ?? label);
+        }
+        catch
+        {
+            return ("This device", FallbackPlatform(), null);
+        }
+    }
+
+    private static string FallbackPlatform() =>
+        OperatingSystem.IsAndroid() ? "Android"
+        : OperatingSystem.IsIOS() ? "iOS"
+        : OperatingSystem.IsWindows() ? "Windows"
+        : "MAUI";
+
+    private static bool IsUsableLabel(string? value) =>
+        !string.IsNullOrWhiteSpace(value)
+        && !string.Equals(value, "localhost", StringComparison.OrdinalIgnoreCase)
+        && !string.Equals(value, "unknown", StringComparison.OrdinalIgnoreCase)
+        && !value.Contains("emulator", StringComparison.OrdinalIgnoreCase);
+
+    private static string ToTitleCase(string value) =>
+        value.Length == 0
+            ? value
+            : char.ToUpperInvariant(value[0]) + value[1..].ToLowerInvariant();
 }

@@ -11,6 +11,39 @@ namespace ExItS.PinoyBusinessPOS.Maui.Tests;
 public sealed class AuthenticationServiceTests
 {
     [Fact]
+    public async Task SecureSessionStore_persists_branch_and_pos_device_ids()
+    {
+        var tokens = new MemorySecureTokenStore();
+        var store = new SecureSessionStore(tokens);
+        var now = DateTimeOffset.UtcNow;
+        var branchId = Guid.Parse("55555555-5555-5555-5555-555555555555");
+        var posDeviceId = Guid.Parse("66666666-6666-6666-6666-666666666666");
+        var session = new AuthSession(
+            Guid.Parse("11111111-1111-1111-1111-111111111111"),
+            "Owner",
+            "owner1",
+            "o@example.com",
+            Guid.Parse("22222222-2222-2222-2222-222222222222"),
+            "Store",
+            now,
+            now.AddHours(8),
+            HasPosAccess: true,
+            AccessReasonCode: "allowed",
+            AccessToken: "token",
+            BranchId: branchId,
+            PosDeviceId: posDeviceId);
+
+        await store.SaveAsync(session, Guid.NewGuid().ToString("N"));
+        var (loaded, marker) = await store.LoadAsync();
+
+        Assert.NotNull(loaded);
+        Assert.False(string.IsNullOrWhiteSpace(marker));
+        Assert.Equal(branchId, loaded!.BranchId);
+        Assert.Equal(posDeviceId, loaded.PosDeviceId);
+        Assert.Equal(session.AccessToken, loaded.AccessToken);
+    }
+
+    [Fact]
     public async Task SignIn_is_blocked_outside_development_testing()
     {
         var sut = CreateSut(environment: "Production", access: new FakeAccessClient());

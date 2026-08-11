@@ -11479,3 +11479,49 @@ html.pos-keyboard-open .pos-content {
 .pos-offline-pin__signout:not(:disabled):focus-visible {
     color: var(--exits-text, #15201a);
 }
+
+/* ========== POS device registration ============================== */
+.pos-device-register__header {
+    margin-bottom: var(--exits-space-4, 1rem);
+}
+
+.pos-device-register__title {
+    margin: 0;
+    color: var(--exits-text, #15201a);
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.25;
+}
+
+.pos-device-register__subtitle {
+    margin: 0.35rem 0 0;
+    color: var(--exits-text-muted, #5b6b62);
+    font-size: var(--exits-text-sm, 0.875rem);
+    line-height: 1.45;
+    max-width: 40rem;
+}
+
+.pos-device-register__info {
+    display: flex;
+    flex-direction: column;
+    gap: var(--exits-space-2, 0.5rem);
+    margin: 0 0 var(--exits-space-4, 1rem);
+    padding: var(--exits-space-3, 0.75rem) 0;
+    border-top: 1px solid var(--exits-border, #d7e0da);
+    border-bottom: 1px solid var(--exits-border, #d7e0da);
+}
+
+.pos-device-register__note {
+    margin: 0 0 var(--exits-space-3, 0.75rem);
+    font-size: var(--exits-text-sm, 0.875rem);
+    line-height: 1.45;
+}
+
+.pos-device-register__actions {
+    margin-top: var(--exits-space-2, 0.5rem);
+}
+
+.pos-device-register__actions > *,
+.pos-device-register__actions .exds-btn {
+    width: 100%;
+}

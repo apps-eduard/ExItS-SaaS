@@ -19,6 +19,8 @@ public static class SecureTokenKeys
     public const string AccountClass = "pos.session.accountClass";
     public const string AccountProfileId = "pos.session.accountProfileId";
     public const string OrganizationContextLocked = "pos.session.organizationContextLocked";
+    public const string BranchId = "pos.session.branchId";
+    public const string PosDeviceId = "pos.session.posDeviceId";
 
     /// <summary>
     /// Durable installation DeviceId. Not a session key — must survive logout and ClearAllSessionKeysAsync.

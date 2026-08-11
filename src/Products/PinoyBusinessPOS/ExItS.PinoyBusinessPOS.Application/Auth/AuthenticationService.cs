@@ -530,7 +530,9 @@ public sealed class AuthenticationService(
                     shell.PlatformSessionToken,
                     shell.AccountClass,
                     shell.AccountProfileId,
-                    shell.OrganizationContextLocked);
+                    shell.OrganizationContextLocked,
+                    shell.BranchId,
+                    shell.PosDeviceId);
 
                 try
                 {
@@ -552,6 +554,7 @@ public sealed class AuthenticationService(
 
                 if (hasAccess && orgId is Guid validatedOrg)
                 {
+                    restored = await EnsurePosDeviceBindingAsync(restored, ct).ConfigureAwait(false);
                     await OpenLocalContextAsync(restored.UserId, validatedOrg, ct).ConfigureAwait(false);
                     _accessPolicy?.NotifySessionAccessChanged();
                     if (_offlineGrant is not null)
@@ -1676,7 +1679,9 @@ public sealed class AuthenticationService(
             existingShell.Session?.PlatformSessionToken,
             existingShell.Session?.AccountClass,
             existingShell.Session?.AccountProfileId,
-            existingShell.Session?.OrganizationContextLocked == true);
+            existingShell.Session?.OrganizationContextLocked == true,
+            existingShell.Session?.BranchId,
+            existingShell.Session?.PosDeviceId);
 
         try
         {
@@ -1878,7 +1883,9 @@ public sealed class AuthenticationService(
             AccessReasonCode: "offline_pin_required",
             SubscriptionStatus: grant.SubscriptionStatus,
             EnabledFeatureCodes: grant.EnabledFeatureCodes,
-            AccountClass: "Organization");
+            AccountClass: "Organization",
+            BranchId: grant.BranchId,
+            PosDeviceId: grant.PosDeviceId);
     }
 
     private static AuthSession BuildSessionFromGrant(AuthSession baseSession, OfflineOperatingGrant grant)
@@ -1898,7 +1905,9 @@ public sealed class AuthenticationService(
                 EnabledFeatureCodes = null,
                 AccessToken = null,
                 PlatformSessionToken = null,
-                AccountClass = "Personal"
+                AccountClass = "Personal",
+                BranchId = null,
+                PosDeviceId = null
             };
         }
 
@@ -1917,8 +1926,63 @@ public sealed class AuthenticationService(
             EnabledFeatureCodes = grant.EnabledFeatureCodes.Count > 0
                 ? grant.EnabledFeatureCodes
                 : baseSession.EnabledFeatureCodes,
-            AccountClass = "Organization"
+            AccountClass = "Organization",
+            BranchId = grant.BranchId ?? baseSession.BranchId,
+            PosDeviceId = grant.PosDeviceId ?? baseSession.PosDeviceId
         };
+    }
+
+    private async Task<AuthSession> EnsurePosDeviceBindingAsync(AuthSession session, CancellationToken ct)
+    {
+        if (!session.HasPosAccess
+            || session.OrganizationId is not Guid orgId
+            || (session.BranchId is not null && session.PosDeviceId is not null)
+            || _deviceIdentity is null)
+        {
+            return session;
+        }
+
+        try
+        {
+            var installationId = await _deviceIdentity.GetOrCreateDeviceIdAsync(ct).ConfigureAwait(false);
+            if (string.IsNullOrWhiteSpace(installationId))
+            {
+                return session;
+            }
+
+            var authorization = await accessClient.AuthorizePosDeviceAsync(
+                orgId,
+                new AuthorizePosDeviceRequest(installationId),
+                ct).ConfigureAwait(false);
+            if (!authorization.IsSuccess || authorization.Data is null)
+            {
+                return session;
+            }
+
+            var bound = session with
+            {
+                BranchId = authorization.Data.BranchId,
+                PosDeviceId = authorization.Data.PosDeviceId
+            };
+
+            try
+            {
+                var (_, marker) = await sessionStore.LoadAsync(ct).ConfigureAwait(false);
+                marker ??= Guid.NewGuid().ToString("N");
+                await sessionStore.SaveAsync(bound, marker, ct).ConfigureAwait(false);
+            }
+            catch
+            {
+                events.Record("secure_storage_failure", Dict(("operation", "pos_device_bind_save")));
+            }
+
+            currentUser.Set(bound);
+            return bound;
+        }
+        catch
+        {
+            return session;
+        }
     }
 
     private async Task CloseLocalContextAsync(CancellationToken ct)

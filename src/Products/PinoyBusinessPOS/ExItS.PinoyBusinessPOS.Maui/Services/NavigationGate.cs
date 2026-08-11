@@ -134,6 +134,135 @@ public sealed class NavigationGate(
     }
 
     /// <summary>
+    /// Organization POS first-time setup still blocking (device → PIN → template → /setup).
+    /// Used to hide primary bottom navigation and bounce out of selling routes.
+    /// </summary>
+    public async Task<bool> IsOrgPosFirstTimeSetupIncompleteAsync(CancellationToken ct = default)
+    {
+        var session = currentUser.Session;
+        if (session?.OrganizationId is null || !currentUser.HasPosAccess)
+        {
+            return false;
+        }
+
+        if (session.PosDeviceId is null || session.BranchId is null)
+        {
+            return true;
+        }
+
+        await auth.EnsureOfflineOperateGrantAsync(ct).ConfigureAwait(false);
+        if (!await auth.HasOfflinePinConfiguredAsync(ct).ConfigureAwait(false))
+        {
+            return true;
+        }
+
+        if (await preferences.GetBusinessTemplatePromptPendingAsync(session.OrganizationId.Value, ct)
+                .ConfigureAwait(false))
+        {
+            return true;
+        }
+
+        if (capabilities.IsAllowed(UtangCapability.ManageOperationalSetup))
+        {
+            var setupResult = await operationalSetup.GetAsync(ct).ConfigureAwait(false);
+            if (setupResult.IsSuccess && setupResult.Data is { IsCompleted: false })
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Routes allowed while <see cref="IsOrgPosFirstTimeSetupIncompleteAsync"/> is true.
+    /// Anything else should redirect through <see cref="ResolveStartRouteAsync"/>.
+    /// </summary>
+    public static bool IsOrgFirstTimeSetupRoute(string absoluteOrRelativeUri)
+    {
+        if (string.IsNullOrWhiteSpace(absoluteOrRelativeUri))
+        {
+            return false;
+        }
+
+        string path;
+        string query;
+        if (Uri.TryCreate(absoluteOrRelativeUri, UriKind.Absolute, out var absolute))
+        {
+            path = absolute.AbsolutePath;
+            query = absolute.Query.TrimStart('?');
+        }
+        else
+        {
+            var trimmed = absoluteOrRelativeUri.Trim();
+            var queryIndex = trimmed.IndexOf('?', StringComparison.Ordinal);
+            if (queryIndex >= 0)
+            {
+                path = trimmed[..queryIndex];
+                query = trimmed[(queryIndex + 1)..];
+            }
+            else
+            {
+                path = trimmed.Split('#', 2)[0];
+                query = string.Empty;
+            }
+
+            if (!path.StartsWith('/'))
+            {
+                path = "/" + path;
+            }
+        }
+
+        path = path.TrimEnd('/');
+        if (string.IsNullOrEmpty(path))
+        {
+            path = "/";
+        }
+
+        if (path.Equals("/devices/register", StringComparison.OrdinalIgnoreCase)
+            || path.Equals("/offline-pin-setup", StringComparison.OrdinalIgnoreCase)
+            || path.Equals("/offline-pin", StringComparison.OrdinalIgnoreCase)
+            || path.Equals("/setup", StringComparison.OrdinalIgnoreCase)
+            || path.Equals("/reconnect", StringComparison.OrdinalIgnoreCase)
+            || path.Equals("/signin", StringComparison.OrdinalIgnoreCase)
+            || path.Equals("/organization-select", StringComparison.OrdinalIgnoreCase)
+            || path.Equals("/org", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (path.Equals("/catalog/import", StringComparison.OrdinalIgnoreCase))
+        {
+            foreach (var part in query.Split('&', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                var pair = part.Split('=', 2);
+                if (pair.Length == 0)
+                {
+                    continue;
+                }
+
+                if (!string.Equals(Uri.UnescapeDataString(pair[0]), "onboarding", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                var value = pair.Length > 1 ? Uri.UnescapeDataString(pair[1]) : "1";
+                if (string.Equals(value, "1", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(value, "true", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(value, "yes", StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            // Catalog import wizard is AuthShell-only; treat it as setup chrome even without the query.
+            return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
     /// Mandatory offline PIN enrollment after online auth (Personal Utang and Organization POS).
     /// Without a PIN, cold-start cannot unlock the offline grant and the app is forced online.
     /// </summary>

@@ -938,6 +938,8 @@
   <data name="Catalog_Import_Skipped" xml:space="preserve"><value>Nilaktawan</value></data>
   <data name="Catalog_Import_Failed" xml:space="preserve"><value>Nabigo</value></data>
   <data name="Catalog_Import_WarningsTitle" xml:space="preserve"><value>Mga tala sa import</value></data>
+  <data name="Catalog_Import_ZeroImportedTitle" xml:space="preserve"><value>Walang na-import na produkto</value></data>
+  <data name="Catalog_Import_ZeroImportedMessage" xml:space="preserve"><value>Tapos ang batch pero walang nadagdag na produkto. Buksan ang Review para sa skipped/failed items, tapos subukan ulit.</value></data>
   <data name="Catalog_Import_Polling" xml:space="preserve"><value>Tumatakbo pa ang import…</value></data>
   <data name="Catalog_Import_Review" xml:space="preserve"><value>Suriin ang lokal na produkto</value></data>
   <data name="Catalog_Import_JobNotFoundTitle" xml:space="preserve"><value>Hindi nahanap ang import job</value></data>
