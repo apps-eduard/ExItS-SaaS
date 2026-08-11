@@ -494,7 +494,8 @@ file sealed class InMemoryGlobalCategoryRepository : IGlobalCategoryRepository
         int take,
         CancellationToken cancellationToken = default,
         GlobalCategoryListSortBy sortBy = GlobalCategoryListSortBy.SortOrder,
-        bool sortDescending = false)
+        bool sortDescending = false,
+        IReadOnlyCollection<Guid>? allowedBusinessTypeIds = null)
     {
         var items = _store.Values.AsEnumerable();
         if (status is not null)
@@ -561,7 +562,8 @@ file sealed class InMemoryGlobalProductRepository : IGlobalProductRepository
         CancellationToken cancellationToken = default,
         IReadOnlyCollection<Guid>? excludeProductIds = null,
         GlobalProductListSortBy sortBy = GlobalProductListSortBy.Name,
-        bool sortDescending = false)
+        bool sortDescending = false,
+        IReadOnlyCollection<Guid>? allowedBusinessTypeIds = null)
     {
         var list = _store.Values.Skip(skip).Take(take).ToList();
         return Task.FromResult(((IReadOnlyList<GlobalProduct>)list, _store.Count));

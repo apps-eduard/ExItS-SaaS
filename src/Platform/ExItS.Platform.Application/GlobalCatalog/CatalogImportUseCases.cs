@@ -787,7 +787,8 @@ file sealed class NullCatalogTemplateRepository : ICatalogTemplateRepository
         int take,
         CancellationToken cancellationToken = default,
         CatalogTemplateListSortBy sortBy = CatalogTemplateListSortBy.Name,
-        bool sortDescending = false) =>
+        bool sortDescending = false,
+        IReadOnlyCollection<Guid>? allowedPrimaryBusinessTypeIds = null) =>
         Task.FromResult<(IReadOnlyList<CatalogTemplate>, int)>(([], 0));
 
     public Task AddAsync(CatalogTemplate template, CancellationToken cancellationToken = default) =>

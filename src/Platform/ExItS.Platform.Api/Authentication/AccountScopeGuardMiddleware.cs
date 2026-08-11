@@ -87,9 +87,9 @@ public sealed class AccountScopeGuardMiddleware(RequestDelegate next)
         }
 
         // Authenticated merchant discovery (global catalog templates/products/categories) —
-        // cross-scope, any authenticated account class. Endpoint enforces session auth
-        // (RequireAuthorization + EnsureAuthenticated) and returns published/Active data only;
-        // entitlement-aware filtering is deferred to POS import (WP06). Mirrors /api/v1/commercial.
+        // cross-scope, any authenticated account class. Endpoint enforces session auth and
+        // organization effective Business Type entitlements (WP03). Platform Admin with
+        // ViewGlobalCatalog remains unrestricted. Mirrors /api/v1/commercial.
         if (path.StartsWith("/api/v1/catalog", StringComparison.OrdinalIgnoreCase))
         {
             return true;

@@ -940,7 +940,8 @@ file sealed class FakeCategoryRepository : IGlobalCategoryRepository
         int take,
         CancellationToken cancellationToken = default,
         GlobalCategoryListSortBy sortBy = GlobalCategoryListSortBy.SortOrder,
-        bool sortDescending = false) =>
+        bool sortDescending = false,
+        IReadOnlyCollection<Guid>? allowedBusinessTypeIds = null) =>
         Task.FromResult<(IReadOnlyList<GlobalCategory>, int)>((Items, Items.Count));
 
     public Task<IReadOnlyList<GlobalCategory>> GetByIdsAsync(
@@ -1008,7 +1009,8 @@ file sealed class FakeProductRepository : IGlobalProductRepository
         CancellationToken cancellationToken = default,
         IReadOnlyCollection<Guid>? excludeProductIds = null,
         GlobalProductListSortBy sortBy = GlobalProductListSortBy.Name,
-        bool sortDescending = false)
+        bool sortDescending = false,
+        IReadOnlyCollection<Guid>? allowedBusinessTypeIds = null)
     {
         IEnumerable<GlobalProduct> query = Added;
         if (!string.IsNullOrWhiteSpace(barcode))

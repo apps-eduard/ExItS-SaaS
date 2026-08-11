@@ -49,7 +49,8 @@ public sealed class CatalogTemplateQueryService
         int? pageSize,
         CancellationToken cancellationToken = default,
         CatalogTemplateListSortBy sortBy = CatalogTemplateListSortBy.Name,
-        bool sortDescending = false)
+        bool sortDescending = false,
+        IReadOnlyCollection<Guid>? allowedPrimaryBusinessTypeIds = null)
     {
         var (skip, take) = CatalogPagination.Normalize(page, pageSize);
         var (items, total) = await _templates
@@ -62,7 +63,8 @@ public sealed class CatalogTemplateQueryService
                 take,
                 cancellationToken,
                 sortBy,
-                sortDescending)
+                sortDescending,
+                allowedPrimaryBusinessTypeIds)
             .ConfigureAwait(false);
 
         var codes = await BusinessTypeResolver
@@ -81,7 +83,8 @@ public sealed class CatalogTemplateQueryService
         string? search,
         int? page,
         int? pageSize,
-        CancellationToken cancellationToken = default) =>
+        CancellationToken cancellationToken = default,
+        IReadOnlyCollection<Guid>? allowedPrimaryBusinessTypeIds = null) =>
         await ListAsync(
                 CatalogTemplateStatus.Published,
                 primaryBusinessTypeId,
@@ -89,7 +92,8 @@ public sealed class CatalogTemplateQueryService
                 search,
                 page,
                 pageSize,
-                cancellationToken)
+                cancellationToken,
+                allowedPrimaryBusinessTypeIds: allowedPrimaryBusinessTypeIds)
             .ConfigureAwait(false);
 
     public async Task<CatalogTemplateDto?> GetPublishedByIdAsync(

@@ -257,7 +257,8 @@ internal sealed class GlobalCategoryRepository : IGlobalCategoryRepository
         int take,
         CancellationToken cancellationToken = default,
         GlobalCategoryListSortBy sortBy = GlobalCategoryListSortBy.SortOrder,
-        bool sortDescending = false)
+        bool sortDescending = false,
+        IReadOnlyCollection<Guid>? allowedBusinessTypeIds = null)
     {
         var query = _db.GlobalCategories.AsNoTracking().Include(c => c.BusinessTypes).AsQueryable();
 
@@ -272,7 +273,12 @@ internal sealed class GlobalCategoryRepository : IGlobalCategoryRepository
             query = query.Where(c => c.ParentId == parentId.Value);
         }
 
-        query = await ApplyBusinessTypeFilterAsync(query, businessTypeId, businessTypeCode, cancellationToken)
+        query = await ApplyBusinessTypeFilterAsync(
+                query,
+                businessTypeId,
+                businessTypeCode,
+                allowedBusinessTypeIds,
+                cancellationToken)
             .ConfigureAwait(false);
 
         if (!string.IsNullOrWhiteSpace(search))
@@ -292,8 +298,20 @@ internal sealed class GlobalCategoryRepository : IGlobalCategoryRepository
         IQueryable<GlobalCategoryRecord> query,
         Guid? businessTypeId,
         string? businessTypeCode,
+        IReadOnlyCollection<Guid>? allowedBusinessTypeIds,
         CancellationToken cancellationToken)
     {
+        if (allowedBusinessTypeIds is not null)
+        {
+            if (allowedBusinessTypeIds.Count == 0)
+            {
+                return query.Where(_ => false);
+            }
+
+            var allowed = allowedBusinessTypeIds.ToArray();
+            query = query.Where(c => c.BusinessTypes.Any(b => allowed.Contains(b.BusinessTypeId)));
+        }
+
         Guid? resolvedId = businessTypeId;
         if (resolvedId is null && !string.IsNullOrWhiteSpace(businessTypeCode))
         {
@@ -464,7 +482,8 @@ internal sealed class GlobalProductRepository : IGlobalProductRepository
         CancellationToken cancellationToken = default,
         IReadOnlyCollection<Guid>? excludeProductIds = null,
         GlobalProductListSortBy sortBy = GlobalProductListSortBy.Name,
-        bool sortDescending = false)
+        bool sortDescending = false,
+        IReadOnlyCollection<Guid>? allowedBusinessTypeIds = null)
     {
         var query = _db.GlobalProducts.AsNoTracking().Include(p => p.BusinessTypes).AsQueryable();
 
@@ -479,7 +498,12 @@ internal sealed class GlobalProductRepository : IGlobalProductRepository
             query = query.Where(p => p.GlobalCategoryId == categoryId.Value);
         }
 
-        query = await ApplyBusinessTypeFilterAsync(query, businessTypeId, businessTypeCode, cancellationToken)
+        query = await ApplyBusinessTypeFilterAsync(
+                query,
+                businessTypeId,
+                businessTypeCode,
+                allowedBusinessTypeIds,
+                cancellationToken)
             .ConfigureAwait(false);
 
         if (!string.IsNullOrWhiteSpace(barcode))
@@ -533,8 +557,20 @@ internal sealed class GlobalProductRepository : IGlobalProductRepository
         IQueryable<GlobalProductRecord> query,
         Guid? businessTypeId,
         string? businessTypeCode,
+        IReadOnlyCollection<Guid>? allowedBusinessTypeIds,
         CancellationToken cancellationToken)
     {
+        if (allowedBusinessTypeIds is not null)
+        {
+            if (allowedBusinessTypeIds.Count == 0)
+            {
+                return query.Where(_ => false);
+            }
+
+            var allowed = allowedBusinessTypeIds.ToArray();
+            query = query.Where(p => p.BusinessTypes.Any(b => allowed.Contains(b.BusinessTypeId)));
+        }
+
         Guid? resolvedId = businessTypeId;
         if (resolvedId is null && !string.IsNullOrWhiteSpace(businessTypeCode))
         {
@@ -702,7 +738,8 @@ internal sealed class CatalogTemplateRepository : ICatalogTemplateRepository
         int take,
         CancellationToken cancellationToken = default,
         CatalogTemplateListSortBy sortBy = CatalogTemplateListSortBy.Name,
-        bool sortDescending = false)
+        bool sortDescending = false,
+        IReadOnlyCollection<Guid>? allowedPrimaryBusinessTypeIds = null)
     {
         var query = _db.CatalogTemplates.AsNoTracking().Include(t => t.Products).AsQueryable();
 
@@ -710,6 +747,19 @@ internal sealed class CatalogTemplateRepository : ICatalogTemplateRepository
         {
             var statusText = status.Value.ToString();
             query = query.Where(t => t.Status == statusText);
+        }
+
+        if (allowedPrimaryBusinessTypeIds is not null)
+        {
+            if (allowedPrimaryBusinessTypeIds.Count == 0)
+            {
+                query = query.Where(_ => false);
+            }
+            else
+            {
+                var allowed = allowedPrimaryBusinessTypeIds.ToArray();
+                query = query.Where(t => allowed.Contains(t.PrimaryBusinessTypeId));
+            }
         }
 
         Guid? resolvedId = primaryBusinessTypeId;

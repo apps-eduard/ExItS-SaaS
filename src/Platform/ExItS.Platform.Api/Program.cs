@@ -186,6 +186,11 @@ builder.Services.AddHostedService<CatalogImportBackgroundService>();
 
 builder.Services.AddScoped<OrganizationQueryService>();
 builder.Services.AddScoped<CreatePlatformOrganization>();
+builder.Services.AddScoped<IOrganizationBusinessTypeEntitlementResolver, OrganizationBusinessTypeEntitlementResolver>();
+builder.Services.AddScoped<MerchantCatalogEntitlementGate>();
+builder.Services.AddScoped<GetOrganizationBusinessTypeEntitlement>();
+builder.Services.AddScoped<ActivateOrganizationBusinessType>();
+builder.Services.AddScoped<DeactivateOrganizationBusinessType>();
 builder.Services.AddScoped<SuspendPlatformOrganization>();
 builder.Services.AddScoped<ReactivatePlatformOrganization>();
 builder.Services.AddScoped<ClosePlatformOrganization>();

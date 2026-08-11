@@ -44,7 +44,8 @@ public sealed class GlobalCategoryQueryService
         int? pageSize,
         CancellationToken cancellationToken = default,
         GlobalCategoryListSortBy sortBy = GlobalCategoryListSortBy.SortOrder,
-        bool sortDescending = false)
+        bool sortDescending = false,
+        IReadOnlyCollection<Guid>? allowedBusinessTypeIds = null)
     {
         var (skip, take) = CatalogPagination.Normalize(page, pageSize);
         var (items, total) = await _categories
@@ -58,7 +59,8 @@ public sealed class GlobalCategoryQueryService
                 take,
                 cancellationToken,
                 sortBy: sortBy,
-                sortDescending: sortDescending)
+                sortDescending: sortDescending,
+                allowedBusinessTypeIds: allowedBusinessTypeIds)
             .ConfigureAwait(false);
 
         var codes = await BusinessTypeResolver
@@ -112,7 +114,8 @@ public sealed class GlobalProductQueryService
         int? pageSize,
         CancellationToken cancellationToken = default,
         GlobalProductListSortBy sortBy = GlobalProductListSortBy.Name,
-        bool sortDescending = false)
+        bool sortDescending = false,
+        IReadOnlyCollection<Guid>? allowedBusinessTypeIds = null)
     {
         var (skip, take) = CatalogPagination.Normalize(page, pageSize);
         var (items, total) = await _products
@@ -128,7 +131,8 @@ public sealed class GlobalProductQueryService
                 take,
                 cancellationToken,
                 sortBy: sortBy,
-                sortDescending: sortDescending)
+                sortDescending: sortDescending,
+                allowedBusinessTypeIds: allowedBusinessTypeIds)
             .ConfigureAwait(false);
 
         var codes = await BusinessTypeResolver

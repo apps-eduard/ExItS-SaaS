@@ -428,9 +428,102 @@ internal static class OrganizationEndpoints
             return PlatformApiResults.FromResult(result, Results.Ok);
         });
 
+        organizations.MapGet("/{organizationId:guid}/business-type-entitlements", async (
+            Guid organizationId,
+            string? productCode,
+            GetOrganizationBusinessTypeEntitlement useCase,
+            PlatformOrganizationAuthz orgAuthz,
+            CancellationToken ct) =>
+        {
+            var denied = await orgAuthz.EnsureCanViewOrganizationAsync(organizationId, ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var result = await useCase.ExecuteAsync(organizationId, productCode, ct).ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
+        organizations.MapPost("/{organizationId:guid}/business-type-activations", async (
+            Guid organizationId,
+            ActivateOrganizationBusinessTypeRequest body,
+            ActivateOrganizationBusinessType useCase,
+            PlatformOrganizationAuthz orgAuthz,
+            PlatformAuthz authz,
+            CancellationToken ct) =>
+        {
+            var denied = await orgAuthz
+                .EnsureCanManageOrganizationCommercialAsync(
+                    organizationId,
+                    PlatformAuditActions.PlatformAccessChecked,
+                    ct)
+                .ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var result = await useCase
+                .ExecuteAsync(organizationId, body.BusinessTypeId, body.ProductCode, ct)
+                .ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                await authz.AuditSucceededAsync(
+                    PlatformAuditActions.PlatformAccessChecked,
+                    "OrganizationBusinessTypeActivation",
+                    $"{organizationId:D}:{body.BusinessTypeId:D}",
+                    organizationId,
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
+            return PlatformApiResults.FromResult(result, value => Results.Created(
+                $"/api/v1/platform/organizations/{organizationId:D}/business-type-activations/{body.BusinessTypeId:D}",
+                value));
+        });
+
+        organizations.MapDelete("/{organizationId:guid}/business-type-activations/{businessTypeId:guid}", async (
+            Guid organizationId,
+            Guid businessTypeId,
+            DeactivateOrganizationBusinessType useCase,
+            PlatformOrganizationAuthz orgAuthz,
+            PlatformAuthz authz,
+            CancellationToken ct) =>
+        {
+            var denied = await orgAuthz
+                .EnsureCanManageOrganizationCommercialAsync(
+                    organizationId,
+                    PlatformAuditActions.PlatformAccessChecked,
+                    ct)
+                .ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var result = await useCase.ExecuteAsync(organizationId, businessTypeId, ct).ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                await authz.AuditSucceededAsync(
+                    PlatformAuditActions.PlatformAccessChecked,
+                    "OrganizationBusinessTypeActivation",
+                    $"{organizationId:D}:{businessTypeId:D}",
+                    organizationId,
+                    cancellationToken: ct).ConfigureAwait(false);
+                return Results.NoContent();
+            }
+
+            return PlatformApiResults.Problem(
+                result.ErrorCode!,
+                result.ErrorMessage!,
+                PlatformApiResults.MapStatusCode(result.ErrorCode!));
+        });
+
         return app;
     }
 }
+
+internal sealed record ActivateOrganizationBusinessTypeRequest(Guid BusinessTypeId, string? ProductCode = null);
 
 internal sealed record CreateOrganizationRequest(string DisplayName, string Slug);
 

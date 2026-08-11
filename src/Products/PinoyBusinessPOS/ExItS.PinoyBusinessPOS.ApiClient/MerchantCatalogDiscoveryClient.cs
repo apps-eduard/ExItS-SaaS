@@ -23,11 +23,11 @@ public sealed class MerchantCatalogDiscoveryClient(IPosApiClient api) : IMerchan
         var path = new StringBuilder("/api/v1/catalog/templates?");
         path.Append("page=").Append(page.ToString(CultureInfo.InvariantCulture));
         path.Append("&pageSize=").Append(pageSize.ToString(CultureInfo.InvariantCulture));
-        AppendOptional(path, "businessType", businessType);
+        AppendOptional(path, "businessTypeCode", businessType);
         AppendOptional(path, "search", search);
         if (primaryBusinessTypeId is { } businessTypeId && businessTypeId != Guid.Empty)
         {
-            path.Append("&primaryBusinessTypeId=").Append(businessTypeId.ToString("D"));
+            path.Append("&businessTypeId=").Append(businessTypeId.ToString("D"));
         }
         return api.GetAsync<PlatformPagedResult<PlatformMerchantCatalogTemplateSummaryDto>>(path.ToString(), ct);
     }
@@ -51,7 +51,7 @@ public sealed class MerchantCatalogDiscoveryClient(IPosApiClient api) : IMerchan
         path.Append("page=").Append(page.ToString(CultureInfo.InvariantCulture));
         path.Append("&pageSize=").Append(pageSize.ToString(CultureInfo.InvariantCulture));
         AppendOptional(path, "q", search);
-        AppendOptional(path, "businessType", businessType);
+        AppendOptional(path, "businessTypeCode", businessType);
         AppendOptional(path, "barcode", barcode);
         AppendOptional(path, "sku", sku);
         if (categoryId is not null && categoryId.Value != Guid.Empty)
@@ -79,7 +79,7 @@ public sealed class MerchantCatalogDiscoveryClient(IPosApiClient api) : IMerchan
         path.Append("page=").Append(page.ToString(CultureInfo.InvariantCulture));
         path.Append("&pageSize=").Append(pageSize.ToString(CultureInfo.InvariantCulture));
         AppendOptional(path, "search", search);
-        AppendOptional(path, "businessType", businessType);
+        AppendOptional(path, "businessTypeCode", businessType);
         if (parentId is not null && parentId.Value != Guid.Empty)
         {
             path.Append("&parentId=").Append(parentId.Value.ToString("D"));

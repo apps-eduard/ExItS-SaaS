@@ -37,6 +37,11 @@ internal static class CommercialTestServices
         services.AddScoped<CreatePlatformOrganization>();
         services.AddScoped<SuspendPlatformOrganization>();
         services.AddScoped<OrganizationQueryService>();
+        services.AddScoped<IOrganizationBusinessTypeEntitlementResolver, OrganizationBusinessTypeEntitlementResolver>();
+        services.AddScoped<GetOrganizationBusinessTypeEntitlement>();
+        services.AddScoped<ActivateOrganizationBusinessType>();
+        services.AddScoped<DeactivateOrganizationBusinessType>();
+        services.AddScoped<MerchantCatalogEntitlementGate>();
 
         services.AddScoped<StartTrialSubscription>();
         services.AddScoped<ActivateSubscription>();

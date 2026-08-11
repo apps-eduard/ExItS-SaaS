@@ -39,7 +39,9 @@ internal static class PlatformApiResults
             or DomainErrorCodes.StaffCannotAccessUnrelatedPersonalRecords
             or ApplicationErrorCodes.UtangMigrationConsentRequired
             or ApplicationErrorCodes.StartBusinessOwnerRequired
-            or DomainErrorCodes.PersonalUtangMigrationConsentRequired => StatusCodes.Status403Forbidden,
+            or DomainErrorCodes.PersonalUtangMigrationConsentRequired
+            or ApplicationErrorCodes.BusinessTypeNotEntitled
+            or ApplicationErrorCodes.BusinessTypeInactive => StatusCodes.Status403Forbidden,
 
         ApplicationErrorCodes.LoginFailed
             or ApplicationErrorCodes.SessionInvalid
@@ -74,7 +76,8 @@ internal static class PlatformApiResults
             or ApplicationErrorCodes.BusinessCustomerNotFound
             or ApplicationErrorCodes.CreditCustomerNotFound
             or ApplicationErrorCodes.CustomerLinkRequestNotFound
-            or ApplicationErrorCodes.UtangMigrationBatchNotFound => StatusCodes.Status404NotFound,
+            or ApplicationErrorCodes.UtangMigrationBatchNotFound
+            or ApplicationErrorCodes.BusinessTypeActivationNotFound => StatusCodes.Status404NotFound,
 
         ApplicationErrorCodes.SlugConflict
             or ApplicationErrorCodes.EmailConflict

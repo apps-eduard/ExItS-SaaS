@@ -114,7 +114,7 @@ public sealed class PlatformMerchantCatalogClient(
 
         if (!string.IsNullOrWhiteSpace(businessType))
         {
-            query.Add($"businessType={Uri.EscapeDataString(businessType.Trim())}");
+            query.Add($"businessTypeCode={Uri.EscapeDataString(businessType.Trim())}");
         }
 
         if (!string.IsNullOrWhiteSpace(barcode))
@@ -165,7 +165,7 @@ public sealed class PlatformMerchantCatalogClient(
 
         if (!string.IsNullOrWhiteSpace(businessType))
         {
-            query.Add($"businessType={Uri.EscapeDataString(businessType.Trim())}");
+            query.Add($"businessTypeCode={Uri.EscapeDataString(businessType.Trim())}");
         }
 
         if (parentId is Guid pid)

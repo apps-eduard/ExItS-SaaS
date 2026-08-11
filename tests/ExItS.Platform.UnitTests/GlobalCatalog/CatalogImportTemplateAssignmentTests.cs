@@ -310,7 +310,8 @@ file sealed class TemplateAssignFakeTemplateRepository : ICatalogTemplateReposit
         int take,
         CancellationToken cancellationToken = default,
         CatalogTemplateListSortBy sortBy = CatalogTemplateListSortBy.Name,
-        bool sortDescending = false) =>
+        bool sortDescending = false,
+        IReadOnlyCollection<Guid>? allowedPrimaryBusinessTypeIds = null) =>
         Task.FromResult<(IReadOnlyList<CatalogTemplate>, int)>((_byId.Values.ToList(), _byId.Count));
 
     public Task AddAsync(CatalogTemplate template, CancellationToken cancellationToken = default)
@@ -387,7 +388,8 @@ file sealed class TemplateAssignFakeProductRepo : IGlobalProductRepository
         CancellationToken cancellationToken = default,
         IReadOnlyCollection<Guid>? excludeProductIds = null,
         GlobalProductListSortBy sortBy = GlobalProductListSortBy.Name,
-        bool sortDescending = false)
+        bool sortDescending = false,
+        IReadOnlyCollection<Guid>? allowedBusinessTypeIds = null)
     {
         IEnumerable<GlobalProduct> query = _existing.Concat(Added);
         if (!string.IsNullOrWhiteSpace(barcode))
@@ -449,7 +451,8 @@ file sealed class TemplateAssignFakeCategoryRepo : IGlobalCategoryRepository
         int take,
         CancellationToken cancellationToken = default,
         GlobalCategoryListSortBy sortBy = GlobalCategoryListSortBy.SortOrder,
-        bool sortDescending = false) =>
+        bool sortDescending = false,
+        IReadOnlyCollection<Guid>? allowedBusinessTypeIds = null) =>
         Task.FromResult<(IReadOnlyList<GlobalCategory>, int)>(([], 0));
 
     public Task UpdateAsync(GlobalCategory category, CancellationToken cancellationToken = default) =>

@@ -61,7 +61,8 @@ public interface IGlobalCategoryRepository
         int take,
         CancellationToken cancellationToken = default,
         GlobalCategoryListSortBy sortBy = GlobalCategoryListSortBy.SortOrder,
-        bool sortDescending = false);
+        bool sortDescending = false,
+        IReadOnlyCollection<Guid>? allowedBusinessTypeIds = null);
 
     Task<IReadOnlyList<GlobalCategory>> GetByIdsAsync(
         IReadOnlyCollection<Guid> ids,
@@ -102,7 +103,8 @@ public interface IGlobalProductRepository
         CancellationToken cancellationToken = default,
         IReadOnlyCollection<Guid>? excludeProductIds = null,
         GlobalProductListSortBy sortBy = GlobalProductListSortBy.Name,
-        bool sortDescending = false);
+        bool sortDescending = false,
+        IReadOnlyCollection<Guid>? allowedBusinessTypeIds = null);
 
     Task<IReadOnlyList<GlobalProduct>> GetByIdsAsync(
         IReadOnlyCollection<Guid> ids,
@@ -130,7 +132,8 @@ public interface ICatalogTemplateRepository
         int take,
         CancellationToken cancellationToken = default,
         CatalogTemplateListSortBy sortBy = CatalogTemplateListSortBy.Name,
-        bool sortDescending = false);
+        bool sortDescending = false,
+        IReadOnlyCollection<Guid>? allowedPrimaryBusinessTypeIds = null);
 
     Task AddAsync(CatalogTemplate template, CancellationToken cancellationToken = default);
     Task UpdateAsync(CatalogTemplate template, CancellationToken cancellationToken = default);

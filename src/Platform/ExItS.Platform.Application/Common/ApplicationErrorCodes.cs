@@ -21,6 +21,9 @@ public static class ApplicationErrorCodes
     public const string EntitlementMissing = "application.entitlement.missing";
     public const string EntitlementStale = "application.entitlement.stale";
     public const string EntitlementDenied = "application.entitlement.denied";
+    public const string BusinessTypeNotEntitled = "application.business_type.not_entitled";
+    public const string BusinessTypeInactive = "application.business_type.inactive";
+    public const string BusinessTypeActivationNotFound = "application.business_type_activation.not_found";
     public const string DomainViolation = "application.domain_violation";
 
     public const string ProductNotFound = "application.product.not_found";

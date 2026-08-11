@@ -41,7 +41,8 @@ public sealed class BusinessTypeQueryService
     }
 
     public async Task<IReadOnlyList<BusinessTypeDto>> ListActiveForMerchantsAsync(
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        IReadOnlyCollection<Guid>? allowedBusinessTypeIds = null)
     {
         var (items, _) = await _businessTypes
             .ListAsync(
@@ -52,6 +53,13 @@ public sealed class BusinessTypeQueryService
                 cancellationToken,
                 BusinessTypeListSortBy.SortOrder)
             .ConfigureAwait(false);
+
+        if (allowedBusinessTypeIds is not null)
+        {
+            var allowed = allowedBusinessTypeIds.ToHashSet();
+            items = items.Where(i => allowed.Contains(i.Id.Value)).ToList();
+        }
+
         return items.Select(GlobalCatalogDtoMaps.Map).ToList();
     }
 }
