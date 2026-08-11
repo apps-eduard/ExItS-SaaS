@@ -4,7 +4,7 @@
 
 | Field | Value |
 |---|---|
-| Status | **Open** — WP01 ✓ · WP02 ✓ · WP03 ✓ · WP04 ✓ · WP05 ✓ · WP06 ✓ · WP07 ✓ · WP08 ✓ · WP09 ✓ · WP10 ✓ · **WP10A Done** · WP11+ not started |
+| Status | **Open** — WP01 ✓ · WP02 ✓ · WP03 ✓ · WP04 ✓ · WP05 ✓ · WP06 ✓ · WP07 ✓ · WP08 ✓ · WP09 ✓ · WP10 ✓ · **WP10A Done** · **WP10B Done** · WP11+ not started |
 | Branch / HEAD at open | `main` @ `c03894f` (WP01 docs later @ `4e5cb99`) |
 | Physical device target | `R58R61E3CAZ` (validation not in WP01–WP03) |
 
@@ -182,6 +182,7 @@ Register → Personal → Start Business → plan + **required** Business Type �
 | **WP09** | Weighted-sale MAUI UX | **Done** — [P23-WP09](../reports/P23-WP09-weighted-sale-maui-ux.md) |
 | **WP10** | Today’s Prices workflow | **Done** — [P23-WP10](../reports/P23-WP10-todays-prices.md) |
 | **WP10A** | Philippine default Business Types & starter templates | **Done** — [P23-WP10A](../reports/P23-WP10A-philippine-default-business-types-and-templates.md) |
+| **WP10B** | POS commercial plan refresh (Starter/Growth/Pro + BT capacity) | **Done** — [P23-WP10B](../reports/P23-WP10B-pos-commercial-plan-refresh.md) |
 | **WP11** | Onboarding multi-BT entitlement UX | Activate allowed add-on types |
 | **WP12** | Regression/security/edge-case tests | Matrix below |
 | **WP13** | Documentation/closeout | Final report; no Device Verified claim |

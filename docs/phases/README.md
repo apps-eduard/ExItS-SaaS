@@ -27,4 +27,4 @@
 | 20 | Global Product Catalog and Business Template Onboarding | **Open** (Implementation → Validation Pending; not Device Verified) | [Open](phase-20-global-product-catalog-and-business-template-onboarding.md) |
 | 21 | Privacy, Compliance, and Regulatory Readiness | **Open** (Foundation Code Complete — readiness tooling; not legally compliant) | [Open](phase-21-privacy-compliance-and-regulatory-readiness.md) |
 | 22 | Production Readiness, Release & Operational Hardening | **Open** (In Progress; not Device Verified; not Production Ready) | [Open](phase-22-production-readiness-release-and-operational-hardening.md) |
-| 23 | Multi-Business Entitlements and Variable-Quantity Selling | **Open** (WP01–WP10A done; WP11+ not started; not Device Verified) | [Open](phase-23-multi-business-entitlements-and-variable-quantity-selling.md) |
+| 23 | Multi-Business Entitlements and Variable-Quantity Selling | **Open** (WP01–WP10B done; WP11+ not started; not Device Verified) | [Open](phase-23-multi-business-entitlements-and-variable-quantity-selling.md) |
