@@ -114,4 +114,4 @@ Merchant `GET /api/v1/catalog/business-types` returns effective types only, with
 
 ## Implementation commit hash
 
-_(filled after commit)_
+`e4bcac5345925d8992f77d98baa29e4e230cc0a9`
