@@ -69,6 +69,7 @@ Normalized kg is what goes into receipt_json and outbox snapshots.
 |---|---|
 | `WeightEntryTests` + `WeightedSaleCheckoutUiTests` + SalePage/ProductRow/Stock guards | **32** passed |
 | `WeightQuantitiesTests` | **8** passed |
+| Maui `net10.0-android` Release build | **Succeeded** after Dialog `ChildContent` + InitialKilograms pattern fix (RZ9996 / CS1073) |
 
 ## Migration / schema impact
 
@@ -91,3 +92,7 @@ Normalized kg is what goes into receipt_json and outbox snapshots.
 ## Implementation commit hash
 
 `a1f45719da4c3ffc9e2f231d71493f45e187740d`
+
+## Maui compile fix commit hash
+
+`1f19d884576810835e14414f28d3707ae16e9d0f` — Dialog `ChildContent` + `InitialKilograms` pattern rewrite (RZ9996 / CS1073).
