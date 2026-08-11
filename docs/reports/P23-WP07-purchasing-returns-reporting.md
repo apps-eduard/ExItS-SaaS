@@ -78,7 +78,7 @@ Soft gap: return-only product rows (no sale in range) default `SellingMode` to `
 
 ## Known gaps deferred (WP08+)
 
-- **WP08:** offline outbox / server sync must preserve immutable Quantity, Unit, SellingMode, UnitPriceSnapshot (no live-catalog re-price). Not fixed in WP07.
+- **WP08:** offline outbox / server sync must preserve immutable Quantity, Unit, SellingMode, UnitPriceSnapshot (no live-catalog re-price). — **done** ([P23-WP08](P23-WP08-offline-sale-snapshot-fidelity.md))
 - WP09 weighted MAUI checkout UX (kg/g keypad)
 - WP10 Today’s Prices; WP11 onboarding
 - Persisted SellingMode on return lines (optional; soft report gap only)

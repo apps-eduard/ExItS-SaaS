@@ -116,7 +116,7 @@ Quantity columns: **no schema migration required**; existing `numeric(18,3)` is 
 ## Known gaps deferred
 
 - WP07 purchasing / returns / reporting full ByWeight matrix — **done** ([P23-WP07](P23-WP07-purchasing-returns-reporting.md))
-- WP08 offline server price/qty snapshot fidelity
+- WP08 offline server price/qty snapshot fidelity — **done** ([P23-WP08](P23-WP08-offline-sale-snapshot-fidelity.md))
 - WP09 weighted MAUI cart entry (kg/g keypad)
 - WP10 Today’s Prices; WP11 onboarding
 - Amount→weight; scale hardware
