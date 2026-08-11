@@ -26,6 +26,7 @@ WP13+ **not started**. WP12 remains **in progress** until the remaining regressi
 | 5 | Online checkout + snapshots | High | Client could send trusted line snapshots without offline `SaleId` and undercharge vs live catalog. |
 | 6 | Platform Admin refresh/nav | **Critical** | Hard refresh on Organizations/Subscriptions showed API ProblemDetails title “An unexpected error occurred.”; Plans/Subscriptions navigation often collapsed sidebar to Dashboard-only until multiple refreshes. |
 | 7 | Platform Admin shell stuck + catalog Spin | **Critical** | After ae0fb73, Payments refresh left sidenav on Spin+Retry; Product Catalog (Business Types/Categories/Products/Imports) showed content Spin only; Test Payments showed unauthorized — shell `Loaded=false` blocked nav while pages that never called `Permissions.EnsureLoadedAsync()` never left Spin. |
+| 8 | Templates/Business Types refresh: header OK, sidenav Spin+Retry | **Critical** | Hard refresh on Templates/Business Types: header showed Platform Administration (shell Loaded) while sidenav stayed Spin+Retry; Templates also showed Result “An unexpected error occurred.” (API 500). |
 
 ## Fixes made
 
@@ -36,6 +37,7 @@ WP13+ **not started**. WP12 remains **in progress** until the remaining regressi
 5. **Trusted snapshots require `SaleId`** — online carts must omit snapshot fields; incomplete offline provenance rejected as `pos.sale.snapshot.invalid`.
 6. **Admin shell/nav/page mount hardening** — see section below.
 7. **Admin shell recovery + catalog permission load** — generation-safe shell loads; recover Platform/Org/Personal mode from `/authorization/me` when `/auth/me` fails; tolerant `AuthSessionInfoDto` (+ `Mfa`); catalog/Test Payments call `Permissions.EnsureLoadedAsync()`; AdminNav retries shell on navigation when not ready.
+8. **AdminNav/MainLayout shell Changed re-sync + Templates/BT mount** — see bug #8 section.
 
 ## Platform Admin refresh / navigation (bug #6)
 
@@ -86,6 +88,23 @@ Additional root causes:
 
 Fix commit stamps below include recovery via `/authorization/me` ActorType, generation-safe loads, MFA-tolerant session DTO, and explicit permission loads on those pages.
 
+### Follow-up (Templates / Business Types — bug #8)
+
+Observed after 82ac36f: hard refresh on Templates showed header **Platform Administration** (shell Loaded) while sidenav stayed **Spin+Retry**; Templates content showed API 500 ProblemDetails Result. Business Types same nav symptom.
+
+Root causes:
+
+1. **`AdminNav` `_ready` desync** — nav could finish an earlier failed `EnsureLoaded`/`Refresh` with `_ready=false`, then shell later became Loaded (MainLayout / page / recovery) without notifying nav. `Permissions.Changed` only called `StateHasChanged` and did **not** set `_ready=true`.
+2. **Templates page remount** — list loaded on every `OnParametersSetAsync` without `_pageReady` / load gate / initial table-change suppress (race class shared with Organizations).
+3. **Template list mapping** — `Enum.Parse` on Status/SelectionMode could fail the entire list; list now uses `TryToDomain` (skip corrupt rows) + case-insensitive parse.
+
+Exact fix:
+
+- `AdminShellContext.Changed` raised on successful/failed load and refresh start.
+- `AdminNav` / `MainLayout` subscribe and complete `_ready` / `_shellReady` when `Shell.Loaded` becomes true after an earlier failure.
+- Templates + Business Types: `Shell.EnsureLoadedAsync`, `_pageReady`, `_loadGate`, `_suppressInitialTableChange`.
+- Catalog template list: `TryToDomain` in repository list path.
+
 ### Legacy plan rows (WP10B secondary)
 
 Ensure path `EnsureMvpPosPlans` remaps active-like legacy subscriptions to Growth and **retires unused** `business` / `start-business-pos` / `local-validation-pos` (never hard-deletes subscription history). Screenshot rows labeled “Business” / “Start a Business POS Plan” are therefore either:
@@ -99,7 +118,7 @@ No destructive cleanup applied in this fix. Local DB audit deferred (container r
 
 | Suite | Result |
 |---|---|
-| `AdminShellRefreshHardeningTests` | **2** passed (shell retry + source guards) |
+| `AdminShellRefreshHardeningTests` | **3** passed (shell retry + Changed event + source guards) |
 | `AdminArchitectureGuardTests` (incl. Orgs/Plans/Subs suppress) | included in **17** passed filter with shell tests |
 | Admin Release build | succeeded |
 | Platform API Release build | succeeded |
