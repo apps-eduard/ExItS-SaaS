@@ -18,8 +18,9 @@ public sealed class CatalogImportWizardTests
     {
         var import = ReadCatalogPage("CatalogImport.razor");
 
-        Assert.Contains("_previewProducts = result.Data.Products", import, StringComparison.Ordinal);
-        Assert.Contains(".Where(p => p.IsFirstBatch)", import, StringComparison.Ordinal);
+        Assert.Contains("_previewProducts =", import, StringComparison.Ordinal);
+        Assert.Contains("p.IsFirstBatch", import, StringComparison.Ordinal);
+        Assert.Contains("ordered.Take(batchSize)", import, StringComparison.Ordinal);
         Assert.DoesNotContain("GetActiveProductAsync", import, StringComparison.Ordinal);
         Assert.Contains("CostPrice", import, StringComparison.Ordinal);
         Assert.Contains("SellingPrice", import, StringComparison.Ordinal);
@@ -211,6 +212,8 @@ public sealed class CatalogImportWizardTests
         Assert.Contains("Catalog_Import_GoToProducts", job, StringComparison.Ordinal);
         Assert.Contains("Nav.NavigateTo(\"/catalog\")", job, StringComparison.Ordinal);
         Assert.Contains("IsSuccessTerminal", job, StringComparison.Ordinal);
+        Assert.Contains("_job.ImportedCount <= 0", job, StringComparison.Ordinal);
+        Assert.Contains("Catalog_Import_ZeroImportedTitle", job, StringComparison.Ordinal);
         Assert.Contains("Task.Delay(1500", job, StringComparison.Ordinal);
         Assert.Contains("GoReview", job, StringComparison.Ordinal);
     }

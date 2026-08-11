@@ -15,6 +15,43 @@ public sealed class GetTemplateImportStatusTests
     private static readonly Guid NextB = Guid.Parse("44444444-4444-4444-4444-444444444444");
 
     [Fact]
+    public async Task Status_WhenNoFirstBatchFlags_UsesOrderedWindowAsFirstBatch()
+    {
+        var products = new MemoryProducts();
+        var template = new PlatformMerchantCatalogTemplateDto(
+            Id: TemplateId,
+            Name: "Bakery",
+            Slug: "bakery",
+            Description: null,
+            IconReference: null,
+            PrimaryBusinessType: "Bakery",
+            Status: "Published",
+            DefaultBatchSize: 2,
+            SelectionMode: "Curated",
+            PublishedAtUtc: DateTimeOffset.Parse("2026-08-01T00:00:00Z"),
+            ProductCount: 4,
+            FirstBatchCount: 0,
+            Products:
+            [
+                new(Guid.NewGuid(), FirstA, 1, false, false, "A"),
+                new(Guid.NewGuid(), FirstB, 2, false, false, "B"),
+                new(Guid.NewGuid(), NextA, 3, false, false, "C"),
+                new(Guid.NewGuid(), NextB, 4, false, false, "D")
+            ],
+            CreatedAtUtc: DateTimeOffset.Parse("2026-08-01T00:00:00Z"),
+            UpdatedAtUtc: DateTimeOffset.Parse("2026-08-01T00:00:00Z"));
+
+        var status = await new GetTemplateImportStatus(products, new FakePlatform(template))
+            .ExecuteAsync(Org.Value, TemplateId, platformSessionToken: null);
+
+        Assert.True(status.IsSuccess);
+        Assert.True(status.Value!.CanImportFirstBatch);
+        Assert.Equal(2, status.Value.FirstBatchTotal);
+        Assert.Equal(2, status.Value.SubsequentTotal);
+        Assert.False(status.Value.CanImportNextBatch);
+    }
+
+    [Fact]
     public async Task Status_WhenNothingImported_AllowsFirstBatchOnly()
     {
         var products = new MemoryProducts();

@@ -62,17 +62,31 @@ public sealed class PlatformMerchantCatalogClient(
         string? platformSessionToken,
         CancellationToken cancellationToken = default)
     {
-        var results = new List<PlatformMerchantGlobalProductDto>();
-        foreach (var id in productIds.Distinct())
+        var ids = productIds.Where(id => id != Guid.Empty).Distinct().ToArray();
+        if (ids.Length == 0)
         {
-            var product = await GetActiveProductAsync(id, platformSessionToken, cancellationToken).ConfigureAwait(false);
-            if (product is not null)
-            {
-                results.Add(product);
-            }
+            return [];
         }
 
-        return results;
+        var results = new System.Collections.Concurrent.ConcurrentBag<PlatformMerchantGlobalProductDto>();
+        await Parallel.ForEachAsync(
+                ids,
+                new ParallelOptions
+                {
+                    MaxDegreeOfParallelism = 8,
+                    CancellationToken = cancellationToken
+                },
+                async (id, ct) =>
+                {
+                    var product = await GetActiveProductAsync(id, platformSessionToken, ct).ConfigureAwait(false);
+                    if (product is not null)
+                    {
+                        results.Add(product);
+                    }
+                })
+            .ConfigureAwait(false);
+
+        return results.ToList();
     }
 
     public async Task<PagedResult<PlatformMerchantGlobalProductDto>> SearchActiveProductsAsync(

@@ -122,7 +122,7 @@ public sealed class GetTemplateImportStatus(
                 .GetPublishedTemplateAsync(platformTemplateId, platformSessionToken, cancellationToken)
                 .ConfigureAwait(false);
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        catch (Exception ex) when (ImportTemplateBatch.IsTransientPlatformFailure(ex, cancellationToken))
         {
             return ApplicationResult<PosTemplateImportStatusDto>.Failure(
                 ApplicationErrorCodes.CatalogImportPlatformUnavailable,
@@ -136,16 +136,33 @@ public sealed class GetTemplateImportStatus(
                 "Published template was not found.");
         }
 
-        var firstBatch = template.Products
+        var flaggedFirst = template.Products
             .Where(p => p.IsFirstBatch && p.GlobalProductId != Guid.Empty)
+            .OrderBy(p => p.SortOrder)
             .Select(p => p.GlobalProductId)
             .Distinct()
             .ToList();
-        var subsequent = template.Products
-            .Where(p => !p.IsFirstBatch && p.GlobalProductId != Guid.Empty)
+        var orderedIds = template.Products
+            .Where(p => p.GlobalProductId != Guid.Empty)
+            .OrderBy(p => p.SortOrder)
             .Select(p => p.GlobalProductId)
             .Distinct()
             .ToList();
+        var defaultBatchSize = Math.Max(1, template.DefaultBatchSize);
+
+        // Templates linked without IsFirstBatch flags still need a usable first batch window.
+        IReadOnlyList<Guid> firstBatch;
+        IReadOnlyList<Guid> subsequent;
+        if (flaggedFirst.Count > 0)
+        {
+            firstBatch = flaggedFirst;
+            subsequent = orderedIds.Where(id => !flaggedFirst.Contains(id)).ToList();
+        }
+        else
+        {
+            firstBatch = orderedIds.Take(defaultBatchSize).ToList();
+            subsequent = orderedIds.Skip(defaultBatchSize).ToList();
+        }
 
         var allIds = firstBatch.Concat(subsequent).Distinct().ToList();
         IReadOnlySet<Guid> already = allIds.Count == 0
@@ -162,7 +179,6 @@ public sealed class GetTemplateImportStatus(
         var subsequentRemaining = subsequent.Count - subsequentImported;
         var firstComplete = firstBatch.Count == 0 || firstImported >= firstBatch.Count;
         var hasSubsequent = subsequent.Count > 0;
-        var defaultBatchSize = Math.Max(1, template.DefaultBatchSize);
         var nextBatchEstimate = Math.Min(defaultBatchSize, Math.Max(0, subsequentRemaining));
 
         return ApplicationResult<PosTemplateImportStatusDto>.Success(new PosTemplateImportStatusDto(
@@ -251,7 +267,7 @@ public sealed class ImportTemplateBatch
                     .GetPublishedTemplateAsync(platformTemplateId, platformSessionToken, cancellationToken)
                     .ConfigureAwait(false);
             }
-            catch (Exception ex) when (ex is not OperationCanceledException)
+            catch (Exception ex) when (IsTransientPlatformFailure(ex, cancellationToken))
             {
                 return ApplicationResult<PosCatalogImportJobDto>.Failure(
                     ApplicationErrorCodes.CatalogImportPlatformUnavailable,
@@ -297,30 +313,51 @@ public sealed class ImportTemplateBatch
                     "All selected template products are already imported.");
             }
 
-            IReadOnlyList<PlatformMerchantGlobalProductDto> products;
-            try
-            {
-                products = await _platform
-                    .GetActiveProductsAsync(
-                        remaining.Select(r => r.GlobalProductId).ToList(),
-                        platformSessionToken,
-                        cancellationToken)
-                    .ConfigureAwait(false);
-            }
-            catch (Exception ex) when (ex is not OperationCanceledException)
-            {
-                return ApplicationResult<PosCatalogImportJobDto>.Failure(
-                    ApplicationErrorCodes.CatalogImportPlatformUnavailable,
-                    "Platform catalog is temporarily unavailable. Existing POS selling is unaffected.");
-            }
-
-            var byId = products.ToDictionary(p => p.Id);
+            // Prefer enriched template snapshots (same payload Preview already shows). Avoid N+1
+            // Platform product GETs that routinely exceed the MAUI 15s client timeout (HTTP 500 /
+            // "Service unavailable" when HttpClient timeouts bubble as OperationCanceledException).
             var items = new List<CatalogImportItemResult>();
+            var needingLiveFetch = new List<PlatformMerchantCatalogTemplateProductDto>();
             var sort = 0;
             foreach (var link in remaining.OrderBy(r => r.SortOrder))
             {
-                if (byId.TryGetValue(link.GlobalProductId, out var product))
+                if (TryCreatePendingFromTemplateLink(link, sort, out var snapshot))
                 {
+                    items.Add(snapshot!);
+                    sort++;
+                    continue;
+                }
+
+                needingLiveFetch.Add(link);
+            }
+
+            if (needingLiveFetch.Count > 0)
+            {
+                IReadOnlyList<PlatformMerchantGlobalProductDto> products;
+                try
+                {
+                    products = await _platform
+                        .GetActiveProductsAsync(
+                            needingLiveFetch.Select(r => r.GlobalProductId).ToList(),
+                            platformSessionToken,
+                            cancellationToken)
+                        .ConfigureAwait(false);
+                }
+                catch (Exception ex) when (IsTransientPlatformFailure(ex, cancellationToken))
+                {
+                    return ApplicationResult<PosCatalogImportJobDto>.Failure(
+                        ApplicationErrorCodes.CatalogImportPlatformUnavailable,
+                        "Platform catalog is temporarily unavailable. Existing POS selling is unaffected.");
+                }
+
+                var byId = products.ToDictionary(p => p.Id);
+                foreach (var link in needingLiveFetch.OrderBy(r => r.SortOrder))
+                {
+                    if (!byId.TryGetValue(link.GlobalProductId, out var product))
+                    {
+                        continue;
+                    }
+
                     items.Add(CatalogImportItemResult.CreatePending(
                         product.Id,
                         sort++,
@@ -332,14 +369,6 @@ public sealed class ImportTemplateBatch
                         product.Barcode,
                         product.GlobalCategoryId ?? link.CategoryId,
                         sourceCategoryName: FirstNonBlank(link.CategoryName)));
-                    continue;
-                }
-
-                // Fall back to enriched template snapshot when live product GET misses an active row.
-                if (TryCreatePendingFromTemplateLink(link, sort, out var snapshot))
-                {
-                    items.Add(snapshot!);
-                    sort++;
                 }
             }
 
@@ -379,12 +408,30 @@ public sealed class ImportTemplateBatch
         PlatformMerchantCatalogTemplateDto template,
         int batchNumber)
     {
+        var ordered = template.Products
+            .Where(p => p.GlobalProductId != Guid.Empty)
+            .OrderBy(p => p.SortOrder)
+            .ToList();
+        var flaggedFirst = ordered.Where(p => p.IsFirstBatch).ToList();
+        var batchSize = Math.Max(1, template.DefaultBatchSize);
+
         if (batchNumber <= 1)
         {
-            return template.Products.Where(p => p.IsFirstBatch).OrderBy(p => p.SortOrder).ToList();
+            if (flaggedFirst.Count > 0)
+            {
+                return flaggedFirst;
+            }
+
+            // No IsFirstBatch flags (common after CSV→template link): import a usable first window.
+            return ordered.Take(batchSize).ToList();
         }
 
-        return template.Products.Where(p => !p.IsFirstBatch).OrderBy(p => p.SortOrder).ToList();
+        if (flaggedFirst.Count > 0)
+        {
+            return ordered.Where(p => !p.IsFirstBatch).ToList();
+        }
+
+        return ordered.Skip(batchSize).ToList();
     }
 
     private static bool TryCreatePendingFromTemplateLink(
@@ -416,6 +463,14 @@ public sealed class ImportTemplateBatch
 
     private static string? FirstNonBlank(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    /// <summary>
+    /// HttpClient timeouts raise <see cref="TaskCanceledException"/> (an
+    /// <see cref="OperationCanceledException"/>) even when the request token is still open.
+    /// Those must map to a controlled failure — not an unhandled 500.
+    /// </summary>
+    public static bool IsTransientPlatformFailure(Exception ex, CancellationToken cancellationToken) =>
+        ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested;
 }
 
 public sealed class ImportSelectedProducts
@@ -478,7 +533,7 @@ public sealed class ImportSelectedProducts
                     .GetActiveProductsAsync(ids, platformSessionToken, cancellationToken)
                     .ConfigureAwait(false);
             }
-            catch (Exception ex) when (ex is not OperationCanceledException)
+            catch (Exception ex) when (ImportTemplateBatch.IsTransientPlatformFailure(ex, cancellationToken))
             {
                 return ApplicationResult<PosCatalogImportJobDto>.Failure(
                     ApplicationErrorCodes.CatalogImportPlatformUnavailable,
@@ -722,12 +777,25 @@ public sealed class ProcessPosCatalogImportChunk
             try
             {
                 (_, normalizedSku) = CatalogProduct.NormalizeOptionalSku(item.Sku);
-                barcode = CatalogProduct.NormalizeOptionalBarcode(item.Barcode);
             }
             catch (DomainException ex)
             {
                 item.MarkFailed(ex.ErrorCode, ex.Message, now);
                 return;
+            }
+
+            try
+            {
+                barcode = CatalogProduct.NormalizeOptionalBarcode(item.Barcode);
+            }
+            catch (DomainException ex) when (string.Equals(
+                ex.ErrorCode,
+                DomainErrorCodes.InvalidProductBarcode,
+                StringComparison.Ordinal))
+            {
+                // Defensive: legacy Platform snapshots may still carry non-GS1 text.
+                // Do not persist invalid barcodes; import without a POS barcode.
+                barcode = null;
             }
 
             var conflict = await CatalogAssignment

@@ -1,4 +1,5 @@
 @page "/catalog/import"
+@layout Layout.AuthShell
 @using ExItS.DesignSystem.Components.Internal
 @inject NavigationManager Nav
 @inject NavigationGate Gate
@@ -624,21 +625,27 @@ else
             _selected = result.Data;
             var status = StatusFor(templateId);
             _importingNextBatch = status?.CanImportNextBatch == true;
+            var batchSize = Math.Max(1, status?.DefaultBatchSize ?? result.Data.DefaultBatchSize);
+            var ordered = result.Data.Products
+                .Where(p => p.GlobalProductId != Guid.Empty)
+                .OrderBy(p => p.SortOrder)
+                .ToList();
+            var flaggedFirst = ordered.Where(p => p.IsFirstBatch).ToList();
             if (_importingNextBatch)
             {
-                var take = Math.Max(1, status?.DefaultBatchSize ?? result.Data.DefaultBatchSize);
-                _previewProducts = result.Data.Products
-                    .Where(p => !p.IsFirstBatch)
-                    .OrderBy(p => p.SortOrder)
-                    .Take(take)
-                    .ToList();
+                var take = batchSize;
+                _previewProducts = flaggedFirst.Count > 0
+                    ? ordered.Where(p => !p.IsFirstBatch).Take(take).ToList()
+                    : ordered.Skip(batchSize).Take(take).ToList();
+            }
+            else if (flaggedFirst.Count > 0)
+            {
+                _previewProducts = flaggedFirst;
             }
             else
             {
-                _previewProducts = result.Data.Products
-                    .Where(p => p.IsFirstBatch)
-                    .OrderBy(p => p.SortOrder)
-                    .ToList();
+                // CSV→template links often omit IsFirstBatch; still preview a usable first window.
+                _previewProducts = ordered.Take(batchSize).ToList();
             }
 
             _unavailableCount = _previewProducts.Count(IsUnavailable);

@@ -19,6 +19,16 @@ public sealed class ApiStatusLocalizer(
     {
         var diagnostic = string.IsNullOrWhiteSpace(error?.ErrorCode) ? null : error.ErrorCode;
 
+        if (!string.IsNullOrWhiteSpace(error?.ErrorCode)
+            && error.ErrorCode.StartsWith("pos.catalog_import.", StringComparison.OrdinalIgnoreCase)
+            && status is not ApiCallStatus.Success)
+        {
+            return (
+                PreferText(error.Title, errors["Unexpected_Title"]),
+                PreferText(error.Detail, design["Error_DefaultMessage"]),
+                diagnostic);
+        }
+
         return status switch
         {
             ApiCallStatus.Success => (pos["Api_Available"], pos["Home_ApiHealthy"], diagnostic),
@@ -46,15 +56,6 @@ public sealed class ApiStatusLocalizer(
             || string.Equals(error?.ErrorCode, "pos.inventory.insufficient_stock", StringComparison.Ordinal))
         {
             return (pos["Inventory_InsufficientStockTitle"], pos["Inventory_InsufficientStockMessage"], diagnostic);
-        }
-
-        if (!string.IsNullOrWhiteSpace(error?.ErrorCode)
-            && error.ErrorCode.StartsWith("pos.catalog_import.", StringComparison.OrdinalIgnoreCase))
-        {
-            return (
-                PreferText(error.Title, errors["Unexpected_Title"]),
-                PreferText(error.Detail, design["Error_DefaultMessage"]),
-                diagnostic);
         }
 
         return (errors["Unexpected_Title"], design["Error_DefaultMessage"], diagnostic);

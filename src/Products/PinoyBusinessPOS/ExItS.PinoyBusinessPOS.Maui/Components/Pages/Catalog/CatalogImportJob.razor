@@ -100,6 +100,12 @@ else
                 {
                     <Alert Tone="AlertTone.Warning" Title="@L["Catalog_Import_WarningsTitle"]" Message="@_job.ErrorSummary" />
                 }
+                @if (successTerminal && _job.ImportedCount <= 0)
+                {
+                    <Alert Tone="AlertTone.Warning"
+                           Title="@L["Catalog_Import_ZeroImportedTitle"]"
+                           Message="@L["Catalog_Import_ZeroImportedMessage"]" />
+                }
                 @if (!terminal)
                 {
                     <div class="pos-catalog-import-job__polling">
@@ -243,7 +249,10 @@ else
 
     private void ScheduleAutoNavigateIfNeeded()
     {
-        if (_job is null || !IsSuccessTerminal(_job.Status) || _autoNavigateScheduled)
+        if (_job is null
+            || !IsSuccessTerminal(_job.Status)
+            || _job.ImportedCount <= 0
+            || _autoNavigateScheduled)
         {
             return;
         }
