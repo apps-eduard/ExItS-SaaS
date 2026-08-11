@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using System.Text.RegularExpressions;
 using ExItS.Platform.Domain.Common;
 
 namespace ExItS.Platform.Domain.GlobalCatalog;
@@ -28,7 +29,7 @@ public static class CatalogImportCsvSchema
     public const string BusinessTypes = "BusinessTypes";
     public const string Status = "Status";
 
-    /// <summary>Required header names in the exact import order.</summary>
+    /// <summary>Required header names in the exact import order (canonical, without markers).</summary>
     public static readonly IReadOnlyList<string> RequiredColumns =
     [
         ProductName,
@@ -46,12 +47,61 @@ public static class CatalogImportCsvSchema
         Status
     ];
 
+    /// <summary>
+    /// Columns whose cell values are required for a successful product import row.
+    /// Other columns must still appear as headers but may be blank.
+    /// </summary>
+    public static readonly IReadOnlySet<string> RequiredValueColumns =
+        new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ProductName,
+            Category,
+            Brand,
+            Unit,
+            SuggestedSku,
+            SellingPrice,
+            CostPrice
+        };
+
     public static readonly IReadOnlySet<string> RequiredColumnSet =
         new HashSet<string>(RequiredColumns, StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
+    /// Strips download-template markers such as trailing <c>*</c> or
+    /// <c>(required)</c>/<c>(optional)</c> so uploads remain compatible.
+    /// </summary>
+    public static string NormalizeHeaderName(string? header)
+    {
+        if (string.IsNullOrWhiteSpace(header))
+        {
+            return string.Empty;
+        }
+
+        var trimmed = header.Trim();
+        while (trimmed.EndsWith('*'))
+        {
+            trimmed = trimmed[..^1].TrimEnd();
+        }
+
+        trimmed = Regex.Replace(
+            trimmed,
+            @"\s*\((required|optional)\)\s*$",
+            string.Empty,
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
+        return trimmed.Trim();
+    }
+
+    /// <summary>Download headers: required-value columns marked with a trailing asterisk.</summary>
+    public static IReadOnlyList<string> TemplateDownloadHeaders =>
+        RequiredColumns
+            .Select(c => RequiredValueColumns.Contains(c) ? c + "*" : c)
+            .ToList();
+
+    /// <summary>
     /// Validates uploaded headers against <see cref="RequiredColumns"/>.
     /// Fails on missing, unknown, duplicate, or out-of-order headers.
+    /// Download markers (<c>*</c>, <c>(required)</c>, <c>(optional)</c>) are accepted.
     /// </summary>
     public static void ValidateHeaders(IReadOnlyList<string> headers)
     {
@@ -63,7 +113,7 @@ public static class CatalogImportCsvSchema
         }
 
         var trimmed = headers
-            .Select(h => (h ?? string.Empty).Trim())
+            .Select(h => NormalizeHeaderName(h))
             .ToList();
 
         var emptyIndexes = trimmed
@@ -150,19 +200,20 @@ public static class CatalogImportCsvSchema
     }
 
     /// <summary>
-    /// Header row plus three clearly marked sample rows.
+    /// Header row (required-value columns marked with <c>*</c>) plus three sample rows.
     /// Multi-value fields use <see cref="MultiValueSeparator"/>; decimals use invariant culture.
+    /// Barcode samples use valid GS1 digits; one sample leaves Barcode blank (optional).
     /// </summary>
     public static string GenerateTemplateCsv()
     {
         var sb = new StringBuilder();
-        sb.AppendLine(string.Join(',', RequiredColumns.Select(EscapeCsvField)));
+        sb.AppendLine(string.Join(',', TemplateDownloadHeaders.Select(EscapeCsvField)));
 
         AppendSampleRow(
             sb,
             productName: "SAMPLE Soft Drink 320ml",
             category: "Beverages",
-            description: "Carbonated soft drink can — replace or delete this sample row",
+            description: "Carbonated soft drink can — replace or delete this sample row. Barcode is optional GS1 digits (8-14) with check digit; put codes like BAKERY000001 in SuggestedSku.",
             brand: "SampleBrand",
             unit: nameof(ProductUnit.Can),
             barcode: GlobalCatalogBarcodeChecksum.WithCheckDigit("480001000000"),
@@ -178,7 +229,7 @@ public static class CatalogImportCsvSchema
             sb,
             productName: "SAMPLE Crackers 10s",
             category: "Snacks",
-            description: "Crackers multipack — replace or delete this sample row",
+            description: "Crackers multipack — replace or delete this sample row. Columns marked * in the header require a value.",
             brand: "SampleBrand",
             unit: nameof(ProductUnit.Pack),
             barcode: GlobalCatalogBarcodeChecksum.WithCheckDigit("480001000001"),
@@ -194,11 +245,11 @@ public static class CatalogImportCsvSchema
             sb,
             productName: "SAMPLE Pandesal Pack",
             category: "Bakery",
-            description: "Fresh bread pack — replace or delete this sample row",
+            description: "Fresh bread pack — replace or delete this sample row. Blank Barcode is valid; SKU holds the merchant code.",
             brand: "SampleBakery",
             unit: nameof(ProductUnit.Pack),
-            barcode: GlobalCatalogBarcodeChecksum.WithCheckDigit("480001000002"),
-            sku: "SAMPLE-PS-12",
+            barcode: string.Empty,
+            sku: "BAKERY000001",
             sellingPrice: 35.75m,
             costPrice: 22.00m,
             taxHint: "VAT-EXEMPT",

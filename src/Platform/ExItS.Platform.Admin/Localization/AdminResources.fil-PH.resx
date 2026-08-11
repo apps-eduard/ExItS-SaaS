@@ -872,6 +872,7 @@
   <data name="Activate_PasswordMismatch" xml:space="preserve"><value>Hindi tugma ang mga password.</value></data>
   <data name="Status_PendingVerification" xml:space="preserve"><value>Pending Verification</value></data>
   <data name="Login_InvalidCredentials" xml:space="preserve"><value>Mali ang username/email o password.</value></data>
+  <data name="Login_SessionExpired" xml:space="preserve"><value>Nag-expire na ang iyong session. Mag-sign in ulit.</value></data>
   <data name="Login_LocalValidationTitle" xml:space="preserve"><value>Local Validation identities</value></data>
   <data name="Login_LocalValidationHint" xml:space="preserve"><value>Pumili ng approved identity. Ang sign-in ay normal Platform credential login sa server (hindi ipinapakita ang password sa browser).</value></data>
   <data name="Login_LocalValidationSelect" xml:space="preserve"><value>Mag-sign in bilang…</value></data>
@@ -1079,8 +1080,8 @@
   <data name="GlobalImports_DownloadTemplate" xml:space="preserve"><value>I-download ang CSV Template</value></data>
   <data name="GlobalImports_DownloadTemplateSucceeded" xml:space="preserve"><value>Na-download ang CSV template.</value></data>
   <data name="GlobalImports_DownloadTemplateFailed" xml:space="preserve"><value>Hindi ma-download ang CSV template.</value></data>
-  <data name="GlobalImports_TemplateHint" xml:space="preserve"><value>CSV columns (eksaktong order): ProductName, Category, Description, Brand, Unit, Barcode, SuggestedSku, SellingPrice, CostPrice, TaxHint, Tags, BusinessTypes, Status. Multi-value Tags/BusinessTypes gumamit ng |. Decimals: invariant (25.50). Max 5 MB / 5000 rows.</value></data>
-  <data name="GlobalImports_TemplateInstructions" xml:space="preserve"><value>1) I-download ang CSV template. 2) Huwag baguhin ang header names. 3) Alisin o palitan ang SAMPLE rows. 4) I-save bilang CSV UTF-8. 5) I-upload para sa validation at preview. 6) Hindi magsisimula ang import hanggang sa i-click ang Confirm. Gumamit ng | para sa Tags at BusinessTypes. Decimals: invariant (hal. 25.50).</value></data>
+  <data name="GlobalImports_TemplateHint" xml:space="preserve"><value>Columns na may *: kailangan ang value — ProductName, Category, Brand, Unit, SuggestedSku, SellingPrice, CostPrice. Opsyonal: Description, Barcode (GS1 digits 8–14 + check digit kung may laman; gamitin ang SuggestedSku para sa code tulad ng BAKERY000001), TaxHint, Tags, BusinessTypes, Status (blank = Draft). Panatilihin ang order ng headers. Tags/BusinessTypes: |. Decimals: 25.50. Max 5 MB / 5000 rows.</value></data>
+  <data name="GlobalImports_TemplateInstructions" xml:space="preserve"><value>1) I-download ang CSV template. 2) Panatilihin ang header names (* = required value; puwedeng iwan o tanggalin ang *). 3) Punan ang required (*) columns; iwanang blank ang optional kung hindi gagamitin. 4) Opsyonal ang Barcode — digits lang na may valid GS1 check digit; ilagay ang merchant code sa SuggestedSku. 5) Alisin o palitan ang SAMPLE rows. 6) I-save bilang CSV UTF-8 at i-upload. 7) Magsisimula ang import pagkatapos ng Confirm.</value></data>
   <data name="GlobalImports_FileName" xml:space="preserve"><value>File</value></data>
   <data name="GlobalImports_Total" xml:space="preserve"><value>Kabuuan</value></data>
   <data name="GlobalImports_Processed" xml:space="preserve"><value>Naproseso</value></data>

@@ -37,6 +37,7 @@ else if (Id is null)
         <FormValidationSummary Title="@L["GlobalImports_UploadFailed"]" Message="@_uploadError" IsConflict="false" />
         <Space Direction="SpaceDirection.Vertical" Style="width:100%; max-width:720px;">
             <Alert Type="@AlertType.Info" ShowIcon="true" Message="@L["GlobalImports_TemplateInstructions"]" />
+            <Alert Type="@AlertType.Info" ShowIcon="true" Message="@L["GlobalImports_TemplateHint"]" />
             <Space>
                 <Button Size="@ButtonSize.Small" Loading="_downloadBusy" OnClick="DownloadTemplateAsync">
                     @L["GlobalImports_DownloadTemplate"]

@@ -101,8 +101,35 @@ public sealed class CatalogImportCsvSchemaTests
         Assert.Equal(CatalogImportCsvSchema.RequiredColumns.Count, headers.Count);
         for (var i = 0; i < CatalogImportCsvSchema.RequiredColumns.Count; i++)
         {
-            Assert.Equal(CatalogImportCsvSchema.RequiredColumns[i], headers[i]);
+            var expected = CatalogImportCsvSchema.TemplateDownloadHeaders[i];
+            Assert.Equal(expected, headers[i]);
+            Assert.Equal(
+                CatalogImportCsvSchema.RequiredColumns[i],
+                CatalogImportCsvSchema.NormalizeHeaderName(headers[i]));
         }
+
+        Assert.Contains("ProductName*", headers);
+        Assert.Contains("Barcode", headers);
+        Assert.DoesNotContain("Barcode*", headers);
+    }
+
+    [Fact]
+    public void ValidateHeaders_accepts_download_template_asterisk_markers()
+    {
+        CatalogImportCsvSchema.ValidateHeaders(CatalogImportCsvSchema.TemplateDownloadHeaders);
+    }
+
+    [Fact]
+    public void Template_marks_required_value_columns_and_leaves_optional_unmarked()
+    {
+        foreach (var column in CatalogImportCsvSchema.RequiredValueColumns)
+        {
+            Assert.Contains(column, CatalogImportCsvSchema.RequiredColumns);
+        }
+
+        Assert.False(CatalogImportCsvSchema.RequiredValueColumns.Contains(CatalogImportCsvSchema.Barcode));
+        Assert.False(CatalogImportCsvSchema.RequiredValueColumns.Contains(CatalogImportCsvSchema.Description));
+        Assert.True(CatalogImportCsvSchema.RequiredValueColumns.Contains(CatalogImportCsvSchema.SuggestedSku));
     }
 
     [Fact]
@@ -123,6 +150,9 @@ public sealed class CatalogImportCsvSchemaTests
         Assert.Equal("25.50", rows[0].Cells[CatalogImportCsvSchema.SellingPrice]);
         Assert.Contains('|', rows[0].Cells[CatalogImportCsvSchema.Tags]);
         Assert.Contains('|', rows[0].Cells[CatalogImportCsvSchema.BusinessTypes]);
+        Assert.False(string.IsNullOrWhiteSpace(rows[0].Cells[CatalogImportCsvSchema.Barcode]));
+        Assert.True(string.IsNullOrWhiteSpace(rows[2].Cells[CatalogImportCsvSchema.Barcode]));
+        Assert.Equal("BAKERY000001", rows[2].Cells[CatalogImportCsvSchema.SuggestedSku]);
     }
 
     [Fact]

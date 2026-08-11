@@ -873,6 +873,7 @@
   <data name="Status_PendingVerification" xml:space="preserve"><value>Pending Verification</value></data>
 
   <data name="Login_InvalidCredentials" xml:space="preserve"><value>Invalid username/email or password.</value></data>
+  <data name="Login_SessionExpired" xml:space="preserve"><value>Your session has expired. Please sign in again.</value></data>
   <data name="Login_LocalValidationTitle" xml:space="preserve"><value>Local Validation identities</value></data>
   <data name="Login_LocalValidationHint" xml:space="preserve"><value>Choose an approved identity. Sign-in uses normal Platform credential login on the server (password is not shown in the browser).</value></data>
   <data name="Login_LocalValidationSelect" xml:space="preserve"><value>Sign in as…</value></data>
@@ -1080,8 +1081,8 @@
   <data name="GlobalImports_DownloadTemplate" xml:space="preserve"><value>Download CSV Template</value></data>
   <data name="GlobalImports_DownloadTemplateSucceeded" xml:space="preserve"><value>CSV template downloaded.</value></data>
   <data name="GlobalImports_DownloadTemplateFailed" xml:space="preserve"><value>Could not download the CSV template.</value></data>
-  <data name="GlobalImports_TemplateHint" xml:space="preserve"><value>CSV columns (exact order): ProductName, Category, Description, Brand, Unit, Barcode, SuggestedSku, SellingPrice, CostPrice, TaxHint, Tags, BusinessTypes, Status. Multi-value Tags/BusinessTypes use |. Decimals use invariant form (25.50). Max 5 MB / 5000 rows.</value></data>
-  <data name="GlobalImports_TemplateInstructions" xml:space="preserve"><value>1) Download the CSV template. 2) Keep header names unchanged. 3) Remove or replace the SAMPLE rows. 4) Save as CSV UTF-8. 5) Upload for validation and preview. 6) Import does not begin until you click Confirm. Tags and BusinessTypes use | as the multi-value separator. Decimals must use invariant form (example: 25.50).</value></data>
+  <data name="GlobalImports_TemplateHint" xml:space="preserve"><value>Columns marked * require a cell value: ProductName, Category, Brand, Unit, SuggestedSku, SellingPrice, CostPrice. Optional: Description, Barcode (GS1 digits 8–14 with check digit when present; use SuggestedSku for codes like BAKERY000001), TaxHint, Tags, BusinessTypes, Status (blank = Draft). Keep header order. Multi-value Tags/BusinessTypes use |. Decimals: 25.50. Max 5 MB / 5000 rows.</value></data>
+  <data name="GlobalImports_TemplateInstructions" xml:space="preserve"><value>1) Download the CSV template. 2) Keep header names (the trailing * marks required values; you may leave * in place or remove it). 3) Fill required (*) columns; leave optional columns blank when unused. 4) Barcode is optional — digits only with a valid GS1 check digit; put merchant codes in SuggestedSku. 5) Remove or replace the SAMPLE rows. 6) Save as CSV UTF-8 and upload. 7) Import starts only after Confirm.</value></data>
   <data name="GlobalImports_FileName" xml:space="preserve"><value>File</value></data>
   <data name="GlobalImports_Total" xml:space="preserve"><value>Total</value></data>
   <data name="GlobalImports_Processed" xml:space="preserve"><value>Processed</value></data>

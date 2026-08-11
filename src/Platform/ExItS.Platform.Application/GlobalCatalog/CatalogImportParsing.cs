@@ -778,7 +778,7 @@ public static class CatalogImportCsvParser
             var cells = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             for (var i = 0; i < headers.Count; i++)
             {
-                var header = headers[i].Trim();
+                var header = CatalogImportCsvSchema.NormalizeHeaderName(headers[i]);
                 if (string.IsNullOrWhiteSpace(header))
                 {
                     continue;
