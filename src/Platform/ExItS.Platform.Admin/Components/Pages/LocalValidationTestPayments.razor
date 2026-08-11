@@ -8,7 +8,11 @@
 @inject PlatformPermissionState Permissions
 @inject LocalValidationSignInService LocalValidation
 
-@if (!LocalValidation.IsAvailable)
+@if (!Permissions.Loaded)
+{
+    <div style="padding:2rem;text-align:center;"><Spin Tip="@L["Common_Loading"]" /></div>
+}
+else if (!LocalValidation.IsAvailable)
 {
     <Result Status="@ResultStatus.Warning" Title="Not available" SubTitle="Test payments are only available when Local Validation is enabled (non-Production)." />
 }
@@ -74,6 +78,11 @@ else
     [
         "Succeeded", "Declined", "Pending", "Failed", "RenewalSucceeded", "RenewalFailed", "Refunded"
     ];
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await Permissions.EnsureLoadedAsync();
+    }
 
     private async Task SimulateAsync()
     {

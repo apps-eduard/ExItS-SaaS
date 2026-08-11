@@ -309,6 +309,7 @@ else
     protected override async Task OnParametersSetAsync()
     {
         StopPolling();
+        await Permissions.EnsureLoadedAsync();
         if (!Permissions.Loaded || !CanImport)
         {
             return;

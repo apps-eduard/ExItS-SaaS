@@ -32,6 +32,7 @@ public sealed class AdminShellContext(
 {
     private readonly object _gate = new();
     private Task? _loadTask;
+    private int _loadGeneration;
 
     public bool Loaded { get; private set; }
     public AdminShellMode Mode { get; private set; } = AdminShellMode.Limited;
@@ -61,7 +62,7 @@ public sealed class AdminShellContext(
                 return _loadTask;
             }
 
-            _loadTask = LoadAsync();
+            _loadTask = StartLoadLocked();
             return _loadTask;
         }
     }
@@ -72,33 +73,40 @@ public sealed class AdminShellContext(
         lock (_gate)
         {
             Loaded = false;
-            _loadTask = LoadAsync();
+            _loadTask = StartLoadLocked();
             load = _loadTask;
         }
 
         await load;
     }
 
-    private async Task LoadAsync()
+    private Task StartLoadLocked()
+    {
+        var generation = ++_loadGeneration;
+        return LoadAsync(generation);
+    }
+
+    private async Task LoadAsync(int generation)
     {
         try
         {
-            await LoadCoreAsync();
+            await LoadCoreAsync(generation);
         }
         catch
         {
-            Mode = AdminShellMode.Limited;
-            Loaded = false;
-            lock (_gate)
+            if (!IsCurrentGeneration(generation))
             {
-                _loadTask = null;
+                return;
             }
 
+            Mode = AdminShellMode.Limited;
+            Loaded = false;
+            ClearTaskIfCurrent(generation);
             throw;
         }
     }
 
-    private async Task LoadCoreAsync()
+    private async Task LoadCoreAsync(int generation)
     {
         // Blazor circuit-scoped: keep awaits on the sync context when mutating shell state.
         string? displayName = null;
@@ -111,38 +119,51 @@ public sealed class AdminShellContext(
         string? allowedScope = null;
 
         var me = await api.GetAuthMeAsync();
-        if (!me.IsSuccess || me.Data is null)
+        if (!IsCurrentGeneration(generation))
         {
-            // Do NOT cache Limited forever and do NOT poison PlatformPermissionState with a
-            // NonPlatform empty load — that collapses AdminNav to Dashboard-only after hard refresh
-            // when auth/me races the circuit session token.
-            Mode = AdminShellMode.Limited;
-            RoleLabel = "Signed in";
-            Loaded = false;
-            lock (_gate)
-            {
-                _loadTask = null;
-            }
-
             return;
         }
 
-        displayName = me.Data.DisplayName;
-        username = me.Data.Username;
-        selectedOrgId = me.Data.SelectedOrganizationId;
-        selectedOrgName = me.Data.SelectedOrganizationDisplayName;
-        orgCount = me.Data.ActiveOrganizationCount;
-        accountClass = me.Data.AccountClass;
-        allowedScope = me.Data.AllowedScope;
+        if (me.IsSuccess && me.Data is not null)
+        {
+            displayName = me.Data.DisplayName;
+            username = me.Data.Username;
+            selectedOrgId = me.Data.SelectedOrganizationId;
+            selectedOrgName = me.Data.SelectedOrganizationDisplayName;
+            orgCount = me.Data.ActiveOrganizationCount;
+            accountClass = me.Data.AccountClass;
+            allowedScope = me.Data.AllowedScope;
+        }
+        else
+        {
+            // /auth/me can fail (deserialization/transient) while other Platform APIs succeed with the
+            // same session. Recover shell mode from authorization/me instead of leaving Loaded=false
+            // (which stuck AdminNav on Spin+Retry and left catalog pages spinning).
+            var recovered = await TryRecoverFromAuthorizationAsync(generation);
+            if (recovered || !IsCurrentGeneration(generation))
+            {
+                return;
+            }
+
+            Mode = AdminShellMode.Limited;
+            RoleLabel = "Signed in";
+            Loaded = false;
+            ClearTaskIfCurrent(generation);
+            return;
+        }
 
         var isOrganizationAccount = string.Equals(accountClass, "Organization", StringComparison.OrdinalIgnoreCase);
         var isPlatformAccount = string.Equals(accountClass, "Platform", StringComparison.OrdinalIgnoreCase);
         var isPersonalAccount = string.Equals(accountClass, "Personal", StringComparison.OrdinalIgnoreCase);
 
-        ApiCallResult<IReadOnlyList<EligibleOrganizationDto>>? orgs = null;
         if (isOrganizationAccount)
         {
-            orgs = await api.GetEligibleOrganizationsAsync();
+            var orgs = await api.GetEligibleOrganizationsAsync();
+            if (!IsCurrentGeneration(generation))
+            {
+                return;
+            }
+
             if (orgs.IsSuccess && orgs.Data is not null)
             {
                 var list = orgs.Data;
@@ -175,6 +196,89 @@ public sealed class AdminShellContext(
             await permissions.EnsureLoadedForNonPlatformAsync();
         }
 
+        if (!IsCurrentGeneration(generation))
+        {
+            return;
+        }
+
+        ApplyLoadedState(
+            displayName,
+            username,
+            accountClass,
+            allowedScope,
+            selectedOrgId,
+            selectedOrgName,
+            membershipRole,
+            orgCount,
+            isPlatformAccount,
+            isOrganizationAccount,
+            isPersonalAccount);
+    }
+
+    private async Task<bool> TryRecoverFromAuthorizationAsync(int generation)
+    {
+        var authz = await api.GetMyAuthorizationAsync();
+        if (!IsCurrentGeneration(generation))
+        {
+            return true;
+        }
+
+        if (!authz.IsSuccess || authz.Data is null)
+        {
+            return false;
+        }
+
+        var actorType = authz.Data.ActorType?.Trim();
+        var isPlatform = string.Equals(actorType, "Platform", StringComparison.OrdinalIgnoreCase);
+        var isOrganization = string.Equals(actorType, "Organization", StringComparison.OrdinalIgnoreCase);
+        var isPersonal = string.Equals(actorType, "Personal", StringComparison.OrdinalIgnoreCase);
+        if (!isPlatform && !isOrganization && !isPersonal)
+        {
+            return false;
+        }
+
+        if (isPlatform)
+        {
+            await permissions.RefreshAsync();
+        }
+        else
+        {
+            await permissions.EnsureLoadedForNonPlatformAsync();
+        }
+
+        if (!IsCurrentGeneration(generation))
+        {
+            return true;
+        }
+
+        ApplyLoadedState(
+            displayName: authz.Data.ActorIdentifier,
+            username: authz.Data.ActorIdentifier,
+            accountClass: actorType,
+            allowedScope: actorType,
+            selectedOrgId: authz.Data.OrganizationId,
+            selectedOrgName: null,
+            membershipRole: null,
+            orgCount: authz.Data.OrganizationId is null ? 0 : 1,
+            isPlatformAccount: isPlatform,
+            isOrganizationAccount: isOrganization,
+            isPersonalAccount: isPersonal);
+        return true;
+    }
+
+    private void ApplyLoadedState(
+        string? displayName,
+        string? username,
+        string? accountClass,
+        string? allowedScope,
+        Guid? selectedOrgId,
+        string? selectedOrgName,
+        string? membershipRole,
+        int orgCount,
+        bool isPlatformAccount,
+        bool isOrganizationAccount,
+        bool isPersonalAccount)
+    {
         DisplayName = string.IsNullOrWhiteSpace(displayName) ? username : displayName;
         Username = username;
         AccountClass = accountClass;
@@ -201,13 +305,30 @@ public sealed class AdminShellContext(
         }
         else
         {
-            // Authenticated me payload without a recognized AccountClass — treat as loaded Limited
-            // (not a transient failure). Nav will show Dashboard-only intentionally.
             Mode = AdminShellMode.Limited;
             RoleLabel = FormatMembershipRole(membershipRole) ?? "Signed in";
         }
 
         Loaded = true;
+    }
+
+    private bool IsCurrentGeneration(int generation)
+    {
+        lock (_gate)
+        {
+            return generation == _loadGeneration;
+        }
+    }
+
+    private void ClearTaskIfCurrent(int generation)
+    {
+        lock (_gate)
+        {
+            if (generation == _loadGeneration)
+            {
+                _loadTask = null;
+            }
+        }
     }
 
     private string ResolvePlatformRoleLabel()

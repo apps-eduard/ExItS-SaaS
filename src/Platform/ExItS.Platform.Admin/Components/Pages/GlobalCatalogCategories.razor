@@ -357,6 +357,7 @@ else
     {
         _formError = null;
         _formConflict = false;
+        await Permissions.EnsureLoadedAsync();
         if (!CanView)
         {
             return;

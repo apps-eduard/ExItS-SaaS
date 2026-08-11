@@ -474,7 +474,14 @@
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
         SyncSelection();
-        _ = InvokeAsync(StateHasChanged);
+        if (!_ready)
+        {
+            _ = LoadShellForNavAsync();
+        }
+        else
+        {
+            _ = InvokeAsync(StateHasChanged);
+        }
     }
 
     private void SyncSelection()

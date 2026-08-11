@@ -414,19 +414,28 @@ public sealed record RequestRecoveryEmailRequest(string RecoveryEmail);
 public sealed record ConfirmRecoveryEmailRequest(string Token);
 public sealed record SetUserPasswordRequest(string Password);
 
+public sealed record AuthSessionMfaDto(
+    bool MfaEnabled,
+    bool EnrollmentAvailable,
+    bool EnforcementRequired,
+    bool ChallengeRequired,
+    int RegisteredFactorCount,
+    string ReadinessState);
+
 public sealed record AuthSessionInfoDto(
     Guid SessionId,
     Guid UserId,
-    string Username,
-    string DisplayName,
-    string Email,
+    string? Username,
+    string? DisplayName,
+    string? Email,
     DateTimeOffset ExpiresAtUtc,
     DateTimeOffset AbsoluteExpiresAtUtc,
     DateTimeOffset LastActivityAtUtc,
     Guid? SelectedOrganizationId,
     string? SelectedOrganizationDisplayName,
-    string OrganizationSelectionState,
+    string? OrganizationSelectionState,
     int ActiveOrganizationCount,
+    AuthSessionMfaDto? Mfa = null,
     Guid? AccountProfileId = null,
     string? AccountClass = null,
     string? AllowedScope = null);

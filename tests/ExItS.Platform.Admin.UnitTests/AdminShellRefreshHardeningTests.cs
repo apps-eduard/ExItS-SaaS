@@ -10,10 +10,31 @@ namespace ExItS.Platform.Admin.UnitTests;
 public sealed class AdminShellRefreshHardeningTests
 {
     [Fact]
+    public async Task Failed_auth_me_recovers_platform_shell_from_authorization()
+    {
+        var api = CreateApiProxy(out var state);
+        state.FailMe = true;
+        state.AuthorizationActorType = "Platform";
+
+        var env = new HostingEnvironment { EnvironmentName = Environments.Development };
+        var permissions = new PlatformPermissionState(api, env);
+        var shell = new AdminShellContext(api, permissions);
+
+        await shell.EnsureLoadedAsync();
+
+        Assert.True(shell.Loaded);
+        Assert.True(shell.IsPlatformShell);
+        Assert.True(permissions.Loaded);
+        Assert.True(permissions.HasPermission(PlatformPermissionCodes.ViewPortfolio));
+        Assert.True(state.AuthorizationCalls >= 1);
+    }
+
+    [Fact]
     public async Task Failed_auth_me_does_not_cache_limited_shell_or_poison_permissions()
     {
         var api = CreateApiProxy(out var state);
         state.FailMe = true;
+        state.AuthorizationActorType = null; // force hard failure path
 
         var env = new HostingEnvironment { EnvironmentName = Environments.Development };
         var permissions = new PlatformPermissionState(api, env);
@@ -23,8 +44,6 @@ public sealed class AdminShellRefreshHardeningTests
 
         Assert.False(shell.Loaded);
         Assert.Equal(AdminShellMode.Limited, shell.Mode);
-        Assert.False(permissions.Loaded);
-        Assert.Equal(0, state.AuthorizationCalls);
 
         state.FailMe = false;
         state.Me = new AuthSessionInfoDto(
@@ -51,7 +70,6 @@ public sealed class AdminShellRefreshHardeningTests
         Assert.True(shell.IsPlatformShell);
         Assert.True(permissions.Loaded);
         Assert.True(permissions.HasPermission(PlatformPermissionCodes.ViewPortfolio));
-        Assert.Equal(1, state.AuthorizationCalls);
     }
 
     [Fact]
@@ -73,16 +91,30 @@ public sealed class AdminShellRefreshHardeningTests
             Assert.Contains("Common_Retry", text, StringComparison.Ordinal);
         }
 
+        foreach (var relative in new[]
+                 {
+                     Path.Combine("src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "GlobalCatalogBusinessTypes.razor"),
+                     Path.Combine("src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "GlobalCatalogCategories.razor"),
+                     Path.Combine("src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "GlobalCatalogProducts.razor"),
+                     Path.Combine("src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "GlobalCatalogImports.razor"),
+                     Path.Combine("src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "LocalValidationTestPayments.razor")
+                 })
+        {
+            var text = File.ReadAllText(Path.Combine(root, relative));
+            Assert.Contains("Permissions.EnsureLoadedAsync()", text, StringComparison.Ordinal);
+        }
+
         var nav = File.ReadAllText(Path.Combine(
             root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Layout", "AdminNav.razor"));
         Assert.Contains("!Shell.Loaded", nav, StringComparison.Ordinal);
         Assert.Contains("RetryShellAsync", nav, StringComparison.Ordinal);
         Assert.Contains("_shellLoadFailed", nav, StringComparison.Ordinal);
+        Assert.Contains("if (!_ready)", nav, StringComparison.Ordinal);
 
         var shell = File.ReadAllText(Path.Combine(
             root, "src", "Platform", "ExItS.Platform.Admin", "Services", "AdminShellContext.cs"));
-        Assert.Contains("Do NOT cache Limited forever", shell, StringComparison.Ordinal);
-        Assert.Contains("_loadTask = null", shell, StringComparison.Ordinal);
+        Assert.Contains("TryRecoverFromAuthorizationAsync", shell, StringComparison.Ordinal);
+        Assert.Contains("_loadGeneration", shell, StringComparison.Ordinal);
     }
 
     private static string FindRepoRoot()
@@ -112,6 +144,7 @@ public sealed class AdminShellRefreshHardeningTests
     private sealed class ProxyState
     {
         public bool FailMe { get; set; } = true;
+        public string? AuthorizationActorType { get; set; } = "Platform";
         public AuthSessionInfoDto? Me { get; set; }
         public int AuthorizationCalls { get; set; }
     }
@@ -136,10 +169,17 @@ public sealed class AdminShellRefreshHardeningTests
             if (targetMethod.Name == nameof(IPlatformApiClient.GetMyAuthorizationAsync))
             {
                 State.AuthorizationCalls++;
+                if (string.IsNullOrWhiteSpace(State.AuthorizationActorType))
+                {
+                    var failed = ApiCallResult<ResolvedPermissionsDto>.Failed(
+                        new PlatformApiException(HttpStatusCode.Unauthorized, "Unauthorized", "authz"));
+                    return Task.FromResult(failed);
+                }
+
                 var result = ApiCallResult<ResolvedPermissionsDto>.Success(
                     new ResolvedPermissionsDto(
                         "platform.admin",
-                        "Platform",
+                        State.AuthorizationActorType,
                         null,
                         null,
                         [.. PlatformPermissionCodes.All]));
