@@ -12,7 +12,9 @@ public sealed record BusinessTypeDto(
     int SortOrder,
     string? IconReference,
     DateTimeOffset CreatedAtUtc,
-    DateTimeOffset UpdatedAtUtc);
+    DateTimeOffset UpdatedAtUtc,
+    /// <summary>True when this type is the organization primary (merchant listing only).</summary>
+    bool IsPrimary = false);
 
 public sealed record CreateBusinessTypeRequest(
     string Code,

@@ -8,8 +8,11 @@ namespace ExItS.Platform.Api.GlobalCatalog;
 
 /// <summary>
 /// Merchant discovery for published business templates under /api/v1/catalog/*.
-/// Enforces organization effective Business Type entitlements (WP03). Platform Admin
+/// Enforces organization effective Business Type entitlements (WP03/WP04). Platform Admin
 /// with ViewGlobalCatalog remains unrestricted.
+/// Canonical query params: <c>businessTypeCode</c>, <c>businessTypeId</c>.
+/// Legacy aliases <c>businessType</c> / <c>primaryBusinessTypeId</c> are compatibility-only
+/// and remain entitlement-intersected (cannot widen).
 /// </summary>
 internal static class MerchantCatalogDiscoveryEndpoints
 {
@@ -41,7 +44,10 @@ internal static class MerchantCatalogDiscoveryEndpoints
             var items = await queries
                 .ListActiveForMerchantsAsync(
                     ct,
-                    scope.Value!.Unrestricted ? null : scope.Value.AllowedBusinessTypeIds)
+                    scope.Value!.Unrestricted ? null : scope.Value.AllowedBusinessTypeIds,
+                    primaryBusinessTypeId: scope.Value.Unrestricted
+                        ? null
+                        : scope.Value.Entitlement?.PrimaryBusinessTypeId?.Value)
                 .ConfigureAwait(false);
             return Results.Ok(items);
         });
@@ -52,7 +58,7 @@ internal static class MerchantCatalogDiscoveryEndpoints
             MerchantCatalogEntitlementGate gate,
             Guid? businessTypeId,
             string? businessTypeCode,
-            // Legacy aliases (WP01 mismatch) — still entitlement-intersected.
+            // Compatibility-only aliases — entitlement-intersected; never widen access.
             Guid? primaryBusinessTypeId,
             string? businessType,
             string? search,
@@ -132,6 +138,8 @@ internal static class MerchantCatalogDiscoveryEndpoints
                     PlatformApiResults.MapStatusCode(entitled.ErrorCode!));
             }
 
+            template = await ApplyMerchantTemplateProductFilterAsync(queries, scope.Value!, template, ct)
+                .ConfigureAwait(false);
             return Results.Ok(template);
         });
 
@@ -177,6 +185,8 @@ internal static class MerchantCatalogDiscoveryEndpoints
                     PlatformApiResults.MapStatusCode(entitled.ErrorCode!));
             }
 
+            template = await ApplyMerchantTemplateProductFilterAsync(queries, scope.Value!, template, ct)
+                .ConfigureAwait(false);
             return Results.Ok(template.Products);
         });
 
@@ -187,6 +197,7 @@ internal static class MerchantCatalogDiscoveryEndpoints
             string? q,
             Guid? businessTypeId,
             string? businessTypeCode,
+            // Compatibility-only alias — entitlement-intersected; never widen access.
             string? businessType,
             Guid? categoryId,
             string? barcode,
@@ -281,6 +292,7 @@ internal static class MerchantCatalogDiscoveryEndpoints
             MerchantCatalogEntitlementGate gate,
             Guid? businessTypeId,
             string? businessTypeCode,
+            // Compatibility-only alias — entitlement-intersected; never widen access.
             string? businessType,
             Guid? parentId,
             string? search,
@@ -360,6 +372,16 @@ internal static class MerchantCatalogDiscoveryEndpoints
 
         return (null, filter.Value.SingleBusinessTypeId, filter.Value.AllowedBusinessTypeIds);
     }
+
+    private static Task<CatalogTemplateDto> ApplyMerchantTemplateProductFilterAsync(
+        CatalogTemplateQueryService queries,
+        MerchantCatalogEntitlementGate.DiscoveryScope scope,
+        CatalogTemplateDto template,
+        CancellationToken ct) =>
+        queries.ApplyMerchantProductEntitlementAsync(
+            template,
+            scope.Unrestricted ? null : scope.AllowedBusinessTypeIds,
+            ct);
 
     private static IResult? EnsureAuthenticated(HttpContext http)
     {

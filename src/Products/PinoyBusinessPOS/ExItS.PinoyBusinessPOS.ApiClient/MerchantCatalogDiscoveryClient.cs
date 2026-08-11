@@ -13,21 +13,21 @@ namespace ExItS.PinoyBusinessPOS.ApiClient;
 public sealed class MerchantCatalogDiscoveryClient(IPosApiClient api) : IMerchantCatalogDiscoveryClient
 {
     public Task<ApiResult<PlatformPagedResult<PlatformMerchantCatalogTemplateSummaryDto>>> ListPublishedTemplatesAsync(
-        string? businessType = null,
+        string? businessTypeCode = null,
         string? search = null,
         int page = 1,
         int pageSize = 20,
-        Guid? primaryBusinessTypeId = null,
+        Guid? businessTypeId = null,
         CancellationToken ct = default)
     {
         var path = new StringBuilder("/api/v1/catalog/templates?");
         path.Append("page=").Append(page.ToString(CultureInfo.InvariantCulture));
         path.Append("&pageSize=").Append(pageSize.ToString(CultureInfo.InvariantCulture));
-        AppendOptional(path, "businessTypeCode", businessType);
+        AppendOptional(path, "businessTypeCode", businessTypeCode);
         AppendOptional(path, "search", search);
-        if (primaryBusinessTypeId is { } businessTypeId && businessTypeId != Guid.Empty)
+        if (businessTypeId is { } id && id != Guid.Empty)
         {
-            path.Append("&businessTypeId=").Append(businessTypeId.ToString("D"));
+            path.Append("&businessTypeId=").Append(id.ToString("D"));
         }
         return api.GetAsync<PlatformPagedResult<PlatformMerchantCatalogTemplateSummaryDto>>(path.ToString(), ct);
     }
@@ -40,7 +40,7 @@ public sealed class MerchantCatalogDiscoveryClient(IPosApiClient api) : IMerchan
     public Task<ApiResult<PlatformPagedResult<PlatformMerchantGlobalProductDto>>> SearchActiveProductsAsync(
         string? search = null,
         Guid? categoryId = null,
-        string? businessType = null,
+        string? businessTypeCode = null,
         string? barcode = null,
         string? sku = null,
         int page = 1,
@@ -51,7 +51,7 @@ public sealed class MerchantCatalogDiscoveryClient(IPosApiClient api) : IMerchan
         path.Append("page=").Append(page.ToString(CultureInfo.InvariantCulture));
         path.Append("&pageSize=").Append(pageSize.ToString(CultureInfo.InvariantCulture));
         AppendOptional(path, "q", search);
-        AppendOptional(path, "businessTypeCode", businessType);
+        AppendOptional(path, "businessTypeCode", businessTypeCode);
         AppendOptional(path, "barcode", barcode);
         AppendOptional(path, "sku", sku);
         if (categoryId is not null && categoryId.Value != Guid.Empty)
@@ -69,7 +69,7 @@ public sealed class MerchantCatalogDiscoveryClient(IPosApiClient api) : IMerchan
 
     public Task<ApiResult<PlatformPagedResult<PlatformMerchantGlobalCategoryDto>>> ListActiveCategoriesAsync(
         string? search = null,
-        string? businessType = null,
+        string? businessTypeCode = null,
         Guid? parentId = null,
         int page = 1,
         int pageSize = 100,
@@ -79,7 +79,7 @@ public sealed class MerchantCatalogDiscoveryClient(IPosApiClient api) : IMerchan
         path.Append("page=").Append(page.ToString(CultureInfo.InvariantCulture));
         path.Append("&pageSize=").Append(pageSize.ToString(CultureInfo.InvariantCulture));
         AppendOptional(path, "search", search);
-        AppendOptional(path, "businessTypeCode", businessType);
+        AppendOptional(path, "businessTypeCode", businessTypeCode);
         if (parentId is not null && parentId.Value != Guid.Empty)
         {
             path.Append("&parentId=").Append(parentId.Value.ToString("D"));

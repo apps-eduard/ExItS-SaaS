@@ -152,7 +152,7 @@ public sealed class GetTemplateImportStatusTests
         public Task<PagedResult<PlatformMerchantGlobalProductDto>> SearchActiveProductsAsync(
             string? search,
             Guid? categoryId,
-            string? businessType,
+            string? businessTypeCode,
             string? barcode,
             string? sku,
             int? page,
@@ -163,7 +163,7 @@ public sealed class GetTemplateImportStatusTests
 
         public Task<PagedResult<PlatformMerchantGlobalCategoryDto>> ListActiveCategoriesAsync(
             string? search,
-            string? businessType,
+            string? businessTypeCode,
             Guid? parentId,
             int? page,
             int? pageSize,

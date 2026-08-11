@@ -39,6 +39,7 @@ public interface ICatalogImportJobRepository
 /// Platform merchant catalog routes authenticate with <c>PlatformSession</c> (not product Bearer tokens).
 /// Callers should pass the Platform session token; the typed client also reads
 /// <c>X-ExItS-Session-Token</c> from the current POS request when present.
+/// Canonical query params: <c>businessTypeCode</c> / <c>businessTypeId</c> (WP03/WP04).
 /// </remarks>
 public interface IPlatformMerchantCatalogClient
 {
@@ -60,7 +61,7 @@ public interface IPlatformMerchantCatalogClient
     Task<PagedResult<PlatformMerchantGlobalProductDto>> SearchActiveProductsAsync(
         string? search,
         Guid? categoryId,
-        string? businessType,
+        string? businessTypeCode,
         string? barcode,
         string? sku,
         int? page,
@@ -70,7 +71,7 @@ public interface IPlatformMerchantCatalogClient
 
     Task<PagedResult<PlatformMerchantGlobalCategoryDto>> ListActiveCategoriesAsync(
         string? search,
-        string? businessType,
+        string? businessTypeCode,
         Guid? parentId,
         int? page,
         int? pageSize,

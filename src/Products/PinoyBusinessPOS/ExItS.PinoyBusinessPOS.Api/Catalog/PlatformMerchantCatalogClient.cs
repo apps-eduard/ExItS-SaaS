@@ -27,7 +27,7 @@ public sealed class PlatformMerchantCatalogClient(
         EnsureBaseAddress();
         using var request = CreateRequest(HttpMethod.Get, $"api/v1/catalog/templates/{templateId:D}", platformSessionToken);
         using var response = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
-        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        if (response.StatusCode is System.Net.HttpStatusCode.NotFound or System.Net.HttpStatusCode.Forbidden)
         {
             return null;
         }
@@ -46,7 +46,7 @@ public sealed class PlatformMerchantCatalogClient(
         EnsureBaseAddress();
         using var request = CreateRequest(HttpMethod.Get, $"api/v1/catalog/products/{productId:D}", platformSessionToken);
         using var response = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
-        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        if (response.StatusCode is System.Net.HttpStatusCode.NotFound or System.Net.HttpStatusCode.Forbidden)
         {
             return null;
         }
@@ -92,7 +92,7 @@ public sealed class PlatformMerchantCatalogClient(
     public async Task<PagedResult<PlatformMerchantGlobalProductDto>> SearchActiveProductsAsync(
         string? search,
         Guid? categoryId,
-        string? businessType,
+        string? businessTypeCode,
         string? barcode,
         string? sku,
         int? page,
@@ -112,9 +112,9 @@ public sealed class PlatformMerchantCatalogClient(
             query.Add($"categoryId={cid:D}");
         }
 
-        if (!string.IsNullOrWhiteSpace(businessType))
+        if (!string.IsNullOrWhiteSpace(businessTypeCode))
         {
-            query.Add($"businessTypeCode={Uri.EscapeDataString(businessType.Trim())}");
+            query.Add($"businessTypeCode={Uri.EscapeDataString(businessTypeCode.Trim())}");
         }
 
         if (!string.IsNullOrWhiteSpace(barcode))
@@ -149,7 +149,7 @@ public sealed class PlatformMerchantCatalogClient(
 
     public async Task<PagedResult<PlatformMerchantGlobalCategoryDto>> ListActiveCategoriesAsync(
         string? search,
-        string? businessType,
+        string? businessTypeCode,
         Guid? parentId,
         int? page,
         int? pageSize,
@@ -163,9 +163,9 @@ public sealed class PlatformMerchantCatalogClient(
             query.Add($"search={Uri.EscapeDataString(search.Trim())}");
         }
 
-        if (!string.IsNullOrWhiteSpace(businessType))
+        if (!string.IsNullOrWhiteSpace(businessTypeCode))
         {
-            query.Add($"businessTypeCode={Uri.EscapeDataString(businessType.Trim())}");
+            query.Add($"businessTypeCode={Uri.EscapeDataString(businessTypeCode.Trim())}");
         }
 
         if (parentId is Guid pid)

@@ -24,10 +24,13 @@ public sealed class MerchantCatalogDiscoveryClientParameterTests
 
         Assert.Contains("businessTypeCode", discovery, StringComparison.Ordinal);
         Assert.Contains("businessTypeId=", discovery, StringComparison.Ordinal);
+        Assert.Contains("string? businessTypeCode", discovery, StringComparison.Ordinal);
         Assert.DoesNotContain("AppendOptional(path, \"businessType\",", discovery, StringComparison.Ordinal);
         Assert.DoesNotContain("primaryBusinessTypeId=", discovery, StringComparison.Ordinal);
+        Assert.DoesNotContain("string? businessType =", discovery, StringComparison.Ordinal);
 
         Assert.Contains("businessTypeCode=", platform, StringComparison.Ordinal);
+        Assert.Contains("string? businessTypeCode", platform, StringComparison.Ordinal);
         Assert.DoesNotContain("businessType=", platform.Replace("businessTypeCode=", string.Empty, StringComparison.Ordinal), StringComparison.Ordinal);
     }
 

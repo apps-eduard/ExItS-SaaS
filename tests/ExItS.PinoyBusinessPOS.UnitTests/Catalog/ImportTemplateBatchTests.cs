@@ -16,7 +16,7 @@ public sealed class ImportTemplateBatchTests
     private static readonly Guid ProductC = Guid.Parse("33333333-3333-3333-3333-333333333333");
 
     [Fact]
-    public async Task Import_WhenTemplateHasEnrichedNames_DoesNotCallLiveProductFetch()
+    public async Task Import_WhenTemplateHasEnrichedNames_StillReChecksEntitlementViaLiveProductFetch()
     {
         var platform = new RecordingPlatform(BuildEnrichedTemplate(firstBatchFlags: false, defaultBatchSize: 2));
         var imports = new MemoryImports();
@@ -33,8 +33,55 @@ public sealed class ImportTemplateBatchTests
 
         Assert.True(result.IsSuccess);
         Assert.Equal(2, result.Value!.TotalCount);
-        Assert.Equal(0, platform.LiveFetchCalls);
+        Assert.Equal(1, platform.LiveFetchCalls);
         Assert.Equal(1, platform.TemplateFetchCalls);
+    }
+
+    [Fact]
+    public async Task Import_SkipsProductsNotReturnedByEntitledPlatformGet()
+    {
+        var platform = new RecordingPlatform(
+            BuildEnrichedTemplate(firstBatchFlags: false, defaultBatchSize: 2),
+            entitledProductIds: [ProductA]);
+        var useCase = new ImportTemplateBatch(
+            new MemoryImports(),
+            new MemoryProducts(),
+            platform,
+            new FakeUnitOfWork(),
+            new FixedClock());
+
+        var result = await useCase.ExecuteAsync(
+            Org.Value,
+            TemplateId,
+            batchNumber: 1,
+            requestedBy: Guid.NewGuid().ToString("D"),
+            platformSessionToken: "session");
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(1, result.Value!.TotalCount);
+    }
+
+    [Fact]
+    public async Task Import_WhenTemplateNotReturned_IsDenied()
+    {
+        var platform = new RecordingPlatform(BuildEnrichedTemplate(firstBatchFlags: false, defaultBatchSize: 2));
+        platform.ReturnNullTemplate = true;
+        var useCase = new ImportTemplateBatch(
+            new MemoryImports(),
+            new MemoryProducts(),
+            platform,
+            new FakeUnitOfWork(),
+            new FixedClock());
+
+        var result = await useCase.ExecuteAsync(
+            Org.Value,
+            Guid.NewGuid(),
+            batchNumber: 1,
+            requestedBy: Guid.NewGuid().ToString("D"),
+            platformSessionToken: "session");
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.CatalogImportTemplateNotFound, result.ErrorCode);
     }
 
     [Fact]
@@ -116,10 +163,17 @@ public sealed class ImportTemplateBatchTests
             action(cancellationToken);
     }
 
-    private sealed class RecordingPlatform(PlatformMerchantCatalogTemplateDto template) : IPlatformMerchantCatalogClient
+    private sealed class RecordingPlatform(
+        PlatformMerchantCatalogTemplateDto template,
+        IReadOnlyCollection<Guid>? entitledProductIds = null) : IPlatformMerchantCatalogClient
     {
+        private readonly HashSet<Guid> _entitled =
+            entitledProductIds?.ToHashSet()
+            ?? template.Products.Select(p => p.GlobalProductId).ToHashSet();
+
         public int TemplateFetchCalls { get; private set; }
         public int LiveFetchCalls { get; private set; }
+        public bool ReturnNullTemplate { get; set; }
 
         public Task<PlatformMerchantCatalogTemplateDto?> GetPublishedTemplateAsync(
             Guid templateId,
@@ -127,8 +181,12 @@ public sealed class ImportTemplateBatchTests
             CancellationToken cancellationToken = default)
         {
             TemplateFetchCalls++;
-            return Task.FromResult<PlatformMerchantCatalogTemplateDto?>(
-                templateId == template.Id ? template : null);
+            if (ReturnNullTemplate || templateId != template.Id)
+            {
+                return Task.FromResult<PlatformMerchantCatalogTemplateDto?>(null);
+            }
+
+            return Task.FromResult<PlatformMerchantCatalogTemplateDto?>(template);
         }
 
         public Task<PlatformMerchantGlobalProductDto?> GetActiveProductAsync(
@@ -137,7 +195,13 @@ public sealed class ImportTemplateBatchTests
             CancellationToken cancellationToken = default)
         {
             LiveFetchCalls++;
-            return Task.FromResult<PlatformMerchantGlobalProductDto?>(null);
+            if (!_entitled.Contains(productId))
+            {
+                return Task.FromResult<PlatformMerchantGlobalProductDto?>(null);
+            }
+
+            var link = template.Products.First(p => p.GlobalProductId == productId);
+            return Task.FromResult<PlatformMerchantGlobalProductDto?>(Map(link));
         }
 
         public Task<IReadOnlyList<PlatformMerchantGlobalProductDto>> GetActiveProductsAsync(
@@ -146,13 +210,34 @@ public sealed class ImportTemplateBatchTests
             CancellationToken cancellationToken = default)
         {
             LiveFetchCalls++;
-            return Task.FromResult<IReadOnlyList<PlatformMerchantGlobalProductDto>>([]);
+            var items = productIds
+                .Where(_entitled.Contains)
+                .Select(id => Map(template.Products.First(p => p.GlobalProductId == id)))
+                .ToList();
+            return Task.FromResult<IReadOnlyList<PlatformMerchantGlobalProductDto>>(items);
         }
+
+        private static PlatformMerchantGlobalProductDto Map(PlatformMerchantCatalogTemplateProductDto link) =>
+            new(
+                link.GlobalProductId,
+                link.ProductName ?? "Product",
+                null,
+                link.Sku,
+                link.Barcode,
+                link.Brand,
+                link.CategoryId,
+                link.Unit ?? "Piece",
+                link.CostPrice,
+                link.SellingPrice,
+                null,
+                "Active",
+                DateTimeOffset.Parse("2026-08-01T00:00:00Z"),
+                DateTimeOffset.Parse("2026-08-01T00:00:00Z"));
 
         public Task<PagedResult<PlatformMerchantGlobalProductDto>> SearchActiveProductsAsync(
             string? search,
             Guid? categoryId,
-            string? businessType,
+            string? businessTypeCode,
             string? barcode,
             string? sku,
             int? page,
@@ -163,7 +248,7 @@ public sealed class ImportTemplateBatchTests
 
         public Task<PagedResult<PlatformMerchantGlobalCategoryDto>> ListActiveCategoriesAsync(
             string? search,
-            string? businessType,
+            string? businessTypeCode,
             Guid? parentId,
             int? page,
             int? pageSize,
@@ -195,7 +280,7 @@ public sealed class ImportTemplateBatchTests
         public Task<PagedResult<PlatformMerchantGlobalProductDto>> SearchActiveProductsAsync(
             string? search,
             Guid? categoryId,
-            string? businessType,
+            string? businessTypeCode,
             string? barcode,
             string? sku,
             int? page,
@@ -206,7 +291,7 @@ public sealed class ImportTemplateBatchTests
 
         public Task<PagedResult<PlatformMerchantGlobalCategoryDto>> ListActiveCategoriesAsync(
             string? search,
-            string? businessType,
+            string? businessTypeCode,
             Guid? parentId,
             int? page,
             int? pageSize,

@@ -4,7 +4,7 @@
 
 | Field | Value |
 |---|---|
-| Status | **Open** — WP01 ✓ · WP02 ✓ · **WP03 Implemented** (resolver + enforcement) · WP04+ not started |
+| Status | **Open** — WP01 ✓ · WP02 ✓ · WP03 ✓ · **WP04 Implemented** (catalog/template discovery + import) · WP05+ not started |
 | Branch / HEAD at open | `main` @ `c03894f` (WP01 docs later @ `4e5cb99`) |
 | Physical device target | `R58R61E3CAZ` (validation not in WP01–WP03) |
 
@@ -174,7 +174,7 @@ Register → Personal → Start Business → plan + **required** Business Type �
 | **WP01** | Architecture audit + phase contract | **Done** — [P23-WP01](../reports/P23-WP01-current-state-and-domain-design.md) |
 | **WP02** | Subscription Business Type entitlement domain/persistence | **Done** — [P23-WP02](../reports/P23-WP02-business-type-entitlement-model.md) |
 | **WP03** | Effective entitlement resolution + server enforcement | **Done** — [P23-WP03](../reports/P23-WP03-entitlement-enforcement.md) |
-| **WP04** | Template + Global Catalog entitlement filtering | Fix client params; enforce on merchant APIs |
+| **WP04** | Template + Global Catalog entitlement filtering | **Done** — [P23-WP04](../reports/P23-WP04-catalog-template-filtering.md) |
 | **WP05** | Product selling mode / unit model | PerItem/ByWeight; Platform↔POS mapping |
 | **WP06** | Decimal quantity foundation across sales/inventory | Mostly confirm + gaps; kg canonical |
 | **WP07** | Purchasing/returns/reporting propagation | Ensure ByWeight paths |

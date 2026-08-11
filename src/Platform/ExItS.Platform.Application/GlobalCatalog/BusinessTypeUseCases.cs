@@ -42,7 +42,8 @@ public sealed class BusinessTypeQueryService
 
     public async Task<IReadOnlyList<BusinessTypeDto>> ListActiveForMerchantsAsync(
         CancellationToken cancellationToken = default,
-        IReadOnlyCollection<Guid>? allowedBusinessTypeIds = null)
+        IReadOnlyCollection<Guid>? allowedBusinessTypeIds = null,
+        Guid? primaryBusinessTypeId = null)
     {
         var (items, _) = await _businessTypes
             .ListAsync(
@@ -60,7 +61,15 @@ public sealed class BusinessTypeQueryService
             items = items.Where(i => allowed.Contains(i.Id.Value)).ToList();
         }
 
-        return items.Select(GlobalCatalogDtoMaps.Map).ToList();
+        return items
+            .Select(i =>
+            {
+                var dto = GlobalCatalogDtoMaps.Map(i);
+                return primaryBusinessTypeId is Guid primary && primary == i.Id.Value
+                    ? dto with { IsPrimary = true }
+                    : dto;
+            })
+            .ToList();
     }
 }
 

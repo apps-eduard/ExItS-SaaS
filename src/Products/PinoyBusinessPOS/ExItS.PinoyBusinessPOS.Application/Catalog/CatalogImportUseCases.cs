@@ -313,14 +313,36 @@ public sealed class ImportTemplateBatch
                     "All selected template products are already imported.");
             }
 
-            // Prefer enriched template snapshots (same payload Preview already shows). Avoid N+1
-            // Platform product GETs that routinely exceed the MAUI 15s client timeout (HTTP 500 /
-            // "Service unavailable" when HttpClient timeouts bubble as OperationCanceledException).
-            var items = new List<CatalogImportItemResult>();
-            var needingLiveFetch = new List<PlatformMerchantCatalogTemplateProductDto>();
-            var sort = 0;
-            foreach (var link in remaining.OrderBy(r => r.SortOrder))
+            // Prefer enriched template snapshots for display fields, but always re-check each
+            // GlobalProductId against Platform GET (entitlement boundary). Do not trust snapshot
+            // presence alone — a previously discoverable or forged id must still be entitled now.
+            IReadOnlyList<PlatformMerchantGlobalProductDto> entitledProducts;
+            try
             {
+                entitledProducts = await _platform
+                    .GetActiveProductsAsync(
+                        remaining.Select(r => r.GlobalProductId).ToList(),
+                        platformSessionToken,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+            }
+            catch (Exception ex) when (IsTransientPlatformFailure(ex, cancellationToken))
+            {
+                return ApplicationResult<PosCatalogImportJobDto>.Failure(
+                    ApplicationErrorCodes.CatalogImportPlatformUnavailable,
+                    "Platform catalog is temporarily unavailable. Existing POS selling is unaffected.");
+            }
+
+            var entitledById = entitledProducts.ToDictionary(p => p.Id);
+            var items = new List<CatalogImportItemResult>();
+            var sort = 0;
+            foreach (var link in remaining.OrderBy(r => r.SortOrder).ThenBy(r => r.GlobalProductId))
+            {
+                if (!entitledById.TryGetValue(link.GlobalProductId, out var product))
+                {
+                    continue;
+                }
+
                 if (TryCreatePendingFromTemplateLink(link, sort, out var snapshot))
                 {
                     items.Add(snapshot!);
@@ -328,55 +350,24 @@ public sealed class ImportTemplateBatch
                     continue;
                 }
 
-                needingLiveFetch.Add(link);
-            }
-
-            if (needingLiveFetch.Count > 0)
-            {
-                IReadOnlyList<PlatformMerchantGlobalProductDto> products;
-                try
-                {
-                    products = await _platform
-                        .GetActiveProductsAsync(
-                            needingLiveFetch.Select(r => r.GlobalProductId).ToList(),
-                            platformSessionToken,
-                            cancellationToken)
-                        .ConfigureAwait(false);
-                }
-                catch (Exception ex) when (IsTransientPlatformFailure(ex, cancellationToken))
-                {
-                    return ApplicationResult<PosCatalogImportJobDto>.Failure(
-                        ApplicationErrorCodes.CatalogImportPlatformUnavailable,
-                        "Platform catalog is temporarily unavailable. Existing POS selling is unaffected.");
-                }
-
-                var byId = products.ToDictionary(p => p.Id);
-                foreach (var link in needingLiveFetch.OrderBy(r => r.SortOrder))
-                {
-                    if (!byId.TryGetValue(link.GlobalProductId, out var product))
-                    {
-                        continue;
-                    }
-
-                    items.Add(CatalogImportItemResult.CreatePending(
-                        product.Id,
-                        sort++,
-                        product.Name,
-                        product.Unit,
-                        product.SellingPrice ?? 0m,
-                        product.Description,
-                        product.Sku,
-                        product.Barcode,
-                        product.GlobalCategoryId ?? link.CategoryId,
-                        sourceCategoryName: FirstNonBlank(link.CategoryName)));
-                }
+                items.Add(CatalogImportItemResult.CreatePending(
+                    product.Id,
+                    sort++,
+                    product.Name,
+                    product.Unit,
+                    product.SellingPrice ?? 0m,
+                    product.Description,
+                    product.Sku,
+                    product.Barcode,
+                    product.GlobalCategoryId ?? link.CategoryId,
+                    sourceCategoryName: FirstNonBlank(link.CategoryName)));
             }
 
             if (items.Count == 0)
             {
                 return ApplicationResult<PosCatalogImportJobDto>.Failure(
                     ApplicationErrorCodes.CatalogImportNoProducts,
-                    "No active Platform products were available for import.");
+                    "No entitled Platform products were available for import.");
             }
 
             var job = CatalogImportJob.CreateQueued(
@@ -544,7 +535,7 @@ public sealed class ImportSelectedProducts
             {
                 return ApplicationResult<PosCatalogImportJobDto>.Failure(
                     ApplicationErrorCodes.CatalogImportNoProducts,
-                    "No active Platform products were found for the requested ids.");
+                    "No entitled Platform products were found for the requested ids.");
             }
 
             var categoryNames = await LoadCategoryNamesAsync(
@@ -616,7 +607,7 @@ public sealed class ImportSelectedProducts
             var batch = await _platform
                 .ListActiveCategoriesAsync(
                     search: null,
-                    businessType: null,
+                    businessTypeCode: null,
                     parentId: null,
                     page: page,
                     pageSize: pageSize,

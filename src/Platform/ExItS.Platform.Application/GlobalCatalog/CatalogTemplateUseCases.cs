@@ -114,6 +114,49 @@ public sealed class CatalogTemplateQueryService
     }
 
     /// <summary>
+    /// Merchant-only: drop template product links whose Active global product has no BT intersection
+    /// with the organization's effective entitlement set. Null allowed set = unrestricted (Admin).
+    /// </summary>
+    public async Task<CatalogTemplateDto> ApplyMerchantProductEntitlementAsync(
+        CatalogTemplateDto dto,
+        IReadOnlyCollection<Guid>? allowedBusinessTypeIds,
+        CancellationToken cancellationToken = default)
+    {
+        if (allowedBusinessTypeIds is null)
+        {
+            return dto;
+        }
+
+        if (allowedBusinessTypeIds.Count == 0 || dto.Products.Count == 0)
+        {
+            return dto with { Products = [], ProductCount = 0, FirstBatchCount = 0 };
+        }
+
+        var productIds = dto.Products.Select(p => p.GlobalProductId).Distinct().ToArray();
+        var products = await _products.GetByIdsAsync(productIds, cancellationToken).ConfigureAwait(false);
+        var allowed = allowedBusinessTypeIds.ToHashSet();
+        var entitledIds = products
+            .Where(p =>
+                p.Status == GlobalProductStatus.Active
+                && p.BusinessTypeIds.Any(bt => allowed.Contains(bt.Value)))
+            .Select(p => p.Id.Value)
+            .ToHashSet();
+
+        var filtered = dto.Products
+            .Where(p => entitledIds.Contains(p.GlobalProductId))
+            .OrderBy(p => p.SortOrder)
+            .ThenBy(p => p.GlobalProductId)
+            .ToList();
+
+        return dto with
+        {
+            Products = filtered,
+            ProductCount = filtered.Count,
+            FirstBatchCount = filtered.Count(p => p.IsFirstBatch)
+        };
+    }
+
+    /// <summary>
     /// Paged Platform products that can still be assigned to the template.
     /// Already-assigned products are excluded. Defaults to Active when status is omitted by callers.
     /// </summary>
