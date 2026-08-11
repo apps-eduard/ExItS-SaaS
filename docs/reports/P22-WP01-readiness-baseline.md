@@ -41,9 +41,9 @@ Template (optional) ──filtered by──► Organization.PrimaryBusinessTypeI
 
 ## Preserved vs disposable (WP09)
 
-**Keep:** 2 Platform admin identities (Local Validation: `olivia.mendoza@exits.local`, `rafael.torres@exits.local`), products/plans/features, Global Catalog, categories, Business Types, Catalog Templates + compositions, system permissions/roles.
+**Keep:** 2 Platform admin identities (Local Validation: `olivia.mendoza@exits.local`, `rafael.torres@exits.local`), commercial products/plans/features, Business Type definitions, Catalog Template definitions (rows), system permissions/roles, EF migration history.
 
-**Remove:** scrap Personal/org/staff users, orgs, memberships, invitations, org subscriptions/trials, branches, POS devices, offline grants, merchant ops data.
+**Remove:** scrap Personal/org/staff users, orgs, memberships, invitations, org subscriptions/trials, branches, POS devices, offline grants, merchant ops data; **all disposable Global Catalog merchandise** (products, categories, product↔business-type mappings, template↔product compositions, catalog import jobs/items). Template definition rows are kept; compositions are cleared so product deletes leave no orphans.
 
 ## Related reports
 

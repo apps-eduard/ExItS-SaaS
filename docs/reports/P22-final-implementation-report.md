@@ -70,9 +70,9 @@ Preserves Local Validation Platform administrators:
 - `olivia.mendoza@exits.local`
 - `rafael.torres@exits.local`
 
-Also preserves products/plans/features, Global Catalog, categories, Business Types, Catalog Templates + compositions, EF migration history.
+Also preserves products/plans/features, Business Type definitions, Catalog Template definitions (not compositions), EF migration history.
 
-Removes scrap Personal/org/staff identities, orgs, memberships, invitations, org subscriptions, branches, POS devices, and POS operational schema data when executed against configured Development databases.
+Removes scrap Personal/org/staff identities, orgs, memberships, invitations, org subscriptions, branches, POS devices, POS operational schema data, and disposable Global Catalog merchandise (products, categories, mappings, template compositions, import jobs) when executed against configured Development databases. Production-looking connection strings remain rejected.
 
 Before/after counts are printed by the script at runtime (not claimed here without a live run against a reachable DB in this closeout).
 
