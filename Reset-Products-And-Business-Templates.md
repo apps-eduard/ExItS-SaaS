@@ -28,6 +28,16 @@ cd C:\Users\speed\Desktop\ExItS-SaaS
 |---|---|
 | Platform SaaS catalog products / plans / features | Recreated by migrate + seed |
 | Built-in Platform roles | Recreated by migrate + seed |
+| Philippine default Business Types + starter templates (WP10A) | Recreated by Local Validation seed (`EnsurePhilippinePosStarterCatalog`) after migrate/start |
+
+## Development disposable reset (optional)
+
+`scripts/dev/Reset-DisposableCustomerData.ps1` preserves `catalog.business_types` definitions and deletes disposable global catalog merchandise (categories/products/templates). After that script:
+
+1. Restart Local Validation / Platform API with seeding enabled.
+2. `EnsurePhilippinePosStarterCatalog` re-creates starter categories, products, and the 16 optional `*-starter` templates without duplicating Business Type codes.
+
+Do **not** run disposable reset casually against shared or production databases.
 
 ## Ordinary Start does **not** wipe data
 
