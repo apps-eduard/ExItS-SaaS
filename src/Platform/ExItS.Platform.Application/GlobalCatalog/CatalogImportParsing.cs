@@ -13,12 +13,16 @@ public static class CatalogImportRowMapper
     /// <summary>Reserved tag prefix storing intended <see cref="GlobalProductStatus"/> until apply.</summary>
     public const string ImportStatusTagPrefix = "import.status:";
 
+    /// <summary>Reserved tag prefix storing <see cref="ProductSellingMode"/> until apply.</summary>
+    public const string ImportSellingModeTagPrefix = "import.sellingmode:";
+
     public const string BrandTagPrefix = "brand:";
     public const string TaxHintTagPrefix = "tax:";
 
     // Authoritative schema names first; legacy aliases retained for programmatic/unit-test rows.
     private static readonly string[] NameKeys = ["productname", "name", "product_name"];
     private static readonly string[] UnitKeys = ["unit", "productunit", "product_unit"];
+    private static readonly string[] SellingModeKeys = ["sellingmode", "selling_mode", "mode"];
     private static readonly string[] DescriptionKeys = ["description", "desc"];
     private static readonly string[] BrandKeys = ["brand"];
     private static readonly string[] SkuKeys = ["suggestedsku", "sku"];
@@ -77,6 +81,7 @@ public static class CatalogImportRowMapper
         var cells = NormalizeKeys(row.Cells);
         var rawName = Get(cells, NameKeys);
         var rawUnit = Get(cells, UnitKeys);
+        var rawSellingMode = Get(cells, SellingModeKeys);
         var rawDescription = Get(cells, DescriptionKeys);
         var rawBrand = Get(cells, BrandKeys);
         var rawSku = Get(cells, SkuKeys);
@@ -104,6 +109,7 @@ public static class CatalogImportRowMapper
                 || CatalogImportRules.LooksLikeFormulaInjection(rawTags)
                 || CatalogImportRules.LooksLikeFormulaInjection(rawBusinessTypes)
                 || CatalogImportRules.LooksLikeFormulaInjection(rawUnit)
+                || CatalogImportRules.LooksLikeFormulaInjection(rawSellingMode)
                 || CatalogImportRules.LooksLikeFormulaInjection(rawPrice)
                 || CatalogImportRules.LooksLikeFormulaInjection(rawCost)
                 || CatalogImportRules.LooksLikeFormulaInjection(rawStatus)
@@ -136,6 +142,22 @@ public static class CatalogImportRowMapper
                     unitText,
                     DomainErrorCodes.InvalidGlobalProductUnit,
                     $"Unrecognized or missing product unit '{unitText}'.");
+            }
+
+            ProductSellingMode sellingMode;
+            try
+            {
+                sellingMode = ProductSellingModes.Parse(CatalogImportRules.SanitizeCell(rawSellingMode));
+                ProductSellingModes.EnsureCompatible(sellingMode, unit);
+            }
+            catch (DomainException ex)
+            {
+                return CatalogImportItem.CreateFailed(
+                    row.RowNumber,
+                    name,
+                    unit.ToString(),
+                    ex.ErrorCode,
+                    ex.Message);
             }
 
             var description = NullIfEmpty(CatalogImportRules.SanitizeCell(rawDescription));
@@ -326,7 +348,8 @@ public static class CatalogImportRowMapper
                 NullIfEmpty(CatalogImportRules.SanitizeCell(rawTags)),
                 brand,
                 taxHint,
-                productStatus);
+                productStatus,
+                sellingMode);
             var businessTypesRaw = NullIfEmpty(CatalogImportRules.SanitizeCell(rawBusinessTypes));
             _ = GlobalCatalogRules.NormalizeSearchTags(SplitList(tagsRaw));
             try
@@ -522,10 +545,12 @@ public static class CatalogImportRowMapper
             StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
     }
 
-    public static (IReadOnlyList<string> Tags, GlobalProductStatus Status) SplitTagsAndStatus(string? searchTagsRaw)
+    public static (IReadOnlyList<string> Tags, GlobalProductStatus Status, ProductSellingMode SellingMode)
+        SplitTagsStatusAndSellingMode(string? searchTagsRaw)
     {
         var parts = SplitList(searchTagsRaw);
         var status = GlobalProductStatus.Draft;
+        var sellingMode = ProductSellingMode.PerItem;
         var tags = new List<string>(parts.Count);
         foreach (var part in parts)
         {
@@ -541,9 +566,27 @@ public static class CatalogImportRowMapper
                 continue;
             }
 
+            if (part.StartsWith(ImportSellingModeTagPrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                var value = part[ImportSellingModeTagPrefix.Length..];
+                if (ProductSellingModes.TryParse(value, out var parsedMode))
+                {
+                    sellingMode = parsedMode;
+                }
+
+                continue;
+            }
+
             tags.Add(part);
         }
 
+        return (tags, status, sellingMode);
+    }
+
+    /// <summary>Backward-compatible wrapper used by older call sites.</summary>
+    public static (IReadOnlyList<string> Tags, GlobalProductStatus Status) SplitTagsAndStatus(string? searchTagsRaw)
+    {
+        var (tags, status, _) = SplitTagsStatusAndSellingMode(searchTagsRaw);
         return (tags, status);
     }
 
@@ -665,7 +708,8 @@ public static class CatalogImportRowMapper
         string? tags,
         string? brand,
         string? taxHint,
-        GlobalProductStatus status)
+        GlobalProductStatus status,
+        ProductSellingMode sellingMode)
     {
         var parts = new List<string>();
         if (!string.IsNullOrWhiteSpace(tags))
@@ -686,6 +730,11 @@ public static class CatalogImportRowMapper
         if (status != GlobalProductStatus.Draft)
         {
             parts.Add(ImportStatusTagPrefix + status);
+        }
+
+        if (sellingMode != ProductSellingMode.PerItem)
+        {
+            parts.Add(ImportSellingModeTagPrefix + sellingMode);
         }
 
         return parts.Count == 0

@@ -58,6 +58,13 @@
                     Required="true"
                     Disabled="@(IsSaving || Disabled)" />
 
+            <Select Label="@L["Catalog_Field_SellingMode"]"
+                    Value="@SellingMode"
+                    ValueChanged="SellingModeChanged"
+                    Options="@CatalogUiOptions.SellingModes(L)"
+                    Required="true"
+                    Disabled="@(IsSaving || Disabled)" />
+
             <CurrencyInput Label="@L["Catalog_Field_SellingPrice"]"
                            Value="@SellingPrice"
                            ValueChanged="SellingPriceChanged"
@@ -110,6 +117,8 @@
     [Parameter] public EventCallback<string?> CategoryIdChanged { get; set; }
     [Parameter] public string? UnitOfMeasure { get; set; }
     [Parameter] public EventCallback<string?> UnitOfMeasureChanged { get; set; }
+    [Parameter] public string? SellingMode { get; set; }
+    [Parameter] public EventCallback<string?> SellingModeChanged { get; set; }
     [Parameter] public decimal? SellingPrice { get; set; }
     [Parameter] public EventCallback<decimal?> SellingPriceChanged { get; set; }
     [Parameter] public IReadOnlyList<PosProductCategoryDto> Categories { get; set; } = Array.Empty<PosProductCategoryDto>();

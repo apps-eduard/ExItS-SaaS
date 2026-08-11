@@ -1814,6 +1814,7 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.Brand).HasColumnName("brand").HasMaxLength(120);
             entity.Property(e => e.GlobalCategoryId).HasColumnName("global_category_id");
             entity.Property(e => e.Unit).HasColumnName("unit").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.SellingMode).HasColumnName("selling_mode").HasMaxLength(32).IsRequired();
             entity.Property(e => e.CostPrice).HasColumnName("cost_price").HasColumnType("decimal(18,2)");
             entity.Property(e => e.SellingPrice).HasColumnName("selling_price").HasColumnType("decimal(18,2)");
             entity.Property(e => e.ImageReference).HasColumnName("image_reference").HasMaxLength(512);
@@ -1826,6 +1827,13 @@ public sealed class PlatformDbContext : DbContext
                 .HasColumnType("xid")
                 .ValueGeneratedOnAddOrUpdate()
                 .IsConcurrencyToken();
+
+            entity.HasCheckConstraint(
+                "ck_global_products_selling_mode",
+                "selling_mode IN ('PerItem', 'ByWeight')");
+            entity.HasCheckConstraint(
+                "ck_global_products_selling_mode_unit",
+                "selling_mode <> 'ByWeight' OR unit = 'Kilogram'");
 
             entity.HasIndex(e => e.Barcode)
                 .IsUnique()

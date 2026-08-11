@@ -225,6 +225,10 @@ public static class DomainErrorCodes
     public const string InvalidGlobalProductSearchTag =
         "platform.global_catalog.product.search_tag.invalid";
     public const string InvalidGlobalProductUnit = "platform.global_catalog.product.unit.invalid";
+    public const string InvalidGlobalProductSellingMode =
+        "platform.global_catalog.product.selling_mode.invalid";
+    public const string InvalidGlobalProductSellingModeUnit =
+        "platform.global_catalog.product.selling_mode.unit.invalid";
     public const string InvalidGlobalProductSortField =
         "platform.global_catalog.product.sort.invalid";
     public const string InvalidGlobalCategorySortField =

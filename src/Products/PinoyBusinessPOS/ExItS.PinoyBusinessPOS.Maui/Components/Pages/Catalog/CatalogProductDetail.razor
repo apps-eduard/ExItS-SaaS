@@ -93,6 +93,10 @@ else
                 <dd>@CatalogUiOptions.UnitOfMeasureLabel(L, product.UnitOfMeasure)</dd>
             </div>
             <div class="pos-catalog-product-detail__fact">
+                <dt>@L["Catalog_Field_SellingMode"]</dt>
+                <dd>@CatalogUiOptions.SellingModeLabel(L, product.SellingMode)</dd>
+            </div>
+            <div class="pos-catalog-product-detail__fact">
                 <dt>@L["Catalog_Field_Status"]</dt>
                 <dd>
                     <Badge Tone="@(isActive ? BadgeTone.Success : BadgeTone.Neutral)">@CatalogUiOptions.StatusLabel(L, product.Status)</Badge>

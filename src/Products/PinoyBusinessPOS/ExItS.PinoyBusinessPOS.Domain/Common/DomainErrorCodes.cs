@@ -36,6 +36,8 @@ public static class DomainErrorCodes
     public const string InvalidCatalogProductId = "pos.catalog.product.id.invalid";
     public const string InvalidProductCategoryId = "pos.catalog.category.id.invalid";
     public const string InvalidUnitOfMeasure = "pos.catalog.unit_of_measure.invalid";
+    public const string InvalidSellingMode = "pos.catalog.selling_mode.invalid";
+    public const string InvalidSellingModeUnit = "pos.catalog.selling_mode.unit.invalid";
 
     public const string InvalidCategoryName = "pos.category.name.invalid";
     public const string InvalidCategoryStatus = "pos.category.status.invalid";

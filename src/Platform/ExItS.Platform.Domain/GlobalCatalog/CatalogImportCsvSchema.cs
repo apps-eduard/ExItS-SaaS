@@ -28,6 +28,8 @@ public static class CatalogImportCsvSchema
     public const string Tags = "Tags";
     public const string BusinessTypes = "BusinessTypes";
     public const string Status = "Status";
+    /// <summary>Optional. Omitted or blank ⇒ PerItem. Canonical values: PerItem, ByWeight.</summary>
+    public const string SellingMode = "SellingMode";
 
     /// <summary>Required header names in the exact import order (canonical, without markers).</summary>
     public static readonly IReadOnlyList<string> RequiredColumns =
@@ -46,6 +48,15 @@ public static class CatalogImportCsvSchema
         BusinessTypes,
         Status
     ];
+
+    /// <summary>Optional trailing columns accepted after <see cref="RequiredColumns"/> (order among optionals free).</summary>
+    public static readonly IReadOnlyList<string> OptionalColumns =
+    [
+        SellingMode
+    ];
+
+    public static readonly IReadOnlySet<string> OptionalColumnSet =
+        new HashSet<string>(OptionalColumns, StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
     /// Columns whose cell values are required for a successful product import row.
@@ -92,16 +103,18 @@ public static class CatalogImportCsvSchema
         return trimmed.Trim();
     }
 
-    /// <summary>Download headers: required-value columns marked with a trailing asterisk.</summary>
+    /// <summary>Download headers: required-value columns marked with a trailing asterisk; optional columns unmarked.</summary>
     public static IReadOnlyList<string> TemplateDownloadHeaders =>
         RequiredColumns
             .Select(c => RequiredValueColumns.Contains(c) ? c + "*" : c)
+            .Concat(OptionalColumns)
             .ToList();
 
     /// <summary>
     /// Validates uploaded headers against <see cref="RequiredColumns"/>.
-    /// Fails on missing, unknown, duplicate, or out-of-order headers.
+    /// Required columns must appear first in order. Optional known columns may follow.
     /// Download markers (<c>*</c>, <c>(required)</c>, <c>(optional)</c>) are accepted.
+    /// Legacy files with only <see cref="RequiredColumns"/> remain valid (SellingMode defaults to PerItem).
     /// </summary>
     public static void ValidateHeaders(IReadOnlyList<string> headers)
     {
@@ -145,7 +158,7 @@ public static class CatalogImportCsvSchema
             .Where(required => trimmed.All(h => !string.Equals(h, required, StringComparison.OrdinalIgnoreCase)))
             .ToList();
         var unknown = trimmed
-            .Where(h => !RequiredColumnSet.Contains(h))
+            .Where(h => !RequiredColumnSet.Contains(h) && !OptionalColumnSet.Contains(h))
             .ToList();
 
         if (missing.Count > 0 || unknown.Count > 0)
@@ -162,17 +175,18 @@ public static class CatalogImportCsvSchema
             }
 
             parts.Add(
-                $"Expected headers in order: {string.Join(", ", RequiredColumns)}.");
+                $"Expected required headers in order: {string.Join(", ", RequiredColumns)}. "
+                + $"Optional: {string.Join(", ", OptionalColumns)}.");
             throw new DomainException(
                 DomainErrorCodes.CatalogImportHeadersInvalid,
                 string.Join(" ", parts));
         }
 
-        if (trimmed.Count != RequiredColumns.Count)
+        if (trimmed.Count < RequiredColumns.Count)
         {
             throw new DomainException(
                 DomainErrorCodes.CatalogImportHeadersInvalid,
-                $"Expected exactly {RequiredColumns.Count} columns in order: {string.Join(", ", RequiredColumns)}.");
+                $"Expected at least {RequiredColumns.Count} columns in order: {string.Join(", ", RequiredColumns)}.");
         }
 
         for (var i = 0; i < RequiredColumns.Count; i++)
@@ -182,7 +196,17 @@ public static class CatalogImportCsvSchema
                 throw new DomainException(
                     DomainErrorCodes.CatalogImportHeadersInvalid,
                     $"Header order mismatch at column {i + 1}: expected '{RequiredColumns[i]}', found '{trimmed[i]}'. "
-                    + $"Expected headers in order: {string.Join(", ", RequiredColumns)}.");
+                    + $"Expected required headers in order: {string.Join(", ", RequiredColumns)}.");
+            }
+        }
+
+        for (var i = RequiredColumns.Count; i < trimmed.Count; i++)
+        {
+            if (!OptionalColumnSet.Contains(trimmed[i]))
+            {
+                throw new DomainException(
+                    DomainErrorCodes.CatalogImportHeadersInvalid,
+                    $"Unknown optional column '{trimmed[i]}' at position {i + 1}.");
             }
         }
     }
@@ -223,7 +247,8 @@ public static class CatalogImportCsvSchema
             taxHint: "VAT",
             tags: "beverage|cola|sample",
             businessTypes: $"{LegacyBusinessTypeSeeds.SariSariCode}|{LegacyBusinessTypeSeeds.MiniGroceryCode}",
-            status: nameof(GlobalProductStatus.Draft));
+            status: nameof(GlobalProductStatus.Draft),
+            sellingMode: nameof(ProductSellingMode.PerItem));
 
         AppendSampleRow(
             sb,
@@ -239,23 +264,25 @@ public static class CatalogImportCsvSchema
             taxHint: "VAT",
             tags: "snack|sample",
             businessTypes: LegacyBusinessTypeSeeds.SariSariCode,
-            status: nameof(GlobalProductStatus.Active));
+            status: nameof(GlobalProductStatus.Active),
+            sellingMode: nameof(ProductSellingMode.PerItem));
 
         AppendSampleRow(
             sb,
-            productName: "SAMPLE Pandesal Pack",
-            category: "Bakery",
-            description: "Fresh bread pack — replace or delete this sample row. Blank Barcode is valid; SKU holds the merchant code.",
-            brand: "SampleBakery",
-            unit: nameof(ProductUnit.Pack),
+            productName: "SAMPLE Tomato per kg",
+            category: "Produce",
+            description: "ByWeight sample — Unit must be Kilogram; SellingPrice is PHP per kilogram. Blank Barcode is valid.",
+            brand: "SampleFresh",
+            unit: nameof(ProductUnit.Kilogram),
             barcode: string.Empty,
-            sku: "BAKERY000001",
-            sellingPrice: 35.75m,
-            costPrice: 22.00m,
-            taxHint: "VAT-EXEMPT",
-            tags: "bakery|bread|sample",
-            businessTypes: $"{LegacyBusinessTypeSeeds.BakeryCode}|{LegacyBusinessTypeSeeds.CafeCode}",
-            status: nameof(GlobalProductStatus.Draft));
+            sku: "VEG-TOMATO-KG",
+            sellingPrice: 120.00m,
+            costPrice: 80.00m,
+            taxHint: "VAT",
+            tags: "produce|sample",
+            businessTypes: LegacyBusinessTypeSeeds.SariSariCode,
+            status: nameof(GlobalProductStatus.Draft),
+            sellingMode: nameof(ProductSellingMode.ByWeight));
 
         return sb.ToString();
     }
@@ -274,7 +301,8 @@ public static class CatalogImportCsvSchema
         string taxHint,
         string tags,
         string businessTypes,
-        string status)
+        string status,
+        string sellingMode)
     {
         var fields = new[]
         {
@@ -290,7 +318,8 @@ public static class CatalogImportCsvSchema
             taxHint,
             tags,
             businessTypes,
-            status
+            status,
+            sellingMode
         };
         sb.AppendLine(string.Join(',', fields.Select(EscapeCsvField)));
     }

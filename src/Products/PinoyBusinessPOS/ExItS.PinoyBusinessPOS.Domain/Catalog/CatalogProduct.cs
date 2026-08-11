@@ -26,6 +26,7 @@ public sealed class CatalogProduct
     public string? Barcode { get; private set; }
     public ProductCategoryId? CategoryId { get; private set; }
     public UnitOfMeasure UnitOfMeasure { get; private set; }
+    public SellingMode SellingMode { get; private set; }
     public decimal SellingPrice { get; private set; }
     public CatalogProductStatus Status { get; private set; }
     public Guid? PlatformGlobalProductId { get; private set; }
@@ -47,6 +48,7 @@ public sealed class CatalogProduct
         string? barcode,
         ProductCategoryId? categoryId,
         UnitOfMeasure unitOfMeasure,
+        SellingMode sellingMode,
         decimal sellingPrice,
         CatalogProductStatus status,
         Guid? platformGlobalProductId,
@@ -67,6 +69,7 @@ public sealed class CatalogProduct
         Barcode = barcode;
         CategoryId = categoryId;
         UnitOfMeasure = unitOfMeasure;
+        SellingMode = sellingMode;
         SellingPrice = sellingPrice;
         Status = status;
         PlatformGlobalProductId = platformGlobalProductId;
@@ -89,9 +92,11 @@ public sealed class CatalogProduct
         string? sku = null,
         string? barcode = null,
         ProductCategoryId? categoryId = null,
-        CatalogProductId? id = null)
+        CatalogProductId? id = null,
+        SellingMode sellingMode = SellingMode.PerItem)
     {
         CatalogGuards.EnsureUtc(utcNow);
+        SellingModes.EnsureCompatible(sellingMode, unitOfMeasure);
         var (displaySku, normalizedSku) = NormalizeOptionalSku(sku);
 
         return new CatalogProduct(
@@ -104,6 +109,7 @@ public sealed class CatalogProduct
             NormalizeOptionalBarcode(barcode),
             categoryId,
             unitOfMeasure,
+            sellingMode,
             NormalizeSellingPrice(sellingPrice),
             CatalogProductStatus.Active,
             platformGlobalProductId: null,
@@ -135,9 +141,11 @@ public sealed class CatalogProduct
         Guid? platformTemplateId = null,
         Guid? sourceGlobalCategoryId = null,
         int snapshotVersion = CatalogImportRules.SnapshotVersion,
-        CatalogProductId? id = null)
+        CatalogProductId? id = null,
+        SellingMode sellingMode = SellingMode.PerItem)
     {
         CatalogGuards.EnsureUtc(utcNow);
+        SellingModes.EnsureCompatible(sellingMode, unitOfMeasure);
         if (platformGlobalProductId == Guid.Empty)
         {
             throw new DomainException(
@@ -164,6 +172,7 @@ public sealed class CatalogProduct
             NormalizeOptionalBarcode(barcode),
             categoryId,
             unitOfMeasure,
+            sellingMode,
             NormalizeSellingPrice(sellingPrice),
             CatalogProductStatus.Active,
             platformGlobalProductId,
@@ -195,7 +204,8 @@ public sealed class CatalogProduct
         CatalogSource catalogSource = CatalogSource.Manual,
         DateTimeOffset? catalogImportedAt = null,
         int? catalogSnapshotVersion = null,
-        Guid? sourceGlobalCategoryId = null) =>
+        Guid? sourceGlobalCategoryId = null,
+        SellingMode sellingMode = SellingMode.PerItem) =>
         new(
             id,
             organizationId,
@@ -206,6 +216,7 @@ public sealed class CatalogProduct
             barcode,
             categoryId,
             unitOfMeasure,
+            sellingMode,
             sellingPrice,
             status,
             platformGlobalProductId,
@@ -226,7 +237,8 @@ public sealed class CatalogProduct
         ProductCategoryId? categoryId,
         UnitOfMeasure unitOfMeasure,
         decimal sellingPrice,
-        DateTimeOffset utcNow)
+        DateTimeOffset utcNow,
+        SellingMode sellingMode = SellingMode.PerItem)
     {
         CatalogGuards.EnsureUtc(utcNow);
         if (Status == CatalogProductStatus.Inactive)
@@ -236,6 +248,7 @@ public sealed class CatalogProduct
                 "Inactive products cannot be edited. Reactivate first.");
         }
 
+        SellingModes.EnsureCompatible(sellingMode, unitOfMeasure);
         var (displaySku, normalizedSku) = NormalizeOptionalSku(sku);
         Name = NormalizeName(name);
         Description = NormalizeOptionalDescription(description);
@@ -244,6 +257,7 @@ public sealed class CatalogProduct
         Barcode = NormalizeOptionalBarcode(barcode);
         CategoryId = categoryId;
         UnitOfMeasure = unitOfMeasure;
+        SellingMode = sellingMode;
         SellingPrice = NormalizeSellingPrice(sellingPrice);
         UpdatedAtUtc = utcNow;
     }

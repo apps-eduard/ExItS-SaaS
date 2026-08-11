@@ -11,6 +11,7 @@ internal sealed class CatalogImportItemResultRecord
     public string? Sku { get; set; }
     public string? Barcode { get; set; }
     public string UnitOfMeasure { get; set; } = string.Empty;
+    public string SellingMode { get; set; } = "PerItem";
     public decimal SuggestedPrice { get; set; }
     public Guid? SourceGlobalCategoryId { get; set; }
     public string? SourceCategoryName { get; set; }

@@ -274,7 +274,7 @@ public sealed class LocalSellingCatalogAndCashSaleStore(
             var sql = new StringBuilder(
                 """
                 SELECT product_id, organization_id, name, description, sku, barcode, category_id,
-                       unit_of_measure, selling_price, status, is_tracked, on_hand_quantity, stock_status, updated_utc
+                       unit_of_measure, selling_mode, selling_price, status, is_tracked, on_hand_quantity, stock_status, updated_utc
                 FROM local_catalog_product
                 WHERE organization_id = $org
                   AND status = 'Active'
@@ -664,7 +664,7 @@ public sealed class LocalSellingCatalogAndCashSaleStore(
             cmd.CommandText =
                 $"""
                 SELECT product_id, organization_id, name, description, sku, barcode, category_id,
-                       unit_of_measure, selling_price, status, is_tracked, on_hand_quantity, stock_status, updated_utc
+                       unit_of_measure, selling_mode, selling_price, status, is_tracked, on_hand_quantity, stock_status, updated_utc
                 FROM local_catalog_product
                 WHERE organization_id = $org
                   AND status = 'Active'
@@ -727,10 +727,10 @@ public sealed class LocalSellingCatalogAndCashSaleStore(
             """
             INSERT INTO local_catalog_product (
                 product_id, organization_id, name, description, sku, barcode, category_id,
-                unit_of_measure, selling_price, status, is_tracked, on_hand_quantity, stock_status, updated_utc)
+                unit_of_measure, selling_mode, selling_price, status, is_tracked, on_hand_quantity, stock_status, updated_utc)
             VALUES (
                 $id, $org, $name, $description, $sku, $barcode, $category,
-                $uom, $price, $status, $tracked, $onhand, $stock, $updated)
+                $uom, $sellingMode, $price, $status, $tracked, $onhand, $stock, $updated)
             ON CONFLICT(product_id) DO UPDATE SET
                 organization_id = excluded.organization_id,
                 name = excluded.name,
@@ -739,6 +739,7 @@ public sealed class LocalSellingCatalogAndCashSaleStore(
                 barcode = excluded.barcode,
                 category_id = excluded.category_id,
                 unit_of_measure = excluded.unit_of_measure,
+                selling_mode = excluded.selling_mode,
                 selling_price = excluded.selling_price,
                 status = excluded.status,
                 is_tracked = excluded.is_tracked,
@@ -756,6 +757,9 @@ public sealed class LocalSellingCatalogAndCashSaleStore(
             "$category",
             product.CategoryId is Guid c ? c.ToString("D") : DBNull.Value);
         cmd.Parameters.AddWithValue("$uom", product.UnitOfMeasure);
+        cmd.Parameters.AddWithValue(
+            "$sellingMode",
+            string.IsNullOrWhiteSpace(product.SellingMode) ? "PerItem" : product.SellingMode);
         cmd.Parameters.AddWithValue("$price", DecimalText(product.SellingPrice));
         cmd.Parameters.AddWithValue("$status", product.Status);
         cmd.Parameters.AddWithValue("$tracked", product.IsTracked ? 1 : 0);
@@ -768,7 +772,7 @@ public sealed class LocalSellingCatalogAndCashSaleStore(
     private static PosCatalogProductDto ReadProduct(SqliteDataReader reader)
     {
         Guid? categoryId = reader.IsDBNull(6) ? null : Guid.Parse(reader.GetString(6));
-        var updated = ParseUtc(reader.GetString(13));
+        var updated = ParseUtc(reader.GetString(14));
         return new PosCatalogProductDto(
             Guid.Parse(reader.GetString(0)),
             Guid.Parse(reader.GetString(1)),
@@ -778,13 +782,14 @@ public sealed class LocalSellingCatalogAndCashSaleStore(
             reader.IsDBNull(5) ? null : reader.GetString(5),
             categoryId,
             reader.GetString(7),
-            ParseDecimal(reader.GetString(8)),
-            reader.GetString(9),
+            string.IsNullOrWhiteSpace(reader.GetString(8)) ? "PerItem" : reader.GetString(8),
+            ParseDecimal(reader.GetString(9)),
+            reader.GetString(10),
             updated,
             updated,
-            IsTracked: reader.GetInt32(10) == 1,
-            OnHandQuantity: ParseDecimal(reader.GetString(11)),
-            StockStatus: reader.GetString(12));
+            IsTracked: reader.GetInt32(11) == 1,
+            OnHandQuantity: ParseDecimal(reader.GetString(12)),
+            StockStatus: reader.GetString(13));
     }
 
     private async Task EnsureEncryptionKeyAsync(CancellationToken ct)

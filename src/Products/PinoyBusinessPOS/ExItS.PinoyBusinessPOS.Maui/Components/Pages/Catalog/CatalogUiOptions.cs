@@ -19,6 +19,14 @@ internal static class CatalogUiOptions
     public static string UnitOfMeasureLabel(IStringLocalizer<PosResources> localizer, string? code) =>
         string.IsNullOrWhiteSpace(code) ? string.Empty : localizer[$"Catalog_Uom_{code}"].Value;
 
+    public static IReadOnlyList<SelectOption> SellingModes(IStringLocalizer<PosResources> localizer) =>
+        PosCatalogOptions.SellingModeCodes
+            .Select(code => new SelectOption(code, localizer[$"Catalog_SellingMode_{code}"].Value))
+            .ToList();
+
+    public static string SellingModeLabel(IStringLocalizer<PosResources> localizer, string? code) =>
+        string.IsNullOrWhiteSpace(code) ? string.Empty : localizer[$"Catalog_SellingMode_{code}"].Value;
+
     public static string StatusLabel(IStringLocalizer<PosResources> localizer, string? status) =>
         string.Equals(status, PosCatalogOptions.ActiveStatus, StringComparison.Ordinal)
             ? localizer["Catalog_Status_Active"].Value

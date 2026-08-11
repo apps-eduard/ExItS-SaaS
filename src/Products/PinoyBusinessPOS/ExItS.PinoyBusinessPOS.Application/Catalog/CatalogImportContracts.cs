@@ -93,6 +93,7 @@ public sealed record PlatformMerchantCatalogTemplateProductDto(
     string? CategoryName = null,
     string? Status = null,
     string? Unit = null,
+    string? SellingMode = null,
     decimal? CostPrice = null,
     decimal? SellingPrice = null);
 
@@ -138,12 +139,13 @@ public sealed record PlatformMerchantGlobalProductDto(
     string? Brand,
     Guid? GlobalCategoryId,
     string Unit,
-    decimal? CostPrice,
-    decimal? SellingPrice,
-    string? ImageReference,
-    string Status,
-    DateTimeOffset CreatedAtUtc,
-    DateTimeOffset UpdatedAtUtc);
+    string SellingMode = "PerItem",
+    decimal? CostPrice = null,
+    decimal? SellingPrice = null,
+    string? ImageReference = null,
+    string Status = "Active",
+    DateTimeOffset CreatedAtUtc = default,
+    DateTimeOffset UpdatedAtUtc = default);
 
 public sealed record PlatformMerchantGlobalCategoryDto(
     Guid Id,
@@ -210,6 +212,7 @@ public sealed record PosCatalogImportItemDto(
     string? Sku,
     string? Barcode,
     string UnitOfMeasure,
+    string SellingMode,
     decimal SuggestedPrice,
     string Status,
     Guid? LocalProductId,

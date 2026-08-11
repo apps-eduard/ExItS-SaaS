@@ -25,4 +25,8 @@ public static class PosCatalogOptions
     public const string ActiveStatus = nameof(CatalogProductStatus.Active);
     public const string InactiveStatus = nameof(CatalogProductStatus.Inactive);
     public const string DefaultUnitOfMeasureCode = nameof(UnitOfMeasure.Piece);
+
+    public static IReadOnlyList<string> SellingModeCodes { get; } = SellingModes.Codes;
+
+    public const string DefaultSellingModeCode = nameof(SellingMode.PerItem);
 }

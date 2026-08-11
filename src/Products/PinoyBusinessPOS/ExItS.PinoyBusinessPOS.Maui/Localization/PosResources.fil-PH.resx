@@ -802,13 +802,16 @@
   <data name="Catalog_Field_Barcode" xml:space="preserve"><value>Barcode</value></data>
   <data name="Catalog_Field_Category" xml:space="preserve"><value>Kategorya</value></data>
   <data name="Catalog_Field_Unit" xml:space="preserve"><value>Yunit ng sukat</value></data>
+  <data name="Catalog_Field_SellingMode" xml:space="preserve"><value>Paraan ng bentahan</value></data>
   <data name="Catalog_Field_SellingPrice" xml:space="preserve"><value>Presyong bentahan</value></data>
   <data name="Catalog_Field_Status" xml:space="preserve"><value>Status</value></data>
   <data name="Catalog_DescriptionHint" xml:space="preserve"><value>Opsyonal. Hanggang 512 karakter.</value></data>
   <data name="Catalog_SkuHint" xml:space="preserve"><value>Opsyonal. Letra, numero, - _ . / lamang.</value></data>
   <data name="Catalog_BarcodeHint" xml:space="preserve"><value>Opsyonal. 8 hanggang 14 na numero, sinusuri ang check digit.</value></data>
   <data name="Catalog_CategoryHint" xml:space="preserve"><value>Opsyonal. Aktibong kategorya lamang ang maaaring italaga.</value></data>
-  <data name="Catalog_PriceHint" xml:space="preserve"><value>Zero pataas, hanggang dalawang decimal.</value></data>
+  <data name="Catalog_PriceHint" xml:space="preserve"><value>Zero pataas, hanggang dalawang decimal. ByWeight ay kada kg.</value></data>
+  <data name="Catalog_SellingMode_PerItem" xml:space="preserve"><value>Kada piraso</value></data>
+  <data name="Catalog_SellingMode_ByWeight" xml:space="preserve"><value>Ayon sa timbang</value></data>
   <data name="Catalog_NameRequired" xml:space="preserve"><value>Kailangan ang pangalan ng produkto.</value></data>
   <data name="Catalog_PriceRequired" xml:space="preserve"><value>Maglagay ng presyong zero pataas.</value></data>
   <data name="Catalog_SkuConflict" xml:space="preserve"><value>Ginagamit na ang SKU na ito ng ibang produkto sa organisasyon mo.</value></data>

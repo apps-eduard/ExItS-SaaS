@@ -415,6 +415,18 @@ public sealed class CreateGlobalProduct
                     $"Unrecognized product unit '{request.Unit}'.");
             }
 
+            ProductSellingMode sellingMode;
+            try
+            {
+                // Create: blank/omitted SellingMode defaults to PerItem.
+                sellingMode = ProductSellingModes.Parse(request.SellingMode);
+                ProductSellingModes.EnsureCompatible(sellingMode, unit);
+            }
+            catch (DomainException ex)
+            {
+                return ApplicationResult<GlobalProductDto>.Failure(ex.ErrorCode, ex.Message);
+            }
+
             GlobalCategoryId categoryId;
             try
             {
@@ -469,7 +481,8 @@ public sealed class CreateGlobalProduct
                 request.SearchTags,
                 await BusinessTypeResolver
                     .ResolveManyAsync(_businessTypes, request.BusinessTypes, request.BusinessTypeIds, cancellationToken)
-                    .ConfigureAwait(false));
+                    .ConfigureAwait(false),
+                sellingMode: sellingMode);
 
             await _products.AddAsync(product, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
@@ -541,6 +554,20 @@ public sealed class UpdateGlobalProduct
                     $"Unrecognized product unit '{request.Unit}'.");
             }
 
+            ProductSellingMode sellingMode;
+            try
+            {
+                // Update: omitted/blank SellingMode preserves the existing value.
+                sellingMode = string.IsNullOrWhiteSpace(request.SellingMode)
+                    ? product.SellingMode
+                    : ProductSellingModes.Parse(request.SellingMode);
+                ProductSellingModes.EnsureCompatible(sellingMode, unit);
+            }
+            catch (DomainException ex)
+            {
+                return ApplicationResult<GlobalProductDto>.Failure(ex.ErrorCode, ex.Message);
+            }
+
             GlobalCategoryId categoryId;
             try
             {
@@ -595,7 +622,8 @@ public sealed class UpdateGlobalProduct
                 request.SearchTags,
                 await BusinessTypeResolver
                     .ResolveManyAsync(_businessTypes, request.BusinessTypes, request.BusinessTypeIds, cancellationToken)
-                    .ConfigureAwait(false));
+                    .ConfigureAwait(false),
+                sellingMode: sellingMode);
 
             await _products.UpdateAsync(product, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);

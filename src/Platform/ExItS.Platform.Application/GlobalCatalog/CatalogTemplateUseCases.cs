@@ -254,6 +254,7 @@ public sealed class CatalogTemplateQueryService
                 CategoryName = categoryName,
                 Status = product.Status.ToString(),
                 Unit = product.Unit.ToString(),
+                SellingMode = product.SellingMode.ToString(),
                 CostPrice = product.CostPrice,
                 SellingPrice = product.SellingPrice
             };

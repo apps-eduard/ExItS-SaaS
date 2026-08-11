@@ -124,6 +124,7 @@ public sealed class ImportSelectedProductsEntitlementTests
                 "Brand",
                 null,
                 "Piece",
+                "PerItem",
                 5m,
                 10m,
                 null,

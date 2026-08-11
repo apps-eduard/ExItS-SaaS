@@ -94,6 +94,7 @@ public sealed class CatalogImportQueryService
             item.Sku,
             item.Barcode,
             item.UnitOfMeasure,
+            item.SellingMode,
             item.SuggestedPrice,
             item.Status.ToString(),
             item.LocalProductId?.Value,
@@ -360,7 +361,8 @@ public sealed class ImportTemplateBatch
                     product.Sku,
                     product.Barcode,
                     product.GlobalCategoryId ?? link.CategoryId,
-                    sourceCategoryName: FirstNonBlank(link.CategoryName)));
+                    sourceCategoryName: FirstNonBlank(link.CategoryName),
+                    sellingMode: string.IsNullOrWhiteSpace(product.SellingMode) ? "PerItem" : product.SellingMode));
             }
 
             if (items.Count == 0)
@@ -448,7 +450,8 @@ public sealed class ImportTemplateBatch
             sku: link.Sku,
             barcode: link.Barcode,
             sourceGlobalCategoryId: link.CategoryId,
-            sourceCategoryName: link.CategoryName);
+            sourceCategoryName: link.CategoryName,
+            sellingMode: string.IsNullOrWhiteSpace(link.SellingMode) ? "PerItem" : link.SellingMode);
         return true;
     }
 
@@ -560,7 +563,8 @@ public sealed class ImportSelectedProducts
                     sourceCategoryName: p.GlobalCategoryId is Guid cid
                         && categoryNames.TryGetValue(cid, out var categoryName)
                         ? categoryName
-                        : null))
+                        : null,
+                    sellingMode: string.IsNullOrWhiteSpace(p.SellingMode) ? "PerItem" : p.SellingMode))
                 .ToList();
 
             var job = CatalogImportJob.CreateQueued(
@@ -763,6 +767,18 @@ public sealed class ProcessPosCatalogImportChunk
                 return;
             }
 
+            SellingMode sellingMode;
+            try
+            {
+                sellingMode = SellingModes.Parse(item.SellingMode);
+                SellingModes.EnsureCompatible(sellingMode, unit);
+            }
+            catch (DomainException ex)
+            {
+                item.MarkFailed(ex.ErrorCode, ex.Message, now);
+                return;
+            }
+
             string? normalizedSku;
             string? barcode;
             try
@@ -836,7 +852,8 @@ public sealed class ProcessPosCatalogImportChunk
                 barcode,
                 categoryId,
                 job.PlatformTemplateId,
-                item.SourceGlobalCategoryId);
+                item.SourceGlobalCategoryId,
+                sellingMode: sellingMode);
 
             await _products.AddAsync(product, cancellationToken).ConfigureAwait(false);
             item.MarkImported(product.Id, now);

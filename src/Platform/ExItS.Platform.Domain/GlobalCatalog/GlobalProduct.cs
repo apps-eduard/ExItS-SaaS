@@ -22,6 +22,7 @@ public sealed class GlobalProduct
     public string Brand { get; private set; }
     public GlobalCategoryId? GlobalCategoryId { get; private set; }
     public ProductUnit Unit { get; private set; }
+    public ProductSellingMode SellingMode { get; private set; }
     public decimal? CostPrice { get; private set; }
     public decimal? SellingPrice { get; private set; }
     public string? ImageReference { get; private set; }
@@ -40,6 +41,7 @@ public sealed class GlobalProduct
         string brand,
         GlobalCategoryId? globalCategoryId,
         ProductUnit unit,
+        ProductSellingMode sellingMode,
         decimal? costPrice,
         decimal? sellingPrice,
         string? imageReference,
@@ -57,6 +59,7 @@ public sealed class GlobalProduct
         Brand = brand;
         GlobalCategoryId = globalCategoryId;
         Unit = unit;
+        SellingMode = sellingMode;
         CostPrice = costPrice;
         SellingPrice = sellingPrice;
         ImageReference = imageReference;
@@ -81,10 +84,12 @@ public sealed class GlobalProduct
         string? imageReference = null,
         IEnumerable<string>? searchTags = null,
         IEnumerable<BusinessTypeId>? businessTypeIds = null,
-        GlobalProductId? id = null)
+        GlobalProductId? id = null,
+        ProductSellingMode sellingMode = ProductSellingMode.PerItem)
     {
         DomainTime.EnsureUtc(utcNow);
         EnsureValidUnit(unit);
+        ProductSellingModes.EnsureCompatible(sellingMode, unit);
         GlobalCatalogRules.RequireCategory(globalCategoryId);
         var (normalizedCost, normalizedSelling) = GlobalCatalogRules.NormalizeProductPrices(costPrice, sellingPrice);
 
@@ -100,6 +105,7 @@ public sealed class GlobalProduct
             GlobalCatalogRules.NormalizeBrand(brand),
             globalCategoryId,
             unit,
+            sellingMode,
             normalizedCost,
             normalizedSelling,
             GlobalCatalogRules.NormalizeOptionalText(
@@ -133,7 +139,8 @@ public sealed class GlobalProduct
         IEnumerable<string> searchTags,
         IEnumerable<BusinessTypeId> businessTypeIds,
         DateTimeOffset createdAtUtc,
-        DateTimeOffset updatedAtUtc) =>
+        DateTimeOffset updatedAtUtc,
+        ProductSellingMode sellingMode = ProductSellingMode.PerItem) =>
         new(
             id,
             name,
@@ -143,6 +150,7 @@ public sealed class GlobalProduct
             brand ?? string.Empty,
             globalCategoryId,
             unit,
+            sellingMode,
             costPrice,
             sellingPrice,
             imageReference,
@@ -165,10 +173,12 @@ public sealed class GlobalProduct
         string? description = null,
         string? imageReference = null,
         IEnumerable<string>? searchTags = null,
-        IEnumerable<BusinessTypeId>? businessTypeIds = null)
+        IEnumerable<BusinessTypeId>? businessTypeIds = null,
+        ProductSellingMode sellingMode = ProductSellingMode.PerItem)
     {
         EnsureMutable(utcNow);
         EnsureValidUnit(unit);
+        ProductSellingModes.EnsureCompatible(sellingMode, unit);
         GlobalCatalogRules.RequireCategory(globalCategoryId);
         var (normalizedCost, normalizedSelling) = GlobalCatalogRules.NormalizeProductPrices(costPrice, sellingPrice);
 
@@ -182,6 +192,7 @@ public sealed class GlobalProduct
         Brand = GlobalCatalogRules.NormalizeBrand(brand);
         GlobalCategoryId = globalCategoryId;
         Unit = unit;
+        SellingMode = sellingMode;
         CostPrice = normalizedCost;
         SellingPrice = normalizedSelling;
         ImageReference = GlobalCatalogRules.NormalizeOptionalText(

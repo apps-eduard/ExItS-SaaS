@@ -986,6 +986,7 @@
   <data name="GlobalProducts_Category" xml:space="preserve"><value>Category</value></data>
   <data name="GlobalProducts_Uncategorized" xml:space="preserve"><value>Uncategorized</value></data>
   <data name="GlobalProducts_Unit" xml:space="preserve"><value>Unit</value></data>
+  <data name="GlobalProducts_SellingMode" xml:space="preserve"><value>Selling mode</value></data>
   <data name="GlobalProducts_CostPrice" xml:space="preserve"><value>Cost price</value></data>
   <data name="GlobalProducts_SellingPrice" xml:space="preserve"><value>Selling price</value></data>
   <data name="GlobalProducts_RequiredCostPrice" xml:space="preserve"><value>Cost price is required.</value></data>

@@ -165,6 +165,7 @@ public sealed class CatalogProductQueryService
             product.Barcode,
             product.CategoryId?.Value,
             UnitOfMeasures.ToCode(product.UnitOfMeasure),
+            SellingModes.ToCode(product.SellingMode),
             product.SellingPrice,
             product.Status.ToString(),
             product.CreatedAtUtc,
@@ -210,6 +211,7 @@ public sealed class CreateCatalogProduct
         string? barcode = null,
         Guid? categoryId = null,
         Guid? clientProductId = null,
+        string? sellingMode = null,
         CancellationToken cancellationToken = default)
     {
         try
@@ -228,6 +230,7 @@ public sealed class CreateCatalogProduct
             }
 
             var unit = UnitOfMeasures.Parse(unitOfMeasure);
+            var mode = SellingModes.Parse(sellingMode);
             ProductCategoryId? category = null;
             if (categoryId is not null)
             {
@@ -252,7 +255,8 @@ public sealed class CreateCatalogProduct
                 sku,
                 barcode,
                 category,
-                clientProductId is null ? null : CatalogProductId.From(clientProductId.Value));
+                clientProductId is null ? null : CatalogProductId.From(clientProductId.Value),
+                mode);
 
             var conflict = await CatalogAssignment
                 .FindIdentifierConflictAsync(
@@ -316,6 +320,7 @@ public sealed class UpdateCatalogProduct
         string? barcode = null,
         Guid? categoryId = null,
         DateTimeOffset? expectedUpdatedAtUtc = null,
+        string? sellingMode = null,
         CancellationToken cancellationToken = default)
     {
         var orgId = PosOrganizationId.From(organizationId);
@@ -339,6 +344,10 @@ public sealed class UpdateCatalogProduct
         try
         {
             var unit = UnitOfMeasures.Parse(unitOfMeasure);
+            // Update: omitted/blank SellingMode preserves the existing value.
+            var mode = string.IsNullOrWhiteSpace(sellingMode)
+                ? product.SellingMode
+                : SellingModes.Parse(sellingMode);
 
             if (unit != product.UnitOfMeasure)
             {
@@ -393,7 +402,8 @@ public sealed class UpdateCatalogProduct
                 category,
                 unit,
                 sellingPrice,
-                _clock.UtcNow);
+                _clock.UtcNow,
+                mode);
 
             await _products.UpdateAsync(product, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);

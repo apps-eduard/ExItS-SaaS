@@ -461,6 +461,12 @@ public sealed class PosDbContext : DbContext
                     "ck_products_unit_of_measure",
                     $"unit_of_measure IN ({string.Join(", ", UnitOfMeasures.Codes.Select(c => $"'{c}'"))})");
                 tb.HasCheckConstraint(
+                    "ck_products_selling_mode",
+                    "selling_mode IN ('PerItem','ByWeight')");
+                tb.HasCheckConstraint(
+                    "ck_products_selling_mode_unit",
+                    "selling_mode <> 'ByWeight' OR unit_of_measure = 'Kilogram'");
+                tb.HasCheckConstraint(
                     "ck_products_barcode_digits",
                     "barcode IS NULL OR barcode ~ '^[0-9]{8,14}$'");
                 tb.HasCheckConstraint(
@@ -489,6 +495,10 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.UnitOfMeasure)
                 .HasColumnName("unit_of_measure")
                 .HasMaxLength(UnitOfMeasures.CodeMaxLength)
+                .IsRequired();
+            entity.Property(e => e.SellingMode)
+                .HasColumnName("selling_mode")
+                .HasMaxLength(32)
                 .IsRequired();
             entity.Property(e => e.SellingPrice)
                 .HasColumnName("selling_price")
@@ -611,6 +621,9 @@ public sealed class PosDbContext : DbContext
                 tb.HasCheckConstraint(
                     "ck_catalog_import_items_status",
                     "status IN ('Pending', 'Imported', 'Skipped', 'Failed')");
+                tb.HasCheckConstraint(
+                    "ck_catalog_import_items_selling_mode",
+                    "selling_mode IN ('PerItem','ByWeight')");
             });
 
             entity.HasKey(e => e.Id);
@@ -627,6 +640,10 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.UnitOfMeasure)
                 .HasColumnName("unit_of_measure")
                 .HasMaxLength(UnitOfMeasures.CodeMaxLength)
+                .IsRequired();
+            entity.Property(e => e.SellingMode)
+                .HasColumnName("selling_mode")
+                .HasMaxLength(32)
                 .IsRequired();
             entity.Property(e => e.SuggestedPrice).HasColumnName("suggested_price").HasPrecision(18, 2);
             entity.Property(e => e.SourceGlobalCategoryId).HasColumnName("source_global_category_id");

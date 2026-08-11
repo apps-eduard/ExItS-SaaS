@@ -226,6 +226,7 @@ internal static class CatalogEndpoints
                     body.Barcode,
                     body.CategoryId,
                     body.ProductId,
+                    body.SellingMode,
                     ct)
                 .ConfigureAwait(false);
 
@@ -284,6 +285,7 @@ internal static class CatalogEndpoints
                     body.Barcode,
                     body.CategoryId,
                     body.ExpectedUpdatedAtUtc,
+                    body.SellingMode,
                     ct)
                 .ConfigureAwait(false);
 

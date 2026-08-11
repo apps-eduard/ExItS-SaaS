@@ -47,6 +47,7 @@ internal sealed class GlobalProductRecord
     public string? Brand { get; set; }
     public Guid? GlobalCategoryId { get; set; }
     public string Unit { get; set; } = string.Empty;
+    public string SellingMode { get; set; } = "PerItem";
     public decimal? CostPrice { get; set; }
     public decimal? SellingPrice { get; set; }
     public string? ImageReference { get; set; }

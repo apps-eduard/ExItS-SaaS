@@ -65,6 +65,8 @@ else
                                 CategoryIdChanged="v => _categoryId = v"
                                 UnitOfMeasure="@_unitOfMeasure"
                                 UnitOfMeasureChanged="v => _unitOfMeasure = v"
+                                SellingMode="@_sellingMode"
+                                SellingModeChanged="v => _sellingMode = v"
                                 SellingPrice="@_sellingPrice"
                                 SellingPriceChanged="v => _sellingPrice = v"
                                 Categories="@_categories"
@@ -97,6 +99,7 @@ else
     private string? _barcode;
     private string? _categoryId;
     private string? _unitOfMeasure;
+    private string? _sellingMode = PosCatalogOptions.DefaultSellingModeCode;
     private decimal? _sellingPrice;
     private IReadOnlyList<PosProductCategoryDto> _categories = Array.Empty<PosProductCategoryDto>();
     private string? _nameError;
@@ -148,6 +151,9 @@ else
             _barcode = _product.Barcode;
             _categoryId = _product.CategoryId?.ToString("D");
             _unitOfMeasure = _product.UnitOfMeasure;
+            _sellingMode = string.IsNullOrWhiteSpace(_product.SellingMode)
+                ? PosCatalogOptions.DefaultSellingModeCode
+                : _product.SellingMode;
             _sellingPrice = _product.SellingPrice;
 
             var categories = await Catalog.ListCategoriesAsync(
@@ -214,7 +220,8 @@ else
             string.IsNullOrWhiteSpace(_sku) ? null : _sku,
             string.IsNullOrWhiteSpace(_barcode) ? null : _barcode,
             Guid.TryParse(_categoryId, out var categoryId) ? categoryId : null,
-            _product.UpdatedAtUtc));
+            _product.UpdatedAtUtc,
+            SellingMode: _sellingMode ?? PosCatalogOptions.DefaultSellingModeCode));
         _saving = false;
 
         if (result.IsSuccess && result.Data is not null)

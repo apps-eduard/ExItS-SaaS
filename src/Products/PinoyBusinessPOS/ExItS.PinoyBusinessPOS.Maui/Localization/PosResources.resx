@@ -802,13 +802,16 @@
   <data name="Catalog_Field_Barcode" xml:space="preserve"><value>Barcode</value></data>
   <data name="Catalog_Field_Category" xml:space="preserve"><value>Category</value></data>
   <data name="Catalog_Field_Unit" xml:space="preserve"><value>Unit of measure</value></data>
+  <data name="Catalog_Field_SellingMode" xml:space="preserve"><value>Selling mode</value></data>
   <data name="Catalog_Field_SellingPrice" xml:space="preserve"><value>Selling price</value></data>
   <data name="Catalog_Field_Status" xml:space="preserve"><value>Status</value></data>
   <data name="Catalog_DescriptionHint" xml:space="preserve"><value>Optional. Up to 512 characters.</value></data>
   <data name="Catalog_SkuHint" xml:space="preserve"><value>Optional. Letters, digits, - _ . / only.</value></data>
   <data name="Catalog_BarcodeHint" xml:space="preserve"><value>Optional. 8 to 14 digits, check digit verified.</value></data>
   <data name="Catalog_CategoryHint" xml:space="preserve"><value>Optional. Only active categories can be assigned.</value></data>
-  <data name="Catalog_PriceHint" xml:space="preserve"><value>Zero or more, up to two decimal places.</value></data>
+  <data name="Catalog_PriceHint" xml:space="preserve"><value>Zero or more, up to two decimals. ByWeight is per kg.</value></data>
+  <data name="Catalog_SellingMode_PerItem" xml:space="preserve"><value>Per item</value></data>
+  <data name="Catalog_SellingMode_ByWeight" xml:space="preserve"><value>By weight</value></data>
   <data name="Catalog_NameRequired" xml:space="preserve"><value>Product name is required.</value></data>
   <data name="Catalog_PriceRequired" xml:space="preserve"><value>Enter a selling price of zero or more.</value></data>
   <data name="Catalog_SkuConflict" xml:space="preserve"><value>This SKU is already used by another product in your organization.</value></data>

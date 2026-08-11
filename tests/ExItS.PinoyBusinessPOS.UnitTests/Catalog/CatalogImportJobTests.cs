@@ -110,11 +110,35 @@ public sealed class CatalogImportJobTests
         Assert.Equal(now, imported.CatalogImportedAt);
         Assert.Equal(CatalogImportRules.SnapshotVersion, imported.CatalogSnapshotVersion);
         Assert.NotNull(imported.SourceGlobalCategoryId);
+        Assert.Equal(SellingMode.PerItem, imported.SellingMode);
 
         var manual = CatalogProduct.Create(Org, "Custom", UnitOfMeasure.Piece, 10m, now);
         Assert.Null(manual.PlatformGlobalProductId);
         Assert.Equal(CatalogSource.Manual, manual.CatalogSource);
         Assert.Null(manual.CatalogImportedAt);
+        Assert.Equal(SellingMode.PerItem, manual.SellingMode);
+    }
+
+    [Fact]
+    public void CreateImportedSnapshot_ByWeight_Kilogram_preserves_mode()
+    {
+        var now = DateTimeOffset.Parse("2026-08-05T00:00:00Z");
+        var imported = CatalogProduct.CreateImportedSnapshot(
+            Org,
+            "Tomato",
+            UnitOfMeasure.Kilogram,
+            120m,
+            GlobalProductA,
+            CatalogSource.GlobalSearch,
+            now,
+            barcode: null,
+            sellingMode: SellingMode.ByWeight);
+
+        Assert.Equal(SellingMode.ByWeight, imported.SellingMode);
+        Assert.Equal(UnitOfMeasure.Kilogram, imported.UnitOfMeasure);
+        Assert.Equal(GlobalProductA, imported.PlatformGlobalProductId);
+        Assert.Equal(CatalogSource.GlobalSearch, imported.CatalogSource);
+        Assert.Null(imported.Barcode);
     }
 
     [Fact]

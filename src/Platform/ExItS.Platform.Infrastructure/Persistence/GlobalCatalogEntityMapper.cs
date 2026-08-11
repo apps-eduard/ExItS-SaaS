@@ -114,7 +114,10 @@ internal static class GlobalCatalogEntityMapper
             record.SearchTags ?? [],
             record.BusinessTypes.Select(b => BusinessTypeId.From(b.BusinessTypeId)),
             record.CreatedAtUtc,
-            record.UpdatedAtUtc);
+            record.UpdatedAtUtc,
+            sellingMode: ProductSellingModes.TryParse(record.SellingMode, out var mode)
+                ? mode
+                : ProductSellingMode.PerItem);
 
     public static GlobalProductRecord ToRecord(GlobalProduct product) =>
         new()
@@ -127,6 +130,7 @@ internal static class GlobalCatalogEntityMapper
             Brand = product.Brand,
             GlobalCategoryId = product.GlobalCategoryId?.Value,
             Unit = product.Unit.ToString(),
+            SellingMode = product.SellingMode.ToString(),
             SellingPrice = product.SellingPrice,
             CostPrice = product.CostPrice,
             ImageReference = product.ImageReference,
@@ -152,6 +156,7 @@ internal static class GlobalCatalogEntityMapper
         record.Brand = product.Brand;
         record.GlobalCategoryId = product.GlobalCategoryId?.Value;
         record.Unit = product.Unit.ToString();
+        record.SellingMode = product.SellingMode.ToString();
         record.SellingPrice = product.SellingPrice;
         record.CostPrice = product.CostPrice;
         record.ImageReference = product.ImageReference;

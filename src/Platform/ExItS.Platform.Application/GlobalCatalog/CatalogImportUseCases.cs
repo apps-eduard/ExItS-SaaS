@@ -586,9 +586,19 @@ public sealed class ProcessCatalogImportChunk
                 return;
             }
 
-            var (rawTags, targetStatus) = CatalogImportRowMapper.SplitTagsAndStatus(item.SearchTagsRaw);
+            var (rawTags, targetStatus, sellingMode) = CatalogImportRowMapper.SplitTagsStatusAndSellingMode(item.SearchTagsRaw);
             var tags = rawTags.ToList();
             var brand = CatalogImportRowMapper.ExtractBrand(tags);
+            try
+            {
+                ProductSellingModes.EnsureCompatible(sellingMode, unit);
+            }
+            catch (DomainException ex)
+            {
+                item.MarkFailed(ex.ErrorCode, ex.Message, now);
+                return;
+            }
+
             var product = GlobalProduct.Create(
                 item.Name,
                 unit,
@@ -604,7 +614,8 @@ public sealed class ProcessCatalogImportChunk
                 tags,
                 await CatalogImportRowMapper
                     .ParseBusinessTypesAsync(_businessTypes, item.BusinessTypesRaw, cancellationToken)
-                    .ConfigureAwait(false));
+                    .ConfigureAwait(false),
+                sellingMode: sellingMode);
 
             if (targetStatus != GlobalProductStatus.Draft)
             {

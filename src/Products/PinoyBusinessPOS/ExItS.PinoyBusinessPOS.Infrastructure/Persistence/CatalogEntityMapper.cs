@@ -59,7 +59,10 @@ internal static class CatalogEntityMapper
             Enum.Parse<CatalogSource>(record.CatalogSource, ignoreCase: true),
             record.CatalogImportedAt,
             record.CatalogSnapshotVersion,
-            record.SourceGlobalCategoryId);
+            record.SourceGlobalCategoryId,
+            sellingMode: SellingModes.TryParse(record.SellingMode, out var productMode)
+                ? productMode
+                : SellingMode.PerItem);
 
     public static CatalogProductRecord ToRecord(CatalogProduct product) =>
         new()
@@ -73,6 +76,7 @@ internal static class CatalogEntityMapper
             Barcode = product.Barcode,
             CategoryId = product.CategoryId?.Value,
             UnitOfMeasure = UnitOfMeasures.ToCode(product.UnitOfMeasure),
+            SellingMode = SellingModes.ToCode(product.SellingMode),
             SellingPrice = product.SellingPrice,
             Status = product.Status.ToString(),
             PlatformGlobalProductId = product.PlatformGlobalProductId,
@@ -94,6 +98,7 @@ internal static class CatalogEntityMapper
         record.Barcode = product.Barcode;
         record.CategoryId = product.CategoryId?.Value;
         record.UnitOfMeasure = UnitOfMeasures.ToCode(product.UnitOfMeasure);
+        record.SellingMode = SellingModes.ToCode(product.SellingMode);
         record.SellingPrice = product.SellingPrice;
         record.Status = product.Status.ToString();
         record.PlatformGlobalProductId = product.PlatformGlobalProductId;
@@ -140,6 +145,9 @@ internal static class CatalogEntityMapper
             record.Sku,
             record.Barcode,
             record.UnitOfMeasure,
+            SellingModes.TryParse(record.SellingMode, out var itemMode)
+                ? SellingModes.ToCode(itemMode)
+                : SellingModes.ToCode(SellingMode.PerItem),
             record.SuggestedPrice,
             record.SourceGlobalCategoryId,
             record.SourceCategoryName,
@@ -187,6 +195,9 @@ internal static class CatalogEntityMapper
             Sku = item.Sku,
             Barcode = item.Barcode,
             UnitOfMeasure = item.UnitOfMeasure,
+            SellingMode = SellingModes.TryParse(item.SellingMode, out var mode)
+                ? SellingModes.ToCode(mode)
+                : SellingModes.ToCode(SellingMode.PerItem),
             SuggestedPrice = item.SuggestedPrice,
             SourceGlobalCategoryId = item.SourceGlobalCategoryId,
             SourceCategoryName = item.SourceCategoryName,
@@ -243,6 +254,9 @@ internal static class CatalogEntityMapper
         record.Sku = item.Sku;
         record.Barcode = item.Barcode;
         record.UnitOfMeasure = item.UnitOfMeasure;
+        record.SellingMode = SellingModes.TryParse(item.SellingMode, out var mode)
+            ? SellingModes.ToCode(mode)
+            : SellingModes.ToCode(SellingMode.PerItem);
         record.SuggestedPrice = item.SuggestedPrice;
         record.SourceGlobalCategoryId = item.SourceGlobalCategoryId;
         record.SourceCategoryName = item.SourceCategoryName;

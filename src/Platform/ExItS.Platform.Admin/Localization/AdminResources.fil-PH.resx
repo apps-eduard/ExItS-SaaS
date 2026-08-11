@@ -985,6 +985,7 @@
   <data name="GlobalProducts_Category" xml:space="preserve"><value>Kategorya</value></data>
   <data name="GlobalProducts_Uncategorized" xml:space="preserve"><value>Walang kategorya</value></data>
   <data name="GlobalProducts_Unit" xml:space="preserve"><value>Yunit</value></data>
+  <data name="GlobalProducts_SellingMode" xml:space="preserve"><value>Paraan ng bentahan</value></data>
   <data name="GlobalProducts_CostPrice" xml:space="preserve"><value>Presyo ng gastos</value></data>
   <data name="GlobalProducts_SellingPrice" xml:space="preserve"><value>Presyo ng bentahan</value></data>
   <data name="GlobalProducts_RequiredCostPrice" xml:space="preserve"><value>Kailangan ang presyo ng gastos.</value></data>

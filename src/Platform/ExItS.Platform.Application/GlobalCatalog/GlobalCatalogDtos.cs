@@ -61,6 +61,7 @@ public sealed record GlobalProductDto(
     string Brand,
     Guid? GlobalCategoryId,
     string Unit,
+    string SellingMode,
     decimal? CostPrice,
     decimal? SellingPrice,
     string? ImageReference,
@@ -105,7 +106,8 @@ public sealed record CreateGlobalProductRequest(
     string? ImageReference = null,
     IReadOnlyList<string>? SearchTags = null,
     IReadOnlyList<string>? BusinessTypes = null,
-    IReadOnlyList<Guid>? BusinessTypeIds = null);
+    IReadOnlyList<Guid>? BusinessTypeIds = null,
+    string? SellingMode = null);
 
 public sealed record UpdateGlobalProductRequest(
     string Name,
@@ -121,7 +123,8 @@ public sealed record UpdateGlobalProductRequest(
     IReadOnlyList<string>? SearchTags = null,
     IReadOnlyList<string>? BusinessTypes = null,
     IReadOnlyList<Guid>? BusinessTypeIds = null,
-    DateTimeOffset? ExpectedUpdatedAtUtc = null);
+    DateTimeOffset? ExpectedUpdatedAtUtc = null,
+    string? SellingMode = null);
 
 public sealed record SetGlobalProductStatusRequest(
     string Status,
@@ -141,6 +144,7 @@ public sealed record CatalogTemplateProductDto(
     string? CategoryName = null,
     string? Status = null,
     string? Unit = null,
+    string? SellingMode = null,
     decimal? CostPrice = null,
     decimal? SellingPrice = null);
 
@@ -356,6 +360,7 @@ internal static class GlobalCatalogDtoMaps
             product.Brand,
             product.GlobalCategoryId?.Value,
             product.Unit.ToString(),
+            product.SellingMode.ToString(),
             product.CostPrice,
             product.SellingPrice,
             product.ImageReference,

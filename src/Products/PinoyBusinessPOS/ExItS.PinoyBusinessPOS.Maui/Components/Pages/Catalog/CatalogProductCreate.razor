@@ -61,6 +61,8 @@ else
                                 CategoryIdChanged="v => _categoryId = v"
                                 UnitOfMeasure="@_unitOfMeasure"
                                 UnitOfMeasureChanged="v => _unitOfMeasure = v"
+                                SellingMode="@_sellingMode"
+                                SellingModeChanged="v => _sellingMode = v"
                                 SellingPrice="@_sellingPrice"
                                 SellingPriceChanged="v => _sellingPrice = v"
                                 Categories="@_categories"
@@ -91,6 +93,7 @@ else
     private string? _barcode;
     private string? _categoryId;
     private string? _unitOfMeasure = PosCatalogOptions.DefaultUnitOfMeasureCode;
+    private string? _sellingMode = PosCatalogOptions.DefaultSellingModeCode;
     private decimal? _sellingPrice;
     private bool _trackStock;
     private Guid? _createdProductId;
@@ -165,7 +168,8 @@ else
                 string.IsNullOrWhiteSpace(_description) ? null : _description,
                 string.IsNullOrWhiteSpace(_sku) ? null : _sku,
                 string.IsNullOrWhiteSpace(_barcode) ? null : _barcode,
-                Guid.TryParse(_categoryId, out var categoryId) ? categoryId : null));
+                Guid.TryParse(_categoryId, out var categoryId) ? categoryId : null,
+                SellingMode: _sellingMode ?? PosCatalogOptions.DefaultSellingModeCode));
 
             if (!result.IsSuccess || result.Data is null)
             {

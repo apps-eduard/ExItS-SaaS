@@ -98,7 +98,10 @@ public sealed class CatalogImportCsvSchemaTests
         var headerLine = reader.ReadLine();
         Assert.NotNull(headerLine);
         var headers = CatalogImportCsvParser.SplitCsvLine(headerLine!);
-        Assert.Equal(CatalogImportCsvSchema.RequiredColumns.Count, headers.Count);
+        Assert.Equal(CatalogImportCsvSchema.TemplateDownloadHeaders.Count, headers.Count);
+        Assert.Equal(
+            CatalogImportCsvSchema.RequiredColumns.Count + CatalogImportCsvSchema.OptionalColumns.Count,
+            headers.Count);
         for (var i = 0; i < CatalogImportCsvSchema.RequiredColumns.Count; i++)
         {
             var expected = CatalogImportCsvSchema.TemplateDownloadHeaders[i];
@@ -111,6 +114,23 @@ public sealed class CatalogImportCsvSchemaTests
         Assert.Contains("ProductName*", headers);
         Assert.Contains("Barcode", headers);
         Assert.DoesNotContain("Barcode*", headers);
+        Assert.Equal(CatalogImportCsvSchema.SellingMode, headers[^1]);
+        Assert.Contains(CatalogImportCsvSchema.SellingMode, CatalogImportCsvSchema.OptionalColumns);
+    }
+
+    [Fact]
+    public void ValidateHeaders_accepts_legacy_headers_without_SellingMode()
+    {
+        CatalogImportCsvSchema.ValidateHeaders(CatalogImportCsvSchema.RequiredColumns);
+    }
+
+    [Fact]
+    public void ValidateHeaders_accepts_optional_SellingMode_column()
+    {
+        var headers = CatalogImportCsvSchema.RequiredColumns
+            .Concat(CatalogImportCsvSchema.OptionalColumns)
+            .ToList();
+        CatalogImportCsvSchema.ValidateHeaders(headers);
     }
 
     [Fact]
@@ -152,7 +172,9 @@ public sealed class CatalogImportCsvSchemaTests
         Assert.Contains('|', rows[0].Cells[CatalogImportCsvSchema.BusinessTypes]);
         Assert.False(string.IsNullOrWhiteSpace(rows[0].Cells[CatalogImportCsvSchema.Barcode]));
         Assert.True(string.IsNullOrWhiteSpace(rows[2].Cells[CatalogImportCsvSchema.Barcode]));
-        Assert.Equal("BAKERY000001", rows[2].Cells[CatalogImportCsvSchema.SuggestedSku]);
+        Assert.Equal("VEG-TOMATO-KG", rows[2].Cells[CatalogImportCsvSchema.SuggestedSku]);
+        Assert.Equal(nameof(ProductUnit.Kilogram), rows[2].Cells[CatalogImportCsvSchema.Unit]);
+        Assert.Equal(nameof(ProductSellingMode.ByWeight), rows[2].Cells[CatalogImportCsvSchema.SellingMode]);
     }
 
     [Fact]
@@ -410,6 +432,66 @@ public sealed class CatalogImportRowMapperTests
         Assert.Equal(DomainErrorCodes.InvalidGlobalProductStatus, items[1].ErrorCode);
         Assert.Equal(DomainErrorCodes.InvalidGlobalCatalogBusinessType, items[2].ErrorCode);
         Assert.Equal(DomainErrorCodes.InvalidGlobalProductMoney, items[3].ErrorCode);
+    }
+
+    [Fact]
+    public async Task MapRows_ByWeight_stores_import_sellingmode_tag()
+    {
+        var rows = new List<CatalogImportRawRow>
+        {
+            new(2, RequiredCells("Tomato", c =>
+            {
+                c["Unit"] = "Kilogram";
+                c["Barcode"] = string.Empty;
+                c["SellingMode"] = "ByWeight";
+            }))
+        };
+
+        var items = await CatalogImportRowMapper.MapRowsAsync(
+            rows, new FakeCategoryRepository(), new FakeProductRepository(), new FakeBusinessTypeRepository(), T0);
+
+        Assert.Equal(CatalogImportItemStatus.Pending, items[0].Status);
+        Assert.Contains(
+            CatalogImportRowMapper.ImportSellingModeTagPrefix + nameof(ProductSellingMode.ByWeight),
+            items[0].SearchTagsRaw,
+            StringComparison.OrdinalIgnoreCase);
+
+        var (_, _, mode) = CatalogImportRowMapper.SplitTagsStatusAndSellingMode(items[0].SearchTagsRaw);
+        Assert.Equal(ProductSellingMode.ByWeight, mode);
+    }
+
+    [Fact]
+    public async Task MapRows_rejects_invalid_SellingMode()
+    {
+        var rows = new List<CatalogImportRawRow>
+        {
+            new(2, RequiredCells("BadMode", c => c["SellingMode"] = "NotAMode"))
+        };
+
+        var items = await CatalogImportRowMapper.MapRowsAsync(
+            rows, new FakeCategoryRepository(), new FakeProductRepository(), new FakeBusinessTypeRepository(), T0);
+
+        Assert.Equal(CatalogImportItemStatus.Failed, items[0].Status);
+        Assert.Equal(DomainErrorCodes.InvalidGlobalProductSellingMode, items[0].ErrorCode);
+    }
+
+    [Fact]
+    public async Task MapRows_rejects_ByWeight_with_incompatible_unit()
+    {
+        var rows = new List<CatalogImportRawRow>
+        {
+            new(2, RequiredCells("BadWeightUnit", c =>
+            {
+                c["Unit"] = "Bottle";
+                c["SellingMode"] = "ByWeight";
+            }))
+        };
+
+        var items = await CatalogImportRowMapper.MapRowsAsync(
+            rows, new FakeCategoryRepository(), new FakeProductRepository(), new FakeBusinessTypeRepository(), T0);
+
+        Assert.Equal(CatalogImportItemStatus.Failed, items[0].Status);
+        Assert.Equal(DomainErrorCodes.InvalidGlobalProductSellingModeUnit, items[0].ErrorCode);
     }
 
     [Fact]

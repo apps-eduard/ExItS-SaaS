@@ -11,6 +11,7 @@ internal sealed class CatalogProductRecord
     public string? Barcode { get; set; }
     public Guid? CategoryId { get; set; }
     public string UnitOfMeasure { get; set; } = string.Empty;
+    public string SellingMode { get; set; } = "PerItem";
     public decimal SellingPrice { get; set; }
     public string Status { get; set; } = string.Empty;
     public Guid? PlatformGlobalProductId { get; set; }

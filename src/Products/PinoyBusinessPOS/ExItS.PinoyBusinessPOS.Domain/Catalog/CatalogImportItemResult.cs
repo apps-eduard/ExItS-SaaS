@@ -16,6 +16,7 @@ public sealed class CatalogImportItemResult
     public string? Sku { get; }
     public string? Barcode { get; }
     public string UnitOfMeasure { get; }
+    public string SellingMode { get; }
     public decimal SuggestedPrice { get; }
     public Guid? SourceGlobalCategoryId { get; }
     public string? SourceCategoryName { get; }
@@ -34,6 +35,7 @@ public sealed class CatalogImportItemResult
         string? sku,
         string? barcode,
         string unitOfMeasure,
+        string sellingMode,
         decimal suggestedPrice,
         Guid? sourceGlobalCategoryId,
         string? sourceCategoryName,
@@ -51,6 +53,7 @@ public sealed class CatalogImportItemResult
         Sku = sku;
         Barcode = barcode;
         UnitOfMeasure = unitOfMeasure;
+        SellingMode = sellingMode;
         SuggestedPrice = suggestedPrice;
         SourceGlobalCategoryId = sourceGlobalCategoryId;
         SourceCategoryName = sourceCategoryName;
@@ -72,6 +75,7 @@ public sealed class CatalogImportItemResult
         string? barcode = null,
         Guid? sourceGlobalCategoryId = null,
         string? sourceCategoryName = null,
+        string? sellingMode = null,
         CatalogImportItemResultId? id = null)
     {
         if (platformGlobalProductId == Guid.Empty)
@@ -99,6 +103,9 @@ public sealed class CatalogImportItemResult
         var unitCode = string.IsNullOrWhiteSpace(unitOfMeasure)
             ? UnitOfMeasures.ToCode(Domain.Catalog.UnitOfMeasure.Piece)
             : unitOfMeasure.Trim();
+        var sellingModeCode = string.IsNullOrWhiteSpace(sellingMode)
+            ? SellingModes.ToCode(Domain.Catalog.SellingMode.PerItem)
+            : sellingMode.Trim();
         var price = suggestedPrice < 0m ? 0m : decimal.Round(suggestedPrice, 2, MidpointRounding.AwayFromZero);
         if (price > CatalogProduct.SellingPriceMax)
         {
@@ -144,6 +151,7 @@ public sealed class CatalogImportItemResult
             displaySku,
             TryNormalizeBarcode(barcode),
             unitCode,
+            sellingModeCode,
             price,
             sourceGlobalCategoryId == Guid.Empty ? null : sourceGlobalCategoryId,
             categoryName,
@@ -163,6 +171,7 @@ public sealed class CatalogImportItemResult
         string? sku,
         string? barcode,
         string unitOfMeasure,
+        string sellingMode,
         decimal suggestedPrice,
         Guid? sourceGlobalCategoryId,
         string? sourceCategoryName,
@@ -180,6 +189,7 @@ public sealed class CatalogImportItemResult
             sku,
             barcode,
             unitOfMeasure,
+            sellingMode,
             suggestedPrice,
             sourceGlobalCategoryId,
             sourceCategoryName,

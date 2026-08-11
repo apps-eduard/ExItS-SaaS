@@ -28,6 +28,16 @@ public enum ProductUnit
     Milliliter = 9
 }
 
+/// <summary>
+/// How a product is sold in POS. Orthogonal to Business Type and to <see cref="ProductUnit"/>.
+/// ByWeight products use <see cref="ProductUnit.Kilogram"/> as the canonical inventory/price unit.
+/// </summary>
+public enum ProductSellingMode
+{
+    PerItem = 0,
+    ByWeight = 1
+}
+
 public enum CatalogTemplateStatus
 {
     Draft = 0,

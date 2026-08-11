@@ -227,6 +227,7 @@ public sealed class ImportTemplateBatchTests
                 link.Brand,
                 link.CategoryId,
                 link.Unit ?? "Piece",
+                string.IsNullOrWhiteSpace(link.SellingMode) ? "PerItem" : link.SellingMode!,
                 link.CostPrice,
                 link.SellingPrice,
                 null,

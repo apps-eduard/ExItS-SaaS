@@ -6,7 +6,8 @@ namespace ExItS.PinoyBusinessPOS.LocalStore;
 /// <summary>
 /// Local schema migrations. v1 foundation metadata; v2 generic encrypted outbox; v3 encrypted business cache;
 /// v4 payment projections; v5 selling-catalog cache + local cash-sale outbox support;
-/// v6 Personal Utang local-first tables (user_id owner; no organization_id on personal rows).
+/// v6 Personal Utang local-first tables (user_id owner; no organization_id on personal rows);
+/// v7 catalog product selling_mode (PerItem / ByWeight).
 /// </summary>
 public sealed class LocalDatabaseMigrator(TimeProvider? timeProvider = null) : ILocalDatabaseMigrator
 {
@@ -15,7 +16,8 @@ public sealed class LocalDatabaseMigrator(TimeProvider? timeProvider = null) : I
     public const int BusinessCacheSchemaVersion = 3;
     public const int PaymentCacheSchemaVersion = 4;
     public const int CatalogSaleSchemaVersion = 5;
-    public const int PersonalUtangSchemaVersion = 6;
+    public const int PersonalUtangTablesSchemaVersion = 6;
+    public const int PersonalUtangSchemaVersion = 7;
 
     private readonly TimeProvider _clock = timeProvider ?? TimeProvider.System;
 
@@ -402,7 +404,7 @@ public sealed class LocalDatabaseMigrator(TimeProvider? timeProvider = null) : I
                 current = CatalogSaleSchemaVersion;
             }
 
-            if (current < PersonalUtangSchemaVersion)
+            if (current < PersonalUtangTablesSchemaVersion)
             {
                 await connection.ExecuteAsync(
                     """
@@ -483,6 +485,24 @@ public sealed class LocalDatabaseMigrator(TimeProvider? timeProvider = null) : I
                         cursor_version TEXT NOT NULL,
                         last_sync_utc TEXT NULL
                     );
+                    """,
+                    ct).ConfigureAwait(false);
+
+                await connection.ExecuteAsync(
+                    $"""
+                    INSERT INTO local_schema_info (schema_version, applied_at_utc)
+                    VALUES ({PersonalUtangTablesSchemaVersion}, '{now}');
+                    """,
+                    ct).ConfigureAwait(false);
+                current = PersonalUtangTablesSchemaVersion;
+            }
+
+            if (current < PersonalUtangSchemaVersion)
+            {
+                await connection.ExecuteAsync(
+                    """
+                    ALTER TABLE local_catalog_product
+                    ADD COLUMN selling_mode TEXT NOT NULL DEFAULT 'PerItem';
                     """,
                     ct).ConfigureAwait(false);
 

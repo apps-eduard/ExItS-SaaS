@@ -179,6 +179,7 @@ public sealed class LocalCashSaleOfflineStoreTests
             "BAR-1",
             null,
             "pc",
+            "PerItem",
             10m,
             PosCatalogOptions.ActiveStatus,
             DateTimeOffset.UtcNow,

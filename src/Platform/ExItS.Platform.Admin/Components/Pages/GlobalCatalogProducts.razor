@@ -150,6 +150,17 @@ else if (Id is null)
                         <div class="ant-form-item-explain ant-form-item-explain-error">@_newUnitError</div>
                     }
                 </div>
+                <div>
+                    <label class="ant-form-item-label">@L["GlobalProducts_SellingMode"] *</label>
+                    <Select TItemValue="string" TItem="string" @bind-Value="_newSellingMode" Size="@InputSize.Small" Style="width:200px;" Disabled="_busy">
+                        <SelectOptions>
+                            @foreach (var mode in SellingModeOptions)
+                            {
+                                <SelectOption TItemValue="string" TItem="string" Value="@mode" Label="@mode" />
+                            }
+                        </SelectOptions>
+                    </Select>
+                </div>
                 <Space Wrap>
                     <div>
                         <label class="ant-form-item-label">@L["GlobalProducts_CostPrice"] *</label>
@@ -208,7 +219,7 @@ else if (Id is null)
                Size="@TableSize.Small"
                Bordered
                Resizable
-               ScrollX="1880"
+               ScrollX="2000"
                RemoteDataSource
                OnChange="OnProductsTableChangeAsync">
             <PropertyColumn Property="c => c.Name" Title="@L["Common_Name"]" Sortable>
@@ -227,6 +238,7 @@ else if (Id is null)
                 @AdminCurrency.FormatPhp(context.SellingPrice)
             </PropertyColumn>
             <PropertyColumn Property="c => c.Unit" Title="@L["GlobalProducts_Unit"]" Sortable Width="100" />
+            <PropertyColumn Property="c => c.SellingMode" Title="@L["GlobalProducts_SellingMode"]" Sortable Width="120" />
             <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Sortable Width="110">
                 <AdminStatusTag Value="@context.Status" />
             </PropertyColumn>
@@ -384,6 +396,17 @@ else
                             <div class="ant-form-item-explain ant-form-item-explain-error">@_editUnitError</div>
                         }
                     </div>
+                    <div>
+                        <label class="ant-form-item-label">@L["GlobalProducts_SellingMode"] *</label>
+                        <Select TItemValue="string" TItem="string" @bind-Value="_editSellingMode" Size="@InputSize.Small" Style="width:200px;" Disabled="_busy">
+                            <SelectOptions>
+                                @foreach (var mode in SellingModeOptions)
+                                {
+                                    <SelectOption TItemValue="string" TItem="string" Value="@mode" Label="@mode" />
+                                }
+                            </SelectOptions>
+                        </Select>
+                    </div>
                     <Space Wrap>
                         <div>
                             <label class="ant-form-item-label">@L["GlobalProducts_CostPrice"] *</label>
@@ -423,6 +446,7 @@ else
             <Descriptions Size="@DescriptionsSize.Small" Column="2">
                 <DescriptionsItem Title="@L["Common_Name"]">@p.Name</DescriptionsItem>
                 <DescriptionsItem Title="@L["GlobalProducts_Unit"]">@p.Unit</DescriptionsItem>
+                <DescriptionsItem Title="@L["GlobalProducts_SellingMode"]">@p.SellingMode</DescriptionsItem>
                 <DescriptionsItem Title="@L["GlobalProducts_Sku"]">@p.Sku</DescriptionsItem>
                 <DescriptionsItem Title="@L["GlobalProducts_Barcode"]">@p.Barcode</DescriptionsItem>
                 <DescriptionsItem Title="@L["GlobalProducts_Brand"]">@p.Brand</DescriptionsItem>
@@ -448,6 +472,8 @@ else
         "Piece", "Pack", "Box", "Bottle", "Can", "Sachet", "Kilogram", "Gram", "Liter", "Milliliter"
     ];
 
+    private static readonly string[] SellingModeOptions = ["PerItem", "ByWeight"];
+
     private CheckboxOption<string>[] _businessTypeCheckboxOptions = [];
     private List<BusinessTypeDto> _activeBusinessTypes = [];
 
@@ -470,6 +496,7 @@ else
     private string _newBrand = "";
     private string _newCategoryId = "";
     private string _newUnit = "Piece";
+    private string _newSellingMode = "PerItem";
     private decimal? _newPrice;
     private decimal? _newCost;
     private string _newImage = "";
@@ -482,6 +509,7 @@ else
     private string _editBrand = "";
     private string _editCategoryId = "";
     private string _editUnit = "Piece";
+    private string _editSellingMode = "PerItem";
     private decimal? _editPrice;
     private decimal? _editCost;
     private string _editImage = "";
@@ -664,6 +692,7 @@ else
         _editBrand = p.Brand;
         _editCategoryId = p.GlobalCategoryId?.ToString("D") ?? "";
         _editUnit = p.Unit;
+        _editSellingMode = string.IsNullOrWhiteSpace(p.SellingMode) ? "PerItem" : p.SellingMode;
         _editPrice = p.SellingPrice;
         _editCost = p.CostPrice;
         _editImage = p.ImageReference ?? "";
@@ -888,7 +917,8 @@ else
                 _newPrice,
                 string.IsNullOrWhiteSpace(_newImage) ? null : _newImage.Trim(),
                 ParseTags(_newTags),
-                BusinessTypeIds: ParseBusinessTypeIds(_newBusinessTypeIds)));
+                BusinessTypeIds: ParseBusinessTypeIds(_newBusinessTypeIds),
+                SellingMode: _newSellingMode));
             if (!result.IsSuccess)
             {
                 _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
@@ -931,7 +961,8 @@ else
                 string.IsNullOrWhiteSpace(_editImage) ? null : _editImage.Trim(),
                 ParseTags(_editTags),
                 BusinessTypeIds: ParseBusinessTypeIds(_editBusinessTypeIds) ?? Array.Empty<Guid>(),
-                ExpectedUpdatedAtUtc: _expectedUpdatedAt));
+                ExpectedUpdatedAtUtc: _expectedUpdatedAt,
+                SellingMode: _editSellingMode));
             if (!result.IsSuccess)
             {
                 _formConflict = AdminFormErrorMapper.IsConflict(result.Error);

@@ -17,6 +17,7 @@ public sealed record PosCatalogProductDto(
     string? Barcode,
     Guid? CategoryId,
     string UnitOfMeasure,
+    string SellingMode,
     decimal SellingPrice,
     string Status,
     DateTimeOffset CreatedAtUtc,
@@ -53,7 +54,8 @@ public sealed record CreatePosCatalogProductRequest(
     string? Sku = null,
     string? Barcode = null,
     Guid? CategoryId = null,
-    Guid? ProductId = null);
+    Guid? ProductId = null,
+    string? SellingMode = null);
 
 public sealed record UpdatePosCatalogProductRequest(
     string Name,
@@ -63,7 +65,8 @@ public sealed record UpdatePosCatalogProductRequest(
     string? Sku = null,
     string? Barcode = null,
     Guid? CategoryId = null,
-    DateTimeOffset? ExpectedUpdatedAtUtc = null);
+    DateTimeOffset? ExpectedUpdatedAtUtc = null,
+    string? SellingMode = null);
 
 public sealed record PosProductCategoryPagedResult(
     List<PosProductCategoryDto> Items,
