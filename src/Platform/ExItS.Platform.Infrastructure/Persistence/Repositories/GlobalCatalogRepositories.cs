@@ -423,6 +423,11 @@ internal sealed class GlobalProductRepository : IGlobalProductRepository
         GlobalProductId? excludingId = null,
         CancellationToken cancellationToken = default)
     {
+        if (string.IsNullOrWhiteSpace(barcode))
+        {
+            return false;
+        }
+
         var query = _db.GlobalProducts.AsNoTracking().Where(p => p.Barcode == barcode);
         if (excludingId is not null)
         {

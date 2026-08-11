@@ -429,11 +429,12 @@ public sealed class CreateGlobalProduct
                     "Category was not found.");
             }
 
-            var barcode = GlobalCatalogRules.NormalizeBarcode(request.Barcode);
+            var barcode = GlobalCatalogRules.NormalizeOptionalBarcode(request.Barcode);
             var sku = GlobalCatalogRules.NormalizeSku(request.Sku);
             var brand = GlobalCatalogRules.NormalizeBrand(request.Brand);
 
-            if (await _products.ExistsWithBarcodeAsync(barcode, excludingId: null, cancellationToken)
+            if (barcode is not null
+                && await _products.ExistsWithBarcodeAsync(barcode, excludingId: null, cancellationToken)
                     .ConfigureAwait(false))
             {
                 return ApplicationResult<GlobalProductDto>.Failure(
@@ -554,11 +555,12 @@ public sealed class UpdateGlobalProduct
                     "Category was not found.");
             }
 
-            var barcode = GlobalCatalogRules.NormalizeBarcode(request.Barcode);
+            var barcode = GlobalCatalogRules.NormalizeOptionalBarcode(request.Barcode);
             var sku = GlobalCatalogRules.NormalizeSku(request.Sku);
             var brand = GlobalCatalogRules.NormalizeBrand(request.Brand);
 
-            if (await _products.ExistsWithBarcodeAsync(barcode, product.Id, cancellationToken)
+            if (barcode is not null
+                && await _products.ExistsWithBarcodeAsync(barcode, product.Id, cancellationToken)
                     .ConfigureAwait(false))
             {
                 return ApplicationResult<GlobalProductDto>.Failure(

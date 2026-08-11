@@ -18,7 +18,7 @@ public sealed class CatalogImportTemplateAssignmentTests
     [Fact]
     public async Task Global_only_import_does_not_link_template()
     {
-        var item = Pending("Alpha", "SKU-A", "480100");
+        var item = Pending("Alpha", "SKU-A", "4801000000009");
         var job = Validated([item]);
         job.Confirm(T0.AddMinutes(1));
 
@@ -40,7 +40,7 @@ public sealed class CatalogImportTemplateAssignmentTests
         var templates = new TemplateAssignFakeTemplateRepository();
         templates.Seed(template);
 
-        var item = Pending("Bread", "SKU-B", "480200");
+        var item = Pending("Bread", "SKU-B", "4802000000006");
         var job = Validated([item]);
         job.Confirm(T0.AddMinutes(1), template.Id.Value);
 
@@ -54,6 +54,37 @@ public sealed class CatalogImportTemplateAssignmentTests
         Assert.Single(templates.Updated);
         Assert.Equal(1, templates.Updated[0].ProductCount);
         Assert.Equal(products.Added[0].Id, templates.Updated[0].Products[0].GlobalProductId);
+        Assert.True(templates.Updated[0].Products[0].IsFirstBatch);
+    }
+
+    [Fact]
+    public async Task Import_plus_template_marks_first_default_batch_as_first_batch()
+    {
+        var template = CatalogTemplate.Create(
+            "Bakery",
+            BusinessTypeId.From(LegacyBusinessTypeSeeds.BakeryId),
+            T0,
+            defaultBatchSize: 2);
+        var templates = new TemplateAssignFakeTemplateRepository();
+        templates.Seed(template);
+
+        var items = new[]
+        {
+            Pending("One", "SKU-1", "4802010000003"),
+            Pending("Two", "SKU-2", "4802020000000"),
+            Pending("Three", "SKU-3", "4802030000007"),
+        };
+        var job = Validated(items);
+        job.Confirm(T0.AddMinutes(1), template.Id.Value);
+
+        var products = new TemplateAssignFakeProductRepo { CaptureAdds = true };
+        var processor = CreateProcessor(job, products, templates);
+
+        Assert.True(await processor.ExecuteOnceAsync());
+        Assert.Equal(3, templates.Updated[0].ProductCount);
+        Assert.Equal(2, templates.Updated[0].FirstBatchCount);
+        Assert.True(templates.Updated[0].Products.OrderBy(p => p.SortOrder).Take(2).All(p => p.IsFirstBatch));
+        Assert.False(templates.Updated[0].Products.OrderBy(p => p.SortOrder).Last().IsFirstBatch);
     }
 
     [Fact]
@@ -63,13 +94,13 @@ public sealed class CatalogImportTemplateAssignmentTests
         var templates = new TemplateAssignFakeTemplateRepository();
         templates.Seed(template);
 
-        var good = Pending("Cake", "SKU-C", "480300");
+        var good = Pending("Cake", "SKU-C", "4803000000003");
         var bad = CatalogImportItem.CreatePending(
             3,
             "Bad",
             "NotAUnit",
             sku: "SKU-BAD",
-            barcode: "480301",
+            barcode: "4803010000000",
             categoryName: "Pastry",
             sellingPrice: 12m,
             costPrice: 8m,
@@ -99,7 +130,7 @@ public sealed class CatalogImportTemplateAssignmentTests
             "Existing Bun",
             ProductUnit.Piece,
             "SKU-EXIST",
-            "480400",
+            "4804000000000",
             "BrandX",
             GlobalCategory.Create("Buns", T0).Id,
             T0,
@@ -109,7 +140,7 @@ public sealed class CatalogImportTemplateAssignmentTests
         var products = new TemplateAssignFakeProductRepo { CaptureAdds = true };
         products.SeedExisting(existing);
 
-        var item = Pending("Existing Bun", "SKU-EXIST", "480400");
+        var item = Pending("Existing Bun", "SKU-EXIST", "4804000000000");
         var job = Validated([item]);
         job.Confirm(T0.AddMinutes(1), template.Id.Value);
 
@@ -132,7 +163,7 @@ public sealed class CatalogImportTemplateAssignmentTests
         var templates = new TemplateAssignFakeTemplateRepository();
         templates.Seed(template);
 
-        var item = Pending("Cookie", "SKU-D", "480500");
+        var item = Pending("Cookie", "SKU-D", "4805000000007");
         var job = Validated([item]);
         job.Confirm(T0.AddMinutes(1), template.Id.Value);
 
@@ -180,7 +211,7 @@ public sealed class CatalogImportTemplateAssignmentTests
     [Fact]
     public async Task Confirm_with_missing_template_fails()
     {
-        var item = Pending("Pie", "SKU-E", "480600");
+        var item = Pending("Pie", "SKU-E", "4806000000004");
         var job = Validated([item]);
         var imports = new TemplateAssignFakeImportRepo(job);
         var confirm = new ConfirmCatalogImport(
@@ -202,7 +233,7 @@ public sealed class CatalogImportTemplateAssignmentTests
     [Fact]
     public async Task Confirm_global_only_leaves_target_template_null()
     {
-        var item = Pending("Tart", "SKU-F", "480700");
+        var item = Pending("Tart", "SKU-F", "4807000000001");
         var job = Validated([item]);
         var imports = new TemplateAssignFakeImportRepo(job);
         var confirm = new ConfirmCatalogImport(

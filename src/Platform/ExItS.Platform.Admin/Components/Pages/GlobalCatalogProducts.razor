@@ -104,8 +104,8 @@ else if (Id is null)
                         }
                     </div>
                     <div>
-                        <label class="ant-form-item-label" for="gc-prod-barcode">@L["GlobalProducts_Barcode"] *</label>
-                        <Input Id="gc-prod-barcode" @bind-Value="_newBarcode" Size="@InputSize.Small" Disabled="_busy" Style="width:180px;" />
+                        <label class="ant-form-item-label" for="gc-prod-barcode">@L["GlobalProducts_Barcode"]</label>
+                        <Input Id="gc-prod-barcode" @bind-Value="_newBarcode" Size="@InputSize.Small" Disabled="_busy" Style="width:180px;" Placeholder="@L["GlobalProducts_BarcodeHint"]" />
                         @if (!string.IsNullOrEmpty(_newBarcodeError))
                         {
                             <div class="ant-form-item-explain ant-form-item-explain-error">@_newBarcodeError</div>
@@ -338,8 +338,8 @@ else
                             }
                         </div>
                         <div>
-                            <label class="ant-form-item-label" for="gc-prod-edit-barcode">@L["GlobalProducts_Barcode"] *</label>
-                            <Input Id="gc-prod-edit-barcode" @bind-Value="_editBarcode" Size="@InputSize.Small" Disabled="_busy" Style="width:180px;" />
+                            <label class="ant-form-item-label" for="gc-prod-edit-barcode">@L["GlobalProducts_Barcode"]</label>
+                            <Input Id="gc-prod-edit-barcode" @bind-Value="_editBarcode" Size="@InputSize.Small" Disabled="_busy" Style="width:180px;" Placeholder="@L["GlobalProducts_BarcodeHint"]" />
                             @if (!string.IsNullOrEmpty(_editBarcodeError))
                             {
                                 <div class="ant-form-item-explain ant-form-item-explain-error">@_editBarcodeError</div>
@@ -660,7 +660,7 @@ else
         _editName = p.Name;
         _editDescription = p.Description ?? "";
         _editSku = p.Sku;
-        _editBarcode = p.Barcode;
+        _editBarcode = p.Barcode ?? "";
         _editBrand = p.Brand;
         _editCategoryId = p.GlobalCategoryId?.ToString("D") ?? "";
         _editUnit = p.Unit;
@@ -742,9 +742,9 @@ else
             ok = false;
         }
 
-        if (string.IsNullOrWhiteSpace(_newBarcode))
+        if (!string.IsNullOrWhiteSpace(_newBarcode) && !LooksLikeOptionalGs1Barcode(_newBarcode))
         {
-            _newBarcodeError = L["GlobalProducts_RequiredBarcode"];
+            _newBarcodeError = L["GlobalProducts_InvalidBarcode"];
             ok = false;
         }
 
@@ -790,9 +790,9 @@ else
             ok = false;
         }
 
-        if (string.IsNullOrWhiteSpace(_editBarcode))
+        if (!string.IsNullOrWhiteSpace(_editBarcode) && !LooksLikeOptionalGs1Barcode(_editBarcode))
         {
-            _editBarcodeError = L["GlobalProducts_RequiredBarcode"];
+            _editBarcodeError = L["GlobalProducts_InvalidBarcode"];
             ok = false;
         }
 
@@ -880,7 +880,7 @@ else
                 _newName.Trim(),
                 _newUnit,
                 _newSku.Trim(),
-                _newBarcode.Trim(),
+                string.IsNullOrWhiteSpace(_newBarcode) ? null : _newBarcode.Trim(),
                 _newBrand.Trim(),
                 categoryId,
                 string.IsNullOrWhiteSpace(_newDescription) ? null : _newDescription.Trim(),
@@ -922,7 +922,7 @@ else
                 _editName.Trim(),
                 _editUnit,
                 _editSku.Trim(),
-                _editBarcode.Trim(),
+                string.IsNullOrWhiteSpace(_editBarcode) ? null : _editBarcode.Trim(),
                 _editBrand.Trim(),
                 categoryId,
                 string.IsNullOrWhiteSpace(_editDescription) ? null : _editDescription.Trim(),
@@ -1012,6 +1012,15 @@ else
     }
 
     private void ClearErrorAlert() => _errorAlert = null;
+
+    /// <summary>
+    /// Client-side shape check only (digits, length 8–14). Blank is allowed; GS1 check digit is enforced by the API.
+    /// </summary>
+    private static bool LooksLikeOptionalGs1Barcode(string barcode)
+    {
+        var trimmed = barcode.Trim();
+        return trimmed.Length is >= 8 and <= 14 && trimmed.All(char.IsAsciiDigit);
+    }
 
     public void Dispose()
     {

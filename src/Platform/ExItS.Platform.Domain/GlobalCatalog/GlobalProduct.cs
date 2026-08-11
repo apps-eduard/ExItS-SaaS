@@ -6,7 +6,8 @@ namespace ExItS.Platform.Domain.GlobalCatalog;
 /// Platform-owned global merchandise product. Soft lifecycle only — never hard-deleted.
 /// Barcode/SKU uniqueness is enforced by the repository / application layer.
 /// Optimistic concurrency uses <see cref="UpdatedAtUtc"/>.
-/// Required: Name, Category, Unit, SKU, Barcode, Brand, CostPrice, SellingPrice.
+/// Required: Name, Category, Unit, SKU, Brand, CostPrice, SellingPrice.
+/// Optional: Barcode (GS1 digits when present; flexible codes belong in SKU).
 /// </summary>
 public sealed class GlobalProduct
 {
@@ -17,7 +18,7 @@ public sealed class GlobalProduct
     public string Name { get; private set; }
     public string? Description { get; private set; }
     public string Sku { get; private set; }
-    public string Barcode { get; private set; }
+    public string? Barcode { get; private set; }
     public string Brand { get; private set; }
     public GlobalCategoryId? GlobalCategoryId { get; private set; }
     public ProductUnit Unit { get; private set; }
@@ -35,7 +36,7 @@ public sealed class GlobalProduct
         string name,
         string? description,
         string sku,
-        string barcode,
+        string? barcode,
         string brand,
         GlobalCategoryId? globalCategoryId,
         ProductUnit unit,
@@ -70,7 +71,7 @@ public sealed class GlobalProduct
         string name,
         ProductUnit unit,
         string sku,
-        string barcode,
+        string? barcode,
         string brand,
         GlobalCategoryId globalCategoryId,
         DateTimeOffset utcNow,
@@ -95,7 +96,7 @@ public sealed class GlobalProduct
                 GlobalCatalogRules.DescriptionMaxLength,
                 DomainErrorCodes.InvalidGlobalProductDescription),
             GlobalCatalogRules.NormalizeSku(sku),
-            GlobalCatalogRules.NormalizeBarcode(barcode),
+            GlobalCatalogRules.NormalizeOptionalBarcode(barcode),
             GlobalCatalogRules.NormalizeBrand(brand),
             globalCategoryId,
             unit,
@@ -138,7 +139,7 @@ public sealed class GlobalProduct
             name,
             description,
             sku ?? string.Empty,
-            barcode ?? string.Empty,
+            string.IsNullOrWhiteSpace(barcode) ? null : barcode,
             brand ?? string.Empty,
             globalCategoryId,
             unit,
@@ -155,7 +156,7 @@ public sealed class GlobalProduct
         string name,
         ProductUnit unit,
         string sku,
-        string barcode,
+        string? barcode,
         string brand,
         GlobalCategoryId globalCategoryId,
         DateTimeOffset utcNow,
@@ -177,7 +178,7 @@ public sealed class GlobalProduct
             GlobalCatalogRules.DescriptionMaxLength,
             DomainErrorCodes.InvalidGlobalProductDescription);
         Sku = GlobalCatalogRules.NormalizeSku(sku);
-        Barcode = GlobalCatalogRules.NormalizeBarcode(barcode);
+        Barcode = GlobalCatalogRules.NormalizeOptionalBarcode(barcode);
         Brand = GlobalCatalogRules.NormalizeBrand(brand);
         GlobalCategoryId = globalCategoryId;
         Unit = unit;

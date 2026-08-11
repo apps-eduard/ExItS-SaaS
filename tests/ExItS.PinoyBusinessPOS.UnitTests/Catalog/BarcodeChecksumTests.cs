@@ -50,6 +50,7 @@ public sealed class BarcodeChecksumTests
     [Theory]
     [InlineData("4006381-33393")]
     [InlineData("ABCDEFGH")]
+    [InlineData("BAKERY000001")]
     public void Non_digit_barcodes_are_rejected(string barcode)
     {
         var ex = Assert.Throws<DomainException>(() => CatalogProduct.NormalizeOptionalBarcode(barcode));

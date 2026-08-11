@@ -11,7 +11,7 @@ file static class GlobalCatalogTestProducts
 {
     private static readonly DateTimeOffset T0 = new(2026, 8, 5, 12, 0, 0, TimeSpan.Zero);
 
-    public static GlobalProduct Make(string name, string sku, string barcode = "480001", decimal cost = 10m, decimal selling = 15m) =>
+    public static GlobalProduct Make(string name, string sku, string barcode = "4800010000016", decimal cost = 10m, decimal selling = 15m) =>
         GlobalProduct.Create(
             name,
             ProductUnit.Piece,
@@ -184,7 +184,7 @@ public sealed class CatalogTemplateUseCaseTests
             "Coke",
             ProductUnit.Bottle,
             "COKE-1",
-            "480001",
+            "4800010000016",
             "BrandX",
             GlobalCategory.Create("Beverages", T0).Id,
             T0,
@@ -219,8 +219,8 @@ public sealed class CatalogTemplateUseCaseTests
         var clock = new FixedClock(T0);
         var uow = new NoOpUnitOfWork();
 
-        var a = GlobalCatalogTestProducts.Make("Product A", "SKU-A", "480001");
-        var b = GlobalCatalogTestProducts.Make("Product B", "SKU-B", "480002");
+        var a = GlobalCatalogTestProducts.Make("Product A", "SKU-A", "4800010000016");
+        var b = GlobalCatalogTestProducts.Make("Product B", "SKU-B", "4800010000023");
         await products.AddAsync(a);
         await products.AddAsync(b);
 
@@ -254,8 +254,8 @@ public sealed class CatalogTemplateUseCaseTests
         var clock = new FixedClock(T0);
         var uow = new NoOpUnitOfWork();
 
-        var keep = GlobalCatalogTestProducts.Make("Keep", "SKU-KEEP", "480010");
-        var drop = GlobalCatalogTestProducts.Make("Drop", "SKU-DROP", "480011");
+        var keep = GlobalCatalogTestProducts.Make("Keep", "SKU-KEEP", "4800100000001");
+        var drop = GlobalCatalogTestProducts.Make("Drop", "SKU-DROP", "4800110000008");
         await products.AddAsync(keep);
         await products.AddAsync(drop);
 
@@ -309,7 +309,7 @@ public sealed class CatalogTemplateUseCaseTests
             "Coke",
             ProductUnit.Piece,
             "COKE-1",
-            "480001",
+            "4800010000016",
             "BrandX",
             category.Id,
             T0,

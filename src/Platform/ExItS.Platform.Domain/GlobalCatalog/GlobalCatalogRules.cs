@@ -8,7 +8,9 @@ public static class GlobalCatalogRules
     public const int NameMinLength = 1;
     public const int NameMaxLength = 200;
     public const int DescriptionMaxLength = 2000;
-    public const int BarcodeMaxLength = 64;
+    /// <summary>Retail barcode digit length bounds (aligned with POS GS1 rules).</summary>
+    public const int BarcodeMinLength = 8;
+    public const int BarcodeMaxLength = 14;
     public const int SkuMaxLength = 64;
     public const int BrandMaxLength = 120;
     public const int IconReferenceMaxLength = 512;
@@ -41,11 +43,60 @@ public static class GlobalCatalogRules
         return trimmed;
     }
 
-    /// <summary>Uppercase + trim; blank/whitespace rejected.</summary>
-    public static string NormalizeBarcode(string? barcode) =>
-        NormalizeRequiredCode(barcode, BarcodeMaxLength, DomainErrorCodes.InvalidGlobalProductBarcode, "Barcode");
+    /// <summary>
+    /// Optional retail barcode: blank → null. When present, digits only (8–14) with GS1 check
+    /// digit for EAN-8 / UPC-A / EAN-13 / GTIN-14. Flexible merchant codes belong in SKU.
+    /// </summary>
+    public static string? NormalizeOptionalBarcode(string? barcode)
+    {
+        if (string.IsNullOrWhiteSpace(barcode))
+        {
+            return null;
+        }
 
-    /// <summary>Uppercase + trim; blank/whitespace rejected.</summary>
+        var trimmed = barcode.Trim();
+        if (!trimmed.All(char.IsAsciiDigit))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidGlobalProductBarcode,
+                "Barcode must contain digits only. Use SKU for flexible internal codes (e.g. BAKERY000001).");
+        }
+
+        if (trimmed.Length is < BarcodeMinLength or > BarcodeMaxLength)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidGlobalProductBarcode,
+                $"Barcode must be {BarcodeMinLength}–{BarcodeMaxLength} digits.");
+        }
+
+        if (!GlobalCatalogBarcodeChecksum.IsValid(trimmed))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidGlobalProductBarcode,
+                "Barcode check digit is invalid for its GS1 format (EAN-8, UPC-A, EAN-13, or GTIN-14).");
+        }
+
+        return trimmed;
+    }
+
+    /// <summary>
+    /// Required barcode for callers that still demand a value. Prefer
+    /// <see cref="NormalizeOptionalBarcode"/> when blank is allowed.
+    /// </summary>
+    public static string NormalizeBarcode(string? barcode)
+    {
+        var normalized = NormalizeOptionalBarcode(barcode);
+        if (normalized is null)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidGlobalProductBarcode,
+                "Barcode cannot be blank.");
+        }
+
+        return normalized;
+    }
+
+    /// <summary>Uppercase + trim; blank/whitespace rejected. Letters/digits and common separators allowed.</summary>
     public static string NormalizeSku(string? sku) =>
         NormalizeRequiredCode(sku, SkuMaxLength, DomainErrorCodes.InvalidGlobalProductSku, "SKU");
 

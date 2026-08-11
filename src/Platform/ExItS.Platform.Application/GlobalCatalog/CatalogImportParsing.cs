@@ -140,7 +140,24 @@ public static class CatalogImportRowMapper
 
             var description = NullIfEmpty(CatalogImportRules.SanitizeCell(rawDescription));
             var sku = GlobalCatalogRules.NormalizeSku(CatalogImportRules.SanitizeCell(rawSku));
-            var barcode = GlobalCatalogRules.NormalizeBarcode(CatalogImportRules.SanitizeCell(rawBarcode));
+            string? barcode;
+            try
+            {
+                barcode = GlobalCatalogRules.NormalizeOptionalBarcode(CatalogImportRules.SanitizeCell(rawBarcode));
+            }
+            catch (DomainException ex)
+            {
+                return CatalogImportItem.CreateFailed(
+                    row.RowNumber,
+                    name,
+                    unit.ToString(),
+                    ex.ErrorCode,
+                    ex.Message,
+                    description,
+                    NullIfEmpty(CatalogImportRules.SanitizeCell(rawSku)),
+                    NullIfEmpty(CatalogImportRules.SanitizeCell(rawBarcode)));
+            }
+
             var brand = GlobalCatalogRules.NormalizeBrand(CatalogImportRules.SanitizeCell(rawBrand));
             var image = GlobalCatalogRules.NormalizeOptionalText(
                 CatalogImportRules.SanitizeCell(rawImage),
@@ -361,7 +378,7 @@ public static class CatalogImportRowMapper
                     businessTypesRaw);
             }
 
-            if (barcodesInFile.TryGetValue(barcode, out var priorBarcodeRow))
+            if (barcode is not null && barcodesInFile.TryGetValue(barcode, out var priorBarcodeRow))
             {
                 return CatalogImportItem.CreateFailed(
                     row.RowNumber,
@@ -381,9 +398,13 @@ public static class CatalogImportRowMapper
                     businessTypesRaw);
             }
 
-            barcodesInFile[barcode] = row.RowNumber;
+            if (barcode is not null)
+            {
+                barcodesInFile[barcode] = row.RowNumber;
+            }
 
-            if (await products.ExistsWithBarcodeAsync(barcode, excludingId: null, cancellationToken)
+            if (barcode is not null
+                && await products.ExistsWithBarcodeAsync(barcode, excludingId: null, cancellationToken)
                     .ConfigureAwait(false))
             {
                 return CatalogImportItem.CreateSkipped(

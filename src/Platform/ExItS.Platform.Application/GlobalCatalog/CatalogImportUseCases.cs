@@ -460,11 +460,23 @@ public sealed class ProcessCatalogImportChunk
 
         var linkNow = _clock.UtcNow;
         var linkedAny = false;
+        // Fill first-batch slots up to DefaultBatchSize so merchant onboarding import
+        // (which selects IsFirstBatch) is not empty after CSV → template linking.
+        var firstBatchSlotsRemaining = Math.Max(0, Math.Max(1, template.DefaultBatchSize) - template.FirstBatchCount);
         foreach (var productId in productIds)
         {
-            if (template.TryAssignProduct(GlobalProductId.From(productId), linkNow))
+            var isFirstBatch = firstBatchSlotsRemaining > 0;
+            if (template.TryAssignProduct(
+                    GlobalProductId.From(productId),
+                    linkNow,
+                    isFeatured: false,
+                    isFirstBatch: isFirstBatch))
             {
                 linkedAny = true;
+                if (isFirstBatch)
+                {
+                    firstBatchSlotsRemaining--;
+                }
             }
         }
 
@@ -520,29 +532,42 @@ public sealed class ProcessCatalogImportChunk
                 return;
             }
 
-            if (string.IsNullOrWhiteSpace(item.Sku) || string.IsNullOrWhiteSpace(item.Barcode))
+            if (string.IsNullOrWhiteSpace(item.Sku))
             {
                 item.MarkFailed(
                     DomainErrorCodes.CatalogImportRowInvalid,
-                    "SKU and barcode are required.",
+                    "SKU is required.",
                     now);
                 return;
             }
 
-            if (await _products.ExistsWithBarcodeAsync(item.Barcode, excludingId: null, cancellationToken)
-                    .ConfigureAwait(false))
+            if (!string.IsNullOrWhiteSpace(item.Barcode))
             {
-                var existingId = await ResolveExistingProductIdAsync(
-                        barcode: item.Barcode,
-                        sku: null,
-                        cancellationToken)
-                    .ConfigureAwait(false);
-                item.MarkSkipped(
-                    ApplicationErrorCodes.DuplicateGlobalProductBarcode,
-                    $"Barcode '{item.Barcode}' already exists in the global catalog.",
-                    now,
-                    existingId);
-                return;
+                try
+                {
+                    _ = GlobalCatalogRules.NormalizeOptionalBarcode(item.Barcode);
+                }
+                catch (DomainException ex)
+                {
+                    item.MarkFailed(ex.ErrorCode, ex.Message, now);
+                    return;
+                }
+
+                if (await _products.ExistsWithBarcodeAsync(item.Barcode, excludingId: null, cancellationToken)
+                        .ConfigureAwait(false))
+                {
+                    var existingId = await ResolveExistingProductIdAsync(
+                            barcode: item.Barcode,
+                            sku: null,
+                            cancellationToken)
+                        .ConfigureAwait(false);
+                    item.MarkSkipped(
+                        ApplicationErrorCodes.DuplicateGlobalProductBarcode,
+                        $"Barcode '{item.Barcode}' already exists in the global catalog.",
+                        now,
+                        existingId);
+                    return;
+                }
             }
 
             if (await _products.ExistsWithSkuAsync(item.Sku, excludingId: null, cancellationToken)

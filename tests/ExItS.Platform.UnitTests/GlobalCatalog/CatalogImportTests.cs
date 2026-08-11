@@ -301,7 +301,7 @@ public sealed class CatalogImportRowMapperTests
                 ["Brand"] = "BrandA",
                 ["Category"] = "General",
                 ["SuggestedSku"] = "SKU-A",
-                ["Barcode"] = "480001",
+                ["Barcode"] = "4800010000016",
                 ["SellingPrice"] = "12.00",
                 ["CostPrice"] = "8.00"
             }),
@@ -312,7 +312,7 @@ public sealed class CatalogImportRowMapperTests
                 ["Brand"] = "BrandB",
                 ["Category"] = "General",
                 ["SuggestedSku"] = "SKU-B",
-                ["Barcode"] = "480001",
+                ["Barcode"] = "4800010000016",
                 ["SellingPrice"] = "12.00",
                 ["CostPrice"] = "8.00"
             })
@@ -329,10 +329,10 @@ public sealed class CatalogImportRowMapperTests
     [Fact]
     public async Task MapRows_skips_existing_catalog_barcode()
     {
-        var products = new FakeProductRepository { ExistingBarcodes = { "480099" } };
+        var products = new FakeProductRepository { ExistingBarcodes = { "4800990000006" } };
         var rows = new List<CatalogImportRawRow>
         {
-            new(2, RequiredCells("Existing", c => c["Barcode"] = "480099"))
+            new(2, RequiredCells("Existing", c => c["Barcode"] = "4800990000006"))
         };
 
         var items = await CatalogImportRowMapper.MapRowsAsync(
@@ -340,6 +340,26 @@ public sealed class CatalogImportRowMapperTests
 
         Assert.Equal(CatalogImportItemStatus.Skipped, items[0].Status);
         Assert.Equal(ApplicationErrorCodes.DuplicateGlobalProductBarcode, items[0].ErrorCode);
+    }
+
+    [Fact]
+    public async Task MapRows_rejects_sku_style_barcode_like_bakery_code()
+    {
+        var rows = new List<CatalogImportRawRow>
+        {
+            new(2, RequiredCells("Bakery Bun", c =>
+            {
+                c["Barcode"] = "BAKERY000001";
+                c["SuggestedSku"] = "BAKERY000001";
+            }))
+        };
+
+        var items = await CatalogImportRowMapper.MapRowsAsync(
+            rows, new FakeCategoryRepository(), new FakeProductRepository(), new FakeBusinessTypeRepository(), T0);
+
+        Assert.Equal(CatalogImportItemStatus.Failed, items[0].Status);
+        Assert.Equal(DomainErrorCodes.InvalidGlobalProductBarcode, items[0].ErrorCode);
+        Assert.Equal("BAKERY000001", items[0].Barcode);
     }
 
     [Fact]
@@ -425,7 +445,7 @@ public sealed class CatalogImportRowMapperTests
                 ["Category"] = "General",
                 ["Brand"] = "TestBrand",
                 ["Unit"] = "Piece",
-                ["Barcode"] = "4800010000999",
+                ["Barcode"] = "4800010000016",
                 ["SuggestedSku"] = "LEG-SKU",
                 ["SuggestedSellingPrice"] = "15.00",
                 ["SuggestedCostPrice"] = "10.00"
@@ -594,7 +614,7 @@ public sealed class CatalogImportJobLifecycleTests
     [Fact]
     public void Confirm_is_idempotent_after_queue_via_status_guard()
     {
-        var pending = CatalogImportItem.CreatePending(2, "Coke", "Bottle", barcode: "480001", sellingPrice: 12m, costPrice: 8m);
+        var pending = CatalogImportItem.CreatePending(2, "Coke", "Bottle", barcode: "4800010000016", sellingPrice: 12m, costPrice: 8m);
         var job = CatalogImportJob.CreateValidated(
             "products.csv",
             CatalogImportFileFormat.Csv,
@@ -615,7 +635,7 @@ public sealed class CatalogImportJobLifecycleTests
     [Fact]
     public void Item_mark_imported_is_idempotent()
     {
-        var item = CatalogImportItem.CreatePending(2, "Coke", "Bottle", barcode: "480001", sellingPrice: 12m, costPrice: 8m);
+        var item = CatalogImportItem.CreatePending(2, "Coke", "Bottle", barcode: "4800010000016", sellingPrice: 12m, costPrice: 8m);
         var productId = Guid.NewGuid();
         item.MarkImported(productId, T0);
         item.MarkImported(productId, T0.AddSeconds(1));
@@ -663,7 +683,7 @@ public sealed class CatalogImportCategoryCreateTests
                 $"Product {i}",
                 "Piece",
                 sku: $"SKU-{i}",
-                barcode: $"B{i:000000}",
+                barcode: $"48091000{i:000}",
                 categoryName: "Rice and Staples",
                 sellingPrice: 12m,
                 costPrice: 8m,
@@ -713,7 +733,7 @@ public sealed class CatalogImportCategoryCreateTests
             "Chips",
             "Pack",
             sku: "SKU-CHIPS",
-            barcode: "480099",
+            barcode: "4800990000006",
             categoryName: "snacks",
             sellingPrice: 12m,
             costPrice: 8m,
@@ -752,7 +772,7 @@ public sealed class CatalogImportCategoryCreateTests
             "Soap",
             "Piece",
             sku: "SKU-SOAP",
-            barcode: "480001",
+            barcode: "4800010000016",
             categoryName: "Personal Care",
             sellingPrice: 12m,
             costPrice: 8m,
@@ -785,7 +805,7 @@ public sealed class CatalogImportCategoryCreateTests
             "Good",
             "Piece",
             sku: "SKU-GOOD",
-            barcode: "GOOD",
+            barcode: "4800010000009",
             categoryName: "Household",
             sellingPrice: 12m,
             costPrice: 8m,
@@ -795,7 +815,7 @@ public sealed class CatalogImportCategoryCreateTests
             "Bad",
             "NotAUnit",
             sku: "SKU-BAD",
-            barcode: "BAD",
+            barcode: "4800010000023",
             categoryName: "Household",
             sellingPrice: 12m,
             costPrice: 8m,

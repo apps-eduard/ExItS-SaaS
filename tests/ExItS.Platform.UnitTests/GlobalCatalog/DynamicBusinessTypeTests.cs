@@ -141,7 +141,7 @@ public sealed class DynamicBusinessTypeTests
             "Croissant",
             ProductUnit.Piece,
             "SKU-C",
-            "480900",
+            "4809000000005",
             "BrandX",
             category.Id,
             T0,

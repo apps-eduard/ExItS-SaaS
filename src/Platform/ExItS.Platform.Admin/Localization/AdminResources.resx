@@ -973,10 +973,12 @@
   <data name="GlobalProducts_FieldDescription" xml:space="preserve"><value>Description</value></data>
   <data name="GlobalProducts_Sku" xml:space="preserve"><value>SKU</value></data>
   <data name="GlobalProducts_Barcode" xml:space="preserve"><value>Barcode</value></data>
+  <data name="GlobalProducts_BarcodeHint" xml:space="preserve"><value>Optional GS1 digits (8–14)</value></data>
   <data name="GlobalProducts_Brand" xml:space="preserve"><value>Brand</value></data>
   <data name="GlobalProducts_RequiredName" xml:space="preserve"><value>Name is required.</value></data>
   <data name="GlobalProducts_RequiredSku" xml:space="preserve"><value>SKU is required.</value></data>
   <data name="GlobalProducts_RequiredBarcode" xml:space="preserve"><value>Barcode is required.</value></data>
+  <data name="GlobalProducts_InvalidBarcode" xml:space="preserve"><value>Barcode must be 8–14 digits (optional). Use SKU for codes like BAKERY000001.</value></data>
   <data name="GlobalProducts_RequiredBrand" xml:space="preserve"><value>Brand is required.</value></data>
   <data name="GlobalProducts_RequiredCategory" xml:space="preserve"><value>Category is required.</value></data>
   <data name="GlobalProducts_RequiredUnit" xml:space="preserve"><value>Unit is required.</value></data>
