@@ -122,4 +122,4 @@ Same as existing catalog product update: no new POS price-audit subsystem. Attri
 
 ## Implementation commit hash
 
-_(filled after commit)_
+`52ca42e248f180e8a69a3aaa2db976ba9ed127de`
