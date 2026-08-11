@@ -202,12 +202,12 @@ public static class LegacyBusinessTypeSeeds
 
     public static IReadOnlyList<(Guid Id, string Code, string Name, int SortOrder)> All { get; } =
     [
-        (SariSariId, SariSariCode, "Sari-Sari", 10),
+        (SariSariId, SariSariCode, "Sari-Sari Store", 10),
         (MiniGroceryId, MiniGroceryCode, "Mini Grocery", 20),
         (BakeryId, BakeryCode, "Bakery", 30),
-        (CafeId, CafeCode, "Cafe", 40),
+        (CafeId, CafeCode, "Cafe / Coffee Shop", 40),
         (PharmacyId, PharmacyCode, "Pharmacy", 50),
-        (GeneralRetailId, GeneralRetailCode, "General Retail", 60)
+        (GeneralRetailId, GeneralRetailCode, "General Retail / Other", 60)
     ];
 
     public static bool TryGetIdByCode(string code, out Guid id)

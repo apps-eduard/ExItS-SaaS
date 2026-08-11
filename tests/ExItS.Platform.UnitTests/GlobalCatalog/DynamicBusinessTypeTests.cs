@@ -12,6 +12,21 @@ public sealed class DynamicBusinessTypeTests
     private static readonly DateTimeOffset T0 = new(2026, 8, 10, 10, 0, 0, TimeSpan.Zero);
 
     [Fact]
+    public void Philippine_default_business_types_are_sixteen_unique_active_codes()
+    {
+        Assert.Equal(16, PhilippineBusinessTypeSeeds.All.Count);
+        Assert.Equal(16, PhilippineBusinessTypeSeeds.All.Select(r => r.Code).Distinct(StringComparer.OrdinalIgnoreCase).Count());
+        Assert.Equal(16, PhilippineBusinessTypeSeeds.All.Select(r => r.Id).Distinct().Count());
+        Assert.Contains(PhilippineBusinessTypeSeeds.All, r => r.Code == "SariSari" && r.Name == "Sari-Sari Store");
+        Assert.Contains(PhilippineBusinessTypeSeeds.All, r => r.Code == "Cafe" && r.Name == "Cafe / Coffee Shop");
+        Assert.Contains(PhilippineBusinessTypeSeeds.All, r => r.Code == "GeneralRetail" && r.Name == "General Retail / Other");
+        Assert.Contains(PhilippineBusinessTypeSeeds.All, r => r.Code == PhilippineBusinessTypeSeeds.VegetableVendorCode);
+        Assert.Contains(PhilippineBusinessTypeSeeds.All, r => r.Code == PhilippineBusinessTypeSeeds.WaterRefillingCode);
+        Assert.True(PhilippineBusinessTypeSeeds.TryGetIdByCode("fishvendor", out var fishId));
+        Assert.Equal(PhilippineBusinessTypeSeeds.FishVendorId, fishId);
+    }
+
+    [Fact]
     public void Legacy_seeds_preserve_six_codes_and_stable_ids()
     {
         Assert.Equal(6, LegacyBusinessTypeSeeds.All.Count);
@@ -63,7 +78,7 @@ public sealed class DynamicBusinessTypeTests
         Assert.False(dupCode.IsSuccess);
         Assert.Equal(ApplicationErrorCodes.DuplicateBusinessTypeCode, dupCode.ErrorCode);
 
-        var dupName = await create.ExecuteAsync(new CreateBusinessTypeRequest("UniqueCode", "Sari-Sari"));
+        var dupName = await create.ExecuteAsync(new CreateBusinessTypeRequest("UniqueCode", "Sari-Sari Store"));
         Assert.False(dupName.IsSuccess);
         Assert.Equal(ApplicationErrorCodes.DuplicateBusinessTypeName, dupName.ErrorCode);
     }

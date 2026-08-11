@@ -3,6 +3,7 @@ using ExItS.Platform.Application.Authorization;
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Entitlements;
+using ExItS.Platform.Application.GlobalCatalog;
 using ExItS.Platform.Application.Identity;
 using ExItS.Platform.Application.Organizations;
 using ExItS.Platform.Application.Personal;
@@ -56,6 +57,7 @@ public sealed class InitializeLocalValidationDataset
     private readonly InitializeLocalValidationPersonalUtangSeed _personalUtangSeed;
     private readonly ILocalValidationBaselinePurge _baselinePurge;
     private readonly EnsureBuiltInPlatformRoleDefinitions _ensureBuiltInRoles;
+    private readonly EnsurePhilippinePosStarterCatalog _ensurePhilippinePosStarterCatalog;
     private readonly IPlanRepository _plans;
     private readonly ITrialDefinitionRepository _trials;
     private readonly ISubscriptionRepository _subscriptions;
@@ -97,6 +99,7 @@ public sealed class InitializeLocalValidationDataset
         InitializeLocalValidationPersonalUtangSeed personalUtangSeed,
         ILocalValidationBaselinePurge baselinePurge,
         EnsureBuiltInPlatformRoleDefinitions ensureBuiltInRoles,
+        EnsurePhilippinePosStarterCatalog ensurePhilippinePosStarterCatalog,
         IPlanRepository plans,
         ITrialDefinitionRepository trials,
         ISubscriptionRepository subscriptions,
@@ -137,6 +140,7 @@ public sealed class InitializeLocalValidationDataset
         _personalUtangSeed = personalUtangSeed;
         _baselinePurge = baselinePurge;
         _ensureBuiltInRoles = ensureBuiltInRoles;
+        _ensurePhilippinePosStarterCatalog = ensurePhilippinePosStarterCatalog;
         _plans = plans;
         _trials = trials;
         _subscriptions = subscriptions;
@@ -185,6 +189,7 @@ public sealed class InitializeLocalValidationDataset
         }
 
         await _ensureBuiltInRoles.ExecuteAsync(cancellationToken).ConfigureAwait(false);
+        await _ensurePhilippinePosStarterCatalog.ExecuteAsync(cancellationToken).ConfigureAwait(false);
 
         var organizations = new Dictionary<string, PlatformOrganization>(StringComparer.OrdinalIgnoreCase);
 

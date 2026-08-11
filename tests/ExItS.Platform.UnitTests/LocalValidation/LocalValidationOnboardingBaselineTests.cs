@@ -61,6 +61,7 @@ public sealed class LocalValidationOnboardingBaselineTests
         Assert.Contains("PurgeTransactionalDataAsync", initializer, StringComparison.Ordinal);
         Assert.Contains("PurgeTransactionalOnSeed", initializer, StringComparison.Ordinal);
         Assert.Contains("EnsureBuiltInPlatformRoleDefinitions", initializer, StringComparison.Ordinal);
+        Assert.Contains("EnsurePhilippinePosStarterCatalog", initializer, StringComparison.Ordinal);
 
         var options = File.ReadAllText(Path.Combine(
             root, "src", "Platform", "ExItS.Platform.Application", "LocalValidation", "LocalValidationOptions.cs"));

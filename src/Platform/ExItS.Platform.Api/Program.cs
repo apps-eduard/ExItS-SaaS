@@ -149,6 +149,7 @@ builder.Services.AddScoped<PublishPlanVersion>();
 builder.Services.AddScoped<CreateTrialDefinition>();
 builder.Services.AddScoped<RetireTrialDefinition>();
 builder.Services.AddScoped<EnsureMvpPosPlans>();
+builder.Services.AddScoped<EnsurePhilippinePosStarterCatalog>();
 builder.Services.AddScoped<CommercialCatalogQueryService>();
 builder.Services.AddScoped<OrganizationCurrentPlanQueryService>();
 builder.Services.AddScoped<StartOrganizationCommercialSubscription>();
