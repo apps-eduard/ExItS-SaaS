@@ -4,6 +4,7 @@
 @inject IStringLocalizer<AdminResources> L
 @inject NavigationManager Nav
 @inject AdminShellContext Shell
+@inject AdminSessionExpiryCoordinator SessionExpiry
 @implements IDisposable
 
 @*
@@ -166,6 +167,7 @@
     protected override void OnInitialized()
     {
         Nav.LocationChanged += OnLocationChanged;
+        SessionExpiry.SessionExpired += OnSessionExpired;
         UpdatePageTitle();
     }
 
@@ -187,6 +189,12 @@
 
         _shellReady = true;
         await InvokeAsync(StateHasChanged);
+    }
+
+    private void OnSessionExpired()
+    {
+        _ = InvokeAsync(() =>
+            Nav.NavigateTo("/admin/logout?notice=session-expired", forceLoad: true));
     }
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
@@ -255,5 +263,9 @@
         }
     }
 
-    public void Dispose() => Nav.LocationChanged -= OnLocationChanged;
+    public void Dispose()
+    {
+        Nav.LocationChanged -= OnLocationChanged;
+        SessionExpiry.SessionExpired -= OnSessionExpired;
+    }
 }

@@ -112,6 +112,7 @@ builder.Services.AddAuthorization(options =>
 builder.Services.AddTransient<PlatformSessionForwardingHandler>();
 builder.Services.AddScoped<PlatformBrowserSessionService>();
 builder.Services.AddScoped<PlatformCircuitSession>();
+builder.Services.AddScoped<AdminSessionExpiryCoordinator>();
 builder.Services.AddScoped<CircuitHandler, PlatformSessionCircuitHandler>();
 
 

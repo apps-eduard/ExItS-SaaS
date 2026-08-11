@@ -12,7 +12,8 @@ public sealed class PlatformApiClient(
     HttpClient httpClient,
     IHttpContextAccessor httpContextAccessor,
     AuthenticationStateProvider authenticationStateProvider,
-    PlatformCircuitSession circuitSession) : IPlatformApiClient
+    PlatformCircuitSession circuitSession,
+    AdminSessionExpiryCoordinator sessionExpiry) : IPlatformApiClient
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
     private const string DevActor = "dev-admin";
@@ -718,6 +719,7 @@ public sealed class PlatformApiClient(
                     : ApiCallResult<CatalogImportJobDto>.Success(data);
             }
 
+            NotifySessionExpiredIfUnauthorized(response.StatusCode, sessionToken);
             var error = await ToExceptionAsync(response, ct);
             return response.StatusCode switch
             {
@@ -839,6 +841,7 @@ public sealed class PlatformApiClient(
                 return ApiCallResult<byte[]>.Success(bytes);
             }
 
+            NotifySessionExpiredIfUnauthorized(response.StatusCode, sessionToken);
             var error = await ToExceptionAsync(response, ct);
             return response.StatusCode switch
             {
@@ -884,6 +887,7 @@ public sealed class PlatformApiClient(
                 return ApiCallResult<byte[]>.Success(bytes);
             }
 
+            NotifySessionExpiredIfUnauthorized(response.StatusCode, sessionToken);
             var error = await ToExceptionAsync(response, ct);
             return response.StatusCode switch
             {
@@ -953,6 +957,7 @@ public sealed class PlatformApiClient(
                     : ApiCallResult<T>.Success(data);
             }
 
+            NotifySessionExpiredIfUnauthorized(response.StatusCode, sessionToken);
             var error = await ToExceptionAsync(response, ct);
             return response.StatusCode switch
             {
@@ -965,6 +970,14 @@ public sealed class PlatformApiClient(
         catch (HttpRequestException ex) { return ApiCallResult<T>.Unavailable(new PlatformApiException(null, "Platform API unavailable", ex.Message, innerException: ex)); }
         catch (TaskCanceledException ex) when (!ct.IsCancellationRequested) { return ApiCallResult<T>.Unavailable(new PlatformApiException(null, "Platform API timed out", ex.Message, innerException: ex)); }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+    }
+
+    private void NotifySessionExpiredIfUnauthorized(HttpStatusCode statusCode, string? sessionToken)
+    {
+        if (statusCode == HttpStatusCode.Unauthorized && !string.IsNullOrWhiteSpace(sessionToken))
+        {
+            sessionExpiry.NotifyUnauthorized();
+        }
     }
 
     private static async Task<PlatformApiException> ToExceptionAsync(HttpResponseMessage response, CancellationToken ct)

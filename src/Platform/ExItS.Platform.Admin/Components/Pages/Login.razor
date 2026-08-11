@@ -98,7 +98,15 @@
     protected override void OnInitialized()
     {
         _error = string.IsNullOrWhiteSpace(ErrorQuery) ? null : ErrorQuery;
-        _notice = string.IsNullOrWhiteSpace(NoticeQuery) ? null : NoticeQuery;
+        if (string.Equals(NoticeQuery, "session-expired", StringComparison.OrdinalIgnoreCase))
+        {
+            _error = L["Login_SessionExpired"];
+            _notice = null;
+        }
+        else
+        {
+            _notice = string.IsNullOrWhiteSpace(NoticeQuery) ? null : NoticeQuery;
+        }
     }
 
     private string BuildChallengeUrl(string provider)
