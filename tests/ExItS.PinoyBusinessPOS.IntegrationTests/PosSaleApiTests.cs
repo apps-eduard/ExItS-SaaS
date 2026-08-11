@@ -174,9 +174,38 @@ public sealed class PosSaleApiTests(PosPostgreSqlFixture fixture)
                         LineTotal: 99.00m)
                 ],
                 PosSaleOptions.CashPaymentMethod,
-                99m));
+                99m,
+                SaleId: Guid.NewGuid()));
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         Assert.Equal(ApplicationErrorCodes.SaleSnapshotLineTotalMismatch, await ReadErrorCodeAsync(response));
+    }
+
+    [Fact]
+    public async Task Checkout_rejects_trusted_snapshots_without_client_sale_id()
+    {
+        await using var factory = new PosApiFactory(fixture.ConnectionString);
+        var client = factory.CreateClient();
+        var org = Guid.NewGuid();
+        var tomato = await CreateProductAsync(
+            client, org, "Tomato", "Kilogram", 120m, sku: "tom-nosaleid-1", sellingMode: "ByWeight");
+
+        using var response = await PostCheckoutAsync(
+            client,
+            org,
+            new CheckoutSaleRequest(
+                [
+                    new CheckoutSaleLineRequest(
+                        tomato.ProductId,
+                        0.350m,
+                        UnitPriceSnapshot: 120m,
+                        UnitOfMeasure: "Kilogram",
+                        SellingMode: "ByWeight",
+                        LineTotal: 42.00m)
+                ],
+                PosSaleOptions.CashPaymentMethod,
+                42m));
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(ApplicationErrorCodes.SaleSnapshotInvalid, await ReadErrorCodeAsync(response));
     }
 
     [Fact]
@@ -212,7 +241,8 @@ public sealed class PosSaleApiTests(PosPostgreSqlFixture fixture)
                         NameSnapshot: "Tomato")
                 ],
                 PosSaleOptions.CashPaymentMethod,
-                194m));
+                194m,
+                SaleId: Guid.NewGuid()));
 
         Assert.Equal(194.00m, sale.Total);
         Assert.Equal(2, sale.Lines.Count);

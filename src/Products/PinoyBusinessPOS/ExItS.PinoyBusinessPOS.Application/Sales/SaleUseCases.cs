@@ -412,6 +412,14 @@ public sealed class CheckoutSale
 
             var drafts = new List<SaleLineDraft>();
             var usesTrustedSnapshots = CheckoutSaleLineSnapshots.RequestUsesTrustedSnapshots(lines);
+            if (usesTrustedSnapshots
+                && (clientSaleId is null || clientSaleId == Guid.Empty))
+            {
+                return ApplicationResult<Sale>.Failure(
+                    ApplicationErrorCodes.SaleSnapshotInvalid,
+                    "Trusted sale line snapshots require a client SaleId (offline sync). Online carts must omit snapshot fields.");
+            }
+
             if (usesTrustedSnapshots)
             {
                 foreach (var line in lines)

@@ -80,4 +80,15 @@ public interface ITrialDefinitionRepository
 public interface IPlatformUnitOfWork
 {
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Runs <paramref name="action"/> under an organization-scoped DB advisory lock when the
+    /// provider supports it (PostgreSQL). Default runs the action without locking so in-memory
+    /// unit-test fakes need no changes.
+    /// </summary>
+    Task ExecuteWithOrganizationLockAsync(
+        Guid organizationId,
+        Func<CancellationToken, Task> action,
+        CancellationToken cancellationToken = default) =>
+        action(cancellationToken);
 }

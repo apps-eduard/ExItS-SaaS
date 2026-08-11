@@ -594,12 +594,14 @@ public sealed class UpdateCatalogProductPrices
                 continue;
             }
 
-            if (CatalogConcurrency.IsStale(item.ExpectedUpdatedAtUtc, product.UpdatedAtUtc))
+            if (CatalogConcurrency.IsStaleOrMissing(item.ExpectedUpdatedAtUtc, product.UpdatedAtUtc))
             {
                 results[i] = Fail(
                     item.ProductId,
                     ApplicationErrorCodes.CatalogConcurrencyConflict,
-                    "The product was updated concurrently. Reload the latest version and try again.");
+                    item.ExpectedUpdatedAtUtc is null
+                        ? "ExpectedUpdatedAtUtc is required for Today's Prices updates."
+                        : "The product was updated concurrently. Reload the latest version and try again.");
                 continue;
             }
 

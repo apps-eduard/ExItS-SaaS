@@ -328,4 +328,17 @@ internal static class CatalogConcurrency
         return expectedUpdatedAtUtc.Value.ToUniversalTime().UtcTicks
                != actualUpdatedAtUtc.ToUniversalTime().UtcTicks;
     }
+
+    /// <summary>
+    /// Today's Prices requires an expected concurrency token (fail-closed when omitted).
+    /// </summary>
+    public static bool IsStaleOrMissing(DateTimeOffset? expectedUpdatedAtUtc, DateTimeOffset actualUpdatedAtUtc)
+    {
+        if (expectedUpdatedAtUtc is null)
+        {
+            return true;
+        }
+
+        return IsStale(expectedUpdatedAtUtc, actualUpdatedAtUtc);
+    }
 }

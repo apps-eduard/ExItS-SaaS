@@ -145,6 +145,31 @@ public sealed class PosCatalogTodaysPricesApiTests(PosPostgreSqlFixture fixture)
         Assert.Equal(ApplicationErrorCodes.CatalogPriceBulkEmpty, await ReadErrorCodeAsync(emptyResponse));
     }
 
+    [Fact]
+    public async Task Bulk_price_update_requires_expected_updated_at()
+    {
+        await using var factory = new PosApiFactory(fixture.ConnectionString);
+        var client = factory.CreateClient();
+        var org = Guid.NewGuid();
+
+        var eggs = await CreateProductAsync(client, org, new CreatePosCatalogProductRequest(
+            "Eggs",
+            "Piece",
+            9m));
+        eggs = await GetProductAsync(client, org, eggs.ProductId);
+
+        using var missingToken = Scoped(HttpMethod.Post, Prices, org);
+        missingToken.Content = JsonContent.Create(new UpdatePosCatalogProductPricesRequest(
+        [
+            new UpdatePosCatalogProductPriceItem(eggs.ProductId, 11m) // no ExpectedUpdatedAtUtc
+        ]));
+        using var missingResponse = await client.SendAsync(missingToken);
+        missingResponse.EnsureSuccessStatusCode();
+        var body = await missingResponse.Content.ReadFromJsonAsync<UpdatePosCatalogProductPricesResponse>(JsonOptions);
+        Assert.False(body!.Results[0].Succeeded);
+        Assert.Equal(ApplicationErrorCodes.CatalogConcurrencyConflict, body.Results[0].ErrorCode);
+    }
+
     private static async Task<PosCatalogProductDto> GetProductAsync(HttpClient client, Guid org, Guid productId)
     {
         using var request = Scoped(HttpMethod.Get, $"{Products}/{productId:D}", org);

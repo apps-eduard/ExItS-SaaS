@@ -177,89 +177,141 @@ public sealed class ActivateOrganizationBusinessType(
             var product = string.IsNullOrWhiteSpace(productCode)
                 ? null
                 : ProductCode.Create(productCode);
-            var entitlement = await resolver.ResolveAsync(orgId, product, cancellationToken).ConfigureAwait(false);
-            if (!entitlement.IsSuccess)
-            {
-                return ApplicationResult<OrganizationBusinessTypeActivationDto>.Failure(
-                    entitlement.ErrorCode!,
-                    entitlement.ErrorMessage!);
-            }
 
-            var granted = entitlement.Value!.GrantedBusinessTypeIds
-                .Select(id => id.Value)
-                .ToHashSet();
-            if (!granted.Contains(btId.Value))
-            {
-                return ApplicationResult<OrganizationBusinessTypeActivationDto>.Failure(
-                    ApplicationErrorCodes.BusinessTypeNotEntitled,
-                    "Current subscription does not grant this business type.");
-            }
+            ApplicationResult<OrganizationBusinessTypeActivationDto>? lockedResult = null;
+            await unitOfWork.ExecuteWithOrganizationLockAsync(
+                organizationId,
+                async ct =>
+                {
+                    lockedResult = await ActivateUnderLockAsync(
+                            orgId,
+                            btId,
+                            businessType,
+                            organization,
+                            product,
+                            ct)
+                        .ConfigureAwait(false);
+                },
+                cancellationToken).ConfigureAwait(false);
 
-            var existingActivation = await activations.GetAsync(orgId, btId, cancellationToken).ConfigureAwait(false);
-            if (existingActivation is not null
-                || entitlement.Value.EffectiveBusinessTypeIds.Any(id => id == btId))
+            return lockedResult
+                   ?? ApplicationResult<OrganizationBusinessTypeActivationDto>.Failure(
+                       ApplicationErrorCodes.DomainViolation,
+                       "Business type activation did not complete.");
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<OrganizationBusinessTypeActivationDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+        catch (PersistenceConflictException)
+        {
+            var orgId = PlatformOrganizationId.From(organizationId);
+            var btId = BusinessTypeId.From(businessTypeId);
+            var existing = await activations.GetAsync(orgId, btId, cancellationToken).ConfigureAwait(false);
+            var businessType = await businessTypes.GetByIdAsync(btId, cancellationToken).ConfigureAwait(false);
+            if (existing is not null && businessType is not null)
             {
                 return ApplicationResult<OrganizationBusinessTypeActivationDto>.Success(
                     new OrganizationBusinessTypeActivationDto(
                         orgId.Value,
                         btId.Value,
                         businessType.Code,
-                        existingActivation?.ActivatedAtUtc ?? clock.UtcNow));
+                        existing.ActivatedAtUtc));
             }
 
-            if (entitlement.Value.PlanVersionId is null)
-            {
-                return ApplicationResult<OrganizationBusinessTypeActivationDto>.Failure(
-                    ApplicationErrorCodes.SubscriptionNotFound,
-                    "No plan version is bound for business type capacity evaluation.");
-            }
+            return ApplicationResult<OrganizationBusinessTypeActivationDto>.Failure(
+                ApplicationErrorCodes.DomainViolation,
+                "A concurrent business type activation conflict occurred.");
+        }
+    }
 
-            var planVersion = await plans
-                .GetVersionByIdAsync(PlanVersionId.From(entitlement.Value.PlanVersionId.Value), cancellationToken)
-                .ConfigureAwait(false);
-            if (planVersion is null)
-            {
-                return ApplicationResult<OrganizationBusinessTypeActivationDto>.Failure(
-                    ApplicationErrorCodes.PlanNotFound,
-                    "Bound plan version was not found.");
-            }
+    private async Task<ApplicationResult<OrganizationBusinessTypeActivationDto>> ActivateUnderLockAsync(
+        PlatformOrganizationId orgId,
+        BusinessTypeId btId,
+        BusinessType businessType,
+        PlatformOrganization organization,
+        ProductCode? product,
+        CancellationToken cancellationToken)
+    {
+        var entitlement = await resolver.ResolveAsync(orgId, product, cancellationToken).ConfigureAwait(false);
+        if (!entitlement.IsSuccess)
+        {
+            return ApplicationResult<OrganizationBusinessTypeActivationDto>.Failure(
+                entitlement.ErrorCode!,
+                entitlement.ErrorMessage!);
+        }
 
-            var plan = await plans.GetByIdAsync(planVersion.PlanId, cancellationToken).ConfigureAwait(false);
-            if (plan is null)
-            {
-                return ApplicationResult<OrganizationBusinessTypeActivationDto>.Failure(
-                    ApplicationErrorCodes.PlanNotFound,
-                    "Current plan was not found.");
-            }
+        var granted = entitlement.Value!.GrantedBusinessTypeIds
+            .Select(id => id.Value)
+            .ToHashSet();
+        if (!granted.Contains(btId.Value))
+        {
+            return ApplicationResult<OrganizationBusinessTypeActivationDto>.Failure(
+                ApplicationErrorCodes.BusinessTypeNotEntitled,
+                "Current subscription does not grant this business type.");
+        }
 
-            var effectiveCount = entitlement.Value.EffectiveBusinessTypeIds.Count;
-            if (effectiveCount >= plan.MaxActiveBusinessTypes)
-            {
-                return ApplicationResult<OrganizationBusinessTypeActivationDto>.Failure(
-                    ApplicationErrorCodes.BusinessTypeActivationCapacityExceeded,
-                    $"Active business type capacity ({plan.MaxActiveBusinessTypes}) has been reached.");
-            }
-
-            var activation = OrganizationBusinessTypeActivation.Activate(
-                orgId,
-                btId,
-                clock.UtcNow,
-                organization.PrimaryBusinessTypeId);
-
-            await activations.AddAsync(activation, cancellationToken).ConfigureAwait(false);
-            await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-
+        var existingActivation = await activations.GetAsync(orgId, btId, cancellationToken).ConfigureAwait(false);
+        if (existingActivation is not null
+            || entitlement.Value.EffectiveBusinessTypeIds.Any(id => id == btId))
+        {
             return ApplicationResult<OrganizationBusinessTypeActivationDto>.Success(
                 new OrganizationBusinessTypeActivationDto(
                     orgId.Value,
                     btId.Value,
                     businessType.Code,
-                    activation.ActivatedAtUtc));
+                    existingActivation?.ActivatedAtUtc ?? clock.UtcNow));
         }
-        catch (DomainException ex)
+
+        if (entitlement.Value.PlanVersionId is null)
         {
-            return ApplicationResult<OrganizationBusinessTypeActivationDto>.Failure(ex.ErrorCode, ex.Message);
+            return ApplicationResult<OrganizationBusinessTypeActivationDto>.Failure(
+                ApplicationErrorCodes.SubscriptionNotFound,
+                "No plan version is bound for business type capacity evaluation.");
         }
+
+        var planVersion = await plans
+            .GetVersionByIdAsync(PlanVersionId.From(entitlement.Value.PlanVersionId.Value), cancellationToken)
+            .ConfigureAwait(false);
+        if (planVersion is null)
+        {
+            return ApplicationResult<OrganizationBusinessTypeActivationDto>.Failure(
+                ApplicationErrorCodes.PlanNotFound,
+                "Bound plan version was not found.");
+        }
+
+        var plan = await plans.GetByIdAsync(planVersion.PlanId, cancellationToken).ConfigureAwait(false);
+        if (plan is null)
+        {
+            return ApplicationResult<OrganizationBusinessTypeActivationDto>.Failure(
+                ApplicationErrorCodes.PlanNotFound,
+                "Current plan was not found.");
+        }
+
+        // Recount under the org advisory lock so concurrent activations cannot exceed capacity.
+        var effectiveCount = entitlement.Value.EffectiveBusinessTypeIds.Count;
+        if (effectiveCount >= plan.MaxActiveBusinessTypes)
+        {
+            return ApplicationResult<OrganizationBusinessTypeActivationDto>.Failure(
+                ApplicationErrorCodes.BusinessTypeActivationCapacityExceeded,
+                $"Active business type capacity ({plan.MaxActiveBusinessTypes}) has been reached.");
+        }
+
+        var activation = OrganizationBusinessTypeActivation.Activate(
+            orgId,
+            btId,
+            clock.UtcNow,
+            organization.PrimaryBusinessTypeId);
+
+        await activations.AddAsync(activation, cancellationToken).ConfigureAwait(false);
+        await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        return ApplicationResult<OrganizationBusinessTypeActivationDto>.Success(
+            new OrganizationBusinessTypeActivationDto(
+                orgId.Value,
+                btId.Value,
+                businessType.Code,
+                activation.ActivatedAtUtc));
     }
 }
 
@@ -295,9 +347,8 @@ public sealed class DeactivateOrganizationBusinessType(
             var existing = await activations.GetAsync(orgId, btId, cancellationToken).ConfigureAwait(false);
             if (existing is null)
             {
-                return ApplicationResult.Failure(
-                    ApplicationErrorCodes.BusinessTypeActivationNotFound,
-                    "Business type activation was not found.");
+                // Idempotent: already inactive / never activated (non-primary).
+                return ApplicationResult.Success();
             }
 
             await activations.RemoveAsync(orgId, btId, cancellationToken).ConfigureAwait(false);

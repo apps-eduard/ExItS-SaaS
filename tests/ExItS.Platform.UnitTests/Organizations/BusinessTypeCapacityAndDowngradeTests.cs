@@ -129,6 +129,22 @@ public sealed class BusinessTypeCapacityAndDowngradeTests
     }
 
     [Fact]
+    public async Task Optional_deactivation_is_idempotent_when_already_inactive()
+    {
+        var h = Harness.Create(maxActiveBusinessTypes: 2);
+        var primary = h.AddBusinessType("SariSari", "Sari-Sari Store");
+        var bakery = h.AddBusinessType("Bakery", "Bakery");
+        var org = h.AddOrganization(primary);
+        h.SetPlanGrants(org.Id, [primary, bakery]);
+
+        var first = await h.Deactivate.ExecuteAsync(org.Id.Value, bakery.Value);
+        var second = await h.Deactivate.ExecuteAsync(org.Id.Value, bakery.Value);
+
+        Assert.True(first.IsSuccess);
+        Assert.True(second.IsSuccess);
+    }
+
+    [Fact]
     public async Task Optional_deactivation_frees_capacity_for_ux()
     {
         var h = Harness.Create(maxActiveBusinessTypes: 2);
