@@ -20,6 +20,62 @@ public sealed class AuthOfflineUxLayerTests
     }
 
     [Fact]
+    public async Task Online_establish_clears_legacy_unbound_pin_forcing_reenrollment()
+    {
+        var clock = new FakeClock(DateTimeOffset.Parse("2026-08-08T00:00:00Z"));
+        var harness = await SeedGrantWithoutPinAsync(clock);
+        // Simulate a leftover device PIN written before UserId binding.
+        await harness.Store.SavePinVerifierAsync(OfflinePinHasher.Create("123456", 10_000, userId: null));
+        Assert.True(await harness.Service.HasPinConfiguredAsync());
+
+        await harness.Service.EstablishFromOnlineSessionAsync(OnlineSession(), harness.Device.DeviceId, "Cashier");
+
+        Assert.False(await harness.Service.HasPinConfiguredAsync());
+        Assert.Null(await harness.Store.LoadPinVerifierAsync());
+        Assert.NotNull(await harness.Store.LoadGrantAsync());
+    }
+
+    [Fact]
+    public async Task Online_establish_clears_pin_owned_by_different_user()
+    {
+        var clock = new FakeClock(DateTimeOffset.Parse("2026-08-08T00:00:00Z"));
+        var harness = await SeedGrantWithoutPinAsync(clock);
+        var otherUser = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
+        await harness.Store.SavePinVerifierAsync(OfflinePinHasher.Create("123456", 10_000, otherUser));
+
+        await harness.Service.EstablishFromOnlineSessionAsync(OnlineSession(), harness.Device.DeviceId, "Cashier");
+
+        Assert.False(await harness.Service.HasPinConfiguredAsync());
+        Assert.Null(await harness.Store.LoadPinVerifierAsync());
+    }
+
+    [Fact]
+    public async Task Online_establish_keeps_pin_for_same_user()
+    {
+        var clock = new FakeClock(DateTimeOffset.Parse("2026-08-08T00:00:00Z"));
+        var harness = await SeedAsync(clock);
+        Assert.True(await harness.Service.HasPinConfiguredAsync());
+        var before = await harness.Store.LoadPinVerifierAsync();
+
+        await harness.Service.EstablishFromOnlineSessionAsync(OnlineSession(), harness.Device.DeviceId, "Cashier");
+
+        Assert.True(await harness.Service.HasPinConfiguredAsync());
+        var after = await harness.Store.LoadPinVerifierAsync();
+        Assert.NotNull(after);
+        Assert.Equal(OnlineSession().UserId, after!.UserId);
+        Assert.Equal(before!.HashBase64, after.HashBase64);
+    }
+
+    [Fact]
+    public void Pin_enrollment_page_stays_when_pin_missing()
+    {
+        var page = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Pages", "OfflinePinEnrollment.razor"));
+        Assert.Contains("never auto-dismiss", page, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("_isChange = false", page, StringComparison.Ordinal);
+        Assert.DoesNotContain("already done", page, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task Enrolled_user_is_not_forced_to_enroll_again()
     {
         var clock = new FakeClock(DateTimeOffset.Parse("2026-08-08T00:00:00Z"));
@@ -192,6 +248,40 @@ public sealed class AuthOfflineUxLayerTests
         // Template prompt must not require ManageCatalog (trial feature hydration lag).
         var templateBlock = gate.Substring(templateRoute - 200, Math.Min(400, gate.Length - (templateRoute - 200)));
         Assert.DoesNotContain("ManageCatalog", templateBlock, StringComparison.Ordinal);
+
+        Assert.Contains("IsOrgPosFirstTimeSetupIncompleteAsync", gate, StringComparison.Ordinal);
+        Assert.Contains("IsOrgFirstTimeSetupRoute", gate, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void First_time_setup_pages_use_AuthShell_and_PosShell_hides_bottom_nav()
+    {
+        var maui = MauiProject();
+        var posShell = File.ReadAllText(Path.Combine(maui, "Components", "Layout", "PosShell.razor"));
+        Assert.Contains("IsOrgPosFirstTimeSetupIncompleteAsync", posShell, StringComparison.Ordinal);
+        Assert.Contains("_showBottomNav", posShell, StringComparison.Ordinal);
+        Assert.Contains("pos-shell--auth", posShell, StringComparison.Ordinal);
+        Assert.Contains("IsOrgFirstTimeSetupRoute", posShell, StringComparison.Ordinal);
+
+        Assert.Contains("@layout Layout.AuthShell",
+            File.ReadAllText(Path.Combine(maui, "Components", "Pages", "Devices", "PosDeviceRegister.razor")),
+            StringComparison.Ordinal);
+        Assert.Contains("@layout Layout.AuthShell",
+            File.ReadAllText(Path.Combine(maui, "Components", "Pages", "Catalog", "CatalogImport.razor")),
+            StringComparison.Ordinal);
+        Assert.Contains("@layout Layout.AuthShell",
+            File.ReadAllText(Path.Combine(maui, "Components", "Pages", "OperationalSetup", "OperationalSetupPage.razor")),
+            StringComparison.Ordinal);
+        Assert.Contains("@layout Layout.AuthShell",
+            File.ReadAllText(Path.Combine(maui, "Components", "Pages", "OfflinePinEnrollment.razor")),
+            StringComparison.Ordinal);
+
+        var gate = File.ReadAllText(Path.Combine(maui, "Services", "NavigationGate.cs"));
+        Assert.Contains("\"/devices/register\"", gate, StringComparison.Ordinal);
+        Assert.Contains("\"/offline-pin-setup\"", gate, StringComparison.Ordinal);
+        Assert.Contains("\"/catalog/import\"", gate, StringComparison.Ordinal);
+        Assert.Contains("\"/setup\"", gate, StringComparison.Ordinal);
+        Assert.Contains("IsOrgFirstTimeSetupRoute", gate, StringComparison.Ordinal);
     }
 
     [Fact]

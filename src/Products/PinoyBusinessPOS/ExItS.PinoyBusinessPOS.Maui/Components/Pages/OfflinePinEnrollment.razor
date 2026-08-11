@@ -97,16 +97,18 @@
         }
 
         var hasPin = await Auth.HasOfflinePinConfiguredAsync();
-        if (hasPin && !_isChange)
+        if (!hasPin)
         {
-            // Mandatory first-time enrollment path — already done.
-            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            // Mandatory enrollment: never auto-dismiss. A leftover device PIN from another
+            // account is cleared on grant establish and must be set again here.
+            _isChange = false;
             return;
         }
 
-        if (!hasPin)
+        if (!_isChange)
         {
-            _isChange = false;
+            // Deep-link to setup when this user already enrolled — continue first-time flow.
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
         }
     }
 

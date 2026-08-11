@@ -28,7 +28,7 @@ public static class OfflinePinHasher
         return true;
     }
 
-    public static OfflinePinVerifier Create(string pin, int iterations)
+    public static OfflinePinVerifier Create(string pin, int iterations, Guid? userId = null)
     {
         ArgumentException.ThrowIfNullOrEmpty(pin);
         if (iterations < 10_000)
@@ -44,7 +44,8 @@ public static class OfflinePinHasher
             Convert.ToBase64String(salt),
             Convert.ToBase64String(hash),
             FailedAttempts: 0,
-            LockedUntilUtc: null);
+            LockedUntilUtc: null,
+            UserId: userId);
     }
 
     public static bool Verify(string pin, OfflinePinVerifier verifier)

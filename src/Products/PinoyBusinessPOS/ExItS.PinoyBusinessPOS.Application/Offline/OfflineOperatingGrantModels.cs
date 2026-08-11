@@ -70,7 +70,9 @@ public sealed record OfflinePinVerifier(
     string SaltBase64,
     string HashBase64,
     int FailedAttempts,
-    DateTimeOffset? LockedUntilUtc);
+    DateTimeOffset? LockedUntilUtc,
+    /// <summary>Owner of this PIN. Null on legacy device verifiers written before user binding.</summary>
+    Guid? UserId = null);
 
 public enum OfflinePinUnlockStatus
 {

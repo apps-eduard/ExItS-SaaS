@@ -92,6 +92,7 @@ public sealed class OfflineOperatingGrantService(
         }
 
         await store.SaveGrantAsync(grant, ct).ConfigureAwait(false);
+        await EnsurePinBelongsToUserAsync(grant.UserId, ct).ConfigureAwait(false);
 
         // Online validation refreshes the grant window; do not require PIN again this process.
         IsUnlockedThisProcess = true;
@@ -118,9 +119,28 @@ public sealed class OfflineOperatingGrantService(
     public async Task<bool> HasPinConfiguredAsync(CancellationToken ct = default)
     {
         var verifier = await store.LoadPinVerifierAsync(ct).ConfigureAwait(false);
-        return verifier is not null
-               && !string.IsNullOrWhiteSpace(verifier.HashBase64)
-               && !string.IsNullOrWhiteSpace(verifier.SaltBase64);
+        if (verifier is null
+            || string.IsNullOrWhiteSpace(verifier.HashBase64)
+            || string.IsNullOrWhiteSpace(verifier.SaltBase64))
+        {
+            return false;
+        }
+
+        // Mandatory enrollment is per signed-in user. A leftover PIN from another account
+        // must not count as enrolled. Legacy unbound verifiers still unlock cold-start until
+        // the next online establish clears them and forces re-enrollment.
+        var grant = await LoadNormalizedGrantAsync(ct).ConfigureAwait(false);
+        if (grant is null)
+        {
+            return true;
+        }
+
+        if (verifier.UserId is null)
+        {
+            return true;
+        }
+
+        return verifier.UserId == grant.UserId;
     }
 
     public async Task<OfflinePinSetupResult> SetPinAsync(string pin, CancellationToken ct = default)
@@ -148,7 +168,10 @@ public sealed class OfflineOperatingGrantService(
             return new OfflinePinSetupResult(false, "Offline_DeviceMismatch");
         }
 
-        var verifier = OfflinePinHasher.Create(pin, Math.Max(10_000, _options.PinHashIterations));
+        var verifier = OfflinePinHasher.Create(
+            pin,
+            Math.Max(10_000, _options.PinHashIterations),
+            grant.UserId);
         await store.SavePinVerifierAsync(verifier, ct).ConfigureAwait(false);
         return new OfflinePinSetupResult(true);
     }
@@ -251,9 +274,21 @@ public sealed class OfflineOperatingGrantService(
                     OfflinePinUnlockStatus.WrongPin, offer.Grant, "Offline_PinWrong");
         }
 
+        if (verifier.UserId is Guid pinUser && pinUser != offer.Grant.UserId)
+        {
+            return new OfflinePinUnlockResult(
+                OfflinePinUnlockStatus.UserMismatch, offer.Grant, "Offline_GrantMissing");
+        }
+
         // Successful unlock: reset attempts. Do NOT change grant expiry.
+        // Bind legacy unbound verifiers to the grant owner so enrollment gates stay consistent.
         await store.SavePinVerifierAsync(
-                verifier with { FailedAttempts = 0, LockedUntilUtc = null },
+                verifier with
+                {
+                    FailedAttempts = 0,
+                    LockedUntilUtc = null,
+                    UserId = offer.Grant.UserId
+                },
                 ct)
             .ConfigureAwait(false);
 
@@ -280,6 +315,26 @@ public sealed class OfflineOperatingGrantService(
         }
 
         return normalized;
+    }
+
+    /// <summary>
+    /// Drop PIN verifiers that are unbound (legacy) or belong to a different user so online
+    /// login always forces enrollment for the current account.
+    /// </summary>
+    private async Task EnsurePinBelongsToUserAsync(Guid userId, CancellationToken ct)
+    {
+        var verifier = await store.LoadPinVerifierAsync(ct).ConfigureAwait(false);
+        if (verifier is null)
+        {
+            return;
+        }
+
+        if (verifier.UserId is Guid pinUser && pinUser == userId)
+        {
+            return;
+        }
+
+        await store.ClearPinVerifierAsync(ct).ConfigureAwait(false);
     }
 
     private static bool IsPersonalEligible(AuthSession session)
