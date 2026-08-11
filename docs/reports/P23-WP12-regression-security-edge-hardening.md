@@ -231,6 +231,8 @@ Broader Platform integration filter (`BusinessType|Entitlement|CatalogTemplate|G
 | Docs stamp (initial) | `5164dcccd137636580aeec4d77cf617bf9874679` |
 | Admin refresh/nav stabilization | `ae0fb7339ed7f47411ce088670a7f21b6b6ca6fa` |
 | Admin shell recovery + catalog permission load | `82ac36fb00b3e8232d234e966496650b511d0455` |
+| Admin nav re-sync + Templates/BT mount + template list harden | `d013afbc6555f8e8723baef4811d876cb673a052` |
+| Docs stamp (Templates/BT nav re-sync) | `60fa8d37216b18ec35a0c6b3d891c0ca8059231f` |
 
 ## Explicit stop
 
