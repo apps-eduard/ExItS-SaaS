@@ -64,7 +64,7 @@ public sealed class ApiWp11StartBusinessCommercialTests(PostgreSqlFixture fixtur
             displayName = "Ana Sari-Sari",
             slug,
             productCode = ProductCode.PinoyBusinessPos,
-            planKey = MvpPosPlanCodes.Business,
+            planKey = MvpPosPlanCodes.Growth,
             billingCycle = BillingCycle.Monthly,
             startAsTrial = true,
             payNow = false,
@@ -140,7 +140,7 @@ public sealed class ApiWp11StartBusinessCommercialTests(PostgreSqlFixture fixtur
                 displayName = "String Cycle Store",
                 slug,
                 productCode = ProductCode.PinoyBusinessPos,
-                planKey = MvpPosPlanCodes.Business,
+                planKey = MvpPosPlanCodes.Growth,
                 billingCycle = "Monthly",
                 startAsTrial = true,
                 payNow = false
@@ -313,7 +313,7 @@ public sealed class ApiWp11StartBusinessCommercialTests(PostgreSqlFixture fixtur
             displayName = "Idempotent Store",
             slug,
             productCode = ProductCode.PinoyBusinessPos,
-            planKey = MvpPosPlanCodes.Business,
+            planKey = MvpPosPlanCodes.Growth,
             billingCycle = BillingCycle.Monthly,
             startAsTrial = true,
             activatePosEntitlement = true
@@ -349,7 +349,7 @@ public sealed class ApiWp11StartBusinessCommercialTests(PostgreSqlFixture fixtur
                 displayName = "Trial Once Store",
                 slug,
                 productCode = ProductCode.PinoyBusinessPos,
-                planKey = MvpPosPlanCodes.Business,
+                planKey = MvpPosPlanCodes.Growth,
                 startAsTrial = true,
                 activatePosEntitlement = true
             });
@@ -364,7 +364,7 @@ public sealed class ApiWp11StartBusinessCommercialTests(PostgreSqlFixture fixtur
         var businessPlan = (await plans.Content.ReadFromJsonAsync<JsonElement>())
             .GetProperty("items")
             .EnumerateArray()
-            .First(p => p.GetProperty("code").GetString() == MvpPosPlanCodes.Business);
+            .First(p => p.GetProperty("code").GetString() == MvpPosPlanCodes.Growth);
 
         var planId = businessPlan.GetProperty("id").GetGuid();
         var versionResponse = await _admin.GetAsync(
@@ -414,7 +414,7 @@ public sealed class ApiWp11StartBusinessCommercialTests(PostgreSqlFixture fixtur
                 displayName = "Pay Convert Store",
                 slug,
                 productCode = ProductCode.PinoyBusinessPos,
-                planKey = MvpPosPlanCodes.Business,
+                planKey = MvpPosPlanCodes.Growth,
                 billingCycle = BillingCycle.Monthly,
                 startAsTrial = true,
                 activatePosEntitlement = true
@@ -503,7 +503,7 @@ public sealed class ApiWp11StartBusinessCommercialTests(PostgreSqlFixture fixtur
                 displayName = "Declined Store",
                 slug = declinedSlug,
                 productCode = ProductCode.PinoyBusinessPos,
-                planKey = MvpPosPlanCodes.Business,
+                planKey = MvpPosPlanCodes.Growth,
                 startAsTrial = true,
                 activatePosEntitlement = true
             });

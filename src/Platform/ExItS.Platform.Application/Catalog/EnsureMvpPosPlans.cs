@@ -1,8 +1,10 @@
 using ExItS.Platform.Application.Common;
+using ExItS.Platform.Application.GlobalCatalog;
 using ExItS.Platform.Application.LocalValidation;
 using ExItS.Platform.Application.Subscriptions;
 using ExItS.Platform.Domain.Abstractions;
 using ExItS.Platform.Domain.Catalog;
+using ExItS.Platform.Domain.GlobalCatalog;
 using ExItS.Platform.Domain.Products;
 using ExItS.Platform.Domain.Subscriptions;
 using Microsoft.Extensions.Logging;
@@ -10,9 +12,9 @@ using Microsoft.Extensions.Logging;
 namespace ExItS.Platform.Application.Catalog;
 
 /// <summary>
-/// Idempotently seeds MVP Pinoy Business POS commercial plans (Starter / Business / Pro),
-/// remaps legacy Local Validation / Start-Business provisional subscriptions onto Business,
-/// and retires <c>local-validation-pos</c> when no active-like subscriptions remain.
+/// Idempotently seeds MVP Pinoy Business POS commercial plans (Starter / Growth / Pro),
+/// remaps legacy Local Validation / Start-Business / Business provisional subscriptions onto Growth,
+/// and retires unused legacy plans when no active-like subscriptions remain.
 /// </summary>
 public sealed class EnsureMvpPosPlans
 {
@@ -24,6 +26,7 @@ public sealed class EnsureMvpPosPlans
         (FeatureCode.PlanMaxBranches, FeatureValueType.QuantityLimit),
         (FeatureCode.PlanMaxActiveStaff, FeatureValueType.QuantityLimit),
         (FeatureCode.PlanMaxActivePosDevices, FeatureValueType.QuantityLimit),
+        (FeatureCode.PlanMaxActiveBusinessTypes, FeatureValueType.QuantityLimit),
         (FeatureCode.StoreAdvancedReports, FeatureValueType.Boolean),
         (FeatureCode.StoreExport, FeatureValueType.Boolean),
         (FeatureCode.CustomerCreditCreate, FeatureValueType.Boolean),
@@ -80,6 +83,7 @@ public sealed class EnsureMvpPosPlans
     private readonly IProductRepository _products;
     private readonly IPlanRepository _plans;
     private readonly IFeatureDefinitionRepository _features;
+    private readonly IBusinessTypeRepository _businessTypes;
     private readonly CreatePlan _createPlan;
     private readonly ActivatePlan _activatePlan;
     private readonly UpdatePlanCommercialPackage _updateCommercialPackage;
@@ -96,6 +100,7 @@ public sealed class EnsureMvpPosPlans
         IProductRepository products,
         IPlanRepository plans,
         IFeatureDefinitionRepository features,
+        IBusinessTypeRepository businessTypes,
         CreatePlan createPlan,
         ActivatePlan activatePlan,
         UpdatePlanCommercialPackage updateCommercialPackage,
@@ -111,6 +116,7 @@ public sealed class EnsureMvpPosPlans
         _products = products;
         _plans = plans;
         _features = features;
+        _businessTypes = businessTypes;
         _createPlan = createPlan;
         _activatePlan = activatePlan;
         _updateCommercialPackage = updateCommercialPackage;
@@ -135,31 +141,38 @@ public sealed class EnsureMvpPosPlans
         }
 
         await EnsureFeaturesAsync(productCode.Value, cancellationToken).ConfigureAwait(false);
+        var businessTypeGrants = await EnsurePhilippineBusinessTypesAsync(cancellationToken).ConfigureAwait(false);
 
-        Plan? businessPlan = null;
-        PlanVersion? businessVersion = null;
+        Plan? growthPlan = null;
+        PlanVersion? growthVersion = null;
 
         foreach (var spec in MvpPosPlanCatalog.Plans)
         {
             var plan = await EnsurePlanAsync(productCode.Value, spec, cancellationToken).ConfigureAwait(false);
-            var version = await EnsurePublishedVersionAsync(plan, spec, cancellationToken).ConfigureAwait(false);
+            var version = await EnsurePublishedVersionAsync(plan, spec, businessTypeGrants, cancellationToken)
+                .ConfigureAwait(false);
 
-            if (string.Equals(spec.PlanKey, MvpPosPlanCodes.Business, StringComparison.Ordinal))
+            if (string.Equals(spec.PlanKey, MvpPosPlanCodes.Growth, StringComparison.Ordinal))
             {
-                businessPlan = plan;
-                businessVersion = version;
+                growthPlan = plan;
+                growthVersion = version;
             }
         }
 
-        if (businessPlan is null || businessVersion is null)
+        if (growthPlan is null || growthVersion is null)
         {
-            throw new InvalidOperationException("MVP Business plan/version was not available after EnsureMvpPosPlans.");
+            throw new InvalidOperationException("MVP Growth plan/version was not available after EnsureMvpPosPlans.");
         }
 
-        await RemapLegacySubscriptionsAsync(productCode, businessPlan, businessVersion, cancellationToken)
+        await RemapLegacySubscriptionsAsync(productCode, growthPlan, growthVersion, cancellationToken)
             .ConfigureAwait(false);
 
-        await RetireLegacyLocalValidationPlanIfUnusedAsync(productCode, cancellationToken).ConfigureAwait(false);
+        await RetireLegacyPlanIfUnusedAsync(productCode, LegacyLocalValidationPlanCode, cancellationToken)
+            .ConfigureAwait(false);
+        await RetireLegacyPlanIfUnusedAsync(productCode, LegacyStartBusinessPlanCode, cancellationToken)
+            .ConfigureAwait(false);
+        await RetireLegacyPlanIfUnusedAsync(productCode, MvpPosPlanCodes.LegacyBusiness, cancellationToken)
+            .ConfigureAwait(false);
     }
 
     private async Task EnsureFeaturesAsync(string productCode, CancellationToken cancellationToken)
@@ -185,6 +198,49 @@ public sealed class EnsureMvpPosPlans
         }
     }
 
+    private async Task<IReadOnlyList<BusinessTypeId>> EnsurePhilippineBusinessTypesAsync(
+        CancellationToken cancellationToken)
+    {
+        var grants = new List<BusinessTypeId>(PhilippineBusinessTypeSeeds.All.Count);
+        var added = false;
+        foreach (var seed in PhilippineBusinessTypeSeeds.All)
+        {
+            var existing = await _businessTypes.GetByCodeAsync(seed.Code, cancellationToken).ConfigureAwait(false);
+            if (existing is not null)
+            {
+                grants.Add(existing.Id);
+                continue;
+            }
+
+            var byId = await _businessTypes
+                .GetByIdAsync(BusinessTypeId.From(seed.Id), cancellationToken)
+                .ConfigureAwait(false);
+            if (byId is not null)
+            {
+                grants.Add(byId.Id);
+                continue;
+            }
+
+            var created = BusinessType.Create(
+                seed.Code,
+                seed.Name,
+                _clock.UtcNow,
+                description: $"Philippine Pinoy Business POS default type ({seed.Code}).",
+                sortOrder: seed.SortOrder,
+                id: BusinessTypeId.From(seed.Id));
+            await _businessTypes.AddAsync(created, cancellationToken).ConfigureAwait(false);
+            grants.Add(created.Id);
+            added = true;
+        }
+
+        if (added)
+        {
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        return grants;
+    }
+
     private async Task<Plan> EnsurePlanAsync(
         string productCode,
         MvpPosPlanCatalog.Spec spec,
@@ -205,6 +261,7 @@ public sealed class EnsureMvpPosPlans
                     spec.MaxBranches,
                     spec.MaxActiveStaff,
                     spec.MaxActivePosDevices,
+                    spec.MaxActiveBusinessTypes,
                     spec.CustomerCreditEnabled,
                     spec.AdvancedReportsEnabled,
                     spec.ExportEnabled,
@@ -241,6 +298,7 @@ public sealed class EnsureMvpPosPlans
                     spec.MaxBranches,
                     spec.MaxActiveStaff,
                     spec.MaxActivePosDevices,
+                    spec.MaxActiveBusinessTypes,
                     spec.CustomerCreditEnabled,
                     spec.AdvancedReportsEnabled,
                     spec.ExportEnabled,
@@ -289,55 +347,181 @@ public sealed class EnsureMvpPosPlans
     private async Task<PlanVersion> EnsurePublishedVersionAsync(
         Plan plan,
         MvpPosPlanCatalog.Spec spec,
+        IReadOnlyList<BusinessTypeId> businessTypeGrants,
         CancellationToken cancellationToken)
     {
         var versions = await _plans.ListVersionsAsync(plan.Id, cancellationToken).ConfigureAwait(false);
-        var version = versions.FirstOrDefault(v => v.VersionNumber == 1);
+        var published = versions
+            .Where(v => v.Status == PlanVersionStatus.Published)
+            .OrderByDescending(v => v.VersionNumber)
+            .FirstOrDefault();
         var grants = BuildGrants(spec);
 
-        if (version is null)
+        if (published is null)
         {
-            var draft = await _createDraftVersion
-                .ExecuteAsync(plan.Id, 1, BillingPeriod.Monthly, trialEligible: true, grants, cancellationToken: cancellationToken)
+            var nextNumber = Math.Max(1, await _plans.GetMaxVersionNumberAsync(plan.Id, cancellationToken).ConfigureAwait(false) + 1);
+            return await CreateAndPublishVersionAsync(plan, spec, nextNumber, grants, businessTypeGrants, cancellationToken)
                 .ConfigureAwait(false);
-            if (!draft.IsSuccess || draft.Value is null)
-            {
-                throw new InvalidOperationException(
-                    $"MVP POS plan '{spec.PlanKey}' version draft failed: {draft.ErrorCode} {draft.ErrorMessage}");
-            }
-
-            var published = await _publishVersion.ExecuteAsync(plan.Id, 1, cancellationToken).ConfigureAwait(false);
-            if (!published.IsSuccess || published.Value is null)
-            {
-                throw new InvalidOperationException(
-                    $"MVP POS plan '{spec.PlanKey}' version publish failed: {published.ErrorCode} {published.ErrorMessage}");
-            }
-
-            return published.Value;
         }
 
-        if (version.Status != PlanVersionStatus.Published)
+        if (!VersionNeedsRefresh(published, grants, businessTypeGrants))
         {
-            var published = await _publishVersion.ExecuteAsync(plan.Id, 1, cancellationToken).ConfigureAwait(false);
-            if (!published.IsSuccess || published.Value is null)
-            {
-                throw new InvalidOperationException(
-                    $"MVP POS plan '{spec.PlanKey}' version publish failed: {published.ErrorCode} {published.ErrorMessage}");
-            }
-
-            return published.Value;
+            return published;
         }
 
-        return version;
+        var refreshNumber = await _plans.GetMaxVersionNumberAsync(plan.Id, cancellationToken).ConfigureAwait(false) + 1;
+        var refreshed = await CreateAndPublishVersionAsync(
+                plan,
+                spec,
+                refreshNumber,
+                grants,
+                businessTypeGrants,
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        await RemapPlanSubscriptionsToVersionAsync(plan, refreshed, cancellationToken).ConfigureAwait(false);
+        return refreshed;
+    }
+
+    private static bool VersionNeedsRefresh(
+        PlanVersion version,
+        IReadOnlyList<FeatureGrantSpec> expectedGrants,
+        IReadOnlyList<BusinessTypeId> expectedBusinessTypes)
+    {
+        if (version.BusinessTypeGrants.Count != expectedBusinessTypes.Count)
+        {
+            return true;
+        }
+
+        var granted = version.BusinessTypeGrants.Select(id => id.Value).ToHashSet();
+        if (expectedBusinessTypes.Any(id => !granted.Contains(id.Value)))
+        {
+            return true;
+        }
+
+        if (version.Grants.Count != expectedGrants.Count)
+        {
+            return true;
+        }
+
+        foreach (var expected in expectedGrants)
+        {
+            var match = version.Grants.FirstOrDefault(g =>
+                string.Equals(g.FeatureCode.Value, expected.FeatureCode.Value, StringComparison.Ordinal));
+            if (match is null
+                || match.Enabled != expected.Enabled
+                || match.NumericLimit != expected.NumericLimit)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private async Task<PlanVersion> CreateAndPublishVersionAsync(
+        Plan plan,
+        MvpPosPlanCatalog.Spec spec,
+        int versionNumber,
+        IReadOnlyList<FeatureGrantSpec> grants,
+        IReadOnlyList<BusinessTypeId> businessTypeGrants,
+        CancellationToken cancellationToken)
+    {
+        var draft = await _createDraftVersion
+            .ExecuteAsync(
+                plan.Id,
+                versionNumber,
+                BillingPeriod.Monthly,
+                trialEligible: true,
+                grants,
+                businessTypeGrants: businessTypeGrants,
+                cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+        if (!draft.IsSuccess || draft.Value is null)
+        {
+            throw new InvalidOperationException(
+                $"MVP POS plan '{spec.PlanKey}' version draft failed: {draft.ErrorCode} {draft.ErrorMessage}");
+        }
+
+        var published = await _publishVersion
+            .ExecuteAsync(plan.Id, versionNumber, cancellationToken)
+            .ConfigureAwait(false);
+        if (!published.IsSuccess || published.Value is null)
+        {
+            throw new InvalidOperationException(
+                $"MVP POS plan '{spec.PlanKey}' version publish failed: {published.ErrorCode} {published.ErrorMessage}");
+        }
+
+        return published.Value;
+    }
+
+    private async Task RemapPlanSubscriptionsToVersionAsync(
+        Plan plan,
+        PlanVersion version,
+        CancellationToken cancellationToken)
+    {
+        var skip = 0;
+        const int take = 200;
+        while (true)
+        {
+            var (items, total) = await _subscriptions
+                .ListAsync(
+                    organizationId: null,
+                    plan.ProductCode,
+                    status: null,
+                    search: null,
+                    isTrial: null,
+                    planId: plan.Id.Value,
+                    SubscriptionListSortBy.CreatedAtUtc,
+                    sortDescending: false,
+                    skip,
+                    take,
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+            foreach (var subscription in items)
+            {
+                if (!Subscription.IsActiveLike(subscription.Status))
+                {
+                    continue;
+                }
+
+                if (subscription.PlanVersionId == version.Id)
+                {
+                    continue;
+                }
+
+                subscription.RebindCommercialPackage(plan, version, _clock.UtcNow);
+                await _subscriptions.UpdateAsync(subscription, cancellationToken).ConfigureAwait(false);
+                await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+                _logger.LogInformation(
+                    "Remapped subscription {SubscriptionId} on plan '{PlanCode}' to published version {VersionNumber}.",
+                    subscription.Id.Value,
+                    plan.Code.Value,
+                    version.VersionNumber);
+            }
+
+            skip += items.Count;
+            if (skip >= total || items.Count == 0)
+            {
+                break;
+            }
+        }
     }
 
     private async Task RemapLegacySubscriptionsAsync(
         ProductCode productCode,
-        Plan businessPlan,
-        PlanVersion businessVersion,
+        Plan growthPlan,
+        PlanVersion growthVersion,
         CancellationToken cancellationToken)
     {
-        foreach (var legacyCode in new[] { LegacyLocalValidationPlanCode, LegacyStartBusinessPlanCode })
+        foreach (var legacyCode in new[]
+                 {
+                     LegacyLocalValidationPlanCode,
+                     LegacyStartBusinessPlanCode,
+                     MvpPosPlanCodes.LegacyBusiness
+                 })
         {
             var legacyPlan = await _plans
                 .GetByProductAndCodeAsync(productCode, PlanCode.Create(legacyCode), cancellationToken)
@@ -373,21 +557,21 @@ public sealed class EnsureMvpPosPlans
                         continue;
                     }
 
-                    if (subscription.PlanId == businessPlan.Id
-                        && subscription.PlanVersionId == businessVersion.Id)
+                    if (subscription.PlanId == growthPlan.Id
+                        && subscription.PlanVersionId == growthVersion.Id)
                     {
                         continue;
                     }
 
-                    subscription.RebindCommercialPackage(businessPlan, businessVersion, _clock.UtcNow);
+                    subscription.RebindCommercialPackage(growthPlan, growthVersion, _clock.UtcNow);
                     await _subscriptions.UpdateAsync(subscription, cancellationToken).ConfigureAwait(false);
                     await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
                     _logger.LogInformation(
-                        "Remapped subscription {SubscriptionId} from plan '{LegacyPlanCode}' to Business plan '{BusinessPlanCode}' (Local Validation safety).",
+                        "Remapped subscription {SubscriptionId} from plan '{LegacyPlanCode}' to Growth plan '{GrowthPlanCode}'.",
                         subscription.Id.Value,
                         legacyCode,
-                        businessPlan.Code.Value);
+                        growthPlan.Code.Value);
                 }
 
                 skip += items.Count;
@@ -399,12 +583,13 @@ public sealed class EnsureMvpPosPlans
         }
     }
 
-    private async Task RetireLegacyLocalValidationPlanIfUnusedAsync(
+    private async Task RetireLegacyPlanIfUnusedAsync(
         ProductCode productCode,
+        string legacyPlanCode,
         CancellationToken cancellationToken)
     {
         var legacyPlan = await _plans
-            .GetByProductAndCodeAsync(productCode, PlanCode.Create(LegacyLocalValidationPlanCode), cancellationToken)
+            .GetByProductAndCodeAsync(productCode, PlanCode.Create(legacyPlanCode), cancellationToken)
             .ConfigureAwait(false);
         if (legacyPlan is null || legacyPlan.Status == PlanStatus.Retired)
         {
@@ -430,7 +615,7 @@ public sealed class EnsureMvpPosPlans
         {
             _logger.LogInformation(
                 "Leaving legacy plan '{PlanCode}' in place; active-like subscriptions remain.",
-                LegacyLocalValidationPlanCode);
+                legacyPlanCode);
             return;
         }
 
@@ -439,13 +624,13 @@ public sealed class EnsureMvpPosPlans
         {
             _logger.LogWarning(
                 "Could not retire legacy plan '{PlanCode}': {ErrorCode} {ErrorMessage}",
-                LegacyLocalValidationPlanCode,
+                legacyPlanCode,
                 retired.ErrorCode,
                 retired.ErrorMessage);
             return;
         }
 
-        _logger.LogInformation("Retired unused legacy plan '{PlanCode}'.", LegacyLocalValidationPlanCode);
+        _logger.LogInformation("Retired unused legacy plan '{PlanCode}'.", legacyPlanCode);
     }
 
     private static bool CommercialPackageDiffers(Plan plan, MvpPosPlanCatalog.Spec spec) =>
@@ -454,6 +639,7 @@ public sealed class EnsureMvpPosPlans
         || plan.MaxBranches != spec.MaxBranches
         || plan.MaxActiveStaff != spec.MaxActiveStaff
         || plan.MaxActivePosDevices != spec.MaxActivePosDevices
+        || plan.MaxActiveBusinessTypes != spec.MaxActiveBusinessTypes
         || plan.CustomerCreditEnabled != spec.CustomerCreditEnabled
         || plan.AdvancedReportsEnabled != spec.AdvancedReportsEnabled
         || plan.ExportEnabled != spec.ExportEnabled
@@ -464,13 +650,16 @@ public sealed class EnsureMvpPosPlans
         || plan.AnnualPrice != spec.AnnualPrice
         || !string.Equals(plan.CurrencyCode, spec.CurrencyCode, StringComparison.Ordinal);
 
-    internal static FeatureGrantSpec[] BuildGrants(MvpPosPlanCatalog.Spec spec)
+    public static FeatureGrantSpec[] BuildGrants(MvpPosPlanCatalog.Spec spec)
     {
         var grants = new List<FeatureGrantSpec>
         {
             FeatureGrantSpec.Limit(FeatureCode.Create(FeatureCode.PlanMaxBranches), spec.MaxBranches),
             FeatureGrantSpec.Limit(FeatureCode.Create(FeatureCode.PlanMaxActiveStaff), spec.MaxActiveStaff),
             FeatureGrantSpec.Limit(FeatureCode.Create(FeatureCode.PlanMaxActivePosDevices), spec.MaxActivePosDevices),
+            FeatureGrantSpec.Limit(
+                FeatureCode.Create(FeatureCode.PlanMaxActiveBusinessTypes),
+                spec.MaxActiveBusinessTypes),
             FeatureGrantSpec.Boolean(FeatureCode.Create(FeatureCode.CustomerCreditCreate), spec.CustomerCreditEnabled),
             FeatureGrantSpec.Boolean(FeatureCode.Create(FeatureCode.CustomerCreditView), spec.CustomerCreditEnabled),
             FeatureGrantSpec.Boolean(FeatureCode.Create(FeatureCode.CustomerCreditRepay), spec.CustomerCreditEnabled),

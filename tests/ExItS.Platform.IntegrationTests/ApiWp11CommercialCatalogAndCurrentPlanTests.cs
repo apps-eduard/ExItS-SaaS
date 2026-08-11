@@ -216,7 +216,7 @@ public sealed class ApiWp11CommercialCatalogAndCurrentPlanTests(PostgreSqlFixtur
             new
             {
                 productCode = ProductCode.PinoyBusinessPos,
-                planKey = MvpPosPlanCodes.Business,
+                planKey = MvpPosPlanCodes.Growth,
                 billingCycle = "Monthly",
                 startAsTrial = true,
                 payNow = false,
@@ -247,7 +247,7 @@ public sealed class ApiWp11CommercialCatalogAndCurrentPlanTests(PostgreSqlFixtur
             new
             {
                 productCode = ProductCode.PinoyBusinessPos,
-                planKey = MvpPosPlanCodes.Business,
+                planKey = MvpPosPlanCodes.Growth,
                 billingCycle = "Monthly",
                 startAsTrial = true,
                 payNow = false
@@ -289,7 +289,7 @@ public sealed class ApiWp11CommercialCatalogAndCurrentPlanTests(PostgreSqlFixtur
         var businessPlan = (await plans.Content.ReadFromJsonAsync<JsonElement>())!
             .GetProperty("items")
             .EnumerateArray()
-            .First(p => string.Equals(p.GetProperty("planKey").GetString(), MvpPosPlanCodes.Business, StringComparison.Ordinal));
+            .First(p => string.Equals(p.GetProperty("planKey").GetString(), MvpPosPlanCodes.Growth, StringComparison.Ordinal));
 
         var trial = await _admin.PostAsJsonAsync(
             $"/api/v1/platform/organizations/{organizationId}/subscriptions/trials",

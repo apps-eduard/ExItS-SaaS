@@ -148,6 +148,7 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.MaxBranches).HasColumnName("max_branches").HasDefaultValue(1);
             entity.Property(e => e.MaxActiveStaff).HasColumnName("max_active_staff").HasDefaultValue(3);
             entity.Property(e => e.MaxActivePosDevices).HasColumnName("max_active_pos_devices").HasDefaultValue(1);
+            entity.Property(e => e.MaxActiveBusinessTypes).HasColumnName("max_active_business_types").HasDefaultValue(1);
             entity.Property(e => e.CustomerCreditEnabled).HasColumnName("customer_credit_enabled").HasDefaultValue(false);
             entity.Property(e => e.AdvancedReportsEnabled).HasColumnName("advanced_reports_enabled").HasDefaultValue(false);
             entity.Property(e => e.ExportEnabled).HasColumnName("export_enabled").HasDefaultValue(false);

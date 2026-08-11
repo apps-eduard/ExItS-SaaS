@@ -743,32 +743,34 @@ public sealed class InitializeLocalValidationDataset
 
         await _ensureMvpPosPlans.ExecuteAsync(ct).ConfigureAwait(false);
 
-        var businessSpec = MvpPosPlanCatalog.Plans.First(p =>
-            string.Equals(p.PlanKey, MvpPosPlanCodes.Business, StringComparison.Ordinal));
-        var planCode = PlanCode.Create(MvpPosPlanCodes.Business);
+        var growthSpec = MvpPosPlanCatalog.Plans.First(p =>
+            string.Equals(p.PlanKey, MvpPosPlanCodes.Growth, StringComparison.Ordinal));
+        var planCode = PlanCode.Create(MvpPosPlanCodes.Growth);
         var plan = await _plans
             .GetByProductAndCodeAsync(ProductCode.Create(productCode), planCode, ct)
             .ConfigureAwait(false);
         if (plan is null || plan.Status != PlanStatus.Active)
         {
             throw new InvalidOperationException(
-                $"MVP Business plan '{MvpPosPlanCodes.Business}' was not available after EnsureMvpPosPlans.");
+                $"MVP Growth plan '{MvpPosPlanCodes.Growth}' was not available after EnsureMvpPosPlans.");
         }
 
         var versions = await _plans.ListVersionsAsync(plan.Id, ct).ConfigureAwait(false);
-        var version = versions.FirstOrDefault(v =>
-            v.VersionNumber == 1 && v.Status == PlanVersionStatus.Published);
+        var version = versions
+            .Where(v => v.Status == PlanVersionStatus.Published)
+            .OrderByDescending(v => v.VersionNumber)
+            .FirstOrDefault();
         if (version is null)
         {
             throw new InvalidOperationException(
-                $"Published Business plan version 1 was not available after EnsureMvpPosPlans.");
+                $"Published Growth plan version was not available after EnsureMvpPosPlans.");
         }
 
         var trials = await _trials.ListByProductAsync(ProductCode.Create(productCode), ct).ConfigureAwait(false);
         var trial = trials.FirstOrDefault(t => string.Equals(t.DisplayName, LocalValidationOptions.TrialDisplayName, StringComparison.Ordinal));
         if (trial is null)
         {
-            var grants = EnsureMvpPosPlans.BuildGrants(businessSpec);
+            var grants = EnsureMvpPosPlans.BuildGrants(growthSpec);
             var createdTrial = await _createTrial
                 .ExecuteAsync(
                     productCode,

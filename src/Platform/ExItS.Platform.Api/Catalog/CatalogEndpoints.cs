@@ -536,6 +536,7 @@ internal static class CatalogEndpoints
                 body.MaxBranches,
                 body.MaxActiveStaff,
                 body.MaxActivePosDevices,
+                body.MaxActiveBusinessTypes,
                 body.CustomerCreditEnabled,
                 body.AdvancedReportsEnabled,
                 body.ExportEnabled,
@@ -622,6 +623,7 @@ internal static class CatalogEndpoints
                 body.MaxBranches,
                 body.MaxActiveStaff,
                 body.MaxActivePosDevices,
+                body.MaxActiveBusinessTypes,
                 body.CustomerCreditEnabled,
                 body.AdvancedReportsEnabled,
                 body.ExportEnabled,
@@ -825,7 +827,8 @@ internal static class CatalogEndpoints
                 grants,
                 body.EffectiveFromUtc,
                 body.EffectiveToUtc,
-                ct).ConfigureAwait(false);
+                businessTypeGrants: null,
+                cancellationToken: ct).ConfigureAwait(false);
 
             if (result.IsSuccess)
             {
@@ -1122,6 +1125,8 @@ internal static class CatalogEndpoints
         description = plan.Description,
         maxBranches = plan.MaxBranches,
         maxActiveStaff = plan.MaxActiveStaff,
+        maxActivePosDevices = plan.MaxActivePosDevices,
+        maxActiveBusinessTypes = plan.MaxActiveBusinessTypes,
         customerCreditEnabled = plan.CustomerCreditEnabled,
         advancedReportsEnabled = plan.AdvancedReportsEnabled,
         exportEnabled = plan.ExportEnabled,
@@ -1190,6 +1195,7 @@ internal sealed record CreatePlanRequest(
     int MaxBranches = 1,
     int MaxActiveStaff = 3,
     int MaxActivePosDevices = 1,
+    int MaxActiveBusinessTypes = 1,
     bool CustomerCreditEnabled = false,
     bool AdvancedReportsEnabled = false,
     bool ExportEnabled = false,
@@ -1205,6 +1211,7 @@ internal sealed record UpdatePlanCommercialRequest(
     int MaxBranches,
     int MaxActiveStaff,
     int MaxActivePosDevices,
+    int MaxActiveBusinessTypes,
     bool CustomerCreditEnabled,
     bool AdvancedReportsEnabled,
     bool ExportEnabled,

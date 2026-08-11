@@ -2,6 +2,7 @@ using ExItS.Platform.Application.Common;
 using ExItS.Platform.Domain.Abstractions;
 using ExItS.Platform.Domain.Catalog;
 using ExItS.Platform.Domain.Common;
+using ExItS.Platform.Domain.GlobalCatalog;
 using ExItS.Platform.Domain.Products;
 
 namespace ExItS.Platform.Application.Catalog;
@@ -352,6 +353,7 @@ public sealed class CreatePlan
             maxBranches: 1,
             maxActiveStaff: 3,
             maxActivePosDevices: 1,
+            maxActiveBusinessTypes: 1,
             customerCreditEnabled: false,
             advancedReportsEnabled: false,
             exportEnabled: false,
@@ -371,6 +373,7 @@ public sealed class CreatePlan
         int maxBranches,
         int maxActiveStaff,
         int maxActivePosDevices,
+        int maxActiveBusinessTypes,
         bool customerCreditEnabled,
         bool advancedReportsEnabled,
         bool exportEnabled,
@@ -409,6 +412,7 @@ public sealed class CreatePlan
                 maxBranches: maxBranches,
                 maxActiveStaff: maxActiveStaff,
                 maxActivePosDevices: maxActivePosDevices,
+                maxActiveBusinessTypes: maxActiveBusinessTypes,
                 customerCreditEnabled: customerCreditEnabled,
                 advancedReportsEnabled: advancedReportsEnabled,
                 exportEnabled: exportEnabled,
@@ -439,6 +443,7 @@ public sealed class CreatePlan
         string? description,
         int maxBranches,
         int maxActiveStaff,
+        int maxActivePosDevices,
         bool customerCreditEnabled,
         bool advancedReportsEnabled,
         bool exportEnabled,
@@ -449,8 +454,62 @@ public sealed class CreatePlan
         decimal annualPrice,
         string currencyCode,
         CancellationToken cancellationToken = default) =>
-        ExecuteAsync(productCode, planCode, displayName, description, maxBranches, maxActiveStaff, 1, customerCreditEnabled,
-            advancedReportsEnabled, exportEnabled, trialAllowed, defaultTrialDays, sortOrder, monthlyPrice, annualPrice, currencyCode, cancellationToken);
+        ExecuteAsync(
+            productCode,
+            planCode,
+            displayName,
+            description,
+            maxBranches,
+            maxActiveStaff,
+            maxActivePosDevices,
+            maxActiveBusinessTypes: 1,
+            customerCreditEnabled,
+            advancedReportsEnabled,
+            exportEnabled,
+            trialAllowed,
+            defaultTrialDays,
+            sortOrder,
+            monthlyPrice,
+            annualPrice,
+            currencyCode,
+            cancellationToken);
+
+    public Task<ApplicationResult<Plan>> ExecuteAsync(
+        string productCode,
+        string planCode,
+        string displayName,
+        string? description,
+        int maxBranches,
+        int maxActiveStaff,
+        bool customerCreditEnabled,
+        bool advancedReportsEnabled,
+        bool exportEnabled,
+        bool trialAllowed,
+        int defaultTrialDays,
+        int sortOrder,
+        decimal monthlyPrice,
+        decimal annualPrice,
+        string currencyCode,
+        CancellationToken cancellationToken = default) =>
+        ExecuteAsync(
+            productCode,
+            planCode,
+            displayName,
+            description,
+            maxBranches,
+            maxActiveStaff,
+            maxActivePosDevices: 1,
+            maxActiveBusinessTypes: 1,
+            customerCreditEnabled,
+            advancedReportsEnabled,
+            exportEnabled,
+            trialAllowed,
+            defaultTrialDays,
+            sortOrder,
+            monthlyPrice,
+            annualPrice,
+            currencyCode,
+            cancellationToken);
 }
 
 public sealed class RenamePlan
@@ -599,6 +658,7 @@ public sealed class UpdatePlanCommercialPackage
         int maxBranches,
         int maxActiveStaff,
         int maxActivePosDevices,
+        int maxActiveBusinessTypes,
         bool customerCreditEnabled,
         bool advancedReportsEnabled,
         bool exportEnabled,
@@ -632,6 +692,7 @@ public sealed class UpdatePlanCommercialPackage
                 maxBranches,
                 maxActiveStaff,
                 maxActivePosDevices,
+                maxActiveBusinessTypes,
                 customerCreditEnabled,
                 advancedReportsEnabled,
                 exportEnabled,
@@ -658,6 +719,7 @@ public sealed class UpdatePlanCommercialPackage
         string? description,
         int maxBranches,
         int maxActiveStaff,
+        int maxActivePosDevices,
         bool customerCreditEnabled,
         bool advancedReportsEnabled,
         bool exportEnabled,
@@ -669,8 +731,62 @@ public sealed class UpdatePlanCommercialPackage
         string currencyCode,
         DateTimeOffset? expectedUpdatedAtUtc = null,
         CancellationToken cancellationToken = default) =>
-        ExecuteAsync(id, displayName, description, maxBranches, maxActiveStaff, 1, customerCreditEnabled, advancedReportsEnabled,
-            exportEnabled, trialAllowed, defaultTrialDays, sortOrder, monthlyPrice, annualPrice, currencyCode, expectedUpdatedAtUtc, cancellationToken);
+        ExecuteAsync(
+            id,
+            displayName,
+            description,
+            maxBranches,
+            maxActiveStaff,
+            maxActivePosDevices,
+            maxActiveBusinessTypes: 1,
+            customerCreditEnabled,
+            advancedReportsEnabled,
+            exportEnabled,
+            trialAllowed,
+            defaultTrialDays,
+            sortOrder,
+            monthlyPrice,
+            annualPrice,
+            currencyCode,
+            expectedUpdatedAtUtc,
+            cancellationToken);
+
+    public Task<ApplicationResult<Plan>> ExecuteAsync(
+        PlanId id,
+        string displayName,
+        string? description,
+        int maxBranches,
+        int maxActiveStaff,
+        bool customerCreditEnabled,
+        bool advancedReportsEnabled,
+        bool exportEnabled,
+        bool trialAllowed,
+        int defaultTrialDays,
+        int sortOrder,
+        decimal monthlyPrice,
+        decimal annualPrice,
+        string currencyCode,
+        DateTimeOffset? expectedUpdatedAtUtc = null,
+        CancellationToken cancellationToken = default) =>
+        ExecuteAsync(
+            id,
+            displayName,
+            description,
+            maxBranches,
+            maxActiveStaff,
+            maxActivePosDevices: 1,
+            maxActiveBusinessTypes: 1,
+            customerCreditEnabled,
+            advancedReportsEnabled,
+            exportEnabled,
+            trialAllowed,
+            defaultTrialDays,
+            sortOrder,
+            monthlyPrice,
+            annualPrice,
+            currencyCode,
+            expectedUpdatedAtUtc,
+            cancellationToken);
 }
 
 public sealed class RetirePlan
@@ -735,6 +851,7 @@ public sealed class CreateDraftPlanVersion
         IReadOnlyList<FeatureGrantSpec> grants,
         DateTimeOffset? effectiveFromUtc = null,
         DateTimeOffset? effectiveToUtc = null,
+        IReadOnlyList<BusinessTypeId>? businessTypeGrants = null,
         CancellationToken cancellationToken = default)
     {
         var plan = await _plans.GetByIdAsync(planId, cancellationToken).ConfigureAwait(false);
@@ -768,7 +885,8 @@ public sealed class CreateDraftPlanVersion
                 trialEligible,
                 grants,
                 utcNow,
-                effectiveToUtc);
+                effectiveToUtc,
+                businessTypeGrants: businessTypeGrants);
 
             await _plans.AddVersionAsync(version, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);

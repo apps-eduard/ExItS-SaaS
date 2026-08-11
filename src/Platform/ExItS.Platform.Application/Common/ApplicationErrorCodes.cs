@@ -164,6 +164,10 @@ public static class ApplicationErrorCodes
     public const string BranchCodeConflict = "application.branch.code_conflict";
     public const string PosDeviceNotFound = "application.pos_device.not_found";
     public const string PosDeviceCapacityExceeded = "application.pos_device.capacity_exceeded";
+    public const string BusinessTypeActivationCapacityExceeded =
+        "application.business_type_activation.capacity_exceeded";
+    public const string PlanDowngradeBlockedByBusinessTypeCapacity =
+        "application.plan_change.business_type_capacity_blocked";
     public const string PosDeviceNotAuthorized = "application.pos_device.not_authorized";
     public const string PosDeviceRevoked = "application.pos_device.revoked";
 

@@ -642,6 +642,12 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                         .HasDefaultValue(false)
                         .HasColumnName("export_enabled");
 
+                    b.Property<int>("MaxActiveBusinessTypes")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1)
+                        .HasColumnName("max_active_business_types");
+
                     b.Property<int>("MaxActivePosDevices")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")

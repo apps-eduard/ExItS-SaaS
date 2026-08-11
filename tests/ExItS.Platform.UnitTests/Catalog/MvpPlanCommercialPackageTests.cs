@@ -11,12 +11,60 @@ public sealed class MvpPlanCommercialPackageTests
     private static readonly DateTimeOffset T0 = new(2026, 7, 29, 12, 0, 0, TimeSpan.Zero);
 
     [Fact]
-    public void MvpPosPlanCodes_defines_starter_business_pro()
+    public void MvpPosPlanCodes_defines_starter_growth_pro()
     {
-        Assert.Equal(["starter", "business", "pro"], MvpPosPlanCodes.All);
+        Assert.Equal(["starter", "growth", "pro"], MvpPosPlanCodes.All);
         Assert.Equal(MvpPosPlanCodes.Starter, MvpPosPlanCodes.All[0]);
-        Assert.Equal(MvpPosPlanCodes.Business, MvpPosPlanCodes.All[1]);
+        Assert.Equal(MvpPosPlanCodes.Growth, MvpPosPlanCodes.All[1]);
         Assert.Equal(MvpPosPlanCodes.Pro, MvpPosPlanCodes.All[2]);
+        Assert.Equal("business", MvpPosPlanCodes.LegacyBusiness);
+    }
+
+    [Fact]
+    public void MvpPosPlanCatalog_defines_business_type_capacities_1_3_6()
+    {
+        Assert.Equal(1, MvpPosPlanCatalog.Plans.Single(p => p.PlanKey == MvpPosPlanCodes.Starter).MaxActiveBusinessTypes);
+        Assert.Equal(3, MvpPosPlanCatalog.Plans.Single(p => p.PlanKey == MvpPosPlanCodes.Growth).MaxActiveBusinessTypes);
+        Assert.Equal(6, MvpPosPlanCatalog.Plans.Single(p => p.PlanKey == MvpPosPlanCodes.Pro).MaxActiveBusinessTypes);
+    }
+
+    [Fact]
+    public void BuildGrants_includes_max_active_business_types_limit()
+    {
+        var starter = MvpPosPlanCatalog.Plans.Single(p => p.PlanKey == MvpPosPlanCodes.Starter);
+        var grants = EnsureMvpPosPlans.BuildGrants(starter);
+        var limit = grants.Single(g => g.FeatureCode.Value == FeatureCode.PlanMaxActiveBusinessTypes);
+        Assert.Equal(1, limit.NumericLimit);
+    }
+
+    [Fact]
+    public void MvpPosPlanCatalog_defines_branch_staff_device_capacities()
+    {
+        var starter = MvpPosPlanCatalog.Plans.Single(p => p.PlanKey == MvpPosPlanCodes.Starter);
+        var growth = MvpPosPlanCatalog.Plans.Single(p => p.PlanKey == MvpPosPlanCodes.Growth);
+        var pro = MvpPosPlanCatalog.Plans.Single(p => p.PlanKey == MvpPosPlanCodes.Pro);
+
+        Assert.Equal((1, 3, 1), (starter.MaxBranches, starter.MaxActiveStaff, starter.MaxActivePosDevices));
+        Assert.Equal((3, 10, 3), (growth.MaxBranches, growth.MaxActiveStaff, growth.MaxActivePosDevices));
+        Assert.Equal((10, 30, 10), (pro.MaxBranches, pro.MaxActiveStaff, pro.MaxActivePosDevices));
+        Assert.False(starter.CustomerCreditEnabled);
+        Assert.True(growth.CustomerCreditEnabled);
+        Assert.True(pro.CustomerCreditEnabled);
+        Assert.False(starter.AdvancedReportsEnabled);
+        Assert.True(growth.AdvancedReportsEnabled);
+        Assert.True(pro.ExportEnabled);
+    }
+
+    [Fact]
+    public void Plan_validates_max_active_business_types()
+    {
+        var exception = Assert.Throws<DomainException>(() => Plan.CreateDraft(
+            ProductCode.Create(ProductCode.PinoyBusinessPos),
+            PlanCode.Create("starter-bt-0"),
+            "Starter",
+            T0,
+            maxActiveBusinessTypes: 0));
+        Assert.Equal(DomainErrorCodes.InvalidPlanStatusTransition, exception.ErrorCode);
     }
 
     [Fact]
@@ -49,15 +97,15 @@ public sealed class MvpPlanCommercialPackageTests
     {
         var plan = Plan.CreateDraft(
             ProductCode.Create(ProductCode.PinoyBusinessPos),
-            PlanCode.Create(MvpPosPlanCodes.Business),
-            "Business",
+            PlanCode.Create(MvpPosPlanCodes.Growth),
+            "Growth",
             T0);
         plan.Activate(T0.AddMinutes(1));
-        plan.Rename("Business Plus", T0.AddMinutes(2));
+        plan.Rename("Growth Plus", T0.AddMinutes(2));
 
-        Assert.Equal("Business Plus", plan.DisplayName);
-        Assert.Equal(MvpPosPlanCodes.Business, plan.PlanKey);
-        Assert.Equal(MvpPosPlanCodes.Business, plan.Code.Value);
+        Assert.Equal("Growth Plus", plan.DisplayName);
+        Assert.Equal(MvpPosPlanCodes.Growth, plan.PlanKey);
+        Assert.Equal(MvpPosPlanCodes.Growth, plan.Code.Value);
     }
 
     [Fact]

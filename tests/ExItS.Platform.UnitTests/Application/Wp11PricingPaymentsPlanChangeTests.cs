@@ -6,13 +6,14 @@ using ExItS.Platform.Application.Payments;
 using ExItS.Platform.Application.Subscriptions;
 using ExItS.Platform.Domain.Catalog;
 using ExItS.Platform.Domain.Entitlements;
+using ExItS.Platform.Domain.GlobalCatalog;
 using ExItS.Platform.Domain.Organizations;
 using ExItS.Platform.Domain.Payments;
 using ExItS.Platform.Domain.Products;
 using ExItS.Platform.Domain.Subscriptions;
 using ExItS.Platform.UnitTests.Support;
-
 using ExItS.Platform.UnitTests.TestSupport;
+
 namespace ExItS.Platform.UnitTests.Application;
 
 public sealed class Wp11PricingPaymentsPlanChangeTests
@@ -279,7 +280,7 @@ public sealed class Wp11PricingPaymentsPlanChangeTests
         var ctx = await Wp11CommercialHarness.CreateAsync(T0);
         var sub = await ctx.StartTrialingSubscriptionAsync(ctx.BusinessPlan, ctx.BusinessVersion);
         var downgrade = new ScheduleOrganizationSubscriptionDowngrade(
-            ctx.Subscriptions, ctx.Plans, ctx.UnitOfWork, ctx.Clock);
+            ctx.Subscriptions, ctx.Plans, new EmptyBusinessTypeEntitlementResolver(), ctx.UnitOfWork, ctx.Clock);
         var effective = T0.AddMonths(1);
         var result = await downgrade.ExecuteAsync(
             ctx.Organization.Id,
@@ -290,6 +291,34 @@ public sealed class Wp11PricingPaymentsPlanChangeTests
         Assert.Equal(ctx.StarterPlan.Id, result.Value!.PendingPlanId);
         Assert.Equal(effective, result.Value.PendingPlanEffectiveAtUtc);
         Assert.Equal(ctx.BusinessPlan.Id, result.Value.PlanId);
+    }
+
+    [Fact]
+    public async Task Downgrade_blocked_when_effective_business_types_exceed_target_capacity()
+    {
+        var ctx = await Wp11CommercialHarness.CreateAsync(T0);
+        await ctx.StartTrialingSubscriptionAsync(ctx.BusinessPlan, ctx.BusinessVersion);
+        var primary = BusinessTypeId.New();
+        var bakery = BusinessTypeId.New();
+        var veg = BusinessTypeId.New();
+        var resolver = new FixedBusinessTypeEntitlementResolver(
+            ctx.Organization.Id,
+            [primary, bakery, veg]);
+        var downgrade = new ScheduleOrganizationSubscriptionDowngrade(
+            ctx.Subscriptions, ctx.Plans, resolver, ctx.UnitOfWork, ctx.Clock);
+        var result = await downgrade.ExecuteAsync(
+            ctx.Organization.Id,
+            ProductCode.Create(ProductCode.PinoyBusinessPos),
+            ctx.StarterPlan.Id,
+            T0.AddMonths(1));
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.PlanDowngradeBlockedByBusinessTypeCapacity, result.ErrorCode);
+        var reloaded = await ctx.Subscriptions.GetCurrentForOrganizationProductAsync(
+            ctx.Organization.Id,
+            ProductCode.Create(ProductCode.PinoyBusinessPos));
+        Assert.NotNull(reloaded);
+        Assert.Null(reloaded!.PendingPlanId);
+        Assert.Equal(ctx.BusinessPlan.Id, reloaded.PlanId);
     }
 
     [Fact]
@@ -330,10 +359,17 @@ public sealed class Wp11PricingPaymentsPlanChangeTests
             monthlyPrice: 299m,
             annualPrice: 2990m,
             currencyCode: "PHP");
-        var preview = PlanChangeImpact.Evaluate(current, target, activeStaffCount: 8, activeBranchCount: 2, branchCountAvailable: true);
+        var preview = PlanChangeImpact.Evaluate(
+            current,
+            target,
+            activeStaffCount: 8,
+            activeBranchCount: 2,
+            branchCountAvailable: true,
+            activeBusinessTypeCount: 3);
         Assert.True(preview.HasBlockingUsageConflicts);
         Assert.Contains(preview.UsageConflicts, c => c.Resource == "Branches");
         Assert.Contains(preview.UsageConflicts, c => c.Resource == "ActiveStaff");
+        Assert.Contains(preview.UsageConflicts, c => c.Resource == "ActiveBusinessTypes");
         Assert.Contains(preview.LostFeatures, f => f.Contains("Customer credit", StringComparison.OrdinalIgnoreCase));
     }
 
@@ -732,9 +768,12 @@ public sealed class Wp11PricingPaymentsPlanChangeTests
             await ctx.Features.AddAsync(FeatureDefinition.Create(
                 pc, FeatureCode.Create(FeatureCode.CustomerCreditView), "View", FeatureValueType.Boolean, utcNow));
 
-            ctx.StarterPlan = await ctx.CreatePricedPlanAsync(MvpPosPlanCodes.Starter, "Starter", 10, 499m, 4990m);
-            ctx.BusinessPlan = await ctx.CreatePricedPlanAsync(MvpPosPlanCodes.Business, "Business", 20, 999m, 9990m);
-            ctx.ProPlan = await ctx.CreatePricedPlanAsync(MvpPosPlanCodes.Pro, "Pro", 30, 1999m, 19990m);
+            ctx.StarterPlan = await ctx.CreatePricedPlanAsync(
+                MvpPosPlanCodes.Starter, "Starter", 10, 499m, 4990m, maxActiveBusinessTypes: 1);
+            ctx.BusinessPlan = await ctx.CreatePricedPlanAsync(
+                MvpPosPlanCodes.Growth, "Growth", 20, 999m, 9990m, maxActiveBusinessTypes: 3);
+            ctx.ProPlan = await ctx.CreatePricedPlanAsync(
+                MvpPosPlanCodes.Pro, "Pro", 30, 1999m, 19990m, maxActiveBusinessTypes: 6);
             ctx.StarterVersion = await ctx.PublishVersionAsync(ctx.StarterPlan);
             ctx.BusinessVersion = await ctx.PublishVersionAsync(ctx.BusinessPlan);
             await ctx.PublishVersionAsync(ctx.ProPlan);
@@ -743,12 +782,18 @@ public sealed class Wp11PricingPaymentsPlanChangeTests
             return ctx;
         }
 
-        private async Task<Plan> CreatePricedPlanAsync(string code, string name, int sortOrder, decimal monthly, decimal annual)
+        private async Task<Plan> CreatePricedPlanAsync(
+            string code,
+            string name,
+            int sortOrder,
+            decimal monthly,
+            decimal annual,
+            int maxActiveBusinessTypes = 1)
         {
             var (trialAllowed, trialDays) = code switch
             {
                 MvpPosPlanCodes.Starter => (true, 14),
-                MvpPosPlanCodes.Business => (true, 14),
+                MvpPosPlanCodes.Growth => (true, 14),
                 MvpPosPlanCodes.Pro => (false, 0),
                 _ => (true, 14)
             };
@@ -760,6 +805,8 @@ public sealed class Wp11PricingPaymentsPlanChangeTests
                     description: null,
                     maxBranches: 1,
                     maxActiveStaff: 3,
+                    maxActivePosDevices: 1,
+                    maxActiveBusinessTypes: maxActiveBusinessTypes,
                     customerCreditEnabled: false,
                     advancedReportsEnabled: false,
                     exportEnabled: false,
@@ -796,5 +843,55 @@ public sealed class Wp11PricingPaymentsPlanChangeTests
                 Organizations, Products, Plans, Subscriptions, UnitOfWork, Clock)
                 .ExecuteAsync(Organization.Id, plan.Id, version.Id, T0, end, cycle)).Value!;
         }
+    }
+
+    private sealed class EmptyBusinessTypeEntitlementResolver : IOrganizationBusinessTypeEntitlementResolver
+    {
+        public Task<ApplicationResult<OrganizationBusinessTypeEntitlement>> ResolveAsync(
+            PlatformOrganizationId organizationId,
+            ProductCode? productCode = null,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(ApplicationResult<OrganizationBusinessTypeEntitlement>.Success(
+                new OrganizationBusinessTypeEntitlement
+                {
+                    OrganizationId = organizationId,
+                    GrantedBusinessTypeIds = [],
+                    ActivatedBusinessTypeIds = [],
+                    EffectiveBusinessTypeIds = [],
+                    EffectiveBusinessTypeCodes = new Dictionary<Guid, string>()
+                }));
+
+        public Task<ApplicationResult> EnsureEntitledAsync(
+            PlatformOrganizationId organizationId,
+            BusinessTypeId businessTypeId,
+            ProductCode? productCode = null,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(ApplicationResult.Success());
+    }
+
+    private sealed class FixedBusinessTypeEntitlementResolver(
+        PlatformOrganizationId organizationId,
+        IReadOnlyList<BusinessTypeId> effective) : IOrganizationBusinessTypeEntitlementResolver
+    {
+        public Task<ApplicationResult<OrganizationBusinessTypeEntitlement>> ResolveAsync(
+            PlatformOrganizationId orgId,
+            ProductCode? productCode = null,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(ApplicationResult<OrganizationBusinessTypeEntitlement>.Success(
+                new OrganizationBusinessTypeEntitlement
+                {
+                    OrganizationId = organizationId,
+                    GrantedBusinessTypeIds = effective,
+                    ActivatedBusinessTypeIds = effective,
+                    EffectiveBusinessTypeIds = effective,
+                    EffectiveBusinessTypeCodes = effective.ToDictionary(id => id.Value, id => id.Value.ToString("N"))
+                }));
+
+        public Task<ApplicationResult> EnsureEntitledAsync(
+            PlatformOrganizationId orgId,
+            BusinessTypeId businessTypeId,
+            ProductCode? productCode = null,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(ApplicationResult.Success());
     }
 }

@@ -5,7 +5,6 @@ using ExItS.Platform.Application.Organizations;
 using ExItS.Platform.Application.Subscriptions;
 using ExItS.Platform.Domain.Abstractions;
 using ExItS.Platform.Domain.Catalog;
-using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.GlobalCatalog;
 using ExItS.Platform.Domain.Organizations;
 using ExItS.Platform.Domain.Products;
@@ -13,267 +12,120 @@ using ExItS.Platform.Domain.Subscriptions;
 
 namespace ExItS.Platform.UnitTests.Organizations;
 
-public sealed class OrganizationBusinessTypeEntitlementResolverTests
+public sealed class BusinessTypeCapacityAndDowngradeTests
 {
-    private static readonly DateTimeOffset T0 = new(2026, 8, 11, 18, 0, 0, TimeSpan.Zero);
+    private static readonly DateTimeOffset T0 = new(2026, 8, 11, 22, 0, 0, TimeSpan.Zero);
     private static readonly ProductCode Pos = ProductCode.Create(ProductCode.PinoyBusinessPos);
 
     [Fact]
-    public async Task Legacy_org_with_primary_only_resolves_primary()
+    public async Task Activate_blocks_when_effective_count_meets_plan_capacity()
     {
-        var h = Harness.Create();
-        var primary = h.AddBusinessType("SariSari");
-        var org = h.AddOrganization(primary);
-
-        var result = await h.Resolver.ResolveAsync(org.Id);
-        Assert.True(result.IsSuccess);
-        Assert.Equal([primary], result.Value!.EffectiveBusinessTypeIds);
-        Assert.Empty(result.Value.GrantedBusinessTypeIds);
-    }
-
-    [Fact]
-    public async Task Primary_remains_included_with_additional_activation()
-    {
-        var h = Harness.Create();
-        var primary = h.AddBusinessType("SariSari");
-        var veg = h.AddBusinessType("VegetableVendor");
-        var org = h.AddOrganization(primary);
-        h.SetPlanGrants(org.Id, [primary, veg]);
-        h.Activate(org.Id, veg);
-
-        var result = await h.Resolver.ResolveAsync(org.Id);
-        Assert.True(result.IsSuccess);
-        Assert.Contains(primary, result.Value!.EffectiveBusinessTypeIds);
-        Assert.Contains(veg, result.Value.EffectiveBusinessTypeIds);
-    }
-
-    [Fact]
-    public async Task Granted_but_not_activated_additional_bt_is_excluded()
-    {
-        var h = Harness.Create();
-        var primary = h.AddBusinessType("SariSari");
-        var veg = h.AddBusinessType("VegetableVendor");
-        var org = h.AddOrganization(primary);
-        h.SetPlanGrants(org.Id, [primary, veg]);
-
-        var result = await h.Resolver.ResolveAsync(org.Id);
-        Assert.True(result.IsSuccess);
-        Assert.Equal([primary], result.Value!.EffectiveBusinessTypeIds);
-    }
-
-    [Fact]
-    public async Task Activated_but_no_longer_granted_bt_is_excluded()
-    {
-        var h = Harness.Create();
-        var primary = h.AddBusinessType("SariSari");
-        var veg = h.AddBusinessType("VegetableVendor");
-        var org = h.AddOrganization(primary);
-        h.SetPlanGrants(org.Id, [primary]);
-        h.Activate(org.Id, veg);
-
-        var result = await h.Resolver.ResolveAsync(org.Id);
-        Assert.True(result.IsSuccess);
-        Assert.DoesNotContain(veg, result.Value!.EffectiveBusinessTypeIds);
-        Assert.Contains(veg, result.Value.ActivatedBusinessTypeIds);
-    }
-
-    [Fact]
-    public async Task Inactive_additional_activation_is_excluded()
-    {
-        var h = Harness.Create();
+        var h = Harness.Create(maxActiveBusinessTypes: 1);
         var primary = h.AddBusinessType("SariSari");
         var bakery = h.AddBusinessType("Bakery");
         var org = h.AddOrganization(primary);
-        h.BusinessTypes.SetStatus(bakery, BusinessTypeStatus.Inactive);
         h.SetPlanGrants(org.Id, [primary, bakery]);
-        h.Activate(org.Id, bakery);
 
-        var result = await h.Resolver.ResolveAsync(org.Id);
-        Assert.True(result.IsSuccess);
-        Assert.DoesNotContain(bakery, result.Value!.EffectiveBusinessTypeIds);
-    }
-
-    [Fact]
-    public async Task EnsureEntitled_rejects_pharmacy_for_sarisari_org()
-    {
-        var h = Harness.Create();
-        var primary = h.AddBusinessType("SariSari");
-        var pharmacy = h.AddBusinessType("Pharmacy");
-        var org = h.AddOrganization(primary);
-        h.SetPlanGrants(org.Id, [primary]);
-
-        var denied = await h.Resolver.EnsureEntitledAsync(org.Id, pharmacy);
-        Assert.False(denied.IsSuccess);
-        Assert.Equal(ApplicationErrorCodes.BusinessTypeNotEntitled, denied.ErrorCode);
-    }
-
-    [Fact]
-    public async Task Activate_rejects_ungranted_type()
-    {
-        var h = Harness.Create();
-        var primary = h.AddBusinessType("SariSari");
-        var pharmacy = h.AddBusinessType("Pharmacy");
-        var org = h.AddOrganization(primary);
-        h.SetPlanGrants(org.Id, [primary]);
-
-        var useCase = new ActivateOrganizationBusinessType(
-            h.Organizations,
-            h.Resolver,
-            h.Activations,
-            h.BusinessTypes,
-            h.Plans,
-            new NoopUnitOfWork(),
-            new FixedClock(T0));
-
-        var result = await useCase.ExecuteAsync(org.Id.Value, pharmacy.Value);
+        var result = await h.Activate.ExecuteAsync(org.Id.Value, bakery.Value, Pos.Value);
         Assert.False(result.IsSuccess);
-        Assert.Equal(ApplicationErrorCodes.BusinessTypeNotEntitled, result.ErrorCode);
+        Assert.Equal(ApplicationErrorCodes.BusinessTypeActivationCapacityExceeded, result.ErrorCode);
     }
 
     [Fact]
-    public async Task Activate_denies_when_max_active_business_types_capacity_reached()
+    public async Task Activate_is_idempotent_when_type_already_effective()
     {
-        var h = Harness.Create();
+        var h = Harness.Create(maxActiveBusinessTypes: 1);
+        var primary = h.AddBusinessType("SariSari");
+        var org = h.AddOrganization(primary);
+        h.SetPlanGrants(org.Id, [primary]);
+
+        var first = await h.Activate.ExecuteAsync(org.Id.Value, primary.Value, Pos.Value);
+        var second = await h.Activate.ExecuteAsync(org.Id.Value, primary.Value, Pos.Value);
+
+        Assert.True(first.IsSuccess);
+        Assert.True(second.IsSuccess);
+        Assert.Empty(await h.Activations.ListByOrganizationAsync(org.Id));
+    }
+
+    [Fact]
+    public void Plan_change_impact_blocks_when_effective_business_types_exceed_target()
+    {
+        var current = Plan.CreateDraft(Pos, PlanCode.Create("pro-cap"), "Pro", T0, maxActiveBusinessTypes: 6);
+        var target = Plan.CreateDraft(Pos, PlanCode.Create("starter-cap"), "Starter", T0, maxActiveBusinessTypes: 1);
+
+        var preview = PlanChangeImpact.Evaluate(
+            current,
+            target,
+            activeStaffCount: 1,
+            activeBranchCount: 1,
+            branchCountAvailable: true,
+            activeBusinessTypeCount: 3);
+
+        Assert.True(preview.HasBlockingUsageConflicts);
+        Assert.Contains(preview.UsageConflicts, c => c.Resource == "ActiveBusinessTypes");
+    }
+
+    [Fact]
+    public async Task Downgrade_fails_when_effective_business_types_exceed_target_capacity()
+    {
+        var h = Harness.Create(maxActiveBusinessTypes: 3);
         var primary = h.AddBusinessType("SariSari");
         var bakery = h.AddBusinessType("Bakery");
-        var veg = h.AddBusinessType("VegetableVendor");
-        var org = h.AddOrganization(primary, maxActiveBusinessTypes: 1);
-        h.SetPlanGrants(org.Id, [primary, bakery, veg]);
+        var pharmacy = h.AddBusinessType("Pharmacy");
+        var org = h.AddOrganization(primary);
+        h.SetPlanGrants(org.Id, [primary, bakery, pharmacy]);
+        h.ActivateRow(org.Id, bakery);
+        h.ActivateRow(org.Id, pharmacy);
 
-        var useCase = new ActivateOrganizationBusinessType(
-            h.Organizations,
-            h.Resolver,
-            h.Activations,
-            h.BusinessTypes,
-            h.Plans,
-            new NoopUnitOfWork(),
-            new FixedClock(T0));
+        var starter = Plan.CreateDraft(
+            Pos,
+            PlanCode.Create(MvpPosPlanCodes.Starter),
+            "Starter",
+            T0,
+            maxActiveBusinessTypes: 1);
+        starter.Activate(T0);
+        await h.Plans.AddAsync(starter);
 
-        var denied = await useCase.ExecuteAsync(org.Id.Value, bakery.Value);
-        Assert.False(denied.IsSuccess);
-        Assert.Equal(ApplicationErrorCodes.BusinessTypeActivationCapacityExceeded, denied.ErrorCode);
-    }
-
-    [Fact]
-    public async Task Activate_allows_after_deactivation_frees_capacity()
-    {
-        var h = Harness.Create();
-        var primary = h.AddBusinessType("SariSari");
-        var bakery = h.AddBusinessType("Bakery");
-        var veg = h.AddBusinessType("VegetableVendor");
-        var org = h.AddOrganization(primary, maxActiveBusinessTypes: 2);
-        h.SetPlanGrants(org.Id, [primary, bakery, veg]);
-
-        var activate = new ActivateOrganizationBusinessType(
-            h.Organizations,
-            h.Resolver,
-            h.Activations,
-            h.BusinessTypes,
-            h.Plans,
-            new NoopUnitOfWork(),
-            new FixedClock(T0));
-        var deactivate = new DeactivateOrganizationBusinessType(h.Activations, new NoopUnitOfWork());
-
-        Assert.True((await activate.ExecuteAsync(org.Id.Value, bakery.Value)).IsSuccess);
-        Assert.False((await activate.ExecuteAsync(org.Id.Value, veg.Value)).IsSuccess);
-
-        Assert.True((await deactivate.ExecuteAsync(org.Id.Value, bakery.Value)).IsSuccess);
-        Assert.True((await activate.ExecuteAsync(org.Id.Value, veg.Value)).IsSuccess);
-
-        var entitlement = await h.Resolver.ResolveAsync(org.Id);
-        Assert.Contains(primary, entitlement.Value!.EffectiveBusinessTypeIds);
-        Assert.Contains(veg, entitlement.Value.EffectiveBusinessTypeIds);
-        Assert.DoesNotContain(bakery, entitlement.Value.EffectiveBusinessTypeIds);
-    }
-
-    [Fact]
-    public async Task Gate_forged_business_type_filter_cannot_widen_access()
-    {
-        var allowed = Guid.NewGuid();
-        var scope = new MerchantCatalogEntitlementGate.DiscoveryScope(
-            Unrestricted: false,
-            OrganizationId: PlatformOrganizationId.New(),
-            AllowedBusinessTypeIds: [allowed],
-            Entitlement: null);
-
-        var gate = new MerchantCatalogEntitlementGate(
-            null!,
-            null!,
-            null!,
-            new EmptyBusinessTypeRepo());
-
-        var filter = await gate.ResolveListFilterAsync(scope, Guid.NewGuid(), null);
-        Assert.False(filter.IsSuccess);
-        Assert.Equal(ApplicationErrorCodes.BusinessTypeNotEntitled, filter.ErrorCode);
-    }
-
-    [Fact]
-    public async Task Gate_omitted_filter_returns_full_allowed_set_not_unrestricted()
-    {
-        var a = Guid.NewGuid();
-        var b = Guid.NewGuid();
-        var scope = new MerchantCatalogEntitlementGate.DiscoveryScope(
-            Unrestricted: false,
-            OrganizationId: PlatformOrganizationId.New(),
-            AllowedBusinessTypeIds: [a, b],
-            Entitlement: null);
-
-        var gate = new MerchantCatalogEntitlementGate(null!, null!, null!, new EmptyBusinessTypeRepo());
-        var filter = await gate.ResolveListFilterAsync(scope, null, null);
-        Assert.True(filter.IsSuccess);
-        Assert.Null(filter.Value.SingleBusinessTypeId);
-        Assert.Equal(2, filter.Value.AllowedBusinessTypeIds!.Count);
-    }
-
-    private sealed class EmptyBusinessTypeRepo : IBusinessTypeRepository
-    {
-        public Task AddAsync(BusinessType businessType, CancellationToken cancellationToken = default) => Task.CompletedTask;
-        public Task<bool> ExistsWithCodeAsync(string code, BusinessTypeId? excludingId = null, CancellationToken cancellationToken = default) => Task.FromResult(false);
-        public Task<bool> ExistsWithNameAsync(string name, BusinessTypeId? excludingId = null, CancellationToken cancellationToken = default) => Task.FromResult(false);
-        public Task<BusinessType?> FindByNormalizedNameAsync(string normalizedName, CancellationToken cancellationToken = default) => Task.FromResult<BusinessType?>(null);
-        public Task<BusinessType?> GetByCodeAsync(string code, CancellationToken cancellationToken = default) => Task.FromResult<BusinessType?>(null);
-        public Task<BusinessType?> GetByIdAsync(BusinessTypeId id, CancellationToken cancellationToken = default) => Task.FromResult<BusinessType?>(null);
-        public Task<IReadOnlyList<BusinessType>> GetByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<BusinessType>>([]);
-        public Task<bool> IsReferencedAsync(BusinessTypeId id, CancellationToken cancellationToken = default) => Task.FromResult(false);
-        public Task<(IReadOnlyList<BusinessType> Items, int TotalCount)> ListAsync(BusinessTypeStatus? status, string? search, int skip, int take, CancellationToken cancellationToken = default, BusinessTypeListSortBy sortBy = BusinessTypeListSortBy.SortOrder, bool sortDescending = false) => Task.FromResult<(IReadOnlyList<BusinessType>, int)>(([], 0));
-        public Task UpdateAsync(BusinessType businessType, CancellationToken cancellationToken = default) => Task.CompletedTask;
-    }
-
-    private sealed class FixedClock(DateTimeOffset utcNow) : IClock
-    {
-        public DateTimeOffset UtcNow => utcNow;
-    }
-
-    private sealed class NoopUnitOfWork : IPlatformUnitOfWork
-    {
-        public Task SaveChangesAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+        var result = await h.Downgrade.ExecuteAsync(org.Id, Pos, starter.Id, T0.AddMonths(1));
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.PlanDowngradeBlockedByBusinessTypeCapacity, result.ErrorCode);
     }
 
     private sealed class Harness
     {
-        public required OrganizationBusinessTypeEntitlementResolver Resolver { get; init; }
+        private readonly Dictionary<Guid, PlanVersionId> _versionByOrg = new();
+        private readonly FixedClock _clock = new(T0);
+
         public required OrgRepo Organizations { get; init; }
         public required ActivationRepo Activations { get; init; }
         public required BtRepo BusinessTypes { get; init; }
         public required PlanRepo Plans { get; init; }
-        private SubRepo Subscriptions { get; init; } = null!;
-        private readonly Dictionary<Guid, PlanVersionId> _versionByOrg = new();
+        public required SubRepo Subscriptions { get; init; }
+        public required ActivateOrganizationBusinessType Activate { get; init; }
+        public required ScheduleOrganizationSubscriptionDowngrade Downgrade { get; init; }
+        public int MaxActiveBusinessTypes { get; private init; }
 
-        public static Harness Create()
+        public static Harness Create(int maxActiveBusinessTypes = 1)
         {
             var orgs = new OrgRepo();
             var subs = new SubRepo();
             var plans = new PlanRepo();
             var activations = new ActivationRepo();
             var businessTypes = new BtRepo();
+            var clock = new FixedClock(T0);
+            var resolver = new OrganizationBusinessTypeEntitlementResolver(orgs, subs, plans, activations, businessTypes);
             return new Harness
             {
                 Organizations = orgs,
                 Activations = activations,
                 BusinessTypes = businessTypes,
-                Subscriptions = subs,
                 Plans = plans,
-                Resolver = new OrganizationBusinessTypeEntitlementResolver(orgs, subs, plans, activations, businessTypes)
+                Subscriptions = subs,
+                MaxActiveBusinessTypes = maxActiveBusinessTypes,
+                Activate = new ActivateOrganizationBusinessType(
+                    orgs, resolver, activations, businessTypes, plans, new NoOpUnitOfWork(), clock),
+                Downgrade = new ScheduleOrganizationSubscriptionDowngrade(
+                    subs, plans, resolver, new NoOpUnitOfWork(), clock)
             };
         }
 
@@ -284,7 +136,7 @@ public sealed class OrganizationBusinessTypeEntitlementResolverTests
             return bt.Id;
         }
 
-        public PlatformOrganization AddOrganization(BusinessTypeId primary, int maxActiveBusinessTypes = 10)
+        public PlatformOrganization AddOrganization(BusinessTypeId primary)
         {
             var org = PlatformOrganization.Create("Org", $"o{Guid.NewGuid():N}"[..12], T0);
             org.AssignPrimaryBusinessType(primary, T0);
@@ -295,7 +147,7 @@ public sealed class OrganizationBusinessTypeEntitlementResolverTests
                 PlanCode.Create($"p{Guid.NewGuid():N}"[..8]),
                 "Plan",
                 T0,
-                maxActiveBusinessTypes: maxActiveBusinessTypes);
+                maxActiveBusinessTypes: MaxActiveBusinessTypes);
             plan.Activate(T0);
             var version = PlanVersion.CreateDraft(plan, 1, T0, BillingPeriod.Monthly, true, [], T0);
             version.Publish(T0);
@@ -314,18 +166,26 @@ public sealed class OrganizationBusinessTypeEntitlementResolverTests
             return org;
         }
 
-        public void SetPlanGrants(PlatformOrganizationId orgId, IReadOnlyList<BusinessTypeId> grants)
-        {
+        public void SetPlanGrants(PlatformOrganizationId orgId, IReadOnlyList<BusinessTypeId> grants) =>
             Plans.ReplaceBusinessTypeGrants(_versionByOrg[orgId.Value], grants);
-        }
 
-        public void Activate(PlatformOrganizationId orgId, BusinessTypeId btId)
+        public void ActivateRow(PlatformOrganizationId orgId, BusinessTypeId btId)
         {
             var org = Organizations.GetByIdAsync(orgId).GetAwaiter().GetResult()!;
             Activations.AddAsync(
                     OrganizationBusinessTypeActivation.Activate(orgId, btId, T0, org.PrimaryBusinessTypeId))
                 .GetAwaiter().GetResult();
         }
+    }
+
+    private sealed class FixedClock(DateTimeOffset utcNow) : IClock
+    {
+        public DateTimeOffset UtcNow { get; } = utcNow;
+    }
+
+    private sealed class NoOpUnitOfWork : IPlatformUnitOfWork
+    {
+        public Task SaveChangesAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 
     private sealed class OrgRepo : IPlatformOrganizationRepository
@@ -359,12 +219,6 @@ public sealed class OrganizationBusinessTypeEntitlementResolverTests
     {
         private readonly Dictionary<Guid, BusinessType> _items = new();
         public void Store(BusinessType bt) => _items[bt.Id.Value] = bt;
-        public void SetStatus(BusinessTypeId id, BusinessTypeStatus status)
-        {
-            var bt = _items[id.Value];
-            bt.SetStatus(status, T0.AddMinutes(1));
-            _items[id.Value] = bt;
-        }
         public Task AddAsync(BusinessType businessType, CancellationToken cancellationToken = default) { Store(businessType); return Task.CompletedTask; }
         public Task<bool> ExistsWithCodeAsync(string code, BusinessTypeId? excludingId = null, CancellationToken cancellationToken = default) => Task.FromResult(false);
         public Task<bool> ExistsWithNameAsync(string name, BusinessTypeId? excludingId = null, CancellationToken cancellationToken = default) => Task.FromResult(false);
@@ -428,15 +282,15 @@ public sealed class OrganizationBusinessTypeEntitlementResolverTests
         public Task AddAsync(Plan plan, CancellationToken cancellationToken = default) { _plans[plan.Id.Value] = plan; return Task.CompletedTask; }
         public Task AddVersionAsync(PlanVersion version, CancellationToken cancellationToken = default) { _versions[version.Id.Value] = version; return Task.CompletedTask; }
         public Task<Plan?> GetByIdAsync(PlanId id, CancellationToken cancellationToken = default) => Task.FromResult(_plans.GetValueOrDefault(id.Value));
-        public Task<Plan?> GetByProductAndCodeAsync(ProductCode productCode, PlanCode planCode, CancellationToken cancellationToken = default) => Task.FromResult<Plan?>(null);
-        public Task<int> GetMaxVersionNumberAsync(PlanId planId, CancellationToken cancellationToken = default) => Task.FromResult(1);
-        public Task<PlanVersion?> GetLatestPublishedVersionAsync(PlanId planId, CancellationToken cancellationToken = default) => Task.FromResult(_versions.Values.FirstOrDefault(v => v.PlanId == planId));
+        public Task<Plan?> GetByProductAndCodeAsync(ProductCode productCode, PlanCode planCode, CancellationToken cancellationToken = default) => Task.FromResult(_plans.Values.FirstOrDefault(p => p.ProductCode == productCode && p.Code == planCode));
+        public Task<int> GetMaxVersionNumberAsync(PlanId planId, CancellationToken cancellationToken = default) => Task.FromResult(_versions.Values.Where(v => v.PlanId == planId).Select(v => v.VersionNumber).DefaultIfEmpty(0).Max());
+        public Task<PlanVersion?> GetLatestPublishedVersionAsync(PlanId planId, CancellationToken cancellationToken = default) => Task.FromResult(_versions.Values.Where(v => v.PlanId == planId && v.Status == PlanVersionStatus.Published).OrderByDescending(v => v.VersionNumber).FirstOrDefault());
         public Task<PlanVersion?> GetVersionByIdAsync(PlanVersionId id, CancellationToken cancellationToken = default) => Task.FromResult(_versions.GetValueOrDefault(id.Value));
-        public Task<PlanVersion?> GetVersionByPlanAndNumberAsync(PlanId planId, int versionNumber, CancellationToken cancellationToken = default) => Task.FromResult<PlanVersion?>(null);
+        public Task<PlanVersion?> GetVersionByPlanAndNumberAsync(PlanId planId, int versionNumber, CancellationToken cancellationToken = default) => Task.FromResult(_versions.Values.FirstOrDefault(v => v.PlanId == planId && v.VersionNumber == versionNumber));
         public Task<(IReadOnlyList<Plan> Items, int TotalCount)> ListAsync(ProductCode? productCode, PlanStatus? status, string? search, CatalogListSortBy sortBy, bool sortDescending, int skip, int take, CancellationToken cancellationToken = default) => Task.FromResult<(IReadOnlyList<Plan>, int)>((_plans.Values.ToList(), _plans.Count));
         public Task<IReadOnlyList<Plan>> ListByProductAsync(ProductCode productCode, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<Plan>>(_plans.Values.ToList());
         public Task<IReadOnlyList<PlanVersion>> ListVersionsAsync(PlanId planId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<PlanVersion>>(_versions.Values.Where(v => v.PlanId == planId).ToList());
-        public Task UpdateAsync(Plan plan, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task UpdateAsync(Plan plan, CancellationToken cancellationToken = default) { _plans[plan.Id.Value] = plan; return Task.CompletedTask; }
         public Task UpdateVersionAsync(PlanVersion version, CancellationToken cancellationToken = default) { _versions[version.Id.Value] = version; return Task.CompletedTask; }
     }
 }

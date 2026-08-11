@@ -63,7 +63,7 @@ public sealed class MvpPlanAndSubscriptionDisplayIntegrationTests(PostgreSqlFixt
     }
 
     [Fact]
-    public async Task EnsureMvpPosPlans_seeds_starter_business_pro_idempotently()
+    public async Task EnsureMvpPosPlans_seeds_starter_growth_pro_idempotently()
     {
         await using var provider = BuildMvpPlanServices(fixture.ConnectionString);
         await SeedPosProductAsync(provider);
@@ -89,6 +89,15 @@ public sealed class MvpPlanAndSubscriptionDisplayIntegrationTests(PostgreSqlFixt
             Assert.Equal(expected.DisplayName, plan.DisplayName);
             Assert.Equal(expected.MaxBranches, plan.MaxBranches);
             Assert.Equal(expected.MaxActiveStaff, plan.MaxActiveStaff);
+            Assert.Equal(expected.MaxActivePosDevices, plan.MaxActivePosDevices);
+            Assert.Equal(expected.MaxActiveBusinessTypes, plan.MaxActiveBusinessTypes);
+            var version = await plans.GetLatestPublishedVersionAsync(plan.Id);
+            Assert.NotNull(version);
+            Assert.Equal(16, version!.BusinessTypeGrants.Count);
+            Assert.Contains(
+                version.Grants,
+                g => g.FeatureCode.Value == FeatureCode.PlanMaxActiveBusinessTypes
+                    && g.NumericLimit == expected.MaxActiveBusinessTypes);
         }
     }
 
@@ -109,7 +118,7 @@ public sealed class MvpPlanAndSubscriptionDisplayIntegrationTests(PostgreSqlFixt
         var productCode = ProductCode.Create(ProductCode.PinoyBusinessPos);
         var businessPlan = (await plans.GetByProductAndCodeAsync(
             productCode,
-            PlanCode.Create(MvpPosPlanCodes.Business)))!;
+            PlanCode.Create(MvpPosPlanCodes.Growth)))!;
         var starterPlan = (await plans.GetByProductAndCodeAsync(
             productCode,
             PlanCode.Create(MvpPosPlanCodes.Starter)))!;
@@ -159,7 +168,7 @@ public sealed class MvpPlanAndSubscriptionDisplayIntegrationTests(PostgreSqlFixt
             page: 1,
             pageSize: 10);
         Assert.Equal(2, businessOnly.TotalCount);
-        Assert.All(businessOnly.Items, i => Assert.Equal(MvpPosPlanCodes.Business, i.PlanKey));
+        Assert.All(businessOnly.Items, i => Assert.Equal(MvpPosPlanCodes.Growth, i.PlanKey));
 
         var firstPage = await queries.ListAsync(
             organizationId: null,

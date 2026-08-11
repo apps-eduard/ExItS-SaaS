@@ -34,7 +34,7 @@ public sealed class CommercialUseCaseTests
         var product = (await new CreateProduct(products, uow, clock)
             .ExecuteAsync(ProductCode.PinoyBusinessPos, "Pinoy Business POS")).Value!;
         var plan = (await new CreatePlan(products, plans, uow, clock)
-            .ExecuteAsync(product.Code.Value, MvpPosPlanCodes.Business, "Business")).Value!;
+            .ExecuteAsync(product.Code.Value, MvpPosPlanCodes.Growth, "Growth")).Value!;
         plan.Activate(T0);
         plan.Deactivate(T0.AddMinutes(1));
         await plans.UpdateAsync(plan);

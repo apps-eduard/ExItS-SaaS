@@ -20,6 +20,7 @@ public sealed class Plan
     public int MaxBranches { get; private set; }
     public int MaxActiveStaff { get; private set; }
     public int MaxActivePosDevices { get; private set; }
+    public int MaxActiveBusinessTypes { get; private set; }
     public bool CustomerCreditEnabled { get; private set; }
     public bool AdvancedReportsEnabled { get; private set; }
     public bool ExportEnabled { get; private set; }
@@ -45,6 +46,7 @@ public sealed class Plan
         int maxBranches,
         int maxActiveStaff,
         int maxActivePosDevices,
+        int maxActiveBusinessTypes,
         bool customerCreditEnabled,
         bool advancedReportsEnabled,
         bool exportEnabled,
@@ -66,6 +68,7 @@ public sealed class Plan
         MaxBranches = maxBranches;
         MaxActiveStaff = maxActiveStaff;
         MaxActivePosDevices = maxActivePosDevices;
+        MaxActiveBusinessTypes = maxActiveBusinessTypes;
         CustomerCreditEnabled = customerCreditEnabled;
         AdvancedReportsEnabled = advancedReportsEnabled;
         ExportEnabled = exportEnabled;
@@ -89,6 +92,7 @@ public sealed class Plan
         int maxBranches = 1,
         int maxActiveStaff = 3,
         int maxActivePosDevices = 1,
+        int maxActiveBusinessTypes = 1,
         bool customerCreditEnabled = false,
         bool advancedReportsEnabled = false,
         bool exportEnabled = false,
@@ -102,7 +106,7 @@ public sealed class Plan
         ArgumentNullException.ThrowIfNull(productCode);
         ArgumentNullException.ThrowIfNull(code);
         DomainTime.EnsureUtc(utcNow);
-        ValidateCommercialLimits(maxBranches, maxActiveStaff, maxActivePosDevices, defaultTrialDays, sortOrder);
+        ValidateCommercialLimits(maxBranches, maxActiveStaff, maxActivePosDevices, maxActiveBusinessTypes, defaultTrialDays, sortOrder);
         ValidatePricing(monthlyPrice, annualPrice, currencyCode);
         return new Plan(
             id ?? PlanId.New(),
@@ -114,6 +118,7 @@ public sealed class Plan
             maxBranches,
             maxActiveStaff,
             maxActivePosDevices,
+            maxActiveBusinessTypes,
             customerCreditEnabled,
             advancedReportsEnabled,
             exportEnabled,
@@ -139,6 +144,7 @@ public sealed class Plan
         int maxBranches = 1,
         int maxActiveStaff = 3,
         int maxActivePosDevices = 1,
+        int maxActiveBusinessTypes = 1,
         bool customerCreditEnabled = false,
         bool advancedReportsEnabled = false,
         bool exportEnabled = false,
@@ -158,6 +164,7 @@ public sealed class Plan
             maxBranches,
             maxActiveStaff,
             maxActivePosDevices,
+            maxActiveBusinessTypes,
             customerCreditEnabled,
             advancedReportsEnabled,
             exportEnabled,
@@ -189,6 +196,7 @@ public sealed class Plan
         int maxBranches,
         int maxActiveStaff,
         int maxActivePosDevices,
+        int maxActiveBusinessTypes,
         bool customerCreditEnabled,
         bool advancedReportsEnabled,
         bool exportEnabled,
@@ -208,12 +216,13 @@ public sealed class Plan
                 "A retired Plan cannot be edited.");
         }
 
-        ValidateCommercialLimits(maxBranches, maxActiveStaff, maxActivePosDevices, defaultTrialDays, sortOrder);
+        ValidateCommercialLimits(maxBranches, maxActiveStaff, maxActivePosDevices, maxActiveBusinessTypes, defaultTrialDays, sortOrder);
         ValidatePricing(monthlyPrice, annualPrice, currencyCode);
         Description = NormalizeDescription(description);
         MaxBranches = maxBranches;
         MaxActiveStaff = maxActiveStaff;
         MaxActivePosDevices = maxActivePosDevices;
+        MaxActiveBusinessTypes = maxActiveBusinessTypes;
         CustomerCreditEnabled = customerCreditEnabled;
         AdvancedReportsEnabled = advancedReportsEnabled;
         ExportEnabled = exportEnabled;
@@ -271,7 +280,7 @@ public sealed class Plan
         UpdatedAtUtc = utcNow;
     }
 
-    private static void ValidateCommercialLimits(int maxBranches, int maxActiveStaff, int maxActivePosDevices, int defaultTrialDays, int sortOrder)
+    private static void ValidateCommercialLimits(int maxBranches, int maxActiveStaff, int maxActivePosDevices, int maxActiveBusinessTypes, int defaultTrialDays, int sortOrder)
     {
         if (maxBranches < 1 || maxBranches > 10_000)
         {
@@ -292,6 +301,13 @@ public sealed class Plan
             throw new DomainException(
                 DomainErrorCodes.InvalidPlanStatusTransition,
                 "MaxActivePosDevices must be between 1 and 10000.");
+        }
+
+        if (maxActiveBusinessTypes < 1 || maxActiveBusinessTypes > 10_000)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPlanStatusTransition,
+                "MaxActiveBusinessTypes must be between 1 and 10000.");
         }
 
         if (defaultTrialDays < 0 || defaultTrialDays > 365)

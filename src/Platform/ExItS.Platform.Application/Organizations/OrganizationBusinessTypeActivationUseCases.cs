@@ -2,6 +2,7 @@ using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.GlobalCatalog;
 using ExItS.Platform.Domain.Abstractions;
+using ExItS.Platform.Domain.Catalog;
 using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.GlobalCatalog;
 using ExItS.Platform.Domain.Organizations;
@@ -69,6 +70,7 @@ public sealed class ActivateOrganizationBusinessType(
     IOrganizationBusinessTypeEntitlementResolver resolver,
     IOrganizationBusinessTypeActivationRepository activations,
     IBusinessTypeRepository businessTypes,
+    IPlanRepository plans,
     IPlatformUnitOfWork unitOfWork,
     IClock clock)
 {
@@ -124,6 +126,51 @@ public sealed class ActivateOrganizationBusinessType(
                 return ApplicationResult<OrganizationBusinessTypeActivationDto>.Failure(
                     ApplicationErrorCodes.BusinessTypeNotEntitled,
                     "Current subscription does not grant this business type.");
+            }
+
+            var existingActivation = await activations.GetAsync(orgId, btId, cancellationToken).ConfigureAwait(false);
+            if (existingActivation is not null
+                || entitlement.Value.EffectiveBusinessTypeIds.Any(id => id == btId))
+            {
+                return ApplicationResult<OrganizationBusinessTypeActivationDto>.Success(
+                    new OrganizationBusinessTypeActivationDto(
+                        orgId.Value,
+                        btId.Value,
+                        businessType.Code,
+                        existingActivation?.ActivatedAtUtc ?? clock.UtcNow));
+            }
+
+            if (entitlement.Value.PlanVersionId is null)
+            {
+                return ApplicationResult<OrganizationBusinessTypeActivationDto>.Failure(
+                    ApplicationErrorCodes.SubscriptionNotFound,
+                    "No plan version is bound for business type capacity evaluation.");
+            }
+
+            var planVersion = await plans
+                .GetVersionByIdAsync(PlanVersionId.From(entitlement.Value.PlanVersionId.Value), cancellationToken)
+                .ConfigureAwait(false);
+            if (planVersion is null)
+            {
+                return ApplicationResult<OrganizationBusinessTypeActivationDto>.Failure(
+                    ApplicationErrorCodes.PlanNotFound,
+                    "Bound plan version was not found.");
+            }
+
+            var plan = await plans.GetByIdAsync(planVersion.PlanId, cancellationToken).ConfigureAwait(false);
+            if (plan is null)
+            {
+                return ApplicationResult<OrganizationBusinessTypeActivationDto>.Failure(
+                    ApplicationErrorCodes.PlanNotFound,
+                    "Current plan was not found.");
+            }
+
+            var effectiveCount = entitlement.Value.EffectiveBusinessTypeIds.Count;
+            if (effectiveCount >= plan.MaxActiveBusinessTypes)
+            {
+                return ApplicationResult<OrganizationBusinessTypeActivationDto>.Failure(
+                    ApplicationErrorCodes.BusinessTypeActivationCapacityExceeded,
+                    $"Active business type capacity ({plan.MaxActiveBusinessTypes}) has been reached.");
             }
 
             var activation = OrganizationBusinessTypeActivation.Activate(

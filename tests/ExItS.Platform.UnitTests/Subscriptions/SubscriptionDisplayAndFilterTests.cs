@@ -27,8 +27,8 @@ public sealed class SubscriptionDisplayAndFilterTests
         Assert.NotNull(dto);
         Assert.Equal("Acme Retail Group", dto!.OrganizationDisplayName);
         Assert.Equal("Pinoy Business POS", dto.ProductDisplayName);
-        Assert.Equal("Business", dto.PlanDisplayName);
-        Assert.Equal(MvpPosPlanCodes.Business, dto.PlanKey);
+        Assert.Equal("Growth", dto.PlanDisplayName);
+        Assert.Equal(MvpPosPlanCodes.Growth, dto.PlanKey);
 
         Assert.NotEqual(dto.ProductCode, dto.ProductDisplayName);
         Assert.NotEqual(dto.PlanKey, dto.PlanDisplayName);
@@ -66,7 +66,7 @@ public sealed class SubscriptionDisplayAndFilterTests
             page: 1,
             pageSize: 20);
         Assert.Equal(2, businessPlanOnly.TotalCount);
-        Assert.All(businessPlanOnly.Items, i => Assert.Equal(MvpPosPlanCodes.Business, i.PlanKey));
+        Assert.All(businessPlanOnly.Items, i => Assert.Equal(MvpPosPlanCodes.Growth, i.PlanKey));
 
         var orgScoped = await harness.Queries.ListAsync(
             organizationId: harness.OrgA.Id.Value,
@@ -271,8 +271,8 @@ public sealed class SubscriptionDisplayAndFilterTests
 
             var businessPlan = Plan.CreateDraft(
                 ProductCode.Create(ProductCode.PinoyBusinessPos),
-                PlanCode.Create(MvpPosPlanCodes.Business),
-                "Business",
+                PlanCode.Create(MvpPosPlanCodes.Growth),
+                "Growth",
                 T0);
             businessPlan.Activate(T0);
             await plans.AddAsync(businessPlan);

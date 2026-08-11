@@ -87,6 +87,9 @@ public sealed partial class FeatureCode : IEquatable<FeatureCode>
     /// <summary>POS plan commercial limit: maximum active registered POS devices (QuantityLimit).</summary>
     public const string PlanMaxActivePosDevices = "plan-max-active-pos-devices";
 
+    /// <summary>POS plan commercial limit: maximum concurrent effective Business Types (QuantityLimit).</summary>
+    public const string PlanMaxActiveBusinessTypes = "plan-max-active-business-types";
+
     /// <summary>POS advanced reporting beyond basic operational reports.</summary>
     public const string StoreAdvancedReports = "store-advanced-reports";
 

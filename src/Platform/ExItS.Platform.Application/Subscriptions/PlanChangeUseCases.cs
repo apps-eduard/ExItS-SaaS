@@ -223,7 +223,8 @@ public static class PlanChangeImpact
         int activeStaffCount,
         int? activeBranchCount,
         bool branchCountAvailable,
-        string? branchCountUnavailableReason = null)
+        string? branchCountUnavailableReason = null,
+        int? activeBusinessTypeCount = null)
     {
         var conflicts = new List<PlanUsageConflict>();
         if (branchCountAvailable && activeBranchCount.HasValue && activeBranchCount.Value > targetPlan.MaxBranches)
@@ -242,6 +243,16 @@ public static class PlanChangeImpact
                 activeStaffCount,
                 targetPlan.MaxActiveStaff,
                 $"Current active staff ({activeStaffCount}) exceed the target limit ({targetPlan.MaxActiveStaff}). Existing staff are retained; inviting or activating additional staff that would further exceed the limit is blocked."));
+        }
+
+        if (activeBusinessTypeCount.HasValue
+            && activeBusinessTypeCount.Value > targetPlan.MaxActiveBusinessTypes)
+        {
+            conflicts.Add(new PlanUsageConflict(
+                "ActiveBusinessTypes",
+                activeBusinessTypeCount.Value,
+                targetPlan.MaxActiveBusinessTypes,
+                $"Current effective business types ({activeBusinessTypeCount.Value}) exceed the target limit ({targetPlan.MaxActiveBusinessTypes}). Downgrade is blocked until optional activations are reduced; merchant catalog/history is not deleted."));
         }
 
         var lost = new List<string>();
@@ -280,15 +291,18 @@ public sealed class PreviewOrganizationPlanChange
     private readonly ISubscriptionRepository _subscriptions;
     private readonly IPlanRepository _plans;
     private readonly IOrganizationProductUsageReader _usageReader;
+    private readonly IOrganizationBusinessTypeEntitlementResolver _businessTypeEntitlements;
 
     public PreviewOrganizationPlanChange(
         ISubscriptionRepository subscriptions,
         IPlanRepository plans,
-        IOrganizationProductUsageReader usageReader)
+        IOrganizationProductUsageReader usageReader,
+        IOrganizationBusinessTypeEntitlementResolver businessTypeEntitlements)
     {
         _subscriptions = subscriptions;
         _plans = plans;
         _usageReader = usageReader;
+        _businessTypeEntitlements = businessTypeEntitlements;
     }
 
     public async Task<ApplicationResult<PlanChangeImpactPreview>> ExecuteAsync(
@@ -330,6 +344,16 @@ public sealed class PreviewOrganizationPlanChange
         var branchCountAvailable = usage.BranchCountAvailable || activeBranchCount.HasValue;
         var branchCount = activeBranchCount ?? usage.ActiveBranchCount;
         var unavailableReason = branchCountAvailable ? null : usage.BranchCountUnavailableReason;
+
+        int? activeBusinessTypeCount = null;
+        var entitlement = await _businessTypeEntitlements
+            .ResolveAsync(organizationId, productCode, cancellationToken)
+            .ConfigureAwait(false);
+        if (entitlement.IsSuccess && entitlement.Value is not null)
+        {
+            activeBusinessTypeCount = entitlement.Value.EffectiveBusinessTypeIds.Count;
+        }
+
         return ApplicationResult<PlanChangeImpactPreview>.Success(
             PlanChangeImpact.Evaluate(
                 currentPlan,
@@ -337,7 +361,8 @@ public sealed class PreviewOrganizationPlanChange
                 usage.ActiveStaffCount,
                 branchCount,
                 branchCountAvailable,
-                unavailableReason));
+                unavailableReason,
+                activeBusinessTypeCount));
     }
 }
 
@@ -345,17 +370,20 @@ public sealed class ScheduleOrganizationSubscriptionDowngrade
 {
     private readonly ISubscriptionRepository _subscriptions;
     private readonly IPlanRepository _plans;
+    private readonly IOrganizationBusinessTypeEntitlementResolver _businessTypeEntitlements;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
     public ScheduleOrganizationSubscriptionDowngrade(
         ISubscriptionRepository subscriptions,
         IPlanRepository plans,
+        IOrganizationBusinessTypeEntitlementResolver businessTypeEntitlements,
         IPlatformUnitOfWork unitOfWork,
         IClock clock)
     {
         _subscriptions = subscriptions;
         _plans = plans;
+        _businessTypeEntitlements = businessTypeEntitlements;
         _unitOfWork = unitOfWork;
         _clock = clock;
     }
@@ -390,6 +418,18 @@ public sealed class ScheduleOrganizationSubscriptionDowngrade
             return ApplicationResult<Subscription>.Failure(
                 ApplicationErrorCodes.SubscriptionIneligible,
                 "Subscription is already on the requested plan.");
+        }
+
+        var entitlement = await _businessTypeEntitlements
+            .ResolveAsync(organizationId, productCode, cancellationToken)
+            .ConfigureAwait(false);
+        if (entitlement.IsSuccess
+            && entitlement.Value is not null
+            && entitlement.Value.EffectiveBusinessTypeIds.Count > targetPlan.MaxActiveBusinessTypes)
+        {
+            return ApplicationResult<Subscription>.Failure(
+                ApplicationErrorCodes.PlanDowngradeBlockedByBusinessTypeCapacity,
+                $"Downgrade blocked: effective business types ({entitlement.Value.EffectiveBusinessTypeIds.Count}) exceed target plan capacity ({targetPlan.MaxActiveBusinessTypes}). Deactivate excess types before downgrading; merchant data is not deleted.");
         }
 
         try
