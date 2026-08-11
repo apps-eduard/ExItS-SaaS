@@ -11,6 +11,7 @@ internal sealed class SaleLineRecord
     public string? SkuSnapshot { get; set; }
     public string? BarcodeSnapshot { get; set; }
     public string UnitOfMeasureSnapshot { get; set; } = string.Empty;
+    public string SellingModeSnapshot { get; set; } = "PerItem";
     public decimal UnitPrice { get; set; }
     public decimal Quantity { get; set; }
     public decimal LineTotal { get; set; }

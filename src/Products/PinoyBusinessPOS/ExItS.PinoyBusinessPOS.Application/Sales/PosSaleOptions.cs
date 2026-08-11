@@ -35,15 +35,34 @@ public static class PosSaleOptions
     /// the server without referencing the domain enum. The server still validates every quantity.
     /// </summary>
     public static bool RequiresWholeQuantity(string? unitOfMeasureCode) =>
-        UnitOfMeasures.TryParse(unitOfMeasureCode, out var unit) && SaleMoney.IsWholeUnit(unit);
+        RequiresWholeQuantity(unitOfMeasureCode, nameof(SellingMode.PerItem));
+
+    public static bool RequiresWholeQuantity(string? unitOfMeasureCode, string? sellingModeCode) =>
+        UnitOfMeasures.TryParse(unitOfMeasureCode, out var unit)
+        && SaleMoney.RequiresWholeQuantity(unit, SellingModes.Parse(sellingModeCode));
 
     public static int MaxQuantityDecimals(string? unitOfMeasureCode) =>
-        UnitOfMeasures.TryParse(unitOfMeasureCode, out var unit)
-            ? SaleMoney.MaxQuantityDecimals(unit)
+        MaxQuantityDecimals(unitOfMeasureCode, nameof(SellingMode.PerItem));
+
+    public static int MaxQuantityDecimals(string? unitOfMeasureCode, string? sellingModeCode)
+    {
+        var sellingMode = SellingModes.Parse(sellingModeCode);
+        if (sellingMode == SellingMode.ByWeight)
+        {
+            return SaleMoney.MeasuredQuantityDecimals;
+        }
+
+        return UnitOfMeasures.TryParse(unitOfMeasureCode, out var unit)
+            ? SaleMoney.MaxQuantityDecimals(unit, sellingMode)
             : SaleMoney.MeasuredQuantityDecimals;
+    }
 
     public static bool IsValidQuantity(decimal quantity, string? unitOfMeasureCode) =>
-        quantity > 0m && SaleMoney.HasAtMostDecimals(quantity, MaxQuantityDecimals(unitOfMeasureCode));
+        IsValidQuantity(quantity, unitOfMeasureCode, nameof(SellingMode.PerItem));
+
+    public static bool IsValidQuantity(decimal quantity, string? unitOfMeasureCode, string? sellingModeCode) =>
+        quantity > 0m
+        && SaleMoney.HasAtMostDecimals(quantity, MaxQuantityDecimals(unitOfMeasureCode, sellingModeCode));
 
     /// <summary>Client-side preview rounding. Matches the server rule exactly (2dp, away from zero).</summary>
     public static decimal RoundMoney(decimal amount) => SaleMoney.RoundMoney(amount);

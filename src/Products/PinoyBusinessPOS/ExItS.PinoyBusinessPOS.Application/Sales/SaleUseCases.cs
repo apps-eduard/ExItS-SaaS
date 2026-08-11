@@ -111,6 +111,7 @@ public sealed class SaleQueryService
                     l.SkuSnapshot,
                     l.BarcodeSnapshot,
                     UnitOfMeasures.ToCode(l.UnitOfMeasureSnapshot),
+                    SellingModes.ToCode(l.SellingModeSnapshot),
                     l.UnitPrice,
                     l.Quantity,
                     l.LineTotal))
@@ -437,7 +438,8 @@ public sealed class CheckoutSale
                     product.Barcode,
                     product.UnitOfMeasure,
                     product.SellingPrice,
-                    quantity));
+                    quantity,
+                    product.SellingMode));
             }
 
             var utcNow = _clock.UtcNow;

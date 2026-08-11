@@ -79,7 +79,10 @@ public sealed class SaleReturnLine
                 "Return line must reference a line from the originating sale.");
         }
 
-        var quantity = SaleLine.NormalizeQuantity(draft.QuantityReturned, saleLine.UnitOfMeasureSnapshot);
+        var quantity = SaleLine.NormalizeQuantity(
+            draft.QuantityReturned,
+            saleLine.UnitOfMeasureSnapshot,
+            saleLine.SellingModeSnapshot);
         var refundableQty = SaleReturnRefundable.RefundableQuantity(saleLine, previouslyReturnedQuantity);
         if (quantity > refundableQty)
         {

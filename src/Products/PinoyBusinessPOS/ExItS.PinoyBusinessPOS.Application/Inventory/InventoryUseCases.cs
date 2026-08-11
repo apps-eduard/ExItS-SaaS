@@ -561,7 +561,8 @@ public sealed class SaleStockService : ISaleStockService
                 product.UnitOfMeasure,
                 sale.Id.Value,
                 actorId,
-                utcNow);
+                utcNow,
+                sellingMode: product.SellingMode);
             account.ApplyMovementEffect(movement.QuantityEffect);
             account.Touch(utcNow);
             await _inventory.UpdateAccountAsync(account, cancellationToken).ConfigureAwait(false);

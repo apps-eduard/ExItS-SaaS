@@ -149,7 +149,8 @@ public sealed class StockMovement
         Guid saleId,
         Guid actorId,
         DateTimeOffset utcNow,
-        StockMovementId? id = null)
+        StockMovementId? id = null,
+        SellingMode sellingMode = SellingMode.PerItem)
     {
         EnsureUtc(utcNow);
         EnsureActor(actorId);
@@ -160,7 +161,7 @@ public sealed class StockMovement
                 "SaleId cannot be an empty GUID.");
         }
 
-        var absolute = SaleLine.NormalizeQuantity(quantity, unitOfMeasure);
+        var absolute = SaleLine.NormalizeQuantity(quantity, unitOfMeasure, sellingMode);
         return new StockMovement(
             id ?? StockMovementId.New(),
             organizationId,

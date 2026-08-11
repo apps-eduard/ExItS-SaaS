@@ -791,6 +791,9 @@ public sealed class PosDbContext : DbContext
                 tb.HasCheckConstraint(
                     "ck_sale_lines_unit_of_measure",
                     $"unit_of_measure_snapshot IN ({string.Join(", ", UnitOfMeasures.Codes.Select(c => $"'{c}'"))})");
+                tb.HasCheckConstraint(
+                    "ck_sale_lines_selling_mode",
+                    "selling_mode_snapshot IN ('PerItem','ByWeight')");
             });
 
             entity.HasKey(e => e.Id);
@@ -812,6 +815,10 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.UnitOfMeasureSnapshot)
                 .HasColumnName("unit_of_measure_snapshot")
                 .HasMaxLength(UnitOfMeasures.CodeMaxLength)
+                .IsRequired();
+            entity.Property(e => e.SellingModeSnapshot)
+                .HasColumnName("selling_mode_snapshot")
+                .HasMaxLength(32)
                 .IsRequired();
             entity.Property(e => e.UnitPrice).HasColumnName("unit_price").HasPrecision(18, 2).IsRequired();
             // Measured units admit up to three decimal places; countable units stay whole.

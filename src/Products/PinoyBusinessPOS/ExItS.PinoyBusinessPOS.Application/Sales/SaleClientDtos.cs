@@ -8,6 +8,7 @@ public sealed record PosSaleLineDto(
     string? Sku,
     string? Barcode,
     string UnitOfMeasure,
+    string SellingMode,
     decimal UnitPrice,
     decimal Quantity,
     decimal LineTotal);

@@ -29,7 +29,8 @@ internal static class SaleEntityMapper
                 UnitOfMeasures.Parse(l.UnitOfMeasureSnapshot),
                 l.UnitPrice,
                 l.Quantity,
-                l.LineTotal))
+                l.LineTotal,
+                SellingModes.Parse(l.SellingModeSnapshot)))
             .ToList();
 
         return Sale.Rehydrate(
@@ -95,6 +96,7 @@ internal static class SaleEntityMapper
             SkuSnapshot = line.SkuSnapshot,
             BarcodeSnapshot = line.BarcodeSnapshot,
             UnitOfMeasureSnapshot = UnitOfMeasures.ToCode(line.UnitOfMeasureSnapshot),
+            SellingModeSnapshot = SellingModes.ToCode(line.SellingModeSnapshot),
             UnitPrice = line.UnitPrice,
             Quantity = line.Quantity,
             LineTotal = line.LineTotal

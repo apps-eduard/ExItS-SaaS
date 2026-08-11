@@ -13,9 +13,11 @@ namespace ExItS.PinoyBusinessPOS.Domain.Sales;
 /// Applying one convention across sales and Utang keeps sale totals reconcilable against credit and
 /// repayment records without per-feature rounding drift.
 ///
-/// Quantity precision is driven by the unit of measure: countable units admit whole numbers only,
-/// while measured units admit up to <see cref="MeasuredQuantityDecimals"/> decimal places. Quantities
-/// are never rounded silently — an over-precise quantity is rejected instead.
+/// Quantity precision is driven by <see cref="SellingMode"/> when known, otherwise by unit of measure:
+/// ByWeight always admits up to <see cref="MeasuredQuantityDecimals"/> decimal places in kilograms;
+/// PerItem countable units admit whole numbers only; PerItem measured units (Liter, Kilogram bags, etc.)
+/// keep the historical measured-UOM rule (up to 3 dp). Quantities are never rounded silently —
+/// an over-precise quantity is rejected instead.
 /// </summary>
 public static class SaleMoney
 {
@@ -38,9 +40,22 @@ public static class SaleMoney
         _ => false
     };
 
-    /// <summary>Maximum decimal places a quantity may carry for the given unit of measure.</summary>
-    public static int MaxQuantityDecimals(UnitOfMeasure unitOfMeasure) =>
-        IsWholeUnit(unitOfMeasure) ? 0 : MeasuredQuantityDecimals;
+    /// <summary>
+    /// Maximum decimal places a quantity may carry.
+    /// SellingMode is authoritative when ByWeight; otherwise UOM rules apply.
+    /// </summary>
+    public static int MaxQuantityDecimals(
+        UnitOfMeasure unitOfMeasure,
+        SellingMode sellingMode = SellingMode.PerItem) =>
+        sellingMode == SellingMode.ByWeight
+            ? MeasuredQuantityDecimals
+            : IsWholeUnit(unitOfMeasure) ? 0 : MeasuredQuantityDecimals;
+
+    /// <summary>True when a PerItem product with this UOM must be sold in whole increments.</summary>
+    public static bool RequiresWholeQuantity(
+        UnitOfMeasure unitOfMeasure,
+        SellingMode sellingMode = SellingMode.PerItem) =>
+        sellingMode != SellingMode.ByWeight && IsWholeUnit(unitOfMeasure);
 
     /// <summary>True when <paramref name="value"/> carries no more than <paramref name="decimals"/> decimal places.</summary>
     public static bool HasAtMostDecimals(decimal value, int decimals) =>

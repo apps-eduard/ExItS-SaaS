@@ -1803,7 +1803,17 @@ else
             var lines = Cart.Items
                 .Select(i =>
                 {
-                    var tracked = _productById.TryGetValue(i.ProductId, out var p) && p.IsTracked;
+                    var tracked = false;
+                    var sellingMode = "PerItem";
+                    if (_productById.TryGetValue(i.ProductId, out var p))
+                    {
+                        tracked = p.IsTracked;
+                        if (!string.IsNullOrWhiteSpace(p.SellingMode))
+                        {
+                            sellingMode = p.SellingMode;
+                        }
+                    }
+
                     return new LocalCashSaleLineSnapshot(
                         i.ProductId,
                         i.Name,
@@ -1812,7 +1822,8 @@ else
                         i.UnitPrice,
                         i.Quantity,
                         i.LineTotal,
-                        tracked);
+                        tracked,
+                        sellingMode);
                 })
                 .ToList();
 

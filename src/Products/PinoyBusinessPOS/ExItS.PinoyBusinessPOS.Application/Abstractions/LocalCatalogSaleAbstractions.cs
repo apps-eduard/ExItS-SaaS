@@ -65,7 +65,8 @@ public sealed record LocalCashSaleLineSnapshot(
     decimal UnitPrice,
     decimal Quantity,
     decimal LineTotal,
-    bool IsTracked);
+    bool IsTracked,
+    string SellingMode = "PerItem");
 
 public sealed record LocalCashSaleCommitCommand(
     Guid SaleId,

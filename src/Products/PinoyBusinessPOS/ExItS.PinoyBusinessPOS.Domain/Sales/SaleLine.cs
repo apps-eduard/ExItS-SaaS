@@ -6,7 +6,8 @@ namespace ExItS.PinoyBusinessPOS.Domain.Sales;
 
 /// <summary>
 /// Snapshot input for one checkout line. The application layer resolves these values from the live
-/// catalog product; the client never supplies name, price, or unit of measure.
+/// catalog product; the client never supplies name, price, unit of measure, or selling mode.
+/// Quantity for ByWeight products is already canonical kilograms.
 /// </summary>
 public sealed record SaleLineDraft(
     CatalogProductId ProductId,
@@ -15,12 +16,13 @@ public sealed record SaleLineDraft(
     string? BarcodeSnapshot,
     UnitOfMeasure UnitOfMeasureSnapshot,
     decimal UnitPrice,
-    decimal Quantity);
+    decimal Quantity,
+    SellingMode SellingModeSnapshot = SellingMode.PerItem);
 
 /// <summary>
-/// One immutable line of a recorded sale. Product name, SKU, barcode, unit of measure and unit price
-/// are snapshotted at checkout so later catalog edits never rewrite history. No stock movement,
-/// tax, discount, or line-level void exists in this scope.
+/// One immutable line of a recorded sale. Product name, SKU, barcode, unit of measure, selling mode,
+/// and unit price are snapshotted at checkout so later catalog edits never rewrite history. No stock
+/// movement, tax, discount, or line-level void exists in this scope.
 /// </summary>
 public sealed class SaleLine
 {
@@ -42,6 +44,7 @@ public sealed class SaleLine
     public string? SkuSnapshot { get; }
     public string? BarcodeSnapshot { get; }
     public UnitOfMeasure UnitOfMeasureSnapshot { get; }
+    public SellingMode SellingModeSnapshot { get; }
     public decimal UnitPrice { get; }
     public decimal Quantity { get; }
     public decimal LineTotal { get; }
@@ -56,6 +59,7 @@ public sealed class SaleLine
         string? skuSnapshot,
         string? barcodeSnapshot,
         UnitOfMeasure unitOfMeasureSnapshot,
+        SellingMode sellingModeSnapshot,
         decimal unitPrice,
         decimal quantity,
         decimal lineTotal)
@@ -69,6 +73,7 @@ public sealed class SaleLine
         SkuSnapshot = skuSnapshot;
         BarcodeSnapshot = barcodeSnapshot;
         UnitOfMeasureSnapshot = unitOfMeasureSnapshot;
+        SellingModeSnapshot = sellingModeSnapshot;
         UnitPrice = unitPrice;
         Quantity = quantity;
         LineTotal = lineTotal;
@@ -81,7 +86,15 @@ public sealed class SaleLine
         SaleLineDraft draft,
         SaleLineId? id = null)
     {
-        var quantity = NormalizeQuantity(draft.Quantity, draft.UnitOfMeasureSnapshot);
+        if (draft.SellingModeSnapshot == SellingMode.ByWeight)
+        {
+            SellingModes.EnsureCompatible(draft.SellingModeSnapshot, draft.UnitOfMeasureSnapshot);
+        }
+
+        var quantity = NormalizeQuantity(
+            draft.Quantity,
+            draft.UnitOfMeasureSnapshot,
+            draft.SellingModeSnapshot);
         var unitPrice = NormalizeUnitPrice(draft.UnitPrice);
 
         return new SaleLine(
@@ -94,6 +107,7 @@ public sealed class SaleLine
             NormalizeOptionalSnapshot(draft.SkuSnapshot, SkuSnapshotMaxLength),
             NormalizeOptionalSnapshot(draft.BarcodeSnapshot, BarcodeSnapshotMaxLength),
             draft.UnitOfMeasureSnapshot,
+            draft.SellingModeSnapshot,
             unitPrice,
             quantity,
             SaleMoney.RoundMoney(unitPrice * quantity));
@@ -111,7 +125,8 @@ public sealed class SaleLine
         UnitOfMeasure unitOfMeasureSnapshot,
         decimal unitPrice,
         decimal quantity,
-        decimal lineTotal) =>
+        decimal lineTotal,
+        SellingMode sellingModeSnapshot = SellingMode.PerItem) =>
         new(
             id,
             saleId,
@@ -122,16 +137,19 @@ public sealed class SaleLine
             skuSnapshot,
             barcodeSnapshot,
             unitOfMeasureSnapshot,
+            sellingModeSnapshot,
             unitPrice,
             quantity,
             lineTotal);
 
     /// <summary>
-    /// Validates a sold quantity against its unit of measure: countable units (Piece, Pack, Box,
-    /// Bottle, Can, Sachet) accept whole numbers only; measured units (Kilogram, Gram, Liter,
-    /// Milliliter, Meter) accept at most three decimal places. Zero and negative are always rejected.
+    /// Validates a sold quantity. SellingMode is authoritative for ByWeight (canonical kg, ≤3 dp).
+    /// PerItem keeps UOM rules: countable whole units; measured UOMs admit ≤3 dp (historical).
     /// </summary>
-    public static decimal NormalizeQuantity(decimal quantity, UnitOfMeasure unitOfMeasure)
+    public static decimal NormalizeQuantity(
+        decimal quantity,
+        UnitOfMeasure unitOfMeasure,
+        SellingMode sellingMode = SellingMode.PerItem)
     {
         if (quantity <= 0m)
         {
@@ -147,14 +165,16 @@ public sealed class SaleLine
                 $"Quantity must be at most {MaxQuantity}.");
         }
 
-        var maxDecimals = SaleMoney.MaxQuantityDecimals(unitOfMeasure);
+        var maxDecimals = SaleMoney.MaxQuantityDecimals(unitOfMeasure, sellingMode);
         if (!SaleMoney.HasAtMostDecimals(quantity, maxDecimals))
         {
             throw new DomainException(
                 DomainErrorCodes.InvalidSaleLineQuantity,
                 maxDecimals == 0
                     ? $"{unitOfMeasure} is sold in whole units, so the quantity cannot have decimal places."
-                    : $"{unitOfMeasure} quantities may have at most {maxDecimals} decimal places.");
+                    : sellingMode == SellingMode.ByWeight
+                        ? $"ByWeight quantities are kilograms and may have at most {maxDecimals} decimal places."
+                        : $"{unitOfMeasure} quantities may have at most {maxDecimals} decimal places.");
         }
 
         return quantity;

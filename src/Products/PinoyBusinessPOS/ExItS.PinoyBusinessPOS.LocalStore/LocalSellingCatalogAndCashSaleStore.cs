@@ -347,29 +347,15 @@ public sealed class LocalSellingCatalogAndCashSaleStore(
                     continue;
                 }
 
-                await using var cmd = connection.CreateCommand();
-                cmd.Transaction = tx;
-                cmd.CommandText =
-                    """
-                    UPDATE local_catalog_product
-                    SET on_hand_quantity = CAST(
-                            MAX(0, CAST(on_hand_quantity AS REAL) - $qty) AS TEXT),
-                        stock_status = CASE
-                            WHEN is_tracked = 0 THEN stock_status
-                            WHEN CAST(on_hand_quantity AS REAL) - $qty <= 0 THEN 'OutOfStock'
-                            WHEN CAST(on_hand_quantity AS REAL) - $qty <= 5 THEN 'LowStock'
-                            ELSE 'InStock'
-                        END,
-                        updated_utc = $updated
-                    WHERE product_id = $id
-                      AND organization_id = $org
-                      AND is_tracked = 1;
-                    """;
-                cmd.Parameters.AddWithValue("$qty", quantity.ToString(CultureInfo.InvariantCulture));
-                cmd.Parameters.AddWithValue("$updated", now);
-                cmd.Parameters.AddWithValue("$id", productId.ToString("D"));
-                cmd.Parameters.AddWithValue("$org", active.Identity.OrganizationId.ToString("D"));
-                await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+                await DeductTrackedOnHandAsync(
+                        connection,
+                        tx,
+                        active.Identity.OrganizationId,
+                        productId,
+                        quantity,
+                        now,
+                        ct)
+                    .ConfigureAwait(false);
             }
 
             await tx.CommitAsync(ct).ConfigureAwait(false);
@@ -463,28 +449,15 @@ public sealed class LocalSellingCatalogAndCashSaleStore(
 
             foreach (var line in command.Lines.Where(l => l.IsTracked && l.Quantity > 0m))
             {
-                await using var stockCmd = connection.CreateCommand();
-                stockCmd.Transaction = tx;
-                stockCmd.CommandText =
-                    """
-                    UPDATE local_catalog_product
-                    SET on_hand_quantity = CAST(
-                            MAX(0, CAST(on_hand_quantity AS REAL) - $qty) AS TEXT),
-                        stock_status = CASE
-                            WHEN CAST(on_hand_quantity AS REAL) - $qty <= 0 THEN 'OutOfStock'
-                            WHEN CAST(on_hand_quantity AS REAL) - $qty <= 5 THEN 'LowStock'
-                            ELSE 'InStock'
-                        END,
-                        updated_utc = $updated
-                    WHERE product_id = $id
-                      AND organization_id = $org
-                      AND is_tracked = 1;
-                    """;
-                stockCmd.Parameters.AddWithValue("$qty", line.Quantity.ToString(CultureInfo.InvariantCulture));
-                stockCmd.Parameters.AddWithValue("$updated", nowText);
-                stockCmd.Parameters.AddWithValue("$id", line.ProductId.ToString("D"));
-                stockCmd.Parameters.AddWithValue("$org", active.Identity.OrganizationId.ToString("D"));
-                await stockCmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+                await DeductTrackedOnHandAsync(
+                        connection,
+                        tx,
+                        active.Identity.OrganizationId,
+                        line.ProductId,
+                        line.Quantity,
+                        nowText,
+                        ct)
+                    .ConfigureAwait(false);
             }
 
             await using (var queueCmd = connection.CreateCommand())
@@ -826,6 +799,74 @@ public sealed class LocalSellingCatalogAndCashSaleStore(
 
     private static string FormatUtc(DateTimeOffset value) =>
         value.UtcDateTime.ToString("O", CultureInfo.InvariantCulture);
+
+    private static async Task DeductTrackedOnHandAsync(
+        SqliteConnection connection,
+        SqliteTransaction tx,
+        Guid organizationId,
+        Guid productId,
+        decimal quantity,
+        string updatedUtc,
+        CancellationToken ct)
+    {
+        await using var selectCmd = connection.CreateCommand();
+        selectCmd.Transaction = tx;
+        selectCmd.CommandText =
+            """
+            SELECT on_hand_quantity, is_tracked
+            FROM local_catalog_product
+            WHERE product_id = $id
+              AND organization_id = $org
+            LIMIT 1;
+            """;
+        selectCmd.Parameters.AddWithValue("$id", productId.ToString("D"));
+        selectCmd.Parameters.AddWithValue("$org", organizationId.ToString("D"));
+
+        string onHandText;
+        long isTrackedFlag;
+        await using (var reader = await selectCmd.ExecuteReaderAsync(ct).ConfigureAwait(false))
+        {
+            if (!await reader.ReadAsync(ct).ConfigureAwait(false))
+            {
+                return;
+            }
+
+            onHandText = reader.GetString(0);
+            isTrackedFlag = reader.GetInt64(1);
+        }
+
+        if (isTrackedFlag != 1)
+        {
+            return;
+        }
+
+        var onHand = ParseDecimal(onHandText);
+        var next = Math.Max(0m, onHand - quantity);
+        var stockStatus = next <= 0m
+            ? "OutOfStock"
+            : next <= 5m
+                ? "LowStock"
+                : "InStock";
+
+        await using var updateCmd = connection.CreateCommand();
+        updateCmd.Transaction = tx;
+        updateCmd.CommandText =
+            """
+            UPDATE local_catalog_product
+            SET on_hand_quantity = $onhand,
+                stock_status = $status,
+                updated_utc = $updated
+            WHERE product_id = $id
+              AND organization_id = $org
+              AND is_tracked = 1;
+            """;
+        updateCmd.Parameters.AddWithValue("$onhand", DecimalText(next));
+        updateCmd.Parameters.AddWithValue("$status", stockStatus);
+        updateCmd.Parameters.AddWithValue("$updated", updatedUtc);
+        updateCmd.Parameters.AddWithValue("$id", productId.ToString("D"));
+        updateCmd.Parameters.AddWithValue("$org", organizationId.ToString("D"));
+        await updateCmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+    }
 
     private static DateTimeOffset ParseUtc(string value) =>
         DateTimeOffset.Parse(value, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
