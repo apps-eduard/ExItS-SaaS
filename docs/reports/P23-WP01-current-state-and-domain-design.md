@@ -112,4 +112,4 @@ None (documentation-only WP). Prior unrelated suite results not claimed for P23.
 
 ## Commit hash
 
-Documentation commit for this WP: see `git log` message `docs(p23): add Phase 23 multi-BT entitlements and variable-quantity plan` (hash reported in the Cursor closing response).
+`3dcb66228736484a65b070bc51d1ad3dbf0006d9` — `docs(p23): add Phase 23 multi-BT entitlements and variable-quantity plan`
