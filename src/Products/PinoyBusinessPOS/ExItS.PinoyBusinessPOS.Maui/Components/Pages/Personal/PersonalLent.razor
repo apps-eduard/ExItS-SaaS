@@ -150,6 +150,8 @@
         await LoadAsync();
     }
 
+    private bool _remoteStarted;
+
     private async Task LoadAsync()
     {
         _loading = true;
@@ -182,12 +184,6 @@
 
             _userId = CurrentUser.Session?.UserId;
             await LocalStore.EnsurePersonalContextAsync();
-            if (await Connectivity.IsConnectedAsync())
-            {
-                await HydrateLentFromServerAsync();
-                await PersonalSync.TrySyncPendingAsync();
-            }
-
             var contacts = await LocalStore.ListContactsAsync();
             _contactNames = contacts.ToDictionary(c => c.Id, c => c.DisplayName);
             _contactOptions = contacts.Select(c => new SelectOption(c.Id.ToString("D"), c.DisplayName)).ToArray();
@@ -203,6 +199,35 @@
         finally
         {
             _loading = false;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || _remoteStarted || !_authenticated || _loadFailed)
+        {
+            return;
+        }
+
+        _remoteStarted = true;
+        if (!await Connectivity.IsConnectedAsync())
+        {
+            return;
+        }
+
+        try
+        {
+            await HydrateLentFromServerAsync();
+            var contacts = await LocalStore.ListContactsAsync();
+            _contactNames = contacts.ToDictionary(c => c.Id, c => c.DisplayName);
+            _contactOptions = contacts.Select(c => new SelectOption(c.Id.ToString("D"), c.DisplayName)).ToArray();
+            _items = await LocalStore.ListRelationshipsAsync(LocalPersonalDirection.Lent);
+            _pendingSync = await PersonalSync.GetPendingCountAsync();
+            await InvokeAsync(StateHasChanged);
+        }
+        catch
+        {
+            // Local list already shown.
         }
     }
 

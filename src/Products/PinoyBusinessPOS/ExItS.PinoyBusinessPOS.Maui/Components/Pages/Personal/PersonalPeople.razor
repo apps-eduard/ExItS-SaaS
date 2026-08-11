@@ -136,6 +136,8 @@
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
 
+    private bool _remoteStarted;
+
     private async Task LoadAsync()
     {
         _loading = true;
@@ -167,13 +169,6 @@
             }
 
             await LocalStore.EnsurePersonalContextAsync();
-
-            if (await Connectivity.IsConnectedAsync())
-            {
-                await TryHydrateFromServerAsync();
-                await PersonalSync.TrySyncPendingAsync();
-            }
-
             _contacts = await LocalStore.ListContactsAsync();
             _pendingSync = await PersonalSync.GetPendingCountAsync();
             _showCreate = _contacts.Count == 0;
@@ -186,6 +181,33 @@
         finally
         {
             _loading = false;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || _remoteStarted || !_authenticated || _loadFailed)
+        {
+            return;
+        }
+
+        _remoteStarted = true;
+        if (!await Connectivity.IsConnectedAsync())
+        {
+            return;
+        }
+
+        try
+        {
+            await TryHydrateFromServerAsync();
+            _contacts = await LocalStore.ListContactsAsync();
+            _pendingSync = await PersonalSync.GetPendingCountAsync();
+            _showCreate = _contacts.Count == 0;
+            await InvokeAsync(StateHasChanged);
+        }
+        catch
+        {
+            // Local list already shown.
         }
     }
 

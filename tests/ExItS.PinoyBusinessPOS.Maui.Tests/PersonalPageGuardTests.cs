@@ -50,6 +50,8 @@ public sealed class PersonalPageGuardTests
         Assert.Contains("Personal_DashboardSection", home, StringComparison.Ordinal);
         Assert.Contains("Personal_HomeTitle", home, StringComparison.Ordinal);
         Assert.Contains("pos-personal-home__header", home, StringComparison.Ordinal);
+        Assert.Contains("OnAfterRenderAsync", home, StringComparison.Ordinal);
+        Assert.DoesNotContain("await PersonalSync.TrySyncPendingAsync();", home, StringComparison.Ordinal);
         Assert.DoesNotContain("PageHeader", home, StringComparison.Ordinal);
 
         Assert.DoesNotContain("Personal_Nav_People", home, StringComparison.Ordinal);
@@ -221,6 +223,28 @@ public sealed class PersonalPageGuardTests
             "PlatformAccessClient.cs"));
         Assert.Contains("/api/v1/commercial/plans", client, StringComparison.Ordinal);
         Assert.Contains("GetCommercialPlansAsync", client, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Personal_primary_tabs_paint_local_before_server_hydrate()
+    {
+        var personal = PersonalPagesDirectory();
+        foreach (var page in new[] { "PersonalHome.razor", "PersonalPeople.razor", "PersonalLent.razor", "PersonalBorrowed.razor" })
+        {
+            var text = File.ReadAllText(Path.Combine(personal, page));
+            Assert.Contains("OnAfterRenderAsync", text, StringComparison.Ordinal);
+            Assert.Contains("_remoteStarted", text, StringComparison.Ordinal);
+        }
+
+        var auth = File.ReadAllText(Path.Combine(
+            FindRepoRoot(),
+            "src",
+            "Products",
+            "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.Application",
+            "Auth",
+            "AuthenticationService.cs"));
+        Assert.Contains("HasActivePersonalGrantFor", auth, StringComparison.Ordinal);
     }
 
     [Fact]

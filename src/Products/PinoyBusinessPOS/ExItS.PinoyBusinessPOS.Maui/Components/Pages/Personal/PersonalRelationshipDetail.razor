@@ -162,10 +162,6 @@
             }
 
             await LocalStore.EnsurePersonalContextAsync();
-            if (await Connectivity.IsConnectedAsync())
-            {
-                await PersonalSync.TrySyncPendingAsync();
-            }
 
             _relationship = await LocalStore.GetRelationshipAsync(RelationshipId);
             if (_relationship is null && await Connectivity.IsConnectedAsync())

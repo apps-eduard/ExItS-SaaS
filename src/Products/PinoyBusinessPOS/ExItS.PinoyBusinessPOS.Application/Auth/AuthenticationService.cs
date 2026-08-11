@@ -988,7 +988,13 @@ public sealed class AuthenticationService(
         if (string.Equals(session.AccountClass, "Personal", StringComparison.OrdinalIgnoreCase)
             && session.OrganizationId is null)
         {
-            await EstablishPersonalOfflineGrantAsync(session, ct).ConfigureAwait(false);
+            // Tab switches call this on every Personal page. Do not rewrite SecureStorage
+            // when a matching Personal grant is already unlocked in this process.
+            if (!HasActivePersonalGrantFor(session.UserId))
+            {
+                await EstablishPersonalOfflineGrantAsync(session, ct).ConfigureAwait(false);
+            }
+
             await OpenPersonalLocalContextAsync(session.UserId, ct).ConfigureAwait(false);
             return new AuthResult(true, AuthFailureReason.None, session);
         }
@@ -1826,6 +1832,11 @@ public sealed class AuthenticationService(
             await OpenLocalContextAsync(userId, orgId, ct).ConfigureAwait(false);
         }
     }
+
+    private bool HasActivePersonalGrantFor(Guid userId) =>
+        _offlineGrant is { IsUnlockedThisProcess: true, ActiveUnlockedGrant: { } grant }
+        && grant.IsPersonalScope
+        && grant.UserId == userId;
 
     private async Task EstablishPersonalOfflineGrantAsync(AuthSession session, CancellationToken ct)
     {
