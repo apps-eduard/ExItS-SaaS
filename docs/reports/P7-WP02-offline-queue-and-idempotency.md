@@ -74,6 +74,6 @@ Updated Phase 7, offline-sync design, portfolio, FILE-MANIFEST, README, security
 
 Exact next work package: **P7-WP03 — Customer and Credit Sync** (do not begin until authorized).
 
-## HealthCare freeze
+## Portfolio independence
 
-Root `HealthCare/` remains ignored, untracked, outside `ExItS.slnx`.
+Root `HealthCare/` must remain absent/untracked and outside `ExItS.slnx`.

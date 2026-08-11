@@ -52,6 +52,9 @@ Desktop.ini
 .DS_Store
 *.log
 
+# Portfolio safety — never nest an external HealthCare product tree
+/HealthCare/
+
 tools/node_modules/
 artifacts/
 

@@ -4,7 +4,7 @@ Phase marker: `P9-WP06-commercial-mvp-closeout`
 
 ## Status
 
-**Complete with documented risks. Phase 9 closed.** Reconciled P9-WP01 through P9-WP05 plus prior Platform and PinoyBusinessPOS MVP capabilities as one Commercial MVP release-candidate evidence package. **No new business functionality.** HealthCare remains frozen.
+**Complete with documented risks. Phase 9 closed.** Reconciled P9-WP01 through P9-WP05 plus prior Platform and PinoyBusinessPOS MVP capabilities as one Commercial MVP release-candidate evidence package. **No new business functionality.** No nested HealthCare product tree in this repository.
 
 Final environment decisions:
 
@@ -31,7 +31,7 @@ Mark Phase 9 **complete with documented risks** when:
 - Full `ExItS.slnx` Release tests pass
 - Android Release packaging remains buildable; R-109 retained if no device
 - Documentation matches implementation
-- HealthCare remains frozen
+- No nested HealthCare product tree in this repository
 - Git is clean; `main` matches `origin/main` after push
 
 **Do not claim Production or restricted external pilot readiness** while mandatory release blockers remain open.

@@ -17,7 +17,7 @@ $env:PATH = "$env:ANDROID_HOME\platform-tools;$env:ANDROID_HOME\emulator;$env:PA
 Use your AVD name (example below matches a common local AVD):
 
 ```powershell
-emulator -avd HealthCare_Pixel_API34
+emulator -avd ExItS_Pixel_API34
 ```
 
 Wait until the emulator UI is up.

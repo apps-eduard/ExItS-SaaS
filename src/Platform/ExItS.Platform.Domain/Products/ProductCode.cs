@@ -8,7 +8,6 @@ namespace ExItS.Platform.Domain.Products;
 /// </summary>
 public sealed partial class ProductCode : IEquatable<ProductCode>
 {
-    public const string HealthCare = "healthcare";
     public const string PinoyBusinessPos = "pinoy-business-pos";
 
     private static readonly Regex ValidPattern = CreateValidPattern();

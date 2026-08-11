@@ -22,7 +22,7 @@ Directory.Build.props
 Directory.Packages.props
 ExItS.slnx
 src/Platform/ExItS.Platform.Domain/ (+ Authorization; Audit; FeatureCode includes `store-suppliers-view` / `store-suppliers-manage`)
-src/Platform/ExItS.Platform.Application/ (+ Catalog; Admin portfolio queries; Authorization; Audit; Contracts; Projections; MigrationValidation; Integration/HealthCare)
+src/Platform/ExItS.Platform.Application/ (+ Catalog; Admin portfolio queries; Authorization; Audit; Contracts; Projections; MigrationValidation)
 src/Platform/ExItS.Platform.Infrastructure/ (PlatformDbContext, catalog + organization/subscription + payment + entitlement + role-assignment + audit persistence, Admin portfolio read store, migrations including `AddPlatformAuthorizationAndAudit`; `Health/PlatformDatabaseReadyHealthCheck`)
 src/Platform/ExItS.Platform.Api/ (`/` + `/health` + `/health/ready` + catalog + organizations + subscriptions + payments + entitlements + identity/access + authorization + audit + admin read APIs; `PlatformAuthz`; Production security pipeline; phase marker `P10-WP08-phase-10-closeout`)
 src/Platform/ExItS.Platform.Admin/ (Blazor Web App — Ant Design Blazor shell per ADR-015/P15-WP01; Pro as design reference; typed API client; portfolio + users/orgs + residual report pages; themes Light/Dark/System; AdminResources en/fil-PH; no Fluent/Tailwind)
@@ -62,7 +62,6 @@ docs/cursor/first-cursor-command.md
 docs/decisions/ADR-010-separate-ui-implementations-platform-and-pos.md
 docs/decisions/ADR-011-platform-authority-and-product-local-projections.md
 docs/decisions/ADR-012-versioned-platform-contracts-and-local-projections.md
-docs/decisions/ADR-013-build-new-platform-before-healthcare-reconnection.md
 docs/decisions/ADR-014-approve-exits-portfolio-architecture-for-controlled-implementation.md
 docs/decisions/README.md
 docs/engineering/architecture.md
@@ -96,7 +95,6 @@ docs/engineering/theme-system.md
 docs/engineering/ui-design-system.md
 docs/index.md
 docs/phases/README.md
-docs/phases/phase-00-healthcare-assessment.md
 docs/phases/phase-01-platform-boundary.md
 docs/phases/phase-02-platform-extraction.md
 docs/phases/phase-03-billing-entitlements.md
@@ -114,7 +112,6 @@ docs/product/subscriptions-and-billing.md
 docs/release-plan.md
 docs/reports/README.md
 docs/reports/P0-WP01-completion.md
-docs/reports/P0-WP01-healthcare-reuse-assessment.md
 docs/reports/P0-WP02-baseline-runtime-map.md
 docs/reports/P0-WP03-ui-reuse-review.md
 docs/reports/P0-WP04-assessment-closeout.md
@@ -125,7 +122,6 @@ docs/reports/P1-WP04-architecture-approval-closeout.md
 docs/reports/P2-WP01-extraction-baseline-and-safety.md
 docs/reports/P2-WP02-identity-organization-boundary.md
 docs/reports/P2-WP03-products-plans-entitlements.md
-docs/reports/P2-WP04-healthcare-contract-adaptation.md
 docs/reports/P2-WP05-regression-and-migration-validation.md
 docs/reports/P2-WP06-extraction-closeout.md
 docs/reports/P3-WP01-product-and-plan-catalog.md
@@ -171,7 +167,6 @@ docs/reports/P9-WP06-commercial-mvp-closeout.md
 docs/reports/P10-WP01-scope-ambiguity.md
 docs/reports/P10-WP01-suppliers.md
 docs/reports/P10-WP02-purchasing.md
-docs/reports/P10-WP02-healthcare-workspace-cleanup.md
 docs/reports/P10-WP03-advanced-inventory.md
 docs/reports/P10-WP04-cashier-shifts.md
 docs/reports/P10-WP05-returns-refunds.md
@@ -233,9 +228,6 @@ docs/reports/phase-00-final-assessment-and-recommendation.md
 docs/reports/phase-01-architecture-approval.md
 docs/reuse/extraction-rules.md
 docs/reuse/extraction-sequence.md
-docs/reuse/healthcare-reuse-assessment.md
-docs/reuse/healthcare-runtime-baseline.md
-docs/reuse/healthcare-ui-reuse-assessment.md
 docs/reuse/reuse-classification-matrix.md
 docs/risks-and-issues.md
 

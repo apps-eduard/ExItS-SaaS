@@ -308,7 +308,7 @@ public sealed class Phase3CommercialCloseoutTests(PostgreSqlFixture fixture) : I
         Assert.Equal(HttpStatusCode.NotFound,
             (await _client.GetAsync("/api/v1/platform/entitlements/deliver")).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound,
-            (await _client.PostAsync("/api/v1/healthcare/entitlements", null)).StatusCode);
+            (await _client.PostAsync("/api/v1/other-product/entitlements", null)).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound,
             (await _client.PostAsync("/api/v1/pos/entitlements", null)).StatusCode);
     }

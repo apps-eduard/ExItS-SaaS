@@ -4,7 +4,7 @@
 
 | Phase | Name | Status | Link |
 |---:|---|---|---|
-| 0 | Existing HealthCare Assessment | **Complete with documented risks** | [Open](phase-00-healthcare-assessment.md) |
+| 0 | Existing HealthCare Assessment | **Complete with documented risks** | [Open](../reports/phase-00-final-assessment-and-recommendation.md) |
 | 1 | Platform Boundary and Architecture | **Complete with documented risks** | [Open](phase-01-platform-boundary.md) |
 | 2 | Platform Extraction and HealthCare Reconnection | **Complete with documented risks** | [Open](phase-02-platform-extraction.md) |
 | 3 | Portfolio Billing, Plans and Entitlements | **Complete with documented risks** | [Open](phase-03-billing-entitlements.md) |

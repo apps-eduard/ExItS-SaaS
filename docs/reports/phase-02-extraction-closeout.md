@@ -16,7 +16,7 @@
 
 **Close Phase 2 with documented non-blocking risks.**
 
-P2-WP01 through P2-WP05 are accepted. Root Platform foundation, identity/organization boundary, commercial/entitlement domain, HealthCare contract boundaries, and migration dry-run validation are implemented and tested. HealthCare remains frozen. No authentication, persistence, real HealthCare integration, migration, cutover, Platform Admin, or PinoyBusinessPOS was delivered — and must not be assumed complete.
+P2-WP01 through P2-WP05 are accepted. Root Platform foundation, identity/organization boundary, commercial/entitlement domain, HealthCare contract boundaries, and migration dry-run validation are implemented and tested. No nested HealthCare product tree in this repository. No authentication, persistence, real HealthCare integration, migration, cutover, Platform Admin, or PinoyBusinessPOS was delivered — and must not be assumed complete.
 
 Deferred items (auth, EF/PostgreSQL, HC Integration/E2E, restore rehearsal, calendar EOM rule, stale entitlement windows) belong to later phases and have safe defaults for continuing Platform work.
 

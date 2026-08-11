@@ -102,9 +102,9 @@ Runtime: API phase marker `P4-WP04-audit-authorization-closeout`; `/authorizatio
 - Product-local roles; HealthCare/POS authorization
 - Phase 5 POS MAUI
 
-### HealthCare freeze
+### Portfolio independence
 
-`/HealthCare/` ignored, untracked, outside `ExItS.slnx`.
+Root `HealthCare/` must remain absent/untracked and outside `ExItS.slnx`.
 
 ### Exact next work package
 

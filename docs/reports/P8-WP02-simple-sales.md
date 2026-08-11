@@ -71,9 +71,9 @@ Interactive device validation **not** claimed (`adb` unavailable) — **R-109** 
 | Manual GCash | No independent verification (by design) |
 | No stock | Sales do not adjust inventory (deferred P8-WP04) |
 
-## HealthCare freeze
+## Portfolio independence
 
-Root `HealthCare/` remains ignored, untracked, outside `ExItS.slnx`.
+Root `HealthCare/` must remain absent/untracked and outside `ExItS.slnx`.
 
 ## Documentation and Git
 

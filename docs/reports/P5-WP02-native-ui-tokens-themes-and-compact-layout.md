@@ -82,7 +82,7 @@ Release `net10.0-android` build succeeded with `AndroidSdkDirectory` set. `adb d
 
 ## 12. HealthCare freeze
 
-`/HealthCare/` ignored, untracked, outside `ExItS.slnx`.
+Root `HealthCare/` must remain absent/untracked and outside `ExItS.slnx`.
 
 ## 13. Exact next work package
 

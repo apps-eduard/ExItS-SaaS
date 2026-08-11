@@ -104,7 +104,7 @@ Android Release APK path unchanged under MAUI `bin/Release/net10.0-android/`. No
 - Not production-secure
 - Effective business date uses server UTC calendar day only (no org timezone)
 
-## HealthCare freeze
+## Portfolio independence
 
 `git ls-files -- HealthCare/` empty; ignored via `.gitignore`; not in `ExItS.slnx`.
 

@@ -22,7 +22,7 @@ Mark Phase 7 **complete with documented risks** when:
 - Full `ExItS.slnx` Release tests pass (619 / 0 / 0)
 - Android Release APK builds
 - Documentation matches implementation
-- HealthCare remains frozen
+- No nested HealthCare product tree in this repository
 - Git is clean; `main` matches `origin/main` after push
 
 **Do not claim production readiness** while documented blockers remain open.
@@ -222,9 +222,9 @@ Updated Phase 7, offline-sync design, portfolio, FILE-MANIFEST, README, security
 | Docs hash-record commit | `1d4c6eb9fabd0b8a3014f131529a83659df8fe6f` |
 | Final working tree | clean after push |
 
-## HealthCare freeze
+## Portfolio independence
 
-Root `HealthCare/` remains ignored, untracked, outside `ExItS.slnx`.
+Root `HealthCare/` must remain absent/untracked and outside `ExItS.slnx`.
 
 ## Exact next authorized phase / work package
 

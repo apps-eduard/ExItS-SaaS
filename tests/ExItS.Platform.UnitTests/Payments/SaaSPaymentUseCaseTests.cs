@@ -351,8 +351,8 @@ public sealed class SaaSPaymentUseCaseTests
         var productCode = await fx.CreateProductAsync();
         var subscription = await fx.StartTrialAsync(org.Id, productCode);
 
-        await new CreateProduct(fx.Products, fx.UnitOfWork, fx.Clock).ExecuteAsync("healthcare", "HealthCare");
-        var otherProductCode = ProductCode.Create("healthcare");
+        await new CreateProduct(fx.Products, fx.UnitOfWork, fx.Clock).ExecuteAsync("other-product", "Other Product");
+        var otherProductCode = ProductCode.Create("other-product");
 
         var payment = SaaSPayment.CreateManual(
             org.Id, otherProductCode, 999m, CurrencyCode.Create(CurrencyCode.PHP), SaaSPaymentMethod.GCash, "REF-PRODUCT-MISMATCH", T0, T0);

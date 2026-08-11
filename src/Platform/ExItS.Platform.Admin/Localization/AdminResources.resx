@@ -592,11 +592,11 @@
   <data name="OrgMembers_ProductAccessReadOnly" xml:space="preserve"><value>Product-access assignments are shown read-only here. Grant/revoke remains on the product-access surface. Access never assigns product-local roles.</value></data>
   <data name="OrgUsers_Title" xml:space="preserve"><value>Organization users</value></data>
   <data name="OrgUsers_Description" xml:space="preserve"><value>Select an organization to manage members and invitations.</value></data>
-  <data name="OrgUsers_Hint" xml:space="preserve"><value>Platform organization memberships only. Product-local roles (Cashier, Doctor, etc.) are never assigned here.</value></data>
+  <data name="OrgUsers_Hint" xml:space="preserve"><value>Platform organization memberships only. Product-local roles (Cashier, Store Manager, etc.) are never assigned here.</value></data>
 
   <data name="OrgProductAccess_Title" xml:space="preserve"><value>Product access</value></data>
   <data name="OrgProductAccess_Description" xml:space="preserve"><value>Commercial product-access assignments.</value></data>
-  <data name="OrgProductAccess_Warning" xml:space="preserve"><value>Product access grants commercial entry eligibility only. It does not assign Doctor, Nurse, Clinic Admin, Cashier, Store Manager, POS Administrator, Patient, or any other product-local role. Effective access also requires active user, membership, product, Trialing/Active subscription, and a current entitlement snapshot.</value></data>
+  <data name="OrgProductAccess_Warning" xml:space="preserve"><value>Product access grants commercial entry eligibility only. It does not assign Cashier, Store Manager, POS Administrator, or any other product-local role. Effective access also requires active user, membership, product, Trialing/Active subscription, and a current entitlement snapshot.</value></data>
   <data name="OrgProductAccess_Loading" xml:space="preserve"><value>Loading organization…</value></data>
   <data name="OrgProductAccess_GrantSection" xml:space="preserve"><value>Grant product access</value></data>
   <data name="OrgProductAccess_GrantUserIdPlaceholder" xml:space="preserve"><value>GUID of active member</value></data>
@@ -689,7 +689,7 @@
   <data name="Users_ToastDeactivated" xml:space="preserve"><value>Account deactivated.</value></data>
   <data name="Users_ToastMovedToSuspended" xml:space="preserve"><value>Account moved to Suspended.</value></data>
   <data name="Users_OrgMemberships" xml:space="preserve"><value>Organization memberships</value></data>
-  <data name="Users_OrgMembershipsHint" xml:space="preserve"><value>Platform organization roles only — not Doctor, Nurse, Cashier, or other product-local roles.</value></data>
+  <data name="Users_OrgMembershipsHint" xml:space="preserve"><value>Platform organization roles only — not Cashier, Store Manager, or other product-local roles.</value></data>
   <data name="Users_LoadingMemberships" xml:space="preserve"><value>Loading memberships…</value></data>
   <data name="Users_MembershipsUnavailable" xml:space="preserve"><value>Memberships unavailable</value></data>
   <data name="Users_MembershipsEmpty" xml:space="preserve"><value>This user has no organization memberships.</value></data>
@@ -701,7 +701,7 @@
 
   <data name="Subscriptions_Title" xml:space="preserve"><value>Subscriptions</value></data>
   <data name="Subscriptions_Description" xml:space="preserve"><value>Subscription administration. Lifecycle mutations call Platform APIs.</value></data>
-  <data name="Subscriptions_Warning" xml:space="preserve"><value>Subscription changes affect commercial eligibility only. They do not assign product-local roles or deliver entitlements to HealthCare or POS.</value></data>
+  <data name="Subscriptions_Warning" xml:space="preserve"><value>Subscription changes affect commercial eligibility only. They do not assign product-local roles.</value></data>
   <data name="Subscriptions_StartTrial" xml:space="preserve"><value>Start organization trial</value></data>
   <data name="Subscriptions_StartTrialHint" xml:space="preserve"><value>Trial duration comes from the selected trial definition. Repeat-trial policy is provisional — review before starting another trial for the same organization and product.</value></data>
   <data name="Subscriptions_StartTrialFailed" xml:space="preserve"><value>Could not start trial</value></data>
@@ -728,7 +728,7 @@
   <data name="Payments_Empty" xml:space="preserve"><value>No payments match the current filters.</value></data>
   <data name="Payments_DetailTitle" xml:space="preserve"><value>Payment detail</value></data>
   <data name="Payments_DetailDescription" xml:space="preserve"><value>Manual SaaS payment lifecycle.</value></data>
-  <data name="Payments_DetailWarning" xml:space="preserve"><value>Manual confirmation is not automatic provider verification. Confirmed payments may activate an eligible subscription atomically. Confirmed payments cannot be reused. No gateway, card, invoice, POS, or HealthCare payment behavior.</value></data>
+  <data name="Payments_DetailWarning" xml:space="preserve"><value>Manual confirmation is not automatic provider verification. Confirmed payments may activate an eligible subscription atomically. Confirmed payments cannot be reused. No gateway, card, or invoice payment behavior.</value></data>
   <data name="Payments_DetailLoading" xml:space="preserve"><value>Loading payment…</value></data>
   <data name="Payments_AriaCreate" xml:space="preserve"><value>Create manual SaaS payment</value></data>
   <data name="Payments_PaymentActions" xml:space="preserve"><value>Payment actions</value></data>
@@ -740,7 +740,7 @@
   <data name="Entitlements_Empty" xml:space="preserve"><value>No entitlement snapshots exist yet.</value></data>
   <data name="Entitlements_DetailTitle" xml:space="preserve"><value>Entitlement snapshot</value></data>
   <data name="Entitlements_DetailDescription" xml:space="preserve"><value>Platform-authoritative snapshot state. Not proof of delivery to a product.</value></data>
-  <data name="Entitlements_DetailWarning" xml:space="preserve"><value>This snapshot is authoritative Platform state only. It is not evidence that HealthCare or POS received or applied entitlements. Provisional refresh policy remains open where applicable.</value></data>
+  <data name="Entitlements_DetailWarning" xml:space="preserve"><value>This snapshot is authoritative Platform state only. It is not evidence that a product application received or applied entitlements. Provisional refresh policy remains open where applicable.</value></data>
   <data name="Entitlements_DetailLoading" xml:space="preserve"><value>Loading snapshot…</value></data>
   <data name="Entitlements_HistoryTitle" xml:space="preserve"><value>Entitlement history</value></data>
   <data name="Entitlements_HistoryDescription" xml:space="preserve"><value>Immutable snapshot versions for an organization/product pair.</value></data>

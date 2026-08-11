@@ -80,9 +80,9 @@ Interactive device validation **not** claimed (`adb` unavailable) — **R-109** 
 | Manual linkage policy | Standalone reverse of sale-linked credits blocked by design |
 | No stock | Sales still do not adjust inventory (deferred P8-WP04) |
 
-## HealthCare freeze
+## Portfolio independence
 
-Root `HealthCare/` remains ignored, untracked, outside `ExItS.slnx`.
+Root `HealthCare/` must remain absent/untracked and outside `ExItS.slnx`.
 
 ## Documentation and Git
 

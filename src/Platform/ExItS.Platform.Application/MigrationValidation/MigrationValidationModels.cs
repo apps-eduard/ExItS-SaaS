@@ -467,7 +467,7 @@ public sealed class MigrationSimulationInput
     }
 }
 
-/// <summary>Supported contract major for HealthCare migration dry-run validation.</summary>
+/// <summary>Supported contract major for migration dry-run validation.</summary>
 public readonly struct ContractVersionSupported : IEquatable<ContractVersionSupported>
 {
     public int Major { get; }

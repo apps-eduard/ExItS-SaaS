@@ -15,7 +15,6 @@ The dashboard links to the latest accepted report.
 | Report | Work package | Status |
 |---|---|---|
 | [P0-WP01-completion.md](P0-WP01-completion.md) | Repository and Reuse Inventory | Complete |
-| [P0-WP01-healthcare-reuse-assessment.md](P0-WP01-healthcare-reuse-assessment.md) | Alias / snapshot for P0-WP01 | Complete |
 | [P0-WP02-baseline-runtime-map.md](P0-WP02-baseline-runtime-map.md) | Baseline Build, Tests, Runtime and Repository Safety Map | Complete |
 | [P0-WP03-ui-reuse-review.md](P0-WP03-ui-reuse-review.md) | Ant Design and UI Reuse Review | Complete |
 | [P0-WP04-assessment-closeout.md](P0-WP04-assessment-closeout.md) | Assessment Closeout and Recommendation | Complete (Phase 0 closed with documented risks) |
@@ -28,7 +27,6 @@ The dashboard links to the latest accepted report.
 | [P2-WP01-extraction-baseline-and-safety.md](P2-WP01-extraction-baseline-and-safety.md) | Extraction Baseline Tag and Safety Checks | Complete |
 | [P2-WP02-identity-organization-boundary.md](P2-WP02-identity-organization-boundary.md) | Shared Identity and Organization Boundary | Complete |
 | [P2-WP03-products-plans-entitlements.md](P2-WP03-products-plans-entitlements.md) | Products, Plans and Entitlement Foundation | Complete |
-| [P2-WP04-healthcare-contract-adaptation.md](P2-WP04-healthcare-contract-adaptation.md) | HealthCare Contract Adaptation | Complete |
 | [P2-WP05-regression-and-migration-validation.md](P2-WP05-regression-and-migration-validation.md) | Regression and Migration Validation | Complete |
 | [P2-WP06-extraction-closeout.md](P2-WP06-extraction-closeout.md) | Extraction Closeout | Ready for Review |
 | [phase-02-extraction-closeout.md](phase-02-extraction-closeout.md) | Phase 2 Extraction Closeout | Complete |
@@ -73,7 +71,6 @@ The dashboard links to the latest accepted report.
 | [P10-WP01-scope-ambiguity.md](P10-WP01-scope-ambiguity.md) | P10-WP01 scope ambiguity | Resolved — Option A authorized |
 | [P10-WP01-suppliers.md](P10-WP01-suppliers.md) | P10-WP01 Suppliers | Complete (Option A — master data only) |
 | [P10-WP02-purchasing.md](P10-WP02-purchasing.md) | P10-WP02 Purchasing | Complete |
-| [P10-WP02-healthcare-workspace-cleanup.md](P10-WP02-healthcare-workspace-cleanup.md) | P10-WP02 Part A workspace cleanup | Complete |
 | [P11-WP01-web-ui-audit-and-component-inventory.md](P11-WP01-web-ui-audit-and-component-inventory.md) | P11-WP01 Web UI Audit | Complete |
 | [P11-WP02-global-web-layout-and-navigation.md](P11-WP02-global-web-layout-and-navigation.md) | P11-WP02 Global Web Layout and Navigation | Complete |
 | [P11-WP03-shared-forms-validation-and-dialogs.md](P11-WP03-shared-forms-validation-and-dialogs.md) | P11-WP03 Shared Forms, Validation, and Dialogs | Complete |

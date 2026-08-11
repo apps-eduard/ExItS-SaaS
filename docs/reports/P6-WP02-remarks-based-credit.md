@@ -22,7 +22,7 @@ Phase marker: `P6-WP02-remarks-based-credit`
 
 ## Explicit exclusions
 
-Repayments, payment allocation, full payment ledger, due dates, statements, receipts, interest, penalties, credit limits, sales, inventory, gateways, QR/cards, offline sync. No Platform/HealthCare tables or cross-database FKs. HealthCare remains frozen.
+Repayments, payment allocation, full payment ledger, due dates, statements, receipts, interest, penalties, credit limits, sales, inventory, gateways, QR/cards, offline sync. No Platform/HealthCare tables or cross-database FKs. No nested HealthCare product tree in this repository.
 
 ## Persistence and migration
 
@@ -78,7 +78,7 @@ Android Release APK: `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/
 - Development/Testing Platform identity remains the only auth path for MAUI
 - Not production-secure
 
-## HealthCare freeze
+## Portfolio independence
 
 `git ls-files -- HealthCare/` empty; `git check-ignore -v HealthCare/` → `.gitignore:/HealthCare/`; HealthCare not in `ExItS.slnx`.
 

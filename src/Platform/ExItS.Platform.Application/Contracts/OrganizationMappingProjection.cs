@@ -12,7 +12,7 @@ public enum OrganizationMappingStatus
 }
 
 /// <summary>
-/// Explicit reversible mapping: Platform Organization ↔ opaque HealthCare operational org/clinic ID.
+/// Explicit reversible mapping: Platform Organization ↔ opaque product-local operational organization ID.
 /// Supports one Platform Organization → many external IDs. No PHI.
 /// </summary>
 public sealed class OrganizationMappingProjection
@@ -70,13 +70,6 @@ public sealed class OrganizationMappingProjection
         if (!Enum.IsDefined(status))
         {
             throw new ContractException(ContractErrorCodes.InvalidOrganizationMapping, "Mapping status is invalid.");
-        }
-
-        if (!string.Equals(productCode.Value, ProductCode.HealthCare, StringComparison.Ordinal))
-        {
-            throw new ContractException(
-                ContractErrorCodes.ProductCodeMismatch,
-                "Organization mapping for HealthCare adaptation requires healthcare ProductCode.");
         }
 
         if (operationalNote is { Length: > 256 })

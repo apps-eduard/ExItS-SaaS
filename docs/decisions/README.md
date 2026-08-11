@@ -16,7 +16,7 @@
 | ADR-010 | Separate UI stacks; Admin Ant Design (ADR-015); POS native | **Accepted (amended P15)** — [Open](ADR-010-separate-ui-implementations-platform-and-pos.md) |
 | ADR-011 | Platform authority and product-local projections | **Accepted** — [Open](ADR-011-platform-authority-and-product-local-projections.md) |
 | ADR-012 | Versioned Platform contracts and local product projections | **Accepted** — [Open](ADR-012-versioned-platform-contracts-and-local-projections.md) |
-| ADR-013 | Build new Platform foundation before HealthCare reconnection | **Accepted** — [Open](ADR-013-build-new-platform-before-healthcare-reconnection.md) |
+| ADR-013 | Build new Platform foundation before HealthCare reconnection | **Accepted (historical)** — ADR file removed; portfolio is Platform + PinoyBusinessPOS only |
 | ADR-014 | Approve ExItS portfolio architecture for controlled implementation | **Accepted** — [Open](ADR-014-approve-exits-portfolio-architecture-for-controlled-implementation.md) |
 | ADR-015 | Ant Design Blazor for Platform Admin (Pro as design reference) | **Accepted** — [Open](ADR-015-antdesign-blazor-platform-admin.md) |
 | ADR-016 | Account profile isolation (Platform / Personal / Organization) | **Accepted** — [Open](ADR-016-account-profile-isolation.md) |

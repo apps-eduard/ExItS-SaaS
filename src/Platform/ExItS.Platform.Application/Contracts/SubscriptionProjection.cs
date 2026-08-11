@@ -6,7 +6,7 @@ using ExItS.Platform.Domain.Subscriptions;
 
 namespace ExItS.Platform.Application.Contracts;
 
-/// <summary>HealthCare-facing commercial subscription projection. No payment secrets.</summary>
+/// <summary>Product-facing commercial subscription projection. No payment secrets.</summary>
 public sealed class SubscriptionProjection
 {
     public PlatformOrganizationId PlatformOrganizationId { get; }

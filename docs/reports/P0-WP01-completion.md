@@ -34,13 +34,13 @@ Completed a read-only inventory of the copied HealthCare MVP and documented reus
 
 Documentation only (expected):
 
-- `docs/reuse/healthcare-reuse-assessment.md`
+- `docs/reuse/healthcare-reuse-assessment.md` *(later removed)*
 - `docs/reuse/reuse-classification-matrix.md`
 - `docs/portfolio-progress.md`
-- `docs/phases/phase-00-healthcare-assessment.md`
+- `docs/phases/phase-00-healthcare-assessment.md` *(later removed; see [phase-00 final assessment](phase-00-final-assessment-and-recommendation.md))*
 - `docs/risks-and-issues.md`
 - `docs/reports/P0-WP01-completion.md`
-- `docs/reports/P0-WP01-healthcare-reuse-assessment.md` (pointer)
+- `docs/reports/P0-WP01-healthcare-reuse-assessment.md` *(later removed; see this completion report)*
 - `FILE-MANIFEST.md`
 
 ## 5. Architecture/reuse impact

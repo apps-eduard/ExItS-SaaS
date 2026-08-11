@@ -73,9 +73,9 @@ Validated against MVP-scale integration data (single-org sales/expense fixtures)
 | Category labels | Sales-by-category uses current catalog category assignment for labels; line money/qty remain immutable snapshots |
 | Export deferred | No file generation |
 
-## HealthCare freeze
+## Portfolio independence
 
-Root `HealthCare/` remains ignored, untracked, outside `ExItS.slnx`.
+Root `HealthCare/` must remain absent/untracked and outside `ExItS.slnx`.
 
 ## Documentation and Git
 

@@ -33,7 +33,7 @@ public sealed class AuditRecordTests
     public void Create_normalizes_optional_organization_product_reason_and_summary()
     {
         var orgId = PlatformOrganizationId.New();
-        var productCode = ProductCode.Create(ProductCode.HealthCare);
+        var productCode = ProductCode.Create("other-product");
 
         var record = AuditRecord.Create(
             T0,
@@ -207,7 +207,7 @@ public sealed class AuditRecordTests
     {
         var id = AuditRecordId.New();
         var orgId = PlatformOrganizationId.New();
-        var productCode = ProductCode.Create(ProductCode.HealthCare);
+        var productCode = ProductCode.Create("other-product");
 
         var record = AuditRecord.Rehydrate(
             id,

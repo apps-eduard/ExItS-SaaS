@@ -2,7 +2,7 @@
 
 ## 1. Status
 
-**Complete.** Platform Admin subscription lifecycle, trial start, and manual SaaS payment workflows delivered by reusing Phase 3 domain/application/API behavior. No new persistence migration. HealthCare remains frozen. Authentication, payment gateways, invoices, entitlement delivery, and product-local roles remain out of scope.
+**Complete.** Platform Admin subscription lifecycle, trial start, and manual SaaS payment workflows delivered by reusing Phase 3 domain/application/API behavior. No new persistence migration. No nested HealthCare product tree in this repository. Authentication, payment gateways, invoices, entitlement delivery, and product-local roles remain out of scope.
 
 | Field | Value |
 |---|---|

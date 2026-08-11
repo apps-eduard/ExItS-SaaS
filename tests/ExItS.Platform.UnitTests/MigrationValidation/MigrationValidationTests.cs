@@ -8,7 +8,8 @@ namespace ExItS.Platform.UnitTests.MigrationValidation;
 public sealed class MigrationValidationTests
 {
     private static readonly DateTimeOffset T0 = new(2026, 7, 29, 12, 0, 0, TimeSpan.Zero);
-    private static readonly ProductCode HealthCare = ProductCode.Create(ProductCode.HealthCare);
+    private const string OtherProductCode = "other-product";
+    private static readonly ProductCode OtherProduct = ProductCode.Create(OtherProductCode);
 
     private static Guid BatchId => Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
     private static Guid Correlation => Guid.Parse("11111111-2222-3333-4444-555555555555");
@@ -185,7 +186,7 @@ public sealed class MigrationValidationTests
     {
         var local = new DateTimeOffset(2026, 7, 29, 12, 0, 0, TimeSpan.FromHours(3));
         var badTime = new MigrationSimulationInput(
-            HealthCare,
+            OtherProduct,
             ContractVersionSupported.V1,
             local,
             Array.Empty<IdentityMappingCandidate>(),
@@ -193,19 +194,20 @@ public sealed class MigrationValidationTests
             Array.Empty<MembershipMappingCandidate>());
         Assert.Equal(CompatibilityStatus.Failed, new MigrationPreflightValidator().Validate(badTime).OverallStatus);
 
-        var wrongProduct = new MigrationSimulationInput(
+        // Preflight is product-agnostic: any valid ProductCode is accepted (no ProductCodeMismatch).
+        var posProduct = new MigrationSimulationInput(
             ProductCode.Create(ProductCode.PinoyBusinessPos),
             ContractVersionSupported.V1,
             T0,
             Array.Empty<IdentityMappingCandidate>(),
             Array.Empty<OrganizationMappingCandidate>(),
             Array.Empty<MembershipMappingCandidate>());
-        Assert.Contains(
-            new MigrationPreflightValidator().Validate(wrongProduct).Findings,
+        Assert.DoesNotContain(
+            new MigrationPreflightValidator().Validate(posProduct).Findings,
             f => f.Code == MigrationFindingCodes.ProductCodeMismatch);
 
         var unsupported = new MigrationSimulationInput(
-            HealthCare,
+            OtherProduct,
             new ContractVersionSupported(2),
             T0,
             Array.Empty<IdentityMappingCandidate>(),
@@ -216,7 +218,7 @@ public sealed class MigrationValidationTests
             f => f.Code == MigrationFindingCodes.UnsupportedContractVersion);
 
         var sensitive = new MigrationSimulationInput(
-            HealthCare,
+            OtherProduct,
             ContractVersionSupported.V1,
             T0,
             Array.Empty<IdentityMappingCandidate>(),
@@ -228,7 +230,7 @@ public sealed class MigrationValidationTests
             f => f.Code == MigrationFindingCodes.SensitiveFieldDetected);
 
         var features = new MigrationSimulationInput(
-            HealthCare,
+            OtherProduct,
             ContractVersionSupported.V1,
             T0,
             Array.Empty<IdentityMappingCandidate>(),
@@ -346,11 +348,11 @@ public sealed class MigrationValidationTests
         var batch = new MigrationBatch(
             BatchId,
             MigrationType.IdentityMapping,
-            HealthCare,
+            OtherProduct,
             T0,
             T0,
             Correlation,
-            "healthcare-opaque-export",
+            "product-opaque-export",
             "exits-platform",
             MigrationBatchStatus.Validated,
             2,
@@ -363,7 +365,7 @@ public sealed class MigrationValidationTests
             new MigrationBatch(
                 BatchId,
                 MigrationType.IdentityMapping,
-                HealthCare,
+                OtherProduct,
                 new DateTimeOffset(2026, 7, 29, 12, 0, 0, TimeSpan.FromHours(2)),
                 T0,
                 Correlation,
@@ -410,7 +412,7 @@ public sealed class MigrationValidationTests
         IReadOnlyList<OrganizationMappingCandidate>? orgs = null,
         IReadOnlyList<MembershipMappingCandidate>? memberships = null) =>
         new(
-            HealthCare,
+            OtherProduct,
             ContractVersionSupported.V1,
             T0,
             identities ?? Array.Empty<IdentityMappingCandidate>(),

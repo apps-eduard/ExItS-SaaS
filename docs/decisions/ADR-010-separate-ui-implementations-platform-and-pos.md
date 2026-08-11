@@ -1,6 +1,6 @@
 # ADR-010 — Separate UI Implementations for HealthCare vs Platform Admin and POS
 
-[Decisions](README.md) | [UI design system](../engineering/ui-design-system.md) | [UI reuse assessment](../reuse/healthcare-ui-reuse-assessment.md)
+[Decisions](README.md) | [UI design system](../engineering/ui-design-system.md) | [ADR-015](ADR-015-antdesign-blazor-platform-admin.md)
 
 | Field | Value |
 |---|---|

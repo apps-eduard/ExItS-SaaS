@@ -1,6 +1,6 @@
 # Extraction Rollback Plan
 
-[Extraction sequence](../reuse/extraction-sequence.md) | [Risk matrix](platform-extraction-risk-matrix.md) | [Gate matrix](implementation-gate-matrix.md) | [ADR-013](../decisions/ADR-013-build-new-platform-before-healthcare-reconnection.md)
+[Extraction sequence](../reuse/extraction-sequence.md) | [Risk matrix](platform-extraction-risk-matrix.md) | [Gate matrix](implementation-gate-matrix.md) | [ADR-014](../decisions/ADR-014-approve-exits-portfolio-architecture-for-controlled-implementation.md)
 
 **Work package:** P1-WP03  
 **Status:** Planning only — no cutover authorized

@@ -117,9 +117,9 @@ Interactive device/emulator validation **not** claimed (`adb` unavailable) — *
 | Online-only catalog | By design for P8-WP01; offline catalog deferred |
 | R-022 / R-129 / full-DB encryption | Unchanged from Phase 7; not catalog-specific |
 
-## HealthCare freeze
+## Portfolio independence
 
-Root `HealthCare/` remains ignored, untracked, outside `ExItS.slnx`.
+Root `HealthCare/` must remain absent/untracked and outside `ExItS.slnx`.
 
 ## Documentation and Git
 

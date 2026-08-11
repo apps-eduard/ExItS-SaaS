@@ -86,7 +86,7 @@ Reused: `ProductCode` (P2-WP02).
 | `dotnet build ExItS.slnx -c Release` | 0 (0 warnings, 0 errors) |
 | `dotnet test ExItS.slnx -c Release --no-build` | 0 |
 
-## 9. HealthCare freeze
+## 9. Portfolio independence
 
 `git ls-files HealthCare` empty; ignored; not in solution; unchanged.
 

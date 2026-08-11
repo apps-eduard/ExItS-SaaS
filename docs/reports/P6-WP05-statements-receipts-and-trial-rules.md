@@ -109,7 +109,7 @@ Baseline preserved and exceeded (prior 521). Focused coverage: `UtangCapabilityP
 - Development/Testing Platform identity remains the only MAUI auth path
 - Not production-secure (R-091 remains open)
 
-## HealthCare freeze
+## Portfolio independence
 
 `git ls-files -- HealthCare/` empty; ignored via `.gitignore`; not in `ExItS.slnx`.
 

@@ -35,7 +35,7 @@ Added:
 - `docs/engineering/extraction-rollback-plan.md`
 - `docs/engineering/platform-extraction-risk-matrix.md`
 - `docs/engineering/implementation-gate-matrix.md`
-- `docs/decisions/ADR-013-build-new-platform-before-healthcare-reconnection.md`
+- `docs/decisions/ADR-013-build-new-platform-before-healthcare-reconnection.md` *(later removed; historical ADR-013 retained in [decisions README](../decisions/README.md))*
 - `docs/reports/P1-WP03-extraction-sequence-and-rollback.md`
 
 Modified:

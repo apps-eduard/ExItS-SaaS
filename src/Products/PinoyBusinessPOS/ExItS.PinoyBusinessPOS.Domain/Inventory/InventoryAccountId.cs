@@ -2,7 +2,7 @@ using ExItS.PinoyBusinessPOS.Domain.Common;
 
 namespace ExItS.PinoyBusinessPOS.Domain.Inventory;
 
-/// <summary>Strongly typed identifier for a POS inventory account. Not a Platform or HealthCare identity.</summary>
+/// <summary>Strongly typed identifier for a POS inventory account. Not a Platform identity.</summary>
 public sealed class InventoryAccountId : IEquatable<InventoryAccountId>
 {
     public Guid Value { get; }

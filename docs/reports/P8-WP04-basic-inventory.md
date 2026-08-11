@@ -77,9 +77,9 @@ Interactive device validation **not** claimed (`adb` unavailable) — **R-109** 
 | Concurrent last unit | Serializable/xmin protected; dedicated race stress test not expanded |
 | Online-only | Multi-device offline stock reconciliation deferred |
 
-## HealthCare freeze
+## Portfolio independence
 
-Root `HealthCare/` remains ignored, untracked, outside `ExItS.slnx`.
+Root `HealthCare/` must remain absent/untracked and outside `ExItS.slnx`.
 
 ## Documentation and Git
 

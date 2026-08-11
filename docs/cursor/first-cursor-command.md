@@ -25,7 +25,7 @@ Read:
 - `docs/product/`
 - `docs/reuse/`
 - `docs/engineering/`
-- `docs/phases/phase-00-healthcare-assessment.md`
+- `docs/phases/` (phase pages for the active assignment)
 - `docs/cursor/completion-report-template.md`
 - `docs/risks-and-issues.md`
 
@@ -45,9 +45,7 @@ Read:
 Update only documentation/report files unless a small non-production validation script is necessary:
 
 - `docs/reuse/reuse-classification-matrix.md`
-- `docs/reuse/healthcare-reuse-assessment.md`
 - `docs/portfolio-progress.md`
-- `docs/phases/phase-00-healthcare-assessment.md`
 - `docs/risks-and-issues.md` when evidence requires it
 - `docs/reports/P0-WP01-completion.md`
 

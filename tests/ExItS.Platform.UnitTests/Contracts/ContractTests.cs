@@ -1,5 +1,4 @@
 using ExItS.Platform.Application.Contracts;
-using ExItS.Platform.Application.Integration.HealthCare;
 using ExItS.Platform.Application.Projections;
 using ExItS.Platform.Domain.Catalog;
 using ExItS.Platform.Domain.Entitlements;
@@ -94,6 +93,7 @@ public sealed class ContractEnvelopeAndVersionTests
 
 public sealed class ProjectionContractTests
 {
+    private const string OtherProduct = "other-product";
     private static readonly DateTimeOffset T0 = new(2026, 7, 29, 12, 0, 0, TimeSpan.Zero);
 
     [Fact]
@@ -115,7 +115,7 @@ public sealed class ProjectionContractTests
     public void Organization_mapping_allows_multiple_external_ids_for_one_platform_org()
     {
         var org = PlatformOrganizationId.New();
-        var product = ProductCode.Create(ProductCode.HealthCare);
+        var product = ProductCode.Create(OtherProduct);
         var a = new OrganizationMappingProjection(
             Guid.NewGuid(), org, product, "clinic-A", OrganizationMappingStatus.Active, T0, T0, 1);
         var b = new OrganizationMappingProjection(
@@ -123,10 +123,11 @@ public sealed class ProjectionContractTests
 
         Assert.Equal(a.PlatformOrganizationId, b.PlatformOrganizationId);
         Assert.NotEqual(a.ExternalOrganizationId, b.ExternalOrganizationId);
-        Assert.Throws<ContractException>(() =>
-            new OrganizationMappingProjection(
-                Guid.NewGuid(), org, ProductCode.Create(ProductCode.PinoyBusinessPos), "x",
-                OrganizationMappingStatus.Active, T0, T0, 1));
+
+        var posMapping = new OrganizationMappingProjection(
+            Guid.NewGuid(), org, ProductCode.Create(ProductCode.PinoyBusinessPos), "pos-store-1",
+            OrganizationMappingStatus.Active, T0, T0, 1);
+        Assert.Equal(ProductCode.PinoyBusinessPos, posMapping.ProductCode.Value);
     }
 
     [Fact]
@@ -135,14 +136,14 @@ public sealed class ProjectionContractTests
         Assert.Throws<ContractException>(() =>
             new ProductAccessProjection(
                 PlatformOrganizationId.New(),
-                ProductCode.Create(ProductCode.HealthCare),
+                ProductCode.Create(OtherProduct),
                 ProductAccessStatus.Revoked,
                 T0,
                 1));
 
         var revoked = new ProductAccessProjection(
             PlatformOrganizationId.New(),
-            ProductCode.Create(ProductCode.HealthCare),
+            ProductCode.Create(OtherProduct),
             ProductAccessStatus.Revoked,
             T0,
             1,
@@ -165,7 +166,7 @@ public sealed class ProjectionContractTests
             new EntitlementSnapshotProjection(
                 Guid.NewGuid(), 1, ContractVersion.V1,
                 PlatformOrganizationId.New(),
-                ProductCode.Create(ProductCode.HealthCare),
+                ProductCode.Create(OtherProduct),
                 SubscriptionId.New(),
                 SubscriptionStatus.Active,
                 PlanCode.Create("basic"),
@@ -183,7 +184,7 @@ public sealed class ProjectionApplicabilityTests
     public void Duplicate_message_id_ignored()
     {
         var msg = Guid.NewGuid();
-        var checkpoint = ProjectionCheckpoint.Empty("hc", ContractNames.PlatformUserProjection)
+        var checkpoint = ProjectionCheckpoint.Empty("consumer", ContractNames.PlatformUserProjection)
             .WithApplied(1, msg, T0, null, null);
         var result = _evaluator.Evaluate(checkpoint, msg, 2, ContractVersion.V1, T0, null, null);
         Assert.Equal(ProjectionApplyOutcome.DuplicateIgnored, result.Outcome);
@@ -192,7 +193,7 @@ public sealed class ProjectionApplicabilityTests
     [Fact]
     public void Older_version_ignored_and_sequential_accepted()
     {
-        var checkpoint = ProjectionCheckpoint.Empty("hc", ContractNames.PlatformUserProjection)
+        var checkpoint = ProjectionCheckpoint.Empty("consumer", ContractNames.PlatformUserProjection)
             .WithApplied(3, Guid.NewGuid(), T0, null, null);
 
         var older = _evaluator.Evaluate(checkpoint, Guid.NewGuid(), 2, ContractVersion.V1, T0, null, null);
@@ -206,7 +207,7 @@ public sealed class ProjectionApplicabilityTests
     [Fact]
     public void Version_gap_and_same_version_conflict_and_unsupported_major()
     {
-        var checkpoint = ProjectionCheckpoint.Empty("hc", ContractNames.EntitlementSnapshotProjection)
+        var checkpoint = ProjectionCheckpoint.Empty("consumer", ContractNames.EntitlementSnapshotProjection)
             .WithApplied(1, Guid.NewGuid(), T0, null, null);
 
         var gap = _evaluator.Evaluate(checkpoint, Guid.NewGuid(), 3, ContractVersion.V1, T0, null, null);
@@ -224,7 +225,7 @@ public sealed class ProjectionApplicabilityTests
     [Fact]
     public void Reconciliation_snapshot_can_bridge_gap()
     {
-        var checkpoint = ProjectionCheckpoint.Empty("hc", ContractNames.EntitlementSnapshotProjection)
+        var checkpoint = ProjectionCheckpoint.Empty("consumer", ContractNames.EntitlementSnapshotProjection)
             .WithApplied(1, Guid.NewGuid(), T0, null, null);
         var result = _evaluator.Evaluate(
             checkpoint, Guid.NewGuid(), 5, ContractVersion.V1, T0, null, null, isReconciliationSnapshot: true);
@@ -233,7 +234,7 @@ public sealed class ProjectionApplicabilityTests
     }
 }
 
-public sealed class ProjectionUseCaseAndReconciliationTests
+public sealed class ProjectionUseCaseTests
 {
     private static readonly DateTimeOffset T0 = new(2026, 7, 29, 12, 0, 0, TimeSpan.Zero);
 
@@ -265,43 +266,15 @@ public sealed class ProjectionUseCaseAndReconciliationTests
         var useCase = new EvaluateProjectionApplicability(store, new ProjectionApplicabilityEvaluator(), new FixedClock(T0));
 
         var applied = await useCase.ExecuteAsync(
-            "healthcare-api", ContractNames.PlatformUserProjection, Guid.NewGuid(), 1, ContractVersion.V1, null, null);
+            "product-api", ContractNames.PlatformUserProjection, Guid.NewGuid(), 1, ContractVersion.V1, null, null);
         Assert.True(applied.IsSuccess);
         Assert.Equal(ProjectionApplyOutcome.Applied, applied.Value!.Outcome);
         Assert.Equal(1, store.SaveCount);
 
         var older = await useCase.ExecuteAsync(
-            "healthcare-api", ContractNames.PlatformUserProjection, Guid.NewGuid(), 1, ContractVersion.V1, null, null);
+            "product-api", ContractNames.PlatformUserProjection, Guid.NewGuid(), 1, ContractVersion.V1, null, null);
         Assert.Equal(ProjectionApplyOutcome.Conflict, older.Value!.Outcome);
         Assert.Equal(1, store.SaveCount);
-    }
-
-    [Fact]
-    public async Task Reconciliation_request_validates_and_reports_transport_unavailable()
-    {
-        var request = new ReconciliationRequest(
-            "healthcare-api",
-            PlatformOrganizationId.New(),
-            ProductCode.Create(ProductCode.HealthCare),
-            "version gap",
-            Guid.NewGuid(),
-            expectedSourceVersion: 5,
-            currentSourceVersion: 2);
-
-        var result = await new RequestProjectionReconciliation().ExecuteAsync(request);
-        Assert.True(result.IsSuccess);
-        Assert.Equal(ReconciliationOutcome.SourceUnavailable, result.Value!.Outcome);
-
-        var noChange = await new RequestProjectionReconciliation().ExecuteAsync(
-            new ReconciliationRequest(
-                "healthcare-api",
-                PlatformOrganizationId.New(),
-                ProductCode.Create(ProductCode.HealthCare),
-                "already current",
-                Guid.NewGuid(),
-                expectedSourceVersion: 3,
-                currentSourceVersion: 3));
-        Assert.Equal(ReconciliationOutcome.NoChange, noChange.Value!.Outcome);
     }
 }
 
@@ -318,8 +291,7 @@ public sealed class ContractSecurityShapeTests
 
         var contractTypes = typeof(ContractEnvelope<>).Assembly.GetTypes()
             .Where(t => t.Namespace is not null
-                        && (t.Namespace.Contains(".Contracts", StringComparison.Ordinal)
-                            || t.Namespace.Contains(".Integration.HealthCare", StringComparison.Ordinal)))
+                        && t.Namespace.Contains(".Contracts", StringComparison.Ordinal))
             .Where(t => t.IsClass && !t.IsAbstract);
 
         foreach (var type in contractTypes)
@@ -329,27 +301,6 @@ public sealed class ContractSecurityShapeTests
                 Assert.DoesNotContain(forbidden, f =>
                     string.Equals(prop.Name, f, StringComparison.OrdinalIgnoreCase));
             }
-        }
-    }
-
-    [Fact]
-    public void HealthCare_delivery_interfaces_do_not_reference_clinical_type_names()
-    {
-        var interfaces = new[]
-        {
-            typeof(IHealthCareUserProjectionDelivery),
-            typeof(IHealthCareMembershipProjectionDelivery),
-            typeof(IHealthCareOrganizationMappingDelivery),
-            typeof(IHealthCareProductAccessProjectionDelivery),
-            typeof(IHealthCareSubscriptionProjectionDelivery),
-            typeof(IHealthCareEntitlementSnapshotDelivery),
-            typeof(IPlatformProjectionReconciliationService)
-        };
-
-        foreach (var iface in interfaces)
-        {
-            Assert.DoesNotContain(iface.GetMethods().SelectMany(m => m.GetParameters()).Select(p => p.ParameterType.Name),
-                n => n is "Patient" or "MedicalNote" or "DbContext" or "ApplicationUser");
         }
     }
 }

@@ -112,7 +112,7 @@ No Redis / distributed cache introduced. Prefer query + index fixes.
 
 P9-WP01 Production guards, rate limits, safe ProblemDetails, header gating, and fail-closed commercial behavior remain. Health responses do not leak secrets. No cross-org caching.
 
-## HealthCare freeze
+## Portfolio independence
 
 Unchanged: ignored, untracked, outside `ExItS.slnx`.
 

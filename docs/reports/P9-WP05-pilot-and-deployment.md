@@ -4,7 +4,7 @@ Phase marker: `P9-WP05-pilot-and-deployment`
 
 ## Status
 
-**Complete with documented risks.** Delivered repeatable non-production deployment packaging, environment/config validation, backup-before-migrate gates, migration order, smoke contracts, pilot criteria/runbooks, Android Release packaging instructions, rehearsal automation, and an honest release-readiness decision. **No new business features.** HealthCare remains frozen. **Not Production-ready.**
+**Complete with documented risks.** Delivered repeatable non-production deployment packaging, environment/config validation, backup-before-migrate gates, migration order, smoke contracts, pilot criteria/runbooks, Android Release packaging instructions, rehearsal automation, and an honest release-readiness decision. **No new business features.** No nested HealthCare product tree in this repository. **Not Production-ready.**
 
 Final readiness state: **Ready for controlled internal technical pilot** (StagingPilot). **Blocked** for restricted external pilot and Production while R-091, R-109, R-129, Production TLS, POS operational roles, Manual GCash verification, online-only limits, and PITR deferral remain open.
 
@@ -108,7 +108,7 @@ Disposable DB migrate+backup+live health smoke remains operator-run against prov
 | Production readiness | Evaluator + Production validate-config keep R-091/R-109/R-129 blockers open (unit-tested) |
 | Backup gate | Unverified backups block migrate (unit-tested + CLI) |
 
-## HealthCare freeze
+## Portfolio independence
 
 `git ls-files -- HealthCare/` empty; `git check-ignore -v HealthCare/` shows ignored; Deployment projects in `ExItS.slnx`; HealthCare absent from solution and compose.
 

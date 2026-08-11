@@ -59,7 +59,7 @@ public sealed class FeatureGrantProjection
     }
 }
 
-/// <summary>Transport-independent entitlement snapshot projection for HealthCare. Immutable.</summary>
+/// <summary>Transport-independent entitlement snapshot projection for product consumers. Immutable.</summary>
 public sealed class EntitlementSnapshotProjection
 {
     private readonly IReadOnlyList<FeatureGrantProjection> _grants;

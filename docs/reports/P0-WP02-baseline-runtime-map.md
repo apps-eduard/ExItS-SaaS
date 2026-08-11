@@ -27,7 +27,7 @@ Established a safe root-repository baseline: root `.gitignore` excludes nested `
 | Non-MAUI build verified | Met | All listed non-MAUI projects build Release OK |
 | Full solution + MAUI classification | Met | XA5300 without ANDROID_HOME; XA0035 with SDK path + win-x64 RID |
 | Safe tests re-executed | Met | 1102 / 0 / 0 |
-| Runtime/DB/config maps | Met | healthcare-runtime-baseline.md |
+| Runtime/DB/config maps | Met | historical healthcare-runtime-baseline.md (later removed) |
 | Docs + report + dashboard + risks | Met | This WP |
 | Focused commit | Met | See Git evidence after commit |
 | HealthCare freeze held | Met | No HC file edits from this WP |
@@ -37,11 +37,11 @@ Established a safe root-repository baseline: root `.gitignore` excludes nested `
 Root only:
 
 - `.gitignore` (added)
-- `docs/reuse/healthcare-runtime-baseline.md`
+- `docs/reuse/healthcare-runtime-baseline.md` *(later removed)*
 - `docs/engineering/repository-boundaries.md`
 - `docs/engineering/development-environment.md`
 - `docs/portfolio-progress.md`
-- `docs/phases/phase-00-healthcare-assessment.md`
+- `docs/phases/phase-00-healthcare-assessment.md` *(later removed; see [phase-00 final assessment](phase-00-final-assessment-and-recommendation.md))*
 - `docs/risks-and-issues.md`
 - `docs/reports/P0-WP02-baseline-runtime-map.md`
 - `docs/reports/README.md`

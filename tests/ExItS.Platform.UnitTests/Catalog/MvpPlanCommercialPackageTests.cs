@@ -163,7 +163,7 @@ public sealed class MvpPlanCommercialPackageTests
             "POS Starter",
             T0);
         var otherProductPlan = Plan.CreateDraft(
-            ProductCode.Create("healthcare"),
+            ProductCode.Create("other-product"),
             starter,
             "HC Starter",
             T0);

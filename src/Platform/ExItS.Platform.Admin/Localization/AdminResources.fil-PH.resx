@@ -590,11 +590,11 @@
   <data name="OrgMembers_ProductAccessReadOnly" xml:space="preserve"><value>Read-only ang product-access assignments dito. Ang grant/revoke ay nasa product-access surface. Hindi nag-a-assign ng product-local roles ang access.</value></data>
   <data name="OrgUsers_Title" xml:space="preserve"><value>Mga gumagamit ng organisasyon</value></data>
   <data name="OrgUsers_Description" xml:space="preserve"><value>Pumili ng organisasyon upang pamahalaan ang mga miyembro at imbitasyon.</value></data>
-  <data name="OrgUsers_Hint" xml:space="preserve"><value>Platform organization memberships lamang. Hindi kailanman ina-assign dito ang product-local roles (Cashier, Doctor, atbp.).</value></data>
+  <data name="OrgUsers_Hint" xml:space="preserve"><value>Platform organization memberships lamang. Hindi kailanman ina-assign dito ang product-local roles (Cashier, Store Manager, atbp.).</value></data>
 
   <data name="OrgProductAccess_Title" xml:space="preserve"><value>Product access</value></data>
   <data name="OrgProductAccess_Description" xml:space="preserve"><value>Mga commercial product-access assignment.</value></data>
-  <data name="OrgProductAccess_Warning" xml:space="preserve"><value>Ang product access ay nagbibigay ng commercial entry eligibility lamang. Hindi ito nag-a-assign ng Doctor, Nurse, Clinic Admin, Cashier, Store Manager, POS Administrator, Patient, o anumang product-local role. Kailangan din ng active user, membership, produkto, Trialing/Active subscription, at current entitlement snapshot para maging epektibo ang access.</value></data>
+  <data name="OrgProductAccess_Warning" xml:space="preserve"><value>Ang product access ay nagbibigay ng commercial entry eligibility lamang. Hindi ito nag-a-assign ng Cashier, Store Manager, POS Administrator, o anumang product-local role. Kailangan din ng active user, membership, produkto, Trialing/Active subscription, at current entitlement snapshot para maging epektibo ang access.</value></data>
   <data name="OrgProductAccess_Loading" xml:space="preserve"><value>Naglo-load ng organisasyon…</value></data>
   <data name="OrgProductAccess_GrantSection" xml:space="preserve"><value>I-grant ang product access</value></data>
   <data name="OrgProductAccess_GrantUserIdPlaceholder" xml:space="preserve"><value>GUID ng active member</value></data>
@@ -687,7 +687,7 @@
   <data name="Users_ToastDeactivated" xml:space="preserve"><value>Na-deactivate ang account.</value></data>
   <data name="Users_ToastMovedToSuspended" xml:space="preserve"><value>Nilipat ang account sa Suspended.</value></data>
   <data name="Users_OrgMemberships" xml:space="preserve"><value>Mga organization membership</value></data>
-  <data name="Users_OrgMembershipsHint" xml:space="preserve"><value>Platform organization role lamang — hindi Doctor, Nurse, Cashier, o iba pang product-local role.</value></data>
+  <data name="Users_OrgMembershipsHint" xml:space="preserve"><value>Platform organization role lamang — hindi Cashier, Store Manager, o iba pang product-local role.</value></data>
   <data name="Users_LoadingMemberships" xml:space="preserve"><value>Naglo-load ng mga membership…</value></data>
   <data name="Users_MembershipsUnavailable" xml:space="preserve"><value>Hindi available ang mga membership</value></data>
   <data name="Users_MembershipsEmpty" xml:space="preserve"><value>Walang organization membership ang user na ito.</value></data>
@@ -699,7 +699,7 @@
 
   <data name="Subscriptions_Title" xml:space="preserve"><value>Mga Subscription</value></data>
   <data name="Subscriptions_Description" xml:space="preserve"><value>Pamamahala ng subscription. Ang lifecycle mutation ay tumatawag sa Platform APIs.</value></data>
-  <data name="Subscriptions_Warning" xml:space="preserve"><value>Ang mga pagbabago sa subscription ay nakakaapekto sa commercial eligibility lamang. Hindi ito nag-a-assign ng product-local role o nagde-deliver ng entitlement sa HealthCare o POS.</value></data>
+  <data name="Subscriptions_Warning" xml:space="preserve"><value>Ang mga pagbabago sa subscription ay nakakaapekto sa commercial eligibility lamang. Hindi ito nag-a-assign ng product-local role.</value></data>
   <data name="Subscriptions_StartTrial" xml:space="preserve"><value>Simulan ang organization trial</value></data>
   <data name="Subscriptions_StartTrialHint" xml:space="preserve"><value>Ang tagal ng trial ay mula sa napiling trial definition. Ang repeat-trial policy ay provisional — suriin bago magsimula ng isa pang trial para sa parehong organisasyon at produkto.</value></data>
   <data name="Subscriptions_StartTrialFailed" xml:space="preserve"><value>Hindi masimulan ang trial</value></data>
@@ -726,7 +726,7 @@
   <data name="Payments_Empty" xml:space="preserve"><value>Walang bayad na tumugma sa kasalukuyang filter.</value></data>
   <data name="Payments_DetailTitle" xml:space="preserve"><value>Detalye ng bayad</value></data>
   <data name="Payments_DetailDescription" xml:space="preserve"><value>Manual SaaS payment lifecycle.</value></data>
-  <data name="Payments_DetailWarning" xml:space="preserve"><value>Ang manual confirmation ay hindi automatic provider verification. Maaaring i-activate ng confirmed payment ang eligible subscription nang sabay-sabay. Hindi maaaring gamitin muli ang confirmed payment. Walang gateway, card, invoice, POS, o HealthCare payment behavior.</value></data>
+  <data name="Payments_DetailWarning" xml:space="preserve"><value>Ang manual confirmation ay hindi automatic provider verification. Maaaring i-activate ng confirmed payment ang eligible subscription nang sabay-sabay. Hindi maaaring gamitin muli ang confirmed payment. Walang gateway, card, o invoice payment behavior.</value></data>
   <data name="Payments_DetailLoading" xml:space="preserve"><value>Naglo-load ng bayad…</value></data>
   <data name="Payments_AriaCreate" xml:space="preserve"><value>Gumawa ng manual SaaS payment</value></data>
   <data name="Payments_PaymentActions" xml:space="preserve"><value>Mga payment action</value></data>
@@ -738,7 +738,7 @@
   <data name="Entitlements_Empty" xml:space="preserve"><value>Wala pang entitlement snapshot.</value></data>
   <data name="Entitlements_DetailTitle" xml:space="preserve"><value>Entitlement snapshot</value></data>
   <data name="Entitlements_DetailDescription" xml:space="preserve"><value>Platform-authoritative snapshot state. Hindi patunay ng delivery sa produkto.</value></data>
-  <data name="Entitlements_DetailWarning" xml:space="preserve"><value>Ang snapshot na ito ay authoritative Platform state lamang. Hindi ito ebidensya na natanggap o na-apply ng HealthCare o POS ang mga entitlement. Ang provisional refresh policy ay nananatiling bukas kung naaangkop.</value></data>
+  <data name="Entitlements_DetailWarning" xml:space="preserve"><value>Ang snapshot na ito ay authoritative Platform state lamang. Hindi ito ebidensya na natanggap o na-apply ng isang product application ang mga entitlement. Ang provisional refresh policy ay nananatiling bukas kung naaangkop.</value></data>
   <data name="Entitlements_DetailLoading" xml:space="preserve"><value>Naglo-load ng snapshot…</value></data>
   <data name="Entitlements_HistoryTitle" xml:space="preserve"><value>Kasaysayan ng entitlement</value></data>
   <data name="Entitlements_HistoryDescription" xml:space="preserve"><value>Mga immutable snapshot version para sa pares ng organisasyon/produkto.</value></data>

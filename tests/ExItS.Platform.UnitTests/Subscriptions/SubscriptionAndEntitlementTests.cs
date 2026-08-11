@@ -76,7 +76,7 @@ public sealed class SubscriptionAndEntitlementTests
         Assert.Equal(SubscriptionStatus.Expired, sub.Status);
         Assert.Throws<DomainException>(() => sub.ActivateFromTrial(T0, T0.AddDays(1), T0.AddMinutes(2)));
 
-        var otherPlan = Plan.CreateDraft(ProductCode.Create("healthcare"), PlanCode.Create("hc-basic"), "HC", T0);
+        var otherPlan = Plan.CreateDraft(ProductCode.Create("other-product"), PlanCode.Create("op-basic"), "Other", T0);
         Assert.Throws<DomainException>(() =>
             Subscription.StartTrial(PlatformOrganizationId.New(), otherPlan, version, trial, T0));
     }
@@ -297,7 +297,7 @@ public sealed class SubscriptionAndEntitlementTests
         Assert.Throws<DomainException>(() =>
             EntitlementSnapshot.Create(
                 PlatformOrganizationId.New(),
-                ProductCode.Create("healthcare"),
+                ProductCode.Create("other-product"),
                 SubscriptionId.New(),
                 PlanCode.Create("basic"),
                 1,
@@ -311,7 +311,7 @@ public sealed class SubscriptionAndEntitlementTests
         Assert.Throws<DomainException>(() =>
             EntitlementSnapshot.Create(
                 PlatformOrganizationId.New(),
-                ProductCode.Create("healthcare"),
+                ProductCode.Create("other-product"),
                 SubscriptionId.New(),
                 PlanCode.Create("basic"),
                 1,
@@ -466,7 +466,7 @@ public sealed class SubscriptionAndEntitlementTests
         Assert.Throws<DomainException>(() =>
             EntitlementSnapshot.Create(
                 PlatformOrganizationId.New(),
-                ProductCode.Create("healthcare"),
+                ProductCode.Create("other-product"),
                 SubscriptionId.New(),
                 PlanCode.Create("basic"),
                 1,
@@ -480,7 +480,7 @@ public sealed class SubscriptionAndEntitlementTests
 
         var withExpiry = EntitlementSnapshot.Create(
             PlatformOrganizationId.New(),
-            ProductCode.Create("healthcare"),
+            ProductCode.Create("other-product"),
             SubscriptionId.New(),
             PlanCode.Create("basic"),
             1,

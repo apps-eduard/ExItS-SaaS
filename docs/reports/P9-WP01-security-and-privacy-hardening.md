@@ -101,9 +101,9 @@ Baseline **882** preserved and exceeded.
 - Report export / online-only Basic Store (by design until later phases)
 - POS operational roles
 
-## HealthCare freeze
+## Portfolio independence
 
-Root `HealthCare/` remains ignored, untracked, outside `ExItS.slnx`.
+Root `HealthCare/` must remain absent/untracked and outside `ExItS.slnx`.
 
 ## Documentation and Git
 

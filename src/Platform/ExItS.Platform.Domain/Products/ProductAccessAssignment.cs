@@ -6,8 +6,8 @@ namespace ExItS.Platform.Domain.Products;
 
 /// <summary>
 /// Explicit commercial product-access assignment for a Platform user within an organization.
-/// Does not assign product-local roles (Doctor, Cashier, Clinic Admin, Store Manager, etc.).
-/// Does not deliver entitlements to HealthCare or POS.
+/// Does not assign product-local roles (Cashier, Store Manager, POS Administrator, etc.).
+/// Does not deliver entitlements into product applications.
 /// </summary>
 public sealed class ProductAccessAssignment
 {

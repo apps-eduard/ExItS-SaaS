@@ -2,7 +2,7 @@ using ExItS.PinoyBusinessPOS.Domain.Common;
 
 namespace ExItS.PinoyBusinessPOS.Domain.Catalog;
 
-/// <summary>Strongly typed identifier for a POS catalog product. Not a Platform or HealthCare identity.</summary>
+/// <summary>Strongly typed identifier for a POS catalog product. Not a Platform identity.</summary>
 public sealed class CatalogProductId : IEquatable<CatalogProductId>
 {
     public Guid Value { get; }

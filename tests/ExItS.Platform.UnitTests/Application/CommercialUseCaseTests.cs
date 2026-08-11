@@ -216,8 +216,8 @@ public sealed class CommercialUseCaseTests
     {
         var products = new InMemoryProductRepository();
         var create = new CreateProduct(products, new NoOpUnitOfWork(), new FixedClock(T0));
-        Assert.True((await create.ExecuteAsync("healthcare", "HealthCare")).IsSuccess);
-        var dup = await create.ExecuteAsync("HealthCare", "HealthCare Two");
+        Assert.True((await create.ExecuteAsync("other-product", "Other Product")).IsSuccess);
+        var dup = await create.ExecuteAsync("Other-Product", "Other Product Two");
         Assert.Equal(ApplicationErrorCodes.DuplicateProductCode, dup.ErrorCode);
         Assert.Equal(1, products.AddCount);
     }

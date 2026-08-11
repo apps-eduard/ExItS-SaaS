@@ -79,9 +79,9 @@ Sales, inventory, customers, Utang, repayments, reporting, offline sync, gateway
 
 R-091 (production auth), R-098 (dev identity), R-106 (secure storage), R-109 (emulator), plus P5-WP05 notes for session restore/org-switch/commercial-vs-role confusion remain documented in `docs/risks-and-issues.md`.
 
-## 9. HealthCare freeze
+## 9. Portfolio independence
 
-`/HealthCare/` ignored, untracked, outside `ExItS.slnx`.
+Root `HealthCare/` must remain absent/untracked and outside `ExItS.slnx`.
 
 ## 10. Exact next work package
 

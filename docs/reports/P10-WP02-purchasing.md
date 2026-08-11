@@ -90,7 +90,7 @@ Typed DTOs; ProblemDetails `errorCode`; org concealment; pagination on list.
 - Cross-org IDs concealed
 - Purchase cost is operational reference only — not exposed as COGS
 - Production rejects Development/Testing bypasses
-- No HealthCare/PHI coupling (Part A cleanup preserved at `fd77f88`)
+- No foreign-product/PHI coupling (Part A cleanup preserved at `fd77f88`)
 
 ## 11. Explicit exclusions (preserved)
 

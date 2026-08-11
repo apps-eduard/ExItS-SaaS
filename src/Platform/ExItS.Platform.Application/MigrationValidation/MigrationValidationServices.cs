@@ -55,14 +55,6 @@ public sealed partial class MigrationPreflightValidator : IMigrationPreflightVal
                 "Validation timestamp must be UTC."));
         }
 
-        if (!string.Equals(input.ProductCode.Value, ProductCode.HealthCare, StringComparison.Ordinal))
-        {
-            findings.Add(Finding(
-                MigrationFindingCodes.ProductCodeMismatch,
-                ValidationFindingSeverity.Blocked,
-                "Migration dry-run requires healthcare ProductCode."));
-        }
-
         if (input.ContractVersion.Major > 1)
         {
             findings.Add(Finding(

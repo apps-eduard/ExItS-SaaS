@@ -81,7 +81,7 @@ No supplier offline queue, local mutation projections, or sync conflict policy. 
 - Cross-org IDs concealed
 - Contact details not logged in full; no secrets in supplier records
 - Production rejects Development/Testing bypasses
-- No HealthCare/PHI coupling
+- No foreign-product/PHI coupling
 
 ## 11. Explicit exclusions (preserved)
 
@@ -113,6 +113,6 @@ Unchanged release blockers: R-091, R-109, R-129, TLS-PROD, MAUI-HTTPS, POS-ROLES
 | Feature message | `feat(pos): add organization-owned supplier master data (P10-WP01 Option A)` |
 | Docs commit | `55469c60802d11273669efa10494ff1632efa84d` |
 | Docs message | `docs(pos): record P10-WP01 suppliers Option A completion evidence` |
-| HealthCare | ignored, untracked, outside `ExItS.slnx` |
+| Foreign product trees | Root `HealthCare/` must remain absent/untracked and outside `ExItS.slnx` |
 
 Exact next: **P10-WP02 — Purchasing** (do not begin until authorized).

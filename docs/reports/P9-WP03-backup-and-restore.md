@@ -108,7 +108,7 @@ Backup freshness is an **operational readiness signal**, not application livenes
 
 No secrets in manifests or committed artifacts. Connection strings not logged. Destructive restore requires explicit token. P9-WP01 Production guards preserved.
 
-## HealthCare freeze
+## Portfolio independence
 
 Unchanged: ignored, untracked, outside `ExItS.slnx`.
 

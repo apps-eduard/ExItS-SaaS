@@ -2,7 +2,7 @@
 
 ## 1. Status
 
-**Complete.** Platform users, organization memberships, Platform organization roles, product-access assignments, effective commercial access evaluation, PostgreSQL persistence, Admin APIs/UI, tests, and documentation delivered. HealthCare remains frozen. Authentication and product-local roles remain out of scope.
+**Complete.** Platform users, organization memberships, Platform organization roles, product-access assignments, effective commercial access evaluation, PostgreSQL persistence, Admin APIs/UI, tests, and documentation delivered. No nested HealthCare product tree in this repository. Authentication and product-local roles remain out of scope.
 
 | Field | Value |
 |---|---|

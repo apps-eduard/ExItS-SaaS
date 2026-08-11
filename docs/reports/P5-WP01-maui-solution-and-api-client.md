@@ -2,7 +2,7 @@
 
 ## 1. Status
 
-**Complete.** PinoyBusinessPOS Android-first MAUI Blazor Hybrid foundation delivered: shared DesignSystem library, shell, System/Light/Dark themes, EN/fil-PH resources, typed API client with connectivity/health classification, and Release Android APK evidence. Phase 5 remains **In Progress**. HealthCare remains frozen.
+**Complete.** PinoyBusinessPOS Android-first MAUI Blazor Hybrid foundation delivered: shared DesignSystem library, shell, System/Light/Dark themes, EN/fil-PH resources, typed API client with connectivity/health classification, and Release Android APK evidence. Phase 5 remains **In Progress**. No nested HealthCare product tree in this repository.
 
 | Field | Value |
 |---|---|
@@ -123,7 +123,7 @@ Release `net10.0-android` APK produced for `ExItS.PinoyBusinessPOS.Maui` (Androi
 
 ## 12. HealthCare freeze
 
-`/HealthCare/` ignored, untracked, outside `ExItS.slnx`. Platform Integration contracts under `src/Platform/.../Integration/HealthCare/` remain tracked Platform files only.
+Root `HealthCare/` must remain absent/untracked and outside `ExItS.slnx`. Platform Integration contracts under `src/Platform/.../Integration/HealthCare/` remain tracked Platform files only.
 
 ## 13. Exact next work package
 

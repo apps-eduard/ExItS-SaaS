@@ -96,6 +96,6 @@ Updated: phase-07, offline-sync-design, portfolio, FILE-MANIFEST, README, engine
 
 Exact next work package: **P7-WP02 — Offline Queue and Idempotency** (do not begin until authorized).
 
-## HealthCare freeze
+## Portfolio independence
 
-Root `HealthCare/` remains ignored, untracked, outside `ExItS.slnx`.
+Root `HealthCare/` must remain absent/untracked and outside `ExItS.slnx`.

@@ -64,7 +64,7 @@ Release `net10.0-android` build succeeded. `adb devices` empty — interactive v
 
 ## 10. HealthCare freeze
 
-`/HealthCare/` ignored, untracked, outside `ExItS.slnx`.
+Root `HealthCare/` must remain absent/untracked and outside `ExItS.slnx`.
 
 ## 11. Exact next work package
 

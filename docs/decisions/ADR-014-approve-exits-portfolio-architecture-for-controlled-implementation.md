@@ -16,7 +16,7 @@ Phase 1 produced capability boundaries, contracts, payment MVP rules, extraction
 ## Decision
 
 1. **Phase 1 architecture is approved** (close with documented risks).
-2. **New Platform is built in root Git**; HealthCare remains frozen/ignored until an approved reconnection WP.
+2. **New Platform is built in root Git**; No nested HealthCare product tree in this repository/ignored until an approved reconnection WP.
 3. **Product and Platform boundaries** in P1-WP01–02 documents are authoritative.
 4. **Local entitlement projections** and **versioned contracts** are required (ADR-011/012).
 5. **New Platform Admin and POS use native Razor/CSS** (no Ant, no Tailwind); HC Staff retains Ant (ADR-010).

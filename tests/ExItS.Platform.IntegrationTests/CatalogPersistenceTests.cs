@@ -39,8 +39,8 @@ public sealed class CatalogPersistenceTests(PostgreSqlFixture fixture)
         await using var provider = CatalogTestServices.Build(fixture.ConnectionString);
         var create = provider.GetRequiredService<CreateProduct>();
 
-        Assert.True((await create.ExecuteAsync(code, "HealthCare")).IsSuccess);
-        var duplicate = await create.ExecuteAsync(code.ToUpperInvariant(), "HealthCare Two");
+        Assert.True((await create.ExecuteAsync(code, "Other Product")).IsSuccess);
+        var duplicate = await create.ExecuteAsync(code.ToUpperInvariant(), "Other Product Two");
         Assert.False(duplicate.IsSuccess);
         Assert.Equal(ApplicationErrorCodes.DuplicateProductCode, duplicate.ErrorCode);
     }

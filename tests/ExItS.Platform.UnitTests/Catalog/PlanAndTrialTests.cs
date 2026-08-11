@@ -48,7 +48,7 @@ public sealed class PlanAndTrialTests
     public void PlanVersion_rejects_duplicate_features_and_non_positive_version()
     {
         var plan = Plan.CreateDraft(
-            ProductCode.Create("healthcare"),
+            ProductCode.Create("other-product"),
             PlanCode.Create("basic"),
             "Basic",
             T0);

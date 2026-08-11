@@ -340,36 +340,6 @@ public sealed class LayerDependencyTests
     }
 
     [Fact]
-    public void HealthCare_adapter_interfaces_exist_without_DbContext_or_clinical_types()
-    {
-        Assert.NotNull(Application.GetType(
-            "ExItS.Platform.Application.Integration.HealthCare.IHealthCareUserProjectionDelivery"));
-        Assert.NotNull(Application.GetType(
-            "ExItS.Platform.Application.Integration.HealthCare.IPlatformProjectionReconciliationService"));
-
-        var forbidden = new HashSet<string>(StringComparer.Ordinal)
-        {
-            "Patient", "Doctor", "Nurse", "Appointment", "MedicalNote", "Amendment",
-            "ClinicalRole", "ClinicPermission", "Diagnosis", "Prescription", "ClinicalAuditRecord",
-            "DbContext"
-        };
-
-        foreach (var type in Application.GetTypes().Where(t =>
-                     t.Namespace?.Contains("Integration.HealthCare", StringComparison.Ordinal) == true))
-        {
-            Assert.False(forbidden.Contains(type.Name), $"Unexpected type {type.Name}");
-            foreach (var method in type.GetMethods())
-            {
-                foreach (var p in method.GetParameters())
-                {
-                    Assert.False(forbidden.Contains(p.ParameterType.Name),
-                        $"{type.Name}.{method.Name} exposes {p.ParameterType.Name}");
-                }
-            }
-        }
-    }
-
-    [Fact]
     public void Application_has_no_EfCore_or_Npgsql_dependencies()
     {
         var referenced = Application.GetReferencedAssemblies().Select(a => a.Name ?? string.Empty).ToArray();

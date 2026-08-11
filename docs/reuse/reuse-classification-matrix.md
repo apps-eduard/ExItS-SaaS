@@ -1,6 +1,6 @@
 # Reuse Classification Matrix
 
-[Reuse Assessment](healthcare-reuse-assessment.md) | [Extraction Rules](extraction-rules.md)
+[Reuse classification matrix](reuse-classification-matrix.md) | [Extraction Rules](extraction-rules.md)
 
 Filled from repository evidence during **P0-WP01** and extended for UI in **P0-WP03** (2026-07-29). Classifications:
 
@@ -55,4 +55,4 @@ Filled from repository evidence during **P0-WP01** and extended for UI in **P0-W
 - **Clinic** is HealthCare location semantics — do not rename to Store for POS.
 - **Organization usage limits** are the only commercial-adjacent controls found; they are **not** subscriptions.
 - **Hangfire** hosting is reusable infrastructure; reminder/summary jobs are HealthCare-specific.
-- **UI (P0-WP03, corrected):** Ant stays in **HealthCare Staff Web only**; **new** Platform Admin and POS share a **native** CSS/Razor foundation — see [healthcare-ui-reuse-assessment.md](healthcare-ui-reuse-assessment.md) and [ADR-010](../decisions/ADR-010-separate-ui-implementations-platform-and-pos.md).
+- **UI (P0-WP03, corrected):** Historical HealthCare Staff Web kept Ant; **Platform Admin** uses Ant Design Blazor (ADR-015); **POS** uses native CSS/DesignSystem — see [ADR-010](../decisions/ADR-010-separate-ui-implementations-platform-and-pos.md).

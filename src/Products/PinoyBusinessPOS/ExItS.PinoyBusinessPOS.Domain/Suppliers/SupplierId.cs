@@ -2,7 +2,7 @@ using ExItS.PinoyBusinessPOS.Domain.Common;
 
 namespace ExItS.PinoyBusinessPOS.Domain.Suppliers;
 
-/// <summary>Strongly typed identifier for a POS supplier. Not a Platform or HealthCare identity.</summary>
+/// <summary>Strongly typed identifier for a POS supplier. Not a Platform identity.</summary>
 public sealed class SupplierId : IEquatable<SupplierId>
 {
     public Guid Value { get; }

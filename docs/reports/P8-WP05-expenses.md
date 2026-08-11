@@ -82,9 +82,9 @@ Interactive device validation **not** claimed (`adb` unavailable) — **R-109** 
 | Manual GCash | No independent verification (by design) |
 | Online-only | Offline expense policy deferred |
 
-## HealthCare freeze
+## Portfolio independence
 
-Root `HealthCare/` remains ignored, untracked, outside `ExItS.slnx`.
+Root `HealthCare/` must remain absent/untracked and outside `ExItS.slnx`.
 
 ## Documentation and Git
 

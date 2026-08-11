@@ -1,6 +1,6 @@
 # Phase 0 Final Assessment and Recommendation
 
-[Dashboard](../portfolio-progress.md) | [Closeout report](P0-WP04-assessment-closeout.md) | [Final boundaries](../engineering/final-portfolio-boundaries.md) | [Phase 0](../phases/phase-00-healthcare-assessment.md)
+[Dashboard](../portfolio-progress.md) | [Closeout report](P0-WP04-assessment-closeout.md) | [Final boundaries](../engineering/final-portfolio-boundaries.md) | [Phase 0](phase-00-final-assessment-and-recommendation.md)
 
 **Work package:** P0-WP04  
 **Date:** 2026-07-29  
@@ -45,7 +45,7 @@ Root remote remains **empty** (`origin` → `ExItS-SaaS`, `origin/main` gone). N
 | **Deferred** | MFA, production email, EF global tenant filters, rich calendar, Full POS modules, iOS shipping validation, HC Ant modernization, HealthCare monorepo import |
 | **Do not reuse** | Patient↔Customer / Clinic↔Store renames; Ant into Platform Admin or POS; Tailwind; medical-note auth for Utang; patient self-scope as generic tenant rule; `/auth/dev/*` and lab seed credentials in production |
 
-Evidence: [reuse matrix](../reuse/reuse-classification-matrix.md), [HC reuse assessment](../reuse/healthcare-reuse-assessment.md), [UI assessment](../reuse/healthcare-ui-reuse-assessment.md), [ADR-010](../decisions/ADR-010-separate-ui-implementations-platform-and-pos.md).
+Evidence: [reuse matrix](../reuse/reuse-classification-matrix.md), [ADR-010](../decisions/ADR-010-separate-ui-implementations-platform-and-pos.md).
 
 ---
 

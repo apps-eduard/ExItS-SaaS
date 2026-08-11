@@ -159,7 +159,7 @@ Create Platform-side versioned contracts, projection apply rules, and HealthCare
 - Projection checkpoint / apply outcomes / applicability evaluator (idempotency, ordering, gap, conflict).
 - HealthCare delivery + reconciliation interfaces (no implementation/transport).
 - Architecture + unit tests; API phase marker `P2-WP04-healthcare-contract-adaptation`.
-- HealthCare remains frozen.
+- No nested HealthCare product tree in this repository.
 
 #### Explicit exclusions (honored)
 
@@ -179,7 +179,7 @@ Create Platform-side versioned contracts, projection apply rules, and HealthCare
 
 | Artifact | Path |
 |---|---|
-| Report | [P2-WP04 report](../reports/P2-WP04-healthcare-contract-adaptation.md) |
+| Report | Historical P2-WP04 report removed; see [P2-WP05](../reports/P2-WP05-regression-and-migration-validation.md) / [phase-02 closeout](../reports/phase-02-extraction-closeout.md) |
 
 #### Commit
 
@@ -202,7 +202,7 @@ Validate Platform regression coverage and HealthCare mapping dry-run readiness w
 - Migration batch + identity/organization/membership mapping candidates.
 - Preflight validator, compatibility report, simulation service, rollback-readiness models (no executor).
 - Architecture + unit tests; API phase marker `P2-WP05-regression-migration-validation`.
-- HealthCare remains frozen.
+- No nested HealthCare product tree in this repository.
 
 #### Explicit exclusions (honored)
 

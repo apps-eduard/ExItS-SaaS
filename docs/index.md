@@ -15,10 +15,7 @@
 
 ## Reuse (historical assessments — HealthCare not in this workspace)
 
-- [HealthCare reuse assessment (historical)](reuse/healthcare-reuse-assessment.md)
 - [Reuse classification matrix](reuse/reuse-classification-matrix.md)
-- [HealthCare runtime baseline (historical)](reuse/healthcare-runtime-baseline.md)
-- [HealthCare UI reuse assessment (historical)](reuse/healthcare-ui-reuse-assessment.md)
 - [Extraction and migration rules](reuse/extraction-rules.md)
 - [Extraction sequence](reuse/extraction-sequence.md)
 - [Extraction rollback plan](engineering/extraction-rollback-plan.md)
@@ -71,7 +68,7 @@
 - [P2-WP01 foundation report](reports/P2-WP01-extraction-baseline-and-safety.md)
 - [P2-WP02 identity/organization report](reports/P2-WP02-identity-organization-boundary.md)
 - [P2-WP03 products/plans/entitlements report](reports/P2-WP03-products-plans-entitlements.md)
-- [P2-WP04 HealthCare contract adaptation report](reports/P2-WP04-healthcare-contract-adaptation.md)
+- [P2-WP04 product contract adaptation (historical; report removed)](reports/P2-WP05-regression-and-migration-validation.md)
 - [P2-WP05 regression and migration validation report](reports/P2-WP05-regression-and-migration-validation.md)
 - [P2-WP06 extraction closeout report](reports/P2-WP06-extraction-closeout.md)
 - [Phase 2 extraction closeout](reports/phase-02-extraction-closeout.md)

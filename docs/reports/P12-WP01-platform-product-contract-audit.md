@@ -44,7 +44,7 @@ ExItS-SaaS/
 - `ExItS.slnx` contains Platform, PinoyBusinessPOS, Shared, tests, and tools projects only.
 - No HealthCare product projects in the solution.
 - No root `HealthCare/` directory; `git ls-files -- HealthCare/` empty.
-- Platform `Integration/HealthCare/` holds **versioned contract abstractions only** (not a product source tree), guarded by `RepositorySafetyTests`.
+- Portfolio independence: no nested `HealthCare/` product tree (`RepositorySafetyTests`); Platform + PinoyBusinessPOS only.
 
 ### Only in-repo product today — Implemented
 

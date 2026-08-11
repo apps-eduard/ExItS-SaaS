@@ -80,7 +80,7 @@ Release `net10.0-android` build/publish succeeded (`com.exits.pinoybusinesspos-S
 
 ## 11. HealthCare freeze
 
-`/HealthCare/` ignored, untracked, outside `ExItS.slnx`.
+Root `HealthCare/` must remain absent/untracked and outside `ExItS.slnx`.
 
 ## 12. Exact next work package
 

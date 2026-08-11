@@ -1,6 +1,6 @@
 # Extraction and Implementation Sequence
 
-[Home](../index.md) | [Extraction rules](extraction-rules.md) | [Rollback plan](../engineering/extraction-rollback-plan.md) | [Risk matrix](../engineering/platform-extraction-risk-matrix.md) | [Gate matrix](../engineering/implementation-gate-matrix.md) | [ADR-013](../decisions/ADR-013-build-new-platform-before-healthcare-reconnection.md)
+[Home](../index.md) | [Extraction rules](extraction-rules.md) | [Rollback plan](../engineering/extraction-rollback-plan.md) | [Risk matrix](../engineering/platform-extraction-risk-matrix.md) | [Gate matrix](../engineering/implementation-gate-matrix.md) | [ADR-014](../decisions/ADR-014-approve-exits-portfolio-architecture-for-controlled-implementation.md)
 
 **Work package:** P1-WP03  
 **Status:** Authoritative planning (documentation only — no extraction executed)  

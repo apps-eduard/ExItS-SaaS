@@ -19,7 +19,7 @@ Phase 6 is **complete** for the approved Utang MVP scope:
 - Migration chain apply / stepwise rollback / re-apply validated
 - Full solution tests pass; Android Release APK builds
 - Documentation matches implementation
-- HealthCare remains frozen
+- No nested HealthCare product tree in this repository
 - Working tree clean and `main` matches `origin/main` after push
 
 ## Final delivered Utang MVP scope
@@ -149,7 +149,7 @@ Baseline 541 preserved and exceeded (+3 closeout tests). Release Android APK: `s
 | R-091 / R-124 / R-128 | Open — not production-secure headers/auth |
 | R-022 | Open — stale/refresh durations |
 
-## HealthCare freeze
+## Portfolio independence
 
 `git ls-files -- HealthCare/` empty; ignored; not in `ExItS.slnx`.
 

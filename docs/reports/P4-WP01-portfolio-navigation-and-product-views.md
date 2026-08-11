@@ -2,7 +2,7 @@
 
 ## 1. Status
 
-**Complete.** Permanent Cursor workflow rules added; read-only Platform Admin Blazor shell delivered; focused Admin read APIs added; validation passed; HealthCare remains frozen.
+**Complete.** Permanent Cursor workflow rules added; read-only Platform Admin Blazor shell delivered; focused Admin read APIs added; validation passed; No nested HealthCare product tree in this repository.
 
 | Field | Value |
 |---|---|

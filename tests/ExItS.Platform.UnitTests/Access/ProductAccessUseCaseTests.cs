@@ -86,15 +86,15 @@ public sealed class ProductAccessUseCaseTests
             EntitlementGrantSource.Plan,
             T0);
         Assert.False(ProductAccessEligibility.CanEnterProduct(
-            ProductCode.HealthCare,
+            "other-product",
             SubscriptionStatus.Expired,
             [view]));
         Assert.False(ProductAccessEligibility.CanEnterProduct(
-            ProductCode.HealthCare,
+            "other-product",
             SubscriptionStatus.GracePeriod,
             [view]));
         Assert.True(ProductAccessEligibility.CanEnterProduct(
-            ProductCode.HealthCare,
+            "other-product",
             SubscriptionStatus.Active,
             [view]));
     }

@@ -3,7 +3,7 @@ using ExItS.Platform.Domain.Identity;
 
 namespace ExItS.Platform.Application.Contracts;
 
-/// <summary>HealthCare-facing Platform User projection. No credentials or clinical data.</summary>
+/// <summary>Product-facing Platform User projection. No credentials or clinical data.</summary>
 public sealed class PlatformUserProjection
 {
     public PlatformUserId PlatformUserId { get; }

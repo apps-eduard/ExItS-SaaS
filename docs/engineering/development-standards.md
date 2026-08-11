@@ -16,5 +16,5 @@
 - Create one focused commit and report the hash.
 - **P2-WP02:** Domain uses `DomainException` + stable error codes; Application returns `ApplicationResult`; timestamps are UTC `DateTimeOffset` supplied via `IClock` at the use-case boundary (domain methods do not call `DateTime.UtcNow`).
 - **P2-WP03:** Commercial composition is deterministic via `EntitlementSnapshotComposer`; no generic rules engine; published plan versions are immutable.
-- **P2-WP04:** Outbound contracts live in Application (`Contracts` / `Projections` / `Integration.HealthCare`); no Shared/ project; no transport packages.
+- **P2-WP04:** Outbound contracts live in Application (`Contracts` / `Projections`); no Shared/ project; no transport packages.
 - **P2-WP05:** Migration validation lives in Application (`MigrationValidation`); structured findings; no EF/SQL/generic repositories.

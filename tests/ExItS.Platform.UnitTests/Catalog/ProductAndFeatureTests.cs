@@ -11,7 +11,7 @@ public sealed class ProductAndFeatureTests
     [Fact]
     public void Product_create_activate_deactivate_retire()
     {
-        var product = Product.Create(ProductCode.Create("healthcare"), "HealthCare", T0);
+        var product = Product.Create(ProductCode.Create("other-product"), "Other Product", T0);
         Assert.Equal(ProductStatus.Active, product.Status);
         product.Deactivate(T0.AddMinutes(1));
         Assert.Equal(ProductStatus.Inactive, product.Status);
@@ -25,7 +25,7 @@ public sealed class ProductAndFeatureTests
     public void Product_rejects_blank_name()
     {
         var ex = Assert.Throws<DomainException>(() =>
-            Product.Create(ProductCode.Create("healthcare"), " ", T0));
+            Product.Create(ProductCode.Create("other-product"), " ", T0));
         Assert.Equal(DomainErrorCodes.InvalidDisplayName, ex.ErrorCode);
     }
 

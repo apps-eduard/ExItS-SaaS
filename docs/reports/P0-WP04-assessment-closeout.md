@@ -37,7 +37,7 @@ Closed Phase 0 by reconciling reuse, product boundaries, UI strategy (including 
 - `docs/product/pinoy-business-pos-requirements.md`
 - `docs/product/portfolio-vision.md`
 - `docs/portfolio-progress.md`
-- `docs/phases/phase-00-healthcare-assessment.md`
+- `docs/phases/phase-00-healthcare-assessment.md` *(later removed; see [phase-00 final assessment](phase-00-final-assessment-and-recommendation.md))*
 - `docs/risks-and-issues.md`
 - `docs/index.md`
 - `docs/reports/README.md`

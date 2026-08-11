@@ -114,7 +114,7 @@ Legend: P = Pass (source/automated), NT = Not tested interactively, L = Environm
 
 P9-WP01 Production guards and P9-WP02 health/readiness unchanged. P9-WP03 backup tooling unchanged. No cross-org weakening.
 
-## HealthCare freeze
+## Portfolio independence
 
 Unchanged: ignored, untracked, outside `ExItS.slnx`.
 

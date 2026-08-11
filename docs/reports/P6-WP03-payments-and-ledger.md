@@ -90,7 +90,7 @@ Android Release APK: `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/
 - Development/Testing Platform identity remains the only MAUI auth path
 - Not production-secure
 
-## HealthCare freeze
+## Portfolio independence
 
 `git ls-files -- HealthCare/` empty; ignored via `.gitignore`; not in `ExItS.slnx`.
 

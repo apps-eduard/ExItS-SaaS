@@ -8,7 +8,6 @@ alwaysApply: true
 ## Repository Safety
 
 - ExItS is an independent multi-product portfolio repository. Do not recreate, clone, import, or nest a HealthCare (or other external product) source tree into this workspace without explicit authorization.
-- Platform integration contracts under `src/Platform/.../Integration/HealthCare/` are tracked Platform files (versioned contract boundaries) — not a product source tree.
 - Preserve ownership boundaries: product operational data belongs in the product database; no cross-product database access or foreign keys; POS must not contain PHI; future products require separate authorization.
 - Do not implement future work packages or adjacent product capability without explicit authorization.
 - Do not implement PinoyBusinessPOS unless explicitly authorized.

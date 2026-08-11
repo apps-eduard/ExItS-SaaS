@@ -21,7 +21,7 @@ Mark Phase 8 **complete with documented risks** when:
 - Full `ExItS.slnx` Release tests pass (**882** / **0** / **0**; baseline 851)
 - Android Release APK builds
 - Documentation matches implementation
-- HealthCare remains frozen
+- No nested HealthCare product tree in this repository
 - Git is clean; `main` matches `origin/main` after push
 
 **Do not claim production readiness** while documented blockers remain open.
@@ -217,9 +217,9 @@ Interactive device/emulator validation **not** claimed (`adb` unavailable) — *
 
 Do **not** mark these resolved without evidence.
 
-## HealthCare freeze
+## Portfolio independence
 
-Root `HealthCare/` remains ignored, untracked, outside `ExItS.slnx`.
+Root `HealthCare/` must remain absent/untracked and outside `ExItS.slnx`.
 
 ## Documentation and Git
 

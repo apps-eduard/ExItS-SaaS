@@ -2,7 +2,7 @@ using ExItS.PinoyBusinessPOS.Domain.Common;
 
 namespace ExItS.PinoyBusinessPOS.Domain.Customers;
 
-/// <summary>Strongly typed identifier for a POS customer. Not a Platform User or HealthCare identity.</summary>
+/// <summary>Strongly typed identifier for a POS customer. Not a Platform User identity.</summary>
 public sealed class POSCustomerId : IEquatable<POSCustomerId>
 {
     public Guid Value { get; }

@@ -8,8 +8,8 @@ namespace ExItS.Platform.UnitTests.Products;
 public sealed class ProductCodeTests
 {
     [Theory]
-    [InlineData("healthcare", "healthcare")]
-    [InlineData("HealthCare", "healthcare")]
+    [InlineData("other-product", "other-product")]
+    [InlineData("Other-Product", "other-product")]
     [InlineData(" pinoy-business-pos ", "pinoy-business-pos")]
     public void Create_normalizes_valid_codes(string input, string expected)
     {
@@ -20,7 +20,7 @@ public sealed class ProductCodeTests
     [Theory]
     [InlineData("")]
     [InlineData(" ")]
-    [InlineData("-healthcare")]
+    [InlineData("-other-product")]
     [InlineData("pinoy_business_pos")]
     [InlineData("pinoy--pos")]
     public void Create_rejects_invalid_codes(string input)
@@ -32,10 +32,10 @@ public sealed class ProductCodeTests
     [Fact]
     public void Equality_is_stable_on_normalized_value()
     {
-        var a = ProductCode.Create("HealthCare");
-        var b = ProductCode.Create("healthcare");
+        var a = ProductCode.Create("Other-Product");
+        var b = ProductCode.Create("other-product");
         Assert.Equal(a, b);
-        Assert.Equal(ProductCode.HealthCare, a.Value);
+        Assert.Equal("other-product", a.Value);
         Assert.Equal(ProductCode.PinoyBusinessPos, ProductCode.Create("pinoy-business-pos").Value);
     }
 
@@ -45,7 +45,7 @@ public sealed class ProductCodeTests
         var utc = new DateTimeOffset(2026, 7, 29, 12, 0, 0, TimeSpan.Zero);
         var access = ProductAccess.Grant(
             PlatformOrganizationId.New(),
-            ProductCode.Create(ProductCode.HealthCare),
+            ProductCode.Create("other-product"),
             utc,
             PlatformUserId.New());
 

@@ -39,7 +39,7 @@ Deliver:
 - Automated security/architecture tests
 - Threat model and release-blocker documentation
 
-HealthCare remains frozen.
+No nested HealthCare product tree in this repository.
 
 #### Explicit exclusions (this WP)
 
@@ -169,7 +169,7 @@ Phase marker: `P9-WP04-accessibility-localization-theme-qa`
 
 #### Approved scope (clarified)
 
-Perform a complete accessibility, localization, responsive-layout, and theme-quality review across delivered Platform and PinoyBusinessPOS MVP. **QA and hardening only — no new business features.** Preserve P9-WP01–P9-WP03 security, isolation, idempotency, immutability, and reliability controls. HealthCare remains frozen.
+Perform a complete accessibility, localization, responsive-layout, and theme-quality review across delivered Platform and PinoyBusinessPOS MVP. **QA and hardening only — no new business features.** Preserve P9-WP01–P9-WP03 security, isolation, idempotency, immutability, and reliability controls. No nested HealthCare product tree in this repository.
 
 Deliver:
 
@@ -215,7 +215,7 @@ Phase marker: `P9-WP05-pilot-and-deployment`
 
 #### Approved scope (clarified)
 
-Prepare and validate a controlled deployment and pilot process for ExItS Platform and PinoyBusinessPOS MVP. **No new business features.** Preserve P9-WP01–P9-WP04 controls. HealthCare remains frozen.
+Prepare and validate a controlled deployment and pilot process for ExItS Platform and PinoyBusinessPOS MVP. **No new business features.** Preserve P9-WP01–P9-WP04 controls. No nested HealthCare product tree in this repository.
 
 Deliver:
 
@@ -261,7 +261,7 @@ Phase marker: `P9-WP06-commercial-mvp-closeout`
 
 #### Approved scope (clarified)
 
-Close Phase 9 and produce the final Commercial MVP readiness decision for ExItS Platform and PinoyBusinessPOS. Reconcile P9-WP01–P9-WP05 plus prior Platform/POS MVP capabilities as one release-candidate evidence package. **No new business functionality** unless correcting a confirmed release-critical defect already inside approved MVP scope. HealthCare remains frozen.
+Close Phase 9 and produce the final Commercial MVP readiness decision for ExItS Platform and PinoyBusinessPOS. Reconcile P9-WP01–P9-WP05 plus prior Platform/POS MVP capabilities as one release-candidate evidence package. **No new business functionality** unless correcting a confirmed release-critical defect already inside approved MVP scope. No nested HealthCare product tree in this repository.
 
 Deliver:
 

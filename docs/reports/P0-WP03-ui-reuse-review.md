@@ -27,7 +27,7 @@ An earlier draft of this report incorrectly stated that Platform Admin would ret
 | Criterion | Status | Evidence |
 |---|---|---|
 | P0-WP02 recorded Complete | Met | Dashboard / phase page |
-| UI apps inventoried | Met | healthcare-ui-reuse-assessment.md §1 |
+| UI apps inventoried | Met | historical healthcare-ui-reuse-assessment.md (later removed) |
 | Ant Design usage evidenced | Met | Assessment §2 |
 | Wrappers/models classified | Met | Assessment §3 |
 | Platform Admin + POS decisions | Met (corrected) | ADR-010: HC Staff Ant; **new** Platform Admin + POS native |
@@ -45,14 +45,14 @@ An earlier draft of this report incorrectly stated that Platform Admin would ret
 
 Documentation only (root):
 
-- `docs/reuse/healthcare-ui-reuse-assessment.md`
+- `docs/reuse/healthcare-ui-reuse-assessment.md` *(later removed)*
 - `docs/engineering/ui-design-system.md`
 - `docs/engineering/reusable-component-catalog.md`
 - `docs/decisions/ADR-010-separate-ui-implementations-platform-and-pos.md`
 - `docs/decisions/README.md`
 - `docs/reuse/reuse-classification-matrix.md`
 - `docs/portfolio-progress.md`
-- `docs/phases/phase-00-healthcare-assessment.md`
+- `docs/phases/phase-00-healthcare-assessment.md` *(later removed; see [phase-00 final assessment](phase-00-final-assessment-and-recommendation.md))*
 - `docs/risks-and-issues.md`
 - `docs/reports/P0-WP03-ui-reuse-review.md`
 - `docs/reports/README.md`

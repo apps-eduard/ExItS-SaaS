@@ -392,7 +392,7 @@ public sealed class ApiEntitlementTests(PostgreSqlFixture fixture) : IAsyncLifet
                      $"/api/v1/platform/organizations/{organizationId}/products/{productCode}/entitlements/deliver",
                      $"/api/v1/platform/organizations/{organizationId}/products/{productCode}/entitlements/publish",
                      "/api/v1/platform/entitlements/broker",
-                     "/api/v1/healthcare/entitlements"
+                     "/api/v1/other-product/entitlements"
                  })
         {
             var response = await _client.GetAsync(path);

@@ -30,7 +30,7 @@ Persist the Platform product/plan catalog and expose it via Platform API without
 - Repository + unit-of-work implementations; expanded catalog commands/queries.
 - Catalog REST API under `/api/v1/platform/catalog` (development-stage, unauthenticated).
 - Integration tests via Testcontainers PostgreSQL; 140 root tests passing at acceptance.
-- HealthCare remains frozen.
+- No nested HealthCare product tree in this repository.
 
 #### Explicit exclusions (honored)
 
@@ -75,7 +75,7 @@ Persist Platform organizations (subscription ownership) and the commercial subsc
 - Trial start/expire; paid activation without payment processing; grace/past-due/suspend/reactivate/cancel/expire.
 - APIs under `/api/v1/platform/organizations` and `/api/v1/platform/subscriptions` (development-stage, unauthenticated).
 - 185 root tests passing; isolated PostgreSQL apply/rollback/re-apply validated.
-- HealthCare remains frozen.
+- No nested HealthCare product tree in this repository.
 
 #### Explicit exclusions (honored)
 
@@ -121,7 +121,7 @@ Implement persistent Platform SaaS manual payment records, confirmation lifecycl
 - ConfirmPaymentAndActivateSubscription: atomic confirm + subscription activation.
 - APIs under `/api/v1/platform/payments` (development-stage, unauthenticated).
 - 251 root tests passing; isolated PostgreSQL apply/rollback/re-apply validated.
-- HealthCare remains frozen.
+- No nested HealthCare product tree in this repository.
 
 #### Explicit exclusions (honored)
 
@@ -170,7 +170,7 @@ Persist authoritative Platform entitlement snapshots and feature overrides with 
 - Provisional `IEntitlementRefreshPolicy` (24h); R-022 remains open.
 - APIs under entitlements and feature-overrides routes (development-stage, unauthenticated).
 - 301 root tests; isolated PostgreSQL apply/rollback/re-apply validated.
-- HealthCare remains frozen.
+- No nested HealthCare product tree in this repository.
 
 #### Explicit exclusions (honored)
 
@@ -217,7 +217,7 @@ Close Phase 3 by validating the commercial foundation (catalog, subscriptions, m
 - API and database inventories recorded.
 - Risk dispositions evidence-based; authentication/delivery/R-022/R-035 remain open.
 - 302 root tests passing.
-- HealthCare remains frozen.
+- No nested HealthCare product tree in this repository.
 
 #### Explicit exclusions (honored)
 

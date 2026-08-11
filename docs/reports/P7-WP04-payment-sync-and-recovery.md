@@ -99,9 +99,9 @@ Updated Phase 7, offline-sync design, portfolio, FILE-MANIFEST, README, security
 | Commit hash | `9c862b4bcd1604a351334120823bdf1e4a2014cb` |
 | Final working tree | uncommitted (per task instruction) |
 
-## HealthCare freeze
+## Portfolio independence
 
-Root `HealthCare/` remains ignored, untracked, outside `ExItS.slnx`.
+Root `HealthCare/` must remain absent/untracked and outside `ExItS.slnx`.
 
 ## Exact next work package
 

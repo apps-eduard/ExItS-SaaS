@@ -4,7 +4,6 @@ namespace ExItS.ArchitectureTests;
 
 /// <summary>
 /// Portfolio independence: ExItS must not nest or track a HealthCare product source tree.
-/// Platform <c>Integration/HealthCare</c> contract abstractions remain tracked intentionally.
 /// </summary>
 public sealed class RepositorySafetyTests
 {
@@ -24,25 +23,6 @@ public sealed class RepositorySafetyTests
         Assert.False(
             Directory.Exists(Path.Combine(root, "HealthCare")),
             "A nested HealthCare/ product directory must not exist in the ExItS workspace.");
-    }
-
-    [Fact]
-    public void Platform_Integration_HealthCare_sources_are_tracked_not_ignored()
-    {
-        var root = FindRepositoryRoot();
-        var relative =
-            "src/Platform/ExItS.Platform.Application/Integration/HealthCare/HealthCareIntegrationAbstractions.cs"
-                .Replace('/', Path.DirectorySeparatorChar);
-        var full = Path.Combine(root, relative);
-        Assert.True(File.Exists(full), "Expected Integration HealthCare abstraction file.");
-
-        var ignored = RunGit(root, "check-ignore", "-v", relative.Replace('\\', '/'));
-        Assert.True(string.IsNullOrWhiteSpace(ignored),
-            "Platform Integration/HealthCare must not be ignored. Output: " + ignored);
-
-        var tracked = RunGit(root, "ls-files", "--", relative.Replace('\\', '/'));
-        Assert.False(string.IsNullOrWhiteSpace(tracked),
-            "Platform Integration/HealthCare must be tracked by root Git.");
     }
 
     [Fact]

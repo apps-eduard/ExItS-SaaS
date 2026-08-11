@@ -46,7 +46,7 @@ ExItS-SaaS/
 └── README.md
 ```
 
-This workspace does **not** contain a nested HealthCare product tree. Platform `Integration/HealthCare` contracts remain tracked Platform files. Do not recreate or import external product source without an approved work package.
+This workspace does **not** contain a nested HealthCare product tree. Do not recreate or import external product source without an approved work package. Active portfolio: Platform + PinoyBusinessPOS.
 
 **Phase 6** is **complete** with documented risks ([P6-WP06 closeout](docs/reports/P6-WP06-utang-mvp-closeout.md)). Utang MVP (customers, credit, repayments/ledger, due dates/overdue, statements/receipts, trial/continuity rules) is closed.
 

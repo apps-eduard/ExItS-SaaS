@@ -2,7 +2,7 @@ using ExItS.PinoyBusinessPOS.Domain.Common;
 
 namespace ExItS.PinoyBusinessPOS.Domain.Expenses;
 
-/// <summary>Strongly typed identifier for a POS expense. Not a Platform or HealthCare identity.</summary>
+/// <summary>Strongly typed identifier for a POS expense. Not a Platform identity.</summary>
 public sealed class ExpenseId : IEquatable<ExpenseId>
 {
     public Guid Value { get; }

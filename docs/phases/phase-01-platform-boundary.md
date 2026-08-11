@@ -1,6 +1,6 @@
 # Phase 1 — Platform Boundary and Architecture
 
-[Dashboard](../portfolio-progress.md) | [All Phases](README.md) | [Previous](phase-00-healthcare-assessment.md) | [Next](phase-02-platform-extraction.md) | [Architecture approval](../reports/phase-01-architecture-approval.md) | [Approved summary](../engineering/approved-architecture-summary.md)
+[Dashboard](../portfolio-progress.md) | [All Phases](README.md) | [Previous](../reports/phase-00-final-assessment-and-recommendation.md) | [Next](phase-02-platform-extraction.md) | [Architecture approval](../reports/phase-01-architecture-approval.md) | [Approved summary](../engineering/approved-architecture-summary.md)
 
 ## Objective
 
