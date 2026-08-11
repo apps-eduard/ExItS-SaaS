@@ -155,7 +155,7 @@ else if (Id is null)
                Size="@TableSize.Small"
                Bordered
                Resizable
-               ScrollX="1120"
+               ScrollX="900"
                RemoteDataSource
                OnChange="OnCategoriesTableChangeAsync">
             @if (CanManage)
@@ -168,10 +168,6 @@ else if (Id is null)
             <PropertyColumn Property="c => c.Name" Title="@L["Common_Name"]" Sortable>
                 <a href="/admin/global-catalog/categories/@context.Id">@Indent(context)@context.Name</a>
             </PropertyColumn>
-            <PropertyColumn Property="c => c.ParentId" Title="@L["GlobalCategories_Parent"]" Width="180">
-                @ParentName(context.ParentId)
-            </PropertyColumn>
-            <PropertyColumn Property="c => c.SortOrder" Title="@L["GlobalCategories_SortOrder"]" Sortable Width="100" />
             <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Sortable Width="110">
                 <AdminStatusTag Value="@context.Status" />
             </PropertyColumn>

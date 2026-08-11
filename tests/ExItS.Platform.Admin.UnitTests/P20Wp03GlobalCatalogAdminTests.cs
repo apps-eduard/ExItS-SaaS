@@ -52,6 +52,16 @@ public sealed class P20Wp03GlobalCatalogAdminTests
 
         Assert.Contains("Resizable", categories, StringComparison.Ordinal);
         Assert.Contains("AdminTableSort.ApplyChangeAsync", categories, StringComparison.Ordinal);
+        Assert.Contains("GlobalCategories_Parent", categories, StringComparison.Ordinal);
+        Assert.Contains("GlobalCategories_SortOrder", categories, StringComparison.Ordinal);
+        Assert.DoesNotContain(
+            "PropertyColumn Property=\"c => c.ParentId\" Title=\"@L[\"GlobalCategories_Parent\"]\"",
+            categories,
+            StringComparison.Ordinal);
+        Assert.DoesNotContain(
+            "PropertyColumn Property=\"c => c.SortOrder\" Title=\"@L[\"GlobalCategories_SortOrder\"]\"",
+            categories,
+            StringComparison.Ordinal);
         Assert.Contains("Resizable", templates, StringComparison.Ordinal);
         Assert.Contains("AdminTableSort.ApplyChangeAsync", templates, StringComparison.Ordinal);
         Assert.Contains("Resizable", imports, StringComparison.Ordinal);

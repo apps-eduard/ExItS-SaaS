@@ -299,7 +299,8 @@ public sealed class PlatformApiClientTests
             new HttpClient(handler) { BaseAddress = new Uri("http://platform.test") },
             new HttpContextAccessor(),
             new AnonymousAuthenticationStateProvider(),
-            new PlatformCircuitSession());
+            new PlatformCircuitSession(),
+            new AdminSessionExpiryCoordinator());
 
     private sealed class AnonymousAuthenticationStateProvider : AuthenticationStateProvider
     {
