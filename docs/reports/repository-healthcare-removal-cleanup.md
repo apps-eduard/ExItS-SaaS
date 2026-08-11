@@ -109,4 +109,4 @@ WP11: **not started**
 
 ## Implementation commit hash
 
-`<pending>`
+`2d582376a87779aef100eb0c72678ead4f53961e`
