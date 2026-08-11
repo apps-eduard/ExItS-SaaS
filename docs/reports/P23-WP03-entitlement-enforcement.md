@@ -110,4 +110,4 @@ Server still accepts legacy aliases on merchant list endpoints but **intersects*
 
 ## Commit hash
 
-_Recorded after implementation commit._
+`fe8cd435973c6433ac4e62021741a37cc85f98fb`
