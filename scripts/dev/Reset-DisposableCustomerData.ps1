@@ -143,17 +143,19 @@ if (-not $PSCmdlet.ShouldProcess('the supplied Platform and POS databases', 'Del
 
 # Preserve:
 # - the two local-validation Platform administrators and their Platform role assignments
-# - commercial products/plans/features, Business Type definitions, Catalog Template definitions
+# - commercial products/plans/features, Business Type definitions
 # - EF migration history, privacy/system reference configuration
-# Clear disposable Global Catalog merchandise (products, categories, mappings, template compositions,
-# import jobs) so corrected barcode rules can re-seed cleanly. Template definition rows remain.
+# Clear disposable Global Catalog merchandise (products, categories, mappings, template compositions
+# and template definitions including Published shells, import jobs) so corrected barcode rules can
+# re-seed cleanly. Business Type rows remain.
 $platformReset = @"
 BEGIN;
 
--- Disposable Global Catalog merchandise (keep business_types + catalog_templates definitions).
+-- Disposable Global Catalog merchandise (keep business_types definitions).
 DELETE FROM catalog.catalog_import_items;
 DELETE FROM catalog.catalog_import_jobs;
 DELETE FROM catalog.catalog_template_products;
+DELETE FROM catalog.catalog_templates;
 DELETE FROM catalog.global_product_business_types;
 DELETE FROM catalog.global_products;
 DELETE FROM catalog.global_category_business_types;
@@ -238,4 +240,4 @@ Write-Host 'Platform counts after reset:'
 Invoke-Psql -Connection $PlatformConnection -Sql $platformCounts -Target Platform
 Write-Host 'POS counts after reset:'
 Invoke-Psql -Connection $PosConnection -Sql $posCounts -Target Pos
-Write-Host 'Disposable Development reset completed. Preserved: Platform admins, Business Types, Catalog Template definitions, commercial plans/features, EF migrations. Cleared: Global Catalog products/categories/mappings/template compositions/import jobs, disposable orgs/users, and all POS operational tables.'
+Write-Host 'Disposable Development reset completed. Preserved: Platform admins, Business Types, commercial plans/features, EF migrations. Cleared: Global Catalog products/categories/mappings/template compositions and definitions/import jobs, disposable orgs/users, and all POS operational tables.'

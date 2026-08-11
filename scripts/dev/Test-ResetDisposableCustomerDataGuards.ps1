@@ -103,6 +103,7 @@ Assert-Ok {
 
 $requiredClears = @(
     'DELETE FROM catalog.catalog_template_products',
+    'DELETE FROM catalog.catalog_templates',
     'DELETE FROM catalog.global_products',
     'DELETE FROM catalog.global_categories',
     'DELETE FROM catalog.global_product_business_types',
@@ -118,14 +119,6 @@ foreach ($stmt in $requiredClears) {
         Write-Host "FAIL missing clear statement: $stmt"
         $failures++
     }
-}
-
-if ($source -match 'DELETE FROM catalog\.catalog_templates\b' -or $source -match 'TRUNCATE TABLE catalog\.catalog_templates') {
-    Write-Host 'FAIL catalog_templates definitions must be preserved'
-    $failures++
-}
-else {
-    Write-Host 'PASS catalog_templates definitions are not deleted'
 }
 
 if ($source -match 'DELETE FROM catalog\.business_types\b') {
