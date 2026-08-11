@@ -524,6 +524,147 @@ public sealed class ReactivateCatalogProduct
     }
 }
 
+/// <summary>
+/// Today's Prices: narrow bulk current-price update. Partial success (per-item results).
+/// Unchanged prices are successes with <c>Changed=false</c> and do not bump UpdatedAtUtc.
+/// Does not mutate historical sale lines.
+/// </summary>
+public sealed class UpdateCatalogProductPrices
+{
+    private readonly ICatalogProductRepository _products;
+    private readonly IInventoryRepository _inventory;
+    private readonly IPosUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
+
+    public UpdateCatalogProductPrices(
+        ICatalogProductRepository products,
+        IInventoryRepository inventory,
+        IPosUnitOfWork unitOfWork,
+        IClock clock)
+    {
+        _products = products;
+        _inventory = inventory;
+        _unitOfWork = unitOfWork;
+        _clock = clock;
+    }
+
+    public async Task<ApplicationResult<UpdatePosCatalogProductPricesResponse>> ExecuteAsync(
+        Guid organizationId,
+        IReadOnlyList<UpdatePosCatalogProductPriceItem> items,
+        CancellationToken cancellationToken = default)
+    {
+        if (items is null || items.Count == 0)
+        {
+            return ApplicationResult<UpdatePosCatalogProductPricesResponse>.Failure(
+                ApplicationErrorCodes.CatalogPriceBulkEmpty,
+                "At least one price update item is required.");
+        }
+
+        var orgId = PosOrganizationId.From(organizationId);
+        var results = new UpdatePosCatalogProductPriceResultItem[items.Count];
+        var seen = new HashSet<Guid>();
+        var productsById = new Dictionary<Guid, CatalogProduct>();
+        var now = _clock.UtcNow;
+        var anyChanged = false;
+
+        for (var i = 0; i < items.Count; i++)
+        {
+            var item = items[i];
+            if (item.ProductId == Guid.Empty)
+            {
+                results[i] = Fail(item.ProductId, ApplicationErrorCodes.ProductNotFound, "Product was not found.");
+                continue;
+            }
+
+            if (!seen.Add(item.ProductId))
+            {
+                results[i] = Fail(
+                    item.ProductId,
+                    ApplicationErrorCodes.CatalogPriceBulkDuplicate,
+                    "Duplicate ProductId in the same Today's Prices request.");
+                continue;
+            }
+
+            var product = await _products
+                .GetByIdAsync(orgId, CatalogProductId.From(item.ProductId), cancellationToken)
+                .ConfigureAwait(false);
+            if (product is null)
+            {
+                results[i] = Fail(item.ProductId, ApplicationErrorCodes.ProductNotFound, "Product was not found.");
+                continue;
+            }
+
+            if (CatalogConcurrency.IsStale(item.ExpectedUpdatedAtUtc, product.UpdatedAtUtc))
+            {
+                results[i] = Fail(
+                    item.ProductId,
+                    ApplicationErrorCodes.CatalogConcurrencyConflict,
+                    "The product was updated concurrently. Reload the latest version and try again.");
+                continue;
+            }
+
+            try
+            {
+                var changed = product.UpdateSellingPrice(item.SellingPrice, now);
+                if (changed)
+                {
+                    await _products.UpdateAsync(product, cancellationToken).ConfigureAwait(false);
+                    anyChanged = true;
+                }
+
+                productsById[item.ProductId] = product;
+                results[i] = new UpdatePosCatalogProductPriceResultItem(
+                    item.ProductId,
+                    Succeeded: true,
+                    Changed: changed,
+                    Product: null);
+            }
+            catch (DomainException ex)
+            {
+                results[i] = Fail(item.ProductId, ex.ErrorCode, ex.Message);
+            }
+            catch (PersistenceConflictException ex)
+            {
+                results[i] = Fail(item.ProductId, ex.ErrorCode, ex.Message);
+            }
+        }
+
+        if (anyChanged)
+        {
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        var accounts = await _inventory
+            .ListByProductIdsAsync(
+                orgId,
+                productsById.Values.Select(p => p.Id).ToList(),
+                cancellationToken)
+            .ConfigureAwait(false);
+        var accountsByProduct = accounts.ToDictionary(a => a.ProductId.Value);
+
+        for (var i = 0; i < results.Length; i++)
+        {
+            var row = results[i];
+            if (!row.Succeeded || !productsById.TryGetValue(row.ProductId, out var product))
+            {
+                continue;
+            }
+
+            accountsByProduct.TryGetValue(row.ProductId, out var account);
+            results[i] = row with { Product = CatalogProductQueryService.Map(product, account) };
+        }
+
+        var succeeded = results.Count(r => r.Succeeded);
+        var failed = results.Length - succeeded;
+        var changedCount = results.Count(r => r is { Succeeded: true, Changed: true });
+        return ApplicationResult<UpdatePosCatalogProductPricesResponse>.Success(
+            new UpdatePosCatalogProductPricesResponse(results, succeeded, failed, changedCount));
+    }
+
+    private static UpdatePosCatalogProductPriceResultItem Fail(Guid productId, string code, string message) =>
+        new(productId, Succeeded: false, Changed: false, Product: null, code, message);
+}
+
 internal static class CatalogAssignment
 {
     public static async Task<ApplicationResult> EnsureAssignableCategoryAsync(

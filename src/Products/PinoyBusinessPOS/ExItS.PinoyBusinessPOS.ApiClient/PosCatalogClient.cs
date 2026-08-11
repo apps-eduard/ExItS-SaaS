@@ -101,6 +101,11 @@ public sealed class PosCatalogClient(HttpClient httpClient, IConnectivityService
         CancellationToken ct = default) =>
         SendAsync<PosCatalogProductDto>(HttpMethod.Put, $"{ProductsPath}/{productId:D}", request, ct);
 
+    public Task<ApiResult<UpdatePosCatalogProductPricesResponse>> UpdateProductPricesAsync(
+        UpdatePosCatalogProductPricesRequest request,
+        CancellationToken ct = default) =>
+        SendAsync<UpdatePosCatalogProductPricesResponse>(HttpMethod.Post, $"{ProductsPath}/prices", request, ct);
+
     public Task<ApiResult<PosCatalogProductDto>> DeactivateProductAsync(
         Guid productId,
         CancellationToken ct = default) =>

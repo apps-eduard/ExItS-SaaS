@@ -108,6 +108,7 @@ builder.Services.AddScoped<ReactivateProductCategory>();
 builder.Services.AddScoped<CatalogProductQueryService>();
 builder.Services.AddScoped<CreateCatalogProduct>();
 builder.Services.AddScoped<UpdateCatalogProduct>();
+builder.Services.AddScoped<UpdateCatalogProductPrices>();
 builder.Services.AddScoped<DeactivateCatalogProduct>();
 builder.Services.AddScoped<ReactivateCatalogProduct>();
 builder.Services.AddScoped<GetOrganizationCatalogForPlatformSupport>();

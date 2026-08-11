@@ -4,7 +4,7 @@
 
 | Field | Value |
 |---|---|
-| Status | **Open** — WP01 ✓ · WP02 ✓ · WP03 ✓ · WP04 ✓ · WP05 ✓ · WP06 ✓ · WP07 ✓ · WP08 ✓ · **WP09 Implemented** (weighted MAUI sale UX) · WP10+ not started |
+| Status | **Open** — WP01 ✓ · WP02 ✓ · WP03 ✓ · WP04 ✓ · WP05 ✓ · WP06 ✓ · WP07 ✓ · WP08 ✓ · WP09 ✓ · **WP10 Implemented** (Today's Prices) · WP11+ not started |
 | Branch / HEAD at open | `main` @ `c03894f` (WP01 docs later @ `4e5cb99`) |
 | Physical device target | `R58R61E3CAZ` (validation not in WP01–WP03) |
 
@@ -180,7 +180,7 @@ Register → Personal → Start Business → plan + **required** Business Type �
 | **WP07** | Purchasing/returns/reporting propagation | **Done** — [P23-WP07](../reports/P23-WP07-purchasing-returns-reporting.md) |
 | **WP08** | SQLite/offline/outbox/sync compatibility | **Done** — [P23-WP08](../reports/P23-WP08-offline-sale-snapshot-fidelity.md) |
 | **WP09** | Weighted-sale MAUI UX | **Done** — [P23-WP09](../reports/P23-WP09-weighted-sale-maui-ux.md) |
-| **WP10** | Today’s Prices workflow | Bulk current-price update |
+| **WP10** | Today’s Prices workflow | **Done** — [P23-WP10](../reports/P23-WP10-todays-prices.md) |
 | **WP11** | Onboarding multi-BT entitlement UX | Activate allowed add-on types |
 | **WP12** | Regression/security/edge-case tests | Matrix below |
 | **WP13** | Documentation/closeout | Final report; no Device Verified claim |

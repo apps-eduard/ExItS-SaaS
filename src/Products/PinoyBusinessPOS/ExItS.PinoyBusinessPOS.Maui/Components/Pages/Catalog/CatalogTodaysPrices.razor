@@ -1,0 +1,410 @@
+@page "/catalog/todays-prices"
+@using ExItS.DesignSystem.Components.Internal
+@using ExItS.PinoyBusinessPOS.Application.Offline
+@using ExItS.PinoyBusinessPOS.Maui.Components.Pages.Sales
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosCatalogClient Catalog
+@inject ICurrentUserContext CurrentUser
+@inject IUtangCapabilityEvaluator Capabilities
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IConnectivityService Connectivity
+@inject OnlineRequiredGuard OnlineRequired
+@inject ILocalSellingCatalogStore LocalCatalog
+@inject IStringLocalizer<PosResources> L
+
+<StoreHeaderBack Href="/catalog" />
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else
+{
+    var canManage = Capabilities.IsAllowed(UtangCapability.ManageCatalog);
+<div class="pos-todays-prices">
+    <Page>
+        <header class="pos-todays-prices__header">
+            <h1 class="pos-todays-prices__title">@L["Catalog_TodaysPrices_Title"]</h1>
+            <p class="pos-todays-prices__subtitle">@L["Catalog_TodaysPrices_Subtitle"]</p>
+        </header>
+
+        @if (_isOffline)
+        {
+            <Alert Tone="AlertTone.Warning" Title="@L["Catalog_OfflineTitle"]" Message="@L["Catalog_OfflineMessage"]" />
+        }
+        else if (!canManage)
+        {
+            <Alert Tone="AlertTone.Warning" Title="@L["Access_RestrictedTitle"]" Message="@L["Access_RestrictedMessage"]" />
+        }
+
+        @if (!string.IsNullOrEmpty(_formError))
+        {
+            <Alert Tone="AlertTone.Danger" Title="@L["Catalog_ErrorTitle"]" Message="@_formError" />
+        }
+
+        @if (!string.IsNullOrEmpty(_successMessage))
+        {
+            <Alert Tone="AlertTone.Success" Title="@L["Catalog_SuccessTitle"]" Message="@_successMessage" />
+        }
+
+        @if (canManage && !_isOffline)
+        {
+            <div class="pos-todays-prices__toolbar">
+                <div class="pos-catalog__search">
+                    <span class="pos-catalog__search-icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
+                    <input class="pos-catalog__search-input"
+                           type="search"
+                           value="@_search"
+                           placeholder="@L["Catalog_SearchShort"]"
+                           disabled="@(_loading || _saving)"
+                           @oninput="OnSearchInputAsync" />
+                </div>
+                <Select Label="@L["Catalog_Filter_Category"]"
+                        Value="@_categoryFilter"
+                        ValueChanged="OnCategoryFilterChanged"
+                        Options="@CatalogUiOptions.CategoryFilters(L, _categories)"
+                        Disabled="@(_loading || _saving)" />
+            </div>
+
+            <FormActions>
+                <Button Variant="ButtonVariant.Secondary"
+                        Disabled="@(_loading || _saving || ChangedCount == 0)"
+                        OnClick="ResetChangedAsync">@L["Catalog_TodaysPrices_Reset"]</Button>
+                <Button Variant="ButtonVariant.Primary"
+                        IsLoading="@_saving"
+                        Disabled="@(_loading || ChangedCount == 0)"
+                        OnClick="SaveAsync">@L["Catalog_TodaysPrices_Apply"]</Button>
+            </FormActions>
+
+            @if (ChangedCount > 0)
+            {
+                <p class="pos-todays-prices__changed">@string.Format(L["Catalog_TodaysPrices_ChangedCount"].Value, ChangedCount)</p>
+            }
+        }
+
+        @if (_loading)
+        {
+            <Spinner /><span>@L["Catalog_Loading"]</span>
+        }
+        else if (_rows.Count == 0 && canManage && !_isOffline)
+        {
+            <EmptyState Title="@L["Catalog_EmptyTitle"]" Message="@L["Catalog_EmptyMessage"]" />
+        }
+        else if (canManage && !_isOffline)
+        {
+            <section class="pos-todays-prices__list" aria-label="@L["Catalog_TodaysPrices_Title"]">
+                @foreach (var row in _rows)
+                {
+                    <div class="pos-todays-prices__row @(row.IsChanged ? "pos-todays-prices__row--changed" : null)">
+                        <div class="pos-todays-prices__row-main">
+                            <div class="pos-todays-prices__name">@row.Name</div>
+                            <div class="pos-todays-prices__current">
+                                <MoneyDisplay Amount="@row.OriginalPrice" CurrencyCode="PHP" />
+                                @if (!string.IsNullOrEmpty(row.PriceSuffix))
+                                {
+                                    <span> @row.PriceSuffix</span>
+                                }
+                            </div>
+                            @if (!string.IsNullOrEmpty(row.RowError))
+                            {
+                                <div class="pos-todays-prices__row-error">@row.RowError</div>
+                            }
+                        </div>
+                        <div class="pos-todays-prices__input">
+                            <CurrencyInput Label="@L["Catalog_TodaysPrices_NewPrice"]"
+                                           Value="@row.DraftPrice"
+                                           ValueChanged="v => OnPriceChanged(row, v)"
+                                           CurrencyCode="PHP"
+                                           Disabled="@_saving"
+                                           IsInvalid="@(!string.IsNullOrEmpty(row.RowError))" />
+                        </div>
+                    </div>
+                }
+            </section>
+        }
+    </Page>
+</div>
+}
+}
+
+@code {
+    private bool _ready;
+    private bool _loading;
+    private bool _saving;
+    private bool _isOffline;
+    private string? _search;
+    private string? _categoryFilter;
+    private string? _formError;
+    private string? _successMessage;
+    private CancellationTokenSource? _searchCts;
+    private List<PosProductCategoryDto> _categories = [];
+    private List<PriceRow> _rows = [];
+
+    private int ChangedCount => _rows.Count(r => r.IsChanged);
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell || CurrentUser.Session?.OrganizationId is null)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        _ready = true;
+        await ReloadAsync();
+    }
+
+    private async Task OnSearchInputAsync(ChangeEventArgs args)
+    {
+        _search = args.Value?.ToString();
+        _searchCts?.Cancel();
+        _searchCts?.Dispose();
+        _searchCts = new CancellationTokenSource();
+        var token = _searchCts.Token;
+        try
+        {
+            await Task.Delay(250, token);
+            await ReloadAsync();
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    private async Task OnCategoryFilterChanged(string? value)
+    {
+        _categoryFilter = value;
+        await ReloadAsync();
+    }
+
+    private void OnPriceChanged(PriceRow row, decimal? value)
+    {
+        row.DraftPrice = value;
+        row.RowError = null;
+        _successMessage = null;
+    }
+
+    private Task ResetChangedAsync()
+    {
+        foreach (var row in _rows)
+        {
+            row.DraftPrice = row.OriginalPrice;
+            row.RowError = null;
+        }
+
+        _formError = null;
+        _successMessage = null;
+        return Task.CompletedTask;
+    }
+
+    private async Task ReloadAsync()
+    {
+        _loading = true;
+        _formError = null;
+        _successMessage = null;
+        StateHasChanged();
+
+        if (!await OnlineRequired.EnsureOnlineForActionAsync(PosOfflineActionKeys.CatalogManage))
+        {
+            _isOffline = true;
+            _rows = [];
+            _loading = false;
+            return;
+        }
+
+        _isOffline = false;
+        if (!Capabilities.IsAllowed(UtangCapability.ManageCatalog))
+        {
+            _rows = [];
+            _loading = false;
+            return;
+        }
+
+        await LoadCategoriesAsync();
+
+        Guid? categoryId = Guid.TryParse(_categoryFilter, out var parsedCategory) ? parsedCategory : null;
+        var collected = new List<PosCatalogProductDto>();
+        const int pageSize = 100;
+        var page = 1;
+        while (page <= 20)
+        {
+            var result = await Catalog.ListProductsAsync(
+                _search,
+                PosCatalogOptions.ActiveStatus,
+                categoryId,
+                unitOfMeasure: null,
+                page,
+                pageSize);
+
+            if (!result.IsSuccess || result.Data is null)
+            {
+                _rows = [];
+                var described = ApiLocalizer.Describe(result.Status, result.Error);
+                _formError = result.Error?.Detail ?? described.Message;
+                _loading = false;
+                return;
+            }
+
+            collected.AddRange(result.Data.Items);
+            if (collected.Count >= result.Data.TotalCount || result.Data.Items.Count == 0)
+            {
+                break;
+            }
+
+            page++;
+        }
+
+        _rows = collected
+            .OrderBy(p => p.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(p => new PriceRow(
+                p.ProductId,
+                p.Name,
+                p.SellingPrice,
+                p.SellingPrice,
+                p.UpdatedAtUtc,
+                SalesUiOptions.PriceUnitSuffix(L, p.SellingMode)))
+            .ToList();
+        _loading = false;
+    }
+
+    private async Task LoadCategoriesAsync()
+    {
+        var result = await Catalog.ListCategoriesAsync(
+            status: PosCatalogOptions.ActiveStatus,
+            page: 1,
+            pageSize: 100);
+        _categories = result.IsSuccess && result.Data is not null
+            ? result.Data.Items
+            : [];
+    }
+
+    private async Task SaveAsync()
+    {
+        _formError = null;
+        _successMessage = null;
+
+        if (!Capabilities.IsAllowed(UtangCapability.ManageCatalog))
+        {
+            return;
+        }
+
+        if (!await OnlineRequired.EnsureOnlineForActionAsync(PosOfflineActionKeys.CatalogManage))
+        {
+            _isOffline = true;
+            return;
+        }
+
+        var changed = _rows.Where(r => r.IsChanged).ToList();
+        if (changed.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var row in changed)
+        {
+            row.RowError = null;
+            if (row.DraftPrice is null || row.DraftPrice < 0m)
+            {
+                row.RowError = L["Catalog_PriceRequired"];
+            }
+        }
+
+        if (changed.Any(r => !string.IsNullOrEmpty(r.RowError)))
+        {
+            _formError = L["Catalog_TodaysPrices_FixErrors"];
+            return;
+        }
+
+        _saving = true;
+        try
+        {
+            var request = new UpdatePosCatalogProductPricesRequest(
+                changed.Select(r => new UpdatePosCatalogProductPriceItem(
+                    r.ProductId,
+                    r.DraftPrice!.Value,
+                    r.ExpectedUpdatedAtUtc)).ToList());
+
+            var result = await Catalog.UpdateProductPricesAsync(request);
+            if (!result.IsSuccess || result.Data is null)
+            {
+                var described = ApiLocalizer.Describe(result.Status, result.Error);
+                _formError = result.Error?.Detail ?? described.Message;
+                // Offline / unavailable must never look like a successful local price change.
+                if (result.Status is ApiCallStatus.Offline or ApiCallStatus.Timeout or ApiCallStatus.Unavailable)
+                {
+                    _isOffline = true;
+                }
+
+                return;
+            }
+
+            var byId = result.Data.Results.ToDictionary(r => r.ProductId);
+            var upsert = new List<PosCatalogProductDto>();
+            foreach (var row in changed)
+            {
+                if (!byId.TryGetValue(row.ProductId, out var item))
+                {
+                    row.RowError = L["Catalog_TodaysPrices_UnknownResult"];
+                    continue;
+                }
+
+                if (!item.Succeeded || item.Product is null)
+                {
+                    row.RowError = item.ErrorMessage ?? L["Catalog_TodaysPrices_ItemFailed"];
+                    continue;
+                }
+
+                row.OriginalPrice = item.Product.SellingPrice;
+                row.DraftPrice = item.Product.SellingPrice;
+                row.ExpectedUpdatedAtUtc = item.Product.UpdatedAtUtc;
+                row.RowError = null;
+                upsert.Add(item.Product);
+            }
+
+            if (upsert.Count > 0)
+            {
+                await LocalCatalog.UpsertProductsAsync(upsert);
+            }
+
+            if (result.Data.FailedCount > 0)
+            {
+                _formError = string.Format(
+                    L["Catalog_TodaysPrices_PartialFailure"].Value,
+                    result.Data.SucceededCount,
+                    result.Data.FailedCount);
+            }
+            else
+            {
+                _successMessage = string.Format(
+                    L["Catalog_TodaysPrices_Success"].Value,
+                    result.Data.ChangedCount);
+            }
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private sealed class PriceRow(
+        Guid productId,
+        string name,
+        decimal originalPrice,
+        decimal? draftPrice,
+        DateTimeOffset expectedUpdatedAtUtc,
+        string priceSuffix)
+    {
+        public Guid ProductId { get; } = productId;
+        public string Name { get; } = name;
+        public decimal OriginalPrice { get; set; } = originalPrice;
+        public decimal? DraftPrice { get; set; } = draftPrice;
+        public DateTimeOffset ExpectedUpdatedAtUtc { get; set; } = expectedUpdatedAtUtc;
+        public string PriceSuffix { get; } = priceSuffix;
+        public string? RowError { get; set; }
+
+        public bool IsChanged =>
+            DraftPrice is decimal draft
+            && decimal.Round(draft, 2) != decimal.Round(OriginalPrice, 2);
+    }
+}

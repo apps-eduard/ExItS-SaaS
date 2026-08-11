@@ -152,6 +152,40 @@ public sealed class CatalogDomainTests
     }
 
     [Fact]
+    public void UpdateSellingPrice_changes_current_price_only_and_skips_unchanged()
+    {
+        var product = CatalogProduct.Create(
+            OrgA,
+            "Tomato",
+            UnitOfMeasure.Kilogram,
+            120m,
+            Now,
+            sellingMode: SellingMode.ByWeight);
+
+        Assert.True(product.UpdateSellingPrice(135m, Now.AddMinutes(5)));
+        Assert.Equal(135m, product.SellingPrice);
+        Assert.Equal(Now.AddMinutes(5), product.UpdatedAtUtc);
+        Assert.Equal(SellingMode.ByWeight, product.SellingMode);
+        Assert.Equal("Tomato", product.Name);
+
+        Assert.False(product.UpdateSellingPrice(135m, Now.AddMinutes(10)));
+        Assert.Equal(Now.AddMinutes(5), product.UpdatedAtUtc);
+
+        Assert.True(product.UpdateSellingPrice(0m, Now.AddMinutes(15)));
+        Assert.Equal(0m, product.SellingPrice);
+
+        var negative = Assert.Throws<DomainException>(() => product.UpdateSellingPrice(-1m, Now.AddMinutes(20)));
+        Assert.Equal(DomainErrorCodes.InvalidProductSellingPrice, negative.ErrorCode);
+
+        var precision = Assert.Throws<DomainException>(() => product.UpdateSellingPrice(10.123m, Now.AddMinutes(21)));
+        Assert.Equal(DomainErrorCodes.InvalidProductSellingPrice, precision.ErrorCode);
+
+        product.Deactivate(Now.AddMinutes(30));
+        var inactive = Assert.Throws<DomainException>(() => product.UpdateSellingPrice(11m, Now.AddMinutes(31)));
+        Assert.Equal(DomainErrorCodes.ProductNotActive, inactive.ErrorCode);
+    }
+
+    [Fact]
     public void Product_has_no_stock_or_sales_state()
     {
         var propertyNames = typeof(CatalogProduct)

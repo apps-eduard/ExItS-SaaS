@@ -61,6 +61,7 @@ public sealed class PosOfflineCapabilityPolicy : IPosOfflineCapabilityPolicy
             ["/org/subscription"] = PosConnectivityRequirement.OnlineRequired,
             ["/catalog"] = PosConnectivityRequirement.OnlineRequired,
             ["/catalog/import"] = PosConnectivityRequirement.OnlineRequired,
+            ["/catalog/todays-prices"] = PosConnectivityRequirement.OnlineRequired,
             ["/catalog/categories"] = PosConnectivityRequirement.OnlineRequired,
             ["/catalog/global"] = PosConnectivityRequirement.OnlineRequired,
             ["/catalog/barcode-lookup"] = PosConnectivityRequirement.OnlineRequired,

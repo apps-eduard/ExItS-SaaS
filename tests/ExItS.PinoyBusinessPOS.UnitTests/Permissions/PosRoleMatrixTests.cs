@@ -7,6 +7,12 @@ namespace ExItS.PinoyBusinessPOS.UnitTests.Permissions;
 public sealed class PosRoleMatrixTests
 {
     [Theory]
+    [InlineData(PosRole.Owner, UtangCapability.ManageCatalog, true)]
+    [InlineData(PosRole.StoreManager, UtangCapability.ManageCatalog, true)]
+    [InlineData(PosRole.Cashier, UtangCapability.ManageCatalog, false)]
+    [InlineData(PosRole.Cashier, UtangCapability.ViewCatalog, true)]
+    [InlineData(PosRole.InventoryStaff, UtangCapability.ManageCatalog, false)]
+    [InlineData(PosRole.ReportingUser, UtangCapability.ManageCatalog, false)]
     [InlineData(PosRole.Owner, UtangCapability.ManagePermissions, true)]
     [InlineData(PosRole.Admin, UtangCapability.ManagePermissions, true)]
     [InlineData(PosRole.StoreManager, UtangCapability.ManagePermissions, false)]

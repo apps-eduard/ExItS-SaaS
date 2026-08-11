@@ -68,6 +68,29 @@ public sealed record UpdatePosCatalogProductRequest(
     DateTimeOffset? ExpectedUpdatedAtUtc = null,
     string? SellingMode = null);
 
+/// <summary>One row for Today's Prices bulk current-price update (price only).</summary>
+public sealed record UpdatePosCatalogProductPriceItem(
+    Guid ProductId,
+    decimal SellingPrice,
+    DateTimeOffset? ExpectedUpdatedAtUtc = null);
+
+public sealed record UpdatePosCatalogProductPricesRequest(
+    IReadOnlyList<UpdatePosCatalogProductPriceItem> Items);
+
+public sealed record UpdatePosCatalogProductPriceResultItem(
+    Guid ProductId,
+    bool Succeeded,
+    bool Changed,
+    PosCatalogProductDto? Product = null,
+    string? ErrorCode = null,
+    string? ErrorMessage = null);
+
+public sealed record UpdatePosCatalogProductPricesResponse(
+    IReadOnlyList<UpdatePosCatalogProductPriceResultItem> Results,
+    int SucceededCount,
+    int FailedCount,
+    int ChangedCount);
+
 public sealed record PosProductCategoryPagedResult(
     List<PosProductCategoryDto> Items,
     int TotalCount,

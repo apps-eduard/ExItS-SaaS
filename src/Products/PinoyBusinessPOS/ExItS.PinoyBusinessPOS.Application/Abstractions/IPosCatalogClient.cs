@@ -50,6 +50,11 @@ public interface IPosCatalogClient
         UpdatePosCatalogProductRequest request,
         CancellationToken ct = default);
 
+    /// <summary>Today's Prices: bulk current selling-price update (online-only).</summary>
+    Task<ApiResult<UpdatePosCatalogProductPricesResponse>> UpdateProductPricesAsync(
+        UpdatePosCatalogProductPricesRequest request,
+        CancellationToken ct = default);
+
     Task<ApiResult<PosCatalogProductDto>> DeactivateProductAsync(Guid productId, CancellationToken ct = default);
 
     Task<ApiResult<PosCatalogProductDto>> ReactivateProductAsync(Guid productId, CancellationToken ct = default);

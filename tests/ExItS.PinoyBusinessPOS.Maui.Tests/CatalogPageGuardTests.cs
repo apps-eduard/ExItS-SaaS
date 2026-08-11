@@ -17,8 +17,10 @@ public sealed class CatalogPageGuardTests
         Assert.Contains("IPosCatalogClient", list, StringComparison.Ordinal);
         Assert.Contains("/catalog/global", list, StringComparison.Ordinal);
         Assert.Contains("/catalog/import", list, StringComparison.Ordinal);
+        Assert.Contains("/catalog/todays-prices", list, StringComparison.Ordinal);
         Assert.Contains("Catalog_Quick_Global", list, StringComparison.Ordinal);
         Assert.Contains("Catalog_Quick_Template", list, StringComparison.Ordinal);
+        Assert.Contains("Catalog_Quick_TodaysPrices", list, StringComparison.Ordinal);
         Assert.Contains("Catalog_FiltersTitle", list, StringComparison.Ordinal);
         Assert.Contains("ListProductsAsync", list, StringComparison.Ordinal);
         Assert.Contains("Pagination", list, StringComparison.Ordinal);
@@ -134,7 +136,8 @@ public sealed class CatalogPageGuardTests
                      "CatalogImport.razor",
                      "CatalogGlobalBrowse.razor",
                      "CatalogImportJob.razor",
-                     "CatalogImportReview.razor"
+                     "CatalogImportReview.razor",
+                     "CatalogTodaysPrices.razor"
                  })
         {
             var text = File.ReadAllText(Path.Combine(CatalogPagesDirectory(), page));

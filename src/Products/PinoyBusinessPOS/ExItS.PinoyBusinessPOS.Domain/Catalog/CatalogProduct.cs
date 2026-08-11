@@ -262,6 +262,32 @@ public sealed class CatalogProduct
         UpdatedAtUtc = utcNow;
     }
 
+    /// <summary>
+    /// Updates only the current catalog selling price (Today's Prices). Does not change identity,
+    /// UOM, SellingMode, or Platform provenance. Unchanged normalized price is a no-op.
+    /// </summary>
+    /// <returns><see langword="true"/> when the price changed; otherwise <see langword="false"/>.</returns>
+    public bool UpdateSellingPrice(decimal sellingPrice, DateTimeOffset utcNow)
+    {
+        CatalogGuards.EnsureUtc(utcNow);
+        if (Status == CatalogProductStatus.Inactive)
+        {
+            throw new DomainException(
+                DomainErrorCodes.ProductNotActive,
+                "Inactive products cannot be edited. Reactivate first.");
+        }
+
+        var normalized = NormalizeSellingPrice(sellingPrice);
+        if (normalized == SellingPrice)
+        {
+            return false;
+        }
+
+        SellingPrice = normalized;
+        UpdatedAtUtc = utcNow;
+        return true;
+    }
+
     public void Deactivate(DateTimeOffset utcNow)
     {
         CatalogGuards.EnsureUtc(utcNow);

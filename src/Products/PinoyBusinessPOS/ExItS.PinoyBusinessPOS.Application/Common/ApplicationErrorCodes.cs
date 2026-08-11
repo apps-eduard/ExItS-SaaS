@@ -24,6 +24,8 @@ public static class ApplicationErrorCodes
     public const string ProductSkuConflict = "pos.product.sku.conflict";
     public const string ProductBarcodeConflict = "pos.product.barcode.conflict";
     public const string CatalogConcurrencyConflict = "pos.catalog.concurrency_conflict";
+    public const string CatalogPriceBulkEmpty = "pos.catalog.price_bulk_empty";
+    public const string CatalogPriceBulkDuplicate = "pos.catalog.price_bulk_duplicate";
 
     public const string SaleNotFound = "pos.sale.not_found";
     public const string PaymentAttemptConflict = "pos.payment_attempt.conflict";

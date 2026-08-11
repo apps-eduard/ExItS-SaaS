@@ -750,6 +750,18 @@
   <data name="Catalog_Quick_Barcode" xml:space="preserve"><value>Barcode lookup</value></data>
   <data name="Catalog_Quick_Global" xml:space="preserve"><value>Global catalog</value></data>
   <data name="Catalog_Quick_Template" xml:space="preserve"><value>Business template</value></data>
+  <data name="Catalog_Quick_TodaysPrices" xml:space="preserve"><value>Presyo ngayon</value></data>
+  <data name="Catalog_TodaysPrices_Title" xml:space="preserve"><value>Presyo ngayon</value></data>
+  <data name="Catalog_TodaysPrices_Subtitle" xml:space="preserve"><value>Mabilis na baguhin ang kasalukuyang selling price. Mananatili ang snapshot ng nakaraang benta.</value></data>
+  <data name="Catalog_TodaysPrices_NewPrice" xml:space="preserve"><value>Bagong presyo</value></data>
+  <data name="Catalog_TodaysPrices_Apply" xml:space="preserve"><value>I-apply ang mga presyo</value></data>
+  <data name="Catalog_TodaysPrices_Reset" xml:space="preserve"><value>I-reset ang mga pagbabago</value></data>
+  <data name="Catalog_TodaysPrices_ChangedCount" xml:space="preserve"><value>{0} nabago</value></data>
+  <data name="Catalog_TodaysPrices_Success" xml:space="preserve"><value>Na-update ang {0} kasalukuyang presyo. Hindi nabago ang nakaraang benta.</value></data>
+  <data name="Catalog_TodaysPrices_PartialFailure" xml:space="preserve"><value>Na-save ang {0}; {1} ang bigo. Ayusin ang naka-highlight na row at subukan muli.</value></data>
+  <data name="Catalog_TodaysPrices_FixErrors" xml:space="preserve"><value>Ayusin muna ang naka-highlight na error sa presyo bago i-apply.</value></data>
+  <data name="Catalog_TodaysPrices_ItemFailed" xml:space="preserve"><value>Hindi ma-update ang presyong ito.</value></data>
+  <data name="Catalog_TodaysPrices_UnknownResult" xml:space="preserve"><value>Walang resulta para sa product na ito.</value></data>
   <data name="Catalog_SearchShort" xml:space="preserve"><value>Maghanap ng produkto…</value></data>
   <data name="Catalog_AppliedFilters" xml:space="preserve"><value>Mga filter na aktibo</value></data>
   <data name="Catalog_Categories" xml:space="preserve"><value>Mga Kategorya</value></data>

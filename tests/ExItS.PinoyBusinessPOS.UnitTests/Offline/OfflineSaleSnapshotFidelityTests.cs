@@ -38,7 +38,10 @@ public sealed class OfflineSaleSnapshotFidelityTests
     [Fact]
     public void ByWeight_snapshot_preserves_historical_price_when_live_catalog_changed()
     {
-        var live = Tomato(livePrice: 150m);
+        var live = Tomato(livePrice: 120m);
+        Assert.True(live.UpdateSellingPrice(150m, Now.AddHours(1)));
+        Assert.Equal(150m, live.SellingPrice);
+
         var line = new CheckoutSaleLineRequest(
             live.Id.Value,
             1.200m,
@@ -57,6 +60,7 @@ public sealed class OfflineSaleSnapshotFidelityTests
         Assert.Equal(UnitOfMeasure.Kilogram, draft.Value.UnitOfMeasureSnapshot);
         Assert.Equal(144.00m, SaleMoney.RoundMoney(draft.Value.UnitPrice * draft.Value.Quantity));
         Assert.NotEqual(live.SellingPrice, draft.Value.UnitPrice);
+        Assert.Equal(180.00m, SaleMoney.RoundMoney(live.SellingPrice * 1.200m));
     }
 
     [Fact]

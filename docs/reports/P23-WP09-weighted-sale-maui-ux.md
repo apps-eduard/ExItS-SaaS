@@ -77,7 +77,7 @@ Normalized kg is what goes into receipt_json and outbox snapshots.
 
 ## Known gaps (WP10+)
 
-- WP10 Today’s Prices
+- WP10 Today’s Prices — **done** ([P23-WP10](P23-WP10-todays-prices.md))
 - WP11 onboarding / multi-business UX
 - Scale hardware; amount→weight entry
 - Physical Android device validation (WP14)

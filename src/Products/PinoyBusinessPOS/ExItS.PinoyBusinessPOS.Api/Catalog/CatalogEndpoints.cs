@@ -239,6 +239,26 @@ internal static class CatalogEndpoints
                 });
         });
 
+        // Today's Prices — narrow bulk current-price update (ManageCatalog; partial success).
+        group.MapPost("/prices", async (
+            HttpRequest request,
+            UpdatePosCatalogProductPricesRequest body,
+            UpdateCatalogProductPrices useCase,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!TryAuthorize(request, access, UtangCapability.ManageCatalog, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            var result = await useCase
+                .ExecuteAsync(organizationId, body.Items ?? Array.Empty<UpdatePosCatalogProductPriceItem>(), ct)
+                .ConfigureAwait(false);
+
+            return PosApiResults.FromResult(result, Results.Ok);
+        });
+
         group.MapGet("/{productId:guid}", async (
             HttpRequest request,
             Guid productId,

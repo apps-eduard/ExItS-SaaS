@@ -58,6 +58,10 @@ else
                     <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("products")</span>
                     <span class="pos-action-tile__label">@L["Catalog_Quick_Template"]</span>
                 </button>
+                <button type="button" class="pos-action-tile" disabled="@_isOffline" @onclick="GoTodaysPrices">
+                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("edit")</span>
+                    <span class="pos-action-tile__label">@L["Catalog_Quick_TodaysPrices"]</span>
+                </button>
             }
         </div>
 
@@ -365,4 +369,5 @@ else
     private void GoBarcodeLookup() => Nav.NavigateTo("/catalog/barcode-lookup");
     private void GoImport() => Nav.NavigateTo("/catalog/import");
     private void GoGlobal() => Nav.NavigateTo("/catalog/global");
+    private void GoTodaysPrices() => Nav.NavigateTo("/catalog/todays-prices");
 }
