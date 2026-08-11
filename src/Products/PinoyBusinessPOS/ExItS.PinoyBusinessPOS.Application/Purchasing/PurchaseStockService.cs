@@ -1,4 +1,6 @@
+using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Inventory;
+using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Purchasing;
@@ -23,8 +25,13 @@ public interface IPurchaseStockService
 public sealed class PurchaseStockService : IPurchaseStockService
 {
     private readonly IInventoryRepository _inventory;
+    private readonly ICatalogProductRepository _products;
 
-    public PurchaseStockService(IInventoryRepository inventory) => _inventory = inventory;
+    public PurchaseStockService(IInventoryRepository inventory, ICatalogProductRepository products)
+    {
+        _inventory = inventory;
+        _products = products;
+    }
 
     public async Task ApplyReceiptAsync(
         PosOrganizationId organizationId,
@@ -40,6 +47,11 @@ public sealed class PurchaseStockService : IPurchaseStockService
             .ConfigureAwait(false);
         var accountsByProduct = accounts.ToDictionary(a => a.ProductId.Value);
 
+        var catalogProducts = await _products
+            .ListByIdsAsync(organizationId, productIds, cancellationToken)
+            .ConfigureAwait(false);
+        var sellingModeByProduct = catalogProducts.ToDictionary(p => p.Id.Value, p => p.SellingMode);
+
         foreach (var line in receipt.Lines.OrderBy(l => l.LineNumber))
         {
             if (!accountsByProduct.TryGetValue(line.ProductId.Value, out var account) || !account.IsTracked)
@@ -54,6 +66,10 @@ public sealed class PurchaseStockService : IPurchaseStockService
                 continue;
             }
 
+            var sellingMode = sellingModeByProduct.TryGetValue(line.ProductId.Value, out var mode)
+                ? mode
+                : SellingMode.PerItem;
+
             var movement = StockMovement.PurchaseReceipt(
                 organizationId,
                 line.ProductId,
@@ -62,7 +78,8 @@ public sealed class PurchaseStockService : IPurchaseStockService
                 line.UomSnapshot,
                 receipt.Id.Value,
                 actorId,
-                utcNow);
+                utcNow,
+                sellingMode: sellingMode);
             line.AttachInventoryMovement(movement.Id);
             account.ApplyMovementEffect(movement.QuantityEffect);
             account.Touch(utcNow);

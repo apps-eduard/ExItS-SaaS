@@ -434,6 +434,7 @@ public sealed class SalesReportService
                     sample.NameSnapshot,
                     sample.SkuSnapshot,
                     UnitOfMeasures.ToCode(sample.UnitOfMeasureSnapshot),
+                    SellingModes.ToCode(sample.SellingModeSnapshot),
                     g.Sum(l => l.Quantity),
                     ReportMath.RoundMoney(g.Sum(l => l.LineTotal)),
                     g.Count(),

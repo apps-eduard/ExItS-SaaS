@@ -151,7 +151,8 @@ public sealed class StockCount
     public void UpdateInProgressLines(
         IReadOnlyList<StockCountLineDraft> lines,
         IReadOnlyDictionary<Guid, UnitOfMeasure> unitByProductId,
-        DateTimeOffset utcNow)
+        DateTimeOffset utcNow,
+        IReadOnlyDictionary<Guid, SellingMode>? sellingModeByProductId = null)
     {
         SaleMoney.EnsureUtc(utcNow);
         EnsureInProgress();
@@ -179,7 +180,11 @@ public sealed class StockCount
                     "Count line product was not found.");
             }
 
-            line.SetCountedQuantity(draft.CountedQuantity.Value, unit);
+            var sellingMode = sellingModeByProductId is not null
+                && sellingModeByProductId.TryGetValue(draft.ProductId.Value, out var mode)
+                    ? mode
+                    : SellingMode.PerItem;
+            line.SetCountedQuantity(draft.CountedQuantity.Value, unit, sellingMode);
         }
 
         UpdatedAtUtc = utcNow;

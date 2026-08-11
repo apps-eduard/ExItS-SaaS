@@ -40,6 +40,7 @@ public sealed record ReportProductSalesRowDto(
     string NameSnapshot,
     string? SkuSnapshot,
     string UnitOfMeasure,
+    string SellingMode,
     decimal Quantity,
     decimal SalesAmount,
     int LineCount,

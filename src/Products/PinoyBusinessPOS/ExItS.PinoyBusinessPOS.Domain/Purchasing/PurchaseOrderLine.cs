@@ -91,7 +91,12 @@ public sealed class PurchaseOrderLine
         PurchaseOrderLineId? id = null)
     {
         var name = NormalizeNameSnapshot(snapshot.NameSnapshot);
-        var qty = NormalizeQuantity(snapshot.OrderedQty, snapshot.UomSnapshot);
+        if (snapshot.SellingMode == SellingMode.ByWeight)
+        {
+            SellingModes.EnsureCompatible(snapshot.SellingMode, snapshot.UomSnapshot);
+        }
+
+        var qty = NormalizeQuantity(snapshot.OrderedQty, snapshot.UomSnapshot, snapshot.SellingMode);
         var cost = NormalizeUnitPurchaseCost(snapshot.UnitPurchaseCost);
         return new PurchaseOrderLine(
             id ?? PurchaseOrderLineId.New(),
@@ -129,7 +134,12 @@ public sealed class PurchaseOrderLine
 
         NameSnapshot = NormalizeNameSnapshot(snapshot.NameSnapshot);
         UomSnapshot = snapshot.UomSnapshot;
-        var qty = NormalizeQuantity(snapshot.OrderedQty, snapshot.UomSnapshot);
+        if (snapshot.SellingMode == SellingMode.ByWeight)
+        {
+            SellingModes.EnsureCompatible(snapshot.SellingMode, snapshot.UomSnapshot);
+        }
+
+        var qty = NormalizeQuantity(snapshot.OrderedQty, snapshot.UomSnapshot, snapshot.SellingMode);
         var cost = NormalizeUnitPurchaseCost(snapshot.UnitPurchaseCost);
         OrderedQty = qty;
         UnitPurchaseCost = cost;
@@ -137,7 +147,7 @@ public sealed class PurchaseOrderLine
         LineNotes = NormalizeLineNotes(snapshot.LineNotes);
     }
 
-    internal void ApplyReceipt(decimal receiveQty)
+    internal void ApplyReceipt(decimal receiveQty, SellingMode sellingMode = SellingMode.PerItem)
     {
         if (UomSnapshot is null)
         {
@@ -146,7 +156,7 @@ public sealed class PurchaseOrderLine
                 "Cannot receive against a line that has not been ordered.");
         }
 
-        var normalized = NormalizeQuantity(receiveQty, UomSnapshot.Value);
+        var normalized = NormalizeQuantity(receiveQty, UomSnapshot.Value, sellingMode);
         if (normalized <= 0m)
         {
             throw new DomainException(
@@ -210,10 +220,17 @@ public sealed class PurchaseOrderLine
         return SaleMoney.RoundMoney(cost);
     }
 
-    internal static decimal NormalizeQuantity(decimal quantity, UnitOfMeasure uom) =>
-        SaleLine.NormalizeQuantity(quantity, uom);
+    internal static decimal NormalizeQuantity(
+        decimal quantity,
+        UnitOfMeasure uom,
+        SellingMode sellingMode = SellingMode.PerItem) =>
+        SaleLine.NormalizeQuantity(quantity, uom, sellingMode);
 
-    private static void EnsurePositiveQty(decimal quantity, UnitOfMeasure? uom, bool isDraft)
+    private static void EnsurePositiveQty(
+        decimal quantity,
+        UnitOfMeasure? uom,
+        bool isDraft,
+        SellingMode sellingMode = SellingMode.PerItem)
     {
         if (quantity <= 0m)
         {
@@ -224,7 +241,7 @@ public sealed class PurchaseOrderLine
 
         if (!isDraft && uom is not null)
         {
-            _ = NormalizeQuantity(quantity, uom.Value);
+            _ = NormalizeQuantity(quantity, uom.Value, sellingMode);
         }
     }
 

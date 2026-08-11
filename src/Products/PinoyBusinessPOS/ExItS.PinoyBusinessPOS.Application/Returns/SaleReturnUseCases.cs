@@ -101,6 +101,7 @@ public sealed class SaleReturnQueryService
                     l.ProductId.Value,
                     l.NameSnapshot,
                     UnitOfMeasures.ToCode(l.UnitOfMeasureSnapshot),
+                    SellingModes.ToCode(l.SellingModeSnapshot),
                     l.Quantity,
                     l.UnitPrice,
                     l.LineTotal,
@@ -294,7 +295,7 @@ public sealed class ProcessSaleReturn
                     async (created, ct) =>
                     {
                         await _returnStock
-                            .RestockForReturnAsync(orgId, created, capturedActorId, utcNow, ct)
+                            .RestockForReturnAsync(orgId, created, capturedSale, capturedActorId, utcNow, ct)
                             .ConfigureAwait(false);
 
                         if (capturedSale.PaymentMethod == SalePaymentMethod.Utang)

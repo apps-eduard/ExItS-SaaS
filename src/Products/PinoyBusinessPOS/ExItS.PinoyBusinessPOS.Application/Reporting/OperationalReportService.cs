@@ -11,6 +11,7 @@ using ExItS.PinoyBusinessPOS.Application.Returns;
 using ExItS.PinoyBusinessPOS.Application.Sales;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.CashierShifts;
+using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Permissions;
@@ -67,6 +68,8 @@ public sealed record PosSalesByPaymentReportDto(
 public sealed record PosSalesByProductRowDto(
     Guid ProductId,
     string ProductName,
+    string UnitOfMeasure,
+    string SellingMode,
     decimal QuantitySold,
     decimal QuantityReturned,
     decimal NetQuantity,
@@ -392,6 +395,8 @@ public sealed class OperationalReportService(
                 existing ??= new PosSalesByProductRowDto(
                     line.ProductId.Value,
                     line.NameSnapshot,
+                    UnitOfMeasures.ToCode(line.UnitOfMeasureSnapshot),
+                    SellingModes.ToCode(line.SellingModeSnapshot),
                     0m, 0m, 0m, 0m, 0m, 0m);
                 sold[line.ProductId.Value] = existing with
                 {
@@ -414,6 +419,8 @@ public sealed class OperationalReportService(
                 existing ??= new PosSalesByProductRowDto(
                     line.ProductId.Value,
                     line.ProductNameSnapshot,
+                    UnitOfMeasures.ToCode(line.UomSnapshot),
+                    nameof(SellingMode.PerItem),
                     0m, 0m, 0m, 0m, 0m, 0m);
                 sold[line.ProductId.Value] = existing with
                 {
@@ -960,6 +967,8 @@ public sealed class OperationalReportService(
                 existing ??= new PosSalesByProductRowDto(
                     line.ProductId.Value,
                     line.NameSnapshot,
+                    UnitOfMeasures.ToCode(line.UnitOfMeasureSnapshot),
+                    SellingModes.ToCode(line.SellingModeSnapshot),
                     0m, 0m, 0m, 0m, 0m, 0m);
                 productRows[line.ProductId.Value] = existing with
                 {

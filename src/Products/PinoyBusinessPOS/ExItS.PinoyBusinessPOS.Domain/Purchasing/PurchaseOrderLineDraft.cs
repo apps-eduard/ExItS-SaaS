@@ -18,9 +18,11 @@ public sealed record PurchaseOrderLineSnapshotInput(
     UnitOfMeasure UomSnapshot,
     decimal OrderedQty,
     decimal UnitPurchaseCost,
-    string? LineNotes = null);
+    string? LineNotes = null,
+    SellingMode SellingMode = SellingMode.PerItem);
 
 /// <summary>Receive quantity for one PO line during goods receipt.</summary>
 public sealed record PurchaseOrderReceiveLineDraft(
     CatalogProductId ProductId,
-    decimal ReceiveQty);
+    decimal ReceiveQty,
+    SellingMode SellingMode = SellingMode.PerItem);

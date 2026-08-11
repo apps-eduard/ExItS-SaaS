@@ -59,7 +59,8 @@ public sealed class GoodsReceiptLine
         int lineNumber,
         PurchaseOrderLine poLine,
         decimal receiveQty,
-        GoodsReceiptLineId? id = null)
+        GoodsReceiptLineId? id = null,
+        SellingMode sellingMode = SellingMode.PerItem)
     {
         if (poLine.NameSnapshot is null || poLine.UomSnapshot is null)
         {
@@ -68,7 +69,10 @@ public sealed class GoodsReceiptLine
                 "Cannot receive against an unordered line.");
         }
 
-        var normalized = PurchaseOrderLine.NormalizeQuantity(receiveQty, poLine.UomSnapshot.Value);
+        var normalized = PurchaseOrderLine.NormalizeQuantity(
+            receiveQty,
+            poLine.UomSnapshot.Value,
+            sellingMode);
         if (normalized <= 0m)
         {
             throw new DomainException(

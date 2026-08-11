@@ -58,9 +58,12 @@ public sealed class StockCountLine
 
     public void ApplySnapshot(decimal onHandQuantity) => SystemOnHandSnapshot = onHandQuantity;
 
-    public void SetCountedQuantity(decimal quantity, UnitOfMeasure unitOfMeasure)
+    public void SetCountedQuantity(
+        decimal quantity,
+        UnitOfMeasure unitOfMeasure,
+        SellingMode sellingMode = SellingMode.PerItem)
     {
-        CountedQuantity = SaleLine.NormalizeQuantity(quantity, unitOfMeasure);
+        CountedQuantity = SaleLine.NormalizeQuantity(quantity, unitOfMeasure, sellingMode);
     }
 
     public static StockCountLine Rehydrate(

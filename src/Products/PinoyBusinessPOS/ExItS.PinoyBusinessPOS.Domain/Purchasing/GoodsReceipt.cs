@@ -99,7 +99,13 @@ public sealed class GoodsReceipt
                     "Duplicate purchase-order line references are not allowed on a receipt.");
             }
 
-            lines.Add(GoodsReceiptLine.Create(grnId, organizationId, lineNumber++, poLine, receive.ReceiveQty));
+            lines.Add(GoodsReceiptLine.Create(
+                grnId,
+                organizationId,
+                lineNumber++,
+                poLine,
+                receive.ReceiveQty,
+                sellingMode: receive.SellingMode));
         }
 
         return new GoodsReceipt(

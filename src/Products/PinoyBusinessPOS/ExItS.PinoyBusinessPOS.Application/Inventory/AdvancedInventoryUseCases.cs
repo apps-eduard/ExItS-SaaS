@@ -414,10 +414,11 @@ public sealed class UpdateStockCountInProgress
             var productIds = request.Lines.Select(l => CatalogProductId.From(l.ProductId)).ToList();
             var products = await _products.ListByIdsAsync(orgId, productIds, cancellationToken).ConfigureAwait(false);
             var unitByProduct = products.ToDictionary(p => p.Id.Value, p => p.UnitOfMeasure);
+            var sellingModeByProduct = products.ToDictionary(p => p.Id.Value, p => p.SellingMode);
             var drafts = request.Lines
                 .Select(l => new StockCountLineDraft(CatalogProductId.From(l.ProductId), l.CountedQuantity))
                 .ToList();
-            count.UpdateInProgressLines(drafts, unitByProduct, _clock.UtcNow);
+            count.UpdateInProgressLines(drafts, unitByProduct, _clock.UtcNow, sellingModeByProduct);
             await _counts.UpdateAsync(count, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             return ApplicationResult<StockCount>.Success(count);
@@ -561,7 +562,7 @@ public sealed class CompleteStockCount
             var utcNow = _clock.UtcNow;
             var productIds = existing.Lines.Select(l => l.ProductId).ToList();
             var products = await _products.ListByIdsAsync(orgId, productIds, cancellationToken).ConfigureAwait(false);
-            var unitByProduct = products.ToDictionary(p => p.Id.Value, p => p.UnitOfMeasure);
+            var productById = products.ToDictionary(p => p.Id.Value);
 
             var completed = await _counts.CompleteAsync(
                     orgId,
@@ -587,7 +588,7 @@ public sealed class CompleteStockCount
                                 continue;
                             }
 
-                            if (!unitByProduct.TryGetValue(line.ProductId.Value, out var unit))
+                            if (!productById.TryGetValue(line.ProductId.Value, out var product))
                             {
                                 continue;
                             }
@@ -609,10 +610,11 @@ public sealed class CompleteStockCount
                                     line.ProductId,
                                     account.Id,
                                     variance,
-                                    unit,
+                                    product.UnitOfMeasure,
                                     count.Id.Value,
                                     actorId,
-                                    utcNow);
+                                    utcNow,
+                                    sellingMode: product.SellingMode);
                             }
                             else
                             {
@@ -629,10 +631,11 @@ public sealed class CompleteStockCount
                                     line.ProductId,
                                     account.Id,
                                     Math.Abs(variance),
-                                    unit,
+                                    product.UnitOfMeasure,
                                     count.Id.Value,
                                     actorId,
-                                    utcNow);
+                                    utcNow,
+                                    sellingMode: product.SellingMode);
                             }
 
                             account.ApplyMovementEffect(movement.QuantityEffect);

@@ -266,7 +266,13 @@ public sealed class EnableInventoryTracking
             var hadOpening = await _inventory
                 .HasOpeningStockAsync(orgId, catalogProductId, cancellationToken)
                 .ConfigureAwait(false);
-            var opening = account.Enable(openingQuantity, product.UnitOfMeasure, actorId, utcNow, hadOpening);
+            var opening = account.Enable(
+                openingQuantity,
+                product.UnitOfMeasure,
+                actorId,
+                utcNow,
+                hadOpening,
+                product.SellingMode);
 
             if (reorderLevel is not null)
             {
@@ -434,7 +440,8 @@ public sealed class AdjustInventoryStock
                     product.UnitOfMeasure,
                     reason,
                     actorId,
-                    utcNow);
+                    utcNow,
+                    sellingMode: product.SellingMode);
             }
             else if (string.Equals(normalizedDirection, "Out", StringComparison.OrdinalIgnoreCase))
             {
@@ -446,7 +453,8 @@ public sealed class AdjustInventoryStock
                     product.UnitOfMeasure,
                     reason,
                     actorId,
-                    utcNow);
+                    utcNow,
+                    sellingMode: product.SellingMode);
             }
             else
             {
@@ -609,10 +617,12 @@ public sealed class SaleStockService : ISaleStockService
             var absolute = Math.Abs(deduction.QuantityEffect);
             // UOM precision already validated on the original deduction; Piece-safe absolute restore.
             var unit = UnitOfMeasure.Piece;
+            var sellingMode = SellingMode.PerItem;
             var line = sale.Lines.FirstOrDefault(l => l.ProductId == deduction.ProductId);
             if (line is not null)
             {
                 unit = line.UnitOfMeasureSnapshot;
+                sellingMode = line.SellingModeSnapshot;
             }
 
             var restoration = StockMovement.SaleVoidRestoration(
@@ -624,7 +634,8 @@ public sealed class SaleStockService : ISaleStockService
                 sale.Id.Value,
                 actorId,
                 utcNow,
-                reason);
+                reason,
+                sellingMode: sellingMode);
             account.ApplyMovementEffect(restoration.QuantityEffect);
             account.Touch(utcNow);
             await _inventory.UpdateAccountAsync(account, cancellationToken).ConfigureAwait(false);

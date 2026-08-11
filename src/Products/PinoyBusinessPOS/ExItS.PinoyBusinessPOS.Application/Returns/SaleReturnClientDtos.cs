@@ -35,6 +35,7 @@ public sealed record PosRefundableSaleLineDto(
     Guid ProductId,
     string ProductNameSnapshot,
     string UnitOfMeasure,
+    string SellingMode,
     decimal OriginalQuantity,
     decimal UnitPriceSnapshot,
     decimal OriginalLineTotal,

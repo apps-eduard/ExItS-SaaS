@@ -216,7 +216,7 @@ public sealed class PurchaseOrder
                     "Receive line product is not on this purchase order.");
             }
 
-            line.ApplyReceipt(receive.ReceiveQty);
+            line.ApplyReceipt(receive.ReceiveQty, receive.SellingMode);
         }
 
         Status = _lines.All(l => l.OutstandingQty <= 0m)

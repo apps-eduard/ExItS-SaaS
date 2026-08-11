@@ -561,7 +561,8 @@ public sealed class SubmitPurchaseOrder
                         product.UnitOfMeasure,
                         l.OrderedQty,
                         l.UnitPurchaseCost,
-                        l.LineNotes);
+                        l.LineNotes,
+                        product.SellingMode);
                 })
                 .ToList();
 
@@ -651,17 +652,20 @@ public sealed class CancelPurchaseOrder
 public sealed class ReceivePurchaseOrder
 {
     private readonly IPurchaseOrderRepository _orders;
+    private readonly ICatalogProductRepository _products;
     private readonly IPurchaseStockService _purchaseStock;
     private readonly IPosCommercialAccessAccessor _access;
     private readonly TimeProvider _clock;
 
     public ReceivePurchaseOrder(
         IPurchaseOrderRepository orders,
+        ICatalogProductRepository products,
         IPurchaseStockService purchaseStock,
         IPosCommercialAccessAccessor access,
         TimeProvider? clock = null)
     {
         _orders = orders;
+        _products = products;
         _purchaseStock = purchaseStock;
         _access = access;
         _clock = clock ?? TimeProvider.System;
@@ -699,10 +703,26 @@ public sealed class ReceivePurchaseOrder
                     "Purchase order was not found in this organization.");
             }
 
+            var productIds = request.Lines.Select(l => l.ProductId).Distinct().ToList();
+            var (productError, products) = await PurchaseProductGuard
+                .ResolveProductsAsync(_products, org, productIds, cancellationToken)
+                .ConfigureAwait(false);
+            if (productError is not null)
+            {
+                return ApplicationResult<PosGoodsReceiptDto>.Failure(
+                    productError.ErrorCode!,
+                    productError.ErrorMessage!);
+            }
+
             var receiveLines = request.Lines
-                .Select(l => new PurchaseOrderReceiveLineDraft(
-                    CatalogProductId.From(l.ProductId),
-                    l.ReceiveQty))
+                .Select(l =>
+                {
+                    var product = products[l.ProductId];
+                    return new PurchaseOrderReceiveLineDraft(
+                        CatalogProductId.From(l.ProductId),
+                        l.ReceiveQty,
+                        product.SellingMode);
+                })
                 .ToList();
 
             var utcNow = _clock.GetUtcNow();
