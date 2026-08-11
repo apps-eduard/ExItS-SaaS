@@ -38,6 +38,7 @@ public sealed class PlatformDbContext : DbContext
     internal DbSet<PlanRecord> Plans => Set<PlanRecord>();
     internal DbSet<PlanVersionRecord> PlanVersions => Set<PlanVersionRecord>();
     internal DbSet<PlanVersionFeatureGrantRecord> PlanVersionFeatureGrants => Set<PlanVersionFeatureGrantRecord>();
+    internal DbSet<PlanVersionBusinessTypeGrantRecord> PlanVersionBusinessTypeGrants => Set<PlanVersionBusinessTypeGrantRecord>();
     internal DbSet<TrialDefinitionRecord> TrialDefinitions => Set<TrialDefinitionRecord>();
     internal DbSet<TrialDefinitionFeatureGrantRecord> TrialDefinitionFeatureGrants => Set<TrialDefinitionFeatureGrantRecord>();
     internal DbSet<BusinessTypeRecord> BusinessTypes => Set<BusinessTypeRecord>();
@@ -50,6 +51,8 @@ public sealed class PlatformDbContext : DbContext
     internal DbSet<CatalogImportJobRecord> CatalogImportJobs => Set<CatalogImportJobRecord>();
     internal DbSet<CatalogImportItemRecord> CatalogImportItems => Set<CatalogImportItemRecord>();
     internal DbSet<PlatformOrganizationRecord> Organizations => Set<PlatformOrganizationRecord>();
+    internal DbSet<OrganizationBusinessTypeActivationRecord> OrganizationBusinessTypeActivations =>
+        Set<OrganizationBusinessTypeActivationRecord>();
     internal DbSet<OrganizationBranchRecord> OrganizationBranches => Set<OrganizationBranchRecord>();
     internal DbSet<PosDeviceRecord> PosDevices => Set<PosDeviceRecord>();
     internal DbSet<SubscriptionRecord> Subscriptions => Set<SubscriptionRecord>();
@@ -195,6 +198,24 @@ public sealed class PlatformDbContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
+        modelBuilder.Entity<PlanVersionBusinessTypeGrantRecord>(entity =>
+        {
+            entity.ToTable("plan_version_business_type_grants");
+            entity.HasKey(e => new { e.PlanVersionId, e.BusinessTypeId });
+            entity.Property(e => e.PlanVersionId).HasColumnName("plan_version_id");
+            entity.Property(e => e.BusinessTypeId).HasColumnName("business_type_id");
+            entity.HasIndex(e => e.BusinessTypeId)
+                .HasDatabaseName("ix_plan_version_business_type_grants_business_type_id");
+            entity.HasOne(e => e.PlanVersion)
+                .WithMany(v => v.BusinessTypeGrants)
+                .HasForeignKey(e => e.PlanVersionId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne<BusinessTypeRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.BusinessTypeId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
         modelBuilder.Entity<TrialDefinitionRecord>(entity =>
         {
             entity.ToTable("trial_definitions");
@@ -269,6 +290,25 @@ public sealed class PlatformDbContext : DbContext
                 .HasColumnType("xid")
                 .ValueGeneratedOnAddOrUpdate()
                 .IsConcurrencyToken();
+        });
+
+        modelBuilder.Entity<OrganizationBusinessTypeActivationRecord>(entity =>
+        {
+            entity.ToTable("organization_business_type_activations");
+            entity.HasKey(e => new { e.OrganizationId, e.BusinessTypeId });
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.BusinessTypeId).HasColumnName("business_type_id");
+            entity.Property(e => e.ActivatedAtUtc).HasColumnName("activated_at_utc");
+            entity.HasIndex(e => e.BusinessTypeId)
+                .HasDatabaseName("ix_organization_business_type_activations_business_type_id");
+            entity.HasOne<PlatformOrganizationRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.OrganizationId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne<BusinessTypeRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.BusinessTypeId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<OrganizationBranchRecord>(entity =>

@@ -35,6 +35,10 @@ public static class DomainErrorCodes
     public const string StaffOrganizationSwitchDenied = "platform.user.staff_organization_switch_denied";
     public const string InvalidOrganizationSlug = "platform.organization.slug.invalid";
     public const string PrimaryBusinessTypeImmutable = "platform.organization.primary_business_type.immutable";
+    public const string DuplicateBusinessTypeGrant = "platform.plan_version.business_type_grant.duplicate";
+    public const string DuplicateBusinessTypeActivation = "platform.organization.business_type_activation.duplicate";
+    public const string PrimaryBusinessTypeActivationForbidden =
+        "platform.organization.business_type_activation.primary_forbidden";
     public const string InvalidOrganizationProfile = "platform.organization.profile.invalid";
     public const string InvalidOrganizationBranding = "platform.organization.branding.invalid";
     public const string InvalidProductCode = "platform.product_code.invalid";

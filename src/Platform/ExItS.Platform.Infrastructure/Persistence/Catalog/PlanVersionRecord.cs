@@ -17,4 +17,5 @@ internal sealed class PlanVersionRecord
 
     public PlanRecord Plan { get; set; } = null!;
     public ICollection<PlanVersionFeatureGrantRecord> FeatureGrants { get; set; } = [];
+    public ICollection<PlanVersionBusinessTypeGrantRecord> BusinessTypeGrants { get; set; } = [];
 }

@@ -145,6 +145,7 @@ internal sealed class PlanRepository : IPlanRepository
         var record = await _db.PlanVersions
             .AsNoTracking()
             .Include(v => v.FeatureGrants)
+            .Include(v => v.BusinessTypeGrants)
             .FirstOrDefaultAsync(v => v.Id == id.Value, cancellationToken)
             .ConfigureAwait(false);
 
@@ -159,6 +160,7 @@ internal sealed class PlanRepository : IPlanRepository
         var record = await _db.PlanVersions
             .AsNoTracking()
             .Include(v => v.FeatureGrants)
+            .Include(v => v.BusinessTypeGrants)
             .FirstOrDefaultAsync(
                 v => v.PlanId == planId.Value && v.VersionNumber == versionNumber,
                 cancellationToken)
@@ -174,6 +176,7 @@ internal sealed class PlanRepository : IPlanRepository
         var records = await _db.PlanVersions
             .AsNoTracking()
             .Include(v => v.FeatureGrants)
+            .Include(v => v.BusinessTypeGrants)
             .Where(v => v.PlanId == planId.Value)
             .OrderBy(v => v.VersionNumber)
             .ToListAsync(cancellationToken)
@@ -189,6 +192,7 @@ internal sealed class PlanRepository : IPlanRepository
         var record = await _db.PlanVersions
             .AsNoTracking()
             .Include(v => v.FeatureGrants)
+            .Include(v => v.BusinessTypeGrants)
             .Where(v => v.PlanId == planId.Value && v.Status == PlanVersionStatus.Published.ToString())
             .OrderByDescending(v => v.VersionNumber)
             .FirstOrDefaultAsync(cancellationToken)
@@ -218,6 +222,7 @@ internal sealed class PlanRepository : IPlanRepository
     {
         var record = await _db.PlanVersions
             .Include(v => v.FeatureGrants)
+            .Include(v => v.BusinessTypeGrants)
             .FirstOrDefaultAsync(v => v.Id == version.Id.Value, cancellationToken)
             .ConfigureAwait(false);
 

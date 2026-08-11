@@ -1,14 +1,17 @@
 using ExItS.Platform.Domain.Common;
+using ExItS.Platform.Domain.GlobalCatalog;
 using ExItS.Platform.Domain.Products;
 
 namespace ExItS.Platform.Domain.Catalog;
 
 /// <summary>
 /// Historical commercial plan version. Published versions are immutable.
+/// Feature grants and Business Type grants hang off the version (not the Plan shell).
 /// </summary>
 public sealed class PlanVersion
 {
     private readonly List<FeatureGrantSpec> _grants;
+    private readonly List<BusinessTypeId> _businessTypeGrants;
 
     public PlanVersionId Id { get; }
     public PlanId PlanId { get; }
@@ -24,6 +27,9 @@ public sealed class PlanVersion
 
     public IReadOnlyList<FeatureGrantSpec> Grants => _grants;
 
+    /// <summary>Business Types this plan version commercially entitles (classification packs, not feature flags).</summary>
+    public IReadOnlyList<BusinessTypeId> BusinessTypeGrants => _businessTypeGrants;
+
     private PlanVersion(
         PlanVersionId id,
         PlanId planId,
@@ -35,6 +41,7 @@ public sealed class PlanVersion
         bool trialEligible,
         PlanVersionStatus status,
         IEnumerable<FeatureGrantSpec> grants,
+        IEnumerable<BusinessTypeId> businessTypeGrants,
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc)
     {
@@ -48,6 +55,7 @@ public sealed class PlanVersion
         TrialEligible = trialEligible;
         Status = status;
         _grants = grants.ToList();
+        _businessTypeGrants = businessTypeGrants.ToList();
         CreatedAtUtc = createdAtUtc;
         UpdatedAtUtc = updatedAtUtc;
     }
@@ -61,7 +69,8 @@ public sealed class PlanVersion
         IReadOnlyList<FeatureGrantSpec> grants,
         DateTimeOffset utcNow,
         DateTimeOffset? effectiveToUtc = null,
-        PlanVersionId? id = null)
+        PlanVersionId? id = null,
+        IReadOnlyList<BusinessTypeId>? businessTypeGrants = null)
     {
         ArgumentNullException.ThrowIfNull(plan);
         ArgumentNullException.ThrowIfNull(grants);
@@ -93,6 +102,7 @@ public sealed class PlanVersion
         }
 
         EnsureUniqueGrants(grants);
+        var btGrants = NormalizeBusinessTypeGrants(businessTypeGrants);
 
         return new PlanVersion(
             id ?? PlanVersionId.New(),
@@ -105,6 +115,7 @@ public sealed class PlanVersion
             trialEligible,
             PlanVersionStatus.Draft,
             grants,
+            btGrants,
             utcNow,
             utcNow);
     }
@@ -120,6 +131,7 @@ public sealed class PlanVersion
         bool trialEligible,
         PlanVersionStatus status,
         IEnumerable<FeatureGrantSpec> grants,
+        IEnumerable<BusinessTypeId> businessTypeGrants,
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc) =>
         new(
@@ -133,6 +145,7 @@ public sealed class PlanVersion
             trialEligible,
             status,
             grants,
+            businessTypeGrants,
             createdAtUtc,
             updatedAtUtc);
 
@@ -144,6 +157,19 @@ public sealed class PlanVersion
         EnsureUniqueGrants(grants);
         _grants.Clear();
         _grants.AddRange(grants);
+        UpdatedAtUtc = utcNow;
+    }
+
+    public void ReplaceDraftBusinessTypeGrants(
+        IReadOnlyList<BusinessTypeId> businessTypeGrants,
+        DateTimeOffset utcNow)
+    {
+        DomainTime.EnsureUtc(utcNow);
+        EnsureDraft();
+        ArgumentNullException.ThrowIfNull(businessTypeGrants);
+        var normalized = NormalizeBusinessTypeGrants(businessTypeGrants);
+        _businessTypeGrants.Clear();
+        _businessTypeGrants.AddRange(normalized);
         UpdatedAtUtc = utcNow;
     }
 
@@ -207,5 +233,38 @@ public sealed class PlanVersion
                     $"Duplicate feature grant '{grant.FeatureCode}'.");
             }
         }
+    }
+
+    private static IReadOnlyList<BusinessTypeId> NormalizeBusinessTypeGrants(
+        IReadOnlyList<BusinessTypeId>? businessTypeGrants)
+    {
+        if (businessTypeGrants is null || businessTypeGrants.Count == 0)
+        {
+            return Array.Empty<BusinessTypeId>();
+        }
+
+        var seen = new HashSet<Guid>();
+        var result = new List<BusinessTypeId>(businessTypeGrants.Count);
+        foreach (var id in businessTypeGrants)
+        {
+            ArgumentNullException.ThrowIfNull(id);
+            if (id.Value == Guid.Empty)
+            {
+                throw new DomainException(
+                    DomainErrorCodes.InvalidGlobalCatalogBusinessType,
+                    "Business type id cannot be empty.");
+            }
+
+            if (!seen.Add(id.Value))
+            {
+                throw new DomainException(
+                    DomainErrorCodes.DuplicateBusinessTypeGrant,
+                    $"Duplicate business type grant '{id}'.");
+            }
+
+            result.Add(id);
+        }
+
+        return result;
     }
 }

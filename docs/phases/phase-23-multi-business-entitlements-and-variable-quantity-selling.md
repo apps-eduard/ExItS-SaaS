@@ -4,9 +4,9 @@
 
 | Field | Value |
 |---|---|
-| Status | **Open** (WP01 Planned/Contract only — not Implemented) |
-| Branch / HEAD at open | `main` @ `c03894f` |
-| Physical device target | `R58R61E3CAZ` (validation not in WP01) |
+| Status | **Open** — WP01 Planned ✓ · **WP02 Implemented** (domain/persistence) · WP03+ not started |
+| Branch / HEAD at open | `main` @ `c03894f` (WP01 docs later @ `4e5cb99`) |
+| Physical device target | `R58R61E3CAZ` (validation not in WP01–WP02) |
 
 ## Problem statement
 
@@ -171,8 +171,8 @@ Register → Personal → Start Business → plan + **required** Business Type �
 
 | WP | Title | Notes |
 |---|---|---|
-| **WP01** | Architecture audit + phase contract | **This document + P23-WP01 report** |
-| **WP02** | Subscription Business Type entitlement domain/persistence | Plan grants BT set |
+| **WP01** | Architecture audit + phase contract | **Done** — [P23-WP01](../reports/P23-WP01-current-state-and-domain-design.md) |
+| **WP02** | Subscription Business Type entitlement domain/persistence | **Done** — [P23-WP02](../reports/P23-WP02-business-type-entitlement-model.md) |
 | **WP03** | Effective entitlement resolution + server enforcement | Org effective BTs API |
 | **WP04** | Template + Global Catalog entitlement filtering | Fix client params; enforce on merchant APIs |
 | **WP05** | Product selling mode / unit model | PerItem/ByWeight; Platform↔POS mapping |

@@ -1,4 +1,5 @@
 using ExItS.Platform.Domain.Catalog;
+using ExItS.Platform.Domain.GlobalCatalog;
 using ExItS.Platform.Domain.Products;
 using ExItS.Platform.Infrastructure.Persistence.Catalog;
 
@@ -139,6 +140,10 @@ internal static class CatalogEntityMapper
                 g.NumericLimit))
             .ToList();
 
+        var businessTypeGrants = record.BusinessTypeGrants
+            .Select(g => BusinessTypeId.From(g.BusinessTypeId))
+            .ToList();
+
         return PlanVersion.Rehydrate(
             PlanVersionId.From(record.Id),
             PlanId.From(record.PlanId),
@@ -150,6 +155,7 @@ internal static class CatalogEntityMapper
             record.TrialEligible,
             Enum.Parse<PlanVersionStatus>(record.Status),
             grants,
+            businessTypeGrants,
             record.CreatedAtUtc,
             record.UpdatedAtUtc);
     }
@@ -176,6 +182,11 @@ internal static class CatalogEntityMapper
                 FeatureCode = g.FeatureCode.Value,
                 Enabled = g.Enabled,
                 NumericLimit = g.NumericLimit
+            }).ToList(),
+            BusinessTypeGrants = version.BusinessTypeGrants.Select(id => new PlanVersionBusinessTypeGrantRecord
+            {
+                PlanVersionId = version.Id.Value,
+                BusinessTypeId = id.Value
             }).ToList()
         };
 
@@ -201,6 +212,16 @@ internal static class CatalogEntityMapper
                 FeatureCode = grant.FeatureCode.Value,
                 Enabled = grant.Enabled,
                 NumericLimit = grant.NumericLimit
+            });
+        }
+
+        record.BusinessTypeGrants.Clear();
+        foreach (var businessTypeId in version.BusinessTypeGrants)
+        {
+            record.BusinessTypeGrants.Add(new PlanVersionBusinessTypeGrantRecord
+            {
+                PlanVersionId = record.Id,
+                BusinessTypeId = businessTypeId.Value
             });
         }
     }
