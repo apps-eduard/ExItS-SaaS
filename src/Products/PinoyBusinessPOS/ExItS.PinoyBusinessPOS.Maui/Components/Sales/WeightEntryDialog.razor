@@ -8,32 +8,34 @@
 <Dialog Visible="@Visible"
         Title="@DialogTitle"
         OnClose="CancelAsync">
-    <Stack Gap="3">
-        @if (Product is not null)
-        {
-            <div>
-                <div class="pos-value-md">@Product.Name</div>
-                <div class="pos-type-helper">
-                    <MoneyDisplay Amount="@Product.SellingPrice" CurrencyCode="PHP" />
-                    <span> @L["Sales_Checkout_PricePerKg"]</span>
+    <ChildContent>
+        <Stack Gap="3">
+            @if (Product is not null)
+            {
+                <div>
+                    <div class="pos-value-md">@Product.Name</div>
+                    <div class="pos-type-helper">
+                        <MoneyDisplay Amount="@Product.SellingPrice" CurrencyCode="PHP" />
+                        <span> @L["Sales_Checkout_PricePerKg"]</span>
+                    </div>
                 </div>
-            </div>
-        }
+            }
 
-        <NumberInput Label="@L["Sales_Checkout_WeightQuantity"]"
-                     Value="@_rawValue"
-                     ValueChanged="OnValueChanged"
-                     DecimalPlaces="@(_unitCode == WeightEntry.UnitGram ? 0 : 3)"
-                     Required="true"
-                     IsInvalid="@(!string.IsNullOrEmpty(_error))"
-                     ErrorText="@_error"
-                     Hint="@L["Sales_Checkout_WeightHint"]" />
+            <NumberInput Label="@L["Sales_Checkout_WeightQuantity"]"
+                         Value="@_rawValue"
+                         ValueChanged="OnValueChanged"
+                         DecimalPlaces="@(_unitCode == WeightEntry.UnitGram ? 0 : 3)"
+                         Required="true"
+                         IsInvalid="@(!string.IsNullOrEmpty(_error))"
+                         ErrorText="@_error"
+                         Hint="@L["Sales_Checkout_WeightHint"]" />
 
-        <RadioGroup Label="@L["Sales_Checkout_WeightUnit"]"
-                    Value="@_unitCode"
-                    ValueChanged="OnUnitChanged"
-                    Options="@_unitOptions" />
-    </Stack>
+            <RadioGroup Label="@L["Sales_Checkout_WeightUnit"]"
+                        Value="@_unitCode"
+                        ValueChanged="OnUnitChanged"
+                        Options="@_unitOptions" />
+        </Stack>
+    </ChildContent>
     <Footer>
         <FormActions>
             <Button Variant="ButtonVariant.Secondary" OnClick="CancelAsync">@L["Sales_Cancel"]</Button>
@@ -81,16 +83,11 @@
             _opened = true;
             _error = null;
             _unitCode = _sessionUnit;
-            if (InitialKilograms is > 0m kg)
+            if (InitialKilograms is decimal kilograms && kilograms > 0m)
             {
-                if (_unitCode == WeightEntry.UnitGram)
-                {
-                    _rawValue = kg * 1000m;
-                }
-                else
-                {
-                    _rawValue = kg;
-                }
+                _rawValue = _unitCode == WeightEntry.UnitGram
+                    ? kilograms * 1000m
+                    : kilograms;
             }
             else
             {
