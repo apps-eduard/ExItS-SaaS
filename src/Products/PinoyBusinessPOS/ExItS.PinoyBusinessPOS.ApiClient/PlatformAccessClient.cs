@@ -159,6 +159,10 @@ public sealed class PlatformAccessClient(IPosApiClient api) : IPlatformAccessCli
         CancellationToken ct = default) =>
         api.SendAsync<StartBusinessResultDto>(HttpMethod.Post, "/api/v1/personal/start-business", request, ct);
 
+    public Task<ApiResult<IReadOnlyList<BusinessTypeDto>>> GetOnboardingBusinessTypesAsync(
+        CancellationToken ct = default) =>
+        api.GetAsync<IReadOnlyList<BusinessTypeDto>>("/api/v1/personal/onboarding/business-types", ct);
+
     public Task<ApiResult<IReadOnlyList<BusinessTypeDto>>> GetActiveBusinessTypesAsync(
         CancellationToken ct = default) =>
         api.GetAsync<IReadOnlyList<BusinessTypeDto>>("/api/v1/catalog/business-types", ct);
@@ -175,6 +179,40 @@ public sealed class PlatformAccessClient(IPosApiClient api) : IPlatformAccessCli
 
         return api.GetAsync<IReadOnlyList<CommercialPlanDto>>(path, ct);
     }
+
+    public Task<ApiResult<OrganizationBusinessTypeEntitlementDto>> GetOrganizationBusinessTypeEntitlementsAsync(
+        Guid organizationId,
+        string? productCode = null,
+        CancellationToken ct = default)
+    {
+        var path = $"/api/v1/platform/organizations/{organizationId:D}/business-type-entitlements";
+        if (!string.IsNullOrWhiteSpace(productCode))
+        {
+            path += $"?productCode={Uri.EscapeDataString(productCode.Trim())}";
+        }
+
+        return api.GetAsync<OrganizationBusinessTypeEntitlementDto>(path, ct);
+    }
+
+    public Task<ApiResult<OrganizationBusinessTypeActivationDto>> ActivateOrganizationBusinessTypeAsync(
+        Guid organizationId,
+        ActivateOrganizationBusinessTypeRequest request,
+        CancellationToken ct = default) =>
+        api.SendAsync<OrganizationBusinessTypeActivationDto>(
+            HttpMethod.Post,
+            $"/api/v1/platform/organizations/{organizationId:D}/business-type-activations",
+            request,
+            ct);
+
+    public Task<ApiResult<object>> DeactivateOrganizationBusinessTypeAsync(
+        Guid organizationId,
+        Guid businessTypeId,
+        CancellationToken ct = default) =>
+        api.SendAsync<object>(
+            HttpMethod.Delete,
+            $"/api/v1/platform/organizations/{organizationId:D}/business-type-activations/{businessTypeId:D}",
+            null,
+            ct);
 
     public Task<ApiResult<OrganizationInvitationDto>> CreateOrganizationInvitationAsync(
         Guid organizationId,

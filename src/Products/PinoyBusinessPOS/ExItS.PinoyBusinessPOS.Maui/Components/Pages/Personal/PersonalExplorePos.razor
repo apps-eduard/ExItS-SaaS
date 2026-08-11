@@ -160,6 +160,8 @@
     {
         yield return string.Format(L["Personal_ExplorePosFeatureBranches"].Value, plan.MaxBranches);
         yield return string.Format(L["Personal_ExplorePosFeatureStaff"].Value, plan.MaxActiveStaff);
+        yield return string.Format(L["Personal_ExplorePosFeatureDevices"].Value, plan.MaxActivePosDevices);
+        yield return string.Format(L["Personal_ExplorePosFeatureBusinessTypes"].Value, plan.MaxActiveBusinessTypes);
         if (plan.CustomerCreditEnabled)
         {
             yield return L["Personal_ExplorePosFeatureCredit"];

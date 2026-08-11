@@ -248,11 +248,12 @@ public static class PlanChangeImpact
         if (activeBusinessTypeCount.HasValue
             && activeBusinessTypeCount.Value > targetPlan.MaxActiveBusinessTypes)
         {
+            var excess = activeBusinessTypeCount.Value - targetPlan.MaxActiveBusinessTypes;
             conflicts.Add(new PlanUsageConflict(
                 "ActiveBusinessTypes",
                 activeBusinessTypeCount.Value,
                 targetPlan.MaxActiveBusinessTypes,
-                $"Current effective business types ({activeBusinessTypeCount.Value}) exceed the target limit ({targetPlan.MaxActiveBusinessTypes}). Downgrade is blocked until optional activations are reduced; merchant catalog/history is not deleted."));
+                $"Deactivate {excess} optional business type{(excess == 1 ? string.Empty : "s")} before switching to {targetPlan.DisplayName}. Merchant catalog and history are not deleted."));
         }
 
         var lost = new List<string>();
@@ -427,9 +428,10 @@ public sealed class ScheduleOrganizationSubscriptionDowngrade
             && entitlement.Value is not null
             && entitlement.Value.EffectiveBusinessTypeIds.Count > targetPlan.MaxActiveBusinessTypes)
         {
+            var excess = entitlement.Value.EffectiveBusinessTypeIds.Count - targetPlan.MaxActiveBusinessTypes;
             return ApplicationResult<Subscription>.Failure(
                 ApplicationErrorCodes.PlanDowngradeBlockedByBusinessTypeCapacity,
-                $"Downgrade blocked: effective business types ({entitlement.Value.EffectiveBusinessTypeIds.Count}) exceed target plan capacity ({targetPlan.MaxActiveBusinessTypes}). Deactivate excess types before downgrading; merchant data is not deleted.");
+                $"Deactivate {excess} optional business type{(excess == 1 ? string.Empty : "s")} before switching to {targetPlan.DisplayName}. Merchant catalog and history are not deleted.");
         }
 
         try

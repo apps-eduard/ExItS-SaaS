@@ -2279,4 +2279,37 @@
   <data name="Support_AccessWrongScope" xml:space="preserve"><value>This diagnostics page does not match your current account scope.</value></data>
   <data name="Personal_UnknownContact" xml:space="preserve"><value>Unknown contact</value></data>
   <data name="Personal_PeopleDetailSubtitle" xml:space="preserve"><value>Contact details and Utang shortcuts.</value></data>
+  <data name="Personal_ExplorePosFeatureDevices" xml:space="preserve"><value>Up to {0} POS devices</value></data>
+  <data name="Personal_ExplorePosFeatureBusinessTypes" xml:space="preserve"><value>Up to {0} business types</value></data>
+  <data name="StartBusiness_PrimaryTypeTitle" xml:space="preserve"><value>Primary business type</value></data>
+  <data name="StartBusiness_PrimaryTypeHint" xml:space="preserve"><value>Choose the main type of business you run. You can add more types later if your plan allows.</value></data>
+  <data name="StartBusiness_PrimaryTypeRequired" xml:space="preserve"><value>Select a primary business type.</value></data>
+  <data name="StartBusiness_BusinessTypesLoadFailed" xml:space="preserve"><value>Could not load business types. Check your connection and try again.</value></data>
+  <data name="BusinessTypes_OnboardingTitle" xml:space="preserve"><value>Add business types</value></data>
+  <data name="BusinessTypes_OnboardingSubtitle" xml:space="preserve"><value>Your primary type is already active. Add more if your plan has room, or continue.</value></data>
+  <data name="BusinessTypes_ManageTitle" xml:space="preserve"><value>Business types</value></data>
+  <data name="BusinessTypes_ManageSubtitle" xml:space="preserve"><value>View your primary type and activate optional types included in your plan.</value></data>
+  <data name="BusinessTypes_Capacity" xml:space="preserve"><value>{0} of {1} business types active</value></data>
+  <data name="BusinessTypes_CapacityLabel" xml:space="preserve"><value>Active business types</value></data>
+  <data name="BusinessTypes_AddUpTo" xml:space="preserve"><value>You can add up to {0} more</value></data>
+  <data name="BusinessTypes_StarterNoAdditional" xml:space="preserve"><value>Your plan includes one business type — your primary. Upgrade later to add more.</value></data>
+  <data name="BusinessTypes_PrimaryBadge" xml:space="preserve"><value>Primary</value></data>
+  <data name="BusinessTypes_ActiveBadge" xml:space="preserve"><value>Active</value></data>
+  <data name="BusinessTypes_PrimaryLocked" xml:space="preserve"><value>Cannot deactivate</value></data>
+  <data name="BusinessTypes_Activate" xml:space="preserve"><value>Activate</value></data>
+  <data name="BusinessTypes_Deactivate" xml:space="preserve"><value>Deactivate</value></data>
+  <data name="BusinessTypes_AtCapacity" xml:space="preserve"><value>At capacity</value></data>
+  <data name="BusinessTypes_NotOnPlan" xml:space="preserve"><value>Not on current plan</value></data>
+  <data name="BusinessTypes_Continue" xml:space="preserve"><value>Continue</value></data>
+  <data name="BusinessTypes_SkipContinue" xml:space="preserve"><value>Skip for now</value></data>
+  <data name="BusinessTypes_EmptyTitle" xml:space="preserve"><value>No business types</value></data>
+  <data name="BusinessTypes_EmptyMessage" xml:space="preserve"><value>Business type details are unavailable right now.</value></data>
+  <data name="BusinessTypes_LoadFailed" xml:space="preserve"><value>Could not load business types.</value></data>
+  <data name="BusinessTypes_ActivateFailed" xml:space="preserve"><value>Could not activate that business type.</value></data>
+  <data name="BusinessTypes_DeactivateFailed" xml:space="preserve"><value>Could not deactivate that business type.</value></data>
+  <data name="BusinessTypes_OwnerOnlyTitle" xml:space="preserve"><value>Owner only</value></data>
+  <data name="BusinessTypes_OwnerOnlyMessage" xml:space="preserve"><value>Only the organization owner can manage business types.</value></data>
+  <data name="BusinessTypes_ManageLink" xml:space="preserve"><value>Manage business types</value></data>
+  <data name="BusinessTypes_DowngradeHint" xml:space="preserve"><value>If you change to a smaller plan, deactivate optional business types first until you are within the new limit. Products and sales history are kept.</value></data>
+  <data name="Org_BusinessTypesLink" xml:space="preserve"><value>Business types</value></data>
 </root>

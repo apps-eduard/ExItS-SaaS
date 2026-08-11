@@ -96,6 +96,31 @@ public sealed class MauiOnboardingPreferenceStore : IOnboardingPreferenceStore
         return Task.CompletedTask;
     }
 
+    public Task<bool> GetBusinessTypeActivationPromptPendingAsync(Guid organizationId, CancellationToken ct = default)
+    {
+        ct.ThrowIfCancellationRequested();
+        return Task.FromResult(Preferences.Default.Get(BusinessTypeActivationPromptKey(organizationId), false));
+    }
+
+    public Task SetBusinessTypeActivationPromptPendingAsync(Guid organizationId, bool pending, CancellationToken ct = default)
+    {
+        ct.ThrowIfCancellationRequested();
+        var key = BusinessTypeActivationPromptKey(organizationId);
+        if (pending)
+        {
+            Preferences.Default.Set(key, true);
+        }
+        else
+        {
+            Preferences.Default.Remove(key);
+        }
+
+        return Task.CompletedTask;
+    }
+
     private static string TemplatePromptKey(Guid organizationId) =>
         PreferenceKeys.BusinessTemplatePromptPendingPrefix + organizationId.ToString("D");
+
+    private static string BusinessTypeActivationPromptKey(Guid organizationId) =>
+        PreferenceKeys.BusinessTypeActivationPromptPendingPrefix + organizationId.ToString("D");
 }

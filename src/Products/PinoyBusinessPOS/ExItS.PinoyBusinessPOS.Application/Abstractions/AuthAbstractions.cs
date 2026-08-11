@@ -36,6 +36,14 @@ public interface IOnboardingPreferenceStore
     Task<bool> GetBusinessTemplatePromptPendingAsync(Guid organizationId, CancellationToken ct = default);
 
     Task SetBusinessTemplatePromptPendingAsync(Guid organizationId, bool pending, CancellationToken ct = default);
+
+    /// <summary>
+    /// True when Start Business should offer optional additional Business Type activation
+    /// (Growth/Pro capacity) before device registration.
+    /// </summary>
+    Task<bool> GetBusinessTypeActivationPromptPendingAsync(Guid organizationId, CancellationToken ct = default);
+
+    Task SetBusinessTypeActivationPromptPendingAsync(Guid organizationId, bool pending, CancellationToken ct = default);
 }
 
 public interface ISessionStore

@@ -202,7 +202,9 @@ public sealed class PersonalPageGuardTests
         Assert.Contains("StartBusiness_PlanRequired", start, StringComparison.Ordinal);
         Assert.Contains("StartBusiness_ConfirmSubmit", start, StringComparison.Ordinal);
         Assert.Contains("StartBusinessAsync", start, StringComparison.Ordinal);
+        Assert.Contains("GetOnboardingBusinessTypesAsync", start, StringComparison.Ordinal);
         Assert.Contains("SetBusinessTemplatePromptPendingAsync", start, StringComparison.Ordinal);
+        Assert.Contains("SetBusinessTypeActivationPromptPendingAsync", start, StringComparison.Ordinal);
         Assert.Contains("Gate.ResolveStartRouteAsync", start, StringComparison.Ordinal);
         Assert.DoesNotContain("NavigateTo(\"/org\"", start, StringComparison.Ordinal);
 

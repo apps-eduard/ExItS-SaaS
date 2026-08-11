@@ -37,6 +37,60 @@
     {
         <FormValidationSummary Messages="_errors" />
 
+        <section class="pos-start-business-form" aria-labelledby="start-business-type-heading">
+            <h2 class="pos-start-business-form__title" id="start-business-type-heading">@L["StartBusiness_PrimaryTypeTitle"]</h2>
+            <p class="pos-start-business-form__hint pos-muted">@L["StartBusiness_PrimaryTypeHint"]</p>
+
+            @if (_businessTypesLoading)
+            {
+                <Spinner />
+            }
+            else if (_businessTypes.Count == 0)
+            {
+                <InlineMessage Tone="InlineMessageTone.Warning">@L["StartBusiness_BusinessTypesLoadFailed"]</InlineMessage>
+            }
+            else
+            {
+                <div class="pos-bt-cards" role="listbox" aria-label="@L["StartBusiness_PrimaryTypeTitle"]">
+                    @foreach (var type in _businessTypes.OrderBy(t => t.SortOrder).ThenBy(t => t.Name))
+                    {
+                        var selected = string.Equals(_primaryBusinessTypeId, type.Id.ToString("D"), StringComparison.OrdinalIgnoreCase);
+                        <button type="button"
+                                class="pos-bt-card @(selected ? "pos-bt-card--selected" : null)"
+                                role="option"
+                                aria-selected="@selected"
+                                disabled="@_busy"
+                                @onclick="() => SelectBusinessType(type.Id)">
+                            <span class="pos-bt-card__name">@type.Name</span>
+                            @if (!string.IsNullOrWhiteSpace(type.Description))
+                            {
+                                <span class="pos-bt-card__desc pos-muted">@type.Description</span>
+                            }
+                        </button>
+                    }
+                </div>
+            }
+        </section>
+
+        <section class="pos-start-business-form" aria-labelledby="start-business-form-heading">
+            <h2 class="pos-start-business-form__title" id="start-business-form-heading">@L["StartBusiness_FormTitle"]</h2>
+            <Stack Gap="3">
+                <TextInput Label="@L["StartBusiness_DisplayName"]"
+                           Value="@_displayName"
+                           ValueChanged="OnDisplayNameChanged"
+                           Placeholder="@L["StartBusiness_DisplayNamePlaceholder"]"
+                           Disabled="_busy"
+                           Required="true" />
+                <TextInput Label="@L["StartBusiness_Slug"]"
+                           Value="@_slug"
+                           ValueChanged="OnSlugChanged"
+                           Hint="@L["StartBusiness_SlugHint"]"
+                           Placeholder="@L["StartBusiness_SlugPlaceholder"]"
+                           Disabled="_busy"
+                           Required="true" />
+            </Stack>
+        </section>
+
         <section class="pos-start-business-plan" aria-labelledby="start-business-plan-heading">
             <div class="pos-start-business-plan__top">
                 <div>
@@ -71,26 +125,12 @@
                         <span class="pos-start-business-plan__currency">@_plan.CurrencyCode</span>
                         <span class="pos-start-business-plan__period">/ @BillingPeriodLabel</span>
                     </p>
-                    @if (string.Equals(_billingCycle, "Annual", StringComparison.Ordinal)
-                         && _plan.MonthlyPrice > 0)
-                    {
-                        <p class="pos-start-business-plan__alt">
-                            @string.Format(
-                                L["StartBusiness_MonthlyEquivalent"].Value,
-                                (_plan.AnnualPrice / 12m).ToString("N0"),
-                                _plan.CurrencyCode)
-                        </p>
-                    }
-                    else if (string.Equals(_billingCycle, "Monthly", StringComparison.Ordinal)
-                             && _plan.AnnualPrice > 0)
-                    {
-                        <p class="pos-start-business-plan__alt">
-                            @string.Format(
-                                L["StartBusiness_AnnualOption"].Value,
-                                _plan.AnnualPrice.ToString("N0"),
-                                _plan.CurrencyCode)
-                        </p>
-                    }
+                    <ul class="pos-start-business-plan__limits pos-muted">
+                        <li>@string.Format(L["Personal_ExplorePosFeatureBranches"].Value, _plan.MaxBranches)</li>
+                        <li>@string.Format(L["Personal_ExplorePosFeatureStaff"].Value, _plan.MaxActiveStaff)</li>
+                        <li>@string.Format(L["Personal_ExplorePosFeatureDevices"].Value, _plan.MaxActivePosDevices)</li>
+                        <li>@string.Format(L["Personal_ExplorePosFeatureBusinessTypes"].Value, _plan.MaxActiveBusinessTypes)</li>
+                    </ul>
                 </div>
             }
 
@@ -101,30 +141,6 @@
                         Options="_billingOptions"
                         Disabled="_busy" />
             </div>
-        </section>
-
-        <section class="pos-start-business-form" aria-labelledby="start-business-form-heading">
-            <h2 class="pos-start-business-form__title" id="start-business-form-heading">@L["StartBusiness_FormTitle"]</h2>
-            <Stack Gap="3">
-                <TextInput Label="@L["StartBusiness_DisplayName"]"
-                           Value="@_displayName"
-                           ValueChanged="OnDisplayNameChanged"
-                           Placeholder="@L["StartBusiness_DisplayNamePlaceholder"]"
-                           Disabled="_busy"
-                           Required="true" />
-                <TextInput Label="@L["StartBusiness_Slug"]"
-                           Value="@_slug"
-                           ValueChanged="OnSlugChanged"
-                           Hint="@L["StartBusiness_SlugHint"]"
-                           Placeholder="@L["StartBusiness_SlugPlaceholder"]"
-                           Disabled="_busy"
-                           Required="true" />
-                <Select Label="Business Type"
-                        Value="@_primaryBusinessTypeId"
-                        ValueChanged="OnBusinessTypeChanged"
-                        Options="_businessTypeOptions"
-                        Disabled="_busy || _businessTypesLoading" />
-            </Stack>
         </section>
 
         <InlineMessage Tone="InlineMessageTone.Info">@L["StartBusiness_ConfirmHint"]</InlineMessage>
@@ -151,17 +167,13 @@
     private CommercialPlanDto? _plan;
     private IReadOnlyList<BusinessTypeDto> _businessTypes = [];
     private List<string> _errors = [];
+    private bool _businessTypesLoading;
 
     private IReadOnlyList<SelectOption> _billingOptions =>
     [
         new("Monthly", L["Personal_Billing_Month"]),
         new("Annual", L["Personal_Billing_Year"]),
     ];
-
-    private IReadOnlyList<SelectOption> _businessTypeOptions =>
-        _businessTypes
-            .Select(type => new SelectOption(type.Id.ToString("D"), type.Name))
-            .ToList();
 
     private string PlanDisplayName =>
         !string.IsNullOrWhiteSpace(_plan?.DisplayName) ? _plan!.DisplayName
@@ -264,17 +276,21 @@
         }
     }
 
-    private bool _businessTypesLoading;
-
     private async Task LoadBusinessTypesAsync()
     {
         _businessTypesLoading = true;
         try
         {
-            var result = await Platform.GetActiveBusinessTypesAsync();
+            // Personal onboarding list — not org-entitlement filtered (no org yet).
+            var result = await Platform.GetOnboardingBusinessTypesAsync();
             if (result.IsSuccess && result.Data is not null)
             {
-                _businessTypes = result.Data;
+                // Do not auto-select General Retail / Other; merchant must choose.
+                _businessTypes = result.Data
+                    .Where(t => string.Equals(t.Status, "Active", StringComparison.OrdinalIgnoreCase))
+                    .OrderBy(t => t.SortOrder)
+                    .ThenBy(t => t.Name, StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
             }
         }
         finally
@@ -311,11 +327,7 @@
         return Task.CompletedTask;
     }
 
-    private Task OnBusinessTypeChanged(string? value)
-    {
-        _primaryBusinessTypeId = value;
-        return Task.CompletedTask;
-    }
+    private void SelectBusinessType(Guid id) => _primaryBusinessTypeId = id.ToString("D");
 
     private async Task SubmitAsync()
     {
@@ -346,7 +358,7 @@
         if (!Guid.TryParse(_primaryBusinessTypeId, out var primaryBusinessTypeId)
             || primaryBusinessTypeId == Guid.Empty)
         {
-            _errors.Add("Select a business type.");
+            _errors.Add(L["StartBusiness_PrimaryTypeRequired"]);
             return;
         }
 
@@ -388,6 +400,11 @@
 
             await Prefs.SetOnboardingCompletedAsync(true);
             await Prefs.SetOnboardingStepAsync(nameof(OnboardingStep.Complete));
+            // Growth/Pro: optional additional BT activation before device registration.
+            var offerAdditionalTypes = (_plan?.MaxActiveBusinessTypes ?? 1) > 1;
+            await Prefs.SetBusinessTypeActivationPromptPendingAsync(
+                created.Data.OrganizationId,
+                pending: offerAdditionalTypes);
             // One-time skippable template suggest after PIN + sell-critical setup (NavigationGate).
             await Prefs.SetBusinessTemplatePromptPendingAsync(created.Data.OrganizationId, pending: true);
             Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);

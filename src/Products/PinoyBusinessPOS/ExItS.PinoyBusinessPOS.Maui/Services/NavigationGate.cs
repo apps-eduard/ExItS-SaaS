@@ -101,6 +101,14 @@ public sealed class NavigationGate(
         // before catalog/setup routes so an owner cannot enter selling workflows unregistered.
         if (currentUser.Session.PosDeviceId is null || currentUser.Session.BranchId is null)
         {
+            // Optional additional Business Types (Growth/Pro) before device registration.
+            if (currentUser.Session.OrganizationId is Guid pendingOrgId
+                && await preferences.GetBusinessTypeActivationPromptPendingAsync(pendingOrgId, ct)
+                    .ConfigureAwait(false))
+            {
+                return "/onboarding/business-types";
+            }
+
             return "/devices/register";
         }
 
@@ -147,6 +155,12 @@ public sealed class NavigationGate(
 
         if (session.PosDeviceId is null || session.BranchId is null)
         {
+            if (await preferences.GetBusinessTypeActivationPromptPendingAsync(session.OrganizationId.Value, ct)
+                    .ConfigureAwait(false))
+            {
+                return true;
+            }
+
             return true;
         }
 
@@ -226,7 +240,9 @@ public sealed class NavigationGate(
             || path.Equals("/reconnect", StringComparison.OrdinalIgnoreCase)
             || path.Equals("/signin", StringComparison.OrdinalIgnoreCase)
             || path.Equals("/organization-select", StringComparison.OrdinalIgnoreCase)
-            || path.Equals("/org", StringComparison.OrdinalIgnoreCase))
+            || path.Equals("/org", StringComparison.OrdinalIgnoreCase)
+            || path.Equals("/onboarding/business-types", StringComparison.OrdinalIgnoreCase)
+            || path.Equals("/org/business-types", StringComparison.OrdinalIgnoreCase))
         {
             return true;
         }

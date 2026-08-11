@@ -2279,4 +2279,37 @@
   <data name="Support_AccessWrongScope" xml:space="preserve"><value>This diagnostics page does not match your current account scope.</value></data>
   <data name="Personal_UnknownContact" xml:space="preserve"><value>Unknown contact</value></data>
   <data name="Personal_PeopleDetailSubtitle" xml:space="preserve"><value>Contact details and Utang shortcuts.</value></data>
+  <data name="Personal_ExplorePosFeatureDevices" xml:space="preserve"><value>Hanggang {0} POS devices</value></data>
+  <data name="Personal_ExplorePosFeatureBusinessTypes" xml:space="preserve"><value>Hanggang {0} business types</value></data>
+  <data name="StartBusiness_PrimaryTypeTitle" xml:space="preserve"><value>Pangunahing business type</value></data>
+  <data name="StartBusiness_PrimaryTypeHint" xml:space="preserve"><value>Piliin ang pangunahing uri ng negosyo. Puwede kang magdagdag pa kung pinapayagan ng plan.</value></data>
+  <data name="StartBusiness_PrimaryTypeRequired" xml:space="preserve"><value>Pumili ng primary business type.</value></data>
+  <data name="StartBusiness_BusinessTypesLoadFailed" xml:space="preserve"><value>Hindi ma-load ang business types. Subukan ulit.</value></data>
+  <data name="BusinessTypes_OnboardingTitle" xml:space="preserve"><value>Magdagdag ng business types</value></data>
+  <data name="BusinessTypes_OnboardingSubtitle" xml:space="preserve"><value>Aktibo na ang primary type. Magdagdag pa kung may slot ang plan, o magpatuloy.</value></data>
+  <data name="BusinessTypes_ManageTitle" xml:space="preserve"><value>Business types</value></data>
+  <data name="BusinessTypes_ManageSubtitle" xml:space="preserve"><value>Tingnan ang primary type at i-activate ang optional types sa iyong plan.</value></data>
+  <data name="BusinessTypes_Capacity" xml:space="preserve"><value>{0} sa {1} business types ang aktibo</value></data>
+  <data name="BusinessTypes_CapacityLabel" xml:space="preserve"><value>Aktibong business types</value></data>
+  <data name="BusinessTypes_AddUpTo" xml:space="preserve"><value>Puwede kang magdagdag pa ng hanggang {0}</value></data>
+  <data name="BusinessTypes_StarterNoAdditional" xml:space="preserve"><value>Isang business type lang ang kasama sa plan — ang primary. Mag-upgrade para makapagdagdag.</value></data>
+  <data name="BusinessTypes_PrimaryBadge" xml:space="preserve"><value>Primary</value></data>
+  <data name="BusinessTypes_ActiveBadge" xml:space="preserve"><value>Aktibo</value></data>
+  <data name="BusinessTypes_PrimaryLocked" xml:space="preserve"><value>Hindi ma-deactivate</value></data>
+  <data name="BusinessTypes_Activate" xml:space="preserve"><value>I-activate</value></data>
+  <data name="BusinessTypes_Deactivate" xml:space="preserve"><value>I-deactivate</value></data>
+  <data name="BusinessTypes_AtCapacity" xml:space="preserve"><value>Puno na</value></data>
+  <data name="BusinessTypes_NotOnPlan" xml:space="preserve"><value>Wala sa kasalukuyang plan</value></data>
+  <data name="BusinessTypes_Continue" xml:space="preserve"><value>Magpatuloy</value></data>
+  <data name="BusinessTypes_SkipContinue" xml:space="preserve"><value>Laktawan muna</value></data>
+  <data name="BusinessTypes_EmptyTitle" xml:space="preserve"><value>Walang business types</value></data>
+  <data name="BusinessTypes_EmptyMessage" xml:space="preserve"><value>Hindi available ang detalye ngayon.</value></data>
+  <data name="BusinessTypes_LoadFailed" xml:space="preserve"><value>Hindi ma-load ang business types.</value></data>
+  <data name="BusinessTypes_ActivateFailed" xml:space="preserve"><value>Hindi ma-activate ang business type.</value></data>
+  <data name="BusinessTypes_DeactivateFailed" xml:space="preserve"><value>Hindi ma-deactivate ang business type.</value></data>
+  <data name="BusinessTypes_OwnerOnlyTitle" xml:space="preserve"><value>Owner lang</value></data>
+  <data name="BusinessTypes_OwnerOnlyMessage" xml:space="preserve"><value>Owner lang ang puwedeng mag-manage ng business types.</value></data>
+  <data name="BusinessTypes_ManageLink" xml:space="preserve"><value>I-manage ang business types</value></data>
+  <data name="BusinessTypes_DowngradeHint" xml:space="preserve"><value>Kung lilipat sa mas maliit na plan, i-deactivate muna ang optional business types hanggang pasok sa bagong limit. Nananatili ang products at sales history.</value></data>
+  <data name="Org_BusinessTypesLink" xml:space="preserve"><value>Business types</value></data>
 </root>

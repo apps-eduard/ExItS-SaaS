@@ -166,6 +166,8 @@ public static class ApplicationErrorCodes
     public const string PosDeviceCapacityExceeded = "application.pos_device.capacity_exceeded";
     public const string BusinessTypeActivationCapacityExceeded =
         "application.business_type_activation.capacity_exceeded";
+    public const string BusinessTypePrimaryCannotDeactivate =
+        "application.business_type_activation.primary_locked";
     public const string PlanDowngradeBlockedByBusinessTypeCapacity =
         "application.plan_change.business_type_capacity_blocked";
     public const string PosDeviceNotAuthorized = "application.pos_device.not_authorized";

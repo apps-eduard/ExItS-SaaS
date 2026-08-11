@@ -214,6 +214,7 @@ public sealed record CommercialPlanDto(
     int MaxBranches = 1,
     int MaxActiveStaff = 3,
     int MaxActivePosDevices = 1,
+    int MaxActiveBusinessTypes = 1,
     bool CustomerCreditEnabled = false,
     bool AdvancedReportsEnabled = false,
     bool ExportEnabled = false,
@@ -251,7 +252,41 @@ public sealed record BusinessTypeDto(
     string Name,
     string? Description,
     string Status,
-    int SortOrder);
+    int SortOrder,
+    bool IsPrimary = false);
+
+public sealed record OrganizationBusinessTypeOptionDto(
+    Guid Id,
+    string Code,
+    string Name,
+    bool IsPrimary,
+    bool IsGranted,
+    bool IsActivated,
+    bool IsEffective);
+
+public sealed record OrganizationBusinessTypeEntitlementDto(
+    Guid OrganizationId,
+    Guid? PrimaryBusinessTypeId,
+    Guid? SubscriptionId,
+    Guid? PlanVersionId,
+    IReadOnlyList<Guid> GrantedBusinessTypeIds,
+    IReadOnlyList<Guid> ActivatedBusinessTypeIds,
+    IReadOnlyList<Guid> EffectiveBusinessTypeIds,
+    IReadOnlyDictionary<string, string> EffectiveBusinessTypeCodesById,
+    int MaxActiveBusinessTypes = 1,
+    int EffectiveCount = 0,
+    int RemainingCapacity = 0,
+    IReadOnlyList<OrganizationBusinessTypeOptionDto>? BusinessTypes = null);
+
+public sealed record OrganizationBusinessTypeActivationDto(
+    Guid OrganizationId,
+    Guid BusinessTypeId,
+    string? BusinessTypeCode,
+    DateTimeOffset ActivatedAtUtc);
+
+public sealed record ActivateOrganizationBusinessTypeRequest(
+    Guid BusinessTypeId,
+    string? ProductCode = null);
 
 public sealed record CreateInvitationRequest(
     string Email,
@@ -595,11 +630,30 @@ public interface IPlatformAccessClient
         StartBusinessRequest request,
         CancellationToken ct = default);
 
+    /// <summary>Active Business Types for Start Business (Personal onboarding; not org-entitlement filtered).</summary>
+    Task<ApiResult<IReadOnlyList<BusinessTypeDto>>> GetOnboardingBusinessTypesAsync(
+        CancellationToken ct = default);
+
     Task<ApiResult<IReadOnlyList<BusinessTypeDto>>> GetActiveBusinessTypesAsync(
         CancellationToken ct = default);
 
     Task<ApiResult<IReadOnlyList<CommercialPlanDto>>> GetCommercialPlansAsync(
         string? productCode = null,
+        CancellationToken ct = default);
+
+    Task<ApiResult<OrganizationBusinessTypeEntitlementDto>> GetOrganizationBusinessTypeEntitlementsAsync(
+        Guid organizationId,
+        string? productCode = null,
+        CancellationToken ct = default);
+
+    Task<ApiResult<OrganizationBusinessTypeActivationDto>> ActivateOrganizationBusinessTypeAsync(
+        Guid organizationId,
+        ActivateOrganizationBusinessTypeRequest request,
+        CancellationToken ct = default);
+
+    Task<ApiResult<object>> DeactivateOrganizationBusinessTypeAsync(
+        Guid organizationId,
+        Guid businessTypeId,
         CancellationToken ct = default);
 
     Task<ApiResult<OrganizationInvitationDto>> CreateOrganizationInvitationAsync(

@@ -62,7 +62,8 @@ public sealed class BusinessTypeCapacityAndDowngradeTests
             activeBusinessTypeCount: 3);
 
         Assert.True(preview.HasBlockingUsageConflicts);
-        Assert.Contains(preview.UsageConflicts, c => c.Resource == "ActiveBusinessTypes");
+        var conflict = Assert.Single(preview.UsageConflicts, c => c.Resource == "ActiveBusinessTypes");
+        Assert.Contains("Deactivate 2 optional business types before switching to Starter", conflict.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -89,6 +90,65 @@ public sealed class BusinessTypeCapacityAndDowngradeTests
         var result = await h.Downgrade.ExecuteAsync(org.Id, Pos, starter.Id, T0.AddMonths(1));
         Assert.False(result.IsSuccess);
         Assert.Equal(ApplicationErrorCodes.PlanDowngradeBlockedByBusinessTypeCapacity, result.ErrorCode);
+        Assert.Contains("Deactivate 2 optional business types before switching to Starter", result.ErrorMessage, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Entitlement_dto_exposes_capacity_and_display_names()
+    {
+        var h = Harness.Create(maxActiveBusinessTypes: 3);
+        var sari = h.AddBusinessType("SariSari", "Sari-Sari Store");
+        var bakery = h.AddBusinessType("Bakery", "Bakery");
+        var general = h.AddBusinessType("GeneralRetail", "General Retail / Other");
+        var org = h.AddOrganization(sari);
+        h.SetPlanGrants(org.Id, [sari, bakery, general]);
+
+        var result = await h.GetEntitlement.ExecuteAsync(org.Id.Value);
+        Assert.True(result.IsSuccess);
+        var dto = result.Value!;
+        Assert.Equal(3, dto.MaxActiveBusinessTypes);
+        Assert.Equal(1, dto.EffectiveCount);
+        Assert.Equal(2, dto.RemainingCapacity);
+        Assert.Equal(sari.Value, dto.PrimaryBusinessTypeId);
+        Assert.Contains(dto.BusinessTypes!, o => o.IsPrimary && o.Name == "Sari-Sari Store");
+        Assert.Contains(dto.BusinessTypes!, o => o.Code == "Bakery" && !o.IsEffective);
+        Assert.DoesNotContain(dto.BusinessTypes!, o => o.IsPrimary && o.Code == "GeneralRetail");
+    }
+
+    [Fact]
+    public async Task Primary_cannot_be_deactivated()
+    {
+        var h = Harness.Create(maxActiveBusinessTypes: 3);
+        var primary = h.AddBusinessType("SariSari", "Sari-Sari Store");
+        var org = h.AddOrganization(primary);
+        h.SetPlanGrants(org.Id, [primary]);
+
+        var result = await h.Deactivate.ExecuteAsync(org.Id.Value, primary.Value);
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.BusinessTypePrimaryCannotDeactivate, result.ErrorCode);
+    }
+
+    [Fact]
+    public async Task Optional_deactivation_frees_capacity_for_ux()
+    {
+        var h = Harness.Create(maxActiveBusinessTypes: 2);
+        var primary = h.AddBusinessType("SariSari", "Sari-Sari Store");
+        var bakery = h.AddBusinessType("Bakery", "Bakery");
+        var org = h.AddOrganization(primary);
+        h.SetPlanGrants(org.Id, [primary, bakery]);
+
+        var activated = await h.Activate.ExecuteAsync(org.Id.Value, bakery.Value);
+        Assert.True(activated.IsSuccess);
+
+        var full = await h.GetEntitlement.ExecuteAsync(org.Id.Value);
+        Assert.Equal(0, full.Value!.RemainingCapacity);
+
+        var deactivated = await h.Deactivate.ExecuteAsync(org.Id.Value, bakery.Value);
+        Assert.True(deactivated.IsSuccess);
+
+        var after = await h.GetEntitlement.ExecuteAsync(org.Id.Value);
+        Assert.Equal(1, after.Value!.RemainingCapacity);
+        Assert.Equal(1, after.Value.EffectiveCount);
     }
 
     private sealed class Harness
@@ -102,6 +162,8 @@ public sealed class BusinessTypeCapacityAndDowngradeTests
         public required PlanRepo Plans { get; init; }
         public required SubRepo Subscriptions { get; init; }
         public required ActivateOrganizationBusinessType Activate { get; init; }
+        public required DeactivateOrganizationBusinessType Deactivate { get; init; }
+        public required GetOrganizationBusinessTypeEntitlement GetEntitlement { get; init; }
         public required ScheduleOrganizationSubscriptionDowngrade Downgrade { get; init; }
         public int MaxActiveBusinessTypes { get; private init; }
 
@@ -124,14 +186,16 @@ public sealed class BusinessTypeCapacityAndDowngradeTests
                 MaxActiveBusinessTypes = maxActiveBusinessTypes,
                 Activate = new ActivateOrganizationBusinessType(
                     orgs, resolver, activations, businessTypes, plans, new NoOpUnitOfWork(), clock),
+                Deactivate = new DeactivateOrganizationBusinessType(orgs, activations, new NoOpUnitOfWork()),
+                GetEntitlement = new GetOrganizationBusinessTypeEntitlement(resolver, plans, businessTypes),
                 Downgrade = new ScheduleOrganizationSubscriptionDowngrade(
                     subs, plans, resolver, new NoOpUnitOfWork(), clock)
             };
         }
 
-        public BusinessTypeId AddBusinessType(string code)
+        public BusinessTypeId AddBusinessType(string code, string? name = null)
         {
-            var bt = BusinessType.Create(code, code, T0);
+            var bt = BusinessType.Create(code, name ?? code, T0);
             BusinessTypes.Store(bt);
             return bt.Id;
         }

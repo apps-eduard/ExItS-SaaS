@@ -172,7 +172,7 @@ public sealed class OrganizationBusinessTypeEntitlementResolverTests
             h.Plans,
             new NoopUnitOfWork(),
             new FixedClock(T0));
-        var deactivate = new DeactivateOrganizationBusinessType(h.Activations, new NoopUnitOfWork());
+        var deactivate = new DeactivateOrganizationBusinessType(h.Organizations, h.Activations, new NoopUnitOfWork());
 
         Assert.True((await activate.ExecuteAsync(org.Id.Value, bakery.Value)).IsSuccess);
         Assert.False((await activate.ExecuteAsync(org.Id.Value, veg.Value)).IsSuccess);

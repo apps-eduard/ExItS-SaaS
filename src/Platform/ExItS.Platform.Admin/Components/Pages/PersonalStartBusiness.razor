@@ -91,7 +91,7 @@ else
                         <div style="color:#ff4d4f;font-size:12px;margin-top:4px;">@_slugError</div>
                     }
                 </div>
-                <div>
+                <div style="margin-bottom:12px;">
                     <label class="ant-form-item-label"><span class="ant-form-item-required">Billing cycle</span></label>
                     <Select TItemValue="string" TItem="string" @bind-Value="_billingCycle" Style="width:100%;" Disabled="_busy">
                         <SelectOptions>
@@ -100,16 +100,37 @@ else
                         </SelectOptions>
                     </Select>
                 </div>
+                <div>
+                    <label class="ant-form-item-label"><span class="ant-form-item-required">Primary business type</span></label>
+                    <Select TItemValue="Guid?"
+                            TItem="BusinessTypeDto"
+                            @bind-Value="_primaryBusinessTypeId"
+                            Style="width:100%;"
+                            Disabled="_busy || _businessTypesLoading"
+                            Placeholder="Select primary business type"
+                            AllowClear>
+                        <SelectOptions>
+                            @foreach (var type in _businessTypes)
+                            {
+                                <SelectOption TItemValue="Guid?" TItem="BusinessTypeDto" Value="@type.Id" Label="@type.Name" />
+                            }
+                        </SelectOptions>
+                    </Select>
+                    @if (!string.IsNullOrWhiteSpace(_businessTypeError))
+                    {
+                        <div style="color:#ff4d4f;font-size:12px;margin-top:4px;">@_businessTypeError</div>
+                    }
+                </div>
             </Card>
         </AntDesign.Col>
         <AntDesign.Col Xs="24" Md="12">
             <Card Class="admin-elevated-card" Size="@CardSize.Small" Title="What happens next">
                 <Alert Type="@AlertType.Info" ShowIcon="true"
-                       Message="Pick a plan below. We create your organization, start the trial or paid subscription, then switch you into Organization Administration." />
+                       Message="Pick a primary business type and plan. We create your organization, start the trial or paid subscription, then switch you into Organization Administration." />
                 <ul style="margin:12px 0 0;padding-left:1.25rem;">
-                    <li>Starter and Business include a 14-day free trial (no card).</li>
+                    <li>Starter and Growth include a 14-day free trial (no card).</li>
                     <li>Subscribe Now uses the Local Validation test payment provider here.</li>
-                    <li>You become Organization Owner. POS product roles are assigned separately later.</li>
+                    <li>You become Organization Owner. Additional business types can be activated within plan capacity.</li>
                     <li>Personal utang and profile stay separate.</li>
                 </ul>
             </Card>
@@ -191,19 +212,23 @@ else
     private bool _busy;
     private bool _completed;
     private bool _plansLoading = true;
+    private bool _businessTypesLoading;
     private string? _formError;
     private string? _validationBanner;
     private string? _plansError;
     private string? _nameError;
     private string? _slugError;
+    private string? _businessTypeError;
     private bool _formConflict;
     private string _displayName = "";
     private string _slug = "";
     private string _billingCycle = "Monthly";
+    private Guid? _primaryBusinessTypeId;
     private bool _slugTouched;
     private string _progressTitle = "Working…";
     private string _progressDetail = "Please wait.";
     private List<PlanDto> _plans = [];
+    private List<BusinessTypeDto> _businessTypes = [];
     private Guid? _createdOrganizationId;
     private string _successDetail = "Select your organization profile to continue.";
 
@@ -216,7 +241,7 @@ else
             return;
         }
 
-        await LoadPlansAsync();
+        await Task.WhenAll(LoadPlansAsync(), LoadBusinessTypesAsync());
     }
 
     private static string CardStyle(bool highlight) =>
@@ -228,6 +253,8 @@ else
     {
         yield return $"{plan.MaxBranches} branch{(plan.MaxBranches == 1 ? "" : "es")}";
         yield return $"{plan.MaxActiveStaff} active staff";
+        yield return $"{plan.MaxActivePosDevices} POS device{(plan.MaxActivePosDevices == 1 ? "" : "s")}";
+        yield return $"{plan.MaxActiveBusinessTypes} business type{(plan.MaxActiveBusinessTypes == 1 ? "" : "s")}";
         if (plan.CustomerCreditEnabled) yield return "Customer credit (utang)";
         if (plan.AdvancedReportsEnabled) yield return "Advanced reports";
         if (plan.ExportEnabled) yield return "Export";
@@ -264,6 +291,38 @@ else
         }
     }
 
+    private async Task LoadBusinessTypesAsync()
+    {
+        _businessTypesLoading = true;
+        _businessTypeError = null;
+        try
+        {
+            var types = await Api.GetBusinessTypesAsync(page: 1, pageSize: 100, status: "Active");
+            if (!types.IsSuccess)
+            {
+                _businessTypeError = types.Error?.Detail ?? "Failed to load business types.";
+                _businessTypes = [];
+                return;
+            }
+
+            // Do not auto-select General Retail / Other.
+            _businessTypes = types.Data?.Items
+                .OrderBy(t => t.SortOrder)
+                .ThenBy(t => t.Name, StringComparer.OrdinalIgnoreCase)
+                .ToList() ?? [];
+        }
+        catch (Exception ex)
+        {
+            _businessTypeError = "Could not load business types.";
+            _businessTypes = [];
+            Console.Error.WriteLine(ex);
+        }
+        finally
+        {
+            _businessTypesLoading = false;
+        }
+    }
+
     private void OnDisplayNameChanged()
     {
         if (_slugTouched || string.IsNullOrWhiteSpace(_displayName))
@@ -294,6 +353,7 @@ else
     {
         _nameError = null;
         _slugError = null;
+        _businessTypeError = null;
         _formError = null;
         _validationBanner = null;
         _formConflict = false;
@@ -325,9 +385,15 @@ else
             ok = false;
         }
 
+        if (_primaryBusinessTypeId is null || _primaryBusinessTypeId == Guid.Empty)
+        {
+            _businessTypeError = "Select a primary business type.";
+            ok = false;
+        }
+
         if (!ok)
         {
-            _validationBanner = "Fill Organization name and Slug above, then try Start Free Trial or Subscribe again.";
+            _validationBanner = "Fill Organization name, Slug, and Primary business type above, then try again.";
             _formError ??= _validationBanner;
         }
 
@@ -408,6 +474,7 @@ else
             var result = await Api.StartBusinessAsync(new StartBusinessRequest(
                 _displayName.Trim(),
                 _slug.Trim().ToLowerInvariant(),
+                PrimaryBusinessTypeId: _primaryBusinessTypeId!.Value,
                 ProductCode: "pinoy-business-pos",
                 PlanKey: planKey,
                 BillingCycle: _billingCycle,

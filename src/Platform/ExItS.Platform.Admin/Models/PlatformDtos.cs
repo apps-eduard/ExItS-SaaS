@@ -784,6 +784,7 @@ public sealed record SimulateLocalValidationPaymentResultDto(
 public sealed record StartBusinessRequest(
     string DisplayName,
     string Slug,
+    Guid PrimaryBusinessTypeId,
     string? ProductCode = null,
     Guid? PlanId = null,
     Guid? PlanVersionId = null,

@@ -1,0 +1,259 @@
+@page "/org/business-types"
+@using ExItS.DesignSystem.Components.Internal
+@inject IAuthenticationService Auth
+@inject ICurrentUserContext CurrentUser
+@inject IPlatformAccessClient Platform
+@inject IProductAccessResolver Access
+@inject OnlineRequiredGuard OnlineRequired
+@inject NavigationManager Nav
+@inject IStringLocalizer<PosResources> L
+
+<div class="pos-org-bt">
+    <StoreHeaderBack Href="/org" />
+    <Page>
+        <header class="pos-org-bt__header">
+            <h1 class="pos-org-bt__title">@L["BusinessTypes_ManageTitle"]</h1>
+            <p class="pos-org-bt__subtitle">@L["BusinessTypes_ManageSubtitle"]</p>
+        </header>
+
+        @if (_loading)
+        {
+            <Spinner />
+        }
+        else if (!_isOrganizationOwner)
+        {
+            <Alert Tone="AlertTone.Warning" Title="@L["BusinessTypes_OwnerOnlyTitle"]" Message="@L["BusinessTypes_OwnerOnlyMessage"]" />
+        }
+        else if (!string.IsNullOrEmpty(_error))
+        {
+            <ErrorState Title="@L["Org_ErrorTitle"]" Message="@_error" RetryLabel="@L["Common_Retry"]" OnRetry="LoadAsync" />
+        }
+        else if (_entitlement is null)
+        {
+            <EmptyState Title="@L["BusinessTypes_EmptyTitle"]" Message="@L["BusinessTypes_EmptyMessage"]" />
+        }
+        else
+        {
+            <p class="pos-org-bt__capacity" role="status">
+                @string.Format(L["BusinessTypes_Capacity"].Value, _entitlement.EffectiveCount, _entitlement.MaxActiveBusinessTypes)
+            </p>
+
+            @if (!string.IsNullOrEmpty(_actionError))
+            {
+                <InlineMessage Tone="InlineMessageTone.Danger">@_actionError</InlineMessage>
+            }
+
+            <div class="pos-bt-cards" role="list">
+                @foreach (var type in EligibleOptions)
+                {
+                    var active = type.IsEffective;
+                    var locked = type.IsPrimary;
+                    var canActivate = !active && !locked && _entitlement.RemainingCapacity > 0 && type.IsGranted;
+                    <article class="pos-bt-card @(active ? "pos-bt-card--selected" : null) @(locked ? "pos-bt-card--locked" : null)" role="listitem">
+                        <div class="pos-bt-card__body">
+                            <span class="pos-bt-card__name">@type.Name</span>
+                            @if (locked)
+                            {
+                                <span class="pos-bt-card__badge">@L["BusinessTypes_PrimaryBadge"]</span>
+                            }
+                            else if (active)
+                            {
+                                <span class="pos-bt-card__badge pos-bt-card__badge--active">@L["BusinessTypes_ActiveBadge"]</span>
+                            }
+                        </div>
+                        <div class="pos-bt-card__actions">
+                            @if (locked)
+                            {
+                                <span class="pos-muted">@L["BusinessTypes_PrimaryLocked"]</span>
+                            }
+                            else if (active)
+                            {
+                                <Button Variant="ButtonVariant.Secondary"
+                                        Disabled="_busy"
+                                        IsLoading="_busy"
+                                        OnClick="() => DeactivateAsync(type)">
+                                    @L["BusinessTypes_Deactivate"]
+                                </Button>
+                            }
+                            else if (canActivate)
+                            {
+                                <Button Disabled="_busy" IsLoading="_busy" OnClick="() => ActivateAsync(type)">
+                                    @L["BusinessTypes_Activate"]
+                                </Button>
+                            }
+                            else if (!type.IsGranted)
+                            {
+                                <span class="pos-muted">@L["BusinessTypes_NotOnPlan"]</span>
+                            }
+                            else
+                            {
+                                <span class="pos-muted">@L["BusinessTypes_AtCapacity"]</span>
+                            }
+                        </div>
+                    </article>
+                }
+            </div>
+
+            <Alert Tone="AlertTone.Info" Message="@L["BusinessTypes_DowngradeHint"]" />
+        }
+    </Page>
+</div>
+
+@code {
+    private bool _loading = true;
+    private bool _busy;
+    private bool _isOrganizationOwner;
+    private string? _error;
+    private string? _actionError;
+    private OrganizationBusinessTypeEntitlementDto? _entitlement;
+    private Guid _organizationId;
+
+    private IEnumerable<OrganizationBusinessTypeOptionDto> EligibleOptions =>
+        (_entitlement?.BusinessTypes ?? [])
+            .Where(t => t.IsGranted || t.IsPrimary)
+            .OrderByDescending(t => t.IsPrimary)
+            .ThenBy(t => t.Name, StringComparer.OrdinalIgnoreCase);
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+        _actionError = null;
+        try
+        {
+            if (!CurrentUser.IsAuthenticated)
+            {
+                var restore = await Auth.RestoreSessionAsync();
+                if (!restore.Succeeded)
+                {
+                    Nav.NavigateTo("/signin", replace: true);
+                    return;
+                }
+            }
+
+            if (CurrentUser.Session?.OrganizationId is not Guid orgId)
+            {
+                _error = L["Org_MissingMessage"];
+                return;
+            }
+
+            _organizationId = orgId;
+            _isOrganizationOwner = await ResolveIsOrganizationOwnerAsync(orgId);
+            if (!_isOrganizationOwner)
+            {
+                return;
+            }
+
+            if (!await OnlineRequired.EnsureOnlineForRouteAsync("/org/business-types"))
+            {
+                _error = L["OnlineRequired_Message"];
+                return;
+            }
+
+            var result = await Platform.GetOrganizationBusinessTypeEntitlementsAsync(
+                orgId,
+                PosProductCodes.PinoyBusinessPos);
+            if (!result.IsSuccess || result.Data is null)
+            {
+                _error = result.Error?.Detail ?? L["BusinessTypes_LoadFailed"];
+                return;
+            }
+
+            _entitlement = result.Data;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task<bool> ResolveIsOrganizationOwnerAsync(Guid organizationId)
+    {
+        var userId = CurrentUser.Session?.UserId;
+        if (userId is null)
+        {
+            return false;
+        }
+
+        var eligible = await Access.ListEligibleOrganizationsAsync(userId.Value);
+        if (eligible.Any(o =>
+                o.OrganizationId == organizationId
+                && OrganizationMembershipRoles.IsOwnerRole(o.MembershipRole)))
+        {
+            return true;
+        }
+
+        var memberships = await Platform.GetUserMembershipsAsync(userId.Value);
+        if (!memberships.IsSuccess || memberships.Data is null)
+        {
+            return false;
+        }
+
+        return memberships.Data.Items.Any(m =>
+            m.OrganizationId == organizationId
+            && string.Equals(m.Status, "Active", StringComparison.OrdinalIgnoreCase)
+            && OrganizationMembershipRoles.IsOwnerRole(m.Role));
+    }
+
+    private async Task ActivateAsync(OrganizationBusinessTypeOptionDto type)
+    {
+        _busy = true;
+        _actionError = null;
+        try
+        {
+            var result = await Platform.ActivateOrganizationBusinessTypeAsync(
+                _organizationId,
+                new ActivateOrganizationBusinessTypeRequest(type.Id, PosProductCodes.PinoyBusinessPos));
+            if (!result.IsSuccess)
+            {
+                _actionError = result.Error?.Detail ?? L["BusinessTypes_ActivateFailed"];
+                return;
+            }
+
+            await ReloadEntitlementAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task DeactivateAsync(OrganizationBusinessTypeOptionDto type)
+    {
+        if (type.IsPrimary)
+        {
+            return;
+        }
+
+        _busy = true;
+        _actionError = null;
+        try
+        {
+            var result = await Platform.DeactivateOrganizationBusinessTypeAsync(_organizationId, type.Id);
+            if (!result.IsSuccess)
+            {
+                _actionError = result.Error?.Detail ?? L["BusinessTypes_DeactivateFailed"];
+                return;
+            }
+
+            await ReloadEntitlementAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task ReloadEntitlementAsync()
+    {
+        var result = await Platform.GetOrganizationBusinessTypeEntitlementsAsync(
+            _organizationId,
+            PosProductCodes.PinoyBusinessPos);
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _entitlement = result.Data;
+        }
+    }
+}

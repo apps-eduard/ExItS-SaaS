@@ -72,7 +72,24 @@
                     </div>
                 </div>
             </Section>
+            @if (_btEntitlement is not null)
+            {
+                <Section Title="@L["Org_BusinessTypesLink"]">
+                    <div class="pos-org-subscription__facts">
+                        <div class="pos-org-subscription__fact">
+                            <span class="pos-muted">@L["BusinessTypes_CapacityLabel"]</span>
+                            <span class="pos-org-subscription__value">
+                                @string.Format(L["BusinessTypes_Capacity"].Value, _btEntitlement.EffectiveCount, _btEntitlement.MaxActiveBusinessTypes)
+                            </span>
+                        </div>
+                    </div>
+                    <FormActions>
+                        <Button Variant="ButtonVariant.Secondary" OnClick="GoBusinessTypes">@L["BusinessTypes_ManageLink"]</Button>
+                    </FormActions>
+                </Section>
+            }
             <Alert Tone="AlertTone.Info" Message="@L["Org_WebAdminReminder"]" />
+            <Alert Tone="AlertTone.Info" Message="@L["BusinessTypes_DowngradeHint"]" />
         }
     </Page>
 </div>
@@ -82,6 +99,7 @@
     private string? _error;
     private PlatformSubscriptionDto? _subscription;
     private PlatformEntitlementSnapshotDto? _entitlement;
+    private OrganizationBusinessTypeEntitlementDto? _btEntitlement;
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
 
@@ -115,6 +133,14 @@
                 _entitlement = ent.Data;
             }
 
+            var bt = await Platform.GetOrganizationBusinessTypeEntitlementsAsync(
+                orgId.Value,
+                PosProductCodes.PinoyBusinessPos);
+            if (bt.IsSuccess)
+            {
+                _btEntitlement = bt.Data;
+            }
+
             if (_subscription is null && _entitlement is null)
             {
                 _error = L["Org_SubscriptionLoadFailed"];
@@ -125,6 +151,8 @@
             _loading = false;
         }
     }
+
+    private void GoBusinessTypes() => Nav.NavigateTo("/org/business-types");
 
     private static string Format(DateTimeOffset? value) =>
         value is null ? "—" : value.Value.ToLocalTime().ToString("g");

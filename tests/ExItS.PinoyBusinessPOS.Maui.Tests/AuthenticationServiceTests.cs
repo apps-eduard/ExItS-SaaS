@@ -1235,11 +1235,32 @@ public sealed class AuthenticationServiceTests
         public Task<ApiResult<StartBusinessResultDto>> StartBusinessAsync(StartBusinessRequest request, CancellationToken ct = default) =>
             Task.FromResult(ApiResult<StartBusinessResultDto>.Unavailable());
 
+        public Task<ApiResult<IReadOnlyList<BusinessTypeDto>>> GetOnboardingBusinessTypesAsync(CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<IReadOnlyList<BusinessTypeDto>>.Success(Array.Empty<BusinessTypeDto>()));
+
         public Task<ApiResult<IReadOnlyList<BusinessTypeDto>>> GetActiveBusinessTypesAsync(CancellationToken ct = default) =>
             Task.FromResult(ApiResult<IReadOnlyList<BusinessTypeDto>>.Success(Array.Empty<BusinessTypeDto>()));
 
         public Task<ApiResult<IReadOnlyList<CommercialPlanDto>>> GetCommercialPlansAsync(string? productCode = null, CancellationToken ct = default) =>
             Task.FromResult(ApiResult<IReadOnlyList<CommercialPlanDto>>.Success(Array.Empty<CommercialPlanDto>()));
+
+        public Task<ApiResult<OrganizationBusinessTypeEntitlementDto>> GetOrganizationBusinessTypeEntitlementsAsync(
+            Guid organizationId,
+            string? productCode = null,
+            CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<OrganizationBusinessTypeEntitlementDto>.Unavailable());
+
+        public Task<ApiResult<OrganizationBusinessTypeActivationDto>> ActivateOrganizationBusinessTypeAsync(
+            Guid organizationId,
+            ActivateOrganizationBusinessTypeRequest request,
+            CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<OrganizationBusinessTypeActivationDto>.Unavailable());
+
+        public Task<ApiResult<object>> DeactivateOrganizationBusinessTypeAsync(
+            Guid organizationId,
+            Guid businessTypeId,
+            CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<object>.Unavailable());
 
         public Task<ApiResult<OrganizationInvitationDto>> CreateOrganizationInvitationAsync(Guid organizationId, CreateInvitationRequest request, CancellationToken ct = default) =>
             Task.FromResult(ApiResult<OrganizationInvitationDto>.Unavailable());
@@ -1378,6 +1399,7 @@ public sealed class AuthenticationServiceTests
         private Guid? _org;
         private bool _devConfirmed;
         private readonly HashSet<Guid> _templatePromptPending = [];
+        private readonly HashSet<Guid> _btActivationPromptPending = [];
 
         public string? PeekSecretLeak() => null;
 
@@ -1401,6 +1423,23 @@ public sealed class AuthenticationServiceTests
             else
             {
                 _templatePromptPending.Remove(organizationId);
+            }
+
+            return Task.CompletedTask;
+        }
+
+        public Task<bool> GetBusinessTypeActivationPromptPendingAsync(Guid organizationId, CancellationToken ct = default) =>
+            Task.FromResult(_btActivationPromptPending.Contains(organizationId));
+
+        public Task SetBusinessTypeActivationPromptPendingAsync(Guid organizationId, bool pending, CancellationToken ct = default)
+        {
+            if (pending)
+            {
+                _btActivationPromptPending.Add(organizationId);
+            }
+            else
+            {
+                _btActivationPromptPending.Remove(organizationId);
             }
 
             return Task.CompletedTask;

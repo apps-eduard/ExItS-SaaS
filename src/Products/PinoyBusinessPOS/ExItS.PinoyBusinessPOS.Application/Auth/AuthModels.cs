@@ -55,6 +55,9 @@ public static class PreferenceKeys
 
     /// <summary>Prefix for per-organization one-time business template onboarding prompt flags.</summary>
     public const string BusinessTemplatePromptPendingPrefix = "exits-pos-template-prompt-pending-";
+
+    /// <summary>Prefix for per-organization optional Business Type activation onboarding prompt flags.</summary>
+    public const string BusinessTypeActivationPromptPendingPrefix = "exits-pos-bt-activation-prompt-pending-";
 }
 
 /// <summary>MAUI WebAuthenticator callback for Platform external login redirects.</summary>

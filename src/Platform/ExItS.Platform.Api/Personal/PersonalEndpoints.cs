@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using ExItS.Platform.Api.Common;
 using ExItS.Platform.Application.Common;
+using ExItS.Platform.Application.GlobalCatalog;
 using ExItS.Platform.Application.Identity;
 using ExItS.Platform.Application.Personal;
 using ExItS.Platform.Domain.Identity;
@@ -127,6 +128,21 @@ internal static class PersonalEndpoints
                 http.Request.Headers.UserAgent.ToString(),
                 ct).ConfigureAwait(false);
             return PlatformApiResults.FromResult(result, dto => Results.Created($"/api/v1/organizations/{dto.OrganizationId}", dto));
+        });
+
+        // Active Platform Business Types for Start Business (Personal scope; no org entitlement filter).
+        personal.MapGet("/onboarding/business-types", async (
+            HttpContext http,
+            BusinessTypeQueryService queries,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out _, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var items = await queries.ListActiveForMerchantsAsync(ct).ConfigureAwait(false);
+            return Results.Ok(items);
         });
 
         MapPersonalUtangEndpoints(personal);

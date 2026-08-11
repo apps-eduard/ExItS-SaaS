@@ -16,6 +16,16 @@ public sealed record OrganizationBusinessTypeActivationDto(
     string? BusinessTypeCode,
     DateTimeOffset ActivatedAtUtc);
 
+/// <summary>Merchant-facing option for a plan-granted Business Type (WP11).</summary>
+public sealed record OrganizationBusinessTypeOptionDto(
+    Guid Id,
+    string Code,
+    string Name,
+    bool IsPrimary,
+    bool IsGranted,
+    bool IsActivated,
+    bool IsEffective);
+
 public sealed record OrganizationBusinessTypeEntitlementDto(
     Guid OrganizationId,
     Guid? PrimaryBusinessTypeId,
@@ -24,10 +34,16 @@ public sealed record OrganizationBusinessTypeEntitlementDto(
     IReadOnlyList<Guid> GrantedBusinessTypeIds,
     IReadOnlyList<Guid> ActivatedBusinessTypeIds,
     IReadOnlyList<Guid> EffectiveBusinessTypeIds,
-    IReadOnlyDictionary<string, string> EffectiveBusinessTypeCodesById);
+    IReadOnlyDictionary<string, string> EffectiveBusinessTypeCodesById,
+    int MaxActiveBusinessTypes = 1,
+    int EffectiveCount = 0,
+    int RemainingCapacity = 0,
+    IReadOnlyList<OrganizationBusinessTypeOptionDto>? BusinessTypes = null);
 
 public sealed class GetOrganizationBusinessTypeEntitlement(
-    IOrganizationBusinessTypeEntitlementResolver resolver)
+    IOrganizationBusinessTypeEntitlementResolver resolver,
+    IPlanRepository plans,
+    IBusinessTypeRepository businessTypes)
 {
     public async Task<ApplicationResult<OrganizationBusinessTypeEntitlementDto>> ExecuteAsync(
         Guid organizationId,
@@ -47,22 +63,73 @@ public sealed class GetOrganizationBusinessTypeEntitlement(
                 result.ErrorMessage!);
         }
 
-        return ApplicationResult<OrganizationBusinessTypeEntitlementDto>.Success(Map(result.Value!));
-    }
+        var value = result.Value!;
+        var maxActive = 1;
+        if (value.PlanVersionId is Guid planVersionId)
+        {
+            var planVersion = await plans
+                .GetVersionByIdAsync(PlanVersionId.From(planVersionId), cancellationToken)
+                .ConfigureAwait(false);
+            if (planVersion is not null)
+            {
+                var plan = await plans.GetByIdAsync(planVersion.PlanId, cancellationToken).ConfigureAwait(false);
+                if (plan is not null)
+                {
+                    maxActive = plan.MaxActiveBusinessTypes;
+                }
+            }
+        }
 
-    internal static OrganizationBusinessTypeEntitlementDto Map(OrganizationBusinessTypeEntitlement value) =>
-        new(
-            value.OrganizationId.Value,
-            value.PrimaryBusinessTypeId?.Value,
-            value.SubscriptionId,
-            value.PlanVersionId,
-            value.GrantedBusinessTypeIds.Select(id => id.Value).ToList(),
-            value.ActivatedBusinessTypeIds.Select(id => id.Value).ToList(),
-            value.EffectiveBusinessTypeIds.Select(id => id.Value).ToList(),
-            value.EffectiveBusinessTypeCodes.ToDictionary(
-                kv => kv.Key.ToString("D"),
-                kv => kv.Value,
-                StringComparer.OrdinalIgnoreCase));
+        var effectiveCount = value.EffectiveBusinessTypeIds.Count;
+        var remaining = Math.Max(0, maxActive - effectiveCount);
+
+        var optionIds = value.GrantedBusinessTypeIds
+            .Select(id => id.Value)
+            .Concat(value.PrimaryBusinessTypeId is { } primary ? [primary.Value] : Array.Empty<Guid>())
+            .Distinct()
+            .ToList();
+        var typeEntities = await businessTypes.GetByIdsAsync(optionIds, cancellationToken).ConfigureAwait(false);
+        var byId = typeEntities.ToDictionary(t => t.Id.Value);
+        var activated = value.ActivatedBusinessTypeIds.Select(id => id.Value).ToHashSet();
+        var effective = value.EffectiveBusinessTypeIds.Select(id => id.Value).ToHashSet();
+        var granted = value.GrantedBusinessTypeIds.Select(id => id.Value).ToHashSet();
+        var primaryId = value.PrimaryBusinessTypeId?.Value;
+
+        var options = optionIds
+            .Select(id =>
+            {
+                byId.TryGetValue(id, out var entity);
+                return new OrganizationBusinessTypeOptionDto(
+                    id,
+                    entity?.Code ?? value.EffectiveBusinessTypeCodes.GetValueOrDefault(id) ?? id.ToString("D"),
+                    entity?.Name ?? entity?.Code ?? id.ToString("D"),
+                    primaryId == id,
+                    granted.Contains(id) || primaryId == id,
+                    activated.Contains(id) || primaryId == id,
+                    effective.Contains(id));
+            })
+            .OrderByDescending(o => o.IsPrimary)
+            .ThenBy(o => o.Name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        return ApplicationResult<OrganizationBusinessTypeEntitlementDto>.Success(
+            new OrganizationBusinessTypeEntitlementDto(
+                value.OrganizationId.Value,
+                primaryId,
+                value.SubscriptionId,
+                value.PlanVersionId,
+                value.GrantedBusinessTypeIds.Select(id => id.Value).ToList(),
+                value.ActivatedBusinessTypeIds.Select(id => id.Value).ToList(),
+                value.EffectiveBusinessTypeIds.Select(id => id.Value).ToList(),
+                value.EffectiveBusinessTypeCodes.ToDictionary(
+                    kv => kv.Key.ToString("D"),
+                    kv => kv.Value,
+                    StringComparer.OrdinalIgnoreCase),
+                maxActive,
+                effectiveCount,
+                remaining,
+                options));
+    }
 }
 
 public sealed class ActivateOrganizationBusinessType(
@@ -197,6 +264,7 @@ public sealed class ActivateOrganizationBusinessType(
 }
 
 public sealed class DeactivateOrganizationBusinessType(
+    IPlatformOrganizationRepository organizations,
     IOrganizationBusinessTypeActivationRepository activations,
     IPlatformUnitOfWork unitOfWork)
 {
@@ -209,6 +277,21 @@ public sealed class DeactivateOrganizationBusinessType(
         {
             var orgId = PlatformOrganizationId.From(organizationId);
             var btId = BusinessTypeId.From(businessTypeId);
+            var organization = await organizations.GetByIdAsync(orgId, cancellationToken).ConfigureAwait(false);
+            if (organization is null)
+            {
+                return ApplicationResult.Failure(
+                    ApplicationErrorCodes.OrganizationNotFound,
+                    "Organization was not found.");
+            }
+
+            if (organization.PrimaryBusinessTypeId is { } primary && primary == btId)
+            {
+                return ApplicationResult.Failure(
+                    ApplicationErrorCodes.BusinessTypePrimaryCannotDeactivate,
+                    "The primary business type cannot be deactivated.");
+            }
+
             var existing = await activations.GetAsync(orgId, btId, cancellationToken).ConfigureAwait(false);
             if (existing is null)
             {

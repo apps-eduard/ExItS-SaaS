@@ -1,0 +1,246 @@
+@page "/onboarding/business-types"
+@layout Layout.AuthShell
+@inject IAuthenticationService Auth
+@inject ICurrentUserContext CurrentUser
+@inject IPlatformAccessClient Platform
+@inject IOnboardingPreferenceStore Prefs
+@inject OnlineRequiredGuard OnlineRequired
+@inject NavigationGate Gate
+@inject NavigationManager Nav
+@inject IStringLocalizer<PosResources> L
+
+<div class="pos-onboarding-bt">
+    <Page>
+        <header class="pos-onboarding-bt__header">
+            <h1 class="pos-onboarding-bt__title">@L["BusinessTypes_OnboardingTitle"]</h1>
+            <p class="pos-onboarding-bt__subtitle">@L["BusinessTypes_OnboardingSubtitle"]</p>
+        </header>
+
+        @if (_loading)
+        {
+            <Spinner />
+        }
+        else if (!string.IsNullOrEmpty(_error))
+        {
+            <ErrorState Title="@L["Org_ErrorTitle"]" Message="@_error" RetryLabel="@L["Common_Retry"]" OnRetry="LoadAsync" />
+        }
+        else if (_entitlement is null)
+        {
+            <EmptyState Title="@L["BusinessTypes_EmptyTitle"]" Message="@L["BusinessTypes_EmptyMessage"]" />
+            <FormActions>
+                <Button Variant="ButtonVariant.Primary" OnClick="ContinueAsync">@L["BusinessTypes_SkipContinue"]</Button>
+            </FormActions>
+        }
+        else
+        {
+            <p class="pos-onboarding-bt__capacity" role="status">
+                @string.Format(L["BusinessTypes_Capacity"].Value, _entitlement.EffectiveCount, _entitlement.MaxActiveBusinessTypes)
+            </p>
+
+            @if (_entitlement.RemainingCapacity <= 0)
+            {
+                <InlineMessage Tone="InlineMessageTone.Info">@L["BusinessTypes_StarterNoAdditional"]</InlineMessage>
+            }
+            else
+            {
+                <p class="pos-muted">@string.Format(L["BusinessTypes_AddUpTo"].Value, _entitlement.RemainingCapacity)</p>
+            }
+
+            @if (!string.IsNullOrEmpty(_actionError))
+            {
+                <InlineMessage Tone="InlineMessageTone.Danger">@_actionError</InlineMessage>
+            }
+
+            <div class="pos-bt-cards" role="list">
+                @foreach (var type in EligibleOptions)
+                {
+                    var active = type.IsEffective;
+                    var locked = type.IsPrimary;
+                    var canActivate = !active && !locked && _entitlement.RemainingCapacity > 0 && type.IsGranted;
+                    <article class="pos-bt-card @(active ? "pos-bt-card--selected" : null) @(locked ? "pos-bt-card--locked" : null)" role="listitem">
+                        <div class="pos-bt-card__body">
+                            <span class="pos-bt-card__name">@type.Name</span>
+                            @if (locked)
+                            {
+                                <span class="pos-bt-card__badge">@L["BusinessTypes_PrimaryBadge"]</span>
+                            }
+                            else if (active)
+                            {
+                                <span class="pos-bt-card__badge pos-bt-card__badge--active">@L["BusinessTypes_ActiveBadge"]</span>
+                            }
+                        </div>
+                        <div class="pos-bt-card__actions">
+                            @if (locked)
+                            {
+                                <span class="pos-muted">@L["BusinessTypes_PrimaryLocked"]</span>
+                            }
+                            else if (active)
+                            {
+                                <Button Variant="ButtonVariant.Secondary"
+                                        Disabled="_busy"
+                                        IsLoading="_busy"
+                                        OnClick="() => DeactivateAsync(type)">
+                                    @L["BusinessTypes_Deactivate"]
+                                </Button>
+                            }
+                            else if (canActivate)
+                            {
+                                <Button Disabled="_busy" IsLoading="_busy" OnClick="() => ActivateAsync(type)">
+                                    @L["BusinessTypes_Activate"]
+                                </Button>
+                            }
+                            else
+                            {
+                                <span class="pos-muted">@L["BusinessTypes_AtCapacity"]</span>
+                            }
+                        </div>
+                    </article>
+                }
+            </div>
+
+            <div class="pos-onboarding-bt__actions">
+                <Button Variant="ButtonVariant.Primary" Disabled="_busy" OnClick="ContinueAsync">
+                    @(_entitlement.EffectiveCount > 1 ? L["BusinessTypes_Continue"] : L["BusinessTypes_SkipContinue"])
+                </Button>
+            </div>
+        }
+    </Page>
+</div>
+
+@code {
+    private bool _loading = true;
+    private bool _busy;
+    private string? _error;
+    private string? _actionError;
+    private OrganizationBusinessTypeEntitlementDto? _entitlement;
+    private Guid _organizationId;
+
+    private IEnumerable<OrganizationBusinessTypeOptionDto> EligibleOptions =>
+        (_entitlement?.BusinessTypes ?? [])
+            .Where(t => t.IsGranted || t.IsPrimary)
+            .OrderByDescending(t => t.IsPrimary)
+            .ThenBy(t => t.Name, StringComparer.OrdinalIgnoreCase);
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+        _actionError = null;
+        try
+        {
+            if (!CurrentUser.IsAuthenticated)
+            {
+                var restore = await Auth.RestoreSessionAsync();
+                if (!restore.Succeeded)
+                {
+                    Nav.NavigateTo("/signin", replace: true);
+                    return;
+                }
+            }
+
+            if (!await OnlineRequired.EnsureOnlineForActionAsync(PosOfflineActionKeys.PersonalStartBusiness))
+            {
+                _error = L["OnlineRequired_Message"];
+                return;
+            }
+
+            if (CurrentUser.Session?.OrganizationId is not Guid orgId)
+            {
+                _error = L["Org_MissingMessage"];
+                return;
+            }
+
+            _organizationId = orgId;
+            var result = await Platform.GetOrganizationBusinessTypeEntitlementsAsync(
+                orgId,
+                PosProductCodes.PinoyBusinessPos);
+            if (!result.IsSuccess || result.Data is null)
+            {
+                _error = result.Error?.Detail ?? L["BusinessTypes_LoadFailed"];
+                return;
+            }
+
+            _entitlement = result.Data;
+            if (_entitlement.MaxActiveBusinessTypes <= 1)
+            {
+                await ContinueAsync();
+            }
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task ActivateAsync(OrganizationBusinessTypeOptionDto type)
+    {
+        _busy = true;
+        _actionError = null;
+        try
+        {
+            var result = await Platform.ActivateOrganizationBusinessTypeAsync(
+                _organizationId,
+                new ActivateOrganizationBusinessTypeRequest(type.Id, PosProductCodes.PinoyBusinessPos));
+            if (!result.IsSuccess)
+            {
+                _actionError = result.Error?.Detail ?? L["BusinessTypes_ActivateFailed"];
+                return;
+            }
+
+            await ReloadEntitlementAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task DeactivateAsync(OrganizationBusinessTypeOptionDto type)
+    {
+        if (type.IsPrimary)
+        {
+            return;
+        }
+
+        _busy = true;
+        _actionError = null;
+        try
+        {
+            var result = await Platform.DeactivateOrganizationBusinessTypeAsync(_organizationId, type.Id);
+            if (!result.IsSuccess)
+            {
+                _actionError = result.Error?.Detail ?? L["BusinessTypes_DeactivateFailed"];
+                return;
+            }
+
+            await ReloadEntitlementAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task ReloadEntitlementAsync()
+    {
+        var result = await Platform.GetOrganizationBusinessTypeEntitlementsAsync(
+            _organizationId,
+            PosProductCodes.PinoyBusinessPos);
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _entitlement = result.Data;
+        }
+    }
+
+    private async Task ContinueAsync()
+    {
+        if (_organizationId != Guid.Empty)
+        {
+            await Prefs.SetBusinessTypeActivationPromptPendingAsync(_organizationId, pending: false);
+        }
+
+        Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+    }
+}
