@@ -5,9 +5,9 @@ using ExItS.PinoyBusinessPOS.Domain.Customers;
 namespace ExItS.PinoyBusinessPOS.Domain.Sales;
 
 /// <summary>
-/// Snapshot input for one checkout line. The application layer resolves these values from the live
-/// catalog product; the client never supplies name, price, unit of measure, or selling mode.
-/// Quantity for ByWeight products is already canonical kilograms.
+/// Snapshot input for one checkout line. Online checkout resolves price/mode/name from the live
+/// catalog. Offline cash sync supplies immutable snapshots that the application validates without
+/// live-catalog re-pricing. Quantity for ByWeight products is already canonical kilograms.
 /// </summary>
 public sealed record SaleLineDraft(
     CatalogProductId ProductId,

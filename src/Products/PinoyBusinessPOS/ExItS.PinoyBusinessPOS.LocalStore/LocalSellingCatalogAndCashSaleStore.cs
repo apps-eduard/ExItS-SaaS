@@ -473,7 +473,7 @@ public sealed class LocalSellingCatalogAndCashSaleStore(
                         claimed_by, claimed_utc, depends_on_operation_id, entity_id)
                     VALUES (
                         $operation_id, $device_id, $user_id, $organization_id, $product_code,
-                        $operation_type, 1, $ciphertext, $nonce, $tag, $payload_hash,
+                        $operation_type, $payload_version, $ciphertext, $nonce, $tag, $payload_hash,
                         $idempotency_key, $created_utc, $next_attempt_utc, 0, $queue_state,
                         NULL, NULL, NULL, NULL, NULL,
                         NULL, NULL, NULL, $entity_id);
@@ -484,6 +484,9 @@ public sealed class LocalSellingCatalogAndCashSaleStore(
                 queueCmd.Parameters.AddWithValue("$organization_id", active.Identity.OrganizationId.ToString("D"));
                 queueCmd.Parameters.AddWithValue("$product_code", active.Identity.ProductCode);
                 queueCmd.Parameters.AddWithValue("$operation_type", OfflineOperationTypes.SaleCheckout);
+                queueCmd.Parameters.AddWithValue(
+                    "$payload_version",
+                    OfflineOperationTypes.SaleCheckoutPayloadVersions.Current);
                 queueCmd.Parameters.AddWithValue("$ciphertext", queueEncrypted.Ciphertext);
                 queueCmd.Parameters.AddWithValue("$nonce", queueEncrypted.Nonce);
                 queueCmd.Parameters.AddWithValue("$tag", queueEncrypted.Tag);

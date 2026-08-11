@@ -18,7 +18,8 @@ internal interface IPosDeviceTransactionAuthorizer
 internal sealed class PosDeviceTransactionAuthorizer(
     HttpClient client,
     IHttpContextAccessor httpContextAccessor,
-    IOptions<PlatformAuthOptions> options) : IPosDeviceTransactionAuthorizer
+    IOptions<PlatformAuthOptions> options,
+    IHostEnvironment environment) : IPosDeviceTransactionAuthorizer
 {
     internal const string DeviceHeaderName = "X-Pos-Installation-Device-Id";
 
@@ -32,6 +33,13 @@ internal sealed class PosDeviceTransactionAuthorizer(
         var deviceId = request.Headers[DeviceHeaderName].FirstOrDefault()?.Trim();
         if (string.IsNullOrWhiteSpace(deviceId))
         {
+            // Integration WebApplicationFactory has no Platform device service. Production and real
+            // Development clients must still send a registered installation device id.
+            if (environment.IsEnvironment("Testing"))
+            {
+                return null;
+            }
+
             return Denied("application.pos_device.not_authorized", "A registered POS installation device is required.");
         }
 

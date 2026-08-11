@@ -15,9 +15,11 @@ namespace ExItS.PinoyBusinessPOS.Api.Sales;
 /// scope comes from <c>X-Pos-Organization-Id</c>, the actor from <c>X-Dev-Platform-User-Id</c>, and
 /// cross-organization access returns 404 (fail closed).
 ///
-/// Totals are always computed server-side from the live catalog. Product-Based Utang checkout also
-/// creates a linked remarks credit. Tracked inventory is deducted atomically at checkout and
-/// restored on void. No discount, tax, refund, split tender, or gateway surface exists here.
+/// Totals for online carts are computed server-side from the live catalog. Offline cash sync may
+/// supply immutable line snapshots (UnitPrice/UOM/SellingMode/LineTotal); the server validates
+/// arithmetic consistency without replacing those snapshots from the live catalog. Product-Based
+/// Utang checkout also creates a linked remarks credit. Tracked inventory is deducted atomically at
+/// checkout and restored on void. No discount, tax, refund, split tender, or gateway surface exists here.
 /// </summary>
 internal static class SaleEndpoints
 {

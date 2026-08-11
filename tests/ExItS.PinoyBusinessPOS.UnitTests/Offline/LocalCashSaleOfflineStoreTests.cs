@@ -135,6 +135,77 @@ public sealed class LocalCashSaleOfflineStoreTests
         Assert.Equal(7m, product.OnHandQuantity);
     }
 
+    [Fact]
+    public async Task Offline_cash_sale_enqueues_payload_version_2_with_line_snapshots()
+    {
+        await using var harness = await Harness.CreateAsync();
+        var productId = Guid.NewGuid();
+        await SeedProductAsync(harness, productId, onHand: 10m, tracked: true);
+
+        var saleId = Guid.NewGuid();
+        var operationId = Guid.NewGuid();
+        await harness.Store.PersistCashSaleAndEnqueueAsync(
+            CreateCommand(harness, saleId, operationId, productId, qty: 2m));
+
+        var claimed = await harness.Queue.TryClaimNextAsync("snap-claim");
+        Assert.NotNull(claimed);
+        Assert.Equal(OfflineOperationTypes.SaleCheckoutPayloadVersions.Current, claimed!.PayloadVersion);
+
+        var loaded = await harness.Queue.TryLoadEncryptedAsync(claimed.OperationId);
+        Assert.NotNull(loaded);
+        var protector = new AesGcmLocalPayloadProtector(harness.Tokens);
+        var plaintext = await protector.DecryptAsync(
+            loaded.Value.Encrypted,
+            OfflinePayloadBinding.BuildAssociatedData(
+                harness.Manager.ActiveContext!.Identity.ContextHash,
+                claimed.OperationId,
+                OfflineOperationTypes.SaleCheckout));
+
+        var payload = System.Text.Json.JsonSerializer.Deserialize<CheckoutSaleRequest>(
+            plaintext,
+            new System.Text.Json.JsonSerializerOptions
+            {
+                PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
+                PropertyNameCaseInsensitive = true
+            });
+        Assert.NotNull(payload);
+        var line = Assert.Single(payload!.Lines);
+        Assert.Equal(2m, line.Quantity);
+        Assert.Equal(10m, line.UnitPriceSnapshot);
+        Assert.Equal(nameof(Domain.Catalog.UnitOfMeasure.Piece), line.UnitOfMeasure);
+        Assert.Equal(nameof(Domain.Catalog.SellingMode.PerItem), line.SellingMode);
+        Assert.Equal(20m, line.LineTotal);
+
+        var local = await harness.Store.GetBySaleIdAsync(saleId);
+        Assert.NotNull(local);
+        var receiptLine = Assert.Single(local!.Lines);
+        Assert.Equal(2m, receiptLine.Quantity);
+        Assert.Equal(10m, receiptLine.UnitPrice);
+        Assert.Equal(20m, receiptLine.LineTotal);
+    }
+
+    [Fact]
+    public async Task Offline_weighted_receipt_json_survives_restart_with_decimal_kg()
+    {
+        await using var harness = await Harness.CreateAsync();
+        var productId = Guid.NewGuid();
+        await SeedWeightedProductAsync(harness, productId, onHand: 50m);
+
+        var saleId = Guid.NewGuid();
+        await harness.Store.PersistCashSaleAndEnqueueAsync(
+            CreateWeightedCommand(harness, saleId, Guid.NewGuid(), productId, qtyKg: 1.200m, pricePerKg: 120m));
+
+        var store2 = CreateStore(harness);
+        var again = await store2.GetBySaleIdAsync(saleId);
+        Assert.NotNull(again);
+        var line = Assert.Single(again!.Lines);
+        Assert.Equal(1.200m, line.Quantity);
+        Assert.Equal(120m, line.UnitPrice);
+        Assert.Equal(144.00m, line.LineTotal);
+        Assert.Equal(nameof(Domain.Catalog.SellingMode.ByWeight), line.SellingMode);
+        Assert.Equal(nameof(Domain.Catalog.UnitOfMeasure.Kilogram), line.UnitOfMeasure);
+    }
+
     private static LocalCashSaleCommitCommand CreateCommand(
         Harness harness,
         Guid saleId,
@@ -142,14 +213,26 @@ public sealed class LocalCashSaleOfflineStoreTests
         Guid productId,
         decimal qty)
     {
+        var unitPrice = 10m;
+        var lineTotal = PosSaleOptions.RoundMoney(unitPrice * qty);
         var lines = new List<LocalCashSaleLineSnapshot>
         {
-            new(productId, "Test Item", "SKU-1", "pc", 10m, qty, 10m * qty, true)
+            new(productId, "Test Item", "SKU-1", nameof(Domain.Catalog.UnitOfMeasure.Piece), unitPrice, qty, lineTotal, true, "PerItem")
         };
         var request = new CheckoutSaleRequest(
-            [new CheckoutSaleLineRequest(productId, qty)],
+            [
+                new CheckoutSaleLineRequest(
+                    productId,
+                    qty,
+                    UnitPriceSnapshot: unitPrice,
+                    UnitOfMeasure: nameof(Domain.Catalog.UnitOfMeasure.Piece),
+                    SellingMode: "PerItem",
+                    LineTotal: lineTotal,
+                    NameSnapshot: "Test Item",
+                    SkuSnapshot: "SKU-1")
+            ],
             PosSaleOptions.CashPaymentMethod,
-            AmountTendered: 10m * qty,
+            AmountTendered: lineTotal,
             SaleId: saleId,
             ShiftId: Guid.NewGuid());
 
@@ -159,9 +242,63 @@ public sealed class LocalCashSaleOfflineStoreTests
             saleId.ToString("N"),
             $"OFF-TEST-{saleId.ToString("N")[..8]}",
             request.ShiftId!.Value,
-            10m * qty,
-            10m * qty,
-            10m * qty,
+            lineTotal,
+            lineTotal,
+            lineTotal,
+            0m,
+            harness.UserId,
+            lines,
+            request);
+    }
+
+    private static LocalCashSaleCommitCommand CreateWeightedCommand(
+        Harness harness,
+        Guid saleId,
+        Guid operationId,
+        Guid productId,
+        decimal qtyKg,
+        decimal pricePerKg)
+    {
+        var lineTotal = PosSaleOptions.RoundMoney(pricePerKg * qtyKg);
+        var lines = new List<LocalCashSaleLineSnapshot>
+        {
+            new(
+                productId,
+                "Tomato",
+                "TOM-1",
+                nameof(Domain.Catalog.UnitOfMeasure.Kilogram),
+                pricePerKg,
+                qtyKg,
+                lineTotal,
+                true,
+                nameof(Domain.Catalog.SellingMode.ByWeight))
+        };
+        var request = new CheckoutSaleRequest(
+            [
+                new CheckoutSaleLineRequest(
+                    productId,
+                    qtyKg,
+                    UnitPriceSnapshot: pricePerKg,
+                    UnitOfMeasure: nameof(Domain.Catalog.UnitOfMeasure.Kilogram),
+                    SellingMode: nameof(Domain.Catalog.SellingMode.ByWeight),
+                    LineTotal: lineTotal,
+                    NameSnapshot: "Tomato",
+                    SkuSnapshot: "TOM-1")
+            ],
+            PosSaleOptions.CashPaymentMethod,
+            AmountTendered: lineTotal,
+            SaleId: saleId,
+            ShiftId: Guid.NewGuid());
+
+        return new LocalCashSaleCommitCommand(
+            saleId,
+            operationId,
+            saleId.ToString("N"),
+            $"OFF-W-{saleId.ToString("N")[..8]}",
+            request.ShiftId!.Value,
+            lineTotal,
+            lineTotal,
+            lineTotal,
             0m,
             harness.UserId,
             lines,
@@ -178,13 +315,35 @@ public sealed class LocalCashSaleOfflineStoreTests
             "SKU-1",
             "BAR-1",
             null,
-            "pc",
+            nameof(Domain.Catalog.UnitOfMeasure.Piece),
             "PerItem",
             10m,
             PosCatalogOptions.ActiveStatus,
             DateTimeOffset.UtcNow,
             DateTimeOffset.UtcNow,
             IsTracked: tracked,
+            OnHandQuantity: onHand,
+            StockStatus: "InStock");
+        await harness.Store.UpsertProductsAsync([product]);
+    }
+
+    private static async Task SeedWeightedProductAsync(Harness harness, Guid productId, decimal onHand)
+    {
+        var product = new PosCatalogProductDto(
+            productId,
+            harness.OrgId,
+            "Tomato",
+            null,
+            "TOM-1",
+            "4800001000001",
+            null,
+            nameof(Domain.Catalog.UnitOfMeasure.Kilogram),
+            nameof(Domain.Catalog.SellingMode.ByWeight),
+            150m,
+            PosCatalogOptions.ActiveStatus,
+            DateTimeOffset.UtcNow,
+            DateTimeOffset.UtcNow,
+            IsTracked: true,
             OnHandQuantity: onHand,
             StockStatus: "InStock");
         await harness.Store.UpsertProductsAsync([product]);

@@ -409,6 +409,18 @@ public static class OfflineOperationTypes
     public const string SaleCheckout = "sale.checkout";
 
     /// <summary>
+    /// Outbox payload_version for <see cref="SaleCheckout"/>.
+    /// v1 = ProductId + Quantity only (server live-catalog priced; already-queued rows still valid).
+    /// v2 = immutable line snapshots (UnitPrice/UOM/SellingMode/LineTotal) for sync fidelity.
+    /// </summary>
+    public static class SaleCheckoutPayloadVersions
+    {
+        public const int LegacyProductIdQuantityOnly = 1;
+        public const int ImmutableLineSnapshots = 2;
+        public const int Current = ImmutableLineSnapshots;
+    }
+
+    /// <summary>
     /// Server-side idempotency scope for electronic payment attempt create. Online-only.
     /// </summary>
     public const string PaymentAttemptCreate = "payment.attempt.create";

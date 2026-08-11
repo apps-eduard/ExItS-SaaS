@@ -120,7 +120,7 @@ public sealed class LocalDatabaseIsolationTests
         var versions = await connection.QueryRowsAsync(
             "SELECT schema_version FROM local_schema_info ORDER BY schema_version;");
         var versionNums = versions.Select(r => Convert.ToInt32(r["schema_version"])).ToArray();
-        Assert.Equal([1, 2, 3, 4, 5, 6], versionNums);
+        Assert.Equal([1, 2, 3, 4, 5, 6, 7], versionNums);
 
         var tables = await connection.QueryRowsAsync(
             "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;");

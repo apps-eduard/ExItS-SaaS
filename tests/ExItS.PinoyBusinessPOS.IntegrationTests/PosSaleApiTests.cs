@@ -87,6 +87,140 @@ public sealed class PosSaleApiTests(PosPostgreSqlFixture fixture)
     }
 
     [Fact]
+    public async Task Checkout_with_trusted_snapshots_preserves_price_when_live_catalog_changed()
+    {
+        await using var factory = new PosApiFactory(fixture.ConnectionString);
+        var client = factory.CreateClient();
+        var org = Guid.NewGuid();
+
+        var tomato = await CreateProductAsync(
+            client,
+            org,
+            "Tomato",
+            "Kilogram",
+            150m,
+            sku: "tom-snap-1",
+            sellingMode: "ByWeight");
+
+        var saleId = Guid.NewGuid();
+        var sale = await CheckoutAsync(
+            client,
+            org,
+            new CheckoutSaleRequest(
+                [
+                    new CheckoutSaleLineRequest(
+                        tomato.ProductId,
+                        1.200m,
+                        UnitPriceSnapshot: 120m,
+                        UnitOfMeasure: "Kilogram",
+                        SellingMode: "ByWeight",
+                        LineTotal: 144.00m,
+                        NameSnapshot: "Tomato",
+                        SkuSnapshot: tomato.Sku)
+                ],
+                PosSaleOptions.CashPaymentMethod,
+                144m,
+                SaleId: saleId));
+
+        var line = Assert.Single(sale.Lines);
+        Assert.Equal(120m, line.UnitPrice);
+        Assert.Equal(1.200m, line.Quantity);
+        Assert.Equal(144.00m, line.LineTotal);
+        Assert.Equal("ByWeight", line.SellingMode);
+        Assert.Equal("Kilogram", line.UnitOfMeasure);
+        Assert.Equal(144.00m, sale.Total);
+
+        var replay = await CheckoutAsync(
+            client,
+            org,
+            new CheckoutSaleRequest(
+                [
+                    new CheckoutSaleLineRequest(
+                        tomato.ProductId,
+                        1.200m,
+                        UnitPriceSnapshot: 120m,
+                        UnitOfMeasure: "Kilogram",
+                        SellingMode: "ByWeight",
+                        LineTotal: 144.00m)
+                ],
+                PosSaleOptions.CashPaymentMethod,
+                144m,
+                SaleId: saleId));
+        Assert.Equal(sale.SaleId, replay.SaleId);
+        Assert.Equal(144.00m, replay.Total);
+        Assert.Equal(120m, Assert.Single(replay.Lines).UnitPrice);
+    }
+
+    [Fact]
+    public async Task Checkout_rejects_forged_snapshot_line_total()
+    {
+        await using var factory = new PosApiFactory(fixture.ConnectionString);
+        var client = factory.CreateClient();
+        var org = Guid.NewGuid();
+        var tomato = await CreateProductAsync(
+            client, org, "Tomato", "Kilogram", 120m, sku: "tom-forge-1", sellingMode: "ByWeight");
+
+        using var response = await PostCheckoutAsync(
+            client,
+            org,
+            new CheckoutSaleRequest(
+                [
+                    new CheckoutSaleLineRequest(
+                        tomato.ProductId,
+                        0.350m,
+                        UnitPriceSnapshot: 120m,
+                        UnitOfMeasure: "Kilogram",
+                        SellingMode: "ByWeight",
+                        LineTotal: 99.00m)
+                ],
+                PosSaleOptions.CashPaymentMethod,
+                99m));
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(ApplicationErrorCodes.SaleSnapshotLineTotalMismatch, await ReadErrorCodeAsync(response));
+    }
+
+    [Fact]
+    public async Task Mixed_snapshot_cart_total_is_194_when_live_prices_differ()
+    {
+        await using var factory = new PosApiFactory(fixture.ConnectionString);
+        var client = factory.CreateClient();
+        var org = Guid.NewGuid();
+        var coke = await CreateProductAsync(client, org, "Coke", "Bottle", 30m, sku: "coke-snap-1");
+        var tomato = await CreateProductAsync(
+            client, org, "Tomato", "Kilogram", 150m, sku: "tom-mix-1", sellingMode: "ByWeight");
+
+        var sale = await CheckoutAsync(
+            client,
+            org,
+            new CheckoutSaleRequest(
+                [
+                    new CheckoutSaleLineRequest(
+                        coke.ProductId,
+                        2m,
+                        UnitPriceSnapshot: 25m,
+                        UnitOfMeasure: "Bottle",
+                        SellingMode: "PerItem",
+                        LineTotal: 50.00m,
+                        NameSnapshot: "Coke"),
+                    new CheckoutSaleLineRequest(
+                        tomato.ProductId,
+                        1.200m,
+                        UnitPriceSnapshot: 120m,
+                        UnitOfMeasure: "Kilogram",
+                        SellingMode: "ByWeight",
+                        LineTotal: 144.00m,
+                        NameSnapshot: "Tomato")
+                ],
+                PosSaleOptions.CashPaymentMethod,
+                194m));
+
+        Assert.Equal(194.00m, sale.Total);
+        Assert.Equal(2, sale.Lines.Count);
+        Assert.Equal(25m, sale.Lines.Single(l => l.ProductId == coke.ProductId).UnitPrice);
+        Assert.Equal(120m, sale.Lines.Single(l => l.ProductId == tomato.ProductId).UnitPrice);
+    }
+
+    [Fact]
     public async Task Checkout_ignores_client_prices_and_uses_the_current_selling_price()
     {
         await using var factory = new PosApiFactory(fixture.ConnectionString);
@@ -596,11 +730,12 @@ public sealed class PosSaleApiTests(PosPostgreSqlFixture fixture)
         string name,
         string unitOfMeasure,
         decimal sellingPrice,
-        string? sku = null)
+        string? sku = null,
+        string? sellingMode = null)
     {
         using var request = Scoped(HttpMethod.Post, Products, org);
         request.Content = JsonContent.Create(
-            new CreatePosCatalogProductRequest(name, unitOfMeasure, sellingPrice, null, sku),
+            new CreatePosCatalogProductRequest(name, unitOfMeasure, sellingPrice, null, sku, SellingMode: sellingMode),
             options: JsonOptions);
         using var response = await client.SendAsync(request);
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);

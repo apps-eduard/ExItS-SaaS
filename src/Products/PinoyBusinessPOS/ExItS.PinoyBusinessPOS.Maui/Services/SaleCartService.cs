@@ -5,8 +5,8 @@ using ExItS.PinoyBusinessPOS.Application.Sales;
 namespace ExItS.PinoyBusinessPOS.Maui.Services;
 
 /// <summary>
-/// One cart line held in memory. Amounts are a display preview only — the server recomputes every
-/// price and total from the live catalog at checkout.
+/// One cart line held in memory. Amounts are a display preview for online checkout (server still
+/// prices from the live catalog). Offline cash sync embeds these values as immutable snapshots.
 /// </summary>
 public sealed record SaleCartItem(
     Guid ProductId,
@@ -15,7 +15,8 @@ public sealed record SaleCartItem(
     string? Barcode,
     string UnitOfMeasure,
     decimal UnitPrice,
-    decimal Quantity)
+    decimal Quantity,
+    string SellingMode = "PerItem")
 {
     public decimal LineTotal => PosSaleOptions.RoundMoney(UnitPrice * Quantity);
 }
@@ -70,6 +71,7 @@ public sealed class SaleCartService : IDisposable
 
         var index = _items.FindIndex(i => i.ProductId == product.ProductId);
         var existingQuantity = index >= 0 ? _items[index].Quantity : 0m;
+        var sellingMode = string.IsNullOrWhiteSpace(product.SellingMode) ? "PerItem" : product.SellingMode;
         var item = new SaleCartItem(
             product.ProductId,
             product.Name,
@@ -77,7 +79,8 @@ public sealed class SaleCartService : IDisposable
             product.Barcode,
             product.UnitOfMeasure,
             product.SellingPrice,
-            existingQuantity + quantity);
+            existingQuantity + quantity,
+            sellingMode);
 
         if (index >= 0)
         {
@@ -132,10 +135,26 @@ public sealed class SaleCartService : IDisposable
 
     /// <summary>True when every line quantity satisfies the unit-of-measure precision rule.</summary>
     public bool IsCheckoutReady =>
-        _items.Count > 0 && _items.All(i => PosSaleOptions.IsValidQuantity(i.Quantity, i.UnitOfMeasure));
+        _items.Count > 0
+        && _items.All(i => PosSaleOptions.IsValidQuantity(i.Quantity, i.UnitOfMeasure, i.SellingMode));
 
-    public List<CheckoutSaleLineRequest> ToCheckoutLines() =>
-        _items.Select(i => new CheckoutSaleLineRequest(i.ProductId, i.Quantity)).ToList();
+    /// <summary>
+    /// Online checkout: ProductId + Quantity only (server live-catalog prices).
+    /// Offline cash sync: include immutable line snapshots (payload_version 2).
+    /// </summary>
+    public List<CheckoutSaleLineRequest> ToCheckoutLines(bool includePriceSnapshots = false) =>
+        includePriceSnapshots
+            ? _items.Select(i => new CheckoutSaleLineRequest(
+                i.ProductId,
+                i.Quantity,
+                UnitPriceSnapshot: i.UnitPrice,
+                UnitOfMeasure: i.UnitOfMeasure,
+                SellingMode: i.SellingMode,
+                LineTotal: i.LineTotal,
+                NameSnapshot: i.Name,
+                SkuSnapshot: i.Sku,
+                BarcodeSnapshot: i.Barcode)).ToList()
+            : _items.Select(i => new CheckoutSaleLineRequest(i.ProductId, i.Quantity)).ToList();
 
     private Task OnSessionChangedAsync()
     {

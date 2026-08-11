@@ -1828,7 +1828,7 @@ else
                 .ToList();
 
             var request = new CheckoutSaleRequest(
-                Cart.ToCheckoutLines(),
+                Cart.ToCheckoutLines(includePriceSnapshots: true),
                 PosSaleOptions.CashPaymentMethod,
                 tendered,
                 GCashReference: null,

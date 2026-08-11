@@ -400,46 +400,96 @@ public sealed class CheckoutSale
                     "A sale must contain at least one line.");
             }
 
-            var requested = CombineRequestedQuantities(lines);
-            if (requested.Count == 0)
-            {
-                return ApplicationResult<Sale>.Failure(
-                    DomainErrorCodes.SaleRequiresAtLeastOneLine,
-                    "A sale must contain at least one line.");
-            }
-
-            var productIds = requested.Select(r => CatalogProductId.From(r.ProductId)).ToList();
+            var productIds = lines
+                .Where(l => l is not null)
+                .Select(l => CatalogProductId.From(l.ProductId))
+                .Distinct()
+                .ToList();
             var products = await _products
                 .ListByIdsAsync(orgId, productIds, cancellationToken)
                 .ConfigureAwait(false);
             var byId = products.ToDictionary(p => p.Id.Value);
 
-            var drafts = new List<SaleLineDraft>(requested.Count);
-            foreach (var (productId, quantity) in requested)
+            var drafts = new List<SaleLineDraft>();
+            var usesTrustedSnapshots = CheckoutSaleLineSnapshots.RequestUsesTrustedSnapshots(lines);
+            if (usesTrustedSnapshots)
             {
-                if (!byId.TryGetValue(productId, out var product))
+                foreach (var line in lines)
                 {
-                    return ApplicationResult<Sale>.Failure(
-                        ApplicationErrorCodes.SaleProductNotFound,
-                        "One or more products in the cart were not found in this organization.");
+                    if (line is null)
+                    {
+                        continue;
+                    }
+
+                    if (!byId.TryGetValue(line.ProductId, out var product))
+                    {
+                        return ApplicationResult<Sale>.Failure(
+                            ApplicationErrorCodes.SaleProductNotFound,
+                            "One or more products in the cart were not found in this organization.");
+                    }
+
+                    if (product.Status != CatalogProductStatus.Active)
+                    {
+                        return ApplicationResult<Sale>.Failure(
+                            ApplicationErrorCodes.SaleProductNotActive,
+                            $"'{product.Name}' is inactive and cannot be sold. Remove it from the cart or reactivate it.");
+                    }
+
+                    var snapshotDraft = CheckoutSaleLineSnapshots.TryCreateDraftFromSnapshot(line, product);
+                    if (!snapshotDraft.IsSuccess)
+                    {
+                        return ApplicationResult<Sale>.Failure(
+                            snapshotDraft.ErrorCode!,
+                            snapshotDraft.ErrorMessage!);
+                    }
+
+                    drafts.Add(snapshotDraft.Value!);
                 }
 
-                if (product.Status != CatalogProductStatus.Active)
+                if (drafts.Count == 0)
                 {
                     return ApplicationResult<Sale>.Failure(
-                        ApplicationErrorCodes.SaleProductNotActive,
-                        $"'{product.Name}' is inactive and cannot be sold. Remove it from the cart or reactivate it.");
+                        DomainErrorCodes.SaleRequiresAtLeastOneLine,
+                        "A sale must contain at least one line.");
+                }
+            }
+            else
+            {
+                var requested = CombineRequestedQuantities(lines);
+                if (requested.Count == 0)
+                {
+                    return ApplicationResult<Sale>.Failure(
+                        DomainErrorCodes.SaleRequiresAtLeastOneLine,
+                        "A sale must contain at least one line.");
                 }
 
-                drafts.Add(new SaleLineDraft(
-                    product.Id,
-                    product.Name,
-                    product.Sku,
-                    product.Barcode,
-                    product.UnitOfMeasure,
-                    product.SellingPrice,
-                    quantity,
-                    product.SellingMode));
+                drafts = new List<SaleLineDraft>(requested.Count);
+                foreach (var (productId, quantity) in requested)
+                {
+                    if (!byId.TryGetValue(productId, out var product))
+                    {
+                        return ApplicationResult<Sale>.Failure(
+                            ApplicationErrorCodes.SaleProductNotFound,
+                            "One or more products in the cart were not found in this organization.");
+                    }
+
+                    if (product.Status != CatalogProductStatus.Active)
+                    {
+                        return ApplicationResult<Sale>.Failure(
+                            ApplicationErrorCodes.SaleProductNotActive,
+                            $"'{product.Name}' is inactive and cannot be sold. Remove it from the cart or reactivate it.");
+                    }
+
+                    drafts.Add(new SaleLineDraft(
+                        product.Id,
+                        product.Name,
+                        product.Sku,
+                        product.Barcode,
+                        product.UnitOfMeasure,
+                        product.SellingPrice,
+                        quantity,
+                        product.SellingMode));
+                }
             }
 
             var utcNow = _clock.UtcNow;

@@ -51,11 +51,21 @@ public sealed record PosSaleDto(
     string? ContactPhone = null);
 
 /// <summary>
-/// One requested checkout line. Only the product identity and quantity are accepted — name, unit of
-/// measure and unit price always come from the live catalog on the server, so any price or name a
-/// client sends is ignored rather than trusted.
+/// One requested checkout line.
+/// Online carts may send ProductId + Quantity only; the server then prices from the live catalog.
+/// Offline cash sync (payload_version ≥ 2) must also send immutable snapshots so the server
+/// validates arithmetic without replacing UnitPrice / UOM / SellingMode from the live catalog.
 /// </summary>
-public sealed record CheckoutSaleLineRequest(Guid ProductId, decimal Quantity);
+public sealed record CheckoutSaleLineRequest(
+    Guid ProductId,
+    decimal Quantity,
+    decimal? UnitPriceSnapshot = null,
+    string? UnitOfMeasure = null,
+    string? SellingMode = null,
+    decimal? LineTotal = null,
+    string? NameSnapshot = null,
+    string? SkuSnapshot = null,
+    string? BarcodeSnapshot = null);
 
 /// <summary>
 /// Checkout request. The cart itself is never persisted server-side; it exists only in the client
