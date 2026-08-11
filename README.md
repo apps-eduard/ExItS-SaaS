@@ -19,6 +19,17 @@ Product-specific workflows and data remain inside each product.
 - [Root Platform solution](ExItS.slnx) (`dotnet restore/build/test ExItS.slnx`)
 - [All phases](docs/phases/README.md)
 
+### Local Validation operator commands (cheat sheets)
+
+Copy-paste PowerShell for day-to-day Local Validation (not Production):
+
+- [Start / stop apps (PublicHost)](Start-LocalValidation.md)
+- [Reset → 2 Platform users only](Reset-LocalValidation.md)
+- [Reset products + business templates](Reset-Products-And-Business-Templates.md) (same volume wipe)
+- [MAUI emulator build + install](Maui-Emulator-Install.md)
+- [MAUI physical device + Tailscale](Maui-PhysicalDevice-Install.md)
+- Deeper workflow: [deploy/docker/README.local-validation-workflow.md](deploy/docker/README.local-validation-workflow.md)
+
 ## Repository layout (current)
 
 ```text

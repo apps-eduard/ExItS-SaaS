@@ -72,7 +72,7 @@ When seed data is wrong or obsolete:
 .\tools\Reset-LocalValidation.ps1 -ConfirmReset
 ```
 
-This stops apps/DBs, removes **only** `exits_local_validation_*_db_data` volumes, starts Local Validation again, and verifies eight seed identities. Production is rejected. Ordinary startup never performs this wipe.
+This stops apps/DBs, removes **only** `exits_local_validation_*_db_data` volumes, starts Local Validation again, and verifies **two** seed identities (Olivia + Rafael). Production is rejected. Ordinary startup never performs this wipe. Root cheat sheets: [Start-LocalValidation.md](../../Start-LocalValidation.md), [Reset-LocalValidation.md](../../Reset-LocalValidation.md).
 
 ## Prerequisites
 

@@ -11,6 +11,11 @@ Broken links: none found in spot-check of new paths
 .cursor/rules/exits-product-context.mdc
 .dockerignore
 README.md
+Start-LocalValidation.md
+Reset-LocalValidation.md
+Reset-Products-And-Business-Templates.md
+Maui-Emulator-Install.md
+Maui-PhysicalDevice-Install.md
 FILE-MANIFEST.md
 global.json
 Directory.Build.props
