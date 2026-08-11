@@ -196,6 +196,12 @@ internal sealed class InMemoryPlanRepository : IPlanRepository
             (CatalogListSortBy.ProductCode, true) => query.OrderByDescending(p => p.ProductCode.Value).ThenBy(p => p.Code.Value),
             (CatalogListSortBy.SortOrder, false) => query.OrderBy(p => p.SortOrder).ThenBy(p => p.Code.Value),
             (CatalogListSortBy.SortOrder, true) => query.OrderByDescending(p => p.SortOrder).ThenBy(p => p.Code.Value),
+            (CatalogListSortBy.MonthlyPrice, false) => query.OrderBy(p => p.MonthlyPrice).ThenBy(p => p.Code.Value),
+            (CatalogListSortBy.MonthlyPrice, true) => query.OrderByDescending(p => p.MonthlyPrice).ThenBy(p => p.Code.Value),
+            (CatalogListSortBy.AnnualPrice, false) => query.OrderBy(p => p.AnnualPrice).ThenBy(p => p.Code.Value),
+            (CatalogListSortBy.AnnualPrice, true) => query.OrderByDescending(p => p.AnnualPrice).ThenBy(p => p.Code.Value),
+            (CatalogListSortBy.CurrencyCode, false) => query.OrderBy(p => p.CurrencyCode, StringComparer.OrdinalIgnoreCase).ThenBy(p => p.Code.Value),
+            (CatalogListSortBy.CurrencyCode, true) => query.OrderByDescending(p => p.CurrencyCode, StringComparer.OrdinalIgnoreCase).ThenBy(p => p.Code.Value),
             (_, true) => query.OrderByDescending(p => p.Code.Value),
             _ => query.OrderBy(p => p.Code.Value)
         };

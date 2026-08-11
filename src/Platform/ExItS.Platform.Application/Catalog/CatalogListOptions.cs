@@ -9,5 +9,8 @@ public enum CatalogListSortBy
     UpdatedAtUtc = 4,
     ProductCode = 5,
     ProductDisplayName = 6,
-    SortOrder = 7
+    SortOrder = 7,
+    MonthlyPrice = 8,
+    AnnualPrice = 9,
+    CurrencyCode = 10
 }
