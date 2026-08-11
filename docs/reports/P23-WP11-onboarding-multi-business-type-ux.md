@@ -107,7 +107,7 @@ Surfaced in plan-change preview conflicts and Org Subscription / Business Types 
 
 ## Implementation commit hash
 
-*(stamped after commit)*
+`fdc5a9868f71c558b0b04b2ee627fc2fce3dba02`
 
 ## Files (representative)
 
