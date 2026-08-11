@@ -9,8 +9,23 @@
 @inject IStringLocalizer<AdminResources> L
 @inject NavigationManager Nav
 @inject PlatformPermissionState Permissions
+@inject AdminShellContext Shell
 
-@if (Id is null)
+@if (!_pageReady)
+{
+    <div style="padding:2rem;text-align:center;"><Spin Tip="@L["Common_Loading"]" /></div>
+}
+else if (!Shell.IsPlatformShell)
+{
+    <Result Status="@ResultStatus.Warning"
+            Title="@L["Scope_PlatformAccountsDenied"]"
+            SubTitle="@Shell.RoleLabel" />
+}
+else if (!CanViewSubscriptions)
+{
+    <UnauthorizedPanel RequiredPermission="@PlatformPermissionCodes.ManageSubscriptions" />
+}
+else if (Id is null)
 {
     <PageHeader Class="exits-page-header" Title="@L["Subscriptions_Title"]" SubTitle="@L["Subscriptions_Description"]">
         <PageHeaderBreadcrumb>
@@ -137,7 +152,7 @@
     {
         <Empty Description="@L["Subscriptions_Empty"].Value" />
     }
-    else
+    else if (_tableReady)
     {
         <Table TItem="SubscriptionDto"
                Class="exits-table-fit"
@@ -406,23 +421,62 @@ else
             .ThenBy(p => p.DisplayName, StringComparer.OrdinalIgnoreCase);
 
     private readonly AdminPageLoadGate _loadGate = new();
+    private bool _pageReady;
+    private bool _tableReady;
+    private bool _suppressInitialTableChange = true;
+
+    private bool CanViewSubscriptions => Permissions.HasPermission(PlatformPermissionCodes.ManageSubscriptions);
 
     protected override async Task OnParametersSetAsync()
     {
+        await Shell.EnsureLoadedAsync();
+        if (!Shell.Loaded)
+        {
+            await Shell.RefreshAsync();
+        }
+
+        if (Shell.IsPlatformShell)
+        {
+            await Permissions.EnsureLoadedAsync();
+        }
+
+        if (!Shell.IsPlatformShell || !CanViewSubscriptions)
+        {
+            _pageReady = true;
+            return;
+        }
+
         _formError = null;
         _formConflict = false;
-        if (Id is null)
-        {
-            if (!_loadGate.ShouldLoad("list"))
-            {
-                return;
-            }
+        object mode = Id is null ? "list" : Id;
 
-            await LoadListAsync();
-        }
-        else if (_loadGate.ShouldLoad(Id))
+        if (!_loadGate.ShouldLoad(mode))
         {
-            await LoadDetailAsync();
+            _pageReady = true;
+            return;
+        }
+
+        _pageReady = false;
+        try
+        {
+            if (Id is null)
+            {
+                _suppressInitialTableChange = true;
+                _tableReady = false;
+                _page = 1;
+                _list = null;
+                await LoadListAsync();
+                _tableReady = true;
+                _suppressInitialTableChange = false;
+            }
+            else
+            {
+                await LoadDetailAsync();
+            }
+        }
+        finally
+        {
+            _pageReady = true;
         }
     }
 
@@ -466,6 +520,11 @@ else
 
     private async Task OnSubscriptionsTableChangeAsync(QueryModel<SubscriptionDto> queryModel)
     {
+        if (_suppressInitialTableChange || _list is null)
+        {
+            return;
+        }
+
         await AdminTableSort.ApplyChangeAsync(
             queryModel,
             MapSortField,

@@ -173,7 +173,17 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!firstRender || _shellReady)
+        if (!firstRender)
+        {
+            return;
+        }
+
+        await EnsureShellChromeAsync();
+    }
+
+    private async Task EnsureShellChromeAsync()
+    {
+        if (_shellReady)
         {
             return;
         }
@@ -181,10 +191,19 @@
         try
         {
             await Shell.EnsureLoadedAsync();
+            if (!Shell.Loaded)
+            {
+                await Shell.RefreshAsync();
+            }
         }
         catch
         {
             // Shell chrome must not crash the page if API is briefly unavailable.
+        }
+
+        if (!Shell.Loaded)
+        {
+            return;
         }
 
         _shellReady = true;
@@ -203,6 +222,10 @@
         // and re-enters the active page's OnParametersSetAsync (API flood → 500 / circuit drop).
         // Router navigation already re-renders the layout with the new page.
         UpdatePageTitle();
+        if (!_shellReady)
+        {
+            _ = EnsureShellChromeAsync();
+        }
     }
 
     private void UpdatePageTitle()

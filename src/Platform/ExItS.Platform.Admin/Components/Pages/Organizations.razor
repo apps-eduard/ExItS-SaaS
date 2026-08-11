@@ -12,7 +12,21 @@
 @inject PlatformPermissionState Permissions
 @inject AdminShellContext Shell
 
-@if (Id is null)
+@if (!_pageReady)
+{
+    <div style="padding:2rem;text-align:center;"><Spin Tip="@L["Common_Loading"]" /></div>
+}
+else if (Id is null && !Shell.IsPlatformShell)
+{
+    <Result Status="@ResultStatus.Warning"
+            Title="@L["Scope_PlatformAccountsDenied"]"
+            SubTitle="@Shell.RoleLabel" />
+}
+else if (Id is null && !CanViewOrganizations)
+{
+    <UnauthorizedPanel RequiredPermission="@PlatformPermissionCodes.ViewPortfolio" />
+}
+else if (Id is null)
 {
     <PageHeader Class="exits-page-header" Title="@L["Organizations_Title"]" SubTitle="@L["Organizations_Description"]">
         <PageHeaderBreadcrumb>
@@ -47,13 +61,17 @@
 
     @if (_list is { IsSuccess: false })
     {
-        <Result Status="@ResultStatus.Error" Title="@(_list.Error?.Title ?? L["Common_Error"])" SubTitle="@_list.Error?.Detail" />
+        <Result Status="@ResultStatus.Error" Title="@(_list.Error?.Title ?? L["Common_Error"])" SubTitle="@_list.Error?.Detail">
+            <Extra>
+                <Button Type="@ButtonType.Primary" OnClick="RetryListAsync">@L["Common_Retry"]</Button>
+            </Extra>
+        </Result>
     }
     else if (_list is { IsSuccess: true, Data.Items.Count: 0 })
     {
         <Empty Description="@L["Organizations_Empty"].Value" />
     }
-    else
+    else if (_tableReady)
     {
         <Table TItem="OrganizationDto"
                Class="exits-table-fit"
@@ -380,9 +398,13 @@ else
     private string? _formError;
     private bool _formConflict;
     private bool _busy;
+    private bool _pageReady;
+    private bool _tableReady;
+    private bool _suppressInitialTableChange = true;
     private readonly AdminPageLoadGate _loadGate = new();
 
     private bool CanManageLifecycle => Permissions.HasPermission(PlatformPermissionCodes.ManageOrganizations);
+    private bool CanViewOrganizations => Permissions.HasPermission(PlatformPermissionCodes.ViewPortfolio);
 
     private bool CanEditProfile =>
         _org?.IsSuccess == true
@@ -395,20 +417,54 @@ else
 
     protected override async Task OnParametersSetAsync()
     {
+        await Shell.EnsureLoadedAsync();
+        if (!Shell.Loaded)
+        {
+            await Shell.RefreshAsync();
+        }
+
+        if (Shell.IsPlatformShell)
+        {
+            await Permissions.EnsureLoadedAsync();
+        }
+
+        if (Id is null && (!Shell.IsPlatformShell || !CanViewOrganizations))
+        {
+            _pageReady = true;
+            return;
+        }
+
         _formError = null;
         _formConflict = false;
-        if (Id is null)
-        {
-            if (!_loadGate.ShouldLoad("list"))
-            {
-                return;
-            }
+        object mode = Id is null ? "list" : Id;
 
-            await LoadOrgsAsync();
-        }
-        else if (_loadGate.ShouldLoad(Id))
+        if (!_loadGate.ShouldLoad(mode))
         {
-            await LoadDetailAsync();
+            _pageReady = true;
+            return;
+        }
+
+        _pageReady = false;
+        try
+        {
+            if (Id is null)
+            {
+                _suppressInitialTableChange = true;
+                _tableReady = false;
+                _page = 1;
+                _list = null;
+                await LoadOrgsAsync();
+                _tableReady = true;
+                _suppressInitialTableChange = false;
+            }
+            else
+            {
+                await LoadDetailAsync();
+            }
+        }
+        finally
+        {
+            _pageReady = true;
         }
     }
 
@@ -420,8 +476,19 @@ else
             sortBy: _sortBy,
             sortDesc: _sortBy is null ? null : _sortDesc);
 
+    private async Task RetryListAsync()
+    {
+        _list = null;
+        await LoadOrgsAsync();
+    }
+
     private async Task OnOrganizationsTableChangeAsync(QueryModel<OrganizationDto> queryModel)
     {
+        if (_suppressInitialTableChange || _list is null)
+        {
+            return;
+        }
+
         await AdminTableSort.ApplyChangeAsync(
             queryModel,
             MapSortField,

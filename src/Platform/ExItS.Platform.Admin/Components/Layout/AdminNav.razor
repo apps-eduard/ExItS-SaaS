@@ -13,7 +13,15 @@
 
 @if (!_ready)
 {
-    <div class="exits-nav-loading" style="padding:12px;text-align:center;"><Spin Size="@SpinSize.Small" /></div>
+    <div class="exits-nav-loading" style="padding:12px;text-align:center;">
+        <Spin Size="@SpinSize.Small" />
+        @if (_shellLoadFailed)
+        {
+            <div style="margin-top:8px;">
+                <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" OnClick="RetryShellAsync">@L["Common_Retry"]</Button>
+            </div>
+        }
+    </div>
 }
 
 <Menu Theme="MenuTheme.Dark"
@@ -360,6 +368,7 @@
     [Parameter] public EventCallback OnNavigate { get; set; }
 
     private bool _ready;
+    private bool _shellLoadFailed;
     private string[] _selected = ["dashboard"];
     private string[] _openKeys = ["accounts", "commercial", "product-catalog", "privacy-compliance", "operations", "settings", "people", "org-products", "subscription", "security", "utang"];
 
@@ -394,13 +403,44 @@
 
     protected override async Task OnInitializedAsync()
     {
+        Permissions.Changed += OnPermissionsChanged;
+        Nav.LocationChanged += OnLocationChanged;
+        // New circuit/session: reset selection so a prior account-class menu cannot linger.
+        _selected = ["dashboard"];
+        await LoadShellForNavAsync();
+    }
+
+    private async Task RetryShellAsync()
+    {
+        _shellLoadFailed = false;
+        _ready = false;
+        await InvokeAsync(StateHasChanged);
+        await LoadShellForNavAsync();
+    }
+
+    private async Task LoadShellForNavAsync()
+    {
         try
         {
             await Shell.EnsureLoadedAsync();
+            if (!Shell.Loaded)
+            {
+                // One intentional retry after circuit session capture — no delay loops.
+                await Shell.RefreshAsync();
+            }
         }
         catch
         {
-            // Keep Dashboard usable if shell APIs are briefly rate-limited after login.
+            // Keep Spin + Retry instead of painting a false Dashboard-only menu.
+        }
+
+        if (!Shell.Loaded)
+        {
+            _shellLoadFailed = true;
+            _ready = false;
+            SyncSelection();
+            await InvokeAsync(StateHasChanged);
+            return;
         }
 
         if (Shell.IsPlatformShell)
@@ -411,17 +451,14 @@
             }
             catch
             {
-                // Nav falls back to permission-safe empty Platform submenus.
+                // Nav falls back to permission-safe empty Platform submenus once shell is known.
             }
         }
 
-        Permissions.Changed += OnPermissionsChanged;
-
-        // New circuit/session: reset selection so a prior account-class menu cannot linger.
-        _selected = ["dashboard"];
+        _shellLoadFailed = false;
         _ready = true;
         SyncSelection();
-        Nav.LocationChanged += OnLocationChanged;
+        await InvokeAsync(StateHasChanged);
     }
 
     private void OnPermissionsChanged() => _ = InvokeAsync(StateHasChanged);

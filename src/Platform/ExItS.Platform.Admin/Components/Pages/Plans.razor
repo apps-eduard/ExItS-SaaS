@@ -9,8 +9,23 @@
 @inject IStringLocalizer<AdminResources> L
 @inject NavigationManager Nav
 @inject PlatformPermissionState Permissions
+@inject AdminShellContext Shell
 
-@if (Id is null)
+@if (!_pageReady)
+{
+    <div style="padding:2rem;text-align:center;"><Spin Tip="@L["Common_Loading"]" /></div>
+}
+else if (!Shell.IsPlatformShell)
+{
+    <Result Status="@ResultStatus.Warning"
+            Title="@L["Scope_PlatformAccountsDenied"]"
+            SubTitle="@Shell.RoleLabel" />
+}
+else if (!CanViewPlans)
+{
+    <UnauthorizedPanel RequiredPermission="@PlatformPermissionCodes.ViewPortfolio" />
+}
+else if (Id is null)
 {
     <PageHeader Class="exits-page-header" Title="@L["Plans_Title"]" SubTitle="@L["Plans_Description"]">
         <PageHeaderBreadcrumb>
@@ -116,13 +131,17 @@
 
     @if (_list is { IsSuccess: false })
     {
-        <Result Status="@ResultStatus.Error" Title="@(_list.Error?.Title ?? L["Common_Error"])" SubTitle="@_list.Error?.Detail" />
+        <Result Status="@ResultStatus.Error" Title="@(_list.Error?.Title ?? L["Common_Error"])" SubTitle="@_list.Error?.Detail">
+            <Extra>
+                <Button Type="@ButtonType.Primary" OnClick="RetryListAsync">@L["Common_Retry"]</Button>
+            </Extra>
+        </Result>
     }
     else if (_list is { IsSuccess: true, Data.Items.Count: 0 })
     {
         <Empty Description="@L["Plans_Empty"].Value" />
     }
-    else
+    else if (_tableReady)
     {
         <Table TItem="PlanDto"
                Class="exits-table-fit"
@@ -391,35 +410,73 @@ else
     private string? _formError;
     private bool _formConflict;
     private bool _busy;
+    private bool _pageReady;
+    private bool _tableReady;
+    private bool _suppressInitialTableChange = true;
     private readonly AdminPageLoadGate _loadGate = new();
 
     private bool CanManage => Permissions.HasPermission(PlatformPermissionCodes.ManageCatalog);
+    private bool CanViewPlans => Permissions.HasPermission(PlatformPermissionCodes.ViewPortfolio);
 
     protected override async Task OnParametersSetAsync()
     {
+        await Shell.EnsureLoadedAsync();
+        if (!Shell.Loaded)
+        {
+            await Shell.RefreshAsync();
+        }
+
+        if (Shell.IsPlatformShell)
+        {
+            await Permissions.EnsureLoadedAsync();
+        }
+
+        if (!Shell.IsPlatformShell || !CanViewPlans)
+        {
+            _pageReady = true;
+            return;
+        }
+
         _formError = null;
         _formConflict = false;
-        if (_productOptions.Count == 0)
+        object mode = Id is null ? "list" : Id;
+
+        if (!_loadGate.ShouldLoad(mode))
         {
-            var products = await Api.GetProductsAsync(page: 1, pageSize: 100);
-            if (products is { IsSuccess: true, Data: not null })
-            {
-                _productOptions = products.Data.Items.ToList();
-            }
+            _pageReady = true;
+            return;
         }
 
-        if (Id is null)
+        _pageReady = false;
+        try
         {
-            if (!_loadGate.ShouldLoad("list"))
+            if (_productOptions.Count == 0)
             {
-                return;
+                var products = await Api.GetProductsAsync(page: 1, pageSize: 100);
+                if (products is { IsSuccess: true, Data: not null })
+                {
+                    _productOptions = products.Data.Items.ToList();
+                }
             }
 
-            await LoadPlansAsync();
+            if (Id is null)
+            {
+                _suppressInitialTableChange = true;
+                _tableReady = false;
+                _page = 1;
+                _list = null;
+                await LoadPlansAsync();
+                _tableReady = true;
+                _suppressInitialTableChange = false;
+            }
+            else
+            {
+                await LoadDetailAsync();
+            }
         }
-        else if (_loadGate.ShouldLoad(Id))
+        finally
         {
-            await LoadDetailAsync();
+            _pageReady = true;
         }
     }
 
@@ -432,8 +489,19 @@ else
             sortBy: _sortBy,
             sortDesc: _sortBy is null ? null : _sortDesc);
 
+    private async Task RetryListAsync()
+    {
+        _list = null;
+        await LoadPlansAsync();
+    }
+
     private async Task OnPlansTableChangeAsync(QueryModel<PlanDto> queryModel)
     {
+        if (_suppressInitialTableChange || _list is null)
+        {
+            return;
+        }
+
         await AdminTableSort.ApplyChangeAsync(
             queryModel,
             MapSortField,

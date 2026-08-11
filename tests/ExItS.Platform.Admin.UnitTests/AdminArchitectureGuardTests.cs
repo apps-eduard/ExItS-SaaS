@@ -391,6 +391,14 @@ public sealed class AdminArchitectureGuardTests
         Assert.Contains("_suppressInitialTableChange", entitlementsPage, StringComparison.Ordinal);
         Assert.Contains("CanViewEntitlements", entitlementsPage, StringComparison.Ordinal);
 
+        foreach (var pageName in new[] { "Organizations.razor", "Plans.razor", "Subscriptions.razor" })
+        {
+            var page = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", pageName));
+            Assert.Contains("_suppressInitialTableChange", page, StringComparison.Ordinal);
+            Assert.Contains("Shell.EnsureLoadedAsync()", page, StringComparison.Ordinal);
+            Assert.Contains("_pageReady", page, StringComparison.Ordinal);
+        }
+
         var usersPage = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "Users.razor"));
         Assert.Contains("CanCreatePlatformStaff", usersPage, StringComparison.Ordinal);
         Assert.Contains("DirectoryFilter == \"PlatformStaff\"", usersPage, StringComparison.Ordinal);

@@ -30,6 +30,7 @@ public sealed class AdminShellContext(
     IPlatformApiClient api,
     PlatformPermissionState permissions)
 {
+    private readonly object _gate = new();
     private Task? _loadTask;
 
     public bool Loaded { get; private set; }
@@ -51,17 +52,53 @@ public sealed class AdminShellContext(
 
     public Task EnsureLoadedAsync()
     {
-        _loadTask ??= LoadAsync();
-        return _loadTask;
+        lock (_gate)
+        {
+            // Reuse an in-flight load, or a completed successful load. Never reuse a completed
+            // failure (Loaded=false) — that permanently collapsed AdminNav after hard refresh.
+            if (_loadTask is not null && (Loaded || !_loadTask.IsCompleted))
+            {
+                return _loadTask;
+            }
+
+            _loadTask = LoadAsync();
+            return _loadTask;
+        }
     }
 
     public async Task RefreshAsync()
     {
-        _loadTask = LoadAsync();
-        await _loadTask;
+        Task load;
+        lock (_gate)
+        {
+            Loaded = false;
+            _loadTask = LoadAsync();
+            load = _loadTask;
+        }
+
+        await load;
     }
 
     private async Task LoadAsync()
+    {
+        try
+        {
+            await LoadCoreAsync();
+        }
+        catch
+        {
+            Mode = AdminShellMode.Limited;
+            Loaded = false;
+            lock (_gate)
+            {
+                _loadTask = null;
+            }
+
+            throw;
+        }
+    }
+
+    private async Task LoadCoreAsync()
     {
         // Blazor circuit-scoped: keep awaits on the sync context when mutating shell state.
         string? displayName = null;
@@ -74,16 +111,29 @@ public sealed class AdminShellContext(
         string? allowedScope = null;
 
         var me = await api.GetAuthMeAsync();
-        if (me.IsSuccess && me.Data is not null)
+        if (!me.IsSuccess || me.Data is null)
         {
-            displayName = me.Data.DisplayName;
-            username = me.Data.Username;
-            selectedOrgId = me.Data.SelectedOrganizationId;
-            selectedOrgName = me.Data.SelectedOrganizationDisplayName;
-            orgCount = me.Data.ActiveOrganizationCount;
-            accountClass = me.Data.AccountClass;
-            allowedScope = me.Data.AllowedScope;
+            // Do NOT cache Limited forever and do NOT poison PlatformPermissionState with a
+            // NonPlatform empty load — that collapses AdminNav to Dashboard-only after hard refresh
+            // when auth/me races the circuit session token.
+            Mode = AdminShellMode.Limited;
+            RoleLabel = "Signed in";
+            Loaded = false;
+            lock (_gate)
+            {
+                _loadTask = null;
+            }
+
+            return;
         }
+
+        displayName = me.Data.DisplayName;
+        username = me.Data.Username;
+        selectedOrgId = me.Data.SelectedOrganizationId;
+        selectedOrgName = me.Data.SelectedOrganizationDisplayName;
+        orgCount = me.Data.ActiveOrganizationCount;
+        accountClass = me.Data.AccountClass;
+        allowedScope = me.Data.AllowedScope;
 
         var isOrganizationAccount = string.Equals(accountClass, "Organization", StringComparison.OrdinalIgnoreCase);
         var isPlatformAccount = string.Equals(accountClass, "Platform", StringComparison.OrdinalIgnoreCase);
@@ -151,6 +201,8 @@ public sealed class AdminShellContext(
         }
         else
         {
+            // Authenticated me payload without a recognized AccountClass — treat as loaded Limited
+            // (not a transient failure). Nav will show Dashboard-only intentionally.
             Mode = AdminShellMode.Limited;
             RoleLabel = FormatMembershipRole(membershipRole) ?? "Signed in";
         }
