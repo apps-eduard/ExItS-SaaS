@@ -4,7 +4,7 @@
 
 | Field | Value |
 |---|---|
-| Status | **Open** — WP01–WP10 Complete · WP11+ not started |
+| Status | **Open** — WP01–WP11 Complete · WP12+ not started |
 | Branch / HEAD at open | `main` @ `2fdcc8ab86f8a1df516053930885b6df04b0e436` |
 | Device Verified | **No** |
 | Production Ready | **No** |
@@ -151,7 +151,7 @@ Personal must not modify financial ledger entries. A later WP may add “I don�
 | **WP08** | Reward ledger foundation | **Complete** — [P24-WP08](../reports/P24-WP08-reward-ledger-foundation.md) |
 | **WP09** | Ads abstraction + Ad-Free entitlement | **Complete** — [P24-WP09](../reports/P24-WP09-ads-abstraction-and-ad-free-entitlement.md) |
 | **WP10** | Entitlement-aware older/settled history | **Complete** — [P24-WP10](../reports/P24-WP10-entitlement-aware-older-settled-history.md) |
-| **WP11** | Admin configuration for Personal features | Ant Design; costs/durations not hard-coded in UI |
+| **WP11** | Admin configuration for Personal features | **Complete** — [P24-WP11](../reports/P24-WP11-admin-configuration-for-personal-features.md) |
 | **WP12** | Regression, security, and edge-case tests | Authz matrix, ledger arithmetic, privacy DTOs |
 | **WP13** | Dispute/request architecture (optional) | Skip implementation if it expands; document if deferred |
 | **WP14** | Documentation/closeout | No Device Verified claim from tests alone |
@@ -161,7 +161,7 @@ Personal must not modify financial ledger entries. A later WP may add “I don�
 
 - Prefer additive columns/tables. No destructive reset.
 - POS: optional `PlatformBusinessCustomerId` on `pos.customers` (value, unique per org when set).
-- Platform: Personal entitlement/reward/ads foundation — WP06–WP09 landed; WP10 entitlement-aware older/settled history landed; WP11 Admin configuration next.
+- Platform: Personal entitlement/reward/ads foundation — WP06–WP11 landed; WP12 regression/security next.
 - No production auto-`Migrate()`.
 - Do not physically archive/delete financial records in this phase.
 

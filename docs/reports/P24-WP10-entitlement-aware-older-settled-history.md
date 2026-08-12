@@ -129,11 +129,9 @@ No client-supplied entitlement state, cutoff dates, or PersonalUserId.
 
 ## Exact WP11 recommendation
 
-**P24-WP11 — Admin configuration for Personal features**
+**P24-WP11 — Admin configuration for Personal features** — **Complete**
 
-- Ant Design; costs/durations not hard-coded in UI
-
-Do **not** start WP11 from this package.
+See [P24-WP11](P24-WP11-admin-configuration-for-personal-features.md). Next: **P24-WP12 — Regression, security, and edge-case tests**.
 
 ## Checks performed
 
