@@ -41,7 +41,12 @@ public sealed record LinkedCustomerActivityItemDto(
     decimal? AdjustmentAmount,
     decimal? BalanceAfter,
     string Status,
-    bool HasDetails);
+    bool HasDetails,
+    /// <summary>
+    /// Present when the activity row is backed by a customer-owned sale. Clients use this
+    /// for one-shot lazy receipt detail; never expand lines into the activity payload.
+    /// </summary>
+    Guid? SourceSaleId);
 
 public sealed record LinkedCustomerRecentActivityPageDto(
     Guid OrganizationId,
@@ -274,8 +279,9 @@ public sealed class ListLinkedCustomerRecentActivity
                 ? saleId.ToString("N")[..8].ToUpperInvariant()
                 : row.EntryId.ToString("N")[..8].ToUpperInvariant();
 
-        // HasDetails hints that WP05 may expose receipt/sale detail on explicit open.
-        var hasDetails = isRepayment || row.SourceSaleId is not null;
+        // HasDetails is true only when a sale receipt can be opened (WP05). Repayments stay
+        // as activity rows; they do not preload or imply product-line receipt detail.
+        var hasDetails = row.SourceSaleId is not null;
 
         return new LinkedCustomerActivityItemDto(
             row.EntryId,
@@ -287,7 +293,8 @@ public sealed class ListLinkedCustomerRecentActivity
             adjustment,
             balanceAfter,
             row.Status,
-            hasDetails);
+            hasDetails,
+            row.SourceSaleId);
     }
 
     private static string BuildRepaymentReference(Guid repaymentId) =>

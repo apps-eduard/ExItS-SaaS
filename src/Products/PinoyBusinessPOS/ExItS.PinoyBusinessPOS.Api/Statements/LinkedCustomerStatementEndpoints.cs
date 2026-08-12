@@ -5,7 +5,7 @@ using ExItS.PinoyBusinessPOS.Application.Statements;
 namespace ExItS.PinoyBusinessPOS.Api.Statements;
 
 /// <summary>
-/// Personal linked-customer Business Utang projection (WP04).
+/// Personal linked-customer Business Utang projection (WP04) + lazy sale receipt detail (WP05).
 /// Authorization is WP03 only — not staff UtangCapability / org-header alone.
 /// </summary>
 internal static class LinkedCustomerStatementEndpoints
@@ -45,6 +45,26 @@ internal static class LinkedCustomerStatementEndpoints
 
             var result = await activity
                 .ExecuteAsync(orgId, platformBusinessCustomerId, page, pageSize, ct)
+                .ConfigureAwait(false);
+            return PosApiResults.FromResult(result, Results.Ok);
+        });
+
+        // WP05: one receipt only, after explicit open — never nested under activity.
+        app.MapGet("/api/v1/pos/personal/linked-customers/{platformBusinessCustomerId:guid}/receipts/{saleId:guid}", async (
+            Guid platformBusinessCustomerId,
+            Guid saleId,
+            Guid? organizationId,
+            string? currency,
+            GetLinkedCustomerSaleReceipt receipt,
+            CancellationToken ct) =>
+        {
+            if (!TryGetOrganizationId(organizationId, out var orgId, out var problem))
+            {
+                return problem!;
+            }
+
+            var result = await receipt
+                .ExecuteAsync(orgId, platformBusinessCustomerId, saleId, currency ?? "PHP", ct)
                 .ConfigureAwait(false);
             return PosApiResults.FromResult(result, Results.Ok);
         });

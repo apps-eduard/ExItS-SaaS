@@ -7,6 +7,7 @@ using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Credit;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Payments;
+using ExItS.PinoyBusinessPOS.Domain.Sales;
 
 namespace ExItS.PinoyBusinessPOS.UnitTests.Statements;
 
@@ -145,10 +146,51 @@ public sealed class LinkedCustomerStatementUseCaseTests
                 nameof(LinkedCustomerActivityItemDto.OccurredAtUtc),
                 nameof(LinkedCustomerActivityItemDto.PaymentAmount),
                 nameof(LinkedCustomerActivityItemDto.ReferenceNumber),
+                nameof(LinkedCustomerActivityItemDto.SourceSaleId),
                 nameof(LinkedCustomerActivityItemDto.Status),
                 nameof(LinkedCustomerActivityItemDto.Type)
             },
             typeof(LinkedCustomerActivityItemDto).GetProperties().Select(p => p.Name).OrderBy(n => n).ToArray());
+    }
+
+    [Fact]
+    public async Task Activity_source_sale_id_enables_lazy_receipt_without_lines()
+    {
+        var harness = await Harness.CreateAuthorizedAsync();
+        var saleId = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
+        await harness.Credits.AddAsync(CreditEntry.Create(
+            PosOrganizationId.From(OrgA),
+            harness.PosCustomer.Id,
+            80m,
+            "Goods",
+            T0,
+            sourceSaleId: SaleId.From(saleId)));
+
+        var result = await harness.Activity.ExecuteAsync(OrgA, PlatformCustomer);
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        var item = Assert.Single(result.Value!.Items);
+        Assert.True(item.HasDetails);
+        Assert.Equal(saleId, item.SourceSaleId);
+        Assert.Null(typeof(LinkedCustomerActivityItemDto).GetProperty("Lines"));
+    }
+
+    [Fact]
+    public async Task Activity_repayment_has_no_source_sale_details_flag()
+    {
+        var harness = await Harness.CreateAuthorizedAsync();
+        await harness.Repayments.AddAsync(Repayment.Create(
+            PosOrganizationId.From(OrgA),
+            harness.PosCustomer.Id,
+            10m,
+            "Partial",
+            Actor,
+            T0));
+
+        var result = await harness.Activity.ExecuteAsync(OrgA, PlatformCustomer);
+        Assert.True(result.IsSuccess);
+        var item = Assert.Single(result.Value!.Items);
+        Assert.False(item.HasDetails);
+        Assert.Null(item.SourceSaleId);
     }
 
     [Fact]
