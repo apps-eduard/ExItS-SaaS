@@ -252,6 +252,8 @@ Broader Platform integration filter (`BusinessType|Entitlement|CatalogTemplate|G
 | Admin shell recovery + catalog permission load | `82ac36fb00b3e8232d234e966496650b511d0455` |
 | Admin nav re-sync + Templates/BT mount + template list harden | `d013afbc6555f8e8723baef4811d876cb673a052` |
 | Docs stamp (Templates/BT nav re-sync) | `60fa8d37216b18ec35a0c6b3d891c0ca8059231f` |
+| POS catalog import Platform failure mapping | `65762f6` |
+| Docs stamp (POS template confirm mapping) | `066649d` |
 
 ## Explicit stop
 
