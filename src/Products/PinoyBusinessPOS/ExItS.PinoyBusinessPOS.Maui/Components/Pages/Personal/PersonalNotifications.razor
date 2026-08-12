@@ -1,0 +1,159 @@
+@page "/personal/notifications"
+@layout Layout.PersonalShell
+@using ExItS.DesignSystem.Components.Internal
+@inject IAuthenticationService Auth
+@inject ICurrentUserContext CurrentUser
+@inject IPlatformAccessClient Platform
+@inject OnlineRequiredGuard OnlineRequired
+@inject NavigationManager Nav
+@inject IStringLocalizer<PosResources> L
+
+<div class="pos-personal-invitations">
+<StoreHeaderBack Href="/personal/more" />
+<Page>
+    <header class="pos-personal-invitations__header">
+        <h1 class="pos-personal-invitations__title">@L["Personal_NotificationsTitle"]</h1>
+        <p class="pos-personal-invitations__subtitle">@L["Personal_NotificationsSubtitle"]</p>
+    </header>
+
+    @if (_loading)
+    {
+        <Spinner />
+    }
+    else if (!_authenticated)
+    {
+        <ErrorState Title="@L["Auth_SessionExpiredTitle"]" Message="@L["Auth_SessionExpired"]" RetryLabel="@L["SignIn_Submit"]" OnRetry="GoSignIn" />
+    }
+    else if (_loadFailed)
+    {
+        <ErrorState Title="@L["Personal_NotificationsErrorTitle"]" Message="@(_error ?? L["Personal_LoadErrorMessage"])" RetryLabel="@L["Common_Retry"]" OnRetry="LoadAsync" />
+    }
+    else if (_notifications.Count == 0)
+    {
+        <EmptyState Title="@L["Personal_NotificationsEmptyTitle"]" Message="@L["Personal_NotificationsEmptyMessage"]" />
+    }
+    else
+    {
+        <div class="pos-personal-list" role="list">
+            @foreach (var item in _notifications)
+            {
+                <button type="button"
+                        class="pos-personal-row"
+                        role="listitem"
+                        disabled="_busy"
+                        @onclick="() => OpenAsync(item)">
+                    <span class="pos-personal-row__body">
+                        <span class="pos-personal-row__title">
+                            @item.Title
+                            @if (!item.IsRead)
+                            {
+                                <span class="pos-muted"> · @L["Personal_NotificationsUnread"]</span>
+                            }
+                        </span>
+                        <span class="pos-personal-row__meta">
+                            @item.Preview
+                            · @item.CreatedAtUtc.LocalDateTime.ToString("g")
+                        </span>
+                    </span>
+                    <span class="pos-personal-row__chevron" aria-hidden="true">›</span>
+                </button>
+            }
+        </div>
+    }
+</Page>
+</div>
+
+@code {
+    private bool _loading = true;
+    private bool _authenticated;
+    private bool _loadFailed;
+    private bool _busy;
+    private string? _error;
+    private IReadOnlyList<PersonalInAppNotificationDto> _notifications = [];
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _loadFailed = false;
+        _error = null;
+        try
+        {
+            if (!CurrentUser.IsAuthenticated)
+            {
+                var restore = await Auth.RestoreSessionAsync();
+                _authenticated = restore.Succeeded;
+            }
+            else
+            {
+                _authenticated = true;
+            }
+
+            if (!_authenticated)
+            {
+                return;
+            }
+
+            var personal = await Auth.EnsurePersonalAccountProfileAsync();
+            if (!personal.Succeeded)
+            {
+                _loadFailed = true;
+                _error = L[personal.SafeMessageKey ?? "Access_Denied"];
+                return;
+            }
+
+            if (!await OnlineRequired.EnsureOnlineForRouteAsync("/personal/notifications"))
+            {
+                _loadFailed = true;
+                _error = L["OnlineRequired_Message"];
+                return;
+            }
+
+            var result = await Platform.GetPersonalNotificationsAsync();
+            if (!result.IsSuccess || result.Data is null)
+            {
+                _loadFailed = true;
+                _error = result.Error?.Detail ?? L["Personal_NotificationsLoadFailed"];
+                return;
+            }
+
+            _notifications = result.Data;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task OpenAsync(PersonalInAppNotificationDto item)
+    {
+        if (_busy)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            if (!item.IsRead)
+            {
+                await Platform.MarkPersonalNotificationReadAsync(item.Id);
+            }
+
+            if (string.Equals(item.RelatedType, "CustomerLinkRequest", StringComparison.OrdinalIgnoreCase))
+            {
+                Nav.NavigateTo("/personal/customer-link-requests");
+                return;
+            }
+
+            await LoadAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void GoSignIn() => Nav.NavigateTo("/signin");
+}

@@ -12,6 +12,7 @@
 @inject ILocalCustomerCreditStore LocalStore
 @inject IConnectivityService Connectivity
 @inject ILocalContextManager LocalContext
+@inject IPlatformAccessClient Platform
 
 @if (!_ready)
 {
@@ -76,6 +77,11 @@ else
         <Alert Tone="AlertTone.Success" Title="@L["Customers_SuccessTitle"]" Message="@_banner" />
     }
 
+    @if (!string.IsNullOrEmpty(_pendingLinkBanner))
+    {
+        <Alert Tone="AlertTone.Info" Title="@L["CustomerLink_PendingTitle"]" Message="@_pendingLinkBanner" />
+    }
+
     @if (_showRecoveryBanner)
     {
         <Alert Tone="AlertTone.Warning" Title="@L["Offline_RecoveryRequired"]" Message="@L["Offline_ConflictMessage"]" />
@@ -114,6 +120,10 @@ else
             <div class="pos-customer-detail__fact">
                 <dt>@L["Personal_ExItsIdLabel"]</dt>
                 <dd class="pos-wrap">@(string.IsNullOrWhiteSpace(_exItsId) ? L["Customers_NoExItsId"] : _exItsId)</dd>
+            </div>
+            <div class="pos-customer-detail__fact">
+                <dt>@L["CustomerLink_StatusLabel"]</dt>
+                <dd>@_linkStatusLabel</dd>
             </div>
             <div class="pos-customer-detail__fact">
                 <dt>@L["Customers_Field_Mobile"]</dt>
@@ -436,6 +446,9 @@ else
     [SupplyParameterFromQuery(Name = "pending")]
     public int? Pending { get; set; }
 
+    [SupplyParameterFromQuery(Name = "pendingLink")]
+    public int? PendingLink { get; set; }
+
     private bool _ready;
     private bool _loading = true;
     private bool _entriesLoading;
@@ -460,8 +473,11 @@ else
     private string? _errorTitle;
     private string? _errorMessage;
     private string? _banner;
+    private string? _pendingLinkBanner;
     private string? _exItsId;
     private string? _notesDisplay;
+    private string _linkStatusLabel = "—";
+    private string? _linkStatusCode;
 
     protected override async Task OnInitializedAsync()
     {
@@ -474,6 +490,11 @@ else
         if (Pending == 1)
         {
             _banner = L["Offline_SavedPendingSync"];
+        }
+
+        if (PendingLink == 1)
+        {
+            _pendingLinkBanner = L["CustomerLink_PendingMessage"];
         }
 
         _ready = true;
@@ -510,6 +531,7 @@ else
                 }
 
                 await LoadUtangAsync();
+                await LoadLinkStatusAsync();
             }
             else if (OfflineCustomerCreditUiHelpers.IsLocalContextReady(LocalContext))
             {
@@ -519,6 +541,7 @@ else
             {
                 _customer = null;
                 ClearProfileNotes();
+                ClearLinkStatus();
                 var described = ApiLocalizer.Describe(result.Status, result.Error);
                 _errorTitle = described.Title;
                 _errorMessage = result.Error?.Detail ?? described.Message;
@@ -532,12 +555,57 @@ else
         {
             _customer = null;
             ClearProfileNotes();
+            ClearLinkStatus();
             _errorTitle = L["SyncStatus_Offline"];
             _errorMessage = L["Api_Offline"];
         }
 
         _loading = false;
     }
+
+    private async Task LoadLinkStatusAsync()
+    {
+        ClearLinkStatus();
+        if (_customer?.PlatformBusinessCustomerId is not Guid platformCustomerId
+            || CurrentUser.Session?.OrganizationId is not Guid orgId)
+        {
+            _linkStatusLabel = L["CustomerLink_Status_NotLinked"];
+            return;
+        }
+
+        var statusResult = await Platform.GetCustomerLinkStatusAsync(orgId, platformCustomerId);
+        if (!statusResult.IsSuccess || statusResult.Data is null)
+        {
+            _linkStatusLabel = L["CustomerLink_StatusUnavailable"];
+            return;
+        }
+
+        _linkStatusCode = statusResult.Data.Status;
+        _linkStatusLabel = MapLinkStatusLabel(statusResult.Data.Status);
+        if (string.Equals(_linkStatusCode, "Pending", StringComparison.OrdinalIgnoreCase)
+            && string.IsNullOrEmpty(_pendingLinkBanner))
+        {
+            _pendingLinkBanner = L["CustomerLink_PendingWaiting"];
+        }
+    }
+
+    private void ClearLinkStatus()
+    {
+        _linkStatusCode = null;
+        _linkStatusLabel = "—";
+    }
+
+    private string MapLinkStatusLabel(string? status) =>
+        status?.Trim() switch
+        {
+            "NotLinked" => L["CustomerLink_Status_NotLinked"],
+            "Pending" => L["CustomerLink_Status_Pending"],
+            "Linked" or "Active" => L["CustomerLink_Status_Linked"],
+            "Declined" => L["CustomerLink_Status_Declined"],
+            "Expired" => L["CustomerLink_Status_Expired"],
+            "Revoked" => L["CustomerLink_Status_Revoked"],
+            _ => L["CustomerLink_StatusUnavailable"]
+        };
 
     private async Task LoadFromLocalAsync()
     {
@@ -553,6 +621,7 @@ else
 
         _customer = OfflineCustomerCreditUiHelpers.ToDetail(local);
         ApplyProfileNotes(local.Notes);
+        ClearLinkStatus();
         _entityState = local.EntityState;
         _localBalance = await LocalStore.GetBalanceAsync(CustomerId);
         _showLocalBalance = true;

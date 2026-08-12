@@ -1434,6 +1434,67 @@ public sealed class AuthenticationServiceTests
             Task.FromResult(ApiResult<PlatformPagedResult<LinkedMerchantDto>>.Success(
                 new PlatformPagedResult<LinkedMerchantDto>(Array.Empty<LinkedMerchantDto>(), 0, page, pageSize)));
 
+        public Task<ApiResult<CreateBusinessCustomerWithPersonalLinkResultDto>> CreateBusinessCustomerWithPersonalLinkAsync(
+            Guid organizationId,
+            CreateBusinessCustomerWithPersonalLinkRequest request,
+            CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<CreateBusinessCustomerWithPersonalLinkResultDto>.Unavailable());
+
+        public Task<ApiResult<PlatformCustomerLinkStatusDto>> GetCustomerLinkStatusAsync(
+            Guid organizationId,
+            Guid businessCustomerId,
+            CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<PlatformCustomerLinkStatusDto>.Unavailable());
+
+        public Task<ApiResult<IReadOnlyList<PlatformCustomerLinkRequestDto>>> GetCustomerLinkRequestsAsync(
+            Guid organizationId,
+            Guid businessCustomerId,
+            CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<IReadOnlyList<PlatformCustomerLinkRequestDto>>.Success(
+                Array.Empty<PlatformCustomerLinkRequestDto>()));
+
+        public Task<ApiResult<PlatformCustomerLinkRequestStatsDto>> GetCustomerLinkRequestStatsAsync(
+            Guid organizationId,
+            CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<PlatformCustomerLinkRequestStatsDto>.Unavailable());
+
+        public Task<ApiResult<IReadOnlyList<OrganizationInAppNotificationDto>>> GetOrganizationNotificationsAsync(
+            Guid organizationId,
+            CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<IReadOnlyList<OrganizationInAppNotificationDto>>.Success(
+                Array.Empty<OrganizationInAppNotificationDto>()));
+
+        public Task<ApiResult<OrganizationInAppNotificationDto>> MarkOrganizationNotificationReadAsync(
+            Guid organizationId,
+            Guid notificationId,
+            CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<OrganizationInAppNotificationDto>.Unavailable());
+
+        public Task<ApiResult<IReadOnlyList<PersonalPendingCustomerLinkRequestDto>>> GetPersonalCustomerLinkRequestsAsync(
+            CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<IReadOnlyList<PersonalPendingCustomerLinkRequestDto>>.Success(
+                Array.Empty<PersonalPendingCustomerLinkRequestDto>()));
+
+        public Task<ApiResult<AcceptCustomerLinkResultDto>> AcceptPersonalCustomerLinkRequestAsync(
+            Guid requestId,
+            CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<AcceptCustomerLinkResultDto>.Unavailable());
+
+        public Task<ApiResult<PlatformCustomerLinkRequestDto>> DeclinePersonalCustomerLinkRequestAsync(
+            Guid requestId,
+            CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<PlatformCustomerLinkRequestDto>.Unavailable());
+
+        public Task<ApiResult<IReadOnlyList<PersonalInAppNotificationDto>>> GetPersonalNotificationsAsync(
+            CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<IReadOnlyList<PersonalInAppNotificationDto>>.Success(
+                Array.Empty<PersonalInAppNotificationDto>()));
+
+        public Task<ApiResult<PersonalInAppNotificationDto>> MarkPersonalNotificationReadAsync(
+            Guid notificationId,
+            CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<PersonalInAppNotificationDto>.Unavailable());
+
         public Task<ApiResult<PersonalRewardBalanceDto>> GetPersonalRewardBalanceAsync(CancellationToken ct = default) =>
             Task.FromResult(ApiResult<PersonalRewardBalanceDto>.Success(new PersonalRewardBalanceDto(Guid.Empty, 0)));
 

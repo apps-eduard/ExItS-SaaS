@@ -250,6 +250,7 @@ public interface ICustomerCreditOfflineSyncService
         string? mobileNumber,
         string? address,
         string? notes,
+        Guid? platformBusinessCustomerId = null,
         CancellationToken ct = default);
 
     Task<ApiResultLikeCustomer> UpdateCustomerAsync(

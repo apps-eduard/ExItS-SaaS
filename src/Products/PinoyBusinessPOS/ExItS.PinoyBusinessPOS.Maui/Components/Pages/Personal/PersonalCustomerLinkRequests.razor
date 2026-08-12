@@ -1,0 +1,188 @@
+@page "/personal/customer-link-requests"
+@layout Layout.PersonalShell
+@using ExItS.DesignSystem.Components.Internal
+@inject IAuthenticationService Auth
+@inject ICurrentUserContext CurrentUser
+@inject IPlatformAccessClient Platform
+@inject OnlineRequiredGuard OnlineRequired
+@inject NavigationManager Nav
+@inject IStringLocalizer<PosResources> L
+
+<div class="pos-personal-invitations">
+<StoreHeaderBack Href="/personal/more" />
+<Page>
+    <header class="pos-personal-invitations__header">
+        <h1 class="pos-personal-invitations__title">@L["CustomerLink_PersonalRequestsTitle"]</h1>
+        <p class="pos-personal-invitations__subtitle">@L["CustomerLink_PersonalRequestsSubtitle"]</p>
+    </header>
+
+    @if (_loading)
+    {
+        <Spinner />
+    }
+    else if (!_authenticated)
+    {
+        <ErrorState Title="@L["Auth_SessionExpiredTitle"]" Message="@L["Auth_SessionExpired"]" RetryLabel="@L["SignIn_Submit"]" OnRetry="GoSignIn" />
+    }
+    else if (_loadFailed)
+    {
+        <ErrorState Title="@L["CustomerLink_PersonalRequestsErrorTitle"]" Message="@(_error ?? L["Personal_LoadErrorMessage"])" RetryLabel="@L["Common_Retry"]" OnRetry="LoadAsync" />
+    }
+    else if (_requests.Count == 0)
+    {
+        <EmptyState Title="@L["CustomerLink_PersonalRequestsEmptyTitle"]" Message="@L["CustomerLink_PersonalRequestsEmptyMessage"]" />
+    }
+    else
+    {
+        @if (!string.IsNullOrEmpty(_actionError))
+        {
+            <Alert Tone="AlertTone.Danger" Title="@L["Customers_ErrorTitle"]" Message="@_actionError" />
+        }
+
+        <div class="pos-personal-list" role="list">
+            @foreach (var request in _requests)
+            {
+                var busy = _busyRequestId == request.Id;
+                <div class="pos-personal-row pos-personal-row--static" role="listitem">
+                    <span class="pos-personal-row__body">
+                        <span class="pos-personal-row__title">@request.OrganizationDisplayName</span>
+                        <span class="pos-personal-row__meta">
+                            @L["CustomerLink_Status_Pending"]
+                            · @L["CustomerLink_RequestedAt"]: @request.CreatedAtUtc.LocalDateTime.ToString("g")
+                            · @L["CustomerLink_ExpiresAt"]: @request.ExpiresAtUtc.LocalDateTime.ToString("g")
+                        </span>
+                    </span>
+                    <span class="pos-personal-row__actions" style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+                        <Button IsLoading="busy" Disabled="_busyRequestId is not null" OnClick="() => AcceptAsync(request.Id)">
+                            @L["CustomerLink_Accept"]
+                        </Button>
+                        <Button Variant="ButtonVariant.Secondary" IsLoading="busy" Disabled="_busyRequestId is not null" OnClick="() => DeclineAsync(request.Id)">
+                            @L["CustomerLink_Decline"]
+                        </Button>
+                    </span>
+                </div>
+            }
+        </div>
+    }
+</Page>
+</div>
+
+@code {
+    private bool _loading = true;
+    private bool _authenticated;
+    private bool _loadFailed;
+    private Guid? _busyRequestId;
+    private string? _error;
+    private string? _actionError;
+    private IReadOnlyList<PersonalPendingCustomerLinkRequestDto> _requests = [];
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _loadFailed = false;
+        _error = null;
+        _actionError = null;
+        try
+        {
+            if (!CurrentUser.IsAuthenticated)
+            {
+                var restore = await Auth.RestoreSessionAsync();
+                _authenticated = restore.Succeeded;
+            }
+            else
+            {
+                _authenticated = true;
+            }
+
+            if (!_authenticated)
+            {
+                return;
+            }
+
+            var personal = await Auth.EnsurePersonalAccountProfileAsync();
+            if (!personal.Succeeded)
+            {
+                _loadFailed = true;
+                _error = L[personal.SafeMessageKey ?? "Access_Denied"];
+                return;
+            }
+
+            if (!await OnlineRequired.EnsureOnlineForRouteAsync("/personal/customer-link-requests"))
+            {
+                _loadFailed = true;
+                _error = L["OnlineRequired_Message"];
+                return;
+            }
+
+            var result = await Platform.GetPersonalCustomerLinkRequestsAsync();
+            if (!result.IsSuccess || result.Data is null)
+            {
+                _loadFailed = true;
+                _error = result.Error?.Detail ?? L["CustomerLink_PersonalRequestsLoadFailed"];
+                return;
+            }
+
+            _requests = result.Data;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task AcceptAsync(Guid requestId)
+    {
+        if (_busyRequestId is not null)
+        {
+            return;
+        }
+
+        _busyRequestId = requestId;
+        _actionError = null;
+        try
+        {
+            var result = await Platform.AcceptPersonalCustomerLinkRequestAsync(requestId);
+            if (!result.IsSuccess)
+            {
+                _actionError = result.Error?.Detail ?? L["CustomerLink_AcceptFailed"];
+                return;
+            }
+
+            await LoadAsync();
+        }
+        finally
+        {
+            _busyRequestId = null;
+        }
+    }
+
+    private async Task DeclineAsync(Guid requestId)
+    {
+        if (_busyRequestId is not null)
+        {
+            return;
+        }
+
+        _busyRequestId = requestId;
+        _actionError = null;
+        try
+        {
+            var result = await Platform.DeclinePersonalCustomerLinkRequestAsync(requestId);
+            if (!result.IsSuccess)
+            {
+                _actionError = result.Error?.Detail ?? L["CustomerLink_DeclineFailed"];
+                return;
+            }
+
+            await LoadAsync();
+        }
+        finally
+        {
+            _busyRequestId = null;
+        }
+    }
+
+    private void GoSignIn() => Nav.NavigateTo("/signin");
+}

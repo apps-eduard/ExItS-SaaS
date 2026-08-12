@@ -103,20 +103,28 @@ public sealed class CustomerCreditOfflineSyncService(
         string? mobileNumber,
         string? address,
         string? notes,
+        Guid? platformBusinessCustomerId = null,
         CancellationToken ct = default)
     {
         var online = await connectivity.IsConnectedAsync(ct).ConfigureAwait(false);
         if (online)
         {
             var customerId = Guid.NewGuid();
-            var request = new CreatePosCustomerRequest(displayName, mobileNumber, address, notes, customerId);
+            var request = new CreatePosCustomerRequest(
+                displayName,
+                mobileNumber,
+                address,
+                notes,
+                customerId,
+                platformBusinessCustomerId);
             var payload = JsonSerializer.Serialize(new
             {
                 customerId,
                 displayName,
                 mobileNumber,
                 address,
-                notes
+                notes,
+                platformBusinessCustomerId
             }, JsonOptions);
             var hash = Sha256Hex(payload);
             var opId = Guid.NewGuid();
@@ -138,7 +146,10 @@ public sealed class CustomerCreditOfflineSyncService(
                 return new ApiResultLikeCustomer(true, false, projection, null, null);
             }
 
-            if (ShouldFallbackOffline(result.Status) && CanMutateOffline)
+            // Platform-linked creates must not silently fall back to local-only without the correlation id.
+            if (platformBusinessCustomerId is null
+                && ShouldFallbackOffline(result.Status)
+                && CanMutateOffline)
             {
                 return await EnqueueCustomerCreateAsync(displayName, mobileNumber, address, notes, ct)
                     .ConfigureAwait(false);
@@ -150,6 +161,16 @@ public sealed class CustomerCreditOfflineSyncService(
                 null,
                 result.Error?.ErrorCode,
                 result.Error?.Detail ?? result.Status.ToString());
+        }
+
+        if (platformBusinessCustomerId is not null)
+        {
+            return new ApiResultLikeCustomer(
+                false,
+                false,
+                null,
+                "offline_mutations_unavailable",
+                "Personal link requires an online connection.");
         }
 
         if (!CanMutateOffline)

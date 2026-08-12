@@ -2390,4 +2390,45 @@
   <data name="BusinessTypes_ManageLink" xml:space="preserve"><value>Manage business types</value></data>
   <data name="BusinessTypes_DowngradeHint" xml:space="preserve"><value>If you change to a smaller plan, deactivate optional business types first until you are within the new limit. Products and sales history are kept.</value></data>
   <data name="Org_BusinessTypesLink" xml:space="preserve"><value>Business types</value></data>
+  <data name="CustomerLink_RequiresOnline" xml:space="preserve"><value>Linking an ExItS ID requires an online connection. Connect and try again.</value></data>
+  <data name="CustomerLink_CreateFailed" xml:space="preserve"><value>Could not create the personal link request.</value></data>
+  <data name="CustomerLink_PendingTitle" xml:space="preserve"><value>Personal link pending</value></data>
+  <data name="CustomerLink_PendingMessage" xml:space="preserve"><value>Customer added. Personal link request sent — waiting for customer acceptance.</value></data>
+  <data name="CustomerLink_PendingWaiting" xml:space="preserve"><value>Waiting for the customer to accept the personal link request.</value></data>
+  <data name="CustomerLink_StatusLabel" xml:space="preserve"><value>Personal link</value></data>
+  <data name="CustomerLink_StatusUnavailable" xml:space="preserve"><value>Status unavailable</value></data>
+  <data name="CustomerLink_Status_NotLinked" xml:space="preserve"><value>Not linked</value></data>
+  <data name="CustomerLink_Status_Pending" xml:space="preserve"><value>Pending</value></data>
+  <data name="CustomerLink_Status_Linked" xml:space="preserve"><value>Linked</value></data>
+  <data name="CustomerLink_Status_Declined" xml:space="preserve"><value>Declined</value></data>
+  <data name="CustomerLink_Status_Expired" xml:space="preserve"><value>Expired</value></data>
+  <data name="CustomerLink_Status_Revoked" xml:space="preserve"><value>Revoked</value></data>
+  <data name="CustomerLink_Accept" xml:space="preserve"><value>Accept</value></data>
+  <data name="CustomerLink_Decline" xml:space="preserve"><value>Decline</value></data>
+  <data name="CustomerLink_AcceptFailed" xml:space="preserve"><value>Could not accept the link request.</value></data>
+  <data name="CustomerLink_DeclineFailed" xml:space="preserve"><value>Could not decline the link request.</value></data>
+  <data name="CustomerLink_RequestedAt" xml:space="preserve"><value>Requested</value></data>
+  <data name="CustomerLink_ExpiresAt" xml:space="preserve"><value>Expires</value></data>
+  <data name="CustomerLink_PersonalRequestsTitle" xml:space="preserve"><value>Customer link requests</value></data>
+  <data name="CustomerLink_PersonalRequestsSubtitle" xml:space="preserve"><value>Merchants asking to link your Personal account as their customer.</value></data>
+  <data name="CustomerLink_PersonalRequestsErrorTitle" xml:space="preserve"><value>Could not load link requests</value></data>
+  <data name="CustomerLink_PersonalRequestsEmptyTitle" xml:space="preserve"><value>No pending link requests</value></data>
+  <data name="CustomerLink_PersonalRequestsEmptyMessage" xml:space="preserve"><value>When a merchant sends a customer link request, it appears here.</value></data>
+  <data name="CustomerLink_PersonalRequestsLoadFailed" xml:space="preserve"><value>Customer link requests could not be loaded. Try again.</value></data>
+  <data name="CustomerLink_OrgNotificationsTitle" xml:space="preserve"><value>Customer link responses</value></data>
+  <data name="CustomerLink_OrgNotificationsSubtitle" xml:space="preserve"><value>Accept and decline responses for customer link requests you sent.</value></data>
+  <data name="CustomerLink_OrgNotificationsLink" xml:space="preserve"><value>Customer link responses</value></data>
+  <data name="CustomerLink_OrgNotificationsErrorTitle" xml:space="preserve"><value>Could not load notifications</value></data>
+  <data name="CustomerLink_OrgNotificationsEmptyTitle" xml:space="preserve"><value>No link responses yet</value></data>
+  <data name="CustomerLink_OrgNotificationsEmptyMessage" xml:space="preserve"><value>When customers accept or decline link requests, responses appear here.</value></data>
+  <data name="CustomerLink_OrgNotificationsLoadFailed" xml:space="preserve"><value>Organization notifications could not be loaded. Try again.</value></data>
+  <data name="Personal_Nav_CustomerLinkRequests" xml:space="preserve"><value>Customer link requests</value></data>
+  <data name="Personal_Nav_Notifications" xml:space="preserve"><value>Notifications</value></data>
+  <data name="Personal_NotificationsTitle" xml:space="preserve"><value>Notifications</value></data>
+  <data name="Personal_NotificationsSubtitle" xml:space="preserve"><value>In-app messages for your Personal account.</value></data>
+  <data name="Personal_NotificationsErrorTitle" xml:space="preserve"><value>Could not load notifications</value></data>
+  <data name="Personal_NotificationsEmptyTitle" xml:space="preserve"><value>No notifications</value></data>
+  <data name="Personal_NotificationsEmptyMessage" xml:space="preserve"><value>New link requests and related updates will appear here.</value></data>
+  <data name="Personal_NotificationsLoadFailed" xml:space="preserve"><value>Notifications could not be loaded. Try again.</value></data>
+  <data name="Personal_NotificationsUnread" xml:space="preserve"><value>Unread</value></data>
 </root>

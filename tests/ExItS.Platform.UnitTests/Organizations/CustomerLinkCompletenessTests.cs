@@ -1,9 +1,11 @@
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Organizations;
 using ExItS.Platform.Application.Personal;
+using ExItS.Platform.Domain.Abstractions;
 using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Identity;
 using ExItS.Platform.Domain.Organizations;
+using ExItS.Platform.Domain.Personal;
 using ExItS.Platform.UnitTests.Support;
 
 namespace ExItS.Platform.UnitTests.Organizations;
@@ -333,8 +335,11 @@ public sealed class CustomerLinkCompletenessTests
             var memberships = new InMemoryOrganizationMembershipRepository();
             var orgs = new InMemoryPlatformOrganizationRepository();
             var customers = new InMemoryBusinessCustomerRepository();
-            var requests = new InMemoryCustomerLinkRequestRepository();
+            var requests = new InMemoryCustomerLinkRequestRepository(clock);
             var links = new InMemoryLinkedCustomerAppUserRepository();
+            var personalSettings = new InMemoryPersonalAccountSettingsRepository();
+            var personalNotifications = new InMemoryPersonalInAppNotificationRepository();
+            var orgNotifications = new InMemoryOrganizationInAppNotificationRepository();
 
             var org = PlatformOrganization.Create("Corner Store", "corner-store", T0);
             await orgs.AddAsync(org);
@@ -357,12 +362,20 @@ public sealed class CustomerLinkCompletenessTests
                 links,
                 requests,
                 orgs,
-                new AcceptCustomerLinkRequest(requests, customers, links, memberships, users, uow, clock),
+                new AcceptCustomerLinkRequest(requests, customers, links, memberships, users, uow, clock, orgNotifications),
                 new UnlinkAcceptedCustomerLink(links, customers, uow, clock),
                 new ListLinkedMerchantsForPersonalUser(links, customers, orgs),
                 new RevokeCustomerLinkRequest(requests, uow, clock),
-                new CreateCustomerLinkRequest(customers, requests, uow, clock),
-                new DeclineCustomerLinkRequest(requests, uow, clock),
+                new CreateCustomerLinkRequest(
+                    customers,
+                    requests,
+                    uow,
+                    clock,
+                    users,
+                    orgs,
+                    personalSettings,
+                    personalNotifications),
+                new DeclineCustomerLinkRequest(requests, uow, clock, orgNotifications, users),
                 new AuthorizeLinkedCustomerAccess(users, links, customers));
         }
     }
@@ -421,6 +434,9 @@ public sealed class CustomerLinkCompletenessTests
     internal sealed class InMemoryCustomerLinkRequestRepository : ICustomerLinkRequestRepository
     {
         private readonly List<CustomerLinkRequest> _items = [];
+        private readonly IClock? _clock;
+
+        public InMemoryCustomerLinkRequestRepository(IClock? clock = null) => _clock = clock;
 
         public Task<CustomerLinkRequest?> GetByIdAsync(
             CustomerLinkRequestId id,
@@ -454,6 +470,38 @@ public sealed class CustomerLinkCompletenessTests
 
             var list = query.ToList();
             return Task.FromResult(((IReadOnlyList<CustomerLinkRequest>)list.Skip(skip).Take(take).ToList(), list.Count));
+        }
+
+        public Task<IReadOnlyList<CustomerLinkRequest>> ListPendingForTargetUserAsync(
+            PlatformUserId targetUserIdentityId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<CustomerLinkRequest>>(
+                _items.Where(r =>
+                        r.Status == CustomerLinkRequestStatus.Pending
+                        && r.TargetUserIdentityId == targetUserIdentityId)
+                    .ToList());
+
+        public Task<IReadOnlyList<CustomerLinkRequest>> ListByBusinessCustomerAsync(
+            BusinessCustomerId businessCustomerId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<CustomerLinkRequest>>(
+                _items.Where(r => r.BusinessCustomerId == businessCustomerId)
+                    .OrderByDescending(r => r.CreatedAtUtc)
+                    .ToList());
+
+        public Task<IReadOnlyDictionary<string, int>> CountByOrganizationGroupedAsync(
+            PlatformOrganizationId organizationId,
+            CancellationToken cancellationToken = default)
+        {
+            var now = _clock?.UtcNow ?? DateTimeOffset.UtcNow;
+            var counts = _items
+                .Where(r => r.OrganizationId == organizationId)
+                .GroupBy(r =>
+                    r.Status == CustomerLinkRequestStatus.Pending && r.IsExpired(now)
+                        ? nameof(CustomerLinkRequestStatus.Expired)
+                        : r.Status.ToString())
+                .ToDictionary(g => g.Key, g => g.Count());
+            return Task.FromResult((IReadOnlyDictionary<string, int>)counts);
         }
 
         public Task AddAsync(CustomerLinkRequest request, CancellationToken cancellationToken = default)
@@ -545,6 +593,134 @@ public sealed class CustomerLinkCompletenessTests
             if (index >= 0)
             {
                 _items[index] = link;
+            }
+
+            return Task.CompletedTask;
+        }
+    }
+
+    internal sealed class InMemoryPersonalAccountSettingsRepository : IPersonalAccountSettingsRepository
+    {
+        private readonly Dictionary<Guid, PersonalAccountSettings> _byUser = new();
+
+        public Task<PersonalAccountSettings?> GetByUserAsync(
+            PlatformUserId userIdentityId,
+            CancellationToken cancellationToken = default)
+        {
+            _byUser.TryGetValue(userIdentityId.Value, out var settings);
+            return Task.FromResult(settings);
+        }
+
+        public Task AddAsync(PersonalAccountSettings settings, CancellationToken cancellationToken = default)
+        {
+            _byUser[settings.UserIdentityId.Value] = settings;
+            return Task.CompletedTask;
+        }
+
+        public Task UpdateAsync(PersonalAccountSettings settings, CancellationToken cancellationToken = default)
+        {
+            _byUser[settings.UserIdentityId.Value] = settings;
+            return Task.CompletedTask;
+        }
+    }
+
+    internal sealed class InMemoryPersonalInAppNotificationRepository : IPersonalInAppNotificationRepository
+    {
+        private readonly List<PersonalInAppNotification> _items = [];
+
+        public IReadOnlyList<PersonalInAppNotification> Items => _items;
+
+        public Task<PersonalInAppNotification?> GetByIdAsync(
+            PersonalInAppNotificationId id,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(_items.FirstOrDefault(n => n.Id == id));
+
+        public Task<IReadOnlyList<PersonalInAppNotification>> ListForUserAsync(
+            PlatformUserId recipientUserIdentityId,
+            int take,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<PersonalInAppNotification>>(
+                _items
+                    .Where(n => n.RecipientUserIdentityId == recipientUserIdentityId)
+                    .OrderByDescending(n => n.CreatedAtUtc)
+                    .Take(take)
+                    .ToList());
+
+        public Task<PersonalInAppNotification?> FindByRecipientRelatedAsync(
+            PlatformUserId recipientUserIdentityId,
+            string relatedType,
+            string relatedId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(_items.FirstOrDefault(n =>
+                n.RecipientUserIdentityId == recipientUserIdentityId
+                && string.Equals(n.RelatedType, relatedType, StringComparison.Ordinal)
+                && string.Equals(n.RelatedId, relatedId, StringComparison.Ordinal)));
+
+        public Task AddAsync(PersonalInAppNotification notification, CancellationToken cancellationToken = default)
+        {
+            _items.Add(notification);
+            return Task.CompletedTask;
+        }
+
+        public Task UpdateAsync(PersonalInAppNotification notification, CancellationToken cancellationToken = default)
+        {
+            var index = _items.FindIndex(n => n.Id == notification.Id);
+            if (index >= 0)
+            {
+                _items[index] = notification;
+            }
+
+            return Task.CompletedTask;
+        }
+    }
+
+    internal sealed class InMemoryOrganizationInAppNotificationRepository : IOrganizationInAppNotificationRepository
+    {
+        private readonly List<OrganizationInAppNotification> _items = [];
+
+        public IReadOnlyList<OrganizationInAppNotification> Items => _items;
+
+        public Task<OrganizationInAppNotification?> GetByIdAsync(
+            OrganizationInAppNotificationId id,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(_items.FirstOrDefault(n => n.Id == id));
+
+        public Task<IReadOnlyList<OrganizationInAppNotification>> ListForRecipientInOrganizationAsync(
+            PlatformOrganizationId organizationId,
+            PlatformUserId recipientUserIdentityId,
+            int take,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<OrganizationInAppNotification>>(
+                _items
+                    .Where(n =>
+                        n.OrganizationId == organizationId
+                        && n.RecipientUserIdentityId == recipientUserIdentityId)
+                    .OrderByDescending(n => n.CreatedAtUtc)
+                    .Take(take)
+                    .ToList());
+
+        public Task<OrganizationInAppNotification?> FindByRecipientRelatedAsync(
+            PlatformUserId recipientUserIdentityId,
+            string relatedType,
+            string relatedId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(_items.FirstOrDefault(n =>
+                n.RecipientUserIdentityId == recipientUserIdentityId
+                && string.Equals(n.RelatedType, relatedType, StringComparison.Ordinal)
+                && string.Equals(n.RelatedId, relatedId, StringComparison.Ordinal)));
+
+        public Task AddAsync(OrganizationInAppNotification notification, CancellationToken cancellationToken = default)
+        {
+            _items.Add(notification);
+            return Task.CompletedTask;
+        }
+
+        public Task UpdateAsync(OrganizationInAppNotification notification, CancellationToken cancellationToken = default)
+        {
+            var index = _items.FindIndex(n => n.Id == notification.Id);
+            if (index >= 0)
+            {
+                _items[index] = notification;
             }
 
             return Task.CompletedTask;

@@ -151,6 +151,11 @@ else
                             <span class="pos-org__nav-label">@L["Org_BusinessTypesLink"]</span>
                             <span class="pos-org__nav-chevron" aria-hidden="true">›</span>
                         </button>
+                        <button type="button" class="pos-org__nav-row" role="listitem" @onclick="GoCustomerLinkNotifications">
+                            <span class="pos-org__nav-icon" aria-hidden="true">@IconGlyphs.Get("inbox")</span>
+                            <span class="pos-org__nav-label">@L["CustomerLink_OrgNotificationsLink"]</span>
+                            <span class="pos-org__nav-chevron" aria-hidden="true">›</span>
+                        </button>
                     </div>
                 }
                 else
@@ -514,5 +519,6 @@ else
     private void GoDevices() => Nav.NavigateTo("/organization/devices");
     private void GoSubscription() => Nav.NavigateTo("/org/subscription");
     private void GoBusinessTypes() => Nav.NavigateTo("/org/business-types");
+    private void GoCustomerLinkNotifications() => Nav.NavigateTo("/org/customer-link-notifications");
     private void GoSelect() => Nav.NavigateTo("/organization-select");
 }

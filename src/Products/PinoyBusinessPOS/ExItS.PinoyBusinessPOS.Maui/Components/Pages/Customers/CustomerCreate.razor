@@ -7,6 +7,8 @@
 @inject ApiStatusLocalizer ApiLocalizer
 @inject IStringLocalizer<PosResources> L
 @inject ICustomerCreditOfflineSyncService Sync
+@inject IPlatformAccessClient Platform
+@inject IConnectivityService Connectivity
 
 @if (!_ready)
 {
@@ -115,6 +117,7 @@ else
     private string? _formError;
     private string? _pendingMessage;
     private string? _resolvedPublicUserId;
+    private Guid? _resolvedUserIdentityId;
 
     protected override async Task OnInitializedAsync()
     {
@@ -135,7 +138,10 @@ else
         }
 
         // Platform user id is an external reference only — never grants membership/POS role.
-        _ = ResolvedUserId;
+        if (Guid.TryParse(ResolvedUserId, out var userId) && userId != Guid.Empty)
+        {
+            _resolvedUserIdentityId = userId;
+        }
 
         _ready = true;
     }
@@ -160,52 +166,105 @@ else
         }
 
         _saving = true;
-        var notes = string.IsNullOrWhiteSpace(_notes) ? null : _notes;
-        if (!string.IsNullOrWhiteSpace(_resolvedPublicUserId))
+        try
         {
-            var tag = $"exits-id:{_resolvedPublicUserId}";
-            notes = string.IsNullOrWhiteSpace(notes) ? tag : $"{notes}\n{tag}";
-        }
-
-        var result = await Sync.CreateCustomerAsync(
-            _displayName.Trim(),
-            string.IsNullOrWhiteSpace(_mobile) ? null : _mobile,
-            string.IsNullOrWhiteSpace(_address) ? null : _address,
-            notes);
-
-        if (result.Succeeded && result.Customer is not null)
-        {
-            if (IsSaleCheckoutReturn(ReturnPath))
+            var notes = string.IsNullOrWhiteSpace(_notes) ? null : _notes;
+            if (!string.IsNullOrWhiteSpace(_resolvedPublicUserId))
             {
-                var sep = ReturnPath!.Contains('?', StringComparison.Ordinal) ? "&" : "?";
-                Nav.NavigateTo(
-                    $"{ReturnPath}{sep}customerId={result.Customer.CustomerId:D}",
-                    replace: true);
+                var tag = $"exits-id:{_resolvedPublicUserId}";
+                notes = string.IsNullOrWhiteSpace(notes) ? tag : $"{notes}\n{tag}";
+            }
+
+            var wantsPersonalLink = !string.IsNullOrWhiteSpace(_resolvedPublicUserId)
+                || _resolvedUserIdentityId is not null;
+            Guid? platformBusinessCustomerId = null;
+
+            if (wantsPersonalLink)
+            {
+                if (!await Connectivity.IsConnectedAsync())
+                {
+                    _formError = L["CustomerLink_RequiresOnline"];
+                    return;
+                }
+
+                var orgId = CurrentUser.Session!.OrganizationId!.Value;
+                var linkResult = await Platform.CreateBusinessCustomerWithPersonalLinkAsync(
+                    orgId,
+                    new CreateBusinessCustomerWithPersonalLinkRequest(
+                        DisplayName: _displayName.Trim(),
+                        Phone: string.IsNullOrWhiteSpace(_mobile) ? null : _mobile,
+                        Notes: notes,
+                        OwningProductCode: PosProductCodes.PinoyBusinessPos,
+                        PublicUserId: _resolvedPublicUserId,
+                        TargetUserIdentityId: _resolvedUserIdentityId));
+
+                if (!linkResult.IsSuccess || linkResult.Data?.Customer is null)
+                {
+                    _formError = linkResult.Error?.Detail
+                        ?? ApiLocalizer.Describe(linkResult.Status, linkResult.Error).Message
+                        ?? L["CustomerLink_CreateFailed"];
+                    return;
+                }
+
+                platformBusinessCustomerId = linkResult.Data.Customer.Id;
+            }
+
+            var result = await Sync.CreateCustomerAsync(
+                _displayName.Trim(),
+                string.IsNullOrWhiteSpace(_mobile) ? null : _mobile,
+                string.IsNullOrWhiteSpace(_address) ? null : _address,
+                notes,
+                platformBusinessCustomerId);
+
+            if (result.Succeeded && result.Customer is not null)
+            {
+                if (IsSaleCheckoutReturn(ReturnPath))
+                {
+                    var sep = ReturnPath!.Contains('?', StringComparison.Ordinal) ? "&" : "?";
+                    Nav.NavigateTo(
+                        $"{ReturnPath}{sep}customerId={result.Customer.CustomerId:D}",
+                        replace: true);
+                    return;
+                }
+
+                string route;
+                if (wantsPersonalLink)
+                {
+                    route = $"/customers/{result.Customer.CustomerId:D}?pendingLink=1";
+                }
+                else if (result.PendingLocal)
+                {
+                    route = $"/customers/{result.Customer.CustomerId:D}?pending=1";
+                }
+                else
+                {
+                    route = $"/customers/{result.Customer.CustomerId:D}";
+                }
+
+                Nav.NavigateTo(route, replace: true);
                 return;
             }
 
-            var route = result.PendingLocal
-                ? $"/customers/{result.Customer.CustomerId:D}?pending=1"
-                : $"/customers/{result.Customer.CustomerId:D}";
-            Nav.NavigateTo(route, replace: true);
-            return;
+            if (string.Equals(result.ErrorCode, ApplicationErrorCodes.MobileConflict, StringComparison.Ordinal))
+            {
+                _formError = L["Customers_ConflictMessage"];
+                _mobileError = L["Customers_ConflictMessage"];
+            }
+            else if (string.Equals(result.ErrorCode, "offline_mutations_unavailable", StringComparison.Ordinal))
+            {
+                _formError = wantsPersonalLink
+                    ? L["CustomerLink_RequiresOnline"]
+                    : L["Offline_MutationsUnavailable"];
+            }
+            else
+            {
+                _formError = result.ErrorMessage ?? L["Customers_ErrorTitle"];
+            }
         }
-
-        if (string.Equals(result.ErrorCode, ApplicationErrorCodes.MobileConflict, StringComparison.Ordinal))
+        finally
         {
-            _formError = L["Customers_ConflictMessage"];
-            _mobileError = L["Customers_ConflictMessage"];
+            _saving = false;
         }
-        else if (string.Equals(result.ErrorCode, "offline_mutations_unavailable", StringComparison.Ordinal))
-        {
-            _formError = L["Offline_MutationsUnavailable"];
-        }
-        else
-        {
-            _formError = result.ErrorMessage ?? L["Customers_ErrorTitle"];
-        }
-
-        _saving = false;
     }
 
     private string BuildCustomerCreateReturn() =>

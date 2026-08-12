@@ -20,6 +20,7 @@ internal static class OfflineCustomerCreditUiHelpers
             customer.Address,
             customer.Notes,
             customer.Status,
+            PlatformBusinessCustomerId: null,
             customer.CreatedAtUtc,
             customer.UpdatedAtUtc);
 
@@ -32,6 +33,7 @@ internal static class OfflineCustomerCreditUiHelpers
             customer.Address,
             customer.Notes,
             customer.Status,
+            PlatformBusinessCustomerId: null,
             customer.CreatedAtUtc,
             customer.UpdatedAtUtc);
 

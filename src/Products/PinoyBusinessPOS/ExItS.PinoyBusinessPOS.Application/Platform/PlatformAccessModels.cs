@@ -466,6 +466,107 @@ public sealed record LinkedMerchantDto(
     string LinkStatus,
     DateTimeOffset LinkedAtUtc);
 
+/// <summary>Platform BusinessCustomer (org-owned customer record used for Personal link consent).</summary>
+public sealed record PlatformBusinessCustomerDto(
+    Guid Id,
+    Guid OrganizationId,
+    string DisplayName,
+    string? Email,
+    string? Phone,
+    string? Notes,
+    string? OwningProductCode,
+    string Status,
+    Guid? LinkedUserIdentityId,
+    bool IsOrganizationStaff,
+    bool IsCreditCustomer,
+    DateTimeOffset CreatedAtUtc,
+    DateTimeOffset UpdatedAtUtc);
+
+public sealed record PlatformCustomerLinkRequestDto(
+    Guid Id,
+    Guid OrganizationId,
+    Guid BusinessCustomerId,
+    string InvitationType,
+    string Email,
+    string Status,
+    Guid? InvitedByUserId,
+    DateTimeOffset CreatedAtUtc,
+    DateTimeOffset UpdatedAtUtc,
+    DateTimeOffset ExpiresAtUtc,
+    DateTimeOffset? AcceptedAtUtc,
+    DateTimeOffset? DeclinedAtUtc,
+    DateTimeOffset? RevokedAtUtc,
+    Guid? AcceptedByUserId,
+    string? AcceptToken = null,
+    Guid? TargetUserIdentityId = null,
+    string? TargetPublicUserId = null);
+
+public sealed record PlatformCustomerLinkStatusDto(
+    Guid BusinessCustomerId,
+    Guid OrganizationId,
+    string Status,
+    Guid? LinkedUserIdentityId,
+    Guid? LatestLinkRequestId,
+    string? LatestLinkRequestStatus);
+
+public sealed record PlatformCustomerLinkRequestStatsDto(
+    Guid OrganizationId,
+    IReadOnlyDictionary<string, int> CountsByStatus);
+
+public sealed record CreateBusinessCustomerWithPersonalLinkRequest(
+    string DisplayName,
+    string? Email = null,
+    string? Phone = null,
+    string? Notes = null,
+    string? OwningProductCode = null,
+    string? PublicUserId = null,
+    Guid? TargetUserIdentityId = null);
+
+public sealed record CreateBusinessCustomerWithPersonalLinkResultDto(
+    PlatformBusinessCustomerDto Customer,
+    PlatformCustomerLinkRequestDto LinkRequest);
+
+public sealed record PersonalPendingCustomerLinkRequestDto(
+    Guid Id,
+    Guid OrganizationId,
+    string OrganizationDisplayName,
+    Guid BusinessCustomerId,
+    string Status,
+    DateTimeOffset CreatedAtUtc,
+    DateTimeOffset ExpiresAtUtc,
+    string? TargetPublicUserId);
+
+public sealed record AcceptCustomerLinkResultDto(
+    Guid LinkRequestId,
+    Guid BusinessCustomerId,
+    Guid LinkedUserIdentityId,
+    Guid LinkedCustomerAppUserId,
+    bool CreatedOrganizationMembership,
+    bool GrantedStaffRole,
+    bool GrantedProductRole);
+
+public sealed record OrganizationInAppNotificationDto(
+    Guid Id,
+    Guid OrganizationId,
+    Guid RecipientUserIdentityId,
+    string Title,
+    string Preview,
+    string RelatedType,
+    string? RelatedId,
+    bool IsRead,
+    DateTimeOffset CreatedAtUtc,
+    DateTimeOffset? ReadAtUtc);
+
+public sealed record PersonalInAppNotificationDto(
+    Guid Id,
+    string Title,
+    string Preview,
+    string RelatedType,
+    string? RelatedId,
+    bool IsRead,
+    DateTimeOffset CreatedAtUtc,
+    DateTimeOffset? ReadAtUtc);
+
 public sealed record PersonalRewardBalanceDto(Guid PersonalUserId, int AvailablePoints);
 
 public sealed record PersonalRewardTransactionDto(
@@ -818,6 +919,52 @@ public interface IPlatformAccessClient
     Task<ApiResult<PlatformPagedResult<LinkedMerchantDto>>> GetLinkedMerchantsAsync(
         int page = 1,
         int pageSize = 20,
+        CancellationToken ct = default);
+
+    Task<ApiResult<CreateBusinessCustomerWithPersonalLinkResultDto>> CreateBusinessCustomerWithPersonalLinkAsync(
+        Guid organizationId,
+        CreateBusinessCustomerWithPersonalLinkRequest request,
+        CancellationToken ct = default);
+
+    Task<ApiResult<PlatformCustomerLinkStatusDto>> GetCustomerLinkStatusAsync(
+        Guid organizationId,
+        Guid businessCustomerId,
+        CancellationToken ct = default);
+
+    Task<ApiResult<IReadOnlyList<PlatformCustomerLinkRequestDto>>> GetCustomerLinkRequestsAsync(
+        Guid organizationId,
+        Guid businessCustomerId,
+        CancellationToken ct = default);
+
+    Task<ApiResult<PlatformCustomerLinkRequestStatsDto>> GetCustomerLinkRequestStatsAsync(
+        Guid organizationId,
+        CancellationToken ct = default);
+
+    Task<ApiResult<IReadOnlyList<OrganizationInAppNotificationDto>>> GetOrganizationNotificationsAsync(
+        Guid organizationId,
+        CancellationToken ct = default);
+
+    Task<ApiResult<OrganizationInAppNotificationDto>> MarkOrganizationNotificationReadAsync(
+        Guid organizationId,
+        Guid notificationId,
+        CancellationToken ct = default);
+
+    Task<ApiResult<IReadOnlyList<PersonalPendingCustomerLinkRequestDto>>> GetPersonalCustomerLinkRequestsAsync(
+        CancellationToken ct = default);
+
+    Task<ApiResult<AcceptCustomerLinkResultDto>> AcceptPersonalCustomerLinkRequestAsync(
+        Guid requestId,
+        CancellationToken ct = default);
+
+    Task<ApiResult<PlatformCustomerLinkRequestDto>> DeclinePersonalCustomerLinkRequestAsync(
+        Guid requestId,
+        CancellationToken ct = default);
+
+    Task<ApiResult<IReadOnlyList<PersonalInAppNotificationDto>>> GetPersonalNotificationsAsync(
+        CancellationToken ct = default);
+
+    Task<ApiResult<PersonalInAppNotificationDto>> MarkPersonalNotificationReadAsync(
+        Guid notificationId,
         CancellationToken ct = default);
 
     Task<ApiResult<PersonalRewardBalanceDto>> GetPersonalRewardBalanceAsync(CancellationToken ct = default);

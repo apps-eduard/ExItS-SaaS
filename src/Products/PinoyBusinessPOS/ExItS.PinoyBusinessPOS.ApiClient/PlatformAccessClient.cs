@@ -433,6 +433,95 @@ public sealed class PlatformAccessClient(IPosApiClient api) : IPlatformAccessCli
             $"/api/v1/personal/linked-merchants?page={page}&pageSize={pageSize}",
             ct);
 
+    public Task<ApiResult<CreateBusinessCustomerWithPersonalLinkResultDto>> CreateBusinessCustomerWithPersonalLinkAsync(
+        Guid organizationId,
+        CreateBusinessCustomerWithPersonalLinkRequest request,
+        CancellationToken ct = default) =>
+        api.SendAsync<CreateBusinessCustomerWithPersonalLinkResultDto>(
+            HttpMethod.Post,
+            $"/api/v1/organizations/{organizationId:D}/customers/with-personal-link",
+            request,
+            ct);
+
+    public Task<ApiResult<PlatformCustomerLinkStatusDto>> GetCustomerLinkStatusAsync(
+        Guid organizationId,
+        Guid businessCustomerId,
+        CancellationToken ct = default) =>
+        api.GetAsync<PlatformCustomerLinkStatusDto>(
+            $"/api/v1/organizations/{organizationId:D}/customers/{businessCustomerId:D}/link-status",
+            ct);
+
+    public Task<ApiResult<IReadOnlyList<PlatformCustomerLinkRequestDto>>> GetCustomerLinkRequestsAsync(
+        Guid organizationId,
+        Guid businessCustomerId,
+        CancellationToken ct = default) =>
+        api.GetAsync<IReadOnlyList<PlatformCustomerLinkRequestDto>>(
+            $"/api/v1/organizations/{organizationId:D}/customers/{businessCustomerId:D}/link-requests",
+            ct);
+
+    public Task<ApiResult<PlatformCustomerLinkRequestStatsDto>> GetCustomerLinkRequestStatsAsync(
+        Guid organizationId,
+        CancellationToken ct = default) =>
+        api.GetAsync<PlatformCustomerLinkRequestStatsDto>(
+            $"/api/v1/organizations/{organizationId:D}/customer-link-requests/stats",
+            ct);
+
+    public Task<ApiResult<IReadOnlyList<OrganizationInAppNotificationDto>>> GetOrganizationNotificationsAsync(
+        Guid organizationId,
+        CancellationToken ct = default) =>
+        api.GetAsync<IReadOnlyList<OrganizationInAppNotificationDto>>(
+            $"/api/v1/organizations/{organizationId:D}/notifications",
+            ct);
+
+    public Task<ApiResult<OrganizationInAppNotificationDto>> MarkOrganizationNotificationReadAsync(
+        Guid organizationId,
+        Guid notificationId,
+        CancellationToken ct = default) =>
+        api.SendAsync<OrganizationInAppNotificationDto>(
+            HttpMethod.Post,
+            $"/api/v1/organizations/{organizationId:D}/notifications/{notificationId:D}/read",
+            null,
+            ct);
+
+    public Task<ApiResult<IReadOnlyList<PersonalPendingCustomerLinkRequestDto>>> GetPersonalCustomerLinkRequestsAsync(
+        CancellationToken ct = default) =>
+        api.GetAsync<IReadOnlyList<PersonalPendingCustomerLinkRequestDto>>(
+            "/api/v1/personal/customer-link-requests",
+            ct);
+
+    public Task<ApiResult<AcceptCustomerLinkResultDto>> AcceptPersonalCustomerLinkRequestAsync(
+        Guid requestId,
+        CancellationToken ct = default) =>
+        api.SendAsync<AcceptCustomerLinkResultDto>(
+            HttpMethod.Post,
+            $"/api/v1/personal/customer-link-requests/{requestId:D}/accept",
+            null,
+            ct);
+
+    public Task<ApiResult<PlatformCustomerLinkRequestDto>> DeclinePersonalCustomerLinkRequestAsync(
+        Guid requestId,
+        CancellationToken ct = default) =>
+        api.SendAsync<PlatformCustomerLinkRequestDto>(
+            HttpMethod.Post,
+            $"/api/v1/personal/customer-link-requests/{requestId:D}/decline",
+            null,
+            ct);
+
+    public Task<ApiResult<IReadOnlyList<PersonalInAppNotificationDto>>> GetPersonalNotificationsAsync(
+        CancellationToken ct = default) =>
+        api.GetAsync<IReadOnlyList<PersonalInAppNotificationDto>>(
+            "/api/v1/personal/notifications",
+            ct);
+
+    public Task<ApiResult<PersonalInAppNotificationDto>> MarkPersonalNotificationReadAsync(
+        Guid notificationId,
+        CancellationToken ct = default) =>
+        api.SendAsync<PersonalInAppNotificationDto>(
+            HttpMethod.Post,
+            $"/api/v1/personal/notifications/{notificationId:D}/read",
+            null,
+            ct);
+
     public Task<ApiResult<PersonalRewardBalanceDto>> GetPersonalRewardBalanceAsync(CancellationToken ct = default) =>
         api.GetAsync<PersonalRewardBalanceDto>("/api/v1/personal/reward-points/balance", ct);
 
