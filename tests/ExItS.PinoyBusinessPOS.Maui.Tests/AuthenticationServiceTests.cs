@@ -1434,6 +1434,27 @@ public sealed class AuthenticationServiceTests
             Task.FromResult(ApiResult<PlatformPagedResult<LinkedMerchantDto>>.Success(
                 new PlatformPagedResult<LinkedMerchantDto>(Array.Empty<LinkedMerchantDto>(), 0, page, pageSize)));
 
+        public Task<ApiResult<PersonalRewardBalanceDto>> GetPersonalRewardBalanceAsync(CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<PersonalRewardBalanceDto>.Success(new PersonalRewardBalanceDto(Guid.Empty, 0)));
+
+        public Task<ApiResult<PersonalRewardActivityPageDto>> GetPersonalRewardActivityAsync(
+            int page = 1, int pageSize = 20, CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<PersonalRewardActivityPageDto>.Success(
+                new PersonalRewardActivityPageDto(Guid.Empty, Array.Empty<PersonalRewardTransactionDto>(), page, pageSize, 0, false)));
+
+        public Task<ApiResult<PersonalFeatureActiveDto>> GetPersonalFeatureActiveAsync(
+            string featureCode, CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<PersonalFeatureActiveDto>.Success(
+                new PersonalFeatureActiveDto(Guid.Empty, featureCode, false)));
+
+        public Task<ApiResult<RedeemPersonalFeatureResultDto>> RedeemPersonalFeatureAsync(
+            string featureCode, CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<RedeemPersonalFeatureResultDto>.Unavailable());
+
+        public Task<ApiResult<PersonalAdEligibilityDto>> GetPersonalAdEligibilityAsync(CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<PersonalAdEligibilityDto>.Success(
+                new PersonalAdEligibilityDto(Guid.Empty, false, false, false, "provider_unavailable", null)));
+
         public Task<ApiResult<IReadOnlyList<LocalValidationQuickLoginIdentityDto>>> GetLocalValidationQuickLoginIdentitiesAsync(
             CancellationToken ct = default) =>
             Task.FromResult(ApiResult<IReadOnlyList<LocalValidationQuickLoginIdentityDto>>.Success(

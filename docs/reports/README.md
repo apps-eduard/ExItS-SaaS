@@ -104,3 +104,10 @@ The dashboard links to the latest accepted report.
 | [P24-WP15-physical-android-validation-preparation.md](P24-WP15-physical-android-validation-preparation.md) | P24-WP15 Physical Android validation preparation | Complete (prep ≠ Device Verified) |
 | [P24-WP16-personal-mobile-linked-customer-statement-experience.md](P24-WP16-personal-mobile-linked-customer-statement-experience.md) | P24-WP16 Personal mobile linked-customer statement experience | Complete |
 | [P24-WP17-mobile-receipts-and-older-history-entitlement-ux.md](P24-WP17-mobile-receipts-and-older-history-entitlement-ux.md) | P24-WP17 Mobile receipts and older-history entitlement UX | Complete |
+| [P24-WP18-mobile-rewards-and-personal-feature-redemption.md](P24-WP18-mobile-rewards-and-personal-feature-redemption.md) | P24-WP18 Mobile rewards and Personal feature redemption | Complete |
+| [P24-WP19-mobile-ads-ad-free-ux-abstraction.md](P24-WP19-mobile-ads-ad-free-ux-abstraction.md) | P24-WP19 Mobile ads/ad-free UX abstraction | Complete |
+| [P24-WP20-android-integration-and-e2e-mobile-flows.md](P24-WP20-android-integration-and-e2e-mobile-flows.md) | P24-WP20 Android integration and end-to-end mobile flows | Complete |
+| [P24-WP21-physical-android-device-validation-and-fix-pass.md](P24-WP21-physical-android-device-validation-and-fix-pass.md) | P24-WP21 Physical Android device validation | Complete (Device Verified No) |
+| [P24-WP22-mobile-regression-privacy-security-resilience.md](P24-WP22-mobile-regression-privacy-security-resilience.md) | P24-WP22 Mobile regression/privacy/security | Complete |
+| [P24-WP23-phase-24-implementation-closeout-preparation.md](P24-WP23-phase-24-implementation-closeout-preparation.md) | P24-WP23 Implementation closeout prep | Complete |
+| [P24-WP24-owner-user-final-validation-and-acceptance.md](P24-WP24-owner-user-final-validation-and-acceptance.md) | P24-WP24 Owner validation | Awaiting Owner Validation |

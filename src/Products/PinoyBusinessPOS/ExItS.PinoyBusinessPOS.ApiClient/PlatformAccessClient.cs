@@ -433,6 +433,36 @@ public sealed class PlatformAccessClient(IPosApiClient api) : IPlatformAccessCli
             $"/api/v1/personal/linked-merchants?page={page}&pageSize={pageSize}",
             ct);
 
+    public Task<ApiResult<PersonalRewardBalanceDto>> GetPersonalRewardBalanceAsync(CancellationToken ct = default) =>
+        api.GetAsync<PersonalRewardBalanceDto>("/api/v1/personal/reward-points/balance", ct);
+
+    public Task<ApiResult<PersonalRewardActivityPageDto>> GetPersonalRewardActivityAsync(
+        int page = 1,
+        int pageSize = 20,
+        CancellationToken ct = default) =>
+        api.GetAsync<PersonalRewardActivityPageDto>(
+            $"/api/v1/personal/reward-points/activity?page={page}&pageSize={pageSize}",
+            ct);
+
+    public Task<ApiResult<PersonalFeatureActiveDto>> GetPersonalFeatureActiveAsync(
+        string featureCode,
+        CancellationToken ct = default) =>
+        api.GetAsync<PersonalFeatureActiveDto>(
+            $"/api/v1/personal/features/{Uri.EscapeDataString(featureCode)}/active",
+            ct);
+
+    public Task<ApiResult<RedeemPersonalFeatureResultDto>> RedeemPersonalFeatureAsync(
+        string featureCode,
+        CancellationToken ct = default) =>
+        api.SendAsync<RedeemPersonalFeatureResultDto>(
+            HttpMethod.Post,
+            $"/api/v1/personal/features/{Uri.EscapeDataString(featureCode)}/redeem",
+            null,
+            ct);
+
+    public Task<ApiResult<PersonalAdEligibilityDto>> GetPersonalAdEligibilityAsync(CancellationToken ct = default) =>
+        api.GetAsync<PersonalAdEligibilityDto>("/api/v1/personal/ads/eligibility", ct);
+
     public Task<ApiResult<IReadOnlyList<LocalValidationQuickLoginIdentityDto>>> GetLocalValidationQuickLoginIdentitiesAsync(
         CancellationToken ct = default) =>
         api.GetAsync<IReadOnlyList<LocalValidationQuickLoginIdentityDto>>(

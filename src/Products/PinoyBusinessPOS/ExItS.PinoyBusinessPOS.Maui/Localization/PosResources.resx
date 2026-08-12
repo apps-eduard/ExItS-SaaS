@@ -1972,6 +1972,31 @@
   <data name="Personal_RewardsTitle" xml:space="preserve"><value>Rewards</value></data>
   <data name="Personal_RewardsSubtitle" xml:space="preserve"><value>Personal reward points and feature unlocks.</value></data>
   <data name="Personal_RewardsComingSoon" xml:space="preserve"><value>Reward balance and redemption arrive in the next update. Extended history unlock uses the same Personal rewards surface.</value></data>
+  <data name="Personal_RewardsErrorTitle" xml:space="preserve"><value>Could not load rewards</value></data>
+  <data name="Personal_RewardsLoadFailed" xml:space="preserve"><value>Reward points could not be loaded. Try again.</value></data>
+  <data name="Personal_RewardsBalanceSection" xml:space="preserve"><value>Balance</value></data>
+  <data name="Personal_RewardsAvailable" xml:space="preserve"><value>Available points</value></data>
+  <data name="Personal_RewardsServerPriceNote" xml:space="preserve"><value>Redemption cost and entitlement duration are set by the server — this app never chooses the debit amount or end date.</value></data>
+  <data name="Personal_RewardsFeaturesSection" xml:space="preserve"><value>Personal features</value></data>
+  <data name="Personal_RewardsFeatureDigitalRecords" xml:space="preserve"><value>Extended digital records</value></data>
+  <data name="Personal_RewardsFeatureAdFree" xml:space="preserve"><value>Ad-Free</value></data>
+  <data name="Personal_RewardsFeatureActive" xml:space="preserve"><value>Active</value></data>
+  <data name="Personal_RewardsFeatureInactive" xml:space="preserve"><value>Not active</value></data>
+  <data name="Personal_RewardsRedeem" xml:space="preserve"><value>Redeem with points</value></data>
+  <data name="Personal_RewardsRedeemFailed" xml:space="preserve"><value>Redemption failed.</value></data>
+  <data name="Personal_RewardsAlreadyActive" xml:space="preserve"><value>Already active — no points debited.</value></data>
+  <data name="Personal_RewardsRedeemSucceeded" xml:space="preserve"><value>Redeemed (−{0} points).</value></data>
+  <data name="Personal_RewardsActivitySection" xml:space="preserve"><value>Reward activity</value></data>
+  <data name="Personal_RewardsActivityEmptyTitle" xml:space="preserve"><value>No reward activity yet</value></data>
+  <data name="Personal_RewardsActivityEmptyMessage" xml:space="preserve"><value>Credits and redemptions will appear here.</value></data>
+  <data name="Personal_AdsEligibilitySection" xml:space="preserve"><value>Ads eligibility</value></data>
+  <data name="Personal_AdsEligibilityUnknownTitle" xml:space="preserve"><value>Ads status unavailable</value></data>
+  <data name="Personal_AdsEligibilityUnknownMessage" xml:space="preserve"><value>Could not load ads eligibility right now.</value></data>
+  <data name="Personal_AdsAdFreeActive" xml:space="preserve"><value>Ad-Free is active — rewarded ads are not offered.</value></data>
+  <data name="Personal_AdsProviderUnavailable" xml:space="preserve"><value>Ad provider is not configured. No fake playback or timer rewards.</value></data>
+  <data name="Personal_AdsEligible" xml:space="preserve"><value>Eligible for a future verified rewarded-ad claim when a provider is configured.</value></data>
+  <data name="Personal_AdsNotEligible" xml:space="preserve"><value>Not eligible for rewarded ads right now.</value></data>
+  <data name="Personal_AdsNoFakePlayback" xml:space="preserve"><value>This app never invents ad completion or awards points from a local timer.</value></data>
   <data name="Personal_Nav_PaymentsSoon" xml:space="preserve"><value>Payments (coming soon)</value></data>
   <data name="Personal_Nav_RemindersSoon" xml:space="preserve"><value>Reminders (coming soon)</value></data>
   <data name="Personal_Nav_HistorySoon" xml:space="preserve"><value>History (coming soon)</value></data>

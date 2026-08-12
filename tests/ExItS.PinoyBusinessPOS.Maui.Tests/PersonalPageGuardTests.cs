@@ -395,6 +395,9 @@ public sealed class PersonalPageGuardTests
         Assert.Contains("/api/v1/personal/utang/invitations/accept", client, StringComparison.Ordinal);
         Assert.Contains("/api/v1/personal/utang/invitations/decline", client, StringComparison.Ordinal);
         Assert.Contains("/api/v1/personal/linked-merchants", client, StringComparison.Ordinal);
+        Assert.Contains("/api/v1/personal/reward-points/balance", client, StringComparison.Ordinal);
+        Assert.Contains("/api/v1/personal/features/", client, StringComparison.Ordinal);
+        Assert.Contains("/redeem", client, StringComparison.Ordinal);
     }
 
     [Fact]

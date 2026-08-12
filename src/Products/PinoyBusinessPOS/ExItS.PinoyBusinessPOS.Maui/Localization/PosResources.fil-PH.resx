@@ -1972,6 +1972,31 @@
   <data name="Personal_RewardsTitle" xml:space="preserve"><value>Rewards</value></data>
   <data name="Personal_RewardsSubtitle" xml:space="preserve"><value>Personal reward points at feature unlocks.</value></data>
   <data name="Personal_RewardsComingSoon" xml:space="preserve"><value>Darating sa susunod na update ang reward balance at redemption. Ang extended history unlock ay gagamit ng parehong Personal rewards surface.</value></data>
+  <data name="Personal_RewardsErrorTitle" xml:space="preserve"><value>Hindi ma-load ang rewards</value></data>
+  <data name="Personal_RewardsLoadFailed" xml:space="preserve"><value>Hindi ma-load ang reward points. Subukan ulit.</value></data>
+  <data name="Personal_RewardsBalanceSection" xml:space="preserve"><value>Balance</value></data>
+  <data name="Personal_RewardsAvailable" xml:space="preserve"><value>Available points</value></data>
+  <data name="Personal_RewardsServerPriceNote" xml:space="preserve"><value>Ang redemption cost at entitlement duration ay mula sa server — hindi pinipili ng app ang debit amount o end date.</value></data>
+  <data name="Personal_RewardsFeaturesSection" xml:space="preserve"><value>Personal features</value></data>
+  <data name="Personal_RewardsFeatureDigitalRecords" xml:space="preserve"><value>Extended digital records</value></data>
+  <data name="Personal_RewardsFeatureAdFree" xml:space="preserve"><value>Ad-Free</value></data>
+  <data name="Personal_RewardsFeatureActive" xml:space="preserve"><value>Active</value></data>
+  <data name="Personal_RewardsFeatureInactive" xml:space="preserve"><value>Hindi active</value></data>
+  <data name="Personal_RewardsRedeem" xml:space="preserve"><value>I-redeem gamit ang points</value></data>
+  <data name="Personal_RewardsRedeemFailed" xml:space="preserve"><value>Hindi nag-succeed ang redemption.</value></data>
+  <data name="Personal_RewardsAlreadyActive" xml:space="preserve"><value>Active na — walang points na na-debit.</value></data>
+  <data name="Personal_RewardsRedeemSucceeded" xml:space="preserve"><value>Na-redeem (−{0} points).</value></data>
+  <data name="Personal_RewardsActivitySection" xml:space="preserve"><value>Reward activity</value></data>
+  <data name="Personal_RewardsActivityEmptyTitle" xml:space="preserve"><value>Wala pang reward activity</value></data>
+  <data name="Personal_RewardsActivityEmptyMessage" xml:space="preserve"><value>Lilitaw dito ang credits at redemptions.</value></data>
+  <data name="Personal_AdsEligibilitySection" xml:space="preserve"><value>Ads eligibility</value></data>
+  <data name="Personal_AdsEligibilityUnknownTitle" xml:space="preserve"><value>Hindi available ang ads status</value></data>
+  <data name="Personal_AdsEligibilityUnknownMessage" xml:space="preserve"><value>Hindi ma-load ang ads eligibility ngayon.</value></data>
+  <data name="Personal_AdsAdFreeActive" xml:space="preserve"><value>Active ang Ad-Free — hindi ino-offer ang rewarded ads.</value></data>
+  <data name="Personal_AdsProviderUnavailable" xml:space="preserve"><value>Hindi naka-configure ang ad provider. Walang fake playback o timer rewards.</value></data>
+  <data name="Personal_AdsEligible" xml:space="preserve"><value>Eligible para sa future verified rewarded-ad claim kapag may provider.</value></data>
+  <data name="Personal_AdsNotEligible" xml:space="preserve"><value>Hindi eligible sa rewarded ads ngayon.</value></data>
+  <data name="Personal_AdsNoFakePlayback" xml:space="preserve"><value>Hindi kailanman nag-iimbento ang app ng ad completion o points mula sa local timer.</value></data>
   <data name="Personal_Nav_PaymentsSoon" xml:space="preserve"><value>Payments (coming soon)</value></data>
   <data name="Personal_Nav_RemindersSoon" xml:space="preserve"><value>Reminders (coming soon)</value></data>
   <data name="Personal_Nav_HistorySoon" xml:space="preserve"><value>History (coming soon)</value></data>

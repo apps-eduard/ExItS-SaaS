@@ -466,6 +466,57 @@ public sealed record LinkedMerchantDto(
     string LinkStatus,
     DateTimeOffset LinkedAtUtc);
 
+public sealed record PersonalRewardBalanceDto(Guid PersonalUserId, int AvailablePoints);
+
+public sealed record PersonalRewardTransactionDto(
+    Guid Id,
+    Guid PersonalUserId,
+    string TransactionType,
+    int Points,
+    int SignedDelta,
+    int BalanceAfter,
+    string Source,
+    string? Reason,
+    string? ReferenceId,
+    DateTimeOffset CreatedAtUtc);
+
+public sealed record PersonalRewardActivityPageDto(
+    Guid PersonalUserId,
+    IReadOnlyList<PersonalRewardTransactionDto> Items,
+    int Page,
+    int PageSize,
+    int TotalCount,
+    bool HasMore);
+
+public sealed record PersonalFeatureActiveDto(Guid PersonalUserId, string FeatureCode, bool IsActive);
+
+public sealed record PersonalFeatureEntitlementDto(
+    Guid Id,
+    Guid PersonalUserId,
+    string FeatureCode,
+    DateTimeOffset StartsAtUtc,
+    DateTimeOffset? EndsAtUtc,
+    string Status,
+    string GrantSource,
+    DateTimeOffset CreatedAtUtc,
+    bool IsActiveAtQueryTime);
+
+public sealed record RedeemPersonalFeatureResultDto(
+    Guid PersonalUserId,
+    string FeatureCode,
+    bool AlreadyActive,
+    int? PointsDebited,
+    int AvailablePoints,
+    PersonalFeatureEntitlementDto? Entitlement);
+
+public sealed record PersonalAdEligibilityDto(
+    Guid PersonalUserId,
+    bool Eligible,
+    bool AdFreeActive,
+    bool ProviderConfigured,
+    string? ReasonCode,
+    string? ReasonMessage);
+
 public sealed record PersonalDebtRelationshipSummaryDto(
     Guid Id,
     string Perspective,
@@ -768,6 +819,19 @@ public interface IPlatformAccessClient
         int page = 1,
         int pageSize = 20,
         CancellationToken ct = default);
+
+    Task<ApiResult<PersonalRewardBalanceDto>> GetPersonalRewardBalanceAsync(CancellationToken ct = default);
+    Task<ApiResult<PersonalRewardActivityPageDto>> GetPersonalRewardActivityAsync(
+        int page = 1,
+        int pageSize = 20,
+        CancellationToken ct = default);
+    Task<ApiResult<PersonalFeatureActiveDto>> GetPersonalFeatureActiveAsync(
+        string featureCode,
+        CancellationToken ct = default);
+    Task<ApiResult<RedeemPersonalFeatureResultDto>> RedeemPersonalFeatureAsync(
+        string featureCode,
+        CancellationToken ct = default);
+    Task<ApiResult<PersonalAdEligibilityDto>> GetPersonalAdEligibilityAsync(CancellationToken ct = default);
 
     /// <summary>
     /// Local Validation Quick Login directory (anonymous, non-Production). Empty/failure when unavailable.

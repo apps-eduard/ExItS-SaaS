@@ -216,7 +216,7 @@ P19-WP08 ? End-to-End Validation and User Closeout Checklist (Retest � awaitin
 | 17 | POS MVP Operational Onboarding and First Sale | **Complete with documented residuals** | 8 | 8 | 100% | [Open](phases/phase-17-pos-mvp-operational-onboarding-and-first-sale.md) |
 | 18 | Mobile Personal, Organization, and POS Experience | **Complete (implementation/scope)** � partial phone validation; Not Device Verified | 8 | 8 | 100% | [Open](phases/phase-18-mobile-personal-organization-and-pos-experience.md) |
 | 19 | Mobile POS Operations and Cashier Experience Completion | **Open** (WP01�WP07 Code Complete; WP08 Retest) | 7 | 8 |  -  | [Open](phases/phase-19-mobile-pos-operations-and-cashier-experience.md) |
-| 24 | Linked Customer Statements and Personal Monetization | **Open** (WP01–WP17 Complete; WP18 next; roadmap through WP24) | 17 | 24 |  -  | [Open](phases/phase-24-linked-customer-statements-and-personal-monetization.md) |
+| 24 | Linked Customer Statements and Personal Monetization | **Open** (WP01–WP23 Complete; WP24 Awaiting Owner Validation) | 23 | 24 |  -  | [Open](phases/phase-24-linked-customer-statements-and-personal-monetization.md) |
 
 **MVP phases 0-9:** 52 / 52 = **100%** (with documented risks; not Production-ready).
 **Phase 10 Full POS:** 8 / 8 = **100%** (with documented risks; not Production-ready).
@@ -231,7 +231,7 @@ P19-WP08 ? End-to-End Validation and User Closeout Checklist (Retest � awaitin
 **Phase 19 Mobile POS Operations / Cashier Experience:** **Open** ([phase](phases/phase-19-mobile-pos-operations-and-cashier-experience.md); [P19-WP08](reports/P19-WP08-end-to-end-validation-and-closeout.md)) — WP01–WP07 Code Complete; WP08 Retest awaiting phone confirmation; offline operability foundation Code Complete with physical A–S incomplete ([report](reports/P19-offline-operability-foundation.md); commits `f476172`, `cc64ba3`, `10a1fc5`); Personal-scope offline sync hardening Code Complete ([report](reports/P19-personal-scope-offline-operability.md); tip `f3d87be`); Phase 14 unchanged; not Production-ready; **Not Device Verified**; **Not Complete**.
 **Phase 21 Privacy, Compliance, and Regulatory Readiness:** **Open** ([phase](phases/phase-21-privacy-compliance-and-regulatory-readiness.md); [foundation report](reports/P21-foundation-privacy-compliance-workspace.md)) — Platform-only readiness workspace foundation Code Complete; **not** legal/NPC certification; DPO/legal review required; Phase 14/19/20 unchanged.
 **Phase 23 Multi-Business Entitlements / Variable-Quantity Selling:** **Open** ([phase](phases/phase-23-multi-business-entitlements-and-variable-quantity-selling.md)) — WP01–WP11 done; WP12 in progress; WP13 closeout **not started**; **Not Device Verified**. Phase 24 does not close Phase 23.
-**Phase 24 Linked Customer Statements / Personal Monetization:** **Open** ([phase](phases/phase-24-linked-customer-statements-and-personal-monetization.md); reports WP01–WP17; [ADR-021](decisions/ADR-021-linked-customer-statements-and-personal-monetization.md)) — WP01–WP17 Complete; WP18 rewards mobile next; **Not Device Verified**; **Not Production Ready**.
+**Phase 24 Linked Customer Statements / Personal Monetization:** **Open** — Implementation Complete / Owner Validation Pending ([phase](phases/phase-24-linked-customer-statements-and-personal-monetization.md); reports WP01–WP24; [ADR-021](decisions/ADR-021-linked-customer-statements-and-personal-monetization.md)) — WP24 Awaiting Owner Validation; **Device Verified: No**; **Production Ready: No**; Phase 24 **not** Closed.
 
 ## Phase 24 work packages
 
@@ -254,13 +254,13 @@ P19-WP08 ? End-to-End Validation and User Closeout Checklist (Retest � awaitin
 | P24-WP15 — Physical Android validation preparation | **Complete** (prep ≠ Device Verified) | `b1200f314c02c7573224899c6f1f516d5d9a32b9` (docs) — [report](reports/P24-WP15-physical-android-validation-preparation.md) |
 | P24-WP16 — Personal mobile linked-customer statement experience | **Complete** | `de568ae08f17b11c2c14823f4e2b4c3e9f337c78` (feat) — [report](reports/P24-WP16-personal-mobile-linked-customer-statement-experience.md) |
 | P24-WP17 — Mobile receipts and older-history entitlement UX | **Complete** | `cf81e15b8bd9d6ff27b66db6f105a880fe23a96d` (feat) — [report](reports/P24-WP17-mobile-receipts-and-older-history-entitlement-ux.md) |
-| P24-WP18 — Mobile rewards and Personal feature redemption | **Not started** | — |
-| P24-WP19 — Mobile ads/ad-free UX abstraction | **Not started** | — |
-| P24-WP20 — Android integration and end-to-end mobile flows | **Not started** | — |
-| P24-WP21 — Physical Android device validation and fix pass | **Not started** | — |
-| P24-WP22 — Mobile regression, privacy, security, and resilience hardening | **Not started** | — |
-| P24-WP23 — Phase-24 implementation closeout preparation | **Not started** | — |
-| P24-WP24 — Owner/User Final Validation and Acceptance | **Not started** | Hard user gate |
+| P24-WP18 — Mobile rewards and Personal feature redemption | **Complete** | see tip after push — [report](reports/P24-WP18-mobile-rewards-and-personal-feature-redemption.md) |
+| P24-WP19 — Mobile ads/ad-free UX abstraction | **Complete** | see tip after push — [report](reports/P24-WP19-mobile-ads-ad-free-ux-abstraction.md) |
+| P24-WP20 — Android integration and end-to-end mobile flows | **Complete** | see tip after push — [report](reports/P24-WP20-android-integration-and-e2e-mobile-flows.md) |
+| P24-WP21 — Physical Android device validation and fix pass | **Complete** (Device Verified **No**) | see tip after push — [report](reports/P24-WP21-physical-android-device-validation-and-fix-pass.md) |
+| P24-WP22 — Mobile regression, privacy, security, and resilience hardening | **Complete** | see tip after push — [report](reports/P24-WP22-mobile-regression-privacy-security-resilience.md) |
+| P24-WP23 — Phase-24 implementation closeout preparation | **Complete** | Owner Validation Pending — [report](reports/P24-WP23-phase-24-implementation-closeout-preparation.md) |
+| P24-WP24 — Owner/User Final Validation and Acceptance | **Awaiting Owner Validation** | Hard user gate — [report](reports/P24-WP24-owner-user-final-validation-and-acceptance.md) |
 
 ## Phase 21 work packages
 

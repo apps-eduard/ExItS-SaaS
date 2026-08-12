@@ -4,7 +4,7 @@
 
 | Field | Value |
 |---|---|
-| Status | **Open** — WP01–WP17 Complete · WP18 next (roadmap through WP24) |
+| Status | **Open** — WP01–WP23 Complete · WP24 Awaiting Owner Validation |
 | Branch / HEAD at open | `main` @ `2fdcc8ab86f8a1df516053930885b6df04b0e436` |
 | Device Verified | **No** |
 | Production Ready | **No** |
@@ -158,13 +158,13 @@ Personal must not modify financial ledger entries. Architecture for customer dis
 | **WP15** | Physical Android validation preparation | **Complete** (prep ≠ Device Verified) — [P24-WP15](../reports/P24-WP15-physical-android-validation-preparation.md) |
 | **WP16** | Personal mobile linked-customer statement experience | **Complete** — [P24-WP16](../reports/P24-WP16-personal-mobile-linked-customer-statement-experience.md) |
 | **WP17** | Mobile receipts and older-history entitlement UX | **Complete** — [P24-WP17](../reports/P24-WP17-mobile-receipts-and-older-history-entitlement-ux.md) |
-| **WP18** | Mobile rewards and Personal feature redemption | Server-authoritative price/duration; no client debit/end-date |
-| **WP19** | Mobile ads/ad-free UX abstraction | Provider-ready; no fake playback; no timer rewards |
-| **WP20** | Android integration and end-to-end mobile flows | Real APIs; session/nav/localization/error mapping |
-| **WP21** | Physical Android device validation and fix pass | Device Verified only with real device evidence |
-| **WP22** | Mobile regression, privacy, security, and resilience hardening | Cross-user/privacy/ledger/entitlement/ad-free hardening |
-| **WP23** | Phase-24 implementation closeout preparation | Implementation Complete — Owner/User Validation Pending |
-| **WP24** | Owner/User Final Validation and Acceptance | Hard user gate — Cursor must not fabricate Complete |
+| **WP18** | Mobile rewards and Personal feature redemption | **Complete** — [P24-WP18](../reports/P24-WP18-mobile-rewards-and-personal-feature-redemption.md) |
+| **WP19** | Mobile ads/ad-free UX abstraction | **Complete** — [P24-WP19](../reports/P24-WP19-mobile-ads-ad-free-ux-abstraction.md) |
+| **WP20** | Android integration and end-to-end mobile flows | **Complete** — [P24-WP20](../reports/P24-WP20-android-integration-and-e2e-mobile-flows.md) |
+| **WP21** | Physical Android device validation and fix pass | **Complete** (device pending; Device Verified **No**) — [P24-WP21](../reports/P24-WP21-physical-android-device-validation-and-fix-pass.md) |
+| **WP22** | Mobile regression, privacy, security, and resilience hardening | **Complete** — [P24-WP22](../reports/P24-WP22-mobile-regression-privacy-security-resilience.md) |
+| **WP23** | Phase-24 implementation closeout preparation | **Complete** — Owner Validation Pending — [P24-WP23](../reports/P24-WP23-phase-24-implementation-closeout-preparation.md) |
+| **WP24** | Owner/User Final Validation and Acceptance | **Awaiting Owner Validation** — [P24-WP24](../reports/P24-WP24-owner-user-final-validation-and-acceptance.md) |
 
 ## Migration strategy
 

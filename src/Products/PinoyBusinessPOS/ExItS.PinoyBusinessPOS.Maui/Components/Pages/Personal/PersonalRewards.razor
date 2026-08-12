@@ -1,6 +1,10 @@
 @page "/personal/rewards"
 @layout Layout.PersonalShell
 @using ExItS.DesignSystem.Components.Internal
+@inject IAuthenticationService Auth
+@inject ICurrentUserContext CurrentUser
+@inject IPlatformAccessClient Platform
+@inject OnlineRequiredGuard OnlineRequired
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
 
@@ -11,6 +15,235 @@
         <h1 class="pos-personal-rewards__title">@L["Personal_RewardsTitle"]</h1>
         <p class="pos-personal-rewards__subtitle">@L["Personal_RewardsSubtitle"]</p>
     </header>
-    <InlineMessage Tone="InlineMessageTone.Info">@L["Personal_RewardsComingSoon"]</InlineMessage>
+
+    @if (_loading)
+    {
+        <Spinner />
+    }
+    else if (!_authenticated)
+    {
+        <ErrorState Title="@L["Auth_SessionExpiredTitle"]" Message="@L["Auth_SessionExpired"]" RetryLabel="@L["SignIn_Submit"]" OnRetry="GoSignIn" />
+    }
+    else if (_loadFailed)
+    {
+        <ErrorState Title="@L["Personal_RewardsErrorTitle"]" Message="@(_error ?? L["Personal_LoadErrorMessage"])" RetryLabel="@L["Common_Retry"]" OnRetry="LoadAsync" />
+    }
+    else
+    {
+        <Section Title="@L["Personal_RewardsBalanceSection"]">
+            <div class="pos-personal-linked-statement__balance" aria-live="polite">
+                <span class="pos-personal-linked-statement__balance-label">@L["Personal_RewardsAvailable"]</span>
+                <span class="pos-personal-linked-statement__balance-value">@_balance</span>
+            </div>
+            <InlineMessage Tone="InlineMessageTone.Info">@L["Personal_RewardsServerPriceNote"]</InlineMessage>
+        </Section>
+
+        <Section Title="@L["Personal_RewardsFeaturesSection"]">
+            @foreach (var feature in _features)
+            {
+                <div class="pos-settings__panel" style="margin-bottom:12px;">
+                    <div class="pos-personal-row__title">@feature.DisplayName</div>
+                    <div class="pos-personal-row__meta">
+                        @(feature.IsActive ? L["Personal_RewardsFeatureActive"] : L["Personal_RewardsFeatureInactive"])
+                        @if (!string.IsNullOrWhiteSpace(feature.LastMessage))
+                        {
+                            <text> · @feature.LastMessage</text>
+                        }
+                    </div>
+                    <div class="pos-personal-invitations__actions" style="margin-top:8px;">
+                        <Button IsLoading="_busyCode == feature.Code"
+                                Disabled="_busyCode is not null || feature.IsActive"
+                                OnClick="() => RedeemAsync(feature)">
+                            @L["Personal_RewardsRedeem"]
+                        </Button>
+                    </div>
+                </div>
+            }
+        </Section>
+
+        <Section Title="@L["Personal_AdsEligibilitySection"]">
+            @if (_ads is null)
+            {
+                <EmptyState Title="@L["Personal_AdsEligibilityUnknownTitle"]" Message="@L["Personal_AdsEligibilityUnknownMessage"]" />
+            }
+            else if (_ads.AdFreeActive)
+            {
+                <InlineMessage Tone="InlineMessageTone.Success">@L["Personal_AdsAdFreeActive"]</InlineMessage>
+            }
+            else if (!_ads.ProviderConfigured)
+            {
+                <InlineMessage Tone="InlineMessageTone.Info">@L["Personal_AdsProviderUnavailable"]</InlineMessage>
+            }
+            else if (_ads.Eligible)
+            {
+                <InlineMessage Tone="InlineMessageTone.Info">@L["Personal_AdsEligible"]</InlineMessage>
+            }
+            else
+            {
+                <InlineMessage Tone="InlineMessageTone.Warning">@(_ads.ReasonMessage ?? L["Personal_AdsNotEligible"])</InlineMessage>
+            }
+            <p class="pos-personal-row__meta">@L["Personal_AdsNoFakePlayback"]</p>
+        </Section>
+
+        <Section Title="@L["Personal_RewardsActivitySection"]">
+            @if (_activity.Count == 0)
+            {
+                <EmptyState Title="@L["Personal_RewardsActivityEmptyTitle"]" Message="@L["Personal_RewardsActivityEmptyMessage"]" />
+            }
+            else
+            {
+                <div class="pos-personal-list" role="list">
+                    @foreach (var item in _activity)
+                    {
+                        <div class="pos-personal-row pos-personal-row--static" role="listitem">
+                            <span class="pos-personal-row__body">
+                                <span class="pos-personal-row__title">@item.TransactionType · @item.SignedDelta</span>
+                                <span class="pos-personal-row__meta">@item.CreatedAtUtc.LocalDateTime.ToString("g") · @item.Source</span>
+                            </span>
+                        </div>
+                    }
+                </div>
+            }
+        </Section>
+    }
 </Page>
 </div>
+
+@code {
+    private const string DigitalRecords = "personal-digital-records-extended";
+    private const string AdFree = "personal-ad-free";
+
+    private bool _loading = true;
+    private bool _authenticated;
+    private bool _loadFailed;
+    private string? _error;
+    private string? _busyCode;
+    private int _balance;
+    private PersonalAdEligibilityDto? _ads;
+    private List<PersonalRewardTransactionDto> _activity = [];
+    private List<FeatureRow> _features = [];
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _loadFailed = false;
+        _error = null;
+        try
+        {
+            if (!CurrentUser.IsAuthenticated)
+            {
+                var restore = await Auth.RestoreSessionAsync();
+                _authenticated = restore.Succeeded;
+            }
+            else
+            {
+                _authenticated = true;
+            }
+
+            if (!_authenticated)
+            {
+                return;
+            }
+
+            var personal = await Auth.EnsurePersonalAccountProfileAsync();
+            if (!personal.Succeeded)
+            {
+                _loadFailed = true;
+                _error = L[personal.SafeMessageKey ?? "Access_Denied"];
+                return;
+            }
+
+            if (!await OnlineRequired.EnsureOnlineForRouteAsync("/personal/rewards"))
+            {
+                _loadFailed = true;
+                _error = L["OnlineRequired_Message"];
+                return;
+            }
+
+            var balance = await Platform.GetPersonalRewardBalanceAsync();
+            if (!balance.IsSuccess || balance.Data is null)
+            {
+                _loadFailed = true;
+                _error = balance.Error?.Detail ?? L["Personal_RewardsLoadFailed"];
+                return;
+            }
+
+            _balance = balance.Data.AvailablePoints;
+
+            var activity = await Platform.GetPersonalRewardActivityAsync(page: 1, pageSize: 20);
+            _activity = activity.IsSuccess && activity.Data is not null
+                ? activity.Data.Items.ToList()
+                : [];
+
+            _features =
+            [
+                await BuildFeatureAsync(DigitalRecords, L["Personal_RewardsFeatureDigitalRecords"]),
+                await BuildFeatureAsync(AdFree, L["Personal_RewardsFeatureAdFree"])
+            ];
+
+            var ads = await Platform.GetPersonalAdEligibilityAsync();
+            _ads = ads.IsSuccess ? ads.Data : null;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task<FeatureRow> BuildFeatureAsync(string code, string displayName)
+    {
+        var active = await Platform.GetPersonalFeatureActiveAsync(code);
+        return new FeatureRow(
+            code,
+            displayName,
+            active.IsSuccess && active.Data is not null && active.Data.IsActive,
+            null);
+    }
+
+    private async Task RedeemAsync(FeatureRow feature)
+    {
+        _busyCode = feature.Code;
+        try
+        {
+            // Client never chooses debit amount or entitlement end date — server authority only.
+            var result = await Platform.RedeemPersonalFeatureAsync(feature.Code);
+            if (!result.IsSuccess || result.Data is null)
+            {
+                feature.LastMessage = result.Error?.Detail ?? L["Personal_RewardsRedeemFailed"];
+                return;
+            }
+
+            if (result.Data.AlreadyActive)
+            {
+                feature.IsActive = true;
+                feature.LastMessage = L["Personal_RewardsAlreadyActive"];
+            }
+            else
+            {
+                feature.IsActive = true;
+                feature.LastMessage = string.Format(
+                    L["Personal_RewardsRedeemSucceeded"].Value,
+                    result.Data.PointsDebited ?? 0);
+                _balance = result.Data.AvailablePoints;
+            }
+
+            await LoadAsync();
+        }
+        finally
+        {
+            _busyCode = null;
+        }
+    }
+
+    private void GoSignIn() => Nav.NavigateTo("/signin");
+
+    private sealed class FeatureRow(string code, string displayName, bool isActive, string? lastMessage)
+    {
+        public string Code { get; } = code;
+        public string DisplayName { get; } = displayName;
+        public bool IsActive { get; set; } = isActive;
+        public string? LastMessage { get; set; } = lastMessage;
+    }
+}
