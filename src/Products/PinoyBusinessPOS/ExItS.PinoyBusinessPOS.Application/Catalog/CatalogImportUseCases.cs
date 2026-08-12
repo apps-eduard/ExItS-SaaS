@@ -312,34 +312,20 @@ public sealed class ImportTemplateBatch
                     "All selected template products are already imported.");
             }
 
-            // Prefer enriched template snapshots for display fields, but always re-check each
-            // GlobalProductId against Platform GET (entitlement boundary). Do not trust snapshot
-            // presence alone — a previously discoverable or forged id must still be entitled now.
-            IReadOnlyList<PlatformMerchantGlobalProductDto> entitledProducts;
-            try
-            {
-                entitledProducts = await _platform
-                    .GetActiveProductsAsync(
-                        remaining.Select(r => r.GlobalProductId).ToList(),
-                        platformSessionToken,
-                        cancellationToken)
-                    .ConfigureAwait(false);
-            }
-            catch (Exception ex) when (TryMapPlatformFailure<PosCatalogImportJobDto>(ex, cancellationToken, out var mappedProducts))
-            {
-                return mappedProducts!;
-            }
-
-            var entitledById = entitledProducts.ToDictionary(p => p.Id);
+            // Template batch IDs come only from the Platform published-template payload already
+            // entitlement-filtered in the same request. Do not re-GET every product (N parallel
+            // Platform calls): that path was timing out / failing as "platform unavailable" after
+            // preview succeeded. Live product GET is a fallback for sparse/unavailable links only.
+            // (Selected-product import still re-checks client-supplied IDs via GetActiveProductsAsync.)
+            var orderedRemaining = remaining
+                .OrderBy(r => r.SortOrder)
+                .ThenBy(r => r.GlobalProductId)
+                .ToList();
             var items = new List<CatalogImportItemResult>();
+            var needsLiveFetch = new List<PlatformMerchantCatalogTemplateProductDto>();
             var sort = 0;
-            foreach (var link in remaining.OrderBy(r => r.SortOrder).ThenBy(r => r.GlobalProductId))
+            foreach (var link in orderedRemaining)
             {
-                if (!entitledById.TryGetValue(link.GlobalProductId, out var product))
-                {
-                    continue;
-                }
-
                 if (TryCreatePendingFromTemplateLink(link, sort, out var snapshot))
                 {
                     items.Add(snapshot!);
@@ -347,18 +333,47 @@ public sealed class ImportTemplateBatch
                     continue;
                 }
 
-                items.Add(CatalogImportItemResult.CreatePending(
-                    product.Id,
-                    sort++,
-                    product.Name,
-                    product.Unit,
-                    product.SellingPrice ?? 0m,
-                    product.Description,
-                    product.Sku,
-                    product.Barcode,
-                    product.GlobalCategoryId ?? link.CategoryId,
-                    sourceCategoryName: FirstNonBlank(link.CategoryName),
-                    sellingMode: string.IsNullOrWhiteSpace(product.SellingMode) ? "PerItem" : product.SellingMode));
+                needsLiveFetch.Add(link);
+            }
+
+            if (needsLiveFetch.Count > 0)
+            {
+                IReadOnlyList<PlatformMerchantGlobalProductDto> entitledProducts;
+                try
+                {
+                    entitledProducts = await _platform
+                        .GetActiveProductsAsync(
+                            needsLiveFetch.Select(r => r.GlobalProductId).ToList(),
+                            platformSessionToken,
+                            cancellationToken)
+                        .ConfigureAwait(false);
+                }
+                catch (Exception ex) when (TryMapPlatformFailure<PosCatalogImportJobDto>(ex, cancellationToken, out var mappedProducts))
+                {
+                    return mappedProducts!;
+                }
+
+                var entitledById = entitledProducts.ToDictionary(p => p.Id);
+                foreach (var link in needsLiveFetch)
+                {
+                    if (!entitledById.TryGetValue(link.GlobalProductId, out var product))
+                    {
+                        continue;
+                    }
+
+                    items.Add(CatalogImportItemResult.CreatePending(
+                        product.Id,
+                        sort++,
+                        product.Name,
+                        product.Unit,
+                        product.SellingPrice ?? 0m,
+                        product.Description,
+                        product.Sku,
+                        product.Barcode,
+                        product.GlobalCategoryId ?? link.CategoryId,
+                        sourceCategoryName: FirstNonBlank(link.CategoryName),
+                        sellingMode: string.IsNullOrWhiteSpace(product.SellingMode) ? "PerItem" : product.SellingMode));
+                }
             }
 
             if (items.Count == 0)

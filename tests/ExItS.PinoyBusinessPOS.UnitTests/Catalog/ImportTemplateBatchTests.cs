@@ -16,7 +16,7 @@ public sealed class ImportTemplateBatchTests
     private static readonly Guid ProductC = Guid.Parse("33333333-3333-3333-3333-333333333333");
 
     [Fact]
-    public async Task Import_WhenTemplateHasEnrichedNames_StillReChecksEntitlementViaLiveProductFetch()
+    public async Task Import_WhenTemplateHasEnrichedNames_DoesNotLiveFetchEachProduct()
     {
         var platform = new RecordingPlatform(BuildEnrichedTemplate(firstBatchFlags: false, defaultBatchSize: 2));
         var imports = new MemoryImports();
@@ -33,16 +33,53 @@ public sealed class ImportTemplateBatchTests
 
         Assert.True(result.IsSuccess);
         Assert.Equal(2, result.Value!.TotalCount);
-        Assert.Equal(1, platform.LiveFetchCalls);
+        Assert.Equal(0, platform.LiveFetchCalls);
         Assert.Equal(1, platform.TemplateFetchCalls);
     }
 
     [Fact]
-    public async Task Import_SkipsProductsNotReturnedByEntitledPlatformGet()
+    public async Task Import_LiveFetchesOnlySparseTemplateLinks()
     {
-        var platform = new RecordingPlatform(
-            BuildEnrichedTemplate(firstBatchFlags: false, defaultBatchSize: 2),
-            entitledProductIds: [ProductA]);
+        var template = BuildEnrichedTemplate(firstBatchFlags: false, defaultBatchSize: 2) with
+        {
+            Products =
+            [
+                new(Guid.NewGuid(), ProductA, 1, false, false, "Pandosal", Unit: "Piece", SellingPrice: 5m),
+                new(Guid.NewGuid(), ProductB, 2, false, false, ProductName: null, Unit: "Piece", SellingPrice: 20m)
+            ]
+        };
+        var platform = new RecordingPlatform(template, entitledProductIds: [ProductA, ProductB]);
+        var useCase = new ImportTemplateBatch(
+            new MemoryImports(),
+            new MemoryProducts(),
+            platform,
+            new FakeUnitOfWork(),
+            new FixedClock());
+
+        var result = await useCase.ExecuteAsync(
+            Org.Value,
+            TemplateId,
+            batchNumber: 1,
+            requestedBy: Guid.NewGuid().ToString("D"),
+            platformSessionToken: "session");
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(2, result.Value!.TotalCount);
+        Assert.Equal(1, platform.LiveFetchCalls);
+    }
+
+    [Fact]
+    public async Task Import_SkipsSparseLinksNotReturnedByEntitledPlatformGet()
+    {
+        var template = BuildEnrichedTemplate(firstBatchFlags: false, defaultBatchSize: 2) with
+        {
+            Products =
+            [
+                new(Guid.NewGuid(), ProductA, 1, false, false, ProductName: null, Unit: "Piece", SellingPrice: 5m),
+                new(Guid.NewGuid(), ProductB, 2, false, false, ProductName: null, Unit: "Piece", SellingPrice: 20m)
+            ]
+        };
+        var platform = new RecordingPlatform(template, entitledProductIds: [ProductA]);
         var useCase = new ImportTemplateBatch(
             new MemoryImports(),
             new MemoryProducts(),
@@ -59,6 +96,7 @@ public sealed class ImportTemplateBatchTests
 
         Assert.True(result.IsSuccess);
         Assert.Equal(1, result.Value!.TotalCount);
+        Assert.Equal(1, platform.LiveFetchCalls);
     }
 
     [Fact]
