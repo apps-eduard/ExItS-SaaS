@@ -36,6 +36,7 @@ internal static class PlatformApiResults
             or DomainErrorCodes.PersonalReminderUnauthorized
             or DomainErrorCodes.CustomerToStaffConversionDenied
             or DomainErrorCodes.CustomerLinkMustNotCreateStaff
+            or DomainErrorCodes.CustomerLinkPersonalIdentityRequired
             or DomainErrorCodes.StaffCannotAccessUnrelatedPersonalRecords
             or ApplicationErrorCodes.UtangMigrationConsentRequired
             or ApplicationErrorCodes.StartBusinessOwnerRequired
@@ -76,6 +77,7 @@ internal static class PlatformApiResults
             or ApplicationErrorCodes.BusinessCustomerNotFound
             or ApplicationErrorCodes.CreditCustomerNotFound
             or ApplicationErrorCodes.CustomerLinkRequestNotFound
+            or ApplicationErrorCodes.LinkedCustomerAppUserNotFound
             or ApplicationErrorCodes.UtangMigrationBatchNotFound
             or ApplicationErrorCodes.BusinessTypeActivationNotFound => StatusCodes.Status404NotFound,
 

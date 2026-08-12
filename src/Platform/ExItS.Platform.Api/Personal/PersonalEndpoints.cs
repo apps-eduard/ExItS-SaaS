@@ -3,8 +3,10 @@ using ExItS.Platform.Api.Common;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.GlobalCatalog;
 using ExItS.Platform.Application.Identity;
+using ExItS.Platform.Application.Organizations;
 using ExItS.Platform.Application.Personal;
 using ExItS.Platform.Domain.Identity;
+using ExItS.Platform.Domain.Organizations;
 
 namespace ExItS.Platform.Api.Personal;
 
@@ -32,6 +34,44 @@ internal static class PersonalEndpoints
                 allowedScope,
                 scope = "Personal"
             });
+        });
+
+        personal.MapGet("/linked-merchants", async (
+            HttpContext http,
+            int? page,
+            int? pageSize,
+            ListLinkedMerchantsForPersonalUser listMerchants,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await listMerchants
+                .ExecuteAsync(PlatformUserId.From(userId), page, pageSize, ct)
+                .ConfigureAwait(false);
+            return Results.Ok(result);
+        });
+
+        personal.MapPost("/linked-merchants/{linkedCustomerId:guid}/unlink", async (
+            HttpContext http,
+            Guid linkedCustomerId,
+            UnlinkAcceptedCustomerLink unlink,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await unlink
+                .ExecuteForOwnerAsync(
+                    LinkedCustomerAppUserId.From(linkedCustomerId),
+                    PlatformUserId.From(userId),
+                    ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
         });
 
         personal.MapGet("/health", () => Results.Ok(new { status = "Healthy", scope = "Personal" }));

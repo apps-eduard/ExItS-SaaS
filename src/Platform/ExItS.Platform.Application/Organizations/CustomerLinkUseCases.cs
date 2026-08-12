@@ -414,6 +414,7 @@ public sealed class AcceptCustomerLinkRequest
     public async Task<ApplicationResult<AcceptCustomerLinkResultDto>> ExecuteAsync(
         string acceptToken,
         PlatformUserId acceptingUserId,
+        AccountClass accountClass,
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(acceptToken))
@@ -429,6 +430,22 @@ public sealed class AcceptCustomerLinkRequest
             return ApplicationResult<AcceptCustomerLinkResultDto>.Failure(
                 DomainErrorCodes.UserNotActive,
                 "Accepting a customer link requires an active user.");
+        }
+
+        if (accountClass != AccountClass.Personal)
+        {
+            return ApplicationResult<AcceptCustomerLinkResultDto>.Failure(
+                ApplicationErrorCodes.AccountScopeDenied,
+                "Accepting a customer link requires a Personal session.");
+        }
+
+        if (user.IsOrganizationScopedStaff
+            || user.HomeOrganizationId is not null
+            || !string.IsNullOrWhiteSpace(user.StaffNumber))
+        {
+            return ApplicationResult<AcceptCustomerLinkResultDto>.Failure(
+                DomainErrorCodes.CustomerLinkPersonalIdentityRequired,
+                "Only a Personal identity can accept a customer link.");
         }
 
         var hash = CustomerLinkRequest.HashToken(acceptToken);
@@ -503,6 +520,7 @@ public sealed class AcceptCustomerLinkRequest
         catch (DomainException ex) when (
             ex.ErrorCode is DomainErrorCodes.CustomerLinkRequestEmailMismatch
                 or DomainErrorCodes.CustomerLinkMustNotCreateStaff
+                or DomainErrorCodes.CustomerLinkPersonalIdentityRequired
                 or DomainErrorCodes.BusinessCustomerAlreadyLinked)
         {
             return ApplicationResult<AcceptCustomerLinkResultDto>.Failure(ex.ErrorCode, ex.Message);
@@ -512,6 +530,92 @@ public sealed class AcceptCustomerLinkRequest
             return ApplicationResult<AcceptCustomerLinkResultDto>.Failure(
                 ApplicationErrorCodes.CustomerLinkRequestNotFound,
                 "Customer link request was not found.");
+        }
+    }
+}
+
+public sealed class UnlinkAcceptedCustomerLink
+{
+    private readonly ILinkedCustomerAppUserRepository _links;
+    private readonly IBusinessCustomerRepository _customers;
+    private readonly IPlatformUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
+
+    public UnlinkAcceptedCustomerLink(
+        ILinkedCustomerAppUserRepository links,
+        IBusinessCustomerRepository customers,
+        IPlatformUnitOfWork unitOfWork,
+        IClock clock)
+    {
+        _links = links;
+        _customers = customers;
+        _unitOfWork = unitOfWork;
+        _clock = clock;
+    }
+
+    public async Task<ApplicationResult<LinkedCustomerAppUserDto>> ExecuteAsync(
+        LinkedCustomerAppUserId linkId,
+        PlatformOrganizationId organizationId,
+        CancellationToken cancellationToken = default)
+    {
+        var link = await _links.GetByIdAsync(linkId, cancellationToken).ConfigureAwait(false);
+        if (link is null || link.OrganizationId != organizationId)
+        {
+            return ApplicationResult<LinkedCustomerAppUserDto>.Failure(
+                ApplicationErrorCodes.LinkedCustomerAppUserNotFound,
+                "Linked customer was not found.");
+        }
+
+        return await RevokeCoreAsync(link, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<ApplicationResult<LinkedCustomerAppUserDto>> ExecuteForOwnerAsync(
+        LinkedCustomerAppUserId linkId,
+        PlatformUserId userIdentityId,
+        CancellationToken cancellationToken = default)
+    {
+        var link = await _links.GetByIdAsync(linkId, cancellationToken).ConfigureAwait(false);
+        if (link is null || link.UserIdentityId != userIdentityId)
+        {
+            return ApplicationResult<LinkedCustomerAppUserDto>.Failure(
+                ApplicationErrorCodes.LinkedCustomerAppUserNotFound,
+                "Linked customer was not found.");
+        }
+
+        return await RevokeCoreAsync(link, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<ApplicationResult<LinkedCustomerAppUserDto>> RevokeCoreAsync(
+        LinkedCustomerAppUser link,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (link.Status == LinkedCustomerAppUserStatus.Revoked)
+            {
+                return ApplicationResult<LinkedCustomerAppUserDto>.Success(
+                    LinkedCustomerAppUserQueryService.Map(link));
+            }
+
+            link.Revoke(_clock.UtcNow);
+            var customer = await _customers.GetByIdAsync(link.BusinessCustomerId, cancellationToken)
+                .ConfigureAwait(false);
+            if (customer is not null
+                && customer.OrganizationId == link.OrganizationId
+                && customer.LinkedUserIdentityId == link.UserIdentityId)
+            {
+                customer.UnlinkAppUser(_clock.UtcNow);
+                await _customers.UpdateAsync(customer, cancellationToken).ConfigureAwait(false);
+            }
+
+            await _links.UpdateAsync(link, cancellationToken).ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            return ApplicationResult<LinkedCustomerAppUserDto>.Success(
+                LinkedCustomerAppUserQueryService.Map(link));
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<LinkedCustomerAppUserDto>.Failure(ex.ErrorCode, ex.Message);
         }
     }
 }

@@ -82,6 +82,8 @@ builder.Services.AddScoped<CreatePOSCustomer>();
 builder.Services.AddScoped<UpdatePOSCustomer>();
 builder.Services.AddScoped<DeactivatePOSCustomer>();
 builder.Services.AddScoped<ReactivatePOSCustomer>();
+builder.Services.AddScoped<CorrelatePOSCustomerToPlatformBusinessCustomer>();
+builder.Services.AddScoped<ClearPOSCustomerPlatformCorrelation>();
 builder.Services.AddScoped<CreditEntryQueryService>();
 builder.Services.AddScoped<CreateCreditEntry>();
 builder.Services.AddScoped<ReverseCreditEntry>();

@@ -18,6 +18,23 @@ internal sealed class BusinessCustomerRepository(PlatformDbContext db) : IBusine
         return record is null ? null : ToDomain(record);
     }
 
+    public async Task<IReadOnlyList<BusinessCustomer>> ListByIdsAsync(
+        IReadOnlyCollection<BusinessCustomerId> ids,
+        CancellationToken cancellationToken = default)
+    {
+        if (ids.Count == 0)
+        {
+            return [];
+        }
+
+        var values = ids.Select(i => i.Value).Distinct().ToList();
+        var records = await db.BusinessCustomers.AsNoTracking()
+            .Where(x => values.Contains(x.Id))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return records.Select(ToDomain).ToList();
+    }
+
     public async Task<(IReadOnlyList<BusinessCustomer> Items, int TotalCount)> ListByOrganizationAsync(
         PlatformOrganizationId organizationId,
         string? owningProductCode,
@@ -350,6 +367,44 @@ internal sealed class LinkedCustomerAppUserRepository(PlatformDbContext db) : IL
                 cancellationToken)
             .ConfigureAwait(false);
         return record is null ? null : ToDomain(record);
+    }
+
+    public async Task<LinkedCustomerAppUser?> FindActiveByUserOrganizationAndBusinessCustomerAsync(
+        PlatformUserId userIdentityId,
+        PlatformOrganizationId organizationId,
+        BusinessCustomerId businessCustomerId,
+        CancellationToken cancellationToken = default)
+    {
+        var active = nameof(LinkedCustomerAppUserStatus.Active);
+        var record = await db.LinkedCustomerAppUsers.AsNoTracking()
+            .FirstOrDefaultAsync(
+                x => x.UserIdentityId == userIdentityId.Value
+                     && x.OrganizationId == organizationId.Value
+                     && x.BusinessCustomerId == businessCustomerId.Value
+                     && x.Status == active,
+                cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : ToDomain(record);
+    }
+
+    public async Task<(IReadOnlyList<LinkedCustomerAppUser> Items, int TotalCount)> ListActiveByUserAsync(
+        PlatformUserId userIdentityId,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default)
+    {
+        var active = nameof(LinkedCustomerAppUserStatus.Active);
+        var query = db.LinkedCustomerAppUsers.AsNoTracking()
+            .Where(x => x.UserIdentityId == userIdentityId.Value && x.Status == active);
+        var total = await query.CountAsync(cancellationToken).ConfigureAwait(false);
+        var records = await query
+            .OrderByDescending(x => x.LinkedAtUtc)
+            .ThenBy(x => x.Id)
+            .Skip(skip)
+            .Take(take)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return (records.Select(ToDomain).ToList(), total);
     }
 
     public async Task<(IReadOnlyList<LinkedCustomerAppUser> Items, int TotalCount)> ListByOrganizationAsync(

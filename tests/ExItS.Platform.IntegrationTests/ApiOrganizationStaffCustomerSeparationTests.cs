@@ -325,4 +325,204 @@ public sealed class ApiOrganizationStaffCustomerSeparationTests(PostgreSqlFixtur
         var denied = await _client.SendAsync(personalDenied);
         Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);
     }
+
+    [Fact]
+    public async Task Organization_session_cannot_accept_customer_link()
+    {
+        var (_, _, _, _, ownerToken) = await SeedOrgOwnerAsync("oac");
+        var organizationId = await ResolveSelectedOrganizationAsync(ownerToken);
+        var (_, customerEmail, _) = await SeedPersonalUserAsync("oacc");
+
+        using var createCustomer = Authed(
+            HttpMethod.Post,
+            $"/api/v1/organizations/{organizationId}/customers",
+            ownerToken,
+            new { displayName = "Store Customer", email = customerEmail });
+        var created = await _client.SendAsync(createCustomer);
+        created.EnsureSuccessStatusCode();
+        var customerId = (await created.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+
+        using var linkRequest = Authed(
+            HttpMethod.Post,
+            $"/api/v1/organizations/{organizationId}/customers/{customerId}/link-requests",
+            ownerToken,
+            new { email = customerEmail });
+        var linkResponse = await _client.SendAsync(linkRequest);
+        linkResponse.EnsureSuccessStatusCode();
+        var acceptToken = (await linkResponse.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("acceptToken").GetString();
+
+        using var accept = Authed(
+            HttpMethod.Post,
+            "/api/v1/organizations/customer-link-requests/accept",
+            ownerToken,
+            new { token = acceptToken });
+        var acceptResponse = await _client.SendAsync(accept);
+        Assert.Equal(HttpStatusCode.Forbidden, acceptResponse.StatusCode);
+        var body = await acceptResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(ApplicationErrorCodes.AccountScopeDenied, body.GetProperty("errorCode").GetString());
+    }
+
+    [Fact]
+    public async Task Unrelated_personal_user_cannot_accept_customer_link()
+    {
+        var (_, _, _, _, ownerToken) = await SeedOrgOwnerAsync("unr");
+        var organizationId = await ResolveSelectedOrganizationAsync(ownerToken);
+        var (_, customerEmail, _) = await SeedPersonalUserAsync("unrc");
+        var (_, _, otherToken) = await SeedPersonalUserAsync("unro");
+
+        using var createCustomer = Authed(
+            HttpMethod.Post,
+            $"/api/v1/organizations/{organizationId}/customers",
+            ownerToken,
+            new { displayName = "Store Customer", email = customerEmail });
+        var created = await _client.SendAsync(createCustomer);
+        created.EnsureSuccessStatusCode();
+        var customerId = (await created.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+
+        using var linkRequest = Authed(
+            HttpMethod.Post,
+            $"/api/v1/organizations/{organizationId}/customers/{customerId}/link-requests",
+            ownerToken,
+            new { email = customerEmail });
+        var linkResponse = await _client.SendAsync(linkRequest);
+        linkResponse.EnsureSuccessStatusCode();
+        var acceptToken = (await linkResponse.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("acceptToken").GetString();
+
+        using var accept = Authed(
+            HttpMethod.Post,
+            "/api/v1/organizations/customer-link-requests/accept",
+            otherToken,
+            new { token = acceptToken });
+        var acceptResponse = await _client.SendAsync(accept);
+        Assert.Equal(HttpStatusCode.BadRequest, acceptResponse.StatusCode);
+        var body = await acceptResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(DomainErrorCodes.CustomerLinkRequestEmailMismatch, body.GetProperty("errorCode").GetString());
+    }
+
+    [Fact]
+    public async Task Personal_linked_merchants_list_unlink_and_identifier_guessing()
+    {
+        var (_, _, _, _, ownerToken) = await SeedOrgOwnerAsync("lst");
+        var organizationId = await ResolveSelectedOrganizationAsync(ownerToken);
+        var (_, customerEmail, customerToken) = await SeedPersonalUserAsync("lstc");
+        var (_, _, otherToken) = await SeedPersonalUserAsync("lsto");
+
+        using var createCustomer = Authed(
+            HttpMethod.Post,
+            $"/api/v1/organizations/{organizationId}/customers",
+            ownerToken,
+            new { displayName = "Store Customer", email = customerEmail });
+        var created = await _client.SendAsync(createCustomer);
+        created.EnsureSuccessStatusCode();
+        var customerId = (await created.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+
+        using var linkRequest = Authed(
+            HttpMethod.Post,
+            $"/api/v1/organizations/{organizationId}/customers/{customerId}/link-requests",
+            ownerToken,
+            new { email = customerEmail });
+        var linkResponse = await _client.SendAsync(linkRequest);
+        linkResponse.EnsureSuccessStatusCode();
+        var acceptToken = (await linkResponse.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("acceptToken").GetString();
+
+        using var accept = Authed(
+            HttpMethod.Post,
+            "/api/v1/organizations/customer-link-requests/accept",
+            customerToken,
+            new { token = acceptToken });
+        var acceptResponse = await _client.SendAsync(accept);
+        Assert.Equal(HttpStatusCode.OK, acceptResponse.StatusCode);
+        var linkedCustomerId = (await acceptResponse.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("linkedCustomerAppUserId").GetGuid();
+
+        using var listOwn = Authed(HttpMethod.Get, "/api/v1/personal/linked-merchants", customerToken);
+        var listOwnResponse = await _client.SendAsync(listOwn);
+        Assert.Equal(HttpStatusCode.OK, listOwnResponse.StatusCode);
+        var ownBody = await listOwnResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(1, ownBody.GetProperty("totalCount").GetInt32());
+        Assert.Equal(customerId, ownBody.GetProperty("items")[0].GetProperty("businessCustomerId").GetGuid());
+        Assert.Equal(linkedCustomerId, ownBody.GetProperty("items")[0].GetProperty("linkedCustomerId").GetGuid());
+
+        using var listOther = Authed(HttpMethod.Get, "/api/v1/personal/linked-merchants", otherToken);
+        var listOtherResponse = await _client.SendAsync(listOther);
+        Assert.Equal(HttpStatusCode.OK, listOtherResponse.StatusCode);
+        Assert.Equal(0, (await listOtherResponse.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("totalCount").GetInt32());
+
+        using var guess = Authed(
+            HttpMethod.Post,
+            $"/api/v1/personal/linked-merchants/{Guid.NewGuid():D}/unlink",
+            otherToken);
+        var guessResponse = await _client.SendAsync(guess);
+        Assert.Equal(HttpStatusCode.NotFound, guessResponse.StatusCode);
+
+        using var steal = Authed(
+            HttpMethod.Post,
+            $"/api/v1/personal/linked-merchants/{linkedCustomerId:D}/unlink",
+            otherToken);
+        var stealResponse = await _client.SendAsync(steal);
+        Assert.Equal(HttpStatusCode.NotFound, stealResponse.StatusCode);
+
+        using var unlink = Authed(
+            HttpMethod.Post,
+            $"/api/v1/personal/linked-merchants/{linkedCustomerId:D}/unlink",
+            customerToken);
+        var unlinkResponse = await _client.SendAsync(unlink);
+        Assert.Equal(HttpStatusCode.OK, unlinkResponse.StatusCode);
+        Assert.Equal(
+            "Revoked",
+            (await unlinkResponse.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("status").GetString());
+
+        using var listAfter = Authed(HttpMethod.Get, "/api/v1/personal/linked-merchants", customerToken);
+        var listAfterResponse = await _client.SendAsync(listAfter);
+        Assert.Equal(HttpStatusCode.OK, listAfterResponse.StatusCode);
+        Assert.Equal(0, (await listAfterResponse.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("totalCount").GetInt32());
+    }
+
+    [Fact]
+    public async Task Pending_customer_link_revoke_still_blocks_accept()
+    {
+        var (_, _, _, _, ownerToken) = await SeedOrgOwnerAsync("prv");
+        var organizationId = await ResolveSelectedOrganizationAsync(ownerToken);
+        var (_, customerEmail, customerToken) = await SeedPersonalUserAsync("prvc");
+
+        using var createCustomer = Authed(
+            HttpMethod.Post,
+            $"/api/v1/organizations/{organizationId}/customers",
+            ownerToken,
+            new { displayName = "Store Customer", email = customerEmail });
+        var created = await _client.SendAsync(createCustomer);
+        created.EnsureSuccessStatusCode();
+        var customerId = (await created.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+
+        using var linkRequest = Authed(
+            HttpMethod.Post,
+            $"/api/v1/organizations/{organizationId}/customers/{customerId}/link-requests",
+            ownerToken,
+            new { email = customerEmail });
+        var linkResponse = await _client.SendAsync(linkRequest);
+        linkResponse.EnsureSuccessStatusCode();
+        var linkBody = await linkResponse.Content.ReadFromJsonAsync<JsonElement>();
+        var requestId = linkBody.GetProperty("id").GetGuid();
+        var acceptToken = linkBody.GetProperty("acceptToken").GetString();
+
+        using var revoke = Authed(
+            HttpMethod.Post,
+            $"/api/v1/organizations/{organizationId}/customer-link-requests/{requestId}/revoke",
+            ownerToken);
+        var revokeResponse = await _client.SendAsync(revoke);
+        Assert.Equal(HttpStatusCode.OK, revokeResponse.StatusCode);
+
+        using var accept = Authed(
+            HttpMethod.Post,
+            "/api/v1/organizations/customer-link-requests/accept",
+            customerToken,
+            new { token = acceptToken });
+        var acceptResponse = await _client.SendAsync(accept);
+        Assert.Equal(HttpStatusCode.NotFound, acceptResponse.StatusCode);
+        var acceptBody = await acceptResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(ApplicationErrorCodes.CustomerLinkRequestNotFound, acceptBody.GetProperty("errorCode").GetString());
+    }
 }

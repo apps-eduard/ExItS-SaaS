@@ -65,4 +65,55 @@ public sealed class POSCustomerDomainTests
             POSCustomer.Create(OrgA, "Juan", Now, notes: longNotes));
         Assert.Equal(DomainErrorCodes.InvalidNotes, ex.ErrorCode);
     }
+
+    [Fact]
+    public void Create_allows_legacy_customer_without_platform_correlation()
+    {
+        var customer = POSCustomer.Create(OrgA, "Legacy", Now);
+        Assert.Null(customer.PlatformBusinessCustomerId);
+    }
+
+    [Fact]
+    public void Correlate_is_idempotent_for_the_same_platform_id()
+    {
+        var platformId = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
+        var customer = POSCustomer.Create(OrgA, "Rosa", Now, platformBusinessCustomerId: platformId);
+        customer.CorrelateToPlatformBusinessCustomer(platformId, Now.AddMinutes(1));
+        Assert.Equal(platformId, customer.PlatformBusinessCustomerId);
+    }
+
+    [Fact]
+    public void Correlate_rejects_a_different_platform_id()
+    {
+        var customer = POSCustomer.Create(
+            OrgA,
+            "Rosa",
+            Now,
+            platformBusinessCustomerId: Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"));
+        var ex = Assert.Throws<DomainException>(() =>
+            customer.CorrelateToPlatformBusinessCustomer(
+                Guid.Parse("ffffffff-bbbb-cccc-dddd-eeeeeeeeeeee"),
+                Now.AddMinutes(1)));
+        Assert.Equal(DomainErrorCodes.PlatformBusinessCustomerCorrelationConflict, ex.ErrorCode);
+    }
+
+    [Fact]
+    public void Correlate_rejects_empty_platform_id()
+    {
+        var customer = POSCustomer.Create(OrgA, "Rosa", Now);
+        var ex = Assert.Throws<DomainException>(() =>
+            customer.CorrelateToPlatformBusinessCustomer(Guid.Empty, Now.AddMinutes(1)));
+        Assert.Equal(DomainErrorCodes.InvalidPlatformBusinessCustomerId, ex.ErrorCode);
+    }
+
+    [Fact]
+    public void Clear_correlation_does_not_change_profile_or_status()
+    {
+        var platformId = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
+        var customer = POSCustomer.Create(OrgA, "Rosa", Now, platformBusinessCustomerId: platformId);
+        customer.ClearPlatformBusinessCustomerCorrelation(Now.AddMinutes(1));
+        Assert.Null(customer.PlatformBusinessCustomerId);
+        Assert.Equal("Rosa", customer.DisplayName);
+        Assert.Equal(CustomerStatus.Active, customer.Status);
+    }
 }

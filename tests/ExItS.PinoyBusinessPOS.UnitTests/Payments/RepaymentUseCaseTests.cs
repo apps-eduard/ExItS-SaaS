@@ -88,6 +88,12 @@ public sealed class RepaymentUseCaseTests
         public Task<POSCustomer?> FindActiveByNormalizedMobileAsync(PosOrganizationId organizationId, string normalizedMobile, CancellationToken cancellationToken = default) =>
             Task.FromResult<POSCustomer?>(null);
 
+        public Task<POSCustomer?> FindByPlatformBusinessCustomerIdAsync(
+            PosOrganizationId organizationId,
+            Guid platformBusinessCustomerId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<POSCustomer?>(null);
+
         public Task<(IReadOnlyList<POSCustomer> Items, int TotalCount)> ListAsync(
             PosOrganizationId organizationId,
             CustomerStatus? status,

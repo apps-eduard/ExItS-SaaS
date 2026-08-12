@@ -38,6 +38,9 @@ internal static class PosApiResults
             or ApplicationErrorCodes.RegisterNotFound => StatusCodes.Status404NotFound,
 
         ApplicationErrorCodes.MobileConflict
+            or ApplicationErrorCodes.PlatformBusinessCustomerCorrelationConflict
+            or DomainErrorCodes.PlatformBusinessCustomerCorrelationConflict
+            or DomainErrorCodes.InvalidPlatformBusinessCustomerId
             or ApplicationErrorCodes.ConcurrencyConflict
             or ApplicationErrorCodes.CustomerConcurrencyConflict
             or DomainErrorCodes.InvalidCustomerStatusTransition

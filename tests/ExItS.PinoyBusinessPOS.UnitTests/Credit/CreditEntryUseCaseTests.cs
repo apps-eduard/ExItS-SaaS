@@ -82,6 +82,14 @@ public sealed class CreditEntryUseCaseTests
                 && c.Status == CustomerStatus.Active
                 && c.NormalizedMobile == normalizedMobile));
 
+        public Task<POSCustomer?> FindByPlatformBusinessCustomerIdAsync(
+            PosOrganizationId organizationId,
+            Guid platformBusinessCustomerId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(_items.FirstOrDefault(c =>
+                c.OrganizationId == organizationId
+                && c.PlatformBusinessCustomerId == platformBusinessCustomerId));
+
         public Task<(IReadOnlyList<POSCustomer> Items, int TotalCount)> ListAsync(
             PosOrganizationId organizationId,
             CustomerStatus? status,

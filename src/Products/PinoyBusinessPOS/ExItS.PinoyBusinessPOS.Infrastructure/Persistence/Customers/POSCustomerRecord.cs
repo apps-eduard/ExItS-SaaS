@@ -10,6 +10,7 @@ internal sealed class POSCustomerRecord
     public string? Address { get; set; }
     public string? Notes { get; set; }
     public string Status { get; set; } = string.Empty;
+    public Guid? PlatformBusinessCustomerId { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset UpdatedAtUtc { get; set; }
     public uint Xmin { get; set; }

@@ -1,6 +1,7 @@
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
+using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 
 namespace ExItS.PinoyBusinessPOS.UnitTests.Customers;
@@ -74,6 +75,93 @@ public sealed class CreatePOSCustomerUseCaseTests
         Assert.True((await create.ExecuteAsync(orgB, "B", "09171234567", null, null)).IsSuccess);
     }
 
+    [Fact]
+    public async Task Create_rejects_duplicate_platform_correlation_in_same_organization()
+    {
+        var org = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        var platformId = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
+        var repo = new InMemoryCustomerRepository();
+        var create = new CreatePOSCustomer(repo, new ImmediateUnitOfWork(), new FixedClock(DateTimeOffset.Parse("2026-07-30T08:00:00Z")));
+
+        var first = await create.ExecuteAsync(org, "One", null, null, null, platformBusinessCustomerId: platformId);
+        Assert.True(first.IsSuccess);
+
+        var second = await create.ExecuteAsync(org, "Two", null, null, null, platformBusinessCustomerId: platformId);
+        Assert.False(second.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.PlatformBusinessCustomerCorrelationConflict, second.ErrorCode);
+    }
+
+    [Fact]
+    public async Task Create_allows_same_platform_correlation_across_organizations()
+    {
+        var orgA = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        var orgB = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+        var platformId = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
+        var repo = new InMemoryCustomerRepository();
+        var create = new CreatePOSCustomer(repo, new ImmediateUnitOfWork(), new FixedClock(DateTimeOffset.Parse("2026-07-30T08:00:00Z")));
+
+        Assert.True((await create.ExecuteAsync(orgA, "A", null, null, null, platformBusinessCustomerId: platformId)).IsSuccess);
+        Assert.True((await create.ExecuteAsync(orgB, "B", null, null, null, platformBusinessCustomerId: platformId)).IsSuccess);
+    }
+
+    [Fact]
+    public async Task Correlate_is_idempotent_and_rejects_conflicts()
+    {
+        var org = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        var platformId = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
+        var otherId = Guid.Parse("ffffffff-bbbb-cccc-dddd-eeeeeeeeeeee");
+        var repo = new InMemoryCustomerRepository();
+        var clock = new FixedClock(DateTimeOffset.Parse("2026-07-30T08:00:00Z"));
+        var uow = new ImmediateUnitOfWork();
+        var create = new CreatePOSCustomer(repo, uow, clock);
+        var correlate = new CorrelatePOSCustomerToPlatformBusinessCustomer(repo, uow, clock);
+
+        var first = await create.ExecuteAsync(org, "One", null, null, null);
+        var second = await create.ExecuteAsync(org, "Two", null, null, null);
+        Assert.True(first.IsSuccess);
+        Assert.True(second.IsSuccess);
+
+        var correlated = await correlate.ExecuteAsync(org, first.Value!.Id.Value, platformId);
+        Assert.True(correlated.IsSuccess);
+        var again = await correlate.ExecuteAsync(org, first.Value.Id.Value, platformId);
+        Assert.True(again.IsSuccess);
+
+        var taken = await correlate.ExecuteAsync(org, second.Value!.Id.Value, platformId);
+        Assert.False(taken.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.PlatformBusinessCustomerCorrelationConflict, taken.ErrorCode);
+
+        var different = await correlate.ExecuteAsync(org, first.Value.Id.Value, otherId);
+        Assert.False(different.IsSuccess);
+        Assert.Equal(DomainErrorCodes.PlatformBusinessCustomerCorrelationConflict, different.ErrorCode);
+    }
+
+    [Fact]
+    public async Task Clear_correlation_is_idempotent_and_lookup_is_org_scoped()
+    {
+        var orgA = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        var orgB = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+        var platformId = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
+        var repo = new InMemoryCustomerRepository();
+        var clock = new FixedClock(DateTimeOffset.Parse("2026-07-30T08:00:00Z"));
+        var uow = new ImmediateUnitOfWork();
+        var create = new CreatePOSCustomer(repo, uow, clock);
+        var clear = new ClearPOSCustomerPlatformCorrelation(repo, uow, clock);
+        var queries = new POSCustomerQueryService(repo);
+
+        var created = await create.ExecuteAsync(orgA, "Rosa", null, null, null, platformBusinessCustomerId: platformId);
+        Assert.True(created.IsSuccess);
+
+        Assert.NotNull(await queries.GetByPlatformBusinessCustomerIdAsync(orgA, platformId));
+        Assert.Null(await queries.GetByPlatformBusinessCustomerIdAsync(orgB, platformId));
+
+        var cleared = await clear.ExecuteAsync(orgA, created.Value!.Id.Value);
+        Assert.True(cleared.IsSuccess);
+        Assert.Null(cleared.Value!.PlatformBusinessCustomerId);
+        var again = await clear.ExecuteAsync(orgA, created.Value.Id.Value);
+        Assert.True(again.IsSuccess);
+        Assert.Null(await queries.GetByPlatformBusinessCustomerIdAsync(orgA, platformId));
+    }
+
     private sealed class FixedClock(DateTimeOffset utcNow) : IClock
     {
         public DateTimeOffset UtcNow { get; } = utcNow;
@@ -101,6 +189,14 @@ public sealed class CreatePOSCustomerUseCaseTests
                 c.OrganizationId == organizationId
                 && c.Status == CustomerStatus.Active
                 && c.NormalizedMobile == normalizedMobile));
+
+        public Task<POSCustomer?> FindByPlatformBusinessCustomerIdAsync(
+            PosOrganizationId organizationId,
+            Guid platformBusinessCustomerId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(_items.FirstOrDefault(c =>
+                c.OrganizationId == organizationId
+                && c.PlatformBusinessCustomerId == platformBusinessCustomerId));
 
         public Task<(IReadOnlyList<POSCustomer> Items, int TotalCount)> ListAsync(
             PosOrganizationId organizationId,

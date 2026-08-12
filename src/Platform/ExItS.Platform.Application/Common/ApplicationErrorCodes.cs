@@ -148,6 +148,7 @@ public static class ApplicationErrorCodes
     public const string CreditCustomerConflict = "application.credit_customer.conflict";
     public const string CustomerLinkRequestNotFound = "application.customer_link_request.not_found";
     public const string CustomerLinkRequestConflict = "application.customer_link_request.conflict";
+    public const string LinkedCustomerAppUserNotFound = "application.linked_customer_app_user.not_found";
 
     public const string UtangMigrationConsentRequired = "application.utang_migration.consent_required";
     public const string UtangMigrationSelectionRequired = "application.utang_migration.selection_required";

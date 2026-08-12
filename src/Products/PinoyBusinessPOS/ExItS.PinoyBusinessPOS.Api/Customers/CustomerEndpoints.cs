@@ -91,6 +91,7 @@ internal static class CustomerEndpoints
                         body.Address,
                         body.Notes,
                         body.CustomerId,
+                        body.PlatformBusinessCustomerId,
                         ct2),
                     POSCustomerQueryService.Map,
                     dto => Results.Created($"/api/v1/pos/customers/{dto.CustomerId:D}", dto),
@@ -205,6 +206,79 @@ internal static class CustomerEndpoints
             return PosApiResults.FromResult(result, c => Results.Ok(POSCustomerQueryService.Map(c)));
         });
 
+        group.MapGet("/by-platform-business-customer/{platformBusinessCustomerId:guid}", async (
+            HttpRequest request,
+            Guid platformBusinessCustomerId,
+            POSCustomerQueryService queries,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!PosOrganizationScope.TryGetOrganizationId(request, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            if (!PosCommercialScope.TryAuthorize(access, UtangCapability.ViewCustomersAndHistory, out problem))
+            {
+                return problem!;
+            }
+
+            var customer = await queries
+                .GetByPlatformBusinessCustomerIdAsync(organizationId, platformBusinessCustomerId, ct)
+                .ConfigureAwait(false);
+            return customer is null
+                ? PosApiResults.Problem(
+                    ApplicationErrorCodes.CustomerNotFound,
+                    "Customer was not found.",
+                    StatusCodes.Status404NotFound)
+                : Results.Ok(customer);
+        });
+
+        group.MapPut("/{customerId:guid}/platform-correlation", async (
+            HttpRequest request,
+            Guid customerId,
+            CorrelatePlatformBusinessCustomerRequest body,
+            CorrelatePOSCustomerToPlatformBusinessCustomer useCase,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!PosOrganizationScope.TryGetOrganizationId(request, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            if (!PosCommercialScope.TryAuthorize(access, UtangCapability.EditCustomer, out problem))
+            {
+                return problem!;
+            }
+
+            var result = await useCase
+                .ExecuteAsync(organizationId, customerId, body.PlatformBusinessCustomerId, ct)
+                .ConfigureAwait(false);
+            return PosApiResults.FromResult(result, c => Results.Ok(POSCustomerQueryService.Map(c)));
+        });
+
+        group.MapDelete("/{customerId:guid}/platform-correlation", async (
+            HttpRequest request,
+            Guid customerId,
+            ClearPOSCustomerPlatformCorrelation useCase,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!PosOrganizationScope.TryGetOrganizationId(request, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            if (!PosCommercialScope.TryAuthorize(access, UtangCapability.EditCustomer, out problem))
+            {
+                return problem!;
+            }
+
+            var result = await useCase.ExecuteAsync(organizationId, customerId, ct).ConfigureAwait(false);
+            return PosApiResults.FromResult(result, c => Results.Ok(POSCustomerQueryService.Map(c)));
+        });
+
         return app;
     }
 }
@@ -214,7 +288,8 @@ public sealed record CreateCustomerRequest(
     string? MobileNumber,
     string? Address,
     string? Notes,
-    Guid? CustomerId = null);
+    Guid? CustomerId = null,
+    Guid? PlatformBusinessCustomerId = null);
 
 public sealed record UpdateCustomerRequest(
     string DisplayName,
@@ -222,3 +297,5 @@ public sealed record UpdateCustomerRequest(
     string? Address,
     string? Notes,
     DateTimeOffset? ExpectedUpdatedAtUtc = null);
+
+public sealed record CorrelatePlatformBusinessCustomerRequest(Guid PlatformBusinessCustomerId);

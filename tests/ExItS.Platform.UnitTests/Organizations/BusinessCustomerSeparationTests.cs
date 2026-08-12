@@ -83,4 +83,32 @@ public sealed class BusinessCustomerSeparationTests
         Assert.Equal(InvitationKinds.OrganizationStaffInvitation, OrganizationInvitation.InvitationType);
         Assert.NotEqual(OrganizationInvitation.InvitationType, CustomerLinkRequest.InvitationType);
     }
+
+    [Fact]
+    public void Accepted_link_revoke_is_soft_and_unlinks_business_customer()
+    {
+        var orgId = PlatformOrganizationId.New();
+        var customer = BusinessCustomer.Create(orgId, "Linked Customer", T0, email: "link@example.com");
+        var userId = PlatformUserId.New();
+        var (request, _) = CustomerLinkRequest.Create(orgId, customer.Id, "link@example.com", T0);
+        request.Accept(userId, "link@example.com", T0.AddMinutes(1));
+        customer.LinkAppUser(userId, T0.AddMinutes(1));
+        var link = LinkedCustomerAppUser.CreateFromAcceptedLink(
+            orgId,
+            customer.Id,
+            userId,
+            request.Id,
+            T0.AddMinutes(1));
+
+        link.Revoke(T0.AddMinutes(2));
+        customer.UnlinkAppUser(T0.AddMinutes(2));
+
+        Assert.Equal(LinkedCustomerAppUserStatus.Revoked, link.Status);
+        Assert.Equal(T0.AddMinutes(2), link.RevokedAtUtc);
+        Assert.Null(customer.LinkedUserIdentityId);
+        Assert.False(link.IsOrganizationStaff);
+        Assert.False(link.GrantsProductRole);
+        link.Revoke(T0.AddMinutes(3));
+        Assert.Equal(T0.AddMinutes(2), link.RevokedAtUtc);
+    }
 }

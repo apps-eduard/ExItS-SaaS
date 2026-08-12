@@ -13,6 +13,7 @@ public sealed record POSCustomerDto(
     string? Address,
     string? Notes,
     string Status,
+    Guid? PlatformBusinessCustomerId,
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset UpdatedAtUtc);
 
@@ -36,6 +37,25 @@ public sealed class POSCustomerQueryService
     {
         var customer = await _customers
             .GetByIdAsync(PosOrganizationId.From(organizationId), POSCustomerId.From(customerId), cancellationToken)
+            .ConfigureAwait(false);
+        return customer is null ? null : Map(customer);
+    }
+
+    public async Task<POSCustomerDto?> GetByPlatformBusinessCustomerIdAsync(
+        Guid organizationId,
+        Guid platformBusinessCustomerId,
+        CancellationToken cancellationToken = default)
+    {
+        if (platformBusinessCustomerId == Guid.Empty)
+        {
+            return null;
+        }
+
+        var customer = await _customers
+            .FindByPlatformBusinessCustomerIdAsync(
+                PosOrganizationId.From(organizationId),
+                platformBusinessCustomerId,
+                cancellationToken)
             .ConfigureAwait(false);
         return customer is null ? null : Map(customer);
     }
@@ -89,6 +109,7 @@ public sealed class POSCustomerQueryService
             customer.Address,
             customer.Notes,
             customer.Status.ToString(),
+            customer.PlatformBusinessCustomerId,
             customer.CreatedAtUtc,
             customer.UpdatedAtUtc);
 }
@@ -113,6 +134,7 @@ public sealed class CreatePOSCustomer
         string? address,
         string? notes,
         Guid? clientCustomerId = null,
+        Guid? platformBusinessCustomerId = null,
         CancellationToken cancellationToken = default)
     {
         try
@@ -131,7 +153,14 @@ public sealed class CreatePOSCustomer
             }
 
             var customer = clientCustomerId is null
-                ? POSCustomer.Create(orgId, displayName, _clock.UtcNow, mobileNumber, address, notes)
+                ? POSCustomer.Create(
+                    orgId,
+                    displayName,
+                    _clock.UtcNow,
+                    mobileNumber,
+                    address,
+                    notes,
+                    platformBusinessCustomerId: platformBusinessCustomerId)
                 : POSCustomer.Create(
                     orgId,
                     displayName,
@@ -139,7 +168,24 @@ public sealed class CreatePOSCustomer
                     mobileNumber,
                     address,
                     notes,
-                    id: POSCustomerId.From(clientCustomerId.Value));
+                    id: POSCustomerId.From(clientCustomerId.Value),
+                    platformBusinessCustomerId: platformBusinessCustomerId);
+
+            if (customer.PlatformBusinessCustomerId is not null)
+            {
+                var existingCorrelation = await _customers
+                    .FindByPlatformBusinessCustomerIdAsync(
+                        orgId,
+                        customer.PlatformBusinessCustomerId.Value,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+                if (existingCorrelation is not null)
+                {
+                    return ApplicationResult<POSCustomer>.Failure(
+                        ApplicationErrorCodes.PlatformBusinessCustomerCorrelationConflict,
+                        "Another POS customer in this organization is already correlated to that Platform BusinessCustomer.");
+                }
+            }
 
             if (customer.NormalizedMobile is not null)
             {
@@ -339,6 +385,127 @@ public sealed class ReactivatePOSCustomer
             }
 
             customer.Reactivate(_clock.UtcNow);
+            await _customers.UpdateAsync(customer, cancellationToken).ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            return ApplicationResult<POSCustomer>.Success(customer);
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<POSCustomer>.Failure(ex.ErrorCode, ex.Message);
+        }
+        catch (PersistenceConflictException ex)
+        {
+            return ApplicationResult<POSCustomer>.Failure(ex.ErrorCode, ex.Message);
+        }
+    }
+}
+
+public sealed class CorrelatePOSCustomerToPlatformBusinessCustomer
+{
+    private readonly IPOSCustomerRepository _customers;
+    private readonly IPosUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
+
+    public CorrelatePOSCustomerToPlatformBusinessCustomer(
+        IPOSCustomerRepository customers,
+        IPosUnitOfWork unitOfWork,
+        IClock clock)
+    {
+        _customers = customers;
+        _unitOfWork = unitOfWork;
+        _clock = clock;
+    }
+
+    public async Task<ApplicationResult<POSCustomer>> ExecuteAsync(
+        Guid organizationId,
+        Guid customerId,
+        Guid platformBusinessCustomerId,
+        CancellationToken cancellationToken = default)
+    {
+        var orgId = PosOrganizationId.From(organizationId);
+        var customer = await _customers
+            .GetByIdAsync(orgId, POSCustomerId.From(customerId), cancellationToken)
+            .ConfigureAwait(false);
+        if (customer is null)
+        {
+            return ApplicationResult<POSCustomer>.Failure(
+                ApplicationErrorCodes.CustomerNotFound,
+                "Customer was not found.");
+        }
+
+        try
+        {
+            var existing = await _customers
+                .FindByPlatformBusinessCustomerIdAsync(orgId, platformBusinessCustomerId, cancellationToken)
+                .ConfigureAwait(false);
+            if (existing is not null && existing.Id != customer.Id)
+            {
+                return ApplicationResult<POSCustomer>.Failure(
+                    ApplicationErrorCodes.PlatformBusinessCustomerCorrelationConflict,
+                    "Another POS customer in this organization is already correlated to that Platform BusinessCustomer.");
+            }
+
+            if (customer.PlatformBusinessCustomerId == platformBusinessCustomerId)
+            {
+                return ApplicationResult<POSCustomer>.Success(customer);
+            }
+
+            customer.CorrelateToPlatformBusinessCustomer(platformBusinessCustomerId, _clock.UtcNow);
+            await _customers.UpdateAsync(customer, cancellationToken).ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            return ApplicationResult<POSCustomer>.Success(customer);
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<POSCustomer>.Failure(ex.ErrorCode, ex.Message);
+        }
+        catch (PersistenceConflictException ex)
+        {
+            return ApplicationResult<POSCustomer>.Failure(ex.ErrorCode, ex.Message);
+        }
+    }
+}
+
+public sealed class ClearPOSCustomerPlatformCorrelation
+{
+    private readonly IPOSCustomerRepository _customers;
+    private readonly IPosUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
+
+    public ClearPOSCustomerPlatformCorrelation(
+        IPOSCustomerRepository customers,
+        IPosUnitOfWork unitOfWork,
+        IClock clock)
+    {
+        _customers = customers;
+        _unitOfWork = unitOfWork;
+        _clock = clock;
+    }
+
+    public async Task<ApplicationResult<POSCustomer>> ExecuteAsync(
+        Guid organizationId,
+        Guid customerId,
+        CancellationToken cancellationToken = default)
+    {
+        var orgId = PosOrganizationId.From(organizationId);
+        var customer = await _customers
+            .GetByIdAsync(orgId, POSCustomerId.From(customerId), cancellationToken)
+            .ConfigureAwait(false);
+        if (customer is null)
+        {
+            return ApplicationResult<POSCustomer>.Failure(
+                ApplicationErrorCodes.CustomerNotFound,
+                "Customer was not found.");
+        }
+
+        try
+        {
+            if (customer.PlatformBusinessCustomerId is null)
+            {
+                return ApplicationResult<POSCustomer>.Success(customer);
+            }
+
+            customer.ClearPlatformBusinessCustomerCorrelation(_clock.UtcNow);
             await _customers.UpdateAsync(customer, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             return ApplicationResult<POSCustomer>.Success(customer);

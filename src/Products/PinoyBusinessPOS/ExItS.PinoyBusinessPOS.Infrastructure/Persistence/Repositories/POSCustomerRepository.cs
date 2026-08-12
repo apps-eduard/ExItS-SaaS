@@ -41,6 +41,20 @@ internal sealed class POSCustomerRepository : IPOSCustomerRepository
         return record is null ? null : CustomerEntityMapper.ToDomain(record);
     }
 
+    public async Task<POSCustomer?> FindByPlatformBusinessCustomerIdAsync(
+        PosOrganizationId organizationId,
+        Guid platformBusinessCustomerId,
+        CancellationToken cancellationToken = default)
+    {
+        var record = await _db.Customers.AsNoTracking()
+            .FirstOrDefaultAsync(
+                c => c.OrganizationId == organizationId.Value
+                     && c.PlatformBusinessCustomerId == platformBusinessCustomerId,
+                cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : CustomerEntityMapper.ToDomain(record);
+    }
+
     public async Task<(IReadOnlyList<POSCustomer> Items, int TotalCount)> ListAsync(
         PosOrganizationId organizationId,
         CustomerStatus? status,

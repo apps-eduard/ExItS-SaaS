@@ -178,6 +178,9 @@ public static class DomainErrorCodes
     public const string InvalidLinkedCustomerAppUserId = "platform.linked_customer_app_user.id.invalid";
     public const string CustomerToStaffConversionDenied = "platform.customer.staff_conversion_denied";
     public const string CustomerLinkMustNotCreateStaff = "platform.customer_link.must_not_create_staff";
+    public const string CustomerLinkPersonalIdentityRequired =
+        "platform.customer_link.personal_identity_required";
+    public const string LinkedCustomerAppUserNotFound = "platform.linked_customer_app_user.not_found";
     public const string StaffCannotAccessUnrelatedPersonalRecords =
         "platform.staff.unrelated_personal_records_denied";
 

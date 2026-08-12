@@ -101,6 +101,8 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.Address).HasColumnName("address").HasMaxLength(256);
             entity.Property(e => e.Notes).HasColumnName("notes").HasMaxLength(512);
             entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.PlatformBusinessCustomerId)
+                .HasColumnName("platform_business_customer_id");
             entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
             entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
             entity.Property(e => e.Xmin)
@@ -119,6 +121,11 @@ public sealed class PosDbContext : DbContext
 
             entity.HasIndex(e => new { e.OrganizationId, e.UpdatedAtUtc })
                 .HasDatabaseName("ix_customers_org_updated");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.PlatformBusinessCustomerId })
+                .IsUnique()
+                .HasDatabaseName("ux_customers_org_platform_business_customer")
+                .HasFilter("platform_business_customer_id IS NOT NULL");
 
             entity.HasIndex(e => e.OrganizationId)
                 .HasDatabaseName("ix_customers_organization_id");

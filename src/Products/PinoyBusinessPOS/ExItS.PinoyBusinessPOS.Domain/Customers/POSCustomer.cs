@@ -27,6 +27,11 @@ public sealed class POSCustomer
     public string? Address { get; private set; }
     public string? Notes { get; private set; }
     public CustomerStatus Status { get; private set; }
+    /// <summary>
+    /// Optional Platform <c>BusinessCustomerId</c> correlation value (not a cross-database FK).
+    /// Null for legacy POS customers that have no Platform BusinessCustomer.
+    /// </summary>
+    public Guid? PlatformBusinessCustomerId { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
 
@@ -39,6 +44,7 @@ public sealed class POSCustomer
         string? address,
         string? notes,
         CustomerStatus status,
+        Guid? platformBusinessCustomerId,
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc)
     {
@@ -50,6 +56,7 @@ public sealed class POSCustomer
         Address = address;
         Notes = notes;
         Status = status;
+        PlatformBusinessCustomerId = platformBusinessCustomerId;
         CreatedAtUtc = createdAtUtc;
         UpdatedAtUtc = updatedAtUtc;
     }
@@ -61,7 +68,8 @@ public sealed class POSCustomer
         string? mobileNumber = null,
         string? address = null,
         string? notes = null,
-        POSCustomerId? id = null)
+        POSCustomerId? id = null,
+        Guid? platformBusinessCustomerId = null)
     {
         EnsureUtc(utcNow);
         var (displayMobile, normalizedMobile) = NormalizeOptionalMobile(mobileNumber);
@@ -75,6 +83,7 @@ public sealed class POSCustomer
             NormalizeOptionalText(address, AddressMaxLength, DomainErrorCodes.InvalidAddress, "Address"),
             NormalizeOptionalText(notes, NotesMaxLength, DomainErrorCodes.InvalidNotes, "Notes"),
             CustomerStatus.Active,
+            NormalizeOptionalPlatformBusinessCustomerId(platformBusinessCustomerId),
             utcNow,
             utcNow);
     }
@@ -88,6 +97,7 @@ public sealed class POSCustomer
         string? address,
         string? notes,
         CustomerStatus status,
+        Guid? platformBusinessCustomerId,
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc) =>
         new(
@@ -99,6 +109,7 @@ public sealed class POSCustomer
             address,
             notes,
             status,
+            platformBusinessCustomerId,
             createdAtUtc,
             updatedAtUtc);
 
@@ -147,6 +158,37 @@ public sealed class POSCustomer
         }
 
         Status = CustomerStatus.Active;
+        UpdatedAtUtc = utcNow;
+    }
+
+    /// <summary>
+    /// Binds this POS customer to a Platform BusinessCustomer id (value only).
+    /// Idempotent when the same id is already set. Rejects a different id.
+    /// </summary>
+    public void CorrelateToPlatformBusinessCustomer(Guid platformBusinessCustomerId, DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        var normalized = NormalizeOptionalPlatformBusinessCustomerId(platformBusinessCustomerId)
+            ?? throw new DomainException(
+                DomainErrorCodes.InvalidPlatformBusinessCustomerId,
+                "Platform BusinessCustomer id is required.");
+
+        if (PlatformBusinessCustomerId is not null && PlatformBusinessCustomerId != normalized)
+        {
+            throw new DomainException(
+                DomainErrorCodes.PlatformBusinessCustomerCorrelationConflict,
+                "This POS customer is already correlated to a different Platform BusinessCustomer.");
+        }
+
+        PlatformBusinessCustomerId = normalized;
+        UpdatedAtUtc = utcNow;
+    }
+
+    /// <summary>Clears the Platform BusinessCustomer correlation. Does not delete financial history.</summary>
+    public void ClearPlatformBusinessCustomerCorrelation(DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        PlatformBusinessCustomerId = null;
         UpdatedAtUtc = utcNow;
     }
 
@@ -231,6 +273,23 @@ public sealed class POSCustomer
         }
 
         return trimmed;
+    }
+
+    private static Guid? NormalizeOptionalPlatformBusinessCustomerId(Guid? platformBusinessCustomerId)
+    {
+        if (platformBusinessCustomerId is null)
+        {
+            return null;
+        }
+
+        if (platformBusinessCustomerId.Value == Guid.Empty)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPlatformBusinessCustomerId,
+                "Platform BusinessCustomer id cannot be empty.");
+        }
+
+        return platformBusinessCustomerId.Value;
     }
 
     private void EnsureNotInactiveForEdit()

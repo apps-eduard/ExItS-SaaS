@@ -87,6 +87,13 @@ internal static class PersistenceExceptionMapper
             return true;
         }
 
+        if (constraint.Contains("ux_customers_org_platform_business_customer", StringComparison.OrdinalIgnoreCase))
+        {
+            errorCode = ApplicationErrorCodes.PlatformBusinessCustomerCorrelationConflict;
+            message = "Another POS customer in this organization is already correlated to that Platform BusinessCustomer.";
+            return true;
+        }
+
         return true;
     }
 }

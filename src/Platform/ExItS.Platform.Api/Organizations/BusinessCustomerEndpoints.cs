@@ -3,6 +3,7 @@ using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Organizations;
 using ExItS.Platform.Domain.Audit;
 using ExItS.Platform.Domain.Common;
+using ExItS.Platform.Domain.Identity;
 using ExItS.Platform.Domain.Organizations;
 
 namespace ExItS.Platform.Api.Organizations;
@@ -244,7 +245,11 @@ internal static class BusinessCustomerEndpoints
             }
 
             var result = await useCase
-                .ExecuteAsync(body.Token ?? string.Empty, actor.PlatformUserId, ct)
+                .ExecuteAsync(
+                    body.Token ?? string.Empty,
+                    actor.PlatformUserId,
+                    actor.AccountClass ?? AccountClass.Platform,
+                    ct)
                 .ConfigureAwait(false);
             if (result.IsSuccess)
             {
@@ -302,6 +307,45 @@ internal static class BusinessCustomerEndpoints
             var result = await queries.ListByOrganizationAsync(organizationId, page, pageSize, ct)
                 .ConfigureAwait(false);
             return Results.Ok(result);
+        });
+
+        app.MapPost("/api/v1/organizations/{organizationId:guid}/linked-customer-app-users/{linkedCustomerId:guid}/revoke", async (
+            Guid organizationId,
+            Guid linkedCustomerId,
+            UnlinkAcceptedCustomerLink useCase,
+            PlatformMembershipAuthz membershipAuthz,
+            CancellationToken ct) =>
+        {
+            var denied = await membershipAuthz.EnsureCanManageMembershipsAsync(
+                PlatformAuditActions.LinkedCustomerAppUserRevoked,
+                nameof(LinkedCustomerAppUser),
+                linkedCustomerId.ToString("D"),
+                organizationId,
+                summary: "Revoke accepted customer link.",
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var result = await useCase
+                .ExecuteAsync(
+                    LinkedCustomerAppUserId.From(linkedCustomerId),
+                    PlatformOrganizationId.From(organizationId),
+                    ct)
+                .ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                await membershipAuthz.Inner.AuditSucceededAsync(
+                    PlatformAuditActions.LinkedCustomerAppUserRevoked,
+                    nameof(LinkedCustomerAppUser),
+                    linkedCustomerId.ToString("D"),
+                    organizationId,
+                    summary: "Revoked accepted customer link (no financial records deleted).",
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
+            return PlatformApiResults.FromResult(result, Results.Ok);
         });
 
         app.MapGet("/api/v1/organizations/{organizationId:guid}/staff-invitations", async (

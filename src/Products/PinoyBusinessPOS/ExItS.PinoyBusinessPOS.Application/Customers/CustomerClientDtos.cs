@@ -8,6 +8,7 @@ public sealed record PosCustomerListItemDto(
     string? Address,
     string? Notes,
     string Status,
+    Guid? PlatformBusinessCustomerId,
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset UpdatedAtUtc);
 
@@ -19,6 +20,7 @@ public sealed record PosCustomerDetailDto(
     string? Address,
     string? Notes,
     string Status,
+    Guid? PlatformBusinessCustomerId,
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset UpdatedAtUtc);
 
@@ -27,7 +29,8 @@ public sealed record CreatePosCustomerRequest(
     string? MobileNumber,
     string? Address,
     string? Notes,
-    Guid? CustomerId = null);
+    Guid? CustomerId = null,
+    Guid? PlatformBusinessCustomerId = null);
 
 public sealed record UpdatePosCustomerRequest(
     string DisplayName,

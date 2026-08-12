@@ -150,6 +150,88 @@ public sealed class PosCustomerApiTests(PosPostgreSqlFixture fixture)
         Assert.Equal(new[] { "Mia", "Zed" }, second!.Items.Select(i => i.DisplayName).ToArray());
     }
 
+    [Fact]
+    public async Task Platform_correlation_is_org_scoped_unique_and_optional_for_legacy_customers()
+    {
+        await using var factory = new PosApiFactory(fixture.ConnectionString);
+        var client = factory.CreateClient();
+        var platformId = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
+        var otherId = Guid.Parse("ffffffff-bbbb-cccc-dddd-eeeeeeeeeeee");
+
+        var legacy = await PostCustomerAsync(client, OrgA, new CreateCustomerRequest("Legacy", null, null, null));
+        Assert.Equal(HttpStatusCode.Created, legacy.StatusCode);
+        var legacyDto = await legacy.Content.ReadFromJsonAsync<POSCustomerDto>(JsonOptions);
+        Assert.Null(legacyDto!.PlatformBusinessCustomerId);
+
+        var created = await PostCustomerAsync(
+            client,
+            OrgA,
+            new CreateCustomerRequest("Rosa", null, null, null, PlatformBusinessCustomerId: platformId));
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        var rosa = await created.Content.ReadFromJsonAsync<POSCustomerDto>(JsonOptions);
+        Assert.Equal(platformId, rosa!.PlatformBusinessCustomerId);
+
+        var duplicate = await PostCustomerAsync(
+            client,
+            OrgA,
+            new CreateCustomerRequest("Clone", null, null, null, PlatformBusinessCustomerId: platformId));
+        Assert.Equal(HttpStatusCode.Conflict, duplicate.StatusCode);
+
+        var otherOrg = await PostCustomerAsync(
+            client,
+            OrgB,
+            new CreateCustomerRequest("Other Org", null, null, null, PlatformBusinessCustomerId: platformId));
+        Assert.Equal(HttpStatusCode.Created, otherOrg.StatusCode);
+
+        using var found = CreateScopedRequest(
+            HttpMethod.Get,
+            $"/api/v1/pos/customers/by-platform-business-customer/{platformId:D}",
+            OrgA);
+        using var foundResponse = await client.SendAsync(found);
+        foundResponse.EnsureSuccessStatusCode();
+        var foundDto = await foundResponse.Content.ReadFromJsonAsync<POSCustomerDto>(JsonOptions);
+        Assert.Equal(rosa.CustomerId, foundDto!.CustomerId);
+
+        using var crossGet = CreateScopedRequest(
+            HttpMethod.Get,
+            $"/api/v1/pos/customers/by-platform-business-customer/{platformId:D}",
+            Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc"));
+        using var crossGetResponse = await client.SendAsync(crossGet);
+        Assert.Equal(HttpStatusCode.NotFound, crossGetResponse.StatusCode);
+
+        using var conflictPut = CreateScopedRequest(
+            HttpMethod.Put,
+            $"/api/v1/pos/customers/{rosa.CustomerId:D}/platform-correlation",
+            OrgA);
+        conflictPut.Content = JsonContent.Create(new CorrelatePlatformBusinessCustomerRequest(otherId));
+        using var conflictResponse = await client.SendAsync(conflictPut);
+        Assert.Equal(HttpStatusCode.Conflict, conflictResponse.StatusCode);
+
+        using var idempotentPut = CreateScopedRequest(
+            HttpMethod.Put,
+            $"/api/v1/pos/customers/{rosa.CustomerId:D}/platform-correlation",
+            OrgA);
+        idempotentPut.Content = JsonContent.Create(new CorrelatePlatformBusinessCustomerRequest(platformId));
+        using var idempotentResponse = await client.SendAsync(idempotentPut);
+        idempotentResponse.EnsureSuccessStatusCode();
+
+        using var clear = CreateScopedRequest(
+            HttpMethod.Delete,
+            $"/api/v1/pos/customers/{rosa.CustomerId:D}/platform-correlation",
+            OrgA);
+        using var clearResponse = await client.SendAsync(clear);
+        clearResponse.EnsureSuccessStatusCode();
+        var cleared = await clearResponse.Content.ReadFromJsonAsync<POSCustomerDto>(JsonOptions);
+        Assert.Null(cleared!.PlatformBusinessCustomerId);
+
+        using var missing = CreateScopedRequest(
+            HttpMethod.Get,
+            $"/api/v1/pos/customers/by-platform-business-customer/{platformId:D}",
+            OrgA);
+        using var missingResponse = await client.SendAsync(missing);
+        Assert.Equal(HttpStatusCode.NotFound, missingResponse.StatusCode);
+    }
+
     private static async Task<HttpResponseMessage> PostCustomerAsync(
         HttpClient client,
         Guid organizationId,

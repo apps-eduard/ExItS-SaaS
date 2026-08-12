@@ -14,6 +14,10 @@ public interface IBusinessCustomerRepository
         int take,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<BusinessCustomer>> ListByIdsAsync(
+        IReadOnlyCollection<BusinessCustomerId> ids,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(BusinessCustomer customer, CancellationToken cancellationToken = default);
 
     Task UpdateAsync(BusinessCustomer customer, CancellationToken cancellationToken = default);
@@ -75,6 +79,18 @@ public interface ILinkedCustomerAppUserRepository
     Task<LinkedCustomerAppUser?> FindActiveByUserAndOrganizationAsync(
         PlatformUserId userIdentityId,
         PlatformOrganizationId organizationId,
+        CancellationToken cancellationToken = default);
+
+    Task<LinkedCustomerAppUser?> FindActiveByUserOrganizationAndBusinessCustomerAsync(
+        PlatformUserId userIdentityId,
+        PlatformOrganizationId organizationId,
+        BusinessCustomerId businessCustomerId,
+        CancellationToken cancellationToken = default);
+
+    Task<(IReadOnlyList<LinkedCustomerAppUser> Items, int TotalCount)> ListActiveByUserAsync(
+        PlatformUserId userIdentityId,
+        int skip,
+        int take,
         CancellationToken cancellationToken = default);
 
     Task<(IReadOnlyList<LinkedCustomerAppUser> Items, int TotalCount)> ListByOrganizationAsync(

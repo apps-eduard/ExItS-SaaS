@@ -14,6 +14,11 @@ public interface IPOSCustomerRepository
         string normalizedMobile,
         CancellationToken cancellationToken = default);
 
+    Task<POSCustomer?> FindByPlatformBusinessCustomerIdAsync(
+        PosOrganizationId organizationId,
+        Guid platformBusinessCustomerId,
+        CancellationToken cancellationToken = default);
+
     Task<(IReadOnlyList<POSCustomer> Items, int TotalCount)> ListAsync(
         PosOrganizationId organizationId,
         CustomerStatus? status,

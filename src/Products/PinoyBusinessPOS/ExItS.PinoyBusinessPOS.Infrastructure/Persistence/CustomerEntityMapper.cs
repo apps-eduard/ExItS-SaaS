@@ -15,6 +15,7 @@ internal static class CustomerEntityMapper
             record.Address,
             record.Notes,
             Enum.Parse<CustomerStatus>(record.Status, ignoreCase: true),
+            record.PlatformBusinessCustomerId,
             record.CreatedAtUtc,
             record.UpdatedAtUtc);
 
@@ -29,6 +30,7 @@ internal static class CustomerEntityMapper
             Address = customer.Address,
             Notes = customer.Notes,
             Status = customer.Status.ToString(),
+            PlatformBusinessCustomerId = customer.PlatformBusinessCustomerId,
             CreatedAtUtc = customer.CreatedAtUtc,
             UpdatedAtUtc = customer.UpdatedAtUtc
         };
@@ -41,6 +43,7 @@ internal static class CustomerEntityMapper
         record.Address = customer.Address;
         record.Notes = customer.Notes;
         record.Status = customer.Status.ToString();
+        record.PlatformBusinessCustomerId = customer.PlatformBusinessCustomerId;
         record.UpdatedAtUtc = customer.UpdatedAtUtc;
         // OrganizationId is immutable — never rewritten from the aggregate.
     }
