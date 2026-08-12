@@ -267,6 +267,7 @@ Broader Platform integration filter (`BusinessType|Entitlement|CatalogTemplate|G
 | POS template import from preview snapshots | `db35dca945541758fc4c4a8a6adca6d96945032e` |
 | POS Personal/Org switch session context | `61acf50f8e5369aeb8c9bfccd07baae892d7104d` |
 | POS offline status + sell/return UX | `77a99964f4ab2eab013131f02abbd54734a4cfb4` |
+| Docs stamp (POS sign-in/import/switch/offline) | `6f5733735260245fb6730afbe2f07f3c17925ddc` |
 
 ## Explicit stop
 
