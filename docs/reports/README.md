@@ -103,3 +103,4 @@ The dashboard links to the latest accepted report.
 | [P24-WP14-documentation-backend-closeout-preparation.md](P24-WP14-documentation-backend-closeout-preparation.md) | P24-WP14 Documentation / backend closeout preparation | Complete |
 | [P24-WP15-physical-android-validation-preparation.md](P24-WP15-physical-android-validation-preparation.md) | P24-WP15 Physical Android validation preparation | Complete (prep ≠ Device Verified) |
 | [P24-WP16-personal-mobile-linked-customer-statement-experience.md](P24-WP16-personal-mobile-linked-customer-statement-experience.md) | P24-WP16 Personal mobile linked-customer statement experience | Complete |
+| [P24-WP17-mobile-receipts-and-older-history-entitlement-ux.md](P24-WP17-mobile-receipts-and-older-history-entitlement-ux.md) | P24-WP17 Mobile receipts and older-history entitlement UX | Complete |

@@ -2,12 +2,14 @@
 @layout Layout.PersonalShell
 @using ExItS.DesignSystem.Components.Internal
 @using ExItS.PinoyBusinessPOS.Application.Abstractions
+@using ExItS.PinoyBusinessPOS.Application.Common
 @using ExItS.PinoyBusinessPOS.Application.Statements
 @inject IAuthenticationService Auth
 @inject ICurrentUserContext CurrentUser
 @inject IPosLinkedCustomerClient LinkedCustomer
 @inject OnlineRequiredGuard OnlineRequired
 @inject NavigationManager Nav
+@inject OfflineAwareNavigation OfflineNav
 @inject IStringLocalizer<PosResources> L
 
 <div class="pos-personal-linked-statement">
@@ -86,6 +88,54 @@
                 <div class="pos-personal-list" role="list">
                     @foreach (var item in _recent)
                     {
+                        @if (item.SourceSaleId is Guid saleId)
+                        {
+                            var href = $"/personal/linked-merchants/{OrganizationId:D}/{PlatformBusinessCustomerId:D}/receipts/{saleId:D}";
+                            <button type="button" class="pos-personal-row" role="listitem" @onclick="() => OpenReceiptAsync(href)">
+                                <span class="pos-personal-row__body">
+                                    <span class="pos-personal-row__title">@FormatActivityTitle(item)</span>
+                                    <span class="pos-personal-row__meta">@item.OccurredAtUtc.LocalDateTime.ToString("g") · @item.Type · @L["Personal_MerchantOpenReceipt"]</span>
+                                </span>
+                                <span class="pos-personal-row__chevron" aria-hidden="true">›</span>
+                            </button>
+                        }
+                        else
+                        {
+                            <div class="pos-personal-row pos-personal-row--static" role="listitem">
+                                <span class="pos-personal-row__body">
+                                    <span class="pos-personal-row__title">@FormatActivityTitle(item)</span>
+                                    <span class="pos-personal-row__meta">@item.OccurredAtUtc.LocalDateTime.ToString("g") · @item.Type</span>
+                                </span>
+                            </div>
+                        }
+                    }
+                </div>
+                @if (_recentHasMore)
+                {
+                    <Button Variant="ButtonVariant.Secondary" IsLoading="_busyRecent" Disabled="_busyRecent" OnClick="LoadMoreRecentAsync">@L["Personal_MerchantsLoadMore"]</Button>
+                }
+            }
+        </Section>
+
+        <Section Title="@L["Personal_MerchantOlderSection"]">
+            @if (_olderLocked)
+            {
+                <InlineMessage Tone="InlineMessageTone.Warning">@L["Personal_MerchantHistoryLocked"]</InlineMessage>
+                <Button Variant="ButtonVariant.Secondary" OnClick="GoRewardsAsync">@L["Personal_MerchantHistoryUnlockHint"]</Button>
+            }
+            else if (_older.Count == 0 && !_olderLoadAttempted)
+            {
+                <Button Variant="ButtonVariant.Secondary" IsLoading="_busyOlder" Disabled="_busyOlder" OnClick="LoadOlderAsync">@L["Personal_MerchantOlderLoad"]</Button>
+            }
+            else if (_older.Count == 0)
+            {
+                <EmptyState Title="@L["Personal_MerchantOlderEmptyTitle"]" Message="@L["Personal_MerchantOlderEmptyMessage"]" />
+            }
+            else
+            {
+                <div class="pos-personal-list" role="list">
+                    @foreach (var item in _older)
+                    {
                         <div class="pos-personal-row pos-personal-row--static" role="listitem">
                             <span class="pos-personal-row__body">
                                 <span class="pos-personal-row__title">@FormatActivityTitle(item)</span>
@@ -94,9 +144,9 @@
                         </div>
                     }
                 </div>
-                @if (_recentHasMore)
+                @if (_olderHasMore)
                 {
-                    <Button Variant="ButtonVariant.Secondary" IsLoading="_busyRecent" Disabled="_busyRecent" OnClick="LoadMoreRecentAsync">@L["Personal_MerchantsLoadMore"]</Button>
+                    <Button Variant="ButtonVariant.Secondary" IsLoading="_busyOlder" Disabled="_busyOlder" OnClick="LoadMoreOlderAsync">@L["Personal_MerchantsLoadMore"]</Button>
                 }
             }
         </Section>
@@ -115,14 +165,20 @@
     private bool _notFound;
     private bool _busyOpen;
     private bool _busyRecent;
+    private bool _busyOlder;
     private bool _openDebtHasMore;
     private bool _recentHasMore;
+    private bool _olderHasMore;
+    private bool _olderLocked;
+    private bool _olderLoadAttempted;
     private int _openDebtPage = 1;
     private int _recentPage = 1;
+    private int _olderPage = 1;
     private string? _error;
     private LinkedCustomerStatementSummaryDto? _summary;
     private List<LinkedCustomerActivityItemDto> _openDebt = [];
     private List<LinkedCustomerActivityItemDto> _recent = [];
+    private List<LinkedCustomerActivityItemDto> _older = [];
 
     protected override async Task OnParametersSetAsync() => await LoadAsync();
 
@@ -136,8 +192,12 @@
         _summary = null;
         _openDebt = [];
         _recent = [];
+        _older = [];
         _openDebtPage = 1;
         _recentPage = 1;
+        _olderPage = 1;
+        _olderLocked = false;
+        _olderLoadAttempted = false;
         try
         {
             if (!CurrentUser.IsAuthenticated)
@@ -258,6 +318,73 @@
         }
     }
 
+    private async Task LoadOlderAsync()
+    {
+        if (_busyOlder)
+        {
+            return;
+        }
+
+        _busyOlder = true;
+        _olderLocked = false;
+        try
+        {
+            _olderPage = 1;
+            var older = await LinkedCustomer.GetOlderSettledActivityAsync(
+                OrganizationId, PlatformBusinessCustomerId, page: 1, pageSize: 10);
+            _olderLoadAttempted = true;
+            if (!older.IsSuccess || older.Data is null)
+            {
+                if (older.Status == ApiCallStatus.Forbidden
+                    && string.Equals(
+                        older.Error?.ErrorCode,
+                        ApplicationErrorCodes.ExtendedHistoryRequired,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    _olderLocked = true;
+                    return;
+                }
+
+                return;
+            }
+
+            _older = older.Data.Items.ToList();
+            _olderHasMore = older.Data.HasMore;
+        }
+        finally
+        {
+            _busyOlder = false;
+        }
+    }
+
+    private async Task LoadMoreOlderAsync()
+    {
+        if (_busyOlder || !_olderHasMore)
+        {
+            return;
+        }
+
+        _busyOlder = true;
+        try
+        {
+            _olderPage++;
+            var older = await LinkedCustomer.GetOlderSettledActivityAsync(
+                OrganizationId, PlatformBusinessCustomerId, page: _olderPage, pageSize: 10);
+            if (!older.IsSuccess || older.Data is null)
+            {
+                _olderPage = Math.Max(1, _olderPage - 1);
+                return;
+            }
+
+            _older.AddRange(older.Data.Items);
+            _olderHasMore = older.Data.HasMore;
+        }
+        finally
+        {
+            _busyOlder = false;
+        }
+    }
+
     private void ApplyFailure(ApiCallStatus status, string message)
     {
         _error = message;
@@ -295,5 +422,7 @@
         return item.ReferenceNumber;
     }
 
+    private Task OpenReceiptAsync(string href) => OfflineNav.NavigateAsync(href);
+    private Task GoRewardsAsync() => OfflineNav.NavigateAsync("/personal/rewards");
     private void GoSignIn() => Nav.NavigateTo("/signin");
 }

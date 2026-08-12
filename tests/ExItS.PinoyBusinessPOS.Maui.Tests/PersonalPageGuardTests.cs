@@ -79,6 +79,7 @@ public sealed class PersonalPageGuardTests
         Assert.Contains("Personal_Nav_UtangInvitations", more, StringComparison.Ordinal);
         Assert.Contains("Personal_Nav_LinkedMerchants", more, StringComparison.Ordinal);
         Assert.Contains("/personal/linked-merchants", more, StringComparison.Ordinal);
+        Assert.Contains("/personal/rewards", File.ReadAllText(Path.Combine(PersonalPagesDirectory(), "PersonalLinkedMerchantStatement.razor")), StringComparison.Ordinal);
         Assert.Contains("Personal_ProfileLink", more, StringComparison.Ordinal);
         Assert.Contains("Personal_SettingsLink", more, StringComparison.Ordinal);
         Assert.Contains("Personal_ExplorePos", more, StringComparison.Ordinal);
@@ -334,6 +335,7 @@ public sealed class PersonalPageGuardTests
                      "PersonalHome.razor", "PersonalMore.razor", "PersonalPeople.razor", "PersonalLent.razor",
                      "PersonalBorrowed.razor", "PersonalRelationshipDetail.razor", "PersonalUtangInvitations.razor",
                      "PersonalLinkedMerchants.razor", "PersonalLinkedMerchantStatement.razor",
+                     "PersonalLinkedMerchantReceipt.razor", "PersonalRewards.razor",
                      "PersonalProfile.razor", "PersonalSettings.razor", "PersonalExplorePos.razor",
                      "PersonalPeopleDetail.razor", "PersonalMyQr.razor", "PublicUserResolve.razor",
                      "PersonalSupportDiagnosticsPage.razor"
@@ -416,6 +418,8 @@ public sealed class PersonalPageGuardTests
         Assert.DoesNotContain("ILocalPersonalUtangStore", statement, StringComparison.Ordinal);
         Assert.Contains("/api/v1/pos/personal/linked-customers/", linkedClient, StringComparison.Ordinal);
         Assert.Contains("open-debt-activity", linkedClient, StringComparison.Ordinal);
+        Assert.Contains("older-activity", linkedClient, StringComparison.Ordinal);
+        Assert.Contains("/receipts/", linkedClient, StringComparison.Ordinal);
     }
 
     [Fact]

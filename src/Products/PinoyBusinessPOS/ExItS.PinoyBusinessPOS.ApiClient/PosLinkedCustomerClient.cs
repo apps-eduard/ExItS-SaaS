@@ -60,6 +60,36 @@ public sealed class PosLinkedCustomerClient(HttpClient httpClient, IConnectivity
         return SendAsync<LinkedCustomerOpenDebtActivityPageDto>(HttpMethod.Get, path, ct);
     }
 
+    public Task<ApiResult<LinkedCustomerRecentActivityPageDto>> GetOlderSettledActivityAsync(
+        Guid organizationId,
+        Guid platformBusinessCustomerId,
+        int page = 1,
+        int pageSize = 10,
+        CancellationToken ct = default)
+    {
+        var path =
+            $"/api/v1/pos/personal/linked-customers/{platformBusinessCustomerId:D}/older-activity" +
+            $"?organizationId={organizationId:D}&page={page}&pageSize={pageSize}";
+        return SendAsync<LinkedCustomerRecentActivityPageDto>(HttpMethod.Get, path, ct);
+    }
+
+    public Task<ApiResult<LinkedCustomerSaleReceiptDto>> GetReceiptAsync(
+        Guid organizationId,
+        Guid platformBusinessCustomerId,
+        Guid saleId,
+        string? currency = null,
+        CancellationToken ct = default)
+    {
+        var path = new StringBuilder(
+            $"/api/v1/pos/personal/linked-customers/{platformBusinessCustomerId:D}/receipts/{saleId:D}?organizationId={organizationId:D}");
+        if (!string.IsNullOrWhiteSpace(currency))
+        {
+            path.Append("&currency=").Append(Uri.EscapeDataString(currency.Trim()));
+        }
+
+        return SendAsync<LinkedCustomerSaleReceiptDto>(HttpMethod.Get, path.ToString(), ct);
+    }
+
     private async Task<ApiResult<TResponse>> SendAsync<TResponse>(
         HttpMethod method,
         string path,

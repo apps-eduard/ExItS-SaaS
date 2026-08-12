@@ -1928,6 +1928,7 @@
   <data name="Personal_Nav_Borrowed" xml:space="preserve"><value>I Borrowed</value></data>
   <data name="Personal_Nav_UtangInvitations" xml:space="preserve"><value>Utang invitations</value></data>
   <data name="Personal_Nav_LinkedMerchants" xml:space="preserve"><value>Linked merchants</value></data>
+  <data name="Personal_Nav_Rewards" xml:space="preserve"><value>Rewards</value></data>
   <data name="Personal_MerchantsTitle" xml:space="preserve"><value>Linked merchants</value></data>
   <data name="Personal_MerchantsSubtitle" xml:space="preserve"><value>See Business Utang at merchants that linked you. Balances come from the merchant ledger — not Personal Utang.</value></data>
   <data name="Personal_MerchantsEmptyTitle" xml:space="preserve"><value>No linked merchants yet</value></data>
@@ -1952,6 +1953,25 @@
   <data name="Personal_MerchantStatementDenied" xml:space="preserve"><value>You are not authorized to view this merchant statement.</value></data>
   <data name="Personal_MerchantStatementMissingTitle" xml:space="preserve"><value>Not found</value></data>
   <data name="Personal_MerchantStatementMissing" xml:space="preserve"><value>This linked merchant statement was not found.</value></data>
+  <data name="Personal_MerchantOpenReceipt" xml:space="preserve"><value>Open receipt</value></data>
+  <data name="Personal_MerchantReceiptTitle" xml:space="preserve"><value>Receipt</value></data>
+  <data name="Personal_MerchantReceiptSubtitle" xml:space="preserve"><value>Sale lines from the merchant ledger (read-only).</value></data>
+  <data name="Personal_MerchantReceiptSummarySection" xml:space="preserve"><value>Summary</value></data>
+  <data name="Personal_MerchantReceiptLinesSection" xml:space="preserve"><value>Lines</value></data>
+  <data name="Personal_MerchantReceiptErrorTitle" xml:space="preserve"><value>Could not load receipt</value></data>
+  <data name="Personal_MerchantReceiptLoadFailed" xml:space="preserve"><value>The receipt could not be loaded. Try again.</value></data>
+  <data name="Personal_MerchantReceiptMissingTitle" xml:space="preserve"><value>Receipt not found</value></data>
+  <data name="Personal_MerchantReceiptMissing" xml:space="preserve"><value>This receipt was not found.</value></data>
+  <data name="Personal_MerchantOlderSection" xml:space="preserve"><value>Older settled history</value></data>
+  <data name="Personal_MerchantOlderLoad" xml:space="preserve"><value>Load older history</value></data>
+  <data name="Personal_MerchantOlderEmptyTitle" xml:space="preserve"><value>No older settled rows</value></data>
+  <data name="Personal_MerchantOlderEmptyMessage" xml:space="preserve"><value>No older settled activity was returned for this merchant.</value></data>
+  <data name="Personal_MerchantHistoryLockedTitle" xml:space="preserve"><value>Extended history locked</value></data>
+  <data name="Personal_MerchantHistoryLocked" xml:space="preserve"><value>Older settled digital records require the Personal extended-history entitlement.</value></data>
+  <data name="Personal_MerchantHistoryUnlockHint" xml:space="preserve"><value>Open rewards</value></data>
+  <data name="Personal_RewardsTitle" xml:space="preserve"><value>Rewards</value></data>
+  <data name="Personal_RewardsSubtitle" xml:space="preserve"><value>Personal reward points and feature unlocks.</value></data>
+  <data name="Personal_RewardsComingSoon" xml:space="preserve"><value>Reward balance and redemption arrive in the next update. Extended history unlock uses the same Personal rewards surface.</value></data>
   <data name="Personal_Nav_PaymentsSoon" xml:space="preserve"><value>Payments (coming soon)</value></data>
   <data name="Personal_Nav_RemindersSoon" xml:space="preserve"><value>Reminders (coming soon)</value></data>
   <data name="Personal_Nav_HistorySoon" xml:space="preserve"><value>History (coming soon)</value></data>

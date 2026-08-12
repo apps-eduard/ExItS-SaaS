@@ -1928,6 +1928,7 @@
   <data name="Personal_Nav_Borrowed" xml:space="preserve"><value>I Borrowed</value></data>
   <data name="Personal_Nav_UtangInvitations" xml:space="preserve"><value>Utang invitations</value></data>
   <data name="Personal_Nav_LinkedMerchants" xml:space="preserve"><value>Mga naka-link na merchant</value></data>
+  <data name="Personal_Nav_Rewards" xml:space="preserve"><value>Rewards</value></data>
   <data name="Personal_MerchantsTitle" xml:space="preserve"><value>Mga naka-link na merchant</value></data>
   <data name="Personal_MerchantsSubtitle" xml:space="preserve"><value>Tingnan ang Business Utang sa mga merchant na nag-link sa iyo. Ang balances ay galing sa merchant ledger — hindi Personal Utang.</value></data>
   <data name="Personal_MerchantsEmptyTitle" xml:space="preserve"><value>Wala pang naka-link na merchant</value></data>
@@ -1952,6 +1953,25 @@
   <data name="Personal_MerchantStatementDenied" xml:space="preserve"><value>Hindi ka authorized na tingnan ang merchant statement na ito.</value></data>
   <data name="Personal_MerchantStatementMissingTitle" xml:space="preserve"><value>Hindi nahanap</value></data>
   <data name="Personal_MerchantStatementMissing" xml:space="preserve"><value>Hindi nahanap ang linked merchant statement na ito.</value></data>
+  <data name="Personal_MerchantOpenReceipt" xml:space="preserve"><value>Buksan ang receipt</value></data>
+  <data name="Personal_MerchantReceiptTitle" xml:space="preserve"><value>Receipt</value></data>
+  <data name="Personal_MerchantReceiptSubtitle" xml:space="preserve"><value>Mga sale lines mula sa merchant ledger (read-only).</value></data>
+  <data name="Personal_MerchantReceiptSummarySection" xml:space="preserve"><value>Buod</value></data>
+  <data name="Personal_MerchantReceiptLinesSection" xml:space="preserve"><value>Mga linya</value></data>
+  <data name="Personal_MerchantReceiptErrorTitle" xml:space="preserve"><value>Hindi ma-load ang receipt</value></data>
+  <data name="Personal_MerchantReceiptLoadFailed" xml:space="preserve"><value>Hindi ma-load ang receipt. Subukan ulit.</value></data>
+  <data name="Personal_MerchantReceiptMissingTitle" xml:space="preserve"><value>Hindi nahanap ang receipt</value></data>
+  <data name="Personal_MerchantReceiptMissing" xml:space="preserve"><value>Hindi nahanap ang receipt na ito.</value></data>
+  <data name="Personal_MerchantOlderSection" xml:space="preserve"><value>Mas lumang settled history</value></data>
+  <data name="Personal_MerchantOlderLoad" xml:space="preserve"><value>I-load ang older history</value></data>
+  <data name="Personal_MerchantOlderEmptyTitle" xml:space="preserve"><value>Walang older settled rows</value></data>
+  <data name="Personal_MerchantOlderEmptyMessage" xml:space="preserve"><value>Walang older settled activity na ibinalik para sa merchant na ito.</value></data>
+  <data name="Personal_MerchantHistoryLockedTitle" xml:space="preserve"><value>Naka-lock ang extended history</value></data>
+  <data name="Personal_MerchantHistoryLocked" xml:space="preserve"><value>Kailangan ng Personal extended-history entitlement para sa older settled digital records.</value></data>
+  <data name="Personal_MerchantHistoryUnlockHint" xml:space="preserve"><value>Buksan ang rewards</value></data>
+  <data name="Personal_RewardsTitle" xml:space="preserve"><value>Rewards</value></data>
+  <data name="Personal_RewardsSubtitle" xml:space="preserve"><value>Personal reward points at feature unlocks.</value></data>
+  <data name="Personal_RewardsComingSoon" xml:space="preserve"><value>Darating sa susunod na update ang reward balance at redemption. Ang extended history unlock ay gagamit ng parehong Personal rewards surface.</value></data>
   <data name="Personal_Nav_PaymentsSoon" xml:space="preserve"><value>Payments (coming soon)</value></data>
   <data name="Personal_Nav_RemindersSoon" xml:space="preserve"><value>Reminders (coming soon)</value></data>
   <data name="Personal_Nav_HistorySoon" xml:space="preserve"><value>History (coming soon)</value></data>

@@ -1,0 +1,16 @@
+@page "/personal/rewards"
+@layout Layout.PersonalShell
+@using ExItS.DesignSystem.Components.Internal
+@inject NavigationManager Nav
+@inject IStringLocalizer<PosResources> L
+
+<div class="pos-personal-rewards">
+<StoreHeaderBack Href="/personal/more" />
+<Page>
+    <header class="pos-personal-rewards__header">
+        <h1 class="pos-personal-rewards__title">@L["Personal_RewardsTitle"]</h1>
+        <p class="pos-personal-rewards__subtitle">@L["Personal_RewardsSubtitle"]</p>
+    </header>
+    <InlineMessage Tone="InlineMessageTone.Info">@L["Personal_RewardsComingSoon"]</InlineMessage>
+</Page>
+</div>

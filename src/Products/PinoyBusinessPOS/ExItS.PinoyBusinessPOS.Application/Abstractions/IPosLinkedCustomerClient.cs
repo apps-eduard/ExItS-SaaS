@@ -28,4 +28,18 @@ public interface IPosLinkedCustomerClient
         int page = 1,
         int pageSize = 10,
         CancellationToken ct = default);
+
+    Task<ApiResult<LinkedCustomerRecentActivityPageDto>> GetOlderSettledActivityAsync(
+        Guid organizationId,
+        Guid platformBusinessCustomerId,
+        int page = 1,
+        int pageSize = 10,
+        CancellationToken ct = default);
+
+    Task<ApiResult<LinkedCustomerSaleReceiptDto>> GetReceiptAsync(
+        Guid organizationId,
+        Guid platformBusinessCustomerId,
+        Guid saleId,
+        string? currency = null,
+        CancellationToken ct = default);
 }

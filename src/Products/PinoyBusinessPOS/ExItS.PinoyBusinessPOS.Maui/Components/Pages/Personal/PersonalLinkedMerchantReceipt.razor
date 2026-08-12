@@ -1,0 +1,170 @@
+@page "/personal/linked-merchants/{OrganizationId:guid}/{PlatformBusinessCustomerId:guid}/receipts/{SaleId:guid}"
+@layout Layout.PersonalShell
+@using ExItS.DesignSystem.Components.Internal
+@using ExItS.PinoyBusinessPOS.Application.Abstractions
+@using ExItS.PinoyBusinessPOS.Application.Common
+@using ExItS.PinoyBusinessPOS.Application.Statements
+@inject IAuthenticationService Auth
+@inject ICurrentUserContext CurrentUser
+@inject IPosLinkedCustomerClient LinkedCustomer
+@inject OnlineRequiredGuard OnlineRequired
+@inject NavigationManager Nav
+@inject OfflineAwareNavigation OfflineNav
+@inject IStringLocalizer<PosResources> L
+
+<div class="pos-personal-linked-receipt">
+<StoreHeaderBack Href="@_backHref" />
+<Page>
+    <header class="pos-personal-linked-receipt__header">
+        <h1 class="pos-personal-linked-receipt__title">@(_receipt?.ReceiptNumber ?? L["Personal_MerchantReceiptTitle"])</h1>
+        <p class="pos-personal-linked-receipt__subtitle">@L["Personal_MerchantReceiptSubtitle"]</p>
+    </header>
+
+    @if (_loading)
+    {
+        <Spinner />
+    }
+    else if (!_authenticated)
+    {
+        <ErrorState Title="@L["Auth_SessionExpiredTitle"]" Message="@L["Auth_SessionExpired"]" RetryLabel="@L["SignIn_Submit"]" OnRetry="GoSignIn" />
+    }
+    else if (_notFound)
+    {
+        <ErrorState Title="@L["Personal_MerchantReceiptMissingTitle"]" Message="@(_error ?? L["Personal_MerchantReceiptMissing"])" RetryLabel="@L["Common_Retry"]" OnRetry="LoadAsync" />
+    }
+    else if (_entitlementRequired)
+    {
+        <ErrorState Title="@L["Personal_MerchantHistoryLockedTitle"]" Message="@(_error ?? L["Personal_MerchantHistoryLocked"])" RetryLabel="@L["Personal_MerchantHistoryUnlockHint"]" OnRetry="GoRewardsAsync" />
+    }
+    else if (_forbidden)
+    {
+        <ErrorState Title="@L["Personal_MerchantStatementDeniedTitle"]" Message="@(_error ?? L["Personal_MerchantStatementDenied"])" RetryLabel="@L["Common_Retry"]" OnRetry="LoadAsync" />
+    }
+    else if (_loadFailed)
+    {
+        <ErrorState Title="@L["Personal_MerchantReceiptErrorTitle"]" Message="@(_error ?? L["Personal_LoadErrorMessage"])" RetryLabel="@L["Common_Retry"]" OnRetry="LoadAsync" />
+    }
+    else if (_receipt is not null)
+    {
+        <Section Title="@L["Personal_MerchantReceiptSummarySection"]">
+            <div class="pos-personal-linked-receipt__summary">
+                <div>@_receipt.OccurredAtUtc.LocalDateTime.ToString("g")</div>
+                <div>@_receipt.PaymentMethod · @_receipt.Status</div>
+                <div class="pos-personal-linked-receipt__total">@_receipt.Total.ToString("N2") @_receipt.Currency</div>
+            </div>
+        </Section>
+        <Section Title="@L["Personal_MerchantReceiptLinesSection"]">
+            <div class="pos-personal-list" role="list">
+                @foreach (var line in _receipt.Lines)
+                {
+                    <div class="pos-personal-row pos-personal-row--static" role="listitem">
+                        <span class="pos-personal-row__body">
+                            <span class="pos-personal-row__title">@line.ProductNameSnapshot</span>
+                            <span class="pos-personal-row__meta">@line.Quantity.ToString("0.###") @line.UnitOfMeasure · @line.LineTotal.ToString("N2")</span>
+                        </span>
+                    </div>
+                }
+            </div>
+        </Section>
+    }
+</Page>
+</div>
+
+@code {
+    [Parameter] public Guid OrganizationId { get; set; }
+    [Parameter] public Guid PlatformBusinessCustomerId { get; set; }
+    [Parameter] public Guid SaleId { get; set; }
+
+    private string _backHref = "/personal/linked-merchants";
+    private bool _loading = true;
+    private bool _authenticated;
+    private bool _loadFailed;
+    private bool _forbidden;
+    private bool _notFound;
+    private bool _entitlementRequired;
+    private string? _error;
+    private LinkedCustomerSaleReceiptDto? _receipt;
+
+    protected override void OnParametersSet()
+    {
+        _backHref = $"/personal/linked-merchants/{OrganizationId:D}/{PlatformBusinessCustomerId:D}";
+    }
+
+    protected override async Task OnParametersSetAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _loadFailed = _forbidden = _notFound = _entitlementRequired = false;
+        _error = null;
+        _receipt = null;
+        try
+        {
+            if (!CurrentUser.IsAuthenticated)
+            {
+                var restore = await Auth.RestoreSessionAsync();
+                _authenticated = restore.Succeeded;
+            }
+            else
+            {
+                _authenticated = true;
+            }
+
+            if (!_authenticated)
+            {
+                return;
+            }
+
+            await Auth.EnsurePersonalAccountProfileAsync();
+            if (!await OnlineRequired.EnsureOnlineForRouteAsync("/personal/linked-merchants"))
+            {
+                _loadFailed = true;
+                _error = L["OnlineRequired_Message"];
+                return;
+            }
+
+            var result = await LinkedCustomer.GetReceiptAsync(OrganizationId, PlatformBusinessCustomerId, SaleId);
+            if (!result.IsSuccess || result.Data is null)
+            {
+                ApplyFailure(result);
+                return;
+            }
+
+            _receipt = result.Data;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void ApplyFailure(ApiResult<LinkedCustomerSaleReceiptDto> result)
+    {
+        _error = result.Error?.Detail ?? L["Personal_MerchantReceiptLoadFailed"];
+        // Privacy: treat NotFound before premium entitlement messaging.
+        if (result.Status == ApiCallStatus.NotFound)
+        {
+            _notFound = true;
+            return;
+        }
+
+        if (result.Status == ApiCallStatus.Forbidden
+            && string.Equals(result.Error?.ErrorCode, ApplicationErrorCodes.ExtendedHistoryRequired, StringComparison.OrdinalIgnoreCase))
+        {
+            _entitlementRequired = true;
+            _error = L["Personal_MerchantHistoryLocked"];
+            return;
+        }
+
+        if (result.Status == ApiCallStatus.Forbidden)
+        {
+            _forbidden = true;
+            return;
+        }
+
+        _loadFailed = true;
+    }
+
+    private Task GoRewardsAsync() => OfflineNav.NavigateAsync("/personal/rewards");
+    private void GoSignIn() => Nav.NavigateTo("/signin");
+}

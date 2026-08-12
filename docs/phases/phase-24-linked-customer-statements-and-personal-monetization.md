@@ -4,7 +4,7 @@
 
 | Field | Value |
 |---|---|
-| Status | **Open** — WP01–WP16 Complete · WP17 next (roadmap through WP24) |
+| Status | **Open** — WP01–WP17 Complete · WP18 next (roadmap through WP24) |
 | Branch / HEAD at open | `main` @ `2fdcc8ab86f8a1df516053930885b6df04b0e436` |
 | Device Verified | **No** |
 | Production Ready | **No** |
@@ -157,7 +157,7 @@ Personal must not modify financial ledger entries. Architecture for customer dis
 | **WP14** | Documentation / backend closeout preparation | **Complete** — [P24-WP14](../reports/P24-WP14-documentation-backend-closeout-preparation.md) |
 | **WP15** | Physical Android validation preparation | **Complete** (prep ≠ Device Verified) — [P24-WP15](../reports/P24-WP15-physical-android-validation-preparation.md) |
 | **WP16** | Personal mobile linked-customer statement experience | **Complete** — [P24-WP16](../reports/P24-WP16-personal-mobile-linked-customer-statement-experience.md) |
-| **WP17** | Mobile receipts and older-history entitlement UX | Lazy receipt detail; free-window / entitlement lock; 404 before 403 |
+| **WP17** | Mobile receipts and older-history entitlement UX | **Complete** — [P24-WP17](../reports/P24-WP17-mobile-receipts-and-older-history-entitlement-ux.md) |
 | **WP18** | Mobile rewards and Personal feature redemption | Server-authoritative price/duration; no client debit/end-date |
 | **WP19** | Mobile ads/ad-free UX abstraction | Provider-ready; no fake playback; no timer rewards |
 | **WP20** | Android integration and end-to-end mobile flows | Real APIs; session/nav/localization/error mapping |
