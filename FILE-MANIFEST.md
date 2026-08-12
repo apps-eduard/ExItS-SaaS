@@ -115,6 +115,7 @@ docs/reports/P24-WP05-receipt-summary-detail-and-lazy-loading.md
 docs/reports/P24-WP06-free-vs-paid-personal-history-entitlement.md
 docs/reports/P24-WP07-personal-reward-points-and-redemption.md
 docs/reports/P24-WP08-reward-ledger-foundation.md
+docs/reports/P24-WP09-ads-abstraction-and-ad-free-entitlement.md
 docs/portfolio-progress.md
 docs/product/pinoy-business-pos-requirements.md
 docs/product/portfolio-vision.md

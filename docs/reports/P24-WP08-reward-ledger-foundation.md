@@ -94,6 +94,10 @@ No generic self-award / add-points endpoint. Trusted admin award remains `AwardP
 
 Do **not** start WP09 from this package.
 
+## Post-completion note
+
+**P24-WP09** completed separately — see [P24-WP09](P24-WP09-ads-abstraction-and-ad-free-entitlement.md).
+
 ## Checks performed
 
 - Starting HEAD = `origin/main` = `766f6166e5075d9a5296c00af573ccf0bc5b6762`

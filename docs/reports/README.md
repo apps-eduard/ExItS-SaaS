@@ -95,3 +95,4 @@ The dashboard links to the latest accepted report.
 | [P24-WP06-free-vs-paid-personal-history-entitlement.md](P24-WP06-free-vs-paid-personal-history-entitlement.md) | P24-WP06 Free vs Paid Personal history entitlement | Complete |
 | [P24-WP07-personal-reward-points-and-redemption.md](P24-WP07-personal-reward-points-and-redemption.md) | P24-WP07 Personal reward points ledger + feature redemption | Complete |
 | [P24-WP08-reward-ledger-foundation.md](P24-WP08-reward-ledger-foundation.md) | P24-WP08 Reward ledger foundation (org rejection + AdRewardClaim) | Complete |
+| [P24-WP09-ads-abstraction-and-ad-free-entitlement.md](P24-WP09-ads-abstraction-and-ad-free-entitlement.md) | P24-WP09 Ads abstraction + Ad-Free entitlement | Complete |
