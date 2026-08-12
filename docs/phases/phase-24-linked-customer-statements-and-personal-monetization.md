@@ -1,6 +1,6 @@
 # Phase 24 — Linked Customer Statements and Personal Monetization
 
-[Phases](README.md) | [Portfolio](../portfolio-progress.md) | [WP01 audit](../reports/P24-WP01-current-state-and-architecture-contract.md) | [WP02](../reports/P24-WP02-customer-link-and-pos-correlation.md) | [ADR-021](../decisions/ADR-021-linked-customer-statements-and-personal-monetization.md)
+[Phases](README.md) | [Portfolio](../portfolio-progress.md) | [WP01 audit](../reports/P24-WP01-current-state-and-architecture-contract.md) | [WP02](../reports/P24-WP02-customer-link-and-pos-correlation.md) | [WP03](../reports/P24-WP03-linked-customer-authorization-contract.md) | [ADR-021](../decisions/ADR-021-linked-customer-statements-and-personal-monetization.md)
 
 | Field | Value |
 |---|---|

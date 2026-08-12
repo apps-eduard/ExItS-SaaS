@@ -239,7 +239,7 @@ P19-WP08 ? End-to-End Validation and User Closeout Checklist (Retest � awaitin
 |---|---|---|
 | P24-WP01 — Current-state audit + architecture contract | **Complete** (architecture contract) | `1351bef72f9ba04030495785767cc9bb609c5f8d` — [report](reports/P24-WP01-current-state-and-architecture-contract.md) |
 | P24-WP02 — Customer-link completeness + POS↔Platform correlation | **Complete** | `19786a3d2a19fdf0131c5ca315a272e012ab2926` (feat), `b99809cd3a46d28983a663e0ca9bbe9488a5ffbb` (docs) — [report](reports/P24-WP02-customer-link-and-pos-correlation.md) |
-| P24-WP03 — Linked-customer authorization contract | **Complete** | `d8c90f0c46fe8d70efb93970fb93d96412c5fc39` (feat) — [report](reports/P24-WP03-linked-customer-authorization-contract.md) |
+| P24-WP03 — Linked-customer authorization contract | **Complete** | `d8c90f0c46fe8d70efb93970fb93d96412c5fc39` (feat), `ef947f5ee274bc7cda1d09b7af5b6a65682ebfe7` (docs) — [report](reports/P24-WP03-linked-customer-authorization-contract.md) |
 
 ## Phase 21 work packages
 
