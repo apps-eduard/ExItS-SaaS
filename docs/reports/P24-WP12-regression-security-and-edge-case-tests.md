@@ -9,7 +9,7 @@
 | Starting SHA | `92bffb9a30f14b5b855d80593b2312f6a1885fb1` on `main` |
 | Implementation commit | `5ccf12e2a1a420ae4ff9ef3cdbc586868f33126c` |
 | Docs commit | `c6f013ace3e1800bfbcb9a5179fae4ffb1df005b` |
-| Docs/hash-stamp commit | _(filled after stamp)_ |
+| Docs/hash-stamp commit | `10db6ccd5f99f86c936e8e5b56035e8d55051c83` |
 | Device Verified | **No** |
 | Production Ready | **No** |
 | Migration | **None** |
