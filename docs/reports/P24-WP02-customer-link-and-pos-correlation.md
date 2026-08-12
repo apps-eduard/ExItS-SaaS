@@ -8,7 +8,7 @@
 | Date | 2026-08-12 |
 | Starting SHA | `b27c94b6328d7d5fb56e2b2b7d0d77372141e912` on `main` |
 | Implementation commit | `19786a3d2a19fdf0131c5ca315a272e012ab2926` |
-| Docs/hash-stamp commit | *(this docs commit)* |
+| Docs/hash-stamp commit | `b99809cd3a46d28983a663e0ca9bbe9488a5ffbb` |
 | Device Verified | **No** |
 | Production Ready | **No** |
 | Migration added | **Yes** — `AddPosCustomerPlatformBusinessCustomerId` (`20260812130703`) |
