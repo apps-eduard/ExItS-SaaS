@@ -24,6 +24,7 @@ internal static class PosApiResults
     public static int MapStatusCode(string errorCode) => errorCode switch
     {
         ApplicationErrorCodes.CustomerNotFound
+            or ApplicationErrorCodes.LinkedCustomerNotFound
             or ApplicationErrorCodes.CreditEntryNotFound
             or ApplicationErrorCodes.RepaymentNotFound
             or ApplicationErrorCodes.CategoryNotFound

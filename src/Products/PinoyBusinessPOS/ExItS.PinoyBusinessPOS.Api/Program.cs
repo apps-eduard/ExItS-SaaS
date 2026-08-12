@@ -130,6 +130,20 @@ builder.Services.AddHttpClient<IPlatformMerchantCatalogClient, PlatformMerchantC
 
     client.Timeout = TimeSpan.FromSeconds(10);
 });
+builder.Services.AddHttpClient<ILinkedCustomerPlatformAuthorization, LinkedCustomerPlatformAuthorizationClient>((provider, client) =>
+{
+    var options = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<PlatformAuthOptions>>().Value;
+    if (!string.IsNullOrWhiteSpace(options.BaseUrl))
+    {
+        client.BaseAddress = new Uri(options.BaseUrl.TrimEnd('/') + "/", UriKind.Absolute);
+    }
+
+    // Fail fast: unreachable Platform must deny statement access, not hang.
+    client.Timeout = TimeSpan.FromSeconds(3);
+});
+builder.Services.AddScoped<AuthorizeLinkedCustomerStatementAccess>();
+builder.Services.AddScoped<GetLinkedCustomerStatementSummary>();
+builder.Services.AddScoped<ListLinkedCustomerRecentActivity>();
 builder.Services.AddHostedService<ExItS.PinoyBusinessPOS.Infrastructure.Catalog.PosCatalogImportBackgroundService>();
 builder.Services.AddScoped<SaleQueryService>();
 builder.Services.AddScoped<CheckoutSale>();
@@ -223,6 +237,7 @@ app.MapDueDateEndpoints();
 app.MapRepaymentEndpoints();
 app.MapPaymentAttemptEndpoints();
 app.MapStatementEndpoints();
+app.MapLinkedCustomerStatementEndpoints();
 app.MapCatalogEndpoints();
 app.MapCatalogImportEndpoints();
 app.MapPlatformSupportCatalogEndpoints();

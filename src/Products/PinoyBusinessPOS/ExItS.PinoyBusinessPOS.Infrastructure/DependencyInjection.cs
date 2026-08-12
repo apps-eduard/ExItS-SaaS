@@ -6,6 +6,7 @@ using ExItS.PinoyBusinessPOS.Application.Expenses;
 using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Application.Payments;
 using ExItS.PinoyBusinessPOS.Application.Sales;
+using ExItS.PinoyBusinessPOS.Application.Statements;
 using ExItS.PinoyBusinessPOS.Application.Purchasing;
 using ExItS.PinoyBusinessPOS.Application.Returns;
 using ExItS.PinoyBusinessPOS.Application.Permissions;
@@ -56,6 +57,7 @@ public static class DependencyInjection
         services.AddScoped<ISaleReturnStockService, SaleReturnStockService>();
         services.AddScoped<IPurchaseStockService, PurchaseStockService>();
         services.AddScoped<IUtangLedgerQuery, UtangLedgerQuery>();
+        services.AddScoped<ILinkedCustomerRecentActivityQuery, LinkedCustomerRecentActivityQuery>();
         services.AddScoped<IOutstandingBalanceService, OutstandingBalanceService>();
         services.AddScoped<IPosUnitOfWork, PosUnitOfWork>();
         services.AddScoped<ExItS.PinoyBusinessPOS.Application.Abstractions.IPosIdempotencyService, Idempotency.PosIdempotencyService>();
