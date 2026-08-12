@@ -10,7 +10,7 @@ public static class PersonalFeatureCodes
     /// <summary>Unlocks older settled Business Utang history and settled receipt detail beyond the free window.</summary>
     public const string DigitalRecordsExtended = "personal-digital-records-extended";
 
-    /// <summary>Ad-Free Personal entitlement (WP09). Used by WP08 eligibility to skip rewarded-ad earning.</summary>
+    /// <summary>Ad-Free Personal entitlement — suppresses rewarded ads while active.</summary>
     public const string AdFree = "personal-ad-free";
 
     /// <summary>
@@ -18,6 +18,12 @@ public static class PersonalFeatureCodes
     /// Not a production launch price — Admin/config owns economics later (WP11).
     /// </summary>
     public const int DigitalRecordsExtendedDefaultRewardPoints = 100;
+
+    /// <summary>
+    /// Development/test default reward-point price for personal-ad-free.
+    /// Not a production launch price — Admin/config owns economics later (WP11).
+    /// </summary>
+    public const int AdFreeDefaultRewardPoints = 150;
 
     public static FeatureCode DigitalRecordsExtendedCode { get; } = FeatureCode.Create(DigitalRecordsExtended);
     public static FeatureCode AdFreeCode { get; } = FeatureCode.Create(AdFree);

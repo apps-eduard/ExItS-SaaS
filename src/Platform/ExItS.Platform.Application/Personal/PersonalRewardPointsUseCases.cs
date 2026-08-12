@@ -319,23 +319,35 @@ public sealed class RedeemPersonalFeatureWithRewardPoints
         var definition = await _definitions.GetByCodeAsync(code, cancellationToken).ConfigureAwait(false);
         if (definition is null)
         {
-            // Seed redeemable digital-records definition for development/test paths.
-            if (code.Value == PersonalFeatureCodes.DigitalRecordsExtended)
+            // Seed known redeemable Personal definitions for development/test paths (WP07/WP09).
+            var seededPrice = code.Value switch
             {
-                definition = PersonalFeatureDefinition.Create(
-                    code,
-                    "Digital Records Extended History",
-                    utcNow,
-                    isActive: true,
-                    rewardPointsPrice: PersonalFeatureCodes.DigitalRecordsExtendedDefaultRewardPoints);
-                await _definitions.AddAsync(definition, cancellationToken).ConfigureAwait(false);
-            }
-            else
+                PersonalFeatureCodes.DigitalRecordsExtended =>
+                    PersonalFeatureCodes.DigitalRecordsExtendedDefaultRewardPoints,
+                PersonalFeatureCodes.AdFree =>
+                    PersonalFeatureCodes.AdFreeDefaultRewardPoints,
+                _ => (int?)null
+            };
+            if (seededPrice is null)
             {
                 return ApplicationResult<RedeemPersonalFeatureResultDto>.Failure(
                     ApplicationErrorCodes.PersonalFeatureDefinitionNotFound,
                     "Personal feature was not found.");
             }
+
+            var displayName = code.Value switch
+            {
+                PersonalFeatureCodes.DigitalRecordsExtended => "Digital Records Extended History",
+                PersonalFeatureCodes.AdFree => "Ad-Free Personal",
+                _ => code.Value
+            };
+            definition = PersonalFeatureDefinition.Create(
+                code,
+                displayName,
+                utcNow,
+                isActive: true,
+                rewardPointsPrice: seededPrice);
+            await _definitions.AddAsync(definition, cancellationToken).ConfigureAwait(false);
         }
 
         if (!definition.IsActive)

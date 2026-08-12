@@ -185,6 +185,7 @@ public sealed class GrantPersonalFeature
         code.Value switch
         {
             PersonalFeatureCodes.DigitalRecordsExtended => "Digital Records Extended History",
+            PersonalFeatureCodes.AdFree => "Ad-Free Personal",
             _ => code.Value
         };
 
@@ -193,6 +194,8 @@ public sealed class GrantPersonalFeature
         {
             PersonalFeatureCodes.DigitalRecordsExtended =>
                 PersonalFeatureCodes.DigitalRecordsExtendedDefaultRewardPoints,
+            PersonalFeatureCodes.AdFree =>
+                PersonalFeatureCodes.AdFreeDefaultRewardPoints,
             _ => null
         };
 

@@ -223,4 +223,8 @@ public static class ApplicationErrorCodes
         "application.personal.reward_points.claim.invalid";
     public const string PersonalRewardClaimProviderUnavailable =
         "application.personal.reward_points.claim.provider_unavailable";
+    public const string PersonalAdsAdFreeActive =
+        "application.personal.ads.ad_free_active";
+    public const string PersonalAdsNotEligible =
+        "application.personal.ads.not_eligible";
 }

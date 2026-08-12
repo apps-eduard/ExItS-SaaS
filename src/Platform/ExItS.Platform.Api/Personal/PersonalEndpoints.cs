@@ -180,7 +180,24 @@ internal static class PersonalEndpoints
             return PlatformApiResults.FromResult(result, Results.Ok);
         });
 
-        // WP08: idempotent AdReward claim (server-side points; null provider until WP09).
+        // WP09: server-side ads eligibility (Ad-Free authoritative; no fake playback).
+        personal.MapGet("/ads/eligibility", async (
+            HttpContext http,
+            GetPersonalAdEligibility getEligibility,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await getEligibility
+                .ExecuteAsync(PlatformUserId.From(userId), organizationId: null, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
+        // WP08: idempotent AdReward claim (server-side points; null provider does not fabricate success).
         personal.MapPost("/reward-points/ad-claims", async (
             HttpContext http,
             ClaimPersonalAdRewardRequest body,

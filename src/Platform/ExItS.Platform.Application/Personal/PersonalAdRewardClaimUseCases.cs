@@ -20,7 +20,8 @@ public sealed record PersonalAdRewardClaimResultDto(
     DateTimeOffset ClaimedAtUtc);
 
 /// <summary>
-/// Null/provider-neutral rewarded-ad verifier (WP08 foundation). Does not call a real ad network.
+/// Null/disabled rewarded-ad verifier. Does not call a real ad network and does not
+/// fabricate playback proof. Default runtime behavior rejects all claims (WP09).
 /// </summary>
 public sealed class NullRewardedAdClaimVerifier(IOptions<PersonalRewardClaimOptions> options) : IRewardedAdClaimVerifier
 {
@@ -31,16 +32,6 @@ public sealed class NullRewardedAdClaimVerifier(IOptions<PersonalRewardClaimOpti
     {
         ArgumentNullException.ThrowIfNull(personalUserId);
         _ = cancellationToken;
-
-        var opts = options.Value;
-        if (!opts.NullProviderClaimsEnabled)
-        {
-            return Task.FromResult(new RewardedAdClaimVerification(
-                IsValid: false,
-                Points: null,
-                ApplicationErrorCodes.PersonalRewardClaimProviderUnavailable,
-                "Rewarded-ad claim provider is not configured."));
-        }
 
         try
         {
@@ -53,6 +44,18 @@ public sealed class NullRewardedAdClaimVerifier(IOptions<PersonalRewardClaimOpti
                 Points: null,
                 ApplicationErrorCodes.PersonalRewardClaimInvalid,
                 ex.Message));
+        }
+
+        var opts = options.Value;
+        // Explicit: null provider never claims a real verification. The opt-in flag is
+        // test-only structural compatibility from WP08 and must stay false in appsettings.
+        if (!opts.NullProviderClaimsEnabled)
+        {
+            return Task.FromResult(new RewardedAdClaimVerification(
+                IsValid: false,
+                Points: null,
+                ApplicationErrorCodes.PersonalRewardClaimProviderUnavailable,
+                "Rewarded-ad claim provider is not configured. No fake playback is available."));
         }
 
         var points = opts.AdRewardPoints;
@@ -69,15 +72,18 @@ public sealed class NullRewardedAdClaimVerifier(IOptions<PersonalRewardClaimOpti
             IsValid: true,
             Points: points,
             ErrorCode: null,
-            ErrorMessage: null));
+            ErrorMessage: null,
+            ProviderReference: null));
     }
 }
 
 /// <summary>
-/// Free Personal users may earn rewarded-ad points. Ad-Free entitlement makes the user ineligible.
+/// Free Personal users may be offered rewarded ads. Active Ad-Free entitlement makes ads ineligible.
+/// Critical debt/security surfaces must never require ads (product rule; not enforced here as UI).
 /// </summary>
 public sealed class DefaultPersonalAdEligibility(
-    IPersonalFeatureEntitlementService entitlements) : IPersonalAdEligibility
+    IPersonalFeatureEntitlementService entitlements,
+    IOptions<PersonalAdsOptions> adsOptions) : IPersonalAdEligibility
 {
     public async Task<PersonalAdEligibilityResult> EvaluateAsync(
         PlatformUserId personalUserId,
@@ -90,12 +96,26 @@ public sealed class DefaultPersonalAdEligibility(
         if (adFree)
         {
             return new PersonalAdEligibilityResult(
-                false,
-                ApplicationErrorCodes.PersonalRewardClaimNotEligible,
-                "Ad-Free entitlement is active; rewarded-ad claims are not available.");
+                IsEligible: false,
+                AdFreeActive: true,
+                ApplicationErrorCodes.PersonalAdsAdFreeActive,
+                "Ad-Free entitlement is active; rewarded ads are not available.");
         }
 
-        return new PersonalAdEligibilityResult(true, null, null);
+        if (!adsOptions.Value.SurfaceEnabled)
+        {
+            return new PersonalAdEligibilityResult(
+                IsEligible: false,
+                AdFreeActive: false,
+                ApplicationErrorCodes.PersonalAdsNotEligible,
+                "Personal ads surface is disabled.");
+        }
+
+        return new PersonalAdEligibilityResult(
+            IsEligible: true,
+            AdFreeActive: false,
+            DenialCode: null,
+            DenialMessage: null);
     }
 }
 

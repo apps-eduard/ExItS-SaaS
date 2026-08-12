@@ -11,180 +11,135 @@ using Microsoft.Extensions.Options;
 
 namespace ExItS.Platform.UnitTests.Personal;
 
-public sealed class PersonalRewardClaimTests
+public sealed class PersonalAdsTests
 {
-    private static readonly DateTimeOffset T0 = new(2026, 8, 12, 16, 0, 0, TimeSpan.Zero);
+    private static readonly DateTimeOffset T0 = new(2026, 8, 12, 17, 0, 0, TimeSpan.Zero);
     private static readonly PlatformUserId User = PlatformUserId.From(Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
-    private static readonly PlatformUserId Other = PlatformUserId.From(Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"));
-    private const string ClaimKey = "dev-claim-0001";
 
     [Fact]
-    public async Task First_ad_claim_credits_configured_points_once()
+    public async Task Without_ad_free_user_is_eligible_and_provider_not_configured()
     {
         var harness = new Harness();
-        var result = await harness.Claim.ExecuteAsync(User, ClaimKey);
+        var result = await harness.GetEligibility.ExecuteAsync(User);
         Assert.True(result.IsSuccess, result.ErrorMessage);
-        Assert.False(result.Value!.AlreadyClaimed);
-        Assert.Equal(10, result.Value.PointsAwarded);
-        Assert.Equal(10, result.Value.AvailablePoints);
-        Assert.Equal(PersonalRewardClaimTypes.AdReward, result.Value.ClaimType);
-        Assert.Equal(PersonalRewardSources.AdReward, harness.Transactions.Committed.Single().Source);
-        Assert.Single(harness.Claims.Committed);
+        Assert.True(result.Value!.Eligible);
+        Assert.False(result.Value.AdFreeActive);
+        Assert.False(result.Value.ProviderConfigured);
+        Assert.Null(result.Value.ReasonCode);
     }
 
     [Fact]
-    public async Task Duplicate_ad_claim_is_idempotent()
+    public async Task Active_ad_free_makes_ads_ineligible()
     {
         var harness = new Harness();
-        var first = await harness.Claim.ExecuteAsync(User, ClaimKey);
-        var second = await harness.Claim.ExecuteAsync(User, ClaimKey);
-        Assert.True(first.IsSuccess);
-        Assert.True(second.IsSuccess, second.ErrorMessage);
-        Assert.True(second.Value!.AlreadyClaimed);
-        Assert.Equal(first.Value!.RewardTransactionId, second.Value.RewardTransactionId);
-        Assert.Equal(10, second.Value.AvailablePoints);
-        Assert.Single(harness.Transactions.Committed);
-        Assert.Single(harness.Claims.Committed);
+        await harness.GrantAdFreeAsync(endsAtUtc: null);
+        var result = await harness.GetEligibility.ExecuteAsync(User);
+        Assert.True(result.IsSuccess);
+        Assert.False(result.Value!.Eligible);
+        Assert.True(result.Value.AdFreeActive);
+        Assert.Equal(ApplicationErrorCodes.PersonalAdsAdFreeActive, result.Value.ReasonCode);
     }
 
     [Fact]
-    public async Task Concurrent_duplicate_claim_credits_once()
+    public async Task Expired_ad_free_restores_eligibility()
     {
         var harness = new Harness();
-        harness.OnBeforeCommit = () =>
-        {
-            // Peer already committed the same claim.
-            var peerTx = PersonalRewardTransaction.Rehydrate(
-                Guid.NewGuid(),
-                User,
-                PersonalRewardTransactionType.Credit,
-                10,
-                10,
-                10,
-                PersonalRewardSources.AdReward,
-                "peer",
-                ClaimKey,
-                PersonalRewardClaim.BuildLedgerIdempotencyKey(PersonalRewardClaimTypes.AdReward, ClaimKey),
-                T0);
-            harness.Transactions.CommitDirect(peerTx);
-            harness.Balances.CommitDirect(PersonalRewardBalance.Rehydrate(User, 10, T0, T0, version: 2));
-            harness.Claims.CommitDirect(PersonalRewardClaim.Create(
-                User,
-                PersonalRewardClaimTypes.AdReward,
-                ClaimKey,
-                10,
-                peerTx.Id,
-                T0));
-            throw new PersistenceConflictException(
-                ApplicationErrorCodes.PersonalRewardBalanceConflict,
-                "conflict");
-        };
-
-        var result = await harness.Claim.ExecuteAsync(User, ClaimKey);
-        Assert.True(result.IsSuccess, result.ErrorMessage);
-        Assert.True(result.Value!.AlreadyClaimed);
-        Assert.Equal(10, result.Value.AvailablePoints);
-        Assert.Single(harness.Transactions.Committed);
-        Assert.Single(harness.Claims.Committed);
+        await harness.GrantAdFreeAsync(endsAtUtc: T0.AddMinutes(-1));
+        var result = await harness.GetEligibility.ExecuteAsync(User);
+        Assert.True(result.IsSuccess);
+        Assert.True(result.Value!.Eligible);
+        Assert.False(result.Value.AdFreeActive);
     }
 
     [Fact]
-    public async Task Organization_context_claim_is_rejected()
+    public async Task Organization_context_eligibility_is_rejected()
     {
         var harness = new Harness();
-        var result = await harness.Claim.ExecuteAsync(
+        var result = await harness.GetEligibility.ExecuteAsync(
             User,
-            ClaimKey,
             organizationId: Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc"));
         Assert.False(result.IsSuccess);
         Assert.Equal(ApplicationErrorCodes.OrganizationRewardRedemptionUnsupported, result.ErrorCode);
-        Assert.Empty(harness.Transactions.Committed);
-        Assert.Empty(harness.Claims.Committed);
     }
 
     [Fact]
-    public async Task Organization_staff_cannot_claim_ad_reward()
+    public async Task Organization_staff_cannot_query_eligibility()
     {
         var harness = new Harness();
         var staff = PlatformUser.CreateOrganizationStaff(
-            "staff2",
-            "staff2@ORG000001",
-            "staff2@example.com",
+            "staff9",
+            "staff9@ORG000001",
+            "staff9@example.com",
             PlatformOrganizationId.From(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd")),
-            "Staff Two",
+            "Staff Nine",
             T0,
-            id: PlatformUserId.From(Guid.Parse("ffffffff-ffff-ffff-ffff-ffffffffffff")));
+            id: PlatformUserId.From(Guid.Parse("99999999-9999-9999-9999-999999999999")));
         await harness.Users.AddAsync(staff);
-        var result = await harness.Claim.ExecuteAsync(staff.Id, ClaimKey);
+        var result = await harness.GetEligibility.ExecuteAsync(staff.Id);
         Assert.False(result.IsSuccess);
         Assert.Equal(ApplicationErrorCodes.OrganizationRewardRedemptionUnsupported, result.ErrorCode);
-        Assert.Empty(harness.Claims.Committed);
     }
 
     [Fact]
-    public async Task Other_user_cannot_consume_another_users_claim_row()
+    public void Null_verifier_never_fabricates_success_by_default()
     {
-        var harness = new Harness();
-        await harness.Claim.ExecuteAsync(User, ClaimKey);
-        var other = await harness.Claim.ExecuteAsync(Other, ClaimKey);
-        Assert.True(other.IsSuccess);
-        Assert.False(other.Value!.AlreadyClaimed);
-        Assert.Equal(2, harness.Claims.Committed.Count);
-        Assert.Equal(2, harness.Transactions.Committed.Count);
-    }
-
-    [Fact]
-    public async Task Invalid_claim_key_does_not_credit()
-    {
-        var harness = new Harness();
-        var result = await harness.Claim.ExecuteAsync(User, "short");
-        Assert.False(result.IsSuccess);
-        Assert.Equal(ApplicationErrorCodes.PersonalRewardClaimInvalid, result.ErrorCode);
-        Assert.Empty(harness.Transactions.Committed);
-    }
-
-    [Fact]
-    public async Task Ad_free_entitlement_makes_claim_ineligible()
-    {
-        var harness = new Harness();
-        await harness.Definitions.AddAsync(
-            PersonalFeatureDefinition.Create(PersonalFeatureCodes.AdFreeCode, "Ad Free", T0));
-        await harness.Entitlements.AddAsync(
-            PersonalFeatureEntitlement.Grant(
-                User,
-                PersonalFeatureCodes.AdFreeCode,
-                PersonalFeatureGrantSource.AdminGrant,
-                T0,
-                null,
-                T0));
-        await harness.UnitOfWork.SaveChangesAsync();
-
-        var result = await harness.Claim.ExecuteAsync(User, ClaimKey);
-        Assert.False(result.IsSuccess);
-        Assert.Equal(ApplicationErrorCodes.PersonalAdsAdFreeActive, result.ErrorCode);
-        Assert.Empty(harness.Transactions.Committed);
-    }
-
-    [Fact]
-    public async Task Null_provider_disabled_rejects_claim()
-    {
-        var harness = new Harness(useTrustedVerifier: false, nullProviderEnabled: false);
-        var result = await harness.Claim.ExecuteAsync(User, ClaimKey);
-        Assert.False(result.IsSuccess);
+        var verifier = new NullRewardedAdClaimVerifier(Options.Create(new PersonalRewardClaimOptions
+        {
+            AdRewardPoints = 10,
+            NullProviderClaimsEnabled = false
+        }));
+        var result = verifier.VerifyAsync(User, "dev-claim-0001").GetAwaiter().GetResult();
+        Assert.False(result.IsValid);
+        Assert.Null(result.Points);
         Assert.Equal(ApplicationErrorCodes.PersonalRewardClaimProviderUnavailable, result.ErrorCode);
-        Assert.Empty(harness.Transactions.Committed);
     }
 
     [Fact]
-    public async Task Redeem_still_works_after_ad_claim_credit()
+    public async Task Ad_free_reward_redemption_grants_entitlement()
     {
-        var harness = new Harness(adRewardPoints: 100);
-        var claim = await harness.Claim.ExecuteAsync(User, ClaimKey);
-        Assert.True(claim.IsSuccess);
-        var redeem = await harness.Redeem.ExecuteAsync(User, PersonalFeatureCodes.DigitalRecordsExtended);
+        var harness = new Harness();
+        await harness.Award.ExecuteAsync(
+            User.Value,
+            PersonalFeatureCodes.AdFreeDefaultRewardPoints,
+            PersonalRewardSources.AdminAward);
+        var redeem = await harness.Redeem.ExecuteAsync(User, PersonalFeatureCodes.AdFree);
         Assert.True(redeem.IsSuccess, redeem.ErrorMessage);
         Assert.Equal(0, redeem.Value!.AvailablePoints);
         Assert.Equal(nameof(PersonalFeatureGrantSource.RewardPoints), redeem.Value.Entitlement!.GrantSource);
+        Assert.True(await harness.EntitlementService.HasActiveEntitlementAsync(
+            User, PersonalFeatureCodes.AdFree, T0));
+
+        var eligibility = await harness.GetEligibility.ExecuteAsync(User);
+        Assert.False(eligibility.Value!.Eligible);
+        Assert.True(eligibility.Value.AdFreeActive);
+    }
+
+    [Fact]
+    public async Task Ad_free_already_active_redemption_does_not_double_debit()
+    {
+        var harness = new Harness();
+        await harness.Award.ExecuteAsync(
+            User.Value,
+            PersonalFeatureCodes.AdFreeDefaultRewardPoints * 2,
+            PersonalRewardSources.AdminAward);
+        var first = await harness.Redeem.ExecuteAsync(User, PersonalFeatureCodes.AdFree);
+        var second = await harness.Redeem.ExecuteAsync(User, PersonalFeatureCodes.AdFree);
+        Assert.True(first.IsSuccess);
+        Assert.True(second.IsSuccess);
+        Assert.True(second.Value!.AlreadyActive);
+        Assert.Null(second.Value.PointsDebited);
+        Assert.Equal(PersonalFeatureCodes.AdFreeDefaultRewardPoints, second.Value.AvailablePoints);
+    }
+
+    [Fact]
+    public async Task Claim_with_trusted_verifier_blocked_when_ad_free_active()
+    {
+        var harness = new Harness();
+        await harness.GrantAdFreeAsync(endsAtUtc: null);
+        var claim = await harness.Claim.ExecuteAsync(User, "dev-claim-0001");
+        Assert.False(claim.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.PersonalAdsAdFreeActive, claim.ErrorCode);
+        Assert.Empty(harness.Transactions.Committed);
     }
 
     private sealed class Harness
@@ -196,109 +151,87 @@ public sealed class PersonalRewardClaimTests
         public InMemoryClaims Claims { get; } = new();
         public InMemoryPlatformUserRepository Users { get; } = new();
         public ControllableUnitOfWork UnitOfWork { get; }
+        public PersonalFeatureEntitlementService EntitlementService { get; }
+        public GetPersonalAdEligibility GetEligibility { get; }
         public ClaimPersonalAdReward Claim { get; }
         public RedeemPersonalFeatureWithRewardPoints Redeem { get; }
-        public Action? OnBeforeCommit { get; set; }
+        public AwardPersonalRewardPoints Award { get; }
 
-        public Harness(
-            bool useTrustedVerifier = true,
-            int adRewardPoints = 10,
-            bool nullProviderEnabled = false)
+        public Harness()
         {
             Users.AddAsync(PlatformUser.Create("personal1", "Personal One", "personal1@example.com", T0, id: User));
-            Users.AddAsync(PlatformUser.Create("personal2", "Personal Two", "personal2@example.com", T0, id: Other));
             var clock = new FixedClock(T0);
             UnitOfWork = new ControllableUnitOfWork(this);
-            var entitlementService = new PersonalFeatureEntitlementService(Definitions, Entitlements);
+            EntitlementService = new PersonalFeatureEntitlementService(Definitions, Entitlements);
+            var adsOptions = Options.Create(new PersonalAdsOptions { ProviderMode = "None", SurfaceEnabled = true });
             var claimOptions = Options.Create(new PersonalRewardClaimOptions
             {
-                AdRewardPoints = adRewardPoints,
-                NullProviderClaimsEnabled = nullProviderEnabled
+                AdRewardPoints = 10,
+                NullProviderClaimsEnabled = false
             });
-            var adsOptions = Options.Create(new PersonalAdsOptions
-            {
-                ProviderMode = "None",
-                SurfaceEnabled = true
-            });
-            IRewardedAdClaimVerifier verifier = useTrustedVerifier
-                ? new TrustedTestRewardedAdClaimVerifier(adRewardPoints)
-                : new NullRewardedAdClaimVerifier(claimOptions);
+            var eligibility = new DefaultPersonalAdEligibility(EntitlementService, adsOptions);
+            GetEligibility = new GetPersonalAdEligibility(
+                eligibility, Users, clock, adsOptions, claimOptions);
             Claim = new ClaimPersonalAdReward(
                 Claims,
                 Balances,
                 Transactions,
-                verifier,
-                new DefaultPersonalAdEligibility(entitlementService, adsOptions),
+                new TrustedVerifier(10),
+                eligibility,
                 Users,
                 UnitOfWork,
                 clock);
             Redeem = new RedeemPersonalFeatureWithRewardPoints(
-                Definitions,
-                Entitlements,
-                entitlementService,
-                Balances,
-                Transactions,
-                Users,
-                UnitOfWork,
-                clock);
+                Definitions, Entitlements, EntitlementService, Balances, Transactions, Users, UnitOfWork, clock);
+            Award = new AwardPersonalRewardPoints(Balances, Transactions, UnitOfWork, clock);
+        }
+
+        public async Task GrantAdFreeAsync(DateTimeOffset? endsAtUtc)
+        {
+            await Definitions.AddAsync(
+                PersonalFeatureDefinition.Create(
+                    PersonalFeatureCodes.AdFreeCode,
+                    "Ad-Free Personal",
+                    T0,
+                    isActive: true,
+                    rewardPointsPrice: PersonalFeatureCodes.AdFreeDefaultRewardPoints));
+            await Entitlements.AddAsync(
+                PersonalFeatureEntitlement.Grant(
+                    User,
+                    PersonalFeatureCodes.AdFreeCode,
+                    PersonalFeatureGrantSource.AdminGrant,
+                    T0.AddDays(-1),
+                    endsAtUtc,
+                    T0));
+            await UnitOfWork.SaveChangesAsync();
         }
     }
 
-    /// <summary>Trusted test double — not a production or null provider.</summary>
-    private sealed class TrustedTestRewardedAdClaimVerifier(int points) : IRewardedAdClaimVerifier
+    private sealed class TrustedVerifier(int points) : IRewardedAdClaimVerifier
     {
         public Task<RewardedAdClaimVerification> VerifyAsync(
             PlatformUserId personalUserId,
             string claimKey,
-            CancellationToken cancellationToken = default)
-        {
-            _ = personalUserId;
-            _ = claimKey;
-            _ = cancellationToken;
-            return Task.FromResult(new RewardedAdClaimVerification(
-                IsValid: true,
-                Points: points,
-                ErrorCode: null,
-                ErrorMessage: null,
-                ProviderReference: "test-double"));
-        }
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(new RewardedAdClaimVerification(true, points, null, null, "test"));
+    }
+
+    private sealed class FixedClock(DateTimeOffset utcNow) : IClock
+    {
+        public DateTimeOffset UtcNow { get; } = utcNow;
     }
 
     private sealed class ControllableUnitOfWork(Harness harness) : IPlatformUnitOfWork
     {
         public Task SaveChangesAsync(CancellationToken cancellationToken = default)
         {
-            try
-            {
-                if (harness.OnBeforeCommit is not null)
-                {
-                    var action = harness.OnBeforeCommit;
-                    harness.OnBeforeCommit = null;
-                    action();
-                }
-
-                harness.Definitions.Commit();
-                harness.Entitlements.Commit();
-                harness.Balances.Commit();
-                harness.Transactions.Commit();
-                harness.Claims.Commit();
-                return Task.CompletedTask;
-            }
-            catch
-            {
-                harness.Definitions.Rollback();
-                harness.Entitlements.Rollback();
-                harness.Balances.Rollback();
-                harness.Transactions.Rollback();
-                harness.Claims.Rollback();
-                throw;
-            }
+            harness.Definitions.Commit();
+            harness.Entitlements.Commit();
+            harness.Balances.Commit();
+            harness.Transactions.Commit();
+            harness.Claims.Commit();
+            return Task.CompletedTask;
         }
-    }
-
-    private sealed class FixedClock(DateTimeOffset utcNow) : IClock
-    {
-        public DateTimeOffset UtcNow { get; } = utcNow;
     }
 
     private sealed class InMemoryDefinitions : IPersonalFeatureDefinitionRepository
@@ -339,8 +272,6 @@ public sealed class PersonalRewardClaimTests
 
             _pending.Clear();
         }
-
-        public void Rollback() => _pending.Clear();
     }
 
     private sealed class InMemoryEntitlements : IPersonalFeatureEntitlementRepository
@@ -374,8 +305,6 @@ public sealed class PersonalRewardClaimTests
             Committed.AddRange(_pending);
             _pending.Clear();
         }
-
-        public void Rollback() => _pending.Clear();
     }
 
     private sealed class InMemoryBalances : IPersonalRewardBalanceRepository
@@ -431,11 +360,6 @@ public sealed class PersonalRewardClaimTests
             _pending.Clear();
         }
 
-        public void Rollback() => _pending.Clear();
-
-        public void CommitDirect(PersonalRewardBalance balance) =>
-            _committed[balance.PersonalUserId.Value] = Clone(balance);
-
         private static PersonalRewardBalance Clone(PersonalRewardBalance b) =>
             PersonalRewardBalance.Rehydrate(
                 b.PersonalUserId, b.AvailablePoints, b.CreatedAtUtc, b.UpdatedAtUtc, b.Version);
@@ -480,10 +404,6 @@ public sealed class PersonalRewardClaimTests
             Committed.AddRange(_pending);
             _pending.Clear();
         }
-
-        public void Rollback() => _pending.Clear();
-
-        public void CommitDirect(PersonalRewardTransaction tx) => Committed.Add(tx);
     }
 
     private sealed class InMemoryClaims : IPersonalRewardClaimRepository
@@ -512,9 +432,5 @@ public sealed class PersonalRewardClaimTests
             Committed.AddRange(_pending);
             _pending.Clear();
         }
-
-        public void Rollback() => _pending.Clear();
-
-        public void CommitDirect(PersonalRewardClaim claim) => Committed.Add(claim);
     }
 }

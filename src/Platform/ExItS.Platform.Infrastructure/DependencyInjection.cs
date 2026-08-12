@@ -112,6 +112,7 @@ public static class DependencyInjection
         services.AddSingleton<IRewardedAdClaimVerifier, NullRewardedAdClaimVerifier>();
         services.AddScoped<IPersonalAdEligibility, DefaultPersonalAdEligibility>();
         services.Configure<PersonalRewardClaimOptions>(config.GetSection(PersonalRewardClaimOptions.SectionName));
+        services.Configure<PersonalAdsOptions>(config.GetSection(PersonalAdsOptions.SectionName));
         services.AddScoped<IBusinessCreditOpeningBalanceRepository, BusinessCreditOpeningBalanceRepository>();
         services.AddScoped<IProductLocalRoleGrantRepository, ProductLocalRoleGrantRepository>();
         services.AddSingleton<IPersonalPushNotificationSink, NullPersonalPushNotificationSink>();

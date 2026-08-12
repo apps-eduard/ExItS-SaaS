@@ -31,9 +31,10 @@ public sealed record RewardedAdClaimVerification(
     bool IsValid,
     int? Points,
     string? ErrorCode,
-    string? ErrorMessage);
+    string? ErrorMessage,
+    string? ProviderReference = null);
 
-/// <summary>Whether the Personal user may earn points via rewarded ads.</summary>
+/// <summary>Whether the Personal user may be offered rewarded ads / claim ad rewards.</summary>
 public interface IPersonalAdEligibility
 {
     Task<PersonalAdEligibilityResult> EvaluateAsync(
@@ -42,7 +43,11 @@ public interface IPersonalAdEligibility
         CancellationToken cancellationToken = default);
 }
 
-public sealed record PersonalAdEligibilityResult(bool IsEligible, string? DenialCode, string? DenialMessage);
+public sealed record PersonalAdEligibilityResult(
+    bool IsEligible,
+    bool AdFreeActive,
+    string? DenialCode,
+    string? DenialMessage);
 
 /// <summary>
 /// Development/test defaults for Personal reward earning. Not production economics (WP11).
@@ -55,10 +60,10 @@ public sealed class PersonalRewardClaimOptions
     public int AdRewardPoints { get; set; } = 10;
 
     /// <summary>
-    /// When true, <see cref="NullRewardedAdClaimVerifier"/> accepts well-formed claim keys.
-    /// Real ad networks remain WP09.
+    /// Unsafe test-only switch. When true, <see cref="NullRewardedAdClaimVerifier"/> may accept
+    /// well-formed claim keys without a real provider. Must remain <c>false</c> in runtime config (WP09).
     /// </summary>
-    public bool NullProviderClaimsEnabled { get; set; } = true;
+    public bool NullProviderClaimsEnabled { get; set; } = false;
 }
 
 /// <summary>
