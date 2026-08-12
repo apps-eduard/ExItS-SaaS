@@ -113,6 +113,7 @@ docs/reports/P24-WP03-linked-customer-authorization-contract.md
 docs/reports/P24-WP04-lightweight-linked-business-utang-statement.md
 docs/reports/P24-WP05-receipt-summary-detail-and-lazy-loading.md
 docs/reports/P24-WP06-free-vs-paid-personal-history-entitlement.md
+docs/reports/P24-WP07-personal-reward-points-and-redemption.md
 docs/portfolio-progress.md
 docs/product/pinoy-business-pos-requirements.md
 docs/product/portfolio-vision.md
