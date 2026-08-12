@@ -216,6 +216,7 @@ P19-WP08 ? End-to-End Validation and User Closeout Checklist (Retest � awaitin
 | 17 | POS MVP Operational Onboarding and First Sale | **Complete with documented residuals** | 8 | 8 | 100% | [Open](phases/phase-17-pos-mvp-operational-onboarding-and-first-sale.md) |
 | 18 | Mobile Personal, Organization, and POS Experience | **Complete (implementation/scope)** � partial phone validation; Not Device Verified | 8 | 8 | 100% | [Open](phases/phase-18-mobile-personal-organization-and-pos-experience.md) |
 | 19 | Mobile POS Operations and Cashier Experience Completion | **Open** (WP01�WP07 Code Complete; WP08 Retest) | 7 | 8 |  -  | [Open](phases/phase-19-mobile-pos-operations-and-cashier-experience.md) |
+| 24 | Linked Customer Statements and Personal Monetization | **Open** (WP01 Planned) | 0 | 15 |  -  | [Open](phases/phase-24-linked-customer-statements-and-personal-monetization.md) |
 
 **MVP phases 0-9:** 52 / 52 = **100%** (with documented risks; not Production-ready).
 **Phase 10 Full POS:** 8 / 8 = **100%** (with documented risks; not Production-ready).
@@ -229,6 +230,14 @@ P19-WP08 ? End-to-End Validation and User Closeout Checklist (Retest � awaitin
 **Phase 18 Mobile Personal / Org / POS Experience:** **Complete (implementation/scope)** � WP01�WP08 closed ([checklist](reports/P18-WP08-end-to-end-validation-and-closeout.md)); Products/Categories phone-validated; Quick Login pending final retest; PhysicalDevice Tailscale APK delivered; **Not Device Verified**; Inventory/Registers/Shifts/Sales/Customers/Reports/full Cashier UI ? Phase 19; Phase 14 unchanged; not Production-ready.
 **Phase 19 Mobile POS Operations / Cashier Experience:** **Open** ([phase](phases/phase-19-mobile-pos-operations-and-cashier-experience.md); [P19-WP08](reports/P19-WP08-end-to-end-validation-and-closeout.md)) — WP01–WP07 Code Complete; WP08 Retest awaiting phone confirmation; offline operability foundation Code Complete with physical A–S incomplete ([report](reports/P19-offline-operability-foundation.md); commits `f476172`, `cc64ba3`, `10a1fc5`); Personal-scope offline sync hardening Code Complete ([report](reports/P19-personal-scope-offline-operability.md); tip `f3d87be`); Phase 14 unchanged; not Production-ready; **Not Device Verified**; **Not Complete**.
 **Phase 21 Privacy, Compliance, and Regulatory Readiness:** **Open** ([phase](phases/phase-21-privacy-compliance-and-regulatory-readiness.md); [foundation report](reports/P21-foundation-privacy-compliance-workspace.md)) — Platform-only readiness workspace foundation Code Complete; **not** legal/NPC certification; DPO/legal review required; Phase 14/19/20 unchanged.
+**Phase 23 Multi-Business Entitlements / Variable-Quantity Selling:** **Open** ([phase](phases/phase-23-multi-business-entitlements-and-variable-quantity-selling.md)) — WP01–WP11 done; WP12 in progress; WP13 closeout **not started**; **Not Device Verified**. Phase 24 does not close Phase 23.
+**Phase 24 Linked Customer Statements / Personal Monetization:** **Open** ([phase](phases/phase-24-linked-customer-statements-and-personal-monetization.md); [P24-WP01](reports/P24-WP01-current-state-and-architecture-contract.md); [ADR-021](decisions/ADR-021-linked-customer-statements-and-personal-monetization.md)) — WP01 architecture contract Planned; WP02+ not started; **Not Device Verified**; **Not Production Ready**.
+
+## Phase 24 work packages
+
+| WP | Status | Key commit |
+|---|---|---|
+| P24-WP01 — Current-state audit + architecture contract | **Planned** (docs) | See phase page after docs commit — [report](reports/P24-WP01-current-state-and-architecture-contract.md) |
 
 ## Phase 21 work packages
 

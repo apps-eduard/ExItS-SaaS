@@ -63,6 +63,7 @@ docs/decisions/ADR-010-separate-ui-implementations-platform-and-pos.md
 docs/decisions/ADR-011-platform-authority-and-product-local-projections.md
 docs/decisions/ADR-012-versioned-platform-contracts-and-local-projections.md
 docs/decisions/ADR-014-approve-exits-portfolio-architecture-for-controlled-implementation.md
+docs/decisions/ADR-021-linked-customer-statements-and-personal-monetization.md
 docs/decisions/README.md
 docs/engineering/architecture.md
 docs/engineering/approved-architecture-summary.md
@@ -105,6 +106,8 @@ docs/phases/phase-07-offline-sync.md
 docs/phases/phase-08-basic-store.md
 docs/phases/phase-09-mvp-hardening.md
 docs/phases/phase-10-full-pos.md
+docs/phases/phase-24-linked-customer-statements-and-personal-monetization.md
+docs/reports/P24-WP01-current-state-and-architecture-contract.md
 docs/portfolio-progress.md
 docs/product/pinoy-business-pos-requirements.md
 docs/product/portfolio-vision.md

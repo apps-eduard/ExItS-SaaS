@@ -27,4 +27,5 @@
 | 20 | Global Product Catalog and Business Template Onboarding | **Open** (Implementation → Validation Pending; not Device Verified) | [Open](phase-20-global-product-catalog-and-business-template-onboarding.md) |
 | 21 | Privacy, Compliance, and Regulatory Readiness | **Open** (Foundation Code Complete — readiness tooling; not legally compliant) | [Open](phase-21-privacy-compliance-and-regulatory-readiness.md) |
 | 22 | Production Readiness, Release & Operational Hardening | **Open** (In Progress; not Device Verified; not Production Ready) | [Open](phase-22-production-readiness-release-and-operational-hardening.md) |
-| 23 | Multi-Business Entitlements and Variable-Quantity Selling | **Open** (WP01–WP11 done; WP12+ not started; not Device Verified) | [Open](phase-23-multi-business-entitlements-and-variable-quantity-selling.md) |
+| 23 | Multi-Business Entitlements and Variable-Quantity Selling | **Open** (WP01–WP11 done; WP12 in progress; WP13 not started; not Device Verified) | [Open](phase-23-multi-business-entitlements-and-variable-quantity-selling.md) |
+| 24 | Linked Customer Statements and Personal Monetization | **Open** (WP01 Planned — architecture contract; WP02+ not started; not Device Verified) | [Open](phase-24-linked-customer-statements-and-personal-monetization.md) |
