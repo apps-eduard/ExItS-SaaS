@@ -1,3 +1,5 @@
+using System.IO;
+using System.Net.Http;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
@@ -123,11 +125,9 @@ public sealed class GetTemplateImportStatus(
                 .GetPublishedTemplateAsync(platformTemplateId, platformSessionToken, cancellationToken)
                 .ConfigureAwait(false);
         }
-        catch (Exception ex) when (ImportTemplateBatch.IsTransientPlatformFailure(ex, cancellationToken))
+        catch (Exception ex) when (ImportTemplateBatch.TryMapPlatformFailure<PosTemplateImportStatusDto>(ex, cancellationToken, out var mapped))
         {
-            return ApplicationResult<PosTemplateImportStatusDto>.Failure(
-                ApplicationErrorCodes.CatalogImportPlatformUnavailable,
-                "Platform catalog is temporarily unavailable. Existing POS selling is unaffected.");
+            return mapped!;
         }
 
         if (template is null || !string.Equals(template.Status, "Published", StringComparison.OrdinalIgnoreCase))
@@ -268,11 +268,9 @@ public sealed class ImportTemplateBatch
                     .GetPublishedTemplateAsync(platformTemplateId, platformSessionToken, cancellationToken)
                     .ConfigureAwait(false);
             }
-            catch (Exception ex) when (IsTransientPlatformFailure(ex, cancellationToken))
+            catch (Exception ex) when (TryMapPlatformFailure<PosCatalogImportJobDto>(ex, cancellationToken, out var mapped))
             {
-                return ApplicationResult<PosCatalogImportJobDto>.Failure(
-                    ApplicationErrorCodes.CatalogImportPlatformUnavailable,
-                    "Platform catalog is temporarily unavailable. Existing POS selling is unaffected.");
+                return mapped!;
             }
 
             if (template is null || !string.Equals(template.Status, "Published", StringComparison.OrdinalIgnoreCase))
@@ -327,11 +325,9 @@ public sealed class ImportTemplateBatch
                         cancellationToken)
                     .ConfigureAwait(false);
             }
-            catch (Exception ex) when (IsTransientPlatformFailure(ex, cancellationToken))
+            catch (Exception ex) when (TryMapPlatformFailure<PosCatalogImportJobDto>(ex, cancellationToken, out var mappedProducts))
             {
-                return ApplicationResult<PosCatalogImportJobDto>.Failure(
-                    ApplicationErrorCodes.CatalogImportPlatformUnavailable,
-                    "Platform catalog is temporarily unavailable. Existing POS selling is unaffected.");
+                return mappedProducts!;
             }
 
             var entitledById = entitledProducts.ToDictionary(p => p.Id);
@@ -462,9 +458,70 @@ public sealed class ImportTemplateBatch
     /// HttpClient timeouts raise <see cref="TaskCanceledException"/> (an
     /// <see cref="OperationCanceledException"/>) even when the request token is still open.
     /// Those must map to a controlled failure — not an unhandled 500.
+    /// Do <b>not</b> treat 4xx Platform responses as "temporarily unavailable".
     /// </summary>
-    public static bool IsTransientPlatformFailure(Exception ex, CancellationToken cancellationToken) =>
-        ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested;
+    public static bool IsTransientPlatformFailure(Exception ex, CancellationToken cancellationToken)
+    {
+        ex = Unwrap(ex);
+        if (ex is PlatformMerchantCatalogTransientException)
+        {
+            return true;
+        }
+
+        if (ex is PlatformMerchantCatalogRequestException)
+        {
+            return false;
+        }
+
+        if (ex is OperationCanceledException)
+        {
+            // HttpClient timeout cancels with an open caller token → treat as transient.
+            return !cancellationToken.IsCancellationRequested;
+        }
+
+        return ex is HttpRequestException or IOException or TimeoutException;
+    }
+
+    public static bool TryMapPlatformFailure<T>(
+        Exception ex,
+        CancellationToken cancellationToken,
+        out ApplicationResult<T>? mapped)
+    {
+        ex = Unwrap(ex);
+        if (ex is PlatformMerchantCatalogRequestException request)
+        {
+            if (request.IsUnauthorized)
+            {
+                mapped = ApplicationResult<T>.Failure(
+                    ApplicationErrorCodes.CatalogImportPlatformSessionRequired,
+                    "Platform session is required to import catalog templates. Sign in again and retry.");
+                return true;
+            }
+
+            mapped = ApplicationResult<T>.Failure(
+                ApplicationErrorCodes.CatalogImportTemplateNotFound,
+                string.IsNullOrWhiteSpace(request.Message)
+                    ? "Published template was not found."
+                    : request.Message);
+            return true;
+        }
+
+        if (IsTransientPlatformFailure(ex, cancellationToken))
+        {
+            mapped = ApplicationResult<T>.Failure(
+                ApplicationErrorCodes.CatalogImportPlatformUnavailable,
+                "Platform catalog is temporarily unavailable. Existing POS selling is unaffected.");
+            return true;
+        }
+
+        mapped = null;
+        return false;
+    }
+
+    private static Exception Unwrap(Exception ex) =>
+        ex is AggregateException aggregate && aggregate.InnerExceptions.Count == 1
+            ? aggregate.InnerExceptions[0]
+            : ex;
 }
 
 public sealed class ImportSelectedProducts
@@ -527,11 +584,9 @@ public sealed class ImportSelectedProducts
                     .GetActiveProductsAsync(ids, platformSessionToken, cancellationToken)
                     .ConfigureAwait(false);
             }
-            catch (Exception ex) when (ImportTemplateBatch.IsTransientPlatformFailure(ex, cancellationToken))
+            catch (Exception ex) when (ImportTemplateBatch.TryMapPlatformFailure<PosCatalogImportJobDto>(ex, cancellationToken, out var mapped))
             {
-                return ApplicationResult<PosCatalogImportJobDto>.Failure(
-                    ApplicationErrorCodes.CatalogImportPlatformUnavailable,
-                    "Platform catalog is temporarily unavailable. Existing POS selling is unaffected.");
+                return mapped!;
             }
 
             if (products.Count == 0)

@@ -107,11 +107,45 @@ public sealed class ImportTemplateBatchTests
     }
 
     [Fact]
+    public async Task Import_WhenPlatformReturnsUnauthorized_RequiresSessionNotUnavailable()
+    {
+        var platform = new UnauthorizedPlatform();
+        var useCase = new ImportTemplateBatch(
+            new MemoryImports(),
+            new MemoryProducts(),
+            platform,
+            new FakeUnitOfWork(),
+            new FixedClock());
+
+        var result = await useCase.ExecuteAsync(
+            Org.Value,
+            TemplateId,
+            batchNumber: 1,
+            requestedBy: Guid.NewGuid().ToString("D"),
+            platformSessionToken: "session");
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.CatalogImportPlatformSessionRequired, result.ErrorCode);
+        Assert.DoesNotContain("temporarily unavailable", result.ErrorMessage, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void IsTransientPlatformFailure_TreatsHttpClientTimeoutAsTransient()
     {
         using var open = new CancellationTokenSource();
         Assert.True(ImportTemplateBatch.IsTransientPlatformFailure(
             new TaskCanceledException("HttpClient timeout"),
+            open.Token));
+    }
+
+    [Fact]
+    public void IsTransientPlatformFailure_DoesNotTreatUnauthorizedAsTransient()
+    {
+        using var open = new CancellationTokenSource();
+        Assert.False(ImportTemplateBatch.IsTransientPlatformFailure(
+            new PlatformMerchantCatalogRequestException(
+                System.Net.HttpStatusCode.Unauthorized,
+                "Authentication is required."),
             open.Token));
     }
 
@@ -133,6 +167,7 @@ public sealed class ImportTemplateBatchTests
             Description: null,
             IconReference: null,
             PrimaryBusinessType: "Bakery",
+            PrimaryBusinessTypeId: Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc"),
             Status: "Published",
             DefaultBatchSize: defaultBatchSize,
             SelectionMode: "Curated",
@@ -265,6 +300,51 @@ public sealed class ImportTemplateBatchTests
             string? platformSessionToken,
             CancellationToken cancellationToken = default) =>
             throw new TaskCanceledException("The request was canceled due to the configured HttpClient.Timeout.");
+
+        public Task<PlatformMerchantGlobalProductDto?> GetActiveProductAsync(
+            Guid productId,
+            string? platformSessionToken,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<PlatformMerchantGlobalProductDto?>(null);
+
+        public Task<IReadOnlyList<PlatformMerchantGlobalProductDto>> GetActiveProductsAsync(
+            IReadOnlyList<Guid> productIds,
+            string? platformSessionToken,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<PlatformMerchantGlobalProductDto>>([]);
+
+        public Task<PagedResult<PlatformMerchantGlobalProductDto>> SearchActiveProductsAsync(
+            string? search,
+            Guid? categoryId,
+            string? businessTypeCode,
+            string? barcode,
+            string? sku,
+            int? page,
+            int? pageSize,
+            string? platformSessionToken,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(new PagedResult<PlatformMerchantGlobalProductDto>([], 0, 1, 50));
+
+        public Task<PagedResult<PlatformMerchantGlobalCategoryDto>> ListActiveCategoriesAsync(
+            string? search,
+            string? businessTypeCode,
+            Guid? parentId,
+            int? page,
+            int? pageSize,
+            string? platformSessionToken,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(new PagedResult<PlatformMerchantGlobalCategoryDto>([], 0, 1, 50));
+    }
+
+    private sealed class UnauthorizedPlatform : IPlatformMerchantCatalogClient
+    {
+        public Task<PlatformMerchantCatalogTemplateDto?> GetPublishedTemplateAsync(
+            Guid templateId,
+            string? platformSessionToken,
+            CancellationToken cancellationToken = default) =>
+            throw new PlatformMerchantCatalogRequestException(
+                System.Net.HttpStatusCode.Unauthorized,
+                "Authentication is required.");
 
         public Task<PlatformMerchantGlobalProductDto?> GetActiveProductAsync(
             Guid productId,

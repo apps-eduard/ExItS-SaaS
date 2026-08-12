@@ -25,6 +25,14 @@ internal static class CatalogImportEndpoints
             }
 
             var platformSessionToken = ExtractPlatformSessionToken(request);
+            if (string.IsNullOrWhiteSpace(platformSessionToken))
+            {
+                return PosApiResults.Problem(
+                    ApplicationErrorCodes.CatalogImportPlatformSessionRequired,
+                    "Platform session is required to import catalog templates. Sign in again and retry.",
+                    StatusCodes.Status401Unauthorized);
+            }
+
             var result = await useCase
                 .ExecuteAsync(organizationId, templateId, platformSessionToken, ct)
                 .ConfigureAwait(false);
@@ -50,6 +58,14 @@ internal static class CatalogImportEndpoints
             }
 
             var platformSessionToken = ExtractPlatformSessionToken(request);
+            if (string.IsNullOrWhiteSpace(platformSessionToken))
+            {
+                return PosApiResults.Problem(
+                    ApplicationErrorCodes.CatalogImportPlatformSessionRequired,
+                    "Platform session is required to import catalog templates. Sign in again and retry.",
+                    StatusCodes.Status401Unauthorized);
+            }
+
             return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
                     request,
                     organizationId,
@@ -88,6 +104,14 @@ internal static class CatalogImportEndpoints
             }
 
             var platformSessionToken = ExtractPlatformSessionToken(request);
+            if (string.IsNullOrWhiteSpace(platformSessionToken))
+            {
+                return PosApiResults.Problem(
+                    ApplicationErrorCodes.CatalogImportPlatformSessionRequired,
+                    "Platform session is required to import catalog products. Sign in again and retry.",
+                    StatusCodes.Status401Unauthorized);
+            }
+
             return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
                     request,
                     organizationId,
@@ -127,6 +151,14 @@ internal static class CatalogImportEndpoints
 
             var batchNumber = body?.BatchNumber is > 1 ? body.BatchNumber : 2;
             var platformSessionToken = ExtractPlatformSessionToken(request);
+            if (string.IsNullOrWhiteSpace(platformSessionToken))
+            {
+                return PosApiResults.Problem(
+                    ApplicationErrorCodes.CatalogImportPlatformSessionRequired,
+                    "Platform session is required to import catalog templates. Sign in again and retry.",
+                    StatusCodes.Status401Unauthorized);
+            }
+
             return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
                     request,
                     organizationId,

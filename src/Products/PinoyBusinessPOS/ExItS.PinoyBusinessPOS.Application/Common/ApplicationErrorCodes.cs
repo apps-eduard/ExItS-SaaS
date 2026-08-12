@@ -98,6 +98,7 @@ public static class ApplicationErrorCodes
     public const string CatalogImportJobNotFound = "pos.catalog_import.job.not_found";
     public const string CatalogImportIdempotencyConflict = "pos.catalog_import.idempotency.conflict";
     public const string CatalogImportPlatformUnavailable = "pos.catalog_import.platform_unavailable";
+    public const string CatalogImportPlatformSessionRequired = "pos.catalog_import.platform_session_required";
     public const string CatalogImportTemplateNotFound = "pos.catalog_import.template.not_found";
     public const string CatalogImportNoProducts = "pos.catalog_import.no_products";
     public const string CatalogImportProductAlreadyImported = "pos.catalog_import.product.already_imported";

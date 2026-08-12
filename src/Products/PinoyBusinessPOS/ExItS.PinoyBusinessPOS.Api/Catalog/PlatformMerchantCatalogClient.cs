@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -27,12 +28,12 @@ public sealed class PlatformMerchantCatalogClient(
         EnsureBaseAddress();
         using var request = CreateRequest(HttpMethod.Get, $"api/v1/catalog/templates/{templateId:D}", platformSessionToken);
         using var response = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
-        if (response.StatusCode is System.Net.HttpStatusCode.NotFound or System.Net.HttpStatusCode.Forbidden)
+        if (response.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.Forbidden)
         {
             return null;
         }
 
-        response.EnsureSuccessStatusCode();
+        await EnsureMerchantCatalogSuccessAsync(response, cancellationToken).ConfigureAwait(false);
         return await response.Content
             .ReadFromJsonAsync<PlatformMerchantCatalogTemplateDto>(JsonOptions, cancellationToken)
             .ConfigureAwait(false);
@@ -46,12 +47,12 @@ public sealed class PlatformMerchantCatalogClient(
         EnsureBaseAddress();
         using var request = CreateRequest(HttpMethod.Get, $"api/v1/catalog/products/{productId:D}", platformSessionToken);
         using var response = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
-        if (response.StatusCode is System.Net.HttpStatusCode.NotFound or System.Net.HttpStatusCode.Forbidden)
+        if (response.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.Forbidden)
         {
             return null;
         }
 
-        response.EnsureSuccessStatusCode();
+        await EnsureMerchantCatalogSuccessAsync(response, cancellationToken).ConfigureAwait(false);
         return await response.Content
             .ReadFromJsonAsync<PlatformMerchantGlobalProductDto>(JsonOptions, cancellationToken)
             .ConfigureAwait(false);
@@ -69,22 +70,29 @@ public sealed class PlatformMerchantCatalogClient(
         }
 
         var results = new System.Collections.Concurrent.ConcurrentBag<PlatformMerchantGlobalProductDto>();
-        await Parallel.ForEachAsync(
-                ids,
-                new ParallelOptions
-                {
-                    MaxDegreeOfParallelism = 8,
-                    CancellationToken = cancellationToken
-                },
-                async (id, ct) =>
-                {
-                    var product = await GetActiveProductAsync(id, platformSessionToken, ct).ConfigureAwait(false);
-                    if (product is not null)
+        try
+        {
+            await Parallel.ForEachAsync(
+                    ids,
+                    new ParallelOptions
                     {
-                        results.Add(product);
-                    }
-                })
-            .ConfigureAwait(false);
+                        MaxDegreeOfParallelism = 8,
+                        CancellationToken = cancellationToken
+                    },
+                    async (id, ct) =>
+                    {
+                        var product = await GetActiveProductAsync(id, platformSessionToken, ct).ConfigureAwait(false);
+                        if (product is not null)
+                        {
+                            results.Add(product);
+                        }
+                    })
+                .ConfigureAwait(false);
+        }
+        catch (AggregateException ex)
+        {
+            throw UnwrapAggregate(ex);
+        }
 
         return results.ToList();
     }
@@ -140,7 +148,7 @@ public sealed class PlatformMerchantCatalogClient(
         var path = "api/v1/catalog/products/search" + (query.Count == 0 ? string.Empty : "?" + string.Join("&", query));
         using var request = CreateRequest(HttpMethod.Get, path, platformSessionToken);
         using var response = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
-        response.EnsureSuccessStatusCode();
+        await EnsureMerchantCatalogSuccessAsync(response, cancellationToken).ConfigureAwait(false);
         var result = await response.Content
             .ReadFromJsonAsync<PagedResult<PlatformMerchantGlobalProductDto>>(JsonOptions, cancellationToken)
             .ConfigureAwait(false);
@@ -186,7 +194,7 @@ public sealed class PlatformMerchantCatalogClient(
         var path = "api/v1/catalog/categories" + (query.Count == 0 ? string.Empty : "?" + string.Join("&", query));
         using var request = CreateRequest(HttpMethod.Get, path, platformSessionToken);
         using var response = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
-        response.EnsureSuccessStatusCode();
+        await EnsureMerchantCatalogSuccessAsync(response, cancellationToken).ConfigureAwait(false);
         var result = await response.Content
             .ReadFromJsonAsync<PagedResult<PlatformMerchantGlobalCategoryDto>>(JsonOptions, cancellationToken)
             .ConfigureAwait(false);
@@ -231,5 +239,90 @@ public sealed class PlatformMerchantCatalogClient(
         }
 
         return request;
+    }
+
+    private static async Task EnsureMerchantCatalogSuccessAsync(
+        HttpResponseMessage response,
+        CancellationToken cancellationToken)
+    {
+        if (response.IsSuccessStatusCode)
+        {
+            return;
+        }
+
+        var status = response.StatusCode;
+        var body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+        var (title, detail, errorCode) = TryReadProblem(body);
+        var message = FirstNonBlank(detail, title)
+                      ?? $"Platform catalog request failed with {(int)status} {status}.";
+
+        if (IsTransientStatus(status))
+        {
+            throw new PlatformMerchantCatalogTransientException(message);
+        }
+
+        throw new PlatformMerchantCatalogRequestException(status, message, errorCode);
+    }
+
+    private static bool IsTransientStatus(HttpStatusCode status) =>
+        status is HttpStatusCode.RequestTimeout
+            or HttpStatusCode.TooManyRequests
+            or HttpStatusCode.BadGateway
+            or HttpStatusCode.ServiceUnavailable
+            or HttpStatusCode.GatewayTimeout
+            || (int)status >= 500;
+
+    private static (string? Title, string? Detail, string? ErrorCode) TryReadProblem(string body)
+    {
+        if (string.IsNullOrWhiteSpace(body))
+        {
+            return (null, null, null);
+        }
+
+        try
+        {
+            using var document = JsonDocument.Parse(body);
+            var root = document.RootElement;
+            string? title = root.TryGetProperty("title", out var titleEl) ? titleEl.GetString() : null;
+            string? detail = root.TryGetProperty("detail", out var detailEl) ? detailEl.GetString() : null;
+            string? errorCode = null;
+            if (root.TryGetProperty("errorCode", out var codeEl))
+            {
+                errorCode = codeEl.GetString();
+            }
+            else if (root.TryGetProperty("extensions", out var extensions)
+                     && extensions.ValueKind == JsonValueKind.Object
+                     && extensions.TryGetProperty("errorCode", out var extCode))
+            {
+                errorCode = extCode.GetString();
+            }
+
+            return (title, detail, errorCode);
+        }
+        catch (JsonException)
+        {
+            return (null, null, null);
+        }
+    }
+
+    private static string? FirstNonBlank(params string?[] values)
+    {
+        foreach (var value in values)
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                return value.Trim();
+            }
+        }
+
+        return null;
+    }
+
+    private static Exception UnwrapAggregate(AggregateException ex)
+    {
+        var flattened = ex.Flatten();
+        return flattened.InnerExceptions.Count == 1
+            ? flattened.InnerExceptions[0]
+            : flattened;
     }
 }
