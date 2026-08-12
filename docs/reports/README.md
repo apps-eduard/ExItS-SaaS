@@ -89,3 +89,4 @@ The dashboard links to the latest accepted report.
 | [P20-dynamic-business-types-and-catalog-classification.md](P20-dynamic-business-types-and-catalog-classification.md) | P20 supplemental — dynamic Business Types + catalog classification | Code Complete (Validation Pending) |
 | [P24-WP01-current-state-and-architecture-contract.md](P24-WP01-current-state-and-architecture-contract.md) | P24-WP01 Current-state audit + architecture contract | Complete (architecture contract) |
 | [P24-WP02-customer-link-and-pos-correlation.md](P24-WP02-customer-link-and-pos-correlation.md) | P24-WP02 Customer-link completeness + POS↔Platform correlation | Complete |
+| [P24-WP03-linked-customer-authorization-contract.md](P24-WP03-linked-customer-authorization-contract.md) | P24-WP03 Linked-customer authorization contract | Complete |
