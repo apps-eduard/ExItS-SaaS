@@ -1,0 +1,166 @@
+@implements IDisposable
+@using ExItS.DesignSystem.Components.Internal
+@using ExItS.PinoyBusinessPOS.Application.Platform
+@inject IPlatformAccessClient Platform
+@inject ICurrentUserContext CurrentUser
+@inject IConnectivityService Connectivity
+@inject OfflineAwareNavigation OfflineNav
+@inject NavigationManager Nav
+@inject IStringLocalizer<PosResources> L
+
+<div class="pos-shell-notify">
+    <button type="button"
+            class="pos-shell-action"
+            title="@AccessibleLabel"
+            aria-label="@AccessibleLabel"
+            @onclick="OpenNotificationsAsync">
+        <span class="pos-shell-action__icon" aria-hidden="true">@IconGlyphs.Get("bell")</span>
+        @if (BadgeText is not null)
+        {
+            <span class="pos-shell-notify__badge" aria-hidden="true">@BadgeText</span>
+        }
+    </button>
+</div>
+
+@code {
+    /// <summary>
+    /// When true, loads personal notifications and navigates to <c>/personal/notifications</c>.
+    /// When false, loads organization notifications and navigates to <c>/org/customer-link-notifications</c>.
+    /// </summary>
+    [Parameter] public bool UsePersonalNotifications { get; set; }
+
+    [Parameter] public Guid? OrganizationIdOverride { get; set; }
+
+    [Parameter] public EventCallback OnOpened { get; set; }
+
+    private int _unreadCount;
+    private CancellationTokenSource? _loadCts;
+
+    private string? BadgeText => ShellNotificationUnread.FormatBadge(_unreadCount);
+
+    private string AccessibleLabel =>
+        _unreadCount > 0
+            ? string.Format(L["Shell_NotificationsAriaUnread"].Value, _unreadCount)
+            : L["Shell_NotificationsAria"];
+
+    protected override void OnInitialized()
+    {
+        CurrentUser.Changed += OnContextChangedAsync;
+        Connectivity.ConnectivityChanged += OnConnectivityChanged;
+        Nav.LocationChanged += OnLocationChanged;
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await RefreshUnreadAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await RefreshUnreadAsync();
+        }
+    }
+
+    private async Task OpenNotificationsAsync()
+    {
+        if (OnOpened.HasDelegate)
+        {
+            await OnOpened.InvokeAsync();
+        }
+
+        var href = UsePersonalNotifications
+            ? "/personal/notifications"
+            : "/org/customer-link-notifications";
+        await OfflineNav.NavigateAsync(href);
+    }
+
+    private async Task RefreshUnreadAsync()
+    {
+        _loadCts?.Cancel();
+        _loadCts?.Dispose();
+        _loadCts = new CancellationTokenSource();
+        var ct = _loadCts.Token;
+
+        var previous = _unreadCount;
+        try
+        {
+            if (!CurrentUser.IsAuthenticated)
+            {
+                _unreadCount = 0;
+                return;
+            }
+
+            if (!await Connectivity.IsConnectedAsync())
+            {
+                // Keep last known count while offline; do not invent zeros on transient disconnect.
+                return;
+            }
+
+            if (UsePersonalNotifications)
+            {
+                var result = await Platform.GetPersonalNotificationsAsync(ct);
+                if (ct.IsCancellationRequested)
+                {
+                    return;
+                }
+
+                _unreadCount = result.IsSuccess && result.Data is not null
+                    ? result.Data.Count(n => !n.IsRead)
+                    : 0;
+            }
+            else
+            {
+                var orgId = OrganizationIdOverride ?? CurrentUser.Session?.OrganizationId;
+                if (orgId is null || orgId == Guid.Empty)
+                {
+                    _unreadCount = 0;
+                    return;
+                }
+
+                var result = await Platform.GetOrganizationNotificationsAsync(orgId.Value, ct);
+                if (ct.IsCancellationRequested)
+                {
+                    return;
+                }
+
+                _unreadCount = result.IsSuccess && result.Data is not null
+                    ? result.Data.Count(n => !n.IsRead)
+                    : 0;
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Ignore superseded loads.
+        }
+        catch
+        {
+            // Leave previous count on unexpected failures.
+        }
+        finally
+        {
+            if (!ct.IsCancellationRequested && previous != _unreadCount)
+            {
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+    }
+
+    private Task OnContextChangedAsync() => RefreshUnreadAsync();
+
+    private void OnConnectivityChanged(object? sender, ConnectivityStatus status) =>
+        _ = InvokeAsync(RefreshUnreadAsync);
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e) =>
+        _ = InvokeAsync(RefreshUnreadAsync);
+
+    public void Dispose()
+    {
+        CurrentUser.Changed -= OnContextChangedAsync;
+        Connectivity.ConnectivityChanged -= OnConnectivityChanged;
+        Nav.LocationChanged -= OnLocationChanged;
+        _loadCts?.Cancel();
+        _loadCts?.Dispose();
+    }
+}

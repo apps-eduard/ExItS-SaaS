@@ -206,45 +206,98 @@ button.pos-link {
     margin-left: auto;
 }
 
-/* Circular shell action buttons (menu / sync) — do not restyle left identity. */
+/* Chrome-less shell action buttons (status / notifications / menu) — left identity unchanged. */
+.pos-shell-action,
 .pos-topbar__status .exds-icon-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     width: 2.75rem;
     height: 2.75rem;
     min-width: 2.75rem;
     min-height: 2.75rem;
+    padding: 0;
+    border: 1px solid transparent;
     border-radius: var(--exits-radius-full);
-    border: 1px solid var(--exits-border);
-    background: var(--exits-surface);
+    background: transparent;
     color: var(--exits-text-muted);
+    cursor: pointer;
+    flex-shrink: 0;
     transition:
         background-color var(--exits-motion-fast, 120ms) var(--exits-ease, ease),
-        border-color var(--exits-motion-fast, 120ms) var(--exits-ease, ease),
         color var(--exits-motion-fast, 120ms) var(--exits-ease, ease),
         transform var(--exits-motion-fast, 120ms) var(--exits-ease, ease);
 }
 
+.pos-shell-action:hover:not(:disabled),
+.pos-shell-action:focus-visible:not(:disabled),
 .pos-topbar__status .exds-icon-btn:hover:not(:disabled),
 .pos-topbar__status .exds-icon-btn:focus-visible:not(:disabled) {
-    background: var(--exits-bg);
-    border-color: color-mix(in srgb, var(--exits-border) 70%, var(--exits-text-muted));
+    background: color-mix(in srgb, var(--exits-text-muted) 10%, transparent);
     color: var(--exits-text);
     outline: none;
 }
 
+.pos-shell-action:focus-visible:not(:disabled),
 .pos-topbar__status .exds-icon-btn:focus-visible:not(:disabled) {
     box-shadow: 0 0 0 2px color-mix(in srgb, var(--exits-primary) 35%, transparent);
 }
 
+.pos-shell-action:active:not(:disabled),
 .pos-topbar__status .exds-icon-btn:active:not(:disabled) {
     transform: scale(0.96);
+    background: color-mix(in srgb, var(--exits-text-muted) 14%, transparent);
+}
+
+.pos-shell-action__icon {
+    display: inline-flex;
+    width: 1.35rem;
+    height: 1.35rem;
+    flex-shrink: 0;
+}
+
+.pos-shell-action__icon svg {
+    width: 1.35rem;
+    height: 1.35rem;
+    display: block;
+}
+
+.pos-shell-notify {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
+.pos-shell-notify__badge {
+    position: absolute;
+    top: 0.2rem;
+    right: 0.15rem;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.05rem;
+    height: 1.05rem;
+    padding: 0 0.25rem;
+    border-radius: 999px;
+    border: 1.5px solid var(--exits-surface, #fff);
+    background: var(--exits-danger, #b42318);
+    color: #fff;
+    font-size: 0.625rem;
+    font-weight: 700;
+    line-height: 1;
+    pointer-events: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
+    .pos-shell-action,
     .pos-topbar__status .exds-icon-btn,
     .pos-sync-status {
         transition: none;
     }
 
+    .pos-shell-action:active:not(:disabled),
     .pos-topbar__status .exds-icon-btn:active:not(:disabled),
     .pos-sync-status:active {
         transform: none;
@@ -266,133 +319,63 @@ button.pos-link {
 }
 
 .pos-sync-status {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 2.75rem;
-    height: 2.75rem;
-    min-width: 2.75rem;
-    min-height: 2.75rem;
+    /* Inherits .pos-shell-action; tone classes color the single cloud icon. */
     max-width: none;
-    padding: 0;
     gap: 0;
-    border: 1px solid var(--exits-border);
-    border-radius: var(--exits-radius-full);
-    background: var(--exits-surface);
-    color: var(--exits-text);
-    cursor: pointer;
-    flex-shrink: 0;
-    transition:
-        background-color var(--exits-motion-fast, 120ms) var(--exits-ease, ease),
-        border-color var(--exits-motion-fast, 120ms) var(--exits-ease, ease),
-        color var(--exits-motion-fast, 120ms) var(--exits-ease, ease),
-        transform var(--exits-motion-fast, 120ms) var(--exits-ease, ease);
 }
 
 .pos-sync-status--chip {
     justify-content: center;
 }
 
-.pos-sync-status:hover,
-.pos-sync-status:focus-visible {
-    background: var(--exits-bg);
-    border-color: color-mix(in srgb, var(--exits-border) 70%, var(--exits-text-muted));
-    outline: none;
+.pos-sync-status--online,
+.pos-sync-status--synced {
+    color: var(--exits-success, #0f5c38);
 }
 
-.pos-sync-status:focus-visible {
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--exits-primary) 35%, transparent);
-}
-
-.pos-sync-status:active {
-    transform: scale(0.96);
-}
-
-.pos-sync-status--quiet {
-    border-color: color-mix(in srgb, var(--exits-border) 75%, transparent);
-    background: var(--exits-surface);
-    color: var(--exits-text-muted, #5b6b62);
-}
-
-.pos-sync-status--attention {
-    font-weight: 650;
-}
-
-.pos-sync-status--attention.pos-sync-status--offline,
-.pos-sync-status--attention.pos-sync-status--failed,
-.pos-sync-status--attention.pos-sync-status--recovery {
-    border-color: color-mix(in srgb, var(--exits-danger, #b42318) 40%, var(--exits-border));
-    background: color-mix(in srgb, var(--exits-danger, #b42318) 8%, var(--exits-surface));
+.pos-sync-status--offline {
     color: var(--exits-danger, #b42318);
 }
 
-.pos-sync-status--attention.pos-sync-status--pending,
-.pos-sync-status--attention.pos-sync-status--reconnect,
-.pos-sync-status--attention.pos-sync-status--syncing {
-    border-color: color-mix(in srgb, var(--exits-warning, #b54708) 45%, var(--exits-border));
-    background: color-mix(in srgb, var(--exits-warning, #b54708) 10%, var(--exits-surface));
+.pos-sync-status--reconnect,
+.pos-sync-status--pending,
+.pos-sync-status--syncing {
     color: var(--exits-warning, #b54708);
+}
+
+.pos-sync-status--failed,
+.pos-sync-status--recovery {
+    color: var(--exits-danger, #b42318);
+}
+
+.pos-sync-status--quiet {
+    /* Healthy online/synced: color comes from tone class; no permanent chrome. */
+}
+
+.pos-sync-status--attention {
+    font-weight: inherit;
 }
 
 .pos-sync-status__icon {
     display: inline-flex;
-    width: 1.15rem;
-    height: 1.15rem;
+    width: 1.35rem;
+    height: 1.35rem;
     flex-shrink: 0;
 }
 
 .pos-sync-status__icon svg {
-    width: 1.15rem;
-    height: 1.15rem;
+    width: 1.35rem;
+    height: 1.35rem;
     display: block;
 }
 
-.pos-sync-status__label {
-    /* Reserved for non-circular layouts; circular shell trigger keeps status in icon/aria. */
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-}
-
-.pos-sync-status__badge {
-    position: absolute;
-    top: -0.1rem;
-    right: -0.1rem;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 1.05rem;
-    height: 1.05rem;
-    padding: 0 0.25rem;
-    border-radius: 999px;
-    border: 1px solid var(--exits-surface-elevated, var(--exits-surface));
-    background: var(--exits-warning, #b54708);
-    color: #fff;
-    font-size: 0.625rem;
-    font-weight: 700;
-    line-height: 1;
-    pointer-events: none;
-}
-
 .pos-sync-status__marker {
-    position: absolute;
-    top: 0.35rem;
-    right: 0.35rem;
     display: inline-block;
     width: 0.45rem;
     height: 0.45rem;
     border-radius: 50%;
     background: var(--exits-text-muted);
     flex-shrink: 0;
-    box-shadow: 0 0 0 1.5px var(--exits-surface);
-    pointer-events: none;
 }
 
 .pos-sync-status--online .pos-sync-status__marker,
@@ -402,7 +385,7 @@ button.pos-link {
 .pos-sync-status__marker--synced { background: var(--exits-success); }
 
 .pos-sync-status--offline .pos-sync-status__marker,
-.pos-sync-status__marker--offline { background: var(--exits-text-muted); }
+.pos-sync-status__marker--offline { background: var(--exits-danger); }
 
 .pos-sync-status--reconnect .pos-sync-status__marker,
 .pos-sync-status__marker--reconnect { background: var(--exits-warning); }
@@ -645,6 +628,7 @@ button.pos-link {
         gap: var(--exits-space-1);
     }
 
+    .pos-shell-action,
     .pos-topbar__status .exds-icon-btn,
     .pos-sync-status {
         width: 2.625rem;

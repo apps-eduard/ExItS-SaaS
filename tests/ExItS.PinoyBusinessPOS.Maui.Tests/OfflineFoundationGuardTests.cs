@@ -58,17 +58,22 @@ public sealed class OfflineFoundationGuardTests
 
         Assert.Contains("pos-sync-status--quiet", sync, StringComparison.Ordinal);
         Assert.Contains("pos-sync-status--attention", sync, StringComparison.Ordinal);
-        Assert.Contains("pos-sync-status__badge", sync, StringComparison.Ordinal);
         Assert.Contains("PosSyncStatusKind.LastSynced => \"synced\"", sync, StringComparison.Ordinal);
+        Assert.Contains("PosSyncStatusKind.Online or PosSyncStatusKind.LastSynced => \"cloud\"", sync, StringComparison.Ordinal);
+        Assert.Contains("PosSyncStatusKind.Offline => \"cloud-off\"", sync, StringComparison.Ordinal);
+        Assert.DoesNotContain("pos-sync-status__marker\"", sync.Split("pos-sync-popover")[0], StringComparison.Ordinal);
+        Assert.DoesNotContain("ShowPendingBadge", sync, StringComparison.Ordinal);
+        Assert.DoesNotContain("pos-sync-status__badge", sync, StringComparison.Ordinal);
         Assert.Contains(".pos-sync-status--quiet", css, StringComparison.Ordinal);
         Assert.Contains(".pos-sync-status--synced", css, StringComparison.Ordinal);
         Assert.Contains(".pos-sync-popover__section", css, StringComparison.Ordinal);
         Assert.Contains(".pos-sync-popover__value--synced", css, StringComparison.Ordinal);
-        Assert.Contains(".pos-sync-status__badge", css, StringComparison.Ordinal);
-        Assert.Contains("border-radius: var(--exits-radius-full)", css, StringComparison.Ordinal);
+        Assert.Contains(".pos-shell-action", css, StringComparison.Ordinal);
+        Assert.Contains(".pos-shell-notify__badge", css, StringComparison.Ordinal);
         Assert.Contains("pos-sync-popover__action-icon", sync, StringComparison.Ordinal);
         Assert.Contains("SyncStatus_PanelTitle", sync, StringComparison.Ordinal);
         Assert.Contains("SyncStatus_Aria", sync, StringComparison.Ordinal);
+        Assert.Contains("background: transparent", css, StringComparison.Ordinal);
     }
 
     [Fact]

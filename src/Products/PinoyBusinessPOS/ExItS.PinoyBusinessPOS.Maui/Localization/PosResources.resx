@@ -65,6 +65,8 @@
   <data name="Shell_UserAria" xml:space="preserve"><value>Signed in as {0}</value></data>
   <data name="Shell_OrganizationAria" xml:space="preserve"><value>Organization {0}</value></data>
   <data name="Shell_AccountMenuAria" xml:space="preserve"><value>Account menu</value></data>
+  <data name="Shell_NotificationsAria" xml:space="preserve"><value>Notifications</value></data>
+  <data name="Shell_NotificationsAriaUnread" xml:space="preserve"><value>Notifications, {0} unread</value></data>
   <data name="Shell_ChangeOrganization" xml:space="preserve"><value>Change organization</value></data>
   <data name="Brand_Tagline" xml:space="preserve"><value>Point-of-sale foundation for Filipino small businesses</value></data>
 

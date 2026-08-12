@@ -40,6 +40,12 @@
         {
             <ShellSyncStatus @ref="_syncStatus" OnPanelOpened="OnSyncPanelOpenedAsync" />
         }
+        @if (EffectiveShowNotifications)
+        {
+            <ShellNotificationBell UsePersonalNotifications="@(Identity == StoreHeaderIdentity.Personal)"
+                                   OrganizationIdOverride="@OrganizationIdOverride"
+                                   OnOpened="OnNotificationOpenedAsync" />
+        }
         @if (ShowAccountMenu)
         {
             <ShellAccountMenu @ref="_accountMenu"
@@ -55,6 +61,8 @@
 @code {
     [Parameter] public StoreHeaderIdentity Identity { get; set; } = StoreHeaderIdentity.Organization;
     [Parameter] public bool ShowSync { get; set; } = true;
+    /// <summary>When null, notifications show for Personal/Organization identity only (not Brand).</summary>
+    [Parameter] public bool? ShowNotifications { get; set; }
     [Parameter] public bool ShowAccountMenu { get; set; } = true;
     [Parameter] public bool ShowSettings { get; set; } = true;
     [Parameter] public bool ShowSwitchOrganization { get; set; } = true;
@@ -71,6 +79,10 @@
 
     private bool EffectiveShowBack =>
         ShowBack || HeaderState.ShowBack;
+
+    private bool EffectiveShowNotifications =>
+        ShowNotifications
+        ?? Identity is StoreHeaderIdentity.Personal or StoreHeaderIdentity.Organization;
 
     private bool EffectiveShowSwitchOrganization =>
         ShowSwitchOrganization && CurrentUser.Session?.OrganizationContextLocked != true;
@@ -92,6 +104,15 @@
 
     private async Task OnSyncPanelOpenedAsync()
     {
+        if (_accountMenu is not null)
+        {
+            await _accountMenu.CloseAsync();
+        }
+    }
+
+    private async Task OnNotificationOpenedAsync()
+    {
+        _syncStatus?.Close();
         if (_accountMenu is not null)
         {
             await _accountMenu.CloseAsync();

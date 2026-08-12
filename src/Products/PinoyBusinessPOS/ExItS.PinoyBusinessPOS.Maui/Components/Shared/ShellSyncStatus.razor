@@ -8,22 +8,13 @@
 
 <div class="pos-sync-anchor">
     <button type="button"
-            class="pos-sync-status pos-sync-status--chip pos-sync-status--@SyncToneClass @(IsQuietStatus ? "pos-sync-status--quiet" : "pos-sync-status--attention")"
+            class="pos-shell-action pos-sync-status pos-sync-status--chip pos-sync-status--@SyncToneClass @(IsQuietStatus ? "pos-sync-status--quiet" : "pos-sync-status--attention")"
             title="@SyncTitle"
             aria-label="@SyncAccessibleLabel"
             aria-expanded="@_syncPanelOpen"
             aria-haspopup="dialog"
             @onclick="ToggleSyncPanelAsync">
-        <span class="pos-sync-status__icon" aria-hidden="true">@IconGlyphs.Get(SyncIconName)</span>
-        <span class="pos-sync-status__marker" aria-hidden="true"></span>
-        @if (ShowPendingBadge)
-        {
-            <span class="pos-sync-status__badge" aria-hidden="true">@PendingBadgeText</span>
-        }
-        @if (ShowChipLabel)
-        {
-            <span class="pos-sync-status__label">@SyncChipLabel</span>
-        }
+        <span class="pos-shell-action__icon pos-sync-status__icon" aria-hidden="true">@IconGlyphs.Get(SyncIconName)</span>
     </button>
 
     @if (_syncPanelOpen)
@@ -216,15 +207,7 @@
 
     private int SyncingQueueTotal => Math.Max(1, _queuePending + _queueSyncing);
 
-    private bool ShowPendingBadge =>
-        SyncKind is PosSyncStatusKind.PendingSync or PosSyncStatusKind.Syncing
-        && PendingDisplayCount > 0;
-
-    private string PendingBadgeText => PendingDisplayCount.ToString();
-
-    // Circular icon button: status meaning lives in icon + marker color + aria-label (not chip text).
-    private bool ShowChipLabel => false;
-
+    // One status icon carries the meaning (cloud / cloud-off + tone color + aria-label). No dot or count badge.
     private string SyncToneClass => SyncKind switch
     {
         PosSyncStatusKind.Online => "online",
@@ -240,33 +223,19 @@
 
     private string SyncIconName => SyncKind switch
     {
-        PosSyncStatusKind.Online => "check",
+        PosSyncStatusKind.Online or PosSyncStatusKind.LastSynced => "cloud",
         PosSyncStatusKind.Offline => "cloud-off",
-        PosSyncStatusKind.ReconnectRequired => "warning",
-        PosSyncStatusKind.PendingSync => "inbox",
-        PosSyncStatusKind.Syncing => "refresh",
-        PosSyncStatusKind.SyncFailed => "error",
-        PosSyncStatusKind.LastSynced => "check",
-        PosSyncStatusKind.RecoveryRequired => "warning",
-        _ => "info",
+        PosSyncStatusKind.SyncFailed or PosSyncStatusKind.RecoveryRequired => "cloud-off",
+        PosSyncStatusKind.ReconnectRequired
+            or PosSyncStatusKind.PendingSync
+            or PosSyncStatusKind.Syncing => "cloud",
+        _ => "cloud-off",
     };
 
-    private string SyncChipLabel => SyncKind switch
-    {
-        PosSyncStatusKind.Offline when PendingWaitingCount > 0 =>
-            string.Format(L["SyncStatus_OfflineWaiting"].Value, PendingWaitingCount),
-        PosSyncStatusKind.Offline => L["SyncStatus_OfflineShort"],
-        PosSyncStatusKind.ReconnectRequired => L["SyncStatus_ReconnectShort"],
-        PosSyncStatusKind.Syncing => L["SyncStatus_SyncingEllipsis"],
-        PosSyncStatusKind.SyncFailed => L["SyncStatus_FailedShort"],
-        PosSyncStatusKind.RecoveryRequired => L["SyncStatus_RecoveryRequiredShort"],
-        _ => string.Empty,
-    };
-
-    private string SyncTitle => $"{L["SyncStatus_PanelTitle"]}: {SyncSectionTitle}";
+    private string SyncTitle => $"{L["SyncStatus_Aria"]}: {ConnectionTitle}";
 
     private string SyncAccessibleLabel =>
-        $"{L["SyncStatus_Aria"]}. {L["SyncStatus_ConnectionLabel"]}: {ConnectionTitle}. {L["SyncStatus_SyncLabel"]}: {SyncSectionTitle}";
+        $"{L["SyncStatus_Aria"]}: {ConnectionTitle}. {L["SyncStatus_SyncLabel"]}: {SyncSectionTitle}";
 
     private string ConnectionToneClass => SyncKind switch
     {
@@ -314,6 +283,8 @@
                 PosSyncStatusKind.Syncing => L["SyncStatus_SyncingEllipsis"],
                 PosSyncStatusKind.SyncFailed => L["SyncStatus_Failed"],
                 PosSyncStatusKind.RecoveryRequired => L["SyncStatus_RecoveryRequired"],
+                PosSyncStatusKind.Offline when pending > 0 =>
+                    string.Format(L["SyncStatus_OfflineWaiting"].Value, pending),
                 PosSyncStatusKind.Offline or PosSyncStatusKind.ReconnectRequired when pending > 0 =>
                     string.Format(L["SyncStatus_WaitingWithPending"].Value, pending),
                 PosSyncStatusKind.Offline or PosSyncStatusKind.ReconnectRequired => L["SyncStatus_WaitingForConnection"],
