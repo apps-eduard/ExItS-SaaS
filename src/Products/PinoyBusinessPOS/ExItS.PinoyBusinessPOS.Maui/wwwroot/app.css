@@ -1601,6 +1601,66 @@ html.pos-keyboard-open .pos-content {
     width: 100%;
 }
 
+.pos-weight-entry {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.pos-weight-entry__product {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.pos-weight-entry__name {
+    color: var(--exits-text, #15201a);
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.pos-weight-entry__unit-price,
+.pos-weight-entry__unit-price .exds-money {
+    color: var(--exits-text-muted, #5b6b62);
+    font-size: 0.8125rem;
+}
+
+.pos-weight-entry__qty {
+    align-items: flex-start;
+    display: grid;
+    gap: 0.55rem 0.65rem;
+    grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.pos-weight-entry__qty .exds-radio-group--inline {
+    min-height: 2.75rem;
+}
+
+.pos-weight-entry__total {
+    align-items: baseline;
+    background: var(--exits-bg-subtle, #f3f6f4);
+    border: 1px solid var(--pos-border-subtle, #d7e0da);
+    border-radius: var(--exits-radius-md, 0.5rem);
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.65rem 0.8rem;
+}
+
+.pos-weight-entry__total-label {
+    color: var(--exits-text-muted, #5b6b62);
+    font-size: 0.8125rem;
+    font-weight: 600;
+}
+
+.pos-weight-entry__total-amount,
+.pos-weight-entry__total-amount .exds-money {
+    font-family: var(--exits-font-tabular);
+    font-size: 1.05rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+}
+
 .pos-sell-payment {
     display: flex;
     flex-direction: column;

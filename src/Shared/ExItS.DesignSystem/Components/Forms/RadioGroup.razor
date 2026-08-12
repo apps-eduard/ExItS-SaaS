@@ -6,7 +6,7 @@
     {
         <span class="exds-label @(Required ? "exds-label--required" : null)" id="@_labelId">@Label</span>
     }
-    <div class="exds-radio-group">
+    <div class="exds-radio-group @(Inline ? "exds-radio-group--inline" : null)">
         @foreach (var option in Options ?? Array.Empty<RadioOption>())
         {
             var optionId = $"{_id}-{option.Value}";
@@ -40,6 +40,8 @@
     [Parameter] public bool Required { get; set; }
     [Parameter] public bool IsInvalid { get; set; }
     [Parameter] public string? ErrorText { get; set; }
+    /// <summary>Lay options out in a row (for compact two-choice groups such as kg/g).</summary>
+    [Parameter] public bool Inline { get; set; }
 
     private async Task SelectAsync(string value)
     {

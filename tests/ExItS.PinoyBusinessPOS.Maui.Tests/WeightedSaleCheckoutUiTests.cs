@@ -23,6 +23,11 @@ public sealed class WeightedSaleCheckoutUiTests
         Assert.Contains("WeightEntry.TryNormalize", dialog, StringComparison.Ordinal);
         Assert.Contains("WeightEntry.UnitGram", dialog, StringComparison.Ordinal);
         Assert.Contains("WeightEntry.UnitKilogram", dialog, StringComparison.Ordinal);
+        Assert.Contains("_sessionUnit = WeightEntry.UnitKilogram", dialog, StringComparison.Ordinal);
+        Assert.Contains("Inline=\"true\"", dialog, StringComparison.Ordinal);
+        Assert.Contains("PreviewAmount", dialog, StringComparison.Ordinal);
+        Assert.Contains("Sales_Checkout_WeightLineTotal", dialog, StringComparison.Ordinal);
+        Assert.Contains("ConvertDisplayedWeight", dialog, StringComparison.Ordinal);
         Assert.Contains("NumberInput", dialog, StringComparison.Ordinal);
         Assert.Contains("RadioGroup", dialog, StringComparison.Ordinal);
         Assert.Contains("EventCallback Removed", dialog, StringComparison.Ordinal);

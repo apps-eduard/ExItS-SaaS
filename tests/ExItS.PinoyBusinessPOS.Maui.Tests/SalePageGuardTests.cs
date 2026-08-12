@@ -301,6 +301,8 @@ public sealed class SalePageGuardTests
                      "Sales_Checkout_WeightUnitKg",
                      "Sales_Checkout_WeightUnitG",
                      "Sales_Checkout_WeightHint",
+                     "Sales_Checkout_WeightHintKg",
+                     "Sales_Checkout_WeightLineTotal",
                      "Sales_Checkout_WeightAdd",
                      "Sales_Checkout_WeightUpdate",
                      "Sales_Checkout_WeightEdit",

@@ -1154,7 +1154,9 @@
   <data name="Sales_Checkout_WeightUnit" xml:space="preserve"><value>Yunit</value></data>
   <data name="Sales_Checkout_WeightUnitKg" xml:space="preserve"><value>kg</value></data>
   <data name="Sales_Checkout_WeightUnitG" xml:space="preserve"><value>g</value></data>
-  <data name="Sales_Checkout_WeightHint" xml:space="preserve"><value>Awtomatikong ginagawang kilogram ang gramo (350 g = 0.350 kg).</value></data>
+  <data name="Sales_Checkout_WeightHint" xml:space="preserve"><value>Ginagawang kilogram ang gramo (350 g = 0.350 kg).</value></data>
+  <data name="Sales_Checkout_WeightHintKg" xml:space="preserve"><value>Hanggang 3 desimal (1.5 kg).</value></data>
+  <data name="Sales_Checkout_WeightLineTotal" xml:space="preserve"><value>Halaga</value></data>
   <data name="Sales_Checkout_WeightAdd" xml:space="preserve"><value>Idagdag</value></data>
   <data name="Sales_Checkout_WeightUpdate" xml:space="preserve"><value>I-update</value></data>
   <data name="Sales_Checkout_WeightEdit" xml:space="preserve"><value>Baguhin ang timbang</value></data>

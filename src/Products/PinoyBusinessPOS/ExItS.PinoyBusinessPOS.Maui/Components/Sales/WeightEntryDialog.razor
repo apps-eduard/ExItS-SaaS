@@ -9,32 +9,45 @@
         Title="@DialogTitle"
         OnClose="CancelAsync">
     <ChildContent>
-        <Stack Gap="3">
+        <div class="pos-weight-entry">
             @if (Product is not null)
             {
-                <div>
-                    <div class="pos-value-md">@Product.Name</div>
-                    <div class="pos-type-helper">
+                <div class="pos-weight-entry__product">
+                    <span class="pos-weight-entry__name">@Product.Name</span>
+                    <span class="pos-weight-entry__unit-price">
                         <MoneyDisplay Amount="@Product.SellingPrice" CurrencyCode="PHP" />
                         <span> @L["Sales_Checkout_PricePerKg"]</span>
-                    </div>
+                    </span>
                 </div>
             }
 
-            <NumberInput Label="@L["Sales_Checkout_WeightQuantity"]"
-                         Value="@_rawValue"
-                         ValueChanged="OnValueChanged"
-                         DecimalPlaces="@(_unitCode == WeightEntry.UnitGram ? 0 : 3)"
-                         Required="true"
-                         IsInvalid="@(!string.IsNullOrEmpty(_error))"
-                         ErrorText="@_error"
-                         Hint="@L["Sales_Checkout_WeightHint"]" />
+            <div class="pos-weight-entry__qty">
+                <NumberInput Label="@L["Sales_Checkout_WeightQuantity"]"
+                             Value="@_rawValue"
+                             ValueChanged="OnValueChanged"
+                             DecimalPlaces="@(_unitCode == WeightEntry.UnitGram ? 0 : 3)"
+                             Required="true"
+                             IsInvalid="@(!string.IsNullOrEmpty(_error))"
+                             ErrorText="@_error"
+                             Hint="@WeightHint"
+                             autofocus="true" />
+                <RadioGroup Label="@L["Sales_Checkout_WeightUnit"]"
+                            Value="@_unitCode"
+                            ValueChanged="OnUnitChanged"
+                            Options="@_unitOptions"
+                            Inline="true" />
+            </div>
 
-            <RadioGroup Label="@L["Sales_Checkout_WeightUnit"]"
-                        Value="@_unitCode"
-                        ValueChanged="OnUnitChanged"
-                        Options="@_unitOptions" />
-        </Stack>
+            @if (PreviewAmount is decimal amount)
+            {
+                <div class="pos-weight-entry__total" aria-live="polite">
+                    <span class="pos-weight-entry__total-label">@L["Sales_Checkout_WeightLineTotal"]</span>
+                    <span class="pos-weight-entry__total-amount">
+                        <MoneyDisplay Amount="@amount" CurrencyCode="PHP" />
+                    </span>
+                </div>
+            }
+        </div>
     </ChildContent>
     <Footer>
         <FormActions>
@@ -59,9 +72,9 @@
     [Parameter] public EventCallback Cancelled { get; set; }
 
     private decimal? _rawValue;
-    private string _unitCode = WeightEntry.UnitGram;
+    private string _unitCode = WeightEntry.UnitKilogram;
     private string? _error;
-    private string _sessionUnit = WeightEntry.UnitGram;
+    private string _sessionUnit = WeightEntry.UnitKilogram;
     private List<RadioOption> _unitOptions = [];
     private bool _opened;
 
@@ -75,12 +88,31 @@
             ? L["Sales_Checkout_WeightUpdate"]
             : L["Sales_Checkout_WeightAdd"];
 
+    private string WeightHint =>
+        _unitCode == WeightEntry.UnitGram
+            ? L["Sales_Checkout_WeightHint"]
+            : L["Sales_Checkout_WeightHintKg"];
+
+    private decimal? PreviewAmount
+    {
+        get
+        {
+            if (Product is null
+                || !WeightEntry.TryNormalize(_rawValue, _unitCode, out var kilograms, out _))
+            {
+                return null;
+            }
+
+            return PosSaleOptions.RoundMoney(Product.SellingPrice * kilograms);
+        }
+    }
+
     protected override void OnParametersSet()
     {
         _unitOptions =
         [
-            new RadioOption(WeightEntry.UnitGram, L["Sales_Checkout_WeightUnitG"]),
-            new RadioOption(WeightEntry.UnitKilogram, L["Sales_Checkout_WeightUnitKg"])
+            new RadioOption(WeightEntry.UnitKilogram, L["Sales_Checkout_WeightUnitKg"]),
+            new RadioOption(WeightEntry.UnitGram, L["Sales_Checkout_WeightUnitG"])
         ];
 
         if (Visible && !_opened)
@@ -113,14 +145,36 @@
 
     private void OnUnitChanged(string? value)
     {
-        if (string.IsNullOrWhiteSpace(value))
+        if (string.IsNullOrWhiteSpace(value) || string.Equals(value, _unitCode, StringComparison.Ordinal))
         {
             return;
         }
 
+        var from = _unitCode;
         _unitCode = value;
         _sessionUnit = value;
         _error = null;
+        _rawValue = ConvertDisplayedWeight(_rawValue, from, value);
+    }
+
+    private static decimal? ConvertDisplayedWeight(decimal? raw, string fromUnit, string toUnit)
+    {
+        if (raw is null)
+        {
+            return null;
+        }
+
+        if (fromUnit == WeightEntry.UnitGram && toUnit == WeightEntry.UnitKilogram)
+        {
+            return Math.Round(raw.Value / 1000m, 3, MidpointRounding.AwayFromZero);
+        }
+
+        if (fromUnit == WeightEntry.UnitKilogram && toUnit == WeightEntry.UnitGram)
+        {
+            return Math.Round(raw.Value * 1000m, 0, MidpointRounding.AwayFromZero);
+        }
+
+        return raw;
     }
 
     private async Task ConfirmAsync()

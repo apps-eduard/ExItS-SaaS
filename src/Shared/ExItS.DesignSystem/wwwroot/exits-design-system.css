@@ -1160,6 +1160,7 @@ button.exds-date-trigger.exds-field__control:disabled { cursor: not-allowed; }
 .exds-radio input:focus-visible + .exds-radio__mark { outline: 3px solid var(--exits-focus); outline-offset: 2px; }
 .exds-checkbox--disabled, .exds-radio--disabled { color: var(--exits-disabled-text); cursor: not-allowed; }
 .exds-radio-group { display: flex; flex-direction: column; gap: var(--exits-space-1); }
+.exds-radio-group--inline { flex-direction: row; flex-wrap: wrap; align-items: center; gap: var(--exits-space-3); }
 
 .exds-currency__control { display: flex; align-items: stretch; gap: 0; }
 .exds-currency__code {
