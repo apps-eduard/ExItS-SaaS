@@ -79,7 +79,7 @@ OFFSET @skip
 LIMIT @take
 ```
 
-on the credits ∪ repayments union. Take is hard-capped at `MaxPageSize + 1` (for `HasMore`) in the repository. **Does not** use `IUtangLedgerQuery.ListAsync` / `ListAllChronologicalAsync` (those load full history into memory).
+on the credits ∪ repayments ∪ settled non-Utang sales union (settled `SignedEffect = 0`; Utang sales remain Credit-only). Take is hard-capped at `MaxPageSize + 1` (for `HasMore`) in the repository. **Does not** use `IUtangLedgerQuery.ListAsync` / `ListAllChronologicalAsync` (those load full history into memory).
 
 Pagination is **offset** (`page` / `pageSize`) because existing POS credit/repayment repositories and staff ledger use offset, and WP04 only needs a tiny newest window. Keyset/cursor remains preferred for WP05+ when older history expands.
 
@@ -90,7 +90,7 @@ Pagination is **offset** (`page` / `pageSize`) because existing POS credit/repay
 ```text
 ActivityId
 OccurredAtUtc
-Type                  (UtangCharge | UtangChargeReversal | Payment | PartialPayment | PaymentReversal | Adjustment)
+Type                  (UtangCharge | UtangChargeReversal | Payment | PartialPayment | PaymentReversal | Adjustment | Purchase | PurchaseVoided)
 ReferenceNumber
 ChargeAmount
 PaymentAmount
@@ -170,3 +170,42 @@ Adapter, statement/activity use cases, SQL-limited activity query, Personal POS 
 - No stash, reset, rebase, amend, squash, or force-push
 - Focused commits only (no `git add .`)
 - Migration: **No**
+
+## Follow-up fix — cash checkout → Personal projection (2026-08-13)
+
+| Field | Value |
+|---|---|
+| Status | **Fixed in code** (owner Device Verified still pending) |
+| Starting SHA (this fix) | `077881018067b1f5cf42bcb1555cd15c71543cfa` |
+| Root cause class | **H = A + C + D** |
+| Device Verified | **No** |
+| Production Ready | **No** |
+| Phase 24 Closed | **No** |
+| Migration | **Yes** — `20260813000000_AllowOptionalCustomerOnSettledSales` |
+
+### Root cause
+
+1. **A — Checkout persistence:** Cash/Card/GCash/ManualGCash checkout dropped `CustomerId` (UI sent null; application rejected non-Utang customer; DB `ck_sales_tender_consistency` required `customer_id IS NULL` on settled methods).
+2. **C/D — Statement/receipt projection:** Recent activity was credits ∪ repayments only (Utang ledger). Settled sales with a customer never appeared as activity; receipts already required `sale.CustomerId == PosCustomerId` so cash sales without persisted customer could not open.
+
+### Corrected data flow
+
+```text
+Accepted LinkedCustomerAppUser
+  → POSCustomer.PlatformBusinessCustomerId correlation
+  → Checkout selects that POSCustomerId (cash or Utang)
+  → Sale persists CustomerId (settled optional; Utang required + credit)
+  → Activity = credits ∪ repayments ∪ settled non-Utang sales (SignedEffect=0)
+  → Purchase / PurchaseVoided + HasDetails via SourceSaleId
+  → Receipt by SaleId (auth + customer match unchanged)
+```
+
+Utang remains Credit/`UtangCharge` (no duplicate Sale activity row). Open-debt list stays active ledger only. Older settled history entitlement rules unchanged.
+
+### Tests
+
+`LinkedCustomerSaleProjectionTests` covers cash Purchase + receipt, Utang charge + debt, no-customer / other-customer / other-org / wrong-user / declined-link isolation, duplicate-name non-match, entitlement on older cash Purchase, open-debt excludes Purchase.
+
+### Owner validation
+
+Still required (Kizzy Meat Shop ↔ Mica cash + Utang + negative sales). Do **not** mark Device Verified until owner completes the checklist.
