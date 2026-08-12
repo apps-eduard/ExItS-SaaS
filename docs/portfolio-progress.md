@@ -247,7 +247,7 @@ P19-WP08 ? End-to-End Validation and User Closeout Checklist (Retest � awaitin
 | P24-WP08 — Reward ledger foundation | **Complete** | `f18a9ea76b34e4f265dcc29af7b0220cc3c8a625` (feat), `0d0d6595d1e57b756bf30599bd801cd19544419d` (docs) — [report](reports/P24-WP08-reward-ledger-foundation.md) |
 | P24-WP09 — Ads abstraction + Ad-Free entitlement | **Complete** | `ea9bac0db464f369238d40957789b6b3d4188a4f` (feat), `50a517b9591d77fc75fb8dc46044fb96010f496f` (docs) — [report](reports/P24-WP09-ads-abstraction-and-ad-free-entitlement.md) |
 | P24-WP10 — Entitlement-aware older/settled history | **Complete** | `40d6da229e2473c347664a79c91463770f1547ee` (feat), `59af882023428f4961c97297c4c80633c517f731` (docs) — [report](reports/P24-WP10-entitlement-aware-older-settled-history.md) |
-| P24-WP11 — Admin configuration for Personal features | **Complete** | `f9f479dbe784103d74803160132ae28c510eb69f` (feat) — [report](reports/P24-WP11-admin-configuration-for-personal-features.md) |
+| P24-WP11 — Admin configuration for Personal features | **Complete** | `f9f479dbe784103d74803160132ae28c510eb69f` (feat), `fc046aa8f1278b4d902488adb75f55480bfef814` (docs) — [report](reports/P24-WP11-admin-configuration-for-personal-features.md) |
 
 ## Phase 21 work packages
 
