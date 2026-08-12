@@ -4,7 +4,7 @@
 
 | Field | Value |
 |---|---|
-| Status | **Planned** (architecture contract; not Implemented) |
+| Status | **Complete** (architecture contract; no application code in WP01) |
 | Date | 2026-08-12 |
 | Repo HEAD at audit | `2fdcc8ab86f8a1df516053930885b6df04b0e436` on `main` |
 | Device Verified | **No** |
@@ -14,7 +14,7 @@
 
 ## Status legend
 
-This report is the Phase 24 contract. It is **not** Device Verified and **not** Production Ready. Phase 23 remains Open (WP12 in progress; WP13 **not started**). WP01 does not mix P23 closeout.
+This report is the Phase 24 contract. It is **Complete** as an architecture contract (no application code in WP01). It is **not** Device Verified and **not** Production Ready. Phase 23 remains Open (WP12 in progress; WP13 **not started**). WP01 does not mix P23 closeout.
 
 ## Confirmed exists today (reusable)
 

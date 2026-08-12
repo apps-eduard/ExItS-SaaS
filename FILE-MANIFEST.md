@@ -108,6 +108,7 @@ docs/phases/phase-09-mvp-hardening.md
 docs/phases/phase-10-full-pos.md
 docs/phases/phase-24-linked-customer-statements-and-personal-monetization.md
 docs/reports/P24-WP01-current-state-and-architecture-contract.md
+docs/reports/P24-WP02-customer-link-and-pos-correlation.md
 docs/portfolio-progress.md
 docs/product/pinoy-business-pos-requirements.md
 docs/product/portfolio-vision.md

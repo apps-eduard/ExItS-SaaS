@@ -1,10 +1,10 @@
 # Phase 24 — Linked Customer Statements and Personal Monetization
 
-[Phases](README.md) | [Portfolio](../portfolio-progress.md) | [WP01 audit](../reports/P24-WP01-current-state-and-architecture-contract.md) | [ADR-021](../decisions/ADR-021-linked-customer-statements-and-personal-monetization.md)
+[Phases](README.md) | [Portfolio](../portfolio-progress.md) | [WP01 audit](../reports/P24-WP01-current-state-and-architecture-contract.md) | [WP02](../reports/P24-WP02-customer-link-and-pos-correlation.md) | [ADR-021](../decisions/ADR-021-linked-customer-statements-and-personal-monetization.md)
 
 | Field | Value |
 |---|---|
-| Status | **Open** — WP01 Planned (architecture contract) · WP02+ not started |
+| Status | **Open** — WP01 Complete (architecture contract) · WP02 Complete · WP03+ not started |
 | Branch / HEAD at open | `main` @ `2fdcc8ab86f8a1df516053930885b6df04b0e436` |
 | Device Verified | **No** |
 | Production Ready | **No** |
@@ -141,8 +141,8 @@ Personal must not modify financial ledger entries. A later WP may add “I don�
 
 | WP | Title | Notes |
 |---|---|---|
-| **WP01** | Current-state audit + architecture/commercial contract | **Planned** — [P24-WP01](../reports/P24-WP01-current-state-and-architecture-contract.md) |
-| **WP02** | Customer-link completeness + POS↔Platform customer correlation | Identity join; list-by-user; accept/revoke guards; no balances yet |
+| **WP01** | Current-state audit + architecture/commercial contract | **Complete** (architecture contract) — [P24-WP01](../reports/P24-WP01-current-state-and-architecture-contract.md) |
+| **WP02** | Customer-link completeness + POS↔Platform customer correlation | **Complete** — [P24-WP02](../reports/P24-WP02-customer-link-and-pos-correlation.md) |
 | **WP03** | Linked-customer authorization contract | Personal principal; fail-closed tests; Platform link-verify for POS |
 | **WP04** | Business-credit statement projection APIs | Summary + recent activity; no receipt lines; reuse POS outstanding |
 | **WP05** | Lazy receipt detail + open-debt exception + page limits | Separate detail endpoint; cursor pagination |
