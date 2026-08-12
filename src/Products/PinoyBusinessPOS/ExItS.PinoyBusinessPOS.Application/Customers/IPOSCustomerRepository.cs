@@ -19,6 +19,11 @@ public interface IPOSCustomerRepository
         Guid platformBusinessCustomerId,
         CancellationToken cancellationToken = default);
 
+    Task<int> CountByPlatformBusinessCustomerIdAsync(
+        PosOrganizationId organizationId,
+        Guid platformBusinessCustomerId,
+        CancellationToken cancellationToken = default);
+
     Task<(IReadOnlyList<POSCustomer> Items, int TotalCount)> ListAsync(
         PosOrganizationId organizationId,
         CustomerStatus? status,

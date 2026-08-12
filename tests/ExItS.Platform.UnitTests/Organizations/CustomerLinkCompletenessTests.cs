@@ -264,7 +264,7 @@ public sealed class CustomerLinkCompletenessTests
         Assert.NotEqual(accepted.Value.LinkedCustomerAppUserId, relinked.Value!.LinkedCustomerAppUserId);
     }
 
-    private sealed class Harness
+    internal sealed class Harness
     {
         private Harness(
             PlatformOrganization org,
@@ -275,11 +275,16 @@ public sealed class CustomerLinkCompletenessTests
             InMemoryPlatformUserRepository users,
             InMemoryOrganizationMembershipRepository memberships,
             InMemoryBusinessCustomerRepository customers,
+            InMemoryLinkedCustomerAppUserRepository links,
+            InMemoryCustomerLinkRequestRepository requests,
+            InMemoryPlatformOrganizationRepository orgs,
             AcceptCustomerLinkRequest accept,
             UnlinkAcceptedCustomerLink unlink,
             ListLinkedMerchantsForPersonalUser list,
             RevokeCustomerLinkRequest revokePending,
-            CreateCustomerLinkRequest createRequest)
+            CreateCustomerLinkRequest createRequest,
+            DeclineCustomerLinkRequest decline,
+            AuthorizeLinkedCustomerAccess authorize)
         {
             Org = org;
             Personal = personal;
@@ -289,11 +294,16 @@ public sealed class CustomerLinkCompletenessTests
             Users = users;
             Memberships = memberships;
             Customers = customers;
+            Links = links;
+            Requests = requests;
+            Orgs = orgs;
             Accept = accept;
             Unlink = unlink;
             List = list;
             RevokePending = revokePending;
             CreateRequest = createRequest;
+            Decline = decline;
+            Authorize = authorize;
         }
 
         public PlatformOrganization Org { get; }
@@ -304,11 +314,16 @@ public sealed class CustomerLinkCompletenessTests
         public InMemoryPlatformUserRepository Users { get; }
         public InMemoryOrganizationMembershipRepository Memberships { get; }
         public InMemoryBusinessCustomerRepository Customers { get; }
+        public InMemoryLinkedCustomerAppUserRepository Links { get; }
+        public InMemoryCustomerLinkRequestRepository Requests { get; }
+        public InMemoryPlatformOrganizationRepository Orgs { get; }
         public AcceptCustomerLinkRequest Accept { get; }
         public UnlinkAcceptedCustomerLink Unlink { get; }
         public ListLinkedMerchantsForPersonalUser List { get; }
         public RevokeCustomerLinkRequest RevokePending { get; }
         public CreateCustomerLinkRequest CreateRequest { get; }
+        public DeclineCustomerLinkRequest Decline { get; }
+        public AuthorizeLinkedCustomerAccess Authorize { get; }
 
         public static async Task<Harness> CreateAsync()
         {
@@ -339,11 +354,16 @@ public sealed class CustomerLinkCompletenessTests
                 users,
                 memberships,
                 customers,
+                links,
+                requests,
+                orgs,
                 new AcceptCustomerLinkRequest(requests, customers, links, memberships, users, uow, clock),
                 new UnlinkAcceptedCustomerLink(links, customers, uow, clock),
                 new ListLinkedMerchantsForPersonalUser(links, customers, orgs),
                 new RevokeCustomerLinkRequest(requests, uow, clock),
-                new CreateCustomerLinkRequest(customers, requests, uow, clock));
+                new CreateCustomerLinkRequest(customers, requests, uow, clock),
+                new DeclineCustomerLinkRequest(requests, uow, clock),
+                new AuthorizeLinkedCustomerAccess(users, links, customers));
         }
     }
 
@@ -398,7 +418,7 @@ public sealed class CustomerLinkCompletenessTests
         }
     }
 
-    private sealed class InMemoryCustomerLinkRequestRepository : ICustomerLinkRequestRepository
+    internal sealed class InMemoryCustomerLinkRequestRepository : ICustomerLinkRequestRepository
     {
         private readonly List<CustomerLinkRequest> _items = [];
 
@@ -454,7 +474,7 @@ public sealed class CustomerLinkCompletenessTests
         }
     }
 
-    private sealed class InMemoryLinkedCustomerAppUserRepository : ILinkedCustomerAppUserRepository
+    internal sealed class InMemoryLinkedCustomerAppUserRepository : ILinkedCustomerAppUserRepository
     {
         private readonly List<LinkedCustomerAppUser> _items = [];
 

@@ -94,6 +94,12 @@ public sealed class RepaymentUseCaseTests
             CancellationToken cancellationToken = default) =>
             Task.FromResult<POSCustomer?>(null);
 
+        public Task<int> CountByPlatformBusinessCustomerIdAsync(
+            PosOrganizationId organizationId,
+            Guid platformBusinessCustomerId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(0);
+
         public Task<(IReadOnlyList<POSCustomer> Items, int TotalCount)> ListAsync(
             PosOrganizationId organizationId,
             CustomerStatus? status,

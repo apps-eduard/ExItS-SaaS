@@ -54,6 +54,42 @@ internal static class PersonalEndpoints
             return Results.Ok(result);
         });
 
+        personal.MapGet("/linked-merchants/authorization", async (
+            HttpContext http,
+            Guid? organizationId,
+            Guid? businessCustomerId,
+            AuthorizeLinkedCustomerAccess authorize,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out var accountClassRaw, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            if (organizationId is not Guid orgId || orgId == Guid.Empty
+                || businessCustomerId is not Guid customerId || customerId == Guid.Empty)
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.LinkedCustomerAppUserNotFound,
+                    "Linked customer was not found.",
+                    StatusCodes.Status404NotFound);
+            }
+
+            var accountClass = Enum.TryParse<AccountClass>(accountClassRaw, ignoreCase: true, out var parsed)
+                ? parsed
+                : AccountClass.Platform;
+
+            var result = await authorize
+                .ExecuteAsync(
+                    PlatformUserId.From(userId),
+                    accountClass,
+                    PlatformOrganizationId.From(orgId),
+                    BusinessCustomerId.From(customerId),
+                    ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
         personal.MapPost("/linked-merchants/{linkedCustomerId:guid}/unlink", async (
             HttpContext http,
             Guid linkedCustomerId,

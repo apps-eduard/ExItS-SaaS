@@ -326,6 +326,7 @@ builder.Services.AddScoped<DeclineCustomerLinkRequest>();
 builder.Services.AddScoped<AcceptCustomerLinkRequest>();
 builder.Services.AddScoped<UnlinkAcceptedCustomerLink>();
 builder.Services.AddScoped<ListLinkedMerchantsForPersonalUser>();
+builder.Services.AddScoped<AuthorizeLinkedCustomerAccess>();
 builder.Services.AddScoped<DenyStaffAccessToUnrelatedPersonalRecords>();
 builder.Services.AddScoped<StartBusinessForPersonalUser>();
 builder.Services.AddScoped<PreviewPersonalUtangMigration>();

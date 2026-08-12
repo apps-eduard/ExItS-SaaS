@@ -55,6 +55,16 @@ internal sealed class POSCustomerRepository : IPOSCustomerRepository
         return record is null ? null : CustomerEntityMapper.ToDomain(record);
     }
 
+    public Task<int> CountByPlatformBusinessCustomerIdAsync(
+        PosOrganizationId organizationId,
+        Guid platformBusinessCustomerId,
+        CancellationToken cancellationToken = default) =>
+        _db.Customers.AsNoTracking()
+            .CountAsync(
+                c => c.OrganizationId == organizationId.Value
+                     && c.PlatformBusinessCustomerId == platformBusinessCustomerId,
+                cancellationToken);
+
     public async Task<(IReadOnlyList<POSCustomer> Items, int TotalCount)> ListAsync(
         PosOrganizationId organizationId,
         CustomerStatus? status,

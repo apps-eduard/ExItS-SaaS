@@ -124,7 +124,8 @@ internal static class PosApiResults
 
         ApplicationErrorCodes.CommercialAccessUnknown
             or ApplicationErrorCodes.CommercialCapabilityDenied
-            or ApplicationErrorCodes.DevelopmentHeadersUnavailable => StatusCodes.Status403Forbidden,
+            or ApplicationErrorCodes.DevelopmentHeadersUnavailable
+            or ApplicationErrorCodes.LinkedCustomerDenied => StatusCodes.Status403Forbidden,
 
         ApplicationErrorCodes.ReceiptNotFound => StatusCodes.Status404NotFound,
 

@@ -90,6 +90,14 @@ public sealed class CreditEntryUseCaseTests
                 c.OrganizationId == organizationId
                 && c.PlatformBusinessCustomerId == platformBusinessCustomerId));
 
+        public Task<int> CountByPlatformBusinessCustomerIdAsync(
+            PosOrganizationId organizationId,
+            Guid platformBusinessCustomerId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(_items.Count(c =>
+                c.OrganizationId == organizationId
+                && c.PlatformBusinessCustomerId == platformBusinessCustomerId));
+
         public Task<(IReadOnlyList<POSCustomer> Items, int TotalCount)> ListAsync(
             PosOrganizationId organizationId,
             CustomerStatus? status,
