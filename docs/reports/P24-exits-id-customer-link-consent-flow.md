@@ -7,7 +7,10 @@
 | Production Ready | **No** |
 | Phase 24 Closed | **No** |
 | Migration | `20260812204536_AddCustomerLinkTargetAndOrgNotifications` |
-| Implementation tip | `4f843034` (docs); prior feat commits `1d18baab` (platform), `ad5d9e37` (pos/tests) |
+| Implementation tip | `9fa4b8f50d76a459030b969c939e3296a094a450` |
+| Platform feat | `1d18baab` |
+| POS/UI/tests feat | `ad5d9e37` |
+| Docs | `4f843034` + stamp `9fa4b8f5` |
 
 ## Rule (authoritative)
 
