@@ -7,10 +7,10 @@
 | Production Ready | **No** |
 | Phase 24 Closed | **No** |
 | Migration | `20260812204536_AddCustomerLinkTargetAndOrgNotifications` |
-| Implementation tip | `9fa4b8f50d76a459030b969c939e3296a094a450` |
+| Implementation tip | _(stamped after push)_ |
 | Platform feat | `1d18baab` |
 | POS/UI/tests feat | `ad5d9e37` |
-| Docs | `4f843034` + stamp `9fa4b8f5` |
+| Docs | `4f843034` + stamp `9fa4b8f5` / `7c55f907` |
 
 ## Rule (authoritative)
 
@@ -40,6 +40,15 @@ Email invitation/token remains the **fallback** for non-ExItS / legacy flows. Ex
 | Org history/status | link-requests list, link-status, stats COUNT aggregation |
 | MAUI | Org create → pending; Personal Accept/Decline + notifications; Org response inbox |
 
+## Follow-up fix — create save “Business customer was not found”
+
+| Field | Value |
+|---|---|
+| Symptom | ExItS ID resolve succeeded (“Identity confirmed”) but **Save** returned **Business customer was not found** |
+| Cause | Orchestration `Add`ed the customer then called `CreateCustomerLinkRequest` with `persist: false`. Link use case `GetByIdAsync` used `AsNoTracking` and could not see the unsaved tracked entity |
+| Fix | Pass `knownCustomer` into link creation; repository `GetByIdAsync` also checks `DbSet.Local` before the database query |
+| Deploy note | Requires **Platform API** restart/redeploy (MAUI rebuild not required for this error alone) |
+
 ## Explicit exclusions
 
 - No organization membership / staff / product role from resolve or accept
@@ -49,5 +58,4 @@ Email invitation/token remains the **fallback** for non-ExItS / legacy flows. Ex
 
 ## Tests
 
-`FullyQualifiedName~CustomerLink`: **Passed 25** / failed 0 / skipped 0  
-Maui AuthenticationService filter: **Passed 27** / failed 0 / skipped 0
+`FullyQualifiedName~CustomerLink`: **Passed 26** / failed 0 / skipped 0 (includes unsaved-customer orchestration regression)

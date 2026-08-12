@@ -85,6 +85,7 @@ Longer Queueable prefixes override the blanket `/personal/utang` OnlineRequired 
 | Org POS offline grant cannot read personal rows (and reverse) | Code complete · device incomplete |
 | Cold-start PIN unlock for Personal grant | Code complete · device incomplete |
 | Mandatory offline PIN enrollment after Personal online login (same as Org POS) | Code complete · device incomplete |
+| Same-user logout → login keeps PIN (no re-setup) | See [P19-offline-pin-same-user-relogin-fix](P19-offline-pin-same-user-relogin-fix.md) |
 | Sign out keeps grant + PIN; offline Sign In offers limited PIN unlock | Code complete · device incomplete |
 | Change/Set Offline PIN from Personal Settings | Code complete · device incomplete |
 | Manual Retry clears stuck Personal Recovery after contact-id remap | Code complete · device incomplete |

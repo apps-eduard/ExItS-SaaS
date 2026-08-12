@@ -13,6 +13,7 @@
 | Personal offline | [P19-personal-scope-offline-operability](P19-personal-scope-offline-operability.md) — Personal Utang local-first (separate grant scope + DB) |
 | Support diagnostics | [P19-support-diagnostics](P19-support-diagnostics.md) — shared Personal/Organization device-local diagnostics |
 | Staff identities | [P19-organization-scoped-staff-identities](P19-organization-scoped-staff-identities.md) — offline grant remains UserId + OrganizationId + device |
+| PIN re-login fix | [P19-offline-pin-same-user-relogin-fix](P19-offline-pin-same-user-relogin-fix.md) — same-user logout/login keeps PIN; account switch re-enrolls |
 
 ## 1. Objective
 
@@ -71,7 +72,9 @@ UI: Settings (online) for optional PIN change; `/offline-pin-setup` for **mandat
 
 | Topic | Behavior |
 |---|---|
-| Mandatory PIN enrollment | After successful online auth and Personal/Org/setup completion, if this device has no PIN and a valid operate grant exists → force `/offline-pin-setup` (no Skip / Maybe later) |
+| Mandatory PIN enrollment | After successful online auth and Personal/Org/setup completion, if this device has no PIN for the **signed-in user** and a valid operate grant exists → force `/offline-pin-setup` (no Skip / Maybe later) |
+| Same-user re-login | Online establish **keeps** the enrolled PIN for that user (binds legacy unbound verifiers). Do **not** force setup again after logout → same-account login. See [P19-offline-pin-same-user-relogin-fix](P19-offline-pin-same-user-relogin-fix.md). |
+| Account switch on one device | One SecureStorage PIN verifier. Different `UserId` → clear prior PIN and require enrollment for the new account (expected). |
 | Existing-user migration | Existing users who never enrolled a PIN are gated the same way on next online POS entry |
 | Use PIN on Sign-in | Shown only when enrolled PIN + usable offline operate grant/session identity exist on this device |
 | Offline Sign-in | Use PIN is primary; username/password and Google/Facebook placeholders show Internet-required messaging (do not fake auth) |
@@ -80,7 +83,7 @@ UI: Settings (online) for optional PIN change; `/offline-pin-setup` for **mandat
 | Offline warning | Once per unlocked offline session: “You're working offline” + device-data warning → Continue offline |
 | Top-bar sync | `ShellSyncStatus`: Offline • N waiting; panel shows device storage copy + Retry connection; Syncing… then Online / All changes synced |
 | Online-required guard | Shared `OnlineRequiredGuard` + dialog; stays in context; does **not** destroy offline session or bounce to Reconnect for ordinary online-only actions |
-| Lock vs Sign out | **Lock** keeps grant + PIN, returns to PIN unlock. **Sign out** clears operate grant (PIN verifier may remain); next auth requires internet |
+| Lock vs Sign out | **Lock** keeps grant + PIN, returns to PIN unlock. **Sign out** drops process unlock and cloud session but **keeps** durable grant + PIN for cold-start unlock; next **online** auth refreshes the grant without wiping same-user PIN |
 | Google / Facebook | UI-ready placeholders only (shared provider button style + icons). **Real OAuth is not implemented** and is explicitly deferred |
 
 **Root cause of prior endless Boot spinner:** `/` (`Boot.razor`) awaited `NavigationGate.ResolveStartRouteAsync` → `RestoreSessionAsync` HTTP introspect with no progressive UI when the server was slow/unreachable while the OS still reported connectivity.

@@ -85,11 +85,13 @@ The dashboard links to the latest accepted report.
 | [P12-WP04-cursor-product-context-rule.md](P12-WP04-cursor-product-context-rule.md) | P12-WP04 Cursor Product Context Rule | Complete |
 | [P12-WP05-product-bootstrap-prompt.md](P12-WP05-product-bootstrap-prompt.md) | P12-WP05 Product Bootstrap Prompt | Complete |
 | [P12-WP06-reference-product-dry-run.md](P12-WP06-reference-product-dry-run.md) | P12-WP06 Reference Product Dry Run | Complete |
+| [P19-offline-operability-foundation.md](P19-offline-operability-foundation.md) | P19 offline grant + cold-start PIN foundation | Code Complete (Device Verified No) |
+| [P19-offline-pin-same-user-relogin-fix.md](P19-offline-pin-same-user-relogin-fix.md) | P19 fix — same-user logout/login keeps offline PIN | Code Complete (Device Verified No) |
 | [P20-template-aware-import-and-org-catalog-visibility.md](P20-template-aware-import-and-org-catalog-visibility.md) | P20 supplemental — template-aware import + org catalog visibility | Code Complete (Validation Pending) |
 | [P20-dynamic-business-types-and-catalog-classification.md](P20-dynamic-business-types-and-catalog-classification.md) | P20 supplemental — dynamic Business Types + catalog classification | Code Complete (Validation Pending) |
 | [P24-WP01-current-state-and-architecture-contract.md](P24-WP01-current-state-and-architecture-contract.md) | P24-WP01 Current-state audit + architecture contract | Complete (architecture contract) |
 | [P24-WP02-customer-link-and-pos-correlation.md](P24-WP02-customer-link-and-pos-correlation.md) | P24-WP02 Customer-link completeness + POS↔Platform correlation | Complete |
-| [P24-exits-id-customer-link-consent-flow.md](P24-exits-id-customer-link-consent-flow.md) | ExItS-ID customer-link consent (pending → Accept/Decline) | Complete (implementation; Device Verified No) |
+| [P24-exits-id-customer-link-consent-flow.md](P24-exits-id-customer-link-consent-flow.md) | ExItS-ID customer-link consent (pending → Accept/Decline) + create-save tracking fix | Complete (implementation; Device Verified No) |
 | [P24-WP03-linked-customer-authorization-contract.md](P24-WP03-linked-customer-authorization-contract.md) | P24-WP03 Linked-customer authorization contract | Complete |
 | [P24-WP04-lightweight-linked-business-utang-statement.md](P24-WP04-lightweight-linked-business-utang-statement.md) | P24-WP04 Lightweight linked Business Utang statement projection | Complete |
 | [P24-WP05-receipt-summary-detail-and-lazy-loading.md](P24-WP05-receipt-summary-detail-and-lazy-loading.md) | P24-WP05 Receipt summary/detail and lazy loading | Complete |
