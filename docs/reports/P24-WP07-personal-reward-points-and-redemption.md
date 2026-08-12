@@ -136,6 +136,10 @@ Admin UI, reward-store UI, cash checkout, payment gateway, ads network, point tr
 
 Do **not** start WP08 from this package.
 
+## Post-completion note
+
+**P24-WP08** completed separately — see [P24-WP08](P24-WP08-reward-ledger-foundation.md).
+
 ## Checks performed
 
 - Starting HEAD = `origin/main` = `8a7689e42a511571e704356a95e53465e3291921`
