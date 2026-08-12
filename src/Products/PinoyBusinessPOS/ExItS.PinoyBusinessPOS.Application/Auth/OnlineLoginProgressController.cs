@@ -125,6 +125,15 @@ public sealed class OnlineLoginProgressController
                 return OnlineLoginProgressResult<T>.PinSelected();
             }
 
+            // API clients often swallow OperationCanceledException into a Cancelled status
+            // instead of rethrowing. When our hard-timeout CTS fired, treat that as unreachable
+            // rather than a completed "request cancelled" payload.
+            if (_onlineCts.IsCancellationRequested)
+            {
+                SoftPromptVisible = false;
+                return OnlineLoginProgressResult<T>.HardTimedOut();
+            }
+
             SoftPromptVisible = false;
             return OnlineLoginProgressResult<T>.Completed(value);
         }

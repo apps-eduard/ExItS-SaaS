@@ -497,7 +497,12 @@
             {
                 _showSlowPrompt = false;
                 // Explicit denial / invalid credentials — do not treat as offline PIN fallback.
-                if (result.FailureReason is AuthFailureReason.Offline or AuthFailureReason.Timeout or AuthFailureReason.ApiUnavailable)
+                // Cancelled usually means the hard-timeout CTS fired and the API client swallowed
+                // it as Cancelled (not a user-initiated cancel on this screen).
+                if (result.FailureReason is AuthFailureReason.Offline
+                    or AuthFailureReason.Timeout
+                    or AuthFailureReason.ApiUnavailable
+                    or AuthFailureReason.Cancelled)
                 {
                     await RefreshOfflineStateAsync();
                     _errors = _canUsePin

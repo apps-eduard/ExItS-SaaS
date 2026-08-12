@@ -105,6 +105,34 @@ public sealed class OnlineLoginProgressControllerTests
     }
 
     [Fact]
+    public async Task Hard_timeout_when_work_swallows_cancel_is_still_timed_out()
+    {
+        // Mirrors PosApiClient: OperationCanceledException → Cancelled status, no throw.
+        var controller = new OnlineLoginProgressController
+        {
+            SoftPromptDelay = TimeSpan.FromSeconds(5)
+        };
+        controller.BeginOnlineAttempt(TimeSpan.FromMilliseconds(40));
+
+        var result = await controller.RunAsync(async ct =>
+        {
+            try
+            {
+                await Task.Delay(TimeSpan.FromSeconds(5), ct);
+                return "never";
+            }
+            catch (OperationCanceledException)
+            {
+                return "cancelled-payload";
+            }
+        });
+
+        Assert.Equal(OnlineLoginProgressOutcome.HardTimedOut, result.Outcome);
+        Assert.Null(result.Value);
+        Assert.False(controller.PinChosen);
+    }
+
+    [Fact]
     public void Default_soft_prompt_delay_is_three_seconds()
     {
         Assert.Equal(TimeSpan.FromSeconds(3), OnlineLoginProgressController.DefaultSoftPromptDelay);
@@ -130,6 +158,7 @@ public sealed class OnlineLoginProgressControllerTests
         Assert.Contains("ChoosePinInstead", signIn, StringComparison.Ordinal);
         Assert.Contains("AuthFailureReason.Offline", signIn, StringComparison.Ordinal);
         Assert.Contains("AuthFailureReason.Timeout", signIn, StringComparison.Ordinal);
+        Assert.Contains("AuthFailureReason.Cancelled", signIn, StringComparison.Ordinal);
         Assert.Contains("SignIn_ServerUnreachablePinHint", signIn, StringComparison.Ordinal);
         Assert.Contains("Auth_InvalidCredentials", signIn, StringComparison.Ordinal);
     }
