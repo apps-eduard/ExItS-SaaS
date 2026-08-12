@@ -407,11 +407,20 @@ public sealed class RoleHomeResolverTests
 
         public Task ClearAsync(CancellationToken ct = default) => Task.CompletedTask;
 
+        public Task ClearUserGrantAsync(Guid userId, CancellationToken ct = default) => Task.CompletedTask;
+
+        public Task RemoveEnrolledUserAsync(Guid userId, CancellationToken ct = default) => Task.CompletedTask;
+
         public void LockThisProcess()
         {
         }
 
+        public Task<IReadOnlyList<OfflineEnrolledUserSummary>> GetEnrolledUsersAsync(CancellationToken ct = default) =>
+            Task.FromResult<IReadOnlyList<OfflineEnrolledUserSummary>>([]);
+
         public Task<bool> HasPinConfiguredAsync(CancellationToken ct = default) => Task.FromResult(true);
+
+        public Task<bool> HasPinConfiguredAsync(Guid userId, CancellationToken ct = default) => Task.FromResult(true);
 
         public Task<OfflinePinSetupResult> SetPinAsync(string pin, CancellationToken ct = default) =>
             Task.FromResult(new OfflinePinSetupResult(true));
@@ -422,7 +431,16 @@ public sealed class RoleHomeResolverTests
         public Task<OfflinePinUnlockResult> UnlockWithPinAsync(string pin, CancellationToken ct = default) =>
             Task.FromResult(new OfflinePinUnlockResult(OfflinePinUnlockStatus.Succeeded, ActiveUnlockedGrant));
 
+        public Task<OfflinePinUnlockResult> UnlockWithPinAsync(Guid userId, string pin, CancellationToken ct = default) =>
+            Task.FromResult(new OfflinePinUnlockResult(OfflinePinUnlockStatus.Succeeded, ActiveUnlockedGrant));
+
+        public Task<bool> ForceExpireGrantForDevelopmentAsync(Guid userId, CancellationToken ct = default) =>
+            Task.FromResult(false);
+
         public Task<OfflineOperatingGrant?> PeekStoredGrantAsync(CancellationToken ct = default) =>
+            Task.FromResult(ActiveUnlockedGrant);
+
+        public Task<OfflineOperatingGrant?> PeekStoredGrantAsync(Guid userId, CancellationToken ct = default) =>
             Task.FromResult(ActiveUnlockedGrant);
     }
 }

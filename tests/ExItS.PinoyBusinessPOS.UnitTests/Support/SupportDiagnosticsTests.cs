@@ -405,15 +405,26 @@ public sealed class SupportDiagnosticsTests
         public OfflineOperatingGrant? ActiveUnlockedGrant => Build();
         public Task EstablishFromOnlineSessionAsync(AuthSession session, string deviceId, string? roleCode, CancellationToken ct = default) => Task.CompletedTask;
         public Task ClearAsync(CancellationToken ct = default) => Task.CompletedTask;
+        public Task ClearUserGrantAsync(Guid clearUserId, CancellationToken ct = default) => Task.CompletedTask;
+        public Task RemoveEnrolledUserAsync(Guid removeUserId, CancellationToken ct = default) => Task.CompletedTask;
         public void LockThisProcess() { }
+        public Task<IReadOnlyList<OfflineEnrolledUserSummary>> GetEnrolledUsersAsync(CancellationToken ct = default) =>
+            Task.FromResult<IReadOnlyList<OfflineEnrolledUserSummary>>([]);
         public Task<bool> HasPinConfiguredAsync(CancellationToken ct = default) => Task.FromResult(true);
+        public Task<bool> HasPinConfiguredAsync(Guid pinUserId, CancellationToken ct = default) => Task.FromResult(true);
         public Task<OfflinePinSetupResult> SetPinAsync(string pin, CancellationToken ct = default) =>
             Task.FromResult(new OfflinePinSetupResult(true));
         public Task<OfflineColdStartOffer> EvaluateColdStartOfferAsync(CancellationToken ct = default) =>
             Task.FromResult(new OfflineColdStartOffer(true, ActiveUnlockedGrant, null));
         public Task<OfflinePinUnlockResult> UnlockWithPinAsync(string pin, CancellationToken ct = default) =>
             Task.FromResult(new OfflinePinUnlockResult(OfflinePinUnlockStatus.Succeeded, ActiveUnlockedGrant));
+        public Task<OfflinePinUnlockResult> UnlockWithPinAsync(Guid unlockUserId, string pin, CancellationToken ct = default) =>
+            Task.FromResult(new OfflinePinUnlockResult(OfflinePinUnlockStatus.Succeeded, ActiveUnlockedGrant));
+        public Task<bool> ForceExpireGrantForDevelopmentAsync(Guid expireUserId, CancellationToken ct = default) =>
+            Task.FromResult(false);
         public Task<OfflineOperatingGrant?> PeekStoredGrantAsync(CancellationToken ct = default) =>
+            Task.FromResult(Build());
+        public Task<OfflineOperatingGrant?> PeekStoredGrantAsync(Guid peekUserId, CancellationToken ct = default) =>
             Task.FromResult(Build());
 
         private OfflineOperatingGrant? Build() => new(

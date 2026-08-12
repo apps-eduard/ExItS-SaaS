@@ -292,7 +292,12 @@ public sealed class OfflineReconnectAutoSyncServiceTests
         }
 
         public Task<ApiResultLikeCustomer> CreateCustomerAsync(
-            string displayName, string? mobileNumber, string? address, string? notes, CancellationToken ct = default) =>
+            string displayName,
+            string? mobileNumber,
+            string? address,
+            string? notes,
+            Guid? platformBusinessCustomerId = null,
+            CancellationToken ct = default) =>
             throw new NotSupportedException();
 
         public Task<ApiResultLikeCustomer> UpdateCustomerAsync(

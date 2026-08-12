@@ -15,8 +15,9 @@ public sealed class AuthOfflineUxLayerTests
         Assert.False(await harness.Service.HasPinConfiguredAsync());
         var offer = await harness.Service.EvaluateColdStartOfferAsync();
         Assert.False(offer.CanOfferPinUnlock);
-        Assert.NotNull(offer.Grant);
         Assert.Equal("offline_pin_not_configured", offer.DenialReasonCode);
+        // Denial does not surface a grant for unlock; enrollment is gated separately.
+        Assert.Null(offer.Grant);
     }
 
     [Fact]
@@ -24,17 +25,18 @@ public sealed class AuthOfflineUxLayerTests
     {
         var clock = new FakeClock(DateTimeOffset.Parse("2026-08-08T00:00:00Z"));
         var harness = await SeedGrantWithoutPinAsync(clock);
+        var userId = OnlineSession().UserId;
         // Simulate a leftover device PIN written before UserId binding (or lost UserId on disk).
-        await harness.Store.SavePinVerifierAsync(OfflinePinHasher.Create("123456", 10_000, userId: null));
-        Assert.True(await harness.Service.HasPinConfiguredAsync());
+        await harness.Store.SavePinVerifierAsync(userId, OfflinePinHasher.Create("123456", 10_000, userId: null));
+        Assert.True(await harness.Service.HasPinConfiguredAsync(userId));
 
         await harness.Service.EstablishFromOnlineSessionAsync(OnlineSession(), harness.Device.DeviceId, "Cashier");
 
-        Assert.True(await harness.Service.HasPinConfiguredAsync());
-        var bound = await harness.Store.LoadPinVerifierAsync();
+        Assert.True(await harness.Service.HasPinConfiguredAsync(userId));
+        var bound = await harness.Store.LoadPinVerifierAsync(userId);
         Assert.NotNull(bound);
-        Assert.Equal(OnlineSession().UserId, bound!.UserId);
-        Assert.NotNull(await harness.Store.LoadGrantAsync());
+        Assert.Equal(userId, bound!.UserId);
+        Assert.NotNull(await harness.Store.LoadGrantAsync(userId));
     }
 
     [Fact]
@@ -43,7 +45,7 @@ public sealed class AuthOfflineUxLayerTests
         var clock = new FakeClock(DateTimeOffset.Parse("2026-08-08T00:00:00Z"));
         var options = Options.Create(new OfflineOperatingGrantOptions
         {
-            DurationHours = 24,
+            DurationHours = 720,
             PinMinLength = 6,
             MaxFailedPinAttempts = 5,
             PinLockoutMinutes = 15,
@@ -67,14 +69,14 @@ public sealed class AuthOfflineUxLayerTests
 
         await sut.EstablishFromOnlineSessionAsync(personal, device.DeviceId, roleCode: null);
         Assert.True((await sut.SetPinAsync("123456")).Succeeded);
-        var before = await store.LoadPinVerifierAsync();
+        var before = await store.LoadPinVerifierAsync(personal.UserId);
 
         // Simulate app kill + online Personal login again (new process unlock flag).
         sut.LockThisProcess();
         await sut.EstablishFromOnlineSessionAsync(personal, device.DeviceId, roleCode: null);
 
-        Assert.True(await sut.HasPinConfiguredAsync());
-        var after = await store.LoadPinVerifierAsync();
+        Assert.True(await sut.HasPinConfiguredAsync(personal.UserId));
+        var after = await store.LoadPinVerifierAsync(personal.UserId);
         Assert.NotNull(after);
         Assert.Equal(personal.UserId, after!.UserId);
         Assert.Equal(before!.HashBase64, after.HashBase64);
@@ -117,7 +119,7 @@ public sealed class AuthOfflineUxLayerTests
             """;
         await tokens.SetAsync(SecureTokenKeys.OfflinePinVerifier, pascal);
 
-        var loaded = await store.LoadPinVerifierAsync();
+        var loaded = await store.LoadPinVerifierAsync(userId);
         Assert.NotNull(loaded);
         Assert.Equal(userId, loaded!.UserId);
     }
@@ -127,28 +129,50 @@ public sealed class AuthOfflineUxLayerTests
     {
         var clock = new FakeClock(DateTimeOffset.Parse("2026-08-08T00:00:00Z"));
         var harness = await SeedGrantWithoutPinAsync(clock);
+        var userId = OnlineSession().UserId;
         var unbound = OfflinePinHasher.Create("123456", 10_000, userId: Guid.Empty);
-        await harness.Store.SavePinVerifierAsync(unbound);
+        await harness.Store.SavePinVerifierAsync(userId, unbound);
 
         await harness.Service.EstablishFromOnlineSessionAsync(OnlineSession(), harness.Device.DeviceId, "Cashier");
 
-        Assert.True(await harness.Service.HasPinConfiguredAsync());
-        var bound = await harness.Store.LoadPinVerifierAsync();
-        Assert.Equal(OnlineSession().UserId, bound!.UserId);
+        Assert.True(await harness.Service.HasPinConfiguredAsync(userId));
+        var bound = await harness.Store.LoadPinVerifierAsync(userId);
+        Assert.Equal(userId, bound!.UserId);
     }
 
     [Fact]
-    public async Task Online_establish_clears_pin_owned_by_different_user()
+    public async Task Online_establish_keeps_pin_owned_by_different_user()
     {
         var clock = new FakeClock(DateTimeOffset.Parse("2026-08-08T00:00:00Z"));
         var harness = await SeedGrantWithoutPinAsync(clock);
         var otherUser = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
-        await harness.Store.SavePinVerifierAsync(OfflinePinHasher.Create("123456", 10_000, otherUser));
+        var otherPin = OfflinePinHasher.Create("123456", 10_000, otherUser);
+        await harness.Store.SaveGrantAsync(new OfflineOperatingGrant(
+            OfflineOperatingGrant.CurrentSchemaVersion,
+            otherUser,
+            Guid.Parse("22222222-2222-2222-2222-222222222222"),
+            "Test Store",
+            harness.Device.DeviceId,
+            "Cashier",
+            ["pos.sell"],
+            "Active",
+            "Other Cashier",
+            "other",
+            "other@example.com",
+            clock.GetUtcNow(),
+            clock.GetUtcNow(),
+            clock.GetUtcNow().AddHours(720),
+            OfflineGrantScopeKind.Organization,
+            BranchId: Guid.Parse("33333333-3333-3333-3333-333333333333"),
+            PosDeviceId: Guid.Parse("44444444-4444-4444-4444-444444444444")));
+        await harness.Store.SavePinVerifierAsync(otherUser, otherPin);
 
         await harness.Service.EstablishFromOnlineSessionAsync(OnlineSession(), harness.Device.DeviceId, "Cashier");
 
-        Assert.False(await harness.Service.HasPinConfiguredAsync());
-        Assert.Null(await harness.Store.LoadPinVerifierAsync());
+        var kept = await harness.Store.LoadPinVerifierAsync(otherUser);
+        Assert.NotNull(kept);
+        Assert.Equal(otherPin.HashBase64, kept!.HashBase64);
+        Assert.False(await harness.Service.HasPinConfiguredAsync(OnlineSession().UserId));
     }
 
     [Fact]
@@ -156,15 +180,16 @@ public sealed class AuthOfflineUxLayerTests
     {
         var clock = new FakeClock(DateTimeOffset.Parse("2026-08-08T00:00:00Z"));
         var harness = await SeedAsync(clock);
-        Assert.True(await harness.Service.HasPinConfiguredAsync());
-        var before = await harness.Store.LoadPinVerifierAsync();
+        var userId = OnlineSession().UserId;
+        Assert.True(await harness.Service.HasPinConfiguredAsync(userId));
+        var before = await harness.Store.LoadPinVerifierAsync(userId);
 
         await harness.Service.EstablishFromOnlineSessionAsync(OnlineSession(), harness.Device.DeviceId, "Cashier");
 
-        Assert.True(await harness.Service.HasPinConfiguredAsync());
-        var after = await harness.Store.LoadPinVerifierAsync();
+        Assert.True(await harness.Service.HasPinConfiguredAsync(userId));
+        var after = await harness.Store.LoadPinVerifierAsync(userId);
         Assert.NotNull(after);
-        Assert.Equal(OnlineSession().UserId, after!.UserId);
+        Assert.Equal(userId, after!.UserId);
         Assert.Equal(before!.HashBase64, after.HashBase64);
     }
 
@@ -210,7 +235,8 @@ public sealed class AuthOfflineUxLayerTests
         var clock = new FakeClock(DateTimeOffset.Parse("2026-08-08T00:00:00Z"));
         var harness = await SeedGrantWithoutPinAsync(clock);
         Assert.True((await harness.Service.SetPinAsync("123456")).Succeeded);
-        Assert.False(OfflinePinHasher.Verify("654321", (await harness.Store.LoadPinVerifierAsync())!));
+        var userId = OnlineSession().UserId;
+        Assert.False(OfflinePinHasher.Verify("654321", (await harness.Store.LoadPinVerifierAsync(userId))!));
     }
 
     [Fact]
@@ -218,20 +244,21 @@ public sealed class AuthOfflineUxLayerTests
     {
         var clock = new FakeClock(DateTimeOffset.Parse("2026-08-08T00:00:00Z"));
         var harness = await SeedAsync(clock);
-        Assert.Equal(OfflinePinUnlockStatus.Succeeded, (await harness.Service.UnlockWithPinAsync("123456")).Status);
+        var userId = OnlineSession().UserId;
+        Assert.Equal(OfflinePinUnlockStatus.Succeeded, (await harness.Service.UnlockWithPinAsync(userId, "123456")).Status);
         Assert.True(harness.Service.IsUnlockedThisProcess);
 
         // Lock / Sign out path: process unlock drops, durable grant + PIN remain.
         harness.Service.LockThisProcess();
         Assert.False(harness.Service.IsUnlockedThisProcess);
-        Assert.NotNull(await harness.Store.LoadGrantAsync());
-        Assert.NotNull(await harness.Store.LoadPinVerifierAsync());
+        Assert.NotNull(await harness.Store.LoadGrantAsync(userId));
+        Assert.NotNull(await harness.Store.LoadPinVerifierAsync(userId));
         Assert.True((await harness.Service.EvaluateColdStartOfferAsync()).CanOfferPinUnlock);
 
         // Hard clear (server denial / remove-from-device): grant gone, PIN verifier retained.
-        await harness.Service.ClearAsync();
-        Assert.Null(await harness.Store.LoadGrantAsync());
-        Assert.NotNull(await harness.Store.LoadPinVerifierAsync());
+        await harness.Service.ClearUserGrantAsync(userId);
+        Assert.Null(await harness.Store.LoadGrantAsync(userId));
+        Assert.NotNull(await harness.Store.LoadPinVerifierAsync(userId));
         Assert.False((await harness.Service.EvaluateColdStartOfferAsync()).CanOfferPinUnlock);
     }
 
@@ -269,7 +296,7 @@ public sealed class AuthOfflineUxLayerTests
     }
 
     [Fact]
-    public void Offline_pin_unlock_ui_is_stacked_and_not_duplicating_org_name()
+    public void Offline_pin_unlock_ui_is_stacked_and_supports_account_selection()
     {
         var unlock = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Pages", "OfflinePinUnlock.razor"));
         var css = File.ReadAllText(Path.Combine(MauiProject(), "wwwroot", "app.css"));
@@ -279,7 +306,9 @@ public sealed class AuthOfflineUxLayerTests
         Assert.Contains("pos-offline-pin__signout", unlock, StringComparison.Ordinal);
         Assert.Contains("Offline_PinShow", unlock, StringComparison.Ordinal);
         Assert.Contains("NotifyApiReachability(false)", unlock, StringComparison.Ordinal);
-        Assert.DoesNotContain("OrganizationDisplayName", unlock, StringComparison.Ordinal);
+        Assert.Contains("pos-offline-pin__accounts", unlock, StringComparison.Ordinal);
+        Assert.Contains("pos-offline-pin__account-meta", unlock, StringComparison.Ordinal);
+        Assert.Contains("user.OrganizationDisplayName", unlock, StringComparison.Ordinal);
         Assert.DoesNotContain("InlineMessageTone.Warning", unlock, StringComparison.Ordinal);
 
         Assert.Contains(".pos-offline-pin__actions", css, StringComparison.Ordinal);
@@ -453,7 +482,7 @@ public sealed class AuthOfflineUxLayerTests
     {
         var options = Options.Create(new OfflineOperatingGrantOptions
         {
-            DurationHours = 24,
+            DurationHours = 720,
             PinMinLength = 6,
             MaxFailedPinAttempts = 5,
             PinLockoutMinutes = 15,
@@ -534,42 +563,6 @@ public sealed class AuthOfflineUxLayerTests
 
         public Task<bool> IsConnectedAsync(CancellationToken ct = default) =>
             Task.FromResult(Connected);
-    }
-
-    private sealed class MemoryOfflineGrantStore : IOfflineOperatingGrantStore
-    {
-        private OfflineOperatingGrant? _grant;
-        private OfflinePinVerifier? _pin;
-
-        public Task<OfflineOperatingGrant?> LoadGrantAsync(CancellationToken ct = default) =>
-            Task.FromResult(_grant);
-
-        public Task SaveGrantAsync(OfflineOperatingGrant grant, CancellationToken ct = default)
-        {
-            _grant = grant;
-            return Task.CompletedTask;
-        }
-
-        public Task ClearGrantAsync(CancellationToken ct = default)
-        {
-            _grant = null;
-            return Task.CompletedTask;
-        }
-
-        public Task<OfflinePinVerifier?> LoadPinVerifierAsync(CancellationToken ct = default) =>
-            Task.FromResult(_pin);
-
-        public Task SavePinVerifierAsync(OfflinePinVerifier verifier, CancellationToken ct = default)
-        {
-            _pin = verifier;
-            return Task.CompletedTask;
-        }
-
-        public Task ClearPinVerifierAsync(CancellationToken ct = default)
-        {
-            _pin = null;
-            return Task.CompletedTask;
-        }
     }
 
     private sealed class MemorySecureTokenStoreForPin : ISecureTokenStore

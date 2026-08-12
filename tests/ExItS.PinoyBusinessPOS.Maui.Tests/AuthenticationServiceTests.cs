@@ -914,15 +914,15 @@ public sealed class AuthenticationServiceTests
         var restore = await harness.Auth.RestoreSessionAsync();
         Assert.True(restore.Succeeded);
         Assert.False(restore.Session!.HasPosAccess);
-        Assert.Null(await harness.GrantStore.LoadGrantAsync());
+        Assert.Null(await harness.GrantStore.LoadGrantAsync(harness.UserId));
     }
 
     [Fact]
     public async Task Logout_keeps_offline_grant_and_pin_for_cold_start()
     {
         var harness = await SeedOfflineGrantHarnessAsync();
-        Assert.NotNull(await harness.GrantStore.LoadGrantAsync());
-        Assert.NotNull(await harness.GrantStore.LoadPinVerifierAsync());
+        Assert.NotNull(await harness.GrantStore.LoadGrantAsync(harness.UserId));
+        Assert.NotNull(await harness.GrantStore.LoadPinVerifierAsync(harness.UserId));
 
         // Restore online session into Current so Logout has a session to clear.
         harness.Access.IntrospectResult = ApiResult<PlatformAccessTokenIntrospectionDto>.Success(
@@ -944,8 +944,8 @@ public sealed class AuthenticationServiceTests
 
         await harness.Auth.LogoutAsync();
         Assert.False(harness.Current.IsAuthenticated);
-        Assert.NotNull(await harness.GrantStore.LoadGrantAsync());
-        Assert.NotNull(await harness.GrantStore.LoadPinVerifierAsync());
+        Assert.NotNull(await harness.GrantStore.LoadGrantAsync(harness.UserId));
+        Assert.NotNull(await harness.GrantStore.LoadPinVerifierAsync(harness.UserId));
         Assert.True((await harness.Auth.EvaluateOfflineColdStartOfferAsync()).CanOfferPinUnlock);
 
         // PIN unlock must work with no leftover secure session (post Sign out).
@@ -960,7 +960,7 @@ public sealed class AuthenticationServiceTests
     public async Task Online_relogin_after_logout_does_not_force_pin_setup_again()
     {
         var harness = await SeedOfflineGrantHarnessAsync();
-        var pinHashBefore = (await harness.GrantStore.LoadPinVerifierAsync())!.HashBase64;
+        var pinHashBefore = (await harness.GrantStore.LoadPinVerifierAsync(harness.UserId))!.HashBase64;
 
         harness.Access.IntrospectResult = ApiResult<PlatformAccessTokenIntrospectionDto>.Success(
             new PlatformAccessTokenIntrospectionDto(
@@ -1002,7 +1002,7 @@ public sealed class AuthenticationServiceTests
         await harness.Auth.EnsureOfflineOperateGrantAsync();
 
         Assert.True(await harness.Auth.HasOfflinePinConfiguredAsync());
-        var pinAfter = await harness.GrantStore.LoadPinVerifierAsync();
+        var pinAfter = await harness.GrantStore.LoadPinVerifierAsync(harness.UserId);
         Assert.NotNull(pinAfter);
         Assert.Equal(harness.UserId, pinAfter!.UserId);
         Assert.Equal(pinHashBefore, pinAfter.HashBase64);
@@ -1068,7 +1068,7 @@ public sealed class AuthenticationServiceTests
         var device = new FakeDeviceIdentity("device-a");
         var grantOptions = Options.Create(new OfflineOperatingGrantOptions
         {
-            DurationHours = 24,
+            DurationHours = 720,
             PinMinLength = 6,
             MaxFailedPinAttempts = 5,
             PinLockoutMinutes = 15,
@@ -1128,42 +1128,6 @@ public sealed class AuthenticationServiceTests
         }
 
         public Task<bool> IsConnectedAsync(CancellationToken ct = default) => Task.FromResult(online);
-    }
-
-    private sealed class MemoryOfflineGrantStore : IOfflineOperatingGrantStore
-    {
-        private OfflineOperatingGrant? _grant;
-        private OfflinePinVerifier? _pin;
-
-        public Task<OfflineOperatingGrant?> LoadGrantAsync(CancellationToken ct = default) =>
-            Task.FromResult(_grant);
-
-        public Task SaveGrantAsync(OfflineOperatingGrant grant, CancellationToken ct = default)
-        {
-            _grant = grant;
-            return Task.CompletedTask;
-        }
-
-        public Task ClearGrantAsync(CancellationToken ct = default)
-        {
-            _grant = null;
-            return Task.CompletedTask;
-        }
-
-        public Task<OfflinePinVerifier?> LoadPinVerifierAsync(CancellationToken ct = default) =>
-            Task.FromResult(_pin);
-
-        public Task SavePinVerifierAsync(OfflinePinVerifier verifier, CancellationToken ct = default)
-        {
-            _pin = verifier;
-            return Task.CompletedTask;
-        }
-
-        public Task ClearPinVerifierAsync(CancellationToken ct = default)
-        {
-            _pin = null;
-            return Task.CompletedTask;
-        }
     }
 
     private static AuthenticationService CreateSut(
