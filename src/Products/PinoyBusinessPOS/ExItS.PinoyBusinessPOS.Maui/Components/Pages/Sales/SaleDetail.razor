@@ -93,6 +93,16 @@ else
             {
                 <p class="pos-sale-detail__context pos-muted">@sale.StoreDisplayName</p>
             }
+            @if (sale.CustomerId is not null)
+            {
+                <p class="pos-sale-detail__context">
+                    <span class="pos-muted">@L["Sales_Field_SoldTo"]</span>
+                    <span aria-hidden="true"> </span>
+                    <a class="pos-link" href="@($"/customers/{sale.CustomerId.Value:D}")">
+                        @(string.IsNullOrWhiteSpace(sale.CustomerDisplayName) ? L["Sales_Detail_CustomerFallback"] : sale.CustomerDisplayName)
+                    </a>
+                </p>
+            }
             @if (!string.IsNullOrWhiteSpace(_cashierName))
             {
                 <p class="pos-sale-detail__context pos-muted">
@@ -137,8 +147,7 @@ else
          || !string.IsNullOrWhiteSpace(sale.ReceiptHeader)
          || !string.IsNullOrWhiteSpace(sale.BusinessAddress)
          || !string.IsNullOrWhiteSpace(sale.ContactPhone))
-    {
-        <section class="pos-sale-detail__extra" aria-label="@L["Sales_DetailSection"]">
+    {        <section class="pos-sale-detail__extra" aria-label="@L["Sales_DetailSection"]">
             @if (!string.IsNullOrWhiteSpace(sale.GCashReference))
             {
                 <div class="pos-sale-detail__extra-block">
@@ -178,17 +187,6 @@ else
             }
             @if (isUtang)
             {
-                @if (sale.CustomerId is not null)
-                {
-                    <div class="pos-sale-detail__extra-block">
-                        <span class="pos-muted">@L["Sales_Detail_LinkedCustomer"]</span>
-                        <div class="pos-sale-detail__extra-value">
-                            <a class="pos-link" href="@($"/customers/{sale.CustomerId.Value:D}")">
-                                @(string.IsNullOrWhiteSpace(sale.CustomerDisplayName) ? L["Sales_Detail_CustomerFallback"] : sale.CustomerDisplayName)
-                            </a>
-                        </div>
-                    </div>
-                }
                 @if (sale.CustomerId is not null && sale.LinkedCreditEntryId is not null)
                 {
                     <div class="pos-sale-detail__extra-block">

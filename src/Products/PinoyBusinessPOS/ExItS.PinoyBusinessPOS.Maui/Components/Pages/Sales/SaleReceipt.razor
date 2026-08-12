@@ -95,6 +95,17 @@ else
                 <dt>@L["Sales_Field_PaymentMethod"]</dt>
                 <dd>@SalesUiOptions.PaymentMethodLabel(L, sale.PaymentMethod)</dd>
             </div>
+            @if (sale.CustomerId is not null)
+            {
+                <div class="pos-sale-receipt__fact">
+                    <dt>@L["Sales_Field_SoldTo"]</dt>
+                    <dd>
+                        @(string.IsNullOrWhiteSpace(sale.CustomerDisplayName)
+                            ? L["Sales_Detail_CustomerFallback"]
+                            : sale.CustomerDisplayName)
+                    </dd>
+                </div>
+            }
             @if (_paymentAttempt is not null)
             {
                 <div class="pos-sale-receipt__fact">

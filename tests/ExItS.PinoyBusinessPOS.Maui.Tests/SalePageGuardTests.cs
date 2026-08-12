@@ -76,7 +76,9 @@ public sealed class SalePageGuardTests
         Assert.Contains("VoidSaleAsync", detail, StringComparison.Ordinal);
         Assert.Contains("ShowReason=\"true\"", detail, StringComparison.Ordinal);
         Assert.Contains("Sales_VoidUtangMessage", detail, StringComparison.Ordinal);
-        Assert.Contains("Sales_Detail_LinkedCustomer", detail, StringComparison.Ordinal);
+        Assert.Contains("Sales_Field_SoldTo", detail, StringComparison.Ordinal);
+        Assert.Contains("sale.CustomerId is not null", detail, StringComparison.Ordinal);
+        Assert.Contains("CustomerDisplayName", detail, StringComparison.Ordinal);
         Assert.Contains("UtangCapability.ReverseCredit", detail, StringComparison.Ordinal);
         Assert.Contains("UtangCapability.ViewReturns", detail, StringComparison.Ordinal);
         Assert.Contains("UtangCapability.ProcessReturn", detail, StringComparison.Ordinal);
@@ -84,6 +86,11 @@ public sealed class SalePageGuardTests
         Assert.DoesNotContain("Sales_BackToList", detail, StringComparison.Ordinal);
         Assert.DoesNotContain("PageHeader", detail, StringComparison.Ordinal);
         Assert.DoesNotContain("RecordedBy.ToString", detail, StringComparison.Ordinal);
+
+        var receipt = File.ReadAllText(Path.Combine(sales, "SaleReceipt.razor"));
+        Assert.Contains("@page \"/sales/{SaleId:guid}/receipt\"", receipt, StringComparison.Ordinal);
+        Assert.Contains("Sales_Field_SoldTo", receipt, StringComparison.Ordinal);
+        Assert.Contains("CustomerDisplayName", receipt, StringComparison.Ordinal);
 
         var returnsDir = Path.Combine(MauiProject(), "Components", "Pages", "Returns");
         Assert.True(Directory.Exists(returnsDir));
@@ -335,7 +342,7 @@ public sealed class SalePageGuardTests
                      "Sales_Checkout_ProductAddAria",
                      "Sales_DetailSubtitle",
                      "Sales_DetailSection",
-                     "Sales_Detail_LinkedCustomer",
+                     "Sales_Field_SoldTo",
                      "Sales_Detail_LinkedCredit",
                      "Sales_Detail_OpenCredit",
                      "Sales_Detail_CustomerFallback",

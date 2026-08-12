@@ -1049,6 +1049,7 @@
   <data name="Sales_DetailSubtitle" xml:space="preserve"><value>Sale details</value></data>
   <data name="Sales_DetailSection" xml:space="preserve"><value>Sale summary</value></data>
   <data name="Sales_Detail_LinkedCustomer" xml:space="preserve"><value>Customer</value></data>
+  <data name="Sales_Field_SoldTo" xml:space="preserve"><value>Sold to</value></data>
   <data name="Sales_Detail_LinkedCredit" xml:space="preserve"><value>Linked credit</value></data>
   <data name="Sales_Detail_OpenCredit" xml:space="preserve"><value>Open credit ledger</value></data>
   <data name="Sales_Detail_CustomerFallback" xml:space="preserve"><value>Customer</value></data>

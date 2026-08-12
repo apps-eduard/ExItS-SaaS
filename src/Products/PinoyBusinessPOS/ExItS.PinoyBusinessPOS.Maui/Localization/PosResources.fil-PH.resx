@@ -1051,6 +1051,7 @@
   <data name="Sales_Detail_OpenCredit" xml:space="preserve"><value>Buksan ang credit ledger</value></data>
   <data name="Sales_Detail_CustomerFallback" xml:space="preserve"><value>Customer</value></data>
   <data name="Sales_Detail_LinkedCustomer" xml:space="preserve"><value>Customer</value></data>
+  <data name="Sales_Field_SoldTo" xml:space="preserve"><value>Ibinenta kay</value></data>
   <data name="Sales_Detail_LinkedCredit" xml:space="preserve"><value>Naka-link na credit</value></data>
   <data name="Sales_Detail_LinkedDueDate" xml:space="preserve"><value>Due date</value></data>
   <data name="Sales_Detail_OutstandingAfter" xml:space="preserve"><value>Outstanding pagkatapos ng bentang ito</value></data>
