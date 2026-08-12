@@ -14,8 +14,8 @@
             aria-expanded="@_syncPanelOpen"
             aria-haspopup="dialog"
             @onclick="ToggleSyncPanelAsync">
-        <span class="pos-sync-status__marker" aria-hidden="true"></span>
         <span class="pos-sync-status__icon" aria-hidden="true">@IconGlyphs.Get(SyncIconName)</span>
+        <span class="pos-sync-status__marker" aria-hidden="true"></span>
         @if (ShowPendingBadge)
         {
             <span class="pos-sync-status__badge" aria-hidden="true">@PendingBadgeText</span>
@@ -30,12 +30,18 @@
     {
         <div class="pos-sync-popover"
              role="dialog"
-             aria-label="@L["SyncStatus_Label"]"
+             aria-labelledby="pos-sync-panel-title"
              aria-modal="false">
-            <section class="pos-sync-popover__section" aria-labelledby="pos-sync-connection-heading">
-                <h2 id="pos-sync-connection-heading" class="pos-sync-popover__section-label">
-                    @L["SyncStatus_ConnectionLabel"]
+            <header class="pos-sync-popover__header">
+                <h2 id="pos-sync-panel-title" class="pos-sync-popover__title">
+                    @L["SyncStatus_PanelTitle"]
                 </h2>
+            </header>
+
+            <section class="pos-sync-popover__section" aria-labelledby="pos-sync-connection-heading">
+                <h3 id="pos-sync-connection-heading" class="pos-sync-popover__section-label">
+                    @L["SyncStatus_ConnectionLabel"]
+                </h3>
                 <div class="pos-sync-popover__row">
                     <span class="pos-sync-status__marker pos-sync-status__marker--@ConnectionToneClass"
                           aria-hidden="true"></span>
@@ -52,9 +58,9 @@
             </section>
 
             <section class="pos-sync-popover__section" aria-labelledby="pos-sync-sync-heading">
-                <h2 id="pos-sync-sync-heading" class="pos-sync-popover__section-label">
+                <h3 id="pos-sync-sync-heading" class="pos-sync-popover__section-label">
                     @L["SyncStatus_SyncLabel"]
-                </h2>
+                </h3>
                 <div class="pos-sync-popover__row">
                     @if (SyncKind is PosSyncStatusKind.Syncing)
                     {
@@ -91,7 +97,8 @@
                             class="pos-sync-popover__action pos-sync-popover__action--primary"
                             disabled="@(_retryBusy || _refreshBusy)"
                             @onclick="RetrySyncAsync">
-                        @(_retryBusy ? L["Common_Loading"] : RetryActionLabel)
+                        <span class="pos-sync-popover__action-icon" aria-hidden="true">@IconGlyphs.Get("refresh")</span>
+                        <span>@(_retryBusy ? L["Common_Loading"] : RetryActionLabel)</span>
                     </button>
                 }
                 @if (_canRefreshFromServer)
@@ -100,13 +107,15 @@
                             class="pos-sync-popover__action"
                             disabled="@(_retryBusy || _refreshBusy)"
                             @onclick="RefreshFromServerAsync">
-                        @(_refreshBusy ? L["Common_Loading"] : L["Offline_RefreshFromServer"])
+                        <span class="pos-sync-popover__action-icon" aria-hidden="true">@IconGlyphs.Get("refresh")</span>
+                        <span>@(_refreshBusy ? L["Common_Loading"] : L["Offline_RefreshFromServer"])</span>
                     </button>
                 }
                 <button type="button"
-                        class="pos-sync-popover__action"
+                        class="pos-sync-popover__action pos-sync-popover__action--close"
                         @onclick="Close">
-                    @L["Common_Close"]
+                    <span class="pos-sync-popover__action-icon" aria-hidden="true">@IconGlyphs.Get("close")</span>
+                    <span>@L["Common_Close"]</span>
                 </button>
             </div>
         </div>
@@ -213,10 +222,8 @@
 
     private string PendingBadgeText => PendingDisplayCount.ToString();
 
-    private bool ShowChipLabel =>
-        SyncKind is not PosSyncStatusKind.Online
-        and not PosSyncStatusKind.LastSynced
-        and not PosSyncStatusKind.PendingSync;
+    // Circular icon button: status meaning lives in icon + marker color + aria-label (not chip text).
+    private bool ShowChipLabel => false;
 
     private string SyncToneClass => SyncKind switch
     {
@@ -256,10 +263,10 @@
         _ => string.Empty,
     };
 
-    private string SyncTitle => SyncSectionTitle;
+    private string SyncTitle => $"{L["SyncStatus_PanelTitle"]}: {SyncSectionTitle}";
 
     private string SyncAccessibleLabel =>
-        $"{L["SyncStatus_ConnectionLabel"]}: {ConnectionTitle}. {L["SyncStatus_SyncLabel"]}: {SyncSectionTitle}";
+        $"{L["SyncStatus_Aria"]}. {L["SyncStatus_ConnectionLabel"]}: {ConnectionTitle}. {L["SyncStatus_SyncLabel"]}: {SyncSectionTitle}";
 
     private string ConnectionToneClass => SyncKind switch
     {

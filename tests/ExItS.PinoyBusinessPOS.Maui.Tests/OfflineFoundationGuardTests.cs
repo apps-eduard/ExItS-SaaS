@@ -65,6 +65,10 @@ public sealed class OfflineFoundationGuardTests
         Assert.Contains(".pos-sync-popover__section", css, StringComparison.Ordinal);
         Assert.Contains(".pos-sync-popover__value--synced", css, StringComparison.Ordinal);
         Assert.Contains(".pos-sync-status__badge", css, StringComparison.Ordinal);
+        Assert.Contains("border-radius: var(--exits-radius-full)", css, StringComparison.Ordinal);
+        Assert.Contains("pos-sync-popover__action-icon", sync, StringComparison.Ordinal);
+        Assert.Contains("SyncStatus_PanelTitle", sync, StringComparison.Ordinal);
+        Assert.Contains("SyncStatus_Aria", sync, StringComparison.Ordinal);
     }
 
     [Fact]

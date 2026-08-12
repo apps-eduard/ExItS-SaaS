@@ -622,6 +622,8 @@
   <data name="Customers_DeactivatedSuccess" xml:space="preserve"><value>Customer deactivated.</value></data>
   <data name="Customers_ReactivatedSuccess" xml:space="preserve"><value>Customer reactivated.</value></data>
   <data name="SyncStatus_Label" xml:space="preserve"><value>Sync status</value></data>
+  <data name="SyncStatus_PanelTitle" xml:space="preserve"><value>Connection &amp; Sync</value></data>
+  <data name="SyncStatus_Aria" xml:space="preserve"><value>Connection and sync status</value></data>
   <data name="SyncStatus_Online" xml:space="preserve"><value>Online</value></data>
   <data name="SyncStatus_OnlineShort" xml:space="preserve"><value>Online</value></data>
   <data name="SyncStatus_OnlineDetail" xml:space="preserve"><value>Connected. Access verified</value></data>
