@@ -32,6 +32,7 @@ WP13+ **not started**. WP12 remains **in progress** until the remaining regressi
 | 11 | POS template confirm N product re-GETs | **High** | After preview, confirm re-fetched every first-batch product from Platform; timeouts surfaced as unavailable. |
 | 12 | POS Personal ↔ Org switch | **High** | Org→Personal could leave `AccountClass` stuck and skip Personal SQLite; Personal→Org listed empty organizations without ensuring the org profile. |
 | 13 | POS PIN offline status vs Sales shift flash | **High** | PIN/offline still showed Online because status used device network, not API reachability. Sales flashed “open shift” before shift state loaded. |
+| 14 | POS weight entry dialog | **Medium** | Enter-weight defaulted to grams, stacked kg/g vertically, and did not show a live line total while typing. |
 
 ## Fixes made
 
@@ -48,6 +49,7 @@ WP13+ **not started**. WP12 remains **in progress** until the remaining regressi
 11. **Template import from preview snapshots** — `ImportTemplateBatch` builds from enriched template snapshots; live Platform GET only for sparse/unavailable links.
 12. **Personal/Org switch session** — `SwitchToPersonalAsync` sets Personal class and opens Personal context; Organization Select ensures org account profile before listing.
 13. **Truthful offline status + sell/return UX** — API reachability handler + PIN `NotifyApiReachability(false)`; Sales waits for shift load and falls back to local snapshot; weighted line total/icon remove; return refundable amount + live preview.
+14. **Weight entry default kg + live line total** — dialog defaults to kg; kg/g on one row beside the field; live “This line” total from `SellingPrice × kilograms`; unit switch converts the typed value.
 
 ## Platform Admin refresh / navigation (bug #6)
 
@@ -268,6 +270,8 @@ Broader Platform integration filter (`BusinessType|Entitlement|CatalogTemplate|G
 | POS Personal/Org switch session context | `61acf50f8e5369aeb8c9bfccd07baae892d7104d` |
 | POS offline status + sell/return UX | `77a99964f4ab2eab013131f02abbd54734a4cfb4` |
 | Docs stamp (POS sign-in/import/switch/offline) | `6f5733735260245fb6730afbe2f07f3c17925ddc` |
+| Docs stamp (POS follow-up hashes) | `6a9a938e241570440703f21b113fa2b0c6e40d62` |
+| POS weight entry default kg + live line total | `d9e20a5934ecb8a7d4e6ce30f245cabe4d858d11` |
 
 ## Explicit stop
 
