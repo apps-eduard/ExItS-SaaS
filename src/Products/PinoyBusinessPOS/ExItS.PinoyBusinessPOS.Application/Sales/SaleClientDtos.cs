@@ -70,7 +70,8 @@ public sealed record CheckoutSaleLineRequest(
 /// <summary>
 /// Checkout request. The cart itself is never persisted server-side; it exists only in the client
 /// session until this single request records the sale. Product-Based Utang supplies CustomerId and
-/// optional DueDate / CreditEntryId; Cash and ManualGCash must omit those.
+/// optional DueDate / CreditEntryId. Settled Cash/Card/GCash/ManualGCash may optionally supply
+/// CustomerId for linked-merchant projection; they must omit DueDate / CreditEntryId.
 /// </summary>
 public sealed record CheckoutSaleRequest(
     List<CheckoutSaleLineRequest> Lines,

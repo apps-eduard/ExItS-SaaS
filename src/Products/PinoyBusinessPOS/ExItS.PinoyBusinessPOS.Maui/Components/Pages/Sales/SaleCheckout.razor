@@ -1920,7 +1920,7 @@ else
             isUtang || _paymentMethod == PosSaleOptions.ManualGCashPaymentMethod || SalesUiOptions.IsElectronicPaymentMethod(_paymentMethod) ? null : _amountTendered,
             _paymentMethod == PosSaleOptions.ManualGCashPaymentMethod ? _gcashReference : null,
             _attemptSaleId,
-            isUtang ? _selectedCustomer!.CustomerId : null,
+            isUtang ? _selectedCustomer!.CustomerId : _selectedCustomer?.CustomerId,
             isUtang ? _dueDate : null,
             isUtang ? _attemptCreditEntryId : null,
             _openShift?.ShiftId);
@@ -2011,7 +2011,7 @@ else
                 tendered,
                 GCashReference: null,
                 saleId,
-                CustomerId: null,
+                CustomerId: _selectedCustomer?.CustomerId,
                 DueDate: null,
                 CreditEntryId: null,
                 _openShift.ShiftId);

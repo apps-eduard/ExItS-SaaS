@@ -68,6 +68,23 @@ internal sealed class LinkedCustomerRecentActivityQuery : ILinkedCustomerRecentA
                 WHERE r.organization_id = @org AND r.customer_id = @customer
                   AND (@not_before IS NULL OR r.recorded_at_utc >= @not_before)
                   AND (@before IS NULL OR r.recorded_at_utc < @before)
+                UNION ALL
+                SELECT
+                    s.id,
+                    'Sale'::text AS entry_type,
+                    s.total AS amount,
+                    0::numeric AS signed_effect,
+                    s.status,
+                    s.recorded_at_utc,
+                    s.id AS source_sale_id
+                FROM pos.sales s
+                WHERE s.organization_id = @org
+                  AND s.customer_id = @customer
+                  AND s.payment_method <> 'Utang'
+                  AND s.linked_credit_entry_id IS NULL
+                  AND s.status IN ('Completed', 'Voided')
+                  AND (@not_before IS NULL OR s.recorded_at_utc >= @not_before)
+                  AND (@before IS NULL OR s.recorded_at_utc < @before)
             ) ledger
             ORDER BY recorded_at_utc DESC, id DESC
             OFFSET @skip

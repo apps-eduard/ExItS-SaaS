@@ -329,27 +329,21 @@ public sealed class CheckoutSale
             var isElectronic = SalePaymentMethods.IsElectronic(method);
             var isUtang = method == SalePaymentMethod.Utang;
 
-            if (!isUtang && (customerId is not null || dueDate is not null || creditEntryId is not null))
+            if (!isUtang && (dueDate is not null || creditEntryId is not null))
             {
                 return ApplicationResult<Sale>.Failure(
                     DomainErrorCodes.SaleCashMustNotLinkCredit,
-                    "Cash, Card, GCash, and Manual GCash sales must not include customer, due date, or credit entry fields.");
+                    "Cash, Card, GCash, and Manual GCash sales must not include due date or credit entry fields.");
             }
 
-            POSCustomerId? utangCustomerId = null;
+            POSCustomerId? linkedCustomerId = null;
             CreditEntryId? linkedCreditEntryId = null;
-            if (isUtang)
-            {
-                if (customerId is null || customerId == Guid.Empty)
-                {
-                    return ApplicationResult<Sale>.Failure(
-                        DomainErrorCodes.SaleUtangCustomerRequired,
-                        "Product-Based Utang requires a customer.");
-                }
 
-                utangCustomerId = POSCustomerId.From(customerId.Value);
+            if (customerId is not null && customerId != Guid.Empty)
+            {
+                linkedCustomerId = POSCustomerId.From(customerId.Value);
                 var customer = await _customers
-                    .GetByIdAsync(orgId, utangCustomerId, cancellationToken)
+                    .GetByIdAsync(orgId, linkedCustomerId, cancellationToken)
                     .ConfigureAwait(false);
                 if (customer is null)
                 {
@@ -362,7 +356,17 @@ public sealed class CheckoutSale
                 {
                     return ApplicationResult<Sale>.Failure(
                         DomainErrorCodes.CustomerNotActive,
-                        "Utang can only be recorded for an active customer.");
+                        "Sales can only attach an active customer.");
+                }
+            }
+
+            if (isUtang)
+            {
+                if (linkedCustomerId is null)
+                {
+                    return ApplicationResult<Sale>.Failure(
+                        DomainErrorCodes.SaleUtangCustomerRequired,
+                        "Product-Based Utang requires a customer.");
                 }
 
                 linkedCreditEntryId = creditEntryId is null || creditEntryId == Guid.Empty
@@ -370,7 +374,7 @@ public sealed class CheckoutSale
                     : CreditEntryId.From(creditEntryId.Value);
 
                 var existingCredit = await _credits
-                    .GetByIdAsync(orgId, utangCustomerId, linkedCreditEntryId, cancellationToken)
+                    .GetByIdAsync(orgId, linkedCustomerId, linkedCreditEntryId, cancellationToken)
                     .ConfigureAwait(false);
                 if (existingCredit is not null)
                 {
@@ -501,7 +505,7 @@ public sealed class CheckoutSale
             }
 
             var utcNow = _clock.UtcNow;
-            var capturedCustomerId = utangCustomerId;
+            var capturedCustomerId = linkedCustomerId;
             var capturedCreditEntryId = linkedCreditEntryId;
             var capturedDueDate = dueDate;
             var capturedActorId = actorId;

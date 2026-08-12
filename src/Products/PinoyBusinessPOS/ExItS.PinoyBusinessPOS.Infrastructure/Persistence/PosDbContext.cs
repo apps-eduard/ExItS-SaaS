@@ -688,11 +688,12 @@ public sealed class PosDbContext : DbContext
                 tb.HasCheckConstraint(
                     "ck_sales_void_consistency",
                     "(status IN ('Completed', 'AwaitingPayment') AND voided_at_utc IS NULL AND voided_by IS NULL AND void_reason IS NULL) OR (status = 'Voided' AND voided_at_utc IS NOT NULL AND voided_by IS NOT NULL AND void_reason IS NOT NULL)");
-                // Cash: tender + change. ManualGCash / Card / GCash: no tender/change/customer/credit.
+                // Cash: tender + change; optional customer; never credit link.
+                // ManualGCash / Card / GCash: no tender/change/credit; optional customer.
                 // Utang: customer + linked credit; total > 0.
                 tb.HasCheckConstraint(
                     "ck_sales_tender_consistency",
-                    "(payment_method = 'Cash' AND amount_tendered IS NOT NULL AND change_amount IS NOT NULL AND amount_tendered >= total AND gcash_reference IS NULL AND customer_id IS NULL AND linked_credit_entry_id IS NULL) OR (payment_method = 'ManualGCash' AND amount_tendered IS NULL AND change_amount IS NULL AND customer_id IS NULL AND linked_credit_entry_id IS NULL) OR (payment_method IN ('Card', 'GCash') AND amount_tendered IS NULL AND change_amount IS NULL AND customer_id IS NULL AND linked_credit_entry_id IS NULL) OR (payment_method = 'Utang' AND amount_tendered IS NULL AND change_amount IS NULL AND gcash_reference IS NULL AND customer_id IS NOT NULL AND linked_credit_entry_id IS NOT NULL AND total > 0)");
+                    "(payment_method = 'Cash' AND amount_tendered IS NOT NULL AND change_amount IS NOT NULL AND amount_tendered >= total AND gcash_reference IS NULL AND linked_credit_entry_id IS NULL) OR (payment_method = 'ManualGCash' AND amount_tendered IS NULL AND change_amount IS NULL AND linked_credit_entry_id IS NULL) OR (payment_method IN ('Card', 'GCash') AND amount_tendered IS NULL AND change_amount IS NULL AND linked_credit_entry_id IS NULL) OR (payment_method = 'Utang' AND amount_tendered IS NULL AND change_amount IS NULL AND gcash_reference IS NULL AND customer_id IS NOT NULL AND linked_credit_entry_id IS NOT NULL AND total > 0)");
             });
 
             entity.HasKey(e => e.Id);
@@ -754,6 +755,10 @@ public sealed class PosDbContext : DbContext
 
             entity.HasIndex(e => e.CustomerId)
                 .HasDatabaseName("ix_sales_customer_id");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.CustomerId, e.RecordedAtUtc })
+                .HasDatabaseName("ix_sales_org_customer_recorded_at")
+                .HasFilter("customer_id IS NOT NULL");
 
             entity.HasIndex(e => e.CashierShiftId)
                 .HasDatabaseName("ix_sales_cashier_shift_id");

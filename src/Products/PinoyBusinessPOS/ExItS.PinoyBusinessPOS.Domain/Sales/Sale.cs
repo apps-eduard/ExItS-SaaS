@@ -51,10 +51,13 @@ public sealed class Sale
     /// </summary>
     public string? GCashReference { get; private set; }
 
-    /// <summary>Customer for Product-Based Utang; null for Cash and ManualGCash.</summary>
+    /// <summary>
+    /// Optional customer association. Required for Product-Based Utang; optional for settled
+    /// Cash/Card/GCash/ManualGCash so linked Personal customers can see receipts/activity.
+    /// </summary>
     public POSCustomerId? CustomerId { get; }
 
-    /// <summary>Linked credit entry for Product-Based Utang; null for Cash and ManualGCash.</summary>
+    /// <summary>Linked credit entry for Product-Based Utang only; null for settled payment methods.</summary>
     public CreditEntryId? LinkedCreditEntryId { get; }
 
     /// <summary>Open cashier shift at checkout; null for legacy pre-migration sales.</summary>
@@ -514,11 +517,13 @@ public sealed class Sale
             return;
         }
 
-        if (customerId is not null || linkedCreditEntryId is not null)
+        // Settled payments may optionally attach a customer (linked-merchant receipts/activity).
+        // They must never attach a credit entry / Utang linkage.
+        if (linkedCreditEntryId is not null)
         {
             throw new DomainException(
                 DomainErrorCodes.SaleCashMustNotLinkCredit,
-                "Cash and Manual GCash sales must not link a customer or credit entry.");
+                "Cash, Card, GCash, and Manual GCash sales must not link a credit entry.");
         }
     }
 }

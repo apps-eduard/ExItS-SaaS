@@ -75,7 +75,8 @@ public sealed record LinkedCustomerOpenDebtActivityPageDto(
     bool HasMore);
 
 /// <summary>
-/// Server-side limited recent ledger rows for linked-customer activity (credits ∪ repayments).
+/// Server-side limited recent rows for linked-customer activity
+/// (credits ∪ repayments ∪ settled non-Utang customer sales).
 /// Must apply ORDER BY + LIMIT/OFFSET in the database — never load full history then trim.
 /// </summary>
 public interface ILinkedCustomerRecentActivityQuery
@@ -487,7 +488,9 @@ internal static class LinkedCustomerActivityMapper
     {
         var isCredit = string.Equals(row.EntryType, "Credit", StringComparison.OrdinalIgnoreCase);
         var isRepayment = string.Equals(row.EntryType, "Repayment", StringComparison.OrdinalIgnoreCase);
-        var isReversed = string.Equals(row.Status, "Reversed", StringComparison.OrdinalIgnoreCase);
+        var isSale = string.Equals(row.EntryType, "Sale", StringComparison.OrdinalIgnoreCase);
+        var isReversed = string.Equals(row.Status, "Reversed", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(row.Status, "Voided", StringComparison.OrdinalIgnoreCase);
 
         string type;
         decimal? charge = null;
@@ -519,6 +522,11 @@ internal static class LinkedCustomerActivityMapper
             {
                 type = "Payment";
             }
+        }
+        else if (isSale)
+        {
+            payment = row.Amount;
+            type = isReversed ? "PurchaseVoided" : "Purchase";
         }
         else
         {
