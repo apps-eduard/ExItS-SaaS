@@ -4,7 +4,7 @@
 
 | Field | Value |
 |---|---|
-| Status | **Open** — WP01–WP12 Complete · WP13 next (roadmap extended through WP24) |
+| Status | **Open** — WP01–WP13 Complete · WP14 next (roadmap extended through WP24) |
 | Branch / HEAD at open | `main` @ `2fdcc8ab86f8a1df516053930885b6df04b0e436` |
 | Device Verified | **No** |
 | Production Ready | **No** |
@@ -135,7 +135,7 @@ IPersonalAdEligibility / IRewardedAdClaimVerifier (null provider first)
 
 ### Reconciliation / disputes
 
-Personal must not modify financial ledger entries. A later WP may add “I don’t recognize this / amount incorrect / payment missing / item incorrect / other”. Disputes do not change balances; merchants resolve through existing payment/adjustment/correction paths.
+Personal must not modify financial ledger entries. Architecture for customer dispute/request tickets is locked in [P24-WP13](../reports/P24-WP13-dispute-request-architecture.md) (kinds, lifecycle, non-mutating rule). **Implementation is deferred** past the WP16–WP24 mobile stream. Disputes do not change balances; merchants resolve through existing payment/adjustment/correction paths.
 
 ## Work packages
 
@@ -153,7 +153,7 @@ Personal must not modify financial ledger entries. A later WP may add “I don�
 | **WP10** | Entitlement-aware older/settled history | **Complete** — [P24-WP10](../reports/P24-WP10-entitlement-aware-older-settled-history.md) |
 | **WP11** | Admin configuration for Personal features | **Complete** — [P24-WP11](../reports/P24-WP11-admin-configuration-for-personal-features.md) |
 | **WP12** | Regression, security, and edge-case tests | **Complete** — [P24-WP12](../reports/P24-WP12-regression-security-and-edge-case-tests.md) |
-| **WP13** | Dispute/request architecture (optional) | Architecture-first; defer implementation if it expands |
+| **WP13** | Dispute/request architecture (optional) | **Complete** (architecture; implementation deferred) — [P24-WP13](../reports/P24-WP13-dispute-request-architecture.md) |
 | **WP14** | Documentation / backend closeout preparation | No Device Verified from tests alone; Phase 24 not closed (mobile follows) |
 | **WP15** | Physical Android validation preparation | Bridge into mobile stream; preparation ≠ Device Verified |
 | **WP16** | Personal mobile linked-customer statement experience | Linked merchants, outstanding, recent/open-debt activity; read projection only |
@@ -170,7 +170,7 @@ Personal must not modify financial ledger entries. A later WP may add “I don�
 
 - Prefer additive columns/tables. No destructive reset.
 - POS: optional `PlatformBusinessCustomerId` on `pos.customers` (value, unique per org when set).
-- Platform: Personal entitlement/reward/ads foundation — WP06–WP12 landed; WP13 dispute architecture next; WP16–WP24 mobile stream authorized.
+- Platform: Personal entitlement/reward/ads foundation — WP06–WP13 landed (WP13 architecture/deferral); WP14 backend docs prep next; WP16–WP24 mobile stream authorized.
 - No production auto-`Migrate()`.
 - Do not physically archive/delete financial records in this phase.
 
@@ -190,6 +190,7 @@ Personal must not modify financial ledger entries. A later WP may add “I don�
 - Cold archive storage.
 - Push notification vendor (Personal push sink is still null).
 - Customer-link email delivery (already a P16-WP07 exclusion).
+- **Dispute/request workflow implementation** (architecture locked in WP13; code deferred).
 - Phase 23 closeout.
 
 ## Validation (target)

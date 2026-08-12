@@ -99,3 +99,4 @@ The dashboard links to the latest accepted report.
 | [P24-WP10-entitlement-aware-older-settled-history.md](P24-WP10-entitlement-aware-older-settled-history.md) | P24-WP10 Entitlement-aware older/settled history | Complete |
 | [P24-WP11-admin-configuration-for-personal-features.md](P24-WP11-admin-configuration-for-personal-features.md) | P24-WP11 Admin configuration for Personal features | Complete |
 | [P24-WP12-regression-security-and-edge-case-tests.md](P24-WP12-regression-security-and-edge-case-tests.md) | P24-WP12 Regression, security, and edge-case tests | Complete |
+| [P24-WP13-dispute-request-architecture.md](P24-WP13-dispute-request-architecture.md) | P24-WP13 Dispute/request architecture | Complete (architecture; implementation deferred) |

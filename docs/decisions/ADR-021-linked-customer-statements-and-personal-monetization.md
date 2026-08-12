@@ -108,6 +108,10 @@ Do not invent a fake Organization in order to reuse `Subscription.OrganizationId
 
 No real ad network in the first implementation. Provider-neutral abstractions only. Critical debt/security information must never require watching an ad. Do not build fake ad playback.
 
+### 8. Disputes / customer requests (architecture only; implementation deferred)
+
+Personal users may later raise non-mutating dispute/request tickets against linked Business Utang activity (unrecognized charge, amount incorrect, payment missing, item incorrect, other). Disputes **do not** change POS balances. Merchants resolve via existing payment/adjustment/correction paths. Full workflow (persistence, APIs, merchant inbox, notifications, UI) is deferred after the Phase-24 mobile stream — see [P24-WP13](../reports/P24-WP13-dispute-request-architecture.md).
+
 ## Consequences
 
 ### Positive
