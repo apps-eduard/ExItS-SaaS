@@ -128,6 +128,58 @@ internal static class PersonalEndpoints
             return PlatformApiResults.FromResult(result, Results.Ok);
         });
 
+        // WP07: redeem eligible personal features with reward points (session PersonalUserId only).
+        personal.MapPost("/features/{featureCode}/redeem", async (
+            HttpContext http,
+            string featureCode,
+            RedeemPersonalFeatureWithRewardPoints redeem,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await redeem
+                .ExecuteAsync(PlatformUserId.From(userId), featureCode, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
+        personal.MapGet("/reward-points/balance", async (
+            HttpContext http,
+            GetPersonalRewardPointsBalance getBalance,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await getBalance
+                .ExecuteAsync(PlatformUserId.From(userId), ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
+        personal.MapGet("/reward-points/activity", async (
+            HttpContext http,
+            int? page,
+            int? pageSize,
+            ListPersonalRewardPointsActivity listActivity,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await listActivity
+                .ExecuteAsync(PlatformUserId.From(userId), page, pageSize, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
         personal.MapGet("/health", () => Results.Ok(new { status = "Healthy", scope = "Personal" }));
 
         personal.MapGet("/dashboard", async (

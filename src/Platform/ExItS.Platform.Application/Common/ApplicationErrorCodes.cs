@@ -209,4 +209,10 @@ public static class ApplicationErrorCodes
         "application.personal.feature.entitlement.not_found";
     public const string PersonalFeatureDefinitionInactive =
         "application.personal.feature.definition.inactive";
+    public const string PersonalFeatureNotRewardRedeemable =
+        "application.personal.feature.not_reward_redeemable";
+    public const string InsufficientPersonalRewardPoints =
+        "application.personal.reward_points.insufficient";
+    public const string PersonalRewardBalanceConflict =
+        "application.personal.reward_points.concurrency_conflict";
 }

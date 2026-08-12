@@ -97,6 +97,8 @@ public sealed class PlatformDbContext : DbContext
     internal DbSet<PersonalUtangMigrationItemRecord> PersonalUtangMigrationItems => Set<PersonalUtangMigrationItemRecord>();
     internal DbSet<PersonalFeatureDefinitionRecord> PersonalFeatureDefinitions => Set<PersonalFeatureDefinitionRecord>();
     internal DbSet<PersonalFeatureEntitlementRecord> PersonalFeatureEntitlements => Set<PersonalFeatureEntitlementRecord>();
+    internal DbSet<PersonalRewardBalanceRecord> PersonalRewardBalances => Set<PersonalRewardBalanceRecord>();
+    internal DbSet<PersonalRewardTransactionRecord> PersonalRewardTransactions => Set<PersonalRewardTransactionRecord>();
     internal DbSet<ComplianceRequirementRecord> ComplianceRequirements => Set<ComplianceRequirementRecord>();
     internal DbSet<ComplianceEvidenceRecord> ComplianceEvidence => Set<ComplianceEvidenceRecord>();
     internal DbSet<ProcessingSystemRecordEntity> ProcessingSystems => Set<ProcessingSystemRecordEntity>();
@@ -1731,6 +1733,7 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.FeatureCode).HasColumnName("feature_code").HasMaxLength(64).IsRequired();
             entity.Property(e => e.DisplayName).HasColumnName("display_name").HasMaxLength(200).IsRequired();
             entity.Property(e => e.IsActive).HasColumnName("is_active");
+            entity.Property(e => e.RewardPointsPrice).HasColumnName("reward_points_price");
             entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
             entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
             entity.HasIndex(e => e.IsActive).HasDatabaseName("ix_personal_feature_definitions_is_active");
@@ -1755,6 +1758,56 @@ public sealed class PlatformDbContext : DbContext
                 .HasDatabaseName("ix_personal_feature_entitlements_user_feature_status");
             entity.HasIndex(e => new { e.PersonalUserId, e.FeatureCode, e.StartsAtUtc, e.EndsAtUtc })
                 .HasDatabaseName("ix_personal_feature_entitlements_user_feature_window");
+
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.PersonalUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<PersonalRewardBalanceRecord>(entity =>
+        {
+            entity.ToTable("personal_reward_balances");
+            entity.HasKey(e => e.PersonalUserId);
+            entity.Property(e => e.PersonalUserId).HasColumnName("personal_user_id");
+            entity.Property(e => e.AvailablePoints).HasColumnName("available_points");
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.Version).HasColumnName("version").IsConcurrencyToken();
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.PersonalUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<PersonalRewardTransactionRecord>(entity =>
+        {
+            entity.ToTable("personal_reward_transactions");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.PersonalUserId).HasColumnName("personal_user_id");
+            entity.Property(e => e.TransactionType).HasColumnName("transaction_type").HasMaxLength(16).IsRequired();
+            entity.Property(e => e.Points).HasColumnName("points");
+            entity.Property(e => e.SignedDelta).HasColumnName("signed_delta");
+            entity.Property(e => e.BalanceAfter).HasColumnName("balance_after");
+            entity.Property(e => e.Source).HasColumnName("source").HasMaxLength(64).IsRequired();
+            entity.Property(e => e.Reason).HasColumnName("reason").HasMaxLength(512);
+            entity.Property(e => e.ReferenceId).HasColumnName("reference_id").HasMaxLength(128);
+            entity.Property(e => e.IdempotencyKey).HasColumnName("idempotency_key").HasMaxLength(128);
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+
+            entity.HasIndex(e => new { e.PersonalUserId, e.CreatedAtUtc, e.Id })
+                .HasDatabaseName("ix_personal_reward_transactions_user_created");
+            entity.HasIndex(e => new { e.PersonalUserId, e.IdempotencyKey })
+                .IsUnique()
+                .HasFilter("idempotency_key IS NOT NULL")
+                .HasDatabaseName("ux_personal_reward_transactions_user_idempotency");
 
             entity.HasOne<PlatformUserRecord>()
                 .WithMany()

@@ -106,6 +106,8 @@ public static class DependencyInjection
         services.AddScoped<IPersonalFeatureDefinitionRepository, PersonalFeatureDefinitionRepository>();
         services.AddScoped<IPersonalFeatureEntitlementRepository, PersonalFeatureEntitlementRepository>();
         services.AddScoped<IPersonalFeatureEntitlementService, PersonalFeatureEntitlementService>();
+        services.AddScoped<IPersonalRewardBalanceRepository, PersonalRewardBalanceRepository>();
+        services.AddScoped<IPersonalRewardTransactionRepository, PersonalRewardTransactionRepository>();
         services.AddScoped<IBusinessCreditOpeningBalanceRepository, BusinessCreditOpeningBalanceRepository>();
         services.AddScoped<IProductLocalRoleGrantRepository, ProductLocalRoleGrantRepository>();
         services.AddSingleton<IPersonalPushNotificationSink, NullPersonalPushNotificationSink>();

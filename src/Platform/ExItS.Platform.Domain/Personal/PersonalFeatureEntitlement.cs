@@ -10,6 +10,12 @@ public static class PersonalFeatureCodes
     /// <summary>Unlocks older settled Business Utang history and settled receipt detail beyond the free window.</summary>
     public const string DigitalRecordsExtended = "personal-digital-records-extended";
 
+    /// <summary>
+    /// Development/test default reward-point price for digital-records-extended.
+    /// Not a production launch price — Admin/config owns economics later (WP11).
+    /// </summary>
+    public const int DigitalRecordsExtendedDefaultRewardPoints = 100;
+
     public static FeatureCode DigitalRecordsExtendedCode { get; } = FeatureCode.Create(DigitalRecordsExtended);
 }
 
@@ -19,9 +25,7 @@ public enum PersonalFeatureEntitlementStatus
     Revoked = 2
 }
 
-/// <summary>
-/// How a Personal feature was granted. RewardPoints is reserved for WP07 — not redeemable in WP06.
-/// </summary>
+/// <summary>How a Personal feature was granted.</summary>
 public enum PersonalFeatureGrantSource
 {
     CashPurchase = 1,
@@ -36,6 +40,13 @@ public sealed class PersonalFeatureDefinition
     public FeatureCode FeatureCode { get; }
     public string DisplayName { get; }
     public bool IsActive { get; private set; }
+
+    /// <summary>
+    /// Reward-point redemption price. Null means the feature is not redeemable with points.
+    /// Development defaults only — not production pricing.
+    /// </summary>
+    public int? RewardPointsPrice { get; private set; }
+
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
 
@@ -43,12 +54,14 @@ public sealed class PersonalFeatureDefinition
         FeatureCode featureCode,
         string displayName,
         bool isActive,
+        int? rewardPointsPrice,
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc)
     {
         FeatureCode = featureCode;
         DisplayName = displayName;
         IsActive = isActive;
+        RewardPointsPrice = rewardPointsPrice;
         CreatedAtUtc = createdAtUtc;
         UpdatedAtUtc = updatedAtUtc;
     }
@@ -57,27 +70,50 @@ public sealed class PersonalFeatureDefinition
         FeatureCode featureCode,
         string displayName,
         DateTimeOffset utcNow,
-        bool isActive = true)
+        bool isActive = true,
+        int? rewardPointsPrice = null)
     {
         ArgumentNullException.ThrowIfNull(featureCode);
         EnsureUtc(utcNow);
         var name = NormalizeDisplayName(displayName);
-        return new PersonalFeatureDefinition(featureCode, name, isActive, utcNow, utcNow);
+        EnsureRewardPrice(rewardPointsPrice);
+        return new PersonalFeatureDefinition(featureCode, name, isActive, rewardPointsPrice, utcNow, utcNow);
     }
 
     public static PersonalFeatureDefinition Rehydrate(
         FeatureCode featureCode,
         string displayName,
         bool isActive,
+        int? rewardPointsPrice,
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc) =>
-        new(featureCode, displayName, isActive, createdAtUtc, updatedAtUtc);
+        new(featureCode, displayName, isActive, rewardPointsPrice, createdAtUtc, updatedAtUtc);
+
+    public bool IsRewardRedeemable => IsActive && RewardPointsPrice is > 0;
 
     public void SetActive(bool isActive, DateTimeOffset utcNow)
     {
         EnsureUtc(utcNow);
         IsActive = isActive;
         UpdatedAtUtc = utcNow;
+    }
+
+    public void SetRewardPointsPrice(int? rewardPointsPrice, DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        EnsureRewardPrice(rewardPointsPrice);
+        RewardPointsPrice = rewardPointsPrice;
+        UpdatedAtUtc = utcNow;
+    }
+
+    private static void EnsureRewardPrice(int? rewardPointsPrice)
+    {
+        if (rewardPointsPrice is < 1)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPersonalRewardPoints,
+                "Reward points price must be null or a positive integer.");
+        }
     }
 
     private static string NormalizeDisplayName(string displayName)

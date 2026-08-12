@@ -95,6 +95,7 @@ internal static class PlatformApiResults
             or ApplicationErrorCodes.TrialNotAllowed
             or ApplicationErrorCodes.TrialAlreadyConsumed
             or ApplicationErrorCodes.ConcurrencyConflict
+            or ApplicationErrorCodes.PersonalRewardBalanceConflict
             or ApplicationErrorCodes.OrganizationNotEligible
             or ApplicationErrorCodes.ProductNotActive
             or ApplicationErrorCodes.PaymentReferenceConflict

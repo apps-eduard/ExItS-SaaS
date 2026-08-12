@@ -166,6 +166,7 @@ internal sealed class PersonalFeatureDefinitionRecord
     public string FeatureCode { get; set; } = string.Empty;
     public string DisplayName { get; set; } = string.Empty;
     public bool IsActive { get; set; }
+    public int? RewardPointsPrice { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset UpdatedAtUtc { get; set; }
 }
@@ -182,4 +183,29 @@ internal sealed class PersonalFeatureEntitlementRecord
     public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset? RevokedAtUtc { get; set; }
     public string? RevocationReason { get; set; }
+}
+
+internal sealed class PersonalRewardBalanceRecord
+{
+    public Guid PersonalUserId { get; set; }
+    public int AvailablePoints { get; set; }
+    public DateTimeOffset CreatedAtUtc { get; set; }
+    public DateTimeOffset UpdatedAtUtc { get; set; }
+    public int Version { get; set; }
+    public uint Xmin { get; set; }
+}
+
+internal sealed class PersonalRewardTransactionRecord
+{
+    public Guid Id { get; set; }
+    public Guid PersonalUserId { get; set; }
+    public string TransactionType { get; set; } = string.Empty;
+    public int Points { get; set; }
+    public int SignedDelta { get; set; }
+    public int BalanceAfter { get; set; }
+    public string Source { get; set; } = string.Empty;
+    public string? Reason { get; set; }
+    public string? ReferenceId { get; set; }
+    public string? IdempotencyKey { get; set; }
+    public DateTimeOffset CreatedAtUtc { get; set; }
 }

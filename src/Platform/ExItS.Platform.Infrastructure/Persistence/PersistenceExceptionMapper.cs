@@ -123,6 +123,15 @@ public static class PersistenceExceptionMapper
             return true;
         }
 
+        if (detail.Contains("personal_reward_balances", StringComparison.OrdinalIgnoreCase)
+            || detail.Contains("ux_personal_reward_transactions_user_idempotency", StringComparison.OrdinalIgnoreCase)
+            || detail.Contains("personal_reward_transactions", StringComparison.OrdinalIgnoreCase))
+        {
+            errorCode = ApplicationErrorCodes.PersonalRewardBalanceConflict;
+            message = "Personal reward points ledger conflict. Retry the operation.";
+            return true;
+        }
+
         errorCode = ApplicationErrorCodes.DomainViolation;
         message = "A unique constraint was violated.";
         return true;

@@ -1,3 +1,4 @@
+using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Personal;
 using ExItS.Platform.Domain.Catalog;
 using ExItS.Platform.Domain.Identity;
@@ -927,6 +928,7 @@ internal sealed class PersonalFeatureDefinitionRepository(PlatformDbContext db) 
 
         record.DisplayName = definition.DisplayName;
         record.IsActive = definition.IsActive;
+        record.RewardPointsPrice = definition.RewardPointsPrice;
         record.UpdatedAtUtc = definition.UpdatedAtUtc;
     }
 
@@ -935,6 +937,7 @@ internal sealed class PersonalFeatureDefinitionRepository(PlatformDbContext db) 
             FeatureCode.Create(record.FeatureCode),
             record.DisplayName,
             record.IsActive,
+            record.RewardPointsPrice,
             record.CreatedAtUtc,
             record.UpdatedAtUtc);
 
@@ -944,6 +947,7 @@ internal sealed class PersonalFeatureDefinitionRepository(PlatformDbContext db) 
             FeatureCode = definition.FeatureCode.Value,
             DisplayName = definition.DisplayName,
             IsActive = definition.IsActive,
+            RewardPointsPrice = definition.RewardPointsPrice,
             CreatedAtUtc = definition.CreatedAtUtc,
             UpdatedAtUtc = definition.UpdatedAtUtc
         };
@@ -1022,5 +1026,142 @@ internal sealed class PersonalFeatureEntitlementRepository(PlatformDbContext db)
             CreatedAtUtc = entitlement.CreatedAtUtc,
             RevokedAtUtc = entitlement.RevokedAtUtc,
             RevocationReason = entitlement.RevocationReason
+        };
+}
+
+internal sealed class PersonalRewardBalanceRepository(PlatformDbContext db) : IPersonalRewardBalanceRepository
+{
+    public async Task<PersonalRewardBalance?> GetByUserAsync(
+        PlatformUserId personalUserId,
+        CancellationToken cancellationToken = default)
+    {
+        var record = await db.PersonalRewardBalances.AsNoTracking()
+            .FirstOrDefaultAsync(x => x.PersonalUserId == personalUserId.Value, cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : ToDomain(record);
+    }
+
+    public Task AddAsync(PersonalRewardBalance balance, CancellationToken cancellationToken = default)
+    {
+        db.PersonalRewardBalances.Add(ToRecord(balance));
+        return Task.CompletedTask;
+    }
+
+    public async Task UpdateAsync(
+        PersonalRewardBalance balance,
+        int expectedVersion,
+        CancellationToken cancellationToken = default)
+    {
+        var record = await db.PersonalRewardBalances
+            .FirstOrDefaultAsync(x => x.PersonalUserId == balance.PersonalUserId.Value, cancellationToken)
+            .ConfigureAwait(false);
+        if (record is null)
+        {
+            throw new PersistenceConflictException(
+                ApplicationErrorCodes.PersonalRewardBalanceConflict,
+                "Personal reward balance was not found.");
+        }
+
+        if (record.Version != expectedVersion)
+        {
+            throw new PersistenceConflictException(
+                ApplicationErrorCodes.PersonalRewardBalanceConflict,
+                "Personal reward balance was modified concurrently.");
+        }
+
+        record.AvailablePoints = balance.AvailablePoints;
+        record.UpdatedAtUtc = balance.UpdatedAtUtc;
+        record.Version = balance.Version;
+    }
+
+    private static PersonalRewardBalance ToDomain(PersonalRewardBalanceRecord record) =>
+        PersonalRewardBalance.Rehydrate(
+            PlatformUserId.From(record.PersonalUserId),
+            record.AvailablePoints,
+            record.CreatedAtUtc,
+            record.UpdatedAtUtc,
+            record.Version);
+
+    private static PersonalRewardBalanceRecord ToRecord(PersonalRewardBalance balance) =>
+        new()
+        {
+            PersonalUserId = balance.PersonalUserId.Value,
+            AvailablePoints = balance.AvailablePoints,
+            CreatedAtUtc = balance.CreatedAtUtc,
+            UpdatedAtUtc = balance.UpdatedAtUtc,
+            Version = balance.Version
+        };
+}
+
+internal sealed class PersonalRewardTransactionRepository(PlatformDbContext db) : IPersonalRewardTransactionRepository
+{
+    public Task AddAsync(PersonalRewardTransaction transaction, CancellationToken cancellationToken = default)
+    {
+        db.PersonalRewardTransactions.Add(ToRecord(transaction));
+        return Task.CompletedTask;
+    }
+
+    public async Task<PersonalRewardTransaction?> FindByIdempotencyKeyAsync(
+        PlatformUserId personalUserId,
+        string idempotencyKey,
+        CancellationToken cancellationToken = default)
+    {
+        var record = await db.PersonalRewardTransactions.AsNoTracking()
+            .FirstOrDefaultAsync(
+                x => x.PersonalUserId == personalUserId.Value && x.IdempotencyKey == idempotencyKey,
+                cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : ToDomain(record);
+    }
+
+    public async Task<(IReadOnlyList<PersonalRewardTransaction> Items, int TotalCount)> ListByUserDescendingAsync(
+        PlatformUserId personalUserId,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default)
+    {
+        var query = db.PersonalRewardTransactions.AsNoTracking()
+            .Where(x => x.PersonalUserId == personalUserId.Value);
+
+        var total = await query.CountAsync(cancellationToken).ConfigureAwait(false);
+        var rows = await query
+            .OrderByDescending(x => x.CreatedAtUtc)
+            .ThenByDescending(x => x.Id)
+            .Skip(skip)
+            .Take(take)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return (rows.Select(ToDomain).ToList(), total);
+    }
+
+    private static PersonalRewardTransaction ToDomain(PersonalRewardTransactionRecord record) =>
+        PersonalRewardTransaction.Rehydrate(
+            record.Id,
+            PlatformUserId.From(record.PersonalUserId),
+            Enum.Parse<PersonalRewardTransactionType>(record.TransactionType, ignoreCase: true),
+            record.Points,
+            record.SignedDelta,
+            record.BalanceAfter,
+            record.Source,
+            record.Reason,
+            record.ReferenceId,
+            record.IdempotencyKey,
+            record.CreatedAtUtc);
+
+    private static PersonalRewardTransactionRecord ToRecord(PersonalRewardTransaction transaction) =>
+        new()
+        {
+            Id = transaction.Id,
+            PersonalUserId = transaction.PersonalUserId.Value,
+            TransactionType = transaction.TransactionType.ToString(),
+            Points = transaction.Points,
+            SignedDelta = transaction.SignedDelta,
+            BalanceAfter = transaction.BalanceAfter,
+            Source = transaction.Source,
+            Reason = transaction.Reason,
+            ReferenceId = transaction.ReferenceId,
+            IdempotencyKey = transaction.IdempotencyKey,
+            CreatedAtUtc = transaction.CreatedAtUtc
         };
 }

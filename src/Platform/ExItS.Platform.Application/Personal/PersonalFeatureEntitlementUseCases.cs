@@ -127,7 +127,8 @@ public sealed class GrantPersonalFeature
                 code,
                 DisplayNameFor(code),
                 utcNow,
-                isActive: true);
+                isActive: true,
+                rewardPointsPrice: DefaultRewardPriceFor(code));
             await _definitions.AddAsync(definition, cancellationToken).ConfigureAwait(false);
         }
         else if (!definition.IsActive)
@@ -185,6 +186,14 @@ public sealed class GrantPersonalFeature
         {
             PersonalFeatureCodes.DigitalRecordsExtended => "Digital Records Extended History",
             _ => code.Value
+        };
+
+    private static int? DefaultRewardPriceFor(FeatureCode code) =>
+        code.Value switch
+        {
+            PersonalFeatureCodes.DigitalRecordsExtended =>
+                PersonalFeatureCodes.DigitalRecordsExtendedDefaultRewardPoints,
+            _ => null
         };
 
     private static PersonalFeatureEntitlementDto Map(PersonalFeatureEntitlement grant, DateTimeOffset asOfUtc) =>
