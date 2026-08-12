@@ -184,7 +184,7 @@ Register → Personal → Start Business → plan + **required** Business Type �
 | **WP10A** | Philippine default Business Types & starter templates | **Done** — [P23-WP10A](../reports/P23-WP10A-philippine-default-business-types-and-templates.md) |
 | **WP10B** | POS commercial plan refresh (Starter/Growth/Pro + BT capacity) | **Done** — [P23-WP10B](../reports/P23-WP10B-pos-commercial-plan-refresh.md) |
 | **WP11** | Onboarding multi-BT entitlement UX | **Done** — [P23-WP11](../reports/P23-WP11-onboarding-multi-business-type-ux.md) |
-| **WP12** | Regression/security/edge-case tests | **In progress** — [P23-WP12](../reports/P23-WP12-regression-security-edge-hardening.md) (Admin refresh hardening added; matrix still open) |
+| **WP12** | Regression/security/edge-case tests | **In progress** — [P23-WP12](../reports/P23-WP12-regression-security-edge-hardening.md) (POS sign-in/import/switch/offline follow-ups added; matrix still open) |
 | **WP13** | Documentation/closeout | **Not started** — final report; no Device Verified claim |
 | **WP14** | Physical Android validation prep only | Device `R58R61E3CAZ` — not run unless asked |
 

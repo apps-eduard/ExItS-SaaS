@@ -28,6 +28,10 @@ WP13+ **not started**. WP12 remains **in progress** until the remaining regressi
 | 7 | Platform Admin shell stuck + catalog Spin | **Critical** | After ae0fb73, Payments refresh left sidenav on Spin+Retry; Product Catalog (Business Types/Categories/Products/Imports) showed content Spin only; Test Payments showed unauthorized — shell `Loaded=false` blocked nav while pages that never called `Permissions.EnsureLoadedAsync()` never left Spin. |
 | 8 | Templates/Business Types refresh: header OK, sidenav Spin+Retry | **Critical** | Hard refresh on Templates/Business Types: header showed Platform Administration (shell Loaded) while sidenav stayed Spin+Retry; Templates also showed Result “An unexpected error occurred.” (API 500). |
 | 9 | POS template confirm: Bad Request / platform unavailable | **High** | Onboarding “Use business template” confirm showed Bad Request + “Platform catalog is temporarily unavailable” while preview worked (direct Platform discovery). POS import treated almost any Platform HTTP failure (incl. 401) as transient unavailable. |
+| 10 | POS sign-in hard-timeout | **High** | First tap mapped hard-timeout cancel to `Auth_Cancelled`; second tap showed server unreachable. |
+| 11 | POS template confirm N product re-GETs | **High** | After preview, confirm re-fetched every first-batch product from Platform; timeouts surfaced as unavailable. |
+| 12 | POS Personal ↔ Org switch | **High** | Org→Personal could leave `AccountClass` stuck and skip Personal SQLite; Personal→Org listed empty organizations without ensuring the org profile. |
+| 13 | POS PIN offline status vs Sales shift flash | **High** | PIN/offline still showed Online because status used device network, not API reachability. Sales flashed “open shift” before shift state loaded. |
 
 ## Fixes made
 
@@ -40,6 +44,10 @@ WP13+ **not started**. WP12 remains **in progress** until the remaining regressi
 7. **Admin shell recovery + catalog permission load** — generation-safe shell loads; recover Platform/Org/Personal mode from `/authorization/me` when `/auth/me` fails; tolerant `AuthSessionInfoDto` (+ `Mfa`); catalog/Test Payments call `Permissions.EnsureLoadedAsync()`; AdminNav retries shell on navigation when not ready.
 8. **AdminNav/MainLayout shell Changed re-sync + Templates/BT mount** — see bug #8 section.
 9. **POS catalog import Platform failure mapping** — see bug #9 section.
+10. **Sign-in hard-timeout** — after work returns, cancelled hard CTS → `HardTimedOut`; Sign-in treats `Cancelled` like unreachable/PIN UX.
+11. **Template import from preview snapshots** — `ImportTemplateBatch` builds from enriched template snapshots; live Platform GET only for sparse/unavailable links.
+12. **Personal/Org switch session** — `SwitchToPersonalAsync` sets Personal class and opens Personal context; Organization Select ensures org account profile before listing.
+13. **Truthful offline status + sell/return UX** — API reachability handler + PIN `NotifyApiReachability(false)`; Sales waits for shift load and falls back to local snapshot; weighted line total/icon remove; return refundable amount + live preview.
 
 ## Platform Admin refresh / navigation (bug #6)
 
@@ -254,6 +262,11 @@ Broader Platform integration filter (`BusinessType|Entitlement|CatalogTemplate|G
 | Docs stamp (Templates/BT nav re-sync) | `60fa8d37216b18ec35a0c6b3d891c0ca8059231f` |
 | POS catalog import Platform failure mapping | `65762f6d93b6dd5c45b671765131492897070075` |
 | Docs stamp (POS template confirm mapping) | `066649db0c0eddce638daf3a00b4c2b5fb3aa641` |
+| Docs stamp (full SHA expand) | `4e69ed4a3b4e0137a3e082218c47bfee02ae4926` |
+| POS sign-in hard-timeout mapping | `37b981686f3e57d6d4f214714442c843d51699e5` |
+| POS template import from preview snapshots | `db35dca945541758fc4c4a8a6adca6d96945032e` |
+| POS Personal/Org switch session context | `61acf50f8e5369aeb8c9bfccd07baae892d7104d` |
+| POS offline status + sell/return UX | `77a99964f4ab2eab013131f02abbd54734a4cfb4` |
 
 ## Explicit stop
 
