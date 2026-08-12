@@ -248,7 +248,7 @@ P19-WP08 ? End-to-End Validation and User Closeout Checklist (Retest � awaitin
 | P24-WP09 — Ads abstraction + Ad-Free entitlement | **Complete** | `ea9bac0db464f369238d40957789b6b3d4188a4f` (feat), `50a517b9591d77fc75fb8dc46044fb96010f496f` (docs) — [report](reports/P24-WP09-ads-abstraction-and-ad-free-entitlement.md) |
 | P24-WP10 — Entitlement-aware older/settled history | **Complete** | `40d6da229e2473c347664a79c91463770f1547ee` (feat), `59af882023428f4961c97297c4c80633c517f731` (docs) — [report](reports/P24-WP10-entitlement-aware-older-settled-history.md) |
 | P24-WP11 — Admin configuration for Personal features | **Complete** | `f9f479dbe784103d74803160132ae28c510eb69f` (feat), `fc046aa8f1278b4d902488adb75f55480bfef814` (docs) — [report](reports/P24-WP11-admin-configuration-for-personal-features.md) |
-| P24-WP12 — Regression, security, and edge-case tests | **Complete** | `5ccf12e2a1a420ae4ff9ef3cdbc586868f33126c` (test) — [report](reports/P24-WP12-regression-security-and-edge-case-tests.md) |
+| P24-WP12 — Regression, security, and edge-case tests | **Complete** | `5ccf12e2a1a420ae4ff9ef3cdbc586868f33126c` (test), `c6f013ace3e1800bfbcb9a5179fae4ffb1df005b` (docs) — [report](reports/P24-WP12-regression-security-and-edge-case-tests.md) |
 | P24-WP13 — Dispute/request architecture (optional) | **Not started** | — |
 | P24-WP14 — Documentation / backend closeout preparation | **Not started** | — |
 | P24-WP15 — Physical Android validation preparation | **Not started** | — |
