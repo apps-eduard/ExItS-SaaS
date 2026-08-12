@@ -251,7 +251,7 @@ P19-WP08 ? End-to-End Validation and User Closeout Checklist (Retest � awaitin
 | P24-WP12 — Regression, security, and edge-case tests | **Complete** | `5ccf12e2a1a420ae4ff9ef3cdbc586868f33126c` (test), `c6f013ace3e1800bfbcb9a5179fae4ffb1df005b` (docs) — [report](reports/P24-WP12-regression-security-and-edge-case-tests.md) |
 | P24-WP13 — Dispute/request architecture (optional) | **Complete** (architecture; implementation deferred) | `6a10dbf503c35e086e72c00f8c503bb005facfae` (docs) — [report](reports/P24-WP13-dispute-request-architecture.md) |
 | P24-WP14 — Documentation / backend closeout preparation | **Complete** | `d5b25e6cc197d4f4cf7955051282e6293df52655` (docs) — [report](reports/P24-WP14-documentation-backend-closeout-preparation.md) |
-| P24-WP15 — Physical Android validation preparation | **Complete** (prep ≠ Device Verified) | _(hashes stamped after push)_ — [report](reports/P24-WP15-physical-android-validation-preparation.md) |
+| P24-WP15 — Physical Android validation preparation | **Complete** (prep ≠ Device Verified) | `b1200f314c02c7573224899c6f1f516d5d9a32b9` (docs) — [report](reports/P24-WP15-physical-android-validation-preparation.md) |
 | P24-WP16 — Personal mobile linked-customer statement experience | **Not started** | — |
 | P24-WP17 — Mobile receipts and older-history entitlement UX | **Not started** | — |
 | P24-WP18 — Mobile rewards and Personal feature redemption | **Not started** | — |
