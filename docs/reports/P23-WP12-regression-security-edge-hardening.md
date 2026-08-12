@@ -27,6 +27,7 @@ WP13+ **not started**. WP12 remains **in progress** until the remaining regressi
 | 6 | Platform Admin refresh/nav | **Critical** | Hard refresh on Organizations/Subscriptions showed API ProblemDetails title “An unexpected error occurred.”; Plans/Subscriptions navigation often collapsed sidebar to Dashboard-only until multiple refreshes. |
 | 7 | Platform Admin shell stuck + catalog Spin | **Critical** | After ae0fb73, Payments refresh left sidenav on Spin+Retry; Product Catalog (Business Types/Categories/Products/Imports) showed content Spin only; Test Payments showed unauthorized — shell `Loaded=false` blocked nav while pages that never called `Permissions.EnsureLoadedAsync()` never left Spin. |
 | 8 | Templates/Business Types refresh: header OK, sidenav Spin+Retry | **Critical** | Hard refresh on Templates/Business Types: header showed Platform Administration (shell Loaded) while sidenav stayed Spin+Retry; Templates also showed Result “An unexpected error occurred.” (API 500). |
+| 9 | POS template confirm: Bad Request / platform unavailable | **High** | Onboarding “Use business template” confirm showed Bad Request + “Platform catalog is temporarily unavailable” while preview worked (direct Platform discovery). POS import treated almost any Platform HTTP failure (incl. 401) as transient unavailable. |
 
 ## Fixes made
 
@@ -38,6 +39,7 @@ WP13+ **not started**. WP12 remains **in progress** until the remaining regressi
 6. **Admin shell/nav/page mount hardening** — see section below.
 7. **Admin shell recovery + catalog permission load** — generation-safe shell loads; recover Platform/Org/Personal mode from `/authorization/me` when `/auth/me` fails; tolerant `AuthSessionInfoDto` (+ `Mfa`); catalog/Test Payments call `Permissions.EnsureLoadedAsync()`; AdminNav retries shell on navigation when not ready.
 8. **AdminNav/MainLayout shell Changed re-sync + Templates/BT mount** — see bug #8 section.
+9. **POS catalog import Platform failure mapping** — see bug #9 section.
 
 ## Platform Admin refresh / navigation (bug #6)
 
@@ -104,6 +106,23 @@ Exact fix:
 - `AdminNav` / `MainLayout` subscribe and complete `_ready` / `_shellReady` when `Shell.Loaded` becomes true after an earlier failure.
 - Templates + Business Types: `Shell.EnsureLoadedAsync`, `_pageReady`, `_loadGate`, `_suppressInitialTableChange`.
 - Catalog template list: `TryToDomain` in repository list path.
+
+### Follow-up (POS template confirm — bug #9)
+
+Observed: onboarding Confirm on Carinderia template showed **Bad Request** + “Platform catalog is temporarily unavailable” after Preview succeeded.
+
+Root causes:
+
+1. `ImportTemplateBatch.IsTransientPlatformFailure` treated **almost any** exception (including Platform 401/4xx via `EnsureSuccessStatusCode`) as transient unavailable.
+2. `PlatformMerchantCatalogClient` did not distinguish auth/client errors from outages.
+3. Merchant template DTOs omitted `PrimaryBusinessTypeId` present on Platform catalog DTOs (aligned).
+
+Exact fix:
+
+- Typed `PlatformMerchantCatalogRequestException` / `PlatformMerchantCatalogTransientException`.
+- Map 401 → `pos.catalog_import.platform_session_required`; other 4xx → clear failure; 5xx/timeout/network → unavailable.
+- Catalog-import endpoints require `X-ExItS-Session-Token` / `PlatformSession` before calling Platform.
+- Merchant template DTOs include `PrimaryBusinessTypeId`.
 
 ### Legacy plan rows (WP10B secondary)
 
