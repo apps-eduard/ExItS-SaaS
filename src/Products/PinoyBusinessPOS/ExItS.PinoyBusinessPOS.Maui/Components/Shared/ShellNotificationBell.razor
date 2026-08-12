@@ -6,6 +6,7 @@
 @inject IConnectivityService Connectivity
 @inject OfflineAwareNavigation OfflineNav
 @inject NavigationManager Nav
+@inject ShellNotificationUnreadState UnreadState
 @inject IStringLocalizer<PosResources> L
 
 <div class="pos-shell-notify">
@@ -48,6 +49,7 @@
         CurrentUser.Changed += OnContextChangedAsync;
         Connectivity.ConnectivityChanged += OnConnectivityChanged;
         Nav.LocationChanged += OnLocationChanged;
+        UnreadState.Changed += OnUnreadStateChangedAsync;
     }
 
     protected override async Task OnParametersSetAsync()
@@ -149,6 +151,8 @@
 
     private Task OnContextChangedAsync() => RefreshUnreadAsync();
 
+    private Task OnUnreadStateChangedAsync() => RefreshUnreadAsync();
+
     private void OnConnectivityChanged(object? sender, ConnectivityStatus status) =>
         _ = InvokeAsync(RefreshUnreadAsync);
 
@@ -160,6 +164,7 @@
         CurrentUser.Changed -= OnContextChangedAsync;
         Connectivity.ConnectivityChanged -= OnConnectivityChanged;
         Nav.LocationChanged -= OnLocationChanged;
+        UnreadState.Changed -= OnUnreadStateChangedAsync;
         _loadCts?.Cancel();
         _loadCts?.Dispose();
     }

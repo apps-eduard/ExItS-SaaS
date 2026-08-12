@@ -6,6 +6,7 @@
 @inject IPlatformAccessClient Platform
 @inject OnlineRequiredGuard OnlineRequired
 @inject NavigationManager Nav
+@inject ShellNotificationUnreadState UnreadState
 @inject IStringLocalizer<PosResources> L
 
 <div class="pos-personal-invitations">
@@ -139,6 +140,7 @@
             if (!item.IsRead)
             {
                 await Platform.MarkPersonalNotificationReadAsync(item.Id);
+                UnreadState.NotifyChanged();
             }
 
             if (string.Equals(item.RelatedType, "CustomerLinkRequest", StringComparison.OrdinalIgnoreCase))

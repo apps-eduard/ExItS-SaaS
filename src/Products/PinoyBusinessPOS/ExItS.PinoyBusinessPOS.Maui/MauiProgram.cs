@@ -147,6 +147,7 @@ public static class MauiProgram
         services.AddSingleton<IDocumentHandoffService, MauiDocumentHandoffService>();
         services.AddSingleton<SellingModeService>();
         services.AddSingleton<StoreHeaderState>();
+        services.AddSingleton<ShellNotificationUnreadState>();
         services.AddSingleton<AuthShellIdentityState>();
         services.AddSingleton<RoleHomeResolver>();
         services.AddSingleton<NavigationGate>();

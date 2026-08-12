@@ -122,6 +122,52 @@ public sealed class CustomerLinkConsentFlowTests
     }
 
     [Fact]
+    public async Task Accept_and_decline_mark_personal_pending_notification_read()
+    {
+        var harness = await Harness.CreateAsync();
+        var acceptCreated = await harness.CreateTargetedPendingAsync();
+        Assert.True(acceptCreated.IsSuccess, acceptCreated.ErrorMessage);
+
+        var acceptNotification = harness.PersonalNotifications.Items.Single(n =>
+            n.RelatedId == acceptCreated.Value!.Id.ToString("D"));
+        Assert.False(acceptNotification.IsRead);
+        Assert.Equal(CustomerLinkNotificationTypes.PersonalPendingRequest, acceptNotification.RelatedType);
+
+        var accepted = await harness.Accept.ExecuteByIdAsync(
+            CustomerLinkRequestId.From(acceptCreated.Value.Id),
+            harness.Personal.Id,
+            AccountClass.Personal);
+        Assert.True(accepted.IsSuccess, accepted.ErrorMessage);
+        Assert.True(acceptNotification.IsRead);
+
+        var declineCustomer = BusinessCustomer.Create(
+            harness.Org.Id,
+            "Decline Customer",
+            T0,
+            email: "rosa@example.com");
+        await harness.Customers.AddAsync(declineCustomer);
+        var declineCreated = await harness.CreateRequest.ExecuteAsync(
+            harness.Org.Id,
+            declineCustomer.Id,
+            email: null,
+            invitedByUserId: harness.Inviter.Id,
+            targetUserIdentityId: harness.Personal.Id,
+            publicUserId: null);
+        Assert.True(declineCreated.IsSuccess, declineCreated.ErrorMessage);
+
+        var declineNotification = harness.PersonalNotifications.Items.Single(n =>
+            n.RelatedId == declineCreated.Value!.Id.ToString("D"));
+        Assert.False(declineNotification.IsRead);
+
+        var declined = await harness.Decline.ExecuteByIdAsync(
+            CustomerLinkRequestId.From(declineCreated.Value.Id),
+            harness.Personal.Id,
+            AccountClass.Personal);
+        Assert.True(declined.IsSuccess, declined.ErrorMessage);
+        Assert.True(declineNotification.IsRead);
+    }
+
+    [Fact]
     public async Task Accept_notifies_inviter_only_not_other_orgs_or_users()
     {
         var harness = await Harness.CreateAsync();
@@ -638,8 +684,9 @@ public sealed class CustomerLinkConsentFlowTests
                 users,
                 uow,
                 clock,
-                orgNotifications);
-            var decline = new DeclineCustomerLinkRequest(requests, uow, clock, orgNotifications, users);
+                orgNotifications,
+                personalNotifications);
+            var decline = new DeclineCustomerLinkRequest(requests, uow, clock, orgNotifications, users, personalNotifications);
 
             return new Harness(
                 clock,

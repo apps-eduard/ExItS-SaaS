@@ -6,6 +6,7 @@
 @inject IPlatformAccessClient Platform
 @inject OnlineRequiredGuard OnlineRequired
 @inject NavigationManager Nav
+@inject ShellNotificationUnreadState UnreadState
 @inject IStringLocalizer<PosResources> L
 
 <div class="pos-personal-invitations">
@@ -150,6 +151,7 @@
                 return;
             }
 
+            await MarkRelatedNotificationsReadAsync(requestId);
             await LoadAsync();
         }
         finally
@@ -176,11 +178,41 @@
                 return;
             }
 
+            await MarkRelatedNotificationsReadAsync(requestId);
             await LoadAsync();
         }
         finally
         {
             _busyRequestId = null;
+        }
+    }
+
+    /// <summary>
+    /// Clears the related Personal in-app notification so the shell bell updates even when
+    /// accept/decline already removed the pending request (and for older API hosts).
+    /// </summary>
+    private async Task MarkRelatedNotificationsReadAsync(Guid requestId)
+    {
+        try
+        {
+            var relatedId = requestId.ToString("D");
+            var notifications = await Platform.GetPersonalNotificationsAsync();
+            if (!notifications.IsSuccess || notifications.Data is null)
+            {
+                return;
+            }
+
+            foreach (var item in notifications.Data.Where(n =>
+                         !n.IsRead
+                         && string.Equals(n.RelatedType, "CustomerLinkRequest", StringComparison.OrdinalIgnoreCase)
+                         && string.Equals(n.RelatedId, relatedId, StringComparison.OrdinalIgnoreCase)))
+            {
+                await Platform.MarkPersonalNotificationReadAsync(item.Id);
+            }
+        }
+        finally
+        {
+            UnreadState.NotifyChanged();
         }
     }
 

@@ -719,19 +719,22 @@ public sealed class DeclineCustomerLinkRequest
     private readonly IClock _clock;
     private readonly IOrganizationInAppNotificationRepository? _orgNotifications;
     private readonly IPlatformUserRepository? _users;
+    private readonly IPersonalInAppNotificationRepository? _personalNotifications;
 
     public DeclineCustomerLinkRequest(
         ICustomerLinkRequestRepository requests,
         IPlatformUnitOfWork unitOfWork,
         IClock clock,
         IOrganizationInAppNotificationRepository? orgNotifications = null,
-        IPlatformUserRepository? users = null)
+        IPlatformUserRepository? users = null,
+        IPersonalInAppNotificationRepository? personalNotifications = null)
     {
         _requests = requests;
         _unitOfWork = unitOfWork;
         _clock = clock;
         _orgNotifications = orgNotifications;
         _users = users;
+        _personalNotifications = personalNotifications;
     }
 
     public async Task<ApplicationResult<CustomerLinkRequestDto>> ExecuteAsync(
@@ -785,12 +788,13 @@ public sealed class DeclineCustomerLinkRequest
                 "Customer link request was not found.");
         }
 
-        return await DeclineCoreAsync(request, cancellationToken).ConfigureAwait(false);
+        return await DeclineCoreAsync(request, cancellationToken, decliningUserId).ConfigureAwait(false);
     }
 
     private async Task<ApplicationResult<CustomerLinkRequestDto>> DeclineCoreAsync(
         CustomerLinkRequest request,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        PlatformUserId? decliningUserId = null)
     {
         try
         {
@@ -817,6 +821,16 @@ public sealed class DeclineCustomerLinkRequest
                 }
             }
 
+            var personalRecipient = decliningUserId ?? request.TargetUserIdentityId;
+            if (personalRecipient is not null)
+            {
+                await TryMarkPersonalPendingRequestNotificationReadAsync(
+                        request,
+                        personalRecipient,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+            }
+
             await TryNotifyInviterAsync(
                     request,
                     CustomerLinkNotificationTypes.OrganizationDeclined,
@@ -834,6 +848,33 @@ public sealed class DeclineCustomerLinkRequest
                 ApplicationErrorCodes.CustomerLinkRequestNotFound,
                 "Customer link request was not found.");
         }
+    }
+
+    private async Task TryMarkPersonalPendingRequestNotificationReadAsync(
+        CustomerLinkRequest request,
+        PlatformUserId recipientUserId,
+        CancellationToken cancellationToken)
+    {
+        if (_personalNotifications is null)
+        {
+            return;
+        }
+
+        var relatedId = request.Id.Value.ToString("D");
+        var notification = await _personalNotifications
+            .FindByRecipientRelatedAsync(
+                recipientUserId,
+                CustomerLinkNotificationTypes.PersonalPendingRequest,
+                relatedId,
+                cancellationToken)
+            .ConfigureAwait(false);
+        if (notification is null || notification.IsRead)
+        {
+            return;
+        }
+
+        notification.MarkRead(_clock.UtcNow);
+        await _personalNotifications.UpdateAsync(notification, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task TryNotifyInviterAsync(
@@ -906,6 +947,7 @@ public sealed class AcceptCustomerLinkRequest
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
     private readonly IOrganizationInAppNotificationRepository? _orgNotifications;
+    private readonly IPersonalInAppNotificationRepository? _personalNotifications;
 
     public AcceptCustomerLinkRequest(
         ICustomerLinkRequestRepository requests,
@@ -915,7 +957,8 @@ public sealed class AcceptCustomerLinkRequest
         IPlatformUserRepository users,
         IPlatformUnitOfWork unitOfWork,
         IClock clock,
-        IOrganizationInAppNotificationRepository? orgNotifications = null)
+        IOrganizationInAppNotificationRepository? orgNotifications = null,
+        IPersonalInAppNotificationRepository? personalNotifications = null)
     {
         _requests = requests;
         _customers = customers;
@@ -925,6 +968,7 @@ public sealed class AcceptCustomerLinkRequest
         _unitOfWork = unitOfWork;
         _clock = clock;
         _orgNotifications = orgNotifications;
+        _personalNotifications = personalNotifications;
     }
 
     public async Task<ApplicationResult<AcceptCustomerLinkResultDto>> ExecuteAsync(
@@ -1082,6 +1126,8 @@ public sealed class AcceptCustomerLinkRequest
             await _requests.UpdateAsync(request, cancellationToken).ConfigureAwait(false);
             await _customers.UpdateAsync(customer, cancellationToken).ConfigureAwait(false);
             await _links.AddAsync(link, cancellationToken).ConfigureAwait(false);
+            await TryMarkPersonalPendingRequestNotificationReadAsync(request, acceptingUserId, cancellationToken)
+                .ConfigureAwait(false);
             await TryNotifyInviterAcceptedAsync(request, acceptingUserId, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
@@ -1118,6 +1164,33 @@ public sealed class AcceptCustomerLinkRequest
                 ApplicationErrorCodes.CustomerLinkRequestNotFound,
                 "Customer link request was not found.");
         }
+    }
+
+    private async Task TryMarkPersonalPendingRequestNotificationReadAsync(
+        CustomerLinkRequest request,
+        PlatformUserId recipientUserId,
+        CancellationToken cancellationToken)
+    {
+        if (_personalNotifications is null)
+        {
+            return;
+        }
+
+        var relatedId = request.Id.Value.ToString("D");
+        var notification = await _personalNotifications
+            .FindByRecipientRelatedAsync(
+                recipientUserId,
+                CustomerLinkNotificationTypes.PersonalPendingRequest,
+                relatedId,
+                cancellationToken)
+            .ConfigureAwait(false);
+        if (notification is null || notification.IsRead)
+        {
+            return;
+        }
+
+        notification.MarkRead(_clock.UtcNow);
+        await _personalNotifications.UpdateAsync(notification, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task TryNotifyInviterAcceptedAsync(

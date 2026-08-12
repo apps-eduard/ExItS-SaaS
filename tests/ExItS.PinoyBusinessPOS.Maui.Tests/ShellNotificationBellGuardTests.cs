@@ -42,6 +42,13 @@ public sealed class ShellNotificationBellGuardTests
         Assert.Contains("IconGlyphs.Get(\"bell\")", bell, StringComparison.Ordinal);
         Assert.Contains("ShellNotificationUnread.FormatBadge", bell, StringComparison.Ordinal);
         Assert.Contains("Shell_NotificationsAria", bell, StringComparison.Ordinal);
+        Assert.Contains("UnreadState.Changed", bell, StringComparison.Ordinal);
+        Assert.Contains("ShellNotificationUnreadState", File.ReadAllText(Path.Combine(MauiProject(),
+            "MauiProgram.cs")), StringComparison.Ordinal);
+        Assert.Contains("MarkRelatedNotificationsReadAsync", File.ReadAllText(Path.Combine(MauiProject(),
+            "Components", "Pages", "Personal", "PersonalCustomerLinkRequests.razor")), StringComparison.Ordinal);
+        Assert.Contains("UnreadState.NotifyChanged", File.ReadAllText(Path.Combine(MauiProject(),
+            "Components", "Pages", "Personal", "PersonalNotifications.razor")), StringComparison.Ordinal);
     }
 
     [Fact]

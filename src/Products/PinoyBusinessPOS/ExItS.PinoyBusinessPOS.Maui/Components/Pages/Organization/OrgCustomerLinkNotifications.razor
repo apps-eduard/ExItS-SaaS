@@ -6,6 +6,7 @@
 @inject OnlineRequiredGuard OnlineRequired
 @inject NavigationManager Nav
 @inject NavigationGate Gate
+@inject ShellNotificationUnreadState UnreadState
 @inject IStringLocalizer<PosResources> L
 
 @if (!_ready)
@@ -137,6 +138,7 @@ else
         try
         {
             await Platform.MarkOrganizationNotificationReadAsync(orgId, item.Id);
+            UnreadState.NotifyChanged();
             await LoadAsync();
         }
         finally
