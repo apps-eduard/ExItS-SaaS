@@ -84,6 +84,7 @@ public sealed class P20Wp03GlobalCatalogAdminTests
         Assert.Contains("/admin/global-catalog/templates", nav, StringComparison.Ordinal);
         Assert.Contains("/admin/products", nav, StringComparison.Ordinal);
         Assert.Contains("/admin/plans", nav, StringComparison.Ordinal);
+        Assert.Contains("/admin/personal-features", nav, StringComparison.Ordinal);
     }
 
     [Fact]

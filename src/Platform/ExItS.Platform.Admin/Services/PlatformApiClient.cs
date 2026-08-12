@@ -76,6 +76,26 @@ public sealed class PlatformApiClient(
         SendAsync<PlanDto>(HttpMethod.Post, $"/api/v1/platform/catalog/products/{Escape(productCode)}/plans/{planId}/retire", null, ct);
     public Task<ApiCallResult<IReadOnlyList<PlanVersionDto>>> GetPlanVersionsAsync(string productCode, Guid planId, CancellationToken ct = default) =>
         GetAsync<IReadOnlyList<PlanVersionDto>>($"/api/v1/platform/catalog/products/{Escape(productCode)}/plans/{planId}/versions", ct);
+
+    public Task<ApiCallResult<IReadOnlyList<PersonalFeatureDefinitionDto>>> GetPersonalFeatureDefinitionsAsync(
+        CancellationToken ct = default) =>
+        GetAsync<IReadOnlyList<PersonalFeatureDefinitionDto>>("/api/v1/platform/personal/features", ct);
+
+    public Task<ApiCallResult<PersonalFeatureDefinitionDto>> GetPersonalFeatureDefinitionAsync(
+        string featureCode,
+        CancellationToken ct = default) =>
+        GetAsync<PersonalFeatureDefinitionDto>($"/api/v1/platform/personal/features/{Escape(featureCode)}", ct);
+
+    public Task<ApiCallResult<PersonalFeatureDefinitionDto>> UpdatePersonalFeatureDefinitionAsync(
+        string featureCode,
+        UpdatePersonalFeatureDefinitionRequest request,
+        CancellationToken ct = default) =>
+        SendAsync<PersonalFeatureDefinitionDto>(
+            HttpMethod.Patch,
+            $"/api/v1/platform/personal/features/{Escape(featureCode)}",
+            request,
+            ct);
+
     public Task<ApiCallResult<PagedResult<OrganizationDto>>> GetOrganizationsAsync(
         int page = 1,
         int pageSize = 20,

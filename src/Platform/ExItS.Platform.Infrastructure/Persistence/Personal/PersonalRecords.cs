@@ -167,6 +167,7 @@ internal sealed class PersonalFeatureDefinitionRecord
     public string DisplayName { get; set; } = string.Empty;
     public bool IsActive { get; set; }
     public int? RewardPointsPrice { get; set; }
+    public int? DefaultEntitlementDurationDays { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset UpdatedAtUtc { get; set; }
 }

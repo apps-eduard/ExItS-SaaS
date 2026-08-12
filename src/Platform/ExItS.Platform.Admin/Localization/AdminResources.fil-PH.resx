@@ -89,6 +89,7 @@
   <data name="Nav_PlatformUsers" xml:space="preserve"><value>Mga Platform User</value></data>
   <data name="Nav_OrganizationUsers" xml:space="preserve"><value>Mga User ng Organisasyon</value></data>
   <data name="Nav_Plans" xml:space="preserve"><value>Mga Plano</value></data>
+  <data name="Nav_PersonalFeatures" xml:space="preserve"><value>Mga Personal Feature</value></data>
   <data name="Nav_ProductAccess" xml:space="preserve"><value>Access sa Produkto</value></data>
   <data name="Nav_SystemStatus" xml:space="preserve"><value>Katayuan ng Sistema</value></data>
   <data name="Nav_AuditLogs" xml:space="preserve"><value>Mga Audit Log</value></data>
@@ -429,6 +430,27 @@
   <data name="Products_TrialDefinitionsEmpty" xml:space="preserve"><value>Walang trial definition.</value></data>
   <data name="Products_Column_Billing" xml:space="preserve"><value>Billing</value></data>
   <data name="Products_Column_TrialEligible" xml:space="preserve"><value>Trial eligible</value></data>
+
+  <data name="PersonalFeatures_Title" xml:space="preserve"><value>Mga Personal Feature</value></data>
+  <data name="PersonalFeatures_Description" xml:space="preserve"><value>I-configure ang Personal feature catalog. Ang gastos at duration ay galing sa server — hindi hard-coded sa UI.</value></data>
+  <data name="PersonalFeatures_Empty" xml:space="preserve"><value>Walang Personal feature definition na ibinalik.</value></data>
+  <data name="PersonalFeatures_DetailSubtitle" xml:space="preserve"><value>Server-authoritative commercial configuration para sa Personal feature.</value></data>
+  <data name="PersonalFeatures_EditSection" xml:space="preserve"><value>I-edit ang configuration</value></data>
+  <data name="PersonalFeatures_FeatureCode" xml:space="preserve"><value>Feature code</value></data>
+  <data name="PersonalFeatures_RewardPointsCost" xml:space="preserve"><value>Gastos sa reward points</value></data>
+  <data name="PersonalFeatures_DurationDays" xml:space="preserve"><value>Default duration (araw)</value></data>
+  <data name="PersonalFeatures_Enabled" xml:space="preserve"><value>Naka-enable</value></data>
+  <data name="PersonalFeatures_NotRedeemable" xml:space="preserve"><value>Hindi redeemable</value></data>
+  <data name="PersonalFeatures_Indefinite" xml:space="preserve"><value>Walang hangganan</value></data>
+  <data name="PersonalFeatures_UpdatedAt" xml:space="preserve"><value>Na-update (UTC)</value></data>
+  <data name="PersonalFeatures_RewardPriceHint" xml:space="preserve"><value>I-clear ang value para i-disable ang reward-point redemption. Ang susunod na redemption ay magde-debit ng server price na ito.</value></data>
+  <data name="PersonalFeatures_DurationHint" xml:space="preserve"><value>I-clear para sa indefinite grant. Para sa future reward redemption lang — hindi nire-rewrite ang existing entitlements.</value></data>
+  <data name="PersonalFeatures_DevEconomicsNote" xml:space="preserve"><value>Ang mga value ay administrative configuration (kasama ang development defaults). Hindi ito production price catalog claim.</value></data>
+  <data name="PersonalFeatures_SaveFailed" xml:space="preserve"><value>Hindi ma-save ang Personal feature configuration.</value></data>
+  <data name="PersonalFeatures_SaveSucceeded" xml:space="preserve"><value>Na-save ang Personal feature configuration.</value></data>
+  <data name="PersonalFeatures_Edit" xml:space="preserve"><value>I-edit</value></data>
+  <data name="PersonalFeatures_View" xml:space="preserve"><value>Tingnan</value></data>
+  <data name="PersonalFeatures_Back" xml:space="preserve"><value>Bumalik sa listahan</value></data>
 
   <data name="Plans_Title" xml:space="preserve"><value>Mga Plano</value></data>
   <data name="Plans_Description" xml:space="preserve"><value>Platform plan catalog na may create, rename, at lifecycle administration.</value></data>

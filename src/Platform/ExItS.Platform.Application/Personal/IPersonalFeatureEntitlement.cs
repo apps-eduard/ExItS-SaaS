@@ -10,6 +10,9 @@ public interface IPersonalFeatureDefinitionRepository
         FeatureCode featureCode,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<PersonalFeatureDefinition>> ListAllAsync(
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(PersonalFeatureDefinition definition, CancellationToken cancellationToken = default);
 
     Task UpdateAsync(PersonalFeatureDefinition definition, CancellationToken cancellationToken = default);

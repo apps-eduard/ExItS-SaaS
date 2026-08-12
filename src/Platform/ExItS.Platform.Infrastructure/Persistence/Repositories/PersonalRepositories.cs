@@ -910,6 +910,16 @@ internal sealed class PersonalFeatureDefinitionRepository(PlatformDbContext db) 
         return record is null ? null : ToDomain(record);
     }
 
+    public async Task<IReadOnlyList<PersonalFeatureDefinition>> ListAllAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var records = await db.PersonalFeatureDefinitions.AsNoTracking()
+            .OrderBy(x => x.FeatureCode)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return records.Select(ToDomain).ToList();
+    }
+
     public Task AddAsync(PersonalFeatureDefinition definition, CancellationToken cancellationToken = default)
     {
         db.PersonalFeatureDefinitions.Add(ToRecord(definition));
@@ -929,6 +939,7 @@ internal sealed class PersonalFeatureDefinitionRepository(PlatformDbContext db) 
         record.DisplayName = definition.DisplayName;
         record.IsActive = definition.IsActive;
         record.RewardPointsPrice = definition.RewardPointsPrice;
+        record.DefaultEntitlementDurationDays = definition.DefaultEntitlementDurationDays;
         record.UpdatedAtUtc = definition.UpdatedAtUtc;
     }
 
@@ -939,7 +950,8 @@ internal sealed class PersonalFeatureDefinitionRepository(PlatformDbContext db) 
             record.IsActive,
             record.RewardPointsPrice,
             record.CreatedAtUtc,
-            record.UpdatedAtUtc);
+            record.UpdatedAtUtc,
+            record.DefaultEntitlementDurationDays);
 
     private static PersonalFeatureDefinitionRecord ToRecord(PersonalFeatureDefinition definition) =>
         new()
@@ -948,6 +960,7 @@ internal sealed class PersonalFeatureDefinitionRepository(PlatformDbContext db) 
             DisplayName = definition.DisplayName,
             IsActive = definition.IsActive,
             RewardPointsPrice = definition.RewardPointsPrice,
+            DefaultEntitlementDurationDays = definition.DefaultEntitlementDurationDays,
             CreatedAtUtc = definition.CreatedAtUtc,
             UpdatedAtUtc = definition.UpdatedAtUtc
         };

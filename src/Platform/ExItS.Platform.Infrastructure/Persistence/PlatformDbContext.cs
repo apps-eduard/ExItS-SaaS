@@ -1735,8 +1735,12 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.DisplayName).HasColumnName("display_name").HasMaxLength(200).IsRequired();
             entity.Property(e => e.IsActive).HasColumnName("is_active");
             entity.Property(e => e.RewardPointsPrice).HasColumnName("reward_points_price");
+            entity.Property(e => e.DefaultEntitlementDurationDays).HasColumnName("default_entitlement_duration_days");
             entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
             entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.ToTable(t => t.HasCheckConstraint(
+                "ck_personal_feature_definitions_duration_days",
+                "default_entitlement_duration_days IS NULL OR (default_entitlement_duration_days >= 1 AND default_entitlement_duration_days <= 3650)"));
             entity.HasIndex(e => e.IsActive).HasDatabaseName("ix_personal_feature_definitions_is_active");
         });
 

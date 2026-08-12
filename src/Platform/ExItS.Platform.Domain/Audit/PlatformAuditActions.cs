@@ -115,6 +115,7 @@ public static class PlatformAuditActions
     public const string CatalogPlanActivated = "platform.catalog.plan.activated";
     public const string CatalogPlanRetired = "platform.catalog.plan.retired";
     public const string CatalogPlanVersionPublished = "platform.catalog.plan_version.published";
+    public const string PersonalFeatureDefinitionUpdated = "platform.personal.feature_definition.updated";
 
     public const string GlobalCategoryCreated = "platform.global_catalog.category.created";
     public const string GlobalCategoryUpdated = "platform.global_catalog.category.updated";

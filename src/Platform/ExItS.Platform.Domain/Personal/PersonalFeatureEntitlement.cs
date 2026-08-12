@@ -47,15 +47,23 @@ public enum PersonalFeatureGrantSource
 /// <summary>Catalog row for Personal-scoped features (not Organization plan features).</summary>
 public sealed class PersonalFeatureDefinition
 {
+    public const int MaxDefaultEntitlementDurationDays = 3650;
+
     public FeatureCode FeatureCode { get; }
-    public string DisplayName { get; }
+    public string DisplayName { get; private set; }
     public bool IsActive { get; private set; }
 
     /// <summary>
     /// Reward-point redemption price. Null means the feature is not redeemable with points.
-    /// Development defaults only — not production pricing.
+    /// Live economics are Admin-configured (WP11); seed defaults are not production prices.
     /// </summary>
     public int? RewardPointsPrice { get; private set; }
+
+    /// <summary>
+    /// Default entitlement length in whole UTC days for reward-point redemption.
+    /// Null means indefinite (<c>EndsAtUtc</c> remains null). Does not rewrite already-issued grants.
+    /// </summary>
+    public int? DefaultEntitlementDurationDays { get; private set; }
 
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
@@ -65,6 +73,7 @@ public sealed class PersonalFeatureDefinition
         string displayName,
         bool isActive,
         int? rewardPointsPrice,
+        int? defaultEntitlementDurationDays,
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc)
     {
@@ -72,6 +81,7 @@ public sealed class PersonalFeatureDefinition
         DisplayName = displayName;
         IsActive = isActive;
         RewardPointsPrice = rewardPointsPrice;
+        DefaultEntitlementDurationDays = defaultEntitlementDurationDays;
         CreatedAtUtc = createdAtUtc;
         UpdatedAtUtc = updatedAtUtc;
     }
@@ -81,13 +91,22 @@ public sealed class PersonalFeatureDefinition
         string displayName,
         DateTimeOffset utcNow,
         bool isActive = true,
-        int? rewardPointsPrice = null)
+        int? rewardPointsPrice = null,
+        int? defaultEntitlementDurationDays = null)
     {
         ArgumentNullException.ThrowIfNull(featureCode);
         EnsureUtc(utcNow);
         var name = NormalizeDisplayName(displayName);
         EnsureRewardPrice(rewardPointsPrice);
-        return new PersonalFeatureDefinition(featureCode, name, isActive, rewardPointsPrice, utcNow, utcNow);
+        EnsureDurationDays(defaultEntitlementDurationDays);
+        return new PersonalFeatureDefinition(
+            featureCode,
+            name,
+            isActive,
+            rewardPointsPrice,
+            defaultEntitlementDurationDays,
+            utcNow,
+            utcNow);
     }
 
     public static PersonalFeatureDefinition Rehydrate(
@@ -96,10 +115,31 @@ public sealed class PersonalFeatureDefinition
         bool isActive,
         int? rewardPointsPrice,
         DateTimeOffset createdAtUtc,
-        DateTimeOffset updatedAtUtc) =>
-        new(featureCode, displayName, isActive, rewardPointsPrice, createdAtUtc, updatedAtUtc);
+        DateTimeOffset updatedAtUtc,
+        int? defaultEntitlementDurationDays = null) =>
+        new(
+            featureCode,
+            displayName,
+            isActive,
+            rewardPointsPrice,
+            defaultEntitlementDurationDays,
+            createdAtUtc,
+            updatedAtUtc);
 
     public bool IsRewardRedeemable => IsActive && RewardPointsPrice is > 0;
+
+    /// <summary>Computes EndsAtUtc for a new grant starting at <paramref name="startsAtUtc"/>.</summary>
+    public DateTimeOffset? ComputeDefaultEndsAtUtc(DateTimeOffset startsAtUtc) =>
+        DefaultEntitlementDurationDays is int days
+            ? startsAtUtc.AddDays(days)
+            : null;
+
+    public void SetDisplayName(string displayName, DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        DisplayName = NormalizeDisplayName(displayName);
+        UpdatedAtUtc = utcNow;
+    }
 
     public void SetActive(bool isActive, DateTimeOffset utcNow)
     {
@@ -116,6 +156,14 @@ public sealed class PersonalFeatureDefinition
         UpdatedAtUtc = utcNow;
     }
 
+    public void SetDefaultEntitlementDurationDays(int? durationDays, DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        EnsureDurationDays(durationDays);
+        DefaultEntitlementDurationDays = durationDays;
+        UpdatedAtUtc = utcNow;
+    }
+
     private static void EnsureRewardPrice(int? rewardPointsPrice)
     {
         if (rewardPointsPrice is < 1)
@@ -123,6 +171,16 @@ public sealed class PersonalFeatureDefinition
             throw new DomainException(
                 DomainErrorCodes.InvalidPersonalRewardPoints,
                 "Reward points price must be null or a positive integer.");
+        }
+    }
+
+    private static void EnsureDurationDays(int? durationDays)
+    {
+        if (durationDays is < 1 or > MaxDefaultEntitlementDurationDays)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPersonalFeatureDuration,
+                $"Default entitlement duration must be null (indefinite) or between 1 and {MaxDefaultEntitlementDurationDays} days.");
         }
     }
 

@@ -11,6 +11,24 @@ public sealed record ProductDto(
     DateTimeOffset UpdatedAtUtc);
 
 public sealed record CreateProductRequest(string Code, string DisplayName);
+
+public sealed record PersonalFeatureDefinitionDto(
+    string FeatureCode,
+    string DisplayName,
+    bool IsActive,
+    int? RewardPointsPrice,
+    int? DefaultEntitlementDurationDays,
+    bool IsRewardRedeemable,
+    DateTimeOffset CreatedAtUtc,
+    DateTimeOffset UpdatedAtUtc);
+
+public sealed record UpdatePersonalFeatureDefinitionRequest(
+    string DisplayName,
+    bool IsActive,
+    int? RewardPointsPrice,
+    int? DefaultEntitlementDurationDays,
+    DateTimeOffset? ExpectedUpdatedAtUtc);
+
 public sealed record CreatePlanRequest(
     string Code,
     string DisplayName,

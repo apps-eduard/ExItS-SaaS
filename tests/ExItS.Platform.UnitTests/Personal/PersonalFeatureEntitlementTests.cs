@@ -180,6 +180,11 @@ public sealed class PersonalFeatureEntitlementTests
             CancellationToken cancellationToken = default) =>
             Task.FromResult(_items.TryGetValue(featureCode.Value, out var d) ? d : null);
 
+        public Task<IReadOnlyList<PersonalFeatureDefinition>> ListAllAsync(
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<PersonalFeatureDefinition>>(
+                _items.Values.OrderBy(d => d.FeatureCode.Value, StringComparer.Ordinal).ToList());
+
         public Task AddAsync(PersonalFeatureDefinition definition, CancellationToken cancellationToken = default)
         {
             _items[definition.FeatureCode.Value] = definition;

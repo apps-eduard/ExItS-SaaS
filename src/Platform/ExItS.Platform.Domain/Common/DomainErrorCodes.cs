@@ -296,6 +296,9 @@ public static class DomainErrorCodes
 
     public const string InvalidPersonalFeatureGrantSource =
         "platform.personal.feature.grant_source.invalid";
+    public const string InvalidPersonalFeatureDuration =
+        "platform.personal.feature_duration.invalid";
+
     public const string InvalidPersonalRewardPoints =
         "platform.personal.reward_points.invalid";
     public const string InsufficientPersonalRewardPoints =

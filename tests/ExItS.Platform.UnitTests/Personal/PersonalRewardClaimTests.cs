@@ -318,6 +318,19 @@ public sealed class PersonalRewardClaimTests
             return Task.FromResult(_committed.TryGetValue(featureCode.Value, out var d) ? d : null);
         }
 
+        public Task<IReadOnlyList<PersonalFeatureDefinition>> ListAllAsync(
+            CancellationToken cancellationToken = default)
+        {
+            var map = new Dictionary<string, PersonalFeatureDefinition>(_committed, StringComparer.Ordinal);
+            foreach (var (key, value) in _pending)
+            {
+                map[key] = value;
+            }
+
+            return Task.FromResult<IReadOnlyList<PersonalFeatureDefinition>>(
+                map.Values.OrderBy(d => d.FeatureCode.Value, StringComparer.Ordinal).ToList());
+        }
+
         public Task AddAsync(PersonalFeatureDefinition definition, CancellationToken cancellationToken = default)
         {
             _pending[definition.FeatureCode.Value] = definition;

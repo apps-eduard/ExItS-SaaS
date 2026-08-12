@@ -1,0 +1,284 @@
+@page "/admin/personal-features"
+@page "/admin/personal-features/{FeatureCode}"
+@using AntDesign
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject IPlatformApiClient Api
+@inject IMessageService Message
+@inject IStringLocalizer<AdminResources> L
+@inject NavigationManager Nav
+@inject PlatformPermissionState Permissions
+@inject AdminShellContext Shell
+
+@if (!_pageReady)
+{
+    <div style="padding:2rem;text-align:center;"><Spin Tip="@L["Common_Loading"]" /></div>
+}
+else if (!Shell.IsPlatformShell)
+{
+    <Result Status="@ResultStatus.Warning"
+            Title="@L["Scope_PlatformAccountsDenied"]"
+            SubTitle="@Shell.RoleLabel" />
+}
+else if (!CanView)
+{
+    <UnauthorizedPanel RequiredPermission="@PlatformPermissionCodes.ViewPortfolio" />
+}
+else if (string.IsNullOrWhiteSpace(FeatureCode))
+{
+    <PageHeader Class="exits-page-header" Title="@L["PersonalFeatures_Title"]" SubTitle="@L["PersonalFeatures_Description"]">
+        <PageHeaderBreadcrumb>
+            <Breadcrumb>
+                <BreadcrumbItem>@L["Brand_Name"]</BreadcrumbItem>
+                <BreadcrumbItem>@L["Nav_PersonalFeatures"]</BreadcrumbItem>
+            </Breadcrumb>
+        </PageHeaderBreadcrumb>
+    </PageHeader>
+
+    @if (_list is { IsSuccess: false })
+    {
+        <Result Status="@ResultStatus.Error" Title="@(_list.Error?.Title ?? L["Common_Error"])" SubTitle="@_list.Error?.Detail">
+            <Extra>
+                <Button Type="@ButtonType.Primary" OnClick="RetryListAsync">@L["Common_Retry"]</Button>
+            </Extra>
+        </Result>
+    }
+    else if (_list is { IsSuccess: true, Data.Count: 0 })
+    {
+        <Empty Description="@L["PersonalFeatures_Empty"].Value" />
+    }
+    else if (_list is { IsSuccess: true })
+    {
+        <Alert Type="@AlertType.Info"
+               ShowIcon="true"
+               Message="@L["PersonalFeatures_DevEconomicsNote"]"
+               Style="margin-bottom:12px;" />
+        <Table TItem="PersonalFeatureDefinitionDto"
+               Class="exits-table-fit"
+               DataSource="@_list.Data"
+               HidePagination="true"
+               Size="@TableSize.Small"
+               Bordered>
+            <PropertyColumn Property="c => c.FeatureCode" Title="@L["PersonalFeatures_FeatureCode"]" />
+            <PropertyColumn Property="c => c.DisplayName" Title="@L["Common_DisplayName"]" />
+            <PropertyColumn Property="c => c.IsActive" Title="@L["Common_Status"]">
+                <AdminStatusTag Value="@(context.IsActive ? "Active" : "Inactive")" />
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.RewardPointsPrice" Title="@L["PersonalFeatures_RewardPointsCost"]">
+                @(context.RewardPointsPrice?.ToString() ?? L["PersonalFeatures_NotRedeemable"].Value)
+            </PropertyColumn>
+            <PropertyColumn Property="c => c.DefaultEntitlementDurationDays" Title="@L["PersonalFeatures_DurationDays"]">
+                @(context.DefaultEntitlementDurationDays?.ToString() ?? L["PersonalFeatures_Indefinite"].Value)
+            </PropertyColumn>
+            <ActionColumn Title="@L["Common_Actions"]">
+                    <Button Size="@ButtonSize.Small" Type="@ButtonType.Link"
+                        OnClick="@(() => Nav.NavigateTo($"/admin/personal-features/{Uri.EscapeDataString(context.FeatureCode)}"))">
+                    @(CanManage ? L["PersonalFeatures_Edit"] : L["PersonalFeatures_View"])
+                </Button>
+            </ActionColumn>
+        </Table>
+    }
+}
+else
+{
+    <PageHeader Class="exits-page-header"
+                Title="@(_detail?.Data?.DisplayName ?? FeatureCode)"
+                SubTitle="@L["PersonalFeatures_DetailSubtitle"]">
+        <PageHeaderBreadcrumb>
+            <Breadcrumb>
+                <BreadcrumbItem>@L["Brand_Name"]</BreadcrumbItem>
+                <BreadcrumbItem Href="/admin/personal-features">@L["Nav_PersonalFeatures"]</BreadcrumbItem>
+                <BreadcrumbItem>@FeatureCode</BreadcrumbItem>
+            </Breadcrumb>
+        </PageHeaderBreadcrumb>
+        <PageHeaderExtra>
+            <Button Size="@ButtonSize.Small" OnClick="@(() => Nav.NavigateTo("/admin/personal-features"))">@L["PersonalFeatures_Back"]</Button>
+        </PageHeaderExtra>
+    </PageHeader>
+
+    @if (_detail is { IsSuccess: false })
+    {
+        <Result Status="@ResultStatus.Error" Title="@(_detail.Error?.Title ?? L["Common_Error"])" SubTitle="@_detail.Error?.Detail">
+            <Extra>
+                <Button Type="@ButtonType.Primary" OnClick="RetryDetailAsync">@L["Common_Retry"]</Button>
+            </Extra>
+        </Result>
+    }
+    else if (_detail is { IsSuccess: true, Data: not null })
+    {
+        var item = _detail.Data;
+        <Descriptions Bordered Size="@DescriptionsSize.Small" Column="1" Style="margin-bottom:16px;">
+            <DescriptionsItem Title="@L["PersonalFeatures_FeatureCode"]">@item.FeatureCode</DescriptionsItem>
+            <DescriptionsItem Title="@L["Common_DisplayName"]">@item.DisplayName</DescriptionsItem>
+            <DescriptionsItem Title="@L["Common_Status"]">
+                <AdminStatusTag Value="@(item.IsActive ? "Active" : "Inactive")" />
+            </DescriptionsItem>
+            <DescriptionsItem Title="@L["PersonalFeatures_RewardPointsCost"]">
+                @(item.RewardPointsPrice?.ToString() ?? L["PersonalFeatures_NotRedeemable"].Value)
+            </DescriptionsItem>
+            <DescriptionsItem Title="@L["PersonalFeatures_DurationDays"]">
+                @(item.DefaultEntitlementDurationDays?.ToString() ?? L["PersonalFeatures_Indefinite"].Value)
+            </DescriptionsItem>
+            <DescriptionsItem Title="@L["PersonalFeatures_UpdatedAt"]">@item.UpdatedAtUtc.ToString("u")</DescriptionsItem>
+        </Descriptions>
+
+        @if (CanManage)
+        {
+            <Card Size="@CardSize.Small" Title="@L["PersonalFeatures_EditSection"]">
+                <FormValidationSummary Title="@L["PersonalFeatures_SaveFailed"]" Message="@_formError" IsConflict="_formConflict" />
+                <Space Direction="SpaceDirection.Vertical" Style="width:100%;">
+                    <div>
+                        <label class="ant-form-item-label" for="pf-code">@L["PersonalFeatures_FeatureCode"]</label>
+                        <Input Id="pf-code" Value="@item.FeatureCode" Disabled Size="@InputSize.Small" />
+                    </div>
+                    <div>
+                        <label class="ant-form-item-label" for="pf-name">@L["Common_DisplayName"]</label>
+                        <Input Id="pf-name" @bind-Value="_editDisplayName" Size="@InputSize.Small" Disabled="_busy" />
+                    </div>
+                    <Checkbox @bind-Checked="_editIsActive" Disabled="_busy">@L["PersonalFeatures_Enabled"]</Checkbox>
+                    <div>
+                        <label class="ant-form-item-label">@L["PersonalFeatures_RewardPointsCost"]</label>
+                        <AntDesign.InputNumber TValue="int?"
+                                               @bind-Value="_editRewardPrice"
+                                               Min="1"
+                                               Disabled="_busy"
+                                               Style="width:180px;"
+                                               Placeholder="@L["PersonalFeatures_NotRedeemable"]" />
+                        <div style="margin-top:4px;color:rgba(0,0,0,.45);font-size:12px;">@L["PersonalFeatures_RewardPriceHint"]</div>
+                    </div>
+                    <div>
+                        <label class="ant-form-item-label">@L["PersonalFeatures_DurationDays"]</label>
+                        <AntDesign.InputNumber TValue="int?"
+                                               @bind-Value="_editDurationDays"
+                                               Min="1"
+                                               Max="3650"
+                                               Disabled="_busy"
+                                               Style="width:180px;"
+                                               Placeholder="@L["PersonalFeatures_Indefinite"]" />
+                        <div style="margin-top:4px;color:rgba(0,0,0,.45);font-size:12px;">@L["PersonalFeatures_DurationHint"]</div>
+                    </div>
+                    <Space>
+                        <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary" Loading="_busy" OnClick="SaveAsync">@L["Common_Save"]</Button>
+                        <Button Size="@ButtonSize.Small" Disabled="_busy" OnClick="LoadEditFromDetail">@L["Common_Reset"]</Button>
+                    </Space>
+                </Space>
+            </Card>
+        }
+        else
+        {
+            <UnauthorizedPanel RequiredPermission="@PlatformPermissionCodes.ManageCatalog" />
+        }
+    }
+}
+
+@code {
+    [Parameter] public string? FeatureCode { get; set; }
+
+    private bool _pageReady;
+    private bool _busy;
+    private string? _formError;
+    private bool _formConflict;
+    private ApiCallResult<IReadOnlyList<PersonalFeatureDefinitionDto>>? _list;
+    private ApiCallResult<PersonalFeatureDefinitionDto>? _detail;
+
+    private string _editDisplayName = string.Empty;
+    private bool _editIsActive = true;
+    private int? _editRewardPrice;
+    private int? _editDurationDays;
+    private DateTimeOffset? _expectedUpdatedAtUtc;
+
+    private bool CanView => Permissions.HasPermission(PlatformPermissionCodes.ViewPortfolio);
+    private bool CanManage => Permissions.HasPermission(PlatformPermissionCodes.ManageCatalog);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _pageReady = false;
+        if (!Shell.IsPlatformShell || !CanView)
+        {
+            _pageReady = true;
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(FeatureCode))
+        {
+            await LoadListAsync();
+        }
+        else
+        {
+            await LoadDetailAsync();
+        }
+
+        _pageReady = true;
+    }
+
+    private async Task RetryListAsync() => await LoadListAsync();
+    private async Task RetryDetailAsync() => await LoadDetailAsync();
+
+    private async Task LoadListAsync()
+    {
+        _list = await Api.GetPersonalFeatureDefinitionsAsync();
+    }
+
+    private async Task LoadDetailAsync()
+    {
+        _detail = await Api.GetPersonalFeatureDefinitionAsync(FeatureCode!);
+        if (_detail is { IsSuccess: true, Data: not null })
+        {
+            LoadEditFromDetail();
+        }
+    }
+
+    private void LoadEditFromDetail()
+    {
+        if (_detail?.Data is null)
+        {
+            return;
+        }
+
+        var item = _detail.Data;
+        _editDisplayName = item.DisplayName;
+        _editIsActive = item.IsActive;
+        _editRewardPrice = item.RewardPointsPrice;
+        _editDurationDays = item.DefaultEntitlementDurationDays;
+        _expectedUpdatedAtUtc = item.UpdatedAtUtc;
+        _formError = null;
+        _formConflict = false;
+    }
+
+    private async Task SaveAsync()
+    {
+        if (!CanManage || string.IsNullOrWhiteSpace(FeatureCode))
+        {
+            return;
+        }
+
+        _busy = true;
+        _formError = null;
+        _formConflict = false;
+        try
+        {
+            var result = await Api.UpdatePersonalFeatureDefinitionAsync(
+                FeatureCode,
+                new UpdatePersonalFeatureDefinitionRequest(
+                    _editDisplayName,
+                    _editIsActive,
+                    _editRewardPrice,
+                    _editDurationDays,
+                    _expectedUpdatedAtUtc));
+            if (!result.IsSuccess)
+            {
+                _formError = result.Error?.Detail ?? result.Error?.Title ?? L["Common_Error"];
+                _formConflict = AdminFormErrorMapper.IsConflict(result.Error);
+                return;
+            }
+
+            _detail = result;
+            LoadEditFromDetail();
+            await Message.SuccessAsync(L["PersonalFeatures_SaveSucceeded"].Value);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

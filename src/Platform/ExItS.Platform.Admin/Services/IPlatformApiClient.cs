@@ -38,6 +38,17 @@ public interface IPlatformApiClient
     Task<ApiCallResult<PlanDto>> DeactivatePlanAsync(string productCode, Guid planId, CancellationToken ct = default);
     Task<ApiCallResult<PlanDto>> RetirePlanAsync(string productCode, Guid planId, CancellationToken ct = default);
     Task<ApiCallResult<IReadOnlyList<PlanVersionDto>>> GetPlanVersionsAsync(string productCode, Guid planId, CancellationToken ct = default);
+
+    Task<ApiCallResult<IReadOnlyList<PersonalFeatureDefinitionDto>>> GetPersonalFeatureDefinitionsAsync(
+        CancellationToken ct = default);
+    Task<ApiCallResult<PersonalFeatureDefinitionDto>> GetPersonalFeatureDefinitionAsync(
+        string featureCode,
+        CancellationToken ct = default);
+    Task<ApiCallResult<PersonalFeatureDefinitionDto>> UpdatePersonalFeatureDefinitionAsync(
+        string featureCode,
+        UpdatePersonalFeatureDefinitionRequest request,
+        CancellationToken ct = default);
+
     Task<ApiCallResult<PagedResult<OrganizationDto>>> GetOrganizationsAsync(
         int page = 1,
         int pageSize = 20,

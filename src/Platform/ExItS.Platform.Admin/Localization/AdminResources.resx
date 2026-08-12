@@ -89,6 +89,7 @@
   <data name="Nav_PlatformUsers" xml:space="preserve"><value>Platform Users</value></data>
   <data name="Nav_OrganizationUsers" xml:space="preserve"><value>Organization Users</value></data>
   <data name="Nav_Plans" xml:space="preserve"><value>Plans</value></data>
+  <data name="Nav_PersonalFeatures" xml:space="preserve"><value>Personal Features</value></data>
   <data name="Nav_ProductAccess" xml:space="preserve"><value>Product Access</value></data>
   <data name="Nav_SystemStatus" xml:space="preserve"><value>System Status</value></data>
   <data name="Nav_AuditLogs" xml:space="preserve"><value>Audit Logs</value></data>
@@ -431,6 +432,27 @@
   <data name="Products_TrialDefinitionsEmpty" xml:space="preserve"><value>No trial definitions.</value></data>
   <data name="Products_Column_Billing" xml:space="preserve"><value>Billing</value></data>
   <data name="Products_Column_TrialEligible" xml:space="preserve"><value>Trial eligible</value></data>
+
+  <data name="PersonalFeatures_Title" xml:space="preserve"><value>Personal Features</value></data>
+  <data name="PersonalFeatures_Description" xml:space="preserve"><value>Configure Personal-only feature catalog values. Costs and durations load from the server — not hard-coded in this UI.</value></data>
+  <data name="PersonalFeatures_Empty" xml:space="preserve"><value>No Personal feature definitions were returned.</value></data>
+  <data name="PersonalFeatures_DetailSubtitle" xml:space="preserve"><value>Server-authoritative commercial configuration for a Personal feature.</value></data>
+  <data name="PersonalFeatures_EditSection" xml:space="preserve"><value>Edit configuration</value></data>
+  <data name="PersonalFeatures_FeatureCode" xml:space="preserve"><value>Feature code</value></data>
+  <data name="PersonalFeatures_RewardPointsCost" xml:space="preserve"><value>Reward points cost</value></data>
+  <data name="PersonalFeatures_DurationDays" xml:space="preserve"><value>Default duration (days)</value></data>
+  <data name="PersonalFeatures_Enabled" xml:space="preserve"><value>Enabled</value></data>
+  <data name="PersonalFeatures_NotRedeemable" xml:space="preserve"><value>Not redeemable</value></data>
+  <data name="PersonalFeatures_Indefinite" xml:space="preserve"><value>Indefinite</value></data>
+  <data name="PersonalFeatures_UpdatedAt" xml:space="preserve"><value>Updated (UTC)</value></data>
+  <data name="PersonalFeatures_RewardPriceHint" xml:space="preserve"><value>Clear the value to disable reward-point redemption. Future redemptions debit this server price.</value></data>
+  <data name="PersonalFeatures_DurationHint" xml:space="preserve"><value>Clear for indefinite grants. Applies to future reward redemptions only — existing entitlements are not rewritten.</value></data>
+  <data name="PersonalFeatures_DevEconomicsNote" xml:space="preserve"><value>Displayed values are administrative configuration (including development defaults). They are not a production price catalog claim.</value></data>
+  <data name="PersonalFeatures_SaveFailed" xml:space="preserve"><value>Could not save Personal feature configuration.</value></data>
+  <data name="PersonalFeatures_SaveSucceeded" xml:space="preserve"><value>Personal feature configuration saved.</value></data>
+  <data name="PersonalFeatures_Edit" xml:space="preserve"><value>Edit</value></data>
+  <data name="PersonalFeatures_View" xml:space="preserve"><value>View</value></data>
+  <data name="PersonalFeatures_Back" xml:space="preserve"><value>Back to list</value></data>
 
   <data name="Plans_Title" xml:space="preserve"><value>Plans</value></data>
   <data name="Plans_Description" xml:space="preserve"><value>Platform plan catalog with create, rename, and lifecycle administration.</value></data>

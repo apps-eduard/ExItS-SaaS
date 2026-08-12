@@ -401,7 +401,7 @@ public sealed class RedeemPersonalFeatureWithRewardPoints
                 code,
                 PersonalFeatureGrantSource.RewardPoints,
                 startsAtUtc: utcNow,
-                endsAtUtc: null,
+                endsAtUtc: definition.ComputeDefaultEndsAtUtc(utcNow),
                 utcNow);
         }
         catch (DomainException ex)
