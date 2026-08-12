@@ -1117,6 +1117,12 @@
   <data name="Returns_ErrorTitle" xml:space="preserve"><value>Return failed</value></data>
   <data name="Returns_LinesSection" xml:space="preserve"><value>Lines to return</value></data>
   <data name="Returns_RefundableQty" xml:space="preserve"><value>Refundable: {0}</value></data>
+  <data name="Returns_QuantityLabel" xml:space="preserve"><value>Quantity</value></data>
+  <data name="Returns_QuantityMaxHint" xml:space="preserve"><value>Max {0}</value></data>
+  <data name="Returns_ReturnAll" xml:space="preserve"><value>All</value></data>
+  <data name="Returns_DispositionLabel" xml:space="preserve"><value>Stock action</value></data>
+  <data name="Returns_LineRefund" xml:space="preserve"><value>This return</value></data>
+  <data name="Returns_TotalRefund" xml:space="preserve"><value>Total refund</value></data>
   <data name="Returns_Restock" xml:space="preserve"><value>Return to stock</value></data>
   <data name="Returns_NoRestock" xml:space="preserve"><value>Do not restock</value></data>
   <data name="Returns_ReasonSection" xml:space="preserve"><value>Return reason</value></data>

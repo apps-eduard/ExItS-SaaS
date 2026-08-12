@@ -30,6 +30,7 @@ public static class IconGlyphs
         ["share"] = "<circle cx=\"18\" cy=\"5\" r=\"2.5\"/><circle cx=\"6\" cy=\"12\" r=\"2.5\"/><circle cx=\"18\" cy=\"19\" r=\"2.5\"/><path d=\"m8.2 10.8 7.6-4.6\"/><path d=\"m8.2 13.2 7.6 4.6\"/>",
         ["refresh"] = "<path d=\"M21 12a9 9 0 1 1-2.64-6.36\"/><path d=\"M21 3v6h-6\"/>",
         ["close"] = "<path d=\"M18 6 6 18\"/><path d=\"M6 6l12 12\"/>",
+        ["trash"] = "<path d=\"M3.5 7h17\"/><path d=\"M9.5 7V5.5A1.5 1.5 0 0 1 11 4h2a1.5 1.5 0 0 1 1.5 1.5V7\"/><path d=\"M6.5 7l.8 12.2A1.5 1.5 0 0 0 8.8 20.5h6.4a1.5 1.5 0 0 0 1.5-1.3L17.5 7\"/><path d=\"M10 11v6\"/><path d=\"M14 11v6\"/>",
         ["plus"] = "<path d=\"M12 5v14\"/><path d=\"M5 12h14\"/>",
         ["menu"] = "<path d=\"M4 6h16\"/><path d=\"M4 12h16\"/><path d=\"M4 18h16\"/>",
         ["check"] = "<path d=\"M20 6 9 17l-5-5\"/>",

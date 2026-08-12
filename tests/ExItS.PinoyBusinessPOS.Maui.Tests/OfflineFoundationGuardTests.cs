@@ -15,6 +15,12 @@ public sealed class OfflineFoundationGuardTests
         Assert.Contains("StoreHeader", shell, StringComparison.Ordinal);
         Assert.Contains("ShellSyncStatus", header, StringComparison.Ordinal);
         Assert.Contains("IPosSyncStatusService", sync, StringComparison.Ordinal);
+        Assert.Contains("NotifyApiReachability", File.ReadAllText(Path.Combine(FindRepoRoot(),
+            "src", "Products", "PinoyBusinessPOS", "ExItS.PinoyBusinessPOS.Application",
+            "Abstractions", "SyncStatusAbstractions.cs")), StringComparison.Ordinal);
+        Assert.Contains("PosApiReachabilityHandler", File.ReadAllText(Path.Combine(FindRepoRoot(),
+            "src", "Products", "PinoyBusinessPOS", "ExItS.PinoyBusinessPOS.ApiClient",
+            "DependencyInjection.cs")), StringComparison.Ordinal);
         Assert.Contains("pos-sync-status", sync, StringComparison.Ordinal);
         Assert.Contains("pos-sync-status--chip", sync, StringComparison.Ordinal);
         Assert.Contains("pos-topbar__status", header, StringComparison.Ordinal);

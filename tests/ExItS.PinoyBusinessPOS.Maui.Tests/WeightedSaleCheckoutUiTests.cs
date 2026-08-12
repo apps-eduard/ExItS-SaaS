@@ -25,6 +25,22 @@ public sealed class WeightedSaleCheckoutUiTests
         Assert.Contains("WeightEntry.UnitKilogram", dialog, StringComparison.Ordinal);
         Assert.Contains("NumberInput", dialog, StringComparison.Ordinal);
         Assert.Contains("RadioGroup", dialog, StringComparison.Ordinal);
+        Assert.Contains("EventCallback Removed", dialog, StringComparison.Ordinal);
+        Assert.Contains("RemoveAsync", dialog, StringComparison.Ordinal);
+        Assert.Contains("Sales_Checkout_Remove", dialog, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ByWeight_in_cart_row_offers_remove_without_opening_cart_sheet()
+    {
+        var checkout = ReadCheckout();
+        Assert.Contains("RemoveWeightedLine", checkout, StringComparison.Ordinal);
+        Assert.Contains("pos-product-row__stepper--weight", checkout, StringComparison.Ordinal);
+        Assert.Contains("IconName=\"trash\"", checkout, StringComparison.Ordinal);
+        Assert.Contains("AriaLabel=\"@L[\"Sales_Checkout_Remove\"]\"", checkout, StringComparison.Ordinal);
+        Assert.Contains("RoundMoney(product.SellingPrice * qty)", checkout, StringComparison.Ordinal);
+        Assert.Contains("Removed=\"OnWeightRemoved\"", checkout, StringComparison.Ordinal);
+        Assert.Contains("OnWeightRemoved", checkout, StringComparison.Ordinal);
     }
 
     [Fact]

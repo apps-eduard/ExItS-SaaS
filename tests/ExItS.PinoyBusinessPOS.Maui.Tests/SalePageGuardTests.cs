@@ -89,6 +89,12 @@ public sealed class SalePageGuardTests
         Assert.Contains("StoreHeaderBack Href=", returnPage, StringComparison.Ordinal);
         Assert.Contains("Returns_OfflineMessage", returnPage, StringComparison.Ordinal);
         Assert.Contains("pos-sale-return", returnPage, StringComparison.Ordinal);
+        Assert.Contains("RefundableAmount", returnPage, StringComparison.Ordinal);
+        Assert.Contains("FormatCartQuantity", returnPage, StringComparison.Ordinal);
+        Assert.Contains("Returns_ReturnAll", returnPage, StringComparison.Ordinal);
+        Assert.Contains("Returns_TotalRefund", returnPage, StringComparison.Ordinal);
+        Assert.Contains("PreviewRefund", returnPage, StringComparison.Ordinal);
+        Assert.Contains("QuantityStepper", returnPage, StringComparison.Ordinal);
         Assert.DoesNotContain("Returns_BackToSale", returnPage, StringComparison.Ordinal);
         Assert.DoesNotContain("PageHeader", returnPage, StringComparison.Ordinal);
 
@@ -153,6 +159,9 @@ public sealed class SalePageGuardTests
         var checkout = File.ReadAllText(Path.Combine(SalesPagesDirectory(), "SaleCheckout.razor"));
         Assert.Contains("Connectivity.IsConnectedAsync", checkout, StringComparison.Ordinal);
         Assert.Contains("Sales_Checkout_OfflineMessage", checkout, StringComparison.Ordinal);
+        Assert.Contains("LoadOfflineCheckoutStateAsync", checkout, StringComparison.Ordinal);
+        Assert.Contains("NotifyApiReachability(false)", checkout, StringComparison.Ordinal);
+        Assert.Contains("IsUnreachable", checkout, StringComparison.Ordinal);
         Assert.Contains("OnlineRequired.EnsureOnlineForActionAsync", checkout, StringComparison.Ordinal);
         Assert.Contains("PosOfflineActionKeys.SaleNonCashPayment", checkout, StringComparison.Ordinal);
         Assert.Contains("ILocalCashSaleStore", checkout, StringComparison.Ordinal);

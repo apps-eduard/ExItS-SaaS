@@ -229,6 +229,30 @@ public sealed class PosSyncStatusAndAccessPolicyTests
         Assert.Equal(PosSyncStatusKind.ReconnectRequired, sync.Current.Kind);
     }
 
+    [Fact]
+    public async Task Api_unreachable_shows_offline_even_when_device_network_is_up()
+    {
+        var connectivity = new FakeConnectivity(online: true);
+        var current = new CurrentUserContext();
+        current.Set(CreateSession());
+        var policy = new ProtectedShellAccessPolicy(current, connectivity);
+        await policy.InitializeAsync();
+        var sync = new PosSyncStatusService(connectivity, policy);
+        await sync.InitializeAsync();
+
+        Assert.Equal(PosSyncStatusKind.Online, sync.Current.Kind);
+
+        sync.NotifyApiReachability(false);
+        await Task.Delay(20);
+
+        Assert.Equal(PosSyncStatusKind.Offline, sync.Current.Kind);
+
+        sync.NotifyApiReachability(true);
+        await Task.Delay(20);
+
+        Assert.Equal(PosSyncStatusKind.Online, sync.Current.Kind);
+    }
+
     private static async Task<PosSyncStatusService> CreateSyncWithQueueAsync(OfflineQueueCounts counts)
     {
         var connectivity = new FakeConnectivity(online: true);

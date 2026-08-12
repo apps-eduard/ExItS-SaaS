@@ -38,6 +38,10 @@
     </ChildContent>
     <Footer>
         <FormActions>
+            @if (InitialKilograms is > 0m)
+            {
+                <Button Variant="ButtonVariant.Ghost" OnClick="RemoveAsync">@L["Sales_Checkout_Remove"]</Button>
+            }
             <Button Variant="ButtonVariant.Secondary" OnClick="CancelAsync">@L["Sales_Cancel"]</Button>
             <Button Variant="ButtonVariant.Primary" OnClick="ConfirmAsync">@ConfirmLabel</Button>
         </FormActions>
@@ -51,6 +55,7 @@
     /// <summary>When editing an existing line, pass the current cart kilograms.</summary>
     [Parameter] public decimal? InitialKilograms { get; set; }
     [Parameter] public EventCallback<decimal> Confirmed { get; set; }
+    [Parameter] public EventCallback Removed { get; set; }
     [Parameter] public EventCallback Cancelled { get; set; }
 
     private decimal? _rawValue;
@@ -133,6 +138,16 @@
         }
 
         await Confirmed.InvokeAsync(kilograms);
+        await SetVisibleAsync(false);
+    }
+
+    private async Task RemoveAsync()
+    {
+        if (Removed.HasDelegate)
+        {
+            await Removed.InvokeAsync();
+        }
+
         await SetVisibleAsync(false);
     }
 

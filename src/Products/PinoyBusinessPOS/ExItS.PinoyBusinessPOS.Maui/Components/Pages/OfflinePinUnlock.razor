@@ -104,6 +104,7 @@
             }
 
             SyncStatus.SetReconnectRequired(false);
+            SyncStatus.NotifyApiReachability(false);
             SyncStatus.Refresh();
             // Do not call ResolveStartRouteAsync — it would RestoreSession and re-hit introspect offline.
             // Prefer grant-snapshot home so unlock never waits on permissions HTTP while unreachable.

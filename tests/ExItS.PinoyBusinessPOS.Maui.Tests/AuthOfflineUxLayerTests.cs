@@ -176,6 +176,7 @@ public sealed class AuthOfflineUxLayerTests
         Assert.Contains("pos-offline-pin__actions", unlock, StringComparison.Ordinal);
         Assert.Contains("pos-offline-pin__signout", unlock, StringComparison.Ordinal);
         Assert.Contains("Offline_PinShow", unlock, StringComparison.Ordinal);
+        Assert.Contains("NotifyApiReachability(false)", unlock, StringComparison.Ordinal);
         Assert.DoesNotContain("OrganizationDisplayName", unlock, StringComparison.Ordinal);
         Assert.DoesNotContain("InlineMessageTone.Warning", unlock, StringComparison.Ordinal);
 

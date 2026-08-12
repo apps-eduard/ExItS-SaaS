@@ -52,21 +52,64 @@ else
             @foreach (var line in _refundable.Lines)
             {
                 var qty = GetQuantity(line.SaleLineId);
-                <article class="pos-sale-return__entry" role="listitem">
+                var byWeight = SalesUiOptions.IsByWeight(line.SellingMode);
+                var decimals = PosSaleOptions.MaxQuantityDecimals(line.UnitOfMeasure, line.SellingMode);
+                var refundPreview = PreviewRefund(line, qty);
+                var refundableQtyLabel = SalesUiOptions.FormatCartQuantity(L, line.RefundableQuantity, line.UnitOfMeasure, line.SellingMode);
+                <article class="pos-sale-return__entry @(qty > 0m ? "pos-sale-return__entry--active" : null)" role="listitem">
                     <div class="pos-sale-return__entry-top">
-                        <span class="pos-sale-return__entry-name">@line.ProductNameSnapshot</span>
-                        <span class="pos-sale-return__entry-meta">@L["Returns_RefundableQty", line.RefundableQuantity.ToString("0.###")]</span>
+                        <div class="pos-sale-return__entry-info">
+                            <span class="pos-sale-return__entry-name">@line.ProductNameSnapshot</span>
+                            <span class="pos-sale-return__entry-meta">@L["Returns_RefundableQty", refundableQtyLabel]</span>
+                        </div>
+                        <span class="pos-sale-return__entry-amount">
+                            <MoneyDisplay Amount="@line.RefundableAmount" CurrencyCode="PHP" />
+                        </span>
                     </div>
                     <div class="pos-sale-return__entry-controls">
-                        <NumberInput Value="@qty"
-                                     ValueChanged="v => SetQuantity(line.SaleLineId, v)"
-                                     Min="0"
-                                     Max="@line.RefundableQuantity"
-                                     Step="1" />
-                        <select class="pos-input" value="@GetDisposition(line.SaleLineId)" @onchange="e => SetDisposition(line.SaleLineId, e)">
-                            <option value="ReturnToStock">@L["Returns_Restock"]</option>
-                            <option value="DoNotRestock">@L["Returns_NoRestock"]</option>
-                        </select>
+                        <div class="pos-sale-return__qty-row">
+                            @if (byWeight)
+                            {
+                                <NumberInput Label="@L["Returns_QuantityLabel"]"
+                                             Value="@(qty > 0m ? qty : null)"
+                                             ValueChanged="v => SetQuantity(line, v)"
+                                             DecimalPlaces="@decimals"
+                                             Hint="@string.Format(L["Returns_QuantityMaxHint"].Value, refundableQtyLabel)" />
+                            }
+                            else
+                            {
+                                <div class="pos-sale-return__stepper-wrap">
+                                    <span class="pos-sale-return__qty-label">@L["Returns_QuantityLabel"]</span>
+                                    <QuantityStepper Value="@qty"
+                                                     ValueChanged="v => SetQuantity(line, v)"
+                                                     Step="@(PosSaleOptions.RequiresWholeQuantity(line.UnitOfMeasure, line.SellingMode) ? 1m : 0.001m)"
+                                                     Min="0"
+                                                     Max="@line.RefundableQuantity"
+                                                     DecimalPlaces="@decimals"
+                                                     AriaLabel="@L["Returns_QuantityLabel"]"
+                                                     DecreaseLabel="@L["Sales_Checkout_DecreaseQty"]"
+                                                     IncreaseLabel="@L["Sales_Checkout_IncreaseQty"]" />
+                                </div>
+                            }
+                            <Button Variant="ButtonVariant.Secondary"
+                                    Disabled="@(qty >= line.RefundableQuantity)"
+                                    OnClick="() => SetQuantity(line, line.RefundableQuantity)">
+                                @L["Returns_ReturnAll"]
+                            </Button>
+                        </div>
+                        <Select Label="@L["Returns_DispositionLabel"]"
+                                Value="@GetDisposition(line.SaleLineId)"
+                                ValueChanged="v => SetDisposition(line.SaleLineId, v)"
+                                Options="_dispositionOptions" />
+                        @if (qty > 0m)
+                        {
+                            <div class="pos-sale-return__line-refund">
+                                <span class="pos-sale-return__line-refund-label">@L["Returns_LineRefund"]</span>
+                                <span class="pos-sale-return__line-refund-amount">
+                                    <MoneyDisplay Amount="@refundPreview" CurrencyCode="PHP" />
+                                </span>
+                            </div>
+                        }
                     </div>
                 </article>
             }
@@ -80,6 +123,13 @@ else
             <TextInput Label="@L["Returns_NotesLabel"]" @bind-Value="_notes" />
         </div>
     </section>
+
+    <div class="pos-sale-return__summary" aria-live="polite">
+        <span class="pos-sale-return__summary-label">@L["Returns_TotalRefund"]</span>
+        <span class="pos-sale-return__summary-amount">
+            <MoneyDisplay Amount="@TotalRefundPreview" CurrencyCode="PHP" />
+        </span>
+    </div>
 
     <FormActions class="pos-customer-create__footer">
         <Button Variant="ButtonVariant.Primary"
@@ -105,9 +155,16 @@ else
     private string? _notes;
     private readonly Dictionary<Guid, decimal> _quantities = new();
     private readonly Dictionary<Guid, string> _dispositions = new();
+    private IReadOnlyList<SelectOption> _dispositionOptions = Array.Empty<SelectOption>();
 
     protected override async Task OnInitializedAsync()
     {
+        _dispositionOptions =
+        [
+            new SelectOption("ReturnToStock", L["Returns_Restock"]),
+            new SelectOption("DoNotRestock", L["Returns_NoRestock"]),
+        ];
+
         if (!Gate.CanEnterProtectedShell || CurrentUser.Session?.OrganizationId is null)
         {
             Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
@@ -131,17 +188,43 @@ else
         && _quantities.Values.Any(q => q > 0m)
         && !_acting;
 
+    private decimal TotalRefundPreview =>
+        _refundable is null
+            ? 0m
+            : _refundable.Lines.Sum(line => PreviewRefund(line, GetQuantity(line.SaleLineId)));
+
     private decimal GetQuantity(Guid saleLineId) =>
         _quantities.TryGetValue(saleLineId, out var qty) ? qty : 0m;
 
-    private void SetQuantity(Guid saleLineId, decimal? value) =>
-        _quantities[saleLineId] = Math.Max(0m, value ?? 0m);
+    private void SetQuantity(PosRefundableSaleLineDto line, decimal? value)
+    {
+        var decimals = PosSaleOptions.MaxQuantityDecimals(line.UnitOfMeasure, line.SellingMode);
+        var qty = Math.Max(0m, value ?? 0m);
+        qty = Math.Min(qty, line.RefundableQuantity);
+        qty = Math.Round(qty, decimals, MidpointRounding.AwayFromZero);
+        _quantities[line.SaleLineId] = qty;
+    }
 
     private string GetDisposition(Guid saleLineId) =>
         _dispositions.TryGetValue(saleLineId, out var d) ? d : "ReturnToStock";
 
-    private void SetDisposition(Guid saleLineId, ChangeEventArgs e) =>
-        _dispositions[saleLineId] = e.Value?.ToString() ?? "ReturnToStock";
+    private void SetDisposition(Guid saleLineId, string? value) =>
+        _dispositions[saleLineId] = string.IsNullOrWhiteSpace(value) ? "ReturnToStock" : value;
+
+    private static decimal PreviewRefund(PosRefundableSaleLineDto line, decimal quantity)
+    {
+        if (quantity <= 0m)
+        {
+            return 0m;
+        }
+
+        if (quantity >= line.RefundableQuantity)
+        {
+            return line.RefundableAmount;
+        }
+
+        return PosSaleOptions.RoundMoney(quantity * line.UnitPriceSnapshot);
+    }
 
     private async Task LoadAsync()
     {

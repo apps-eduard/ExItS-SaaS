@@ -42,6 +42,12 @@ public interface IPosSyncStatusService
     /// <summary>Marks encryption-key or other recovery-required condition (fail-closed; work retained).</summary>
     void SetRecoveryRequired(bool required);
 
+    /// <summary>
+    /// Records whether the POS/Platform API was actually reached. Device Wi-Fi/cellular is not
+    /// enough — PIN unlock and transport failures must show Offline until a call succeeds.
+    /// </summary>
+    void NotifyApiReachability(bool reachable);
+
     void Refresh();
 }
 

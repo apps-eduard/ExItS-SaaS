@@ -93,6 +93,7 @@ public sealed class CustomerCreditReconcileReconnectTests
         public Task InitializeAsync(CancellationToken ct = default) => Task.CompletedTask;
         public void SetReconnectRequired(bool required) => ReconnectRequired = required;
         public void SetRecoveryRequired(bool required) { }
+        public void NotifyApiReachability(bool reachable) { }
         public void Refresh() => RefreshInvocations++;
     }
 }

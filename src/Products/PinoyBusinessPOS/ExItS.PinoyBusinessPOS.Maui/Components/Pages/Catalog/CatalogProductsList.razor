@@ -341,13 +341,21 @@ else
             _items = result.Data.Items;
             _totalCount = result.Data.TotalCount;
         }
+        else if (result.Status is ApiCallStatus.Offline or ApiCallStatus.Timeout or ApiCallStatus.Unavailable)
+        {
+            _items = Array.Empty<PosCatalogProductDto>();
+            _totalCount = 0;
+            _isOffline = true;
+            _errorTitle = L["Catalog_OfflineTitle"];
+            _errorMessage = L["Catalog_OfflineMessage"];
+        }
         else
         {
             _items = Array.Empty<PosCatalogProductDto>();
             _totalCount = 0;
             var described = ApiLocalizer.Describe(result.Status, result.Error);
             _errorTitle = described.Title;
-            _errorMessage = result.Error?.Detail ?? described.Message;
+            _errorMessage = described.Message;
         }
 
         _loading = false;

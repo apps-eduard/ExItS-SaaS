@@ -21,7 +21,10 @@ public sealed class SalesCheckoutProductRowUiTests
         var checkout = ReadCheckout();
 
         Assert.Contains("@if (inCart && !byWeight)", checkout, StringComparison.Ordinal);
+        Assert.Contains("else if (inCart && byWeight)", checkout, StringComparison.Ordinal);
         Assert.Contains("pos-product-row__stepper", checkout, StringComparison.Ordinal);
+        Assert.Contains("RemoveWeightedLine", checkout, StringComparison.Ordinal);
+        Assert.Contains("IconName=\"trash\"", checkout, StringComparison.Ordinal);
         Assert.Contains("@onclick:stopPropagation=\"true\"", checkout, StringComparison.Ordinal);
         Assert.Contains("@onkeydown:stopPropagation=\"true\"", checkout, StringComparison.Ordinal);
         Assert.Contains("Compact=\"true\"", checkout, StringComparison.Ordinal);

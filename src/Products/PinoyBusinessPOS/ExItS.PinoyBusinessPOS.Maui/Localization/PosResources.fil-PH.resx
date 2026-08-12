@@ -1117,6 +1117,12 @@
   <data name="Returns_ErrorTitle" xml:space="preserve"><value>Nabigo ang pagbalik</value></data>
   <data name="Returns_LinesSection" xml:space="preserve"><value>Mga linyang ibabalik</value></data>
   <data name="Returns_RefundableQty" xml:space="preserve"><value>Maibabalik: {0}</value></data>
+  <data name="Returns_QuantityLabel" xml:space="preserve"><value>Dami</value></data>
+  <data name="Returns_QuantityMaxHint" xml:space="preserve"><value>Max {0}</value></data>
+  <data name="Returns_ReturnAll" xml:space="preserve"><value>Lahat</value></data>
+  <data name="Returns_DispositionLabel" xml:space="preserve"><value>Aksyon sa stock</value></data>
+  <data name="Returns_LineRefund" xml:space="preserve"><value>Ibabalik</value></data>
+  <data name="Returns_TotalRefund" xml:space="preserve"><value>Kabuuang refund</value></data>
   <data name="Returns_Restock" xml:space="preserve"><value>Balik sa stock</value></data>
   <data name="Returns_NoRestock" xml:space="preserve"><value>Huwag ibalik sa stock</value></data>
   <data name="Returns_ReasonSection" xml:space="preserve"><value>Dahilan ng pagbalik</value></data>

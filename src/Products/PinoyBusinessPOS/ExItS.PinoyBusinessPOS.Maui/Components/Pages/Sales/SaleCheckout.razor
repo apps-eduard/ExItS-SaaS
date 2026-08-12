@@ -578,6 +578,7 @@ else
                        Product="@_weightProduct"
                        InitialKilograms="@_weightInitialKg"
                        Confirmed="OnWeightConfirmed"
+                       Removed="OnWeightRemoved"
                        Cancelled="CloseWeightEntry" />
 </Page>
 }
@@ -740,7 +741,6 @@ else
         }
 
         Cart.Changed += OnCartChanged;
-        _ready = true;
         _isOffline = !await Connectivity.IsConnectedAsync();
         if (!string.IsNullOrWhiteSpace(ResolvedDisplayName))
         {
@@ -754,42 +754,61 @@ else
         _ = ResolvedPublicUserId;
         if (_isOffline)
         {
-            _openShift = await LocalCatalog.LoadOpenShiftSnapshotAsync();
-            await LoadCategoriesAsync();
-            await LoadBrowseProductsAsync();
+            await LoadOfflineCheckoutStateAsync();
         }
         else
         {
             var shiftResult = await ShiftClient.GetCurrentAsync();
-            if (shiftResult.IsSuccess)
+            if (IsUnreachable(shiftResult.Status))
             {
-                _openShift = shiftResult.Data;
-                if (_openShift is not null)
+                _isOffline = true;
+                SyncStatus.NotifyApiReachability(false);
+                await LoadOfflineCheckoutStateAsync();
+            }
+            else
+            {
+                if (shiftResult.IsSuccess)
                 {
-                    await LocalCatalog.SaveOpenShiftSnapshotAsync(_openShift);
+                    _openShift = shiftResult.Data;
+                    if (_openShift is not null)
+                    {
+                        await LocalCatalog.SaveOpenShiftSnapshotAsync(_openShift);
+                    }
+                    else
+                    {
+                        await LocalCatalog.ClearOpenShiftSnapshotAsync();
+                    }
                 }
-                else
+
+                await LoadOperationalSetupAsync();
+                await LoadCategoriesAsync();
+                await LoadBrowseProductsAsync();
+                try
                 {
-                    await LocalCatalog.ClearOpenShiftSnapshotAsync();
+                    await CatalogSync.RefreshFromServerAsync();
                 }
-            }
+                catch
+                {
+                    // Cache refresh is best-effort; checkout remains online-capable.
+                }
 
-            await LoadOperationalSetupAsync();
-            await LoadCategoriesAsync();
-            await LoadBrowseProductsAsync();
-            try
-            {
-                await CatalogSync.RefreshFromServerAsync();
+                await TryRestorePendingPaymentAsync();
+                await TryApplyCheckoutResumeAsync();
             }
-            catch
-            {
-                // Cache refresh is best-effort; checkout remains online-capable.
-            }
-
-            await TryRestorePendingPaymentAsync();
-            await TryApplyCheckoutResumeAsync();
         }
+
+        _ready = true;
     }
+
+    private async Task LoadOfflineCheckoutStateAsync()
+    {
+        _openShift = await LocalCatalog.LoadOpenShiftSnapshotAsync();
+        await LoadCategoriesAsync();
+        await LoadBrowseProductsAsync();
+    }
+
+    private static bool IsUnreachable(ApiCallStatus status) =>
+        status is ApiCallStatus.Offline or ApiCallStatus.Timeout or ApiCallStatus.Unavailable;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -1034,13 +1053,29 @@ else
                     </span>
                 </div>
                 <div class="pos-product-row__side">
-                    <span class="pos-product-row__price">
-                        <MoneyDisplay Amount="@product.SellingPrice" CurrencyCode="PHP" />
-                        @if (!string.IsNullOrEmpty(priceSuffix))
-                        {
-                            <span class="pos-type-helper"> @priceSuffix</span>
-                        }
-                    </span>
+                    @if (inCart && byWeight)
+                    {
+                        <span class="pos-product-row__price">
+                            <MoneyDisplay Amount="@PosSaleOptions.RoundMoney(product.SellingPrice * qty)" CurrencyCode="PHP" />
+                        </span>
+                        <span class="pos-product-row__unit-price pos-type-helper">
+                            <MoneyDisplay Amount="@product.SellingPrice" CurrencyCode="PHP" />
+                            @if (!string.IsNullOrEmpty(priceSuffix))
+                            {
+                                <span> @priceSuffix</span>
+                            }
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="pos-product-row__price">
+                            <MoneyDisplay Amount="@product.SellingPrice" CurrencyCode="PHP" />
+                            @if (!string.IsNullOrEmpty(priceSuffix))
+                            {
+                                <span class="pos-type-helper"> @priceSuffix</span>
+                            }
+                        </span>
+                    }
                     @if (inCart && !byWeight)
                     {
                         <div class="pos-product-row__stepper"
@@ -1060,7 +1095,7 @@ else
                     }
                     else if (inCart && byWeight)
                     {
-                        <div class="pos-product-row__stepper"
+                        <div class="pos-product-row__stepper pos-product-row__stepper--weight"
                              @onclick:stopPropagation="true"
                              @onkeydown:stopPropagation="true">
                             <Button Variant="ButtonVariant.Secondary"
@@ -1068,6 +1103,10 @@ else
                                     OnClick="() => OpenWeightEntry(product, qty)">
                                 @string.Format(L["Sales_Checkout_QuantityKg"].Value, WeightEntry.FormatKilograms(qty))
                             </Button>
+                            <IconButton IconName="trash"
+                                        AriaLabel="@L["Sales_Checkout_Remove"]"
+                                        Disabled="@blocked"
+                                        OnClick="() => RemoveWeightedLine(product.ProductId)" />
                         </div>
                     }
                 </div>
@@ -1153,6 +1192,25 @@ else
         var product = _weightProduct;
         CloseWeightEntry();
         ApplyWeightedQuantity(product, kilograms);
+    }
+
+    private void OnWeightRemoved()
+    {
+        if (_weightProduct is not null)
+        {
+            Cart.Remove(_weightProduct.ProductId);
+        }
+
+        CloseWeightEntry();
+        _errorTitle = null;
+        _errorMessage = null;
+    }
+
+    private void RemoveWeightedLine(Guid productId)
+    {
+        Cart.Remove(productId);
+        _errorTitle = null;
+        _errorMessage = null;
     }
 
     private void ApplyWeightedQuantity(PosCatalogProductDto product, decimal kilograms)

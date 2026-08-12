@@ -13,6 +13,7 @@ public sealed class PosSyncStatusService : IPosSyncStatusService, IDisposable
     private ConnectivityStatus _connectivityStatus = ConnectivityStatus.Unknown;
     private bool _reconnectRequired;
     private bool _recoveryRequired;
+    private bool? _apiReachable;
 
     public PosSyncStatusService(
         IConnectivityService connectivity,
@@ -58,6 +59,17 @@ public sealed class PosSyncStatusService : IPosSyncStatusService, IDisposable
         }
 
         _recoveryRequired = required;
+        Refresh();
+    }
+
+    public void NotifyApiReachability(bool reachable)
+    {
+        if (_apiReachable == reachable)
+        {
+            return;
+        }
+
+        _apiReachable = reachable;
         Refresh();
     }
 
@@ -110,9 +122,11 @@ public sealed class PosSyncStatusService : IPosSyncStatusService, IDisposable
             return;
         }
 
+        var effectivelyOnline = IsEffectivelyOnline();
+
         if (counts is not null)
         {
-            if (counts.Syncing > 0)
+            if (effectivelyOnline && counts.Syncing > 0)
             {
                 Current = new PosSyncStatusSnapshot(PosSyncStatusKind.Syncing, PendingCount: counts.PendingSyncDisplay);
                 return;
@@ -127,7 +141,7 @@ public sealed class PosSyncStatusService : IPosSyncStatusService, IDisposable
                 return;
             }
 
-            if (counts.Pending > 0)
+            if (effectivelyOnline && counts.Pending > 0)
             {
                 Current = new PosSyncStatusSnapshot(
                     PosSyncStatusKind.PendingSync,
@@ -135,7 +149,7 @@ public sealed class PosSyncStatusService : IPosSyncStatusService, IDisposable
                 return;
             }
 
-            if (lastSynced is not null && _connectivityStatus == ConnectivityStatus.Online)
+            if (lastSynced is not null && effectivelyOnline)
             {
                 Current = new PosSyncStatusSnapshot(
                     PosSyncStatusKind.LastSynced,
@@ -145,13 +159,13 @@ public sealed class PosSyncStatusService : IPosSyncStatusService, IDisposable
             }
         }
 
-        Current = _connectivityStatus switch
-        {
-            ConnectivityStatus.Online => new PosSyncStatusSnapshot(PosSyncStatusKind.Online),
-            ConnectivityStatus.Offline => new PosSyncStatusSnapshot(PosSyncStatusKind.Offline),
-            _ => new PosSyncStatusSnapshot(PosSyncStatusKind.Offline)
-        };
+        Current = effectivelyOnline
+            ? new PosSyncStatusSnapshot(PosSyncStatusKind.Online)
+            : new PosSyncStatusSnapshot(PosSyncStatusKind.Offline);
     }
+
+    private bool IsEffectivelyOnline() =>
+        _connectivityStatus == ConnectivityStatus.Online && _apiReachable != false;
 
     private async void OnConnectivityChanged(object? sender, ConnectivityStatus status)
     {

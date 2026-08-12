@@ -39,6 +39,7 @@ public static class DependencyInjection
         services.AddTransient<PosOrganizationHeaderHandler>();
         services.AddTransient<PosInstallationDeviceHeaderHandler>();
         services.AddTransient<PosCommercialHeaderHandler>();
+        services.AddTransient<PosApiReachabilityHandler>();
 
         services.AddHttpClient<IPosApiClient, PosApiClient>((provider, client) =>
             {
@@ -48,7 +49,8 @@ public static class DependencyInjection
             })
             .AddHttpMessageHandler<PlatformSessionHeaderHandler>()
             .AddHttpMessageHandler<DevPlatformUserHeaderHandler>()
-            .AddHttpMessageHandler<PlatformBearerHandler>();
+            .AddHttpMessageHandler<PlatformBearerHandler>()
+            .AddHttpMessageHandler<PosApiReachabilityHandler>();
 
         AddBusinessClient<IPosCustomerClient, PosCustomerClient>(services);
         AddBusinessClient<IPosCatalogClient, PosCatalogClient>(services);
@@ -92,6 +94,7 @@ public static class DependencyInjection
             .AddHttpMessageHandler<PosInstallationDeviceHeaderHandler>()
             .AddHttpMessageHandler<PosCommercialHeaderHandler>()
             .AddHttpMessageHandler<PosPlatformSessionForwardingHandler>()
-            .AddHttpMessageHandler<PlatformBearerHandler>();
+            .AddHttpMessageHandler<PlatformBearerHandler>()
+            .AddHttpMessageHandler<PosApiReachabilityHandler>();
     }
 }
