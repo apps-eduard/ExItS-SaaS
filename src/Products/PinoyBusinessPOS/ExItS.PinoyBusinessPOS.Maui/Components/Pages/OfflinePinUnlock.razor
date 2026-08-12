@@ -1,6 +1,7 @@
 @page "/offline-pin"
 @layout Layout.AuthShell
 @using ExItS.DesignSystem.Components.Internal
+@using ExItS.PinoyBusinessPOS.Application.Offline
 @inject IAuthenticationService Auth
 @inject ICurrentUserContext CurrentUser
 @inject RoleHomeResolver RoleHome
@@ -13,7 +14,9 @@
         <header class="pos-offline-pin__header">
             <div class="pos-offline-pin__badge" aria-hidden="true">@IconGlyphs.Get("lock")</div>
             <h1 class="pos-offline-pin__title">@L["Offline_PinTitle"]</h1>
-            <p class="pos-offline-pin__subtitle">@L["Offline_PinSubtitle"]</p>
+            <p class="pos-offline-pin__subtitle">
+                @(_needsAccountPick ? L["Offline_SelectAccountSubtitle"] : L["Offline_PinSubtitle"])
+            </p>
             <p class="pos-offline-pin__status" role="status">@L["Offline_Banner"]</p>
         </header>
 
@@ -22,49 +25,88 @@
             <InlineMessage Tone="InlineMessageTone.Danger">@_error</InlineMessage>
         }
 
-        <div class="pos-offline-pin__field">
-            <label class="pos-offline-pin__label" for="offline-pin">@L["Offline_PinLabel"]</label>
-            <div class="pos-offline-pin__input-wrap">
-                <input id="offline-pin"
-                       type="@(_showPin ? "text" : "password")"
-                       inputmode="numeric"
-                       pattern="[0-9]*"
-                       autocomplete="one-time-code"
-                       maxlength="12"
-                       class="pos-offline-pin__input"
-                       disabled="@_busy"
-                       aria-invalid="@(!string.IsNullOrEmpty(_error))"
-                       @bind="_pin"
-                       @bind:event="oninput"
-                       @onkeydown="OnPinKeyDownAsync" />
+        @if (_needsAccountPick)
+        {
+            <p class="pos-offline-pin__hint">@L["Offline_SelectAccountHint"]</p>
+            <div class="pos-offline-pin__accounts" role="list">
+                @foreach (var user in _candidates)
+                {
+                    <button type="button"
+                            class="pos-offline-pin__account"
+                            role="listitem"
+                            disabled="@_busy"
+                            @onclick="() => SelectAccountAsync(user)">
+                        <span class="pos-offline-pin__account-name">@user.DisplayName</span>
+                        @if (!string.IsNullOrWhiteSpace(user.OrganizationDisplayName))
+                        {
+                            <span class="pos-offline-pin__account-meta">@user.OrganizationDisplayName</span>
+                        }
+                    </button>
+                }
+            </div>
+        }
+        else
+        {
+            @if (_selected is not null)
+            {
+                <p class="pos-offline-pin__selected" role="status">
+                    @L["Offline_UnlockingAs", _selected.DisplayName]
+                    @if (_candidates.Count > 1)
+                    {
+                        <button type="button"
+                                class="pos-offline-pin__change-user"
+                                disabled="@_busy"
+                                @onclick="ClearSelection">
+                            @L["Offline_ChangeAccount"]
+                        </button>
+                    }
+                </p>
+            }
+
+            <div class="pos-offline-pin__field">
+                <label class="pos-offline-pin__label" for="offline-pin">@L["Offline_PinLabel"]</label>
+                <div class="pos-offline-pin__input-wrap">
+                    <input id="offline-pin"
+                           type="@(_showPin ? "text" : "password")"
+                           inputmode="numeric"
+                           pattern="[0-9]*"
+                           autocomplete="one-time-code"
+                           maxlength="12"
+                           class="pos-offline-pin__input"
+                           disabled="@_busy"
+                           aria-invalid="@(!string.IsNullOrEmpty(_error))"
+                           @bind="_pin"
+                           @bind:event="oninput"
+                           @onkeydown="OnPinKeyDownAsync" />
+                    <button type="button"
+                            class="pos-offline-pin__toggle"
+                            disabled="@_busy"
+                            aria-pressed="@_showPin"
+                            aria-label="@(_showPin ? L["Offline_PinHide"] : L["Offline_PinShow"])"
+                            @onclick="TogglePinVisibility">
+                        @(_showPin ? L["Offline_PinHide"] : L["Offline_PinShow"])
+                    </button>
+                </div>
+            </div>
+
+            <div class="pos-offline-pin__actions" role="group" aria-label="@L["Offline_PinTitle"]">
+                <Button Variant="ButtonVariant.Primary"
+                        IsLoading="_busy"
+                        Disabled="_busy || string.IsNullOrWhiteSpace(_pin) || _selected is null"
+                        OnClick="UnlockAsync">
+                    @L["Offline_PinUnlock"]
+                </Button>
+                <Button Variant="ButtonVariant.Secondary" Disabled="_busy" OnClick="GoReconnectAsync">
+                    @L["SyncStatus_ReconnectShort"]
+                </Button>
                 <button type="button"
-                        class="pos-offline-pin__toggle"
+                        class="pos-offline-pin__signout"
                         disabled="@_busy"
-                        aria-pressed="@_showPin"
-                        aria-label="@(_showPin ? L["Offline_PinHide"] : L["Offline_PinShow"])"
-                        @onclick="TogglePinVisibility">
-                    @(_showPin ? L["Offline_PinHide"] : L["Offline_PinShow"])
+                        @onclick="SignOutAsync">
+                    @L["Auth_Logout"]
                 </button>
             </div>
-        </div>
-
-        <div class="pos-offline-pin__actions" role="group" aria-label="@L["Offline_PinTitle"]">
-            <Button Variant="ButtonVariant.Primary"
-                    IsLoading="_busy"
-                    Disabled="_busy || string.IsNullOrWhiteSpace(_pin)"
-                    OnClick="UnlockAsync">
-                @L["Offline_PinUnlock"]
-            </Button>
-            <Button Variant="ButtonVariant.Secondary" Disabled="_busy" OnClick="GoReconnectAsync">
-                @L["SyncStatus_ReconnectShort"]
-            </Button>
-            <button type="button"
-                    class="pos-offline-pin__signout"
-                    disabled="@_busy"
-                    @onclick="SignOutAsync">
-                @L["Auth_Logout"]
-            </button>
-        </div>
+        }
     </Page>
 </div>
 
@@ -73,8 +115,52 @@
     private string? _error;
     private bool _busy;
     private bool _showPin;
+    private IReadOnlyList<OfflineEnrolledUserSummary> _candidates = Array.Empty<OfflineEnrolledUserSummary>();
+    private OfflineEnrolledUserSummary? _selected;
+
+    private bool _needsAccountPick => _selected is null && _candidates.Count > 1;
 
     private void TogglePinVisibility() => _showPin = !_showPin;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var offer = await Auth.EvaluateOfflineColdStartOfferAsync();
+        _candidates = offer.UnlockCandidates?
+            .Where(c => c.HasPinConfigured)
+            .ToArray()
+            ?? Array.Empty<OfflineEnrolledUserSummary>();
+
+        if (_candidates.Count == 0)
+        {
+            var enrolled = await Auth.GetEnrolledOfflineUsersAsync();
+            _candidates = enrolled.Where(c => c.HasPinConfigured).ToArray();
+        }
+
+        if (_candidates.Count == 1)
+        {
+            _selected = _candidates[0];
+        }
+    }
+
+    private Task SelectAccountAsync(OfflineEnrolledUserSummary user)
+    {
+        _selected = user;
+        _error = null;
+        _pin = string.Empty;
+        return Task.CompletedTask;
+    }
+
+    private void ClearSelection()
+    {
+        if (_candidates.Count <= 1)
+        {
+            return;
+        }
+
+        _selected = null;
+        _pin = string.Empty;
+        _error = null;
+    }
 
     private async Task OnPinKeyDownAsync(KeyboardEventArgs e)
     {
@@ -86,7 +172,7 @@
 
     private async Task UnlockAsync()
     {
-        if (_busy || string.IsNullOrWhiteSpace(_pin))
+        if (_busy || string.IsNullOrWhiteSpace(_pin) || _selected is null)
         {
             return;
         }
@@ -95,7 +181,7 @@
         _error = null;
         try
         {
-            var result = await Auth.UnlockOfflineWithPinAsync(_pin);
+            var result = await Auth.UnlockOfflineWithPinAsync(_selected.UserId, _pin);
             if (!result.Succeeded)
             {
                 _error = L[result.SafeMessageKey ?? "Offline_PinWrong"];
@@ -106,8 +192,6 @@
             SyncStatus.SetReconnectRequired(false);
             SyncStatus.NotifyApiReachability(false);
             SyncStatus.Refresh();
-            // Do not call ResolveStartRouteAsync — it would RestoreSession and re-hit introspect offline.
-            // Prefer grant-snapshot home so unlock never waits on permissions HTTP while unreachable.
             Nav.NavigateTo(RoleHome.ResolveFromOfflineGrantSnapshot(), replace: true);
         }
         finally

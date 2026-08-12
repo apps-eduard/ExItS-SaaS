@@ -11845,6 +11845,81 @@ html.pos-keyboard-open .pos-content {
     color: var(--exits-text, #15201a);
 }
 
+.pos-offline-pin__hint {
+    margin: 0 0 var(--exits-space-3, 0.75rem);
+    color: var(--exits-text-muted, #5b6b62);
+    font-size: 0.9375rem;
+    line-height: 1.4;
+}
+
+.pos-offline-pin__accounts {
+    display: flex;
+    flex-direction: column;
+    gap: var(--exits-space-2, 0.5rem);
+    margin-bottom: var(--exits-space-4, 1rem);
+}
+
+.pos-offline-pin__account {
+    appearance: none;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.15rem;
+    width: 100%;
+    min-height: 3rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--exits-border, #c9d5ce);
+    border-radius: var(--exits-radius-md, 0.5rem);
+    background: var(--exits-surface, #fff);
+    color: var(--exits-text, #15201a);
+    text-align: left;
+    cursor: pointer;
+}
+
+.pos-offline-pin__account:disabled {
+    opacity: 0.55;
+    cursor: default;
+}
+
+.pos-offline-pin__account:not(:disabled):hover,
+.pos-offline-pin__account:not(:disabled):focus-visible {
+    border-color: var(--exits-accent, #1f7a4d);
+}
+
+.pos-offline-pin__account-name {
+    font-weight: 700;
+    font-size: 1rem;
+}
+
+.pos-offline-pin__account-meta {
+    font-size: 0.8125rem;
+    color: var(--exits-text-muted, #5b6b62);
+}
+
+.pos-offline-pin__selected {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 0 var(--exits-space-3, 0.75rem);
+    color: var(--exits-text, #15201a);
+    font-size: 0.9375rem;
+    font-weight: 600;
+}
+
+.pos-offline-pin__change-user {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: var(--exits-accent, #1f7a4d);
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 0.12em;
+    padding: 0;
+}
+
 /* ========== POS device registration ============================== */
 .pos-device-register__header {
     margin-bottom: var(--exits-space-4, 1rem);

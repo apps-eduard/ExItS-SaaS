@@ -642,7 +642,12 @@
   <data name="Offline_PinInvalidFormat" xml:space="preserve"><value>Dapat hindi bababa sa 6 digits ang PIN.</value></data>
   <data name="Offline_PinNotConfigured" xml:space="preserve"><value>Mag-set muna ng offline PIN habang online bago gamitin ang offline unlock.</value></data>
   <data name="Offline_GrantMissing" xml:space="preserve"><value>Walang offline grant sa device na ito. Mag-reconnect online sandali.</value></data>
-  <data name="Offline_GrantExpired" xml:space="preserve"><value>Nag-expire ang offline grant. Mag-reconnect online para i-refresh.</value></data>
+  <data name="Offline_GrantExpired" xml:space="preserve"><value>Kailangan ang online verification. Mag-reconnect at mag-sign in para i-refresh ang offline access.</value></data>
+  <data name="Offline_SelectAccount" xml:space="preserve"><value>Pumili ng account</value></data>
+  <data name="Offline_SelectAccountSubtitle" xml:space="preserve"><value>Pumili ng account na na-verify na sa device na ito.</value></data>
+  <data name="Offline_SelectAccountHint" xml:space="preserve"><value>Offline access — piliin ang cashier account, tapos ilagay ang PIN.</value></data>
+  <data name="Offline_UnlockingAs" xml:space="preserve"><value>Nag-u-unlock bilang {0}</value></data>
+  <data name="Offline_ChangeAccount" xml:space="preserve"><value>Palitan ang account</value></data>
   <data name="Offline_DeviceMismatch" xml:space="preserve"><value>Ang offline grant na ito ay para sa ibang device.</value></data>
   <data name="Offline_PinSetupTitle" xml:space="preserve"><value>Offline PIN</value></data>
   <data name="Offline_PinSetupHint" xml:space="preserve"><value>Gumawa ng 6+ digit PIN para ma-unlock ang POS sa device na ito kapag may outage.</value></data>

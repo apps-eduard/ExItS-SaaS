@@ -642,7 +642,12 @@
   <data name="Offline_PinInvalidFormat" xml:space="preserve"><value>PIN must be at least 6 digits.</value></data>
   <data name="Offline_PinNotConfigured" xml:space="preserve"><value>Set an offline PIN while online before using offline unlock.</value></data>
   <data name="Offline_GrantMissing" xml:space="preserve"><value>No offline grant on this device. Reconnect online once.</value></data>
-  <data name="Offline_GrantExpired" xml:space="preserve"><value>Offline grant expired. Reconnect online to refresh access.</value></data>
+  <data name="Offline_GrantExpired" xml:space="preserve"><value>Online verification required. Reconnect and sign in to refresh offline access.</value></data>
+  <data name="Offline_SelectAccount" xml:space="preserve"><value>Select an account</value></data>
+  <data name="Offline_SelectAccountSubtitle" xml:space="preserve"><value>Choose an account previously verified on this device.</value></data>
+  <data name="Offline_SelectAccountHint" xml:space="preserve"><value>Offline access — pick your cashier account, then enter your PIN.</value></data>
+  <data name="Offline_UnlockingAs" xml:space="preserve"><value>Unlocking as {0}</value></data>
+  <data name="Offline_ChangeAccount" xml:space="preserve"><value>Change account</value></data>
   <data name="Offline_DeviceMismatch" xml:space="preserve"><value>This offline grant belongs to a different device.</value></data>
   <data name="Offline_PinSetupTitle" xml:space="preserve"><value>Offline PIN</value></data>
   <data name="Offline_PinSetupHint" xml:space="preserve"><value>Create a 6+ digit PIN so this device can unlock POS during outages.</value></data>
