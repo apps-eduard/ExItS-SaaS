@@ -9,7 +9,7 @@
 | Starting SHA | `92c8da6d9d5b1f478e56519d06aed8198a490b43` on `main` |
 | Implementation commit | `7a9a8301de1489c75ccc3a4a9890d0a7d3b54196` |
 | Docs commit | `cdd991b51e02fbb1de576c6337793e2b809503e8` |
-| Docs/hash-stamp commit | *(filled after stamp)* |
+| Docs/hash-stamp commit | `4b111e9feedc04a20997008e326e3bca402b86e7` |
 | Device Verified | **No** |
 | Production Ready | **No** |
 | Migration | **Yes** — `20260812152011_AddPersonalFeatureEntitlements` (Platform only) |
