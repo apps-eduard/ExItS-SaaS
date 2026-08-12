@@ -4,7 +4,7 @@
 
 | Field | Value |
 |---|---|
-| Status | **Open** — WP01–WP11 Complete · WP12+ not started |
+| Status | **Open** — WP01–WP12 Complete · WP13 next (roadmap extended through WP24) |
 | Branch / HEAD at open | `main` @ `2fdcc8ab86f8a1df516053930885b6df04b0e436` |
 | Device Verified | **No** |
 | Production Ready | **No** |
@@ -152,16 +152,25 @@ Personal must not modify financial ledger entries. A later WP may add “I don�
 | **WP09** | Ads abstraction + Ad-Free entitlement | **Complete** — [P24-WP09](../reports/P24-WP09-ads-abstraction-and-ad-free-entitlement.md) |
 | **WP10** | Entitlement-aware older/settled history | **Complete** — [P24-WP10](../reports/P24-WP10-entitlement-aware-older-settled-history.md) |
 | **WP11** | Admin configuration for Personal features | **Complete** — [P24-WP11](../reports/P24-WP11-admin-configuration-for-personal-features.md) |
-| **WP12** | Regression, security, and edge-case tests | Authz matrix, ledger arithmetic, privacy DTOs |
-| **WP13** | Dispute/request architecture (optional) | Skip implementation if it expands; document if deferred |
-| **WP14** | Documentation/closeout | No Device Verified claim from tests alone |
-| **WP15** | Physical Android validation prep only | Not run unless asked |
+| **WP12** | Regression, security, and edge-case tests | **Complete** — [P24-WP12](../reports/P24-WP12-regression-security-and-edge-case-tests.md) |
+| **WP13** | Dispute/request architecture (optional) | Architecture-first; defer implementation if it expands |
+| **WP14** | Documentation / backend closeout preparation | No Device Verified from tests alone; Phase 24 not closed (mobile follows) |
+| **WP15** | Physical Android validation preparation | Bridge into mobile stream; preparation ≠ Device Verified |
+| **WP16** | Personal mobile linked-customer statement experience | Linked merchants, outstanding, recent/open-debt activity; read projection only |
+| **WP17** | Mobile receipts and older-history entitlement UX | Lazy receipt detail; free-window / entitlement lock; 404 before 403 |
+| **WP18** | Mobile rewards and Personal feature redemption | Server-authoritative price/duration; no client debit/end-date |
+| **WP19** | Mobile ads/ad-free UX abstraction | Provider-ready; no fake playback; no timer rewards |
+| **WP20** | Android integration and end-to-end mobile flows | Real APIs; session/nav/localization/error mapping |
+| **WP21** | Physical Android device validation and fix pass | Device Verified only with real device evidence |
+| **WP22** | Mobile regression, privacy, security, and resilience hardening | Cross-user/privacy/ledger/entitlement/ad-free hardening |
+| **WP23** | Phase-24 implementation closeout preparation | Implementation Complete — Owner/User Validation Pending |
+| **WP24** | Owner/User Final Validation and Acceptance | Hard user gate — Cursor must not fabricate Complete |
 
 ## Migration strategy
 
 - Prefer additive columns/tables. No destructive reset.
 - POS: optional `PlatformBusinessCustomerId` on `pos.customers` (value, unique per org when set).
-- Platform: Personal entitlement/reward/ads foundation — WP06–WP11 landed; WP12 regression/security next.
+- Platform: Personal entitlement/reward/ads foundation — WP06–WP12 landed; WP13 dispute architecture next; WP16–WP24 mobile stream authorized.
 - No production auto-`Migrate()`.
 - Do not physically archive/delete financial records in this phase.
 

@@ -216,7 +216,7 @@ P19-WP08 ? End-to-End Validation and User Closeout Checklist (Retest � awaitin
 | 17 | POS MVP Operational Onboarding and First Sale | **Complete with documented residuals** | 8 | 8 | 100% | [Open](phases/phase-17-pos-mvp-operational-onboarding-and-first-sale.md) |
 | 18 | Mobile Personal, Organization, and POS Experience | **Complete (implementation/scope)** � partial phone validation; Not Device Verified | 8 | 8 | 100% | [Open](phases/phase-18-mobile-personal-organization-and-pos-experience.md) |
 | 19 | Mobile POS Operations and Cashier Experience Completion | **Open** (WP01�WP07 Code Complete; WP08 Retest) | 7 | 8 |  -  | [Open](phases/phase-19-mobile-pos-operations-and-cashier-experience.md) |
-| 24 | Linked Customer Statements and Personal Monetization | **Open** (WP01–WP11 Complete; WP12+ not started) | 11 | 15 |  -  | [Open](phases/phase-24-linked-customer-statements-and-personal-monetization.md) |
+| 24 | Linked Customer Statements and Personal Monetization | **Open** (WP01–WP12 Complete; WP13 next; roadmap through WP24) | 12 | 24 |  -  | [Open](phases/phase-24-linked-customer-statements-and-personal-monetization.md) |
 
 **MVP phases 0-9:** 52 / 52 = **100%** (with documented risks; not Production-ready).
 **Phase 10 Full POS:** 8 / 8 = **100%** (with documented risks; not Production-ready).
@@ -231,7 +231,7 @@ P19-WP08 ? End-to-End Validation and User Closeout Checklist (Retest � awaitin
 **Phase 19 Mobile POS Operations / Cashier Experience:** **Open** ([phase](phases/phase-19-mobile-pos-operations-and-cashier-experience.md); [P19-WP08](reports/P19-WP08-end-to-end-validation-and-closeout.md)) — WP01–WP07 Code Complete; WP08 Retest awaiting phone confirmation; offline operability foundation Code Complete with physical A–S incomplete ([report](reports/P19-offline-operability-foundation.md); commits `f476172`, `cc64ba3`, `10a1fc5`); Personal-scope offline sync hardening Code Complete ([report](reports/P19-personal-scope-offline-operability.md); tip `f3d87be`); Phase 14 unchanged; not Production-ready; **Not Device Verified**; **Not Complete**.
 **Phase 21 Privacy, Compliance, and Regulatory Readiness:** **Open** ([phase](phases/phase-21-privacy-compliance-and-regulatory-readiness.md); [foundation report](reports/P21-foundation-privacy-compliance-workspace.md)) — Platform-only readiness workspace foundation Code Complete; **not** legal/NPC certification; DPO/legal review required; Phase 14/19/20 unchanged.
 **Phase 23 Multi-Business Entitlements / Variable-Quantity Selling:** **Open** ([phase](phases/phase-23-multi-business-entitlements-and-variable-quantity-selling.md)) — WP01–WP11 done; WP12 in progress; WP13 closeout **not started**; **Not Device Verified**. Phase 24 does not close Phase 23.
-**Phase 24 Linked Customer Statements / Personal Monetization:** **Open** ([phase](phases/phase-24-linked-customer-statements-and-personal-monetization.md); [P24-WP01](reports/P24-WP01-current-state-and-architecture-contract.md); [P24-WP02](reports/P24-WP02-customer-link-and-pos-correlation.md); [P24-WP03](reports/P24-WP03-linked-customer-authorization-contract.md); [P24-WP04](reports/P24-WP04-lightweight-linked-business-utang-statement.md); [P24-WP05](reports/P24-WP05-receipt-summary-detail-and-lazy-loading.md); [P24-WP06](reports/P24-WP06-free-vs-paid-personal-history-entitlement.md); [P24-WP07](reports/P24-WP07-personal-reward-points-and-redemption.md); [P24-WP08](reports/P24-WP08-reward-ledger-foundation.md); [P24-WP09](reports/P24-WP09-ads-abstraction-and-ad-free-entitlement.md); [P24-WP10](reports/P24-WP10-entitlement-aware-older-settled-history.md); [P24-WP11](reports/P24-WP11-admin-configuration-for-personal-features.md); [ADR-021](decisions/ADR-021-linked-customer-statements-and-personal-monetization.md)) — WP01–WP11 Complete; WP12+ not started; **Not Device Verified**; **Not Production Ready**.
+**Phase 24 Linked Customer Statements / Personal Monetization:** **Open** ([phase](phases/phase-24-linked-customer-statements-and-personal-monetization.md); [P24-WP01](reports/P24-WP01-current-state-and-architecture-contract.md); [P24-WP02](reports/P24-WP02-customer-link-and-pos-correlation.md); [P24-WP03](reports/P24-WP03-linked-customer-authorization-contract.md); [P24-WP04](reports/P24-WP04-lightweight-linked-business-utang-statement.md); [P24-WP05](reports/P24-WP05-receipt-summary-detail-and-lazy-loading.md); [P24-WP06](reports/P24-WP06-free-vs-paid-personal-history-entitlement.md); [P24-WP07](reports/P24-WP07-personal-reward-points-and-redemption.md); [P24-WP08](reports/P24-WP08-reward-ledger-foundation.md); [P24-WP09](reports/P24-WP09-ads-abstraction-and-ad-free-entitlement.md); [P24-WP10](reports/P24-WP10-entitlement-aware-older-settled-history.md); [P24-WP11](reports/P24-WP11-admin-configuration-for-personal-features.md); [P24-WP12](reports/P24-WP12-regression-security-and-edge-case-tests.md); [ADR-021](decisions/ADR-021-linked-customer-statements-and-personal-monetization.md)) — WP01–WP12 Complete; roadmap through WP24; WP13 next; **Not Device Verified**; **Not Production Ready**.
 
 ## Phase 24 work packages
 
@@ -248,6 +248,19 @@ P19-WP08 ? End-to-End Validation and User Closeout Checklist (Retest � awaitin
 | P24-WP09 — Ads abstraction + Ad-Free entitlement | **Complete** | `ea9bac0db464f369238d40957789b6b3d4188a4f` (feat), `50a517b9591d77fc75fb8dc46044fb96010f496f` (docs) — [report](reports/P24-WP09-ads-abstraction-and-ad-free-entitlement.md) |
 | P24-WP10 — Entitlement-aware older/settled history | **Complete** | `40d6da229e2473c347664a79c91463770f1547ee` (feat), `59af882023428f4961c97297c4c80633c517f731` (docs) — [report](reports/P24-WP10-entitlement-aware-older-settled-history.md) |
 | P24-WP11 — Admin configuration for Personal features | **Complete** | `f9f479dbe784103d74803160132ae28c510eb69f` (feat), `fc046aa8f1278b4d902488adb75f55480bfef814` (docs) — [report](reports/P24-WP11-admin-configuration-for-personal-features.md) |
+| P24-WP12 — Regression, security, and edge-case tests | **Complete** | `5ccf12e2a1a420ae4ff9ef3cdbc586868f33126c` (test) — [report](reports/P24-WP12-regression-security-and-edge-case-tests.md) |
+| P24-WP13 — Dispute/request architecture (optional) | **Not started** | — |
+| P24-WP14 — Documentation / backend closeout preparation | **Not started** | — |
+| P24-WP15 — Physical Android validation preparation | **Not started** | — |
+| P24-WP16 — Personal mobile linked-customer statement experience | **Not started** | — |
+| P24-WP17 — Mobile receipts and older-history entitlement UX | **Not started** | — |
+| P24-WP18 — Mobile rewards and Personal feature redemption | **Not started** | — |
+| P24-WP19 — Mobile ads/ad-free UX abstraction | **Not started** | — |
+| P24-WP20 — Android integration and end-to-end mobile flows | **Not started** | — |
+| P24-WP21 — Physical Android device validation and fix pass | **Not started** | — |
+| P24-WP22 — Mobile regression, privacy, security, and resilience hardening | **Not started** | — |
+| P24-WP23 — Phase-24 implementation closeout preparation | **Not started** | — |
+| P24-WP24 — Owner/User Final Validation and Acceptance | **Not started** | Hard user gate |
 
 ## Phase 21 work packages
 
