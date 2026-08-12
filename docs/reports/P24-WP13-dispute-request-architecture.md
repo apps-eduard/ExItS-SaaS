@@ -8,8 +8,8 @@
 | Date | 2026-08-12 |
 | Starting SHA | `28203abc9938de8d5c1f87441d8d98a5928deadd` on `main` |
 | Implementation commit | **None** (architecture / deferral only) |
-| Docs commit | _(filled after push)_ |
-| Docs/hash-stamp commit | _(filled after stamp)_ |
+| Docs commit | `6a10dbf503c35e086e72c00f8c503bb005facfae` |
+| Docs/hash-stamp commit | _(pending stamp)_ |
 | Device Verified | **No** |
 | Production Ready | **No** |
 | Migration | **None** |
