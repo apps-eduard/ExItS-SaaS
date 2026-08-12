@@ -245,7 +245,7 @@ P19-WP08 ? End-to-End Validation and User Closeout Checklist (Retest � awaitin
 | P24-WP06 — Free vs Paid Personal history entitlement | **Complete** | `7a9a8301de1489c75ccc3a4a9890d0a7d3b54196` (feat), `cdd991b51e02fbb1de576c6337793e2b809503e8` (docs) — [report](reports/P24-WP06-free-vs-paid-personal-history-entitlement.md) |
 | P24-WP07 — Personal reward points ledger + feature redemption | **Complete** | `d41106acd32bd950bb6638bc769539ab22abd99a` (feat), `20a61d99afbfca3587b4d688fff5161b508a66ca` (docs) — [report](reports/P24-WP07-personal-reward-points-and-redemption.md) |
 | P24-WP08 — Reward ledger foundation | **Complete** | `f18a9ea76b34e4f265dcc29af7b0220cc3c8a625` (feat), `0d0d6595d1e57b756bf30599bd801cd19544419d` (docs) — [report](reports/P24-WP08-reward-ledger-foundation.md) |
-| P24-WP09 — Ads abstraction + Ad-Free entitlement | **Complete** | `ea9bac0db464f369238d40957789b6b3d4188a4f` (feat) — [report](reports/P24-WP09-ads-abstraction-and-ad-free-entitlement.md) |
+| P24-WP09 — Ads abstraction + Ad-Free entitlement | **Complete** | `ea9bac0db464f369238d40957789b6b3d4188a4f` (feat), `50a517b9591d77fc75fb8dc46044fb96010f496f` (docs) — [report](reports/P24-WP09-ads-abstraction-and-ad-free-entitlement.md) |
 
 ## Phase 21 work packages
 
