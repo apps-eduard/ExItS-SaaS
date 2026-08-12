@@ -3,8 +3,8 @@
 | Field | Value |
 |---|---|
 | Status | **Complete** |
-| Starting SHA | _(after WP18)_ |
-| Implementation commit | _(stamp)_ |
+| Starting SHA | `ab3dd06fdc604dc385450222d2c762927968aa3e` |
+| Implementation commit | `ab3dd06fdc604dc385450222d2c762927968aa3e` |
 | Migration | **None** |
 | Device Verified | **No** |
 | Production Ready | **No** |
