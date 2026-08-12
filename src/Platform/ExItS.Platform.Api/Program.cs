@@ -335,6 +335,7 @@ builder.Services.AddScoped<AwardPersonalRewardPoints>();
 builder.Services.AddScoped<GetPersonalRewardPointsBalance>();
 builder.Services.AddScoped<ListPersonalRewardPointsActivity>();
 builder.Services.AddScoped<RedeemPersonalFeatureWithRewardPoints>();
+builder.Services.AddScoped<ClaimPersonalAdReward>();
 builder.Services.AddScoped<StartBusinessForPersonalUser>();
 builder.Services.AddScoped<PreviewPersonalUtangMigration>();
 builder.Services.AddScoped<ExecutePersonalUtangMigration>();

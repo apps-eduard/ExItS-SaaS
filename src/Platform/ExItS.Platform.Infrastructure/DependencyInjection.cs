@@ -108,6 +108,10 @@ public static class DependencyInjection
         services.AddScoped<IPersonalFeatureEntitlementService, PersonalFeatureEntitlementService>();
         services.AddScoped<IPersonalRewardBalanceRepository, PersonalRewardBalanceRepository>();
         services.AddScoped<IPersonalRewardTransactionRepository, PersonalRewardTransactionRepository>();
+        services.AddScoped<IPersonalRewardClaimRepository, PersonalRewardClaimRepository>();
+        services.AddSingleton<IRewardedAdClaimVerifier, NullRewardedAdClaimVerifier>();
+        services.AddScoped<IPersonalAdEligibility, DefaultPersonalAdEligibility>();
+        services.Configure<PersonalRewardClaimOptions>(config.GetSection(PersonalRewardClaimOptions.SectionName));
         services.AddScoped<IBusinessCreditOpeningBalanceRepository, BusinessCreditOpeningBalanceRepository>();
         services.AddScoped<IProductLocalRoleGrantRepository, ProductLocalRoleGrantRepository>();
         services.AddSingleton<IPersonalPushNotificationSink, NullPersonalPushNotificationSink>();

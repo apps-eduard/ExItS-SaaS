@@ -125,7 +125,10 @@ public static class PersistenceExceptionMapper
 
         if (detail.Contains("personal_reward_balances", StringComparison.OrdinalIgnoreCase)
             || detail.Contains("ux_personal_reward_transactions_user_idempotency", StringComparison.OrdinalIgnoreCase)
-            || detail.Contains("personal_reward_transactions", StringComparison.OrdinalIgnoreCase))
+            || detail.Contains("personal_reward_transactions", StringComparison.OrdinalIgnoreCase)
+            || detail.Contains("ux_personal_reward_claims_user_type_key", StringComparison.OrdinalIgnoreCase)
+            || detail.Contains("ux_personal_reward_claims_transaction", StringComparison.OrdinalIgnoreCase)
+            || detail.Contains("personal_reward_claims", StringComparison.OrdinalIgnoreCase))
         {
             errorCode = ApplicationErrorCodes.PersonalRewardBalanceConflict;
             message = "Personal reward points ledger conflict. Retry the operation.";

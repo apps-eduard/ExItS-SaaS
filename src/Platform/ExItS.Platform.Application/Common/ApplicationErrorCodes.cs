@@ -215,4 +215,12 @@ public static class ApplicationErrorCodes
         "application.personal.reward_points.insufficient";
     public const string PersonalRewardBalanceConflict =
         "application.personal.reward_points.concurrency_conflict";
+    public const string OrganizationRewardRedemptionUnsupported =
+        "application.personal.reward_points.organization_redemption_unsupported";
+    public const string PersonalRewardClaimNotEligible =
+        "application.personal.reward_points.claim.not_eligible";
+    public const string PersonalRewardClaimInvalid =
+        "application.personal.reward_points.claim.invalid";
+    public const string PersonalRewardClaimProviderUnavailable =
+        "application.personal.reward_points.claim.provider_unavailable";
 }

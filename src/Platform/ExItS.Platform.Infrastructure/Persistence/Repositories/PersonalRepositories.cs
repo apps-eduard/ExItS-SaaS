@@ -1165,3 +1165,50 @@ internal sealed class PersonalRewardTransactionRepository(PlatformDbContext db) 
             CreatedAtUtc = transaction.CreatedAtUtc
         };
 }
+
+internal sealed class PersonalRewardClaimRepository(PlatformDbContext db) : IPersonalRewardClaimRepository
+{
+    public async Task<PersonalRewardClaim?> FindByUserTypeAndKeyAsync(
+        PlatformUserId personalUserId,
+        string claimType,
+        string claimKey,
+        CancellationToken cancellationToken = default)
+    {
+        var record = await db.PersonalRewardClaims.AsNoTracking()
+            .FirstOrDefaultAsync(
+                x => x.PersonalUserId == personalUserId.Value
+                    && x.ClaimType == claimType
+                    && x.ClaimKey == claimKey,
+                cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : ToDomain(record);
+    }
+
+    public Task AddAsync(PersonalRewardClaim claim, CancellationToken cancellationToken = default)
+    {
+        db.PersonalRewardClaims.Add(ToRecord(claim));
+        return Task.CompletedTask;
+    }
+
+    private static PersonalRewardClaim ToDomain(PersonalRewardClaimRecord record) =>
+        PersonalRewardClaim.Rehydrate(
+            record.Id,
+            PlatformUserId.From(record.PersonalUserId),
+            record.ClaimType,
+            record.ClaimKey,
+            record.PointsAwarded,
+            record.RewardTransactionId,
+            record.ClaimedAtUtc);
+
+    private static PersonalRewardClaimRecord ToRecord(PersonalRewardClaim claim) =>
+        new()
+        {
+            Id = claim.Id,
+            PersonalUserId = claim.PersonalUserId.Value,
+            ClaimType = claim.ClaimType,
+            ClaimKey = claim.ClaimKey,
+            PointsAwarded = claim.PointsAwarded,
+            RewardTransactionId = claim.RewardTransactionId,
+            ClaimedAtUtc = claim.ClaimedAtUtc
+        };
+}

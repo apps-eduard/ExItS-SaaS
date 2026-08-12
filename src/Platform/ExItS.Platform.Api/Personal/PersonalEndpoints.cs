@@ -141,7 +141,7 @@ internal static class PersonalEndpoints
             }
 
             var result = await redeem
-                .ExecuteAsync(PlatformUserId.From(userId), featureCode, ct)
+                .ExecuteAsync(PlatformUserId.From(userId), featureCode, organizationId: null, cancellationToken: ct)
                 .ConfigureAwait(false);
             return PlatformApiResults.FromResult(result, Results.Ok);
         });
@@ -176,6 +176,24 @@ internal static class PersonalEndpoints
 
             var result = await listActivity
                 .ExecuteAsync(PlatformUserId.From(userId), page, pageSize, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
+        // WP08: idempotent AdReward claim (server-side points; null provider until WP09).
+        personal.MapPost("/reward-points/ad-claims", async (
+            HttpContext http,
+            ClaimPersonalAdRewardRequest body,
+            ClaimPersonalAdReward claimAdReward,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await claimAdReward
+                .ExecuteAsync(PlatformUserId.From(userId), body.ClaimKey, organizationId: null, ct)
                 .ConfigureAwait(false);
             return PlatformApiResults.FromResult(result, Results.Ok);
         });
@@ -725,4 +743,6 @@ internal static class PersonalEndpoints
         var raw = http.User.FindFirstValue(ClaimTypes.NameIdentifier);
         return Guid.TryParse(raw, out userId) && userId != Guid.Empty;
     }
+
+    internal sealed record ClaimPersonalAdRewardRequest(string ClaimKey);
 }

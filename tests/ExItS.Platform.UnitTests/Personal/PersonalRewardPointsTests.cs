@@ -1,11 +1,14 @@
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Common;
+using ExItS.Platform.Application.Identity;
 using ExItS.Platform.Application.Personal;
 using ExItS.Platform.Domain.Abstractions;
 using ExItS.Platform.Domain.Catalog;
 using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Identity;
+using ExItS.Platform.Domain.Organizations;
 using ExItS.Platform.Domain.Personal;
+using ExItS.Platform.UnitTests.Support;
 
 namespace ExItS.Platform.UnitTests.Personal;
 
@@ -278,12 +281,62 @@ public sealed class PersonalRewardPointsTests
         Assert.DoesNotContain(userActivity.Value.Items, i => i.Points == 70);
     }
 
+    [Fact]
+    public async Task Organization_context_redemption_is_rejected_without_debit_or_entitlement()
+    {
+        var harness = new Harness();
+        await harness.Award.ExecuteAsync(User.Value, 150, PersonalRewardSources.AdminAward);
+        var orgId = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc");
+        var redeem = await harness.Redeem.ExecuteAsync(
+            User,
+            PersonalFeatureCodes.DigitalRecordsExtended,
+            organizationId: orgId);
+        Assert.False(redeem.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.OrganizationRewardRedemptionUnsupported, redeem.ErrorCode);
+        Assert.Equal(150, (await harness.GetBalance.ExecuteAsync(User)).Value!.AvailablePoints);
+        Assert.Empty(harness.Transactions.Committed.Where(t => t.TransactionType == PersonalRewardTransactionType.Debit));
+        Assert.False(await harness.EntitlementService.HasActiveEntitlementAsync(
+            User, PersonalFeatureCodes.DigitalRecordsExtended, T0));
+    }
+
+    [Fact]
+    public async Task Organization_staff_identity_cannot_redeem_personal_rewards()
+    {
+        var harness = new Harness();
+        var staff = PlatformUser.CreateOrganizationStaff(
+            "staff1",
+            "staff1@ORG000001",
+            "staff1@example.com",
+            PlatformOrganizationId.From(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd")),
+            "Staff One",
+            T0,
+            id: PlatformUserId.From(Guid.Parse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee")));
+        harness.Users.AddAsync(staff);
+        await harness.Award.ExecuteAsync(staff.Id.Value, 150, PersonalRewardSources.AdminAward);
+        var redeem = await harness.Redeem.ExecuteAsync(staff.Id, PersonalFeatureCodes.DigitalRecordsExtended);
+        Assert.False(redeem.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.OrganizationRewardRedemptionUnsupported, redeem.ErrorCode);
+        Assert.Equal(150, (await harness.GetBalance.ExecuteAsync(staff.Id)).Value!.AvailablePoints);
+        Assert.False(await harness.EntitlementService.HasActiveEntitlementAsync(
+            staff.Id, PersonalFeatureCodes.DigitalRecordsExtended, T0));
+    }
+
+    [Fact]
+    public void Organization_feature_unlock_rejects_reward_points_source()
+    {
+        var result = OrganizationRewardRedemptionGuard.RejectOrganizationFeatureRewardPoints("RewardPoints");
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.OrganizationRewardRedemptionUnsupported, result.ErrorCode);
+        Assert.True(OrganizationRewardRedemptionGuard.RejectOrganizationFeatureRewardPoints("Plan").IsSuccess);
+    }
+
     private sealed class Harness
     {
         public InMemoryDefinitions Definitions { get; } = new();
         public InMemoryEntitlements Entitlements { get; } = new();
         public InMemoryBalances Balances { get; } = new();
         public InMemoryTransactions Transactions { get; } = new();
+        public InMemoryPlatformUserRepository Users { get; } = new();
         public ControllableUnitOfWork UnitOfWork { get; }
         public PersonalFeatureEntitlementService EntitlementService { get; }
         public AwardPersonalRewardPoints Award { get; }
@@ -294,6 +347,8 @@ public sealed class PersonalRewardPointsTests
 
         public Harness()
         {
+            Users.AddAsync(PlatformUser.Create("personal1", "Personal One", "personal1@example.com", T0, id: User));
+            Users.AddAsync(PlatformUser.Create("personal2", "Personal Two", "personal2@example.com", T0, id: Other));
             var clock = new FixedClock(T0);
             UnitOfWork = new ControllableUnitOfWork(this);
             EntitlementService = new PersonalFeatureEntitlementService(Definitions, Entitlements);
@@ -301,7 +356,7 @@ public sealed class PersonalRewardPointsTests
             GetBalance = new GetPersonalRewardPointsBalance(Balances);
             ListActivity = new ListPersonalRewardPointsActivity(Transactions);
             Redeem = new RedeemPersonalFeatureWithRewardPoints(
-                Definitions, Entitlements, EntitlementService, Balances, Transactions, UnitOfWork, clock);
+                Definitions, Entitlements, EntitlementService, Balances, Transactions, Users, UnitOfWork, clock);
         }
     }
 

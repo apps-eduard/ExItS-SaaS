@@ -209,3 +209,14 @@ internal sealed class PersonalRewardTransactionRecord
     public string? IdempotencyKey { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; }
 }
+
+internal sealed class PersonalRewardClaimRecord
+{
+    public Guid Id { get; set; }
+    public Guid PersonalUserId { get; set; }
+    public string ClaimType { get; set; } = string.Empty;
+    public string ClaimKey { get; set; } = string.Empty;
+    public int PointsAwarded { get; set; }
+    public Guid RewardTransactionId { get; set; }
+    public DateTimeOffset ClaimedAtUtc { get; set; }
+}

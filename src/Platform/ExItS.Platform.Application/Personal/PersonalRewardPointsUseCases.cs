@@ -1,5 +1,6 @@
 using ExItS.Platform.Application.Catalog;
 using ExItS.Platform.Application.Common;
+using ExItS.Platform.Application.Identity;
 using ExItS.Platform.Domain.Abstractions;
 using ExItS.Platform.Domain.Catalog;
 using ExItS.Platform.Domain.Common;
@@ -216,6 +217,7 @@ public sealed class ListPersonalRewardPointsActivity
 /// <summary>
 /// Atomically debits reward points and grants PersonalFeatureEntitlement with GrantSource=RewardPoints.
 /// Idempotent when the feature is already active (no second debit).
+/// Organization context and organization-scoped identities are explicitly rejected (WP08).
 /// </summary>
 public sealed class RedeemPersonalFeatureWithRewardPoints
 {
@@ -224,6 +226,7 @@ public sealed class RedeemPersonalFeatureWithRewardPoints
     private readonly IPersonalFeatureEntitlementService _entitlementService;
     private readonly IPersonalRewardBalanceRepository _balances;
     private readonly IPersonalRewardTransactionRepository _transactions;
+    private readonly IPlatformUserRepository _users;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
@@ -233,6 +236,7 @@ public sealed class RedeemPersonalFeatureWithRewardPoints
         IPersonalFeatureEntitlementService entitlementService,
         IPersonalRewardBalanceRepository balances,
         IPersonalRewardTransactionRepository transactions,
+        IPlatformUserRepository users,
         IPlatformUnitOfWork unitOfWork,
         IClock clock)
     {
@@ -241,6 +245,7 @@ public sealed class RedeemPersonalFeatureWithRewardPoints
         _entitlementService = entitlementService;
         _balances = balances;
         _transactions = transactions;
+        _users = users;
         _unitOfWork = unitOfWork;
         _clock = clock;
     }
@@ -248,9 +253,34 @@ public sealed class RedeemPersonalFeatureWithRewardPoints
     public async Task<ApplicationResult<RedeemPersonalFeatureResultDto>> ExecuteAsync(
         PlatformUserId personalUserId,
         string featureCode,
+        Guid? organizationId = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(personalUserId);
+
+        var orgGuard = OrganizationRewardRedemptionGuard.EnsurePersonalOnly(organizationId);
+        if (!orgGuard.IsSuccess)
+        {
+            return ApplicationResult<RedeemPersonalFeatureResultDto>.Failure(
+                orgGuard.ErrorCode!,
+                orgGuard.ErrorMessage!);
+        }
+
+        var user = await _users.GetByIdAsync(personalUserId, cancellationToken).ConfigureAwait(false);
+        if (user is null || user.Status != AccountStatus.Active)
+        {
+            return ApplicationResult<RedeemPersonalFeatureResultDto>.Failure(
+                ApplicationErrorCodes.UserNotFound,
+                "Personal user was not found.");
+        }
+
+        var identityGuard = OrganizationRewardRedemptionGuard.EnsurePersonalIdentity(user);
+        if (!identityGuard.IsSuccess)
+        {
+            return ApplicationResult<RedeemPersonalFeatureResultDto>.Failure(
+                identityGuard.ErrorCode!,
+                identityGuard.ErrorMessage!);
+        }
 
         FeatureCode code;
         try

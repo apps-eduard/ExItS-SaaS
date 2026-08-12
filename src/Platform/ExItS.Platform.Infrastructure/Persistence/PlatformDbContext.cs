@@ -99,6 +99,7 @@ public sealed class PlatformDbContext : DbContext
     internal DbSet<PersonalFeatureEntitlementRecord> PersonalFeatureEntitlements => Set<PersonalFeatureEntitlementRecord>();
     internal DbSet<PersonalRewardBalanceRecord> PersonalRewardBalances => Set<PersonalRewardBalanceRecord>();
     internal DbSet<PersonalRewardTransactionRecord> PersonalRewardTransactions => Set<PersonalRewardTransactionRecord>();
+    internal DbSet<PersonalRewardClaimRecord> PersonalRewardClaims => Set<PersonalRewardClaimRecord>();
     internal DbSet<ComplianceRequirementRecord> ComplianceRequirements => Set<ComplianceRequirementRecord>();
     internal DbSet<ComplianceEvidenceRecord> ComplianceEvidence => Set<ComplianceEvidenceRecord>();
     internal DbSet<ProcessingSystemRecordEntity> ProcessingSystems => Set<ProcessingSystemRecordEntity>();
@@ -1808,6 +1809,31 @@ public sealed class PlatformDbContext : DbContext
                 .IsUnique()
                 .HasFilter("idempotency_key IS NOT NULL")
                 .HasDatabaseName("ux_personal_reward_transactions_user_idempotency");
+
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.PersonalUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<PersonalRewardClaimRecord>(entity =>
+        {
+            entity.ToTable("personal_reward_claims");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.PersonalUserId).HasColumnName("personal_user_id");
+            entity.Property(e => e.ClaimType).HasColumnName("claim_type").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.ClaimKey).HasColumnName("claim_key").HasMaxLength(128).IsRequired();
+            entity.Property(e => e.PointsAwarded).HasColumnName("points_awarded");
+            entity.Property(e => e.RewardTransactionId).HasColumnName("reward_transaction_id");
+            entity.Property(e => e.ClaimedAtUtc).HasColumnName("claimed_at_utc");
+
+            entity.HasIndex(e => new { e.PersonalUserId, e.ClaimType, e.ClaimKey })
+                .IsUnique()
+                .HasDatabaseName("ux_personal_reward_claims_user_type_key");
+            entity.HasIndex(e => e.RewardTransactionId)
+                .IsUnique()
+                .HasDatabaseName("ux_personal_reward_claims_transaction");
 
             entity.HasOne<PlatformUserRecord>()
                 .WithMany()

@@ -302,4 +302,8 @@ public static class DomainErrorCodes
         "platform.personal.reward_points.insufficient";
     public const string InvalidPersonalRewardSource =
         "platform.personal.reward_points.source.invalid";
+    public const string InvalidPersonalRewardClaim =
+        "platform.personal.reward_points.claim.invalid";
+    public const string OrganizationRewardRedemptionUnsupported =
+        "platform.personal.reward_points.organization_redemption_unsupported";
 }
