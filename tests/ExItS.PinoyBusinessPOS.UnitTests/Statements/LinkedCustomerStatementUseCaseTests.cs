@@ -426,6 +426,120 @@ public sealed class LinkedCustomerStatementUseCaseTests
             PersonalHistoryWindows.ComputeFreeWindowStart(asOf, 3));
     }
 
+    [Fact]
+    public async Task Activity_free_window_includes_current_and_two_prior_months_excludes_fourth()
+    {
+        var harness = await Harness.CreateAuthorizedAsync();
+        // Clock 2026-08-13 → free from 2026-06-01.
+        await harness.Credits.AddAsync(CreditEntry.Create(
+            PosOrganizationId.From(OrgA), harness.PosCustomer.Id, 10m, "Aug",
+            new DateTimeOffset(2026, 8, 5, 0, 0, 0, TimeSpan.Zero)));
+        await harness.Credits.AddAsync(CreditEntry.Create(
+            PosOrganizationId.From(OrgA), harness.PosCustomer.Id, 11m, "Jul",
+            new DateTimeOffset(2026, 7, 5, 0, 0, 0, TimeSpan.Zero)));
+        await harness.Credits.AddAsync(CreditEntry.Create(
+            PosOrganizationId.From(OrgA), harness.PosCustomer.Id, 12m, "Jun",
+            new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero)));
+        await harness.Credits.AddAsync(CreditEntry.Create(
+            PosOrganizationId.From(OrgA), harness.PosCustomer.Id, 13m, "May",
+            new DateTimeOffset(2026, 5, 31, 23, 0, 0, TimeSpan.Zero)));
+
+        var result = await harness.Activity.ExecuteAsync(OrgA, PlatformCustomer);
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.Equal(3, result.Value!.Items.Count);
+        Assert.DoesNotContain(result.Value.Items, i => i.ChargeAmount == 13m);
+    }
+
+    [Fact]
+    public async Task Older_activity_requires_extended_entitlement()
+    {
+        var harness = await Harness.CreateAuthorizedAsync();
+        await harness.Credits.AddAsync(CreditEntry.Create(
+            PosOrganizationId.From(OrgA), harness.PosCustomer.Id, 100m, "Old",
+            new DateTimeOffset(2026, 1, 15, 0, 0, 0, TimeSpan.Zero)));
+
+        var denied = await harness.Older.ExecuteAsync(OrgA, PlatformCustomer);
+        Assert.False(denied.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.ExtendedHistoryRequired, denied.ErrorCode);
+
+        harness.Entitlements.Active = true;
+        var allowed = await harness.Older.ExecuteAsync(OrgA, PlatformCustomer);
+        Assert.True(allowed.IsSuccess, allowed.ErrorMessage);
+        Assert.Single(allowed.Value!.Items);
+        Assert.True(allowed.Value.Items[0].OccurredAtUtc < allowed.Value.FreeHistoryStartsAtUtc);
+    }
+
+    [Fact]
+    public async Task Older_activity_excludes_free_window_rows_and_paginates()
+    {
+        var harness = await Harness.CreateAuthorizedAsync();
+        harness.Entitlements.Active = true;
+        await harness.Credits.AddAsync(CreditEntry.Create(
+            PosOrganizationId.From(OrgA), harness.PosCustomer.Id, 25m, "Recent",
+            new DateTimeOffset(2026, 7, 10, 0, 0, 0, TimeSpan.Zero)));
+        for (var i = 0; i < 22; i++)
+        {
+            await harness.Credits.AddAsync(CreditEntry.Create(
+                PosOrganizationId.From(OrgA),
+                harness.PosCustomer.Id,
+                1m + i,
+                $"Old-{i}",
+                new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero).AddDays(i)));
+        }
+
+        var page1 = await harness.Older.ExecuteAsync(OrgA, PlatformCustomer, page: 1, pageSize: 50);
+        Assert.True(page1.IsSuccess);
+        Assert.Equal(LinkedCustomerStatementLimits.MaxPageSize, page1.Value!.PageSize);
+        Assert.Equal(20, page1.Value.Items.Count);
+        Assert.True(page1.Value.HasMore);
+        Assert.DoesNotContain(page1.Value.Items, i => i.ChargeAmount == 25m);
+        Assert.All(page1.Value.Items, i => Assert.True(i.OccurredAtUtc < page1.Value.FreeHistoryStartsAtUtc));
+    }
+
+    [Fact]
+    public async Task Open_debt_does_not_unlock_unrelated_reversed_settled_history()
+    {
+        var harness = await Harness.CreateAuthorizedAsync();
+        var settled = CreditEntry.Create(
+            PosOrganizationId.From(OrgA), harness.PosCustomer.Id, 500m, "Settled old",
+            new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero));
+        settled.Reverse("closed", new DateTimeOffset(2024, 1, 2, 0, 0, 0, TimeSpan.Zero));
+        await harness.Credits.AddAsync(settled);
+        await harness.Credits.AddAsync(CreditEntry.Create(
+            PosOrganizationId.From(OrgA), harness.PosCustomer.Id, 80m, "Still open",
+            new DateTimeOffset(2025, 3, 1, 0, 0, 0, TimeSpan.Zero)));
+
+        var free = await harness.Activity.ExecuteAsync(OrgA, PlatformCustomer);
+        Assert.Empty(free.Value!.Items);
+
+        var openDebt = await harness.OpenDebt.ExecuteAsync(OrgA, PlatformCustomer);
+        Assert.True(openDebt.IsSuccess);
+        Assert.Equal(80m, openDebt.Value!.OutstandingBalance);
+        Assert.Single(openDebt.Value.Items);
+        Assert.Equal(80m, openDebt.Value.Items[0].ChargeAmount);
+
+        Assert.Equal(
+            ApplicationErrorCodes.ExtendedHistoryRequired,
+            (await harness.Older.ExecuteAsync(OrgA, PlatformCustomer)).ErrorCode);
+    }
+
+    [Fact]
+    public async Task Open_debt_and_free_activity_overlap_without_duplicate_within_each_list()
+    {
+        var harness = await Harness.CreateAuthorizedAsync();
+        await harness.Credits.AddAsync(CreditEntry.Create(
+            PosOrganizationId.From(OrgA), harness.PosCustomer.Id, 40m, "Recent open",
+            new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero)));
+
+        var free = await harness.Activity.ExecuteAsync(OrgA, PlatformCustomer);
+        Assert.Single(free.Value!.Items);
+        Assert.Equal(1, free.Value.Items.Select(i => i.ActivityId).Distinct().Count());
+
+        var openDebt = await harness.OpenDebt.ExecuteAsync(OrgA, PlatformCustomer);
+        Assert.Single(openDebt.Value!.Items);
+        Assert.Equal(free.Value.Items[0].ActivityId, openDebt.Value.Items[0].ActivityId);
+    }
+
     private sealed class Harness
     {
         public required POSCustomer PosCustomer { get; init; }
@@ -435,6 +549,7 @@ public sealed class LinkedCustomerStatementUseCaseTests
         public required GetLinkedCustomerStatementSummary Summary { get; init; }
         public required ListLinkedCustomerRecentActivity Activity { get; init; }
         public required ListLinkedCustomerOpenDebtActivity OpenDebt { get; init; }
+        public required ListLinkedCustomerOlderSettledActivity Older { get; init; }
         public required FakeEntitlements Entitlements { get; init; }
         public required Microsoft.Extensions.Options.IOptions<PersonalStatementsOptions> Options { get; init; }
         public required FixedClock Clock { get; init; }
@@ -470,6 +585,8 @@ public sealed class LinkedCustomerStatementUseCaseTests
                 Activity = new ListLinkedCustomerRecentActivity(
                     authorize, activityQuery, outstanding, entitlements, options, clock),
                 OpenDebt = new ListLinkedCustomerOpenDebtActivity(authorize, activityQuery, outstanding),
+                Older = new ListLinkedCustomerOlderSettledActivity(
+                    authorize, activityQuery, entitlements, options, clock),
                 Entitlements = entitlements,
                 Options = options,
                 Clock = clock
@@ -537,12 +654,14 @@ public sealed class LinkedCustomerStatementUseCaseTests
             int skip,
             int take,
             DateTimeOffset? notBeforeUtc = null,
+            DateTimeOffset? beforeUtc = null,
             CancellationToken cancellationToken = default)
         {
             take = Math.Min(take, LinkedCustomerStatementLimits.MaxPageSize + 1);
             var rows = credits.All
                 .Where(c => c.OrganizationId == organizationId && c.CustomerId == customerId)
                 .Where(c => notBeforeUtc is null || c.CreatedAtUtc >= notBeforeUtc)
+                .Where(c => beforeUtc is null || c.CreatedAtUtc < beforeUtc)
                 .Select(c => new LinkedCustomerActivityRawRow(
                     c.Id.Value,
                     "Credit",
@@ -554,6 +673,7 @@ public sealed class LinkedCustomerStatementUseCaseTests
                 .Concat(repayments.All
                     .Where(r => r.OrganizationId == organizationId && r.CustomerId == customerId)
                     .Where(r => notBeforeUtc is null || r.RecordedAtUtc >= notBeforeUtc)
+                    .Where(r => beforeUtc is null || r.RecordedAtUtc < beforeUtc)
                     .Select(r => new LinkedCustomerActivityRawRow(
                         r.Id.Value,
                         "Repayment",

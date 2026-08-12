@@ -120,23 +120,31 @@ public sealed class GetLinkedCustomerSaleReceipt
             asOfUtc,
             _options.Value.FreeRecentMonths);
 
-        var inFreeWindow = sale.RecordedAtUtc >= freeStart;
-        if (!inFreeWindow)
+        var openDebtAllows = false;
+        if (sale.RecordedAtUtc < freeStart)
         {
-            var openDebtAllows = await IsOpenDebtEvidenceAsync(orgId, sale, cancellationToken)
+            openDebtAllows = await IsOpenDebtEvidenceAsync(orgId, sale, cancellationToken)
                 .ConfigureAwait(false);
-            if (!openDebtAllows)
-            {
-                var entitled = await _entitlements
-                    .HasActiveEntitlementAsync(PersonalDigitalRecordsFeatureCodes.Extended, cancellationToken)
-                    .ConfigureAwait(false);
-                if (!entitled)
-                {
-                    return ApplicationResult<LinkedCustomerSaleReceiptDto>.Failure(
-                        ApplicationErrorCodes.ExtendedHistoryRequired,
-                        ExtendedRequiredMessage);
-                }
-            }
+        }
+
+        var entitled = false;
+        if (sale.RecordedAtUtc < freeStart && !openDebtAllows)
+        {
+            entitled = await _entitlements
+                .HasActiveEntitlementAsync(PersonalSettledHistoryPolicy.ExtendedFeatureCode, cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        var decision = PersonalSettledHistoryPolicy.EvaluateDetailAccess(
+            sale.RecordedAtUtc,
+            freeStart,
+            openDebtAllows,
+            entitled);
+        if (decision == PersonalHistoryDetailAccessDecision.ExtendedHistoryRequired)
+        {
+            return ApplicationResult<LinkedCustomerSaleReceiptDto>.Failure(
+                ApplicationErrorCodes.ExtendedHistoryRequired,
+                ExtendedRequiredMessage);
         }
 
         return ApplicationResult<LinkedCustomerSaleReceiptDto>.Success(Map(ctx, sale, currencyCode));
@@ -150,22 +158,25 @@ public sealed class GetLinkedCustomerSaleReceipt
         var outstanding = await _outstanding
             .GetOutstandingAsync(orgId, sale.CustomerId!, cancellationToken)
             .ConfigureAwait(false);
-        if (outstanding <= 0m)
-        {
-            return false;
-        }
 
-        // Utang sale with an Active linked credit still contributes to open outstanding.
         if (sale.PaymentMethod != SalePaymentMethod.Utang || sale.LinkedCreditEntryId is null)
         {
-            return false;
+            return PersonalSettledHistoryPolicy.OpenDebtReceiptExceptionApplies(
+                outstanding,
+                isUtangSale: false,
+                hasLinkedCredit: false,
+                linkedCreditIsActive: false);
         }
 
         var credit = await _credits
             .GetByIdAsync(orgId, sale.CustomerId!, sale.LinkedCreditEntryId, cancellationToken)
             .ConfigureAwait(false);
 
-        return credit is not null && credit.Status == CreditEntryStatus.Active;
+        return PersonalSettledHistoryPolicy.OpenDebtReceiptExceptionApplies(
+            outstanding,
+            isUtangSale: true,
+            hasLinkedCredit: true,
+            linkedCreditIsActive: credit is not null && credit.Status == CreditEntryStatus.Active);
     }
 
     private static LinkedCustomerSaleReceiptDto Map(

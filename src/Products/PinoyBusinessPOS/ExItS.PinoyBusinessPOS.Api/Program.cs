@@ -157,6 +157,7 @@ builder.Services.AddScoped<AuthorizeLinkedCustomerStatementAccess>();
 builder.Services.AddScoped<GetLinkedCustomerStatementSummary>();
 builder.Services.AddScoped<ListLinkedCustomerRecentActivity>();
 builder.Services.AddScoped<ListLinkedCustomerOpenDebtActivity>();
+builder.Services.AddScoped<ListLinkedCustomerOlderSettledActivity>();
 builder.Services.AddScoped<GetLinkedCustomerSaleReceipt>();
 builder.Services.AddHostedService<ExItS.PinoyBusinessPOS.Infrastructure.Catalog.PosCatalogImportBackgroundService>();
 builder.Services.AddScoped<SaleQueryService>();

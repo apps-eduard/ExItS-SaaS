@@ -80,15 +80,21 @@ public sealed record LinkedCustomerOpenDebtActivityPageDto(
 /// </summary>
 public interface ILinkedCustomerRecentActivityQuery
 {
+    /// <param name="notBeforeUtc">Inclusive lower bound (free-window floor).</param>
+    /// <param name="beforeUtc">Exclusive upper bound (older-than-free-window settled history).</param>
     Task<IReadOnlyList<LinkedCustomerActivityRawRow>> ListRecentDescendingAsync(
         PosOrganizationId organizationId,
         POSCustomerId customerId,
         int skip,
         int take,
         DateTimeOffset? notBeforeUtc = null,
+        DateTimeOffset? beforeUtc = null,
         CancellationToken cancellationToken = default);
 
-    /// <summary>Active ledger rows only (Status = Active), newest first — open-debt explanation.</summary>
+    /// <summary>
+    /// Active ledger rows only (Status = Active), newest first — open-debt explanation.
+    /// Callers must gate on outstanding &gt; 0; never use this to unlock settled-old history.
+    /// </summary>
     Task<IReadOnlyList<LinkedCustomerActivityRawRow>> ListActiveDescendingAsync(
         PosOrganizationId organizationId,
         POSCustomerId customerId,
@@ -224,14 +230,22 @@ public sealed class ListLinkedCustomerRecentActivity
             asOfUtc,
             _options.Value.FreeRecentMonths);
         var canAccessExtended = await _entitlements
-            .HasActiveEntitlementAsync(PersonalDigitalRecordsFeatureCodes.Extended, cancellationToken)
+            .HasActiveEntitlementAsync(PersonalSettledHistoryPolicy.ExtendedFeatureCode, cancellationToken)
             .ConfigureAwait(false);
 
         // Free users: server-side date filter. Entitled users: no notBefore (still page-sized).
+        // Older-than-window settled history for entitled clients also has an explicit /older-activity route (WP10).
         DateTimeOffset? notBefore = canAccessExtended ? null : freeStart;
 
         var rows = await _activity
-            .ListRecentDescendingAsync(orgId, posCustomerId, skip, normalizedPageSize + 1, notBefore, cancellationToken)
+            .ListRecentDescendingAsync(
+                orgId,
+                posCustomerId,
+                skip,
+                normalizedPageSize + 1,
+                notBefore,
+                beforeUtc: null,
+                cancellationToken)
             .ConfigureAwait(false);
         var hasMore = rows.Count > normalizedPageSize;
         var pageRows = hasMore ? rows.Take(normalizedPageSize).ToList() : rows.ToList();
@@ -272,8 +286,108 @@ public sealed class ListLinkedCustomerRecentActivity
 }
 
 /// <summary>
-/// Open-debt explanation: Active credits + Active repayments only.
-/// Always available after WP03 when outstanding &gt; 0; never unlocks settled-old history when balance is zero.
+/// Explicit older/settled history (WP10): rows strictly before the free-history window.
+/// Requires active <c>personal-digital-records-extended</c>; does not replace open-debt.
+/// </summary>
+public sealed class ListLinkedCustomerOlderSettledActivity
+{
+    private const string ExtendedRequiredMessage =
+        "Extended digital records entitlement is required to view older settled history.";
+
+    private readonly AuthorizeLinkedCustomerStatementAccess _authorize;
+    private readonly ILinkedCustomerRecentActivityQuery _activity;
+    private readonly IPersonalFeatureEntitlementClient _entitlements;
+    private readonly IOptions<PersonalStatementsOptions> _options;
+    private readonly IClock _clock;
+
+    public ListLinkedCustomerOlderSettledActivity(
+        AuthorizeLinkedCustomerStatementAccess authorize,
+        ILinkedCustomerRecentActivityQuery activity,
+        IPersonalFeatureEntitlementClient entitlements,
+        IOptions<PersonalStatementsOptions> options,
+        IClock clock)
+    {
+        _authorize = authorize;
+        _activity = activity;
+        _entitlements = entitlements;
+        _options = options;
+        _clock = clock;
+    }
+
+    public async Task<ApplicationResult<LinkedCustomerRecentActivityPageDto>> ExecuteAsync(
+        Guid organizationId,
+        Guid platformBusinessCustomerId,
+        int? page = null,
+        int? pageSize = null,
+        CancellationToken cancellationToken = default)
+    {
+        var authz = await _authorize
+            .ExecuteAsync(organizationId, platformBusinessCustomerId, posCustomerId: null, cancellationToken)
+            .ConfigureAwait(false);
+        if (!authz.IsSuccess)
+        {
+            return ApplicationResult<LinkedCustomerRecentActivityPageDto>.Failure(
+                authz.ErrorCode!,
+                authz.ErrorMessage!);
+        }
+
+        var canAccessExtended = await _entitlements
+            .HasActiveEntitlementAsync(PersonalSettledHistoryPolicy.ExtendedFeatureCode, cancellationToken)
+            .ConfigureAwait(false);
+        if (!canAccessExtended)
+        {
+            return ApplicationResult<LinkedCustomerRecentActivityPageDto>.Failure(
+                ApplicationErrorCodes.ExtendedHistoryRequired,
+                ExtendedRequiredMessage);
+        }
+
+        var ctx = authz.Value!;
+        var orgId = PosOrganizationId.From(ctx.OrganizationId);
+        var posCustomerId = POSCustomerId.From(ctx.PosCustomerId);
+        var normalizedPage = LinkedCustomerStatementLimits.NormalizePage(page);
+        var normalizedPageSize = LinkedCustomerStatementLimits.NormalizePageSize(pageSize);
+        var skip = (normalizedPage - 1) * normalizedPageSize;
+
+        var asOfUtc = _clock.UtcNow;
+        var freeStart = PersonalHistoryWindows.ComputeFreeWindowStart(
+            asOfUtc,
+            _options.Value.FreeRecentMonths);
+
+        // Exclusive upper bound = free window start → older settled only; SQL OFFSET/LIMIT.
+        var rows = await _activity
+            .ListRecentDescendingAsync(
+                orgId,
+                posCustomerId,
+                skip,
+                normalizedPageSize + 1,
+                notBeforeUtc: null,
+                beforeUtc: freeStart,
+                cancellationToken)
+            .ConfigureAwait(false);
+        var hasMore = rows.Count > normalizedPageSize;
+        var pageRows = hasMore ? rows.Take(normalizedPageSize).ToList() : rows.ToList();
+
+        var items = pageRows
+            .Select(row => LinkedCustomerActivityMapper.Map(row, balanceAfter: null))
+            .ToList();
+
+        return ApplicationResult<LinkedCustomerRecentActivityPageDto>.Success(
+            new LinkedCustomerRecentActivityPageDto(
+                ctx.OrganizationId,
+                ctx.PlatformBusinessCustomerId,
+                ctx.PosCustomerId,
+                items,
+                normalizedPage,
+                normalizedPageSize,
+                hasMore,
+                CanAccessExtendedHistory: true,
+                freeStart));
+    }
+}
+
+/// <summary>
+/// Open-debt explanation: Active credits + Active repayments only while outstanding &gt; 0.
+/// Never unlocks settled-old history when balance is zero; does not unlock unrelated reversed rows.
 /// </summary>
 public sealed class ListLinkedCustomerOpenDebtActivity
 {

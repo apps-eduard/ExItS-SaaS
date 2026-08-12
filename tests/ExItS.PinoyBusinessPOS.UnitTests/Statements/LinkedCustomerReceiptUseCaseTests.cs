@@ -336,6 +336,61 @@ public sealed class LinkedCustomerReceiptUseCaseTests
         Assert.Equal("Still owed", Assert.Single(result.Value!.Lines).ProductNameSnapshot);
     }
 
+    [Fact]
+    public async Task Receipt_settling_open_debt_removes_exception_then_entitlement_unlocks()
+    {
+        var harness = await Harness.CreateAuthorizedAsync();
+        var creditId = CreditEntryId.New();
+        var sale = UtangSale(
+            harness.PosCustomer.Id,
+            new SaleLineDraft(
+                CatalogProductId.New(),
+                "Settled later",
+                null,
+                null,
+                UnitOfMeasure.Piece,
+                90m,
+                1m),
+            recordedAt: new DateTimeOffset(2025, 1, 10, 0, 0, 0, TimeSpan.Zero),
+            creditId: creditId);
+        await harness.Sales.AddAsync(sale);
+        await harness.Credits.AddAsync(CreditEntry.Create(
+            PosOrganizationId.From(OrgA),
+            harness.PosCustomer.Id,
+            90m,
+            "Goods",
+            sale.RecordedAtUtc,
+            id: creditId,
+            sourceSaleId: sale.Id));
+
+        Assert.True((await harness.Receipt.ExecuteAsync(OrgA, PlatformCustomer, sale.Id.Value)).IsSuccess);
+
+        await harness.Repayments.AddAsync(Repayment.Create(
+            PosOrganizationId.From(OrgA),
+            harness.PosCustomer.Id,
+            90m,
+            "Paid off",
+            Actor,
+            new DateTimeOffset(2025, 2, 1, 0, 0, 0, TimeSpan.Zero)));
+
+        var afterSettle = await harness.Receipt.ExecuteAsync(OrgA, PlatformCustomer, sale.Id.Value);
+        Assert.False(afterSettle.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.ExtendedHistoryRequired, afterSettle.ErrorCode);
+
+        harness.Entitlements.Active = true;
+        Assert.True((await harness.Receipt.ExecuteAsync(OrgA, PlatformCustomer, sale.Id.Value)).IsSuccess);
+    }
+
+    [Fact]
+    public async Task Receipt_guessed_id_stays_not_found_even_when_entitled()
+    {
+        var harness = await Harness.CreateAuthorizedAsync();
+        harness.Entitlements.Active = true;
+        var result = await harness.Receipt.ExecuteAsync(OrgA, PlatformCustomer, Guid.NewGuid());
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.ReceiptNotFound, result.ErrorCode);
+    }
+
     private static Sale UtangSale(
         POSCustomerId customerId,
         SaleLineDraft line,
@@ -361,6 +416,7 @@ public sealed class LinkedCustomerReceiptUseCaseTests
         public required InMemoryCustomers Customers { get; init; }
         public required InMemorySales Sales { get; init; }
         public required InMemoryCredits Credits { get; init; }
+        public required InMemoryRepayments Repayments { get; init; }
         public required FakeEntitlements Entitlements { get; init; }
         public required GetLinkedCustomerSaleReceipt Receipt { get; init; }
 
@@ -391,6 +447,7 @@ public sealed class LinkedCustomerReceiptUseCaseTests
                 Customers = customers,
                 Sales = sales,
                 Credits = credits,
+                Repayments = repayments,
                 Entitlements = entitlements,
                 Receipt = new GetLinkedCustomerSaleReceipt(
                     authorize,

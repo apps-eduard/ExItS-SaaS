@@ -5,8 +5,8 @@ using ExItS.PinoyBusinessPOS.Application.Statements;
 namespace ExItS.PinoyBusinessPOS.Api.Statements;
 
 /// <summary>
-/// Personal linked-customer Business Utang projection (WP04–WP06):
-/// statement, free/entitled activity, open-debt explanation, lazy receipt detail.
+/// Personal linked-customer Business Utang projection (WP04–WP10):
+/// statement, free/entitled activity, open-debt explanation, older settled history, lazy receipt detail.
 /// Authorization is WP03 only — not staff UtangCapability / org-header alone.
 /// </summary>
 internal static class LinkedCustomerStatementEndpoints
@@ -65,6 +65,26 @@ internal static class LinkedCustomerStatementEndpoints
             }
 
             var result = await openDebt
+                .ExecuteAsync(orgId, platformBusinessCustomerId, page, pageSize, ct)
+                .ConfigureAwait(false);
+            return PosApiResults.FromResult(result, Results.Ok);
+        });
+
+        // WP10: older/settled history — explicit request; requires personal-digital-records-extended.
+        app.MapGet("/api/v1/pos/personal/linked-customers/{platformBusinessCustomerId:guid}/older-activity", async (
+            Guid platformBusinessCustomerId,
+            Guid? organizationId,
+            int? page,
+            int? pageSize,
+            ListLinkedCustomerOlderSettledActivity older,
+            CancellationToken ct) =>
+        {
+            if (!TryGetOrganizationId(organizationId, out var orgId, out var problem))
+            {
+                return problem!;
+            }
+
+            var result = await older
                 .ExecuteAsync(orgId, platformBusinessCustomerId, page, pageSize, ct)
                 .ConfigureAwait(false);
             return PosApiResults.FromResult(result, Results.Ok);
