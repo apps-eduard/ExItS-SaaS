@@ -243,7 +243,7 @@ P19-WP08 ? End-to-End Validation and User Closeout Checklist (Retest � awaitin
 | P24-WP04 — Lightweight linked Business Utang statement projection | **Complete** | `cd24b28ad29a5a4ddc3af9e49021884d7640a520` (feat), `b8cf30964fec6270f5fefd8435488bdf806ca4d1` (docs) — [report](reports/P24-WP04-lightweight-linked-business-utang-statement.md) |
 | P24-WP05 — Receipt summary/detail and lazy loading | **Complete** | `b819914aa8403af02db3015a3eb47f681e25ec01` (feat), `d0e9254ff042125932a351eebb3fe85c761e6e0f` (docs) — [report](reports/P24-WP05-receipt-summary-detail-and-lazy-loading.md) |
 | P24-WP06 — Free vs Paid Personal history entitlement | **Complete** | `7a9a8301de1489c75ccc3a4a9890d0a7d3b54196` (feat), `cdd991b51e02fbb1de576c6337793e2b809503e8` (docs) — [report](reports/P24-WP06-free-vs-paid-personal-history-entitlement.md) |
-| P24-WP07 — Personal reward points ledger + feature redemption | **Complete** | `d41106acd32bd950bb6638bc769539ab22abd99a` (feat) — [report](reports/P24-WP07-personal-reward-points-and-redemption.md) |
+| P24-WP07 — Personal reward points ledger + feature redemption | **Complete** | `d41106acd32bd950bb6638bc769539ab22abd99a` (feat), `20a61d99afbfca3587b4d688fff5161b508a66ca` (docs) — [report](reports/P24-WP07-personal-reward-points-and-redemption.md) |
 
 ## Phase 21 work packages
 
