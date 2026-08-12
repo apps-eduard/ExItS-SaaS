@@ -26,6 +26,10 @@ public interface IPosCatalogImportClient
         Guid templateId,
         CancellationToken ct = default);
 
+    Task<ApiResult<ImportedGlobalProductsDto>> ListImportedGlobalProductsAsync(
+        IReadOnlyList<Guid> platformGlobalProductIds,
+        CancellationToken ct = default);
+
     Task<ApiResult<PosCatalogImportJobDto>> GetJobAsync(
         Guid jobId,
         CancellationToken ct = default);

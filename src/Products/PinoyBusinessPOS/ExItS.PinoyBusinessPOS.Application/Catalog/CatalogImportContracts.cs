@@ -186,6 +186,12 @@ public sealed record ImportSelectedProductsRequest(
     IReadOnlyList<Guid> PlatformGlobalProductIds,
     string? IdempotencyKey = null);
 
+/// <summary>
+/// Org-scoped lookup of which Platform global product ids already have a local catalog product
+/// (<c>PlatformGlobalProductId</c> correlation). Requested ids not present are omitted.
+/// </summary>
+public sealed record ImportedGlobalProductsDto(IReadOnlyList<Guid> ImportedIds);
+
 public sealed record PosCatalogImportJobDto(
     Guid JobId,
     Guid OrganizationId,

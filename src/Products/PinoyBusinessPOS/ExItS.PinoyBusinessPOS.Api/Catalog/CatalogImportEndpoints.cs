@@ -12,6 +12,24 @@ internal static class CatalogImportEndpoints
     {
         var group = app.MapGroup("/api/v1/pos/catalog-imports");
 
+        group.MapGet("/imported-global-products", async (
+            HttpRequest request,
+            [AsParameters] ImportedGlobalProductsQuery query,
+            ListImportedGlobalProducts useCase,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!TryAuthorize(request, access, UtangCapability.ViewCatalog, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            var result = await useCase
+                .ExecuteAsync(organizationId, query.Ids, ct)
+                .ConfigureAwait(false);
+            return PosApiResults.FromResult(result, Results.Ok);
+        });
+
         group.MapGet("/templates/{templateId:guid}/status", async (
             HttpRequest request,
             Guid templateId,
@@ -270,4 +288,9 @@ internal static class CatalogImportEndpoints
         var token = header["PlatformSession ".Length..].Trim();
         return string.IsNullOrWhiteSpace(token) ? null : token;
     }
+}
+
+internal sealed class ImportedGlobalProductsQuery
+{
+    public Guid[]? Ids { get; init; }
 }

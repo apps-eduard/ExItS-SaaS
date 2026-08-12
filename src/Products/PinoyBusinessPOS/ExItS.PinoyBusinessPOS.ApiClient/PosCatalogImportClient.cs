@@ -52,6 +52,27 @@ public sealed class PosCatalogImportClient(HttpClient httpClient, IConnectivityS
             null,
             ct);
 
+    public Task<ApiResult<ImportedGlobalProductsDto>> ListImportedGlobalProductsAsync(
+        IReadOnlyList<Guid> platformGlobalProductIds,
+        CancellationToken ct = default)
+    {
+        var ids = platformGlobalProductIds
+            .Where(id => id != Guid.Empty)
+            .Distinct()
+            .ToList();
+        if (ids.Count == 0)
+        {
+            return Task.FromResult(ApiResult<ImportedGlobalProductsDto>.Success(new ImportedGlobalProductsDto([])));
+        }
+
+        var query = string.Join("&", ids.Select(id => $"ids={id:D}"));
+        return SendAsync<ImportedGlobalProductsDto>(
+            HttpMethod.Get,
+            $"{ImportsPath}/imported-global-products?{query}",
+            null,
+            ct);
+    }
+
     public Task<ApiResult<PosCatalogImportJobDto>> GetJobAsync(Guid jobId, CancellationToken ct = default) =>
         SendAsync<PosCatalogImportJobDto>(HttpMethod.Get, $"{ImportsPath}/{jobId:D}", null, ct);
 

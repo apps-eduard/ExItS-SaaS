@@ -4661,6 +4661,21 @@ html.pos-keyboard-open .pos-content {
     border-radius: var(--exits-radius-sm, 0.35rem);
 }
 
+.pos-global__row--already {
+    cursor: default;
+}
+
+.pos-global__check--already {
+    border-color: var(--exits-success, #1f7a4c);
+    background: var(--exits-success, #1f7a4c);
+    color: #fff;
+}
+
+.pos-global__row-action--already {
+    color: var(--exits-success, #1f7a4c);
+    font-weight: 600;
+}
+
 .pos-global__check {
     display: inline-flex;
     align-items: center;

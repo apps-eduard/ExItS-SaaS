@@ -1007,6 +1007,7 @@
   <data name="Catalog_Global_ClearFilters" xml:space="preserve"><value>Burahin ang mga filter</value></data>
   <data name="Catalog_Global_FiltersCount" xml:space="preserve"><value>Mga filter ({0})</value></data>
   <data name="Catalog_Global_Select" xml:space="preserve"><value>Piliin</value></data>
+  <data name="Catalog_Global_AlreadyAdded" xml:space="preserve"><value>Nasa produkto mo na</value></data>
   <data name="Catalog_Global_Selected" xml:space="preserve"><value>Napili</value></data>
   <data name="Sales_Title" xml:space="preserve"><value>Benta</value></data>
   <data name="Sales_Subtitle" xml:space="preserve"><value>Mga naitalang benta ng tindahan.</value></data>

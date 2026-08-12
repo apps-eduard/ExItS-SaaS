@@ -168,45 +168,81 @@ else
                     <div class="pos-global__list" role="list" aria-label="@L["Catalog_Global_Title"]">
                         @foreach (var product in _items)
                         {
-                            var selected = _selectedIds.Contains(product.Id);
+                            var alreadyAdded = _importedIds.Contains(product.Id);
+                            var selected = !alreadyAdded && _selectedIds.Contains(product.Id);
                             var meta = BuildMeta(product);
                             var identity = BuildIdentity(product);
-                            <button type="button"
-                                    class="pos-global__row @(selected ? "pos-global__row--selected" : null)"
-                                    role="listitem"
-                                    aria-pressed="@selected"
-                                    aria-label="@RowAria(product, selected)"
-                                    disabled="@_busy"
-                                    @onclick="() => ToggleSelect(product.Id)">
-                                <span class="pos-global__check" aria-hidden="true">
-                                    @if (selected)
-                                    {
+                            if (alreadyAdded)
+                            {
+                                <div class="pos-global__row pos-global__row--already"
+                                     role="listitem"
+                                     aria-label="@RowAriaAlready(product)">
+                                    <span class="pos-global__check pos-global__check--already" aria-hidden="true">
                                         @IconGlyphs.Get("check")
-                                    }
-                                </span>
-                                <span class="pos-global__row-main">
-                                    <span class="pos-global__row-name">@product.Name</span>
-                                    @if (!string.IsNullOrEmpty(meta))
-                                    {
-                                        <span class="pos-global__row-meta">@meta</span>
-                                    }
-                                    @if (!string.IsNullOrEmpty(identity))
-                                    {
-                                        <span class="pos-global__row-id">@identity</span>
-                                    }
-                                </span>
-                                <span class="pos-global__row-side">
-                                    @if (product.SellingPrice is decimal price)
-                                    {
-                                        <span class="pos-global__row-price">
-                                            <MoneyDisplay Amount="@price" CurrencyCode="PHP" />
-                                        </span>
-                                    }
-                                    <span class="pos-global__row-action">
-                                        @(selected ? L["Catalog_Global_Selected"] : L["Catalog_Global_Select"])
                                     </span>
-                                </span>
-                            </button>
+                                    <span class="pos-global__row-main">
+                                        <span class="pos-global__row-name">@product.Name</span>
+                                        @if (!string.IsNullOrEmpty(meta))
+                                        {
+                                            <span class="pos-global__row-meta">@meta</span>
+                                        }
+                                        @if (!string.IsNullOrEmpty(identity))
+                                        {
+                                            <span class="pos-global__row-id">@identity</span>
+                                        }
+                                    </span>
+                                    <span class="pos-global__row-side">
+                                        @if (product.SellingPrice is decimal price)
+                                        {
+                                            <span class="pos-global__row-price">
+                                                <MoneyDisplay Amount="@price" CurrencyCode="PHP" />
+                                            </span>
+                                        }
+                                        <span class="pos-global__row-action pos-global__row-action--already">
+                                            @L["Catalog_Global_AlreadyAdded"]
+                                        </span>
+                                    </span>
+                                </div>
+                            }
+                            else
+                            {
+                                <button type="button"
+                                        class="pos-global__row @(selected ? "pos-global__row--selected" : null)"
+                                        role="listitem"
+                                        aria-pressed="@selected"
+                                        aria-label="@RowAria(product, selected)"
+                                        disabled="@_busy"
+                                        @onclick="() => ToggleSelect(product.Id)">
+                                    <span class="pos-global__check" aria-hidden="true">
+                                        @if (selected)
+                                        {
+                                            @IconGlyphs.Get("check")
+                                        }
+                                    </span>
+                                    <span class="pos-global__row-main">
+                                        <span class="pos-global__row-name">@product.Name</span>
+                                        @if (!string.IsNullOrEmpty(meta))
+                                        {
+                                            <span class="pos-global__row-meta">@meta</span>
+                                        }
+                                        @if (!string.IsNullOrEmpty(identity))
+                                        {
+                                            <span class="pos-global__row-id">@identity</span>
+                                        }
+                                    </span>
+                                    <span class="pos-global__row-side">
+                                        @if (product.SellingPrice is decimal price)
+                                        {
+                                            <span class="pos-global__row-price">
+                                                <MoneyDisplay Amount="@price" CurrencyCode="PHP" />
+                                            </span>
+                                        }
+                                        <span class="pos-global__row-action">
+                                            @(selected ? L["Catalog_Global_Selected"] : L["Catalog_Global_Select"])
+                                        </span>
+                                    </span>
+                                </button>
+                            }
                         }
                     </div>
 
@@ -260,6 +296,7 @@ else
     private IReadOnlyList<PlatformMerchantGlobalProductDto> _items = Array.Empty<PlatformMerchantGlobalProductDto>();
     private IReadOnlyList<PlatformMerchantGlobalCategoryDto> _categories = Array.Empty<PlatformMerchantGlobalCategoryDto>();
     private readonly HashSet<Guid> _selectedIds = [];
+    private HashSet<Guid> _importedIds = [];
     private string? _errorTitle;
     private string? _errorMessage;
     private CancellationTokenSource? _searchCts;
@@ -426,6 +463,7 @@ else
         {
             _items = Array.Empty<PlatformMerchantGlobalProductDto>();
             _totalCount = 0;
+            _importedIds = [];
             _loading = false;
             return;
         }
@@ -461,17 +499,41 @@ else
         {
             _items = result.Data.Items;
             _totalCount = result.Data.TotalCount;
+            await ResolveImportedAsync().ConfigureAwait(false);
         }
         else
         {
             _items = Array.Empty<PlatformMerchantGlobalProductDto>();
             _totalCount = 0;
+            _importedIds = [];
             var described = ApiLocalizer.Describe(result.Status, result.Error);
             _errorTitle = described.Title;
             _errorMessage = described.Message;
         }
 
         _loading = false;
+    }
+
+    private async Task ResolveImportedAsync()
+    {
+        if (_items.Count == 0)
+        {
+            _importedIds = [];
+            return;
+        }
+
+        var result = await Imports
+            .ListImportedGlobalProductsAsync(_items.Select(i => i.Id).ToList())
+            .ConfigureAwait(false);
+        if (!result.IsSuccess || result.Data is null)
+        {
+            // Fail open for marking only — import API still rejects duplicates.
+            _importedIds = [];
+            return;
+        }
+
+        _importedIds = result.Data.ImportedIds.ToHashSet();
+        _selectedIds.RemoveWhere(_importedIds.Contains);
     }
 
     private void ApplyAuthBlocked()
@@ -484,6 +546,7 @@ else
         _items = Array.Empty<PlatformMerchantGlobalProductDto>();
         _totalCount = 0;
         _selectedIds.Clear();
+        _importedIds = [];
         _errorTitle = null;
         _errorMessage = null;
     }
@@ -495,6 +558,7 @@ else
         _items = Array.Empty<PlatformMerchantGlobalProductDto>();
         _totalCount = 0;
         _selectedIds.Clear();
+        _importedIds = [];
         var described = ApiLocalizer.Describe(status, error);
         _errorTitle = described.Title;
         _errorMessage = described.Message;
@@ -502,7 +566,7 @@ else
 
     private void ToggleSelect(Guid productId)
     {
-        if (_busy)
+        if (_busy || _importedIds.Contains(productId))
         {
             return;
         }
@@ -535,6 +599,12 @@ else
         _errorMessage = null;
         try
         {
+            _selectedIds.RemoveWhere(_importedIds.Contains);
+            if (_selectedIds.Count == 0)
+            {
+                return;
+            }
+
             var request = new ImportSelectedProductsRequest(
                 _selectedIds.ToList(),
                 IdempotencyKey: Guid.NewGuid().ToString("N"));
@@ -620,6 +690,9 @@ else
         var state = selected ? L["Catalog_Global_Selected"] : L["Catalog_Global_Select"];
         return $"{product.Name}. {state}";
     }
+
+    private string RowAriaAlready(PlatformMerchantGlobalProductDto product) =>
+        $"{product.Name}. {L["Catalog_Global_AlreadyAdded"]}";
 
     private void GoImport() => Nav.NavigateTo("/catalog/import");
 }

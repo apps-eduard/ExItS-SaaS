@@ -288,6 +288,10 @@ else
                                                 {
                                                     <Badge Tone="BadgeTone.Warning">@L["Catalog_Import_UnavailableProduct"]</Badge>
                                                 }
+                                                else if (_previewImportedIds.Contains(product.GlobalProductId))
+                                                {
+                                                    <Badge Tone="BadgeTone.Success">@L["Catalog_Global_AlreadyAdded"]</Badge>
+                                                }
                                             </div>
                                             <div class="pos-catalog-import__prices">
                                                 @if (product.CostPrice is decimal cost)
@@ -389,6 +393,7 @@ else
     private readonly Dictionary<Guid, PosTemplateImportStatusDto> _statuses = new();
     private PlatformMerchantCatalogTemplateDto? _selected;
     private IReadOnlyList<PlatformMerchantCatalogTemplateProductDto> _previewProducts = Array.Empty<PlatformMerchantCatalogTemplateProductDto>();
+    private HashSet<Guid> _previewImportedIds = [];
     private int _unavailableCount;
     private string? _errorTitle;
     private string? _errorMessage;
@@ -650,6 +655,7 @@ else
 
             _unavailableCount = _previewProducts.Count(IsUnavailable);
             _previewSearch = null;
+            await ResolvePreviewImportedAsync();
             _step = WizardStep.Preview;
         }
         finally
@@ -659,11 +665,29 @@ else
         }
     }
 
+    private async Task ResolvePreviewImportedAsync()
+    {
+        _previewImportedIds = [];
+        if (_previewProducts.Count == 0)
+        {
+            return;
+        }
+
+        var result = await Imports
+            .ListImportedGlobalProductsAsync(_previewProducts.Select(p => p.GlobalProductId).ToList())
+            .ConfigureAwait(false);
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _previewImportedIds = result.Data.ImportedIds.ToHashSet();
+        }
+    }
+
     private void BackToChoose()
     {
         _selected = null;
         _selectedTemplateId = null;
         _previewProducts = Array.Empty<PlatformMerchantCatalogTemplateProductDto>();
+        _previewImportedIds = [];
         _previewSearch = null;
         _unavailableCount = 0;
         _confirmAcknowledged = false;

@@ -542,17 +542,20 @@ public sealed class ImportTemplateBatch
 public sealed class ImportSelectedProducts
 {
     private readonly ICatalogImportJobRepository _imports;
+    private readonly ICatalogProductRepository _products;
     private readonly IPlatformMerchantCatalogClient _platform;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
     public ImportSelectedProducts(
         ICatalogImportJobRepository imports,
+        ICatalogProductRepository products,
         IPlatformMerchantCatalogClient platform,
         IPosUnitOfWork unitOfWork,
         IClock clock)
     {
         _imports = imports;
+        _products = products;
         _platform = platform;
         _unitOfWork = unitOfWork;
         _clock = clock;
@@ -592,11 +595,22 @@ public sealed class ImportSelectedProducts
                     "At least one Platform global product id is required.");
             }
 
+            var already = await _products
+                .ListPlatformGlobalProductIdsAsync(orgId, ids, cancellationToken)
+                .ConfigureAwait(false);
+            var candidateIds = ids.Where(id => !already.Contains(id)).ToList();
+            if (candidateIds.Count == 0)
+            {
+                return ApplicationResult<PosCatalogImportJobDto>.Failure(
+                    ApplicationErrorCodes.CatalogImportProductAlreadyImported,
+                    "All selected products are already in your catalog.");
+            }
+
             IReadOnlyList<PlatformMerchantGlobalProductDto> products;
             try
             {
                 products = await _platform
-                    .GetActiveProductsAsync(ids, platformSessionToken, cancellationToken)
+                    .GetActiveProductsAsync(candidateIds, platformSessionToken, cancellationToken)
                     .ConfigureAwait(false);
             }
             catch (Exception ex) when (ImportTemplateBatch.TryMapPlatformFailure<PosCatalogImportJobDto>(ex, cancellationToken, out var mapped))
@@ -706,6 +720,39 @@ public sealed class ImportSelectedProducts
         }
 
         return found;
+    }
+}
+
+/// <summary>
+/// Batched org-scoped lookup: which Platform global product ids already map to a local product.
+/// </summary>
+public sealed class ListImportedGlobalProducts
+{
+    private readonly ICatalogProductRepository _products;
+
+    public ListImportedGlobalProducts(ICatalogProductRepository products) => _products = products;
+
+    public async Task<ApplicationResult<ImportedGlobalProductsDto>> ExecuteAsync(
+        Guid organizationId,
+        IReadOnlyList<Guid>? platformGlobalProductIds,
+        CancellationToken cancellationToken = default)
+    {
+        var orgId = PosOrganizationId.From(organizationId);
+        var ids = (platformGlobalProductIds ?? Array.Empty<Guid>())
+            .Where(id => id != Guid.Empty)
+            .Distinct()
+            .Take(CatalogImportRules.MaxItemsPerJob)
+            .ToList();
+        if (ids.Count == 0)
+        {
+            return ApplicationResult<ImportedGlobalProductsDto>.Success(new ImportedGlobalProductsDto([]));
+        }
+
+        var found = await _products
+            .ListPlatformGlobalProductIdsAsync(orgId, ids, cancellationToken)
+            .ConfigureAwait(false);
+        return ApplicationResult<ImportedGlobalProductsDto>.Success(
+            new ImportedGlobalProductsDto(found.OrderBy(id => id).ToList()));
     }
 }
 
