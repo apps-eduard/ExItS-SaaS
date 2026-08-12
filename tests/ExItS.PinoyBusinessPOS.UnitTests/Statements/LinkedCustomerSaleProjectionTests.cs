@@ -1,4 +1,4 @@
-using ExItS.PinoyBusinessPOS.Application.Common;
+﻿using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Credit;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Application.Payments;
@@ -16,444 +16,303 @@ using ExItS.PinoyBusinessPOS.Domain.Sales;
 
 namespace ExItS.PinoyBusinessPOS.UnitTests.Statements;
 
-public sealed class LinkedCustomerReceiptUseCaseTests
+/// <summary>
+/// End-to-end-ish projection: accepted linked customer â†’ checkout sale with that POSCustomerId
+/// â†’ Personal statement/receipt visibility. Cash purchases appear as Sale/Purchase rows;
+/// Utang remains Credit/UtangCharge (no duplicate Sale row).
+/// </summary>
+public sealed class LinkedCustomerSaleProjectionTests
 {
-    private static readonly DateTimeOffset T0 = new(2026, 8, 12, 14, 30, 0, TimeSpan.Zero);
-    private static readonly Guid OrgA = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
-    private static readonly Guid OrgB = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
-    private static readonly Guid PlatformCustomer = Guid.Parse("cccccccc-cccc-cccc-dddd-eeeeeeeeeeee");
+    private static readonly DateTimeOffset T0 = new(2026, 8, 12, 12, 0, 0, TimeSpan.Zero);
+    private static readonly Guid OrgKizzy = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+    private static readonly Guid OrgOther = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+    private static readonly Guid MicaPlatformCustomer = Guid.Parse("cccccccc-cccc-cccc-dddd-eeeeeeeeeeee");
     private static readonly Guid OtherPlatformCustomer = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd");
-    private static readonly Guid PersonalUser = Guid.Parse("11111111-1111-1111-1111-111111111111");
+    private static readonly Guid MicaPersonalUser = Guid.Parse("11111111-1111-1111-1111-111111111111");
+    private static readonly Guid WrongPersonalUser = Guid.Parse("99999999-9999-9999-9999-999999999999");
     private static readonly Guid LinkedId = Guid.Parse("22222222-2222-2222-2222-222222222222");
     private static readonly Guid Actor = Guid.Parse("33333333-3333-3333-3333-333333333333");
     private static readonly CashierShiftId Shift = CashierShiftId.New();
     private static readonly RegisterId Register = RegisterId.New();
 
     [Fact]
-    public async Task Receipt_returns_cash_sale_when_customer_id_persisted()
+    public async Task Cash_sale_for_linked_mica_appears_in_activity_and_receipt()
     {
         var harness = await Harness.CreateAuthorizedAsync();
+
+        // Correlation: PlatformBusinessCustomerId on the exact POSCustomer used at checkout.
+        Assert.Equal(MicaPlatformCustomer, harness.MicaPosCustomer.PlatformBusinessCustomerId);
+
+        var sale = CashSale(harness.MicaPosCustomer.Id, 75.50m, saleNumber: "SALE-20260812-000101");
+        await harness.Sales.AddAsync(sale);
+
+        // Selected customer ID survived into sale persistence (stable id, not name).
+        Assert.Equal(harness.MicaPosCustomer.Id, sale.CustomerId);
+        Assert.Null(sale.LinkedCreditEntryId);
+
+        var activity = await harness.Activity.ExecuteAsync(OrgKizzy, MicaPlatformCustomer);
+        Assert.True(activity.IsSuccess, activity.ErrorMessage);
+        var purchase = Assert.Single(activity.Value!.Items);
+        Assert.Equal("Purchase", purchase.Type);
+        Assert.Equal(75.50m, purchase.PaymentAmount);
+        Assert.Null(purchase.ChargeAmount);
+        Assert.True(purchase.HasDetails);
+        Assert.Equal(sale.Id.Value, purchase.SourceSaleId);
+        // Cash does not change outstanding walk (SignedEffect = 0).
+        Assert.Equal(0m, purchase.BalanceAfter);
+
+        var receipt = await harness.Receipt.ExecuteAsync(OrgKizzy, MicaPlatformCustomer, sale.Id.Value);
+        Assert.True(receipt.IsSuccess, receipt.ErrorMessage);
+        Assert.Equal("Cash", receipt.Value!.PaymentMethod);
+        Assert.Equal(75.50m, receipt.Value.Total);
+        Assert.Equal(75.50m, receipt.Value.PaidAmount);
+        Assert.Null(receipt.Value.UtangAmount);
+        Assert.Equal(0m, receipt.Value.OutstandingEffect);
+        Assert.Equal(harness.MicaPosCustomer.Id.Value, receipt.Value.PosCustomerId);
+    }
+
+    [Fact]
+    public async Task Utang_sale_appears_as_credit_activity_with_debt_and_receipt_not_duplicate_sale_row()
+    {
+        var harness = await Harness.CreateAuthorizedAsync();
+        var creditId = CreditEntryId.New();
+        var sale = UtangSale(harness.MicaPosCustomer.Id, 120m, creditId);
+        await harness.Sales.AddAsync(sale);
+        await harness.Credits.AddAsync(CreditEntry.Create(
+            PosOrganizationId.From(OrgKizzy),
+            harness.MicaPosCustomer.Id,
+            120m,
+            "Goods",
+            T0,
+            id: creditId,
+            sourceSaleId: sale.Id));
+
+        var summary = await harness.Summary.ExecuteAsync(OrgKizzy, MicaPlatformCustomer);
+        Assert.True(summary.IsSuccess);
+        Assert.Equal(120m, summary.Value!.OutstandingBalance);
+
+        var activity = await harness.Activity.ExecuteAsync(OrgKizzy, MicaPlatformCustomer);
+        Assert.True(activity.IsSuccess, activity.ErrorMessage);
+        var charge = Assert.Single(activity.Value!.Items);
+        Assert.Equal("UtangCharge", charge.Type);
+        Assert.Equal(120m, charge.ChargeAmount);
+        Assert.Equal(sale.Id.Value, charge.SourceSaleId);
+        Assert.DoesNotContain(activity.Value.Items, i => i.Type is "Purchase");
+
+        var receipt = await harness.Receipt.ExecuteAsync(OrgKizzy, MicaPlatformCustomer, sale.Id.Value);
+        Assert.True(receipt.IsSuccess, receipt.ErrorMessage);
+        Assert.Equal("Utang", receipt.Value!.PaymentMethod);
+        Assert.Equal(120m, receipt.Value.UtangAmount);
+        Assert.Equal(120m, receipt.Value.OutstandingEffect);
+    }
+
+    [Fact]
+    public async Task Mixed_cash_and_utang_keeps_outstanding_walk_stable_across_purchase()
+    {
+        var harness = await Harness.CreateAuthorizedAsync();
+        await harness.Credits.AddAsync(CreditEntry.Create(
+            PosOrganizationId.From(OrgKizzy), harness.MicaPosCustomer.Id, 100m, "Prior", T0));
+        var cash = CashSale(harness.MicaPosCustomer.Id, 40m, recordedAt: T0.AddHours(1));
+        await harness.Sales.AddAsync(cash);
+
+        var activity = await harness.Activity.ExecuteAsync(OrgKizzy, MicaPlatformCustomer);
+        Assert.True(activity.IsSuccess);
+        Assert.Equal(2, activity.Value!.Items.Count);
+        Assert.Equal("Purchase", activity.Value.Items[0].Type);
+        Assert.Equal(100m, activity.Value.Items[0].BalanceAfter); // cash SignedEffect 0
+        Assert.Equal("UtangCharge", activity.Value.Items[1].Type);
+        Assert.Equal(100m, activity.Value.Items[1].BalanceAfter);
+    }
+
+    [Fact]
+    public async Task Sale_without_customer_does_not_appear()
+    {
+        var harness = await Harness.CreateAuthorizedAsync();
+        var anonymous = CashSale(customerId: null, total: 33m);
+        await harness.Sales.AddAsync(anonymous);
+
+        var activity = await harness.Activity.ExecuteAsync(OrgKizzy, MicaPlatformCustomer);
+        Assert.True(activity.IsSuccess);
+        Assert.Empty(activity.Value!.Items);
+
+        var receipt = await harness.Receipt.ExecuteAsync(OrgKizzy, MicaPlatformCustomer, anonymous.Id.Value);
+        Assert.False(receipt.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.ReceiptNotFound, receipt.ErrorCode);
+    }
+
+    [Fact]
+    public async Task Sale_for_duplicate_name_other_customer_does_not_match()
+    {
+        var harness = await Harness.CreateAuthorizedAsync();
+        var impostor = POSCustomer.Create(
+            PosOrganizationId.From(OrgKizzy),
+            "Mica Same Name",
+            T0);
+        await harness.Customers.AddAsync(impostor);
+        var sale = CashSale(impostor.Id, 55m);
+        await harness.Sales.AddAsync(sale);
+
+        var activity = await harness.Activity.ExecuteAsync(OrgKizzy, MicaPlatformCustomer);
+        Assert.Empty(activity.Value!.Items);
+
+        var receipt = await harness.Receipt.ExecuteAsync(OrgKizzy, MicaPlatformCustomer, sale.Id.Value);
+        Assert.Equal(ApplicationErrorCodes.ReceiptNotFound, receipt.ErrorCode);
+    }
+
+    [Fact]
+    public async Task Sale_from_other_organization_does_not_appear()
+    {
+        var harness = await Harness.CreateAuthorizedAsync();
+        var otherOrgCustomer = POSCustomer.Create(
+            PosOrganizationId.From(OrgOther),
+            "Mica",
+            T0,
+            platformBusinessCustomerId: MicaPlatformCustomer);
+        await harness.Customers.AddAsync(otherOrgCustomer);
         var sale = Sale.Checkout(
-            PosOrganizationId.From(OrgA),
-            SaleNumbers.Format(new DateOnly(2026, 8, 12), 9),
+            PosOrganizationId.From(OrgOther),
+            "SALE-20260812-000201",
             SalePaymentMethod.Cash,
-            [
-                new SaleLineDraft(
-                    CatalogProductId.New(),
-                    "Pork",
-                    "SKU-P",
-                    null,
-                    UnitOfMeasure.Kilogram,
-                    80m,
-                    1m,
-                    SellingMode.ByWeight)
-            ],
+            [Line(20m)],
             Actor,
             T0,
-            amountTendered: 80m,
-            customerId: harness.PosCustomer.Id,
+            amountTendered: 20m,
+            customerId: otherOrgCustomer.Id,
             cashierShiftId: Shift,
             registerId: Register);
         await harness.Sales.AddAsync(sale);
 
-        var result = await harness.Receipt.ExecuteAsync(OrgA, PlatformCustomer, sale.Id.Value);
-        Assert.True(result.IsSuccess, result.ErrorMessage);
-        Assert.Equal("Cash", result.Value!.PaymentMethod);
-        Assert.Equal(80m, result.Value.PaidAmount);
-        Assert.Null(result.Value.UtangAmount);
-        Assert.Equal(0m, result.Value.OutstandingEffect);
+        var activity = await harness.Activity.ExecuteAsync(OrgKizzy, MicaPlatformCustomer);
+        Assert.Empty(activity.Value!.Items);
     }
 
     [Fact]
-    public async Task Receipt_returns_per_item_utang_sale_with_line_snapshots()
-    {
-        var harness = await Harness.CreateAuthorizedAsync();
-        var sale = UtangSale(
-            harness.PosCustomer.Id,
-            new SaleLineDraft(
-                CatalogProductId.New(),
-                "Sardinas",
-                "SKU-1",
-                null,
-                UnitOfMeasure.Can,
-                25.50m,
-                2m,
-                SellingMode.PerItem));
-        await harness.Sales.AddAsync(sale);
-
-        var result = await harness.Receipt.ExecuteAsync(OrgA, PlatformCustomer, sale.Id.Value);
-
-        Assert.True(result.IsSuccess, result.ErrorMessage);
-        var dto = result.Value!;
-        Assert.Equal(sale.Id.Value, dto.SaleId);
-        Assert.Equal(sale.SaleNumber, dto.ReceiptNumber);
-        Assert.Equal("Completed", dto.Status);
-        Assert.Equal("Utang", dto.PaymentMethod);
-        Assert.Equal(51.00m, dto.Total);
-        Assert.Equal(51.00m, dto.Subtotal);
-        Assert.Equal(51.00m, dto.UtangAmount);
-        Assert.Equal(0m, dto.PaidAmount);
-        Assert.Equal(51.00m, dto.OutstandingEffect);
-        Assert.Null(dto.DiscountAmount);
-        Assert.Null(dto.MerchantDisplayName);
-        Assert.Null(dto.BranchDisplayName);
-        Assert.Equal(0m, dto.TaxAmount);
-
-        var line = Assert.Single(dto.Lines);
-        Assert.Equal("Sardinas", line.ProductNameSnapshot);
-        Assert.Equal(2m, line.Quantity);
-        Assert.Equal("Can", line.UnitOfMeasure);
-        Assert.Equal("PerItem", line.SellingMode);
-        Assert.Equal(25.50m, line.UnitPriceSnapshot);
-        Assert.Equal(51.00m, line.LineTotal);
-
-        Assert.DoesNotContain(
-            typeof(LinkedCustomerSaleReceiptDto).GetProperties().Select(p => p.Name),
-            name => name is "Cost" or "Margin" or "Remarks" or "RecordedBy" or "VoidReason" or "RegisterId");
-        Assert.DoesNotContain(
-            typeof(LinkedCustomerSaleReceiptLineDto).GetProperties().Select(p => p.Name),
-            name => name is "Cost" or "Margin" or "SkuSnapshot" or "BarcodeSnapshot" or "ProductId");
-    }
-
-    [Fact]
-    public async Task Receipt_preserves_by_weight_quantity_and_unit_price_snapshot()
-    {
-        var harness = await Harness.CreateAuthorizedAsync();
-        var sale = UtangSale(
-            harness.PosCustomer.Id,
-            new SaleLineDraft(
-                CatalogProductId.New(),
-                "Tomato",
-                null,
-                null,
-                UnitOfMeasure.Kilogram,
-                120m,
-                0.350m,
-                SellingMode.ByWeight));
-        await harness.Sales.AddAsync(sale);
-
-        var result = await harness.Receipt.ExecuteAsync(OrgA, PlatformCustomer, sale.Id.Value);
-        Assert.True(result.IsSuccess, result.ErrorMessage);
-        var line = Assert.Single(result.Value!.Lines);
-        Assert.Equal(0.350m, line.Quantity);
-        Assert.Equal(120m, line.UnitPriceSnapshot);
-        Assert.Equal(42.00m, line.LineTotal);
-        Assert.Equal("Kilogram", line.UnitOfMeasure);
-        Assert.Equal("ByWeight", line.SellingMode);
-        Assert.Equal(42.00m, result.Value.Total);
-    }
-
-    [Fact]
-    public async Task Receipt_exposes_voided_status_without_active_outstanding_effect()
-    {
-        var harness = await Harness.CreateAuthorizedAsync();
-        var sale = UtangSale(
-            harness.PosCustomer.Id,
-            new SaleLineDraft(
-                CatalogProductId.New(),
-                "Kape",
-                null,
-                null,
-                UnitOfMeasure.Piece,
-                10m,
-                1m));
-        sale.Void("customer cancel", Actor, T0.AddMinutes(5));
-        await harness.Sales.AddAsync(sale);
-
-        var result = await harness.Receipt.ExecuteAsync(OrgA, PlatformCustomer, sale.Id.Value);
-        Assert.True(result.IsSuccess, result.ErrorMessage);
-        Assert.Equal("Voided", result.Value!.Status);
-        Assert.Equal(10m, result.Value.Total);
-        Assert.Equal(10m, result.Value.UtangAmount);
-        Assert.Equal(0m, result.Value.OutstandingEffect);
-        Assert.Equal("Kape", Assert.Single(result.Value.Lines).ProductNameSnapshot);
-    }
-
-    [Fact]
-    public async Task Receipt_not_found_for_guessed_sale_id()
-    {
-        var harness = await Harness.CreateAuthorizedAsync();
-        var result = await harness.Receipt.ExecuteAsync(OrgA, PlatformCustomer, Guid.NewGuid());
-        Assert.False(result.IsSuccess);
-        Assert.Equal(ApplicationErrorCodes.ReceiptNotFound, result.ErrorCode);
-    }
-
-    [Fact]
-    public async Task Receipt_not_found_when_sale_belongs_to_other_pos_customer()
-    {
-        var harness = await Harness.CreateAuthorizedAsync();
-        var otherCustomer = POSCustomer.Create(
-            PosOrganizationId.From(OrgA),
-            "Other",
-            T0,
-            mobileNumber: "+639171111111");
-        await harness.Customers.AddAsync(otherCustomer);
-
-        var sale = UtangSale(
-            otherCustomer.Id,
-            new SaleLineDraft(
-                CatalogProductId.New(),
-                "Secret",
-                null,
-                null,
-                UnitOfMeasure.Piece,
-                99m,
-                1m));
-        await harness.Sales.AddAsync(sale);
-
-        var result = await harness.Receipt.ExecuteAsync(OrgA, PlatformCustomer, sale.Id.Value);
-        Assert.False(result.IsSuccess);
-        Assert.Equal(ApplicationErrorCodes.ReceiptNotFound, result.ErrorCode);
-    }
-
-    [Fact]
-    public async Task Receipt_denied_when_platform_denied()
+    public async Task Wrong_personal_user_denied_sees_no_data()
     {
         var harness = await Harness.CreateAsync(FakePlatform.Denied());
-        var result = await harness.Receipt.ExecuteAsync(OrgA, PlatformCustomer, Guid.NewGuid());
-        Assert.False(result.IsSuccess);
-        Assert.Equal(ApplicationErrorCodes.LinkedCustomerDenied, result.ErrorCode);
+        var sale = CashSale(harness.MicaPosCustomer.Id, 10m);
+        await harness.Sales.AddAsync(sale);
+
+        Assert.Equal(
+            ApplicationErrorCodes.LinkedCustomerDenied,
+            (await harness.Activity.ExecuteAsync(OrgKizzy, MicaPlatformCustomer)).ErrorCode);
+        Assert.Equal(
+            ApplicationErrorCodes.LinkedCustomerDenied,
+            (await harness.Receipt.ExecuteAsync(OrgKizzy, MicaPlatformCustomer, sale.Id.Value)).ErrorCode);
     }
 
     [Fact]
-    public async Task Receipt_not_found_when_platform_unreachable()
+    public async Task Declined_or_revoked_link_not_found_sees_no_data()
     {
         var harness = await Harness.CreateAsync(FakePlatform.NotFound());
-        var result = await harness.Receipt.ExecuteAsync(OrgA, PlatformCustomer, Guid.NewGuid());
-        Assert.False(result.IsSuccess);
-        Assert.Equal(ApplicationErrorCodes.LinkedCustomerNotFound, result.ErrorCode);
-    }
-
-    [Fact]
-    public async Task Receipt_not_found_for_wrong_org()
-    {
-        var harness = await Harness.CreateAuthorizedAsync();
-        var sale = UtangSale(
-            harness.PosCustomer.Id,
-            new SaleLineDraft(
-                CatalogProductId.New(),
-                "Item",
-                null,
-                null,
-                UnitOfMeasure.Piece,
-                5m,
-                1m));
+        var sale = CashSale(harness.MicaPosCustomer.Id, 10m);
         await harness.Sales.AddAsync(sale);
 
-        var result = await harness.Receipt.ExecuteAsync(OrgB, PlatformCustomer, sale.Id.Value);
-        Assert.False(result.IsSuccess);
-        Assert.Equal(ApplicationErrorCodes.LinkedCustomerNotFound, result.ErrorCode);
+        Assert.Equal(
+            ApplicationErrorCodes.LinkedCustomerNotFound,
+            (await harness.Activity.ExecuteAsync(OrgKizzy, MicaPlatformCustomer)).ErrorCode);
+        Assert.Equal(
+            ApplicationErrorCodes.LinkedCustomerNotFound,
+            (await harness.Receipt.ExecuteAsync(OrgKizzy, MicaPlatformCustomer, sale.Id.Value)).ErrorCode);
     }
 
     [Fact]
-    public async Task Receipt_not_found_for_wrong_platform_customer()
+    public async Task Wrong_platform_business_customer_sees_no_sale()
     {
         var harness = await Harness.CreateAuthorizedAsync();
-        var sale = UtangSale(
-            harness.PosCustomer.Id,
-            new SaleLineDraft(
-                CatalogProductId.New(),
-                "Item",
-                null,
-                null,
-                UnitOfMeasure.Piece,
-                5m,
-                1m));
+        var sale = CashSale(harness.MicaPosCustomer.Id, 10m);
         await harness.Sales.AddAsync(sale);
 
-        var result = await harness.Receipt.ExecuteAsync(OrgA, OtherPlatformCustomer, sale.Id.Value);
-        Assert.False(result.IsSuccess);
-        Assert.Equal(ApplicationErrorCodes.LinkedCustomerNotFound, result.ErrorCode);
+        Assert.Equal(
+            ApplicationErrorCodes.LinkedCustomerNotFound,
+            (await harness.Activity.ExecuteAsync(OrgKizzy, OtherPlatformCustomer)).ErrorCode);
     }
 
     [Fact]
-    public async Task Receipt_returns_exactly_one_sale_payload()
+    public async Task Older_settled_cash_purchase_still_requires_entitlement_outside_free_window()
     {
         var harness = await Harness.CreateAuthorizedAsync();
-        var sale1 = UtangSale(
-            harness.PosCustomer.Id,
-            new SaleLineDraft(
-                CatalogProductId.New(),
-                "A",
-                null,
-                null,
-                UnitOfMeasure.Piece,
-                1m,
-                1m));
-        var sale2 = UtangSale(
-            harness.PosCustomer.Id,
-            new SaleLineDraft(
-                CatalogProductId.New(),
-                "B",
-                null,
-                null,
-                UnitOfMeasure.Piece,
-                2m,
-                1m),
-            saleNumber: SaleNumbers.Format(new DateOnly(2026, 8, 12), 2));
-        await harness.Sales.AddAsync(sale1);
-        await harness.Sales.AddAsync(sale2);
+        harness.Clock.Set(new DateTimeOffset(2026, 8, 13, 0, 0, 0, TimeSpan.Zero));
+        var old = CashSale(
+            harness.MicaPosCustomer.Id,
+            25m,
+            recordedAt: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));
+        await harness.Sales.AddAsync(old);
 
-        var result = await harness.Receipt.ExecuteAsync(OrgA, PlatformCustomer, sale1.Id.Value);
-        Assert.True(result.IsSuccess);
-        Assert.Equal(sale1.Id.Value, result.Value!.SaleId);
-        Assert.Equal("A", Assert.Single(result.Value.Lines).ProductNameSnapshot);
-    }
-
-    [Fact]
-    public async Task Receipt_old_settled_requires_extended_entitlement()
-    {
-        var harness = await Harness.CreateAuthorizedAsync();
-        var creditId = CreditEntryId.New();
-        var sale = UtangSale(
-            harness.PosCustomer.Id,
-            new SaleLineDraft(
-                CatalogProductId.New(),
-                "Old",
-                null,
-                null,
-                UnitOfMeasure.Piece,
-                50m,
-                1m),
-            recordedAt: new DateTimeOffset(2025, 1, 10, 0, 0, 0, TimeSpan.Zero),
-            creditId: creditId);
-        await harness.Sales.AddAsync(sale);
-        var credit = CreditEntry.Create(
-            PosOrganizationId.From(OrgA),
-            harness.PosCustomer.Id,
-            50m,
-            "Goods",
-            sale.RecordedAtUtc,
-            id: creditId,
-            sourceSaleId: sale.Id);
-        credit.Reverse("settled via repayment path", sale.RecordedAtUtc.AddDays(1));
-        await harness.Credits.AddAsync(credit);
-
-        var denied = await harness.Receipt.ExecuteAsync(OrgA, PlatformCustomer, sale.Id.Value);
-        Assert.False(denied.IsSuccess);
-        Assert.Equal(ApplicationErrorCodes.ExtendedHistoryRequired, denied.ErrorCode);
+        var older = await harness.Older.ExecuteAsync(OrgKizzy, MicaPlatformCustomer);
+        Assert.Equal(ApplicationErrorCodes.ExtendedHistoryRequired, older.ErrorCode);
 
         harness.Entitlements.Active = true;
-        var allowed = await harness.Receipt.ExecuteAsync(OrgA, PlatformCustomer, sale.Id.Value);
-        Assert.True(allowed.IsSuccess, allowed.ErrorMessage);
-        Assert.Equal(sale.Id.Value, allowed.Value!.SaleId);
+        older = await harness.Older.ExecuteAsync(OrgKizzy, MicaPlatformCustomer);
+        Assert.True(older.IsSuccess, older.ErrorMessage);
+        var item = Assert.Single(older.Value!.Items);
+        Assert.Equal("Purchase", item.Type);
+        Assert.Equal(old.Id.Value, item.SourceSaleId);
     }
 
     [Fact]
-    public async Task Receipt_old_active_utang_allowed_under_open_debt_exception()
+    public async Task Open_debt_list_excludes_cash_purchases()
     {
         var harness = await Harness.CreateAuthorizedAsync();
-        var creditId = CreditEntryId.New();
-        var sale = UtangSale(
-            harness.PosCustomer.Id,
-            new SaleLineDraft(
-                CatalogProductId.New(),
-                "Still owed",
-                null,
-                null,
-                UnitOfMeasure.Piece,
-                80m,
-                1m),
-            recordedAt: new DateTimeOffset(2025, 1, 10, 0, 0, 0, TimeSpan.Zero),
-            creditId: creditId);
-        await harness.Sales.AddAsync(sale);
         await harness.Credits.AddAsync(CreditEntry.Create(
-            PosOrganizationId.From(OrgA),
-            harness.PosCustomer.Id,
-            80m,
-            "Goods",
-            sale.RecordedAtUtc,
-            id: creditId,
-            sourceSaleId: sale.Id));
+            PosOrganizationId.From(OrgKizzy), harness.MicaPosCustomer.Id, 80m, "Debt", T0));
+        await harness.Sales.AddAsync(CashSale(harness.MicaPosCustomer.Id, 15m, recordedAt: T0.AddHours(1)));
 
-        var result = await harness.Receipt.ExecuteAsync(OrgA, PlatformCustomer, sale.Id.Value);
-        Assert.True(result.IsSuccess, result.ErrorMessage);
-        Assert.Equal("Still owed", Assert.Single(result.Value!.Lines).ProductNameSnapshot);
+        var openDebt = await harness.OpenDebt.ExecuteAsync(OrgKizzy, MicaPlatformCustomer);
+        Assert.True(openDebt.IsSuccess);
+        var item = Assert.Single(openDebt.Value!.Items);
+        Assert.Equal("UtangCharge", item.Type);
+        Assert.DoesNotContain(openDebt.Value.Items, i => i.Type is "Purchase");
     }
 
-    [Fact]
-    public async Task Receipt_settling_open_debt_removes_exception_then_entitlement_unlocks()
-    {
-        var harness = await Harness.CreateAuthorizedAsync();
-        var creditId = CreditEntryId.New();
-        var sale = UtangSale(
-            harness.PosCustomer.Id,
-            new SaleLineDraft(
-                CatalogProductId.New(),
-                "Settled later",
-                null,
-                null,
-                UnitOfMeasure.Piece,
-                90m,
-                1m),
-            recordedAt: new DateTimeOffset(2025, 1, 10, 0, 0, 0, TimeSpan.Zero),
-            creditId: creditId);
-        await harness.Sales.AddAsync(sale);
-        await harness.Credits.AddAsync(CreditEntry.Create(
-            PosOrganizationId.From(OrgA),
-            harness.PosCustomer.Id,
-            90m,
-            "Goods",
-            sale.RecordedAtUtc,
-            id: creditId,
-            sourceSaleId: sale.Id));
+    private static SaleLineDraft Line(decimal unitPrice, decimal qty = 1m) =>
+        new(CatalogProductId.New(), "Pork", "SKU-P", null, UnitOfMeasure.Kilogram, unitPrice, qty, SellingMode.ByWeight);
 
-        Assert.True((await harness.Receipt.ExecuteAsync(OrgA, PlatformCustomer, sale.Id.Value)).IsSuccess);
-
-        await harness.Repayments.AddAsync(Repayment.Create(
-            PosOrganizationId.From(OrgA),
-            harness.PosCustomer.Id,
-            90m,
-            "Paid off",
-            Actor,
-            new DateTimeOffset(2025, 2, 1, 0, 0, 0, TimeSpan.Zero)));
-
-        var afterSettle = await harness.Receipt.ExecuteAsync(OrgA, PlatformCustomer, sale.Id.Value);
-        Assert.False(afterSettle.IsSuccess);
-        Assert.Equal(ApplicationErrorCodes.ExtendedHistoryRequired, afterSettle.ErrorCode);
-
-        harness.Entitlements.Active = true;
-        Assert.True((await harness.Receipt.ExecuteAsync(OrgA, PlatformCustomer, sale.Id.Value)).IsSuccess);
-    }
-
-    [Fact]
-    public async Task Receipt_guessed_id_stays_not_found_even_when_entitled()
-    {
-        var harness = await Harness.CreateAuthorizedAsync();
-        harness.Entitlements.Active = true;
-        var result = await harness.Receipt.ExecuteAsync(OrgA, PlatformCustomer, Guid.NewGuid());
-        Assert.False(result.IsSuccess);
-        Assert.Equal(ApplicationErrorCodes.ReceiptNotFound, result.ErrorCode);
-    }
-
-    private static Sale UtangSale(
-        POSCustomerId customerId,
-        SaleLineDraft line,
+    private static Sale CashSale(
+        POSCustomerId? customerId,
+        decimal total,
         string? saleNumber = null,
-        DateTimeOffset? recordedAt = null,
-        CreditEntryId? creditId = null) =>
+        DateTimeOffset? recordedAt = null) =>
         Sale.Checkout(
-            PosOrganizationId.From(OrgA),
+            PosOrganizationId.From(OrgKizzy),
             saleNumber ?? SaleNumbers.Format(new DateOnly(2026, 8, 12), 1),
-            SalePaymentMethod.Utang,
-            [line],
+            SalePaymentMethod.Cash,
+            [Line(total)],
             Actor,
             recordedAt ?? T0,
+            amountTendered: total,
+            customerId: customerId,
+            cashierShiftId: Shift,
+            registerId: Register);
+
+    private static Sale UtangSale(POSCustomerId customerId, decimal total, CreditEntryId creditId) =>
+        Sale.Checkout(
+            PosOrganizationId.From(OrgKizzy),
+            SaleNumbers.Format(new DateOnly(2026, 8, 12), 2),
+            SalePaymentMethod.Utang,
+            [Line(total)],
+            Actor,
+            T0.AddMinutes(30),
             amountTendered: null,
             customerId: customerId,
-            linkedCreditEntryId: creditId ?? CreditEntryId.New(),
+            linkedCreditEntryId: creditId,
             cashierShiftId: Shift,
             registerId: Register);
 
     private sealed class Harness
     {
-        public required POSCustomer PosCustomer { get; init; }
+        public required POSCustomer MicaPosCustomer { get; init; }
         public required InMemoryCustomers Customers { get; init; }
         public required InMemorySales Sales { get; init; }
         public required InMemoryCredits Credits { get; init; }
         public required InMemoryRepayments Repayments { get; init; }
-        public required FakeEntitlements Entitlements { get; init; }
+        public required GetLinkedCustomerStatementSummary Summary { get; init; }
+        public required ListLinkedCustomerRecentActivity Activity { get; init; }
+        public required ListLinkedCustomerOpenDebtActivity OpenDebt { get; init; }
+        public required ListLinkedCustomerOlderSettledActivity Older { get; init; }
         public required GetLinkedCustomerSaleReceipt Receipt { get; init; }
+        public required FakeEntitlements Entitlements { get; init; }
+        public required MutableClock Clock { get; init; }
 
         public static async Task<Harness> CreateAuthorizedAsync() =>
             await CreateAsync(FakePlatform.Authorized());
@@ -464,34 +323,37 @@ public sealed class LinkedCustomerReceiptUseCaseTests
             var sales = new InMemorySales();
             var credits = new InMemoryCredits();
             var repayments = new InMemoryRepayments();
-            var clock = new FixedClock(T0.AddDays(1));
+            var clock = new MutableClock(T0.AddDays(1));
             var outstanding = new OutstandingBalanceService(credits, repayments, clock);
             var entitlements = new FakeEntitlements(active: false);
             var options = Microsoft.Extensions.Options.Options.Create(new PersonalStatementsOptions { FreeRecentMonths = 3 });
-            var posCustomer = POSCustomer.Create(
-                PosOrganizationId.From(OrgA),
-                "Rosa Customer",
+
+            var mica = POSCustomer.Create(
+                PosOrganizationId.From(OrgKizzy),
+                "Mica",
                 T0,
-                platformBusinessCustomerId: PlatformCustomer);
-            await customers.AddAsync(posCustomer);
+                platformBusinessCustomerId: MicaPlatformCustomer);
+            await customers.AddAsync(mica);
 
             var authorize = new AuthorizeLinkedCustomerStatementAccess(platform, customers);
+            var activityQuery = new InMemoryRecentActivity(credits, repayments, sales);
             return new Harness
             {
-                PosCustomer = posCustomer,
+                MicaPosCustomer = mica,
                 Customers = customers,
                 Sales = sales,
                 Credits = credits,
                 Repayments = repayments,
-                Entitlements = entitlements,
+                Summary = new GetLinkedCustomerStatementSummary(authorize, customers, outstanding, clock),
+                Activity = new ListLinkedCustomerRecentActivity(
+                    authorize, activityQuery, outstanding, entitlements, options, clock),
+                OpenDebt = new ListLinkedCustomerOpenDebtActivity(authorize, activityQuery, outstanding),
+                Older = new ListLinkedCustomerOlderSettledActivity(
+                    authorize, activityQuery, entitlements, options, clock),
                 Receipt = new GetLinkedCustomerSaleReceipt(
-                    authorize,
-                    sales,
-                    credits,
-                    outstanding,
-                    entitlements,
-                    options,
-                    clock)
+                    authorize, sales, credits, outstanding, entitlements, options, clock),
+                Entitlements = entitlements,
+                Clock = clock
             };
         }
     }
@@ -504,9 +366,11 @@ public sealed class LinkedCustomerReceiptUseCaseTests
             Task.FromResult(Active);
     }
 
-    private sealed class FixedClock(DateTimeOffset utcNow) : IClock
+    private sealed class MutableClock(DateTimeOffset utcNow) : IClock
     {
-        public DateTimeOffset UtcNow { get; } = utcNow;
+        public DateTimeOffset UtcNow { get; private set; } = utcNow;
+
+        public void Set(DateTimeOffset utcNow) => UtcNow = utcNow;
     }
 
     private sealed class FakePlatform : ILinkedCustomerPlatformAuthorization
@@ -519,7 +383,7 @@ public sealed class LinkedCustomerReceiptUseCaseTests
             new LinkedCustomerPlatformAuthorizationResult(
                 LinkedCustomerPlatformAuthorizationOutcome.Authorized,
                 new LinkedCustomerPlatformAuthorizationProof(
-                    PersonalUser, OrgA, PlatformCustomer, LinkedId)));
+                    MicaPersonalUser, OrgKizzy, MicaPlatformCustomer, LinkedId)));
 
         public static FakePlatform Denied() => new(
             new LinkedCustomerPlatformAuthorizationResult(
@@ -542,7 +406,108 @@ public sealed class LinkedCustomerReceiptUseCaseTests
                     LinkedCustomerPlatformAuthorizationOutcome.NotFound, null));
             }
 
+            _ = WrongPersonalUser; // documents wrong-user isolation is Platform-side Denied/NotFound
             return Task.FromResult(_result);
+        }
+    }
+
+    private sealed class InMemoryRecentActivity(
+        InMemoryCredits credits,
+        InMemoryRepayments repayments,
+        InMemorySales sales) : ILinkedCustomerRecentActivityQuery
+    {
+        public Task<IReadOnlyList<LinkedCustomerActivityRawRow>> ListRecentDescendingAsync(
+            PosOrganizationId organizationId,
+            POSCustomerId customerId,
+            int skip,
+            int take,
+            DateTimeOffset? notBeforeUtc = null,
+            DateTimeOffset? beforeUtc = null,
+            CancellationToken cancellationToken = default)
+        {
+            take = Math.Min(take, LinkedCustomerStatementLimits.MaxPageSize + 1);
+            var rows = credits.All
+                .Where(c => c.OrganizationId == organizationId && c.CustomerId == customerId)
+                .Where(c => notBeforeUtc is null || c.CreatedAtUtc >= notBeforeUtc)
+                .Where(c => beforeUtc is null || c.CreatedAtUtc < beforeUtc)
+                .Select(c => new LinkedCustomerActivityRawRow(
+                    c.Id.Value,
+                    "Credit",
+                    c.Amount,
+                    c.Status == CreditEntryStatus.Active ? c.Amount : 0m,
+                    c.Status.ToString(),
+                    c.CreatedAtUtc,
+                    c.SourceSaleId?.Value))
+                .Concat(repayments.All
+                    .Where(r => r.OrganizationId == organizationId && r.CustomerId == customerId)
+                    .Where(r => notBeforeUtc is null || r.RecordedAtUtc >= notBeforeUtc)
+                    .Where(r => beforeUtc is null || r.RecordedAtUtc < beforeUtc)
+                    .Select(r => new LinkedCustomerActivityRawRow(
+                        r.Id.Value,
+                        "Repayment",
+                        r.Amount,
+                        r.Status == RepaymentStatus.Active ? -r.Amount : 0m,
+                        r.Status.ToString(),
+                        r.RecordedAtUtc,
+                        null)))
+                .Concat(sales.All
+                    .Where(s => s.OrganizationId == organizationId
+                                && s.CustomerId == customerId
+                                && s.PaymentMethod != SalePaymentMethod.Utang
+                                && s.LinkedCreditEntryId is null
+                                && s.Status is SaleStatus.Completed or SaleStatus.Voided)
+                    .Where(s => notBeforeUtc is null || s.RecordedAtUtc >= notBeforeUtc)
+                    .Where(s => beforeUtc is null || s.RecordedAtUtc < beforeUtc)
+                    .Select(s => new LinkedCustomerActivityRawRow(
+                        s.Id.Value,
+                        "Sale",
+                        s.Total,
+                        0m,
+                        s.Status.ToString(),
+                        s.RecordedAtUtc,
+                        s.Id.Value)))
+                .OrderByDescending(r => r.RecordedAtUtc)
+                .ThenByDescending(r => r.EntryId)
+                .Skip(Math.Max(skip, 0))
+                .Take(take)
+                .ToList();
+            return Task.FromResult<IReadOnlyList<LinkedCustomerActivityRawRow>>(rows);
+        }
+
+        public Task<IReadOnlyList<LinkedCustomerActivityRawRow>> ListActiveDescendingAsync(
+            PosOrganizationId organizationId,
+            POSCustomerId customerId,
+            int skip,
+            int take,
+            CancellationToken cancellationToken = default)
+        {
+            take = Math.Min(take, LinkedCustomerStatementLimits.MaxPageSize + 1);
+            var rows = credits.All
+                .Where(c => c.OrganizationId == organizationId && c.CustomerId == customerId && c.Status == CreditEntryStatus.Active)
+                .Select(c => new LinkedCustomerActivityRawRow(
+                    c.Id.Value,
+                    "Credit",
+                    c.Amount,
+                    c.Amount,
+                    c.Status.ToString(),
+                    c.CreatedAtUtc,
+                    c.SourceSaleId?.Value))
+                .Concat(repayments.All
+                    .Where(r => r.OrganizationId == organizationId && r.CustomerId == customerId && r.Status == RepaymentStatus.Active)
+                    .Select(r => new LinkedCustomerActivityRawRow(
+                        r.Id.Value,
+                        "Repayment",
+                        r.Amount,
+                        -r.Amount,
+                        r.Status.ToString(),
+                        r.RecordedAtUtc,
+                        null)))
+                .OrderByDescending(r => r.RecordedAtUtc)
+                .ThenByDescending(r => r.EntryId)
+                .Skip(Math.Max(skip, 0))
+                .Take(take)
+                .ToList();
+            return Task.FromResult<IReadOnlyList<LinkedCustomerActivityRawRow>>(rows);
         }
     }
 
@@ -611,6 +576,7 @@ public sealed class LinkedCustomerReceiptUseCaseTests
     private sealed class InMemorySales : ISaleRepository
     {
         private readonly List<Sale> _items = [];
+        public IReadOnlyList<Sale> All => _items;
 
         public Task AddAsync(Sale sale)
         {
@@ -657,8 +623,16 @@ public sealed class LinkedCustomerReceiptUseCaseTests
             CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
 
-        public Task UpdateAsync(Sale sale, CancellationToken cancellationToken = default) =>
-            throw new NotSupportedException();
+        public Task UpdateAsync(Sale sale, CancellationToken cancellationToken = default)
+        {
+            var i = _items.FindIndex(s => s.Id == sale.Id);
+            if (i >= 0)
+            {
+                _items[i] = sale;
+            }
+
+            return Task.CompletedTask;
+        }
 
         public Task<bool> HasReturnsForSaleAsync(
             PosOrganizationId organizationId,

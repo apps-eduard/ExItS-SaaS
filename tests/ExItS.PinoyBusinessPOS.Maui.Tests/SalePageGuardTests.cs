@@ -24,6 +24,9 @@ public sealed class SalePageGuardTests
 
         var checkout = File.ReadAllText(Path.Combine(sales, "SaleCheckout.razor"));
         Assert.Contains("@page \"/sales/new\"", checkout, StringComparison.Ordinal);
+        // Settled checkout must persist selected customer id for linked-merchant projection (not Utang-only).
+        Assert.Contains("_selectedCustomer?.CustomerId", checkout, StringComparison.Ordinal);
+        Assert.Contains("CustomerId: _selectedCustomer?.CustomerId", checkout, StringComparison.Ordinal);
         Assert.Contains("LookupByBarcodeAsync", checkout, StringComparison.Ordinal);
         Assert.Contains("LookupBySkuAsync", checkout, StringComparison.Ordinal);
         Assert.Contains("SaleCartService", checkout, StringComparison.Ordinal);

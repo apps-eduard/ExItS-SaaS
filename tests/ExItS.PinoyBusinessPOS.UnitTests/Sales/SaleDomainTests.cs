@@ -390,6 +390,47 @@ public sealed class SaleDomainTests
     }
 
     [Fact]
+    public void Cash_checkout_may_attach_customer_without_credit_link()
+    {
+        var customerId = POSCustomerId.New();
+        var sale = Sale.Checkout(
+            Org,
+            SaleNumbers.Format(new DateOnly(2026, 7, 30), 1),
+            SalePaymentMethod.Cash,
+            [Draft(50m, 1m)],
+            Actor,
+            Now,
+            amountTendered: 100m,
+            customerId: customerId,
+            linkedCreditEntryId: null,
+            cashierShiftId: Shift,
+            registerId: Register);
+
+        Assert.Equal(SalePaymentMethod.Cash, sale.PaymentMethod);
+        Assert.Equal(customerId, sale.CustomerId);
+        Assert.Null(sale.LinkedCreditEntryId);
+        Assert.Equal(50m, sale.ChangeAmount);
+    }
+
+    [Fact]
+    public void Cash_checkout_still_rejects_linked_credit_entry()
+    {
+        var error = Assert.Throws<DomainException>(() => Sale.Checkout(
+            Org,
+            SaleNumbers.Format(new DateOnly(2026, 7, 30), 1),
+            SalePaymentMethod.Cash,
+            [Draft(50m, 1m)],
+            Actor,
+            Now,
+            amountTendered: 50m,
+            customerId: POSCustomerId.New(),
+            linkedCreditEntryId: CreditEntryId.New(),
+            cashierShiftId: Shift,
+            registerId: Register));
+        Assert.Equal(DomainErrorCodes.SaleCashMustNotLinkCredit, error.ErrorCode);
+    }
+
+    [Fact]
     public void Utang_checkout_records_customer_and_linked_credit_without_tender()
     {
         var customerId = POSCustomerId.New();
