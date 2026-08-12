@@ -6,6 +6,7 @@
 | Device Verified | **No** (emulator retest recommended) |
 | Production Ready | **No** |
 | Date | 2026-08-13 |
+| Tip hash | `cd8ca6265a65c94eb3a2f465bb0b9655ce07895b` |
 | Related | [P19-offline-operability-foundation](P19-offline-operability-foundation.md), [P19-personal-scope-offline-operability](P19-personal-scope-offline-operability.md) |
 
 ## Symptom
