@@ -351,10 +351,14 @@ public sealed class CreateCustomerLinkRequest
         PlatformUserId? targetUserIdentityId,
         string? publicUserId,
         CancellationToken cancellationToken = default,
-        bool persist = true)
+        bool persist = true,
+        BusinessCustomer? knownCustomer = null)
     {
-        var customer = await _customers.GetByIdAsync(businessCustomerId, cancellationToken).ConfigureAwait(false);
-        if (customer is null || customer.OrganizationId != organizationId)
+        var customer = knownCustomer
+            ?? await _customers.GetByIdAsync(businessCustomerId, cancellationToken).ConfigureAwait(false);
+        if (customer is null
+            || customer.Id != businessCustomerId
+            || customer.OrganizationId != organizationId)
         {
             return ApplicationResult<CustomerLinkRequestDto>.Failure(
                 ApplicationErrorCodes.BusinessCustomerNotFound,
@@ -1330,7 +1334,8 @@ public sealed class CreateBusinessCustomerWithPersonalLink
                     targetUserIdentityId,
                     publicUserId,
                     cancellationToken,
-                    persist: false)
+                    persist: false,
+                    knownCustomer: customer)
                 .ConfigureAwait(false);
             if (!linkResult.IsSuccess)
             {

@@ -12,6 +12,14 @@ internal sealed class BusinessCustomerRepository(PlatformDbContext db) : IBusine
         BusinessCustomerId id,
         CancellationToken cancellationToken = default)
     {
+        // Prefer the change tracker so same-UoW orchestration (create customer + link request)
+        // can see an Added entity before SaveChanges.
+        var tracked = db.BusinessCustomers.Local.FirstOrDefault(x => x.Id == id.Value);
+        if (tracked is not null)
+        {
+            return ToDomain(tracked);
+        }
+
         var record = await db.BusinessCustomers.AsNoTracking()
             .FirstOrDefaultAsync(x => x.Id == id.Value, cancellationToken)
             .ConfigureAwait(false);

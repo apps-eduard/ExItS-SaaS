@@ -431,6 +431,89 @@ public sealed class CustomerLinkConsentFlowTests
         Assert.Equal(harness.Customer.Id.Value, after.Value.PlatformBusinessCustomerId);
     }
 
+    [Fact]
+    public async Task Create_customer_with_personal_link_succeeds_when_get_by_id_cannot_see_unsaved_customer()
+    {
+        // Reproduces the EF AsNoTracking miss: customer is Added but not yet SaveChanges'd.
+        var harness = await Harness.CreateAsync();
+        var blindCustomers = new BlindGetUntilListedBusinessCustomerRepository();
+        var uow = new NoOpUnitOfWork();
+        var settings = await CreateSettingsRepoAsync(harness.Personal.Id);
+        var createLink = new CreateCustomerLinkRequest(
+            blindCustomers,
+            harness.Requests,
+            uow,
+            harness.Clock,
+            harness.Users,
+            harness.Orgs,
+            settings,
+            harness.PersonalNotifications);
+
+        var orchestration = new CreateBusinessCustomerWithPersonalLink(
+            harness.Orgs,
+            blindCustomers,
+            createLink,
+            uow,
+            harness.Clock);
+
+        var result = await orchestration.ExecuteAsync(
+            harness.Org.Id,
+            new CreateBusinessCustomerRequest("Mica Uy", Phone: null, Notes: "exits-id:EX-9228-5078"),
+            harness.Inviter.Id,
+            harness.Personal.Id,
+            harness.Personal.PublicUserId);
+
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.Equal("Mica Uy", result.Value!.Customer.DisplayName);
+        Assert.Equal(nameof(CustomerLinkRequestStatus.Pending), result.Value.LinkRequest.Status);
+        Assert.Equal(harness.Personal.Id.Value, result.Value.LinkRequest.TargetUserIdentityId);
+        Assert.NotEqual(Guid.Empty, result.Value.Customer.Id);
+    }
+
+    private static async Task<CustomerLinkCompletenessTests.InMemoryPersonalAccountSettingsRepository> CreateSettingsRepoAsync(
+        PlatformUserId userId)
+    {
+        var repo = new CustomerLinkCompletenessTests.InMemoryPersonalAccountSettingsRepository();
+        await repo.AddAsync(PersonalAccountSettings.CreateDefaults(userId, T0));
+        return repo;
+    }
+
+    /// <summary>
+    /// Simulates EF GetById AsNoTracking: Added entities are invisible until explicitly listed.
+    /// </summary>
+    private sealed class BlindGetUntilListedBusinessCustomerRepository : IBusinessCustomerRepository
+    {
+        private readonly List<BusinessCustomer> _pending = [];
+
+        public Task AddAsync(BusinessCustomer customer, CancellationToken cancellationToken = default)
+        {
+            _pending.Add(customer);
+            return Task.CompletedTask;
+        }
+
+        public Task<BusinessCustomer?> GetByIdAsync(
+            BusinessCustomerId id,
+            CancellationToken cancellationToken = default) =>
+            // Intentionally blind — mirrors AsNoTracking before SaveChanges.
+            Task.FromResult<BusinessCustomer?>(null);
+
+        public Task<(IReadOnlyList<BusinessCustomer> Items, int TotalCount)> ListByOrganizationAsync(
+            PlatformOrganizationId organizationId,
+            string? owningProductCode,
+            int skip,
+            int take,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<(IReadOnlyList<BusinessCustomer>, int)>(([], 0));
+
+        public Task<IReadOnlyList<BusinessCustomer>> ListByIdsAsync(
+            IReadOnlyCollection<BusinessCustomerId> ids,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<BusinessCustomer>>([]);
+
+        public Task UpdateAsync(BusinessCustomer customer, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+    }
+
     internal sealed class Harness
     {
         private Harness(
