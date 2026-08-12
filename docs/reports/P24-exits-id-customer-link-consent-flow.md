@@ -7,7 +7,7 @@
 | Production Ready | **No** |
 | Phase 24 Closed | **No** |
 | Migration | `20260812204536_AddCustomerLinkTargetAndOrgNotifications` |
-| Implementation tip | `cd8ca6265a65c94eb3a2f465bb0b9655ce07895b` |
+| Implementation tip | `d88c6a8bfd7153ea9f87c9fbab9251d36079242b` |
 | Platform feat | `1d18baab` |
 | POS/UI/tests feat | `ad5d9e37` |
 | Docs | `4f843034` + stamp `9fa4b8f5` / `7c55f907` |
