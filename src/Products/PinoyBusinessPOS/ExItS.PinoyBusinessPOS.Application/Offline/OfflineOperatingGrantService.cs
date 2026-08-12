@@ -127,15 +127,15 @@ public sealed class OfflineOperatingGrantService(
         }
 
         // Mandatory enrollment is per signed-in user. A leftover PIN from another account
-        // must not count as enrolled. Legacy unbound verifiers still unlock cold-start until
-        // the next online establish clears them and forces re-enrollment.
+        // must not count as enrolled. Legacy/unbound (or Guid.Empty) verifiers still count as
+        // configured until online establish binds or clears them.
         var grant = await LoadNormalizedGrantAsync(ct).ConfigureAwait(false);
         if (grant is null)
         {
             return true;
         }
 
-        if (verifier.UserId is null)
+        if (verifier.UserId is null || verifier.UserId == Guid.Empty)
         {
             return true;
         }
@@ -318,8 +318,8 @@ public sealed class OfflineOperatingGrantService(
     }
 
     /// <summary>
-    /// Drop PIN verifiers that are unbound (legacy) or belong to a different user so online
-    /// login always forces enrollment for the current account.
+    /// Keep the current user's PIN across re-login. Bind legacy unbound verifiers to this user.
+    /// Clear only when the verifier belongs to a different account (device shared / account switch).
     /// </summary>
     private async Task EnsurePinBelongsToUserAsync(Guid userId, CancellationToken ct)
     {
@@ -329,12 +329,22 @@ public sealed class OfflineOperatingGrantService(
             return;
         }
 
-        if (verifier.UserId is Guid pinUser && pinUser == userId)
+        // Null or Empty = unbound / corrupt binding — bind, do not wipe (wipe forces setup every login).
+        if (verifier.UserId is Guid pinUser && pinUser != Guid.Empty)
         {
+            if (pinUser == userId)
+            {
+                return;
+            }
+
+            // Different account on this device — force fresh enrollment for the signed-in user.
+            await store.ClearPinVerifierAsync(ct).ConfigureAwait(false);
             return;
         }
 
-        await store.ClearPinVerifierAsync(ct).ConfigureAwait(false);
+        await store
+            .SavePinVerifierAsync(verifier with { UserId = userId }, ct)
+            .ConfigureAwait(false);
     }
 
     private static bool IsPersonalEligible(AuthSession session)

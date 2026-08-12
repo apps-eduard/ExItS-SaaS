@@ -10,6 +10,7 @@ public sealed class OfflineOperatingGrantStore(ISecureTokenStore tokens) : IOffl
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        PropertyNameCaseInsensitive = true,
         WriteIndented = false
     };
 

@@ -20,19 +20,121 @@ public sealed class AuthOfflineUxLayerTests
     }
 
     [Fact]
-    public async Task Online_establish_clears_legacy_unbound_pin_forcing_reenrollment()
+    public async Task Online_establish_binds_legacy_unbound_pin_to_current_user()
     {
         var clock = new FakeClock(DateTimeOffset.Parse("2026-08-08T00:00:00Z"));
         var harness = await SeedGrantWithoutPinAsync(clock);
-        // Simulate a leftover device PIN written before UserId binding.
+        // Simulate a leftover device PIN written before UserId binding (or lost UserId on disk).
         await harness.Store.SavePinVerifierAsync(OfflinePinHasher.Create("123456", 10_000, userId: null));
         Assert.True(await harness.Service.HasPinConfiguredAsync());
 
         await harness.Service.EstablishFromOnlineSessionAsync(OnlineSession(), harness.Device.DeviceId, "Cashier");
 
-        Assert.False(await harness.Service.HasPinConfiguredAsync());
-        Assert.Null(await harness.Store.LoadPinVerifierAsync());
+        Assert.True(await harness.Service.HasPinConfiguredAsync());
+        var bound = await harness.Store.LoadPinVerifierAsync();
+        Assert.NotNull(bound);
+        Assert.Equal(OnlineSession().UserId, bound!.UserId);
         Assert.NotNull(await harness.Store.LoadGrantAsync());
+    }
+
+    [Fact]
+    public async Task Personal_relogin_establish_keeps_same_user_pin()
+    {
+        var clock = new FakeClock(DateTimeOffset.Parse("2026-08-08T00:00:00Z"));
+        var options = Options.Create(new OfflineOperatingGrantOptions
+        {
+            DurationHours = 24,
+            PinMinLength = 6,
+            MaxFailedPinAttempts = 5,
+            PinLockoutMinutes = 15,
+            PinHashIterations = 10_000
+        });
+        var store = new MemoryOfflineGrantStore();
+        var device = new FakeDevice("device-personal");
+        var sut = new OfflineOperatingGrantService(store, device, options, clock);
+        var personal = new AuthSession(
+            Guid.Parse("11111111-1111-1111-1111-111111111111"),
+            "Rosa Personal",
+            "rosa",
+            "rosa@example.com",
+            OrganizationId: null,
+            OrganizationDisplayName: null,
+            IssuedAtUtc: clock.GetUtcNow(),
+            ExpiresAtUtc: clock.GetUtcNow().AddHours(8),
+            HasPosAccess: false,
+            AccessReasonCode: null,
+            AccountClass: "Personal");
+
+        await sut.EstablishFromOnlineSessionAsync(personal, device.DeviceId, roleCode: null);
+        Assert.True((await sut.SetPinAsync("123456")).Succeeded);
+        var before = await store.LoadPinVerifierAsync();
+
+        // Simulate app kill + online Personal login again (new process unlock flag).
+        sut.LockThisProcess();
+        await sut.EstablishFromOnlineSessionAsync(personal, device.DeviceId, roleCode: null);
+
+        Assert.True(await sut.HasPinConfiguredAsync());
+        var after = await store.LoadPinVerifierAsync();
+        Assert.NotNull(after);
+        Assert.Equal(personal.UserId, after!.UserId);
+        Assert.Equal(before!.HashBase64, after.HashBase64);
+    }
+
+    [Fact]
+    public void Pin_verifier_json_roundtrip_preserves_user_id()
+    {
+        var original = OfflinePinHasher.Create(
+            "123456",
+            10_000,
+            Guid.Parse("11111111-1111-1111-1111-111111111111"));
+        var json = System.Text.Json.JsonSerializer.Serialize(
+            original,
+            new System.Text.Json.JsonSerializerOptions
+            {
+                PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
+            });
+        var restored = System.Text.Json.JsonSerializer.Deserialize<OfflinePinVerifier>(
+            json,
+            new System.Text.Json.JsonSerializerOptions
+            {
+                PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
+                PropertyNameCaseInsensitive = true
+            });
+        Assert.NotNull(restored);
+        Assert.Equal(original.UserId, restored!.UserId);
+        Assert.Equal(original.HashBase64, restored.HashBase64);
+    }
+
+    [Fact]
+    public async Task Store_loads_pascal_case_pin_json_without_dropping_user_id()
+    {
+        // Older builds may have written PascalCase SecureStorage JSON; UserId must still bind.
+        var tokens = new MemorySecureTokenStoreForPin();
+        var store = new OfflineOperatingGrantStore(tokens);
+        var userId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        var pascal = """
+            {"Algorithm":"PBKDF2-SHA256","Iterations":10000,"SaltBase64":"c2FsdA==","HashBase64":"aGFzaA==","FailedAttempts":0,"LockedUntilUtc":null,"UserId":"11111111-1111-1111-1111-111111111111"}
+            """;
+        await tokens.SetAsync(SecureTokenKeys.OfflinePinVerifier, pascal);
+
+        var loaded = await store.LoadPinVerifierAsync();
+        Assert.NotNull(loaded);
+        Assert.Equal(userId, loaded!.UserId);
+    }
+
+    [Fact]
+    public async Task Online_establish_binds_empty_userid_pin_instead_of_clearing()
+    {
+        var clock = new FakeClock(DateTimeOffset.Parse("2026-08-08T00:00:00Z"));
+        var harness = await SeedGrantWithoutPinAsync(clock);
+        var unbound = OfflinePinHasher.Create("123456", 10_000, userId: Guid.Empty);
+        await harness.Store.SavePinVerifierAsync(unbound);
+
+        await harness.Service.EstablishFromOnlineSessionAsync(OnlineSession(), harness.Device.DeviceId, "Cashier");
+
+        Assert.True(await harness.Service.HasPinConfiguredAsync());
+        var bound = await harness.Store.LoadPinVerifierAsync();
+        Assert.Equal(OnlineSession().UserId, bound!.UserId);
     }
 
     [Fact]
@@ -466,6 +568,32 @@ public sealed class AuthOfflineUxLayerTests
         public Task ClearPinVerifierAsync(CancellationToken ct = default)
         {
             _pin = null;
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed class MemorySecureTokenStoreForPin : ISecureTokenStore
+    {
+        private readonly Dictionary<string, string> _values = new(StringComparer.Ordinal);
+
+        public Task<string?> GetAsync(string key, CancellationToken ct = default) =>
+            Task.FromResult(_values.TryGetValue(key, out var value) ? value : null);
+
+        public Task SetAsync(string key, string value, CancellationToken ct = default)
+        {
+            _values[key] = value;
+            return Task.CompletedTask;
+        }
+
+        public Task ClearAsync(string key, CancellationToken ct = default)
+        {
+            _values.Remove(key);
+            return Task.CompletedTask;
+        }
+
+        public Task ClearAllSessionKeysAsync(CancellationToken ct = default)
+        {
+            _values.Clear();
             return Task.CompletedTask;
         }
     }

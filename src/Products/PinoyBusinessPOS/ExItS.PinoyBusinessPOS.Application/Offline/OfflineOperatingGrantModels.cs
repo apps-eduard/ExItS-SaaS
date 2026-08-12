@@ -72,6 +72,7 @@ public sealed record OfflinePinVerifier(
     int FailedAttempts,
     DateTimeOffset? LockedUntilUtc,
     /// <summary>Owner of this PIN. Null on legacy device verifiers written before user binding.</summary>
+    [property: System.Text.Json.Serialization.JsonPropertyName("userId")]
     Guid? UserId = null);
 
 public enum OfflinePinUnlockStatus

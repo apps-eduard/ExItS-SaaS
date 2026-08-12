@@ -957,6 +957,58 @@ public sealed class AuthenticationServiceTests
     }
 
     [Fact]
+    public async Task Online_relogin_after_logout_does_not_force_pin_setup_again()
+    {
+        var harness = await SeedOfflineGrantHarnessAsync();
+        var pinHashBefore = (await harness.GrantStore.LoadPinVerifierAsync())!.HashBase64;
+
+        harness.Access.IntrospectResult = ApiResult<PlatformAccessTokenIntrospectionDto>.Success(
+            new PlatformAccessTokenIntrospectionDto(
+                Active: true,
+                TokenId: Guid.NewGuid(),
+                UserId: harness.UserId,
+                Username: "cashier1",
+                DisplayName: "Cashier",
+                OrganizationId: harness.OrgId,
+                OrganizationDisplayName: "Store",
+                ProductCode: PosProductCodes.PinoyBusinessPos,
+                ExpiresAtUtc: DateTimeOffset.UtcNow.AddHours(1),
+                ProductAccessAllowed: true,
+                ProductAccessReasonCode: null,
+                SubscriptionStatus: "Active",
+                EnabledFeatureCodes: ["pos.sell"]));
+        Assert.True((await harness.Auth.RestoreSessionAsync()).Succeeded);
+        await harness.Auth.LogoutAsync();
+
+        // Simulate online password login for the same user (new process already locked by Logout).
+        var now = DateTimeOffset.UtcNow;
+        harness.Current.Set(new AuthSession(
+            harness.UserId,
+            "Cashier",
+            "cashier1",
+            "c@example.com",
+            harness.OrgId,
+            "Store",
+            now,
+            now.AddHours(8),
+            HasPosAccess: true,
+            AccessReasonCode: "allowed",
+            SubscriptionStatus: "Active",
+            EnabledFeatureCodes: ["pos.sell"],
+            AccessToken: "opaque-token-2",
+            BranchId: Guid.Parse("55555555-5555-5555-5555-555555555555"),
+            PosDeviceId: Guid.Parse("66666666-6666-6666-6666-666666666666")));
+
+        await harness.Auth.EnsureOfflineOperateGrantAsync();
+
+        Assert.True(await harness.Auth.HasOfflinePinConfiguredAsync());
+        var pinAfter = await harness.GrantStore.LoadPinVerifierAsync();
+        Assert.NotNull(pinAfter);
+        Assert.Equal(harness.UserId, pinAfter!.UserId);
+        Assert.Equal(pinHashBefore, pinAfter.HashBase64);
+    }
+
+    [Fact]
     public async Task Offline_pin_unlock_restores_permission_snapshot()
     {
         var harness = await SeedOfflineGrantHarnessAsync();
