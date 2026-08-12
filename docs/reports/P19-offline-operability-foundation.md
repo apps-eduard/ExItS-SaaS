@@ -13,7 +13,8 @@
 | Personal offline | [P19-personal-scope-offline-operability](P19-personal-scope-offline-operability.md) — Personal Utang local-first (separate grant scope + DB) |
 | Support diagnostics | [P19-support-diagnostics](P19-support-diagnostics.md) — shared Personal/Organization device-local diagnostics |
 | Staff identities | [P19-organization-scoped-staff-identities](P19-organization-scoped-staff-identities.md) — offline grant remains UserId + OrganizationId + device |
-| PIN re-login fix | [P19-offline-pin-same-user-relogin-fix](P19-offline-pin-same-user-relogin-fix.md) — same-user logout/login keeps PIN; account switch re-enrolls |
+| PIN re-login fix | [P19-offline-pin-same-user-relogin-fix](P19-offline-pin-same-user-relogin-fix.md) — same-user logout/login keeps PIN; superseded for **multi-cashier** by [P19-multi-user-offline-cashier-pin](P19-multi-user-offline-cashier-pin.md) |
+| Multi-cashier offline | [P19-multi-user-offline-cashier-pin](P19-multi-user-offline-cashier-pin.md) — per-user PIN + 30-day grant on shared POS devices |
 
 ## 1. Objective
 
@@ -73,8 +74,9 @@ UI: Settings (online) for optional PIN change; `/offline-pin-setup` for **mandat
 | Topic | Behavior |
 |---|---|
 | Mandatory PIN enrollment | After successful online auth and Personal/Org/setup completion, if this device has no PIN for the **signed-in user** and a valid operate grant exists → force `/offline-pin-setup` (no Skip / Maybe later) |
-| Same-user re-login | Online establish **keeps** the enrolled PIN for that user (binds legacy unbound verifiers). Do **not** force setup again after logout → same-account login. See [P19-offline-pin-same-user-relogin-fix](P19-offline-pin-same-user-relogin-fix.md). |
-| Account switch on one device | One SecureStorage PIN verifier. Different `UserId` → clear prior PIN and require enrollment for the new account (expected). |
+| Same-user re-login | Online establish **keeps** that user's PIN. See [P19-offline-pin-same-user-relogin-fix](P19-offline-pin-same-user-relogin-fix.md). |
+| Shared POS multi-cashier | Per-user grant + PIN on one device. Enrolling another cashier does **not** wipe others. Offline picker when multiple enrolled. Default grant **720h / 30 days**. See [P19-multi-user-offline-cashier-pin](P19-multi-user-offline-cashier-pin.md). |
+| Account switch on one device | ~~One SecureStorage PIN verifier~~ **Superseded:** each user has an independent verifier/grant slot. |
 | Existing-user migration | Existing users who never enrolled a PIN are gated the same way on next online POS entry |
 | Use PIN on Sign-in | Shown only when enrolled PIN + usable offline operate grant/session identity exist on this device |
 | Offline Sign-in | Use PIN is primary; username/password and Google/Facebook placeholders show Internet-required messaging (do not fake auth) |
