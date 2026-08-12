@@ -253,7 +253,7 @@ P19-WP08 ? End-to-End Validation and User Closeout Checklist (Retest � awaitin
 | P24-WP14 — Documentation / backend closeout preparation | **Complete** | `d5b25e6cc197d4f4cf7955051282e6293df52655` (docs) — [report](reports/P24-WP14-documentation-backend-closeout-preparation.md) |
 | P24-WP15 — Physical Android validation preparation | **Complete** (prep ≠ Device Verified) | `b1200f314c02c7573224899c6f1f516d5d9a32b9` (docs) — [report](reports/P24-WP15-physical-android-validation-preparation.md) |
 | P24-WP16 — Personal mobile linked-customer statement experience | **Complete** | `de568ae08f17b11c2c14823f4e2b4c3e9f337c78` (feat) — [report](reports/P24-WP16-personal-mobile-linked-customer-statement-experience.md) |
-| P24-WP17 — Mobile receipts and older-history entitlement UX | **Complete** | _(hashes stamped after push)_ — [report](reports/P24-WP17-mobile-receipts-and-older-history-entitlement-ux.md) |
+| P24-WP17 — Mobile receipts and older-history entitlement UX | **Complete** | `cf81e15b8bd9d6ff27b66db6f105a880fe23a96d` (feat) — [report](reports/P24-WP17-mobile-receipts-and-older-history-entitlement-ux.md) |
 | P24-WP18 — Mobile rewards and Personal feature redemption | **Not started** | — |
 | P24-WP19 — Mobile ads/ad-free UX abstraction | **Not started** | — |
 | P24-WP20 — Android integration and end-to-end mobile flows | **Not started** | — |
