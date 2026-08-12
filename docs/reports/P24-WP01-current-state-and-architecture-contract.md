@@ -227,4 +227,4 @@ None (documentation-only WP). Prior unrelated suite results are not claimed for 
 
 ## Commit hash
 
-Recorded after the documentation commit on `main`.
+`1351bef72f9ba04030495785767cc9bb609c5f8d` — `docs(p24): define linked customer statements and personal monetization`

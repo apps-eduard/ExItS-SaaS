@@ -237,7 +237,7 @@ P19-WP08 ? End-to-End Validation and User Closeout Checklist (Retest � awaitin
 
 | WP | Status | Key commit |
 |---|---|---|
-| P24-WP01 — Current-state audit + architecture contract | **Planned** (docs) | See phase page after docs commit — [report](reports/P24-WP01-current-state-and-architecture-contract.md) |
+| P24-WP01 — Current-state audit + architecture contract | **Planned** (docs) | `1351bef72f9ba04030495785767cc9bb609c5f8d` — [report](reports/P24-WP01-current-state-and-architecture-contract.md) |
 
 ## Phase 21 work packages
 
