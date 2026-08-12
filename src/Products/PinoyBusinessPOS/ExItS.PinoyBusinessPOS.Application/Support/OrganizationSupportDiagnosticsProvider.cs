@@ -125,7 +125,9 @@ public sealed class OrganizationSupportDiagnosticsProvider(
             deviceId = string.Empty;
         }
 
-        var grant = await offlineGrant.PeekStoredGrantAsync(ct).ConfigureAwait(false);
+        var grant = session.UserId != Guid.Empty
+            ? await offlineGrant.PeekStoredGrantAsync(session.UserId, ct).ConfigureAwait(false)
+            : await offlineGrant.PeekStoredGrantAsync(ct).ConfigureAwait(false);
         if (grant is not null
             && (!grant.IsOrganizationScope
                 || grant.OrganizationId != orgId
@@ -134,7 +136,7 @@ public sealed class OrganizationSupportDiagnosticsProvider(
             grant = null;
         }
 
-        var pinConfigured = await offlineGrant.HasPinConfiguredAsync(ct).ConfigureAwait(false);
+        var pinConfigured = await offlineGrant.HasPinConfiguredAsync(session.UserId, ct).ConfigureAwait(false);
         var publicOrgId = SupportDiagnosticsPublicIds.TryExtractPublicOrganizationId(session.Username)
             ?? SupportDiagnosticsPublicIds.TryExtractPublicOrganizationId(session.Email);
 

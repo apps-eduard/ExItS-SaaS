@@ -81,14 +81,16 @@ public sealed class PersonalSupportDiagnosticsProvider(
             lastSynced = null;
         }
 
-        var grant = await offlineGrant.PeekStoredGrantAsync(ct).ConfigureAwait(false);
+        var grant = session.UserId != Guid.Empty
+            ? await offlineGrant.PeekStoredGrantAsync(session.UserId, ct).ConfigureAwait(false)
+            : await offlineGrant.PeekStoredGrantAsync(ct).ConfigureAwait(false);
         if (grant is not null
             && (!grant.IsPersonalScope || grant.UserId != session.UserId))
         {
             grant = null;
         }
 
-        var pinConfigured = await offlineGrant.HasPinConfiguredAsync(ct).ConfigureAwait(false);
+        var pinConfigured = await offlineGrant.HasPinConfiguredAsync(session.UserId, ct).ConfigureAwait(false);
 
         return new SupportDiagnosticsSnapshot(
             CapturedAtUtc: now,

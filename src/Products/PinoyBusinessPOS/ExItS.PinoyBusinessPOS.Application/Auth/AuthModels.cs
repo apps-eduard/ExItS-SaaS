@@ -33,15 +33,25 @@ public static class SecureTokenKeys
     public const string LocalPayloadEncryptionKey = "pos.local.payload.key";
 
     /// <summary>
-    /// Offline operate grant (no tokens/passwords). Kept across Sign out for PIN unlock;
-    /// cleared on hard revoke (server denial) / remove-from-device; replaced on online bind.
+    /// Legacy single-slot offline operate grant (pre multi-cashier). Migrated to
+    /// <see cref="OfflineOperatingGrantFor"/> then removed.
     /// </summary>
     public const string OfflineOperatingGrant = "pos.offline.operatingGrant";
 
     /// <summary>
-    /// Salted PIN verifier for unlocking an existing offline grant. Survives Sign out.
+    /// Legacy single-slot PIN verifier (pre multi-cashier). Migrated to
+    /// <see cref="OfflinePinVerifierFor"/> then removed.
     /// </summary>
     public const string OfflinePinVerifier = "pos.offline.pinVerifier";
+
+    /// <summary>Non-secret directory of enrolled offline users on this device.</summary>
+    public const string OfflineEnrolledUsers = "pos.offline.enrolledUsers";
+
+    public static string OfflineOperatingGrantFor(Guid userId) =>
+        $"pos.offline.grant.{userId:D}";
+
+    public static string OfflinePinVerifierFor(Guid userId) =>
+        $"pos.offline.pin.{userId:D}";
 }
 
 public static class PreferenceKeys

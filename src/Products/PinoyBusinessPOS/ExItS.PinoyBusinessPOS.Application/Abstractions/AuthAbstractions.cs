@@ -122,8 +122,16 @@ public interface IAuthenticationService
     /// <summary>
     /// Unlocks a previously established offline operate grant with the local PIN after cold-start
     /// when the server is unreachable. Never creates or extends authorization.
+    /// When multiple cashiers are enrolled, use <see cref="UnlockOfflineWithPinAsync(Guid, string, CancellationToken)"/>.
     /// </summary>
     Task<AuthResult> UnlockOfflineWithPinAsync(string pin, CancellationToken ct = default);
+
+    /// <summary>Unlocks offline operate for a specific enrolled user on this device.</summary>
+    Task<AuthResult> UnlockOfflineWithPinAsync(Guid userId, string pin, CancellationToken ct = default);
+
+    /// <summary>Safe list of cashiers enrolled for offline unlock on this device (no secrets).</summary>
+    Task<IReadOnlyList<OfflineEnrolledUserSummary>> GetEnrolledOfflineUsersAsync(
+        CancellationToken ct = default);
 
     /// <summary>Sets or replaces the local offline PIN while an online-validated grant exists.</summary>
     Task<OfflinePinSetupResult> SetOfflinePinAsync(string pin, CancellationToken ct = default);
@@ -137,6 +145,9 @@ public interface IAuthenticationService
     /// (Organization POS or Personal) so mandatory PIN enrollment can succeed.
     /// </summary>
     Task EnsureOfflineOperateGrantAsync(CancellationToken ct = default);
+
+    /// <summary>Removes one enrolled offline cashier from this device (grant + PIN).</summary>
+    Task RemoveEnrolledOfflineUserAsync(Guid userId, CancellationToken ct = default);
 }
 
 /// <summary>Local security-event sink. Does not replace Platform audit authority.</summary>

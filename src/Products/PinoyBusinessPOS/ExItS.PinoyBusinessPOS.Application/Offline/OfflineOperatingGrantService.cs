@@ -5,9 +5,10 @@ using Microsoft.Extensions.Options;
 namespace ExItS.PinoyBusinessPOS.Application.Offline;
 
 /// <summary>
-/// Offline operate grant lifecycle. Online bind establishes/refreshes the grant; PIN only unlocks
-/// an already-valid grant and never extends <see cref="OfflineOperatingGrant.ExpiresAtUtc"/>.
-/// Supports Organization (POS) and Personal (Utang) scopes with mutual isolation.
+/// Offline operate grant lifecycle for shared POS terminals.
+/// Online bind establishes/refreshes one user's grant; PIN only unlocks an already-valid grant
+/// and never extends <see cref="OfflineOperatingGrant.ExpiresAtUtc"/>.
+/// Multiple cashiers may keep independent PIN verifiers and grants on one device.
 /// </summary>
 public sealed class OfflineOperatingGrantService(
     IOfflineOperatingGrantStore store,
@@ -29,10 +30,15 @@ public sealed class OfflineOperatingGrantService(
         CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(session);
+        if (session.UserId == Guid.Empty)
+        {
+            return;
+        }
 
         OfflineOperatingGrant? grant = null;
         var now = _clock.GetUtcNow();
-        var duration = TimeSpan.FromHours(Math.Clamp(_options.DurationHours, 1, 168));
+        var maxHours = Math.Max(1, _options.MaxDurationHours);
+        var duration = TimeSpan.FromHours(Math.Clamp(_options.DurationHours, 1, maxHours));
 
         if (string.IsNullOrWhiteSpace(deviceId))
         {
@@ -46,7 +52,6 @@ public sealed class OfflineOperatingGrantService(
             && session.BranchId is Guid branchId
             && session.PosDeviceId is Guid posDeviceId)
         {
-            // Organization / POS operate grant — requires org + POS access.
             grant = new OfflineOperatingGrant(
                 SchemaVersion: OfflineOperatingGrant.CurrentSchemaVersion,
                 UserId: session.UserId,
@@ -68,7 +73,6 @@ public sealed class OfflineOperatingGrantService(
         }
         else if (IsPersonalEligible(session))
         {
-            // Personal Utang grant — never for staff/org-locked sessions with an organization bind.
             grant = new OfflineOperatingGrant(
                 SchemaVersion: OfflineOperatingGrant.CurrentSchemaVersion,
                 UserId: session.UserId,
@@ -92,33 +96,76 @@ public sealed class OfflineOperatingGrantService(
         }
 
         await store.SaveGrantAsync(grant, ct).ConfigureAwait(false);
-        await EnsurePinBelongsToUserAsync(grant.UserId, ct).ConfigureAwait(false);
+        // Per-user slots: never clear another cashier's PIN when this user establishes online.
+        await BindUnboundPinForUserAsync(grant.UserId, ct).ConfigureAwait(false);
 
-        // Online validation refreshes the grant window; do not require PIN again this process.
         IsUnlockedThisProcess = true;
         ActiveUnlockedGrant = grant;
     }
 
     public async Task ClearAsync(CancellationToken ct = default)
     {
-        // Hard clear (server denial / inactive user / remove-from-device). Sign out does NOT call
-        // this — it only LockThisProcess so offline PIN unlock remains available. PIN verifier is
-        // retained for reuse after the next online establish when the grant is cleared.
-        await store.ClearGrantAsync(ct).ConfigureAwait(false);
-        IsUnlockedThisProcess = false;
-        ActiveUnlockedGrant = null;
+        var userId = ActiveUnlockedGrant?.UserId;
+        if (userId is null)
+        {
+            IsUnlockedThisProcess = false;
+            ActiveUnlockedGrant = null;
+            return;
+        }
+
+        await ClearUserGrantAsync(userId.Value, ct).ConfigureAwait(false);
+    }
+
+    public async Task ClearUserGrantAsync(Guid userId, CancellationToken ct = default)
+    {
+        await store.ClearGrantAsync(userId, ct).ConfigureAwait(false);
+        if (ActiveUnlockedGrant?.UserId == userId)
+        {
+            IsUnlockedThisProcess = false;
+            ActiveUnlockedGrant = null;
+        }
+    }
+
+    public async Task RemoveEnrolledUserAsync(Guid userId, CancellationToken ct = default)
+    {
+        await store.RemoveUserAsync(userId, ct).ConfigureAwait(false);
+        if (ActiveUnlockedGrant?.UserId == userId)
+        {
+            IsUnlockedThisProcess = false;
+            ActiveUnlockedGrant = null;
+        }
     }
 
     public void LockThisProcess()
     {
-        // Keep durable grant + PIN; only revoke process unlock so Lock ≠ Sign out.
         IsUnlockedThisProcess = false;
         ActiveUnlockedGrant = null;
     }
 
+    public Task<IReadOnlyList<OfflineEnrolledUserSummary>> GetEnrolledUsersAsync(
+        CancellationToken ct = default) =>
+        store.GetEnrolledUsersAsync(ct);
+
     public async Task<bool> HasPinConfiguredAsync(CancellationToken ct = default)
     {
-        var verifier = await store.LoadPinVerifierAsync(ct).ConfigureAwait(false);
+        if (ActiveUnlockedGrant is { UserId: var active })
+        {
+            return await HasPinConfiguredAsync(active, ct).ConfigureAwait(false);
+        }
+
+        // Online enrollment gate: prefer evaluating against the sole enrolled user when one exists.
+        var enrolled = await store.GetEnrolledUsersAsync(ct).ConfigureAwait(false);
+        if (enrolled.Count == 1)
+        {
+            return await HasPinConfiguredAsync(enrolled[0].UserId, ct).ConfigureAwait(false);
+        }
+
+        return false;
+    }
+
+    public async Task<bool> HasPinConfiguredAsync(Guid userId, CancellationToken ct = default)
+    {
+        var verifier = await store.LoadPinVerifierAsync(userId, ct).ConfigureAwait(false);
         if (verifier is null
             || string.IsNullOrWhiteSpace(verifier.HashBase64)
             || string.IsNullOrWhiteSpace(verifier.SaltBase64))
@@ -126,21 +173,12 @@ public sealed class OfflineOperatingGrantService(
             return false;
         }
 
-        // Mandatory enrollment is per signed-in user. A leftover PIN from another account
-        // must not count as enrolled. Legacy/unbound (or Guid.Empty) verifiers still count as
-        // configured until online establish binds or clears them.
-        var grant = await LoadNormalizedGrantAsync(ct).ConfigureAwait(false);
-        if (grant is null)
+        if (verifier.UserId is Guid pinUser && pinUser != Guid.Empty && pinUser != userId)
         {
-            return true;
+            return false;
         }
 
-        if (verifier.UserId is null || verifier.UserId == Guid.Empty)
-        {
-            return true;
-        }
-
-        return verifier.UserId == grant.UserId;
+        return true;
     }
 
     public async Task<OfflinePinSetupResult> SetPinAsync(string pin, CancellationToken ct = default)
@@ -150,7 +188,7 @@ public sealed class OfflineOperatingGrantService(
             return new OfflinePinSetupResult(false, "Offline_PinInvalidFormat");
         }
 
-        var grant = await LoadNormalizedGrantAsync(ct).ConfigureAwait(false);
+        var grant = ActiveUnlockedGrant ?? await ResolveSingleActiveGrantAsync(ct).ConfigureAwait(false);
         if (grant is null)
         {
             return new OfflinePinSetupResult(false, "Offline_GrantMissing");
@@ -172,82 +210,160 @@ public sealed class OfflineOperatingGrantService(
             pin,
             Math.Max(10_000, _options.PinHashIterations),
             grant.UserId);
-        await store.SavePinVerifierAsync(verifier, ct).ConfigureAwait(false);
+        await store.SavePinVerifierAsync(grant.UserId, verifier, ct).ConfigureAwait(false);
         return new OfflinePinSetupResult(true);
     }
 
     public async Task<OfflineColdStartOffer> EvaluateColdStartOfferAsync(CancellationToken ct = default)
     {
-        var grant = await LoadNormalizedGrantAsync(ct).ConfigureAwait(false);
-        if (grant is null)
+        var deviceId = await deviceIdentity.GetOrCreateDeviceIdAsync(ct).ConfigureAwait(false);
+        var now = _clock.GetUtcNow();
+        var enrolled = await store.GetEnrolledUsersAsync(ct).ConfigureAwait(false);
+        if (enrolled.Count == 0)
         {
             return new OfflineColdStartOffer(false, null, "offline_grant_missing");
         }
 
-        if (!grant.IsOrganizationScope && !grant.IsPersonalScope)
+        var candidates = new List<OfflineEnrolledUserSummary>();
+        OfflineOperatingGrant? singleGrant = null;
+        string? lastDenial = "offline_grant_missing";
+
+        foreach (var summary in enrolled)
         {
-            return new OfflineColdStartOffer(false, null, "offline_grant_invalid_scope");
+            var grant = await LoadNormalizedGrantAsync(summary.UserId, ct).ConfigureAwait(false);
+            if (grant is null)
+            {
+                lastDenial = "offline_grant_missing";
+                continue;
+            }
+
+            if (!grant.IsOrganizationScope && !grant.IsPersonalScope)
+            {
+                lastDenial = "offline_grant_invalid_scope";
+                continue;
+            }
+
+            if (grant.IsExpired(now))
+            {
+                lastDenial = "offline_grant_expired";
+                continue;
+            }
+
+            if (!string.Equals(grant.DeviceId, deviceId, StringComparison.Ordinal))
+            {
+                lastDenial = "offline_device_mismatch";
+                continue;
+            }
+
+            if (!await HasPinConfiguredAsync(summary.UserId, ct).ConfigureAwait(false))
+            {
+                lastDenial = "offline_pin_not_configured";
+                continue;
+            }
+
+            candidates.Add(summary with { HasPinConfigured = true });
+            singleGrant = grant;
         }
 
-        var now = _clock.GetUtcNow();
-        if (grant.IsExpired(now))
+        if (candidates.Count == 0)
         {
-            return new OfflineColdStartOffer(false, grant, "offline_grant_expired");
+            return new OfflineColdStartOffer(false, null, lastDenial);
         }
 
-        var deviceId = await deviceIdentity.GetOrCreateDeviceIdAsync(ct).ConfigureAwait(false);
-        if (!string.Equals(grant.DeviceId, deviceId, StringComparison.Ordinal))
+        if (candidates.Count == 1)
         {
-            return new OfflineColdStartOffer(false, grant, "offline_device_mismatch");
+            return new OfflineColdStartOffer(true, singleGrant, null, candidates);
         }
 
-        if (!await HasPinConfiguredAsync(ct).ConfigureAwait(false))
-        {
-            return new OfflineColdStartOffer(false, grant, "offline_pin_not_configured");
-        }
-
-        return new OfflineColdStartOffer(true, grant, null);
+        return new OfflineColdStartOffer(true, null, null, candidates);
     }
 
     public async Task<OfflinePinUnlockResult> UnlockWithPinAsync(string pin, CancellationToken ct = default)
     {
         var offer = await EvaluateColdStartOfferAsync(ct).ConfigureAwait(false);
-        if (!offer.CanOfferPinUnlock || offer.Grant is null)
+        if (!offer.CanOfferPinUnlock)
         {
-            return offer.DenialReasonCode switch
-            {
-                "offline_grant_expired" => new OfflinePinUnlockResult(
-                    OfflinePinUnlockStatus.GrantExpired, offer.Grant, "Offline_GrantExpired"),
-                "offline_device_mismatch" => new OfflinePinUnlockResult(
-                    OfflinePinUnlockStatus.DeviceMismatch, offer.Grant, "Offline_DeviceMismatch"),
-                "offline_pin_not_configured" => new OfflinePinUnlockResult(
-                    OfflinePinUnlockStatus.PinNotConfigured, offer.Grant, "Offline_PinNotConfigured"),
-                "offline_grant_invalid_scope" => new OfflinePinUnlockResult(
-                    OfflinePinUnlockStatus.ScopeMismatch, offer.Grant, "Offline_GrantMissing"),
-                _ => new OfflinePinUnlockResult(
-                    OfflinePinUnlockStatus.GrantMissing, null, "Offline_GrantMissing")
-            };
+            return MapOfferDenial(offer);
+        }
+
+        if (offer.UnlockCandidates is { Count: > 1 })
+        {
+            return new OfflinePinUnlockResult(
+                OfflinePinUnlockStatus.UserSelectionRequired,
+                null,
+                "Offline_SelectAccount");
+        }
+
+        var userId = offer.UnlockCandidates is { Count: 1 }
+            ? offer.UnlockCandidates[0].UserId
+            : offer.Grant?.UserId;
+        if (userId is null)
+        {
+            return new OfflinePinUnlockResult(
+                OfflinePinUnlockStatus.GrantMissing, null, "Offline_GrantMissing");
+        }
+
+        return await UnlockWithPinAsync(userId.Value, pin, ct).ConfigureAwait(false);
+    }
+
+    public async Task<OfflinePinUnlockResult> UnlockWithPinAsync(
+        Guid userId,
+        string pin,
+        CancellationToken ct = default)
+    {
+        var grant = await LoadNormalizedGrantAsync(userId, ct).ConfigureAwait(false);
+        if (grant is null)
+        {
+            return new OfflinePinUnlockResult(
+                OfflinePinUnlockStatus.GrantMissing, null, "Offline_GrantMissing");
+        }
+
+        if (!grant.IsOrganizationScope && !grant.IsPersonalScope)
+        {
+            return new OfflinePinUnlockResult(
+                OfflinePinUnlockStatus.ScopeMismatch, grant, "Offline_GrantMissing");
+        }
+
+        var now = _clock.GetUtcNow();
+        if (grant.IsExpired(now))
+        {
+            return new OfflinePinUnlockResult(
+                OfflinePinUnlockStatus.GrantExpired, grant, "Offline_GrantExpired");
+        }
+
+        var deviceId = await deviceIdentity.GetOrCreateDeviceIdAsync(ct).ConfigureAwait(false);
+        if (!string.Equals(grant.DeviceId, deviceId, StringComparison.Ordinal))
+        {
+            return new OfflinePinUnlockResult(
+                OfflinePinUnlockStatus.DeviceMismatch, grant, "Offline_DeviceMismatch");
         }
 
         if (!OfflinePinHasher.IsValidPinFormat(pin, _options.PinMinLength))
         {
             return new OfflinePinUnlockResult(
-                OfflinePinUnlockStatus.InvalidPinFormat, offer.Grant, "Offline_PinInvalidFormat");
+                OfflinePinUnlockStatus.InvalidPinFormat, grant, "Offline_PinInvalidFormat");
         }
 
-        var verifier = await store.LoadPinVerifierAsync(ct).ConfigureAwait(false);
-        if (verifier is null)
+        var verifier = await store.LoadPinVerifierAsync(userId, ct).ConfigureAwait(false);
+        if (verifier is null
+            || string.IsNullOrWhiteSpace(verifier.HashBase64)
+            || string.IsNullOrWhiteSpace(verifier.SaltBase64))
         {
             return new OfflinePinUnlockResult(
-                OfflinePinUnlockStatus.PinNotConfigured, offer.Grant, "Offline_PinNotConfigured");
+                OfflinePinUnlockStatus.PinNotConfigured, grant, "Offline_PinNotConfigured");
         }
 
-        var now = _clock.GetUtcNow();
+        if (verifier.UserId is Guid pinUser && pinUser != Guid.Empty && pinUser != userId)
+        {
+            return new OfflinePinUnlockResult(
+                OfflinePinUnlockStatus.UserMismatch, grant, "Offline_GrantMissing");
+        }
+
         if (verifier.LockedUntilUtc is DateTimeOffset locked && locked > now)
         {
             return new OfflinePinUnlockResult(
                 OfflinePinUnlockStatus.Locked,
-                offer.Grant,
+                grant,
                 "Offline_PinLocked",
                 locked);
         }
@@ -263,46 +379,91 @@ public sealed class OfflineOperatingGrantService(
             }
 
             await store.SavePinVerifierAsync(
-                    verifier with { FailedAttempts = failed, LockedUntilUtc = lockUntil },
+                    userId,
+                    verifier with { FailedAttempts = failed, LockedUntilUtc = lockUntil, UserId = userId },
                     ct)
                 .ConfigureAwait(false);
 
             return lockUntil is not null
                 ? new OfflinePinUnlockResult(
-                    OfflinePinUnlockStatus.Locked, offer.Grant, "Offline_PinLocked", lockUntil)
+                    OfflinePinUnlockStatus.Locked, grant, "Offline_PinLocked", lockUntil)
                 : new OfflinePinUnlockResult(
-                    OfflinePinUnlockStatus.WrongPin, offer.Grant, "Offline_PinWrong");
+                    OfflinePinUnlockStatus.WrongPin, grant, "Offline_PinWrong");
         }
 
-        if (verifier.UserId is Guid pinUser && pinUser != offer.Grant.UserId)
-        {
-            return new OfflinePinUnlockResult(
-                OfflinePinUnlockStatus.UserMismatch, offer.Grant, "Offline_GrantMissing");
-        }
-
-        // Successful unlock: reset attempts. Do NOT change grant expiry.
-        // Bind legacy unbound verifiers to the grant owner so enrollment gates stay consistent.
+        // Successful unlock: reset attempts. Do NOT change grant expiry / issued / last-online.
         await store.SavePinVerifierAsync(
+                userId,
                 verifier with
                 {
                     FailedAttempts = 0,
                     LockedUntilUtc = null,
-                    UserId = offer.Grant.UserId
+                    UserId = userId
                 },
                 ct)
             .ConfigureAwait(false);
 
         IsUnlockedThisProcess = true;
-        ActiveUnlockedGrant = offer.Grant;
-        return new OfflinePinUnlockResult(OfflinePinUnlockStatus.Succeeded, offer.Grant);
+        ActiveUnlockedGrant = grant;
+        return new OfflinePinUnlockResult(OfflinePinUnlockStatus.Succeeded, grant);
     }
 
-    public Task<OfflineOperatingGrant?> PeekStoredGrantAsync(CancellationToken ct = default) =>
-        LoadNormalizedGrantAsync(ct);
-
-    private async Task<OfflineOperatingGrant?> LoadNormalizedGrantAsync(CancellationToken ct)
+    public async Task<bool> ForceExpireGrantForDevelopmentAsync(Guid userId, CancellationToken ct = default)
     {
-        var grant = await store.LoadGrantAsync(ct).ConfigureAwait(false);
+        if (!_options.AllowDevelopmentExpiryOverride)
+        {
+            return false;
+        }
+
+        var grant = await store.LoadGrantAsync(userId, ct).ConfigureAwait(false);
+        if (grant is null)
+        {
+            return false;
+        }
+
+        var expired = grant with { ExpiresAtUtc = _clock.GetUtcNow().AddMinutes(-1) };
+        await store.SaveGrantAsync(expired, ct).ConfigureAwait(false);
+        if (ActiveUnlockedGrant?.UserId == userId)
+        {
+            ActiveUnlockedGrant = expired;
+        }
+
+        return true;
+    }
+
+    public async Task<OfflineOperatingGrant?> PeekStoredGrantAsync(CancellationToken ct = default)
+    {
+        if (ActiveUnlockedGrant is not null)
+        {
+            return ActiveUnlockedGrant.NormalizeForEvaluation();
+        }
+
+        return await ResolveSingleActiveGrantAsync(ct).ConfigureAwait(false);
+    }
+
+    public Task<OfflineOperatingGrant?> PeekStoredGrantAsync(Guid userId, CancellationToken ct = default) =>
+        LoadNormalizedGrantAsync(userId, ct);
+
+    private async Task BindUnboundPinForUserAsync(Guid userId, CancellationToken ct)
+    {
+        var verifier = await store.LoadPinVerifierAsync(userId, ct).ConfigureAwait(false);
+        if (verifier is null)
+        {
+            return;
+        }
+
+        if (verifier.UserId is Guid pinUser && pinUser != Guid.Empty)
+        {
+            return;
+        }
+
+        await store.SavePinVerifierAsync(userId, verifier with { UserId = userId }, ct)
+            .ConfigureAwait(false);
+    }
+
+    private async Task<OfflineOperatingGrant?> LoadNormalizedGrantAsync(Guid userId, CancellationToken ct)
+    {
+        var grant = await store.LoadGrantAsync(userId, ct).ConfigureAwait(false);
         if (grant is null || !OfflineOperatingGrant.IsSupportedSchemaVersion(grant.SchemaVersion))
         {
             return null;
@@ -317,35 +478,31 @@ public sealed class OfflineOperatingGrantService(
         return normalized;
     }
 
-    /// <summary>
-    /// Keep the current user's PIN across re-login. Bind legacy unbound verifiers to this user.
-    /// Clear only when the verifier belongs to a different account (device shared / account switch).
-    /// </summary>
-    private async Task EnsurePinBelongsToUserAsync(Guid userId, CancellationToken ct)
+    private async Task<OfflineOperatingGrant?> ResolveSingleActiveGrantAsync(CancellationToken ct)
     {
-        var verifier = await store.LoadPinVerifierAsync(ct).ConfigureAwait(false);
-        if (verifier is null)
+        var enrolled = await store.GetEnrolledUsersAsync(ct).ConfigureAwait(false);
+        if (enrolled.Count != 1)
         {
-            return;
+            return null;
         }
 
-        // Null or Empty = unbound / corrupt binding — bind, do not wipe (wipe forces setup every login).
-        if (verifier.UserId is Guid pinUser && pinUser != Guid.Empty)
-        {
-            if (pinUser == userId)
-            {
-                return;
-            }
-
-            // Different account on this device — force fresh enrollment for the signed-in user.
-            await store.ClearPinVerifierAsync(ct).ConfigureAwait(false);
-            return;
-        }
-
-        await store
-            .SavePinVerifierAsync(verifier with { UserId = userId }, ct)
-            .ConfigureAwait(false);
+        return await LoadNormalizedGrantAsync(enrolled[0].UserId, ct).ConfigureAwait(false);
     }
+
+    private static OfflinePinUnlockResult MapOfferDenial(OfflineColdStartOffer offer) =>
+        offer.DenialReasonCode switch
+        {
+            "offline_grant_expired" => new OfflinePinUnlockResult(
+                OfflinePinUnlockStatus.GrantExpired, offer.Grant, "Offline_GrantExpired"),
+            "offline_device_mismatch" => new OfflinePinUnlockResult(
+                OfflinePinUnlockStatus.DeviceMismatch, offer.Grant, "Offline_DeviceMismatch"),
+            "offline_pin_not_configured" => new OfflinePinUnlockResult(
+                OfflinePinUnlockStatus.PinNotConfigured, offer.Grant, "Offline_PinNotConfigured"),
+            "offline_grant_invalid_scope" => new OfflinePinUnlockResult(
+                OfflinePinUnlockStatus.ScopeMismatch, offer.Grant, "Offline_GrantMissing"),
+            _ => new OfflinePinUnlockResult(
+                OfflinePinUnlockStatus.GrantMissing, null, "Offline_GrantMissing")
+        };
 
     private static bool IsPersonalEligible(AuthSession session)
     {

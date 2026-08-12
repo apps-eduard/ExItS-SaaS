@@ -574,7 +574,8 @@ public sealed class AuthenticationService(
                     // Explicit server denial of product access — do not keep a stale offline grant.
                     if (_offlineGrant is not null && !hasAccess)
                     {
-                        await _offlineGrant.ClearAsync(ct).ConfigureAwait(false);
+                        await ClearOfflineGrantForCurrentUserAsync(restored.UserId, ct)
+                            .ConfigureAwait(false);
                     }
                 }
 
@@ -687,14 +688,40 @@ public sealed class AuthenticationService(
         return new AuthResult(false, AuthFailureReason.Offline, offlineShell, SafeMessageKey: "SyncStatus_Reconnect");
     }
 
-    public async Task<AuthResult> UnlockOfflineWithPinAsync(string pin, CancellationToken ct = default)
+    public Task<AuthResult> UnlockOfflineWithPinAsync(string pin, CancellationToken ct = default) =>
+        UnlockOfflineWithPinCoreAsync(userId: null, pin, ct);
+
+    public Task<AuthResult> UnlockOfflineWithPinAsync(
+        Guid userId,
+        string pin,
+        CancellationToken ct = default) =>
+        UnlockOfflineWithPinCoreAsync(userId, pin, ct);
+
+    public Task<IReadOnlyList<OfflineEnrolledUserSummary>> GetEnrolledOfflineUsersAsync(
+        CancellationToken ct = default) =>
+        _offlineGrant is null
+            ? Task.FromResult<IReadOnlyList<OfflineEnrolledUserSummary>>(
+                Array.Empty<OfflineEnrolledUserSummary>())
+            : _offlineGrant.GetEnrolledUsersAsync(ct);
+
+    public Task RemoveEnrolledOfflineUserAsync(Guid userId, CancellationToken ct = default) =>
+        _offlineGrant is null
+            ? Task.CompletedTask
+            : _offlineGrant.RemoveEnrolledUserAsync(userId, ct);
+
+    private async Task<AuthResult> UnlockOfflineWithPinCoreAsync(
+        Guid? userId,
+        string pin,
+        CancellationToken ct)
     {
         if (_offlineGrant is null)
         {
             return new AuthResult(false, AuthFailureReason.AccessDenied, SafeMessageKey: "Offline_GrantMissing");
         }
 
-        var unlock = await _offlineGrant.UnlockWithPinAsync(pin, ct).ConfigureAwait(false);
+        var unlock = userId is Guid id
+            ? await _offlineGrant.UnlockWithPinAsync(id, pin, ct).ConfigureAwait(false)
+            : await _offlineGrant.UnlockWithPinAsync(pin, ct).ConfigureAwait(false);
         if (unlock.Status != OfflinePinUnlockStatus.Succeeded || unlock.Grant is null)
         {
             return new AuthResult(
@@ -722,14 +749,11 @@ public sealed class AuthenticationService(
         }
 
         var baseSession = shell ?? markerSession;
-        if (baseSession is null)
+        // Multi-cashier: after logout/lock, rebuild from the unlocked grant when session is missing
+        // or belongs to a different enrolled user.
+        if (baseSession is null || baseSession.UserId != grant.UserId)
         {
-            // Sign out clears the secure session; rebuild a token-less shell from the durable grant.
             baseSession = BuildShellFromGrant(grant);
-        }
-        else if (baseSession.UserId != grant.UserId)
-        {
-            return new AuthResult(false, AuthFailureReason.SessionExpired, SafeMessageKey: "Auth_SessionExpired");
         }
 
         // Reject cross-use: personal grant must not unlock while the shell is org-bound.
@@ -779,10 +803,21 @@ public sealed class AuthenticationService(
             ? Task.FromResult(new OfflinePinSetupResult(false, "Offline_GrantMissing"))
             : _offlineGrant.SetPinAsync(pin, ct);
 
-    public Task<bool> HasOfflinePinConfiguredAsync(CancellationToken ct = default) =>
-        _offlineGrant is null
-            ? Task.FromResult(false)
-            : _offlineGrant.HasPinConfiguredAsync(ct);
+    public Task<bool> HasOfflinePinConfiguredAsync(CancellationToken ct = default)
+    {
+        if (_offlineGrant is null)
+        {
+            return Task.FromResult(false);
+        }
+
+        var userId = currentUser.Session?.UserId;
+        if (userId is Guid id && id != Guid.Empty)
+        {
+            return _offlineGrant.HasPinConfiguredAsync(id, ct);
+        }
+
+        return _offlineGrant.HasPinConfiguredAsync(ct);
+    }
 
     public Task<OfflineColdStartOffer> EvaluateOfflineColdStartOfferAsync(CancellationToken ct = default) =>
         _offlineGrant is null
@@ -2197,12 +2232,37 @@ public sealed class AuthenticationService(
 
         try
         {
-            await _offlineGrant.ClearAsync(ct).ConfigureAwait(false);
+            var userId = currentUser.Session?.UserId ?? _offlineGrant.ActiveUnlockedGrant?.UserId;
+            if (userId is Guid id && id != Guid.Empty)
+            {
+                await _offlineGrant.ClearUserGrantAsync(id, ct).ConfigureAwait(false);
+            }
+            else
+            {
+                await _offlineGrant.ClearAsync(ct).ConfigureAwait(false);
+            }
         }
         catch
         {
             // The server rejection remains authoritative; secure-storage failure is handled by the
             // normal next-session path and must not be treated as a network fallback.
+        }
+    }
+
+    private async Task ClearOfflineGrantForCurrentUserAsync(Guid userId, CancellationToken ct)
+    {
+        if (_offlineGrant is null || userId == Guid.Empty)
+        {
+            return;
+        }
+
+        try
+        {
+            await _offlineGrant.ClearUserGrantAsync(userId, ct).ConfigureAwait(false);
+        }
+        catch
+        {
+            // Best-effort.
         }
     }
 
@@ -2237,13 +2297,20 @@ public sealed class AuthenticationService(
             {
                 if (clearOfflineGrant)
                 {
-                    // Hard clear: next offline reopen requires a fresh online establish.
-                    // PIN verifier is still retained for reuse after the next online establish.
-                    await _offlineGrant.ClearAsync(ct).ConfigureAwait(false);
+                    // Hard clear for the signed-in / active user only — other enrolled cashiers remain.
+                    var userId = currentUser.Session?.UserId ?? _offlineGrant.ActiveUnlockedGrant?.UserId;
+                    if (userId is Guid id && id != Guid.Empty)
+                    {
+                        await _offlineGrant.ClearUserGrantAsync(id, ct).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        await _offlineGrant.ClearAsync(ct).ConfigureAwait(false);
+                    }
                 }
                 else
                 {
-                    // Sign out: drop process unlock only; durable grant + PIN stay on device.
+                    // Sign out: drop process unlock only; all enrolled grants + PINs stay on device.
                     _offlineGrant.LockThisProcess();
                 }
             }

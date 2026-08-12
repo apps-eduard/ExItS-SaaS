@@ -63,7 +63,9 @@ public sealed class PlatformOrganizationOwnerProbe(
             // Fall through.
         }
 
-        var grant = await offlineGrant.PeekStoredGrantAsync(ct).ConfigureAwait(false);
+        var grant = session.UserId != Guid.Empty
+            ? await offlineGrant.PeekStoredGrantAsync(session.UserId, ct).ConfigureAwait(false)
+            : await offlineGrant.PeekStoredGrantAsync(ct).ConfigureAwait(false);
         return MatchesOfflineOwnerGrant(grant, session, organizationId, time.GetUtcNow());
     }
 

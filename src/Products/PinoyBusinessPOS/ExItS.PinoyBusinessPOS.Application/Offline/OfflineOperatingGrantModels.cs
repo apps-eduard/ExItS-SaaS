@@ -87,7 +87,8 @@ public enum OfflinePinUnlockStatus
     UserMismatch = 7,
     PinNotConfigured = 8,
     InvalidPinFormat = 9,
-    ScopeMismatch = 10
+    ScopeMismatch = 10,
+    UserSelectionRequired = 11
 }
 
 public sealed record OfflinePinUnlockResult(
@@ -98,8 +99,38 @@ public sealed record OfflinePinUnlockResult(
 
 public sealed record OfflinePinSetupResult(bool Succeeded, string? SafeMessageKey = null);
 
+/// <summary>
+/// Safe, non-secret summary of an enrolled offline cashier on this device.
+/// Never includes PIN hashes or verifier material.
+/// </summary>
+public sealed record OfflineEnrolledUserSummary(
+    Guid UserId,
+    string DisplayName,
+    string? Username,
+    OfflineGrantScopeKind ScopeKind,
+    string? OrganizationDisplayName,
+    DateTimeOffset ExpiresAtUtc,
+    bool HasPinConfigured);
+
 /// <summary>Result of evaluating whether cold-start offline unlock can be offered.</summary>
 public sealed record OfflineColdStartOffer(
     bool CanOfferPinUnlock,
     OfflineOperatingGrant? Grant,
-    string? DenialReasonCode);
+    string? DenialReasonCode,
+    IReadOnlyList<OfflineEnrolledUserSummary>? UnlockCandidates = null);
+
+/// <summary>Directory document persisted in SecureStorage (no secrets).</summary>
+public sealed record OfflineEnrolledUsersDirectory(
+    int SchemaVersion,
+    IReadOnlyList<OfflineEnrolledUserDirectoryEntry> Users)
+{
+    public const int CurrentSchemaVersion = 1;
+}
+
+public sealed record OfflineEnrolledUserDirectoryEntry(
+    Guid UserId,
+    string DisplayName,
+    string? Username,
+    OfflineGrantScopeKind ScopeKind,
+    string? OrganizationDisplayName,
+    DateTimeOffset ExpiresAtUtc);

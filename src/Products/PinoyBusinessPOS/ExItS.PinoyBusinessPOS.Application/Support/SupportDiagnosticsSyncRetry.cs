@@ -68,7 +68,9 @@ public sealed class PosEffectiveRoleReader(
 
         var session = currentUser.Session;
         var grant = offlineGrant.ActiveUnlockedGrant
-            ?? await offlineGrant.PeekStoredGrantAsync(ct).ConfigureAwait(false);
+            ?? (session?.UserId is Guid uid && uid != Guid.Empty
+                ? await offlineGrant.PeekStoredGrantAsync(uid, ct).ConfigureAwait(false)
+                : await offlineGrant.PeekStoredGrantAsync(ct).ConfigureAwait(false));
         if (grant is not null
             && grant.IsOrganizationScope
             && session?.OrganizationId is Guid orgId
