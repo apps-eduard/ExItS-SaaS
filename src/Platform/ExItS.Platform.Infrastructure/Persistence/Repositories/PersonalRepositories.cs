@@ -588,6 +588,22 @@ internal sealed class PersonalInAppNotificationRepository(PlatformDbContext db) 
         return records.Select(ToDomain).ToList();
     }
 
+    public async Task<PersonalInAppNotification?> FindByRecipientRelatedAsync(
+        PlatformUserId recipientUserIdentityId,
+        string relatedType,
+        string relatedId,
+        CancellationToken cancellationToken = default)
+    {
+        var record = await db.PersonalInAppNotifications.AsNoTracking()
+            .FirstOrDefaultAsync(
+                x => x.RecipientUserIdentityId == recipientUserIdentityId.Value
+                     && x.RelatedType == relatedType
+                     && x.RelatedId == relatedId,
+                cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : ToDomain(record);
+    }
+
     public Task AddAsync(PersonalInAppNotification notification, CancellationToken cancellationToken = default)
     {
         db.PersonalInAppNotifications.Add(ToRecord(notification));

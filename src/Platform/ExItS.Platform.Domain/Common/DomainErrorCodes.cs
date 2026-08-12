@@ -175,7 +175,9 @@ public static class DomainErrorCodes
     public const string CustomerLinkRequestExpired = "platform.customer_link_request.expired";
     public const string InvalidCustomerLinkRequestToken = "platform.customer_link_request.token.invalid";
     public const string CustomerLinkRequestEmailMismatch = "platform.customer_link_request.email_mismatch";
+    public const string CustomerLinkRequestTargetMismatch = "platform.customer_link_request.target_mismatch";
     public const string InvalidLinkedCustomerAppUserId = "platform.linked_customer_app_user.id.invalid";
+    public const string InvalidOrganizationNotificationId = "platform.organization.notification.id.invalid";
     public const string CustomerToStaffConversionDenied = "platform.customer.staff_conversion_denied";
     public const string CustomerLinkMustNotCreateStaff = "platform.customer_link.must_not_create_staff";
     public const string CustomerLinkPersonalIdentityRequired =

@@ -264,6 +264,57 @@ internal sealed class CustomerLinkRequestRepository(PlatformDbContext db) : ICus
         return (records.Select(ToDomain).ToList(), total);
     }
 
+    public async Task<IReadOnlyList<CustomerLinkRequest>> ListPendingForTargetUserAsync(
+        PlatformUserId targetUserIdentityId,
+        CancellationToken cancellationToken = default)
+    {
+        var pending = nameof(CustomerLinkRequestStatus.Pending);
+        var records = await db.CustomerLinkRequests.AsNoTracking()
+            .Where(x => x.TargetUserIdentityId == targetUserIdentityId.Value && x.Status == pending)
+            .OrderByDescending(x => x.CreatedAtUtc)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return records.Select(ToDomain).ToList();
+    }
+
+    public async Task<IReadOnlyList<CustomerLinkRequest>> ListByBusinessCustomerAsync(
+        BusinessCustomerId businessCustomerId,
+        CancellationToken cancellationToken = default)
+    {
+        var records = await db.CustomerLinkRequests.AsNoTracking()
+            .Where(x => x.BusinessCustomerId == businessCustomerId.Value)
+            .OrderByDescending(x => x.CreatedAtUtc)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return records.Select(ToDomain).ToList();
+    }
+
+    public async Task<IReadOnlyDictionary<string, int>> CountByOrganizationGroupedAsync(
+        PlatformOrganizationId organizationId,
+        CancellationToken cancellationToken = default)
+    {
+        // Effective expiry: Pending rows past ExpiresAtUtc count as Expired.
+        var now = DateTimeOffset.UtcNow;
+        var pending = nameof(CustomerLinkRequestStatus.Pending);
+        var expired = nameof(CustomerLinkRequestStatus.Expired);
+        var records = await db.CustomerLinkRequests.AsNoTracking()
+            .Where(x => x.OrganizationId == organizationId.Value)
+            .Select(x => new { x.Status, x.ExpiresAtUtc })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var counts = new Dictionary<string, int>(StringComparer.Ordinal);
+        foreach (var row in records)
+        {
+            var key = row.Status == pending && row.ExpiresAtUtc <= now
+                ? expired
+                : row.Status;
+            counts[key] = counts.TryGetValue(key, out var n) ? n + 1 : 1;
+        }
+
+        return counts;
+    }
+
     public Task AddAsync(CustomerLinkRequest request, CancellationToken cancellationToken = default)
     {
         db.CustomerLinkRequests.Add(ToRecord(request));
@@ -281,6 +332,8 @@ internal sealed class CustomerLinkRequestRepository(PlatformDbContext db) : ICus
         }
 
         record.NormalizedEmail = request.NormalizedEmail;
+        record.TargetUserIdentityId = request.TargetUserIdentityId?.Value;
+        record.TargetPublicUserId = request.TargetPublicUserId;
         record.Status = request.Status.ToString();
         record.TokenHash = request.TokenHash;
         record.UpdatedAtUtc = request.UpdatedAtUtc;
@@ -306,7 +359,9 @@ internal sealed class CustomerLinkRequestRepository(PlatformDbContext db) : ICus
             record.AcceptedAtUtc,
             record.DeclinedAtUtc,
             record.RevokedAtUtc,
-            record.AcceptedByUserId is null ? null : PlatformUserId.From(record.AcceptedByUserId.Value));
+            record.AcceptedByUserId is null ? null : PlatformUserId.From(record.AcceptedByUserId.Value),
+            record.TargetUserIdentityId is null ? null : PlatformUserId.From(record.TargetUserIdentityId.Value),
+            record.TargetPublicUserId);
 
     private static CustomerLinkRequestRecord ToRecord(CustomerLinkRequest request) =>
         new()
@@ -315,6 +370,8 @@ internal sealed class CustomerLinkRequestRepository(PlatformDbContext db) : ICus
             OrganizationId = request.OrganizationId.Value,
             BusinessCustomerId = request.BusinessCustomerId.Value,
             NormalizedEmail = request.NormalizedEmail,
+            TargetUserIdentityId = request.TargetUserIdentityId?.Value,
+            TargetPublicUserId = request.TargetPublicUserId,
             Status = request.Status.ToString(),
             TokenHash = request.TokenHash,
             InvitedByUserId = request.InvitedByUserId?.Value,
@@ -325,6 +382,101 @@ internal sealed class CustomerLinkRequestRepository(PlatformDbContext db) : ICus
             DeclinedAtUtc = request.DeclinedAtUtc,
             RevokedAtUtc = request.RevokedAtUtc,
             AcceptedByUserId = request.AcceptedByUserId?.Value
+        };
+}
+
+internal sealed class OrganizationInAppNotificationRepository(PlatformDbContext db)
+    : IOrganizationInAppNotificationRepository
+{
+    public async Task<OrganizationInAppNotification?> GetByIdAsync(
+        OrganizationInAppNotificationId id,
+        CancellationToken cancellationToken = default)
+    {
+        var record = await db.OrganizationInAppNotifications.AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == id.Value, cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : ToDomain(record);
+    }
+
+    public async Task<IReadOnlyList<OrganizationInAppNotification>> ListForRecipientInOrganizationAsync(
+        PlatformOrganizationId organizationId,
+        PlatformUserId recipientUserIdentityId,
+        int take,
+        CancellationToken cancellationToken = default)
+    {
+        var records = await db.OrganizationInAppNotifications.AsNoTracking()
+            .Where(x =>
+                x.OrganizationId == organizationId.Value
+                && x.RecipientUserIdentityId == recipientUserIdentityId.Value)
+            .OrderByDescending(x => x.CreatedAtUtc)
+            .Take(take)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return records.Select(ToDomain).ToList();
+    }
+
+    public async Task<OrganizationInAppNotification?> FindByRecipientRelatedAsync(
+        PlatformUserId recipientUserIdentityId,
+        string relatedType,
+        string relatedId,
+        CancellationToken cancellationToken = default)
+    {
+        var record = await db.OrganizationInAppNotifications.AsNoTracking()
+            .FirstOrDefaultAsync(
+                x => x.RecipientUserIdentityId == recipientUserIdentityId.Value
+                     && x.RelatedType == relatedType
+                     && x.RelatedId == relatedId,
+                cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : ToDomain(record);
+    }
+
+    public Task AddAsync(OrganizationInAppNotification notification, CancellationToken cancellationToken = default)
+    {
+        db.OrganizationInAppNotifications.Add(ToRecord(notification));
+        return Task.CompletedTask;
+    }
+
+    public async Task UpdateAsync(OrganizationInAppNotification notification, CancellationToken cancellationToken = default)
+    {
+        var record = await db.OrganizationInAppNotifications
+            .FirstOrDefaultAsync(x => x.Id == notification.Id.Value, cancellationToken)
+            .ConfigureAwait(false);
+        if (record is null)
+        {
+            return;
+        }
+
+        record.IsRead = notification.IsRead;
+        record.ReadAtUtc = notification.ReadAtUtc;
+    }
+
+    private static OrganizationInAppNotification ToDomain(OrganizationInAppNotificationRecord record) =>
+        OrganizationInAppNotification.Rehydrate(
+            OrganizationInAppNotificationId.From(record.Id),
+            PlatformOrganizationId.From(record.OrganizationId),
+            PlatformUserId.From(record.RecipientUserIdentityId),
+            record.Title,
+            record.Preview,
+            record.RelatedType,
+            record.RelatedId,
+            record.IsRead,
+            record.CreatedAtUtc,
+            record.ReadAtUtc);
+
+    private static OrganizationInAppNotificationRecord ToRecord(OrganizationInAppNotification notification) =>
+        new()
+        {
+            Id = notification.Id.Value,
+            OrganizationId = notification.OrganizationId.Value,
+            RecipientUserIdentityId = notification.RecipientUserIdentityId.Value,
+            Title = notification.Title,
+            Preview = notification.Preview,
+            RelatedType = notification.RelatedType,
+            RelatedId = notification.RelatedId,
+            IsRead = notification.IsRead,
+            CreatedAtUtc = notification.CreatedAtUtc,
+            ReadAtUtc = notification.ReadAtUtc
         };
 }
 

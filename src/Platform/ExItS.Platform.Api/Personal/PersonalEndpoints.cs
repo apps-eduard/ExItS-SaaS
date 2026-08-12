@@ -110,6 +110,81 @@ internal static class PersonalEndpoints
             return PlatformApiResults.FromResult(result, Results.Ok);
         });
 
+        personal.MapGet("/customer-link-requests", async (
+            HttpContext http,
+            ListPendingCustomerLinkRequestsForPersonalUser listRequests,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out var accountClassRaw, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            if (!TryRequirePersonalAccountClass(accountClassRaw, out var accountClass, out var scopeDenied))
+            {
+                return scopeDenied!;
+            }
+
+            var result = await listRequests
+                .ExecuteAsync(PlatformUserId.From(userId), accountClass, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
+        personal.MapPost("/customer-link-requests/{requestId:guid}/accept", async (
+            HttpContext http,
+            Guid requestId,
+            AcceptCustomerLinkRequestById acceptById,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out var accountClassRaw, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            if (!TryRequirePersonalAccountClass(accountClassRaw, out var accountClass, out var scopeDenied))
+            {
+                return scopeDenied!;
+            }
+
+            var result = await acceptById
+                .ExecuteAsync(
+                    CustomerLinkRequestId.From(requestId),
+                    PlatformUserId.From(userId),
+                    accountClass,
+                    ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
+        personal.MapPost("/customer-link-requests/{requestId:guid}/decline", async (
+            HttpContext http,
+            Guid requestId,
+            DeclineCustomerLinkRequestById declineById,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out var accountClassRaw, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            if (!TryRequirePersonalAccountClass(accountClassRaw, out var accountClass, out var scopeDenied))
+            {
+                return scopeDenied!;
+            }
+
+            var result = await declineById
+                .ExecuteAsync(
+                    CustomerLinkRequestId.From(requestId),
+                    PlatformUserId.From(userId),
+                    accountClass,
+                    ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(
+                result,
+                dto => Results.Ok(dto with { AcceptToken = null }));
+        });
+
         // WP06: Personal feature entitlement check for POS history APIs (session-bound; not self-grant).
         personal.MapGet("/features/{featureCode}/active", async (
             HttpContext http,
@@ -709,6 +784,26 @@ internal static class PersonalEndpoints
                 .ConfigureAwait(false);
             return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
         });
+    }
+
+    private static bool TryRequirePersonalAccountClass(
+        string? accountClassRaw,
+        out AccountClass accountClass,
+        out IResult? denied)
+    {
+        accountClass = AccountClass.Platform;
+        denied = null;
+        if (!Enum.TryParse(accountClassRaw, ignoreCase: true, out accountClass)
+            || accountClass != AccountClass.Personal)
+        {
+            denied = PlatformApiResults.Problem(
+                ApplicationErrorCodes.AccountScopeDenied,
+                "This action requires a Personal session.",
+                StatusCodes.Status403Forbidden);
+            return false;
+        }
+
+        return true;
     }
 
     private static bool TryGetPersonalContext(

@@ -76,6 +76,8 @@ public sealed class PlatformDbContext : DbContext
     internal DbSet<CreditCustomerRecord> CreditCustomers => Set<CreditCustomerRecord>();
     internal DbSet<CustomerLinkRequestRecord> CustomerLinkRequests => Set<CustomerLinkRequestRecord>();
     internal DbSet<LinkedCustomerAppUserRecord> LinkedCustomerAppUsers => Set<LinkedCustomerAppUserRecord>();
+    internal DbSet<OrganizationInAppNotificationRecord> OrganizationInAppNotifications =>
+        Set<OrganizationInAppNotificationRecord>();
     internal DbSet<BusinessCreditOpeningBalanceRecord> BusinessCreditOpeningBalances => Set<BusinessCreditOpeningBalanceRecord>();
     internal DbSet<ProductLocalRoleGrantRecord> ProductLocalRoleGrants => Set<ProductLocalRoleGrantRecord>();
     internal DbSet<ProductAccessAssignmentRecord> ProductAccessAssignments => Set<ProductAccessAssignmentRecord>();
@@ -1522,6 +1524,8 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
             entity.Property(e => e.BusinessCustomerId).HasColumnName("business_customer_id");
             entity.Property(e => e.NormalizedEmail).HasColumnName("normalized_email").HasMaxLength(320).IsRequired();
+            entity.Property(e => e.TargetUserIdentityId).HasColumnName("target_user_identity_id");
+            entity.Property(e => e.TargetPublicUserId).HasColumnName("target_public_user_id").HasMaxLength(32);
             entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
             entity.Property(e => e.TokenHash).HasColumnName("token_hash").HasMaxLength(64).IsRequired();
             entity.Property(e => e.InvitedByUserId).HasColumnName("invited_by_user_id");
@@ -1542,6 +1546,8 @@ public sealed class PlatformDbContext : DbContext
                 .IsUnique()
                 .HasFilter("status = 'Pending'")
                 .HasDatabaseName("ux_customer_link_requests_pending_customer");
+            entity.HasIndex(e => e.TargetUserIdentityId)
+                .HasDatabaseName("ix_customer_link_requests_target_user_identity_id");
 
             entity.HasOne<PlatformOrganizationRecord>()
                 .WithMany()
@@ -1551,6 +1557,35 @@ public sealed class PlatformDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.BusinessCustomerId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<OrganizationInAppNotificationRecord>(entity =>
+        {
+            entity.ToTable("organization_in_app_notifications");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.RecipientUserIdentityId).HasColumnName("recipient_user_identity_id");
+            entity.Property(e => e.Title).HasColumnName("title").HasMaxLength(120).IsRequired();
+            entity.Property(e => e.Preview).HasColumnName("preview").HasMaxLength(200).IsRequired();
+            entity.Property(e => e.RelatedType).HasColumnName("related_type").HasMaxLength(64).IsRequired();
+            entity.Property(e => e.RelatedId).HasColumnName("related_id").HasMaxLength(64);
+            entity.Property(e => e.IsRead).HasColumnName("is_read");
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.ReadAtUtc).HasColumnName("read_at_utc");
+            entity.HasIndex(e => new { e.OrganizationId, e.RecipientUserIdentityId })
+                .HasDatabaseName("ix_organization_in_app_notifications_org_recipient");
+            entity.HasIndex(e => new { e.RecipientUserIdentityId, e.RelatedType, e.RelatedId })
+                .HasDatabaseName("ix_organization_in_app_notifications_recipient_related");
+
+            entity.HasOne<PlatformOrganizationRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.OrganizationId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.RecipientUserIdentityId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<LinkedCustomerAppUserRecord>(entity =>

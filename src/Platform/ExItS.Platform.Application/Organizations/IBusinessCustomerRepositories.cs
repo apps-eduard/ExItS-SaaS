@@ -61,9 +61,49 @@ public interface ICustomerLinkRequestRepository
         int take,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<CustomerLinkRequest>> ListPendingForTargetUserAsync(
+        PlatformUserId targetUserIdentityId,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<CustomerLinkRequest>> ListByBusinessCustomerAsync(
+        BusinessCustomerId businessCustomerId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Counts requests by effective status for an organization.
+    /// Pending rows whose <c>ExpiresAtUtc</c> has passed are counted as Expired
+    /// (effective expiry), not as Pending — stored status may still be Pending until marked.
+    /// </summary>
+    Task<IReadOnlyDictionary<string, int>> CountByOrganizationGroupedAsync(
+        PlatformOrganizationId organizationId,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(CustomerLinkRequest request, CancellationToken cancellationToken = default);
 
     Task UpdateAsync(CustomerLinkRequest request, CancellationToken cancellationToken = default);
+}
+
+public interface IOrganizationInAppNotificationRepository
+{
+    Task<OrganizationInAppNotification?> GetByIdAsync(
+        OrganizationInAppNotificationId id,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<OrganizationInAppNotification>> ListForRecipientInOrganizationAsync(
+        PlatformOrganizationId organizationId,
+        PlatformUserId recipientUserIdentityId,
+        int take,
+        CancellationToken cancellationToken = default);
+
+    Task<OrganizationInAppNotification?> FindByRecipientRelatedAsync(
+        PlatformUserId recipientUserIdentityId,
+        string relatedType,
+        string relatedId,
+        CancellationToken cancellationToken = default);
+
+    Task AddAsync(OrganizationInAppNotification notification, CancellationToken cancellationToken = default);
+
+    Task UpdateAsync(OrganizationInAppNotification notification, CancellationToken cancellationToken = default);
 }
 
 public interface ILinkedCustomerAppUserRepository

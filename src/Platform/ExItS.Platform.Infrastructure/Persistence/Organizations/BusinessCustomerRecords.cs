@@ -34,6 +34,8 @@ internal sealed class CustomerLinkRequestRecord
     public Guid OrganizationId { get; set; }
     public Guid BusinessCustomerId { get; set; }
     public string NormalizedEmail { get; set; } = string.Empty;
+    public Guid? TargetUserIdentityId { get; set; }
+    public string? TargetPublicUserId { get; set; }
     public string Status { get; set; } = string.Empty;
     public string TokenHash { get; set; } = string.Empty;
     public Guid? InvitedByUserId { get; set; }
@@ -45,6 +47,20 @@ internal sealed class CustomerLinkRequestRecord
     public DateTimeOffset? RevokedAtUtc { get; set; }
     public Guid? AcceptedByUserId { get; set; }
     public uint Xmin { get; set; }
+}
+
+internal sealed class OrganizationInAppNotificationRecord
+{
+    public Guid Id { get; set; }
+    public Guid OrganizationId { get; set; }
+    public Guid RecipientUserIdentityId { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string Preview { get; set; } = string.Empty;
+    public string RelatedType { get; set; } = string.Empty;
+    public string? RelatedId { get; set; }
+    public bool IsRead { get; set; }
+    public DateTimeOffset CreatedAtUtc { get; set; }
+    public DateTimeOffset? ReadAtUtc { get; set; }
 }
 
 internal sealed class LinkedCustomerAppUserRecord

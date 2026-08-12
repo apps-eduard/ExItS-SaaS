@@ -116,6 +116,84 @@ internal static class BusinessCustomerEndpoints
             return Results.Ok(sanitized);
         });
 
+        app.MapGet("/api/v1/organizations/{organizationId:guid}/customer-link-requests/stats", async (
+            Guid organizationId,
+            CustomerLinkRequestStatsQuery stats,
+            PlatformMembershipAuthz membershipAuthz,
+            CancellationToken ct) =>
+        {
+            var denied = await membershipAuthz.EnsureCanManageMembershipsAsync(
+                PlatformAuditActions.PlatformAccessChecked,
+                nameof(CustomerLinkRequest),
+                organizationId.ToString("D"),
+                organizationId,
+                summary: "Customer link request stats.",
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var result = await stats
+                .CountByOrganizationAsync(PlatformOrganizationId.From(organizationId), ct)
+                .ConfigureAwait(false);
+            return Results.Ok(result);
+        });
+
+        app.MapPost("/api/v1/organizations/{organizationId:guid}/customers/with-personal-link", async (
+            Guid organizationId,
+            CreateBusinessCustomerWithPersonalLinkBody body,
+            CreateBusinessCustomerWithPersonalLink useCase,
+            PlatformMembershipAuthz membershipAuthz,
+            CancellationToken ct) =>
+        {
+            var denied = await membershipAuthz.EnsureCanManageMembershipsAsync(
+                PlatformAuditActions.BusinessCustomerCreated,
+                nameof(BusinessCustomer),
+                organizationId.ToString("D"),
+                organizationId,
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var customerRequest = new CreateBusinessCustomerRequest(
+                body.DisplayName ?? string.Empty,
+                body.Email,
+                body.Phone,
+                body.Notes,
+                body.OwningProductCode);
+            var targetId = body.TargetUserIdentityId is Guid g && g != Guid.Empty
+                ? PlatformUserId.From(g)
+                : null;
+            var result = await useCase
+                .ExecuteAsync(
+                    PlatformOrganizationId.From(organizationId),
+                    customerRequest,
+                    membershipAuthz.Inner.CurrentActor.PlatformUserId,
+                    targetId,
+                    body.PublicUserId,
+                    ct)
+                .ConfigureAwait(false);
+            if (result.IsSuccess)
+            {
+                await membershipAuthz.Inner.AuditSucceededAsync(
+                    PlatformAuditActions.CustomerLinkRequestCreated,
+                    nameof(CustomerLinkRequest),
+                    result.Value!.LinkRequest.Id.ToString("D"),
+                    organizationId,
+                    summary: "Created business customer with personal link request.",
+                    cancellationToken: ct).ConfigureAwait(false);
+            }
+
+            return PlatformApiResults.FromResult(
+                result,
+                dto => Results.Created(
+                    $"/api/v1/organizations/{organizationId}/customers/{dto.Customer.Id}",
+                    dto with { LinkRequest = dto.LinkRequest with { AcceptToken = null } }));
+        });
+
         app.MapPost("/api/v1/organizations/{organizationId:guid}/customers/{customerId:guid}/link-requests", async (
             Guid organizationId,
             Guid customerId,
@@ -135,12 +213,17 @@ internal static class BusinessCustomerEndpoints
                 return denied;
             }
 
+            var targetId = body.TargetUserIdentityId is Guid g && g != Guid.Empty
+                ? PlatformUserId.From(g)
+                : null;
             var result = await useCase
                 .ExecuteAsync(
                     PlatformOrganizationId.From(organizationId),
                     BusinessCustomerId.From(customerId),
-                    body.Email ?? string.Empty,
+                    body.Email,
                     membershipAuthz.Inner.CurrentActor.PlatformUserId,
+                    targetId,
+                    body.PublicUserId,
                     ct)
                 .ConfigureAwait(false);
             if (result.IsSuccess)
@@ -159,6 +242,130 @@ internal static class BusinessCustomerEndpoints
                 dto => Results.Created(
                     $"/api/v1/organizations/{organizationId}/customer-link-requests/{dto.Id}",
                     dto));
+        });
+
+        app.MapGet("/api/v1/organizations/{organizationId:guid}/customers/{customerId:guid}/link-requests", async (
+            Guid organizationId,
+            Guid customerId,
+            CustomerLinkRequestQueryService queries,
+            PlatformMembershipAuthz membershipAuthz,
+            CancellationToken ct) =>
+        {
+            var denied = await membershipAuthz.EnsureCanManageMembershipsAsync(
+                PlatformAuditActions.PlatformAccessChecked,
+                nameof(CustomerLinkRequest),
+                customerId.ToString("D"),
+                organizationId,
+                summary: "List customer link request history.",
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var items = await queries
+                .ListByBusinessCustomerAsync(organizationId, customerId, ct)
+                .ConfigureAwait(false);
+            return Results.Ok(items.Select(i => i with { AcceptToken = null }).ToList());
+        });
+
+        app.MapGet("/api/v1/organizations/{organizationId:guid}/customers/{customerId:guid}/link-status", async (
+            Guid organizationId,
+            Guid customerId,
+            GetCustomerLinkStatusForBusinessCustomer useCase,
+            PlatformMembershipAuthz membershipAuthz,
+            CancellationToken ct) =>
+        {
+            var denied = await membershipAuthz.EnsureCanManageMembershipsAsync(
+                PlatformAuditActions.PlatformAccessChecked,
+                nameof(BusinessCustomer),
+                customerId.ToString("D"),
+                organizationId,
+                summary: "Get customer link status.",
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var result = await useCase
+                .ExecuteAsync(
+                    PlatformOrganizationId.From(organizationId),
+                    BusinessCustomerId.From(customerId),
+                    ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
+        app.MapGet("/api/v1/organizations/{organizationId:guid}/notifications", async (
+            Guid organizationId,
+            ListOrganizationInAppNotifications useCase,
+            PlatformMembershipAuthz membershipAuthz,
+            CancellationToken ct) =>
+        {
+            var actor = membershipAuthz.Inner.CurrentActor;
+            if (actor.PlatformUserId is null)
+            {
+                return PlatformApiResults.Problem(
+                    DomainErrorCodes.AuthorizationDenied,
+                    "Authentication is required.",
+                    StatusCodes.Status401Unauthorized);
+            }
+
+            var denied = await membershipAuthz.EnsureCanManageMembershipsAsync(
+                PlatformAuditActions.PlatformAccessChecked,
+                nameof(OrganizationInAppNotification),
+                organizationId.ToString("D"),
+                organizationId,
+                summary: "List organization in-app notifications.",
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var list = await useCase
+                .ExecuteAsync(PlatformOrganizationId.From(organizationId), actor.PlatformUserId, ct)
+                .ConfigureAwait(false);
+            return Results.Ok(list);
+        });
+
+        app.MapPost("/api/v1/organizations/{organizationId:guid}/notifications/{notificationId:guid}/read", async (
+            Guid organizationId,
+            Guid notificationId,
+            MarkOrganizationInAppNotificationRead useCase,
+            PlatformMembershipAuthz membershipAuthz,
+            CancellationToken ct) =>
+        {
+            var actor = membershipAuthz.Inner.CurrentActor;
+            if (actor.PlatformUserId is null)
+            {
+                return PlatformApiResults.Problem(
+                    DomainErrorCodes.AuthorizationDenied,
+                    "Authentication is required.",
+                    StatusCodes.Status401Unauthorized);
+            }
+
+            var denied = await membershipAuthz.EnsureCanManageMembershipsAsync(
+                PlatformAuditActions.PlatformAccessChecked,
+                nameof(OrganizationInAppNotification),
+                notificationId.ToString("D"),
+                organizationId,
+                summary: "Mark organization notification read.",
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var result = await useCase
+                .ExecuteAsync(
+                    PlatformOrganizationId.From(organizationId),
+                    actor.PlatformUserId,
+                    notificationId,
+                    ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
         });
 
         app.MapPost("/api/v1/organizations/{organizationId:guid}/customer-link-requests/{requestId:guid}/resend", async (
@@ -741,6 +948,19 @@ internal static class BusinessCustomerEndpoints
     }
 }
 
-internal sealed record CreateCustomerLinkBody(string? Email);
+internal sealed record CreateCustomerLinkBody(
+    string? Email = null,
+    string? PublicUserId = null,
+    Guid? TargetUserIdentityId = null);
+
+internal sealed record CreateBusinessCustomerWithPersonalLinkBody(
+    string? DisplayName,
+    string? Email = null,
+    string? Phone = null,
+    string? Notes = null,
+    string? OwningProductCode = null,
+    string? PublicUserId = null,
+    Guid? TargetUserIdentityId = null);
+
 internal sealed record AcceptCustomerLinkBody(string? Token);
 internal sealed record EnableCreditBody(string? CurrencyCode);

@@ -118,6 +118,12 @@ public interface IPersonalInAppNotificationRepository
         int take,
         CancellationToken cancellationToken = default);
 
+    Task<PersonalInAppNotification?> FindByRecipientRelatedAsync(
+        PlatformUserId recipientUserIdentityId,
+        string relatedType,
+        string relatedId,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(PersonalInAppNotification notification, CancellationToken cancellationToken = default);
 
     Task UpdateAsync(PersonalInAppNotification notification, CancellationToken cancellationToken = default);

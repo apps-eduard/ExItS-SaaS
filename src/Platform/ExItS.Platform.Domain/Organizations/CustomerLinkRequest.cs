@@ -8,6 +8,8 @@ namespace ExItS.Platform.Domain.Organizations;
 /// <summary>
 /// Explicit Customer Link Request. Acceptance links one Platform User to one Business Customer —
 /// never Organization Staff membership and never a product-local role.
+/// Existing ExItS users are targeted by <see cref="TargetUserIdentityId"/> (in-app consent).
+/// Email+token remains the fallback invite path.
 /// </summary>
 public sealed class CustomerLinkRequest
 {
@@ -18,6 +20,8 @@ public sealed class CustomerLinkRequest
     public PlatformOrganizationId OrganizationId { get; }
     public BusinessCustomerId BusinessCustomerId { get; }
     public string NormalizedEmail { get; private set; }
+    public PlatformUserId? TargetUserIdentityId { get; private set; }
+    public string? TargetPublicUserId { get; private set; }
     public CustomerLinkRequestStatus Status { get; private set; }
     public string TokenHash { get; private set; }
     public PlatformUserId? InvitedByUserId { get; }
@@ -34,6 +38,8 @@ public sealed class CustomerLinkRequest
         PlatformOrganizationId organizationId,
         BusinessCustomerId businessCustomerId,
         string normalizedEmail,
+        PlatformUserId? targetUserIdentityId,
+        string? targetPublicUserId,
         CustomerLinkRequestStatus status,
         string tokenHash,
         PlatformUserId? invitedByUserId,
@@ -49,6 +55,8 @@ public sealed class CustomerLinkRequest
         OrganizationId = organizationId;
         BusinessCustomerId = businessCustomerId;
         NormalizedEmail = normalizedEmail;
+        TargetUserIdentityId = targetUserIdentityId;
+        TargetPublicUserId = targetPublicUserId;
         Status = status;
         TokenHash = tokenHash;
         InvitedByUserId = invitedByUserId;
@@ -68,11 +76,21 @@ public sealed class CustomerLinkRequest
         DateTimeOffset utcNow,
         PlatformUserId? invitedByUserId = null,
         TimeSpan? lifetime = null,
-        CustomerLinkRequestId? id = null)
+        CustomerLinkRequestId? id = null,
+        PlatformUserId? targetUserIdentityId = null,
+        string? targetPublicUserId = null)
     {
         ArgumentNullException.ThrowIfNull(organizationId);
         ArgumentNullException.ThrowIfNull(businessCustomerId);
         EnsureUtc(utcNow);
+
+        var normalizedPublicId = NormalizeOptionalPublicUserId(targetPublicUserId);
+        if (targetUserIdentityId is null && normalizedPublicId is not null)
+        {
+            throw new DomainException(
+                DomainErrorCodes.CustomerLinkRequestTargetMismatch,
+                "Target public ExItS ID requires a target user identity.");
+        }
 
         var acceptToken = CreateAcceptToken();
         var request = new CustomerLinkRequest(
@@ -80,6 +98,8 @@ public sealed class CustomerLinkRequest
             organizationId,
             businessCustomerId,
             PlatformUser.NormalizeEmail(email),
+            targetUserIdentityId,
+            normalizedPublicId,
             CustomerLinkRequestStatus.Pending,
             HashToken(acceptToken),
             invitedByUserId,
@@ -107,12 +127,16 @@ public sealed class CustomerLinkRequest
         DateTimeOffset? acceptedAtUtc,
         DateTimeOffset? declinedAtUtc,
         DateTimeOffset? revokedAtUtc,
-        PlatformUserId? acceptedByUserId) =>
+        PlatformUserId? acceptedByUserId,
+        PlatformUserId? targetUserIdentityId = null,
+        string? targetPublicUserId = null) =>
         new(
             id,
             organizationId,
             businessCustomerId,
             normalizedEmail,
+            targetUserIdentityId,
+            targetPublicUserId,
             status,
             tokenHash,
             invitedByUserId,
@@ -167,6 +191,13 @@ public sealed class CustomerLinkRequest
         EnsureUtc(utcNow);
         EnsurePendingUsable(utcNow);
 
+        if (TargetUserIdentityId is not null && TargetUserIdentityId != acceptedByUserId)
+        {
+            throw new DomainException(
+                DomainErrorCodes.CustomerLinkRequestTargetMismatch,
+                "Customer link request was issued to a different ExItS identity.");
+        }
+
         var normalized = PlatformUser.NormalizeEmail(email);
         if (!string.Equals(normalized, NormalizedEmail, StringComparison.Ordinal))
         {
@@ -203,6 +234,9 @@ public sealed class CustomerLinkRequest
     public bool IsExpired(DateTimeOffset utcNow) =>
         Status == CustomerLinkRequestStatus.Pending && utcNow >= ExpiresAtUtc;
 
+    public bool IsTargetedTo(PlatformUserId userId) =>
+        TargetUserIdentityId is not null && TargetUserIdentityId == userId;
+
     public static string HashToken(string acceptToken)
     {
         if (string.IsNullOrWhiteSpace(acceptToken))
@@ -233,6 +267,16 @@ public sealed class CustomerLinkRequest
                 DomainErrorCodes.CustomerLinkRequestExpired,
                 "Customer link request has expired.");
         }
+    }
+
+    private static string? NormalizeOptionalPublicUserId(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        return PublicUserIdRules.Normalize(value.Trim());
     }
 
     private static string CreateAcceptToken()
