@@ -9,7 +9,7 @@
 | Starting SHA | `8a7689e42a511571e704356a95e53465e3291921` on `main` |
 | Implementation commit | `d41106acd32bd950bb6638bc769539ab22abd99a` |
 | Docs commit | `20a61d99afbfca3587b4d688fff5161b508a66ca` |
-| Docs/hash-stamp commit | _(filled after stamp)_ |
+| Docs/hash-stamp commit | `4e3bdb24a0e96e427c27d0ef67fafcbc589763a1` |
 | Device Verified | **No** |
 | Production Ready | **No** |
 | Migration | **Yes** — `20260812153929_AddPersonalRewardPoints` (Platform only) |
