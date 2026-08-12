@@ -1,10 +1,10 @@
 # Phase 24 — Linked Customer Statements and Personal Monetization
 
-[Phases](README.md) | [Portfolio](../portfolio-progress.md) | [WP01 audit](../reports/P24-WP01-current-state-and-architecture-contract.md) | [WP02](../reports/P24-WP02-customer-link-and-pos-correlation.md) | [WP03](../reports/P24-WP03-linked-customer-authorization-contract.md) | [WP04](../reports/P24-WP04-lightweight-linked-business-utang-statement.md) | [ADR-021](../decisions/ADR-021-linked-customer-statements-and-personal-monetization.md)
+[Phases](README.md) | [Portfolio](../portfolio-progress.md) | [WP01 audit](../reports/P24-WP01-current-state-and-architecture-contract.md) | [WP02](../reports/P24-WP02-customer-link-and-pos-correlation.md) | [WP03](../reports/P24-WP03-linked-customer-authorization-contract.md) | [WP04](../reports/P24-WP04-lightweight-linked-business-utang-statement.md) | [WP05](../reports/P24-WP05-receipt-summary-detail-and-lazy-loading.md) | [ADR-021](../decisions/ADR-021-linked-customer-statements-and-personal-monetization.md)
 
 | Field | Value |
 |---|---|
-| Status | **Open** — WP01–WP04 Complete · WP05+ not started |
+| Status | **Open** — WP01–WP05 Complete · WP06+ not started |
 | Branch / HEAD at open | `main` @ `2fdcc8ab86f8a1df516053930885b6df04b0e436` |
 | Device Verified | **No** |
 | Production Ready | **No** |
@@ -145,8 +145,8 @@ Personal must not modify financial ledger entries. A later WP may add “I don�
 | **WP02** | Customer-link completeness + POS↔Platform customer correlation | **Complete** — [P24-WP02](../reports/P24-WP02-customer-link-and-pos-correlation.md) |
 | **WP03** | Linked-customer authorization contract | **Complete** — [P24-WP03](../reports/P24-WP03-linked-customer-authorization-contract.md) |
 | **WP04** | Business-credit statement projection APIs | **Complete** — [P24-WP04](../reports/P24-WP04-lightweight-linked-business-utang-statement.md) |
-| **WP05** | Lazy receipt detail + open-debt exception + page limits | Separate detail endpoint; cursor pagination |
-| **WP06** | Personal MAUI statement UX (free path) | Low-bandwidth; no preload of lines |
+| **WP05** | Lazy receipt detail + summary/lazy loading | **Complete** — [P24-WP05](../reports/P24-WP05-receipt-summary-detail-and-lazy-loading.md) |
+| **WP06** | Free vs Paid Personal history entitlement | Free window; open-debt exception; Personal premium foundation (MAUI UX follows later) |
 | **WP07** | Personal feature entitlement subject + feature codes | Not an Organization subscription; no production prices |
 | **WP08** | Reward ledger foundation | Personal-only; org redemption rejected; idempotent claims |
 | **WP09** | Ads abstraction + Ad-Free entitlement | No real ad network; no fake playback |

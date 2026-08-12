@@ -111,6 +111,7 @@ docs/reports/P24-WP01-current-state-and-architecture-contract.md
 docs/reports/P24-WP02-customer-link-and-pos-correlation.md
 docs/reports/P24-WP03-linked-customer-authorization-contract.md
 docs/reports/P24-WP04-lightweight-linked-business-utang-statement.md
+docs/reports/P24-WP05-receipt-summary-detail-and-lazy-loading.md
 docs/portfolio-progress.md
 docs/product/pinoy-business-pos-requirements.md
 docs/product/portfolio-vision.md
