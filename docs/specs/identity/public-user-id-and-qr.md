@@ -77,17 +77,34 @@ Allowed for any authenticated account class (Personal and Organization sessions)
 
 Scan or enter ID **never** automatically:
 
-- creates a relationship
-- adds a customer
-- joins an organization
-- assigns a role
+- creates Organization membership
+- grants staff or product roles
+- activates a Personal↔merchant **LinkedCustomerAppUser**
+
+### Existing ExItS Personal user (primary path)
+
+1. Resolve Public ExItS ID / QR (exact match).
+2. Confirm identity in UI (display name, public ID, policy-masked fields only).
+3. Save organization-local customer (`BusinessCustomer` + POS correlation).
+4. Create **PENDING** `CustomerLinkRequest` targeted to that Personal identity.
+5. Personal in-app notification → Accept or Decline.
+6. **Accept** creates/activates `LinkedCustomerAppUser` only.
+7. **Decline** keeps merchant customer; no active Personal link.
+
+Email invitation/token is **fallback**, not required for the normal existing-user flow.
+
+See [P24 ExItS-ID customer-link consent](../../reports/P24-exits-id-customer-link-consent-flow.md).
+
+### Organization customer create (POS)
+
+Organization MAUI customer create may resolve ExItS ID, confirm, save local customer, and automatically create the pending Personal link request. Resolving an ID alone is **not** acceptance.
 
 Always show identity confirmation before the final action.
 
 | Flow | After confirm |
 |---|---|
 | Personal Utang People | May create a **local contact**; debt linking still follows existing invitation/acceptance rules |
-| Org / POS customer | Creates/links **organization-local customer** only after explicit save; no membership / POS role |
+| Org / POS customer | Creates organization-local customer + **pending** Personal link request after explicit save; no membership / POS role; link activates only after Personal Accept |
 | Staff invitation | Prefills display name; **email + invite send** still required; user must accept |
 | Sale customer picker | Prefills search / select existing org customer; does not invent membership |
 
@@ -98,6 +115,8 @@ Always show identity confirmation before the final action.
 - **My QR Code:** Personal More, Profile, Organization essentials menu → `/personal/my-qr`
 - **Resolve:** `/personal/resolve-user?purpose=…&return=…` (manual ID; camera deferred in this build)
 - Contextual entry: People, I Lent / I Borrowed, Customers, Customer create, Sale checkout, Staff invite
+- **Customer link requests:** `/personal/customer-link-requests` (Accept/Decline pending merchant links)
+- **Notifications:** `/personal/notifications`
 
 Recommended More order: My QR → Invitations → Profile → Settings → Explore POS → Sign out.
 
@@ -109,6 +128,7 @@ Recommended More order: My QR → Invitations → Profile → Settings → Explo
 - Invite-by-public-ID without email (staff invite still requires email)
 - Deep user-to-user sharing beyond contact/customer/invite prefill
 - Native share sheet for QR image on all platforms
+- Broad organization-wide broadcast of customer-link responses (responses notify the initiating user)
 
 ---
 
