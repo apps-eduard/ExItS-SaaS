@@ -1,4 +1,5 @@
 using ExItS.Platform.Application.Personal;
+using ExItS.Platform.Domain.Catalog;
 using ExItS.Platform.Domain.Identity;
 using ExItS.Platform.Domain.Organizations;
 using ExItS.Platform.Domain.Personal;
@@ -893,5 +894,133 @@ internal sealed class PersonalUtangMigrationItemRepository(PlatformDbContext db)
             HistoryEntryIdsCsv = item.HistoryEntryIdsCsv,
             Status = item.Status.ToString(),
             BlockedReason = item.BlockedReason
+        };
+}
+
+internal sealed class PersonalFeatureDefinitionRepository(PlatformDbContext db) : IPersonalFeatureDefinitionRepository
+{
+    public async Task<PersonalFeatureDefinition?> GetByCodeAsync(
+        FeatureCode featureCode,
+        CancellationToken cancellationToken = default)
+    {
+        var record = await db.PersonalFeatureDefinitions.AsNoTracking()
+            .FirstOrDefaultAsync(x => x.FeatureCode == featureCode.Value, cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : ToDomain(record);
+    }
+
+    public Task AddAsync(PersonalFeatureDefinition definition, CancellationToken cancellationToken = default)
+    {
+        db.PersonalFeatureDefinitions.Add(ToRecord(definition));
+        return Task.CompletedTask;
+    }
+
+    public async Task UpdateAsync(PersonalFeatureDefinition definition, CancellationToken cancellationToken = default)
+    {
+        var record = await db.PersonalFeatureDefinitions
+            .FirstOrDefaultAsync(x => x.FeatureCode == definition.FeatureCode.Value, cancellationToken)
+            .ConfigureAwait(false);
+        if (record is null)
+        {
+            return;
+        }
+
+        record.DisplayName = definition.DisplayName;
+        record.IsActive = definition.IsActive;
+        record.UpdatedAtUtc = definition.UpdatedAtUtc;
+    }
+
+    private static PersonalFeatureDefinition ToDomain(PersonalFeatureDefinitionRecord record) =>
+        PersonalFeatureDefinition.Rehydrate(
+            FeatureCode.Create(record.FeatureCode),
+            record.DisplayName,
+            record.IsActive,
+            record.CreatedAtUtc,
+            record.UpdatedAtUtc);
+
+    private static PersonalFeatureDefinitionRecord ToRecord(PersonalFeatureDefinition definition) =>
+        new()
+        {
+            FeatureCode = definition.FeatureCode.Value,
+            DisplayName = definition.DisplayName,
+            IsActive = definition.IsActive,
+            CreatedAtUtc = definition.CreatedAtUtc,
+            UpdatedAtUtc = definition.UpdatedAtUtc
+        };
+}
+
+internal sealed class PersonalFeatureEntitlementRepository(PlatformDbContext db) : IPersonalFeatureEntitlementRepository
+{
+    public async Task<PersonalFeatureEntitlement?> GetByIdAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        var record = await db.PersonalFeatureEntitlements.AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : ToDomain(record);
+    }
+
+    public async Task<IReadOnlyList<PersonalFeatureEntitlement>> ListByUserAndFeatureAsync(
+        PlatformUserId personalUserId,
+        FeatureCode featureCode,
+        CancellationToken cancellationToken = default)
+    {
+        var rows = await db.PersonalFeatureEntitlements.AsNoTracking()
+            .Where(x => x.PersonalUserId == personalUserId.Value && x.FeatureCode == featureCode.Value)
+            .OrderByDescending(x => x.CreatedAtUtc)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return rows.Select(ToDomain).ToList();
+    }
+
+    public Task AddAsync(PersonalFeatureEntitlement entitlement, CancellationToken cancellationToken = default)
+    {
+        db.PersonalFeatureEntitlements.Add(ToRecord(entitlement));
+        return Task.CompletedTask;
+    }
+
+    public async Task UpdateAsync(PersonalFeatureEntitlement entitlement, CancellationToken cancellationToken = default)
+    {
+        var record = await db.PersonalFeatureEntitlements
+            .FirstOrDefaultAsync(x => x.Id == entitlement.Id, cancellationToken)
+            .ConfigureAwait(false);
+        if (record is null)
+        {
+            return;
+        }
+
+        record.EndsAtUtc = entitlement.EndsAtUtc;
+        record.Status = entitlement.Status.ToString();
+        record.RevokedAtUtc = entitlement.RevokedAtUtc;
+        record.RevocationReason = entitlement.RevocationReason;
+    }
+
+    private static PersonalFeatureEntitlement ToDomain(PersonalFeatureEntitlementRecord record) =>
+        PersonalFeatureEntitlement.Rehydrate(
+            record.Id,
+            PlatformUserId.From(record.PersonalUserId),
+            FeatureCode.Create(record.FeatureCode),
+            record.StartsAtUtc,
+            record.EndsAtUtc,
+            Enum.Parse<PersonalFeatureEntitlementStatus>(record.Status, ignoreCase: true),
+            Enum.Parse<PersonalFeatureGrantSource>(record.GrantSource, ignoreCase: true),
+            record.CreatedAtUtc,
+            record.RevokedAtUtc,
+            record.RevocationReason);
+
+    private static PersonalFeatureEntitlementRecord ToRecord(PersonalFeatureEntitlement entitlement) =>
+        new()
+        {
+            Id = entitlement.Id,
+            PersonalUserId = entitlement.PersonalUserId.Value,
+            FeatureCode = entitlement.FeatureCode.Value,
+            StartsAtUtc = entitlement.StartsAtUtc,
+            EndsAtUtc = entitlement.EndsAtUtc,
+            Status = entitlement.Status.ToString(),
+            GrantSource = entitlement.GrantSource.ToString(),
+            CreatedAtUtc = entitlement.CreatedAtUtc,
+            RevokedAtUtc = entitlement.RevokedAtUtc,
+            RevocationReason = entitlement.RevocationReason
         };
 }

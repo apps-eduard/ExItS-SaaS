@@ -3,6 +3,7 @@ using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Application.Payments;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using Microsoft.Extensions.Options;
 
 namespace ExItS.PinoyBusinessPOS.Application.Statements;
 
@@ -55,6 +56,22 @@ public sealed record LinkedCustomerRecentActivityPageDto(
     IReadOnlyList<LinkedCustomerActivityItemDto> Items,
     int Page,
     int PageSize,
+    bool HasMore,
+    bool CanAccessExtendedHistory,
+    DateTimeOffset FreeHistoryStartsAtUtc);
+
+/// <summary>
+/// Active credits + active repayments that explain current outstanding (open-debt exception path).
+/// Separate from chronological free/entitled recent activity to avoid premium paging leaks.
+/// </summary>
+public sealed record LinkedCustomerOpenDebtActivityPageDto(
+    Guid OrganizationId,
+    Guid PlatformBusinessCustomerId,
+    Guid PosCustomerId,
+    decimal OutstandingBalance,
+    IReadOnlyList<LinkedCustomerActivityItemDto> Items,
+    int Page,
+    int PageSize,
     bool HasMore);
 
 /// <summary>
@@ -64,6 +81,15 @@ public sealed record LinkedCustomerRecentActivityPageDto(
 public interface ILinkedCustomerRecentActivityQuery
 {
     Task<IReadOnlyList<LinkedCustomerActivityRawRow>> ListRecentDescendingAsync(
+        PosOrganizationId organizationId,
+        POSCustomerId customerId,
+        int skip,
+        int take,
+        DateTimeOffset? notBeforeUtc = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Active ledger rows only (Status = Active), newest first — open-debt explanation.</summary>
+    Task<IReadOnlyList<LinkedCustomerActivityRawRow>> ListActiveDescendingAsync(
         PosOrganizationId organizationId,
         POSCustomerId customerId,
         int skip,
@@ -149,15 +175,24 @@ public sealed class ListLinkedCustomerRecentActivity
     private readonly AuthorizeLinkedCustomerStatementAccess _authorize;
     private readonly ILinkedCustomerRecentActivityQuery _activity;
     private readonly IOutstandingBalanceService _outstanding;
+    private readonly IPersonalFeatureEntitlementClient _entitlements;
+    private readonly IOptions<PersonalStatementsOptions> _options;
+    private readonly IClock _clock;
 
     public ListLinkedCustomerRecentActivity(
         AuthorizeLinkedCustomerStatementAccess authorize,
         ILinkedCustomerRecentActivityQuery activity,
-        IOutstandingBalanceService outstanding)
+        IOutstandingBalanceService outstanding,
+        IPersonalFeatureEntitlementClient entitlements,
+        IOptions<PersonalStatementsOptions> options,
+        IClock clock)
     {
         _authorize = authorize;
         _activity = activity;
         _outstanding = outstanding;
+        _entitlements = entitlements;
+        _options = options;
+        _clock = clock;
     }
 
     public async Task<ApplicationResult<LinkedCustomerRecentActivityPageDto>> ExecuteAsync(
@@ -184,26 +219,29 @@ public sealed class ListLinkedCustomerRecentActivity
         var normalizedPageSize = LinkedCustomerStatementLimits.NormalizePageSize(pageSize);
         var skip = (normalizedPage - 1) * normalizedPageSize;
 
-        // Fetch one extra row to compute HasMore without a separate COUNT(*).
+        var asOfUtc = _clock.UtcNow;
+        var freeStart = PersonalHistoryWindows.ComputeFreeWindowStart(
+            asOfUtc,
+            _options.Value.FreeRecentMonths);
+        var canAccessExtended = await _entitlements
+            .HasActiveEntitlementAsync(PersonalDigitalRecordsFeatureCodes.Extended, cancellationToken)
+            .ConfigureAwait(false);
+
+        // Free users: server-side date filter. Entitled users: no notBefore (still page-sized).
+        DateTimeOffset? notBefore = canAccessExtended ? null : freeStart;
+
         var rows = await _activity
-            .ListRecentDescendingAsync(orgId, posCustomerId, skip, normalizedPageSize + 1, cancellationToken)
+            .ListRecentDescendingAsync(orgId, posCustomerId, skip, normalizedPageSize + 1, notBefore, cancellationToken)
             .ConfigureAwait(false);
         var hasMore = rows.Count > normalizedPageSize;
         var pageRows = hasMore ? rows.Take(normalizedPageSize).ToList() : rows.ToList();
 
         decimal? runningAfter = null;
-        if (pageRows.Count > 0)
+        if (pageRows.Count > 0 && normalizedPage == 1)
         {
-            // Balance after the newest entry on this page equals current outstanding when page=1.
-            // For later pages, reconstruct by subtracting signed effects of all newer rows
-            // (skip count) would require more data; for WP04 we only attach BalanceAfter on page 1
-            // (newest slice) where outstanding is the balance after the newest entry.
-            if (normalizedPage == 1)
-            {
-                runningAfter = await _outstanding
-                    .GetOutstandingAsync(orgId, posCustomerId, cancellationToken)
-                    .ConfigureAwait(false);
-            }
+            runningAfter = await _outstanding
+                .GetOutstandingAsync(orgId, posCustomerId, cancellationToken)
+                .ConfigureAwait(false);
         }
 
         var items = new List<LinkedCustomerActivityItemDto>(pageRows.Count);
@@ -216,7 +254,7 @@ public sealed class ListLinkedCustomerRecentActivity
                 runningAfter = bal - row.SignedEffect;
             }
 
-            items.Add(Map(row, balanceAfter));
+            items.Add(LinkedCustomerActivityMapper.Map(row, balanceAfter));
         }
 
         return ApplicationResult<LinkedCustomerRecentActivityPageDto>.Success(
@@ -227,10 +265,111 @@ public sealed class ListLinkedCustomerRecentActivity
                 items,
                 normalizedPage,
                 normalizedPageSize,
-                hasMore));
+                hasMore,
+                canAccessExtended,
+                freeStart));
+    }
+}
+
+/// <summary>
+/// Open-debt explanation: Active credits + Active repayments only.
+/// Always available after WP03 when outstanding &gt; 0; never unlocks settled-old history when balance is zero.
+/// </summary>
+public sealed class ListLinkedCustomerOpenDebtActivity
+{
+    private readonly AuthorizeLinkedCustomerStatementAccess _authorize;
+    private readonly ILinkedCustomerRecentActivityQuery _activity;
+    private readonly IOutstandingBalanceService _outstanding;
+
+    public ListLinkedCustomerOpenDebtActivity(
+        AuthorizeLinkedCustomerStatementAccess authorize,
+        ILinkedCustomerRecentActivityQuery activity,
+        IOutstandingBalanceService outstanding)
+    {
+        _authorize = authorize;
+        _activity = activity;
+        _outstanding = outstanding;
     }
 
-    private static LinkedCustomerActivityItemDto Map(LinkedCustomerActivityRawRow row, decimal? balanceAfter)
+    public async Task<ApplicationResult<LinkedCustomerOpenDebtActivityPageDto>> ExecuteAsync(
+        Guid organizationId,
+        Guid platformBusinessCustomerId,
+        int? page = null,
+        int? pageSize = null,
+        CancellationToken cancellationToken = default)
+    {
+        var authz = await _authorize
+            .ExecuteAsync(organizationId, platformBusinessCustomerId, posCustomerId: null, cancellationToken)
+            .ConfigureAwait(false);
+        if (!authz.IsSuccess)
+        {
+            return ApplicationResult<LinkedCustomerOpenDebtActivityPageDto>.Failure(
+                authz.ErrorCode!,
+                authz.ErrorMessage!);
+        }
+
+        var ctx = authz.Value!;
+        var orgId = PosOrganizationId.From(ctx.OrganizationId);
+        var posCustomerId = POSCustomerId.From(ctx.PosCustomerId);
+        var outstanding = await _outstanding
+            .GetOutstandingAsync(orgId, posCustomerId, cancellationToken)
+            .ConfigureAwait(false);
+
+        var normalizedPage = LinkedCustomerStatementLimits.NormalizePage(page);
+        var normalizedPageSize = LinkedCustomerStatementLimits.NormalizePageSize(pageSize);
+
+        if (outstanding <= 0m)
+        {
+            // Zero outstanding must not unlock arbitrary old active-history dumps.
+            return ApplicationResult<LinkedCustomerOpenDebtActivityPageDto>.Success(
+                new LinkedCustomerOpenDebtActivityPageDto(
+                    ctx.OrganizationId,
+                    ctx.PlatformBusinessCustomerId,
+                    ctx.PosCustomerId,
+                    0m,
+                    [],
+                    normalizedPage,
+                    normalizedPageSize,
+                    HasMore: false));
+        }
+
+        var skip = (normalizedPage - 1) * normalizedPageSize;
+        var rows = await _activity
+            .ListActiveDescendingAsync(orgId, posCustomerId, skip, normalizedPageSize + 1, cancellationToken)
+            .ConfigureAwait(false);
+        var hasMore = rows.Count > normalizedPageSize;
+        var pageRows = hasMore ? rows.Take(normalizedPageSize).ToList() : rows.ToList();
+
+        decimal? runningAfter = normalizedPage == 1 ? outstanding : null;
+        var items = new List<LinkedCustomerActivityItemDto>(pageRows.Count);
+        foreach (var row in pageRows)
+        {
+            decimal? balanceAfter = null;
+            if (runningAfter is decimal bal)
+            {
+                balanceAfter = bal;
+                runningAfter = bal - row.SignedEffect;
+            }
+
+            items.Add(LinkedCustomerActivityMapper.Map(row, balanceAfter));
+        }
+
+        return ApplicationResult<LinkedCustomerOpenDebtActivityPageDto>.Success(
+            new LinkedCustomerOpenDebtActivityPageDto(
+                ctx.OrganizationId,
+                ctx.PlatformBusinessCustomerId,
+                ctx.PosCustomerId,
+                outstanding,
+                items,
+                normalizedPage,
+                normalizedPageSize,
+                hasMore));
+    }
+}
+
+internal static class LinkedCustomerActivityMapper
+{
+    public static LinkedCustomerActivityItemDto Map(LinkedCustomerActivityRawRow row, decimal? balanceAfter)
     {
         var isCredit = string.Equals(row.EntryType, "Credit", StringComparison.OrdinalIgnoreCase);
         var isRepayment = string.Equals(row.EntryType, "Repayment", StringComparison.OrdinalIgnoreCase);
@@ -274,13 +413,11 @@ public sealed class ListLinkedCustomerRecentActivity
         }
 
         var reference = isRepayment
-            ? BuildRepaymentReference(row.EntryId)
+            ? $"RCPT-{row.EntryId.ToString("N")[..12].ToUpperInvariant()}"
             : row.SourceSaleId is Guid saleId
                 ? saleId.ToString("N")[..8].ToUpperInvariant()
                 : row.EntryId.ToString("N")[..8].ToUpperInvariant();
 
-        // HasDetails is true only when a sale receipt can be opened (WP05). Repayments stay
-        // as activity rows; they do not preload or imply product-line receipt detail.
         var hasDetails = row.SourceSaleId is not null;
 
         return new LinkedCustomerActivityItemDto(
@@ -296,7 +433,4 @@ public sealed class ListLinkedCustomerRecentActivity
             hasDetails,
             row.SourceSaleId);
     }
-
-    private static string BuildRepaymentReference(Guid repaymentId) =>
-        $"RCPT-{repaymentId.ToString("N")[..12].ToUpperInvariant()}";
 }

@@ -5,7 +5,8 @@ using ExItS.PinoyBusinessPOS.Application.Statements;
 namespace ExItS.PinoyBusinessPOS.Api.Statements;
 
 /// <summary>
-/// Personal linked-customer Business Utang projection (WP04) + lazy sale receipt detail (WP05).
+/// Personal linked-customer Business Utang projection (WP04–WP06):
+/// statement, free/entitled activity, open-debt explanation, lazy receipt detail.
 /// Authorization is WP03 only — not staff UtangCapability / org-header alone.
 /// </summary>
 internal static class LinkedCustomerStatementEndpoints
@@ -44,6 +45,26 @@ internal static class LinkedCustomerStatementEndpoints
             }
 
             var result = await activity
+                .ExecuteAsync(orgId, platformBusinessCustomerId, page, pageSize, ct)
+                .ConfigureAwait(false);
+            return PosApiResults.FromResult(result, Results.Ok);
+        });
+
+        // WP06: open-debt evidence only (Active credits/repayments). Never paywalled.
+        app.MapGet("/api/v1/pos/personal/linked-customers/{platformBusinessCustomerId:guid}/open-debt-activity", async (
+            Guid platformBusinessCustomerId,
+            Guid? organizationId,
+            int? page,
+            int? pageSize,
+            ListLinkedCustomerOpenDebtActivity openDebt,
+            CancellationToken ct) =>
+        {
+            if (!TryGetOrganizationId(organizationId, out var orgId, out var problem))
+            {
+                return problem!;
+            }
+
+            var result = await openDebt
                 .ExecuteAsync(orgId, platformBusinessCustomerId, page, pageSize, ct)
                 .ConfigureAwait(false);
             return PosApiResults.FromResult(result, Results.Ok);

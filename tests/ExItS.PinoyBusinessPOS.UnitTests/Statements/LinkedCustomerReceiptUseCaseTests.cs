@@ -1,12 +1,16 @@
 using ExItS.PinoyBusinessPOS.Application.Common;
+using ExItS.PinoyBusinessPOS.Application.Credit;
 using ExItS.PinoyBusinessPOS.Application.Customers;
+using ExItS.PinoyBusinessPOS.Application.Payments;
 using ExItS.PinoyBusinessPOS.Application.Sales;
 using ExItS.PinoyBusinessPOS.Application.Statements;
+using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.CashierShifts;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Credit;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Payments;
 using ExItS.PinoyBusinessPOS.Domain.Registers;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
 
@@ -261,20 +265,93 @@ public sealed class LinkedCustomerReceiptUseCaseTests
         Assert.Equal("A", Assert.Single(result.Value.Lines).ProductNameSnapshot);
     }
 
+    [Fact]
+    public async Task Receipt_old_settled_requires_extended_entitlement()
+    {
+        var harness = await Harness.CreateAuthorizedAsync();
+        var creditId = CreditEntryId.New();
+        var sale = UtangSale(
+            harness.PosCustomer.Id,
+            new SaleLineDraft(
+                CatalogProductId.New(),
+                "Old",
+                null,
+                null,
+                UnitOfMeasure.Piece,
+                50m,
+                1m),
+            recordedAt: new DateTimeOffset(2025, 1, 10, 0, 0, 0, TimeSpan.Zero),
+            creditId: creditId);
+        await harness.Sales.AddAsync(sale);
+        var credit = CreditEntry.Create(
+            PosOrganizationId.From(OrgA),
+            harness.PosCustomer.Id,
+            50m,
+            "Goods",
+            sale.RecordedAtUtc,
+            id: creditId,
+            sourceSaleId: sale.Id);
+        credit.Reverse("settled via repayment path", sale.RecordedAtUtc.AddDays(1));
+        await harness.Credits.AddAsync(credit);
+
+        var denied = await harness.Receipt.ExecuteAsync(OrgA, PlatformCustomer, sale.Id.Value);
+        Assert.False(denied.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.ExtendedHistoryRequired, denied.ErrorCode);
+
+        harness.Entitlements.Active = true;
+        var allowed = await harness.Receipt.ExecuteAsync(OrgA, PlatformCustomer, sale.Id.Value);
+        Assert.True(allowed.IsSuccess, allowed.ErrorMessage);
+        Assert.Equal(sale.Id.Value, allowed.Value!.SaleId);
+    }
+
+    [Fact]
+    public async Task Receipt_old_active_utang_allowed_under_open_debt_exception()
+    {
+        var harness = await Harness.CreateAuthorizedAsync();
+        var creditId = CreditEntryId.New();
+        var sale = UtangSale(
+            harness.PosCustomer.Id,
+            new SaleLineDraft(
+                CatalogProductId.New(),
+                "Still owed",
+                null,
+                null,
+                UnitOfMeasure.Piece,
+                80m,
+                1m),
+            recordedAt: new DateTimeOffset(2025, 1, 10, 0, 0, 0, TimeSpan.Zero),
+            creditId: creditId);
+        await harness.Sales.AddAsync(sale);
+        await harness.Credits.AddAsync(CreditEntry.Create(
+            PosOrganizationId.From(OrgA),
+            harness.PosCustomer.Id,
+            80m,
+            "Goods",
+            sale.RecordedAtUtc,
+            id: creditId,
+            sourceSaleId: sale.Id));
+
+        var result = await harness.Receipt.ExecuteAsync(OrgA, PlatformCustomer, sale.Id.Value);
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.Equal("Still owed", Assert.Single(result.Value!.Lines).ProductNameSnapshot);
+    }
+
     private static Sale UtangSale(
         POSCustomerId customerId,
         SaleLineDraft line,
-        string? saleNumber = null) =>
+        string? saleNumber = null,
+        DateTimeOffset? recordedAt = null,
+        CreditEntryId? creditId = null) =>
         Sale.Checkout(
             PosOrganizationId.From(OrgA),
             saleNumber ?? SaleNumbers.Format(new DateOnly(2026, 8, 12), 1),
             SalePaymentMethod.Utang,
             [line],
             Actor,
-            T0,
+            recordedAt ?? T0,
             amountTendered: null,
             customerId: customerId,
-            linkedCreditEntryId: CreditEntryId.New(),
+            linkedCreditEntryId: creditId ?? CreditEntryId.New(),
             cashierShiftId: Shift,
             registerId: Register);
 
@@ -283,6 +360,8 @@ public sealed class LinkedCustomerReceiptUseCaseTests
         public required POSCustomer PosCustomer { get; init; }
         public required InMemoryCustomers Customers { get; init; }
         public required InMemorySales Sales { get; init; }
+        public required InMemoryCredits Credits { get; init; }
+        public required FakeEntitlements Entitlements { get; init; }
         public required GetLinkedCustomerSaleReceipt Receipt { get; init; }
 
         public static async Task<Harness> CreateAuthorizedAsync() =>
@@ -292,6 +371,12 @@ public sealed class LinkedCustomerReceiptUseCaseTests
         {
             var customers = new InMemoryCustomers();
             var sales = new InMemorySales();
+            var credits = new InMemoryCredits();
+            var repayments = new InMemoryRepayments();
+            var clock = new FixedClock(T0.AddDays(1));
+            var outstanding = new OutstandingBalanceService(credits, repayments, clock);
+            var entitlements = new FakeEntitlements(active: false);
+            var options = Microsoft.Extensions.Options.Options.Create(new PersonalStatementsOptions { FreeRecentMonths = 3 });
             var posCustomer = POSCustomer.Create(
                 PosOrganizationId.From(OrgA),
                 "Rosa Customer",
@@ -305,9 +390,31 @@ public sealed class LinkedCustomerReceiptUseCaseTests
                 PosCustomer = posCustomer,
                 Customers = customers,
                 Sales = sales,
-                Receipt = new GetLinkedCustomerSaleReceipt(authorize, sales)
+                Credits = credits,
+                Entitlements = entitlements,
+                Receipt = new GetLinkedCustomerSaleReceipt(
+                    authorize,
+                    sales,
+                    credits,
+                    outstanding,
+                    entitlements,
+                    options,
+                    clock)
             };
         }
+    }
+
+    private sealed class FakeEntitlements(bool active) : IPersonalFeatureEntitlementClient
+    {
+        public bool Active { get; set; } = active;
+
+        public Task<bool> HasActiveEntitlementAsync(string featureCode, CancellationToken cancellationToken = default) =>
+            Task.FromResult(Active);
+    }
+
+    private sealed class FixedClock(DateTimeOffset utcNow) : IClock
+    {
+        public DateTimeOffset UtcNow { get; } = utcNow;
     }
 
     private sealed class FakePlatform : ILinkedCustomerPlatformAuthorization
@@ -466,5 +573,129 @@ public sealed class LinkedCustomerReceiptUseCaseTests
             SaleId saleId,
             CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
+    }
+
+    private sealed class InMemoryCredits : ICreditEntryRepository
+    {
+        public List<CreditEntry> All { get; } = [];
+
+        public Task AddAsync(CreditEntry entry, CancellationToken cancellationToken = default)
+        {
+            All.Add(entry);
+            return Task.CompletedTask;
+        }
+
+        public Task UpdateAsync(CreditEntry entry, CancellationToken cancellationToken = default)
+        {
+            var i = All.FindIndex(e => e.Id == entry.Id);
+            if (i >= 0)
+            {
+                All[i] = entry;
+            }
+
+            return Task.CompletedTask;
+        }
+
+        public Task<CreditEntry?> GetByIdAsync(
+            PosOrganizationId organizationId,
+            POSCustomerId customerId,
+            CreditEntryId entryId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(All.FirstOrDefault(e =>
+                e.OrganizationId == organizationId && e.CustomerId == customerId && e.Id == entryId));
+
+        public Task<CreditEntry?> GetByIdForOrganizationAsync(
+            PosOrganizationId organizationId,
+            CreditEntryId entryId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(All.FirstOrDefault(e => e.OrganizationId == organizationId && e.Id == entryId));
+
+        public Task<(IReadOnlyList<CreditEntry> Items, int TotalCount)> ListByCustomerAsync(
+            PosOrganizationId organizationId, POSCustomerId customerId, int skip, int take, CancellationToken cancellationToken = default)
+        {
+            var list = All.Where(e => e.OrganizationId == organizationId && e.CustomerId == customerId)
+                .OrderByDescending(e => e.CreatedAtUtc).ThenByDescending(e => e.Id.Value).ToList();
+            return Task.FromResult(((IReadOnlyList<CreditEntry>)list.Skip(skip).Take(take).ToList(), list.Count));
+        }
+
+        public Task<(IReadOnlyList<CreditEntry> Items, int TotalCount)> ListCreatedSinceAsync(
+            PosOrganizationId organizationId, DateTimeOffset? sinceUtc, int skip, int take, CancellationToken cancellationToken = default) =>
+            Task.FromResult(((IReadOnlyList<CreditEntry>)Array.Empty<CreditEntry>(), 0));
+
+        public Task<IReadOnlyList<CreditEntry>> ListActiveByOrganizationAsync(
+            PosOrganizationId organizationId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<CreditEntry>>(
+                All.Where(e => e.OrganizationId == organizationId && e.Status == CreditEntryStatus.Active).ToList());
+
+        public Task<IReadOnlyList<CreditEntry>> ListRecordedInRangeAsync(
+            PosOrganizationId organizationId, DateOnly fromDateUtc, DateOnly toDateUtc, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<CreditEntry>>(Array.Empty<CreditEntry>());
+
+        public Task<decimal> SumActiveAmountAsync(
+            PosOrganizationId organizationId, POSCustomerId customerId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(All.Where(e =>
+                e.OrganizationId == organizationId && e.CustomerId == customerId && e.Status == CreditEntryStatus.Active)
+                .Sum(e => e.Amount));
+
+        public Task<int> CountActiveAsync(
+            PosOrganizationId organizationId, POSCustomerId customerId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(All.Count(e =>
+                e.OrganizationId == organizationId && e.CustomerId == customerId && e.Status == CreditEntryStatus.Active));
+    }
+
+    private sealed class InMemoryRepayments : IRepaymentRepository
+    {
+        public List<Repayment> All { get; } = [];
+
+        public Task AddAsync(Repayment repayment, CancellationToken cancellationToken = default)
+        {
+            All.Add(repayment);
+            return Task.CompletedTask;
+        }
+
+        public Task UpdateAsync(Repayment repayment, CancellationToken cancellationToken = default)
+        {
+            var i = All.FindIndex(r => r.Id == repayment.Id);
+            if (i >= 0)
+            {
+                All[i] = repayment;
+            }
+
+            return Task.CompletedTask;
+        }
+
+        public Task<Repayment?> GetByIdAsync(PosOrganizationId organizationId, RepaymentId repaymentId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(All.FirstOrDefault(r => r.OrganizationId == organizationId && r.Id == repaymentId));
+
+        public Task<(IReadOnlyList<Repayment> Items, int TotalCount)> ListByCustomerAsync(
+            PosOrganizationId organizationId, POSCustomerId customerId, int skip, int take, CancellationToken cancellationToken = default)
+        {
+            var list = All.Where(r => r.OrganizationId == organizationId && r.CustomerId == customerId)
+                .OrderByDescending(r => r.RecordedAtUtc).ThenByDescending(r => r.Id.Value).ToList();
+            return Task.FromResult(((IReadOnlyList<Repayment>)list.Skip(skip).Take(take).ToList(), list.Count));
+        }
+
+        public Task<(IReadOnlyList<Repayment> Items, int TotalCount)> ListCreatedSinceAsync(
+            PosOrganizationId organizationId, DateTimeOffset? sinceUtc, int skip, int take, CancellationToken cancellationToken = default) =>
+            Task.FromResult(((IReadOnlyList<Repayment>)Array.Empty<Repayment>(), 0));
+
+        public Task<IReadOnlyList<Repayment>> ListRecordedInRangeAsync(
+            PosOrganizationId organizationId, DateOnly fromDateUtc, DateOnly toDateUtc, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<Repayment>>(Array.Empty<Repayment>());
+
+        public Task<decimal> SumActiveAmountAsync(
+            PosOrganizationId organizationId, POSCustomerId customerId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(All.Where(r =>
+                r.OrganizationId == organizationId && r.CustomerId == customerId && r.Status == RepaymentStatus.Active)
+                .Sum(r => r.Amount));
+
+        public Task<IReadOnlyDictionary<Guid, decimal>> SumActiveAmountsByOrganizationAsync(
+            PosOrganizationId organizationId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyDictionary<Guid, decimal>>(new Dictionary<Guid, decimal>());
+
+        public Task<int> CountActiveAsync(
+            PosOrganizationId organizationId, POSCustomerId customerId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(All.Count(r =>
+                r.OrganizationId == organizationId && r.CustomerId == customerId && r.Status == RepaymentStatus.Active));
     }
 }

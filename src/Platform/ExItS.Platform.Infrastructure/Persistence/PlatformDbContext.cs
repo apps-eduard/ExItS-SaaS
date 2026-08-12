@@ -95,6 +95,8 @@ public sealed class PlatformDbContext : DbContext
     internal DbSet<PersonalNotificationDeliveryRecord> PersonalNotificationDeliveries => Set<PersonalNotificationDeliveryRecord>();
     internal DbSet<PersonalUtangMigrationBatchRecord> PersonalUtangMigrationBatches => Set<PersonalUtangMigrationBatchRecord>();
     internal DbSet<PersonalUtangMigrationItemRecord> PersonalUtangMigrationItems => Set<PersonalUtangMigrationItemRecord>();
+    internal DbSet<PersonalFeatureDefinitionRecord> PersonalFeatureDefinitions => Set<PersonalFeatureDefinitionRecord>();
+    internal DbSet<PersonalFeatureEntitlementRecord> PersonalFeatureEntitlements => Set<PersonalFeatureEntitlementRecord>();
     internal DbSet<ComplianceRequirementRecord> ComplianceRequirements => Set<ComplianceRequirementRecord>();
     internal DbSet<ComplianceEvidenceRecord> ComplianceEvidence => Set<ComplianceEvidenceRecord>();
     internal DbSet<ProcessingSystemRecordEntity> ProcessingSystems => Set<ProcessingSystemRecordEntity>();
@@ -1719,6 +1721,44 @@ public sealed class PlatformDbContext : DbContext
             entity.HasOne<PersonalUtangMigrationBatchRecord>()
                 .WithMany()
                 .HasForeignKey(e => e.BatchId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<PersonalFeatureDefinitionRecord>(entity =>
+        {
+            entity.ToTable("personal_feature_definitions");
+            entity.HasKey(e => e.FeatureCode);
+            entity.Property(e => e.FeatureCode).HasColumnName("feature_code").HasMaxLength(64).IsRequired();
+            entity.Property(e => e.DisplayName).HasColumnName("display_name").HasMaxLength(200).IsRequired();
+            entity.Property(e => e.IsActive).HasColumnName("is_active");
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.HasIndex(e => e.IsActive).HasDatabaseName("ix_personal_feature_definitions_is_active");
+        });
+
+        modelBuilder.Entity<PersonalFeatureEntitlementRecord>(entity =>
+        {
+            entity.ToTable("personal_feature_entitlements");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.PersonalUserId).HasColumnName("personal_user_id");
+            entity.Property(e => e.FeatureCode).HasColumnName("feature_code").HasMaxLength(64).IsRequired();
+            entity.Property(e => e.StartsAtUtc).HasColumnName("starts_at_utc");
+            entity.Property(e => e.EndsAtUtc).HasColumnName("ends_at_utc");
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.GrantSource).HasColumnName("grant_source").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.RevokedAtUtc).HasColumnName("revoked_at_utc");
+            entity.Property(e => e.RevocationReason).HasColumnName("revocation_reason").HasMaxLength(512);
+
+            entity.HasIndex(e => new { e.PersonalUserId, e.FeatureCode, e.Status })
+                .HasDatabaseName("ix_personal_feature_entitlements_user_feature_status");
+            entity.HasIndex(e => new { e.PersonalUserId, e.FeatureCode, e.StartsAtUtc, e.EndsAtUtc })
+                .HasDatabaseName("ix_personal_feature_entitlements_user_feature_window");
+
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.PersonalUserId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 

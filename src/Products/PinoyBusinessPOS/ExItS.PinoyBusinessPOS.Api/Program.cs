@@ -141,9 +141,22 @@ builder.Services.AddHttpClient<ILinkedCustomerPlatformAuthorization, LinkedCusto
     // Fail fast: unreachable Platform must deny statement access, not hang.
     client.Timeout = TimeSpan.FromSeconds(3);
 });
+builder.Services.AddHttpClient<IPersonalFeatureEntitlementClient, PersonalFeatureEntitlementClient>((provider, client) =>
+{
+    var options = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<PlatformAuthOptions>>().Value;
+    if (!string.IsNullOrWhiteSpace(options.BaseUrl))
+    {
+        client.BaseAddress = new Uri(options.BaseUrl.TrimEnd('/') + "/", UriKind.Absolute);
+    }
+
+    client.Timeout = TimeSpan.FromSeconds(3);
+});
+builder.Services.Configure<PersonalStatementsOptions>(
+    builder.Configuration.GetSection(PersonalStatementsOptions.SectionName));
 builder.Services.AddScoped<AuthorizeLinkedCustomerStatementAccess>();
 builder.Services.AddScoped<GetLinkedCustomerStatementSummary>();
 builder.Services.AddScoped<ListLinkedCustomerRecentActivity>();
+builder.Services.AddScoped<ListLinkedCustomerOpenDebtActivity>();
 builder.Services.AddScoped<GetLinkedCustomerSaleReceipt>();
 builder.Services.AddHostedService<ExItS.PinoyBusinessPOS.Infrastructure.Catalog.PosCatalogImportBackgroundService>();
 builder.Services.AddScoped<SaleQueryService>();

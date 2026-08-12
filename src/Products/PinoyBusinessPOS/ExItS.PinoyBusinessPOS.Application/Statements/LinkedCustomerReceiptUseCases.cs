@@ -1,9 +1,14 @@
 using ExItS.PinoyBusinessPOS.Application.Common;
+using ExItS.PinoyBusinessPOS.Application.Credit;
 using ExItS.PinoyBusinessPOS.Application.Customers;
+using ExItS.PinoyBusinessPOS.Application.Payments;
 using ExItS.PinoyBusinessPOS.Application.Sales;
+using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
+using ExItS.PinoyBusinessPOS.Domain.Credit;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
+using Microsoft.Extensions.Options;
 
 namespace ExItS.PinoyBusinessPOS.Application.Statements;
 
@@ -42,22 +47,38 @@ public sealed record LinkedCustomerSaleReceiptDto(
     IReadOnlyList<LinkedCustomerSaleReceiptLineDto> Lines);
 
 /// <summary>
-/// Lazy receipt detail: WP03 authorization → authorized PosCustomerId → sale ownership check.
-/// Does not batch, does not accept activity EntryIds, does not load catalog.
+/// Lazy receipt detail: WP03 authorization → ownership → free-window / open-debt / entitlement.
 /// </summary>
 public sealed class GetLinkedCustomerSaleReceipt
 {
     private const string NotFoundMessage = "Receipt was not found.";
+    private const string ExtendedRequiredMessage =
+        "Extended digital records entitlement is required to open this settled historical receipt.";
 
     private readonly AuthorizeLinkedCustomerStatementAccess _authorize;
     private readonly ISaleRepository _sales;
+    private readonly ICreditEntryRepository _credits;
+    private readonly IOutstandingBalanceService _outstanding;
+    private readonly IPersonalFeatureEntitlementClient _entitlements;
+    private readonly IOptions<PersonalStatementsOptions> _options;
+    private readonly IClock _clock;
 
     public GetLinkedCustomerSaleReceipt(
         AuthorizeLinkedCustomerStatementAccess authorize,
-        ISaleRepository sales)
+        ISaleRepository sales,
+        ICreditEntryRepository credits,
+        IOutstandingBalanceService outstanding,
+        IPersonalFeatureEntitlementClient entitlements,
+        IOptions<PersonalStatementsOptions> options,
+        IClock clock)
     {
         _authorize = authorize;
         _sales = sales;
+        _credits = credits;
+        _outstanding = outstanding;
+        _entitlements = entitlements;
+        _options = options;
+        _clock = clock;
     }
 
     public async Task<ApplicationResult<LinkedCustomerSaleReceiptDto>> ExecuteAsync(
@@ -81,11 +102,12 @@ public sealed class GetLinkedCustomerSaleReceipt
         }
 
         var ctx = auth.Value!;
+        var orgId = PosOrganizationId.From(ctx.OrganizationId);
         var sale = await _sales
-            .GetByIdAsync(PosOrganizationId.From(ctx.OrganizationId), SaleId.From(saleId), cancellationToken)
+            .GetByIdAsync(orgId, SaleId.From(saleId), cancellationToken)
             .ConfigureAwait(false);
 
-        // Fail closed: missing, wrong org (repo scoped), or different POS customer → same 404.
+        // Fail closed before revealing entitlement: missing / wrong customer → same 404.
         if (sale is null
             || sale.CustomerId is null
             || sale.CustomerId.Value != ctx.PosCustomerId)
@@ -93,7 +115,57 @@ public sealed class GetLinkedCustomerSaleReceipt
             return NotFound();
         }
 
+        var asOfUtc = _clock.UtcNow;
+        var freeStart = PersonalHistoryWindows.ComputeFreeWindowStart(
+            asOfUtc,
+            _options.Value.FreeRecentMonths);
+
+        var inFreeWindow = sale.RecordedAtUtc >= freeStart;
+        if (!inFreeWindow)
+        {
+            var openDebtAllows = await IsOpenDebtEvidenceAsync(orgId, sale, cancellationToken)
+                .ConfigureAwait(false);
+            if (!openDebtAllows)
+            {
+                var entitled = await _entitlements
+                    .HasActiveEntitlementAsync(PersonalDigitalRecordsFeatureCodes.Extended, cancellationToken)
+                    .ConfigureAwait(false);
+                if (!entitled)
+                {
+                    return ApplicationResult<LinkedCustomerSaleReceiptDto>.Failure(
+                        ApplicationErrorCodes.ExtendedHistoryRequired,
+                        ExtendedRequiredMessage);
+                }
+            }
+        }
+
         return ApplicationResult<LinkedCustomerSaleReceiptDto>.Success(Map(ctx, sale, currencyCode));
+    }
+
+    private async Task<bool> IsOpenDebtEvidenceAsync(
+        PosOrganizationId orgId,
+        Sale sale,
+        CancellationToken cancellationToken)
+    {
+        var outstanding = await _outstanding
+            .GetOutstandingAsync(orgId, sale.CustomerId!, cancellationToken)
+            .ConfigureAwait(false);
+        if (outstanding <= 0m)
+        {
+            return false;
+        }
+
+        // Utang sale with an Active linked credit still contributes to open outstanding.
+        if (sale.PaymentMethod != SalePaymentMethod.Utang || sale.LinkedCreditEntryId is null)
+        {
+            return false;
+        }
+
+        var credit = await _credits
+            .GetByIdAsync(orgId, sale.CustomerId!, sale.LinkedCreditEntryId, cancellationToken)
+            .ConfigureAwait(false);
+
+        return credit is not null && credit.Status == CreditEntryStatus.Active;
     }
 
     private static LinkedCustomerSaleReceiptDto Map(
@@ -106,7 +178,6 @@ public sealed class GetLinkedCustomerSaleReceipt
 
         decimal? utangAmount = isUtang ? sale.Total : null;
         decimal? paidAmount = isUtang ? 0m : sale.Total;
-        // Outstanding effect of this sale on Business Utang (not a historical running balance).
         decimal? outstandingEffect = isUtang && isCompleted ? sale.Total : 0m;
 
         var lines = sale.Lines

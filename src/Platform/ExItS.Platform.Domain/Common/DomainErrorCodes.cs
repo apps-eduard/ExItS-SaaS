@@ -293,4 +293,7 @@ public static class DomainErrorCodes
         "platform.privacy_compliance.requirement.not_found";
     public const string ProcessingSystemNotFound =
         "platform.privacy_compliance.processing_system.not_found";
+
+    public const string InvalidPersonalFeatureGrantSource =
+        "platform.personal.feature.grant_source.invalid";
 }

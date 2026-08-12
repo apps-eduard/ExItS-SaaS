@@ -202,4 +202,11 @@ public static class ApplicationErrorCodes
         "application.privacy_compliance.requirement.not_found";
     public const string ProcessingSystemNotFound =
         "application.privacy_compliance.processing_system.not_found";
+
+    public const string PersonalFeatureDefinitionNotFound =
+        "application.personal.feature.definition.not_found";
+    public const string PersonalFeatureEntitlementNotFound =
+        "application.personal.feature.entitlement.not_found";
+    public const string PersonalFeatureDefinitionInactive =
+        "application.personal.feature.definition.inactive";
 }

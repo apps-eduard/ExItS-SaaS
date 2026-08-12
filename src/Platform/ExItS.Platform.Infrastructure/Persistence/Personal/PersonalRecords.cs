@@ -160,3 +160,26 @@ internal sealed class PersonalNotificationDeliveryRecord
     public DateTimeOffset? DeliveredAtUtc { get; set; }
     public string? FailureReason { get; set; }
 }
+
+internal sealed class PersonalFeatureDefinitionRecord
+{
+    public string FeatureCode { get; set; } = string.Empty;
+    public string DisplayName { get; set; } = string.Empty;
+    public bool IsActive { get; set; }
+    public DateTimeOffset CreatedAtUtc { get; set; }
+    public DateTimeOffset UpdatedAtUtc { get; set; }
+}
+
+internal sealed class PersonalFeatureEntitlementRecord
+{
+    public Guid Id { get; set; }
+    public Guid PersonalUserId { get; set; }
+    public string FeatureCode { get; set; } = string.Empty;
+    public DateTimeOffset StartsAtUtc { get; set; }
+    public DateTimeOffset? EndsAtUtc { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public string GrantSource { get; set; } = string.Empty;
+    public DateTimeOffset CreatedAtUtc { get; set; }
+    public DateTimeOffset? RevokedAtUtc { get; set; }
+    public string? RevocationReason { get; set; }
+}

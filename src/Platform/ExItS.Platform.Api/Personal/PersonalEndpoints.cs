@@ -110,6 +110,24 @@ internal static class PersonalEndpoints
             return PlatformApiResults.FromResult(result, Results.Ok);
         });
 
+        // WP06: Personal feature entitlement check for POS history APIs (session-bound; not self-grant).
+        personal.MapGet("/features/{featureCode}/active", async (
+            HttpContext http,
+            string featureCode,
+            GetPersonalFeatureActiveStatus getActive,
+            CancellationToken ct) =>
+        {
+            if (!TryGetPersonalContext(http, out var userId, out _, out _, out _, out var unauthorized))
+            {
+                return unauthorized!;
+            }
+
+            var result = await getActive
+                .ExecuteAsync(PlatformUserId.From(userId), featureCode, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
         personal.MapGet("/health", () => Results.Ok(new { status = "Healthy", scope = "Personal" }));
 
         personal.MapGet("/dashboard", async (
