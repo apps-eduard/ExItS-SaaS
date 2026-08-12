@@ -7,9 +7,9 @@
 | Status | **Complete** (Personal mobile linked-merchant read projection) |
 | Date | 2026-08-12 |
 | Starting SHA | `9214443f562244e5fd3a749d166691f1aee17d9b` on `main` |
-| Implementation commit | _(filled after push)_ |
-| Docs commit | _(filled after push)_ |
-| Docs/hash-stamp commit | _(filled after stamp)_ |
+| Implementation commit | `de568ae08f17b11c2c14823f4e2b4c3e9f337c78` |
+| Docs commit | `de568ae08f17b11c2c14823f4e2b4c3e9f337c78` (included with feat) |
+| Docs/hash-stamp commit | _(pending stamp)_ |
 | Device Verified | **No** |
 | Production Ready | **No** |
 | Migration | **None** |
