@@ -835,8 +835,39 @@ public sealed class AuthenticationServiceTests
         var personal = await sut.SwitchToPersonalAsync();
         Assert.True(personal.Succeeded);
         Assert.Null(current.Session?.OrganizationId);
+        Assert.Equal("Personal", current.Session?.AccountClass);
         Assert.False(current.HasPosAccess);
         Assert.Null(await prefs.GetSelectedOrganizationIdAsync());
+    }
+
+    [Fact]
+    public async Task SwitchToPersonal_activates_local_personal_when_platform_profiles_unavailable()
+    {
+        var userId = Guid.NewGuid();
+        var orgId = Guid.NewGuid();
+        var tokens = new MemorySecureTokenStore();
+        var prefs = new MemoryOnboardingStore();
+        var current = new CurrentUserContext();
+        var access = new FakeAccessClient
+        {
+            UserResult = ApiResult<PlatformUserDto>.Success(User(userId, "Active")),
+            OrganizationResult = ApiResult<PlatformOrganizationDto>.Success(Org(orgId)),
+            EvaluateResult = ApiResult<EffectiveAccessDto>.Success(new EffectiveAccessDto(
+                true, "allowed", userId, orgId, PosProductCodes.PinoyBusinessPos,
+                Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), DateTimeOffset.UtcNow,
+                SubscriptionStatus: "Active",
+                EnabledFeatureCodes: ["customer-credit-view"])),
+            AccountProfilesResult = ApiResult<IReadOnlyList<PlatformAccountProfileDto>>.Unavailable()
+        };
+        var sut = CreateSut("Development", access, tokens, prefs, current);
+        await sut.SignInAsync(new SignInRequest(null, null, userId));
+        Assert.True((await sut.SelectOrganizationAsync(orgId)).Succeeded);
+
+        var personal = await sut.SwitchToPersonalAsync();
+        Assert.True(personal.Succeeded);
+        Assert.Equal("Personal", current.Session?.AccountClass);
+        Assert.Null(current.Session?.OrganizationId);
+        Assert.Null(current.Session?.OrganizationDisplayName);
     }
 
     [Fact]
@@ -1133,6 +1164,15 @@ public sealed class AuthenticationServiceTests
         public ApiResult<PlatformLoginResultDto> LoginResult { get; set; } = ApiResult<PlatformLoginResultDto>.Unavailable();
         public ApiResult<IReadOnlyList<PlatformAuthEligibleOrganizationDto>> AuthEligibleOrganizationsResult { get; set; } =
             ApiResult<IReadOnlyList<PlatformAuthEligibleOrganizationDto>>.Unavailable();
+        public ApiResult<IReadOnlyList<PlatformAccountProfileDto>> AccountProfilesResult { get; set; } =
+            ApiResult<IReadOnlyList<PlatformAccountProfileDto>>.Success(
+            [
+                new PlatformAccountProfileDto(Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1"), Guid.Empty, "Personal", "Personal", "Active"),
+                new PlatformAccountProfileDto(Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa2"), Guid.Empty, "Organization", "Organization", "Active")
+            ]);
+
+        public ApiResult<PlatformLoginResultDto> SelectAccountProfileResult { get; set; } =
+            ApiResult<PlatformLoginResultDto>.Unavailable();
 
         public Task<ApiResult<PlatformUserDto>> GetUserAsync(Guid userId, CancellationToken ct = default) =>
             Task.FromResult(UserResult);
@@ -1229,8 +1269,39 @@ public sealed class AuthenticationServiceTests
         public Task<ApiResult<object>> LogoutSessionAsync(CancellationToken ct = default) =>
             Task.FromResult(ApiResult<object>.Success(new object()));
 
-        public Task<ApiResult<PlatformLoginResultDto>> SelectAccountProfileAsync(SelectAccountProfileRequest request, CancellationToken ct = default) =>
-            Task.FromResult(ApiResult<PlatformLoginResultDto>.Unavailable());
+        public Task<ApiResult<PlatformLoginResultDto>> SelectAccountProfileAsync(SelectAccountProfileRequest request, CancellationToken ct = default)
+        {
+            if (SelectAccountProfileResult.IsSuccess && SelectAccountProfileResult.Data is not null)
+            {
+                return Task.FromResult(SelectAccountProfileResult);
+            }
+
+            var profile = AccountProfilesResult.Data?.FirstOrDefault(p => p.Id == request.AccountProfileId);
+            if (profile is null)
+            {
+                return Task.FromResult(ApiResult<PlatformLoginResultDto>.Unavailable());
+            }
+
+            var userId = LoginResult.Data?.UserId
+                         ?? IssueTokenResult.Data?.UserId
+                         ?? Guid.NewGuid();
+            return Task.FromResult(ApiResult<PlatformLoginResultDto>.Success(new PlatformLoginResultDto(
+                "selected-platform-session",
+                Guid.NewGuid(),
+                userId,
+                LoginResult.Data?.Username ?? "user",
+                LoginResult.Data?.DisplayName ?? "User",
+                LoginResult.Data?.Email ?? "u@example.com",
+                DateTimeOffset.UtcNow.AddHours(8),
+                DateTimeOffset.UtcNow.AddHours(24),
+                null,
+                null,
+                "none",
+                0,
+                AccountProfileId: profile.Id,
+                AccountClass: profile.AccountClass,
+                AllowedScope: profile.AllowedScope)));
+        }
 
         public Task<ApiResult<StartBusinessResultDto>> StartBusinessAsync(StartBusinessRequest request, CancellationToken ct = default) =>
             Task.FromResult(ApiResult<StartBusinessResultDto>.Unavailable());
@@ -1284,7 +1355,7 @@ public sealed class AuthenticationServiceTests
             Task.FromResult(ApiResult<object>.Success(new object()));
 
         public Task<ApiResult<IReadOnlyList<PlatformAccountProfileDto>>> GetAccountProfilesAsync(CancellationToken ct = default) =>
-            Task.FromResult(ApiResult<IReadOnlyList<PlatformAccountProfileDto>>.Success(Array.Empty<PlatformAccountProfileDto>()));
+            Task.FromResult(AccountProfilesResult);
 
         public Task<ApiResult<IReadOnlyList<PendingOrganizationInvitationDto>>> GetPendingOrganizationInvitationsAsync(CancellationToken ct = default) =>
             Task.FromResult(ApiResult<IReadOnlyList<PendingOrganizationInvitationDto>>.Success(

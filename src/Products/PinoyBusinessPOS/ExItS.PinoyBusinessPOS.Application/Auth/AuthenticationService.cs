@@ -955,7 +955,11 @@ public sealed class AuthenticationService(
             HasPosAccess = false,
             AccessReasonCode = null,
             SubscriptionStatus = null,
-            EnabledFeatureCodes = null
+            EnabledFeatureCodes = null,
+            // Local Personal pages require AccountClass=Personal before opening SQLite context.
+            // Clear AccountProfileId so EnsurePersonal rebinds the Platform Personal profile.
+            AccountClass = "Personal",
+            AccountProfileId = null
         };
 
         try
@@ -996,37 +1000,31 @@ public sealed class AuthenticationService(
             }
 
             await OpenPersonalLocalContextAsync(session.UserId, ct).ConfigureAwait(false);
+
+            // Best-effort Platform Personal profile bind (needed after org → personal).
+            // Skip when already bound so Personal tab switches stay local-first.
+            if (!string.IsNullOrWhiteSpace(session.PlatformSessionToken)
+                && session.AccountProfileId is null)
+            {
+                var bound = await TryBindPersonalPlatformProfileAsync(session, ct).ConfigureAwait(false);
+                if (bound is not null)
+                {
+                    return new AuthResult(true, AuthFailureReason.None, bound);
+                }
+            }
+
             return new AuthResult(true, AuthFailureReason.None, session);
         }
 
         if (string.IsNullOrWhiteSpace(session.PlatformSessionToken))
         {
-            var localOnly = session with
-            {
-                OrganizationId = null,
-                OrganizationDisplayName = null,
-                HasPosAccess = false,
-                AccessReasonCode = null,
-                SubscriptionStatus = null,
-                EnabledFeatureCodes = null,
-                AccountClass = "Personal"
-            };
-            currentUser.Set(localOnly);
-            await EstablishPersonalOfflineGrantAsync(localOnly, ct).ConfigureAwait(false);
-            await OpenPersonalLocalContextAsync(localOnly.UserId, ct).ConfigureAwait(false);
-            return new AuthResult(true, AuthFailureReason.None, localOnly);
+            return await ActivateLocalPersonalSessionAsync(session, ct).ConfigureAwait(false);
         }
 
         var profiles = await accessClient.GetAccountProfilesAsync(ct).ConfigureAwait(false);
         if (!profiles.IsSuccess || profiles.Data is null)
         {
-            return new AuthResult(true, AuthFailureReason.None, session with
-            {
-                OrganizationId = null,
-                OrganizationDisplayName = null,
-                HasPosAccess = false,
-                AccountClass = "Personal"
-            });
+            return await ActivateLocalPersonalSessionAsync(session, ct).ConfigureAwait(false);
         }
 
         var personalProfile = profiles.Data.FirstOrDefault(p =>
@@ -1034,13 +1032,7 @@ public sealed class AuthenticationService(
             && string.Equals(p.Status, "Active", StringComparison.OrdinalIgnoreCase));
         if (personalProfile is null)
         {
-            return new AuthResult(true, AuthFailureReason.None, session with
-            {
-                OrganizationId = null,
-                OrganizationDisplayName = null,
-                HasPosAccess = false,
-                AccountClass = "Personal"
-            });
+            return await ActivateLocalPersonalSessionAsync(session, ct).ConfigureAwait(false);
         }
 
         var selected = await accessClient
@@ -1048,10 +1040,8 @@ public sealed class AuthenticationService(
             .ConfigureAwait(false);
         if (!selected.IsSuccess || selected.Data is null)
         {
-            return new AuthResult(
-                false,
-                AuthFailureReason.AccessDenied,
-                SafeMessageKey: "Access_Denied");
+            // Org → personal must still open local Personal home even when Platform select fails.
+            return await ActivateLocalPersonalSessionAsync(session, ct).ConfigureAwait(false);
         }
 
         var updated = session with
@@ -1062,7 +1052,10 @@ public sealed class AuthenticationService(
             AccessReasonCode = null,
             SubscriptionStatus = null,
             EnabledFeatureCodes = null,
-            PlatformSessionToken = selected.Data.SessionToken ?? session.PlatformSessionToken,
+            // Prefer Platform session token from SelectAccountProfile; never blank a valid token.
+            PlatformSessionToken = string.IsNullOrWhiteSpace(selected.Data.SessionToken)
+                ? session.PlatformSessionToken
+                : selected.Data.SessionToken.Trim(),
             AccountClass = selected.Data.AccountClass ?? "Personal",
             AccountProfileId = selected.Data.AccountProfileId ?? personalProfile.Id,
             ExpiresAtUtc = selected.Data.ExpiresAtUtc == default ? session.ExpiresAtUtc : selected.Data.ExpiresAtUtc
@@ -1087,6 +1080,112 @@ public sealed class AuthenticationService(
         return new AuthResult(true, AuthFailureReason.None, updated);
     }
 
+    /// <summary>
+    /// Clears org fields, marks AccountClass=Personal, opens local Personal SQLite context.
+    /// Used when Platform profile APIs are unavailable so Personal home still loads.
+    /// </summary>
+    private async Task<AuthResult> ActivateLocalPersonalSessionAsync(AuthSession session, CancellationToken ct)
+    {
+        var updated = session with
+        {
+            OrganizationId = null,
+            OrganizationDisplayName = null,
+            HasPosAccess = false,
+            AccessReasonCode = null,
+            SubscriptionStatus = null,
+            EnabledFeatureCodes = null,
+            AccountClass = "Personal"
+        };
+
+        try
+        {
+            var (_, marker) = await sessionStore.LoadAsync(ct).ConfigureAwait(false);
+            marker ??= Guid.NewGuid().ToString("N");
+            await sessionStore.SaveAsync(updated, marker, ct).ConfigureAwait(false);
+        }
+        catch
+        {
+            events.Record("secure_storage_failure", Dict(("operation", "activate_local_personal_save")));
+        }
+
+        currentUser.Set(updated);
+        await EstablishPersonalOfflineGrantAsync(updated, ct).ConfigureAwait(false);
+        await OpenPersonalLocalContextAsync(updated.UserId, ct).ConfigureAwait(false);
+        return new AuthResult(true, AuthFailureReason.None, updated);
+    }
+
+    private async Task<AuthSession?> TryBindPersonalPlatformProfileAsync(AuthSession session, CancellationToken ct)
+    {
+        try
+        {
+            var profiles = await accessClient.GetAccountProfilesAsync(ct).ConfigureAwait(false);
+            if (!profiles.IsSuccess || profiles.Data is null)
+            {
+                return null;
+            }
+
+            var personalProfile = profiles.Data.FirstOrDefault(p =>
+                string.Equals(p.AccountClass, "Personal", StringComparison.OrdinalIgnoreCase)
+                && string.Equals(p.Status, "Active", StringComparison.OrdinalIgnoreCase));
+            if (personalProfile is null)
+            {
+                return null;
+            }
+
+            // Already bound — avoid SecureStorage rewrite on every tab.
+            if (session.AccountProfileId == personalProfile.Id
+                && string.Equals(session.AccountClass, "Personal", StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            var selected = await accessClient
+                .SelectAccountProfileAsync(new SelectAccountProfileRequest(personalProfile.Id), ct)
+                .ConfigureAwait(false);
+            if (!selected.IsSuccess || selected.Data is null)
+            {
+                return null;
+            }
+
+            var updated = session with
+            {
+                OrganizationId = null,
+                OrganizationDisplayName = null,
+                HasPosAccess = false,
+                AccessReasonCode = null,
+                SubscriptionStatus = null,
+                EnabledFeatureCodes = null,
+                PlatformSessionToken = string.IsNullOrWhiteSpace(selected.Data.SessionToken)
+                    ? session.PlatformSessionToken
+                    : selected.Data.SessionToken.Trim(),
+                AccountClass = selected.Data.AccountClass ?? "Personal",
+                AccountProfileId = selected.Data.AccountProfileId ?? personalProfile.Id,
+                ExpiresAtUtc = selected.Data.ExpiresAtUtc == default ? session.ExpiresAtUtc : selected.Data.ExpiresAtUtc
+            };
+
+            try
+            {
+                var (_, marker) = await sessionStore.LoadAsync(ct).ConfigureAwait(false);
+                marker ??= Guid.NewGuid().ToString("N");
+                await sessionStore.SaveAsync(updated, marker, ct).ConfigureAwait(false);
+            }
+            catch
+            {
+                events.Record("secure_storage_failure", Dict(("operation", "bind_personal_profile_save")));
+                currentUser.Set(updated);
+                return updated;
+            }
+
+            currentUser.Set(updated);
+            events.Record("ensured_personal_profile", Dict(("userId", session.UserId.ToString("D"))));
+            return updated;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
     public async Task<AuthResult> EnsureOrganizationAccountProfileAsync(CancellationToken ct = default)
     {
         var session = currentUser.Session;
@@ -1108,6 +1207,7 @@ public sealed class AuthenticationService(
         var profiles = await accessClient.GetAccountProfilesAsync(ct).ConfigureAwait(false);
         if (!profiles.IsSuccess || profiles.Data is null)
         {
+            // Keep current session so auth/organizations can still list under Personal.
             return new AuthResult(true, AuthFailureReason.None, session);
         }
 
@@ -1116,7 +1216,10 @@ public sealed class AuthenticationService(
             && string.Equals(p.Status, "Active", StringComparison.OrdinalIgnoreCase));
         if (orgProfile is null)
         {
-            return new AuthResult(true, AuthFailureReason.None, session);
+            return new AuthResult(
+                false,
+                AuthFailureReason.AccessDenied,
+                SafeMessageKey: "Access_Denied");
         }
 
         var selected = await accessClient
@@ -1132,7 +1235,9 @@ public sealed class AuthenticationService(
 
         var updated = session with
         {
-            PlatformSessionToken = selected.Data.SessionToken ?? session.PlatformSessionToken,
+            PlatformSessionToken = string.IsNullOrWhiteSpace(selected.Data.SessionToken)
+                ? session.PlatformSessionToken
+                : selected.Data.SessionToken.Trim(),
             AccountClass = selected.Data.AccountClass ?? "Organization",
             AccountProfileId = selected.Data.AccountProfileId ?? orgProfile.Id,
             ExpiresAtUtc = selected.Data.ExpiresAtUtc == default ? session.ExpiresAtUtc : selected.Data.ExpiresAtUtc

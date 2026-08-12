@@ -253,6 +253,9 @@ public sealed class HomeDestinationRoutingGuardTests
         Assert.Contains("_organizations.Count == 1 && CurrentUser.Session.OrganizationId is null", orgSelect, StringComparison.Ordinal);
         Assert.DoesNotContain("!_isOwner\n                && _organizations.Count == 1", orgSelect, StringComparison.Ordinal);
 
+        Assert.Contains("EnsureOrganizationAccountProfileAsync", orgSelect, StringComparison.Ordinal);
+        Assert.Contains("ListEligibleOrganizationsAsync", orgSelect, StringComparison.Ordinal);
+
         // Personal → Organization always opens Select Organization.
         Assert.Contains("if (IsPersonalActive)", switcher, StringComparison.Ordinal);
         Assert.Contains("Nav.NavigateTo(\"/organization-select\", replace: true)", switcher, StringComparison.Ordinal);
