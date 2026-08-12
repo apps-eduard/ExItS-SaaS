@@ -4,7 +4,7 @@
 
 | Field | Value |
 |---|---|
-| Status | **Open** — WP01–WP14 Complete · WP15 next (roadmap extended through WP24) |
+| Status | **Open** — WP01–WP15 Complete · WP16 mobile stream next (roadmap through WP24) |
 | Branch / HEAD at open | `main` @ `2fdcc8ab86f8a1df516053930885b6df04b0e436` |
 | Device Verified | **No** |
 | Production Ready | **No** |
@@ -155,7 +155,7 @@ Personal must not modify financial ledger entries. Architecture for customer dis
 | **WP12** | Regression, security, and edge-case tests | **Complete** — [P24-WP12](../reports/P24-WP12-regression-security-and-edge-case-tests.md) |
 | **WP13** | Dispute/request architecture (optional) | **Complete** (architecture; implementation deferred) — [P24-WP13](../reports/P24-WP13-dispute-request-architecture.md) |
 | **WP14** | Documentation / backend closeout preparation | **Complete** — [P24-WP14](../reports/P24-WP14-documentation-backend-closeout-preparation.md) |
-| **WP15** | Physical Android validation preparation | Bridge into mobile stream; preparation ≠ Device Verified |
+| **WP15** | Physical Android validation preparation | **Complete** (prep ≠ Device Verified) — [P24-WP15](../reports/P24-WP15-physical-android-validation-preparation.md) |
 | **WP16** | Personal mobile linked-customer statement experience | Linked merchants, outstanding, recent/open-debt activity; read projection only |
 | **WP17** | Mobile receipts and older-history entitlement UX | Lazy receipt detail; free-window / entitlement lock; 404 before 403 |
 | **WP18** | Mobile rewards and Personal feature redemption | Server-authoritative price/duration; no client debit/end-date |

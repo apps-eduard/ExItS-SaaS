@@ -101,3 +101,4 @@ The dashboard links to the latest accepted report.
 | [P24-WP12-regression-security-and-edge-case-tests.md](P24-WP12-regression-security-and-edge-case-tests.md) | P24-WP12 Regression, security, and edge-case tests | Complete |
 | [P24-WP13-dispute-request-architecture.md](P24-WP13-dispute-request-architecture.md) | P24-WP13 Dispute/request architecture | Complete (architecture; implementation deferred) |
 | [P24-WP14-documentation-backend-closeout-preparation.md](P24-WP14-documentation-backend-closeout-preparation.md) | P24-WP14 Documentation / backend closeout preparation | Complete |
+| [P24-WP15-physical-android-validation-preparation.md](P24-WP15-physical-android-validation-preparation.md) | P24-WP15 Physical Android validation preparation | Complete (prep ≠ Device Verified) |
