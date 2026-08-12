@@ -78,11 +78,9 @@ Duplicate/concurrent behavior unchanged from WP08.
 
 ## Exact WP10 recommendation
 
-**P24-WP10 — Entitlement-aware older/settled history**
+**P24-WP10 — Entitlement-aware older/settled history** — **Complete**
 
-- Digital records lock; open debt remains visible
-
-Do **not** start WP10 from this package.
+See [P24-WP10](P24-WP10-entitlement-aware-older-settled-history.md). Next: **P24-WP11 — Admin configuration for Personal features**.
 
 ## Checks performed
 
