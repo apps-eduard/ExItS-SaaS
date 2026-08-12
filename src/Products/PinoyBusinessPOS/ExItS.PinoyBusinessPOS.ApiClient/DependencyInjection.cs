@@ -68,6 +68,7 @@ public static class DependencyInjection
         AddBusinessClient<IPosPermissionClient, PosPermissionClient>(services);
         AddBusinessClient<IPosReportingClient, PosReportingClient>(services);
         AddBusinessClient<IPosOfflineProbeClient, PosOfflineProbeClient>(services);
+        AddBusinessClient<IPosLinkedCustomerClient, PosLinkedCustomerClient>(services);
 
         services.AddSingleton<IPlatformAccessClient, PlatformAccessClient>();
         services.AddSingleton<IMerchantCatalogDiscoveryClient, MerchantCatalogDiscoveryClient>();

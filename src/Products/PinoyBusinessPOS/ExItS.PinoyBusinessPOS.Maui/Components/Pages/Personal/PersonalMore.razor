@@ -31,6 +31,11 @@
                         <span class="pos-settings__nav-label">@L["Personal_MyQrLink"]</span>
                         <span class="pos-settings__chevron" aria-hidden="true">›</span>
                     </button>
+                    <button type="button" class="pos-settings__nav" @onclick="GoLinkedMerchants">
+                        <span class="pos-settings__nav-icon" aria-hidden="true">@IconGlyphs.Get("receipt")</span>
+                        <span class="pos-settings__nav-label">@L["Personal_Nav_LinkedMerchants"]</span>
+                        <span class="pos-settings__chevron" aria-hidden="true">›</span>
+                    </button>
                     <button type="button" class="pos-settings__nav" @onclick="GoUtangInvitations">
                         <span class="pos-settings__nav-icon" aria-hidden="true">@IconGlyphs.Get("inbox")</span>
                         <span class="pos-settings__nav-label">@L["Personal_Nav_UtangInvitations"]</span>
@@ -87,6 +92,7 @@
     }
 
     private Task GoMyQr() => OfflineNav.NavigateAsync("/personal/my-qr");
+    private Task GoLinkedMerchants() => OfflineNav.NavigateAsync("/personal/linked-merchants");
     private Task GoUtangInvitations() => OfflineNav.NavigateAsync("/personal/utang/invitations");
     private Task GoProfile() => OfflineNav.NavigateAsync("/personal/profile");
     private Task GoSettings() => OfflineNav.NavigateAsync("/personal/settings");

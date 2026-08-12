@@ -216,7 +216,7 @@ P19-WP08 ? End-to-End Validation and User Closeout Checklist (Retest � awaitin
 | 17 | POS MVP Operational Onboarding and First Sale | **Complete with documented residuals** | 8 | 8 | 100% | [Open](phases/phase-17-pos-mvp-operational-onboarding-and-first-sale.md) |
 | 18 | Mobile Personal, Organization, and POS Experience | **Complete (implementation/scope)** � partial phone validation; Not Device Verified | 8 | 8 | 100% | [Open](phases/phase-18-mobile-personal-organization-and-pos-experience.md) |
 | 19 | Mobile POS Operations and Cashier Experience Completion | **Open** (WP01�WP07 Code Complete; WP08 Retest) | 7 | 8 |  -  | [Open](phases/phase-19-mobile-pos-operations-and-cashier-experience.md) |
-| 24 | Linked Customer Statements and Personal Monetization | **Open** (WP01–WP15 Complete; WP16 mobile next; roadmap through WP24) | 15 | 24 |  -  | [Open](phases/phase-24-linked-customer-statements-and-personal-monetization.md) |
+| 24 | Linked Customer Statements and Personal Monetization | **Open** (WP01–WP16 Complete; WP17 next; roadmap through WP24) | 16 | 24 |  -  | [Open](phases/phase-24-linked-customer-statements-and-personal-monetization.md) |
 
 **MVP phases 0-9:** 52 / 52 = **100%** (with documented risks; not Production-ready).
 **Phase 10 Full POS:** 8 / 8 = **100%** (with documented risks; not Production-ready).

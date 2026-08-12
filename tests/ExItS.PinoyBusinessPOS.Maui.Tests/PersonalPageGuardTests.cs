@@ -77,6 +77,8 @@ public sealed class PersonalPageGuardTests
         Assert.Contains("Personal_MyQrLink", more, StringComparison.Ordinal);
         Assert.Contains("/personal/my-qr", more, StringComparison.Ordinal);
         Assert.Contains("Personal_Nav_UtangInvitations", more, StringComparison.Ordinal);
+        Assert.Contains("Personal_Nav_LinkedMerchants", more, StringComparison.Ordinal);
+        Assert.Contains("/personal/linked-merchants", more, StringComparison.Ordinal);
         Assert.Contains("Personal_ProfileLink", more, StringComparison.Ordinal);
         Assert.Contains("Personal_SettingsLink", more, StringComparison.Ordinal);
         Assert.Contains("Personal_ExplorePos", more, StringComparison.Ordinal);
@@ -331,6 +333,7 @@ public sealed class PersonalPageGuardTests
                  {
                      "PersonalHome.razor", "PersonalMore.razor", "PersonalPeople.razor", "PersonalLent.razor",
                      "PersonalBorrowed.razor", "PersonalRelationshipDetail.razor", "PersonalUtangInvitations.razor",
+                     "PersonalLinkedMerchants.razor", "PersonalLinkedMerchantStatement.razor",
                      "PersonalProfile.razor", "PersonalSettings.razor", "PersonalExplorePos.razor",
                      "PersonalPeopleDetail.razor", "PersonalMyQr.razor", "PublicUserResolve.razor",
                      "PersonalSupportDiagnosticsPage.razor"
@@ -389,6 +392,30 @@ public sealed class PersonalPageGuardTests
         Assert.Contains("/api/v1/personal/utang/relationships/borrowed", client, StringComparison.Ordinal);
         Assert.Contains("/api/v1/personal/utang/invitations/accept", client, StringComparison.Ordinal);
         Assert.Contains("/api/v1/personal/utang/invitations/decline", client, StringComparison.Ordinal);
+        Assert.Contains("/api/v1/personal/linked-merchants", client, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Personal_linked_merchants_pages_are_read_projection_only()
+    {
+        var personal = PersonalPagesDirectory();
+        var list = File.ReadAllText(Path.Combine(personal, "PersonalLinkedMerchants.razor"));
+        var statement = File.ReadAllText(Path.Combine(personal, "PersonalLinkedMerchantStatement.razor"));
+        var linkedClient = File.ReadAllText(Path.Combine(
+            FindRepoRoot(),
+            "src", "Products", "PinoyBusinessPOS", "ExItS.PinoyBusinessPOS.ApiClient", "PosLinkedCustomerClient.cs"));
+
+        Assert.Contains("@page \"/personal/linked-merchants\"", list, StringComparison.Ordinal);
+        Assert.Contains("GetLinkedMerchantsAsync", list, StringComparison.Ordinal);
+        Assert.Contains("@page \"/personal/linked-merchants/{OrganizationId:guid}/{PlatformBusinessCustomerId:guid}\"", statement, StringComparison.Ordinal);
+        Assert.Contains("IPosLinkedCustomerClient", statement, StringComparison.Ordinal);
+        Assert.Contains("GetStatementAsync", statement, StringComparison.Ordinal);
+        Assert.Contains("GetRecentActivityAsync", statement, StringComparison.Ordinal);
+        Assert.Contains("GetOpenDebtActivityAsync", statement, StringComparison.Ordinal);
+        Assert.DoesNotContain("RecordPersonalUtangEntryAsync", statement, StringComparison.Ordinal);
+        Assert.DoesNotContain("ILocalPersonalUtangStore", statement, StringComparison.Ordinal);
+        Assert.Contains("/api/v1/pos/personal/linked-customers/", linkedClient, StringComparison.Ordinal);
+        Assert.Contains("open-debt-activity", linkedClient, StringComparison.Ordinal);
     }
 
     [Fact]

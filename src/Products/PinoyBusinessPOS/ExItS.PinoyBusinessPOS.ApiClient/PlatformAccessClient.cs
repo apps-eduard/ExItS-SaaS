@@ -425,6 +425,14 @@ public sealed class PlatformAccessClient(IPosApiClient api) : IPlatformAccessCli
             new AcceptPersonalUtangInvitationRequest(token),
             ct);
 
+    public Task<ApiResult<PlatformPagedResult<LinkedMerchantDto>>> GetLinkedMerchantsAsync(
+        int page = 1,
+        int pageSize = 20,
+        CancellationToken ct = default) =>
+        api.GetAsync<PlatformPagedResult<LinkedMerchantDto>>(
+            $"/api/v1/personal/linked-merchants?page={page}&pageSize={pageSize}",
+            ct);
+
     public Task<ApiResult<IReadOnlyList<LocalValidationQuickLoginIdentityDto>>> GetLocalValidationQuickLoginIdentitiesAsync(
         CancellationToken ct = default) =>
         api.GetAsync<IReadOnlyList<LocalValidationQuickLoginIdentityDto>>(

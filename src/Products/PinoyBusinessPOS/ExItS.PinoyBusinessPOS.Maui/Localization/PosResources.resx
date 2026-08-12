@@ -1927,6 +1927,31 @@
   <data name="Personal_Nav_Lent" xml:space="preserve"><value>I Lent</value></data>
   <data name="Personal_Nav_Borrowed" xml:space="preserve"><value>I Borrowed</value></data>
   <data name="Personal_Nav_UtangInvitations" xml:space="preserve"><value>Utang invitations</value></data>
+  <data name="Personal_Nav_LinkedMerchants" xml:space="preserve"><value>Linked merchants</value></data>
+  <data name="Personal_MerchantsTitle" xml:space="preserve"><value>Linked merchants</value></data>
+  <data name="Personal_MerchantsSubtitle" xml:space="preserve"><value>See Business Utang at merchants that linked you. Balances come from the merchant ledger — not Personal Utang.</value></data>
+  <data name="Personal_MerchantsEmptyTitle" xml:space="preserve"><value>No linked merchants yet</value></data>
+  <data name="Personal_MerchantsEmptyMessage" xml:space="preserve"><value>When a store links your Personal account as a customer, it appears here.</value></data>
+  <data name="Personal_MerchantsErrorTitle" xml:space="preserve"><value>Could not load merchants</value></data>
+  <data name="Personal_MerchantsLoadFailed" xml:space="preserve"><value>Linked merchants could not be loaded. Try again.</value></data>
+  <data name="Personal_MerchantsLoadMore" xml:space="preserve"><value>Load more</value></data>
+  <data name="Personal_MerchantsUnknownOrg" xml:space="preserve"><value>Merchant</value></data>
+  <data name="Personal_MerchantStatementTitle" xml:space="preserve"><value>Merchant statement</value></data>
+  <data name="Personal_MerchantStatementSubtitle" xml:space="preserve"><value>Outstanding balance and recent Business Utang activity.</value></data>
+  <data name="Personal_MerchantOutstandingSection" xml:space="preserve"><value>Outstanding</value></data>
+  <data name="Personal_MerchantOutstandingLabel" xml:space="preserve"><value>Current balance</value></data>
+  <data name="Personal_MerchantOpenDebtSection" xml:space="preserve"><value>Open debt activity</value></data>
+  <data name="Personal_MerchantOpenDebtEmptyTitle" xml:space="preserve"><value>No open-debt rows</value></data>
+  <data name="Personal_MerchantOpenDebtEmptyMessage" xml:space="preserve"><value>There is an outstanding balance, but no open-debt activity rows were returned.</value></data>
+  <data name="Personal_MerchantRecentSection" xml:space="preserve"><value>Recent activity</value></data>
+  <data name="Personal_MerchantRecentEmptyTitle" xml:space="preserve"><value>No recent activity</value></data>
+  <data name="Personal_MerchantRecentEmptyMessage" xml:space="preserve"><value>Recent Business Utang activity will appear here when available.</value></data>
+  <data name="Personal_MerchantStatementErrorTitle" xml:space="preserve"><value>Could not load statement</value></data>
+  <data name="Personal_MerchantStatementLoadFailed" xml:space="preserve"><value>The merchant statement could not be loaded. Try again.</value></data>
+  <data name="Personal_MerchantStatementDeniedTitle" xml:space="preserve"><value>Access denied</value></data>
+  <data name="Personal_MerchantStatementDenied" xml:space="preserve"><value>You are not authorized to view this merchant statement.</value></data>
+  <data name="Personal_MerchantStatementMissingTitle" xml:space="preserve"><value>Not found</value></data>
+  <data name="Personal_MerchantStatementMissing" xml:space="preserve"><value>This linked merchant statement was not found.</value></data>
   <data name="Personal_Nav_PaymentsSoon" xml:space="preserve"><value>Payments (coming soon)</value></data>
   <data name="Personal_Nav_RemindersSoon" xml:space="preserve"><value>Reminders (coming soon)</value></data>
   <data name="Personal_Nav_HistorySoon" xml:space="preserve"><value>History (coming soon)</value></data>

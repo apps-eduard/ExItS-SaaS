@@ -1,0 +1,299 @@
+@page "/personal/linked-merchants/{OrganizationId:guid}/{PlatformBusinessCustomerId:guid}"
+@layout Layout.PersonalShell
+@using ExItS.DesignSystem.Components.Internal
+@using ExItS.PinoyBusinessPOS.Application.Abstractions
+@using ExItS.PinoyBusinessPOS.Application.Statements
+@inject IAuthenticationService Auth
+@inject ICurrentUserContext CurrentUser
+@inject IPosLinkedCustomerClient LinkedCustomer
+@inject OnlineRequiredGuard OnlineRequired
+@inject NavigationManager Nav
+@inject IStringLocalizer<PosResources> L
+
+<div class="pos-personal-linked-statement">
+<StoreHeaderBack Href="/personal/linked-merchants" />
+<Page>
+    <header class="pos-personal-linked-statement__header">
+        <h1 class="pos-personal-linked-statement__title">@(_summary?.MerchantDisplayName ?? L["Personal_MerchantStatementTitle"])</h1>
+        <p class="pos-personal-linked-statement__subtitle">@L["Personal_MerchantStatementSubtitle"]</p>
+    </header>
+
+    @if (_loading)
+    {
+        <Spinner />
+    }
+    else if (!_authenticated)
+    {
+        <ErrorState Title="@L["Auth_SessionExpiredTitle"]" Message="@L["Auth_SessionExpired"]" RetryLabel="@L["SignIn_Submit"]" OnRetry="GoSignIn" />
+    }
+    else if (_forbidden)
+    {
+        <ErrorState Title="@L["Personal_MerchantStatementDeniedTitle"]" Message="@(_error ?? L["Personal_MerchantStatementDenied"])" RetryLabel="@L["Common_Retry"]" OnRetry="LoadAsync" />
+    }
+    else if (_notFound)
+    {
+        <ErrorState Title="@L["Personal_MerchantStatementMissingTitle"]" Message="@(_error ?? L["Personal_MerchantStatementMissing"])" RetryLabel="@L["Common_Retry"]" OnRetry="LoadAsync" />
+    }
+    else if (_loadFailed)
+    {
+        <ErrorState Title="@L["Personal_MerchantStatementErrorTitle"]" Message="@(_error ?? L["Personal_LoadErrorMessage"])" RetryLabel="@L["Common_Retry"]" OnRetry="LoadAsync" />
+    }
+    else if (_summary is not null)
+    {
+        <Section Title="@L["Personal_MerchantOutstandingSection"]">
+            <div class="pos-personal-linked-statement__balance" aria-live="polite">
+                <span class="pos-personal-linked-statement__balance-label">@L["Personal_MerchantOutstandingLabel"]</span>
+                <span class="pos-personal-linked-statement__balance-value">@_summary.OutstandingBalance.ToString("N2") @_summary.Currency</span>
+                <span class="pos-personal-linked-statement__balance-meta">@_summary.CustomerDisplayName</span>
+            </div>
+        </Section>
+
+        @if (_summary.OutstandingBalance > 0)
+        {
+            <Section Title="@L["Personal_MerchantOpenDebtSection"]">
+                @if (_openDebt.Count == 0)
+                {
+                    <EmptyState Title="@L["Personal_MerchantOpenDebtEmptyTitle"]" Message="@L["Personal_MerchantOpenDebtEmptyMessage"]" />
+                }
+                else
+                {
+                    <div class="pos-personal-list" role="list">
+                        @foreach (var item in _openDebt)
+                        {
+                            <div class="pos-personal-row pos-personal-row--static" role="listitem">
+                                <span class="pos-personal-row__body">
+                                    <span class="pos-personal-row__title">@FormatActivityTitle(item)</span>
+                                    <span class="pos-personal-row__meta">@item.OccurredAtUtc.LocalDateTime.ToString("g") · @item.Type</span>
+                                </span>
+                            </div>
+                        }
+                    </div>
+                    @if (_openDebtHasMore)
+                    {
+                        <Button Variant="ButtonVariant.Secondary" IsLoading="_busyOpen" Disabled="_busyOpen" OnClick="LoadMoreOpenDebtAsync">@L["Personal_MerchantsLoadMore"]</Button>
+                    }
+                }
+            </Section>
+        }
+
+        <Section Title="@L["Personal_MerchantRecentSection"]">
+            @if (_recent.Count == 0)
+            {
+                <EmptyState Title="@L["Personal_MerchantRecentEmptyTitle"]" Message="@L["Personal_MerchantRecentEmptyMessage"]" />
+            }
+            else
+            {
+                <div class="pos-personal-list" role="list">
+                    @foreach (var item in _recent)
+                    {
+                        <div class="pos-personal-row pos-personal-row--static" role="listitem">
+                            <span class="pos-personal-row__body">
+                                <span class="pos-personal-row__title">@FormatActivityTitle(item)</span>
+                                <span class="pos-personal-row__meta">@item.OccurredAtUtc.LocalDateTime.ToString("g") · @item.Type</span>
+                            </span>
+                        </div>
+                    }
+                </div>
+                @if (_recentHasMore)
+                {
+                    <Button Variant="ButtonVariant.Secondary" IsLoading="_busyRecent" Disabled="_busyRecent" OnClick="LoadMoreRecentAsync">@L["Personal_MerchantsLoadMore"]</Button>
+                }
+            }
+        </Section>
+    }
+</Page>
+</div>
+
+@code {
+    [Parameter] public Guid OrganizationId { get; set; }
+    [Parameter] public Guid PlatformBusinessCustomerId { get; set; }
+
+    private bool _loading = true;
+    private bool _authenticated;
+    private bool _loadFailed;
+    private bool _forbidden;
+    private bool _notFound;
+    private bool _busyOpen;
+    private bool _busyRecent;
+    private bool _openDebtHasMore;
+    private bool _recentHasMore;
+    private int _openDebtPage = 1;
+    private int _recentPage = 1;
+    private string? _error;
+    private LinkedCustomerStatementSummaryDto? _summary;
+    private List<LinkedCustomerActivityItemDto> _openDebt = [];
+    private List<LinkedCustomerActivityItemDto> _recent = [];
+
+    protected override async Task OnParametersSetAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _loadFailed = false;
+        _forbidden = false;
+        _notFound = false;
+        _error = null;
+        _summary = null;
+        _openDebt = [];
+        _recent = [];
+        _openDebtPage = 1;
+        _recentPage = 1;
+        try
+        {
+            if (!CurrentUser.IsAuthenticated)
+            {
+                var restore = await Auth.RestoreSessionAsync();
+                _authenticated = restore.Succeeded;
+            }
+            else
+            {
+                _authenticated = true;
+            }
+
+            if (!_authenticated)
+            {
+                return;
+            }
+
+            var personal = await Auth.EnsurePersonalAccountProfileAsync();
+            if (!personal.Succeeded)
+            {
+                _loadFailed = true;
+                _error = L[personal.SafeMessageKey ?? "Access_Denied"];
+                return;
+            }
+
+            if (!await OnlineRequired.EnsureOnlineForRouteAsync("/personal/linked-merchants"))
+            {
+                _loadFailed = true;
+                _error = L["OnlineRequired_Message"];
+                return;
+            }
+
+            var statement = await LinkedCustomer.GetStatementAsync(OrganizationId, PlatformBusinessCustomerId);
+            if (!statement.IsSuccess || statement.Data is null)
+            {
+                ApplyFailure(statement.Status, statement.Error?.Detail ?? L["Personal_MerchantStatementLoadFailed"]);
+                return;
+            }
+
+            _summary = statement.Data;
+
+            if (_summary.OutstandingBalance > 0)
+            {
+                var open = await LinkedCustomer.GetOpenDebtActivityAsync(OrganizationId, PlatformBusinessCustomerId, page: 1, pageSize: 10);
+                if (open.IsSuccess && open.Data is not null)
+                {
+                    _openDebt = open.Data.Items.ToList();
+                    _openDebtHasMore = open.Data.HasMore;
+                }
+            }
+
+            var recent = await LinkedCustomer.GetRecentActivityAsync(OrganizationId, PlatformBusinessCustomerId, page: 1, pageSize: 10);
+            if (recent.IsSuccess && recent.Data is not null)
+            {
+                _recent = recent.Data.Items.ToList();
+                _recentHasMore = recent.Data.HasMore;
+            }
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task LoadMoreOpenDebtAsync()
+    {
+        if (_busyOpen || !_openDebtHasMore)
+        {
+            return;
+        }
+
+        _busyOpen = true;
+        try
+        {
+            _openDebtPage++;
+            var open = await LinkedCustomer.GetOpenDebtActivityAsync(
+                OrganizationId, PlatformBusinessCustomerId, page: _openDebtPage, pageSize: 10);
+            if (!open.IsSuccess || open.Data is null)
+            {
+                _openDebtPage = Math.Max(1, _openDebtPage - 1);
+                return;
+            }
+
+            _openDebt.AddRange(open.Data.Items);
+            _openDebtHasMore = open.Data.HasMore;
+        }
+        finally
+        {
+            _busyOpen = false;
+        }
+    }
+
+    private async Task LoadMoreRecentAsync()
+    {
+        if (_busyRecent || !_recentHasMore)
+        {
+            return;
+        }
+
+        _busyRecent = true;
+        try
+        {
+            _recentPage++;
+            var recent = await LinkedCustomer.GetRecentActivityAsync(
+                OrganizationId, PlatformBusinessCustomerId, page: _recentPage, pageSize: 10);
+            if (!recent.IsSuccess || recent.Data is null)
+            {
+                _recentPage = Math.Max(1, _recentPage - 1);
+                return;
+            }
+
+            _recent.AddRange(recent.Data.Items);
+            _recentHasMore = recent.Data.HasMore;
+        }
+        finally
+        {
+            _busyRecent = false;
+        }
+    }
+
+    private void ApplyFailure(ApiCallStatus status, string message)
+    {
+        _error = message;
+        if (status == ApiCallStatus.Forbidden)
+        {
+            _forbidden = true;
+        }
+        else if (status == ApiCallStatus.NotFound)
+        {
+            _notFound = true;
+        }
+        else
+        {
+            _loadFailed = true;
+        }
+    }
+
+    private static string FormatActivityTitle(LinkedCustomerActivityItemDto item)
+    {
+        if (item.ChargeAmount is decimal charge)
+        {
+            return $"{item.ReferenceNumber} · +{charge:N2}";
+        }
+
+        if (item.PaymentAmount is decimal payment)
+        {
+            return $"{item.ReferenceNumber} · −{payment:N2}";
+        }
+
+        if (item.AdjustmentAmount is decimal adjustment)
+        {
+            return $"{item.ReferenceNumber} · {adjustment:N2}";
+        }
+
+        return item.ReferenceNumber;
+    }
+
+    private void GoSignIn() => Nav.NavigateTo("/signin");
+}

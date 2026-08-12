@@ -456,6 +456,16 @@ public sealed record PersonalContactDto(
 
 public sealed record CreatePersonalContactRequest(string DisplayName, string? Phone, string? Email);
 
+/// <summary>Personal-facing linked merchant metadata (no balances — balances come from POS projection).</summary>
+public sealed record LinkedMerchantDto(
+    Guid LinkedCustomerId,
+    Guid BusinessCustomerId,
+    Guid OrganizationId,
+    string OrganizationDisplayName,
+    string CustomerDisplayName,
+    string LinkStatus,
+    DateTimeOffset LinkedAtUtc);
+
 public sealed record PersonalDebtRelationshipSummaryDto(
     Guid Id,
     string Perspective,
@@ -751,6 +761,12 @@ public interface IPlatformAccessClient
         CancellationToken ct = default);
     Task<ApiResult<PersonalUtangInvitationDto>> DeclinePersonalUtangInvitationAsync(
         string token,
+        CancellationToken ct = default);
+
+    /// <summary>Accepted Customer Links for the Personal user (merchant metadata only; no balances).</summary>
+    Task<ApiResult<PlatformPagedResult<LinkedMerchantDto>>> GetLinkedMerchantsAsync(
+        int page = 1,
+        int pageSize = 20,
         CancellationToken ct = default);
 
     /// <summary>

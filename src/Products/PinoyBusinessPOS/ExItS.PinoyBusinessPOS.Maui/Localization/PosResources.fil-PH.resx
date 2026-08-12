@@ -1927,6 +1927,31 @@
   <data name="Personal_Nav_Lent" xml:space="preserve"><value>I Lent</value></data>
   <data name="Personal_Nav_Borrowed" xml:space="preserve"><value>I Borrowed</value></data>
   <data name="Personal_Nav_UtangInvitations" xml:space="preserve"><value>Utang invitations</value></data>
+  <data name="Personal_Nav_LinkedMerchants" xml:space="preserve"><value>Mga naka-link na merchant</value></data>
+  <data name="Personal_MerchantsTitle" xml:space="preserve"><value>Mga naka-link na merchant</value></data>
+  <data name="Personal_MerchantsSubtitle" xml:space="preserve"><value>Tingnan ang Business Utang sa mga merchant na nag-link sa iyo. Ang balances ay galing sa merchant ledger — hindi Personal Utang.</value></data>
+  <data name="Personal_MerchantsEmptyTitle" xml:space="preserve"><value>Wala pang naka-link na merchant</value></data>
+  <data name="Personal_MerchantsEmptyMessage" xml:space="preserve"><value>Kapag nag-link ang tindahan sa Personal account mo bilang customer, lilitaw ito dito.</value></data>
+  <data name="Personal_MerchantsErrorTitle" xml:space="preserve"><value>Hindi ma-load ang merchants</value></data>
+  <data name="Personal_MerchantsLoadFailed" xml:space="preserve"><value>Hindi ma-load ang mga naka-link na merchant. Subukan ulit.</value></data>
+  <data name="Personal_MerchantsLoadMore" xml:space="preserve"><value>Mag-load pa</value></data>
+  <data name="Personal_MerchantsUnknownOrg" xml:space="preserve"><value>Merchant</value></data>
+  <data name="Personal_MerchantStatementTitle" xml:space="preserve"><value>Statement ng merchant</value></data>
+  <data name="Personal_MerchantStatementSubtitle" xml:space="preserve"><value>Outstanding balance at recent Business Utang activity.</value></data>
+  <data name="Personal_MerchantOutstandingSection" xml:space="preserve"><value>Outstanding</value></data>
+  <data name="Personal_MerchantOutstandingLabel" xml:space="preserve"><value>Kasalukuyang balance</value></data>
+  <data name="Personal_MerchantOpenDebtSection" xml:space="preserve"><value>Open debt activity</value></data>
+  <data name="Personal_MerchantOpenDebtEmptyTitle" xml:space="preserve"><value>Walang open-debt rows</value></data>
+  <data name="Personal_MerchantOpenDebtEmptyMessage" xml:space="preserve"><value>May outstanding balance, pero walang open-debt activity na ibinalik.</value></data>
+  <data name="Personal_MerchantRecentSection" xml:space="preserve"><value>Recent activity</value></data>
+  <data name="Personal_MerchantRecentEmptyTitle" xml:space="preserve"><value>Walang recent activity</value></data>
+  <data name="Personal_MerchantRecentEmptyMessage" xml:space="preserve"><value>Lilitaw dito ang recent Business Utang activity kapag available.</value></data>
+  <data name="Personal_MerchantStatementErrorTitle" xml:space="preserve"><value>Hindi ma-load ang statement</value></data>
+  <data name="Personal_MerchantStatementLoadFailed" xml:space="preserve"><value>Hindi ma-load ang merchant statement. Subukan ulit.</value></data>
+  <data name="Personal_MerchantStatementDeniedTitle" xml:space="preserve"><value>Walang access</value></data>
+  <data name="Personal_MerchantStatementDenied" xml:space="preserve"><value>Hindi ka authorized na tingnan ang merchant statement na ito.</value></data>
+  <data name="Personal_MerchantStatementMissingTitle" xml:space="preserve"><value>Hindi nahanap</value></data>
+  <data name="Personal_MerchantStatementMissing" xml:space="preserve"><value>Hindi nahanap ang linked merchant statement na ito.</value></data>
   <data name="Personal_Nav_PaymentsSoon" xml:space="preserve"><value>Payments (coming soon)</value></data>
   <data name="Personal_Nav_RemindersSoon" xml:space="preserve"><value>Reminders (coming soon)</value></data>
   <data name="Personal_Nav_HistorySoon" xml:space="preserve"><value>History (coming soon)</value></data>

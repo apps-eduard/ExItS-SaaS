@@ -131,7 +131,8 @@
         || _path.StartsWith("/personal/profile", StringComparison.OrdinalIgnoreCase)
         || _path.StartsWith("/personal/settings", StringComparison.OrdinalIgnoreCase)
         || _path.StartsWith("/personal/explore-pos", StringComparison.OrdinalIgnoreCase)
-        || _path.StartsWith("/personal/utang/invitations", StringComparison.OrdinalIgnoreCase);
+        || _path.StartsWith("/personal/utang/invitations", StringComparison.OrdinalIgnoreCase)
+        || _path.StartsWith("/personal/linked-merchants", StringComparison.OrdinalIgnoreCase);
 
     private Task GoHome() => NavigateTabAsync("/personal");
     private Task GoPeople() => NavigateTabAsync("/personal/utang/people");

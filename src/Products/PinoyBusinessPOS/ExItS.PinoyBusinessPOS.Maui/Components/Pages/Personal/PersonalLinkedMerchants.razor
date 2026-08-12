@@ -1,0 +1,185 @@
+@page "/personal/linked-merchants"
+@layout Layout.PersonalShell
+@using ExItS.DesignSystem.Components.Internal
+@inject IAuthenticationService Auth
+@inject ICurrentUserContext CurrentUser
+@inject IPlatformAccessClient Platform
+@inject OnlineRequiredGuard OnlineRequired
+@inject OfflineAwareNavigation OfflineNav
+@inject NavigationManager Nav
+@inject IStringLocalizer<PosResources> L
+
+<div class="pos-personal-linked-merchants">
+<StoreHeaderBack Href="/personal/more" />
+<Page>
+    <header class="pos-personal-linked-merchants__header">
+        <h1 class="pos-personal-linked-merchants__title">@L["Personal_MerchantsTitle"]</h1>
+        <p class="pos-personal-linked-merchants__subtitle">@L["Personal_MerchantsSubtitle"]</p>
+    </header>
+
+    @if (_loading)
+    {
+        <Spinner />
+    }
+    else if (!_authenticated)
+    {
+        <ErrorState Title="@L["Auth_SessionExpiredTitle"]" Message="@L["Auth_SessionExpired"]" RetryLabel="@L["SignIn_Submit"]" OnRetry="GoSignIn" />
+    }
+    else if (_loadFailed)
+    {
+        <ErrorState Title="@L["Personal_MerchantsErrorTitle"]" Message="@(_error ?? L["Personal_LoadErrorMessage"])" RetryLabel="@L["Common_Retry"]" OnRetry="LoadAsync" />
+    }
+    else if (_merchants.Count == 0)
+    {
+        <EmptyState Title="@L["Personal_MerchantsEmptyTitle"]" Message="@L["Personal_MerchantsEmptyMessage"]" />
+    }
+    else
+    {
+        <div class="pos-personal-list" role="list">
+            @foreach (var merchant in _merchants)
+            {
+                var href = $"/personal/linked-merchants/{merchant.OrganizationId:D}/{merchant.BusinessCustomerId:D}";
+                <button type="button"
+                        class="pos-personal-row"
+                        role="listitem"
+                        @onclick="() => OpenMerchantAsync(href)">
+                    <span class="pos-personal-row__body">
+                        <span class="pos-personal-row__title">@(string.IsNullOrWhiteSpace(merchant.OrganizationDisplayName) ? L["Personal_MerchantsUnknownOrg"] : merchant.OrganizationDisplayName)</span>
+                        <span class="pos-personal-row__meta">@merchant.CustomerDisplayName · @merchant.LinkStatus</span>
+                    </span>
+                    <span class="pos-personal-row__chevron" aria-hidden="true">›</span>
+                </button>
+            }
+        </div>
+        @if (_hasMore)
+        {
+            <div class="pos-personal-linked-merchants__more">
+                <Button Variant="ButtonVariant.Secondary" IsLoading="_busy" Disabled="_busy" OnClick="LoadMoreAsync">@L["Personal_MerchantsLoadMore"]</Button>
+            </div>
+        }
+    }
+</Page>
+</div>
+
+@code {
+    private bool _loading = true;
+    private bool _authenticated;
+    private bool _loadFailed;
+    private bool _busy;
+    private bool _hasMore;
+    private int _page = 1;
+    private string? _error;
+    private List<LinkedMerchantDto> _merchants = [];
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _loadFailed = false;
+        _error = null;
+        _page = 1;
+        _merchants = [];
+        try
+        {
+            if (!await EnsureSessionAsync())
+            {
+                return;
+            }
+
+            if (!await OnlineRequired.EnsureOnlineForRouteAsync("/personal/linked-merchants"))
+            {
+                _loadFailed = true;
+                _error = L["OnlineRequired_Message"];
+                return;
+            }
+
+            await FetchPageAsync(replace: true);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task LoadMoreAsync()
+    {
+        if (_busy || !_hasMore)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            _page++;
+            await FetchPageAsync(replace: false);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task FetchPageAsync(bool replace)
+    {
+        var result = await Platform.GetLinkedMerchantsAsync(_page, pageSize: 20);
+        if (!result.IsSuccess || result.Data is null)
+        {
+            if (replace)
+            {
+                _loadFailed = true;
+                _error = result.Error?.Detail ?? L["Personal_MerchantsLoadFailed"];
+            }
+
+            if (!replace)
+            {
+                _page = Math.Max(1, _page - 1);
+            }
+
+            return;
+        }
+
+        if (replace)
+        {
+            _merchants = result.Data.Items.ToList();
+        }
+        else
+        {
+            _merchants.AddRange(result.Data.Items);
+        }
+
+        _hasMore = _merchants.Count < result.Data.TotalCount;
+    }
+
+    private async Task<bool> EnsureSessionAsync()
+    {
+        if (!CurrentUser.IsAuthenticated)
+        {
+            var restore = await Auth.RestoreSessionAsync();
+            _authenticated = restore.Succeeded;
+        }
+        else
+        {
+            _authenticated = true;
+        }
+
+        if (!_authenticated)
+        {
+            return false;
+        }
+
+        var personal = await Auth.EnsurePersonalAccountProfileAsync();
+        if (!personal.Succeeded)
+        {
+            _loadFailed = true;
+            _error = L[personal.SafeMessageKey ?? "Access_Denied"];
+            return false;
+        }
+
+        return true;
+    }
+
+    private Task OpenMerchantAsync(string href) => OfflineNav.NavigateAsync(href);
+    private void GoSignIn() => Nav.NavigateTo("/signin");
+}

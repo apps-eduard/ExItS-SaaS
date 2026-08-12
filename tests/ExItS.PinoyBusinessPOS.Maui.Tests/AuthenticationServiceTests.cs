@@ -1427,6 +1427,13 @@ public sealed class AuthenticationServiceTests
         public Task<ApiResult<PersonalUtangInvitationDto>> DeclinePersonalUtangInvitationAsync(string token, CancellationToken ct = default) =>
             Task.FromResult(ApiResult<PersonalUtangInvitationDto>.Unavailable());
 
+        public Task<ApiResult<PlatformPagedResult<LinkedMerchantDto>>> GetLinkedMerchantsAsync(
+            int page = 1,
+            int pageSize = 20,
+            CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<PlatformPagedResult<LinkedMerchantDto>>.Success(
+                new PlatformPagedResult<LinkedMerchantDto>(Array.Empty<LinkedMerchantDto>(), 0, page, pageSize)));
+
         public Task<ApiResult<IReadOnlyList<LocalValidationQuickLoginIdentityDto>>> GetLocalValidationQuickLoginIdentitiesAsync(
             CancellationToken ct = default) =>
             Task.FromResult(ApiResult<IReadOnlyList<LocalValidationQuickLoginIdentityDto>>.Success(
