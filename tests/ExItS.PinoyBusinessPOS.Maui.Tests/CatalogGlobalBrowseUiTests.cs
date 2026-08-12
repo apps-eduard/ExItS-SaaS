@@ -110,6 +110,21 @@ public sealed class CatalogGlobalBrowseUiTests
     }
 
     [Fact]
+    public void Already_imported_rows_remain_visible_but_are_not_selectable()
+    {
+        var page = Page();
+
+        Assert.Contains("ListImportedGlobalProductsAsync", page, StringComparison.Ordinal);
+        Assert.Contains("ResolveImportedAsync", page, StringComparison.Ordinal);
+        Assert.Contains("_importedIds", page, StringComparison.Ordinal);
+        Assert.Contains("pos-global__row--already", page, StringComparison.Ordinal);
+        Assert.Contains("Catalog_Global_AlreadyAdded", page, StringComparison.Ordinal);
+        Assert.Contains("_importedIds.Contains(productId)", page, StringComparison.Ordinal);
+        Assert.Contains("_selectedIds.RemoveWhere(_importedIds.Contains)", page, StringComparison.Ordinal);
+        Assert.DoesNotContain("HideImported", page, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Import_prevents_duplicates_and_preserves_contracts()
     {
         var page = Page();
@@ -117,6 +132,7 @@ public sealed class CatalogGlobalBrowseUiTests
         Assert.Contains("if (_selectedIds.Count == 0 || _busy || _isOffline || _authBlocked)", page, StringComparison.Ordinal);
         Assert.Contains("IdempotencyKey: Guid.NewGuid().ToString(\"N\")", page, StringComparison.Ordinal);
         Assert.Contains("ImportSelectedProductsAsync", page, StringComparison.Ordinal);
+        Assert.Contains("_selectedIds.RemoveWhere(_importedIds.Contains)", page, StringComparison.Ordinal);
         Assert.Contains("finally", page, StringComparison.Ordinal);
         Assert.Contains("/catalog/import/jobs/", page, StringComparison.Ordinal);
     }
@@ -144,6 +160,7 @@ public sealed class CatalogGlobalBrowseUiTests
                      ".pos-global__filter-toggle",
                      ".pos-global__row",
                      ".pos-global__row--selected",
+                     ".pos-global__row--already",
                      ".pos-global__selection",
                      ".pos-global__state"
                  })
@@ -166,7 +183,8 @@ public sealed class CatalogGlobalBrowseUiTests
                      "Catalog_Global_Loading",
                      "Catalog_Global_ClearSearch",
                      "Catalog_Global_ClearFilters",
-                     "Catalog_Global_FiltersCount"
+                     "Catalog_Global_FiltersCount",
+                     "Catalog_Global_AlreadyAdded"
                  })
         {
             Assert.Contains($"name=\"{key}\"", en, StringComparison.Ordinal);

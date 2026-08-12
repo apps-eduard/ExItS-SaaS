@@ -7,47 +7,62 @@ using ExItS.PinoyBusinessPOS.Domain.Customers;
 
 namespace ExItS.PinoyBusinessPOS.UnitTests.Catalog;
 
-public sealed class ImportSelectedProductsEntitlementTests
+public sealed class ImportSelectedProductsDuplicateTests
 {
-    private static readonly PosOrganizationId Org = PosOrganizationId.From(Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
-    private static readonly Guid EntitledId = Guid.Parse("11111111-1111-1111-1111-111111111111");
-    private static readonly Guid ForgedId = Guid.Parse("99999999-9999-9999-9999-999999999999");
+    private static readonly PosOrganizationId OrgA = PosOrganizationId.From(Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
+    private static readonly PosOrganizationId OrgB = PosOrganizationId.From(Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"));
+    private static readonly Guid GlobalBacon = Guid.Parse("11111111-1111-1111-1111-111111111111");
+    private static readonly Guid GlobalChicken = Guid.Parse("22222222-2222-2222-2222-222222222222");
+    private static readonly Guid GlobalNew = Guid.Parse("33333333-3333-3333-3333-333333333333");
 
     [Fact]
-    public async Task Import_rejects_when_all_requested_ids_are_unentitled()
+    public async Task Import_rejects_when_all_selected_ids_already_imported()
     {
-        var platform = new FakePlatform(entitled: []);
-        var useCase = new ImportSelectedProducts(
-            new MemoryImports(),
-            new MemoryProducts(),
-            platform,
-            new FakeUnitOfWork(),
-            new FixedClock());
+        var products = new MemoryProducts();
+        products.MarkImported(OrgA, GlobalBacon);
+        var useCase = Create(products, entitled: [GlobalBacon]);
 
         var result = await useCase.ExecuteAsync(
-            Org.Value,
-            [ForgedId],
+            OrgA.Value,
+            [GlobalBacon],
             requestedBy: Guid.NewGuid().ToString("D"),
             platformSessionToken: "session");
 
         Assert.False(result.IsSuccess);
-        Assert.Equal(ApplicationErrorCodes.CatalogImportNoProducts, result.ErrorCode);
+        Assert.Equal(ApplicationErrorCodes.CatalogImportProductAlreadyImported, result.ErrorCode);
+        Assert.Empty(products.Added);
     }
 
     [Fact]
-    public async Task Import_imports_only_entitled_products_and_skips_forged_ids()
+    public async Task Import_queues_only_missing_products_when_mix_of_imported_and_new()
     {
-        var platform = new FakePlatform(entitled: [EntitledId]);
-        var useCase = new ImportSelectedProducts(
-            new MemoryImports(),
-            new MemoryProducts(),
-            platform,
-            new FakeUnitOfWork(),
-            new FixedClock());
+        var products = new MemoryProducts();
+        products.MarkImported(OrgA, GlobalBacon);
+        var imports = new MemoryImports();
+        var useCase = Create(products, entitled: [GlobalBacon, GlobalChicken], imports);
 
         var result = await useCase.ExecuteAsync(
-            Org.Value,
-            [EntitledId, ForgedId],
+            OrgA.Value,
+            [GlobalBacon, GlobalChicken],
+            requestedBy: Guid.NewGuid().ToString("D"),
+            platformSessionToken: "session");
+
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.Equal(1, result.Value!.TotalCount);
+        var job = Assert.Single(imports.Jobs);
+        Assert.Equal(GlobalChicken, Assert.Single(job.Items).PlatformGlobalProductId);
+    }
+
+    [Fact]
+    public async Task Same_global_id_can_exist_independently_in_another_organization()
+    {
+        var products = new MemoryProducts();
+        products.MarkImported(OrgA, GlobalBacon);
+        var useCase = Create(products, entitled: [GlobalBacon]);
+
+        var result = await useCase.ExecuteAsync(
+            OrgB.Value,
+            [GlobalBacon],
             requestedBy: Guid.NewGuid().ToString("D"),
             platformSessionToken: "session");
 
@@ -55,9 +70,57 @@ public sealed class ImportSelectedProductsEntitlementTests
         Assert.Equal(1, result.Value!.TotalCount);
     }
 
+    [Fact]
+    public async Task List_imported_returns_only_matching_org_ids()
+    {
+        var products = new MemoryProducts();
+        products.MarkImported(OrgA, GlobalBacon);
+        products.MarkImported(OrgB, GlobalChicken);
+        var useCase = new ListImportedGlobalProducts(products);
+
+        var forA = await useCase.ExecuteAsync(OrgA.Value, [GlobalBacon, GlobalChicken, GlobalNew]);
+        Assert.True(forA.IsSuccess);
+        Assert.Equal([GlobalBacon], forA.Value!.ImportedIds);
+
+        var forB = await useCase.ExecuteAsync(OrgB.Value, [GlobalBacon, GlobalChicken]);
+        Assert.True(forB.IsSuccess);
+        Assert.Equal([GlobalChicken], forB.Value!.ImportedIds);
+    }
+
+    [Fact]
+    public async Task Replay_of_already_imported_global_id_does_not_create_job_items()
+    {
+        var products = new MemoryProducts();
+        products.MarkImported(OrgA, GlobalBacon);
+        products.MarkImported(OrgA, GlobalChicken);
+        var imports = new MemoryImports();
+        var useCase = Create(products, entitled: [GlobalBacon, GlobalChicken], imports);
+
+        var result = await useCase.ExecuteAsync(
+            OrgA.Value,
+            [GlobalBacon, GlobalChicken, GlobalBacon],
+            requestedBy: Guid.NewGuid().ToString("D"),
+            platformSessionToken: "session");
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.CatalogImportProductAlreadyImported, result.ErrorCode);
+        Assert.Empty(imports.Jobs);
+    }
+
+    private static ImportSelectedProducts Create(
+        MemoryProducts products,
+        IReadOnlyCollection<Guid> entitled,
+        MemoryImports? imports = null) =>
+        new(
+            imports ?? new MemoryImports(),
+            products,
+            new FakePlatform(entitled),
+            new FakeUnitOfWork(),
+            new FixedClock());
+
     private sealed class FixedClock : IClock
     {
-        public DateTimeOffset UtcNow { get; } = DateTimeOffset.Parse("2026-08-11T00:00:00Z");
+        public DateTimeOffset UtcNow { get; } = DateTimeOffset.Parse("2026-08-13T00:00:00Z");
     }
 
     private sealed class FakeUnitOfWork : IPosUnitOfWork
@@ -82,10 +145,7 @@ public sealed class ImportSelectedProductsEntitlementTests
             Guid productId,
             string? platformSessionToken,
             CancellationToken cancellationToken = default) =>
-            Task.FromResult(
-                entitled.Contains(productId)
-                    ? Build(productId)
-                    : null);
+            Task.FromResult(entitled.Contains(productId) ? Build(productId) : null);
 
         public Task<IReadOnlyList<PlatformMerchantGlobalProductDto>> GetActiveProductsAsync(
             IReadOnlyList<Guid> productIds,
@@ -119,7 +179,7 @@ public sealed class ImportSelectedProductsEntitlementTests
         private static PlatformMerchantGlobalProductDto Build(Guid id) =>
             new(
                 id,
-                "Entitled Product",
+                "Product",
                 null,
                 "SKU-1",
                 null,
@@ -137,11 +197,11 @@ public sealed class ImportSelectedProductsEntitlementTests
 
     private sealed class MemoryImports : ICatalogImportJobRepository
     {
-        private readonly List<CatalogImportJob> _jobs = [];
+        public List<CatalogImportJob> Jobs { get; } = [];
 
         public Task AddAsync(CatalogImportJob job, CancellationToken cancellationToken = default)
         {
-            _jobs.Add(job);
+            Jobs.Add(job);
             return Task.CompletedTask;
         }
 
@@ -149,10 +209,10 @@ public sealed class ImportSelectedProductsEntitlementTests
             Task.FromResult<CatalogImportJob?>(null);
 
         public Task<CatalogImportJob?> FindByIdempotencyKeyAsync(PosOrganizationId organizationId, string idempotencyKey, CancellationToken cancellationToken = default) =>
-            Task.FromResult(_jobs.FirstOrDefault(j => j.OrganizationId == organizationId && j.IdempotencyKey == idempotencyKey));
+            Task.FromResult(Jobs.FirstOrDefault(j => j.OrganizationId == organizationId && j.IdempotencyKey == idempotencyKey));
 
         public Task<CatalogImportJob?> GetByIdAsync(PosOrganizationId organizationId, CatalogImportJobId jobId, CancellationToken cancellationToken = default) =>
-            Task.FromResult(_jobs.FirstOrDefault(j => j.OrganizationId == organizationId && j.Id == jobId));
+            Task.FromResult(Jobs.FirstOrDefault(j => j.OrganizationId == organizationId && j.Id == jobId));
 
         public Task<(IReadOnlyList<CatalogImportItemResult> Items, int TotalCount)> ListItemsAsync(
             PosOrganizationId organizationId,
@@ -168,7 +228,11 @@ public sealed class ImportSelectedProductsEntitlementTests
 
     private sealed class MemoryProducts : ICatalogProductRepository
     {
-        public HashSet<Guid> Imported { get; } = [];
+        private readonly HashSet<(Guid Org, Guid Global)> _imported = [];
+        public List<CatalogProduct> Added { get; } = [];
+
+        public void MarkImported(PosOrganizationId organizationId, Guid platformGlobalProductId) =>
+            _imported.Add((organizationId.Value, platformGlobalProductId));
 
         public Task<CatalogProduct?> GetByIdAsync(PosOrganizationId organizationId, CatalogProductId productId, CancellationToken cancellationToken = default) =>
             Task.FromResult<CatalogProduct?>(null);
@@ -187,7 +251,9 @@ public sealed class ImportSelectedProductsEntitlementTests
             IReadOnlyCollection<Guid> platformGlobalProductIds,
             CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlySet<Guid>>(
-                platformGlobalProductIds.Where(Imported.Contains).ToHashSet());
+                platformGlobalProductIds
+                    .Where(id => _imported.Contains((organizationId.Value, id)))
+                    .ToHashSet());
 
         public Task<IReadOnlyList<CatalogProduct>> ListByIdsAsync(
             PosOrganizationId organizationId,
@@ -203,7 +269,11 @@ public sealed class ImportSelectedProductsEntitlementTests
             CancellationToken cancellationToken = default) =>
             Task.FromResult<(IReadOnlyList<CatalogProduct>, int)>(([], 0));
 
-        public Task AddAsync(CatalogProduct product, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task AddAsync(CatalogProduct product, CancellationToken cancellationToken = default)
+        {
+            Added.Add(product);
+            return Task.CompletedTask;
+        }
 
         public Task UpdateAsync(CatalogProduct product, CancellationToken cancellationToken = default) => Task.CompletedTask;
     }

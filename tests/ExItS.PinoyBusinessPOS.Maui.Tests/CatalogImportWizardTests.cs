@@ -100,6 +100,9 @@ public sealed class CatalogImportWizardTests
         Assert.Contains("GetTemplateImportStatusAsync", import, StringComparison.Ordinal);
         Assert.Contains("ImportTemplateNextBatchAsync", import, StringComparison.Ordinal);
         Assert.Contains("Catalog_Import_AlreadyImported", import, StringComparison.Ordinal);
+        Assert.Contains("Catalog_Global_AlreadyAdded", import, StringComparison.Ordinal);
+        Assert.Contains("ResolvePreviewImportedAsync", import, StringComparison.Ordinal);
+        Assert.Contains("ListImportedGlobalProductsAsync", import, StringComparison.Ordinal);
         Assert.Contains("Catalog_Import_NextBatchReady", import, StringComparison.Ordinal);
         Assert.Contains("Catalog_Import_LoadNextBatch", import, StringComparison.Ordinal);
         Assert.Contains("IsFullyImported", import, StringComparison.Ordinal);
