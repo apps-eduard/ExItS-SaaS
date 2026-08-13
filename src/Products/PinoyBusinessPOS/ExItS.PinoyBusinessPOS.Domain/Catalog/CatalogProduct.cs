@@ -35,6 +35,8 @@ public sealed class CatalogProduct
     public DateTimeOffset? CatalogImportedAt { get; private set; }
     public int? CatalogSnapshotVersion { get; private set; }
     public Guid? SourceGlobalCategoryId { get; private set; }
+    public bool TracksExpiration { get; private set; }
+    public int? ExpirationWarningDays { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
 
@@ -58,7 +60,9 @@ public sealed class CatalogProduct
         int? catalogSnapshotVersion,
         Guid? sourceGlobalCategoryId,
         DateTimeOffset createdAtUtc,
-        DateTimeOffset updatedAtUtc)
+        DateTimeOffset updatedAtUtc,
+        bool tracksExpiration = false,
+        int? expirationWarningDays = null)
     {
         Id = id;
         OrganizationId = organizationId;
@@ -80,6 +84,10 @@ public sealed class CatalogProduct
         SourceGlobalCategoryId = sourceGlobalCategoryId;
         CreatedAtUtc = createdAtUtc;
         UpdatedAtUtc = updatedAtUtc;
+        TracksExpiration = tracksExpiration;
+        ExpirationWarningDays = tracksExpiration
+            ? Inventory.InventoryLot.NormalizeWarningDays(expirationWarningDays)
+            : null;
     }
 
     public static CatalogProduct Create(
@@ -93,7 +101,9 @@ public sealed class CatalogProduct
         string? barcode = null,
         ProductCategoryId? categoryId = null,
         CatalogProductId? id = null,
-        SellingMode sellingMode = SellingMode.PerItem)
+        SellingMode sellingMode = SellingMode.PerItem,
+        bool tracksExpiration = false,
+        int? expirationWarningDays = null)
     {
         CatalogGuards.EnsureUtc(utcNow);
         SellingModes.EnsureCompatible(sellingMode, unitOfMeasure);
@@ -119,7 +129,9 @@ public sealed class CatalogProduct
             catalogSnapshotVersion: null,
             sourceGlobalCategoryId: null,
             utcNow,
-            utcNow);
+            utcNow,
+            tracksExpiration,
+            expirationWarningDays);
     }
 
     /// <summary>
@@ -205,7 +217,9 @@ public sealed class CatalogProduct
         DateTimeOffset? catalogImportedAt = null,
         int? catalogSnapshotVersion = null,
         Guid? sourceGlobalCategoryId = null,
-        SellingMode sellingMode = SellingMode.PerItem) =>
+        SellingMode sellingMode = SellingMode.PerItem,
+        bool tracksExpiration = false,
+        int? expirationWarningDays = null) =>
         new(
             id,
             organizationId,
@@ -226,7 +240,9 @@ public sealed class CatalogProduct
             catalogSnapshotVersion,
             sourceGlobalCategoryId,
             createdAtUtc,
-            updatedAtUtc);
+            updatedAtUtc,
+            tracksExpiration,
+            expirationWarningDays);
 
     /// <summary>Updates permitted catalog fields. OrganizationId and Platform provenance cannot change.</summary>
     public void UpdateDetails(
@@ -261,6 +277,24 @@ public sealed class CatalogProduct
         SellingPrice = NormalizeSellingPrice(sellingPrice);
         UpdatedAtUtc = utcNow;
     }
+
+    /// <summary>
+    /// Optional per-product expiration tracking. Default is off. Does not change Global Catalog.
+    /// </summary>
+    public void SetExpirationTracking(bool tracksExpiration, int? expirationWarningDays, DateTimeOffset utcNow)
+    {
+        CatalogGuards.EnsureUtc(utcNow);
+        TracksExpiration = tracksExpiration;
+        ExpirationWarningDays = tracksExpiration
+            ? Inventory.InventoryLot.NormalizeWarningDays(expirationWarningDays)
+            : null;
+        UpdatedAtUtc = utcNow;
+    }
+
+    public int EffectiveExpirationWarningDays =>
+        TracksExpiration
+            ? ExpirationWarningDays ?? Inventory.InventoryLot.DefaultWarningDays
+            : Inventory.InventoryLot.DefaultWarningDays;
 
     /// <summary>
     /// Updates only the current catalog selling price (Today's Prices). Does not change identity,

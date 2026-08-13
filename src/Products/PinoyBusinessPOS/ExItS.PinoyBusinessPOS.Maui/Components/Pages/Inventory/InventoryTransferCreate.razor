@@ -52,10 +52,19 @@ else
             <div class="pos-stock-count-create__form">
                 <Select Label="@L["Inventory_CountsProduct"]"
                         Value="@_selectedProductId"
-                        ValueChanged="value => _selectedProductId = value"
+                        ValueChanged="OnProductChanged"
                         Options="@ProductOptions"
                         Required="true"
                         Disabled="@(blocked || _products.Count == 0)" />
+                @if (SelectedProduct?.TracksExpiration == true)
+                {
+                    <Select Label="@L["Inventory_Lots"]"
+                            Value="@_selectedLotId"
+                            ValueChanged="OnLotChanged"
+                            Options="@LotOptions"
+                            Required="true"
+                            Disabled="@(blocked || _lots.Count == 0)" />
+                }
                 <TextInput Label="@L["Inventory_TransfersQty"]"
                            Value="@_qtyText"
                            ValueChanged="value => _qtyText = value"
@@ -85,7 +94,7 @@ else
                                 <span class="pos-stock-count-create__line-name">@line.Name</span>
                                 <span class="pos-muted">@line.Quantity</span>
                             </div>
-                            <Button Variant="ButtonVariant.Ghost" Disabled="@blocked" OnClick="() => RemoveLine(line.ProductId)">
+                            <Button Variant="ButtonVariant.Ghost" Disabled="@blocked" OnClick="() => RemoveLine(line)">
                                 @L["Inventory_CountsRemoveLine"]
                             </Button>
                         </div>
@@ -116,17 +125,30 @@ else
     private string? _errorMessage;
     private string? _destinationId;
     private string? _selectedProductId;
+    private string? _selectedLotId;
     private string _qtyText = "1";
     private string? _notes;
     private readonly List<LineDraft> _lines = [];
     private IReadOnlyList<OrganizationBranchDto> _destinations = Array.Empty<OrganizationBranchDto>();
     private IReadOnlyList<PosCatalogProductDto> _products = Array.Empty<PosCatalogProductDto>();
+    private List<PosInventoryLotDto> _lots = [];
+
+    private PosCatalogProductDto? SelectedProduct =>
+        Guid.TryParse(_selectedProductId, out var id)
+            ? _products.FirstOrDefault(p => p.ProductId == id)
+            : null;
 
     private IReadOnlyList<SelectOption> DestinationOptions =>
         _destinations.Select(b => new SelectOption(b.Id.ToString("D"), b.Name)).ToList();
 
     private IReadOnlyList<SelectOption> ProductOptions =>
         _products.Select(p => new SelectOption(p.ProductId.ToString("D"), p.Name)).ToList();
+
+    private IReadOnlyList<SelectOption> LotOptions =>
+        _lots.Select(l => new SelectOption(
+            l.LotId.ToString("D"),
+            $"{l.ExpirationDate:yyyy-MM-dd} · {l.QuantityOnHand.ToString("0.###")}"))
+            .ToList();
 
     protected override async Task OnInitializedAsync()
     {
@@ -150,7 +172,25 @@ else
             .ToList()
             ?? [];
         var catalog = await Catalog.ListProductsAsync(status: "Active", pageSize: 100);
-        _products = catalog.Data?.Items ?? Array.Empty<PosCatalogProductDto>();
+        _products = catalog.Data?.Items ?? [];
+    }
+
+    private async Task OnProductChanged(string value)
+    {
+        _selectedProductId = value;
+        _selectedLotId = null;
+        _lots = [];
+        if (SelectedProduct?.TracksExpiration == true && Guid.TryParse(value, out var productId))
+        {
+            var lots = await Inventory.ListLotsAsync(productId, includeDepleted: false, pageSize: 50);
+            _lots = lots.Data?.Items.ToList() ?? [];
+        }
+    }
+
+    private Task OnLotChanged(string value)
+    {
+        _selectedLotId = value;
+        return Task.CompletedTask;
     }
 
     private void AddLine()
@@ -168,13 +208,26 @@ else
             return;
         }
 
-        _lines.RemoveAll(l => l.ProductId == productId);
-        _lines.Add(new LineDraft(productId, product.Name, qty));
+        Guid? lotId = null;
+        if (product.TracksExpiration)
+        {
+            if (!Guid.TryParse(_selectedLotId, out var parsedLot))
+            {
+                return;
+            }
+
+            lotId = parsedLot;
+        }
+
+        _lines.RemoveAll(l => l.ProductId == productId && l.SourceLotId == lotId);
+        _lines.Add(new LineDraft(productId, product.Name, qty, lotId));
         _selectedProductId = null;
+        _selectedLotId = null;
         _qtyText = "1";
     }
 
-    private void RemoveLine(Guid productId) => _lines.RemoveAll(l => l.ProductId == productId);
+    private void RemoveLine(LineDraft line) =>
+        _lines.RemoveAll(l => l.ProductId == line.ProductId && l.SourceLotId == line.SourceLotId);
 
     private async Task SubmitAsync()
     {
@@ -192,7 +245,7 @@ else
                 new CreateInventoryTransferRequest(
                     source,
                     dest,
-                    _lines.Select(l => new InventoryTransferLineRequest(l.ProductId, l.Quantity)).ToList(),
+                    _lines.Select(l => new InventoryTransferLineRequest(l.ProductId, l.Quantity, l.SourceLotId)).ToList(),
                     _notes));
             if (!created.IsSuccess || created.Data is null)
             {
@@ -210,5 +263,5 @@ else
         }
     }
 
-    private sealed record LineDraft(Guid ProductId, string Name, decimal Quantity);
+    private sealed record LineDraft(Guid ProductId, string Name, decimal Quantity, Guid? SourceLotId);
 }

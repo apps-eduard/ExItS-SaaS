@@ -43,7 +43,10 @@ internal static class InventoryTransferEntityMapper
             string.IsNullOrWhiteSpace(record.DiscrepancyReason)
                 ? null
                 : InventoryTransferDiscrepancyReasons.Parse(record.DiscrepancyReason),
-            record.DiscrepancyNote);
+            record.DiscrepancyNote,
+            record.SourceLotId is null ? null : InventoryLotId.From(record.SourceLotId.Value),
+            record.LotNumber,
+            record.ExpirationDate);
 
     public static InventoryTransferRecord ToRecord(InventoryTransfer transfer) =>
         new()
@@ -95,7 +98,10 @@ internal static class InventoryTransferEntityMapper
             DiscrepancyReason = line.DiscrepancyReason is null
                 ? null
                 : InventoryTransferDiscrepancyReasons.ToCode(line.DiscrepancyReason.Value),
-            DiscrepancyNote = line.DiscrepancyNote
+            DiscrepancyNote = line.DiscrepancyNote,
+            SourceLotId = line.SourceLotId?.Value,
+            LotNumber = line.LotNumber,
+            ExpirationDate = line.ExpirationDate
         };
 
     public static InventoryBranchBalance ToDomain(InventoryBranchBalanceRecord record) =>

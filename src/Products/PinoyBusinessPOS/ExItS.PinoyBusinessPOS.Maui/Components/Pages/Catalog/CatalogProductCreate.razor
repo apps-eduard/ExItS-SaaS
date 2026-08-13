@@ -75,6 +75,10 @@ else
                                 ShowStockTracking="@(canTrackStock && !_isOffline)"
                                 TrackStock="@_trackStock"
                                 TrackStockChanged="v => _trackStock = v"
+                                TracksExpiration="@_tracksExpiration"
+                                TracksExpirationChanged="v => _tracksExpiration = v"
+                                ExpirationWarningDaysText="@_warningDaysText"
+                                ExpirationWarningDaysTextChanged="v => _warningDaysText = v"
                                 SaveLabel="@L["Catalog_Product_Create"]"
                                 OnSave="SaveAsync"
                                 OnCancel="GoBack" />
@@ -96,6 +100,8 @@ else
     private string? _sellingMode = PosCatalogOptions.DefaultSellingModeCode;
     private decimal? _sellingPrice;
     private bool _trackStock;
+    private bool _tracksExpiration;
+    private string? _warningDaysText = "7";
     private Guid? _createdProductId;
     private IReadOnlyList<PosProductCategoryDto> _categories = Array.Empty<PosProductCategoryDto>();
     private string? _nameError;
@@ -169,7 +175,9 @@ else
                 string.IsNullOrWhiteSpace(_sku) ? null : _sku,
                 string.IsNullOrWhiteSpace(_barcode) ? null : _barcode,
                 Guid.TryParse(_categoryId, out var categoryId) ? categoryId : null,
-                SellingMode: _sellingMode ?? PosCatalogOptions.DefaultSellingModeCode));
+                SellingMode: _sellingMode ?? PosCatalogOptions.DefaultSellingModeCode,
+                TracksExpiration: _tracksExpiration,
+                ExpirationWarningDays: ParseWarningDays()));
 
             if (!result.IsSuccess || result.Data is null)
             {
@@ -206,6 +214,9 @@ else
         var result = await Inventory.EnableAsync(productId, new EnableInventoryTrackingRequest());
         return result.IsSuccess;
     }
+
+    private int? ParseWarningDays() =>
+        _tracksExpiration && int.TryParse(_warningDaysText, out var days) ? days : null;
 
     private void GoProduct(Guid productId) => Nav.NavigateTo($"/catalog/products/{productId:D}", replace: true);
 

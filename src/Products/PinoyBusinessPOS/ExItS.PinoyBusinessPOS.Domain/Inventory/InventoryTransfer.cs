@@ -163,22 +163,39 @@ public sealed class InventoryTransfer
                 "At least one receive line is required.");
         }
 
-        var lineByProduct = _lines.ToDictionary(l => l.ProductId.Value);
+        var lineById = _lines.ToDictionary(l => l.Id.Value);
+        var lineByProduct = _lines
+            .GroupBy(l => l.ProductId.Value)
+            .ToDictionary(g => g.Key, g => g.ToList());
         var seen = new HashSet<Guid>();
         foreach (var receive in receiveLines)
         {
-            if (!seen.Add(receive.ProductId.Value))
+            InventoryTransferLine line;
+            if (receive.LineId is not null)
             {
-                throw new DomainException(
-                    DomainErrorCodes.InventoryTransferDuplicateProduct,
-                    "Receive lines cannot repeat the same product.");
+                if (!lineById.TryGetValue(receive.LineId.Value, out line!))
+                {
+                    throw new DomainException(
+                        DomainErrorCodes.InvalidInventoryTransferLine,
+                        "Receive line is not on this transfer.");
+                }
             }
-
-            if (!lineByProduct.TryGetValue(receive.ProductId.Value, out var line))
+            else if (lineByProduct.TryGetValue(receive.ProductId.Value, out var matches) && matches.Count == 1)
+            {
+                line = matches[0];
+            }
+            else
             {
                 throw new DomainException(
                     DomainErrorCodes.InvalidInventoryTransferLine,
                     "Receive line product is not on this transfer.");
+            }
+
+            if (!seen.Add(line.Id.Value))
+            {
+                throw new DomainException(
+                    DomainErrorCodes.InventoryTransferDuplicateProduct,
+                    "Receive lines cannot repeat the same transfer line.");
             }
 
             line.ApplyReceipt(receive);
@@ -186,7 +203,7 @@ public sealed class InventoryTransfer
 
         foreach (var line in _lines)
         {
-            if (!seen.Contains(line.ProductId.Value))
+            if (!seen.Contains(line.Id.Value))
             {
                 throw new DomainException(
                     DomainErrorCodes.InventoryTransferReceiveRequiresLines,
@@ -311,12 +328,14 @@ public sealed class InventoryTransfer
                 $"A transfer may contain at most {MaxLineCount} lines.");
         }
 
-        var productIds = lines.Select(l => l.ProductId.Value).ToList();
-        if (productIds.Count != productIds.Distinct().Count())
+        var keys = lines
+            .Select(l => (l.ProductId.Value, Lot: l.SourceLotId?.Value ?? Guid.Empty))
+            .ToList();
+        if (keys.Count != keys.Distinct().Count())
         {
             throw new DomainException(
                 DomainErrorCodes.InventoryTransferDuplicateProduct,
-                "A transfer cannot contain the same product more than once.");
+                "A transfer cannot contain the same product lot more than once.");
         }
     }
 

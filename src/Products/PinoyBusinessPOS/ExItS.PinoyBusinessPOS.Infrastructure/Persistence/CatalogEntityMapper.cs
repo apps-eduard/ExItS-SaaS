@@ -62,7 +62,9 @@ internal static class CatalogEntityMapper
             record.SourceGlobalCategoryId,
             sellingMode: SellingModes.TryParse(record.SellingMode, out var productMode)
                 ? productMode
-                : SellingMode.PerItem);
+                : SellingMode.PerItem,
+            tracksExpiration: record.TracksExpiration,
+            expirationWarningDays: record.ExpirationWarningDays);
 
     public static CatalogProductRecord ToRecord(CatalogProduct product) =>
         new()
@@ -85,6 +87,8 @@ internal static class CatalogEntityMapper
             CatalogImportedAt = product.CatalogImportedAt,
             CatalogSnapshotVersion = product.CatalogSnapshotVersion,
             SourceGlobalCategoryId = product.SourceGlobalCategoryId,
+            TracksExpiration = product.TracksExpiration,
+            ExpirationWarningDays = product.ExpirationWarningDays,
             CreatedAtUtc = product.CreatedAtUtc,
             UpdatedAtUtc = product.UpdatedAtUtc
         };
@@ -107,6 +111,8 @@ internal static class CatalogEntityMapper
         record.CatalogImportedAt = product.CatalogImportedAt;
         record.CatalogSnapshotVersion = product.CatalogSnapshotVersion;
         record.SourceGlobalCategoryId = product.SourceGlobalCategoryId;
+        record.TracksExpiration = product.TracksExpiration;
+        record.ExpirationWarningDays = product.ExpirationWarningDays;
         record.UpdatedAtUtc = product.UpdatedAtUtc;
     }
 

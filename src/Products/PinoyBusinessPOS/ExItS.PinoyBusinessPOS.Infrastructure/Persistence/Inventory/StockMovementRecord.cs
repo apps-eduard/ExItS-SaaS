@@ -14,4 +14,5 @@ internal sealed class StockMovementRecord
     public DateTimeOffset RecordedAtUtc { get; set; }
     public Guid RecordedBy { get; set; }
     public Guid? BranchId { get; set; }
+    public Guid? InventoryLotId { get; set; }
 }

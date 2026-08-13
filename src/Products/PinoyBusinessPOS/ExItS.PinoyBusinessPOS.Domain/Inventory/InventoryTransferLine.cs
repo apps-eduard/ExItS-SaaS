@@ -10,14 +10,18 @@ public sealed record InventoryTransferLineDraft(
     decimal Quantity,
     string NameSnapshot,
     UnitOfMeasure UnitOfMeasure,
-    SellingMode SellingMode = SellingMode.PerItem);
+    SellingMode SellingMode = SellingMode.PerItem,
+    InventoryLotId? SourceLotId = null,
+    string? LotNumber = null,
+    DateOnly? ExpirationDate = null);
 
 public sealed record InventoryTransferReceiveLineDraft(
     CatalogProductId ProductId,
     decimal ReceivedQty,
     InventoryTransferDiscrepancyReason? DiscrepancyReason = null,
     string? DiscrepancyNote = null,
-    SellingMode SellingMode = SellingMode.PerItem);
+    SellingMode SellingMode = SellingMode.PerItem,
+    InventoryTransferLineId? LineId = null);
 
 public sealed class InventoryTransferLine
 {
@@ -35,6 +39,9 @@ public sealed class InventoryTransferLine
     public decimal ReceivedQty { get; private set; }
     public InventoryTransferDiscrepancyReason? DiscrepancyReason { get; private set; }
     public string? DiscrepancyNote { get; private set; }
+    public InventoryLotId? SourceLotId { get; }
+    public string? LotNumber { get; }
+    public DateOnly? ExpirationDate { get; }
 
     public decimal DifferenceQty => SentQty - ReceivedQty;
 
@@ -56,7 +63,10 @@ public sealed class InventoryTransferLine
         decimal sentQty,
         decimal receivedQty,
         InventoryTransferDiscrepancyReason? discrepancyReason,
-        string? discrepancyNote)
+        string? discrepancyNote,
+        InventoryLotId? sourceLotId = null,
+        string? lotNumber = null,
+        DateOnly? expirationDate = null)
     {
         Id = id;
         TransferId = transferId;
@@ -69,6 +79,9 @@ public sealed class InventoryTransferLine
         ReceivedQty = receivedQty;
         DiscrepancyReason = discrepancyReason;
         DiscrepancyNote = discrepancyNote;
+        SourceLotId = sourceLotId;
+        LotNumber = lotNumber;
+        ExpirationDate = expirationDate;
     }
 
     internal static InventoryTransferLine CreateDraft(
@@ -99,7 +112,10 @@ public sealed class InventoryTransferLine
             qty,
             receivedQty: 0m,
             discrepancyReason: null,
-            discrepancyNote: null);
+            discrepancyNote: null,
+            draft.SourceLotId,
+            draft.LotNumber,
+            draft.ExpirationDate);
     }
 
     internal void ReplaceDraftQuantity(decimal quantity, SellingMode sellingMode)
@@ -153,7 +169,10 @@ public sealed class InventoryTransferLine
         decimal sentQty,
         decimal receivedQty,
         InventoryTransferDiscrepancyReason? discrepancyReason,
-        string? discrepancyNote) =>
+        string? discrepancyNote,
+        InventoryLotId? sourceLotId = null,
+        string? lotNumber = null,
+        DateOnly? expirationDate = null) =>
         new(
             id,
             transferId,
@@ -165,7 +184,10 @@ public sealed class InventoryTransferLine
             sentQty,
             receivedQty,
             discrepancyReason,
-            discrepancyNote);
+            discrepancyNote,
+            sourceLotId,
+            lotNumber,
+            expirationDate);
 
     private static string NormalizeName(string name)
     {

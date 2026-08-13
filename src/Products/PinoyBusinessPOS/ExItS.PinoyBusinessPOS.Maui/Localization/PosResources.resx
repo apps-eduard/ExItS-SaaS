@@ -854,6 +854,19 @@
   <data name="Catalog_TrackStockOnHint" xml:space="preserve"><value>Selling reduces the counted quantity. Set the starting count in Stock after saving.</value></data>
   <data name="Catalog_TrackStockOffHint" xml:space="preserve"><value>Sold without counting. You can turn tracking on later in Stock.</value></data>
   <data name="Catalog_TrackStockFailed" xml:space="preserve"><value>The product was saved, but stock tracking could not be turned on. Turn it on in Stock.</value></data>
+  <data name="Catalog_TrackExpiration" xml:space="preserve"><value>Track expiration dates</value></data>
+  <data name="Catalog_TrackExpirationHint" xml:space="preserve"><value>Track inventory by expiration date and use earliest-expiring stock first.</value></data>
+  <data name="Catalog_ExpirationWarningDays" xml:space="preserve"><value>Near-expiry warning</value></data>
+  <data name="Catalog_ExpirationWarningDaysHint" xml:space="preserve"><value>Days before expiry to warn. Default is 7.</value></data>
+  <data name="Inventory_Available" xml:space="preserve"><value>Available</value></data>
+  <data name="Inventory_Expired" xml:space="preserve"><value>Expired</value></data>
+  <data name="Inventory_NearExpiry" xml:space="preserve"><value>Near expiry</value></data>
+  <data name="Inventory_Lots" xml:space="preserve"><value>Lots</value></data>
+  <data name="Inventory_LotNumber" xml:space="preserve"><value>Lot / batch (optional)</value></data>
+  <data name="Inventory_ExpirationDate" xml:space="preserve"><value>Expiration date</value></data>
+  <data name="Inventory_ExpiresToday" xml:space="preserve"><value>Expires today</value></data>
+  <data name="Inventory_ExpiresInDays" xml:space="preserve"><value>Expires in {0} days</value></data>
+  <data name="Inventory_ReasonExpired" xml:space="preserve"><value>Expired</value></data>
   <data name="Catalog_Product_CreatedTitle" xml:space="preserve"><value>Product saved</value></data>
   <data name="Catalog_Product_View" xml:space="preserve"><value>View product</value></data>
   <data name="Catalog_Product_NoCategory" xml:space="preserve"><value>No category</value></data>

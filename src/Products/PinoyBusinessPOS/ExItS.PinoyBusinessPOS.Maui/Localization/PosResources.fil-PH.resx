@@ -854,6 +854,19 @@
   <data name="Catalog_TrackStockOnHint" xml:space="preserve"><value>Bumababa ang bilang kapag nakabenta. Itakda ang panimulang bilang sa Stock pagkatapos i-save.</value></data>
   <data name="Catalog_TrackStockOffHint" xml:space="preserve"><value>Ibinebenta nang walang bilang. Puwede mong buksan ang tracking sa Stock mamaya.</value></data>
   <data name="Catalog_TrackStockFailed" xml:space="preserve"><value>Na-save ang produkto, pero hindi nabuksan ang stock tracking. Buksan ito sa Stock.</value></data>
+  <data name="Catalog_TrackExpiration" xml:space="preserve"><value>Subaybayan ang expiration</value></data>
+  <data name="Catalog_TrackExpirationHint" xml:space="preserve"><value>Subaybayan ang imbentaryo ayon sa expiration at unahin ang malapit nang mag-expire.</value></data>
+  <data name="Catalog_ExpirationWarningDays" xml:space="preserve"><value>Babala bago mag-expire</value></data>
+  <data name="Catalog_ExpirationWarningDaysHint" xml:space="preserve"><value>Ilang araw bago mag-expire magbabala. Default ay 7.</value></data>
+  <data name="Inventory_Available" xml:space="preserve"><value>Magagamit</value></data>
+  <data name="Inventory_Expired" xml:space="preserve"><value>Expired</value></data>
+  <data name="Inventory_NearExpiry" xml:space="preserve"><value>Malapit nang mag-expire</value></data>
+  <data name="Inventory_Lots" xml:space="preserve"><value>Mga lot</value></data>
+  <data name="Inventory_LotNumber" xml:space="preserve"><value>Lot / batch (opsyonal)</value></data>
+  <data name="Inventory_ExpirationDate" xml:space="preserve"><value>Petsa ng expiration</value></data>
+  <data name="Inventory_ExpiresToday" xml:space="preserve"><value>Mag-e-expire ngayon</value></data>
+  <data name="Inventory_ExpiresInDays" xml:space="preserve"><value>Mag-e-expire sa {0} araw</value></data>
+  <data name="Inventory_ReasonExpired" xml:space="preserve"><value>Expired</value></data>
   <data name="Catalog_Product_CreatedTitle" xml:space="preserve"><value>Na-save ang produkto</value></data>
   <data name="Catalog_Product_View" xml:space="preserve"><value>Tingnan ang produkto</value></data>
   <data name="Catalog_Product_NoCategory" xml:space="preserve"><value>Walang kategorya</value></data>

@@ -111,6 +111,11 @@ public static class DomainErrorCodes
     public const string SaleCashMustNotLinkCredit = "pos.sale.cash_must_not_link_credit";
 
     public const string InvalidInventoryAccountId = "pos.inventory.account.id.invalid";
+    public const string InvalidInventoryLotId = "pos.inventory.lot.id.invalid";
+    public const string InvalidInventoryLotNumber = "pos.inventory.lot_number.invalid";
+    public const string InventoryExpirationRequired = "pos.inventory.expiration.required";
+    public const string InventoryLotMismatch = "pos.inventory.lot.mismatch";
+    public const string InvalidExpirationWarningDays = "pos.inventory.expiration_warning_days.invalid";
     public const string InvalidStockMovementId = "pos.inventory.movement.id.invalid";
     public const string InvalidInventoryMovementType = "pos.inventory.movement_type.invalid";
     public const string InvalidInventorySourceType = "pos.inventory.source_type.invalid";

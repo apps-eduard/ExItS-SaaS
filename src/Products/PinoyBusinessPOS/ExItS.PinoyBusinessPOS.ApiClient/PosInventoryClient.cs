@@ -67,6 +67,20 @@ public sealed class PosInventoryClient(HttpClient httpClient, IConnectivityServi
     public Task<ApiResult<PosInventoryAccountDto>> GetAsync(Guid productId, CancellationToken ct = default) =>
         SendAsync<PosInventoryAccountDto>(HttpMethod.Get, $"{InventoryPath}/{productId:D}", null, ct);
 
+    public Task<ApiResult<PagedResult<PosInventoryLotDto>>> ListLotsAsync(
+        Guid productId,
+        bool includeDepleted = false,
+        int page = 1,
+        int pageSize = 20,
+        CancellationToken ct = default)
+    {
+        var query = new StringBuilder($"{InventoryPath}/{productId:D}/lots?");
+        query.Append("page=").Append(page.ToString(CultureInfo.InvariantCulture));
+        query.Append("&pageSize=").Append(pageSize.ToString(CultureInfo.InvariantCulture));
+        query.Append("&includeDepleted=").Append(includeDepleted ? "true" : "false");
+        return SendAsync<PagedResult<PosInventoryLotDto>>(HttpMethod.Get, query.ToString(), null, ct);
+    }
+
     public Task<ApiResult<PosInventoryAccountDto>> EnableAsync(
         Guid productId,
         EnableInventoryTrackingRequest request,

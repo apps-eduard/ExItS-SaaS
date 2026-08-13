@@ -68,12 +68,50 @@ else
                 <dt>@L["Inventory_StockStatus"]</dt>
                 <dd>@StatusLabel(_account)</dd>
             </div>
+            @if (_account.TracksExpiration)
+            {
+                <div class="pos-inventory-detail__fact">
+                    <dt>@L["Inventory_Available"]</dt>
+                    <dd>@((_account.SellableQuantity ?? 0m).ToString("0.###"))</dd>
+                </div>
+                <div class="pos-inventory-detail__fact">
+                    <dt>@L["Inventory_NearExpiry"]</dt>
+                    <dd>@((_account.NearExpiryQuantity ?? 0m).ToString("0.###"))</dd>
+                </div>
+                <div class="pos-inventory-detail__fact">
+                    <dt>@L["Inventory_Expired"]</dt>
+                    <dd>@((_account.ExpiredQuantity ?? 0m).ToString("0.###"))</dd>
+                </div>
+            }
         </dl>
         @if (_account.IsLowStock)
         {
             <p class="pos-inventory-detail__note">@L["Inventory_LowStockSubtitle"]</p>
         }
     </section>
+
+    @if (_account.TracksExpiration)
+    {
+        <section class="pos-inventory-detail__panel" aria-labelledby="inventory-lots-heading">
+            <h2 id="inventory-lots-heading" class="pos-inventory-detail__section-title">@L["Inventory_Lots"]</h2>
+            @if (_lots.Count == 0)
+            {
+                <p class="pos-inventory-detail__note">—</p>
+            }
+            else
+            {
+                <dl class="pos-inventory-detail__facts">
+                    @foreach (var lot in _lots)
+                    {
+                        <div class="pos-inventory-detail__fact">
+                            <dt>@lot.ExpirationDate.ToString("yyyy-MM-dd") @(string.IsNullOrEmpty(lot.LotNumber) ? "" : lot.LotNumber)</dt>
+                            <dd>@lot.QuantityOnHand.ToString("0.###") · @LotStatusLabel(lot)</dd>
+                        </div>
+                    }
+                </dl>
+            }
+        </section>
+    }
 
     @if (manageOnline)
     {
@@ -157,6 +195,7 @@ else
     private bool _isOffline;
     private PosInventoryAccountDto? _account;
     private List<PosStockMovementDto> _movements = [];
+    private List<PosInventoryLotDto> _lots = [];
     private string? _errorTitle;
     private string? _errorMessage;
 
@@ -217,7 +256,28 @@ else
         _movements = movements.Status == ApiCallStatus.Success && movements.Data is not null
             ? movements.Data.Items
             : [];
+
+        if (_account?.TracksExpiration == true)
+        {
+            var lots = await Inventory.ListLotsAsync(ProductId, includeDepleted: false, pageSize: 50);
+            _lots = lots.Status == ApiCallStatus.Success && lots.Data is not null
+                ? lots.Data.Items.ToList()
+                : [];
+        }
+        else
+        {
+            _lots = [];
+        }
     }
+
+    private string LotStatusLabel(PosInventoryLotDto lot) =>
+        lot.ExpiryStatus switch
+        {
+            "Expired" => L["Inventory_Expired"],
+            "ExpiresToday" => L["Inventory_ExpiresToday"],
+            "NearExpiry" => L["Inventory_NearExpiry"],
+            _ => lot.ExpiryStatus
+        };
 
     private async Task EnableAsync()
     {

@@ -125,6 +125,7 @@ public interface IInventoryRepository
         InventoryTransferId transferId,
         CatalogProductId productId,
         StockMovementType movementType,
+        InventoryLotId? lotId = null,
         CancellationToken cancellationToken = default);
 
     Task<(DateTimeOffset? LatestAt, int Count)> GetMovementSummaryAsync(

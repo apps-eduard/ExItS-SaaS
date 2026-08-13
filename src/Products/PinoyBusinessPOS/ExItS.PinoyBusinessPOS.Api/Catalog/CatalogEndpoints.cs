@@ -227,6 +227,8 @@ internal static class CatalogEndpoints
                     body.CategoryId,
                     body.ProductId,
                     body.SellingMode,
+                    body.TracksExpiration,
+                    body.ExpirationWarningDays,
                     ct)
                 .ConfigureAwait(false);
 
@@ -306,6 +308,8 @@ internal static class CatalogEndpoints
                     body.CategoryId,
                     body.ExpectedUpdatedAtUtc,
                     body.SellingMode,
+                    body.TracksExpiration,
+                    body.ExpirationWarningDays,
                     ct)
                 .ConfigureAwait(false);
 

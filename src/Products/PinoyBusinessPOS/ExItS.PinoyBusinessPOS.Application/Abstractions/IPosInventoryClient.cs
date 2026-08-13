@@ -26,6 +26,13 @@ public interface IPosInventoryClient
 
     Task<ApiResult<PosInventoryAccountDto>> GetAsync(Guid productId, CancellationToken ct = default);
 
+    Task<ApiResult<PagedResult<PosInventoryLotDto>>> ListLotsAsync(
+        Guid productId,
+        bool includeDepleted = false,
+        int page = 1,
+        int pageSize = 20,
+        CancellationToken ct = default);
+
     Task<ApiResult<PosInventoryAccountDto>> EnableAsync(
         Guid productId,
         EnableInventoryTrackingRequest request,

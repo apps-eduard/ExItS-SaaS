@@ -93,6 +93,25 @@
         </section>
     }
 
+    <section class="pos-product-form__group" aria-labelledby="@_expiryId">
+        <h2 class="pos-product-form__group-title" id="@_expiryId">@L["Catalog_TrackExpiration"]</h2>
+        <div class="pos-product-form__fields">
+            <Switch Checked="@TracksExpiration"
+                    CheckedChanged="TracksExpirationChanged"
+                    Label="@L["Catalog_TrackExpiration"]"
+                    Disabled="@(IsSaving || Disabled)" />
+            @if (TracksExpiration)
+            {
+                <p class="pos-product-form__note">@L["Catalog_TrackExpirationHint"]</p>
+                <TextInput Label="@L["Catalog_ExpirationWarningDays"]"
+                           Value="@ExpirationWarningDaysText"
+                           ValueChanged="ExpirationWarningDaysTextChanged"
+                           Hint="@L["Catalog_ExpirationWarningDaysHint"]"
+                           Disabled="@(IsSaving || Disabled)" />
+            }
+        </div>
+    </section>
+
     <div class="pos-product-form__actions">
         <Button Variant="ButtonVariant.Secondary" Disabled="@(IsSaving || Disabled)" OnClick="OnCancel">@L["Catalog_Cancel"]</Button>
         <Button Variant="ButtonVariant.Primary" Disabled="@Disabled" IsLoading="@IsSaving" OnClick="OnSave">@SaveLabel</Button>
@@ -104,6 +123,7 @@
     private readonly string _codesId = $"pos-product-form-codes-{Guid.NewGuid():N}";
     private readonly string _pricingId = $"pos-product-form-pricing-{Guid.NewGuid():N}";
     private readonly string _stockId = $"pos-product-form-stock-{Guid.NewGuid():N}";
+    private readonly string _expiryId = $"pos-product-form-expiry-{Guid.NewGuid():N}";
 
     [Parameter] public string? Name { get; set; }
     [Parameter] public EventCallback<string?> NameChanged { get; set; }
@@ -131,6 +151,10 @@
     [Parameter] public bool ShowStockTracking { get; set; }
     [Parameter] public bool TrackStock { get; set; }
     [Parameter] public EventCallback<bool> TrackStockChanged { get; set; }
+    [Parameter] public bool TracksExpiration { get; set; }
+    [Parameter] public EventCallback<bool> TracksExpirationChanged { get; set; }
+    [Parameter] public string? ExpirationWarningDaysText { get; set; }
+    [Parameter] public EventCallback<string?> ExpirationWarningDaysTextChanged { get; set; }
     [Parameter] public string? SaveLabel { get; set; }
     [Parameter] public EventCallback OnSave { get; set; }
     [Parameter] public EventCallback OnCancel { get; set; }

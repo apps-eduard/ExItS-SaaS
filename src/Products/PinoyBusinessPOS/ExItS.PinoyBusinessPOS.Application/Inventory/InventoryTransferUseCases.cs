@@ -100,7 +100,10 @@ public sealed class InventoryTransferQueryService
                 l.DifferenceQty,
                 l.LineStatus,
                 l.DiscrepancyReason is null ? null : InventoryTransferDiscrepancyReasons.ToCode(l.DiscrepancyReason.Value),
-                l.DiscrepancyNote)).ToList());
+                l.DiscrepancyNote,
+                l.SourceLotId?.Value,
+                l.LotNumber,
+                l.ExpirationDate)).ToList());
 
     private static InventoryTransferListItemDto MapListItem(
         InventoryTransfer transfer,
@@ -124,6 +127,7 @@ public sealed class CreateInventoryTransfer
 {
     private readonly IInventoryTransferRepository _transfers;
     private readonly ICatalogProductRepository _products;
+    private readonly IInventoryLotRepository _lots;
     private readonly IOrganizationBranchDirectory _branches;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
@@ -131,12 +135,14 @@ public sealed class CreateInventoryTransfer
     public CreateInventoryTransfer(
         IInventoryTransferRepository transfers,
         ICatalogProductRepository products,
+        IInventoryLotRepository lots,
         IOrganizationBranchDirectory branches,
         IPosUnitOfWork unitOfWork,
         IClock clock)
     {
         _transfers = transfers;
         _products = products;
+        _lots = lots;
         _branches = branches;
         _unitOfWork = unitOfWork;
         _clock = clock;
@@ -166,7 +172,7 @@ public sealed class CreateInventoryTransfer
 
         var orgId = PosOrganizationId.From(organizationId);
         var drafts = await InventoryTransferLineFactory
-            .CreateDraftsAsync(_products, orgId, request.Lines, cancellationToken)
+            .CreateDraftsAsync(_products, _lots, orgId, request.Lines, cancellationToken)
             .ConfigureAwait(false);
         if (!drafts.IsSuccess)
         {
@@ -200,6 +206,8 @@ public sealed class DispatchInventoryTransfer
     private readonly IInventoryRepository _inventory;
     private readonly IInventoryBranchBalanceRepository _balances;
     private readonly ICatalogProductRepository _products;
+    private readonly IInventoryLotRepository _lotRepository;
+    private readonly InventoryLotStockService _lots;
     private readonly IOrganizationBranchDirectory _branches;
     private readonly IInventoryTransferAlertSink _alerts;
     private readonly IPosUnitOfWork _unitOfWork;
@@ -210,6 +218,8 @@ public sealed class DispatchInventoryTransfer
         IInventoryRepository inventory,
         IInventoryBranchBalanceRepository balances,
         ICatalogProductRepository products,
+        IInventoryLotRepository lotRepository,
+        InventoryLotStockService lots,
         IOrganizationBranchDirectory branches,
         IInventoryTransferAlertSink alerts,
         IPosUnitOfWork unitOfWork,
@@ -219,6 +229,8 @@ public sealed class DispatchInventoryTransfer
         _inventory = inventory;
         _balances = balances;
         _products = products;
+        _lotRepository = lotRepository;
+        _lots = lots;
         _branches = branches;
         _alerts = alerts;
         _unitOfWork = unitOfWork;
@@ -310,7 +322,7 @@ public sealed class DispatchInventoryTransfer
             {
                 var account = accounts[line.ProductId.Value];
                 if (await _inventory
-                        .HasInventoryTransferMovementAsync(orgId, transfer.Id, line.ProductId, StockMovementType.TransferOut, ct)
+                        .HasInventoryTransferMovementAsync(orgId, transfer.Id, line.ProductId, StockMovementType.TransferOut, line.SourceLotId, ct)
                         .ConfigureAwait(false))
                 {
                     continue;
@@ -339,6 +351,34 @@ public sealed class DispatchInventoryTransfer
                     actorId,
                     utcNow,
                     sellingMode: sellingMode);
+                if (line.SourceLotId is not null)
+                {
+                    var lot = await _lotRepository
+                        .GetByIdAsync(orgId, line.SourceLotId, ct)
+                        .ConfigureAwait(false);
+                    if (lot is null || lot.ProductId != line.ProductId)
+                    {
+                        return ApplicationResult<InventoryTransfer>.Failure(
+                            DomainErrorCodes.InventoryLotMismatch,
+                            $"Source lot for '{line.NameSnapshot}' was not found.");
+                    }
+
+                    await _lots
+                        .ConsumeSpecificAsync(
+                            orgId,
+                            lot,
+                            line.SentQty,
+                            actorId,
+                            utcNow,
+                            StockMovementType.TransferOut,
+                            StockMovementSourceType.InventoryTransfer,
+                            transfer.Id.Value,
+                            movement.Id.Value,
+                            ct)
+                        .ConfigureAwait(false);
+                    movement = movement.WithLot(lot.Id);
+                }
+
                 account.ApplyMovementEffect(movement.QuantityEffect);
                 account.Touch(utcNow);
                 sourceBalance.Apply(movement.QuantityEffect, utcNow);
@@ -395,6 +435,8 @@ public sealed class ReceiveInventoryTransfer
     private readonly IInventoryRepository _inventory;
     private readonly IInventoryBranchBalanceRepository _balances;
     private readonly ICatalogProductRepository _products;
+    private readonly IInventoryLotRepository _lotRepository;
+    private readonly InventoryLotStockService _lots;
     private readonly IOrganizationBranchDirectory _branches;
     private readonly IInventoryTransferAlertSink _alerts;
     private readonly IPosUnitOfWork _unitOfWork;
@@ -405,6 +447,8 @@ public sealed class ReceiveInventoryTransfer
         IInventoryRepository inventory,
         IInventoryBranchBalanceRepository balances,
         ICatalogProductRepository products,
+        IInventoryLotRepository lotRepository,
+        InventoryLotStockService lots,
         IOrganizationBranchDirectory branches,
         IInventoryTransferAlertSink alerts,
         IPosUnitOfWork unitOfWork,
@@ -414,6 +458,8 @@ public sealed class ReceiveInventoryTransfer
         _inventory = inventory;
         _balances = balances;
         _products = products;
+        _lotRepository = lotRepository;
+        _lots = lots;
         _branches = branches;
         _alerts = alerts;
         _unitOfWork = unitOfWork;
@@ -494,7 +540,8 @@ public sealed class ReceiveInventoryTransfer
                 CatalogProductId.From(line.ProductId),
                 line.ReceivedQty,
                 reason,
-                line.DiscrepancyNote));
+                line.DiscrepancyNote,
+                LineId: line.LineId is null ? null : InventoryTransferLineId.From(line.LineId.Value)));
         }
 
         var productIds = transfer.Lines.Select(l => l.ProductId).ToList();
@@ -518,7 +565,7 @@ public sealed class ReceiveInventoryTransfer
                 }
 
                 if (await _inventory
-                        .HasInventoryTransferMovementAsync(orgId, transfer.Id, line.ProductId, StockMovementType.TransferIn, ct)
+                        .HasInventoryTransferMovementAsync(orgId, transfer.Id, line.ProductId, StockMovementType.TransferIn, line.SourceLotId, ct)
                         .ConfigureAwait(false))
                 {
                     continue;
@@ -555,6 +602,38 @@ public sealed class ReceiveInventoryTransfer
                     actorId,
                     utcNow,
                     sellingMode: product.SellingMode);
+                DateOnly? expiry = line.ExpirationDate;
+                var lotNumber = line.LotNumber;
+                if (line.SourceLotId is not null && expiry is null)
+                {
+                    var sourceLot = await _lotRepository
+                        .GetByIdAsync(orgId, line.SourceLotId, ct)
+                        .ConfigureAwait(false);
+                    expiry = sourceLot?.ExpirationDate;
+                    lotNumber ??= sourceLot?.LotNumber;
+                }
+
+                if (expiry is DateOnly lotExpiry)
+                {
+                    var destLot = await _lots
+                        .ReceiveAsync(
+                            orgId,
+                            line.ProductId,
+                            lotExpiry,
+                            line.ReceivedQty,
+                            actorId,
+                            utcNow,
+                            StockMovementType.TransferIn,
+                            StockMovementSourceType.InventoryTransfer,
+                            transfer.DestinationBranchId,
+                            lotNumber,
+                            transfer.Id.Value,
+                            movement.Id.Value,
+                            ct)
+                        .ConfigureAwait(false);
+                    movement = movement.WithLot(destLot.Id);
+                }
+
                 account.ApplyMovementEffect(movement.QuantityEffect);
                 account.Touch(utcNow);
                 var destBalance = InventoryTransferStock.EnsureBalance(
@@ -614,6 +693,7 @@ public sealed class CancelInventoryTransfer
     private readonly IInventoryRepository _inventory;
     private readonly IInventoryBranchBalanceRepository _balances;
     private readonly ICatalogProductRepository _products;
+    private readonly InventoryLotStockService _lots;
     private readonly IOrganizationBranchDirectory _branches;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
@@ -623,6 +703,7 @@ public sealed class CancelInventoryTransfer
         IInventoryRepository inventory,
         IInventoryBranchBalanceRepository balances,
         ICatalogProductRepository products,
+        InventoryLotStockService lots,
         IOrganizationBranchDirectory branches,
         IPosUnitOfWork unitOfWork,
         IClock clock)
@@ -631,6 +712,7 @@ public sealed class CancelInventoryTransfer
         _inventory = inventory;
         _balances = balances;
         _products = products;
+        _lots = lots;
         _branches = branches;
         _unitOfWork = unitOfWork;
         _clock = clock;
@@ -697,7 +779,7 @@ public sealed class CancelInventoryTransfer
                 foreach (var line in transfer.Lines)
                 {
                     if (await _inventory
-                            .HasInventoryTransferMovementAsync(orgId, transfer.Id, line.ProductId, StockMovementType.TransferCancelRestore, ct)
+                            .HasInventoryTransferMovementAsync(orgId, transfer.Id, line.ProductId, StockMovementType.TransferCancelRestore, line.SourceLotId, ct)
                             .ConfigureAwait(false))
                     {
                         continue;
@@ -736,6 +818,17 @@ public sealed class CancelInventoryTransfer
                     await _inventory.AddMovementAsync(movement, ct).ConfigureAwait(false);
                     await _balances.UpsertAsync(sourceBalance, ct).ConfigureAwait(false);
                 }
+
+                await _lots
+                    .RestoreSourceAsync(
+                        orgId,
+                        transfer.Id.Value,
+                        StockMovementType.TransferOut,
+                        StockMovementType.TransferCancelRestore,
+                        actorId,
+                        utcNow,
+                        ct)
+                    .ConfigureAwait(false);
             }
 
             await _transfers.UpdateAsync(transfer, ct).ConfigureAwait(false);
@@ -805,6 +898,7 @@ internal static class InventoryTransferLineFactory
 {
     public static async Task<ApplicationResult<IReadOnlyList<InventoryTransferLineDraft>>> CreateDraftsAsync(
         ICatalogProductRepository products,
+        IInventoryLotRepository lots,
         PosOrganizationId organizationId,
         IReadOnlyList<InventoryTransferLineRequest>? lines,
         CancellationToken cancellationToken)
@@ -837,12 +931,42 @@ internal static class InventoryTransferLineFactory
                     $"Product '{product.Name}' is not active.");
             }
 
+            InventoryLotId? sourceLotId = null;
+            string? lotNumber = null;
+            DateOnly? expirationDate = null;
+            if (product.TracksExpiration)
+            {
+                if (line.SourceLotId is null)
+                {
+                    return ApplicationResult<IReadOnlyList<InventoryTransferLineDraft>>.Failure(
+                        DomainErrorCodes.InventoryLotMismatch,
+                        $"A source lot is required to transfer '{product.Name}'.");
+                }
+
+                var lot = await lots
+                    .GetByIdAsync(organizationId, InventoryLotId.From(line.SourceLotId.Value), cancellationToken)
+                    .ConfigureAwait(false);
+                if (lot is null || lot.ProductId != product.Id)
+                {
+                    return ApplicationResult<IReadOnlyList<InventoryTransferLineDraft>>.Failure(
+                        DomainErrorCodes.InventoryLotMismatch,
+                        $"Lot does not belong to '{product.Name}'.");
+                }
+
+                sourceLotId = lot.Id;
+                lotNumber = lot.LotNumber;
+                expirationDate = lot.ExpirationDate;
+            }
+
             drafts.Add(new InventoryTransferLineDraft(
                 product.Id,
                 line.Quantity,
                 product.Name,
                 product.UnitOfMeasure,
-                product.SellingMode));
+                product.SellingMode,
+                sourceLotId,
+                lotNumber,
+                expirationDate));
         }
 
         return ApplicationResult<IReadOnlyList<InventoryTransferLineDraft>>.Success(drafts);

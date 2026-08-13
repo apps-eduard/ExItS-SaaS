@@ -280,13 +280,17 @@ internal sealed class InventoryBranchBalanceRepository : IInventoryBranchBalance
 
     public async Task UpsertAsync(InventoryBranchBalance balance, CancellationToken cancellationToken = default)
     {
-        var record = await _db.InventoryBranchBalances
-            .FirstOrDefaultAsync(
-                b => b.OrganizationId == balance.OrganizationId.Value
-                    && b.BranchId == balance.BranchId.Value
-                    && b.ProductId == balance.ProductId.Value,
-                cancellationToken)
-            .ConfigureAwait(false);
+        var record = _db.InventoryBranchBalances.Local.FirstOrDefault(b =>
+                b.OrganizationId == balance.OrganizationId.Value
+                && b.BranchId == balance.BranchId.Value
+                && b.ProductId == balance.ProductId.Value)
+            ?? await _db.InventoryBranchBalances
+                .FirstOrDefaultAsync(
+                    b => b.OrganizationId == balance.OrganizationId.Value
+                        && b.BranchId == balance.BranchId.Value
+                        && b.ProductId == balance.ProductId.Value,
+                    cancellationToken)
+                .ConfigureAwait(false);
         if (record is null)
         {
             _db.InventoryBranchBalances.Add(InventoryTransferEntityMapper.ToRecord(balance));

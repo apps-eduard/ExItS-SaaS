@@ -34,6 +34,7 @@ public sealed class StockMovement
     public DateTimeOffset RecordedAtUtc { get; }
     public Guid RecordedBy { get; }
     public Guid? BranchId { get; }
+    public InventoryLotId? InventoryLotId { get; }
 
     private StockMovement(
         StockMovementId id,
@@ -47,7 +48,8 @@ public sealed class StockMovement
         Guid? sourceId,
         DateTimeOffset recordedAtUtc,
         Guid recordedBy,
-        Guid? branchId = null)
+        Guid? branchId = null,
+        InventoryLotId? inventoryLotId = null)
     {
         Id = id;
         OrganizationId = organizationId;
@@ -61,6 +63,7 @@ public sealed class StockMovement
         RecordedAtUtc = recordedAtUtc;
         RecordedBy = recordedBy;
         BranchId = branchId;
+        InventoryLotId = inventoryLotId;
     }
 
     public static StockMovement OpeningStock(
@@ -469,6 +472,22 @@ public sealed class StockMovement
             branchId.Value);
     }
 
+    public StockMovement WithLot(InventoryLotId lotId) =>
+        new(
+            Id,
+            OrganizationId,
+            ProductId,
+            InventoryAccountId,
+            MovementType,
+            QuantityEffect,
+            Reason,
+            SourceType,
+            SourceId,
+            RecordedAtUtc,
+            RecordedBy,
+            BranchId,
+            lotId);
+
     public static StockMovement Rehydrate(
         StockMovementId id,
         PosOrganizationId organizationId,
@@ -481,7 +500,8 @@ public sealed class StockMovement
         Guid? sourceId,
         DateTimeOffset recordedAtUtc,
         Guid recordedBy,
-        Guid? branchId = null) =>
+        Guid? branchId = null,
+        InventoryLotId? inventoryLotId = null) =>
         new(
             id,
             organizationId,
@@ -494,7 +514,8 @@ public sealed class StockMovement
             sourceId,
             recordedAtUtc,
             recordedBy,
-            branchId);
+            branchId,
+            inventoryLotId);
 
     private static string NormalizeAdjustmentReason(string reason)
     {

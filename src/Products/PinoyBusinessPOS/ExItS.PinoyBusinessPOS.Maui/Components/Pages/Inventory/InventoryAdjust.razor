@@ -48,6 +48,25 @@ else
                        Value="@_reason"
                        ValueChanged="v => _reason = v"
                        Disabled="@(_isOffline || _busy)" />
+            @if (_account?.TracksExpiration == true)
+            {
+                <DateInput Label="@L["Inventory_ExpirationDate"]"
+                           Value="@_expirationDate"
+                           ValueChanged="v => _expirationDate = v"
+                           Disabled="@(_isOffline || _busy)" />
+                <TextInput Label="@L["Inventory_LotNumber"]"
+                           Value="@_lotNumber"
+                           ValueChanged="v => _lotNumber = v"
+                           Disabled="@(_isOffline || _busy)" />
+                @if (_lots.Count > 0 && _direction == "Out")
+                {
+                    <Select Label="@L["Inventory_Lots"]"
+                            Value="@_selectedLotId"
+                            ValueChanged="v => _selectedLotId = v"
+                            Options="@LotOptions"
+                            Disabled="@(_isOffline || _busy)" />
+                }
+            }
         </div>
     </section>
 
@@ -74,8 +93,18 @@ else
     private string _direction = "In";
     private string _quantityText = "1";
     private string _reason = string.Empty;
+    private DateOnly? _expirationDate;
+    private string? _lotNumber;
+    private string? _selectedLotId;
+    private List<PosInventoryLotDto> _lots = [];
     private string? _errorTitle;
     private string? _errorMessage;
+
+    private IReadOnlyList<SelectOption> LotOptions =>
+        _lots.Select(l => new SelectOption(
+            l.LotId.ToString("D"),
+            $"{l.ExpirationDate:yyyy-MM-dd} · {l.QuantityOnHand.ToString("0.###")}{(string.IsNullOrEmpty(l.LotNumber) ? "" : " · " + l.LotNumber)}"))
+            .ToList();
 
     private IReadOnlyList<SelectOption> DirectionOptions =>
     [
@@ -103,6 +132,13 @@ else
         if (result.Status != ApiCallStatus.Success || _account is null || !_account.IsTracked)
         {
             Nav.NavigateTo($"/inventory/{ProductId:D}", replace: true);
+            return;
+        }
+
+        if (_account.TracksExpiration)
+        {
+            var lots = await Inventory.ListLotsAsync(ProductId, includeDepleted: false, pageSize: 50);
+            _lots = lots.Data?.Items.ToList() ?? [];
         }
     }
 
@@ -137,9 +173,16 @@ else
             return;
         }
 
+        Guid? lotId = Guid.TryParse(_selectedLotId, out var parsedLot) ? parsedLot : null;
         var result = await Inventory.AdjustAsync(
             ProductId,
-            new AdjustInventoryRequest(_direction, qty, _reason.Trim()));
+            new AdjustInventoryRequest(
+                _direction,
+                qty,
+                _reason.Trim(),
+                ExpirationDate: _expirationDate,
+                LotNumber: string.IsNullOrWhiteSpace(_lotNumber) ? null : _lotNumber.Trim(),
+                LotId: lotId));
         _busy = false;
 
         if (result.Status == ApiCallStatus.Success)

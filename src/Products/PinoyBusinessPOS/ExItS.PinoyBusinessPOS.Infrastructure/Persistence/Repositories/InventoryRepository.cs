@@ -407,14 +407,20 @@ internal sealed class InventoryRepository : IInventoryRepository
         InventoryTransferId transferId,
         CatalogProductId productId,
         StockMovementType movementType,
-        CancellationToken cancellationToken = default) =>
-        _db.StockMovements.AsNoTracking().AnyAsync(
+        InventoryLotId? lotId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var type = StockMovementTypes.ToCode(movementType);
+        var lot = lotId?.Value;
+        return _db.StockMovements.AsNoTracking().AnyAsync(
             m => m.OrganizationId == organizationId.Value
                 && m.ProductId == productId.Value
                 && m.SourceType == nameof(StockMovementSourceType.InventoryTransfer)
                 && m.SourceId == transferId.Value
-                && m.MovementType == StockMovementTypes.ToCode(movementType),
+                && m.MovementType == type
+                && m.InventoryLotId == lot,
             cancellationToken);
+    }
 
     public async Task<(DateTimeOffset? LatestAt, int Count)> GetMovementSummaryAsync(
         PosOrganizationId organizationId,

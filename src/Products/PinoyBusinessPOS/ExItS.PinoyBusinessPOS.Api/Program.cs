@@ -167,6 +167,7 @@ builder.Services.AddScoped<VoidSale>();
 builder.Services.AddScoped<SaleReturnQueryService>();
 builder.Services.AddScoped<ProcessSaleReturn>();
 builder.Services.AddScoped<InventoryQueryService>();
+builder.Services.AddScoped<InventoryLotQueryService>();
 builder.Services.AddScoped<EnableInventoryTracking>();
 builder.Services.AddScoped<DisableInventoryTracking>();
 builder.Services.AddScoped<AdjustInventoryStock>();

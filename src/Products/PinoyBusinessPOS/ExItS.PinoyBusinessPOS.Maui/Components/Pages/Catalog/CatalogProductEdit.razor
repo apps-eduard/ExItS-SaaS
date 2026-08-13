@@ -76,6 +76,10 @@ else
                                 SellingPriceError="@_priceError"
                                 IsSaving="@_saving"
                                 Disabled="@(!canManage || _isOffline)"
+                                TracksExpiration="@_tracksExpiration"
+                                TracksExpirationChanged="v => _tracksExpiration = v"
+                                ExpirationWarningDaysText="@_warningDaysText"
+                                ExpirationWarningDaysTextChanged="v => _warningDaysText = v"
                                 SaveLabel="@L["Catalog_Save"]"
                                 OnSave="SaveAsync"
                                 OnCancel="GoDetail" />
@@ -101,6 +105,8 @@ else
     private string? _unitOfMeasure;
     private string? _sellingMode = PosCatalogOptions.DefaultSellingModeCode;
     private decimal? _sellingPrice;
+    private bool _tracksExpiration;
+    private string? _warningDaysText = "7";
     private IReadOnlyList<PosProductCategoryDto> _categories = Array.Empty<PosProductCategoryDto>();
     private string? _nameError;
     private string? _skuError;
@@ -155,6 +161,8 @@ else
                 ? PosCatalogOptions.DefaultSellingModeCode
                 : _product.SellingMode;
             _sellingPrice = _product.SellingPrice;
+            _tracksExpiration = _product.TracksExpiration;
+            _warningDaysText = (_product.ExpirationWarningDays ?? 7).ToString();
 
             var categories = await Catalog.ListCategoriesAsync(
                 status: PosCatalogOptions.ActiveStatus,
@@ -221,7 +229,9 @@ else
             string.IsNullOrWhiteSpace(_barcode) ? null : _barcode,
             Guid.TryParse(_categoryId, out var categoryId) ? categoryId : null,
             _product.UpdatedAtUtc,
-            SellingMode: _sellingMode ?? PosCatalogOptions.DefaultSellingModeCode));
+            SellingMode: _sellingMode ?? PosCatalogOptions.DefaultSellingModeCode,
+            TracksExpiration: _tracksExpiration,
+            ExpirationWarningDays: _tracksExpiration && int.TryParse(_warningDaysText, out var days) ? days : null));
         _saving = false;
 
         if (result.IsSuccess && result.Data is not null)

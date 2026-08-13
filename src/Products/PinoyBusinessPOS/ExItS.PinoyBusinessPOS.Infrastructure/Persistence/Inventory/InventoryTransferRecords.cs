@@ -34,6 +34,9 @@ internal sealed class InventoryTransferLineRecord
     public decimal ReceivedQty { get; set; }
     public string? DiscrepancyReason { get; set; }
     public string? DiscrepancyNote { get; set; }
+    public Guid? SourceLotId { get; set; }
+    public string? LotNumber { get; set; }
+    public DateOnly? ExpirationDate { get; set; }
 }
 
 internal sealed class InventoryTransferNumberSequenceRecord

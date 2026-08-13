@@ -64,6 +64,8 @@ public sealed class PosDbContext : DbContext
     internal DbSet<InventoryTransferLineRecord> InventoryTransferLines => Set<InventoryTransferLineRecord>();
     internal DbSet<InventoryTransferNumberSequenceRecord> InventoryTransferNumberSequences => Set<InventoryTransferNumberSequenceRecord>();
     internal DbSet<InventoryBranchBalanceRecord> InventoryBranchBalances => Set<InventoryBranchBalanceRecord>();
+    internal DbSet<InventoryLotRecord> InventoryLots => Set<InventoryLotRecord>();
+    internal DbSet<InventoryLotMovementRecord> InventoryLotMovements => Set<InventoryLotMovementRecord>();
     internal DbSet<ExpenseCategoryRecord> ExpenseCategories => Set<ExpenseCategoryRecord>();
     internal DbSet<ExpenseRecord> Expenses => Set<ExpenseRecord>();
     internal DbSet<ExpenseNumberSequenceRecord> ExpenseNumberSequences => Set<ExpenseNumberSequenceRecord>();
@@ -483,6 +485,12 @@ public sealed class PosDbContext : DbContext
                 tb.HasCheckConstraint(
                     "ck_products_catalog_source",
                     "catalog_source IN ('Manual', 'Template', 'GlobalSearch', 'BulkImport')");
+                tb.HasCheckConstraint(
+                    "ck_products_expiration_warning_days",
+                    "expiration_warning_days IS NULL OR (expiration_warning_days >= 1 AND expiration_warning_days <= 365)");
+                tb.HasCheckConstraint(
+                    "ck_products_expiration_warning_requires_tracking",
+                    "tracks_expiration OR expiration_warning_days IS NULL");
             });
 
             entity.HasKey(e => e.Id);
@@ -526,6 +534,11 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.CatalogImportedAt).HasColumnName("catalog_imported_at");
             entity.Property(e => e.CatalogSnapshotVersion).HasColumnName("catalog_snapshot_version");
             entity.Property(e => e.SourceGlobalCategoryId).HasColumnName("source_global_category_id");
+            entity.Property(e => e.TracksExpiration)
+                .HasColumnName("tracks_expiration")
+                .IsRequired()
+                .HasDefaultValue(false);
+            entity.Property(e => e.ExpirationWarningDays).HasColumnName("expiration_warning_days");
             entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
             entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
             entity.Property(e => e.Xmin)
@@ -1084,6 +1097,108 @@ public sealed class PosDbContext : DbContext
                 .HasConstraintName("fk_inventory_accounts_products");
         });
 
+        modelBuilder.Entity<InventoryLotRecord>(entity =>
+        {
+            entity.ToTable("inventory_lots", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_inventory_lots_on_hand_non_negative",
+                    "quantity_on_hand >= 0");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.ProductId).HasColumnName("product_id").IsRequired();
+            entity.Property(e => e.BranchId).HasColumnName("branch_id");
+            entity.Property(e => e.LotNumber)
+                .HasColumnName("lot_number")
+                .HasMaxLength(InventoryLot.LotNumberMaxLength);
+            entity.Property(e => e.NormalizedLotNumber)
+                .HasColumnName("normalized_lot_number")
+                .HasMaxLength(InventoryLot.LotNumberMaxLength)
+                .IsRequired()
+                .HasDefaultValue(string.Empty);
+            entity.Property(e => e.ExpirationDate).HasColumnName("expiration_date").IsRequired();
+            entity.Property(e => e.QuantityOnHand)
+                .HasColumnName("quantity_on_hand")
+                .HasPrecision(18, 3)
+                .IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+
+            entity.HasIndex(e => new { e.OrganizationId, e.ProductId, e.ExpirationDate, e.NormalizedLotNumber })
+                .IsUnique()
+                .HasDatabaseName("ux_inventory_lots_identity_org")
+                .HasFilter("branch_id IS NULL");
+            entity.HasIndex(e => new { e.OrganizationId, e.ProductId, e.BranchId, e.ExpirationDate, e.NormalizedLotNumber })
+                .IsUnique()
+                .HasDatabaseName("ux_inventory_lots_identity_branch")
+                .HasFilter("branch_id IS NOT NULL");
+            entity.HasIndex(e => new { e.OrganizationId, e.ProductId, e.ExpirationDate })
+                .HasDatabaseName("ix_inventory_lots_org_product_expiry")
+                .HasFilter("quantity_on_hand > 0");
+            entity.HasIndex(e => new { e.OrganizationId, e.ProductId, e.BranchId, e.ExpirationDate })
+                .HasDatabaseName("ix_inventory_lots_org_product_branch_expiry")
+                .HasFilter("quantity_on_hand > 0");
+
+            entity.HasOne<CatalogProductRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.ProductId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_inventory_lots_products");
+        });
+
+        modelBuilder.Entity<InventoryLotMovementRecord>(entity =>
+        {
+            entity.ToTable("inventory_lot_movements", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_inventory_lot_movements_quantity_effect_nonzero",
+                    "quantity_effect <> 0");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.LotId).HasColumnName("lot_id").IsRequired();
+            entity.Property(e => e.ProductId).HasColumnName("product_id").IsRequired();
+            entity.Property(e => e.MovementType)
+                .HasColumnName("movement_type")
+                .HasMaxLength(StockMovementTypes.CodeMaxLength)
+                .IsRequired();
+            entity.Property(e => e.QuantityEffect)
+                .HasColumnName("quantity_effect")
+                .HasPrecision(18, 3)
+                .IsRequired();
+            entity.Property(e => e.SourceType)
+                .HasColumnName("source_type")
+                .HasMaxLength(StockMovementSourceTypes.CodeMaxLength)
+                .IsRequired();
+            entity.Property(e => e.SourceId).HasColumnName("source_id");
+            entity.Property(e => e.StockMovementId).HasColumnName("stock_movement_id");
+            entity.Property(e => e.RecordedAtUtc).HasColumnName("recorded_at_utc");
+            entity.Property(e => e.RecordedBy).HasColumnName("recorded_by").IsRequired();
+
+            entity.HasIndex(e => new { e.OrganizationId, e.SourceId, e.LotId, e.MovementType })
+                .IsUnique()
+                .HasDatabaseName("ux_inventory_lot_movements_source_lot")
+                .HasFilter("source_id IS NOT NULL");
+            entity.HasIndex(e => new { e.OrganizationId, e.LotId, e.RecordedAtUtc })
+                .HasDatabaseName("ix_inventory_lot_movements_lot_recorded");
+
+            entity.HasOne<InventoryLotRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.LotId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_inventory_lot_movements_lots");
+        });
+
         modelBuilder.Entity<StockMovementRecord>(entity =>
         {
             entity.ToTable("stock_movements", tb =>
@@ -1124,6 +1239,7 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.RecordedAtUtc).HasColumnName("recorded_at_utc");
             entity.Property(e => e.RecordedBy).HasColumnName("recorded_by").IsRequired();
             entity.Property(e => e.BranchId).HasColumnName("branch_id");
+            entity.Property(e => e.InventoryLotId).HasColumnName("inventory_lot_id");
 
             entity.HasIndex(e => new { e.OrganizationId, e.ProductId, e.RecordedAtUtc })
                 .HasDatabaseName("ix_stock_movements_org_product_recorded");
@@ -1162,7 +1278,13 @@ public sealed class PosDbContext : DbContext
                 .IsUnique()
                 .HasDatabaseName("ux_stock_movements_inventory_transfer_source")
                 .HasFilter(
-                    $"source_type = '{nameof(StockMovementSourceType.InventoryTransfer)}' AND source_id IS NOT NULL");
+                    $"source_type = '{nameof(StockMovementSourceType.InventoryTransfer)}' AND source_id IS NOT NULL AND inventory_lot_id IS NULL");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.SourceId, e.InventoryLotId, e.MovementType })
+                .IsUnique()
+                .HasDatabaseName("ux_stock_movements_inventory_transfer_lot")
+                .HasFilter(
+                    $"source_type = '{nameof(StockMovementSourceType.InventoryTransfer)}' AND source_id IS NOT NULL AND inventory_lot_id IS NOT NULL");
 
             entity.HasIndex(e => new { e.OrganizationId, e.ProductId, e.MovementType })
                 .IsUnique()
@@ -1180,6 +1302,12 @@ public sealed class PosDbContext : DbContext
                 .HasForeignKey(e => e.ProductId)
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("fk_stock_movements_products");
+
+            entity.HasOne<InventoryLotRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.InventoryLotId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_stock_movements_inventory_lots");
         });
 
         modelBuilder.Entity<InventoryReorderChangeRecord>(entity =>
@@ -1385,12 +1513,22 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.DiscrepancyNote)
                 .HasColumnName("discrepancy_note")
                 .HasMaxLength(InventoryTransferLine.DiscrepancyNoteMaxLength);
+            entity.Property(e => e.SourceLotId).HasColumnName("source_lot_id");
+            entity.Property(e => e.LotNumber)
+                .HasColumnName("lot_number")
+                .HasMaxLength(InventoryLot.LotNumberMaxLength);
+            entity.Property(e => e.ExpirationDate).HasColumnName("expiration_date");
 
-            entity.HasIndex(e => new { e.TransferId, e.ProductId })
+            entity.HasIndex(e => new { e.TransferId, e.LineNumber })
                 .IsUnique()
-                .HasDatabaseName("ux_inventory_transfer_lines_transfer_product");
+                .HasDatabaseName("ux_inventory_transfer_lines_transfer_line_number");
             entity.HasIndex(e => e.ProductId)
                 .HasDatabaseName("ix_inventory_transfer_lines_product");
+            entity.HasOne<InventoryLotRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.SourceLotId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_inventory_transfer_lines_source_lots");
 
             entity.HasOne<InventoryTransferRecord>()
                 .WithMany()

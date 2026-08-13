@@ -14,11 +14,19 @@ public sealed class InventoryQueryService
 {
     private readonly IInventoryRepository _inventory;
     private readonly ICatalogProductRepository _products;
+    private readonly IInventoryLotRepository _lots;
+    private readonly IClock _clock;
 
-    public InventoryQueryService(IInventoryRepository inventory, ICatalogProductRepository products)
+    public InventoryQueryService(
+        IInventoryRepository inventory,
+        ICatalogProductRepository products,
+        IInventoryLotRepository lots,
+        IClock clock)
     {
         _inventory = inventory;
         _products = products;
+        _lots = lots;
+        _clock = clock;
     }
 
     public async Task<PosInventoryAccountDto?> GetByProductIdAsync(
@@ -40,7 +48,23 @@ public sealed class InventoryQueryService
         var summary = await _inventory
             .GetMovementSummaryAsync(orgId, catalogProductId, cancellationToken)
             .ConfigureAwait(false);
-        return Map(product, account, summary.LatestAt, summary.Count);
+
+        decimal? sellable = null;
+        decimal? expired = null;
+        decimal? near = null;
+        if (product.TracksExpiration)
+        {
+            var today = InventoryLot.BusinessDateOf(_clock.UtcNow);
+            var lots = await _lots
+                .ListOnHandAsync(orgId, catalogProductId, branchId: null, includeDepleted: false, cancellationToken)
+                .ConfigureAwait(false);
+            var warning = product.EffectiveExpirationWarningDays;
+            sellable = InventoryLotFefo.SellableQuantity(lots, today);
+            expired = InventoryLotFefo.ExpiredQuantity(lots, today);
+            near = InventoryLotFefo.NearExpiryQuantity(lots, today, warning);
+        }
+
+        return Map(product, account, summary.LatestAt, summary.Count, sellable, expired, near);
     }
 
     public async Task<PagedResult<PosInventoryAccountDto>> ListAsync(
@@ -159,7 +183,10 @@ public sealed class InventoryQueryService
         CatalogProduct product,
         InventoryAccount? account,
         DateTimeOffset? latestMovementAtUtc,
-        int movementCount)
+        int movementCount,
+        decimal? sellableQuantity = null,
+        decimal? expiredQuantity = null,
+        decimal? nearExpiryQuantity = null)
     {
         var isTracked = account?.IsTracked ?? false;
         var onHand = account?.OnHandQuantity ?? 0m;
@@ -189,7 +216,12 @@ public sealed class InventoryQueryService
             latestMovementAtUtc,
             movementCount,
             account?.CreatedAtUtc ?? product.CreatedAtUtc,
-            account?.UpdatedAtUtc ?? product.UpdatedAtUtc);
+            account?.UpdatedAtUtc ?? product.UpdatedAtUtc,
+            product.TracksExpiration,
+            product.ExpirationWarningDays,
+            sellableQuantity,
+            expiredQuantity,
+            nearExpiryQuantity);
     }
 
     public static PosStockMovementDto MapMovement(StockMovement movement) =>
@@ -210,17 +242,20 @@ public sealed class EnableInventoryTracking
 {
     private readonly IInventoryRepository _inventory;
     private readonly ICatalogProductRepository _products;
+    private readonly InventoryLotStockService _lots;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
     public EnableInventoryTracking(
         IInventoryRepository inventory,
         ICatalogProductRepository products,
+        InventoryLotStockService lots,
         IPosUnitOfWork unitOfWork,
         IClock clock)
     {
         _inventory = inventory;
         _products = products;
+        _lots = lots;
         _unitOfWork = unitOfWork;
         _clock = clock;
     }
@@ -231,6 +266,8 @@ public sealed class EnableInventoryTracking
         Guid actorId,
         decimal? openingQuantity = null,
         decimal? reorderLevel = null,
+        DateOnly? expirationDate = null,
+        string? lotNumber = null,
         CancellationToken cancellationToken = default)
     {
         if (actorId == Guid.Empty)
@@ -290,6 +327,32 @@ public sealed class EnableInventoryTracking
 
             if (opening is not null)
             {
+                if (product.TracksExpiration)
+                {
+                    if (expirationDate is null)
+                    {
+                        return ApplicationResult<InventoryAccount>.Failure(
+                            DomainErrorCodes.InventoryExpirationRequired,
+                            "Expiration date is required for opening stock on expiration-tracked products.");
+                    }
+
+                    var lot = await _lots
+                        .ReceiveAsync(
+                            orgId,
+                            catalogProductId,
+                            expirationDate.Value,
+                            opening.QuantityEffect,
+                            actorId,
+                            utcNow,
+                            StockMovementType.OpeningStock,
+                            StockMovementSourceType.Opening,
+                            lotNumber: lotNumber,
+                            stockMovementId: opening.Id.Value,
+                            cancellationToken: cancellationToken)
+                        .ConfigureAwait(false);
+                    opening = opening.WithLot(lot.Id);
+                }
+
                 await _inventory.AddMovementAsync(opening, cancellationToken).ConfigureAwait(false);
             }
 
@@ -374,6 +437,8 @@ public sealed class AdjustInventoryStock
     private readonly IInventoryRepository _inventory;
     private readonly ICatalogProductRepository _products;
     private readonly IInventoryBranchBalanceRepository _branchBalances;
+    private readonly IInventoryLotRepository _lotRepository;
+    private readonly InventoryLotStockService _lots;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
@@ -381,12 +446,16 @@ public sealed class AdjustInventoryStock
         IInventoryRepository inventory,
         ICatalogProductRepository products,
         IInventoryBranchBalanceRepository branchBalances,
+        IInventoryLotRepository lotRepository,
+        InventoryLotStockService lots,
         IPosUnitOfWork unitOfWork,
         IClock clock)
     {
         _inventory = inventory;
         _products = products;
         _branchBalances = branchBalances;
+        _lotRepository = lotRepository;
+        _lots = lots;
         _unitOfWork = unitOfWork;
         _clock = clock;
     }
@@ -400,6 +469,9 @@ public sealed class AdjustInventoryStock
         Guid actorId,
         decimal? reorderLevel = null,
         Guid? branchId = null,
+        DateOnly? expirationDate = null,
+        string? lotNumber = null,
+        Guid? lotId = null,
         CancellationToken cancellationToken = default)
     {
         if (actorId == Guid.Empty)
@@ -475,15 +547,100 @@ public sealed class AdjustInventoryStock
                 account.SetReorderLevel(reorderLevel, product.UnitOfMeasure, utcNow);
             }
 
-            if (branchId is Guid locationId && locationId != Guid.Empty)
+            PosBranchId? branch = branchId is Guid locationId && locationId != Guid.Empty
+                ? PosBranchId.From(locationId)
+                : null;
+            if (branch is not null)
             {
-                var branch = PosBranchId.From(locationId);
                 var balance = await _branchBalances
                     .GetAsync(orgId, branch, catalogProductId, cancellationToken)
                     .ConfigureAwait(false)
                     ?? InventoryBranchBalance.Create(orgId, branch, catalogProductId, 0m, utcNow);
                 balance.Apply(movement.QuantityEffect, utcNow);
                 await _branchBalances.UpsertAsync(balance, cancellationToken).ConfigureAwait(false);
+            }
+
+            if (product.TracksExpiration)
+            {
+                if (string.Equals(normalizedDirection, "In", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (expirationDate is null)
+                    {
+                        return ApplicationResult<InventoryAccount>.Failure(
+                            DomainErrorCodes.InventoryExpirationRequired,
+                            "Expiration date is required when receiving expiration-tracked stock.");
+                    }
+
+                    var received = await _lots
+                        .ReceiveAsync(
+                            orgId,
+                            catalogProductId,
+                            expirationDate.Value,
+                            quantity,
+                            actorId,
+                            utcNow,
+                            movement.MovementType,
+                            StockMovementSourceType.Manual,
+                            branch,
+                            lotNumber,
+                            stockMovementId: movement.Id.Value,
+                            cancellationToken: cancellationToken)
+                        .ConfigureAwait(false);
+                    movement = movement.WithLot(received.Id);
+                }
+                else
+                {
+                    InventoryLot target;
+                    if (lotId is Guid specifiedLot)
+                    {
+                        var found = await _lotRepository
+                            .GetByIdAsync(orgId, InventoryLotId.From(specifiedLot), cancellationToken)
+                            .ConfigureAwait(false);
+                        if (found is null || found.ProductId != catalogProductId)
+                        {
+                            return ApplicationResult<InventoryAccount>.Failure(
+                                DomainErrorCodes.InventoryLotMismatch,
+                                "Lot does not belong to this product.");
+                        }
+
+                        target = found;
+                    }
+                    else if (expirationDate is DateOnly expiry)
+                    {
+                        var (_, normalizedLot) = InventoryLot.NormalizeLotNumber(lotNumber);
+                        var found = await _lotRepository
+                            .FindAsync(orgId, catalogProductId, expiry, normalizedLot, branch, cancellationToken)
+                            .ConfigureAwait(false);
+                        if (found is null)
+                        {
+                            return ApplicationResult<InventoryAccount>.Failure(
+                                DomainErrorCodes.InventoryLotMismatch,
+                                "Lot was not found for this product.");
+                        }
+
+                        target = found;
+                    }
+                    else
+                    {
+                        return ApplicationResult<InventoryAccount>.Failure(
+                            DomainErrorCodes.InventoryLotMismatch,
+                            "A lot is required when decreasing expiration-tracked stock.");
+                    }
+
+                    await _lots
+                        .ConsumeSpecificAsync(
+                            orgId,
+                            target,
+                            quantity,
+                            actorId,
+                            utcNow,
+                            movement.MovementType,
+                            StockMovementSourceType.Manual,
+                            stockMovementId: movement.Id.Value,
+                            cancellationToken: cancellationToken)
+                        .ConfigureAwait(false);
+                    movement = movement.WithLot(target.Id);
+                }
             }
 
             await _inventory.UpdateAccountAsync(account, cancellationToken).ConfigureAwait(false);
@@ -531,8 +688,13 @@ public interface ISaleStockService
 public sealed class SaleStockService : ISaleStockService
 {
     private readonly IInventoryRepository _inventory;
+    private readonly InventoryLotStockService _lots;
 
-    public SaleStockService(IInventoryRepository inventory) => _inventory = inventory;
+    public SaleStockService(IInventoryRepository inventory, InventoryLotStockService lots)
+    {
+        _inventory = inventory;
+        _lots = lots;
+    }
 
     public async Task DeductForSaleAsync(
         PosOrganizationId organizationId,
@@ -569,7 +731,33 @@ public sealed class SaleStockService : ISaleStockService
                     "One or more products in the cart were not found in this organization.");
             }
 
-            if (account.OnHandQuantity < line.Quantity)
+            if (product.TracksExpiration)
+            {
+                var today = InventoryLot.BusinessDateOf(utcNow);
+                try
+                {
+                    await _lots
+                        .ConsumeFefoAsync(
+                            organizationId,
+                            line.ProductId,
+                            line.Quantity,
+                            today,
+                            actorId,
+                            utcNow,
+                            StockMovementType.SaleDeduction,
+                            StockMovementSourceType.Sale,
+                            sourceId: sale.Id.Value,
+                            cancellationToken: cancellationToken)
+                        .ConfigureAwait(false);
+                }
+                catch (DomainException)
+                {
+                    throw new DomainException(
+                        ApplicationErrorCodes.InsufficientStock,
+                        $"Insufficient non-expired stock for '{product.Name}'. Required: {line.Quantity}.");
+                }
+            }
+            else if (account.OnHandQuantity < line.Quantity)
             {
                 throw new DomainException(
                     ApplicationErrorCodes.InsufficientStock,
@@ -653,6 +841,16 @@ public sealed class SaleStockService : ISaleStockService
                 sellingMode: sellingMode);
             account.ApplyMovementEffect(restoration.QuantityEffect);
             account.Touch(utcNow);
+            await _lots
+                .RestoreSourceAsync(
+                    organizationId,
+                    sale.Id.Value,
+                    StockMovementType.SaleDeduction,
+                    StockMovementType.SaleVoidRestoration,
+                    actorId,
+                    utcNow,
+                    cancellationToken)
+                .ConfigureAwait(false);
             await _inventory.UpdateAccountAsync(account, cancellationToken).ConfigureAwait(false);
             await _inventory.AddMovementAsync(restoration, cancellationToken).ConfigureAwait(false);
         }

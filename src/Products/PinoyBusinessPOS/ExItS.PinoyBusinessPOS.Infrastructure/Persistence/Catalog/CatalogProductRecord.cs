@@ -20,6 +20,8 @@ internal sealed class CatalogProductRecord
     public DateTimeOffset? CatalogImportedAt { get; set; }
     public int? CatalogSnapshotVersion { get; set; }
     public Guid? SourceGlobalCategoryId { get; set; }
+    public bool TracksExpiration { get; set; }
+    public int? ExpirationWarningDays { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset UpdatedAtUtc { get; set; }
     public uint Xmin { get; set; }

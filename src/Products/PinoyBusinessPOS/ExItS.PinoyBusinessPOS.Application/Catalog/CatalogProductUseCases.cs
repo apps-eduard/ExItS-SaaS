@@ -178,7 +178,9 @@ public sealed class CatalogProductQueryService
             product.SourceGlobalCategoryId,
             isTracked,
             onHand,
-            stockStatus);
+            stockStatus,
+            product.TracksExpiration,
+            product.ExpirationWarningDays);
     }
 }
 
@@ -212,6 +214,8 @@ public sealed class CreateCatalogProduct
         Guid? categoryId = null,
         Guid? clientProductId = null,
         string? sellingMode = null,
+        bool tracksExpiration = false,
+        int? expirationWarningDays = null,
         CancellationToken cancellationToken = default)
     {
         try
@@ -256,7 +260,9 @@ public sealed class CreateCatalogProduct
                 barcode,
                 category,
                 clientProductId is null ? null : CatalogProductId.From(clientProductId.Value),
-                mode);
+                mode,
+                tracksExpiration,
+                expirationWarningDays);
 
             var conflict = await CatalogAssignment
                 .FindIdentifierConflictAsync(
@@ -321,6 +327,8 @@ public sealed class UpdateCatalogProduct
         Guid? categoryId = null,
         DateTimeOffset? expectedUpdatedAtUtc = null,
         string? sellingMode = null,
+        bool? tracksExpiration = null,
+        int? expirationWarningDays = null,
         CancellationToken cancellationToken = default)
     {
         var orgId = PosOrganizationId.From(organizationId);
@@ -404,6 +412,14 @@ public sealed class UpdateCatalogProduct
                 sellingPrice,
                 _clock.UtcNow,
                 mode);
+
+            if (tracksExpiration is not null)
+            {
+                product.SetExpirationTracking(
+                    tracksExpiration.Value,
+                    expirationWarningDays,
+                    _clock.UtcNow);
+            }
 
             await _products.UpdateAsync(product, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);

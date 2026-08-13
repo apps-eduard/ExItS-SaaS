@@ -5,7 +5,8 @@ namespace ExItS.PinoyBusinessPOS.Application.Inventory;
 
 public sealed record InventoryTransferLineRequest(
     Guid ProductId,
-    decimal Quantity);
+    decimal Quantity,
+    Guid? SourceLotId = null);
 
 public sealed record CreateInventoryTransferRequest(
     Guid SourceBranchId,
@@ -17,7 +18,8 @@ public sealed record InventoryTransferReceiveLineRequest(
     Guid ProductId,
     decimal ReceivedQty,
     string? DiscrepancyReason = null,
-    string? DiscrepancyNote = null);
+    string? DiscrepancyNote = null,
+    Guid? LineId = null);
 
 public sealed record ReceiveInventoryTransferRequest(
     IReadOnlyList<InventoryTransferReceiveLineRequest> Lines);
@@ -33,7 +35,10 @@ public sealed record InventoryTransferLineDto(
     decimal DifferenceQty,
     string LineStatus,
     string? DiscrepancyReason,
-    string? DiscrepancyNote);
+    string? DiscrepancyNote,
+    Guid? SourceLotId = null,
+    string? LotNumber = null,
+    DateOnly? ExpirationDate = null);
 
 public sealed record InventoryTransferDto(
     Guid TransferId,

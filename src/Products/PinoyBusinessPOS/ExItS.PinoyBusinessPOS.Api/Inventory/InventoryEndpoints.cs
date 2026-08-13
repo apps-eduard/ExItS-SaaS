@@ -27,6 +27,7 @@ internal static class InventoryEndpoints
         group.MapPost("/{productId:guid}/enable", Enable);
         group.MapPost("/{productId:guid}/disable", Disable);
         group.MapPost("/{productId:guid}/adjustments", Adjust);
+        group.MapGet("/{productId:guid}/lots", ListLots);
         group.MapGet("/{productId:guid}/movements", ListMovements);
 
         return app;
@@ -256,6 +257,27 @@ internal static class InventoryEndpoints
             : Results.Ok(dto);
     }
 
+    private static async Task<IResult> ListLots(
+        HttpRequest request,
+        Guid productId,
+        bool? includeDepleted,
+        int? page,
+        int? pageSize,
+        InventoryLotQueryService queries,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorize(request, access, UtangCapability.ViewInventory, out var organizationId, out var problem))
+        {
+            return problem!;
+        }
+
+        var result = await queries
+            .ListAsync(organizationId, productId, includeDepleted ?? false, page, pageSize, ct)
+            .ConfigureAwait(false);
+        return Results.Ok(result);
+    }
+
     private static async Task<IResult> SetReorder(
         HttpRequest request,
         Guid productId,
@@ -317,7 +339,15 @@ internal static class InventoryEndpoints
 
         body ??= new EnableInventoryTrackingRequest();
         var result = await useCase
-            .ExecuteAsync(organizationId, productId, actorId, body.OpeningQuantity, body.ReorderLevel, ct)
+            .ExecuteAsync(
+                organizationId,
+                productId,
+                actorId,
+                body.OpeningQuantity,
+                body.ReorderLevel,
+                body.ExpirationDate,
+                body.LotNumber,
+                ct)
             .ConfigureAwait(false);
         return await FromAccountResultAsync(organizationId, productId, result, queries, ct).ConfigureAwait(false);
     }
@@ -365,6 +395,9 @@ internal static class InventoryEndpoints
                 actorId,
                 body.ReorderLevel,
                 branchId,
+                body.ExpirationDate,
+                body.LotNumber,
+                body.LotId,
                 ct)
             .ConfigureAwait(false);
         return await FromAccountResultAsync(organizationId, productId, result, queries, ct).ConfigureAwait(false);

@@ -17,7 +17,12 @@ public sealed record PosInventoryAccountDto(
     DateTimeOffset? LatestMovementAtUtc,
     int MovementCount,
     DateTimeOffset CreatedAtUtc,
-    DateTimeOffset UpdatedAtUtc);
+    DateTimeOffset UpdatedAtUtc,
+    bool TracksExpiration = false,
+    int? ExpirationWarningDays = null,
+    decimal? SellableQuantity = null,
+    decimal? ExpiredQuantity = null,
+    decimal? NearExpiryQuantity = null);
 
 public sealed record PosStockMovementDto(
     Guid MovementId,
@@ -33,13 +38,35 @@ public sealed record PosStockMovementDto(
 
 public sealed record EnableInventoryTrackingRequest(
     decimal? OpeningQuantity = null,
-    decimal? ReorderLevel = null);
+    decimal? ReorderLevel = null,
+    DateOnly? ExpirationDate = null,
+    string? LotNumber = null);
 
 public sealed record AdjustInventoryRequest(
     string Direction,
     decimal Quantity,
     string Reason,
-    decimal? ReorderLevel = null);
+    decimal? ReorderLevel = null,
+    DateOnly? ExpirationDate = null,
+    string? LotNumber = null,
+    Guid? LotId = null);
+
+public sealed record PosInventoryLotDto(
+    Guid LotId,
+    Guid ProductId,
+    Guid? BranchId,
+    string? LotNumber,
+    DateOnly ExpirationDate,
+    decimal QuantityOnHand,
+    string ExpiryStatus,
+    DateTimeOffset CreatedAtUtc,
+    DateTimeOffset UpdatedAtUtc);
+
+public sealed record PosInventoryLotPagedResult(
+    List<PosInventoryLotDto> Items,
+    int TotalCount,
+    int Page,
+    int PageSize);
 
 public sealed record SetInventoryReorderRequest(
     decimal? ReorderLevel,

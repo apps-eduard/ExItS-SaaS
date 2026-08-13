@@ -38,7 +38,9 @@ public sealed record PosCatalogProductDto(
     /// Derived tracked stock state code (<c>InStock</c> / <c>LowStock</c> / <c>OutOfStock</c>).
     /// Meaningful only when <see cref="IsTracked"/> is true.
     /// </summary>
-    string StockStatus = "InStock");
+    string StockStatus = "InStock",
+    bool TracksExpiration = false,
+    int? ExpirationWarningDays = null);
 
 public sealed record CreatePosProductCategoryRequest(string Name, Guid? CategoryId = null);
 
@@ -55,7 +57,9 @@ public sealed record CreatePosCatalogProductRequest(
     string? Barcode = null,
     Guid? CategoryId = null,
     Guid? ProductId = null,
-    string? SellingMode = null);
+    string? SellingMode = null,
+    bool TracksExpiration = false,
+    int? ExpirationWarningDays = null);
 
 public sealed record UpdatePosCatalogProductRequest(
     string Name,
@@ -66,7 +70,9 @@ public sealed record UpdatePosCatalogProductRequest(
     string? Barcode = null,
     Guid? CategoryId = null,
     DateTimeOffset? ExpectedUpdatedAtUtc = null,
-    string? SellingMode = null);
+    string? SellingMode = null,
+    bool? TracksExpiration = null,
+    int? ExpirationWarningDays = null);
 
 /// <summary>One row for Today's Prices bulk current-price update (price only).</summary>
 public sealed record UpdatePosCatalogProductPriceItem(
