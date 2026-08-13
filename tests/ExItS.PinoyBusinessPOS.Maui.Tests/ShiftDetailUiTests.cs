@@ -100,7 +100,8 @@ public sealed class ShiftDetailUiTests
         Assert.Contains("Shifts_ConfirmClose", detail, StringComparison.Ordinal);
         Assert.Contains("Shifts_ContinueEditing", detail, StringComparison.Ordinal);
         Assert.Contains("Shifts_CloseConfirmMessage", detail, StringComparison.Ordinal);
-        Assert.Contains("variancePreview = countedPreview - expectedCash", detail, StringComparison.Ordinal);
+        Assert.Contains("countedPreview is null ? (decimal?)null : countedPreview.Value - expectedCash", detail, StringComparison.Ordinal);
+        Assert.Contains("Shifts_SkipClosingCash", detail, StringComparison.Ordinal);
         Assert.Contains("Shifts_VarianceOverage", detail, StringComparison.Ordinal);
         Assert.Contains("Shifts_VarianceShortage", detail, StringComparison.Ordinal);
         Assert.Contains("Shifts_VarianceBalanced", detail, StringComparison.Ordinal);

@@ -19,6 +19,9 @@ public sealed class OperationalSetupUiGuardTests
         Assert.Contains("Setup_FirstRunHint", page, StringComparison.Ordinal);
         Assert.Contains("Setup_StoreSectionHint", page, StringComparison.Ordinal);
         Assert.Contains("Setup_ReceiptSectionHint", page, StringComparison.Ordinal);
+        Assert.Contains("Setup_CashHandlingSection", page, StringComparison.Ordinal);
+        Assert.Contains("Setup_CashCount", page, StringComparison.Ordinal);
+        Assert.Contains("_cashCountMode", page, StringComparison.Ordinal);
         Assert.Contains("pos-setup__footer", page, StringComparison.Ordinal);
         Assert.Contains("SeedDefaultsFromSession", page, StringComparison.Ordinal);
         Assert.Contains("OrganizationDisplayName", page, StringComparison.Ordinal);
@@ -31,6 +34,8 @@ public sealed class OperationalSetupUiGuardTests
         Assert.Contains("name=\"Setup_FirstRunHint\"", fil, StringComparison.Ordinal);
         Assert.Contains("name=\"Setup_StoreSectionHint\"", en, StringComparison.Ordinal);
         Assert.Contains("name=\"Setup_ReceiptSectionHint\"", fil, StringComparison.Ordinal);
+        Assert.Contains("name=\"Setup_CashHandlingSection\"", en, StringComparison.Ordinal);
+        Assert.Contains("name=\"Setup_CashCountHelpOptional\"", fil, StringComparison.Ordinal);
     }
 
     private static string MauiProject()

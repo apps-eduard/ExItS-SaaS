@@ -87,6 +87,9 @@ public sealed class ShiftsPageGuardTests
         Assert.Contains("@page \"/shifts/open\"", open, StringComparison.Ordinal);
         Assert.Contains("StoreHeaderBack Href=\"/shifts\"", open, StringComparison.Ordinal);
         Assert.Contains("ListAvailableForShiftAsync", open, StringComparison.Ordinal);
+        Assert.Contains("IPosOperationalSetupClient", open, StringComparison.Ordinal);
+        Assert.Contains("Shifts_SkipOpeningCash", open, StringComparison.Ordinal);
+        Assert.Contains("showOpeningCash", open, StringComparison.Ordinal);
         Assert.Contains("UtangCapability.ManageShifts", open, StringComparison.Ordinal);
         Assert.Contains("ListAsync", open, StringComparison.Ordinal);
         Assert.Contains("Shifts_NoRegisterTitle", open, StringComparison.Ordinal);
@@ -115,6 +118,10 @@ public sealed class ShiftsPageGuardTests
         Assert.DoesNotContain("RecordedBy.ToString", detail, StringComparison.Ordinal);
         Assert.Contains("_confirmClose", detail, StringComparison.Ordinal);
         Assert.Contains("Shifts_MoreActions", detail, StringComparison.Ordinal);
+        Assert.Contains("Shifts_SkipClosingCash", detail, StringComparison.Ordinal);
+        Assert.Contains("Shifts_CashCountNotPerformed", detail, StringComparison.Ordinal);
+        Assert.Contains("EffectiveCashCountMode", detail, StringComparison.Ordinal);
+        Assert.DoesNotContain("ClosingCashAmount ?? 0m", detail, StringComparison.Ordinal);
         Assert.Contains("ConfirmDialog", detail, StringComparison.Ordinal);
         Assert.Contains("try", detail, StringComparison.Ordinal);
         Assert.Contains("finally", detail, StringComparison.Ordinal);
