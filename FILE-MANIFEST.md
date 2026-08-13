@@ -41,6 +41,7 @@ src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Api/ (`/health` + `/health/
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.ApiClient/ (+ Platform access client; PosCommercialHeaderHandler; PosCustomerClient; PosSaleClient/PosExpenseClient/**PosPurchaseOrderClient** idempotency headers; PosCatalogClient online-only; PosSupplierClient online-only)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.LocalStore/ (Microsoft.Data.Sqlite foundation + generic encrypted offline_operations outbox + BlockedByAccess reclaim + encrypted customer/credit/repayment projections — P7-WP01/P7-WP02/P7-WP03/P7-WP04; no catalog/supplier offline cache; **not** part of server backup sets)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/ (Android-first MAUI Blazor Hybrid; Customers + credit + repayments + ledger + overdue/due dates + statement/receipt preview/share + catalog/barcode + sales + inventory + expenses + suppliers + **purchasing** + dashboard/reports; onboarding/auth; sync-status shell; offline foundation diagnostics; PosResources en/fil-PH)
+src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Web/ (Organization Web Admin — DesignSystem Blazor Server management/reporting; **not a POS checkout client**; Local Validation :8093)
 tests/ExItS.Platform.UnitTests/
 tests/ExItS.ArchitectureTests/
 tests/ExItS.Platform.IntegrationTests/
@@ -48,6 +49,7 @@ tests/ExItS.Platform.Admin.UnitTests/
 tests/ExItS.DesignSystem.Tests/
 tests/ExItS.PinoyBusinessPOS.ApiClient.Tests/
 tests/ExItS.PinoyBusinessPOS.Maui.Tests/
+tests/ExItS.PinoyBusinessPOS.Web.Tests/
 tests/ExItS.PinoyBusinessPOS.UnitTests/
 tests/ExItS.PinoyBusinessPOS.IntegrationTests/
 tests/ExItS.BackupRestore.Tests/
@@ -110,6 +112,8 @@ docs/phases/phase-08-basic-store.md
 docs/phases/phase-09-mvp-hardening.md
 docs/phases/phase-10-full-pos.md
 docs/phases/phase-24-linked-customer-statements-and-personal-monetization.md
+docs/phases/phase-25-organization-web-admin.md
+docs/reports/P25-WP01-organization-web-admin-management-center.md
 docs/reports/P24-WP01-current-state-and-architecture-contract.md
 docs/reports/P24-WP02-customer-link-and-pos-correlation.md
 docs/reports/P24-WP03-linked-customer-authorization-contract.md

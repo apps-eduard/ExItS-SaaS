@@ -11,12 +11,12 @@
 | Portfolio | ExITS SaaS |
 | Existing product | Historical HealthCare SaaS MVP (separate product; **not** in this workspace ? do not restore) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
-| Current phase | Phase 22 **Open — Implementation Complete / Validation Pending**; Phase 19/20/21 remain Open; Phase 14 still open |
-| Current work package | **P22** closeout recorded ([phase](phases/phase-22-production-readiness-release-and-operational-hardening.md); [final report](reports/P22-final-implementation-report.md)). Physical validation and External Setup remain. |
-| Overall status | **Phase 22 Implementation Complete / Validation Pending** + Phase 19/20/21 Open. Business type, branches, capacity, registered devices, transaction authorization, and release docs landed. **Not Device Verified**. Production remains **Blocked**. **Not production-ready.** |
-| Latest verified commit | See Phase 22 tip on `main` after closeout push |
-| Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA deferred; Phase 19/20/22 physical validation pending |
-| Last updated | 2026-08-10 |
+| Current phase | Phase 25 **Open — WP01 Code Complete / Owner Validation Pending**; Phase 22/24/19/20/21 remain Open; Phase 14 still open |
+| Current work package | **P25-WP01** Organization Web Admin Management Center ([phase](phases/phase-25-organization-web-admin.md); [report](reports/P25-WP01-organization-web-admin-management-center.md)). Owner browser validation pending. |
+| Overall status | **Phase 25 WP01 Code Complete** (Organization Web is management/reporting, **not** a POS checkout client) + Phase 22/24 Owner Validation Pending. **Not Device Verified**. Production remains **Blocked**. **Not production-ready.** |
+| Latest verified commit | See Phase 25 tip on `main` after P25-WP01 push |
+| Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA deferred; Phase 19/20/22/24/25 owner/physical validation pending |
+| Last updated | 2026-08-13 |
 
 ## Delivery sequence
 
@@ -217,6 +217,7 @@ P19-WP08 ? End-to-End Validation and User Closeout Checklist (Retest � awaitin
 | 18 | Mobile Personal, Organization, and POS Experience | **Complete (implementation/scope)** � partial phone validation; Not Device Verified | 8 | 8 | 100% | [Open](phases/phase-18-mobile-personal-organization-and-pos-experience.md) |
 | 19 | Mobile POS Operations and Cashier Experience Completion | **Open** (WP01�WP07 Code Complete; WP08 Retest) | 7 | 8 |  -  | [Open](phases/phase-19-mobile-pos-operations-and-cashier-experience.md) |
 | 24 | Linked Customer Statements and Personal Monetization | **Open** (WP01–WP23 Complete; WP24 Awaiting Owner Validation) | 23 | 24 |  -  | [Open](phases/phase-24-linked-customer-statements-and-personal-monetization.md) |
+| 25 | Organization Web Admin Management Center | **Open** (WP01 Code Complete; Owner Validation Pending; not Device Verified) | 1 | 1 |  -  | [Open](phases/phase-25-organization-web-admin.md) |
 
 **MVP phases 0-9:** 52 / 52 = **100%** (with documented risks; not Production-ready).
 **Phase 10 Full POS:** 8 / 8 = **100%** (with documented risks; not Production-ready).
@@ -232,6 +233,7 @@ P19-WP08 ? End-to-End Validation and User Closeout Checklist (Retest � awaitin
 **Phase 21 Privacy, Compliance, and Regulatory Readiness:** **Open** ([phase](phases/phase-21-privacy-compliance-and-regulatory-readiness.md); [foundation report](reports/P21-foundation-privacy-compliance-workspace.md)) — Platform-only readiness workspace foundation Code Complete; **not** legal/NPC certification; DPO/legal review required; Phase 14/19/20 unchanged.
 **Phase 23 Multi-Business Entitlements / Variable-Quantity Selling:** **Open** ([phase](phases/phase-23-multi-business-entitlements-and-variable-quantity-selling.md)) — WP01–WP11 done; WP12 in progress; WP13 closeout **not started**; **Not Device Verified**. Phase 24 does not close Phase 23.
 **Phase 24 Linked Customer Statements / Personal Monetization:** **Open** — Implementation Complete / Owner Validation Pending ([phase](phases/phase-24-linked-customer-statements-and-personal-monetization.md); reports WP01–WP24; [ADR-021](decisions/ADR-021-linked-customer-statements-and-personal-monetization.md)) — WP24 Awaiting Owner Validation; **Device Verified: No**; **Production Ready: No**; Phase 24 **not** Closed.
+**Phase 25 Organization Web Admin:** **Open** ([phase](phases/phase-25-organization-web-admin.md); [P25-WP01](reports/P25-WP01-organization-web-admin-management-center.md)) — WP01 Code Complete; Organization Web is **not** a POS checkout client; Owner Validation Pending; **Device Verified: No**; **Production Ready: No**.
 
 ## Phase 24 work packages
 

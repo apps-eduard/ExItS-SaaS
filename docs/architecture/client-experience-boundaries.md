@@ -151,6 +151,8 @@ Mobile is not a separate simplified data model. It is a smaller presentation of 
 
 Organization Administration must not own operational POS data such as sales, shifts, receipts, inventory transactions, refunds, or operational cash.
 
+**P25 update:** Organization Web Admin remains **not a POS checkout client**. It may **read** operational records (sales history, receipts, shifts, inventory movements) for reporting, audit, and investigation, and may **write** management configuration (profile, branches, staff, catalog, inventory adjustments/transfers, devices, settings) through the same server-authoritative APIs. It must not provide checkout, cart, barcode selling, payment-taking, or cashier sale creation. See [P25-WP01](../reports/P25-WP01-organization-web-admin-management-center.md).
+
 ---
 
 ## 4. POS Product Operations
