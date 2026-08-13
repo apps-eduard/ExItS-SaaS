@@ -154,6 +154,22 @@ internal sealed class CashierShiftRepository : ICashierShiftRepository
         }
 
         CashierShiftEntityMapper.ApplyToRecord(shift, record);
+        try
+        {
+            await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw new PersistenceConflictException(
+                ApplicationErrorCodes.CashierShiftConcurrencyConflict,
+                "The cashier shift was modified by another session.");
+        }
+        catch (DbUpdateException ex) when (IsOpenShiftConflict(ex))
+        {
+            throw new PersistenceConflictException(
+                ApplicationErrorCodes.CashierShiftOpenConflict,
+                "This cashier already has an open shift.");
+        }
     }
 
     public async Task AddMovementAsync(CashierShiftMovement movement, CancellationToken cancellationToken = default)

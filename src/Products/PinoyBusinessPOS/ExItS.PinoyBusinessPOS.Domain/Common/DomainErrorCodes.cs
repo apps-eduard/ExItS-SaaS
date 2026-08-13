@@ -218,6 +218,9 @@ public static class DomainErrorCodes
     public const string InvalidCashierShiftStatusTransition = "pos.cashier_shift.status.invalid_transition";
     public const string InvalidCashierShiftOpeningCash = "pos.cashier_shift.opening_cash.invalid";
     public const string InvalidCashierShiftClosingCash = "pos.cashier_shift.closing_cash.invalid";
+    public const string InvalidCashCountMode = "pos.operational_setup.cash_count_mode.invalid";
+    public const string CashierShiftOpeningCashCountRequired = "pos.cashier_shift.opening_cash_count.required";
+    public const string CashierShiftClosingCashCountRequired = "pos.cashier_shift.closing_cash_count.required";
     public const string InvalidCashierShiftClosingNotes = "pos.cashier_shift.closing_notes.invalid";
     public const string InvalidCashierShiftMovementAmount = "pos.cashier_shift_movement.amount.invalid";
     public const string InvalidCashierShiftMovementReason = "pos.cashier_shift_movement.reason.invalid";

@@ -2,6 +2,7 @@ using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
+using ExItS.PinoyBusinessPOS.Domain.CashierShifts;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.OperationalSetup;
@@ -20,6 +21,7 @@ public sealed record PosOperationalSetupDto(
     string? BusinessAddress,
     string? ContactPhone,
     Guid? DefaultRegisterId,
+    string CashCountMode,
     bool IsCompleted,
     DateTimeOffset? CompletedAtUtc,
     DateTimeOffset CreatedAtUtc,
@@ -35,7 +37,8 @@ public sealed record CompleteOperationalSetupRequest(
     string? ReceiptHeader = null,
     string? ReceiptFooter = null,
     string? BusinessAddress = null,
-    string? ContactPhone = null);
+    string? ContactPhone = null,
+    string? CashCountMode = null);
 
 public sealed record UpdateOperationalSetupRequest(
     string StoreDisplayName,
@@ -46,7 +49,8 @@ public sealed record UpdateOperationalSetupRequest(
     string? ReceiptHeader = null,
     string? ReceiptFooter = null,
     string? BusinessAddress = null,
-    string? ContactPhone = null);
+    string? ContactPhone = null,
+    string? CashCountMode = null);
 
 public static class OperationalSetupMapper
 {
@@ -62,6 +66,7 @@ public static class OperationalSetupMapper
             setup.BusinessAddress,
             setup.ContactPhone,
             setup.DefaultRegisterId?.Value,
+            setup.CashCountMode.ToString(),
             setup.IsCompleted,
             setup.CompletedAtUtc,
             setup.CreatedAtUtc,
@@ -178,7 +183,8 @@ public sealed class CompleteOperationalSetup
                 request.ContactPhone,
                 defaultRegister.Id,
                 actorId,
-                utcNow);
+                utcNow,
+                CashCountModes.Parse(request.CashCountMode));
 
             if (isNew)
             {
@@ -304,7 +310,8 @@ public sealed class UpdateOperationalSetup
                 request.BusinessAddress,
                 request.ContactPhone,
                 actorId,
-                _clock.GetUtcNow());
+                _clock.GetUtcNow(),
+                CashCountModes.Parse(request.CashCountMode, setup.CashCountMode));
 
             await _setups.UpdateAsync(setup, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);

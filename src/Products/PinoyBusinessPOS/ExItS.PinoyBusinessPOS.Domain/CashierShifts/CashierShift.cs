@@ -7,7 +7,8 @@ namespace ExItS.PinoyBusinessPOS.Domain.CashierShifts;
 
 /// <summary>
 /// Organization-owned cashier shift. Opens directly in Open status with an opening cash float.
-/// Close captures expected cash snapshot and variance; Cancel is allowed only before financial activity.
+/// Close snapshots expected cash; counted cash and variance are optional unless the snapshotted
+/// <see cref="CashCountMode"/> is Required. Cancel is allowed only before financial activity.
 /// Every new shift links to exactly one Active Register (P10-WP07); legacy rows may have null RegisterId.
 /// </summary>
 public sealed class CashierShift
@@ -21,6 +22,8 @@ public sealed class CashierShift
     public RegisterId? RegisterId { get; }
     public CashierShiftStatus Status { get; private set; }
     public DateOnly BusinessDate { get; }
+    public CashCountMode EffectiveCashCountMode { get; }
+    public bool OpeningCashCounted { get; private set; }
     public decimal OpeningCashAmount { get; private set; }
     public DateTimeOffset OpenedAtUtc { get; }
     public Guid OpenedBy { get; }
@@ -43,6 +46,8 @@ public sealed class CashierShift
         RegisterId? registerId,
         CashierShiftStatus status,
         DateOnly businessDate,
+        CashCountMode effectiveCashCountMode,
+        bool openingCashCounted,
         decimal openingCashAmount,
         DateTimeOffset openedAtUtc,
         Guid openedBy,
@@ -64,6 +69,8 @@ public sealed class CashierShift
         RegisterId = registerId;
         Status = status;
         BusinessDate = businessDate;
+        EffectiveCashCountMode = effectiveCashCountMode;
+        OpeningCashCounted = openingCashCounted;
         OpeningCashAmount = openingCashAmount;
         OpenedAtUtc = openedAtUtc;
         OpenedBy = openedBy;
@@ -79,17 +86,21 @@ public sealed class CashierShift
         UpdatedAtUtc = updatedAtUtc;
     }
 
-    /// <summary>Opens a shift directly in Open status with a non-negative opening float on an Active Register.</summary>
+    /// <summary>
+    /// Opens a shift on an Active Register. Opening cash is required only when
+    /// <paramref name="cashCountMode"/> is Required. Skipped counts persist as not-counted (float 0).
+    /// </summary>
     public static CashierShift Open(
         PosOrganizationId organizationId,
         string shiftNumber,
         Guid actorId,
         RegisterId registerId,
-        decimal openingCashAmount,
+        decimal? openingCashAmount,
         DateTimeOffset utcNow,
         DateOnly? businessDate = null,
         CashierShiftId? id = null,
-        Guid? openedBy = null)
+        Guid? openedBy = null,
+        CashCountMode cashCountMode = CashCountMode.Required)
     {
         SaleMoney.EnsureUtc(utcNow);
         SaleMoney.EnsureActor(actorId);
@@ -97,7 +108,18 @@ public sealed class CashierShift
         SaleMoney.EnsureActor(opener);
         ArgumentNullException.ThrowIfNull(registerId);
 
-        ValidateOpeningCash(openingCashAmount);
+        var counted = openingCashAmount is not null;
+        if (CashCountModes.RequiresPhysicalCount(cashCountMode) && !counted)
+        {
+            throw new DomainException(
+                DomainErrorCodes.CashierShiftOpeningCashCountRequired,
+                "Opening cash count is required before this shift can become active.");
+        }
+
+        if (counted)
+        {
+            ValidateOpeningCash(openingCashAmount!.Value);
+        }
 
         return new CashierShift(
             id ?? CashierShiftId.New(),
@@ -107,7 +129,9 @@ public sealed class CashierShift
             registerId,
             CashierShiftStatus.Open,
             businessDate ?? CashierShiftNumbers.BusinessDateOf(utcNow),
-            SaleMoney.RoundMoney(openingCashAmount),
+            cashCountMode,
+            counted,
+            counted ? SaleMoney.RoundMoney(openingCashAmount!.Value) : 0m,
             utcNow,
             opener,
             closingCashAmount: null,
@@ -142,7 +166,9 @@ public sealed class CashierShift
         DateTimeOffset? cancelledAtUtc,
         Guid? cancelledBy,
         DateTimeOffset createdAtUtc,
-        DateTimeOffset updatedAtUtc) =>
+        DateTimeOffset updatedAtUtc,
+        CashCountMode effectiveCashCountMode = CashCountMode.Required,
+        bool openingCashCounted = true) =>
         new(
             id,
             organizationId,
@@ -151,6 +177,8 @@ public sealed class CashierShift
             registerId,
             status,
             businessDate,
+            effectiveCashCountMode,
+            openingCashCounted,
             openingCashAmount,
             openedAtUtc,
             openedBy,
@@ -166,7 +194,7 @@ public sealed class CashierShift
             updatedAtUtc);
 
     public void Close(
-        decimal closingCashAmount,
+        decimal? closingCashAmount,
         decimal expectedCashAmount,
         Guid closedBy,
         DateTimeOffset utcNow,
@@ -176,11 +204,22 @@ public sealed class CashierShift
         SaleMoney.EnsureActor(closedBy);
         EnsureOpen();
 
-        ValidateClosingCash(closingCashAmount);
+        if (CashCountModes.RequiresPhysicalCount(EffectiveCashCountMode) && closingCashAmount is null)
+        {
+            throw new DomainException(
+                DomainErrorCodes.CashierShiftClosingCashCountRequired,
+                "Counted cash is required before this shift can close.");
+        }
 
         var roundedExpected = SaleMoney.RoundMoney(expectedCashAmount);
-        var roundedClosing = SaleMoney.RoundMoney(closingCashAmount);
-        var variance = SaleMoney.RoundMoney(roundedClosing - roundedExpected);
+        decimal? roundedClosing = null;
+        decimal? variance = null;
+        if (closingCashAmount is not null)
+        {
+            ValidateClosingCash(closingCashAmount.Value);
+            roundedClosing = SaleMoney.RoundMoney(closingCashAmount.Value);
+            variance = SaleMoney.RoundMoney(roundedClosing.Value - roundedExpected);
+        }
 
         Status = CashierShiftStatus.Closed;
         ClosingCashAmount = roundedClosing;

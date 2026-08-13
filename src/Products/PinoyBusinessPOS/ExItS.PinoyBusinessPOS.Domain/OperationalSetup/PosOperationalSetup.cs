@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using ExItS.PinoyBusinessPOS.Domain.CashierShifts;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Registers;
@@ -37,6 +38,7 @@ public sealed class PosOperationalSetup
     public string? BusinessAddress { get; private set; }
     public string? ContactPhone { get; private set; }
     public RegisterId? DefaultRegisterId { get; private set; }
+    public CashCountMode CashCountMode { get; private set; }
     public bool IsCompleted { get; private set; }
     public DateTimeOffset? CompletedAtUtc { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; }
@@ -55,6 +57,7 @@ public sealed class PosOperationalSetup
         string? businessAddress,
         string? contactPhone,
         RegisterId? defaultRegisterId,
+        CashCountMode cashCountMode,
         bool isCompleted,
         DateTimeOffset? completedAtUtc,
         DateTimeOffset createdAtUtc,
@@ -72,6 +75,7 @@ public sealed class PosOperationalSetup
         BusinessAddress = businessAddress;
         ContactPhone = contactPhone;
         DefaultRegisterId = defaultRegisterId;
+        CashCountMode = cashCountMode;
         IsCompleted = isCompleted;
         CompletedAtUtc = completedAtUtc;
         CreatedAtUtc = createdAtUtc;
@@ -95,6 +99,7 @@ public sealed class PosOperationalSetup
             null,
             null,
             null,
+            CashCountMode.Optional,
             isCompleted: false,
             completedAtUtc: null,
             utcNow,
@@ -118,7 +123,8 @@ public sealed class PosOperationalSetup
         DateTimeOffset createdAtUtc,
         Guid createdBy,
         DateTimeOffset updatedAtUtc,
-        Guid updatedBy) =>
+        Guid updatedBy,
+        CashCountMode cashCountMode = CashCountMode.Optional) =>
         new(
             organizationId,
             storeDisplayName,
@@ -130,6 +136,7 @@ public sealed class PosOperationalSetup
             businessAddress,
             contactPhone,
             defaultRegisterId,
+            cashCountMode,
             isCompleted,
             completedAtUtc,
             createdAtUtc,
@@ -148,7 +155,8 @@ public sealed class PosOperationalSetup
         string? contactPhone,
         RegisterId defaultRegisterId,
         Guid actorId,
-        DateTimeOffset utcNow)
+        DateTimeOffset utcNow,
+        CashCountMode cashCountMode = CashCountMode.Optional)
     {
         SaleMoney.EnsureUtc(utcNow);
         SaleMoney.EnsureActor(actorId);
@@ -164,6 +172,7 @@ public sealed class PosOperationalSetup
         DefaultRegisterId = defaultRegisterId ?? throw new DomainException(
             DomainErrorCodes.OperationalSetupDefaultRegisterRequired,
             "A default register is required to complete operational setup.");
+        CashCountMode = cashCountMode;
         IsCompleted = true;
         CompletedAtUtc = utcNow;
         UpdatedAtUtc = utcNow;
@@ -180,7 +189,8 @@ public sealed class PosOperationalSetup
         string? businessAddress,
         string? contactPhone,
         Guid actorId,
-        DateTimeOffset utcNow)
+        DateTimeOffset utcNow,
+        CashCountMode? cashCountMode = null)
     {
         SaleMoney.EnsureUtc(utcNow);
         SaleMoney.EnsureActor(actorId);
@@ -200,6 +210,11 @@ public sealed class PosOperationalSetup
         ReceiptFooter = NormalizeOptional(receiptFooter, ReceiptFooterMaxLength, DomainErrorCodes.InvalidOperationalSetupReceiptFooter);
         BusinessAddress = NormalizeOptional(businessAddress, BusinessAddressMaxLength, DomainErrorCodes.InvalidOperationalSetupBusinessAddress);
         ContactPhone = NormalizeOptional(contactPhone, ContactPhoneMaxLength, DomainErrorCodes.InvalidOperationalSetupContactPhone);
+        if (cashCountMode is not null)
+        {
+            CashCountMode = cashCountMode.Value;
+        }
+
         UpdatedAtUtc = utcNow;
         UpdatedBy = actorId;
     }

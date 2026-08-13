@@ -93,6 +93,8 @@ public sealed class CashierShiftQueryService
             shift.ShiftNumber,
             shift.Status.ToString(),
             shift.OpeningCashAmount,
+            shift.OpeningCashCounted,
+            shift.EffectiveCashCountMode.ToString(),
             salesTotals.NetCashSales,
             salesTotals.CashSalesTotal,
             salesTotals.GCashSalesTotal,
@@ -104,6 +106,9 @@ public sealed class CashierShiftQueryService
             shift.ClosingCashAmount,
             shift.ExpectedCashAmountSnapshot,
             shift.CashVarianceAmount,
+            shift.Status == CashierShiftStatus.Closed
+                ? CashCountModes.ClosingState(shift.EffectiveCashCountMode, shift.ClosingCashAmount)
+                : null,
             salesTotals.CompletedCashCount,
             salesTotals.VoidedCashCount,
             salesTotals.CompletedGCashCount,
@@ -126,11 +131,16 @@ public sealed class CashierShiftQueryService
             register?.Name,
             shift.BusinessDate,
             shift.OpeningCashAmount,
+            shift.OpeningCashCounted,
+            shift.EffectiveCashCountMode.ToString(),
             shift.OpenedAtUtc,
             shift.OpenedBy,
             shift.ClosingCashAmount,
             shift.ExpectedCashAmountSnapshot,
             shift.CashVarianceAmount,
+            shift.Status == CashierShiftStatus.Closed
+                ? CashCountModes.ClosingState(shift.EffectiveCashCountMode, shift.ClosingCashAmount)
+                : null,
             shift.ClosingNotes,
             shift.ClosedAtUtc,
             shift.ClosedBy,
@@ -169,12 +179,18 @@ public sealed class OpenCashierShift
 {
     private readonly ICashierShiftRepository _shifts;
     private readonly IRegisterRepository _registers;
+    private readonly IPosOperationalSetupRepository _setups;
     private readonly IClock _clock;
 
-    public OpenCashierShift(ICashierShiftRepository shifts, IRegisterRepository registers, IClock clock)
+    public OpenCashierShift(
+        ICashierShiftRepository shifts,
+        IRegisterRepository registers,
+        IPosOperationalSetupRepository setups,
+        IClock clock)
     {
         _shifts = shifts;
         _registers = registers;
+        _setups = setups;
         _clock = clock;
     }
 
@@ -182,7 +198,7 @@ public sealed class OpenCashierShift
         Guid organizationId,
         Guid actorId,
         Guid registerId,
-        decimal openingCashAmount,
+        decimal? openingCashAmount,
         DateOnly? businessDate = null,
         CancellationToken cancellationToken = default)
     {
@@ -229,14 +245,24 @@ public sealed class OpenCashierShift
 
             var utcNow = _clock.UtcNow;
             var date = businessDate ?? CashierShiftNumbers.BusinessDateOf(utcNow);
+            var setup = await _setups.GetByOrganizationIdAsync(orgId, cancellationToken).ConfigureAwait(false);
+            var cashCountMode = setup?.CashCountMode ?? CashCountMode.Optional;
             var shift = await _shifts
                 .OpenAsync(
                     orgId,
                     date,
                     actorId,
-                    openingCashAmount,
+                    openingCashAmount ?? 0m,
                     actorId,
-                    number => CashierShift.Open(orgId, number, actorId, regId, openingCashAmount, utcNow, date),
+                    number => CashierShift.Open(
+                        orgId,
+                        number,
+                        actorId,
+                        regId,
+                        openingCashAmount,
+                        utcNow,
+                        date,
+                        cashCountMode: cashCountMode),
                     cancellationToken)
                 .ConfigureAwait(false);
 
@@ -267,7 +293,7 @@ public sealed class CloseCashierShift
     public async Task<ApplicationResult<CashierShift>> ExecuteAsync(
         Guid organizationId,
         Guid shiftId,
-        decimal closingCashAmount,
+        decimal? closingCashAmount,
         Guid actorId,
         string? notes = null,
         CancellationToken cancellationToken = default)

@@ -1,3 +1,4 @@
+using ExItS.PinoyBusinessPOS.Domain.CashierShifts;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.OperationalSetup;
 using ExItS.PinoyBusinessPOS.Domain.Registers;
@@ -23,7 +24,8 @@ internal static class OperationalSetupEntityMapper
             record.CreatedAtUtc,
             record.CreatedBy,
             record.UpdatedAtUtc,
-            record.UpdatedBy);
+            record.UpdatedBy,
+            Enum.Parse<CashCountMode>(record.CashCountMode, ignoreCase: true));
 
     public static OperationalSetupRecord ToRecord(PosOperationalSetup setup) =>
         new()
@@ -38,6 +40,7 @@ internal static class OperationalSetupEntityMapper
             BusinessAddress = setup.BusinessAddress,
             ContactPhone = setup.ContactPhone,
             DefaultRegisterId = setup.DefaultRegisterId?.Value,
+            CashCountMode = setup.CashCountMode.ToString(),
             IsCompleted = setup.IsCompleted,
             CompletedAtUtc = setup.CompletedAtUtc,
             CreatedAtUtc = setup.CreatedAtUtc,
@@ -57,6 +60,7 @@ internal static class OperationalSetupEntityMapper
         record.BusinessAddress = setup.BusinessAddress;
         record.ContactPhone = setup.ContactPhone;
         record.DefaultRegisterId = setup.DefaultRegisterId?.Value;
+        record.CashCountMode = setup.CashCountMode.ToString();
         record.IsCompleted = setup.IsCompleted;
         record.CompletedAtUtc = setup.CompletedAtUtc;
         record.UpdatedAtUtc = setup.UpdatedAtUtc;

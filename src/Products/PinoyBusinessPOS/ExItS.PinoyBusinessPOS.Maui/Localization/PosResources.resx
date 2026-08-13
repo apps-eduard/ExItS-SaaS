@@ -1698,6 +1698,13 @@
   <data name="Shifts_FinalDifference" xml:space="preserve"><value>Final difference</value></data>
   <data name="Shifts_CountedCash" xml:space="preserve"><value>Counted cash</value></data>
   <data name="Shifts_CountedCashRequired" xml:space="preserve"><value>Enter the counted closing cash amount.</value></data>
+  <data name="Shifts_OpeningCashRequired" xml:space="preserve"><value>Enter the opening cash amount.</value></data>
+  <data name="Shifts_SkipOpeningCash" xml:space="preserve"><value>Skip cash count</value></data>
+  <data name="Shifts_SkipClosingCash" xml:space="preserve"><value>Skip cash count</value></data>
+  <data name="Shifts_CashCountState" xml:space="preserve"><value>Cash count</value></data>
+  <data name="Shifts_CashCountNotRequired" xml:space="preserve"><value>Not required</value></data>
+  <data name="Shifts_CashCountNotPerformed" xml:space="preserve"><value>Not counted</value></data>
+  <data name="Shifts_CashCountCounted" xml:space="preserve"><value>Counted</value></data>
   <data name="Shifts_VarianceOverage" xml:space="preserve"><value>Overage</value></data>
   <data name="Shifts_VarianceShortage" xml:space="preserve"><value>Shortage</value></data>
   <data name="Shifts_VarianceBalanced" xml:space="preserve"><value>Balanced</value></data>
@@ -1876,6 +1883,15 @@
   <data name="Setup_ReadOnlyMessage" xml:space="preserve"><value>Only owners and admins can complete or change operational setup.</value></data>
   <data name="Setup_ErrorTitle" xml:space="preserve"><value>Setup error</value></data>
   <data name="Setup_InvalidTaxRate" xml:space="preserve"><value>Enter a valid tax rate between 0 and 100.</value></data>
+  <data name="Setup_CashHandlingSection" xml:space="preserve"><value>Cash handling</value></data>
+  <data name="Setup_CashHandlingHint" xml:space="preserve"><value>How cashiers count cash when opening and closing a shift.</value></data>
+  <data name="Setup_CashCount" xml:space="preserve"><value>Cash count</value></data>
+  <data name="Setup_CashCountOff" xml:space="preserve"><value>Off</value></data>
+  <data name="Setup_CashCountOptional" xml:space="preserve"><value>Optional</value></data>
+  <data name="Setup_CashCountRequired" xml:space="preserve"><value>Required</value></data>
+  <data name="Setup_CashCountHelpOff" xml:space="preserve"><value>Physical cash counting is not requested.</value></data>
+  <data name="Setup_CashCountHelpOptional" xml:space="preserve"><value>Cashiers may count opening/closing cash.</value></data>
+  <data name="Setup_CashCountHelpRequired" xml:space="preserve"><value>Cashiers must complete cash counting before applicable shift actions.</value></data>
   <data name="Nav_Setup" xml:space="preserve"><value>Operational setup</value></data>
   <data name="Shifts_RegisterSection" xml:space="preserve"><value>Register</value></data>
   <data name="Shifts_RegisterLabel" xml:space="preserve"><value>Select register</value></data>

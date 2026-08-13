@@ -1698,6 +1698,13 @@
   <data name="Shifts_FinalDifference" xml:space="preserve"><value>Pinal na pagkakaiba</value></data>
   <data name="Shifts_CountedCash" xml:space="preserve"><value>Binilang na cash</value></data>
   <data name="Shifts_CountedCashRequired" xml:space="preserve"><value>Ilagay ang binilang na closing cash.</value></data>
+  <data name="Shifts_OpeningCashRequired" xml:space="preserve"><value>Ilagay ang opening cash.</value></data>
+  <data name="Shifts_SkipOpeningCash" xml:space="preserve"><value>Laktawan ang cash count</value></data>
+  <data name="Shifts_SkipClosingCash" xml:space="preserve"><value>Laktawan ang cash count</value></data>
+  <data name="Shifts_CashCountState" xml:space="preserve"><value>Cash count</value></data>
+  <data name="Shifts_CashCountNotRequired" xml:space="preserve"><value>Hindi kailangan</value></data>
+  <data name="Shifts_CashCountNotPerformed" xml:space="preserve"><value>Hindi binilang</value></data>
+  <data name="Shifts_CashCountCounted" xml:space="preserve"><value>Binilang</value></data>
   <data name="Shifts_VarianceOverage" xml:space="preserve"><value>Sobra</value></data>
   <data name="Shifts_VarianceShortage" xml:space="preserve"><value>Kulang</value></data>
   <data name="Shifts_VarianceBalanced" xml:space="preserve"><value>Tugma</value></data>
@@ -1876,6 +1883,15 @@
   <data name="Setup_ReadOnlyMessage" xml:space="preserve"><value>Owners at admins lang ang puwedeng mag-complete o magbago ng operational setup.</value></data>
   <data name="Setup_ErrorTitle" xml:space="preserve"><value>Setup error</value></data>
   <data name="Setup_InvalidTaxRate" xml:space="preserve"><value>Maglagay ng valid tax rate mula 0 hanggang 100.</value></data>
+  <data name="Setup_CashHandlingSection" xml:space="preserve"><value>Paghawak ng pera</value></data>
+  <data name="Setup_CashHandlingHint" xml:space="preserve"><value>Paano magbibilang ng pera ang cashier sa pagbukas at pagsara ng shift.</value></data>
+  <data name="Setup_CashCount" xml:space="preserve"><value>Cash count</value></data>
+  <data name="Setup_CashCountOff" xml:space="preserve"><value>Off</value></data>
+  <data name="Setup_CashCountOptional" xml:space="preserve"><value>Optional</value></data>
+  <data name="Setup_CashCountRequired" xml:space="preserve"><value>Required</value></data>
+  <data name="Setup_CashCountHelpOff" xml:space="preserve"><value>Hindi hinihingi ang physical cash counting.</value></data>
+  <data name="Setup_CashCountHelpOptional" xml:space="preserve"><value>Puwedeng magbilang ang cashier ng opening/closing cash.</value></data>
+  <data name="Setup_CashCountHelpRequired" xml:space="preserve"><value>Kailangang tapusin ng cashier ang cash counting bago ang applicable na shift action.</value></data>
   <data name="Nav_Setup" xml:space="preserve"><value>Operational setup</value></data>
   <data name="Shifts_RegisterSection" xml:space="preserve"><value>Register</value></data>
   <data name="Shifts_RegisterLabel" xml:space="preserve"><value>Pumili ng rehistro</value></data>

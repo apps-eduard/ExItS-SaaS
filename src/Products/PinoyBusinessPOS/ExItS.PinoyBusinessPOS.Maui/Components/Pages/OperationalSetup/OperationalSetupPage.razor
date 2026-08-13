@@ -108,6 +108,21 @@ else
         </div>
     </div>
 
+    <div class="pos-setup__panel">
+        <div class="pos-setup__panel-head">
+            <h2 class="pos-setup__panel-title">@L["Setup_CashHandlingSection"]</h2>
+            <p class="pos-setup__panel-hint">@L["Setup_CashHandlingHint"]</p>
+        </div>
+        <div class="pos-setup__fields">
+            <Select Label="@L["Setup_CashCount"]"
+                    Value="@_cashCountMode"
+                    ValueChanged="v => _cashCountMode = v ?? CashCountOptional"
+                    Options="CashCountOptions"
+                    Disabled="@readOnly" />
+            <p class="pos-setup__panel-hint">@CashCountHelp</p>
+        </div>
+    </div>
+
     @if (canManage)
     {
         <div class="pos-setup__footer" role="group" aria-label="@L["Setup_Title"]">
@@ -126,6 +141,9 @@ else
 @code {
     private const string TaxExclusive = "TaxExclusive";
     private const string TaxInclusive = "TaxInclusive";
+    private const string CashCountOff = "Off";
+    private const string CashCountOptional = "Optional";
+    private const string CashCountRequired = "Required";
 
     private bool _ready;
     private bool _saving;
@@ -139,6 +157,7 @@ else
     private string? _receiptFooter;
     private string? _businessAddress;
     private string? _contactPhone;
+    private string _cashCountMode = CashCountOptional;
     private string? _formError;
 
     private IReadOnlyList<SelectOption> TaxModeOptions =>
@@ -146,6 +165,20 @@ else
         new(TaxExclusive, L["Setup_TaxExclusive"].Value),
         new(TaxInclusive, L["Setup_TaxInclusive"].Value)
     ];
+
+    private IReadOnlyList<SelectOption> CashCountOptions =>
+    [
+        new(CashCountOff, L["Setup_CashCountOff"].Value),
+        new(CashCountOptional, L["Setup_CashCountOptional"].Value),
+        new(CashCountRequired, L["Setup_CashCountRequired"].Value)
+    ];
+
+    private string CashCountHelp => _cashCountMode switch
+    {
+        CashCountOff => L["Setup_CashCountHelpOff"],
+        CashCountRequired => L["Setup_CashCountHelpRequired"],
+        _ => L["Setup_CashCountHelpOptional"]
+    };
 
     protected override async Task OnInitializedAsync()
     {
@@ -218,6 +251,7 @@ else
         _receiptFooter = setup.ReceiptFooter;
         _businessAddress = setup.BusinessAddress;
         _contactPhone = setup.ContactPhone;
+        _cashCountMode = string.IsNullOrWhiteSpace(setup.CashCountMode) ? CashCountOptional : setup.CashCountMode;
     }
 
     private async Task SaveAsync()
@@ -245,7 +279,8 @@ else
                 _receiptHeader,
                 _receiptFooter,
                 _businessAddress,
-                _contactPhone);
+                _contactPhone,
+                _cashCountMode);
 
             var result = _setup?.IsCompleted == true
                 ? await SetupClient.UpdateAsync(new UpdateOperationalSetupRequest(
@@ -257,7 +292,8 @@ else
                     completeRequest.ReceiptHeader,
                     completeRequest.ReceiptFooter,
                     completeRequest.BusinessAddress,
-                    completeRequest.ContactPhone))
+                    completeRequest.ContactPhone,
+                    _cashCountMode))
                 : await SetupClient.CompleteAsync(completeRequest);
 
             if (!result.IsSuccess || result.Data is null)

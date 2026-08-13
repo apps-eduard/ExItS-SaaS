@@ -9,6 +9,8 @@ internal sealed class CashierShiftRecord
     public Guid? RegisterId { get; set; }
     public string Status { get; set; } = string.Empty;
     public DateOnly BusinessDate { get; set; }
+    public string EffectiveCashCountMode { get; set; } = "Required";
+    public bool OpeningCashCounted { get; set; } = true;
     public decimal OpeningCashAmount { get; set; }
     public DateTimeOffset OpenedAtUtc { get; set; }
     public Guid OpenedBy { get; set; }

@@ -40,8 +40,10 @@ else
     var onlineActionsEnabled = !_isOffline && canManage && isOpen;
     var expectedCash = ExpectedCash;
     var countedPreview = _closingCash;
-    var variancePreview = countedPreview - expectedCash;
-    var varianceKind = VarianceKind(variancePreview);
+    var variancePreview = countedPreview is null ? (decimal?)null : countedPreview.Value - expectedCash;
+    var varianceKind = variancePreview is null ? "skipped" : VarianceKind(variancePreview.Value);
+    var closingRequired = string.Equals(_shift.EffectiveCashCountMode, "Required", StringComparison.OrdinalIgnoreCase);
+    var closingOff = string.Equals(_shift.EffectiveCashCountMode, "Off", StringComparison.OrdinalIgnoreCase);
     var movements = _summary?.Movements ?? Array.Empty<PosCashierShiftMovementDto>();
     var canCancel = onlineActionsEnabled && CanOfferCancel;
     var registerPrimary = RegisterPrimary(_shift);
@@ -107,7 +109,16 @@ else
         <dl class="pos-shift-detail__totals">
             <div class="pos-shift-detail__total-row">
                 <dt>@L["Shifts_OpeningCashLabel"]</dt>
-                <dd><MoneyDisplay Amount="@_shift.OpeningCashAmount" CurrencyCode="PHP" /></dd>
+                <dd>
+                    @if (_shift.OpeningCashCounted)
+                    {
+                        <MoneyDisplay Amount="@_shift.OpeningCashAmount" CurrencyCode="PHP" />
+                    }
+                    else
+                    {
+                        <span>@OpeningCountLabel(_shift.EffectiveCashCountMode)</span>
+                    }
+                </dd>
             </div>
             <div class="pos-shift-detail__total-row">
                 <dt>@L["Shifts_NetCashSales"]</dt>
@@ -128,16 +139,23 @@ else
             @if (isClosed)
             {
                 <div class="pos-shift-detail__total-row">
-                    <dt>@L["Shifts_CountedCash"]</dt>
-                    <dd><MoneyDisplay Amount="@(_shift.ClosingCashAmount ?? 0m)" CurrencyCode="PHP" /></dd>
+                    <dt>@L["Shifts_CashCountState"]</dt>
+                    <dd>@ClosingCountLabel(_shift.EffectiveCashCountMode, _shift.ClosingCashAmount, _shift.ClosingCashCountState)</dd>
                 </div>
-                <div class="pos-shift-detail__total-row pos-shift-detail__total-row--emphasis">
-                    <dt>@L["Shifts_FinalDifference"]</dt>
-                    <dd>
-                        <MoneyDisplay Amount="@(_shift.CashVarianceAmount ?? 0m)" CurrencyCode="PHP" Emphasized="true" />
-                        <span class="pos-shift-detail__variance-label pos-muted">@VarianceLabel(_shift.CashVarianceAmount ?? 0m)</span>
-                    </dd>
-                </div>
+                @if (_shift.ClosingCashAmount is not null)
+                {
+                    <div class="pos-shift-detail__total-row">
+                        <dt>@L["Shifts_CountedCash"]</dt>
+                        <dd><MoneyDisplay Amount="@_shift.ClosingCashAmount.Value" CurrencyCode="PHP" /></dd>
+                    </div>
+                    <div class="pos-shift-detail__total-row pos-shift-detail__total-row--emphasis">
+                        <dt>@L["Shifts_FinalDifference"]</dt>
+                        <dd>
+                            <MoneyDisplay Amount="@(_shift.CashVarianceAmount ?? 0m)" CurrencyCode="PHP" Emphasized="true" />
+                            <span class="pos-shift-detail__variance-label pos-muted">@VarianceLabel(_shift.CashVarianceAmount ?? 0m)</span>
+                        </dd>
+                    </div>
+                }
                 @if (!string.IsNullOrWhiteSpace(_shift.ClosingNotes))
                 {
                     <div class="pos-shift-detail__notes">
@@ -257,34 +275,47 @@ else
                         <span class="pos-muted">@L["Shifts_ExpectedCash"]</span>
                         <MoneyDisplay Amount="@expectedCash" CurrencyCode="PHP" Emphasized="true" />
                     </div>
-                    <NumberInput Label="@L["Shifts_CountedCash"]"
-                                 Value="@_closingCash"
-                                 ValueChanged="OnClosingCashChanged"
-                                 DecimalPlaces="2"
-                                 Disabled="@(!onlineActionsEnabled || _closing)"
-                                 IsInvalid="@(!string.IsNullOrEmpty(_closingCashError))"
-                                 ErrorText="@_closingCashError" />
-                    <div class="pos-shift-detail__reconcile-row"
-                         role="status"
-                         aria-live="polite"
-                         aria-label="@($"{L["Shifts_Difference"]}: {variancePreview:0.00}, {VarianceLabel(variancePreview)}")">
-                        <span>
-                            @L["Shifts_Difference"]
-                            <span class="pos-shift-detail__variance-label pos-muted">@VarianceLabel(variancePreview)</span>
-                        </span>
-                        <MoneyDisplay Amount="@variancePreview" CurrencyCode="PHP" Emphasized="true" />
-                    </div>
+                    @if (!closingOff)
+                    {
+                        <NumberInput Label="@L["Shifts_CountedCash"]"
+                                     Value="@_closingCash"
+                                     ValueChanged="OnClosingCashChanged"
+                                     DecimalPlaces="2"
+                                     Required="@closingRequired"
+                                     Disabled="@(!onlineActionsEnabled || _closing)"
+                                     IsInvalid="@(!string.IsNullOrEmpty(_closingCashError))"
+                                     ErrorText="@_closingCashError" />
+                    }
+                    @if (variancePreview is not null)
+                    {
+                        <div class="pos-shift-detail__reconcile-row"
+                             role="status"
+                             aria-live="polite"
+                             aria-label="@($"{L["Shifts_Difference"]}: {variancePreview.Value:0.00}, {VarianceLabel(variancePreview.Value)}")">
+                            <span>
+                                @L["Shifts_Difference"]
+                                <span class="pos-shift-detail__variance-label pos-muted">@VarianceLabel(variancePreview.Value)</span>
+                            </span>
+                            <MoneyDisplay Amount="@variancePreview.Value" CurrencyCode="PHP" Emphasized="true" />
+                        </div>
+                    }
                     <TextInput Label="@L["Shifts_ClosingNotes"]"
                                Value="@_closingNotes"
                                ValueChanged="v => _closingNotes = v"
                                Disabled="@(!onlineActionsEnabled || _closing)" />
-                    @if (varianceKind != "balanced")
+                    @if (varianceKind is "overage" or "shortage")
                     {
                         <p class="pos-muted">@L["Shifts_VarianceNotesHint"]</p>
                     }
+                    @if (!closingRequired && !closingOff)
+                    {
+                        <Button Variant="ButtonVariant.Secondary"
+                                Disabled="@(!onlineActionsEnabled)"
+                                OnClick="() => BeginCloseReview(skipCount: true)">@L["Shifts_SkipClosingCash"]</Button>
+                    }
                     <Button Variant="ButtonVariant.Primary"
                             Disabled="@(!onlineActionsEnabled)"
-                            OnClick="BeginCloseReview">@L["Shifts_ReviewAndClose"]</Button>
+                            OnClick="() => BeginCloseReview(skipCount: closingOff)">@L["Shifts_ReviewAndClose"]</Button>
                 </Stack>
             }
             else
@@ -299,7 +330,16 @@ else
                         </div>
                         <div class="pos-shift-detail__total-row">
                             <dt>@L["Shifts_OpeningCashLabel"]</dt>
-                            <dd><MoneyDisplay Amount="@_shift.OpeningCashAmount" CurrencyCode="PHP" /></dd>
+                            <dd>
+                                @if (_shift.OpeningCashCounted)
+                                {
+                                    <MoneyDisplay Amount="@_shift.OpeningCashAmount" CurrencyCode="PHP" />
+                                }
+                                else
+                                {
+                                    <span>@OpeningCountLabel(_shift.EffectiveCashCountMode)</span>
+                                }
+                            </dd>
                         </div>
                         <div class="pos-shift-detail__total-row">
                             <dt>@L["Shifts_ExpectedCash"]</dt>
@@ -307,15 +347,27 @@ else
                         </div>
                         <div class="pos-shift-detail__total-row">
                             <dt>@L["Shifts_CountedCash"]</dt>
-                            <dd><MoneyDisplay Amount="@_closingCash" CurrencyCode="PHP" /></dd>
-                        </div>
-                        <div class="pos-shift-detail__total-row pos-shift-detail__total-row--emphasis">
-                            <dt>@L["Shifts_Difference"]</dt>
                             <dd>
-                                <MoneyDisplay Amount="@variancePreview" CurrencyCode="PHP" Emphasized="true" />
-                                <span class="pos-shift-detail__variance-label pos-muted">@VarianceLabel(variancePreview)</span>
+                                @if (_closingCash is not null)
+                                {
+                                    <MoneyDisplay Amount="@_closingCash.Value" CurrencyCode="PHP" />
+                                }
+                                else
+                                {
+                                    <span>@ClosingCountLabel(_shift.EffectiveCashCountMode, null, null)</span>
+                                }
                             </dd>
                         </div>
+                        @if (variancePreview is not null)
+                        {
+                            <div class="pos-shift-detail__total-row pos-shift-detail__total-row--emphasis">
+                                <dt>@L["Shifts_Difference"]</dt>
+                                <dd>
+                                    <MoneyDisplay Amount="@variancePreview.Value" CurrencyCode="PHP" Emphasized="true" />
+                                    <span class="pos-shift-detail__variance-label pos-muted">@VarianceLabel(variancePreview.Value)</span>
+                                </dd>
+                            </div>
+                        }
                         @if (movements.Count > 0)
                         {
                             <div class="pos-shift-detail__total-row">
@@ -392,7 +444,7 @@ else
     private string? _movementTypeError;
     private string? _movementAmountError;
     private string? _movementReasonError;
-    private decimal _closingCash;
+    private decimal? _closingCash;
     private string? _closingNotes;
     private string? _closingCashError;
     private readonly Dictionary<Guid, string> _nameById = new();
@@ -593,7 +645,7 @@ else
 
     private void OnClosingCashChanged(decimal? value)
     {
-        _closingCash = value ?? 0m;
+        _closingCash = value;
         _closingCashError = null;
     }
 
@@ -671,14 +723,34 @@ else
         }
     }
 
-    private void BeginCloseReview()
+    private void BeginCloseReview(bool skipCount = false)
     {
         _closingCashError = null;
         _errorTitle = null;
         _errorMessage = null;
         _banner = null;
 
-        if (_closingCash < 0m)
+        var required = string.Equals(_shift?.EffectiveCashCountMode, "Required", StringComparison.OrdinalIgnoreCase);
+        if (skipCount)
+        {
+            if (required)
+            {
+                _closingCashError = L["Shifts_CountedCashRequired"];
+                return;
+            }
+
+            _closingCash = null;
+            _confirmClose = true;
+            return;
+        }
+
+        if (required && _closingCash is null)
+        {
+            _closingCashError = L["Shifts_CountedCashRequired"];
+            return;
+        }
+
+        if (_closingCash is < 0m)
         {
             _closingCashError = L["Shifts_CountedCashRequired"];
             return;
@@ -694,7 +766,15 @@ else
             return;
         }
 
-        if (_closingCash < 0m)
+        var required = string.Equals(_shift?.EffectiveCashCountMode, "Required", StringComparison.OrdinalIgnoreCase);
+        if (required && _closingCash is null)
+        {
+            _closingCashError = L["Shifts_CountedCashRequired"];
+            _confirmClose = false;
+            return;
+        }
+
+        if (_closingCash is < 0m)
         {
             _closingCashError = L["Shifts_CountedCashRequired"];
             _confirmClose = false;
@@ -830,6 +910,27 @@ else
         "shortage" => L["Shifts_VarianceShortage"],
         _ => L["Shifts_VarianceBalanced"]
     };
+
+    private string OpeningCountLabel(string? mode) =>
+        string.Equals(mode, "Off", StringComparison.OrdinalIgnoreCase)
+            ? L["Shifts_CashCountNotRequired"]
+            : L["Shifts_CashCountNotPerformed"];
+
+    private string ClosingCountLabel(string? mode, decimal? counted, string? state)
+    {
+        if (counted is not null || string.Equals(state, "Counted", StringComparison.OrdinalIgnoreCase))
+        {
+            return L["Shifts_CashCountCounted"];
+        }
+
+        if (string.Equals(state, "NotRequired", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(mode, "Off", StringComparison.OrdinalIgnoreCase))
+        {
+            return L["Shifts_CashCountNotRequired"];
+        }
+
+        return L["Shifts_CashCountNotPerformed"];
+    }
 
     private static string? FirstMeaningful(params string?[] values)
     {

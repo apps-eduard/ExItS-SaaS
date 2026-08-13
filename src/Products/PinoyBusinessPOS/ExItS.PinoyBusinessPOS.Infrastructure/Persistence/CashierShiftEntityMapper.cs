@@ -28,7 +28,9 @@ internal static class CashierShiftEntityMapper
             record.CancelledAtUtc,
             record.CancelledBy,
             record.CreatedAtUtc,
-            record.UpdatedAtUtc);
+            record.UpdatedAtUtc,
+            Enum.Parse<CashCountMode>(record.EffectiveCashCountMode, ignoreCase: true),
+            record.OpeningCashCounted);
 
     public static CashierShiftRecord ToRecord(CashierShift shift) =>
         new()
@@ -40,6 +42,8 @@ internal static class CashierShiftEntityMapper
             RegisterId = shift.RegisterId?.Value,
             Status = shift.Status.ToString(),
             BusinessDate = shift.BusinessDate,
+            EffectiveCashCountMode = shift.EffectiveCashCountMode.ToString(),
+            OpeningCashCounted = shift.OpeningCashCounted,
             OpeningCashAmount = shift.OpeningCashAmount,
             OpenedAtUtc = shift.OpenedAtUtc,
             OpenedBy = shift.OpenedBy,

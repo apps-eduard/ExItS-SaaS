@@ -102,9 +102,12 @@ public sealed record PosShiftSummaryRowDto(
     string Status,
     DateOnly BusinessDate,
     decimal OpeningCashAmount,
+    bool OpeningCashCounted,
+    string EffectiveCashCountMode,
     decimal? ClosingCashAmount,
     decimal? ExpectedCashAmount,
     decimal? CashVarianceAmount,
+    string? CashCountState,
     decimal NetCashSales,
     decimal CashRefundsTotal);
 
@@ -1029,9 +1032,14 @@ public sealed class OperationalReportService(
             shift.Status.ToString(),
             shift.BusinessDate,
             shift.OpeningCashAmount,
+            shift.OpeningCashCounted,
+            shift.EffectiveCashCountMode.ToString(),
             shift.ClosingCashAmount,
             shift.ExpectedCashAmountSnapshot,
             shift.CashVarianceAmount,
+            shift.Status == CashierShiftStatus.Closed
+                ? CashCountModes.ClosingState(shift.EffectiveCashCountMode, shift.ClosingCashAmount)
+                : CashCountModes.OpeningState(shift.EffectiveCashCountMode, shift.OpeningCashCounted),
             totals.NetCashSales,
             totals.CashRefundsTotal);
 

@@ -204,7 +204,7 @@ else
                     Add("Variance total", d.TotalCashVariance);
                     foreach (var row in d.Rows.Take(20))
                     {
-                        _lines.Add((row.ShiftNumber, row.CashVarianceAmount?.ToString("N2") ?? row.Status));
+                        _lines.Add((row.ShiftNumber, row.CashVarianceAmount?.ToString("N2") ?? row.CashCountState ?? row.Status));
                     }
                 });
                 break;

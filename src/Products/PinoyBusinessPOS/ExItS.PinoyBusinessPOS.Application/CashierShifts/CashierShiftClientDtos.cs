@@ -22,11 +22,14 @@ public sealed record PosCashierShiftDto(
     string? RegisterName,
     DateOnly BusinessDate,
     decimal OpeningCashAmount,
+    bool OpeningCashCounted,
+    string EffectiveCashCountMode,
     DateTimeOffset OpenedAtUtc,
     Guid OpenedBy,
     decimal? ClosingCashAmount,
     decimal? ExpectedCashAmountSnapshot,
     decimal? CashVarianceAmount,
+    string? ClosingCashCountState,
     string? ClosingNotes,
     DateTimeOffset? ClosedAtUtc,
     Guid? ClosedBy,
@@ -40,6 +43,8 @@ public sealed record PosCashierShiftSummaryDto(
     string ShiftNumber,
     string Status,
     decimal OpeningCashAmount,
+    bool OpeningCashCounted,
+    string EffectiveCashCountMode,
     decimal NetCashSales,
     decimal CashSalesTotal,
     decimal GCashSalesTotal,
@@ -51,6 +56,7 @@ public sealed record PosCashierShiftSummaryDto(
     decimal? ClosingCashAmount,
     decimal? ExpectedCashAmountSnapshot,
     decimal? CashVarianceAmount,
+    string? ClosingCashCountState,
     int CompletedCashCount,
     int VoidedCashCount,
     int CompletedGCashCount,
@@ -59,10 +65,10 @@ public sealed record PosCashierShiftSummaryDto(
 
 public sealed record OpenCashierShiftRequest(
     Guid RegisterId,
-    decimal OpeningCashAmount,
+    decimal? OpeningCashAmount = null,
     DateOnly? BusinessDate = null);
 
-public sealed record CloseCashierShiftRequest(decimal ClosingCashAmount, string? Notes = null);
+public sealed record CloseCashierShiftRequest(decimal? ClosingCashAmount = null, string? Notes = null);
 
 public sealed record RecordCashierShiftMovementRequest(
     string MovementType,

@@ -1923,7 +1923,10 @@ public sealed class PosDbContext : DbContext
                     "opening_cash_amount >= 0");
                 tb.HasCheckConstraint(
                     "ck_cashier_shifts_close_consistency",
-                    "(status = 'Open' AND closing_cash_amount IS NULL AND expected_cash_amount_snapshot IS NULL AND cash_variance_amount IS NULL AND closed_at_utc IS NULL AND closed_by IS NULL AND cancelled_at_utc IS NULL AND cancelled_by IS NULL) OR (status = 'Closed' AND closing_cash_amount IS NOT NULL AND expected_cash_amount_snapshot IS NOT NULL AND cash_variance_amount IS NOT NULL AND closed_at_utc IS NOT NULL AND closed_by IS NOT NULL AND cancelled_at_utc IS NULL AND cancelled_by IS NULL) OR (status = 'Cancelled' AND closing_cash_amount IS NULL AND expected_cash_amount_snapshot IS NULL AND cash_variance_amount IS NULL AND closed_at_utc IS NULL AND closed_by IS NULL AND cancelled_at_utc IS NOT NULL AND cancelled_by IS NOT NULL)");
+                    "(status = 'Open' AND closing_cash_amount IS NULL AND expected_cash_amount_snapshot IS NULL AND cash_variance_amount IS NULL AND closed_at_utc IS NULL AND closed_by IS NULL AND cancelled_at_utc IS NULL AND cancelled_by IS NULL) OR (status = 'Closed' AND expected_cash_amount_snapshot IS NOT NULL AND closed_at_utc IS NOT NULL AND closed_by IS NOT NULL AND cancelled_at_utc IS NULL AND cancelled_by IS NULL AND ((closing_cash_amount IS NOT NULL AND cash_variance_amount IS NOT NULL) OR (closing_cash_amount IS NULL AND cash_variance_amount IS NULL))) OR (status = 'Cancelled' AND closing_cash_amount IS NULL AND expected_cash_amount_snapshot IS NULL AND cash_variance_amount IS NULL AND closed_at_utc IS NULL AND closed_by IS NULL AND cancelled_at_utc IS NOT NULL AND cancelled_by IS NOT NULL)");
+                tb.HasCheckConstraint(
+                    "ck_cashier_shifts_cash_count_mode",
+                    "effective_cash_count_mode IN ('Off', 'Optional', 'Required')");
             });
 
             entity.HasKey(e => e.Id);
@@ -1937,6 +1940,15 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.RegisterId).HasColumnName("register_id");
             entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
             entity.Property(e => e.BusinessDate).HasColumnName("business_date").HasColumnType("date").IsRequired();
+            entity.Property(e => e.EffectiveCashCountMode)
+                .HasColumnName("effective_cash_count_mode")
+                .HasMaxLength(16)
+                .IsRequired()
+                .HasDefaultValue("Required");
+            entity.Property(e => e.OpeningCashCounted)
+                .HasColumnName("opening_cash_counted")
+                .IsRequired()
+                .HasDefaultValue(true);
             entity.Property(e => e.OpeningCashAmount).HasColumnName("opening_cash_amount").HasPrecision(18, 2).IsRequired();
             entity.Property(e => e.OpenedAtUtc).HasColumnName("opened_at_utc");
             entity.Property(e => e.OpenedBy).HasColumnName("opened_by").IsRequired();
@@ -2173,6 +2185,9 @@ public sealed class PosDbContext : DbContext
                 tb.HasCheckConstraint(
                     "ck_operational_setups_completed_consistency",
                     "(is_completed = FALSE AND completed_at_utc IS NULL) OR (is_completed = TRUE AND completed_at_utc IS NOT NULL)");
+                tb.HasCheckConstraint(
+                    "ck_operational_setups_cash_count_mode",
+                    "cash_count_mode IN ('Off', 'Optional', 'Required')");
             });
 
             entity.HasKey(e => e.OrganizationId);
@@ -2206,6 +2221,11 @@ public sealed class PosDbContext : DbContext
                 .HasColumnName("contact_phone")
                 .HasMaxLength(PosOperationalSetup.ContactPhoneMaxLength);
             entity.Property(e => e.DefaultRegisterId).HasColumnName("default_register_id");
+            entity.Property(e => e.CashCountMode)
+                .HasColumnName("cash_count_mode")
+                .HasMaxLength(16)
+                .IsRequired()
+                .HasDefaultValue("Optional");
             entity.Property(e => e.IsCompleted).HasColumnName("is_completed").IsRequired();
             entity.Property(e => e.CompletedAtUtc).HasColumnName("completed_at_utc");
             entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
