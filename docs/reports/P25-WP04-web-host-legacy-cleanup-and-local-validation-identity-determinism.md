@@ -188,3 +188,4 @@ Starting SHA: `e979cc12182a73d1db249051e62b560541e415d1`
 | `11269762` | fix(local-validation): make quick login identities deterministic |
 | `11f22c6d` | refactor(platform-admin): remove migrated organization and personal product UI |
 | `4093c092` | test(web): guard host route ownership and compatibility redirects |
+| `9df02401` | docs(p25): document web cleanup and Local Validation reset semantics |

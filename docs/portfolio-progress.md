@@ -14,7 +14,7 @@
 | Current phase | Phase 25 **Open — WP01–WP04 Code Complete / Owner Validation Pending**; Phase 22/24/19/20/21 remain Open; Phase 14 still open |
 | Current work package | **P25-WP04** Web Host Legacy Cleanup and Local Validation Identity Determinism ([phase](phases/phase-25-organization-web-admin.md); [WP04](reports/P25-WP04-web-host-legacy-cleanup-and-local-validation-identity-determinism.md)). Owner browser validation pending. |
 | Overall status | **Phase 25 WP01–WP04 Code Complete** (three AntDesign browser hosts; Admin is not a hidden multi-scope app; Local Validation quick login is database-backed MODEL A) + Phase 22/24 Owner Validation Pending. **Not Device Verified**. Production remains **Blocked**. **Not production-ready.** |
-| Latest verified commit | See Phase 25 tip on `main` after P25-WP04 push |
+| Latest verified commit | `9df02401` (P25-WP04 docs; implementation `11269762` `11f22c6d` `4093c092`) |
 | Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA deferred; Phase 19/20/22/24/25 owner/physical validation pending |
 | Last updated | 2026-08-13 |
 
