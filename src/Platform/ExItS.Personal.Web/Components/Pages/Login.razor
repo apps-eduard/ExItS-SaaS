@@ -1,0 +1,27 @@
+@page "/login"
+@layout EmptyLayout
+@attribute [AllowAnonymous]
+@inject IOptions<ExItSWebHostOptions> Hosts
+@inject NavigationManager Nav
+
+<PageTitle>Sign in — Personal</PageTitle>
+<div class="exits-login-shell">
+    <Card Class="exits-login-card">
+        <TitleTemplate>ExItS Personal</TitleTemplate>
+        <Body>
+            <Paragraph>Canonical ExItS sign-in is used for Personal Web.</Paragraph>
+            @if (!string.IsNullOrWhiteSpace(Error))
+            {
+                <Alert Type="@AlertType.Error" Message="@Error" ShowIcon="true" />
+            }
+            <Button Type="@ButtonType.Primary" Block OnClick="Go">Sign in</Button>
+        </Body>
+    </Card>
+</div>
+
+@code {
+    [SupplyParameterFromQuery] public string? Error { get; set; }
+
+    private void Go() =>
+        Nav.NavigateTo(Hosts.Value.CanonicalLoginUrl(WebApps.Personal, "/home"), forceLoad: true);
+}

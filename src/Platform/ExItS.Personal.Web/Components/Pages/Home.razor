@@ -1,0 +1,35 @@
+@page "/home"
+@attribute [Authorize]
+@inject PersonalApiClient Api
+
+<PageTitle>Personal home</PageTitle>
+<ExitsPageHeader Title="Home" Subtitle="Personal contacts and Utang summary. This is not Organization Admin." />
+
+@if (_loading)
+{
+    <Spin />
+}
+else if (_dashboard is null)
+{
+    <Alert Type="@AlertType.Warning" Message="Personal dashboard is unavailable for this session." ShowIcon="true" />
+}
+else
+{
+    <Row Gutter="(12,12)">
+        <AntDesign.Col Xs="24" Sm="12" Md="6"><Card Size="@CardSize.Small" Title="Contacts">@_dashboard.ContactCount</Card></AntDesign.Col>
+        <AntDesign.Col Xs="24" Sm="12" Md="6"><Card Size="@CardSize.Small" Title="Active relationships">@_dashboard.ActiveRelationshipCount</Card></AntDesign.Col>
+        <AntDesign.Col Xs="24" Sm="12" Md="6"><Card Size="@CardSize.Small" Title="I Lent">@_dashboard.TotalLentBalance</Card></AntDesign.Col>
+        <AntDesign.Col Xs="24" Sm="12" Md="6"><Card Size="@CardSize.Small" Title="I Borrowed">@_dashboard.TotalBorrowedBalance</Card></AntDesign.Col>
+    </Row>
+}
+
+@code {
+    private bool _loading = true;
+    private PersonalDashboardDto? _dashboard;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _dashboard = await Api.GetDashboardAsync();
+        _loading = false;
+    }
+}

@@ -1,0 +1,122 @@
+@page "/utang/people"
+@page "/utang/lent"
+@page "/utang/borrowed"
+@page "/utang/invitations"
+@page "/notifications"
+@page "/profile"
+@page "/settings"
+@attribute [Authorize]
+@inject PersonalApiClient Api
+@inject NavigationManager Nav
+
+<PageTitle>@_title</PageTitle>
+<ExitsPageHeader Title="@_title" Subtitle="Personal account data from existing Platform Personal APIs." />
+
+@if (_loading)
+{
+    <Spin />
+}
+else if (!string.IsNullOrWhiteSpace(_error))
+{
+    <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" />
+}
+else if (_mode == "people")
+{
+    <Table TItem="PersonalContactDto" DataSource="_contacts" Size="@TableSize.Small" Bordered>
+        <PropertyColumn Property="c => c.DisplayName" Title="Name" />
+        <PropertyColumn Property="c => c.Email" Title="Email" />
+        <PropertyColumn Property="c => c.Status" Title="Status" />
+    </Table>
+}
+else if (_mode is "lent" or "borrowed")
+{
+    <Table TItem="PersonalDebtRelationshipSummaryDto" DataSource="_relationships" Size="@TableSize.Small" Bordered>
+        <PropertyColumn Property="c => c.Perspective" Title="Perspective" />
+        <PropertyColumn Property="c => c.CurrentBalance" Title="Balance" />
+        <PropertyColumn Property="c => c.CurrencyCode" Title="Currency" />
+        <PropertyColumn Property="c => c.Status" Title="Status" />
+    </Table>
+}
+else if (_mode == "invitations")
+{
+    <Table TItem="PersonalUtangInvitationDto" DataSource="_invitations" Size="@TableSize.Small" Bordered>
+        <PropertyColumn Property="c => c.InviteTargetEmailMasked" Title="Email" />
+        <PropertyColumn Property="c => c.Status" Title="Status" />
+    </Table>
+}
+else if (_mode == "notifications")
+{
+    <Table TItem="PersonalInAppNotificationDto" DataSource="_notifications" Size="@TableSize.Small" Bordered>
+        <PropertyColumn Property="c => c.Title" Title="Title" />
+        <PropertyColumn Property="c => c.Preview" Title="Preview" />
+        <PropertyColumn Property="c => c.IsRead" Title="Read" />
+    </Table>
+}
+else if (_mode == "profile" && _profile is not null)
+{
+    <Descriptions Bordered Size="@DescriptionsSize.Small" Column="1">
+        <DescriptionsItem Title="Name">@_profile.DisplayName</DescriptionsItem>
+        <DescriptionsItem Title="Username">@_profile.Username</DescriptionsItem>
+        <DescriptionsItem Title="Email">@_profile.Email</DescriptionsItem>
+        <DescriptionsItem Title="Account class">@_profile.AccountClass</DescriptionsItem>
+    </Descriptions>
+}
+else if (_mode == "settings" && _settings is not null)
+{
+    <Descriptions Bordered Size="@DescriptionsSize.Small" Column="1">
+        <DescriptionsItem Title="Email notifications">@_settings.EmailNotificationsEnabled</DescriptionsItem>
+        <DescriptionsItem Title="Push notifications">@_settings.PushNotificationsEnabled</DescriptionsItem>
+        <DescriptionsItem Title="In-app notifications">@_settings.InAppNotificationsEnabled</DescriptionsItem>
+        <DescriptionsItem Title="Reminders">@_settings.ReminderNotificationsEnabled</DescriptionsItem>
+    </Descriptions>
+}
+
+@code {
+    private bool _loading = true;
+    private string _mode = "people";
+    private string _title = "Contacts";
+    private string? _error;
+    private IReadOnlyList<PersonalContactDto> _contacts = [];
+    private IReadOnlyList<PersonalDebtRelationshipSummaryDto> _relationships = [];
+    private IReadOnlyList<PersonalUtangInvitationDto> _invitations = [];
+    private IReadOnlyList<PersonalInAppNotificationDto> _notifications = [];
+    private PersonalProfileDto? _profile;
+    private PersonalAccountSettingsDto? _settings;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var path = new Uri(Nav.Uri).AbsolutePath.TrimEnd('/');
+        (_mode, _title) = path switch
+        {
+            "/utang/lent" => ("lent", "I Lent"),
+            "/utang/borrowed" => ("borrowed", "I Borrowed"),
+            "/utang/invitations" => ("invitations", "Invitations"),
+            "/notifications" => ("notifications", "Notifications"),
+            "/profile" => ("profile", "Profile"),
+            "/settings" => ("settings", "Settings"),
+            _ => ("people", "Contacts")
+        };
+
+        try
+        {
+            switch (_mode)
+            {
+                case "people": _contacts = await Api.GetContactsAsync() ?? []; break;
+                case "lent": _relationships = await Api.GetLentAsync() ?? []; break;
+                case "borrowed": _relationships = await Api.GetBorrowedAsync() ?? []; break;
+                case "invitations": _invitations = await Api.GetInvitationsAsync() ?? []; break;
+                case "notifications": _notifications = await Api.GetNotificationsAsync() ?? []; break;
+                case "profile": _profile = await Api.GetProfileAsync(); break;
+                case "settings": _settings = await Api.GetSettingsAsync(); break;
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

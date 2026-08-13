@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json.schemastore.org/launchsettings.json",
+  "profiles": {
+    "http": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": true,
+      "applicationUrl": "http://localhost:5292",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+    "LocalValidation": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": true,
+      "applicationUrl": "http://0.0.0.0:8094",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "LocalValidation__Enabled": "true",
+        "PlatformApi__BaseUrl": "http://127.0.0.1:8091",
+        "ExItSWebHosts__PlatformAdmin": "http://127.0.0.1:8090",
+        "ExItSWebHosts__OrganizationWeb": "http://127.0.0.1:8093",
+        "ExItSWebHosts__PersonalWeb": "http://127.0.0.1:8094"
+      }
+    }
+  }
+}

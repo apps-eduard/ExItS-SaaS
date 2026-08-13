@@ -1,0 +1,25 @@
+@page "/start-business"
+@attribute [Authorize]
+@inject NavigationManager Nav
+@inject IOptions<ExItSWebHostOptions> Hosts
+
+<PageTitle>Start a Business</PageTitle>
+<ExitsPageHeader Title="Start a Business" Subtitle="Create an organization from your Personal account. Your Personal profile stays separate." />
+<Alert Type="@AlertType.Info"
+       ShowIcon="true"
+       Message="After the organization is created, choose the Organization workspace. Staff membership is never attached to a Personal login." />
+<Paragraph>
+    The Start a Business form uses the existing Platform catalog and remains available from canonical sign-in.
+</Paragraph>
+<Button Type="@ButtonType.Primary"
+        OnClick="OpenForm">
+    Continue
+</Button>
+
+@code {
+    private void OpenForm()
+    {
+        var admin = Hosts.Value.GetOrigin(WebApps.Platform).TrimEnd('/');
+        Nav.NavigateTo(admin + "/admin/personal/start-business", forceLoad: true);
+    }
+}

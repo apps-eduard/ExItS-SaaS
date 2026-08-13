@@ -6,6 +6,7 @@
     <Project Path="src/Platform/ExItS.Platform.Application/ExItS.Platform.Application.csproj" />
     <Project Path="src/Platform/ExItS.Platform.Domain/ExItS.Platform.Domain.csproj" />
     <Project Path="src/Platform/ExItS.Platform.Infrastructure/ExItS.Platform.Infrastructure.csproj" />
+    <Project Path="src/Platform/ExItS.Personal.Web/ExItS.Personal.Web.csproj" />
   </Folder>
   <Folder Name="/src/Products/PinoyBusinessPOS/">
     <Project Path="src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Api/ExItS.PinoyBusinessPOS.Api.csproj" />
@@ -21,6 +22,7 @@
     <Project Path="src/Shared/ExItS.DesignSystem/ExItS.DesignSystem.csproj" />
     <Project Path="src/Shared/ExItS.BackupRestore/ExItS.BackupRestore.csproj" />
     <Project Path="src/Shared/ExItS.Deployment/ExItS.Deployment.csproj" />
+    <Project Path="src/Shared/ExItS.Web.UI/ExItS.Web.UI.csproj" />
   </Folder>
   <Folder Name="/src/Products/">
     <Folder Name="/src/Products/PinoyBusinessPOS/">
@@ -40,6 +42,7 @@
     <Project Path="tests/ExItS.PinoyBusinessPOS.IntegrationTests/ExItS.PinoyBusinessPOS.IntegrationTests.csproj" />
     <Project Path="tests/ExItS.PinoyBusinessPOS.Maui.Tests/ExItS.PinoyBusinessPOS.Maui.Tests.csproj" />
     <Project Path="tests/ExItS.PinoyBusinessPOS.Web.Tests/ExItS.PinoyBusinessPOS.Web.Tests.csproj" />
+    <Project Path="tests/ExItS.Personal.Web.Tests/ExItS.Personal.Web.Tests.csproj" />
     <Project Path="tests/ExItS.BackupRestore.Tests/ExItS.BackupRestore.Tests.csproj" />
     <Project Path="tests/ExItS.Deployment.Tests/ExItS.Deployment.Tests.csproj" />
   </Folder>

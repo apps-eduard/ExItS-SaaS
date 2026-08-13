@@ -1,0 +1,10 @@
+@inject NavigationManager Nav
+@inject IOptions<ExItSWebHostOptions> Hosts
+
+@code {
+    protected override void OnInitialized()
+    {
+        var path = "/" + Nav.ToBaseRelativePath(Nav.Uri);
+        Nav.NavigateTo(Hosts.Value.CanonicalLoginUrl(WebApps.Personal, SafeReturnPath.Sanitize(path, "/home")), forceLoad: true);
+    }
+}

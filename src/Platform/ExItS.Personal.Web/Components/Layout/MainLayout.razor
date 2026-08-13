@@ -1,0 +1,51 @@
+@inherits LayoutComponentBase
+@attribute [Authorize]
+@inject NavigationManager Nav
+
+<Layout Class="exits-web-layout">
+    <Sider Theme="SiderTheme.Dark" Width="220" Collapsible Breakpoint="@BreakpointType.Lg" Class="exits-web-sider">
+        <div class="exits-brand" @onclick='() => Nav.NavigateTo("/home")'>
+            <span class="exits-brand-mark">PW</span>
+            <span>Personal</span>
+        </div>
+        <Menu Theme="MenuTheme.Dark" Mode="MenuMode.Inline" Class="exits-web-menu">
+            <MenuItem RouterLink="/home" RouterMatch="NavLinkMatch.All" Icon="home">Home</MenuItem>
+            <MenuItem RouterLink="/utang/people" Icon="team">Contacts</MenuItem>
+            <SubMenu Title="Utang">
+                <MenuItem RouterLink="/utang/lent">I Lent</MenuItem>
+                <MenuItem RouterLink="/utang/borrowed">I Borrowed</MenuItem>
+                <MenuItem RouterLink="/utang/invitations">Invitations</MenuItem>
+            </SubMenu>
+            <MenuItem RouterLink="/start-business" Icon="shop">Start a Business</MenuItem>
+            <MenuItem RouterLink="/notifications" Icon="bell">Notifications</MenuItem>
+            <MenuItem RouterLink="/profile" Icon="user">Profile</MenuItem>
+            <MenuItem RouterLink="/settings" Icon="setting">Settings</MenuItem>
+        </Menu>
+    </Sider>
+    <Layout>
+        <Header Class="exits-web-header">
+            <span class="exits-header-title">Personal</span>
+            <div class="exits-header-right">
+                <ExitsThemeSelector />
+                <ExitsLanguageSelector />
+                <Dropdown>
+                    <Overlay>
+                        <Menu>
+                            <MenuItem OnClick='() => Nav.NavigateTo("/handoff/organization", forceLoad: true)'>Organization workspace</MenuItem>
+                            <MenuDivider />
+                            <MenuItem>
+                                <a href="/logout">Sign out</a>
+                            </MenuItem>
+                        </Menu>
+                    </Overlay>
+                    <ChildContent>
+                        <Button Type="@ButtonType.Text" Icon="user" />
+                    </ChildContent>
+                </Dropdown>
+            </div>
+        </Header>
+        <Content Class="exits-web-content">
+            @Body
+        </Content>
+    </Layout>
+</Layout>

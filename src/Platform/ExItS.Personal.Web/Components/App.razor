@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+@using AntDesign
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <base href="/" />
+    <link id="exits-antd-theme" href="/_content/AntDesign/css/ant-design-blazor.css" rel="stylesheet" />
+    <script src="/_content/ExItS.Web.UI/theme-boot.js"></script>
+    <link rel="stylesheet" href="/_content/ExItS.Web.UI/exits-web.css" />
+    <ImportMap />
+    <HeadOutlet />
+</head>
+<body>
+    <CascadingAuthenticationState>
+        <Routes @rendermode="InteractiveServer" />
+    </CascadingAuthenticationState>
+    <AntContainer />
+    <script src="/_content/AntDesign/js/ant-design-blazor.js"></script>
+    <script src="@Assets["_framework/blazor.web.js"]"></script>
+</body>
+</html>
