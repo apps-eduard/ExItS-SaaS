@@ -13,20 +13,20 @@
 }
 else
 {
-    <PageHeader Title="Stock overview" Subtitle="Organization-level tracked stock. Branch overlay appears on lots and transfers. Adjustments are audited stock movements." />
+    <ExitsPageHeader Title="Stock overview" Subtitle="Organization-level tracked stock. Branch overlay appears on lots and transfers. Adjustments are audited stock movements." />
     <div class="org-subnav">
         <a href="/inventory">Stock</a>
         <a href="/inventory/transfers">Transfers</a>
         <a href="/inventory/lots">Expiration</a>
     </div>
     <div class="org-toolbar">
-        <TextInput Label="Search" @bind-Value="_search" />
+        <ExitsField Label="Search"><Input @bind-Value="_search" /></ExitsField>
         <label><input type="checkbox" @bind="_lowStock" /> Low stock</label>
         <Button OnClick="SearchAsync">Filter</Button>
     </div>
     @if (!string.IsNullOrWhiteSpace(_error))
     {
-        <Alert Tone="AlertTone.Danger" Message="@_error" />
+        <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" />
     }
     <div class="org-table-wrap">
         <table class="org-table">
@@ -52,7 +52,7 @@ else
 
     @if (_detail is not null)
     {
-        <Section Title="@($"Adjust {_detail.Name}")">
+        <Card Size="@CardSize.Small" Title="@($"Adjust {_detail.Name}")">
             <p class="org-note">Direction In/Out creates a stock movement. Quantity overwrite is not allowed.</p>
             @if (Shell.Can(UtangCapability.ManageInventory))
             {
@@ -61,14 +61,14 @@ else
                         <option value="In">In (receive)</option>
                         <option value="Out">Out (write-off)</option>
                     </select>
-                    <TextInput Label="Quantity" @bind-Value="_qty" />
-                    <TextInput Label="Reason" @bind-Value="_reason" />
+                    <ExitsField Label="Quantity"><Input @bind-Value="_qty" /></ExitsField>
+                    <ExitsField Label="Reason"><Input @bind-Value="_reason" /></ExitsField>
                     @if (_detail.TracksExpiration)
                     {
-                        <TextInput Label="Lot number" @bind-Value="_lot" />
-                        <TextInput Label="Expiry (yyyy-MM-dd)" @bind-Value="_expiry" />
+                        <ExitsField Label="Lot number"><Input @bind-Value="_lot" /></ExitsField>
+                        <ExitsField Label="Expiry (yyyy-MM-dd)"><Input @bind-Value="_expiry" /></ExitsField>
                     }
-                    <Button Variant="ButtonVariant.Primary" IsLoading="_busy" OnClick="AdjustAsync">Record adjustment</Button>
+                    <Button Type="@ButtonType.Primary" Loading="_busy" OnClick="AdjustAsync">Record adjustment</Button>
                 </div>
             }
             <h3>Recent movements</h3>
@@ -90,7 +90,7 @@ else
                     </tbody>
                 </table>
             </div>
-        </Section>
+        </Card>
     }
 }
 

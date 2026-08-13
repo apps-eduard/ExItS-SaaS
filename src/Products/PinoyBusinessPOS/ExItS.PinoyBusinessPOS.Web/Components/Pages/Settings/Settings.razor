@@ -11,30 +11,30 @@
 }
 else
 {
-    <PageHeader Title="Settings" Subtitle="Organization POS and cash-handling configuration. Changes apply to future shifts." />
+    <ExitsPageHeader Title="Settings" Subtitle="Organization POS and cash-handling configuration. Changes apply to future shifts." />
     @if (!string.IsNullOrWhiteSpace(_error))
     {
-        <Alert Tone="AlertTone.Danger" Message="@_error" />
+        <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" />
     }
     @if (!string.IsNullOrWhiteSpace(_ok))
     {
-        <Alert Tone="AlertTone.Success" Message="@_ok" />
+        <Alert Type="@AlertType.Success" Message="@_ok" ShowIcon="true" />
     }
     @if (_dto is not null)
     {
-        <Section Title="General / POS">
+        <Card Size="@CardSize.Small" Title="General / POS">
             <div class="org-form">
-                <TextInput Label="Store display name" @bind-Value="_store" />
-                <TextInput Label="Currency" @bind-Value="_currency" />
-                <TextInput Label="Tax mode" @bind-Value="_taxMode" />
-                <TextInput Label="Tax rate %" @bind-Value="_taxRate" />
-                <TextInput Label="Receipt header" @bind-Value="_header" />
-                <TextInput Label="Receipt footer" @bind-Value="_footer" />
-                <TextInput Label="Business address" @bind-Value="_address" />
-                <TextInput Label="Contact phone" @bind-Value="_phone" />
+                <ExitsField Label="Store display name"><Input @bind-Value="_store" /></ExitsField>
+                <ExitsField Label="Currency"><Input @bind-Value="_currency" /></ExitsField>
+                <ExitsField Label="Tax mode"><Input @bind-Value="_taxMode" /></ExitsField>
+                <ExitsField Label="Tax rate %"><Input @bind-Value="_taxRate" /></ExitsField>
+                <ExitsField Label="Receipt header"><Input @bind-Value="_header" /></ExitsField>
+                <ExitsField Label="Receipt footer"><Input @bind-Value="_footer" /></ExitsField>
+                <ExitsField Label="Business address"><Input @bind-Value="_address" /></ExitsField>
+                <ExitsField Label="Contact phone"><Input @bind-Value="_phone" /></ExitsField>
             </div>
-        </Section>
-        <Section Title="Cash handling">
+        </Card>
+        <Card Size="@CardSize.Small" Title="Cash handling">
             <p class="org-note">Cash Count mode is snapshotted onto new/open shifts. Already-open shifts keep their effective mode.</p>
             <label>
                 Cash count
@@ -44,10 +44,10 @@ else
                     <option value="Required">Required — count is required to close</option>
                 </select>
             </label>
-        </Section>
+        </Card>
         @if (Shell.Can(UtangCapability.ManageOperationalSetup) || Shell.IsOrgOwner)
         {
-            <Button Variant="ButtonVariant.Primary" IsLoading="_busy" OnClick="SaveAsync">Save settings</Button>
+            <Button Type="@ButtonType.Primary" Loading="_busy" OnClick="SaveAsync">Save settings</Button>
         }
         else
         {

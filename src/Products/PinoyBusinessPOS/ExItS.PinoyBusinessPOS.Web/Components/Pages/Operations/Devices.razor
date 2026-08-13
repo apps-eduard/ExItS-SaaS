@@ -12,14 +12,14 @@
 }
 else
 {
-    <PageHeader Title="POS devices / registers" Subtitle="Registered POS terminals. This browser is not a POS device. Offline PIN secrets are never shown." />
+    <ExitsPageHeader Title="POS devices / registers" Subtitle="Registered POS terminals. This browser is not a POS device. Offline PIN secrets are never shown." />
     @if (_capacity is not null)
     {
         <p class="org-note">Capacity @_capacity.Used / @_capacity.Allowed</p>
     }
     @if (!string.IsNullOrWhiteSpace(_error))
     {
-        <Alert Tone="AlertTone.Danger" Message="@_error" />
+        <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" />
     }
     <div class="org-table-wrap">
         <table class="org-table">
@@ -38,10 +38,10 @@ else
                         <td>@d.LastSeenAtUtc.LocalDateTime</td>
                         <td>@d.Platform @d.Model</td>
                         <td>
-                            <button type="button" class="exds-btn" @onclick="() => RenameAsync(d)">Rename</button>
+                            <button type="button" class="ant-btn ant-btn-sm" @onclick="() => RenameAsync(d)">Rename</button>
                             @if (!string.Equals(d.Status, "Revoked", StringComparison.OrdinalIgnoreCase))
                             {
-                                <button type="button" class="exds-btn" @onclick="() => RevokeAsync(d)">Revoke</button>
+                                <button type="button" class="ant-btn ant-btn-sm" @onclick="() => RevokeAsync(d)">Revoke</button>
                             }
                         </td>
                     </tr>

@@ -12,15 +12,15 @@
 }
 else
 {
-    <PageHeader Title="Utang / receivables" Subtitle="Business Utang remains on the POS ledger. This is a management view of outstanding balances." />
+    <ExitsPageHeader Title="Utang / receivables" Subtitle="Business Utang remains on the POS ledger. This is a management view of outstanding balances." />
     <div class="org-toolbar">
-        <TextInput Label="From" @bind-Value="_from" />
-        <TextInput Label="To" @bind-Value="_to" />
+        <ExitsField Label="From"><Input @bind-Value="_from" /></ExitsField>
+        <ExitsField Label="To"><Input @bind-Value="_to" /></ExitsField>
         <Button OnClick="LoadAsync">Run</Button>
     </div>
     @if (!string.IsNullOrWhiteSpace(_error))
     {
-        <Alert Tone="AlertTone.Danger" Message="@_error" />
+        <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" />
     }
     else if (_report is not null)
     {
@@ -44,7 +44,7 @@ else
         </div>
     }
 
-    <Section Title="Overdue customers (paged)">
+    <Card Size="@CardSize.Small" Title="Overdue customers (paged)">
         <div class="org-table-wrap">
             <table class="org-table">
                 <thead><tr><th>Customer</th><th>Outstanding</th><th>Overdue</th></tr></thead>
@@ -57,7 +57,7 @@ else
             </table>
         </div>
         <OrgPager Page="_page" PageSize="20" TotalCount="_overdueTotal" PageChanged="ChangePageAsync" />
-    </Section>
+    </Card>
 }
 
 @code {

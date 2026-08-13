@@ -15,7 +15,7 @@
 }
 else
 {
-    <PageHeader Title="Branch transfers" Subtitle="Intra-organization inventory transfers. Statuses: Draft, InTransit, PartiallyReceived, Received, Cancelled." />
+    <ExitsPageHeader Title="Branch transfers" Subtitle="Intra-organization inventory transfers. Statuses: Draft, InTransit, PartiallyReceived, Received, Cancelled." />
     <div class="org-toolbar">
         <select @bind="_status">
             <option value="">All statuses</option>
@@ -29,7 +29,7 @@ else
     </div>
     @if (!string.IsNullOrWhiteSpace(_error))
     {
-        <Alert Tone="AlertTone.Danger" Message="@_error" />
+        <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" />
     }
     <div class="org-table-wrap">
         <table class="org-table">
@@ -56,20 +56,20 @@ else
 
     @if (Shell.Can(UtangCapability.ManageInventory))
     {
-        <Section Title="Create transfer">
+        <Card Size="@CardSize.Small" Title="Create transfer">
             <div class="org-form">
                 <label>Source<select @bind="_sourceId">@foreach (var b in _branches) { <option value="@b.Id">@b.Name</option> }</select></label>
                 <label>Destination<select @bind="_destId">@foreach (var b in _branches) { <option value="@b.Id">@b.Name</option> }</select></label>
-                <TextInput Label="Product id" @bind-Value="_productId" />
-                <TextInput Label="Quantity" @bind-Value="_qty" />
-                <Button IsLoading="_busy" OnClick="CreateAsync">Create draft</Button>
+                <ExitsField Label="Product id"><Input @bind-Value="_productId" /></ExitsField>
+                <ExitsField Label="Quantity"><Input @bind-Value="_qty" /></ExitsField>
+                <Button Loading="_busy" OnClick="CreateAsync">Create draft</Button>
             </div>
-        </Section>
+        </Card>
     }
 
     @if (_detail is not null)
     {
-        <Section Title="@($"Transfer {_detail.TransferNumber}")">
+        <Card Size="@CardSize.Small" Title="@($"Transfer {_detail.TransferNumber}")">
             <p class="org-note">@_detail.SourceBranchName → @_detail.DestinationBranchName · @_detail.Status</p>
             <div class="org-table-wrap">
                 <table class="org-table">
@@ -95,16 +95,16 @@ else
             {
                 @if (string.Equals(_detail.Status, "Draft", StringComparison.OrdinalIgnoreCase))
                 {
-                    <Button IsLoading="_busy" OnClick="DispatchAsync">Dispatch</Button>
-                    <Button Variant="ButtonVariant.Danger" IsLoading="_busy" OnClick="CancelAsync">Cancel</Button>
+                    <Button Loading="_busy" OnClick="DispatchAsync">Dispatch</Button>
+                    <Button Danger="true" Loading="_busy" OnClick="CancelAsync">Cancel</Button>
                 }
                 @if (string.Equals(_detail.Status, "InTransit", StringComparison.OrdinalIgnoreCase)
                      || string.Equals(_detail.Status, "PartiallyReceived", StringComparison.OrdinalIgnoreCase))
                 {
-                    <Button IsLoading="_busy" OnClick="ReceiveAsync">Receive sent quantities</Button>
+                    <Button Loading="_busy" OnClick="ReceiveAsync">Receive sent quantities</Button>
                 }
             }
-        </Section>
+        </Card>
     }
 }
 

@@ -12,26 +12,24 @@
 }
 else
 {
-    <PageHeader Title="Products" Subtitle="Catalog management. This is not a selling screen.">
-        <Actions>
-            @if (Shell.Can(UtangCapability.ManageCatalog))
-            {
-                <a class="exds-btn" href="/products/new">New product</a>
-            }
-        </Actions>
-    </PageHeader>
+    <ExitsPageHeader Title="Products" Subtitle="Catalog management. This is not a selling screen.">
+        @if (Shell.Can(UtangCapability.ManageCatalog))
+        {
+            <a class="ant-btn ant-btn-sm" href="/products/new">New product</a>
+        }
+    </ExitsPageHeader>
     <div class="org-subnav">
         <a href="/categories">Categories</a>
         <a href="/catalog">Global Catalog</a>
     </div>
     <div class="org-toolbar">
-        <TextInput Label="Search" @bind-Value="_search" Placeholder="Name, SKU, barcode" />
-        <TextInput Label="Status" @bind-Value="_status" Placeholder="Active" />
+        <ExitsField Label="Search"><Input @bind-Value="_search" Placeholder="Name, SKU, barcode" /></ExitsField>
+        <ExitsField Label="Status"><Input @bind-Value="_status" Placeholder="Active" /></ExitsField>
         <Button OnClick="SearchAsync">Search</Button>
     </div>
     @if (!string.IsNullOrWhiteSpace(_error))
     {
-        <Alert Tone="AlertTone.Danger" Message="@_error" />
+        <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" />
     }
     @if (_loading)
     {

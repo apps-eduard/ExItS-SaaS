@@ -14,17 +14,17 @@
 }
 else
 {
-    <PageHeader Title="Overview" Subtitle="What is happening in this business today. Aggregates only — not a checkout terminal." />
+    <ExitsPageHeader Title="Overview" Subtitle="What is happening in this business today. Aggregates only — not a checkout terminal." />
     <p class="org-note">@L["Boundary_NotPos"]</p>
 
     @if (_loading)
     {
-        <Skeleton />
+        <Spin />
         <p class="org-note">Loading management metrics…</p>
     }
     else if (!string.IsNullOrWhiteSpace(_error))
     {
-        <ErrorState Title="Overview unavailable" Message="@_error" RetryLabel="Retry" OnRetry="LoadAsync" />
+        <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" />
     }
     else if (_overview is not null)
     {

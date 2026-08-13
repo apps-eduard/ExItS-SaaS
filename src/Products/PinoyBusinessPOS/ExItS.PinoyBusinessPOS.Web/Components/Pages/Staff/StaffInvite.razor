@@ -13,12 +13,15 @@
 }
 else
 {
-    <PageHeader Title="Invite staff" Subtitle="Creates an organization-scoped staff identity. Never attaches Staff membership to a Personal login." />
+    <ExitsPageHeader Title="Invite staff" Subtitle="Creates an organization-scoped staff identity. Never attaches Staff membership to a Personal login." />
     <p class="org-note">Invite role is Organization Member. Assign a POS role after the staff identity exists. Passwords are set by the invitee.</p>
-    <FormValidationSummary Messages="_errors" />
+    @if (_errors.Count > 0)
+    {
+        <Alert Type="@AlertType.Error" Message="@string.Join(" ", _errors)" ShowIcon="true" />
+    }
     <div class="org-form">
-        <TextInput Label="Contact email" @bind-Value="_email" Type="email" Required="true" />
-        <TextInput Label="Display name" @bind-Value="_displayName" />
+        <ExitsField Label="Contact email"><Input @bind-Value="_email" /></ExitsField>
+        <ExitsField Label="Display name"><Input @bind-Value="_displayName" /></ExitsField>
         <label>
             POS role (optional)
             <select @bind="_productRole">
@@ -30,7 +33,7 @@ else
                 <option value="Admin">Admin</option>
             </select>
         </label>
-        <Button Variant="ButtonVariant.Primary" IsLoading="_busy" OnClick="InviteAsync">Send invite</Button>
+        <Button Type="@ButtonType.Primary" Loading="_busy" OnClick="InviteAsync">Send invite</Button>
     </div>
 }
 

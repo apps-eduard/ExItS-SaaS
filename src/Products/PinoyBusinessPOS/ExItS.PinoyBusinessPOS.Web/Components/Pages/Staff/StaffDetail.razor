@@ -17,18 +17,18 @@ else if (_member is null)
 }
 else
 {
-    <PageHeader Title="@(_member.DisplayName ?? _member.Username ?? "Staff")" Subtitle="Organization membership and POS role. Passwords are never displayed." />
+    <ExitsPageHeader Title="@(_member.DisplayName ?? _member.Username ?? "Staff")" Subtitle="Organization membership and POS role. Passwords are never displayed." />
     <p class="org-note">Org role: @_member.Role · Status: @_member.Status · Contact: @_member.Email</p>
     @if (!string.IsNullOrWhiteSpace(_error))
     {
-        <Alert Tone="AlertTone.Danger" Message="@_error" />
+        <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" />
     }
     @if (!string.IsNullOrWhiteSpace(_ok))
     {
-        <Alert Tone="AlertTone.Success" Message="@_ok" />
+        <Alert Type="@AlertType.Success" Message="@_ok" ShowIcon="true" />
     }
 
-    <Section Title="POS role">
+    <Card Size="@CardSize.Small" Title="POS role">
         <p class="org-note">System-defined roles only. There is no custom RBAC designer.</p>
         <select @bind="_posRole">
             <option value="Cashier">Cashier</option>
@@ -38,24 +38,24 @@ else
             <option value="Admin">Admin</option>
             <option value="Owner">Owner</option>
         </select>
-        <Button IsLoading="_busy" OnClick="AssignPosRoleAsync">Assign POS role</Button>
+        <Button Loading="_busy" OnClick="AssignPosRoleAsync">Assign POS role</Button>
         @if (_assignment is not null)
         {
             <p class="org-note">Current: @_assignment.RoleDisplayName (@_assignment.Status)</p>
-            <Button Variant="ButtonVariant.Danger" IsLoading="_busy" OnClick="RevokePosRoleAsync">Revoke POS role</Button>
+            <Button Danger="true" Loading="_busy" OnClick="RevokePosRoleAsync">Revoke POS role</Button>
         }
-    </Section>
+    </Card>
 
-    <Section Title="Membership">
+    <Card Size="@CardSize.Small" Title="Membership">
         @if (string.Equals(_member.Status, "Active", StringComparison.OrdinalIgnoreCase))
         {
-            <Button Variant="ButtonVariant.Danger" IsLoading="_busy" OnClick="SuspendAsync">Deactivate</Button>
+            <Button Danger="true" Loading="_busy" OnClick="SuspendAsync">Deactivate</Button>
         }
         else
         {
-            <Button IsLoading="_busy" OnClick="ReactivateAsync">Reactivate</Button>
+            <Button Loading="_busy" OnClick="ReactivateAsync">Reactivate</Button>
         }
-    </Section>
+    </Card>
 }
 
 @code {

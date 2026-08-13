@@ -12,7 +12,7 @@
 }
 else
 {
-    <PageHeader Title="Branches" Subtitle="Location-specific operational state. Products remain organization-level." />
+    <ExitsPageHeader Title="Branches" Subtitle="Location-specific operational state. Products remain organization-level." />
 
     @if (_capacity is not null)
     {
@@ -20,15 +20,15 @@ else
     }
 
     <div class="org-form" style="margin-bottom:1rem">
-        <TextInput Label="Code" @bind-Value="_code" />
-        <TextInput Label="Name" @bind-Value="_name" />
-        <TextInput Label="Address" @bind-Value="_address" />
-        <Button Variant="ButtonVariant.Primary" IsLoading="_busy" OnClick="CreateAsync">Create branch</Button>
+        <ExitsField Label="Code"><Input @bind-Value="_code" /></ExitsField>
+        <ExitsField Label="Name"><Input @bind-Value="_name" /></ExitsField>
+        <ExitsField Label="Address"><Input @bind-Value="_address" /></ExitsField>
+        <Button Type="@ButtonType.Primary" Loading="_busy" OnClick="CreateAsync">Create branch</Button>
     </div>
 
     @if (!string.IsNullOrWhiteSpace(_error))
     {
-        <Alert Tone="AlertTone.Danger" Message="@_error" />
+        <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" />
     }
 
     @if (_loading)
@@ -37,7 +37,7 @@ else
     }
     else if (_items.Count == 0)
     {
-        <EmptyState Title="No branches" Message="Create the first branch for this organization." />
+        <ExitsEmptyState Title="No branches" Message="Create the first branch for this organization." />
     }
     else
     {
@@ -57,10 +57,10 @@ else
                             <td><span class="org-badge">@b.Status</span></td>
                             <td>@b.AddressLine1 @b.City</td>
                             <td>
-                                <button type="button" class="exds-btn" disabled="@_busy" @onclick="() => SaveAsync(b)">Save</button>
+                                <button type="button" class="ant-btn ant-btn-sm" disabled="@_busy" @onclick="() => SaveAsync(b)">Save</button>
                                 @if (!b.IsPrimary && !string.Equals(b.Status, "Archived", StringComparison.OrdinalIgnoreCase))
                                 {
-                                    <button type="button" class="exds-btn" disabled="@_busy" @onclick="() => ArchiveAsync(b)">Archive</button>
+                                    <button type="button" class="ant-btn ant-btn-sm" disabled="@_busy" @onclick="() => ArchiveAsync(b)">Archive</button>
                                 }
                             </td>
                         </tr>

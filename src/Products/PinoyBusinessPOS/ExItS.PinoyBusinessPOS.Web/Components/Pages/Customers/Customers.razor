@@ -15,14 +15,14 @@
 }
 else
 {
-    <PageHeader Title="Customer directory" Subtitle="Business customers for this organization. Personal private data beyond the authorized contract is not shown." />
+    <ExitsPageHeader Title="Customer directory" Subtitle="Business customers for this organization. Personal private data beyond the authorized contract is not shown." />
     <div class="org-toolbar">
-        <TextInput Label="Search" @bind-Value="_search" />
+        <ExitsField Label="Search"><Input @bind-Value="_search" /></ExitsField>
         <Button OnClick="SearchAsync">Search</Button>
     </div>
     @if (!string.IsNullOrWhiteSpace(_error))
     {
-        <Alert Tone="AlertTone.Danger" Message="@_error" />
+        <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" />
     }
     <div class="org-table-wrap">
         <table class="org-table">
@@ -46,7 +46,7 @@ else
 
     @if (_detail is not null)
     {
-        <Section Title="@_detail.DisplayName">
+        <Card Size="@CardSize.Small" Title="@_detail.DisplayName">
             <p class="org-note">Mobile: @_detail.MobileNumber · Status: @_detail.Status</p>
             @if (_credit is not null)
             {
@@ -60,7 +60,7 @@ else
             {
                 <p class="org-note">No Personal identity link on file for this customer.</p>
             }
-        </Section>
+        </Card>
     }
 }
 

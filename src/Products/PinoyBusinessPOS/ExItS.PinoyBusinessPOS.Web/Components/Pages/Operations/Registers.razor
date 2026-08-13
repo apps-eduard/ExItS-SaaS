@@ -11,17 +11,17 @@
 }
 else
 {
-    <PageHeader Title="Registers" Subtitle="POS registers for cashier shifts. Opening a shift remains a POS operation." />
+    <ExitsPageHeader Title="Registers" Subtitle="POS registers for cashier shifts. Opening a shift remains a POS operation." />
     @if (Shell.Can(UtangCapability.ManageRegisters))
     {
         <div class="org-toolbar">
-            <TextInput Label="Name" @bind-Value="_name" />
-            <Button Variant="ButtonVariant.Primary" IsLoading="_busy" OnClick="CreateAsync">Create</Button>
+            <ExitsField Label="Name"><Input @bind-Value="_name" /></ExitsField>
+            <Button Type="@ButtonType.Primary" Loading="_busy" OnClick="CreateAsync">Create</Button>
         </div>
     }
     @if (!string.IsNullOrWhiteSpace(_error))
     {
-        <Alert Tone="AlertTone.Danger" Message="@_error" />
+        <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" />
     }
     <div class="org-table-wrap">
         <table class="org-table">
@@ -39,7 +39,7 @@ else
                         <td>
                             @if (Shell.Can(UtangCapability.ManageRegisters) && string.Equals(r.Status, "Active", StringComparison.OrdinalIgnoreCase))
                             {
-                                <button type="button" class="exds-btn" @onclick="() => DeactivateAsync(r.RegisterId)">Deactivate</button>
+                                <button type="button" class="ant-btn ant-btn-sm" @onclick="() => DeactivateAsync(r.RegisterId)">Deactivate</button>
                             }
                         </td>
                     </tr>

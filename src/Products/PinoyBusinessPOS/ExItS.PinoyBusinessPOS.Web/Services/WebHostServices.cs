@@ -1,14 +1,14 @@
+using System.Net.Http.Json;
 using System.Security.Claims;
-using ExItS.DesignSystem.Abstractions;
 using ExItS.PinoyBusinessPOS.Application.Abstractions;
 using ExItS.PinoyBusinessPOS.Application.Auth;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Offline;
 using ExItS.PinoyBusinessPOS.Application.Platform;
+using ExItS.Web.UI;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Server.Circuits;
-using Microsoft.JSInterop;
 
 namespace ExItS.PinoyBusinessPOS.Web.Services;
 
@@ -95,69 +95,6 @@ public sealed class MemorySecureTokenStore : ISecureTokenStore
     }
 }
 
-public sealed class BrowserThemeStore(IJSRuntime js) : IThemePreferenceStore
-{
-    public async Task<ThemePreference> GetAsync(CancellationToken ct = default)
-    {
-        var raw = await BrowserStorage.GetAsync(js, "exits-orgweb-theme", ct).ConfigureAwait(false);
-        return Enum.TryParse<ThemePreference>(raw, ignoreCase: true, out var value)
-            ? value
-            : ThemePreference.System;
-    }
-
-    public Task SetAsync(ThemePreference preference, CancellationToken ct = default) =>
-        BrowserStorage.SetAsync(js, "exits-orgweb-theme", preference.ToString(), ct);
-}
-
-public sealed class BrowserDensityStore(IJSRuntime js) : IDensityPreferenceStore
-{
-    public async Task<DensityMode> GetAsync(CancellationToken ct = default)
-    {
-        var raw = await BrowserStorage.GetAsync(js, "exits-orgweb-density", ct).ConfigureAwait(false);
-        return Enum.TryParse<DensityMode>(raw, ignoreCase: true, out var value)
-            ? value
-            : DensityMode.Compact;
-    }
-
-    public Task SetAsync(DensityMode density, CancellationToken ct = default) =>
-        BrowserStorage.SetAsync(js, "exits-orgweb-density", density.ToString(), ct);
-}
-
-public sealed class BrowserCultureStore(IJSRuntime js) : ICulturePreferenceStore
-{
-    public async Task<string> GetAsync(CancellationToken ct = default) =>
-        await BrowserStorage.GetAsync(js, "exits-orgweb-culture", ct).ConfigureAwait(false) ?? "en";
-
-    public Task SetAsync(string culture, CancellationToken ct = default) =>
-        BrowserStorage.SetAsync(js, "exits-orgweb-culture", culture, ct);
-}
-
-internal static class BrowserStorage
-{
-    public static async Task<string?> GetAsync(IJSRuntime js, string key, CancellationToken ct)
-    {
-        try
-        {
-            return await js.InvokeAsync<string?>("localStorage.getItem", ct, key).ConfigureAwait(false);
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
-    public static async Task SetAsync(IJSRuntime js, string key, string value, CancellationToken ct)
-    {
-        try
-        {
-            await js.InvokeVoidAsync("localStorage.setItem", ct, key, value).ConfigureAwait(false);
-        }
-        catch
-        {
-        }
-    }
-}
-
 public sealed class OrgWebCircuitSession
 {
     public string? SessionToken { get; set; }
@@ -234,6 +171,62 @@ public sealed class OrgWebBrowserSessionService(
             login.SessionToken,
             login.ExpiresAtUtc).ConfigureAwait(false);
         return (true, null);
+    }
+
+    public async Task<(bool Ok, string? Error)> EstablishFromSessionTokenAsync(
+        string sessionToken,
+        CancellationToken ct = default)
+    {
+        var http = httpContextAccessor.HttpContext
+            ?? throw new InvalidOperationException("HTTP context is required to establish the browser session.");
+        if (string.IsNullOrWhiteSpace(sessionToken))
+        {
+            return (false, "Session token is missing.");
+        }
+
+        var client = httpClientFactory.CreateClient("PlatformApiUnauthenticated");
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/platform/auth/me");
+        request.Headers.TryAddWithoutValidation("X-ExItS-Session-Token", sessionToken);
+        using var response = await client.SendAsync(request, ct).ConfigureAwait(false);
+        if (!response.IsSuccessStatusCode)
+        {
+            return (false, "Session is invalid.");
+        }
+
+        var me = await response.Content.ReadFromJsonAsync<PlatformLoginResultDto>(ct).ConfigureAwait(false);
+        if (me is null)
+        {
+            return (false, "Session response was invalid.");
+        }
+
+        await EstablishBrowserSessionAsync(
+            http,
+            me.UserId,
+            me.Username,
+            me.Email,
+            sessionToken,
+            me.ExpiresAtUtc).ConfigureAwait(false);
+        return (true, null);
+    }
+
+    public async Task<(bool Ok, string? Error, string? ReturnPath)> RedeemHandoffAsync(
+        string ticket,
+        CancellationToken ct = default)
+    {
+        var client = httpClientFactory.CreateClient("PlatformApiUnauthenticated");
+        var redeemed = await WebHandoffHttp.RedeemAsync(client, ticket, ct).ConfigureAwait(false);
+        if (redeemed is null || string.IsNullOrWhiteSpace(redeemed.SessionToken))
+        {
+            return (false, "Handoff ticket is invalid or expired.", null);
+        }
+
+        if (!string.Equals(redeemed.TargetApp, WebApps.Organization, StringComparison.OrdinalIgnoreCase))
+        {
+            return (false, "Handoff ticket is not for Organization Web.", null);
+        }
+
+        var established = await EstablishFromSessionTokenAsync(redeemed.SessionToken, ct).ConfigureAwait(false);
+        return (established.Ok, established.Error, redeemed.ReturnPath);
     }
 
     public async Task LogoutAsync(CancellationToken ct = default)

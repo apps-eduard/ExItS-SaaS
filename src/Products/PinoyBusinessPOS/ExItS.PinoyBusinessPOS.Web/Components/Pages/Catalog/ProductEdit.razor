@@ -13,37 +13,37 @@
 }
 else
 {
-    <PageHeader Title="@(_isNew ? "New product" : "Edit product")" Subtitle="Management fields only. Selling happens in the POS app." />
+    <ExitsPageHeader Title="@(_isNew ? "New product" : "Edit product")" Subtitle="Management fields only. Selling happens in the POS app." />
     @if (!string.IsNullOrWhiteSpace(_error))
     {
-        <Alert Tone="AlertTone.Danger" Message="@_error" />
+        <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" />
     }
     <div class="org-form">
-        <TextInput Label="Name" @bind-Value="_name" />
-        <TextInput Label="SKU" @bind-Value="_sku" />
-        <TextInput Label="Barcode" @bind-Value="_barcode" />
-        <TextInput Label="Unit" @bind-Value="_unit" />
-        <TextInput Label="Selling price" @bind-Value="_price" />
-        <TextInput Label="Description" @bind-Value="_description" />
+        <ExitsField Label="Name"><Input @bind-Value="_name" /></ExitsField>
+        <ExitsField Label="SKU"><Input @bind-Value="_sku" /></ExitsField>
+        <ExitsField Label="Barcode"><Input @bind-Value="_barcode" /></ExitsField>
+        <ExitsField Label="Unit"><Input @bind-Value="_unit" /></ExitsField>
+        <ExitsField Label="Selling price"><Input @bind-Value="_price" /></ExitsField>
+        <ExitsField Label="Description"><Input @bind-Value="_description" /></ExitsField>
         <label>
             <input type="checkbox" @bind="_tracksExpiration" />
             Tracks expiration
         </label>
-        <TextInput Label="Expiration warning days" @bind-Value="_warningDays" />
+        <ExitsField Label="Expiration warning days"><Input @bind-Value="_warningDays" /></ExitsField>
         @if (_existing is not null)
         {
             <p class="org-note">Status: @_existing.Status · Source: @_existing.CatalogSource · Global: @(_existing.PlatformGlobalProductId is null ? "No" : "Yes")</p>
         }
         @if (Shell.Can(UtangCapability.ManageCatalog))
         {
-            <Button Variant="ButtonVariant.Primary" IsLoading="_busy" OnClick="SaveAsync">Save</Button>
+            <Button Type="@ButtonType.Primary" Loading="_busy" OnClick="SaveAsync">Save</Button>
             @if (_existing is not null && string.Equals(_existing.Status, "Active", StringComparison.OrdinalIgnoreCase))
             {
-                <Button Variant="ButtonVariant.Danger" IsLoading="_busy" OnClick="DeactivateAsync">Deactivate</Button>
+                <Button Danger="true" Loading="_busy" OnClick="DeactivateAsync">Deactivate</Button>
             }
             else if (_existing is not null)
             {
-                <Button IsLoading="_busy" OnClick="ReactivateAsync">Reactivate</Button>
+                <Button Loading="_busy" OnClick="ReactivateAsync">Reactivate</Button>
             }
         }
     </div>

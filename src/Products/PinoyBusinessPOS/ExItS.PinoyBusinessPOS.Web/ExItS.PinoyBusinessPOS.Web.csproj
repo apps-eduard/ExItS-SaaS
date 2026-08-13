@@ -10,7 +10,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Shared\ExItS.DesignSystem\ExItS.DesignSystem.csproj" />
+    <PackageReference Include="AntDesign" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Shared\ExItS.Web.UI\ExItS.Web.UI.csproj" />
     <ProjectReference Include="..\ExItS.PinoyBusinessPOS.ApiClient\ExItS.PinoyBusinessPOS.ApiClient.csproj" />
     <ProjectReference Include="..\ExItS.PinoyBusinessPOS.Application\ExItS.PinoyBusinessPOS.Application.csproj" />
   </ItemGroup>

@@ -1,8 +1,16 @@
 @inject NavigationManager Nav
+@inject Microsoft.Extensions.Options.IOptions<ExItSWebHostOptions> Hosts
 
 @code {
     protected override void OnInitialized()
     {
-        Nav.NavigateTo("/login", forceLoad: true);
+        var path = "/" + Nav.ToBaseRelativePath(Nav.Uri);
+        if (path.StartsWith("/login", StringComparison.OrdinalIgnoreCase)
+            || path.StartsWith("/session/", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        Nav.NavigateTo(Hosts.Value.CanonicalLoginUrl(WebApps.Organization, SafeReturnPath.Sanitize(path, "/overview")), forceLoad: true);
     }
 }

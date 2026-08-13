@@ -12,10 +12,10 @@
 }
 else
 {
-    <PageHeader Title="Subscription & entitlements" Subtitle="Read-only commercial status. Purchasing is not implemented in Organization Admin." />
+    <ExitsPageHeader Title="Subscription & entitlements" Subtitle="Read-only commercial status. Purchasing is not implemented in Organization Admin." />
     @if (!string.IsNullOrWhiteSpace(_error))
     {
-        <Alert Tone="AlertTone.Danger" Message="@_error" />
+        <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" />
     }
     @if (_sub is not null)
     {
@@ -31,14 +31,14 @@ else
     }
     @if (CurrentUser.Session?.EnabledFeatureCodes is { Count: > 0 } features)
     {
-        <Section Title="Active features">
+        <Card Size="@CardSize.Small" Title="Active features">
             <ul>
                 @foreach (var featureCode in features)
                 {
                     <li>@featureCode</li>
                 }
             </ul>
-        </Section>
+        </Card>
     }
 }
 

@@ -22,7 +22,10 @@
         "LocalValidation__Enabled": "true",
         "Security__RequireHttpsApiUrls": "false",
         "PosApi__BaseUrl": "http://127.0.0.1:8091",
-        "PosBusinessApi__BaseUrl": "http://127.0.0.1:8092"
+        "PosBusinessApi__BaseUrl": "http://127.0.0.1:8092",
+        "ExItSWebHosts__PlatformAdmin": "http://127.0.0.1:8090",
+        "ExItSWebHosts__OrganizationWeb": "http://127.0.0.1:8093",
+        "ExItSWebHosts__PersonalWeb": "http://127.0.0.1:8094"
       }
     }
   }

@@ -12,7 +12,7 @@
 }
 else
 {
-    <PageHeader Title="Organization profile" Subtitle="Manage display and contact fields. Platform lifecycle status is read-only." />
+    <ExitsPageHeader Title="Organization profile" Subtitle="Manage display and contact fields. Platform lifecycle status is read-only." />
 
     @if (_loading)
     {
@@ -20,31 +20,32 @@ else
     }
     else if (!string.IsNullOrWhiteSpace(_error))
     {
-        <Alert Tone="AlertTone.Danger" Message="@_error" />
+        <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" />
     }
     else
     {
         <p class="org-note">Status: @_status (platform-controlled)</p>
         <div class="org-form">
-            <TextInput Label="Business name" @bind-Value="_displayName" />
-            <TextInput Label="Slug" @bind-Value="_slug" Hint="URL-safe identifier. Do not change casually." />
-            <TextInput Label="Legal name" @bind-Value="_legalName" />
-            <TextInput Label="Contact email" @bind-Value="_contactEmail" Type="email" />
-            <TextInput Label="Contact phone" @bind-Value="_contactPhone" />
-            <TextInput Label="Address line 1" @bind-Value="_address1" />
-            <TextInput Label="Address line 2" @bind-Value="_address2" />
-            <TextInput Label="City" @bind-Value="_city" />
-            <TextInput Label="Region" @bind-Value="_region" />
-            <TextInput Label="Postal code" @bind-Value="_postal" />
-            <TextInput Label="Country" @bind-Value="_country" />
-            <TextInput Label="Timezone" @bind-Value="_timezone" />
-            <TextInput Label="Locale" @bind-Value="_locale" />
-            <TextInput Label="Currency" @bind-Value="_currency" />
-            <Button Variant="ButtonVariant.Primary" IsLoading="_busy" OnClick="SaveAsync">Save</Button>
+            <ExitsField Label="Business name"><Input @bind-Value="_displayName" /></ExitsField>
+            <ExitsField Label="Slug"><Input @bind-Value="_slug" /></ExitsField>
+            <p class="org-note">URL-safe identifier. Do not change casually.</p>
+            <ExitsField Label="Legal name"><Input @bind-Value="_legalName" /></ExitsField>
+            <ExitsField Label="Contact email"><Input @bind-Value="_contactEmail" /></ExitsField>
+            <ExitsField Label="Contact phone"><Input @bind-Value="_contactPhone" /></ExitsField>
+            <ExitsField Label="Address line 1"><Input @bind-Value="_address1" /></ExitsField>
+            <ExitsField Label="Address line 2"><Input @bind-Value="_address2" /></ExitsField>
+            <ExitsField Label="City"><Input @bind-Value="_city" /></ExitsField>
+            <ExitsField Label="Region"><Input @bind-Value="_region" /></ExitsField>
+            <ExitsField Label="Postal code"><Input @bind-Value="_postal" /></ExitsField>
+            <ExitsField Label="Country"><Input @bind-Value="_country" /></ExitsField>
+            <ExitsField Label="Timezone"><Input @bind-Value="_timezone" /></ExitsField>
+            <ExitsField Label="Locale"><Input @bind-Value="_locale" /></ExitsField>
+            <ExitsField Label="Currency"><Input @bind-Value="_currency" /></ExitsField>
+            <Button Type="@ButtonType.Primary" Loading="_busy" OnClick="SaveAsync">Save</Button>
         </div>
         @if (!string.IsNullOrWhiteSpace(_ok))
         {
-            <Alert Tone="AlertTone.Success" Message="@_ok" />
+            <Alert Type="@AlertType.Success" Message="@_ok" ShowIcon="true" />
         }
     }
 }

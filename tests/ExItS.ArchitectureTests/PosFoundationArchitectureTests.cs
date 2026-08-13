@@ -18,9 +18,7 @@ public sealed class PosFoundationArchitectureTests
             Path.Combine(root, "src", "Products", "PinoyBusinessPOS", "ExItS.PinoyBusinessPOS.ApiClient",
                 "ExItS.PinoyBusinessPOS.ApiClient.csproj"),
             Path.Combine(root, "src", "Products", "PinoyBusinessPOS", "ExItS.PinoyBusinessPOS.Maui",
-                "ExItS.PinoyBusinessPOS.Maui.csproj"),
-            Path.Combine(root, "src", "Products", "PinoyBusinessPOS", "ExItS.PinoyBusinessPOS.Web",
-                "ExItS.PinoyBusinessPOS.Web.csproj")
+                "ExItS.PinoyBusinessPOS.Maui.csproj")
         };
 
         foreach (var project in projects)

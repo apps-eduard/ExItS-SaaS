@@ -11,10 +11,10 @@
 }
 else
 {
-    <PageHeader Title="Inventory report" Subtitle="Server-side stock status. Low-stock rows are a bounded report payload, not the entire catalog history." />
+    <ExitsPageHeader Title="Inventory report" Subtitle="Server-side stock status. Low-stock rows are a bounded report payload, not the entire catalog history." />
     @if (!string.IsNullOrWhiteSpace(_error))
     {
-        <Alert Tone="AlertTone.Danger" Message="@_error" />
+        <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" />
     }
     else if (_report is not null)
     {

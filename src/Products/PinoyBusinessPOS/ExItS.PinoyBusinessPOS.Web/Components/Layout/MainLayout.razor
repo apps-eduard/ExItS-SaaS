@@ -4,100 +4,201 @@
 @inject ICurrentUserContext CurrentUser
 @inject NavigationManager Nav
 @inject IStringLocalizer<OrgWebResources> L
+@inject Microsoft.Extensions.Options.IOptions<ExItSWebHostOptions> Hosts
 @attribute [Authorize]
 
-<div class="exds-root org-shell @(Shell.DrawerOpen ? "org-shell--drawer" : null)">
-    <header class="org-header">
-        <button type="button" class="org-nav-toggle exds-btn" @onclick="() => Shell.DrawerOpen = !Shell.DrawerOpen">Menu</button>
-        <span class="org-header__brand">@L["Brand"]</span>
-        <span class="org-header__org">@(CurrentUser.Session?.OrganizationDisplayName ?? "No organization")</span>
-        @if (Shell.CanSee("notifications"))
-        {
-            <a href="/notifications">Alerts @(Shell.UnreadNotificationCount > 0 ? $"({Shell.UnreadNotificationCount})" : "")</a>
-        }
-        <span>@(CurrentUser.Session?.DisplayName)</span>
-        <form method="post" action="/logout">
-            <button type="submit" class="exds-btn">Sign out</button>
-        </form>
-    </header>
-    <nav class="org-nav" aria-label="Organization">
-        @if (Shell.CanSee("overview")) { <NavLink href="/overview" Match="NavLinkMatch.All">@L["Nav_Overview"]</NavLink> }
-        @if (Shell.CanSee("products"))
-        {
-            <div class="org-nav__group">@L["Nav_Products"]</div>
-            <NavLink href="/products">Products</NavLink>
-            <NavLink href="/categories">Categories</NavLink>
-            <NavLink href="/catalog">Global Catalog</NavLink>
-        }
-        @if (Shell.CanSee("inventory"))
-        {
-            <div class="org-nav__group">@L["Nav_Inventory"]</div>
-            <NavLink href="/inventory">Stock</NavLink>
-            <NavLink href="/inventory/transfers">Transfers</NavLink>
-            <NavLink href="/inventory/lots">Expiration</NavLink>
-        }
-        @if (Shell.CanSee("customers")) { <NavLink href="/customers">@L["Nav_Customers"]</NavLink> }
-        @if (Shell.CanSee("branches")) { <NavLink href="/organization/branches">@L["Nav_Branches"]</NavLink> }
-        @if (Shell.CanSee("staff"))
-        {
-            <NavLink href="/staff">@L["Nav_Staff"]</NavLink>
-            <NavLink href="/staff/roles">Roles</NavLink>
-        }
-        @if (Shell.CanSee("reports"))
-        {
-            <div class="org-nav__group">@L["Nav_Reports"]</div>
-            <NavLink href="/reports/sales">Sales</NavLink>
-            <NavLink href="/sales">Sales history</NavLink>
-            <NavLink href="/reports/utang">Utang</NavLink>
-            <NavLink href="/reports/inventory">Inventory</NavLink>
-            <NavLink href="/reports/shifts">Cashier / shift</NavLink>
-        }
-        @if (Shell.CanSee("devices") || Shell.CanSee("shifts"))
-        {
-            <div class="org-nav__group">@L["Nav_Operations"]</div>
-            @if (Shell.CanSee("devices")) { <NavLink href="/operations/devices">Devices</NavLink> }
-            @if (Shell.CanSee("devices")) { <NavLink href="/operations/registers">Registers</NavLink> }
-            @if (Shell.CanSee("shifts")) { <NavLink href="/operations/shifts">Shifts</NavLink> }
-        }
-        @if (Shell.CanSee("settings") || Shell.CanSee("subscription"))
-        {
-            <div class="org-nav__group">@L["Nav_Settings"]</div>
-            @if (Shell.CanSee("profile")) { <NavLink href="/organization/profile">Profile</NavLink> }
-            @if (Shell.CanSee("settings")) { <NavLink href="/settings">General / POS</NavLink> }
-            @if (Shell.CanSee("subscription")) { <NavLink href="/account/subscription">@L["Nav_Subscription"]</NavLink> }
-        }
-    </nav>
-    <main class="org-main">
-        @if (!Shell.Ready)
-        {
-            <p>Loading organization context…</p>
-        }
-        else if (CurrentUser.Session?.OrganizationId is null)
-        {
-            <Page>
-                <PageHeader Title="No organization" Subtitle="Organization Admin requires an active organization membership. Linked customers cannot use this console." />
-            </Page>
-        }
-        else
-        {
-            @Body
-        }
-    </main>
-</div>
+<a class="skip-link" href="#main-content">Skip to content</a>
+
+<Layout Class="exits-web-layout">
+    @if (!_mobile)
+    {
+        <Sider Collapsible
+               @bind-Collapsed="_collapsed"
+               Theme="SiderTheme.Dark"
+               Width="220"
+               CollapsedWidth="64"
+               Breakpoint="@BreakpointType.Lg"
+               OnBreakpoint="OnBreakpoint"
+               Class="exits-web-sider">
+            <div class="exits-brand" @onclick='() => Nav.NavigateTo("/overview")'>
+                <span class="exits-brand-mark">OA</span>
+                @if (!_collapsed)
+                {
+                    <span>@L["Brand"]</span>
+                }
+            </div>
+            <Menu Theme="MenuTheme.Dark" Mode="MenuMode.Inline" InlineCollapsed="_collapsed" Class="exits-web-menu">
+                @if (Shell.CanSee("overview"))
+                {
+                    <MenuItem Key="overview" RouterLink="/overview" RouterMatch="NavLinkMatch.All" Icon="dashboard">@L["Nav_Overview"]</MenuItem>
+                }
+                @if (Shell.CanSee("products"))
+                {
+                    <SubMenu Key="products" Title="Products">
+                        <MenuItem Key="product-list" RouterLink="/products" Icon="appstore">Products</MenuItem>
+                        <MenuItem Key="categories" RouterLink="/categories">Categories</MenuItem>
+                        <MenuItem Key="catalog" RouterLink="/catalog">Global Catalog</MenuItem>
+                    </SubMenu>
+                }
+                @if (Shell.CanSee("inventory"))
+                {
+                    <SubMenu Key="inventory" Title="@L["Nav_Inventory"]">
+                        <MenuItem Key="stock" RouterLink="/inventory">Stock</MenuItem>
+                        <MenuItem Key="transfers" RouterLink="/inventory/transfers">Transfers</MenuItem>
+                        <MenuItem Key="lots" RouterLink="/inventory/lots">Expiration</MenuItem>
+                    </SubMenu>
+                }
+                @if (Shell.CanSee("customers"))
+                {
+                    <MenuItem Key="customers" RouterLink="/customers" Icon="team">@L["Nav_Customers"]</MenuItem>
+                }
+                @if (Shell.CanSee("branches"))
+                {
+                    <MenuItem Key="branches" RouterLink="/organization/branches" Icon="bank">@L["Nav_Branches"]</MenuItem>
+                }
+                @if (Shell.CanSee("staff"))
+                {
+                    <SubMenu Key="staff" Title="@L["Nav_Staff"]">
+                        <MenuItem Key="staff-list" RouterLink="/staff">Staff</MenuItem>
+                        <MenuItem Key="roles" RouterLink="/staff/roles">Roles</MenuItem>
+                    </SubMenu>
+                }
+                @if (Shell.CanSee("reports"))
+                {
+                    <SubMenu Key="reports" Title="@L["Nav_Reports"]">
+                        <MenuItem Key="sales-report" RouterLink="/reports/sales">Sales</MenuItem>
+                        <MenuItem Key="sales-history" RouterLink="/sales">Sales history</MenuItem>
+                        <MenuItem Key="utang" RouterLink="/reports/utang">Utang</MenuItem>
+                        <MenuItem Key="inv-report" RouterLink="/reports/inventory">Inventory</MenuItem>
+                        <MenuItem Key="shift-report" RouterLink="/reports/shifts">Cashier / shift</MenuItem>
+                    </SubMenu>
+                }
+                @if (Shell.CanSee("devices") || Shell.CanSee("shifts"))
+                {
+                    <SubMenu Key="ops" Title="@L["Nav_Operations"]">
+                        @if (Shell.CanSee("devices"))
+                        {
+                            <MenuItem Key="devices" RouterLink="/operations/devices">Devices</MenuItem>
+                            <MenuItem Key="registers" RouterLink="/operations/registers">Registers</MenuItem>
+                        }
+                        @if (Shell.CanSee("shifts"))
+                        {
+                            <MenuItem Key="shifts" RouterLink="/operations/shifts">Shifts</MenuItem>
+                        }
+                    </SubMenu>
+                }
+                @if (Shell.CanSee("settings") || Shell.CanSee("subscription"))
+                {
+                    <SubMenu Key="settings" Title="@L["Nav_Settings"]">
+                        @if (Shell.CanSee("profile"))
+                        {
+                            <MenuItem Key="profile" RouterLink="/organization/profile">Profile</MenuItem>
+                        }
+                        @if (Shell.CanSee("settings"))
+                        {
+                            <MenuItem Key="general" RouterLink="/settings">General / POS</MenuItem>
+                        }
+                        @if (Shell.CanSee("subscription"))
+                        {
+                            <MenuItem Key="sub" RouterLink="/account/subscription">@L["Nav_Subscription"]</MenuItem>
+                        }
+                    </SubMenu>
+                }
+            </Menu>
+        </Sider>
+    }
+
+    <Layout>
+        <Header Class="exits-web-header">
+            <div class="exits-header-left">
+                @if (_mobile)
+                {
+                    <Button Type="@ButtonType.Text" Icon="menu" OnClick="() => _drawer = true" />
+                }
+                <span class="exits-header-title">@(CurrentUser.Session?.OrganizationDisplayName ?? L["Brand"])</span>
+            </div>
+            <div class="exits-header-right">
+                @if (Shell.CanSee("notifications"))
+                {
+                    <Badge Count="Shell.UnreadNotificationCount" Size="@BadgeSize.Small">
+                        <Button Type="@ButtonType.Text" Icon="bell" OnClick='() => Nav.NavigateTo("/notifications")' />
+                    </Badge>
+                }
+                <ExitsThemeSelector />
+                <ExitsLanguageSelector />
+                <div class="exits-identity">
+                    <div class="exits-identity-text">
+                        <span class="exits-identity-name">@(CurrentUser.Session?.DisplayName)</span>
+                        <span class="exits-identity-meta">Organization</span>
+                    </div>
+                    <Dropdown>
+                        <Overlay>
+                            <Menu>
+                                <MenuItem OnClick='() => Nav.NavigateTo("/handoff/personal", forceLoad: true)'>Personal workspace</MenuItem>
+                                <MenuItem OnClick='() => Nav.NavigateTo("/select-organization")'>Switch organization</MenuItem>
+                                <MenuDivider />
+                                <MenuItem>
+                                    <a href="/logout">Sign out</a>
+                                </MenuItem>
+                            </Menu>
+                        </Overlay>
+                        <ChildContent>
+                            <Button Type="@ButtonType.Text" Icon="user" />
+                        </ChildContent>
+                    </Dropdown>
+                </div>
+            </div>
+        </Header>
+        <Content Class="exits-web-content" Id="main-content">
+            @if (!Shell.Ready)
+            {
+                <div style="padding:2rem;text-align:center;"><Spin /></div>
+            }
+            else if (CurrentUser.Session?.OrganizationId is null)
+            {
+                <ExitsPageHeader Title="No organization" Subtitle="Organization Admin requires an active organization membership. Linked customers cannot use this console." />
+            }
+            else
+            {
+                @Body
+            }
+        </Content>
+    </Layout>
+</Layout>
+
+@if (_mobile)
+{
+    <Drawer Visible="_drawer" Placement="DrawerPlacement.Left" Closable="true" OnClose="() => _drawer = false" Title="@L["Brand"].Value">
+        <Menu Mode="MenuMode.Inline" OnMenuItemClicked="() => _drawer = false">
+            @if (Shell.CanSee("overview")) { <MenuItem RouterLink="/overview">@L["Nav_Overview"]</MenuItem> }
+            @if (Shell.CanSee("products")) { <MenuItem RouterLink="/products">Products</MenuItem> }
+            @if (Shell.CanSee("inventory")) { <MenuItem RouterLink="/inventory">Inventory</MenuItem> }
+            @if (Shell.CanSee("customers")) { <MenuItem RouterLink="/customers">Customers</MenuItem> }
+            @if (Shell.CanSee("staff")) { <MenuItem RouterLink="/staff">Staff</MenuItem> }
+            @if (Shell.CanSee("reports")) { <MenuItem RouterLink="/reports/sales">Reports</MenuItem> }
+            @if (Shell.CanSee("settings")) { <MenuItem RouterLink="/settings">Settings</MenuItem> }
+        </Menu>
+    </Drawer>
+}
 
 @code {
+    private bool _collapsed;
+    private bool _mobile;
+    private bool _drawer;
+
     protected override async Task OnInitializedAsync()
     {
         await Hydrator.HydrateAsync();
         var path = Nav.ToBaseRelativePath(Nav.Uri);
         if (CurrentUser.Session?.OrganizationId is null
             && !path.StartsWith("login", StringComparison.OrdinalIgnoreCase)
-            && !path.StartsWith("select-organization", StringComparison.OrdinalIgnoreCase))
+            && !path.StartsWith("select-organization", StringComparison.OrdinalIgnoreCase)
+            && !path.StartsWith("session/", StringComparison.OrdinalIgnoreCase)
+            && Shell.Organizations.Count > 1)
         {
-            if (Shell.Organizations.Count > 1)
-            {
-                Nav.NavigateTo("/select-organization");
-            }
+            Nav.NavigateTo("/select-organization");
         }
     }
+
+    private void OnBreakpoint(bool broken) => _mobile = broken;
 }

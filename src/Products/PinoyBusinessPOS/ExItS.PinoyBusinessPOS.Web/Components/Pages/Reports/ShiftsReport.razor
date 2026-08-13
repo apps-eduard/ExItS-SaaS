@@ -11,15 +11,15 @@
 }
 else
 {
-    <PageHeader Title="Cashier / shift report" Subtitle="Expected vs counted cash and variance. Skipped counts stay null — they are not zero." />
+    <ExitsPageHeader Title="Cashier / shift report" Subtitle="Expected vs counted cash and variance. Skipped counts stay null — they are not zero." />
     <div class="org-toolbar">
-        <TextInput Label="From" @bind-Value="_from" />
-        <TextInput Label="To" @bind-Value="_to" />
+        <ExitsField Label="From"><Input @bind-Value="_from" /></ExitsField>
+        <ExitsField Label="To"><Input @bind-Value="_to" /></ExitsField>
         <Button OnClick="LoadAsync">Run</Button>
     </div>
     @if (!string.IsNullOrWhiteSpace(_error))
     {
-        <Alert Tone="AlertTone.Danger" Message="@_error" />
+        <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" />
     }
     else if (_shifts is not null && _variance is not null)
     {

@@ -2,29 +2,29 @@
 @layout EmptyLayout
 @attribute [AllowAnonymous]
 @inject IStringLocalizer<OrgWebResources> L
+@inject Microsoft.Extensions.Options.IOptions<ExItSWebHostOptions> Hosts
+@inject NavigationManager Nav
 
 <PageTitle>Sign in — Organization Admin</PageTitle>
 
-<div class="org-login">
-    <div class="org-login__card">
-        <h1>@L["Brand"]</h1>
-        <p class="org-note">@L["Boundary_NotPos"]</p>
-        @if (!string.IsNullOrWhiteSpace(_error))
-        {
-            <p class="org-login__error" role="alert">@_error</p>
-        }
-        <form method="post" action="/login/credentials">
-            <label>
-                Email
-                <input name="Email" type="email" autocomplete="username" required />
-            </label>
-            <label>
-                Password
-                <input name="Password" type="password" autocomplete="current-password" required />
-            </label>
-            <button type="submit" class="exds-btn">Sign in</button>
-        </form>
-    </div>
+<div class="exits-login-shell">
+    <Card Class="exits-login-card" Bordered>
+        <TitleTemplate>
+            <div class="exits-brand">
+                <span class="exits-brand-mark">OA</span>
+                <span>@L["Brand"]</span>
+            </div>
+        </TitleTemplate>
+        <Body>
+            <Paragraph Type="@TextElementType.Secondary">@L["Boundary_NotPos"]</Paragraph>
+            <Paragraph>Canonical ExItS sign-in is used for Organization Web. You will return here after authentication.</Paragraph>
+            @if (!string.IsNullOrWhiteSpace(_error))
+            {
+                <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" Style="margin-bottom:1rem;" />
+            }
+            <Button Type="@ButtonType.Primary" Block OnClick="GoCanonical">Sign in</Button>
+        </Body>
+    </Card>
 </div>
 
 @code {
@@ -32,4 +32,7 @@
     private string? _error;
 
     protected override void OnParametersSet() => _error = Error;
+
+    private void GoCanonical() =>
+        Nav.NavigateTo(Hosts.Value.CanonicalLoginUrl(WebApps.Organization, "/overview"), forceLoad: true);
 }

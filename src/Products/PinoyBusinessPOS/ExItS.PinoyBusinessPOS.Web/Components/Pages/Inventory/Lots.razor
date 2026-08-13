@@ -13,7 +13,7 @@
 }
 else
 {
-    <PageHeader Title="Expiration / lots" Subtitle="On-hand lots only. Expired inventory is not sellable stock." />
+    <ExitsPageHeader Title="Expiration / lots" Subtitle="On-hand lots only. Expired inventory is not sellable stock." />
     <div class="org-toolbar">
         <select @bind="_window">
             <option value="Expired">Expired</option>
@@ -22,8 +22,8 @@ else
             <option value="Days30">30 days</option>
             <option value="Custom">Custom</option>
         </select>
-        <TextInput Label="From" @bind-Value="_from" Placeholder="yyyy-MM-dd" />
-        <TextInput Label="To" @bind-Value="_to" Placeholder="yyyy-MM-dd" />
+        <ExitsField Label="From"><Input @bind-Value="_from" Placeholder="yyyy-MM-dd" /></ExitsField>
+        <ExitsField Label="To"><Input @bind-Value="_to" Placeholder="yyyy-MM-dd" /></ExitsField>
         <select @bind="_branchId">
             <option value="">All branches</option>
             @foreach (var b in _branches)
@@ -31,7 +31,7 @@ else
                 <option value="@b.Id">@b.Name</option>
             }
         </select>
-        <TextInput Label="Search" @bind-Value="_search" />
+        <ExitsField Label="Search"><Input @bind-Value="_search" /></ExitsField>
         <Button OnClick="SearchAsync">Filter</Button>
     </div>
     @if (_result is not null)
@@ -40,7 +40,7 @@ else
     }
     @if (!string.IsNullOrWhiteSpace(_error))
     {
-        <Alert Tone="AlertTone.Danger" Message="@_error" />
+        <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" />
     }
     <div class="org-table-wrap">
         <table class="org-table">

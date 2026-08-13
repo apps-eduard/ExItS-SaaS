@@ -1,5 +1,4 @@
 using System.Globalization;
-using ExItS.DesignSystem.Abstractions;
 using ExItS.PinoyBusinessPOS.ApiClient;
 using ExItS.PinoyBusinessPOS.Application.Abstractions;
 using ExItS.PinoyBusinessPOS.Application.Auth;
@@ -8,10 +7,12 @@ using ExItS.PinoyBusinessPOS.Application.Offline;
 using ExItS.PinoyBusinessPOS.Application.Platform;
 using ExItS.PinoyBusinessPOS.Web.Components;
 using ExItS.PinoyBusinessPOS.Web.Services;
+using ExItS.Web.UI;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components.Server.Circuits;
 using Microsoft.AspNetCore.Localization;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,6 +32,9 @@ if (builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("Te
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddLocalization();
+builder.Services.AddAntDesign();
+builder.Services.Configure<ExItSWebHostOptions>(builder.Configuration.GetSection(ExItSWebHostOptions.SectionName));
+builder.Services.AddScoped<ExitsWebThemeService>();
 
 var supportedCultures = new[]
 {
@@ -84,9 +88,6 @@ builder.Services.AddScoped<IDeviceIdentityProvider, WebDeviceIdentityProvider>()
 builder.Services.AddScoped<ISecureTokenStore, MemorySecureTokenStore>();
 builder.Services.AddScoped<ICurrentUserContext, CurrentUserContext>();
 builder.Services.AddScoped<IUtangCapabilityEvaluator, UtangCapabilityEvaluator>();
-builder.Services.AddScoped<IThemePreferenceStore, BrowserThemeStore>();
-builder.Services.AddScoped<IDensityPreferenceStore, BrowserDensityStore>();
-builder.Services.AddScoped<ICulturePreferenceStore, BrowserCultureStore>();
 builder.Services.AddScoped<OrgWebCircuitSession>();
 builder.Services.AddScoped<OrgWebShellState>();
 builder.Services.AddScoped<OrgWebBrowserSessionService>();
@@ -126,11 +127,12 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseAntiforgery();
 app.MapStaticAssets().AllowAnonymous();
+app.MapExitsCultureSet();
 
-app.MapGet("/", (HttpContext http) =>
+app.MapGet("/", (HttpContext http, IOptions<ExItSWebHostOptions> hosts) =>
     http.User.Identity?.IsAuthenticated == true
         ? Results.Redirect("/overview")
-        : Results.Redirect("/login"));
+        : Results.Redirect(hosts.Value.CanonicalLoginUrl(WebApps.Organization, "/overview")));
 
 app.MapGet("/health", () => Results.Ok(new { status = "Healthy", service = "organization-web" }))
     .AllowAnonymous();
@@ -151,16 +153,64 @@ app.MapPost("/login/credentials", async (
     return Results.Redirect("/overview");
 }).AllowAnonymous().DisableAntiforgery();
 
-app.MapPost("/logout", async (OrgWebBrowserSessionService sessions) =>
+app.MapPost("/logout", async (OrgWebBrowserSessionService sessions, IOptions<ExItSWebHostOptions> hosts) =>
 {
     await sessions.LogoutAsync().ConfigureAwait(false);
-    return Results.Redirect("/login");
+    return Results.Redirect(hosts.Value.CanonicalLoginUrl());
 }).DisableAntiforgery();
 
-app.MapGet("/logout", async (OrgWebBrowserSessionService sessions) =>
+app.MapGet("/logout", async (OrgWebBrowserSessionService sessions, IOptions<ExItSWebHostOptions> hosts) =>
 {
     await sessions.LogoutAsync().ConfigureAwait(false);
-    return Results.Redirect("/login");
+    return Results.Redirect(hosts.Value.CanonicalLoginUrl());
+});
+
+app.MapGet("/session/establish", async (
+    string? ticket,
+    string? returnPath,
+    OrgWebBrowserSessionService sessions) =>
+{
+    if (string.IsNullOrWhiteSpace(ticket))
+    {
+        return Results.Redirect("/login?error=" + Uri.EscapeDataString("Handoff ticket is missing."));
+    }
+
+    var (ok, error, path) = await sessions.RedeemHandoffAsync(ticket).ConfigureAwait(false);
+    if (!ok)
+    {
+        return Results.Redirect("/login?error=" + Uri.EscapeDataString(error ?? "Could not establish the session."));
+    }
+
+    return Results.Redirect(SafeReturnPath.Sanitize(returnPath ?? path, "/overview"));
+}).AllowAnonymous();
+
+app.MapGet("/handoff/{app}", async (
+    string app,
+    HttpContext http,
+    OrgWebBrowserSessionService sessions,
+    IHttpClientFactory httpClientFactory,
+    IOptions<ExItSWebHostOptions> hosts) =>
+{
+    if (!WebApps.IsKnown(app))
+    {
+        return Results.Redirect("/overview");
+    }
+
+    var token = OrgWebBrowserSessionService.ResolveSessionToken(http);
+    if (string.IsNullOrWhiteSpace(token))
+    {
+        return Results.Redirect(hosts.Value.CanonicalLoginUrl(app));
+    }
+
+    var client = httpClientFactory.CreateClient("PlatformApiUnauthenticated");
+    var created = await WebHandoffHttp.CreateAsync(client, token, WebApps.Normalize(app), null, null)
+        .ConfigureAwait(false);
+    if (created is null)
+    {
+        return Results.Redirect("/access-denied");
+    }
+
+    return Results.Redirect(WebHandoffHttp.EstablishUrl(hosts.Value.GetOrigin(app), created.Ticket, created.ReturnPath));
 });
 
 app.MapRazorComponents<App>()

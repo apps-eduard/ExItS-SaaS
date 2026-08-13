@@ -1,22 +1,36 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="system" data-density="compact">
+<html lang="@CultureName">
+
+@using AntDesign
 
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light dark" />
     <base href="/" />
-    <link rel="stylesheet" href="_content/ExItS.DesignSystem/exits-design-system.css" />
+    <link id="exits-antd-theme" href="/_content/AntDesign/css/ant-design-blazor.css" rel="stylesheet" />
+    <script src="/_content/ExItS.Web.UI/theme-boot.js"></script>
+    <link rel="stylesheet" href="/_content/ExItS.Web.UI/exits-web.css" />
     <link rel="stylesheet" href="@Assets["org-web.css"]" />
     <ImportMap />
-    <HeadOutlet @rendermode="InteractiveServer" />
+    <HeadOutlet />
 </head>
 
 <body>
     <CascadingAuthenticationState>
         <Routes @rendermode="InteractiveServer" />
     </CascadingAuthenticationState>
+    <AntContainer />
+    <script src="/_content/AntDesign/js/ant-design-blazor.js"></script>
     <script src="@Assets["_framework/blazor.web.js"]"></script>
 </body>
 
 </html>
+
+@code {
+    private string CultureName => System.Globalization.CultureInfo.CurrentUICulture.Name switch
+    {
+        "fil-PH" => "fil-PH",
+        _ => "en"
+    };
+}

@@ -12,23 +12,23 @@
 }
 else
 {
-    <PageHeader Title="Sales history" Subtitle="Read-only receipts for reporting, audit, and investigation. There is no web checkout." />
+    <ExitsPageHeader Title="Sales history" Subtitle="Read-only receipts for reporting, audit, and investigation. There is no web checkout." />
     <p class="org-note">Operational selling remains in the POS app. This page never creates a sale.</p>
     <div class="org-toolbar">
-        <TextInput Label="Sale number" @bind-Value="_number" />
+        <ExitsField Label="Sale number"><Input @bind-Value="_number" /></ExitsField>
         <select @bind="_payment">
             <option value="">All payments</option>
             <option>Cash</option>
             <option>Utang</option>
             <option>GCash</option>
         </select>
-        <TextInput Label="From" @bind-Value="_from" Placeholder="yyyy-MM-dd" />
-        <TextInput Label="To" @bind-Value="_to" Placeholder="yyyy-MM-dd" />
+        <ExitsField Label="From"><Input @bind-Value="_from" Placeholder="yyyy-MM-dd" /></ExitsField>
+        <ExitsField Label="To"><Input @bind-Value="_to" Placeholder="yyyy-MM-dd" /></ExitsField>
         <Button OnClick="SearchAsync">Filter</Button>
     </div>
     @if (!string.IsNullOrWhiteSpace(_error))
     {
-        <Alert Tone="AlertTone.Danger" Message="@_error" />
+        <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" />
     }
     <div class="org-table-wrap">
         <table class="org-table">
@@ -55,11 +55,11 @@ else
 
     @if (_detail is not null)
     {
-        <Section Title="@($"Receipt {_detail.SaleNumber}")">
+        <Card Size="@CardSize.Small" Title="@($"Receipt {_detail.SaleNumber}")">
             <p>@_detail.Status · @_detail.PaymentMethod · @_detail.RecordedAtUtc.LocalDateTime · Register @_detail.RegisterName · Shift @_detail.ShiftNumber</p>
             @if (_detail.VoidedAtUtc is not null)
             {
-                <Alert Tone="AlertTone.Warning" Message="@($"Voided: {_detail.VoidReason}")" />
+                <Alert Type="@AlertType.Warning" Message="@($"Voided: {_detail.VoidReason}")" ShowIcon="true" />
             }
             <div class="org-table-wrap">
                 <table class="org-table">
@@ -80,7 +80,7 @@ else
                 </table>
             </div>
             <p>Total @OrgWebUi.Money(_detail.Total)</p>
-        </Section>
+        </Card>
     }
 }
 

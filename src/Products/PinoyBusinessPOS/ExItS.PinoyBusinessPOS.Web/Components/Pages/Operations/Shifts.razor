@@ -12,7 +12,7 @@
 }
 else
 {
-    <PageHeader Title="Cashier shifts" Subtitle="Inspection only. Closed shift history is not mutated from this page. Skipped cash count is not treated as zero." />
+    <ExitsPageHeader Title="Cashier shifts" Subtitle="Inspection only. Closed shift history is not mutated from this page. Skipped cash count is not treated as zero." />
     <div class="org-toolbar">
         <select @bind="_status">
             <option value="">All</option>
@@ -24,7 +24,7 @@ else
     </div>
     @if (!string.IsNullOrWhiteSpace(_error))
     {
-        <Alert Tone="AlertTone.Danger" Message="@_error" />
+        <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" />
     }
     <div class="org-table-wrap">
         <table class="org-table">
@@ -51,9 +51,9 @@ else
     <OrgPager Page="_page" PageSize="20" TotalCount="_total" PageChanged="ChangePageAsync" />
     @if (_summary is not null)
     {
-        <Section Title="Shift summary">
+        <Card Size="@CardSize.Small" Title="Shift summary">
             <p>Expected @_summary.ExpectedCashAmountSnapshot · Counted @_summary.ClosingCashAmount · Variance @_summary.CashVarianceAmount · State @_summary.ClosingCashCountState</p>
-        </Section>
+        </Card>
     }
 }
 

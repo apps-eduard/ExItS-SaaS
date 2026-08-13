@@ -11,17 +11,17 @@
 }
 else
 {
-    <PageHeader Title="Categories" Subtitle="Organization product categories." />
+    <ExitsPageHeader Title="Categories" Subtitle="Organization product categories." />
     @if (Shell.Can(UtangCapability.ManageCatalog))
     {
         <div class="org-toolbar">
-            <TextInput Label="New category" @bind-Value="_name" />
-            <Button Variant="ButtonVariant.Primary" IsLoading="_busy" OnClick="CreateAsync">Create</Button>
+            <ExitsField Label="New category"><Input @bind-Value="_name" /></ExitsField>
+            <Button Type="@ButtonType.Primary" Loading="_busy" OnClick="CreateAsync">Create</Button>
         </div>
     }
     @if (!string.IsNullOrWhiteSpace(_error))
     {
-        <Alert Tone="AlertTone.Danger" Message="@_error" />
+        <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" />
     }
     <div class="org-table-wrap">
         <table class="org-table">
@@ -37,7 +37,7 @@ else
                         <td>
                             @if (Shell.Can(UtangCapability.ManageCatalog) && string.Equals(c.Status, "Active", StringComparison.OrdinalIgnoreCase))
                             {
-                                <button type="button" class="exds-btn" @onclick="() => DeactivateAsync(c.CategoryId)">Deactivate</button>
+                                <button type="button" class="ant-btn ant-btn-sm" @onclick="() => DeactivateAsync(c.CategoryId)">Deactivate</button>
                             }
                         </td>
                     </tr>

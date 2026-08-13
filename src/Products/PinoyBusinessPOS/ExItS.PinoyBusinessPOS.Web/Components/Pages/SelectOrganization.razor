@@ -6,11 +6,11 @@
 @inject NavigationManager Nav
 
 <PageTitle>Select organization</PageTitle>
-<PageHeader Title="Select organization" Subtitle="Organization Admin uses your active membership. Linked customers do not receive admin rights." />
+<ExitsPageHeader Title="Select organization" Subtitle="Organization Admin uses your active membership. Linked customers do not receive admin rights." />
 
 @if (Shell.Organizations.Count == 0)
 {
-    <EmptyState Title="No organization" Message="This account has no organization membership." />
+    <ExitsEmptyState Title="No organization" Message="This account has no organization membership." />
 }
 else
 {
@@ -26,7 +26,7 @@ else
                         <td>@org.DisplayName</td>
                         <td>@org.MembershipRole</td>
                         <td>
-                            <button type="button" class="exds-btn" disabled="@_busy" @onclick="() => SelectAsync(org.OrganizationId)">Open</button>
+                            <button type="button" class="ant-btn ant-btn-sm" disabled="@_busy" @onclick="() => SelectAsync(org.OrganizationId)">Open</button>
                         </td>
                     </tr>
                 }
@@ -37,7 +37,7 @@ else
 
 @if (!string.IsNullOrWhiteSpace(_error))
 {
-    <Alert Tone="AlertTone.Danger" Message="@_error" />
+    <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" />
 }
 
 @code {

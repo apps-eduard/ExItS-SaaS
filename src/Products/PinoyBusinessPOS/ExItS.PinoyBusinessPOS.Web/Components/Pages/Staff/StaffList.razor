@@ -14,20 +14,18 @@
 }
 else
 {
-    <PageHeader Title="Staff & users" Subtitle="Organization-scoped staff identities. Passwords are never shown. Personal customers are not staff.">
-        <Actions>
-            <a class="exds-btn" href="/staff/invite">Invite staff</a>
-        </Actions>
-    </PageHeader>
+    <ExitsPageHeader Title="Staff & users" Subtitle="Organization-scoped staff identities. Passwords are never shown. Personal customers are not staff.">
+        <a class="ant-btn ant-btn-sm" href="/staff/invite">Invite staff</a>
+    </ExitsPageHeader>
 
     <div class="org-toolbar">
-        <TextInput Label="Status" @bind-Value="_status" Placeholder="Active / Suspended" />
+        <ExitsField Label="Status"><Input @bind-Value="_status" Placeholder="Active / Suspended" /></ExitsField>
         <Button OnClick="LoadAsync">Filter</Button>
     </div>
 
     @if (!string.IsNullOrWhiteSpace(_error))
     {
-        <Alert Tone="AlertTone.Danger" Message="@_error" />
+        <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" />
     }
 
     @if (_loading)

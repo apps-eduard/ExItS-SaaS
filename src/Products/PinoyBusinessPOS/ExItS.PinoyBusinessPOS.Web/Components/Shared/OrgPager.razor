@@ -1,11 +1,4 @@
-@if (TotalCount > 0)
-{
-    <div class="org-pager">
-        <button type="button" class="exds-btn" disabled="@(Page <= 1 || Busy)" @onclick="() => PageChanged.InvokeAsync(Page - 1)">Previous</button>
-        <span>Page @Page of @LastPage (@TotalCount)</span>
-        <button type="button" class="exds-btn" disabled="@(Page >= LastPage || Busy)" @onclick="() => PageChanged.InvokeAsync(Page + 1)">Next</button>
-    </div>
-}
+<ExitsPager Page="@Page" PageSize="@PageSize" TotalCount="@TotalCount" Busy="@Busy" PageChanged="@PageChanged" />
 
 @code {
     [Parameter] public int Page { get; set; } = 1;
@@ -13,6 +6,4 @@
     [Parameter] public int TotalCount { get; set; }
     [Parameter] public bool Busy { get; set; }
     [Parameter] public EventCallback<int> PageChanged { get; set; }
-
-    private int LastPage => Math.Max(1, (int)Math.Ceiling(TotalCount / (double)Math.Max(1, PageSize)));
 }

@@ -11,10 +11,10 @@
 }
 else
 {
-    <PageHeader Title="Sales report" Subtitle="Server-side aggregates. The browser never loads the full sales history." />
+    <ExitsPageHeader Title="Sales report" Subtitle="Server-side aggregates. The browser never loads the full sales history." />
     <div class="org-toolbar">
-        <TextInput Label="From" @bind-Value="_from" Placeholder="yyyy-MM-dd" />
-        <TextInput Label="To" @bind-Value="_to" Placeholder="yyyy-MM-dd" />
+        <ExitsField Label="From"><Input @bind-Value="_from" Placeholder="yyyy-MM-dd" /></ExitsField>
+        <ExitsField Label="To"><Input @bind-Value="_to" Placeholder="yyyy-MM-dd" /></ExitsField>
         <select @bind="_payment">
             <option value="">All methods</option>
             <option>Cash</option>
@@ -25,7 +25,7 @@ else
     </div>
     @if (!string.IsNullOrWhiteSpace(_error))
     {
-        <Alert Tone="AlertTone.Danger" Message="@_error" />
+        <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" />
     }
     else if (_report is not null)
     {

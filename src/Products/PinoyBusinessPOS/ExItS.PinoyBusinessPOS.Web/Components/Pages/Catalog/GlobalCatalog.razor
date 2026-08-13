@@ -12,22 +12,22 @@
 }
 else
 {
-    <PageHeader Title="Global Catalog" Subtitle="Browse published Platform products. Already imported items cannot be selected again." />
+    <ExitsPageHeader Title="Global Catalog" Subtitle="Browse published Platform products. Already imported items cannot be selected again." />
     <div class="org-toolbar">
-        <TextInput Label="Search" @bind-Value="_search" />
+        <ExitsField Label="Search"><Input @bind-Value="_search" /></ExitsField>
         <Button OnClick="SearchAsync">Search</Button>
         @if (Shell.Can(UtangCapability.ManageCatalog))
         {
-            <Button Variant="ButtonVariant.Primary" IsLoading="_busy" Disabled="_selected.Count == 0" OnClick="ImportAsync">Import selected</Button>
+            <Button Type="@ButtonType.Primary" Loading="_busy" Disabled="_selected.Count == 0" OnClick="ImportAsync">Import selected</Button>
         }
     </div>
     @if (!string.IsNullOrWhiteSpace(_error))
     {
-        <Alert Tone="AlertTone.Danger" Message="@_error" />
+        <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" />
     }
     @if (!string.IsNullOrWhiteSpace(_ok))
     {
-        <Alert Tone="AlertTone.Success" Message="@_ok" />
+        <Alert Type="@AlertType.Success" Message="@_ok" ShowIcon="true" />
     }
     <div class="org-table-wrap">
         <table class="org-table">

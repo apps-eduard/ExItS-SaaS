@@ -12,14 +12,14 @@
 }
 else
 {
-    <PageHeader Title="Notifications" Subtitle="Organization in-app alerts from the existing Platform notification store." />
+    <ExitsPageHeader Title="Notifications" Subtitle="Organization in-app alerts from the existing Platform notification store." />
     @if (!string.IsNullOrWhiteSpace(_error))
     {
-        <Alert Tone="AlertTone.Danger" Message="@_error" />
+        <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" />
     }
     @if (_items.Count == 0)
     {
-        <EmptyState Title="No alerts" Message="Management events will appear here when the Platform notification APIs emit them." />
+        <ExitsEmptyState Title="No alerts" Message="Management events will appear here when the Platform notification APIs emit them." />
     }
     else
     {
@@ -36,7 +36,7 @@ else
                             <td>
                                 @if (!n.IsRead)
                                 {
-                                    <button type="button" class="exds-btn" @onclick="() => ReadAsync(n)">Mark read</button>
+                                    <button type="button" class="ant-btn ant-btn-sm" @onclick="() => ReadAsync(n)">Mark read</button>
                                 }
                             </td>
                         </tr>
