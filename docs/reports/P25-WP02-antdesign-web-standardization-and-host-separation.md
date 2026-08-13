@@ -120,3 +120,4 @@ Starting SHA: `9a3be47879dc89cf392ae3a0ef84d209cc52e2ef`
 | `d743128a` | feat(personal-web): add dedicated AntDesign personal web host |
 | `9f4be5b` | feat(auth): add unified web workspace routing |
 | `4fdddfe5` | test(web): cover web host and SSO boundaries |
+| `5be25973` | docs(p25): document web host separation and unified authentication |
