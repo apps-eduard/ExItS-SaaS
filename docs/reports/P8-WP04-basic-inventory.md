@@ -89,6 +89,10 @@ Root `HealthCare/` must remain absent/untracked and outside `ExItS.slnx`.
 | Docs hash-record commit | `df36203728aa244037b0bf83ad45b7a6f7504f50` |
 | Final working tree | clean after push |
 
+## Later addition
+
+Intra-organization branch inventory transfers were added later as an overlay (`InventoryTransfer`, `InventoryBranchBalance`). Org `InventoryAccount` remains the sellable on-hand used by sales/PO/counts. See [pos-branch-inventory-transfers.md](../engineering/pos-branch-inventory-transfers.md).
+
 ## Exact next work package
 
 **P8-WP05 — Expenses** completed separately; next authorized WP is **P8-WP06 — Dashboard and Reports**.

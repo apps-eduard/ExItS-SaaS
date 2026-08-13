@@ -25,7 +25,9 @@
 | Catalog product / barcode | POS | ProductId (POS) | POS | — | POS | POS | POS |
 | Sale | POS | SaleId | POS | — | POS | POS | POS |
 | POS payment attempt (Card/GCash simulated / manual transfer) | POS | PaymentAttemptId | POS sale | Provider/external refs, safe card metadata; **no** PAN/CVV/wallet secrets | POS (webhook/simulation authoritative for Paid) | POS | POS |
-| Inventory balance | POS | per store+product | POS | — | POS | POS | POS |
+| Inventory balance | POS | org+product `InventoryAccount` (sellable on-hand) | POS | — | POS | POS | POS |
+| Branch inventory balance | POS | org+branch+product `InventoryBranchBalance` | POS | Platform `OrganizationBranchId` as opaque GUID | POS | POS | POS |
+| Inventory transfer | POS | `InventoryTransferId` | POS | Platform branch GUIDs | POS | POS | POS |
 | Supplier | POS | SupplierId | POS | — | POS | POS | POS |
 | POS retail payment | POS | RetailPaymentId | POS | Method: cash \| gcash \| customer-credit; GCash ref when gcash | POS | POS | POS |
 | POS credit payment | POS | CreditPaymentId | POS | Method: cash \| gcash; GCash ref when gcash | POS | POS | POS |

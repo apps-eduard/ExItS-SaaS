@@ -93,7 +93,9 @@ Pre-migration shifts/sales/returns may have null RegisterIds. They are legacy un
 
 ## Explicit exclusions
 
-Branches, warehouses, inventory-by-register, stock transfers, physical drawers, denomination counting, device/printer assignment, licensing/billing, bank deposits/cash drops, accounting journals, tax/fiscal devices, manager approvals, production authentication, Windows MAUI, offline Register management, Phase 11, P10-WP08.
+Warehouses, inventory-by-register, physical drawers, denomination counting, device/printer assignment, licensing/billing, bank deposits/cash drops, accounting journals, tax/fiscal devices, manager approvals, production authentication, Windows MAUI, offline Register management, Phase 11, P10-WP08.
+
+A Register is still not a branch. Intra-organization branch inventory transfers were added later on inventory (Platform `OrganizationBranch` GUIDs), not as inventory-by-register. See [pos-branch-inventory-transfers.md](../engineering/pos-branch-inventory-transfers.md).
 
 ## Tests
 

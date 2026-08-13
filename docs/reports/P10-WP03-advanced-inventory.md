@@ -27,7 +27,9 @@ Gap-fix: `31d809c` (stock status alignment, CountDate, migration Down safety)
 
 ## Explicit exclusions
 
-Warehouses, branches, transfers, costing, valuation, batches, serials, expiry, purchase returns, automatic PO creation, demand forecasting, **P10-WP04+**.
+Warehouses, costing, valuation, batches, serials, expiry, purchase returns, automatic PO creation, demand forecasting, **P10-WP04+**.
+
+Later overlay (not part of this WP’s original delivery): intra-organization branch inventory transfers. See [pos-branch-inventory-transfers.md](../engineering/pos-branch-inventory-transfers.md). P10-WP03 still did not deliver warehouses or a POS branches table.
 
 ## Build and test evidence
 
