@@ -27,7 +27,7 @@
 - Same setting from Organization Web Settings → Cash handling and MAUI Operational Setup.
 - `EffectiveCashCountMode` remains snapshotted at shift open.
 - Optional denomination helper on MAUI open/close. Authoritative totals remain `OpeningCashAmount` / `ClosingCashAmount`. Server recalculates `sum(value * qty)` and rejects mismatch.
-- Organization-configurable denominations with PHP defaults; custom values such as 5000 require no code change. Historical breakdown snapshots denomination values used at count time.
+- Organization-configurable denominations with PHP defaults **1000, 500, 200, 100, 50, 20, 10, 5, 1, 0.25, 0.05, 0.01** (not 0.50 / 0.10). Custom values such as 5000, 0.50, or 0.10 still require no code change. Historical breakdown snapshots denomination values used at count time. Existing org denomination rows are not rewritten. Denomination UI/UX was preserved in the centavo-default refinement.
 - Closing UX hides expected cash until the cashier submits a count (except historical Off snapshots that skip counting).
 
 ## 3. Explicit exclusions
@@ -48,7 +48,7 @@ Migration `AddPosCashDenominationsAndRequiredDefault`:
 - `cashier_shift_cash_count_lines` (unique shift+kind+value)
 - `cashier_shifts.effective_cash_count_mode` still allows Off for history
 
-Existing Required/Optional unchanged. PHP denomination seed is idempotent in application code, not a one-time SQL dump.
+Existing Required/Optional unchanged. PHP denomination seed is idempotent in application code, not a one-time SQL dump. Centavo default refinement does **not** add a migration (`numeric(18,2)` already stores 0.25 / 0.05 / 0.01). Existing organization denomination rows are preserved.
 
 ## 5. API / UI
 
@@ -62,9 +62,9 @@ Existing Required/Optional unchanged. PHP denomination seed is idempotent in app
 
 | Suite | Passed | Failed | Skipped | Notes |
 |---|---:|---:|---:|---|
-| PinoyBusinessPOS.UnitTests | 650 | 0 | 0 | Includes new denomination tests |
+| PinoyBusinessPOS.UnitTests | 654 | 0 | 0 | Includes centavo default and line-total tests |
 | PinoyBusinessPOS.IntegrationTests (CashCount/OperationalSetup filter) | 11 | 0 | 0 | NEW |
-| PinoyBusinessPOS.Maui.Tests | 379 | 1 | 0 | 1 PRE-EXISTING (`Cashier` substring in auth foundation guard) |
+| PinoyBusinessPOS.Maui.Tests | 380 | 1 | 0 | 1 PRE-EXISTING (`Cashier` substring in auth foundation guard) |
 | PinoyBusinessPOS.Web.Tests | 8 | 0 | 0 | Includes Org Web cash-handling guard |
 | PinoyBusinessPOS.ApiClient.Tests | 48 | 0 | 0 | |
 | Platform.UnitTests | 856 | 0 | 0 | |

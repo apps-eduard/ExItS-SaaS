@@ -65,7 +65,17 @@ Entry method is implied: breakdown present = denomination-assisted; absent = man
 
 `OrganizationCashDenomination`: `Id`, `OrganizationId`, `Value`, `DisplayLabel`, `IsEnabled`, `SortOrder`.
 
-PHP defaults seeded idempotently: 1000, 500, 200, 100, 50, 20, 10, 5, 1. Full administration is on Organization Web; MAUI owner/admin can enable/disable and add values.
+PHP defaults seeded **only when an organization has no denomination rows** (idempotent; repeated setup does not duplicate). Fresh default set:
+
+PHP 1000, 500, 200, 100, 50, 20, 10, 5, 1, **0.25**, **0.05**, **0.01**.
+
+PHP **0.50** and PHP **0.10** are **not** part of this current default. Owners may still add `0.50`, `0.10`, `5000`, or another custom value from settings without a code change. Existing organization configurations are **not** rewritten: custom rows and previously seeded lists stay as stored. Historical shift breakdowns are untouched.
+
+Values are `decimal` money (`numeric(18,2)` / `SaleMoney`, 2 dp AwayFromZero). Centavos calculate exactly (`0.25 × 3 = 0.75`, `0.05 × 3 = 0.15`, `0.01 × 5 = 0.05`).
+
+Full administration is on Organization Web; MAUI owner/admin can enable/disable and add values. Cashiers count with configured denominations; they cannot change organization setup.
+
+Using the helper copies the calculated total into authoritative Opening / Closing Cash on Hand. Denomination UI/UX is preserved (no layout redesign in this refinement).
 
 Historical `cashier_shift_cash_count_lines` snapshot `DenominationValue` and `Quantity` for Opening or Closing. Later config changes do not rewrite history.
 
@@ -87,9 +97,11 @@ MAUI shift open/close remain **online-only**. Denomination quantities are local 
 
 Existing Required remains Required. Existing Optional remains Optional.
 
+No additional migration for centavo defaults: `value` is already `numeric(18,2)`. Application seed list change only; existing `organization_cash_denominations` rows are not rewritten.
+
 ## Tests
 
-Covered in POS unit, integration, MAUI UI guards, and Org Web settings guards: new-org Required default; owner set Required/Optional from Org Web and MAUI; cashier/Personal/cross-org rejected; shift snapshot; Off retired for new configuration; denomination seed/add/5000/duplicates/zero/negative; disabled not offered; manual vs assisted; server recalculate; mismatch rejected; repeated close does not duplicate lines; cash/GCash/Utang semantics; Required/Optional skip vs zero.
+Covered in POS unit, integration, MAUI UI guards, and Org Web settings guards: new-org Required default; owner set Required/Optional from Org Web and MAUI; cashier/Personal/cross-org rejected; shift snapshot; Off retired for new configuration; denomination seed/add/5000/duplicates/zero/negative; centavo line totals (`0.25`, `0.05`, `0.01`); default set excludes `0.50`; custom `0.50`/`0.10`/`5000` still allowed; opening/closing denomination total becomes Cash on Hand; disabled not offered; manual vs assisted; server recalculate; mismatch rejected; repeated close does not duplicate lines; cash/GCash/Utang semantics; Required/Optional skip vs zero.
 
 ## Owner acceptance
 
