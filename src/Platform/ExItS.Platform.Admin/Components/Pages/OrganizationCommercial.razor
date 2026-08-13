@@ -346,11 +346,16 @@ else
     private string? SubscriptionDetailHref => _currentSubscription is null ? null : $"/admin/subscriptions/{_currentSubscription.Id:D}";
 
     private bool CanManageCommercial =>
-        Permissions.HasPermission(PlatformPermissionCodes.ManageSubscriptions)
-        || (Shell.IsOrganizationShell && Shell.SelectedOrganizationId == OrganizationId);
+        Permissions.HasPermission(PlatformPermissionCodes.ManageSubscriptions);
 
     protected override async Task OnParametersSetAsync()
     {
+        await Shell.EnsureLoadedAsync();
+        if (OrganizationShellHandoff.TryRedirect(Shell, Nav, "/account/subscription"))
+        {
+            return;
+        }
+
         // Only reload when the organization route changes. Parent re-renders must not
         // tear down AntDesign listeners (DomEventListener "Collection was modified").
         if (_loadedOrganizationId == OrganizationId)

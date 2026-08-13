@@ -107,10 +107,9 @@ else if (_detail.Data is { } role)
     [Parameter] public Guid OrganizationId { get; set; }
     [Parameter] public Guid? RoleId { get; set; }
 
-    private bool CanManage => Permissions.HasPermission(PlatformPermissionCodes.ManageMemberships) || Shell.IsOrganizationShell;
+    private bool CanManage => Permissions.HasPermission(PlatformPermissionCodes.ManageMemberships);
     private bool CanAccessOrg =>
-        Permissions.HasPermission(PlatformPermissionCodes.ManageMemberships)
-        || (Shell.IsOrganizationShell && Shell.SelectedOrganizationId == OrganizationId);
+        Permissions.HasPermission(PlatformPermissionCodes.ManageMemberships);
 
     private ApiCallResult<PagedResult<OrganizationRoleDefinitionDto>>? _list;
     private ApiCallResult<OrganizationRoleDefinitionDto>? _detail;
@@ -133,6 +132,12 @@ else if (_detail.Data is { } role)
 
     protected override async Task OnParametersSetAsync()
     {
+        await Shell.EnsureLoadedAsync();
+        if (OrganizationShellHandoff.TryRedirect(Shell, Nav, "/staff/roles"))
+        {
+            return;
+        }
+
         if (!CanAccessOrg) return;
         if (RoleId is null) await LoadListAsync();
         else _detail = await Api.GetOrganizationRoleDefinitionAsync(OrganizationId, RoleId.Value);

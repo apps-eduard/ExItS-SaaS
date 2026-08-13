@@ -7,10 +7,15 @@
 @inject IStringLocalizer<AdminResources> L
 @inject PlatformPermissionState Permissions
 @inject NavigationManager Nav
+@inject AdminShellContext Shell
 
 @if (!Permissions.Loaded)
 {
     <Spin />
+}
+else if (Shell.IsOrganizationShell)
+{
+    <div style="padding:2rem;text-align:center;"><Spin Tip="Opening Organization Web…" /></div>
 }
 else if (!CanAccess)
 {
@@ -107,6 +112,12 @@ else
 
     protected override async Task OnParametersSetAsync()
     {
+        await Shell.EnsureLoadedAsync();
+        if (OrganizationShellHandoff.TryRedirect(Shell, Nav, "/products"))
+        {
+            return;
+        }
+
         if (!Permissions.Loaded || !CanAccess)
         {
             return;

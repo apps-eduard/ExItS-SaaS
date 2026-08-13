@@ -13,6 +13,10 @@
 {
     <LoadingState />
 }
+else if (Shell.IsOrganizationShell)
+{
+    <div style="padding:2rem;text-align:center;"><Spin Tip="Opening Organization Web…" /></div>
+}
 else if (!CanAccessPage)
 {
     <UnauthorizedPanel RequiredPermission="@PlatformPermissionCodes.ManageProductAccess" />
@@ -223,10 +227,7 @@ else
     private ConfirmState? _confirm;
 
     private bool CanAccessPage =>
-        Permissions.HasPermission(PlatformPermissionCodes.ManageProductAccess)
-        || (Shell.IsOrganizationShell
-            && Shell.SelectedOrganizationId == OrganizationId
-            && Shell.SelectedOrganizationId is not null);
+        Permissions.HasPermission(PlatformPermissionCodes.ManageProductAccess);
 
     private bool CanManageRoles =>
         Permissions.HasPermission(PlatformPermissionCodes.ManageMemberships)
@@ -285,6 +286,11 @@ else
     {
         await Permissions.EnsureLoadedAsync();
         await Shell.EnsureLoadedAsync();
+        if (OrganizationShellHandoff.TryRedirect(Shell, Nav, "/account/subscription"))
+        {
+            return;
+        }
+
         if (!CanAccessPage)
         {
             return;

@@ -9,23 +9,14 @@
 @inject AdminShellContext Shell
 @inject NavigationManager Nav
 @inject PlatformPermissionState Permissions
-@inject OrganizationDeepLinkGuard DeepLinkGuard
 
 @if (!Permissions.Loaded || !Shell.Loaded)
 {
     <div style="padding:2rem;text-align:center;"><Spin /></div>
 }
-else if (Shell.IsOrganizationShell && !DeepLinkGuard.CanOpenOrganization(OrganizationId))
+else if (Shell.IsOrganizationShell)
 {
-    <Result Status="@ResultStatus.Warning"
-            Title="Organization context required"
-            SubTitle="This organization is not the active organization context.">
-        <Extra>
-            <Button Type="@ButtonType.Primary" OnClick="@(() => Nav.NavigateTo(DeepLinkGuard.DeniedRedirectUrl(OrganizationId)))">
-                Back
-            </Button>
-        </Extra>
-    </Result>
+    <div style="padding:2rem;text-align:center;"><Spin Tip="Opening Organization Web…" /></div>
 }
 else if (!CanAccessInvitations)
 {
@@ -198,14 +189,16 @@ else
         || string.Equals(Shell.MembershipRole, "OrganizationAdministrator", StringComparison.OrdinalIgnoreCase);
 
     private bool CanAccessInvitations =>
-        Permissions.HasPermission(PlatformPermissionCodes.ManageMemberships)
-        || (Shell.IsOrganizationShell
-            && Shell.SelectedOrganizationId == OrganizationId
-            && IsOrgAdminMembership);
+        Permissions.HasPermission(PlatformPermissionCodes.ManageMemberships);
 
     protected override async Task OnParametersSetAsync()
     {
         await Shell.EnsureLoadedAsync();
+        if (OrganizationShellHandoff.TryRedirect(Shell, Nav, "/staff/invite"))
+        {
+            return;
+        }
+
         if (!Permissions.Loaded)
         {
             await Permissions.EnsureLoadedAsync();

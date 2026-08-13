@@ -6,81 +6,15 @@
 @inject IStringLocalizer<AdminResources> L
 @inject NavigationManager Nav
 @inject AdminShellContext Shell
+@inject IJSRuntime Js
 
 @if (!_shellReady)
 {
     <div style="padding:2rem; text-align:center;"><Spin /></div>
 }
-else if (Shell.IsPersonalShell)
+else if (Shell.IsPersonalShell || Shell.IsOrganizationShell)
 {
-    <PageHeader Class="exits-page-header" Title="@L["Personal_HomeTitle"]" SubTitle="@L["Personal_HomeDescription"]">
-        <PageHeaderBreadcrumb>
-            <Breadcrumb>
-                <BreadcrumbItem>@L["Brand_Name"]</BreadcrumbItem>
-                <BreadcrumbItem>@L["Nav_Home"]</BreadcrumbItem>
-            </Breadcrumb>
-        </PageHeaderBreadcrumb>
-    </PageHeader>
-
-    @if (_personal is null)
-    {
-        <div style="padding:2rem; text-align:center;"><Spin Tip="@L["Dashboard_Loading"]" /></div>
-    }
-    else if (!_personal.IsSuccess)
-    {
-        <Result Status="@ResultStatus.Error"
-                Title="@(_personal.Error?.Title ?? L["Common_Unavailable"])"
-                SubTitle="@(_personal.Error?.Detail ?? "")" />
-    }
-    else
-    {
-        var data = _personal.Data!;
-        <Row Gutter="(12,12)" Style="margin-bottom:1rem;">
-            <AntDesign.Col Xs="24" Sm="12" Md="6">
-                <AdminSummaryCard Label="@L["Nav_UtangPeople"]">@data.ContactCount</AdminSummaryCard>
-            </AntDesign.Col>
-            <AntDesign.Col Xs="24" Sm="12" Md="6">
-                <AdminSummaryCard Label="Active relationships">@data.ActiveRelationshipCount</AdminSummaryCard>
-            </AntDesign.Col>
-            <AntDesign.Col Xs="24" Sm="12" Md="6">
-                <AdminSummaryCard Label="@L["Nav_UtangLent"]">@data.TotalLentBalance</AdminSummaryCard>
-            </AntDesign.Col>
-            <AntDesign.Col Xs="24" Sm="12" Md="6">
-                <AdminSummaryCard Label="@L["Nav_UtangBorrowed"]">@data.TotalBorrowedBalance</AdminSummaryCard>
-            </AntDesign.Col>
-        </Row>
-        <Space Wrap>
-            <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" OnClick='() => Nav.NavigateTo("/admin/personal/utang/people")'>@L["Nav_UtangPeople"]</Button>
-            <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" OnClick='() => Nav.NavigateTo("/admin/personal/utang/lent")'>@L["Nav_UtangLent"]</Button>
-            <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" OnClick='() => Nav.NavigateTo("/admin/personal/utang/borrowed")'>@L["Nav_UtangBorrowed"]</Button>
-            <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" OnClick='() => Nav.NavigateTo("/admin/personal/profile")'>@L["Nav_Profile"]</Button>
-        </Space>
-    }
-}
-else if (Shell.IsOrganizationShell)
-{
-    <PageHeader Class="exits-page-header" Title="@L["Organization_HomeTitle"]" SubTitle="@L["Organization_HomeDescription"]">
-        <PageHeaderBreadcrumb>
-            <Breadcrumb>
-                <BreadcrumbItem>@L["Brand_Name"]</BreadcrumbItem>
-                <BreadcrumbItem>@L["Nav_Dashboard"]</BreadcrumbItem>
-            </Breadcrumb>
-        </PageHeaderBreadcrumb>
-    </PageHeader>
-
-    <Alert Type="@AlertType.Info"
-           ShowIcon="true"
-           Style="margin-bottom:1rem;"
-           Message="@($"{Shell.RoleLabel}{(string.IsNullOrWhiteSpace(Shell.SelectedOrganizationName) ? "" : $" · {Shell.SelectedOrganizationName}")}")" />
-
-    <Space Wrap>
-        @if (Shell.SelectedOrganizationId is Guid orgId)
-        {
-            <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" OnClick="@(() => Nav.NavigateTo($"/admin/organizations/{orgId}"))">@L["Nav_OrganizationProfile"]</Button>
-            <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" OnClick="@(() => Nav.NavigateTo($"/admin/organizations/{orgId}/members"))">@L["Nav_Members"]</Button>
-            <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" OnClick="@(() => Nav.NavigateTo($"/admin/organizations/{orgId}/enabled-products"))">@L["Nav_MyProducts"]</Button>
-        }
-    </Space>
+    <div style="padding:2rem; text-align:center;"><Spin Tip="Opening workspace…" /></div>
 }
 else if (Shell.IsPlatformShell)
 {
@@ -172,7 +106,6 @@ else
 
 @code {
     private ApiCallResult<PortfolioSummaryDto>? _result;
-    private ApiCallResult<PersonalDashboardDto>? _personal;
     private HashSet<string> _failed = new(StringComparer.OrdinalIgnoreCase);
     private bool _loading;
     private bool _started;
@@ -192,10 +125,20 @@ else
         if (Shell.IsPlatformShell)
         {
             await LoadWithRetryAsync();
+            StateHasChanged();
+            return;
         }
-        else if (Shell.IsPersonalShell)
+
+        if (Shell.IsPersonalShell)
         {
-            _personal = await Api.GetPersonalDashboardAsync();
+            await Js.InvokeVoidAsync("location.assign", Nav.ToAbsoluteUri("/admin/handoff/personal").AbsoluteUri);
+            return;
+        }
+
+        if (Shell.IsOrganizationShell)
+        {
+            await Js.InvokeVoidAsync("location.assign", Nav.ToAbsoluteUri("/admin/handoff/organization").AbsoluteUri);
+            return;
         }
 
         StateHasChanged();

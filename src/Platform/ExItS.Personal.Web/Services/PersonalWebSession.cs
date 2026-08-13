@@ -1,6 +1,8 @@
 using System.Net.Http.Json;
 using System.Security.Claims;
 using System.Text.Json;
+using ExItS.Platform.Application.Catalog;
+using ExItS.Platform.Application.GlobalCatalog;
 using ExItS.Platform.Application.Personal;
 using ExItS.Web.UI;
 using Microsoft.AspNetCore.Authentication;
@@ -181,6 +183,63 @@ public sealed class PersonalApiClient(IHttpClientFactory httpClientFactory, Pers
 
     public Task<IReadOnlyList<PersonalInAppNotificationDto>?> GetNotificationsAsync(CancellationToken ct = default) =>
         GetAsync<IReadOnlyList<PersonalInAppNotificationDto>>("/api/v1/personal/notifications", ct);
+
+    public Task<IReadOnlyList<PlanDto>?> GetCommercialPlansAsync(CancellationToken ct = default) =>
+        GetAsync<IReadOnlyList<PlanDto>>("/api/v1/commercial/plans?productCode=pinoy-business-pos", ct);
+
+    public Task<IReadOnlyList<BusinessTypeDto>?> GetOnboardingBusinessTypesAsync(CancellationToken ct = default) =>
+        GetAsync<IReadOnlyList<BusinessTypeDto>>("/api/v1/personal/onboarding/business-types", ct);
+
+    public Task<(bool Ok, StartBusinessResultDto? Data, string? Error)> StartBusinessAsync(
+        StartBusinessRequest request,
+        CancellationToken ct = default) =>
+        PostAsync<StartBusinessResultDto>("/api/v1/personal/start-business", request, ct);
+
+    private async Task<(bool Ok, T? Data, string? Error)> PostAsync<T>(string path, object body, CancellationToken ct)
+    {
+        var client = httpClientFactory.CreateClient("PlatformApi");
+        using var request = new HttpRequestMessage(HttpMethod.Post, path)
+        {
+            Content = JsonContent.Create(body)
+        };
+        if (!string.IsNullOrWhiteSpace(circuit.SessionToken))
+        {
+            request.Headers.TryAddWithoutValidation("X-ExItS-Session-Token", circuit.SessionToken);
+        }
+
+        using var response = await client.SendAsync(request, ct).ConfigureAwait(false);
+        if (!response.IsSuccessStatusCode)
+        {
+            var raw = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+            return (false, default, TryProblemDetail(raw) ?? "Request failed.");
+        }
+
+        var data = await response.Content.ReadFromJsonAsync<T>(ct).ConfigureAwait(false);
+        return (true, data, null);
+    }
+
+    private static string? TryProblemDetail(string raw)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(raw);
+            if (doc.RootElement.TryGetProperty("detail", out var detail))
+            {
+                return detail.GetString();
+            }
+
+            if (doc.RootElement.TryGetProperty("title", out var title))
+            {
+                return title.GetString();
+            }
+        }
+        catch
+        {
+            // Fall through.
+        }
+
+        return null;
+    }
 
     private async Task<T?> GetAsync<T>(string path, CancellationToken ct)
     {

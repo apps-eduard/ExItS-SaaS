@@ -7,6 +7,7 @@
 @inject IStringLocalizer<AdminResources> L
 @inject PlatformPermissionState Permissions
 @inject AdminShellContext Shell
+@inject NavigationManager Nav
 
 <AdminPageHeader Title="@L["Branding_Title"]"
                  Breadcrumb="@($"{_org?.Data?.DisplayName ?? L["Nav_Organizations"].Value} · {L["Nav_Branding"]}")"
@@ -110,6 +111,12 @@ else
 
     protected override async Task OnParametersSetAsync()
     {
+        await Shell.EnsureLoadedAsync();
+        if (OrganizationShellHandoff.TryRedirect(Shell, Nav, "/organization/profile"))
+        {
+            return;
+        }
+
         _formError = null;
         _formConflict = false;
         _org = await Api.GetOrganizationAsync(OrganizationId);

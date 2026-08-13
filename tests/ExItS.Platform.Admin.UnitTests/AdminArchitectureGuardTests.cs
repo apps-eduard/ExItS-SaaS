@@ -123,7 +123,8 @@ public sealed class AdminArchitectureGuardTests
         Assert.Contains("Nav_SectionSettings", File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Layout", "AdminNav.razor")), StringComparison.Ordinal);
         var nav = File.ReadAllText(Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Layout", "AdminNav.razor"));
         Assert.Contains("enabled-products", nav, StringComparison.Ordinal);
-        Assert.Contains("my-products", nav, StringComparison.Ordinal);
+        Assert.DoesNotContain("my-products", nav, StringComparison.Ordinal);
+        Assert.Contains("/admin/handoff/organization", nav, StringComparison.Ordinal);
         Assert.True(File.Exists(Path.Combine(pagesDir, "OrganizationEnabledProducts.razor")));
     }
 
@@ -363,7 +364,6 @@ public sealed class AdminArchitectureGuardTests
         Assert.Contains("Nav_RolesPermissions", nav, StringComparison.Ordinal);
         Assert.Contains("Nav_OrganizationMemberships", nav, StringComparison.Ordinal);
         Assert.Contains("Nav_OrganizationStaff", accountNav, StringComparison.Ordinal);
-        Assert.Contains("Nav_People", nav, StringComparison.Ordinal);
         Assert.Contains("Nav_Contacts", accountNav, StringComparison.Ordinal);
         Assert.Contains("Nav_SelectOrganization", nav, StringComparison.Ordinal);
         Assert.Contains("/invitations", accountNav, StringComparison.Ordinal);
@@ -372,7 +372,10 @@ public sealed class AdminArchitectureGuardTests
         Assert.Contains("IsOrganizationShell", nav, StringComparison.Ordinal);
         Assert.Contains("IsPersonalShell", nav, StringComparison.Ordinal);
         Assert.Contains("/admin/personal/utang/people", accountNav, StringComparison.Ordinal);
-        Assert.Contains("Nav_UtangTracker", nav, StringComparison.Ordinal);
+        Assert.Contains("/admin/handoff/personal", nav, StringComparison.Ordinal);
+        Assert.Contains("Open Organization Web", nav, StringComparison.Ordinal);
+        Assert.Contains("Open Personal Web", nav, StringComparison.Ordinal);
+        Assert.DoesNotContain("RouterLink=\"/admin/personal/utang/lent\"", nav, StringComparison.Ordinal);
         Assert.DoesNotContain("CanView(PlatformPermissionCodes.ViewPortfolio) || IsOrgAdminMembership", nav, StringComparison.Ordinal);
         Assert.Contains("RouterMatch=\"NavLinkMatch.All\"", nav, StringComparison.Ordinal);
         Assert.DoesNotContain("Sign out", nav, StringComparison.OrdinalIgnoreCase);

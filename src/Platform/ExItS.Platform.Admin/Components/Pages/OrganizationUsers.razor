@@ -50,9 +50,8 @@ else
     protected override async Task OnInitializedAsync()
     {
         await Shell.EnsureLoadedAsync();
-        if (Shell.IsOrganizationShell && Shell.SelectedOrganizationId is Guid orgId)
+        if (OrganizationShellHandoff.TryRedirect(Shell, Nav, "/staff"))
         {
-            Nav.NavigateTo($"/admin/organizations/{orgId}/members", replace: true);
             return;
         }
 

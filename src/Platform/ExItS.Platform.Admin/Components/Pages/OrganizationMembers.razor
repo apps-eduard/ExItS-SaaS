@@ -9,23 +9,14 @@
 @inject AdminShellContext Shell
 @inject NavigationManager Nav
 @inject PlatformPermissionState Permissions
-@inject OrganizationDeepLinkGuard DeepLinkGuard
 
 @if (!Permissions.Loaded || !Shell.Loaded)
 {
     <div style="padding:2rem;text-align:center;"><Spin /></div>
 }
-else if (Shell.IsOrganizationShell && !DeepLinkGuard.CanOpenOrganization(OrganizationId))
+else if (Shell.IsOrganizationShell)
 {
-    <Result Status="@ResultStatus.Warning"
-            Title="Organization context required"
-            SubTitle="This organization is not the active organization context.">
-        <Extra>
-            <Button Type="@ButtonType.Primary" OnClick="@(() => Nav.NavigateTo(DeepLinkGuard.DeniedRedirectUrl(OrganizationId)))">
-                Back
-            </Button>
-        </Extra>
-    </Result>
+    <div style="padding:2rem;text-align:center;"><Spin Tip="Opening Organization Web…" /></div>
 }
 else if (!CanAccessMembers)
 {
@@ -433,10 +424,7 @@ else
         || string.Equals(Shell.MembershipRole, "OrganizationAdministrator", StringComparison.OrdinalIgnoreCase);
 
     private bool CanAccessMembers =>
-        Permissions.HasPermission(PlatformPermissionCodes.ManageMemberships)
-        || (Shell.IsOrganizationShell
-            && Shell.SelectedOrganizationId == OrganizationId
-            && IsOrgAdminMembership);
+        Permissions.HasPermission(PlatformPermissionCodes.ManageMemberships);
 
     /// <summary>Raw GUID membership linking is Platform support only — never the Owner onboarding path.</summary>
     private bool CanUseAdvancedIdentityLink =>
@@ -464,6 +452,11 @@ else
         // Load shell first so Organization sessions mark permissions via EnsureLoadedForNonPlatformAsync
         // (empty set). Calling Permissions.EnsureLoadedAsync first can race and show a false deny.
         await Shell.EnsureLoadedAsync();
+        if (OrganizationShellHandoff.TryRedirect(Shell, Nav, "/staff"))
+        {
+            return;
+        }
+
         if (!Permissions.Loaded)
         {
             await Permissions.EnsureLoadedAsync();

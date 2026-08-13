@@ -5,237 +5,30 @@
 @page "/admin/personal/notifications"
 @page "/admin/personal/profile"
 @page "/admin/personal/settings"
-@using AntDesign
-@using Microsoft.AspNetCore.Authorization
-@using Microsoft.Extensions.Options
 @using ExItS.Web.UI
+@using Microsoft.Extensions.Options
+@layout EmptyLayout
 @attribute [Authorize]
-@inject IPlatformApiClient Api
-@inject IStringLocalizer<AdminResources> L
-@inject AdminShellContext Shell
 @inject NavigationManager Nav
 @inject IOptions<ExItSWebHostOptions> Hosts
 
-@if (!_ready)
-{
-    <div style="padding:2rem;text-align:center;"><Spin /></div>
-}
-else if (!Shell.IsPersonalShell)
-{
-    <Result Status="@ResultStatus.Warning" Title="@L["Personal_ShellRequired"]">
-        <Extra>
-            <Button Type="@ButtonType.Primary" OnClick='() => Nav.NavigateTo("/admin")'>@L["Nav_Dashboard"]</Button>
-        </Extra>
-    </Result>
-}
-else
-{
-    <AdminPageHeader Title="@_title"
-                     Breadcrumb="@($"{L["Brand_Name"]} · {L["Nav_Home"]} · {_title}")"
-                     Description="@L["Personal_HomeDescription"]" />
-
-    @if (!string.IsNullOrWhiteSpace(_error))
-    {
-        <AdminErrorState Title="@L["Common_Error"].Value" Detail="@_error" />
-    }
-    else if (_loading)
-    {
-        <AdminLoadingState />
-    }
-    else if (_mode == "people")
-    {
-        <Table TItem="PersonalContactDto" DataSource="_contacts" Size="@TableSize.Small" Bordered ScrollX="720">
-            <PropertyColumn Property="c => c.DisplayName" Title="@L["Common_User"]" Ellipsis />
-            <PropertyColumn Property="c => c.Email" Title="@L["Common_Email"]" Ellipsis Width="200">
-                <Tooltip Title="@(context.Email ?? "")">
-                    <span>@(context.Email ?? "—")</span>
-                </Tooltip>
-            </PropertyColumn>
-            <PropertyColumn Property="c => c.Phone" Title="Phone" Width="140" />
-            <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Width="120">
-                <AdminStatusTag Value="@context.Status" />
-            </PropertyColumn>
-        </Table>
-    }
-    else if (_mode is "lent" or "borrowed")
-    {
-        <Table TItem="PersonalDebtRelationshipSummaryDto" DataSource="_relationships" Size="@TableSize.Small" Bordered ScrollX="720">
-            <PropertyColumn Property="c => c.Perspective" Title="Perspective" />
-            <PropertyColumn Property="c => c.CurrentBalance" Title="Balance" Width="120">
-                <AdminMoneyDisplay Amount="@context.CurrentBalance" CurrencyCode="@context.CurrencyCode" />
-            </PropertyColumn>
-            <PropertyColumn Property="c => c.CurrencyCode" Title="Currency" Width="90" />
-            <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Width="120">
-                <AdminStatusTag Value="@context.Status" />
-            </PropertyColumn>
-            <PropertyColumn Property="c => c.DueDateUtc" Title="Due" Width="180">
-                <LocalTimestamp Value="@context.DueDateUtc" />
-            </PropertyColumn>
-        </Table>
-    }
-    else if (_mode == "invitations")
-    {
-        <Table TItem="PersonalUtangInvitationDto" DataSource="_invitations" Size="@TableSize.Small" Bordered ScrollX="720">
-            <PropertyColumn Property="c => c.InviteTargetEmailMasked" Title="@L["Common_Email"]" Ellipsis />
-            <PropertyColumn Property="c => c.Status" Title="@L["Common_Status"]" Width="120">
-                <AdminStatusTag Value="@context.Status" />
-            </PropertyColumn>
-            <PropertyColumn Property="c => c.CreatedAtUtc" Title="@L["Common_CreatedUtc"]" Width="180">
-                <LocalTimestamp Value="@context.CreatedAtUtc" />
-            </PropertyColumn>
-            <PropertyColumn Property="c => c.ExpiresAtUtc" Title="Expires" Width="180">
-                <LocalTimestamp Value="@context.ExpiresAtUtc" />
-            </PropertyColumn>
-        </Table>
-    }
-    else if (_mode == "notifications")
-    {
-        <Table TItem="PersonalInAppNotificationDto" DataSource="_notifications" Size="@TableSize.Small" Bordered ScrollX="720">
-            <PropertyColumn Property="c => c.Title" Title="Title" Ellipsis />
-            <PropertyColumn Property="c => c.Preview" Title="Preview" Ellipsis Width="240">
-                <Tooltip Title="@(context.Preview ?? "")">
-                    <span>@(context.Preview ?? "—")</span>
-                </Tooltip>
-            </PropertyColumn>
-            <PropertyColumn Property="c => c.IsRead" Title="Read" Width="80" />
-            <PropertyColumn Property="c => c.CreatedAtUtc" Title="@L["Common_CreatedUtc"]" Width="180">
-                <LocalTimestamp Value="@context.CreatedAtUtc" />
-            </PropertyColumn>
-        </Table>
-    }
-    else if (_mode == "profile" && _profile is not null)
-    {
-        <Descriptions Bordered Size="@DescriptionsSize.Small" Column="1">
-            <DescriptionsItem Title="@L["Common_User"]">@_profile.DisplayName</DescriptionsItem>
-            <DescriptionsItem Title="Username">@_profile.Username</DescriptionsItem>
-            <DescriptionsItem Title="@L["Common_Email"]">@_profile.Email</DescriptionsItem>
-            <DescriptionsItem Title="Account class">@_profile.AccountClass</DescriptionsItem>
-            <DescriptionsItem Title="@L["Common_Status"]"><AdminStatusTag Value="@_profile.Status" /></DescriptionsItem>
-        </Descriptions>
-    }
-    else if (_mode == "settings" && _settings is not null)
-    {
-        <Descriptions Bordered Size="@DescriptionsSize.Small" Column="1">
-            <DescriptionsItem Title="Email notifications">@_settings.EmailNotificationsEnabled</DescriptionsItem>
-            <DescriptionsItem Title="Push notifications">@_settings.PushNotificationsEnabled</DescriptionsItem>
-            <DescriptionsItem Title="In-app notifications">@_settings.InAppNotificationsEnabled</DescriptionsItem>
-            <DescriptionsItem Title="Reminder notifications">@_settings.ReminderNotificationsEnabled</DescriptionsItem>
-        </Descriptions>
-    }
-}
+<div style="padding:2rem;text-align:center;"><Spin Tip="Opening Personal Web…" /></div>
 
 @code {
-    private bool _ready;
-    private bool _loading;
-    private string _mode = "people";
-    private string _title = "";
-    private string? _error;
-    private IReadOnlyList<PersonalContactDto> _contacts = [];
-    private IReadOnlyList<PersonalDebtRelationshipSummaryDto> _relationships = [];
-    private IReadOnlyList<PersonalUtangInvitationDto> _invitations = [];
-    private IReadOnlyList<PersonalInAppNotificationDto> _notifications = [];
-    private PersonalProfileDto? _profile;
-    private PersonalAccountSettingsDto? _settings;
-
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
-        await Shell.EnsureLoadedAsync();
-        _ready = true;
-        if (Shell.IsPersonalShell)
+        var personalPath = new Uri(Nav.Uri).AbsolutePath.TrimEnd('/');
+        var mapped = personalPath switch
         {
-            var personalPath = new Uri(Nav.Uri).AbsolutePath.TrimEnd('/');
-            var mapped = personalPath switch
-            {
-                "/admin/personal/utang/people" => "/utang/people",
-                "/admin/personal/utang/lent" => "/utang/lent",
-                "/admin/personal/utang/borrowed" => "/utang/borrowed",
-                "/admin/personal/utang/invitations" => "/utang/invitations",
-                "/admin/personal/notifications" => "/notifications",
-                "/admin/personal/profile" => "/profile",
-                "/admin/personal/settings" => "/settings",
-                _ => "/home"
-            };
-            Nav.NavigateTo(Hosts.Value.GetOrigin(WebApps.Personal).TrimEnd('/') + mapped, forceLoad: true);
-            return;
-        }
-
-        if (!Shell.IsPersonalShell)
-        {
-            return;
-        }
-
-        var path = new Uri(Nav.Uri).AbsolutePath.TrimEnd('/');
-        (_mode, _title) = path switch
-        {
-            "/admin/personal/utang/people" => ("people", L["Nav_UtangPeople"].Value),
-            "/admin/personal/utang/lent" => ("lent", L["Nav_UtangLent"].Value),
-            "/admin/personal/utang/borrowed" => ("borrowed", L["Nav_UtangBorrowed"].Value),
-            "/admin/personal/utang/invitations" => ("invitations", L["Nav_Invitations"].Value),
-            "/admin/personal/notifications" => ("notifications", L["Nav_Notifications"].Value),
-            "/admin/personal/profile" => ("profile", L["Nav_Profile"].Value),
-            "/admin/personal/settings" => ("settings", L["Nav_PersonalSettings"].Value),
-            _ => ("people", L["Nav_UtangPeople"].Value)
+            "/admin/personal/utang/people" => "/utang/people",
+            "/admin/personal/utang/lent" => "/utang/lent",
+            "/admin/personal/utang/borrowed" => "/utang/borrowed",
+            "/admin/personal/utang/invitations" => "/utang/invitations",
+            "/admin/personal/notifications" => "/notifications",
+            "/admin/personal/profile" => "/profile",
+            "/admin/personal/settings" => "/settings",
+            _ => "/home"
         };
-
-        _loading = true;
-        try
-        {
-            switch (_mode)
-            {
-                case "people":
-                {
-                    var result = await Api.GetPersonalUtangContactsAsync();
-                    if (!result.IsSuccess) { _error = result.Error?.Detail ?? result.Error?.Title; break; }
-                    _contacts = result.Data ?? [];
-                    break;
-                }
-                case "lent":
-                {
-                    var result = await Api.GetPersonalUtangLentAsync();
-                    if (!result.IsSuccess) { _error = result.Error?.Detail ?? result.Error?.Title; break; }
-                    _relationships = result.Data ?? [];
-                    break;
-                }
-                case "borrowed":
-                {
-                    var result = await Api.GetPersonalUtangBorrowedAsync();
-                    if (!result.IsSuccess) { _error = result.Error?.Detail ?? result.Error?.Title; break; }
-                    _relationships = result.Data ?? [];
-                    break;
-                }
-                case "invitations":
-                {
-                    var result = await Api.GetPersonalUtangInvitationsAsync();
-                    if (!result.IsSuccess) { _error = result.Error?.Detail ?? result.Error?.Title; break; }
-                    _invitations = result.Data ?? [];
-                    break;
-                }
-                case "notifications":
-                {
-                    var result = await Api.GetPersonalNotificationsAsync();
-                    if (!result.IsSuccess) { _error = result.Error?.Detail ?? result.Error?.Title; break; }
-                    _notifications = result.Data ?? [];
-                    break;
-                }
-                case "profile":
-                {
-                    var result = await Api.GetPersonalProfileAsync();
-                    if (!result.IsSuccess) { _error = result.Error?.Detail ?? result.Error?.Title; break; }
-                    _profile = result.Data;
-                    break;
-                }
-                case "settings":
-                {
-                    var result = await Api.GetPersonalSettingsAsync();
-                    if (!result.IsSuccess) { _error = result.Error?.Detail ?? result.Error?.Title; break; }
-                    _settings = result.Data;
-                    break;
-                }
-            }
-        }
-        finally
-        {
-            _loading = false;
-        }
+        Nav.NavigateTo(Hosts.Value.GetOrigin(WebApps.Personal).TrimEnd('/') + mapped, forceLoad: true);
     }
 }

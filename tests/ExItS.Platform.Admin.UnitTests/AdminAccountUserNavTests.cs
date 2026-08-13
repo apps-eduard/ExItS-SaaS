@@ -204,7 +204,9 @@ public sealed class AdminAccountUserNavTests
         Assert.Contains("Nav_Customers", model, StringComparison.Ordinal);
         Assert.Contains("Nav_CustomerLinking", model, StringComparison.Ordinal);
         Assert.Contains("Nav_Contacts", model, StringComparison.Ordinal);
-        Assert.Contains("Nav_People", nav, StringComparison.Ordinal);
+        Assert.DoesNotContain("Nav_People", nav, StringComparison.Ordinal);
+        Assert.Contains("/admin/handoff/organization", nav, StringComparison.Ordinal);
+        Assert.Contains("/admin/handoff/personal", nav, StringComparison.Ordinal);
         Assert.DoesNotContain("Nav_UnassignedUsers", nav, StringComparison.Ordinal);
         Assert.DoesNotContain("Requires Assignment", nav, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("System Users", nav, StringComparison.OrdinalIgnoreCase);

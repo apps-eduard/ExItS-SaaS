@@ -26,7 +26,9 @@ public sealed class OrganizationDeepLinkGuard(AdminShellContext shell)
     }
 
     public string DeniedRedirectUrl(Guid requestedOrganizationId) =>
-        shell.SelectedOrganizationId is Guid selected
-            ? $"/admin/organizations/{selected:D}"
-            : "/admin";
+        shell.IsOrganizationShell
+            ? OrganizationShellHandoff.Url(shell, "/overview")
+            : shell.SelectedOrganizationId is Guid selected
+                ? $"/admin/organizations/{selected:D}"
+                : "/admin";
 }

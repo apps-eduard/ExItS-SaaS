@@ -220,154 +220,17 @@
         <MenuItem Key="open-org-web" Icon="export" OnClick='() => Nav.NavigateTo("/admin/handoff/organization", forceLoad: true)'>
             Open Organization Web
         </MenuItem>
-        @if (OrganizationPeopleItems.Count > 0)
-        {
-            <SubMenu Key="people" TitleTemplate="@PeopleTitle">
-                @foreach (var item in OrganizationPeopleItems)
-                {
-                    @if (item.Implemented && item.Route is not null)
-                    {
-                        <MenuItem Key="@item.Key" RouterLink="@item.Route" Icon="@PeopleItemIcon(item.Key)">
-                            @L[item.LabelKey]
-                        </MenuItem>
-                    }
-                    else if (item.Implemented && item.Route is null)
-                    {
-                        <MenuItem Key="@item.Key" Disabled="true">
-                            @L[item.LabelKey] <span class="exits-phase15-tag">@L["Nav_SelectOrganization"]</span>
-                        </MenuItem>
-                    }
-                    else
-                    {
-                        <MenuItem Key="@item.Key" Disabled="true">
-                            @L[item.LabelKey] <span class="exits-phase15-tag">@L["Nav_ComingSoon"]</span>
-                        </MenuItem>
-                    }
-                }
-            </SubMenu>
-        }
-
-        <SubMenu Key="org-products" TitleTemplate="@OrgProductsTitle">
-            @if (Shell.SelectedOrganizationId is Guid productsOrg)
-            {
-                <MenuItem Key="my-products" RouterLink="@($"/admin/organizations/{productsOrg}/enabled-products")" Icon="appstore">
-                    @L["Nav_MyProducts"]
-                </MenuItem>
-                @if (IsOrgAdminMembership)
-                {
-                    <MenuItem Key="enabled-products" RouterLink="@($"/admin/organizations/{productsOrg}/enabled-products")" Icon="rocket">
-                        @L["OrgEnabledProducts_Title"]
-                    </MenuItem>
-                }
-            }
-            else
-            {
-                <MenuItem Key="my-products" Disabled="true">
-                    @L["Nav_MyProducts"] <span class="exits-phase15-tag">@L["Nav_SelectOrganization"]</span>
-                </MenuItem>
-            }
-        </SubMenu>
-
-        <SubMenu Key="subscription" TitleTemplate="@SubscriptionTitle">
-            @if (Shell.SelectedOrganizationId is Guid planOrg && IsOrgAdminMembership)
-            {
-                <MenuItem Key="current-plan" RouterLink="@($"/admin/organizations/{planOrg}/commercial")" Icon="profile">
-                    @L["Nav_CurrentPlan"]
-                </MenuItem>
-                <MenuItem Key="billing" RouterLink="@($"/admin/organizations/{planOrg}/commercial")" Icon="credit-card">
-                    @L["Nav_BillingRenewal"]
-                </MenuItem>
-            }
-            else
-            {
-                <MenuItem Key="current-plan" Disabled="true">
-                    @L["Nav_CurrentPlan"] <span class="exits-phase15-tag">@(IsOrgAdminMembership ? L["Nav_SelectOrganization"] : L["Unauthorized_Title"])</span>
-                </MenuItem>
-            }
-            <MenuItem Key="usage" Disabled="true">
-                @L["Nav_Usage"] <span class="exits-phase15-tag">@L["Nav_ComingSoon"]</span>
-            </MenuItem>
-        </SubMenu>
-
-        <SubMenu Key="security" TitleTemplate="@SecurityTitle">
-            <MenuItem Key="activity-log" Disabled="true">
-                @L["Nav_ActivityLog"] <span class="exits-phase15-tag">@L["Nav_ComingSoon"]</span>
-            </MenuItem>
-        </SubMenu>
-
-        <SubMenu Key="settings" TitleTemplate="@SettingsTitle">
-            @if (Shell.SelectedOrganizationId is Guid orgSettingsId && IsOrgAdminMembership)
-            {
-                <MenuItem Key="org-settings" RouterLink="@($"/admin/organizations/{orgSettingsId}")" Icon="setting">
-                    @L["Nav_OrganizationSettings"]
-                </MenuItem>
-            }
-            else
-            {
-                <MenuItem Key="org-settings" Disabled="true">
-                    @L["Nav_OrganizationSettings"] <span class="exits-phase15-tag">@(IsOrgAdminMembership ? L["Nav_SelectOrganization"] : L["Unauthorized_Title"])</span>
-                </MenuItem>
-            }
-            @if (Shell.SelectedOrganizationId is Guid orgBrandingId && IsOrgAdminMembership)
-            {
-                <MenuItem Key="branding" RouterLink="@($"/admin/organizations/{orgBrandingId}/branding")" Icon="bg-colors">
-                    @L["Nav_Branding"]
-                </MenuItem>
-            }
-            else
-            {
-                <MenuItem Key="branding" Disabled="true">
-                    @L["Nav_Branding"] <span class="exits-phase15-tag">@(IsOrgAdminMembership ? L["Nav_SelectOrganization"] : L["Unauthorized_Title"])</span>
-                </MenuItem>
-            }
-        </SubMenu>
+        <MenuItem Key="workspaces" RouterLink="/admin/workspaces" Icon="appstore">
+            Workspaces
+        </MenuItem>
     }
     else if (_ready && Shell.IsPersonalShell)
     {
         <MenuItem Key="open-personal-web" Icon="export" OnClick='() => Nav.NavigateTo("/admin/handoff/personal", forceLoad: true)'>
             Open Personal Web
         </MenuItem>
-        @foreach (var item in PersonalContactItems)
-        {
-            @if (item.Implemented && item.Route is not null)
-            {
-                <MenuItem Key="@item.Key" RouterLink="@item.Route" Icon="contacts">
-                    @L[item.LabelKey]
-                </MenuItem>
-            }
-        }
-
-        <SubMenu Key="utang" TitleTemplate="@UtangTitle">
-            <MenuItem Key="utang-lent" RouterLink="/admin/personal/utang/lent" Icon="export">
-                @L["Nav_UtangLent"]
-            </MenuItem>
-            <MenuItem Key="utang-borrowed" RouterLink="/admin/personal/utang/borrowed" Icon="import">
-                @L["Nav_UtangBorrowed"]
-            </MenuItem>
-            <MenuItem Key="utang-invitations" RouterLink="/admin/personal/utang/invitations" Icon="mail">
-                @L["Nav_Invitations"]
-            </MenuItem>
-            <MenuItem Key="utang-payments" Disabled="true">
-                @L["Nav_UtangPayments"] <span class="exits-phase15-tag">@L["Nav_ComingSoon"]</span>
-            </MenuItem>
-            <MenuItem Key="utang-reminders" Disabled="true">
-                @L["Nav_UtangReminders"] <span class="exits-phase15-tag">@L["Nav_ComingSoon"]</span>
-            </MenuItem>
-            <MenuItem Key="utang-history" Disabled="true">
-                @L["Nav_UtangHistory"] <span class="exits-phase15-tag">@L["Nav_ComingSoon"]</span>
-            </MenuItem>
-        </SubMenu>
-        <MenuItem Key="personal-start-business" RouterLink="/admin/personal/start-business" Icon="shop">
-            Start a Business
-        </MenuItem>
-        <MenuItem Key="personal-notifications" RouterLink="/admin/personal/notifications" Icon="bell">
-            @L["Nav_Notifications"]
-        </MenuItem>
-        <MenuItem Key="personal-profile" RouterLink="/admin/personal/profile" Icon="user">
-            @L["Nav_Profile"]
-        </MenuItem>
-        <MenuItem Key="personal-settings" RouterLink="/admin/personal/settings" Icon="setting">
-            @L["Nav_PersonalSettings"]
+        <MenuItem Key="workspaces" RouterLink="/admin/workspaces" Icon="appstore">
+            Workspaces
         </MenuItem>
     }
 </Menu>
@@ -379,7 +242,7 @@
     private bool _ready;
     private bool _shellLoadFailed;
     private string[] _selected = ["dashboard"];
-    private string[] _openKeys = ["accounts", "commercial", "product-catalog", "privacy-compliance", "operations", "settings", "people", "org-products", "subscription", "security", "utang"];
+    private string[] _openKeys = ["accounts", "commercial", "product-catalog", "privacy-compliance", "operations", "settings"];
 
     private RenderFragment AccountsTitle => b => { b.OpenElement(0, "span"); b.AddContent(1, L["Nav_Accounts"]); b.CloseElement(); };
     private RenderFragment CommercialTitle => b => { b.OpenElement(0, "span"); b.AddContent(1, L["Nav_SectionCommercial"]); b.CloseElement(); };
@@ -387,20 +250,8 @@
     private RenderFragment PrivacyComplianceTitle => b => { b.OpenElement(0, "span"); b.AddContent(1, L["Nav_PrivacyCompliance"]); b.CloseElement(); };
     private RenderFragment OperationsTitle => b => { b.OpenElement(0, "span"); b.AddContent(1, L["Nav_SectionOperations"]); b.CloseElement(); };
     private RenderFragment SettingsTitle => b => { b.OpenElement(0, "span"); b.AddContent(1, L["Nav_SectionSettings"]); b.CloseElement(); };
-    private RenderFragment PeopleTitle => b => { b.OpenElement(0, "span"); b.AddContent(1, L["Nav_People"]); b.CloseElement(); };
-    private RenderFragment OrgProductsTitle => b => { b.OpenElement(0, "span"); b.AddContent(1, L["Nav_SectionProducts"]); b.CloseElement(); };
-    private RenderFragment SubscriptionTitle => b => { b.OpenElement(0, "span"); b.AddContent(1, L["Nav_SectionSubscription"]); b.CloseElement(); };
-    private RenderFragment SecurityTitle => b => { b.OpenElement(0, "span"); b.AddContent(1, L["Nav_SectionSecurity"]); b.CloseElement(); };
-    private RenderFragment UtangTitle => b => { b.OpenElement(0, "span"); b.AddContent(1, L["Nav_UtangTracker"]); b.CloseElement(); };
-
     private IReadOnlyList<AdminAccountUserNav.Item> PlatformAccountItems =>
         AdminAccountUserNav.PlatformAccounts(CanView(PlatformPermissionCodes.ManagePlatformUsers));
-
-    private IReadOnlyList<AdminAccountUserNav.Item> OrganizationPeopleItems =>
-        AdminAccountUserNav.OrganizationPeople(IsOrgAdminMembership, Shell.SelectedOrganizationId);
-
-    private IReadOnlyList<AdminAccountUserNav.Item> PersonalContactItems =>
-        AdminAccountUserNav.PersonalContacts();
 
     private bool ShowCommercialSection =>
         CanView(PlatformPermissionCodes.ViewPortfolio)
@@ -540,16 +391,12 @@
             var p when p.StartsWith("/admin/platform-roles", StringComparison.Ordinal) => ["platform-roles"],
             var p when p.StartsWith("/admin/organization-users", StringComparison.Ordinal) => ["org-users"],
             var p when p.Contains("/roles", StringComparison.Ordinal) => ["org-roles"],
-            var p when p.Contains("/invitations", StringComparison.Ordinal) =>
-                Shell.IsOrganizationShell ? ["org-invitations"] : ["org-users"],
-            var p when p.Contains("/members", StringComparison.Ordinal) =>
-                Shell.IsOrganizationShell ? ["org-staff"] : ["org-users"],
-            var p when p.Contains("/enabled-products", StringComparison.Ordinal) =>
-                IsOrgAdminMembership ? ["enabled-products", "my-products"] : ["my-products"],
+            var p when p.Contains("/invitations", StringComparison.Ordinal) => ["org-users"],
+            var p when p.Contains("/members", StringComparison.Ordinal) => ["org-users"],
+            var p when p.Contains("/enabled-products", StringComparison.Ordinal) => ["organizations"],
             var p when p.Contains("/product-access", StringComparison.Ordinal) => ["organizations"],
             var p when p.EndsWith("/branding", StringComparison.Ordinal) => ["branding"],
-            var p when p.StartsWith("/admin/organizations", StringComparison.Ordinal) =>
-                Shell.IsOrganizationShell ? ["org-settings"] : ["organizations"],
+            var p when p.StartsWith("/admin/organizations", StringComparison.Ordinal) => ["organizations"],
             var p when p.StartsWith("/admin/global-catalog/categories", StringComparison.Ordinal) => ["global-categories"],
             var p when p.StartsWith("/admin/global-catalog/imports", StringComparison.Ordinal) => ["global-imports"],
             var p when p.StartsWith("/admin/global-catalog/products", StringComparison.Ordinal) => ["global-products"],
@@ -569,15 +416,8 @@
             var p when p.StartsWith("/admin/subscriptions", StringComparison.Ordinal) => ["subscriptions"],
             var p when p.StartsWith("/admin/entitlements", StringComparison.Ordinal) => ["entitlements"],
             var p when p.StartsWith("/admin/payments", StringComparison.Ordinal) => ["payments"],
-            var p when p.StartsWith("/admin/audit", StringComparison.Ordinal) =>
-                Shell.IsOrganizationShell ? ["activity-log"] : ["audit"],
-            "/admin/personal/utang/people" => ["personal-contacts"],
-            "/admin/personal/utang/lent" => ["utang-lent"],
-            "/admin/personal/utang/borrowed" => ["utang-borrowed"],
-            "/admin/personal/utang/invitations" => ["utang-invitations"],
-            "/admin/personal/notifications" => ["personal-notifications"],
-            "/admin/personal/profile" => ["personal-profile"],
-            "/admin/personal/settings" => ["personal-settings"],
+            var p when p.StartsWith("/admin/audit", StringComparison.Ordinal) => ["audit"],
+            "/admin/workspaces" => ["workspaces"],
             _ => _selected
         };
 
@@ -591,10 +431,6 @@
 
     private bool CanView(string permission) => Permissions.HasPermission(permission);
 
-    private bool IsOrgAdminMembership =>
-        string.Equals(Shell.MembershipRole, "OrganizationOwner", StringComparison.OrdinalIgnoreCase)
-        || string.Equals(Shell.MembershipRole, "OrganizationAdministrator", StringComparison.OrdinalIgnoreCase);
-
     private static string AccountItemIcon(string key) => key switch
     {
         "all-accounts" => "team",
@@ -603,15 +439,6 @@
         "personal-accounts" => "user",
         "needs-review" => "alert",
         _ => "user"
-    };
-
-    private static string PeopleItemIcon(string key) => key switch
-    {
-        "org-staff" => "team",
-        "org-invitations" => "mail",
-        "org-customers" => "idcard",
-        "org-customer-linking" => "link",
-        _ => "team"
     };
 
     public void Dispose()

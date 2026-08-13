@@ -423,6 +423,11 @@ else
             await Shell.RefreshAsync();
         }
 
+        if (OrganizationShellHandoff.TryRedirect(Shell, Nav, "/overview"))
+        {
+            return;
+        }
+
         if (Shell.IsPlatformShell)
         {
             await Permissions.EnsureLoadedAsync();

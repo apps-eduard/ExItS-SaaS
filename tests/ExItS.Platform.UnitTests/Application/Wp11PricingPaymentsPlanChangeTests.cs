@@ -448,6 +448,8 @@ public sealed class Wp11PricingPaymentsPlanChangeTests
     {
         var root = FindRepoRoot();
         var startBusiness = File.ReadAllText(Path.Combine(
+            root, "src", "Platform", "ExItS.Personal.Web", "Components", "Pages", "StartBusiness.razor"));
+        var adminRedirect = File.ReadAllText(Path.Combine(
             root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "PersonalStartBusiness.razor"));
         var commercial = File.ReadAllText(Path.Combine(
             root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "OrganizationCommercial.razor"));
@@ -457,8 +459,8 @@ public sealed class Wp11PricingPaymentsPlanChangeTests
         Assert.Contains("GetCommercialPlansAsync", startBusiness, StringComparison.Ordinal);
         Assert.DoesNotContain("GetPlansAsync", startBusiness, StringComparison.Ordinal);
         Assert.Contains("StartBusinessAsync", startBusiness, StringComparison.Ordinal);
-        Assert.Contains("Sign in again", startBusiness, StringComparison.Ordinal);
-        Assert.Contains("/admin/logout", startBusiness, StringComparison.Ordinal);
+        Assert.Contains("Open Organization Web", startBusiness, StringComparison.Ordinal);
+        Assert.Contains("/start-business", adminRedirect, StringComparison.Ordinal);
         Assert.Contains("try", startBusiness, StringComparison.Ordinal);
         Assert.Contains("finally", startBusiness, StringComparison.Ordinal);
         Assert.Contains("GetCommercialPlansAsync", commercial, StringComparison.Ordinal);
@@ -527,14 +529,14 @@ public sealed class Wp11PricingPaymentsPlanChangeTests
         Assert.DoesNotContain("Create Organization account", users, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("CanManageLifecycle", orgs, StringComparison.Ordinal);
         Assert.DoesNotContain("assign Plan to Personal", File.ReadAllText(Path.Combine(
-            root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "PersonalStartBusiness.razor")), StringComparison.OrdinalIgnoreCase);
+            root, "src", "Platform", "ExItS.Personal.Web", "Components", "Pages", "StartBusiness.razor")), StringComparison.OrdinalIgnoreCase);
         var startBusiness = File.ReadAllText(Path.Combine(
-            root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "PersonalStartBusiness.razor"));
+            root, "src", "Platform", "ExItS.Personal.Web", "Components", "Pages", "StartBusiness.razor"));
         Assert.Contains("Start Free Trial", startBusiness, StringComparison.Ordinal);
         Assert.Contains("Subscribe Now", startBusiness, StringComparison.Ordinal);
         Assert.Contains("AssignPosOwnerRole: true", startBusiness, StringComparison.Ordinal);
         Assert.Contains("Processing test payment", startBusiness, StringComparison.Ordinal);
-        Assert.Contains("AllowSubscribeUxDelay", startBusiness, StringComparison.Ordinal);
+        Assert.Contains("Task.Delay(2500)", startBusiness, StringComparison.Ordinal);
         Assert.DoesNotContain("Try Business Free First", startBusiness, StringComparison.Ordinal);
     }
 

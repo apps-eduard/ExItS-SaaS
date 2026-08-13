@@ -1,25 +1,376 @@
 @page "/start-business"
 @attribute [Authorize]
+@inject PersonalApiClient Api
 @inject NavigationManager Nav
+@inject IHttpClientFactory HttpFactory
+@inject PersonalCircuitSession Circuit
 @inject IOptions<ExItSWebHostOptions> Hosts
+@inject IHostEnvironment HostEnvironment
+@inject IMessageService Message
 
 <PageTitle>Start a Business</PageTitle>
 <ExitsPageHeader Title="Start a Business" Subtitle="Create an organization from your Personal account. Your Personal profile stays separate." />
-<Alert Type="@AlertType.Info"
-       ShowIcon="true"
-       Message="After the organization is created, choose the Organization workspace. Staff membership is never attached to a Personal login." />
-<Paragraph>
-    The Start a Business form uses the existing Platform catalog and remains available from canonical sign-in.
-</Paragraph>
-<Button Type="@ButtonType.Primary"
-        OnClick="OpenForm">
-    Continue
-</Button>
+
+@if (!string.IsNullOrWhiteSpace(_formError))
+{
+    <Alert Type="@AlertType.Error" ShowIcon="true" Message="Start business failed" Description="@_formError" Style="margin-bottom:16px;" />
+}
+@if (!string.IsNullOrWhiteSpace(_validationBanner))
+{
+    <Alert Type="@AlertType.Warning" ShowIcon="true" Message="@_validationBanner" Style="margin-bottom:16px;" />
+}
+
+@if (_completed)
+{
+    <Result Status="@ResultStatus.Success" Title="Business created" SubTitle="@_successDetail">
+        <Extra>
+            <Button Type="@ButtonType.Primary" OnClick="OpenOrganizationAsync">Open Organization Web</Button>
+        </Extra>
+    </Result>
+}
+else
+{
+    @if (_busy)
+    {
+        <Card Size="@CardSize.Small" Style="margin-bottom:16px;">
+            <div style="display:flex;align-items:center;gap:16px;">
+                <Spin Size="SpinSize.Large" />
+                <div>
+                    <div style="font-weight:600;">@_progressTitle</div>
+                    <div style="color:var(--ant-color-text-secondary,#8c8c8c);">@_progressDetail</div>
+                </div>
+            </div>
+        </Card>
+    }
+
+    <Row Gutter="(16, 16)" Style="margin-bottom:24px;">
+        <AntDesign.Col Xs="24" Md="12">
+            <Card Size="@CardSize.Small" Title="Organization details">
+                <div style="margin-bottom:12px;">
+                    <label class="ant-form-item-label"><span class="ant-form-item-required">Organization name</span></label>
+                    <Input @bind-Value="_displayName" @bind-Value:after="OnDisplayNameChanged" Disabled="_busy" Placeholder="My Store" />
+                    @if (!string.IsNullOrWhiteSpace(_nameError))
+                    {
+                        <div style="color:#ff4d4f;font-size:12px;margin-top:4px;">@_nameError</div>
+                    }
+                </div>
+                <div style="margin-bottom:12px;">
+                    <label class="ant-form-item-label"><span class="ant-form-item-required">Slug</span></label>
+                    <Input @bind-Value="_slug" @bind-Value:after="OnSlugChanged" Disabled="_busy" Placeholder="my-store" />
+                    @if (!string.IsNullOrWhiteSpace(_slugError))
+                    {
+                        <div style="color:#ff4d4f;font-size:12px;margin-top:4px;">@_slugError</div>
+                    }
+                </div>
+                <div style="margin-bottom:12px;">
+                    <label class="ant-form-item-label"><span class="ant-form-item-required">Billing cycle</span></label>
+                    <Select TItemValue="string" TItem="string" @bind-Value="_billingCycle" Style="width:100%;" Disabled="_busy">
+                        <SelectOptions>
+                            <SelectOption TItemValue="string" TItem="string" Value="@("Monthly")" Label="Monthly" />
+                            <SelectOption TItemValue="string" TItem="string" Value="@("Annual")" Label="Annual" />
+                        </SelectOptions>
+                    </Select>
+                </div>
+                <div>
+                    <label class="ant-form-item-label"><span class="ant-form-item-required">Primary business type</span></label>
+                    <Select TItemValue="string" TItem="string" @bind-Value="_primaryBusinessTypeId" Style="width:100%;" Disabled="_busy || _businessTypesLoading" Placeholder="Select primary business type" AllowClear>
+                        <SelectOptions>
+                            @foreach (var type in _businessTypes)
+                            {
+                                <SelectOption TItemValue="string" TItem="string" Value="@type.Id.ToString("D")" Label="@($"{type.Name} ({type.Code})")" />
+                            }
+                        </SelectOptions>
+                    </Select>
+                    @if (!string.IsNullOrWhiteSpace(_businessTypeError))
+                    {
+                        <div style="color:#ff4d4f;font-size:12px;margin-top:4px;">@_businessTypeError</div>
+                    }
+                    else if (!_businessTypesLoading && _businessTypes.Count == 0)
+                    {
+                        <div style="color:#ff4d4f;font-size:12px;margin-top:4px;">No active business types are available.</div>
+                    }
+                </div>
+            </Card>
+        </AntDesign.Col>
+        <AntDesign.Col Xs="24" Md="12">
+            <Card Size="@CardSize.Small" Title="What happens next">
+                <Alert Type="@AlertType.Info" ShowIcon="true"
+                       Message="Pick a primary business type and plan. We create your organization, start the trial or paid subscription, then open Organization Web. Staff membership is never attached to this Personal login." />
+                <ul style="margin:12px 0 0;padding-left:1.25rem;">
+                    <li>Starter and Growth include a 14-day free trial (no card).</li>
+                    <li>Subscribe Now uses the Local Validation test payment provider here.</li>
+                    <li>You become Organization Owner. Personal profile stays separate.</li>
+                </ul>
+            </Card>
+        </AntDesign.Col>
+    </Row>
+
+    <ExitsPageHeader Title="Available Plans" />
+    @if (_plansLoading)
+    {
+        <Spin />
+    }
+    else if (!string.IsNullOrWhiteSpace(_plansError))
+    {
+        <Alert Type="@AlertType.Error" Message="@_plansError" ShowIcon="true" />
+        <Button Type="@ButtonType.Primary" OnClick="LoadPlansAsync" Style="margin-top:12px;">Retry</Button>
+    }
+    else if (_plans.Count == 0)
+    {
+        <Empty Description="@("No plans are currently available for this product.")" />
+    }
+    else
+    {
+        <Row Gutter="(16, 16)">
+            @foreach (var plan in _plans.OrderBy(p => p.SortOrder))
+            {
+                var planKey = plan.PlanKey ?? plan.Code;
+                var isStarter = string.Equals(planKey, "starter", StringComparison.OrdinalIgnoreCase);
+                <AntDesign.Col Xs="24" Sm="24" Md="8">
+                    <Card Size="@CardSize.Small" Title="@plan.DisplayName" Style="@(isStarter ? "border:2px solid #1890ff;height:100%;" : "height:100%;")">
+                        <div style="font-size:1.25rem;font-weight:600;">@plan.MonthlyPrice.ToString("N2") @plan.CurrencyCode / month</div>
+                        <div style="color:#8c8c8c;">@plan.AnnualPrice.ToString("N2") @plan.CurrencyCode / year</div>
+                        @if (plan.TrialAllowed && plan.DefaultTrialDays > 0)
+                        {
+                            <p style="color:#52c41a;">@($"{plan.DefaultTrialDays}-day free trial · No card required")</p>
+                        }
+                        <ul>
+                            <li>@plan.MaxBranches branch@(plan.MaxBranches == 1 ? "" : "es")</li>
+                            <li>@plan.MaxActiveStaff active staff</li>
+                            <li>@plan.MaxActivePosDevices POS device@(plan.MaxActivePosDevices == 1 ? "" : "s")</li>
+                            <li>@plan.MaxActiveBusinessTypes business type@(plan.MaxActiveBusinessTypes == 1 ? "" : "s")</li>
+                        </ul>
+                        <Space Direction="SpaceDirection.Vertical" Style="width:100%;">
+                            @if (plan.TrialAllowed && plan.DefaultTrialDays > 0)
+                            {
+                                <Button Type="@ButtonType.Primary" Block Loading="_busy" Disabled="_busy"
+                                        OnClick="@(async () => await SubmitAsync(planKey, startAsTrial: true))">
+                                    Start Free Trial
+                                </Button>
+                            }
+                            <Button Type="@(plan.TrialAllowed ? ButtonType.Default : ButtonType.Primary)" Block Loading="_busy" Disabled="_busy"
+                                    OnClick="@(async () => await SubmitAsync(planKey, startAsTrial: false, payNow: true))">
+                                Subscribe Now
+                            </Button>
+                        </Space>
+                    </Card>
+                </AntDesign.Col>
+            }
+        </Row>
+    }
+}
 
 @code {
-    private void OpenForm()
+    private bool _busy;
+    private bool _completed;
+    private bool _plansLoading = true;
+    private bool _businessTypesLoading;
+    private string? _formError;
+    private string? _validationBanner;
+    private string? _plansError;
+    private string? _nameError;
+    private string? _slugError;
+    private string? _businessTypeError;
+    private string _displayName = "";
+    private string _slug = "";
+    private string _billingCycle = "Monthly";
+    private string? _primaryBusinessTypeId;
+    private bool _slugTouched;
+    private string _progressTitle = "Working…";
+    private string _progressDetail = "Please wait.";
+    private string _successDetail = "Choose the Organization workspace to continue.";
+    private string? _handoffUrl;
+    private List<PlanDto> _plans = [];
+    private List<BusinessTypeDto> _businessTypes = [];
+
+    protected override async Task OnInitializedAsync()
     {
-        var admin = Hosts.Value.GetOrigin(WebApps.Platform).TrimEnd('/');
-        Nav.NavigateTo(admin + "/admin/personal/start-business", forceLoad: true);
+        await Task.WhenAll(LoadPlansAsync(), LoadBusinessTypesAsync());
+    }
+
+    private async Task LoadPlansAsync()
+    {
+        _plansLoading = true;
+        _plansError = null;
+        try
+        {
+            _plans = (await Api.GetCommercialPlansAsync())?.OrderBy(p => p.SortOrder).ToList() ?? [];
+            if (_plans.Count == 0)
+            {
+                _plansError = "Could not load plans.";
+            }
+        }
+        finally
+        {
+            _plansLoading = false;
+        }
+    }
+
+    private async Task LoadBusinessTypesAsync()
+    {
+        _businessTypesLoading = true;
+        _businessTypeError = null;
+        try
+        {
+            _businessTypes = (await Api.GetOnboardingBusinessTypesAsync())
+                ?.OrderBy(t => t.SortOrder).ThenBy(t => t.Name, StringComparer.OrdinalIgnoreCase)
+                .ToList() ?? [];
+            if (_businessTypes.Count == 0)
+            {
+                _businessTypeError = "Could not load business types.";
+            }
+        }
+        finally
+        {
+            _businessTypesLoading = false;
+        }
+    }
+
+    private void OnDisplayNameChanged()
+    {
+        if (_slugTouched || string.IsNullOrWhiteSpace(_displayName))
+        {
+            return;
+        }
+
+        _slug = SuggestSlug(_displayName);
+    }
+
+    private void OnSlugChanged() => _slugTouched = !string.IsNullOrWhiteSpace(_slug);
+
+    private static string SuggestSlug(string displayName)
+    {
+        var chars = displayName.Trim().ToLowerInvariant().Select(c => char.IsLetterOrDigit(c) ? c : '-').ToArray();
+        var slug = new string(chars);
+        while (slug.Contains("--", StringComparison.Ordinal))
+        {
+            slug = slug.Replace("--", "-", StringComparison.Ordinal);
+        }
+
+        return slug.Trim('-');
+    }
+
+    private bool ValidateForm()
+    {
+        _nameError = null;
+        _slugError = null;
+        _businessTypeError = null;
+        _formError = null;
+        _validationBanner = null;
+        var ok = true;
+        if (string.IsNullOrWhiteSpace(_displayName))
+        {
+            _nameError = "Organization name is required.";
+            ok = false;
+        }
+        else if (!_slugTouched && string.IsNullOrWhiteSpace(_slug))
+        {
+            _slug = SuggestSlug(_displayName);
+        }
+
+        if (string.IsNullOrWhiteSpace(_slug))
+        {
+            _slugError = "Organization slug is required.";
+            ok = false;
+        }
+
+        if (!Guid.TryParse(_primaryBusinessTypeId, out var id) || id == Guid.Empty)
+        {
+            _businessTypeError = "Select a primary business type.";
+            ok = false;
+        }
+
+        if (!ok)
+        {
+            _validationBanner = "Fill Organization name, Slug, and Primary business type above, then try again.";
+            _formError ??= _validationBanner;
+        }
+
+        return ok;
+    }
+
+    private async Task SubmitAsync(string planKey, bool startAsTrial, bool payNow = false)
+    {
+        if (_busy)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            if (!ValidateForm())
+            {
+                await Message.WarningAsync(_validationBanner ?? "Complete the required organization fields first.");
+                return;
+            }
+
+            _progressTitle = startAsTrial ? "Creating your business…" : "Processing test payment…";
+            _progressDetail = startAsTrial
+                ? "Provisioning organization and Owner membership."
+                : "Charging via Local Validation payment provider.";
+            await InvokeAsync(StateHasChanged);
+            if (!startAsTrial && (HostEnvironment.IsDevelopment() || HostEnvironment.IsEnvironment("Testing")))
+            {
+                await Task.Delay(2500);
+            }
+
+            var billing = string.Equals(_billingCycle, "Annual", StringComparison.OrdinalIgnoreCase)
+                ? BillingCycle.Annual
+                : BillingCycle.Monthly;
+            var (ok, data, error) = await Api.StartBusinessAsync(new StartBusinessRequest(
+                _displayName.Trim(),
+                _slug.Trim().ToLowerInvariant(),
+                PrimaryBusinessTypeId: Guid.Parse(_primaryBusinessTypeId!),
+                ProductCode: "pinoy-business-pos",
+                PlanKey: planKey,
+                BillingCycle: billing,
+                StartAsTrial: startAsTrial,
+                PayNow: payNow,
+                AssignPosOwnerRole: true));
+            if (!ok || data is null)
+            {
+                _formError = error ?? "Start business failed.";
+                _validationBanner = _formError;
+                await Message.ErrorAsync(_formError);
+                return;
+            }
+
+            var client = HttpFactory.CreateClient("PlatformApi");
+            var created = await WebHandoffHttp.CreateAsync(
+                client,
+                data.SessionToken,
+                WebApps.Organization,
+                data.OrganizationId,
+                "/overview");
+            if (created is not null)
+            {
+                _handoffUrl = WebHandoffHttp.EstablishUrl(
+                    Hosts.Value.GetOrigin(WebApps.Organization),
+                    created.Ticket,
+                    created.ReturnPath);
+            }
+
+            _completed = true;
+            _successDetail = startAsTrial
+                ? "Trial started. Your Organization profile is ready. Open Organization Web — Personal stays available separately."
+                : "Payment succeeded. Your Organization profile is ready. Open Organization Web — Personal stays available separately.";
+            await Message.SuccessAsync("Business created.");
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void OpenOrganizationAsync()
+    {
+        if (!string.IsNullOrWhiteSpace(_handoffUrl))
+        {
+            Nav.NavigateTo(_handoffUrl, forceLoad: true);
+            return;
+        }
+
+        Nav.NavigateTo("/handoff/organization", forceLoad: true);
     }
 }

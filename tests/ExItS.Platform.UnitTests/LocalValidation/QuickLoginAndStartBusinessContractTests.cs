@@ -35,17 +35,38 @@ public sealed class QuickLoginAndStartBusinessContractTests
         var signIn = File.ReadAllText(Path.Combine(
             root, "src", "Platform", "ExItS.Platform.Admin", "Services", "LocalValidationSignInService.cs"));
         var startBusiness = File.ReadAllText(Path.Combine(
-            root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "PersonalStartBusiness.razor"));
+            root, "src", "Platform", "ExItS.Personal.Web", "Components", "Pages", "StartBusiness.razor"));
 
         Assert.Contains("quick-login-identities", endpoints, StringComparison.Ordinal);
         Assert.Contains("Results.NotFound()", endpoints, StringComparison.Ordinal);
         Assert.Contains("ListLocalValidationQuickLoginIdentities", auth, StringComparison.Ordinal);
         Assert.Contains("Organization Administration", auth, StringComparison.Ordinal);
+        Assert.Contains("_users", auth, StringComparison.Ordinal);
+        Assert.Contains("ListAsync", auth, StringComparison.Ordinal);
+        Assert.Contains("IsCanonicalBaseline", auth, StringComparison.Ordinal);
         Assert.Contains("quick-login-identities", signIn, StringComparison.Ordinal);
         Assert.Contains("account-profiles/select", signIn, StringComparison.Ordinal);
-        Assert.Contains("AllowSubscribeUxDelay", startBusiness, StringComparison.Ordinal);
-        Assert.Contains("IsProduction()", startBusiness, StringComparison.Ordinal);
         Assert.Contains("Task.Delay(2500)", startBusiness, StringComparison.Ordinal);
+        Assert.Contains("class ListLocalValidationQuickLoginIdentities", auth, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Personal_start_business_loads_business_types_from_personal_onboarding_endpoint()
+    {
+        var root = FindRepoRoot();
+        var startBusiness = File.ReadAllText(Path.Combine(
+            root, "src", "Platform", "ExItS.Personal.Web", "Components", "Pages", "StartBusiness.razor"));
+        var client = File.ReadAllText(Path.Combine(
+            root, "src", "Platform", "ExItS.Personal.Web", "Services", "PersonalWebSession.cs"));
+        var adminForm = File.ReadAllText(Path.Combine(
+            root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "PersonalStartBusiness.razor"));
+
+        Assert.Contains("GetOnboardingBusinessTypesAsync", startBusiness, StringComparison.Ordinal);
+        Assert.Contains("GetCommercialPlansAsync", startBusiness, StringComparison.Ordinal);
+        Assert.Contains("StartBusinessAsync", startBusiness, StringComparison.Ordinal);
+        Assert.Contains("/api/v1/personal/onboarding/business-types", client, StringComparison.Ordinal);
+        Assert.Contains("/start-business", adminForm, StringComparison.Ordinal);
+        Assert.DoesNotContain("Start Free Trial", adminForm, StringComparison.Ordinal);
     }
 
     [Fact]

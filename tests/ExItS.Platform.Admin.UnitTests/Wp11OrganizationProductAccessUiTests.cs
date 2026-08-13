@@ -66,8 +66,10 @@ public sealed class Wp11OrganizationProductAccessUiTests
         var nav = File.ReadAllText(Path.Combine(
             FindRepositoryRoot(),
             "src", "Platform", "ExItS.Platform.Admin", "Components", "Layout", "AdminNav.razor"));
-        Assert.Contains("enabled-products", nav, StringComparison.Ordinal);
-        Assert.Contains("Nav_MyProducts", nav, StringComparison.Ordinal);
+        var page = ReadAdminPage("OrganizationEnabledProducts.razor");
+        Assert.Contains("/admin/handoff/organization", nav, StringComparison.Ordinal);
+        Assert.DoesNotContain("Nav_MyProducts", nav, StringComparison.Ordinal);
+        Assert.Contains("@page \"/admin/organizations/{OrganizationId:guid}/enabled-products\"", page, StringComparison.Ordinal);
         Assert.DoesNotContain(
             "RouterLink=\"@($\"/admin/organizations/{accessOrg}/product-access\")\"",
             nav,
