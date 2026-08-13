@@ -18,6 +18,9 @@ public sealed class StockMovement
     public const string PurchaseReceiptReason = "Purchase receipt";
     public const string StockCountVarianceReason = "Stock count variance";
     public const string SaleReturnRestockReason = "Sale return restock";
+    public const string TransferOutReasonPrefix = "Transfer out";
+    public const string TransferInReasonPrefix = "Transfer in";
+    public const string TransferCancelRestoreReasonPrefix = "Transfer cancelled";
 
     public StockMovementId Id { get; }
     public PosOrganizationId OrganizationId { get; }
@@ -30,6 +33,7 @@ public sealed class StockMovement
     public Guid? SourceId { get; }
     public DateTimeOffset RecordedAtUtc { get; }
     public Guid RecordedBy { get; }
+    public Guid? BranchId { get; }
 
     private StockMovement(
         StockMovementId id,
@@ -42,7 +46,8 @@ public sealed class StockMovement
         StockMovementSourceType sourceType,
         Guid? sourceId,
         DateTimeOffset recordedAtUtc,
-        Guid recordedBy)
+        Guid recordedBy,
+        Guid? branchId = null)
     {
         Id = id;
         OrganizationId = organizationId;
@@ -55,6 +60,7 @@ public sealed class StockMovement
         SourceId = sourceId;
         RecordedAtUtc = recordedAtUtc;
         RecordedBy = recordedBy;
+        BranchId = branchId;
     }
 
     public static StockMovement OpeningStock(
@@ -364,6 +370,105 @@ public sealed class StockMovement
             actorId);
     }
 
+    public static StockMovement TransferOut(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        InventoryAccountId inventoryAccountId,
+        PosBranchId branchId,
+        decimal quantity,
+        UnitOfMeasure unitOfMeasure,
+        Guid transferId,
+        string transferNumber,
+        Guid actorId,
+        DateTimeOffset utcNow,
+        StockMovementId? id = null,
+        SellingMode sellingMode = SellingMode.PerItem)
+    {
+        EnsureUtc(utcNow);
+        EnsureActor(actorId);
+        EnsureTransferId(transferId);
+        var absolute = SaleLine.NormalizeQuantity(quantity, unitOfMeasure, sellingMode);
+        return new StockMovement(
+            id ?? StockMovementId.New(),
+            organizationId,
+            productId,
+            inventoryAccountId,
+            StockMovementType.TransferOut,
+            -absolute,
+            TransferReason(TransferOutReasonPrefix, transferNumber),
+            StockMovementSourceType.InventoryTransfer,
+            transferId,
+            utcNow,
+            actorId,
+            branchId.Value);
+    }
+
+    public static StockMovement TransferIn(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        InventoryAccountId inventoryAccountId,
+        PosBranchId branchId,
+        decimal quantity,
+        UnitOfMeasure unitOfMeasure,
+        Guid transferId,
+        string transferNumber,
+        Guid actorId,
+        DateTimeOffset utcNow,
+        StockMovementId? id = null,
+        SellingMode sellingMode = SellingMode.PerItem)
+    {
+        EnsureUtc(utcNow);
+        EnsureActor(actorId);
+        EnsureTransferId(transferId);
+        var absolute = SaleLine.NormalizeQuantity(quantity, unitOfMeasure, sellingMode);
+        return new StockMovement(
+            id ?? StockMovementId.New(),
+            organizationId,
+            productId,
+            inventoryAccountId,
+            StockMovementType.TransferIn,
+            absolute,
+            TransferReason(TransferInReasonPrefix, transferNumber),
+            StockMovementSourceType.InventoryTransfer,
+            transferId,
+            utcNow,
+            actorId,
+            branchId.Value);
+    }
+
+    public static StockMovement TransferCancelRestore(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        InventoryAccountId inventoryAccountId,
+        PosBranchId branchId,
+        decimal quantity,
+        UnitOfMeasure unitOfMeasure,
+        Guid transferId,
+        string transferNumber,
+        Guid actorId,
+        DateTimeOffset utcNow,
+        StockMovementId? id = null,
+        SellingMode sellingMode = SellingMode.PerItem)
+    {
+        EnsureUtc(utcNow);
+        EnsureActor(actorId);
+        EnsureTransferId(transferId);
+        var absolute = SaleLine.NormalizeQuantity(quantity, unitOfMeasure, sellingMode);
+        return new StockMovement(
+            id ?? StockMovementId.New(),
+            organizationId,
+            productId,
+            inventoryAccountId,
+            StockMovementType.TransferCancelRestore,
+            absolute,
+            TransferReason(TransferCancelRestoreReasonPrefix, transferNumber),
+            StockMovementSourceType.InventoryTransfer,
+            transferId,
+            utcNow,
+            actorId,
+            branchId.Value);
+    }
+
     public static StockMovement Rehydrate(
         StockMovementId id,
         PosOrganizationId organizationId,
@@ -375,7 +480,8 @@ public sealed class StockMovement
         StockMovementSourceType sourceType,
         Guid? sourceId,
         DateTimeOffset recordedAtUtc,
-        Guid recordedBy) =>
+        Guid recordedBy,
+        Guid? branchId = null) =>
         new(
             id,
             organizationId,
@@ -387,7 +493,8 @@ public sealed class StockMovement
             sourceType,
             sourceId,
             recordedAtUtc,
-            recordedBy);
+            recordedBy,
+            branchId);
 
     private static string NormalizeAdjustmentReason(string reason)
     {
@@ -430,5 +537,21 @@ public sealed class StockMovement
                 DomainErrorCodes.InvalidSaleActor,
                 "A non-empty actor identifier is required for stock movements.");
         }
+    }
+
+    private static void EnsureTransferId(Guid transferId)
+    {
+        if (transferId == Guid.Empty)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidInventoryTransferId,
+                "TransferId cannot be an empty GUID.");
+        }
+    }
+
+    private static string TransferReason(string prefix, string transferNumber)
+    {
+        var number = InventoryTransferNumbers.Normalize(transferNumber);
+        return $"{prefix} {number}";
     }
 }

@@ -94,6 +94,20 @@ internal static class PersistenceExceptionMapper
             return true;
         }
 
+        if (constraint.Contains("ux_inventory_transfers_org_transfer_number", StringComparison.OrdinalIgnoreCase))
+        {
+            errorCode = ApplicationErrorCodes.InventoryTransferNumberConflict;
+            message = "A transfer number was allocated concurrently. Retry the dispatch.";
+            return true;
+        }
+
+        if (constraint.Contains("ux_stock_movements_inventory_transfer_source", StringComparison.OrdinalIgnoreCase))
+        {
+            errorCode = ApplicationErrorCodes.InventoryTransferAlreadyReceived;
+            message = "This transfer stock movement has already been applied.";
+            return true;
+        }
+
         return true;
     }
 }

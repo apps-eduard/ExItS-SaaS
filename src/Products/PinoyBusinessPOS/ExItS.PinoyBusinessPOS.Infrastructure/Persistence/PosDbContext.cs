@@ -60,6 +60,10 @@ public sealed class PosDbContext : DbContext
     internal DbSet<StockCountRecord> StockCounts => Set<StockCountRecord>();
     internal DbSet<StockCountLineRecord> StockCountLines => Set<StockCountLineRecord>();
     internal DbSet<StockCountNumberSequenceRecord> StockCountNumberSequences => Set<StockCountNumberSequenceRecord>();
+    internal DbSet<InventoryTransferRecord> InventoryTransfers => Set<InventoryTransferRecord>();
+    internal DbSet<InventoryTransferLineRecord> InventoryTransferLines => Set<InventoryTransferLineRecord>();
+    internal DbSet<InventoryTransferNumberSequenceRecord> InventoryTransferNumberSequences => Set<InventoryTransferNumberSequenceRecord>();
+    internal DbSet<InventoryBranchBalanceRecord> InventoryBranchBalances => Set<InventoryBranchBalanceRecord>();
     internal DbSet<ExpenseCategoryRecord> ExpenseCategories => Set<ExpenseCategoryRecord>();
     internal DbSet<ExpenseRecord> Expenses => Set<ExpenseRecord>();
     internal DbSet<ExpenseNumberSequenceRecord> ExpenseNumberSequences => Set<ExpenseNumberSequenceRecord>();
@@ -1119,6 +1123,7 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.SourceId).HasColumnName("source_id");
             entity.Property(e => e.RecordedAtUtc).HasColumnName("recorded_at_utc");
             entity.Property(e => e.RecordedBy).HasColumnName("recorded_by").IsRequired();
+            entity.Property(e => e.BranchId).HasColumnName("branch_id");
 
             entity.HasIndex(e => new { e.OrganizationId, e.ProductId, e.RecordedAtUtc })
                 .HasDatabaseName("ix_stock_movements_org_product_recorded");
@@ -1127,7 +1132,8 @@ public sealed class PosDbContext : DbContext
                 .HasDatabaseName("ix_stock_movements_org_recorded");
 
             // One unique index covers SaleDeduction and SaleVoidRestoration (movement_type is part of the key).
-            // EF cannot model two filtered uniques on the identical column set.
+            // EF Core snapshots only the last filtered unique on this identical column set.
+            // Earlier indexes (sale/purchase/count/return) remain from prior migrations and must not be dropped.
             entity.HasIndex(e => new { e.OrganizationId, e.SourceId, e.ProductId, e.MovementType })
                 .IsUnique()
                 .HasDatabaseName("ux_stock_movements_sale_source")
@@ -1151,6 +1157,12 @@ public sealed class PosDbContext : DbContext
                 .HasDatabaseName("ux_stock_movements_sale_return_source")
                 .HasFilter(
                     $"source_type = '{nameof(StockMovementSourceType.SaleReturn)}' AND source_id IS NOT NULL");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.SourceId, e.ProductId, e.MovementType })
+                .IsUnique()
+                .HasDatabaseName("ux_stock_movements_inventory_transfer_source")
+                .HasFilter(
+                    $"source_type = '{nameof(StockMovementSourceType.InventoryTransfer)}' AND source_id IS NOT NULL");
 
             entity.HasIndex(e => new { e.OrganizationId, e.ProductId, e.MovementType })
                 .IsUnique()
@@ -1283,6 +1295,157 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
             entity.Property(e => e.BusinessDate).HasColumnName("business_date").HasColumnType("date");
             entity.Property(e => e.LastValue).HasColumnName("last_value").IsRequired();
+        });
+
+        modelBuilder.Entity<InventoryTransferRecord>(entity =>
+        {
+            entity.ToTable("inventory_transfers", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_inventory_transfers_status",
+                    $"status IN ({string.Join(", ", InventoryTransferStatuses.Codes.Select(c => $"'{c}'"))})");
+                tb.HasCheckConstraint(
+                    "ck_inventory_transfers_distinct_branches",
+                    "source_branch_id <> destination_branch_id");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.TransferNumber)
+                .HasColumnName("transfer_number")
+                .HasMaxLength(InventoryTransferNumbers.MaxLength);
+            entity.Property(e => e.SourceBranchId).HasColumnName("source_branch_id").IsRequired();
+            entity.Property(e => e.DestinationBranchId).HasColumnName("destination_branch_id").IsRequired();
+            entity.Property(e => e.Status)
+                .HasColumnName("status")
+                .HasMaxLength(InventoryTransferStatuses.CodeMaxLength)
+                .IsRequired();
+            entity.Property(e => e.Notes)
+                .HasColumnName("notes")
+                .HasMaxLength(InventoryTransfer.NotesMaxLength);
+            entity.Property(e => e.CreatedBy).HasColumnName("created_by").IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.DispatchedAtUtc).HasColumnName("dispatched_at_utc");
+            entity.Property(e => e.DispatchedBy).HasColumnName("dispatched_by");
+            entity.Property(e => e.ReceivedAtUtc).HasColumnName("received_at_utc");
+            entity.Property(e => e.ReceivedBy).HasColumnName("received_by");
+            entity.Property(e => e.CancelledAtUtc).HasColumnName("cancelled_at_utc");
+            entity.Property(e => e.CancelledBy).HasColumnName("cancelled_by");
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+
+            entity.HasIndex(e => new { e.OrganizationId, e.TransferNumber })
+                .IsUnique()
+                .HasDatabaseName("ux_inventory_transfers_org_transfer_number")
+                .HasFilter("transfer_number IS NOT NULL");
+            entity.HasIndex(e => new { e.OrganizationId, e.SourceBranchId })
+                .HasDatabaseName("ix_inventory_transfers_org_source");
+            entity.HasIndex(e => new { e.OrganizationId, e.DestinationBranchId })
+                .HasDatabaseName("ix_inventory_transfers_org_destination");
+            entity.HasIndex(e => new { e.OrganizationId, e.Status })
+                .HasDatabaseName("ix_inventory_transfers_org_status");
+        });
+
+        modelBuilder.Entity<InventoryTransferLineRecord>(entity =>
+        {
+            entity.ToTable("inventory_transfer_lines", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_inventory_transfer_lines_sent_positive",
+                    "sent_qty > 0");
+                tb.HasCheckConstraint(
+                    "ck_inventory_transfer_lines_received_range",
+                    "received_qty >= 0 AND received_qty <= sent_qty");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.TransferId).HasColumnName("transfer_id").IsRequired();
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.ProductId).HasColumnName("product_id").IsRequired();
+            entity.Property(e => e.LineNumber).HasColumnName("line_number").IsRequired();
+            entity.Property(e => e.NameSnapshot)
+                .HasColumnName("name_snapshot")
+                .HasMaxLength(InventoryTransferLine.NameSnapshotMaxLength)
+                .IsRequired();
+            entity.Property(e => e.UnitOfMeasure)
+                .HasColumnName("unit_of_measure")
+                .HasMaxLength(32)
+                .IsRequired();
+            entity.Property(e => e.SentQty).HasColumnName("sent_qty").HasPrecision(18, 3).IsRequired();
+            entity.Property(e => e.ReceivedQty).HasColumnName("received_qty").HasPrecision(18, 3).IsRequired();
+            entity.Property(e => e.DiscrepancyReason)
+                .HasColumnName("discrepancy_reason")
+                .HasMaxLength(InventoryTransferDiscrepancyReasons.CodeMaxLength);
+            entity.Property(e => e.DiscrepancyNote)
+                .HasColumnName("discrepancy_note")
+                .HasMaxLength(InventoryTransferLine.DiscrepancyNoteMaxLength);
+
+            entity.HasIndex(e => new { e.TransferId, e.ProductId })
+                .IsUnique()
+                .HasDatabaseName("ux_inventory_transfer_lines_transfer_product");
+            entity.HasIndex(e => e.ProductId)
+                .HasDatabaseName("ix_inventory_transfer_lines_product");
+
+            entity.HasOne<InventoryTransferRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.TransferId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("fk_inventory_transfer_lines_transfers");
+
+            entity.HasOne<CatalogProductRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.ProductId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_inventory_transfer_lines_products");
+        });
+
+        modelBuilder.Entity<InventoryTransferNumberSequenceRecord>(entity =>
+        {
+            entity.ToTable("inventory_transfer_number_sequences", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_inventory_transfer_number_sequences_last_value_positive",
+                    "last_value > 0");
+            });
+
+            entity.HasKey(e => new { e.OrganizationId, e.BusinessDate })
+                .HasName("pk_inventory_transfer_number_sequences");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.BusinessDate).HasColumnName("business_date").HasColumnType("date");
+            entity.Property(e => e.LastValue).HasColumnName("last_value").IsRequired();
+        });
+
+        modelBuilder.Entity<InventoryBranchBalanceRecord>(entity =>
+        {
+            entity.ToTable("inventory_branch_balances", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_inventory_branch_balances_on_hand_non_negative",
+                    "on_hand_quantity >= 0");
+            });
+
+            entity.HasKey(e => new { e.OrganizationId, e.BranchId, e.ProductId })
+                .HasName("pk_inventory_branch_balances");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.BranchId).HasColumnName("branch_id");
+            entity.Property(e => e.ProductId).HasColumnName("product_id");
+            entity.Property(e => e.OnHandQuantity)
+                .HasColumnName("on_hand_quantity")
+                .HasPrecision(18, 3)
+                .IsRequired();
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+
+            entity.HasOne<CatalogProductRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.ProductId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_inventory_branch_balances_products");
         });
 
         modelBuilder.Entity<ExpenseCategoryRecord>(entity =>

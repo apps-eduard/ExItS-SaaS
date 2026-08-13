@@ -86,4 +86,29 @@ public interface IPosInventoryClient
     Task<ApiResult<PosStockCountDto>> CompleteStockCountAsync(Guid stockCountId, CancellationToken ct = default);
 
     Task<ApiResult<PosStockCountDto>> CancelStockCountAsync(Guid stockCountId, CancellationToken ct = default);
+
+    Task<ApiResult<PagedResult<InventoryTransferListItemDto>>> ListTransfersAsync(
+        string? status = null,
+        string? transferNumber = null,
+        string? direction = null,
+        Guid? sourceBranchId = null,
+        Guid? destinationBranchId = null,
+        int page = 1,
+        int pageSize = 20,
+        CancellationToken ct = default);
+
+    Task<ApiResult<InventoryTransferDto>> GetTransferAsync(Guid transferId, CancellationToken ct = default);
+
+    Task<ApiResult<InventoryTransferDto>> CreateTransferAsync(
+        CreateInventoryTransferRequest request,
+        CancellationToken ct = default);
+
+    Task<ApiResult<InventoryTransferDto>> DispatchTransferAsync(Guid transferId, CancellationToken ct = default);
+
+    Task<ApiResult<InventoryTransferDto>> ReceiveTransferAsync(
+        Guid transferId,
+        ReceiveInventoryTransferRequest request,
+        CancellationToken ct = default);
+
+    Task<ApiResult<InventoryTransferDto>> CancelTransferAsync(Guid transferId, CancellationToken ct = default);
 }

@@ -1,0 +1,188 @@
+@page "/inventory/transfers"
+@using ExItS.DesignSystem.Components.Internal
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject ICurrentUserContext CurrentUser
+@inject IPosInventoryClient Inventory
+@inject IUtangCapabilityEvaluator Capabilities
+@inject IConnectivityService Connectivity
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else
+{
+    var canManage = Capabilities.IsAllowed(UtangCapability.ManageInventory);
+<div class="pos-stock-counts">
+    <Page>
+        <header class="pos-stock-counts__header">
+            <h1 class="pos-stock-counts__title">@L["Inventory_TransfersTitle"]</h1>
+            <p class="pos-stock-counts__subtitle">@L["Inventory_TransfersSubtitle"]</p>
+        </header>
+
+        @if (_isOffline)
+        {
+            <Alert Tone="AlertTone.Warning" Title="@L["Inventory_OfflineTitle"]" Message="@L["Inventory_OfflineMessage"]" />
+        }
+
+        <div class="pos-action-grid pos-action-grid--three pos-stock-counts__actions" role="group" aria-label="@L["Inventory_TransfersTitle"]">
+            <button type="button"
+                    class="pos-action-tile pos-action-tile--primary"
+                    disabled="@(!canManage || _isOffline)"
+                    @onclick="GoNew">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("plus")</span>
+                <span class="pos-action-tile__label">@L["Inventory_TransfersAdd"]</span>
+            </button>
+            <button type="button"
+                    class="pos-action-tile"
+                    @onclick="GoInventory">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("products")</span>
+                <span class="pos-action-tile__label">@L["Inventory_Title"]</span>
+            </button>
+            <button type="button"
+                    class="pos-action-tile"
+                    disabled="@(_loading || _isOffline)"
+                    @onclick="ReloadAsync">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("refresh")</span>
+                <span class="pos-action-tile__label">@L["Inventory_Refresh"]</span>
+            </button>
+        </div>
+
+        <div class="pos-action-grid pos-action-grid--three" role="tablist" aria-label="@L["Inventory_TransfersTitle"]">
+            @foreach (var tab in new[] { "outgoing", "incoming", "history" })
+            {
+                <button type="button"
+                        class="pos-action-tile @(_direction == tab ? "pos-action-tile--primary" : null)"
+                        disabled="@_loading"
+                        @onclick="() => SetDirectionAsync(tab)">
+                    <span class="pos-action-tile__label">@TabLabel(tab)</span>
+                </button>
+            }
+        </div>
+
+        <section class="pos-stock-counts__panel" aria-labelledby="inventory-transfers-heading">
+            <h2 id="inventory-transfers-heading" class="pos-stock-counts__section-title">@L["Inventory_TransfersTitle"]</h2>
+            @if (_loading)
+            {
+                <div class="pos-stock-counts__loading"><Spinner /><span>@L["Inventory_Loading"]</span></div>
+            }
+            else if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <ErrorState Title="@(_errorTitle ?? L["Inventory_TransfersTitle"])"
+                            Message="@_errorMessage"
+                            RetryLabel="@L["Api_Retry"]"
+                            OnRetry="ReloadAsync" />
+            }
+            else if (_items.Count == 0)
+            {
+                <EmptyState IconName="lent"
+                            Title="@L["Inventory_TransfersEmptyTitle"]"
+                            Message="@L["Inventory_TransfersEmptyMessage"]" />
+            }
+            else
+            {
+                <div class="pos-stock-counts__list" role="list" aria-label="@L["Inventory_TransfersTitle"]">
+                    @foreach (var item in _items)
+                    {
+                        <a class="pos-stock-counts__row"
+                           role="listitem"
+                           href="@($"/inventory/transfers/{item.TransferId:D}")">
+                            <div class="pos-stock-counts__row-main">
+                                <span class="pos-stock-counts__row-name">
+                                    @(item.TransferNumber ?? L["Inventory_TransfersDraft"])
+                                </span>
+                                <span class="pos-stock-counts__row-meta">
+                                    @(item.SourceBranchName ?? item.SourceBranchId.ToString("N")[..8])
+                                    →
+                                    @(item.DestinationBranchName ?? item.DestinationBranchId.ToString("N")[..8])
+                                    · @item.LineCount @L["Inventory_TransfersProducts"]
+                                    · @item.Status
+                                </span>
+                            </div>
+                            <div class="pos-stock-counts__row-side">
+                                <span class="pos-stock-counts__view">
+                                    @(_direction == "incoming" && item.Status == "InTransit" ? L["Inventory_TransfersReceive"] : L["Customers_View"])
+                                </span>
+                            </div>
+                        </a>
+                    }
+                </div>
+            }
+        </section>
+    </Page>
+</div>
+}
+
+@code {
+    private bool _ready;
+    private bool _loading;
+    private bool _isOffline;
+    private string _direction = "outgoing";
+    private string? _errorTitle;
+    private string? _errorMessage;
+    private IReadOnlyList<InventoryTransferListItemDto> _items = Array.Empty<InventoryTransferListItemDto>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell || !Capabilities.IsAllowed(UtangCapability.ViewInventory))
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        _isOffline = !await Connectivity.IsConnectedAsync();
+        _ready = true;
+        await ReloadAsync();
+    }
+
+    private async Task SetDirectionAsync(string direction)
+    {
+        _direction = direction;
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        _errorTitle = null;
+        _errorMessage = null;
+        if (_isOffline)
+        {
+            _items = Array.Empty<InventoryTransferListItemDto>();
+            return;
+        }
+
+        _loading = true;
+        try
+        {
+            var result = await Inventory.ListTransfersAsync(direction: _direction);
+            if (result.IsSuccess && result.Data is not null)
+            {
+                _items = result.Data.Items;
+            }
+            else
+            {
+                _items = Array.Empty<InventoryTransferListItemDto>();
+                var described = ApiLocalizer.Describe(result.Status, result.Error);
+                _errorTitle = described.Title;
+                _errorMessage = result.Error?.Detail ?? described.Message;
+            }
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private string TabLabel(string tab) => tab switch
+    {
+        "incoming" => L["Inventory_TransfersIncoming"],
+        "history" => L["Inventory_TransfersHistory"],
+        _ => L["Inventory_TransfersOutgoing"]
+    };
+
+    private void GoNew() => Nav.NavigateTo("/inventory/transfers/new");
+    private void GoInventory() => Nav.NavigateTo("/inventory");
+}

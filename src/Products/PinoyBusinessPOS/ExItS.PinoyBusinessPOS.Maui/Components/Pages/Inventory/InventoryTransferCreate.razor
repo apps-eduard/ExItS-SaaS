@@ -1,0 +1,214 @@
+@page "/inventory/transfers/new"
+@using ExItS.DesignSystem.Components.Internal
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject ICurrentUserContext CurrentUser
+@inject IPosInventoryClient Inventory
+@inject IPosCatalogClient Catalog
+@inject IPlatformAccessClient Platform
+@inject IUtangCapabilityEvaluator Capabilities
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+<StoreHeaderBack Href="/inventory/transfers" />
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else
+{
+    var blocked = _isOffline || _busy;
+<div class="pos-stock-count-create">
+    <Page>
+        <header class="pos-stock-count-create__header">
+            <div class="pos-stock-count-create__heading">
+                <h1 class="pos-stock-count-create__title">@L["Inventory_TransfersCreateTitle"]</h1>
+                <p class="pos-stock-count-create__subtitle">@L["Inventory_TransfersSubtitle"]</p>
+            </div>
+        </header>
+
+        @if (_isOffline)
+        {
+            <Alert Tone="AlertTone.Warning" Title="@L["Inventory_OfflineTitle"]" Message="@L["Inventory_OfflineMessage"]" />
+        }
+
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Inventory_TransfersCreateTitle"])" Message="@_errorMessage" />
+        }
+
+        <section class="pos-stock-count-create__panel">
+            <Select Label="@L["Inventory_TransfersDestination"]"
+                    Value="@_destinationId"
+                    ValueChanged="value => _destinationId = value"
+                    Options="@DestinationOptions"
+                    Required="true"
+                    Disabled="@(blocked || _destinations.Count == 0)" />
+        </section>
+
+        <section class="pos-stock-count-create__panel">
+            <div class="pos-stock-count-create__form">
+                <Select Label="@L["Inventory_CountsProduct"]"
+                        Value="@_selectedProductId"
+                        ValueChanged="value => _selectedProductId = value"
+                        Options="@ProductOptions"
+                        Required="true"
+                        Disabled="@(blocked || _products.Count == 0)" />
+                <TextInput Label="@L["Inventory_TransfersQty"]"
+                           Value="@_qtyText"
+                           ValueChanged="value => _qtyText = value"
+                           Disabled="@blocked" />
+                <button type="button"
+                        class="pos-action-tile pos-action-tile--primary"
+                        disabled="@(blocked || string.IsNullOrEmpty(_selectedProductId))"
+                        @onclick="AddLine">
+                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("products")</span>
+                    <span class="pos-action-tile__label">@L["Inventory_CountsAddLine"]</span>
+                </button>
+            </div>
+        </section>
+
+        <section class="pos-stock-count-create__panel">
+            @if (_lines.Count == 0)
+            {
+                <InlineMessage Tone="InlineMessageTone.Info">@L["Inventory_TransfersLinesEmpty"]</InlineMessage>
+            }
+            else
+            {
+                <div class="pos-stock-count-create__lines" role="list">
+                    @foreach (var line in _lines)
+                    {
+                        <div class="pos-stock-count-create__line" role="listitem">
+                            <div class="pos-stock-count-create__line-main">
+                                <span class="pos-stock-count-create__line-name">@line.Name</span>
+                                <span class="pos-muted">@line.Quantity</span>
+                            </div>
+                            <Button Variant="ButtonVariant.Ghost" Disabled="@blocked" OnClick="() => RemoveLine(line.ProductId)">
+                                @L["Inventory_CountsRemoveLine"]
+                            </Button>
+                        </div>
+                    }
+                </div>
+            }
+        </section>
+
+        <TextInput Label="@L["Inventory_CountsNotes"]"
+                   Value="@_notes"
+                   ValueChanged="value => _notes = value"
+                   Disabled="@blocked" />
+
+        <Button Variant="ButtonVariant.Primary"
+                Disabled="@(blocked || _lines.Count == 0 || string.IsNullOrEmpty(_destinationId))"
+                OnClick="SubmitAsync">
+            @L["Inventory_TransfersCreate"]
+        </Button>
+    </Page>
+</div>
+}
+
+@code {
+    private bool _ready;
+    private bool _busy;
+    private bool _isOffline;
+    private string? _errorTitle;
+    private string? _errorMessage;
+    private string? _destinationId;
+    private string? _selectedProductId;
+    private string _qtyText = "1";
+    private string? _notes;
+    private readonly List<LineDraft> _lines = [];
+    private IReadOnlyList<OrganizationBranchDto> _destinations = Array.Empty<OrganizationBranchDto>();
+    private IReadOnlyList<PosCatalogProductDto> _products = Array.Empty<PosCatalogProductDto>();
+
+    private IReadOnlyList<SelectOption> DestinationOptions =>
+        _destinations.Select(b => new SelectOption(b.Id.ToString("D"), b.Name)).ToList();
+
+    private IReadOnlyList<SelectOption> ProductOptions =>
+        _products.Select(p => new SelectOption(p.ProductId.ToString("D"), p.Name)).ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell || !Capabilities.IsAllowed(UtangCapability.ManageInventory))
+        {
+            Nav.NavigateTo("/inventory/transfers", replace: true);
+            return;
+        }
+
+        _isOffline = !await Connectivity.IsConnectedAsync();
+        _ready = true;
+        if (_isOffline || CurrentUser.Session?.OrganizationId is not Guid orgId)
+        {
+            return;
+        }
+
+        var branches = await Platform.GetBranchesAsync(orgId);
+        var source = CurrentUser.Session.BranchId;
+        _destinations = branches.Data?
+            .Where(b => source is null || b.Id != source.Value)
+            .ToList()
+            ?? [];
+        var catalog = await Catalog.ListProductsAsync(status: "Active", pageSize: 100);
+        _products = catalog.Data?.Items ?? Array.Empty<PosCatalogProductDto>();
+    }
+
+    private void AddLine()
+    {
+        if (!Guid.TryParse(_selectedProductId, out var productId)
+            || !decimal.TryParse(_qtyText, out var qty)
+            || qty <= 0)
+        {
+            return;
+        }
+
+        var product = _products.FirstOrDefault(p => p.ProductId == productId);
+        if (product is null)
+        {
+            return;
+        }
+
+        _lines.RemoveAll(l => l.ProductId == productId);
+        _lines.Add(new LineDraft(productId, product.Name, qty));
+        _selectedProductId = null;
+        _qtyText = "1";
+    }
+
+    private void RemoveLine(Guid productId) => _lines.RemoveAll(l => l.ProductId == productId);
+
+    private async Task SubmitAsync()
+    {
+        if (!Guid.TryParse(_destinationId, out var dest)
+            || CurrentUser.Session?.BranchId is not Guid source)
+        {
+            return;
+        }
+
+        _busy = true;
+        _errorMessage = null;
+        try
+        {
+            var created = await Inventory.CreateTransferAsync(
+                new CreateInventoryTransferRequest(
+                    source,
+                    dest,
+                    _lines.Select(l => new InventoryTransferLineRequest(l.ProductId, l.Quantity)).ToList(),
+                    _notes));
+            if (!created.IsSuccess || created.Data is null)
+            {
+                var described = ApiLocalizer.Describe(created.Status, created.Error);
+                _errorTitle = described.Title;
+                _errorMessage = created.Error?.Detail ?? described.Message;
+                return;
+            }
+
+            Nav.NavigateTo($"/inventory/transfers/{created.Data.TransferId:D}");
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private sealed record LineDraft(Guid ProductId, string Name, decimal Quantity);
+}

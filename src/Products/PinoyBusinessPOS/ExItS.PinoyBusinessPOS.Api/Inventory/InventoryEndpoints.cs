@@ -19,6 +19,7 @@ internal static class InventoryEndpoints
         group.MapGet("/low-stock", ListLowStock);
         group.MapGet("/reorder-suggestions", ListReorderSuggestions);
         MapStockCounts(group);
+        InventoryTransferEndpoints.Map(group);
 
         group.MapGet("/{productId:guid}", GetByProduct);
         group.MapPut("/{productId:guid}/reorder", SetReorder);
@@ -353,6 +354,7 @@ internal static class InventoryEndpoints
             return problem!;
         }
 
+        PosOrganizationScope.TryGetOptionalBranchId(request, out var branchId);
         var result = await useCase
             .ExecuteAsync(
                 organizationId,
@@ -362,6 +364,7 @@ internal static class InventoryEndpoints
                 body.Reason,
                 actorId,
                 body.ReorderLevel,
+                branchId,
                 ct)
             .ConfigureAwait(false);
         return await FromAccountResultAsync(organizationId, productId, result, queries, ct).ConfigureAwait(false);

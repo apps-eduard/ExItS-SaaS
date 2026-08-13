@@ -373,17 +373,20 @@ public sealed class AdjustInventoryStock
 {
     private readonly IInventoryRepository _inventory;
     private readonly ICatalogProductRepository _products;
+    private readonly IInventoryBranchBalanceRepository _branchBalances;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
     public AdjustInventoryStock(
         IInventoryRepository inventory,
         ICatalogProductRepository products,
+        IInventoryBranchBalanceRepository branchBalances,
         IPosUnitOfWork unitOfWork,
         IClock clock)
     {
         _inventory = inventory;
         _products = products;
+        _branchBalances = branchBalances;
         _unitOfWork = unitOfWork;
         _clock = clock;
     }
@@ -396,6 +399,7 @@ public sealed class AdjustInventoryStock
         string reason,
         Guid actorId,
         decimal? reorderLevel = null,
+        Guid? branchId = null,
         CancellationToken cancellationToken = default)
     {
         if (actorId == Guid.Empty)
@@ -469,6 +473,17 @@ public sealed class AdjustInventoryStock
             if (reorderLevel is not null)
             {
                 account.SetReorderLevel(reorderLevel, product.UnitOfMeasure, utcNow);
+            }
+
+            if (branchId is Guid locationId && locationId != Guid.Empty)
+            {
+                var branch = PosBranchId.From(locationId);
+                var balance = await _branchBalances
+                    .GetAsync(orgId, branch, catalogProductId, cancellationToken)
+                    .ConfigureAwait(false)
+                    ?? InventoryBranchBalance.Create(orgId, branch, catalogProductId, 0m, utcNow);
+                balance.Apply(movement.QuantityEffect, utcNow);
+                await _branchBalances.UpsertAsync(balance, cancellationToken).ConfigureAwait(false);
             }
 
             await _inventory.UpdateAccountAsync(account, cancellationToken).ConfigureAwait(false);

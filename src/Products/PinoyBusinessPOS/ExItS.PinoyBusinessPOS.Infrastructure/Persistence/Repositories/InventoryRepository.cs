@@ -402,6 +402,20 @@ internal sealed class InventoryRepository : IInventoryRepository
                 && m.MovementType == nameof(StockMovementType.SaleReturnRestock),
             cancellationToken);
 
+    public Task<bool> HasInventoryTransferMovementAsync(
+        PosOrganizationId organizationId,
+        InventoryTransferId transferId,
+        CatalogProductId productId,
+        StockMovementType movementType,
+        CancellationToken cancellationToken = default) =>
+        _db.StockMovements.AsNoTracking().AnyAsync(
+            m => m.OrganizationId == organizationId.Value
+                && m.ProductId == productId.Value
+                && m.SourceType == nameof(StockMovementSourceType.InventoryTransfer)
+                && m.SourceId == transferId.Value
+                && m.MovementType == StockMovementTypes.ToCode(movementType),
+            cancellationToken);
+
     public async Task<(DateTimeOffset? LatestAt, int Count)> GetMovementSummaryAsync(
         PosOrganizationId organizationId,
         CatalogProductId productId,

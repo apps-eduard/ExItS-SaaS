@@ -37,7 +37,7 @@ else
             <Alert Tone="AlertTone.Warning" Title="@L["Inventory_OfflineTitle"]" Message="@L["Inventory_OfflineMessage"]" />
         }
 
-        <div class="pos-action-grid pos-action-grid--three pos-inventory__actions" role="group" aria-label="@L["Inventory_Title"]">
+        <div class="pos-action-grid pos-action-grid--four pos-inventory__actions" role="group" aria-label="@L["Inventory_Title"]">
             <button type="button"
                     class="pos-action-tile"
                     disabled="@_isOffline"
@@ -51,6 +51,13 @@ else
                     @onclick="GoCounts">
                 <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("check")</span>
                 <span class="pos-action-tile__label">@L["Inventory_OpenCounts"]</span>
+            </button>
+            <button type="button"
+                    class="pos-action-tile"
+                    disabled="@_isOffline"
+                    @onclick="GoTransfers">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("lent")</span>
+                <span class="pos-action-tile__label">@L["Inventory_OpenTransfers"]</span>
             </button>
             <button type="button"
                     class="pos-action-tile"
@@ -241,6 +248,7 @@ else
 
     private void GoLowStock() => Nav.NavigateTo("/inventory/low-stock");
     private void GoCounts() => Nav.NavigateTo("/inventory/counts");
+    private void GoTransfers() => Nav.NavigateTo("/inventory/transfers");
 
     private static BadgeTone StockBadgeTone(PosInventoryAccountDto item) =>
         item.StockStatus switch

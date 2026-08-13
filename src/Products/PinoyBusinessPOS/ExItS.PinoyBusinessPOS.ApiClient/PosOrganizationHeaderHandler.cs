@@ -9,6 +9,7 @@ namespace ExItS.PinoyBusinessPOS.ApiClient;
 public sealed class PosOrganizationHeaderHandler(ICurrentUserContext currentUser) : DelegatingHandler
 {
     public const string HeaderName = "X-Pos-Organization-Id";
+    public const string BranchHeaderName = "X-Pos-Branch-Id";
 
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
@@ -16,6 +17,12 @@ public sealed class PosOrganizationHeaderHandler(ICurrentUserContext currentUser
         {
             request.Headers.Remove(HeaderName);
             request.Headers.TryAddWithoutValidation(HeaderName, organizationId.ToString("D"));
+        }
+
+        if (currentUser.Session?.BranchId is { } branchId && branchId != Guid.Empty)
+        {
+            request.Headers.Remove(BranchHeaderName);
+            request.Headers.TryAddWithoutValidation(BranchHeaderName, branchId.ToString("D"));
         }
 
         return base.SendAsync(request, cancellationToken);

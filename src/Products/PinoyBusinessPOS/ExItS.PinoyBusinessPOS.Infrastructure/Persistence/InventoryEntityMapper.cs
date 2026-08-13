@@ -54,7 +54,8 @@ internal static class InventoryEntityMapper
             StockMovementSourceTypes.Parse(record.SourceType),
             record.SourceId,
             record.RecordedAtUtc,
-            record.RecordedBy);
+            record.RecordedBy,
+            record.BranchId);
 
     public static StockMovementRecord ToRecord(StockMovement movement) =>
         new()
@@ -69,6 +70,7 @@ internal static class InventoryEntityMapper
             SourceType = StockMovementSourceTypes.ToCode(movement.SourceType),
             SourceId = movement.SourceId,
             RecordedAtUtc = movement.RecordedAtUtc,
-            RecordedBy = movement.RecordedBy
+            RecordedBy = movement.RecordedBy,
+            BranchId = movement.BranchId
         };
 }

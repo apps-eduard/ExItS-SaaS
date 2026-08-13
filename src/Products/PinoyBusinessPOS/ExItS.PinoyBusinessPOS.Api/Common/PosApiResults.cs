@@ -33,6 +33,7 @@ internal static class PosApiResults
             or DomainErrorCodes.PaymentAttemptNotFound
             or ApplicationErrorCodes.InventoryAccountNotFound
             or ApplicationErrorCodes.InventoryProductNotFound
+            or ApplicationErrorCodes.InventoryTransferNotFound
             or ApplicationErrorCodes.ExpenseCategoryNotFound
             or ApplicationErrorCodes.ExpenseNotFound
             or ApplicationErrorCodes.SupplierNotFound
@@ -71,6 +72,9 @@ internal static class PosApiResults
             or ApplicationErrorCodes.SaleReturnNumberConflict
             or ApplicationErrorCodes.InsufficientStock
             or ApplicationErrorCodes.InventoryConcurrencyConflict
+            or ApplicationErrorCodes.InventoryTransferAlreadyReceived
+            or ApplicationErrorCodes.InventoryTransferNumberConflict
+            or ApplicationErrorCodes.InventoryTransferConcurrencyConflict
             or DomainErrorCodes.InventoryInsufficientStock
             or DomainErrorCodes.InventoryDisableRequiresZero
             or DomainErrorCodes.InventoryOpeningDuplicate
@@ -127,7 +131,8 @@ internal static class PosApiResults
             or ApplicationErrorCodes.CommercialCapabilityDenied
             or ApplicationErrorCodes.DevelopmentHeadersUnavailable
             or ApplicationErrorCodes.LinkedCustomerDenied
-            or ApplicationErrorCodes.ExtendedHistoryRequired => StatusCodes.Status403Forbidden,
+            or ApplicationErrorCodes.ExtendedHistoryRequired
+            or ApplicationErrorCodes.InventoryTransferBranchForbidden => StatusCodes.Status403Forbidden,
 
         ApplicationErrorCodes.ReceiptNotFound => StatusCodes.Status404NotFound,
 

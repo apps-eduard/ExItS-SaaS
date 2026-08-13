@@ -1285,6 +1285,31 @@
   <data name="Inventory_ListSection" xml:space="preserve"><value>Products</value></data>
   <data name="Inventory_SaveReorder" xml:space="preserve"><value>Save reorder settings</value></data>
   <data name="Inventory_OpenCounts" xml:space="preserve"><value>Stock counts</value></data>
+  <data name="Inventory_OpenTransfers" xml:space="preserve"><value>Transfers</value></data>
+  <data name="Inventory_TransfersTitle" xml:space="preserve"><value>Transfers</value></data>
+  <data name="Inventory_TransfersSubtitle" xml:space="preserve"><value>Send stock to another branch. Destination must receive it before it can be sold.</value></data>
+  <data name="Inventory_TransfersAdd" xml:space="preserve"><value>New transfer</value></data>
+  <data name="Inventory_TransfersEmptyTitle" xml:space="preserve"><value>No transfers</value></data>
+  <data name="Inventory_TransfersEmptyMessage" xml:space="preserve"><value>Create a transfer from this branch, or wait for incoming stock.</value></data>
+  <data name="Inventory_TransfersDraft" xml:space="preserve"><value>Draft transfer</value></data>
+  <data name="Inventory_TransfersProducts" xml:space="preserve"><value>products</value></data>
+  <data name="Inventory_TransfersReceive" xml:space="preserve"><value>Receive</value></data>
+  <data name="Inventory_TransfersIncoming" xml:space="preserve"><value>Incoming</value></data>
+  <data name="Inventory_TransfersOutgoing" xml:space="preserve"><value>Outgoing</value></data>
+  <data name="Inventory_TransfersHistory" xml:space="preserve"><value>History</value></data>
+  <data name="Inventory_TransfersCreateTitle" xml:space="preserve"><value>New transfer</value></data>
+  <data name="Inventory_TransfersDestination" xml:space="preserve"><value>Destination branch</value></data>
+  <data name="Inventory_TransfersQty" xml:space="preserve"><value>Quantity</value></data>
+  <data name="Inventory_TransfersLinesEmpty" xml:space="preserve"><value>Add at least one product.</value></data>
+  <data name="Inventory_TransfersCreate" xml:space="preserve"><value>Create draft</value></data>
+  <data name="Inventory_TransfersDispatch" xml:space="preserve"><value>Dispatch</value></data>
+  <data name="Inventory_TransfersSent" xml:space="preserve"><value>Sent</value></data>
+  <data name="Inventory_TransfersReceivedQty" xml:space="preserve"><value>Received</value></data>
+  <data name="Inventory_TransfersDifference" xml:space="preserve"><value>Difference</value></data>
+  <data name="Inventory_TransfersReceiveTitle" xml:space="preserve"><value>Receive transfer</value></data>
+  <data name="Inventory_TransfersConfirmTitle" xml:space="preserve"><value>Confirm receiving?</value></data>
+  <data name="Inventory_TransfersConfirm" xml:space="preserve"><value>Confirm receiving</value></data>
+  <data name="Inventory_TransfersConfirmSummary" xml:space="preserve"><value>Sent: {0} units. Received: {1} units. Short: {2} units.</value></data>
   <data name="Inventory_CountsTitle" xml:space="preserve"><value>Stock counts</value></data>
   <data name="Inventory_CountsSubtitle" xml:space="preserve"><value>Physical counts with variance adjustments (online only).</value></data>
   <data name="Inventory_CountsAdd" xml:space="preserve"><value>New count</value></data>

@@ -1,0 +1,180 @@
+@page "/inventory/transfers/{TransferId:guid}"
+@using ExItS.DesignSystem.Components.Internal
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject ICurrentUserContext CurrentUser
+@inject IPosInventoryClient Inventory
+@inject IUtangCapabilityEvaluator Capabilities
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+<StoreHeaderBack Href="/inventory/transfers" />
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else if (_transfer is null)
+{
+    <Page>
+        <ErrorState Title="@(_errorTitle ?? L["Inventory_TransfersTitle"])"
+                    Message="@(_errorMessage ?? L["Inventory_TransfersEmptyMessage"])"
+                    RetryLabel="@L["Api_Retry"]"
+                    OnRetry="ReloadAsync" />
+    </Page>
+}
+else
+{
+    var canManage = Capabilities.IsAllowed(UtangCapability.ManageInventory);
+    var isSource = CurrentUser.Session?.BranchId == _transfer.SourceBranchId;
+    var isDest = CurrentUser.Session?.BranchId == _transfer.DestinationBranchId;
+<div class="pos-stock-count-create">
+    <Page>
+        <header class="pos-stock-count-create__header">
+            <div class="pos-stock-count-create__heading">
+                <h1 class="pos-stock-count-create__title">@(_transfer.TransferNumber ?? L["Inventory_TransfersDraft"])</h1>
+                <p class="pos-stock-count-create__subtitle">
+                    @(_transfer.SourceBranchName ?? "A") → @(_transfer.DestinationBranchName ?? "B") · @_transfer.Status
+                </p>
+            </div>
+        </header>
+
+        @if (_isOffline)
+        {
+            <Alert Tone="AlertTone.Warning" Title="@L["Inventory_OfflineTitle"]" Message="@L["Inventory_OfflineMessage"]" />
+        }
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Inventory_TransfersTitle"])" Message="@_errorMessage" />
+        }
+
+        <section class="pos-stock-count-create__panel">
+            <div class="pos-stock-count-create__lines" role="list">
+                @foreach (var line in _transfer.Lines)
+                {
+                    <div class="pos-stock-count-create__line" role="listitem">
+                        <div class="pos-stock-count-create__line-main">
+                            <span class="pos-stock-count-create__line-name">@line.ProductName</span>
+                            <span class="pos-muted">
+                                @L["Inventory_TransfersSent"]: @line.SentQty
+                                · @L["Inventory_TransfersReceivedQty"]: @line.ReceivedQty
+                                · @L["Inventory_TransfersDifference"]: @line.DifferenceQty
+                                · @line.LineStatus
+                            </span>
+                        </div>
+                    </div>
+                }
+            </div>
+        </section>
+
+        @if (canManage && !_isOffline && _transfer.Status == "Draft" && isSource)
+        {
+            <Button Variant="ButtonVariant.Primary" Disabled="@_busy" IsLoading="@_busy" OnClick="DispatchAsync">
+                @L["Inventory_TransfersDispatch"]
+            </Button>
+            <Button Variant="ButtonVariant.Secondary" Disabled="@_busy" OnClick="CancelAsync">
+                @L["Common_Cancel"]
+            </Button>
+        }
+
+        @if (canManage && !_isOffline && _transfer.Status == "InTransit" && isDest)
+        {
+            <Button Variant="ButtonVariant.Primary" Disabled="@_busy" OnClick="GoReceive">
+                @L["Inventory_TransfersReceive"]
+            </Button>
+        }
+    </Page>
+</div>
+}
+
+@code {
+    [Parameter] public Guid TransferId { get; set; }
+
+    private bool _ready;
+    private bool _busy;
+    private bool _isOffline;
+    private string? _errorTitle;
+    private string? _errorMessage;
+    private InventoryTransferDto? _transfer;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!Gate.CanEnterProtectedShell || !Capabilities.IsAllowed(UtangCapability.ViewInventory))
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        _ready = true;
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        _isOffline = !await Connectivity.IsConnectedAsync();
+        _errorMessage = null;
+        if (_isOffline)
+        {
+            return;
+        }
+
+        var result = await Inventory.GetTransferAsync(TransferId);
+        if (result.IsSuccess)
+        {
+            _transfer = result.Data;
+            return;
+        }
+
+        _transfer = null;
+        var described = ApiLocalizer.Describe(result.Status, result.Error);
+        _errorTitle = described.Title;
+        _errorMessage = result.Error?.Detail ?? described.Message;
+    }
+
+    private async Task DispatchAsync()
+    {
+        _busy = true;
+        try
+        {
+            var result = await Inventory.DispatchTransferAsync(TransferId);
+            if (result.IsSuccess)
+            {
+                _transfer = result.Data;
+                return;
+            }
+
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorTitle = described.Title;
+            _errorMessage = result.Error?.Detail ?? described.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task CancelAsync()
+    {
+        _busy = true;
+        try
+        {
+            var result = await Inventory.CancelTransferAsync(TransferId);
+            if (result.IsSuccess)
+            {
+                _transfer = result.Data;
+                return;
+            }
+
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorTitle = described.Title;
+            _errorMessage = result.Error?.Detail ?? described.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void GoReceive() => Nav.NavigateTo($"/inventory/transfers/{TransferId:D}/receive");
+}

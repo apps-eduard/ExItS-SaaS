@@ -120,6 +120,13 @@ public interface IInventoryRepository
         CatalogProductId productId,
         CancellationToken cancellationToken = default);
 
+    Task<bool> HasInventoryTransferMovementAsync(
+        PosOrganizationId organizationId,
+        InventoryTransferId transferId,
+        CatalogProductId productId,
+        StockMovementType movementType,
+        CancellationToken cancellationToken = default);
+
     Task<(DateTimeOffset? LatestAt, int Count)> GetMovementSummaryAsync(
         PosOrganizationId organizationId,
         CatalogProductId productId,

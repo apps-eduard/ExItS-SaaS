@@ -15,7 +15,10 @@ public enum StockMovementType
     PurchaseReceipt = 5,
     StockCountVarianceIncrease = 6,
     StockCountVarianceDecrease = 7,
-    SaleReturnRestock = 8
+    SaleReturnRestock = 8,
+    TransferOut = 9,
+    TransferIn = 10,
+    TransferCancelRestore = 11
 }
 
 public static class StockMovementTypes
@@ -32,7 +35,10 @@ public static class StockMovementTypes
         nameof(StockMovementType.PurchaseReceipt),
         nameof(StockMovementType.StockCountVarianceIncrease),
         nameof(StockMovementType.StockCountVarianceDecrease),
-        nameof(StockMovementType.SaleReturnRestock)
+        nameof(StockMovementType.SaleReturnRestock),
+        nameof(StockMovementType.TransferOut),
+        nameof(StockMovementType.TransferIn),
+        nameof(StockMovementType.TransferCancelRestore)
     ];
 
     public static string ToCode(StockMovementType type) => type.ToString();

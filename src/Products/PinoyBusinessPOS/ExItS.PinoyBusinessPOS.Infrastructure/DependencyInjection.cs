@@ -44,6 +44,9 @@ public static class DependencyInjection
         services.AddScoped<ISaleReturnRepository, SaleReturnRepository>();
         services.AddScoped<IInventoryRepository, InventoryRepository>();
         services.AddScoped<IInventoryReorderChangeRepository, InventoryReorderChangeRepository>();
+        services.AddScoped<IInventoryTransferRepository, InventoryTransferRepository>();
+        services.AddScoped<IInventoryBranchBalanceRepository, InventoryBranchBalanceRepository>();
+        services.AddSingleton<IInventoryTransferAlertSink, NoOpInventoryTransferAlertSink>();
         services.AddScoped<IStockCountRepository, StockCountRepository>();
         services.AddScoped<ICashierShiftRepository, CashierShiftRepository>();
         services.AddScoped<IPosRoleAssignmentRepository, PosRoleAssignmentRepository>();

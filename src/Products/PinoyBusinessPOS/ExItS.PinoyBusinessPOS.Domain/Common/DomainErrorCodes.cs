@@ -141,6 +141,22 @@ public static class DomainErrorCodes
     public const string StockCountNumberConflict = "pos.stock_count.number.conflict";
     public const string InventoryOpeningDuplicate = "pos.inventory.opening_duplicate";
     public const string InventoryUomChangeBlocked = "pos.inventory.uom_change_blocked";
+    public const string InvalidBranchId = "pos.branch.id.invalid";
+    public const string InvalidInventoryTransferId = "pos.inventory.transfer.id.invalid";
+    public const string InvalidInventoryTransferLineId = "pos.inventory.transfer.line.id.invalid";
+    public const string InvalidInventoryTransferNumber = "pos.inventory.transfer.number.invalid";
+    public const string InvalidInventoryTransferStatus = "pos.inventory.transfer.status.invalid";
+    public const string InvalidInventoryTransferStatusTransition = "pos.inventory.transfer.status.invalid_transition";
+    public const string InvalidInventoryTransferQuantity = "pos.inventory.transfer.quantity.invalid";
+    public const string InvalidInventoryTransferReceiveQty = "pos.inventory.transfer.receive_qty.invalid";
+    public const string InvalidInventoryTransferLine = "pos.inventory.transfer.line.invalid";
+    public const string InvalidInventoryTransferNotes = "pos.inventory.transfer.notes.invalid";
+    public const string InvalidInventoryTransferDiscrepancyReason = "pos.inventory.transfer.discrepancy_reason.invalid";
+    public const string InvalidInventoryTransferDiscrepancyNote = "pos.inventory.transfer.discrepancy_note.invalid";
+    public const string InventoryTransferRequiresLines = "pos.inventory.transfer.lines.required";
+    public const string InventoryTransferReceiveRequiresLines = "pos.inventory.transfer.receive.lines.required";
+    public const string InventoryTransferDuplicateProduct = "pos.inventory.transfer.duplicate_product";
+    public const string InventoryTransferSameBranch = "pos.inventory.transfer.same_branch";
 
     public const string InvalidExpenseCategoryId = "pos.expense_category.id.invalid";
     public const string InvalidExpenseCategoryName = "pos.expense_category.name.invalid";

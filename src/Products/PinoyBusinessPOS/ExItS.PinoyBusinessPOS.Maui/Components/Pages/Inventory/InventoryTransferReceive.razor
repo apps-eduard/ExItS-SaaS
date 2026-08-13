@@ -1,0 +1,182 @@
+@page "/inventory/transfers/{TransferId:guid}/receive"
+@using ExItS.DesignSystem.Components.Internal
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosInventoryClient Inventory
+@inject IUtangCapabilityEvaluator Capabilities
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+<StoreHeaderBack Href="@($"/inventory/transfers/{TransferId:D}")" />
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else if (_transfer is null)
+{
+    <Page>
+        <ErrorState Title="@(_errorTitle ?? L["Inventory_TransfersReceive"])"
+                    Message="@(_errorMessage ?? L["Inventory_TransfersEmptyMessage"])"
+                    RetryLabel="@L["Api_Retry"]"
+                    OnRetry="ReloadAsync" />
+    </Page>
+}
+else
+{
+<div class="pos-stock-count-create">
+    <Page>
+        <header class="pos-stock-count-create__header">
+            <div class="pos-stock-count-create__heading">
+                <h1 class="pos-stock-count-create__title">@L["Inventory_TransfersReceiveTitle"]</h1>
+                <p class="pos-stock-count-create__subtitle">@(_transfer.TransferNumber ?? L["Inventory_TransfersDraft"])</p>
+            </div>
+        </header>
+
+        @if (_isOffline)
+        {
+            <Alert Tone="AlertTone.Warning" Title="@L["Inventory_OfflineTitle"]" Message="@L["Inventory_OfflineMessage"]" />
+        }
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Inventory_TransfersReceiveTitle"])" Message="@_errorMessage" />
+        }
+
+        <section class="pos-stock-count-create__panel">
+            @foreach (var row in _rows)
+            {
+                var difference = row.SentQty - ParseQty(row.ReceivedText);
+                <div class="pos-stock-count-create__line">
+                    <div class="pos-stock-count-create__line-main">
+                        <span class="pos-stock-count-create__line-name">@row.ProductName</span>
+                        <span class="pos-muted">@L["Inventory_TransfersSent"]: @row.SentQty</span>
+                    </div>
+                    <TextInput Label="@L["Inventory_TransfersReceivedQty"]"
+                               Value="@row.ReceivedText"
+                               ValueChanged="value => row.ReceivedText = value"
+                               Disabled="@(_busy || _isOffline)" />
+                    <span class="pos-muted">@L["Inventory_TransfersDifference"]: @difference</span>
+                </div>
+            }
+        </section>
+
+        <InlineMessage Tone="InlineMessageTone.Info">@ConfirmSummary</InlineMessage>
+
+        <ConfirmDialog @bind-Visible="_confirmOpen"
+                       Title="@L["Inventory_TransfersConfirmTitle"]"
+                       Message="@ConfirmSummary"
+                       ConfirmLabel="@L["Inventory_TransfersConfirm"]"
+                       CancelLabel="@L["Common_Cancel"]"
+                       OnConfirm="ConfirmAsync" />
+
+        <Button Variant="ButtonVariant.Primary"
+                Disabled="@(_busy || _isOffline)"
+                OnClick="() => _confirmOpen = true">
+            @L["Inventory_TransfersConfirm"]
+        </Button>
+    </Page>
+</div>
+}
+
+@code {
+    [Parameter] public Guid TransferId { get; set; }
+
+    private bool _ready;
+    private bool _busy;
+    private bool _isOffline;
+    private bool _confirmOpen;
+    private string? _errorTitle;
+    private string? _errorMessage;
+    private InventoryTransferDto? _transfer;
+    private List<ReceiveRow> _rows = [];
+
+    private decimal _sentTotal => _rows.Sum(r => r.SentQty);
+    private decimal _receivedTotal => _rows.Sum(r => ParseQty(r.ReceivedText));
+    private string ConfirmSummary =>
+        L["Inventory_TransfersConfirmSummary", _sentTotal, _receivedTotal, _sentTotal - _receivedTotal];
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!Gate.CanEnterProtectedShell || !Capabilities.IsAllowed(UtangCapability.ManageInventory))
+        {
+            Nav.NavigateTo($"/inventory/transfers/{TransferId:D}", replace: true);
+            return;
+        }
+
+        _ready = true;
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        _isOffline = !await Connectivity.IsConnectedAsync();
+        if (_isOffline)
+        {
+            return;
+        }
+
+        var result = await Inventory.GetTransferAsync(TransferId);
+        if (!result.IsSuccess || result.Data is null)
+        {
+            _transfer = null;
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorTitle = described.Title;
+            _errorMessage = result.Error?.Detail ?? described.Message;
+            return;
+        }
+
+        _transfer = result.Data;
+        _rows = _transfer.Lines
+            .Select(l => new ReceiveRow(l.ProductId, l.ProductName, l.SentQty, l.SentQty.ToString("0.###")))
+            .ToList();
+    }
+
+    private async Task ConfirmAsync()
+    {
+        _busy = true;
+        _confirmOpen = false;
+        try
+        {
+            var request = new ReceiveInventoryTransferRequest(
+                _rows.Select(r => new InventoryTransferReceiveLineRequest(
+                    r.ProductId,
+                    ParseQty(r.ReceivedText),
+                    ParseQty(r.ReceivedText) < r.SentQty ? "ShortShipment" : null))
+                    .ToList());
+            var result = await Inventory.ReceiveTransferAsync(TransferId, request);
+            if (result.IsSuccess)
+            {
+                Nav.NavigateTo($"/inventory/transfers/{TransferId:D}");
+                return;
+            }
+
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorTitle = described.Title;
+            _errorMessage = result.Error?.Detail ?? described.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private static decimal ParseQty(string? text) =>
+        decimal.TryParse(text, out var qty) ? qty : 0m;
+
+    private sealed class ReceiveRow
+    {
+        public ReceiveRow(Guid productId, string productName, decimal sentQty, string receivedText)
+        {
+            ProductId = productId;
+            ProductName = productName;
+            SentQty = sentQty;
+            ReceivedText = receivedText;
+        }
+
+        public Guid ProductId { get; }
+        public string ProductName { get; }
+        public decimal SentQty { get; }
+        public string ReceivedText { get; set; }
+    }
+}

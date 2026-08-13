@@ -442,6 +442,18 @@ public static class OfflineOperationTypes
     /// </summary>
     public const string PurchaseOrderReceive = "purchase_order.receive";
 
+    /// <summary>Server-side idempotency for inventory transfer create. Online-only.</summary>
+    public const string InventoryTransferCreate = "inventory_transfer.create";
+
+    /// <summary>Server-side idempotency for inventory transfer dispatch. Online-only.</summary>
+    public const string InventoryTransferDispatch = "inventory_transfer.dispatch";
+
+    /// <summary>Server-side idempotency for inventory transfer receive. Online-only.</summary>
+    public const string InventoryTransferReceive = "inventory_transfer.receive";
+
+    /// <summary>Server-side idempotency for inventory transfer cancel. Online-only.</summary>
+    public const string InventoryTransferCancel = "inventory_transfer.cancel";
+
     /// <summary>Server-side idempotency operation type for cashier shift cash movements. Online-only.</summary>
     public const string CashierShiftMovement = "cashier_shift.movement";
 

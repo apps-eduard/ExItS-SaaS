@@ -52,6 +52,13 @@ public static class ApplicationErrorCodes
     public const string StockCountNotFound = "pos.stock_count.not_found";
     public const string StockCountNumberConflict = "pos.stock_count.number.conflict";
     public const string InsufficientStock = "pos.inventory.insufficient_stock";
+    public const string InventoryTransferNotFound = "pos.inventory.transfer.not_found";
+    public const string InventoryTransferNumberConflict = "pos.inventory.transfer.number.conflict";
+    public const string InventoryTransferConcurrencyConflict = "pos.inventory.transfer.concurrency_conflict";
+    public const string InventoryTransferBranchNotFound = "pos.inventory.transfer.branch.not_found";
+    public const string InventoryTransferProductNotTracked = "pos.inventory.transfer.product.not_tracked";
+    public const string InventoryTransferAlreadyReceived = "pos.inventory.transfer.already_received";
+    public const string InventoryTransferBranchForbidden = "pos.inventory.transfer.branch.forbidden";
 
     public const string ExpenseCategoryNotFound = "pos.expense_category.not_found";
     public const string ExpenseCategoryNameConflict = "pos.expense_category.name.conflict";

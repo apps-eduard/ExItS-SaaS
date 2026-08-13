@@ -179,6 +179,21 @@ builder.Services.AddScoped<UpdateStockCountInProgress>();
 builder.Services.AddScoped<StartStockCount>();
 builder.Services.AddScoped<CompleteStockCount>();
 builder.Services.AddScoped<CancelStockCount>();
+builder.Services.AddScoped<InventoryTransferQueryService>();
+builder.Services.AddScoped<CreateInventoryTransfer>();
+builder.Services.AddScoped<DispatchInventoryTransfer>();
+builder.Services.AddScoped<ReceiveInventoryTransfer>();
+builder.Services.AddScoped<CancelInventoryTransfer>();
+builder.Services.AddHttpClient<IOrganizationBranchDirectory, PosOrganizationBranchDirectory>((provider, client) =>
+{
+    var options = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<PlatformAuthOptions>>().Value;
+    if (!string.IsNullOrWhiteSpace(options.BaseUrl))
+    {
+        client.BaseAddress = new Uri(options.BaseUrl.TrimEnd('/') + "/", UriKind.Absolute);
+    }
+
+    client.Timeout = TimeSpan.FromSeconds(3);
+});
 builder.Services.AddScoped<CashierShiftQueryService>();
 builder.Services.AddScoped<OpenCashierShift>();
 builder.Services.AddScoped<CloseCashierShift>();

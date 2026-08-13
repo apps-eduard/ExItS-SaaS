@@ -172,6 +172,59 @@ public sealed class PosInventoryClient(HttpClient httpClient, IConnectivityServi
     public Task<ApiResult<PosStockCountDto>> CancelStockCountAsync(Guid stockCountId, CancellationToken ct = default) =>
         SendAsync<PosStockCountDto>(HttpMethod.Post, $"{InventoryPath}/stock-counts/{stockCountId:D}/cancel", null, ct);
 
+    public Task<ApiResult<PagedResult<InventoryTransferListItemDto>>> ListTransfersAsync(
+        string? status = null,
+        string? transferNumber = null,
+        string? direction = null,
+        Guid? sourceBranchId = null,
+        Guid? destinationBranchId = null,
+        int page = 1,
+        int pageSize = 20,
+        CancellationToken ct = default)
+    {
+        var query = new StringBuilder($"{InventoryPath}/transfers?");
+        query.Append("page=").Append(page.ToString(CultureInfo.InvariantCulture));
+        query.Append("&pageSize=").Append(pageSize.ToString(CultureInfo.InvariantCulture));
+        AppendOptional(query, "status", status);
+        AppendOptional(query, "transferNumber", transferNumber);
+        AppendOptional(query, "direction", direction);
+        if (sourceBranchId is Guid source && source != Guid.Empty)
+        {
+            query.Append("&sourceBranchId=").Append(source.ToString("D"));
+        }
+
+        if (destinationBranchId is Guid dest && dest != Guid.Empty)
+        {
+            query.Append("&destinationBranchId=").Append(dest.ToString("D"));
+        }
+
+        return SendAsync<PagedResult<InventoryTransferListItemDto>>(HttpMethod.Get, query.ToString(), null, ct);
+    }
+
+    public Task<ApiResult<InventoryTransferDto>> GetTransferAsync(Guid transferId, CancellationToken ct = default) =>
+        SendAsync<InventoryTransferDto>(HttpMethod.Get, $"{InventoryPath}/transfers/{transferId:D}", null, ct);
+
+    public Task<ApiResult<InventoryTransferDto>> CreateTransferAsync(
+        CreateInventoryTransferRequest request,
+        CancellationToken ct = default) =>
+        SendAsync<InventoryTransferDto>(HttpMethod.Post, $"{InventoryPath}/transfers", request, ct);
+
+    public Task<ApiResult<InventoryTransferDto>> DispatchTransferAsync(Guid transferId, CancellationToken ct = default) =>
+        SendAsync<InventoryTransferDto>(HttpMethod.Post, $"{InventoryPath}/transfers/{transferId:D}/dispatch", null, ct);
+
+    public Task<ApiResult<InventoryTransferDto>> ReceiveTransferAsync(
+        Guid transferId,
+        ReceiveInventoryTransferRequest request,
+        CancellationToken ct = default) =>
+        SendAsync<InventoryTransferDto>(
+            HttpMethod.Post,
+            $"{InventoryPath}/transfers/{transferId:D}/receive",
+            request,
+            ct);
+
+    public Task<ApiResult<InventoryTransferDto>> CancelTransferAsync(Guid transferId, CancellationToken ct = default) =>
+        SendAsync<InventoryTransferDto>(HttpMethod.Post, $"{InventoryPath}/transfers/{transferId:D}/cancel", null, ct);
+
     private static void AppendOptional(StringBuilder query, string name, string? value)
     {
         if (!string.IsNullOrWhiteSpace(value))

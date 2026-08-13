@@ -8,6 +8,7 @@ public static class PosOrganizationHeaders
 {
     public const string OrganizationHeaderName = "X-Pos-Organization-Id";
     public const string ActorHeaderName = "X-Dev-Platform-User-Id";
+    public const string BranchHeaderName = "X-Pos-Branch-Id";
 }
 
 internal static class PosOrganizationScope
@@ -105,6 +106,41 @@ internal static class PosOrganizationScope
             return false;
         }
 
+        return true;
+    }
+
+    public static bool TryGetOptionalBranchId(HttpRequest request, out Guid? branchId)
+    {
+        branchId = null;
+        if (!request.Headers.TryGetValue(PosOrganizationHeaders.BranchHeaderName, out var values)
+            || string.IsNullOrWhiteSpace(values.FirstOrDefault()))
+        {
+            return true;
+        }
+
+        if (!Guid.TryParse(values.First(), out var parsed) || parsed == Guid.Empty)
+        {
+            return false;
+        }
+
+        branchId = parsed;
+        return true;
+    }
+
+    public static bool TryGetBranchId(HttpRequest request, out Guid branchId, out IResult? problem)
+    {
+        branchId = default;
+        problem = null;
+        if (!TryGetOptionalBranchId(request, out var optional) || optional is null)
+        {
+            problem = PosApiResults.Problem(
+                DomainErrorCodes.InvalidBranchId,
+                $"Header '{PosOrganizationHeaders.BranchHeaderName}' is required for branch inventory transfers.",
+                StatusCodes.Status400BadRequest);
+            return false;
+        }
+
+        branchId = optional.Value;
         return true;
     }
 

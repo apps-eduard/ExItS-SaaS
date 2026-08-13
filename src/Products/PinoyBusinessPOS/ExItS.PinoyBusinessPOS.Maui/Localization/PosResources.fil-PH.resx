@@ -1285,6 +1285,31 @@
   <data name="Inventory_ListSection" xml:space="preserve"><value>Mga produkto</value></data>
   <data name="Inventory_SaveReorder" xml:space="preserve"><value>I-save ang reorder settings</value></data>
   <data name="Inventory_OpenCounts" xml:space="preserve"><value>Stock counts</value></data>
+  <data name="Inventory_OpenTransfers" xml:space="preserve"><value>Mga transfer</value></data>
+  <data name="Inventory_TransfersTitle" xml:space="preserve"><value>Mga transfer</value></data>
+  <data name="Inventory_TransfersSubtitle" xml:space="preserve"><value>Magpadala ng stock sa ibang branch. Dapat i-receive muna ng destinasyon bago ito maibenta.</value></data>
+  <data name="Inventory_TransfersAdd" xml:space="preserve"><value>Bagong transfer</value></data>
+  <data name="Inventory_TransfersEmptyTitle" xml:space="preserve"><value>Walang transfer</value></data>
+  <data name="Inventory_TransfersEmptyMessage" xml:space="preserve"><value>Gumawa ng transfer mula sa branch na ito, o hintayin ang paparating na stock.</value></data>
+  <data name="Inventory_TransfersDraft" xml:space="preserve"><value>Draft transfer</value></data>
+  <data name="Inventory_TransfersProducts" xml:space="preserve"><value>mga produkto</value></data>
+  <data name="Inventory_TransfersReceive" xml:space="preserve"><value>Tanggapin</value></data>
+  <data name="Inventory_TransfersIncoming" xml:space="preserve"><value>Papasok</value></data>
+  <data name="Inventory_TransfersOutgoing" xml:space="preserve"><value>Palabas</value></data>
+  <data name="Inventory_TransfersHistory" xml:space="preserve"><value>Kasaysayan</value></data>
+  <data name="Inventory_TransfersCreateTitle" xml:space="preserve"><value>Bagong transfer</value></data>
+  <data name="Inventory_TransfersDestination" xml:space="preserve"><value>Destinasyong branch</value></data>
+  <data name="Inventory_TransfersQty" xml:space="preserve"><value>Dami</value></data>
+  <data name="Inventory_TransfersLinesEmpty" xml:space="preserve"><value>Magdagdag ng kahit isang produkto.</value></data>
+  <data name="Inventory_TransfersCreate" xml:space="preserve"><value>Gumawa ng draft</value></data>
+  <data name="Inventory_TransfersDispatch" xml:space="preserve"><value>I-dispatch</value></data>
+  <data name="Inventory_TransfersSent" xml:space="preserve"><value>Naipadala</value></data>
+  <data name="Inventory_TransfersReceivedQty" xml:space="preserve"><value>Natanggap</value></data>
+  <data name="Inventory_TransfersDifference" xml:space="preserve"><value>Pagkakaiba</value></data>
+  <data name="Inventory_TransfersReceiveTitle" xml:space="preserve"><value>Tanggapin ang transfer</value></data>
+  <data name="Inventory_TransfersConfirmTitle" xml:space="preserve"><value>Kumpirmahin ang pagtanggap?</value></data>
+  <data name="Inventory_TransfersConfirm" xml:space="preserve"><value>Kumpirmahin ang pagtanggap</value></data>
+  <data name="Inventory_TransfersConfirmSummary" xml:space="preserve"><value>Naipadala: {0} units. Natanggap: {1} units. Kulang: {2} units.</value></data>
   <data name="Inventory_CountsTitle" xml:space="preserve"><value>Stock counts</value></data>
   <data name="Inventory_CountsSubtitle" xml:space="preserve"><value>Physical counts na may variance adjustments (online lamang).</value></data>
   <data name="Inventory_CountsAdd" xml:space="preserve"><value>Bagong count</value></data>
