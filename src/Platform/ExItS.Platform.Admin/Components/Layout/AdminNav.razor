@@ -217,6 +217,9 @@
     }
     else if (_ready && Shell.IsOrganizationShell)
     {
+        <MenuItem Key="open-org-web" Icon="export" OnClick='() => Nav.NavigateTo("/admin/handoff/organization", forceLoad: true)'>
+            Open Organization Web
+        </MenuItem>
         @if (OrganizationPeopleItems.Count > 0)
         {
             <SubMenu Key="people" TitleTemplate="@PeopleTitle">
@@ -321,6 +324,9 @@
     }
     else if (_ready && Shell.IsPersonalShell)
     {
+        <MenuItem Key="open-personal-web" Icon="export" OnClick='() => Nav.NavigateTo("/admin/handoff/personal", forceLoad: true)'>
+            Open Personal Web
+        </MenuItem>
         @foreach (var item in PersonalContactItems)
         {
             @if (item.Implemented && item.Route is not null)

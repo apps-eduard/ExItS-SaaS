@@ -4,8 +4,8 @@
   Stops local Local Validation ExItS apps started by tools/Start-LocalValidation.ps1.
 
 .DESCRIPTION
-  - Stops only repo-scoped ExItS.Platform.Api / ExItS.PinoyBusinessPOS.Api / ExItS.Platform.Admin
-    and launcher PowerShell windows recorded in launcher-state.json.
+  - Stops only repo-scoped ExItS.Platform.Api / ExItS.PinoyBusinessPOS.Api / ExItS.Platform.Admin /
+    ExItS.PinoyBusinessPOS.Web / ExItS.Personal.Web and launcher PowerShell windows recorded in launcher-state.json.
   - Leaves PostgreSQL containers running by default.
   - -StopDatabases stops DB containers without deleting volumes (never compose down with -v).
   - Not Production.
@@ -44,7 +44,9 @@ function Get-RepoScopedAppProcesses([string]$RepoRoot) {
     $markers = @(
         'ExItS.Platform.Api',
         'ExItS.PinoyBusinessPOS.Api',
-        'ExItS.Platform.Admin'
+        'ExItS.Platform.Admin',
+        'ExItS.PinoyBusinessPOS.Web',
+        'ExItS.Personal.Web'
     )
     $rootNorm = $RepoRoot.Replace('/', '\').TrimEnd('\')
     $results = @()

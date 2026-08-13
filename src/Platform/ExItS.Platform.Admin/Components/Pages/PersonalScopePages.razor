@@ -7,11 +7,14 @@
 @page "/admin/personal/settings"
 @using AntDesign
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.Extensions.Options
+@using ExItS.Web.UI
 @attribute [Authorize]
 @inject IPlatformApiClient Api
 @inject IStringLocalizer<AdminResources> L
 @inject AdminShellContext Shell
 @inject NavigationManager Nav
+@inject IOptions<ExItSWebHostOptions> Hosts
 
 @if (!_ready)
 {
@@ -138,6 +141,24 @@ else
     {
         await Shell.EnsureLoadedAsync();
         _ready = true;
+        if (Shell.IsPersonalShell)
+        {
+            var personalPath = new Uri(Nav.Uri).AbsolutePath.TrimEnd('/');
+            var mapped = personalPath switch
+            {
+                "/admin/personal/utang/people" => "/utang/people",
+                "/admin/personal/utang/lent" => "/utang/lent",
+                "/admin/personal/utang/borrowed" => "/utang/borrowed",
+                "/admin/personal/utang/invitations" => "/utang/invitations",
+                "/admin/personal/notifications" => "/notifications",
+                "/admin/personal/profile" => "/profile",
+                "/admin/personal/settings" => "/settings",
+                _ => "/home"
+            };
+            Nav.NavigateTo(Hosts.Value.GetOrigin(WebApps.Personal).TrimEnd('/') + mapped, forceLoad: true);
+            return;
+        }
+
         if (!Shell.IsPersonalShell)
         {
             return;

@@ -22,6 +22,10 @@
         "AllowedHosts": "localhost;127.0.0.1;10.0.2.2",
         "Cors__AllowedOrigins__0": "http://localhost:8090",
         "Cors__AllowedOrigins__1": "http://127.0.0.1:8090",
+        "Cors__AllowedOrigins__2": "http://localhost:8093",
+        "Cors__AllowedOrigins__3": "http://127.0.0.1:8093",
+        "Cors__AllowedOrigins__4": "http://localhost:8094",
+        "Cors__AllowedOrigins__5": "http://127.0.0.1:8094",
         "LocalValidation__PlatformApiBaseUrl": "http://127.0.0.1:8091",
         "PlatformAuth__BaseUrl": "http://127.0.0.1:8091"
       }

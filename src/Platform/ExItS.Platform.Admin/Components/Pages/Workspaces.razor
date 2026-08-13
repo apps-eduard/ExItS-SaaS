@@ -1,0 +1,66 @@
+@page "/admin/workspaces"
+@attribute [Authorize]
+@layout EmptyLayout
+@using ExItS.Web.UI
+@inject IHttpClientFactory HttpFactory
+@inject PlatformCircuitSession Circuit
+@inject NavigationManager Nav
+
+<PageTitle>Choose workspace</PageTitle>
+<div class="exits-login-shell">
+    <Card Class="exits-login-card" Title="Choose a workspace">
+        <Paragraph Type="@TextElementType.Secondary">
+            Sign in once. Each app still checks its own account scope. Linked customers do not receive Organization Admin.
+        </Paragraph>
+        @if (_loading)
+        {
+            <Spin />
+        }
+        else if (_items.Count == 0)
+        {
+            <Empty Description="@("No authorized workspaces.")" />
+        }
+        else
+        {
+            <Space Direction="SpaceDirection.Vertical" Style="width:100%;">
+                @foreach (var item in _items)
+                {
+                    var capture = item;
+                    <Button Block OnClick="() => Open(capture)">
+                        @capture.Label@(string.IsNullOrWhiteSpace(capture.RoleLabel) ? "" : $" · {capture.RoleLabel}")
+                    </Button>
+                }
+            </Space>
+        }
+    </Card>
+</div>
+
+@code {
+    private bool _loading = true;
+    private IReadOnlyList<WebWorkspaceItemResponse> _items = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        var client = HttpFactory.CreateClient("PlatformApiUnauthenticated");
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/platform/auth/workspaces");
+        if (!string.IsNullOrWhiteSpace(Circuit.SessionToken))
+        {
+            request.Headers.TryAddWithoutValidation("X-ExItS-Session-Token", Circuit.SessionToken);
+        }
+
+        using var response = await client.SendAsync(request);
+        if (response.IsSuccessStatusCode)
+        {
+            var list = await response.Content.ReadFromJsonAsync<WebWorkspaceListResponse>();
+            _items = list?.Workspaces ?? [];
+        }
+
+        _loading = false;
+    }
+
+    private void Open(WebWorkspaceItemResponse item)
+    {
+        var org = item.OrganizationId is Guid id ? $"?organizationId={id:D}" : "";
+        Nav.NavigateTo($"/admin/handoff/{Uri.EscapeDataString(item.App)}{org}", forceLoad: true);
+    }
+}

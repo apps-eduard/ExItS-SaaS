@@ -13,4 +13,8 @@
     <PackageReference Include="AntDesign" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\Shared\ExItS.Web.UI\ExItS.Web.UI.csproj" />
+  </ItemGroup>
+
 </Project>

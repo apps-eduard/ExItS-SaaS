@@ -1,5 +1,6 @@
 using ExItS.Platform.Admin;
 using ExItS.Platform.Admin.Services;
+using ExItS.Web.UI;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components.Server.Circuits;
@@ -29,6 +30,8 @@ if (builder.Environment.IsDevelopment()
 }
 
 builder.Services.AddAntDesign();
+builder.Services.Configure<ExItSWebHostOptions>(builder.Configuration.GetSection(ExItSWebHostOptions.SectionName));
+builder.Services.AddScoped<WebPostLoginRouter>();
 
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddHttpContextAccessor();
@@ -174,6 +177,7 @@ app.UseAntiforgery();
 
 // FallbackPolicy RequireAuthenticatedUser applies to MapStaticAssets; login CSS/JS must stay anonymous.
 app.MapStaticAssets().AllowAnonymous();
+app.MapExitsCultureSet();
 
 app.MapGet("/", (HttpContext http) =>
     http.User.Identity?.IsAuthenticated == true
@@ -186,7 +190,8 @@ app.MapGet("/health", () => Results.Ok(new { status = "Healthy", service = "plat
 // Full HTTP round-trip so auth cookies are set (Interactive Server cannot SignIn from a circuit event).
 app.MapPost("/admin/login/credentials", async (
     HttpContext http,
-    PlatformBrowserSessionService sessions) =>
+    PlatformBrowserSessionService sessions,
+    WebPostLoginRouter router) =>
 {
     var form = await http.Request.ReadFormAsync().ConfigureAwait(false);
     // Public login is email-only; UsernameOrEmail kept for older clients.
@@ -197,6 +202,8 @@ app.MapPost("/admin/login/credentials", async (
     }
 
     var password = form["Password"].ToString();
+    var returnApp = form["ReturnApp"].ToString();
+    var returnPath = form["ReturnPath"].ToString();
     var (ok, error) = await sessions.LoginAsync(email, password).ConfigureAwait(false);
     if (!ok)
     {
@@ -204,14 +211,19 @@ app.MapPost("/admin/login/credentials", async (
             "/admin/login?error=" + Uri.EscapeDataString(error ?? "Invalid email or password."));
     }
 
-    return Results.Redirect("/admin");
+    var next = await router.ResolveAsync(http, returnApp, returnPath).ConfigureAwait(false);
+    return Results.Redirect(next);
 }).AllowAnonymous().DisableAntiforgery();
 
 // Local Validation only: full HTTP round-trip so auth cookies are set (Interactive Server cannot).
 app.MapGet("/admin/login/as/{key}", async (
     string key,
+    string? returnApp,
+    string? returnPath,
     LocalValidationSignInService localValidation,
-    IHostEnvironment env) =>
+    WebPostLoginRouter router,
+    IHostEnvironment env,
+    HttpContext http) =>
 {
     if (env.IsProduction() || !localValidation.IsAvailable)
     {
@@ -222,10 +234,28 @@ app.MapGet("/admin/login/as/{key}", async (
     if (!ok)
     {
         return Results.Redirect(
-            "/admin/login?error=" + Uri.EscapeDataString(error ?? "Invalid username/email or password."));
+            "/admin/login?error=" + Uri.EscapeDataString(error ?? "Invalid email or password."));
     }
 
-    return Results.Redirect("/admin");
+    // Route by the selected identity's account class so one picker can land on 8090/8093/8094.
+    var identities = await localValidation.ListIdentitiesAsync().ConfigureAwait(false);
+    var selected = identities.FirstOrDefault(i =>
+        string.Equals(i.Key, key, StringComparison.OrdinalIgnoreCase));
+    var appFromIdentity = selected?.AccountClass?.Trim() switch
+    {
+        "Organization" => WebApps.Organization,
+        "Personal" => WebApps.Personal,
+        "Platform" => WebApps.Platform,
+        _ => null
+    };
+
+    var next = await router.ResolveAsync(
+            http,
+            appFromIdentity ?? returnApp,
+            returnPath,
+            selected?.OrganizationId)
+        .ConfigureAwait(false);
+    return Results.Redirect(next);
 }).AllowAnonymous();
 
 app.MapPost("/admin/logout", async (HttpContext http, PlatformBrowserSessionService sessions) =>
@@ -242,6 +272,45 @@ app.MapGet("/admin/logout", async (HttpContext http, PlatformBrowserSessionServi
 
 // Full HTTP round-trip so auth cookies are set after Interactive Server flows that mint a new
 // Platform session (e.g. Start a Business). Circuit events cannot SignIn.
+app.MapGet("/admin/handoff/{app}", async (
+    string app,
+    Guid? organizationId,
+    string? returnPath,
+    HttpContext http,
+    IHttpClientFactory httpClientFactory,
+    IOptions<ExItSWebHostOptions> hosts) =>
+{
+    if (!WebApps.IsKnown(app))
+    {
+        return Results.Redirect("/admin/workspaces");
+    }
+
+    var token = PlatformBrowserSessionService.ResolveSessionToken(http);
+    if (string.IsNullOrWhiteSpace(token))
+    {
+        return Results.Redirect(hosts.Value.CanonicalLoginUrl(app, returnPath));
+    }
+
+    if (string.Equals(WebApps.Normalize(app), WebApps.Platform, StringComparison.OrdinalIgnoreCase))
+    {
+        return Results.Redirect(SafeReturnPath.Sanitize(returnPath, "/admin"));
+    }
+
+    var client = httpClientFactory.CreateClient("PlatformApiUnauthenticated");
+    var created = await WebHandoffHttp.CreateAsync(
+        client,
+        token,
+        WebApps.Normalize(app),
+        organizationId,
+        returnPath).ConfigureAwait(false);
+    if (created is null)
+    {
+        return Results.Redirect("/admin/workspaces");
+    }
+
+    return Results.Redirect(WebHandoffHttp.EstablishUrl(hosts.Value.GetOrigin(app), created.Ticket, created.ReturnPath));
+});
+
 app.MapGet("/admin/session/establish", async (
     string sessionToken,
     string? returnUrl,

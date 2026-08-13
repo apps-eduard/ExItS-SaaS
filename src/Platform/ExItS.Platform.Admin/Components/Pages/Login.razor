@@ -35,6 +35,8 @@
 
             @* Native form POST — Interactive Server cannot set auth cookies from a Blazor event. *@
             <form method="post" action="/admin/login/credentials" class="exits-login-form">
+                <input type="hidden" name="ReturnApp" value="@ReturnApp" />
+                <input type="hidden" name="ReturnPath" value="@ReturnPath" />
                 <div class="ant-form-item">
                     <label class="ant-form-item-label" for="login-email">@L["Login_Email"]</label>
                     <input id="login-email"
@@ -91,6 +93,12 @@
 
     [SupplyParameterFromQuery(Name = "notice")]
     public string? NoticeQuery { get; set; }
+
+    [SupplyParameterFromQuery(Name = "returnApp")]
+    public string? ReturnApp { get; set; }
+
+    [SupplyParameterFromQuery(Name = "returnPath")]
+    public string? ReturnPath { get; set; }
 
     private string GoogleChallengeUrl => BuildChallengeUrl("google");
     private string FacebookChallengeUrl => BuildChallengeUrl("facebook");

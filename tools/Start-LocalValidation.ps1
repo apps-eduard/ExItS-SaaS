@@ -1,13 +1,13 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-  One-command local Local Validation: Docker DBs only + host Platform/POS/Admin.
+  One-command local Local Validation: Docker DBs only + host Platform/POS/Admin/Org Web/Personal Web.
 
 .DESCRIPTION
   - Resolves repo root from this script location (run from any directory).
   - Starts only exits-local-validation platform-db + pos-db (never compose down with -v).
-  - Stops stale ExItS.Platform.Api / ExItS.PinoyBusinessPOS.Api / ExItS.Platform.Admin
-    processes that belong to this repository only.
+  - Stops stale ExItS.Platform.Api / ExItS.PinoyBusinessPOS.Api / ExItS.Platform.Admin /
+    ExItS.PinoyBusinessPOS.Web / ExItS.Personal.Web processes that belong to this repository only.
   - Starts apps with dotnet watch in separate PowerShell windows, in order.
   - Uses deploy/docker/.env.local-validation (gitignored) - no secrets committed.
   - Admin DataProtection keys: %LOCALAPPDATA%\ExItS\LocalValidation\DataProtectionKeys
@@ -157,7 +157,9 @@ function Get-RepoScopedAppProcesses([string]$RepoRoot) {
     $markers = @(
         'ExItS.Platform.Api',
         'ExItS.PinoyBusinessPOS.Api',
-        'ExItS.Platform.Admin'
+        'ExItS.Platform.Admin',
+        'ExItS.PinoyBusinessPOS.Web',
+        'ExItS.Personal.Web'
     )
     $rootNorm = $RepoRoot.Replace('/', '\').TrimEnd('\')
     $results = @()
@@ -327,12 +329,13 @@ function Get-LocalValidationAllowedHosts([string]$PublicHostValue, $EnvMap) {
 }
 
 function Show-LocalValidationFirewallGuidance {
-    Write-Note 'Windows Firewall: allow inbound TCP 8090/8091/8092/8093 for Tailscale/LAN Admin+APIs+Org Web. Do not open 15533/15534 (DB).'
+    Write-Note 'Windows Firewall: allow inbound TCP 8090/8091/8092/8093/8094 for Tailscale/LAN Admin+APIs+Org Web+Personal Web. Do not open 15533/15534 (DB).'
     Write-Host @'
   New-NetFirewallRule -DisplayName "ExItS Local Validation Admin 8090" -Direction Inbound -Protocol TCP -LocalPort 8090 -Action Allow -Profile Any
   New-NetFirewallRule -DisplayName "ExItS Local Validation Platform API 8091" -Direction Inbound -Protocol TCP -LocalPort 8091 -Action Allow -Profile Any
   New-NetFirewallRule -DisplayName "ExItS Local Validation POS API 8092" -Direction Inbound -Protocol TCP -LocalPort 8092 -Action Allow -Profile Any
   New-NetFirewallRule -DisplayName "ExItS Local Validation Org Web 8093" -Direction Inbound -Protocol TCP -LocalPort 8093 -Action Allow -Profile Any
+  New-NetFirewallRule -DisplayName "ExItS Local Validation Personal Web 8094" -Direction Inbound -Protocol TCP -LocalPort 8094 -Action Allow -Profile Any
 '@
 }
 
@@ -402,6 +405,7 @@ $adminPort = if ($envMap['LOCAL_VALIDATION_ADMIN_HOST_PORT']) { [int]$envMap['LO
 $platformApiPort = if ($envMap['LOCAL_VALIDATION_PLATFORM_API_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_PLATFORM_API_HOST_PORT'] } else { [int]$LocalValidationStack.DefaultPlatformApiPort }
 $posApiPort = if ($envMap['LOCAL_VALIDATION_POS_API_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_POS_API_HOST_PORT'] } else { [int]$LocalValidationStack.DefaultPosApiPort }
 $orgWebPort = if ($envMap['LOCAL_VALIDATION_ORG_WEB_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_ORG_WEB_HOST_PORT'] } else { [int]$LocalValidationStack.DefaultOrgWebPort }
+$personalWebPort = if ($envMap['LOCAL_VALIDATION_PERSONAL_WEB_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_PERSONAL_WEB_HOST_PORT'] } else { [int]$LocalValidationStack.DefaultPersonalWebPort }
 $mailpitUiPort = if ($envMap['LOCAL_VALIDATION_MAILPIT_UI_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_MAILPIT_UI_HOST_PORT'] } else { 8025 }
 $mailpitSmtpPort = if ($envMap['LOCAL_VALIDATION_MAILPIT_SMTP_HOST_PORT']) { [int]$envMap['LOCAL_VALIDATION_MAILPIT_SMTP_HOST_PORT'] } else { 1025 }
 
@@ -411,11 +415,11 @@ Write-Ok "DataProtection keys directory: $dpKeys"
 Write-Step 'Stopping stale repo-scoped local ExItS apps (Api/Admin only; DBs untouched)...'
 Stop-RepoScopedApps -RepoRoot $repoRoot
 
-$conflicts = @(Report-PortConflicts -Ports @($adminPort, $platformApiPort, $posApiPort, $orgWebPort))
+$conflicts = @(Report-PortConflicts -Ports @($adminPort, $platformApiPort, $posApiPort, $orgWebPort, $personalWebPort))
 if ($conflicts.Count -gt 0) {
-    throw 'Ports 8090/8091/8092/8093 still occupied after stopping repo-scoped apps. Free them and retry.'
+    throw 'Ports 8090/8091/8092/8093/8094 still occupied after stopping repo-scoped apps. Free them and retry.'
 }
-Write-Ok 'App ports 8090/8091/8092/8093 are free'
+Write-Ok 'App ports 8090/8091/8092/8093/8094 are free'
 
 Write-Step 'Starting local-validation PostgreSQL + Mailpit (volumes preserved; never compose down with -v)...'
 $composeExit = Invoke-LocalValidationDocker -DockerArgs @(
@@ -443,21 +447,25 @@ $bindAdminUrl = "http://0.0.0.0:$adminPort"
 $bindPlatformApiUrl = "http://0.0.0.0:$platformApiPort"
 $bindPosApiUrl = "http://0.0.0.0:$posApiPort"
 $bindOrgWebUrl = "http://0.0.0.0:$orgWebPort"
+$bindPersonalWebUrl = "http://0.0.0.0:$personalWebPort"
 $loopbackAdminUrl = "http://127.0.0.1:$adminPort"
 $loopbackPlatformApiUrl = "http://127.0.0.1:$platformApiPort"
 $loopbackPosApiUrl = "http://127.0.0.1:$posApiPort"
 $loopbackOrgWebUrl = "http://127.0.0.1:$orgWebPort"
+$loopbackPersonalWebUrl = "http://127.0.0.1:$personalWebPort"
 if ($resolvedPublicHost) {
     $publicAdminUrl = "http://${resolvedPublicHost}:$adminPort"
     $publicPlatformApiUrl = "http://${resolvedPublicHost}:$platformApiPort"
     $publicPosApiUrl = "http://${resolvedPublicHost}:$posApiPort"
     $publicOrgWebUrl = "http://${resolvedPublicHost}:$orgWebPort"
+    $publicPersonalWebUrl = "http://${resolvedPublicHost}:$personalWebPort"
 }
 else {
     $publicAdminUrl = "http://localhost:$adminPort"
     $publicPlatformApiUrl = "http://localhost:$platformApiPort"
     $publicPosApiUrl = "http://localhost:$posApiPort"
     $publicOrgWebUrl = "http://localhost:$orgWebPort"
+    $publicPersonalWebUrl = "http://localhost:$personalWebPort"
 }
 
 $allowedHosts = Get-LocalValidationAllowedHosts -PublicHostValue $resolvedPublicHost -EnvMap $envMap
@@ -465,18 +473,21 @@ $corsOrigins = @(
     "http://localhost:$adminPort",
     "http://127.0.0.1:$adminPort",
     "http://localhost:$orgWebPort",
-    "http://127.0.0.1:$orgWebPort"
+    "http://127.0.0.1:$orgWebPort",
+    "http://localhost:$personalWebPort",
+    "http://127.0.0.1:$personalWebPort"
 )
 if ($resolvedPublicHost) {
     $corsOrigins += "http://${resolvedPublicHost}:$adminPort"
     $corsOrigins += "http://${resolvedPublicHost}:$orgWebPort"
+    $corsOrigins += "http://${resolvedPublicHost}:$personalWebPort"
 }
 $envAdminOrigin = if ($envMap['LOCAL_VALIDATION_ADMIN_ORIGIN']) { [string]$envMap['LOCAL_VALIDATION_ADMIN_ORIGIN'] } else { $null }
 if (-not [string]::IsNullOrWhiteSpace($envAdminOrigin) -and ($corsOrigins -notcontains $envAdminOrigin)) {
     $corsOrigins += $envAdminOrigin
 }
 
-Write-Ok "Kestrel bind URLs: $bindAdminUrl | $bindPlatformApiUrl | $bindPosApiUrl | $bindOrgWebUrl"
+Write-Ok "Kestrel bind URLs: $bindAdminUrl | $bindPlatformApiUrl | $bindPosApiUrl | $bindOrgWebUrl | $bindPersonalWebUrl"
 Write-Ok "AllowedHosts: $allowedHosts"
 Write-Ok ("CORS origins: {0}" -f ($corsOrigins -join ', '))
 if ($resolvedPublicHost) {
@@ -487,8 +498,9 @@ $platformProject = Join-Path $repoRoot 'src\Platform\ExItS.Platform.Api\ExItS.Pl
 $posProject = Join-Path $repoRoot 'src\Products\PinoyBusinessPOS\ExItS.PinoyBusinessPOS.Api\ExItS.PinoyBusinessPOS.Api.csproj'
 $adminProject = Join-Path $repoRoot 'src\Platform\ExItS.Platform.Admin\ExItS.Platform.Admin.csproj'
 $orgWebProject = Join-Path $repoRoot 'src\Products\PinoyBusinessPOS\ExItS.PinoyBusinessPOS.Web\ExItS.PinoyBusinessPOS.Web.csproj'
+$personalWebProject = Join-Path $repoRoot 'src\Platform\ExItS.Personal.Web\ExItS.Personal.Web.csproj'
 
-foreach ($proj in @($platformProject, $posProject, $adminProject, $orgWebProject)) {
+foreach ($proj in @($platformProject, $posProject, $adminProject, $orgWebProject, $personalWebProject)) {
     if (-not (Test-Path -LiteralPath $proj)) {
         throw "Missing project file: $proj"
     }
@@ -584,6 +596,9 @@ $adminEnv = @{
     PlatformApi__TimeoutSeconds = '30'
     LocalValidation__Enabled = 'true'
     LocalValidation__SharedPassword = [string]$envMap['LOCAL_VALIDATION_SHARED_PASSWORD']
+    ExItSWebHosts__PlatformAdmin = $publicAdminUrl
+    ExItSWebHosts__OrganizationWeb = $publicOrgWebUrl
+    ExItSWebHosts__PersonalWeb = $publicPersonalWebUrl
 }
 $windowPids += Start-AppWindow -Title 'ExItS LocalValidation - Admin' -RepoRoot $repoRoot -Project $adminProject -EnvMap $adminEnv
 Wait-TcpPort -Label 'Platform Admin' -HostName '127.0.0.1' -Port $adminPort -TimeoutSeconds $PortWaitSeconds
@@ -597,9 +612,26 @@ $orgWebEnv = @{
     Security__RequireHttpsApiUrls = 'false'
     PosApi__BaseUrl = $loopbackPlatformApiUrl
     PosBusinessApi__BaseUrl = $loopbackPosApiUrl
+    ExItSWebHosts__PlatformAdmin = $publicAdminUrl
+    ExItSWebHosts__OrganizationWeb = $publicOrgWebUrl
+    ExItSWebHosts__PersonalWeb = $publicPersonalWebUrl
 }
 $windowPids += Start-AppWindow -Title 'ExItS LocalValidation - Org Web' -RepoRoot $repoRoot -Project $orgWebProject -EnvMap $orgWebEnv
 Wait-TcpPort -Label 'Organization Web' -HostName '127.0.0.1' -Port $orgWebPort -TimeoutSeconds $PortWaitSeconds
+
+Write-Step 'Starting Personal Web (dotnet watch)...'
+$personalWebEnv = @{
+    ASPNETCORE_ENVIRONMENT = 'Development'
+    ASPNETCORE_URLS = $bindPersonalWebUrl
+    AllowedHosts = $allowedHosts
+    LocalValidation__Enabled = 'true'
+    PlatformApi__BaseUrl = $loopbackPlatformApiUrl
+    ExItSWebHosts__PlatformAdmin = $publicAdminUrl
+    ExItSWebHosts__OrganizationWeb = $publicOrgWebUrl
+    ExItSWebHosts__PersonalWeb = $publicPersonalWebUrl
+}
+$windowPids += Start-AppWindow -Title 'ExItS LocalValidation - Personal Web' -RepoRoot $repoRoot -Project $personalWebProject -EnvMap $personalWebEnv
+Wait-TcpPort -Label 'Personal Web' -HostName '127.0.0.1' -Port $personalWebPort -TimeoutSeconds $PortWaitSeconds
 
 $state = @{
     RepoRoot = $repoRoot
@@ -619,6 +651,7 @@ $state = @{
         PlatformApi = $platformApiPort
         PosApi = $posApiPort
         OrgWeb = $orgWebPort
+        PersonalWeb = $personalWebPort
         PlatformDb = $platformDbPort
         PosDb = $posDbPort
     }
@@ -646,6 +679,7 @@ $healthOk = (Invoke-HttpCheck -Label 'Platform API /health' -Url "$loopbackPlatf
 $healthOk = (Invoke-HttpCheck -Label 'POS API /health' -Url "$loopbackPosApiUrl/health") -and $healthOk
 $healthOk = (Invoke-HttpCheck -Label 'Admin /admin/login' -Url "$loopbackAdminUrl/admin/login") -and $healthOk
 $healthOk = (Invoke-HttpCheck -Label 'Organization Web /health' -Url "$loopbackOrgWebUrl/health") -and $healthOk
+$healthOk = (Invoke-HttpCheck -Label 'Personal Web /health' -Url "$loopbackPersonalWebUrl/health") -and $healthOk
 
 Write-Host ''
 Write-Host '======== Local Validation local ready ========' -ForegroundColor Green
@@ -653,7 +687,8 @@ Write-Host "  Admin:        $publicAdminUrl"
 Write-Host "  Platform API: $publicPlatformApiUrl"
 Write-Host "  POS API:      $publicPosApiUrl"
 Write-Host "  Org Web:      $publicOrgWebUrl"
-Write-Host "  Bind:         0.0.0.0:$adminPort / 0.0.0.0:$platformApiPort / 0.0.0.0:$posApiPort / 0.0.0.0:$orgWebPort"
+Write-Host "  Personal Web: $publicPersonalWebUrl"
+Write-Host "  Bind:         0.0.0.0:$adminPort / 0.0.0.0:$platformApiPort / 0.0.0.0:$posApiPort / 0.0.0.0:$orgWebPort / 0.0.0.0:$personalWebPort"
 Write-Host "  Platform DB:  127.0.0.1:$platformDbPort"
 Write-Host "  POS DB:       127.0.0.1:$posDbPort"
 Write-Host "  Mailpit UI:   http://localhost:$mailpitUiPort"

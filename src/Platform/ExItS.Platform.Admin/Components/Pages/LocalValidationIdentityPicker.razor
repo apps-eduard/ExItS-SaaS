@@ -102,7 +102,8 @@
         // "Collection was modified; enumeration operation may not execute."
         await Task.Yield();
         await Task.Delay(1);
-        var url = Nav.ToAbsoluteUri($"/admin/login/as/{Uri.EscapeDataString(value)}").AbsoluteUri;
+        var current = new Uri(Nav.Uri);
+        var url = Nav.ToAbsoluteUri($"/admin/login/as/{Uri.EscapeDataString(value)}{current.Query}").AbsoluteUri;
         await Js.InvokeVoidAsync("location.assign", url);
     }
 }

@@ -482,10 +482,55 @@ internal static class AuthEndpoints
             return PlatformApiResults.FromResult(result, m => Results.Ok(MembershipQueryService.Map(m)));
         });
 
+        app.MapGet("/api/v1/platform/auth/workspaces", async (
+            HttpContext http,
+            ListWebWorkspaces useCase,
+            IOptions<PlatformSessionOptions> sessionOptions,
+            CancellationToken ct) =>
+        {
+            var token = ExtractSessionToken(http, sessionOptions.Value);
+            var result = await useCase.ExecuteAsync(token, ct).ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
+        })
+        .AllowAnonymous()
+        .DisableRateLimiting();
+
+        app.MapPost("/api/v1/platform/auth/web-handoff", async (
+            CreateWebHandoffRequest body,
+            HttpContext http,
+            CreateWebHandoffTicket useCase,
+            IOptions<PlatformSessionOptions> sessionOptions,
+            CancellationToken ct) =>
+        {
+            var token = ExtractSessionToken(http, sessionOptions.Value);
+            var result = await useCase.ExecuteAsync(
+                token,
+                body.TargetApp,
+                body.OrganizationId,
+                body.ReturnPath,
+                http.Connection.RemoteIpAddress?.ToString(),
+                http.Request.Headers.UserAgent.ToString(),
+                ct).ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
+        });
+
+        app.MapPost("/api/v1/platform/auth/web-handoff/redeem", async (
+            RedeemWebHandoffRequest body,
+            RedeemWebHandoffTicket useCase,
+            CancellationToken ct) =>
+        {
+            var result = await useCase.ExecuteAsync(body.Ticket, ct).ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
+        })
+        .AllowAnonymous()
+        .RequireRateLimiting(PlatformSecurityPipeline.AuthTokenOpsRateLimitPolicy);
+
         return app;
     }
 
     private sealed record SelectAccountProfileRequest(Guid AccountProfileId);
+    private sealed record CreateWebHandoffRequest(string? TargetApp, Guid? OrganizationId, string? ReturnPath);
+    private sealed record RedeemWebHandoffRequest(string? Ticket);
 
     private sealed record AcceptInvitationTokenRequest(
         string? Token,
