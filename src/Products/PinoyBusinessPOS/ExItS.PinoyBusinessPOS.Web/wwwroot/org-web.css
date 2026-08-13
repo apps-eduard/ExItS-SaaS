@@ -1,5 +1,7 @@
 /* Organization Web extras on top of shared ExItS.Web.UI chrome. */
 .org-note { color: var(--exits-muted); font-size: 12px; margin: 8px 0; }
+.org-table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+.org-table th, .org-table td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--exits-border, #d9e2dc); }
 .org-toolbar, .org-form, .org-subnav { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; margin-bottom: 12px; }
 .org-metrics { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin: 12px 0 20px; }
 .org-metric { border: 1px solid var(--exits-border); border-radius: 8px; padding: 12px; }

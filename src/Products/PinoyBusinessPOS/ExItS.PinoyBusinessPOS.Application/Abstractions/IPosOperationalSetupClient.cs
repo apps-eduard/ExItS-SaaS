@@ -15,4 +15,11 @@ public interface IPosOperationalSetupClient
     Task<ApiResult<PosOperationalSetupDto>> UpdateAsync(
         UpdateOperationalSetupRequest request,
         CancellationToken ct = default);
+
+    Task<ApiResult<List<OrganizationCashDenominationDto>>> ListCashDenominationsAsync(
+        CancellationToken ct = default);
+
+    Task<ApiResult<List<OrganizationCashDenominationDto>>> ReplaceCashDenominationsAsync(
+        ReplaceCashDenominationsRequest request,
+        CancellationToken ct = default);
 }

@@ -1901,10 +1901,33 @@
   <data name="Setup_CashCount" xml:space="preserve"><value>Cash count</value></data>
   <data name="Setup_CashCountOff" xml:space="preserve"><value>Off</value></data>
   <data name="Setup_CashCountOptional" xml:space="preserve"><value>Optional</value></data>
-  <data name="Setup_CashCountRequired" xml:space="preserve"><value>Required</value></data>
+  <data name="Setup_CashCountRequired" xml:space="preserve"><value>Required — Recommended</value></data>
   <data name="Setup_CashCountHelpOff" xml:space="preserve"><value>Hindi hinihingi ang physical cash counting.</value></data>
-  <data name="Setup_CashCountHelpOptional" xml:space="preserve"><value>Puwedeng magbilang ang cashier ng opening/closing cash.</value></data>
-  <data name="Setup_CashCountHelpRequired" xml:space="preserve"><value>Kailangang tapusin ng cashier ang cash counting bago ang applicable na shift action.</value></data>
+  <data name="Setup_CashCountHelpOptional" xml:space="preserve"><value>Puwedeng magbilang ang cashier ng physical cash o laktawan ang count.</value></data>
+  <data name="Setup_CashCountHelpRequired" xml:space="preserve"><value>Kailangang bilangin ng cashier ang physical drawer cash sa pagbubukas at pagsasara ng shift.</value></data>
+  <data name="Setup_CashCountSnapshotHint" xml:space="preserve"><value>Malalapat ang pagbabago sa susunod na shift. Ang kasalukuyang open shift ay pananatilihin ang policy nang ito ay nagbukas.</value></data>
+  <data name="Setup_Denominations" xml:space="preserve"><value>Mga denomination ng pera</value></data>
+  <data name="Setup_DenominationsHint" xml:space="preserve"><value>Optional na tulong sa pagbilang. Hindi puwedeng mag-imbento ang cashier ng denomination habang nagbibilang.</value></data>
+  <data name="Setup_AddDenomination" xml:space="preserve"><value>Magdagdag ng denomination</value></data>
+  <data name="Setup_InvalidDenomination" xml:space="preserve"><value>Maglagay ng denomination na mas malaki sa zero.</value></data>
+  <data name="Shifts_CashOnHand" xml:space="preserve"><value>Cash on hand</value></data>
+  <data name="Shifts_OpeningCashHelpRequired" xml:space="preserve"><value>Bilangin ang kabuuang physical cash sa drawer.</value></data>
+  <data name="Shifts_OpeningCashHelpOptional" xml:space="preserve"><value>Ilagay ang kabuuang physical cash, o laktawan.</value></data>
+  <data name="Shifts_ClosingCashHelpRequired" xml:space="preserve"><value>Bilangin ang kabuuang physical cash sa drawer.</value></data>
+  <data name="Shifts_ClosingCashHelpOptional" xml:space="preserve"><value>Ilagay ang kabuuang physical cash, o laktawan.</value></data>
+  <data name="Shifts_CountByDenomination" xml:space="preserve"><value>Bilangin ayon sa denomination</value></data>
+  <data name="Shifts_DenominationTitle" xml:space="preserve"><value>Denomination breakdown</value></data>
+  <data name="Shifts_DenominationHint" xml:space="preserve"><value>Optional na tulong. Ang Use Total ang magkokopya ng calculated amount sa Cash Count.</value></data>
+  <data name="Shifts_DenominationClose" xml:space="preserve"><value>Isara ang denomination count</value></data>
+  <data name="Shifts_DenominationQtyLabel" xml:space="preserve"><value>Dami para sa {0}</value></data>
+  <data name="Shifts_DenominationPcs" xml:space="preserve"><value>pcs</value></data>
+  <data name="Shifts_DenominationCalculatedTotal" xml:space="preserve"><value>Kalkuladong total</value></data>
+  <data name="Shifts_DenominationReset" xml:space="preserve"><value>I-reset</value></data>
+  <data name="Shifts_DenominationUseTotal" xml:space="preserve"><value>Gamitin ang total</value></data>
+  <data name="Shifts_ViewDenominationBreakdown" xml:space="preserve"><value>Tingnan ang denomination breakdown</value></data>
+  <data name="Shifts_CashSales" xml:space="preserve"><value>Cash sales</value></data>
+  <data name="Shifts_CashRefunds" xml:space="preserve"><value>Cash refunds</value></data>
+  <data name="Shifts_VarianceStatus" xml:space="preserve"><value>Status</value></data>
   <data name="Nav_Setup" xml:space="preserve"><value>Operational setup</value></data>
   <data name="Shifts_RegisterSection" xml:space="preserve"><value>Register</value></data>
   <data name="Shifts_RegisterLabel" xml:space="preserve"><value>Pumili ng rehistro</value></data>

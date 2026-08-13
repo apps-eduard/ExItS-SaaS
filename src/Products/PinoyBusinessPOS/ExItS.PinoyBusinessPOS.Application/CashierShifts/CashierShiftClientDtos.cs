@@ -1,3 +1,5 @@
+using ExItS.PinoyBusinessPOS.Application.OperationalSetup;
+
 namespace ExItS.PinoyBusinessPOS.Application.CashierShifts;
 
 public sealed record PosCashierShiftMovementDto(
@@ -36,7 +38,9 @@ public sealed record PosCashierShiftDto(
     DateTimeOffset? CancelledAtUtc,
     Guid? CancelledBy,
     DateTimeOffset CreatedAtUtc,
-    DateTimeOffset UpdatedAtUtc);
+    DateTimeOffset UpdatedAtUtc,
+    IReadOnlyList<CashCountDenominationLineDto>? OpeningDenominationLines = null,
+    IReadOnlyList<CashCountDenominationLineDto>? ClosingDenominationLines = null);
 
 public sealed record PosCashierShiftSummaryDto(
     Guid ShiftId,
@@ -61,14 +65,20 @@ public sealed record PosCashierShiftSummaryDto(
     int VoidedCashCount,
     int CompletedGCashCount,
     int CompletedUtangCount,
-    IReadOnlyList<PosCashierShiftMovementDto> Movements);
+    IReadOnlyList<PosCashierShiftMovementDto> Movements,
+    IReadOnlyList<CashCountDenominationLineDto>? OpeningDenominationLines = null,
+    IReadOnlyList<CashCountDenominationLineDto>? ClosingDenominationLines = null);
 
 public sealed record OpenCashierShiftRequest(
     Guid RegisterId,
     decimal? OpeningCashAmount = null,
-    DateOnly? BusinessDate = null);
+    DateOnly? BusinessDate = null,
+    IReadOnlyList<CashCountDenominationLineDto>? DenominationLines = null);
 
-public sealed record CloseCashierShiftRequest(decimal? ClosingCashAmount = null, string? Notes = null);
+public sealed record CloseCashierShiftRequest(
+    decimal? ClosingCashAmount = null,
+    string? Notes = null,
+    IReadOnlyList<CashCountDenominationLineDto>? DenominationLines = null);
 
 public sealed record RecordCashierShiftMovementRequest(
     string MovementType,

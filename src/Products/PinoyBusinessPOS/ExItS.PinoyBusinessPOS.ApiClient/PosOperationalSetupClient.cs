@@ -31,6 +31,23 @@ public sealed class PosOperationalSetupClient(HttpClient httpClient, IConnectivi
         CancellationToken ct = default) =>
         SendAsync<PosOperationalSetupDto>(HttpMethod.Put, Path, request, ct);
 
+    public Task<ApiResult<List<OrganizationCashDenominationDto>>> ListCashDenominationsAsync(
+        CancellationToken ct = default) =>
+        SendAsync<List<OrganizationCashDenominationDto>>(
+            HttpMethod.Get,
+            $"{Path}/cash-denominations",
+            null,
+            ct);
+
+    public Task<ApiResult<List<OrganizationCashDenominationDto>>> ReplaceCashDenominationsAsync(
+        ReplaceCashDenominationsRequest request,
+        CancellationToken ct = default) =>
+        SendAsync<List<OrganizationCashDenominationDto>>(
+            HttpMethod.Put,
+            $"{Path}/cash-denominations",
+            request,
+            ct);
+
     private async Task<ApiResult<TResponse>> SendAsync<TResponse>(
         HttpMethod method,
         string path,

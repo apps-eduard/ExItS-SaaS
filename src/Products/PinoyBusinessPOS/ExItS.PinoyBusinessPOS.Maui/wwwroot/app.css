@@ -9784,7 +9784,20 @@ html.pos-keyboard-open .pos-content {
 .pos-shift-open__panel { margin-bottom: var(--exits-space-3, 0.75rem); }
 .pos-shift-open__section-title { color: var(--exits-text, #15201a); font-size: var(--exits-type-section, 0.95rem); font-weight: 650; line-height: 1.25; margin: 0 0 0.55rem; }
 .pos-shift-open__form { display: flex; flex-direction: column; gap: 0.65rem; }
+.pos-shift-open__cash-row { align-items: flex-end; display: flex; gap: 0.5rem; }
+.pos-shift-open__cash-row .exds-icon-btn { margin-bottom: 0.15rem; }
 .pos-shift-open__loading { align-items: center; display: flex; gap: 0.5rem; }
+.pos-denom-sheet { background: rgba(12, 18, 16, 0.45); inset: 0; position: fixed; z-index: 40; display: flex; align-items: flex-end; justify-content: center; }
+.pos-denom-sheet__panel { background: var(--exits-surface, #fff); border-radius: 16px 16px 0 0; max-height: 88vh; overflow: auto; padding: 1rem 1rem 1.25rem; width: min(28rem, 100%); }
+.pos-denom-sheet__header { align-items: center; display: flex; justify-content: space-between; gap: 0.75rem; }
+.pos-denom-sheet__title { font-size: 1.05rem; font-weight: 700; margin: 0; }
+.pos-denom-sheet__hint { margin: 0.35rem 0 0.75rem; }
+.pos-denom-sheet__rows { display: flex; flex-direction: column; gap: 0.45rem; list-style: none; margin: 0; padding: 0; }
+.pos-denom-sheet__row { align-items: center; display: grid; gap: 0.45rem; grid-template-columns: 5.5rem minmax(4rem, 1fr) auto 5.5rem; }
+.pos-denom-sheet__qty { border: 1px solid var(--exits-border, #c9d4cc); border-radius: 10px; font-size: 1.05rem; min-height: 2.6rem; padding: 0.35rem 0.5rem; text-align: right; }
+.pos-denom-sheet__line, .pos-denom-sheet__value { font-variant-numeric: tabular-nums; }
+.pos-denom-sheet__total { align-items: center; display: flex; justify-content: space-between; font-weight: 650; margin-top: 0.85rem; padding-top: 0.65rem; border-top: 1px solid var(--exits-border, #d9e2dc); }
+.pos-denom-sheet__actions { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 0.85rem; }
 
 
 /* Expense create */

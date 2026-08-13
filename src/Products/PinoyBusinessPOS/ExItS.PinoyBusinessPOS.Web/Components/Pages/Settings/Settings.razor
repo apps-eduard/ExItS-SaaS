@@ -35,17 +35,45 @@ else
             </div>
         </Card>
         <Card Size="@CardSize.Small" Title="Cash handling">
-            <p class="org-note">Cash Count mode is snapshotted onto new/open shifts. Already-open shifts keep their effective mode.</p>
+            <p class="org-note">Cash Count Policy. Changes apply to the next shift. An already-open shift keeps the policy it started with.</p>
             <label>
-                Cash count
+                Cash Count Policy
                 <select @bind="_cashCount">
-                    <option value="Off">Off — cashiers are not prompted to count</option>
-                    <option value="Optional">Optional — count may be skipped (skipped is not zero)</option>
-                    <option value="Required">Required — count is required to close</option>
+                    <option value="Required">Required — Recommended. Cashiers must count physical drawer cash when opening and closing shifts.</option>
+                    <option value="Optional">Optional. Cashiers may count physical cash or skip the count.</option>
                 </select>
             </label>
+            <p class="org-note">Denomination breakdown is a counting helper. The Cash Count total remains the authoritative accounting value.</p>
+            <table class="org-table">
+                <thead>
+                    <tr>
+                        <th>Value</th>
+                        <th>Enabled</th>
+                        <th>Order</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var denom in _denominations)
+                    {
+                        <tr>
+                            <td>PHP @denom.Value.ToString("N2")</td>
+                            <td><Checkbox Checked="@denom.IsEnabled" CheckedChanged="v => ToggleDenominationAsync(denom, v)" Disabled="@(!CanManage)" /></td>
+                            <td>@denom.SortOrder</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            @if (CanManage)
+            {
+                <div class="org-form">
+                    <ExitsField Label="Add denomination">
+                        <Input @bind-Value="_newDenomination" Placeholder="5000" />
+                    </ExitsField>
+                    <Button Type="@ButtonType.Default" Loading="_denomBusy" OnClick="AddDenominationAsync">Add denomination</Button>
+                </div>
+            }
         </Card>
-        @if (Shell.Can(UtangCapability.ManageOperationalSetup) || Shell.IsOrgOwner)
+        @if (CanManage)
         {
             <Button Type="@ButtonType.Primary" Loading="_busy" OnClick="SaveAsync">Save settings</Button>
         }
@@ -58,6 +86,7 @@ else
 
 @code {
     private bool _busy;
+    private bool _denomBusy;
     private string? _error;
     private string? _ok;
     private PosOperationalSetupDto? _dto;
@@ -69,7 +98,11 @@ else
     private string? _footer;
     private string? _address;
     private string? _phone;
-    private string _cashCount = "Optional";
+    private string _cashCount = "Required";
+    private string? _newDenomination;
+    private List<OrganizationCashDenominationDto> _denominations = [];
+
+    private bool CanManage => Shell.Can(UtangCapability.ManageOperationalSetup) || Shell.IsOrgOwner;
 
     protected override async Task OnInitializedAsync()
     {
@@ -81,6 +114,7 @@ else
         }
 
         Apply(result.Data);
+        await LoadDenominationsAsync();
     }
 
     private void Apply(PosOperationalSetupDto dto)
@@ -94,7 +128,69 @@ else
         _footer = dto.ReceiptFooter;
         _address = dto.BusinessAddress;
         _phone = dto.ContactPhone;
-        _cashCount = dto.CashCountMode;
+        _cashCount = string.Equals(dto.CashCountMode, "Off", StringComparison.OrdinalIgnoreCase)
+            ? "Optional"
+            : string.IsNullOrWhiteSpace(dto.CashCountMode) ? "Required" : dto.CashCountMode;
+    }
+
+    private async Task LoadDenominationsAsync()
+    {
+        var result = await Setup.ListCashDenominationsAsync();
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _denominations = result.Data.OrderBy(d => d.SortOrder).ThenBy(d => d.Value).ToList();
+        }
+    }
+
+    private Task ToggleDenominationAsync(OrganizationCashDenominationDto denom, bool enabled) =>
+        SaveDenominationsAsync(_denominations.Select(d => new CashDenominationWriteDto(
+            d.Value,
+            d.DenominationId == denom.DenominationId ? enabled : d.IsEnabled,
+            d.SortOrder,
+            d.DisplayLabel,
+            d.DenominationId)).ToList());
+
+    private async Task AddDenominationAsync()
+    {
+        if (!decimal.TryParse(_newDenomination, out var value) || value <= 0)
+        {
+            _error = "Denomination value must be greater than zero.";
+            return;
+        }
+
+        var items = _denominations
+            .Select(d => new CashDenominationWriteDto(d.Value, d.IsEnabled, d.SortOrder, d.DisplayLabel, d.DenominationId))
+            .ToList();
+        items.Add(new CashDenominationWriteDto(value, true, items.Count));
+        await SaveDenominationsAsync(items);
+        _newDenomination = null;
+    }
+
+    private async Task SaveDenominationsAsync(IReadOnlyList<CashDenominationWriteDto> items)
+    {
+        if (!CanManage)
+        {
+            return;
+        }
+
+        _denomBusy = true;
+        try
+        {
+            var result = await Setup.ReplaceCashDenominationsAsync(new ReplaceCashDenominationsRequest(items));
+            if (!result.IsSuccess || result.Data is null)
+            {
+                _error = OrgWebUi.Error(result.Error);
+                return;
+            }
+
+            _denominations = result.Data.OrderBy(d => d.SortOrder).ThenBy(d => d.Value).ToList();
+            _error = null;
+            _ok = "Denominations saved.";
+        }
+        finally
+        {
+            _denomBusy = false;
+        }
     }
 
     private async Task SaveAsync()

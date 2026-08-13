@@ -1,4 +1,5 @@
 using ExItS.PinoyBusinessPOS.Application.Common;
+using ExItS.PinoyBusinessPOS.Application.OperationalSetup;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.CashierShifts;
 using ExItS.PinoyBusinessPOS.Domain.Common;
@@ -113,7 +114,9 @@ public sealed class CashierShiftQueryService
             salesTotals.VoidedCashCount,
             salesTotals.CompletedGCashCount,
             salesTotals.CompletedUtangCount,
-            movements.Select(MapMovement).ToList());
+            movements.Select(MapMovement).ToList(),
+            shift.OpeningDenominationLines.Select(CashDenominationMapper.Map).ToList(),
+            shift.ClosingDenominationLines.Select(CashDenominationMapper.Map).ToList());
     }
 
     public static PosCashierShiftDto Map(CashierShift shift) =>
@@ -147,7 +150,9 @@ public sealed class CashierShiftQueryService
             shift.CancelledAtUtc,
             shift.CancelledBy,
             shift.CreatedAtUtc,
-            shift.UpdatedAtUtc);
+            shift.UpdatedAtUtc,
+            shift.OpeningDenominationLines.Select(CashDenominationMapper.Map).ToList(),
+            shift.ClosingDenominationLines.Select(CashDenominationMapper.Map).ToList());
 
     private async Task<PosCashierShiftDto> MapAsync(CashierShift shift, CancellationToken cancellationToken)
     {
@@ -180,17 +185,20 @@ public sealed class OpenCashierShift
     private readonly ICashierShiftRepository _shifts;
     private readonly IRegisterRepository _registers;
     private readonly IPosOperationalSetupRepository _setups;
+    private readonly IOrganizationCashDenominationRepository _denominations;
     private readonly IClock _clock;
 
     public OpenCashierShift(
         ICashierShiftRepository shifts,
         IRegisterRepository registers,
         IPosOperationalSetupRepository setups,
+        IOrganizationCashDenominationRepository denominations,
         IClock clock)
     {
         _shifts = shifts;
         _registers = registers;
         _setups = setups;
+        _denominations = denominations;
         _clock = clock;
     }
 
@@ -200,6 +208,7 @@ public sealed class OpenCashierShift
         Guid registerId,
         decimal? openingCashAmount,
         DateOnly? businessDate = null,
+        IReadOnlyList<CashCountDenominationLineDto>? denominationLines = null,
         CancellationToken cancellationToken = default)
     {
         if (actorId == Guid.Empty)
@@ -246,7 +255,16 @@ public sealed class OpenCashierShift
             var utcNow = _clock.UtcNow;
             var date = businessDate ?? CashierShiftNumbers.BusinessDateOf(utcNow);
             var setup = await _setups.GetByOrganizationIdAsync(orgId, cancellationToken).ConfigureAwait(false);
-            var cashCountMode = setup?.CashCountMode ?? CashCountMode.Optional;
+            var cashCountMode = CashCountModes.ForNewShift(setup?.CashCountMode ?? CashCountMode.Required);
+            var openingLines = CashDenominationMapper.ParseSubmittedLines(denominationLines, openingCashAmount);
+            if (openingLines.Count > 0)
+            {
+                var configured = await _denominations.ListAsync(orgId, cancellationToken).ConfigureAwait(false);
+                CashCountDenominationBreakdown.EnsureConfigured(
+                    openingLines,
+                    configured.Where(d => d.IsEnabled).Select(d => d.Value).ToHashSet());
+            }
+
             var shift = await _shifts
                 .OpenAsync(
                     orgId,
@@ -262,7 +280,8 @@ public sealed class OpenCashierShift
                         openingCashAmount,
                         utcNow,
                         date,
-                        cashCountMode: cashCountMode),
+                        cashCountMode: cashCountMode,
+                        openingDenominationLines: openingLines),
                     cancellationToken)
                 .ConfigureAwait(false);
 
@@ -282,11 +301,16 @@ public sealed class OpenCashierShift
 public sealed class CloseCashierShift
 {
     private readonly ICashierShiftRepository _shifts;
+    private readonly IOrganizationCashDenominationRepository _denominations;
     private readonly IClock _clock;
 
-    public CloseCashierShift(ICashierShiftRepository shifts, IClock clock)
+    public CloseCashierShift(
+        ICashierShiftRepository shifts,
+        IOrganizationCashDenominationRepository denominations,
+        IClock clock)
     {
         _shifts = shifts;
+        _denominations = denominations;
         _clock = clock;
     }
 
@@ -296,6 +320,7 @@ public sealed class CloseCashierShift
         decimal? closingCashAmount,
         Guid actorId,
         string? notes = null,
+        IReadOnlyList<CashCountDenominationLineDto>? denominationLines = null,
         CancellationToken cancellationToken = default)
     {
         if (actorId == Guid.Empty)
@@ -331,7 +356,16 @@ public sealed class CloseCashierShift
                 movements,
                 salesTotals.CashRefundsTotal);
 
-            shift.Close(closingCashAmount, expected, actorId, _clock.UtcNow, notes);
+            var closingLines = CashDenominationMapper.ParseSubmittedLines(denominationLines, closingCashAmount);
+            if (closingLines.Count > 0)
+            {
+                var configured = await _denominations.ListAsync(orgId, cancellationToken).ConfigureAwait(false);
+                CashCountDenominationBreakdown.EnsureConfigured(
+                    closingLines,
+                    configured.Where(d => d.IsEnabled).Select(d => d.Value).ToHashSet());
+            }
+
+            shift.Close(closingCashAmount, expected, actorId, _clock.UtcNow, notes, closingLines);
             await _shifts.UpdateAsync(shift, cancellationToken).ConfigureAwait(false);
             return ApplicationResult<CashierShift>.Success(shift);
         }

@@ -5,6 +5,7 @@
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IPosCashierShiftClient Shifts
+@inject IPosOperationalSetupClient SetupClient
 @inject IPlatformAccessClient Platform
 @inject IUtangCapabilityEvaluator Capabilities
 @inject IConnectivityService Connectivity
@@ -121,8 +122,8 @@ else
                 </dd>
             </div>
             <div class="pos-shift-detail__total-row">
-                <dt>@L["Shifts_NetCashSales"]</dt>
-                <dd><MoneyDisplay Amount="@(_summary?.NetCashSales ?? 0m)" CurrencyCode="PHP" /></dd>
+                <dt>@L["Shifts_CashSales"]</dt>
+                <dd><MoneyDisplay Amount="@(_summary?.CashSalesTotal ?? _summary?.NetCashSales ?? 0m)" CurrencyCode="PHP" /></dd>
             </div>
             <div class="pos-shift-detail__total-row">
                 <dt>@L["Shifts_CashIn"]</dt>
@@ -132,10 +133,17 @@ else
                 <dt>@L["Shifts_CashOut"]</dt>
                 <dd><MoneyDisplay Amount="@(_summary?.TotalCashOut ?? 0m)" CurrencyCode="PHP" /></dd>
             </div>
-            <div class="pos-shift-detail__total-row pos-shift-detail__total-row--emphasis">
-                <dt>@L["Shifts_ExpectedCash"]</dt>
-                <dd><MoneyDisplay Amount="@expectedCash" CurrencyCode="PHP" Emphasized="true" /></dd>
+            <div class="pos-shift-detail__total-row">
+                <dt>@L["Shifts_CashRefunds"]</dt>
+                <dd><MoneyDisplay Amount="@(_summary?.CashRefundsTotal ?? 0m)" CurrencyCode="PHP" /></dd>
             </div>
+            @if (!isOpen)
+            {
+                <div class="pos-shift-detail__total-row pos-shift-detail__total-row--emphasis">
+                    <dt>@L["Shifts_ExpectedCash"]</dt>
+                    <dd><MoneyDisplay Amount="@expectedCash" CurrencyCode="PHP" Emphasized="true" /></dd>
+                </div>
+            }
             @if (isClosed)
             {
                 <div class="pos-shift-detail__total-row">
@@ -155,6 +163,29 @@ else
                             <span class="pos-shift-detail__variance-label pos-muted">@VarianceLabel(_shift.CashVarianceAmount ?? 0m)</span>
                         </dd>
                     </div>
+                    <div class="pos-shift-detail__total-row">
+                        <dt>@L["Shifts_VarianceStatus"]</dt>
+                        <dd>@VarianceLabel(_shift.CashVarianceAmount ?? 0m)</dd>
+                    </div>
+                    @if ((_shift.ClosingDenominationLines?.Count ?? 0) > 0)
+                    {
+                        <Button Variant="ButtonVariant.Ghost" OnClick="() => _showClosingBreakdown = !_showClosingBreakdown">
+                            @L["Shifts_ViewDenominationBreakdown"]
+                        </Button>
+                        @if (_showClosingBreakdown)
+                        {
+                            <ul class="pos-denom-sheet__rows">
+                                @foreach (var line in _shift.ClosingDenominationLines!)
+                                {
+                                    <li class="pos-denom-sheet__row">
+                                        <span>@($"PHP {line.DenominationValue:N2}")</span>
+                                        <span>@line.Quantity</span>
+                                        <span>@($"PHP {line.LineTotal ?? line.DenominationValue * line.Quantity:N2}")</span>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                    }
                 }
                 @if (!string.IsNullOrWhiteSpace(_shift.ClosingNotes))
                 {
@@ -271,32 +302,22 @@ else
             else if (!_confirmClose)
             {
                 <Stack Gap="3">
-                    <div class="pos-shift-detail__reconcile-row">
-                        <span class="pos-muted">@L["Shifts_ExpectedCash"]</span>
-                        <MoneyDisplay Amount="@expectedCash" CurrencyCode="PHP" Emphasized="true" />
-                    </div>
                     @if (!closingOff)
                     {
-                        <NumberInput Label="@L["Shifts_CountedCash"]"
-                                     Value="@_closingCash"
-                                     ValueChanged="OnClosingCashChanged"
-                                     DecimalPlaces="2"
-                                     Required="@closingRequired"
-                                     Disabled="@(!onlineActionsEnabled || _closing)"
-                                     IsInvalid="@(!string.IsNullOrEmpty(_closingCashError))"
-                                     ErrorText="@_closingCashError" />
-                    }
-                    @if (variancePreview is not null)
-                    {
-                        <div class="pos-shift-detail__reconcile-row"
-                             role="status"
-                             aria-live="polite"
-                             aria-label="@($"{L["Shifts_Difference"]}: {variancePreview.Value:0.00}, {VarianceLabel(variancePreview.Value)}")">
-                            <span>
-                                @L["Shifts_Difference"]
-                                <span class="pos-shift-detail__variance-label pos-muted">@VarianceLabel(variancePreview.Value)</span>
-                            </span>
-                            <MoneyDisplay Amount="@variancePreview.Value" CurrencyCode="PHP" Emphasized="true" />
+                        <p class="pos-muted">@(closingRequired ? L["Shifts_ClosingCashHelpRequired"] : L["Shifts_ClosingCashHelpOptional"])</p>
+                        <div class="pos-shift-open__cash-row">
+                            <NumberInput Label="@L["Shifts_CashOnHand"]"
+                                         Value="@_closingCash"
+                                         ValueChanged="OnClosingCashChanged"
+                                         DecimalPlaces="2"
+                                         Required="@closingRequired"
+                                         Disabled="@(!onlineActionsEnabled || _closing)"
+                                         IsInvalid="@(!string.IsNullOrEmpty(_closingCashError))"
+                                         ErrorText="@_closingCashError" />
+                            <IconButton AriaLabel="@L["Shifts_CountByDenomination"]"
+                                        IconName="cash"
+                                        Disabled="@(!onlineActionsEnabled || _closing || _denominations.Count == 0)"
+                                        OnClick="() => _showDenominationHelper = true" />
                         </div>
                     }
                     <TextInput Label="@L["Shifts_ClosingNotes"]"
@@ -408,6 +429,11 @@ else
     }
 </Page>
 
+    <DenominationCountSheet Visible="@_showDenominationHelper"
+                            VisibleChanged="v => _showDenominationHelper = v"
+                            Denominations="@_denominations"
+                            OnUseTotal="OnClosingDenominationTotal" />
+
     <ConfirmDialog Visible="@_confirmCancel"
                    VisibleChanged="v => _confirmCancel = v"
                    Title="@L["Shifts_CancelTitle"]"
@@ -447,6 +473,10 @@ else
     private decimal? _closingCash;
     private string? _closingNotes;
     private string? _closingCashError;
+    private bool _showDenominationHelper;
+    private bool _showClosingBreakdown;
+    private IReadOnlyList<OrganizationCashDenominationDto> _denominations = Array.Empty<OrganizationCashDenominationDto>();
+    private IReadOnlyList<CashCountDenominationLineDto>? _closingLines;
     private readonly Dictionary<Guid, string> _nameById = new();
 
     private IReadOnlyList<SelectOption> MovementOptions =>
@@ -509,6 +539,15 @@ else
 
         Connectivity.ConnectivityChanged += OnConnectivityChanged;
         _isOffline = !await Connectivity.IsConnectedAsync();
+        if (!_isOffline)
+        {
+            var denoms = await SetupClient.ListCashDenominationsAsync();
+            if (denoms.IsSuccess && denoms.Data is not null)
+            {
+                _denominations = denoms.Data.Where(d => d.IsEnabled).OrderByDescending(d => d.Value).ToList();
+            }
+        }
+
         _ready = true;
         await ReloadAsync();
     }
@@ -646,6 +685,18 @@ else
     private void OnClosingCashChanged(decimal? value)
     {
         _closingCash = value;
+        _closingCashError = null;
+        if (_closingLines is { Count: > 0 }
+            && (value is null || _closingLines.Sum(l => l.DenominationValue * l.Quantity) != value.Value))
+        {
+            _closingLines = null;
+        }
+    }
+
+    private void OnClosingDenominationTotal((decimal Total, IReadOnlyList<CashCountDenominationLineDto> Lines) result)
+    {
+        _closingCash = result.Total;
+        _closingLines = result.Lines;
         _closingCashError = null;
     }
 
@@ -790,7 +841,10 @@ else
         {
             var result = await Shifts.CloseAsync(
                 ShiftId,
-                new CloseCashierShiftRequest(_closingCash, string.IsNullOrWhiteSpace(_closingNotes) ? null : _closingNotes.Trim()));
+                new CloseCashierShiftRequest(
+                    _closingCash,
+                    string.IsNullOrWhiteSpace(_closingNotes) ? null : _closingNotes.Trim(),
+                    _closingCash is null ? null : _closingLines));
 
             if (result.IsSuccess)
             {

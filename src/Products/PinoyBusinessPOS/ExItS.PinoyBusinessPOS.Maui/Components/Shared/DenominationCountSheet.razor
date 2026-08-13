@@ -1,0 +1,119 @@
+@using ExItS.DesignSystem.Components.Internal
+
+@if (Visible)
+{
+    <div class="pos-denom-sheet" role="dialog" aria-modal="true" aria-labelledby="pos-denom-sheet-title">
+        <div class="pos-denom-sheet__panel">
+            <header class="pos-denom-sheet__header">
+                <h2 id="pos-denom-sheet-title" class="pos-denom-sheet__title">@L["Shifts_DenominationTitle"]</h2>
+                <IconButton AriaLabel="@L["Shifts_DenominationClose"]" IconName="close" OnClick="DismissAsync" />
+            </header>
+            <p class="pos-denom-sheet__hint pos-muted">@L["Shifts_DenominationHint"]</p>
+            <div class="pos-denom-sheet__rows">
+                @foreach (var row in _rows)
+                {
+                    <div class="pos-denom-sheet__row">
+                        <span class="pos-denom-sheet__value">@FormatMoney(row.Value)</span>
+                        <input class="pos-denom-sheet__qty"
+                               type="number"
+                               inputmode="numeric"
+                               min="0"
+                               step="1"
+                               value="@row.Quantity"
+                               aria-label="@string.Format(L["Shifts_DenominationQtyLabel"].Value, FormatMoney(row.Value))"
+                               @onchange="e => OnQuantityChanged(row.Value, e.Value)" />
+                        <span class="pos-denom-sheet__pcs pos-muted">@L["Shifts_DenominationPcs"]</span>
+                        <span class="pos-denom-sheet__line">@FormatMoney(row.LineTotal)</span>
+                    </div>
+                }
+            </div>
+            <div class="pos-denom-sheet__total">
+                <span>@L["Shifts_DenominationCalculatedTotal"]</span>
+                <strong>@FormatMoney(CalculatedTotal)</strong>
+            </div>
+            <div class="pos-denom-sheet__actions">
+                <Button Variant="ButtonVariant.Secondary" OnClick="Reset">@L["Shifts_DenominationReset"]</Button>
+                <Button Variant="ButtonVariant.Primary" OnClick="UseTotalAsync">@L["Shifts_DenominationUseTotal"]</Button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool Visible { get; set; }
+    [Parameter] public EventCallback<bool> VisibleChanged { get; set; }
+    [Parameter] public IReadOnlyList<OrganizationCashDenominationDto> Denominations { get; set; } = [];
+    [Parameter] public EventCallback<(decimal Total, IReadOnlyList<CashCountDenominationLineDto> Lines)> OnUseTotal { get; set; }
+    [Inject] private IStringLocalizer<PosResources> L { get; set; } = default!;
+
+    private List<Row> _rows = [];
+
+    protected override void OnParametersSet()
+    {
+        if (!Visible)
+        {
+            return;
+        }
+
+        var enabled = Denominations
+            .Where(d => d.IsEnabled)
+            .OrderByDescending(d => d.Value)
+            .ToList();
+        if (_rows.Count == enabled.Count
+            && _rows.Zip(enabled, (row, denom) => row.Value == denom.Value).All(x => x))
+        {
+            return;
+        }
+
+        _rows = enabled
+            .Select(d => new Row(d.Value, 0))
+            .ToList();
+    }
+
+    private decimal CalculatedTotal => _rows.Sum(r => r.LineTotal);
+
+    private void OnQuantityChanged(decimal value, object? raw)
+    {
+        var qty = 0;
+        if (raw is not null && int.TryParse(raw.ToString(), out var parsed) && parsed >= 0)
+        {
+            qty = parsed;
+        }
+
+        var index = _rows.FindIndex(r => r.Value == value);
+        if (index >= 0)
+        {
+            _rows[index] = new Row(value, qty);
+        }
+    }
+
+    private void Reset()
+    {
+        _rows = _rows.Select(r => new Row(r.Value, 0)).ToList();
+    }
+
+    private async Task UseTotalAsync()
+    {
+        var lines = _rows
+            .Select(r => new CashCountDenominationLineDto(r.Value, r.Quantity, r.LineTotal))
+            .ToList();
+        await OnUseTotal.InvokeAsync((CalculatedTotal, lines));
+        await SetVisibleAsync(false);
+    }
+
+    private Task DismissAsync() => SetVisibleAsync(false);
+
+    private async Task SetVisibleAsync(bool visible)
+    {
+        Visible = visible;
+        await VisibleChanged.InvokeAsync(visible);
+    }
+
+    private static string FormatMoney(decimal amount) =>
+        string.Create(CultureInfo.GetCultureInfo("en-PH"), $"PHP {amount:N2}");
+
+    private sealed record Row(decimal Value, int Quantity)
+    {
+        public decimal LineTotal => decimal.Round(Value * Quantity, 2, MidpointRounding.AwayFromZero);
+    }
+}

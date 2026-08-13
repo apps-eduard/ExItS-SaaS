@@ -222,6 +222,8 @@ builder.Services.AddScoped<DeactivateRegister>();
 builder.Services.AddScoped<GetOperationalSetupQuery>();
 builder.Services.AddScoped<CompleteOperationalSetup>();
 builder.Services.AddScoped<UpdateOperationalSetup>();
+builder.Services.AddScoped<ListCashDenominationsQuery>();
+builder.Services.AddScoped<ReplaceCashDenominations>();
 builder.Services.AddScoped<PurchaseOrderQueryService>();
 builder.Services.AddScoped<GoodsReceiptQueryService>();
 builder.Services.AddScoped<CreatePurchaseOrder>();

@@ -86,6 +86,37 @@ internal static class OperationalSetupEndpoints
             return PosApiResults.FromResult(result, Results.Ok);
         });
 
+        group.MapGet("/cash-denominations", async (
+            HttpRequest request,
+            ListCashDenominationsQuery query,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!TryAuthorize(request, access, UtangCapability.ViewOperationalSetup, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            var items = await query.ExecuteAsync(organizationId, ct).ConfigureAwait(false);
+            return Results.Ok(items);
+        });
+
+        group.MapPut("/cash-denominations", async (
+            HttpRequest request,
+            ReplaceCashDenominationsRequest body,
+            ReplaceCashDenominations useCase,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!TryAuthorize(request, access, UtangCapability.ManageOperationalSetup, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            var result = await useCase.ExecuteAsync(organizationId, body, ct).ConfigureAwait(false);
+            return PosApiResults.FromResult(result, Results.Ok);
+        });
+
         return app;
     }
 

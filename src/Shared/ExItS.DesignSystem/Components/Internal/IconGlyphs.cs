@@ -45,6 +45,7 @@ public static class IconGlyphs
         ["cloud-off"] = "<path d=\"M17.5 19H9a6 6 0 1 1 0.5-12 6.5 6.5 0 0 1 11.3 3.2\"/><path d=\"M22 17a3 3 0 0 0-3.5-2.9\"/><path d=\"m2 2 20 20\"/>",
         ["bell"] = "<path d=\"M6.5 17h11\"/><path d=\"M9.5 17v1.2a2.5 2.5 0 0 0 5 0V17\"/><path d=\"M18 17H6l.7-1.4a2 2 0 0 0 .2-1.1V10a5.1 5.1 0 0 1 10.2 0v4.5c0 .4.1.8.2 1.1L18 17Z\"/><path d=\"M12 4.2V3\"/>",
         ["lock"] = "<rect x=\"5\" y=\"11\" width=\"14\" height=\"10\" rx=\"2\"/><path d=\"M8 11V8a4 4 0 0 1 8 0v3\"/>",
+        ["cash"] = "<rect x=\"2\" y=\"6\" width=\"20\" height=\"12\" rx=\"2\"/><circle cx=\"12\" cy=\"12\" r=\"2.4\"/><path d=\"M6 9.5v5\"/><path d=\"M18 9.5v5\"/>",
     };
 
     private const string Fallback = "<circle cx=\"12\" cy=\"12\" r=\"2\" fill=\"currentColor\" stroke=\"none\"/>";

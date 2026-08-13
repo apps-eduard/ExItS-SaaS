@@ -29,7 +29,7 @@ internal sealed class CashierShiftRepository : ICashierShiftRepository
                 s => s.Id == shiftId.Value && s.OrganizationId == organizationId.Value,
                 cancellationToken)
             .ConfigureAwait(false);
-        return record is null ? null : CashierShiftEntityMapper.ToDomain(record);
+        return record is null ? null : await ToDomainAsync(record, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<CashierShift?> FindOpenForActorAsync(
@@ -44,7 +44,7 @@ internal sealed class CashierShiftRepository : ICashierShiftRepository
                      && s.Status == nameof(CashierShiftStatus.Open),
                 cancellationToken)
             .ConfigureAwait(false);
-        return record is null ? null : CashierShiftEntityMapper.ToDomain(record);
+        return record is null ? null : await ToDomainAsync(record, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<CashierShift?> FindOpenForRegisterAsync(
@@ -59,7 +59,7 @@ internal sealed class CashierShiftRepository : ICashierShiftRepository
                      && s.Status == nameof(CashierShiftStatus.Open),
                 cancellationToken)
             .ConfigureAwait(false);
-        return record is null ? null : CashierShiftEntityMapper.ToDomain(record);
+        return record is null ? null : await ToDomainAsync(record, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<(IReadOnlyList<CashierShift> Items, int TotalCount)> ListAsync(
@@ -113,7 +113,7 @@ internal sealed class CashierShiftRepository : ICashierShiftRepository
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        return (records.Select(CashierShiftEntityMapper.ToDomain).ToList(), total);
+        return (records.Select(record => CashierShiftEntityMapper.ToDomain(record)).ToList(), total);
     }
 
     public Task<CashierShift> OpenAsync(
@@ -131,6 +131,11 @@ internal sealed class CashierShiftRepository : ICashierShiftRepository
             {
                 var shift = createShift(number);
                 _db.CashierShifts.Add(CashierShiftEntityMapper.ToRecord(shift));
+                foreach (var line in CashierShiftEntityMapper.ToLineRecords(shift))
+                {
+                    _db.CashierShiftCashCountLines.Add(line);
+                }
+
                 return shift;
             },
             ApplicationErrorCodes.CashierShiftNumberConflict,
@@ -154,6 +159,7 @@ internal sealed class CashierShiftRepository : ICashierShiftRepository
         }
 
         CashierShiftEntityMapper.ApplyToRecord(shift, record);
+        await SyncCountLinesAsync(shift, cancellationToken).ConfigureAwait(false);
         try
         {
             await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
@@ -423,4 +429,33 @@ internal sealed class CashierShiftRepository : ICashierShiftRepository
     private static bool IsMovementConflict(DbUpdateException exception) =>
         exception.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation } pg
         && (pg.ConstraintName ?? string.Empty).Contains("pk_cashier_shift_movements", StringComparison.OrdinalIgnoreCase);
+
+    private async Task<CashierShift> ToDomainAsync(CashierShiftRecord record, CancellationToken cancellationToken)
+    {
+        var lines = await _db.CashierShiftCashCountLines.AsNoTracking()
+            .Where(l => l.OrganizationId == record.OrganizationId && l.ShiftId == record.Id)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return CashierShiftEntityMapper.ToDomain(record, lines);
+    }
+
+    private async Task SyncCountLinesAsync(CashierShift shift, CancellationToken cancellationToken)
+    {
+        var existing = await _db.CashierShiftCashCountLines
+            .Where(l => l.OrganizationId == shift.OrganizationId.Value && l.ShiftId == shift.Id.Value)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        // Historical lines are append-once per count kind. Repeated close must not duplicate or overwrite.
+        var existingKinds = existing.Select(l => l.CountKind).ToHashSet(StringComparer.Ordinal);
+        foreach (var line in CashierShiftEntityMapper.ToLineRecords(shift))
+        {
+            if (existingKinds.Contains(line.CountKind))
+            {
+                continue;
+            }
+
+            _db.CashierShiftCashCountLines.Add(line);
+        }
+    }
 }

@@ -99,7 +99,7 @@ public sealed class PosOperationalSetup
             null,
             null,
             null,
-            CashCountMode.Optional,
+            CashCountMode.Required,
             isCompleted: false,
             completedAtUtc: null,
             utcNow,
@@ -124,7 +124,7 @@ public sealed class PosOperationalSetup
         Guid createdBy,
         DateTimeOffset updatedAtUtc,
         Guid updatedBy,
-        CashCountMode cashCountMode = CashCountMode.Optional) =>
+        CashCountMode cashCountMode = CashCountMode.Required) =>
         new(
             organizationId,
             storeDisplayName,
@@ -156,7 +156,7 @@ public sealed class PosOperationalSetup
         RegisterId defaultRegisterId,
         Guid actorId,
         DateTimeOffset utcNow,
-        CashCountMode cashCountMode = CashCountMode.Optional)
+        CashCountMode cashCountMode = CashCountMode.Required)
     {
         SaleMoney.EnsureUtc(utcNow);
         SaleMoney.EnsureActor(actorId);

@@ -117,6 +117,7 @@ public sealed class CompleteOperationalSetup
 
     private readonly IPosOperationalSetupRepository _setups;
     private readonly IRegisterRepository _registers;
+    private readonly IOrganizationCashDenominationRepository _denominations;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IPosCommercialAccessAccessor _access;
     private readonly TimeProvider _clock;
@@ -124,12 +125,14 @@ public sealed class CompleteOperationalSetup
     public CompleteOperationalSetup(
         IPosOperationalSetupRepository setups,
         IRegisterRepository registers,
+        IOrganizationCashDenominationRepository denominations,
         IPosUnitOfWork unitOfWork,
         IPosCommercialAccessAccessor access,
         TimeProvider? clock = null)
     {
         _setups = setups;
         _registers = registers;
+        _denominations = denominations;
         _unitOfWork = unitOfWork;
         _access = access;
         _clock = clock ?? TimeProvider.System;
@@ -184,7 +187,7 @@ public sealed class CompleteOperationalSetup
                 defaultRegister.Id,
                 actorId,
                 utcNow,
-                CashCountModes.Parse(request.CashCountMode));
+                CashCountModes.ParseConfigurable(request.CashCountMode));
 
             if (isNew)
             {
@@ -195,6 +198,9 @@ public sealed class CompleteOperationalSetup
                 await _setups.UpdateAsync(setup, cancellationToken).ConfigureAwait(false);
             }
 
+            await DefaultCashDenominationSeeder
+                .EnsureAsync(_denominations, org, utcNow, cancellationToken)
+                .ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             return ApplicationResult<PosOperationalSetupDto>.Success(OperationalSetupMapper.Map(setup));
         }
@@ -311,7 +317,7 @@ public sealed class UpdateOperationalSetup
                 request.ContactPhone,
                 actorId,
                 _clock.GetUtcNow(),
-                CashCountModes.Parse(request.CashCountMode, setup.CashCountMode));
+                CashCountModes.ParseConfigurable(request.CashCountMode, CashCountModes.ForNewShift(setup.CashCountMode)));
 
             await _setups.UpdateAsync(setup, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);

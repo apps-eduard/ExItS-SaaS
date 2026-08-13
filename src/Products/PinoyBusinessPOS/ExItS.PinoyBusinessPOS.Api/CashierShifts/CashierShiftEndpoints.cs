@@ -131,7 +131,14 @@ internal static class CashierShiftEndpoints
             }
 
             var result = await useCase
-                .ExecuteAsync(organizationId, actorId, body.RegisterId, body.OpeningCashAmount, body.BusinessDate, ct)
+                .ExecuteAsync(
+                    organizationId,
+                    actorId,
+                    body.RegisterId,
+                    body.OpeningCashAmount,
+                    body.BusinessDate,
+                    body.DenominationLines,
+                    ct)
                 .ConfigureAwait(false);
             return PosApiResults.FromResult(
                 result,
@@ -161,7 +168,14 @@ internal static class CashierShiftEndpoints
             }
 
             var result = await useCase
-                .ExecuteAsync(organizationId, shiftId, body.ClosingCashAmount, actorId, body.Notes, ct)
+                .ExecuteAsync(
+                    organizationId,
+                    shiftId,
+                    body.ClosingCashAmount,
+                    actorId,
+                    body.Notes,
+                    body.DenominationLines,
+                    ct)
                 .ConfigureAwait(false);
             return PosApiResults.FromResult(result, shift => Results.Ok(CashierShiftQueryService.Map(shift)));
         });

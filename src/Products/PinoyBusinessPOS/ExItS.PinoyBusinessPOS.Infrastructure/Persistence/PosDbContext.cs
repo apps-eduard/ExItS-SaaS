@@ -80,6 +80,8 @@ public sealed class PosDbContext : DbContext
     internal DbSet<CashierShiftRecord> CashierShifts => Set<CashierShiftRecord>();
     internal DbSet<CashierShiftMovementRecord> CashierShiftMovements => Set<CashierShiftMovementRecord>();
     internal DbSet<CashierShiftNumberSequenceRecord> CashierShiftNumberSequences => Set<CashierShiftNumberSequenceRecord>();
+    internal DbSet<CashierShiftCashCountLineRecord> CashierShiftCashCountLines => Set<CashierShiftCashCountLineRecord>();
+    internal DbSet<OrganizationCashDenominationRecord> OrganizationCashDenominations => Set<OrganizationCashDenominationRecord>();
     internal DbSet<Permissions.PosRoleAssignmentRecord> PosRoleAssignments => Set<Permissions.PosRoleAssignmentRecord>();
     internal DbSet<RegisterRecord> Registers => Set<RegisterRecord>();
     internal DbSet<RegisterCodeSequenceRecord> RegisterCodeSequences => Set<RegisterCodeSequenceRecord>();
@@ -2325,7 +2327,7 @@ public sealed class PosDbContext : DbContext
                     "(is_completed = FALSE AND completed_at_utc IS NULL) OR (is_completed = TRUE AND completed_at_utc IS NOT NULL)");
                 tb.HasCheckConstraint(
                     "ck_operational_setups_cash_count_mode",
-                    "cash_count_mode IN ('Off', 'Optional', 'Required')");
+                    "cash_count_mode IN ('Optional', 'Required')");
             });
 
             entity.HasKey(e => e.OrganizationId);
@@ -2363,7 +2365,7 @@ public sealed class PosDbContext : DbContext
                 .HasColumnName("cash_count_mode")
                 .HasMaxLength(16)
                 .IsRequired()
-                .HasDefaultValue("Optional");
+                .HasDefaultValue("Required");
             entity.Property(e => e.IsCompleted).HasColumnName("is_completed").IsRequired();
             entity.Property(e => e.CompletedAtUtc).HasColumnName("completed_at_utc");
             entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
@@ -2381,6 +2383,79 @@ public sealed class PosDbContext : DbContext
                 .HasForeignKey(e => e.DefaultRegisterId)
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("fk_operational_setups_default_register");
+        });
+
+        modelBuilder.Entity<OrganizationCashDenominationRecord>(entity =>
+        {
+            entity.ToTable("organization_cash_denominations", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_organization_cash_denominations_value_positive",
+                    "value > 0");
+                tb.HasCheckConstraint(
+                    "ck_organization_cash_denominations_sort_order_non_negative",
+                    "sort_order >= 0");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.Value).HasColumnName("value").HasPrecision(18, 2).IsRequired();
+            entity.Property(e => e.DisplayLabel)
+                .HasColumnName("display_label")
+                .HasMaxLength(OrganizationCashDenomination.DisplayLabelMaxLength);
+            entity.Property(e => e.IsEnabled).HasColumnName("is_enabled").IsRequired();
+            entity.Property(e => e.SortOrder).HasColumnName("sort_order").IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.Value })
+                .IsUnique()
+                .HasDatabaseName("ux_organization_cash_denominations_org_value");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.SortOrder })
+                .HasDatabaseName("ix_organization_cash_denominations_org_sort");
+        });
+
+        modelBuilder.Entity<CashierShiftCashCountLineRecord>(entity =>
+        {
+            entity.ToTable("cashier_shift_cash_count_lines", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_cashier_shift_cash_count_lines_kind",
+                    "count_kind IN ('Opening', 'Closing')");
+                tb.HasCheckConstraint(
+                    "ck_cashier_shift_cash_count_lines_value_positive",
+                    "denomination_value > 0");
+                tb.HasCheckConstraint(
+                    "ck_cashier_shift_cash_count_lines_quantity_non_negative",
+                    "quantity >= 0");
+                tb.HasCheckConstraint(
+                    "ck_cashier_shift_cash_count_lines_line_total_non_negative",
+                    "line_total >= 0");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.ShiftId).HasColumnName("shift_id").IsRequired();
+            entity.Property(e => e.CountKind).HasColumnName("count_kind").HasMaxLength(16).IsRequired();
+            entity.Property(e => e.DenominationValue).HasColumnName("denomination_value").HasPrecision(18, 2).IsRequired();
+            entity.Property(e => e.Quantity).HasColumnName("quantity").IsRequired();
+            entity.Property(e => e.LineTotal).HasColumnName("line_total").HasPrecision(18, 2).IsRequired();
+
+            entity.HasIndex(e => new { e.ShiftId, e.CountKind, e.DenominationValue })
+                .IsUnique()
+                .HasDatabaseName("ux_cashier_shift_cash_count_lines_shift_kind_value");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.ShiftId, e.CountKind })
+                .HasDatabaseName("ix_cashier_shift_cash_count_lines_org_shift_kind");
+
+            entity.HasOne<CashierShiftRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.ShiftId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_cashier_shift_cash_count_lines_shifts");
         });
     }
 }

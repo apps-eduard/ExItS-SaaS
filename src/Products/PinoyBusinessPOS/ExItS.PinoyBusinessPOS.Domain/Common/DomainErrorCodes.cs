@@ -224,6 +224,16 @@ public static class DomainErrorCodes
     public const string InvalidCashierShiftOpeningCash = "pos.cashier_shift.opening_cash.invalid";
     public const string InvalidCashierShiftClosingCash = "pos.cashier_shift.closing_cash.invalid";
     public const string InvalidCashCountMode = "pos.operational_setup.cash_count_mode.invalid";
+    public const string CashCountModeOffRetired = "pos.operational_setup.cash_count_mode.off_retired";
+    public const string InvalidCashDenominationId = "pos.operational_setup.cash_denomination.id.invalid";
+    public const string InvalidCashDenominationValue = "pos.operational_setup.cash_denomination.value.invalid";
+    public const string InvalidCashDenominationQuantity = "pos.cashier_shift.cash_denomination.quantity.invalid";
+    public const string InvalidCashDenominationSortOrder = "pos.operational_setup.cash_denomination.sort_order.invalid";
+    public const string InvalidCashDenominationLabel = "pos.operational_setup.cash_denomination.label.invalid";
+    public const string DuplicateCashDenomination = "pos.operational_setup.cash_denomination.duplicate";
+    public const string CashCountDenominationDuplicateLine = "pos.cashier_shift.cash_denomination.duplicate_line";
+    public const string CashCountDenominationTotalMismatch = "pos.cashier_shift.cash_denomination.total_mismatch";
+    public const string CashCountDenominationNotConfigured = "pos.cashier_shift.cash_denomination.not_configured";
     public const string CashierShiftOpeningCashCountRequired = "pos.cashier_shift.opening_cash_count.required";
     public const string CashierShiftClosingCashCountRequired = "pos.cashier_shift.closing_cash_count.required";
     public const string InvalidCashierShiftClosingNotes = "pos.cashier_shift.closing_notes.invalid";

@@ -7,8 +7,12 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence;
 
 internal static class CashierShiftEntityMapper
 {
-    public static CashierShift ToDomain(CashierShiftRecord record) =>
-        CashierShift.Rehydrate(
+    public static CashierShift ToDomain(
+        CashierShiftRecord record,
+        IReadOnlyList<CashierShiftCashCountLineRecord>? countLines = null)
+    {
+        var lines = countLines ?? Array.Empty<CashierShiftCashCountLineRecord>();
+        return CashierShift.Rehydrate(
             CashierShiftId.From(record.Id),
             PosOrganizationId.From(record.OrganizationId),
             record.ShiftNumber,
@@ -30,7 +34,47 @@ internal static class CashierShiftEntityMapper
             record.CreatedAtUtc,
             record.UpdatedAtUtc,
             Enum.Parse<CashCountMode>(record.EffectiveCashCountMode, ignoreCase: true),
-            record.OpeningCashCounted);
+            record.OpeningCashCounted,
+            lines.Where(l => l.CountKind == CashCountKinds.Opening)
+                .OrderByDescending(l => l.DenominationValue)
+                .Select(ToDomainLine)
+                .ToList(),
+            lines.Where(l => l.CountKind == CashCountKinds.Closing)
+                .OrderByDescending(l => l.DenominationValue)
+                .Select(ToDomainLine)
+                .ToList());
+    }
+
+    public static IEnumerable<CashierShiftCashCountLineRecord> ToLineRecords(CashierShift shift)
+    {
+        foreach (var line in shift.OpeningDenominationLines)
+        {
+            yield return ToLineRecord(shift, CashCountKinds.Opening, line);
+        }
+
+        foreach (var line in shift.ClosingDenominationLines)
+        {
+            yield return ToLineRecord(shift, CashCountKinds.Closing, line);
+        }
+    }
+
+    private static CashCountDenominationLine ToDomainLine(CashierShiftCashCountLineRecord record) =>
+        new(record.DenominationValue, record.Quantity);
+
+    private static CashierShiftCashCountLineRecord ToLineRecord(
+        CashierShift shift,
+        string countKind,
+        CashCountDenominationLine line) =>
+        new()
+        {
+            Id = Guid.NewGuid(),
+            OrganizationId = shift.OrganizationId.Value,
+            ShiftId = shift.Id.Value,
+            CountKind = countKind,
+            DenominationValue = line.DenominationValue,
+            Quantity = line.Quantity,
+            LineTotal = line.LineTotal
+        };
 
     public static CashierShiftRecord ToRecord(CashierShift shift) =>
         new()

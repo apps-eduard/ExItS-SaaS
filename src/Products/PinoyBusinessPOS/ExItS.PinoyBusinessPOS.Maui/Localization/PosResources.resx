@@ -1901,10 +1901,33 @@
   <data name="Setup_CashCount" xml:space="preserve"><value>Cash count</value></data>
   <data name="Setup_CashCountOff" xml:space="preserve"><value>Off</value></data>
   <data name="Setup_CashCountOptional" xml:space="preserve"><value>Optional</value></data>
-  <data name="Setup_CashCountRequired" xml:space="preserve"><value>Required</value></data>
+  <data name="Setup_CashCountRequired" xml:space="preserve"><value>Required — Recommended</value></data>
   <data name="Setup_CashCountHelpOff" xml:space="preserve"><value>Physical cash counting is not requested.</value></data>
-  <data name="Setup_CashCountHelpOptional" xml:space="preserve"><value>Cashiers may count opening/closing cash.</value></data>
-  <data name="Setup_CashCountHelpRequired" xml:space="preserve"><value>Cashiers must complete cash counting before applicable shift actions.</value></data>
+  <data name="Setup_CashCountHelpOptional" xml:space="preserve"><value>Cashiers may count physical cash or skip the count.</value></data>
+  <data name="Setup_CashCountHelpRequired" xml:space="preserve"><value>Cashiers must count physical drawer cash when opening and closing shifts.</value></data>
+  <data name="Setup_CashCountSnapshotHint" xml:space="preserve"><value>Changes apply to the next shift. An already-open shift keeps the policy it started with.</value></data>
+  <data name="Setup_Denominations" xml:space="preserve"><value>Cash denominations</value></data>
+  <data name="Setup_DenominationsHint" xml:space="preserve"><value>Optional counting helper. Cashiers cannot invent denominations during a count.</value></data>
+  <data name="Setup_AddDenomination" xml:space="preserve"><value>Add denomination</value></data>
+  <data name="Setup_InvalidDenomination" xml:space="preserve"><value>Enter a denomination value greater than zero.</value></data>
+  <data name="Shifts_CashOnHand" xml:space="preserve"><value>Cash on hand</value></data>
+  <data name="Shifts_OpeningCashHelpRequired" xml:space="preserve"><value>Count the total physical cash currently in the drawer.</value></data>
+  <data name="Shifts_OpeningCashHelpOptional" xml:space="preserve"><value>Enter the total physical cash, or skip.</value></data>
+  <data name="Shifts_ClosingCashHelpRequired" xml:space="preserve"><value>Count the total physical cash currently in the drawer.</value></data>
+  <data name="Shifts_ClosingCashHelpOptional" xml:space="preserve"><value>Enter the total physical cash, or skip.</value></data>
+  <data name="Shifts_CountByDenomination" xml:space="preserve"><value>Count by denomination</value></data>
+  <data name="Shifts_DenominationTitle" xml:space="preserve"><value>Denomination breakdown</value></data>
+  <data name="Shifts_DenominationHint" xml:space="preserve"><value>Optional helper. Use Total copies the calculated amount into Cash Count.</value></data>
+  <data name="Shifts_DenominationClose" xml:space="preserve"><value>Close denomination count</value></data>
+  <data name="Shifts_DenominationQtyLabel" xml:space="preserve"><value>Quantity for {0}</value></data>
+  <data name="Shifts_DenominationPcs" xml:space="preserve"><value>pcs</value></data>
+  <data name="Shifts_DenominationCalculatedTotal" xml:space="preserve"><value>Calculated total</value></data>
+  <data name="Shifts_DenominationReset" xml:space="preserve"><value>Reset</value></data>
+  <data name="Shifts_DenominationUseTotal" xml:space="preserve"><value>Use total</value></data>
+  <data name="Shifts_ViewDenominationBreakdown" xml:space="preserve"><value>View denomination breakdown</value></data>
+  <data name="Shifts_CashSales" xml:space="preserve"><value>Cash sales</value></data>
+  <data name="Shifts_CashRefunds" xml:space="preserve"><value>Cash refunds</value></data>
+  <data name="Shifts_VarianceStatus" xml:space="preserve"><value>Status</value></data>
   <data name="Nav_Setup" xml:space="preserve"><value>Operational setup</value></data>
   <data name="Shifts_RegisterSection" xml:space="preserve"><value>Register</value></data>
   <data name="Shifts_RegisterLabel" xml:space="preserve"><value>Select register</value></data>

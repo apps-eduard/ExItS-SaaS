@@ -116,11 +116,41 @@ else
         <div class="pos-setup__fields">
             <Select Label="@L["Setup_CashCount"]"
                     Value="@_cashCountMode"
-                    ValueChanged="v => _cashCountMode = v ?? CashCountOptional"
+                    ValueChanged="v => _cashCountMode = v ?? CashCountRequired"
                     Options="CashCountOptions"
                     Disabled="@readOnly" />
             <p class="pos-setup__panel-hint">@CashCountHelp</p>
+            <p class="pos-setup__panel-hint">@L["Setup_CashCountSnapshotHint"]</p>
         </div>
+        @if (_denominations.Count > 0 || canManage)
+        {
+            <div class="pos-setup__fields">
+                <h3 class="pos-setup__panel-title">@L["Setup_Denominations"]</h3>
+                <p class="pos-setup__panel-hint">@L["Setup_DenominationsHint"]</p>
+                @foreach (var denom in _denominations)
+                {
+                    <label class="pos-setup__row">
+                        <span>@($"PHP {denom.Value:N2}")</span>
+                        <input type="checkbox"
+                               checked="@denom.IsEnabled"
+                               disabled="@readOnly"
+                               @onchange="e => ToggleDenomination(denom, e.Value)" />
+                    </label>
+                }
+                @if (canManage)
+                {
+                    <div class="pos-setup__row">
+                        <TextInput Label="@L["Setup_AddDenomination"]"
+                                   Value="@_newDenominationText"
+                                   ValueChanged="v => _newDenominationText = v"
+                                   Disabled="@readOnly" />
+                        <Button Variant="ButtonVariant.Secondary"
+                                Disabled="@readOnly"
+                                OnClick="AddDenominationAsync">@L["Setup_AddDenomination"]</Button>
+                    </div>
+                }
+            </div>
+        }
     </div>
 
     @if (canManage)
@@ -141,7 +171,6 @@ else
 @code {
     private const string TaxExclusive = "TaxExclusive";
     private const string TaxInclusive = "TaxInclusive";
-    private const string CashCountOff = "Off";
     private const string CashCountOptional = "Optional";
     private const string CashCountRequired = "Required";
 
@@ -157,7 +186,9 @@ else
     private string? _receiptFooter;
     private string? _businessAddress;
     private string? _contactPhone;
-    private string _cashCountMode = CashCountOptional;
+    private string _cashCountMode = CashCountRequired;
+    private string? _newDenominationText;
+    private List<OrganizationCashDenominationDto> _denominations = [];
     private string? _formError;
 
     private IReadOnlyList<SelectOption> TaxModeOptions =>
@@ -168,14 +199,12 @@ else
 
     private IReadOnlyList<SelectOption> CashCountOptions =>
     [
-        new(CashCountOff, L["Setup_CashCountOff"].Value),
-        new(CashCountOptional, L["Setup_CashCountOptional"].Value),
-        new(CashCountRequired, L["Setup_CashCountRequired"].Value)
+        new(CashCountRequired, L["Setup_CashCountRequired"].Value),
+        new(CashCountOptional, L["Setup_CashCountOptional"].Value)
     ];
 
     private string CashCountHelp => _cashCountMode switch
     {
-        CashCountOff => L["Setup_CashCountHelpOff"],
         CashCountRequired => L["Setup_CashCountHelpRequired"],
         _ => L["Setup_CashCountHelpOptional"]
     };
@@ -238,6 +267,7 @@ else
         }
 
         ApplySetup(result.Data);
+        await LoadDenominationsAsync();
     }
 
     private void ApplySetup(PosOperationalSetupDto setup)
@@ -251,7 +281,66 @@ else
         _receiptFooter = setup.ReceiptFooter;
         _businessAddress = setup.BusinessAddress;
         _contactPhone = setup.ContactPhone;
-        _cashCountMode = string.IsNullOrWhiteSpace(setup.CashCountMode) ? CashCountOptional : setup.CashCountMode;
+        _cashCountMode = string.Equals(setup.CashCountMode, "Off", StringComparison.OrdinalIgnoreCase)
+            ? CashCountOptional
+            : string.IsNullOrWhiteSpace(setup.CashCountMode) ? CashCountRequired : setup.CashCountMode;
+    }
+
+    private async Task LoadDenominationsAsync()
+    {
+        var result = await SetupClient.ListCashDenominationsAsync();
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _denominations = result.Data.OrderBy(d => d.SortOrder).ThenBy(d => d.Value).ToList();
+        }
+    }
+
+    private async Task ToggleDenomination(OrganizationCashDenominationDto denom, object? raw)
+    {
+        if (!Capabilities.IsAllowed(UtangCapability.ManageOperationalSetup) || _isOffline)
+        {
+            return;
+        }
+
+        var enabled = raw is bool b ? b : string.Equals(raw?.ToString(), "true", StringComparison.OrdinalIgnoreCase);
+        var items = _denominations
+            .Select(d => new CashDenominationWriteDto(
+                d.Value,
+                d.DenominationId == denom.DenominationId ? enabled : d.IsEnabled,
+                d.SortOrder,
+                d.DisplayLabel,
+                d.DenominationId))
+            .ToList();
+        await SaveDenominationsAsync(items);
+    }
+
+    private async Task AddDenominationAsync()
+    {
+        if (!decimal.TryParse(_newDenominationText, out var value) || value <= 0)
+        {
+            _formError = L["Setup_InvalidDenomination"];
+            return;
+        }
+
+        var items = _denominations
+            .Select(d => new CashDenominationWriteDto(d.Value, d.IsEnabled, d.SortOrder, d.DisplayLabel, d.DenominationId))
+            .ToList();
+        items.Add(new CashDenominationWriteDto(value, true, items.Count));
+        await SaveDenominationsAsync(items);
+        _newDenominationText = null;
+    }
+
+    private async Task SaveDenominationsAsync(IReadOnlyList<CashDenominationWriteDto> items)
+    {
+        var result = await SetupClient.ReplaceCashDenominationsAsync(new ReplaceCashDenominationsRequest(items));
+        if (!result.IsSuccess || result.Data is null)
+        {
+            _formError = ApiLocalizer.Describe(result.Status, result.Error).Message;
+            return;
+        }
+
+        _denominations = result.Data.OrderBy(d => d.SortOrder).ThenBy(d => d.Value).ToList();
+        _formError = null;
     }
 
     private async Task SaveAsync()

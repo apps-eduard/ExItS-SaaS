@@ -37,6 +37,8 @@ public sealed class CashierShift
     public Guid? CancelledBy { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
+    public IReadOnlyList<CashCountDenominationLine> OpeningDenominationLines { get; private set; }
+    public IReadOnlyList<CashCountDenominationLine> ClosingDenominationLines { get; private set; }
 
     private CashierShift(
         CashierShiftId id,
@@ -60,7 +62,9 @@ public sealed class CashierShift
         DateTimeOffset? cancelledAtUtc,
         Guid? cancelledBy,
         DateTimeOffset createdAtUtc,
-        DateTimeOffset updatedAtUtc)
+        DateTimeOffset updatedAtUtc,
+        IReadOnlyList<CashCountDenominationLine>? openingDenominationLines = null,
+        IReadOnlyList<CashCountDenominationLine>? closingDenominationLines = null)
     {
         Id = id;
         OrganizationId = organizationId;
@@ -84,6 +88,8 @@ public sealed class CashierShift
         CancelledBy = cancelledBy;
         CreatedAtUtc = createdAtUtc;
         UpdatedAtUtc = updatedAtUtc;
+        OpeningDenominationLines = openingDenominationLines ?? Array.Empty<CashCountDenominationLine>();
+        ClosingDenominationLines = closingDenominationLines ?? Array.Empty<CashCountDenominationLine>();
     }
 
     /// <summary>
@@ -100,7 +106,8 @@ public sealed class CashierShift
         DateOnly? businessDate = null,
         CashierShiftId? id = null,
         Guid? openedBy = null,
-        CashCountMode cashCountMode = CashCountMode.Required)
+        CashCountMode cashCountMode = CashCountMode.Required,
+        IReadOnlyList<CashCountDenominationLine>? openingDenominationLines = null)
     {
         SaleMoney.EnsureUtc(utcNow);
         SaleMoney.EnsureActor(actorId);
@@ -114,6 +121,21 @@ public sealed class CashierShift
             throw new DomainException(
                 DomainErrorCodes.CashierShiftOpeningCashCountRequired,
                 "Opening cash count is required before this shift can become active.");
+        }
+
+        IReadOnlyList<CashCountDenominationLine> openingLines = Array.Empty<CashCountDenominationLine>();
+        if (openingDenominationLines is { Count: > 0 })
+        {
+            if (!counted)
+            {
+                throw new DomainException(
+                    DomainErrorCodes.CashCountDenominationTotalMismatch,
+                    "A denomination breakdown requires an authoritative opening cash count.");
+            }
+
+            openingLines = CashCountDenominationBreakdown.EnsureMatchesSubmittedTotal(
+                openingCashAmount!.Value,
+                openingDenominationLines);
         }
 
         if (counted)
@@ -143,7 +165,9 @@ public sealed class CashierShift
             cancelledAtUtc: null,
             cancelledBy: null,
             utcNow,
-            utcNow);
+            utcNow,
+            openingLines,
+            Array.Empty<CashCountDenominationLine>());
     }
 
     public static CashierShift Rehydrate(
@@ -168,7 +192,9 @@ public sealed class CashierShift
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc,
         CashCountMode effectiveCashCountMode = CashCountMode.Required,
-        bool openingCashCounted = true) =>
+        bool openingCashCounted = true,
+        IReadOnlyList<CashCountDenominationLine>? openingDenominationLines = null,
+        IReadOnlyList<CashCountDenominationLine>? closingDenominationLines = null) =>
         new(
             id,
             organizationId,
@@ -191,14 +217,17 @@ public sealed class CashierShift
             cancelledAtUtc,
             cancelledBy,
             createdAtUtc,
-            updatedAtUtc);
+            updatedAtUtc,
+            openingDenominationLines,
+            closingDenominationLines);
 
     public void Close(
         decimal? closingCashAmount,
         decimal expectedCashAmount,
         Guid closedBy,
         DateTimeOffset utcNow,
-        string? closingNotes = null)
+        string? closingNotes = null,
+        IReadOnlyList<CashCountDenominationLine>? closingDenominationLines = null)
     {
         SaleMoney.EnsureUtc(utcNow);
         SaleMoney.EnsureActor(closedBy);
@@ -214,6 +243,21 @@ public sealed class CashierShift
         var roundedExpected = SaleMoney.RoundMoney(expectedCashAmount);
         decimal? roundedClosing = null;
         decimal? variance = null;
+        IReadOnlyList<CashCountDenominationLine> closingLines = Array.Empty<CashCountDenominationLine>();
+        if (closingDenominationLines is { Count: > 0 })
+        {
+            if (closingCashAmount is null)
+            {
+                throw new DomainException(
+                    DomainErrorCodes.CashCountDenominationTotalMismatch,
+                    "A denomination breakdown requires an authoritative closing cash count.");
+            }
+
+            closingLines = CashCountDenominationBreakdown.EnsureMatchesSubmittedTotal(
+                closingCashAmount.Value,
+                closingDenominationLines);
+        }
+
         if (closingCashAmount is not null)
         {
             ValidateClosingCash(closingCashAmount.Value);
@@ -222,6 +266,7 @@ public sealed class CashierShift
         }
 
         Status = CashierShiftStatus.Closed;
+        ClosingDenominationLines = closingLines;
         ClosingCashAmount = roundedClosing;
         ExpectedCashAmountSnapshot = roundedExpected;
         CashVarianceAmount = variance;

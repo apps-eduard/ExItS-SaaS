@@ -46,3 +46,14 @@ internal sealed class CashierShiftNumberSequenceRecord
     public DateOnly BusinessDate { get; set; }
     public long LastValue { get; set; }
 }
+
+internal sealed class CashierShiftCashCountLineRecord
+{
+    public Guid Id { get; set; }
+    public Guid OrganizationId { get; set; }
+    public Guid ShiftId { get; set; }
+    public string CountKind { get; set; } = string.Empty;
+    public decimal DenominationValue { get; set; }
+    public int Quantity { get; set; }
+    public decimal LineTotal { get; set; }
+}
