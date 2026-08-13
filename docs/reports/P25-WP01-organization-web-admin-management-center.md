@@ -122,6 +122,7 @@ Do not mark Device Verified / Production Ready until the owner completes this li
 |---|---|
 | `8869aec3` | feat(org-web): add organization management web admin |
 | `837f6d13` | test(org-web): cover admin authorization, no-checkout, and overview queries |
+| `7bff37a2` | docs(org-web): document organization web admin management center |
 
 Starting SHA: `43f5d0f2dd7c92c4903d1947162cf2c1e996b932`
 
