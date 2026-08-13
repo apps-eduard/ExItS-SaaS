@@ -1,0 +1,100 @@
+# P25-WP05 — Cash Count Policy Simplification and Denomination-Assisted Reconciliation
+
+## 1. Assignment
+
+| Field | Value |
+|---|---|
+| Phase | 25 |
+| Work package | P25-WP05 Cash Count Policy Simplification and Denomination-Assisted Reconciliation |
+| Status | Code Complete / Ready for Owner Validation |
+| Branch | `main` |
+| Date | 2026-08-13 |
+| Starting SHA | `147b94e4d0363354a80b8c31a9f353ae1299bb80` |
+| Implementation SHA | `cbcdb8a9` |
+| Test SHA | `8869a179` |
+| Device Verified | **No** |
+| Browser Verified | **No** |
+| Production Ready | **No** |
+| Database migration | **Yes** — `20260813153741_AddPosCashDenominationsAndRequiredDefault` |
+
+## 2. Delivered capability
+
+- Configurable Cash Count Policy is **Required** (default for new organizations) or **Optional**.
+- `Off` is not selectable in Org Web or MAUI. API rejects new Off writes (`CashCountModeOffRetired`).
+- Leftover org `Off` rows migrate to **Optional**. Historical shift snapshots may still store Off.
+- Only `ManageOperationalSetup` (owner/admin) may change policy or denominations. Server-enforced. Cashiers count with `ManageShifts` but cannot change policy. Personal/cross-org rejected.
+- Same setting from Organization Web Settings → Cash handling and MAUI Operational Setup.
+- `EffectiveCashCountMode` remains snapshotted at shift open.
+- Optional denomination helper on MAUI open/close. Authoritative totals remain `OpeningCashAmount` / `ClosingCashAmount`. Server recalculates `sum(value * qty)` and rejects mismatch.
+- Organization-configurable denominations with PHP defaults; custom values such as 5000 require no code change. Historical breakdown snapshots denomination values used at count time.
+- Closing UX hides expected cash until the cashier submits a count (except historical Off snapshots that skip counting).
+
+## 3. Explicit exclusions
+
+- Denomination counting is not mandatory.
+- Breakdown is not a second accounting total.
+- GCash and Utang are not physical drawer cash.
+- No offline shift open/close sync.
+- No Redis, microservices, Platform Admin product-facing cash UI, or production-ready claim.
+- Device Verified / Browser Verified remain No until the owner confirms.
+
+## 4. Persistence / migrations
+
+Migration `AddPosCashDenominationsAndRequiredDefault`:
+
+- `operational_setups.cash_count_mode` default Required; Off → Optional; check `IN ('Optional', 'Required')`
+- `organization_cash_denominations` (unique org+value)
+- `cashier_shift_cash_count_lines` (unique shift+kind+value)
+- `cashier_shifts.effective_cash_count_mode` still allows Off for history
+
+Existing Required/Optional unchanged. PHP denomination seed is idempotent in application code, not a one-time SQL dump.
+
+## 5. API / UI
+
+- `GET/PUT /api/v1/pos/operational-setup/cash-denominations`
+- Open/close requests accept optional `denominationLines`
+- Shift DTOs return opening/closing breakdown when present
+- Org Web Settings: Required/Optional + denomination admin (AntDesign)
+- MAUI: policy select, compact denomination add/enable, money-icon helper
+
+## 6. Build / test evidence
+
+| Suite | Passed | Failed | Skipped | Notes |
+|---|---:|---:|---:|---|
+| PinoyBusinessPOS.UnitTests | 650 | 0 | 0 | Includes new denomination tests |
+| PinoyBusinessPOS.IntegrationTests (CashCount/OperationalSetup filter) | 11 | 0 | 0 | NEW |
+| PinoyBusinessPOS.Maui.Tests | 379 | 1 | 0 | 1 PRE-EXISTING (`Cashier` substring in auth foundation guard) |
+| PinoyBusinessPOS.Web.Tests | 8 | 0 | 0 | Includes Org Web cash-handling guard |
+| PinoyBusinessPOS.ApiClient.Tests | 48 | 0 | 0 | |
+| Platform.UnitTests | 856 | 0 | 0 | |
+| Platform.Admin.UnitTests | 135 | 5 | 0 | 5 PRE-EXISTING (Statistic/AmountDisplay/FormatMoney/payments audit) |
+| Personal.Web.Tests | 3 | 0 | 0 | |
+| ArchitectureTests | 161 | 4 | 0 | 4 PRE-EXISTING |
+
+No new regressions identified in this work package.
+
+## 7. Security limitations
+
+Development-stage unauthenticated POS APIs remain development-stage. Authorization uses existing POS commercial capabilities. Organization id comes from request scope. Client-calculated denomination totals are not trusted.
+
+## 8. Portfolio independence
+
+No HealthCare tree. POS remains the only product in this WP. Platform Admin has no product-facing cash-count implementation.
+
+## 9. Risks / open decisions
+
+- Owner must validate Org Web and a physical MAUI device before Device/Browser Verified.
+- PinoyBusinessPOS remains PHP-authoritative; other currencies can reuse the denomination table but are not seeded here.
+- Historical Off shifts still skip counting by snapshot.
+
+## 10. Files / docs
+
+See git commits `cbcdb8a9`, `8869a179`, and the documentation commit on this report. Canonical engineering page: [pos-cashier-cash-count.md](../engineering/pos-cashier-cash-count.md).
+
+## 11. Owner acceptance
+
+Checklist is in [pos-cashier-cash-count.md](../engineering/pos-cashier-cash-count.md). Do not mark Device Verified or Production Ready until the owner validates.
+
+## 12. Next work package
+
+Continue Phase 25 owner validation of WP01–WP05, or the next authorized focused POS/platform package. Do not mark Phase 25 closed.

@@ -1,168 +1,165 @@
-# POS configurable cashier cash count
+# POS cashier cash count and denomination-assisted reconciliation
 
 Organization-level cash counting for PinoyBusinessPOS cashier shifts. Extends the existing shift aggregate; it is not a separate cash-control subsystem.
 
-## Audit result
+PinoyBusinessPOS is currently **PHP-authoritative** (`PosOperationalSetup.CurrencyCode` defaults to `PHP`). Denomination defaults are Philippine values. Owners can add future values (for example `5000`) from settings without a code deployment.
 
-Existing `CashierShift` already had:
+## Active CashCountMode policies
 
-- Opening float (`OpeningCashAmount`, always stored, `0` allowed)
-- Closing declaration (`ClosingCashAmount`, nullable in storage but previously always required by `Close`)
-- Canonical expected cash: Opening + NetCashSales + CashIn − CashOut − CashRefundsOnShift (`CashierShiftExpectedCash`)
-- Variance = counted − expected when a close amount was supplied
-- Cash in/out movements
-- Organization POS settings in `PosOperationalSetup` (one row per org)
-- Online-only MAUI shift open/close; close of an already-closed shift is idempotent
+Configurable policies:
 
-Gaps: no Off/Optional/Required policy, opening was always a required float, close always required counted cash, skipped count could not be persisted as null, Shift Detail coalesced null counted cash to PHP 0, and org setting changes would have applied immediately to an open shift.
-
-Denomination counting does not exist and is not added here. Cashiers enter one total counted amount.
-
-## CashCountMode
-
-Authoritative server/domain value on `PosOperationalSetup.CashCountMode`.
-
-| Mode | Default | Opening | Closing |
+| Mode | Default for new organizations | Opening | Closing |
 |---|---|---|---|
-| Off | — | No physical count prompt. Shift opens without counted opening cash. | Shift closes without counted cash. |
-| Optional | **New organizations** | Cashier may enter opening cash or skip. | Cashier may enter counted cash or skip. |
-| Required | Existing completed stores (migration backfill) | Opening count required before the shift becomes active. | Counted cash required before close. Server-enforced. |
+| **Required** | **Yes** | Cashier must enter the total physical cash in the drawer before the shift activates. | Cashier must enter the total physical cash before close. Server-enforced. |
+| **Optional** | No | Cashier may enter a total or skip. | Cashier may enter a total or skip. |
 
-Default for new / incomplete organizations: **Optional**.
+Skipped remains `null` / Not counted. Never convert skipped to PHP 0. A genuine count of zero remains distinct from skip.
 
-Off does **not** disable sales, payments, expected-cash calculation, reporting, or audit records.
-
-## Expected cash
-
-Unchanged canonical formula:
-
-```text
-Opening cash
-+ Net cash sales
-+ Cash in
-− Cash out
-− Cash refunds on shift
-= Expected closing cash
-```
-
-Expected cash is always computed and snapshotted on close, including Off and skipped Optional closes.
-
-## Counted cash and variance
-
-When a physical count is supplied:
-
-```text
-Variance = CountedCash − ExpectedCash
-```
-
-| Variance | Classification |
-|---|---|
-| 0 | Balanced |
-| > 0 | Over |
-| < 0 | Short |
-
-Skipped count persists as `ClosingCashAmount = null` and `CashVarianceAmount = null`. It is **not** stored as `0` and is **not** fabricated as `Counted = Expected`. Counted zero remains distinct from not counted.
-
-Variance is an auditable fact. Transactions are not mutated to force balance. No auto-created adjustments.
-
-## Active-shift snapshot
-
-`CashierShift.EffectiveCashCountMode` is captured at open from the current organization setting.
-
-If an admin later changes `PosOperationalSetup.CashCountMode`, the open shift keeps its snapshotted rule. The next shift uses the updated mode.
-
-`OpeningCashCounted` records whether opening cash was physically counted. Uncounted opening float is stored as `0` for expected-cash arithmetic only.
-
-## Offline
-
-MAUI shift open/close remains **online-only** (existing P10-WP04 gate). The snapshotted mode lives on the shift row, so an already-open shift does not need a live settings read to know whether close requires a count.
-
-Close of an already-closed shift remains a success no-op (idempotent retry; does not duplicate close or overwrite counted amounts). Cash movements keep existing `Idempotency-Key` / client `MovementId` behavior.
-
-`CashierShiftRepository.UpdateAsync` now calls `SaveChangesAsync` so close/cancel persist before the next request (open of the next shift, reports).
+`Off` is **not selectable**. It remains on the enum only so historical `CashierShift.EffectiveCashCountMode` snapshots can still be read. Migration `AddPosCashDenominationsAndRequiredDefault` converts leftover `operational_setups.cash_count_mode = Off` to `Optional`. New opens treat any leftover org Off as Optional (`CashCountModes.ForNewShift`). API `ParseConfigurable` rejects new attempts to set Off.
 
 ## Authorization
 
-- Change `CashCountMode`: `ManageOperationalSetup` (organization owner/admin).
-- Perform cash count / open / close: existing `ManageShifts`.
-- Organization id is taken from the authorized request scope, never trusted from the client body.
-- Personal users have no organization scope for these APIs (`OrganizationRequired`).
-- Cross-organization updates cannot change another org's setting.
+Only an authorized organization owner/admin with `ManageOperationalSetup` may change Cash Count Policy. Server-enforced on `PUT /api/v1/pos/operational-setup` and `PUT /api/v1/pos/operational-setup/cash-denominations`.
 
-## Reporting
+Cashiers with `ManageShifts` can perform the count but cannot change the policy unless they also have `ManageOperationalSetup`.
 
-Shift summary and cash-variance reports distinguish:
+Personal users cannot change it (`OrganizationRequired`). Cross-organization updates are rejected.
 
-- `NotRequired` (Off, no count)
-- `NotPerformed` (Optional skip)
-- `Counted` (amount present)
+The same organization-level setting is presented in:
 
-`TotalCashVariance` still sums only rows where `CashVarianceAmount` is not null. Skipped counts are not treated as PHP 0.
+- Organization Web → Settings → Cash handling → Cash Count Policy
+- MAUI → Operational setup → Cash Count Policy
+
+Changes apply to the **next** shift. An already-open shift keeps `EffectiveCashCountMode` captured at open.
+
+## Authoritative cash count
+
+The authoritative physical cash values are `OpeningCashAmount` / `OpeningCashCounted` and `ClosingCashAmount`.
+
+Denomination assistance is optional. Required means the **total** is required, not the breakdown.
+
+When a breakdown is supplied, the server recalculates `sum(DenominationValue * Quantity)` and rejects a mismatch with the submitted total. The calculator total is copied into the authoritative cash-count amount. Breakdown never replaces it, never changes sales, expected cash, cash in/out, refunds, or variance.
+
+Expected cash remains:
+
+```text
+Opening cash
++ Net cash sales (physical cash only)
++ Cash in
+− Cash out
+− Cash refunds
+= Expected closing cash
+```
+
+Variance = Counted cash − Expected cash.
+
+GCash / ManualGCash and Utang are **not** physical drawer cash and are excluded from denomination counting and net cash sales.
+
+## Optional denomination helper
+
+MAUI shift opening and closing show a money icon beside the cash amount. Tapping it opens **Denomination breakdown** (not labeled “Cash Count”). Cashiers may type the total or use the helper. Disabled denominations are not offered. Cashiers cannot invent denominations during a count.
+
+Entry method is implied: breakdown present = denomination-assisted; absent = manual total.
+
+## Denomination configuration
+
+`OrganizationCashDenomination`: `Id`, `OrganizationId`, `Value`, `DisplayLabel`, `IsEnabled`, `SortOrder`.
+
+PHP defaults seeded idempotently: 1000, 500, 200, 100, 50, 20, 10, 5, 1. Full administration is on Organization Web; MAUI owner/admin can enable/disable and add values.
+
+Historical `cashier_shift_cash_count_lines` snapshot `DenominationValue` and `Quantity` for Opening or Closing. Later config changes do not rewrite history.
+
+## Closing reconciliation
+
+MAUI close entry does not show expected cash before the cashier submits a count (historical Off snapshots still skip the count prompt). After count review and after close, show Opening, Cash Sales, Cash In, Cash Out, Cash Refunds, Expected, Counted, Variance, Balanced / Over / Short. Optional “View denomination breakdown”.
+
+## Offline
+
+MAUI shift open/close remain **online-only**. Denomination quantities are local UI state until the online open/close call. No new offline sync subsystem.
 
 ## Migration
 
-`AddPosCashierCashCountMode`:
+`AddPosCashDenominationsAndRequiredDefault` (`20260813153741`):
 
-- `operational_setups.cash_count_mode` default `Optional`; completed existing rows backfilled to `Required`
-- `cashier_shifts.effective_cash_count_mode` default `Required` (legacy shifts always counted)
-- `cashier_shifts.opening_cash_counted` default `true`
-- Close consistency check allows closed shifts with null counted cash when variance is also null
+- `operational_setups.cash_count_mode` default **Required**; leftover **Off → Optional**; check constraint `IN ('Optional', 'Required')`
+- `organization_cash_denominations` (unique org+value)
+- `cashier_shift_cash_count_lines` (unique shift+kind+value); historical Off on `cashier_shifts.effective_cash_count_mode` unchanged
 
-No duplicate opening/closing amount columns.
+Existing Required remains Required. Existing Optional remains Optional.
+
+## Tests
+
+Covered in POS unit, integration, MAUI UI guards, and Org Web settings guards: new-org Required default; owner set Required/Optional from Org Web and MAUI; cashier/Personal/cross-org rejected; shift snapshot; Off retired for new configuration; denomination seed/add/5000/duplicates/zero/negative; disabled not offered; manual vs assisted; server recalculate; mismatch rejected; repeated close does not duplicate lines; cash/GCash/Utang semantics; Required/Optional skip vs zero.
 
 ## Owner acceptance
 
-See the checklist in this document's companion report index row. Device Verified is **No** until the owner validates on a physical device.
+Device Verified is **No** until the owner validates on a physical device. Browser Verified is **No** until the owner confirms Org Web.
 
-### OPTIONAL MODE
+### A. Policy default
 
-1. Organization sets Cash Count = Optional.
-2. Cashier opens shift without entering opening cash.
-3. Confirm shift opens.
-4. Make cash sales.
-5. Close shift.
-6. Confirm expected cash appears.
-7. Skip counted cash.
-8. Confirm shift closes.
-9. Confirm history shows "Not counted" rather than PHP 0.
+1. Create a new organization.
+2. Confirm Cash Count = Required.
 
-### OPTIONAL WITH COUNT
+### B. Policy web
 
-1. Open shift with PHP 1,000 opening cash.
-2. Make PHP 2,000 cash sales.
-3. Expected closing cash should reflect PHP 3,000, subject to existing cash movement rules.
-4. Enter counted cash PHP 2,950.
-5. Close.
-6. Confirm Short = PHP 50.
-7. Confirm transactions remain unchanged.
+3. Open Org Web.
+4. Settings → Cash handling.
+5. Change Required → Optional.
+6. Save/reload.
+7. Confirm persisted.
 
-### REQUIRED MODE
+### C. Policy mobile
 
-1. Set Cash Count = Required.
-2. Attempt open without required opening count.
-3. Confirm rejected if opening count is required by existing workflow.
-4. Open properly.
-5. Make sales.
-6. Attempt close without counted cash.
-7. Confirm rejected.
-8. Enter counted cash.
-9. Confirm close succeeds.
-10. Confirm variance displayed correctly.
+8. Login MAUI as authorized owner/admin.
+9. Change Optional → Required.
+10. Confirm the same server setting updates.
+11. Confirm a cashier-only account cannot change it.
 
-### OFF MODE
+### D. Required opening manual
 
-1. Set Cash Count = Off.
-2. Open shift.
-3. Confirm no cash-count prompt blocks opening.
-4. Make sales.
-5. Close shift.
-6. Confirm no physical count required.
-7. Confirm expected cash/reporting still exists where applicable.
+12. Open a new shift.
+13. Enter PHP 1,000 manually.
+14. Open shift.
+15. Confirm success.
 
-### SETTING SNAPSHOT
+### E. Required opening denomination
 
-1. Open shift while Optional.
-2. Change org setting to Required.
-3. Confirm current shift still behaves Optional.
-4. Open next shift.
-5. Confirm next shift behaves Required.
+16. Open the next shift.
+17. Tap the money icon.
+18. Enter quantities.
+19. Confirm calculated total.
+20. Tap Use Total.
+21. Confirm the cash count field receives the total.
+22. Open shift.
+
+### F. Custom denomination
+
+23. Add denomination 5000 as owner/admin.
+24. Open the denomination helper.
+25. Confirm 5000 appears without a code change.
+
+### G. Closing denomination
+
+26. Make cash sales.
+27. Close shift.
+28. Tap denomination helper.
+29. Count bills/coins.
+30. Submit.
+31. Confirm expected vs counted.
+32. Confirm Balanced / Over / Short.
+33. View denomination breakdown.
+
+### H. Optional
+
+34. Set Cash Count Optional.
+35. Open a new shift and skip count.
+36. Close and skip count.
+37. Confirm Not counted, not PHP 0.
+
+### I. Snapshot
+
+38. Open a shift under Required.
+39. Change organization policy to Optional.
+40. Confirm the current shift still requires a count.
+41. Open the next shift.
+42. Confirm Optional applies.

@@ -1,10 +1,10 @@
 # Phase 25 — Organization Web Admin, AntDesign hosts, and unified web auth
 
-[Phases](README.md) | [Portfolio](../portfolio-progress.md) | [P25-WP01](../reports/P25-WP01-organization-web-admin-management-center.md) | [P25-WP02](../reports/P25-WP02-antdesign-web-standardization-and-host-separation.md) | [P25-WP03](../reports/P25-WP03-unified-web-authentication-sso-and-workspace-routing.md) | [P25-WP04](../reports/P25-WP04-web-host-legacy-cleanup-and-local-validation-identity-determinism.md) | [ADR-022](../decisions/ADR-022-separated-antdesign-web-hosts-and-unified-auth.md)
+[Phases](README.md) | [Portfolio](../portfolio-progress.md) | [P25-WP01](../reports/P25-WP01-organization-web-admin-management-center.md) | [P25-WP02](../reports/P25-WP02-antdesign-web-standardization-and-host-separation.md) | [P25-WP03](../reports/P25-WP03-unified-web-authentication-sso-and-workspace-routing.md) | [P25-WP04](../reports/P25-WP04-web-host-legacy-cleanup-and-local-validation-identity-determinism.md) | [P25-WP05](../reports/P25-WP05-cash-count-policy-simplification-and-denomination-assisted-reconciliation.md) | [ADR-022](../decisions/ADR-022-separated-antdesign-web-hosts-and-unified-auth.md)
 
 | Field | Value |
 |---|---|
-| Status | **Open** — WP01–WP04 Code Complete / Owner Validation Pending |
+| Status | **Open** — WP01–WP05 Code Complete / Owner Validation Pending |
 | Device Verified | **No** |
 | Production Ready | **No** |
 | Boundary | **Organization Web Admin is not a POS checkout client.** |
@@ -44,6 +44,7 @@ Unauthorized sections are hidden in navigation and still denied by server APIs.
 | [P25-WP02](../reports/P25-WP02-antdesign-web-standardization-and-host-separation.md) | AntDesign standardization; Org/Personal/Admin host split | Code Complete |
 | [P25-WP03](../reports/P25-WP03-unified-web-authentication-sso-and-workspace-routing.md) | Canonical sign-in, SSO handoff, workspace routing | Code Complete |
 | [P25-WP04](../reports/P25-WP04-web-host-legacy-cleanup-and-local-validation-identity-determinism.md) | Web host legacy cleanup and Local Validation identity determinism | Code Complete |
+| [P25-WP05](../reports/P25-WP05-cash-count-policy-simplification-and-denomination-assisted-reconciliation.md) | Cash count policy simplification and denomination-assisted reconciliation | Code Complete |
 
 Local ports: **8090** Admin, **8091** Platform API, **8092** POS API, **8093** Org Web, **8094** Personal Web. Production public entry is HTTPS :443 via reverse proxy.
 
