@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>ExItS.PinoyBusinessPOS.Web.Tests</RootNamespace>
+    <AssemblyName>ExItS.PinoyBusinessPOS.Web.Tests</AssemblyName>
+    <IsTestProject>true</IsTestProject>
+    <IsPackable>false</IsPackable>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Products\PinoyBusinessPOS\ExItS.PinoyBusinessPOS.Web\ExItS.PinoyBusinessPOS.Web.csproj" />
+    <ProjectReference Include="..\..\src\Products\PinoyBusinessPOS\ExItS.PinoyBusinessPOS.Application\ExItS.PinoyBusinessPOS.Application.csproj" />
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+</Project>

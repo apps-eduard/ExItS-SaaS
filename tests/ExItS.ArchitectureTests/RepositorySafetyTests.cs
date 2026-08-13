@@ -51,6 +51,7 @@ public sealed class RepositorySafetyTests
             .ToArray();
 
         Assert.Contains(csprojs, name => name is not null && name.Equals("ExItS.PinoyBusinessPOS.Maui", StringComparison.Ordinal));
+        Assert.Contains(csprojs, name => name is not null && name.Equals("ExItS.PinoyBusinessPOS.Web", StringComparison.Ordinal));
         Assert.Contains(csprojs, name => name is not null && name.Equals("ExItS.DesignSystem", StringComparison.Ordinal));
         Assert.DoesNotContain(csprojs, name => name is not null && name.Contains("HealthCare", StringComparison.OrdinalIgnoreCase));
     }
