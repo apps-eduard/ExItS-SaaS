@@ -5,12 +5,12 @@ using Npgsql;
 namespace ExItS.PinoyBusinessPOS.IntegrationTests;
 
 [Collection(PosPostgreSqlCollection.Name)]
-public sealed class AddPosInventoryTransfersMigrationTests(PosPostgreSqlFixture fixture)
+public sealed class AddPosInventoryLotsMigrationTests(PosPostgreSqlFixture fixture)
 {
-    private const string TargetMigration = "AddPosInventoryTransfers";
+    private const string TargetMigration = "AddPosInventoryLots";
 
     [Fact]
-    public async Task AddPosInventoryTransfers_applies_expected_schema()
+    public async Task AddPosInventoryLots_applies_expected_schema()
     {
         var options = new DbContextOptionsBuilder<PosDbContext>()
             .UseNpgsql(fixture.ConnectionString)
@@ -28,26 +28,28 @@ public sealed class AddPosInventoryTransfersMigrationTests(PosPostgreSqlFixture 
             SELECT table_name
             FROM information_schema.tables
             WHERE table_schema = 'pos'
-              AND table_name IN (
-                'inventory_transfers',
-                'inventory_transfer_lines',
-                'inventory_transfer_number_sequences',
-                'inventory_branch_balances')
+              AND table_name IN ('inventory_lots', 'inventory_lot_movements')
             """);
-        Assert.Contains("inventory_transfers", tables);
-        Assert.Contains("inventory_transfer_lines", tables);
-        Assert.Contains("inventory_transfer_number_sequences", tables);
-        Assert.Contains("inventory_branch_balances", tables);
+        Assert.Contains("inventory_lots", tables);
+        Assert.Contains("inventory_lot_movements", tables);
 
         var columns = await QueryNamesAsync(
             """
-            SELECT column_name
+            SELECT table_name || '.' || column_name
             FROM information_schema.columns
             WHERE table_schema = 'pos'
-              AND table_name = 'stock_movements'
-              AND column_name = 'branch_id'
+              AND (
+                    (table_name = 'products' AND column_name IN ('tracks_expiration', 'expiration_warning_days'))
+                 OR (table_name = 'stock_movements' AND column_name = 'inventory_lot_id')
+                 OR (table_name = 'inventory_transfer_lines' AND column_name IN ('source_lot_id', 'lot_number', 'expiration_date'))
+              )
             """);
-        Assert.Contains("branch_id", columns);
+        Assert.Contains("products.tracks_expiration", columns);
+        Assert.Contains("products.expiration_warning_days", columns);
+        Assert.Contains("stock_movements.inventory_lot_id", columns);
+        Assert.Contains("inventory_transfer_lines.source_lot_id", columns);
+        Assert.Contains("inventory_transfer_lines.lot_number", columns);
+        Assert.Contains("inventory_transfer_lines.expiration_date", columns);
 
         var indexes = await QueryNamesAsync(
             """
@@ -55,19 +57,19 @@ public sealed class AddPosInventoryTransfersMigrationTests(PosPostgreSqlFixture 
             FROM pg_indexes
             WHERE schemaname = 'pos'
               AND indexname IN (
-                'ix_inventory_transfers_org_source',
-                'ix_inventory_transfers_org_destination',
-                'ix_inventory_transfers_org_status',
-                'ux_inventory_transfers_org_transfer_number',
+                'ux_inventory_lots_identity_org',
+                'ux_inventory_lots_identity_branch',
+                'ix_inventory_lots_org_product_expiry',
+                'ux_inventory_lot_movements_source_lot',
                 'ux_inventory_transfer_lines_transfer_line_number',
-                'ux_stock_movements_inventory_transfer_source')
+                'ux_stock_movements_inventory_transfer_lot')
             """);
-        Assert.Contains("ix_inventory_transfers_org_source", indexes);
-        Assert.Contains("ix_inventory_transfers_org_destination", indexes);
-        Assert.Contains("ix_inventory_transfers_org_status", indexes);
-        Assert.Contains("ux_inventory_transfers_org_transfer_number", indexes);
+        Assert.Contains("ux_inventory_lots_identity_org", indexes);
+        Assert.Contains("ux_inventory_lots_identity_branch", indexes);
+        Assert.Contains("ix_inventory_lots_org_product_expiry", indexes);
+        Assert.Contains("ux_inventory_lot_movements_source_lot", indexes);
         Assert.Contains("ux_inventory_transfer_lines_transfer_line_number", indexes);
-        Assert.Contains("ux_stock_movements_inventory_transfer_source", indexes);
+        Assert.Contains("ux_stock_movements_inventory_transfer_lot", indexes);
     }
 
     private async Task<IReadOnlyList<string>> QueryNamesAsync(string sql)

@@ -12,7 +12,6 @@ public sealed class PosInventoryScopeArchitectureTests
         "PurchaseOrder",
         "WarehouseId",
         "WarehouseBin",
-        "LotNumber",
         "SerialNumber",
         "ExpiryDate",
         "CostPrice",
@@ -67,11 +66,13 @@ public sealed class PosInventoryScopeArchitectureTests
         Assert.Contains("\"inventory_transfers\"", context, StringComparison.Ordinal);
         Assert.Contains("\"inventory_transfer_lines\"", context, StringComparison.Ordinal);
         Assert.Contains("\"inventory_branch_balances\"", context, StringComparison.Ordinal);
+        Assert.Contains("\"inventory_lots\"", context, StringComparison.Ordinal);
+        Assert.Contains("\"inventory_lot_movements\"", context, StringComparison.Ordinal);
 
         foreach (var table in new[]
                  {
                      "\"warehouses\"", "\"stock_transfers\"",
-                     "\"inventory_costs\"", "\"lots\"", "\"serials\""
+                     "\"inventory_costs\"", "\"serials\""
                  })
         {
             Assert.DoesNotContain(table, context, StringComparison.OrdinalIgnoreCase);

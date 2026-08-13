@@ -153,17 +153,109 @@ public sealed class PosInventoryTransferApiTests(PosPostgreSqlFixture fixture)
         Assert.Equal(6m, await OnHandAsync(client, org, product.ProductId));
     }
 
+    [Fact]
+    public async Task Transfer_preserves_lot_identity_and_partial_receive_does_not_duplicate_on_retry()
+    {
+        await using var factory = new PosApiFactory(fixture.ConnectionString);
+        var client = factory.CreateClient();
+        var org = Guid.NewGuid();
+        var product = await CreateProductAsync(
+            client,
+            org,
+            "Milk 1L",
+            "Piece",
+            50m,
+            "tr-milk-lot",
+            tracksExpiration: true);
+        await EnableAsync(client, org, product.ProductId, 0m);
+
+        var early = new DateOnly(2026, 8, 20);
+        var later = new DateOnly(2026, 9, 5);
+        await AdjustInAsync(client, org, product.ProductId, 10m, early, "LOT-A");
+        await AdjustInAsync(client, org, product.ProductId, 20m, later, "LOT-B");
+
+        var lots = await ListLotsAsync(client, org, product.ProductId);
+        var lotA = lots.Single(l => l.ExpirationDate == early);
+        var lotB = lots.Single(l => l.ExpirationDate == later);
+
+        var created = await CreateTransferAsync(
+            client,
+            org,
+            BranchA,
+            BranchB,
+            [
+                new InventoryTransferLineRequest(product.ProductId, 4m, lotA.LotId),
+                new InventoryTransferLineRequest(product.ProductId, 6m, lotB.LotId)
+            ]);
+        Assert.Equal(early, created.Lines.Single(l => l.SourceLotId == lotA.LotId).ExpirationDate);
+        Assert.Equal(later, created.Lines.Single(l => l.SourceLotId == lotB.LotId).ExpirationDate);
+
+        var dispatched = await DispatchAsync(client, org, BranchA, created.TransferId);
+        Assert.Equal("InTransit", dispatched.Status);
+        Assert.Equal(20m, await OnHandAsync(client, org, product.ProductId));
+
+        var lineA = dispatched.Lines.Single(l => l.SourceLotId == lotA.LotId);
+        var lineB = dispatched.Lines.Single(l => l.SourceLotId == lotB.LotId);
+        using var receiveRaw = await ReceiveRawAsync(
+            client,
+            org,
+            BranchB,
+            created.TransferId,
+            [
+                new InventoryTransferReceiveLineRequest(product.ProductId, 3m, "ShortShipment", LineId: lineA.LineId),
+                new InventoryTransferReceiveLineRequest(product.ProductId, 6m, LineId: lineB.LineId)
+            ],
+            idempotencyKey: "recv-lot-1");
+        var receiveBody = await receiveRaw.Content.ReadAsStringAsync();
+        Assert.True(receiveRaw.IsSuccessStatusCode, receiveBody);
+        var received = JsonSerializer.Deserialize<InventoryTransferDto>(receiveBody, JsonOptions);
+        Assert.NotNull(received);
+        Assert.Equal("PartiallyReceived", received.Status);
+        Assert.Equal(3m, received.Lines.Single(l => l.LineId == lineA.LineId).ReceivedQty);
+        Assert.Equal(1m, received.Lines.Single(l => l.LineId == lineA.LineId).DifferenceQty);
+        Assert.Equal(6m, received.Lines.Single(l => l.LineId == lineB.LineId).ReceivedQty);
+        Assert.Equal(early, received.Lines.Single(l => l.LineId == lineA.LineId).ExpirationDate);
+        Assert.Equal(later, received.Lines.Single(l => l.LineId == lineB.LineId).ExpirationDate);
+        Assert.Equal(29m, await OnHandAsync(client, org, product.ProductId));
+
+        var replay = await ReceiveAsync(
+            client,
+            org,
+            BranchB,
+            created.TransferId,
+            [
+                new InventoryTransferReceiveLineRequest(product.ProductId, 3m, "ShortShipment", LineId: lineA.LineId),
+                new InventoryTransferReceiveLineRequest(product.ProductId, 6m, LineId: lineB.LineId)
+            ],
+            idempotencyKey: "recv-lot-1");
+        Assert.Equal("PartiallyReceived", replay.Status);
+        Assert.Equal(29m, await OnHandAsync(client, org, product.ProductId));
+
+        var destLots = await ListLotsAsync(client, org, product.ProductId);
+        Assert.Equal(3m, destLots.Single(l => l.ExpirationDate == early && l.BranchId == BranchB).QuantityOnHand);
+        Assert.Equal(6m, destLots.Single(l => l.ExpirationDate == later && l.BranchId == BranchB).QuantityOnHand);
+        Assert.Equal(6m, destLots.Single(l => l.LotId == lotA.LotId).QuantityOnHand);
+        Assert.Equal(14m, destLots.Single(l => l.LotId == lotB.LotId).QuantityOnHand);
+    }
+
     private static async Task<PosCatalogProductDto> CreateProductAsync(
         HttpClient client,
         Guid org,
         string name,
         string unitOfMeasure,
         decimal sellingPrice,
-        string sku)
+        string sku,
+        bool tracksExpiration = false)
     {
         using var request = Scoped(HttpMethod.Post, Products, org, BranchA);
         request.Content = JsonContent.Create(
-            new CreatePosCatalogProductRequest(name, unitOfMeasure, sellingPrice, null, sku),
+            new CreatePosCatalogProductRequest(
+                name,
+                unitOfMeasure,
+                sellingPrice,
+                null,
+                sku,
+                TracksExpiration: tracksExpiration),
             options: JsonOptions);
         using var response = await client.SendAsync(request);
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
@@ -177,6 +269,33 @@ public sealed class PosInventoryTransferApiTests(PosPostgreSqlFixture fixture)
         using var enable = Scoped(HttpMethod.Post, $"{Inventory}/{productId:D}/enable", org, BranchA);
         enable.Content = JsonContent.Create(new EnableInventoryTrackingRequest(opening), options: JsonOptions);
         (await client.SendAsync(enable)).EnsureSuccessStatusCode();
+    }
+
+    private static async Task AdjustInAsync(
+        HttpClient client,
+        Guid org,
+        Guid productId,
+        decimal qty,
+        DateOnly expiry,
+        string lotNumber)
+    {
+        using var adjust = Scoped(HttpMethod.Post, $"{Inventory}/{productId:D}/adjustments", org, BranchA);
+        adjust.Content = JsonContent.Create(
+            new AdjustInventoryRequest("In", qty, "Receive", ExpirationDate: expiry, LotNumber: lotNumber),
+            options: JsonOptions);
+        (await client.SendAsync(adjust)).EnsureSuccessStatusCode();
+    }
+
+    private static async Task<IReadOnlyList<PosInventoryLotDto>> ListLotsAsync(
+        HttpClient client,
+        Guid org,
+        Guid productId)
+    {
+        using var get = Scoped(HttpMethod.Get, $"{Inventory}/{productId:D}/lots?includeDepleted=true", org, BranchA);
+        using var response = await client.SendAsync(get);
+        response.EnsureSuccessStatusCode();
+        var page = await response.Content.ReadFromJsonAsync<PagedResult<PosInventoryLotDto>>(JsonOptions);
+        return page!.Items;
     }
 
     private static async Task<decimal> OnHandAsync(HttpClient client, Guid org, Guid productId)

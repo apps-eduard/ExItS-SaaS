@@ -276,7 +276,14 @@ public sealed class InventoryTransferUseCaseTests
 
         if (extraBranchB > 0m)
         {
-            var adjust = new AdjustInventoryStock(fx.Inventory, fx.Products, fx.Balances, fx.UnitOfWork, fx.Clock);
+            var adjust = new AdjustInventoryStock(
+                fx.Inventory,
+                fx.Products,
+                fx.Balances,
+                fx.Lots,
+                new InventoryLotStockService(fx.Lots),
+                fx.UnitOfWork,
+                fx.Clock);
             var result = await adjust.ExecuteAsync(OrgA, fx.CokeId, "In", extraBranchB, "Branch B opening", ActorA, branchId: BranchB);
             Assert.True(result.IsSuccess);
         }
@@ -293,6 +300,7 @@ public sealed class InventoryTransferUseCaseTests
         public InMemoryInventory Inventory { get; } = new();
         public InMemoryTransfers Transfers { get; } = new();
         public InMemoryBalances Balances { get; } = new();
+        public InMemoryLots Lots { get; } = new();
         public CapturingAlerts Alerts { get; } = new();
         public ImmediateUnitOfWork UnitOfWork { get; } = new();
         public FixedClock Clock { get; } = new(Utc);
@@ -305,10 +313,11 @@ public sealed class InventoryTransferUseCaseTests
         public Fixture()
         {
             var branches = new FakeBranches();
-            Create = new CreateInventoryTransfer(Transfers, Products, branches, UnitOfWork, Clock);
-            Dispatch = new DispatchInventoryTransfer(Transfers, Inventory, Balances, Products, branches, Alerts, UnitOfWork, Clock);
-            Receive = new ReceiveInventoryTransfer(Transfers, Inventory, Balances, Products, branches, Alerts, UnitOfWork, Clock);
-            Cancel = new CancelInventoryTransfer(Transfers, Inventory, Balances, Products, branches, UnitOfWork, Clock);
+            var lotStock = new InventoryLotStockService(Lots);
+            Create = new CreateInventoryTransfer(Transfers, Products, Lots, branches, UnitOfWork, Clock);
+            Dispatch = new DispatchInventoryTransfer(Transfers, Inventory, Balances, Products, Lots, lotStock, branches, Alerts, UnitOfWork, Clock);
+            Receive = new ReceiveInventoryTransfer(Transfers, Inventory, Balances, Products, Lots, lotStock, branches, Alerts, UnitOfWork, Clock);
+            Cancel = new CancelInventoryTransfer(Transfers, Inventory, Balances, Products, lotStock, branches, UnitOfWork, Clock);
             Queries = new InventoryTransferQueryService(Transfers, branches);
         }
 
@@ -454,12 +463,14 @@ public sealed class InventoryTransferUseCaseTests
             InventoryTransferId transferId,
             CatalogProductId productId,
             StockMovementType movementType,
+            InventoryLotId? lotId = null,
             CancellationToken cancellationToken = default) =>
             Task.FromResult(Movements.Any(m =>
                 m.OrganizationId == organizationId
                 && m.ProductId == productId
                 && m.SourceId == transferId.Value
-                && m.MovementType == movementType));
+                && m.MovementType == movementType
+                && m.InventoryLotId == lotId));
 
         public Task<(IReadOnlyList<InventoryAccount> Items, int TotalCount)> ListAsync(PosOrganizationId organizationId, InventoryAccountFilter filter, int skip, int take, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<(IReadOnlyList<InventoryAccount> Items, int TotalCount)> ListLowStockAsync(PosOrganizationId organizationId, string? search, int skip, int take, CancellationToken cancellationToken = default) => throw new NotSupportedException();
@@ -512,6 +523,94 @@ public sealed class InventoryTransferUseCaseTests
             _sequence++;
             return Task.FromResult(InventoryTransferNumbers.Format(businessDateUtc, _sequence));
         }
+    }
+
+    private sealed class InMemoryLots : IInventoryLotRepository
+    {
+        public List<InventoryLot> Items { get; } = [];
+        public List<InventoryLotMovement> Movements { get; } = [];
+
+        public Task<InventoryLot?> GetByIdAsync(PosOrganizationId organizationId, InventoryLotId lotId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(Items.FirstOrDefault(l => l.OrganizationId == organizationId && l.Id == lotId));
+
+        public Task<InventoryLot?> FindAsync(
+            PosOrganizationId organizationId,
+            CatalogProductId productId,
+            DateOnly expirationDate,
+            string normalizedLotNumber,
+            PosBranchId? branchId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(Items.FirstOrDefault(l =>
+                l.OrganizationId == organizationId
+                && l.ProductId == productId
+                && l.ExpirationDate == expirationDate
+                && l.NormalizedLotNumber == normalizedLotNumber
+                && l.BranchId == branchId));
+
+        public Task<IReadOnlyList<InventoryLot>> ListOnHandAsync(
+            PosOrganizationId organizationId,
+            CatalogProductId productId,
+            PosBranchId? branchId,
+            bool includeDepleted,
+            CancellationToken cancellationToken = default)
+        {
+            var query = Items.Where(l => l.OrganizationId == organizationId && l.ProductId == productId);
+            if (branchId is not null)
+            {
+                query = query.Where(l => l.BranchId == branchId);
+            }
+
+            if (!includeDepleted)
+            {
+                query = query.Where(l => l.QuantityOnHand > 0m);
+            }
+
+            return Task.FromResult<IReadOnlyList<InventoryLot>>(query.ToList());
+        }
+
+        public Task<(IReadOnlyList<InventoryLot> Items, int TotalCount)> ListPagedAsync(
+            PosOrganizationId organizationId,
+            CatalogProductId productId,
+            PosBranchId? branchId,
+            bool includeDepleted,
+            int skip,
+            int take,
+            CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+
+        public Task AddAsync(InventoryLot lot, CancellationToken cancellationToken = default)
+        {
+            Items.Add(lot);
+            return Task.CompletedTask;
+        }
+
+        public Task UpdateAsync(InventoryLot lot, CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+        public Task AddMovementAsync(InventoryLotMovement movement, CancellationToken cancellationToken = default)
+        {
+            Movements.Add(movement);
+            return Task.CompletedTask;
+        }
+
+        public Task<bool> HasMovementAsync(
+            PosOrganizationId organizationId,
+            Guid sourceId,
+            InventoryLotId lotId,
+            StockMovementType movementType,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(Movements.Any(m =>
+                m.OrganizationId == organizationId
+                && m.SourceId == sourceId
+                && m.LotId == lotId
+                && m.MovementType == movementType));
+
+        public Task<IReadOnlyList<InventoryLotMovement>> ListBySourceAsync(
+            PosOrganizationId organizationId,
+            Guid sourceId,
+            StockMovementType movementType,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<InventoryLotMovement>>(
+                Movements.Where(m => m.OrganizationId == organizationId && m.SourceId == sourceId && m.MovementType == movementType).ToList());
     }
 
     private sealed class InMemoryBalances : IInventoryBranchBalanceRepository

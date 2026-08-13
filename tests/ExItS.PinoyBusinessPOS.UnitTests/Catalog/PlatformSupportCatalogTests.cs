@@ -232,6 +232,7 @@ public sealed class PlatformSupportCatalogTests
             Domain.Inventory.InventoryTransferId transferId,
             CatalogProductId productId,
             Domain.Inventory.StockMovementType movementType,
+            Domain.Inventory.InventoryLotId? lotId = null,
             CancellationToken cancellationToken = default) => throw new NotSupportedException();
 
         public Task<(DateTimeOffset? LatestAt, int Count)> GetMovementSummaryAsync(

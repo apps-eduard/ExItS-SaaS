@@ -42,7 +42,7 @@ public sealed class CatalogProductFormUiTests
         Assert.DoesNotContain("<Section", form, StringComparison.Ordinal);
         Assert.DoesNotContain("<FormActions", form, StringComparison.Ordinal);
         Assert.Contains("pos-product-form__group", form, StringComparison.Ordinal);
-        Assert.Equal(4, Occurrences(form, "pos-product-form__group-title"));
+        Assert.Equal(5, Occurrences(form, "pos-product-form__group-title"));
 
         foreach (var key in new[]
                  {
@@ -69,6 +69,9 @@ public sealed class CatalogProductFormUiTests
         Assert.Contains("Catalog_TrackStock", form, StringComparison.Ordinal);
         Assert.Contains("Catalog_TrackStockOnHint", form, StringComparison.Ordinal);
         Assert.Contains("Catalog_TrackStockOffHint", form, StringComparison.Ordinal);
+        Assert.Contains("Catalog_TrackExpiration", form, StringComparison.Ordinal);
+        Assert.Contains("Catalog_TrackExpirationHint", form, StringComparison.Ordinal);
+        Assert.Contains("Catalog_ExpirationWarningDays", form, StringComparison.Ordinal);
 
         Assert.Contains("IPosInventoryClient", create, StringComparison.Ordinal);
         Assert.Contains("UtangCapability.ManageInventory", create, StringComparison.Ordinal);
@@ -127,6 +130,10 @@ public sealed class CatalogProductFormUiTests
                      "Catalog_TrackStockOnHint",
                      "Catalog_TrackStockOffHint",
                      "Catalog_TrackStockFailed",
+                     "Catalog_TrackExpiration",
+                     "Catalog_TrackExpirationHint",
+                     "Catalog_ExpirationWarningDays",
+                     "Catalog_ExpirationWarningDaysHint",
                      "Catalog_Product_CreatedTitle",
                      "Catalog_Product_View"
                  })

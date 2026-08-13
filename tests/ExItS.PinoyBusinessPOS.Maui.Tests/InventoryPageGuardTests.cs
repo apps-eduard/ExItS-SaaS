@@ -30,6 +30,8 @@ public sealed class InventoryPageGuardTests
         Assert.Contains("ListMovementsAsync", detail, StringComparison.Ordinal);
         Assert.Contains("pos-inventory-detail__header", detail, StringComparison.Ordinal);
         Assert.Contains("pos-inventory-detail__facts", detail, StringComparison.Ordinal);
+        Assert.Contains("ListLotsAsync", detail, StringComparison.Ordinal);
+        Assert.Contains("Inventory_Lots", detail, StringComparison.Ordinal);
         Assert.DoesNotContain("PageHeader", detail, StringComparison.Ordinal);
         Assert.DoesNotContain("OnClick=\"GoBack\"", detail, StringComparison.Ordinal);
 
