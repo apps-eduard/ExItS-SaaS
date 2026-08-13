@@ -58,3 +58,4 @@ Owner browser checklist is in [P25-WP04](../reports/P25-WP04-web-host-legacy-cle
 | Implementation | `cbcdb8a9` |
 | Tests | `8869a179` |
 | Docs | `528de183` |
+| Denomination default refinement | `a50413bc` |
