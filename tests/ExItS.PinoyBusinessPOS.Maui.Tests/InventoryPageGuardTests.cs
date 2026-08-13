@@ -14,10 +14,12 @@ public sealed class InventoryPageGuardTests
         Assert.Contains("!_allowed", list, StringComparison.Ordinal);
         Assert.Contains("Access_RestrictedTitle", list, StringComparison.Ordinal);
         Assert.Contains("Access_RestrictedMessage", list, StringComparison.Ordinal);
-        Assert.Contains("pos-action-grid--three", list, StringComparison.Ordinal);
+        Assert.Contains("pos-action-grid--four", list, StringComparison.Ordinal);
         Assert.Contains("IconGlyphs.Get(\"warning\")", list, StringComparison.Ordinal);
         Assert.Contains("IconGlyphs.Get(\"check\")", list, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"lent\")", list, StringComparison.Ordinal);
         Assert.Contains("IconGlyphs.Get(\"refresh\")", list, StringComparison.Ordinal);
+        Assert.Contains("/inventory/transfers", list, StringComparison.Ordinal);
         Assert.Contains("pos-inventory__row", list, StringComparison.Ordinal);
         Assert.Contains("pos-inventory__header", list, StringComparison.Ordinal);
         Assert.DoesNotContain("PageHeader", list, StringComparison.Ordinal);
@@ -87,12 +89,38 @@ public sealed class InventoryPageGuardTests
         Assert.Contains("pos-stock-count-detail__header", countDetail, StringComparison.Ordinal);
         Assert.DoesNotContain("PageHeader", countDetail, StringComparison.Ordinal);
         Assert.DoesNotContain("OnClick=\"GoBack\"", countDetail, StringComparison.Ordinal);
+
+        var transfers = File.ReadAllText(Path.Combine(pages, "InventoryTransfers.razor"));
+        Assert.Contains("@page \"/inventory/transfers\"", transfers, StringComparison.Ordinal);
+        Assert.Contains("UtangCapability.ViewInventory", transfers, StringComparison.Ordinal);
+        Assert.Contains("outgoing", transfers, StringComparison.Ordinal);
+        Assert.Contains("incoming", transfers, StringComparison.Ordinal);
+        Assert.Contains("history", transfers, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", transfers, StringComparison.Ordinal);
+
+        var transferCreate = File.ReadAllText(Path.Combine(pages, "InventoryTransferCreate.razor"));
+        Assert.Contains("@page \"/inventory/transfers/new\"", transferCreate, StringComparison.Ordinal);
+        Assert.Contains("UtangCapability.ManageInventory", transferCreate, StringComparison.Ordinal);
+        Assert.Contains("CreateTransferAsync", transferCreate, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", transferCreate, StringComparison.Ordinal);
+
+        var transferDetail = File.ReadAllText(Path.Combine(pages, "InventoryTransferDetail.razor"));
+        Assert.Contains("@page \"/inventory/transfers/{TransferId:guid}\"", transferDetail, StringComparison.Ordinal);
+        Assert.Contains("DispatchTransferAsync", transferDetail, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", transferDetail, StringComparison.Ordinal);
+
+        var transferReceive = File.ReadAllText(Path.Combine(pages, "InventoryTransferReceive.razor"));
+        Assert.Contains("@page \"/inventory/transfers/{TransferId:guid}/receive\"", transferReceive, StringComparison.Ordinal);
+        Assert.Contains("UtangCapability.ManageInventory", transferReceive, StringComparison.Ordinal);
+        Assert.Contains("ReceiveTransferAsync", transferReceive, StringComparison.Ordinal);
+        Assert.Contains("ConfirmDialog", transferReceive, StringComparison.Ordinal);
+        Assert.DoesNotContain("PageHeader", transferReceive, StringComparison.Ordinal);
     }
 
     [Fact]
     public void Inventory_pages_guard_entry_and_gate_view_capability()
     {
-        foreach (var name in new[] { "InventoryList.razor", "InventoryDetail.razor", "InventoryLowStock.razor", "StockCountsList.razor" })
+        foreach (var name in new[] { "InventoryList.razor", "InventoryDetail.razor", "InventoryLowStock.razor", "StockCountsList.razor", "InventoryTransfers.razor", "InventoryTransferDetail.razor" })
         {
             var text = File.ReadAllText(Path.Combine(InventoryPagesDirectory(), name));
             Assert.Contains("Gate.CanEnterProtectedShell", text, StringComparison.Ordinal);

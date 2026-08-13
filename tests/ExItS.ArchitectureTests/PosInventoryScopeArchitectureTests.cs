@@ -12,7 +12,6 @@ public sealed class PosInventoryScopeArchitectureTests
         "PurchaseOrder",
         "WarehouseId",
         "WarehouseBin",
-        "StockTransfer",
         "LotNumber",
         "SerialNumber",
         "ExpiryDate",
@@ -65,6 +64,9 @@ public sealed class PosInventoryScopeArchitectureTests
         Assert.Contains("\"inventory_reorder_changes\"", context, StringComparison.Ordinal);
         Assert.Contains("\"stock_counts\"", context, StringComparison.Ordinal);
         Assert.Contains("\"stock_count_lines\"", context, StringComparison.Ordinal);
+        Assert.Contains("\"inventory_transfers\"", context, StringComparison.Ordinal);
+        Assert.Contains("\"inventory_transfer_lines\"", context, StringComparison.Ordinal);
+        Assert.Contains("\"inventory_branch_balances\"", context, StringComparison.Ordinal);
 
         foreach (var table in new[]
                  {

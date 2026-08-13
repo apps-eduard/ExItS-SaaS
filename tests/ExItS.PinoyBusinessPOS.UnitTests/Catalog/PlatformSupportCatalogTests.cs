@@ -227,6 +227,13 @@ public sealed class PlatformSupportCatalogTests
             CatalogProductId productId,
             CancellationToken cancellationToken = default) => throw new NotSupportedException();
 
+        public Task<bool> HasInventoryTransferMovementAsync(
+            PosOrganizationId organizationId,
+            Domain.Inventory.InventoryTransferId transferId,
+            CatalogProductId productId,
+            Domain.Inventory.StockMovementType movementType,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
         public Task<(DateTimeOffset? LatestAt, int Count)> GetMovementSummaryAsync(
             PosOrganizationId organizationId,
             CatalogProductId productId,
