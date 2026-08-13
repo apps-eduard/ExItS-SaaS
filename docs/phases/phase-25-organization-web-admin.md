@@ -48,4 +48,13 @@ Unauthorized sections are hidden in navigation and still denied by server APIs.
 
 Local ports: **8090** Admin, **8091** Platform API, **8092** POS API, **8093** Org Web, **8094** Personal Web. Production public entry is HTTPS :443 via reverse proxy.
 
-Owner browser checklist is in [P25-WP04](../reports/P25-WP04-web-host-legacy-cleanup-and-local-validation-identity-determinism.md) (SSO items also in [P25-WP03](../reports/P25-WP03-unified-web-authentication-sso-and-workspace-routing.md)). Do not mark Device Verified or Production Ready until the owner validates.
+Owner browser checklist is in [P25-WP04](../reports/P25-WP04-web-host-legacy-cleanup-and-local-validation-identity-determinism.md) (SSO items also in [P25-WP03](../reports/P25-WP03-unified-web-authentication-sso-and-workspace-routing.md)). Cash count owner checklist is in [pos-cashier-cash-count.md](../engineering/pos-cashier-cash-count.md). Do not mark Device Verified or Production Ready until the owner validates.
+
+## Recorded hashes (P25-WP05)
+
+| Kind | SHA |
+|---|---|
+| Starting | `147b94e4d0363354a80b8c31a9f353ae1299bb80` |
+| Implementation | `cbcdb8a9` |
+| Tests | `8869a179` |
+| Docs | `528de183` |

@@ -12,6 +12,7 @@
 | Starting SHA | `147b94e4d0363354a80b8c31a9f353ae1299bb80` |
 | Implementation SHA | `cbcdb8a9` |
 | Test SHA | `8869a179` |
+| Docs SHA | `528de183` |
 | Device Verified | **No** |
 | Browser Verified | **No** |
 | Production Ready | **No** |
@@ -89,7 +90,7 @@ No HealthCare tree. POS remains the only product in this WP. Platform Admin has 
 
 ## 10. Files / docs
 
-See git commits `cbcdb8a9`, `8869a179`, and the documentation commit on this report. Canonical engineering page: [pos-cashier-cash-count.md](../engineering/pos-cashier-cash-count.md).
+See git commits `cbcdb8a9` (feat), `8869a179` (test), `528de183` (docs). Canonical engineering page: [pos-cashier-cash-count.md](../engineering/pos-cashier-cash-count.md).
 
 ## 11. Owner acceptance
 
