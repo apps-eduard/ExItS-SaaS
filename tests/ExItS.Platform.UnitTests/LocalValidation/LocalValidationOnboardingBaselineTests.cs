@@ -67,6 +67,9 @@ public sealed class LocalValidationOnboardingBaselineTests
             root, "src", "Platform", "ExItS.Platform.Application", "LocalValidation", "LocalValidationOptions.cs"));
         Assert.Contains("SeedScopePlatformAdministratorsOnly", options, StringComparison.Ordinal);
         Assert.Contains("= SeedScopePlatformAdministratorsOnly", options, StringComparison.Ordinal);
+        Assert.Contains("ReconcileNonBaselineFixtureIdentitiesAsync", initializer, StringComparison.Ordinal);
+        Assert.Contains("FullCatalogExceptBaseline", initializer, StringComparison.Ordinal);
+        Assert.Contains("closeCatalogDemoOrgs: !isFullSeed", initializer, StringComparison.Ordinal);
     }
 
     private static string FindRepoRoot()

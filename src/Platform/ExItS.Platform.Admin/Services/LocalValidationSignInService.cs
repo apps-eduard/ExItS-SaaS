@@ -217,7 +217,8 @@ public sealed class LocalValidationSignInService(
         string? AccountClass,
         Guid? OrganizationId,
         string? ListLabel,
-        string? ScopeLabel);
+        string? ScopeLabel,
+        bool IsCanonicalBaseline = false);
 
     private sealed record LoginResponse(
         string SessionToken,

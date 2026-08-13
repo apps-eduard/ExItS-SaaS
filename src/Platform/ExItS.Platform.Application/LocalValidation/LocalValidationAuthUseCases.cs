@@ -308,6 +308,9 @@ public sealed class ListLocalValidationQuickLoginIdentities
             ? $"ql:{user.Id.Value:N}:{profile.Id.Value:N}:{orgId:N}"
             : $"ql:{user.Id.Value:N}:{profile.Id.Value:N}";
 
+        var baseline = LocalValidationIdentityCatalog.IsCanonicalBaselineEmail(user.NormalizedEmail)
+            || LocalValidationIdentityCatalog.IsCanonicalBaselineEmail(loginDisplay);
+        var labeled = baseline ? $"Baseline · {listLabel}" : listLabel;
         return new LocalValidationQuickLoginIdentityDto(
             key,
             user.Username,
@@ -319,7 +322,8 @@ public sealed class ListLocalValidationQuickLoginIdentities
             organizationId,
             organizationName,
             organizationRole,
-            listLabel,
-            scopeLabel);
+            labeled,
+            scopeLabel,
+            baseline);
     }
 }

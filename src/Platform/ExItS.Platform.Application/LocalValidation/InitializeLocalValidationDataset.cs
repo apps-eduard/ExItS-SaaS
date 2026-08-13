@@ -261,7 +261,13 @@ public sealed class InitializeLocalValidationDataset
                 .ConfigureAwait(false);
         }
 
-        await CloseObsoleteOrganizationsAsync(cancellationToken).ConfigureAwait(false);
+        await CloseObsoleteOrganizationsAsync(cancellationToken, closeCatalogDemoOrgs: !isFullSeed)
+            .ConfigureAwait(false);
+        if (isPlatformAdministratorsOnly)
+        {
+            await ReconcileNonBaselineFixtureIdentitiesAsync(cancellationToken).ConfigureAwait(false);
+        }
+
         if (isFullSeed)
         {
             await _personalUtangSeed.ExecuteAsync(cancellationToken).ConfigureAwait(false);
@@ -294,11 +300,41 @@ public sealed class InitializeLocalValidationDataset
         }
     }
 
-    private async Task CloseObsoleteOrganizationsAsync(CancellationToken ct)
+    private async Task ReconcileNonBaselineFixtureIdentitiesAsync(CancellationToken ct)
     {
-        foreach (var slug in ObsoleteLocalValidationOrganizations.Slugs.Distinct(StringComparer.OrdinalIgnoreCase))
+        foreach (var identity in LocalValidationIdentityCatalog.FullCatalogExceptBaseline)
         {
-            if (LocalValidationOrganizationCatalog.FindBySlug(slug) is not null)
+            var user = await _users.GetByNormalizedEmailAsync(identity.Email.Trim().ToUpperInvariant(), ct)
+                .ConfigureAwait(false);
+            if (user is null)
+            {
+                user = await _users.GetByNormalizedUsernameAsync(identity.Username.Trim().ToUpperInvariant(), ct)
+                    .ConfigureAwait(false);
+            }
+
+            if (user is null)
+            {
+                continue;
+            }
+
+            await DecommissionObsoleteUserAsync(user, ct).ConfigureAwait(false);
+            _logger.LogInformation(
+                "Decommissioned Full-catalog Local Validation fixture {Key} because SeedScope is PlatformAdministratorsOnly.",
+                identity.Key);
+        }
+    }
+
+    private async Task CloseObsoleteOrganizationsAsync(CancellationToken ct, bool closeCatalogDemoOrgs)
+    {
+        var slugs = ObsoleteLocalValidationOrganizations.Slugs.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        if (closeCatalogDemoOrgs)
+        {
+            slugs.AddRange(LocalValidationOrganizationCatalog.All.Select(o => o.Slug));
+        }
+
+        foreach (var slug in slugs.Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            if (!closeCatalogDemoOrgs && LocalValidationOrganizationCatalog.FindBySlug(slug) is not null)
             {
                 continue;
             }

@@ -39,7 +39,7 @@ public sealed class LocalValidationOptions
     public string SharedPassword { get; set; } = string.Empty;
 
     /// <summary>Deterministic Local Validation dataset version (logged on seed).</summary>
-    public const string DatasetVersion = "2026-08-03-platform-admins-baseline-v1";
+    public const string DatasetVersion = "2026-08-13-admins-baseline-decommission-full-fixtures-v1";
 
     public const string ProductPlanCode = "local-validation-pos";
     public const string ProductPlanDisplayName = "Local Validation POS Plan";
@@ -301,6 +301,25 @@ public static class LocalValidationIdentityCatalog
 
     public static LocalValidationIdentityDefinition? FindByKey(string? key) =>
         All.FirstOrDefault(i => string.Equals(i.Key, key, StringComparison.OrdinalIgnoreCase));
+
+    public static bool IsCanonicalBaselineEmail(string? email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            return false;
+        }
+
+        var normalized = email.Trim().ToUpperInvariant();
+        return PlatformAdministratorsOnly.Any(i =>
+            string.Equals(i.Email.Trim().ToUpperInvariant(), normalized, StringComparison.Ordinal));
+    }
+
+    /// <summary>
+    /// Full-catalog fixture identities that must not remain when SeedScope is PlatformAdministratorsOnly.
+    /// Owner-created accounts (e.g. Mica) are never in this list.
+    /// </summary>
+    public static IReadOnlyList<LocalValidationIdentityDefinition> FullCatalogExceptBaseline { get; } =
+        All.Where(i => !IsCanonicalBaselineEmail(i.Email)).ToList();
 }
 
 /// <summary>Deterministic Personal Utang seed markers for Local Validation (Luis ↔ Sofia).</summary>
@@ -341,4 +360,5 @@ public sealed record LocalValidationQuickLoginIdentityDto(
     string? OrganizationName,
     string? OrganizationRole,
     string ListLabel,
-    string ScopeLabel);
+    string ScopeLabel,
+    bool IsCanonicalBaseline = false);

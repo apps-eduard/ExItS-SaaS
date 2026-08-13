@@ -45,6 +45,19 @@ public sealed class LocalValidationIdentityCatalogTests
     }
 
     [Fact]
+    public void Canonical_baseline_emails_are_only_olivia_and_rafael()
+    {
+        Assert.True(LocalValidationIdentityCatalog.IsCanonicalBaselineEmail("olivia.mendoza@exits.local"));
+        Assert.True(LocalValidationIdentityCatalog.IsCanonicalBaselineEmail("RAFAEL.TORRES@EXITS.LOCAL"));
+        Assert.False(LocalValidationIdentityCatalog.IsCanonicalBaselineEmail("maria.santos@exits.local"));
+        Assert.False(LocalValidationIdentityCatalog.IsCanonicalBaselineEmail("mica@gmail.com"));
+        Assert.Equal(6, LocalValidationIdentityCatalog.FullCatalogExceptBaseline.Count);
+        Assert.All(
+            LocalValidationIdentityCatalog.FullCatalogExceptBaseline,
+            i => Assert.False(LocalValidationIdentityCatalog.IsCanonicalBaselineEmail(i.Email)));
+    }
+
+    [Fact]
     public void SeedScope_Full_returns_eight_identities()
     {
         var identities = LocalValidationOptions.IdentitiesForSeedScope(LocalValidationOptions.SeedScopeFull);
