@@ -1,0 +1,13 @@
+@using AntDesign
+
+<Empty Description="@Description" />
+
+@code {
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Message { get; set; }
+
+    private string Description =>
+        string.IsNullOrWhiteSpace(Title)
+            ? (Message ?? "Nothing to show.")
+            : string.IsNullOrWhiteSpace(Message) ? Title : $"{Title}. {Message}";
+}

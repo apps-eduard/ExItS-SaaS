@@ -1,0 +1,14 @@
+<div class="exits-field">
+    @if (!string.IsNullOrWhiteSpace(Label))
+    {
+        <label class="ant-form-item-label">@Label</label>
+    }
+    <div class="exits-field__control">
+        @ChildContent
+    </div>
+</div>
+
+@code {
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

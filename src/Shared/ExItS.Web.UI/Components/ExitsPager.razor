@@ -1,0 +1,25 @@
+@using AntDesign
+
+@if (TotalCount > 0)
+{
+    <div class="exits-pager">
+        <Pagination Current="@Page"
+                    PageSize="@PageSize"
+                    Total="@TotalCount"
+                    Disabled="@Busy"
+                    ShowSizeChanger="false"
+                    Size="@PaginationSize.Small"
+                    OnChange="OnChangeAsync" />
+    </div>
+}
+
+@code {
+    [Parameter] public int Page { get; set; } = 1;
+    [Parameter] public int PageSize { get; set; } = 20;
+    [Parameter] public int TotalCount { get; set; }
+    [Parameter] public bool Busy { get; set; }
+    [Parameter] public EventCallback<int> PageChanged { get; set; }
+
+    private Task OnChangeAsync(PaginationEventArgs args) =>
+        PageChanged.InvokeAsync(args.Page);
+}

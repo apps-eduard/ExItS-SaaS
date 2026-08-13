@@ -1,0 +1,76 @@
+@inject ExitsWebThemeService Theme
+@inject NavigationManager Nav
+@inject IJSRuntime Js
+@implements IDisposable
+
+@if (_ready)
+{
+    <Select TItemValue="string"
+            TItem="string"
+            Value="@_value"
+            ValueChanged="OnValueChangedAsync"
+            Style="width: 104px"
+            Size="@InputSize.Small"
+            Class="exits-theme-select"
+            Placeholder="Theme">
+        <SelectOptions>
+            <SelectOption TItemValue="string" TItem="string" Value="@("light")" Label="Light" />
+            <SelectOption TItemValue="string" TItem="string" Value="@("dark")" Label="Dark" />
+            <SelectOption TItemValue="string" TItem="string" Value="@("system")" Label="System" />
+        </SelectOptions>
+    </Select>
+}
+
+@code {
+    private bool _ready;
+    private string _value = "light";
+
+    protected override void OnInitialized()
+    {
+        Nav.LocationChanged += OnLocationChanged;
+        Theme.Changed += OnThemeChangedAsync;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || _ready)
+        {
+            return;
+        }
+
+        await Theme.InitializeAsync();
+        _value = ExitsWebThemeService.ToStorageValue(Theme.Current);
+        _ready = true;
+        StateHasChanged();
+    }
+
+    private async Task OnValueChangedAsync(string value)
+    {
+        if (!_ready || string.Equals(value, _value, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        _value = value;
+        await Theme.SetThemeAsync(ExitsWebThemeService.Parse(value));
+    }
+
+    private async Task OnThemeChangedAsync()
+    {
+        _value = ExitsWebThemeService.ToStorageValue(Theme.Current);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        try { await Js.InvokeVoidAsync("exitsWebTheme.reapplyFromStorage"); }
+        catch (JSDisconnectedException) { }
+        catch (ObjectDisposedException) { }
+    }
+
+    public void Dispose()
+    {
+        Nav.LocationChanged -= OnLocationChanged;
+        Theme.Changed -= OnThemeChangedAsync;
+    }
+}

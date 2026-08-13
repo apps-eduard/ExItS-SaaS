@@ -1,0 +1,11 @@
+@using AntDesign
+
+<Result Status="@ResultStatus.Warning"
+        Title="Access denied"
+        SubTitle="@Subtitle" />
+
+@code {
+    [Parameter]
+    public string Subtitle { get; set; } =
+        "This section is hidden unless your membership and role allow it. The server still denies unauthorized API calls.";
+}

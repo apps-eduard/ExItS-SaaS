@@ -1,0 +1,178 @@
+/* Shared ExItS browser chrome — Ant Design owns controls. Branding + density only. */
+
+:root {
+    --exits-primary: #1677ff;
+    --exits-bg: #f0f2f5;
+    --exits-surface: #ffffff;
+    --exits-text: #000000d9;
+    --exits-muted: #00000073;
+    --exits-border: #f0f0f0;
+    color-scheme: light;
+}
+
+html.exits-theme-dark {
+    --exits-bg: #141414;
+    --exits-surface: #1f1f1f;
+    --exits-text: #ffffffd9;
+    --exits-muted: #ffffff73;
+    --exits-border: #303030;
+    color-scheme: dark;
+}
+
+html, body {
+    margin: 0;
+    min-height: 100%;
+    background: var(--exits-bg);
+    color: var(--exits-text);
+}
+
+.exits-web-layout { min-height: 100vh; background: var(--exits-bg); }
+.exits-web-sider { box-shadow: 2px 0 8px rgba(0,0,0,.08); }
+.exits-brand {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    height: 48px;
+    padding: 0 16px;
+    cursor: pointer;
+    color: #fff;
+    font-weight: 600;
+}
+.exits-brand-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    background: var(--exits-primary);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+}
+.exits-web-header {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+    padding: 0 16px !important;
+    background: var(--exits-surface) !important;
+    border-bottom: 1px solid var(--exits-border);
+    height: 48px !important;
+    line-height: 48px !important;
+    position: sticky;
+    top: 0;
+    z-index: 9;
+}
+.exits-header-left, .exits-header-right {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    min-width: 0;
+}
+.exits-header-title {
+    font-weight: 600;
+    color: var(--exits-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 28vw;
+}
+.exits-identity {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    min-width: 0;
+    max-width: 240px;
+}
+.exits-identity-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.15;
+    min-width: 0;
+    text-align: right;
+}
+.exits-identity-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--exits-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.exits-identity-meta {
+    font-size: 11px;
+    color: var(--exits-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.exits-web-content {
+    margin: 16px 16px 0;
+    padding: 16px 20px;
+    background: var(--exits-surface);
+    min-height: calc(100vh - 48px - 48px);
+    border-radius: 6px;
+}
+.exits-web-menu.ant-menu-inline { border-inline-end: none !important; }
+.exits-web-menu .ant-menu-item,
+.exits-web-menu .ant-menu-submenu-title {
+    height: 36px !important;
+    line-height: 36px !important;
+    margin: 2px 0 !important;
+}
+.exits-field {
+    display: grid;
+    grid-template-columns: minmax(120px, 180px) minmax(0, 1fr);
+    gap: 8px 12px;
+    align-items: center;
+    margin-bottom: 12px;
+}
+.exits-field__control { min-width: 0; }
+.exits-field__control .ant-input,
+.exits-field__control .ant-select { width: 100%; }
+.exits-pager { margin: 12px 0; }
+.exits-note { color: var(--exits-muted); font-size: 12px; margin: 8px 0; }
+.exits-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+    margin: 12px 0 20px;
+}
+.exits-metric {
+    border: 1px solid var(--exits-border);
+    border-radius: 8px;
+    padding: 12px;
+    background: var(--exits-surface);
+}
+.exits-metric__label { font-size: 12px; color: var(--exits-muted); }
+.exits-metric__value { font-size: 1.25rem; font-weight: 600; }
+.exits-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+.exits-table th, .exits-table td {
+    border-bottom: 1px solid var(--exits-border);
+    padding: 8px 10px;
+    text-align: left;
+}
+.exits-login-shell {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: var(--exits-bg);
+}
+.exits-login-card { width: min(420px, 100%); }
+.exits-form-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; margin-bottom: 12px; }
+
+@media (max-width: 960px) {
+    .exits-web-content { margin: 12px; padding: 12px; }
+    .exits-header-title { max-width: 40vw; }
+}
+@media (max-width: 576px) {
+    .exits-field { grid-template-columns: 1fr; }
+    .exits-identity-text { display: none; }
+}

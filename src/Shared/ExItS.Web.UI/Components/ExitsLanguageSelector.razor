@@ -1,0 +1,58 @@
+@inject NavigationManager Nav
+@inject IJSRuntime Js
+
+<Select TItemValue="string"
+        TItem="string"
+        Value="@_value"
+        ValueChanged="OnChangedAsync"
+        Style="width: 108px"
+        Size="@InputSize.Small"
+        Placeholder="Language">
+    <SelectOptions>
+        <SelectOption TItemValue="string" TItem="string" Value="@("en")" Label="English" />
+        <SelectOption TItemValue="string" TItem="string" Value="@("fil-PH")" Label="Tagalog" />
+    </SelectOptions>
+</Select>
+
+@code {
+    private string _value = "en";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        try
+        {
+            var stored = await Js.InvokeAsync<string?>("exitsWebTheme.get", "exits-web-culture");
+            if (stored is "fil-PH" or "en")
+            {
+                _value = stored;
+                StateHasChanged();
+            }
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+    }
+
+    private async Task OnChangedAsync(string culture)
+    {
+        var normalized = culture == "fil-PH" ? "fil-PH" : "en";
+        _value = normalized;
+        try
+        {
+            await Js.InvokeVoidAsync("exitsWebTheme.set", "exits-web-culture", normalized);
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+
+        var uri = new Uri(Nav.Uri);
+        Nav.NavigateTo(
+            $"/culture/set?culture={Uri.EscapeDataString(normalized)}&redirectUri={Uri.EscapeDataString(uri.PathAndQuery)}",
+            forceLoad: true);
+    }
+}
