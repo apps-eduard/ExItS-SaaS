@@ -49,6 +49,9 @@ public sealed class PersonalWebHostTests
         Assert.Contains("@page \"/settings\"", combined, StringComparison.Ordinal);
         Assert.Contains("@page \"/start-business\"", combined, StringComparison.Ordinal);
         Assert.Contains("CanonicalLoginUrl", combined, StringComparison.Ordinal);
+        Assert.Contains("StartBusinessAsync", combined, StringComparison.Ordinal);
+        Assert.Contains("GetOnboardingBusinessTypesAsync", combined, StringComparison.Ordinal);
+        Assert.Contains("Start Free Trial", combined, StringComparison.Ordinal);
     }
 
     private static string FindPages() =>

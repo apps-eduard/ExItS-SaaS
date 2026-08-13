@@ -127,6 +127,97 @@ public sealed class WebHostArchitectureTests
     }
 
     [Fact]
+    public void Platform_admin_personal_product_pages_are_compatibility_redirects()
+    {
+        var root = FindRepositoryRoot();
+        var personalPages = File.ReadAllText(Path.Combine(
+            root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "PersonalScopePages.razor"));
+        var startBusiness = File.ReadAllText(Path.Combine(
+            root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "PersonalStartBusiness.razor"));
+        var nav = File.ReadAllText(Path.Combine(
+            root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Layout", "AdminNav.razor"));
+        var dashboard = File.ReadAllText(Path.Combine(
+            root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "AdminDashboard.razor"));
+        var personalForm = File.ReadAllText(Path.Combine(
+            root, "src", "Platform", "ExItS.Personal.Web", "Components", "Pages", "StartBusiness.razor"));
+
+        Assert.Contains("GetOrigin(WebApps.Personal)", personalPages, StringComparison.Ordinal);
+        Assert.Contains("forceLoad: true", personalPages, StringComparison.Ordinal);
+        Assert.DoesNotContain("GetPersonalUtangContactsAsync", personalPages, StringComparison.Ordinal);
+        Assert.Contains("/start-business", startBusiness, StringComparison.Ordinal);
+        Assert.DoesNotContain("Start Free Trial", startBusiness, StringComparison.Ordinal);
+        Assert.Contains("/admin/handoff/personal", nav, StringComparison.Ordinal);
+        Assert.Contains("/admin/handoff/organization", nav, StringComparison.Ordinal);
+        Assert.DoesNotContain("RouterLink=\"/admin/personal/utang/lent\"", nav, StringComparison.Ordinal);
+        Assert.Contains("/admin/handoff/personal", dashboard, StringComparison.Ordinal);
+        Assert.Contains("/admin/handoff/organization", dashboard, StringComparison.Ordinal);
+        Assert.Contains("StartBusinessAsync", personalForm, StringComparison.Ordinal);
+        Assert.Contains("GetOnboardingBusinessTypesAsync", personalForm, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Platform_admin_organization_product_pages_handoff_organization_shell()
+    {
+        var root = FindRepositoryRoot();
+        var pages = Path.Combine(root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages");
+        foreach (var file in new[]
+                 {
+                     "OrganizationMembers.razor",
+                     "OrganizationInvitations.razor",
+                     "OrganizationRoles.razor",
+                     "OrganizationBranding.razor",
+                     "OrganizationCatalog.razor",
+                     "OrganizationEnabledProducts.razor",
+                     "OrganizationCommercial.razor",
+                     "Organizations.razor",
+                     "OrganizationUsers.razor"
+                 })
+        {
+            var text = File.ReadAllText(Path.Combine(pages, file));
+            Assert.Contains("OrganizationShellHandoff.TryRedirect", text, StringComparison.Ordinal);
+        }
+
+        var helper = File.ReadAllText(Path.Combine(
+            root, "src", "Platform", "ExItS.Platform.Admin", "Services", "OrganizationShellHandoff.cs"));
+        Assert.Contains("/admin/handoff/organization", helper, StringComparison.Ordinal);
+        Assert.Contains("SafeReturnPath.Sanitize", helper, StringComparison.Ordinal);
+        Assert.Contains("forceLoad: true", helper, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Canonical_login_is_admin_only_and_product_hosts_have_no_quick_login()
+    {
+        var root = FindRepositoryRoot();
+        var orgLogin = File.ReadAllText(Path.Combine(
+            root, "src", "Products", "PinoyBusinessPOS", "ExItS.PinoyBusinessPOS.Web", "Components", "Pages", "Login.razor"));
+        var personalLogin = File.ReadAllText(Path.Combine(
+            root, "src", "Platform", "ExItS.Personal.Web", "Components", "Pages", "Login.razor"));
+        var adminLogin = File.ReadAllText(Path.Combine(
+            root, "src", "Platform", "ExItS.Platform.Admin", "Components", "Pages", "Login.razor"));
+        Assert.Contains("LocalValidationIdentityPicker", adminLogin, StringComparison.Ordinal);
+        Assert.DoesNotContain("LocalValidationIdentityPicker", orgLogin, StringComparison.Ordinal);
+        Assert.DoesNotContain("LocalValidationIdentityPicker", personalLogin, StringComparison.Ordinal);
+        Assert.Contains("CanonicalLoginUrl", orgLogin, StringComparison.Ordinal);
+        Assert.Contains("CanonicalLoginUrl", personalLogin, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Shared_web_ui_contains_no_product_business_pages()
+    {
+        var ui = Path.Combine(FindRepositoryRoot(), "src", "Shared", "ExItS.Web.UI");
+        var razor = Directory.GetFiles(ui, "*.razor", SearchOption.AllDirectories);
+        var combined = string.Join('\n', razor.Select(File.ReadAllText));
+        Assert.DoesNotContain("@page \"/overview\"", combined, StringComparison.Ordinal);
+        Assert.DoesNotContain("@page \"/home\"", combined, StringComparison.Ordinal);
+        Assert.DoesNotContain("@page \"/admin", combined, StringComparison.Ordinal);
+        Assert.DoesNotContain("@page \"/start-business\"", combined, StringComparison.Ordinal);
+        Assert.DoesNotContain("@page \"/staff\"", combined, StringComparison.Ordinal);
+        Assert.Contains(razor, f => f.EndsWith("ExitsThemeSelector.razor", StringComparison.Ordinal));
+        Assert.Contains(razor, f => f.EndsWith("ExitsLanguageSelector.razor", StringComparison.Ordinal));
+        Assert.Contains(razor, f => f.EndsWith("ExitsPageHeader.razor", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void Org_web_routes_exist_and_have_no_checkout()
     {
         var pages = Path.Combine(FindRepositoryRoot(), "src", "Products", "PinoyBusinessPOS", "ExItS.PinoyBusinessPOS.Web");
