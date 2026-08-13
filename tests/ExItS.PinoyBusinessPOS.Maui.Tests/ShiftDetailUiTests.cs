@@ -46,7 +46,8 @@ public sealed class ShiftDetailUiTests
         var detail = ReadDetail();
         Assert.Contains("Shifts_CashSummarySection", detail, StringComparison.Ordinal);
         Assert.Contains("Shifts_OpeningCashLabel", detail, StringComparison.Ordinal);
-        Assert.Contains("Shifts_NetCashSales", detail, StringComparison.Ordinal);
+        Assert.Contains("Shifts_CashSales", detail, StringComparison.Ordinal);
+        Assert.Contains("Shifts_CashRefunds", detail, StringComparison.Ordinal);
         Assert.Contains("Shifts_CashIn", detail, StringComparison.Ordinal);
         Assert.Contains("Shifts_CashOut", detail, StringComparison.Ordinal);
         Assert.Contains("Shifts_ExpectedCash", detail, StringComparison.Ordinal);

@@ -22,6 +22,12 @@ public sealed class OperationalSetupUiGuardTests
         Assert.Contains("Setup_CashHandlingSection", page, StringComparison.Ordinal);
         Assert.Contains("Setup_CashCount", page, StringComparison.Ordinal);
         Assert.Contains("_cashCountMode", page, StringComparison.Ordinal);
+        Assert.Contains("CashCountRequired", page, StringComparison.Ordinal);
+        Assert.Contains("CashCountOptional", page, StringComparison.Ordinal);
+        Assert.DoesNotContain("CashCountOff", page, StringComparison.Ordinal);
+        Assert.Contains("Setup_CashCountSnapshotHint", page, StringComparison.Ordinal);
+        Assert.Contains("Setup_Denominations", page, StringComparison.Ordinal);
+        Assert.Contains("ManageOperationalSetup", page, StringComparison.Ordinal);
         Assert.Contains("pos-setup__footer", page, StringComparison.Ordinal);
         Assert.Contains("SeedDefaultsFromSession", page, StringComparison.Ordinal);
         Assert.Contains("OrganizationDisplayName", page, StringComparison.Ordinal);

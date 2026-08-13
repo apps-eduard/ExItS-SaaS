@@ -15,18 +15,32 @@ public sealed class PosOperationalSetupCashCountTests
     private static readonly DateTimeOffset Now = new(2026, 8, 13, 8, 0, 0, TimeSpan.Zero);
 
     [Fact]
-    public void New_organization_defaults_to_optional_cash_count()
+    public void New_organization_defaults_to_required_cash_count()
     {
         var setup = PosOperationalSetup.CreateIncomplete(Org, Actor, Now);
-        Assert.Equal(CashCountMode.Optional, setup.CashCountMode);
+        Assert.Equal(CashCountMode.Required, setup.CashCountMode);
     }
 
     [Fact]
-    public void Complete_without_mode_keeps_optional_default()
+    public void Complete_without_mode_keeps_required_default()
     {
         var setup = PosOperationalSetup.CreateIncomplete(Org, Actor, Now);
         setup.Complete("Sari-Sari", "PHP", TaxPricingMode.TaxExclusive, 12m, null, null, null, null, Register, Actor, Now);
-        Assert.Equal(CashCountMode.Optional, setup.CashCountMode);
+        Assert.Equal(CashCountMode.Required, setup.CashCountMode);
+    }
+
+    [Fact]
+    public void Parse_configurable_rejects_off()
+    {
+        var ex = Assert.Throws<DomainException>(() => CashCountModes.ParseConfigurable("Off"));
+        Assert.Equal(DomainErrorCodes.CashCountModeOffRetired, ex.ErrorCode);
+    }
+
+    [Fact]
+    public void For_new_shift_treats_legacy_off_as_optional()
+    {
+        Assert.Equal(CashCountMode.Optional, CashCountModes.ForNewShift(CashCountMode.Off));
+        Assert.Equal(CashCountMode.Required, CashCountModes.ForNewShift(CashCountMode.Required));
     }
 
     [Fact]

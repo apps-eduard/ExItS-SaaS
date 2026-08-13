@@ -5,10 +5,12 @@ using ExItS.PinoyBusinessPOS.Application.CashierShifts;
 using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.OperationalSetup;
+using ExItS.PinoyBusinessPOS.Application.Permissions;
 using ExItS.PinoyBusinessPOS.Application.Reporting;
 using ExItS.PinoyBusinessPOS.Application.Sales;
 using ExItS.PinoyBusinessPOS.Domain.CashierShifts;
 using ExItS.PinoyBusinessPOS.Domain.Common;
+using ExItS.PinoyBusinessPOS.Domain.OperationalSetup;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
@@ -32,9 +34,11 @@ public sealed class PosCashierShiftCashCountApiTests(PosPostgreSqlFixture fixtur
     private const string Sales = "/api/v1/pos/sales";
     private const string Products = "/api/v1/pos/catalog/products";
     private const string ShiftSummary = "/api/v1/pos/reports/shifts-summary";
+    private const string Permissions = "/api/v1/pos/permissions";
+    private static readonly Guid Cashier = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
 
     [Fact]
-    public async Task New_organization_defaults_to_optional_cash_count()
+    public async Task New_organization_defaults_to_required_cash_count()
     {
         await using var factory = new PosApiFactory(fixture.ConnectionString);
         var client = factory.CreateClient();
@@ -44,48 +48,72 @@ public sealed class PosCashierShiftCashCountApiTests(PosPostgreSqlFixture fixtur
         using var response = await client.SendAsync(get);
         response.EnsureSuccessStatusCode();
         var setup = await response.Content.ReadFromJsonAsync<PosOperationalSetupDto>(JsonOptions);
-        Assert.Equal(nameof(CashCountMode.Optional), setup!.CashCountMode);
+        Assert.Equal(nameof(CashCountMode.Required), setup!.CashCountMode);
 
-        await CompleteSetupAsync(client, org, CashCountMode.Optional);
+        await CompleteSetupAsync(client, org, CashCountMode.Required);
         using var getCompleted = Scoped(HttpMethod.Get, Setup, org);
         using var completedResponse = await client.SendAsync(getCompleted);
         var completed = await completedResponse.Content.ReadFromJsonAsync<PosOperationalSetupDto>(JsonOptions);
-        Assert.Equal(nameof(CashCountMode.Optional), completed!.CashCountMode);
+        Assert.Equal(nameof(CashCountMode.Required), completed!.CashCountMode);
+
+        using var off = Scoped(HttpMethod.Post, $"{Setup}/complete", org);
+        off.Content = JsonContent.Create(
+            new CompleteOperationalSetupRequest("Sari Sari Store", "PHP", "TaxExclusive", 0m, CashCountMode: nameof(CashCountMode.Off)),
+            options: JsonOptions);
+        using var offResponse = await client.SendAsync(off);
+        // Already completed is idempotent success; Off is rejected on update.
+        await UpdateCashCountModeAsync(client, org, CashCountMode.Optional);
+        using var setOff = Scoped(HttpMethod.Put, Setup, org);
+        var current = await GetSetupAsync(client, org);
+        setOff.Content = JsonContent.Create(
+            new UpdateOperationalSetupRequest(
+                current.StoreDisplayName,
+                current.CurrencyCode,
+                current.TaxPricingMode,
+                current.TaxRatePercent,
+                current.UpdatedAtUtc,
+                current.ReceiptHeader,
+                current.ReceiptFooter,
+                current.BusinessAddress,
+                current.ContactPhone,
+                nameof(CashCountMode.Off)),
+            options: JsonOptions);
+        using var setOffResponse = await client.SendAsync(setOff);
+        Assert.Equal(HttpStatusCode.BadRequest, setOffResponse.StatusCode);
+        Assert.Equal(DomainErrorCodes.CashCountModeOffRetired, await ReadErrorCodeAsync(setOffResponse));
     }
 
     [Fact]
-    public async Task Off_and_optional_allow_skip_while_required_is_enforced_and_snapshot_sticks()
+    public async Task Optional_allows_skip_while_required_is_enforced_and_snapshot_sticks()
     {
         await using var factory = new PosApiFactory(fixture.ConnectionString);
         var client = factory.CreateClient();
         var org = Guid.NewGuid();
-        await CompleteSetupAsync(client, org, CashCountMode.Off);
+        await CompleteSetupAsync(client, org, CashCountMode.Optional);
         var register = await PosShiftIntegrationSupport.EnsureRegisterAsync(client, org, Owner);
 
-        using var openOff = Scoped(HttpMethod.Post, Shifts, org);
-        openOff.Content = JsonContent.Create(new OpenCashierShiftRequest(register.RegisterId), options: JsonOptions);
-        using var openOffResponse = await client.SendAsync(openOff);
-        openOffResponse.EnsureSuccessStatusCode();
-        var offShift = await openOffResponse.Content.ReadFromJsonAsync<PosCashierShiftDto>(JsonOptions);
-        Assert.Equal(nameof(CashCountMode.Off), offShift!.EffectiveCashCountMode);
-        Assert.False(offShift.OpeningCashCounted);
+        using var openOptionalFirst = Scoped(HttpMethod.Post, Shifts, org);
+        openOptionalFirst.Content = JsonContent.Create(new OpenCashierShiftRequest(register.RegisterId), options: JsonOptions);
+        using var openOptionalFirstResponse = await client.SendAsync(openOptionalFirst);
+        openOptionalFirstResponse.EnsureSuccessStatusCode();
+        var optionalFirst = await openOptionalFirstResponse.Content.ReadFromJsonAsync<PosCashierShiftDto>(JsonOptions);
+        Assert.Equal(nameof(CashCountMode.Optional), optionalFirst!.EffectiveCashCountMode);
+        Assert.False(optionalFirst.OpeningCashCounted);
 
         var product = await CreateProductAsync(client, org, "Candy", "Piece", 10m, "cash-count-candy");
         var saleTotal = await CheckoutCashAsync(client, org, product.ProductId, 2m, 20m);
         Assert.Equal(20m, saleTotal);
 
-        using var closeOff = Scoped(HttpMethod.Post, $"{Shifts}/{offShift.ShiftId:D}/close", org);
-        closeOff.Content = JsonContent.Create(new CloseCashierShiftRequest(ClosingCashAmount: null), options: JsonOptions);
-        using var closeOffResponse = await client.SendAsync(closeOff);
-        closeOffResponse.EnsureSuccessStatusCode();
-        var closedOff = await closeOffResponse.Content.ReadFromJsonAsync<PosCashierShiftDto>(JsonOptions);
-        Assert.Equal("Closed", closedOff!.Status);
-        Assert.Null(closedOff.ClosingCashAmount);
-        Assert.Null(closedOff.CashVarianceAmount);
-        Assert.Equal(20m, closedOff.ExpectedCashAmountSnapshot);
-        Assert.Equal(CashCountStates.NotRequired, closedOff.ClosingCashCountState);
-
-        await UpdateCashCountModeAsync(client, org, CashCountMode.Optional);
+        using var closeOptionalFirst = Scoped(HttpMethod.Post, $"{Shifts}/{optionalFirst.ShiftId:D}/close", org);
+        closeOptionalFirst.Content = JsonContent.Create(new CloseCashierShiftRequest(ClosingCashAmount: null), options: JsonOptions);
+        using var closeOptionalFirstResponse = await client.SendAsync(closeOptionalFirst);
+        closeOptionalFirstResponse.EnsureSuccessStatusCode();
+        var closedOptionalFirst = await closeOptionalFirstResponse.Content.ReadFromJsonAsync<PosCashierShiftDto>(JsonOptions);
+        Assert.Equal("Closed", closedOptionalFirst!.Status);
+        Assert.Null(closedOptionalFirst.ClosingCashAmount);
+        Assert.Null(closedOptionalFirst.CashVarianceAmount);
+        Assert.Equal(20m, closedOptionalFirst.ExpectedCashAmountSnapshot);
+        Assert.Equal(CashCountStates.NotPerformed, closedOptionalFirst.ClosingCashCountState);
         using var openOptional = Scoped(HttpMethod.Post, Shifts, org);
         openOptional.Content = JsonContent.Create(new OpenCashierShiftRequest(register.RegisterId, 1000m), options: JsonOptions);
         using var openOptionalResponse = await client.SendAsync(openOptional);
@@ -223,7 +251,7 @@ public sealed class PosCashierShiftCashCountApiTests(PosPostgreSqlFixture fixtur
         var orgA = Guid.NewGuid();
         var orgB = Guid.NewGuid();
         await CompleteSetupAsync(client, orgA, CashCountMode.Optional);
-        await CompleteSetupAsync(client, orgB, CashCountMode.Off);
+        await CompleteSetupAsync(client, orgB, CashCountMode.Optional);
 
         var setupA = await GetSetupAsync(client, orgA);
         using var cross = Scoped(HttpMethod.Put, Setup, orgB);
@@ -263,6 +291,152 @@ public sealed class PosCashierShiftCashCountApiTests(PosPostgreSqlFixture fixtur
         using var personalResponse = await client.SendAsync(personal);
         Assert.Equal(HttpStatusCode.BadRequest, personalResponse.StatusCode);
         Assert.Equal(ApplicationErrorCodes.OrganizationRequired, await ReadErrorCodeAsync(personalResponse));
+    }
+
+    [Fact]
+    public async Task Denomination_seed_is_idempotent_and_custom_value_can_be_added()
+    {
+        await using var factory = new PosApiFactory(fixture.ConnectionString);
+        var client = factory.CreateClient();
+        var org = Guid.NewGuid();
+        await CompleteSetupAsync(client, org, CashCountMode.Required);
+
+        using var first = Scoped(HttpMethod.Get, $"{Setup}/cash-denominations", org);
+        using var firstResponse = await client.SendAsync(first);
+        firstResponse.EnsureSuccessStatusCode();
+        var seeded = await firstResponse.Content.ReadFromJsonAsync<List<OrganizationCashDenominationDto>>(JsonOptions);
+        Assert.Equal(
+            PhilippineCashDenominationDefaults.Values.ToHashSet(),
+            seeded!.Select(d => d.Value).ToHashSet());
+
+        using var second = Scoped(HttpMethod.Get, $"{Setup}/cash-denominations", org);
+        using var secondResponse = await client.SendAsync(second);
+        var seededAgain = await secondResponse.Content.ReadFromJsonAsync<List<OrganizationCashDenominationDto>>(JsonOptions);
+        Assert.Equal(seeded.Count, seededAgain!.Count);
+
+        var items = seeded
+            .Select(d => new CashDenominationWriteDto(d.Value, d.IsEnabled, d.SortOrder, d.DisplayLabel, d.DenominationId))
+            .ToList();
+        items.Add(new CashDenominationWriteDto(5000m, true, items.Count));
+        using var replace = Scoped(HttpMethod.Put, $"{Setup}/cash-denominations", org);
+        replace.Content = JsonContent.Create(new ReplaceCashDenominationsRequest(items), options: JsonOptions);
+        using var replaceResponse = await client.SendAsync(replace);
+        replaceResponse.EnsureSuccessStatusCode();
+        var updated = await replaceResponse.Content.ReadFromJsonAsync<List<OrganizationCashDenominationDto>>(JsonOptions);
+        Assert.Contains(updated!, d => d.Value == 5000m);
+
+        items.Add(new CashDenominationWriteDto(5000m, true, items.Count));
+        using var duplicate = Scoped(HttpMethod.Put, $"{Setup}/cash-denominations", org);
+        duplicate.Content = JsonContent.Create(new ReplaceCashDenominationsRequest(items), options: JsonOptions);
+        using var duplicateResponse = await client.SendAsync(duplicate);
+        Assert.Equal(HttpStatusCode.BadRequest, duplicateResponse.StatusCode);
+        Assert.Equal(DomainErrorCodes.DuplicateCashDenomination, await ReadErrorCodeAsync(duplicateResponse));
+    }
+
+    [Fact]
+    public async Task Denomination_assisted_open_and_close_recalculate_and_reject_mismatch()
+    {
+        await using var factory = new PosApiFactory(fixture.ConnectionString);
+        var client = factory.CreateClient();
+        var org = Guid.NewGuid();
+        await CompleteSetupAsync(client, org, CashCountMode.Required);
+        var register = await PosShiftIntegrationSupport.EnsureRegisterAsync(client, org, Owner);
+        using var seed = Scoped(HttpMethod.Get, $"{Setup}/cash-denominations", org);
+        (await client.SendAsync(seed)).EnsureSuccessStatusCode();
+
+        var openingLines = new[]
+        {
+            new CashCountDenominationLineDto(1000m, 1),
+            new CashCountDenominationLineDto(500m, 0)
+        };
+        using var mismatch = Scoped(HttpMethod.Post, Shifts, org);
+        mismatch.Content = JsonContent.Create(
+            new OpenCashierShiftRequest(register.RegisterId, 999m, DenominationLines: openingLines),
+            options: JsonOptions);
+        using var mismatchResponse = await client.SendAsync(mismatch);
+        Assert.Equal(HttpStatusCode.BadRequest, mismatchResponse.StatusCode);
+        Assert.Equal(DomainErrorCodes.CashCountDenominationTotalMismatch, await ReadErrorCodeAsync(mismatchResponse));
+
+        using var open = Scoped(HttpMethod.Post, Shifts, org);
+        open.Content = JsonContent.Create(
+            new OpenCashierShiftRequest(register.RegisterId, 1000m, DenominationLines: openingLines),
+            options: JsonOptions);
+        using var openResponse = await client.SendAsync(open);
+        openResponse.EnsureSuccessStatusCode();
+        var shift = await openResponse.Content.ReadFromJsonAsync<PosCashierShiftDto>(JsonOptions);
+        Assert.Equal(1000m, shift!.OpeningCashAmount);
+        Assert.Equal(1000m, Assert.Single(shift.OpeningDenominationLines!, l => l.Quantity > 0).DenominationValue);
+
+        var closingLines = new[]
+        {
+            new CashCountDenominationLineDto(1000m, 2),
+            new CashCountDenominationLineDto(500m, 3),
+            new CashCountDenominationLineDto(100m, 10),
+            new CashCountDenominationLineDto(50m, 5)
+        };
+        using var close = Scoped(HttpMethod.Post, $"{Shifts}/{shift.ShiftId:D}/close", org);
+        close.Content = JsonContent.Create(
+            new CloseCashierShiftRequest(4750m, DenominationLines: closingLines),
+            options: JsonOptions);
+        using var closeResponse = await client.SendAsync(close);
+        closeResponse.EnsureSuccessStatusCode();
+        var closed = await closeResponse.Content.ReadFromJsonAsync<PosCashierShiftDto>(JsonOptions);
+        Assert.Equal(4750m, closed!.ClosingCashAmount);
+        Assert.Equal(4, closed.ClosingDenominationLines!.Count);
+
+        using var retry = Scoped(HttpMethod.Post, $"{Shifts}/{shift.ShiftId:D}/close", org);
+        retry.Content = JsonContent.Create(
+            new CloseCashierShiftRequest(1m, DenominationLines: [new CashCountDenominationLineDto(1000m, 1)]),
+            options: JsonOptions);
+        using var retryResponse = await client.SendAsync(retry);
+        retryResponse.EnsureSuccessStatusCode();
+        var retried = await retryResponse.Content.ReadFromJsonAsync<PosCashierShiftDto>(JsonOptions);
+        Assert.Equal(4750m, retried!.ClosingCashAmount);
+        Assert.Equal(4, retried.ClosingDenominationLines!.Count);
+    }
+
+    [Fact]
+    public async Task Cashier_cannot_replace_denominations_and_cross_org_lines_are_rejected()
+    {
+        await using var factory = new PosApiFactory(fixture.ConnectionString);
+        var client = factory.CreateClient();
+        var orgA = Guid.NewGuid();
+        var orgB = Guid.NewGuid();
+        await CompleteSetupAsync(client, orgA, CashCountMode.Required);
+        await CompleteSetupAsync(client, orgB, CashCountMode.Required);
+        using var bootstrap = Scoped(HttpMethod.Get, $"{Permissions}/effective", orgA);
+        (await client.SendAsync(bootstrap)).EnsureSuccessStatusCode();
+        using var assign = Scoped(HttpMethod.Post, $"{Permissions}/assignments", orgA);
+        assign.Content = JsonContent.Create(new AssignPosRoleRequest(Cashier, "Cashier"), options: JsonOptions);
+        (await client.SendAsync(assign)).EnsureSuccessStatusCode();
+
+        using var seedA = Scoped(HttpMethod.Get, $"{Setup}/cash-denominations", orgA);
+        (await client.SendAsync(seedA)).EnsureSuccessStatusCode();
+
+        using var cashier = new HttpRequestMessage(HttpMethod.Put, $"{Setup}/cash-denominations");
+        cashier.Headers.TryAddWithoutValidation(
+            ExItS.PinoyBusinessPOS.Api.Common.PosOrganizationHeaders.OrganizationHeaderName,
+            orgA.ToString("D"));
+        cashier.Headers.TryAddWithoutValidation(
+            ExItS.PinoyBusinessPOS.Api.Common.PosOrganizationHeaders.ActorHeaderName,
+            Cashier.ToString("D"));
+        cashier.Content = JsonContent.Create(
+            new ReplaceCashDenominationsRequest([new CashDenominationWriteDto(5000m)]),
+            options: JsonOptions);
+        using var cashierResponse = await client.SendAsync(cashier);
+        Assert.Equal(HttpStatusCode.Forbidden, cashierResponse.StatusCode);
+
+        var register = await PosShiftIntegrationSupport.EnsureRegisterAsync(client, orgB, Owner);
+        using var open = Scoped(HttpMethod.Post, Shifts, orgB);
+        open.Content = JsonContent.Create(
+            new OpenCashierShiftRequest(
+                register.RegisterId,
+                9000m,
+                DenominationLines: [new CashCountDenominationLineDto(9000m, 1)]),
+            options: JsonOptions);
+        using var openResponse = await client.SendAsync(open);
+        Assert.Equal(HttpStatusCode.BadRequest, openResponse.StatusCode);
+        Assert.Equal(DomainErrorCodes.CashCountDenominationNotConfigured, await ReadErrorCodeAsync(openResponse));
     }
 
     private static async Task CompleteSetupAsync(HttpClient client, Guid org, CashCountMode mode)

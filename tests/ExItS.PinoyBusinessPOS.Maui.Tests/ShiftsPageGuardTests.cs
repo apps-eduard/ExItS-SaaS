@@ -90,6 +90,9 @@ public sealed class ShiftsPageGuardTests
         Assert.Contains("IPosOperationalSetupClient", open, StringComparison.Ordinal);
         Assert.Contains("Shifts_SkipOpeningCash", open, StringComparison.Ordinal);
         Assert.Contains("showOpeningCash", open, StringComparison.Ordinal);
+        Assert.Contains("Shifts_CountByDenomination", open, StringComparison.Ordinal);
+        Assert.Contains("DenominationCountSheet", open, StringComparison.Ordinal);
+        Assert.Contains("IconName=\"cash\"", open, StringComparison.Ordinal);
         Assert.Contains("UtangCapability.ManageShifts", open, StringComparison.Ordinal);
         Assert.Contains("ListAsync", open, StringComparison.Ordinal);
         Assert.Contains("Shifts_NoRegisterTitle", open, StringComparison.Ordinal);
@@ -119,6 +122,9 @@ public sealed class ShiftsPageGuardTests
         Assert.Contains("_confirmClose", detail, StringComparison.Ordinal);
         Assert.Contains("Shifts_MoreActions", detail, StringComparison.Ordinal);
         Assert.Contains("Shifts_SkipClosingCash", detail, StringComparison.Ordinal);
+        Assert.Contains("DenominationCountSheet", detail, StringComparison.Ordinal);
+        Assert.Contains("Shifts_CountByDenomination", detail, StringComparison.Ordinal);
+        Assert.Contains("Shifts_ViewDenominationBreakdown", detail, StringComparison.Ordinal);
         Assert.Contains("Shifts_CashCountNotPerformed", detail, StringComparison.Ordinal);
         Assert.Contains("EffectiveCashCountMode", detail, StringComparison.Ordinal);
         Assert.DoesNotContain("ClosingCashAmount ?? 0m", detail, StringComparison.Ordinal);
