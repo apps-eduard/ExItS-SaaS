@@ -82,6 +82,7 @@ docs/engineering/implementation-gate-matrix.md
 docs/engineering/localization.md
 docs/engineering/pos-terminology-guide.md
 docs/engineering/pos-branch-inventory-transfers.md
+docs/engineering/pos-cashier-cash-count.md
 docs/engineering/offline-sync-design.md
 docs/engineering/phase-02-evidence-matrix.md
 docs/engineering/phase-02-readiness-checklist.md

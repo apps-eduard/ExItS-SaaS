@@ -65,6 +65,10 @@ Development/Testing actor only; no production POS role model. Checkout shift res
 - POS-ROLES operational roles deferred.
 - R-109 Android SDK required for full MAUI host compile on CI/dev machines without SDK.
 
+## Later addition (do not rewrite this historical closeout)
+
+Configurable `CashCountMode` (Off / Optional / Required) was added on the existing shift + operational-setup model. See [POS configurable cashier cash count](../engineering/pos-cashier-cash-count.md).
+
 ## Exact next work package
 
 **P10-WP05 — Returns and Refunds** — do **not** begin until explicitly authorized.

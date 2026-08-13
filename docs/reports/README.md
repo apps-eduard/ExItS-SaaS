@@ -116,3 +116,4 @@ The dashboard links to the latest accepted report.
 | [P24-WP23-phase-24-implementation-closeout-preparation.md](P24-WP23-phase-24-implementation-closeout-preparation.md) | P24-WP23 Implementation closeout prep | Complete |
 | [P24-WP24-owner-user-final-validation-and-acceptance.md](P24-WP24-owner-user-final-validation-and-acceptance.md) | P24-WP24 Owner validation | Awaiting Owner Validation |
 | [pos-branch-inventory-transfers.md](../engineering/pos-branch-inventory-transfers.md) | Intra-org branch inventory transfers | Implemented (Device Verified No) |
+| [pos-cashier-cash-count.md](../engineering/pos-cashier-cash-count.md) | Configurable cashier cash count (Off / Optional / Required) | Implemented (Device Verified No) |

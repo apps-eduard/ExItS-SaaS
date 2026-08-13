@@ -33,6 +33,7 @@
 - [Capability ownership matrix](engineering/capability-ownership-matrix.md)
 - [Data authority matrix](engineering/data-authority-matrix.md)
 - [POS branch inventory transfers](engineering/pos-branch-inventory-transfers.md)
+- [POS configurable cashier cash count](engineering/pos-cashier-cash-count.md)
 - [Final portfolio boundaries](engineering/final-portfolio-boundaries.md)
 - [Repository boundaries](engineering/repository-boundaries.md)
 - [Development environment](engineering/development-environment.md)
