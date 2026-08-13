@@ -13,6 +13,7 @@
 | Implementation SHA | `cbcdb8a9` |
 | Test SHA | `8869a179` |
 | Docs SHA | `528de183` |
+| Denomination default refinement | `a50413bc` |
 | Device Verified | **No** |
 | Browser Verified | **No** |
 | Production Ready | **No** |

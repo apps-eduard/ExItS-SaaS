@@ -14,7 +14,7 @@
 | Current phase | Phase 25 **Open — WP01–WP05 Code Complete / Owner Validation Pending**; Phase 22/24/19/20/21 remain Open; Phase 14 still open |
 | Current work package | **P25-WP05** Cash Count Policy Simplification and Denomination-Assisted Reconciliation ([phase](phases/phase-25-organization-web-admin.md); [WP05](reports/P25-WP05-cash-count-policy-simplification-and-denomination-assisted-reconciliation.md)). Owner browser/device validation pending. |
 | Overall status | **Phase 25 WP01–WP05 Code Complete** (three AntDesign browser hosts; Required/Optional cash count with optional denomination helper) + Phase 22/24 Owner Validation Pending. **Not Device Verified**. Production remains **Blocked**. **Not production-ready.** |
-| Latest verified commit | `528de183` (P25-WP05 docs; tests `8869a179`; implementation `cbcdb8a9`; started from `147b94e4`) |
+| Latest verified commit | `a50413bc` (P25-WP05 PHP denomination default refinement; UI `2f36fb17`) |
 | Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA deferred; Phase 19/20/22/24/25 owner/physical validation pending |
 | Last updated | 2026-08-13 |
 
@@ -243,7 +243,7 @@ P19-WP08 ? End-to-End Validation and User Closeout Checklist (Retest � awaitin
 | P25-WP02 — AntDesign web standardization and host separation | **Code Complete** | [report](reports/P25-WP02-antdesign-web-standardization-and-host-separation.md) |
 | P25-WP03 — Unified web authentication, SSO, workspace routing | **Code Complete** | [report](reports/P25-WP03-unified-web-authentication-sso-and-workspace-routing.md) |
 | P25-WP04 — Web host legacy cleanup and Local Validation identity determinism | **Code Complete** | `9df02401` — [report](reports/P25-WP04-web-host-legacy-cleanup-and-local-validation-identity-determinism.md) |
-| P25-WP05 — Cash count policy simplification and denomination-assisted reconciliation | **Code Complete** | `cbcdb8a9` (feat), `8869a179` (test), `528de183` (docs) — [report](reports/P25-WP05-cash-count-policy-simplification-and-denomination-assisted-reconciliation.md) |
+| P25-WP05 — Cash count policy simplification and denomination-assisted reconciliation | **Code Complete** | `cbcdb8a9` (feat), `8869a179` (test), `528de183` (docs), `a50413bc` (PHP centavo defaults) — [report](reports/P25-WP05-cash-count-policy-simplification-and-denomination-assisted-reconciliation.md) |
 
 ## Phase 24 work packages
 
