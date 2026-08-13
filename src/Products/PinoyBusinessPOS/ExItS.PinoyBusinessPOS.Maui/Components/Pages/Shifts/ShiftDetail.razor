@@ -304,20 +304,34 @@ else
                 <Stack Gap="3">
                     @if (!closingOff)
                     {
-                        <p class="pos-muted">@(closingRequired ? L["Shifts_ClosingCashHelpRequired"] : L["Shifts_ClosingCashHelpOptional"])</p>
-                        <div class="pos-shift-open__cash-row">
-                            <NumberInput Label="@L["Shifts_CashOnHand"]"
-                                         Value="@_closingCash"
-                                         ValueChanged="OnClosingCashChanged"
-                                         DecimalPlaces="2"
-                                         Required="@closingRequired"
-                                         Disabled="@(!onlineActionsEnabled || _closing)"
-                                         IsInvalid="@(!string.IsNullOrEmpty(_closingCashError))"
-                                         ErrorText="@_closingCashError" />
-                            <IconButton AriaLabel="@L["Shifts_CountByDenomination"]"
-                                        IconName="cash"
-                                        Disabled="@(!onlineActionsEnabled || _closing || _denominations.Count == 0)"
-                                        OnClick="() => _showDenominationHelper = true" />
+                        <p class="pos-shift-open__help">@(closingRequired ? L["Shifts_ClosingCashHelpRequired"] : L["Shifts_ClosingCashHelpOptional"])</p>
+                        <div class="pos-shift-open__cash">
+                            <CurrencyInput Label="@L["Shifts_CashOnHand"]"
+                                           CurrencyCode="PHP"
+                                           Placeholder="0.00"
+                                           Value="@_closingCash"
+                                           ValueChanged="OnClosingCashChanged"
+                                           Required="@closingRequired"
+                                           Disabled="@(!onlineActionsEnabled || _closing)"
+                                           IsInvalid="@(!string.IsNullOrEmpty(_closingCashError))"
+                                           ErrorText="@_closingCashError" />
+                            @if (_denominations.Count > 0)
+                            {
+                                <button type="button"
+                                        class="pos-shift-open__denom-action"
+                                        disabled="@(!onlineActionsEnabled || _closing)"
+                                        @onclick="() => _showDenominationHelper = true">
+                                    <span class="pos-shift-open__denom-icon" aria-hidden="true">@IconGlyphs.Get("cash")</span>
+                                    <span>@L["Shifts_CountByDenomination"]</span>
+                                </button>
+                            }
+                            @if (_closingLines is { Count: > 0 } && _closingCash is not null)
+                            {
+                                <p class="pos-shift-open__counted" role="status">
+                                    <span class="pos-shift-open__counted-icon" aria-hidden="true">@IconGlyphs.Get("check")</span>
+                                    <span>@L["Shifts_CountedByDenomination"]</span>
+                                </p>
+                            }
                         </div>
                     }
                     <TextInput Label="@L["Shifts_ClosingNotes"]"

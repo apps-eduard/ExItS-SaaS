@@ -1,4 +1,5 @@
 @page "/shifts/open"
+@using ExItS.DesignSystem.Components.Internal
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IPosCashierShiftClient Shifts
@@ -18,6 +19,7 @@
 else
 {
     var blocked = _isOffline || !Capabilities.IsAllowed(UtangCapability.ManageShifts);
+    var startBlocked = blocked || _selectedRegisterGuid == Guid.Empty || _available.Count == 0 || !string.IsNullOrEmpty(_errorMessage);
 <div class="pos-shift-open">
 <Page>
     <header class="pos-shift-open__header">
@@ -48,60 +50,72 @@ else
         {
             <Alert Tone="AlertTone.Warning" Title="@L["Shifts_NoRegisterTitle"]" Message="@L["Shifts_NoRegisterMessage"]" />
         }
-        else if (_available.Count > 0)
+        else if (_available.Count == 1)
         {
-            <div class="pos-shift-open__form">
-                <Select Label="@L["Shifts_RegisterLabel"]"
-                        Value="@_selectedRegisterId"
-                        ValueChanged="OnRegisterChanged"
-                        Options="@_registerOptions"
-                        Disabled="@(blocked || _loadingRegisters)" />
+            var register = _available[0];
+            <div class="pos-shift-open__register" role="status">
+                <span class="pos-shift-open__register-code">@register.RegisterCode</span>
+                <span class="pos-shift-open__register-name">@register.Name</span>
             </div>
+        }
+        else if (_available.Count > 1)
+        {
+            <Select Label="@L["Shifts_RegisterLabel"]"
+                    Value="@_selectedRegisterId"
+                    ValueChanged="OnRegisterChanged"
+                    Options="@_registerOptions"
+                    Disabled="@(blocked || _loadingRegisters)" />
         }
     </section>
 
     @if (showOpeningCash)
     {
-        <section class="pos-shift-open__panel" aria-labelledby="shift-cash-heading">
+        <section class="pos-shift-open__panel pos-shift-open__panel--cash" aria-labelledby="shift-cash-heading">
             <h2 id="shift-cash-heading" class="pos-shift-open__section-title">@L["Shifts_OpeningCashSection"]</h2>
-            <p class="pos-muted">@(openingCashRequired ? L["Shifts_OpeningCashHelpRequired"] : L["Shifts_OpeningCashHelpOptional"])</p>
-            <div class="pos-shift-open__cash-row">
-                <NumberInput Label="@L["Shifts_CashOnHand"]"
-                             Value="@_openingCash"
-                             ValueChanged="OnOpeningCashChanged"
-                             DecimalPlaces="2"
-                             Required="@openingCashRequired"
-                             Disabled="@blocked"
-                             IsInvalid="@(!string.IsNullOrEmpty(_openingCashError))"
-                             ErrorText="@_openingCashError" />
-                <IconButton AriaLabel="@L["Shifts_CountByDenomination"]"
-                            IconName="cash"
-                            Disabled="@(blocked || _denominations.Count == 0)"
-                            OnClick="() => _showDenominationHelper = true" />
-            </div>
-            <FormActions class="pos-customer-create__footer">
-                @if (openingCashOptional)
+            <p class="pos-shift-open__help">@(openingCashRequired ? L["Shifts_OpeningCashHelpRequired"] : L["Shifts_OpeningCashHelpOptional"])</p>
+            <div class="pos-shift-open__cash">
+                <CurrencyInput Label="@L["Shifts_CashOnHand"]"
+                               CurrencyCode="@_currencyCode"
+                               Placeholder="0.00"
+                               Value="@_openingCash"
+                               ValueChanged="OnOpeningCashChanged"
+                               Required="@openingCashRequired"
+                               Disabled="@blocked"
+                               IsInvalid="@(!string.IsNullOrEmpty(_openingCashError))"
+                               ErrorText="@_openingCashError" />
+                @if (_denominations.Count > 0)
                 {
-                    <Button Variant="ButtonVariant.Secondary"
-                            Disabled="@(blocked || _selectedRegisterGuid == Guid.Empty || _available.Count == 0 || !string.IsNullOrEmpty(_errorMessage))"
-                            OnClick="() => OpenAsync(skipOpeningCash: true)">@L["Shifts_SkipOpeningCash"]</Button>
+                    <button type="button"
+                            class="pos-shift-open__denom-action"
+                            disabled="@blocked"
+                            @onclick="() => _showDenominationHelper = true">
+                        <span class="pos-shift-open__denom-icon" aria-hidden="true">@IconGlyphs.Get("cash")</span>
+                        <span>@L["Shifts_CountByDenomination"]</span>
+                    </button>
                 }
-                <Button Variant="ButtonVariant.Primary"
-                        IsLoading="@_saving"
-                        Disabled="@(blocked || _selectedRegisterGuid == Guid.Empty || _available.Count == 0 || !string.IsNullOrEmpty(_errorMessage))"
-                        OnClick="() => OpenAsync(skipOpeningCash: false)">@L["Shifts_OpenConfirm"]</Button>
-            </FormActions>
+                @if (_openingLines is { Count: > 0 } && _openingCash is not null)
+                {
+                    <p class="pos-shift-open__counted" role="status">
+                        <span class="pos-shift-open__counted-icon" aria-hidden="true">@IconGlyphs.Get("check")</span>
+                        <span>@L["Shifts_CountedByDenomination"]</span>
+                    </p>
+                }
+            </div>
         </section>
     }
-    else
-    {
-        <FormActions class="pos-customer-create__footer">
-            <Button Variant="ButtonVariant.Primary"
-                    IsLoading="@_saving"
-                    Disabled="@(blocked || _selectedRegisterGuid == Guid.Empty || _available.Count == 0 || !string.IsNullOrEmpty(_errorMessage))"
-                    OnClick="() => OpenAsync(skipOpeningCash: true)">@L["Shifts_OpenConfirm"]</Button>
-        </FormActions>
-    }
+
+    <div class="pos-shift-open__footer" role="group" aria-label="@L["Shifts_OpenTitle"]">
+        @if (showOpeningCash && openingCashOptional)
+        {
+            <Button Variant="ButtonVariant.Ghost"
+                    Disabled="@startBlocked"
+                    OnClick="() => OpenAsync(skipOpeningCash: true)">@L["Shifts_SkipOpeningCash"]</Button>
+        }
+        <Button Variant="ButtonVariant.Primary"
+                IsLoading="@_saving"
+                Disabled="@startBlocked"
+                OnClick="() => OpenAsync(skipOpeningCash: !showOpeningCash)">@L["Shifts_OpenConfirm"]</Button>
+    </div>
     <DenominationCountSheet Visible="@_showDenominationHelper"
                             VisibleChanged="v => _showDenominationHelper = v"
                             Denominations="@_denominations"
@@ -118,6 +132,7 @@ else
     private decimal? _openingCash;
     private string? _openingCashError;
     private string _cashCountMode = "Required";
+    private string _currencyCode = "PHP";
     private string? _errorMessage;
     private string? _selectedRegisterId;
     private Guid _selectedRegisterGuid;
@@ -169,14 +184,22 @@ else
     private async Task LoadCashCountModeAsync()
     {
         var setup = await SetupClient.GetAsync();
-        if (setup.IsSuccess && !string.IsNullOrWhiteSpace(setup.Data?.CashCountMode)
-            && !string.Equals(setup.Data.CashCountMode, "Off", StringComparison.OrdinalIgnoreCase))
+        if (setup.IsSuccess && setup.Data is not null)
         {
-            _cashCountMode = setup.Data.CashCountMode;
-        }
-        else if (setup.IsSuccess && string.Equals(setup.Data?.CashCountMode, "Off", StringComparison.OrdinalIgnoreCase))
-        {
-            _cashCountMode = "Optional";
+            if (!string.IsNullOrWhiteSpace(setup.Data.CurrencyCode))
+            {
+                _currencyCode = setup.Data.CurrencyCode.Trim().ToUpperInvariant();
+            }
+
+            if (!string.IsNullOrWhiteSpace(setup.Data.CashCountMode)
+                && !string.Equals(setup.Data.CashCountMode, "Off", StringComparison.OrdinalIgnoreCase))
+            {
+                _cashCountMode = setup.Data.CashCountMode;
+            }
+            else if (string.Equals(setup.Data.CashCountMode, "Off", StringComparison.OrdinalIgnoreCase))
+            {
+                _cashCountMode = "Optional";
+            }
         }
     }
 

@@ -114,39 +114,83 @@ else
             <p class="pos-setup__panel-hint">@L["Setup_CashHandlingHint"]</p>
         </div>
         <div class="pos-setup__fields">
-            <Select Label="@L["Setup_CashCount"]"
-                    Value="@_cashCountMode"
-                    ValueChanged="v => _cashCountMode = v ?? CashCountRequired"
-                    Options="CashCountOptions"
-                    Disabled="@readOnly" />
-            <p class="pos-setup__panel-hint">@CashCountHelp</p>
-            <p class="pos-setup__panel-hint">@L["Setup_CashCountSnapshotHint"]</p>
+            <div class="pos-setup__policy" role="radiogroup" aria-label="@L["Setup_CashCount"]">
+                <button type="button"
+                        class="pos-setup__policy-card @(_cashCountMode == CashCountRequired ? "pos-setup__policy-card--selected" : null)"
+                        role="radio"
+                        aria-checked="@(_cashCountMode == CashCountRequired)"
+                        disabled="@readOnly"
+                        @onclick="() => SetCashCountMode(CashCountRequired)">
+                    <span class="pos-setup__policy-kicker">
+                        <span class="pos-setup__policy-title">@L["Setup_CashCountRequiredTitle"]</span>
+                        <span class="pos-setup__policy-badge">@L["Setup_CashCountRecommended"]</span>
+                    </span>
+                    <span class="pos-setup__policy-copy">@L["Setup_CashCountHelpRequired"]</span>
+                </button>
+                <button type="button"
+                        class="pos-setup__policy-card @(_cashCountMode == CashCountOptional ? "pos-setup__policy-card--selected" : null)"
+                        role="radio"
+                        aria-checked="@(_cashCountMode == CashCountOptional)"
+                        disabled="@readOnly"
+                        @onclick="() => SetCashCountMode(CashCountOptional)">
+                    <span class="pos-setup__policy-kicker">
+                        <span class="pos-setup__policy-title">@L["Setup_CashCountOptional"]</span>
+                    </span>
+                    <span class="pos-setup__policy-copy">@L["Setup_CashCountHelpOptional"]</span>
+                </button>
+            </div>
+            <p class="pos-setup__callout">@L["Setup_CashCountSnapshotHint"]</p>
         </div>
         @if (_denominations.Count > 0 || canManage)
         {
-            <div class="pos-setup__fields">
-                <h3 class="pos-setup__panel-title">@L["Setup_Denominations"]</h3>
+            <div class="pos-setup__denoms">
+                <div class="pos-setup__denoms-head">
+                    <h3 class="pos-setup__panel-title">@L["Setup_Denominations"]</h3>
+                    @if (_denominations.Count > 0)
+                    {
+                        <p class="pos-setup__denoms-count">@L["Setup_DenominationsShown", EnabledDenominationCount]</p>
+                    }
+                </div>
                 <p class="pos-setup__panel-hint">@L["Setup_DenominationsHint"]</p>
-                @foreach (var denom in _denominations)
+                @if (_denominations.Count > 0)
                 {
-                    <label class="pos-setup__row">
-                        <span>@($"PHP {denom.Value:N2}")</span>
-                        <input type="checkbox"
-                               checked="@denom.IsEnabled"
-                               disabled="@readOnly"
-                               @onchange="e => ToggleDenomination(denom, e.Value)" />
-                    </label>
+                    <div class="pos-setup__denom-grid" role="group" aria-label="@L["Setup_Denominations"]">
+                        @foreach (var denom in _denominations)
+                        {
+                            var on = denom.IsEnabled;
+                            <button type="button"
+                                    class="pos-setup__denom-chip @(on ? "pos-setup__denom-chip--on" : "pos-setup__denom-chip--off")"
+                                    aria-pressed="@on"
+                                    aria-label="@DenominationAriaLabel(denom)"
+                                    disabled="@(readOnly || _denomBusy)"
+                                    @onclick="() => ToggleDenominationAsync(denom)">
+                                @if (on)
+                                {
+                                    <span class="pos-setup__denom-check" aria-hidden="true">@IconGlyphs.Get("check")</span>
+                                }
+                                <span class="pos-setup__denom-value">@FormatDenominationValue(denom.Value)</span>
+                            </button>
+                        }
+                    </div>
                 }
                 @if (canManage)
                 {
-                    <div class="pos-setup__row">
-                        <TextInput Label="@L["Setup_AddDenomination"]"
-                                   Value="@_newDenominationText"
-                                   ValueChanged="v => _newDenominationText = v"
-                                   Disabled="@readOnly" />
+                    <div class="pos-setup__composer">
+                        <CurrencyInput Label="@L["Setup_AddDenomination"]"
+                                       CurrencyCode="@CurrencyCode"
+                                       Placeholder="@L["Setup_AddDenominationPlaceholder"]"
+                                       Hint="@L["Setup_AddDenominationHint"]"
+                                       Value="@_newDenominationValue"
+                                       ValueChanged="v => _newDenominationValue = v"
+                                       Disabled="@(readOnly || _denomBusy)"
+                                       IsInvalid="@_newDenominationInvalid"
+                                       ErrorText="@(_newDenominationInvalid ? L["Setup_InvalidDenomination"] : null)"
+                                       @onkeydown="HandleAddDenominationKey" />
                         <Button Variant="ButtonVariant.Secondary"
-                                Disabled="@readOnly"
-                                OnClick="AddDenominationAsync">@L["Setup_AddDenomination"]</Button>
+                                Size="ButtonSize.Sm"
+                                Disabled="@(readOnly || _denomBusy)"
+                                IsLoading="@_denomBusy"
+                                OnClick="AddDenominationAsync">@L["Setup_AddDenominationShort"]</Button>
                     </div>
                 }
             </div>
@@ -187,7 +231,9 @@ else
     private string? _businessAddress;
     private string? _contactPhone;
     private string _cashCountMode = CashCountRequired;
-    private string? _newDenominationText;
+    private decimal? _newDenominationValue;
+    private bool _newDenominationInvalid;
+    private bool _denomBusy;
     private List<OrganizationCashDenominationDto> _denominations = [];
     private string? _formError;
 
@@ -197,17 +243,10 @@ else
         new(TaxInclusive, L["Setup_TaxInclusive"].Value)
     ];
 
-    private IReadOnlyList<SelectOption> CashCountOptions =>
-    [
-        new(CashCountRequired, L["Setup_CashCountRequired"].Value),
-        new(CashCountOptional, L["Setup_CashCountOptional"].Value)
-    ];
+    private string CurrencyCode =>
+        string.IsNullOrWhiteSpace(_currencyCode) ? "PHP" : _currencyCode.Trim().ToUpperInvariant();
 
-    private string CashCountHelp => _cashCountMode switch
-    {
-        CashCountRequired => L["Setup_CashCountHelpRequired"],
-        _ => L["Setup_CashCountHelpOptional"]
-    };
+    private int EnabledDenominationCount => _denominations.Count(d => d.IsEnabled);
 
     protected override async Task OnInitializedAsync()
     {
@@ -295,18 +334,27 @@ else
         }
     }
 
-    private async Task ToggleDenomination(OrganizationCashDenominationDto denom, object? raw)
+    private void SetCashCountMode(string mode)
     {
         if (!Capabilities.IsAllowed(UtangCapability.ManageOperationalSetup) || _isOffline)
         {
             return;
         }
 
-        var enabled = raw is bool b ? b : string.Equals(raw?.ToString(), "true", StringComparison.OrdinalIgnoreCase);
+        _cashCountMode = mode;
+    }
+
+    private async Task ToggleDenominationAsync(OrganizationCashDenominationDto denom)
+    {
+        if (!Capabilities.IsAllowed(UtangCapability.ManageOperationalSetup) || _isOffline || _denomBusy)
+        {
+            return;
+        }
+
         var items = _denominations
             .Select(d => new CashDenominationWriteDto(
                 d.Value,
-                d.DenominationId == denom.DenominationId ? enabled : d.IsEnabled,
+                d.DenominationId == denom.DenominationId ? !d.IsEnabled : d.IsEnabled,
                 d.SortOrder,
                 d.DisplayLabel,
                 d.DenominationId))
@@ -314,33 +362,61 @@ else
         await SaveDenominationsAsync(items);
     }
 
+    private Task HandleAddDenominationKey(KeyboardEventArgs e) =>
+        e.Key is "Enter" ? AddDenominationAsync() : Task.CompletedTask;
+
     private async Task AddDenominationAsync()
     {
-        if (!decimal.TryParse(_newDenominationText, out var value) || value <= 0)
+        if (!Capabilities.IsAllowed(UtangCapability.ManageOperationalSetup) || _isOffline || _denomBusy)
         {
-            _formError = L["Setup_InvalidDenomination"];
             return;
         }
 
+        if (_newDenominationValue is not > 0)
+        {
+            _newDenominationInvalid = true;
+            return;
+        }
+
+        _newDenominationInvalid = false;
         var items = _denominations
             .Select(d => new CashDenominationWriteDto(d.Value, d.IsEnabled, d.SortOrder, d.DisplayLabel, d.DenominationId))
             .ToList();
-        items.Add(new CashDenominationWriteDto(value, true, items.Count));
+        items.Add(new CashDenominationWriteDto(_newDenominationValue.Value, true, items.Count));
         await SaveDenominationsAsync(items);
-        _newDenominationText = null;
+        _newDenominationValue = null;
     }
 
     private async Task SaveDenominationsAsync(IReadOnlyList<CashDenominationWriteDto> items)
     {
-        var result = await SetupClient.ReplaceCashDenominationsAsync(new ReplaceCashDenominationsRequest(items));
-        if (!result.IsSuccess || result.Data is null)
+        _denomBusy = true;
+        try
         {
-            _formError = ApiLocalizer.Describe(result.Status, result.Error).Message;
-            return;
-        }
+            var result = await SetupClient.ReplaceCashDenominationsAsync(new ReplaceCashDenominationsRequest(items));
+            if (!result.IsSuccess || result.Data is null)
+            {
+                _formError = ApiLocalizer.Describe(result.Status, result.Error).Message;
+                return;
+            }
 
-        _denominations = result.Data.OrderBy(d => d.SortOrder).ThenBy(d => d.Value).ToList();
-        _formError = null;
+            _denominations = result.Data.OrderBy(d => d.SortOrder).ThenBy(d => d.Value).ToList();
+            _formError = null;
+        }
+        finally
+        {
+            _denomBusy = false;
+        }
+    }
+
+    private string FormatDenominationValue(decimal value) =>
+        value == decimal.Truncate(value)
+            ? value.ToString("N0", CultureInfo.CurrentCulture)
+            : value.ToString("N2", CultureInfo.CurrentCulture);
+
+    private string DenominationAriaLabel(OrganizationCashDenominationDto denom)
+    {
+        var state = denom.IsEnabled ? L["Setup_DenominationShown"] : L["Setup_DenominationHidden"];
+        return $"{CurrencyCode} {FormatDenominationValue(denom.Value)}, {state}";
     }
 
     private async Task SaveAsync()

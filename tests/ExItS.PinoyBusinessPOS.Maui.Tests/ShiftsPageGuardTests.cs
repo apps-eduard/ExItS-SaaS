@@ -91,8 +91,12 @@ public sealed class ShiftsPageGuardTests
         Assert.Contains("Shifts_SkipOpeningCash", open, StringComparison.Ordinal);
         Assert.Contains("showOpeningCash", open, StringComparison.Ordinal);
         Assert.Contains("Shifts_CountByDenomination", open, StringComparison.Ordinal);
+        Assert.Contains("Shifts_CountedByDenomination", open, StringComparison.Ordinal);
         Assert.Contains("DenominationCountSheet", open, StringComparison.Ordinal);
-        Assert.Contains("IconName=\"cash\"", open, StringComparison.Ordinal);
+        Assert.Contains("pos-shift-open__denom-action", open, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"cash\")", open, StringComparison.Ordinal);
+        Assert.Contains("CurrencyInput", open, StringComparison.Ordinal);
+        Assert.Contains("pos-shift-open__footer", open, StringComparison.Ordinal);
         Assert.Contains("UtangCapability.ManageShifts", open, StringComparison.Ordinal);
         Assert.Contains("ListAsync", open, StringComparison.Ordinal);
         Assert.Contains("Shifts_NoRegisterTitle", open, StringComparison.Ordinal);
@@ -124,6 +128,8 @@ public sealed class ShiftsPageGuardTests
         Assert.Contains("Shifts_SkipClosingCash", detail, StringComparison.Ordinal);
         Assert.Contains("DenominationCountSheet", detail, StringComparison.Ordinal);
         Assert.Contains("Shifts_CountByDenomination", detail, StringComparison.Ordinal);
+        Assert.Contains("pos-shift-open__denom-action", detail, StringComparison.Ordinal);
+        Assert.Contains("Shifts_CountedByDenomination", detail, StringComparison.Ordinal);
         Assert.Contains("Shifts_ViewDenominationBreakdown", detail, StringComparison.Ordinal);
         Assert.Contains("Shifts_CashCountNotPerformed", detail, StringComparison.Ordinal);
         Assert.Contains("EffectiveCashCountMode", detail, StringComparison.Ordinal);
@@ -175,6 +181,45 @@ public sealed class ShiftsPageGuardTests
             Assert.Contains($"name=\"{key}\"", en, StringComparison.Ordinal);
             Assert.Contains($"name=\"{key}\"", fil, StringComparison.Ordinal);
         }
+    }
+
+    [Fact]
+    public void Denomination_sheet_uses_steppers_and_sticky_total()
+    {
+        var sheet = File.ReadAllText(Path.Combine(
+            FindRepoRoot(),
+            "src",
+            "Products",
+            "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.Maui",
+            "Components",
+            "Shared",
+            "DenominationCountSheet.razor"));
+        var css = File.ReadAllText(Path.Combine(
+            FindRepoRoot(),
+            "src",
+            "Products",
+            "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.Maui",
+            "wwwroot",
+            "app.css"));
+        var en = File.ReadAllText(Path.Combine(FindRepoRoot(),
+            "src", "Products", "PinoyBusinessPOS", "ExItS.PinoyBusinessPOS.Maui",
+            "Localization", "PosResources.resx"));
+        var fil = File.ReadAllText(Path.Combine(FindRepoRoot(),
+            "src", "Products", "PinoyBusinessPOS", "ExItS.PinoyBusinessPOS.Maui",
+            "Localization", "PosResources.fil-PH.resx"));
+
+        Assert.Contains("pos-denom-sheet__step", sheet, StringComparison.Ordinal);
+        Assert.Contains("pos-denom-sheet__bar", sheet, StringComparison.Ordinal);
+        Assert.Contains("inputmode=\"numeric\"", sheet, StringComparison.Ordinal);
+        Assert.Contains("Shifts_DenominationUseTotal", sheet, StringComparison.Ordinal);
+        Assert.Contains("Shifts_DenominationDecrease", sheet, StringComparison.Ordinal);
+        Assert.DoesNotContain("type=\"number\"", sheet, StringComparison.Ordinal);
+        Assert.Contains(".pos-denom-sheet__step", css, StringComparison.Ordinal);
+        Assert.Contains(".pos-denom-sheet__bar", css, StringComparison.Ordinal);
+        Assert.Contains("name=\"Shifts_DenominationIncrease\"", en, StringComparison.Ordinal);
+        Assert.Contains("name=\"Shifts_DenominationDecrease\"", fil, StringComparison.Ordinal);
     }
 
     [Fact]

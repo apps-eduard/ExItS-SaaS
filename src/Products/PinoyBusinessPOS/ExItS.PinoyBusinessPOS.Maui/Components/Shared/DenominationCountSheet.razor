@@ -2,44 +2,67 @@
 
 @if (Visible)
 {
-    <div class="pos-denom-sheet" role="dialog" aria-modal="true" aria-labelledby="pos-denom-sheet-title">
-        <div class="pos-denom-sheet__panel">
+    <div class="pos-denom-sheet" role="dialog" aria-modal="true" aria-labelledby="pos-denom-sheet-title" @onclick="DismissAsync">
+        <div class="pos-denom-sheet__panel" @onclick:stopPropagation="true">
             <header class="pos-denom-sheet__header">
-                <h2 id="pos-denom-sheet-title" class="pos-denom-sheet__title">@L["Shifts_DenominationTitle"]</h2>
+                <div>
+                    <h2 id="pos-denom-sheet-title" class="pos-denom-sheet__title">@L["Shifts_DenominationTitle"]</h2>
+                    <p class="pos-denom-sheet__hint">@L["Shifts_DenominationHint"]</p>
+                </div>
                 <IconButton AriaLabel="@L["Shifts_DenominationClose"]" IconName="close" OnClick="DismissAsync" />
             </header>
-            <p class="pos-denom-sheet__hint pos-muted">@L["Shifts_DenominationHint"]</p>
-            <div class="pos-denom-sheet__rows">
+            <div class="pos-denom-sheet__list">
                 @foreach (var row in _rows)
                 {
-                    <div class="pos-denom-sheet__row">
-                        <span class="pos-denom-sheet__value">@FormatMoney(row.Value)</span>
-                        <input class="pos-denom-sheet__qty"
-                               type="number"
-                               inputmode="numeric"
-                               min="0"
-                               step="1"
-                               value="@row.Quantity"
-                               aria-label="@string.Format(L["Shifts_DenominationQtyLabel"].Value, FormatMoney(row.Value))"
-                               @onchange="e => OnQuantityChanged(row.Value, e.Value)" />
-                        <span class="pos-denom-sheet__pcs pos-muted">@L["Shifts_DenominationPcs"]</span>
-                        <span class="pos-denom-sheet__line">@FormatMoney(row.LineTotal)</span>
+                    var hasQty = row.Quantity > 0;
+                    <div class="pos-denom-sheet__item @(hasQty ? "pos-denom-sheet__item--active" : null)">
+                        <div class="pos-denom-sheet__item-top">
+                            <span class="pos-denom-sheet__value">@FormatDenomination(row.Value)</span>
+                            <span class="pos-denom-sheet__line @(hasQty ? null : "pos-denom-sheet__line--empty")">@FormatMoney(row.LineTotal)</span>
+                        </div>
+                        <div class="pos-denom-sheet__stepper">
+                            <button type="button"
+                                    class="pos-denom-sheet__step"
+                                    disabled="@(row.Quantity <= 0)"
+                                    aria-label="@string.Format(L["Shifts_DenominationDecrease"].Value, FormatDenomination(row.Value))"
+                                    @onclick="() => Adjust(row.Value, -1)">−</button>
+                            <input class="pos-denom-sheet__qty"
+                                   type="text"
+                                   inputmode="numeric"
+                                   pattern="[0-9]*"
+                                   autocomplete="off"
+                                   value="@row.Quantity"
+                                   aria-label="@string.Format(L["Shifts_DenominationQtyLabel"].Value, FormatDenomination(row.Value))"
+                                   @oninput="e => OnQuantityChanged(row.Value, e.Value)" />
+                            <span class="pos-denom-sheet__pcs">@L["Shifts_DenominationPcs"]</span>
+                            <button type="button"
+                                    class="pos-denom-sheet__step"
+                                    disabled="@(row.Quantity >= MaxQuantity)"
+                                    aria-label="@string.Format(L["Shifts_DenominationIncrease"].Value, FormatDenomination(row.Value))"
+                                    @onclick="() => Adjust(row.Value, 1)">+</button>
+                        </div>
                     </div>
                 }
             </div>
-            <div class="pos-denom-sheet__total">
-                <span>@L["Shifts_DenominationCalculatedTotal"]</span>
-                <strong>@FormatMoney(CalculatedTotal)</strong>
-            </div>
-            <div class="pos-denom-sheet__actions">
-                <Button Variant="ButtonVariant.Secondary" OnClick="Reset">@L["Shifts_DenominationReset"]</Button>
-                <Button Variant="ButtonVariant.Primary" OnClick="UseTotalAsync">@L["Shifts_DenominationUseTotal"]</Button>
+            <div class="pos-denom-sheet__bar">
+                <div class="pos-denom-sheet__total">
+                    <span>@L["Shifts_DenominationCalculatedTotal"]</span>
+                    <strong>@FormatMoney(CalculatedTotal)</strong>
+                </div>
+                <div class="pos-denom-sheet__actions">
+                    <Button Variant="ButtonVariant.Secondary"
+                            Disabled="@(!HasCount)"
+                            OnClick="Reset">@L["Shifts_DenominationReset"]</Button>
+                    <Button Variant="ButtonVariant.Primary" OnClick="UseTotalAsync">@L["Shifts_DenominationUseTotal"]</Button>
+                </div>
             </div>
         </div>
     </div>
 }
 
 @code {
+    private const int MaxQuantity = 9999;
+
     [Parameter] public bool Visible { get; set; }
     [Parameter] public EventCallback<bool> VisibleChanged { get; set; }
     [Parameter] public IReadOnlyList<OrganizationCashDenominationDto> Denominations { get; set; } = [];
@@ -47,6 +70,9 @@
     [Inject] private IStringLocalizer<PosResources> L { get; set; } = default!;
 
     private List<Row> _rows = [];
+
+    private decimal CalculatedTotal => _rows.Sum(r => r.LineTotal);
+    private bool HasCount => _rows.Any(r => r.Quantity > 0);
 
     protected override void OnParametersSet()
     {
@@ -70,21 +96,49 @@
             .ToList();
     }
 
-    private decimal CalculatedTotal => _rows.Sum(r => r.LineTotal);
+    private void Adjust(decimal value, int delta)
+    {
+        var index = _rows.FindIndex(r => r.Value == value);
+        if (index < 0)
+        {
+            return;
+        }
+
+        SetQuantity(index, _rows[index].Quantity + delta);
+    }
 
     private void OnQuantityChanged(decimal value, object? raw)
     {
-        var qty = 0;
-        if (raw is not null && int.TryParse(raw.ToString(), out var parsed) && parsed >= 0)
+        var index = _rows.FindIndex(r => r.Value == value);
+        if (index < 0)
         {
-            qty = parsed;
+            return;
         }
 
-        var index = _rows.FindIndex(r => r.Value == value);
-        if (index >= 0)
+        if (string.IsNullOrWhiteSpace(raw?.ToString()))
         {
-            _rows[index] = new Row(value, qty);
+            SetQuantity(index, 0);
+            return;
         }
+
+        if (!int.TryParse(raw.ToString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed))
+        {
+            return;
+        }
+
+        SetQuantity(index, parsed);
+    }
+
+    private void SetQuantity(int index, int quantity)
+    {
+        var next = Math.Clamp(quantity, 0, MaxQuantity);
+        if (_rows[index].Quantity == next)
+        {
+            return;
+        }
+
+        _rows[index] = new Row(_rows[index].Value, next);
+        _rows = _rows.ToList();
     }
 
     private void Reset()
@@ -108,6 +162,11 @@
         Visible = visible;
         await VisibleChanged.InvokeAsync(visible);
     }
+
+    private static string FormatDenomination(decimal amount) =>
+        amount == decimal.Truncate(amount)
+            ? amount.ToString("N0", CultureInfo.GetCultureInfo("en-PH"))
+            : amount.ToString("N2", CultureInfo.GetCultureInfo("en-PH"));
 
     private static string FormatMoney(decimal amount) =>
         string.Create(CultureInfo.GetCultureInfo("en-PH"), $"PHP {amount:N2}");

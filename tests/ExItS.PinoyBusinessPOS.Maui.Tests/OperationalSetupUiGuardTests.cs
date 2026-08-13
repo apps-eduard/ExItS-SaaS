@@ -27,6 +27,10 @@ public sealed class OperationalSetupUiGuardTests
         Assert.DoesNotContain("CashCountOff", page, StringComparison.Ordinal);
         Assert.Contains("Setup_CashCountSnapshotHint", page, StringComparison.Ordinal);
         Assert.Contains("Setup_Denominations", page, StringComparison.Ordinal);
+        Assert.Contains("pos-setup__policy", page, StringComparison.Ordinal);
+        Assert.Contains("pos-setup__denom-grid", page, StringComparison.Ordinal);
+        Assert.Contains("pos-setup__composer", page, StringComparison.Ordinal);
+        Assert.Contains("CurrencyInput", page, StringComparison.Ordinal);
         Assert.Contains("ManageOperationalSetup", page, StringComparison.Ordinal);
         Assert.Contains("pos-setup__footer", page, StringComparison.Ordinal);
         Assert.Contains("SeedDefaultsFromSession", page, StringComparison.Ordinal);
@@ -34,6 +38,8 @@ public sealed class OperationalSetupUiGuardTests
 
         Assert.Contains(".pos-setup__panel", css, StringComparison.Ordinal);
         Assert.Contains(".pos-setup__footer", css, StringComparison.Ordinal);
+        Assert.Contains(".pos-setup__policy", css, StringComparison.Ordinal);
+        Assert.Contains(".pos-setup__denom-grid", css, StringComparison.Ordinal);
         Assert.Contains("position: sticky", css, StringComparison.Ordinal);
 
         Assert.Contains("name=\"Setup_FirstRunHint\"", en, StringComparison.Ordinal);
@@ -42,6 +48,8 @@ public sealed class OperationalSetupUiGuardTests
         Assert.Contains("name=\"Setup_ReceiptSectionHint\"", fil, StringComparison.Ordinal);
         Assert.Contains("name=\"Setup_CashHandlingSection\"", en, StringComparison.Ordinal);
         Assert.Contains("name=\"Setup_CashCountHelpOptional\"", fil, StringComparison.Ordinal);
+        Assert.Contains("name=\"Setup_CashCountRecommended\"", en, StringComparison.Ordinal);
+        Assert.Contains("name=\"Setup_AddDenominationShort\"", fil, StringComparison.Ordinal);
     }
 
     private static string MauiProject()
