@@ -142,6 +142,8 @@ Device Verified: **No** until the owner performs this on a real device.
 1. Transfer to a branch of another organization is rejected.
 2. Receiving as an unauthorized branch/user is rejected.
 
+Later overlay: when a product tracks expiration, transfer lines carry `SourceLotId` and snapshotted expiry/lot number so destination receiving does not collapse lots. See [pos-expiration-aware-inventory.md](pos-expiration-aware-inventory.md).
+
 ## Explicit exclusions
 
 Peer-to-peer branch sync, claims module, automatic return of shortages, inventory-by-register, POS branches table, Redis/message broker, production-ready auth, Device Verified.

@@ -31,6 +31,8 @@ Warehouses, costing, valuation, batches, serials, expiry, purchase returns, auto
 
 Later overlay (not part of this WP’s original delivery): intra-organization branch inventory transfers. See [pos-branch-inventory-transfers.md](../engineering/pos-branch-inventory-transfers.md). P10-WP03 still did not deliver warehouses or a POS branches table.
 
+Later overlay (not part of this WP’s original delivery): optional per-product expiration lots. See [pos-expiration-aware-inventory.md](../engineering/pos-expiration-aware-inventory.md). Historical exclusions above remain accurate for the original WP.
+
 ## Build and test evidence
 
 | Suite | Passed | Failed | Skipped |

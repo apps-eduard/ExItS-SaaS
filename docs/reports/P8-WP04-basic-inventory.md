@@ -93,6 +93,8 @@ Root `HealthCare/` must remain absent/untracked and outside `ExItS.slnx`.
 
 Intra-organization branch inventory transfers were added later as an overlay (`InventoryTransfer`, `InventoryBranchBalance`). Org `InventoryAccount` remains the sellable on-hand used by sales/PO/counts. See [pos-branch-inventory-transfers.md](../engineering/pos-branch-inventory-transfers.md).
 
+Optional per-product expiration lots (`TracksExpiration`, `InventoryLot`, FEFO) were added later. See [pos-expiration-aware-inventory.md](../engineering/pos-expiration-aware-inventory.md). Historical P8-WP04 still did not deliver expiry.
+
 ## Exact next work package
 
 **P8-WP05 — Expenses** completed separately; next authorized WP is **P8-WP06 — Dashboard and Reports**.
