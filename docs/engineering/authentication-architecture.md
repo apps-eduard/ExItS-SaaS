@@ -205,7 +205,7 @@ POS remains non-PHI by default (Product Foundation).
 |---|---|---|
 | **D-P13-01** | Access chain locked: User → Membership → Product Access → Product-Local Role | **Closed** |
 | **D-P13-02** | Platform owns authentication SoR; products never own global credentials | **Closed** |
-| **D-P13-03** | Admin interactive session = cookie/server session; APIs/MAUI = Platform bearer tokens | **Closed** (direction) |
+| **D-P13-03** | Admin interactive session = cookie/server session; APIs/MAUI = Platform bearer tokens | **Closed** (direction) — P25-WP03 adds app-specific browser cookies plus one-time web handoff tickets; still not a shared unrestricted cookie |
 | **D-P13-04** | Phase 13 MVP = local password auth; enterprise SSO/AD deferred; Google/Facebook authorized in P13-WP08 | **Closed** (scope revised by P13-WP08) |
 | **D-P13-05** | MFA readiness in Phase 13; enforcement deferred unless authorized | **Closed** (scope) |
 | **D-P13-06** | Dev headers never become Production authentication | **Closed** |

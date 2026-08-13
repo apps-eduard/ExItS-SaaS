@@ -35,7 +35,7 @@
 - [POS branch inventory transfers](engineering/pos-branch-inventory-transfers.md)
 - [POS configurable cashier cash count](engineering/pos-cashier-cash-count.md)
 - [POS optional expiration-aware inventory](engineering/pos-expiration-aware-inventory.md)
-- [Organization Web Admin (Phase 25)](phases/phase-25-organization-web-admin.md)
+- [Organization Web Admin / AntDesign hosts / SSO (Phase 25)](phases/phase-25-organization-web-admin.md)
 - [Final portfolio boundaries](engineering/final-portfolio-boundaries.md)
 - [Repository boundaries](engineering/repository-boundaries.md)
 - [Development environment](engineering/development-environment.md)

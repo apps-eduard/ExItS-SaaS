@@ -1,7 +1,7 @@
 # Start / stop Local Validation apps
 
 **Local Validation only. Not Production.**  
-Docker DBs + host Platform API, POS API, and Platform Admin (`dotnet watch`).
+Docker DBs + host Platform API, POS API, Platform Admin, Organization Web, and Personal Web (`dotnet watch`).
 
 ## Start (Tailscale / LAN PublicHost)
 
@@ -16,11 +16,13 @@ Replace `100.120.79.81` with your current Tailscale or LAN host if it changed.
 
 ### Printed URLs (example)
 
-- Admin: `http://100.120.79.81:8090`
+- Admin: `http://100.120.79.81:8090` (canonical sign-in)
 - Platform API: `http://100.120.79.81:8091`
 - POS API: `http://100.120.79.81:8092`
+- Org Web: `http://100.120.79.81:8093`
+- Personal Web: `http://100.120.79.81:8094`
 
-Kestrel binds `0.0.0.0:8090|8091|8092` (localhost still works). DB ports stay `127.0.0.1:15533` / `15534`.
+Kestrel binds `0.0.0.0:8090|8091|8092|8093|8094` (localhost still works). DB ports stay `127.0.0.1:15533` / `15534`. These local ports are **not** public production ports; production uses HTTPS :443 via reverse proxy.
 
 ### If you omit `-PublicHost`
 
@@ -54,12 +56,14 @@ Apps + DB containers (volumes preserved):
 
 ## Windows Firewall (physical device / Tailscale)
 
-Allow inbound TCP **8090 / 8091 / 8092**. Do **not** open **15533 / 15534**.
+Allow inbound TCP **8090 / 8091 / 8092 / 8093 / 8094**. Do **not** open **15533 / 15534**.
 
 ```powershell
 New-NetFirewallRule -DisplayName "ExItS Local Validation Admin 8090" -Direction Inbound -Protocol TCP -LocalPort 8090 -Action Allow -Profile Any
 New-NetFirewallRule -DisplayName "ExItS Local Validation Platform API 8091" -Direction Inbound -Protocol TCP -LocalPort 8091 -Action Allow -Profile Any
 New-NetFirewallRule -DisplayName "ExItS Local Validation POS API 8092" -Direction Inbound -Protocol TCP -LocalPort 8092 -Action Allow -Profile Any
+New-NetFirewallRule -DisplayName "ExItS Local Validation Org Web 8093" -Direction Inbound -Protocol TCP -LocalPort 8093 -Action Allow -Profile Any
+New-NetFirewallRule -DisplayName "ExItS Local Validation Personal Web 8094" -Direction Inbound -Protocol TCP -LocalPort 8094 -Action Allow -Profile Any
 ```
 
 ## Related

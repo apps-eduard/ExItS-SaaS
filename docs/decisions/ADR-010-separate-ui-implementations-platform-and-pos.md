@@ -21,8 +21,11 @@ New ExItS Platform Admin
 → Ant Design Blazor (ADR-015; Pro Blazor as design reference only)
   No Tailwind. No Fluent UI.
 
-PinoyBusinessPOS
+PinoyBusinessPOS MAUI
 → Native Razor components and native CSS / DesignSystem
+
+Organization Web / Personal Web (P25 / ADR-022)
+→ Ant Design Blazor (same pin as Platform Admin)
 ```
 
 ## Context
@@ -34,7 +37,7 @@ HealthCare Staff Web is built on **Ant Design Blazor**. PatientWeb and Mobile us
 1. **Existing HealthCare Staff Web retains Ant Design Blazor.** No HealthCare UI rewrite, modernization, framework migration, or restyling is in the current ExITS MVP work.
 2. **Existing HealthCare Patient Web and MAUI retain their current implementations.**
 3. **Platform Admin uses Ant Design Blazor** per **ADR-015** (pinned `AntDesign` package; Ant Design Pro Blazor as visual/structural reference only). **No Tailwind. No Fluent UI.** Compact/Comfortable density, Light/Dark/System themes, English and Filipino localization, and accessibility requirements remain in force.
-4. **PinoyBusinessPOS** retains the **native UI foundation** (MAUI Blazor Hybrid + native CSS / DesignSystem). **No Ant Design requirement. No Tailwind.**
+4. **PinoyBusinessPOS MAUI** retains the **native UI foundation** (MAUI Blazor Hybrid + native CSS / DesignSystem). **No Ant Design requirement. No Tailwind.** Organization Web and Personal Web use Ant Design Blazor per **ADR-022**.
 5. **Shared consistency** across products comes from semantic design principles, terminology, and UI-independent contracts — **not** from forcing one component library into POS.
 6. Platform Admin may reuse HealthCare **framework-independent** patterns (authz, org/user workflows, pagination/search models, status semantics, modal/notification *contracts*, page-state patterns). It must **not** depend on HealthCare clinical/navigation/permission presentation or HealthCare project references.
 7. **MVP date control** remains a controlled wrapper; rich calendars only by approved need (ADR-008).

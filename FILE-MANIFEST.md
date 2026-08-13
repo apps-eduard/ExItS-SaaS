@@ -25,7 +25,9 @@ src/Platform/ExItS.Platform.Domain/ (+ Authorization; Audit; FeatureCode include
 src/Platform/ExItS.Platform.Application/ (+ Catalog; Admin portfolio queries; Authorization; Audit; Contracts; Projections; MigrationValidation)
 src/Platform/ExItS.Platform.Infrastructure/ (PlatformDbContext, catalog + organization/subscription + payment + entitlement + role-assignment + audit persistence, Admin portfolio read store, migrations including `AddPlatformAuthorizationAndAudit`; `Health/PlatformDatabaseReadyHealthCheck`)
 src/Platform/ExItS.Platform.Api/ (`/` + `/health` + `/health/ready` + catalog + organizations + subscriptions + payments + entitlements + identity/access + authorization + audit + admin read APIs; `PlatformAuthz`; Production security pipeline; phase marker `P10-WP08-phase-10-closeout`)
-src/Platform/ExItS.Platform.Admin/ (Blazor Web App — Ant Design Blazor shell per ADR-015/P15-WP01; Pro as design reference; typed API client; portfolio + users/orgs + residual report pages; themes Light/Dark/System; AdminResources en/fil-PH; no Fluent/Tailwind)
+src/Platform/ExItS.Platform.Admin/ (Blazor Web App — Ant Design Blazor shell per ADR-015/ADR-022; canonical browser sign-in; Platform operator console; typed API client; themes Light/Dark/System; AdminResources en/fil-PH; no Fluent/Tailwind)
+src/Platform/ExItS.Personal.Web/ (Personal Web — Ant Design Blazor presentation over existing Personal APIs; Local Validation :8094; no checkout)
+src/Shared/ExItS.Web.UI/ (shared AntDesign browser conventions: theme, culture, page header, pager, host options, handoff helpers; AntDesign 1.6.2)
 src/Shared/ExItS.DesignSystem/ (semantic tokens; forms/data/feedback overlays; DesignSystem/Validation/Error resources en/fil-PH; Blazor primitives; `IDensityPreferenceStore`)
 src/Shared/ExItS.BackupRestore/ (PostgreSQL logical backup/restore helpers: manifests, SHA-256, retention, AES-GCM protect, restore validation)
 src/Shared/ExItS.Deployment/ (pilot/deployment config validation, backup gates, readiness, rollback advisor, Commercial MVP closeout board — P9-WP05/P9-WP06; phase marker `P10-WP08-phase-10-closeout`)
@@ -41,7 +43,7 @@ src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Api/ (`/health` + `/health/
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.ApiClient/ (+ Platform access client; PosCommercialHeaderHandler; PosCustomerClient; PosSaleClient/PosExpenseClient/**PosPurchaseOrderClient** idempotency headers; PosCatalogClient online-only; PosSupplierClient online-only)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.LocalStore/ (Microsoft.Data.Sqlite foundation + generic encrypted offline_operations outbox + BlockedByAccess reclaim + encrypted customer/credit/repayment projections — P7-WP01/P7-WP02/P7-WP03/P7-WP04; no catalog/supplier offline cache; **not** part of server backup sets)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/ (Android-first MAUI Blazor Hybrid; Customers + credit + repayments + ledger + overdue/due dates + statement/receipt preview/share + catalog/barcode + sales + inventory + expenses + suppliers + **purchasing** + dashboard/reports; onboarding/auth; sync-status shell; offline foundation diagnostics; PosResources en/fil-PH)
-src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Web/ (Organization Web Admin — DesignSystem Blazor Server management/reporting; **not a POS checkout client**; Local Validation :8093)
+src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Web/ (Organization Web Admin — AntDesign Blazor Server management/reporting per ADR-022; **not a POS checkout client**; Local Validation :8093)
 tests/ExItS.Platform.UnitTests/
 tests/ExItS.ArchitectureTests/
 tests/ExItS.Platform.IntegrationTests/
@@ -50,6 +52,7 @@ tests/ExItS.DesignSystem.Tests/
 tests/ExItS.PinoyBusinessPOS.ApiClient.Tests/
 tests/ExItS.PinoyBusinessPOS.Maui.Tests/
 tests/ExItS.PinoyBusinessPOS.Web.Tests/
+tests/ExItS.Personal.Web.Tests/
 tests/ExItS.PinoyBusinessPOS.UnitTests/
 tests/ExItS.PinoyBusinessPOS.IntegrationTests/
 tests/ExItS.BackupRestore.Tests/
@@ -114,6 +117,9 @@ docs/phases/phase-10-full-pos.md
 docs/phases/phase-24-linked-customer-statements-and-personal-monetization.md
 docs/phases/phase-25-organization-web-admin.md
 docs/reports/P25-WP01-organization-web-admin-management-center.md
+docs/reports/P25-WP02-antdesign-web-standardization-and-host-separation.md
+docs/reports/P25-WP03-unified-web-authentication-sso-and-workspace-routing.md
+docs/decisions/ADR-022-separated-antdesign-web-hosts-and-unified-auth.md
 docs/reports/P24-WP01-current-state-and-architecture-contract.md
 docs/reports/P24-WP02-customer-link-and-pos-correlation.md
 docs/reports/P24-WP03-linked-customer-authorization-contract.md

@@ -119,3 +119,5 @@ The dashboard links to the latest accepted report.
 | [pos-cashier-cash-count.md](../engineering/pos-cashier-cash-count.md) | Configurable cashier cash count (Off / Optional / Required) | Implemented (Device Verified No) |
 | [pos-expiration-aware-inventory.md](../engineering/pos-expiration-aware-inventory.md) | Optional per-product expiration lots (FEFO) | Implemented (Device Verified No) |
 | [P25-WP01-organization-web-admin-management-center.md](P25-WP01-organization-web-admin-management-center.md) | P25-WP01 Organization Web Admin Management Center | Code Complete (Owner Validation Pending; Device Verified No) |
+| [P25-WP02-antdesign-web-standardization-and-host-separation.md](P25-WP02-antdesign-web-standardization-and-host-separation.md) | P25-WP02 AntDesign web standardization and host separation | Code Complete (Owner Validation Pending; Device Verified No) |
+| [P25-WP03-unified-web-authentication-sso-and-workspace-routing.md](P25-WP03-unified-web-authentication-sso-and-workspace-routing.md) | P25-WP03 Unified web authentication, SSO, workspace routing | Code Complete (Owner Validation Pending; Device Verified No) |

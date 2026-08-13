@@ -49,7 +49,8 @@ Phase 11 delivered a native-CSS Admin design system. A brief Fluent UI Phase 15 
 ## Consequences
 
 - ADR-010 Admin “native CSS only / no Ant” clause is **superseded for Platform Admin**.
-- Architecture guards must allow `AntDesign` in Admin and continue to forbid Tailwind/FluentUI and Ant in POS.
+- Architecture guards must allow `AntDesign` in Admin and continue to forbid Tailwind/FluentUI and Ant in POS/MAUI.
+- **P25-WP02 / [ADR-022](ADR-022-separated-antdesign-web-hosts-and-unified-auth.md):** AntDesign 1.6.2 is also the browser standard for Organization Web and Personal Web. This ADR’s Admin pin is unchanged.
 
 ## Rejected alternatives
 

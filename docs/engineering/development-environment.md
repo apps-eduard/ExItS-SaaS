@@ -26,11 +26,16 @@ Use the Local Validation stack (not a nested product tree):
 
 | Port | Service |
 |---|---|
+| **8090** | Platform Admin (canonical browser sign-in) |
 | **8091** | Platform API |
 | **8092** | POS API |
-| **15533** | Platform PostgreSQL (Docker) |
-| **15534** | POS PostgreSQL (Docker) |
+| **8093** | Organization Web |
+| **8094** | Personal Web |
+| **15533** | Platform PostgreSQL (Docker; do not expose) |
+| **15534** | POS PostgreSQL (Docker; do not expose) |
 | **8025** | Mailpit UI |
+
+Local ports are **internal**. Production public entry is HTTPS **:443** via reverse proxy (see [ADR-022](../decisions/ADR-022-separated-antdesign-web-hosts-and-unified-auth.md)).
 
 ```powershell
 # From ExItS-SaaS root (see deploy/docker/README.local-validation-workflow.md)

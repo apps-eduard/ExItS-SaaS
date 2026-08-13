@@ -20,22 +20,26 @@ Tailscale / LAN (bind `0.0.0.0`, print public URLs, CORS + AllowedHosts for the 
 
 Printed when `-PublicHost` is set:
 
-- Admin: `http://100.120.79.81:8090`
+- Admin: `http://100.120.79.81:8090` (canonical sign-in)
 - Platform API: `http://100.120.79.81:8091`
 - POS API: `http://100.120.79.81:8092`
+- Org Web: `http://100.120.79.81:8093`
+- Personal Web: `http://100.120.79.81:8094`
 
-Kestrel always binds `http://0.0.0.0:8090|8091|8092` (localhost still works). Database connection strings stay `127.0.0.1:15533` / `127.0.0.1:15534`.
+Kestrel always binds `http://0.0.0.0:8090|8091|8092|8093|8094` (localhost still works). Database connection strings stay `127.0.0.1:15533` / `127.0.0.1:15534`. These local ports are internal; production public entry is HTTPS :443.
 
 If you omit `-PublicHost`, Start still tries (in order): `LOCAL_VALIDATION_PUBLIC_HOST` in `.env.local-validation`, the last saved PublicHost, then an active Tailscale `100.x` address. Plain `.\tools\Start-LocalValidation.ps1` should keep Tailscale AllowedHosts working once that value is known.
 
 ### Windows Firewall (apps only)
 
-Allow inbound TCP **8090 / 8091 / 8092**. Do **not** open **15533 / 15534** (PostgreSQL stays local-only).
+Allow inbound TCP **8090 / 8091 / 8092 / 8093 / 8094**. Do **not** open **15533 / 15534** (PostgreSQL stays local-only).
 
 ```powershell
 New-NetFirewallRule -DisplayName "ExItS Local Validation Admin 8090" -Direction Inbound -Protocol TCP -LocalPort 8090 -Action Allow -Profile Any
 New-NetFirewallRule -DisplayName "ExItS Local Validation Platform API 8091" -Direction Inbound -Protocol TCP -LocalPort 8091 -Action Allow -Profile Any
 New-NetFirewallRule -DisplayName "ExItS Local Validation POS API 8092" -Direction Inbound -Protocol TCP -LocalPort 8092 -Action Allow -Profile Any
+New-NetFirewallRule -DisplayName "ExItS Local Validation Org Web 8093" -Direction Inbound -Protocol TCP -LocalPort 8093 -Action Allow -Profile Any
+New-NetFirewallRule -DisplayName "ExItS Local Validation Personal Web 8094" -Direction Inbound -Protocol TCP -LocalPort 8094 -Action Allow -Profile Any
 ```
 
 Requires an elevated PowerShell. The start script prints the same guidance after a successful launch.
@@ -44,10 +48,13 @@ This script:
 
 1. Checks Docker Desktop
 2. Starts **only** Platform + POS PostgreSQL (ports **15533** / **15534**); preserves volumes; never `down -v`
-3. Stops stale repo-scoped `ExItS.Platform.Api` / `ExItS.PinoyBusinessPOS.Api` / `ExItS.Platform.Admin` processes
+3. Stops stale repo-scoped `ExItS.Platform.Api` / `ExItS.PinoyBusinessPOS.Api` / `ExItS.Platform.Admin` / `ExItS.PinoyBusinessPOS.Web` / `ExItS.Personal.Web` processes
 4. Starts, in order, with `dotnet watch` bound to **0.0.0.0**:
    - Platform API → http://localhost:8091 (or `http://<PublicHost>:8091`)
    - POS API → http://localhost:8092 (or `http://<PublicHost>:8092`)
+   - Platform Admin → http://localhost:8090
+   - Organization Web → http://localhost:8093
+   - Personal Web → http://localhost:8094
    - Platform Admin → http://localhost:8090 (or `http://<PublicHost>:8090`)
 5. Waits for ports, runs health checks, prints URLs
 6. Configures CORS for `http://localhost:8090`, `http://127.0.0.1:8090`, and `http://<PublicHost>:8090` when `-PublicHost` is set

@@ -1,10 +1,10 @@
-# Phase 25 — Organization Web Admin Management Center
+# Phase 25 — Organization Web Admin, AntDesign hosts, and unified web auth
 
-[Phases](README.md) | [Portfolio](../portfolio-progress.md) | [P25-WP01](../reports/P25-WP01-organization-web-admin-management-center.md)
+[Phases](README.md) | [Portfolio](../portfolio-progress.md) | [P25-WP01](../reports/P25-WP01-organization-web-admin-management-center.md) | [P25-WP02](../reports/P25-WP02-antdesign-web-standardization-and-host-separation.md) | [P25-WP03](../reports/P25-WP03-unified-web-authentication-sso-and-workspace-routing.md) | [ADR-022](../decisions/ADR-022-separated-antdesign-web-hosts-and-unified-auth.md)
 
 | Field | Value |
 |---|---|
-| Status | **Open** — WP01 Code Complete / Owner Validation Pending |
+| Status | **Open** — WP01–WP03 Code Complete / Owner Validation Pending |
 | Device Verified | **No** |
 | Production Ready | **No** |
 | Boundary | **Organization Web Admin is not a POS checkout client.** |
@@ -36,4 +36,14 @@ Unauthorized sections are hidden in navigation and still denied by server APIs.
 
 ## Owner acceptance
 
-Browser checklist is in [P25-WP01](../reports/P25-WP01-organization-web-admin-management-center.md). Do not mark Device Verified or Production Ready until the owner validates.
+## Work packages
+
+| WP | Scope | Status |
+|---|---|---|
+| [P25-WP01](../reports/P25-WP01-organization-web-admin-management-center.md) | Organization Web management center (original DesignSystem host) | Code Complete |
+| [P25-WP02](../reports/P25-WP02-antdesign-web-standardization-and-host-separation.md) | AntDesign standardization; Org/Personal/Admin host split | Code Complete |
+| [P25-WP03](../reports/P25-WP03-unified-web-authentication-sso-and-workspace-routing.md) | Canonical sign-in, SSO handoff, workspace routing | Code Complete |
+
+Local ports: **8090** Admin, **8091** Platform API, **8092** POS API, **8093** Org Web, **8094** Personal Web. Production public entry is HTTPS :443 via reverse proxy.
+
+Owner browser checklist is in [P25-WP03](../reports/P25-WP03-unified-web-authentication-sso-and-workspace-routing.md). Do not mark Device Verified or Production Ready until the owner validates.

@@ -25,5 +25,6 @@
 | ADR-019 | Personal Utang versus Business Credit ownership | **Accepted** — [Open](ADR-019-personal-utang-versus-business-credit-ownership.md) |
 | ADR-020 | Personal Utang migration and provenance | **Accepted** — [Open](ADR-020-personal-utang-migration-and-provenance.md) |
 | ADR-021 | Linked customer statements and Personal monetization | **Accepted** (architecture contract; not implemented) — [Open](ADR-021-linked-customer-statements-and-personal-monetization.md) |
+| ADR-022 | Separated AntDesign browser hosts and unified authentication | **Accepted** — [Open](ADR-022-separated-antdesign-web-hosts-and-unified-auth.md) |
 
 Cursor creates detailed ADR files only when the related phase validates the decision against the repository.
