@@ -1,0 +1,197 @@
+@page "/organization/branches"
+@attribute [Authorize]
+@inject OrgWebShellState Shell
+@inject ICurrentUserContext CurrentUser
+@inject IPlatformAccessClient Platform
+
+<PageTitle>Branches</PageTitle>
+
+@if (!Shell.CanSee("branches"))
+{
+    <AccessDeniedPanel />
+}
+else
+{
+    <PageHeader Title="Branches" Subtitle="Location-specific operational state. Products remain organization-level." />
+
+    @if (_capacity is not null)
+    {
+        <p class="org-note">Capacity @_capacity.Used / @_capacity.Allowed. Archive instead of deleting branches that have history.</p>
+    }
+
+    <div class="org-form" style="margin-bottom:1rem">
+        <TextInput Label="Code" @bind-Value="_code" />
+        <TextInput Label="Name" @bind-Value="_name" />
+        <TextInput Label="Address" @bind-Value="_address" />
+        <Button Variant="ButtonVariant.Primary" IsLoading="_busy" OnClick="CreateAsync">Create branch</Button>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <Alert Tone="AlertTone.Danger" Message="@_error" />
+    }
+
+    @if (_loading)
+    {
+        <p class="org-note">Loading…</p>
+    }
+    else if (_items.Count == 0)
+    {
+        <EmptyState Title="No branches" Message="Create the first branch for this organization." />
+    }
+    else
+    {
+        <div class="org-table-wrap">
+            <table class="org-table">
+                <thead>
+                    <tr><th>Code</th><th>Name</th><th>Status</th><th>Address</th><th></th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var b in _items)
+                    {
+                        <tr>
+                            <td>@b.Code @(b.IsPrimary ? "(primary)" : "")</td>
+                            <td>
+                                <input value="@b.Name" @onchange="e => _names[b.Id] = e.Value?.ToString() ?? b.Name" />
+                            </td>
+                            <td><span class="org-badge">@b.Status</span></td>
+                            <td>@b.AddressLine1 @b.City</td>
+                            <td>
+                                <button type="button" class="exds-btn" disabled="@_busy" @onclick="() => SaveAsync(b)">Save</button>
+                                @if (!b.IsPrimary && !string.Equals(b.Status, "Archived", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    <button type="button" class="exds-btn" disabled="@_busy" @onclick="() => ArchiveAsync(b)">Archive</button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+}
+
+@code {
+    private bool _loading = true;
+    private bool _busy;
+    private string? _error;
+    private string? _code;
+    private string? _name;
+    private string? _address;
+    private BranchCapacityDto? _capacity;
+    private List<OrganizationBranchDto> _items = [];
+    private readonly Dictionary<Guid, string> _names = [];
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        var orgId = CurrentUser.Session?.OrganizationId;
+        if (orgId is null)
+        {
+            _loading = false;
+            return;
+        }
+
+        var list = await Platform.GetBranchesAsync(orgId.Value);
+        var cap = await Platform.GetBranchCapacityAsync(orgId.Value);
+        if (list.IsSuccess && list.Data is not null)
+        {
+            _items = list.Data.ToList();
+            foreach (var b in _items)
+            {
+                _names[b.Id] = b.Name;
+            }
+        }
+        else
+        {
+            _error = OrgWebUi.Error(list.Error);
+        }
+
+        _capacity = cap.Data;
+        _loading = false;
+    }
+
+    private async Task CreateAsync()
+    {
+        var orgId = CurrentUser.Session?.OrganizationId;
+        if (orgId is null || string.IsNullOrWhiteSpace(_code) || string.IsNullOrWhiteSpace(_name))
+        {
+            _error = "Code and name are required.";
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var result = await Platform.CreateBranchAsync(
+                orgId.Value,
+                new CreateBranchRequest(_code.Trim(), _name.Trim(), _address));
+            if (!result.IsSuccess)
+            {
+                _error = OrgWebUi.Error(result.Error);
+                return;
+            }
+
+            _code = _name = _address = null;
+            _error = null;
+            await LoadAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task SaveAsync(OrganizationBranchDto branch)
+    {
+        var orgId = CurrentUser.Session?.OrganizationId;
+        if (orgId is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var name = _names.GetValueOrDefault(branch.Id, branch.Name);
+            var result = await Platform.UpdateBranchAsync(
+                orgId.Value,
+                branch.Id,
+                new UpdateBranchRequest(Name: name));
+            _error = result.IsSuccess ? null : OrgWebUi.Error(result.Error);
+            if (result.IsSuccess)
+            {
+                await LoadAsync();
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task ArchiveAsync(OrganizationBranchDto branch)
+    {
+        var orgId = CurrentUser.Session?.OrganizationId;
+        if (orgId is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var result = await Platform.ArchiveBranchAsync(orgId.Value, branch.Id);
+            _error = result.IsSuccess ? null : OrgWebUi.Error(result.Error);
+            if (result.IsSuccess)
+            {
+                await LoadAsync();
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

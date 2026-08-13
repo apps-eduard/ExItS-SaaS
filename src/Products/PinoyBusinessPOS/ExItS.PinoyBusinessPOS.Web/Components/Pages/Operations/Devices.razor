@@ -1,0 +1,93 @@
+@page "/operations/devices"
+@attribute [Authorize]
+@inject OrgWebShellState Shell
+@inject ICurrentUserContext CurrentUser
+@inject IPlatformAccessClient Platform
+
+<PageTitle>POS devices</PageTitle>
+
+@if (!Shell.CanSee("devices"))
+{
+    <AccessDeniedPanel />
+}
+else
+{
+    <PageHeader Title="POS devices / registers" Subtitle="Registered POS terminals. This browser is not a POS device. Offline PIN secrets are never shown." />
+    @if (_capacity is not null)
+    {
+        <p class="org-note">Capacity @_capacity.Used / @_capacity.Allowed</p>
+    }
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <Alert Tone="AlertTone.Danger" Message="@_error" />
+    }
+    <div class="org-table-wrap">
+        <table class="org-table">
+            <thead>
+                <tr><th>Name</th><th>Branch</th><th>Status</th><th>Last seen</th><th>Platform</th><th></th></tr>
+            </thead>
+            <tbody>
+                @foreach (var d in _items)
+                {
+                    <tr>
+                        <td>
+                            <input value="@d.FriendlyName" @onchange="e => _names[d.Id] = e.Value?.ToString() ?? d.FriendlyName" />
+                        </td>
+                        <td>@d.BranchId.ToString("N")[..8]</td>
+                        <td><span class="org-badge">@d.Status</span></td>
+                        <td>@d.LastSeenAtUtc.LocalDateTime</td>
+                        <td>@d.Platform @d.Model</td>
+                        <td>
+                            <button type="button" class="exds-btn" @onclick="() => RenameAsync(d)">Rename</button>
+                            @if (!string.Equals(d.Status, "Revoked", StringComparison.OrdinalIgnoreCase))
+                            {
+                                <button type="button" class="exds-btn" @onclick="() => RevokeAsync(d)">Revoke</button>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    private string? _error;
+    private PosDeviceCapacityDto? _capacity;
+    private List<PosDeviceDto> _items = [];
+    private readonly Dictionary<Guid, string> _names = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        var orgId = CurrentUser.Session?.OrganizationId;
+        if (orgId is null) return;
+        var list = await Platform.GetPosDevicesAsync(orgId.Value);
+        var cap = await Platform.GetPosDeviceCapacityAsync(orgId.Value);
+        _items = list.Data?.ToList() ?? [];
+        foreach (var d in _items) _names[d.Id] = d.FriendlyName;
+        _capacity = cap.Data;
+        if (!list.IsSuccess) _error = OrgWebUi.Error(list.Error);
+    }
+
+    private async Task RenameAsync(PosDeviceDto device)
+    {
+        var orgId = CurrentUser.Session?.OrganizationId;
+        if (orgId is null) return;
+        var name = _names.GetValueOrDefault(device.Id, device.FriendlyName);
+        var result = await Platform.RenamePosDeviceAsync(orgId.Value, device.Id, name);
+        _error = result.IsSuccess ? null : OrgWebUi.Error(result.Error);
+    }
+
+    private async Task RevokeAsync(PosDeviceDto device)
+    {
+        var orgId = CurrentUser.Session?.OrganizationId;
+        if (orgId is null) return;
+        var result = await Platform.RevokePosDeviceAsync(orgId.Value, device.Id);
+        _error = result.IsSuccess ? null : OrgWebUi.Error(result.Error);
+        if (result.IsSuccess)
+        {
+            var list = await Platform.GetPosDevicesAsync(orgId.Value);
+            _items = list.Data?.ToList() ?? [];
+        }
+    }
+}

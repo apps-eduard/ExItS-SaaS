@@ -17,6 +17,7 @@ internal static class ReportingEndpoints
     public static IEndpointRouteBuilder MapReportingEndpoints(this IEndpointRouteBuilder app)
     {
         app.MapGet("/api/v1/pos/dashboard", GetDashboard);
+        app.MapGet("/api/v1/pos/management/overview", GetManagementOverview);
         var reports = app.MapGroup("/api/v1/pos/reports");
         reports.MapGet("/sales", GetSalesReport);
         reports.MapGet("/sales/by-product", GetSalesByProduct);
@@ -63,6 +64,21 @@ internal static class ReportingEndpoints
 
         var result = await dashboard.GetAsync(organizationId, from, to, ct).ConfigureAwait(false);
         return PosApiResults.FromResult(result, Results.Ok);
+    }
+
+    private static async Task<IResult> GetManagementOverview(
+        HttpRequest request,
+        ManagementOverviewQueryService overview,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorize(request, access, UtangCapability.ViewDashboard, out var organizationId, out var problem))
+        {
+            return problem!;
+        }
+
+        var dto = await overview.GetAsync(organizationId, ct).ConfigureAwait(false);
+        return Results.Ok(dto);
     }
 
     private static async Task<IResult> GetSalesReport(

@@ -84,6 +84,48 @@ internal sealed class InventoryLotRepository : IInventoryLotRepository
         return (records.Select(InventoryEntityMapper.ToDomain).ToList(), total);
     }
 
+    public async Task<(IReadOnlyList<InventoryLot> Items, int TotalCount)> ListExpiringPagedAsync(
+        PosOrganizationId organizationId,
+        PosBranchId? branchId,
+        DateOnly expireOnOrBefore,
+        DateOnly? expireOnOrAfter,
+        string? search,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default)
+    {
+        var query = ExpiringQuery(organizationId, branchId, expireOnOrBefore, expireOnOrAfter, search);
+        var total = await query.CountAsync(cancellationToken).ConfigureAwait(false);
+        var records = await query
+            .OrderBy(l => l.ExpirationDate)
+            .ThenBy(l => l.CreatedAtUtc)
+            .Skip(skip)
+            .Take(take)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return (records.Select(InventoryEntityMapper.ToDomain).ToList(), total);
+    }
+
+    public async Task<(int ExpiredCount, int NearExpiryCount)> CountExpiryAsync(
+        PosOrganizationId organizationId,
+        DateOnly today,
+        int warningDays,
+        CancellationToken cancellationToken = default)
+    {
+        var onHand = _db.InventoryLots.Where(l =>
+            l.OrganizationId == organizationId.Value && l.QuantityOnHand > 0m);
+        var expired = await onHand
+            .CountAsync(l => l.ExpirationDate < today, cancellationToken)
+            .ConfigureAwait(false);
+        var nearUntil = today.AddDays(warningDays);
+        var near = await onHand
+            .CountAsync(
+                l => l.ExpirationDate >= today && l.ExpirationDate <= nearUntil,
+                cancellationToken)
+            .ConfigureAwait(false);
+        return (expired, near);
+    }
+
     public Task AddAsync(InventoryLot lot, CancellationToken cancellationToken = default)
     {
         _db.InventoryLots.Add(InventoryEntityMapper.ToRecord(lot));
@@ -153,6 +195,44 @@ internal sealed class InventoryLotRepository : IInventoryLotRepository
         if (!includeDepleted)
         {
             query = query.Where(l => l.QuantityOnHand > 0m);
+        }
+
+        return query;
+    }
+
+    private IQueryable<InventoryLotRecord> ExpiringQuery(
+        PosOrganizationId organizationId,
+        PosBranchId? branchId,
+        DateOnly expireOnOrBefore,
+        DateOnly? expireOnOrAfter,
+        string? search)
+    {
+        var query = _db.InventoryLots.Where(l =>
+            l.OrganizationId == organizationId.Value
+            && l.QuantityOnHand > 0m
+            && l.ExpirationDate <= expireOnOrBefore);
+        if (expireOnOrAfter is { } from)
+        {
+            query = query.Where(l => l.ExpirationDate >= from);
+        }
+
+        if (branchId is not null)
+        {
+            query = query.Where(l => l.BranchId == branchId.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim();
+            var productIds = _db.CatalogProducts
+                .Where(p => p.OrganizationId == organizationId.Value
+                    && (p.Name.Contains(term)
+                        || (p.Sku != null && p.Sku.Contains(term))
+                        || (p.Barcode != null && p.Barcode.Contains(term))))
+                .Select(p => p.Id);
+            query = query.Where(l =>
+                productIds.Contains(l.ProductId)
+                || (l.LotNumber != null && l.LotNumber.Contains(term)));
         }
 
         return query;

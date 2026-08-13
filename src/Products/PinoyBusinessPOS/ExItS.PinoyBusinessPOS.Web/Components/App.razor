@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="system" data-density="compact">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <base href="/" />
+    <link rel="stylesheet" href="_content/ExItS.DesignSystem/exits-design-system.css" />
+    <link rel="stylesheet" href="@Assets["org-web.css"]" />
+    <ImportMap />
+    <HeadOutlet @rendermode="InteractiveServer" />
+</head>
+
+<body>
+    <CascadingAuthenticationState>
+        <Routes @rendermode="InteractiveServer" />
+    </CascadingAuthenticationState>
+    <script src="@Assets["_framework/blazor.web.js"]"></script>
+</body>
+
+</html>

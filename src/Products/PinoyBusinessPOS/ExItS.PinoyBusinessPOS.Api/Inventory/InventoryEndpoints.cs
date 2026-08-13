@@ -18,6 +18,7 @@ internal static class InventoryEndpoints
         group.MapGet("/", ListInventory);
         group.MapGet("/low-stock", ListLowStock);
         group.MapGet("/reorder-suggestions", ListReorderSuggestions);
+        group.MapGet("/lots", ListExpiringLots);
         MapStockCounts(group);
         InventoryTransferEndpoints.Map(group);
 
@@ -255,6 +256,35 @@ internal static class InventoryEndpoints
                 "Product was not found.",
                 StatusCodes.Status404NotFound)
             : Results.Ok(dto);
+    }
+
+    private static async Task<IResult> ListExpiringLots(
+        HttpRequest request,
+        string? window,
+        string? fromDate,
+        string? toDate,
+        Guid? branchId,
+        string? search,
+        int? page,
+        int? pageSize,
+        InventoryLotQueryService queries,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorize(request, access, UtangCapability.ViewInventory, out var organizationId, out var problem))
+        {
+            return problem!;
+        }
+
+        if (!TryParseDate(fromDate, out var from, out problem) || !TryParseDate(toDate, out var to, out problem))
+        {
+            return problem!;
+        }
+
+        var result = await queries
+            .ListExpiringAsync(organizationId, branchId, window, from, to, search, page, pageSize, ct)
+            .ConfigureAwait(false);
+        return Results.Ok(result);
     }
 
     private static async Task<IResult> ListLots(

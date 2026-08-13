@@ -230,6 +230,7 @@ builder.Services.AddScoped<SubmitPurchaseOrder>();
 builder.Services.AddScoped<CancelPurchaseOrder>();
 builder.Services.AddScoped<ReceivePurchaseOrder>();
 builder.Services.AddScoped<ExItS.PinoyBusinessPOS.Application.Reporting.DashboardQueryService>();
+builder.Services.AddScoped<ExItS.PinoyBusinessPOS.Application.Reporting.ManagementOverviewQueryService>();
 builder.Services.AddScoped<ExItS.PinoyBusinessPOS.Application.Reporting.SalesReportService>();
 builder.Services.AddScoped<ExItS.PinoyBusinessPOS.Application.Reporting.UtangReportService>();
 builder.Services.AddScoped<ExItS.PinoyBusinessPOS.Application.Reporting.InventoryReportService>();

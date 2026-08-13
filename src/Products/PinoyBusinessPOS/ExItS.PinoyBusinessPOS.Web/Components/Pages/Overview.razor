@@ -1,0 +1,112 @@
+@page "/overview"
+@attribute [Authorize]
+@inject OrgWebShellState Shell
+@inject ICurrentUserContext CurrentUser
+@inject IPosReportingClient Reporting
+@inject IPlatformAccessClient Platform
+@inject IStringLocalizer<OrgWebResources> L
+
+<PageTitle>Overview</PageTitle>
+
+@if (!Shell.CanSee("overview"))
+{
+    <AccessDeniedPanel />
+}
+else
+{
+    <PageHeader Title="Overview" Subtitle="What is happening in this business today. Aggregates only — not a checkout terminal." />
+    <p class="org-note">@L["Boundary_NotPos"]</p>
+
+    @if (_loading)
+    {
+        <Skeleton />
+        <p class="org-note">Loading management metrics…</p>
+    }
+    else if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <ErrorState Title="Overview unavailable" Message="@_error" RetryLabel="Retry" OnRetry="LoadAsync" />
+    }
+    else if (_overview is not null)
+    {
+        <div class="org-metrics">
+            <div class="org-metric"><div class="org-metric__label">Today sales</div><div class="org-metric__value">@OrgWebUi.Money(_overview.TodaySalesTotal)</div><div class="org-note">@_overview.TodaySaleCount sales</div></div>
+            <div class="org-metric"><div class="org-metric__label">Cash sales</div><div class="org-metric__value">@OrgWebUi.Money(_overview.TodayCashSalesTotal)</div></div>
+            <div class="org-metric"><div class="org-metric__label">Utang sales</div><div class="org-metric__value">@OrgWebUi.Money(_overview.TodayUtangSalesTotal)</div></div>
+            <div class="org-metric"><div class="org-metric__label">Payments received</div><div class="org-metric__value">@OrgWebUi.Money(_overview.TodayPaymentsReceived)</div></div>
+            <div class="org-metric"><div class="org-metric__label">Open Utang</div><div class="org-metric__value">@OrgWebUi.Money(_overview.OpenUtangOutstanding)</div></div>
+            <div class="org-metric"><div class="org-metric__label">Low stock</div><div class="org-metric__value">@_overview.LowStockProductCount</div></div>
+            <div class="org-metric"><div class="org-metric__label">Expired lots</div><div class="org-metric__value">@_overview.ExpiredLotCount</div></div>
+            <div class="org-metric"><div class="org-metric__label">Near expiry</div><div class="org-metric__value">@_overview.NearExpiryLotCount</div></div>
+            <div class="org-metric"><div class="org-metric__label">Pending transfers</div><div class="org-metric__value">@_overview.PendingTransferCount</div></div>
+            <div class="org-metric"><div class="org-metric__label">Open shifts</div><div class="org-metric__value">@_overview.OpenShiftCount</div></div>
+            <div class="org-metric"><div class="org-metric__label">Active registers</div><div class="org-metric__value">@_overview.ActiveRegisterCount</div></div>
+            <div class="org-metric"><div class="org-metric__label">Active branches</div><div class="org-metric__value">@_activeBranches</div></div>
+            <div class="org-metric"><div class="org-metric__label">Staff</div><div class="org-metric__value">@_staffCount</div></div>
+            <div class="org-metric"><div class="org-metric__label">POS devices</div><div class="org-metric__value">@_deviceCount</div></div>
+            <div class="org-metric"><div class="org-metric__label">Pending customer links</div><div class="org-metric__value">@_pendingLinks</div></div>
+            <div class="org-metric"><div class="org-metric__label">Unread alerts</div><div class="org-metric__value">@Shell.UnreadNotificationCount</div></div>
+        </div>
+        <p class="org-note">Business date @_overview.BusinessDate. Metrics are organization-scoped SQL aggregates.</p>
+    }
+}
+
+@code {
+    private bool _loading = true;
+    private string? _error;
+    private PosManagementOverviewDto? _overview;
+    private int _activeBranches;
+    private int _staffCount;
+    private int _deviceCount;
+    private int _pendingLinks;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+        var orgId = CurrentUser.Session?.OrganizationId;
+        if (orgId is null || !Shell.CanSee("overview"))
+        {
+            _loading = false;
+            return;
+        }
+
+        var overviewTask = Reporting.GetManagementOverviewAsync();
+        var branchesTask = Platform.GetBranchesAsync(orgId.Value);
+        var membersTask = Platform.GetOrganizationMembersAsync(orgId.Value, page: 1, pageSize: 1);
+        var devicesTask = Platform.GetPosDevicesAsync(orgId.Value);
+        var linksTask = Platform.GetCustomerLinkRequestStatsAsync(orgId.Value);
+        await Task.WhenAll(overviewTask, branchesTask, membersTask, devicesTask, linksTask);
+
+        var overview = await overviewTask;
+        if (!overview.IsSuccess || overview.Data is null)
+        {
+            _error = OrgWebUi.Error(overview.Error, "Management overview is unavailable.");
+            _loading = false;
+            return;
+        }
+
+        _overview = overview.Data;
+        var branches = await branchesTask;
+        _activeBranches = branches.Data?.Count(b => string.Equals(b.Status, "Active", StringComparison.OrdinalIgnoreCase)) ?? 0;
+        var members = await membersTask;
+        _staffCount = members.Data?.TotalCount ?? 0;
+        var devices = await devicesTask;
+        _deviceCount = devices.Data?.Count(d => !string.Equals(d.Status, "Revoked", StringComparison.OrdinalIgnoreCase)) ?? 0;
+        var links = await linksTask;
+        _pendingLinks = 0;
+        if (links.Data?.CountsByStatus is not null)
+        {
+            foreach (var pair in links.Data.CountsByStatus)
+            {
+                if (pair.Key.Contains("Pending", StringComparison.OrdinalIgnoreCase))
+                {
+                    _pendingLinks += pair.Value;
+                }
+            }
+        }
+
+        _loading = false;
+    }
+}

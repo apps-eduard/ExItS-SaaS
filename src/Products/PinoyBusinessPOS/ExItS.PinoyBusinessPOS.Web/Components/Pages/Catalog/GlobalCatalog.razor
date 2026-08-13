@@ -1,0 +1,167 @@
+@page "/catalog"
+@attribute [Authorize]
+@inject OrgWebShellState Shell
+@inject IMerchantCatalogDiscoveryClient Discovery
+@inject IPosCatalogImportClient Import
+
+<PageTitle>Global Catalog</PageTitle>
+
+@if (!Shell.CanSee("products"))
+{
+    <AccessDeniedPanel />
+}
+else
+{
+    <PageHeader Title="Global Catalog" Subtitle="Browse published Platform products. Already imported items cannot be selected again." />
+    <div class="org-toolbar">
+        <TextInput Label="Search" @bind-Value="_search" />
+        <Button OnClick="SearchAsync">Search</Button>
+        @if (Shell.Can(UtangCapability.ManageCatalog))
+        {
+            <Button Variant="ButtonVariant.Primary" IsLoading="_busy" Disabled="_selected.Count == 0" OnClick="ImportAsync">Import selected</Button>
+        }
+    </div>
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <Alert Tone="AlertTone.Danger" Message="@_error" />
+    }
+    @if (!string.IsNullOrWhiteSpace(_ok))
+    {
+        <Alert Tone="AlertTone.Success" Message="@_ok" />
+    }
+    <div class="org-table-wrap">
+        <table class="org-table">
+            <thead>
+                <tr><th></th><th>Name</th><th>SKU</th><th>Barcode</th><th>State</th></tr>
+            </thead>
+            <tbody>
+                @foreach (var p in _items)
+                {
+                    var imported = _imported.Contains(p.Id);
+                    <tr>
+                        <td>
+                            @if (!imported)
+                            {
+                                <input type="checkbox" checked="@_selected.Contains(p.Id)" @onchange="e => Toggle(p.Id, (bool)e.Value!)" />
+                            }
+                        </td>
+                        <td>@p.Name</td>
+                        <td>@p.Sku</td>
+                        <td>@p.Barcode</td>
+                        <td>
+                            @if (imported)
+                            {
+                                <span class="org-badge">Already added</span>
+                            }
+                            else
+                            {
+                                <span>New</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <OrgPager Page="_page" PageSize="20" TotalCount="_total" Busy="_busy" PageChanged="ChangePageAsync" />
+}
+
+@code {
+    private bool _busy;
+    private string? _search;
+    private string? _error;
+    private string? _ok;
+    private int _page = 1;
+    private int _total;
+    private List<PlatformMerchantGlobalProductDto> _items = [];
+    private HashSet<Guid> _imported = [];
+    private readonly HashSet<Guid> _selected = [];
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private void Toggle(Guid id, bool on)
+    {
+        if (on)
+        {
+            _selected.Add(id);
+        }
+        else
+        {
+            _selected.Remove(id);
+        }
+    }
+
+    private async Task SearchAsync()
+    {
+        _page = 1;
+        await LoadAsync();
+    }
+
+    private async Task ChangePageAsync(int page)
+    {
+        _page = page;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _busy = true;
+        try
+        {
+            var result = await Discovery.SearchActiveProductsAsync(_search, page: _page, pageSize: 20);
+            if (!result.IsSuccess || result.Data is null)
+            {
+                _error = OrgWebUi.Error(result.Error);
+                return;
+            }
+
+            _items = result.Data.Items.ToList();
+            _total = result.Data.TotalCount;
+            var ids = _items.Select(i => i.Id).ToList();
+            if (ids.Count > 0)
+            {
+                var imported = await Import.ListImportedGlobalProductsAsync(ids);
+                _imported = imported.Data?.ImportedIds.ToHashSet() ?? [];
+            }
+            else
+            {
+                _imported = [];
+            }
+
+            _selected.RemoveWhere(id => _imported.Contains(id));
+            _error = null;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task ImportAsync()
+    {
+        var ids = _selected.Where(id => !_imported.Contains(id)).ToList();
+        if (ids.Count == 0)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var result = await Import.ImportSelectedProductsAsync(new ImportSelectedProductsRequest(ids));
+            if (!result.IsSuccess)
+            {
+                _error = OrgWebUi.Error(result.Error);
+                return;
+            }
+
+            _ok = "Import started. Already-added products stay marked and are not duplicated.";
+            _selected.Clear();
+            await LoadAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

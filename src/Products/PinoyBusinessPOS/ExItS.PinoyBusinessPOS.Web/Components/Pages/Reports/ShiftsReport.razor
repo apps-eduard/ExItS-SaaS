@@ -1,0 +1,81 @@
+@page "/reports/shifts"
+@attribute [Authorize]
+@inject OrgWebShellState Shell
+@inject IPosReportingClient Reporting
+
+<PageTitle>Shift report</PageTitle>
+
+@if (!Shell.CanSee("reports"))
+{
+    <AccessDeniedPanel />
+}
+else
+{
+    <PageHeader Title="Cashier / shift report" Subtitle="Expected vs counted cash and variance. Skipped counts stay null — they are not zero." />
+    <div class="org-toolbar">
+        <TextInput Label="From" @bind-Value="_from" />
+        <TextInput Label="To" @bind-Value="_to" />
+        <Button OnClick="LoadAsync">Run</Button>
+    </div>
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <Alert Tone="AlertTone.Danger" Message="@_error" />
+    }
+    else if (_shifts is not null && _variance is not null)
+    {
+        <div class="org-metrics">
+            <div class="org-metric"><div class="org-metric__label">Shifts</div><div class="org-metric__value">@_shifts.ShiftCount</div></div>
+            <div class="org-metric"><div class="org-metric__label">Signed variance</div><div class="org-metric__value">@OrgWebUi.Money(_variance.TotalSignedVariance)</div></div>
+            <div class="org-metric"><div class="org-metric__label">Absolute variance</div><div class="org-metric__value">@OrgWebUi.Money(_variance.TotalAbsoluteVariance)</div></div>
+        </div>
+        <div class="org-table-wrap">
+            <table class="org-table">
+                <thead><tr><th>Shift</th><th>Date</th><th>Mode</th><th>Expected</th><th>Counted</th><th>Variance</th><th>State</th></tr></thead>
+                <tbody>
+                    @foreach (var row in _variance.Rows)
+                    {
+                        <tr>
+                            <td>@row.ShiftNumber</td>
+                            <td>@row.BusinessDate</td>
+                            <td>@row.EffectiveCashCountMode</td>
+                            <td>@(row.ExpectedCashAmount?.ToString("N2") ?? "—")</td>
+                            <td>@(row.ClosingCashAmount?.ToString("N2") ?? "—")</td>
+                            <td>@(row.CashVarianceAmount?.ToString("N2") ?? "—")</td>
+                            <td>@row.CashCountState</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+}
+
+@code {
+    private string? _from;
+    private string? _to;
+    private string? _error;
+    private PosShiftSummaryReportDto? _shifts;
+    private PosCashVarianceReportDto? _variance;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        DateOnly? from = DateOnly.TryParse(_from, out var f) ? f : null;
+        DateOnly? to = DateOnly.TryParse(_to, out var t) ? t : null;
+        var shifts = Reporting.GetShiftSummaryReportAsync(from, to);
+        var variance = Reporting.GetCashVarianceReportAsync(from, to);
+        await Task.WhenAll(shifts, variance);
+        var s = await shifts;
+        var v = await variance;
+        if (!s.IsSuccess || !v.IsSuccess)
+        {
+            _error = OrgWebUi.Error(s.Error ?? v.Error);
+            return;
+        }
+
+        _shifts = s.Data;
+        _variance = v.Data;
+        _error = null;
+    }
+}

@@ -1,0 +1,133 @@
+@page "/sales"
+@page "/sales/{SaleId:guid}"
+@attribute [Authorize]
+@inject OrgWebShellState Shell
+@inject IPosSaleClient Sales
+
+<PageTitle>Sales history</PageTitle>
+
+@if (!Shell.CanSee("reports"))
+{
+    <AccessDeniedPanel />
+}
+else
+{
+    <PageHeader Title="Sales history" Subtitle="Read-only receipts for reporting, audit, and investigation. There is no web checkout." />
+    <p class="org-note">Operational selling remains in the POS app. This page never creates a sale.</p>
+    <div class="org-toolbar">
+        <TextInput Label="Sale number" @bind-Value="_number" />
+        <select @bind="_payment">
+            <option value="">All payments</option>
+            <option>Cash</option>
+            <option>Utang</option>
+            <option>GCash</option>
+        </select>
+        <TextInput Label="From" @bind-Value="_from" Placeholder="yyyy-MM-dd" />
+        <TextInput Label="To" @bind-Value="_to" Placeholder="yyyy-MM-dd" />
+        <Button OnClick="SearchAsync">Filter</Button>
+    </div>
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <Alert Tone="AlertTone.Danger" Message="@_error" />
+    }
+    <div class="org-table-wrap">
+        <table class="org-table">
+            <thead>
+                <tr><th>Sale</th><th>When</th><th>Payment</th><th>Status</th><th>Total</th><th>Customer</th><th>Register</th></tr>
+            </thead>
+            <tbody>
+                @foreach (var s in _items)
+                {
+                    <tr>
+                        <td><a href="@($"/sales/{s.SaleId:D}")">@s.SaleNumber</a></td>
+                        <td>@s.RecordedAtUtc.LocalDateTime</td>
+                        <td>@s.PaymentMethod</td>
+                        <td>@s.Status</td>
+                        <td>@OrgWebUi.Money(s.Total)</td>
+                        <td>@s.CustomerDisplayName</td>
+                        <td>@s.RegisterCode</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <OrgPager Page="_page" PageSize="20" TotalCount="_total" PageChanged="ChangePageAsync" />
+
+    @if (_detail is not null)
+    {
+        <Section Title="@($"Receipt {_detail.SaleNumber}")">
+            <p>@_detail.Status · @_detail.PaymentMethod · @_detail.RecordedAtUtc.LocalDateTime · Register @_detail.RegisterName · Shift @_detail.ShiftNumber</p>
+            @if (_detail.VoidedAtUtc is not null)
+            {
+                <Alert Tone="AlertTone.Warning" Message="@($"Voided: {_detail.VoidReason}")" />
+            }
+            <div class="org-table-wrap">
+                <table class="org-table">
+                    <thead>
+                        <tr><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var line in _detail.Lines)
+                        {
+                            <tr>
+                                <td>@line.Name</td>
+                                <td>@line.Quantity</td>
+                                <td>@OrgWebUi.Money(line.UnitPrice)</td>
+                                <td>@OrgWebUi.Money(line.LineTotal)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <p>Total @OrgWebUi.Money(_detail.Total)</p>
+        </Section>
+    }
+}
+
+@code {
+    [Parameter] public Guid SaleId { get; set; }
+    private string? _error;
+    private string? _number;
+    private string? _payment;
+    private string? _from;
+    private string? _to;
+    private int _page = 1;
+    private int _total;
+    private List<PosSaleDto> _items = [];
+    private PosSaleDto? _detail;
+
+    protected override Task OnParametersSetAsync() => LoadAsync();
+
+    private async Task SearchAsync()
+    {
+        _page = 1;
+        await LoadAsync();
+    }
+
+    private async Task ChangePageAsync(int page)
+    {
+        _page = page;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        DateOnly? from = DateOnly.TryParse(_from, out var f) ? f : null;
+        DateOnly? to = DateOnly.TryParse(_to, out var t) ? t : null;
+        var list = await Sales.ListSalesAsync(paymentMethod: string.IsNullOrWhiteSpace(_payment) ? null : _payment, fromDateUtc: from, toDateUtc: to, saleNumber: _number, page: _page, pageSize: 20);
+        if (!list.IsSuccess || list.Data is null)
+        {
+            _error = OrgWebUi.Error(list.Error);
+            return;
+        }
+
+        _items = list.Data.Items;
+        _total = list.Data.TotalCount;
+        _error = null;
+        if (SaleId != Guid.Empty)
+        {
+            var detail = await Sales.GetSaleAsync(SaleId);
+            _detail = detail.Data;
+        }
+    }
+}

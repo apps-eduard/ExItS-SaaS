@@ -81,6 +81,39 @@ public sealed class PosInventoryClient(HttpClient httpClient, IConnectivityServi
         return SendAsync<PagedResult<PosInventoryLotDto>>(HttpMethod.Get, query.ToString(), null, ct);
     }
 
+    public Task<ApiResult<PosExpiringLotPagedResult>> ListExpiringLotsAsync(
+        string? window = null,
+        DateOnly? fromDate = null,
+        DateOnly? toDate = null,
+        Guid? branchId = null,
+        string? search = null,
+        int page = 1,
+        int pageSize = 20,
+        CancellationToken ct = default)
+    {
+        var query = new StringBuilder($"{InventoryPath}/lots?");
+        query.Append("page=").Append(page.ToString(CultureInfo.InvariantCulture));
+        query.Append("&pageSize=").Append(pageSize.ToString(CultureInfo.InvariantCulture));
+        AppendOptional(query, "window", window);
+        AppendOptional(query, "search", search);
+        if (fromDate is { } from)
+        {
+            query.Append("&fromDate=").Append(from.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+        }
+
+        if (toDate is { } to)
+        {
+            query.Append("&toDate=").Append(to.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+        }
+
+        if (branchId is { } id && id != Guid.Empty)
+        {
+            query.Append("&branchId=").Append(id.ToString("D"));
+        }
+
+        return SendAsync<PosExpiringLotPagedResult>(HttpMethod.Get, query.ToString(), null, ct);
+    }
+
     public Task<ApiResult<PosInventoryAccountDto>> EnableAsync(
         Guid productId,
         EnableInventoryTrackingRequest request,

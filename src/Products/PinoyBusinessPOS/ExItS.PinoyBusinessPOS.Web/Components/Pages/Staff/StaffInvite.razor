@@ -1,0 +1,77 @@
+@page "/staff/invite"
+@attribute [Authorize]
+@inject OrgWebShellState Shell
+@inject ICurrentUserContext CurrentUser
+@inject IPlatformAccessClient Platform
+@inject NavigationManager Nav
+
+<PageTitle>Invite staff</PageTitle>
+
+@if (!Shell.CanSee("staff"))
+{
+    <AccessDeniedPanel />
+}
+else
+{
+    <PageHeader Title="Invite staff" Subtitle="Creates an organization-scoped staff identity. Never attaches Staff membership to a Personal login." />
+    <p class="org-note">Invite role is Organization Member. Assign a POS role after the staff identity exists. Passwords are set by the invitee.</p>
+    <FormValidationSummary Messages="_errors" />
+    <div class="org-form">
+        <TextInput Label="Contact email" @bind-Value="_email" Type="email" Required="true" />
+        <TextInput Label="Display name" @bind-Value="_displayName" />
+        <label>
+            POS role (optional)
+            <select @bind="_productRole">
+                <option value="">Assign later</option>
+                <option value="Cashier">Cashier</option>
+                <option value="InventoryStaff">Inventory Staff</option>
+                <option value="ReportingUser">Reporting User</option>
+                <option value="StoreManager">Store Manager</option>
+                <option value="Admin">Admin</option>
+            </select>
+        </label>
+        <Button Variant="ButtonVariant.Primary" IsLoading="_busy" OnClick="InviteAsync">Send invite</Button>
+    </div>
+}
+
+@code {
+    private bool _busy;
+    private string? _email;
+    private string? _displayName;
+    private string? _productRole;
+    private List<string> _errors = [];
+
+    private async Task InviteAsync()
+    {
+        _errors = [];
+        var orgId = CurrentUser.Session?.OrganizationId;
+        if (orgId is null || string.IsNullOrWhiteSpace(_email))
+        {
+            _errors.Add("Contact email is required.");
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var result = await Platform.CreateOrganizationInvitationAsync(
+                orgId.Value,
+                new CreateInvitationRequest(
+                    Email: _email.Trim(),
+                    Role: "OrganizationMember",
+                    DisplayName: string.IsNullOrWhiteSpace(_displayName) ? null : _displayName.Trim(),
+                    ProductRole: string.IsNullOrWhiteSpace(_productRole) ? null : _productRole));
+            if (!result.IsSuccess)
+            {
+                _errors.Add(OrgWebUi.Error(result.Error, "Invite failed."));
+                return;
+            }
+
+            Nav.NavigateTo("/staff");
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

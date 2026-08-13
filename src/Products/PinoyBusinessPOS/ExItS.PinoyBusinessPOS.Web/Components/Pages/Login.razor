@@ -1,0 +1,35 @@
+@page "/login"
+@layout EmptyLayout
+@attribute [AllowAnonymous]
+@inject IStringLocalizer<OrgWebResources> L
+
+<PageTitle>Sign in — Organization Admin</PageTitle>
+
+<div class="org-login">
+    <div class="org-login__card">
+        <h1>@L["Brand"]</h1>
+        <p class="org-note">@L["Boundary_NotPos"]</p>
+        @if (!string.IsNullOrWhiteSpace(_error))
+        {
+            <p class="org-login__error" role="alert">@_error</p>
+        }
+        <form method="post" action="/login/credentials">
+            <label>
+                Email
+                <input name="Email" type="email" autocomplete="username" required />
+            </label>
+            <label>
+                Password
+                <input name="Password" type="password" autocomplete="current-password" required />
+            </label>
+            <button type="submit" class="exds-btn">Sign in</button>
+        </form>
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromQuery] public string? Error { get; set; }
+    private string? _error;
+
+    protected override void OnParametersSet() => _error = Error;
+}

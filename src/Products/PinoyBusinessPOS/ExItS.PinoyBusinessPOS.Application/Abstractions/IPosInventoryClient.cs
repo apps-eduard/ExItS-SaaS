@@ -33,6 +33,16 @@ public interface IPosInventoryClient
         int pageSize = 20,
         CancellationToken ct = default);
 
+    Task<ApiResult<PosExpiringLotPagedResult>> ListExpiringLotsAsync(
+        string? window = null,
+        DateOnly? fromDate = null,
+        DateOnly? toDate = null,
+        Guid? branchId = null,
+        string? search = null,
+        int page = 1,
+        int pageSize = 20,
+        CancellationToken ct = default);
+
     Task<ApiResult<PosInventoryAccountDto>> EnableAsync(
         Guid productId,
         EnableInventoryTrackingRequest request,

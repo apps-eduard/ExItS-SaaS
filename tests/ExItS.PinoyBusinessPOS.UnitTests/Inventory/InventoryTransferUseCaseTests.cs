@@ -578,6 +578,24 @@ public sealed class InventoryTransferUseCaseTests
             CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
 
+        public Task<(IReadOnlyList<InventoryLot> Items, int TotalCount)> ListExpiringPagedAsync(
+            PosOrganizationId organizationId,
+            PosBranchId? branchId,
+            DateOnly expireOnOrBefore,
+            DateOnly? expireOnOrAfter,
+            string? search,
+            int skip,
+            int take,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<(IReadOnlyList<InventoryLot>, int)>(([], 0));
+
+        public Task<(int ExpiredCount, int NearExpiryCount)> CountExpiryAsync(
+            PosOrganizationId organizationId,
+            DateOnly today,
+            int warningDays,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult((0, 0));
+
         public Task AddAsync(InventoryLot lot, CancellationToken cancellationToken = default)
         {
             Items.Add(lot);

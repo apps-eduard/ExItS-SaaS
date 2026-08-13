@@ -1,0 +1,103 @@
+@inherits LayoutComponentBase
+@inject OrgWebSessionHydrator Hydrator
+@inject OrgWebShellState Shell
+@inject ICurrentUserContext CurrentUser
+@inject NavigationManager Nav
+@inject IStringLocalizer<OrgWebResources> L
+@attribute [Authorize]
+
+<div class="exds-root org-shell @(Shell.DrawerOpen ? "org-shell--drawer" : null)">
+    <header class="org-header">
+        <button type="button" class="org-nav-toggle exds-btn" @onclick="() => Shell.DrawerOpen = !Shell.DrawerOpen">Menu</button>
+        <span class="org-header__brand">@L["Brand"]</span>
+        <span class="org-header__org">@(CurrentUser.Session?.OrganizationDisplayName ?? "No organization")</span>
+        @if (Shell.CanSee("notifications"))
+        {
+            <a href="/notifications">Alerts @(Shell.UnreadNotificationCount > 0 ? $"({Shell.UnreadNotificationCount})" : "")</a>
+        }
+        <span>@(CurrentUser.Session?.DisplayName)</span>
+        <form method="post" action="/logout">
+            <button type="submit" class="exds-btn">Sign out</button>
+        </form>
+    </header>
+    <nav class="org-nav" aria-label="Organization">
+        @if (Shell.CanSee("overview")) { <NavLink href="/overview" Match="NavLinkMatch.All">@L["Nav_Overview"]</NavLink> }
+        @if (Shell.CanSee("products"))
+        {
+            <div class="org-nav__group">@L["Nav_Products"]</div>
+            <NavLink href="/products">Products</NavLink>
+            <NavLink href="/categories">Categories</NavLink>
+            <NavLink href="/catalog">Global Catalog</NavLink>
+        }
+        @if (Shell.CanSee("inventory"))
+        {
+            <div class="org-nav__group">@L["Nav_Inventory"]</div>
+            <NavLink href="/inventory">Stock</NavLink>
+            <NavLink href="/inventory/transfers">Transfers</NavLink>
+            <NavLink href="/inventory/lots">Expiration</NavLink>
+        }
+        @if (Shell.CanSee("customers")) { <NavLink href="/customers">@L["Nav_Customers"]</NavLink> }
+        @if (Shell.CanSee("branches")) { <NavLink href="/organization/branches">@L["Nav_Branches"]</NavLink> }
+        @if (Shell.CanSee("staff"))
+        {
+            <NavLink href="/staff">@L["Nav_Staff"]</NavLink>
+            <NavLink href="/staff/roles">Roles</NavLink>
+        }
+        @if (Shell.CanSee("reports"))
+        {
+            <div class="org-nav__group">@L["Nav_Reports"]</div>
+            <NavLink href="/reports/sales">Sales</NavLink>
+            <NavLink href="/sales">Sales history</NavLink>
+            <NavLink href="/reports/utang">Utang</NavLink>
+            <NavLink href="/reports/inventory">Inventory</NavLink>
+            <NavLink href="/reports/shifts">Cashier / shift</NavLink>
+        }
+        @if (Shell.CanSee("devices") || Shell.CanSee("shifts"))
+        {
+            <div class="org-nav__group">@L["Nav_Operations"]</div>
+            @if (Shell.CanSee("devices")) { <NavLink href="/operations/devices">Devices</NavLink> }
+            @if (Shell.CanSee("devices")) { <NavLink href="/operations/registers">Registers</NavLink> }
+            @if (Shell.CanSee("shifts")) { <NavLink href="/operations/shifts">Shifts</NavLink> }
+        }
+        @if (Shell.CanSee("settings") || Shell.CanSee("subscription"))
+        {
+            <div class="org-nav__group">@L["Nav_Settings"]</div>
+            @if (Shell.CanSee("profile")) { <NavLink href="/organization/profile">Profile</NavLink> }
+            @if (Shell.CanSee("settings")) { <NavLink href="/settings">General / POS</NavLink> }
+            @if (Shell.CanSee("subscription")) { <NavLink href="/account/subscription">@L["Nav_Subscription"]</NavLink> }
+        }
+    </nav>
+    <main class="org-main">
+        @if (!Shell.Ready)
+        {
+            <p>Loading organization context…</p>
+        }
+        else if (CurrentUser.Session?.OrganizationId is null)
+        {
+            <Page>
+                <PageHeader Title="No organization" Subtitle="Organization Admin requires an active organization membership. Linked customers cannot use this console." />
+            </Page>
+        }
+        else
+        {
+            @Body
+        }
+    </main>
+</div>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        await Hydrator.HydrateAsync();
+        var path = Nav.ToBaseRelativePath(Nav.Uri);
+        if (CurrentUser.Session?.OrganizationId is null
+            && !path.StartsWith("login", StringComparison.OrdinalIgnoreCase)
+            && !path.StartsWith("select-organization", StringComparison.OrdinalIgnoreCase))
+        {
+            if (Shell.Organizations.Count > 1)
+            {
+                Nav.NavigateTo("/select-organization");
+            }
+        }
+    }
+}

@@ -68,6 +68,26 @@ public sealed record PosInventoryLotPagedResult(
     int Page,
     int PageSize);
 
+public sealed record PosExpiringLotDto(
+    Guid LotId,
+    Guid ProductId,
+    string ProductName,
+    string? Sku,
+    Guid? BranchId,
+    string? LotNumber,
+    DateOnly ExpirationDate,
+    decimal QuantityOnHand,
+    string ExpiryStatus,
+    int WarningDays);
+
+public sealed record PosExpiringLotPagedResult(
+    IReadOnlyList<PosExpiringLotDto> Items,
+    int TotalCount,
+    int Page,
+    int PageSize,
+    int ExpiredCount,
+    int NearExpiryCount);
+
 public sealed record SetInventoryReorderRequest(
     decimal? ReorderLevel,
     decimal? ReorderQuantity,

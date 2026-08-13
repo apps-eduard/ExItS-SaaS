@@ -31,6 +31,9 @@ public sealed class PosReportingClient(HttpClient httpClient, IConnectivityServi
         CancellationToken ct = default) =>
         SendAsync<PosDashboardDto>(HttpMethod.Get, BuildPath(DashboardPath, fromDate, toDate), null, ct);
 
+    public Task<ApiResult<PosManagementOverviewDto>> GetManagementOverviewAsync(CancellationToken ct = default) =>
+        SendAsync<PosManagementOverviewDto>(HttpMethod.Get, "/api/v1/pos/management/overview", null, ct);
+
     public Task<ApiResult<PosSalesReportDto>> GetSalesReportAsync(
         DateOnly? fromDate = null,
         DateOnly? toDate = null,

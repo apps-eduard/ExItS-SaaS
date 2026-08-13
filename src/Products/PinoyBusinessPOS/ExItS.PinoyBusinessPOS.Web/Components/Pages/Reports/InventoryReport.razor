@@ -1,0 +1,61 @@
+@page "/reports/inventory"
+@attribute [Authorize]
+@inject OrgWebShellState Shell
+@inject IPosReportingClient Reporting
+
+<PageTitle>Inventory report</PageTitle>
+
+@if (!Shell.CanSee("reports"))
+{
+    <AccessDeniedPanel />
+}
+else
+{
+    <PageHeader Title="Inventory report" Subtitle="Server-side stock status. Low-stock rows are a bounded report payload, not the entire catalog history." />
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <Alert Tone="AlertTone.Danger" Message="@_error" />
+    }
+    else if (_report is not null)
+    {
+        <div class="org-metrics">
+            <div class="org-metric"><div class="org-metric__label">Tracked</div><div class="org-metric__value">@_report.TrackedCount</div></div>
+            <div class="org-metric"><div class="org-metric__label">Low stock</div><div class="org-metric__value">@_report.LowStockCount</div></div>
+            <div class="org-metric"><div class="org-metric__label">Out of stock</div><div class="org-metric__value">@_report.OutOfStockCount</div></div>
+        </div>
+        <div class="org-table-wrap">
+            <table class="org-table">
+                <thead><tr><th>Product</th><th>SKU</th><th>On hand</th><th>Reorder</th><th>Flags</th></tr></thead>
+                <tbody>
+                    @foreach (var row in _report.Rows.Take(100))
+                    {
+                        <tr>
+                            <td>@row.ProductName</td>
+                            <td>@row.Sku</td>
+                            <td>@row.OnHandQuantity</td>
+                            <td>@row.ReorderLevel</td>
+                            <td>@(row.IsLowStock ? "Low" : "") @(row.IsOutOfStock ? "Out" : "")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+}
+
+@code {
+    private string? _error;
+    private PosInventoryStatusReportDto? _report;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await Reporting.GetInventoryStatusReportAsync();
+        if (!result.IsSuccess)
+        {
+            _error = OrgWebUi.Error(result.Error);
+            return;
+        }
+
+        _report = result.Data;
+    }
+}

@@ -1,0 +1,154 @@
+@page "/organization/profile"
+@attribute [Authorize]
+@inject OrgWebShellState Shell
+@inject ICurrentUserContext CurrentUser
+@inject IPlatformAccessClient Platform
+
+<PageTitle>Organization profile</PageTitle>
+
+@if (!Shell.CanSee("profile"))
+{
+    <AccessDeniedPanel />
+}
+else
+{
+    <PageHeader Title="Organization profile" Subtitle="Manage display and contact fields. Platform lifecycle status is read-only." />
+
+    @if (_loading)
+    {
+        <p class="org-note">Loading…</p>
+    }
+    else if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <Alert Tone="AlertTone.Danger" Message="@_error" />
+    }
+    else
+    {
+        <p class="org-note">Status: @_status (platform-controlled)</p>
+        <div class="org-form">
+            <TextInput Label="Business name" @bind-Value="_displayName" />
+            <TextInput Label="Slug" @bind-Value="_slug" Hint="URL-safe identifier. Do not change casually." />
+            <TextInput Label="Legal name" @bind-Value="_legalName" />
+            <TextInput Label="Contact email" @bind-Value="_contactEmail" Type="email" />
+            <TextInput Label="Contact phone" @bind-Value="_contactPhone" />
+            <TextInput Label="Address line 1" @bind-Value="_address1" />
+            <TextInput Label="Address line 2" @bind-Value="_address2" />
+            <TextInput Label="City" @bind-Value="_city" />
+            <TextInput Label="Region" @bind-Value="_region" />
+            <TextInput Label="Postal code" @bind-Value="_postal" />
+            <TextInput Label="Country" @bind-Value="_country" />
+            <TextInput Label="Timezone" @bind-Value="_timezone" />
+            <TextInput Label="Locale" @bind-Value="_locale" />
+            <TextInput Label="Currency" @bind-Value="_currency" />
+            <Button Variant="ButtonVariant.Primary" IsLoading="_busy" OnClick="SaveAsync">Save</Button>
+        </div>
+        @if (!string.IsNullOrWhiteSpace(_ok))
+        {
+            <Alert Tone="AlertTone.Success" Message="@_ok" />
+        }
+    }
+}
+
+@code {
+    private bool _loading = true;
+    private bool _busy;
+    private string? _error;
+    private string? _ok;
+    private string? _status;
+    private string? _displayName;
+    private string? _slug;
+    private string? _legalName;
+    private string? _contactEmail;
+    private string? _contactPhone;
+    private string? _address1;
+    private string? _address2;
+    private string? _city;
+    private string? _region;
+    private string? _postal;
+    private string? _country;
+    private string? _timezone;
+    private string? _locale;
+    private string? _currency;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var orgId = CurrentUser.Session?.OrganizationId;
+        if (orgId is null || !Shell.CanSee("profile"))
+        {
+            _loading = false;
+            return;
+        }
+
+        var result = await Platform.GetOrganizationAsync(orgId.Value);
+        if (!result.IsSuccess || result.Data is null)
+        {
+            _error = OrgWebUi.Error(result.Error);
+            _loading = false;
+            return;
+        }
+
+        var org = result.Data;
+        _status = org.Status;
+        _displayName = org.DisplayName;
+        _slug = org.Slug;
+        var p = org.Profile;
+        _legalName = p?.LegalName;
+        _contactEmail = p?.ContactEmail;
+        _contactPhone = p?.ContactPhone;
+        _address1 = p?.AddressLine1;
+        _address2 = p?.AddressLine2;
+        _city = p?.City;
+        _region = p?.Region;
+        _postal = p?.PostalCode;
+        _country = p?.CountryCode;
+        _timezone = p?.TimeZoneId;
+        _locale = p?.Locale;
+        _currency = p?.CurrencyCode;
+        _loading = false;
+    }
+
+    private async Task SaveAsync()
+    {
+        _ok = null;
+        var orgId = CurrentUser.Session?.OrganizationId;
+        if (orgId is null || string.IsNullOrWhiteSpace(_displayName))
+        {
+            _error = "Business name is required.";
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var result = await Platform.UpdateOrganizationAsync(
+                orgId.Value,
+                new UpdatePlatformOrganizationRequest(
+                    _displayName.Trim(),
+                    _slug,
+                    _legalName,
+                    _contactEmail,
+                    _contactPhone,
+                    _address1,
+                    _address2,
+                    _city,
+                    _region,
+                    _postal,
+                    _country,
+                    _timezone,
+                    _locale,
+                    _currency));
+            if (!result.IsSuccess)
+            {
+                _error = OrgWebUi.Error(result.Error, "Save failed.");
+                return;
+            }
+
+            _error = null;
+            _ok = "Profile saved.";
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

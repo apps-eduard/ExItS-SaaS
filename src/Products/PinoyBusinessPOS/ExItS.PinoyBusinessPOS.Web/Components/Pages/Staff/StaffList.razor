@@ -1,0 +1,111 @@
+@page "/staff"
+@attribute [Authorize]
+@inject OrgWebShellState Shell
+@inject ICurrentUserContext CurrentUser
+@inject IPlatformAccessClient Platform
+@inject IPosPermissionClient Permissions
+@inject NavigationManager Nav
+
+<PageTitle>Staff</PageTitle>
+
+@if (!Shell.CanSee("staff"))
+{
+    <AccessDeniedPanel />
+}
+else
+{
+    <PageHeader Title="Staff & users" Subtitle="Organization-scoped staff identities. Passwords are never shown. Personal customers are not staff.">
+        <Actions>
+            <a class="exds-btn" href="/staff/invite">Invite staff</a>
+        </Actions>
+    </PageHeader>
+
+    <div class="org-toolbar">
+        <TextInput Label="Status" @bind-Value="_status" Placeholder="Active / Suspended" />
+        <Button OnClick="LoadAsync">Filter</Button>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <Alert Tone="AlertTone.Danger" Message="@_error" />
+    }
+
+    @if (_loading)
+    {
+        <p class="org-note">Loading…</p>
+    }
+    else
+    {
+        <div class="org-table-wrap">
+            <table class="org-table">
+                <thead>
+                    <tr><th>Name</th><th>Login / contact</th><th>Org role</th><th>POS role</th><th>Status</th><th></th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in _rows)
+                    {
+                        <tr>
+                            <td>@(row.Member.DisplayName ?? row.Member.Username)</td>
+                            <td>@row.Member.Email</td>
+                            <td>@row.Member.Role</td>
+                            <td>@(row.PosRole ?? "—")</td>
+                            <td><span class="org-badge">@row.Member.Status</span></td>
+                            <td>
+                                <a href="@($"/staff/{row.Member.Id:D}")">Manage</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <OrgPager Page="_page" PageSize="_pageSize" TotalCount="_total" Busy="_loading" PageChanged="ChangePageAsync" />
+    }
+}
+
+@code {
+    private bool _loading = true;
+    private string? _error;
+    private string? _status;
+    private int _page = 1;
+    private const int _pageSize = 20;
+    private int _total;
+    private List<StaffRow> _rows = [];
+
+    private sealed record StaffRow(PlatformMembershipDto Member, string? PosRole);
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task ChangePageAsync(int page)
+    {
+        _page = page;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        var orgId = CurrentUser.Session?.OrganizationId;
+        if (orgId is null)
+        {
+            _loading = false;
+            return;
+        }
+
+        _loading = true;
+        var members = await Platform.GetOrganizationMembersAsync(orgId.Value, _page, _pageSize, string.IsNullOrWhiteSpace(_status) ? null : _status);
+        var roles = await Permissions.ListAssignmentsAsync(status: "Active", page: 1, pageSize: 200);
+        if (!members.IsSuccess || members.Data is null)
+        {
+            _error = OrgWebUi.Error(members.Error);
+            _loading = false;
+            return;
+        }
+
+        var posByActor = (roles.Data?.Items ?? [])
+            .GroupBy(a => a.ActorId)
+            .ToDictionary(g => g.Key, g => g.First().RoleDisplayName);
+        _total = members.Data.TotalCount;
+        _rows = members.Data.Items.Select(m => new StaffRow(m, posByActor.GetValueOrDefault(m.UserId))).ToList();
+        _error = null;
+        _loading = false;
+    }
+}

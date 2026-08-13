@@ -1,0 +1,69 @@
+@page "/select-organization"
+@attribute [Authorize]
+@inject OrgWebShellState Shell
+@inject OrgWebSessionHydrator Hydrator
+@inject IPlatformAccessClient Platform
+@inject NavigationManager Nav
+
+<PageTitle>Select organization</PageTitle>
+<PageHeader Title="Select organization" Subtitle="Organization Admin uses your active membership. Linked customers do not receive admin rights." />
+
+@if (Shell.Organizations.Count == 0)
+{
+    <EmptyState Title="No organization" Message="This account has no organization membership." />
+}
+else
+{
+    <div class="org-table-wrap">
+        <table class="org-table">
+            <thead>
+                <tr><th>Organization</th><th>Role</th><th></th></tr>
+            </thead>
+            <tbody>
+                @foreach (var org in Shell.Organizations)
+                {
+                    <tr>
+                        <td>@org.DisplayName</td>
+                        <td>@org.MembershipRole</td>
+                        <td>
+                            <button type="button" class="exds-btn" disabled="@_busy" @onclick="() => SelectAsync(org.OrganizationId)">Open</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@if (!string.IsNullOrWhiteSpace(_error))
+{
+    <Alert Tone="AlertTone.Danger" Message="@_error" />
+}
+
+@code {
+    private bool _busy;
+    private string? _error;
+
+    private async Task SelectAsync(Guid organizationId)
+    {
+        _busy = true;
+        _error = null;
+        try
+        {
+            var result = await Platform.SetOrganizationContextAsync(new SetOrganizationContextRequest(organizationId));
+            if (!result.IsSuccess)
+            {
+                _error = OrgWebUi.Error(result.Error);
+                return;
+            }
+
+            Shell.Ready = false;
+            await Hydrator.HydrateAsync();
+            Nav.NavigateTo("/overview");
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

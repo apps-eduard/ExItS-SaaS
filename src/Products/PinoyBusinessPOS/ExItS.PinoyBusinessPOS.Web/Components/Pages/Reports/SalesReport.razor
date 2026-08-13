@@ -1,0 +1,100 @@
+@page "/reports/sales"
+@attribute [Authorize]
+@inject OrgWebShellState Shell
+@inject IPosReportingClient Reporting
+
+<PageTitle>Sales report</PageTitle>
+
+@if (!Shell.CanSee("reports"))
+{
+    <AccessDeniedPanel />
+}
+else
+{
+    <PageHeader Title="Sales report" Subtitle="Server-side aggregates. The browser never loads the full sales history." />
+    <div class="org-toolbar">
+        <TextInput Label="From" @bind-Value="_from" Placeholder="yyyy-MM-dd" />
+        <TextInput Label="To" @bind-Value="_to" Placeholder="yyyy-MM-dd" />
+        <select @bind="_payment">
+            <option value="">All methods</option>
+            <option>Cash</option>
+            <option>Utang</option>
+            <option>GCash</option>
+        </select>
+        <Button OnClick="LoadAsync">Run</Button>
+    </div>
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <Alert Tone="AlertTone.Danger" Message="@_error" />
+    }
+    else if (_report is not null)
+    {
+        <div class="org-metrics">
+            <div class="org-metric"><div class="org-metric__label">Completed</div><div class="org-metric__value">@OrgWebUi.Money(_report.CompletedSalesTotal)</div></div>
+            <div class="org-metric"><div class="org-metric__label">Sales</div><div class="org-metric__value">@_report.CompletedSaleCount</div></div>
+            <div class="org-metric"><div class="org-metric__label">Utang</div><div class="org-metric__value">@OrgWebUi.Money(_report.UtangSalesTotal)</div></div>
+            <div class="org-metric"><div class="org-metric__label">Voided</div><div class="org-metric__value">@_report.VoidedSaleCount</div></div>
+        </div>
+        <h3>By payment</h3>
+        <div class="org-table-wrap">
+            <table class="org-table">
+                <thead><tr><th>Method</th><th>Amount</th><th>Count</th></tr></thead>
+                <tbody>
+                    @foreach (var row in _report.ByPaymentMethod)
+                    {
+                        <tr><td>@row.PaymentMethod</td><td>@OrgWebUi.Money(row.Amount)</td><td>@row.Count</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <h3>Top products</h3>
+        <div class="org-table-wrap">
+            <table class="org-table">
+                <thead><tr><th>Product</th><th>Qty</th><th>Amount</th></tr></thead>
+                <tbody>
+                    @foreach (var row in _report.TopProductsBySalesAmount.Take(20))
+                    {
+                        <tr><td>@row.NameSnapshot</td><td>@row.Quantity</td><td>@OrgWebUi.Money(row.SalesAmount)</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <h3>By day</h3>
+        <div class="org-table-wrap">
+            <table class="org-table">
+                <thead><tr><th>Date</th><th>Amount</th><th>Count</th></tr></thead>
+                <tbody>
+                    @foreach (var row in _report.ByDay)
+                    {
+                        <tr><td>@row.Date</td><td>@OrgWebUi.Money(row.Amount)</td><td>@row.Count</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+}
+
+@code {
+    private string? _from;
+    private string? _to;
+    private string? _payment;
+    private string? _error;
+    private PosSalesReportDto? _report;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        DateOnly? from = DateOnly.TryParse(_from, out var f) ? f : null;
+        DateOnly? to = DateOnly.TryParse(_to, out var t) ? t : null;
+        var result = await Reporting.GetSalesReportAsync(from, to, string.IsNullOrWhiteSpace(_payment) ? null : _payment);
+        if (!result.IsSuccess)
+        {
+            _error = OrgWebUi.Error(result.Error);
+            return;
+        }
+
+        _report = result.Data;
+        _error = null;
+    }
+}

@@ -1,0 +1,116 @@
+@page "/products"
+@attribute [Authorize]
+@inject OrgWebShellState Shell
+@inject IPosCatalogClient Catalog
+@inject NavigationManager Nav
+
+<PageTitle>Products</PageTitle>
+
+@if (!Shell.CanSee("products"))
+{
+    <AccessDeniedPanel />
+}
+else
+{
+    <PageHeader Title="Products" Subtitle="Catalog management. This is not a selling screen.">
+        <Actions>
+            @if (Shell.Can(UtangCapability.ManageCatalog))
+            {
+                <a class="exds-btn" href="/products/new">New product</a>
+            }
+        </Actions>
+    </PageHeader>
+    <div class="org-subnav">
+        <a href="/categories">Categories</a>
+        <a href="/catalog">Global Catalog</a>
+    </div>
+    <div class="org-toolbar">
+        <TextInput Label="Search" @bind-Value="_search" Placeholder="Name, SKU, barcode" />
+        <TextInput Label="Status" @bind-Value="_status" Placeholder="Active" />
+        <Button OnClick="SearchAsync">Search</Button>
+    </div>
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <Alert Tone="AlertTone.Danger" Message="@_error" />
+    }
+    @if (_loading)
+    {
+        <p class="org-note">Loading…</p>
+    }
+    else
+    {
+        <div class="org-table-wrap">
+            <table class="org-table">
+                <thead>
+                    <tr><th>Name</th><th>SKU</th><th>Barcode</th><th>Price</th><th>Source</th><th>Expiry</th><th>Status</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in _items)
+                    {
+                        <tr>
+                            <td><a href="@($"/products/{p.ProductId:D}")">@p.Name</a></td>
+                            <td>@p.Sku</td>
+                            <td>@p.Barcode</td>
+                            <td>@OrgWebUi.Money(p.SellingPrice)</td>
+                            <td>@p.CatalogSource @(p.PlatformGlobalProductId is null ? "" : "· global")</td>
+                            <td>@(p.TracksExpiration ? $"Yes ({p.ExpirationWarningDays ?? 7}d)" : "No")</td>
+                            <td>@p.Status</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <OrgPager Page="_page" PageSize="_pageSize" TotalCount="_total" Busy="_loading" PageChanged="ChangePageAsync" />
+    }
+}
+
+@code {
+    private bool _loading = true;
+    private string? _error;
+    private string? _search;
+    private string? _status;
+    private int _page = 1;
+    private const int _pageSize = 20;
+    private int _total;
+    private List<PosCatalogProductDto> _items = [];
+    private CancellationTokenSource? _cts;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task SearchAsync()
+    {
+        _page = 1;
+        await LoadAsync();
+    }
+
+    private async Task ChangePageAsync(int page)
+    {
+        _page = page;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _cts?.Cancel();
+        _cts = new CancellationTokenSource();
+        var ct = _cts.Token;
+        _loading = true;
+        var result = await Catalog.ListProductsAsync(_search, string.IsNullOrWhiteSpace(_status) ? null : _status, page: _page, pageSize: _pageSize, ct: ct);
+        if (ct.IsCancellationRequested)
+        {
+            return;
+        }
+
+        if (!result.IsSuccess || result.Data is null)
+        {
+            _error = OrgWebUi.Error(result.Error);
+            _loading = false;
+            return;
+        }
+
+        _items = result.Data.Items;
+        _total = result.Data.TotalCount;
+        _error = null;
+        _loading = false;
+    }
+}

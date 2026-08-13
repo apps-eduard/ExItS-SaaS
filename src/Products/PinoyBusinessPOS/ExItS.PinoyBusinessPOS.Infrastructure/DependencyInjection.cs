@@ -44,6 +44,7 @@ public static class DependencyInjection
         services.AddScoped<ISaleReturnRepository, SaleReturnRepository>();
         services.AddScoped<IInventoryRepository, InventoryRepository>();
         services.AddScoped<IInventoryLotRepository, InventoryLotRepository>();
+        services.AddScoped<ExItS.PinoyBusinessPOS.Application.Reporting.IManagementOverviewReadStore, ManagementOverviewReadStore>();
         services.AddScoped<InventoryLotStockService>();
         services.AddScoped<IInventoryReorderChangeRepository, InventoryReorderChangeRepository>();
         services.AddScoped<IInventoryTransferRepository, InventoryTransferRepository>();

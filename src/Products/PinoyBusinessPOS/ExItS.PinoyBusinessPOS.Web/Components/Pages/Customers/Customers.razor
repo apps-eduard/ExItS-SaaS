@@ -1,0 +1,126 @@
+@page "/customers"
+@page "/customers/{CustomerId:guid}"
+@attribute [Authorize]
+@inject OrgWebShellState Shell
+@inject IPosCustomerClient CustomerApi
+@inject IPlatformAccessClient Platform
+@inject ICurrentUserContext CurrentUser
+@inject NavigationManager Nav
+
+<PageTitle>Customers</PageTitle>
+
+@if (!Shell.CanSee("customers"))
+{
+    <AccessDeniedPanel />
+}
+else
+{
+    <PageHeader Title="Customer directory" Subtitle="Business customers for this organization. Personal private data beyond the authorized contract is not shown." />
+    <div class="org-toolbar">
+        <TextInput Label="Search" @bind-Value="_search" />
+        <Button OnClick="SearchAsync">Search</Button>
+    </div>
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <Alert Tone="AlertTone.Danger" Message="@_error" />
+    }
+    <div class="org-table-wrap">
+        <table class="org-table">
+            <thead>
+                <tr><th>Name</th><th>Mobile</th><th>Status</th><th>Linked</th></tr>
+            </thead>
+            <tbody>
+                @foreach (var c in _items)
+                {
+                    <tr>
+                        <td><a href="@($"/customers/{c.CustomerId:D}")">@c.DisplayName</a></td>
+                        <td>@c.MobileNumber</td>
+                        <td>@c.Status</td>
+                        <td>@(c.PlatformBusinessCustomerId is null ? "Unlinked" : "Platform customer")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <OrgPager Page="_page" PageSize="20" TotalCount="_total" PageChanged="ChangePageAsync" />
+
+    @if (_detail is not null)
+    {
+        <Section Title="@_detail.DisplayName">
+            <p class="org-note">Mobile: @_detail.MobileNumber · Status: @_detail.Status</p>
+            @if (_credit is not null)
+            {
+                <p>Outstanding Utang: @OrgWebUi.Money(_credit.OutstandingAmount) (@_credit.ActiveEntryCount open entries)</p>
+            }
+            @if (_link is not null)
+            {
+                <p>Link status: @_link.Status</p>
+            }
+            else
+            {
+                <p class="org-note">No Personal identity link on file for this customer.</p>
+            }
+        </Section>
+    }
+}
+
+@code {
+    [Parameter] public Guid CustomerId { get; set; }
+
+    private string? _error;
+    private string? _search;
+    private int _page = 1;
+    private int _total;
+    private List<PosCustomerListItemDto> _items = [];
+    private PosCustomerDetailDto? _detail;
+    private PosCustomerCreditSummaryDto? _credit;
+    private PlatformCustomerLinkStatusDto? _link;
+
+    protected override Task OnParametersSetAsync() => LoadAsync();
+
+    private async Task SearchAsync()
+    {
+        _page = 1;
+        await LoadAsync();
+    }
+
+    private async Task ChangePageAsync(int page)
+    {
+        _page = page;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        var list = await CustomerApi.ListAsync(_search, page: _page, pageSize: 20);
+        if (!list.IsSuccess || list.Data is null)
+        {
+            _error = OrgWebUi.Error(list.Error);
+            return;
+        }
+
+        _items = list.Data.Items;
+        _total = list.Data.TotalCount;
+        _error = null;
+        if (CustomerId == Guid.Empty)
+        {
+            _detail = null;
+            return;
+        }
+
+        var detail = await CustomerApi.GetAsync(CustomerId);
+        _detail = detail.Data;
+        var credit = await CustomerApi.GetCreditSummaryAsync(CustomerId);
+        _credit = credit.Data;
+        var orgId = CurrentUser.Session?.OrganizationId;
+        if (orgId is not null && _detail?.PlatformBusinessCustomerId is Guid businessId)
+        {
+            var link = await Platform.GetCustomerLinkStatusAsync(orgId.Value, businessId);
+            _link = link.Data;
+        }
+        else
+        {
+            _link = null;
+        }
+    }
+}

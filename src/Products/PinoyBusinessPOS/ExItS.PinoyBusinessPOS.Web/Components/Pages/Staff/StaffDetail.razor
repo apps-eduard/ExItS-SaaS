@@ -1,0 +1,177 @@
+@page "/staff/{MembershipId:guid}"
+@attribute [Authorize]
+@inject OrgWebShellState Shell
+@inject ICurrentUserContext CurrentUser
+@inject IPlatformAccessClient Platform
+@inject IPosPermissionClient Permissions
+
+<PageTitle>Staff detail</PageTitle>
+
+@if (!Shell.CanSee("staff"))
+{
+    <AccessDeniedPanel />
+}
+else if (_member is null)
+{
+    <p class="org-note">@(_error ?? "Loading…")</p>
+}
+else
+{
+    <PageHeader Title="@(_member.DisplayName ?? _member.Username ?? "Staff")" Subtitle="Organization membership and POS role. Passwords are never displayed." />
+    <p class="org-note">Org role: @_member.Role · Status: @_member.Status · Contact: @_member.Email</p>
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <Alert Tone="AlertTone.Danger" Message="@_error" />
+    }
+    @if (!string.IsNullOrWhiteSpace(_ok))
+    {
+        <Alert Tone="AlertTone.Success" Message="@_ok" />
+    }
+
+    <Section Title="POS role">
+        <p class="org-note">System-defined roles only. There is no custom RBAC designer.</p>
+        <select @bind="_posRole">
+            <option value="Cashier">Cashier</option>
+            <option value="InventoryStaff">Inventory Staff</option>
+            <option value="ReportingUser">Reporting User</option>
+            <option value="StoreManager">Store Manager</option>
+            <option value="Admin">Admin</option>
+            <option value="Owner">Owner</option>
+        </select>
+        <Button IsLoading="_busy" OnClick="AssignPosRoleAsync">Assign POS role</Button>
+        @if (_assignment is not null)
+        {
+            <p class="org-note">Current: @_assignment.RoleDisplayName (@_assignment.Status)</p>
+            <Button Variant="ButtonVariant.Danger" IsLoading="_busy" OnClick="RevokePosRoleAsync">Revoke POS role</Button>
+        }
+    </Section>
+
+    <Section Title="Membership">
+        @if (string.Equals(_member.Status, "Active", StringComparison.OrdinalIgnoreCase))
+        {
+            <Button Variant="ButtonVariant.Danger" IsLoading="_busy" OnClick="SuspendAsync">Deactivate</Button>
+        }
+        else
+        {
+            <Button IsLoading="_busy" OnClick="ReactivateAsync">Reactivate</Button>
+        }
+    </Section>
+}
+
+@code {
+    [Parameter] public Guid MembershipId { get; set; }
+
+    private bool _busy;
+    private string? _error;
+    private string? _ok;
+    private string _posRole = "Cashier";
+    private PlatformMembershipDto? _member;
+    private PosRoleAssignmentDto? _assignment;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var orgId = CurrentUser.Session?.OrganizationId;
+        if (orgId is null)
+        {
+            return;
+        }
+
+        var members = await Platform.GetOrganizationMembersAsync(orgId.Value, 1, 100);
+        _member = members.Data?.Items.FirstOrDefault(m => m.Id == MembershipId);
+        if (_member is null)
+        {
+            _error = "Staff membership was not found in this organization.";
+            return;
+        }
+
+        var roles = await Permissions.ListAssignmentsAsync(status: "Active", actorId: _member.UserId, page: 1, pageSize: 20);
+        _assignment = roles.Data?.Items.FirstOrDefault();
+        if (_assignment is not null)
+        {
+            _posRole = _assignment.Role;
+        }
+    }
+
+    private async Task AssignPosRoleAsync()
+    {
+        if (_member is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var result = await Permissions.AssignAsync(new AssignPosRoleRequest(_member.UserId, _posRole));
+            _error = result.IsSuccess ? null : OrgWebUi.Error(result.Error);
+            _ok = result.IsSuccess ? "POS role assigned." : null;
+            _assignment = result.Data;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task RevokePosRoleAsync()
+    {
+        if (_assignment is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var result = await Permissions.RevokeAsync(_assignment.AssignmentId, new RevokePosRoleRequest("Revoked from Organization Admin"));
+            _error = result.IsSuccess ? null : OrgWebUi.Error(result.Error);
+            if (result.IsSuccess)
+            {
+                _assignment = null;
+                _ok = "POS role revoked.";
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task SuspendAsync()
+    {
+        _busy = true;
+        try
+        {
+            var result = await Platform.SuspendMembershipAsync(MembershipId, new PlatformMembershipLifecycleRequest("Deactivated from Organization Admin"));
+            _error = result.IsSuccess ? null : OrgWebUi.Error(result.Error);
+            if (result.IsSuccess)
+            {
+                _member = result.Data;
+                _ok = "Membership deactivated.";
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task ReactivateAsync()
+    {
+        _busy = true;
+        try
+        {
+            var result = await Platform.ReactivateMembershipAsync(MembershipId, new PlatformMembershipLifecycleRequest("Reactivated from Organization Admin"));
+            _error = result.IsSuccess ? null : OrgWebUi.Error(result.Error);
+            if (result.IsSuccess)
+            {
+                _member = result.Data;
+                _ok = "Membership reactivated.";
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

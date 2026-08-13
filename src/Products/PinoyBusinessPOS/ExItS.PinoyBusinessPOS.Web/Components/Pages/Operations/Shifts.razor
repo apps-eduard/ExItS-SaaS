@@ -1,0 +1,95 @@
+@page "/operations/shifts"
+@page "/operations/shifts/{ShiftId:guid}"
+@attribute [Authorize]
+@inject OrgWebShellState Shell
+@inject IPosCashierShiftClient ShiftApi
+
+<PageTitle>Cashier shifts</PageTitle>
+
+@if (!Shell.CanSee("shifts"))
+{
+    <AccessDeniedPanel />
+}
+else
+{
+    <PageHeader Title="Cashier shifts" Subtitle="Inspection only. Closed shift history is not mutated from this page. Skipped cash count is not treated as zero." />
+    <div class="org-toolbar">
+        <select @bind="_status">
+            <option value="">All</option>
+            <option>Open</option>
+            <option>Closed</option>
+            <option>Cancelled</option>
+        </select>
+        <Button OnClick="LoadAsync">Filter</Button>
+    </div>
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <Alert Tone="AlertTone.Danger" Message="@_error" />
+    }
+    <div class="org-table-wrap">
+        <table class="org-table">
+            <thead>
+                <tr><th>Shift</th><th>Status</th><th>Register</th><th>Opened</th><th>Expected</th><th>Counted</th><th>Variance</th><th>Count state</th></tr>
+            </thead>
+            <tbody>
+                @foreach (var s in _items)
+                {
+                    <tr>
+                        <td><a href="@($"/operations/shifts/{s.ShiftId:D}")">@s.ShiftNumber</a></td>
+                        <td>@s.Status</td>
+                        <td>@s.RegisterCode</td>
+                        <td>@s.OpenedAtUtc.LocalDateTime</td>
+                        <td>@(s.ExpectedCashAmountSnapshot?.ToString("N2") ?? "—")</td>
+                        <td>@(s.ClosingCashAmount?.ToString("N2") ?? "—")</td>
+                        <td>@(s.CashVarianceAmount?.ToString("N2") ?? "—")</td>
+                        <td>@(s.ClosingCashCountState ?? s.EffectiveCashCountMode)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <OrgPager Page="_page" PageSize="20" TotalCount="_total" PageChanged="ChangePageAsync" />
+    @if (_summary is not null)
+    {
+        <Section Title="Shift summary">
+            <p>Expected @_summary.ExpectedCashAmountSnapshot · Counted @_summary.ClosingCashAmount · Variance @_summary.CashVarianceAmount · State @_summary.ClosingCashCountState</p>
+        </Section>
+    }
+}
+
+@code {
+    [Parameter] public Guid ShiftId { get; set; }
+    private string? _error;
+    private string? _status;
+    private int _page = 1;
+    private int _total;
+    private List<PosCashierShiftDto> _items = [];
+    private PosCashierShiftDto? _summary;
+
+    protected override Task OnParametersSetAsync() => LoadAsync();
+
+    private async Task ChangePageAsync(int page)
+    {
+        _page = page;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        var list = await ShiftApi.ListAsync(string.IsNullOrWhiteSpace(_status) ? null : _status, page: _page, pageSize: 20);
+        if (!list.IsSuccess || list.Data is null)
+        {
+            _error = OrgWebUi.Error(list.Error);
+            return;
+        }
+
+        _items = list.Data.Items.ToList();
+        _total = list.Data.TotalCount;
+        _error = null;
+        if (ShiftId != Guid.Empty)
+        {
+            var detail = await ShiftApi.GetAsync(ShiftId);
+            _summary = detail.Data;
+        }
+    }
+}

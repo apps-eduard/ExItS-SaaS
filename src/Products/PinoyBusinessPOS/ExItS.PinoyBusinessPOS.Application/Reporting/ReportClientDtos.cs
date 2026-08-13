@@ -14,6 +14,21 @@ public sealed record ReportDailyAmountDto(DateOnly Date, decimal Amount, int Cou
 
 public sealed record ReportPaymentBreakdownDto(string PaymentMethod, decimal Amount, int Count);
 
+public sealed record PosManagementOverviewDto(
+    DateOnly BusinessDate,
+    decimal TodaySalesTotal,
+    int TodaySaleCount,
+    decimal TodayCashSalesTotal,
+    decimal TodayUtangSalesTotal,
+    decimal TodayPaymentsReceived,
+    decimal OpenUtangOutstanding,
+    int LowStockProductCount,
+    int ExpiredLotCount,
+    int NearExpiryLotCount,
+    int PendingTransferCount,
+    int OpenShiftCount,
+    int ActiveRegisterCount);
+
 public sealed record PosDashboardDto(
     DateOnly FromDate,
     DateOnly ToDate,

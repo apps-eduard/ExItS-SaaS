@@ -1,0 +1,233 @@
+@page "/inventory/transfers"
+@page "/inventory/transfers/{TransferId:guid}"
+@attribute [Authorize]
+@inject OrgWebShellState Shell
+@inject ICurrentUserContext CurrentUser
+@inject IPosInventoryClient Inventory
+@inject IPlatformAccessClient Platform
+@inject NavigationManager Nav
+
+<PageTitle>Transfers</PageTitle>
+
+@if (!Shell.CanSee("inventory"))
+{
+    <AccessDeniedPanel />
+}
+else
+{
+    <PageHeader Title="Branch transfers" Subtitle="Intra-organization inventory transfers. Statuses: Draft, InTransit, PartiallyReceived, Received, Cancelled." />
+    <div class="org-toolbar">
+        <select @bind="_status">
+            <option value="">All statuses</option>
+            <option>Draft</option>
+            <option>InTransit</option>
+            <option>PartiallyReceived</option>
+            <option>Received</option>
+            <option>Cancelled</option>
+        </select>
+        <Button OnClick="LoadAsync">Filter</Button>
+    </div>
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <Alert Tone="AlertTone.Danger" Message="@_error" />
+    }
+    <div class="org-table-wrap">
+        <table class="org-table">
+            <thead>
+                <tr><th>Number</th><th>From</th><th>To</th><th>Status</th><th>Sent</th><th>Received</th><th>Diff</th></tr>
+            </thead>
+            <tbody>
+                @foreach (var t in _items)
+                {
+                    <tr>
+                        <td><a href="@($"/inventory/transfers/{t.TransferId:D}")">@(t.TransferNumber ?? t.TransferId.ToString("N")[..8])</a></td>
+                        <td>@t.SourceBranchName</td>
+                        <td>@t.DestinationBranchName</td>
+                        <td>@t.Status</td>
+                        <td>@t.TotalSentQty</td>
+                        <td>@t.TotalReceivedQty</td>
+                        <td>@t.TotalDifferenceQty</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <OrgPager Page="_page" PageSize="20" TotalCount="_total" Busy="_busy" PageChanged="ChangePageAsync" />
+
+    @if (Shell.Can(UtangCapability.ManageInventory))
+    {
+        <Section Title="Create transfer">
+            <div class="org-form">
+                <label>Source<select @bind="_sourceId">@foreach (var b in _branches) { <option value="@b.Id">@b.Name</option> }</select></label>
+                <label>Destination<select @bind="_destId">@foreach (var b in _branches) { <option value="@b.Id">@b.Name</option> }</select></label>
+                <TextInput Label="Product id" @bind-Value="_productId" />
+                <TextInput Label="Quantity" @bind-Value="_qty" />
+                <Button IsLoading="_busy" OnClick="CreateAsync">Create draft</Button>
+            </div>
+        </Section>
+    }
+
+    @if (_detail is not null)
+    {
+        <Section Title="@($"Transfer {_detail.TransferNumber}")">
+            <p class="org-note">@_detail.SourceBranchName → @_detail.DestinationBranchName · @_detail.Status</p>
+            <div class="org-table-wrap">
+                <table class="org-table">
+                    <thead>
+                        <tr><th>Product</th><th>Sent</th><th>Received</th><th>Diff</th><th>Lot</th><th>Expiry</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var line in _detail.Lines)
+                        {
+                            <tr>
+                                <td>@line.ProductName</td>
+                                <td>@line.SentQty</td>
+                                <td>@line.ReceivedQty</td>
+                                <td>@line.DifferenceQty</td>
+                                <td>@line.LotNumber</td>
+                                <td>@line.ExpirationDate</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            @if (Shell.Can(UtangCapability.ManageInventory))
+            {
+                @if (string.Equals(_detail.Status, "Draft", StringComparison.OrdinalIgnoreCase))
+                {
+                    <Button IsLoading="_busy" OnClick="DispatchAsync">Dispatch</Button>
+                    <Button Variant="ButtonVariant.Danger" IsLoading="_busy" OnClick="CancelAsync">Cancel</Button>
+                }
+                @if (string.Equals(_detail.Status, "InTransit", StringComparison.OrdinalIgnoreCase)
+                     || string.Equals(_detail.Status, "PartiallyReceived", StringComparison.OrdinalIgnoreCase))
+                {
+                    <Button IsLoading="_busy" OnClick="ReceiveAsync">Receive sent quantities</Button>
+                }
+            }
+        </Section>
+    }
+}
+
+@code {
+    [Parameter] public Guid TransferId { get; set; }
+
+    private bool _busy;
+    private string? _error;
+    private string? _status;
+    private int _page = 1;
+    private int _total;
+    private List<InventoryTransferListItemDto> _items = [];
+    private InventoryTransferDto? _detail;
+    private List<OrganizationBranchDto> _branches = [];
+    private string? _sourceId;
+    private string? _destId;
+    private string? _productId;
+    private string? _qty;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var orgId = CurrentUser.Session?.OrganizationId;
+        if (orgId is not null)
+        {
+            var branches = await Platform.GetBranchesAsync(orgId.Value);
+            _branches = branches.Data?.ToList() ?? [];
+            _sourceId ??= _branches.FirstOrDefault()?.Id.ToString();
+            _destId ??= _branches.Skip(1).FirstOrDefault()?.Id.ToString() ?? _sourceId;
+        }
+
+        await LoadAsync();
+    }
+
+    private async Task ChangePageAsync(int page)
+    {
+        _page = page;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        var list = await Inventory.ListTransfersAsync(string.IsNullOrWhiteSpace(_status) ? null : _status, page: _page, pageSize: 20);
+        if (!list.IsSuccess || list.Data is null)
+        {
+            _error = OrgWebUi.Error(list.Error);
+            return;
+        }
+
+        _items = list.Data.Items.ToList();
+        _total = list.Data.TotalCount;
+        _error = null;
+        if (TransferId != Guid.Empty)
+        {
+            var detail = await Inventory.GetTransferAsync(TransferId);
+            _detail = detail.Data;
+        }
+    }
+
+    private async Task CreateAsync()
+    {
+        if (!Guid.TryParse(_sourceId, out var source) || !Guid.TryParse(_destId, out var dest)
+            || !Guid.TryParse(_productId, out var product) || !decimal.TryParse(_qty, out var qty))
+        {
+            _error = "Source, destination, product, and quantity are required.";
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var result = await Inventory.CreateTransferAsync(new CreateInventoryTransferRequest(
+                source,
+                dest,
+                [new InventoryTransferLineRequest(product, qty)]));
+            _error = result.IsSuccess ? null : OrgWebUi.Error(result.Error);
+            if (result.IsSuccess && result.Data is not null)
+            {
+                Nav.NavigateTo($"/inventory/transfers/{result.Data.TransferId:D}");
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task DispatchAsync()
+    {
+        if (_detail is null) return;
+        _busy = true;
+        try
+        {
+            var result = await Inventory.DispatchTransferAsync(_detail.TransferId);
+            _error = result.IsSuccess ? null : OrgWebUi.Error(result.Error);
+            if (result.IsSuccess) await LoadAsync();
+        }
+        finally { _busy = false; }
+    }
+
+    private async Task ReceiveAsync()
+    {
+        if (_detail is null) return;
+        _busy = true;
+        try
+        {
+            var lines = _detail.Lines.Select(l => new InventoryTransferReceiveLineRequest(l.ProductId, l.SentQty, LineId: l.LineId)).ToList();
+            var result = await Inventory.ReceiveTransferAsync(_detail.TransferId, new ReceiveInventoryTransferRequest(lines));
+            _error = result.IsSuccess ? null : OrgWebUi.Error(result.Error);
+            if (result.IsSuccess) await LoadAsync();
+        }
+        finally { _busy = false; }
+    }
+
+    private async Task CancelAsync()
+    {
+        if (_detail is null) return;
+        _busy = true;
+        try
+        {
+            var result = await Inventory.CancelTransferAsync(_detail.TransferId);
+            _error = result.IsSuccess ? null : OrgWebUi.Error(result.Error);
+            if (result.IsSuccess) await LoadAsync();
+        }
+        finally { _busy = false; }
+    }
+}

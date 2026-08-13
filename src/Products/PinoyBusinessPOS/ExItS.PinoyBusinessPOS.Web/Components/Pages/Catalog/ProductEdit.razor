@@ -1,0 +1,184 @@
+@page "/products/new"
+@page "/products/{ProductId:guid}"
+@attribute [Authorize]
+@inject OrgWebShellState Shell
+@inject IPosCatalogClient Catalog
+@inject NavigationManager Nav
+
+<PageTitle>Product</PageTitle>
+
+@if (!Shell.CanSee("products"))
+{
+    <AccessDeniedPanel />
+}
+else
+{
+    <PageHeader Title="@(_isNew ? "New product" : "Edit product")" Subtitle="Management fields only. Selling happens in the POS app." />
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <Alert Tone="AlertTone.Danger" Message="@_error" />
+    }
+    <div class="org-form">
+        <TextInput Label="Name" @bind-Value="_name" />
+        <TextInput Label="SKU" @bind-Value="_sku" />
+        <TextInput Label="Barcode" @bind-Value="_barcode" />
+        <TextInput Label="Unit" @bind-Value="_unit" />
+        <TextInput Label="Selling price" @bind-Value="_price" />
+        <TextInput Label="Description" @bind-Value="_description" />
+        <label>
+            <input type="checkbox" @bind="_tracksExpiration" />
+            Tracks expiration
+        </label>
+        <TextInput Label="Expiration warning days" @bind-Value="_warningDays" />
+        @if (_existing is not null)
+        {
+            <p class="org-note">Status: @_existing.Status · Source: @_existing.CatalogSource · Global: @(_existing.PlatformGlobalProductId is null ? "No" : "Yes")</p>
+        }
+        @if (Shell.Can(UtangCapability.ManageCatalog))
+        {
+            <Button Variant="ButtonVariant.Primary" IsLoading="_busy" OnClick="SaveAsync">Save</Button>
+            @if (_existing is not null && string.Equals(_existing.Status, "Active", StringComparison.OrdinalIgnoreCase))
+            {
+                <Button Variant="ButtonVariant.Danger" IsLoading="_busy" OnClick="DeactivateAsync">Deactivate</Button>
+            }
+            else if (_existing is not null)
+            {
+                <Button IsLoading="_busy" OnClick="ReactivateAsync">Reactivate</Button>
+            }
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public Guid ProductId { get; set; }
+
+    private bool _isNew;
+    private bool _busy;
+    private string? _error;
+    private string? _name;
+    private string? _sku;
+    private string? _barcode;
+    private string? _unit = "pc";
+    private string? _price;
+    private string? _description;
+    private bool _tracksExpiration;
+    private string? _warningDays;
+    private PosCatalogProductDto? _existing;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _isNew = !Nav.ToBaseRelativePath(Nav.Uri).Contains("/products/", StringComparison.OrdinalIgnoreCase)
+                 || ProductId == Guid.Empty;
+        var path = Nav.ToBaseRelativePath(Nav.Uri);
+        _isNew = path.StartsWith("products/new", StringComparison.OrdinalIgnoreCase);
+        if (_isNew)
+        {
+            return;
+        }
+
+        var result = await Catalog.GetProductAsync(ProductId);
+        if (!result.IsSuccess || result.Data is null)
+        {
+            _error = OrgWebUi.Error(result.Error);
+            return;
+        }
+
+        _existing = result.Data;
+        _name = _existing.Name;
+        _sku = _existing.Sku;
+        _barcode = _existing.Barcode;
+        _unit = _existing.UnitOfMeasure;
+        _price = _existing.SellingPrice.ToString("0.##");
+        _description = _existing.Description;
+        _tracksExpiration = _existing.TracksExpiration;
+        _warningDays = _existing.ExpirationWarningDays?.ToString();
+    }
+
+    private async Task SaveAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_name) || !decimal.TryParse(_price, out var price))
+        {
+            _error = "Name and a valid price are required.";
+            return;
+        }
+
+        int? warning = int.TryParse(_warningDays, out var days) ? days : null;
+        _busy = true;
+        try
+        {
+            ApiResult<PosCatalogProductDto> result;
+            if (_isNew)
+            {
+                result = await Catalog.CreateProductAsync(new CreatePosCatalogProductRequest(
+                    _name.Trim(),
+                    string.IsNullOrWhiteSpace(_unit) ? "pc" : _unit.Trim(),
+                    price,
+                    _description,
+                    _sku,
+                    _barcode,
+                    TracksExpiration: _tracksExpiration,
+                    ExpirationWarningDays: warning));
+            }
+            else
+            {
+                result = await Catalog.UpdateProductAsync(ProductId, new UpdatePosCatalogProductRequest(
+                    _name.Trim(),
+                    string.IsNullOrWhiteSpace(_unit) ? "pc" : _unit.Trim(),
+                    price,
+                    _description,
+                    _sku,
+                    _barcode,
+                    TracksExpiration: _tracksExpiration,
+                    ExpirationWarningDays: warning));
+            }
+
+            if (!result.IsSuccess)
+            {
+                _error = OrgWebUi.Error(result.Error);
+                return;
+            }
+
+            Nav.NavigateTo("/products");
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task DeactivateAsync()
+    {
+        _busy = true;
+        try
+        {
+            var result = await Catalog.DeactivateProductAsync(ProductId);
+            _error = result.IsSuccess ? null : OrgWebUi.Error(result.Error);
+            if (result.IsSuccess)
+            {
+                Nav.NavigateTo("/products");
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task ReactivateAsync()
+    {
+        _busy = true;
+        try
+        {
+            var result = await Catalog.ReactivateProductAsync(ProductId);
+            _error = result.IsSuccess ? null : OrgWebUi.Error(result.Error);
+            if (result.IsSuccess)
+            {
+                Nav.NavigateTo("/products");
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

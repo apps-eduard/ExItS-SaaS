@@ -1,0 +1,183 @@
+@page "/inventory"
+@page "/inventory/{ProductId:guid}"
+@attribute [Authorize]
+@inject OrgWebShellState Shell
+@inject IPosInventoryClient Inventory
+@inject NavigationManager Nav
+
+<PageTitle>Inventory</PageTitle>
+
+@if (!Shell.CanSee("inventory"))
+{
+    <AccessDeniedPanel />
+}
+else
+{
+    <PageHeader Title="Stock overview" Subtitle="Organization-level tracked stock. Branch overlay appears on lots and transfers. Adjustments are audited stock movements." />
+    <div class="org-subnav">
+        <a href="/inventory">Stock</a>
+        <a href="/inventory/transfers">Transfers</a>
+        <a href="/inventory/lots">Expiration</a>
+    </div>
+    <div class="org-toolbar">
+        <TextInput Label="Search" @bind-Value="_search" />
+        <label><input type="checkbox" @bind="_lowStock" /> Low stock</label>
+        <Button OnClick="SearchAsync">Filter</Button>
+    </div>
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <Alert Tone="AlertTone.Danger" Message="@_error" />
+    }
+    <div class="org-table-wrap">
+        <table class="org-table">
+            <thead>
+                <tr><th>Product</th><th>On hand</th><th>Sellable</th><th>Expired</th><th>Status</th><th></th></tr>
+            </thead>
+            <tbody>
+                @foreach (var row in _items)
+                {
+                    <tr>
+                        <td>@row.Name</td>
+                        <td>@row.OnHandQuantity</td>
+                        <td>@(row.SellableQuantity?.ToString("N2") ?? "—")</td>
+                        <td>@(row.ExpiredQuantity?.ToString("N2") ?? "—")</td>
+                        <td>@row.StockStatus @(row.IsLowStock ? "· low" : "")</td>
+                        <td><a href="@($"/inventory/{row.ProductId:D}")">Adjust / history</a></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <OrgPager Page="_page" PageSize="20" TotalCount="_total" Busy="_busy" PageChanged="ChangePageAsync" />
+
+    @if (_detail is not null)
+    {
+        <Section Title="@($"Adjust {_detail.Name}")">
+            <p class="org-note">Direction In/Out creates a stock movement. Quantity overwrite is not allowed.</p>
+            @if (Shell.Can(UtangCapability.ManageInventory))
+            {
+                <div class="org-form">
+                    <select @bind="_direction">
+                        <option value="In">In (receive)</option>
+                        <option value="Out">Out (write-off)</option>
+                    </select>
+                    <TextInput Label="Quantity" @bind-Value="_qty" />
+                    <TextInput Label="Reason" @bind-Value="_reason" />
+                    @if (_detail.TracksExpiration)
+                    {
+                        <TextInput Label="Lot number" @bind-Value="_lot" />
+                        <TextInput Label="Expiry (yyyy-MM-dd)" @bind-Value="_expiry" />
+                    }
+                    <Button Variant="ButtonVariant.Primary" IsLoading="_busy" OnClick="AdjustAsync">Record adjustment</Button>
+                </div>
+            }
+            <h3>Recent movements</h3>
+            <div class="org-table-wrap">
+                <table class="org-table">
+                    <thead>
+                        <tr><th>When</th><th>Type</th><th>Qty</th><th>Reason</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var m in _movements)
+                        {
+                            <tr>
+                                <td>@m.RecordedAtUtc.LocalDateTime</td>
+                                <td>@m.MovementType</td>
+                                <td>@m.QuantityEffect</td>
+                                <td>@m.Reason</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </Section>
+    }
+}
+
+@code {
+    [Parameter] public Guid ProductId { get; set; }
+
+    private bool _busy;
+    private string? _error;
+    private string? _search;
+    private bool _lowStock;
+    private int _page = 1;
+    private int _total;
+    private List<PosInventoryAccountDto> _items = [];
+    private PosInventoryAccountDto? _detail;
+    private List<PosStockMovementDto> _movements = [];
+    private string _direction = "In";
+    private string? _qty;
+    private string? _reason;
+    private string? _lot;
+    private string? _expiry;
+
+    protected override Task OnParametersSetAsync() => LoadAsync();
+
+    private async Task SearchAsync()
+    {
+        _page = 1;
+        await LoadAsync();
+    }
+
+    private async Task ChangePageAsync(int page)
+    {
+        _page = page;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        var list = await Inventory.ListAsync(_search, tracked: true, lowStock: _lowStock ? true : null, page: _page, pageSize: 20);
+        if (!list.IsSuccess || list.Data is null)
+        {
+            _error = OrgWebUi.Error(list.Error);
+            return;
+        }
+
+        _items = list.Data.Items;
+        _total = list.Data.TotalCount;
+        _error = null;
+
+        if (ProductId != Guid.Empty)
+        {
+            var detail = await Inventory.GetAsync(ProductId);
+            _detail = detail.Data;
+            var moves = await Inventory.ListMovementsAsync(ProductId, page: 1, pageSize: 20);
+            _movements = moves.Data?.Items ?? [];
+        }
+        else
+        {
+            _detail = null;
+            _movements = [];
+        }
+    }
+
+    private async Task AdjustAsync()
+    {
+        if (_detail is null || !decimal.TryParse(_qty, out var qty) || string.IsNullOrWhiteSpace(_reason))
+        {
+            _error = "Quantity and reason are required.";
+            return;
+        }
+
+        DateOnly? expiry = DateOnly.TryParse(_expiry, out var d) ? d : null;
+        _busy = true;
+        try
+        {
+            var result = await Inventory.AdjustAsync(
+                _detail.ProductId,
+                new AdjustInventoryRequest(_direction, qty, _reason.Trim(), LotNumber: _lot, ExpirationDate: expiry));
+            _error = result.IsSuccess ? null : OrgWebUi.Error(result.Error);
+            if (result.IsSuccess)
+            {
+                _qty = _reason = _lot = _expiry = null;
+                await LoadAsync();
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

@@ -1,0 +1,65 @@
+@page "/staff/roles"
+@attribute [Authorize]
+@inject OrgWebShellState Shell
+@inject IPosPermissionClient Permissions
+
+<PageTitle>Roles</PageTitle>
+
+@if (!Shell.CanSee("roles"))
+{
+    <AccessDeniedPanel />
+}
+else
+{
+    <PageHeader Title="Roles & permissions" Subtitle="POS roles are system-defined. Organization Admin does not invent a custom RBAC designer." />
+    <p class="org-note">Authorization is always enforced on the server. Navigation hides sections the current user cannot use.</p>
+
+    @if (_roles.Count == 0)
+    {
+        <p class="org-note">@(_error ?? "Loading…")</p>
+    }
+    else
+    {
+        <div class="org-table-wrap">
+            <table class="org-table">
+                <thead>
+                    <tr><th>Role</th><th>Display</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var role in _roles)
+                    {
+                        <tr>
+                            <td>@role.Role</td>
+                            <td>@role.DisplayName</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <ul class="org-note">
+            <li>Owner / Admin — full management including staff and settings</li>
+            <li>Store Manager — catalog, inventory, reports (cannot manage permissions)</li>
+            <li>Cashier — selling on POS only; not Organization Web checkout</li>
+            <li>Inventory Staff — stock, transfers, lots</li>
+            <li>Reporting User — reports without operational selling</li>
+        </ul>
+    }
+}
+
+@code {
+    private string? _error;
+    private List<PosRoleDto> _roles = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await Permissions.ListRolesAsync();
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _roles = result.Data.ToList();
+        }
+        else
+        {
+            _error = OrgWebUi.Error(result.Error);
+        }
+    }
+}

@@ -14,6 +14,8 @@ public interface IPosReportingClient
         DateOnly? toDate = null,
         CancellationToken ct = default);
 
+    Task<ApiResult<PosManagementOverviewDto>> GetManagementOverviewAsync(CancellationToken ct = default);
+
     Task<ApiResult<PosSalesReportDto>> GetSalesReportAsync(
         DateOnly? fromDate = null,
         DateOnly? toDate = null,

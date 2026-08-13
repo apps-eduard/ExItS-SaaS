@@ -35,6 +35,22 @@ public interface IInventoryLotRepository
         int take,
         CancellationToken cancellationToken = default);
 
+    Task<(IReadOnlyList<InventoryLot> Items, int TotalCount)> ListExpiringPagedAsync(
+        PosOrganizationId organizationId,
+        PosBranchId? branchId,
+        DateOnly expireOnOrBefore,
+        DateOnly? expireOnOrAfter,
+        string? search,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default);
+
+    Task<(int ExpiredCount, int NearExpiryCount)> CountExpiryAsync(
+        PosOrganizationId organizationId,
+        DateOnly today,
+        int warningDays,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(InventoryLot lot, CancellationToken cancellationToken = default);
 
     Task UpdateAsync(InventoryLot lot, CancellationToken cancellationToken = default);

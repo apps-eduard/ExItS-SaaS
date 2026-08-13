@@ -19,6 +19,20 @@ public sealed record PlatformOrganizationBrandingDto(
     string? PrimaryColor = null,
     string? AccentColor = null);
 
+public sealed record OrganizationProfileFieldsDto(
+    string? LegalName = null,
+    string? ContactEmail = null,
+    string? ContactPhone = null,
+    string? AddressLine1 = null,
+    string? AddressLine2 = null,
+    string? City = null,
+    string? Region = null,
+    string? PostalCode = null,
+    string? CountryCode = null,
+    string? TimeZoneId = null,
+    string? Locale = null,
+    string? CurrencyCode = null);
+
 public sealed record PlatformOrganizationDto(
     Guid Id,
     string DisplayName,
@@ -27,7 +41,8 @@ public sealed record PlatformOrganizationDto(
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset UpdatedAtUtc,
     PlatformOrganizationBrandingDto? Branding = null,
-    Guid? PrimaryBusinessTypeId = null);
+    Guid? PrimaryBusinessTypeId = null,
+    OrganizationProfileFieldsDto? Profile = null);
 
 public sealed record OrganizationBranchDto(Guid Id, Guid OrganizationId, string Code, string Name,
     bool IsPrimary, string Status, string? AddressLine1 = null, string? AddressLine2 = null,
@@ -44,7 +59,31 @@ public sealed record RegisterPosDeviceRequest(Guid BranchId, string Installation
 public sealed record AuthorizePosDeviceRequest(string InstallationDeviceId, Guid? BranchId = null);
 public sealed record PosDeviceAuthorizationDto(Guid PosDeviceId, Guid BranchId, string InstallationDeviceId);
 
-public sealed record UpdatePlatformOrganizationRequest(string DisplayName, string? Slug = null);
+public sealed record UpdatePlatformOrganizationRequest(
+    string DisplayName,
+    string? Slug = null,
+    string? LegalName = null,
+    string? ContactEmail = null,
+    string? ContactPhone = null,
+    string? AddressLine1 = null,
+    string? AddressLine2 = null,
+    string? City = null,
+    string? Region = null,
+    string? PostalCode = null,
+    string? CountryCode = null,
+    string? TimeZoneId = null,
+    string? Locale = null,
+    string? CurrencyCode = null);
+
+public sealed record UpdateBranchRequest(
+    string? Name = null,
+    string? AddressLine1 = null,
+    string? AddressLine2 = null,
+    string? City = null,
+    string? Region = null,
+    string? PostalCode = null,
+    string? CountryCode = null,
+    string? Status = null);
 
 public sealed record PlatformMembershipDto(
     Guid Id,
@@ -985,4 +1024,47 @@ public interface IPlatformAccessClient
     /// </summary>
     Task<ApiResult<IReadOnlyList<LocalValidationQuickLoginIdentityDto>>> GetLocalValidationQuickLoginIdentitiesAsync(
         CancellationToken ct = default);
+
+    Task<ApiResult<OrganizationBranchDto>> UpdateBranchAsync(
+        Guid organizationId,
+        Guid branchId,
+        UpdateBranchRequest request,
+        CancellationToken ct = default) =>
+        Task.FromResult(ApiResult<OrganizationBranchDto>.Unavailable());
+
+    Task<ApiResult<OrganizationBranchDto>> ArchiveBranchAsync(
+        Guid organizationId,
+        Guid branchId,
+        CancellationToken ct = default) =>
+        Task.FromResult(ApiResult<OrganizationBranchDto>.Unavailable());
+
+    Task<ApiResult<PlatformPagedResult<OrganizationInvitationDto>>> GetOrganizationInvitationsAsync(
+        Guid organizationId,
+        string? status = null,
+        int page = 1,
+        int pageSize = 20,
+        CancellationToken ct = default) =>
+        Task.FromResult(ApiResult<PlatformPagedResult<OrganizationInvitationDto>>.Unavailable());
+
+    Task<ApiResult<OrganizationInvitationDto>> ResendOrganizationInvitationAsync(
+        Guid invitationId,
+        CancellationToken ct = default) =>
+        Task.FromResult(ApiResult<OrganizationInvitationDto>.Unavailable());
+
+    Task<ApiResult<OrganizationInvitationDto>> RevokeOrganizationInvitationAsync(
+        Guid invitationId,
+        CancellationToken ct = default) =>
+        Task.FromResult(ApiResult<OrganizationInvitationDto>.Unavailable());
+
+    Task<ApiResult<PlatformMembershipDto>> ChangeMembershipRoleAsync(
+        Guid membershipId,
+        string role,
+        CancellationToken ct = default) =>
+        Task.FromResult(ApiResult<PlatformMembershipDto>.Unavailable());
+
+    Task<ApiResult<PlatformMembershipDto>> ReactivateMembershipAsync(
+        Guid membershipId,
+        PlatformMembershipLifecycleRequest request,
+        CancellationToken ct = default) =>
+        Task.FromResult(ApiResult<PlatformMembershipDto>.Unavailable());
 }

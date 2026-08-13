@@ -1,0 +1,63 @@
+@page "/account/subscription"
+@attribute [Authorize]
+@inject OrgWebShellState Shell
+@inject ICurrentUserContext CurrentUser
+@inject IPlatformAccessClient Platform
+
+<PageTitle>Subscription</PageTitle>
+
+@if (!Shell.CanSee("subscription"))
+{
+    <AccessDeniedPanel />
+}
+else
+{
+    <PageHeader Title="Subscription & entitlements" Subtitle="Read-only commercial status. Purchasing is not implemented in Organization Admin." />
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <Alert Tone="AlertTone.Danger" Message="@_error" />
+    }
+    @if (_sub is not null)
+    {
+        <div class="org-metrics">
+            <div class="org-metric"><div class="org-metric__label">Plan</div><div class="org-metric__value">@(_sub.PlanDisplayName ?? _sub.PlanKey ?? "—")</div></div>
+            <div class="org-metric"><div class="org-metric__label">Status</div><div class="org-metric__value">@_sub.Status</div></div>
+            <div class="org-metric"><div class="org-metric__label">Period end</div><div class="org-metric__value">@(_sub.CurrentPeriodEndUtc?.LocalDateTime.ToString("d") ?? "—")</div></div>
+        </div>
+    }
+    @if (_entitlement is not null)
+    {
+        <p class="org-note">Entitlement @_entitlement.PlanCode v@_entitlement.SnapshotVersion · @_entitlement.SubscriptionStatus · expires @_entitlement.ExpiresAtUtc</p>
+    }
+    @if (CurrentUser.Session?.EnabledFeatureCodes is { Count: > 0 } features)
+    {
+        <Section Title="Active features">
+            <ul>
+                @foreach (var featureCode in features)
+                {
+                    <li>@featureCode</li>
+                }
+            </ul>
+        </Section>
+    }
+}
+
+@code {
+    private string? _error;
+    private PlatformSubscriptionDto? _sub;
+    private PlatformEntitlementSnapshotDto? _entitlement;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var orgId = CurrentUser.Session?.OrganizationId;
+        if (orgId is null) return;
+        var sub = await Platform.GetCurrentSubscriptionAsync(orgId.Value, PosProductCodes.PinoyBusinessPos);
+        var ent = await Platform.GetLatestEntitlementAsync(orgId.Value, PosProductCodes.PinoyBusinessPos);
+        _sub = sub.Data;
+        _entitlement = ent.Data;
+        if (!sub.IsSuccess && !ent.IsSuccess)
+        {
+            _error = OrgWebUi.Error(sub.Error);
+        }
+    }
+}

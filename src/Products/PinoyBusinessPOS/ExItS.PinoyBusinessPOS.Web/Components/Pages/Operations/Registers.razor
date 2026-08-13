@@ -1,0 +1,104 @@
+@page "/operations/registers"
+@attribute [Authorize]
+@inject OrgWebShellState Shell
+@inject IPosRegisterClient RegisterApi
+
+<PageTitle>Registers</PageTitle>
+
+@if (!Shell.CanSee("devices"))
+{
+    <AccessDeniedPanel />
+}
+else
+{
+    <PageHeader Title="Registers" Subtitle="POS registers for cashier shifts. Opening a shift remains a POS operation." />
+    @if (Shell.Can(UtangCapability.ManageRegisters))
+    {
+        <div class="org-toolbar">
+            <TextInput Label="Name" @bind-Value="_name" />
+            <Button Variant="ButtonVariant.Primary" IsLoading="_busy" OnClick="CreateAsync">Create</Button>
+        </div>
+    }
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <Alert Tone="AlertTone.Danger" Message="@_error" />
+    }
+    <div class="org-table-wrap">
+        <table class="org-table">
+            <thead>
+                <tr><th>Code</th><th>Name</th><th>Status</th><th>Open shift</th><th></th></tr>
+            </thead>
+            <tbody>
+                @foreach (var r in _items)
+                {
+                    <tr>
+                        <td>@r.RegisterCode</td>
+                        <td>@r.Name</td>
+                        <td>@r.Status</td>
+                        <td>@(r.HasOpenShift ? "Yes" : "No")</td>
+                        <td>
+                            @if (Shell.Can(UtangCapability.ManageRegisters) && string.Equals(r.Status, "Active", StringComparison.OrdinalIgnoreCase))
+                            {
+                                <button type="button" class="exds-btn" @onclick="() => DeactivateAsync(r.RegisterId)">Deactivate</button>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <OrgPager Page="_page" PageSize="20" TotalCount="_total" Busy="_busy" PageChanged="ChangePageAsync" />
+}
+
+@code {
+    private bool _busy;
+    private string? _error;
+    private string? _name;
+    private int _page = 1;
+    private int _total;
+    private List<PosRegisterDto> _items = [];
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task ChangePageAsync(int page)
+    {
+        _page = page;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        var result = await RegisterApi.ListAsync(page: _page, pageSize: 20);
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _items = result.Data.Items.ToList();
+            _total = result.Data.TotalCount;
+        }
+        else _error = OrgWebUi.Error(result.Error);
+    }
+
+    private async Task CreateAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_name)) { _error = "Name is required."; return; }
+        _busy = true;
+        try
+        {
+            var result = await RegisterApi.CreateAsync(new CreateRegisterRequest(_name.Trim()));
+            _error = result.IsSuccess ? null : OrgWebUi.Error(result.Error);
+            if (result.IsSuccess) { _name = null; await LoadAsync(); }
+        }
+        finally { _busy = false; }
+    }
+
+    private async Task DeactivateAsync(Guid id)
+    {
+        _busy = true;
+        try
+        {
+            var result = await RegisterApi.DeactivateAsync(id);
+            _error = result.IsSuccess ? null : OrgWebUi.Error(result.Error);
+            if (result.IsSuccess) await LoadAsync();
+        }
+        finally { _busy = false; }
+    }
+}

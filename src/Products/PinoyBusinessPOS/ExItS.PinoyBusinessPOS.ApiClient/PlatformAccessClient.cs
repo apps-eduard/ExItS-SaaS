@@ -26,6 +26,27 @@ public sealed class PlatformAccessClient(IPosApiClient api) : IPlatformAccessCli
     public Task<ApiResult<OrganizationBranchDto>> CreateBranchAsync(Guid organizationId, CreateBranchRequest request, CancellationToken ct = default) =>
         api.SendAsync<OrganizationBranchDto>(HttpMethod.Post, $"/api/v1/platform/organizations/{organizationId:D}/branches", request, ct);
 
+    public Task<ApiResult<OrganizationBranchDto>> UpdateBranchAsync(
+        Guid organizationId,
+        Guid branchId,
+        UpdateBranchRequest request,
+        CancellationToken ct = default) =>
+        api.SendAsync<OrganizationBranchDto>(
+            HttpMethod.Put,
+            $"/api/v1/platform/organizations/{organizationId:D}/branches/{branchId:D}",
+            request,
+            ct);
+
+    public Task<ApiResult<OrganizationBranchDto>> ArchiveBranchAsync(
+        Guid organizationId,
+        Guid branchId,
+        CancellationToken ct = default) =>
+        api.SendAsync<OrganizationBranchDto>(
+            HttpMethod.Post,
+            $"/api/v1/platform/organizations/{organizationId:D}/branches/{branchId:D}/archive",
+            null,
+            ct);
+
     public Task<ApiResult<IReadOnlyList<PosDeviceDto>>> GetPosDevicesAsync(Guid organizationId, CancellationToken ct = default) =>
         api.GetAsync<IReadOnlyList<PosDeviceDto>>($"/api/v1/platform/organizations/{organizationId:D}/pos-devices", ct);
 
@@ -221,6 +242,61 @@ public sealed class PlatformAccessClient(IPosApiClient api) : IPlatformAccessCli
         api.SendAsync<OrganizationInvitationDto>(
             HttpMethod.Post,
             $"/api/v1/platform/organizations/{organizationId:D}/invitations",
+            request,
+            ct);
+
+    public Task<ApiResult<PlatformPagedResult<OrganizationInvitationDto>>> GetOrganizationInvitationsAsync(
+        Guid organizationId,
+        string? status = null,
+        int page = 1,
+        int pageSize = 20,
+        CancellationToken ct = default)
+    {
+        var path =
+            $"/api/v1/platform/organizations/{organizationId:D}/invitations?page={page}&pageSize={pageSize}";
+        if (!string.IsNullOrWhiteSpace(status))
+        {
+            path += $"&status={Uri.EscapeDataString(status.Trim())}";
+        }
+
+        return api.GetAsync<PlatformPagedResult<OrganizationInvitationDto>>(path, ct);
+    }
+
+    public Task<ApiResult<OrganizationInvitationDto>> ResendOrganizationInvitationAsync(
+        Guid invitationId,
+        CancellationToken ct = default) =>
+        api.SendAsync<OrganizationInvitationDto>(
+            HttpMethod.Post,
+            $"/api/v1/platform/invitations/{invitationId:D}/resend",
+            null,
+            ct);
+
+    public Task<ApiResult<OrganizationInvitationDto>> RevokeOrganizationInvitationAsync(
+        Guid invitationId,
+        CancellationToken ct = default) =>
+        api.SendAsync<OrganizationInvitationDto>(
+            HttpMethod.Post,
+            $"/api/v1/platform/invitations/{invitationId:D}/revoke",
+            null,
+            ct);
+
+    public Task<ApiResult<PlatformMembershipDto>> ChangeMembershipRoleAsync(
+        Guid membershipId,
+        string role,
+        CancellationToken ct = default) =>
+        api.SendAsync<PlatformMembershipDto>(
+            HttpMethod.Put,
+            $"/api/v1/platform/memberships/{membershipId:D}/role",
+            new { role },
+            ct);
+
+    public Task<ApiResult<PlatformMembershipDto>> ReactivateMembershipAsync(
+        Guid membershipId,
+        PlatformMembershipLifecycleRequest request,
+        CancellationToken ct = default) =>
+        api.SendAsync<PlatformMembershipDto>(
+            HttpMethod.Post,
+            $"/api/v1/platform/memberships/{membershipId:D}/reactivate",
             request,
             ct);
 

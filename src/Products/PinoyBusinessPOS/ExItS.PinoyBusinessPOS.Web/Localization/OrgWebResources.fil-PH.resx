@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="Brand" xml:space="preserve"><value>Admin ng Organisasyon</value></data>
+  <data name="Nav_Overview" xml:space="preserve"><value>Pangkalahatan</value></data>
+  <data name="Nav_Products" xml:space="preserve"><value>Mga Produkto</value></data>
+  <data name="Nav_Inventory" xml:space="preserve"><value>Imbentaryo</value></data>
+  <data name="Nav_Customers" xml:space="preserve"><value>Mga Customer</value></data>
+  <data name="Nav_Branches" xml:space="preserve"><value>Mga Sangay</value></data>
+  <data name="Nav_Staff" xml:space="preserve"><value>Tauhan</value></data>
+  <data name="Nav_Reports" xml:space="preserve"><value>Mga Ulat</value></data>
+  <data name="Nav_Operations" xml:space="preserve"><value>Operasyon</value></data>
+  <data name="Nav_Settings" xml:space="preserve"><value>Mga Setting</value></data>
+  <data name="Nav_More" xml:space="preserve"><value>Higit pa</value></data>
+  <data name="Nav_Subscription" xml:space="preserve"><value>Subscription</value></data>
+  <data name="Boundary_NotPos" xml:space="preserve"><value>Ang Organization Web Admin ay hindi POS checkout. Ang pagbebenta ay nananatili sa POS app.</value></data>
+</root>

@@ -1,0 +1,137 @@
+@page "/settings"
+@attribute [Authorize]
+@inject OrgWebShellState Shell
+@inject IPosOperationalSetupClient Setup
+
+<PageTitle>Settings</PageTitle>
+
+@if (!Shell.CanSee("settings"))
+{
+    <AccessDeniedPanel />
+}
+else
+{
+    <PageHeader Title="Settings" Subtitle="Organization POS and cash-handling configuration. Changes apply to future shifts." />
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <Alert Tone="AlertTone.Danger" Message="@_error" />
+    }
+    @if (!string.IsNullOrWhiteSpace(_ok))
+    {
+        <Alert Tone="AlertTone.Success" Message="@_ok" />
+    }
+    @if (_dto is not null)
+    {
+        <Section Title="General / POS">
+            <div class="org-form">
+                <TextInput Label="Store display name" @bind-Value="_store" />
+                <TextInput Label="Currency" @bind-Value="_currency" />
+                <TextInput Label="Tax mode" @bind-Value="_taxMode" />
+                <TextInput Label="Tax rate %" @bind-Value="_taxRate" />
+                <TextInput Label="Receipt header" @bind-Value="_header" />
+                <TextInput Label="Receipt footer" @bind-Value="_footer" />
+                <TextInput Label="Business address" @bind-Value="_address" />
+                <TextInput Label="Contact phone" @bind-Value="_phone" />
+            </div>
+        </Section>
+        <Section Title="Cash handling">
+            <p class="org-note">Cash Count mode is snapshotted onto new/open shifts. Already-open shifts keep their effective mode.</p>
+            <label>
+                Cash count
+                <select @bind="_cashCount">
+                    <option value="Off">Off — cashiers are not prompted to count</option>
+                    <option value="Optional">Optional — count may be skipped (skipped is not zero)</option>
+                    <option value="Required">Required — count is required to close</option>
+                </select>
+            </label>
+        </Section>
+        @if (Shell.Can(UtangCapability.ManageOperationalSetup) || Shell.IsOrgOwner)
+        {
+            <Button Variant="ButtonVariant.Primary" IsLoading="_busy" OnClick="SaveAsync">Save settings</Button>
+        }
+        else
+        {
+            <p class="org-note">You can view these settings but cannot change them.</p>
+        }
+    }
+}
+
+@code {
+    private bool _busy;
+    private string? _error;
+    private string? _ok;
+    private PosOperationalSetupDto? _dto;
+    private string? _store;
+    private string? _currency;
+    private string? _taxMode;
+    private string? _taxRate;
+    private string? _header;
+    private string? _footer;
+    private string? _address;
+    private string? _phone;
+    private string _cashCount = "Optional";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await Setup.GetAsync();
+        if (!result.IsSuccess || result.Data is null)
+        {
+            _error = OrgWebUi.Error(result.Error);
+            return;
+        }
+
+        Apply(result.Data);
+    }
+
+    private void Apply(PosOperationalSetupDto dto)
+    {
+        _dto = dto;
+        _store = dto.StoreDisplayName;
+        _currency = dto.CurrencyCode;
+        _taxMode = dto.TaxPricingMode;
+        _taxRate = dto.TaxRatePercent.ToString("0.##");
+        _header = dto.ReceiptHeader;
+        _footer = dto.ReceiptFooter;
+        _address = dto.BusinessAddress;
+        _phone = dto.ContactPhone;
+        _cashCount = dto.CashCountMode;
+    }
+
+    private async Task SaveAsync()
+    {
+        if (_dto is null || string.IsNullOrWhiteSpace(_store) || !decimal.TryParse(_taxRate, out var rate))
+        {
+            _error = "Store name and tax rate are required.";
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var result = await Setup.UpdateAsync(new UpdateOperationalSetupRequest(
+                _store.Trim(),
+                string.IsNullOrWhiteSpace(_currency) ? "PHP" : _currency.Trim(),
+                string.IsNullOrWhiteSpace(_taxMode) ? "TaxExclusive" : _taxMode.Trim(),
+                rate,
+                _dto.UpdatedAtUtc,
+                _header,
+                _footer,
+                _address,
+                _phone,
+                _cashCount));
+            if (!result.IsSuccess || result.Data is null)
+            {
+                _error = OrgWebUi.Error(result.Error);
+                return;
+            }
+
+            Apply(result.Data);
+            _error = null;
+            _ok = "Settings saved for future shifts.";
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

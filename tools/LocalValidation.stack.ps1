@@ -18,6 +18,7 @@ $script:LocalValidationStack = [pscustomobject]@{
     DefaultAdminPort       = 8090
     DefaultPlatformApiPort = 8091
     DefaultPosApiPort      = 8092
+    DefaultOrgWebPort      = 8093
     DefaultSeedScope       = 'PlatformAdministratorsOnly'
 }
 
