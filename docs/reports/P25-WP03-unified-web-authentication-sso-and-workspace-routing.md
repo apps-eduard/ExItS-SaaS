@@ -66,7 +66,7 @@ Workspace switcher: Admin `/admin/handoff/{app}`, Org `/handoff/{app}`, Personal
 
 ## 8. Local Validation quick login
 
-**One** picker on canonical login. Labels come from seed `ListLabel` (not hard-coded names). Selecting an identity:
+**One** picker on canonical login. Entries are **current Local Validation database accounts** (MODEL A), not a static dump of every catalog name. Canonical baseline identities are labeled `Baseline ·`. Full-catalog demo users appear only after an explicit `-SeedScope Full` seed. See [P25-WP04](P25-WP04-web-host-legacy-cleanup-and-local-validation-identity-determinism.md). Selecting an identity:
 
 1. Server-side credential login with `LOCAL_VALIDATION_SHARED_PASSWORD` (never sent to the browser).
 2. Select account profile + organization context from seed metadata.

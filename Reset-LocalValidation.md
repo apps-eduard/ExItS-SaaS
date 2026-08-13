@@ -40,6 +40,22 @@ cd C:\Users\speed\Desktop\ExItS-SaaS
 
 Sign in with Olivia or Rafael and the shared password from `deploy/docker/.env.local-validation` (`LOCAL_VALIDATION_SHARED_PASSWORD`). Never commit that secret.
 
+Quick login on `http://127.0.0.1:8090/admin/login` is **database-backed (MODEL A)**:
+
+- **Canonical baseline (always after this reset):** Olivia Mendoza, Rafael Torres — labeled `Baseline ·`.
+- **Owner-created accounts** (for example Mica Uy) appear only after you create them, and only in scopes they actually own.
+- **Full catalog demo users** (Maria, Carlo, Ana, Daniel, Luis, Sofia) are **not** part of this baseline. They are recreated only if you later start with `-SeedScope Full`.
+- Ordinary Start (`PlatformAdministratorsOnly`) **decommissions** those Full-catalog fixture accounts if they were left over from an older Full seed. It does **not** delete owner-created users.
+- The fixture **catalog in code** is never deleted by reset. Reset removes **database rows**, then reseeds Olivia + Rafael.
+
+If you need the eight-identity demo catalog again:
+
+```powershell
+.\tools\Start-LocalValidation.ps1 -SeedScope Full
+```
+
+That is an explicit opt-in. Default Start does not do this.
+
 If Admin antiforgery cookies fail after reset: Incognito window or clear localhost site data once.
 
 ## Related

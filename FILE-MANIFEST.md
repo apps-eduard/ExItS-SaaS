@@ -119,6 +119,7 @@ docs/phases/phase-25-organization-web-admin.md
 docs/reports/P25-WP01-organization-web-admin-management-center.md
 docs/reports/P25-WP02-antdesign-web-standardization-and-host-separation.md
 docs/reports/P25-WP03-unified-web-authentication-sso-and-workspace-routing.md
+docs/reports/P25-WP04-web-host-legacy-cleanup-and-local-validation-identity-determinism.md
 docs/decisions/ADR-022-separated-antdesign-web-hosts-and-unified-auth.md
 docs/reports/P24-WP01-current-state-and-architecture-contract.md
 docs/reports/P24-WP02-customer-link-and-pos-correlation.md

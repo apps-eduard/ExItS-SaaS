@@ -16,7 +16,7 @@ Tailscale / LAN (bind `0.0.0.0`, print public URLs, CORS + AllowedHosts for the 
 .\tools\Start-LocalValidation.ps1 -PublicHost 100.120.79.81
 ```
 
-**Seed scope:** default is `PlatformAdministratorsOnly` (Olivia + Rafael only). Ordinary Start/restart does **not** restore the legacy eight-identity catalog. Use `-SeedScope Full` only when you explicitly want that catalog. Reset uses admins-only plus transactional purge.
+**Seed scope:** default is `PlatformAdministratorsOnly` (Olivia + Rafael only). Ordinary Start/restart does **not** restore the legacy eight-identity catalog and **decommissions** those Full-catalog fixture accounts if they still exist. Owner-created users are kept. Use `-SeedScope Full` only when you explicitly want that catalog. Reset uses admins-only plus transactional purge (volume wipe). Quick login is database-backed: see [Reset-LocalValidation.md](../../Reset-LocalValidation.md).
 
 Printed when `-PublicHost` is set:
 

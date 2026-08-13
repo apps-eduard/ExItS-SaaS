@@ -34,11 +34,21 @@ Start resolves, in order:
 
 ## Default seed scope
 
-Ordinary Start uses **`PlatformAdministratorsOnly`** (Olivia + Rafael). It does **not** wipe existing orgs/products.
+Ordinary Start uses **`PlatformAdministratorsOnly`** (Olivia + Rafael). It does **not** wipe existing orgs/products or owner-created users.
+
+It **does** decommission leftover Full-catalog demo identities (Maria, Carlo, Ana, Daniel, Luis, Sofia) so quick login does not keep surprising historic fixtures.
+
+Quick login lists **current database accounts**, not a static menu of every name in source code. Baseline entries are labeled `Baseline ·`.
 
 For a full clean wipe (2 admins + empty POS + cleared templates):
 
 → [Reset-LocalValidation.md](Reset-LocalValidation.md)
+
+To restore the eight-identity demo catalog **on purpose**:
+
+```powershell
+.\tools\Start-LocalValidation.ps1 -SeedScope Full
+```
 
 ## Stop
 
