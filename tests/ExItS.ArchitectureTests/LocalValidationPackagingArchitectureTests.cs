@@ -68,6 +68,7 @@ public sealed class LocalValidationPackagingArchitectureTests
         Assert.Contains("LocalPort 8091", startScript, StringComparison.Ordinal);
         Assert.Contains("LocalPort 8092", startScript, StringComparison.Ordinal);
         Assert.Contains("LocalPort 8093", startScript, StringComparison.Ordinal);
+        Assert.Contains("LocalPort 8094", startScript, StringComparison.Ordinal);
         Assert.DoesNotContain("LocalPort 15533", startScript, StringComparison.Ordinal);
         Assert.DoesNotContain("LocalPort 15534", startScript, StringComparison.Ordinal);
         Assert.DoesNotContain("docker compose down -v", startScript, StringComparison.Ordinal);
