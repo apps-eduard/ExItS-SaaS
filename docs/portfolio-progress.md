@@ -14,7 +14,7 @@
 | Current phase | Phase 26 **Open — WP01–WP04 Code Complete / Validation Pending**; Phase 25 remains **Open — Owner Validation Pending**; Phase 22/24/19/20/21 remain Open; Phase 14 still open |
 | Current work package | **P26-WP04** Organization Tax/Compliance Profile & Future Activation Foundation ([phase](phases/phase-26-sales-documents-compliance-readiness.md); [report](reports/P26-WP04-organization-tax-compliance-profile-and-activation-foundation.md); [roadmap](compliance/bir-compliance-activation-roadmap.md)). P26-WP05 is next. Phase 25 is **not closed**. |
 | Overall status | **P26-WP01–WP04 Code Complete / Validation Pending**; Transaction Summary remains the current sales document; Owner acknowledgment is a soft education prompt; Platform owns compliance eligibility, issuance capability, and org compliance profile anchor; TaxDocument remains unavailable (`ImplementationAvailable=false`); no BIR claim. Phase 25 WP01–WP09 owner validation remains pending. **Not Device Verified**. Production remains **Blocked**. **Not production-ready.** |
-| Latest verified commit | `73b5822c` (P26-WP03 platform-controlled compliance eligibility); P26-WP04 feature SHA pending commit |
+| Latest verified commit | `c794707e` (P26-WP04 organization compliance profile foundation) |
 | Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA deferred; Phase 19/20/22/24/25 owner/physical validation pending |
 | Last updated | 2026-08-14 |
 

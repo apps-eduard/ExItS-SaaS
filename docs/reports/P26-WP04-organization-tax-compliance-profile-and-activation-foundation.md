@@ -5,7 +5,7 @@
 **Code Complete / Validation Pending.** Phase 26 remains **OPEN**. Phase 25 remains **OPEN**. This work package makes no BIR-compliance claim and does not produce `TaxDocument` records.
 
 **Starting SHA:** `22fd8209305c87c16d4adb636652d7b6a1f31f77`  
-**Feature SHA:** *pending commit*
+**Feature SHA:** `c794707e`
 
 Canonical living playbook (not this report):
 [docs/compliance/bir-compliance-activation-roadmap.md](../compliance/bir-compliance-activation-roadmap.md).
