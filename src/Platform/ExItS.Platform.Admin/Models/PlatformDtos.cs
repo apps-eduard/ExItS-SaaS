@@ -822,7 +822,21 @@ public sealed record StartBusinessRequest(
     bool PayNow = false,
     bool ActivatePosEntitlement = true,
     bool ActivateProductAccess = true,
-    bool AssignPosOwnerRole = true);
+    bool AssignPosOwnerRole = true,
+    /// <summary>
+    /// When true, copies the caller's Personal email/phone into organization contact fields
+    /// (one-time). Explicit Contact* fields in this request override the copied values.
+    /// There is no live sync after save.
+    /// </summary>
+    bool UseMyContactDetails = false,
+    string? ContactEmail = null,
+    string? ContactPhone = null,
+    string? AddressLine1 = null,
+    string? AddressLine2 = null,
+    string? City = null,
+    string? Region = null,
+    string? PostalCode = null,
+    string? CountryCode = null);
 
 public sealed record StartBusinessResultDto(
     Guid OrganizationId,

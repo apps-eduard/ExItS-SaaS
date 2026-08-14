@@ -235,7 +235,21 @@ public sealed record StartBusinessRequest(
     bool PayNow = false,
     bool ActivatePosEntitlement = true,
     bool ActivateProductAccess = true,
-    bool AssignPosOwnerRole = true);
+    bool AssignPosOwnerRole = true,
+    /// <summary>
+    /// When true, copies the caller's Personal email/phone into organization contact fields
+    /// (one-time). Explicit Contact* fields in this request override the copied values.
+    /// There is no live sync after save.
+    /// </summary>
+    bool UseMyContactDetails = false,
+    string? ContactEmail = null,
+    string? ContactPhone = null,
+    string? AddressLine1 = null,
+    string? AddressLine2 = null,
+    string? City = null,
+    string? Region = null,
+    string? PostalCode = null,
+    string? CountryCode = null);
 
 /// <summary>Active commercial plan from GET /api/v1/commercial/plans (authoritative Platform catalog).</summary>
 public sealed record CommercialPlanDto(
@@ -448,7 +462,8 @@ public sealed record PersonalProfileDto(
     string AccountClass,
     string Status,
     string? PublicUserId = null,
-    string? QrPayload = null);
+    string? QrPayload = null,
+    string? Phone = null);
 
 public sealed record PublicIdentityDto(
     string PublicUserId,

@@ -35,7 +35,21 @@ public sealed record StartBusinessRequest(
     bool PayNow = false,
     bool ActivatePosEntitlement = true,
     bool ActivateProductAccess = true,
-    bool AssignPosOwnerRole = true);
+    bool AssignPosOwnerRole = true,
+    /// <summary>
+    /// When true, copies the caller's Personal email/phone into organization contact fields
+    /// (one-time). Explicit Contact* fields in this request override the copied values.
+    /// There is no live sync after save.
+    /// </summary>
+    bool UseMyContactDetails = false,
+    string? ContactEmail = null,
+    string? ContactPhone = null,
+    string? AddressLine1 = null,
+    string? AddressLine2 = null,
+    string? City = null,
+    string? Region = null,
+    string? PostalCode = null,
+    string? CountryCode = null);
 
 public sealed record StartBusinessResultDto(
     Guid OrganizationId,
@@ -123,6 +137,7 @@ public sealed class StartBusinessForPersonalUser
     private readonly IProductLocalRoleGrantRepository _roleGrants;
     private readonly IBusinessTypeRepository _businessTypes;
     private readonly IOrganizationBranchRepository _branches;
+    private readonly IPlatformUserRepository _users;
     private readonly IAuditWriter _auditWriter;
     private readonly IPlatformUnitOfWork _unitOfWork;
     private readonly IClock _clock;
@@ -159,6 +174,7 @@ public sealed class StartBusinessForPersonalUser
         IProductLocalRoleGrantRepository roleGrants,
         IBusinessTypeRepository businessTypes,
         IOrganizationBranchRepository branches,
+        IPlatformUserRepository users,
         IAuditWriter auditWriter,
         IPlatformUnitOfWork unitOfWork,
         IClock clock)
@@ -194,6 +210,7 @@ public sealed class StartBusinessForPersonalUser
         _roleGrants = roleGrants;
         _businessTypes = businessTypes;
         _branches = branches;
+        _users = users;
         _auditWriter = auditWriter;
         _unitOfWork = unitOfWork;
         _clock = clock;
@@ -292,6 +309,28 @@ public sealed class StartBusinessForPersonalUser
 
         var organization = orgResult.Value;
         organization.AssignPrimaryBusinessType(businessType.Id, _clock.UtcNow);
+
+        var profileSeed = await BuildInitialOrganizationProfileAsync(userId, request, cancellationToken)
+            .ConfigureAwait(false);
+        if (!profileSeed.IsSuccess)
+        {
+            return ApplicationResult<StartBusinessResultDto>.Failure(
+                profileSeed.ErrorCode ?? ApplicationErrorCodes.DomainViolation,
+                profileSeed.ErrorMessage ?? "Organization contact profile is invalid.");
+        }
+
+        if (profileSeed.Value is not null && !IsEmptyOrganizationProfile(profileSeed.Value))
+        {
+            try
+            {
+                organization.UpdateProfile(profileSeed.Value, _clock.UtcNow);
+            }
+            catch (DomainException ex)
+            {
+                return ApplicationResult<StartBusinessResultDto>.Failure(ex.ErrorCode, ex.Message);
+            }
+        }
+
         await _organizations.UpdateAsync(organization, cancellationToken).ConfigureAwait(false);
 
         var mainBranch = OrganizationBranch.CreateMainBranch(organization.Id, _clock.UtcNow);
@@ -1016,4 +1055,88 @@ public sealed class StartBusinessForPersonalUser
         return ApplicationResult<CatalogSelection>.Success(
             new CatalogSelection(plan.Id, version.Id, trial.Id));
     }
+
+    /// <summary>
+    /// Builds a one-time OrganizationProfile seed. Never live-links to Personal profile.
+    /// Explicit request fields win over copied Personal values.
+    /// </summary>
+    private async Task<ApplicationResult<OrganizationProfile?>> BuildInitialOrganizationProfileAsync(
+        PlatformUserId userId,
+        StartBusinessRequest request,
+        CancellationToken cancellationToken)
+    {
+        string? email = NullIfWhiteSpace(request.ContactEmail);
+        string? phone = NullIfWhiteSpace(request.ContactPhone);
+        var address1 = NullIfWhiteSpace(request.AddressLine1);
+        var address2 = NullIfWhiteSpace(request.AddressLine2);
+        var city = NullIfWhiteSpace(request.City);
+        var region = NullIfWhiteSpace(request.Region);
+        var postal = NullIfWhiteSpace(request.PostalCode);
+        var country = NullIfWhiteSpace(request.CountryCode);
+
+        if (request.UseMyContactDetails)
+        {
+            var user = await _users.GetByIdAsync(userId, cancellationToken).ConfigureAwait(false);
+            if (user is null)
+            {
+                return ApplicationResult<OrganizationProfile?>.Failure(
+                    ApplicationErrorCodes.UserNotFound,
+                    "Personal user was not found.");
+            }
+
+            email ??= NullIfWhiteSpace(user.NormalizedEmail);
+            phone ??= NullIfWhiteSpace(user.Phone);
+        }
+
+        if (email is null
+            && phone is null
+            && address1 is null
+            && address2 is null
+            && city is null
+            && region is null
+            && postal is null
+            && country is null)
+        {
+            return ApplicationResult<OrganizationProfile?>.Success(null);
+        }
+
+        try
+        {
+            var profile = OrganizationProfile.Create(
+                legalName: null,
+                contactEmail: email,
+                contactPhone: phone,
+                addressLine1: address1,
+                addressLine2: address2,
+                city: city,
+                region: region,
+                postalCode: postal,
+                countryCode: country,
+                timeZoneId: null,
+                locale: null,
+                currencyCode: null);
+            return ApplicationResult<OrganizationProfile?>.Success(profile);
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<OrganizationProfile?>.Failure(ex.ErrorCode, ex.Message);
+        }
+    }
+
+    private static bool IsEmptyOrganizationProfile(OrganizationProfile profile) =>
+        string.IsNullOrWhiteSpace(profile.LegalName)
+        && string.IsNullOrWhiteSpace(profile.ContactEmail)
+        && string.IsNullOrWhiteSpace(profile.ContactPhone)
+        && string.IsNullOrWhiteSpace(profile.AddressLine1)
+        && string.IsNullOrWhiteSpace(profile.AddressLine2)
+        && string.IsNullOrWhiteSpace(profile.City)
+        && string.IsNullOrWhiteSpace(profile.Region)
+        && string.IsNullOrWhiteSpace(profile.PostalCode)
+        && string.IsNullOrWhiteSpace(profile.CountryCode)
+        && string.IsNullOrWhiteSpace(profile.TimeZoneId)
+        && string.IsNullOrWhiteSpace(profile.Locale)
+        && string.IsNullOrWhiteSpace(profile.CurrencyCode);
+
+    private static string? NullIfWhiteSpace(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }

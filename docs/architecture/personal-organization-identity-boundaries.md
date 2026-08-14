@@ -17,6 +17,16 @@ Clarify how Personal identities, Organization identities, and POS device registr
 
 Personal subjects remain keyed by `PlatformUserId` / `PublicUserId`. Organization subjects are owned by `OrganizationId` / `PublicOrganizationId`. Device registration tokens are org-scoped, hash-stored, 15-minute TTL, single-use.
 
+## Organization profile independence
+
+- Organization contact/profile fields live on the organization aggregate (`OrganizationProfile`).
+- Start a Business may **copy** Personal email/phone once (`UseMyContactDetails`); there is **no live sync** afterward.
+- The same Personal identity may own multiple organizations; MVP allows **one Owner per organization**.
+- Business QR / public identity exposes only DisplayName + PublicOrganizationId (no contact leak).
+- POS receipts still use product operational setup, not Platform OrganizationProfile.
+
+See [organization-profile-independence.md](../engineering/organization-profile-independence.md).
+
 ## Scan / resolve rules
 
 1. Scan alone never grants membership, POS role, or Personal link.

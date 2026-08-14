@@ -29,7 +29,8 @@ public sealed record PersonalProfileDto(
     string AccountClass,
     string Status,
     string? PublicUserId = null,
-    string? QrPayload = null);
+    string? QrPayload = null,
+    string? Phone = null);
 
 public sealed record PersonalAccountSettingsDto(
     Guid UserIdentityId,
@@ -180,7 +181,8 @@ public sealed class GetPersonalProfile
             profile.AccountClass.ToString(),
             profile.Status,
             publicUserId,
-            qrPayload));
+            qrPayload,
+            user.Phone));
     }
 }
 

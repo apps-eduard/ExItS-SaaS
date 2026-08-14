@@ -29,7 +29,19 @@
             <Section Title="@L["Org_ProfileForm"]">
                 <Stack Gap="2">
                     <TextInput Label="@L["StartBusiness_DisplayName"]" @bind-Value="_displayName" Disabled="_busy" />
-                    <TextInput Label="@L["StartBusiness_Slug"]" @bind-Value="_slug" Disabled="_busy" />
+                    <TextInput Label="@L["StartBusiness_Slug"]" @bind-Value="_slug" Disabled="_busy" Hint="@L["StartBusiness_SlugHint"]" />
+                    <TextInput Label="@L["Org_LegalName"]" @bind-Value="_legalName" Disabled="_busy" />
+                    <TextInput Label="@L["Org_ContactEmail"]" @bind-Value="_contactEmail" Disabled="_busy" />
+                    <TextInput Label="@L["Org_ContactPhone"]" @bind-Value="_contactPhone" Disabled="_busy" />
+                    <TextInput Label="@L["Org_AddressLine1"]" @bind-Value="_address1" Disabled="_busy" />
+                    <TextInput Label="@L["Org_AddressLine2"]" @bind-Value="_address2" Disabled="_busy" />
+                    <TextInput Label="@L["Org_City"]" @bind-Value="_city" Disabled="_busy" />
+                    <TextInput Label="@L["Org_Region"]" @bind-Value="_region" Disabled="_busy" />
+                    <TextInput Label="@L["Org_PostalCode"]" @bind-Value="_postal" Disabled="_busy" />
+                    <TextInput Label="@L["Org_Country"]" @bind-Value="_country" Disabled="_busy" />
+                    <TextInput Label="@L["Org_TimeZone"]" @bind-Value="_timezone" Disabled="_busy" />
+                    <TextInput Label="@L["Org_Locale"]" @bind-Value="_locale" Disabled="_busy" />
+                    <TextInput Label="@L["Org_Currency"]" @bind-Value="_currency" Disabled="_busy" />
                 </Stack>
             </Section>
 
@@ -60,6 +72,18 @@
     private bool _busy;
     private string? _displayName;
     private string? _slug;
+    private string? _legalName;
+    private string? _contactEmail;
+    private string? _contactPhone;
+    private string? _address1;
+    private string? _address2;
+    private string? _city;
+    private string? _region;
+    private string? _postal;
+    private string? _country;
+    private string? _timezone;
+    private string? _locale;
+    private string? _currency;
     private List<string> _errors = [];
 
     protected override async Task OnInitializedAsync()
@@ -74,8 +98,22 @@
         var result = await Platform.GetOrganizationAsync(orgId.Value);
         if (result.IsSuccess && result.Data is not null)
         {
-            _displayName = result.Data.DisplayName;
-            _slug = result.Data.Slug;
+            var org = result.Data;
+            _displayName = org.DisplayName;
+            _slug = org.Slug;
+            var p = org.Profile;
+            _legalName = p?.LegalName;
+            _contactEmail = p?.ContactEmail;
+            _contactPhone = p?.ContactPhone;
+            _address1 = p?.AddressLine1;
+            _address2 = p?.AddressLine2;
+            _city = p?.City;
+            _region = p?.Region;
+            _postal = p?.PostalCode;
+            _country = p?.CountryCode;
+            _timezone = p?.TimeZoneId;
+            _locale = p?.Locale;
+            _currency = p?.CurrencyCode;
         }
 
         _loading = false;
@@ -96,10 +134,24 @@
         {
             var result = await Platform.UpdateOrganizationAsync(
                 orgId.Value,
-                new UpdatePlatformOrganizationRequest(_displayName.Trim(), _slug));
+                new UpdatePlatformOrganizationRequest(
+                    _displayName.Trim(),
+                    _slug,
+                    NullIfWhiteSpace(_legalName),
+                    NullIfWhiteSpace(_contactEmail),
+                    NullIfWhiteSpace(_contactPhone),
+                    NullIfWhiteSpace(_address1),
+                    NullIfWhiteSpace(_address2),
+                    NullIfWhiteSpace(_city),
+                    NullIfWhiteSpace(_region),
+                    NullIfWhiteSpace(_postal),
+                    NullIfWhiteSpace(_country),
+                    NullIfWhiteSpace(_timezone),
+                    NullIfWhiteSpace(_locale),
+                    NullIfWhiteSpace(_currency)));
             if (!result.IsSuccess)
             {
-                _errors.Add(L["Org_ProfileSaveFailed"]);
+                _errors.Add(result.Error?.Detail ?? L["Org_ProfileSaveFailed"]);
                 return;
             }
 
@@ -110,4 +162,7 @@
             _busy = false;
         }
     }
+
+    private static string? NullIfWhiteSpace(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }

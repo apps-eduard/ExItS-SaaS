@@ -123,9 +123,12 @@ docs/reports/P25-WP03-unified-web-authentication-sso-and-workspace-routing.md
 docs/reports/P25-WP04-web-host-legacy-cleanup-and-local-validation-identity-determinism.md
 docs/reports/P25-WP05-cash-count-policy-simplification-and-denomination-assisted-reconciliation.md
 docs/reports/personal-organization-identity-isolation.md
+docs/reports/organization-profile-independence.md
 docs/reports/sales-buyer-party-isolation.md
 docs/engineering/sales-buyer-party-model.md
+docs/engineering/organization-profile-independence.md
 docs/architecture/personal-organization-identity-boundaries.md
+docs/architecture/client-experience-boundaries.md
 docs/specs/identity/public-user-id-and-qr.md
 docs/decisions/ADR-022-separated-antdesign-web-hosts-and-unified-auth.md
 docs/reports/P24-WP01-current-state-and-architecture-contract.md

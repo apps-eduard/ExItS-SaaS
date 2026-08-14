@@ -40,6 +40,52 @@ public sealed class OrganizationPublicIdentityIsolationTests
         Assert.True(allowed.IsSuccess);
         Assert.Equal("ORG000001", allowed.Value!.PublicOrganizationId);
         Assert.Equal("exits://qr/v1/organization/ORG000001", allowed.Value.QrPayload);
+        Assert.Equal("Org A", allowed.Value.DisplayName);
+
+        // Public identity must not leak contact / address fields.
+        var dtoType = typeof(OrganizationPublicIdentityDto);
+        Assert.Null(dtoType.GetProperty("ContactEmail"));
+        Assert.Null(dtoType.GetProperty("ContactPhone"));
+        Assert.Null(dtoType.GetProperty("AddressLine1"));
+        Assert.Null(dtoType.GetProperty("LegalName"));
+        Assert.Equal(3, dtoType.GetProperties().Length);
+    }
+
+    [Fact]
+    public async Task Public_identity_excludes_contact_even_when_profile_has_contact()
+    {
+        var orgs = new InMemoryPlatformOrganizationRepository();
+        var memberships = new InMemoryOrganizationMembershipRepository();
+
+        var owner = PlatformUser.Create("ownera", "Owner A", "ownera@example.com", T0);
+        var org = PlatformOrganization.Create("Org A", "org-a-contact", T0);
+        org.AssignPublicOrganizationId("ORG000099", T0);
+        org.UpdateProfile(
+            OrganizationProfile.Create(
+                "Secret Legal",
+                "secret@org.example",
+                "+639179999999",
+                "Hidden St",
+                null,
+                "Manila",
+                "NCR",
+                "1000",
+                "PH",
+                null,
+                null,
+                null),
+            T0);
+        await orgs.AddAsync(org);
+        await memberships.AddAsync(
+            OrganizationMembership.Create(org.Id, owner.Id, OrganizationRole.OrganizationOwner, T0));
+
+        var useCase = new GetOrganizationPublicIdentity(orgs, memberships);
+        var allowed = await useCase.ExecuteAsync(owner.Id, org.Id);
+        Assert.True(allowed.IsSuccess);
+        Assert.Equal("ORG000099", allowed.Value!.PublicOrganizationId);
+        Assert.Equal("Org A", allowed.Value.DisplayName);
+        Assert.DoesNotContain("secret", allowed.Value.QrPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Hidden", allowed.Value.DisplayName, StringComparison.Ordinal);
     }
 
     [Fact]

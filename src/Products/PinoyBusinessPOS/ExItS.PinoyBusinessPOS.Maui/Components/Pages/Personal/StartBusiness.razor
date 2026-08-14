@@ -91,6 +91,44 @@
             </Stack>
         </section>
 
+        <section class="pos-start-business-form" aria-labelledby="start-business-contact-heading">
+            <h2 class="pos-start-business-form__title" id="start-business-contact-heading">@L["StartBusiness_ContactTitle"]</h2>
+            <p class="pos-start-business-form__hint pos-muted">@L["StartBusiness_ContactHelper"]</p>
+            <Stack Gap="3">
+                <Checkbox Value="_useMyContactDetails"
+                          ValueChanged="OnUseMyContactDetailsChanged"
+                          Disabled="_busy">@L["StartBusiness_UseMyContactDetails"]</Checkbox>
+                <TextInput Label="@L["StartBusiness_ContactEmail"]"
+                           Value="@_contactEmail"
+                           ValueChanged="OnContactEmailChanged"
+                           Disabled="_busy" />
+                <TextInput Label="@L["StartBusiness_ContactPhone"]"
+                           Value="@_contactPhone"
+                           ValueChanged="OnContactPhoneChanged"
+                           Disabled="_busy" />
+                <TextInput Label="@L["StartBusiness_AddressLine1"]"
+                           Value="@_addressLine1"
+                           ValueChanged="OnAddressLine1Changed"
+                           Disabled="_busy" />
+                <TextInput Label="@L["StartBusiness_City"]"
+                           Value="@_city"
+                           ValueChanged="OnCityChanged"
+                           Disabled="_busy" />
+                <TextInput Label="@L["StartBusiness_Region"]"
+                           Value="@_region"
+                           ValueChanged="OnRegionChanged"
+                           Disabled="_busy" />
+                <TextInput Label="@L["StartBusiness_PostalCode"]"
+                           Value="@_postalCode"
+                           ValueChanged="OnPostalCodeChanged"
+                           Disabled="_busy" />
+                <TextInput Label="@L["StartBusiness_Country"]"
+                           Value="@_countryCode"
+                           ValueChanged="OnCountryCodeChanged"
+                           Disabled="_busy" />
+            </Stack>
+        </section>
+
         <section class="pos-start-business-plan" aria-labelledby="start-business-plan-heading">
             <div class="pos-start-business-plan__top">
                 <div>
@@ -164,6 +202,16 @@
     private string _billingCycle = "Monthly";
     private bool _startAsTrial = true;
     private bool _payNow;
+    private bool _useMyContactDetails = true;
+    private string? _personalEmail;
+    private string? _personalPhone;
+    private string? _contactEmail;
+    private string? _contactPhone;
+    private string? _addressLine1;
+    private string? _city;
+    private string? _region;
+    private string? _postalCode;
+    private string? _countryCode;
     private CommercialPlanDto? _plan;
     private IReadOnlyList<BusinessTypeDto> _businessTypes = [];
     private List<string> _errors = [];
@@ -217,6 +265,7 @@
         {
             await LoadSelectedPlanAsync();
             await LoadBusinessTypesAsync();
+            await LoadPersonalContactPrefillAsync();
         }
 
         _ready = true;
@@ -329,6 +378,81 @@
 
     private void SelectBusinessType(Guid id) => _primaryBusinessTypeId = id.ToString("D");
 
+    private async Task LoadPersonalContactPrefillAsync()
+    {
+        var result = await Platform.GetPersonalProfileAsync();
+        if (!result.IsSuccess || result.Data is null)
+        {
+            return;
+        }
+
+        _personalEmail = result.Data.Email;
+        _personalPhone = result.Data.Phone;
+        if (_useMyContactDetails)
+        {
+            ApplyPersonalContactPrefill();
+        }
+    }
+
+    private void ApplyPersonalContactPrefill()
+    {
+        _contactEmail = _personalEmail;
+        _contactPhone = _personalPhone;
+    }
+
+    private Task OnUseMyContactDetailsChanged(bool value)
+    {
+        _useMyContactDetails = value;
+        if (value)
+        {
+            ApplyPersonalContactPrefill();
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private Task OnContactEmailChanged(string? value)
+    {
+        _contactEmail = value;
+        return Task.CompletedTask;
+    }
+
+    private Task OnContactPhoneChanged(string? value)
+    {
+        _contactPhone = value;
+        return Task.CompletedTask;
+    }
+
+    private Task OnAddressLine1Changed(string? value)
+    {
+        _addressLine1 = value;
+        return Task.CompletedTask;
+    }
+
+    private Task OnCityChanged(string? value)
+    {
+        _city = value;
+        return Task.CompletedTask;
+    }
+
+    private Task OnRegionChanged(string? value)
+    {
+        _region = value;
+        return Task.CompletedTask;
+    }
+
+    private Task OnPostalCodeChanged(string? value)
+    {
+        _postalCode = value;
+        return Task.CompletedTask;
+    }
+
+    private Task OnCountryCodeChanged(string? value)
+    {
+        _countryCode = value;
+        return Task.CompletedTask;
+    }
+
     private async Task SubmitAsync()
     {
         _errors = [];
@@ -383,7 +507,15 @@
                 PayNow: _payNow,
                 ActivatePosEntitlement: true,
                 ActivateProductAccess: true,
-                AssignPosOwnerRole: true));
+                AssignPosOwnerRole: true,
+                UseMyContactDetails: _useMyContactDetails,
+                ContactEmail: NullIfWhiteSpace(_contactEmail),
+                ContactPhone: NullIfWhiteSpace(_contactPhone),
+                AddressLine1: NullIfWhiteSpace(_addressLine1),
+                City: NullIfWhiteSpace(_city),
+                Region: NullIfWhiteSpace(_region),
+                PostalCode: NullIfWhiteSpace(_postalCode),
+                CountryCode: NullIfWhiteSpace(_countryCode)));
 
             if (!created.IsSuccess || created.Data is null)
             {
@@ -417,4 +549,7 @@
 
     private void GoExplore() => Nav.NavigateTo("/personal/explore-pos");
     private void GoSignIn() => Nav.NavigateTo("/signin");
+
+    private static string? NullIfWhiteSpace(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }

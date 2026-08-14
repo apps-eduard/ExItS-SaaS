@@ -2300,6 +2300,16 @@
   <data name="StartBusiness_ValidationRequired" xml:space="preserve"><value>Business name and slug are required.</value></data>
   <data name="StartBusiness_SessionRequired" xml:space="preserve"><value>Sign in again so a Platform session is available.</value></data>
   <data name="StartBusiness_Failed" xml:space="preserve"><value>Could not start the business. Try again.</value></data>
+  <data name="StartBusiness_ContactTitle" xml:space="preserve"><value>Mga detalye ng contact</value></data>
+  <data name="StartBusiness_UseMyContactDetails" xml:space="preserve"><value>Gamitin ang aking contact details</value></data>
+  <data name="StartBusiness_ContactHelper" xml:space="preserve"><value>Hiwalay ang business contact details sa Personal profile. Kapag naka-check, kinokopya ang email/phone nang isang beses — walang live sync pagkatapos mag-create.</value></data>
+  <data name="StartBusiness_ContactEmail" xml:space="preserve"><value>Business email</value></data>
+  <data name="StartBusiness_ContactPhone" xml:space="preserve"><value>Business phone</value></data>
+  <data name="StartBusiness_AddressLine1" xml:space="preserve"><value>Address line 1</value></data>
+  <data name="StartBusiness_City" xml:space="preserve"><value>Lungsod</value></data>
+  <data name="StartBusiness_Region" xml:space="preserve"><value>Rehiyon</value></data>
+  <data name="StartBusiness_PostalCode" xml:space="preserve"><value>Postal code</value></data>
+  <data name="StartBusiness_Country" xml:space="preserve"><value>Bansa</value></data>
   <data name="OrgSelect_NoneTitle" xml:space="preserve"><value>No organizations</value></data>
   <data name="Context_SwitcherTitle" xml:space="preserve"><value>Account context</value></data>
   <data name="Context_SwitcherHint" xml:space="preserve"><value>Lumipat sa Personal o organisasyon. Muling sine-validate ang access.</value></data>
@@ -2358,10 +2368,22 @@
   <data name="Org_WebAdminReminder" xml:space="preserve"><value>For full organization administration, use the Web application.</value></data>
   <data name="Org_LoadFailed" xml:space="preserve"><value>Could not load organization details.</value></data>
   <data name="Org_ProfileTitle" xml:space="preserve"><value>Organization profile</value></data>
-  <data name="Org_ProfileSubtitle" xml:space="preserve"><value>Update basic organization details.</value></data>
+  <data name="Org_ProfileSubtitle" xml:space="preserve"><value>I-update ang pangalan ng negosyo at contact details. Hiwalay ito sa Personal profile.</value></data>
   <data name="Org_ProfileForm" xml:space="preserve"><value>Profile</value></data>
   <data name="Org_ProfileValidation" xml:space="preserve"><value>Display name is required.</value></data>
   <data name="Org_ProfileSaveFailed" xml:space="preserve"><value>Could not save organization profile.</value></data>
+  <data name="Org_LegalName" xml:space="preserve"><value>Legal name</value></data>
+  <data name="Org_ContactEmail" xml:space="preserve"><value>Contact email</value></data>
+  <data name="Org_ContactPhone" xml:space="preserve"><value>Contact phone</value></data>
+  <data name="Org_AddressLine1" xml:space="preserve"><value>Address line 1</value></data>
+  <data name="Org_AddressLine2" xml:space="preserve"><value>Address line 2</value></data>
+  <data name="Org_City" xml:space="preserve"><value>Lungsod</value></data>
+  <data name="Org_Region" xml:space="preserve"><value>Rehiyon</value></data>
+  <data name="Org_PostalCode" xml:space="preserve"><value>Postal code</value></data>
+  <data name="Org_Country" xml:space="preserve"><value>Bansa</value></data>
+  <data name="Org_TimeZone" xml:space="preserve"><value>Time zone</value></data>
+  <data name="Org_Locale" xml:space="preserve"><value>Locale</value></data>
+  <data name="Org_Currency" xml:space="preserve"><value>Currency</value></data>
   <data name="Org_SubscriptionTitle" xml:space="preserve"><value>Subscription</value></data>
   <data name="Org_SubscriptionSubtitle" xml:space="preserve"><value>Trial and entitlement status for POS.</value></data>
   <data name="Org_Plan" xml:space="preserve"><value>Plan</value></data>

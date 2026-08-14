@@ -93,6 +93,49 @@ else
             </Card>
         </AntDesign.Col>
         <AntDesign.Col Xs="24" Md="12">
+            <Card Size="@CardSize.Small" Title="Contact details">
+                <p style="color:var(--ant-color-text-secondary,#8c8c8c);margin-bottom:12px;">
+                    Business contact details are separate from your Personal profile. Checking the box copies your Personal email/phone once — there is no live sync after create.
+                </p>
+                <div style="margin-bottom:12px;">
+                    <Checkbox @bind-Value="_useMyContactDetails" @bind-Value:after="OnUseMyContactDetailsChanged" Disabled="_busy">
+                        Use my contact details
+                    </Checkbox>
+                </div>
+                <div style="margin-bottom:12px;">
+                    <label class="ant-form-item-label">Business email</label>
+                    <Input @bind-Value="_contactEmail" Disabled="_busy" Placeholder="store@example.com" />
+                </div>
+                <div style="margin-bottom:12px;">
+                    <label class="ant-form-item-label">Business phone</label>
+                    <Input @bind-Value="_contactPhone" Disabled="_busy" Placeholder="+63…" />
+                </div>
+                <div style="margin-bottom:12px;">
+                    <label class="ant-form-item-label">Address line 1</label>
+                    <Input @bind-Value="_addressLine1" Disabled="_busy" />
+                </div>
+                <div style="margin-bottom:12px;">
+                    <label class="ant-form-item-label">City</label>
+                    <Input @bind-Value="_city" Disabled="_busy" />
+                </div>
+                <div style="margin-bottom:12px;">
+                    <label class="ant-form-item-label">Region</label>
+                    <Input @bind-Value="_region" Disabled="_busy" />
+                </div>
+                <div style="margin-bottom:12px;">
+                    <label class="ant-form-item-label">Postal code</label>
+                    <Input @bind-Value="_postalCode" Disabled="_busy" />
+                </div>
+                <div>
+                    <label class="ant-form-item-label">Country</label>
+                    <Input @bind-Value="_countryCode" Disabled="_busy" Placeholder="PH" />
+                </div>
+            </Card>
+        </AntDesign.Col>
+    </Row>
+
+    <Row Gutter="(16, 16)" Style="margin-bottom:24px;">
+        <AntDesign.Col Xs="24" Md="12">
             <Card Size="@CardSize.Small" Title="What happens next">
                 <Alert Type="@AlertType.Info" ShowIcon="true"
                        Message="Pick a primary business type and plan. We create your organization, start the trial or paid subscription, then open Organization Web. Staff membership is never attached to this Personal login." />
@@ -176,6 +219,16 @@ else
     private string _billingCycle = "Monthly";
     private string? _primaryBusinessTypeId;
     private bool _slugTouched;
+    private bool _useMyContactDetails = true;
+    private string? _personalEmail;
+    private string? _personalPhone;
+    private string _contactEmail = "";
+    private string _contactPhone = "";
+    private string _addressLine1 = "";
+    private string _city = "";
+    private string _region = "";
+    private string _postalCode = "";
+    private string _countryCode = "";
     private string _progressTitle = "Working…";
     private string _progressDetail = "Please wait.";
     private string _successDetail = "Choose the Organization workspace to continue.";
@@ -185,7 +238,37 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        await Task.WhenAll(LoadPlansAsync(), LoadBusinessTypesAsync());
+        await Task.WhenAll(LoadPlansAsync(), LoadBusinessTypesAsync(), LoadPersonalContactPrefillAsync());
+    }
+
+    private async Task LoadPersonalContactPrefillAsync()
+    {
+        var profile = await Api.GetProfileAsync();
+        if (profile is null)
+        {
+            return;
+        }
+
+        _personalEmail = profile.Email;
+        _personalPhone = profile.Phone;
+        if (_useMyContactDetails)
+        {
+            ApplyPersonalContactPrefill();
+        }
+    }
+
+    private void ApplyPersonalContactPrefill()
+    {
+        _contactEmail = _personalEmail ?? "";
+        _contactPhone = _personalPhone ?? "";
+    }
+
+    private void OnUseMyContactDetailsChanged()
+    {
+        if (_useMyContactDetails)
+        {
+            ApplyPersonalContactPrefill();
+        }
     }
 
     private async Task LoadPlansAsync()
@@ -327,7 +410,15 @@ else
                 BillingCycle: billing,
                 StartAsTrial: startAsTrial,
                 PayNow: payNow,
-                AssignPosOwnerRole: true));
+                AssignPosOwnerRole: true,
+                UseMyContactDetails: _useMyContactDetails,
+                ContactEmail: NullIfWhiteSpace(_contactEmail),
+                ContactPhone: NullIfWhiteSpace(_contactPhone),
+                AddressLine1: NullIfWhiteSpace(_addressLine1),
+                City: NullIfWhiteSpace(_city),
+                Region: NullIfWhiteSpace(_region),
+                PostalCode: NullIfWhiteSpace(_postalCode),
+                CountryCode: NullIfWhiteSpace(_countryCode)));
             if (!ok || data is null)
             {
                 _formError = error ?? "Start business failed.";
@@ -373,4 +464,7 @@ else
 
         Nav.NavigateTo("/handoff/organization", forceLoad: true);
     }
+
+    private static string? NullIfWhiteSpace(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }

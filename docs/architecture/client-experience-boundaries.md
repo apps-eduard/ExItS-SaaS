@@ -74,7 +74,7 @@ A personal user may exist without belonging to an organization.
 
 Personal Mobile must not expose POS operational pages until an organization is selected and product access is granted.
 
-Starting a business creates an organization and makes the initiating user its Organization Owner.
+Starting a business creates an organization and makes the initiating user its Organization Owner. Contact details may be copied once from Personal into OrganizationProfile; profiles remain independent afterward (no live sync). The same Personal user may own multiple organizations.
 
 After the business is created, the user must continue inside Mobile without being forced to leave the application.
 
@@ -106,7 +106,7 @@ The Web application provides full control, detailed administration, larger table
 
 For MVP, Mobile should support:
 
-- viewing and editing basic organization profile information;
+- viewing and editing basic organization profile information (business name, legal/contact/address/locale fields; independent of Personal profile);
 - viewing organization status;
 - viewing trial or subscription status;
 - viewing active product entitlements;
