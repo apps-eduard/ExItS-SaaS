@@ -118,6 +118,11 @@ docs/phases/phase-10-full-pos.md
 docs/phases/phase-24-linked-customer-statements-and-personal-monetization.md
 docs/phases/phase-25-organization-web-admin.md
 docs/phases/phase-26-sales-documents-compliance-readiness.md
+docs/phases/phase-21-privacy-compliance-and-regulatory-readiness.md
+docs/reports/P21-foundation-privacy-compliance-workspace.md
+docs/reports/P21-WP01-requirements-and-privacy-inventory.md
+docs/reports/P21-WP11-post-phase21-privacy-impact-refresh.md
+docs/compliance/post-phase21-privacy-impact-refresh.md
 docs/reports/P25-WP01-organization-web-admin-management-center.md
 docs/reports/P25-WP02-antdesign-web-standardization-and-host-separation.md
 docs/reports/P25-WP03-unified-web-authentication-sso-and-workspace-routing.md

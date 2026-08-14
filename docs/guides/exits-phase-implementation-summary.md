@@ -31,10 +31,11 @@
 | 18 | Mobile Personal, Organization, and POS Experience | **Complete (implementation/scope)** — partial phone validation; Not Device Verified |
 | 19 | Mobile POS Operations and Cashier Experience Completion | **Open** |
 | 20–24 | Catalog / Privacy / Production / Entitlements / Statements | **Open** (see portfolio) |
+| 21 | Privacy, Compliance, and Regulatory Readiness | **Open** — Foundation + P21-WP11 P25/P26 privacy delta; legal/DPO review pending; **not** NPC compliant |
 | 25 | Organization Web / Identity / Organization Management | **Open** — WP01–WP09 Code Complete / Owner Validation Pending (**not closed**) |
 | 26 | Sales Documents and Compliance Readiness | **Open** — WP01–WP05 Code Complete / Owner Validation Pending |
 
-**Current focus:** Phase 26 Owner validation pending ([checklist](../validation/phase-26-owner-validation-checklist.md)); future confirmed BIR implementation deferred. Phase 25 remains Open with owner validation pending.
+**Current focus:** Phase 26 Owner validation pending ([checklist](../validation/phase-26-owner-validation-checklist.md)); future confirmed BIR implementation deferred. Phase 25 remains Open with owner validation pending. Phase 21 P21-WP11 privacy delta documented; DPO/legal review pending; NPC compliance not claimed.
 **Production status:** Not production-ready
 
 ---
@@ -385,9 +386,18 @@ Over the project you went through these UI approaches:
 
 ---
 
+## Phase 21 — Privacy, Compliance, and Regulatory Readiness
+
+**Status:** **OPEN** — Foundation Code Complete + **P21-WP11** Post–Phase-21 (P25/P26) privacy delta updated. Legal/DPO review pending. **NPC compliance NOT CLAIMED.** Not Production Ready. No Phase 21 closeout.
+
+- Platform-only Privacy & Compliance workspace (readiness tooling)
+- Additive catalog seeds via `EnsurePrivacyComplianceCatalog` (`PIA_P25_*`, `PIA_P26_*`, `DATA_INV_*`, `SYS_*`)
+- Engineering reference: [post-phase21-privacy-impact-refresh.md](../compliance/post-phase21-privacy-impact-refresh.md)
+- Report: [P21-WP11](../reports/P21-WP11-post-phase21-privacy-impact-refresh.md)
+
 ## Phase 25 — Organization Web / Identity / Organization Management
 
-**Status:** **OPEN** — WP01–WP09 Code Complete / Owner Validation Pending. **Not closed.** No P25-WP10 closeout.
+**Status:** **OPEN** — WP01–WP09 Code Complete / Owner Validation Pending. **Not closed.** No P25-WP10 closeout. Privacy delta cross-ref: P21-WP11.
 
 | WP | Title | Status |
 |----|-------|--------|

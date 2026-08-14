@@ -25,7 +25,7 @@
 | 18 | Mobile Personal, Organization, and POS Experience | **Complete (implementation/scope)** — partial phone validation; Not Device Verified (Phase 14 unchanged) | [Open](phase-18-mobile-personal-organization-and-pos-experience.md) |
 | 19 | Mobile POS Operations and Cashier Experience Completion | **Open** (Phase 14 unchanged; not Device Verified) | [Open](phase-19-mobile-pos-operations-and-cashier-experience.md) |
 | 20 | Global Product Catalog and Business Template Onboarding | **Open** (Implementation → Validation Pending; not Device Verified) | [Open](phase-20-global-product-catalog-and-business-template-onboarding.md) |
-| 21 | Privacy, Compliance, and Regulatory Readiness | **Open** (Foundation Code Complete — readiness tooling; not legally compliant) | [Open](phase-21-privacy-compliance-and-regulatory-readiness.md) |
+| 21 | Privacy, Compliance, and Regulatory Readiness | **Open** (Foundation + P21-WP11 P25/P26 privacy delta; legal/DPO review pending; not NPC compliant) | [Open](phase-21-privacy-compliance-and-regulatory-readiness.md) |
 | 22 | Production Readiness, Release & Operational Hardening | **Open** (In Progress; not Device Verified; not Production Ready) | [Open](phase-22-production-readiness-release-and-operational-hardening.md) |
 | 23 | Multi-Business Entitlements and Variable-Quantity Selling | **Open** (WP01–WP11 done; WP12 in progress; WP13 not started; not Device Verified) | [Open](phase-23-multi-business-entitlements-and-variable-quantity-selling.md) |
 | 24 | Linked Customer Statements and Personal Monetization | **Open** (WP01–WP06 Complete; WP07+ not started; not Device Verified) | [Open](phase-24-linked-customer-statements-and-personal-monetization.md) |

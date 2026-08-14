@@ -56,6 +56,8 @@ Owner device/browser/real-world validation is **required** before Phase 25 can c
 
 **No P25-WP10 closeout in this phase until the owner explicitly closes Phase 25.**
 
+Privacy inventory for identity/QR/ownership/buyer-party processing: [P21-WP11](../reports/P21-WP11-post-phase21-privacy-impact-refresh.md) / [post-phase21-privacy-impact-refresh.md](../compliance/post-phase21-privacy-impact-refresh.md) (Phase 21 remains **OPEN**; NPC compliance **not claimed**).
+
 Local ports: **8090** Admin, **8091** Platform API, **8092** POS API, **8093** Org Web, **8094** Personal Web. Production public entry is HTTPS :443 via reverse proxy.
 
 Owner browser checklist is in [P25-WP04](../reports/P25-WP04-web-host-legacy-cleanup-and-local-validation-identity-determinism.md) (SSO items also in [P25-WP03](../reports/P25-WP03-unified-web-authentication-sso-and-workspace-routing.md)). Cash count owner checklist is in [pos-cashier-cash-count.md](../engineering/pos-cashier-cash-count.md). Ownership transfer engineering note: [organization-ownership-transfer.md](../engineering/organization-ownership-transfer.md). Do not mark Device Verified or Production Ready until the owner validates.

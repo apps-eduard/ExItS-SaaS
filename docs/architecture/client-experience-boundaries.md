@@ -157,6 +157,8 @@ Organization Administration must not own operational POS data such as sales, shi
 
 **P26 update:** Sale documents shown by POS Mobile and Organization Web are Transaction Summaries for business/customer records. Tax calculation and Owner education acknowledgment do not authorize tax-document issuance. Platform owns the default-off organization capability, versioned acknowledgment history, eligibility lifecycle, and an organization-scoped compliance profile anchor (no invented TIN/BIR fields). Organization Web is the primary Owner education surface; MAUI presents the same information as a soft setup prompt. Cashiers cannot acknowledge, and sales/sync are not hard-blocked. Public QR identity remains tax/TIN-free and must not expose the compliance profile. Controlled future activation is tracked in [bir-compliance-activation-roadmap.md](../compliance/bir-compliance-activation-roadmap.md). See [sales-document boundary](../engineering/sales-document-compliance-boundary.md), [acknowledgment design](../engineering/organization-sales-document-acknowledgment.md), [eligibility](../engineering/platform-organization-compliance-eligibility.md), and [compliance profile](../engineering/organization-compliance-profile.md).
 
+**Privacy refresh (P21-WP11):** Client surfaces must respect the P25/P26 access matrix (Owner-only ack; cashiers without compliance review detail; no compliance evidence on offline cashier devices). Inventory: [post-phase21-privacy-impact-refresh.md](../compliance/post-phase21-privacy-impact-refresh.md). **NPC compliance NOT CLAIMED.**
+
 ---
 
 ## 4. POS Product Operations

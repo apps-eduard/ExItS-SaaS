@@ -50,3 +50,21 @@
 - Automatic connected-supplier PO → seller sale
 - Ownership transfer UI
 - Payment / loyalty QR
+
+## Privacy Impact
+
+| Field | Value |
+|---|---|
+| Personal data changed? | **Yes** |
+| Data subjects | Business customers; linked Personal users; linked Organizations |
+| Purpose | Seller-owned buyer/customer identity linking at POS (counterparty only) |
+| Data categories | TRANSACTIONAL (customer record, link status, buyer snapshots) |
+| New exposure/access | Checkout scan of Personal/Business QR within seller org; no Personal ownership of sale |
+| Retention impact | Org business-record lifetime; DSAR must not destroy accounting solely because a user leaves — **LEGAL/DPO REVIEW REQUIRED** |
+| Offline/local impact | LocalStore unchanged (v9); offline sales remain Transaction Summaries |
+| Third-party/vendor impact | None new |
+| Security controls | Seller-org ownership; typed QR; buyer ≠ transaction owner |
+| PIA/ROPA update required? | **Yes** (P21-WP11) |
+| Legal/DPO review required? | **Yes** |
+
+See [post-phase21-privacy-impact-refresh.md](../compliance/post-phase21-privacy-impact-refresh.md). **NPC compliance NOT CLAIMED.**

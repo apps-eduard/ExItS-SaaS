@@ -83,3 +83,21 @@ Ownership transfer preserves Organization as the stable subject:
 ## Next
 
 Owner validation for Phase 25 WP06–WP09. **Do not create P25-WP10 closeout** until the owner explicitly closes Phase 25 after real-world validation.
+
+## Privacy Impact
+
+| Field | Value |
+|---|---|
+| Personal data changed? | **Yes** |
+| Data subjects | Current Organization Owner; recipient Personal user |
+| Purpose | Organization ownership handoff and audit/security of actor history |
+| Data categories | ORGANIZATION INTERNAL (org id, transfer status, actor user ids, timestamps) |
+| New exposure/access | Owner initiate + Personal QR accept; former Owner access revoked on accept |
+| Retention impact | Historical ActorUserId retained for audit — **RETENTION PERIOD REQUIRES LEGAL/DPO CONFIRMATION** |
+| Offline/local impact | None for transfer records (Platform DB) |
+| Third-party/vendor impact | None (email/SMS notifications deferred) |
+| Security controls | Owner-only initiate; Personal QR target; no Personal profile copy into org |
+| PIA/ROPA update required? | **Yes** (P21-WP11) |
+| Legal/DPO review required? | **Yes** |
+
+See [post-phase21-privacy-impact-refresh.md](../compliance/post-phase21-privacy-impact-refresh.md). **NPC compliance NOT CLAIMED.**

@@ -169,7 +169,23 @@ See [sales-document boundary](../engineering/sales-document-compliance-boundary.
 
 Tax / compliance profile data is **not** Public Business QR data. Public resolvers must not expose TIN, registration evidence, approval references, document-review details, uploaded files, or internal reviewer notes.
 
----
+## Privacy / data handling (future evidence)
+
+Engineering principles for future organization eligibility evidence (**not implemented**). Full P25/P26 privacy delta: [post-phase21-privacy-impact-refresh.md](post-phase21-privacy-impact-refresh.md) · [P21-WP11](../reports/P21-WP11-post-phase21-privacy-impact-refresh.md).
+
+| Principle | Requirement |
+|---|---|
+| Storage | Private, access-controlled object storage only — **no public URLs** |
+| Access | Organization Owner submit (when built); Platform authorized reviewers; **no** cashier / default staff access |
+| Classification | **HIGHER-SENSITIVITY FUTURE** — collect only when confirmed required |
+| Vendors | Register real storage/processors before production (`VENDOR_FUTURE_EVIDENCE_STORAGE`) |
+| Validation | Malware / content-type checks when implemented |
+| AI | No AI use of evidence unless explicitly authorized |
+| Retention / disposal | **RETENTION PERIOD REQUIRES LEGAL/DPO CONFIRMATION**; disposal process required before production |
+| Offline | Do not replicate compliance evidence onto cashier / LocalStore devices |
+| Legal status | **NPC compliance NOT CLAIMED**; PIC/PIP **LEGAL/DPO CLASSIFICATION REQUIRED** |
+
+Catalog: `PIA_P26_FUTURE_EVIDENCE`, `DATA_INV_FUTURE_COMPLIANCE_EVIDENCE`, `SYS_FUTURE_COMPLIANCE_EVIDENCE`.
 
 ## Related engineering docs
 

@@ -76,3 +76,21 @@ reference, and file manifest now describe P26-WP02.
 Later foundation: [bir-compliance-activation-roadmap.md](../compliance/bir-compliance-activation-roadmap.md) (P26-WP04).
 P26-WP03 must remain separate from Owner acknowledgment and must not infer authority
 from education state.
+
+## Privacy Impact
+
+| Field | Value |
+|---|---|
+| Personal data changed? | **Yes** |
+| Data subjects | Organization Owners |
+| Purpose | Record Owner review of current ExItS sales-document product behavior (education, not legal certification) |
+| Data categories | ORGANIZATION INTERNAL / product education: OrganizationId, UserId, version, timestamp |
+| New exposure/access | Exact current Owner only; no Platform impersonation; cashiers cannot acknowledge |
+| Retention impact | Version history retained — **RETENTION PERIOD REQUIRES LEGAL/DPO CONFIRMATION** |
+| Offline/local impact | Soft prompt only; sales/sync/offline not hard-blocked; no ack evidence on cashier devices |
+| Third-party/vendor impact | None |
+| Security controls | Exact current Owner; no IP/device fingerprint/GPS; never enables TaxDocument |
+| PIA/ROPA update required? | **Yes** (P21-WP11) |
+| Legal/DPO review required? | **Yes** |
+
+See [post-phase21-privacy-impact-refresh.md](../compliance/post-phase21-privacy-impact-refresh.md). **NPC compliance NOT CLAIMED.**

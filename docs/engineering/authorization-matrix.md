@@ -83,6 +83,22 @@ Optional later roles may include Billing Administrator, Platform Auditor, and Pl
 
 Canonical codes (Domain source of truth): `platform.permission.view_privacy_compliance`, `platform.permission.manage_privacy_compliance`. Privacy Compliance Admin is **Platform shell only** — never Personal, Organization, or POS. See [Phase 21](../phases/phase-21-privacy-compliance-and-regulatory-readiness.md).
 
+### P25 / P26 privacy-sensitive access (summary)
+
+Engineering access boundaries for post–Phase-21 identity and compliance readiness. Not a legal authorization opinion. Detail: [post-phase21-privacy-impact-refresh.md](../compliance/post-phase21-privacy-impact-refresh.md).
+
+| Action / data | Personal | Org Owner | Org Staff / Cashier | Platform Admin | Public QR |
+|---|---|---|---|---|---|
+| View Privacy & Compliance workspace | No | No | No | View: Admin + Auditor; Manage: Admin | No |
+| Resolve Personal QR (typed purpose) | Self / authorized link flows | Per feature | Per feature | Support under Platform rules | Identity-minimal only |
+| Resolve / display Business QR | No | Yes (org essentials) | Policy-limited | Org management | DisplayName + `PublicOrganizationId` only |
+| Ownership transfer initiate | No | Exact current Owner | No | Explicit support only | No |
+| Ownership transfer accept | Personal QR target | — | No | No | No |
+| Sales-document education acknowledge | No | Exact current Owner | No | No impersonation | No |
+| View org compliance eligibility / profile status | No | Limited org status | No review details for cashiers | View; transitions via `ManageOrganizations` | **Nothing** (no TIN / eligibility / evidence) |
+| Enable tax-document issuance capability | No | No self-enable | No | `ManageOrganizations` when Approved + current Owner ack (runtime still unavailable) | No |
+| Future compliance evidence (not implemented) | N/A | Submit when built | No default access | Authorized reviewers only | No public URLs |
+
 `platform.test-payments.*` must not exist as an effective Production permission.
 
 Platform Admin may create or invite Platform Staff only. It must not normally create active Personal or Organization users.

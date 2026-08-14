@@ -64,6 +64,9 @@ The dashboard links to the latest accepted report.
 | [P8-WP06-dashboard-and-reports.md](P8-WP06-dashboard-and-reports.md) | Dashboard and Reports | Complete with documented risks |
 | [P8-WP07-basic-store-closeout.md](P8-WP07-basic-store-closeout.md) | Basic Store Closeout | Complete with documented risks (Phase 8 closed) |
 | [P9-WP01-security-and-privacy-hardening.md](P9-WP01-security-and-privacy-hardening.md) | Security and Privacy Hardening | Complete with documented risks |
+| [P21-foundation-privacy-compliance-workspace.md](P21-foundation-privacy-compliance-workspace.md) | Phase 21 Privacy Compliance workspace foundation | Code Complete (readiness tooling; not NPC compliant) |
+| [P21-WP01-requirements-and-privacy-inventory.md](P21-WP01-requirements-and-privacy-inventory.md) | P21-WP01 Requirements and privacy inventory | Code Complete |
+| [P21-WP11-post-phase21-privacy-impact-refresh.md](P21-WP11-post-phase21-privacy-impact-refresh.md) | P21-WP11 Post–Phase-21 privacy impact refresh (P25/P26) | Code Complete / Validation Pending |
 | [P9-WP02-performance-and-reliability.md](P9-WP02-performance-and-reliability.md) | Performance and Reliability | Complete with documented risks |
 | [P9-WP03-backup-and-restore.md](P9-WP03-backup-and-restore.md) | Backup and Restore | Complete with documented risks |
 | [P9-WP04-accessibility-localization-theme-qa.md](P9-WP04-accessibility-localization-theme-qa.md) | Accessibility, Localization and Theme QA | Complete with documented risks |

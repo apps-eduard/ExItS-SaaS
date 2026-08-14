@@ -55,3 +55,7 @@ Buyer↔supplier relationships remain **organization↔organization** commercial
 ## POS sale buyer parties
 
 POS sales remain owned by the selling organization. Personal or Business QR at checkout identifies the **buyer counterparty** only — never Personal ownership of the sale. See [sales-buyer-party-model.md](../engineering/sales-buyer-party-model.md).
+
+## Privacy refresh (P21-WP11)
+
+Post–Phase-21 privacy inventory for typed QR, ownership transfer, buyer linking, and related classifications: [post-phase21-privacy-impact-refresh.md](../compliance/post-phase21-privacy-impact-refresh.md). **NPC compliance NOT CLAIMED**; Legal/DPO review pending.

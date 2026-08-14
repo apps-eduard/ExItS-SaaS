@@ -56,3 +56,21 @@ The migration uses `CREATE TABLE IF NOT EXISTS`; the table has one row per organ
 ## Next
 
 **P26-WP02 — Owner education and acknowledgment UX.** Do not begin P26-WP03 grant administration or any issuance rules as part of WP02.
+
+## Privacy Impact
+
+| Field | Value |
+|---|---|
+| Personal data changed? | **Yes** (organization-scoped capability row; no public identity change) |
+| Data subjects | Organization Owners; Platform administrators (future grant path) |
+| Purpose | Sales-document kind boundary and default-off tax-document capability foundation |
+| Data categories | RESTRICTED COMPLIANCE (capability flag); TRANSACTIONAL document-kind labeling |
+| New exposure/access | Org/Platform read of capability; public QR unchanged (no TIN/compliance) |
+| Retention impact | Org-scoped capability lifetime — **RETENTION PERIOD REQUIRES LEGAL/DPO CONFIRMATION** |
+| Offline/local impact | LocalStore unchanged; offline sales remain Transaction Summaries |
+| Third-party/vendor impact | None |
+| Security controls | Default off; no owner self-enable in WP01; public QR tax-free |
+| PIA/ROPA update required? | **Yes** (P21-WP11) |
+| Legal/DPO review required? | **Yes** |
+
+See [post-phase21-privacy-impact-refresh.md](../compliance/post-phase21-privacy-impact-refresh.md). **NPC compliance NOT CLAIMED.**

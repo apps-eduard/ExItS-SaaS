@@ -59,3 +59,21 @@ Migrations reviewed for WP01–WP04: additive; no auto-enable of issuance; Local
 
 **Owner validation** using the Phase 26 checklist.  
 **Future:** confirmed BIR / TaxDocument implementation when regulatory requirements are known — tracked in the [activation roadmap](../compliance/bir-compliance-activation-roadmap.md), not as automatic Phase 26 closeout.
+
+## Privacy Impact
+
+| Field | Value |
+|---|---|
+| Personal data changed? | **No** new categories (hardening of existing P26 surfaces) |
+| Data subjects | Same as WP01–WP04 (Owners, Platform reviewers, org members with limited status) |
+| Purpose | Integration hardening and validation readiness for sales-document / compliance boundaries |
+| Data categories | Unchanged RESTRICTED COMPLIANCE / education / transactional boundaries |
+| New exposure/access | None intended; multi-org isolation and issuance gates strengthened in tests |
+| Retention impact | None new — **RETENTION PERIOD REQUIRES LEGAL/DPO CONFIRMATION** for prior delta |
+| Offline/local impact | LocalStore unchanged; offline sales not per-sale compliance-checked |
+| Third-party/vendor impact | None |
+| Security controls | Hardening tests; soft gate preserved; public QR still excludes compliance/TIN |
+| PIA/ROPA update required? | **Yes** (P21-WP11) |
+| Legal/DPO review required? | **Yes** |
+
+See [post-phase21-privacy-impact-refresh.md](../compliance/post-phase21-privacy-impact-refresh.md). **NPC compliance NOT CLAIMED.**

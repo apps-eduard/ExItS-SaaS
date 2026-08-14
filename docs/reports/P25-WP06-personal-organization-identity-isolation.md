@@ -49,3 +49,21 @@
 - LocalStore schema bump (not required)
 
 Ownership transfer UI was delivered in [P25-WP09](P25-WP09-organization-ownership-transfer.md).
+
+## Privacy Impact
+
+| Field | Value |
+|---|---|
+| Personal data changed? | **Yes** |
+| Data subjects | Personal users; organization members; device onboarding actors |
+| Purpose | Typed public identity resolution (Personal / Business / POS device registration) |
+| Data categories | PUBLIC BUSINESS IDENTITY; PERSONAL ACCOUNT DATA (minimal); device onboarding tokens |
+| New exposure/access | Public QR resolvers (purpose-typed, minimal DTOs) |
+| Retention impact | Public IDs durable; **RETENTION PERIOD REQUIRES LEGAL/DPO CONFIRMATION** |
+| Offline/local impact | LocalStore unchanged (v9); no compliance evidence on device |
+| Third-party/vendor impact | None beyond authenticated platform clients |
+| Security controls | Typed purpose guards; org/user isolation tests |
+| PIA/ROPA update required? | **Yes** (P21-WP11) |
+| Legal/DPO review required? | **Yes** |
+
+See [post-phase21-privacy-impact-refresh.md](../compliance/post-phase21-privacy-impact-refresh.md). **NPC compliance NOT CLAIMED.**

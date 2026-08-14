@@ -5,13 +5,13 @@
 | Field | Value |
 |---|---|
 | Status | **Open** |
-| Overall | **Foundation Code Complete — readiness tooling only** |
-| Feature tip | `7f6795b` |
-| Tests tip | `26ec821` |
+| Overall | **Foundation + Post–Phase-21 privacy delta updated — readiness tooling only; legal review pending** |
+| Feature tip | `7f6795b` (foundation); P21-WP11 feature SHA **pending commit** |
+| Tests tip | `26ec821` (foundation); `PostPhase21PublicIdentityPrivacyGuardTests` (WP11) |
 | Device Verified | **No** |
 | Production Ready | **No** |
 | Legal / NPC Compliant | **No — not claimed** |
-| DPO / legal review | **Required** |
+| DPO / legal review | **Required — pending** |
 
 ## Objective
 
@@ -33,6 +33,7 @@ Never display “Compliant” merely because records exist. Prefer language: rea
 | P21-WP08 | PDF / export | **Code Complete** (QuestPDF; DRAFT unless Approved) |
 | P21-WP09 | Gap assessment | **Code Complete** (overview gaps) |
 | P21-WP10 | Security / tests / readiness review | **Code Complete** (foundation tests) |
+| P21-WP11 | Post–Phase-21 privacy impact refresh (P25/P26 delta) | **Code Complete / Validation Pending** |
 
 ## Authorization
 
@@ -64,6 +65,15 @@ API: `/api/v1/platform/privacy-compliance/*`
 
 Every future phase/work package that introduces or changes personal-data processing must include a **Privacy Impact** section (see [security.md](../engineering/security.md)).
 
+## Post–Phase-21 delta (WP11)
+
+P25/P26 processing (typed QR, ownership transfer, buyer-party linking, sales-document education acknowledgment, compliance eligibility/profile, future evidence principles) is inventoried in:
+
+- [post-phase21-privacy-impact-refresh.md](../compliance/post-phase21-privacy-impact-refresh.md)
+- [P21-WP11 report](../reports/P21-WP11-post-phase21-privacy-impact-refresh.md)
+
+Catalog seeds are additive via `EnsurePrivacyComplianceCatalog`. **NPC compliance NOT CLAIMED.** Legal/DPO review pending. Phase 21 remains **OPEN** — no closeout from WP11.
+
 ## Explicit exclusions
 
 - No fabricated NPC submission dates, registrations, or approvals
@@ -78,3 +88,5 @@ Every future phase/work package that introduces or changes personal-data process
 |---|---|
 | Foundation | [P21-foundation-privacy-compliance-workspace](../reports/P21-foundation-privacy-compliance-workspace.md) |
 | WP01 inventory | [P21-WP01-requirements-and-privacy-inventory](../reports/P21-WP01-requirements-and-privacy-inventory.md) |
+| WP11 privacy delta | [P21-WP11-post-phase21-privacy-impact-refresh](../reports/P21-WP11-post-phase21-privacy-impact-refresh.md) |
+| P25/P26 engineering reference | [post-phase21-privacy-impact-refresh](../compliance/post-phase21-privacy-impact-refresh.md) |

@@ -70,3 +70,21 @@ Combined DTO surfaces legal/registered address identity from `OrganizationProfil
 
 **P26-WP05 — Integration Hardening & Validation Readiness** ([report](P26-WP05-sales-document-compliance-integration-hardening.md); [checklist](../validation/phase-26-owner-validation-checklist.md)).  
 P26-WP05 is **not** phase closeout. Phase 26 remains **OPEN**. Living playbook: [bir-compliance-activation-roadmap.md](../compliance/bir-compliance-activation-roadmap.md).
+
+## Privacy Impact
+
+| Field | Value |
+|---|---|
+| Personal data changed? | **Yes** (profile anchor metadata; no invented TIN/BIR fields) |
+| Data subjects | Organization Owners (limited view); Platform administrators |
+| Purpose | Organization-scoped compliance profile anchor for future confirmed readiness fields |
+| Data categories | RESTRICTED COMPLIANCE (profile timestamps/actor; registered business identity from OrganizationProfile) |
+| New exposure/access | Org-scoped APIs; **not** Public QR data; no fake document verification URLs |
+| Retention impact | Organization lifetime; future sensitive fields — **RETENTION PERIOD REQUIRES LEGAL/DPO CONFIRMATION** |
+| Offline/local impact | No POS/LocalStore schema change |
+| Third-party/vendor impact | Future evidence storage vendor TBD (`VENDOR_FUTURE_EVIDENCE_STORAGE`) |
+| Security controls | Org-scoped; never auto-copy from Personal profile; public QR remains tax-free |
+| PIA/ROPA update required? | **Yes** (P21-WP11) |
+| Legal/DPO review required? | **Yes** |
+
+See [post-phase21-privacy-impact-refresh.md](../compliance/post-phase21-privacy-impact-refresh.md). **NPC compliance NOT CLAIMED.**

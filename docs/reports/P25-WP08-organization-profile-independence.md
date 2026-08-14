@@ -37,3 +37,21 @@
 | Device Verified | **No** |
 | Browser Verified | **No** |
 | Production Ready | **No** |
+
+## Privacy Impact
+
+| Field | Value |
+|---|---|
+| Personal data changed? | **Yes** (organization contact/profile; optional one-time copy from Personal) |
+| Data subjects | Organization Owners; Personal users starting a business |
+| Purpose | Independent organization business identity / contact profile; multi-org ownership |
+| Data categories | ORGANIZATION INTERNAL (profile contact); PUBLIC BUSINESS IDENTITY remains DisplayName + PublicOrganizationId only |
+| New exposure/access | Org profile APIs/UI; Start a Business one-time prefill — **no live Personal sync** |
+| Retention impact | Organization lifetime; **RETENTION PERIOD REQUIRES LEGAL/DPO CONFIRMATION** |
+| Offline/local impact | None (Platform profile; POS receipts still from operational setup) |
+| Third-party/vendor impact | None new |
+| Security controls | Copy-not-link tests; public identity contact leak prevention |
+| PIA/ROPA update required? | **Yes** (P21-WP11) |
+| Legal/DPO review required? | **Yes** |
+
+See [post-phase21-privacy-impact-refresh.md](../compliance/post-phase21-privacy-impact-refresh.md). **NPC compliance NOT CLAIMED.**

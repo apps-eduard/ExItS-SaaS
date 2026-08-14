@@ -62,3 +62,21 @@ acknowledgment design, new eligibility engineering note, and file manifest.
 **P26-WP04 — Organization Tax/Compliance Profile & Future Activation Foundation** (delivered separately).  
 **P26-WP05 — Integration Hardening & Validation Readiness** ([report](P26-WP05-sales-document-compliance-integration-hardening.md)).  
 Living activation playbook: [bir-compliance-activation-roadmap.md](../compliance/bir-compliance-activation-roadmap.md).
+
+## Privacy Impact
+
+| Field | Value |
+|---|---|
+| Personal data changed? | **Yes** |
+| Data subjects | Organization Owners (status); Platform administrators (manage) |
+| Purpose | Platform-controlled compliance eligibility lifecycle and issuance capability gates |
+| Data categories | RESTRICTED COMPLIANCE (eligibility status, issuance flag, actor refs, audit) |
+| New exposure/access | Owner request; Platform `ManageOrganizations` transitions; cashiers see no review details |
+| Retention impact | **RETENTION PERIOD REQUIRES LEGAL/DPO CONFIRMATION** |
+| Offline/local impact | No POS/LocalStore schema change; no eligibility packets on cashier devices |
+| Third-party/vendor impact | None |
+| Security controls | RBAC + audit; public QR exposes nothing; ack independent of eligibility |
+| PIA/ROPA update required? | **Yes** (P21-WP11) |
+| Legal/DPO review required? | **Yes** |
+
+See [post-phase21-privacy-impact-refresh.md](../compliance/post-phase21-privacy-impact-refresh.md). **NPC compliance NOT CLAIMED.**

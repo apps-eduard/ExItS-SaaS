@@ -38,6 +38,8 @@ Establish a truthful sales-document boundary before any jurisdiction-specific ta
 
 WP01–WP05 do not implement BIR rules, invoice series, TaxDocument generation, or compliance certification. No ExItS UI claims BIR compliance. WP05 does not close Phase 26.
 
+Privacy inventory for education acknowledgment, eligibility, profile, and future evidence principles: [P21-WP11](../reports/P21-WP11-post-phase21-privacy-impact-refresh.md) / [post-phase21-privacy-impact-refresh.md](../compliance/post-phase21-privacy-impact-refresh.md) (Phase 21 remains **OPEN**; NPC compliance **not claimed**).
+
 See [engineering boundary](../engineering/sales-document-compliance-boundary.md),
 [acknowledgment design](../engineering/organization-sales-document-acknowledgment.md),
 [compliance eligibility](../engineering/platform-organization-compliance-eligibility.md),

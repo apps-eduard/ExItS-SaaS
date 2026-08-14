@@ -62,19 +62,26 @@
 
 ## Privacy Impact (standing engineering rule)
 
-Every future phase or work package that **introduces or changes personal-data processing** must include a **Privacy Impact** section covering, where applicable:
+Every future phase or work package that **introduces or changes personal-data processing** must include a short **Privacy Impact** section. Prefer the Yes/No template below; do not require long legal prose in every WP.
 
-- personal data affected
-- purpose of processing
-- data subjects
-- Personal / Organization / Platform ownership
-- access roles
-- local / offline storage
-- external sharing / processors
-- retention / deletion
-- security controls
-- audit / logging
-- data-subject rights impact
-- PIA required or updated: **Yes / No**
+### Template (minimum fields)
 
-This rule supports readiness documentation only; it is not legal certification. Uncertain NPC/DPA interpretations must be tracked as requirements marked **Requires DPO/legal verification**.
+| Field | Value |
+|---|---|
+| Personal data changed? | Yes / No |
+| Data subjects | … |
+| Purpose | … |
+| Data categories | … |
+| New exposure/access | … |
+| Retention impact | … |
+| Offline/local impact | … |
+| Third-party/vendor impact | … |
+| Security controls | … |
+| PIA/ROPA update required? | Yes / No |
+| Legal/DPO review required? | Yes / No |
+
+Also cover, where applicable: Personal / Organization / Platform ownership; access roles; audit / logging; data-subject rights impact.
+
+This rule supports readiness documentation only; it is not legal certification. Uncertain NPC/DPA interpretations must be tracked as requirements marked **Requires DPO/legal verification**. Never mark **Approved** or claim NPC compliance from documentation alone.
+
+**P21-WP11:** Post–Phase-21 (P25/P26) privacy delta is recorded in [post-phase21-privacy-impact-refresh.md](../compliance/post-phase21-privacy-impact-refresh.md) and [P21-WP11 report](../reports/P21-WP11-post-phase21-privacy-impact-refresh.md). Catalog codes `PIA_P25_*` / `PIA_P26_*` / `DATA_INV_*` are readiness seeds — **LEGAL/DPO REVIEW REQUIRED**.
