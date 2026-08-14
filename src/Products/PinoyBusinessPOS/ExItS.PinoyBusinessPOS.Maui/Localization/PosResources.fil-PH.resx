@@ -856,7 +856,8 @@
   <data name="Catalog_TrackStock" xml:space="preserve"><value>Subaybayan ang stock ng produktong ito</value></data>
   <data name="Catalog_TrackStockOnHint" xml:space="preserve"><value>Bumababa ang bilang kapag nakabenta. Itakda ang panimulang bilang sa Stock pagkatapos i-save.</value></data>
   <data name="Catalog_TrackStockOffHint" xml:space="preserve"><value>Ibinebenta nang walang bilang. Puwede mong buksan ang tracking sa Stock mamaya.</value></data>
-  <data name="Catalog_TrackStockFailed" xml:space="preserve"><value>Na-save ang produkto, pero hindi nabuksan ang stock tracking. Buksan ito sa Stock.</value></data>
+  <data name="Catalog_TrackStockFailed" xml:space="preserve"><value>Na-save ang produkto, pero hindi na-update ang stock tracking. Baguhin ito sa Stock.</value></data>
+  <data name="Catalog_TrackStockDisableRequiresZero" xml:space="preserve"><value>I-off ang stock tracking kapag 0 na ang system quantity. I-adjust muna ang stock papuntang 0, tapos subukan ulit.</value></data>
   <data name="Catalog_TrackExpiration" xml:space="preserve"><value>Subaybayan ang expiration</value></data>
   <data name="Catalog_TrackExpirationHint" xml:space="preserve"><value>Subaybayan ang imbentaryo ayon sa expiration at unahin ang malapit nang mag-expire.</value></data>
   <data name="Catalog_ExpirationWarningDays" xml:space="preserve"><value>Babala bago mag-expire</value></data>

@@ -856,7 +856,8 @@
   <data name="Catalog_TrackStock" xml:space="preserve"><value>Track stock for this product</value></data>
   <data name="Catalog_TrackStockOnHint" xml:space="preserve"><value>Selling reduces the counted quantity. Set the starting count in Stock after saving.</value></data>
   <data name="Catalog_TrackStockOffHint" xml:space="preserve"><value>Sold without counting. You can turn tracking on later in Stock.</value></data>
-  <data name="Catalog_TrackStockFailed" xml:space="preserve"><value>The product was saved, but stock tracking could not be turned on. Turn it on in Stock.</value></data>
+  <data name="Catalog_TrackStockFailed" xml:space="preserve"><value>The product was saved, but stock tracking could not be updated. Change it in Stock.</value></data>
+  <data name="Catalog_TrackStockDisableRequiresZero" xml:space="preserve"><value>Turn off stock tracking only when system quantity is 0. Adjust stock to zero first, then try again.</value></data>
   <data name="Catalog_TrackExpiration" xml:space="preserve"><value>Track expiration dates</value></data>
   <data name="Catalog_TrackExpirationHint" xml:space="preserve"><value>Track inventory by expiration date and use earliest-expiring stock first.</value></data>
   <data name="Catalog_ExpirationWarningDays" xml:space="preserve"><value>Near-expiry warning</value></data>

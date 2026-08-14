@@ -91,12 +91,19 @@ public sealed class CatalogProductFormUiTests
     }
 
     [Fact]
-    public void Edit_page_keeps_the_shared_form_without_the_stock_control()
+    public void Edit_page_shows_track_stock_and_calls_inventory_enable_disable()
     {
         var edit = File.ReadAllText(Path.Combine(CatalogPagesDirectory(), "CatalogProductEdit.razor"));
 
         Assert.Contains("<CatalogProductForm", edit, StringComparison.Ordinal);
-        Assert.DoesNotContain("ShowStockTracking", edit, StringComparison.Ordinal);
+        Assert.Contains("ShowStockTracking=\"@(canTrackStock && !_isOffline)\"", edit, StringComparison.Ordinal);
+        Assert.Contains("TrackStock=\"@_trackStock\"", edit, StringComparison.Ordinal);
+        Assert.Contains("IPosInventoryClient", edit, StringComparison.Ordinal);
+        Assert.Contains("UtangCapability.ManageInventory", edit, StringComparison.Ordinal);
+        Assert.Contains("_product.IsTracked", edit, StringComparison.Ordinal);
+        Assert.Contains("EnableAsync", edit, StringComparison.Ordinal);
+        Assert.Contains("DisableAsync", edit, StringComparison.Ordinal);
+        Assert.Contains("Catalog_TrackStockDisableRequiresZero", edit, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -130,6 +137,7 @@ public sealed class CatalogProductFormUiTests
                      "Catalog_TrackStockOnHint",
                      "Catalog_TrackStockOffHint",
                      "Catalog_TrackStockFailed",
+                     "Catalog_TrackStockDisableRequiresZero",
                      "Catalog_TrackExpiration",
                      "Catalog_TrackExpirationHint",
                      "Catalog_ExpirationWarningDays",

@@ -2,6 +2,7 @@
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IPosCatalogClient Catalog
+@inject IPosInventoryClient Inventory
 @inject ICurrentUserContext CurrentUser
 @inject IUtangCapabilityEvaluator Capabilities
 @inject ApiStatusLocalizer ApiLocalizer
@@ -30,6 +31,7 @@ else if (_product is null)
 else
 {
     var canManage = Capabilities.IsAllowed(UtangCapability.ManageCatalog);
+    var canTrackStock = Capabilities.IsAllowed(UtangCapability.ManageInventory);
 <div class="pos-catalog-product-edit">
 <Page>
     <header class="pos-catalog-product-edit__header">
@@ -76,6 +78,9 @@ else
                                 SellingPriceError="@_priceError"
                                 IsSaving="@_saving"
                                 Disabled="@(!canManage || _isOffline)"
+                                ShowStockTracking="@(canTrackStock && !_isOffline)"
+                                TrackStock="@_trackStock"
+                                TrackStockChanged="v => _trackStock = v"
                                 TracksExpiration="@_tracksExpiration"
                                 TracksExpirationChanged="v => _tracksExpiration = v"
                                 ExpirationWarningDaysText="@_warningDaysText"
@@ -105,6 +110,9 @@ else
     private string? _unitOfMeasure;
     private string? _sellingMode = PosCatalogOptions.DefaultSellingModeCode;
     private decimal? _sellingPrice;
+    private bool _trackStock;
+    private bool _initialTrackStock;
+    private decimal _onHandQuantity;
     private bool _tracksExpiration;
     private string? _warningDaysText = "7";
     private IReadOnlyList<PosProductCategoryDto> _categories = Array.Empty<PosProductCategoryDto>();
@@ -161,6 +169,9 @@ else
                 ? PosCatalogOptions.DefaultSellingModeCode
                 : _product.SellingMode;
             _sellingPrice = _product.SellingPrice;
+            _trackStock = _product.IsTracked;
+            _initialTrackStock = _product.IsTracked;
+            _onHandQuantity = _product.OnHandQuantity;
             _tracksExpiration = _product.TracksExpiration;
             _warningDaysText = (_product.ExpirationWarningDays ?? 7).ToString();
 
@@ -219,34 +230,77 @@ else
             return;
         }
 
-        _saving = true;
-        var result = await Catalog.UpdateProductAsync(ProductId, new UpdatePosCatalogProductRequest(
-            _name.Trim(),
-            _unitOfMeasure ?? PosCatalogOptions.DefaultUnitOfMeasureCode,
-            _sellingPrice.Value,
-            string.IsNullOrWhiteSpace(_description) ? null : _description,
-            string.IsNullOrWhiteSpace(_sku) ? null : _sku,
-            string.IsNullOrWhiteSpace(_barcode) ? null : _barcode,
-            Guid.TryParse(_categoryId, out var categoryId) ? categoryId : null,
-            _product.UpdatedAtUtc,
-            SellingMode: _sellingMode ?? PosCatalogOptions.DefaultSellingModeCode,
-            TracksExpiration: _tracksExpiration,
-            ExpirationWarningDays: _tracksExpiration && int.TryParse(_warningDaysText, out var days) ? days : null));
-        _saving = false;
-
-        if (result.IsSuccess && result.Data is not null)
+        var trackingChanged = _trackStock != _initialTrackStock;
+        if (trackingChanged && !Capabilities.IsAllowed(UtangCapability.ManageInventory))
         {
-            Nav.NavigateTo($"/catalog/products/{ProductId:D}", replace: true);
+            _formError = L["Access_RestrictedMessage"];
             return;
         }
 
-        var mapped = CatalogErrorPresenter.Describe(result.Error?.ErrorCode, L);
-        _nameError = mapped.Name;
-        _skuError = mapped.Sku;
-        _barcodeError = mapped.Barcode;
-        _formError = mapped.Form
-            ?? result.Error?.Detail
-            ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
+        if (trackingChanged && !_trackStock && _onHandQuantity != 0m)
+        {
+            _formError = L["Catalog_TrackStockDisableRequiresZero"];
+            return;
+        }
+
+        _saving = true;
+        try
+        {
+            var result = await Catalog.UpdateProductAsync(ProductId, new UpdatePosCatalogProductRequest(
+                _name.Trim(),
+                _unitOfMeasure ?? PosCatalogOptions.DefaultUnitOfMeasureCode,
+                _sellingPrice.Value,
+                string.IsNullOrWhiteSpace(_description) ? null : _description,
+                string.IsNullOrWhiteSpace(_sku) ? null : _sku,
+                string.IsNullOrWhiteSpace(_barcode) ? null : _barcode,
+                Guid.TryParse(_categoryId, out var categoryId) ? categoryId : null,
+                _product.UpdatedAtUtc,
+                SellingMode: _sellingMode ?? PosCatalogOptions.DefaultSellingModeCode,
+                TracksExpiration: _tracksExpiration,
+                ExpirationWarningDays: _tracksExpiration && int.TryParse(_warningDaysText, out var days) ? days : null));
+
+            if (!result.IsSuccess || result.Data is null)
+            {
+                var mapped = CatalogErrorPresenter.Describe(result.Error?.ErrorCode, L);
+                _nameError = mapped.Name;
+                _skuError = mapped.Sku;
+                _barcodeError = mapped.Barcode;
+                _formError = mapped.Form
+                    ?? result.Error?.Detail
+                    ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
+                return;
+            }
+
+            _product = result.Data;
+
+            if (trackingChanged)
+            {
+                var trackingResult = _trackStock
+                    ? await Inventory.EnableAsync(ProductId, new EnableInventoryTrackingRequest())
+                    : await Inventory.DisableAsync(ProductId);
+
+                if (!trackingResult.IsSuccess)
+                {
+                    _formError = trackingResult.Error?.Detail
+                        ?? ApiLocalizer.Describe(trackingResult.Status, trackingResult.Error).Message
+                        ?? L["Catalog_TrackStockFailed"];
+                    _initialTrackStock = !_trackStock;
+                    return;
+                }
+
+                _initialTrackStock = _trackStock;
+                if (trackingResult.Data is not null)
+                {
+                    _onHandQuantity = trackingResult.Data.OnHandQuantity;
+                }
+            }
+
+            Nav.NavigateTo($"/catalog/products/{ProductId:D}", replace: true);
+        }
+        finally
+        {
+            _saving = false;
+        }
     }
 
     private void GoDetail() => Nav.NavigateTo($"/catalog/products/{ProductId:D}");

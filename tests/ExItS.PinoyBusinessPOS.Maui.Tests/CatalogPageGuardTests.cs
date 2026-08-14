@@ -48,6 +48,13 @@ public sealed class CatalogPageGuardTests
         Assert.Contains("StoreHeaderBack Href=", edit, StringComparison.Ordinal);
         Assert.Contains("UpdateProductAsync", edit, StringComparison.Ordinal);
         Assert.Contains("_product.UpdatedAtUtc", edit, StringComparison.Ordinal);
+        Assert.Contains("ShowStockTracking", edit, StringComparison.Ordinal);
+        Assert.Contains("TrackStock=", edit, StringComparison.Ordinal);
+        Assert.Contains("IPosInventoryClient", edit, StringComparison.Ordinal);
+        Assert.Contains("EnableAsync", edit, StringComparison.Ordinal);
+        Assert.Contains("DisableAsync", edit, StringComparison.Ordinal);
+        Assert.Contains("Catalog_TrackStockDisableRequiresZero", edit, StringComparison.Ordinal);
+        Assert.Contains("UtangCapability.ManageInventory", edit, StringComparison.Ordinal);
         Assert.Contains("pos-catalog-product-edit__header", edit, StringComparison.Ordinal);
         Assert.Contains("pos-catalog-product-edit__panel", edit, StringComparison.Ordinal);
         Assert.DoesNotContain("PageHeader", edit, StringComparison.Ordinal);
