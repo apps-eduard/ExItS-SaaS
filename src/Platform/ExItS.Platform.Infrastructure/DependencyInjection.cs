@@ -53,6 +53,7 @@ public static class DependencyInjection
         services.AddScoped<ICatalogImportJobRepository, CatalogImportJobRepository>();
         services.AddScoped<ICatalogImportFileParser, CatalogImportFileParser>();
         services.AddScoped<IPlatformOrganizationRepository, PlatformOrganizationRepository>();
+        services.AddScoped<IOrganizationSalesDocumentCapabilityRepository, OrganizationSalesDocumentCapabilityRepository>();
         services.AddScoped<IOrganizationBusinessTypeActivationRepository, OrganizationBusinessTypeActivationRepository>();
         services.AddScoped<IOrganizationBranchRepository, OrganizationBranchRepository>();
         services.AddScoped<IPosDeviceRepository, PosDeviceRepository>();

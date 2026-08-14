@@ -11,10 +11,10 @@
 | Portfolio | ExITS SaaS |
 | Existing product | Historical HealthCare SaaS MVP (separate product; **not** in this workspace ? do not restore) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
-| Current phase | Phase 25 **Open — WP01–WP09 Code Complete / Owner Validation Pending**; Phase 22/24/19/20/21 remain Open; Phase 14 still open |
-| Current work package | **P25-WP09** Organization Ownership Transfer ([phase](phases/phase-25-organization-web-admin.md); [WP09](reports/P25-WP09-organization-ownership-transfer.md)). Owner browser/device validation pending. Phase 25 **not closed**. |
-| Overall status | **Phase 25 WP01–WP09 Code Complete** (Org Web hosts + identity/QR isolation + buyer-party + org profile independence + ownership transfer) + Phase 22/24 Owner Validation Pending. **Not Device Verified**. Production remains **Blocked**. **Not production-ready.** |
-| Latest verified commit | `5f51e35a` (P25-WP09 ownership transfer docs evidence; feature `67bd59bd`) |
+| Current phase | Phase 26 **Open — WP01 Code Complete / Validation Pending**; Phase 25 remains **Open — Owner Validation Pending**; Phase 22/24/19/20/21 remain Open; Phase 14 still open |
+| Current work package | **P26-WP01** Sales Document & Compliance Readiness Foundation ([phase](phases/phase-26-sales-documents-compliance-readiness.md); [report](reports/P26-WP01-sales-document-compliance-readiness-foundation.md)). P26-WP02 is next. Phase 25 is **not closed**. |
+| Overall status | **P26-WP01 Code Complete / Validation Pending**; Transaction Summary is the current sales document and TaxDocument remains unavailable. Phase 25 WP01–WP09 owner validation remains pending. **Not Device Verified**. Production remains **Blocked**. **Not production-ready.** |
+| Latest verified commit | (record after P26-WP01 push) |
 | Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA deferred; Phase 19/20/22/24/25 owner/physical validation pending |
 | Last updated | 2026-08-14 |
 

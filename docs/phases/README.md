@@ -30,3 +30,4 @@
 | 23 | Multi-Business Entitlements and Variable-Quantity Selling | **Open** (WP01–WP11 done; WP12 in progress; WP13 not started; not Device Verified) | [Open](phase-23-multi-business-entitlements-and-variable-quantity-selling.md) |
 | 24 | Linked Customer Statements and Personal Monetization | **Open** (WP01–WP06 Complete; WP07+ not started; not Device Verified) | [Open](phase-24-linked-customer-statements-and-personal-monetization.md) |
 | 25 | Organization Web Admin, AntDesign hosts, unified web auth + identity/org management | **Open** (WP01–WP09 Code Complete; Owner Validation Pending; not Device Verified; **no closeout**) | [Open](phase-25-organization-web-admin.md) |
+| 26 | Sales Documents and Compliance Readiness | **Open** (WP01 Code Complete / Validation Pending; no closeout; Phase 25 remains Open) | [Open](phase-26-sales-documents-compliance-readiness.md) |

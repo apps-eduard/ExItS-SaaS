@@ -36,7 +36,7 @@ else
 <Page>
     <header class="pos-sale-receipt__header">
         <div class="pos-sale-receipt__title-row">
-            <h1 class="pos-sale-receipt__title">@L["Sales_DetailSubtitle"]</h1>
+            <h1 class="pos-sale-receipt__title">@L["SalesDocument_TransactionSummaryTitle"]</h1>
             <button type="button"
                     class="pos-sale-receipt__new"
                     @onclick="GoNextSale">
@@ -44,7 +44,7 @@ else
                 <span>@L["Sales_New"]</span>
             </button>
         </div>
-        <p class="pos-sale-receipt__subtitle">@sale.SaleNumber</p>
+        <p class="pos-sale-receipt__subtitle">@L["SalesDocument_TransactionSummarySubtitle"] · @sale.SaleNumber</p>
     </header>
 
     @if (_isOffline)
@@ -212,6 +212,11 @@ else
         {
             <p class="pos-sale-receipt__footer pos-wrap">@sale.ReceiptFooter</p>
         }
+    </section>
+
+    <section class="pos-sale-receipt__panel" aria-labelledby="sale-document-disclaimer-heading">
+        <h2 id="sale-document-disclaimer-heading" class="pos-sale-receipt__section-title">@L["SalesDocument_DisclaimerTitle"]</h2>
+        <p class="pos-sale-receipt__footer pos-wrap">@L["SalesDocument_DisclaimerBody"]</p>
     </section>
 
     <div class="pos-action-grid pos-action-grid--single pos-sale-receipt__actions" role="group">

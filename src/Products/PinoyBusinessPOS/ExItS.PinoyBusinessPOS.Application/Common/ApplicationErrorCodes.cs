@@ -33,6 +33,8 @@ public static class ApplicationErrorCodes
     public const string CatalogPriceBulkDuplicate = "pos.catalog.price_bulk_duplicate";
 
     public const string SaleNotFound = "pos.sale.not_found";
+    public const string TaxDocumentIssuanceNotAvailable =
+        "pos.sales_document.tax_document_issuance_not_available";
     public const string PaymentAttemptConflict = "pos.payment_attempt.conflict";
     public const string ManualGCashTransferDisabled = "pos.payment.manual_gcash_transfer.disabled";
     public const string PaymentProviderUnsupported = "pos.payment.provider.unsupported";

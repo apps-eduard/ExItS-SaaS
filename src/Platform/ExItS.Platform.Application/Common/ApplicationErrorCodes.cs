@@ -9,6 +9,8 @@ public static class ApplicationErrorCodes
     public const string InvitationConflict = "application.invitation.conflict";
     public const string OwnershipTransferNotFound = "application.ownership_transfer.not_found";
     public const string OwnershipTransferConflict = "application.ownership_transfer.conflict";
+    public const string TaxDocumentIssuanceNotEnabled =
+        "application.sales_document.tax_document_issuance_not_enabled";
     public const string EmailConflict = "application.user.email_conflict";
     public const string UsernameConflict = "application.user.username_conflict";
     public const string SlugConflict = "application.organization.slug_conflict";

@@ -2743,4 +2743,10 @@
   <data name="Catalog_UnitAmount" xml:space="preserve"><value>Dami</value></data>
   <data name="Sales_Checkout_ChooseSellingOption" xml:space="preserve"><value>Piliin kung paano ibebenta</value></data>
   <data name="Sales_ChooseSellingOption" xml:space="preserve"><value>Piliin ang opsyon sa pagbenta</value></data>
+  <data name="SalesDocument_TransactionSummaryTitle" xml:space="preserve"><value>Buod ng transaksyon</value></data>
+  <data name="SalesDocument_TransactionSummarySubtitle" xml:space="preserve"><value>Rekord ng negosyo at customer</value></data>
+  <data name="SalesDocument_Open" xml:space="preserve"><value>Buod ng transaksyon</value></data>
+  <data name="SalesDocument_DisclaimerTitle" xml:space="preserve"><value>Paunawa</value></data>
+  <data name="SalesDocument_DisclaimerBody" xml:space="preserve"><value>Ang buod ng transaksyong ito ay ginawa ng ExItS para sa rekord ng negosyo at customer. Hindi ito inilalarawan ng ExItS bilang tax invoice na awtorisado ng BIR.</value></data>
+  <data name="SalesDocument_TaxDocumentUnavailable" xml:space="preserve"><value>Hindi available ang pag-isyu ng tax document para sa organisasyong ito.</value></data>
 </root>

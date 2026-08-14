@@ -27,7 +27,7 @@ else
 <Page>
     <header class="pos-sale-receipt__header">
         <div class="pos-sale-receipt__title-row">
-            <h1 class="pos-sale-receipt__title">@L["Offline_SalePendingSync"]</h1>
+            <h1 class="pos-sale-receipt__title">@L["SalesDocument_TransactionSummaryTitle"]</h1>
             <button type="button"
                     class="pos-sale-receipt__new"
                     @onclick="GoNextSale">
@@ -35,7 +35,7 @@ else
                 <span>@L["Sales_New"]</span>
             </button>
         </div>
-        <p class="pos-sale-receipt__subtitle">@sale.SaleNumber</p>
+        <p class="pos-sale-receipt__subtitle">@L["SalesDocument_TransactionSummarySubtitle"] · @sale.SaleNumber</p>
     </header>
 
     <Alert Tone="AlertTone.Info" Title="@L["Offline_SalePendingSync"]" Message="@L["Offline_Banner"]" />
@@ -89,6 +89,11 @@ else
                 </li>
             }
         </ul>
+    </section>
+
+    <section class="pos-sale-receipt__panel">
+        <h2 class="pos-sale-receipt__section-title">@L["SalesDocument_DisclaimerTitle"]</h2>
+        <p class="pos-sale-receipt__footer pos-wrap">@L["SalesDocument_DisclaimerBody"]</p>
     </section>
 
     <FormActions>

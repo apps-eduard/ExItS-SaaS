@@ -117,6 +117,7 @@ docs/phases/phase-09-mvp-hardening.md
 docs/phases/phase-10-full-pos.md
 docs/phases/phase-24-linked-customer-statements-and-personal-monetization.md
 docs/phases/phase-25-organization-web-admin.md
+docs/phases/phase-26-sales-documents-compliance-readiness.md
 docs/reports/P25-WP01-organization-web-admin-management-center.md
 docs/reports/P25-WP02-antdesign-web-standardization-and-host-separation.md
 docs/reports/P25-WP03-unified-web-authentication-sso-and-workspace-routing.md
@@ -126,6 +127,7 @@ docs/reports/P25-WP06-personal-organization-identity-isolation.md
 docs/reports/P25-WP07-sales-buyer-party-isolation.md
 docs/reports/P25-WP08-organization-profile-independence.md
 docs/reports/P25-WP09-organization-ownership-transfer.md
+docs/reports/P26-WP01-sales-document-compliance-readiness-foundation.md
 docs/reports/personal-organization-identity-isolation.md
 docs/reports/organization-profile-independence.md
 docs/reports/sales-buyer-party-isolation.md
@@ -133,6 +135,7 @@ docs/reports/organization-ownership-transfer.md
 docs/engineering/sales-buyer-party-model.md
 docs/engineering/organization-profile-independence.md
 docs/engineering/organization-ownership-transfer.md
+docs/engineering/sales-document-compliance-boundary.md
 docs/architecture/personal-organization-identity-boundaries.md
 docs/architecture/client-experience-boundaries.md
 docs/specs/identity/public-user-id-and-qr.md

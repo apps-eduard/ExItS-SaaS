@@ -129,5 +129,6 @@ The dashboard links to the latest accepted report.
 | [P25-WP07-sales-buyer-party-isolation.md](P25-WP07-sales-buyer-party-isolation.md) | P25-WP07 POS sales buyer-party / QR purpose isolation | Code Complete / Owner Validation Pending |
 | [P25-WP08-organization-profile-independence.md](P25-WP08-organization-profile-independence.md) | P25-WP08 Organization profile independence + multi-org ownership | Code Complete / Owner Validation Pending |
 | [P25-WP09-organization-ownership-transfer.md](P25-WP09-organization-ownership-transfer.md) | P25-WP09 Organization ownership transfer | Code Complete / Owner Validation Pending |
+| [P26-WP01-sales-document-compliance-readiness-foundation.md](P26-WP01-sales-document-compliance-readiness-foundation.md) | P26-WP01 Sales document and compliance readiness foundation | Code Complete / Validation Pending |
 
 Aliases (stable old paths): [personal-organization-identity-isolation.md](personal-organization-identity-isolation.md) · [sales-buyer-party-isolation.md](sales-buyer-party-isolation.md) · [organization-profile-independence.md](organization-profile-independence.md) · [organization-ownership-transfer.md](organization-ownership-transfer.md)

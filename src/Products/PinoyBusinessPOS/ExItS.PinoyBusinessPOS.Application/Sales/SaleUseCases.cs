@@ -123,7 +123,8 @@ public sealed class SaleQueryService
             BuyerDisplayNameSnapshot: sale.BuyerParty.DisplayNameSnapshot,
             BuyerPersonalPublicUserId: sale.BuyerParty.PersonalPublicUserId,
             BuyerOrganizationId: sale.BuyerParty.BuyerOrganizationId,
-            BuyerPublicOrganizationId: sale.BuyerParty.BuyerPublicOrganizationId);
+            BuyerPublicOrganizationId: sale.BuyerParty.BuyerPublicOrganizationId,
+            DocumentKind: SalesDocumentWording.TransactionSummary);
 
     private async Task<PosSaleDto> MapEnrichedAsync(Sale sale, CancellationToken cancellationToken)
     {

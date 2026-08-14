@@ -53,7 +53,8 @@ public sealed record PosSaleDto(
     string? BuyerDisplayNameSnapshot = null,
     string? BuyerPersonalPublicUserId = null,
     Guid? BuyerOrganizationId = null,
-    string? BuyerPublicOrganizationId = null);
+    string? BuyerPublicOrganizationId = null,
+    string DocumentKind = "TransactionSummary");
 
 /// <summary>
 /// One requested checkout line.
