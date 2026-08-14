@@ -4,6 +4,15 @@ Phase marker: `connected-exits-suppliers-phase-1`
 Date: 2026-08-14  
 Starting SHA: `f67c2763c3e30a7a2b77847f23a101f57c403ca6`
 
+## Implementation commits
+
+| SHA | Message |
+|---|---|
+| `670a79e1` | `feat(suppliers): add connected organization relationships and catalog APIs` |
+| `8d18dfa8` | `feat(sync): add selective connected-supplier offline projection` |
+| `7f2020db` | `feat(purchasing): add connected supplier MAUI workflows` |
+| `1fdc89d0` | `docs(purchasing): document connected ExItS supplier Phase 1` |
+
 ## Status
 
 **Code Complete (Phase 1).** Not Device Verified. Not Browser Verified. **Not Production Ready.**
