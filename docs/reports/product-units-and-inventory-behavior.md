@@ -2,7 +2,8 @@
 
 **Status:** Implemented  
 **Starting SHA:** `64d177c827e16d4d8421d6c9852368c42acdb0b5`  
-**Feature SHAs:** _(filled after push)_  
+**Feature SHAs:**
+- `b77031a4` — feat(catalog): add product units, usage behavior, and conversions  
 **Related:** [engineering note](../engineering/product-units-and-inventory-behavior.md)
 
 ## Architecture audit (pre-implementation)
