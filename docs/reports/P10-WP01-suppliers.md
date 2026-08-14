@@ -116,3 +116,7 @@ Unchanged release blockers: R-091, R-109, R-129, TLS-PROD, MAUI-HTTPS, POS-ROLES
 | Foreign product trees | Root `HealthCare/` must remain absent/untracked and outside `ExItS.slnx` |
 
 Exact next: **P10-WP02 — Purchasing** (do not begin until authorized).
+
+## Later addition
+
+Connected ExItS Suppliers Phase 1 adds optional organization-to-organization supplier relationships on top of this master-data model. External suppliers remain unchanged. See [connected-exits-suppliers.md](../engineering/connected-exits-suppliers.md) and [connected-exits-suppliers-phase-1.md](connected-exits-suppliers-phase-1.md).

@@ -169,3 +169,9 @@ Phase 7 closed as one subsystem. Confirmed defects hardened: rebuild after credi
 ## Later phase (preview)
 
 **Phase 8 — Basic Store** follows Phase 7 closeout (do not begin until authorized).
+
+## Connected suppliers Phase 1
+
+LocalStore schema v8 adds a selective linked-supplier-product projection and per-relationship delta cursor. Only products explicitly linked by the buyer are cached; connected supplier catalog search remains online-only and never performs a full catalog download.
+
+Connected purchase-order drafts may be saved locally with `PendingCreate` state. They are not queued or described as submitted. Reconnect requires explicit online price/availability revalidation before normal purchase-order creation; supplier submission remains online-required.

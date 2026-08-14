@@ -93,9 +93,15 @@ Typed DTOs; ProblemDetails `errorCode`; org concealment; pagination on list.
 | Delete | Trash action with confirmation: “Remove this item from the purchase order?” |
 | Totals | Line and order totals use `PosSaleOptions.RoundMoney` via `PurchaseOrderCreateUi` — domain create/submit/receive unchanged |
 
+### Connected ExItS suppliers (later)
+
+Optional connected-organization suppliers sit above this purchasing spine. Buyer inventory still changes only on Goods Receipt. See [connected-exits-suppliers.md](../engineering/connected-exits-suppliers.md).
+
 ## 9. Online-only policy
 
-`OfflineOperationTypes` defines `purchase_order.submit` and `purchase_order.receive` for idempotency header constants only — **not** mapped in offline capability map. No purchasing offline queue or local projections.
+`OfflineOperationTypes` defines `purchase_order.submit` and `purchase_order.receive` for idempotency header constants only — **not** mapped as full offline queue handlers for ordinary external POs.
+
+Connected ExItS Suppliers Phase 1 adds **device-local** connected-PO drafts and linked-product projections (LocalStore v8). Server search and supplier submission remain online-required with revalidation. See [connected-exits-suppliers.md](../engineering/connected-exits-suppliers.md).
 
 ## 10. Security and privacy
 
