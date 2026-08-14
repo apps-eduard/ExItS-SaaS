@@ -11,12 +11,14 @@ Implemented (MVP).
 ## Feature / documentation hashes
 
 - Feature: `67bd59bd010eaa13fe23a32546ca2b6774fee16a`
-- Docs hash-record: (follow-up commit if separate)
+- Docs hash-record: `f20b6dc3e60b90faa530816f1eef0b9561181249`
 
 ## Git / push evidence
 
 - Feature commit: `67bd59bd010eaa13fe23a32546ca2b6774fee16a`
-- Push: pending
+- Docs commit: `f20b6dc3e60b90faa530816f1eef0b9561181249`
+- `HEAD` = `origin/main` = `f20b6dc3e60b90faa530816f1eef0b9561181249`
+- Cash/shift leftovers intentionally left unstaged/uncommitted
 ## Delivered capability
 
 - New aggregate `OrganizationOwnershipTransfer` (not `OrganizationInvitation` / staff invites).
