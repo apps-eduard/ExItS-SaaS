@@ -80,6 +80,19 @@ Typed DTOs; ProblemDetails `errorCode`; org concealment; pagination on list.
 - Entry from `/more` (not bottom nav)
 - EN + fil-PH resources; online-only reconnect UX
 
+### Create draft UX refinement (later)
+
+`/purchasing/new` product selection and draft lines:
+
+| Topic | Behavior |
+|---|---|
+| Search | Client-side name filter over already-loaded active products (`Search products`) |
+| Category | Horizontal chips defaulting to **All**; only categories present on available products; products without a category use **No category** |
+| Lines | Each draft line shows product name, `Qty N ×` unit purchase cost (`MoneyDisplay`), and line total |
+| Edit | Pencil action prefills product / qty / unit cost; **Save changes** updates the same line (no duplicate) |
+| Delete | Trash action with confirmation: “Remove this item from the purchase order?” |
+| Totals | Line and order totals use `PosSaleOptions.RoundMoney` via `PurchaseOrderCreateUi` — domain create/submit/receive unchanged |
+
 ## 9. Online-only policy
 
 `OfflineOperationTypes` defines `purchase_order.submit` and `purchase_order.receive` for idempotency header constants only — **not** mapped in offline capability map. No purchasing offline queue or local projections.
