@@ -2,7 +2,7 @@
 
 **Status:** Implemented  
 **Starting SHA:** `66a972f84741f7b7f394c19438e0b9ef0d7367c0`  
-**Feature SHAs:** _(filled after push)_  
+**Feature SHAs:** `95f5744b79a058bd9afe91b54e527fc998027181` (feat; hash-record commit follows)  
 **Related:** [sales-buyer-party-model.md](../engineering/sales-buyer-party-model.md)
 
 ## Architecture audit (pre-implementation)
