@@ -319,7 +319,7 @@ public sealed class OrgWebShellState
     public bool CanSee(string section) => section switch
     {
         "overview" => IsOrgOwner || Can(UtangCapability.ViewDashboard),
-        "profile" or "branches" or "staff" or "subscription" or "notifications" => IsOrgOwner,
+        "profile" or "branches" or "staff" or "subscription" or "notifications" or "ownership-transfer" => IsOrgOwner,
         "roles" => IsOrgOwner,
         "products" => Can(UtangCapability.ViewCatalog),
         "inventory" => Can(UtangCapability.ViewInventory),

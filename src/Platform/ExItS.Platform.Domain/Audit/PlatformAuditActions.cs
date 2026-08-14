@@ -96,6 +96,12 @@ public static class PlatformAuditActions
     public const string InvitationRevoked = "platform.invitation.revoked";
     public const string InvitationAccepted = "platform.invitation.accepted";
 
+    public const string OwnershipTransferRequested = "platform.ownership_transfer.requested";
+    public const string OwnershipTransferCancelled = "platform.ownership_transfer.cancelled";
+    public const string OwnershipTransferDeclined = "platform.ownership_transfer.declined";
+    public const string OwnershipTransferAccepted = "platform.ownership_transfer.accepted";
+    public const string OrganizationOwnerChanged = "platform.organization.owner_changed";
+
     public const string BusinessCustomerCreated = "platform.business_customer.created";
     public const string BusinessCustomerUpdated = "platform.business_customer.updated";
     public const string BusinessCustomerArchived = "platform.business_customer.archived";

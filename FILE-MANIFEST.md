@@ -127,6 +127,8 @@ docs/reports/organization-profile-independence.md
 docs/reports/sales-buyer-party-isolation.md
 docs/engineering/sales-buyer-party-model.md
 docs/engineering/organization-profile-independence.md
+docs/engineering/organization-ownership-transfer.md
+docs/reports/organization-ownership-transfer.md
 docs/architecture/personal-organization-identity-boundaries.md
 docs/architecture/client-experience-boundaries.md
 docs/specs/identity/public-user-id-and-qr.md

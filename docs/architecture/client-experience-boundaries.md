@@ -348,7 +348,7 @@ Business creator
 
 Organization Owner status alone never grants POS access. Other organization members receive no POS access until an explicit POS role is assigned.
 
-MVP allows only one Organization Owner per organization. Ownership transfer is deferred.
+MVP allows only one Organization Owner per organization. Ownership transfer is supported via Personal QR / PublicUserId to another Personal identity (former owner removed). See [organization-ownership-transfer.md](../engineering/organization-ownership-transfer.md).
 ---
 
 ## 7. Access Rules

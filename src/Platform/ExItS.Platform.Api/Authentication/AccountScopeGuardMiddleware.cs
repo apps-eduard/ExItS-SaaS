@@ -162,6 +162,18 @@ public sealed class AccountScopeGuardMiddleware(RequestDelegate next)
 
         if (path.StartsWith("/api/v1/platform", StringComparison.OrdinalIgnoreCase))
         {
+            // Ownership transfer accept/decline/list is Personal-recipient capable (and Organization).
+            if (IsOwnershipTransferRecipientPath(path))
+            {
+                return accountClass is AccountClass.Personal or AccountClass.Organization;
+            }
+
+            // Owner cancel lives under /ownership-transfers/{id}/cancel (not /organizations/...).
+            if (IsOwnershipTransferCancelPath(path))
+            {
+                return accountClass is AccountClass.Organization;
+            }
+
             // Until WP03 remaps Organization APIs off /platform, Organization sessions may call
             // organization-scoped routes that still live under /api/v1/platform/organizations/*.
             // Platform administration, catalog, global subscriptions, RBAC, and users stay Platform-only.
@@ -174,6 +186,42 @@ public sealed class AccountScopeGuardMiddleware(RequestDelegate next)
         }
 
         return false;
+    }
+
+    private static bool IsOwnershipTransferRecipientPath(string path)
+    {
+        if (path.Equals("/api/v1/platform/ownership-transfers/my-pending", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        return TryGetOwnershipTransferAction(path, out var action)
+               && (action.Equals("accept", StringComparison.OrdinalIgnoreCase)
+                   || action.Equals("decline", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static bool IsOwnershipTransferCancelPath(string path) =>
+        TryGetOwnershipTransferAction(path, out var action)
+        && action.Equals("cancel", StringComparison.OrdinalIgnoreCase);
+
+    private static bool TryGetOwnershipTransferAction(string path, out string action)
+    {
+        action = string.Empty;
+        const string prefix = "/api/v1/platform/ownership-transfers/";
+        if (!path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var remainder = path[prefix.Length..];
+        var slash = remainder.IndexOf('/');
+        if (slash <= 0 || slash >= remainder.Length - 1)
+        {
+            return false;
+        }
+
+        action = remainder[(slash + 1)..];
+        return true;
     }
 
     private static async Task WriteDeniedAsync(HttpContext context, string detail)

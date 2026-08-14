@@ -64,6 +64,11 @@
                         <span class="pos-settings__nav-label">@L["Personal_Nav_UtangInvitations"]</span>
                         <span class="pos-settings__chevron" aria-hidden="true">›</span>
                     </button>
+                    <button type="button" class="pos-settings__nav" @onclick="GoOwnershipTransfers">
+                        <span class="pos-settings__nav-icon" aria-hidden="true">@IconGlyphs.Get("inbox")</span>
+                        <span class="pos-settings__nav-label">Ownership transfers</span>
+                        <span class="pos-settings__chevron" aria-hidden="true">›</span>
+                    </button>
                     <button type="button" class="pos-settings__nav" @onclick="GoProfile">
                         <span class="pos-settings__nav-icon" aria-hidden="true">@IconGlyphs.Get("customers")</span>
                         <span class="pos-settings__nav-label">@L["Personal_ProfileLink"]</span>
@@ -129,6 +134,7 @@
     private Task GoCustomerLinkRequests() => OfflineNav.NavigateAsync("/personal/customer-link-requests");
     private Task GoNotifications() => OfflineNav.NavigateAsync("/personal/notifications");
     private Task GoUtangInvitations() => OfflineNav.NavigateAsync("/personal/utang/invitations");
+    private Task GoOwnershipTransfers() => OfflineNav.NavigateAsync("/personal/ownership-transfers");
     private Task GoProfile() => OfflineNav.NavigateAsync("/personal/profile");
     private Task GoSettings() => OfflineNav.NavigateAsync("/personal/settings");
     private Task GoExplorePos() => OfflineNav.NavigateAsync("/personal/explore-pos");

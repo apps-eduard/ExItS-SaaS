@@ -1,0 +1,200 @@
+@page "/organization/ownership-transfer"
+@attribute [Authorize]
+@inject OrgWebShellState Shell
+@inject ICurrentUserContext CurrentUser
+@inject IPlatformAccessClient Platform
+
+<PageTitle>Ownership transfer</PageTitle>
+
+@if (!Shell.CanSee("ownership-transfer"))
+{
+    <AccessDeniedPanel />
+}
+else
+{
+    <ExitsPageHeader
+        Title="Ownership transfer"
+        Subtitle="Transfer ownership gives another ExItS member control of this business. The business keeps its records; only the Owner relationship changes." />
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" />
+    }
+    @if (!string.IsNullOrWhiteSpace(_ok))
+    {
+        <Alert Type="@AlertType.Success" Message="@_ok" ShowIcon="true" />
+    }
+
+    @if (_pending is not null)
+    {
+        <Card Size="@CardSize.Small" Title="Ownership transfer pending">
+            <p class="org-note">
+                Waiting for @_pending.ToDisplayName (@_pending.ToPublicUserId) to accept. Expires @_pending.ExpiresAtUtc.LocalDateTime.ToString("g").
+            </p>
+            <p class="org-note">After acceptance you will no longer own this business and will be removed from the organization.</p>
+            <Button Type="@ButtonType.Default" Danger Loading="_busy" OnClick="CancelAsync">Cancel transfer</Button>
+        </Card>
+    }
+    else
+    {
+        <Card Size="@CardSize.Small" Title="Transfer ownership">
+            <Alert Type="@AlertType.Warning"
+                   Message="Transferring ownership gives another ExItS member control of this business."
+                   ShowIcon="true"
+                   Style="margin-bottom: 1rem;" />
+            <p class="org-note">Use a Personal ExItS ID (EX-####-####) or Personal QR. Business QR and Device QR are not accepted.</p>
+            <div class="org-form">
+                <ExitsField Label="Personal ExItS ID or QR">
+                    <Input @bind-Value="_targetInput" Placeholder="EX-4827-1936" />
+                </ExitsField>
+                <Button Type="@ButtonType.Default" Loading="_busy" OnClick="ResolveAsync">Resolve</Button>
+            </div>
+            @if (_resolved is not null)
+            {
+                <p class="org-note">New owner: @_resolved.DisplayName (@_resolved.PublicUserId)</p>
+                <p class="org-note">After they accept, you will no longer own this business.</p>
+                <ExitsField Label='Type "Transfer ownership" to confirm'>
+                    <Input @bind-Value="_confirmText" Placeholder="Transfer ownership" />
+                </ExitsField>
+                <Button Type="@ButtonType.Primary"
+                        Loading="_busy"
+                        Disabled="@(!IsConfirmReady)"
+                        OnClick="RequestAsync">
+                    Send transfer request
+                </Button>
+            }
+        </Card>
+    }
+}
+
+@code {
+    private bool _busy;
+    private string? _error;
+    private string? _ok;
+    private string? _targetInput;
+    private string? _confirmText;
+    private OwnershipTransferTargetDto? _resolved;
+    private OrganizationOwnershipTransferDto? _pending;
+
+    private bool IsConfirmReady =>
+        string.Equals(_confirmText?.Trim(), "Transfer ownership", StringComparison.Ordinal);
+
+    protected override async Task OnInitializedAsync() => await LoadPendingAsync();
+
+    private async Task LoadPendingAsync()
+    {
+        _error = null;
+        var orgId = CurrentUser.Session?.OrganizationId;
+        if (orgId is null)
+        {
+            return;
+        }
+
+        var result = await Platform.GetPendingOwnershipTransferAsync(orgId.Value);
+        if (!result.IsSuccess)
+        {
+            _error = OrgWebUi.Error(result.Error);
+            return;
+        }
+
+        _pending = result.Data;
+    }
+
+    private async Task ResolveAsync()
+    {
+        _busy = true;
+        _error = null;
+        _ok = null;
+        _resolved = null;
+        _confirmText = null;
+        try
+        {
+            var orgId = CurrentUser.Session?.OrganizationId;
+            if (orgId is null)
+            {
+                _error = "No organization selected.";
+                return;
+            }
+
+            var result = await Platform.ResolveOwnershipTransferTargetAsync(orgId.Value, _targetInput ?? string.Empty);
+            if (!result.IsSuccess || result.Data is null)
+            {
+                _error = OrgWebUi.Error(result.Error);
+                return;
+            }
+
+            _resolved = result.Data;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task RequestAsync()
+    {
+        if (!IsConfirmReady)
+        {
+            _error = "Type Transfer ownership to confirm before sending.";
+            return;
+        }
+
+        _busy = true;
+        _error = null;
+        _ok = null;
+        try
+        {
+            var orgId = CurrentUser.Session?.OrganizationId;
+            if (orgId is null || _resolved is null)
+            {
+                _error = "Resolve a Personal recipient first.";
+                return;
+            }
+
+            var result = await Platform.RequestOwnershipTransferAsync(orgId.Value, _resolved.PublicUserId);
+            if (!result.IsSuccess || result.Data is null)
+            {
+                _error = OrgWebUi.Error(result.Error);
+                return;
+            }
+
+            _pending = result.Data;
+            _resolved = null;
+            _targetInput = null;
+            _confirmText = null;
+            _ok = "Ownership transfer request sent. Waiting for the recipient to accept (expires in 7 days).";
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task CancelAsync()
+    {
+        if (_pending is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        _error = null;
+        _ok = null;
+        try
+        {
+            var result = await Platform.CancelOwnershipTransferAsync(_pending.Id);
+            if (!result.IsSuccess)
+            {
+                _error = OrgWebUi.Error(result.Error);
+                return;
+            }
+
+            _pending = null;
+            _ok = "Ownership transfer cancelled.";
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

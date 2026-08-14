@@ -367,6 +367,29 @@ public sealed record OrganizationInvitationDto(
     string? ProductRole = null,
     string? InviteeDisplayName = null);
 
+public sealed record OwnershipTransferTargetDto(string PublicUserId, string DisplayName);
+
+public sealed record OrganizationOwnershipTransferDto(
+    Guid Id,
+    Guid OrganizationId,
+    string? OrganizationDisplayName,
+    string? PublicOrganizationId,
+    Guid FromOwnerUserId,
+    Guid ToUserId,
+    string? ToDisplayName,
+    string? ToPublicUserId,
+    string Status,
+    DateTimeOffset CreatedAtUtc,
+    DateTimeOffset ExpiresAtUtc,
+    DateTimeOffset? AcceptedAtUtc,
+    DateTimeOffset? DeclinedAtUtc,
+    DateTimeOffset? CancelledAtUtc,
+    DateTimeOffset? CompletedAtUtc,
+    DateTimeOffset UpdatedAtUtc);
+
+public sealed record ResolveOwnershipTransferTargetRequest(string Input);
+public sealed record RequestOwnershipTransferRequest(string TargetInput);
+
 public sealed record ProductLocalRoleGrantDto(
     Guid Id,
     Guid OrganizationId,
@@ -1116,6 +1139,42 @@ public interface IPlatformAccessClient
     /// </summary>
     Task<ApiResult<IReadOnlyList<LocalValidationQuickLoginIdentityDto>>> GetLocalValidationQuickLoginIdentitiesAsync(
         CancellationToken ct = default);
+
+    Task<ApiResult<OwnershipTransferTargetDto>> ResolveOwnershipTransferTargetAsync(
+        Guid organizationId,
+        string input,
+        CancellationToken ct = default) =>
+        Task.FromResult(ApiResult<OwnershipTransferTargetDto>.Unavailable());
+
+    Task<ApiResult<OrganizationOwnershipTransferDto>> RequestOwnershipTransferAsync(
+        Guid organizationId,
+        string targetInput,
+        CancellationToken ct = default) =>
+        Task.FromResult(ApiResult<OrganizationOwnershipTransferDto>.Unavailable());
+
+    Task<ApiResult<OrganizationOwnershipTransferDto?>> GetPendingOwnershipTransferAsync(
+        Guid organizationId,
+        CancellationToken ct = default) =>
+        Task.FromResult(ApiResult<OrganizationOwnershipTransferDto?>.Unavailable());
+
+    Task<ApiResult<OrganizationOwnershipTransferDto>> CancelOwnershipTransferAsync(
+        Guid transferId,
+        CancellationToken ct = default) =>
+        Task.FromResult(ApiResult<OrganizationOwnershipTransferDto>.Unavailable());
+
+    Task<ApiResult<OrganizationOwnershipTransferDto>> AcceptOwnershipTransferAsync(
+        Guid transferId,
+        CancellationToken ct = default) =>
+        Task.FromResult(ApiResult<OrganizationOwnershipTransferDto>.Unavailable());
+
+    Task<ApiResult<OrganizationOwnershipTransferDto>> DeclineOwnershipTransferAsync(
+        Guid transferId,
+        CancellationToken ct = default) =>
+        Task.FromResult(ApiResult<OrganizationOwnershipTransferDto>.Unavailable());
+
+    Task<ApiResult<IReadOnlyList<OrganizationOwnershipTransferDto>>> GetMyPendingOwnershipTransfersAsync(
+        CancellationToken ct = default) =>
+        Task.FromResult(ApiResult<IReadOnlyList<OrganizationOwnershipTransferDto>>.Unavailable());
 
     Task<ApiResult<OrganizationBranchDto>> UpdateBranchAsync(
         Guid organizationId,

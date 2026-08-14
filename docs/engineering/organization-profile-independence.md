@@ -12,8 +12,8 @@ Implemented for MVP (no schema migration).
 | One-time copy | Start a Business may copy Personal email/phone when `UseMyContactDetails` is true. Explicit Contact*/Address* request fields override copied values. |
 | No live sync | Updating Personal never updates Organization; updating Organization never updates Personal. |
 | Multi-org ownership | The same Personal identity may be `OrganizationOwner` of Org A and Org B. |
-| One owner per org (MVP) | Each organization has exactly one Owner. Adding a second Owner fails with `OrganizationOwnerUniqueViolation`. |
-| Business QR stable | Public organization identity remains `DisplayName` + `PublicOrganizationId` / QR payload only. Contact fields never appear on public identity. |
+| One owner per org (MVP) | Each organization has exactly one Owner. Adding a second Owner fails with `OrganizationOwnerUniqueViolation`. Ownership transfer (`OrganizationOwnershipTransfer`) atomically replaces the sole Owner; see [organization-ownership-transfer.md](organization-ownership-transfer.md). |
+| Business QR stable | Public organization identity remains `DisplayName` + `PublicOrganizationId` / QR payload only. Contact fields never appear on public identity. Ownership transfer does not change `OrganizationId` / `PublicOrganizationId`. |
 | Receipts | POS receipt merchant details continue to come from `PosOperationalSetup` (product operational data), not Platform OrganizationProfile. |
 
 ## Clients

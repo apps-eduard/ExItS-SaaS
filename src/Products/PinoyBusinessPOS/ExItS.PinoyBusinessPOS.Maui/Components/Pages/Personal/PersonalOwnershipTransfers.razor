@@ -1,0 +1,164 @@
+@page "/personal/ownership-transfers"
+@layout Layout.PersonalShell
+@using ExItS.DesignSystem.Components.Internal
+@inject IAuthenticationService Auth
+@inject ICurrentUserContext CurrentUser
+@inject IPlatformAccessClient Platform
+@inject OnlineRequiredGuard OnlineRequired
+@inject NavigationManager Nav
+@inject IStringLocalizer<PosResources> L
+
+<div class="pos-personal-invitations">
+<StoreHeaderBack Href="/personal/more" />
+<Page>
+    <header class="pos-personal-invitations__header">
+        <h1 class="pos-personal-invitations__title">Ownership transfers</h1>
+        <p class="pos-personal-invitations__subtitle">By accepting, you become the owner of that business. The business keeps its profile, records, staff, inventory, sales, and suppliers. The former owner is removed from the organization.</p>
+    </header>
+
+    @if (_loading)
+    {
+        <Spinner />
+    }
+    else if (!_authenticated)
+    {
+        <ErrorState Title="@L["Auth_SessionExpiredTitle"]" Message="@L["Auth_SessionExpired"]" RetryLabel="@L["SignIn_Submit"]" OnRetry="GoSignIn" />
+    }
+    else if (_loadFailed)
+    {
+        <ErrorState Title="Could not load transfers" Message="@(_error ?? L["Personal_LoadErrorMessage"])" RetryLabel="@L["Common_Retry"]" OnRetry="LoadAsync" />
+    }
+    else if (_items.Count == 0)
+    {
+        <EmptyState Title="No pending ownership transfers" Message="When someone offers you ownership of a business, it will appear here." />
+    }
+    else
+    {
+        <FormValidationSummary Messages="_errors" />
+        <div class="pos-personal-list" role="list">
+            @foreach (var item in _items)
+            {
+                <div class="pos-personal-row pos-personal-row--static" role="listitem">
+                    <span class="pos-personal-row__body">
+                        <span class="pos-personal-row__title">@(item.OrganizationDisplayName ?? item.PublicOrganizationId ?? item.OrganizationId.ToString("D")[..8])</span>
+                        <span class="pos-personal-row__meta">Expires @item.ExpiresAtUtc.LocalDateTime.ToString("g")</span>
+                    </span>
+                    <div class="pos-personal-invitations__actions">
+                        <Button IsLoading="_busy" Disabled="_busy" OnClick="() => AcceptAsync(item.Id)">Accept ownership</Button>
+                        <Button Variant="ButtonVariant.Secondary" IsLoading="_busy" Disabled="_busy" OnClick="() => DeclineAsync(item.Id)">Decline</Button>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</Page>
+</div>
+
+@code {
+    private bool _loading = true;
+    private bool _authenticated;
+    private bool _loadFailed;
+    private bool _busy;
+    private string? _error;
+    private List<string> _errors = [];
+    private IReadOnlyList<OrganizationOwnershipTransferDto> _items = [];
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _loadFailed = false;
+        _error = null;
+        try
+        {
+            if (!CurrentUser.IsAuthenticated)
+            {
+                var restore = await Auth.RestoreSessionAsync();
+                _authenticated = restore.Succeeded;
+            }
+            else
+            {
+                _authenticated = true;
+            }
+
+            if (!_authenticated)
+            {
+                return;
+            }
+
+            var personal = await Auth.EnsurePersonalAccountProfileAsync();
+            if (!personal.Succeeded)
+            {
+                _loadFailed = true;
+                _error = L[personal.SafeMessageKey ?? "Access_Denied"];
+                return;
+            }
+
+            if (!await OnlineRequired.EnsureOnlineForRouteAsync("/personal/ownership-transfers"))
+            {
+                _loadFailed = true;
+                _error = L["OnlineRequired_Message"];
+                return;
+            }
+
+            var result = await Platform.GetMyPendingOwnershipTransfersAsync();
+            if (!result.IsSuccess || result.Data is null)
+            {
+                _loadFailed = true;
+                _error = result.Error?.Detail ?? "Could not load ownership transfers.";
+                return;
+            }
+
+            _items = result.Data;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task AcceptAsync(Guid transferId)
+    {
+        _errors = [];
+        _busy = true;
+        try
+        {
+            var result = await Platform.AcceptOwnershipTransferAsync(transferId);
+            if (!result.IsSuccess)
+            {
+                _errors.Add(result.Error?.Detail ?? "Accept failed.");
+                return;
+            }
+
+            await LoadAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task DeclineAsync(Guid transferId)
+    {
+        _errors = [];
+        _busy = true;
+        try
+        {
+            var result = await Platform.DeclineOwnershipTransferAsync(transferId);
+            if (!result.IsSuccess)
+            {
+                _errors.Add(result.Error?.Detail ?? "Decline failed.");
+                return;
+            }
+
+            await LoadAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void GoSignIn() => Nav.NavigateTo("/sign-in");
+}

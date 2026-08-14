@@ -681,4 +681,64 @@ public sealed class PlatformAccessClient(IPosApiClient api) : IPlatformAccessCli
         api.GetAsync<IReadOnlyList<LocalValidationQuickLoginIdentityDto>>(
             "/api/v1/platform/local-validation/quick-login-identities",
             ct);
+
+    public Task<ApiResult<OwnershipTransferTargetDto>> ResolveOwnershipTransferTargetAsync(
+        Guid organizationId,
+        string input,
+        CancellationToken ct = default) =>
+        api.SendAsync<OwnershipTransferTargetDto>(
+            HttpMethod.Post,
+            $"/api/v1/platform/organizations/{organizationId:D}/ownership-transfer/resolve-target",
+            new ResolveOwnershipTransferTargetRequest(input),
+            ct);
+
+    public Task<ApiResult<OrganizationOwnershipTransferDto>> RequestOwnershipTransferAsync(
+        Guid organizationId,
+        string targetInput,
+        CancellationToken ct = default) =>
+        api.SendAsync<OrganizationOwnershipTransferDto>(
+            HttpMethod.Post,
+            $"/api/v1/platform/organizations/{organizationId:D}/ownership-transfer/request",
+            new RequestOwnershipTransferRequest(targetInput),
+            ct);
+
+    public Task<ApiResult<OrganizationOwnershipTransferDto?>> GetPendingOwnershipTransferAsync(
+        Guid organizationId,
+        CancellationToken ct = default) =>
+        api.GetAsync<OrganizationOwnershipTransferDto?>(
+            $"/api/v1/platform/organizations/{organizationId:D}/ownership-transfer/pending",
+            ct);
+
+    public Task<ApiResult<OrganizationOwnershipTransferDto>> CancelOwnershipTransferAsync(
+        Guid transferId,
+        CancellationToken ct = default) =>
+        api.SendAsync<OrganizationOwnershipTransferDto>(
+            HttpMethod.Post,
+            $"/api/v1/platform/ownership-transfers/{transferId:D}/cancel",
+            null,
+            ct);
+
+    public Task<ApiResult<OrganizationOwnershipTransferDto>> AcceptOwnershipTransferAsync(
+        Guid transferId,
+        CancellationToken ct = default) =>
+        api.SendAsync<OrganizationOwnershipTransferDto>(
+            HttpMethod.Post,
+            $"/api/v1/platform/ownership-transfers/{transferId:D}/accept",
+            null,
+            ct);
+
+    public Task<ApiResult<OrganizationOwnershipTransferDto>> DeclineOwnershipTransferAsync(
+        Guid transferId,
+        CancellationToken ct = default) =>
+        api.SendAsync<OrganizationOwnershipTransferDto>(
+            HttpMethod.Post,
+            $"/api/v1/platform/ownership-transfers/{transferId:D}/decline",
+            null,
+            ct);
+
+    public Task<ApiResult<IReadOnlyList<OrganizationOwnershipTransferDto>>> GetMyPendingOwnershipTransfersAsync(
+        CancellationToken ct = default) =>
+        api.GetAsync<IReadOnlyList<OrganizationOwnershipTransferDto>>(
+            "/api/v1/platform/ownership-transfers/my-pending",
+            ct);
 }

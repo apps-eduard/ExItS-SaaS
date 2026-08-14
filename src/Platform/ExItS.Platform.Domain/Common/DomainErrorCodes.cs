@@ -7,12 +7,23 @@ public static class DomainErrorCodes
     public const string InvalidPlatformOrganizationId = "platform.organization.id.invalid";
     public const string InvalidOrganizationMembershipId = "platform.membership.id.invalid";
     public const string InvalidOrganizationInvitationId = "platform.invitation.id.invalid";
+    public const string InvalidOrganizationOwnershipTransferId = "platform.ownership_transfer.id.invalid";
     public const string InvalidProductAccessAssignmentId = "platform.product_access.id.invalid";
     public const string ActorReferenceRequired = "platform.actor.required";
     public const string InvalidInvitationStatusTransition = "platform.invitation.status.invalid_transition";
     public const string InvitationExpired = "platform.invitation.expired";
     public const string InvitationEmailMismatch = "platform.invitation.email_mismatch";
     public const string InvalidInvitationToken = "platform.invitation.token.invalid";
+    public const string InvalidOwnershipTransferStatusTransition =
+        "platform.ownership_transfer.status.invalid_transition";
+    public const string OwnershipTransferExpired = "platform.ownership_transfer.expired";
+    public const string OwnershipTransferSelfDenied = "platform.ownership_transfer.self_denied";
+    public const string OwnershipTransferActorMismatch = "platform.ownership_transfer.actor_mismatch";
+    public const string OwnershipTransferTargetInvalid = "platform.ownership_transfer.target_invalid";
+    public const string OwnershipTransferQrPurposeRejected = "platform.ownership_transfer.qr_purpose_rejected";
+    public const string OwnershipTransferPendingConflict = "platform.ownership_transfer.pending_conflict";
+    public const string OwnershipTransferOwnerInvariant =
+        "platform.ownership_transfer.owner_invariant";
     public const string LastGoverningAdminProtected = "platform.membership.last_governing_admin";
     public const string OrganizationOwnerAssignmentDenied = "platform.membership.owner_assignment_denied";
     public const string OrganizationOwnerUniqueViolation = "platform.membership.owner_unique_violation";

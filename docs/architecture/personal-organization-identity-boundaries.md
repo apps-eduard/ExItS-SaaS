@@ -22,6 +22,7 @@ Personal subjects remain keyed by `PlatformUserId` / `PublicUserId`. Organizatio
 - Organization contact/profile fields live on the organization aggregate (`OrganizationProfile`).
 - Start a Business may **copy** Personal email/phone once (`UseMyContactDetails`); there is **no live sync** afterward.
 - The same Personal identity may own multiple organizations; MVP allows **one Owner per organization**.
+- Ownership transfer is supported via `OrganizationOwnershipTransfer` (Personal QR / EX ID only). Staff invitations must not be used for Owner handoff. See [organization-ownership-transfer.md](../engineering/organization-ownership-transfer.md).
 - Business QR / public identity exposes only DisplayName + PublicOrganizationId (no contact leak).
 - POS receipts still use product operational setup, not Platform OrganizationProfile.
 

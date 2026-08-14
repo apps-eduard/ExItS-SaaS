@@ -94,6 +94,10 @@
                         {
                             <MenuItem Key="profile" RouterLink="/organization/profile">Profile</MenuItem>
                         }
+                        @if (Shell.CanSee("ownership-transfer"))
+                        {
+                            <MenuItem Key="ownership" RouterLink="/organization/ownership-transfer">Ownership transfer</MenuItem>
+                        }
                         @if (Shell.CanSee("settings"))
                         {
                             <MenuItem Key="general" RouterLink="/settings">General / POS</MenuItem>

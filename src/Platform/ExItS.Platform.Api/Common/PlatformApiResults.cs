@@ -25,6 +25,7 @@ internal static class PlatformApiResults
     public static int MapStatusCode(string errorCode) => errorCode switch
     {
         DomainErrorCodes.AuthorizationDenied
+            or DomainErrorCodes.OwnershipTransferActorMismatch
             or ApplicationErrorCodes.BootstrapUnauthorized
             or ApplicationErrorCodes.BootstrapForbiddenInEnvironment
             or ApplicationErrorCodes.AccountNotEligibleForLogin
@@ -68,7 +69,8 @@ internal static class PlatformApiResults
             or ApplicationErrorCodes.RoleAssignmentNotFound
             or ApplicationErrorCodes.AuditRecordNotFound
             or ApplicationErrorCodes.CredentialNotFound
-            or ApplicationErrorCodes.InvitationNotFound
+            or         ApplicationErrorCodes.InvitationNotFound
+            or ApplicationErrorCodes.OwnershipTransferNotFound
             or ApplicationErrorCodes.PersonalContactNotFound
             or ApplicationErrorCodes.PersonalUtangRelationshipNotFound
             or ApplicationErrorCodes.PersonalUtangInvitationNotFound
@@ -139,8 +141,13 @@ internal static class PlatformApiResults
             or DomainErrorCodes.InvalidPlatformRoleStatusTransition
             or DomainErrorCodes.InvalidOrganizationRoleStatusTransition
             or DomainErrorCodes.InvitationExpired
+            or DomainErrorCodes.OwnershipTransferExpired
+            or DomainErrorCodes.OwnershipTransferPendingConflict
+            or DomainErrorCodes.OwnershipTransferOwnerInvariant
+            or DomainErrorCodes.OwnershipTransferSelfDenied
             or DomainErrorCodes.PersonalUtangInvitationExpired
             or ApplicationErrorCodes.PersonalUtangInvitationConflict
+            or ApplicationErrorCodes.OwnershipTransferConflict
             or ApplicationErrorCodes.PersonalContactEmailConflict
             or ApplicationErrorCodes.CreditCustomerConflict
             or ApplicationErrorCodes.CustomerLinkRequestConflict

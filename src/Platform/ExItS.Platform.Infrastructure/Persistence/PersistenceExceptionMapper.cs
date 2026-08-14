@@ -59,6 +59,23 @@ public static class PersistenceExceptionMapper
             return true;
         }
 
+        if (detail.Contains("ux_organization_ownership_transfers_pending_org", StringComparison.OrdinalIgnoreCase)
+            || detail.Contains("organization_ownership_transfers", StringComparison.OrdinalIgnoreCase))
+        {
+            errorCode = DomainErrorCodes.OwnershipTransferPendingConflict;
+            message = "This organization already has a pending ownership transfer. Cancel it first.";
+            return true;
+        }
+
+        if (detail.Contains("ux_organization_invitations_pending_email", StringComparison.OrdinalIgnoreCase)
+            || (detail.Contains("organization_invitations", StringComparison.OrdinalIgnoreCase)
+                && detail.Contains("pending", StringComparison.OrdinalIgnoreCase)))
+        {
+            errorCode = ApplicationErrorCodes.InvitationConflict;
+            message = "A pending invitation already exists for this email in the organization.";
+            return true;
+        }
+
         if (detail.Contains("organizations", StringComparison.OrdinalIgnoreCase)
             || detail.Contains("(slug)", StringComparison.OrdinalIgnoreCase))
         {
