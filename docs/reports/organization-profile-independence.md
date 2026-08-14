@@ -2,7 +2,7 @@
 
 **Status:** Implemented  
 **Starting SHA:** `710426a97bff97d58ca3dc5b1e8a0f386f77bc31`  
-**Feature SHAs:** _(filled after push)_  
+**Feature SHAs:** "a3dfda282b43b6a443bee4bf6477e435b0ddc3dc" (feat); hash-record follows  
 **Related:** [engineering note](../engineering/organization-profile-independence.md) · [identity boundaries](../architecture/personal-organization-identity-boundaries.md)
 
 ## Delivered
