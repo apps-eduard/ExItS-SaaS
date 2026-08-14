@@ -44,6 +44,7 @@ public sealed class PosOfflineCapabilityPolicy : IPosOfflineCapabilityPolicy
             ["/sales/local"] = PosConnectivityRequirement.OfflineCapable,
             ["/customers"] = PosConnectivityRequirement.Queueable,
             ["/customers/new"] = PosConnectivityRequirement.Queueable,
+            ["/purchasing/new"] = PosConnectivityRequirement.Queueable,
 
             // Sales list is reachable offline (history itself is online-only action)
             ["/sales"] = PosConnectivityRequirement.OfflineCapable,
@@ -117,6 +118,8 @@ public sealed class PosOfflineCapabilityPolicy : IPosOfflineCapabilityPolicy
             [PosOfflineActionKeys.PersonalInvite] = PosConnectivityRequirement.OnlineRequired,
             [PosOfflineActionKeys.PersonalLinkUser] = PosConnectivityRequirement.OnlineRequired,
             [PosOfflineActionKeys.PersonalStartBusiness] = PosConnectivityRequirement.OnlineRequired,
+            [PosOfflineActionKeys.ConnectedSupplierCatalogSearch] = PosConnectivityRequirement.OnlineRequired,
+            [PosOfflineActionKeys.ConnectedSupplierOrderSubmit] = PosConnectivityRequirement.OnlineRequired,
 
             // Explicit local/queueable actions (coverage + mixed pages)
             ["sale.checkout.cash"] = PosConnectivityRequirement.Queueable,
@@ -130,6 +133,8 @@ public sealed class PosOfflineCapabilityPolicy : IPosOfflineCapabilityPolicy
             [PosOfflineActionKeys.PersonalLentCreate] = PosConnectivityRequirement.Queueable,
             [PosOfflineActionKeys.PersonalBorrowedCreate] = PosConnectivityRequirement.Queueable,
             [PosOfflineActionKeys.PersonalEntryRecord] = PosConnectivityRequirement.Queueable,
+            [PosOfflineActionKeys.ConnectedSupplierLinkedProductsView] = PosConnectivityRequirement.OfflineCapable,
+            [PosOfflineActionKeys.ConnectedSupplierDraftSave] = PosConnectivityRequirement.Queueable,
         };
 
     // Longer prefixes first for nested routes (e.g. /catalog/import before /catalog).
@@ -153,6 +158,11 @@ public sealed class PosOfflineCapabilityPolicy : IPosOfflineCapabilityPolicy
         if (IsServerSalesHistoryPath(path) || IsOnlineRequiredCustomerSubpath(path))
         {
             return PosConnectivityRequirement.OnlineRequired;
+        }
+
+        if (IsConnectedSupplierLinkedProductsPath(path))
+        {
+            return PosConnectivityRequirement.OfflineCapable;
         }
 
         foreach (var prefix in RoutePrefixes)
@@ -187,6 +197,10 @@ public sealed class PosOfflineCapabilityPolicy : IPosOfflineCapabilityPolicy
         && (path.EndsWith("/ledger", StringComparison.OrdinalIgnoreCase)
             || path.EndsWith("/statement", StringComparison.OrdinalIgnoreCase)
             || path.EndsWith("/overdue", StringComparison.OrdinalIgnoreCase));
+
+    private static bool IsConnectedSupplierLinkedProductsPath(string path) =>
+        path.StartsWith("/suppliers/", StringComparison.OrdinalIgnoreCase)
+        && path.EndsWith("/linked-products", StringComparison.OrdinalIgnoreCase);
 
     public PosConnectivityRequirement GetActionRequirement(string actionKey)
     {

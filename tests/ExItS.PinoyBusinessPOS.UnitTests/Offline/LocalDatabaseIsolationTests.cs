@@ -55,7 +55,7 @@ public sealed class LocalDatabaseIsolationTests
         var org = Guid.NewGuid();
         var open = await manager.OpenAsync(user, org, PosProductCodes.PinoyBusinessPos);
         Assert.True(open.Succeeded);
-        Assert.Equal(LocalDatabaseMigrator.PersonalUtangSchemaVersion, open.Context!.SchemaVersion);
+        Assert.Equal(LocalDatabaseMigrator.ConnectedSuppliersSchemaVersion, open.Context!.SchemaVersion);
         Assert.Equal(LocalContextInitStatus.Ready, open.Context.Status);
 
         var path = new LocalDatabasePathResolver(root).ResolveDatabasePath(user, org, PosProductCodes.PinoyBusinessPos);
@@ -73,6 +73,10 @@ public sealed class LocalDatabaseIsolationTests
         Assert.Contains("local_repayment_projection", names);
         Assert.Contains("local_customer_balance", names);
         Assert.Contains("local_download_checkpoint", names);
+        Assert.Contains("local_connected_supplier", names);
+        Assert.Contains("local_linked_supplier_product", names);
+        Assert.Contains("local_connected_supplier_sync_state", names);
+        Assert.Contains("local_connected_po_draft", names);
         Assert.DoesNotContain("customers", names);
         Assert.DoesNotContain("credit_entries", names);
         Assert.DoesNotContain("repayments", names);
@@ -92,7 +96,7 @@ public sealed class LocalDatabaseIsolationTests
 
         var open = await manager.OpenAsync(Guid.NewGuid(), Guid.NewGuid(), PosProductCodes.PinoyBusinessPos);
         Assert.True(open.Succeeded);
-        Assert.Equal(LocalDatabaseMigrator.PersonalUtangSchemaVersion, open.Context!.SchemaVersion);
+        Assert.Equal(LocalDatabaseMigrator.ConnectedSuppliersSchemaVersion, open.Context!.SchemaVersion);
         root.Dispose();
     }
 
@@ -115,12 +119,12 @@ public sealed class LocalDatabaseIsolationTests
         var migrator = new LocalDatabaseMigrator();
         var result = await migrator.MigrateAsync(connection, identity);
         Assert.True(result.Succeeded);
-        Assert.Equal(LocalDatabaseMigrator.PersonalUtangSchemaVersion, result.SchemaVersion);
+        Assert.Equal(LocalDatabaseMigrator.ConnectedSuppliersSchemaVersion, result.SchemaVersion);
 
         var versions = await connection.QueryRowsAsync(
             "SELECT schema_version FROM local_schema_info ORDER BY schema_version;");
         var versionNums = versions.Select(r => Convert.ToInt32(r["schema_version"])).ToArray();
-        Assert.Equal([1, 2, 3, 4, 5, 6, 7], versionNums);
+        Assert.Equal([1, 2, 3, 4, 5, 6, 7, 8], versionNums);
 
         var tables = await connection.QueryRowsAsync(
             "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;");
@@ -131,6 +135,7 @@ public sealed class LocalDatabaseIsolationTests
         Assert.Contains("local_customer_balance", names); // v3
         Assert.Contains("local_repayment_projection", names); // v4
         Assert.Contains("local_personal_contact", names); // v6
+        Assert.Contains("local_linked_supplier_product", names); // v8
         Assert.DoesNotContain("customers", names);
         root.Dispose();
     }
@@ -160,7 +165,7 @@ public sealed class LocalDatabaseIsolationTests
 
         var result = await new LocalDatabaseMigrator().MigrateAsync(connection, identity);
         Assert.True(result.Succeeded);
-        Assert.Equal(LocalDatabaseMigrator.PersonalUtangSchemaVersion, result.SchemaVersion);
+        Assert.Equal(LocalDatabaseMigrator.ConnectedSuppliersSchemaVersion, result.SchemaVersion);
 
         var after = await connection.QueryRowsAsync(
             "SELECT name FROM sqlite_master WHERE type='table';");
@@ -196,7 +201,7 @@ public sealed class LocalDatabaseIsolationTests
 
         var result = await new LocalDatabaseMigrator().MigrateAsync(connection, identity);
         Assert.True(result.Succeeded);
-        Assert.Equal(LocalDatabaseMigrator.PersonalUtangSchemaVersion, result.SchemaVersion);
+        Assert.Equal(LocalDatabaseMigrator.ConnectedSuppliersSchemaVersion, result.SchemaVersion);
 
         var after = await connection.QueryRowsAsync(
             "SELECT name FROM sqlite_master WHERE type='table';");

@@ -24,6 +24,10 @@ public static class LocalStoreServiceCollectionExtensions
         services.AddSingleton<LocalSellingCatalogAndCashSaleStore>();
         services.AddSingleton<ILocalSellingCatalogStore>(sp => sp.GetRequiredService<LocalSellingCatalogAndCashSaleStore>());
         services.AddSingleton<ILocalCashSaleStore>(sp => sp.GetRequiredService<LocalSellingCatalogAndCashSaleStore>());
+        services.AddSingleton<LocalConnectedSupplierStore>();
+        services.AddSingleton<ILocalConnectedSupplierStore>(sp => sp.GetRequiredService<LocalConnectedSupplierStore>());
+        services.AddSingleton<ILinkedSupplierProductStore>(sp => sp.GetRequiredService<LocalConnectedSupplierStore>());
+        services.AddSingleton<IConnectedPurchaseOrderDraftStore>(sp => sp.GetRequiredService<LocalConnectedSupplierStore>());
         services.AddSingleton<IOfflineRetryClassifier, OfflineRetryClassifier>();
         services.AddSingleton<IOfflineAccessRevalidator, OfflineAccessRevalidator>();
         services.AddSingleton<IOfflineQueueProcessor, OfflineQueueProcessor>();

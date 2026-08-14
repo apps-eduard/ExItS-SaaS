@@ -19,6 +19,9 @@ public sealed class PosOfflineCapabilityPolicyTests
     [InlineData("/organization-select", PosConnectivityRequirement.OnlineRequired)]
     [InlineData("/inventory", PosConnectivityRequirement.OnlineRequired)]
     [InlineData("/reports", PosConnectivityRequirement.OnlineRequired)]
+    [InlineData("/purchasing/new", PosConnectivityRequirement.Queueable)]
+    [InlineData("/suppliers/11111111-1111-1111-1111-111111111111/linked-products", PosConnectivityRequirement.OfflineCapable)]
+    [InlineData("/suppliers/11111111-1111-1111-1111-111111111111/connected-catalog", PosConnectivityRequirement.OnlineRequired)]
     public void Important_routes_have_expected_classification(string route, PosConnectivityRequirement expected)
     {
         Assert.Equal(expected, _policy.GetRouteRequirement(route));
@@ -105,6 +108,14 @@ public sealed class PosOfflineCapabilityPolicyTests
         Assert.Equal(
             PosConnectivityRequirement.Queueable,
             _policy.GetActionRequirement("sale.checkout.cash"));
+        Assert.Equal(PosConnectivityRequirement.OfflineCapable,
+            _policy.GetActionRequirement(PosOfflineActionKeys.ConnectedSupplierLinkedProductsView));
+        Assert.Equal(PosConnectivityRequirement.OnlineRequired,
+            _policy.GetActionRequirement(PosOfflineActionKeys.ConnectedSupplierCatalogSearch));
+        Assert.Equal(PosConnectivityRequirement.Queueable,
+            _policy.GetActionRequirement(PosOfflineActionKeys.ConnectedSupplierDraftSave));
+        Assert.Equal(PosConnectivityRequirement.OnlineRequired,
+            _policy.GetActionRequirement(PosOfflineActionKeys.ConnectedSupplierOrderSubmit));
     }
 
     [Fact]

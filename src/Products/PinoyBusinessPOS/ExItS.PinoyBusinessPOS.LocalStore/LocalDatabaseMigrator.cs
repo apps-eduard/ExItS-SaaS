@@ -7,7 +7,8 @@ namespace ExItS.PinoyBusinessPOS.LocalStore;
 /// Local schema migrations. v1 foundation metadata; v2 generic encrypted outbox; v3 encrypted business cache;
 /// v4 payment projections; v5 selling-catalog cache + local cash-sale outbox support;
 /// v6 Personal Utang local-first tables (user_id owner; no organization_id on personal rows);
-/// v7 catalog product selling_mode (PerItem / ByWeight).
+/// v7 catalog product selling_mode (PerItem / ByWeight);
+/// v8 connected-supplier relationships, linked products, sync cursors, and device-local PO drafts.
 /// </summary>
 public sealed class LocalDatabaseMigrator(TimeProvider? timeProvider = null) : ILocalDatabaseMigrator
 {
@@ -18,10 +19,11 @@ public sealed class LocalDatabaseMigrator(TimeProvider? timeProvider = null) : I
     public const int CatalogSaleSchemaVersion = 5;
     public const int PersonalUtangTablesSchemaVersion = 6;
     public const int PersonalUtangSchemaVersion = 7;
+    public const int ConnectedSuppliersSchemaVersion = 8;
 
     private readonly TimeProvider _clock = timeProvider ?? TimeProvider.System;
 
-    public int CurrentSchemaVersion => PersonalUtangSchemaVersion;
+    public int CurrentSchemaVersion => ConnectedSuppliersSchemaVersion;
 
     public async Task<LocalMigrationResult> MigrateAsync(
         ILocalDatabaseConnection connection,
@@ -515,6 +517,87 @@ public sealed class LocalDatabaseMigrator(TimeProvider? timeProvider = null) : I
                 current = PersonalUtangSchemaVersion;
             }
 
+            if (current < ConnectedSuppliersSchemaVersion)
+            {
+                await connection.ExecuteAsync(
+                    """
+                    CREATE TABLE IF NOT EXISTS local_connected_supplier (
+                        relationship_id TEXT NOT NULL PRIMARY KEY,
+                        supplier_organization_id TEXT NOT NULL,
+                        buyer_supplier_id TEXT NULL,
+                        display_name TEXT NOT NULL,
+                        status TEXT NOT NULL,
+                        last_synced_utc TEXT NULL
+                    );
+                    """,
+                    ct).ConfigureAwait(false);
+
+                await connection.ExecuteAsync(
+                    """
+                    CREATE TABLE IF NOT EXISTS local_linked_supplier_product (
+                        link_id TEXT NOT NULL PRIMARY KEY,
+                        relationship_id TEXT NOT NULL,
+                        supplier_organization_id TEXT NOT NULL,
+                        buyer_product_id TEXT NOT NULL,
+                        supplier_product_id TEXT NOT NULL,
+                        supplier_sku TEXT NULL,
+                        product_name TEXT NOT NULL,
+                        unit_of_measure TEXT NOT NULL,
+                        last_known_order_price TEXT NOT NULL,
+                        is_orderable INTEGER NOT NULL,
+                        is_active INTEGER NOT NULL,
+                        sync_version INTEGER NOT NULL,
+                        supplier_updated_at_utc TEXT NOT NULL,
+                        synced_at_utc TEXT NOT NULL
+                    );
+                    """,
+                    ct).ConfigureAwait(false);
+
+                await connection.ExecuteAsync(
+                    "CREATE INDEX IF NOT EXISTS ix_local_linked_supplier_product_relationship ON local_linked_supplier_product(relationship_id);",
+                    ct).ConfigureAwait(false);
+                await connection.ExecuteAsync(
+                    "CREATE INDEX IF NOT EXISTS ix_local_linked_supplier_product_name ON local_linked_supplier_product(product_name);",
+                    ct).ConfigureAwait(false);
+                await connection.ExecuteAsync(
+                    "CREATE INDEX IF NOT EXISTS ix_local_linked_supplier_product_sku ON local_linked_supplier_product(supplier_sku);",
+                    ct).ConfigureAwait(false);
+                await connection.ExecuteAsync(
+                    "CREATE INDEX IF NOT EXISTS ix_local_linked_supplier_product_version ON local_linked_supplier_product(sync_version);",
+                    ct).ConfigureAwait(false);
+
+                await connection.ExecuteAsync(
+                    """
+                    CREATE TABLE IF NOT EXISTS local_connected_supplier_sync_state (
+                        relationship_id TEXT NOT NULL PRIMARY KEY,
+                        last_sync_version INTEGER NOT NULL,
+                        last_synced_utc TEXT NOT NULL
+                    );
+                    """,
+                    ct).ConfigureAwait(false);
+
+                await connection.ExecuteAsync(
+                    """
+                    CREATE TABLE IF NOT EXISTS local_connected_po_draft (
+                        local_id TEXT NOT NULL PRIMARY KEY,
+                        relationship_id TEXT NOT NULL,
+                        supplier_id TEXT NOT NULL,
+                        payload_json TEXT NOT NULL,
+                        sync_state TEXT NOT NULL,
+                        updated_at_utc TEXT NOT NULL
+                    );
+                    """,
+                    ct).ConfigureAwait(false);
+
+                await connection.ExecuteAsync(
+                    $"""
+                    INSERT INTO local_schema_info (schema_version, applied_at_utc)
+                    VALUES ({ConnectedSuppliersSchemaVersion}, '{now}');
+                    """,
+                    ct).ConfigureAwait(false);
+                current = ConnectedSuppliersSchemaVersion;
+            }
+
             var existing = await connection
                 .QueryScalarAsync<long>(
                     $"""
@@ -567,7 +650,7 @@ public sealed class LocalDatabaseMigrator(TimeProvider? timeProvider = null) : I
                 return new LocalMigrationResult(false, (int)current, "forbidden_tables_present");
             }
 
-            return new LocalMigrationResult(true, PersonalUtangSchemaVersion);
+            return new LocalMigrationResult(true, ConnectedSuppliersSchemaVersion);
         }
         catch (OperationCanceledException)
         {
