@@ -1,3 +1,5 @@
+using ExItS.PinoyBusinessPOS.Domain.Inventory;
+
 namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory;
 
 internal sealed class StockCountRecord
@@ -7,6 +9,7 @@ internal sealed class StockCountRecord
     public string? CountNumber { get; set; }
     public string Status { get; set; } = string.Empty;
     public DateOnly CountDate { get; set; }
+    public string Title { get; set; } = StockCount.HistoricalTitle;
     public string? Notes { get; set; }
     public DateTimeOffset? StartedAtUtc { get; set; }
     public Guid? StartedBy { get; set; }

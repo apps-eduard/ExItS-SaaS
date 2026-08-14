@@ -1357,6 +1357,7 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.CountNumber).HasColumnName("count_number").HasMaxLength(StockCountNumbers.MaxLength);
             entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
             entity.Property(e => e.CountDate).HasColumnName("count_date").IsRequired();
+            entity.Property(e => e.Title).HasColumnName("title").HasMaxLength(StockCount.TitleMaxLength).IsRequired();
             entity.Property(e => e.Notes).HasColumnName("notes").HasMaxLength(StockCount.NotesMaxLength);
             entity.Property(e => e.StartedAtUtc).HasColumnName("started_at_utc");
             entity.Property(e => e.StartedBy).HasColumnName("started_by");

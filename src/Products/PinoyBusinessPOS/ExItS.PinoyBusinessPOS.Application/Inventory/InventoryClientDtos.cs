@@ -114,6 +114,7 @@ public sealed record PosStockCountDto(
     Guid StockCountId,
     Guid OrganizationId,
     string? CountNumber,
+    string Title,
     string Status,
     DateOnly CountDate,
     string? Notes,
@@ -131,13 +132,15 @@ public sealed record CreateStockCountLineRequest(Guid ProductId, decimal? Counte
 
 public sealed record CreateStockCountRequest(
     IReadOnlyList<CreateStockCountLineRequest> Lines,
+    string Title,
     DateOnly? CountDate = null,
     string? Notes = null);
 
 public sealed record UpdateStockCountRequest(
     IReadOnlyList<CreateStockCountLineRequest> Lines,
     DateOnly? CountDate = null,
-    string? Notes = null);
+    string? Notes = null,
+    string? Title = null);
 
 public sealed record StockMovementFilter(
     string? MovementType = null,

@@ -5,13 +5,14 @@ using ExItS.PinoyBusinessPOS.Domain.Common;
 namespace ExItS.PinoyBusinessPOS.Domain.Inventory;
 
 /// <summary>
-/// Organization-scoped human-readable stock count number: <c>CNT-YYYYMMDD-NNNNNN</c>.
-/// Allocated server-side per organization and business date on start.
+/// Organization-scoped human-readable stock count number. New allocations use
+/// <c>CNT-YYYYMMDD-NN</c> (two digits, expanding naturally past 99). Historical values such as
+/// <c>CNT-YYYYMMDD-000001</c> remain valid. Allocated server-side per organization and business date.
 /// </summary>
 public static partial class StockCountNumbers
 {
     public const string Prefix = "CNT";
-    public const int SequenceDigits = 6;
+    public const int MinSequenceDigits = 2;
     public const int MaxLength = 32;
     public const long MaxSequence = 999_999L;
 
@@ -26,9 +27,10 @@ public static partial class StockCountNumbers
                 $"Stock count sequence must be between 1 and {MaxSequence} for a single business date.");
         }
 
+        var sequenceText = sequence.ToString($"D{MinSequenceDigits}", CultureInfo.InvariantCulture);
         return string.Create(
             CultureInfo.InvariantCulture,
-            $"{Prefix}-{businessDate:yyyyMMdd}-{sequence.ToString($"D{SequenceDigits}", CultureInfo.InvariantCulture)}");
+            $"{Prefix}-{businessDate:yyyyMMdd}-{sequenceText}");
     }
 
     public static string Normalize(string? countNumber)
@@ -43,7 +45,7 @@ public static partial class StockCountNumbers
         {
             throw new DomainException(
                 DomainErrorCodes.InvalidStockCountNumber,
-                "Stock count number must look like CNT-YYYYMMDD-NNNNNN.");
+                "Stock count number must look like CNT-YYYYMMDD-NN.");
         }
 
         return trimmed;
@@ -51,6 +53,6 @@ public static partial class StockCountNumbers
 
     public static DateOnly BusinessDateOf(DateTimeOffset utcNow) => DateOnly.FromDateTime(utcNow.UtcDateTime);
 
-    [GeneratedRegex(@"^CNT-\d{8}-\d{6,}$", RegexOptions.CultureInvariant)]
+    [GeneratedRegex(@"^CNT-\d{8}-\d{2,}$", RegexOptions.CultureInvariant)]
     private static partial Regex CreateValidPattern();
 }

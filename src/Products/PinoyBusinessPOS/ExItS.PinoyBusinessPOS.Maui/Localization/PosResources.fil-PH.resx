@@ -1351,33 +1351,60 @@
   <data name="Inventory_TransfersConfirm" xml:space="preserve"><value>Kumpirmahin ang pagtanggap</value></data>
   <data name="Inventory_TransfersConfirmSummary" xml:space="preserve"><value>Naipadala: {0} units. Natanggap: {1} units. Kulang: {2} units.</value></data>
   <data name="Inventory_CountsTitle" xml:space="preserve"><value>Stock counts</value></data>
-  <data name="Inventory_CountsSubtitle" xml:space="preserve"><value>Physical counts na may variance adjustments (online lamang).</value></data>
+  <data name="Inventory_CountsSubtitle" xml:space="preserve"><value>Suriin ang aktwal na laman at itama ang system quantity para tumugma (online lamang).</value></data>
   <data name="Inventory_CountsAdd" xml:space="preserve"><value>Bagong count</value></data>
   <data name="Inventory_CountsEmptyTitle" xml:space="preserve"><value>Walang stock count</value></data>
-  <data name="Inventory_CountsEmptyMessage" xml:space="preserve"><value>Gumawa ng draft count para i-reconcile ang on-hand stock.</value></data>
+  <data name="Inventory_CountsEmptyMessage" xml:space="preserve"><value>Gumawa ng count para i-check ang pisikal na stock laban sa system quantity.</value></data>
   <data name="Inventory_CountsNumber" xml:space="preserve"><value>Count number</value></data>
   <data name="Inventory_CountsUpdated" xml:space="preserve"><value>Na-update</value></data>
-  <data name="Inventory_CountsDraft" xml:space="preserve"><value>Draft count</value></data>
+  <data name="Inventory_CountsDraft" xml:space="preserve"><value>Inihahanda</value></data>
+  <data name="Inventory_CountsPreparing" xml:space="preserve"><value>Inihahanda</value></data>
   <data name="Inventory_CountsCreateTitle" xml:space="preserve"><value>Gumawa ng stock count</value></data>
+  <data name="Inventory_CountsTitleField" xml:space="preserve"><value>Pamagat ng count</value></data>
+  <data name="Inventory_CountsTitleCustom" xml:space="preserve"><value>Pasadya</value></data>
+  <data name="Inventory_CountsCustomTitle" xml:space="preserve"><value>Pasadyang pamagat</value></data>
+  <data name="Inventory_CountsCustomTitleHint" xml:space="preserve"><value>Halimbawa: Freezer inventory check</value></data>
+  <data name="Inventory_CountsTitleRequired" xml:space="preserve"><value>Maglagay ng pamagat ng count.</value></data>
   <data name="Inventory_CountsAddLine" xml:space="preserve"><value>Magdagdag ng produkto</value></data>
   <data name="Inventory_CountsProduct" xml:space="preserve"><value>Produkto</value></data>
-  <data name="Inventory_CountsProductSection" xml:space="preserve"><value>Magdagdag ng produkto</value></data>
-  <data name="Inventory_CountsLinesEmpty" xml:space="preserve"><value>Magdagdag ng kahit isang produkto para gumawa ng draft count.</value></data>
+  <data name="Inventory_CountsProductSection" xml:space="preserve"><value>Mga produkto</value></data>
+  <data name="Inventory_CountsProducts" xml:space="preserve"><value>Mga produkto</value></data>
+  <data name="Inventory_CountsSelectAll" xml:space="preserve"><value>Piliin lahat</value></data>
+  <data name="Inventory_CountsClearAll" xml:space="preserve"><value>Alisin lahat</value></data>
+  <data name="Inventory_CountsSelectedCount" xml:space="preserve"><value>{0} ang napili</value></data>
+  <data name="Inventory_CountsLinesEmpty" xml:space="preserve"><value>Pumili ng kahit isang tracked na produkto.</value></data>
+  <data name="Inventory_CountsTrackedOnlyHint" xml:space="preserve"><value>Mga produktong naka-enable ang tracking lang ang puwedeng i-count.</value></data>
+  <data name="Inventory_CountsNoTrackedMessage" xml:space="preserve"><value>Wala pang tracked na produkto. I-enable muna ang tracking sa Inventory, tapos bumalik dito.</value></data>
+  <data name="Inventory_CountsOpenInventory" xml:space="preserve"><value>Buksan ang Inventory</value></data>
   <data name="Inventory_CountsLinesCount" xml:space="preserve"><value>{0} (na) produkto</value></data>
+  <data name="Inventory_CountsDifferencesCount" xml:space="preserve"><value>{0} (na) pagkakaiba</value></data>
   <data name="Inventory_CountsRemoveLine" xml:space="preserve"><value>Alisin</value></data>
   <data name="Inventory_CountsReset" xml:space="preserve"><value>I-reset</value></data>
   <data name="Inventory_CountsResetTitle" xml:space="preserve"><value>I-reset ang stock count?</value></data>
-  <data name="Inventory_CountsResetMessage" xml:space="preserve"><value>Mabubura ang listahan ng produkto at mga tala.</value></data>
-  <data name="Inventory_CountsNotesHint" xml:space="preserve"><value>Opsyonal na tala para sa count na ito.</value></data>
+  <data name="Inventory_CountsResetMessage" xml:space="preserve"><value>Mabubura ang pamagat, pagpili ng produkto, at mga tala.</value></data>
+  <data name="Inventory_CountsNotesHint" xml:space="preserve"><value>May iba pa ba dapat malaman? Opsyonal.</value></data>
   <data name="Inventory_CountsNotes" xml:space="preserve"><value>Notes</value></data>
-  <data name="Inventory_CountsCreate" xml:space="preserve"><value>Gumawa ng draft</value></data>
+  <data name="Inventory_CountsCreate" xml:space="preserve"><value>Gumawa ng count</value></data>
   <data name="Inventory_CountsStart" xml:space="preserve"><value>Simulan ang count</value></data>
-  <data name="Inventory_CountsComplete" xml:space="preserve"><value>Kumpletuhin ang count</value></data>
+  <data name="Inventory_CountsComplete" xml:space="preserve"><value>Tapusin ang count</value></data>
   <data name="Inventory_CountsCancel" xml:space="preserve"><value>Kanselahin ang count</value></data>
-  <data name="Inventory_CountsLines" xml:space="preserve"><value>Mga count line</value></data>
-  <data name="Inventory_CountsCounted" xml:space="preserve"><value>Counted</value></data>
-  <data name="Inventory_CountsVariance" xml:space="preserve"><value>Variance</value></data>
-  <data name="Inventory_CountsSaveLines" xml:space="preserve"><value>I-save ang counted quantities</value></data>
+  <data name="Inventory_CountsLines" xml:space="preserve"><value>Mga produkto</value></data>
+  <data name="Inventory_CountsCounted" xml:space="preserve"><value>Aktwal na bilang</value></data>
+  <data name="Inventory_CountsVariance" xml:space="preserve"><value>Pagkakaiba</value></data>
+  <data name="Inventory_CountsSystemQty" xml:space="preserve"><value>System qty</value></data>
+  <data name="Inventory_CountsActual" xml:space="preserve"><value>Aktwal na bilang</value></data>
+  <data name="Inventory_CountsActualHint" xml:space="preserve"><value>Ilagay ang dami na aktwal mong nabilang.</value></data>
+  <data name="Inventory_CountsDifference" xml:space="preserve"><value>Pagkakaiba</value></data>
+  <data name="Inventory_CountsSaveLines" xml:space="preserve"><value>I-save ang nabilang na dami</value></data>
+  <data name="Inventory_CountsLifecycle" xml:space="preserve"><value>Mga oras ng count</value></data>
+  <data name="Inventory_CountsCreated" xml:space="preserve"><value>Ginawa</value></data>
+  <data name="Inventory_CountsStarted" xml:space="preserve"><value>Sinimulan</value></data>
+  <data name="Inventory_CountsCompletedAt" xml:space="preserve"><value>Natapos</value></data>
+  <data name="Inventory_CountsCancelledAt" xml:space="preserve"><value>Kinansela</value></data>
+  <data name="Inventory_CountsStatus_Draft" xml:space="preserve"><value>Inihahanda</value></data>
+  <data name="Inventory_CountsStatus_InProgress" xml:space="preserve"><value>Binibilang</value></data>
+  <data name="Inventory_CountsStatus_Completed" xml:space="preserve"><value>Natapos</value></data>
+  <data name="Inventory_CountsStatus_Cancelled" xml:space="preserve"><value>Kinansela</value></data>
   <data name="Nav_Inventory" xml:space="preserve"><value>Imbentaryo</value></data>
   <data name="Nav_Expenses" xml:space="preserve"><value>Mga Gastos</value></data>
   <data name="Expenses_Title" xml:space="preserve"><value>Mga Gastos</value></data>

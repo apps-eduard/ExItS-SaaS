@@ -3,7 +3,6 @@
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IPosInventoryClient Inventory
-@inject IPosCatalogClient Catalog
 @inject IUtangCapabilityEvaluator Capabilities
 @inject ApiStatusLocalizer ApiLocalizer
 @inject IConnectivityService Connectivity
@@ -19,6 +18,7 @@ else
 {
     var blocked = _isOffline || _busy;
     var hasDraft = HasUnsavedDraft;
+    var eligible = EligibleProducts;
 <div class="pos-stock-count-create">
     <Page>
         <header class="pos-stock-count-create__header">
@@ -46,49 +46,67 @@ else
             <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Inventory_CountsCreateTitle"])" Message="@_errorMessage" />
         }
 
-        <section class="pos-stock-count-create__panel" aria-labelledby="stock-count-product-heading">
-            <h2 id="stock-count-product-heading" class="pos-stock-count-create__section-title">@L["Inventory_CountsProductSection"]</h2>
+        <section class="pos-stock-count-create__panel" aria-labelledby="stock-count-title-heading">
+            <h2 id="stock-count-title-heading" class="pos-stock-count-create__section-title">@L["Inventory_CountsTitleField"]</h2>
             <div class="pos-stock-count-create__form">
-                <Select Label="@L["Inventory_CountsProduct"]"
-                        Value="@_selectedProductId"
-                        ValueChanged="OnProductChanged"
-                        Options="@ProductOptions"
+                <Select Label="@L["Inventory_CountsTitleField"]"
+                        Value="@_titlePreset"
+                        ValueChanged="OnTitlePresetChanged"
+                        Options="@TitlePresetOptions"
                         Required="true"
-                        Disabled="@(blocked || _products.Count == 0)" />
-                <button type="button"
-                        class="pos-action-tile pos-action-tile--primary pos-stock-count-create__add"
-                        disabled="@(blocked || string.IsNullOrEmpty(_selectedProductId))"
-                        @onclick="AddLine">
-                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("products")</span>
-                    <span class="pos-action-tile__label">@L["Inventory_CountsAddLine"]</span>
-                </button>
+                        Disabled="@blocked" />
+                @if (IsCustomTitle)
+                {
+                    <TextInput Label="@L["Inventory_CountsCustomTitle"]"
+                               Value="@_customTitle"
+                               ValueChanged="v => _customTitle = v"
+                               Disabled="@blocked"
+                               Required="true"
+                               Hint="@L["Inventory_CountsCustomTitleHint"]" />
+                }
             </div>
         </section>
 
-        <section class="pos-stock-count-create__panel" aria-labelledby="stock-count-lines-heading">
-            <h2 id="stock-count-lines-heading" class="pos-stock-count-create__section-title">@L["Inventory_CountsLines"]</h2>
-            @if (_lines.Count == 0)
+        <section class="pos-stock-count-create__panel" aria-labelledby="stock-count-product-heading">
+            <h2 id="stock-count-product-heading" class="pos-stock-count-create__section-title">@L["Inventory_CountsProducts"]</h2>
+            @if (eligible.Count == 0 && string.IsNullOrEmpty(_errorMessage) && !_isOffline)
             {
-                <InlineMessage Tone="InlineMessageTone.Info">@L["Inventory_CountsLinesEmpty"]</InlineMessage>
+                <InlineMessage Tone="InlineMessageTone.Warning">@L["Inventory_CountsNoTrackedMessage"]</InlineMessage>
+                <button type="button"
+                        class="pos-stock-count-create__inventory-link"
+                        disabled="@blocked"
+                        @onclick="GoInventory">
+                    @L["Inventory_CountsOpenInventory"]
+                </button>
             }
             else
             {
-                <div class="pos-stock-count-create__summary pos-muted">
-                    @L["Inventory_CountsLinesCount", _lines.Count]
+                <p class="pos-stock-count-create__hint">@L["Inventory_CountsTrackedOnlyHint"]</p>
+                <div class="pos-stock-count-create__bulk" role="group" aria-label="@L["Inventory_CountsProducts"]">
+                    <Button Variant="ButtonVariant.Secondary"
+                            Disabled="@(blocked || eligible.Count == 0)"
+                            OnClick="SelectAll">
+                        @L["Inventory_CountsSelectAll"]
+                    </Button>
+                    <Button Variant="ButtonVariant.Ghost"
+                            Disabled="@(blocked || _selectedProductIds.Count == 0)"
+                            OnClick="ClearAll">
+                        @L["Inventory_CountsClearAll"]
+                    </Button>
                 </div>
-                <div class="pos-stock-count-create__lines" role="list">
-                    @foreach (var line in _lines)
+                <div class="pos-stock-count-create__summary pos-muted">
+                    @L["Inventory_CountsSelectedCount", _selectedProductIds.Count]
+                </div>
+                <div class="pos-stock-count-create__products" role="list">
+                    @foreach (var product in eligible)
                     {
-                        <div class="pos-stock-count-create__line" role="listitem">
-                            <div class="pos-stock-count-create__line-main">
-                                <span class="pos-stock-count-create__line-name">@line.Name</span>
-                            </div>
-                            <Button Variant="ButtonVariant.Ghost"
-                                    Disabled="@blocked"
-                                    OnClick="() => RemoveLine(line.ProductId)">
-                                <span class="pos-btn-icon" aria-hidden="true">@IconGlyphs.Get("close")</span>
-                                @L["Inventory_CountsRemoveLine"]
-                            </Button>
+                        var selected = _selectedProductIds.Contains(product.ProductId);
+                        <div class="pos-stock-count-create__product" role="listitem">
+                            <Checkbox Value="@selected"
+                                      ValueChanged="v => SetProductSelected(product.ProductId, v)"
+                                      Disabled="@blocked">
+                                @product.Name
+                            </Checkbox>
                         </div>
                     }
                 </div>
@@ -112,7 +130,7 @@ else
             </Button>
             <Button Variant="ButtonVariant.Primary"
                     IsLoading="@_busy"
-                    Disabled="@(blocked || _lines.Count == 0)"
+                    Disabled="@(blocked || _selectedProductIds.Count == 0 || !HasResolvedTitle)"
                     OnClick="CreateAsync">
                 <span class="pos-btn-icon" aria-hidden="true">@IconGlyphs.Get("check")</span>
                 @L["Inventory_CountsCreate"]
@@ -132,30 +150,38 @@ else
 }
 
 @code {
-    private sealed record LineEntry(Guid ProductId, string Name);
-
     private bool _ready;
     private bool _busy;
     private bool _isOffline;
     private bool _confirmReset;
-    private string _selectedProductId = string.Empty;
+    private string _titlePreset = StockCountDisplay.PresetTitles[0];
+    private string _customTitle = string.Empty;
     private string _notes = string.Empty;
-    private List<LineEntry> _lines = [];
-    private List<PosCatalogProductDto> _products = [];
+    private readonly HashSet<Guid> _selectedProductIds = [];
+    private List<PosInventoryAccountDto> _products = [];
     private string? _errorTitle;
     private string? _errorMessage;
 
-    private IReadOnlyList<SelectOption> ProductOptions =>
+    private bool IsCustomTitle =>
+        string.Equals(_titlePreset, StockCountDisplay.CustomPresetValue, StringComparison.Ordinal);
+
+    private bool HasResolvedTitle =>
+        !string.IsNullOrWhiteSpace(ResolveTitle());
+
+    private IReadOnlyList<SelectOption> TitlePresetOptions =>
+        InventoryUiOptions.StockCountTitleOptions(L);
+
+    private IReadOnlyList<PosInventoryAccountDto> EligibleProducts =>
         _products
-            .Where(p => _lines.All(l => l.ProductId != p.ProductId))
+            .Where(p => p.IsTracked)
             .OrderBy(p => p.Name, StringComparer.OrdinalIgnoreCase)
-            .Select(p => new SelectOption(p.ProductId.ToString("D"), p.Name))
             .ToList();
 
     private bool HasUnsavedDraft =>
-        _lines.Count > 0
+        _selectedProductIds.Count > 0
         || !string.IsNullOrWhiteSpace(_notes)
-        || !string.IsNullOrWhiteSpace(_selectedProductId);
+        || !string.Equals(_titlePreset, StockCountDisplay.PresetTitles[0], StringComparison.Ordinal)
+        || !string.IsNullOrWhiteSpace(_customTitle);
 
     protected override async Task OnParametersSetAsync()
     {
@@ -172,11 +198,15 @@ else
             return;
         }
 
-        var products = await Catalog.ListProductsAsync(pageSize: 200);
+        var products = await Inventory.ListAsync(
+            tracked: true,
+            productStatus: "Active",
+            page: 1,
+            pageSize: 200);
         if (products.IsSuccess && products.Data is not null)
         {
             _products = products.Data.Items
-                .Where(p => string.Equals(p.Status, "Active", StringComparison.OrdinalIgnoreCase))
+                .Where(p => p.IsTracked)
                 .ToList();
         }
         else
@@ -187,32 +217,34 @@ else
         }
     }
 
-    private void OnProductChanged(string? value) => _selectedProductId = value ?? string.Empty;
+    private void OnTitlePresetChanged(string? value) =>
+        _titlePreset = string.IsNullOrWhiteSpace(value)
+            ? StockCountDisplay.PresetTitles[0]
+            : value;
 
-    private void AddLine()
+    private void SetProductSelected(Guid productId, bool selected)
     {
-        if (!Guid.TryParse(_selectedProductId, out var productId))
+        if (selected)
         {
-            return;
+            _selectedProductIds.Add(productId);
         }
-
-        if (_lines.Any(l => l.ProductId == productId))
+        else
         {
-            return;
+            _selectedProductIds.Remove(productId);
         }
-
-        var product = _products.FirstOrDefault(p => p.ProductId == productId);
-        if (product is null)
-        {
-            return;
-        }
-
-        _lines.Add(new LineEntry(productId, product.Name));
-        _selectedProductId = string.Empty;
     }
 
-    private void RemoveLine(Guid productId) =>
-        _lines.RemoveAll(l => l.ProductId == productId);
+    private void SelectAll()
+    {
+        foreach (var product in EligibleProducts)
+        {
+            _selectedProductIds.Add(product.ProductId);
+        }
+    }
+
+    private void ClearAll() => _selectedProductIds.Clear();
+
+    private void GoInventory() => Nav.NavigateTo("/inventory");
 
     private void RequestReset()
     {
@@ -227,25 +259,48 @@ else
     private void ConfirmReset()
     {
         _confirmReset = false;
-        _selectedProductId = string.Empty;
+        _titlePreset = StockCountDisplay.PresetTitles[0];
+        _customTitle = string.Empty;
         _notes = string.Empty;
-        _lines = [];
+        _selectedProductIds.Clear();
         _errorTitle = null;
         _errorMessage = null;
     }
 
+    private string? ResolveTitle()
+    {
+        if (IsCustomTitle)
+        {
+            return string.IsNullOrWhiteSpace(_customTitle) ? null : _customTitle.Trim();
+        }
+
+        return _titlePreset.Trim();
+    }
+
     private async Task CreateAsync()
     {
-        if (_busy || _isOffline || _lines.Count == 0)
+        if (_busy || _isOffline || _selectedProductIds.Count == 0)
         {
+            return;
+        }
+
+        var title = ResolveTitle();
+        if (string.IsNullOrWhiteSpace(title))
+        {
+            _errorTitle = L["Inventory_CountsCreateTitle"];
+            _errorMessage = L["Inventory_CountsTitleRequired"];
             return;
         }
 
         _busy = true;
         _errorTitle = null;
         _errorMessage = null;
+
+        // Distinct Guids prevent duplicate count lines even if selection state is corrupted.
+        var productIds = _selectedProductIds.Distinct().ToList();
         var request = new CreateStockCountRequest(
-            _lines.Select(l => new CreateStockCountLineRequest(l.ProductId)).ToList(),
+            productIds.Select(id => new CreateStockCountLineRequest(id)).ToList(),
+            title,
             Notes: string.IsNullOrWhiteSpace(_notes) ? null : _notes.Trim());
         var result = await Inventory.CreateStockCountAsync(request);
         _busy = false;

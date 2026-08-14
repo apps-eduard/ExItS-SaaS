@@ -74,16 +74,23 @@ else
                 <div class="pos-stock-counts__list" role="list" aria-label="@L["Inventory_CountsTitle"]">
                     @foreach (var item in _items)
                     {
+                        var title = StockCountDisplay.DisplayTitle(item.Title);
+                        var status = InventoryUiOptions.StockCountStatusLabel(L, item.Status);
+                        var when = StockCountDisplay.FormatLocalTimestamp(StockCountDisplay.PrimaryTimestamp(item));
+                        var differences = StockCountDisplay.DifferenceCount(item.Lines);
                         <a class="pos-stock-counts__row"
                            role="listitem"
                            href="@($"/inventory/counts/{item.StockCountId:D}")">
                             <div class="pos-stock-counts__row-main">
-                                <span class="pos-stock-counts__row-name">
-                                    @(item.CountNumber ?? L["Inventory_CountsDraft"])
+                                <span class="pos-stock-counts__row-title">@title</span>
+                                <span class="pos-stock-counts__row-number">
+                                    @(item.CountNumber ?? L["Inventory_CountsPreparing"])
                                 </span>
+                                <span class="pos-stock-counts__row-status">@status</span>
+                                <span class="pos-stock-counts__row-meta">@when</span>
                                 <span class="pos-stock-counts__row-meta">
-                                    @item.Status
-                                    · @item.UpdatedAtUtc.UtcDateTime.ToString("u")
+                                    @L["Inventory_CountsLinesCount", item.Lines.Count]
+                                    · @L["Inventory_CountsDifferencesCount", differences]
                                 </span>
                             </div>
                             <div class="pos-stock-counts__row-side">

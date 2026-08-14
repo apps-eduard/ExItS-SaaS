@@ -26,13 +26,15 @@ else
     var inProgress = string.Equals(_count.Status, "InProgress", StringComparison.OrdinalIgnoreCase);
     var draft = string.Equals(_count.Status, "Draft", StringComparison.OrdinalIgnoreCase);
     var manageOnline = canManage && !_isOffline;
+    var title = StockCountDisplay.DisplayTitle(_count.Title);
+    var statusLabel = InventoryUiOptions.StockCountStatusLabel(L, _count.Status);
 <div class="pos-stock-count-detail">
 <Page>
     <header class="pos-stock-count-detail__header">
-        <h1 class="pos-stock-count-detail__title">@(_count.CountNumber ?? L["Inventory_CountsDraft"])</h1>
-        <p class="pos-stock-count-detail__subtitle">@L["Inventory_CountsTitle"]</p>
+        <h1 class="pos-stock-count-detail__title">@title</h1>
+        <p class="pos-stock-count-detail__number">@(_count.CountNumber ?? L["Inventory_CountsPreparing"])</p>
         <div class="pos-stock-count-detail__status-row">
-            <Badge Tone="@StatusTone(_count.Status)">@_count.Status</Badge>
+            <Badge Tone="@StatusTone(_count.Status)">@statusLabel</Badge>
         </div>
     </header>
 
@@ -45,6 +47,44 @@ else
     {
         <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Inventory_CountsTitle"])" Message="@_errorMessage" />
     }
+
+    <section class="pos-stock-count-detail__panel" aria-labelledby="stock-count-lifecycle-heading">
+        <h2 id="stock-count-lifecycle-heading" class="visually-hidden">@L["Inventory_CountsLifecycle"]</h2>
+        <dl class="pos-stock-count-detail__facts">
+            <div class="pos-stock-count-detail__fact">
+                <dt>@L["Inventory_CountsCreated"]</dt>
+                <dd>@StockCountDisplay.FormatLocalTimestamp(_count.CreatedAtUtc)</dd>
+            </div>
+            @if (_count.StartedAtUtc is not null)
+            {
+                <div class="pos-stock-count-detail__fact">
+                    <dt>@L["Inventory_CountsStarted"]</dt>
+                    <dd>@StockCountDisplay.FormatLocalTimestamp(_count.StartedAtUtc.Value)</dd>
+                </div>
+            }
+            @if (_count.CompletedAtUtc is not null)
+            {
+                <div class="pos-stock-count-detail__fact">
+                    <dt>@L["Inventory_CountsCompletedAt"]</dt>
+                    <dd>@StockCountDisplay.FormatLocalTimestamp(_count.CompletedAtUtc.Value)</dd>
+                </div>
+            }
+            @if (_count.CancelledAtUtc is not null)
+            {
+                <div class="pos-stock-count-detail__fact">
+                    <dt>@L["Inventory_CountsCancelledAt"]</dt>
+                    <dd>@StockCountDisplay.FormatLocalTimestamp(_count.CancelledAtUtc.Value)</dd>
+                </div>
+            }
+        </dl>
+        @if (!string.IsNullOrWhiteSpace(_count.Notes))
+        {
+            <div class="pos-stock-count-detail__notes">
+                <span class="pos-stock-count-detail__notes-label">@L["Inventory_CountsNotes"]</span>
+                <p class="pos-stock-count-detail__notes-body">@_count.Notes</p>
+            </div>
+        }
+    </section>
 
     @if (manageOnline && (draft || inProgress))
     {
@@ -81,7 +121,7 @@ else
     }
 
     <section class="pos-stock-count-detail__panel" aria-labelledby="stock-count-lines-heading">
-        <h2 id="stock-count-lines-heading" class="pos-stock-count-detail__section-title">@L["Inventory_CountsLines"]</h2>
+        <h2 id="stock-count-lines-heading" class="pos-stock-count-detail__section-title">@L["Inventory_CountsProducts"]</h2>
         @if (_count.Lines.Count == 0)
         {
             <p class="pos-stock-count-detail__empty">—</p>
@@ -91,29 +131,46 @@ else
             <div class="pos-stock-count-detail__list" role="list">
                 @foreach (var line in _count.Lines)
                 {
+                    var liveDiff = inProgress
+                        ? StockCountDisplay.LiveDifference(line.SystemOnHandSnapshot, GetCountedText(line.LineId))
+                        : line.Variance;
+                    var diffClass = InventoryUiOptions.StockCountDifferenceCss(liveDiff);
                     <div class="pos-stock-count-detail__entry" role="listitem">
                         <div class="pos-stock-count-detail__entry-top">
                             <span class="pos-stock-count-detail__entry-name">@line.ProductName</span>
                         </div>
-                        <p class="pos-stock-count-detail__entry-meta">
-                            @L["Inventory_OnHand"]: @(line.SystemOnHandSnapshot?.ToString("0.###") ?? "—")
-                            @if (!inProgress && line.CountedQuantity is not null)
-                            {
-                                <text>
-                                    · @L["Inventory_CountsCounted"]: @line.CountedQuantity.Value.ToString("0.###")
-                                    · @L["Inventory_CountsVariance"]: @(line.Variance?.ToString("+0.###;-0.###") ?? "—")
-                                </text>
-                            }
-                        </p>
-                        @if (inProgress && canManage)
-                        {
-                            <div class="pos-stock-count-detail__line-form">
-                                <TextInput Label="@L["Inventory_CountsCounted"]"
-                                           Value="@GetCountedText(line.LineId)"
-                                           ValueChanged="v => SetCountedText(line.LineId, v)"
-                                           Disabled="@(_isOffline || _busy)" />
+                        <div class="pos-stock-count-detail__metrics">
+                            <div class="pos-stock-count-detail__metric">
+                                <span class="pos-stock-count-detail__metric-label">@L["Inventory_CountsSystemQty"]</span>
+                                <span class="pos-stock-count-detail__metric-value">@(line.SystemOnHandSnapshot?.ToString("0.###") ?? "—")</span>
                             </div>
-                        }
+                            @if (inProgress && canManage)
+                            {
+                                <div class="pos-stock-count-detail__line-form">
+                                    <TextInput Label="@L["Inventory_CountsActual"]"
+                                               Value="@GetCountedText(line.LineId)"
+                                               ValueChanged="v => SetCountedText(line.LineId, v)"
+                                               Disabled="@(_isOffline || _busy)"
+                                               Hint="@L["Inventory_CountsActualHint"]" />
+                                </div>
+                            }
+                            else if (line.CountedQuantity is not null)
+                            {
+                                <div class="pos-stock-count-detail__metric">
+                                    <span class="pos-stock-count-detail__metric-label">@L["Inventory_CountsActual"]</span>
+                                    <span class="pos-stock-count-detail__metric-value">@line.CountedQuantity.Value.ToString("0.###")</span>
+                                </div>
+                            }
+                            @if (liveDiff is not null)
+                            {
+                                <div class="pos-stock-count-detail__metric">
+                                    <span class="pos-stock-count-detail__metric-label">@L["Inventory_CountsDifference"]</span>
+                                    <span class="pos-stock-count-detail__metric-value @diffClass">
+                                        @StockCountDisplay.FormatDifference(liveDiff)
+                                    </span>
+                                </div>
+                            }
+                        </div>
                     </div>
                 }
             </div>

@@ -138,6 +138,7 @@ public static class DomainErrorCodes
     public const string InvalidStockCountStatusTransition = "pos.stock_count.status.invalid_transition";
     public const string InvalidStockCountLine = "pos.stock_count.line.invalid";
     public const string InvalidStockCountNotes = "pos.stock_count.notes.invalid";
+    public const string InvalidStockCountTitle = "pos.stock_count.title.invalid";
     public const string StockCountRequiresLines = "pos.stock_count.lines.required";
     public const string StockCountDuplicateProduct = "pos.stock_count.duplicate_product";
     public const string StockCountProductNotFound = "pos.stock_count.product.not_found";

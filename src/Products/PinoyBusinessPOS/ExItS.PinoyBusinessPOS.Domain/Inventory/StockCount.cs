@@ -11,6 +11,10 @@ namespace ExItS.PinoyBusinessPOS.Domain.Inventory;
 /// </summary>
 public sealed class StockCount
 {
+    /// <summary>Safe display/persistence value for counts created before titles existed.</summary>
+    public const string HistoricalTitle = "Stock count";
+
+    public const int TitleMaxLength = 80;
     public const int NotesMaxLength = 512;
     public const int MaxLineCount = 500;
 
@@ -21,6 +25,7 @@ public sealed class StockCount
     public string? CountNumber { get; private set; }
     public StockCountStatus Status { get; private set; }
     public DateOnly CountDate { get; private set; }
+    public string Title { get; private set; }
     public string? Notes { get; private set; }
     public DateTimeOffset? StartedAtUtc { get; private set; }
     public Guid? StartedBy { get; private set; }
@@ -39,6 +44,7 @@ public sealed class StockCount
         string? countNumber,
         StockCountStatus status,
         DateOnly countDate,
+        string title,
         string? notes,
         DateTimeOffset? startedAtUtc,
         Guid? startedBy,
@@ -55,6 +61,7 @@ public sealed class StockCount
         CountNumber = countNumber;
         Status = status;
         CountDate = countDate;
+        Title = title;
         Notes = notes;
         StartedAtUtc = startedAtUtc;
         StartedBy = startedBy;
@@ -71,6 +78,7 @@ public sealed class StockCount
         PosOrganizationId organizationId,
         IReadOnlyList<StockCountLineDraft> lines,
         DateTimeOffset utcNow,
+        string title,
         DateOnly? countDate = null,
         string? notes = null,
         StockCountId? id = null)
@@ -87,6 +95,7 @@ public sealed class StockCount
             countNumber: null,
             StockCountStatus.Draft,
             countDate ?? DateOnly.FromDateTime(utcNow.UtcDateTime),
+            NormalizeTitle(title, allowHistoricalFallback: false),
             NormalizeNotes(notes),
             startedAtUtc: null,
             startedBy: null,
@@ -103,7 +112,8 @@ public sealed class StockCount
         IReadOnlyList<StockCountLineDraft> lines,
         DateTimeOffset utcNow,
         DateOnly? countDate = null,
-        string? notes = null)
+        string? notes = null,
+        string? title = null)
     {
         SaleMoney.EnsureUtc(utcNow);
         EnsureDraft();
@@ -111,6 +121,11 @@ public sealed class StockCount
         if (countDate is not null)
         {
             CountDate = countDate.Value;
+        }
+
+        if (title is not null)
+        {
+            Title = NormalizeTitle(title, allowHistoricalFallback: false);
         }
 
         Notes = NormalizeNotes(notes);
@@ -315,6 +330,31 @@ public sealed class StockCount
         return result;
     }
 
+    private static string NormalizeTitle(string? title, bool allowHistoricalFallback)
+    {
+        if (string.IsNullOrWhiteSpace(title))
+        {
+            if (allowHistoricalFallback)
+            {
+                return HistoricalTitle;
+            }
+
+            throw new DomainException(
+                DomainErrorCodes.InvalidStockCountTitle,
+                "Stock count title is required.");
+        }
+
+        var trimmed = title.Trim();
+        if (trimmed.Length > TitleMaxLength)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidStockCountTitle,
+                $"Stock count title must be at most {TitleMaxLength} characters.");
+        }
+
+        return trimmed;
+    }
+
     private static string? NormalizeNotes(string? notes)
     {
         if (string.IsNullOrWhiteSpace(notes))
@@ -339,6 +379,7 @@ public sealed class StockCount
         string? countNumber,
         StockCountStatus status,
         DateOnly countDate,
+        string? title,
         string? notes,
         DateTimeOffset? startedAtUtc,
         Guid? startedBy,
@@ -355,6 +396,7 @@ public sealed class StockCount
             countNumber,
             status,
             countDate,
+            NormalizeTitle(title, allowHistoricalFallback: true),
             notes,
             startedAtUtc,
             startedBy,
