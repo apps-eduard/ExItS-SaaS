@@ -30,8 +30,10 @@
 | 17 | POS MVP Operational Onboarding and First Sale | Complete |
 | 18 | Mobile Personal, Organization, and POS Experience | **Complete (implementation/scope)** — partial phone validation; Not Device Verified |
 | 19 | Mobile POS Operations and Cashier Experience Completion | **Open** |
+| 20–24 | Catalog / Privacy / Production / Entitlements / Statements | **Open** (see portfolio) |
+| 25 | Organization Web / Identity / Organization Management | **Open** — WP01–WP09 Code Complete / Owner Validation Pending (**not closed**) |
 
-**Current focus:** Phase 19 (Mobile POS Operations and Cashier Experience)  
+**Current focus:** Phase 25 (Organization Web + identity/org management; owner validation pending)  
 **Production status:** Not production-ready
 
 ---
@@ -382,11 +384,27 @@ Over the project you went through these UI approaches:
 
 ---
 
+## Phase 25 — Organization Web / Identity / Organization Management
+
+**Status:** **OPEN** — WP01–WP09 Code Complete / Owner Validation Pending. **Not closed.** No P25-WP10 closeout.
+
+| WP | Title | Status |
+|----|-------|--------|
+| P25-WP01–WP05 | Org Web hosts, SSO, cash count policy | Code Complete / Validation Pending |
+| P25-WP06 | Personal / Organization identity isolation + typed QR | Code Complete / Validation Pending |
+| P25-WP07 | POS sales buyer-party / QR purpose isolation | Code Complete / Validation Pending |
+| P25-WP08 | Organization profile independence + multi-org ownership | Code Complete / Validation Pending |
+| P25-WP09 | Organization ownership transfer | Code Complete / Validation Pending |
+
+**Future (not started; phase number unassigned):** Sales Documents & Compliance Readiness — Transaction Summary vs Tax Document boundary; org-scoped compliance profile. Not Phase 21. Not implemented here.
+
+---
+
 ## Recommended Next Focus
 
-1. Personally phone-validate Phase 19 using [P19-WP08 checklist](../reports/P19-WP08-end-to-end-validation-and-closeout.md) (do not claim Device Verified early)
-2. Keep Phase 14 **In Progress**; do not start P14-WP03 unless explicitly authorized
-3. Continue Phase 16 validation residuals (P16-WP11/WP12) separately if needed
+1. Owner validate Phase 25 WP01–WP09 (browser/device) before any Phase 25 closeout — do **not** create P25-WP10 yet
+2. Personally phone-validate Phase 19 using [P19-WP08 checklist](../reports/P19-WP08-end-to-end-validation-and-closeout.md) (do not claim Device Verified early)
+3. Keep Phase 14 **In Progress**; do not start P14-WP03 unless explicitly authorized
 
 ---
 

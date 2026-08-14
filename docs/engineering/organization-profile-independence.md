@@ -30,4 +30,4 @@ No migration. `OrganizationProfile` columns already exist on Platform organizati
 
 - [personal-organization-identity-boundaries.md](../architecture/personal-organization-identity-boundaries.md)
 - [client-experience-boundaries.md](../architecture/client-experience-boundaries.md)
-- [organization-profile-independence report](../reports/organization-profile-independence.md)
+- [organization-profile-independence report](../reports/P25-WP08-organization-profile-independence.md)

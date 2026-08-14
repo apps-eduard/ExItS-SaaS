@@ -11,12 +11,12 @@
 | Portfolio | ExITS SaaS |
 | Existing product | Historical HealthCare SaaS MVP (separate product; **not** in this workspace ? do not restore) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
-| Current phase | Phase 25 **Open — WP01–WP05 Code Complete / Owner Validation Pending**; Phase 22/24/19/20/21 remain Open; Phase 14 still open |
-| Current work package | **P25-WP05** Cash Count Policy Simplification and Denomination-Assisted Reconciliation ([phase](phases/phase-25-organization-web-admin.md); [WP05](reports/P25-WP05-cash-count-policy-simplification-and-denomination-assisted-reconciliation.md)). Owner browser/device validation pending. |
-| Overall status | **Phase 25 WP01–WP05 Code Complete** (three AntDesign browser hosts; Required/Optional cash count with optional denomination helper) + Phase 22/24 Owner Validation Pending. **Not Device Verified**. Production remains **Blocked**. **Not production-ready.** |
-| Latest verified commit | `a50413bc` (P25-WP05 PHP denomination default refinement; UI `2f36fb17`) |
+| Current phase | Phase 25 **Open — WP01–WP09 Code Complete / Owner Validation Pending**; Phase 22/24/19/20/21 remain Open; Phase 14 still open |
+| Current work package | **P25-WP09** Organization Ownership Transfer ([phase](phases/phase-25-organization-web-admin.md); [WP09](reports/P25-WP09-organization-ownership-transfer.md)). Owner browser/device validation pending. Phase 25 **not closed**. |
+| Overall status | **Phase 25 WP01–WP09 Code Complete** (Org Web hosts + identity/QR isolation + buyer-party + org profile independence + ownership transfer) + Phase 22/24 Owner Validation Pending. **Not Device Verified**. Production remains **Blocked**. **Not production-ready.** |
+| Latest verified commit | `5f51e35a` (P25-WP09 ownership transfer docs evidence; feature `67bd59bd`) |
 | Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA deferred; Phase 19/20/22/24/25 owner/physical validation pending |
-| Last updated | 2026-08-13 |
+| Last updated | 2026-08-14 |
 
 ## Delivery sequence
 
@@ -217,7 +217,7 @@ P19-WP08 ? End-to-End Validation and User Closeout Checklist (Retest � awaitin
 | 18 | Mobile Personal, Organization, and POS Experience | **Complete (implementation/scope)** � partial phone validation; Not Device Verified | 8 | 8 | 100% | [Open](phases/phase-18-mobile-personal-organization-and-pos-experience.md) |
 | 19 | Mobile POS Operations and Cashier Experience Completion | **Open** (WP01�WP07 Code Complete; WP08 Retest) | 7 | 8 |  -  | [Open](phases/phase-19-mobile-pos-operations-and-cashier-experience.md) |
 | 24 | Linked Customer Statements and Personal Monetization | **Open** (WP01–WP23 Complete; WP24 Awaiting Owner Validation) | 23 | 24 |  -  | [Open](phases/phase-24-linked-customer-statements-and-personal-monetization.md) |
-| 25 | Organization Web Admin, AntDesign hosts, unified web auth | **Open** (WP01–WP05 Code Complete; Owner Validation Pending; not Device Verified) | 5 | 5 |  -  | [Open](phases/phase-25-organization-web-admin.md) |
+| 25 | Organization Web Admin, AntDesign hosts, unified web auth + identity/org management | **Open** (WP01–WP09 Code Complete; Owner Validation Pending; not Device Verified; **no closeout**) | 9 | 9 |  -  | [Open](phases/phase-25-organization-web-admin.md) |
 
 **MVP phases 0-9:** 52 / 52 = **100%** (with documented risks; not Production-ready).
 **Phase 10 Full POS:** 8 / 8 = **100%** (with documented risks; not Production-ready).
@@ -233,17 +233,23 @@ P19-WP08 ? End-to-End Validation and User Closeout Checklist (Retest � awaitin
 **Phase 21 Privacy, Compliance, and Regulatory Readiness:** **Open** ([phase](phases/phase-21-privacy-compliance-and-regulatory-readiness.md); [foundation report](reports/P21-foundation-privacy-compliance-workspace.md)) — Platform-only readiness workspace foundation Code Complete; **not** legal/NPC certification; DPO/legal review required; Phase 14/19/20 unchanged.
 **Phase 23 Multi-Business Entitlements / Variable-Quantity Selling:** **Open** ([phase](phases/phase-23-multi-business-entitlements-and-variable-quantity-selling.md)) — WP01–WP11 done; WP12 in progress; WP13 closeout **not started**; **Not Device Verified**. Phase 24 does not close Phase 23.
 **Phase 24 Linked Customer Statements / Personal Monetization:** **Open** — Implementation Complete / Owner Validation Pending ([phase](phases/phase-24-linked-customer-statements-and-personal-monetization.md); reports WP01–WP24; [ADR-021](decisions/ADR-021-linked-customer-statements-and-personal-monetization.md)) — WP24 Awaiting Owner Validation; **Device Verified: No**; **Production Ready: No**; Phase 24 **not** Closed.
-**Phase 25 Organization Web Admin / web hosts / SSO:** **Open** ([phase](phases/phase-25-organization-web-admin.md); [P25-WP01](reports/P25-WP01-organization-web-admin-management-center.md); [P25-WP02](reports/P25-WP02-antdesign-web-standardization-and-host-separation.md); [P25-WP03](reports/P25-WP03-unified-web-authentication-sso-and-workspace-routing.md); [P25-WP04](reports/P25-WP04-web-host-legacy-cleanup-and-local-validation-identity-determinism.md); [P25-WP05](reports/P25-WP05-cash-count-policy-simplification-and-denomination-assisted-reconciliation.md); [ADR-022](decisions/ADR-022-separated-antdesign-web-hosts-and-unified-auth.md)) — WP01–WP05 Code Complete; three AntDesign browser hosts (8090/8093/8094); Organization Web is **not** a POS checkout client; cash count policy Required/Optional with optional denomination helper; Owner Validation Pending; **Device Verified: No**; **Production Ready: No**.
+**Phase 25 Organization Web Admin / web hosts / SSO / identity:** **Open** ([phase](phases/phase-25-organization-web-admin.md); [P25-WP01](reports/P25-WP01-organization-web-admin-management-center.md)–[P25-WP09](reports/P25-WP09-organization-ownership-transfer.md); [ADR-022](decisions/ADR-022-separated-antdesign-web-hosts-and-unified-auth.md)) — WP01–WP09 Code Complete; three AntDesign browser hosts (8090/8093/8094); typed QR + buyer-party isolation + org profile independence + ownership transfer; Organization Web is **not** a POS checkout client; Owner Validation Pending; **Device Verified: No**; **Production Ready: No**. **No Phase 25 closeout.**
 
 ## Phase 25 work packages
 
 | WP | Status | Key commit |
 |---|---|---|
-| P25-WP01 — Organization Web Admin management center | **Code Complete** | [report](reports/P25-WP01-organization-web-admin-management-center.md) |
-| P25-WP02 — AntDesign web standardization and host separation | **Code Complete** | [report](reports/P25-WP02-antdesign-web-standardization-and-host-separation.md) |
-| P25-WP03 — Unified web authentication, SSO, workspace routing | **Code Complete** | [report](reports/P25-WP03-unified-web-authentication-sso-and-workspace-routing.md) |
-| P25-WP04 — Web host legacy cleanup and Local Validation identity determinism | **Code Complete** | `9df02401` — [report](reports/P25-WP04-web-host-legacy-cleanup-and-local-validation-identity-determinism.md) |
-| P25-WP05 — Cash count policy simplification and denomination-assisted reconciliation | **Code Complete** | `cbcdb8a9` (feat), `8869a179` (test), `528de183` (docs), `a50413bc` (PHP centavo defaults) — [report](reports/P25-WP05-cash-count-policy-simplification-and-denomination-assisted-reconciliation.md) |
+| P25-WP01 — Organization Web Admin management center | **Code Complete / Owner Validation Pending** | [report](reports/P25-WP01-organization-web-admin-management-center.md) |
+| P25-WP02 — AntDesign web standardization and host separation | **Code Complete / Owner Validation Pending** | [report](reports/P25-WP02-antdesign-web-standardization-and-host-separation.md) |
+| P25-WP03 — Unified web authentication, SSO, workspace routing | **Code Complete / Owner Validation Pending** | [report](reports/P25-WP03-unified-web-authentication-sso-and-workspace-routing.md) |
+| P25-WP04 — Web host legacy cleanup and Local Validation identity determinism | **Code Complete / Owner Validation Pending** | `9df02401` — [report](reports/P25-WP04-web-host-legacy-cleanup-and-local-validation-identity-determinism.md) |
+| P25-WP05 — Cash count policy simplification and denomination-assisted reconciliation | **Code Complete / Owner Validation Pending** | `cbcdb8a9` (feat), `8869a179` (test), `528de183` (docs), `a50413bc` (PHP centavo defaults) — [report](reports/P25-WP05-cash-count-policy-simplification-and-denomination-assisted-reconciliation.md) |
+| P25-WP06 — Personal / Organization identity isolation + typed QR | **Code Complete / Owner Validation Pending** | `3e1515b9`, `8f3875f5`, `66a972f8` — [report](reports/P25-WP06-personal-organization-identity-isolation.md) |
+| P25-WP07 — POS sales buyer-party / QR purpose isolation | **Code Complete / Owner Validation Pending** | `95f5744b`, `710426a9` — [report](reports/P25-WP07-sales-buyer-party-isolation.md) |
+| P25-WP08 — Organization profile independence + multi-org ownership | **Code Complete / Owner Validation Pending** | `a3dfda28`, `5fd997e0` — [report](reports/P25-WP08-organization-profile-independence.md) |
+| P25-WP09 — Organization ownership transfer | **Code Complete / Owner Validation Pending** | `67bd59bd`, `f20b6dc3`, `5f51e35a` — [report](reports/P25-WP09-organization-ownership-transfer.md) |
+
+**Future (not started; phase number unassigned):** Sales Documents & Compliance Readiness (Transaction Summary vs Tax Document; org-scoped compliance profile). Not Phase 21. Not implemented in P25.
 
 ## Phase 24 work packages
 

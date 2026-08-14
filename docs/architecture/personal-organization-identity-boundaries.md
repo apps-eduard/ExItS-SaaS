@@ -1,6 +1,6 @@
 # Personal / Organization identity boundaries
 
-[Public User ID and QR](../specs/identity/public-user-id-and-qr.md) | [Client experience](client-experience-boundaries.md) | [Isolation report](../reports/personal-organization-identity-isolation.md)
+[Public User ID and QR](../specs/identity/public-user-id-and-qr.md) | [Client experience](client-experience-boundaries.md) | [Isolation report](../reports/P25-WP06-personal-organization-identity-isolation.md)
 
 ## Purpose
 

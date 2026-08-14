@@ -62,7 +62,7 @@ public sealed class ResolveOwnershipTransferTarget
                 {
                     return ApplicationResult<OwnershipTransferTargetDto>.Failure(
                         DomainErrorCodes.OwnershipTransferQrPurposeRejected,
-                        "This is a Business QR. To transfer ownership, scan the new owner's Personal QR.");
+                        "This is a Business QR. Scan the new owner's Personal QR instead.");
                 }
 
                 if (parsed.Purpose == ExItsQrPurpose.PosDeviceRegistration)

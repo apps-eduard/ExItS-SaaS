@@ -38,6 +38,7 @@ public sealed class ResolveOwnershipTransferTargetTests
         Assert.False(business.IsSuccess);
         Assert.Equal(DomainErrorCodes.OwnershipTransferQrPurposeRejected, business.ErrorCode);
         Assert.Contains("Business QR", business.ErrorMessage, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Personal QR", business.ErrorMessage, StringComparison.OrdinalIgnoreCase);
 
         var device = await useCase.ExecuteAsync("exits://qr/v1/pos-device-registration/opaque-token-value");
         Assert.False(device.IsSuccess);

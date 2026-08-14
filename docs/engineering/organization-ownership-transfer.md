@@ -2,7 +2,9 @@
 
 ## Status
 
-Implemented (MVP).
+Implemented (MVP). Canonical Phase report: [P25-WP09-organization-ownership-transfer.md](../reports/P25-WP09-organization-ownership-transfer.md).
+
+Phase **P25** remains **OPEN** (Owner Validation Pending). No Phase closeout.
 
 ## Purpose
 
@@ -100,6 +102,6 @@ Platform Organization Owner ≠ POS product-local Owner/cashier. Ownership trans
 
 ## Related
 
-- [organization-ownership-transfer report](../reports/organization-ownership-transfer.md)
+- [organization-ownership-transfer report](../reports/P25-WP09-organization-ownership-transfer.md)
 - [personal-organization-identity-boundaries.md](../architecture/personal-organization-identity-boundaries.md)
 - [client-experience-boundaries.md](../architecture/client-experience-boundaries.md)
