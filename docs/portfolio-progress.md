@@ -14,7 +14,7 @@
 | Current phase | Phase 26 **Open — WP01 Code Complete / Validation Pending**; Phase 25 remains **Open — Owner Validation Pending**; Phase 22/24/19/20/21 remain Open; Phase 14 still open |
 | Current work package | **P26-WP01** Sales Document & Compliance Readiness Foundation ([phase](phases/phase-26-sales-documents-compliance-readiness.md); [report](reports/P26-WP01-sales-document-compliance-readiness-foundation.md)). P26-WP02 is next. Phase 25 is **not closed**. |
 | Overall status | **P26-WP01 Code Complete / Validation Pending**; Transaction Summary is the current sales document and TaxDocument remains unavailable. Phase 25 WP01–WP09 owner validation remains pending. **Not Device Verified**. Production remains **Blocked**. **Not production-ready.** |
-| Latest verified commit | (record after P26-WP01 push) |
+| Latest verified commit | `b616cd3e` (P26-WP01 sales-document compliance readiness foundation) |
 | Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA deferred; Phase 19/20/22/24/25 owner/physical validation pending |
 | Last updated | 2026-08-14 |
 
