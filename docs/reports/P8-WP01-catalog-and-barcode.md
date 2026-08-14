@@ -86,9 +86,9 @@ View → `store-catalog-view`; mutations → `store-catalog-manage`.
 | Route | Screen |
 |---|---|
 | `/catalog` | Product list |
-| `/catalog/products/new` | Create |
+| `/catalog/products/new` | Create (optional **Track stock** when `ManageInventory`; default off — see [P8-WP04 later addition](P8-WP04-basic-inventory.md#catalog-track-stock-create--edit)) |
 | `/catalog/products/{id}` | Detail |
-| `/catalog/products/{id}/edit` | Edit |
+| `/catalog/products/{id}/edit` | Edit (same **Track stock** switch, seeded from inventory `IsTracked`) |
 | `/catalog/categories` | Categories |
 | `/catalog/barcode-lookup` | Barcode lookup |
 

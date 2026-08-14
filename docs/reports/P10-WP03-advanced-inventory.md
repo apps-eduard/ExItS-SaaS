@@ -41,7 +41,7 @@ Stock Count means checking what is physically present and correcting the system 
 |---|---|
 | Title | Required user-facing name for the count. Presets: Weekly, Monthly, Quarterly, Midyear, Year-end count, plus Custom. Custom cannot be blank. Max 80 characters after trim. |
 | Notes | Separate optional field for extra context. Title answers “What count is this?”; Notes answers “Anything else we should know?” |
-| Products | Multi-select checkboxes of tracked products only. Select all / Clear all apply to eligible tracked products. Duplicate products are rejected. |
+| Products | Multi-select checkboxes of tracked products only. Select all / Clear all apply to eligible tracked products. Duplicate products are rejected. Untracked catalog items do not appear until **Track stock** is enabled on Product Create/Edit (or Inventory enable). |
 | Count reference | New counts allocate `CNT-YYYYMMDD-NN` server-side (organization + UTC business date, advisory lock, unique `(organization_id, count_number)`). Sequence expands past 99 (`-100`). Historical `CNT-YYYYMMDD-000001` values stay readable and are not rewritten. |
 | Timestamps | Stored UTC unchanged. UI shows local time as `MMM d, yyyy · h:mm tt` (English AM/PM). |
 | UI wording | Presentation only: Draft → Preparing, InProgress → Counting, On hand → System qty, Counted → Actual count, Variance → Difference, Complete count → Finish count, Count lines → Products. Domain enums stay unchanged. |

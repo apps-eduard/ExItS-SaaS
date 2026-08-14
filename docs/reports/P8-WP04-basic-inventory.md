@@ -95,6 +95,19 @@ Intra-organization branch inventory transfers were added later as an overlay (`I
 
 Optional per-product expiration lots (`TracksExpiration`, `InventoryLot`, FEFO) were added later. See [pos-expiration-aware-inventory.md](../engineering/pos-expiration-aware-inventory.md). Historical P8-WP04 still did not deliver expiry.
 
+### Catalog Track stock (Create + Edit)
+
+`IsTracked` remains an inventory-account flag (not a catalog column). MAUI product forms expose **Track stock for this product** when the actor has `ManageInventory` and the device is online:
+
+| Screen | Behavior |
+|---|---|
+| Create (`/catalog/products/new`) | Optional switch (default **off**). After catalog create, enable calls `POST .../inventory/{productId}/enable` with opening qty 0 when the switch is on. |
+| Edit (`/catalog/products/{id}/edit`) | Same switch, seeded from `PosCatalogProductDto.IsTracked`. Catalog PUT runs first; then enable or disable when the value changed. |
+| Disable guard | Turning tracking off requires on-hand **0** (same domain rule as Inventory detail). The Edit page blocks before save and shows `Catalog_TrackStockDisableRequiresZero`. |
+| Failure after catalog save | If enable/disable fails after a successful product update, Edit stays on the form with an error; the catalog save is not rolled back. |
+
+Stock In / Out, reorder, and movements stay on Inventory screens. Stock Count lists **tracked** products only — turn tracking on here (or in Inventory) before counting.
+
 ## Exact next work package
 
 **P8-WP05 — Expenses** completed separately; next authorized WP is **P8-WP06 — Dashboard and Reports**.
