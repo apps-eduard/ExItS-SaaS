@@ -2,15 +2,16 @@
 
 ## Decision
 
-ExItS has one Sale engine. The current document projection is `TransactionSummary`; `TaxDocument` is reserved for future implementation and remains unavailable through P26-WP03 (`TaxDocumentIssuanceRuntime.ImplementationAvailable = false`).
+ExItS has one Sale engine. The current document projection is `TransactionSummary`; `TaxDocument` is reserved for future implementation and remains unavailable through P26-WP04 (`TaxDocumentIssuanceRuntime.ImplementationAvailable = false`).
 
-Tax calculation, education, eligibility, and tax-document authority are separate:
+Tax calculation, education, eligibility, profile, and tax-document authority are separate:
 
 - POS `OperationalSetup.TaxRatePercent` and `TaxPricingMode` calculate sale totals.
 - Platform `OrganizationSalesDocumentCapability` holds `ComplianceEligibilityStatus` and `TaxDocumentIssuanceEnabled`.
+- Platform `OrganizationComplianceProfile` is an organization-scoped anchor for future confirmed compliance fields (no invented TIN/BIR schema).
 - The capability defaults off, is organization-scoped, and is not a subscription, plan entitlement, or `FeatureOverride`.
 - Owner education acknowledgment is independent of eligibility and never enables issuance.
-- Owner may request compliance review; only Platform `ManageOrganizations` may transition eligibility or set issuance.
+- Owner may request compliance review; only Platform `ManageOrganizations` may transition eligibility, set issuance, or ensure the compliance profile anchor.
 
 ## Data ownership
 
@@ -22,7 +23,7 @@ Platform owns the capability row:
 - `UpdatedAtUtc`
 - optional `UpdatedByActorReference`
 
-Missing rows mean disabled issuance. Ownership transfer changes membership authority only; it does not move or recreate organization capability.
+Missing capability rows mean disabled issuance. Ownership transfer changes membership authority only; it does not move or recreate organization capability or the org-scoped compliance profile.
 
 POS owns Sale operational data. `PosSaleDto.DocumentKind` defaults to `TransactionSummary`, and current mappings set it explicitly. Historical records are interpreted as Transaction Summaries. Offline cash-sale storage and synchronization remain unchanged; no LocalStore version bump is needed.
 
@@ -55,14 +56,20 @@ disable issuance. Org enable still does not produce TaxDocuments while runtime
 implementation is unavailable. See
 [platform organization compliance eligibility](platform-organization-compliance-eligibility.md).
 
+## Organization compliance profile (P26-WP04)
+
+The profile anchor prepares organization-owned storage for future confirmed requirements. Business identity continues to read from `OrganizationProfile` today. See
+[organization compliance profile](organization-compliance-profile.md) and the living
+[BIR activation roadmap](../compliance/bir-compliance-activation-roadmap.md).
+
 ## Future TaxDocument invariant
 
-A future TaxDocument must capture an immutable issuance snapshot, including the document kind and all then-required compliance facts. It must never infer authorization from tax calculations or retroactively relabel historical sales.
+A future TaxDocument must capture an immutable issuance snapshot, including the document kind and all then-required compliance facts. It must never infer authorization from tax calculations or retroactively relabel historical sales. Organization profile changes after issuance must not rewrite historical TaxDocuments.
 
 ## Public identity boundary
 
-Public organization ID and QR resolvers remain identity-only. They must not expose TIN, tax configuration, compliance evidence, or sales-document capability.
+Public organization ID and QR resolvers remain identity-only. They must not expose TIN, tax configuration, compliance evidence, compliance profile, or sales-document capability.
 
 ## Deferred
 
-BIR rules, invoice series, TaxDocument generation, and organization tax/compliance profile activation remain deferred. P26-WP04 is next.
+BIR rules, invoice series, TaxDocument generation, evidence verification, and confirmed regulatory field schemas remain deferred. Controlled activation steps are tracked in the roadmap. **P26-WP05** is next (validation / closeout decision — not automatic phase close).

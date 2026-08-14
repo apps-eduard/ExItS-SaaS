@@ -24,6 +24,7 @@ Personal subjects remain keyed by `PlatformUserId` / `PublicUserId`. Organizatio
 - The same Personal identity may own multiple organizations; MVP allows **one Owner per organization**.
 - Ownership transfer is supported via `OrganizationOwnershipTransfer` (Personal QR / EX ID only). Staff invitations must not be used for Owner handoff. See [organization-ownership-transfer.md](../engineering/organization-ownership-transfer.md).
 - Business QR / public identity exposes only DisplayName + PublicOrganizationId (no contact leak).
+- Business regulatory / tax / compliance identity belongs to the Organization (Platform compliance profile anchor + capability), never to the Owner Personal profile. Public Business QR must not expose TIN, compliance profile, evidence, or TaxDocument capability. See [organization-compliance-profile.md](../engineering/organization-compliance-profile.md) and [bir-compliance-activation-roadmap.md](../compliance/bir-compliance-activation-roadmap.md).
 - POS receipts still use product operational setup, not Platform OrganizationProfile.
 
 See [organization-profile-independence.md](../engineering/organization-profile-independence.md).

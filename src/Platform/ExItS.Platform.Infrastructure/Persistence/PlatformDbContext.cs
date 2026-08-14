@@ -92,6 +92,8 @@ public sealed class PlatformDbContext : DbContext
     internal DbSet<AuditRecordRecord> AuditRecords => Set<AuditRecordRecord>();
     internal DbSet<OrganizationSalesDocumentCapabilityRecord> OrganizationSalesDocumentCapabilities =>
         Set<OrganizationSalesDocumentCapabilityRecord>();
+    internal DbSet<OrganizationComplianceProfileRecord> OrganizationComplianceProfiles =>
+        Set<OrganizationComplianceProfileRecord>();
     internal DbSet<OrganizationSalesDocumentAcknowledgmentRecord> OrganizationSalesDocumentAcknowledgments =>
         Set<OrganizationSalesDocumentAcknowledgmentRecord>();
     internal DbSet<PersonalAccountSettingsRecord> PersonalAccountSettings => Set<PersonalAccountSettingsRecord>();
@@ -327,6 +329,22 @@ public sealed class PlatformDbContext : DbContext
             entity.HasOne<PlatformOrganizationRecord>()
                 .WithOne()
                 .HasForeignKey<OrganizationSalesDocumentCapabilityRecord>(e => e.OrganizationId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<OrganizationComplianceProfileRecord>(entity =>
+        {
+            entity.ToTable("organization_compliance_profiles");
+            entity.HasKey(e => e.OrganizationId);
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.UpdatedByActorReference)
+                .HasColumnName("updated_by_actor_reference")
+                .HasMaxLength(256);
+            entity.HasOne<PlatformOrganizationRecord>()
+                .WithOne()
+                .HasForeignKey<OrganizationComplianceProfileRecord>(e => e.OrganizationId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 

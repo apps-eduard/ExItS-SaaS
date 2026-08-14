@@ -54,6 +54,7 @@ public static class DependencyInjection
         services.AddScoped<ICatalogImportFileParser, CatalogImportFileParser>();
         services.AddScoped<IPlatformOrganizationRepository, PlatformOrganizationRepository>();
         services.AddScoped<IOrganizationSalesDocumentCapabilityRepository, OrganizationSalesDocumentCapabilityRepository>();
+        services.AddScoped<IOrganizationComplianceProfileRepository, OrganizationComplianceProfileRepository>();
         services.AddScoped<IOrganizationSalesDocumentAcknowledgmentRepository, OrganizationSalesDocumentAcknowledgmentRepository>();
         services.AddScoped<IOrganizationBusinessTypeActivationRepository, OrganizationBusinessTypeActivationRepository>();
         services.AddScoped<IOrganizationBranchRepository, OrganizationBranchRepository>();

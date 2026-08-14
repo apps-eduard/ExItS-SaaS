@@ -50,7 +50,7 @@ The migration uses `CREATE TABLE IF NOT EXISTS`; the table has one row per organ
 ## Risks and open decisions
 
 - TaxDocument remains unavailable until an audited Platform grant path and compliant immutable snapshot model exist.
-- Legal/regulatory requirements require qualified review before P26-WP04.
+- Legal/regulatory requirements require qualified review; tracked in [bir-compliance-activation-roadmap.md](../compliance/bir-compliance-activation-roadmap.md) after P26-WP04.
 - Owner/browser/device validation remains outstanding for earlier open phases.
 
 ## Next

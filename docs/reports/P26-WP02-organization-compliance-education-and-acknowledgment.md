@@ -72,6 +72,7 @@ reference, and file manifest now describe P26-WP02.
 
 ## Next work package
 
-**P26-WP03 — Platform-controlled grant/revoke administration and audit.**
+**P26-WP03 — Platform-controlled grant/revoke administration and audit** (delivered separately).  
+Later foundation: [bir-compliance-activation-roadmap.md](../compliance/bir-compliance-activation-roadmap.md) (P26-WP04).
 P26-WP03 must remain separate from Owner acknowledgment and must not infer authority
 from education state.

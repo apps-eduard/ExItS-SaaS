@@ -58,5 +58,7 @@ Any transition into a non-`Approved` status disables issuance.
 ## Explicit non-claims
 
 This is not BIR compliance, not TaxDocument issuance, and not Production Ready. See
-[sales-document boundary](sales-document-compliance-boundary.md) and
-[acknowledgment design](organization-sales-document-acknowledgment.md).
+[sales-document boundary](sales-document-compliance-boundary.md),
+[acknowledgment design](organization-sales-document-acknowledgment.md),
+[organization compliance profile](organization-compliance-profile.md), and the living
+[BIR activation roadmap](../compliance/bir-compliance-activation-roadmap.md).

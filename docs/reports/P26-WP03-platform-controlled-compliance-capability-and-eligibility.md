@@ -49,8 +49,7 @@ Education acknowledgment remains independent: it never sets eligibility or issua
 
 ## Risks and open decisions
 
-- Migration apply/rollback/re-apply on an authorized non-production PostgreSQL database remains pending.
-- Feature SHA and full solution validation evidence remain pending commit/validation.
+- Feature SHA recorded as `73b5822c`. Migration apply/rollback/re-apply on an authorized non-production PostgreSQL database remains pending.
 - Phase 25 cash/shift leftovers were intentionally not modified.
 
 ## Documentation changed
@@ -60,4 +59,6 @@ acknowledgment design, new eligibility engineering note, and file manifest.
 
 ## Next work package
 
-**P26-WP04 — Organization Tax/Compliance Profile & Future Activation Foundation.**
+**P26-WP04 — Organization Tax/Compliance Profile & Future Activation Foundation** (delivered separately).  
+Living activation playbook: [bir-compliance-activation-roadmap.md](../compliance/bir-compliance-activation-roadmap.md).  
+Exact next after WP04: **P26-WP05**.

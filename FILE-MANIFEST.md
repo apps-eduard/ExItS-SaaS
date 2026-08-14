@@ -130,6 +130,8 @@ docs/reports/P25-WP09-organization-ownership-transfer.md
 docs/reports/P26-WP01-sales-document-compliance-readiness-foundation.md
 docs/reports/P26-WP02-organization-compliance-education-and-acknowledgment.md
 docs/reports/P26-WP03-platform-controlled-compliance-capability-and-eligibility.md
+docs/reports/P26-WP04-organization-tax-compliance-profile-and-activation-foundation.md
+docs/compliance/bir-compliance-activation-roadmap.md
 docs/reports/personal-organization-identity-isolation.md
 docs/reports/organization-profile-independence.md
 docs/reports/sales-buyer-party-isolation.md
@@ -140,6 +142,7 @@ docs/engineering/organization-ownership-transfer.md
 docs/engineering/sales-document-compliance-boundary.md
 docs/engineering/organization-sales-document-acknowledgment.md
 docs/engineering/platform-organization-compliance-eligibility.md
+docs/engineering/organization-compliance-profile.md
 docs/architecture/personal-organization-identity-boundaries.md
 docs/architecture/client-experience-boundaries.md
 docs/specs/identity/public-user-id-and-qr.md

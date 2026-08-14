@@ -60,17 +60,9 @@ Local ports: **8090** Admin, **8091** Platform API, **8092** POS API, **8093** O
 
 Owner browser checklist is in [P25-WP04](../reports/P25-WP04-web-host-legacy-cleanup-and-local-validation-identity-determinism.md) (SSO items also in [P25-WP03](../reports/P25-WP03-unified-web-authentication-sso-and-workspace-routing.md)). Cash count owner checklist is in [pos-cashier-cash-count.md](../engineering/pos-cashier-cash-count.md). Ownership transfer engineering note: [organization-ownership-transfer.md](../engineering/organization-ownership-transfer.md). Do not mark Device Verified or Production Ready until the owner validates.
 
-## Future roadmap note (not started — not implemented)
+## Future roadmap note (moved to Phase 26)
 
-After current Organization/identity work (WP06–WP09), a future package may cover **Sales Documents & Compliance Readiness**, including:
-
-- Transaction Summary vs Tax Document boundary
-- onboarding compliance education/acknowledgment
-- Platform-controlled compliance capability
-- Organization tax/compliance profile foundation
-- compliance-gated tax-document architecture
-
-This is **not** Phase 21 (privacy foundation already open under a different scope). Phase number for Sales Documents & Compliance Readiness is **not assigned** until the owner schedules it (candidate after Phase 25 closes). **No BIR compliance claim.** Do not implement in P25-WP09.
+Sales Documents & Compliance Readiness is now **Phase 26** ([phase](phase-26-sales-documents-compliance-readiness.md); [roadmap](../compliance/bir-compliance-activation-roadmap.md)). Phase 25 remains **OPEN** for owner validation and is independent of Phase 26. **No BIR compliance claim.** Do not implement Phase 26 work inside P25 packages.
 
 ## Recorded hashes (selected)
 
