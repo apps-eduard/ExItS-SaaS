@@ -2,7 +2,7 @@
 
 **Status:** Implemented  
 **Starting SHA:** `d8e43575d103fc19cf42c5cb33d2c28264a0d4b6`  
-**Feature SHAs:** _(filled after push)_  
+**Feature SHAs:** `3e1515b972e4fe2a99c2baeb26994c465bdd0edd` (feat), `8f3875f5` (docs; hash-record commit follows)  
 **Related:** [architecture boundaries](../architecture/personal-organization-identity-boundaries.md) · [QR spec](../specs/identity/public-user-id-and-qr.md)
 
 ## Architecture audit (pre-implementation)
