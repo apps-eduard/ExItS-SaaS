@@ -76,17 +76,20 @@ public sealed class PosAdvancedInventoryApiTests(PosPostgreSqlFixture fixture)
 
         using var create = Scoped(HttpMethod.Post, $"{Inventory}/stock-counts", org);
         create.Content = JsonContent.Create(
-            new CreateStockCountRequest([new CreateStockCountLineRequest(product.ProductId)]),
+            new CreateStockCountRequest([new CreateStockCountLineRequest(product.ProductId)], "Weekly count"),
             options: JsonOptions);
         using var createResponse = await client.SendAsync(create);
         createResponse.EnsureSuccessStatusCode();
         var draft = await createResponse.Content.ReadFromJsonAsync<PosStockCountDto>(JsonOptions);
+        Assert.Equal("Weekly count", draft!.Title);
+        Assert.Null(draft.Notes);
 
-        using var start = Scoped(HttpMethod.Post, $"{Inventory}/stock-counts/{draft!.StockCountId:D}/start", org);
+        using var start = Scoped(HttpMethod.Post, $"{Inventory}/stock-counts/{draft.StockCountId:D}/start", org);
         using var startResponse = await client.SendAsync(start);
         startResponse.EnsureSuccessStatusCode();
         var started = await startResponse.Content.ReadFromJsonAsync<PosStockCountDto>(JsonOptions);
-        Assert.StartsWith("CNT-", started!.CountNumber, StringComparison.Ordinal);
+        Assert.Matches(@"^CNT-\d{8}-01$", started!.CountNumber);
+        Assert.Equal("Weekly count", started.Title);
 
         using var update = Scoped(HttpMethod.Put, $"{Inventory}/stock-counts/{draft.StockCountId:D}", org);
         update.Content = JsonContent.Create(
@@ -132,7 +135,7 @@ public sealed class PosAdvancedInventoryApiTests(PosPostgreSqlFixture fixture)
 
         using var create = Scoped(HttpMethod.Post, $"{Inventory}/stock-counts", org);
         create.Content = JsonContent.Create(
-            new CreateStockCountRequest([new CreateStockCountLineRequest(product.ProductId)]),
+            new CreateStockCountRequest([new CreateStockCountLineRequest(product.ProductId)], "Weekly count"),
             options: JsonOptions);
         using var createResponse = await client.SendAsync(create);
         var draft = await createResponse.Content.ReadFromJsonAsync<PosStockCountDto>(JsonOptions);
@@ -165,6 +168,77 @@ public sealed class PosAdvancedInventoryApiTests(PosPostgreSqlFixture fixture)
         Assert.Contains(
             page!.Items,
             m => m.MovementType == nameof(StockMovementType.StockCountVarianceIncrease));
+    }
+
+    [Fact]
+    public async Task Stock_count_title_notes_and_friendly_numbers_are_server_authoritative()
+    {
+        await using var factory = new PosApiFactory(fixture.ConnectionString);
+        var client = factory.CreateClient();
+        var org = Guid.NewGuid();
+        var first = await CreateProductAsync(client, org, "Bread", "Piece", 10m, "cnt-bread");
+        var second = await CreateProductAsync(client, org, "Water", "Piece", 15m, "cnt-water");
+
+        using var enableFirst = Scoped(HttpMethod.Post, $"{Inventory}/{first.ProductId:D}/enable", org);
+        enableFirst.Content = JsonContent.Create(new EnableInventoryTrackingRequest(OpeningQuantity: 11m), options: JsonOptions);
+        (await client.SendAsync(enableFirst)).EnsureSuccessStatusCode();
+        using var enableSecond = Scoped(HttpMethod.Post, $"{Inventory}/{second.ProductId:D}/enable", org);
+        enableSecond.Content = JsonContent.Create(new EnableInventoryTrackingRequest(OpeningQuantity: 0m), options: JsonOptions);
+        (await client.SendAsync(enableSecond)).EnsureSuccessStatusCode();
+
+        using var blank = Scoped(HttpMethod.Post, $"{Inventory}/stock-counts", org);
+        blank.Content = JsonContent.Create(
+            new CreateStockCountRequest([new CreateStockCountLineRequest(first.ProductId)], "   "),
+            options: JsonOptions);
+        using var blankResponse = await client.SendAsync(blank);
+        Assert.Equal(HttpStatusCode.BadRequest, blankResponse.StatusCode);
+
+        using var createCustom = Scoped(HttpMethod.Post, $"{Inventory}/stock-counts", org);
+        createCustom.Content = JsonContent.Create(
+            new CreateStockCountRequest(
+                [
+                    new CreateStockCountLineRequest(first.ProductId),
+                    new CreateStockCountLineRequest(second.ProductId)
+                ],
+                "Freezer inventory check",
+                Notes: "Counted after Friday closing."),
+            options: JsonOptions);
+        using var customResponse = await client.SendAsync(createCustom);
+        customResponse.EnsureSuccessStatusCode();
+        var custom = await customResponse.Content.ReadFromJsonAsync<PosStockCountDto>(JsonOptions);
+        Assert.Equal("Freezer inventory check", custom!.Title);
+        Assert.Equal("Counted after Friday closing.", custom.Notes);
+        Assert.Equal(2, custom.Lines.Count);
+        Assert.Equal(TimeSpan.Zero, custom.CreatedAtUtc.Offset);
+
+        using var createSecond = Scoped(HttpMethod.Post, $"{Inventory}/stock-counts", org);
+        createSecond.Content = JsonContent.Create(
+            new CreateStockCountRequest([new CreateStockCountLineRequest(first.ProductId)], "Monthly count"),
+            options: JsonOptions);
+        using var secondCreateResponse = await client.SendAsync(createSecond);
+        secondCreateResponse.EnsureSuccessStatusCode();
+        var secondDraft = await secondCreateResponse.Content.ReadFromJsonAsync<PosStockCountDto>(JsonOptions);
+
+        using var startFirst = Scoped(HttpMethod.Post, $"{Inventory}/stock-counts/{custom.StockCountId:D}/start", org);
+        using var startSecond = Scoped(HttpMethod.Post, $"{Inventory}/stock-counts/{secondDraft!.StockCountId:D}/start", org);
+        var clientA = factory.CreateClient();
+        var clientB = factory.CreateClient();
+        var started = await Task.WhenAll(clientA.SendAsync(startFirst), clientB.SendAsync(startSecond));
+        foreach (var response in started)
+        {
+            response.EnsureSuccessStatusCode();
+        }
+
+        var firstStarted = await started[0].Content.ReadFromJsonAsync<PosStockCountDto>(JsonOptions);
+        var secondStarted = await started[1].Content.ReadFromJsonAsync<PosStockCountDto>(JsonOptions);
+        var numbers = new[] { firstStarted!.CountNumber, secondStarted!.CountNumber };
+        Assert.All(numbers, n => Assert.Matches(@"^CNT-\d{8}-\d{2,}$", n));
+        Assert.Equal(2, numbers.Distinct(StringComparer.Ordinal).Count());
+        Assert.Contains(numbers, n => n!.EndsWith("-01", StringComparison.Ordinal));
+        Assert.Contains(numbers, n => n!.EndsWith("-02", StringComparison.Ordinal));
+        Assert.Equal("Freezer inventory check", firstStarted.Title);
+        Assert.Equal("Counted after Friday closing.", firstStarted.Notes);
+        Assert.Equal("Monthly count", secondStarted.Title);
     }
 
     private static async Task<PosCatalogProductDto> CreateProductAsync(

@@ -65,14 +65,34 @@ public sealed class InventoryPageGuardTests
         Assert.Contains("@page \"/inventory/counts/new\"", create, StringComparison.Ordinal);
         Assert.Contains("StoreHeaderBack Href=\"/inventory/counts\"", create, StringComparison.Ordinal);
         Assert.Contains("CreateStockCountAsync", create, StringComparison.Ordinal);
-        Assert.Contains("Inventory_CountsReset", create, StringComparison.Ordinal);
-        Assert.Contains("IconGlyphs.Get(\"products\")", create, StringComparison.Ordinal);
-        Assert.Contains("IconGlyphs.Get(\"check\")", create, StringComparison.Ordinal);
-        Assert.Contains("pos-stock-count-create__line", create, StringComparison.Ordinal);
+        Assert.Contains("Inventory.ListAsync", create, StringComparison.Ordinal);
+        Assert.Contains("tracked: true", create, StringComparison.Ordinal);
+        Assert.Contains("p.IsTracked", create, StringComparison.Ordinal);
+        Assert.Contains("Inventory_CountsTrackedOnlyHint", create, StringComparison.Ordinal);
+        Assert.DoesNotContain("Catalog.ListProductsAsync", create, StringComparison.Ordinal);
+        Assert.Contains("Checkbox", create, StringComparison.Ordinal);
+        Assert.Contains("Inventory_CountsSelectAll", create, StringComparison.Ordinal);
+        Assert.Contains("Inventory_CountsClearAll", create, StringComparison.Ordinal);
+        Assert.Contains("Inventory_CountsTitleField", create, StringComparison.Ordinal);
+        Assert.Contains("Inventory_CountsCreate", create, StringComparison.Ordinal);
+        Assert.Contains("SelectAll", create, StringComparison.Ordinal);
+        Assert.Contains("ClearAll", create, StringComparison.Ordinal);
+        Assert.Contains("type=\"checkbox\"", File.ReadAllText(Path.Combine(
+            FindRepoRoot(),
+            "src",
+            "Shared",
+            "ExItS.DesignSystem",
+            "Components",
+            "Forms",
+            "Checkbox.razor")), StringComparison.Ordinal);
+        Assert.DoesNotContain("Inventory_CountsAddLine", create, StringComparison.Ordinal);
+        Assert.DoesNotContain("pos-stock-count-create__line", create, StringComparison.Ordinal);
+        Assert.Contains("pos-stock-count-create__product", create, StringComparison.Ordinal);
         Assert.Contains("pos-stock-count-create__header", create, StringComparison.Ordinal);
         Assert.Contains("ConfirmDialog", create, StringComparison.Ordinal);
         Assert.DoesNotContain("PageHeader", create, StringComparison.Ordinal);
         Assert.DoesNotContain("OnClick=\"GoBack\"", create, StringComparison.Ordinal);
+        Assert.DoesNotContain("role=\"radio\"", create, StringComparison.Ordinal);
 
         var reorder = File.ReadAllText(Path.Combine(pages, "InventoryReorder.razor"));
         Assert.Contains("@page \"/inventory/{ProductId:guid}/reorder\"", reorder, StringComparison.Ordinal);
@@ -90,6 +110,13 @@ public sealed class InventoryPageGuardTests
         var counts = File.ReadAllText(Path.Combine(pages, "StockCountsList.razor"));
         Assert.Contains("@page \"/inventory/counts\"", counts, StringComparison.Ordinal);
         Assert.Contains("pos-stock-counts__row", counts, StringComparison.Ordinal);
+        Assert.Contains("pos-stock-counts__row-title", counts, StringComparison.Ordinal);
+        Assert.Contains("StockCountDisplay.DisplayTitle", counts, StringComparison.Ordinal);
+        Assert.Contains("InventoryUiOptions.StockCountStatusLabel", counts, StringComparison.Ordinal);
+        Assert.Contains("StockCountDisplay.FormatLocalTimestamp", counts, StringComparison.Ordinal);
+        Assert.Contains("Inventory_CountsDifferencesCount", counts, StringComparison.Ordinal);
+        Assert.DoesNotContain("ToString(\"u\")", counts, StringComparison.Ordinal);
+        Assert.DoesNotContain("@item.Status", counts, StringComparison.Ordinal);
         Assert.Contains("pos-stock-counts__header", counts, StringComparison.Ordinal);
         Assert.Contains("pos-action-grid--three", counts, StringComparison.Ordinal);
         Assert.Contains("IconGlyphs.Get(\"plus\")", counts, StringComparison.Ordinal);
@@ -102,6 +129,17 @@ public sealed class InventoryPageGuardTests
         Assert.Contains("@page \"/inventory/counts/{StockCountId:guid}\"", countDetail, StringComparison.Ordinal);
         Assert.Contains("StoreHeaderBack Href=\"/inventory/counts\"", countDetail, StringComparison.Ordinal);
         Assert.Contains("pos-stock-count-detail__header", countDetail, StringComparison.Ordinal);
+        Assert.Contains("StockCountDisplay.DisplayTitle", countDetail, StringComparison.Ordinal);
+        Assert.Contains("Inventory_CountsNotes", countDetail, StringComparison.Ordinal);
+        Assert.Contains("Inventory_CountsSystemQty", countDetail, StringComparison.Ordinal);
+        Assert.Contains("Inventory_CountsActual", countDetail, StringComparison.Ordinal);
+        Assert.Contains("Inventory_CountsDifference", countDetail, StringComparison.Ordinal);
+        Assert.Contains("Inventory_CountsComplete", countDetail, StringComparison.Ordinal);
+        Assert.Contains("Inventory_CountsActualHint", countDetail, StringComparison.Ordinal);
+        Assert.Contains("StockCountDisplay.FormatLocalTimestamp", countDetail, StringComparison.Ordinal);
+        Assert.DoesNotContain("Inventory_CountsVariance", countDetail, StringComparison.Ordinal);
+        Assert.DoesNotContain("@_count.Status</Badge>", countDetail, StringComparison.Ordinal);
+        Assert.DoesNotContain("ToString(\"u\")", countDetail, StringComparison.Ordinal);
         Assert.DoesNotContain("PageHeader", countDetail, StringComparison.Ordinal);
         Assert.DoesNotContain("OnClick=\"GoBack\"", countDetail, StringComparison.Ordinal);
 
@@ -196,6 +234,49 @@ public sealed class InventoryPageGuardTests
         Assert.Contains("<value>Stock removed</value>", resources, StringComparison.Ordinal);
         Assert.Contains("<data name=\"Inventory_Remarks\"", resources, StringComparison.Ordinal);
         Assert.Contains("<value>Remarks</value>", resources, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Stock_count_screens_use_plain_language_and_keep_auth_online_rules()
+    {
+        var pages = InventoryPagesDirectory();
+        var create = File.ReadAllText(Path.Combine(pages, "StockCountCreate.razor"));
+        Assert.Contains("UtangCapability.ManageInventory", create, StringComparison.Ordinal);
+        Assert.Contains("_isOffline", create, StringComparison.Ordinal);
+        Assert.Contains("tracked: true", create, StringComparison.Ordinal);
+        Assert.Contains("Distinct()", create, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"check\")", create, StringComparison.Ordinal);
+
+        var detail = File.ReadAllText(Path.Combine(pages, "StockCountDetail.razor"));
+        Assert.Contains("UtangCapability.ViewInventory", detail, StringComparison.Ordinal);
+        Assert.Contains("UtangCapability.ManageInventory", detail, StringComparison.Ordinal);
+
+        var display = File.ReadAllText(Path.Combine(
+            FindRepoRoot(),
+            "src",
+            "Products",
+            "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.Application",
+            "Inventory",
+            "StockCountDisplay.cs"));
+        Assert.Contains("MMM d, yyyy · h:mm tt", display, StringComparison.Ordinal);
+        Assert.Contains("en-US", display, StringComparison.Ordinal);
+        Assert.Contains("ToLocalTime()", display, StringComparison.Ordinal);
+
+        var resources = File.ReadAllText(Path.Combine(
+            FindRepoRoot(),
+            "src",
+            "Products",
+            "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.Maui",
+            "Localization",
+            "PosResources.resx"));
+        Assert.Contains("<data name=\"Inventory_CountsCreate\" xml:space=\"preserve\"><value>Create count</value></data>", resources, StringComparison.Ordinal);
+        Assert.Contains("<data name=\"Inventory_CountsStatus_Draft\" xml:space=\"preserve\"><value>Preparing</value></data>", resources, StringComparison.Ordinal);
+        Assert.Contains("<data name=\"Inventory_CountsStatus_InProgress\" xml:space=\"preserve\"><value>Counting</value></data>", resources, StringComparison.Ordinal);
+        Assert.Contains("<data name=\"Inventory_CountsDifference\" xml:space=\"preserve\"><value>Difference</value></data>", resources, StringComparison.Ordinal);
+        Assert.DoesNotContain("<data name=\"Inventory_CountsCreate\" xml:space=\"preserve\"><value>Create draft</value></data>", resources, StringComparison.Ordinal);
+        Assert.DoesNotContain("<data name=\"Inventory_CountsVariance\" xml:space=\"preserve\"><value>Variance</value></data>", resources, StringComparison.Ordinal);
     }
 
     private static string InventoryPagesDirectory() => Path.Combine(
