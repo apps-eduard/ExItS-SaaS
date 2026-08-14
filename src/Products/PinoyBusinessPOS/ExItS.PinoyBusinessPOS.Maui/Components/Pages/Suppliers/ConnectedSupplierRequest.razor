@@ -1,0 +1,57 @@
+@page "/suppliers/connected/request"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosConnectedSupplierClient ConnectedSuppliers
+@inject IUtangCapabilityEvaluator Capabilities
+@inject IStringLocalizer<PosResources> L
+
+<StoreHeaderBack Href="/suppliers" />
+<Page>
+    <h1>@L["ConnectedSuppliers_RequestTitle"]</h1>
+    <p>@L["ConnectedSuppliers_RequestHelp"]</p>
+    @if (!string.IsNullOrWhiteSpace(_message))
+    {
+        <Alert Tone="@(_succeeded ? AlertTone.Success : AlertTone.Danger)"
+               Title="@L[_succeeded ? "ConnectedSuppliers_RequestSent" : "ConnectedSuppliers_Error"]"
+               Message="@_message" />
+    }
+    <TextInput Label="@L["ConnectedSuppliers_OrganizationId"]"
+               Value="@_supplierOrganizationId"
+               ValueChanged="v => _supplierOrganizationId = v"
+               Required="true"
+               Disabled="@_saving" />
+    <button class="pos-action-tile pos-action-tile--primary" disabled="@_saving" @onclick="RequestAsync">
+        @L["ConnectedSuppliers_SendRequest"]
+    </button>
+</Page>
+
+@code {
+    private string? _supplierOrganizationId;
+    private string? _message;
+    private bool _saving;
+    private bool _succeeded;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+        if (!Capabilities.IsAllowed(UtangCapability.ManageSuppliers)) Nav.NavigateTo("/home", replace: true);
+    }
+
+    private async Task RequestAsync()
+    {
+        if (!Guid.TryParse(_supplierOrganizationId, out var organizationId))
+        {
+            _message = L["ConnectedSuppliers_OrganizationIdInvalid"];
+            return;
+        }
+        _saving = true;
+        var result = await ConnectedSuppliers.RequestConnectionAsync(new(organizationId));
+        _saving = false;
+        _succeeded = result.IsSuccess;
+        _message = result.IsSuccess ? L["ConnectedSuppliers_RequestSentMessage"] : result.Error?.Detail ?? L["ConnectedSuppliers_RequestFailed"];
+    }
+}

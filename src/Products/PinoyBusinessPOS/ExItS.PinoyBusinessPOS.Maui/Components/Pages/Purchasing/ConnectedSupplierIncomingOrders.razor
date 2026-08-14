@@ -1,0 +1,95 @@
+@page "/connected-suppliers/incoming"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosConnectedSupplierClient ConnectedSuppliers
+@inject IUtangCapabilityEvaluator Capabilities
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+<StoreHeaderBack Href="/purchasing" />
+<Page>
+    <h1>@L["ConnectedSuppliers_IncomingOrders"]</h1>
+    @if (_loading)
+    {
+        <Spinner />
+    }
+    else if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <Alert Tone="AlertTone.Danger" Title="@L["ConnectedSuppliers_Error"]" Message="@_error" />
+    }
+    else if (_orders.Count == 0)
+    {
+        <EmptyState IconName="orders" Title="@L["ConnectedSuppliers_NoIncomingOrders"]" Message="@L["ConnectedSuppliers_NoIncomingOrdersHelp"]" />
+    }
+    else
+    {
+        @foreach (var order in _orders)
+        {
+            <section class="pos-settings__panel">
+                <h2>@(order.BuyerPoNumber ?? L["ConnectedSuppliers_PurchaseOrder"])</h2>
+                <p>@order.OrderDate.ToString("d") · <MoneyDisplay Amount="@order.TotalAmount" CurrencyCode="PHP" /></p>
+                @foreach (var line in order.Lines)
+                {
+                    <div>@line.NameSnapshot · @line.Qty @line.UnitOfMeasureCode</div>
+                }
+                @if (string.Equals(order.Status, "New", StringComparison.OrdinalIgnoreCase))
+                {
+                    <button type="button" @onclick="() => RespondAsync(order.ConnectedPurchaseOrderId, true)">@L["ConnectedSuppliers_Accept"]</button>
+                    <button type="button" @onclick="() => RespondAsync(order.ConnectedPurchaseOrderId, false)">@L["ConnectedSuppliers_Decline"]</button>
+                }
+                else
+                {
+                    <Badge>@L[$"ConnectedSuppliers_OrderStatus_{order.Status}"]</Badge>
+                }
+            </section>
+        }
+    }
+</Page>
+
+@code {
+    private bool _loading = true;
+    private bool _offline;
+    private string? _error;
+    private IReadOnlyList<ConnectedPurchaseOrderDto> _orders = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+        if (!Capabilities.IsAllowed(UtangCapability.ViewPurchasing))
+        {
+            Nav.NavigateTo("/home", replace: true);
+            return;
+        }
+        _offline = !await Connectivity.IsConnectedAsync();
+        if (_offline)
+        {
+            _loading = false;
+            _error = L["Purchasing_OfflineMessage"];
+            return;
+        }
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        var result = await ConnectedSuppliers.ListIncomingOrdersAsync();
+        _loading = false;
+        _orders = result.IsSuccess && result.Data is not null ? result.Data : [];
+        _error = result.IsSuccess ? null : result.Error?.Detail ?? L["ConnectedSuppliers_LoadIncomingFailed"];
+    }
+
+    private async Task RespondAsync(Guid id, bool accept)
+    {
+        if (!Capabilities.IsAllowed(UtangCapability.ManagePurchasing)) return;
+        var result = accept
+            ? await ConnectedSuppliers.AcceptIncomingAsync(id)
+            : await ConnectedSuppliers.DeclineIncomingAsync(id);
+        if (result.IsSuccess) await LoadAsync();
+        else _error = result.Error?.Detail ?? L["ConnectedSuppliers_RespondFailed"];
+    }
+}

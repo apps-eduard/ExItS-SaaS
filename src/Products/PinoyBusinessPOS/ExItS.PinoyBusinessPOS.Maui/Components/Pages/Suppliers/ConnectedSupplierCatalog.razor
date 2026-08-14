@@ -1,0 +1,77 @@
+@page "/suppliers/{SupplierId:guid}/connected-catalog"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosConnectedSupplierClient ConnectedSuppliers
+@inject IConnectivityService Connectivity
+@inject IUtangCapabilityEvaluator Capabilities
+@inject IStringLocalizer<PosResources> L
+
+<StoreHeaderBack Href="@($"/suppliers/{SupplierId:D}")" />
+<Page>
+    <h1>@L["ConnectedSuppliers_BrowseProducts"]</h1>
+    <p>@L["ConnectedSuppliers_ServerSearchHelp"]</p>
+    @if (_offline)
+    {
+        <Alert Tone="AlertTone.Warning" Title="@L["ConnectedSuppliers_OnlineRequired"]" Message="@L["ConnectedSuppliers_CatalogOnlineOnly"]" />
+    }
+    else
+    {
+        <input type="search" value="@_query" placeholder="@L["ConnectedSuppliers_SearchPlaceholder"]" @oninput="OnSearch" />
+        <button type="button" disabled="@_loading" @onclick="SearchAsync">@L["ConnectedSuppliers_Search"]</button>
+        @if (!string.IsNullOrWhiteSpace(_error))
+        {
+            <Alert Tone="AlertTone.Danger" Title="@L["ConnectedSuppliers_Error"]" Message="@_error" />
+        }
+        <div role="list">
+            @foreach (var item in _items)
+            {
+                <article role="listitem" class="pos-purchasing-create__product">
+                    <strong>@item.NameSnapshot</strong>
+                    <span>@(item.SkuSnapshot ?? L["ConnectedSuppliers_NoSku"]) · @item.UnitOfMeasureCode</span>
+                    <MoneyDisplay Amount="@item.SupplierOrderPrice" CurrencyCode="PHP" />
+                </article>
+            }
+        </div>
+    }
+</Page>
+
+@code {
+    [Parameter] public Guid SupplierId { get; set; }
+    [SupplyParameterFromQuery(Name = "relationshipId")] public Guid RelationshipId { get; set; }
+    private bool _offline;
+    private bool _loading;
+    private string? _query;
+    private string? _error;
+    private IReadOnlyList<SupplierProductExposureDto> _items = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+        if (!Capabilities.IsAllowed(UtangCapability.ViewPurchasing))
+        {
+            Nav.NavigateTo("/home", replace: true);
+            return;
+        }
+        _offline = !await Connectivity.IsConnectedAsync();
+        if (!_offline && RelationshipId != Guid.Empty) await SearchAsync();
+    }
+
+    private void OnSearch(ChangeEventArgs args) => _query = args.Value?.ToString();
+    private async Task SearchAsync()
+    {
+        if (RelationshipId == Guid.Empty)
+        {
+            _error = L["ConnectedSuppliers_RelationshipMissing"];
+            return;
+        }
+        _loading = true;
+        var result = await ConnectedSuppliers.SearchCatalogAsync(RelationshipId, _query, page: 1, pageSize: 25);
+        _loading = false;
+        _items = result.IsSuccess && result.Data is not null ? result.Data.Items : [];
+        _error = result.IsSuccess ? null : result.Error?.Detail ?? L["ConnectedSuppliers_SearchFailed"];
+    }
+}

@@ -2608,4 +2608,61 @@
   <data name="Personal_NotificationsEmptyMessage" xml:space="preserve"><value>New link requests and related updates will appear here.</value></data>
   <data name="Personal_NotificationsLoadFailed" xml:space="preserve"><value>Notifications could not be loaded. Try again.</value></data>
   <data name="Personal_NotificationsUnread" xml:space="preserve"><value>Unread</value></data>
+  <data name="ConnectedSuppliers_ExternalSupplier" xml:space="preserve"><value>External supplier</value></data>
+  <data name="ConnectedSuppliers_ConnectedViaExits" xml:space="preserve"><value>Connected via ExItS</value></data>
+  <data name="ConnectedSuppliers_Status_Connected" xml:space="preserve"><value>Connected</value></data>
+  <data name="ConnectedSuppliers_Status_Requested" xml:space="preserve"><value>Connection requested</value></data>
+  <data name="ConnectedSuppliers_Status_Declined" xml:space="preserve"><value>Declined</value></data>
+  <data name="ConnectedSuppliers_Status_Disconnected" xml:space="preserve"><value>Disconnected</value></data>
+  <data name="ConnectedSuppliers_RequestConnection" xml:space="preserve"><value>Connect supplier</value></data>
+  <data name="ConnectedSuppliers_RequestTitle" xml:space="preserve"><value>Connect an ExItS supplier</value></data>
+  <data name="ConnectedSuppliers_RequestHelp" xml:space="preserve"><value>Enter the supplier organization's ExItS ID. The supplier must approve your request.</value></data>
+  <data name="ConnectedSuppliers_OrganizationId" xml:space="preserve"><value>Supplier organization ID</value></data>
+  <data name="ConnectedSuppliers_OrganizationIdInvalid" xml:space="preserve"><value>Enter a valid supplier organization ID.</value></data>
+  <data name="ConnectedSuppliers_SendRequest" xml:space="preserve"><value>Send request</value></data>
+  <data name="ConnectedSuppliers_RequestSent" xml:space="preserve"><value>Request sent</value></data>
+  <data name="ConnectedSuppliers_RequestSentMessage" xml:space="preserve"><value>The supplier can now approve or decline your request.</value></data>
+  <data name="ConnectedSuppliers_RequestFailed" xml:space="preserve"><value>The connection request could not be sent.</value></data>
+  <data name="ConnectedSuppliers_Error" xml:space="preserve"><value>Something went wrong</value></data>
+  <data name="ConnectedSuppliers_BrowseProducts" xml:space="preserve"><value>Browse products</value></data>
+  <data name="ConnectedSuppliers_LinkedProducts" xml:space="preserve"><value>Linked products</value></data>
+  <data name="ConnectedSuppliers_PurchaseOrders" xml:space="preserve"><value>Purchase orders</value></data>
+  <data name="ConnectedSuppliers_ServerSearchHelp" xml:space="preserve"><value>Search this supplier's current catalog online. Only linked products are kept for offline use.</value></data>
+  <data name="ConnectedSuppliers_OnlineRequired" xml:space="preserve"><value>Connect to search</value></data>
+  <data name="ConnectedSuppliers_CatalogOnlineOnly" xml:space="preserve"><value>The supplier catalog is available online only. Linked products remain available offline.</value></data>
+  <data name="ConnectedSuppliers_SearchPlaceholder" xml:space="preserve"><value>Search supplier products</value></data>
+  <data name="ConnectedSuppliers_SearchLinkedPlaceholder" xml:space="preserve"><value>Search linked products</value></data>
+  <data name="ConnectedSuppliers_Search" xml:space="preserve"><value>Search</value></data>
+  <data name="ConnectedSuppliers_SearchFailed" xml:space="preserve"><value>Supplier products could not be loaded.</value></data>
+  <data name="ConnectedSuppliers_NoSku" xml:space="preserve"><value>No SKU</value></data>
+  <data name="ConnectedSuppliers_RelationshipMissing" xml:space="preserve"><value>This supplier is not linked to an active connection.</value></data>
+  <data name="ConnectedSuppliers_LinkedProductsHelp" xml:space="preserve"><value>These products were linked for purchasing and are available on this device.</value></data>
+  <data name="ConnectedSuppliers_SyncLinked" xml:space="preserve"><value>Update linked products</value></data>
+  <data name="ConnectedSuppliers_NoOfflineResult" xml:space="preserve"><value>No offline result. Connect to search more products from this supplier.</value></data>
+  <data name="ConnectedSuppliers_LastUpdated" xml:space="preserve"><value>Last updated {0}</value></data>
+  <data name="ConnectedSuppliers_SaveOnDevice" xml:space="preserve"><value>Save on this device</value></data>
+  <data name="ConnectedSuppliers_SavedOnDevice" xml:space="preserve"><value>Saved on this device</value></data>
+  <data name="ConnectedSuppliers_WaitingToSync" xml:space="preserve"><value>Waiting to sync. This order has not been sent to the supplier.</value></data>
+  <data name="ConnectedSuppliers_ReviewChanges" xml:space="preserve"><value>Review supplier changes</value></data>
+  <data name="ConnectedSuppliers_ReviewChangesHelp" xml:space="preserve"><value>Prices or availability changed. Review these items before continuing.</value></data>
+  <data name="ConnectedSuppliers_UpdateAndContinue" xml:space="preserve"><value>Update and continue</value></data>
+  <data name="ConnectedSuppliers_ReviewOrder" xml:space="preserve"><value>Review order</value></data>
+  <data name="ConnectedSuppliers_RemoveItem" xml:space="preserve"><value>Remove unavailable items</value></data>
+  <data name="ConnectedSuppliers_Unavailable" xml:space="preserve"><value>Unavailable</value></data>
+  <data name="ConnectedSuppliers_RevalidateFailed" xml:space="preserve"><value>The supplier could not confirm current prices and availability.</value></data>
+  <data name="ConnectedSuppliers_IncomingOrders" xml:space="preserve"><value>Incoming orders</value></data>
+  <data name="ConnectedSuppliers_NoIncomingOrders" xml:space="preserve"><value>No incoming orders</value></data>
+  <data name="ConnectedSuppliers_NoIncomingOrdersHelp" xml:space="preserve"><value>New orders from connected buyers will appear here.</value></data>
+  <data name="ConnectedSuppliers_PurchaseOrder" xml:space="preserve"><value>Purchase order</value></data>
+  <data name="ConnectedSuppliers_Accept" xml:space="preserve"><value>Accept</value></data>
+  <data name="ConnectedSuppliers_Decline" xml:space="preserve"><value>Decline</value></data>
+  <data name="ConnectedSuppliers_OrderStatus_Accepted" xml:space="preserve"><value>Accepted</value></data>
+  <data name="ConnectedSuppliers_OrderStatus_Declined" xml:space="preserve"><value>Declined</value></data>
+  <data name="ConnectedSuppliers_LoadIncomingFailed" xml:space="preserve"><value>Incoming orders could not be loaded.</value></data>
+  <data name="ConnectedSuppliers_RespondFailed" xml:space="preserve"><value>The order response could not be saved.</value></data>
+  <data name="ConnectedSuppliers_LinkAndUse" xml:space="preserve"><value>Link and use</value></data>
+  <data name="ConnectedSuppliers_LinkProductTitle" xml:space="preserve"><value>Link {0} to your product</value></data>
+  <data name="ConnectedSuppliers_BuyerProduct" xml:space="preserve"><value>Your product</value></data>
+  <data name="ConnectedSuppliers_BuyerProductRequired" xml:space="preserve"><value>Choose the matching product from your catalog.</value></data>
+  <data name="ConnectedSuppliers_LinkFailed" xml:space="preserve"><value>The product could not be linked.</value></data>
 </root>

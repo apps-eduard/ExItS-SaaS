@@ -1,0 +1,79 @@
+@page "/suppliers/{SupplierId:guid}/linked-products"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject ILinkedSupplierProductStore LocalProducts
+@inject ILinkedSupplierProductSyncService SyncService
+@inject IConnectivityService Connectivity
+@inject IUtangCapabilityEvaluator Capabilities
+@inject IStringLocalizer<PosResources> L
+
+<StoreHeaderBack Href="@($"/suppliers/{SupplierId:D}")" />
+<Page>
+    <h1>@L["ConnectedSuppliers_LinkedProducts"]</h1>
+    <p>@L["ConnectedSuppliers_LinkedProductsHelp"]</p>
+    <input type="search" value="@_query" placeholder="@L["ConnectedSuppliers_SearchLinkedPlaceholder"]" @oninput="SearchAsync" />
+    @if (!_offline)
+    {
+        <button type="button" disabled="@_syncing" @onclick="SyncAsync">@L["ConnectedSuppliers_SyncLinked"]</button>
+    }
+    @if (_items.Count == 0)
+    {
+        <InlineMessage Tone="InlineMessageTone.Info">@L["ConnectedSuppliers_NoOfflineResult"]</InlineMessage>
+    }
+    else
+    {
+        <div role="list">
+            @foreach (var item in _items)
+            {
+                <article role="listitem" class="pos-purchasing-create__product">
+                    <strong>@item.ProductName</strong>
+                    <span>@(item.SupplierSku ?? L["ConnectedSuppliers_NoSku"]) · @item.UnitOfMeasure</span>
+                    <MoneyDisplay Amount="@item.LastKnownOrderPrice" CurrencyCode="PHP" />
+                    <small>@L["ConnectedSuppliers_LastUpdated", item.SupplierUpdatedAtUtc.ToLocalTime().ToString("g")]</small>
+                </article>
+            }
+        </div>
+    }
+</Page>
+
+@code {
+    [Parameter] public Guid SupplierId { get; set; }
+    [SupplyParameterFromQuery(Name = "relationshipId")] public Guid RelationshipId { get; set; }
+    private bool _offline;
+    private bool _syncing;
+    private string? _query;
+    private IReadOnlyList<LocalLinkedSupplierProduct> _items = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+        if (!Capabilities.IsAllowed(UtangCapability.ViewPurchasing))
+        {
+            Nav.NavigateTo("/home", replace: true);
+            return;
+        }
+        _offline = !await Connectivity.IsConnectedAsync();
+        if (!_offline && RelationshipId != Guid.Empty) await SyncAsync();
+        else await LoadLocalAsync();
+    }
+
+    private async Task SearchAsync(ChangeEventArgs args)
+    {
+        _query = args.Value?.ToString();
+        await LoadLocalAsync();
+    }
+    private async Task LoadLocalAsync() =>
+        _items = RelationshipId == Guid.Empty ? [] : await LocalProducts.SearchLocalAsync(RelationshipId, _query, 100);
+    private async Task SyncAsync()
+    {
+        if (RelationshipId == Guid.Empty) return;
+        _syncing = true;
+        await SyncService.SyncAsync(RelationshipId);
+        _syncing = false;
+        await LoadLocalAsync();
+    }
+}

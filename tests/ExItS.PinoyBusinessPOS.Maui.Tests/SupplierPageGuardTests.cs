@@ -126,7 +126,7 @@ public sealed class SupplierPageGuardTests
             var text = File.ReadAllText(file);
             foreach (var forbidden in new[]
                      {
-                         "PurchaseOrder", "GoodsReceipt", "Receiving", "AccountsPayable",
+                         "GoodsReceipt", "Receiving", "AccountsPayable",
                          "SupplierInvoice", "SupplierPayment", "CostHistory", "PurchaseReturn"
                      })
             {

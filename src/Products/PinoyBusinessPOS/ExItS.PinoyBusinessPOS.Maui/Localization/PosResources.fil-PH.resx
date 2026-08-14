@@ -2608,4 +2608,61 @@
   <data name="Personal_NotificationsEmptyMessage" xml:space="preserve"><value>Lalabas dito ang bagong link requests at related updates.</value></data>
   <data name="Personal_NotificationsLoadFailed" xml:space="preserve"><value>Hindi ma-load ang notifications. Subukan ulit.</value></data>
   <data name="Personal_NotificationsUnread" xml:space="preserve"><value>Unread</value></data>
+  <data name="ConnectedSuppliers_ExternalSupplier" xml:space="preserve"><value>Panlabas na supplier</value></data>
+  <data name="ConnectedSuppliers_ConnectedViaExits" xml:space="preserve"><value>Konektado sa ExItS</value></data>
+  <data name="ConnectedSuppliers_Status_Connected" xml:space="preserve"><value>Konektado</value></data>
+  <data name="ConnectedSuppliers_Status_Requested" xml:space="preserve"><value>Hiniling ang koneksyon</value></data>
+  <data name="ConnectedSuppliers_Status_Declined" xml:space="preserve"><value>Tinanggihan</value></data>
+  <data name="ConnectedSuppliers_Status_Disconnected" xml:space="preserve"><value>Hindi na konektado</value></data>
+  <data name="ConnectedSuppliers_RequestConnection" xml:space="preserve"><value>Ikonekta ang supplier</value></data>
+  <data name="ConnectedSuppliers_RequestTitle" xml:space="preserve"><value>Ikonekta ang ExItS supplier</value></data>
+  <data name="ConnectedSuppliers_RequestHelp" xml:space="preserve"><value>Ilagay ang ExItS ID ng organisasyon ng supplier. Kailangan nilang aprubahan ang hiling.</value></data>
+  <data name="ConnectedSuppliers_OrganizationId" xml:space="preserve"><value>ID ng organisasyon ng supplier</value></data>
+  <data name="ConnectedSuppliers_OrganizationIdInvalid" xml:space="preserve"><value>Maglagay ng wastong organization ID.</value></data>
+  <data name="ConnectedSuppliers_SendRequest" xml:space="preserve"><value>Ipadala ang hiling</value></data>
+  <data name="ConnectedSuppliers_RequestSent" xml:space="preserve"><value>Naipadala ang hiling</value></data>
+  <data name="ConnectedSuppliers_RequestSentMessage" xml:space="preserve"><value>Maaari nang aprubahan o tanggihan ng supplier ang hiling.</value></data>
+  <data name="ConnectedSuppliers_RequestFailed" xml:space="preserve"><value>Hindi naipadala ang hiling sa koneksyon.</value></data>
+  <data name="ConnectedSuppliers_Error" xml:space="preserve"><value>May nangyaring mali</value></data>
+  <data name="ConnectedSuppliers_BrowseProducts" xml:space="preserve"><value>Tingnan ang mga produkto</value></data>
+  <data name="ConnectedSuppliers_LinkedProducts" xml:space="preserve"><value>Mga naka-link na produkto</value></data>
+  <data name="ConnectedSuppliers_PurchaseOrders" xml:space="preserve"><value>Mga purchase order</value></data>
+  <data name="ConnectedSuppliers_ServerSearchHelp" xml:space="preserve"><value>Hanapin online ang kasalukuyang catalog ng supplier. Mga naka-link na produkto lamang ang naka-save para sa offline.</value></data>
+  <data name="ConnectedSuppliers_OnlineRequired" xml:space="preserve"><value>Kumonekta para maghanap</value></data>
+  <data name="ConnectedSuppliers_CatalogOnlineOnly" xml:space="preserve"><value>Online lamang ang catalog ng supplier. Available pa rin offline ang mga naka-link na produkto.</value></data>
+  <data name="ConnectedSuppliers_SearchPlaceholder" xml:space="preserve"><value>Maghanap ng produkto ng supplier</value></data>
+  <data name="ConnectedSuppliers_SearchLinkedPlaceholder" xml:space="preserve"><value>Maghanap sa mga naka-link</value></data>
+  <data name="ConnectedSuppliers_Search" xml:space="preserve"><value>Maghanap</value></data>
+  <data name="ConnectedSuppliers_SearchFailed" xml:space="preserve"><value>Hindi ma-load ang mga produkto ng supplier.</value></data>
+  <data name="ConnectedSuppliers_NoSku" xml:space="preserve"><value>Walang SKU</value></data>
+  <data name="ConnectedSuppliers_RelationshipMissing" xml:space="preserve"><value>Walang aktibong koneksyon ang supplier na ito.</value></data>
+  <data name="ConnectedSuppliers_LinkedProductsHelp" xml:space="preserve"><value>Naka-link ang mga produktong ito para sa pagbili at available sa device na ito.</value></data>
+  <data name="ConnectedSuppliers_SyncLinked" xml:space="preserve"><value>I-update ang mga naka-link</value></data>
+  <data name="ConnectedSuppliers_NoOfflineResult" xml:space="preserve"><value>Walang resulta offline. Kumonekta para maghanap pa ng produkto mula sa supplier na ito.</value></data>
+  <data name="ConnectedSuppliers_LastUpdated" xml:space="preserve"><value>Huling na-update {0}</value></data>
+  <data name="ConnectedSuppliers_SaveOnDevice" xml:space="preserve"><value>I-save sa device na ito</value></data>
+  <data name="ConnectedSuppliers_SavedOnDevice" xml:space="preserve"><value>Na-save sa device na ito</value></data>
+  <data name="ConnectedSuppliers_WaitingToSync" xml:space="preserve"><value>Naghihintay mag-sync. Hindi pa naipadala ang order sa supplier.</value></data>
+  <data name="ConnectedSuppliers_ReviewChanges" xml:space="preserve"><value>Suriin ang mga pagbabago</value></data>
+  <data name="ConnectedSuppliers_ReviewChangesHelp" xml:space="preserve"><value>Nagbago ang presyo o availability. Suriin bago magpatuloy.</value></data>
+  <data name="ConnectedSuppliers_UpdateAndContinue" xml:space="preserve"><value>I-update at magpatuloy</value></data>
+  <data name="ConnectedSuppliers_ReviewOrder" xml:space="preserve"><value>Suriin ang order</value></data>
+  <data name="ConnectedSuppliers_RemoveItem" xml:space="preserve"><value>Alisin ang hindi available</value></data>
+  <data name="ConnectedSuppliers_Unavailable" xml:space="preserve"><value>Hindi available</value></data>
+  <data name="ConnectedSuppliers_RevalidateFailed" xml:space="preserve"><value>Hindi makumpirma ng supplier ang kasalukuyang presyo at availability.</value></data>
+  <data name="ConnectedSuppliers_IncomingOrders" xml:space="preserve"><value>Mga papasok na order</value></data>
+  <data name="ConnectedSuppliers_NoIncomingOrders" xml:space="preserve"><value>Walang papasok na order</value></data>
+  <data name="ConnectedSuppliers_NoIncomingOrdersHelp" xml:space="preserve"><value>Lalabas dito ang bagong order mula sa konektadong buyer.</value></data>
+  <data name="ConnectedSuppliers_PurchaseOrder" xml:space="preserve"><value>Purchase order</value></data>
+  <data name="ConnectedSuppliers_Accept" xml:space="preserve"><value>Tanggapin</value></data>
+  <data name="ConnectedSuppliers_Decline" xml:space="preserve"><value>Tanggihan</value></data>
+  <data name="ConnectedSuppliers_OrderStatus_Accepted" xml:space="preserve"><value>Tinanggap</value></data>
+  <data name="ConnectedSuppliers_OrderStatus_Declined" xml:space="preserve"><value>Tinanggihan</value></data>
+  <data name="ConnectedSuppliers_LoadIncomingFailed" xml:space="preserve"><value>Hindi ma-load ang mga papasok na order.</value></data>
+  <data name="ConnectedSuppliers_RespondFailed" xml:space="preserve"><value>Hindi na-save ang sagot sa order.</value></data>
+  <data name="ConnectedSuppliers_LinkAndUse" xml:space="preserve"><value>I-link at gamitin</value></data>
+  <data name="ConnectedSuppliers_LinkProductTitle" xml:space="preserve"><value>I-link ang {0} sa produkto mo</value></data>
+  <data name="ConnectedSuppliers_BuyerProduct" xml:space="preserve"><value>Produkto mo</value></data>
+  <data name="ConnectedSuppliers_BuyerProductRequired" xml:space="preserve"><value>Piliin ang katumbas na produkto mula sa catalog mo.</value></data>
+  <data name="ConnectedSuppliers_LinkFailed" xml:space="preserve"><value>Hindi ma-link ang produkto.</value></data>
 </root>

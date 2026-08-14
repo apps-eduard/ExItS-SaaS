@@ -5,6 +5,7 @@ using ExItS.PinoyBusinessPOS.ApiClient;
 using ExItS.PinoyBusinessPOS.Application.Abstractions;
 using ExItS.PinoyBusinessPOS.Application.Auth;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
+using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Application.Offline;
 using ExItS.PinoyBusinessPOS.Application.Options;
 using ExItS.PinoyBusinessPOS.Application.Support;
@@ -182,6 +183,7 @@ public static class MauiProgram
         services.AddSingleton<IPersonalOfflineSyncService, PersonalOfflineSyncService>();
         services.AddSingleton<IOfflineReconnectAutoSync, OfflineReconnectAutoSyncService>();
         services.AddSingleton<ILocalSellingCatalogSyncService, LocalSellingCatalogSyncService>();
+        services.AddSingleton<ILinkedSupplierProductSyncService, LinkedSupplierProductSyncService>();
         services.AddSingleton<PosStatusState>();
         // The checkout cart lives only in memory for the signed-in session and clears itself on
         // sign-out or organization switch; it is never persisted or queued.

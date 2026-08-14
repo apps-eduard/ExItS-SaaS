@@ -3,6 +3,7 @@
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IPosSupplierClient Suppliers
+@inject IPosConnectedSupplierClient ConnectedSuppliers
 @inject ICurrentUserContext CurrentUser
 @inject IUtangCapabilityEvaluator Capabilities
 @inject ApiStatusLocalizer ApiLocalizer
@@ -33,6 +34,7 @@ else
     var supplier = _supplier;
     var canManage = Capabilities.IsAllowed(UtangCapability.ManageSuppliers);
     var isActive = supplier.Status == SupplierUiOptions.ActiveStatus;
+    var isConnected = string.Equals(supplier.ConnectionType, "ConnectedOrganization", StringComparison.OrdinalIgnoreCase);
 <div class="pos-supplier-detail">
 <Page>
     <header class="pos-supplier-detail__header">
@@ -40,6 +42,15 @@ else
         <p class="pos-supplier-detail__subtitle">@L["Suppliers_DetailSubtitle"]</p>
         <div class="pos-supplier-detail__status-row">
             <Badge Tone="@(isActive ? BadgeTone.Success : BadgeTone.Neutral)">@SupplierUiOptions.StatusLabel(L, supplier.Status)</Badge>
+            <Badge Tone="@(isConnected ? BadgeTone.Success : BadgeTone.Neutral)">
+                @L[isConnected ? "ConnectedSuppliers_ConnectedViaExits" : "ConnectedSuppliers_ExternalSupplier"]
+            </Badge>
+            @if (_relationship is not null)
+            {
+                <Badge Tone="@(_relationship.Status == "Active" ? BadgeTone.Success : BadgeTone.Neutral)">
+                    @RelationshipStatusLabel(_relationship.Status)
+                </Badge>
+            }
         </div>
     </header>
 
@@ -120,6 +131,22 @@ else
         </dl>
     </section>
 
+    @if (isConnected && supplier.ConnectedRelationshipId is Guid relationshipId)
+    {
+        <div class="pos-action-grid pos-action-grid--two pos-supplier-detail__actions" role="group">
+            <button type="button" class="pos-action-tile pos-action-tile--primary"
+                    disabled="@(_isOffline)" @onclick="() => GoConnectedCatalog(relationshipId)">
+                <span class="pos-action-tile__label">@L["ConnectedSuppliers_BrowseProducts"]</span>
+            </button>
+            <button type="button" class="pos-action-tile" @onclick="() => GoLinkedProducts(relationshipId)">
+                <span class="pos-action-tile__label">@L["ConnectedSuppliers_LinkedProducts"]</span>
+            </button>
+            <button type="button" class="pos-action-tile" disabled="@(_isOffline)" @onclick="GoPurchaseOrders">
+                <span class="pos-action-tile__label">@L["ConnectedSuppliers_PurchaseOrders"]</span>
+            </button>
+        </div>
+    }
+
     <div class="pos-action-grid pos-action-grid--two pos-supplier-detail__actions" role="group">
         <button type="button"
                 class="pos-action-tile pos-action-tile--primary"
@@ -180,6 +207,7 @@ else
     private bool _confirmDeactivate;
     private bool _confirmReactivate;
     private PosSupplierDto? _supplier;
+    private ConnectedSupplierRelationshipDto? _relationship;
     private string? _errorTitle;
     private string? _errorMessage;
     private string? _banner;
@@ -223,6 +251,11 @@ else
         if (result.IsSuccess && result.Data is not null)
         {
             _supplier = result.Data;
+            if (_supplier.ConnectedRelationshipId is Guid relationshipId)
+            {
+                var relationships = await ConnectedSuppliers.ListRelationshipsAsync();
+                _relationship = relationships.Data?.FirstOrDefault(x => x.RelationshipId == relationshipId);
+            }
         }
         else
         {
@@ -273,4 +306,17 @@ else
     }
 
     private void GoEdit() => Nav.NavigateTo($"/suppliers/{SupplierId:D}/edit");
+    private void GoConnectedCatalog(Guid relationshipId) =>
+        Nav.NavigateTo($"/suppliers/{SupplierId:D}/connected-catalog?relationshipId={relationshipId:D}");
+    private void GoLinkedProducts(Guid relationshipId) =>
+        Nav.NavigateTo($"/suppliers/{SupplierId:D}/linked-products?relationshipId={relationshipId:D}");
+    private void GoPurchaseOrders() => Nav.NavigateTo("/purchasing");
+    private string RelationshipStatusLabel(string status) => status switch
+    {
+        "Active" => L["ConnectedSuppliers_Status_Connected"],
+        "Pending" => L["ConnectedSuppliers_Status_Requested"],
+        "Declined" => L["ConnectedSuppliers_Status_Declined"],
+        "Disconnected" => L["ConnectedSuppliers_Status_Disconnected"],
+        _ => status
+    };
 }

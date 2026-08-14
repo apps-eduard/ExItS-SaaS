@@ -3,6 +3,7 @@
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IPosSupplierClient Suppliers
+@inject IPosConnectedSupplierClient ConnectedSuppliers
 @inject ICurrentUserContext CurrentUser
 @inject IUtangCapabilityEvaluator Capabilities
 @inject ApiStatusLocalizer ApiLocalizer
@@ -39,6 +40,12 @@ else
                     @onclick="GoNew">
                 <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("plus")</span>
                 <span class="pos-action-tile__label">@L["Suppliers_Add"]</span>
+            </button>
+            <button type="button"
+                    class="pos-action-tile"
+                    disabled="@(!canManage || _isOffline)"
+                    @onclick="GoConnect">
+                <span class="pos-action-tile__label">@L["ConnectedSuppliers_RequestConnection"]</span>
             </button>
             <button type="button"
                     class="pos-action-tile"
@@ -121,6 +128,16 @@ else
                                     </div>
                                 </div>
                                 <span class="pos-suppliers__row-meta">
+                                    @L[string.Equals(item.ConnectionType, "ConnectedOrganization", StringComparison.OrdinalIgnoreCase)
+                                        ? "ConnectedSuppliers_ConnectedViaExits"
+                                        : "ConnectedSuppliers_ExternalSupplier"]
+                                    @if (item.ConnectedRelationshipId is Guid relationshipId
+                                         && _relationshipStatuses.TryGetValue(relationshipId, out var relationshipStatus))
+                                    {
+                                        <text> · @RelationshipStatusLabel(relationshipStatus)</text>
+                                    }
+                                </span>
+                                <span class="pos-suppliers__row-meta">
                                     @item.SupplierCode
                                     @if (!string.IsNullOrWhiteSpace(item.ContactPerson))
                                     {
@@ -160,6 +177,7 @@ else
     private string? _errorTitle;
     private string? _errorMessage;
     private CancellationTokenSource? _searchCts;
+    private Dictionary<Guid, string> _relationshipStatuses = [];
 
     protected override async Task OnInitializedAsync()
     {
@@ -243,6 +261,11 @@ else
         {
             _items = result.Data.Items;
             _totalCount = result.Data.TotalCount;
+            var relationships = await ConnectedSuppliers.ListRelationshipsAsync();
+            if (relationships.IsSuccess && relationships.Data is not null)
+            {
+                _relationshipStatuses = relationships.Data.ToDictionary(x => x.RelationshipId, x => x.Status);
+            }
         }
         else
         {
@@ -276,4 +299,13 @@ else
     }
 
     private void GoNew() => Nav.NavigateTo("/suppliers/new");
+    private void GoConnect() => Nav.NavigateTo("/suppliers/connected/request");
+    private string RelationshipStatusLabel(string status) => status switch
+    {
+        "Active" => L["ConnectedSuppliers_Status_Connected"],
+        "Pending" => L["ConnectedSuppliers_Status_Requested"],
+        "Declined" => L["ConnectedSuppliers_Status_Declined"],
+        "Disconnected" => L["ConnectedSuppliers_Status_Disconnected"],
+        _ => status
+    };
 }
