@@ -5,21 +5,23 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations;
 
+/// <summary>
+/// Connected ExItS suppliers Phase 1 schema. Up is idempotent so Local Validation volumes that
+/// already received columns/tables (partial apply / history gap) can complete MigrateAsync.
+/// </summary>
 [DbContext(typeof(PosDbContext))]
 [Migration("20260814180000_AddPosConnectedSuppliers")]
 public partial class AddPosConnectedSuppliers : Migration
 {
     protected override void Up(MigrationBuilder migrationBuilder)
     {
-        migrationBuilder.AddColumn<int>(
-            name: "connection_type", schema: "pos", table: "suppliers",
-            type: "integer", nullable: false, defaultValue: 0);
-        migrationBuilder.AddColumn<Guid>(
-            name: "connected_relationship_id", schema: "pos", table: "suppliers",
-            type: "uuid", nullable: true);
-
         migrationBuilder.Sql("""
-            CREATE TABLE pos.connected_supplier_relationships (
+            ALTER TABLE pos.suppliers
+                ADD COLUMN IF NOT EXISTS connection_type integer NOT NULL DEFAULT 0;
+            ALTER TABLE pos.suppliers
+                ADD COLUMN IF NOT EXISTS connected_relationship_id uuid NULL;
+
+            CREATE TABLE IF NOT EXISTS pos.connected_supplier_relationships (
                 id uuid NOT NULL PRIMARY KEY,
                 buyer_organization_id uuid NOT NULL,
                 supplier_organization_id uuid NOT NULL,
@@ -33,13 +35,15 @@ public partial class AddPosConnectedSuppliers : Migration
                 updated_at_utc timestamp with time zone NOT NULL,
                 CONSTRAINT ck_connected_supplier_relationships_status CHECK (status BETWEEN 0 AND 3)
             );
-            CREATE UNIQUE INDEX ux_connected_supplier_relationships_open
+            CREATE UNIQUE INDEX IF NOT EXISTS ux_connected_supplier_relationships_open
                 ON pos.connected_supplier_relationships (buyer_organization_id, supplier_organization_id)
                 WHERE status IN (0, 1);
-            CREATE INDEX ix_connected_supplier_relationships_buyer ON pos.connected_supplier_relationships (buyer_organization_id);
-            CREATE INDEX ix_connected_supplier_relationships_supplier ON pos.connected_supplier_relationships (supplier_organization_id);
+            CREATE INDEX IF NOT EXISTS ix_connected_supplier_relationships_buyer
+                ON pos.connected_supplier_relationships (buyer_organization_id);
+            CREATE INDEX IF NOT EXISTS ix_connected_supplier_relationships_supplier
+                ON pos.connected_supplier_relationships (supplier_organization_id);
 
-            CREATE TABLE pos.supplier_product_exposures (
+            CREATE TABLE IF NOT EXISTS pos.supplier_product_exposures (
                 id uuid NOT NULL PRIMARY KEY,
                 supplier_organization_id uuid NOT NULL,
                 product_id uuid NOT NULL,
@@ -54,12 +58,16 @@ public partial class AddPosConnectedSuppliers : Migration
                 created_at_utc timestamp with time zone NOT NULL,
                 updated_at_utc timestamp with time zone NOT NULL
             );
-            CREATE UNIQUE INDEX ux_supplier_product_exposures_product ON pos.supplier_product_exposures (supplier_organization_id, product_id);
-            CREATE INDEX ix_supplier_product_exposures_sync ON pos.supplier_product_exposures (supplier_organization_id, sync_version);
-            CREATE INDEX ix_supplier_product_exposures_name ON pos.supplier_product_exposures (supplier_organization_id, name_snapshot);
-            CREATE INDEX ix_supplier_product_exposures_sku ON pos.supplier_product_exposures (supplier_organization_id, sku_snapshot);
+            CREATE UNIQUE INDEX IF NOT EXISTS ux_supplier_product_exposures_product
+                ON pos.supplier_product_exposures (supplier_organization_id, product_id);
+            CREATE INDEX IF NOT EXISTS ix_supplier_product_exposures_sync
+                ON pos.supplier_product_exposures (supplier_organization_id, sync_version);
+            CREATE INDEX IF NOT EXISTS ix_supplier_product_exposures_name
+                ON pos.supplier_product_exposures (supplier_organization_id, name_snapshot);
+            CREATE INDEX IF NOT EXISTS ix_supplier_product_exposures_sku
+                ON pos.supplier_product_exposures (supplier_organization_id, sku_snapshot);
 
-            CREATE TABLE pos.buyer_supplier_product_links (
+            CREATE TABLE IF NOT EXISTS pos.buyer_supplier_product_links (
                 id uuid NOT NULL PRIMARY KEY,
                 relationship_id uuid NOT NULL,
                 buyer_organization_id uuid NOT NULL,
@@ -77,11 +85,12 @@ public partial class AddPosConnectedSuppliers : Migration
                 CONSTRAINT fk_buyer_supplier_product_links_relationship FOREIGN KEY (relationship_id)
                     REFERENCES pos.connected_supplier_relationships(id) ON DELETE RESTRICT
             );
-            CREATE UNIQUE INDEX ux_buyer_supplier_product_links_active
+            CREATE UNIQUE INDEX IF NOT EXISTS ux_buyer_supplier_product_links_active
                 ON pos.buyer_supplier_product_links (relationship_id, buyer_product_id) WHERE is_active;
-            CREATE INDEX ix_buyer_supplier_product_links_sync ON pos.buyer_supplier_product_links (relationship_id, sync_version);
+            CREATE INDEX IF NOT EXISTS ix_buyer_supplier_product_links_sync
+                ON pos.buyer_supplier_product_links (relationship_id, sync_version);
 
-            CREATE TABLE pos.connected_purchase_orders (
+            CREATE TABLE IF NOT EXISTS pos.connected_purchase_orders (
                 id uuid NOT NULL PRIMARY KEY,
                 relationship_id uuid NOT NULL,
                 buyer_organization_id uuid NOT NULL,
@@ -100,10 +109,12 @@ public partial class AddPosConnectedSuppliers : Migration
                 CONSTRAINT fk_connected_purchase_orders_relationship FOREIGN KEY (relationship_id)
                     REFERENCES pos.connected_supplier_relationships(id) ON DELETE RESTRICT
             );
-            CREATE UNIQUE INDEX ux_connected_purchase_orders_buyer_po ON pos.connected_purchase_orders (buyer_purchase_order_id);
-            CREATE INDEX ix_connected_purchase_orders_supplier_status ON pos.connected_purchase_orders (supplier_organization_id, status);
+            CREATE UNIQUE INDEX IF NOT EXISTS ux_connected_purchase_orders_buyer_po
+                ON pos.connected_purchase_orders (buyer_purchase_order_id);
+            CREATE INDEX IF NOT EXISTS ix_connected_purchase_orders_supplier_status
+                ON pos.connected_purchase_orders (supplier_organization_id, status);
 
-            CREATE TABLE pos.connected_purchase_order_lines (
+            CREATE TABLE IF NOT EXISTS pos.connected_purchase_order_lines (
                 connected_purchase_order_id uuid NOT NULL,
                 line_number integer NOT NULL,
                 product_id uuid NOT NULL,
@@ -128,8 +139,8 @@ public partial class AddPosConnectedSuppliers : Migration
             DROP TABLE IF EXISTS pos.buyer_supplier_product_links;
             DROP TABLE IF EXISTS pos.supplier_product_exposures;
             DROP TABLE IF EXISTS pos.connected_supplier_relationships;
+            ALTER TABLE pos.suppliers DROP COLUMN IF EXISTS connected_relationship_id;
+            ALTER TABLE pos.suppliers DROP COLUMN IF EXISTS connection_type;
             """);
-        migrationBuilder.DropColumn(name: "connected_relationship_id", schema: "pos", table: "suppliers");
-        migrationBuilder.DropColumn(name: "connection_type", schema: "pos", table: "suppliers");
     }
 }
