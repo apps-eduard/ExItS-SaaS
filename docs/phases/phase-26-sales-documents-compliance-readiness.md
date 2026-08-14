@@ -2,7 +2,7 @@
 
 ## Status
 
-**OPEN** — P26-WP01–WP04 Code Complete / Validation Pending. This is not a phase closeout. Phase 25 remains **OPEN** with owner validation pending.
+**OPEN** — P26-WP01–WP05 Code Complete / Owner Validation Pending. This is not a phase closeout. Phase 25 remains **OPEN** with owner validation pending. Owner validation and future regulatory confirmation remain outstanding.
 
 ## Goal
 
@@ -16,7 +16,7 @@ Establish a truthful sales-document boundary before any jurisdiction-specific ta
 | P26-WP02 | Owner education, versioned acknowledgment, and soft setup prompt | Code Complete / Validation Pending |
 | P26-WP03 | Platform-controlled compliance eligibility, grant/revoke administration, and audit | Code Complete / Validation Pending |
 | P26-WP04 | Organization Tax/Compliance Profile & Future Activation Foundation | Code Complete / Validation Pending |
-| P26-WP05 | Validation, operational evidence, and phase closeout decision | Not started — exact next work package |
+| P26-WP05 | Integration Hardening & Validation Readiness | Code Complete / Owner Validation Pending |
 
 ## Invariants
 
@@ -36,14 +36,16 @@ Establish a truthful sales-document boundary before any jurisdiction-specific ta
 
 ## Explicit exclusions
 
-WP01–WP04 do not implement BIR rules, invoice series, TaxDocument generation, or compliance certification. No ExItS UI claims BIR compliance.
+WP01–WP05 do not implement BIR rules, invoice series, TaxDocument generation, or compliance certification. No ExItS UI claims BIR compliance. WP05 does not close Phase 26.
 
 See [engineering boundary](../engineering/sales-document-compliance-boundary.md),
 [acknowledgment design](../engineering/organization-sales-document-acknowledgment.md),
 [compliance eligibility](../engineering/platform-organization-compliance-eligibility.md),
 [organization compliance profile](../engineering/organization-compliance-profile.md),
 [BIR activation roadmap](../compliance/bir-compliance-activation-roadmap.md),
+[owner validation checklist](../validation/phase-26-owner-validation-checklist.md),
 [P26-WP01 report](../reports/P26-WP01-sales-document-compliance-readiness-foundation.md),
 [P26-WP02 report](../reports/P26-WP02-organization-compliance-education-and-acknowledgment.md),
-[P26-WP03 report](../reports/P26-WP03-platform-controlled-compliance-capability-and-eligibility.md), and
-[P26-WP04 report](../reports/P26-WP04-organization-tax-compliance-profile-and-activation-foundation.md).
+[P26-WP03 report](../reports/P26-WP03-platform-controlled-compliance-capability-and-eligibility.md),
+[P26-WP04 report](../reports/P26-WP04-organization-tax-compliance-profile-and-activation-foundation.md), and
+[P26-WP05 report](../reports/P26-WP05-sales-document-compliance-integration-hardening.md).

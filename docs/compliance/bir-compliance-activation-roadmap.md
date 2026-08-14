@@ -10,7 +10,9 @@
 [P26-WP01](../reports/P26-WP01-sales-document-compliance-readiness-foundation.md) ·
 [P26-WP02](../reports/P26-WP02-organization-compliance-education-and-acknowledgment.md) ·
 [P26-WP03](../reports/P26-WP03-platform-controlled-compliance-capability-and-eligibility.md) ·
-[P26-WP04](../reports/P26-WP04-organization-tax-compliance-profile-and-activation-foundation.md)
+[P26-WP04](../reports/P26-WP04-organization-tax-compliance-profile-and-activation-foundation.md) ·
+[P26-WP05](../reports/P26-WP05-sales-document-compliance-integration-hardening.md) ·
+[Owner validation checklist](../validation/phase-26-owner-validation-checklist.md)
 
 **Status markers:** `UNCONFIRMED` · `FUTURE` · `Confirmed` · `Implemented` · `Validated` · `Activated`
 

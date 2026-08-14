@@ -57,8 +57,7 @@ Combined DTO surfaces legal/registered address identity from `OrganizationProfil
 
 ## Risks and open decisions
 
-- Feature SHA pending commit; hash record follows the focused feature/docs commit.
-- Migration apply/rollback/re-apply on an authorized non-production PostgreSQL database remains pending.
+- Feature SHA recorded as `c794707e`. Migration apply/rollback/re-apply on an authorized non-production PostgreSQL database remains pending.
 - Regulatory requirements remain **UNCONFIRMED** until ExItS accreditation/registration sources are recorded in the roadmap table.
 - Owner/device/browser validation remains outstanding.
 
@@ -69,5 +68,5 @@ Combined DTO surfaces legal/registered address identity from `OrganizationProfil
 
 ## Next work package
 
-**P26-WP05 — Validation, operational evidence, and phase closeout decision.**  
-P26-WP05 is **not** automatic phase closeout. Phase 26 remains **OPEN** until the Owner explicitly decides.
+**P26-WP05 — Integration Hardening & Validation Readiness** ([report](P26-WP05-sales-document-compliance-integration-hardening.md); [checklist](../validation/phase-26-owner-validation-checklist.md)).  
+P26-WP05 is **not** phase closeout. Phase 26 remains **OPEN**. Living playbook: [bir-compliance-activation-roadmap.md](../compliance/bir-compliance-activation-roadmap.md).

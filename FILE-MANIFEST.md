@@ -131,6 +131,8 @@ docs/reports/P26-WP01-sales-document-compliance-readiness-foundation.md
 docs/reports/P26-WP02-organization-compliance-education-and-acknowledgment.md
 docs/reports/P26-WP03-platform-controlled-compliance-capability-and-eligibility.md
 docs/reports/P26-WP04-organization-tax-compliance-profile-and-activation-foundation.md
+docs/reports/P26-WP05-sales-document-compliance-integration-hardening.md
+docs/validation/phase-26-owner-validation-checklist.md
 docs/compliance/bir-compliance-activation-roadmap.md
 docs/reports/personal-organization-identity-isolation.md
 docs/reports/organization-profile-independence.md

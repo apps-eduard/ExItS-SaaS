@@ -60,5 +60,5 @@ acknowledgment design, new eligibility engineering note, and file manifest.
 ## Next work package
 
 **P26-WP04 — Organization Tax/Compliance Profile & Future Activation Foundation** (delivered separately).  
-Living activation playbook: [bir-compliance-activation-roadmap.md](../compliance/bir-compliance-activation-roadmap.md).  
-Exact next after WP04: **P26-WP05**.
+**P26-WP05 — Integration Hardening & Validation Readiness** ([report](P26-WP05-sales-document-compliance-integration-hardening.md)).  
+Living activation playbook: [bir-compliance-activation-roadmap.md](../compliance/bir-compliance-activation-roadmap.md).

@@ -2,7 +2,7 @@
 
 ## Decision
 
-ExItS has one Sale engine. The current document projection is `TransactionSummary`; `TaxDocument` is reserved for future implementation and remains unavailable through P26-WP04 (`TaxDocumentIssuanceRuntime.ImplementationAvailable = false`).
+ExItS has one Sale engine. The current document projection is `TransactionSummary`; `TaxDocument` is reserved for future implementation and remains unavailable through P26-WP05 (`TaxDocumentIssuanceRuntime.ImplementationAvailable = false`).
 
 Tax calculation, education, eligibility, profile, and tax-document authority are separate:
 
@@ -72,4 +72,4 @@ Public organization ID and QR resolvers remain identity-only. They must not expo
 
 ## Deferred
 
-BIR rules, invoice series, TaxDocument generation, evidence verification, and confirmed regulatory field schemas remain deferred. Controlled activation steps are tracked in the roadmap. **P26-WP05** is next (validation / closeout decision — not automatic phase close).
+BIR rules, invoice series, TaxDocument generation, evidence verification, and confirmed regulatory field schemas remain deferred. Controlled activation steps are tracked in the [BIR activation roadmap](../compliance/bir-compliance-activation-roadmap.md). **P26-WP05** delivered integration hardening and [owner validation readiness](../validation/phase-26-owner-validation-checklist.md); Phase 26 remains **OPEN** (not closeout).
