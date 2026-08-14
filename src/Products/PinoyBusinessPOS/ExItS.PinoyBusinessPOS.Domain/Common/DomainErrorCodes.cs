@@ -58,6 +58,15 @@ public static class DomainErrorCodes
     public const string InvalidProductStatusTransition = "pos.product.status.invalid_transition";
     public const string ProductNotActive = "pos.product.not_active";
 
+    public const string InvalidProductUnitId = "pos.product_unit.id.invalid";
+    public const string InvalidProductUnitKind = "pos.product_unit.kind.invalid";
+    public const string InvalidProductUnitName = "pos.product_unit.name.invalid";
+    public const string InvalidProductUnitMultiplier = "pos.product_unit.multiplier.invalid";
+    public const string InvalidProductUnitSellingPrice = "pos.product_unit.selling_price.invalid";
+    public const string InvalidProductUnitSortOrder = "pos.product_unit.sort_order.invalid";
+    public const string ProductUnitNotActive = "pos.product_unit.not_active";
+    public const string InvalidProductUsage = "pos.product.usage.invalid";
+
     public const string InvalidSaleId = "pos.sale.id.invalid";
     public const string InvalidSaleLineId = "pos.sale_line.id.invalid";
     public const string InvalidSaleNumber = "pos.sale.number.invalid";

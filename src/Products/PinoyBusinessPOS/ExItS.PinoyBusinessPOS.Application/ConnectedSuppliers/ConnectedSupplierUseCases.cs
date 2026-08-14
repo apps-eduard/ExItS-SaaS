@@ -34,8 +34,14 @@ public sealed record UpdateExposureRequest(decimal SupplierOrderPrice, bool IsOr
 public sealed record BuyerSupplierProductLinkDto(Guid LinkId, Guid RelationshipId, Guid BuyerOrganizationId,
     Guid SupplierOrganizationId, Guid BuyerProductId, Guid SupplierProductId, string? SupplierSkuSnapshot,
     string SupplierNameSnapshot, string UnitOfMeasureCode, decimal LastKnownOrderPrice, bool IsActive,
-    long SyncVersion, DateTimeOffset CreatedAtUtc, DateTimeOffset UpdatedAtUtc);
-public sealed record LinkProductRequest(Guid BuyerProductId, Guid ExposureId);
+    long SyncVersion, DateTimeOffset CreatedAtUtc, DateTimeOffset UpdatedAtUtc,
+    Guid? BuyerPurchaseUnitId = null, decimal MultiplierToBase = 1m, string? PackageLabel = null);
+public sealed record LinkProductRequest(
+    Guid BuyerProductId,
+    Guid ExposureId,
+    Guid? BuyerPurchaseUnitId = null,
+    decimal? MultiplierToBase = null,
+    string? PackageLabel = null);
 public sealed record LinkedProductsDeltaDto(IReadOnlyList<BuyerSupplierProductLinkDto> Changed, IReadOnlyList<Guid> RemovedIds, long Cursor);
 public sealed record ConnectedPurchaseOrderLineDto(Guid ProductId, string NameSnapshot, string? SkuSnapshot,
     decimal Qty, decimal UnitPriceSnapshot, decimal LineTotal, string UnitOfMeasureCode);
@@ -60,7 +66,8 @@ public static class ConnectedSupplierMapper
         x.IsOrderable,x.IsExposed,x.SyncVersion,x.CreatedAtUtc,x.UpdatedAtUtc);
     public static BuyerSupplierProductLinkDto Map(BuyerSupplierProductLink x) => new(x.Id.Value,x.RelationshipId.Value,
         x.BuyerOrganizationId.Value,x.SupplierOrganizationId.Value,x.BuyerProductId.Value,x.SupplierProductId.Value,
-        x.SupplierSkuSnapshot,x.SupplierNameSnapshot,x.UnitOfMeasureCode,x.LastKnownOrderPrice,x.IsActive,x.SyncVersion,x.CreatedAtUtc,x.UpdatedAtUtc);
+        x.SupplierSkuSnapshot,x.SupplierNameSnapshot,x.UnitOfMeasureCode,x.LastKnownOrderPrice,x.IsActive,x.SyncVersion,x.CreatedAtUtc,x.UpdatedAtUtc,
+        x.BuyerPurchaseUnitId,x.MultiplierToBase,x.PackageLabel);
     public static ConnectedPurchaseOrderDto Map(ConnectedPurchaseOrder x) => new(x.Id.Value,x.RelationshipId.Value,
         x.BuyerOrganizationId.Value,x.SupplierOrganizationId.Value,x.BuyerPurchaseOrderId.Value,x.BuyerPoNumber,x.OrderDate,
         x.Notes,x.Status.ToString(),x.TotalAmount,x.CreatedAtUtc,x.UpdatedAtUtc,x.AcceptedAtUtc,x.DeclinedAtUtc,
@@ -215,10 +222,11 @@ public sealed class LinkProduct
 {
     private readonly IConnectedSupplierRelationshipRepository _relationships;private readonly ISupplierProductExposureRepository _exposures;
     private readonly IBuyerSupplierProductLinkRepository _links;private readonly ICatalogProductRepository _products;
+    private readonly ICatalogProductUnitRepository _units;
     private readonly IPosUnitOfWork _uow;private readonly IPosCommercialAccessAccessor _access;private readonly TimeProvider _clock;
     public LinkProduct(IConnectedSupplierRelationshipRepository r,ISupplierProductExposureRepository e,IBuyerSupplierProductLinkRepository l,
-        ICatalogProductRepository p,IPosUnitOfWork u,IPosCommercialAccessAccessor a,TimeProvider? c=null)
-    {_relationships=r;_exposures=e;_links=l;_products=p;_uow=u;_access=a;_clock=c??TimeProvider.System;}
+        ICatalogProductRepository p,ICatalogProductUnitRepository units,IPosUnitOfWork u,IPosCommercialAccessAccessor a,TimeProvider? c=null)
+    {_relationships=r;_exposures=e;_links=l;_products=p;_units=units;_uow=u;_access=a;_clock=c??TimeProvider.System;}
     public async Task<ApplicationResult<BuyerSupplierProductLinkDto>> ExecuteAsync(Guid orgId,Guid relationshipId,LinkProductRequest request,CancellationToken ct=default)
     {var gate=ConnectedSupplierUseCaseGuard.Access(_access,UtangCapability.ManagePurchasing);
      if(!gate.IsSuccess)return ConnectedSupplierUseCaseGuard.Failure<BuyerSupplierProductLinkDto>(gate.ErrorCode!,gate.ErrorMessage!);
@@ -228,8 +236,18 @@ public sealed class LinkProduct
      var exposure=await _exposures.GetAsync(SupplierProductExposureId.From(request.ExposureId),ct);
      if(product is null||exposure is null||exposure.SupplierOrganizationId!=r.SupplierOrganizationId||!exposure.IsExposed)
        return ConnectedSupplierUseCaseGuard.Failure<BuyerSupplierProductLinkDto>(ConnectedSupplierErrorCodes.ExposureNotFound,"Exposure was not found.");
+     Guid? buyerPurchaseUnitId=request.BuyerPurchaseUnitId;
+     var multiplier=request.MultiplierToBase??1m;
+     if(buyerPurchaseUnitId is not null)
+     {
+       var unit=await _units.GetByIdAsync(buyer,ProductUnitId.From(buyerPurchaseUnitId.Value),ct);
+       if(unit is null||unit.ProductId!=product.Id||!unit.IsActive||unit.Kind!=ProductUnitKind.Purchase)
+         return ConnectedSupplierUseCaseGuard.Failure<BuyerSupplierProductLinkDto>(DomainErrorCodes.InvalidProductUnitId,"Buyer purchase unit must be an active purchase unit for the buyer product.");
+       multiplier=request.MultiplierToBase??unit.MultiplierToBase;
+     }
      var existing=await _links.FindAsync(r.Id,product.Id,ct);if(existing is not null)return ApplicationResult<BuyerSupplierProductLinkDto>.Success(ConnectedSupplierMapper.Map(existing));
-     var link=BuyerSupplierProductLink.Create(r.Id,buyer,r.SupplierOrganizationId,product.Id,exposure,_clock.GetUtcNow());
+     var link=BuyerSupplierProductLink.Create(r.Id,buyer,r.SupplierOrganizationId,product.Id,exposure,_clock.GetUtcNow(),
+       buyerPurchaseUnitId:buyerPurchaseUnitId,multiplierToBase:multiplier,packageLabel:request.PackageLabel);
      await _links.AddAsync(link,ct);await _uow.SaveChangesAsync(ct);return ApplicationResult<BuyerSupplierProductLinkDto>.Success(ConnectedSupplierMapper.Map(link));}
 }
 

@@ -279,6 +279,7 @@ public sealed class InventoryTransferUseCaseTests
             var adjust = new AdjustInventoryStock(
                 fx.Inventory,
                 fx.Products,
+                new EmptyProductUnits(),
                 fx.Balances,
                 fx.Lots,
                 new InventoryLotStockService(fx.Lots),
@@ -665,5 +666,42 @@ public sealed class InventoryTransferUseCaseTests
 
             return Task.CompletedTask;
         }
+    }
+
+    private sealed class EmptyProductUnits : ICatalogProductUnitRepository
+    {
+        public Task AddAsync(CatalogProductUnit unit, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task<CatalogProductUnit?> GetByIdAsync(
+            PosOrganizationId organizationId,
+            ProductUnitId unitId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<CatalogProductUnit?>(null);
+
+        public Task<IReadOnlyList<CatalogProductUnit>> ListByProductAsync(
+            PosOrganizationId organizationId,
+            CatalogProductId productId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<CatalogProductUnit>>([]);
+
+        public Task<IReadOnlyDictionary<Guid, IReadOnlyList<CatalogProductUnit>>> ListByProductIdsAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<CatalogProductId> productIds,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyDictionary<Guid, IReadOnlyList<CatalogProductUnit>>>(
+                new Dictionary<Guid, IReadOnlyList<CatalogProductUnit>>());
+
+        public Task ReplaceActiveUnitsAsync(
+            PosOrganizationId organizationId,
+            CatalogProductId productId,
+            ProductUnitKind kind,
+            IReadOnlyList<CatalogProductUnit> units,
+            DateTimeOffset utcNow,
+            CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task UpdateAsync(CatalogProductUnit unit, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
     }
 }

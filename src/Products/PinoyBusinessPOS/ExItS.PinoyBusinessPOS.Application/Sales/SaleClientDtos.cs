@@ -65,7 +65,9 @@ public sealed record CheckoutSaleLineRequest(
     decimal? LineTotal = null,
     string? NameSnapshot = null,
     string? SkuSnapshot = null,
-    string? BarcodeSnapshot = null);
+    string? BarcodeSnapshot = null,
+    Guid? SellingUnitId = null,
+    decimal? EnteredQuantity = null);
 
 /// <summary>
 /// Checkout request. The cart itself is never persisted server-side; it exists only in the client

@@ -174,4 +174,6 @@ Phase 7 closed as one subsystem. Confirmed defects hardened: rebuild after credi
 
 LocalStore schema v8 adds a selective linked-supplier-product projection and per-relationship delta cursor. Only products explicitly linked by the buyer are cached; connected supplier catalog search remains online-only and never performs a full catalog download.
 
+LocalStore schema **v9** adds product usage flags, offline sell units (`local_catalog_product_unit`), and linked-product conversion metadata (`multiplier_to_base`, `package_label`). Offline cash sale drafts may include selling-unit conversion snapshots consistent with online checkout.
+
 Connected purchase-order drafts may be saved locally with `PendingCreate` state. They are not queued or described as submitted. Reconnect requires explicit online price/availability revalidation before normal purchase-order creation; supplier submission remains online-required.

@@ -9,7 +9,10 @@ public sealed record PurchaseOrderLineDraft(
     CatalogProductId ProductId,
     decimal OrderedQty,
     decimal UnitPurchaseCost,
-    string? LineNotes = null);
+    string? LineNotes = null,
+    ProductUnitId? PurchaseUnitId = null,
+    string? PurchaseUnitNameSnapshot = null,
+    decimal MultiplierToBaseSnapshot = 1m);
 
 /// <summary>Snapshot input used when freezing catalog values on submit.</summary>
 public sealed record PurchaseOrderLineSnapshotInput(
@@ -19,7 +22,10 @@ public sealed record PurchaseOrderLineSnapshotInput(
     decimal OrderedQty,
     decimal UnitPurchaseCost,
     string? LineNotes = null,
-    SellingMode SellingMode = SellingMode.PerItem);
+    SellingMode SellingMode = SellingMode.PerItem,
+    ProductUnitId? PurchaseUnitId = null,
+    string? PurchaseUnitNameSnapshot = null,
+    decimal MultiplierToBaseSnapshot = 1m);
 
 /// <summary>Receive quantity for one PO line during goods receipt.</summary>
 public sealed record PurchaseOrderReceiveLineDraft(

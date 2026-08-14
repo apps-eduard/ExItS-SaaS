@@ -55,7 +55,7 @@ public sealed class LocalDatabaseIsolationTests
         var org = Guid.NewGuid();
         var open = await manager.OpenAsync(user, org, PosProductCodes.PinoyBusinessPos);
         Assert.True(open.Succeeded);
-        Assert.Equal(LocalDatabaseMigrator.ConnectedSuppliersSchemaVersion, open.Context!.SchemaVersion);
+        Assert.Equal(LocalDatabaseMigrator.ProductUnitsSchemaVersion, open.Context!.SchemaVersion);
         Assert.Equal(LocalContextInitStatus.Ready, open.Context.Status);
 
         var path = new LocalDatabasePathResolver(root).ResolveDatabasePath(user, org, PosProductCodes.PinoyBusinessPos);
@@ -96,7 +96,7 @@ public sealed class LocalDatabaseIsolationTests
 
         var open = await manager.OpenAsync(Guid.NewGuid(), Guid.NewGuid(), PosProductCodes.PinoyBusinessPos);
         Assert.True(open.Succeeded);
-        Assert.Equal(LocalDatabaseMigrator.ConnectedSuppliersSchemaVersion, open.Context!.SchemaVersion);
+        Assert.Equal(LocalDatabaseMigrator.ProductUnitsSchemaVersion, open.Context!.SchemaVersion);
         root.Dispose();
     }
 
@@ -119,12 +119,12 @@ public sealed class LocalDatabaseIsolationTests
         var migrator = new LocalDatabaseMigrator();
         var result = await migrator.MigrateAsync(connection, identity);
         Assert.True(result.Succeeded);
-        Assert.Equal(LocalDatabaseMigrator.ConnectedSuppliersSchemaVersion, result.SchemaVersion);
+        Assert.Equal(LocalDatabaseMigrator.ProductUnitsSchemaVersion, result.SchemaVersion);
 
         var versions = await connection.QueryRowsAsync(
             "SELECT schema_version FROM local_schema_info ORDER BY schema_version;");
         var versionNums = versions.Select(r => Convert.ToInt32(r["schema_version"])).ToArray();
-        Assert.Equal([1, 2, 3, 4, 5, 6, 7, 8], versionNums);
+        Assert.Equal([1, 2, 3, 4, 5, 6, 7, 8, 9], versionNums);
 
         var tables = await connection.QueryRowsAsync(
             "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;");
@@ -136,6 +136,7 @@ public sealed class LocalDatabaseIsolationTests
         Assert.Contains("local_repayment_projection", names); // v4
         Assert.Contains("local_personal_contact", names); // v6
         Assert.Contains("local_linked_supplier_product", names); // v8
+        Assert.Contains("local_catalog_product_unit", names); // v9
         Assert.DoesNotContain("customers", names);
         root.Dispose();
     }
@@ -165,7 +166,7 @@ public sealed class LocalDatabaseIsolationTests
 
         var result = await new LocalDatabaseMigrator().MigrateAsync(connection, identity);
         Assert.True(result.Succeeded);
-        Assert.Equal(LocalDatabaseMigrator.ConnectedSuppliersSchemaVersion, result.SchemaVersion);
+        Assert.Equal(LocalDatabaseMigrator.ProductUnitsSchemaVersion, result.SchemaVersion);
 
         var after = await connection.QueryRowsAsync(
             "SELECT name FROM sqlite_master WHERE type='table';");
@@ -201,7 +202,7 @@ public sealed class LocalDatabaseIsolationTests
 
         var result = await new LocalDatabaseMigrator().MigrateAsync(connection, identity);
         Assert.True(result.Succeeded);
-        Assert.Equal(LocalDatabaseMigrator.ConnectedSuppliersSchemaVersion, result.SchemaVersion);
+        Assert.Equal(LocalDatabaseMigrator.ProductUnitsSchemaVersion, result.SchemaVersion);
 
         var after = await connection.QueryRowsAsync(
             "SELECT name FROM sqlite_master WHERE type='table';");

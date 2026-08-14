@@ -15,4 +15,8 @@ internal sealed class SaleLineRecord
     public decimal UnitPrice { get; set; }
     public decimal Quantity { get; set; }
     public decimal LineTotal { get; set; }
+    public Guid? SellingUnitId { get; set; }
+    public string? SellingUnitNameSnapshot { get; set; }
+    public decimal? EnteredQuantity { get; set; }
+    public decimal? MultiplierToBaseSnapshot { get; set; }
 }

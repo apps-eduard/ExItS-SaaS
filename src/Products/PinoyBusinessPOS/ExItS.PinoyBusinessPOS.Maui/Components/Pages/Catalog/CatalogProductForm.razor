@@ -51,12 +51,130 @@
                     Options="@CatalogUiOptions.CategoryChoices(L, Categories)"
                     Disabled="@(IsSaving || Disabled)" />
 
-            <Select Label="@L["Catalog_Field_Unit"]"
+            <Select Label="@L["Catalog_StockCountedIn"]"
                     Value="@UnitOfMeasure"
                     ValueChanged="UnitOfMeasureChanged"
                     Options="@CatalogUiOptions.UnitOfMeasures(L)"
                     Required="true"
                     Disabled="@(IsSaving || Disabled)" />
+
+            <Select Label="@L["Catalog_HowUsed"]"
+                    Value="@UsagePreset"
+                    ValueChanged="UsagePresetChanged"
+                    Options="@UsagePresetOptions"
+                    Required="true"
+                    Disabled="@(IsSaving || Disabled)" />
+
+            @if (string.Equals(UsagePreset, "IngredientAndSellable", StringComparison.Ordinal)
+                 || ShowIngredientSellable)
+            {
+                <Switch Checked="@IngredientAlsoSellable"
+                        CheckedChanged="IngredientAlsoSellableChanged"
+                        Label="@L["Catalog_IngredientAlsoSellable"]"
+                        Disabled="@(IsSaving || Disabled)" />
+            }
+
+            @if (!IsBulkPreset)
+            {
+                <Switch Checked="@SetPackages"
+                        CheckedChanged="OnSetPackagesChanged"
+                        Label="@L["Catalog_SetPackages"]"
+                        Disabled="@(IsSaving || Disabled)" />
+            }
+
+            @if (ShowUnitsEditor)
+            {
+                <div class="pos-product-form__units" aria-label="@L["Catalog_BuyingUnits"]">
+                    <h3 class="pos-product-form__units-title">@L["Catalog_BuyingUnits"]</h3>
+                    <p class="pos-product-form__note">@L["Catalog_BuyingUnitsHint"]</p>
+                    @for (var i = 0; i < PurchaseUnits.Count; i++)
+                    {
+                        var index = i;
+                        var draft = PurchaseUnits[index];
+                        <div class="pos-product-form__unit-row">
+                            <TextInput Label="@L["Catalog_UnitName"]"
+                                       Value="@draft.DisplayName"
+                                       ValueChanged="v => OnPurchaseNameChanged(index, v)"
+                                       Required="true"
+                                       Disabled="@(IsSaving || Disabled)" />
+                            <TextInput Label="@L["Catalog_UnitShortLabel"]"
+                                       Value="@draft.ShortLabel"
+                                       ValueChanged="v => OnPurchaseShortLabelChanged(index, v)"
+                                       Hint="@L["Catalog_UnitShortLabelHint"]"
+                                       Disabled="@(IsSaving || Disabled)" />
+                            <div class="pos-product-form__unit-contains">
+                                <span class="pos-product-form__unit-contains-text">
+                                    @string.Format(
+                                        L["Catalog_UnitContains"].Value,
+                                        string.IsNullOrWhiteSpace(draft.DisplayName) ? "—" : draft.DisplayName.Trim())
+                                </span>
+                                <NumberInput Label="@L["Catalog_UnitAmount"]"
+                                             Value="@draft.ContainsAmount"
+                                             ValueChanged="v => OnPurchaseContainsChanged(index, v)"
+                                             DecimalPlaces="3"
+                                             Required="true"
+                                             Disabled="@(IsSaving || Disabled)" />
+                                <span class="pos-product-form__unit-contains-text">@StockUnitLabel</span>
+                            </div>
+                            @if (PurchaseUnits.Count > 1)
+                            {
+                                <Button Variant="ButtonVariant.Ghost"
+                                        Disabled="@(IsSaving || Disabled)"
+                                        OnClick="() => RemovePurchaseUnit(index)">@L["Catalog_RemoveUnit"]</Button>
+                            }
+                        </div>
+                    }
+                    <Button Variant="ButtonVariant.Ghost"
+                            Disabled="@(IsSaving || Disabled)"
+                            OnClick="AddPurchaseUnit">@L["Catalog_AddBuyingUnit"]</Button>
+                </div>
+
+                <div class="pos-product-form__units" aria-label="@L["Catalog_SellingOptions"]">
+                    <h3 class="pos-product-form__units-title">@L["Catalog_SellingOptions"]</h3>
+                    <p class="pos-product-form__note">@L["Catalog_SellingOptionsHint"]</p>
+                    @for (var i = 0; i < SellUnits.Count; i++)
+                    {
+                        var index = i;
+                        var draft = SellUnits[index];
+                        <div class="pos-product-form__unit-row">
+                            <TextInput Label="@L["Catalog_UnitName"]"
+                                       Value="@draft.DisplayName"
+                                       ValueChanged="v => OnSellNameChanged(index, v)"
+                                       Required="true"
+                                       Disabled="@(IsSaving || Disabled)" />
+                            <div class="pos-product-form__unit-contains">
+                                <span class="pos-product-form__unit-contains-text">@L["Catalog_SellContains"]</span>
+                                <NumberInput Label="@L["Catalog_UnitAmount"]"
+                                             Value="@draft.ContainsAmount"
+                                             ValueChanged="v => OnSellContainsChanged(index, v)"
+                                             DecimalPlaces="3"
+                                             Required="true"
+                                             Disabled="@(IsSaving || Disabled)" />
+                                <span class="pos-product-form__unit-contains-text">@StockUnitLabel</span>
+                            </div>
+                            <CurrencyInput Label="@L["Catalog_PriceForThisOption"]"
+                                           Value="@draft.SellingPrice"
+                                           ValueChanged="v => OnSellPriceChanged(index, v)"
+                                           CurrencyCode="PHP"
+                                           Required="true"
+                                           Disabled="@(IsSaving || Disabled)" />
+                            <Switch Checked="@draft.AllowsCustomQuantity"
+                                    CheckedChanged="v => OnSellCustomChanged(index, v)"
+                                    Label="@L["Catalog_CustomAmount"]"
+                                    Disabled="@(IsSaving || Disabled)" />
+                            @if (SellUnits.Count > 1)
+                            {
+                                <Button Variant="ButtonVariant.Ghost"
+                                        Disabled="@(IsSaving || Disabled)"
+                                        OnClick="() => RemoveSellUnit(index)">@L["Catalog_RemoveUnit"]</Button>
+                            }
+                        </div>
+                    }
+                    <Button Variant="ButtonVariant.Ghost"
+                            Disabled="@(IsSaving || Disabled)"
+                            OnClick="AddSellUnit">@L["Catalog_AddSellingOption"]</Button>
+                </div>
+            }
 
             <Select Label="@L["Catalog_Field_SellingMode"]"
                     Value="@SellingMode"
@@ -67,7 +185,7 @@
 
             <CurrencyInput Label="@L["Catalog_Field_SellingPrice"]"
                            Value="@SellingPrice"
-                           ValueChanged="SellingPriceChanged"
+                           ValueChanged="OnTopLevelPriceChanged"
                            CurrencyCode="PHP"
                            Required="true"
                            Hint="@L["Catalog_PriceHint"]"
@@ -137,6 +255,16 @@
     [Parameter] public EventCallback<string?> CategoryIdChanged { get; set; }
     [Parameter] public string? UnitOfMeasure { get; set; }
     [Parameter] public EventCallback<string?> UnitOfMeasureChanged { get; set; }
+    [Parameter] public string? UsagePreset { get; set; } = "BuyAndSell";
+    [Parameter] public EventCallback<string?> UsagePresetChanged { get; set; }
+    [Parameter] public bool IngredientAlsoSellable { get; set; }
+    [Parameter] public EventCallback<bool> IngredientAlsoSellableChanged { get; set; }
+    [Parameter] public bool ShowAdvancedUnits { get; set; }
+    [Parameter] public bool SetPackages { get; set; }
+    [Parameter] public EventCallback<bool> SetPackagesChanged { get; set; }
+    [Parameter] public bool ShowIngredientSellable { get; set; }
+    [Parameter] public IList<ProductUnitDraft> PurchaseUnits { get; set; } = new List<ProductUnitDraft>();
+    [Parameter] public IList<ProductUnitDraft> SellUnits { get; set; } = new List<ProductUnitDraft>();
     [Parameter] public string? SellingMode { get; set; }
     [Parameter] public EventCallback<string?> SellingModeChanged { get; set; }
     [Parameter] public decimal? SellingPrice { get; set; }
@@ -158,4 +286,165 @@
     [Parameter] public string? SaveLabel { get; set; }
     [Parameter] public EventCallback OnSave { get; set; }
     [Parameter] public EventCallback OnCancel { get; set; }
+
+    private bool IsBulkPreset =>
+        string.Equals(UsagePreset, "Bulk", StringComparison.Ordinal);
+
+    private bool ShowUnitsEditor =>
+        ShowAdvancedUnits || IsBulkPreset || SetPackages;
+
+    private string StockUnitLabel =>
+        CatalogUiOptions.UnitOfMeasureLabel(L, UnitOfMeasure);
+
+    private IReadOnlyList<SelectOption> UsagePresetOptions =>
+    [
+        new("BuyAndSell", L["Catalog_Usage_BuyAndSell"]),
+        new("Bulk", L["Catalog_Usage_Bulk"]),
+        new("Ingredient", L["Catalog_Usage_Ingredient"]),
+        new("MadeProduct", L["Catalog_Usage_MadeProduct"]),
+        new("IngredientAndSellable", L["Catalog_Usage_IngredientAndSellable"])
+    ];
+
+    protected override void OnParametersSet()
+    {
+        if (ShowUnitsEditor)
+        {
+            ProductUnitDraft.EnsureDefaults(PurchaseUnits, SellUnits, UnitOfMeasure, SellingPrice);
+        }
+    }
+
+    private async Task OnSetPackagesChanged(bool value)
+    {
+        if (value)
+        {
+            ProductUnitDraft.EnsureDefaults(PurchaseUnits, SellUnits, UnitOfMeasure, SellingPrice);
+        }
+
+        if (SetPackagesChanged.HasDelegate)
+        {
+            await SetPackagesChanged.InvokeAsync(value);
+        }
+    }
+
+    private async Task OnTopLevelPriceChanged(decimal? value)
+    {
+        if (SellingPriceChanged.HasDelegate)
+        {
+            await SellingPriceChanged.InvokeAsync(value);
+        }
+
+        if (ShowUnitsEditor && SellUnits.Count > 0)
+        {
+            SellUnits[0].SellingPrice = value;
+        }
+    }
+
+    private void AddPurchaseUnit()
+    {
+        PurchaseUnits.Add(new ProductUnitDraft { DisplayName = string.Empty, ContainsAmount = 1m });
+    }
+
+    private void RemovePurchaseUnit(int index)
+    {
+        if (index < 0 || index >= PurchaseUnits.Count || PurchaseUnits.Count <= 1)
+        {
+            return;
+        }
+
+        PurchaseUnits.RemoveAt(index);
+    }
+
+    private void AddSellUnit()
+    {
+        SellUnits.Add(new ProductUnitDraft
+        {
+            DisplayName = string.Empty,
+            ContainsAmount = 1m,
+            SellingPrice = SellingPrice
+        });
+    }
+
+    private void RemoveSellUnit(int index)
+    {
+        if (index < 0 || index >= SellUnits.Count || SellUnits.Count <= 1)
+        {
+            return;
+        }
+
+        SellUnits.RemoveAt(index);
+    }
+
+    private void OnPurchaseNameChanged(int index, string? value)
+    {
+        if (index < 0 || index >= PurchaseUnits.Count)
+        {
+            return;
+        }
+
+        PurchaseUnits[index].DisplayName = value ?? string.Empty;
+    }
+
+    private void OnPurchaseShortLabelChanged(int index, string? value)
+    {
+        if (index < 0 || index >= PurchaseUnits.Count)
+        {
+            return;
+        }
+
+        PurchaseUnits[index].ShortLabel = value ?? string.Empty;
+    }
+
+    private void OnPurchaseContainsChanged(int index, decimal? value)
+    {
+        if (index < 0 || index >= PurchaseUnits.Count)
+        {
+            return;
+        }
+
+        PurchaseUnits[index].ContainsAmount = value;
+    }
+
+    private void OnSellNameChanged(int index, string? value)
+    {
+        if (index < 0 || index >= SellUnits.Count)
+        {
+            return;
+        }
+
+        SellUnits[index].DisplayName = value ?? string.Empty;
+    }
+
+    private void OnSellContainsChanged(int index, decimal? value)
+    {
+        if (index < 0 || index >= SellUnits.Count)
+        {
+            return;
+        }
+
+        SellUnits[index].ContainsAmount = value;
+    }
+
+    private async Task OnSellPriceChanged(int index, decimal? value)
+    {
+        if (index < 0 || index >= SellUnits.Count)
+        {
+            return;
+        }
+
+        SellUnits[index].SellingPrice = value;
+        if (index == 0 && SellingPriceChanged.HasDelegate)
+        {
+            await SellingPriceChanged.InvokeAsync(value);
+        }
+    }
+
+    private void OnSellCustomChanged(int index, bool value)
+    {
+        if (index < 0 || index >= SellUnits.Count)
+        {
+            return;
+        }
+
+        SellUnits[index].AllowsCustomQuantity = value;
+    }
 }

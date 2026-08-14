@@ -111,7 +111,7 @@ public sealed class PosOfflineCapabilityPolicyTests
         Assert.Equal(PosConnectivityRequirement.OfflineCapable,
             _policy.GetActionRequirement(PosOfflineActionKeys.ConnectedSupplierLinkedProductsView));
         Assert.Equal(PosConnectivityRequirement.OnlineRequired,
-            _policy.GetActionRequirement(PosOfflineActionKeys.ConnectedSupplierCatalogSearch));
+            _policy.GetActionRequirement(PosOfflineActionKeys.ConnectedSupplierOfferSearch));
         Assert.Equal(PosConnectivityRequirement.Queueable,
             _policy.GetActionRequirement(PosOfflineActionKeys.ConnectedSupplierDraftSave));
         Assert.Equal(PosConnectivityRequirement.OnlineRequired,

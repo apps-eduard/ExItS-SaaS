@@ -48,6 +48,7 @@ public sealed class PosDbContext : DbContext
     internal DbSet<PosIdempotencyRecord> IdempotencyRecords => Set<PosIdempotencyRecord>();
     internal DbSet<ProductCategoryRecord> ProductCategories => Set<ProductCategoryRecord>();
     internal DbSet<CatalogProductRecord> CatalogProducts => Set<CatalogProductRecord>();
+    internal DbSet<CatalogProductUnitRecord> CatalogProductUnits => Set<CatalogProductUnitRecord>();
     internal DbSet<CatalogImportJobRecord> CatalogImportJobs => Set<CatalogImportJobRecord>();
     internal DbSet<CatalogImportItemResultRecord> CatalogImportItems => Set<CatalogImportItemResultRecord>();
     internal DbSet<SaleRecord> Sales => Set<SaleRecord>();
@@ -548,6 +549,26 @@ public sealed class PosDbContext : DbContext
                 .IsRequired()
                 .HasDefaultValue(false);
             entity.Property(e => e.ExpirationWarningDays).HasColumnName("expiration_warning_days");
+            entity.Property(e => e.CanBePurchased)
+                .HasColumnName("can_be_purchased")
+                .IsRequired()
+                .HasDefaultValue(true);
+            entity.Property(e => e.CanBeSold)
+                .HasColumnName("can_be_sold")
+                .IsRequired()
+                .HasDefaultValue(true);
+            entity.Property(e => e.CanBeUsedAsIngredient)
+                .HasColumnName("can_be_used_as_ingredient")
+                .IsRequired()
+                .HasDefaultValue(false);
+            entity.Property(e => e.IsProduced)
+                .HasColumnName("is_produced")
+                .IsRequired()
+                .HasDefaultValue(false);
+            entity.Property(e => e.UsagePreset)
+                .HasColumnName("usage_preset")
+                .HasMaxLength(64)
+                .HasDefaultValue("BuyAndSell");
             entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
             entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
             entity.Property(e => e.Xmin)
@@ -587,6 +608,65 @@ public sealed class PosDbContext : DbContext
                 .HasForeignKey(e => e.CategoryId)
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("fk_products_product_categories");
+        });
+
+        modelBuilder.Entity<CatalogProductUnitRecord>(entity =>
+        {
+            entity.ToTable("product_units", tb =>
+            {
+                tb.HasCheckConstraint("ck_product_units_kind", "kind IN (0, 1)");
+                tb.HasCheckConstraint("ck_product_units_multiplier_positive", "multiplier_to_base > 0");
+                tb.HasCheckConstraint(
+                    "ck_product_units_selling_price_non_negative",
+                    "selling_price IS NULL OR selling_price >= 0");
+                tb.HasCheckConstraint("ck_product_units_sort_order_non_negative", "sort_order >= 0");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.ProductId).HasColumnName("product_id").IsRequired();
+            entity.Property(e => e.Kind).HasColumnName("kind").IsRequired();
+            entity.Property(e => e.DisplayName)
+                .HasColumnName("display_name")
+                .HasMaxLength(CatalogProductUnit.DisplayNameMaxLength)
+                .IsRequired();
+            entity.Property(e => e.ShortLabel)
+                .HasColumnName("short_label")
+                .HasMaxLength(CatalogProductUnit.ShortLabelMaxLength)
+                .IsRequired();
+            entity.Property(e => e.MultiplierToBase)
+                .HasColumnName("multiplier_to_base")
+                .HasPrecision(18, 3)
+                .IsRequired();
+            entity.Property(e => e.SellingPrice)
+                .HasColumnName("selling_price")
+                .HasPrecision(18, 2);
+            entity.Property(e => e.AllowsCustomQuantity)
+                .HasColumnName("allows_custom_quantity")
+                .IsRequired();
+            entity.Property(e => e.IsActive).HasColumnName("is_active").IsRequired();
+            entity.Property(e => e.SortOrder).HasColumnName("sort_order").IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+
+            entity.HasIndex(e => new { e.OrganizationId, e.ProductId })
+                .HasDatabaseName("ix_product_units_org_product");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.ProductId, e.Kind })
+                .HasDatabaseName("ix_product_units_org_product_kind_active")
+                .HasFilter("is_active");
+
+            entity.HasOne<CatalogProductRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.ProductId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("fk_product_units_products");
         });
 
         modelBuilder.Entity<CatalogImportJobRecord>(entity =>
@@ -862,6 +942,14 @@ public sealed class PosDbContext : DbContext
             // Measured units admit up to three decimal places; countable units stay whole.
             entity.Property(e => e.Quantity).HasColumnName("quantity").HasPrecision(18, 3).IsRequired();
             entity.Property(e => e.LineTotal).HasColumnName("line_total").HasPrecision(18, 2).IsRequired();
+            entity.Property(e => e.SellingUnitId).HasColumnName("selling_unit_id");
+            entity.Property(e => e.SellingUnitNameSnapshot)
+                .HasColumnName("selling_unit_name_snapshot")
+                .HasMaxLength(SaleLine.SellingUnitNameSnapshotMaxLength);
+            entity.Property(e => e.EnteredQuantity).HasColumnName("entered_quantity").HasPrecision(18, 3);
+            entity.Property(e => e.MultiplierToBaseSnapshot)
+                .HasColumnName("multiplier_to_base_snapshot")
+                .HasPrecision(18, 3);
 
             entity.HasIndex(e => new { e.SaleId, e.LineNumber })
                 .IsUnique()
@@ -1930,6 +2018,15 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.LineTotal).HasColumnName("line_total").HasPrecision(18, 2).IsRequired();
             entity.Property(e => e.ReceivedQty).HasColumnName("received_qty").HasPrecision(18, 3).IsRequired();
             entity.Property(e => e.LineNotes).HasColumnName("line_notes").HasMaxLength(PurchaseOrderLine.LineNotesMaxLength);
+            entity.Property(e => e.PurchaseUnitId).HasColumnName("purchase_unit_id");
+            entity.Property(e => e.PurchaseUnitNameSnapshot)
+                .HasColumnName("purchase_unit_name_snapshot")
+                .HasMaxLength(CatalogProductUnit.DisplayNameMaxLength);
+            entity.Property(e => e.MultiplierToBaseSnapshot)
+                .HasColumnName("multiplier_to_base_snapshot")
+                .HasPrecision(18, 3)
+                .IsRequired()
+                .HasDefaultValue(1m);
 
             entity.HasIndex(e => new { e.PurchaseOrderId, e.LineNumber })
                 .IsUnique()
@@ -2024,6 +2121,15 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.UnitPurchaseCostSnapshot).HasColumnName("unit_purchase_cost_snapshot").HasPrecision(18, 2).IsRequired();
             entity.Property(e => e.LineTotalSnapshot).HasColumnName("line_total_snapshot").HasPrecision(18, 2).IsRequired();
             entity.Property(e => e.InventoryMovementId).HasColumnName("inventory_movement_id");
+            entity.Property(e => e.PurchaseUnitId).HasColumnName("purchase_unit_id");
+            entity.Property(e => e.PurchaseUnitNameSnapshot)
+                .HasColumnName("purchase_unit_name_snapshot")
+                .HasMaxLength(CatalogProductUnit.DisplayNameMaxLength);
+            entity.Property(e => e.MultiplierToBaseSnapshot)
+                .HasColumnName("multiplier_to_base_snapshot")
+                .HasPrecision(18, 3)
+                .IsRequired()
+                .HasDefaultValue(1m);
 
             entity.HasIndex(e => new { e.GoodsReceiptId, e.LineNumber })
                 .IsUnique()
@@ -2505,7 +2611,11 @@ public sealed class PosDbContext : DbContext
             entity.Property(x=>x.SupplierOrganizationId).HasColumnName("supplier_organization_id"); entity.Property(x=>x.BuyerProductId).HasColumnName("buyer_product_id");
             entity.Property(x=>x.SupplierProductId).HasColumnName("supplier_product_id"); entity.Property(x=>x.SupplierSkuSnapshot).HasColumnName("supplier_sku_snapshot").HasMaxLength(64);
             entity.Property(x=>x.SupplierNameSnapshot).HasColumnName("supplier_name_snapshot").HasMaxLength(200); entity.Property(x=>x.UnitOfMeasureCode).HasColumnName("unit_of_measure_code").HasMaxLength(32);
-            entity.Property(x=>x.LastKnownOrderPrice).HasColumnName("last_known_order_price").HasPrecision(18,2); entity.Property(x=>x.IsActive).HasColumnName("is_active");
+            entity.Property(x=>x.LastKnownOrderPrice).HasColumnName("last_known_order_price").HasPrecision(18,2);
+            entity.Property(x=>x.BuyerPurchaseUnitId).HasColumnName("buyer_purchase_unit_id");
+            entity.Property(x=>x.MultiplierToBase).HasColumnName("multiplier_to_base").HasPrecision(18,3).IsRequired().HasDefaultValue(1m);
+            entity.Property(x=>x.PackageLabel).HasColumnName("package_label").HasMaxLength(BuyerSupplierProductLink.PackageLabelMaxLength);
+            entity.Property(x=>x.IsActive).HasColumnName("is_active");
             entity.Property(x=>x.SyncVersion).HasColumnName("sync_version"); entity.Property(x=>x.CreatedAtUtc).HasColumnName("created_at_utc"); entity.Property(x=>x.UpdatedAtUtc).HasColumnName("updated_at_utc");
             entity.Property(x=>x.Xmin).HasColumnName("xmin").HasColumnType("xid").ValueGeneratedOnAddOrUpdate().IsConcurrencyToken();
             entity.HasIndex(x=>new{x.RelationshipId,x.BuyerProductId}).IsUnique().HasFilter("is_active").HasDatabaseName("ux_buyer_supplier_product_links_active");

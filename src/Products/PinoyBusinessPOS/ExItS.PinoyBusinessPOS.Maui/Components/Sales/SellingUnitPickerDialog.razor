@@ -1,0 +1,82 @@
+@using ExItS.DesignSystem.Components.Forms
+@using ExItS.DesignSystem.Components.Overlay
+@using ExItS.DesignSystem.Components.Primitives
+@using ExItS.PinoyBusinessPOS.Application.Catalog
+@inject IStringLocalizer<PosResources> L
+
+<Dialog Visible="@Visible"
+        Title="@L["Sales_ChooseSellingOption"]"
+        OnClose="CancelAsync">
+    <ChildContent>
+        <div class="pos-selling-unit-picker">
+            @if (Product is not null)
+            {
+                <div class="pos-selling-unit-picker__product">
+                    <span class="pos-selling-unit-picker__name">@Product.Name</span>
+                </div>
+            }
+
+            <div class="pos-selling-unit-picker__options" role="list">
+                @foreach (var unit in Options)
+                {
+                    var price = unit.SellingPrice ?? Product?.SellingPrice ?? 0m;
+                    <button type="button"
+                            class="pos-selling-unit-picker__option"
+                            role="listitem"
+                            @onclick="() => SelectAsync(unit)">
+                        <span class="pos-selling-unit-picker__option-name">@unit.DisplayName</span>
+                        <span class="pos-selling-unit-picker__option-price">
+                            <MoneyDisplay Amount="@price" CurrencyCode="PHP" />
+                            @if (unit.AllowsCustomQuantity)
+                            {
+                                <span class="pos-selling-unit-picker__option-note">@L["Catalog_CustomAmount"]</span>
+                            }
+                        </span>
+                    </button>
+                }
+            </div>
+        </div>
+    </ChildContent>
+    <Footer>
+        <FormActions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="CancelAsync">@L["Sales_Cancel"]</Button>
+        </FormActions>
+    </Footer>
+</Dialog>
+
+@code {
+    [Parameter] public bool Visible { get; set; }
+    [Parameter] public EventCallback<bool> VisibleChanged { get; set; }
+    [Parameter] public PosCatalogProductDto? Product { get; set; }
+    [Parameter] public IReadOnlyList<PosCatalogProductUnitDto> Options { get; set; } = Array.Empty<PosCatalogProductUnitDto>();
+    [Parameter] public EventCallback<PosCatalogProductUnitDto> Selected { get; set; }
+    [Parameter] public EventCallback Cancelled { get; set; }
+
+    private async Task SelectAsync(PosCatalogProductUnitDto unit)
+    {
+        if (Selected.HasDelegate)
+        {
+            await Selected.InvokeAsync(unit);
+        }
+
+        await SetVisibleAsync(false);
+    }
+
+    private async Task CancelAsync()
+    {
+        if (Cancelled.HasDelegate)
+        {
+            await Cancelled.InvokeAsync();
+        }
+
+        await SetVisibleAsync(false);
+    }
+
+    private async Task SetVisibleAsync(bool visible)
+    {
+        if (VisibleChanged.HasDelegate)
+        {
+            await VisibleChanged.InvokeAsync(visible);
+        }
+    }
+}

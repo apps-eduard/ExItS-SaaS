@@ -22,6 +22,11 @@ internal sealed class CatalogProductRecord
     public Guid? SourceGlobalCategoryId { get; set; }
     public bool TracksExpiration { get; set; }
     public int? ExpirationWarningDays { get; set; }
+    public bool CanBePurchased { get; set; } = true;
+    public bool CanBeSold { get; set; } = true;
+    public bool CanBeUsedAsIngredient { get; set; }
+    public bool IsProduced { get; set; }
+    public string? UsagePreset { get; set; } = "BuyAndSell";
     public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset UpdatedAtUtc { get; set; }
     public uint Xmin { get; set; }

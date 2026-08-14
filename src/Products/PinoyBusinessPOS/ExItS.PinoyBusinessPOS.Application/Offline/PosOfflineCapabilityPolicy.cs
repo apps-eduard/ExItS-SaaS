@@ -118,7 +118,7 @@ public sealed class PosOfflineCapabilityPolicy : IPosOfflineCapabilityPolicy
             [PosOfflineActionKeys.PersonalInvite] = PosConnectivityRequirement.OnlineRequired,
             [PosOfflineActionKeys.PersonalLinkUser] = PosConnectivityRequirement.OnlineRequired,
             [PosOfflineActionKeys.PersonalStartBusiness] = PosConnectivityRequirement.OnlineRequired,
-            [PosOfflineActionKeys.ConnectedSupplierCatalogSearch] = PosConnectivityRequirement.OnlineRequired,
+            [PosOfflineActionKeys.ConnectedSupplierOfferSearch] = PosConnectivityRequirement.OnlineRequired,
             [PosOfflineActionKeys.ConnectedSupplierOrderSubmit] = PosConnectivityRequirement.OnlineRequired,
 
             // Explicit local/queueable actions (coverage + mixed pages)

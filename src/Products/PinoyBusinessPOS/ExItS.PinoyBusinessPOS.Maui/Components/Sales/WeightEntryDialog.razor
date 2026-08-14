@@ -15,7 +15,7 @@
                 <div class="pos-weight-entry__product">
                     <span class="pos-weight-entry__name">@Product.Name</span>
                     <span class="pos-weight-entry__unit-price">
-                        <MoneyDisplay Amount="@Product.SellingPrice" CurrencyCode="PHP" />
+                        <MoneyDisplay Amount="@(UnitPrice ?? Product.SellingPrice)" CurrencyCode="PHP" />
                         <span> @L["Sales_Checkout_PricePerKg"]</span>
                     </span>
                 </div>
@@ -67,6 +67,8 @@
     [Parameter] public PosCatalogProductDto? Product { get; set; }
     /// <summary>When editing an existing line, pass the current cart kilograms.</summary>
     [Parameter] public decimal? InitialKilograms { get; set; }
+    /// <summary>Optional override when a custom-quantity selling unit has its own price.</summary>
+    [Parameter] public decimal? UnitPrice { get; set; }
     [Parameter] public EventCallback<decimal> Confirmed { get; set; }
     [Parameter] public EventCallback Removed { get; set; }
     [Parameter] public EventCallback Cancelled { get; set; }
@@ -103,7 +105,7 @@
                 return null;
             }
 
-            return PosSaleOptions.RoundMoney(Product.SellingPrice * kilograms);
+            return PosSaleOptions.RoundMoney((UnitPrice ?? Product.SellingPrice) * kilograms);
         }
     }
 

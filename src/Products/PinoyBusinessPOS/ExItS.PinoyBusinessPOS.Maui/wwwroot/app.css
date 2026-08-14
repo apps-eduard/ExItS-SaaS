@@ -4993,6 +4993,44 @@ html.pos-keyboard-open .pos-content {
     color: var(--exits-text-muted, #5b6b62);
 }
 
+.pos-product-form__units {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    padding: 0.35rem 0 0.15rem;
+}
+
+.pos-product-form__units-title {
+    margin: 0;
+    color: var(--exits-text, #15201a);
+    font-size: 0.9375rem;
+    font-weight: 700;
+}
+
+.pos-product-form__unit-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    padding: 0.7rem 0.75rem;
+    background: var(--exits-bg-subtle, #f3f6f4);
+    border: 1px solid var(--pos-border-subtle, #d7e0da);
+    border-radius: var(--exits-radius-md, 0.5rem);
+}
+
+.pos-product-form__unit-contains {
+    align-items: end;
+    display: grid;
+    gap: 0.45rem 0.55rem;
+    grid-template-columns: minmax(0, 1fr) minmax(5.5rem, 7rem) auto;
+}
+
+.pos-product-form__unit-contains-text {
+    padding-bottom: 0.55rem;
+    color: var(--exits-text-muted, #5b6b62);
+    font-size: 0.8125rem;
+    line-height: 1.3;
+}
+
 .pos-product-form__actions {
     display: flex;
     align-items: center;
@@ -5003,6 +5041,72 @@ html.pos-keyboard-open .pos-content {
 .pos-product-form__actions .exds-btn {
     flex: 1 1 0;
     justify-content: center;
+}
+
+.pos-selling-unit-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.pos-selling-unit-picker__product {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.pos-selling-unit-picker__name {
+    color: var(--exits-text, #15201a);
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.pos-selling-unit-picker__options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+
+.pos-selling-unit-picker__option {
+    align-items: center;
+    display: flex;
+    gap: 0.75rem;
+    justify-content: space-between;
+    width: 100%;
+    padding: 0.75rem 0.85rem;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+    background: var(--pos-surface-panel, #fff);
+    border: 1px solid var(--pos-border-subtle, #d7e0da);
+    border-radius: var(--exits-radius-md, 0.5rem);
+}
+
+.pos-selling-unit-picker__option:hover,
+.pos-selling-unit-picker__option:focus-visible {
+    border-color: var(--exits-accent, #1f6b4a);
+    outline: none;
+}
+
+.pos-selling-unit-picker__option-name {
+    font-size: 0.9375rem;
+    font-weight: 650;
+}
+
+.pos-selling-unit-picker__option-price {
+    align-items: flex-end;
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    font-family: var(--exits-font-tabular);
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+}
+
+.pos-selling-unit-picker__option-note {
+    color: var(--exits-text-muted, #5b6b62);
+    font-size: 0.75rem;
+    font-weight: 600;
 }
 
 /* ============================== Sales list ============================== */

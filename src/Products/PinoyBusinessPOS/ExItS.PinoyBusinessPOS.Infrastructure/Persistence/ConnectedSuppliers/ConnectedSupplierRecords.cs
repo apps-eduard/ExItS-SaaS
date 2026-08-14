@@ -28,6 +28,9 @@ internal sealed class BuyerSupplierProductLinkRecord
     public Guid SupplierOrganizationId { get; set; } public Guid BuyerProductId { get; set; } public Guid SupplierProductId { get; set; }
     public string? SupplierSkuSnapshot { get; set; } public string SupplierNameSnapshot { get; set; }=string.Empty;
     public string UnitOfMeasureCode { get; set; }=string.Empty; public decimal LastKnownOrderPrice { get; set; }
+    public Guid? BuyerPurchaseUnitId { get; set; }
+    public decimal MultiplierToBase { get; set; } = 1m;
+    public string? PackageLabel { get; set; }
     public bool IsActive { get; set; } public long SyncVersion { get; set; } public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset UpdatedAtUtc { get; set; } public uint Xmin { get; set; }
 }
@@ -75,15 +78,18 @@ internal static class ConnectedSupplierEntityMapper
     public static BuyerSupplierProductLink ToDomain(BuyerSupplierProductLinkRecord r)=>BuyerSupplierProductLink.Rehydrate(
         BuyerSupplierProductLinkId.From(r.Id),ConnectedSupplierRelationshipId.From(r.RelationshipId),PosOrganizationId.From(r.BuyerOrganizationId),
         PosOrganizationId.From(r.SupplierOrganizationId),CatalogProductId.From(r.BuyerProductId),CatalogProductId.From(r.SupplierProductId),
-        r.SupplierSkuSnapshot,r.SupplierNameSnapshot,r.UnitOfMeasureCode,r.LastKnownOrderPrice,r.IsActive,r.SyncVersion,r.CreatedAtUtc,r.UpdatedAtUtc);
+        r.SupplierSkuSnapshot,r.SupplierNameSnapshot,r.UnitOfMeasureCode,r.LastKnownOrderPrice,r.IsActive,r.SyncVersion,r.CreatedAtUtc,r.UpdatedAtUtc,
+        r.BuyerPurchaseUnitId,r.MultiplierToBase,r.PackageLabel);
     public static BuyerSupplierProductLinkRecord ToRecord(BuyerSupplierProductLink x)=>new(){Id=x.Id.Value,RelationshipId=x.RelationshipId.Value,
         BuyerOrganizationId=x.BuyerOrganizationId.Value,SupplierOrganizationId=x.SupplierOrganizationId.Value,BuyerProductId=x.BuyerProductId.Value,
         SupplierProductId=x.SupplierProductId.Value,SupplierSkuSnapshot=x.SupplierSkuSnapshot,SupplierNameSnapshot=x.SupplierNameSnapshot,
-        UnitOfMeasureCode=x.UnitOfMeasureCode,LastKnownOrderPrice=x.LastKnownOrderPrice,IsActive=x.IsActive,SyncVersion=x.SyncVersion,
+        UnitOfMeasureCode=x.UnitOfMeasureCode,LastKnownOrderPrice=x.LastKnownOrderPrice,BuyerPurchaseUnitId=x.BuyerPurchaseUnitId,
+        MultiplierToBase=x.MultiplierToBase,PackageLabel=x.PackageLabel,IsActive=x.IsActive,SyncVersion=x.SyncVersion,
         CreatedAtUtc=x.CreatedAtUtc,UpdatedAtUtc=x.UpdatedAtUtc};
     public static void Apply(BuyerSupplierProductLink x,BuyerSupplierProductLinkRecord r)
     {r.SupplierSkuSnapshot=x.SupplierSkuSnapshot;r.SupplierNameSnapshot=x.SupplierNameSnapshot;r.UnitOfMeasureCode=x.UnitOfMeasureCode;
-     r.LastKnownOrderPrice=x.LastKnownOrderPrice;r.IsActive=x.IsActive;r.SyncVersion=x.SyncVersion;r.UpdatedAtUtc=x.UpdatedAtUtc;}
+     r.LastKnownOrderPrice=x.LastKnownOrderPrice;r.BuyerPurchaseUnitId=x.BuyerPurchaseUnitId;r.MultiplierToBase=x.MultiplierToBase;
+     r.PackageLabel=x.PackageLabel;r.IsActive=x.IsActive;r.SyncVersion=x.SyncVersion;r.UpdatedAtUtc=x.UpdatedAtUtc;}
 
     public static ConnectedPurchaseOrder ToDomain(ConnectedPurchaseOrderRecord r)=>ConnectedPurchaseOrder.Rehydrate(
         ConnectedPurchaseOrderId.From(r.Id),ConnectedSupplierRelationshipId.From(r.RelationshipId),PosOrganizationId.From(r.BuyerOrganizationId),

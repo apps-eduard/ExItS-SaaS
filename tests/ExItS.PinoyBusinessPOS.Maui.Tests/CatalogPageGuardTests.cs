@@ -262,6 +262,57 @@ public sealed class CatalogPageGuardTests
         }
     }
 
+    [Fact]
+    public void Catalog_product_form_uses_plain_usage_wording_without_conversion_jargon()
+    {
+        var catalog = CatalogPagesDirectory();
+        var form = File.ReadAllText(Path.Combine(catalog, "CatalogProductForm.razor"));
+        Assert.Contains("Catalog_HowUsed", form, StringComparison.Ordinal);
+        Assert.Contains("Catalog_StockCountedIn", form, StringComparison.Ordinal);
+        Assert.DoesNotContain("Base UOM", form, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Multiplier", form, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Conversion factor", form, StringComparison.OrdinalIgnoreCase);
+
+        var loc = Path.Combine(
+            FindRepoRoot(),
+            "src",
+            "Products",
+            "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.Maui",
+            "Localization");
+        var en = File.ReadAllText(Path.Combine(loc, "PosResources.resx"));
+        var fil = File.ReadAllText(Path.Combine(loc, "PosResources.fil-PH.resx"));
+        foreach (var key in new[]
+                 {
+                     "Catalog_HowUsed",
+                     "Catalog_Usage_BuyAndSell",
+                     "Catalog_Usage_Bulk",
+                     "Catalog_Usage_Ingredient",
+                     "Catalog_Usage_MadeProduct",
+                     "Catalog_StockCountedIn",
+                     "Catalog_BuyingUnits",
+                     "Catalog_SellingOptions",
+                     "Catalog_AddBuyingUnit",
+                     "Catalog_AddSellingOption",
+                     "Catalog_UnitContains",
+                     "Catalog_RemoveUnit",
+                     "Catalog_SetPackages",
+                     "Catalog_PriceForThisOption",
+                     "Catalog_CustomAmount",
+                     "Sales_ChooseSellingOption"
+                 })
+        {
+            Assert.Contains($"name=\"{key}\"", en, StringComparison.Ordinal);
+            Assert.Contains($"name=\"{key}\"", fil, StringComparison.Ordinal);
+        }
+
+        Assert.Contains("Catalog_SetPackages", form, StringComparison.Ordinal);
+        Assert.Contains("PurchaseUnits", form, StringComparison.Ordinal);
+        Assert.Contains("SellUnits", form, StringComparison.Ordinal);
+        Assert.Contains("Catalog_BuyingUnits", form, StringComparison.Ordinal);
+        Assert.Contains("Catalog_SellingOptions", form, StringComparison.Ordinal);
+    }
+
     private static string CatalogPagesDirectory() => Path.Combine(
         FindRepoRoot(),
         "src",

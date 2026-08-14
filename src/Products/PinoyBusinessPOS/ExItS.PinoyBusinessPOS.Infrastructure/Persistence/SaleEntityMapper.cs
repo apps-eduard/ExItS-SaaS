@@ -30,7 +30,11 @@ internal static class SaleEntityMapper
                 l.UnitPrice,
                 l.Quantity,
                 l.LineTotal,
-                SellingModes.Parse(l.SellingModeSnapshot)))
+                SellingModes.Parse(l.SellingModeSnapshot),
+                l.SellingUnitId is null ? null : ProductUnitId.From(l.SellingUnitId.Value),
+                l.SellingUnitNameSnapshot,
+                l.EnteredQuantity,
+                l.MultiplierToBaseSnapshot))
             .ToList();
 
         return Sale.Rehydrate(
@@ -99,7 +103,11 @@ internal static class SaleEntityMapper
             SellingModeSnapshot = SellingModes.ToCode(line.SellingModeSnapshot),
             UnitPrice = line.UnitPrice,
             Quantity = line.Quantity,
-            LineTotal = line.LineTotal
+            LineTotal = line.LineTotal,
+            SellingUnitId = line.SellingUnitId?.Value,
+            SellingUnitNameSnapshot = line.SellingUnitNameSnapshot,
+            EnteredQuantity = line.EnteredQuantity,
+            MultiplierToBaseSnapshot = line.MultiplierToBaseSnapshot
         };
 
     /// <summary>

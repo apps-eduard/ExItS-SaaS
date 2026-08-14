@@ -32,7 +32,7 @@ public static class PosOfflineActionKeys
     public const string PersonalBorrowedCreate = "personal.borrowed.create";
     public const string PersonalEntryRecord = "personal.entry.record";
     public const string ConnectedSupplierLinkedProductsView = "connected_supplier.linked_products.view";
-    public const string ConnectedSupplierCatalogSearch = "connected_supplier.catalog.search";
+    public const string ConnectedSupplierOfferSearch = "connected_supplier.catalog.search";
     public const string ConnectedSupplierDraftSave = "connected_supplier.purchase_order.draft.save";
     public const string ConnectedSupplierOrderSubmit = "connected_supplier.purchase_order.submit";
 }

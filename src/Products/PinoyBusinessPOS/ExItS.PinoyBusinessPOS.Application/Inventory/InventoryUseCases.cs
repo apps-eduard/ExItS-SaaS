@@ -436,6 +436,7 @@ public sealed class AdjustInventoryStock
 {
     private readonly IInventoryRepository _inventory;
     private readonly ICatalogProductRepository _products;
+    private readonly ICatalogProductUnitRepository _units;
     private readonly IInventoryBranchBalanceRepository _branchBalances;
     private readonly IInventoryLotRepository _lotRepository;
     private readonly InventoryLotStockService _lots;
@@ -445,6 +446,7 @@ public sealed class AdjustInventoryStock
     public AdjustInventoryStock(
         IInventoryRepository inventory,
         ICatalogProductRepository products,
+        ICatalogProductUnitRepository units,
         IInventoryBranchBalanceRepository branchBalances,
         IInventoryLotRepository lotRepository,
         InventoryLotStockService lots,
@@ -453,6 +455,7 @@ public sealed class AdjustInventoryStock
     {
         _inventory = inventory;
         _products = products;
+        _units = units;
         _branchBalances = branchBalances;
         _lotRepository = lotRepository;
         _lots = lots;
@@ -472,6 +475,7 @@ public sealed class AdjustInventoryStock
         DateOnly? expirationDate = null,
         string? lotNumber = null,
         Guid? lotId = null,
+        Guid? productUnitId = null,
         CancellationToken cancellationToken = default)
     {
         if (actorId == Guid.Empty)
@@ -504,6 +508,22 @@ public sealed class AdjustInventoryStock
         try
         {
             var utcNow = _clock.UtcNow;
+            var baseQuantity = quantity;
+            if (productUnitId is not null)
+            {
+                var unit = await _units
+                    .GetByIdAsync(orgId, ProductUnitId.From(productUnitId.Value), cancellationToken)
+                    .ConfigureAwait(false);
+                if (unit is null || unit.ProductId != catalogProductId || !unit.IsActive)
+                {
+                    return ApplicationResult<InventoryAccount>.Failure(
+                        DomainErrorCodes.InvalidProductUnitId,
+                        "Product unit was not found for this product.");
+                }
+
+                baseQuantity = ProductUnitConversion.ToBaseQuantity(quantity, unit.MultiplierToBase);
+            }
+
             var normalizedDirection = (direction ?? string.Empty).Trim();
             StockMovement movement;
             if (string.Equals(normalizedDirection, "In", StringComparison.OrdinalIgnoreCase))
@@ -512,7 +532,7 @@ public sealed class AdjustInventoryStock
                     orgId,
                     catalogProductId,
                     account.Id,
-                    quantity,
+                    baseQuantity,
                     product.UnitOfMeasure,
                     reason,
                     actorId,
@@ -525,7 +545,7 @@ public sealed class AdjustInventoryStock
                     orgId,
                     catalogProductId,
                     account.Id,
-                    quantity,
+                    baseQuantity,
                     product.UnitOfMeasure,
                     reason,
                     actorId,

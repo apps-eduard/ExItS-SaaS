@@ -41,7 +41,7 @@ src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Application/ (+ Auth; Custo
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Infrastructure/ (PosDbContext schema `pos`; migrations through `AddPosPurchasing`, **`AddPosInventoryTransfers`**, **`AddPosInventoryLots`**; `Health/PosDatabaseReadyHealthCheck`)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Api/ (`/health` + `/health/ready` + customers + credit + repayments/ledger + due dates/overdue + statements/receipts + catalog + sales + inventory + expenses + suppliers + purchase-orders/goods-receipts + cashier-shifts + sale-returns + permissions + registers + dashboard/reports; commercial header gates; Production security pipeline; phase marker `P10-WP08-phase-10-closeout`)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.ApiClient/ (+ Platform access client; PosCommercialHeaderHandler; PosCustomerClient; PosSaleClient/PosExpenseClient/**PosPurchaseOrderClient** idempotency headers; PosCatalogClient online-only; PosSupplierClient online-only)
-src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.LocalStore/ (Microsoft.Data.Sqlite schema v8 + generic encrypted offline_operations outbox + BlockedByAccess reclaim + encrypted customer/credit/repayment projections + selective connected-supplier linked products and local PO drafts; never a full supplier catalog; **not** part of server backup sets)
+src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.LocalStore/ (Microsoft.Data.Sqlite schema v9 + generic encrypted offline_operations outbox + BlockedByAccess reclaim + encrypted customer/credit/repayment projections + selective connected-supplier linked products and local PO drafts + product usage/sell-unit offline cache; never a full supplier catalog; **not** part of server backup sets)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/ (Android-first MAUI Blazor Hybrid; Customers + credit + repayments + ledger + overdue/due dates + statement/receipt preview/share + catalog/barcode + sales + inventory + expenses + suppliers + **purchasing** + connected supplier request/catalog/linked products/incoming orders + dashboard/reports; onboarding/auth; sync-status shell; offline foundation diagnostics; PosResources en/fil-PH)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Web/ (Organization Web Admin — AntDesign Blazor Server management/reporting per ADR-022; **not a POS checkout client**; Local Validation :8093)
 tests/ExItS.Platform.UnitTests/
@@ -90,6 +90,7 @@ docs/engineering/pos-branch-inventory-transfers.md
 docs/engineering/pos-cashier-cash-count.md
 docs/engineering/pos-expiration-aware-inventory.md
 docs/engineering/offline-sync-design.md
+docs/engineering/product-units-and-inventory-behavior.md
 docs/engineering/phase-02-evidence-matrix.md
 docs/engineering/phase-02-readiness-checklist.md
 docs/engineering/platform-extraction-risk-matrix.md
@@ -181,6 +182,7 @@ docs/reports/P8-WP01-catalog-and-barcode.md
 docs/reports/P8-WP02-simple-sales.md
 docs/reports/P8-WP03-product-based-utang.md
 docs/reports/P8-WP04-basic-inventory.md
+docs/reports/product-units-and-inventory-behavior.md
 docs/reports/P8-WP05-expenses.md
 docs/reports/P8-WP06-dashboard-and-reports.md
 docs/reports/P8-WP07-basic-store-closeout.md

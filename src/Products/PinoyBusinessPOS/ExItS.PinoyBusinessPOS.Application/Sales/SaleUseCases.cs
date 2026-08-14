@@ -232,6 +232,7 @@ public sealed class CheckoutSale
 {
     private readonly ISaleRepository _sales;
     private readonly ICatalogProductRepository _products;
+    private readonly ICatalogProductUnitRepository _units;
     private readonly IPOSCustomerRepository _customers;
     private readonly ICreditEntryRepository _credits;
     private readonly ICreditDueDateChangeRepository _dueDateChanges;
@@ -243,6 +244,7 @@ public sealed class CheckoutSale
     public CheckoutSale(
         ISaleRepository sales,
         ICatalogProductRepository products,
+        ICatalogProductUnitRepository units,
         IPOSCustomerRepository customers,
         ICreditEntryRepository credits,
         ICreditDueDateChangeRepository dueDateChanges,
@@ -253,6 +255,7 @@ public sealed class CheckoutSale
     {
         _sales = sales;
         _products = products;
+        _units = units;
         _customers = customers;
         _credits = credits;
         _dueDateChanges = dueDateChanges;
@@ -424,6 +427,21 @@ public sealed class CheckoutSale
                     "Trusted sale line snapshots require a client SaleId (offline sync). Online carts must omit snapshot fields.");
             }
 
+            var unitIds = lines
+                .Where(l => l?.SellingUnitId is not null)
+                .Select(l => ProductUnitId.From(l!.SellingUnitId!.Value))
+                .Distinct()
+                .ToList();
+            var unitsById = new Dictionary<Guid, CatalogProductUnit>();
+            foreach (var unitId in unitIds)
+            {
+                var unit = await _units.GetByIdAsync(orgId, unitId, cancellationToken).ConfigureAwait(false);
+                if (unit is not null)
+                {
+                    unitsById[unit.Id.Value] = unit;
+                }
+            }
+
             if (usesTrustedSnapshots)
             {
                 foreach (var line in lines)
@@ -447,7 +465,13 @@ public sealed class CheckoutSale
                             $"'{product.Name}' is inactive and cannot be sold. Remove it from the cart or reactivate it.");
                     }
 
-                    var snapshotDraft = CheckoutSaleLineSnapshots.TryCreateDraftFromSnapshot(line, product);
+                    CatalogProductUnit? sellingUnit = null;
+                    if (line.SellingUnitId is not null)
+                    {
+                        unitsById.TryGetValue(line.SellingUnitId.Value, out sellingUnit);
+                    }
+
+                    var snapshotDraft = CheckoutSaleLineSnapshots.TryCreateDraftFromSnapshot(line, product, sellingUnit);
                     if (!snapshotDraft.IsSuccess)
                     {
                         return ApplicationResult<Sale>.Failure(
@@ -467,40 +491,89 @@ public sealed class CheckoutSale
             }
             else
             {
-                var requested = CombineRequestedQuantities(lines);
-                if (requested.Count == 0)
+                var usesUnits = lines.Any(l => l?.SellingUnitId is not null || l?.EnteredQuantity is not null);
+                if (usesUnits)
+                {
+                    foreach (var line in lines)
+                    {
+                        if (line is null)
+                        {
+                            continue;
+                        }
+
+                        if (!byId.TryGetValue(line.ProductId, out var product))
+                        {
+                            return ApplicationResult<Sale>.Failure(
+                                ApplicationErrorCodes.SaleProductNotFound,
+                                "One or more products in the cart were not found in this organization.");
+                        }
+
+                        if (product.Status != CatalogProductStatus.Active)
+                        {
+                            return ApplicationResult<Sale>.Failure(
+                                ApplicationErrorCodes.SaleProductNotActive,
+                                $"'{product.Name}' is inactive and cannot be sold. Remove it from the cart or reactivate it.");
+                        }
+
+                        CatalogProductUnit? sellingUnit = null;
+                        if (line.SellingUnitId is not null)
+                        {
+                            unitsById.TryGetValue(line.SellingUnitId.Value, out sellingUnit);
+                        }
+
+                        var onlineDraft = CheckoutSaleLineSnapshots.TryCreateOnlineDraft(line, product, sellingUnit);
+                        if (!onlineDraft.IsSuccess)
+                        {
+                            return ApplicationResult<Sale>.Failure(onlineDraft.ErrorCode!, onlineDraft.ErrorMessage!);
+                        }
+
+                        drafts.Add(onlineDraft.Value!);
+                    }
+                }
+                else
+                {
+                    var requested = CombineRequestedQuantities(lines);
+                    if (requested.Count == 0)
+                    {
+                        return ApplicationResult<Sale>.Failure(
+                            DomainErrorCodes.SaleRequiresAtLeastOneLine,
+                            "A sale must contain at least one line.");
+                    }
+
+                    drafts = new List<SaleLineDraft>(requested.Count);
+                    foreach (var (productId, quantity) in requested)
+                    {
+                        if (!byId.TryGetValue(productId, out var product))
+                        {
+                            return ApplicationResult<Sale>.Failure(
+                                ApplicationErrorCodes.SaleProductNotFound,
+                                "One or more products in the cart were not found in this organization.");
+                        }
+
+                        if (product.Status != CatalogProductStatus.Active)
+                        {
+                            return ApplicationResult<Sale>.Failure(
+                                ApplicationErrorCodes.SaleProductNotActive,
+                                $"'{product.Name}' is inactive and cannot be sold. Remove it from the cart or reactivate it.");
+                        }
+
+                        drafts.Add(new SaleLineDraft(
+                            product.Id,
+                            product.Name,
+                            product.Sku,
+                            product.Barcode,
+                            product.UnitOfMeasure,
+                            product.SellingPrice,
+                            quantity,
+                            product.SellingMode));
+                    }
+                }
+
+                if (drafts.Count == 0)
                 {
                     return ApplicationResult<Sale>.Failure(
                         DomainErrorCodes.SaleRequiresAtLeastOneLine,
                         "A sale must contain at least one line.");
-                }
-
-                drafts = new List<SaleLineDraft>(requested.Count);
-                foreach (var (productId, quantity) in requested)
-                {
-                    if (!byId.TryGetValue(productId, out var product))
-                    {
-                        return ApplicationResult<Sale>.Failure(
-                            ApplicationErrorCodes.SaleProductNotFound,
-                            "One or more products in the cart were not found in this organization.");
-                    }
-
-                    if (product.Status != CatalogProductStatus.Active)
-                    {
-                        return ApplicationResult<Sale>.Failure(
-                            ApplicationErrorCodes.SaleProductNotActive,
-                            $"'{product.Name}' is inactive and cannot be sold. Remove it from the cart or reactivate it.");
-                    }
-
-                    drafts.Add(new SaleLineDraft(
-                        product.Id,
-                        product.Name,
-                        product.Sku,
-                        product.Barcode,
-                        product.UnitOfMeasure,
-                        product.SellingPrice,
-                        quantity,
-                        product.SellingMode));
                 }
             }
 
@@ -512,7 +585,7 @@ public sealed class CheckoutSale
             var productsById = byId;
 
             var previewSubtotal = SaleMoney.RoundMoney(
-                drafts.Sum(d => SaleMoney.RoundMoney(d.UnitPrice * d.Quantity)));
+                drafts.Sum(d => SaleMoney.RoundMoney(d.UnitPrice * (d.EnteredQuantity ?? d.Quantity))));
 
             decimal taxAmount = 0;
             TaxPricingMode? taxPricingMode = null;

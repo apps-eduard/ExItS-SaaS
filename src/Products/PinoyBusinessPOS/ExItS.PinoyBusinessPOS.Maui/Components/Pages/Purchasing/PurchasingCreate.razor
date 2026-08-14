@@ -641,7 +641,8 @@ else
                     var link = bySupplierProduct[x.ProductId];
                     return new LocalLinkedSupplierProduct(link.LinkId, relationshipId, link.SupplierOrganizationId,
                         link.BuyerProductId, x.ProductId, x.SkuSnapshot, x.NameSnapshot, x.UnitOfMeasureCode,
-                        x.SupplierOrderPrice, x.IsOrderable, x.IsExposed, x.SyncVersion, x.UpdatedAtUtc, DateTimeOffset.UtcNow);
+                        x.SupplierOrderPrice, x.IsOrderable, x.IsExposed, x.SyncVersion, x.UpdatedAtUtc, DateTimeOffset.UtcNow,
+                        link.MultiplierToBase, link.PackageLabel);
                 }).ToList();
             _supplierCatalogProducts = catalog.Data.Items
                 .Where(x => !bySupplierProduct.ContainsKey(x.ProductId))

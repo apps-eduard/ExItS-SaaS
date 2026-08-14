@@ -25,6 +25,11 @@ public sealed class CatalogDomainTests
         Assert.Null(product.Barcode);
         Assert.Null(product.CategoryId);
         Assert.Equal(OrgA, product.OrganizationId);
+        Assert.True(product.CanBePurchased);
+        Assert.True(product.CanBeSold);
+        Assert.False(product.CanBeUsedAsIngredient);
+        Assert.False(product.IsProduced);
+        Assert.Equal(ProductUsageCapabilities.BuyAndSellCode, product.UsagePreset);
     }
 
     [Fact]
@@ -244,5 +249,6 @@ public sealed class CatalogDomainTests
     {
         Assert.Throws<DomainException>(() => CatalogProductId.From(Guid.Empty));
         Assert.Throws<DomainException>(() => ProductCategoryId.From(Guid.Empty));
+        Assert.Throws<DomainException>(() => ProductUnitId.From(Guid.Empty));
     }
 }

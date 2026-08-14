@@ -179,6 +179,8 @@ public sealed class SupplierProductExposure
 
 public sealed class BuyerSupplierProductLink
 {
+    public const int PackageLabelMaxLength = 64;
+
     public BuyerSupplierProductLinkId Id { get; }
     public ConnectedSupplierRelationshipId RelationshipId { get; }
     public PosOrganizationId BuyerOrganizationId { get; }
@@ -189,35 +191,165 @@ public sealed class BuyerSupplierProductLink
     public string SupplierNameSnapshot { get; private set; }
     public string UnitOfMeasureCode { get; private set; }
     public decimal LastKnownOrderPrice { get; private set; }
+    public Guid? BuyerPurchaseUnitId { get; private set; }
+    public decimal MultiplierToBase { get; private set; }
+    public string? PackageLabel { get; private set; }
     public bool IsActive { get; private set; }
     public long SyncVersion { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
-    // Future packages may add unit conversion metadata here. Phase 1 deliberately requires exact UOM linkage.
-    // Conversion and packaging behavior must not be inferred from these snapshots.
+
     private BuyerSupplierProductLink(BuyerSupplierProductLinkId id, ConnectedSupplierRelationshipId relationshipId,
         PosOrganizationId buyer, PosOrganizationId supplier, CatalogProductId buyerProductId, CatalogProductId supplierProductId,
         string? sku, string name, string uom, decimal price, bool active, long version,
-        DateTimeOffset createdAtUtc, DateTimeOffset updatedAtUtc)
-    { Id=id; RelationshipId=relationshipId; BuyerOrganizationId=buyer; SupplierOrganizationId=supplier; BuyerProductId=buyerProductId;
-      SupplierProductId=supplierProductId; SupplierSkuSnapshot=sku; SupplierNameSnapshot=name; UnitOfMeasureCode=uom;
-      LastKnownOrderPrice=price; IsActive=active; SyncVersion=version; CreatedAtUtc=createdAtUtc; UpdatedAtUtc=updatedAtUtc; }
-    public static BuyerSupplierProductLink Create(ConnectedSupplierRelationshipId relationshipId, PosOrganizationId buyer,
-        PosOrganizationId supplier, CatalogProductId buyerProductId, SupplierProductExposure exposure, DateTimeOffset utcNow,
-        BuyerSupplierProductLinkId? id=null)
+        DateTimeOffset createdAtUtc, DateTimeOffset updatedAtUtc,
+        Guid? buyerPurchaseUnitId = null, decimal multiplierToBase = 1m, string? packageLabel = null)
     {
-        if (exposure.SupplierOrganizationId != supplier) throw new DomainException(ConnectedSupplierDomainErrorCodes.InvalidOffer, "Exposure belongs to another supplier.");
-        return new(id??BuyerSupplierProductLinkId.New(),relationshipId,buyer,supplier,buyerProductId,exposure.ProductId,
-            exposure.SkuSnapshot,exposure.NameSnapshot,exposure.UnitOfMeasureCode,exposure.SupplierOrderPrice,true,1,utcNow,utcNow);
+        Id = id;
+        RelationshipId = relationshipId;
+        BuyerOrganizationId = buyer;
+        SupplierOrganizationId = supplier;
+        BuyerProductId = buyerProductId;
+        SupplierProductId = supplierProductId;
+        SupplierSkuSnapshot = sku;
+        SupplierNameSnapshot = name;
+        UnitOfMeasureCode = uom;
+        LastKnownOrderPrice = price;
+        IsActive = active;
+        SyncVersion = version;
+        CreatedAtUtc = createdAtUtc;
+        UpdatedAtUtc = updatedAtUtc;
+        BuyerPurchaseUnitId = buyerPurchaseUnitId == Guid.Empty ? null : buyerPurchaseUnitId;
+        MultiplierToBase = CatalogProductUnit.NormalizeMultiplier(multiplierToBase);
+        PackageLabel = NormalizePackageLabel(packageLabel);
     }
-    public void Refresh(SupplierProductExposure exposure, DateTimeOffset utcNow)
-    { SupplierSkuSnapshot=exposure.SkuSnapshot; SupplierNameSnapshot=exposure.NameSnapshot; UnitOfMeasureCode=exposure.UnitOfMeasureCode;
-      LastKnownOrderPrice=exposure.SupplierOrderPrice; IsActive=exposure.IsExposed&&exposure.IsOrderable; SyncVersion++; UpdatedAtUtc=utcNow; }
-    public void Unlink(DateTimeOffset utcNow) { IsActive=false; SyncVersion++; UpdatedAtUtc=utcNow; }
-    public static BuyerSupplierProductLink Rehydrate(BuyerSupplierProductLinkId id, ConnectedSupplierRelationshipId relationshipId,
-        PosOrganizationId buyer, PosOrganizationId supplier, CatalogProductId buyerProductId, CatalogProductId supplierProductId,
-        string? sku,string name,string uom,decimal price,bool active,long version,DateTimeOffset created,DateTimeOffset updated) =>
-        new(id,relationshipId,buyer,supplier,buyerProductId,supplierProductId,sku,name,uom,price,active,version,created,updated);
+
+    public static BuyerSupplierProductLink Create(
+        ConnectedSupplierRelationshipId relationshipId,
+        PosOrganizationId buyer,
+        PosOrganizationId supplier,
+        CatalogProductId buyerProductId,
+        SupplierProductExposure exposure,
+        DateTimeOffset utcNow,
+        BuyerSupplierProductLinkId? id = null,
+        Guid? buyerPurchaseUnitId = null,
+        decimal multiplierToBase = 1m,
+        string? packageLabel = null)
+    {
+        if (exposure.SupplierOrganizationId != supplier)
+        {
+            throw new DomainException(
+                ConnectedSupplierDomainErrorCodes.InvalidOffer,
+                "Exposure belongs to another supplier.");
+        }
+
+        return new(
+            id ?? BuyerSupplierProductLinkId.New(),
+            relationshipId,
+            buyer,
+            supplier,
+            buyerProductId,
+            exposure.ProductId,
+            exposure.SkuSnapshot,
+            exposure.NameSnapshot,
+            exposure.UnitOfMeasureCode,
+            exposure.SupplierOrderPrice,
+            true,
+            1,
+            utcNow,
+            utcNow,
+            buyerPurchaseUnitId,
+            multiplierToBase,
+            packageLabel);
+    }
+
+    public void Refresh(
+        SupplierProductExposure exposure,
+        DateTimeOffset utcNow,
+        Guid? buyerPurchaseUnitId = null,
+        decimal? multiplierToBase = null,
+        string? packageLabel = null)
+    {
+        SupplierSkuSnapshot = exposure.SkuSnapshot;
+        SupplierNameSnapshot = exposure.NameSnapshot;
+        UnitOfMeasureCode = exposure.UnitOfMeasureCode;
+        LastKnownOrderPrice = exposure.SupplierOrderPrice;
+        IsActive = exposure.IsExposed && exposure.IsOrderable;
+        if (buyerPurchaseUnitId is not null)
+        {
+            BuyerPurchaseUnitId = buyerPurchaseUnitId == Guid.Empty ? null : buyerPurchaseUnitId;
+        }
+
+        if (multiplierToBase is not null)
+        {
+            MultiplierToBase = CatalogProductUnit.NormalizeMultiplier(multiplierToBase.Value);
+        }
+
+        if (packageLabel is not null)
+        {
+            PackageLabel = NormalizePackageLabel(packageLabel);
+        }
+
+        SyncVersion++;
+        UpdatedAtUtc = utcNow;
+    }
+
+    public void Unlink(DateTimeOffset utcNow)
+    {
+        IsActive = false;
+        SyncVersion++;
+        UpdatedAtUtc = utcNow;
+    }
+
+    public static BuyerSupplierProductLink Rehydrate(
+        BuyerSupplierProductLinkId id,
+        ConnectedSupplierRelationshipId relationshipId,
+        PosOrganizationId buyer,
+        PosOrganizationId supplier,
+        CatalogProductId buyerProductId,
+        CatalogProductId supplierProductId,
+        string? sku,
+        string name,
+        string uom,
+        decimal price,
+        bool active,
+        long version,
+        DateTimeOffset created,
+        DateTimeOffset updated,
+        Guid? buyerPurchaseUnitId = null,
+        decimal multiplierToBase = 1m,
+        string? packageLabel = null) =>
+        new(
+            id,
+            relationshipId,
+            buyer,
+            supplier,
+            buyerProductId,
+            supplierProductId,
+            sku,
+            name,
+            uom,
+            price,
+            active,
+            version,
+            created,
+            updated,
+            buyerPurchaseUnitId,
+            multiplierToBase,
+            packageLabel);
+
+    private static string? NormalizePackageLabel(string? packageLabel)
+    {
+        if (string.IsNullOrWhiteSpace(packageLabel))
+        {
+            return null;
+        }
+
+        var trimmed = packageLabel.Trim();
+        return trimmed.Length > PackageLabelMaxLength
+            ? trimmed[..PackageLabelMaxLength]
+            : trimmed;
+    }
 }
 
 public sealed record ConnectedPurchaseOrderLine(CatalogProductId ProductId, string NameSnapshot, string? SkuSnapshot,

@@ -37,6 +37,16 @@ public sealed class CatalogProduct
     public Guid? SourceGlobalCategoryId { get; private set; }
     public bool TracksExpiration { get; private set; }
     public int? ExpirationWarningDays { get; private set; }
+
+    /// <summary>Usage flags are authoritative; defaults match BuyAndSell.</summary>
+    public bool CanBePurchased { get; private set; }
+    public bool CanBeSold { get; private set; }
+    public bool CanBeUsedAsIngredient { get; private set; }
+    public bool IsProduced { get; private set; }
+
+    /// <summary>Optional UX preset code (e.g. BuyAndSell, Bulk). Flags remain authoritative.</summary>
+    public string? UsagePreset { get; private set; }
+
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
 
@@ -62,7 +72,12 @@ public sealed class CatalogProduct
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc,
         bool tracksExpiration = false,
-        int? expirationWarningDays = null)
+        int? expirationWarningDays = null,
+        bool canBePurchased = true,
+        bool canBeSold = true,
+        bool canBeUsedAsIngredient = false,
+        bool isProduced = false,
+        string? usagePreset = null)
     {
         Id = id;
         OrganizationId = organizationId;
@@ -88,6 +103,11 @@ public sealed class CatalogProduct
         ExpirationWarningDays = tracksExpiration
             ? Inventory.InventoryLot.NormalizeWarningDays(expirationWarningDays)
             : null;
+        CanBePurchased = canBePurchased;
+        CanBeSold = canBeSold;
+        CanBeUsedAsIngredient = canBeUsedAsIngredient;
+        IsProduced = isProduced;
+        UsagePreset = usagePreset;
     }
 
     public static CatalogProduct Create(
@@ -103,11 +123,14 @@ public sealed class CatalogProduct
         CatalogProductId? id = null,
         SellingMode sellingMode = SellingMode.PerItem,
         bool tracksExpiration = false,
-        int? expirationWarningDays = null)
+        int? expirationWarningDays = null,
+        ProductUsageCapabilities? usage = null)
     {
         CatalogGuards.EnsureUtc(utcNow);
         SellingModes.EnsureCompatible(sellingMode, unitOfMeasure);
         var (displaySku, normalizedSku) = NormalizeOptionalSku(sku);
+        var resolvedUsage = usage ?? ProductUsageCapabilities.BuyAndSell;
+        resolvedUsage.EnsureValid();
 
         return new CatalogProduct(
             id ?? CatalogProductId.New(),
@@ -131,7 +154,12 @@ public sealed class CatalogProduct
             utcNow,
             utcNow,
             tracksExpiration,
-            expirationWarningDays);
+            expirationWarningDays,
+            resolvedUsage.CanBePurchased,
+            resolvedUsage.CanBeSold,
+            resolvedUsage.CanBeUsedAsIngredient,
+            resolvedUsage.IsProduced,
+            resolvedUsage.PresetCode ?? ProductUsageCapabilities.BuyAndSellCode);
     }
 
     /// <summary>
@@ -154,7 +182,8 @@ public sealed class CatalogProduct
         Guid? sourceGlobalCategoryId = null,
         int snapshotVersion = CatalogImportRules.SnapshotVersion,
         CatalogProductId? id = null,
-        SellingMode sellingMode = SellingMode.PerItem)
+        SellingMode sellingMode = SellingMode.PerItem,
+        ProductUsageCapabilities? usage = null)
     {
         CatalogGuards.EnsureUtc(utcNow);
         SellingModes.EnsureCompatible(sellingMode, unitOfMeasure);
@@ -173,6 +202,8 @@ public sealed class CatalogProduct
         }
 
         var (displaySku, normalizedSku) = NormalizeOptionalSku(sku);
+        var resolvedUsage = usage ?? ProductUsageCapabilities.BuyAndSell;
+        resolvedUsage.EnsureValid();
 
         return new CatalogProduct(
             id ?? CatalogProductId.New(),
@@ -194,7 +225,12 @@ public sealed class CatalogProduct
             snapshotVersion,
             sourceGlobalCategoryId == Guid.Empty ? null : sourceGlobalCategoryId,
             utcNow,
-            utcNow);
+            utcNow,
+            canBePurchased: resolvedUsage.CanBePurchased,
+            canBeSold: resolvedUsage.CanBeSold,
+            canBeUsedAsIngredient: resolvedUsage.CanBeUsedAsIngredient,
+            isProduced: resolvedUsage.IsProduced,
+            usagePreset: resolvedUsage.PresetCode ?? ProductUsageCapabilities.BuyAndSellCode);
     }
 
     public static CatalogProduct Rehydrate(
@@ -219,7 +255,12 @@ public sealed class CatalogProduct
         Guid? sourceGlobalCategoryId = null,
         SellingMode sellingMode = SellingMode.PerItem,
         bool tracksExpiration = false,
-        int? expirationWarningDays = null) =>
+        int? expirationWarningDays = null,
+        bool canBePurchased = true,
+        bool canBeSold = true,
+        bool canBeUsedAsIngredient = false,
+        bool isProduced = false,
+        string? usagePreset = null) =>
         new(
             id,
             organizationId,
@@ -242,8 +283,32 @@ public sealed class CatalogProduct
             createdAtUtc,
             updatedAtUtc,
             tracksExpiration,
-            expirationWarningDays);
+            expirationWarningDays,
+            canBePurchased,
+            canBeSold,
+            canBeUsedAsIngredient,
+            isProduced,
+            usagePreset);
 
+    /// <summary>Updates how the product participates in buy / sell / ingredient / production flows.</summary>
+    public void UpdateUsage(ProductUsageCapabilities usage, DateTimeOffset utcNow)
+    {
+        CatalogGuards.EnsureUtc(utcNow);
+        if (Status == CatalogProductStatus.Inactive)
+        {
+            throw new DomainException(
+                DomainErrorCodes.ProductNotActive,
+                "Inactive products cannot be edited. Reactivate first.");
+        }
+
+        usage.EnsureValid();
+        CanBePurchased = usage.CanBePurchased;
+        CanBeSold = usage.CanBeSold;
+        CanBeUsedAsIngredient = usage.CanBeUsedAsIngredient;
+        IsProduced = usage.IsProduced;
+        UsagePreset = usage.PresetCode;
+        UpdatedAtUtc = utcNow;
+    }
     /// <summary>Updates permitted catalog fields. OrganizationId and Platform provenance cannot change.</summary>
     public void UpdateDetails(
         string name,

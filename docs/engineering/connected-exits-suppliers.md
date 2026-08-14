@@ -20,7 +20,7 @@ Encrypted `offline_operations` queue + local projections for customers/credits/c
 Purchasing routes are **OnlineRequired** today (`PosOfflineCapabilityPolicy`). Phase 1 extends LocalStore for **linked supplier products** and **offline PO drafts** without inventing a second sync stack.
 
 ### Existing local MAUI persistence
-SQLite LocalStore schema **v7**; selling catalog uses full-replace page sync. Connected suppliers use **selective linked-product** tables + delta cursor (v8).
+SQLite LocalStore schema **v9** (product units); selling catalog uses full-replace page sync. Connected suppliers use **selective linked-product** tables + delta cursor (v8), with conversion metadata columns added in v9.
 
 ### Existing catalog pagination/search
 Page-based `ListProductsAsync` (`PosPagination`: default 20, max 100). Connected supplier catalog search reuses page+search conventions with a **hard max of 50** for supplier catalog pages.
@@ -70,7 +70,7 @@ Supplier Incoming Orders
 ## Inventory invariant
 Supplier Accept / Decline **must never** mutate buyer on-hand. Automated tests enforce this.
 
-## LocalStore schema v8
+## LocalStore schema v8 / v9
 
 Schema v8 adds four per-user/per-organization SQLite tables:
 
@@ -78,6 +78,8 @@ Schema v8 adds four per-user/per-organization SQLite tables:
 - `local_linked_supplier_product` — selective buyer-linked products only, with relationship/name/SKU/version indexes
 - `local_connected_supplier_sync_state` — per-relationship delta cursor and last-sync timestamp
 - `local_connected_po_draft` — device-local draft JSON with `LocalEntitySyncState`; a local save is never supplier submission
+
+Schema **v9** adds `multiplier_to_base` / `package_label` on linked products so buyer purchase-unit conversion metadata syncs offline. Bag/case ↔ base conversion is supported via product units + link multipliers (see [product-units-and-inventory-behavior.md](product-units-and-inventory-behavior.md)).
 
 `LinkedSupplierProductSyncService` requests `/links/sync?sinceVersion=…`, applies changed and removed link IDs, then advances the local cursor. It does not call catalog search and must never download a complete supplier catalog. Catalog and linked-product commercial fields are plain-text merchant product data, matching the existing local selling-catalog pattern. Outbox payload encryption remains unchanged; Phase 1 drafts are local-only and are not added to the outbox.
 
@@ -92,4 +94,4 @@ Schema v8 adds four per-user/per-organization SQLite tables:
 Connected PO submission is online-only. Before creation, MAUI revalidates supplier price and availability and presents Update and continue, Review order, and Remove unavailable items choices. Offline save text is explicitly “Saved on this device” / “Waiting to sync”; it does not imply submission.
 
 ## Deferred
-Marketplace discovery, inter-org payments, AP/invoices, live stock sharing, logistics, images in sync, Redis, brokers, bag/kg conversion engine, auto-accept, auto-receive, full offline supplier catalog.
+Marketplace discovery, inter-org payments, AP/invoices, live stock sharing, logistics, images in sync, Redis, brokers, auto-accept, auto-receive, full offline supplier catalog.

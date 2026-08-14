@@ -14,7 +14,9 @@ public sealed record LocalLinkedSupplierProduct(
     bool IsActive,
     long SyncVersion,
     DateTimeOffset SupplierUpdatedAtUtc,
-    DateTimeOffset SyncedAtUtc);
+    DateTimeOffset SyncedAtUtc,
+    decimal MultiplierToBase = 1m,
+    string? PackageLabel = null);
 
 public sealed record LocalConnectedSupplier(
     Guid RelationshipId,

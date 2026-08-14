@@ -76,7 +76,8 @@ public sealed record CreatePurchaseOrderLineRequest(
     Guid ProductId,
     decimal OrderedQty,
     decimal UnitPurchaseCost,
-    string? LineNotes = null);
+    string? LineNotes = null,
+    Guid? PurchaseUnitId = null);
 
 public sealed record CreatePurchaseOrderRequest(
     Guid SupplierId,
@@ -299,6 +300,7 @@ public sealed class CreatePurchaseOrder
     private readonly IPurchaseOrderRepository _orders;
     private readonly ISupplierRepository _suppliers;
     private readonly ICatalogProductRepository _products;
+    private readonly ICatalogProductUnitRepository _units;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IPosCommercialAccessAccessor _access;
     private readonly TimeProvider _clock;
@@ -307,6 +309,7 @@ public sealed class CreatePurchaseOrder
         IPurchaseOrderRepository orders,
         ISupplierRepository suppliers,
         ICatalogProductRepository products,
+        ICatalogProductUnitRepository units,
         IPosUnitOfWork unitOfWork,
         IPosCommercialAccessAccessor access,
         TimeProvider? clock = null)
@@ -314,6 +317,7 @@ public sealed class CreatePurchaseOrder
         _orders = orders;
         _suppliers = suppliers;
         _products = products;
+        _units = units;
         _unitOfWork = unitOfWork;
         _access = access;
         _clock = clock ?? TimeProvider.System;
@@ -352,13 +356,41 @@ public sealed class CreatePurchaseOrder
             }
 
             var utcNow = _clock.GetUtcNow();
-            var lineDrafts = request.Lines
-                .Select(l => new PurchaseOrderLineDraft(
+            var lineDrafts = new List<PurchaseOrderLineDraft>();
+            foreach (var l in request.Lines)
+            {
+                ProductUnitId? purchaseUnitId = null;
+                string? purchaseUnitName = null;
+                var multiplier = 1m;
+                if (l.PurchaseUnitId is not null)
+                {
+                    var unit = await _units
+                        .GetByIdAsync(org, ProductUnitId.From(l.PurchaseUnitId.Value), cancellationToken)
+                        .ConfigureAwait(false);
+                    if (unit is null
+                        || unit.ProductId.Value != l.ProductId
+                        || !unit.IsActive
+                        || unit.Kind != ProductUnitKind.Purchase)
+                    {
+                        return ApplicationResult<PosPurchaseOrderDto>.Failure(
+                            DomainErrorCodes.InvalidProductUnitId,
+                            "Purchase unit was not found or is not an active purchase unit for the product.");
+                    }
+
+                    purchaseUnitId = unit.Id;
+                    purchaseUnitName = unit.DisplayName;
+                    multiplier = unit.MultiplierToBase;
+                }
+
+                lineDrafts.Add(new PurchaseOrderLineDraft(
                     CatalogProductId.From(l.ProductId),
                     l.OrderedQty,
                     l.UnitPurchaseCost,
-                    l.LineNotes))
-                .ToList();
+                    l.LineNotes,
+                    purchaseUnitId,
+                    purchaseUnitName,
+                    multiplier));
+            }
 
             var po = PurchaseOrder.CreateDraft(
                 org,
@@ -390,6 +422,7 @@ public sealed class UpdatePurchaseOrder
     private readonly IPurchaseOrderRepository _orders;
     private readonly ISupplierRepository _suppliers;
     private readonly ICatalogProductRepository _products;
+    private readonly ICatalogProductUnitRepository _units;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IPosCommercialAccessAccessor _access;
     private readonly TimeProvider _clock;
@@ -398,6 +431,7 @@ public sealed class UpdatePurchaseOrder
         IPurchaseOrderRepository orders,
         ISupplierRepository suppliers,
         ICatalogProductRepository products,
+        ICatalogProductUnitRepository units,
         IPosUnitOfWork unitOfWork,
         IPosCommercialAccessAccessor access,
         TimeProvider? clock = null)
@@ -405,6 +439,7 @@ public sealed class UpdatePurchaseOrder
         _orders = orders;
         _suppliers = suppliers;
         _products = products;
+        _units = units;
         _unitOfWork = unitOfWork;
         _access = access;
         _clock = clock ?? TimeProvider.System;
@@ -459,13 +494,41 @@ public sealed class UpdatePurchaseOrder
                 return ApplicationResult<PosPurchaseOrderDto>.Failure(productError.ErrorCode!, productError.ErrorMessage!);
             }
 
-            var lineDrafts = request.Lines
-                .Select(l => new PurchaseOrderLineDraft(
+            var lineDrafts = new List<PurchaseOrderLineDraft>();
+            foreach (var l in request.Lines)
+            {
+                ProductUnitId? purchaseUnitId = null;
+                string? purchaseUnitName = null;
+                var multiplier = 1m;
+                if (l.PurchaseUnitId is not null)
+                {
+                    var unit = await _units
+                        .GetByIdAsync(org, ProductUnitId.From(l.PurchaseUnitId.Value), cancellationToken)
+                        .ConfigureAwait(false);
+                    if (unit is null
+                        || unit.ProductId.Value != l.ProductId
+                        || !unit.IsActive
+                        || unit.Kind != ProductUnitKind.Purchase)
+                    {
+                        return ApplicationResult<PosPurchaseOrderDto>.Failure(
+                            DomainErrorCodes.InvalidProductUnitId,
+                            "Purchase unit was not found or is not an active purchase unit for the product.");
+                    }
+
+                    purchaseUnitId = unit.Id;
+                    purchaseUnitName = unit.DisplayName;
+                    multiplier = unit.MultiplierToBase;
+                }
+
+                lineDrafts.Add(new PurchaseOrderLineDraft(
                     CatalogProductId.From(l.ProductId),
                     l.OrderedQty,
                     l.UnitPurchaseCost,
-                    l.LineNotes))
-                .ToList();
+                    l.LineNotes,
+                    purchaseUnitId,
+                    purchaseUnitName,
+                    multiplier));
+            }
 
             existing.UpdateDraft(
                 supplierId,

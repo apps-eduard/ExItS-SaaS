@@ -59,6 +59,7 @@ The dashboard links to the latest accepted report.
 | [P8-WP02-simple-sales.md](P8-WP02-simple-sales.md) | Simple Sales | Complete with documented risks |
 | [P8-WP03-product-based-utang.md](P8-WP03-product-based-utang.md) | Product-Based Utang | Complete with documented risks |
 | [P8-WP04-basic-inventory.md](P8-WP04-basic-inventory.md) | Basic Inventory | Complete with documented risks |
+| [product-units-and-inventory-behavior.md](product-units-and-inventory-behavior.md) | Dynamic Product Units | Code Complete |
 | [P8-WP05-expenses.md](P8-WP05-expenses.md) | Expenses | Complete with documented risks |
 | [P8-WP06-dashboard-and-reports.md](P8-WP06-dashboard-and-reports.md) | Dashboard and Reports | Complete with documented risks |
 | [P8-WP07-basic-store-closeout.md](P8-WP07-basic-store-closeout.md) | Basic Store Closeout | Complete with documented risks (Phase 8 closed) |

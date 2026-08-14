@@ -229,6 +229,12 @@ internal static class CatalogEndpoints
                     body.SellingMode,
                     body.TracksExpiration,
                     body.ExpirationWarningDays,
+                    body.CanBePurchased,
+                    body.CanBeSold,
+                    body.CanBeUsedAsIngredient,
+                    body.IsProduced,
+                    body.UsagePreset,
+                    body.Units,
                     ct)
                 .ConfigureAwait(false);
 
@@ -310,6 +316,12 @@ internal static class CatalogEndpoints
                     body.SellingMode,
                     body.TracksExpiration,
                     body.ExpirationWarningDays,
+                    body.CanBePurchased,
+                    body.CanBeSold,
+                    body.CanBeUsedAsIngredient,
+                    body.IsProduced,
+                    body.UsagePreset,
+                    body.Units,
                     ct)
                 .ConfigureAwait(false);
 

@@ -64,7 +64,12 @@ internal static class CatalogEntityMapper
                 ? productMode
                 : SellingMode.PerItem,
             tracksExpiration: record.TracksExpiration,
-            expirationWarningDays: record.ExpirationWarningDays);
+            expirationWarningDays: record.ExpirationWarningDays,
+            canBePurchased: record.CanBePurchased,
+            canBeSold: record.CanBeSold,
+            canBeUsedAsIngredient: record.CanBeUsedAsIngredient,
+            isProduced: record.IsProduced,
+            usagePreset: record.UsagePreset);
 
     public static CatalogProductRecord ToRecord(CatalogProduct product) =>
         new()
@@ -89,6 +94,11 @@ internal static class CatalogEntityMapper
             SourceGlobalCategoryId = product.SourceGlobalCategoryId,
             TracksExpiration = product.TracksExpiration,
             ExpirationWarningDays = product.ExpirationWarningDays,
+            CanBePurchased = product.CanBePurchased,
+            CanBeSold = product.CanBeSold,
+            CanBeUsedAsIngredient = product.CanBeUsedAsIngredient,
+            IsProduced = product.IsProduced,
+            UsagePreset = product.UsagePreset,
             CreatedAtUtc = product.CreatedAtUtc,
             UpdatedAtUtc = product.UpdatedAtUtc
         };
@@ -113,6 +123,11 @@ internal static class CatalogEntityMapper
         record.SourceGlobalCategoryId = product.SourceGlobalCategoryId;
         record.TracksExpiration = product.TracksExpiration;
         record.ExpirationWarningDays = product.ExpirationWarningDays;
+        record.CanBePurchased = product.CanBePurchased;
+        record.CanBeSold = product.CanBeSold;
+        record.CanBeUsedAsIngredient = product.CanBeUsedAsIngredient;
+        record.IsProduced = product.IsProduced;
+        record.UsagePreset = product.UsagePreset;
         record.UpdatedAtUtc = product.UpdatedAtUtc;
     }
 

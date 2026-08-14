@@ -7,6 +7,8 @@ namespace ExItS.PinoyBusinessPOS.Maui.Services;
 /// <summary>
 /// One cart line held in memory. Amounts are a display preview for online checkout (server still
 /// prices from the live catalog). Offline cash sync embeds these values as immutable snapshots.
+/// When a selling unit is selected, <see cref="Quantity"/> is base inventory quantity and
+/// <see cref="EnteredQuantity"/> is the cashier-entered pack/custom quantity.
 /// </summary>
 public sealed record SaleCartItem(
     Guid ProductId,
@@ -16,9 +18,14 @@ public sealed record SaleCartItem(
     string UnitOfMeasure,
     decimal UnitPrice,
     decimal Quantity,
-    string SellingMode = "PerItem")
+    string SellingMode = "PerItem",
+    Guid? SellingUnitId = null,
+    string? SellingUnitName = null,
+    decimal? EnteredQuantity = null,
+    decimal MultiplierToBase = 1m)
 {
-    public decimal LineTotal => PosSaleOptions.RoundMoney(UnitPrice * Quantity);
+    public decimal LineTotal =>
+        PosSaleOptions.RoundMoney(UnitPrice * (EnteredQuantity ?? Quantity));
 }
 
 /// <summary>
@@ -52,8 +59,19 @@ public sealed class SaleCartService : IDisposable
 
     public decimal GetQuantity(Guid productId)
     {
-        var index = _items.FindIndex(i => i.ProductId == productId);
+        var index = _items.FindIndex(i => i.ProductId == productId && i.SellingUnitId is null);
         return index >= 0 ? _items[index].Quantity : 0m;
+    }
+
+    public decimal GetEnteredQuantity(Guid productId, Guid? sellingUnitId)
+    {
+        var index = _items.FindIndex(i => i.ProductId == productId && i.SellingUnitId == sellingUnitId);
+        if (index < 0)
+        {
+            return 0m;
+        }
+
+        return _items[index].EnteredQuantity ?? _items[index].Quantity;
     }
 
     /// <summary>
@@ -61,7 +79,10 @@ public sealed class SaleCartService : IDisposable
     /// snapshot fields are refreshed from the product so a price edited between scans is reflected in
     /// the preview.
     /// </summary>
-    public void Add(PosCatalogProductDto product, decimal quantity = 1m)
+    public void Add(
+        PosCatalogProductDto product,
+        decimal quantity = 1m,
+        PosCatalogProductUnitDto? sellingUnit = null)
     {
         ArgumentNullException.ThrowIfNull(product);
         if (quantity <= 0m)
@@ -69,10 +90,51 @@ public sealed class SaleCartService : IDisposable
             return;
         }
 
-        var index = _items.FindIndex(i => i.ProductId == product.ProductId);
-        var existingQuantity = index >= 0 ? _items[index].Quantity : 0m;
         var sellingMode = string.IsNullOrWhiteSpace(product.SellingMode) ? "PerItem" : product.SellingMode;
-        var item = new SaleCartItem(
+        if (sellingUnit is not null)
+        {
+            var multiplier = sellingUnit.MultiplierToBase <= 0m ? 1m : sellingUnit.MultiplierToBase;
+            var entered = quantity;
+            var baseQty = PosSaleOptions.RoundMoney(entered * multiplier); // keep preview precision
+            // Prefer 3dp style quantity math without SaleMoney dependency here:
+            baseQty = decimal.Round(entered * multiplier, 3, MidpointRounding.AwayFromZero);
+            var unitPrice = sellingUnit.SellingPrice ?? product.SellingPrice;
+            var index = _items.FindIndex(i =>
+                i.ProductId == product.ProductId && i.SellingUnitId == sellingUnit.UnitId);
+            var existingEntered = index >= 0
+                ? ( _items[index].EnteredQuantity ?? _items[index].Quantity)
+                : 0m;
+            var nextEntered = existingEntered + entered;
+            var nextBase = decimal.Round(nextEntered * multiplier, 3, MidpointRounding.AwayFromZero);
+            var item = new SaleCartItem(
+                product.ProductId,
+                product.Name,
+                product.Sku,
+                product.Barcode,
+                product.UnitOfMeasure,
+                unitPrice,
+                nextBase,
+                sellingMode,
+                sellingUnit.UnitId,
+                sellingUnit.DisplayName,
+                nextEntered,
+                multiplier);
+            if (index >= 0)
+            {
+                _items[index] = item;
+            }
+            else
+            {
+                _items.Add(item);
+            }
+
+            Changed?.Invoke();
+            return;
+        }
+
+        var simpleIndex = _items.FindIndex(i => i.ProductId == product.ProductId && i.SellingUnitId is null);
+        var existingQuantity = simpleIndex >= 0 ? _items[simpleIndex].Quantity : 0m;
+        var simpleItem = new SaleCartItem(
             product.ProductId,
             product.Name,
             product.Sku,
@@ -82,13 +144,13 @@ public sealed class SaleCartService : IDisposable
             existingQuantity + quantity,
             sellingMode);
 
-        if (index >= 0)
+        if (simpleIndex >= 0)
         {
-            _items[index] = item;
+            _items[simpleIndex] = simpleItem;
         }
         else
         {
-            _items.Add(item);
+            _items.Add(simpleItem);
         }
 
         Changed?.Invoke();
@@ -96,7 +158,7 @@ public sealed class SaleCartService : IDisposable
 
     public void SetQuantity(Guid productId, decimal quantity)
     {
-        var index = _items.FindIndex(i => i.ProductId == productId);
+        var index = _items.FindIndex(i => i.ProductId == productId && i.SellingUnitId is null);
         if (index < 0)
         {
             return;
@@ -122,6 +184,14 @@ public sealed class SaleCartService : IDisposable
         }
     }
 
+    public void Remove(Guid productId, Guid? sellingUnitId)
+    {
+        if (_items.RemoveAll(i => i.ProductId == productId && i.SellingUnitId == sellingUnitId) > 0)
+        {
+            Changed?.Invoke();
+        }
+    }
+
     public void Clear()
     {
         if (_items.Count == 0)
@@ -136,10 +206,13 @@ public sealed class SaleCartService : IDisposable
     /// <summary>True when every line quantity satisfies the unit-of-measure precision rule.</summary>
     public bool IsCheckoutReady =>
         _items.Count > 0
-        && _items.All(i => PosSaleOptions.IsValidQuantity(i.Quantity, i.UnitOfMeasure, i.SellingMode));
+        && _items.All(i => PosSaleOptions.IsValidQuantity(
+            i.EnteredQuantity ?? i.Quantity,
+            i.UnitOfMeasure,
+            i.SellingMode));
 
     /// <summary>
-    /// Online checkout: ProductId + Quantity only (server live-catalog prices).
+    /// Online checkout: ProductId + Quantity (+ optional selling unit).
     /// Offline cash sync: include immutable line snapshots (payload_version 2).
     /// </summary>
     public List<CheckoutSaleLineRequest> ToCheckoutLines(bool includePriceSnapshots = false) =>
@@ -153,8 +226,14 @@ public sealed class SaleCartService : IDisposable
                 LineTotal: i.LineTotal,
                 NameSnapshot: i.Name,
                 SkuSnapshot: i.Sku,
-                BarcodeSnapshot: i.Barcode)).ToList()
-            : _items.Select(i => new CheckoutSaleLineRequest(i.ProductId, i.Quantity)).ToList();
+                BarcodeSnapshot: i.Barcode,
+                SellingUnitId: i.SellingUnitId,
+                EnteredQuantity: i.EnteredQuantity)).ToList()
+            : _items.Select(i => new CheckoutSaleLineRequest(
+                i.ProductId,
+                i.Quantity,
+                SellingUnitId: i.SellingUnitId,
+                EnteredQuantity: i.EnteredQuantity)).ToList();
 
     private Task OnSessionChangedAsync()
     {

@@ -37,7 +37,9 @@ public sealed class LinkedSupplierProductSyncService(
             item.IsActive,
             item.SyncVersion,
             item.UpdatedAtUtc,
-            syncedAt)).ToList();
+            syncedAt,
+            item.MultiplierToBase,
+            item.PackageLabel)).ToList();
 
         await store.UpsertRangeAsync(changed, ct).ConfigureAwait(false);
         await store.RemoveIdsAsync(relationshipId, result.Data.RemovedIds, ct).ConfigureAwait(false);

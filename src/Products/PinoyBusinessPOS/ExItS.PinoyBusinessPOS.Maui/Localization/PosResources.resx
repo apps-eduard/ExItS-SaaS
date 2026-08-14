@@ -2665,4 +2665,30 @@
   <data name="ConnectedSuppliers_BuyerProduct" xml:space="preserve"><value>Your product</value></data>
   <data name="ConnectedSuppliers_BuyerProductRequired" xml:space="preserve"><value>Choose the matching product from your catalog.</value></data>
   <data name="ConnectedSuppliers_LinkFailed" xml:space="preserve"><value>The product could not be linked.</value></data>
+  <data name="Catalog_HowUsed" xml:space="preserve"><value>How is this item used?</value></data>
+  <data name="Catalog_Usage_BuyAndSell" xml:space="preserve"><value>Buy and sell</value></data>
+  <data name="Catalog_Usage_Bulk" xml:space="preserve"><value>Buy in bulk, sell smaller</value></data>
+  <data name="Catalog_Usage_Ingredient" xml:space="preserve"><value>Ingredient</value></data>
+  <data name="Catalog_Usage_MadeProduct" xml:space="preserve"><value>Made product</value></data>
+  <data name="Catalog_Usage_IngredientAndSellable" xml:space="preserve"><value>Ingredient that can also be sold</value></data>
+  <data name="Catalog_IngredientAlsoSellable" xml:space="preserve"><value>Also sell this ingredient</value></data>
+  <data name="Catalog_BuyingUnitsHint" xml:space="preserve"><value>You can set how you buy this item (for example, by pack or case).</value></data>
+  <data name="Catalog_SellingOptionsHint" xml:space="preserve"><value>You can set how customers buy this item (for example, by piece or pack).</value></data>
+  <data name="Catalog_StockCountedIn" xml:space="preserve"><value>Stock is counted in</value></data>
+  <data name="Catalog_BuyingUnits" xml:space="preserve"><value>Buying units</value></data>
+  <data name="Catalog_SellingOptions" xml:space="preserve"><value>Selling options</value></data>
+  <data name="Catalog_AddBuyingUnit" xml:space="preserve"><value>Add buying unit</value></data>
+  <data name="Catalog_AddSellingOption" xml:space="preserve"><value>Add selling option</value></data>
+  <data name="Catalog_UnitContains" xml:space="preserve"><value>1 {0} contains</value></data>
+  <data name="Catalog_SellContains" xml:space="preserve"><value>Contains</value></data>
+  <data name="Catalog_RemoveUnit" xml:space="preserve"><value>Remove</value></data>
+  <data name="Catalog_SetPackages" xml:space="preserve"><value>Set buying and selling packages</value></data>
+  <data name="Catalog_PriceForThisOption" xml:space="preserve"><value>Price for this option</value></data>
+  <data name="Catalog_CustomAmount" xml:space="preserve"><value>Custom weight/amount</value></data>
+  <data name="Catalog_UnitName" xml:space="preserve"><value>Name</value></data>
+  <data name="Catalog_UnitShortLabel" xml:space="preserve"><value>Short label</value></data>
+  <data name="Catalog_UnitShortLabelHint" xml:space="preserve"><value>Optional. Defaults from the name.</value></data>
+  <data name="Catalog_UnitAmount" xml:space="preserve"><value>Amount</value></data>
+  <data name="Sales_Checkout_ChooseSellingOption" xml:space="preserve"><value>Choose how to sell</value></data>
+  <data name="Sales_ChooseSellingOption" xml:space="preserve"><value>Choose selling option</value></data>
 </root>

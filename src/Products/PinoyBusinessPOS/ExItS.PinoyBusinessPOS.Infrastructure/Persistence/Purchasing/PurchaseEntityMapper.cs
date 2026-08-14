@@ -25,7 +25,10 @@ internal static class PurchaseEntityMapper
                 l.UnitPurchaseCost,
                 l.LineTotal,
                 l.ReceivedQty,
-                l.LineNotes))
+                l.LineNotes,
+                l.PurchaseUnitId is null ? null : ProductUnitId.From(l.PurchaseUnitId.Value),
+                l.PurchaseUnitNameSnapshot,
+                l.MultiplierToBaseSnapshot))
             .ToList();
 
         return PurchaseOrder.Rehydrate(
@@ -91,7 +94,10 @@ internal static class PurchaseEntityMapper
             UnitPurchaseCost = line.UnitPurchaseCost,
             LineTotal = line.LineTotal,
             ReceivedQty = line.ReceivedQty,
-            LineNotes = line.LineNotes
+            LineNotes = line.LineNotes,
+            PurchaseUnitId = line.PurchaseUnitId?.Value,
+            PurchaseUnitNameSnapshot = line.PurchaseUnitNameSnapshot,
+            MultiplierToBaseSnapshot = line.MultiplierToBaseSnapshot
         };
 
     public static GoodsReceipt ToDomain(GoodsReceiptRecord record, IEnumerable<GoodsReceiptLineRecord> lineRecords)
@@ -112,7 +118,8 @@ internal static class PurchaseEntityMapper
                 l.ReceivedQty,
                 l.UnitPurchaseCostSnapshot,
                 l.LineTotalSnapshot,
-                l.InventoryMovementId))
+                l.InventoryMovementId,
+                l.MultiplierToBaseSnapshot))
             .ToList();
 
         return GoodsReceipt.Rehydrate(
@@ -158,7 +165,8 @@ internal static class PurchaseEntityMapper
             ReceivedQty = line.QuantityReceived,
             UnitPurchaseCostSnapshot = line.UnitPurchaseCostSnapshot,
             LineTotalSnapshot = line.LineTotalSnapshot,
-            InventoryMovementId = line.InventoryMovementId
+            InventoryMovementId = line.InventoryMovementId,
+            MultiplierToBaseSnapshot = line.MultiplierToBaseSnapshot
         };
 
     public static void ApplyMovementId(GoodsReceiptLine line, GoodsReceiptLineRecord record)

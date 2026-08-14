@@ -8,6 +8,28 @@ public sealed record PosProductCategoryDto(
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset UpdatedAtUtc);
 
+public sealed record PosCatalogProductUnitDto(
+    Guid UnitId,
+    Guid ProductId,
+    string Kind,
+    string DisplayName,
+    string ShortLabel,
+    decimal MultiplierToBase,
+    decimal? SellingPrice,
+    bool AllowsCustomQuantity,
+    bool IsActive,
+    int SortOrder);
+
+public sealed record PosCatalogProductUnitInput(
+    string Kind,
+    string DisplayName,
+    string ShortLabel,
+    decimal MultiplierToBase,
+    decimal? SellingPrice = null,
+    bool AllowsCustomQuantity = false,
+    int SortOrder = 0,
+    Guid? UnitId = null);
+
 public sealed record PosCatalogProductDto(
     Guid ProductId,
     Guid OrganizationId,
@@ -40,7 +62,13 @@ public sealed record PosCatalogProductDto(
     /// </summary>
     string StockStatus = "InStock",
     bool TracksExpiration = false,
-    int? ExpirationWarningDays = null);
+    int? ExpirationWarningDays = null,
+    bool CanBePurchased = true,
+    bool CanBeSold = true,
+    bool CanBeUsedAsIngredient = false,
+    bool IsProduced = false,
+    string? UsagePreset = "BuyAndSell",
+    IReadOnlyList<PosCatalogProductUnitDto>? Units = null);
 
 public sealed record CreatePosProductCategoryRequest(string Name, Guid? CategoryId = null);
 
@@ -59,7 +87,13 @@ public sealed record CreatePosCatalogProductRequest(
     Guid? ProductId = null,
     string? SellingMode = null,
     bool TracksExpiration = false,
-    int? ExpirationWarningDays = null);
+    int? ExpirationWarningDays = null,
+    bool? CanBePurchased = null,
+    bool? CanBeSold = null,
+    bool? CanBeUsedAsIngredient = null,
+    bool? IsProduced = null,
+    string? UsagePreset = null,
+    IReadOnlyList<PosCatalogProductUnitInput>? Units = null);
 
 public sealed record UpdatePosCatalogProductRequest(
     string Name,
@@ -72,7 +106,13 @@ public sealed record UpdatePosCatalogProductRequest(
     DateTimeOffset? ExpectedUpdatedAtUtc = null,
     string? SellingMode = null,
     bool? TracksExpiration = null,
-    int? ExpirationWarningDays = null);
+    int? ExpirationWarningDays = null,
+    bool? CanBePurchased = null,
+    bool? CanBeSold = null,
+    bool? CanBeUsedAsIngredient = null,
+    bool? IsProduced = null,
+    string? UsagePreset = null,
+    IReadOnlyList<PosCatalogProductUnitInput>? Units = null);
 
 /// <summary>One row for Today's Prices bulk current-price update (price only).</summary>
 public sealed record UpdatePosCatalogProductPriceItem(

@@ -294,7 +294,7 @@ public sealed class PersonalLocalUtangStoreTests
 
         var personal = await manager.OpenPersonalAsync(user);
         Assert.True(personal.Succeeded);
-        Assert.Equal(LocalDatabaseMigrator.ConnectedSuppliersSchemaVersion, personal.Context!.SchemaVersion);
+        Assert.Equal(LocalDatabaseMigrator.ProductUnitsSchemaVersion, personal.Context!.SchemaVersion);
 
         var org = Guid.NewGuid();
         var orgOpen = await manager.OpenAsync(user, org, PosProductCodes.PinoyBusinessPos);

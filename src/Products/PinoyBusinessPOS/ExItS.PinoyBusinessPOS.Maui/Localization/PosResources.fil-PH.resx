@@ -2665,4 +2665,30 @@
   <data name="ConnectedSuppliers_BuyerProduct" xml:space="preserve"><value>Produkto mo</value></data>
   <data name="ConnectedSuppliers_BuyerProductRequired" xml:space="preserve"><value>Piliin ang katumbas na produkto mula sa catalog mo.</value></data>
   <data name="ConnectedSuppliers_LinkFailed" xml:space="preserve"><value>Hindi ma-link ang produkto.</value></data>
+  <data name="Catalog_HowUsed" xml:space="preserve"><value>Paano ginagamit ang item na ito?</value></data>
+  <data name="Catalog_Usage_BuyAndSell" xml:space="preserve"><value>Bumili at magbenta</value></data>
+  <data name="Catalog_Usage_Bulk" xml:space="preserve"><value>Bumili ng marami, magbenta ng mas maliit</value></data>
+  <data name="Catalog_Usage_Ingredient" xml:space="preserve"><value>Sangkap</value></data>
+  <data name="Catalog_Usage_MadeProduct" xml:space="preserve"><value>Ginawang produkto</value></data>
+  <data name="Catalog_Usage_IngredientAndSellable" xml:space="preserve"><value>Sangkap na pwedeng ibenta rin</value></data>
+  <data name="Catalog_IngredientAlsoSellable" xml:space="preserve"><value>Ibenta rin ang sangkap na ito</value></data>
+  <data name="Catalog_BuyingUnitsHint" xml:space="preserve"><value>Pwede mong itakda kung paano mo binibili ang item (halimbawa, kada pack o case).</value></data>
+  <data name="Catalog_SellingOptionsHint" xml:space="preserve"><value>Pwede mong itakda kung paano bibili ang customer (halimbawa, kada piraso o pack).</value></data>
+  <data name="Catalog_StockCountedIn" xml:space="preserve"><value>Kinakalkula ang stock sa</value></data>
+  <data name="Catalog_BuyingUnits" xml:space="preserve"><value>Mga unit sa pagbili</value></data>
+  <data name="Catalog_SellingOptions" xml:space="preserve"><value>Mga opsyon sa pagbenta</value></data>
+  <data name="Catalog_AddBuyingUnit" xml:space="preserve"><value>Magdagdag ng unit sa pagbili</value></data>
+  <data name="Catalog_AddSellingOption" xml:space="preserve"><value>Magdagdag ng opsyon sa pagbenta</value></data>
+  <data name="Catalog_UnitContains" xml:space="preserve"><value>1 {0} ay may</value></data>
+  <data name="Catalog_SellContains" xml:space="preserve"><value>May</value></data>
+  <data name="Catalog_RemoveUnit" xml:space="preserve"><value>Alisin</value></data>
+  <data name="Catalog_SetPackages" xml:space="preserve"><value>Itakda ang pakete sa pagbili at pagbenta</value></data>
+  <data name="Catalog_PriceForThisOption" xml:space="preserve"><value>Presyo para sa opsyon na ito</value></data>
+  <data name="Catalog_CustomAmount" xml:space="preserve"><value>Custom na timbang/dami</value></data>
+  <data name="Catalog_UnitName" xml:space="preserve"><value>Pangalan</value></data>
+  <data name="Catalog_UnitShortLabel" xml:space="preserve"><value>Maikling label</value></data>
+  <data name="Catalog_UnitShortLabelHint" xml:space="preserve"><value>Opsyonal. Kunin mula sa pangalan kung bakante.</value></data>
+  <data name="Catalog_UnitAmount" xml:space="preserve"><value>Dami</value></data>
+  <data name="Sales_Checkout_ChooseSellingOption" xml:space="preserve"><value>Piliin kung paano ibebenta</value></data>
+  <data name="Sales_ChooseSellingOption" xml:space="preserve"><value>Piliin ang opsyon sa pagbenta</value></data>
 </root>

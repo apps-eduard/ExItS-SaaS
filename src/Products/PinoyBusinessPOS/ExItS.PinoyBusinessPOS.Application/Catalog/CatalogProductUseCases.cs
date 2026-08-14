@@ -12,11 +12,16 @@ namespace ExItS.PinoyBusinessPOS.Application.Catalog;
 public sealed class CatalogProductQueryService
 {
     private readonly ICatalogProductRepository _products;
+    private readonly ICatalogProductUnitRepository _units;
     private readonly IInventoryRepository _inventory;
 
-    public CatalogProductQueryService(ICatalogProductRepository products, IInventoryRepository inventory)
+    public CatalogProductQueryService(
+        ICatalogProductRepository products,
+        ICatalogProductUnitRepository units,
+        IInventoryRepository inventory)
     {
         _products = products;
+        _units = units;
         _inventory = inventory;
     }
 
@@ -37,7 +42,8 @@ public sealed class CatalogProductQueryService
         var account = await _inventory
             .GetByProductIdAsync(orgId, product.Id, cancellationToken)
             .ConfigureAwait(false);
-        return Map(product, account);
+        var units = await _units.ListByProductAsync(orgId, product.Id, cancellationToken).ConfigureAwait(false);
+        return Map(product, account, units);
     }
 
     public async Task<PagedResult<PosCatalogProductDto>> ListAsync(
@@ -57,9 +63,16 @@ public sealed class CatalogProductQueryService
             .ListByProductIdsAsync(orgId, items.Select(p => p.Id).ToList(), cancellationToken)
             .ConfigureAwait(false);
         var accountsByProduct = accounts.ToDictionary(a => a.ProductId.Value);
+        var unitsByProduct = await _units
+            .ListByProductIdsAsync(orgId, items.Select(p => p.Id).ToList(), cancellationToken)
+            .ConfigureAwait(false);
 
         return new PagedResult<PosCatalogProductDto>(
-            items.Select(p => Map(p, accountsByProduct.GetValueOrDefault(p.Id.Value))).ToList(),
+            items.Select(p => Map(
+                    p,
+                    accountsByProduct.GetValueOrDefault(p.Id.Value),
+                    unitsByProduct.GetValueOrDefault(p.Id.Value)))
+                .ToList(),
             total,
             Math.Max(page ?? 1, 1),
             take);
@@ -145,10 +158,14 @@ public sealed class CatalogProductQueryService
         var account = await _inventory
             .GetByProductIdAsync(organizationId, product.Id, cancellationToken)
             .ConfigureAwait(false);
-        return ApplicationResult<PosCatalogProductDto>.Success(Map(product, account));
+        var units = await _units.ListByProductAsync(organizationId, product.Id, cancellationToken).ConfigureAwait(false);
+        return ApplicationResult<PosCatalogProductDto>.Success(Map(product, account, units));
     }
 
-    public static PosCatalogProductDto Map(CatalogProduct product, InventoryAccount? account = null)
+    public static PosCatalogProductDto Map(
+        CatalogProduct product,
+        InventoryAccount? account = null,
+        IReadOnlyList<CatalogProductUnit>? units = null)
     {
         var isTracked = account?.IsTracked ?? false;
         var onHand = account?.OnHandQuantity ?? 0m;
@@ -180,24 +197,33 @@ public sealed class CatalogProductQueryService
             onHand,
             stockStatus,
             product.TracksExpiration,
-            product.ExpirationWarningDays);
+            product.ExpirationWarningDays,
+            product.CanBePurchased,
+            product.CanBeSold,
+            product.CanBeUsedAsIngredient,
+            product.IsProduced,
+            product.UsagePreset,
+            units?.Select(CatalogProductUnitHelpers.MapUnit).ToList());
     }
 }
 
 public sealed class CreateCatalogProduct
 {
     private readonly ICatalogProductRepository _products;
+    private readonly ICatalogProductUnitRepository _units;
     private readonly IProductCategoryRepository _categories;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
     public CreateCatalogProduct(
         ICatalogProductRepository products,
+        ICatalogProductUnitRepository units,
         IProductCategoryRepository categories,
         IPosUnitOfWork unitOfWork,
         IClock clock)
     {
         _products = products;
+        _units = units;
         _categories = categories;
         _unitOfWork = unitOfWork;
         _clock = clock;
@@ -216,6 +242,12 @@ public sealed class CreateCatalogProduct
         string? sellingMode = null,
         bool tracksExpiration = false,
         int? expirationWarningDays = null,
+        bool? canBePurchased = null,
+        bool? canBeSold = null,
+        bool? canBeUsedAsIngredient = null,
+        bool? isProduced = null,
+        string? usagePreset = null,
+        IReadOnlyList<PosCatalogProductUnitInput>? units = null,
         CancellationToken cancellationToken = default)
     {
         try
@@ -235,6 +267,12 @@ public sealed class CreateCatalogProduct
 
             var unit = UnitOfMeasures.Parse(unitOfMeasure);
             var mode = SellingModes.Parse(sellingMode);
+            var usage = CatalogProductUnitHelpers.ResolveUsage(
+                canBePurchased,
+                canBeSold,
+                canBeUsedAsIngredient,
+                isProduced,
+                usagePreset);
             ProductCategoryId? category = null;
             if (categoryId is not null)
             {
@@ -249,12 +287,13 @@ public sealed class CreateCatalogProduct
                 category = ProductCategoryId.From(categoryId.Value);
             }
 
+            var now = _clock.UtcNow;
             var product = CatalogProduct.Create(
                 orgId,
                 name,
                 unit,
                 sellingPrice,
-                _clock.UtcNow,
+                now,
                 description,
                 sku,
                 barcode,
@@ -262,7 +301,8 @@ public sealed class CreateCatalogProduct
                 clientProductId is null ? null : CatalogProductId.From(clientProductId.Value),
                 mode,
                 tracksExpiration,
-                expirationWarningDays);
+                expirationWarningDays,
+                usage);
 
             var conflict = await CatalogAssignment
                 .FindIdentifierConflictAsync(
@@ -279,6 +319,23 @@ public sealed class CreateCatalogProduct
             }
 
             await _products.AddAsync(product, cancellationToken).ConfigureAwait(false);
+
+            var seedUnits = units is { Count: > 0 }
+                ? units.Select(u => CatalogProductUnitHelpers.CreateFromInput(orgId, product.Id, u, now)).ToList()
+                : CatalogProductUnitHelpers.CreateDefaultOneToOneUnits(orgId, product, now).ToList();
+
+            var primarySellPrice = CatalogProductUnitHelpers.PrimarySellUnitPrice(seedUnits);
+            if (primarySellPrice is not null && primarySellPrice.Value != product.SellingPrice)
+            {
+                product.UpdateSellingPrice(primarySellPrice.Value, now);
+                await _products.UpdateAsync(product, cancellationToken).ConfigureAwait(false);
+            }
+
+            foreach (var seed in seedUnits)
+            {
+                await _units.AddAsync(seed, cancellationToken).ConfigureAwait(false);
+            }
+
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             return ApplicationResult<CatalogProduct>.Success(product);
         }
@@ -296,6 +353,7 @@ public sealed class CreateCatalogProduct
 public sealed class UpdateCatalogProduct
 {
     private readonly ICatalogProductRepository _products;
+    private readonly ICatalogProductUnitRepository _units;
     private readonly IProductCategoryRepository _categories;
     private readonly IInventoryRepository _inventory;
     private readonly IPosUnitOfWork _unitOfWork;
@@ -303,12 +361,14 @@ public sealed class UpdateCatalogProduct
 
     public UpdateCatalogProduct(
         ICatalogProductRepository products,
+        ICatalogProductUnitRepository units,
         IProductCategoryRepository categories,
         IInventoryRepository inventory,
         IPosUnitOfWork unitOfWork,
         IClock clock)
     {
         _products = products;
+        _units = units;
         _categories = categories;
         _inventory = inventory;
         _unitOfWork = unitOfWork;
@@ -329,6 +389,12 @@ public sealed class UpdateCatalogProduct
         string? sellingMode = null,
         bool? tracksExpiration = null,
         int? expirationWarningDays = null,
+        bool? canBePurchased = null,
+        bool? canBeSold = null,
+        bool? canBeUsedAsIngredient = null,
+        bool? isProduced = null,
+        string? usagePreset = null,
+        IReadOnlyList<PosCatalogProductUnitInput>? units = null,
         CancellationToken cancellationToken = default)
     {
         var orgId = PosOrganizationId.From(organizationId);
@@ -402,6 +468,7 @@ public sealed class UpdateCatalogProduct
                 return ApplicationResult<CatalogProduct>.Failure(conflict.ErrorCode!, conflict.ErrorMessage!);
             }
 
+            var now = _clock.UtcNow;
             product.UpdateDetails(
                 name,
                 description,
@@ -410,7 +477,7 @@ public sealed class UpdateCatalogProduct
                 category,
                 unit,
                 sellingPrice,
-                _clock.UtcNow,
+                now,
                 mode);
 
             if (tracksExpiration is not null)
@@ -418,7 +485,59 @@ public sealed class UpdateCatalogProduct
                 product.SetExpirationTracking(
                     tracksExpiration.Value,
                     expirationWarningDays,
-                    _clock.UtcNow);
+                    now);
+            }
+
+            if (canBePurchased is not null
+                || canBeSold is not null
+                || canBeUsedAsIngredient is not null
+                || isProduced is not null
+                || !string.IsNullOrWhiteSpace(usagePreset))
+            {
+                var usage = CatalogProductUnitHelpers.ResolveUsage(
+                    canBePurchased ?? product.CanBePurchased,
+                    canBeSold ?? product.CanBeSold,
+                    canBeUsedAsIngredient ?? product.CanBeUsedAsIngredient,
+                    isProduced ?? product.IsProduced,
+                    usagePreset ?? product.UsagePreset);
+                product.UpdateUsage(usage, now);
+            }
+
+            if (units is { Count: > 0 })
+            {
+                var created = units
+                    .Select(u => CatalogProductUnitHelpers.CreateFromInput(orgId, product.Id, u, now))
+                    .ToList();
+                var purchaseUnits = created.Where(u => u.Kind == ProductUnitKind.Purchase).ToList();
+                var sellUnits = created.Where(u => u.Kind == ProductUnitKind.Sell).ToList();
+                if (purchaseUnits.Count > 0)
+                {
+                    await _units.ReplaceActiveUnitsAsync(
+                            orgId,
+                            product.Id,
+                            ProductUnitKind.Purchase,
+                            purchaseUnits,
+                            now,
+                            cancellationToken)
+                        .ConfigureAwait(false);
+                }
+
+                if (sellUnits.Count > 0)
+                {
+                    await _units.ReplaceActiveUnitsAsync(
+                            orgId,
+                            product.Id,
+                            ProductUnitKind.Sell,
+                            sellUnits,
+                            now,
+                            cancellationToken)
+                        .ConfigureAwait(false);
+                    var primarySellPrice = CatalogProductUnitHelpers.PrimarySellUnitPrice(sellUnits);
+                    if (primarySellPrice is not null)
+                    {
+                        product.UpdateSellingPrice(primarySellPrice.Value, now);
+                    }
+                }
             }
 
             await _products.UpdateAsync(product, cancellationToken).ConfigureAwait(false);
@@ -548,17 +667,20 @@ public sealed class ReactivateCatalogProduct
 public sealed class UpdateCatalogProductPrices
 {
     private readonly ICatalogProductRepository _products;
+    private readonly ICatalogProductUnitRepository _units;
     private readonly IInventoryRepository _inventory;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
     public UpdateCatalogProductPrices(
         ICatalogProductRepository products,
+        ICatalogProductUnitRepository units,
         IInventoryRepository inventory,
         IPosUnitOfWork unitOfWork,
         IClock clock)
     {
         _products = products;
+        _units = units;
         _inventory = inventory;
         _unitOfWork = unitOfWork;
         _clock = clock;
@@ -627,6 +749,27 @@ public sealed class UpdateCatalogProductPrices
                 if (changed)
                 {
                     await _products.UpdateAsync(product, cancellationToken).ConfigureAwait(false);
+                    var productUnits = await _units
+                        .ListByProductAsync(orgId, product.Id, cancellationToken)
+                        .ConfigureAwait(false);
+                    var primarySell = productUnits
+                        .Where(u => u.IsActive && u.Kind == ProductUnitKind.Sell)
+                        .OrderBy(u => u.SortOrder)
+                        .ThenBy(u => u.DisplayName)
+                        .FirstOrDefault();
+                    if (primarySell is not null)
+                    {
+                        primarySell.Update(
+                            primarySell.DisplayName,
+                            primarySell.ShortLabel,
+                            primarySell.MultiplierToBase,
+                            now,
+                            sellingPrice: item.SellingPrice,
+                            allowsCustomQuantity: primarySell.AllowsCustomQuantity,
+                            sortOrder: primarySell.SortOrder);
+                        await _units.UpdateAsync(primarySell, cancellationToken).ConfigureAwait(false);
+                    }
+
                     anyChanged = true;
                 }
 

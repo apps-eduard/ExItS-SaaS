@@ -274,7 +274,9 @@ public sealed class LocalSellingCatalogAndCashSaleStore(
             var sql = new StringBuilder(
                 """
                 SELECT product_id, organization_id, name, description, sku, barcode, category_id,
-                       unit_of_measure, selling_mode, selling_price, status, is_tracked, on_hand_quantity, stock_status, updated_utc
+                       unit_of_measure, selling_mode, selling_price, status, is_tracked, on_hand_quantity, stock_status, updated_utc,
+                       IFNULL(can_be_purchased, 1), IFNULL(can_be_sold, 1), IFNULL(can_be_used_as_ingredient, 0),
+                       IFNULL(is_produced, 0), usage_preset
                 FROM local_catalog_product
                 WHERE organization_id = $org
                   AND status = 'Active'
@@ -307,6 +309,12 @@ public sealed class LocalSellingCatalogAndCashSaleStore(
             while (await reader.ReadAsync(ct).ConfigureAwait(false))
             {
                 list.Add(ReadProduct(reader));
+            }
+
+            for (var i = 0; i < list.Count; i++)
+            {
+                var units = await LoadSellUnitsAsync(connection, list[i].ProductId, ct).ConfigureAwait(false);
+                list[i] = list[i] with { Units = units };
             }
 
             return list;
@@ -640,7 +648,9 @@ public sealed class LocalSellingCatalogAndCashSaleStore(
             cmd.CommandText =
                 $"""
                 SELECT product_id, organization_id, name, description, sku, barcode, category_id,
-                       unit_of_measure, selling_mode, selling_price, status, is_tracked, on_hand_quantity, stock_status, updated_utc
+                       unit_of_measure, selling_mode, selling_price, status, is_tracked, on_hand_quantity, stock_status, updated_utc,
+                       IFNULL(can_be_purchased, 1), IFNULL(can_be_sold, 1), IFNULL(can_be_used_as_ingredient, 0),
+                       IFNULL(is_produced, 0), usage_preset
                 FROM local_catalog_product
                 WHERE organization_id = $org
                   AND status = 'Active'
@@ -703,10 +713,12 @@ public sealed class LocalSellingCatalogAndCashSaleStore(
             """
             INSERT INTO local_catalog_product (
                 product_id, organization_id, name, description, sku, barcode, category_id,
-                unit_of_measure, selling_mode, selling_price, status, is_tracked, on_hand_quantity, stock_status, updated_utc)
+                unit_of_measure, selling_mode, selling_price, status, is_tracked, on_hand_quantity, stock_status, updated_utc,
+                can_be_purchased, can_be_sold, can_be_used_as_ingredient, is_produced, usage_preset)
             VALUES (
                 $id, $org, $name, $description, $sku, $barcode, $category,
-                $uom, $sellingMode, $price, $status, $tracked, $onhand, $stock, $updated)
+                $uom, $sellingMode, $price, $status, $tracked, $onhand, $stock, $updated,
+                $canPurchase, $canSell, $asIngredient, $produced, $usagePreset)
             ON CONFLICT(product_id) DO UPDATE SET
                 organization_id = excluded.organization_id,
                 name = excluded.name,
@@ -721,7 +733,12 @@ public sealed class LocalSellingCatalogAndCashSaleStore(
                 is_tracked = excluded.is_tracked,
                 on_hand_quantity = excluded.on_hand_quantity,
                 stock_status = excluded.stock_status,
-                updated_utc = excluded.updated_utc;
+                updated_utc = excluded.updated_utc,
+                can_be_purchased = excluded.can_be_purchased,
+                can_be_sold = excluded.can_be_sold,
+                can_be_used_as_ingredient = excluded.can_be_used_as_ingredient,
+                is_produced = excluded.is_produced,
+                usage_preset = excluded.usage_preset;
             """;
         cmd.Parameters.AddWithValue("$id", product.ProductId.ToString("D"));
         cmd.Parameters.AddWithValue("$org", product.OrganizationId.ToString("D"));
@@ -742,13 +759,55 @@ public sealed class LocalSellingCatalogAndCashSaleStore(
         cmd.Parameters.AddWithValue("$onhand", DecimalText(product.OnHandQuantity));
         cmd.Parameters.AddWithValue("$stock", product.StockStatus);
         cmd.Parameters.AddWithValue("$updated", now);
+        cmd.Parameters.AddWithValue("$canPurchase", product.CanBePurchased ? 1 : 0);
+        cmd.Parameters.AddWithValue("$canSell", product.CanBeSold ? 1 : 0);
+        cmd.Parameters.AddWithValue("$asIngredient", product.CanBeUsedAsIngredient ? 1 : 0);
+        cmd.Parameters.AddWithValue("$produced", product.IsProduced ? 1 : 0);
+        cmd.Parameters.AddWithValue("$usagePreset", (object?)product.UsagePreset ?? DBNull.Value);
         await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+
+        await using var clearUnits = connection.CreateCommand();
+        clearUnits.Transaction = tx;
+        clearUnits.CommandText = "DELETE FROM local_catalog_product_unit WHERE product_id = $id;";
+        clearUnits.Parameters.AddWithValue("$id", product.ProductId.ToString("D"));
+        await clearUnits.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+
+        if (product.Units is { Count: > 0 })
+        {
+            foreach (var unit in product.Units.Where(u =>
+                         string.Equals(u.Kind, "Sell", StringComparison.OrdinalIgnoreCase) && u.IsActive))
+            {
+                await using var unitCmd = connection.CreateCommand();
+                unitCmd.Transaction = tx;
+                unitCmd.CommandText =
+                    """
+                    INSERT INTO local_catalog_product_unit (
+                        unit_id, product_id, display_name, multiplier_to_base, selling_price,
+                        allows_custom_quantity, sort_order, is_active)
+                    VALUES ($unitId, $productId, $display, $multiplier, $price, $custom, $sort, $active);
+                    """;
+                unitCmd.Parameters.AddWithValue("$unitId", unit.UnitId.ToString("D"));
+                unitCmd.Parameters.AddWithValue("$productId", product.ProductId.ToString("D"));
+                unitCmd.Parameters.AddWithValue("$display", unit.DisplayName);
+                unitCmd.Parameters.AddWithValue("$multiplier", DecimalText(unit.MultiplierToBase));
+                unitCmd.Parameters.AddWithValue("$price", DecimalText(unit.SellingPrice ?? 0m));
+                unitCmd.Parameters.AddWithValue("$custom", unit.AllowsCustomQuantity ? 1 : 0);
+                unitCmd.Parameters.AddWithValue("$sort", unit.SortOrder);
+                unitCmd.Parameters.AddWithValue("$active", unit.IsActive ? 1 : 0);
+                await unitCmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+            }
+        }
     }
 
     private static PosCatalogProductDto ReadProduct(SqliteDataReader reader)
     {
         Guid? categoryId = reader.IsDBNull(6) ? null : Guid.Parse(reader.GetString(6));
         var updated = ParseUtc(reader.GetString(14));
+        var canPurchase = reader.FieldCount > 15 ? reader.GetInt32(15) == 1 : true;
+        var canSell = reader.FieldCount > 16 ? reader.GetInt32(16) == 1 : true;
+        var asIngredient = reader.FieldCount > 17 && reader.GetInt32(17) == 1;
+        var produced = reader.FieldCount > 18 && reader.GetInt32(18) == 1;
+        var usagePreset = reader.FieldCount > 19 && !reader.IsDBNull(19) ? reader.GetString(19) : "BuyAndSell";
         return new PosCatalogProductDto(
             Guid.Parse(reader.GetString(0)),
             Guid.Parse(reader.GetString(1)),
@@ -765,7 +824,47 @@ public sealed class LocalSellingCatalogAndCashSaleStore(
             updated,
             IsTracked: reader.GetInt32(11) == 1,
             OnHandQuantity: ParseDecimal(reader.GetString(12)),
-            StockStatus: reader.GetString(13));
+            StockStatus: reader.GetString(13),
+            CanBePurchased: canPurchase,
+            CanBeSold: canSell,
+            CanBeUsedAsIngredient: asIngredient,
+            IsProduced: produced,
+            UsagePreset: usagePreset);
+    }
+
+    private static async Task<IReadOnlyList<PosCatalogProductUnitDto>> LoadSellUnitsAsync(
+        SqliteConnection connection,
+        Guid productId,
+        CancellationToken ct)
+    {
+        await using var cmd = connection.CreateCommand();
+        cmd.CommandText =
+            """
+            SELECT unit_id, product_id, display_name, multiplier_to_base, selling_price,
+                   allows_custom_quantity, sort_order, is_active
+            FROM local_catalog_product_unit
+            WHERE product_id = $id AND is_active = 1
+            ORDER BY sort_order, display_name;
+            """;
+        cmd.Parameters.AddWithValue("$id", productId.ToString("D"));
+        var list = new List<PosCatalogProductUnitDto>();
+        await using var reader = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
+        while (await reader.ReadAsync(ct).ConfigureAwait(false))
+        {
+            list.Add(new PosCatalogProductUnitDto(
+                Guid.Parse(reader.GetString(0)),
+                Guid.Parse(reader.GetString(1)),
+                "Sell",
+                reader.GetString(2),
+                reader.GetString(2),
+                ParseDecimal(reader.GetString(3)),
+                ParseDecimal(reader.GetString(4)),
+                reader.GetInt32(5) == 1,
+                reader.GetInt32(7) == 1,
+                reader.GetInt32(6)));
+        }
+
+        return list;
     }
 
     private async Task EnsureEncryptionKeyAsync(CancellationToken ct)

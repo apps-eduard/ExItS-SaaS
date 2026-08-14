@@ -70,11 +70,13 @@ public sealed class PurchaseStockService : IPurchaseStockService
                 ? mode
                 : SellingMode.PerItem;
 
+            // Inventory ledger is always in base units. Purchase-unit receipts convert via
+            // GoodsReceiptLine.BaseQuantity (QuantityReceived × MultiplierToBaseSnapshot).
             var movement = StockMovement.PurchaseReceipt(
                 organizationId,
                 line.ProductId,
                 account.Id,
-                line.QuantityReceived,
+                line.BaseQuantity,
                 line.UomSnapshot,
                 receipt.Id.Value,
                 actorId,

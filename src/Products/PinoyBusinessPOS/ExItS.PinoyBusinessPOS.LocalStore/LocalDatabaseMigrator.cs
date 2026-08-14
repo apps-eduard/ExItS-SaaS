@@ -8,7 +8,8 @@ namespace ExItS.PinoyBusinessPOS.LocalStore;
 /// v4 payment projections; v5 selling-catalog cache + local cash-sale outbox support;
 /// v6 Personal Utang local-first tables (user_id owner; no organization_id on personal rows);
 /// v7 catalog product selling_mode (PerItem / ByWeight);
-/// v8 connected-supplier relationships, linked products, sync cursors, and device-local PO drafts.
+/// v8 connected-supplier relationships, linked products, sync cursors, and device-local PO drafts;
+/// v9 product usage flags, offline sell units, and linked-product conversion metadata.
 /// </summary>
 public sealed class LocalDatabaseMigrator(TimeProvider? timeProvider = null) : ILocalDatabaseMigrator
 {
@@ -20,10 +21,11 @@ public sealed class LocalDatabaseMigrator(TimeProvider? timeProvider = null) : I
     public const int PersonalUtangTablesSchemaVersion = 6;
     public const int PersonalUtangSchemaVersion = 7;
     public const int ConnectedSuppliersSchemaVersion = 8;
+    public const int ProductUnitsSchemaVersion = 9;
 
     private readonly TimeProvider _clock = timeProvider ?? TimeProvider.System;
 
-    public int CurrentSchemaVersion => ConnectedSuppliersSchemaVersion;
+    public int CurrentSchemaVersion => ProductUnitsSchemaVersion;
 
     public async Task<LocalMigrationResult> MigrateAsync(
         ILocalDatabaseConnection connection,
@@ -598,6 +600,72 @@ public sealed class LocalDatabaseMigrator(TimeProvider? timeProvider = null) : I
                 current = ConnectedSuppliersSchemaVersion;
             }
 
+            if (current < ProductUnitsSchemaVersion)
+            {
+                await connection.ExecuteAsync(
+                    """
+                    ALTER TABLE local_catalog_product ADD COLUMN can_be_purchased INTEGER NOT NULL DEFAULT 1;
+                    """,
+                    ct).ConfigureAwait(false);
+                await connection.ExecuteAsync(
+                    """
+                    ALTER TABLE local_catalog_product ADD COLUMN can_be_sold INTEGER NOT NULL DEFAULT 1;
+                    """,
+                    ct).ConfigureAwait(false);
+                await connection.ExecuteAsync(
+                    """
+                    ALTER TABLE local_catalog_product ADD COLUMN can_be_used_as_ingredient INTEGER NOT NULL DEFAULT 0;
+                    """,
+                    ct).ConfigureAwait(false);
+                await connection.ExecuteAsync(
+                    """
+                    ALTER TABLE local_catalog_product ADD COLUMN is_produced INTEGER NOT NULL DEFAULT 0;
+                    """,
+                    ct).ConfigureAwait(false);
+                await connection.ExecuteAsync(
+                    """
+                    ALTER TABLE local_catalog_product ADD COLUMN usage_preset TEXT NULL;
+                    """,
+                    ct).ConfigureAwait(false);
+
+                await connection.ExecuteAsync(
+                    """
+                    CREATE TABLE IF NOT EXISTS local_catalog_product_unit (
+                        unit_id TEXT NOT NULL PRIMARY KEY,
+                        product_id TEXT NOT NULL,
+                        display_name TEXT NOT NULL,
+                        multiplier_to_base TEXT NOT NULL,
+                        selling_price TEXT NOT NULL,
+                        allows_custom_quantity INTEGER NOT NULL,
+                        sort_order INTEGER NOT NULL,
+                        is_active INTEGER NOT NULL
+                    );
+                    """,
+                    ct).ConfigureAwait(false);
+                await connection.ExecuteAsync(
+                    "CREATE INDEX IF NOT EXISTS ix_local_catalog_product_unit_product ON local_catalog_product_unit(product_id);",
+                    ct).ConfigureAwait(false);
+
+                await connection.ExecuteAsync(
+                    """
+                    ALTER TABLE local_linked_supplier_product ADD COLUMN multiplier_to_base TEXT NOT NULL DEFAULT '1';
+                    """,
+                    ct).ConfigureAwait(false);
+                await connection.ExecuteAsync(
+                    """
+                    ALTER TABLE local_linked_supplier_product ADD COLUMN package_label TEXT NULL;
+                    """,
+                    ct).ConfigureAwait(false);
+
+                await connection.ExecuteAsync(
+                    $"""
+                    INSERT INTO local_schema_info (schema_version, applied_at_utc)
+                    VALUES ({ProductUnitsSchemaVersion}, '{now}');
+                    """,
+                    ct).ConfigureAwait(false);
+                current = ProductUnitsSchemaVersion;
+            }
+
             var existing = await connection
                 .QueryScalarAsync<long>(
                     $"""
@@ -650,7 +718,7 @@ public sealed class LocalDatabaseMigrator(TimeProvider? timeProvider = null) : I
                 return new LocalMigrationResult(false, (int)current, "forbidden_tables_present");
             }
 
-            return new LocalMigrationResult(true, ConnectedSuppliersSchemaVersion);
+            return new LocalMigrationResult(true, ProductUnitsSchemaVersion);
         }
         catch (OperationCanceledException)
         {

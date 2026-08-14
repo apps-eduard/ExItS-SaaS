@@ -577,9 +577,17 @@ else
                        VisibleChanged="v => { if (!v) CloseWeightEntry(); else _weightDialogOpen = v; }"
                        Product="@_weightProduct"
                        InitialKilograms="@_weightInitialKg"
+                       UnitPrice="@_weightUnitPrice"
                        Confirmed="OnWeightConfirmed"
                        Removed="OnWeightRemoved"
                        Cancelled="CloseWeightEntry" />
+
+    <SellingUnitPickerDialog Visible="@_sellingUnitPickerOpen"
+                             VisibleChanged="v => { if (!v) CloseSellingUnitPicker(); else _sellingUnitPickerOpen = v; }"
+                             Product="@_sellingUnitProduct"
+                             Options="@_sellingUnitOptions"
+                             Selected="OnSellingUnitSelected"
+                             Cancelled="CloseSellingUnitPicker" />
 </Page>
 }
 @code {
@@ -658,6 +666,11 @@ else
     private bool _weightDialogOpen;
     private PosCatalogProductDto? _weightProduct;
     private decimal? _weightInitialKg;
+    private decimal? _weightUnitPrice;
+    private PosCatalogProductUnitDto? _weightUnit;
+    private bool _sellingUnitPickerOpen;
+    private PosCatalogProductDto? _sellingUnitProduct;
+    private IReadOnlyList<PosCatalogProductUnitDto> _sellingUnitOptions = Array.Empty<PosCatalogProductUnitDto>();
     private bool _customerSearchAttempted;
     private string? _customerPickerMessage;
     private CancellationTokenSource? _lookupDebounceCts;
@@ -1149,11 +1162,16 @@ else
             ? L["Sales_Checkout_QuantityWhole"]
             : L["Sales_Checkout_QuantityPrecision"];
 
-    private void OpenWeightEntry(PosCatalogProductDto product, decimal? existingKilograms = null)
+    private void OpenWeightEntry(
+        PosCatalogProductDto product,
+        decimal? existingKilograms = null,
+        PosCatalogProductUnitDto? sellingUnit = null)
     {
         RememberProducts([product]);
         _weightProduct = product;
         _weightInitialKg = existingKilograms is > 0m ? existingKilograms : null;
+        _weightUnit = sellingUnit;
+        _weightUnitPrice = sellingUnit?.SellingPrice;
         _weightDialogOpen = true;
         _errorTitle = null;
         _errorMessage = null;
@@ -1180,6 +1198,8 @@ else
         _weightDialogOpen = false;
         _weightProduct = null;
         _weightInitialKg = null;
+        _weightUnit = null;
+        _weightUnitPrice = null;
     }
 
     private void OnWeightConfirmed(decimal kilograms)
@@ -1191,15 +1211,23 @@ else
         }
 
         var product = _weightProduct;
+        var unit = _weightUnit;
         CloseWeightEntry();
-        ApplyWeightedQuantity(product, kilograms);
+        ApplyWeightedQuantity(product, kilograms, unit);
     }
 
     private void OnWeightRemoved()
     {
         if (_weightProduct is not null)
         {
-            Cart.Remove(_weightProduct.ProductId);
+            if (_weightUnit is not null)
+            {
+                Cart.Remove(_weightProduct.ProductId, _weightUnit.UnitId);
+            }
+            else
+            {
+                Cart.Remove(_weightProduct.ProductId);
+            }
         }
 
         CloseWeightEntry();
@@ -1214,7 +1242,10 @@ else
         _errorMessage = null;
     }
 
-    private void ApplyWeightedQuantity(PosCatalogProductDto product, decimal kilograms)
+    private void ApplyWeightedQuantity(
+        PosCatalogProductDto product,
+        decimal kilograms,
+        PosCatalogProductUnitDto? sellingUnit = null)
     {
         RememberProducts([product]);
         if (!SalesUiOptions.CanAcceptQuantity(product.IsTracked, product.OnHandQuantity, kilograms))
@@ -1224,16 +1255,75 @@ else
             return;
         }
 
-        var existing = Cart.GetQuantity(product.ProductId);
-        if (existing > 0m)
+        if (sellingUnit is not null)
         {
-            Cart.SetQuantity(product.ProductId, kilograms);
+            Cart.Remove(product.ProductId, sellingUnit.UnitId);
+            Cart.Add(product, kilograms, sellingUnit);
         }
         else
         {
-            Cart.Add(product, kilograms);
+            var existing = Cart.GetQuantity(product.ProductId);
+            if (existing > 0m)
+            {
+                Cart.SetQuantity(product.ProductId, kilograms);
+            }
+            else
+            {
+                Cart.Add(product, kilograms);
+            }
         }
 
+        _matches = Array.Empty<PosCatalogProductDto>();
+        _lookupText = null;
+        _lookupHelper = null;
+        _errorTitle = null;
+        _errorMessage = null;
+    }
+
+    private void OpenSellingUnitPicker(PosCatalogProductDto product, IReadOnlyList<PosCatalogProductUnitDto> options)
+    {
+        RememberProducts([product]);
+        _sellingUnitProduct = product;
+        _sellingUnitOptions = options;
+        _sellingUnitPickerOpen = true;
+        _errorTitle = null;
+        _errorMessage = null;
+    }
+
+    private void CloseSellingUnitPicker()
+    {
+        _sellingUnitPickerOpen = false;
+        _sellingUnitProduct = null;
+        _sellingUnitOptions = Array.Empty<PosCatalogProductUnitDto>();
+    }
+
+    private void OnSellingUnitSelected(PosCatalogProductUnitDto unit)
+    {
+        var product = _sellingUnitProduct;
+        CloseSellingUnitPicker();
+        if (product is null)
+        {
+            return;
+        }
+
+        if (unit.AllowsCustomQuantity || SalesUiOptions.IsByWeight(product.SellingMode))
+        {
+            var existing = Cart.GetEnteredQuantity(product.ProductId, unit.UnitId);
+            OpenWeightEntry(product, existing > 0m ? existing : null, unit);
+            return;
+        }
+
+        if (!SalesUiOptions.CanAcceptQuantity(
+                product.IsTracked,
+                product.OnHandQuantity,
+                Cart.GetEnteredQuantity(product.ProductId, unit.UnitId) + 1m))
+        {
+            _errorTitle = L["Sales_Checkout_InsufficientStockTitle"];
+            _errorMessage = L["Sales_Checkout_InsufficientStock"];
+            return;
+        }
+
+        Cart.Add(product, 1m, unit);
         _matches = Array.Empty<PosCatalogProductDto>();
         _lookupText = null;
         _lookupHelper = null;
@@ -1416,10 +1506,34 @@ else
     private void AddToCart(PosCatalogProductDto product)
     {
         RememberProducts([product]);
-        if (SalesUiOptions.IsByWeight(product.SellingMode))
+        var sellUnits = (product.Units ?? [])
+            .Where(u => string.Equals(u.Kind, "Sell", StringComparison.OrdinalIgnoreCase) && u.IsActive)
+            .OrderBy(u => u.SortOrder)
+            .ThenBy(u => u.DisplayName)
+            .ToList();
+
+        // Multiple sell options: never auto-pick a pack — cashier chooses.
+        if (sellUnits.Count > 1 && !sellUnits.All(u => u.AllowsCustomQuantity))
         {
-            var existing = Cart.GetQuantity(product.ProductId);
-            OpenWeightEntry(product, existing > 0m ? existing : null);
+            OpenSellingUnitPicker(product, sellUnits);
+            return;
+        }
+
+        if (sellUnits.Count > 1)
+        {
+            // All custom-quantity options still need an explicit choice.
+            OpenSellingUnitPicker(product, sellUnits);
+            return;
+        }
+
+        if (SalesUiOptions.IsByWeight(product.SellingMode)
+            || (sellUnits.Count == 1 && sellUnits[0].AllowsCustomQuantity))
+        {
+            var unit = sellUnits.Count == 1 ? sellUnits[0] : null;
+            var existing = unit is null
+                ? Cart.GetQuantity(product.ProductId)
+                : Cart.GetEnteredQuantity(product.ProductId, unit.UnitId);
+            OpenWeightEntry(product, existing > 0m ? existing : null, unit);
             return;
         }
 
@@ -1432,7 +1546,18 @@ else
             return;
         }
 
-        Cart.Add(product, addQuantity);
+        var singleUnit = sellUnits.Count == 1 && (sellUnits[0].MultiplierToBase != 1m || sellUnits[0].UnitId != Guid.Empty)
+            ? sellUnits[0]
+            : null;
+        // Keep 1:1 single sell unit on the classic path (no SellingUnitId) so server combine behavior stays unchanged.
+        if (singleUnit is not null
+            && singleUnit.MultiplierToBase == 1m
+            && !singleUnit.AllowsCustomQuantity)
+        {
+            singleUnit = null;
+        }
+
+        Cart.Add(product, addQuantity, singleUnit);
         _matches = Array.Empty<PosCatalogProductDto>();
         _lookupText = null;
         _lookupHelper = null;

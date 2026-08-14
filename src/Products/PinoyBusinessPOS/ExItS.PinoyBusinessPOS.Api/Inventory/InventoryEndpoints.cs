@@ -428,6 +428,7 @@ internal static class InventoryEndpoints
                 body.ExpirationDate,
                 body.LotNumber,
                 body.LotId,
+                body.ProductUnitId,
                 ct)
             .ConfigureAwait(false);
         return await FromAccountResultAsync(organizationId, productId, result, queries, ct).ConfigureAwait(false);

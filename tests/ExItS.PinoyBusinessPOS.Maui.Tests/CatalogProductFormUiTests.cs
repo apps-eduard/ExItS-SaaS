@@ -151,6 +151,46 @@ public sealed class CatalogProductFormUiTests
         }
 
         Assert.DoesNotContain("EAN-8, UPC-A, EAN-13, and GTIN-14 check digits are verified", en, StringComparison.Ordinal);
+
+        foreach (var key in new[]
+                 {
+                     "Catalog_BuyingUnits",
+                     "Catalog_SellingOptions",
+                     "Catalog_SetPackages",
+                     "Catalog_AddBuyingUnit",
+                     "Catalog_AddSellingOption",
+                     "Catalog_CustomAmount",
+                     "Catalog_PriceForThisOption"
+                 })
+        {
+            Assert.Contains($"name=\"{key}\"", en, StringComparison.Ordinal);
+            Assert.Contains($"name=\"{key}\"", fil, StringComparison.Ordinal);
+        }
+    }
+
+    [Fact]
+    public void Form_exposes_buying_and_selling_package_editors()
+    {
+        var form = FormComponent();
+        var create = CreatePage();
+        var edit = File.ReadAllText(Path.Combine(CatalogPagesDirectory(), "CatalogProductEdit.razor"));
+
+        Assert.Contains("Catalog_SetPackages", form, StringComparison.Ordinal);
+        Assert.Contains("PurchaseUnits", form, StringComparison.Ordinal);
+        Assert.Contains("SellUnits", form, StringComparison.Ordinal);
+        Assert.Contains("Catalog_BuyingUnits", form, StringComparison.Ordinal);
+        Assert.Contains("Catalog_SellingOptions", form, StringComparison.Ordinal);
+        Assert.Contains("Catalog_CustomAmount", form, StringComparison.Ordinal);
+        Assert.DoesNotContain("Multiplier", form, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Base UOM", form, StringComparison.OrdinalIgnoreCase);
+
+        Assert.Contains("_purchaseUnits", create, StringComparison.Ordinal);
+        Assert.Contains("_sellUnits", create, StringComparison.Ordinal);
+        Assert.Contains("Units: units", create, StringComparison.Ordinal);
+        Assert.Contains("_purchaseUnits", edit, StringComparison.Ordinal);
+        Assert.Contains("_sellUnits", edit, StringComparison.Ordinal);
+        Assert.Contains("Units: units", edit, StringComparison.Ordinal);
+        Assert.Contains("ProductUnitDraft", create, StringComparison.Ordinal);
     }
 
     private static int Occurrences(string text, string value)

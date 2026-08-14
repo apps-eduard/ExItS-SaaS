@@ -635,6 +635,37 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasDefaultValue(false)
                         .HasColumnName("tracks_expiration");
 
+                    b.Property<bool>("CanBePurchased")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("can_be_purchased");
+
+                    b.Property<bool>("CanBeSold")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("can_be_sold");
+
+                    b.Property<bool>("CanBeUsedAsIngredient")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("can_be_used_as_ingredient");
+
+                    b.Property<bool>("IsProduced")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_produced");
+
+                    b.Property<string>("UsagePreset")
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasDefaultValue("BuyAndSell")
+                        .HasColumnName("usage_preset");
+
                     b.Property<string>("UnitOfMeasure")
                         .IsRequired()
                         .HasMaxLength(32)
@@ -700,6 +731,98 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("ck_products_unit_of_measure", "unit_of_measure IN ('Piece', 'Pack', 'Box', 'Bottle', 'Can', 'Sachet', 'Kilogram', 'Gram', 'Liter', 'Milliliter', 'Meter')");
                         });
                 });
+
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Catalog.CatalogProductUnitRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<bool>("AllowsCustomQuantity")
+                        .HasColumnType("boolean")
+                        .HasColumnName("allows_custom_quantity");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("display_name");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("integer")
+                        .HasColumnName("kind");
+
+                    b.Property<decimal>("MultiplierToBase")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasColumnName("multiplier_to_base");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("product_id");
+
+                    b.Property<decimal?>("SellingPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("selling_price");
+
+                    b.Property<string>("ShortLabel")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("short_label");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("sort_order");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<uint>("Xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("OrganizationId", "ProductId")
+                        .HasDatabaseName("ix_product_units_org_product");
+
+                    b.HasIndex("OrganizationId", "ProductId", "Kind")
+                        .HasDatabaseName("ix_product_units_org_product_kind_active")
+                        .HasFilter("is_active");
+
+                    b.ToTable("product_units", "pos", t =>
+                        {
+                            t.HasCheckConstraint("ck_product_units_kind", "kind IN (0, 1)");
+
+                            t.HasCheckConstraint("ck_product_units_multiplier_positive", "multiplier_to_base > 0");
+
+                            t.HasCheckConstraint("ck_product_units_selling_price_non_negative", "selling_price IS NULL OR selling_price >= 0");
+
+                            t.HasCheckConstraint("ck_product_units_sort_order_non_negative", "sort_order >= 0");
+                        });
+                });
+
 
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Catalog.ProductCategoryRecord", b =>
                 {
@@ -839,7 +962,23 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("xid")
                         .HasColumnName("xmin");
 
-                    b.HasKey("Id");
+                                        b.Property<Guid?>("BuyerPurchaseUnitId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("buyer_purchase_unit_id");
+
+                    b.Property<decimal>("MultiplierToBase")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasDefaultValue(1m)
+                        .HasColumnName("multiplier_to_base");
+
+                    b.Property<string>("PackageLabel")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("package_label");
+
+b.HasKey("Id");
 
                     b.HasIndex("RelationshipId", "BuyerProductId")
                         .IsUnique()
@@ -2999,7 +3138,23 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(32)")
                         .HasColumnName("uom_snapshot");
 
-                    b.HasKey("Id");
+                                        b.Property<Guid?>("PurchaseUnitId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("purchase_unit_id");
+
+                    b.Property<string>("PurchaseUnitNameSnapshot")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("purchase_unit_name_snapshot");
+
+                    b.Property<decimal>("MultiplierToBaseSnapshot")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasDefaultValue(1m)
+                        .HasColumnName("multiplier_to_base_snapshot");
+
+b.HasKey("Id");
 
                     b.HasIndex("InventoryMovementId")
                         .IsUnique()
@@ -3166,7 +3321,23 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(32)")
                         .HasColumnName("uom_snapshot");
 
-                    b.HasKey("Id");
+                                        b.Property<Guid?>("PurchaseUnitId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("purchase_unit_id");
+
+                    b.Property<string>("PurchaseUnitNameSnapshot")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("purchase_unit_name_snapshot");
+
+                    b.Property<decimal>("MultiplierToBaseSnapshot")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasDefaultValue(1m)
+                        .HasColumnName("multiplier_to_base_snapshot");
+
+b.HasKey("Id");
 
                     b.HasIndex("ProductId");
 
@@ -3686,6 +3857,25 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(32)")
                         .HasColumnName("selling_mode_snapshot");
 
+                    b.Property<Guid?>("SellingUnitId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("selling_unit_id");
+
+                    b.Property<string>("SellingUnitNameSnapshot")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("selling_unit_name_snapshot");
+
+                    b.Property<decimal?>("EnteredQuantity")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasColumnName("entered_quantity");
+
+                    b.Property<decimal?>("MultiplierToBaseSnapshot")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasColumnName("multiplier_to_base_snapshot");
+
                     b.Property<string>("SkuSnapshot")
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)")
@@ -4186,7 +4376,17 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_expenses_expense_categories");
                 });
 
-            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.InventoryAccountRecord", b =>
+                        modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Catalog.CatalogProductUnitRecord", b =>
+                {
+                    b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Catalog.CatalogProductRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_product_units_products");
+                });
+
+modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.InventoryAccountRecord", b =>
                 {
                     b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Catalog.CatalogProductRecord", null)
                         .WithMany()

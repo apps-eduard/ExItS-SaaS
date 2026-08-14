@@ -6,7 +6,10 @@ using ExItS.PinoyBusinessPOS.Domain.Sales;
 
 namespace ExItS.PinoyBusinessPOS.Domain.Purchasing;
 
-/// <summary>One immutable line on a goods receipt.</summary>
+/// <summary>
+/// One immutable line on a goods receipt. <see cref="QuantityReceived"/> is in purchase-unit terms.
+/// Inventory movements should use <see cref="BaseQuantity"/>.
+/// </summary>
 public sealed class GoodsReceiptLine
 {
     public GoodsReceiptLineId Id { get; }
@@ -20,10 +23,15 @@ public sealed class GoodsReceiptLine
     public decimal QuantityReceived { get; }
     public decimal UnitPurchaseCostSnapshot { get; }
     public decimal LineTotalSnapshot { get; }
+    public decimal MultiplierToBaseSnapshot { get; }
     public Guid? InventoryMovementId { get; private set; }
 
     /// <summary>Alias for persistence/DTO mapping compatibility.</summary>
     public decimal ReceivedQty => QuantityReceived;
+
+    /// <summary>Base inventory quantity = purchase-unit received qty × multiplier.</summary>
+    public decimal BaseQuantity =>
+        ProductUnitConversion.ToBaseQuantity(QuantityReceived, MultiplierToBaseSnapshot);
 
     private GoodsReceiptLine(
         GoodsReceiptLineId id,
@@ -37,6 +45,7 @@ public sealed class GoodsReceiptLine
         decimal quantityReceived,
         decimal unitPurchaseCostSnapshot,
         decimal lineTotalSnapshot,
+        decimal multiplierToBaseSnapshot,
         Guid? inventoryMovementId)
     {
         Id = id;
@@ -50,6 +59,7 @@ public sealed class GoodsReceiptLine
         QuantityReceived = quantityReceived;
         UnitPurchaseCostSnapshot = unitPurchaseCostSnapshot;
         LineTotalSnapshot = lineTotalSnapshot;
+        MultiplierToBaseSnapshot = multiplierToBaseSnapshot;
         InventoryMovementId = inventoryMovementId;
     }
 
@@ -80,6 +90,7 @@ public sealed class GoodsReceiptLine
                 "Receive quantity must be greater than zero.");
         }
 
+        var multiplier = CatalogProductUnit.NormalizeMultiplier(poLine.MultiplierToBaseSnapshot);
         var cost = poLine.UnitPurchaseCost;
         return new GoodsReceiptLine(
             id ?? GoodsReceiptLineId.New(),
@@ -93,6 +104,7 @@ public sealed class GoodsReceiptLine
             normalized,
             cost,
             SaleMoney.RoundMoney(cost * normalized),
+            multiplier,
             inventoryMovementId: null);
     }
 
@@ -120,7 +132,8 @@ public sealed class GoodsReceiptLine
         decimal quantityReceived,
         decimal unitPurchaseCostSnapshot,
         decimal lineTotalSnapshot,
-        Guid? inventoryMovementId) =>
+        Guid? inventoryMovementId,
+        decimal multiplierToBaseSnapshot = 1m) =>
         new(
             id,
             goodsReceiptId,
@@ -133,5 +146,6 @@ public sealed class GoodsReceiptLine
             quantityReceived,
             unitPurchaseCostSnapshot,
             lineTotalSnapshot,
+            multiplierToBaseSnapshot,
             inventoryMovementId);
 }

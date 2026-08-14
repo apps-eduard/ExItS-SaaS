@@ -104,10 +104,12 @@ public sealed class LocalConnectedSupplierStore(
                     INSERT INTO local_linked_supplier_product (
                         link_id, relationship_id, supplier_organization_id, buyer_product_id, supplier_product_id,
                         supplier_sku, product_name, unit_of_measure, last_known_order_price, is_orderable,
-                        is_active, sync_version, supplier_updated_at_utc, synced_at_utc)
+                        is_active, sync_version, supplier_updated_at_utc, synced_at_utc,
+                        multiplier_to_base, package_label)
                     VALUES (
                         $link, $relationship, $supplier, $buyerProduct, $supplierProduct,
-                        $sku, $name, $uom, $price, $orderable, $active, $version, $supplierUpdated, $synced)
+                        $sku, $name, $uom, $price, $orderable, $active, $version, $supplierUpdated, $synced,
+                        $multiplier, $packageLabel)
                     ON CONFLICT(link_id) DO UPDATE SET
                         relationship_id = excluded.relationship_id,
                         supplier_organization_id = excluded.supplier_organization_id,
@@ -121,7 +123,9 @@ public sealed class LocalConnectedSupplierStore(
                         is_active = excluded.is_active,
                         sync_version = excluded.sync_version,
                         supplier_updated_at_utc = excluded.supplier_updated_at_utc,
-                        synced_at_utc = excluded.synced_at_utc;
+                        synced_at_utc = excluded.synced_at_utc,
+                        multiplier_to_base = excluded.multiplier_to_base,
+                        package_label = excluded.package_label;
                     """;
                 AddProductParameters(cmd, product);
                 await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
@@ -175,7 +179,8 @@ public sealed class LocalConnectedSupplierStore(
                 """
                 SELECT link_id, relationship_id, supplier_organization_id, buyer_product_id, supplier_product_id,
                        supplier_sku, product_name, unit_of_measure, last_known_order_price, is_orderable,
-                       is_active, sync_version, supplier_updated_at_utc, synced_at_utc
+                       is_active, sync_version, supplier_updated_at_utc, synced_at_utc,
+                       IFNULL(multiplier_to_base, '1'), package_label
                 FROM local_linked_supplier_product
                 WHERE relationship_id = $relationship AND is_active = 1 AND is_orderable = 1
                 """);
@@ -332,6 +337,8 @@ public sealed class LocalConnectedSupplierStore(
         cmd.Parameters.AddWithValue("$version", product.SyncVersion);
         cmd.Parameters.AddWithValue("$supplierUpdated", FormatUtc(product.SupplierUpdatedAtUtc));
         cmd.Parameters.AddWithValue("$synced", FormatUtc(product.SyncedAtUtc));
+        cmd.Parameters.AddWithValue("$multiplier", product.MultiplierToBase.ToString(CultureInfo.InvariantCulture));
+        cmd.Parameters.AddWithValue("$packageLabel", (object?)product.PackageLabel ?? DBNull.Value);
     }
 
     private static LocalLinkedSupplierProduct ReadProduct(SqliteDataReader reader) => new(
@@ -348,7 +355,11 @@ public sealed class LocalConnectedSupplierStore(
         reader.GetInt32(10) == 1,
         reader.GetInt64(11),
         ParseUtc(reader.GetString(12)),
-        ParseUtc(reader.GetString(13)));
+        ParseUtc(reader.GetString(13)),
+        reader.FieldCount > 14 && !reader.IsDBNull(14)
+            ? decimal.Parse(reader.GetString(14), CultureInfo.InvariantCulture)
+            : 1m,
+        reader.FieldCount > 15 && !reader.IsDBNull(15) ? reader.GetString(15) : null);
 
     private static string EscapeLike(string value) =>
         value.Replace("\\", "\\\\", StringComparison.Ordinal)

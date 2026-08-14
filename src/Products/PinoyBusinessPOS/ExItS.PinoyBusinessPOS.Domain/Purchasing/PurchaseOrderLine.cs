@@ -8,11 +8,13 @@ namespace ExItS.PinoyBusinessPOS.Domain.Purchasing;
 
 /// <summary>
 /// One line on a purchase order. Product name and UOM are snapshotted on submit (Ordered).
+/// OrderedQty / ReceivedQty remain in purchase-unit terms. Multiplier converts to base inventory qty.
 /// Unit purchase cost is operational only — not used for COGS or inventory valuation.
 /// </summary>
 public sealed class PurchaseOrderLine
 {
     public const int NameSnapshotMaxLength = 200;
+    public const int PurchaseUnitNameSnapshotMaxLength = 64;
     public const int LineNotesMaxLength = 512;
     public const decimal MaxUnitPurchaseCost = 9_999_999_999.99m;
 
@@ -28,6 +30,9 @@ public sealed class PurchaseOrderLine
     public decimal LineTotal { get; private set; }
     public decimal ReceivedQty { get; private set; }
     public string? LineNotes { get; private set; }
+    public ProductUnitId? PurchaseUnitId { get; private set; }
+    public string? PurchaseUnitNameSnapshot { get; private set; }
+    public decimal MultiplierToBaseSnapshot { get; private set; }
 
     public decimal OutstandingQty => OrderedQty - ReceivedQty;
 
@@ -43,7 +48,10 @@ public sealed class PurchaseOrderLine
         decimal unitPurchaseCost,
         decimal lineTotal,
         decimal receivedQty,
-        string? lineNotes)
+        string? lineNotes,
+        ProductUnitId? purchaseUnitId,
+        string? purchaseUnitNameSnapshot,
+        decimal multiplierToBaseSnapshot)
     {
         Id = id;
         PurchaseOrderId = purchaseOrderId;
@@ -57,6 +65,9 @@ public sealed class PurchaseOrderLine
         LineTotal = lineTotal;
         ReceivedQty = receivedQty;
         LineNotes = lineNotes;
+        PurchaseUnitId = purchaseUnitId;
+        PurchaseUnitNameSnapshot = purchaseUnitNameSnapshot;
+        MultiplierToBaseSnapshot = multiplierToBaseSnapshot;
     }
 
     internal static PurchaseOrderLine CreateDraft(
@@ -68,6 +79,7 @@ public sealed class PurchaseOrderLine
     {
         EnsurePositiveQty(draft.OrderedQty, uom: null, isDraft: true);
         var cost = NormalizeUnitPurchaseCost(draft.UnitPurchaseCost);
+        var multiplier = CatalogProductUnit.NormalizeMultiplier(draft.MultiplierToBaseSnapshot);
         return new PurchaseOrderLine(
             id ?? PurchaseOrderLineId.New(),
             purchaseOrderId,
@@ -80,7 +92,10 @@ public sealed class PurchaseOrderLine
             cost,
             SaleMoney.RoundMoney(cost * draft.OrderedQty),
             receivedQty: 0m,
-            NormalizeLineNotes(draft.LineNotes));
+            NormalizeLineNotes(draft.LineNotes),
+            draft.PurchaseUnitId,
+            NormalizePurchaseUnitName(draft.PurchaseUnitNameSnapshot),
+            multiplier);
     }
 
     internal static PurchaseOrderLine CreateOrdered(
@@ -98,6 +113,7 @@ public sealed class PurchaseOrderLine
 
         var qty = NormalizeQuantity(snapshot.OrderedQty, snapshot.UomSnapshot, snapshot.SellingMode);
         var cost = NormalizeUnitPurchaseCost(snapshot.UnitPurchaseCost);
+        var multiplier = CatalogProductUnit.NormalizeMultiplier(snapshot.MultiplierToBaseSnapshot);
         return new PurchaseOrderLine(
             id ?? PurchaseOrderLineId.New(),
             purchaseOrderId,
@@ -110,7 +126,10 @@ public sealed class PurchaseOrderLine
             cost,
             SaleMoney.RoundMoney(cost * qty),
             receivedQty: 0m,
-            NormalizeLineNotes(snapshot.LineNotes));
+            NormalizeLineNotes(snapshot.LineNotes),
+            snapshot.PurchaseUnitId,
+            NormalizePurchaseUnitName(snapshot.PurchaseUnitNameSnapshot),
+            multiplier);
     }
 
     internal void UpdateDraft(PurchaseOrderLineDraft draft)
@@ -121,6 +140,9 @@ public sealed class PurchaseOrderLine
         UnitPurchaseCost = cost;
         LineTotal = SaleMoney.RoundMoney(cost * draft.OrderedQty);
         LineNotes = NormalizeLineNotes(draft.LineNotes);
+        PurchaseUnitId = draft.PurchaseUnitId;
+        PurchaseUnitNameSnapshot = NormalizePurchaseUnitName(draft.PurchaseUnitNameSnapshot);
+        MultiplierToBaseSnapshot = CatalogProductUnit.NormalizeMultiplier(draft.MultiplierToBaseSnapshot);
     }
 
     internal void FreezeSnapshot(PurchaseOrderLineSnapshotInput snapshot)
@@ -145,6 +167,9 @@ public sealed class PurchaseOrderLine
         UnitPurchaseCost = cost;
         LineTotal = SaleMoney.RoundMoney(cost * qty);
         LineNotes = NormalizeLineNotes(snapshot.LineNotes);
+        PurchaseUnitId = snapshot.PurchaseUnitId;
+        PurchaseUnitNameSnapshot = NormalizePurchaseUnitName(snapshot.PurchaseUnitNameSnapshot);
+        MultiplierToBaseSnapshot = CatalogProductUnit.NormalizeMultiplier(snapshot.MultiplierToBaseSnapshot);
     }
 
     internal void ApplyReceipt(decimal receiveQty, SellingMode sellingMode = SellingMode.PerItem)
@@ -186,7 +211,10 @@ public sealed class PurchaseOrderLine
         decimal unitPurchaseCost,
         decimal lineTotal,
         decimal receivedQty,
-        string? lineNotes) =>
+        string? lineNotes,
+        ProductUnitId? purchaseUnitId = null,
+        string? purchaseUnitNameSnapshot = null,
+        decimal multiplierToBaseSnapshot = 1m) =>
         new(
             id,
             purchaseOrderId,
@@ -199,7 +227,10 @@ public sealed class PurchaseOrderLine
             unitPurchaseCost,
             lineTotal,
             receivedQty,
-            lineNotes);
+            lineNotes,
+            purchaseUnitId,
+            purchaseUnitNameSnapshot,
+            multiplierToBaseSnapshot);
 
     internal static decimal NormalizeUnitPurchaseCost(decimal cost)
     {
@@ -263,6 +294,19 @@ public sealed class PurchaseOrderLine
         }
 
         return trimmed;
+    }
+
+    private static string? NormalizePurchaseUnitName(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return null;
+        }
+
+        var trimmed = name.Trim();
+        return trimmed.Length > PurchaseUnitNameSnapshotMaxLength
+            ? trimmed[..PurchaseUnitNameSnapshotMaxLength]
+            : trimmed;
     }
 
     private static string? NormalizeLineNotes(string? notes)

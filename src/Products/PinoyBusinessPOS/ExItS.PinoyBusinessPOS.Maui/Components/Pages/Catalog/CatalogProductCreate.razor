@@ -61,6 +61,16 @@ else
                                 CategoryIdChanged="v => _categoryId = v"
                                 UnitOfMeasure="@_unitOfMeasure"
                                 UnitOfMeasureChanged="v => _unitOfMeasure = v"
+                                UsagePreset="@_usagePreset"
+                                UsagePresetChanged="OnUsagePresetChanged"
+                                IngredientAlsoSellable="@_ingredientAlsoSellable"
+                                IngredientAlsoSellableChanged="v => _ingredientAlsoSellable = v"
+                                ShowAdvancedUnits="@ShowAdvancedUnits"
+                                SetPackages="@_setPackages"
+                                SetPackagesChanged="OnSetPackagesChanged"
+                                ShowIngredientSellable="@(_usagePreset == "Ingredient")"
+                                PurchaseUnits="@_purchaseUnits"
+                                SellUnits="@_sellUnits"
                                 SellingMode="@_sellingMode"
                                 SellingModeChanged="v => _sellingMode = v"
                                 SellingPrice="@_sellingPrice"
@@ -97,6 +107,11 @@ else
     private string? _barcode;
     private string? _categoryId;
     private string? _unitOfMeasure = PosCatalogOptions.DefaultUnitOfMeasureCode;
+    private string? _usagePreset = "BuyAndSell";
+    private bool _ingredientAlsoSellable;
+    private bool _setPackages;
+    private readonly List<ProductUnitDraft> _purchaseUnits = [];
+    private readonly List<ProductUnitDraft> _sellUnits = [];
     private string? _sellingMode = PosCatalogOptions.DefaultSellingModeCode;
     private decimal? _sellingPrice;
     private bool _trackStock;
@@ -109,6 +124,9 @@ else
     private string? _barcodeError;
     private string? _priceError;
     private string? _formError;
+
+    private bool ShowAdvancedUnits =>
+        string.Equals(_usagePreset, "Bulk", StringComparison.Ordinal) || _setPackages;
 
     protected override async Task OnInitializedAsync()
     {
@@ -158,6 +176,11 @@ else
             return;
         }
 
+        if (ShowAdvancedUnits && _sellUnits.Count > 0 && _sellUnits[0].SellingPrice is decimal sellPrice)
+        {
+            _sellingPrice = sellPrice;
+        }
+
         if (_sellingPrice is null || _sellingPrice < 0m)
         {
             _priceError = L["Catalog_PriceRequired"];
@@ -167,6 +190,13 @@ else
         _saving = true;
         try
         {
+            IReadOnlyList<PosCatalogProductUnitInput>? units = null;
+            if (ShowAdvancedUnits)
+            {
+                ProductUnitDraft.EnsureDefaults(_purchaseUnits, _sellUnits, _unitOfMeasure, _sellingPrice);
+                units = ProductUnitDraft.ToInputs(_purchaseUnits, _sellUnits);
+            }
+
             var result = await Catalog.CreateProductAsync(new CreatePosCatalogProductRequest(
                 _name.Trim(),
                 _unitOfMeasure ?? PosCatalogOptions.DefaultUnitOfMeasureCode,
@@ -177,7 +207,9 @@ else
                 Guid.TryParse(_categoryId, out var categoryId) ? categoryId : null,
                 SellingMode: _sellingMode ?? PosCatalogOptions.DefaultSellingModeCode,
                 TracksExpiration: _tracksExpiration,
-                ExpirationWarningDays: ParseWarningDays()));
+                ExpirationWarningDays: ParseWarningDays(),
+                UsagePreset: ResolveUsagePresetForSave(),
+                Units: units));
 
             if (!result.IsSuccess || result.Data is null)
             {
@@ -221,4 +253,41 @@ else
     private void GoProduct(Guid productId) => Nav.NavigateTo($"/catalog/products/{productId:D}", replace: true);
 
     private void GoBack() => Nav.NavigateTo("/catalog");
+
+    private Task OnUsagePresetChanged(string? value)
+    {
+        _usagePreset = value ?? "BuyAndSell";
+        if (_usagePreset != "Ingredient")
+        {
+            _ingredientAlsoSellable = _usagePreset == "IngredientAndSellable";
+        }
+
+        if (string.Equals(_usagePreset, "Bulk", StringComparison.Ordinal))
+        {
+            ProductUnitDraft.EnsureDefaults(_purchaseUnits, _sellUnits, _unitOfMeasure, _sellingPrice);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private Task OnSetPackagesChanged(bool value)
+    {
+        _setPackages = value;
+        if (value)
+        {
+            ProductUnitDraft.EnsureDefaults(_purchaseUnits, _sellUnits, _unitOfMeasure, _sellingPrice);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private string ResolveUsagePresetForSave()
+    {
+        if (_usagePreset == "Ingredient" && _ingredientAlsoSellable)
+        {
+            return "IngredientAndSellable";
+        }
+
+        return string.IsNullOrWhiteSpace(_usagePreset) ? "BuyAndSell" : _usagePreset;
+    }
 }

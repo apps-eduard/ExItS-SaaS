@@ -49,7 +49,8 @@ public sealed record AdjustInventoryRequest(
     decimal? ReorderLevel = null,
     DateOnly? ExpirationDate = null,
     string? LotNumber = null,
-    Guid? LotId = null);
+    Guid? LotId = null,
+    Guid? ProductUnitId = null);
 
 public sealed record PosInventoryLotDto(
     Guid LotId,

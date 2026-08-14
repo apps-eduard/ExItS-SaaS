@@ -46,6 +46,9 @@ internal sealed class PurchaseOrderLineRecord
     public decimal LineTotal { get; set; }
     public decimal ReceivedQty { get; set; }
     public string? LineNotes { get; set; }
+    public Guid? PurchaseUnitId { get; set; }
+    public string? PurchaseUnitNameSnapshot { get; set; }
+    public decimal MultiplierToBaseSnapshot { get; set; } = 1m;
 }
 
 internal sealed class GoodsReceiptRecord
@@ -76,4 +79,7 @@ internal sealed class GoodsReceiptLineRecord
     public decimal UnitPurchaseCostSnapshot { get; set; }
     public decimal LineTotalSnapshot { get; set; }
     public Guid? InventoryMovementId { get; set; }
+    public Guid? PurchaseUnitId { get; set; }
+    public string? PurchaseUnitNameSnapshot { get; set; }
+    public decimal MultiplierToBaseSnapshot { get; set; } = 1m;
 }

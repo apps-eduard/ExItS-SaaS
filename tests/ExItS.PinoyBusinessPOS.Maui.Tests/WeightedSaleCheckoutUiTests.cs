@@ -12,7 +12,10 @@ public sealed class WeightedSaleCheckoutUiTests
         Assert.Contains("ApplyWeightedQuantity", checkout, StringComparison.Ordinal);
         Assert.Contains("const decimal addQuantity = 1m;", checkout, StringComparison.Ordinal);
         // ByWeight path must open dialog before any Cart.Add of a default 1 kg.
-        Assert.Contains("OpenWeightEntry(product, existing > 0m ? existing : null);", checkout, StringComparison.Ordinal);
+        Assert.Contains("OpenWeightEntry(product, existing > 0m ? existing : null, unit);", checkout, StringComparison.Ordinal);
+        Assert.Contains("SellingUnitPickerDialog", checkout, StringComparison.Ordinal);
+        Assert.Contains("OpenSellingUnitPicker", checkout, StringComparison.Ordinal);
+        Assert.DoesNotContain("Cart.Add(product, 1m, preferred);", checkout, StringComparison.Ordinal);
     }
 
     [Fact]

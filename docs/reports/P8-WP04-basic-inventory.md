@@ -36,7 +36,9 @@ Feature commit: `64f05e7fd5ab868beb62c7cce88ad7a15e21c7b8`
 
 ## Quantity semantics
 
-Whole: Piece, Pack, Box, Bottle, Can, Sachet. Measured (≤3 dp): Kilogram, Gram, Liter, Milliliter, Meter. Opening/adjustment quantities > 0 (except zero opening). No UOM conversion.
+Whole: Piece, Pack, Box, Bottle, Can, Sachet. Measured (≤3 dp): Kilogram, Gram, Liter, Milliliter, Meter. Opening/adjustment quantities > 0 (except zero opening). No UOM conversion at the time of P8-WP04.
+
+> **Later note:** Product-specific purchase/sell unit conversion (Dynamic Product Units) supersedes the historical “no UOM conversion” limitation for inventory/sales/purchasing paths. See [product-units-and-inventory-behavior.md](../engineering/product-units-and-inventory-behavior.md). This report remains an accurate historical record of P8-WP04 delivery.
 
 ## Commercial matrix
 

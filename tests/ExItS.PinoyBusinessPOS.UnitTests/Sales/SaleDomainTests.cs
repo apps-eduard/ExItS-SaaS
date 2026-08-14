@@ -521,7 +521,7 @@ public sealed class SaleDomainTests
     {
         var names = typeof(Sale).GetProperties().Select(p => p.Name)
             .Concat(typeof(SaleLine).GetProperties().Select(p => p.Name))
-            .ToList();
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         Assert.Contains("CustomerId", names);
         Assert.Contains("LinkedCreditEntryId", names);
@@ -533,7 +533,7 @@ public sealed class SaleDomainTests
                      "Refund", "Tip", "Fee"
                  })
         {
-            Assert.DoesNotContain(names, n => n.Contains(forbidden, StringComparison.OrdinalIgnoreCase));
+            Assert.DoesNotContain(forbidden, names);
         }
     }
 }
