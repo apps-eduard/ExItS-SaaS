@@ -14,7 +14,7 @@
 | Current phase | Phase 26 **Open — WP01–WP05 Code Complete / Owner Validation Pending**; Phase 25 remains **Open — Owner Validation Pending**; Phase 22/24/19/20/21 remain Open; Phase 14 still open |
 | Current work package | **P26-WP05** Integration Hardening & Validation Readiness ([phase](phases/phase-26-sales-documents-compliance-readiness.md); [report](reports/P26-WP05-sales-document-compliance-integration-hardening.md); [checklist](validation/phase-26-owner-validation-checklist.md); [roadmap](compliance/bir-compliance-activation-roadmap.md)). **Owner validation pending.** Phase 26 remains **OPEN**. Phase 25 is **not closed**. |
 | Overall status | **P26-WP01–WP05 Code Complete / Owner Validation Pending**; Transaction Summary remains the current sales document; Owner acknowledgment is a soft education prompt; Platform owns compliance eligibility, issuance capability, and org compliance profile anchor; TaxDocument remains unavailable (`ImplementationAvailable=false`); no BIR claim. Next: Owner validation; future confirmed BIR implementation deferred. Phase 25 WP01–WP09 owner validation remains pending. **Not Device Verified**. Production remains **Blocked**. **Not production-ready.** |
-| Latest verified commit | `254424df` (P26-WP05 sales-document compliance integration hardening) |
+| Latest verified commit | `15eeb660` (P21-WP11 post-Phase-21 privacy impact refresh) |
 | Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA deferred; Phase 19/20/22/24/25/26 owner/physical validation pending |
 | Last updated | 2026-08-15 |
 
@@ -296,7 +296,7 @@ P19-WP08 ? End-to-End Validation and User Closeout Checklist (Retest � awaitin
 |---|---|---|
 | P21 foundation (WP01–WP10 slice) | **Code Complete** (readiness tooling) | `7f6795b` (feat), `26ec821` (test) — [report](reports/P21-foundation-privacy-compliance-workspace.md) |
 | P21-WP01 Requirements & privacy inventory | **Code Complete** | `7f6795b` — [report](reports/P21-WP01-requirements-and-privacy-inventory.md) |
-| P21-WP11 Post–Phase-21 privacy impact refresh | **Code Complete / Validation Pending** | Feature SHA pending commit — [report](reports/P21-WP11-post-phase21-privacy-impact-refresh.md); [delta](compliance/post-phase21-privacy-impact-refresh.md) |
+| P21-WP11 Post–Phase-21 privacy impact refresh | **Code Complete / Validation Pending** | `15eeb660` — [report](reports/P21-WP11-post-phase21-privacy-impact-refresh.md); [delta](compliance/post-phase21-privacy-impact-refresh.md) |
 
 ## Phase 19 work packages
 

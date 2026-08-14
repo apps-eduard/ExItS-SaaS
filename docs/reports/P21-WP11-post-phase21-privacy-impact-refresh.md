@@ -6,7 +6,7 @@
 | Phase | [Phase 21](../phases/phase-21-privacy-compliance-and-regulatory-readiness.md) — **OPEN** |
 | Related phases | [Phase 25](../phases/phase-25-organization-web-admin.md) **OPEN**; [Phase 26](../phases/phase-26-sales-documents-compliance-readiness.md) **OPEN** |
 | Starting SHA | `4c744f579df004db38b4ffa2c2c5b53e802aafba` |
-| Feature SHA | **pending commit** |
+| Feature SHA | `15eeb660` |
 | Migration | **None** |
 | LocalStore | **Unchanged** |
 | Catalog | Additive seeds via `EnsurePrivacyComplianceCatalog` |
@@ -50,7 +50,14 @@ This work package updates **readiness documentation and catalog seeds**. It does
 
 ## Validation
 
-Validation Pending. Targeted privacy/isolation guards exist; full solution owner/device validation for Phases 25/26 remains outstanding. Do not treat catalog seed presence as legal proof.
+Validation Pending for owner/device/browser. Automated evidence recorded at feature commit:
+
+- Platform.UnitTests: **923** passed / 0 failed / 0 skipped
+- Focused privacy/catalog/isolation filter: **14** passed
+- Maui QR/wording guards (focused): **14** passed
+- ArchitectureTests: **4** failed / **163** passed — **PRE-EXISTING**
+
+Do not treat catalog seed presence as legal proof.
 
 ## Next
 
