@@ -17,7 +17,10 @@ internal static class CustomerEntityMapper
             Enum.Parse<CustomerStatus>(record.Status, ignoreCase: true),
             record.PlatformBusinessCustomerId,
             record.CreatedAtUtc,
-            record.UpdatedAtUtc);
+            record.UpdatedAtUtc,
+            record.LinkedPersonalPublicUserId,
+            record.LinkedBuyerOrganizationId,
+            record.LinkedBuyerPublicOrganizationId);
 
     public static POSCustomerRecord ToRecord(POSCustomer customer) =>
         new()
@@ -31,6 +34,9 @@ internal static class CustomerEntityMapper
             Notes = customer.Notes,
             Status = customer.Status.ToString(),
             PlatformBusinessCustomerId = customer.PlatformBusinessCustomerId,
+            LinkedPersonalPublicUserId = customer.LinkedPersonalPublicUserId,
+            LinkedBuyerOrganizationId = customer.LinkedBuyerOrganizationId,
+            LinkedBuyerPublicOrganizationId = customer.LinkedBuyerPublicOrganizationId,
             CreatedAtUtc = customer.CreatedAtUtc,
             UpdatedAtUtc = customer.UpdatedAtUtc
         };
@@ -44,6 +50,9 @@ internal static class CustomerEntityMapper
         record.Notes = customer.Notes;
         record.Status = customer.Status.ToString();
         record.PlatformBusinessCustomerId = customer.PlatformBusinessCustomerId;
+        record.LinkedPersonalPublicUserId = customer.LinkedPersonalPublicUserId;
+        record.LinkedBuyerOrganizationId = customer.LinkedBuyerOrganizationId;
+        record.LinkedBuyerPublicOrganizationId = customer.LinkedBuyerPublicOrganizationId;
         record.UpdatedAtUtc = customer.UpdatedAtUtc;
         // OrganizationId is immutable — never rewritten from the aggregate.
     }

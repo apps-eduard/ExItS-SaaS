@@ -48,7 +48,12 @@ public sealed record PosSaleDto(
     string? ReceiptHeader = null,
     string? ReceiptFooter = null,
     string? BusinessAddress = null,
-    string? ContactPhone = null);
+    string? ContactPhone = null,
+    string BuyerPartyKind = "WalkIn",
+    string? BuyerDisplayNameSnapshot = null,
+    string? BuyerPersonalPublicUserId = null,
+    Guid? BuyerOrganizationId = null,
+    string? BuyerPublicOrganizationId = null);
 
 /// <summary>
 /// One requested checkout line.
@@ -74,6 +79,7 @@ public sealed record CheckoutSaleLineRequest(
 /// session until this single request records the sale. Product-Based Utang supplies CustomerId and
 /// optional DueDate / CreditEntryId. Settled Cash/Card/GCash/ManualGCash may optionally supply
 /// CustomerId for linked-merchant projection; they must omit DueDate / CreditEntryId.
+/// Buyer party fields identify the counterparty only — seller OrganizationId owns the sale.
 /// </summary>
 public sealed record CheckoutSaleRequest(
     List<CheckoutSaleLineRequest> Lines,
@@ -84,7 +90,12 @@ public sealed record CheckoutSaleRequest(
     Guid? CustomerId = null,
     DateOnly? DueDate = null,
     Guid? CreditEntryId = null,
-    Guid? ShiftId = null);
+    Guid? ShiftId = null,
+    string? BuyerPartyKind = null,
+    string? BuyerDisplayNameSnapshot = null,
+    string? BuyerPersonalPublicUserId = null,
+    Guid? BuyerOrganizationId = null,
+    string? BuyerPublicOrganizationId = null);
 
 public sealed record VoidSaleRequest(string Reason);
 

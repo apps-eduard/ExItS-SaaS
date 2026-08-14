@@ -55,6 +55,35 @@ internal sealed class POSCustomerRepository : IPOSCustomerRepository
         return record is null ? null : CustomerEntityMapper.ToDomain(record);
     }
 
+    public async Task<POSCustomer?> FindByLinkedPersonalPublicUserIdAsync(
+        PosOrganizationId organizationId,
+        string linkedPersonalPublicUserId,
+        CancellationToken cancellationToken = default)
+    {
+        var normalized = linkedPersonalPublicUserId.Trim().ToUpperInvariant();
+        var record = await _db.Customers.AsNoTracking()
+            .FirstOrDefaultAsync(
+                c => c.OrganizationId == organizationId.Value
+                     && c.LinkedPersonalPublicUserId == normalized,
+                cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : CustomerEntityMapper.ToDomain(record);
+    }
+
+    public async Task<POSCustomer?> FindByLinkedBuyerOrganizationIdAsync(
+        PosOrganizationId organizationId,
+        Guid linkedBuyerOrganizationId,
+        CancellationToken cancellationToken = default)
+    {
+        var record = await _db.Customers.AsNoTracking()
+            .FirstOrDefaultAsync(
+                c => c.OrganizationId == organizationId.Value
+                     && c.LinkedBuyerOrganizationId == linkedBuyerOrganizationId,
+                cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : CustomerEntityMapper.ToDomain(record);
+    }
+
     public Task<int> CountByPlatformBusinessCustomerIdAsync(
         PosOrganizationId organizationId,
         Guid platformBusinessCustomerId,

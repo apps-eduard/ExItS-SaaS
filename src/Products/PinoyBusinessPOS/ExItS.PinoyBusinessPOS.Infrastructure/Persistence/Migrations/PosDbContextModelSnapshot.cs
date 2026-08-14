@@ -1446,6 +1446,20 @@ b.HasKey("Id");
                         .HasColumnType("character varying(128)")
                         .HasColumnName("display_name");
 
+                    b.Property<Guid?>("LinkedBuyerOrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("linked_buyer_organization_id");
+
+                    b.Property<string>("LinkedBuyerPublicOrganizationId")
+                        .HasMaxLength(9)
+                        .HasColumnType("character varying(9)")
+                        .HasColumnName("linked_buyer_public_organization_id");
+
+                    b.Property<string>("LinkedPersonalPublicUserId")
+                        .HasMaxLength(12)
+                        .HasColumnType("character varying(12)")
+                        .HasColumnName("linked_personal_public_user_id");
+
                     b.Property<string>("MobileNumber")
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)")
@@ -1492,6 +1506,16 @@ b.HasKey("Id");
 
                     b.HasIndex("OrganizationId", "DisplayName")
                         .HasDatabaseName("ix_customers_org_display_name");
+
+                    b.HasIndex("OrganizationId", "LinkedBuyerOrganizationId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_customers_org_linked_buyer_org")
+                        .HasFilter("linked_buyer_organization_id IS NOT NULL");
+
+                    b.HasIndex("OrganizationId", "LinkedPersonalPublicUserId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_customers_org_linked_personal")
+                        .HasFilter("linked_personal_public_user_id IS NOT NULL");
 
                     b.HasIndex("OrganizationId", "NormalizedMobile")
                         .IsUnique()
@@ -3952,6 +3976,31 @@ b.HasKey("Id");
                         .HasColumnType("numeric(18,2)")
                         .HasColumnName("amount_tendered");
 
+                    b.Property<string>("BuyerDisplayNameSnapshot")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("buyer_display_name_snapshot");
+
+                    b.Property<Guid?>("BuyerOrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("buyer_organization_id");
+
+                    b.Property<string>("BuyerPartyKind")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("buyer_party_kind");
+
+                    b.Property<string>("BuyerPersonalPublicUserId")
+                        .HasMaxLength(12)
+                        .HasColumnType("character varying(12)")
+                        .HasColumnName("buyer_personal_public_user_id");
+
+                    b.Property<string>("BuyerPublicOrganizationId")
+                        .HasMaxLength(9)
+                        .HasColumnType("character varying(9)")
+                        .HasColumnName("buyer_public_organization_id");
+
                     b.Property<Guid?>("CashierShiftId")
                         .HasColumnType("uuid")
                         .HasColumnName("cashier_shift_id");
@@ -4062,6 +4111,9 @@ b.HasKey("Id");
                     b.HasIndex("RegisterId")
                         .HasDatabaseName("ix_sales_register_id");
 
+                    b.HasIndex("OrganizationId", "BuyerPartyKind")
+                        .HasDatabaseName("ix_sales_org_buyer_party_kind");
+
                     b.HasIndex("OrganizationId", "PaymentMethod")
                         .HasDatabaseName("ix_sales_org_payment_method");
 
@@ -4081,6 +4133,8 @@ b.HasKey("Id");
 
                     b.ToTable("sales", "pos", t =>
                         {
+                            t.HasCheckConstraint("ck_sales_buyer_party_kind", "buyer_party_kind IN ('WalkIn', 'ExternalCustomer', 'Personal', 'Organization')");
+
                             t.HasCheckConstraint("ck_sales_payment_method", "payment_method IN ('Cash', 'ManualGCash', 'Utang', 'Card', 'GCash')");
 
                             t.HasCheckConstraint("ck_sales_status", "status IN ('Completed', 'Voided', 'AwaitingPayment')");

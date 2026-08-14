@@ -19,6 +19,16 @@ public interface IPOSCustomerRepository
         Guid platformBusinessCustomerId,
         CancellationToken cancellationToken = default);
 
+    Task<POSCustomer?> FindByLinkedPersonalPublicUserIdAsync(
+        PosOrganizationId organizationId,
+        string linkedPersonalPublicUserId,
+        CancellationToken cancellationToken = default);
+
+    Task<POSCustomer?> FindByLinkedBuyerOrganizationIdAsync(
+        PosOrganizationId organizationId,
+        Guid linkedBuyerOrganizationId,
+        CancellationToken cancellationToken = default);
+
     Task<int> CountByPlatformBusinessCustomerIdAsync(
         PosOrganizationId organizationId,
         Guid platformBusinessCustomerId,

@@ -1,7 +1,13 @@
 @page "/suppliers/connected/request"
+@using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers
+@using ExItS.PinoyBusinessPOS.Application.Identity
+@using ExItS.PinoyBusinessPOS.Application.Platform
+@using ExItS.PinoyBusinessPOS.Maui.Services
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IPosConnectedSupplierClient ConnectedSuppliers
+@inject IPlatformAccessClient Platform
+@inject IQrCodeScanService QrScan
 @inject IUtangCapabilityEvaluator Capabilities
 @inject IStringLocalizer<PosResources> L
 
@@ -15,18 +21,24 @@
                Title="@L[_succeeded ? "ConnectedSuppliers_RequestSent" : "ConnectedSuppliers_Error"]"
                Message="@_message" />
     }
-    <TextInput Label="@L["ConnectedSuppliers_OrganizationId"]"
-               Value="@_supplierOrganizationId"
-               ValueChanged="v => _supplierOrganizationId = v"
+    <TextInput Label="@L["ConnectedSuppliers_BusinessQrOrOrgId"]"
+               Value="@_supplierPublicIdOrQr"
+               ValueChanged="v => _supplierPublicIdOrQr = v"
+               Hint="@L["ConnectedSuppliers_BusinessQrHint"]"
                Required="true"
                Disabled="@_saving" />
-    <button class="pos-action-tile pos-action-tile--primary" disabled="@_saving" @onclick="RequestAsync">
-        @L["ConnectedSuppliers_SendRequest"]
-    </button>
+    <div class="pos-sell-customer__actions" role="group">
+        <button class="pos-action-tile" type="button" disabled="@_saving" @onclick="ScanBusinessQrAsync">
+            <span class="pos-action-tile__label">@L["ConnectedSuppliers_ScanBusinessQr"]</span>
+        </button>
+        <button class="pos-action-tile pos-action-tile--primary" type="button" disabled="@_saving" @onclick="RequestAsync">
+            <span class="pos-action-tile__label">@L["ConnectedSuppliers_SendRequest"]</span>
+        </button>
+    </div>
 </Page>
 
 @code {
-    private string? _supplierOrganizationId;
+    private string? _supplierPublicIdOrQr;
     private string? _message;
     private bool _saving;
     private bool _succeeded;
@@ -41,17 +53,118 @@
         if (!Capabilities.IsAllowed(UtangCapability.ManageSuppliers)) Nav.NavigateTo("/home", replace: true);
     }
 
-    private async Task RequestAsync()
+    private async Task ScanBusinessQrAsync()
     {
-        if (!Guid.TryParse(_supplierOrganizationId, out var organizationId))
+        _message = null;
+        _succeeded = false;
+        var scan = await QrScan.CaptureAsync();
+        if (!scan.Succeeded)
         {
-            _message = L["ConnectedSuppliers_OrganizationIdInvalid"];
+            if (!string.IsNullOrWhiteSpace(scan.ErrorKey)
+                && !string.Equals(scan.ErrorKey, "Personal_ScanCancelled", StringComparison.Ordinal))
+            {
+                _message = L[scan.ErrorKey];
+            }
+
             return;
         }
+
+        if (!ExItsQrPurposeGuard.TryValidateOrRoute(
+                scan.Payload,
+                ExItsQrPurposeGuard.Organization,
+                out _,
+                out var mismatch))
+        {
+            ExItsQrPurposeGuard.TryParsePurpose(scan.Payload, out var actual, out _);
+            _message = mismatch is not null && mismatch != ExItsQrPurposeGuard.MismatchMessage
+                ? mismatch
+                : ExItsQrPurposeGuard.MessageForMismatch(
+                    ExItsQrPurposeGuard.FlowConnectedSupplier,
+                    string.IsNullOrWhiteSpace(actual) ? null : actual);
+            return;
+        }
+
+        _supplierPublicIdOrQr = scan.Payload;
+        await RequestAsync();
+    }
+
+    private async Task RequestAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_supplierPublicIdOrQr))
+        {
+            _message = L["ConnectedSuppliers_BusinessQrRequired"];
+            return;
+        }
+
+        var payload = _supplierPublicIdOrQr.Trim();
+        if (!ExItsQrPurposeGuard.TryValidateOrRoute(
+                payload,
+                ExItsQrPurposeGuard.Organization,
+                out _,
+                out var mismatch)
+            && payload.Contains("://", StringComparison.Ordinal))
+        {
+            ExItsQrPurposeGuard.TryParsePurpose(payload, out var actual, out _);
+            _message = mismatch is not null && mismatch != ExItsQrPurposeGuard.MismatchMessage
+                ? mismatch
+                : ExItsQrPurposeGuard.MessageForMismatch(
+                    ExItsQrPurposeGuard.FlowConnectedSupplier,
+                    string.IsNullOrWhiteSpace(actual) ? null : actual);
+            return;
+        }
+
         _saving = true;
-        var result = await ConnectedSuppliers.RequestConnectionAsync(new(organizationId));
-        _saving = false;
-        _succeeded = result.IsSuccess;
-        _message = result.IsSuccess ? L["ConnectedSuppliers_RequestSentMessage"] : result.Error?.Detail ?? L["ConnectedSuppliers_RequestFailed"];
+        _message = null;
+        try
+        {
+            // Client-side resolve confirms Business QR / public ID before POS request (server also enforces).
+            Guid? supplierOrganizationId = null;
+            string? publicIdOrQr = payload;
+            if (payload.Contains("://", StringComparison.Ordinal)
+                || payload.StartsWith("exits://", StringComparison.OrdinalIgnoreCase))
+            {
+                var resolved = await Platform.ResolveQrAsync(
+                    new ResolveExItsQrRequest(payload, ExItsQrPurposeGuard.Organization));
+                if (!resolved.IsSuccess || resolved.Data is null || resolved.Data.OrganizationId is null)
+                {
+                    _succeeded = false;
+                    _message = resolved.Error?.Detail
+                               ?? ExItsQrPurposeGuard.MessageForMismatch(
+                                   ExItsQrPurposeGuard.FlowConnectedSupplier,
+                                   resolved.Data?.Purpose);
+                    return;
+                }
+
+                supplierOrganizationId = resolved.Data.OrganizationId;
+                publicIdOrQr = resolved.Data.PublicOrganizationId ?? payload;
+            }
+            else
+            {
+                var resolved = await Platform.ResolveOrganizationPublicIdAsync(
+                    new ResolvePublicOrganizationIdRequest(payload, Purpose: "Organization"));
+                if (!resolved.IsSuccess || resolved.Data is null)
+                {
+                    _succeeded = false;
+                    _message = resolved.Error?.Detail ?? L["ConnectedSuppliers_RequestFailed"];
+                    return;
+                }
+
+                supplierOrganizationId = resolved.Data.OrganizationId;
+                publicIdOrQr = resolved.Data.PublicOrganizationId;
+            }
+
+            var result = await ConnectedSuppliers.RequestConnectionAsync(
+                new RequestConnectionRequest(
+                    SupplierOrganizationId: supplierOrganizationId,
+                    SupplierPublicOrganizationIdOrQrPayload: publicIdOrQr));
+            _succeeded = result.IsSuccess;
+            _message = result.IsSuccess
+                ? L["ConnectedSuppliers_RequestSentMessage"]
+                : result.Error?.Detail ?? L["ConnectedSuppliers_RequestFailed"];
+        }
+        finally
+        {
+            _saving = false;
+        }
     }
 }

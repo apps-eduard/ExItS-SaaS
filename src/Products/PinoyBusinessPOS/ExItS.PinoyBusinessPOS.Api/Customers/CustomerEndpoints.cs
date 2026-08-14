@@ -279,6 +279,80 @@ internal static class CustomerEndpoints
             return PosApiResults.FromResult(result, c => Results.Ok(POSCustomerQueryService.Map(c)));
         });
 
+        group.MapPut("/{customerId:guid}/exits-identity/personal", async (
+            HttpRequest request,
+            Guid customerId,
+            LinkPersonalExItsIdentityRequest body,
+            LinkPOSCustomerPersonalExItsIdentity useCase,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!PosOrganizationScope.TryGetOrganizationId(request, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            if (!PosCommercialScope.TryAuthorize(access, UtangCapability.EditCustomer, out problem))
+            {
+                return problem!;
+            }
+
+            var result = await useCase
+                .ExecuteAsync(organizationId, customerId, body.PersonalPublicUserId, ct)
+                .ConfigureAwait(false);
+            return PosApiResults.FromResult(result, c => Results.Ok(POSCustomerQueryService.Map(c)));
+        });
+
+        group.MapPut("/{customerId:guid}/exits-identity/organization", async (
+            HttpRequest request,
+            Guid customerId,
+            LinkOrganizationExItsIdentityRequest body,
+            LinkPOSCustomerOrganizationExItsIdentity useCase,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!PosOrganizationScope.TryGetOrganizationId(request, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            if (!PosCommercialScope.TryAuthorize(access, UtangCapability.EditCustomer, out problem))
+            {
+                return problem!;
+            }
+
+            var result = await useCase
+                .ExecuteAsync(
+                    organizationId,
+                    customerId,
+                    body.BuyerOrganizationId,
+                    body.BuyerPublicOrganizationId,
+                    ct)
+                .ConfigureAwait(false);
+            return PosApiResults.FromResult(result, c => Results.Ok(POSCustomerQueryService.Map(c)));
+        });
+
+        group.MapDelete("/{customerId:guid}/exits-identity", async (
+            HttpRequest request,
+            Guid customerId,
+            ClearPOSCustomerExItsIdentityLink useCase,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!PosOrganizationScope.TryGetOrganizationId(request, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            if (!PosCommercialScope.TryAuthorize(access, UtangCapability.EditCustomer, out problem))
+            {
+                return problem!;
+            }
+
+            var result = await useCase.ExecuteAsync(organizationId, customerId, ct).ConfigureAwait(false);
+            return PosApiResults.FromResult(result, c => Results.Ok(POSCustomerQueryService.Map(c)));
+        });
+
         return app;
     }
 }
@@ -299,3 +373,9 @@ public sealed record UpdateCustomerRequest(
     DateTimeOffset? ExpectedUpdatedAtUtc = null);
 
 public sealed record CorrelatePlatformBusinessCustomerRequest(Guid PlatformBusinessCustomerId);
+
+public sealed record LinkPersonalExItsIdentityRequest(string PersonalPublicUserId);
+
+public sealed record LinkOrganizationExItsIdentityRequest(
+    Guid BuyerOrganizationId,
+    string BuyerPublicOrganizationId);

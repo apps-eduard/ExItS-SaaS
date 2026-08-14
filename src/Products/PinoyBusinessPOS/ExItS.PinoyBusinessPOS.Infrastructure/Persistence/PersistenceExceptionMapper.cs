@@ -1,4 +1,5 @@
 using ExItS.PinoyBusinessPOS.Application.Common;
+using ExItS.PinoyBusinessPOS.Domain.Common;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
@@ -91,6 +92,14 @@ internal static class PersistenceExceptionMapper
         {
             errorCode = ApplicationErrorCodes.PlatformBusinessCustomerCorrelationConflict;
             message = "Another POS customer in this organization is already correlated to that Platform BusinessCustomer.";
+            return true;
+        }
+
+        if (constraint.Contains("ux_customers_org_linked_personal", StringComparison.OrdinalIgnoreCase)
+            || constraint.Contains("ux_customers_org_linked_buyer_org", StringComparison.OrdinalIgnoreCase))
+        {
+            errorCode = DomainErrorCodes.CustomerExItsIdentityLinkConflict;
+            message = "Another POS customer in this organization is already linked to that ExItS identity.";
             return true;
         }
 

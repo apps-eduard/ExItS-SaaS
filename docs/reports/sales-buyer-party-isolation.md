@@ -1,0 +1,44 @@
+# Sales buyer party and QR purpose hardening
+
+**Status:** Implemented  
+**Starting SHA:** `66a972f84741f7b7f394c19438e0b9ef0d7367c0`  
+**Feature SHAs:** _(filled after push)_  
+**Related:** [sales-buyer-party-model.md](../engineering/sales-buyer-party-model.md)
+
+## Architecture audit (pre-implementation)
+
+| Area | Finding |
+|------|---------|
+| Sale ownership | Already `OrganizationId`; actor = `RecordedBy` |
+| Customer | Org-owned `POSCustomer`; only `PlatformBusinessCustomerId` link |
+| Buyer party | **Missing** — only optional `CustomerId` |
+| Business Utang | Org-owned `CreditEntry` → `POSCustomer` (separate from Personal Utang) |
+| Snapshots | Line snapshots existed; buyer display was live customer join |
+| Offline | LocalStore v9; cash outbox org-scoped; no buyer columns |
+| Supplier QR | Manual Guid only; no purpose enforcement |
+
+## Delivered
+
+- Sale buyer party kinds + immutable snapshots
+- Customer ExItS Personal/Organization identity links
+- Checkout + MAUI scan Personal/Business QR for customers
+- Connected supplier Business QR required (server + UI)
+- Purpose-mismatch plain-language messages
+- Migration `20260814220000_AddSaleBuyerPartyAndCustomerExItsLinks`
+- LocalStore **unchanged (v9)**
+
+## Gates
+
+| Gate | Result |
+|------|--------|
+| Device Verified | **No** |
+| Browser Verified | **No** |
+| Production Ready | **No** |
+
+## Deferred
+
+- Personal purchase history of merchant sales
+- B2B invoice / buyer-org view of seller sales
+- Automatic connected-supplier PO → seller sale
+- Ownership transfer UI
+- Payment / loyalty QR

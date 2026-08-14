@@ -10,6 +10,11 @@ public static class ExItsQrPurposeGuard
     public const string Organization = "Organization";
     public const string PosDeviceRegistration = "PosDeviceRegistration";
 
+    public const string FlowSaleCustomer = "sale-customer";
+    public const string FlowConnectedSupplier = "connected-supplier";
+    public const string FlowDeviceRegistration = "device-registration";
+    public const string FlowPersonal = "personal";
+
     public const string MismatchMessage =
         "This QR code is not the right type for this screen. Scan a matching ExItS code.";
 
@@ -53,6 +58,54 @@ public static class ExItsQrPurposeGuard
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// Plain-language mismatch copy for scanner flows (WP §24).
+    /// </summary>
+    public static string MessageForMismatch(string flow, string? actualPurpose)
+    {
+        var actual = (actualPurpose ?? string.Empty).Trim();
+        var flowKey = (flow ?? string.Empty).Trim().ToLowerInvariant();
+
+        return flowKey switch
+        {
+            FlowSaleCustomer or "salecustomer" => actual switch
+            {
+                PosDeviceRegistration =>
+                    "This is a device registration code. Scan the customer's Personal or Business QR instead.",
+                _ =>
+                    "This QR code is not for a sale customer. Scan a Personal or Business ExItS QR."
+            },
+            FlowConnectedSupplier or "connectedsupplier" => actual switch
+            {
+                Personal =>
+                    "Connected suppliers require a Business QR, not a Personal QR.",
+                PosDeviceRegistration =>
+                    "This is a device registration code. Scan the supplier's Business QR instead.",
+                _ =>
+                    "Connected suppliers need a Business QR. Scan the supplier's organization code."
+            },
+            FlowDeviceRegistration or "deviceregistration" or "posdeviceregistration" => actual switch
+            {
+                Personal =>
+                    "This is a Personal QR. Scan the device registration code shown on the organization device screen.",
+                Organization =>
+                    "This is a Business QR. Scan the device registration code shown on the organization device screen.",
+                _ =>
+                    "This QR code is not a device registration code. Scan the code shown for this device."
+            },
+            FlowPersonal => actual switch
+            {
+                Organization =>
+                    "This is a Business QR. Scan or enter a Personal ExItS ID instead.",
+                PosDeviceRegistration =>
+                    "This is a device registration code. Scan a Personal ExItS QR instead.",
+                _ =>
+                    "This QR code is not a Personal ExItS ID. Scan a Personal QR."
+            },
+            _ => MismatchMessage
+        };
     }
 
     /// <summary>
@@ -128,7 +181,7 @@ public static class ExItsQrPurposeGuard
         var t = value.Trim();
         return t.Length == 12
                && t.StartsWith("EX-", StringComparison.OrdinalIgnoreCase)
-               && t[5] == '-';
+               && t[7] == '-';
     }
 
     private static bool LooksLikePublicOrganizationId(string? value)

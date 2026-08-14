@@ -15,7 +15,10 @@ public sealed record POSCustomerDto(
     string Status,
     Guid? PlatformBusinessCustomerId,
     DateTimeOffset CreatedAtUtc,
-    DateTimeOffset UpdatedAtUtc);
+    DateTimeOffset UpdatedAtUtc,
+    string? LinkedPersonalPublicUserId = null,
+    Guid? LinkedBuyerOrganizationId = null,
+    string? LinkedBuyerPublicOrganizationId = null);
 
 public sealed record CustomerSyncPageDto(
     List<POSCustomerDto> Items,
@@ -111,7 +114,10 @@ public sealed class POSCustomerQueryService
             customer.Status.ToString(),
             customer.PlatformBusinessCustomerId,
             customer.CreatedAtUtc,
-            customer.UpdatedAtUtc);
+            customer.UpdatedAtUtc,
+            customer.LinkedPersonalPublicUserId,
+            customer.LinkedBuyerOrganizationId,
+            customer.LinkedBuyerPublicOrganizationId);
 }
 
 public sealed class CreatePOSCustomer
@@ -506,6 +512,186 @@ public sealed class ClearPOSCustomerPlatformCorrelation
             }
 
             customer.ClearPlatformBusinessCustomerCorrelation(_clock.UtcNow);
+            await _customers.UpdateAsync(customer, cancellationToken).ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            return ApplicationResult<POSCustomer>.Success(customer);
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<POSCustomer>.Failure(ex.ErrorCode, ex.Message);
+        }
+        catch (PersistenceConflictException ex)
+        {
+            return ApplicationResult<POSCustomer>.Failure(ex.ErrorCode, ex.Message);
+        }
+    }
+}
+
+public sealed class LinkPOSCustomerPersonalExItsIdentity
+{
+    private readonly IPOSCustomerRepository _customers;
+    private readonly IPosUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
+
+    public LinkPOSCustomerPersonalExItsIdentity(
+        IPOSCustomerRepository customers,
+        IPosUnitOfWork unitOfWork,
+        IClock clock)
+    {
+        _customers = customers;
+        _unitOfWork = unitOfWork;
+        _clock = clock;
+    }
+
+    public async Task<ApplicationResult<POSCustomer>> ExecuteAsync(
+        Guid organizationId,
+        Guid customerId,
+        string personalPublicUserId,
+        CancellationToken cancellationToken = default)
+    {
+        var orgId = PosOrganizationId.From(organizationId);
+        var customer = await _customers
+            .GetByIdAsync(orgId, POSCustomerId.From(customerId), cancellationToken)
+            .ConfigureAwait(false);
+        if (customer is null)
+        {
+            return ApplicationResult<POSCustomer>.Failure(
+                ApplicationErrorCodes.CustomerNotFound,
+                "Customer was not found.");
+        }
+
+        try
+        {
+            var existing = await _customers
+                .FindByLinkedPersonalPublicUserIdAsync(orgId, personalPublicUserId, cancellationToken)
+                .ConfigureAwait(false);
+            if (existing is not null && existing.Id != customer.Id)
+            {
+                return ApplicationResult<POSCustomer>.Failure(
+                    DomainErrorCodes.CustomerExItsIdentityLinkConflict,
+                    "Another POS customer in this organization is already linked to that Personal ExItS identity.");
+            }
+
+            customer.LinkPersonalExItsIdentity(personalPublicUserId, _clock.UtcNow);
+            await _customers.UpdateAsync(customer, cancellationToken).ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            return ApplicationResult<POSCustomer>.Success(customer);
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<POSCustomer>.Failure(ex.ErrorCode, ex.Message);
+        }
+        catch (PersistenceConflictException ex)
+        {
+            return ApplicationResult<POSCustomer>.Failure(ex.ErrorCode, ex.Message);
+        }
+    }
+}
+
+public sealed class LinkPOSCustomerOrganizationExItsIdentity
+{
+    private readonly IPOSCustomerRepository _customers;
+    private readonly IPosUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
+
+    public LinkPOSCustomerOrganizationExItsIdentity(
+        IPOSCustomerRepository customers,
+        IPosUnitOfWork unitOfWork,
+        IClock clock)
+    {
+        _customers = customers;
+        _unitOfWork = unitOfWork;
+        _clock = clock;
+    }
+
+    public async Task<ApplicationResult<POSCustomer>> ExecuteAsync(
+        Guid organizationId,
+        Guid customerId,
+        Guid buyerOrganizationId,
+        string buyerPublicOrganizationId,
+        CancellationToken cancellationToken = default)
+    {
+        var orgId = PosOrganizationId.From(organizationId);
+        var customer = await _customers
+            .GetByIdAsync(orgId, POSCustomerId.From(customerId), cancellationToken)
+            .ConfigureAwait(false);
+        if (customer is null)
+        {
+            return ApplicationResult<POSCustomer>.Failure(
+                ApplicationErrorCodes.CustomerNotFound,
+                "Customer was not found.");
+        }
+
+        try
+        {
+            var existing = await _customers
+                .FindByLinkedBuyerOrganizationIdAsync(orgId, buyerOrganizationId, cancellationToken)
+                .ConfigureAwait(false);
+            if (existing is not null && existing.Id != customer.Id)
+            {
+                return ApplicationResult<POSCustomer>.Failure(
+                    DomainErrorCodes.CustomerExItsIdentityLinkConflict,
+                    "Another POS customer in this organization is already linked to that ExItS business identity.");
+            }
+
+            customer.LinkOrganizationExItsIdentity(buyerOrganizationId, buyerPublicOrganizationId, _clock.UtcNow);
+            await _customers.UpdateAsync(customer, cancellationToken).ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            return ApplicationResult<POSCustomer>.Success(customer);
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<POSCustomer>.Failure(ex.ErrorCode, ex.Message);
+        }
+        catch (PersistenceConflictException ex)
+        {
+            return ApplicationResult<POSCustomer>.Failure(ex.ErrorCode, ex.Message);
+        }
+    }
+}
+
+public sealed class ClearPOSCustomerExItsIdentityLink
+{
+    private readonly IPOSCustomerRepository _customers;
+    private readonly IPosUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
+
+    public ClearPOSCustomerExItsIdentityLink(
+        IPOSCustomerRepository customers,
+        IPosUnitOfWork unitOfWork,
+        IClock clock)
+    {
+        _customers = customers;
+        _unitOfWork = unitOfWork;
+        _clock = clock;
+    }
+
+    public async Task<ApplicationResult<POSCustomer>> ExecuteAsync(
+        Guid organizationId,
+        Guid customerId,
+        CancellationToken cancellationToken = default)
+    {
+        var orgId = PosOrganizationId.From(organizationId);
+        var customer = await _customers
+            .GetByIdAsync(orgId, POSCustomerId.From(customerId), cancellationToken)
+            .ConfigureAwait(false);
+        if (customer is null)
+        {
+            return ApplicationResult<POSCustomer>.Failure(
+                ApplicationErrorCodes.CustomerNotFound,
+                "Customer was not found.");
+        }
+
+        try
+        {
+            if (customer.LinkedPersonalPublicUserId is null
+                && customer.LinkedBuyerOrganizationId is null
+                && customer.LinkedBuyerPublicOrganizationId is null)
+            {
+                return ApplicationResult<POSCustomer>.Success(customer);
+            }
+
+            customer.ClearExItsIdentityLink(_clock.UtcNow);
             await _customers.UpdateAsync(customer, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             return ApplicationResult<POSCustomer>.Success(customer);

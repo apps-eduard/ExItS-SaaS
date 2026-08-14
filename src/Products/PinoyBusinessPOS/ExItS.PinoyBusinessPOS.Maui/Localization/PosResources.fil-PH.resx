@@ -1227,6 +1227,12 @@
   <data name="Sales_Checkout_AddCustomerWithExItsId" xml:space="preserve"><value>Idagdag gamit ang ExItS ID</value></data>
   <data name="Sales_Checkout_AddCustomerShort" xml:space="preserve"><value>Bago</value></data>
   <data name="Sales_Checkout_ExItsIdShort" xml:space="preserve"><value>ExItS ID</value></data>
+  <data name="Sales_Checkout_ScanCustomerQr" xml:space="preserve"><value>I-scan ang QR ng customer</value></data>
+  <data name="Sales_Checkout_BuyerExIts" xml:space="preserve"><value>ExItS buyer</value></data>
+  <data name="Sales_Checkout_BuyerPersonal" xml:space="preserve"><value>Personal</value></data>
+  <data name="Sales_Checkout_BuyerOrganization" xml:space="preserve"><value>Negosyo</value></data>
+  <data name="Sales_Checkout_BuyerQrOnlineRequired" xml:space="preserve"><value>Kailangan ng koneksyon para i-scan ang customer QR.</value></data>
+  <data name="Sales_Checkout_BuyerQrResolveFailed" xml:space="preserve"><value>Hindi ma-resolve ang ExItS QR. Subukan muli o pumili mula sa listahan.</value></data>
   <data name="Sales_Checkout_ChooseCustomer" xml:space="preserve"><value>Pumili ng customer</value></data>
   <data name="Sales_Checkout_ChangeCustomer" xml:space="preserve"><value>Palitan</value></data>
   <data name="Sales_Checkout_CustomerPickerTitle" xml:space="preserve"><value>Pumili ng customer</value></data>
@@ -2636,9 +2642,13 @@
   <data name="ConnectedSuppliers_Status_Disconnected" xml:space="preserve"><value>Hindi na konektado</value></data>
   <data name="ConnectedSuppliers_RequestConnection" xml:space="preserve"><value>Ikonekta ang supplier</value></data>
   <data name="ConnectedSuppliers_RequestTitle" xml:space="preserve"><value>Ikonekta ang ExItS supplier</value></data>
-  <data name="ConnectedSuppliers_RequestHelp" xml:space="preserve"><value>Ilagay ang ExItS ID ng organisasyon ng supplier. Kailangan nilang aprubahan ang hiling.</value></data>
+  <data name="ConnectedSuppliers_RequestHelp" xml:space="preserve"><value>I-scan ang Business QR ng supplier o ilagay ang organization ID (ORG######). Kailangan nilang aprubahan ang hiling.</value></data>
   <data name="ConnectedSuppliers_OrganizationId" xml:space="preserve"><value>ID ng organisasyon ng supplier</value></data>
   <data name="ConnectedSuppliers_OrganizationIdInvalid" xml:space="preserve"><value>Maglagay ng wastong organization ID.</value></data>
+  <data name="ConnectedSuppliers_BusinessQrOrOrgId" xml:space="preserve"><value>Business QR o organization ID</value></data>
+  <data name="ConnectedSuppliers_BusinessQrHint" xml:space="preserve"><value>Gamitin ang Business QR ng supplier (ORG######). Hindi tinatanggap ang Personal at device code.</value></data>
+  <data name="ConnectedSuppliers_BusinessQrRequired" xml:space="preserve"><value>I-scan o ilagay ang Business QR / organization ID ng supplier.</value></data>
+  <data name="ConnectedSuppliers_ScanBusinessQr" xml:space="preserve"><value>I-scan ang Business QR</value></data>
   <data name="ConnectedSuppliers_SendRequest" xml:space="preserve"><value>Ipadala ang hiling</value></data>
   <data name="ConnectedSuppliers_RequestSent" xml:space="preserve"><value>Naipadala ang hiling</value></data>
   <data name="ConnectedSuppliers_RequestSentMessage" xml:space="preserve"><value>Maaari nang aprubahan o tanggihan ng supplier ang hiling.</value></data>

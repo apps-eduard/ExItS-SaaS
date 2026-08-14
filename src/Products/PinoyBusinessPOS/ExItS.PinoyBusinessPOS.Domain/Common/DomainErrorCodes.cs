@@ -118,6 +118,11 @@ public static class DomainErrorCodes
     public const string SaleUtangLinkageInvalid = "pos.sale.utang.linkage_invalid";
     public const string SaleUtangTotalMustBePositive = "pos.sale.utang.total_must_be_positive";
     public const string SaleCashMustNotLinkCredit = "pos.sale.cash_must_not_link_credit";
+    public const string InvalidSaleBuyerParty = "pos.sale.buyer_party.invalid";
+    public const string InvalidCustomerExItsIdentityLink = "pos.customer.exits_identity_link.invalid";
+    public const string CustomerExItsIdentityLinkConflict = "pos.customer.exits_identity_link.conflict";
+    public const string ConnectedSupplierRequiresBusinessQr = "pos.connected_supplier.requires_business_qr";
+    public const string ConnectedSupplierQrPurposeMismatch = "pos.connected_supplier.qr_purpose_mismatch";
 
     public const string InvalidInventoryAccountId = "pos.inventory.account.id.invalid";
     public const string InvalidInventoryLotId = "pos.inventory.lot.id.invalid";

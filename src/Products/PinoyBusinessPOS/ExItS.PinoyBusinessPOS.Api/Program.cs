@@ -86,6 +86,9 @@ builder.Services.AddScoped<DeactivatePOSCustomer>();
 builder.Services.AddScoped<ReactivatePOSCustomer>();
 builder.Services.AddScoped<CorrelatePOSCustomerToPlatformBusinessCustomer>();
 builder.Services.AddScoped<ClearPOSCustomerPlatformCorrelation>();
+builder.Services.AddScoped<LinkPOSCustomerPersonalExItsIdentity>();
+builder.Services.AddScoped<LinkPOSCustomerOrganizationExItsIdentity>();
+builder.Services.AddScoped<ClearPOSCustomerExItsIdentityLink>();
 builder.Services.AddScoped<CreditEntryQueryService>();
 builder.Services.AddScoped<CreateCreditEntry>();
 builder.Services.AddScoped<ReverseCreditEntry>();
@@ -124,6 +127,16 @@ builder.Services.AddScoped<ImportTemplateBatch>();
 builder.Services.AddScoped<ImportSelectedProducts>();
 builder.Services.AddScoped<ProcessPosCatalogImportChunk>();
 builder.Services.AddHttpClient<IPlatformMerchantCatalogClient, PlatformMerchantCatalogClient>((provider, client) =>
+{
+    var options = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<PlatformAuthOptions>>().Value;
+    if (!string.IsNullOrWhiteSpace(options.BaseUrl))
+    {
+        client.BaseAddress = new Uri(options.BaseUrl.TrimEnd('/') + "/", UriKind.Absolute);
+    }
+
+    client.Timeout = TimeSpan.FromSeconds(10);
+});
+builder.Services.AddHttpClient<IPlatformOrganizationPublicResolve, PlatformOrganizationPublicResolveClient>((provider, client) =>
 {
     var options = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<PlatformAuthOptions>>().Value;
     if (!string.IsNullOrWhiteSpace(options.BaseUrl))

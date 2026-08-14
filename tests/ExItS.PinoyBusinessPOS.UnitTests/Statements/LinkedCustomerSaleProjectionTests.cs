@@ -1,4 +1,4 @@
-﻿using ExItS.PinoyBusinessPOS.Application.Common;
+using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Credit;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Application.Payments;
@@ -17,8 +17,8 @@ using ExItS.PinoyBusinessPOS.Domain.Sales;
 namespace ExItS.PinoyBusinessPOS.UnitTests.Statements;
 
 /// <summary>
-/// End-to-end-ish projection: accepted linked customer â†’ checkout sale with that POSCustomerId
-/// â†’ Personal statement/receipt visibility. Cash purchases appear as Sale/Purchase rows;
+/// End-to-end-ish projection: accepted linked customer → checkout sale with that POSCustomerId
+/// → Personal statement/receipt visibility. Cash purchases appear as Sale/Purchase rows;
 /// Utang remains Credit/UtangCharge (no duplicate Sale row).
 /// </summary>
 public sealed class LinkedCustomerSaleProjectionTests
@@ -545,6 +545,20 @@ public sealed class LinkedCustomerSaleProjectionTests
             CancellationToken cancellationToken = default) =>
             Task.FromResult(_items.FirstOrDefault(c =>
                 c.OrganizationId == organizationId && c.PlatformBusinessCustomerId == platformBusinessCustomerId));
+
+        public Task<POSCustomer?> FindByLinkedPersonalPublicUserIdAsync(
+            PosOrganizationId organizationId,
+            string linkedPersonalPublicUserId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<POSCustomer?>(null);
+
+        public Task<POSCustomer?> FindByLinkedBuyerOrganizationIdAsync(
+            PosOrganizationId organizationId,
+            Guid linkedBuyerOrganizationId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<POSCustomer?>(null);
+
+
 
         public Task<int> CountByPlatformBusinessCustomerIdAsync(
             PosOrganizationId organizationId,

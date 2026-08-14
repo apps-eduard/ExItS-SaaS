@@ -118,7 +118,12 @@ public sealed class SaleQueryService
                 .ToList(),
             sale.CustomerId?.Value,
             sale.LinkedCreditEntryId?.Value,
-            ShiftId: sale.CashierShiftId?.Value);
+            ShiftId: sale.CashierShiftId?.Value,
+            BuyerPartyKind: SaleBuyerParty.ToCode(sale.BuyerParty.Kind),
+            BuyerDisplayNameSnapshot: sale.BuyerParty.DisplayNameSnapshot,
+            BuyerPersonalPublicUserId: sale.BuyerParty.PersonalPublicUserId,
+            BuyerOrganizationId: sale.BuyerParty.BuyerOrganizationId,
+            BuyerPublicOrganizationId: sale.BuyerParty.BuyerPublicOrganizationId);
 
     private async Task<PosSaleDto> MapEnrichedAsync(Sale sale, CancellationToken cancellationToken)
     {
@@ -148,6 +153,9 @@ public sealed class SaleQueryService
                 linkedDueDate = credit?.CurrentDueDate;
             }
         }
+
+        // Prefer immutable buyer snapshot for receipts/history; fall back to live customer name.
+        displayName = sale.BuyerParty.DisplayNameSnapshot ?? displayName;
 
         string? shiftNumber = null;
         if (sale.CashierShiftId is not null)
@@ -277,6 +285,11 @@ public sealed class CheckoutSale
         DateOnly? dueDate = null,
         Guid? creditEntryId = null,
         Guid? shiftId = null,
+        string? buyerPartyKind = null,
+        string? buyerDisplayNameSnapshot = null,
+        string? buyerPersonalPublicUserId = null,
+        Guid? buyerOrganizationId = null,
+        string? buyerPublicOrganizationId = null,
         CancellationToken cancellationToken = default)
     {
         if (actorId == Guid.Empty)
@@ -341,26 +354,51 @@ public sealed class CheckoutSale
 
             POSCustomerId? linkedCustomerId = null;
             CreditEntryId? linkedCreditEntryId = null;
+            POSCustomer? loadedCustomer = null;
 
             if (customerId is not null && customerId != Guid.Empty)
             {
                 linkedCustomerId = POSCustomerId.From(customerId.Value);
-                var customer = await _customers
+                loadedCustomer = await _customers
                     .GetByIdAsync(orgId, linkedCustomerId, cancellationToken)
                     .ConfigureAwait(false);
-                if (customer is null)
+                if (loadedCustomer is null)
                 {
                     return ApplicationResult<Sale>.Failure(
                         ApplicationErrorCodes.CustomerNotFound,
                         "Customer was not found.");
                 }
 
-                if (customer.Status != CustomerStatus.Active)
+                if (loadedCustomer.Status != CustomerStatus.Active)
                 {
                     return ApplicationResult<Sale>.Failure(
                         DomainErrorCodes.CustomerNotActive,
                         "Sales can only attach an active customer.");
                 }
+            }
+
+            var buyerPartyResult = SaleBuyerPartyFactory.TryCreate(
+                buyerPartyKind,
+                buyerDisplayNameSnapshot,
+                buyerPersonalPublicUserId,
+                buyerOrganizationId,
+                buyerPublicOrganizationId,
+                loadedCustomer);
+            if (!buyerPartyResult.IsSuccess)
+            {
+                return ApplicationResult<Sale>.Failure(
+                    buyerPartyResult.ErrorCode!,
+                    buyerPartyResult.ErrorMessage!);
+            }
+
+            var resolvedBuyerParty = buyerPartyResult.Value!;
+            try
+            {
+                resolvedBuyerParty.EnsureConsistentWith(linkedCustomerId);
+            }
+            catch (DomainException ex)
+            {
+                return ApplicationResult<Sale>.Failure(ex.ErrorCode, ex.Message);
             }
 
             if (isUtang)
@@ -623,7 +661,8 @@ public sealed class CheckoutSale
                         linkedShiftId,
                         linkedRegisterId,
                         capturedTaxAmount,
-                        capturedTaxPricingMode),
+                        capturedTaxPricingMode,
+                        resolvedBuyerParty),
                     async (createdSale, ct) =>
                     {
                         // Electronic Card/GCash sales await payment — stock deducts only after Paid webhook.

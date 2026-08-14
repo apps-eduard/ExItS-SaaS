@@ -38,4 +38,8 @@ LocalStore schema **v9** is unchanged for this package: file-per-organization is
 
 ## Connected suppliers
 
-Buyer↔supplier relationships remain **organization↔organization** commercial links. Public identity QR does not create supplier relationships. See [connected-exits-suppliers.md](../engineering/connected-exits-suppliers.md).
+Buyer↔supplier relationships remain **organization↔organization** commercial links. Public identity QR does not create supplier relationships. Connected-supplier connect requires Business QR / `ORG######` and rejects Personal and device-registration QR on both MAUI and POS Application. See [connected-exits-suppliers.md](../engineering/connected-exits-suppliers.md).
+
+## POS sale buyer parties
+
+POS sales remain owned by the selling organization. Personal or Business QR at checkout identifies the **buyer counterparty** only — never Personal ownership of the sale. See [sales-buyer-party-model.md](../engineering/sales-buyer-party-model.md).

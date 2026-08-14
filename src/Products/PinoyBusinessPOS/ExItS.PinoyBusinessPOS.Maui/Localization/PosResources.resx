@@ -1227,6 +1227,12 @@
   <data name="Sales_Checkout_AddCustomerWithExItsId" xml:space="preserve"><value>Add with ExItS ID</value></data>
   <data name="Sales_Checkout_AddCustomerShort" xml:space="preserve"><value>New</value></data>
   <data name="Sales_Checkout_ExItsIdShort" xml:space="preserve"><value>ExItS ID</value></data>
+  <data name="Sales_Checkout_ScanCustomerQr" xml:space="preserve"><value>Scan customer QR</value></data>
+  <data name="Sales_Checkout_BuyerExIts" xml:space="preserve"><value>ExItS buyer</value></data>
+  <data name="Sales_Checkout_BuyerPersonal" xml:space="preserve"><value>Personal</value></data>
+  <data name="Sales_Checkout_BuyerOrganization" xml:space="preserve"><value>Business</value></data>
+  <data name="Sales_Checkout_BuyerQrOnlineRequired" xml:space="preserve"><value>Scanning a customer QR needs a connection.</value></data>
+  <data name="Sales_Checkout_BuyerQrResolveFailed" xml:space="preserve"><value>Could not resolve that ExItS QR. Try again or choose a customer from the list.</value></data>
   <data name="Sales_Checkout_ChooseCustomer" xml:space="preserve"><value>Choose customer</value></data>
   <data name="Sales_Checkout_ChangeCustomer" xml:space="preserve"><value>Change</value></data>
   <data name="Sales_Checkout_CustomerPickerTitle" xml:space="preserve"><value>Select customer</value></data>
@@ -2636,9 +2642,13 @@
   <data name="ConnectedSuppliers_Status_Disconnected" xml:space="preserve"><value>Disconnected</value></data>
   <data name="ConnectedSuppliers_RequestConnection" xml:space="preserve"><value>Connect supplier</value></data>
   <data name="ConnectedSuppliers_RequestTitle" xml:space="preserve"><value>Connect an ExItS supplier</value></data>
-  <data name="ConnectedSuppliers_RequestHelp" xml:space="preserve"><value>Enter the supplier organization's ExItS ID. The supplier must approve your request.</value></data>
+  <data name="ConnectedSuppliers_RequestHelp" xml:space="preserve"><value>Scan the supplier Business QR or enter their organization ID (ORG######). The supplier must approve your request.</value></data>
   <data name="ConnectedSuppliers_OrganizationId" xml:space="preserve"><value>Supplier organization ID</value></data>
   <data name="ConnectedSuppliers_OrganizationIdInvalid" xml:space="preserve"><value>Enter a valid supplier organization ID.</value></data>
+  <data name="ConnectedSuppliers_BusinessQrOrOrgId" xml:space="preserve"><value>Business QR or organization ID</value></data>
+  <data name="ConnectedSuppliers_BusinessQrHint" xml:space="preserve"><value>Use the supplier's Business QR (ORG######). Personal and device codes are rejected.</value></data>
+  <data name="ConnectedSuppliers_BusinessQrRequired" xml:space="preserve"><value>Scan or enter the supplier Business QR / organization ID.</value></data>
+  <data name="ConnectedSuppliers_ScanBusinessQr" xml:space="preserve"><value>Scan Business QR</value></data>
   <data name="ConnectedSuppliers_SendRequest" xml:space="preserve"><value>Send request</value></data>
   <data name="ConnectedSuppliers_RequestSent" xml:space="preserve"><value>Request sent</value></data>
   <data name="ConnectedSuppliers_RequestSentMessage" xml:space="preserve"><value>The supplier can now approve or decline your request.</value></data>

@@ -10,7 +10,10 @@ public sealed record PosCustomerListItemDto(
     string Status,
     Guid? PlatformBusinessCustomerId,
     DateTimeOffset CreatedAtUtc,
-    DateTimeOffset UpdatedAtUtc);
+    DateTimeOffset UpdatedAtUtc,
+    string? LinkedPersonalPublicUserId = null,
+    Guid? LinkedBuyerOrganizationId = null,
+    string? LinkedBuyerPublicOrganizationId = null);
 
 public sealed record PosCustomerDetailDto(
     Guid CustomerId,
@@ -22,7 +25,10 @@ public sealed record PosCustomerDetailDto(
     string Status,
     Guid? PlatformBusinessCustomerId,
     DateTimeOffset CreatedAtUtc,
-    DateTimeOffset UpdatedAtUtc);
+    DateTimeOffset UpdatedAtUtc,
+    string? LinkedPersonalPublicUserId = null,
+    Guid? LinkedBuyerOrganizationId = null,
+    string? LinkedBuyerPublicOrganizationId = null);
 
 public sealed record CreatePosCustomerRequest(
     string DisplayName,

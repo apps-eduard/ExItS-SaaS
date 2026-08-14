@@ -28,6 +28,8 @@ Page-based `ListProductsAsync` (`PosPagination`: default 20, max 100). Connected
 ### Organization-to-organization relationships
 **None** historically as a general Platform capability. Phase 1 introduces an explicit buyer↔supplier relationship aggregate in the POS database (Platform org GUIDs as values only; no cross-DB FK). Public Personal / Organization identity QR codes do **not** create supplier relationships — buyer↔supplier links remain org↔org commercial relationships only (see [personal-organization-identity-boundaries.md](../architecture/personal-organization-identity-boundaries.md)).
 
+**Connect UX / server rule:** requesting a connected supplier requires the supplier **Business QR** / `ORG######`. Personal QR and POS device-registration QR are rejected in MAUI and in `RequestConnection` (Guid-only is no longer accepted).
+
 ## Conceptual model
 
 ```text

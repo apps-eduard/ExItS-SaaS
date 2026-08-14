@@ -119,6 +119,14 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
             entity.Property(e => e.PlatformBusinessCustomerId)
                 .HasColumnName("platform_business_customer_id");
+            entity.Property(e => e.LinkedPersonalPublicUserId)
+                .HasColumnName("linked_personal_public_user_id")
+                .HasMaxLength(12);
+            entity.Property(e => e.LinkedBuyerOrganizationId)
+                .HasColumnName("linked_buyer_organization_id");
+            entity.Property(e => e.LinkedBuyerPublicOrganizationId)
+                .HasColumnName("linked_buyer_public_organization_id")
+                .HasMaxLength(9);
             entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
             entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
             entity.Property(e => e.Xmin)
@@ -142,6 +150,16 @@ public sealed class PosDbContext : DbContext
                 .IsUnique()
                 .HasDatabaseName("ux_customers_org_platform_business_customer")
                 .HasFilter("platform_business_customer_id IS NOT NULL");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.LinkedPersonalPublicUserId })
+                .IsUnique()
+                .HasDatabaseName("ux_customers_org_linked_personal")
+                .HasFilter("linked_personal_public_user_id IS NOT NULL");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.LinkedBuyerOrganizationId })
+                .IsUnique()
+                .HasDatabaseName("ux_customers_org_linked_buyer_org")
+                .HasFilter("linked_buyer_organization_id IS NOT NULL");
 
             entity.HasIndex(e => e.OrganizationId)
                 .HasDatabaseName("ix_customers_organization_id");
@@ -800,6 +818,9 @@ public sealed class PosDbContext : DbContext
                 tb.HasCheckConstraint(
                     "ck_sales_tender_consistency",
                     "(payment_method = 'Cash' AND amount_tendered IS NOT NULL AND change_amount IS NOT NULL AND amount_tendered >= total AND gcash_reference IS NULL AND linked_credit_entry_id IS NULL) OR (payment_method = 'ManualGCash' AND amount_tendered IS NULL AND change_amount IS NULL AND linked_credit_entry_id IS NULL) OR (payment_method IN ('Card', 'GCash') AND amount_tendered IS NULL AND change_amount IS NULL AND linked_credit_entry_id IS NULL) OR (payment_method = 'Utang' AND amount_tendered IS NULL AND change_amount IS NULL AND gcash_reference IS NULL AND customer_id IS NOT NULL AND linked_credit_entry_id IS NOT NULL AND total > 0)");
+                tb.HasCheckConstraint(
+                    "ck_sales_buyer_party_kind",
+                    "buyer_party_kind IN ('WalkIn', 'ExternalCustomer', 'Personal', 'Organization')");
             });
 
             entity.HasKey(e => e.Id);
@@ -823,6 +844,20 @@ public sealed class PosDbContext : DbContext
                 .HasColumnName("gcash_reference")
                 .HasMaxLength(Sale.GCashReferenceMaxLength);
             entity.Property(e => e.CustomerId).HasColumnName("customer_id");
+            entity.Property(e => e.BuyerPartyKind)
+                .HasColumnName("buyer_party_kind")
+                .HasMaxLength(32)
+                .IsRequired();
+            entity.Property(e => e.BuyerDisplayNameSnapshot)
+                .HasColumnName("buyer_display_name_snapshot")
+                .HasMaxLength(SaleBuyerParty.DisplayNameMaxLength);
+            entity.Property(e => e.BuyerPersonalPublicUserId)
+                .HasColumnName("buyer_personal_public_user_id")
+                .HasMaxLength(SaleBuyerParty.PersonalPublicUserIdMaxLength);
+            entity.Property(e => e.BuyerOrganizationId).HasColumnName("buyer_organization_id");
+            entity.Property(e => e.BuyerPublicOrganizationId)
+                .HasColumnName("buyer_public_organization_id")
+                .HasMaxLength(SaleBuyerParty.PublicOrganizationIdMaxLength);
             entity.Property(e => e.LinkedCreditEntryId).HasColumnName("linked_credit_entry_id");
             entity.Property(e => e.CashierShiftId).HasColumnName("cashier_shift_id");
             entity.Property(e => e.RegisterId).HasColumnName("register_id");
@@ -865,6 +900,17 @@ public sealed class PosDbContext : DbContext
             entity.HasIndex(e => new { e.OrganizationId, e.CustomerId, e.RecordedAtUtc })
                 .HasDatabaseName("ix_sales_org_customer_recorded_at")
                 .HasFilter("customer_id IS NOT NULL");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.BuyerPartyKind })
+                .HasDatabaseName("ix_sales_org_buyer_party_kind");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.BuyerPersonalPublicUserId })
+                .HasDatabaseName("ix_sales_org_buyer_personal")
+                .HasFilter("buyer_personal_public_user_id IS NOT NULL");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.BuyerOrganizationId })
+                .HasDatabaseName("ix_sales_org_buyer_organization")
+                .HasFilter("buyer_organization_id IS NOT NULL");
 
             entity.HasIndex(e => e.CashierShiftId)
                 .HasDatabaseName("ix_sales_cashier_shift_id");

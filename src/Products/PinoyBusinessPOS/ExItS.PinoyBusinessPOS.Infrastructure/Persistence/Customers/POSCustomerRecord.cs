@@ -11,6 +11,9 @@ internal sealed class POSCustomerRecord
     public string? Notes { get; set; }
     public string Status { get; set; } = string.Empty;
     public Guid? PlatformBusinessCustomerId { get; set; }
+    public string? LinkedPersonalPublicUserId { get; set; }
+    public Guid? LinkedBuyerOrganizationId { get; set; }
+    public string? LinkedBuyerPublicOrganizationId { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset UpdatedAtUtc { get; set; }
     public uint Xmin { get; set; }

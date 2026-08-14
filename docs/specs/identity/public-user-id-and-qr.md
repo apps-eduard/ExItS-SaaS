@@ -66,6 +66,17 @@ Scoped envelope types (v1):
 
 Visual QR may be regenerated; the public ID itself cannot change. Personal subjects remain keyed by `PlatformUserId` / `PublicUserId` (no parallel PersonalAccountId).
 
+### Purpose matrix (do not silently reinterpret)
+
+| Flow | Personal | Organization (Business) | Device registration |
+|---|---|---|---|
+| Sale customer selection | Allow (buyer) | Allow (buyer) | Reject |
+| Connected supplier connect | Reject | Allow | Reject |
+| POS device registration | Reject | Reject | Allow |
+| Personal people / contacts | Allow | Reject / explicit business action | Reject |
+
+POS sale buyer parties: seller organization owns the sale; scanned Personal/Business QR is counterparty only — see [sales-buyer-party-model.md](../../engineering/sales-buyer-party-model.md).
+
 ---
 
 ## 5. Platform APIs

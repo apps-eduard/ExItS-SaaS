@@ -59,7 +59,13 @@ internal static class SaleEntityMapper
             record.CustomerId is null ? null : POSCustomerId.From(record.CustomerId.Value),
             record.LinkedCreditEntryId is null ? null : CreditEntryId.From(record.LinkedCreditEntryId.Value),
             record.CashierShiftId is null ? null : CashierShiftId.From(record.CashierShiftId.Value),
-            record.RegisterId is null ? null : RegisterId.From(record.RegisterId.Value));
+            record.RegisterId is null ? null : RegisterId.From(record.RegisterId.Value),
+            SaleBuyerParty.Rehydrate(
+                SaleBuyerParty.ParseKind(record.BuyerPartyKind),
+                record.BuyerDisplayNameSnapshot,
+                record.BuyerPersonalPublicUserId,
+                record.BuyerOrganizationId,
+                record.BuyerPublicOrganizationId));
     }
 
     public static SaleRecord ToRecord(Sale sale) =>
@@ -77,6 +83,11 @@ internal static class SaleEntityMapper
             ChangeAmount = sale.ChangeAmount,
             GcashReference = sale.GCashReference,
             CustomerId = sale.CustomerId?.Value,
+            BuyerPartyKind = SaleBuyerParty.ToCode(sale.BuyerParty.Kind),
+            BuyerDisplayNameSnapshot = sale.BuyerParty.DisplayNameSnapshot,
+            BuyerPersonalPublicUserId = sale.BuyerParty.PersonalPublicUserId,
+            BuyerOrganizationId = sale.BuyerParty.BuyerOrganizationId,
+            BuyerPublicOrganizationId = sale.BuyerParty.BuyerPublicOrganizationId,
             LinkedCreditEntryId = sale.LinkedCreditEntryId?.Value,
             CashierShiftId = sale.CashierShiftId?.Value,
             RegisterId = sale.RegisterId?.Value,

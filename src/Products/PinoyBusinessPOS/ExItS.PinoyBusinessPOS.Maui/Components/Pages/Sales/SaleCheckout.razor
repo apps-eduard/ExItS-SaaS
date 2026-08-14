@@ -1,5 +1,7 @@
-﻿@using ExItS.PinoyBusinessPOS.Application.OperationalSetup
+﻿@using ExItS.PinoyBusinessPOS.Application.Identity
+@using ExItS.PinoyBusinessPOS.Application.OperationalSetup
 @using ExItS.PinoyBusinessPOS.Application.Payments
+@using ExItS.PinoyBusinessPOS.Application.Platform
 @using ExItS.PinoyBusinessPOS.Domain.OperationalSetup
 @using ExItS.PinoyBusinessPOS.Domain.Payments
 @using ExItS.PinoyBusinessPOS.Maui.Services
@@ -15,6 +17,8 @@
 @inject IPosCatalogClient Catalog
 @inject IPosCustomerClient Customers
 @inject IPosOperationalSetupClient OperationalSetup
+@inject IPlatformAccessClient Platform
+@inject IQrCodeScanService QrScan
 @inject SaleCartService Cart
 @inject SellingModeService SellingMode
 @inject ICurrentUserContext CurrentUser
@@ -367,6 +371,10 @@ else
                                         Disabled="@blocked"
                                         OnClick="SearchCustomersAsync">@L["Sales_Checkout_Search"]</Button>
                                 <Button Variant="ButtonVariant.Secondary"
+                                        Disabled="@(blocked || _isOffline || _scanningBuyerQr)"
+                                        IsLoading="@_scanningBuyerQr"
+                                        OnClick="ScanCustomerQrAsync">@L["Sales_Checkout_ScanCustomerQr"]</Button>
+                                <Button Variant="ButtonVariant.Secondary"
                                         Disabled="@blocked"
                                         OnClick="GoAddCustomerWithoutExItsId">@L["Sales_Checkout_AddCustomerShort"]</Button>
                                 <Button Variant="ButtonVariant.Ghost"
@@ -394,6 +402,11 @@ else
                             <div>
                                 <span class="pos-muted">@L["Sales_Checkout_SelectCustomer"]</span>
                                 <div class="pos-value-md">@_selectedCustomer.DisplayName</div>
+                                @if (!string.Equals(_buyerPartyKind, "WalkIn", StringComparison.Ordinal)
+                                     && !string.Equals(_buyerPartyKind, "ExternalCustomer", StringComparison.Ordinal))
+                                {
+                                    <div class="pos-muted">@BuyerPartySummaryLabel()</div>
+                                }
                                 @if (isUtang && _selectedOutstanding is not null)
                                 {
                                     <div class="pos-muted">@L["Sales_Checkout_Outstanding"]: <MoneyDisplay Amount="@_selectedOutstanding.Value" CurrencyCode="PHP" /></div>
@@ -411,6 +424,19 @@ else
                                         OnClick="ClearCustomerSelection">@L["Sales_Checkout_Remove"]</Button>
                             </div>
                         }
+                        else if (HasExItsBuyerSelection)
+                        {
+                            <div>
+                                <span class="pos-muted">@L["Sales_Checkout_BuyerExIts"]</span>
+                                <div class="pos-value-md">@(_buyerDisplayNameSnapshot ?? BuyerPartySummaryLabel())</div>
+                                <div class="pos-muted">@BuyerPartySummaryLabel()</div>
+                            </div>
+                            <div class="pos-sell-customer__actions" role="group">
+                                <Button Variant="ButtonVariant.Ghost"
+                                        Disabled="@blocked"
+                                        OnClick="ClearCustomerSelection">@L["Sales_Checkout_Remove"]</Button>
+                            </div>
+                        }
                         @if (isUtang)
                         {
                             <DateInput Label="@L["Sales_Checkout_DueDateOptional"]"
@@ -423,6 +449,10 @@ else
                 else if (_selectedCustomer is not null)
                 {
                     <div class="pos-sell-customer__summary">@_selectedCustomer.DisplayName</div>
+                }
+                else if (HasExItsBuyerSelection)
+                {
+                    <div class="pos-sell-customer__summary">@(_buyerDisplayNameSnapshot ?? BuyerPartySummaryLabel())</div>
                 }
             </div>
 
@@ -631,6 +661,16 @@ else
     private string? _errorMessage;
     private DateOnly? _dueDate;
     private PosCustomerListItemDto? _selectedCustomer;
+    private string _buyerPartyKind = "WalkIn";
+    private string? _buyerDisplayNameSnapshot;
+    private string? _buyerPersonalPublicUserId;
+    private Guid? _buyerOrganizationId;
+    private string? _buyerPublicOrganizationId;
+    private bool _scanningBuyerQr;
+
+    private bool HasExItsBuyerSelection =>
+        string.Equals(_buyerPartyKind, "Personal", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(_buyerPartyKind, "Organization", StringComparison.OrdinalIgnoreCase);
     private decimal? _selectedOutstanding;
     private IReadOnlyList<PosCatalogProductDto> _matches = Array.Empty<PosCatalogProductDto>();
     private IReadOnlyList<PosCatalogProductDto> _browseProducts = Array.Empty<PosCatalogProductDto>();
@@ -893,7 +933,10 @@ else
             detail.Status,
             detail.PlatformBusinessCustomerId,
             detail.CreatedAtUtc,
-            detail.UpdatedAtUtc);
+            detail.UpdatedAtUtc,
+            detail.LinkedPersonalPublicUserId,
+            detail.LinkedBuyerOrganizationId,
+            detail.LinkedBuyerPublicOrganizationId);
 
     private async Task TryRestorePendingPaymentAsync()
     {
@@ -1413,6 +1456,178 @@ else
         ClearUtangFields();
         _customerMatches = Array.Empty<PosCustomerListItemDto>();
         _customerSearch = null;
+        ResetBuyerPartyToWalkIn();
+    }
+
+    private void ResetBuyerPartyToWalkIn()
+    {
+        _buyerPartyKind = "WalkIn";
+        _buyerDisplayNameSnapshot = null;
+        _buyerPersonalPublicUserId = null;
+        _buyerOrganizationId = null;
+        _buyerPublicOrganizationId = null;
+    }
+
+    private string BuyerPartySummaryLabel()
+    {
+        if (string.Equals(_buyerPartyKind, "Personal", StringComparison.OrdinalIgnoreCase))
+        {
+            return string.IsNullOrWhiteSpace(_buyerPersonalPublicUserId)
+                ? L["Sales_Checkout_BuyerPersonal"]
+                : $"{L["Sales_Checkout_BuyerPersonal"]}: {_buyerPersonalPublicUserId}";
+        }
+
+        if (string.Equals(_buyerPartyKind, "Organization", StringComparison.OrdinalIgnoreCase))
+        {
+            return string.IsNullOrWhiteSpace(_buyerPublicOrganizationId)
+                ? L["Sales_Checkout_BuyerOrganization"]
+                : $"{L["Sales_Checkout_BuyerOrganization"]}: {_buyerPublicOrganizationId}";
+        }
+
+        return L["Sales_Checkout_OptionalCustomer"];
+    }
+
+    private void ApplyBuyerPartyFromCustomer(PosCustomerListItemDto customer)
+    {
+        if (!string.IsNullOrWhiteSpace(customer.LinkedPersonalPublicUserId))
+        {
+            _buyerPartyKind = "Personal";
+            _buyerDisplayNameSnapshot = customer.DisplayName;
+            _buyerPersonalPublicUserId = customer.LinkedPersonalPublicUserId;
+            _buyerOrganizationId = null;
+            _buyerPublicOrganizationId = null;
+            return;
+        }
+
+        if (customer.LinkedBuyerOrganizationId is Guid orgId
+            && !string.IsNullOrWhiteSpace(customer.LinkedBuyerPublicOrganizationId))
+        {
+            _buyerPartyKind = "Organization";
+            _buyerDisplayNameSnapshot = customer.DisplayName;
+            _buyerPersonalPublicUserId = null;
+            _buyerOrganizationId = orgId;
+            _buyerPublicOrganizationId = customer.LinkedBuyerPublicOrganizationId;
+            return;
+        }
+
+        _buyerPartyKind = "ExternalCustomer";
+        _buyerDisplayNameSnapshot = customer.DisplayName;
+        _buyerPersonalPublicUserId = null;
+        _buyerOrganizationId = null;
+        _buyerPublicOrganizationId = null;
+    }
+
+    private async Task ScanCustomerQrAsync()
+    {
+        if (_isOffline)
+        {
+            _errorTitle = L["Sales_ErrorTitle"];
+            _errorMessage = L["Sales_Checkout_BuyerQrOnlineRequired"];
+            return;
+        }
+
+        _scanningBuyerQr = true;
+        _errorTitle = null;
+        _errorMessage = null;
+        try
+        {
+            var scan = await QrScan.CaptureAsync();
+            if (!scan.Succeeded)
+            {
+                if (!string.IsNullOrWhiteSpace(scan.ErrorKey)
+                    && !string.Equals(scan.ErrorKey, "Personal_ScanCancelled", StringComparison.Ordinal))
+                {
+                    _errorTitle = L["Sales_ErrorTitle"];
+                    _errorMessage = L[scan.ErrorKey];
+                }
+
+                return;
+            }
+
+            if (!ExItsQrPurposeGuard.TryValidateOrRoute(scan.Payload, expectedPurpose: null, out var purpose, out _))
+            {
+                _errorTitle = L["Sales_ErrorTitle"];
+                _errorMessage = ExItsQrPurposeGuard.MessageForMismatch(
+                    ExItsQrPurposeGuard.FlowSaleCustomer,
+                    purpose);
+                return;
+            }
+
+            if (string.Equals(purpose, ExItsQrPurposeGuard.PosDeviceRegistration, StringComparison.OrdinalIgnoreCase))
+            {
+                _errorTitle = L["Sales_ErrorTitle"];
+                _errorMessage = ExItsQrPurposeGuard.MessageForMismatch(
+                    ExItsQrPurposeGuard.FlowSaleCustomer,
+                    ExItsQrPurposeGuard.PosDeviceRegistration);
+                return;
+            }
+
+            if (!string.Equals(purpose, ExItsQrPurposeGuard.Personal, StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(purpose, ExItsQrPurposeGuard.Organization, StringComparison.OrdinalIgnoreCase))
+            {
+                _errorTitle = L["Sales_ErrorTitle"];
+                _errorMessage = ExItsQrPurposeGuard.MessageForMismatch(
+                    ExItsQrPurposeGuard.FlowSaleCustomer,
+                    purpose);
+                return;
+            }
+
+            var resolved = await Platform.ResolveQrAsync(new ResolveExItsQrRequest(scan.Payload!, purpose));
+            if (!resolved.IsSuccess || resolved.Data is null)
+            {
+                _errorTitle = L["Sales_ErrorTitle"];
+                _errorMessage = resolved.Error?.Detail
+                                ?? ExItsQrPurposeGuard.MessageForMismatch(
+                                    ExItsQrPurposeGuard.FlowSaleCustomer,
+                                    purpose);
+                return;
+            }
+
+            _selectedCustomer = null;
+            ClearUtangFields();
+            _customerMatches = Array.Empty<PosCustomerListItemDto>();
+
+            if (string.Equals(resolved.Data.Purpose, ExItsQrPurposeGuard.Personal, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(purpose, ExItsQrPurposeGuard.Personal, StringComparison.OrdinalIgnoreCase))
+            {
+                if (string.IsNullOrWhiteSpace(resolved.Data.PublicUserId))
+                {
+                    _errorTitle = L["Sales_ErrorTitle"];
+                    _errorMessage = L["Sales_Checkout_BuyerQrResolveFailed"];
+                    return;
+                }
+
+                _buyerPartyKind = "Personal";
+                _buyerDisplayNameSnapshot = resolved.Data.DisplayName;
+                _buyerPersonalPublicUserId = resolved.Data.PublicUserId;
+                _buyerOrganizationId = null;
+                _buyerPublicOrganizationId = null;
+                _customerSearch = resolved.Data.DisplayName ?? resolved.Data.PublicUserId;
+            }
+            else
+            {
+                if (resolved.Data.OrganizationId is null
+                    || string.IsNullOrWhiteSpace(resolved.Data.PublicOrganizationId))
+                {
+                    _errorTitle = L["Sales_ErrorTitle"];
+                    _errorMessage = L["Sales_Checkout_BuyerQrResolveFailed"];
+                    return;
+                }
+
+                _buyerPartyKind = "Organization";
+                _buyerDisplayNameSnapshot = resolved.Data.DisplayName;
+                _buyerPersonalPublicUserId = null;
+                _buyerOrganizationId = resolved.Data.OrganizationId;
+                _buyerPublicOrganizationId = resolved.Data.PublicOrganizationId;
+                _customerSearch = resolved.Data.DisplayName ?? resolved.Data.PublicOrganizationId;
+            }
+
+            _customerExpanded = true;
+        }
+        finally
+        {
+            _scanningBuyerQr = false;
+        }
     }
 
     private Guid? ParseCategoryFilter() =>
@@ -1896,6 +2111,7 @@ else
     private async Task SelectCustomerAsync(PosCustomerListItemDto customer)
     {
         _selectedCustomer = customer;
+        ApplyBuyerPartyFromCustomer(customer);
         _customerMatches = Array.Empty<PosCustomerListItemDto>();
         _customerSearch = customer.DisplayName;
         _selectedOutstanding = null;
@@ -2048,7 +2264,12 @@ else
             isUtang ? _selectedCustomer!.CustomerId : _selectedCustomer?.CustomerId,
             isUtang ? _dueDate : null,
             isUtang ? _attemptCreditEntryId : null,
-            _openShift?.ShiftId);
+            _openShift?.ShiftId,
+            BuyerPartyKind: _buyerPartyKind,
+            BuyerDisplayNameSnapshot: _buyerDisplayNameSnapshot,
+            BuyerPersonalPublicUserId: _buyerPersonalPublicUserId,
+            BuyerOrganizationId: _buyerOrganizationId,
+            BuyerPublicOrganizationId: _buyerPublicOrganizationId);
 
         var result = await Sales.CheckoutAsync(request);
         _saving = false;
@@ -2139,7 +2360,12 @@ else
                 CustomerId: _selectedCustomer?.CustomerId,
                 DueDate: null,
                 CreditEntryId: null,
-                _openShift.ShiftId);
+                _openShift.ShiftId,
+                BuyerPartyKind: _buyerPartyKind,
+                BuyerDisplayNameSnapshot: _buyerDisplayNameSnapshot,
+                BuyerPersonalPublicUserId: _buyerPersonalPublicUserId,
+                BuyerOrganizationId: _buyerOrganizationId,
+                BuyerPublicOrganizationId: _buyerPublicOrganizationId);
 
             var saleNumber = $"OFF-{DateTime.UtcNow:yyMMdd}-{saleId.ToString("N")[..8].ToUpperInvariant()}";
             await LocalCashSales.PersistCashSaleAndEnqueueAsync(

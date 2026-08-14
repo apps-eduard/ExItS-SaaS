@@ -52,10 +52,15 @@ public sealed class Sale
     public string? GCashReference { get; private set; }
 
     /// <summary>
-    /// Optional customer association. Required for Product-Based Utang; optional for settled
-    /// Cash/Card/GCash/ManualGCash so linked Personal customers can see receipts/activity.
+    /// Optional seller-owned customer association (ledger / local profile). Required for Product-Based Utang.
+    /// Never determines sale ownership — see <see cref="BuyerParty"/>.
     /// </summary>
     public POSCustomerId? CustomerId { get; }
+
+    /// <summary>
+    /// Buyer/counterparty snapshot. Seller <see cref="OrganizationId"/> remains the transaction owner.
+    /// </summary>
+    public SaleBuyerParty BuyerParty { get; }
 
     /// <summary>Linked credit entry for Product-Based Utang only; null for settled payment methods.</summary>
     public CreditEntryId? LinkedCreditEntryId { get; }
@@ -90,6 +95,7 @@ public sealed class Sale
         decimal? changeAmount,
         string? gcashReference,
         POSCustomerId? customerId,
+        SaleBuyerParty buyerParty,
         CreditEntryId? linkedCreditEntryId,
         CashierShiftId? cashierShiftId,
         RegisterId? registerId,
@@ -113,6 +119,7 @@ public sealed class Sale
         ChangeAmount = changeAmount;
         GCashReference = gcashReference;
         CustomerId = customerId;
+        BuyerParty = buyerParty;
         LinkedCreditEntryId = linkedCreditEntryId;
         CashierShiftId = cashierShiftId;
         RegisterId = registerId;
@@ -144,7 +151,8 @@ public sealed class Sale
         CashierShiftId? cashierShiftId = null,
         RegisterId? registerId = null,
         decimal taxAmount = 0,
-        TaxPricingMode? taxPricingMode = null)
+        TaxPricingMode? taxPricingMode = null,
+        SaleBuyerParty? buyerParty = null)
     {
         SaleMoney.EnsureUtc(utcNow);
         SaleMoney.EnsureActor(recordedBy);
@@ -212,6 +220,9 @@ public sealed class Sale
 
         ValidatePaymentLinkage(paymentMethod, customerId, linkedCreditEntryId, total);
 
+        var resolvedBuyer = buyerParty ?? SaleBuyerParty.FromLegacyCustomer(customerId);
+        resolvedBuyer.EnsureConsistentWith(customerId);
+
         var (tendered, change) = NormalizeTender(paymentMethod, total, amountTendered);
         var reference = NormalizeGCashReference(paymentMethod, gcashReference);
         var initialStatus = SalePaymentMethods.IsElectronic(paymentMethod)
@@ -231,6 +242,7 @@ public sealed class Sale
             change,
             reference,
             customerId,
+            resolvedBuyer,
             linkedCreditEntryId,
             cashierShiftId,
             registerId,
@@ -314,7 +326,8 @@ public sealed class Sale
         POSCustomerId? customerId = null,
         CreditEntryId? linkedCreditEntryId = null,
         CashierShiftId? cashierShiftId = null,
-        RegisterId? registerId = null) =>
+        RegisterId? registerId = null,
+        SaleBuyerParty? buyerParty = null) =>
         new(
             id,
             organizationId,
@@ -328,6 +341,7 @@ public sealed class Sale
             changeAmount,
             gcashReference,
             customerId,
+            buyerParty ?? SaleBuyerParty.FromLegacyCustomer(customerId),
             linkedCreditEntryId,
             cashierShiftId,
             registerId,

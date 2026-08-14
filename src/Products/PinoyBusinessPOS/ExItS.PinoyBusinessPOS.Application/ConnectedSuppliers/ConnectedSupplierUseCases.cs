@@ -2,6 +2,7 @@ using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Customers;
+using ExItS.PinoyBusinessPOS.Application.Identity;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Common;
@@ -24,7 +25,10 @@ public static class ConnectedSupplierErrorCodes
 public sealed record ConnectedSupplierRelationshipDto(Guid RelationshipId, Guid BuyerOrganizationId, Guid SupplierOrganizationId,
     string Status, DateTimeOffset RequestedAtUtc, Guid? RequestedByUserId, DateTimeOffset? RespondedAtUtc,
     Guid? RespondedByUserId, DateTimeOffset? DisconnectedAtUtc, DateTimeOffset CreatedAtUtc, DateTimeOffset UpdatedAtUtc);
-public sealed record RequestConnectionRequest(Guid SupplierOrganizationId, Guid? RequestedByUserId = null);
+public sealed record RequestConnectionRequest(
+    Guid? SupplierOrganizationId = null,
+    string? SupplierPublicOrganizationIdOrQrPayload = null,
+    Guid? RequestedByUserId = null);
 public sealed record RespondConnectionRequest(Guid? RespondedByUserId = null);
 public sealed record SupplierProductExposureDto(Guid ExposureId, Guid SupplierOrganizationId, Guid ProductId, string? SkuSnapshot,
     string NameSnapshot, string? CategoryNameSnapshot, string UnitOfMeasureCode, decimal SupplierOrderPrice,
@@ -86,22 +90,150 @@ internal static class ConnectedSupplierUseCaseGuard
 
 public sealed class RequestConnection
 {
-    private readonly IConnectedSupplierRelationshipRepository _relationships; private readonly IPosUnitOfWork _uow;
-    private readonly IPosCommercialAccessAccessor _access; private readonly TimeProvider _clock;
-    public RequestConnection(IConnectedSupplierRelationshipRepository relationships,IPosUnitOfWork uow,IPosCommercialAccessAccessor access,TimeProvider? clock=null)
-    { _relationships=relationships;_uow=uow;_access=access;_clock=clock??TimeProvider.System; }
-    public async Task<ApplicationResult<ConnectedSupplierRelationshipDto>> ExecuteAsync(Guid organizationId,RequestConnectionRequest request,CancellationToken ct=default)
+    private readonly IConnectedSupplierRelationshipRepository _relationships;
+    private readonly IPosUnitOfWork _uow;
+    private readonly IPosCommercialAccessAccessor _access;
+    private readonly IPlatformOrganizationPublicResolve _organizationResolve;
+    private readonly TimeProvider _clock;
+
+    public RequestConnection(
+        IConnectedSupplierRelationshipRepository relationships,
+        IPosUnitOfWork uow,
+        IPosCommercialAccessAccessor access,
+        IPlatformOrganizationPublicResolve organizationResolve,
+        TimeProvider? clock = null)
     {
-        var gate=ConnectedSupplierUseCaseGuard.Access(_access,UtangCapability.ManageSuppliers);
-        if(!gate.IsSuccess)return ConnectedSupplierUseCaseGuard.Failure<ConnectedSupplierRelationshipDto>(gate.ErrorCode!,gate.ErrorMessage!);
-        try {
-            var buyer=PosOrganizationId.From(organizationId);var supplier=PosOrganizationId.From(request.SupplierOrganizationId);
-            if(await _relationships.FindOpenAsync(buyer,supplier,ct) is not null)
-                return ConnectedSupplierUseCaseGuard.Failure<ConnectedSupplierRelationshipDto>(ConnectedSupplierErrorCodes.DuplicateRelationship,"A pending or active relationship already exists.");
-            var relationship=ConnectedSupplierRelationship.Request(buyer,supplier,_clock.GetUtcNow(),request.RequestedByUserId);
-            await _relationships.AddAsync(relationship,ct);await _uow.SaveChangesAsync(ct);
-            return ApplicationResult<ConnectedSupplierRelationshipDto>.Success(ConnectedSupplierMapper.Map(relationship));
-        } catch(DomainException ex){return ConnectedSupplierUseCaseGuard.Failure<ConnectedSupplierRelationshipDto>(ex.ErrorCode,ex.Message);}
+        _relationships = relationships;
+        _uow = uow;
+        _access = access;
+        _organizationResolve = organizationResolve;
+        _clock = clock ?? TimeProvider.System;
+    }
+
+    public async Task<ApplicationResult<ConnectedSupplierRelationshipDto>> ExecuteAsync(
+        Guid organizationId,
+        RequestConnectionRequest request,
+        CancellationToken ct = default)
+    {
+        var gate = ConnectedSupplierUseCaseGuard.Access(_access, UtangCapability.ManageSuppliers);
+        if (!gate.IsSuccess)
+        {
+            return ConnectedSupplierUseCaseGuard.Failure<ConnectedSupplierRelationshipDto>(
+                gate.ErrorCode!,
+                gate.ErrorMessage!);
+        }
+
+        try
+        {
+            var resolvedSupplier = await ResolveSupplierOrganizationAsync(request, ct).ConfigureAwait(false);
+            if (!resolvedSupplier.IsSuccess)
+            {
+                return ConnectedSupplierUseCaseGuard.Failure<ConnectedSupplierRelationshipDto>(
+                    resolvedSupplier.ErrorCode!,
+                    resolvedSupplier.ErrorMessage!);
+            }
+
+            var buyer = PosOrganizationId.From(organizationId);
+            var supplier = PosOrganizationId.From(resolvedSupplier.Value!.OrganizationId);
+            if (await _relationships.FindOpenAsync(buyer, supplier, ct).ConfigureAwait(false) is not null)
+            {
+                return ConnectedSupplierUseCaseGuard.Failure<ConnectedSupplierRelationshipDto>(
+                    ConnectedSupplierErrorCodes.DuplicateRelationship,
+                    "A pending or active relationship already exists.");
+            }
+
+            var relationship = ConnectedSupplierRelationship.Request(
+                buyer,
+                supplier,
+                _clock.GetUtcNow(),
+                request.RequestedByUserId);
+            await _relationships.AddAsync(relationship, ct).ConfigureAwait(false);
+            await _uow.SaveChangesAsync(ct).ConfigureAwait(false);
+            return ApplicationResult<ConnectedSupplierRelationshipDto>.Success(
+                ConnectedSupplierMapper.Map(relationship));
+        }
+        catch (DomainException ex)
+        {
+            return ConnectedSupplierUseCaseGuard.Failure<ConnectedSupplierRelationshipDto>(ex.ErrorCode, ex.Message);
+        }
+    }
+
+    private async Task<ApplicationResult<PlatformOrganizationPublicResolveResult>> ResolveSupplierOrganizationAsync(
+        RequestConnectionRequest request,
+        CancellationToken ct)
+    {
+        var payload = request.SupplierPublicOrganizationIdOrQrPayload?.Trim();
+        if (string.IsNullOrWhiteSpace(payload))
+        {
+            // Guid alone is no longer accepted for new connected-supplier links — Business QR / public ID required.
+            return ApplicationResult<PlatformOrganizationPublicResolveResult>.Failure(
+                DomainErrorCodes.ConnectedSupplierRequiresBusinessQr,
+                "Scan or enter the supplier Business QR / organization ID (ORG######). A Guid alone is not accepted.");
+        }
+
+        var purposeReject = TryRejectNonBusinessPayload(payload);
+        if (purposeReject is not null)
+        {
+            return purposeReject;
+        }
+
+        var resolved = await _organizationResolve
+            .ResolveOrganizationForConnectedSupplierAsync(payload, ct)
+            .ConfigureAwait(false);
+        if (!resolved.IsSuccess || resolved.Value is null)
+        {
+            return resolved;
+        }
+
+        if (request.SupplierOrganizationId is Guid suppliedGuid
+            && suppliedGuid != Guid.Empty
+            && suppliedGuid != resolved.Value.OrganizationId)
+        {
+            return ApplicationResult<PlatformOrganizationPublicResolveResult>.Failure(
+                ConnectedSupplierErrorCodes.OrganizationMismatch,
+                "The scanned Business QR does not match the supplier organization id that was provided.");
+        }
+
+        return resolved;
+    }
+
+    private static ApplicationResult<PlatformOrganizationPublicResolveResult>? TryRejectNonBusinessPayload(
+        string payload)
+    {
+        var trimmed = payload.Trim();
+        if (trimmed.StartsWith("exits://qr/v1/personal", StringComparison.OrdinalIgnoreCase)
+            || trimmed.StartsWith("exits://user/v1/", StringComparison.OrdinalIgnoreCase))
+        {
+            return ApplicationResult<PlatformOrganizationPublicResolveResult>.Failure(
+                DomainErrorCodes.ConnectedSupplierRequiresBusinessQr,
+                "Connected suppliers require a Business QR, not a Personal QR.");
+        }
+
+        if (trimmed.StartsWith("exits://qr/v1/pos-device-registration", StringComparison.OrdinalIgnoreCase))
+        {
+            return ApplicationResult<PlatformOrganizationPublicResolveResult>.Failure(
+                DomainErrorCodes.ConnectedSupplierQrPurposeMismatch,
+                "This is a device registration code. Scan the supplier's Business QR instead.");
+        }
+
+        if (ExItsQrPurposeGuard.TryParsePurpose(trimmed, out var purpose, out _))
+        {
+            if (string.Equals(purpose, ExItsQrPurposeGuard.Personal, StringComparison.OrdinalIgnoreCase))
+            {
+                return ApplicationResult<PlatformOrganizationPublicResolveResult>.Failure(
+                    DomainErrorCodes.ConnectedSupplierRequiresBusinessQr,
+                    "Connected suppliers require a Business QR, not a Personal QR.");
+            }
+
+            if (string.Equals(purpose, ExItsQrPurposeGuard.PosDeviceRegistration, StringComparison.OrdinalIgnoreCase))
+            {
+                return ApplicationResult<PlatformOrganizationPublicResolveResult>.Failure(
+                    DomainErrorCodes.ConnectedSupplierQrPurposeMismatch,
+                    "This is a device registration code. Scan the supplier's Business QR instead.");
+            }
+        }
+
+        return null;
     }
 }
 

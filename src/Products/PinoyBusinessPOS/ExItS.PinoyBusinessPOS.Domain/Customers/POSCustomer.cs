@@ -32,6 +32,23 @@ public sealed class POSCustomer
     /// Null for legacy POS customers that have no Platform BusinessCustomer.
     /// </summary>
     public Guid? PlatformBusinessCustomerId { get; private set; }
+
+    /// <summary>
+    /// Optional ExItS Personal public user id (EX-####-####) linked as counterparty identity.
+    /// Seller-owned customer record remains owned by <see cref="OrganizationId"/>.
+    /// Mutually exclusive with organization buyer link.
+    /// </summary>
+    public string? LinkedPersonalPublicUserId { get; private set; }
+
+    /// <summary>
+    /// Optional ExItS buyer Organization id (Platform/POS org Guid value correlation).
+    /// Mutually exclusive with Personal link.
+    /// </summary>
+    public Guid? LinkedBuyerOrganizationId { get; private set; }
+
+    /// <summary>Optional public organization id (ORG######) for the linked buyer organization.</summary>
+    public string? LinkedBuyerPublicOrganizationId { get; private set; }
+
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
 
@@ -45,6 +62,9 @@ public sealed class POSCustomer
         string? notes,
         CustomerStatus status,
         Guid? platformBusinessCustomerId,
+        string? linkedPersonalPublicUserId,
+        Guid? linkedBuyerOrganizationId,
+        string? linkedBuyerPublicOrganizationId,
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc)
     {
@@ -57,6 +77,9 @@ public sealed class POSCustomer
         Notes = notes;
         Status = status;
         PlatformBusinessCustomerId = platformBusinessCustomerId;
+        LinkedPersonalPublicUserId = linkedPersonalPublicUserId;
+        LinkedBuyerOrganizationId = linkedBuyerOrganizationId;
+        LinkedBuyerPublicOrganizationId = linkedBuyerPublicOrganizationId;
         CreatedAtUtc = createdAtUtc;
         UpdatedAtUtc = updatedAtUtc;
     }
@@ -69,10 +92,17 @@ public sealed class POSCustomer
         string? address = null,
         string? notes = null,
         POSCustomerId? id = null,
-        Guid? platformBusinessCustomerId = null)
+        Guid? platformBusinessCustomerId = null,
+        string? linkedPersonalPublicUserId = null,
+        Guid? linkedBuyerOrganizationId = null,
+        string? linkedBuyerPublicOrganizationId = null)
     {
         EnsureUtc(utcNow);
         var (displayMobile, normalizedMobile) = NormalizeOptionalMobile(mobileNumber);
+        var (personalLink, buyerOrgId, buyerPublicOrgId) = NormalizeExItsIdentityLinks(
+            linkedPersonalPublicUserId,
+            linkedBuyerOrganizationId,
+            linkedBuyerPublicOrganizationId);
 
         return new POSCustomer(
             id ?? POSCustomerId.New(),
@@ -84,6 +114,9 @@ public sealed class POSCustomer
             NormalizeOptionalText(notes, NotesMaxLength, DomainErrorCodes.InvalidNotes, "Notes"),
             CustomerStatus.Active,
             NormalizeOptionalPlatformBusinessCustomerId(platformBusinessCustomerId),
+            personalLink,
+            buyerOrgId,
+            buyerPublicOrgId,
             utcNow,
             utcNow);
     }
@@ -99,7 +132,10 @@ public sealed class POSCustomer
         CustomerStatus status,
         Guid? platformBusinessCustomerId,
         DateTimeOffset createdAtUtc,
-        DateTimeOffset updatedAtUtc) =>
+        DateTimeOffset updatedAtUtc,
+        string? linkedPersonalPublicUserId = null,
+        Guid? linkedBuyerOrganizationId = null,
+        string? linkedBuyerPublicOrganizationId = null) =>
         new(
             id,
             organizationId,
@@ -110,6 +146,9 @@ public sealed class POSCustomer
             notes,
             status,
             platformBusinessCustomerId,
+            linkedPersonalPublicUserId,
+            linkedBuyerOrganizationId,
+            linkedBuyerPublicOrganizationId,
             createdAtUtc,
             updatedAtUtc);
 
@@ -189,6 +228,79 @@ public sealed class POSCustomer
     {
         EnsureUtc(utcNow);
         PlatformBusinessCustomerId = null;
+        UpdatedAtUtc = utcNow;
+    }
+
+    /// <summary>
+    /// Links this seller-owned customer to a Personal ExItS identity. Does not grant access to Personal private data.
+    /// </summary>
+    public void LinkPersonalExItsIdentity(string personalPublicUserId, DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        EnsureNotInactiveForEdit();
+        var normalized = NormalizePersonalPublicUserId(personalPublicUserId);
+        if (LinkedBuyerOrganizationId is not null || LinkedBuyerPublicOrganizationId is not null)
+        {
+            throw new DomainException(
+                DomainErrorCodes.CustomerExItsIdentityLinkConflict,
+                "This customer is already linked to an ExItS business identity.");
+        }
+
+        if (LinkedPersonalPublicUserId is not null
+            && !string.Equals(LinkedPersonalPublicUserId, normalized, StringComparison.Ordinal))
+        {
+            throw new DomainException(
+                DomainErrorCodes.CustomerExItsIdentityLinkConflict,
+                "This customer is already linked to a different Personal ExItS identity.");
+        }
+
+        LinkedPersonalPublicUserId = normalized;
+        UpdatedAtUtc = utcNow;
+    }
+
+    /// <summary>
+    /// Links this seller-owned customer to an ExItS Organization buyer identity (not the current owner user).
+    /// </summary>
+    public void LinkOrganizationExItsIdentity(
+        Guid buyerOrganizationId,
+        string buyerPublicOrganizationId,
+        DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        EnsureNotInactiveForEdit();
+        if (buyerOrganizationId == Guid.Empty)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCustomerExItsIdentityLink,
+                "Buyer organization id cannot be empty.");
+        }
+
+        var publicId = NormalizePublicOrganizationId(buyerPublicOrganizationId);
+        if (LinkedPersonalPublicUserId is not null)
+        {
+            throw new DomainException(
+                DomainErrorCodes.CustomerExItsIdentityLinkConflict,
+                "This customer is already linked to a Personal ExItS identity.");
+        }
+
+        if (LinkedBuyerOrganizationId is not null && LinkedBuyerOrganizationId != buyerOrganizationId)
+        {
+            throw new DomainException(
+                DomainErrorCodes.CustomerExItsIdentityLinkConflict,
+                "This customer is already linked to a different ExItS business identity.");
+        }
+
+        LinkedBuyerOrganizationId = buyerOrganizationId;
+        LinkedBuyerPublicOrganizationId = publicId;
+        UpdatedAtUtc = utcNow;
+    }
+
+    public void ClearExItsIdentityLink(DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        LinkedPersonalPublicUserId = null;
+        LinkedBuyerOrganizationId = null;
+        LinkedBuyerPublicOrganizationId = null;
         UpdatedAtUtc = utcNow;
     }
 
@@ -290,6 +402,76 @@ public sealed class POSCustomer
         }
 
         return platformBusinessCustomerId.Value;
+    }
+
+    private static (string? Personal, Guid? BuyerOrgId, string? BuyerPublicOrgId) NormalizeExItsIdentityLinks(
+        string? linkedPersonalPublicUserId,
+        Guid? linkedBuyerOrganizationId,
+        string? linkedBuyerPublicOrganizationId)
+    {
+        var hasPersonal = !string.IsNullOrWhiteSpace(linkedPersonalPublicUserId);
+        var hasOrg = linkedBuyerOrganizationId is not null
+                     || !string.IsNullOrWhiteSpace(linkedBuyerPublicOrganizationId);
+        if (hasPersonal && hasOrg)
+        {
+            throw new DomainException(
+                DomainErrorCodes.CustomerExItsIdentityLinkConflict,
+                "A customer cannot link both Personal and Organization ExItS identities.");
+        }
+
+        if (hasPersonal)
+        {
+            return (NormalizePersonalPublicUserId(linkedPersonalPublicUserId!), null, null);
+        }
+
+        if (!hasOrg)
+        {
+            return (null, null, null);
+        }
+
+        if (linkedBuyerOrganizationId is null || linkedBuyerOrganizationId == Guid.Empty
+            || string.IsNullOrWhiteSpace(linkedBuyerPublicOrganizationId))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCustomerExItsIdentityLink,
+                "Organization buyer link requires both organization id and public organization id.");
+        }
+
+        return (
+            null,
+            linkedBuyerOrganizationId.Value,
+            NormalizePublicOrganizationId(linkedBuyerPublicOrganizationId));
+    }
+
+    private static string NormalizePersonalPublicUserId(string value)
+    {
+        var trimmed = value.Trim().ToUpperInvariant();
+        if (trimmed.Length != 12
+            || !trimmed.StartsWith("EX-", StringComparison.Ordinal)
+            || trimmed[7] != '-'
+            || !trimmed[3..7].All(char.IsDigit)
+            || !trimmed[8..].All(char.IsDigit))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCustomerExItsIdentityLink,
+                "Personal public user id format is invalid.");
+        }
+
+        return trimmed;
+    }
+
+    private static string NormalizePublicOrganizationId(string value)
+    {
+        var trimmed = value.Trim().ToUpperInvariant();
+        if (trimmed.Length != 9 || !trimmed.StartsWith("ORG", StringComparison.Ordinal)
+            || !trimmed.Skip(3).All(char.IsDigit))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCustomerExItsIdentityLink,
+                "Public organization id must match ORG######.");
+        }
+
+        return trimmed;
     }
 
     private void EnsureNotInactiveForEdit()

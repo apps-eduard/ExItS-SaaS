@@ -248,6 +248,20 @@ public sealed class LinkedCustomerAuthorizationUseCaseTests
                 c.OrganizationId == organizationId
                 && c.PlatformBusinessCustomerId == platformBusinessCustomerId));
 
+        public Task<POSCustomer?> FindByLinkedPersonalPublicUserIdAsync(
+            PosOrganizationId organizationId,
+            string linkedPersonalPublicUserId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<POSCustomer?>(null);
+
+        public Task<POSCustomer?> FindByLinkedBuyerOrganizationIdAsync(
+            PosOrganizationId organizationId,
+            Guid linkedBuyerOrganizationId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<POSCustomer?>(null);
+
+
+
         public Task<int> CountByPlatformBusinessCustomerIdAsync(
             PosOrganizationId organizationId,
             Guid platformBusinessCustomerId,
