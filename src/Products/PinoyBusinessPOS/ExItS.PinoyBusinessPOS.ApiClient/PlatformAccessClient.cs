@@ -401,6 +401,54 @@ public sealed class PlatformAccessClient(IPosApiClient api) : IPlatformAccessCli
         CancellationToken ct = default) =>
         api.SendAsync<ResolvedPublicUserDto>(HttpMethod.Post, "/api/v1/users/resolve-public-id", request, ct);
 
+    public Task<ApiResult<OrganizationPublicIdentityDto>> GetOrganizationPublicIdentityAsync(
+        Guid organizationId,
+        CancellationToken ct = default) =>
+        api.GetAsync<OrganizationPublicIdentityDto>(
+            $"/api/v1/organizations/{organizationId:D}/public-identity",
+            ct);
+
+    public Task<ApiResult<ResolvedPublicOrganizationDto>> ResolveOrganizationPublicIdAsync(
+        ResolvePublicOrganizationIdRequest request,
+        CancellationToken ct = default) =>
+        api.SendAsync<ResolvedPublicOrganizationDto>(
+            HttpMethod.Post,
+            "/api/v1/organizations/resolve-public-id",
+            request,
+            ct);
+
+    public Task<ApiResult<ResolvedExItsQrDto>> ResolveQrAsync(
+        ResolveExItsQrRequest request,
+        CancellationToken ct = default) =>
+        api.SendAsync<ResolvedExItsQrDto>(HttpMethod.Post, "/api/v1/qr/resolve", request, ct);
+
+    public Task<ApiResult<PosDeviceRegistrationTokenDto>> CreatePosDeviceRegistrationTokenAsync(
+        Guid organizationId,
+        CancellationToken ct = default) =>
+        api.SendAsync<PosDeviceRegistrationTokenDto>(
+            HttpMethod.Post,
+            $"/api/v1/platform/organizations/{organizationId:D}/pos-devices/registration-tokens",
+            null,
+            ct);
+
+    public Task<ApiResult<PosDeviceDto>> RedeemPosDeviceRegistrationTokenAsync(
+        Guid organizationId,
+        RedeemPosDeviceRegistrationTokenRequest request,
+        CancellationToken ct = default) =>
+        api.SendAsync<PosDeviceDto>(
+            HttpMethod.Post,
+            $"/api/v1/platform/organizations/{organizationId:D}/pos-devices/registration-tokens/redeem",
+            request,
+            ct);
+
+    public Task<ApiResult<PosDeviceRegistrationTokenMetadataDto>> GetPosDeviceRegistrationTokenAsync(
+        Guid organizationId,
+        Guid tokenId,
+        CancellationToken ct = default) =>
+        api.GetAsync<PosDeviceRegistrationTokenMetadataDto>(
+            $"/api/v1/platform/organizations/{organizationId:D}/pos-devices/registration-tokens/{tokenId:D}",
+            ct);
+
     public Task<ApiResult<PersonalAccountSettingsDto>> GetPersonalSettingsAsync(CancellationToken ct = default) =>
         api.GetAsync<PersonalAccountSettingsDto>("/api/v1/personal/settings", ct);
 

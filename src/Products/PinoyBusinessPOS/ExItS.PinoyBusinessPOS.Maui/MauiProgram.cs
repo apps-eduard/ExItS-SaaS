@@ -142,11 +142,11 @@ public static class MauiProgram
                 sp.GetRequiredService<IConnectivityService>(),
                 sp.GetRequiredService<IProtectedShellAccessPolicy>(),
                 sp.GetRequiredService<IOfflineOperationQueue>()));
+        services.AddSingleton<SellingModeService>();
         services.AddSingleton<IAuthenticationService, AuthenticationService>();
         services.AddSingleton<IUtangCapabilityEvaluator, UtangCapabilityEvaluator>();
         services.Configure<LocalValidationClientOptions>(configuration.GetSection(LocalValidationClientOptions.SectionName));
         services.AddSingleton<IDocumentHandoffService, MauiDocumentHandoffService>();
-        services.AddSingleton<SellingModeService>();
         services.AddSingleton<StoreHeaderState>();
         services.AddSingleton<ShellNotificationUnreadState>();
         services.AddSingleton<AuthShellIdentityState>();

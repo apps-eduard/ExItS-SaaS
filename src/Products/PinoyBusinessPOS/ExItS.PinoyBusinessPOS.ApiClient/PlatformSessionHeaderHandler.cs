@@ -41,7 +41,8 @@ public sealed class PlatformSessionHeaderHandler(ICurrentUserContext currentUser
             || path.StartsWith("/api/v1/commercial", StringComparison.OrdinalIgnoreCase)
             || path.StartsWith("/api/v1/catalog", StringComparison.OrdinalIgnoreCase)
             || path.Equals("/api/v1/me/public-identity", StringComparison.OrdinalIgnoreCase)
-            || path.Equals("/api/v1/users/resolve-public-id", StringComparison.OrdinalIgnoreCase))
+            || path.Equals("/api/v1/users/resolve-public-id", StringComparison.OrdinalIgnoreCase)
+            || path.Equals("/api/v1/qr/resolve", StringComparison.OrdinalIgnoreCase))
         {
             return true;
         }

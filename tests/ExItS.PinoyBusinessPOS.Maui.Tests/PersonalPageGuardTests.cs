@@ -106,6 +106,7 @@ public sealed class PersonalPageGuardTests
         Assert.Contains("Personal_MyQrLoading", myQr, StringComparison.Ordinal);
         Assert.Contains("LocalQrCodeRenderer.TryToPngDataUrl", myQr, StringComparison.Ordinal);
         Assert.Contains("IsSafeIdentity", myQr, StringComparison.Ordinal);
+        Assert.Contains("exits://qr/v1/personal/", myQr, StringComparison.Ordinal);
         Assert.Contains("exits://user/v1/", myQr, StringComparison.Ordinal);
         Assert.Contains("ApiCallStatus.Unauthorized", myQr, StringComparison.Ordinal);
         Assert.Contains("EnsurePlatformSessionAsync", myQr, StringComparison.Ordinal);
@@ -115,6 +116,10 @@ public sealed class PersonalPageGuardTests
         Assert.Contains("Personal_MyQrRenderErrorTitle", myQr, StringComparison.Ordinal);
         Assert.DoesNotContain("PageHeader", myQr, StringComparison.Ordinal);
         Assert.DoesNotContain("PosBusinessApi", myQr, StringComparison.Ordinal);
+
+        var en = File.ReadAllText(Path.Combine(MauiProject(), "Localization", "PosResources.resx"));
+        Assert.Contains("<value>My QR</value>", en, StringComparison.Ordinal);
+        Assert.Contains("Use this to connect with me on ExItS.", en, StringComparison.Ordinal);
 
         var resolve = File.ReadAllText(Path.Combine(personal, "PublicUserResolve.razor"));
         Assert.Contains("@page \"/personal/resolve-user\"", resolve, StringComparison.Ordinal);
@@ -161,6 +166,8 @@ public sealed class PersonalPageGuardTests
             "PlatformAccessClient.cs"));
         Assert.Contains("/api/v1/me/public-identity", client, StringComparison.Ordinal);
         Assert.Contains("/api/v1/users/resolve-public-id", client, StringComparison.Ordinal);
+        Assert.Contains("/api/v1/qr/resolve", client, StringComparison.Ordinal);
+        Assert.Contains("registration-tokens", client, StringComparison.Ordinal);
 
         var sessionHandler = File.ReadAllText(Path.Combine(
             FindRepoRoot(),

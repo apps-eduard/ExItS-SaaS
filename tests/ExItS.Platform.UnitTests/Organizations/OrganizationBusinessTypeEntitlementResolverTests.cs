@@ -335,6 +335,8 @@ public sealed class OrganizationBusinessTypeEntitlementResolverTests
         public Task AddAsync(PlatformOrganization organization, CancellationToken cancellationToken = default) { Store(organization); return Task.CompletedTask; }
         public Task<PlatformOrganization?> GetByIdAsync(PlatformOrganizationId id, CancellationToken cancellationToken = default) => Task.FromResult(_items.GetValueOrDefault(id.Value));
         public Task<PlatformOrganization?> GetBySlugAsync(string slug, CancellationToken cancellationToken = default) => Task.FromResult(_items.Values.FirstOrDefault(o => o.Slug == slug));
+        public Task<PlatformOrganization?> GetByPublicOrganizationIdAsync(string publicOrganizationId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(_items.Values.FirstOrDefault(o => string.Equals(o.PublicOrganizationId, publicOrganizationId, StringComparison.OrdinalIgnoreCase)));
         public Task<(IReadOnlyList<PlatformOrganization> Items, int TotalCount)> ListAsync(int skip, int take, CancellationToken cancellationToken = default) => Task.FromResult<(IReadOnlyList<PlatformOrganization>, int)>((_items.Values.Skip(skip).Take(take).ToList(), _items.Count));
         public Task<(IReadOnlyList<PlatformOrganization> Items, int TotalCount)> ListAsync(OrganizationStatus? status, string? search, OrganizationListSortBy sortBy, bool sortDescending, int skip, int take, CancellationToken cancellationToken = default) => ListAsync(skip, take, cancellationToken);
         public Task UpdateAsync(PlatformOrganization organization, CancellationToken cancellationToken = default) { Store(organization); return Task.CompletedTask; }

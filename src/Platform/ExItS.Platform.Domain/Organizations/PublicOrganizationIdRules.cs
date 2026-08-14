@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using ExItS.Platform.Domain.Common;
+using ExItS.Platform.Domain.Identity;
 
 namespace ExItS.Platform.Domain.Organizations;
 
@@ -11,6 +12,8 @@ namespace ExItS.Platform.Domain.Organizations;
 public static class PublicOrganizationIdRules
 {
     public const string Prefix = "ORG";
+    public const string QrSchemePrefix =
+        ExItsQrEnvelope.CanonicalSchemePrefix + ExItsQrEnvelope.OrganizationType + "/";
     public const int SequenceDigits = 6;
     public const int CanonicalLength = 9;
 
@@ -32,7 +35,13 @@ public static class PublicOrganizationIdRules
             return string.Empty;
         }
 
-        var trimmed = value.Trim().ToUpperInvariant();
+        var trimmed = value.Trim();
+        if (trimmed.StartsWith(QrSchemePrefix, StringComparison.OrdinalIgnoreCase))
+        {
+            trimmed = trimmed[QrSchemePrefix.Length..].Trim();
+        }
+
+        trimmed = trimmed.ToUpperInvariant();
         if (!CanonicalPattern.IsMatch(trimmed))
         {
             throw new DomainException(
@@ -55,6 +64,33 @@ public static class PublicOrganizationIdRules
             normalized = string.Empty;
             return false;
         }
+    }
+
+    public static string BuildQrPayload(string publicOrganizationId) =>
+        ExItsQrEnvelope.Build(ExItsQrPurpose.Organization, publicOrganizationId);
+
+    public static string TryExtractFromQrPayload(string? payload)
+    {
+        if (string.IsNullOrWhiteSpace(payload))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPublicOrganizationId,
+                "QR payload is empty.");
+        }
+
+        if (ExItsQrEnvelope.TryParse(payload, out var parsed) && parsed is not null)
+        {
+            if (parsed.Purpose != ExItsQrPurpose.Organization)
+            {
+                throw new DomainException(
+                    DomainErrorCodes.ExItsQrPurposeMismatch,
+                    "QR payload is not an organization identity.");
+            }
+
+            return parsed.Subject;
+        }
+
+        return Normalize(payload);
     }
 
     /// <summary>Cryptographically random ORG###### (caller must ensure uniqueness).</summary>

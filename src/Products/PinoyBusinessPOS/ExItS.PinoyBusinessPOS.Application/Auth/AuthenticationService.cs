@@ -23,7 +23,8 @@ public sealed class AuthenticationService(
     TimeProvider? timeProvider = null,
     IOfflineOperatingGrantService? offlineGrant = null,
     IDeviceIdentityProvider? deviceIdentity = null,
-    OfflineSessionUxState? offlineSessionUx = null) : IAuthenticationService
+    OfflineSessionUxState? offlineSessionUx = null,
+    SellingModeService? sellingMode = null) : IAuthenticationService
 {
     private static readonly TimeSpan SessionLifetime = TimeSpan.FromHours(12);
     private readonly TimeProvider _clock = timeProvider ?? TimeProvider.System;
@@ -32,6 +33,7 @@ public sealed class AuthenticationService(
     private readonly IOfflineOperatingGrantService? _offlineGrant = offlineGrant;
     private readonly IDeviceIdentityProvider? _deviceIdentity = deviceIdentity;
     private readonly OfflineSessionUxState? _offlineSessionUx = offlineSessionUx;
+    private readonly SellingModeService? _sellingMode = sellingMode;
 
     public bool IsDevelopmentAuthenticationEnabled =>
         string.Equals(appInfo.EnvironmentName, "Development", StringComparison.OrdinalIgnoreCase)
@@ -979,6 +981,9 @@ public sealed class AuthenticationService(
             // Best-effort Platform context clear; local Personal switch still proceeds.
         }
 
+        // Drop org-scoped in-memory UI state. SaleCartService clears itself when
+        // ICurrentUserContext.OrganizationId changes (Maui singleton; not injectable here).
+        ClearOrgScopedInMemoryState();
         await CloseLocalContextAsync(ct).ConfigureAwait(false);
         _accessPolicy?.ClearProcessValidation();
         await preferences.ClearOrganizationPreferenceAsync(ct).ConfigureAwait(false);
@@ -991,6 +996,8 @@ public sealed class AuthenticationService(
             AccessReasonCode = null,
             SubscriptionStatus = null,
             EnabledFeatureCodes = null,
+            BranchId = null,
+            PosDeviceId = null,
             // Local Personal pages require AccountClass=Personal before opening SQLite context.
             // Clear AccountProfileId so EnsurePersonal rebinds the Platform Personal profile.
             AccountClass = "Personal",
@@ -1310,6 +1317,8 @@ public sealed class AuthenticationService(
         }
 
         // Drop prior org/POS process cache before binding a different organization.
+        // SaleCartService clears itself when ICurrentUserContext.OrganizationId changes.
+        ClearOrgScopedInMemoryState();
         _accessPolicy?.ClearProcessValidation();
         await CloseLocalContextAsync(ct).ConfigureAwait(false);
 
@@ -1366,7 +1375,10 @@ public sealed class AuthenticationService(
             HasPosAccess = true,
             AccessReasonCode = accessResult.Data.ReasonCode ?? "allowed",
             SubscriptionStatus = subscriptionStatus,
-            EnabledFeatureCodes = enabledFeatureCodes
+            EnabledFeatureCodes = enabledFeatureCodes,
+            // Never carry branch/device binding from Org A into Org B.
+            BranchId = null,
+            PosDeviceId = null
         };
 
         return await PersistOrganizationSelectionAsync(session, updated, organizationId, ct).ConfigureAwait(false);
@@ -1474,7 +1486,9 @@ public sealed class AuthenticationService(
             Username = issued.Username ?? session.Username,
             Email = issued.Email ?? session.Email,
             SubscriptionStatus = subscriptionStatus,
-            EnabledFeatureCodes = enabledFeatureCodes
+            EnabledFeatureCodes = enabledFeatureCodes,
+            BranchId = null,
+            PosDeviceId = null
         };
 
         if (issued.ProductAccessAllowed == false)
@@ -1598,7 +1612,9 @@ public sealed class AuthenticationService(
             OrganizationId = organizationId,
             OrganizationDisplayName = displayName,
             HasPosAccess = false,
-            AccessReasonCode = reasonCode ?? "product_local_role_missing"
+            AccessReasonCode = reasonCode ?? "product_local_role_missing",
+            BranchId = null,
+            PosDeviceId = null
         };
 
         events.Record("organization_selected_without_pos", Dict(
@@ -2134,6 +2150,12 @@ public sealed class AuthenticationService(
         {
             return session;
         }
+    }
+
+    private void ClearOrgScopedInMemoryState()
+    {
+        // Preferred home / selling mode must not leak Org A → Org B (or into Personal).
+        _sellingMode?.Clear();
     }
 
     private async Task CloseLocalContextAsync(CancellationToken ct)

@@ -34,6 +34,19 @@ internal sealed class PlatformOrganizationRepository : IPlatformOrganizationRepo
         return record is null ? null : OrganizationEntityMapper.ToDomain(record);
     }
 
+    public async Task<PlatformOrganization?> GetByPublicOrganizationIdAsync(
+        string publicOrganizationId,
+        CancellationToken cancellationToken = default)
+    {
+        var normalized = PublicOrganizationIdRules.Normalize(publicOrganizationId);
+        var record = await _db.Organizations
+            .AsNoTracking()
+            .FirstOrDefaultAsync(o => o.PublicOrganizationId == normalized, cancellationToken)
+            .ConfigureAwait(false);
+
+        return record is null ? null : OrganizationEntityMapper.ToDomain(record);
+    }
+
     public Task<(IReadOnlyList<PlatformOrganization> Items, int TotalCount)> ListAsync(
         int skip,
         int take,

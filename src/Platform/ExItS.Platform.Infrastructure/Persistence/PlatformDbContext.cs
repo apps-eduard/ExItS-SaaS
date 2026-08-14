@@ -55,6 +55,7 @@ public sealed class PlatformDbContext : DbContext
         Set<OrganizationBusinessTypeActivationRecord>();
     internal DbSet<OrganizationBranchRecord> OrganizationBranches => Set<OrganizationBranchRecord>();
     internal DbSet<PosDeviceRecord> PosDevices => Set<PosDeviceRecord>();
+    internal DbSet<PosDeviceRegistrationTokenRecord> PosDeviceRegistrationTokens => Set<PosDeviceRegistrationTokenRecord>();
     internal DbSet<SubscriptionRecord> Subscriptions => Set<SubscriptionRecord>();
     internal DbSet<SaaSPaymentRecord> SaaSPayments => Set<SaaSPaymentRecord>();
     internal DbSet<ProviderPaymentRecord> ProviderPayments => Set<ProviderPaymentRecord>();
@@ -365,6 +366,34 @@ public sealed class PlatformDbContext : DbContext
             entity.HasOne<PlatformOrganizationRecord>().WithMany().HasForeignKey(e => e.OrganizationId).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne<OrganizationBranchRecord>().WithMany().HasForeignKey(e => e.BranchId).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne<PlatformUserRecord>().WithMany().HasForeignKey(e => e.RevokedByUserId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<PosDeviceRegistrationTokenRecord>(entity =>
+        {
+            entity.ToTable("pos_device_registration_tokens");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.TokenHash).HasColumnName("token_hash").HasMaxLength(64).IsRequired();
+            entity.Property(e => e.CreatedByUserId).HasColumnName("created_by_user_id");
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.ExpiresAtUtc).HasColumnName("expires_at_utc");
+            entity.Property(e => e.RedeemedAtUtc).HasColumnName("redeemed_at_utc");
+            entity.Property(e => e.RedeemedByInstallationDeviceId)
+                .HasColumnName("redeemed_by_installation_device_id")
+                .HasMaxLength(128);
+            entity.Property(e => e.RedeemedPosDeviceId).HasColumnName("redeemed_pos_device_id");
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(16).IsRequired();
+            entity.HasIndex(e => e.TokenHash).IsUnique().HasDatabaseName("ux_pos_device_registration_tokens_token_hash");
+            entity.HasIndex(e => new { e.OrganizationId, e.Status })
+                .HasDatabaseName("ix_pos_device_registration_tokens_org_status");
+            entity.HasIndex(e => e.ExpiresAtUtc).HasDatabaseName("ix_pos_device_registration_tokens_expires");
+            entity.HasOne<PlatformOrganizationRecord>().WithMany().HasForeignKey(e => e.OrganizationId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<PlatformUserRecord>().WithMany().HasForeignKey(e => e.CreatedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<PosDeviceRecord>().WithMany().HasForeignKey(e => e.RedeemedPosDeviceId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<SubscriptionRecord>(entity =>

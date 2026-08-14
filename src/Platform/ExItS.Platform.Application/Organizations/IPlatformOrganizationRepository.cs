@@ -17,6 +17,10 @@ public interface IPlatformOrganizationRepository
 
     Task<PlatformOrganization?> GetBySlugAsync(string slug, CancellationToken cancellationToken = default);
 
+    Task<PlatformOrganization?> GetByPublicOrganizationIdAsync(
+        string publicOrganizationId,
+        CancellationToken cancellationToken = default);
+
     Task<(IReadOnlyList<PlatformOrganization> Items, int TotalCount)> ListAsync(
         int skip,
         int take,

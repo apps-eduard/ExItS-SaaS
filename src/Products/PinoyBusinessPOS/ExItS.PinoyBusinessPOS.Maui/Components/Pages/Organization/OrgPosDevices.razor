@@ -1,14 +1,43 @@
 @page "/organization/devices"
 @page "/org/devices"
 @using ExItS.DesignSystem.Components.Internal
+@using System.Threading
+@implements IDisposable
 @inject ICurrentUserContext CurrentUser
 @inject IPlatformAccessClient Platform
+@inject IStringLocalizer<PosResources> L
 @inject NavigationManager Nav
 
 <Page>
     <StoreHeaderBack Href="/org" />
     <h1>POS devices</h1>
     <p class="pos-muted">WP06 notice: revoking a device immediately blocks new online transactions. It does not erase locally queued work; reconnect is required to resolve it.</p>
+
+    <div class="pos-action-grid pos-action-grid--one" role="group" style="margin-bottom: 0.75rem;">
+        <button type="button" class="pos-action-tile pos-action-tile--primary" disabled="@_busy" @onclick="ShowRegistrationCodeAsync">
+            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("qr")</span>
+            <span class="pos-action-tile__label">@L["Device_ShowRegistrationCode"]</span>
+        </button>
+    </div>
+
+    @if (_registrationToken is not null)
+    {
+        <Section Title="@L["Device_RegistrationCodeTitle"]">
+            @if (!string.IsNullOrWhiteSpace(_registrationQrDataUrl))
+            {
+                <div class="pos-qr-panel pos-my-qr__panel">
+                    <img class="pos-qr-image" src="@_registrationQrDataUrl" alt="@L["Device_RegistrationCodeTitle"]" width="220" height="220" />
+                    <span class="pos-muted">@L["Device_RegistrationQrHint"]</span>
+                    <p class="pos-muted" role="status">@_expiryLabel</p>
+                </div>
+            }
+            else
+            {
+                <Alert Tone="AlertTone.Warning" Message="@L["Org_BusinessQrRenderFailed"]" />
+            }
+        </Section>
+    }
+
     @if (_loading)
     {
         <Spinner />
@@ -43,6 +72,10 @@
     private bool _loading = true;
     private bool _busy;
     private string? _error;
+    private PosDeviceRegistrationTokenDto? _registrationToken;
+    private string? _registrationQrDataUrl;
+    private string _expiryLabel = string.Empty;
+    private CancellationTokenSource? _expiryCts;
 
     protected override async Task OnInitializedAsync()
     {
@@ -66,6 +99,74 @@
         _loading = false;
     }
 
+    private async Task ShowRegistrationCodeAsync()
+    {
+        if (CurrentUser.Session?.OrganizationId is not Guid orgId)
+        {
+            return;
+        }
+
+        _busy = true;
+        _error = null;
+        try
+        {
+            var result = await Platform.CreatePosDeviceRegistrationTokenAsync(orgId);
+            if (!result.IsSuccess || result.Data is null)
+            {
+                _error = result.Error?.Detail ?? "Could not create a registration code.";
+                return;
+            }
+
+            _registrationToken = result.Data;
+            _registrationQrDataUrl = LocalQrCodeRenderer.TryToPngDataUrl(result.Data.QrPayload, out var dataUrl)
+                ? dataUrl
+                : null;
+            StartExpiryCountdown(result.Data.ExpiresAtUtc);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void StartExpiryCountdown(DateTimeOffset expiresAtUtc)
+    {
+        _expiryCts?.Cancel();
+        _expiryCts?.Dispose();
+        _expiryCts = new CancellationTokenSource();
+        var token = _expiryCts.Token;
+        _ = TickExpiryAsync(expiresAtUtc, token);
+    }
+
+    private async Task TickExpiryAsync(DateTimeOffset expiresAtUtc, CancellationToken ct)
+    {
+        try
+        {
+            while (!ct.IsCancellationRequested)
+            {
+                var remaining = expiresAtUtc - DateTimeOffset.UtcNow;
+                if (remaining <= TimeSpan.Zero)
+                {
+                    _expiryLabel = L["Device_RegistrationExpired"];
+                    await InvokeAsync(StateHasChanged);
+                    return;
+                }
+
+                var minutes = (int)remaining.TotalMinutes;
+                var seconds = remaining.Seconds;
+                _expiryLabel = string.Format(
+                    L["Device_RegistrationExpiresIn"].Value,
+                    minutes > 0 ? $"{minutes} min {seconds} sec" : $"{seconds} sec");
+                await InvokeAsync(StateHasChanged);
+                await Task.Delay(1000, ct);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Page disposed or new token created.
+        }
+    }
+
     private async Task RevokeAsync(Guid deviceId)
     {
         if (CurrentUser.Session?.OrganizationId is not Guid orgId) return;
@@ -78,5 +179,11 @@
             _used = Math.Max(0, _used - 1);
         }
         finally { _busy = false; }
+    }
+
+    public void Dispose()
+    {
+        _expiryCts?.Cancel();
+        _expiryCts?.Dispose();
     }
 }

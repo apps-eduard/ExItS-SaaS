@@ -179,6 +179,18 @@ public static class ApplicationErrorCodes
         "application.plan_change.business_type_capacity_blocked";
     public const string PosDeviceNotAuthorized = "application.pos_device.not_authorized";
     public const string PosDeviceRevoked = "application.pos_device.revoked";
+    public const string PosDeviceRegistrationTokenNotFound =
+        "application.pos_device.registration_token.not_found";
+    public const string PosDeviceRegistrationTokenExpired =
+        "application.pos_device.registration_token.expired";
+    public const string PosDeviceRegistrationTokenAlreadyRedeemed =
+        "application.pos_device.registration_token.already_redeemed";
+    public const string PosDeviceRegistrationTokenOrganizationMismatch =
+        "application.pos_device.registration_token.organization_mismatch";
+    public const string QrPayloadInvalid = "application.qr.payload.invalid";
+    public const string QrPurposeMismatch = "application.qr.purpose.mismatch";
+    public const string PublicOrganizationIdNotAssigned =
+        "application.organization.public_id_not_assigned";
 
     public const string GlobalCategoryNotFound = "application.global_catalog.category.not_found";
     public const string GlobalProductNotFound = "application.global_catalog.product.not_found";

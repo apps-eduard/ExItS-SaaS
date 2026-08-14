@@ -207,6 +207,7 @@ public sealed class SalePageGuardTests
         Assert.Contains("ICurrentUserContext", cart, StringComparison.Ordinal);
         Assert.Contains("_currentUser.Changed +=", cart, StringComparison.Ordinal);
         Assert.Contains("Clear()", cart, StringComparison.Ordinal);
+        Assert.Contains("organizationId != _organizationId", cart, StringComparison.Ordinal);
 
         // No persistence of any kind: the cart must not reach SQLite, preferences, or secure storage.
         foreach (var forbidden in new[]
@@ -221,6 +222,15 @@ public sealed class SalePageGuardTests
         {
             Assert.DoesNotContain(forbidden, cart, StringComparison.Ordinal);
         }
+
+        var auth = File.ReadAllText(Path.Combine(
+            FindRepoRoot(), "src", "Products", "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.Application", "Auth", "AuthenticationService.cs"));
+        Assert.Contains("SaleCartService clears itself", auth, StringComparison.Ordinal);
+        Assert.Contains("ClearOrgScopedInMemoryState", auth, StringComparison.Ordinal);
+        Assert.Contains("_sellingMode?.Clear()", auth, StringComparison.Ordinal);
+        Assert.Contains("BranchId = null", auth, StringComparison.Ordinal);
+        Assert.Contains("PosDeviceId = null", auth, StringComparison.Ordinal);
 
         var program = File.ReadAllText(Path.Combine(
             FindRepoRoot(), "src", "Products", "PinoyBusinessPOS", "ExItS.PinoyBusinessPOS.Maui",

@@ -468,6 +468,63 @@ public sealed record ResolvedPublicUserDto(
     string Status,
     bool IsSelf);
 
+public sealed record OrganizationPublicIdentityDto(
+    string PublicOrganizationId,
+    string QrPayload,
+    string DisplayName);
+
+public sealed record ResolvePublicOrganizationIdRequest(
+    string PublicOrganizationIdOrQrPayload,
+    string? Purpose = null);
+
+public sealed record ResolvedPublicOrganizationDto(
+    string PublicOrganizationId,
+    Guid OrganizationId,
+    string DisplayName,
+    string Status);
+
+public sealed record ResolveExItsQrRequest(string Payload, string? ExpectedPurpose = null);
+
+public sealed record ResolvedExItsQrDto(
+    string Purpose,
+    string? PublicUserId = null,
+    Guid? UserIdentityId = null,
+    string? PublicOrganizationId = null,
+    Guid? OrganizationId = null,
+    string? DisplayName = null,
+    string? Status = null,
+    bool? IsSelf = null,
+    string? RegistrationToken = null,
+    DateTimeOffset? ExpiresAtUtc = null,
+    string? TokenStatus = null);
+
+public sealed record PosDeviceRegistrationTokenDto(
+    Guid Id,
+    Guid OrganizationId,
+    string Token,
+    string QrPayload,
+    DateTimeOffset CreatedAtUtc,
+    DateTimeOffset ExpiresAtUtc,
+    string Status,
+    int ExpiresInMinutes);
+
+public sealed record PosDeviceRegistrationTokenMetadataDto(
+    Guid Id,
+    Guid OrganizationId,
+    DateTimeOffset CreatedAtUtc,
+    DateTimeOffset ExpiresAtUtc,
+    string Status,
+    int ExpiresInMinutes);
+
+public sealed record RedeemPosDeviceRegistrationTokenRequest(
+    string Token,
+    Guid BranchId,
+    string InstallationDeviceId,
+    string FriendlyName,
+    string? Platform = null,
+    string? Model = null,
+    string? AppVersion = null);
+
 public sealed record PersonalAccountSettingsDto(
     Guid UserIdentityId,
     bool EmailNotificationsEnabled,
@@ -912,6 +969,26 @@ public interface IPlatformAccessClient
     Task<ApiResult<PublicIdentityDto>> GetMyPublicIdentityAsync(CancellationToken ct = default);
     Task<ApiResult<ResolvedPublicUserDto>> ResolvePublicUserIdAsync(
         ResolvePublicUserIdRequest request,
+        CancellationToken ct = default);
+    Task<ApiResult<OrganizationPublicIdentityDto>> GetOrganizationPublicIdentityAsync(
+        Guid organizationId,
+        CancellationToken ct = default);
+    Task<ApiResult<ResolvedPublicOrganizationDto>> ResolveOrganizationPublicIdAsync(
+        ResolvePublicOrganizationIdRequest request,
+        CancellationToken ct = default);
+    Task<ApiResult<ResolvedExItsQrDto>> ResolveQrAsync(
+        ResolveExItsQrRequest request,
+        CancellationToken ct = default);
+    Task<ApiResult<PosDeviceRegistrationTokenDto>> CreatePosDeviceRegistrationTokenAsync(
+        Guid organizationId,
+        CancellationToken ct = default);
+    Task<ApiResult<PosDeviceDto>> RedeemPosDeviceRegistrationTokenAsync(
+        Guid organizationId,
+        RedeemPosDeviceRegistrationTokenRequest request,
+        CancellationToken ct = default);
+    Task<ApiResult<PosDeviceRegistrationTokenMetadataDto>> GetPosDeviceRegistrationTokenAsync(
+        Guid organizationId,
+        Guid tokenId,
         CancellationToken ct = default);
     Task<ApiResult<PersonalAccountSettingsDto>> GetPersonalSettingsAsync(CancellationToken ct = default);
     Task<ApiResult<PersonalAccountSettingsDto>> UpdatePersonalSettingsAsync(

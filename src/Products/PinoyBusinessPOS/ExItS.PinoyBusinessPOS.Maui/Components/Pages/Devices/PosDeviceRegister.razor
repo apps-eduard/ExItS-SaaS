@@ -1,5 +1,6 @@
 @page "/devices/register"
 @layout Layout.AuthShell
+@using ExItS.PinoyBusinessPOS.Application.Identity
 @using ExItS.DesignSystem.Components.Internal
 @using Microsoft.Maui.Devices
 @inject ICurrentUserContext CurrentUser
@@ -8,8 +9,10 @@
 @inject ISessionStore SessionStore
 @inject IAuthenticationService Auth
 @inject IAppInfoService AppInfo
+@inject IQrCodeScanService QrScan
 @inject NavigationGate Gate
 @inject NavigationManager Nav
+@inject IStringLocalizer<PosResources> L
 
 <div class="pos-device-register">
 <Page>
@@ -74,7 +77,14 @@
             This device will be authorized to perform POS transactions.
         </p>
 
-        <div class="pos-device-register__actions">
+        <div class="pos-action-grid pos-action-grid--two pos-device-register__actions" role="group">
+            <button type="button"
+                    class="pos-action-tile"
+                    disabled="@(_saving || !CanSubmit)"
+                    @onclick="ScanRegistrationCodeAsync">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("qr")</span>
+                <span class="pos-action-tile__label">@L["Device_ScanRegistrationCode"]</span>
+            </button>
             <Button Variant="ButtonVariant.Primary"
                     IsLoading="_saving"
                     Disabled="_saving || !CanSubmit"
@@ -147,6 +157,99 @@
         return Task.CompletedTask;
     }
 
+    private async Task ScanRegistrationCodeAsync()
+    {
+        var session = CurrentUser.Session;
+        if (session?.OrganizationId is not Guid orgId
+            || !Guid.TryParse(_branchIdText, out var branchId)
+            || branchId == Guid.Empty)
+        {
+            _error = "Select an active branch.";
+            return;
+        }
+
+        var name = _friendlyName?.Trim();
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            _error = "Enter a device name.";
+            return;
+        }
+
+        _saving = true;
+        _error = null;
+        try
+        {
+            var scan = await QrScan.CaptureAsync();
+            if (!scan.Succeeded)
+            {
+                if (!string.IsNullOrWhiteSpace(scan.ErrorKey)
+                    && !string.Equals(scan.ErrorKey, "Personal_ScanCancelled", StringComparison.Ordinal))
+                {
+                    _error = L[scan.ErrorKey];
+                }
+
+                return;
+            }
+
+            if (!ExItsQrPurposeGuard.TryValidateOrRoute(
+                    scan.Payload,
+                    ExItsQrPurposeGuard.PosDeviceRegistration,
+                    out _,
+                    out var mismatch))
+            {
+                _error = mismatch ?? L["Device_QrPurposeMismatch"];
+                return;
+            }
+
+            // Confirm purpose with Platform (rejects Personal/Organization envelopes).
+            var resolved = await Platform.ResolveQrAsync(new ResolveExItsQrRequest(
+                scan.Payload!,
+                ExItsQrPurposeGuard.PosDeviceRegistration));
+            if (!resolved.IsSuccess || resolved.Data is null)
+            {
+                var code = resolved.Error?.ErrorCode ?? string.Empty;
+                var detail = resolved.Error?.Detail ?? string.Empty;
+                _error = code.Contains("purpose.mismatch", StringComparison.OrdinalIgnoreCase)
+                         || detail.Contains("qr_purpose_mismatch", StringComparison.OrdinalIgnoreCase)
+                    ? L["Device_QrPurposeMismatch"]
+                    : (string.IsNullOrWhiteSpace(detail) ? L["Device_RegistrationRedeemFailed"] : detail);
+                return;
+            }
+
+            var token = resolved.Data.RegistrationToken ?? scan.Payload!;
+            var installationId = await DeviceIdentity.GetOrCreateDeviceIdAsync();
+            var redeem = await Platform.RedeemPosDeviceRegistrationTokenAsync(
+                orgId,
+                new RedeemPosDeviceRegistrationTokenRequest(
+                    token,
+                    branchId,
+                    installationId,
+                    name,
+                    Platform: _platformLabel,
+                    Model: _model ?? _deviceLabel,
+                    AppVersion: AppInfo.Version));
+            if (!redeem.IsSuccess || redeem.Data is null)
+            {
+                _error = string.IsNullOrWhiteSpace(redeem.Error?.Detail)
+                    ? L["Device_RegistrationRedeemFailed"]
+                    : redeem.Error!.Detail;
+                return;
+            }
+
+            await PersistDeviceAndContinueAsync(session, redeem.Data);
+        }
+        catch (Exception ex)
+        {
+            _error = string.IsNullOrWhiteSpace(ex.Message)
+                ? L["Device_RegistrationRedeemFailed"]
+                : ex.Message;
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
     private async Task RegisterAsync()
     {
         var session = CurrentUser.Session;
@@ -187,21 +290,7 @@
                 return;
             }
 
-            var updated = session with { BranchId = result.Data.BranchId, PosDeviceId = result.Data.Id };
-            var (_, marker) = await SessionStore.LoadAsync();
-            await SessionStore.SaveAsync(updated, marker ?? Guid.NewGuid().ToString("N"));
-            CurrentUser.Set(updated);
-            await Auth.EnsureOfflineOperateGrantAsync();
-
-            var next = await Gate.ResolveStartRouteAsync();
-            // Persistence/restore must keep PosDeviceId; if we still bounce here, force boot routing.
-            if (string.Equals(next, "/devices/register", StringComparison.OrdinalIgnoreCase)
-                && CurrentUser.Session?.PosDeviceId is not null)
-            {
-                next = "/";
-            }
-
-            Nav.NavigateTo(next, replace: true);
+            await PersistDeviceAndContinueAsync(session, result.Data);
         }
         catch (Exception ex)
         {
@@ -213,6 +302,24 @@
         {
             _saving = false;
         }
+    }
+
+    private async Task PersistDeviceAndContinueAsync(AuthSession session, PosDeviceDto device)
+    {
+        var updated = session with { BranchId = device.BranchId, PosDeviceId = device.Id };
+        var (_, marker) = await SessionStore.LoadAsync();
+        await SessionStore.SaveAsync(updated, marker ?? Guid.NewGuid().ToString("N"));
+        CurrentUser.Set(updated);
+        await Auth.EnsureOfflineOperateGrantAsync();
+
+        var next = await Gate.ResolveStartRouteAsync();
+        if (string.Equals(next, "/devices/register", StringComparison.OrdinalIgnoreCase)
+            && CurrentUser.Session?.PosDeviceId is not null)
+        {
+            next = "/";
+        }
+
+        Nav.NavigateTo(next, replace: true);
     }
 
     private static (string DeviceLabel, string PlatformLabel, string? Model) ResolveDeviceInfo()

@@ -97,7 +97,11 @@ public sealed class AccountScopeGuardMiddleware(RequestDelegate next)
 
         // Public ExItS ID — any authenticated account class (Personal/Organization/Platform).
         if (path.Equals("/api/v1/me/public-identity", StringComparison.OrdinalIgnoreCase)
-            || path.Equals("/api/v1/users/resolve-public-id", StringComparison.OrdinalIgnoreCase))
+            || path.Equals("/api/v1/users/resolve-public-id", StringComparison.OrdinalIgnoreCase)
+            || path.Equals("/api/v1/organizations/resolve-public-id", StringComparison.OrdinalIgnoreCase)
+            || path.Equals("/api/v1/qr/resolve", StringComparison.OrdinalIgnoreCase)
+            || (path.StartsWith("/api/v1/organizations/", StringComparison.OrdinalIgnoreCase)
+                && path.EndsWith("/public-identity", StringComparison.OrdinalIgnoreCase)))
         {
             return true;
         }
@@ -135,7 +139,11 @@ public sealed class AccountScopeGuardMiddleware(RequestDelegate next)
     private static bool IsPathAllowed(string path, AccountClass accountClass)
     {
         if (path.Equals("/api/v1/me/public-identity", StringComparison.OrdinalIgnoreCase)
-            || path.Equals("/api/v1/users/resolve-public-id", StringComparison.OrdinalIgnoreCase))
+            || path.Equals("/api/v1/users/resolve-public-id", StringComparison.OrdinalIgnoreCase)
+            || path.Equals("/api/v1/organizations/resolve-public-id", StringComparison.OrdinalIgnoreCase)
+            || path.Equals("/api/v1/qr/resolve", StringComparison.OrdinalIgnoreCase)
+            || (path.StartsWith("/api/v1/organizations/", StringComparison.OrdinalIgnoreCase)
+                && path.EndsWith("/public-identity", StringComparison.OrdinalIgnoreCase)))
         {
             return true;
         }

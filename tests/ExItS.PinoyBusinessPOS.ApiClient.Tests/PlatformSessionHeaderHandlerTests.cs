@@ -10,6 +10,7 @@ public sealed class PlatformSessionHeaderHandlerTests
     [Theory]
     [InlineData("/api/v1/me/public-identity")]
     [InlineData("/api/v1/users/resolve-public-id")]
+    [InlineData("/api/v1/qr/resolve")]
     [InlineData("/api/v1/personal/dashboard")]
     public async Task Public_identity_and_personal_routes_use_platform_session_not_bearer(string path)
     {

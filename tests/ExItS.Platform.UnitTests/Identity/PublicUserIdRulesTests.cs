@@ -13,6 +13,8 @@ public sealed class PublicUserIdRulesTests
     [InlineData("EX48271936", "EX-4827-1936")]
     [InlineData("exits://user/v1/EX-4827-1936", "EX-4827-1936")]
     [InlineData("exits://user/v1/ex-4827-1936", "EX-4827-1936")]
+    [InlineData("exits://qr/v1/personal/EX-4827-1936", "EX-4827-1936")]
+    [InlineData("exits://qr/v1/personal/ex-4827-1936", "EX-4827-1936")]
     public void Normalize_accepts_canonical_compact_and_qr_payload(string input, string expected)
     {
         Assert.Equal(expected, PublicUserIdRules.Normalize(input));
@@ -33,7 +35,7 @@ public sealed class PublicUserIdRulesTests
     public void Qr_payload_contains_only_versioned_public_reference()
     {
         var payload = PublicUserIdRules.BuildQrPayload("EX-4827-1936");
-        Assert.Equal("exits://user/v1/EX-4827-1936", payload);
+        Assert.Equal("exits://qr/v1/personal/EX-4827-1936", payload);
         Assert.DoesNotContain("@", payload, StringComparison.Ordinal);
         Assert.DoesNotContain("token", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("role", payload, StringComparison.OrdinalIgnoreCase);
@@ -70,7 +72,7 @@ public sealed class PublicIdentityUseCaseTests
         var mine = await get.ExecuteAsync(user.Id);
         Assert.True(mine.IsSuccess);
         Assert.Equal("EX-0000-0001", mine.Value!.PublicUserId);
-        Assert.Equal("exits://user/v1/EX-0000-0001", mine.Value.QrPayload);
+        Assert.Equal("exits://qr/v1/personal/EX-0000-0001", mine.Value.QrPayload);
 
         var again = await get.ExecuteAsync(user.Id);
         Assert.Equal(mine.Value.PublicUserId, again.Value!.PublicUserId);

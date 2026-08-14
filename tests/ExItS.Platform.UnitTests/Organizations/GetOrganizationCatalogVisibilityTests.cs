@@ -74,6 +74,11 @@ public sealed class GetOrganizationCatalogVisibilityTests
         public Task<PlatformOrganization?> GetBySlugAsync(string slug, CancellationToken cancellationToken = default) =>
             Task.FromResult<PlatformOrganization?>(null);
 
+        public Task<PlatformOrganization?> GetByPublicOrganizationIdAsync(
+            string publicOrganizationId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<PlatformOrganization?>(null);
+
         public Task<(IReadOnlyList<PlatformOrganization> Items, int TotalCount)> ListAsync(
             int skip,
             int take,

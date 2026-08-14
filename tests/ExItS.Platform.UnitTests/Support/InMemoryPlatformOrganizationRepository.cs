@@ -27,6 +27,20 @@ internal sealed class InMemoryPlatformOrganizationRepository : IPlatformOrganiza
         return Task.FromResult<PlatformOrganization?>(null);
     }
 
+    public Task<PlatformOrganization?> GetByPublicOrganizationIdAsync(
+        string publicOrganizationId,
+        CancellationToken cancellationToken = default)
+    {
+        if (!PublicOrganizationIdRules.TryNormalize(publicOrganizationId, out var normalized))
+        {
+            return Task.FromResult<PlatformOrganization?>(null);
+        }
+
+        var match = _byId.Values.FirstOrDefault(o =>
+            string.Equals(o.PublicOrganizationId, normalized, StringComparison.Ordinal));
+        return Task.FromResult(match);
+    }
+
     public Task<(IReadOnlyList<PlatformOrganization> Items, int TotalCount)> ListAsync(
         int skip,
         int take,

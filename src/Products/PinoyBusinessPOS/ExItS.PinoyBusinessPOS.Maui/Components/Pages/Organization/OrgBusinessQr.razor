@@ -1,0 +1,202 @@
+@page "/org/business-qr"
+@using ExItS.DesignSystem.Components.Internal
+@inject IAuthenticationService Auth
+@inject ICurrentUserContext CurrentUser
+@inject IPlatformAccessClient Platform
+@inject NavigationManager Nav
+@inject IStringLocalizer<PosResources> L
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IJSRuntime Js
+@inject IDocumentHandoffService Handoff
+
+<div class="pos-my-qr pos-org-business-qr">
+    <StoreHeaderBack Href="/org" />
+    <Page>
+        <header class="pos-org-business-qr__header">
+            <h1 class="pos-org-business-qr__title">@L["Org_BusinessQrTitle"]</h1>
+            <p class="pos-org-business-qr__subtitle">@L["Org_BusinessQrSubtitle"]</p>
+        </header>
+
+        @if (_loading)
+        {
+            <Stack Align="StackAlign.Center" Gap="2">
+                <Spinner />
+                <span class="pos-muted">@L["Org_BusinessQrLoading"]</span>
+            </Stack>
+        }
+        else if (CurrentUser.Session?.OrganizationId is null)
+        {
+            <ErrorState Title="@L["Org_MissingTitle"]"
+                        Message="@L["Org_MissingMessage"]"
+                        RetryLabel="@L["OrgSelect_Title"]"
+                        OnRetry="GoSelect" />
+        }
+        else if (_identityFailure)
+        {
+            <ErrorState Title="@_errorTitle"
+                        Message="@_error"
+                        RetryLabel="@L["Common_Retry"]"
+                        OnRetry="LoadAsync" />
+        }
+        else if (_identity is not null && _renderFailure)
+        {
+            <Section Title="@_identity.DisplayName">
+                <div class="pos-my-qr__id">@_identity.PublicOrganizationId</div>
+                <ErrorState Title="@L["Org_BusinessQrRenderErrorTitle"]"
+                            Message="@L["Org_BusinessQrRenderFailed"]"
+                            RetryLabel="@L["Personal_RefreshQrVisual"]"
+                            OnRetry="RefreshVisual" />
+            </Section>
+        }
+        else if (_identity is not null)
+        {
+            <Section Title="@_identity.DisplayName">
+                <div class="pos-qr-panel pos-my-qr__panel">
+                    <img class="pos-qr-image" src="@_qrDataUrl" alt="@L["Org_BusinessQrTitle"]" width="220" height="220" />
+                    <div class="pos-my-qr__id">@_identity.PublicOrganizationId</div>
+                    <span class="pos-muted">@L["Org_BusinessQrHint"]</span>
+                </div>
+
+                <div class="pos-action-grid pos-action-grid--two pos-my-qr__actions" role="group" aria-label="@L["Org_BusinessQrTitle"]">
+                    <button type="button" class="pos-action-tile" @onclick="CopyIdAsync">
+                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("check")</span>
+                        <span class="pos-action-tile__label">@L["Org_BusinessQrCopyId"]</span>
+                    </button>
+                    <button type="button" class="pos-action-tile" @onclick="RefreshVisual">
+                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("refresh")</span>
+                        <span class="pos-action-tile__label">@L["Personal_RefreshQrVisual"]</span>
+                    </button>
+                </div>
+
+                @if (!string.IsNullOrEmpty(_copyMessage))
+                {
+                    <Alert Tone="AlertTone.Info" Message="@_copyMessage" />
+                }
+            </Section>
+        }
+    </Page>
+</div>
+
+@code {
+    private bool _loading = true;
+    private bool _identityFailure;
+    private bool _renderFailure;
+    private string _errorTitle = string.Empty;
+    private string? _error;
+    private string? _copyMessage;
+    private string _qrDataUrl = string.Empty;
+    private OrganizationPublicIdentityDto? _identity;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _identityFailure = false;
+        _renderFailure = false;
+        _error = null;
+        _errorTitle = L["Org_BusinessQrErrorTitle"];
+        _copyMessage = null;
+        _identity = null;
+        _qrDataUrl = string.Empty;
+        try
+        {
+            if (!CurrentUser.IsAuthenticated)
+            {
+                var restore = await Auth.RestoreSessionAsync();
+                if (!restore.Succeeded)
+                {
+                    Nav.NavigateTo("/signin", replace: true);
+                    return;
+                }
+            }
+
+            if (CurrentUser.Session?.OrganizationId is not Guid orgId)
+            {
+                return;
+            }
+
+            var result = await Platform.GetOrganizationPublicIdentityAsync(orgId);
+            if (!result.IsSuccess || result.Data is null)
+            {
+                _identityFailure = true;
+                var described = ApiLocalizer.Describe(result.Status, result.Error);
+                _errorTitle = L["Org_BusinessQrErrorTitle"];
+                _error = result.Error?.Detail ?? described.Message;
+                return;
+            }
+
+            if (!IsSafeIdentity(result.Data))
+            {
+                _identityFailure = true;
+                _error = L["Org_BusinessQrUnsafePayload"];
+                return;
+            }
+
+            _identity = result.Data;
+            RefreshVisual();
+        }
+        catch
+        {
+            _identityFailure = true;
+            _error = L["Org_BusinessQrNetworkFailed"];
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private static bool IsSafeIdentity(OrganizationPublicIdentityDto identity)
+    {
+        if (string.IsNullOrWhiteSpace(identity.PublicOrganizationId)
+            || string.IsNullOrWhiteSpace(identity.QrPayload))
+        {
+            return false;
+        }
+
+        var expected = "exits://qr/v1/organization/" + identity.PublicOrganizationId.Trim();
+        return string.Equals(identity.QrPayload.Trim(), expected, StringComparison.Ordinal)
+               && !identity.QrPayload.Contains('@', StringComparison.Ordinal)
+               && !identity.QrPayload.Contains("Bearer", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void RefreshVisual()
+    {
+        _renderFailure = false;
+        _copyMessage = null;
+        if (_identity is null)
+        {
+            return;
+        }
+
+        if (!LocalQrCodeRenderer.TryToPngDataUrl(_identity.QrPayload, out var dataUrl))
+        {
+            _renderFailure = true;
+            _qrDataUrl = string.Empty;
+            return;
+        }
+
+        _qrDataUrl = dataUrl;
+    }
+
+    private async Task CopyIdAsync()
+    {
+        if (_identity is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await Js.InvokeVoidAsync("navigator.clipboard.writeText", _identity.PublicOrganizationId);
+            _copyMessage = L["Org_BusinessQrCopyDone"];
+        }
+        catch
+        {
+            _copyMessage = _identity.PublicOrganizationId;
+        }
+    }
+
+    private void GoSelect() => Nav.NavigateTo("/organization-select");
+}

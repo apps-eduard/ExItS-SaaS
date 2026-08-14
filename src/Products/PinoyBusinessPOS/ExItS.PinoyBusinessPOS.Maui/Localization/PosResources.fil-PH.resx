@@ -2322,6 +2322,26 @@
   <data name="Org_EssentialsSection" xml:space="preserve"><value>Essentials</value></data>
   <data name="Org_ProfileLink" xml:space="preserve"><value>Organization profile</value></data>
   <data name="Org_StaffLink" xml:space="preserve"><value>Staff</value></data>
+  <data name="Org_BusinessQrLink" xml:space="preserve"><value>Business QR</value></data>
+  <data name="Org_BusinessQrTitle" xml:space="preserve"><value>Business QR</value></data>
+  <data name="Org_BusinessQrSubtitle" xml:space="preserve"><value>Use this to identify or connect with this business.</value></data>
+  <data name="Org_BusinessQrHint" xml:space="preserve"><value>Use this to identify or connect with this business.</value></data>
+  <data name="Org_BusinessQrLoading" xml:space="preserve"><value>Loading business QR…</value></data>
+  <data name="Org_BusinessQrErrorTitle" xml:space="preserve"><value>Could not load business QR</value></data>
+  <data name="Org_BusinessQrNetworkFailed" xml:space="preserve"><value>Network error while loading the business QR. Check connection and retry.</value></data>
+  <data name="Org_BusinessQrUnsafePayload" xml:space="preserve"><value>The business QR response was invalid. Retry or sign in again.</value></data>
+  <data name="Org_BusinessQrRenderErrorTitle" xml:space="preserve"><value>Could not generate QR code</value></data>
+  <data name="Org_BusinessQrRenderFailed" xml:space="preserve"><value>The business ID loaded, but the QR image could not be drawn. Retry.</value></data>
+  <data name="Org_BusinessQrCopyId" xml:space="preserve"><value>Copy business ID</value></data>
+  <data name="Org_BusinessQrCopyDone" xml:space="preserve"><value>Business ID copied.</value></data>
+  <data name="Device_ShowRegistrationCode" xml:space="preserve"><value>Show registration code</value></data>
+  <data name="Device_ScanRegistrationCode" xml:space="preserve"><value>Scan registration code</value></data>
+  <data name="Device_RegistrationCodeTitle" xml:space="preserve"><value>Device registration code</value></data>
+  <data name="Device_RegistrationExpiresIn" xml:space="preserve"><value>Expires in {0}</value></data>
+  <data name="Device_RegistrationExpired" xml:space="preserve"><value>This registration code has expired. Create a new one.</value></data>
+  <data name="Device_RegistrationQrHint" xml:space="preserve"><value>Show this code on the device that should join this organization.</value></data>
+  <data name="Device_QrPurposeMismatch" xml:space="preserve"><value>This QR code is not the right type for this screen. Scan a matching ExItS code.</value></data>
+  <data name="Device_RegistrationRedeemFailed" xml:space="preserve"><value>The registration code could not be used. Try again or ask for a new code.</value></data>
   <data name="Org_SubscriptionLink" xml:space="preserve"><value>Subscription and entitlement</value></data>
   <data name="Org_EnterPos" xml:space="preserve"><value>Continue to POS</value></data>
   <data name="Org_EnablePos" xml:space="preserve"><value>I-enable ang POS access</value></data>
@@ -2439,9 +2459,9 @@
   <data name="More_WorkspaceSection" xml:space="preserve"><value>Workspace</value></data>
   <data name="More_ToolsSection" xml:space="preserve"><value>Mga tool</value></data>
   <data name="More_RoleHome" xml:space="preserve"><value>Role home</value></data>
-  <data name="Personal_MyQrLink" xml:space="preserve"><value>My QR Code</value></data>
-  <data name="Personal_MyQrTitle" xml:space="preserve"><value>My QR Code</value></data>
-  <data name="Personal_MyQrSubtitle" xml:space="preserve"><value>Share your ExItS ID. Others confirm before any link is created.</value></data>
+  <data name="Personal_MyQrLink" xml:space="preserve"><value>My QR</value></data>
+  <data name="Personal_MyQrTitle" xml:space="preserve"><value>My QR</value></data>
+  <data name="Personal_MyQrSubtitle" xml:space="preserve"><value>Use this to connect with me on ExItS.</value></data>
   <data name="Personal_MyQrErrorTitle" xml:space="preserve"><value>Hindi ma-load ang QR</value></data>
   <data name="Personal_MyQrLoading" xml:space="preserve"><value>Nilo-load ang iyong QR code…</value></data>
   <data name="Personal_MyQrLoadFailed" xml:space="preserve"><value>Hindi ma-load ang iyong ExItS ID. Subukan ulit.</value></data>
@@ -2450,7 +2470,7 @@
   <data name="Personal_MyQrUnsafePayload" xml:space="preserve"><value>Invalid ang ExItS ID response. Subukan ulit o mag-sign in muli.</value></data>
   <data name="Personal_MyQrRenderErrorTitle" xml:space="preserve"><value>Hindi magawa ang QR code</value></data>
   <data name="Personal_MyQrRenderFailed" xml:space="preserve"><value>Na-load ang ExItS ID, pero hindi maguhit ang QR. Subukan ulit.</value></data>
-  <data name="Personal_MyQrHint" xml:space="preserve"><value>Ang QR ay public ExItS reference lang - hindi email, phone, o token.</value></data>
+  <data name="Personal_MyQrHint" xml:space="preserve"><value>Use this to connect with me on ExItS.</value></data>
   <data name="Personal_CopyExItsId" xml:space="preserve"><value>Kopyahin ang ExItS ID</value></data>
   <data name="Personal_CopyExItsIdDone" xml:space="preserve"><value>Nakopya ang ExItS ID.</value></data>
   <data name="Personal_ShareExItsId" xml:space="preserve"><value>I-share ang ExItS ID</value></data>

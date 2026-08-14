@@ -30,9 +30,11 @@ public sealed class OrgSummaryUiGuardTests
         Assert.Contains("pos-org__nav-row", page, StringComparison.Ordinal);
         Assert.Contains("Org_ProfileLink", page, StringComparison.Ordinal);
         Assert.Contains("Org_StaffLink", page, StringComparison.Ordinal);
+        Assert.Contains("Org_BusinessQrLink", page, StringComparison.Ordinal);
         Assert.Contains("Org_SubscriptionLink", page, StringComparison.Ordinal);
         Assert.Contains("/org/profile", page, StringComparison.Ordinal);
         Assert.Contains("/org/staff", page, StringComparison.Ordinal);
+        Assert.Contains("/org/business-qr", page, StringComparison.Ordinal);
         Assert.Contains("/org/subscription", page, StringComparison.Ordinal);
         Assert.Contains("Org_WebAdminReminder", page, StringComparison.Ordinal);
         // My QR is Personal-only; Org shell must not deep-link into Personal tabs.

@@ -1,6 +1,7 @@
 @page "/personal/resolve-user"
 @layout Layout.PersonalShell
 @using ExItS.DesignSystem.Components.Internal
+@using ExItS.PinoyBusinessPOS.Application.Identity
 @inject IAuthenticationService Auth
 @inject ICurrentUserContext CurrentUser
 @inject IPlatformAccessClient Platform
@@ -211,6 +212,16 @@
         }
 
         _input = scan.Payload;
+        if (!ExItsQrPurposeGuard.TryValidateOrRoute(
+                scan.Payload,
+                ExItsQrPurposeGuard.Personal,
+                out _,
+                out var mismatch))
+        {
+            _errors.Add(mismatch ?? ExItsQrPurposeGuard.MismatchMessage);
+            return;
+        }
+
         await ResolveAsync();
     }
 

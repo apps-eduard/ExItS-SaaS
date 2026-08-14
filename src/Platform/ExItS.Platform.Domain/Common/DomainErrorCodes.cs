@@ -54,6 +54,18 @@ public static class DomainErrorCodes
     public const string InvalidPosDeviceId = "platform.pos_device.id.invalid";
     public const string InvalidPosDeviceInstallationId = "platform.pos_device.installation_id.invalid";
     public const string PosDeviceNotActive = "platform.pos_device.not_active";
+    public const string InvalidPosDeviceRegistrationTokenId = "platform.pos_device.registration_token.id.invalid";
+    public const string InvalidPosDeviceRegistrationToken = "platform.pos_device.registration_token.invalid";
+    public const string PosDeviceRegistrationTokenExpired = "platform.pos_device.registration_token.expired";
+    public const string PosDeviceRegistrationTokenAlreadyRedeemed =
+        "platform.pos_device.registration_token.already_redeemed";
+    public const string PosDeviceRegistrationTokenRevoked = "platform.pos_device.registration_token.revoked";
+    public const string PosDeviceRegistrationTokenNotActive = "platform.pos_device.registration_token.not_active";
+    public const string PosDeviceRegistrationTokenOrganizationMismatch =
+        "platform.pos_device.registration_token.organization_mismatch";
+    public const string InvalidExItsQrPayload = "platform.qr.payload.invalid";
+    public const string InvalidExItsQrPurpose = "platform.qr.purpose.invalid";
+    public const string ExItsQrPurposeMismatch = "platform.qr.purpose.mismatch";
     public const string InvalidMembershipStatusTransition = "platform.membership.status.invalid_transition";
 
     public const string UserNotActive = "platform.user.not_active";

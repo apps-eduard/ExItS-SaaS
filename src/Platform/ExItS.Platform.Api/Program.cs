@@ -30,6 +30,7 @@ using ExItS.Platform.Application.Organizations;
 using ExItS.Platform.Application.Payments;
 using ExItS.Platform.Application.Personal;
 using ExItS.Platform.Application.PrivacyCompliance;
+using ExItS.Platform.Application.Qr;
 using ExItS.Platform.Application.Subscriptions;
 using ExItS.Platform.Infrastructure;
 using ExItS.Platform.Infrastructure.GlobalCatalog;
@@ -210,6 +211,12 @@ builder.Services.AddScoped<RenameDevice>();
 builder.Services.AddScoped<RevokeDevice>();
 builder.Services.AddScoped<GetDeviceCapacity>();
 builder.Services.AddScoped<AuthorizeForTransactions>();
+builder.Services.AddScoped<CreatePosDeviceRegistrationToken>();
+builder.Services.AddScoped<RedeemPosDeviceRegistrationToken>();
+builder.Services.AddScoped<GetPosDeviceRegistrationTokenMetadata>();
+builder.Services.AddScoped<GetOrganizationPublicIdentity>();
+builder.Services.AddScoped<ResolvePublicOrganizationId>();
+builder.Services.AddScoped<ResolveExItsQr>();
 builder.Services.Configure<PosProductApiOptions>(builder.Configuration.GetSection(PosProductApiOptions.SectionName));
 builder.Services.AddHttpClient<IPosOrganizationCatalogReadClient, PosOrganizationCatalogReadClient>((sp, client) =>
 {
@@ -469,6 +476,7 @@ app.MapOrganizationEndpoints();
 app.MapBranchAndDeviceEndpoints();
 app.MapIdentityEndpoints();
 app.MapPublicIdentityEndpoints();
+app.MapScopedQrEndpoints();
 app.MapCredentialEndpoints();
 app.MapAuthEndpoints();
 app.MapExternalAuthEndpoints();

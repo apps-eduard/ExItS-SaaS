@@ -835,6 +835,8 @@ public sealed class AuthenticationServiceTests
         var personal = await sut.SwitchToPersonalAsync();
         Assert.True(personal.Succeeded);
         Assert.Null(current.Session?.OrganizationId);
+        Assert.Null(current.Session?.BranchId);
+        Assert.Null(current.Session?.PosDeviceId);
         Assert.Equal("Personal", current.Session?.AccountClass);
         Assert.False(current.HasPosAccess);
         Assert.Null(await prefs.GetSelectedOrganizationIdAsync());
@@ -1397,6 +1399,38 @@ public sealed class AuthenticationServiceTests
 
         public Task<ApiResult<ResolvedPublicUserDto>> ResolvePublicUserIdAsync(ResolvePublicUserIdRequest request, CancellationToken ct = default) =>
             Task.FromResult(ApiResult<ResolvedPublicUserDto>.Unavailable());
+
+        public Task<ApiResult<OrganizationPublicIdentityDto>> GetOrganizationPublicIdentityAsync(
+            Guid organizationId,
+            CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<OrganizationPublicIdentityDto>.Unavailable());
+
+        public Task<ApiResult<ResolvedPublicOrganizationDto>> ResolveOrganizationPublicIdAsync(
+            ResolvePublicOrganizationIdRequest request,
+            CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<ResolvedPublicOrganizationDto>.Unavailable());
+
+        public Task<ApiResult<ResolvedExItsQrDto>> ResolveQrAsync(
+            ResolveExItsQrRequest request,
+            CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<ResolvedExItsQrDto>.Unavailable());
+
+        public Task<ApiResult<PosDeviceRegistrationTokenDto>> CreatePosDeviceRegistrationTokenAsync(
+            Guid organizationId,
+            CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<PosDeviceRegistrationTokenDto>.Unavailable());
+
+        public Task<ApiResult<PosDeviceDto>> RedeemPosDeviceRegistrationTokenAsync(
+            Guid organizationId,
+            RedeemPosDeviceRegistrationTokenRequest request,
+            CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<PosDeviceDto>.Unavailable());
+
+        public Task<ApiResult<PosDeviceRegistrationTokenMetadataDto>> GetPosDeviceRegistrationTokenAsync(
+            Guid organizationId,
+            Guid tokenId,
+            CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<PosDeviceRegistrationTokenMetadataDto>.Unavailable());
 
         public Task<ApiResult<PersonalAccountSettingsDto>> GetPersonalSettingsAsync(CancellationToken ct = default) =>
             Task.FromResult(ApiResult<PersonalAccountSettingsDto>.Unavailable());

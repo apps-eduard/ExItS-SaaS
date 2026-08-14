@@ -63,6 +63,82 @@ internal static class BranchAndDeviceEndpoints
             return PlatformApiResults.FromResult(await useCase.ExecuteAsync(PlatformOrganizationId.From(organizationId),
                 new(body.BranchId, body.InstallationDeviceId ?? string.Empty, body.FriendlyName ?? string.Empty, body.Platform, body.Model, body.AppVersion), ct).ConfigureAwait(false), Results.Ok);
         });
+        root.MapPost("/pos-devices/registration-tokens", async (
+            Guid organizationId,
+            CreatePosDeviceRegistrationToken useCase,
+            PlatformOrganizationAuthz authz,
+            CancellationToken ct) =>
+        {
+            var (denied, _) = await authz.EnsureCanEditOrganizationProfileAsync(
+                organizationId,
+                "platform.organization.pos_device_registration_token_created",
+                ct).ConfigureAwait(false);
+            if (denied is not null) return denied;
+            if (authz.Inner.CurrentActor.PlatformUserId is null)
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.PosDeviceNotAuthorized,
+                    "A signed-in Platform user is required.",
+                    StatusCodes.Status403Forbidden);
+            }
+
+            return PlatformApiResults.FromResult(
+                await useCase.ExecuteAsync(
+                    PlatformOrganizationId.From(organizationId),
+                    authz.Inner.CurrentActor.PlatformUserId,
+                    ct).ConfigureAwait(false),
+                Results.Ok);
+        });
+        root.MapPost("/pos-devices/registration-tokens/redeem", async (
+            Guid organizationId,
+            RedeemPosDeviceRegistrationTokenRequest body,
+            RedeemPosDeviceRegistrationToken useCase,
+            PlatformOrganizationAuthz authz,
+            CancellationToken ct) =>
+        {
+            // Membership is enforced inside the use case; allow any authenticated member session
+            // (not only governing admins) so a staff operator on the scanning device can redeem.
+            var denied = await authz.EnsureCanViewOrganizationAsync(organizationId, ct).ConfigureAwait(false);
+            if (denied is not null) return denied;
+            if (authz.Inner.CurrentActor.PlatformUserId is null)
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.PosDeviceNotAuthorized,
+                    "A signed-in Platform user is required.",
+                    StatusCodes.Status403Forbidden);
+            }
+
+            return PlatformApiResults.FromResult(
+                await useCase.ExecuteAsync(
+                    PlatformOrganizationId.From(organizationId),
+                    authz.Inner.CurrentActor.PlatformUserId,
+                    new RedeemPosDeviceRegistrationTokenCommand(
+                        body.Token ?? string.Empty,
+                        body.BranchId,
+                        body.InstallationDeviceId ?? string.Empty,
+                        body.FriendlyName ?? string.Empty,
+                        body.Platform,
+                        body.Model,
+                        body.AppVersion),
+                    ct).ConfigureAwait(false),
+                Results.Ok);
+        });
+        root.MapGet("/pos-devices/registration-tokens/{tokenId:guid}", async (
+            Guid organizationId,
+            Guid tokenId,
+            GetPosDeviceRegistrationTokenMetadata useCase,
+            PlatformOrganizationAuthz authz,
+            CancellationToken ct) =>
+        {
+            var denied = await authz.EnsureCanViewOrganizationAsync(organizationId, ct).ConfigureAwait(false);
+            if (denied is not null) return denied;
+            return PlatformApiResults.FromResult(
+                await useCase.ExecuteAsync(
+                    PlatformOrganizationId.From(organizationId),
+                    PosDeviceRegistrationTokenId.From(tokenId),
+                    ct).ConfigureAwait(false),
+                Results.Ok);
+        });
         root.MapPut("/pos-devices/{deviceId:guid}", async (Guid organizationId, Guid deviceId, RenamePosDeviceRequest body, RenameDevice useCase, PlatformOrganizationAuthz authz, CancellationToken ct) =>
         {
             var (denied, _) = await authz.EnsureCanEditOrganizationProfileAsync(organizationId, "platform.organization.pos_device_renamed", ct).ConfigureAwait(false);
@@ -90,5 +166,13 @@ internal static class BranchAndDeviceEndpoints
 internal sealed record CreateBranchRequest(string? Code, string? Name, string? AddressLine1 = null, string? AddressLine2 = null, string? City = null, string? Region = null, string? PostalCode = null, string? CountryCode = null);
 internal sealed record UpdateBranchRequest(string? Name, string? AddressLine1 = null, string? AddressLine2 = null, string? City = null, string? Region = null, string? PostalCode = null, string? CountryCode = null, string? Status = null);
 internal sealed record RegisterPosDeviceRequest(Guid BranchId, string? InstallationDeviceId, string? FriendlyName, string? Platform = null, string? Model = null, string? AppVersion = null);
+internal sealed record RedeemPosDeviceRegistrationTokenRequest(
+    string? Token,
+    Guid BranchId,
+    string? InstallationDeviceId,
+    string? FriendlyName,
+    string? Platform = null,
+    string? Model = null,
+    string? AppVersion = null);
 internal sealed record RenamePosDeviceRequest(string? FriendlyName);
 internal sealed record AuthorizePosDeviceRequest(string? InstallationDeviceId, Guid? BranchId = null);

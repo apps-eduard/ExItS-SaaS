@@ -222,8 +222,11 @@
             return false;
         }
 
-        var expected = "exits://user/v1/" + identity.PublicUserId.Trim();
-        return string.Equals(identity.QrPayload.Trim(), expected, StringComparison.Ordinal)
+        var expectedLegacy = "exits://user/v1/" + identity.PublicUserId.Trim();
+        var expectedCanonical = "exits://qr/v1/personal/" + identity.PublicUserId.Trim();
+        var payload = identity.QrPayload.Trim();
+        return (string.Equals(payload, expectedCanonical, StringComparison.Ordinal)
+                || string.Equals(payload, expectedLegacy, StringComparison.Ordinal))
                && !identity.QrPayload.Contains('@', StringComparison.Ordinal)
                && !identity.QrPayload.Contains("Bearer", StringComparison.OrdinalIgnoreCase);
     }

@@ -11,7 +11,10 @@ namespace ExItS.Platform.Domain.Identity;
 public static class PublicUserIdRules
 {
     public const string Prefix = "EX-";
+    /// <summary>Legacy personal QR prefix (accepted on parse; prefer <see cref="CanonicalQrSchemePrefix"/>).</summary>
     public const string QrSchemePrefix = "exits://user/v1/";
+    /// <summary>Canonical personal QR prefix (<c>exits://qr/v1/personal/</c>).</summary>
+    public const string CanonicalQrSchemePrefix = ExItsQrEnvelope.CanonicalSchemePrefix + ExItsQrEnvelope.PersonalType + "/";
     public const int GroupDigits = 4;
     /// <summary>Canonical display length including dashes: EX-4827-1936.</summary>
     public const int CanonicalLength = 12;
@@ -34,11 +37,17 @@ public static class PublicUserIdRules
             return string.Empty;
         }
 
-        var trimmed = value.Trim().ToUpperInvariant();
-        if (trimmed.StartsWith(QrSchemePrefix, StringComparison.OrdinalIgnoreCase))
+        var trimmed = value.Trim();
+        if (trimmed.StartsWith(CanonicalQrSchemePrefix, StringComparison.OrdinalIgnoreCase))
+        {
+            trimmed = trimmed[CanonicalQrSchemePrefix.Length..].Trim();
+        }
+        else if (trimmed.StartsWith(QrSchemePrefix, StringComparison.OrdinalIgnoreCase))
         {
             trimmed = trimmed[QrSchemePrefix.Length..].Trim();
         }
+
+        trimmed = trimmed.ToUpperInvariant();
 
         // Accept EX48271936 / EX-4827-1936 / ex-4827-1936
         var compact = trimmed.Replace("-", string.Empty, StringComparison.Ordinal);
@@ -72,7 +81,7 @@ public static class PublicUserIdRules
     }
 
     public static string BuildQrPayload(string publicUserId) =>
-        QrSchemePrefix + Normalize(publicUserId);
+        ExItsQrEnvelope.Build(ExItsQrPurpose.Personal, publicUserId);
 
     public static string TryExtractFromQrPayload(string? payload)
     {
