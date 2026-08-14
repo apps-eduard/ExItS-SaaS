@@ -5,7 +5,7 @@
 **Code Complete / Owner Validation Pending.** Phase 26 remains **OPEN**. Phase 25 remains **OPEN**. This is **not** phase closeout. No Device / Browser / Production Ready claim. This work package makes no BIR-compliance claim and does not produce `TaxDocument` records.
 
 **Starting SHA:** `fe81abc41439cd0aba1e424414653bc3c530b4b7`  
-**Feature SHA:** pending commit
+**Feature SHA:** `254424df`
 
 Canonical living playbook (not this report):
 [docs/compliance/bir-compliance-activation-roadmap.md](../compliance/bir-compliance-activation-roadmap.md).
@@ -34,9 +34,18 @@ Migrations reviewed for WP01–WP04: additive; no auto-enable of issuance; Local
 - No invented WP06; confirmed BIR implementation remains deferred (not WP03-style grant work).
 - Phase 25 cash/shift leftovers intentionally untouched.
 
+## Validation evidence
+
+- Platform.UnitTests: **919** passed / 0 failed / 0 skipped (includes Phase26 hardening + compliance eligibility/profile suites).
+- PinoyBusinessPOS.ApiClient.Tests: **51** passed / 0 failed / 0 skipped.
+- SalesDocument-focused POS unit filter: **2** passed.
+- SalesDocument / Phase26 Maui wording guards: **6** passed.
+- ArchitectureTests: **4** failed / **163** passed — classified **PRE-EXISTING** (not introduced by Phase 26).
+- LocalStore: unchanged. Device/Browser validation: not performed.
+
 ## Risks and open decisions
 
-- Feature SHA pending commit.
+- Feature SHA recorded as `254424df`.
 - Owner validation outstanding — see checklist.
 - Regulatory requirements remain **UNCONFIRMED** until sources are recorded in the activation roadmap.
 - Future confirmed BIR implementation is deferred; do not treat WP05 as TaxDocument enablement.

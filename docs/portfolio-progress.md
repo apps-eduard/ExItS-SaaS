@@ -14,7 +14,7 @@
 | Current phase | Phase 26 **Open — WP01–WP05 Code Complete / Owner Validation Pending**; Phase 25 remains **Open — Owner Validation Pending**; Phase 22/24/19/20/21 remain Open; Phase 14 still open |
 | Current work package | **P26-WP05** Integration Hardening & Validation Readiness ([phase](phases/phase-26-sales-documents-compliance-readiness.md); [report](reports/P26-WP05-sales-document-compliance-integration-hardening.md); [checklist](validation/phase-26-owner-validation-checklist.md); [roadmap](compliance/bir-compliance-activation-roadmap.md)). **Owner validation pending.** Phase 26 remains **OPEN**. Phase 25 is **not closed**. |
 | Overall status | **P26-WP01–WP05 Code Complete / Owner Validation Pending**; Transaction Summary remains the current sales document; Owner acknowledgment is a soft education prompt; Platform owns compliance eligibility, issuance capability, and org compliance profile anchor; TaxDocument remains unavailable (`ImplementationAvailable=false`); no BIR claim. Next: Owner validation; future confirmed BIR implementation deferred. Phase 25 WP01–WP09 owner validation remains pending. **Not Device Verified**. Production remains **Blocked**. **Not production-ready.** |
-| Latest verified commit | Feature SHA pending (P26-WP05 starting `fe81abc4`; prior WP04 `c794707e`) |
+| Latest verified commit | `254424df` (P26-WP05 sales-document compliance integration hardening) |
 | Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA deferred; Phase 19/20/22/24/25/26 owner/physical validation pending |
 | Last updated | 2026-08-15 |
 
@@ -259,7 +259,7 @@ P19-WP08 ? End-to-End Validation and User Closeout Checklist (Retest � awaitin
 | P26-WP02 — Owner education and acknowledgment | **Code Complete / Validation Pending** | [report](reports/P26-WP02-organization-compliance-education-and-acknowledgment.md) |
 | P26-WP03 — Platform-controlled compliance eligibility / grant-revoke | **Code Complete / Validation Pending** | `73b5822c` — [report](reports/P26-WP03-platform-controlled-compliance-capability-and-eligibility.md) |
 | P26-WP04 — Organization Tax/Compliance Profile & Future Activation Foundation | **Code Complete / Validation Pending** | `c794707e` — [report](reports/P26-WP04-organization-tax-compliance-profile-and-activation-foundation.md); [roadmap](compliance/bir-compliance-activation-roadmap.md) |
-| P26-WP05 — Integration Hardening & Validation Readiness | **Code Complete / Owner Validation Pending** | Feature SHA pending (start `fe81abc4`) — [report](reports/P26-WP05-sales-document-compliance-integration-hardening.md); [checklist](validation/phase-26-owner-validation-checklist.md) |
+| P26-WP05 — Integration Hardening & Validation Readiness | **Code Complete / Owner Validation Pending** | `254424df` — [report](reports/P26-WP05-sales-document-compliance-integration-hardening.md); [checklist](validation/phase-26-owner-validation-checklist.md) |
 
 ## Phase 24 work packages
 
