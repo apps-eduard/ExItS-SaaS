@@ -113,7 +113,7 @@
   <data name="Home_NoFeaturesMessage" xml:space="preserve"><value>Darating pa ang sales at product catalog. Available na ang customer profiles; darating pa ang credit at repayment.</value></data>
 
   <data name="Settings_Title" xml:space="preserve"><value>Mga Setting</value></data>
-  <data name="Settings_Subtitle" xml:space="preserve"><value>Itsura, wika, koneksyon, at account.</value></data>
+  <data name="Settings_Subtitle" xml:space="preserve"><value>Itsura, wika, koneksyon, cash handling ng store, at account.</value></data>
   <data name="Settings_AppearanceSectionTitle" xml:space="preserve"><value>Itsura</value></data>
   <data name="Settings_ThemeLabel" xml:space="preserve"><value>Tema</value></data>
   <data name="Settings_Theme_System" xml:space="preserve"><value>System</value></data>
@@ -374,6 +374,9 @@
   <data name="Access_EntitlementDenied" xml:space="preserve"><value>Tinatanggihan ng entitlement state ang access.</value></data>
   <data name="Home_SessionTitle" xml:space="preserve"><value>Naka-sign in</value></data>
   <data name="Settings_SessionSectionTitle" xml:space="preserve"><value>Session</value></data>
+  <data name="Settings_StoreSectionTitle" xml:space="preserve"><value>Tindahan</value></data>
+  <data name="Settings_CashHandlingSaved" xml:space="preserve"><value>Na-save ang cash count policy. Malalapat ang pagbabago sa susunod na shift.</value></data>
+  <data name="Settings_CashHandlingSetupIncomplete" xml:space="preserve"><value>Kumpletuhin muna ang Operational setup bago baguhin ang cash handling.</value></data>
   <data name="Settings_SwitchOrganization" xml:space="preserve"><value>Palitan ang organization</value></data>
 
   <data name="Customers_Title" xml:space="preserve"><value>Mga customer</value></data>
@@ -1264,6 +1267,21 @@
   <data name="Inventory_LowStockEmptyMessage" xml:space="preserve"><value>Lalabas dito ang produkto kapag ang on-hand ay nasa o mas mababa sa reorder level.</value></data>
   <data name="Inventory_DetailTitle" xml:space="preserve"><value>Detalye ng stock</value></data>
   <data name="Inventory_AdjustTitle" xml:space="preserve"><value>I-adjust ang stock</value></data>
+  <data name="Inventory_AdjustIntro" xml:space="preserve"><value>Magdagdag o magbawas ng on-hand stock. Hindi ito purchase order.</value></data>
+  <data name="Inventory_AdjustDetails" xml:space="preserve"><value>Adjustment</value></data>
+  <data name="Inventory_AdjustExpiryToggleHint" xml:space="preserve"><value>I-on para kailanganin ang expiration date sa stock in. Unahin ng benta ang malapit nang mag-expire.</value></data>
+  <data name="Inventory_AdjustExpiryLockedHint" xml:space="preserve"><value>Naka-track na ang expiration ng produktong ito. Ilagay ang petsa ng lot para sa adjustment.</value></data>
+  <data name="Inventory_AdjustOutExpiryHint" xml:space="preserve"><value>Piliin ang lot na babawasan. Mananatili ang expired lots hanggang i-write off.</value></data>
+  <data name="Inventory_ExpirationDateRequired" xml:space="preserve"><value>Ilagay ang expiration date para sa stock na ito.</value></data>
+  <data name="Inventory_LotRequired" xml:space="preserve"><value>Piliin ang lot na ia-adjust out.</value></data>
+  <data name="Inventory_LotNumberOptionalHint" xml:space="preserve"><value>Opsyonal na batch o lot code.</value></data>
+  <data name="Inventory_ReasonRequired" xml:space="preserve"><value>Ilagay ang dahilan ng adjustment.</value></data>
+  <data name="Inventory_Remarks" xml:space="preserve"><value>Remarks</value></data>
+  <data name="Inventory_RemarksHint" xml:space="preserve"><value>Kailangan. Lalabas sa history (halimbawa: Delivery, Damaged items).</value></data>
+  <data name="Inventory_RemarksRequired" xml:space="preserve"><value>Ilagay ang remarks para sa adjustment.</value></data>
+  <data name="Inventory_Movement_ManualIncrease" xml:space="preserve"><value>Stock added</value></data>
+  <data name="Inventory_Movement_ManualDecrease" xml:space="preserve"><value>Stock removed</value></data>
+  <data name="Inventory_EnableExpiryNeedsCatalog" xml:space="preserve"><value>I-on muna ang Track expiration sa Product edit, o gumamit ng account na may catalog manage.</value></data>
   <data name="Inventory_Enable" xml:space="preserve"><value>I-enable ang tracking</value></data>
   <data name="Inventory_Disable" xml:space="preserve"><value>I-disable ang tracking</value></data>
   <data name="Inventory_Adjust" xml:space="preserve"><value>I-adjust</value></data>
@@ -1290,7 +1308,16 @@
   <data name="Inventory_InsufficientStockTitle" xml:space="preserve"><value>Kulang ang stock</value></data>
   <data name="Inventory_InsufficientStockMessage" xml:space="preserve"><value>Walang sapat na on-hand quantity ang isa o higit pang tracked na produkto para sa bentang ito.</value></data>
   <data name="Inventory_ReorderTitle" xml:space="preserve"><value>Reorder settings</value></data>
+  <data name="Inventory_ReorderIntro" xml:space="preserve"><value>Itakda kung kailan lalabas ang produkto sa Low stock. Hindi nito dinadagdagan ang inventory.</value></data>
+  <data name="Inventory_ReorderDetails" xml:space="preserve"><value>Mga threshold ng alerto</value></data>
+  <data name="Inventory_ReorderLevelHint" xml:space="preserve"><value>Magbabala kapag ang on-hand ay umabot o bumaba dito. Iwanang blangko para patayin ang alerto.</value></data>
   <data name="Inventory_ReorderQuantity" xml:space="preserve"><value>Reorder quantity</value></data>
+  <data name="Inventory_ReorderQuantityHint" xml:space="preserve"><value>Iminumungkahing bilhin kapag kulang na ang stock. Gabay lang ito, hindi awtomatikong order.</value></data>
+  <data name="Inventory_ReorderReasonHint" xml:space="preserve"><value>Kailangan para sa audit trail (halimbawa: weekly restock plan).</value></data>
+  <data name="Inventory_ReorderReasonRequired" xml:space="preserve"><value>Maglagay ng dahilan para sa pagbabago ng reorder settings.</value></data>
+  <data name="Inventory_ReorderInvalidQuantity" xml:space="preserve"><value>Hindi puwedeng negative ang reorder level at quantity.</value></data>
+  <data name="Inventory_ReorderNotRestockHint" xml:space="preserve"><value>Para tumanggap ng delivery o itama ang on-hand, gamitin ang Adjust stock (Stock in / Stock out).</value></data>
+  <data name="Inventory_ReorderGoAdjust" xml:space="preserve"><value>Buksan ang Adjust stock</value></data>
   <data name="Inventory_StockStatus" xml:space="preserve"><value>Stock status</value></data>
   <data name="Inventory_StockStatus_InStock" xml:space="preserve"><value>May stock</value></data>
   <data name="Inventory_StockStatus_LowStock" xml:space="preserve"><value>Kulang</value></data>
@@ -1772,6 +1799,9 @@
   <data name="Shifts_HistorySection" xml:space="preserve"><value>Kasaysayan ng shift</value></data>
   <data name="Shifts_OpenedFormat" xml:space="preserve"><value>Binuksan {0}</value></data>
   <data name="Shifts_ClosedFormat" xml:space="preserve"><value>Isinara {0}</value></data>
+  <data name="Shifts_RegisterCashierFormat" xml:space="preserve"><value>{0} · {1}</value></data>
+  <data name="Shifts_OpenCloseFormat" xml:space="preserve"><value>Binuksan {0} · Isinara {1}</value></data>
+  <data name="Shifts_OpenCancelledFormat" xml:space="preserve"><value>Binuksan {0} · Kinansela {1}</value></data>
   <data name="Shifts_ClearSearch" xml:space="preserve"><value>I-clear ang paghahanap</value></data>
   <data name="Shifts_Refresh" xml:space="preserve"><value>I-refresh</value></data>
   <data name="Shifts_Loading" xml:space="preserve"><value>Naglo-load ng mga shift...</value></data>
@@ -1926,7 +1956,7 @@
   <data name="Shifts_CountByDenomination" xml:space="preserve"><value>Bilangin ayon sa denomination</value></data>
   <data name="Shifts_CountedByDenomination" xml:space="preserve"><value>Nabilang ayon sa denomination</value></data>
   <data name="Shifts_DenominationTitle" xml:space="preserve"><value>Denomination breakdown</value></data>
-  <data name="Shifts_DenominationHint" xml:space="preserve"><value>I-tap ang + o − para bilangin ang bawat bill o coin. Ang Gamitin ang total ang maglalagay sa Cash on hand.</value></data>
+  <data name="Shifts_DenominationHint" xml:space="preserve"><value>I-tap ang + o − para bilangin ang bawat bill o coin. I-tap ang Gamitin ang total (o isara) para mailagay sa Cash on hand.</value></data>
   <data name="Shifts_DenominationClose" xml:space="preserve"><value>Isara ang denomination count</value></data>
   <data name="Shifts_DenominationQtyLabel" xml:space="preserve"><value>Dami para sa {0}</value></data>
   <data name="Shifts_DenominationDecrease" xml:space="preserve"><value>Bawasan ang {0}</value></data>
@@ -1936,7 +1966,13 @@
   <data name="Shifts_DenominationReset" xml:space="preserve"><value>I-reset</value></data>
   <data name="Shifts_DenominationUseTotal" xml:space="preserve"><value>Gamitin ang total</value></data>
   <data name="Shifts_ViewDenominationBreakdown" xml:space="preserve"><value>Tingnan ang denomination breakdown</value></data>
+  <data name="Shifts_TapDenominationHint" xml:space="preserve"><value>I-tap para sa denomination breakdown</value></data>
   <data name="Shifts_CashSales" xml:space="preserve"><value>Cash sales</value></data>
+  <data name="Shifts_GCashSales" xml:space="preserve"><value>GCash sales</value></data>
+  <data name="Shifts_UtangSales" xml:space="preserve"><value>Utang sales</value></data>
+  <data name="Shifts_NonCashReferenceTitle" xml:space="preserve"><value>Ibang tender (sanggunian)</value></data>
+  <data name="Shifts_NonCashInfoHint" xml:space="preserve"><value>Ang GCash at Utang ay hindi physical drawer cash. Hindi nila binabago ang expected cash o variance.</value></data>
+  <data name="Shifts_ViewOpeningDenominationBreakdown" xml:space="preserve"><value>Tingnan ang opening denomination breakdown</value></data>
   <data name="Shifts_CashRefunds" xml:space="preserve"><value>Cash refunds</value></data>
   <data name="Shifts_VarianceStatus" xml:space="preserve"><value>Status</value></data>
   <data name="Nav_Setup" xml:space="preserve"><value>Operational setup</value></data>

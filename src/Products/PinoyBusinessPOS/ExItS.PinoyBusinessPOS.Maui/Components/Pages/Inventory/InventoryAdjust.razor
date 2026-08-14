@@ -2,6 +2,7 @@
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IPosInventoryClient Inventory
+@inject IPosCatalogClient Catalog
 @inject IUtangCapabilityEvaluator Capabilities
 @inject ApiStatusLocalizer ApiLocalizer
 @inject IConnectivityService Connectivity
@@ -15,11 +16,14 @@
 }
 else
 {
+    var expiryOn = _trackExpiration;
+    var canToggleExpiry = !_productAlreadyTracksExpiration;
 <div class="pos-inventory-adjust">
 <Page>
     <header class="pos-inventory-adjust__header">
         <h1 class="pos-inventory-adjust__title">@L["Inventory_AdjustTitle"]</h1>
         <p class="pos-inventory-adjust__subtitle">@(_account?.Name ?? L["Inventory_Title"])</p>
+        <p class="pos-inventory-adjust__intro">@L["Inventory_AdjustIntro"]</p>
     </header>
 
     @if (_isOffline)
@@ -33,7 +37,7 @@ else
     }
 
     <section class="pos-inventory-adjust__panel" aria-labelledby="inventory-adjust-heading">
-        <h2 id="inventory-adjust-heading" class="pos-inventory-adjust__section-title">@L["Inventory_AdjustTitle"]</h2>
+        <h2 id="inventory-adjust-heading" class="pos-inventory-adjust__section-title">@L["Inventory_AdjustDetails"]</h2>
         <div class="pos-inventory-adjust__form">
             <Select Label="@L["Inventory_Direction"]"
                     Value="@_direction"
@@ -43,28 +47,69 @@ else
             <TextInput Label="@L["Inventory_Quantity"]"
                        Value="@_quantityText"
                        ValueChanged="v => _quantityText = v"
-                       Disabled="@(_isOffline || _busy)" />
-            <TextInput Label="@L["Inventory_Reason"]"
+                       Disabled="@(_isOffline || _busy)"
+                       AdditionalAttributes="@DecimalFieldAttributes" />
+            <TextInput Label="@L["Inventory_Remarks"]"
                        Value="@_reason"
                        ValueChanged="v => _reason = v"
+                       Hint="@L["Inventory_RemarksHint"]"
+                       Required="true"
                        Disabled="@(_isOffline || _busy)" />
-            @if (_account?.TracksExpiration == true)
+        </div>
+    </section>
+
+    <section class="pos-inventory-adjust__panel pos-inventory-adjust__panel--expiry" aria-labelledby="inventory-adjust-expiry-heading">
+        <h2 id="inventory-adjust-expiry-heading" class="pos-inventory-adjust__section-title">@L["Catalog_TrackExpiration"]</h2>
+        <div class="pos-inventory-adjust__form">
+            <Switch Checked="@_trackExpiration"
+                    CheckedChanged="OnTrackExpirationChanged"
+                    Label="@L["Catalog_TrackExpiration"]"
+                    Disabled="@(_isOffline || _busy || !canToggleExpiry)" />
+            <p class="pos-inventory-adjust__hint">
+                @(canToggleExpiry
+                    ? L["Inventory_AdjustExpiryToggleHint"]
+                    : L["Inventory_AdjustExpiryLockedHint"])
+            </p>
+
+            @if (expiryOn)
             {
-                <DateInput Label="@L["Inventory_ExpirationDate"]"
-                           Value="@_expirationDate"
-                           ValueChanged="v => _expirationDate = v"
-                           Disabled="@(_isOffline || _busy)" />
-                <TextInput Label="@L["Inventory_LotNumber"]"
-                           Value="@_lotNumber"
-                           ValueChanged="v => _lotNumber = v"
-                           Disabled="@(_isOffline || _busy)" />
-                @if (_lots.Count > 0 && _direction == "Out")
+                @if (_direction == "In")
                 {
-                    <Select Label="@L["Inventory_Lots"]"
-                            Value="@_selectedLotId"
-                            ValueChanged="v => _selectedLotId = v"
-                            Options="@LotOptions"
-                            Disabled="@(_isOffline || _busy)" />
+                    <DateInput Label="@L["Inventory_ExpirationDate"]"
+                               Value="@_expirationDate"
+                               ValueChanged="v => _expirationDate = v"
+                               Required="true"
+                               Disabled="@(_isOffline || _busy)" />
+                    <TextInput Label="@L["Inventory_LotNumber"]"
+                               Value="@_lotNumber"
+                               ValueChanged="v => _lotNumber = v"
+                               Disabled="@(_isOffline || _busy)" />
+                    <p class="pos-inventory-adjust__hint">@L["Inventory_LotNumberOptionalHint"]</p>
+                }
+                else
+                {
+                    @if (_lots.Count > 0)
+                    {
+                        <Select Label="@L["Inventory_Lots"]"
+                                Value="@_selectedLotId"
+                                ValueChanged="v => _selectedLotId = v"
+                                Options="@LotOptions"
+                                Required="true"
+                                Disabled="@(_isOffline || _busy)" />
+                    }
+                    else
+                    {
+                        <DateInput Label="@L["Inventory_ExpirationDate"]"
+                                   Value="@_expirationDate"
+                                   ValueChanged="v => _expirationDate = v"
+                                   Required="true"
+                                   Disabled="@(_isOffline || _busy)" />
+                        <TextInput Label="@L["Inventory_LotNumber"]"
+                                   Value="@_lotNumber"
+                                   ValueChanged="v => _lotNumber = v"
+                                   Disabled="@(_isOffline || _busy)" />
+                    }
+                    <p class="pos-inventory-adjust__hint">@L["Inventory_AdjustOutExpiryHint"]</p>
                 }
             }
         </div>
@@ -82,14 +127,25 @@ else
 </Page>
 </div>
 }
+}
 
 @code {
+    private static readonly IReadOnlyDictionary<string, object> DecimalFieldAttributes =
+        new Dictionary<string, object>(StringComparer.Ordinal)
+        {
+            ["inputmode"] = "decimal",
+            ["autocomplete"] = "off"
+        };
+
     [Parameter] public Guid ProductId { get; set; }
 
     private bool _ready;
     private bool _busy;
     private bool _isOffline;
     private PosInventoryAccountDto? _account;
+    private PosCatalogProductDto? _product;
+    private bool _productAlreadyTracksExpiration;
+    private bool _trackExpiration;
     private string _direction = "In";
     private string _quantityText = "1";
     private string _reason = string.Empty;
@@ -135,17 +191,57 @@ else
             return;
         }
 
-        if (_account.TracksExpiration)
+        _productAlreadyTracksExpiration = _account.TracksExpiration;
+        _trackExpiration = _account.TracksExpiration;
+
+        var productResult = await Catalog.GetProductAsync(ProductId);
+        if (productResult.IsSuccess && productResult.Data is not null)
         {
-            var lots = await Inventory.ListLotsAsync(ProductId, includeDepleted: false, pageSize: 50);
-            _lots = lots.Data?.Items.ToList() ?? [];
+            _product = productResult.Data;
+            _productAlreadyTracksExpiration = _product.TracksExpiration;
+            _trackExpiration = _product.TracksExpiration;
+        }
+
+        if (_trackExpiration)
+        {
+            await LoadLotsAsync();
         }
     }
 
-    private Task OnDirectionChanged(string value)
+    private async Task OnTrackExpirationChanged(bool value)
+    {
+        if (_productAlreadyTracksExpiration)
+        {
+            _trackExpiration = true;
+            return;
+        }
+
+        _trackExpiration = value;
+        if (!value)
+        {
+            _expirationDate = null;
+            _lotNumber = null;
+            _selectedLotId = null;
+            return;
+        }
+
+        await LoadLotsAsync();
+    }
+
+    private async Task OnDirectionChanged(string value)
     {
         _direction = value;
-        return Task.CompletedTask;
+        _selectedLotId = null;
+        if (_trackExpiration && _direction == "Out" && _lots.Count == 0)
+        {
+            await LoadLotsAsync();
+        }
+    }
+
+    private async Task LoadLotsAsync()
+    {
+        var lots = await Inventory.ListLotsAsync(ProductId, includeDepleted: false, pageSize: 50);
+        _lots = lots.Data?.Items.ToList() ?? [];
     }
 
     private void Cancel() => Nav.NavigateTo($"/inventory/{ProductId:D}");
@@ -168,31 +264,99 @@ else
         if (string.IsNullOrWhiteSpace(_reason))
         {
             _errorTitle = L["Inventory_AdjustTitle"];
-            _errorMessage = L["Inventory_Reason"];
+            _errorMessage = L["Inventory_RemarksRequired"];
             _busy = false;
             return;
         }
 
-        Guid? lotId = Guid.TryParse(_selectedLotId, out var parsedLot) ? parsedLot : null;
-        var result = await Inventory.AdjustAsync(
-            ProductId,
-            new AdjustInventoryRequest(
-                _direction,
-                qty,
-                _reason.Trim(),
-                ExpirationDate: _expirationDate,
-                LotNumber: string.IsNullOrWhiteSpace(_lotNumber) ? null : _lotNumber.Trim(),
-                LotId: lotId));
-        _busy = false;
-
-        if (result.Status == ApiCallStatus.Success)
+        if (_trackExpiration && _direction == "In" && _expirationDate is null)
         {
-            Nav.NavigateTo($"/inventory/{ProductId:D}");
+            _errorTitle = L["Inventory_AdjustTitle"];
+            _errorMessage = L["Inventory_ExpirationDateRequired"];
+            _busy = false;
             return;
         }
 
-        var described = ApiLocalizer.Describe(result.Status, result.Error);
-        _errorTitle = described.Title;
-        _errorMessage = result.Error?.Detail ?? described.Message;
+        if (_trackExpiration && _direction == "Out"
+            && _lots.Count > 0
+            && string.IsNullOrWhiteSpace(_selectedLotId))
+        {
+            _errorTitle = L["Inventory_AdjustTitle"];
+            _errorMessage = L["Inventory_LotRequired"];
+            _busy = false;
+            return;
+        }
+
+        if (_trackExpiration && _direction == "Out"
+            && _lots.Count == 0
+            && _expirationDate is null)
+        {
+            _errorTitle = L["Inventory_AdjustTitle"];
+            _errorMessage = L["Inventory_ExpirationDateRequired"];
+            _busy = false;
+            return;
+        }
+
+        try
+        {
+            if (_trackExpiration && !_productAlreadyTracksExpiration)
+            {
+                if (!Capabilities.IsAllowed(UtangCapability.ManageCatalog) || _product is null)
+                {
+                    _errorTitle = L["Inventory_AdjustTitle"];
+                    _errorMessage = L["Inventory_EnableExpiryNeedsCatalog"];
+                    return;
+                }
+
+                var enable = await Catalog.UpdateProductAsync(
+                    ProductId,
+                    new UpdatePosCatalogProductRequest(
+                        _product.Name,
+                        _product.UnitOfMeasure,
+                        _product.SellingPrice,
+                        _product.Description,
+                        _product.Sku,
+                        _product.Barcode,
+                        _product.CategoryId,
+                        SellingMode: _product.SellingMode,
+                        TracksExpiration: true,
+                        ExpirationWarningDays: _product.ExpirationWarningDays ?? 7));
+                if (!enable.IsSuccess)
+                {
+                    var describedEnable = ApiLocalizer.Describe(enable.Status, enable.Error);
+                    _errorTitle = describedEnable.Title;
+                    _errorMessage = enable.Error?.Detail ?? describedEnable.Message;
+                    return;
+                }
+
+                _productAlreadyTracksExpiration = true;
+                _product = enable.Data ?? _product;
+            }
+
+            Guid? lotId = Guid.TryParse(_selectedLotId, out var parsedLot) ? parsedLot : null;
+            var result = await Inventory.AdjustAsync(
+                ProductId,
+                new AdjustInventoryRequest(
+                    _direction,
+                    qty,
+                    _reason.Trim(),
+                    ExpirationDate: _trackExpiration ? _expirationDate : null,
+                    LotNumber: _trackExpiration && !string.IsNullOrWhiteSpace(_lotNumber) ? _lotNumber.Trim() : null,
+                    LotId: _trackExpiration ? lotId : null));
+
+            if (result.Status == ApiCallStatus.Success)
+            {
+                Nav.NavigateTo($"/inventory/{ProductId:D}");
+                return;
+            }
+
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorTitle = described.Title;
+            _errorMessage = result.Error?.Detail ?? described.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
     }
 }

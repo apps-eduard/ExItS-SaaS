@@ -32,16 +32,23 @@ public sealed class InventoryPageGuardTests
         Assert.Contains("pos-inventory-detail__facts", detail, StringComparison.Ordinal);
         Assert.Contains("ListLotsAsync", detail, StringComparison.Ordinal);
         Assert.Contains("Inventory_Lots", detail, StringComparison.Ordinal);
+        Assert.Contains("InventoryUiOptions.MovementTypeLabel", detail, StringComparison.Ordinal);
+        Assert.Contains("pos-inventory-detail__entry-remarks", detail, StringComparison.Ordinal);
         Assert.DoesNotContain("PageHeader", detail, StringComparison.Ordinal);
         Assert.DoesNotContain("OnClick=\"GoBack\"", detail, StringComparison.Ordinal);
+        Assert.DoesNotContain("<span class=\"pos-inventory-detail__entry-name\">@m.MovementType</span>", detail, StringComparison.Ordinal);
 
         var adjust = File.ReadAllText(Path.Combine(pages, "InventoryAdjust.razor"));
         Assert.Contains("@page \"/inventory/{ProductId:guid}/adjust\"", adjust, StringComparison.Ordinal);
         Assert.Contains("StoreHeaderBack Href=", adjust, StringComparison.Ordinal);
         Assert.Contains("UtangCapability.ManageInventory", adjust, StringComparison.Ordinal);
         Assert.Contains("pos-inventory-adjust__header", adjust, StringComparison.Ordinal);
+        Assert.Contains("Inventory_DirectionIn", adjust, StringComparison.Ordinal);
+        Assert.Contains("Inventory_DirectionOut", adjust, StringComparison.Ordinal);
+        Assert.Contains("Inventory_Remarks", adjust, StringComparison.Ordinal);
         Assert.DoesNotContain("PageHeader", adjust, StringComparison.Ordinal);
         Assert.DoesNotContain("OnClick=\"GoBack\"", adjust, StringComparison.Ordinal);
+        Assert.DoesNotContain("Label=\"@L[\"Inventory_Reason\"]\"", adjust, StringComparison.Ordinal);
 
         var low = File.ReadAllText(Path.Combine(pages, "InventoryLowStock.razor"));
         Assert.Contains("@page \"/inventory/low-stock\"", low, StringComparison.Ordinal);
@@ -71,8 +78,14 @@ public sealed class InventoryPageGuardTests
         Assert.Contains("@page \"/inventory/{ProductId:guid}/reorder\"", reorder, StringComparison.Ordinal);
         Assert.Contains("StoreHeaderBack Href=", reorder, StringComparison.Ordinal);
         Assert.Contains("pos-inventory-reorder__header", reorder, StringComparison.Ordinal);
+        Assert.Contains("Inventory_ReorderIntro", reorder, StringComparison.Ordinal);
+        Assert.Contains("Inventory_ReorderDetails", reorder, StringComparison.Ordinal);
+        Assert.Contains("Inventory_ReorderGoAdjust", reorder, StringComparison.Ordinal);
+        Assert.Contains("IsNullOrWhiteSpace(_reason)", reorder, StringComparison.Ordinal);
+        Assert.Contains("inputmode", reorder, StringComparison.Ordinal);
         Assert.DoesNotContain("PageHeader", reorder, StringComparison.Ordinal);
         Assert.DoesNotContain("OnClick=\"GoBack\"", reorder, StringComparison.Ordinal);
+        Assert.DoesNotContain("id=\"inventory-reorder-heading\">@L[\"Inventory_ReorderTitle\"]", reorder, StringComparison.Ordinal);
 
         var counts = File.ReadAllText(Path.Combine(pages, "StockCountsList.razor"));
         Assert.Contains("@page \"/inventory/counts\"", counts, StringComparison.Ordinal);
@@ -137,6 +150,13 @@ public sealed class InventoryPageGuardTests
         Assert.Contains("UtangCapability.ManageInventory", adjust, StringComparison.Ordinal);
         Assert.Contains("qty <= 0", adjust, StringComparison.Ordinal);
         Assert.Contains("IsNullOrWhiteSpace(_reason)", adjust, StringComparison.Ordinal);
+        Assert.Contains("Inventory_RemarksRequired", adjust, StringComparison.Ordinal);
+        Assert.Contains("_trackExpiration", adjust, StringComparison.Ordinal);
+        Assert.Contains("Inventory_ExpirationDate", adjust, StringComparison.Ordinal);
+        Assert.Contains("UpdateProductAsync", adjust, StringComparison.Ordinal);
+        Assert.Contains("TracksExpiration: true", adjust, StringComparison.Ordinal);
+        Assert.Contains("Inventory_DirectionIn", adjust, StringComparison.Ordinal);
+        Assert.Contains("Inventory_DirectionOut", adjust, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -153,6 +173,29 @@ public sealed class InventoryPageGuardTests
             "MoreHub.razor"));
         Assert.Contains("UtangCapability.ViewInventory", more, StringComparison.Ordinal);
         Assert.Contains("GoInventory", more, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Inventory_movement_history_maps_manual_types_to_friendly_labels()
+    {
+        var options = File.ReadAllText(Path.Combine(InventoryPagesDirectory(), "InventoryUiOptions.cs"));
+        Assert.Contains("Inventory_Movement_{code}", options, StringComparison.Ordinal);
+        Assert.Contains("StockMovementPresentation.ToFriendlyLabel", options, StringComparison.Ordinal);
+
+        var resources = File.ReadAllText(Path.Combine(
+            FindRepoRoot(),
+            "src",
+            "Products",
+            "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.Maui",
+            "Localization",
+            "PosResources.resx"));
+        Assert.Contains("<data name=\"Inventory_Movement_ManualIncrease\"", resources, StringComparison.Ordinal);
+        Assert.Contains("<value>Stock added</value>", resources, StringComparison.Ordinal);
+        Assert.Contains("<data name=\"Inventory_Movement_ManualDecrease\"", resources, StringComparison.Ordinal);
+        Assert.Contains("<value>Stock removed</value>", resources, StringComparison.Ordinal);
+        Assert.Contains("<data name=\"Inventory_Remarks\"", resources, StringComparison.Ordinal);
+        Assert.Contains("<value>Remarks</value>", resources, StringComparison.Ordinal);
     }
 
     private static string InventoryPagesDirectory() => Path.Combine(

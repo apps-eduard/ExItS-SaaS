@@ -168,15 +168,15 @@ else
                 {
                     <div class="pos-inventory-detail__entry" role="listitem">
                         <div class="pos-inventory-detail__entry-top">
-                            <span class="pos-inventory-detail__entry-name">@m.MovementType</span>
-                            <span class="pos-inventory-detail__entry-amount">@m.QuantityEffect.ToString("+0.###;-0.###")</span>
+                            <span class="pos-inventory-detail__entry-name">@InventoryUiOptions.MovementTypeLabel(L, m.MovementType)</span>
+                            <span class="pos-inventory-detail__entry-amount @(m.QuantityEffect < 0m ? "pos-inventory-detail__entry-amount--out" : "pos-inventory-detail__entry-amount--in")">@m.QuantityEffect.ToString("+0.###;-0.###")</span>
                         </div>
+                        @if (!string.IsNullOrWhiteSpace(m.Reason))
+                        {
+                            <p class="pos-inventory-detail__entry-remarks">@m.Reason</p>
+                        }
                         <p class="pos-inventory-detail__entry-meta">
                             @m.RecordedAtUtc.UtcDateTime.ToString("u")
-                            @if (!string.IsNullOrWhiteSpace(m.Reason))
-                            {
-                                <text> · @m.Reason</text>
-                            }
                         </p>
                     </div>
                 }

@@ -53,16 +53,16 @@ else
     @if (_detail is not null)
     {
         <Card Size="@CardSize.Small" Title="@($"Adjust {_detail.Name}")">
-            <p class="org-note">Direction In/Out creates a stock movement. Quantity overwrite is not allowed.</p>
+            <p class="org-note">Direction Stock in / Stock out creates a stock movement. Quantity overwrite is not allowed.</p>
             @if (Shell.Can(UtangCapability.ManageInventory))
             {
                 <div class="org-form">
                     <select @bind="_direction">
-                        <option value="In">In (receive)</option>
-                        <option value="Out">Out (write-off)</option>
+                        <option value="In">Stock in</option>
+                        <option value="Out">Stock out</option>
                     </select>
                     <ExitsField Label="Quantity"><Input @bind-Value="_qty" /></ExitsField>
-                    <ExitsField Label="Reason"><Input @bind-Value="_reason" /></ExitsField>
+                    <ExitsField Label="Remarks"><Input @bind-Value="_reason" /></ExitsField>
                     @if (_detail.TracksExpiration)
                     {
                         <ExitsField Label="Lot number"><Input @bind-Value="_lot" /></ExitsField>
@@ -75,15 +75,15 @@ else
             <div class="org-table-wrap">
                 <table class="org-table">
                     <thead>
-                        <tr><th>When</th><th>Type</th><th>Qty</th><th>Reason</th></tr>
+                        <tr><th>When</th><th>Type</th><th>Qty</th><th>Remarks</th></tr>
                     </thead>
                     <tbody>
                         @foreach (var m in _movements)
                         {
                             <tr>
                                 <td>@m.RecordedAtUtc.LocalDateTime</td>
-                                <td>@m.MovementType</td>
-                                <td>@m.QuantityEffect</td>
+                                <td>@StockMovementPresentation.ToFriendlyLabel(m.MovementType)</td>
+                                <td>@m.QuantityEffect.ToString("+0.###;-0.###")</td>
                                 <td>@m.Reason</td>
                             </tr>
                         }
@@ -157,7 +157,7 @@ else
     {
         if (_detail is null || !decimal.TryParse(_qty, out var qty) || string.IsNullOrWhiteSpace(_reason))
         {
-            _error = "Quantity and reason are required.";
+            _error = "Quantity and remarks are required.";
             return;
         }
 

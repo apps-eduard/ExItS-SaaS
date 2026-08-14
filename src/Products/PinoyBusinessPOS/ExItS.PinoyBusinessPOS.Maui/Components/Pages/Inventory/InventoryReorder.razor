@@ -1,4 +1,5 @@
 @page "/inventory/{ProductId:guid}/reorder"
+@using System.Globalization
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IPosInventoryClient Inventory
@@ -15,11 +16,16 @@
 }
 else
 {
+    var unit = _account?.UnitOfMeasure ?? string.Empty;
+    var onHand = _account?.OnHandQuantity ?? 0m;
+    var previewLevel = TryParseOptional(_reorderLevelText);
+    var previewLow = IsPreviewLowStock(onHand, previewLevel);
 <div class="pos-inventory-reorder">
 <Page>
     <header class="pos-inventory-reorder__header">
         <h1 class="pos-inventory-reorder__title">@L["Inventory_ReorderTitle"]</h1>
         <p class="pos-inventory-reorder__subtitle">@(_account?.Name ?? L["Inventory_Title"])</p>
+        <p class="pos-inventory-reorder__intro">@L["Inventory_ReorderIntro"]</p>
     </header>
 
     @if (_isOffline)
@@ -32,22 +38,48 @@ else
         <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Inventory_ReorderTitle"])" Message="@_errorMessage" />
     }
 
+    @if (_account is not null)
+    {
+        <section class="pos-inventory-reorder__status" aria-label="@L["Inventory_StockStatus"]">
+            <div class="pos-inventory-reorder__status-main">
+                <span class="pos-inventory-reorder__status-label">@L["Inventory_OnHand"]</span>
+                <span class="pos-inventory-reorder__status-value">@onHand.ToString("0.###", CultureInfo.CurrentUICulture) @unit</span>
+            </div>
+            <Badge Tone="@(previewLow ? BadgeTone.Warning : BadgeTone.Success)">
+                @(previewLow ? L["Inventory_StockStatus_LowStock"] : L["Inventory_StockStatus_InStock"])
+            </Badge>
+        </section>
+    }
+
     <section class="pos-inventory-reorder__panel" aria-labelledby="inventory-reorder-heading">
-        <h2 id="inventory-reorder-heading" class="pos-inventory-reorder__section-title">@L["Inventory_ReorderTitle"]</h2>
+        <h2 id="inventory-reorder-heading" class="pos-inventory-reorder__section-title">@L["Inventory_ReorderDetails"]</h2>
         <div class="pos-inventory-reorder__form">
             <TextInput Label="@L["Inventory_ReorderLevel"]"
                        Value="@_reorderLevelText"
-                       ValueChanged="v => _reorderLevelText = v"
-                       Disabled="@(_isOffline || _busy)" />
+                       ValueChanged="OnReorderLevelTextChanged"
+                       Hint="@L["Inventory_ReorderLevelHint"]"
+                       Disabled="@(_isOffline || _busy)"
+                       AdditionalAttributes="@DecimalFieldAttributes" />
             <TextInput Label="@L["Inventory_ReorderQuantity"]"
                        Value="@_reorderQuantityText"
-                       ValueChanged="v => _reorderQuantityText = v"
-                       Disabled="@(_isOffline || _busy)" />
+                       ValueChanged="v => _reorderQuantityText = v ?? string.Empty"
+                       Hint="@L["Inventory_ReorderQuantityHint"]"
+                       Disabled="@(_isOffline || _busy)"
+                       AdditionalAttributes="@DecimalFieldAttributes" />
             <TextInput Label="@L["Inventory_Reason"]"
                        Value="@_reason"
-                       ValueChanged="v => _reason = v"
+                       ValueChanged="v => _reason = v ?? string.Empty"
+                       Hint="@L["Inventory_ReorderReasonHint"]"
+                       Required="true"
                        Disabled="@(_isOffline || _busy)" />
         </div>
+        <p class="pos-inventory-reorder__hint">@L["Inventory_ReorderNotRestockHint"]</p>
+        <button type="button"
+                class="pos-inventory-reorder__adjust-link"
+                disabled="@(_isOffline || _busy)"
+                @onclick="GoAdjust">
+            @L["Inventory_ReorderGoAdjust"]
+        </button>
     </section>
 
     <FormActions>
@@ -64,6 +96,13 @@ else
 }
 
 @code {
+    private static readonly IReadOnlyDictionary<string, object> DecimalFieldAttributes =
+        new Dictionary<string, object>(StringComparer.Ordinal)
+        {
+            ["inputmode"] = "decimal",
+            ["autocomplete"] = "off"
+        };
+
     [Parameter] public Guid ProductId { get; set; }
 
     private bool _ready;
@@ -95,33 +134,66 @@ else
         if (result.Status == ApiCallStatus.Success && result.Data is not null)
         {
             _account = result.Data;
-            _reorderLevelText = _account.ReorderLevel?.ToString("0.###") ?? string.Empty;
-            _reorderQuantityText = _account.ReorderQuantity?.ToString("0.###") ?? string.Empty;
+            _reorderLevelText = _account.ReorderLevel?.ToString("0.###", CultureInfo.CurrentUICulture) ?? string.Empty;
+            _reorderQuantityText = _account.ReorderQuantity?.ToString("0.###", CultureInfo.CurrentUICulture) ?? string.Empty;
         }
     }
 
     private void Cancel() => Nav.NavigateTo($"/inventory/{ProductId:D}");
+
+    private void GoAdjust() => Nav.NavigateTo($"/inventory/{ProductId:D}/adjust");
+
+    private Task OnReorderLevelTextChanged(string? value)
+    {
+        _reorderLevelText = value ?? string.Empty;
+        return Task.CompletedTask;
+    }
+
+    private static decimal? TryParseOptional(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return null;
+        }
+
+        return decimal.TryParse(text, NumberStyles.Number, CultureInfo.CurrentUICulture, out var value)
+            ? value
+            : null;
+    }
+
+    private static bool IsPreviewLowStock(decimal onHand, decimal? reorderLevel)
+        => reorderLevel is not null && onHand <= reorderLevel.Value;
 
     private async Task SaveAsync()
     {
         _busy = true;
         _errorTitle = null;
         _errorMessage = null;
-        decimal? level = decimal.TryParse(_reorderLevelText, out var l) ? l : null;
-        if (string.IsNullOrWhiteSpace(_reorderLevelText))
+
+        if (string.IsNullOrWhiteSpace(_reason))
         {
-            level = null;
+            _busy = false;
+            _errorTitle = L["Inventory_ReorderTitle"];
+            _errorMessage = L["Inventory_ReorderReasonRequired"];
+            return;
         }
 
-        decimal? qty = decimal.TryParse(_reorderQuantityText, out var q) ? q : null;
-        if (string.IsNullOrWhiteSpace(_reorderQuantityText))
+        var level = TryParseOptional(_reorderLevelText);
+        var qty = TryParseOptional(_reorderQuantityText);
+        if ((!string.IsNullOrWhiteSpace(_reorderLevelText) && level is null)
+            || (!string.IsNullOrWhiteSpace(_reorderQuantityText) && qty is null)
+            || level is < 0
+            || qty is < 0)
         {
-            qty = null;
+            _busy = false;
+            _errorTitle = L["Inventory_ReorderTitle"];
+            _errorMessage = L["Inventory_ReorderInvalidQuantity"];
+            return;
         }
 
         var result = await Inventory.SetReorderAsync(
             ProductId,
-            new SetInventoryReorderRequest(level, qty, _reason));
+            new SetInventoryReorderRequest(level, qty, _reason.Trim()));
         _busy = false;
         if (result.Status == ApiCallStatus.Success)
         {
