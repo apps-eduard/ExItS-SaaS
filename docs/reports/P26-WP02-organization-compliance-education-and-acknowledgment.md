@@ -5,7 +5,7 @@
 **Code Complete / Validation Pending.** Phase 26 remains **OPEN**. Phase 25 remains **OPEN**. This work package makes no BIR-compliance claim and does not enable `TaxDocument`.
 
 **Starting SHA:** `cb1239385d42161f854792bc0228444c781541ce`  
-**Feature SHA:** (record after push)
+**Feature SHA:** `40830d66`
 
 ## Delivered capability
 
