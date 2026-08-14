@@ -547,6 +547,24 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(14)")
                         .HasColumnName("barcode");
 
+                    b.Property<bool>("CanBePurchased")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("can_be_purchased");
+
+                    b.Property<bool>("CanBeSold")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("can_be_sold");
+
+                    b.Property<bool>("CanBeUsedAsIngredient")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("can_be_used_as_ingredient");
+
                     b.Property<DateTimeOffset?>("CatalogImportedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("catalog_imported_at");
@@ -579,6 +597,12 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                     b.Property<int?>("ExpirationWarningDays")
                         .HasColumnType("integer")
                         .HasColumnName("expiration_warning_days");
+
+                    b.Property<bool>("IsProduced")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_produced");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -635,37 +659,6 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasDefaultValue(false)
                         .HasColumnName("tracks_expiration");
 
-                    b.Property<bool>("CanBePurchased")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true)
-                        .HasColumnName("can_be_purchased");
-
-                    b.Property<bool>("CanBeSold")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true)
-                        .HasColumnName("can_be_sold");
-
-                    b.Property<bool>("CanBeUsedAsIngredient")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false)
-                        .HasColumnName("can_be_used_as_ingredient");
-
-                    b.Property<bool>("IsProduced")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false)
-                        .HasColumnName("is_produced");
-
-                    b.Property<string>("UsagePreset")
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
-                        .HasDefaultValue("BuyAndSell")
-                        .HasColumnName("usage_preset");
-
                     b.Property<string>("UnitOfMeasure")
                         .IsRequired()
                         .HasMaxLength(32)
@@ -675,6 +668,13 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                     b.Property<DateTimeOffset>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at_utc");
+
+                    b.Property<string>("UsagePreset")
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasDefaultValue("BuyAndSell")
+                        .HasColumnName("usage_preset");
 
                     b.Property<uint>("Xmin")
                         .IsConcurrencyToken()
@@ -731,7 +731,6 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("ck_products_unit_of_measure", "unit_of_measure IN ('Piece', 'Pack', 'Box', 'Bottle', 'Can', 'Sachet', 'Kilogram', 'Gram', 'Liter', 'Milliliter', 'Meter')");
                         });
                 });
-
 
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Catalog.CatalogProductUnitRecord", b =>
                 {
@@ -823,7 +822,6 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         });
                 });
 
-
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Catalog.ProductCategoryRecord", b =>
                 {
                     b.Property<Guid>("Id")
@@ -906,6 +904,10 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("buyer_product_id");
 
+                    b.Property<Guid?>("BuyerPurchaseUnitId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("buyer_purchase_unit_id");
+
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
@@ -918,6 +920,18 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)")
                         .HasColumnName("last_known_order_price");
+
+                    b.Property<decimal>("MultiplierToBase")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasDefaultValue(1m)
+                        .HasColumnName("multiplier_to_base");
+
+                    b.Property<string>("PackageLabel")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("package_label");
 
                     b.Property<Guid>("RelationshipId")
                         .HasColumnType("uuid")
@@ -962,23 +976,7 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("xid")
                         .HasColumnName("xmin");
 
-                                        b.Property<Guid?>("BuyerPurchaseUnitId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("buyer_purchase_unit_id");
-
-                    b.Property<decimal>("MultiplierToBase")
-                        .ValueGeneratedOnAdd()
-                        .HasPrecision(18, 3)
-                        .HasColumnType("numeric(18,3)")
-                        .HasDefaultValue(1m)
-                        .HasColumnName("multiplier_to_base");
-
-                    b.Property<string>("PackageLabel")
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
-                        .HasColumnName("package_label");
-
-b.HasKey("Id");
+                    b.HasKey("Id");
 
                     b.HasIndex("RelationshipId", "BuyerProductId")
                         .IsUnique()
@@ -3128,6 +3126,13 @@ b.HasKey("Id");
                         .HasColumnType("numeric(18,2)")
                         .HasColumnName("line_total_snapshot");
 
+                    b.Property<decimal>("MultiplierToBaseSnapshot")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasDefaultValue(1m)
+                        .HasColumnName("multiplier_to_base_snapshot");
+
                     b.Property<string>("NameSnapshot")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -3146,6 +3151,15 @@ b.HasKey("Id");
                         .HasColumnType("uuid")
                         .HasColumnName("purchase_order_line_id");
 
+                    b.Property<Guid?>("PurchaseUnitId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("purchase_unit_id");
+
+                    b.Property<string>("PurchaseUnitNameSnapshot")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("purchase_unit_name_snapshot");
+
                     b.Property<decimal>("ReceivedQty")
                         .HasPrecision(18, 3)
                         .HasColumnType("numeric(18,3)")
@@ -3162,23 +3176,7 @@ b.HasKey("Id");
                         .HasColumnType("character varying(32)")
                         .HasColumnName("uom_snapshot");
 
-                                        b.Property<Guid?>("PurchaseUnitId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("purchase_unit_id");
-
-                    b.Property<string>("PurchaseUnitNameSnapshot")
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
-                        .HasColumnName("purchase_unit_name_snapshot");
-
-                    b.Property<decimal>("MultiplierToBaseSnapshot")
-                        .ValueGeneratedOnAdd()
-                        .HasPrecision(18, 3)
-                        .HasColumnType("numeric(18,3)")
-                        .HasDefaultValue(1m)
-                        .HasColumnName("multiplier_to_base_snapshot");
-
-b.HasKey("Id");
+                    b.HasKey("Id");
 
                     b.HasIndex("InventoryMovementId")
                         .IsUnique()
@@ -3308,6 +3306,13 @@ b.HasKey("Id");
                         .HasColumnType("numeric(18,2)")
                         .HasColumnName("line_total");
 
+                    b.Property<decimal>("MultiplierToBaseSnapshot")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasDefaultValue(1m)
+                        .HasColumnName("multiplier_to_base_snapshot");
+
                     b.Property<string>("NameSnapshot")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")
@@ -3330,6 +3335,15 @@ b.HasKey("Id");
                         .HasColumnType("uuid")
                         .HasColumnName("purchase_order_id");
 
+                    b.Property<Guid?>("PurchaseUnitId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("purchase_unit_id");
+
+                    b.Property<string>("PurchaseUnitNameSnapshot")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("purchase_unit_name_snapshot");
+
                     b.Property<decimal>("ReceivedQty")
                         .HasPrecision(18, 3)
                         .HasColumnType("numeric(18,3)")
@@ -3345,23 +3359,7 @@ b.HasKey("Id");
                         .HasColumnType("character varying(32)")
                         .HasColumnName("uom_snapshot");
 
-                                        b.Property<Guid?>("PurchaseUnitId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("purchase_unit_id");
-
-                    b.Property<string>("PurchaseUnitNameSnapshot")
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
-                        .HasColumnName("purchase_unit_name_snapshot");
-
-                    b.Property<decimal>("MultiplierToBaseSnapshot")
-                        .ValueGeneratedOnAdd()
-                        .HasPrecision(18, 3)
-                        .HasColumnType("numeric(18,3)")
-                        .HasDefaultValue(1m)
-                        .HasColumnName("multiplier_to_base_snapshot");
-
-b.HasKey("Id");
+                    b.HasKey("Id");
 
                     b.HasIndex("ProductId");
 
@@ -3843,6 +3841,11 @@ b.HasKey("Id");
                         .HasColumnType("character varying(14)")
                         .HasColumnName("barcode_snapshot");
 
+                    b.Property<decimal?>("EnteredQuantity")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasColumnName("entered_quantity");
+
                     b.Property<int>("LineNumber")
                         .HasColumnType("integer")
                         .HasColumnName("line_number");
@@ -3851,6 +3854,11 @@ b.HasKey("Id");
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)")
                         .HasColumnName("line_total");
+
+                    b.Property<decimal?>("MultiplierToBaseSnapshot")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasColumnName("multiplier_to_base_snapshot");
 
                     b.Property<string>("NameSnapshot")
                         .IsRequired()
@@ -3889,16 +3897,6 @@ b.HasKey("Id");
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)")
                         .HasColumnName("selling_unit_name_snapshot");
-
-                    b.Property<decimal?>("EnteredQuantity")
-                        .HasPrecision(18, 3)
-                        .HasColumnType("numeric(18,3)")
-                        .HasColumnName("entered_quantity");
-
-                    b.Property<decimal?>("MultiplierToBaseSnapshot")
-                        .HasPrecision(18, 3)
-                        .HasColumnType("numeric(18,3)")
-                        .HasColumnName("multiplier_to_base_snapshot");
 
                     b.Property<string>("SkuSnapshot")
                         .HasMaxLength(64)
@@ -4111,8 +4109,16 @@ b.HasKey("Id");
                     b.HasIndex("RegisterId")
                         .HasDatabaseName("ix_sales_register_id");
 
+                    b.HasIndex("OrganizationId", "BuyerOrganizationId")
+                        .HasDatabaseName("ix_sales_org_buyer_organization")
+                        .HasFilter("buyer_organization_id IS NOT NULL");
+
                     b.HasIndex("OrganizationId", "BuyerPartyKind")
                         .HasDatabaseName("ix_sales_org_buyer_party_kind");
+
+                    b.HasIndex("OrganizationId", "BuyerPersonalPublicUserId")
+                        .HasDatabaseName("ix_sales_org_buyer_personal")
+                        .HasFilter("buyer_personal_public_user_id IS NOT NULL");
 
                     b.HasIndex("OrganizationId", "PaymentMethod")
                         .HasDatabaseName("ix_sales_org_payment_method");
@@ -4378,6 +4384,16 @@ b.HasKey("Id");
                         .HasConstraintName("fk_products_product_categories");
                 });
 
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Catalog.CatalogProductUnitRecord", b =>
+                {
+                    b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Catalog.CatalogProductRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_product_units_products");
+                });
+
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.ConnectedSuppliers.ConnectedPurchaseOrderLineRecord", b =>
                 {
                     b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.ConnectedSuppliers.ConnectedPurchaseOrderRecord", null)
@@ -4430,17 +4446,7 @@ b.HasKey("Id");
                         .HasConstraintName("fk_expenses_expense_categories");
                 });
 
-                        modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Catalog.CatalogProductUnitRecord", b =>
-                {
-                    b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Catalog.CatalogProductRecord", null)
-                        .WithMany()
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_product_units_products");
-                });
-
-modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.InventoryAccountRecord", b =>
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.InventoryAccountRecord", b =>
                 {
                     b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Catalog.CatalogProductRecord", null)
                         .WithMany()
