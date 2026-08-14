@@ -10,8 +10,13 @@ Implemented (MVP).
 
 ## Feature / documentation hashes
 
-Recorded after push (see Git / push evidence below).
+- Feature: `67bd59bd010eaa13fe23a32546ca2b6774fee16a`
+- Docs hash-record: (follow-up commit if separate)
 
+## Git / push evidence
+
+- Feature commit: `67bd59bd010eaa13fe23a32546ca2b6774fee16a`
+- Push: pending
 ## Delivered capability
 
 - New aggregate `OrganizationOwnershipTransfer` (not `OrganizationInvitation` / staff invites).
