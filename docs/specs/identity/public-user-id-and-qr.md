@@ -42,13 +42,29 @@ No cross-product database FK. Products must not query Platform tables directly.
 
 ## 4. QR payload contract
 
+Canonical personal form (emit):
+
+```text
+exits://qr/v1/personal/EX-4827-1936
+```
+
+Legacy personal form (still accepted on parse):
+
 ```text
 exits://user/v1/EX-4827-1936
 ```
 
-**Must never encode:** access tokens, email, phone, internal UUID, roles, balances, organization data, or Personal Utang balances.
+Scoped envelope types (v1):
 
-Visual QR may be regenerated; the public ID itself cannot change.
+| Purpose | Payload |
+|---|---|
+| Personal (PlatformUser / Personal identity) | `exits://qr/v1/personal/{EX-####-####}` |
+| Organization | `exits://qr/v1/organization/{ORG######}` |
+| POS device registration | `exits://qr/v1/pos-device-registration/{opaqueToken}` |
+
+**Must never encode:** access tokens (except opaque one-time device registration tokens), email, phone, internal UUID, roles, balances, or Personal Utang balances.
+
+Visual QR may be regenerated; the public ID itself cannot change. Personal subjects remain keyed by `PlatformUserId` / `PublicUserId` (no parallel PersonalAccountId).
 
 ---
 
@@ -58,6 +74,12 @@ Visual QR may be regenerated; the public ID itself cannot change.
 |---|---|---|
 | `GET` | `/api/v1/me/public-identity` | Assigns ID if missing; returns `{ publicUserId, qrPayload, displayName, status }` |
 | `POST` | `/api/v1/users/resolve-public-id` | Body `{ publicUserIdOrQrPayload, purpose? }` · exact match only · rate limit `public-id-resolve` |
+| `GET` | `/api/v1/organizations/{organizationId}/public-identity` | Member-only; `{ publicOrganizationId, qrPayload, displayName }` |
+| `POST` | `/api/v1/organizations/resolve-public-id` | Body `{ publicOrganizationIdOrQrPayload, purpose? }` · exact match · rate-limited · audited · no membership grant |
+| `POST` | `/api/v1/qr/resolve` | Body `{ payload, expectedPurpose? }` · typed dispatcher for scanners |
+| `POST` | `/api/v1/platform/organizations/{organizationId}/pos-devices/registration-tokens` | Create opaque 15-minute device registration token + QR |
+| `POST` | `/api/v1/platform/organizations/{organizationId}/pos-devices/registration-tokens/redeem` | Authenticated org member redeems token into a PosDevice |
+| `GET` | `/api/v1/platform/organizations/{organizationId}/pos-devices/registration-tokens/{tokenId}` | Metadata (expires in X minutes) |
 
 **Auth:** These routes use Platform **session** authentication (`Authorization: PlatformSession …`). MAUI must attach the Platform session token (not only a POS Bearer access token). Bearer-only calls return **401**.
 
@@ -112,23 +134,29 @@ Always show identity confirmation before the final action.
 
 ## 7. MAUI surfaces
 
-- **My QR Code:** Personal More, Profile, Organization essentials menu → `/personal/my-qr`
-- **Resolve:** `/personal/resolve-user?purpose=…&return=…` (manual ID; camera deferred in this build)
+- **My QR:** Personal More → `/personal/my-qr` (wording: “My QR” / “Use this to connect with me on ExItS.”)
+- **Business QR:** Org essentials → `/org/business-qr` (org name + QR; “Use this to identify or connect with this business.”)
+- **Resolve Personal:** `/personal/resolve-user?purpose=…&return=…` (scan or manual ID; expected Personal purpose guarded locally)
+- **Device registration:** Org devices “Show registration code”; `/devices/register` “Scan registration code” → `ResolveQr(expectedPurpose=PosDeviceRegistration)` → redeem
 - Contextual entry: People, I Lent / I Borrowed, Customers, Customer create, Sale checkout, Staff invite
 - **Customer link requests:** `/personal/customer-link-requests` (Accept/Decline pending merchant links)
 - **Notifications:** `/personal/notifications`
 
 Recommended More order: My QR → Invitations → Profile → Settings → Explore POS → Sign out.
 
+Shared client guard: `ExItsQrPurposeGuard` validates `expectedPurpose` after decode; otherwise routes by envelope type.
+
+See also [personal-organization-identity-boundaries.md](../../architecture/personal-organization-identity-boundaries.md).
+
 ---
 
 ## 8. Deferred
 
-- Camera QR scan (manual ID is the required fallback)
 - Invite-by-public-ID without email (staff invite still requires email)
 - Deep user-to-user sharing beyond contact/customer/invite prefill
 - Native share sheet for QR image on all platforms
 - Broad organization-wide broadcast of customer-link responses (responses notify the initiating user)
+- Physical device verification of camera QR flows
 
 ---
 
@@ -137,3 +165,4 @@ Recommended More order: My QR → Invitations → Profile → Settings → Explo
 - Platform owns public identity
 - Release must not use Development authentication bypasses
 - Log lookup purpose and actor; never log QR image bytes or sensitive profile dumps
+- Device registration tokens are opaque, hash-stored, single-use, org-scoped; never encode email/phone/Bearer tokens in Personal/Organization QR

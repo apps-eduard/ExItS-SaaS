@@ -26,7 +26,7 @@ SQLite LocalStore schema **v9** (product units); selling catalog uses full-repla
 Page-based `ListProductsAsync` (`PosPagination`: default 20, max 100). Connected supplier catalog search reuses page+search conventions with a **hard max of 50** for supplier catalog pages.
 
 ### Organization-to-organization relationships
-**None** today. Platform Personal↔merchant links are not a substitute. Phase 1 introduces an explicit buyer↔supplier relationship aggregate in the POS database (Platform org GUIDs as values only; no cross-DB FK).
+**None** historically as a general Platform capability. Phase 1 introduces an explicit buyer↔supplier relationship aggregate in the POS database (Platform org GUIDs as values only; no cross-DB FK). Public Personal / Organization identity QR codes do **not** create supplier relationships — buyer↔supplier links remain org↔org commercial relationships only (see [personal-organization-identity-boundaries.md](../architecture/personal-organization-identity-boundaries.md)).
 
 ## Conceptual model
 

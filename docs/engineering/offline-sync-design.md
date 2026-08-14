@@ -176,4 +176,8 @@ LocalStore schema v8 adds a selective linked-supplier-product projection and per
 
 LocalStore schema **v9** adds product usage flags, offline sell units (`local_catalog_product_unit`), and linked-product conversion metadata (`multiplier_to_base`, `package_label`). Offline cash sale drafts may include selling-unit conversion snapshots consistent with online checkout.
 
+### Personal / Organization identity QR (no schema bump)
+
+LocalStore remains **v9**. Identity QR work does not change the SQLite schema: each organization (and Personal) already uses a separate LocalStore file, and org switch closes the prior context before opening the next. In-memory SaleCart clears on `OrganizationId` change; SellingMode and BranchId/PosDeviceId clear on auth org switch. No LocalStore version bump is required unless a future identity feature stores new offline tables.
+
 Connected purchase-order drafts may be saved locally with `PendingCreate` state. They are not queued or described as submitted. Reconnect requires explicit online price/availability revalidation before normal purchase-order creation; supplier submission remains online-required.

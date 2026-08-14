@@ -520,14 +520,17 @@ Mobile Application
 │
 ├── Organization Owner Essentials
 │   ├── Basic Organization Profile
+│   ├── Business QR (org public identity; not Personal My QR)
 │   ├── Subscription Status
 │   ├── Entitlement Status
 │   ├── Staff
+│   ├── POS devices (show registration QR / revoke)
 │   ├── POS Role Assignment
 │   └── Open Web for Full Control
 │
 └── POS Product (PosShell)
     ├── Top bar — active organization name + logo/initials (session-derived; updates on org switch)
+    ├── Device registration (self-register or scan org registration code)
     ├── POS Owner (may enter Start Selling mode)
     ├── POS Manager (may enter Start Selling mode)
     └── POS Cashier

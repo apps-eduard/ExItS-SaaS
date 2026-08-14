@@ -24,7 +24,7 @@ ExItS.slnx
 src/Platform/ExItS.Platform.Domain/ (+ Authorization; Audit; FeatureCode includes `store-suppliers-view` / `store-suppliers-manage`)
 src/Platform/ExItS.Platform.Application/ (+ Catalog; Admin portfolio queries; Authorization; Audit; Contracts; Projections; MigrationValidation)
 src/Platform/ExItS.Platform.Infrastructure/ (PlatformDbContext, catalog + organization/subscription + payment + entitlement + role-assignment + audit persistence, Admin portfolio read store, migrations including `AddPlatformAuthorizationAndAudit`; `Health/PlatformDatabaseReadyHealthCheck`)
-src/Platform/ExItS.Platform.Api/ (`/` + `/health` + `/health/ready` + catalog + organizations + subscriptions + payments + entitlements + identity/access + authorization + audit + admin read APIs; `PlatformAuthz`; Production security pipeline; phase marker `P10-WP08-phase-10-closeout`)
+src/Platform/ExItS.Platform.Api/ (`/` + `/health` + `/health/ready` + catalog + organizations + subscriptions + payments + entitlements + identity/access + authorization + audit + admin read APIs + org/public-identity + `/api/v1/qr/resolve` + POS device registration-tokens; `PlatformAuthz`; Production security pipeline; phase marker `P10-WP08-phase-10-closeout`)
 src/Platform/ExItS.Platform.Admin/ (Blazor Web App — Ant Design Blazor shell per ADR-015/ADR-022; canonical browser sign-in; Platform operator console; typed API client; themes Light/Dark/System; AdminResources en/fil-PH; no Fluent/Tailwind)
 src/Platform/ExItS.Personal.Web/ (Personal Web — Ant Design Blazor presentation over existing Personal APIs; Local Validation :8094; no checkout)
 src/Shared/ExItS.Web.UI/ (shared AntDesign browser conventions: theme, culture, page header, pager, host options, handoff helpers; AntDesign 1.6.2)
@@ -40,7 +40,7 @@ src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Domain/ (POSCustomer + Cred
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Application/ (+ Auth; Customers; Credit; due dates/overdue; Payments/ledger; Statements/receipts; Catalog; Suppliers; **Purchasing**; ConnectedSuppliers client contracts + linked-product delta sync; Commercial/UtangCapabilityPolicy; Reporting batch lookups)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Infrastructure/ (PosDbContext schema `pos`; migrations through `AddPosPurchasing`, **`AddPosInventoryTransfers`**, **`AddPosInventoryLots`**; `Health/PosDatabaseReadyHealthCheck`)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Api/ (`/health` + `/health/ready` + customers + credit + repayments/ledger + due dates/overdue + statements/receipts + catalog + sales + inventory + expenses + suppliers + purchase-orders/goods-receipts + cashier-shifts + sale-returns + permissions + registers + dashboard/reports; commercial header gates; Production security pipeline; phase marker `P10-WP08-phase-10-closeout`)
-src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.ApiClient/ (+ Platform access client; PosCommercialHeaderHandler; PosCustomerClient; PosSaleClient/PosExpenseClient/**PosPurchaseOrderClient** idempotency headers; PosCatalogClient online-only; PosSupplierClient online-only)
+src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.ApiClient/ (+ Platform access client incl. org public-identity, `/api/v1/qr/resolve`, POS device registration-token create/redeem; PosCommercialHeaderHandler; PosCustomerClient; PosSaleClient/PosExpenseClient/**PosPurchaseOrderClient** idempotency headers; PosCatalogClient online-only; PosSupplierClient online-only)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.LocalStore/ (Microsoft.Data.Sqlite schema v9 + generic encrypted offline_operations outbox + BlockedByAccess reclaim + encrypted customer/credit/repayment projections + selective connected-supplier linked products and local PO drafts + product usage/sell-unit offline cache; never a full supplier catalog; **not** part of server backup sets)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/ (Android-first MAUI Blazor Hybrid; Customers + credit + repayments + ledger + overdue/due dates + statement/receipt preview/share + catalog/barcode + sales + inventory + expenses + suppliers + **purchasing** + connected supplier request/catalog/linked products/incoming orders + dashboard/reports; onboarding/auth; sync-status shell; offline foundation diagnostics; PosResources en/fil-PH)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Web/ (Organization Web Admin — AntDesign Blazor Server management/reporting per ADR-022; **not a POS checkout client**; Local Validation :8093)
@@ -122,6 +122,9 @@ docs/reports/P25-WP02-antdesign-web-standardization-and-host-separation.md
 docs/reports/P25-WP03-unified-web-authentication-sso-and-workspace-routing.md
 docs/reports/P25-WP04-web-host-legacy-cleanup-and-local-validation-identity-determinism.md
 docs/reports/P25-WP05-cash-count-policy-simplification-and-denomination-assisted-reconciliation.md
+docs/reports/personal-organization-identity-isolation.md
+docs/architecture/personal-organization-identity-boundaries.md
+docs/specs/identity/public-user-id-and-qr.md
 docs/decisions/ADR-022-separated-antdesign-web-hosts-and-unified-auth.md
 docs/reports/P24-WP01-current-state-and-architecture-contract.md
 docs/reports/P24-WP02-customer-link-and-pos-correlation.md
