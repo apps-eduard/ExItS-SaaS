@@ -20,6 +20,9 @@ else
     var canManage = Capabilities.IsAllowed(UtangCapability.ManagePurchasing);
     var blocked = _isOffline || !canManage;
     var hasDraft = HasUnsavedDraft;
+    var eligibleProducts = EligibleProducts;
+    var categoryChips = CategoryChips;
+    var isEditing = _editingProductId is not null;
 <div class="pos-purchasing-create">
 <StoreHeaderBack Href="/purchasing" />
 <Page>
@@ -99,19 +102,88 @@ else
     <section class="pos-purchasing-create__panel" aria-labelledby="purchasing-lines-heading">
         <h2 id="purchasing-lines-heading" class="pos-purchasing-create__section-title">@L["Purchasing_LinesSection"]</h2>
         <div class="pos-purchasing-create__form pos-settings__panel">
-                <Select Label="@L["Purchasing_Field_Product"]"
-                        Value="@_selectedProductId"
-                        ValueChanged="OnProductChanged"
-                        Options="@ProductOptions"
-                        Required="true"
-                        Disabled="@(blocked || _saving || _loadingLookups || _products.Count == 0)" />
+                <div class="pos-purchasing-create__picker" role="search" aria-label="@L["Purchasing_Field_Product"]">
+                    <label class="pos-purchasing-create__search-label" for="purchasing-product-search">@L["Purchasing_SearchProducts"]</label>
+                    <div class="pos-purchasing-create__search">
+                        <span class="pos-purchasing-create__search-icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
+                        <input id="purchasing-product-search"
+                               class="pos-purchasing-create__search-input"
+                               type="search"
+                               value="@_productSearch"
+                               placeholder="@L["Purchasing_SearchProducts"]"
+                               aria-label="@L["Purchasing_SearchProducts"]"
+                               disabled="@(blocked || _saving || _loadingLookups || _products.Count == 0 || isEditing)"
+                               autocomplete="off"
+                               @oninput="OnProductSearchInput" />
+                    </div>
+
+                    <aside class="pos-sell-categories pos-purchasing-create__categories" aria-label="@L["Purchasing_CategoryFilter"]">
+                        <button type="button"
+                                class="@($"pos-category-chip{(_categoryFilterId is null ? " pos-category-chip--selected" : string.Empty)}")"
+                                disabled="@(blocked || _saving || _loadingLookups || _products.Count == 0 || isEditing)"
+                                aria-pressed="@(_categoryFilterId is null)"
+                                @onclick="() => SetCategoryFilter(null)">
+                            @L["Purchasing_AllCategories"]
+                        </button>
+                        @foreach (var category in categoryChips)
+                        {
+                            var selected = _categoryFilterId == category.CategoryId;
+                            <button type="button"
+                                    class="@($"pos-category-chip{(selected ? " pos-category-chip--selected" : string.Empty)}")"
+                                    disabled="@(blocked || _saving || _loadingLookups || isEditing)"
+                                    aria-pressed="@selected"
+                                    @onclick="() => SetCategoryFilter(category.CategoryId)">
+                                @category.Name
+                            </button>
+                        }
+                    </aside>
+
+                    @if (isEditing)
+                    {
+                        <div class="pos-purchasing-create__selected-product" aria-live="polite">
+                            <span class="pos-purchasing-create__selected-label">@L["Purchasing_Field_Product"]</span>
+                            <strong class="pos-purchasing-create__selected-name">@_editingProductName</strong>
+                        </div>
+                    }
+                    else if (_products.Count == 0 && !_loadingLookups)
+                    {
+                        <InlineMessage Tone="InlineMessageTone.Info">@L["Purchasing_NoProductsAvailable"]</InlineMessage>
+                    }
+                    else if (eligibleProducts.Count == 0)
+                    {
+                        <InlineMessage Tone="InlineMessageTone.Info">@L["Purchasing_NoProductsMatch"]</InlineMessage>
+                    }
+                    else
+                    {
+                        <div class="pos-purchasing-create__product-list" role="listbox" aria-label="@L["Purchasing_Field_Product"]">
+                            @foreach (var product in eligibleProducts)
+                            {
+                                var selected = string.Equals(_selectedProductId, product.ProductId.ToString("D"), StringComparison.Ordinal);
+                                <button type="button"
+                                        role="option"
+                                        aria-selected="@selected"
+                                        class="@($"pos-purchasing-create__product{(selected ? " pos-purchasing-create__product--selected" : string.Empty)}")"
+                                        disabled="@(blocked || _saving)"
+                                        @onclick="() => SelectProduct(product)">
+                                    <span class="pos-purchasing-create__product-name">@product.Name</span>
+                                    @if (product.CategoryId is { } categoryId
+                                         && _categoryNames.TryGetValue(categoryId, out var categoryName))
+                                    {
+                                        <span class="pos-purchasing-create__product-meta pos-muted">@categoryName</span>
+                                    }
+                                </button>
+                            }
+                        </div>
+                    }
+                </div>
+
                 <TextInput Label="@L["Purchasing_Field_OrderedQty"]"
                            Value="@_draftQtyText"
                            ValueChanged="v => _draftQtyText = v"
                            Required="true"
                            IsInvalid="@(!string.IsNullOrEmpty(_draftQtyError))"
                            ErrorText="@_draftQtyError"
-                           Disabled="@(blocked || _saving)" />
+                           Disabled="@(blocked || _saving || string.IsNullOrEmpty(_selectedProductId))" />
                 <CurrencyInput Label="@L["Purchasing_Field_UnitCost"]"
                                Value="@_draftUnitCost"
                                ValueChanged="v => _draftUnitCost = v"
@@ -120,15 +192,34 @@ else
                                Hint="@L["Purchasing_UnitCostHint"]"
                                IsInvalid="@(!string.IsNullOrEmpty(_draftCostError))"
                                ErrorText="@_draftCostError"
-                               Disabled="@(blocked || _saving)" />
-                <div class="pos-action-grid pos-action-grid--single pos-purchasing-create__line-actions" role="group">
-                    <button type="button"
-                            class="pos-action-tile pos-action-tile--primary"
-                            disabled="@(blocked || _saving || string.IsNullOrEmpty(_selectedProductId))"
-                            @onclick="AddLine">
-                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("plus")</span>
-                        <span class="pos-action-tile__label">@L["Purchasing_AddLine"]</span>
-                    </button>
+                               Disabled="@(blocked || _saving || string.IsNullOrEmpty(_selectedProductId))" />
+                <div class="@($"pos-action-grid {(isEditing ? "pos-action-grid--two" : "pos-action-grid--single")} pos-purchasing-create__line-actions")" role="group">
+                    @if (isEditing)
+                    {
+                        <button type="button"
+                                class="pos-action-tile"
+                                disabled="@(blocked || _saving)"
+                                @onclick="CancelEdit">
+                            <span class="pos-action-tile__label">@L["Purchasing_CancelEdit"]</span>
+                        </button>
+                        <button type="button"
+                                class="pos-action-tile pos-action-tile--primary"
+                                disabled="@(blocked || _saving || string.IsNullOrEmpty(_selectedProductId))"
+                                @onclick="SaveLineChanges">
+                            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("check")</span>
+                            <span class="pos-action-tile__label">@L["Purchasing_SaveChanges"]</span>
+                        </button>
+                    }
+                    else
+                    {
+                        <button type="button"
+                                class="pos-action-tile pos-action-tile--primary"
+                                disabled="@(blocked || _saving || string.IsNullOrEmpty(_selectedProductId))"
+                                @onclick="AddLine">
+                            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("plus")</span>
+                            <span class="pos-action-tile__label">@L["Purchasing_AddLine"]</span>
+                        </button>
+                    }
                 </div>
 
                 @if (!string.IsNullOrEmpty(_linesError))
@@ -150,20 +241,40 @@ else
                     <div class="pos-purchasing-create__lines" role="list">
                         @foreach (var line in _lines)
                         {
+                            var lineTotal = PurchaseOrderCreateUi.LineTotal(line.OrderedQty, line.UnitPurchaseCost);
                             <div class="pos-po-line" role="listitem">
                                 <div class="pos-po-line__main">
                                     <div class="pos-po-line__title">@line.Name</div>
                                     <div class="pos-po-line__meta pos-muted">
-                                        @L["Purchasing_LineDraftSummary", line.OrderedQty, line.UnitPurchaseCost]
+                                        <span>@L["Purchasing_LineQtyPrefix", FormatQty(line.OrderedQty)]</span>
+                                        <span aria-hidden="true"> × </span>
+                                        <MoneyDisplay Amount="@line.UnitPurchaseCost" CurrencyCode="PHP" />
+                                    </div>
+                                    <div class="pos-po-line__total">
+                                        <span class="pos-muted">@L["Purchasing_LineTotalLabel"]</span>
+                                        <MoneyDisplay Amount="@lineTotal" CurrencyCode="PHP" Emphasized="true" />
                                     </div>
                                 </div>
-                                <button type="button"
-                                        class="pos-po-line__remove"
-                                        disabled="@(blocked || _saving)"
-                                        aria-label="@L["Purchasing_RemoveLine"]"
-                                        @onclick="() => RemoveLine(line.ProductId)">
-                                    <span aria-hidden="true">@IconGlyphs.Get("close")</span>
-                                </button>
+                                <div class="pos-po-line__actions">
+                                    <button type="button"
+                                            class="pos-po-line__action"
+                                            disabled="@(blocked || _saving)"
+                                            aria-label="@L["Purchasing_EditLine"]"
+                                            title="@L["Purchasing_EditLine"]"
+                                            @onclick="() => BeginEditLine(line)">
+                                        <span aria-hidden="true">@IconGlyphs.Get("edit")</span>
+                                        <span class="pos-po-line__action-label">@L["Purchasing_EditLine"]</span>
+                                    </button>
+                                    <button type="button"
+                                            class="pos-po-line__action pos-po-line__action--danger"
+                                            disabled="@(blocked || _saving)"
+                                            aria-label="@L["Purchasing_DeleteLine"]"
+                                            title="@L["Purchasing_DeleteLine"]"
+                                            @onclick="() => RequestDeleteLine(line.ProductId)">
+                                        <span aria-hidden="true">@IconGlyphs.Get("trash")</span>
+                                        <span class="pos-po-line__action-label">@L["Purchasing_DeleteLine"]</span>
+                                    </button>
+                                </div>
                             </div>
                         }
                     </div>
@@ -193,6 +304,15 @@ else
                    Danger="true"
                    OnConfirm="ConfirmReset"
                    OnCancel="() => _confirmReset = false" />
+
+    <ConfirmDialog Visible="@_confirmDelete"
+                   VisibleChanged="v => _confirmDelete = v"
+                   Title="@L["Purchasing_DeleteLineTitle"]"
+                   Message="@L["Purchasing_DeleteLineMessage"]"
+                   ConfirmLabel="@L["Purchasing_DeleteLine"]"
+                   Danger="true"
+                   OnConfirm="ConfirmDeleteLine"
+                   OnCancel="CancelDeleteLine" />
 </Page>
 </div>
 }
@@ -205,6 +325,10 @@ else
     private bool _isOffline;
     private bool _loadingLookups;
     private bool _confirmReset;
+    private bool _confirmDelete;
+    private Guid? _pendingDeleteProductId;
+    private Guid? _editingProductId;
+    private string? _editingProductName;
     private string? _supplierId;
     private DateOnly? _orderDate = DateOnly.FromDateTime(DateTime.Today);
     private DateOnly? _expectedDeliveryDate;
@@ -213,9 +337,12 @@ else
     private string _selectedProductId = string.Empty;
     private string _draftQtyText = "1";
     private decimal? _draftUnitCost;
+    private string _productSearch = string.Empty;
+    private Guid? _categoryFilterId;
     private List<LineEntry> _lines = [];
     private List<PosSupplierDto> _suppliers = [];
     private List<PosCatalogProductDto> _products = [];
+    private Dictionary<Guid, string> _categoryNames = new();
     private string? _supplierError;
     private string? _orderDateError;
     private string? _draftQtyError;
@@ -227,14 +354,32 @@ else
     private IReadOnlyList<SelectOption> SupplierOptions =>
         _suppliers.Select(s => new SelectOption(s.SupplierId.ToString("D"), s.Name)).ToList();
 
-    private IReadOnlyList<SelectOption> ProductOptions =>
-        _products
-            .Where(p => _lines.All(l => l.ProductId != p.ProductId))
-            .Select(p => new SelectOption(p.ProductId.ToString("D"), p.Name))
-            .ToList();
+    private IReadOnlyList<(Guid CategoryId, string Name)> CategoryChips =>
+        PurchaseOrderCreateUi.RelevantCategories(
+            _products.Select(p => (
+                p.CategoryId,
+                p.CategoryId is { } id && _categoryNames.TryGetValue(id, out var name) ? name : null)),
+            L["Purchasing_Uncategorized"].Value);
+
+    private IReadOnlyList<PosCatalogProductDto> EligibleProducts
+    {
+        get
+        {
+            var excluded = _lines.Select(l => l.ProductId).ToHashSet();
+            return PurchaseOrderCreateUi.FilterEligibleProducts(
+                _products,
+                p => p.ProductId,
+                p => p.Name,
+                p => p.CategoryId,
+                excluded,
+                _editingProductId,
+                _productSearch,
+                _categoryFilterId);
+        }
+    }
 
     private decimal LinesTotal =>
-        _lines.Sum(l => PosSaleOptions.RoundMoney(l.OrderedQty * l.UnitPurchaseCost));
+        PurchaseOrderCreateUi.OrderTotal(_lines.Select(l => (l.OrderedQty, l.UnitPurchaseCost)));
 
     private bool HasUnsavedDraft =>
         !string.IsNullOrWhiteSpace(_supplierId)
@@ -243,7 +388,10 @@ else
         || !string.IsNullOrWhiteSpace(_notes)
         || !string.IsNullOrWhiteSpace(_selectedProductId)
         || _draftUnitCost is not null
+        || _editingProductId is not null
         || _lines.Count > 0
+        || !string.IsNullOrWhiteSpace(_productSearch)
+        || _categoryFilterId is not null
         || (!string.IsNullOrWhiteSpace(_draftQtyText) && _draftQtyText != "1")
         || (_orderDate is not null && _orderDate != DateOnly.FromDateTime(DateTime.Today));
 
@@ -278,7 +426,11 @@ else
 
         var suppliersTask = Suppliers.ListAsync(status: "Active", page: 1, pageSize: 200);
         var productsTask = Catalog.ListProductsAsync(pageSize: 200);
-        await Task.WhenAll(suppliersTask, productsTask);
+        var categoriesTask = Catalog.ListCategoriesAsync(
+            status: PosCatalogOptions.ActiveStatus,
+            page: 1,
+            pageSize: 100);
+        await Task.WhenAll(suppliersTask, productsTask, categoriesTask);
 
         var suppliers = await suppliersTask;
         if (suppliers.IsSuccess && suppliers.Data is not null)
@@ -310,25 +462,73 @@ else
             _errorMessage = products.Error?.Detail ?? described.Message;
         }
 
+        var categories = await categoriesTask;
+        if (categories.IsSuccess && categories.Data is not null)
+        {
+            _categoryNames = categories.Data.Items
+                .OrderBy(c => c.Name, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(c => c.CategoryId, c => c.Name);
+        }
+
         _loadingLookups = false;
     }
 
-    private void OnProductChanged(string? value)
+    private void OnProductSearchInput(ChangeEventArgs args) =>
+        _productSearch = args.Value?.ToString() ?? string.Empty;
+
+    private void SetCategoryFilter(Guid? categoryId) =>
+        _categoryFilterId = categoryId;
+
+    private void SelectProduct(PosCatalogProductDto product)
     {
-        _selectedProductId = value ?? string.Empty;
+        _selectedProductId = product.ProductId.ToString("D");
         _draftCostError = null;
         _draftQtyError = null;
+        _linesError = null;
     }
 
-    private void AddLine()
+    private bool TryValidateDraft(out Guid productId, out decimal qty, out decimal unitCost)
     {
+        productId = Guid.Empty;
+        qty = 0m;
+        unitCost = 0m;
         _draftQtyError = null;
         _draftCostError = null;
         _linesError = null;
 
-        if (!Guid.TryParse(_selectedProductId, out var productId))
+        if (!Guid.TryParse(_selectedProductId, out productId))
         {
             _linesError = L["Purchasing_ProductRequired"];
+            return false;
+        }
+
+        if (!decimal.TryParse(_draftQtyText.Trim(), NumberStyles.Number, CultureInfo.InvariantCulture, out qty)
+            || qty <= 0m)
+        {
+            _draftQtyError = L["Purchasing_InvalidOrderedQty"];
+            return false;
+        }
+
+        if (_draftUnitCost is null || _draftUnitCost.Value <= 0m)
+        {
+            _draftCostError = L["Purchasing_UnitCostRequired"];
+            return false;
+        }
+
+        if (_draftUnitCost.Value > PurchaseOrderLine.MaxUnitPurchaseCost)
+        {
+            _draftCostError = L["Purchasing_InvalidUnitCost"];
+            return false;
+        }
+
+        unitCost = PosSaleOptions.RoundMoney(_draftUnitCost.Value);
+        return true;
+    }
+
+    private void AddLine()
+    {
+        if (!TryValidateDraft(out var productId, out var qty, out var unitCost))
+        {
             return;
         }
 
@@ -343,40 +543,103 @@ else
             return;
         }
 
-        if (!decimal.TryParse(_draftQtyText.Trim(), NumberStyles.Number, CultureInfo.InvariantCulture, out var qty)
-            || qty <= 0m)
+        var next = PurchaseOrderCreateUi.UpsertLine(
+            _lines,
+            l => l.ProductId,
+            new LineEntry(productId, product.Name, qty, unitCost),
+            replaceExisting: false);
+        _lines = next.ToList();
+        ClearDraftEditor();
+    }
+
+    private void SaveLineChanges()
+    {
+        if (_editingProductId is null)
         {
-            _draftQtyError = L["Purchasing_InvalidOrderedQty"];
             return;
         }
 
-        if (_draftUnitCost is null)
+        if (!TryValidateDraft(out var productId, out var qty, out var unitCost))
         {
-            _draftCostError = L["Purchasing_UnitCostRequired"];
             return;
         }
 
-        if (_draftUnitCost.Value <= 0m)
+        if (productId != _editingProductId.Value)
         {
-            _draftCostError = L["Purchasing_UnitCostRequired"];
+            _linesError = L["Purchasing_ProductRequired"];
             return;
         }
 
-        if (_draftUnitCost.Value > PurchaseOrderLine.MaxUnitPurchaseCost)
+        var existing = _lines.FirstOrDefault(l => l.ProductId == productId);
+        if (existing is null)
         {
-            _draftCostError = L["Purchasing_InvalidUnitCost"];
             return;
         }
 
-        var unitCost = PosSaleOptions.RoundMoney(_draftUnitCost.Value);
-        _lines.Add(new LineEntry(productId, product.Name, qty, unitCost));
+        var next = PurchaseOrderCreateUi.UpsertLine(
+            _lines,
+            l => l.ProductId,
+            existing with { OrderedQty = qty, UnitPurchaseCost = unitCost },
+            replaceExisting: true);
+        _lines = next.ToList();
+        ClearDraftEditor();
+    }
+
+    private void BeginEditLine(LineEntry line)
+    {
+        _editingProductId = line.ProductId;
+        _editingProductName = line.Name;
+        _selectedProductId = line.ProductId.ToString("D");
+        _draftQtyText = FormatQty(line.OrderedQty);
+        _draftUnitCost = line.UnitPurchaseCost;
+        _draftQtyError = null;
+        _draftCostError = null;
+        _linesError = null;
+        _productSearch = string.Empty;
+        _categoryFilterId = null;
+    }
+
+    private void CancelEdit() => ClearDraftEditor();
+
+    private void ClearDraftEditor()
+    {
+        _editingProductId = null;
+        _editingProductName = null;
         _selectedProductId = string.Empty;
         _draftQtyText = "1";
         _draftUnitCost = null;
+        _draftQtyError = null;
+        _draftCostError = null;
+        _linesError = null;
     }
 
-    private void RemoveLine(Guid productId) =>
-        _lines.RemoveAll(l => l.ProductId == productId);
+    private void RequestDeleteLine(Guid productId)
+    {
+        _pendingDeleteProductId = productId;
+        _confirmDelete = true;
+    }
+
+    private void CancelDeleteLine()
+    {
+        _confirmDelete = false;
+        _pendingDeleteProductId = null;
+    }
+
+    private void ConfirmDeleteLine()
+    {
+        if (_pendingDeleteProductId is { } productId)
+        {
+            if (_editingProductId == productId)
+            {
+                ClearDraftEditor();
+            }
+
+            _lines = PurchaseOrderCreateUi.RemoveLine(_lines, l => l.ProductId, productId).ToList();
+        }
+
+        _confirmDelete = false;
+        _pendingDeleteProductId = null;
+    }
 
     private void RequestReset()
     {
@@ -401,15 +664,14 @@ else
         _expectedDeliveryDate = null;
         _supplierReference = null;
         _notes = null;
-        _selectedProductId = string.Empty;
-        _draftQtyText = "1";
-        _draftUnitCost = null;
+        _productSearch = string.Empty;
+        _categoryFilterId = null;
+        ClearDraftEditor();
         _lines = [];
         _supplierError = null;
         _orderDateError = null;
-        _draftQtyError = null;
-        _draftCostError = null;
-        _linesError = null;
+        _confirmDelete = false;
+        _pendingDeleteProductId = null;
         _errorTitle = null;
         _errorMessage = null;
     }
@@ -480,4 +742,7 @@ else
     }
 
     private void GoCreateSupplier() => Nav.NavigateTo("/suppliers/new");
+
+    private static string FormatQty(decimal qty) =>
+        qty.ToString("0.###", CultureInfo.InvariantCulture);
 }

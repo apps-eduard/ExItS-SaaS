@@ -1713,6 +1713,20 @@
   <data name="Purchasing_AddLine" xml:space="preserve"><value>Add line</value></data>
   <data name="Purchasing_RemoveLine" xml:space="preserve"><value>Remove</value></data>
   <data name="Purchasing_LineDraftSummary" xml:space="preserve"><value>Qty {0} · Cost {1}</value></data>
+  <data name="Purchasing_SearchProducts" xml:space="preserve"><value>Search products</value></data>
+  <data name="Purchasing_CategoryFilter" xml:space="preserve"><value>Category</value></data>
+  <data name="Purchasing_AllCategories" xml:space="preserve"><value>All</value></data>
+  <data name="Purchasing_Uncategorized" xml:space="preserve"><value>No category</value></data>
+  <data name="Purchasing_NoProductsMatch" xml:space="preserve"><value>No products match your search.</value></data>
+  <data name="Purchasing_NoProductsAvailable" xml:space="preserve"><value>No active products are available to order.</value></data>
+  <data name="Purchasing_EditLine" xml:space="preserve"><value>Edit</value></data>
+  <data name="Purchasing_DeleteLine" xml:space="preserve"><value>Delete</value></data>
+  <data name="Purchasing_SaveChanges" xml:space="preserve"><value>Save changes</value></data>
+  <data name="Purchasing_CancelEdit" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Purchasing_LineQtyPrefix" xml:space="preserve"><value>Qty {0}</value></data>
+  <data name="Purchasing_LineTotalLabel" xml:space="preserve"><value>Line total</value></data>
+  <data name="Purchasing_DeleteLineTitle" xml:space="preserve"><value>Remove item?</value></data>
+  <data name="Purchasing_DeleteLineMessage" xml:space="preserve"><value>Remove this item from the purchase order?</value></data>
   <data name="Purchasing_SupplierRequired" xml:space="preserve"><value>Select a supplier.</value></data>
   <data name="Purchasing_OrderDateRequired" xml:space="preserve"><value>Enter the order date.</value></data>
   <data name="Purchasing_LinesRequired" xml:space="preserve"><value>Add at least one product line.</value></data>

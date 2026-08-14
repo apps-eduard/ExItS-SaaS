@@ -22,6 +22,11 @@ public sealed class PurchasingPageGuardTests
         Assert.Contains("IPosSupplierClient", create, StringComparison.Ordinal);
         Assert.Contains("IPosCatalogClient", create, StringComparison.Ordinal);
         Assert.Contains("Purchasing_AddLine", create, StringComparison.Ordinal);
+        Assert.Contains("Purchasing_SearchProducts", create, StringComparison.Ordinal);
+        Assert.Contains("Purchasing_SaveChanges", create, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"trash\")", create, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"edit\")", create, StringComparison.Ordinal);
+        Assert.Contains("PurchaseOrderCreateUi", create, StringComparison.Ordinal);
         Assert.Contains("Purchasing_Field_Supplier", create, StringComparison.Ordinal);
         Assert.Contains("Purchasing_Reset", create, StringComparison.Ordinal);
         Assert.Contains("<StoreHeaderBack Href=\"/purchasing\" />", create, StringComparison.Ordinal);
@@ -117,7 +122,12 @@ public sealed class PurchasingPageGuardTests
                      "Purchasing_ResetMessage",
                      "Purchasing_UnitCostRequired",
                      "Purchasing_UnitCostHint",
-                     "Purchasing_CreateSupplier"
+                     "Purchasing_CreateSupplier",
+                     "Purchasing_SearchProducts",
+                     "Purchasing_EditLine",
+                     "Purchasing_DeleteLine",
+                     "Purchasing_SaveChanges",
+                     "Purchasing_LineTotalLabel"
                  })
         {
             Assert.Contains($"name=\"{key}\"", en, StringComparison.Ordinal);
