@@ -32,9 +32,9 @@
 | 19 | Mobile POS Operations and Cashier Experience Completion | **Open** |
 | 20–24 | Catalog / Privacy / Production / Entitlements / Statements | **Open** (see portfolio) |
 | 25 | Organization Web / Identity / Organization Management | **Open** — WP01–WP09 Code Complete / Owner Validation Pending (**not closed**) |
-| 26 | Sales Documents and Compliance Readiness | **Open** — WP01–WP02 Code Complete / Validation Pending |
+| 26 | Sales Documents and Compliance Readiness | **Open** — WP01–WP03 Code Complete / Validation Pending |
 
-**Current focus:** Phase 26 P26-WP02 validation; P26-WP03 next. Phase 25 remains Open with owner validation pending.
+**Current focus:** Phase 26 P26-WP03 validation; P26-WP04 next. Phase 25 remains Open with owner validation pending.
 **Production status:** Not production-ready
 
 ---
@@ -399,22 +399,24 @@ Over the project you went through these UI approaches:
 
 ## Phase 26 — Sales Documents and Compliance Readiness
 
-**Status:** **OPEN** — P26-WP01–WP02 Code Complete / Validation Pending.
+**Status:** **OPEN** — P26-WP01–WP03 Code Complete / Validation Pending.
 
 - One Sale engine; current and historical sales are Transaction Summaries.
-- Platform owns a default-off, organization-scoped tax-document capability.
+- Platform owns a default-off, organization-scoped tax-document capability plus compliance eligibility lifecycle.
 - Tax calculation settings do not authorize tax-document issuance.
-- TaxDocument generation, grants, BIR rules, and invoice series remain unimplemented.
+- P26-WP03: Owner may request review; Platform `ManageOrganizations` transitions eligibility and may enable issuance only when `Approved` plus current Owner education ack; Suspend/Revoke/non-approved disable issuance.
+- `TaxDocumentIssuanceRuntime.ImplementationAvailable = false` — org enable does not produce TaxDocuments.
+- TaxDocument generation, BIR rules, and invoice series remain unimplemented.
 - Offline Transaction Summary behavior remains unchanged; no LocalStore version bump.
 - Current Owner education is versioned as `transaction-summary-v1`; ownership transfer and version changes require a new current-Owner acknowledgment while preserving history.
 - Organization Web and MAUI use a soft prompt only. Cashiers cannot acknowledge, and checkout/sales/sync remain unblocked.
-- Acknowledgment never enables TaxDocument issuance.
+- Acknowledgment never enables TaxDocument issuance and is independent of compliance eligibility.
 
 ---
 
 ## Recommended Next Focus
 
-1. Implement P26-WP03 Platform-controlled capability grant/revoke administration and audit without deriving authority from acknowledgment
+1. Implement P26-WP04 Organization Tax/Compliance Profile & Future Activation Foundation
 2. Owner validate Phase 25 WP01–WP09 (browser/device) before any Phase 25 closeout — do **not** create P25-WP10 yet
 3. Personally phone-validate Phase 19 using [P19-WP08 checklist](../reports/P19-WP08-end-to-end-validation-and-closeout.md) (do not claim Device Verified early)
 4. Keep Phase 14 **In Progress**; do not start P14-WP03 unless explicitly authorized

@@ -20,6 +20,7 @@ internal sealed class OrganizationSalesDocumentCapabilityRepository(PlatformDbCo
             ? null
             : OrganizationSalesDocumentCapability.Rehydrate(
                 PlatformOrganizationId.From(record.OrganizationId),
+                record.ComplianceEligibilityStatus,
                 record.TaxDocumentIssuanceEnabled,
                 record.UpdatedAtUtc,
                 record.UpdatedByActorReference);
@@ -32,10 +33,30 @@ internal sealed class OrganizationSalesDocumentCapabilityRepository(PlatformDbCo
         db.OrganizationSalesDocumentCapabilities.Add(new OrganizationSalesDocumentCapabilityRecord
         {
             OrganizationId = capability.OrganizationId.Value,
+            ComplianceEligibilityStatus = capability.ComplianceEligibilityStatus,
             TaxDocumentIssuanceEnabled = capability.TaxDocumentIssuanceEnabled,
             UpdatedAtUtc = capability.UpdatedAtUtc,
             UpdatedByActorReference = capability.UpdatedByActorReference
         });
         return Task.CompletedTask;
+    }
+
+    public async Task UpdateAsync(
+        OrganizationSalesDocumentCapability capability,
+        CancellationToken cancellationToken = default)
+    {
+        var record = await db.OrganizationSalesDocumentCapabilities
+            .FirstOrDefaultAsync(x => x.OrganizationId == capability.OrganizationId.Value, cancellationToken)
+            .ConfigureAwait(false);
+        if (record is null)
+        {
+            throw new InvalidOperationException(
+                $"Sales-document capability for organization '{capability.OrganizationId.Value}' was not found.");
+        }
+
+        record.ComplianceEligibilityStatus = capability.ComplianceEligibilityStatus;
+        record.TaxDocumentIssuanceEnabled = capability.TaxDocumentIssuanceEnabled;
+        record.UpdatedAtUtc = capability.UpdatedAtUtc;
+        record.UpdatedByActorReference = capability.UpdatedByActorReference;
     }
 }

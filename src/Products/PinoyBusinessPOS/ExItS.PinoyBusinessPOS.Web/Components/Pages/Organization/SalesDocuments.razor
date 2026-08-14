@@ -43,7 +43,7 @@ else
                    Style="margin-bottom: 1rem;" />
         }
 
-        <Card Size="@CardSize.Small" Title="@L["SalesDocument_EducationTitle"]">
+        <Card Size="@CardSize.Small" Title="@L["SalesDocument_EducationTitle"]" Style="margin-bottom: 1rem;">
             <p><strong>@L["SalesDocument_CurrentDocument"]</strong></p>
             <p><strong>@L["SalesDocument_BirInvoicingNotEnabled"]</strong></p>
             <p>@L["SalesDocument_EducationBody1"]</p>
@@ -73,15 +73,42 @@ else
                 </p>
             }
         </Card>
+
+        <Card Size="@CardSize.Small" Title="@L["SalesDocument_ComplianceTitle"]">
+            <p><strong>@L["SalesDocument_ComplianceReview"]:</strong> @(_compliance?.ComplianceEligibilityStatus ?? "NotRequested")</p>
+            <p><strong>@L["SalesDocument_ComplianceIssuance"]:</strong>
+                @((_compliance?.TaxDocumentIssuanceEnabled ?? false)
+                    ? L["SalesDocument_ComplianceIssuanceEnabled"]
+                    : L["SalesDocument_ComplianceIssuanceDisabled"])
+            </p>
+            <p>@L["SalesDocument_ComplianceNeedHelp"]</p>
+            @if (Shell.IsExactOrgOwner
+                 && (_compliance is null
+                     || _compliance.ComplianceEligibilityStatus is "NotRequested" or "Rejected" or "Revoked"))
+            {
+                <Button Loading="_requesting"
+                        OnClick="RequestComplianceAsync"
+                        Style="margin-top: 0.75rem;">
+                    @L["SalesDocument_ComplianceContactSupport"]
+                </Button>
+            }
+            else if (_compliance is not null
+                     && _compliance.ComplianceEligibilityStatus is not "NotRequested")
+            {
+                <p class="org-note" style="margin-top: 0.75rem;">@L["SalesDocument_ComplianceRequestRecorded"]</p>
+            }
+        </Card>
     }
 }
 
 @code {
     private bool _loading = true;
     private bool _saving;
+    private bool _requesting;
     private bool _understood;
     private string? _error;
     private OrganizationSalesDocumentEducationStatusDto? _status;
+    private OrganizationComplianceStatusDto? _compliance;
 
     protected override async Task OnInitializedAsync()
     {
@@ -115,6 +142,8 @@ else
             }
 
             _status = result.Data;
+            var compliance = await Platform.GetOrganizationComplianceStatusAsync(orgId.Value);
+            _compliance = compliance.IsSuccess ? compliance.Data : null;
         }
         finally
         {
@@ -146,6 +175,38 @@ else
         finally
         {
             _saving = false;
+        }
+    }
+
+    private async Task RequestComplianceAsync()
+    {
+        if (!Shell.IsExactOrgOwner)
+        {
+            return;
+        }
+
+        var orgId = CurrentUser.Session?.OrganizationId;
+        if (orgId is null)
+        {
+            return;
+        }
+
+        _requesting = true;
+        _error = null;
+        try
+        {
+            var result = await Platform.RequestOrganizationComplianceReviewAsync(orgId.Value);
+            if (!result.IsSuccess || result.Data is null)
+            {
+                _error = OrgWebUi.Error(result.Error);
+                return;
+            }
+
+            _compliance = result.Data;
+        }
+        finally
+        {
+            _requesting = false;
         }
     }
 }

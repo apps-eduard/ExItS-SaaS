@@ -29,4 +29,12 @@
   <data name="SalesDocument_EducationOwnerRequired" xml:space="preserve"><value>Kailangang basahin ng may-ari ng negosyo ang impormasyon tungkol sa sales document bago magpatuloy sa setup.</value></data>
   <data name="SalesDocument_BirInvoicingNotEnabled" xml:space="preserve"><value>BIR invoicing: Hindi naka-enable para sa negosyong ito</value></data>
   <data name="SalesDocument_CurrentDocument" xml:space="preserve"><value>Kasalukuyang dokumento: Buod ng Transaksyon</value></data>
+  <data name="SalesDocument_ComplianceTitle" xml:space="preserve"><value>Suporta sa BIR invoicing</value></data>
+  <data name="SalesDocument_ComplianceReview" xml:space="preserve"><value>Compliance review</value></data>
+  <data name="SalesDocument_ComplianceIssuance" xml:space="preserve"><value>Tax-document issuance</value></data>
+  <data name="SalesDocument_ComplianceIssuanceEnabled" xml:space="preserve"><value>Naka-enable ang capability (hindi pa available ang implementation)</value></data>
+  <data name="SalesDocument_ComplianceIssuanceDisabled" xml:space="preserve"><value>Naka-disable</value></data>
+  <data name="SalesDocument_ComplianceNeedHelp" xml:space="preserve"><value>Kailangan ng BIR-enabled invoicing sa ExItS? Makipag-ugnayan sa ExItS Support sa pamamagitan ng pagre-record ng request para sa negosyong ito.</value></data>
+  <data name="SalesDocument_ComplianceContactSupport" xml:space="preserve"><value>Makipag-ugnayan sa ExItS Support</value></data>
+  <data name="SalesDocument_ComplianceRequestRecorded" xml:space="preserve"><value>May naitala nang support request para sa negosyong ito.</value></data>
 </root>

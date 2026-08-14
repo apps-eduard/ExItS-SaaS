@@ -70,6 +70,9 @@ public interface IPlatformApiClient
     Task<ApiCallResult<OrganizationDto>> SuspendOrganizationAsync(Guid id, CancellationToken ct = default);
     Task<ApiCallResult<OrganizationDto>> ReactivateOrganizationAsync(Guid id, CancellationToken ct = default);
     Task<ApiCallResult<OrganizationDto>> CloseOrganizationAsync(Guid id, CancellationToken ct = default);
+    Task<ApiCallResult<OrganizationComplianceStatusDto>> GetOrganizationComplianceStatusAsync(Guid organizationId, CancellationToken ct = default);
+    Task<ApiCallResult<OrganizationComplianceStatusDto>> TransitionOrganizationComplianceAsync(Guid organizationId, ComplianceTransitionRequest request, CancellationToken ct = default);
+    Task<ApiCallResult<OrganizationComplianceStatusDto>> SetOrganizationTaxDocumentCapabilityAsync(Guid organizationId, TaxDocumentCapabilityRequest request, CancellationToken ct = default);
     Task<ApiCallResult<OrganizationCommercialSummaryDto>> GetOrganizationCommercialSummaryAsync(Guid id, CancellationToken ct = default);
     Task<ApiCallResult<OrganizationCurrentPlanDto>> GetOrganizationCurrentPlanAsync(Guid organizationId, string? productCode = null, CancellationToken ct = default);
     Task<ApiCallResult<PagedResult<SubscriptionDto>>> GetSubscriptionsAsync(

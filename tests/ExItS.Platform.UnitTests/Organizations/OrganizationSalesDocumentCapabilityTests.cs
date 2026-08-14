@@ -21,10 +21,12 @@ public sealed class OrganizationSalesDocumentCapabilityTests
         Assert.True(result.Value!.TransactionSummaryAvailable);
         Assert.False(result.Value.TaxDocumentIssuanceEnabled);
         Assert.Equal(SalesDocumentCapabilityStatuses.NotEnabled, result.Value.TaxDocumentIssuanceStatus);
+        Assert.Equal(OrganizationComplianceEligibilityStatuses.NotRequested, result.Value.ComplianceEligibilityStatus);
+        Assert.False(result.Value.TaxDocumentImplementationAvailable);
     }
 
     [Fact]
-    public async Task Ensure_and_request_tax_document_fail_when_capability_is_off()
+    public async Task Ensure_and_request_tax_document_fail_when_implementation_unavailable()
     {
         var repository = new InMemoryCapabilityRepository();
         var organizationId = PlatformOrganizationId.New();
@@ -35,8 +37,8 @@ public sealed class OrganizationSalesDocumentCapabilityTests
 
         Assert.False(ensureResult.IsSuccess);
         Assert.False(requestResult.IsSuccess);
-        Assert.Equal(ApplicationErrorCodes.TaxDocumentIssuanceNotEnabled, ensureResult.ErrorCode);
-        Assert.Equal(ApplicationErrorCodes.TaxDocumentIssuanceNotEnabled, requestResult.ErrorCode);
+        Assert.Equal(ApplicationErrorCodes.TaxDocumentIssuanceNotImplemented, ensureResult.ErrorCode);
+        Assert.Equal(ApplicationErrorCodes.TaxDocumentIssuanceNotImplemented, requestResult.ErrorCode);
     }
 
     [Fact]
@@ -83,6 +85,14 @@ public sealed class OrganizationSalesDocumentCapabilityTests
         }
 
         public Task AddAsync(
+            OrganizationSalesDocumentCapability capability,
+            CancellationToken cancellationToken = default)
+        {
+            _items[capability.OrganizationId.Value] = capability;
+            return Task.CompletedTask;
+        }
+
+        public Task UpdateAsync(
             OrganizationSalesDocumentCapability capability,
             CancellationToken cancellationToken = default)
         {

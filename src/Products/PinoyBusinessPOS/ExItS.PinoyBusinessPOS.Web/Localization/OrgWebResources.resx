@@ -29,4 +29,12 @@
   <data name="SalesDocument_EducationOwnerRequired" xml:space="preserve"><value>The business owner needs to review the sales-document information before setup can continue.</value></data>
   <data name="SalesDocument_BirInvoicingNotEnabled" xml:space="preserve"><value>BIR invoicing: Not enabled for this business</value></data>
   <data name="SalesDocument_CurrentDocument" xml:space="preserve"><value>Current document: Transaction Summary</value></data>
+  <data name="SalesDocument_ComplianceTitle" xml:space="preserve"><value>BIR invoicing support</value></data>
+  <data name="SalesDocument_ComplianceReview" xml:space="preserve"><value>Compliance review</value></data>
+  <data name="SalesDocument_ComplianceIssuance" xml:space="preserve"><value>Tax-document issuance</value></data>
+  <data name="SalesDocument_ComplianceIssuanceEnabled" xml:space="preserve"><value>Capability enabled (implementation still unavailable)</value></data>
+  <data name="SalesDocument_ComplianceIssuanceDisabled" xml:space="preserve"><value>Disabled</value></data>
+  <data name="SalesDocument_ComplianceNeedHelp" xml:space="preserve"><value>Need BIR-enabled invoicing through ExItS? Contact ExItS Support by recording a request for this business.</value></data>
+  <data name="SalesDocument_ComplianceContactSupport" xml:space="preserve"><value>Contact ExItS Support</value></data>
+  <data name="SalesDocument_ComplianceRequestRecorded" xml:space="preserve"><value>A support request is already recorded for this business.</value></data>
 </root>

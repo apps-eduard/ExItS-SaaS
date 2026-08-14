@@ -2,25 +2,27 @@
 
 ## Decision
 
-ExItS has one Sale engine. The current document projection is `TransactionSummary`; `TaxDocument` is reserved for future implementation and remains unavailable through P26-WP02.
+ExItS has one Sale engine. The current document projection is `TransactionSummary`; `TaxDocument` is reserved for future implementation and remains unavailable through P26-WP03 (`TaxDocumentIssuanceRuntime.ImplementationAvailable = false`).
 
-Tax calculation and tax-document authority are separate:
+Tax calculation, education, eligibility, and tax-document authority are separate:
 
 - POS `OperationalSetup.TaxRatePercent` and `TaxPricingMode` calculate sale totals.
-- Platform `OrganizationSalesDocumentCapability` controls whether an organization may request a tax document.
+- Platform `OrganizationSalesDocumentCapability` holds `ComplianceEligibilityStatus` and `TaxDocumentIssuanceEnabled`.
 - The capability defaults off, is organization-scoped, and is not a subscription, plan entitlement, or `FeatureOverride`.
-- No owner or staff endpoint can enable it. Platform grant/revoke administration is deferred to P26-WP03.
+- Owner education acknowledgment is independent of eligibility and never enables issuance.
+- Owner may request compliance review; only Platform `ManageOrganizations` may transition eligibility or set issuance.
 
 ## Data ownership
 
 Platform owns the capability row:
 
 - `OrganizationId`
+- `ComplianceEligibilityStatus` (default `NotRequested`)
 - `TaxDocumentIssuanceEnabled` (default `false`)
 - `UpdatedAtUtc`
 - optional `UpdatedByActorReference`
 
-Missing rows mean disabled. Ownership transfer changes membership authority only; it does not move or recreate organization capability.
+Missing rows mean disabled issuance. Ownership transfer changes membership authority only; it does not move or recreate organization capability.
 
 POS owns Sale operational data. `PosSaleDto.DocumentKind` defaults to `TransactionSummary`, and current mappings set it explicitly. Historical records are interpreted as Transaction Summaries. Offline cash-sale storage and synchronization remain unchanged; no LocalStore version bump is needed.
 
@@ -41,9 +43,17 @@ A version change requires a new row without deleting prior versions.
 
 The Organization Web and MAUI setup prompt are soft gates. They do not block checkout,
 sales, synchronization, or offline operation. Cashiers may read the Owner-required
-message but cannot acknowledge. The acknowledgment use case never changes the
-organization capability. See
+message but cannot acknowledge. The acknowledgment use case never changes eligibility
+or issuance capability. See
 [organization sales-document acknowledgment](organization-sales-document-acknowledgment.md).
+
+## Compliance eligibility and issuance (P26-WP03)
+
+Eligibility is a Platform review lifecycle. Issuance is a separate bool. Enabling issuance
+requires `Approved` plus current Owner education acknowledgment. Non-approved transitions
+disable issuance. Org enable still does not produce TaxDocuments while runtime
+implementation is unavailable. See
+[platform organization compliance eligibility](platform-organization-compliance-eligibility.md).
 
 ## Future TaxDocument invariant
 
@@ -55,4 +65,4 @@ Public organization ID and QR resolvers remain identity-only. They must not expo
 
 ## Deferred
 
-BIR rules, invoice series, capability grants, and tax-document issuance remain deferred. P26-WP03 is next.
+BIR rules, invoice series, TaxDocument generation, and organization tax/compliance profile activation remain deferred. P26-WP04 is next.

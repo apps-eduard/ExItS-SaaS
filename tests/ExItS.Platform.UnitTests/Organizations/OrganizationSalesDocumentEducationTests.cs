@@ -248,6 +248,11 @@ public sealed class OrganizationSalesDocumentEducationTests
             OrganizationSalesDocumentCapability capability,
             CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
+
+        public Task UpdateAsync(
+            OrganizationSalesDocumentCapability capability,
+            CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
     }
 
     private sealed class RecordingAuditWriter : IAuditWriter

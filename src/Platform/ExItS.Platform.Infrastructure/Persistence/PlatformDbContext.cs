@@ -312,6 +312,11 @@ public sealed class PlatformDbContext : DbContext
             entity.ToTable("organization_sales_document_capabilities");
             entity.HasKey(e => e.OrganizationId);
             entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.ComplianceEligibilityStatus)
+                .HasColumnName("compliance_eligibility_status")
+                .HasMaxLength(64)
+                .HasDefaultValue("NotRequested")
+                .IsRequired();
             entity.Property(e => e.TaxDocumentIssuanceEnabled)
                 .HasColumnName("tax_document_issuance_enabled")
                 .HasDefaultValue(false);

@@ -398,6 +398,17 @@ public sealed record OrganizationSalesDocumentEducationStatusDto(
     bool TaxDocumentIssuanceEnabled,
     string DocumentMode);
 
+public sealed record OrganizationComplianceStatusDto(
+    Guid OrganizationId,
+    string ComplianceEligibilityStatus,
+    bool TaxDocumentIssuanceEnabled,
+    string TaxDocumentIssuanceStatus,
+    bool TaxDocumentImplementationAvailable,
+    bool CurrentOwnerEducationAcknowledged,
+    string EducationVersion,
+    DateTimeOffset? UpdatedAtUtc,
+    string? UpdatedByActorReference);
+
 public sealed record ResolveOwnershipTransferTargetRequest(string Input);
 public sealed record RequestOwnershipTransferRequest(string TargetInput);
 
@@ -1196,6 +1207,16 @@ public interface IPlatformAccessClient
         Guid organizationId,
         CancellationToken ct = default) =>
         Task.FromResult(ApiResult<OrganizationSalesDocumentEducationStatusDto>.Unavailable());
+
+    Task<ApiResult<OrganizationComplianceStatusDto>> GetOrganizationComplianceStatusAsync(
+        Guid organizationId,
+        CancellationToken ct = default) =>
+        Task.FromResult(ApiResult<OrganizationComplianceStatusDto>.Unavailable());
+
+    Task<ApiResult<OrganizationComplianceStatusDto>> RequestOrganizationComplianceReviewAsync(
+        Guid organizationId,
+        CancellationToken ct = default) =>
+        Task.FromResult(ApiResult<OrganizationComplianceStatusDto>.Unavailable());
 
     Task<ApiResult<OrganizationBranchDto>> UpdateBranchAsync(
         Guid organizationId,

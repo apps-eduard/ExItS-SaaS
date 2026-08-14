@@ -2,11 +2,11 @@
 
 ## Status
 
-**OPEN** — P26-WP01 and P26-WP02 implemented; validation pending. This is not a phase closeout. Phase 25 remains **OPEN** with owner validation pending.
+**OPEN** — P26-WP01–WP03 Code Complete / Validation Pending. This is not a phase closeout. Phase 25 remains **OPEN** with owner validation pending.
 
 ## Goal
 
-Establish a truthful sales-document boundary before any jurisdiction-specific tax-document work. ExItS continues to use one Sale engine. Existing and new sales produce a **Transaction Summary**; `TaxDocument` is a future document kind and is unavailable.
+Establish a truthful sales-document boundary before any jurisdiction-specific tax-document work. ExItS continues to use one Sale engine. Existing and new sales produce a **Transaction Summary**; `TaxDocument` is a future document kind and is unavailable (`TaxDocumentIssuanceRuntime.ImplementationAvailable = false`).
 
 ## Work packages
 
@@ -14,15 +14,15 @@ Establish a truthful sales-document boundary before any jurisdiction-specific ta
 |---|---|---|
 | P26-WP01 | Sales-document kinds, organization capability foundation, safe wording, read API | Code Complete / Validation Pending |
 | P26-WP02 | Owner education, versioned acknowledgment, and soft setup prompt | Code Complete / Validation Pending |
-| P26-WP03 | Platform-controlled grant/revoke administration and audit | Not started — exact next work package |
-| P26-WP04 | Tax-document snapshot, numbering, and jurisdiction rules | Not started |
+| P26-WP03 | Platform-controlled compliance eligibility, grant/revoke administration, and audit | Code Complete / Validation Pending |
+| P26-WP04 | Organization Tax/Compliance Profile & Future Activation Foundation | Not started — exact next work package |
 | P26-WP05 | Validation, operational evidence, and phase closeout decision | Not started |
 
 ## Invariants
 
 - Tax calculation settings (`TaxRatePercent`, `TaxPricingMode`) do not authorize tax-document issuance.
-- The capability is Platform-controlled and organization-scoped, not a plan entitlement or commercial feature override.
-- Missing capability state means `TaxDocumentIssuanceEnabled=false`.
+- Compliance eligibility and `TaxDocumentIssuanceEnabled` are Platform-controlled and organization-scoped, not plan entitlements or commercial feature overrides.
+- Missing capability state means `TaxDocumentIssuanceEnabled=false` and eligibility defaults to `NotRequested` when a row is ensured.
 - Ownership transfer preserves the capability because it belongs to the organization, not its owner.
 - Historical and offline sales remain Transaction Summaries without a LocalStore schema-version change.
 - A future TaxDocument must snapshot its document kind and compliance facts; it must not reinterpret historical sales.
@@ -30,13 +30,16 @@ Establish a truthful sales-document boundary before any jurisdiction-specific ta
 - Current education version is `transaction-summary-v1`; only the exact current active Owner may acknowledge.
 - Ownership transfer and future version changes retain historical rows and require the current Owner to act.
 - Education is a soft prompt only; checkout, sales, sync, and offline operation remain available.
-- Acknowledgment never mutates `TaxDocumentIssuanceEnabled`.
+- Acknowledgment never mutates eligibility or `TaxDocumentIssuanceEnabled`; enable issuance separately requires Approved eligibility plus current Owner acknowledgment.
+- Organization enable of issuance does not produce TaxDocuments while runtime implementation remains unavailable.
 
 ## Explicit exclusions
 
-WP01–WP02 do not implement BIR rules, invoice series, tax-document issuance, capability grant/revoke UI, or grant workflow. No ExItS UI claims BIR compliance.
+WP01–WP03 do not implement BIR rules, invoice series, TaxDocument generation, or compliance certification. No ExItS UI claims BIR compliance.
 
 See [engineering boundary](../engineering/sales-document-compliance-boundary.md),
 [acknowledgment design](../engineering/organization-sales-document-acknowledgment.md),
-[P26-WP01 report](../reports/P26-WP01-sales-document-compliance-readiness-foundation.md), and
-[P26-WP02 report](../reports/P26-WP02-organization-compliance-education-and-acknowledgment.md).
+[compliance eligibility](../engineering/platform-organization-compliance-eligibility.md),
+[P26-WP01 report](../reports/P26-WP01-sales-document-compliance-readiness-foundation.md),
+[P26-WP02 report](../reports/P26-WP02-organization-compliance-education-and-acknowledgment.md), and
+[P26-WP03 report](../reports/P26-WP03-platform-controlled-compliance-capability-and-eligibility.md).

@@ -103,6 +103,24 @@ public static class PlatformAuditActions
     public const string OrganizationOwnerChanged = "platform.organization.owner_changed";
     public const string OrganizationSalesDocumentEducationAcknowledged =
         "platform.organization.sales_document_education_acknowledged";
+    public const string OrganizationComplianceRequested =
+        "platform.organization.compliance.requested";
+    public const string OrganizationComplianceReviewStarted =
+        "platform.organization.compliance.review_started";
+    public const string OrganizationComplianceDocumentsRequired =
+        "platform.organization.compliance.documents_required";
+    public const string OrganizationComplianceApproved =
+        "platform.organization.compliance.approved";
+    public const string OrganizationComplianceRejected =
+        "platform.organization.compliance.rejected";
+    public const string OrganizationComplianceSuspended =
+        "platform.organization.compliance.suspended";
+    public const string OrganizationComplianceRevoked =
+        "platform.organization.compliance.revoked";
+    public const string OrganizationTaxDocumentCapabilityEnabled =
+        "platform.organization.tax_document_capability_enabled";
+    public const string OrganizationTaxDocumentCapabilityDisabled =
+        "platform.organization.tax_document_capability_disabled";
 
     public const string BusinessCustomerCreated = "platform.business_customer.created";
     public const string BusinessCustomerUpdated = "platform.business_customer.updated";

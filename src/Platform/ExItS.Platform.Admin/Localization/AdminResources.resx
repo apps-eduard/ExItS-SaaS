@@ -526,6 +526,34 @@
   <data name="Organizations_TabSubscriptions" xml:space="preserve"><value>Subscriptions</value></data>
   <data name="Organizations_TabProductAccess" xml:space="preserve"><value>Product access</value></data>
   <data name="Organizations_TabAudit" xml:space="preserve"><value>Audit</value></data>
+  <data name="Organizations_TabCompliance" xml:space="preserve"><value>Sales document compliance</value></data>
+  <data name="Organizations_ComplianceHint" xml:space="preserve"><value>Platform-controlled eligibility and issuance capability. Enabling capability does not create BIR tax documents while implementation is unavailable.</value></data>
+  <data name="Organizations_ComplianceLoadFailed" xml:space="preserve"><value>Could not load compliance status.</value></data>
+  <data name="Organizations_ComplianceStatus" xml:space="preserve"><value>Compliance review</value></data>
+  <data name="Organizations_ComplianceIssuance" xml:space="preserve"><value>Tax-document issuance</value></data>
+  <data name="Organizations_ComplianceIssuanceEnabled" xml:space="preserve"><value>Enabled</value></data>
+  <data name="Organizations_ComplianceIssuanceDisabled" xml:space="preserve"><value>Disabled</value></data>
+  <data name="Organizations_ComplianceImplementation" xml:space="preserve"><value>TaxDocument implementation</value></data>
+  <data name="Organizations_ComplianceImplementationAvailable" xml:space="preserve"><value>Available</value></data>
+  <data name="Organizations_ComplianceImplementationUnavailable" xml:space="preserve"><value>Not implemented</value></data>
+  <data name="Organizations_ComplianceOwnerEducation" xml:space="preserve"><value>Owner education</value></data>
+  <data name="Organizations_ComplianceEducationAcknowledged" xml:space="preserve"><value>Acknowledged</value></data>
+  <data name="Organizations_ComplianceEducationActionNeeded" xml:space="preserve"><value>Action needed</value></data>
+  <data name="Organizations_ComplianceStartReview" xml:space="preserve"><value>Start review</value></data>
+  <data name="Organizations_ComplianceRequestDocuments" xml:space="preserve"><value>Request more information</value></data>
+  <data name="Organizations_ComplianceApprove" xml:space="preserve"><value>Approve eligibility</value></data>
+  <data name="Organizations_ComplianceSuspend" xml:space="preserve"><value>Suspend</value></data>
+  <data name="Organizations_ComplianceRevoke" xml:space="preserve"><value>Revoke</value></data>
+  <data name="Organizations_ComplianceEnableIssuance" xml:space="preserve"><value>Enable issuance capability</value></data>
+  <data name="Organizations_ComplianceDisableIssuance" xml:space="preserve"><value>Disable issuance capability</value></data>
+  <data name="Organizations_ComplianceConfirmStartReview" xml:space="preserve"><value>Start compliance review for this organization?</value></data>
+  <data name="Organizations_ComplianceConfirmDocuments" xml:space="preserve"><value>Mark documents/information as required?</value></data>
+  <data name="Organizations_ComplianceConfirmApprove" xml:space="preserve"><value>Approve compliance eligibility? This does not by itself enable TaxDocument issuance.</value></data>
+  <data name="Organizations_ComplianceConfirmSuspend" xml:space="preserve"><value>Suspend compliance eligibility and disable issuance capability?</value></data>
+  <data name="Organizations_ComplianceConfirmRevoke" xml:space="preserve"><value>Revoke compliance eligibility and disable issuance capability?</value></data>
+  <data name="Organizations_ComplianceConfirmEnableIssuance" xml:space="preserve"><value>Enable TaxDocument issuance capability? TaxDocument production remains unavailable until implementation is delivered.</value></data>
+  <data name="Organizations_ComplianceConfirmDisableIssuance" xml:space="preserve"><value>Disable TaxDocument issuance capability?</value></data>
+  <data name="Organizations_ComplianceActionFailed" xml:space="preserve"><value>Compliance action failed.</value></data>
   <data name="Organizations_OpenMembers" xml:space="preserve"><value>Open members and invitations</value></data>
   <data name="Organizations_OpenCatalog" xml:space="preserve"><value>View POS catalog</value></data>
   <data name="Organizations_OpenProductAccess" xml:space="preserve"><value>Open product access</value></data>

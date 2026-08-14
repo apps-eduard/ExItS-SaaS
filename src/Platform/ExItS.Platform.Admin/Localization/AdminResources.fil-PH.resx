@@ -524,6 +524,34 @@
   <data name="Organizations_TabSubscriptions" xml:space="preserve"><value>Mga subscription</value></data>
   <data name="Organizations_TabProductAccess" xml:space="preserve"><value>Product access</value></data>
   <data name="Organizations_TabAudit" xml:space="preserve"><value>Audit</value></data>
+  <data name="Organizations_TabCompliance" xml:space="preserve"><value>Sales document compliance</value></data>
+  <data name="Organizations_ComplianceHint" xml:space="preserve"><value>Kontrolado ng Platform ang eligibility at issuance capability. Ang pag-enable ng capability ay hindi gumagawa ng BIR tax document habang hindi pa available ang implementation.</value></data>
+  <data name="Organizations_ComplianceLoadFailed" xml:space="preserve"><value>Hindi ma-load ang compliance status.</value></data>
+  <data name="Organizations_ComplianceStatus" xml:space="preserve"><value>Compliance review</value></data>
+  <data name="Organizations_ComplianceIssuance" xml:space="preserve"><value>Tax-document issuance</value></data>
+  <data name="Organizations_ComplianceIssuanceEnabled" xml:space="preserve"><value>Naka-enable</value></data>
+  <data name="Organizations_ComplianceIssuanceDisabled" xml:space="preserve"><value>Naka-disable</value></data>
+  <data name="Organizations_ComplianceImplementation" xml:space="preserve"><value>TaxDocument implementation</value></data>
+  <data name="Organizations_ComplianceImplementationAvailable" xml:space="preserve"><value>Available</value></data>
+  <data name="Organizations_ComplianceImplementationUnavailable" xml:space="preserve"><value>Hindi pa implemented</value></data>
+  <data name="Organizations_ComplianceOwnerEducation" xml:space="preserve"><value>Owner education</value></data>
+  <data name="Organizations_ComplianceEducationAcknowledged" xml:space="preserve"><value>Nabasa na</value></data>
+  <data name="Organizations_ComplianceEducationActionNeeded" xml:space="preserve"><value>Kailangan ng aksyon</value></data>
+  <data name="Organizations_ComplianceStartReview" xml:space="preserve"><value>Simulan ang review</value></data>
+  <data name="Organizations_ComplianceRequestDocuments" xml:space="preserve"><value>Humingi ng karagdagang impormasyon</value></data>
+  <data name="Organizations_ComplianceApprove" xml:space="preserve"><value>Aprubahan ang eligibility</value></data>
+  <data name="Organizations_ComplianceSuspend" xml:space="preserve"><value>I-suspend</value></data>
+  <data name="Organizations_ComplianceRevoke" xml:space="preserve"><value>I-revoke</value></data>
+  <data name="Organizations_ComplianceEnableIssuance" xml:space="preserve"><value>I-enable ang issuance capability</value></data>
+  <data name="Organizations_ComplianceDisableIssuance" xml:space="preserve"><value>I-disable ang issuance capability</value></data>
+  <data name="Organizations_ComplianceConfirmStartReview" xml:space="preserve"><value>Simulan ang compliance review para sa organisasyong ito?</value></data>
+  <data name="Organizations_ComplianceConfirmDocuments" xml:space="preserve"><value>Markahan na kailangan ang mga dokumento/impormasyon?</value></data>
+  <data name="Organizations_ComplianceConfirmApprove" xml:space="preserve"><value>Aprubahan ang compliance eligibility? Hindi nito awtomatikong sine-enable ang TaxDocument issuance.</value></data>
+  <data name="Organizations_ComplianceConfirmSuspend" xml:space="preserve"><value>I-suspend ang compliance eligibility at i-disable ang issuance capability?</value></data>
+  <data name="Organizations_ComplianceConfirmRevoke" xml:space="preserve"><value>I-revoke ang compliance eligibility at i-disable ang issuance capability?</value></data>
+  <data name="Organizations_ComplianceConfirmEnableIssuance" xml:space="preserve"><value>I-enable ang TaxDocument issuance capability? Hindi pa available ang paggawa ng TaxDocument hanggang may implementation.</value></data>
+  <data name="Organizations_ComplianceConfirmDisableIssuance" xml:space="preserve"><value>I-disable ang TaxDocument issuance capability?</value></data>
+  <data name="Organizations_ComplianceActionFailed" xml:space="preserve"><value>Nabigo ang compliance action.</value></data>
   <data name="Organizations_OpenMembers" xml:space="preserve"><value>Buksan ang members at invitations</value></data>
   <data name="Organizations_OpenCatalog" xml:space="preserve"><value>Tingnan ang POS catalog</value></data>
   <data name="Organizations_OpenProductAccess" xml:space="preserve"><value>Buksan ang product access</value></data>

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-P26-WP02 records that the current active Organization Owner reviewed the current sales-document education. It is education state only: acknowledgment never grants or enables tax-document issuance.
+P26-WP02 records that the current active Organization Owner reviewed the current sales-document education. It is education state only: acknowledgment never grants compliance eligibility, never enables tax-document issuance, and remains independent of the P26-WP03 Platform eligibility lifecycle.
 
 ## Version and aggregate
 
@@ -41,7 +41,10 @@ Ownership transfer retains former-owner rows as history. The incoming Owner must
 
 The response remains `DocumentMode=TransactionSummary`,
 `TransactionSummaryAvailable=true`, and reflects the independently controlled
-`TaxDocumentIssuanceEnabled` capability. This use case never mutates that capability.
+capability snapshot (`ComplianceEligibilityStatus` / `TaxDocumentIssuanceEnabled`).
+This use case never mutates eligibility or issuance. Platform may later require a
+current-Owner acknowledgment as a precondition before enabling issuance; that gate
+lives on the capability use case, not on acknowledgment itself.
 
 ## Soft-gate behavior
 
@@ -54,8 +57,11 @@ This is deliberately a soft gate:
 
 - checkout, sales, synchronization, and offline operation are not blocked;
 - Cashier and other staff see a friendly Owner-required message and no checkbox;
-- acknowledgment is not a compliance certification;
+- acknowledgment is not a compliance certification and does not set eligibility status;
 - the UI does not claim BIR compliance.
+
+Compliance review request and Platform eligibility transitions are separate surfaces; see
+[platform organization compliance eligibility](platform-organization-compliance-eligibility.md).
 
 ## Migration
 

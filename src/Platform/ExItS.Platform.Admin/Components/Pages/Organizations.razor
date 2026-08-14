@@ -361,6 +361,72 @@ else
                 }
             </TabPane>
 
+            <TabPane Key="compliance" Tab="@L["Organizations_TabCompliance"]">
+                <Paragraph Type="@TextElementType.Secondary">@L["Organizations_ComplianceHint"]</Paragraph>
+                @if (_complianceBusy)
+                {
+                    <Spin />
+                }
+                else if (_compliance is null)
+                {
+                    <Alert Type="@AlertType.Warning" Message="@L["Organizations_ComplianceLoadFailed"]" ShowIcon="true" />
+                }
+                else
+                {
+                    <Descriptions Bordered Size="@DescriptionsSize.Small" Column="1">
+                        <DescriptionsItem Title="@L["Organizations_ComplianceStatus"]">@_compliance.ComplianceEligibilityStatus</DescriptionsItem>
+                        <DescriptionsItem Title="@L["Organizations_ComplianceIssuance"]">
+                            @(_compliance.TaxDocumentIssuanceEnabled ? L["Organizations_ComplianceIssuanceEnabled"] : L["Organizations_ComplianceIssuanceDisabled"])
+                        </DescriptionsItem>
+                        <DescriptionsItem Title="@L["Organizations_ComplianceImplementation"]">
+                            @(_compliance.TaxDocumentImplementationAvailable ? L["Organizations_ComplianceImplementationAvailable"] : L["Organizations_ComplianceImplementationUnavailable"])
+                        </DescriptionsItem>
+                        <DescriptionsItem Title="@L["Organizations_ComplianceOwnerEducation"]">
+                            @(_compliance.CurrentOwnerEducationAcknowledged ? L["Organizations_ComplianceEducationAcknowledged"] : L["Organizations_ComplianceEducationActionNeeded"])
+                            (@_compliance.EducationVersion)
+                        </DescriptionsItem>
+                    </Descriptions>
+
+                    @if (CanManageLifecycle)
+                    {
+                        <Space Wrap Style="margin-top: 1rem;">
+                            <Popconfirm Title="@L["Organizations_ComplianceConfirmStartReview"]"
+                                        OnConfirm="StartReviewAsync">
+                                <Button>@L["Organizations_ComplianceStartReview"]</Button>
+                            </Popconfirm>
+                            <Popconfirm Title="@L["Organizations_ComplianceConfirmDocuments"]"
+                                        OnConfirm="RequestDocumentsAsync">
+                                <Button>@L["Organizations_ComplianceRequestDocuments"]</Button>
+                            </Popconfirm>
+                            <Popconfirm Title="@L["Organizations_ComplianceConfirmApprove"]"
+                                        OnConfirm="ApproveComplianceAsync">
+                                <Button Type="@ButtonType.Primary">@L["Organizations_ComplianceApprove"]</Button>
+                            </Popconfirm>
+                            <Popconfirm Title="@L["Organizations_ComplianceConfirmSuspend"]"
+                                        OnConfirm="SuspendComplianceAsync">
+                                <Button Danger>@L["Organizations_ComplianceSuspend"]</Button>
+                            </Popconfirm>
+                            <Popconfirm Title="@L["Organizations_ComplianceConfirmRevoke"]"
+                                        OnConfirm="RevokeComplianceAsync">
+                                <Button Danger>@L["Organizations_ComplianceRevoke"]</Button>
+                            </Popconfirm>
+                            <Popconfirm Title="@L["Organizations_ComplianceConfirmEnableIssuance"]"
+                                        OnConfirm="EnableIssuanceAsync">
+                                <Button Type="@ButtonType.Primary" Danger>@L["Organizations_ComplianceEnableIssuance"]</Button>
+                            </Popconfirm>
+                            <Popconfirm Title="@L["Organizations_ComplianceConfirmDisableIssuance"]"
+                                        OnConfirm="DisableIssuanceAsync">
+                                <Button>@L["Organizations_ComplianceDisableIssuance"]</Button>
+                            </Popconfirm>
+                        </Space>
+                        @if (!string.IsNullOrWhiteSpace(_complianceError))
+                        {
+                            <Alert Type="@AlertType.Error" Message="@_complianceError" ShowIcon="true" Style="margin-top: 1rem;" />
+                        }
+                    }
+                }
+            </TabPane>
+
             <TabPane Key="audit" Tab="@L["Organizations_TabAudit"]">
                 <Paragraph Type="@TextElementType.Secondary">@L["Organizations_AuditHint"]</Paragraph>
                 <a class="ant-btn ant-btn-link ant-btn-sm" href="@($"/admin/audit?organizationId={Id}")">@L["Organizations_OpenAudit"]</a>
@@ -375,6 +441,9 @@ else
     private ApiCallResult<PagedResult<OrganizationDto>>? _list;
     private ApiCallResult<OrganizationDto>? _org;
     private ApiCallResult<OrganizationCommercialSummaryDto>? _detail;
+    private OrganizationComplianceStatusDto? _compliance;
+    private bool _complianceBusy;
+    private string? _complianceError;
     private int _page = 1;
     private string? _sortBy;
     private bool _sortDesc;
@@ -542,6 +611,95 @@ else
         }
 
         _detail = await Api.GetOrganizationCommercialSummaryAsync(Id.Value);
+        await LoadComplianceAsync();
+    }
+
+    private async Task LoadComplianceAsync()
+    {
+        if (Id is null)
+        {
+            return;
+        }
+
+        _complianceBusy = true;
+        _complianceError = null;
+        try
+        {
+            var result = await Api.GetOrganizationComplianceStatusAsync(Id.Value);
+            _compliance = result.IsSuccess ? result.Data : null;
+            if (!result.IsSuccess)
+            {
+                _complianceError = AdminFormErrorMapper.MapPageError(result);
+            }
+        }
+        finally
+        {
+            _complianceBusy = false;
+        }
+    }
+
+    private Task StartReviewAsync() => TransitionComplianceAsync("UnderReview");
+    private Task RequestDocumentsAsync() => TransitionComplianceAsync("DocumentsRequired");
+    private Task ApproveComplianceAsync() => TransitionComplianceAsync("Approved");
+    private Task SuspendComplianceAsync() => TransitionComplianceAsync("Suspended");
+    private Task RevokeComplianceAsync() => TransitionComplianceAsync("Revoked");
+    private Task EnableIssuanceAsync() => SetIssuanceAsync(true);
+    private Task DisableIssuanceAsync() => SetIssuanceAsync(false);
+
+    private async Task TransitionComplianceAsync(string targetStatus)
+    {
+        if (Id is null || !CanManageLifecycle)
+        {
+            return;
+        }
+
+        _complianceBusy = true;
+        _complianceError = null;
+        try
+        {
+            var result = await Api.TransitionOrganizationComplianceAsync(
+                Id.Value,
+                new ComplianceTransitionRequest(targetStatus));
+            if (!result.IsSuccess || result.Data is null)
+            {
+                _complianceError = AdminFormErrorMapper.MapPageError(result) ?? L["Organizations_ComplianceActionFailed"];
+                return;
+            }
+
+            _compliance = result.Data;
+        }
+        finally
+        {
+            _complianceBusy = false;
+        }
+    }
+
+    private async Task SetIssuanceAsync(bool enabled)
+    {
+        if (Id is null || !CanManageLifecycle)
+        {
+            return;
+        }
+
+        _complianceBusy = true;
+        _complianceError = null;
+        try
+        {
+            var result = await Api.SetOrganizationTaxDocumentCapabilityAsync(
+                Id.Value,
+                new TaxDocumentCapabilityRequest(enabled));
+            if (!result.IsSuccess || result.Data is null)
+            {
+                _complianceError = AdminFormErrorMapper.MapPageError(result) ?? L["Organizations_ComplianceActionFailed"];
+                return;
+            }
+
+            _compliance = result.Data;
+        }
+        finally
+        {
+            _complianceBusy = false;
+        }
     }
 
     private void BindEditFields(OrganizationDto o)

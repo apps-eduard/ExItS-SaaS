@@ -130,6 +130,12 @@ public sealed class PlatformApiClient(
         SendAsync<OrganizationDto>(HttpMethod.Post, $"/api/v1/platform/organizations/{id}/reactivate", null, ct);
     public Task<ApiCallResult<OrganizationDto>> CloseOrganizationAsync(Guid id, CancellationToken ct = default) =>
         SendAsync<OrganizationDto>(HttpMethod.Post, $"/api/v1/platform/organizations/{id}/close", null, ct);
+    public Task<ApiCallResult<OrganizationComplianceStatusDto>> GetOrganizationComplianceStatusAsync(Guid organizationId, CancellationToken ct = default) =>
+        GetAsync<OrganizationComplianceStatusDto>($"/api/v1/platform/organizations/{organizationId}/compliance-status", ct);
+    public Task<ApiCallResult<OrganizationComplianceStatusDto>> TransitionOrganizationComplianceAsync(Guid organizationId, ComplianceTransitionRequest request, CancellationToken ct = default) =>
+        SendAsync<OrganizationComplianceStatusDto>(HttpMethod.Post, $"/api/v1/platform/organizations/{organizationId}/compliance/transition", request, ct);
+    public Task<ApiCallResult<OrganizationComplianceStatusDto>> SetOrganizationTaxDocumentCapabilityAsync(Guid organizationId, TaxDocumentCapabilityRequest request, CancellationToken ct = default) =>
+        SendAsync<OrganizationComplianceStatusDto>(HttpMethod.Post, $"/api/v1/platform/organizations/{organizationId}/compliance/tax-document-capability", request, ct);
     public Task<ApiCallResult<OrganizationCommercialSummaryDto>> GetOrganizationCommercialSummaryAsync(Guid id, CancellationToken ct = default) =>
         GetAsync<OrganizationCommercialSummaryDto>($"/api/v1/platform/admin/organizations/{id}/commercial-summary", ct);
     public Task<ApiCallResult<OrganizationCurrentPlanDto>> GetOrganizationCurrentPlanAsync(Guid organizationId, string? productCode = null, CancellationToken ct = default) =>

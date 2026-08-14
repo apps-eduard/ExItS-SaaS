@@ -757,4 +757,20 @@ public sealed class PlatformAccessClient(IPosApiClient api) : IPlatformAccessCli
             $"/api/v1/platform/organizations/{organizationId:D}/sales-document-education/acknowledge",
             null,
             ct);
+
+    public Task<ApiResult<OrganizationComplianceStatusDto>> GetOrganizationComplianceStatusAsync(
+        Guid organizationId,
+        CancellationToken ct = default) =>
+        api.GetAsync<OrganizationComplianceStatusDto>(
+            $"/api/v1/platform/organizations/{organizationId:D}/compliance-status",
+            ct);
+
+    public Task<ApiResult<OrganizationComplianceStatusDto>> RequestOrganizationComplianceReviewAsync(
+        Guid organizationId,
+        CancellationToken ct = default) =>
+        api.SendAsync<OrganizationComplianceStatusDto>(
+            HttpMethod.Post,
+            $"/api/v1/platform/organizations/{organizationId:D}/compliance/request",
+            null,
+            ct);
 }

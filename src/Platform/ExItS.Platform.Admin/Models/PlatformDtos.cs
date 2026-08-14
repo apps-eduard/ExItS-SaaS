@@ -167,6 +167,20 @@ public sealed record OrganizationDto(
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset UpdatedAtUtc);
 
+public sealed record OrganizationComplianceStatusDto(
+    Guid OrganizationId,
+    string ComplianceEligibilityStatus,
+    bool TaxDocumentIssuanceEnabled,
+    string TaxDocumentIssuanceStatus,
+    bool TaxDocumentImplementationAvailable,
+    bool CurrentOwnerEducationAcknowledged,
+    string EducationVersion,
+    DateTimeOffset? UpdatedAtUtc,
+    string? UpdatedByActorReference);
+
+public sealed record ComplianceTransitionRequest(string TargetStatus);
+public sealed record TaxDocumentCapabilityRequest(bool Enabled);
+
 public sealed record OrganizationCatalogVisibilityDto(
     Guid OrganizationId,
     string OrganizationDisplayName,
