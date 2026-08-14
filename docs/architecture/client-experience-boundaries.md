@@ -116,6 +116,7 @@ For MVP, Mobile should support:
 - revoking POS product access;
 - suspending or removing staff where safely supported;
 - launching POS onboarding;
+- reviewing and acknowledging current sales-document education as the exact Organization Owner;
 - **Start Selling** (POS selling interface mode without changing the POS role);
 - switching between organizations;
 - receiving clear reminders that Web provides full organization control.
@@ -143,6 +144,7 @@ The Web application owns the complete Organization Administration experience, in
 - subscription details;
 - entitlement details;
 - organization-level audit information;
+- sales-document education status and Owner acknowledgment;
 - detailed tables, filters, exports, and advanced administrative actions.
 
 The Mobile and Web experiences must use the same APIs, authorization rules, organization context, and data source.
@@ -153,7 +155,7 @@ Organization Administration must not own operational POS data such as sales, shi
 
 **P25 update:** Organization Web Admin remains **not a POS checkout client**. It may **read** operational records (sales history, receipts, shifts, inventory movements) for reporting, audit, and investigation, and may **write** management configuration (profile, branches, staff, catalog, inventory adjustments/transfers, devices, settings) through the same server-authoritative APIs. It must not provide checkout, cart, barcode selling, payment-taking, or cashier sale creation. Browser UI is AntDesign on a dedicated host (`:8093` locally). Personal product browser UI is a dedicated Personal Web host (`:8094`). Platform Admin remains the operator console and canonical sign-in. See [P25-WP01](../reports/P25-WP01-organization-web-admin-management-center.md), [P25-WP02](../reports/P25-WP02-antdesign-web-standardization-and-host-separation.md), [P25-WP03](../reports/P25-WP03-unified-web-authentication-sso-and-workspace-routing.md), [ADR-022](../decisions/ADR-022-separated-antdesign-web-hosts-and-unified-auth.md).
 
-**P26 update:** Sale documents shown by POS Mobile and Organization Web are Transaction Summaries for business/customer records. Tax calculation does not authorize tax-document issuance. Platform owns the default-off organization capability; clients may read status but cannot enable it in WP01. Public QR identity remains tax/TIN-free. See [sales-document boundary](../engineering/sales-document-compliance-boundary.md).
+**P26 update:** Sale documents shown by POS Mobile and Organization Web are Transaction Summaries for business/customer records. Tax calculation and Owner education acknowledgment do not authorize tax-document issuance. Platform owns the default-off organization capability and versioned acknowledgment history. Organization Web is the primary Owner education surface; MAUI presents the same information as a soft setup prompt. Cashiers cannot acknowledge, and sales/sync are not hard-blocked. Public QR identity remains tax/TIN-free. See [sales-document boundary](../engineering/sales-document-compliance-boundary.md) and [acknowledgment design](../engineering/organization-sales-document-acknowledgment.md).
 
 ---
 

@@ -1,6 +1,7 @@
 using ExItS.PinoyBusinessPOS.Application.Abstractions;
 using ExItS.PinoyBusinessPOS.Application.Auth;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
+using ExItS.PinoyBusinessPOS.Application.Platform;
 
 namespace ExItS.PinoyBusinessPOS.Maui.Services;
 
@@ -12,6 +13,7 @@ public sealed class NavigationGate(
     IProtectedShellAccessPolicy accessPolicy,
     IPosSyncStatusService syncStatus,
     IPosOperationalSetupClient operationalSetup,
+    IPlatformAccessClient platformAccess,
     IUtangCapabilityEvaluator capabilities,
     RoleHomeResolver roleHome)
 {
@@ -129,6 +131,13 @@ public sealed class NavigationGate(
             return "/catalog/import?onboarding=1";
         }
 
+        // Education is a soft setup prompt for the exact current Organization Owner.
+        // If the Platform status cannot be read, continue normally; selling and sync are never blocked.
+        if (await RequiresSalesDocumentEducationAsync(ct).ConfigureAwait(false))
+        {
+            return "/sales-document-education";
+        }
+
         if (capabilities.IsAllowed(UtangCapability.ManageOperationalSetup))
         {
             var setupResult = await operationalSetup.GetAsync(ct).ConfigureAwait(false);
@@ -237,6 +246,7 @@ public sealed class NavigationGate(
             || path.Equals("/offline-pin-setup", StringComparison.OrdinalIgnoreCase)
             || path.Equals("/offline-pin", StringComparison.OrdinalIgnoreCase)
             || path.Equals("/setup", StringComparison.OrdinalIgnoreCase)
+            || path.Equals("/sales-document-education", StringComparison.OrdinalIgnoreCase)
             || path.Equals("/reconnect", StringComparison.OrdinalIgnoreCase)
             || path.Equals("/signin", StringComparison.OrdinalIgnoreCase)
             || path.Equals("/organization-select", StringComparison.OrdinalIgnoreCase)
@@ -305,4 +315,26 @@ public sealed class NavigationGate(
     }
 
     public bool CanEnterProtectedShell => accessPolicy.CanEnterProtectedShell;
+
+    public async Task<string> ResolveOperationalSetupRouteAsync(CancellationToken ct = default) =>
+        await RequiresSalesDocumentEducationAsync(ct).ConfigureAwait(false)
+            ? "/sales-document-education"
+            : "/setup";
+
+    private async Task<bool> RequiresSalesDocumentEducationAsync(CancellationToken ct)
+    {
+        if (currentUser.Session?.OrganizationId is not Guid organizationId
+            || !string.Equals(
+                currentUser.Session.MembershipRole,
+                OrganizationMembershipRoles.Owner,
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var education = await platformAccess
+            .GetSalesDocumentEducationStatusAsync(organizationId, ct)
+            .ConfigureAwait(false);
+        return education.IsSuccess && education.Data?.RequiresOwnerAction == true;
+    }
 }

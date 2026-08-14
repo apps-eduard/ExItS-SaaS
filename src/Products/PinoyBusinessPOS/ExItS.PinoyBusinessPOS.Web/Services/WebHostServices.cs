@@ -313,13 +313,21 @@ public sealed class OrgWebShellState
     public bool IsOrgOwner =>
         OrganizationMembershipRoles.IsOwnerRole(MembershipRole);
 
+    public bool IsExactOrgOwner =>
+        string.Equals(
+            MembershipRole,
+            OrganizationMembershipRoles.Owner,
+            StringComparison.OrdinalIgnoreCase);
+
     public bool Can(UtangCapability capability) =>
         AllowedCapabilities.Contains(capability.ToString(), StringComparer.OrdinalIgnoreCase);
 
     public bool CanSee(string section) => section switch
     {
         "overview" => IsOrgOwner || Can(UtangCapability.ViewDashboard),
-        "profile" or "branches" or "staff" or "subscription" or "notifications" or "ownership-transfer" => IsOrgOwner,
+        "profile" or "branches" or "staff" or "subscription" or "notifications"
+            or "ownership-transfer" => IsOrgOwner,
+        "sales-documents" => IsExactOrgOwner,
         "roles" => IsOrgOwner,
         "products" => Can(UtangCapability.ViewCatalog),
         "inventory" => Can(UtangCapability.ViewInventory),

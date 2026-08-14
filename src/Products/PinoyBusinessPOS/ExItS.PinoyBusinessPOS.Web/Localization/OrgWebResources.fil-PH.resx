@@ -17,4 +17,16 @@
   <data name="Nav_More" xml:space="preserve"><value>Higit pa</value></data>
   <data name="Nav_Subscription" xml:space="preserve"><value>Subscription</value></data>
   <data name="Boundary_NotPos" xml:space="preserve"><value>Ang Organization Web Admin ay hindi POS checkout. Ang pagbebenta ay nananatili sa POS app.</value></data>
+  <data name="SalesDocument_EducationTitle" xml:space="preserve"><value>Tungkol sa mga rekord ng benta mo</value></data>
+  <data name="SalesDocument_EducationBody1" xml:space="preserve"><value>Sa ngayon, gumagawa ang ExItS ng Buod ng Transaksyon para sa rekord ng negosyo at customer.</value></data>
+  <data name="SalesDocument_EducationBody2" xml:space="preserve"><value>Ang Buod ng Transaksyon ay hindi ipinapakita bilang Official Receipt o tax invoice na awtorisado ng BIR.</value></data>
+  <data name="SalesDocument_EducationBody3" xml:space="preserve"><value>Ang mga tax setting para sa pagkalkula ay hindi nagpapagana ng pag-isyu ng tax document.</value></data>
+  <data name="SalesDocument_EducationBody4" xml:space="preserve"><value>Itinatala lang ng pagkilala mo na nabasa mo ang impormasyong ito. Hindi nito pinapagana ang BIR invoicing.</value></data>
+  <data name="SalesDocument_EducationAckCheckbox" xml:space="preserve"><value>Nauunawaan ko kung paano kasalukuyang hinahawakan ng ExItS ang mga rekord ng benta.</value></data>
+  <data name="SalesDocument_EducationContinue" xml:space="preserve"><value>Magpatuloy</value></data>
+  <data name="SalesDocument_EducationActionNeeded" xml:space="preserve"><value>Kailangang basahin</value></data>
+  <data name="SalesDocument_EducationAcknowledged" xml:space="preserve"><value>Nabasa na</value></data>
+  <data name="SalesDocument_EducationOwnerRequired" xml:space="preserve"><value>Kailangang basahin ng may-ari ng negosyo ang impormasyon tungkol sa sales document bago magpatuloy sa setup.</value></data>
+  <data name="SalesDocument_BirInvoicingNotEnabled" xml:space="preserve"><value>BIR invoicing: Hindi naka-enable para sa negosyong ito</value></data>
+  <data name="SalesDocument_CurrentDocument" xml:space="preserve"><value>Kasalukuyang dokumento: Buod ng Transaksyon</value></data>
 </root>

@@ -130,5 +130,6 @@ The dashboard links to the latest accepted report.
 | [P25-WP08-organization-profile-independence.md](P25-WP08-organization-profile-independence.md) | P25-WP08 Organization profile independence + multi-org ownership | Code Complete / Owner Validation Pending |
 | [P25-WP09-organization-ownership-transfer.md](P25-WP09-organization-ownership-transfer.md) | P25-WP09 Organization ownership transfer | Code Complete / Owner Validation Pending |
 | [P26-WP01-sales-document-compliance-readiness-foundation.md](P26-WP01-sales-document-compliance-readiness-foundation.md) | P26-WP01 Sales document and compliance readiness foundation | Code Complete / Validation Pending |
+| [P26-WP02-organization-compliance-education-and-acknowledgment.md](P26-WP02-organization-compliance-education-and-acknowledgment.md) | P26-WP02 Organization compliance education and acknowledgment | Code Complete / Validation Pending |
 
 Aliases (stable old paths): [personal-organization-identity-isolation.md](personal-organization-identity-isolation.md) · [sales-buyer-party-isolation.md](sales-buyer-party-isolation.md) · [organization-profile-independence.md](organization-profile-independence.md) · [organization-ownership-transfer.md](organization-ownership-transfer.md)

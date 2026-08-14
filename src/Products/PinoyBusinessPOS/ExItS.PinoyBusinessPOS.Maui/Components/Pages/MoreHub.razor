@@ -37,6 +37,14 @@
         {
             <Section Title="@L["More_ToolsSection"]">
                 <div class="pos-action-grid" role="group" aria-label="@L["More_ToolsSection"]">
+                    @if (IsOrganizationOwner)
+                    {
+                        <button type="button" class="pos-action-tile" @onclick="GoSalesDocumentEducation">
+                            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("info")</span>
+                            <span class="pos-action-tile__label">@L["SalesDocument_EducationTitle"]</span>
+                        </button>
+                    }
+
                     <button type="button" class="pos-action-tile" @onclick="GoOverdue">
                         <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("warning")</span>
                         <span class="pos-action-tile__label">@L["Overdue_OpenOrg"]</span>
@@ -122,6 +130,12 @@
 </div>
 
 @code {
+    private bool IsOrganizationOwner =>
+        string.Equals(
+            CurrentUser.Session?.MembershipRole,
+            OrganizationMembershipRoles.Owner,
+            StringComparison.OrdinalIgnoreCase);
+
     protected override async Task OnInitializedAsync()
     {
         if (CurrentUser.Session?.OrganizationId is null)
@@ -145,13 +159,15 @@
 
     private async Task GoRoleHome() => Nav.NavigateTo(await RoleHome.ResolvePosHomeAsync());
     private Task GoOrg() => OfflineNav.NavigateAsync("/org");
+    private Task GoSalesDocumentEducation() => OfflineNav.NavigateAsync("/sales-document-education");
     private Task GoOverdue() => OfflineNav.NavigateAsync("/overdue");
     private Task GoInventory() => OfflineNav.NavigateAsync("/inventory");
     private Task GoExpenses() => OfflineNav.NavigateAsync("/expenses");
     private Task GoSuppliers() => OfflineNav.NavigateAsync("/suppliers");
     private Task GoPurchasing() => OfflineNav.NavigateAsync("/purchasing");
     private Task GoRegisters() => OfflineNav.NavigateAsync("/registers");
-    private Task GoSetup() => OfflineNav.NavigateAsync("/setup");
+    private async Task GoSetup() =>
+        await OfflineNav.NavigateAsync(await Gate.ResolveOperationalSetupRouteAsync());
     private Task GoShifts() => OfflineNav.NavigateAsync("/shifts");
     private Task GoPermissions() => OfflineNav.NavigateAsync("/permissions");
     private Task GoReports() => OfflineNav.NavigateAsync("/reports");

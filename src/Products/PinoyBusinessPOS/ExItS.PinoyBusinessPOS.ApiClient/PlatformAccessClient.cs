@@ -741,4 +741,20 @@ public sealed class PlatformAccessClient(IPosApiClient api) : IPlatformAccessCli
         api.GetAsync<IReadOnlyList<OrganizationOwnershipTransferDto>>(
             "/api/v1/platform/ownership-transfers/my-pending",
             ct);
+
+    public Task<ApiResult<OrganizationSalesDocumentEducationStatusDto>> GetSalesDocumentEducationStatusAsync(
+        Guid organizationId,
+        CancellationToken ct = default) =>
+        api.GetAsync<OrganizationSalesDocumentEducationStatusDto>(
+            $"/api/v1/platform/organizations/{organizationId:D}/sales-document-education",
+            ct);
+
+    public Task<ApiResult<OrganizationSalesDocumentEducationStatusDto>> AcknowledgeSalesDocumentEducationAsync(
+        Guid organizationId,
+        CancellationToken ct = default) =>
+        api.SendAsync<OrganizationSalesDocumentEducationStatusDto>(
+            HttpMethod.Post,
+            $"/api/v1/platform/organizations/{organizationId:D}/sales-document-education/acknowledge",
+            null,
+            ct);
 }

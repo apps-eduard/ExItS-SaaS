@@ -39,6 +39,22 @@ internal sealed class OrganizationMembershipRepository : IOrganizationMembership
         return record is null ? null : IdentityAccessEntityMapper.ToMembershipDomain(record);
     }
 
+    public async Task<OrganizationMembership?> FindActiveOwnerByOrganizationAsync(
+        PlatformOrganizationId organizationId,
+        CancellationToken cancellationToken = default)
+    {
+        var active = nameof(MembershipStatus.Active);
+        var owner = nameof(OrganizationRole.OrganizationOwner);
+        var record = await _db.OrganizationMemberships.AsNoTracking()
+            .Where(m => m.OrganizationId == organizationId.Value
+                        && m.Status == active
+                        && m.Role == owner)
+            .OrderByDescending(m => m.UpdatedAtUtc)
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : IdentityAccessEntityMapper.ToMembershipDomain(record);
+    }
+
     public async Task<OrganizationMembership?> FindCurrentByUserAndOrganizationAsync(
         PlatformUserId userId,
         PlatformOrganizationId organizationId,

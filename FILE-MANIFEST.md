@@ -128,6 +128,7 @@ docs/reports/P25-WP07-sales-buyer-party-isolation.md
 docs/reports/P25-WP08-organization-profile-independence.md
 docs/reports/P25-WP09-organization-ownership-transfer.md
 docs/reports/P26-WP01-sales-document-compliance-readiness-foundation.md
+docs/reports/P26-WP02-organization-compliance-education-and-acknowledgment.md
 docs/reports/personal-organization-identity-isolation.md
 docs/reports/organization-profile-independence.md
 docs/reports/sales-buyer-party-isolation.md
@@ -136,6 +137,7 @@ docs/engineering/sales-buyer-party-model.md
 docs/engineering/organization-profile-independence.md
 docs/engineering/organization-ownership-transfer.md
 docs/engineering/sales-document-compliance-boundary.md
+docs/engineering/organization-sales-document-acknowledgment.md
 docs/architecture/personal-organization-identity-boundaries.md
 docs/architecture/client-experience-boundaries.md
 docs/specs/identity/public-user-id-and-qr.md

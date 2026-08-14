@@ -2,7 +2,7 @@
 
 ## Decision
 
-ExItS has one Sale engine. The current document projection is `TransactionSummary`; `TaxDocument` is reserved for future implementation and is unavailable in P26-WP01.
+ExItS has one Sale engine. The current document projection is `TransactionSummary`; `TaxDocument` is reserved for future implementation and remains unavailable through P26-WP02.
 
 Tax calculation and tax-document authority are separate:
 
@@ -32,6 +32,19 @@ Transaction Summary is a business/customer record. UI must display:
 
 The sentence is a denial of authorization, not a compliance claim. Repayment-receipt wording remains repayment-specific.
 
+## Education acknowledgment
+
+P26-WP02 adds versioned Owner education, not tax authority. The current version is
+`transaction-summary-v1`. Status follows the exact current active Owner; ownership
+transfer retains former-owner history and requires the incoming Owner to acknowledge.
+A version change requires a new row without deleting prior versions.
+
+The Organization Web and MAUI setup prompt are soft gates. They do not block checkout,
+sales, synchronization, or offline operation. Cashiers may read the Owner-required
+message but cannot acknowledge. The acknowledgment use case never changes the
+organization capability. See
+[organization sales-document acknowledgment](organization-sales-document-acknowledgment.md).
+
 ## Future TaxDocument invariant
 
 A future TaxDocument must capture an immutable issuance snapshot, including the document kind and all then-required compliance facts. It must never infer authorization from tax calculations or retroactively relabel historical sales.
@@ -42,4 +55,4 @@ Public organization ID and QR resolvers remain identity-only. They must not expo
 
 ## Deferred
 
-BIR rules, invoice series, capability grants, owner education acknowledgment, and tax-document issuance are outside WP01. P26-WP02 is next.
+BIR rules, invoice series, capability grants, and tax-document issuance remain deferred. P26-WP03 is next.

@@ -387,6 +387,17 @@ public sealed record OrganizationOwnershipTransferDto(
     DateTimeOffset? CompletedAtUtc,
     DateTimeOffset UpdatedAtUtc);
 
+public sealed record OrganizationSalesDocumentEducationStatusDto(
+    Guid OrganizationId,
+    string CurrentVersion,
+    bool CurrentOwnerAcknowledged,
+    DateTimeOffset? AcknowledgedAtUtc,
+    Guid? AcknowledgedByUserId,
+    bool RequiresOwnerAction,
+    bool TransactionSummaryAvailable,
+    bool TaxDocumentIssuanceEnabled,
+    string DocumentMode);
+
 public sealed record ResolveOwnershipTransferTargetRequest(string Input);
 public sealed record RequestOwnershipTransferRequest(string TargetInput);
 
@@ -1175,6 +1186,16 @@ public interface IPlatformAccessClient
     Task<ApiResult<IReadOnlyList<OrganizationOwnershipTransferDto>>> GetMyPendingOwnershipTransfersAsync(
         CancellationToken ct = default) =>
         Task.FromResult(ApiResult<IReadOnlyList<OrganizationOwnershipTransferDto>>.Unavailable());
+
+    Task<ApiResult<OrganizationSalesDocumentEducationStatusDto>> GetSalesDocumentEducationStatusAsync(
+        Guid organizationId,
+        CancellationToken ct = default) =>
+        Task.FromResult(ApiResult<OrganizationSalesDocumentEducationStatusDto>.Unavailable());
+
+    Task<ApiResult<OrganizationSalesDocumentEducationStatusDto>> AcknowledgeSalesDocumentEducationAsync(
+        Guid organizationId,
+        CancellationToken ct = default) =>
+        Task.FromResult(ApiResult<OrganizationSalesDocumentEducationStatusDto>.Unavailable());
 
     Task<ApiResult<OrganizationBranchDto>> UpdateBranchAsync(
         Guid organizationId,

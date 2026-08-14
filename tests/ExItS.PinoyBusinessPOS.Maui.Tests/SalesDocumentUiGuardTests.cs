@@ -34,6 +34,46 @@ public sealed class SalesDocumentUiGuardTests
         Assert.Contains("SalesDocument_Open", detail, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void Education_page_is_owner_acknowledgment_not_a_compliance_claim()
+    {
+        var page = File.ReadAllText(Path.Combine(
+            MauiProject(),
+            "Components",
+            "Pages",
+            "Organization",
+            "SalesDocumentEducation.razor"));
+
+        Assert.Contains("SalesDocument_EducationAckCheckbox", page, StringComparison.Ordinal);
+        Assert.Contains("IsCurrentOwner", page, StringComparison.Ordinal);
+        Assert.Contains("SalesDocument_EducationOwnerRequired", page, StringComparison.Ordinal);
+        Assert.DoesNotContain("BIR compliant", page, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("EnableTax", page, StringComparison.OrdinalIgnoreCase);
+
+        var gate = File.ReadAllText(Path.Combine(MauiProject(), "Services", "NavigationGate.cs"));
+        var more = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Pages", "MoreHub.razor"));
+        Assert.Contains("ResolveOperationalSetupRouteAsync", gate, StringComparison.Ordinal);
+        Assert.Contains("RequiresSalesDocumentEducationAsync", gate, StringComparison.Ordinal);
+        Assert.Contains("Gate.ResolveOperationalSetupRouteAsync()", more, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Education_copy_keeps_transaction_summary_and_bir_boundary_explicit()
+    {
+        var resources = XDocument.Load(Path.Combine(MauiProject(), "Localization", "PosResources.resx"));
+        var values = resources.Root!
+            .Elements("data")
+            .Where(element => ((string?)element.Attribute("name"))?.StartsWith(
+                "SalesDocument_Education",
+                StringComparison.Ordinal) == true)
+            .Select(element => element.Element("value")!.Value)
+            .ToArray();
+
+        Assert.Contains(values, value => value.Contains("Transaction Summary", StringComparison.Ordinal));
+        Assert.DoesNotContain(values, value => value.Contains("BIR compliant", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(values, value => value.Contains("does not enable BIR invoicing", StringComparison.OrdinalIgnoreCase));
+    }
+
     private static string MauiProject() => Path.Combine(
         FindRepoRoot(),
         "src",

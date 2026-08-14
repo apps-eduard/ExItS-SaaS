@@ -11,6 +11,8 @@ public static class ApplicationErrorCodes
     public const string OwnershipTransferConflict = "application.ownership_transfer.conflict";
     public const string TaxDocumentIssuanceNotEnabled =
         "application.sales_document.tax_document_issuance_not_enabled";
+    public const string SalesDocumentEducationOwnerRequired =
+        "application.sales_document.education_owner_required";
     public const string EmailConflict = "application.user.email_conflict";
     public const string UsernameConflict = "application.user.username_conflict";
     public const string SlugConflict = "application.organization.slug_conflict";

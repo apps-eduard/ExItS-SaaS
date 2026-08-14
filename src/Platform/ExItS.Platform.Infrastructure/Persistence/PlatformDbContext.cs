@@ -92,6 +92,8 @@ public sealed class PlatformDbContext : DbContext
     internal DbSet<AuditRecordRecord> AuditRecords => Set<AuditRecordRecord>();
     internal DbSet<OrganizationSalesDocumentCapabilityRecord> OrganizationSalesDocumentCapabilities =>
         Set<OrganizationSalesDocumentCapabilityRecord>();
+    internal DbSet<OrganizationSalesDocumentAcknowledgmentRecord> OrganizationSalesDocumentAcknowledgments =>
+        Set<OrganizationSalesDocumentAcknowledgmentRecord>();
     internal DbSet<PersonalAccountSettingsRecord> PersonalAccountSettings => Set<PersonalAccountSettingsRecord>();
     internal DbSet<PersonalContactRecord> PersonalContacts => Set<PersonalContactRecord>();
     internal DbSet<PersonalDebtRelationshipRecord> PersonalDebtRelationships => Set<PersonalDebtRelationshipRecord>();
@@ -321,6 +323,31 @@ public sealed class PlatformDbContext : DbContext
                 .WithOne()
                 .HasForeignKey<OrganizationSalesDocumentCapabilityRecord>(e => e.OrganizationId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<OrganizationSalesDocumentAcknowledgmentRecord>(entity =>
+        {
+            entity.ToTable("organization_sales_document_acknowledgments");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.Version).HasColumnName("version").HasMaxLength(128).IsRequired();
+            entity.Property(e => e.AcknowledgedAtUtc).HasColumnName("acknowledged_at_utc");
+            entity.Property(e => e.ContentKey).HasColumnName("content_key").HasMaxLength(128);
+            entity.HasIndex(e => e.UserId)
+                .HasDatabaseName("IX_sales_document_ack_user");
+            entity.HasIndex(e => new { e.OrganizationId, e.UserId, e.Version })
+                .IsUnique()
+                .HasDatabaseName("UX_sales_document_ack_org_user_version");
+            entity.HasOne<PlatformOrganizationRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.OrganizationId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne<PlatformUserRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<OrganizationBusinessTypeActivationRecord>(entity =>

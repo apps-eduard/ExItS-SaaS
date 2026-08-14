@@ -1,0 +1,140 @@
+@page "/sales-document-education"
+@using ExItS.DesignSystem.Components.Internal
+@inject ICurrentUserContext CurrentUser
+@inject IPlatformAccessClient Platform
+@inject NavigationGate Gate
+@inject NavigationManager Nav
+@inject IStringLocalizer<PosResources> L
+
+<div class="pos-dash">
+    <Page>
+        <header class="pos-more__header">
+            <h1 class="pos-more__title">@L["SalesDocument_EducationTitle"]</h1>
+            <p class="pos-more__subtitle">@L["SalesDocument_CurrentDocument"]</p>
+        </header>
+
+        @if (_loading)
+        {
+            <p>@L["Common_Loading"]</p>
+        }
+        else if (!string.IsNullOrWhiteSpace(_error))
+        {
+            <div role="alert"><strong>@_error</strong></div>
+        }
+        else if (_status is not null)
+        {
+            <div role="status">
+                <strong>
+                @(_status.RequiresOwnerAction
+                    ? L["SalesDocument_EducationActionNeeded"]
+                    : L["SalesDocument_EducationAcknowledged"])
+                </strong>
+            </div>
+
+            <Section Title="@L["SalesDocument_EducationTitle"]">
+                <p><strong>@L["SalesDocument_BirInvoicingNotEnabled"]</strong></p>
+                <p>@L["SalesDocument_EducationBody1"]</p>
+                <p>@L["SalesDocument_EducationBody2"]</p>
+                <p>@L["SalesDocument_EducationBody3"]</p>
+                <p>@L["SalesDocument_EducationBody4"]</p>
+
+                @if (_status.RequiresOwnerAction && IsCurrentOwner)
+                {
+                    <label class="pos-signin__remember">
+                        <input type="checkbox" checked="@_understood" @onchange="OnUnderstoodChanged" disabled="@_busy" />
+                        <span>@L["SalesDocument_EducationAckCheckbox"]</span>
+                    </label>
+                    <button type="button"
+                            class="pos-btn pos-btn--primary"
+                            disabled="@(!_understood || _busy)"
+                            @onclick="AcknowledgeAsync">
+                        @L["SalesDocument_EducationContinue"]
+                    </button>
+                }
+                else if (_status.RequiresOwnerAction)
+                {
+                    <p role="status"><strong>@L["SalesDocument_EducationOwnerRequired"]</strong></p>
+                }
+                else
+                {
+                    <button type="button" class="pos-btn pos-btn--primary" @onclick="ContinueAsync">
+                        @L["SalesDocument_EducationContinue"]
+                    </button>
+                }
+            </Section>
+        }
+    </Page>
+</div>
+
+@code {
+    private bool _loading = true;
+    private bool _busy;
+    private bool _understood;
+    private string? _error;
+    private OrganizationSalesDocumentEducationStatusDto? _status;
+
+    private bool IsCurrentOwner =>
+        string.Equals(
+            CurrentUser.Session?.MembershipRole,
+            OrganizationMembershipRoles.Owner,
+            StringComparison.OrdinalIgnoreCase);
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (CurrentUser.Session?.OrganizationId is not Guid organizationId)
+        {
+            Nav.NavigateTo("/signin", replace: true);
+            return;
+        }
+
+        var result = await Platform.GetSalesDocumentEducationStatusAsync(organizationId);
+        if (!result.IsSuccess || result.Data is null)
+        {
+            _error = result.Error?.Detail ?? result.Error?.Title ?? "Sales-document information is temporarily unavailable.";
+        }
+        else
+        {
+            _status = result.Data;
+        }
+
+        _loading = false;
+    }
+
+    private void OnUnderstoodChanged(ChangeEventArgs args) =>
+        _understood = args.Value is bool value
+            ? value
+            : bool.TryParse(args.Value?.ToString(), out var parsed) && parsed;
+
+    private async Task AcknowledgeAsync()
+    {
+        if (!_understood
+            || !IsCurrentOwner
+            || CurrentUser.Session?.OrganizationId is not Guid organizationId)
+        {
+            return;
+        }
+
+        _busy = true;
+        _error = null;
+        try
+        {
+            var result = await Platform.AcknowledgeSalesDocumentEducationAsync(organizationId);
+            if (!result.IsSuccess || result.Data is null)
+            {
+                _error = result.Error?.Detail ?? result.Error?.Title ?? "The acknowledgment could not be saved.";
+                return;
+            }
+
+            _status = result.Data;
+            _understood = false;
+            await ContinueAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task ContinueAsync() =>
+        Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+}

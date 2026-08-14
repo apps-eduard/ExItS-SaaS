@@ -11,10 +11,10 @@
 | Portfolio | ExITS SaaS |
 | Existing product | Historical HealthCare SaaS MVP (separate product; **not** in this workspace ? do not restore) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
-| Current phase | Phase 26 **Open — WP01 Code Complete / Validation Pending**; Phase 25 remains **Open — Owner Validation Pending**; Phase 22/24/19/20/21 remain Open; Phase 14 still open |
-| Current work package | **P26-WP01** Sales Document & Compliance Readiness Foundation ([phase](phases/phase-26-sales-documents-compliance-readiness.md); [report](reports/P26-WP01-sales-document-compliance-readiness-foundation.md)). P26-WP02 is next. Phase 25 is **not closed**. |
-| Overall status | **P26-WP01 Code Complete / Validation Pending**; Transaction Summary is the current sales document and TaxDocument remains unavailable. Phase 25 WP01–WP09 owner validation remains pending. **Not Device Verified**. Production remains **Blocked**. **Not production-ready.** |
-| Latest verified commit | `b616cd3e` (P26-WP01 sales-document compliance readiness foundation) |
+| Current phase | Phase 26 **Open — WP01–WP02 Code Complete / Validation Pending**; Phase 25 remains **Open — Owner Validation Pending**; Phase 22/24/19/20/21 remain Open; Phase 14 still open |
+| Current work package | **P26-WP02** Organization Compliance Education & Acknowledgment ([phase](phases/phase-26-sales-documents-compliance-readiness.md); [report](reports/P26-WP02-organization-compliance-education-and-acknowledgment.md)). P26-WP03 is next. Phase 25 is **not closed**. |
+| Overall status | **P26-WP01–WP02 Code Complete / Validation Pending**; Transaction Summary remains the current sales document, Owner acknowledgment is a soft education prompt, and TaxDocument remains unavailable. Phase 25 WP01–WP09 owner validation remains pending. **Not Device Verified**. Production remains **Blocked**. **Not production-ready.** |
+| Latest verified commit | `cb123938` (P26-WP01 documentation hash record; P26-WP02 not yet committed) |
 | Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA deferred; Phase 19/20/22/24/25 owner/physical validation pending |
 | Last updated | 2026-08-14 |
 

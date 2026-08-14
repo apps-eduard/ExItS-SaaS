@@ -29,6 +29,19 @@ internal sealed class InMemoryOrganizationMembershipRepository : IOrganizationMe
         return Task.FromResult(match);
     }
 
+    public Task<OrganizationMembership?> FindActiveOwnerByOrganizationAsync(
+        PlatformOrganizationId organizationId,
+        CancellationToken cancellationToken = default)
+    {
+        var match = _byId.Values
+            .Where(m => m.OrganizationId == organizationId
+                        && m.Status == MembershipStatus.Active
+                        && m.Role == OrganizationRole.OrganizationOwner)
+            .OrderByDescending(m => m.UpdatedAtUtc)
+            .FirstOrDefault();
+        return Task.FromResult(match);
+    }
+
     public Task<OrganizationMembership?> FindCurrentByUserAndOrganizationAsync(
         PlatformUserId userId,
         PlatformOrganizationId organizationId,

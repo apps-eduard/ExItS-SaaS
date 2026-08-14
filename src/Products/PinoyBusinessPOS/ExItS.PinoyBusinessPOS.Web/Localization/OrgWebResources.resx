@@ -17,4 +17,16 @@
   <data name="Nav_More" xml:space="preserve"><value>More</value></data>
   <data name="Nav_Subscription" xml:space="preserve"><value>Subscription</value></data>
   <data name="Boundary_NotPos" xml:space="preserve"><value>Organization Web Admin is not a POS checkout client. Operational selling remains in the POS app.</value></data>
+  <data name="SalesDocument_EducationTitle" xml:space="preserve"><value>About your sales records</value></data>
+  <data name="SalesDocument_EducationBody1" xml:space="preserve"><value>ExItS currently creates a Transaction Summary for business and customer record purposes.</value></data>
+  <data name="SalesDocument_EducationBody2" xml:space="preserve"><value>The Transaction Summary is not presented as an Official Receipt or a BIR-authorized tax invoice.</value></data>
+  <data name="SalesDocument_EducationBody3" xml:space="preserve"><value>Tax settings used for calculations do not enable tax-document issuance.</value></data>
+  <data name="SalesDocument_EducationBody4" xml:space="preserve"><value>Your acknowledgment records that you reviewed this information. It does not enable BIR invoicing.</value></data>
+  <data name="SalesDocument_EducationAckCheckbox" xml:space="preserve"><value>I understand how ExItS currently handles sales records.</value></data>
+  <data name="SalesDocument_EducationContinue" xml:space="preserve"><value>Continue</value></data>
+  <data name="SalesDocument_EducationActionNeeded" xml:space="preserve"><value>Review needed</value></data>
+  <data name="SalesDocument_EducationAcknowledged" xml:space="preserve"><value>Acknowledged</value></data>
+  <data name="SalesDocument_EducationOwnerRequired" xml:space="preserve"><value>The business owner needs to review the sales-document information before setup can continue.</value></data>
+  <data name="SalesDocument_BirInvoicingNotEnabled" xml:space="preserve"><value>BIR invoicing: Not enabled for this business</value></data>
+  <data name="SalesDocument_CurrentDocument" xml:space="preserve"><value>Current document: Transaction Summary</value></data>
 </root>

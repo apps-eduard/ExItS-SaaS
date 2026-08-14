@@ -101,6 +101,8 @@ public static class PlatformAuditActions
     public const string OwnershipTransferDeclined = "platform.ownership_transfer.declined";
     public const string OwnershipTransferAccepted = "platform.ownership_transfer.accepted";
     public const string OrganizationOwnerChanged = "platform.organization.owner_changed";
+    public const string OrganizationSalesDocumentEducationAcknowledged =
+        "platform.organization.sales_document_education_acknowledged";
 
     public const string BusinessCustomerCreated = "platform.business_customer.created";
     public const string BusinessCustomerUpdated = "platform.business_customer.updated";

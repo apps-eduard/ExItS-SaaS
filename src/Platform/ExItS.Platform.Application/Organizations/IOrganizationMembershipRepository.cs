@@ -12,6 +12,10 @@ public interface IOrganizationMembershipRepository
         PlatformOrganizationId organizationId,
         CancellationToken cancellationToken = default);
 
+    Task<OrganizationMembership?> FindActiveOwnerByOrganizationAsync(
+        PlatformOrganizationId organizationId,
+        CancellationToken cancellationToken = default);
+
     /// <summary>Current = Active or Suspended (not Removed).</summary>
     Task<OrganizationMembership?> FindCurrentByUserAndOrganizationAsync(
         PlatformUserId userId,

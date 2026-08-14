@@ -2,7 +2,7 @@
 
 ## Status
 
-**OPEN** — P26-WP01 implemented; validation pending. This is not a phase closeout. Phase 25 remains **OPEN** with owner validation pending.
+**OPEN** — P26-WP01 and P26-WP02 implemented; validation pending. This is not a phase closeout. Phase 25 remains **OPEN** with owner validation pending.
 
 ## Goal
 
@@ -13,8 +13,8 @@ Establish a truthful sales-document boundary before any jurisdiction-specific ta
 | Work package | Scope | Status |
 |---|---|---|
 | P26-WP01 | Sales-document kinds, organization capability foundation, safe wording, read API | Code Complete / Validation Pending |
-| P26-WP02 | Owner education and acknowledgment UX | Not started — exact next work package |
-| P26-WP03 | Platform-controlled grant/revoke administration and audit | Not started |
+| P26-WP02 | Owner education, versioned acknowledgment, and soft setup prompt | Code Complete / Validation Pending |
+| P26-WP03 | Platform-controlled grant/revoke administration and audit | Not started — exact next work package |
 | P26-WP04 | Tax-document snapshot, numbering, and jurisdiction rules | Not started |
 | P26-WP05 | Validation, operational evidence, and phase closeout decision | Not started |
 
@@ -27,9 +27,16 @@ Establish a truthful sales-document boundary before any jurisdiction-specific ta
 - Historical and offline sales remain Transaction Summaries without a LocalStore schema-version change.
 - A future TaxDocument must snapshot its document kind and compliance facts; it must not reinterpret historical sales.
 - Public QR and organization identity contracts expose no TIN or tax/compliance fields.
+- Current education version is `transaction-summary-v1`; only the exact current active Owner may acknowledge.
+- Ownership transfer and future version changes retain historical rows and require the current Owner to act.
+- Education is a soft prompt only; checkout, sales, sync, and offline operation remain available.
+- Acknowledgment never mutates `TaxDocumentIssuanceEnabled`.
 
 ## Explicit exclusions
 
-WP01 does not implement BIR rules, invoice series, tax-document issuance, capability grant/revoke UI, grant workflow, or education acknowledgment. No ExItS UI claims BIR compliance.
+WP01–WP02 do not implement BIR rules, invoice series, tax-document issuance, capability grant/revoke UI, or grant workflow. No ExItS UI claims BIR compliance.
 
-See [engineering boundary](../engineering/sales-document-compliance-boundary.md) and [P26-WP01 report](../reports/P26-WP01-sales-document-compliance-readiness-foundation.md).
+See [engineering boundary](../engineering/sales-document-compliance-boundary.md),
+[acknowledgment design](../engineering/organization-sales-document-acknowledgment.md),
+[P26-WP01 report](../reports/P26-WP01-sales-document-compliance-readiness-foundation.md), and
+[P26-WP02 report](../reports/P26-WP02-organization-compliance-education-and-acknowledgment.md).

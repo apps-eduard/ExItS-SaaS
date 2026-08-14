@@ -1,0 +1,151 @@
+@page "/organization/sales-documents"
+@attribute [Authorize]
+@inject OrgWebShellState Shell
+@inject ICurrentUserContext CurrentUser
+@inject IPlatformAccessClient Platform
+@inject IStringLocalizer<OrgWebResources> L
+
+<PageTitle>@L["SalesDocument_EducationTitle"]</PageTitle>
+
+@if (!Shell.CanSee("sales-documents"))
+{
+    <AccessDeniedPanel />
+}
+else
+{
+    <ExitsPageHeader
+        Title="@L["SalesDocument_EducationTitle"]"
+        Subtitle="Review how sales documents currently work for this business." />
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" Style="margin-bottom: 1rem;" />
+    }
+    else if (_loading)
+    {
+        <Spin />
+    }
+    else if (_status is not null)
+    {
+        @if (_status.RequiresOwnerAction)
+        {
+            <Alert Type="@AlertType.Warning"
+                   Message="@L["SalesDocument_EducationActionNeeded"]"
+                   Description="@L["SalesDocument_EducationOwnerRequired"]"
+                   ShowIcon="true"
+                   Style="margin-bottom: 1rem;" />
+        }
+        else
+        {
+            <Alert Type="@AlertType.Success"
+                   Message="@L["SalesDocument_EducationAcknowledged"]"
+                   ShowIcon="true"
+                   Style="margin-bottom: 1rem;" />
+        }
+
+        <Card Size="@CardSize.Small" Title="@L["SalesDocument_EducationTitle"]">
+            <p><strong>@L["SalesDocument_CurrentDocument"]</strong></p>
+            <p><strong>@L["SalesDocument_BirInvoicingNotEnabled"]</strong></p>
+            <p>@L["SalesDocument_EducationBody1"]</p>
+            <p>@L["SalesDocument_EducationBody2"]</p>
+            <p>@L["SalesDocument_EducationBody3"]</p>
+            <p>@L["SalesDocument_EducationBody4"]</p>
+
+            @if (_status.RequiresOwnerAction)
+            {
+                <div style="margin-top: 1rem;">
+                    <Checkbox Checked="@_understood" CheckedChanged="value => _understood = value">
+                        @L["SalesDocument_EducationAckCheckbox"]
+                    </Checkbox>
+                </div>
+                <Button Type="@ButtonType.Primary"
+                        Loading="_saving"
+                        Disabled="@(!_understood)"
+                        OnClick="AcknowledgeAsync"
+                        Style="margin-top: 1rem;">
+                    @L["SalesDocument_EducationContinue"]
+                </Button>
+            }
+            else if (_status.AcknowledgedAtUtc is not null)
+            {
+                <p class="org-note" style="margin-top: 1rem;">
+                    @L["SalesDocument_EducationAcknowledged"] · @_status.AcknowledgedAtUtc.Value.LocalDateTime.ToString("g")
+                </p>
+            }
+        </Card>
+    }
+}
+
+@code {
+    private bool _loading = true;
+    private bool _saving;
+    private bool _understood;
+    private string? _error;
+    private OrganizationSalesDocumentEducationStatusDto? _status;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Shell.CanSee("sales-documents"))
+        {
+            _loading = false;
+            return;
+        }
+
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+        try
+        {
+            var orgId = CurrentUser.Session?.OrganizationId;
+            if (orgId is null)
+            {
+                _error = "No organization selected.";
+                return;
+            }
+
+            var result = await Platform.GetSalesDocumentEducationStatusAsync(orgId.Value);
+            if (!result.IsSuccess || result.Data is null)
+            {
+                _error = OrgWebUi.Error(result.Error);
+                return;
+            }
+
+            _status = result.Data;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task AcknowledgeAsync()
+    {
+        if (!_understood || CurrentUser.Session?.OrganizationId is not Guid orgId)
+        {
+            return;
+        }
+
+        _saving = true;
+        _error = null;
+        try
+        {
+            var result = await Platform.AcknowledgeSalesDocumentEducationAsync(orgId);
+            if (!result.IsSuccess || result.Data is null)
+            {
+                _error = OrgWebUi.Error(result.Error);
+                return;
+            }
+
+            _status = result.Data;
+            _understood = false;
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}

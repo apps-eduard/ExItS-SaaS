@@ -98,6 +98,10 @@
                         {
                             <MenuItem Key="ownership" RouterLink="/organization/ownership-transfer">Ownership transfer</MenuItem>
                         }
+                        @if (Shell.CanSee("sales-documents"))
+                        {
+                            <MenuItem Key="sales-documents" RouterLink="/organization/sales-documents">@L["SalesDocument_EducationTitle"]</MenuItem>
+                        }
                         @if (Shell.CanSee("settings"))
                         {
                             <MenuItem Key="general" RouterLink="/settings">General / POS</MenuItem>
@@ -181,6 +185,7 @@
             @if (Shell.CanSee("staff")) { <MenuItem RouterLink="/staff">Staff</MenuItem> }
             @if (Shell.CanSee("reports")) { <MenuItem RouterLink="/reports/sales">Reports</MenuItem> }
             @if (Shell.CanSee("settings")) { <MenuItem RouterLink="/settings">Settings</MenuItem> }
+            @if (Shell.CanSee("sales-documents")) { <MenuItem RouterLink="/organization/sales-documents">@L["SalesDocument_EducationTitle"]</MenuItem> }
         </Menu>
     </Drawer>
 }
