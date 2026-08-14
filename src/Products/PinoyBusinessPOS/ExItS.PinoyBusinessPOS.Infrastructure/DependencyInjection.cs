@@ -1,6 +1,7 @@
 using ExItS.PinoyBusinessPOS.Application.CashierShifts;
 using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Credit;
+using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Application.Expenses;
 using ExItS.PinoyBusinessPOS.Application.Inventory;
@@ -13,6 +14,7 @@ using ExItS.PinoyBusinessPOS.Application.Permissions;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Repositories;
+using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.ConnectedSuppliers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -56,6 +58,10 @@ public static class DependencyInjection
         services.AddScoped<IExpenseCategoryRepository, ExpenseCategoryRepository>();
         services.AddScoped<IExpenseRepository, ExpenseRepository>();
         services.AddScoped<ISupplierRepository, SupplierRepository>();
+        services.AddScoped<IConnectedSupplierRelationshipRepository, ConnectedSupplierRelationshipRepository>();
+        services.AddScoped<ISupplierProductExposureRepository, SupplierProductExposureRepository>();
+        services.AddScoped<IBuyerSupplierProductLinkRepository, BuyerSupplierProductLinkRepository>();
+        services.AddScoped<IConnectedPurchaseOrderRepository, ConnectedPurchaseOrderRepository>();
         services.AddScoped<IRegisterRepository, RegisterRepository>();
         services.AddScoped<IPosOperationalSetupRepository, OperationalSetupRepository>();
         services.AddScoped<IOrganizationCashDenominationRepository, OrganizationCashDenominationRepository>();

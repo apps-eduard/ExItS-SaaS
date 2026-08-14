@@ -2,10 +2,12 @@ using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Customers;
+using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
+using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Purchasing;
 using ExItS.PinoyBusinessPOS.Domain.Suppliers;
@@ -493,17 +495,32 @@ public sealed class SubmitPurchaseOrder
 {
     private readonly IPurchaseOrderRepository _orders;
     private readonly ICatalogProductRepository _products;
+    private readonly ISupplierRepository _suppliers;
+    private readonly IConnectedSupplierRelationshipRepository _connectedRelationships;
+    private readonly IBuyerSupplierProductLinkRepository _connectedLinks;
+    private readonly IConnectedPurchaseOrderRepository _connectedOrders;
+    private readonly IPosUnitOfWork _unitOfWork;
     private readonly IPosCommercialAccessAccessor _access;
     private readonly TimeProvider _clock;
 
     public SubmitPurchaseOrder(
         IPurchaseOrderRepository orders,
         ICatalogProductRepository products,
+        ISupplierRepository suppliers,
+        IConnectedSupplierRelationshipRepository connectedRelationships,
+        IBuyerSupplierProductLinkRepository connectedLinks,
+        IConnectedPurchaseOrderRepository connectedOrders,
+        IPosUnitOfWork unitOfWork,
         IPosCommercialAccessAccessor access,
         TimeProvider? clock = null)
     {
         _orders = orders;
         _products = products;
+        _suppliers = suppliers;
+        _connectedRelationships = connectedRelationships;
+        _connectedLinks = connectedLinks;
+        _connectedOrders = connectedOrders;
+        _unitOfWork = unitOfWork;
         _access = access;
         _clock = clock ?? TimeProvider.System;
     }
@@ -577,6 +594,40 @@ public sealed class SubmitPurchaseOrder
                     },
                     cancellationToken)
                 .ConfigureAwait(false);
+
+            var supplier = await _suppliers.GetByIdAsync(org, submitted.SupplierId, cancellationToken).ConfigureAwait(false);
+            if (supplier?.ConnectionType == SupplierConnectionType.ConnectedOrganization
+                && supplier.ConnectedRelationshipId is not null
+                && await _connectedOrders.GetByBuyerPurchaseOrderAsync(submitted.Id, cancellationToken).ConfigureAwait(false) is null)
+            {
+                var relationship = await _connectedRelationships.GetAsync(supplier.ConnectedRelationshipId, cancellationToken).ConfigureAwait(false);
+                if (relationship is not null
+                    && relationship.Status == ConnectedSupplierRelationshipStatus.Active
+                    && relationship.BuyerOrganizationId == org)
+                {
+                    var links = await _connectedLinks.ListAsync(relationship.Id, org, cancellationToken).ConfigureAwait(false);
+                    var linksByBuyerProduct = links.Where(x => x.IsActive).ToDictionary(x => x.BuyerProductId.Value);
+                    if (submitted.Lines.All(x => linksByBuyerProduct.ContainsKey(x.ProductId.Value)))
+                    {
+                        var connectedLines = submitted.Lines.OrderBy(x => x.LineNumber).Select(x =>
+                        {
+                            var link = linksByBuyerProduct[x.ProductId.Value];
+                            return ConnectedPurchaseOrderLine.Create(
+                                link.SupplierProductId,
+                                link.SupplierNameSnapshot,
+                                link.SupplierSkuSnapshot,
+                                x.OrderedQty,
+                                x.UnitPurchaseCost,
+                                link.UnitOfMeasureCode);
+                        }).ToList();
+                        var connectedOrder = ConnectedPurchaseOrder.CreateFromBuyerSubmission(
+                            relationship, submitted.Id, submitted.PoNumber, submitted.OrderDate, submitted.Notes,
+                            connectedLines, utcNow);
+                        await _connectedOrders.AddAsync(connectedOrder, cancellationToken).ConfigureAwait(false);
+                        await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+                    }
+                }
+            }
 
             return ApplicationResult<PosPurchaseOrderDto>.Success(PurchaseMapper.Map(submitted));
         }

@@ -1,4 +1,5 @@
 using ExItS.PinoyBusinessPOS.Domain.Suppliers;
+using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 
 namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Suppliers;
 
@@ -24,6 +25,8 @@ internal sealed class SupplierRecord
     public string? NormalizedTaxOrRegistrationNumber { get; set; }
     public string? Notes { get; set; }
     public string Status { get; set; } = string.Empty;
+    public int ConnectionType { get; set; }
+    public Guid? ConnectedRelationshipId { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset UpdatedAtUtc { get; set; }
     public uint Xmin { get; set; }
@@ -60,7 +63,11 @@ internal static class SupplierEntityMapper
             record.Notes,
             Enum.Parse<SupplierStatus>(record.Status),
             record.CreatedAtUtc,
-            record.UpdatedAtUtc);
+            record.UpdatedAtUtc,
+            (SupplierConnectionType)record.ConnectionType,
+            record.ConnectedRelationshipId is Guid relationshipId
+                ? ConnectedSupplierRelationshipId.From(relationshipId)
+                : null);
 
     public static SupplierRecord ToRecord(Supplier supplier) =>
         new()
@@ -85,6 +92,8 @@ internal static class SupplierEntityMapper
             NormalizedTaxOrRegistrationNumber = supplier.NormalizedTaxOrRegistrationNumber,
             Notes = supplier.Notes,
             Status = supplier.Status.ToString(),
+            ConnectionType = (int)supplier.ConnectionType,
+            ConnectedRelationshipId = supplier.ConnectedRelationshipId?.Value,
             CreatedAtUtc = supplier.CreatedAtUtc,
             UpdatedAtUtc = supplier.UpdatedAtUtc
         };
@@ -108,6 +117,8 @@ internal static class SupplierEntityMapper
         record.NormalizedTaxOrRegistrationNumber = supplier.NormalizedTaxOrRegistrationNumber;
         record.Notes = supplier.Notes;
         record.Status = supplier.Status.ToString();
+        record.ConnectionType = (int)supplier.ConnectionType;
+        record.ConnectedRelationshipId = supplier.ConnectedRelationshipId?.Value;
         record.UpdatedAtUtc = supplier.UpdatedAtUtc;
     }
 }

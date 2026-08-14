@@ -2,6 +2,7 @@ using ExItS.PinoyBusinessPOS.Domain.CashierShifts;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Credit;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Expenses;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Payments;
@@ -15,6 +16,7 @@ using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.CashierShifts;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Catalog;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Credit;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Customers;
+using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Expenses;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Idempotency;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory;
@@ -71,6 +73,11 @@ public sealed class PosDbContext : DbContext
     internal DbSet<ExpenseNumberSequenceRecord> ExpenseNumberSequences => Set<ExpenseNumberSequenceRecord>();
     internal DbSet<SupplierRecord> Suppliers => Set<SupplierRecord>();
     internal DbSet<SupplierCodeSequenceRecord> SupplierCodeSequences => Set<SupplierCodeSequenceRecord>();
+    internal DbSet<ConnectedSupplierRelationshipRecord> ConnectedSupplierRelationships => Set<ConnectedSupplierRelationshipRecord>();
+    internal DbSet<SupplierProductExposureRecord> SupplierProductExposures => Set<SupplierProductExposureRecord>();
+    internal DbSet<BuyerSupplierProductLinkRecord> BuyerSupplierProductLinks => Set<BuyerSupplierProductLinkRecord>();
+    internal DbSet<ConnectedPurchaseOrderRecord> ConnectedPurchaseOrders => Set<ConnectedPurchaseOrderRecord>();
+    internal DbSet<ConnectedPurchaseOrderLineRecord> ConnectedPurchaseOrderLines => Set<ConnectedPurchaseOrderLineRecord>();
     internal DbSet<PurchaseOrderRecord> PurchaseOrders => Set<PurchaseOrderRecord>();
     internal DbSet<PurchaseOrderLineRecord> PurchaseOrderLines => Set<PurchaseOrderLineRecord>();
     internal DbSet<PurchaseOrderNumberSequenceRecord> PurchaseOrderNumberSequences => Set<PurchaseOrderNumberSequenceRecord>();
@@ -1794,6 +1801,8 @@ public sealed class PosDbContext : DbContext
                 .HasColumnName("notes")
                 .HasMaxLength(Supplier.NotesMaxLength);
             entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.ConnectionType).HasColumnName("connection_type").HasDefaultValue(0).IsRequired();
+            entity.Property(e => e.ConnectedRelationshipId).HasColumnName("connected_relationship_id");
             entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
             entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
             entity.Property(e => e.Xmin)
@@ -2457,6 +2466,74 @@ public sealed class PosDbContext : DbContext
                 .HasForeignKey(e => e.ShiftId)
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("fk_cashier_shift_cash_count_lines_shifts");
+        });
+
+        modelBuilder.Entity<ConnectedSupplierRelationshipRecord>(entity =>
+        {
+            entity.ToTable("connected_supplier_relationships", tb => tb.HasCheckConstraint("ck_connected_supplier_relationships_status", "status BETWEEN 0 AND 3"));
+            entity.HasKey(x=>x.Id); entity.Property(x=>x.Id).HasColumnName("id");
+            entity.Property(x=>x.BuyerOrganizationId).HasColumnName("buyer_organization_id");
+            entity.Property(x=>x.SupplierOrganizationId).HasColumnName("supplier_organization_id");
+            entity.Property(x=>x.Status).HasColumnName("status"); entity.Property(x=>x.RequestedAtUtc).HasColumnName("requested_at_utc");
+            entity.Property(x=>x.RequestedByUserId).HasColumnName("requested_by_user_id"); entity.Property(x=>x.RespondedAtUtc).HasColumnName("responded_at_utc");
+            entity.Property(x=>x.RespondedByUserId).HasColumnName("responded_by_user_id"); entity.Property(x=>x.DisconnectedAtUtc).HasColumnName("disconnected_at_utc");
+            entity.Property(x=>x.CreatedAtUtc).HasColumnName("created_at_utc"); entity.Property(x=>x.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(x=>x.Xmin).HasColumnName("xmin").HasColumnType("xid").ValueGeneratedOnAddOrUpdate().IsConcurrencyToken();
+            entity.HasIndex(x=>new{x.BuyerOrganizationId,x.SupplierOrganizationId}).IsUnique().HasFilter("status IN (0, 1)").HasDatabaseName("ux_connected_supplier_relationships_open");
+            entity.HasIndex(x=>x.SupplierOrganizationId).HasDatabaseName("ix_connected_supplier_relationships_supplier");
+            entity.HasIndex(x=>x.BuyerOrganizationId).HasDatabaseName("ix_connected_supplier_relationships_buyer");
+        });
+        modelBuilder.Entity<SupplierProductExposureRecord>(entity =>
+        {
+            entity.ToTable("supplier_product_exposures"); entity.HasKey(x=>x.Id); entity.Property(x=>x.Id).HasColumnName("id");
+            entity.Property(x=>x.SupplierOrganizationId).HasColumnName("supplier_organization_id"); entity.Property(x=>x.ProductId).HasColumnName("product_id");
+            entity.Property(x=>x.SkuSnapshot).HasColumnName("sku_snapshot").HasMaxLength(64); entity.Property(x=>x.NameSnapshot).HasColumnName("name_snapshot").HasMaxLength(200);
+            entity.Property(x=>x.CategoryNameSnapshot).HasColumnName("category_name_snapshot").HasMaxLength(128); entity.Property(x=>x.UnitOfMeasureCode).HasColumnName("unit_of_measure_code").HasMaxLength(32);
+            entity.Property(x=>x.SupplierOrderPrice).HasColumnName("supplier_order_price").HasPrecision(18,2); entity.Property(x=>x.IsOrderable).HasColumnName("is_orderable");
+            entity.Property(x=>x.IsExposed).HasColumnName("is_exposed"); entity.Property(x=>x.SyncVersion).HasColumnName("sync_version");
+            entity.Property(x=>x.CreatedAtUtc).HasColumnName("created_at_utc"); entity.Property(x=>x.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(x=>x.Xmin).HasColumnName("xmin").HasColumnType("xid").ValueGeneratedOnAddOrUpdate().IsConcurrencyToken();
+            entity.HasIndex(x=>new{x.SupplierOrganizationId,x.ProductId}).IsUnique().HasDatabaseName("ux_supplier_product_exposures_product");
+            entity.HasIndex(x=>new{x.SupplierOrganizationId,x.SyncVersion}).HasDatabaseName("ix_supplier_product_exposures_sync");
+            entity.HasIndex(x=>new{x.SupplierOrganizationId,x.NameSnapshot}).HasDatabaseName("ix_supplier_product_exposures_name");
+            entity.HasIndex(x=>new{x.SupplierOrganizationId,x.SkuSnapshot}).HasDatabaseName("ix_supplier_product_exposures_sku");
+        });
+        modelBuilder.Entity<BuyerSupplierProductLinkRecord>(entity =>
+        {
+            entity.ToTable("buyer_supplier_product_links"); entity.HasKey(x=>x.Id); entity.Property(x=>x.Id).HasColumnName("id");
+            entity.Property(x=>x.RelationshipId).HasColumnName("relationship_id"); entity.Property(x=>x.BuyerOrganizationId).HasColumnName("buyer_organization_id");
+            entity.Property(x=>x.SupplierOrganizationId).HasColumnName("supplier_organization_id"); entity.Property(x=>x.BuyerProductId).HasColumnName("buyer_product_id");
+            entity.Property(x=>x.SupplierProductId).HasColumnName("supplier_product_id"); entity.Property(x=>x.SupplierSkuSnapshot).HasColumnName("supplier_sku_snapshot").HasMaxLength(64);
+            entity.Property(x=>x.SupplierNameSnapshot).HasColumnName("supplier_name_snapshot").HasMaxLength(200); entity.Property(x=>x.UnitOfMeasureCode).HasColumnName("unit_of_measure_code").HasMaxLength(32);
+            entity.Property(x=>x.LastKnownOrderPrice).HasColumnName("last_known_order_price").HasPrecision(18,2); entity.Property(x=>x.IsActive).HasColumnName("is_active");
+            entity.Property(x=>x.SyncVersion).HasColumnName("sync_version"); entity.Property(x=>x.CreatedAtUtc).HasColumnName("created_at_utc"); entity.Property(x=>x.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(x=>x.Xmin).HasColumnName("xmin").HasColumnType("xid").ValueGeneratedOnAddOrUpdate().IsConcurrencyToken();
+            entity.HasIndex(x=>new{x.RelationshipId,x.BuyerProductId}).IsUnique().HasFilter("is_active").HasDatabaseName("ux_buyer_supplier_product_links_active");
+            entity.HasIndex(x=>new{x.RelationshipId,x.SyncVersion}).HasDatabaseName("ix_buyer_supplier_product_links_sync");
+        });
+        modelBuilder.Entity<ConnectedPurchaseOrderRecord>(entity =>
+        {
+            entity.ToTable("connected_purchase_orders",tb=>tb.HasCheckConstraint("ck_connected_purchase_orders_status","status BETWEEN 0 AND 2"));
+            entity.HasKey(x=>x.Id);entity.Property(x=>x.Id).HasColumnName("id");entity.Property(x=>x.RelationshipId).HasColumnName("relationship_id");
+            entity.Property(x=>x.BuyerOrganizationId).HasColumnName("buyer_organization_id");entity.Property(x=>x.SupplierOrganizationId).HasColumnName("supplier_organization_id");
+            entity.Property(x=>x.BuyerPurchaseOrderId).HasColumnName("buyer_purchase_order_id");entity.Property(x=>x.BuyerPoNumber).HasColumnName("buyer_po_number").HasMaxLength(64);
+            entity.Property(x=>x.OrderDate).HasColumnName("order_date").HasColumnType("date");entity.Property(x=>x.Notes).HasColumnName("notes").HasMaxLength(512);
+            entity.Property(x=>x.Status).HasColumnName("status");entity.Property(x=>x.TotalAmount).HasColumnName("total_amount").HasPrecision(18,2);
+            entity.Property(x=>x.CreatedAtUtc).HasColumnName("created_at_utc");entity.Property(x=>x.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(x=>x.AcceptedAtUtc).HasColumnName("accepted_at_utc");entity.Property(x=>x.DeclinedAtUtc).HasColumnName("declined_at_utc");
+            entity.Property(x=>x.Xmin).HasColumnName("xmin").HasColumnType("xid").ValueGeneratedOnAddOrUpdate().IsConcurrencyToken();
+            entity.HasIndex(x=>x.BuyerPurchaseOrderId).IsUnique().HasDatabaseName("ux_connected_purchase_orders_buyer_po");
+            entity.HasIndex(x=>new{x.SupplierOrganizationId,x.Status}).HasDatabaseName("ix_connected_purchase_orders_supplier_status");
+            entity.HasMany(x=>x.Lines).WithOne().HasForeignKey(x=>x.ConnectedPurchaseOrderId).OnDelete(DeleteBehavior.Cascade);
+        });
+        modelBuilder.Entity<ConnectedPurchaseOrderLineRecord>(entity =>
+        {
+            entity.ToTable("connected_purchase_order_lines");entity.HasKey(x=>new{x.ConnectedPurchaseOrderId,x.LineNumber});
+            entity.Property(x=>x.ConnectedPurchaseOrderId).HasColumnName("connected_purchase_order_id");entity.Property(x=>x.LineNumber).HasColumnName("line_number");
+            entity.Property(x=>x.ProductId).HasColumnName("product_id");entity.Property(x=>x.NameSnapshot).HasColumnName("name_snapshot").HasMaxLength(200);
+            entity.Property(x=>x.SkuSnapshot).HasColumnName("sku_snapshot").HasMaxLength(64);entity.Property(x=>x.Qty).HasColumnName("qty").HasPrecision(18,3);
+            entity.Property(x=>x.UnitPriceSnapshot).HasColumnName("unit_price_snapshot").HasPrecision(18,2);entity.Property(x=>x.LineTotal).HasColumnName("line_total").HasPrecision(18,2);
+            entity.Property(x=>x.UnitOfMeasureCode).HasColumnName("unit_of_measure_code").HasMaxLength(32);
         });
     }
 }

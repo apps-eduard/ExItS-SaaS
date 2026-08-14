@@ -768,6 +768,382 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.ConnectedSuppliers.BuyerSupplierProductLinkRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("BuyerOrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("buyer_organization_id");
+
+                    b.Property<Guid>("BuyerProductId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("buyer_product_id");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<decimal>("LastKnownOrderPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("last_known_order_price");
+
+                    b.Property<Guid>("RelationshipId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("relationship_id");
+
+                    b.Property<string>("SupplierNameSnapshot")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("supplier_name_snapshot");
+
+                    b.Property<Guid>("SupplierOrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("supplier_organization_id");
+
+                    b.Property<Guid>("SupplierProductId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("supplier_product_id");
+
+                    b.Property<string>("SupplierSkuSnapshot")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("supplier_sku_snapshot");
+
+                    b.Property<long>("SyncVersion")
+                        .HasColumnType("bigint")
+                        .HasColumnName("sync_version");
+
+                    b.Property<string>("UnitOfMeasureCode")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("unit_of_measure_code");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<uint>("Xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RelationshipId", "BuyerProductId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_buyer_supplier_product_links_active")
+                        .HasFilter("is_active");
+
+                    b.HasIndex("RelationshipId", "SyncVersion")
+                        .HasDatabaseName("ix_buyer_supplier_product_links_sync");
+
+                    b.ToTable("buyer_supplier_product_links", "pos");
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.ConnectedSuppliers.ConnectedPurchaseOrderLineRecord", b =>
+                {
+                    b.Property<Guid>("ConnectedPurchaseOrderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("connected_purchase_order_id");
+
+                    b.Property<int>("LineNumber")
+                        .HasColumnType("integer")
+                        .HasColumnName("line_number");
+
+                    b.Property<decimal>("LineTotal")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("line_total");
+
+                    b.Property<string>("NameSnapshot")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("name_snapshot");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("product_id");
+
+                    b.Property<decimal>("Qty")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasColumnName("qty");
+
+                    b.Property<string>("SkuSnapshot")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("sku_snapshot");
+
+                    b.Property<string>("UnitOfMeasureCode")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("unit_of_measure_code");
+
+                    b.Property<decimal>("UnitPriceSnapshot")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("unit_price_snapshot");
+
+                    b.HasKey("ConnectedPurchaseOrderId", "LineNumber");
+
+                    b.ToTable("connected_purchase_order_lines", "pos");
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.ConnectedSuppliers.ConnectedPurchaseOrderRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("AcceptedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("accepted_at_utc");
+
+                    b.Property<Guid>("BuyerOrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("buyer_organization_id");
+
+                    b.Property<string>("BuyerPoNumber")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("buyer_po_number");
+
+                    b.Property<Guid>("BuyerPurchaseOrderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("buyer_purchase_order_id");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<DateTimeOffset?>("DeclinedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("declined_at_utc");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("notes");
+
+                    b.Property<DateOnly>("OrderDate")
+                        .HasColumnType("date")
+                        .HasColumnName("order_date");
+
+                    b.Property<Guid>("RelationshipId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("relationship_id");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("SupplierOrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("supplier_organization_id");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("total_amount");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<uint>("Xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BuyerPurchaseOrderId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_connected_purchase_orders_buyer_po");
+
+                    b.HasIndex("SupplierOrganizationId", "Status")
+                        .HasDatabaseName("ix_connected_purchase_orders_supplier_status");
+
+                    b.ToTable("connected_purchase_orders", "pos", t =>
+                        {
+                            t.HasCheckConstraint("ck_connected_purchase_orders_status", "status BETWEEN 0 AND 2");
+                        });
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.ConnectedSuppliers.ConnectedSupplierRelationshipRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("BuyerOrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("buyer_organization_id");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<DateTimeOffset?>("DisconnectedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("disconnected_at_utc");
+
+                    b.Property<DateTimeOffset>("RequestedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("requested_at_utc");
+
+                    b.Property<Guid?>("RequestedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("requested_by_user_id");
+
+                    b.Property<DateTimeOffset?>("RespondedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("responded_at_utc");
+
+                    b.Property<Guid?>("RespondedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("responded_by_user_id");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("SupplierOrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("supplier_organization_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<uint>("Xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BuyerOrganizationId")
+                        .HasDatabaseName("ix_connected_supplier_relationships_buyer");
+
+                    b.HasIndex("SupplierOrganizationId")
+                        .HasDatabaseName("ix_connected_supplier_relationships_supplier");
+
+                    b.HasIndex("BuyerOrganizationId", "SupplierOrganizationId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_connected_supplier_relationships_open")
+                        .HasFilter("status IN (0, 1)");
+
+                    b.ToTable("connected_supplier_relationships", "pos", t =>
+                        {
+                            t.HasCheckConstraint("ck_connected_supplier_relationships_status", "status BETWEEN 0 AND 3");
+                        });
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.ConnectedSuppliers.SupplierProductExposureRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("CategoryNameSnapshot")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("category_name_snapshot");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<bool>("IsExposed")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_exposed");
+
+                    b.Property<bool>("IsOrderable")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_orderable");
+
+                    b.Property<string>("NameSnapshot")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("name_snapshot");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("product_id");
+
+                    b.Property<string>("SkuSnapshot")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("sku_snapshot");
+
+                    b.Property<decimal>("SupplierOrderPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("supplier_order_price");
+
+                    b.Property<Guid>("SupplierOrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("supplier_organization_id");
+
+                    b.Property<long>("SyncVersion")
+                        .HasColumnType("bigint")
+                        .HasColumnName("sync_version");
+
+                    b.Property<string>("UnitOfMeasureCode")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("unit_of_measure_code");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<uint>("Xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SupplierOrganizationId", "NameSnapshot")
+                        .HasDatabaseName("ix_supplier_product_exposures_name");
+
+                    b.HasIndex("SupplierOrganizationId", "ProductId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_supplier_product_exposures_product");
+
+                    b.HasIndex("SupplierOrganizationId", "SkuSnapshot")
+                        .HasDatabaseName("ix_supplier_product_exposures_sku");
+
+                    b.HasIndex("SupplierOrganizationId", "SyncVersion")
+                        .HasDatabaseName("ix_supplier_product_exposures_sync");
+
+                    b.ToTable("supplier_product_exposures", "pos");
+                });
+
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Credit.CreditDueDateChangeRecord", b =>
                 {
                     b.Property<Guid>("Id")
@@ -3569,6 +3945,16 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(64)")
                         .HasColumnName("city_municipality");
 
+                    b.Property<Guid?>("ConnectedRelationshipId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("connected_relationship_id");
+
+                    b.Property<int>("ConnectionType")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("connection_type");
+
                     b.Property<string>("ContactPerson")
                         .HasMaxLength(128)
                         .HasColumnType("character varying(128)")
@@ -3746,6 +4132,15 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_products_product_categories");
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.ConnectedSuppliers.ConnectedPurchaseOrderLineRecord", b =>
+                {
+                    b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.ConnectedSuppliers.ConnectedPurchaseOrderRecord", null)
+                        .WithMany("Lines")
+                        .HasForeignKey("ConnectedPurchaseOrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Credit.CreditDueDateChangeRecord", b =>
@@ -4087,6 +4482,11 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Catalog.CatalogImportJobRecord", b =>
                 {
                     b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.ConnectedSuppliers.ConnectedPurchaseOrderRecord", b =>
+                {
+                    b.Navigation("Lines");
                 });
 #pragma warning restore 612, 618
         }

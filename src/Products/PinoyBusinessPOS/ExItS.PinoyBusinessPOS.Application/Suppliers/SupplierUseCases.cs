@@ -25,6 +25,8 @@ public sealed record PosSupplierDto(
     string? TaxOrRegistrationNumber,
     string? Notes,
     string Status,
+    string ConnectionType,
+    Guid? ConnectedRelationshipId,
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset UpdatedAtUtc);
 
@@ -77,6 +79,8 @@ public static class SupplierMapper
             supplier.TaxOrRegistrationNumber,
             supplier.Notes,
             supplier.Status.ToString(),
+            supplier.ConnectionType.ToString(),
+            supplier.ConnectedRelationshipId?.Value,
             supplier.CreatedAtUtc,
             supplier.UpdatedAtUtc);
 }

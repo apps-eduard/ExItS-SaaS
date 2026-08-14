@@ -2,6 +2,7 @@ using System.Net.Mail;
 using System.Text.RegularExpressions;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 
 namespace ExItS.PinoyBusinessPOS.Domain.Suppliers;
 
@@ -47,6 +48,8 @@ public sealed class Supplier
     public string? NormalizedTaxOrRegistrationNumber { get; private set; }
     public string? Notes { get; private set; }
     public SupplierStatus Status { get; private set; }
+    public SupplierConnectionType ConnectionType { get; private set; }
+    public ConnectedSupplierRelationshipId? ConnectedRelationshipId { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
 
@@ -72,7 +75,9 @@ public sealed class Supplier
         string? notes,
         SupplierStatus status,
         DateTimeOffset createdAtUtc,
-        DateTimeOffset updatedAtUtc)
+        DateTimeOffset updatedAtUtc,
+        SupplierConnectionType connectionType = SupplierConnectionType.External,
+        ConnectedSupplierRelationshipId? connectedRelationshipId = null)
     {
         Id = id;
         OrganizationId = organizationId;
@@ -94,6 +99,8 @@ public sealed class Supplier
         NormalizedTaxOrRegistrationNumber = normalizedTax;
         Notes = notes;
         Status = status;
+        ConnectionType = connectionType;
+        ConnectedRelationshipId = connectedRelationshipId;
         CreatedAtUtc = createdAtUtc;
         UpdatedAtUtc = updatedAtUtc;
     }
@@ -145,7 +152,9 @@ public sealed class Supplier
             NormalizeOptionalText(notes, NotesMaxLength, DomainErrorCodes.InvalidSupplierNotes, "Notes"),
             SupplierStatus.Active,
             utcNow,
-            utcNow);
+            utcNow,
+            SupplierConnectionType.External,
+            null);
     }
 
     public static Supplier Rehydrate(
@@ -170,12 +179,37 @@ public sealed class Supplier
         string? notes,
         SupplierStatus status,
         DateTimeOffset createdAtUtc,
-        DateTimeOffset updatedAtUtc) =>
+        DateTimeOffset updatedAtUtc,
+        SupplierConnectionType connectionType = SupplierConnectionType.External,
+        ConnectedSupplierRelationshipId? connectedRelationshipId = null) =>
         new(
             id, organizationId, supplierCode, name, normalizedName, contactPerson,
             mobileNumber, normalizedMobile, telephoneNumber, email, normalizedEmail,
             addressLine1, addressLine2, cityMunicipality, province, postalCode,
-            taxOrRegistrationNumber, normalizedTax, notes, status, createdAtUtc, updatedAtUtc);
+            taxOrRegistrationNumber, normalizedTax, notes, status, createdAtUtc, updatedAtUtc,
+            connectionType, connectedRelationshipId);
+
+    public void AttachConnectedRelationship(ConnectedSupplierRelationshipId relationshipId, DateTimeOffset utcNow)
+    {
+        ArgumentNullException.ThrowIfNull(relationshipId);
+        EnsureUtc(utcNow);
+        ConnectionType = SupplierConnectionType.ConnectedOrganization;
+        ConnectedRelationshipId = relationshipId;
+        UpdatedAtUtc = utcNow;
+    }
+
+    public void AttachConnectedRelationship(ConnectedSupplierRelationshipId relationshipId) =>
+        AttachConnectedRelationship(relationshipId, UpdatedAtUtc);
+
+    public void ClearConnectedRelationship(DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        ConnectionType = SupplierConnectionType.External;
+        ConnectedRelationshipId = null;
+        UpdatedAtUtc = utcNow;
+    }
+
+    public void ClearConnectedRelationship() => ClearConnectedRelationship(UpdatedAtUtc);
 
     public void UpdateProfile(
         string name,

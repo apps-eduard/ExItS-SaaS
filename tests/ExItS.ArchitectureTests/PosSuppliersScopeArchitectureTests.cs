@@ -1,13 +1,14 @@
 namespace ExItS.ArchitectureTests;
 
 /// <summary>
-/// Guards P10-WP01 suppliers: master-data only — no purchasing, receiving, payables, cost, or offline queues.
+/// Guards P10-WP01 suppliers master-data boundaries.
+/// Connected ExItS Suppliers Phase 1 may navigate to purchase orders from supplier UI,
+/// but supplier pages must still not embed receiving or accounts-payable concepts.
 /// </summary>
 public sealed class PosSuppliersScopeArchitectureTests
 {
     private static readonly string[] OutOfScopeConcepts =
     [
-        "PurchaseOrder",
         "GoodsReceipt",
         "AccountsPayable",
         "SupplierInvoice",
@@ -17,7 +18,7 @@ public sealed class PosSuppliersScopeArchitectureTests
     ];
 
     [Fact]
-    public void Suppliers_slice_declares_no_purchasing_receiving_or_payables_concepts()
+    public void Suppliers_slice_declares_no_receiving_or_payables_concepts()
     {
         foreach (var file in SupplierSourceFiles())
         {
@@ -113,7 +114,7 @@ public sealed class PosSuppliersScopeArchitectureTests
     }
 
     [Fact]
-    public void Maui_supplier_pages_do_not_surface_purchasing_or_payables()
+    public void Maui_supplier_pages_do_not_surface_payables_or_receiving()
     {
         var pages = Path.Combine(
             PosProject("ExItS.PinoyBusinessPOS.Maui"), "Components", "Pages", "Suppliers");
@@ -128,9 +129,11 @@ public sealed class PosSuppliersScopeArchitectureTests
             }
 
             var text = File.ReadAllText(file);
+            // Connected-supplier Phase 1 may navigate to purchase orders / linked catalog.
+            // Supplier master-data pages still must not embed receiving or accounts-payable.
             foreach (var forbidden in new[]
                      {
-                         "PurchaseOrder", "GoodsReceipt", "Receiving", "AccountsPayable",
+                         "GoodsReceipt", "Receiving", "AccountsPayable",
                          "SupplierInvoice", "SupplierPayment", "CostHistory", "PurchaseReturn"
                      })
             {
