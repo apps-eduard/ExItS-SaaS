@@ -128,7 +128,7 @@ else
                         <button type="button"
                                 class="pos-personal-row"
                                 role="listitem"
-                                disabled="_busy"
+                                disabled="@_busy"
                                 @onclick="() => OpenAsync(item)">
                             <span class="pos-personal-row__body">
                                 <span class="pos-personal-row__title">
@@ -370,18 +370,26 @@ else
 
         _busy = true;
         _actionError = null;
+        // Update UI immediately so Unread/bell clear before navigation / API latency.
+        ApplyLocalRead(item.Id);
+        UnreadState.NotifyChanged();
+        await InvokeAsync(StateHasChanged);
         try
         {
             var result = await Platform.MarkOrganizationNotificationReadAsync(orgId, item.Id);
             if (!result.IsSuccess)
             {
+                // Revert optimistic read if the server rejected the mark.
+                _notifications = _notifications
+                    .Select(n => n.Id == item.Id
+                        ? n with { IsRead = false, ReadAtUtc = null }
+                        : n)
+                    .OrderByDescending(n => n.CreatedAtUtc)
+                    .ToList();
+                UnreadState.NotifyChanged();
                 _actionError = result.Error?.Detail ?? L["OrgNotifications_MarkReadFailed"];
-                return;
+                await InvokeAsync(StateHasChanged);
             }
-
-            ApplyLocalRead(item.Id);
-            UnreadState.NotifyChanged();
-            await InvokeAsync(StateHasChanged);
         }
         finally
         {

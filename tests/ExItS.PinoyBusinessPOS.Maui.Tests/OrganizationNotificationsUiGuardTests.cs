@@ -42,8 +42,10 @@ public sealed class OrganizationNotificationsUiGuardTests
     {
         var page = File.ReadAllText(Path.Combine(MauiProject(),
             "Components", "Pages", "Organization", "OrganizationNotifications.razor"));
+        Assert.Contains("disabled=\"@_busy\"", page, StringComparison.Ordinal);
         Assert.Contains("MarkReadOptimisticAsync", page, StringComparison.Ordinal);
-        Assert.Contains("n with { IsRead = true", page, StringComparison.Ordinal);
+        Assert.Contains("ApplyLocalRead", page, StringComparison.Ordinal);
+        Assert.DoesNotContain("disabled=\"_busy\"", page, StringComparison.Ordinal);
 
         var buyers = File.ReadAllText(Path.Combine(MauiProject(),
             "Components", "Pages", "Suppliers", "ConnectedBuyers.razor"));
