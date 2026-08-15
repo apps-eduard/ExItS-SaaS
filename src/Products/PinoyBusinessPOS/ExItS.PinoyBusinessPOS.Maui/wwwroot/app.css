@@ -3960,6 +3960,26 @@ html.pos-keyboard-open .pos-content {
     text-overflow: ellipsis;
 }
 
+.pos-action-tile__body {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 0;
+}
+
+.pos-action-tile__meta {
+    color: var(--exits-text-muted, #5b6b62);
+    font-size: var(--exits-text-xs, 0.75rem);
+    font-weight: 500;
+    line-height: 1.25;
+}
+
+.pos-action-tile--primary .pos-action-tile__meta,
+.pos-action-tile--primary .pos-muted {
+    color: rgba(255, 255, 255, 0.92);
+}
+
 .pos-more__header {
     margin-bottom: var(--exits-space-3, 0.75rem);
 }
@@ -8663,6 +8683,49 @@ html.pos-keyboard-open .pos-content {
 .pos-purchasing__add-icon { display: inline-flex; height: 1.1rem; width: 1.1rem; }
 .pos-purchasing__add-icon svg { display: block; height: 100%; width: 100%; }
 .pos-purchasing__actions { margin-bottom: var(--exits-space-3, 0.75rem); }
+
+.pos-purchasing__actions .pos-action-tile {
+    align-items: center;
+    flex-direction: column;
+    gap: 0.45rem;
+    justify-content: flex-start;
+    min-height: 6.75rem;
+    padding: 0.75rem 0.55rem;
+    text-align: center;
+}
+
+.pos-purchasing__actions .pos-action-tile__icon {
+    height: 1.45rem;
+    width: 1.45rem;
+}
+
+.pos-purchasing__actions .pos-action-tile__body {
+    align-items: center;
+    width: 100%;
+}
+
+.pos-purchasing__actions .pos-action-tile__label {
+    display: -webkit-box;
+    font-size: var(--exits-text-sm, 0.875rem);
+    line-height: 1.2;
+    overflow: hidden;
+    text-align: center;
+    text-overflow: unset;
+    white-space: normal;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
+.pos-purchasing__actions .pos-action-tile__meta {
+    display: -webkit-box;
+    line-height: 1.3;
+    overflow: hidden;
+    text-align: center;
+    white-space: normal;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+}
+
 .pos-purchasing__panel { margin-bottom: var(--exits-space-3, 0.75rem); }
 .pos-purchasing__section-title { color: var(--exits-text, #15201a); font-size: var(--exits-type-section, 0.95rem); font-weight: 650; line-height: 1.25; margin: 0 0 0.55rem; }
 .pos-purchasing__loading { align-items: center; color: var(--exits-text-muted, #5b6b62); display: flex; gap: 0.5rem; }

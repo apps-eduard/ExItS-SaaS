@@ -25,29 +25,37 @@ else
             {
                 <button type="button" class="pos-action-tile pos-action-tile--primary" @onclick="GoReceiveStock">
                     <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("plus")</span>
-                    <span class="pos-action-tile__label">@L["Purchasing_ReceiveStock"]</span>
-                    <span class="pos-action-tile__meta pos-muted">@L["Purchasing_ReceiveStockHint"]</span>
+                    <span class="pos-action-tile__body">
+                        <span class="pos-action-tile__label">@L["Purchasing_ReceiveStock"]</span>
+                        <span class="pos-action-tile__meta">@L["Purchasing_ReceiveStockHint"]</span>
+                    </span>
                 </button>
             }
             @if (Capabilities.IsAllowed(UtangCapability.ViewPurchasing))
             {
                 <button type="button" class="pos-action-tile" @onclick="GoOrders">
                     <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("inbox")</span>
-                    <span class="pos-action-tile__label">@L["Purchasing_Orders"]</span>
-                    <span class="pos-action-tile__meta pos-muted">@L["Purchasing_OrdersHint"]</span>
+                    <span class="pos-action-tile__body">
+                        <span class="pos-action-tile__label">@L["Purchasing_Orders"]</span>
+                        <span class="pos-action-tile__meta">@L["Purchasing_OrdersHint"]</span>
+                    </span>
                 </button>
                 <button type="button" class="pos-action-tile" @onclick="GoReceipts">
                     <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("check")</span>
-                    <span class="pos-action-tile__label">@L["Purchasing_GoodsReceipts"]</span>
-                    <span class="pos-action-tile__meta pos-muted">@L["Purchasing_GoodsReceiptsHint"]</span>
+                    <span class="pos-action-tile__body">
+                        <span class="pos-action-tile__label">@L["Purchasing_GoodsReceipts"]</span>
+                        <span class="pos-action-tile__meta">@L["Purchasing_GoodsReceiptsHint"]</span>
+                    </span>
                 </button>
             }
             @if (Capabilities.IsAllowed(UtangCapability.ViewSuppliers))
             {
                 <button type="button" class="pos-action-tile" @onclick="GoSuppliers">
                     <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("customers")</span>
-                    <span class="pos-action-tile__label">@L["Purchasing_Suppliers"]</span>
-                    <span class="pos-action-tile__meta pos-muted">@L["Purchasing_SuppliersHint"]</span>
+                    <span class="pos-action-tile__body">
+                        <span class="pos-action-tile__label">@L["Purchasing_Suppliers"]</span>
+                        <span class="pos-action-tile__meta">@L["Purchasing_SuppliersHint"]</span>
+                    </span>
                 </button>
             }
         </div>
