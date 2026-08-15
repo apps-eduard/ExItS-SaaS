@@ -118,7 +118,25 @@ Inventory unchanged until buyer Goods Receipt
 
 ### Notification / bell
 
-Organization in-app notifications exist for **customer-link** events on Platform. Connected-supplier request events are **not** emitted into the bell yet (would require a POS→Platform cross-product notify path for supplier-org recipients). Visibility is via Owner/More/Suppliers banners, Org Web Overview banner, and menu count on Supplier requests. Bell integration is **deferred**.
+**Bell = unified Organization notification center** (Platform `organization_in_app_notifications`).
+
+Connected supplier lifecycle publishes into the same inbox as customer-link responses:
+
+| Event | RelatedType | Recipient org |
+|---|---|---|
+| Buyer sends request | `SupplierConnectionRequested` | Supplier (Owners + Administrators) |
+| Supplier accepts | `SupplierConnectionAccepted` | Buyer |
+| Supplier declines | `SupplierConnectionDeclined` | Buyer |
+
+- MAUI: header bell → `/org/notifications` (Unread / All; Accept/Decline when Pending + `ManageSuppliers`)
+- Org Web: header bell → `/notifications` (same semantics; Owner + Manager)
+- Unread badge counts server `!IsRead` for the selected Organization only
+- Accept/Decline call existing Connected Supplier relationship APIs (not duplicated in notification code)
+- Actioned requests mark related notifications read; rows remain in All/history
+- **Suppliers → Requests** remains domain source of truth / relationship history
+- Dashboard banner is a compact secondary attention card only
+
+POS publishes via `POST /api/v1/organizations/{sourceOrgId}/business-notifications` (session-forwarded, best-effort). No second notification table.
 
 ## Deferred
-Marketplace discovery, inter-org payments, AP/invoices, live stock sharing, logistics, images in sync, Redis, brokers, auto-accept, auto-receive, full offline supplier catalog, connection-request cancellation while Pending (Disconnect remains Active-only), organization-notification bell for supplier connections.
+Marketplace discovery, inter-org payments, AP/invoices, live stock sharing, logistics, images in sync, Redis, brokers, auto-accept, auto-receive, full offline supplier catalog, connection-request cancellation while Pending (Disconnect remains Active-only), SignalR/realtime bell push.

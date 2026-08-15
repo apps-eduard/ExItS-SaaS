@@ -26,7 +26,7 @@
 @code {
     /// <summary>
     /// When true, loads personal notifications and navigates to <c>/personal/notifications</c>.
-    /// When false, loads organization notifications and navigates to <c>/org/customer-link-notifications</c>.
+    /// When false, loads organization notifications and navigates to <c>/org/notifications</c>.
     /// </summary>
     [Parameter] public bool UsePersonalNotifications { get; set; }
 
@@ -74,7 +74,7 @@
 
         var href = UsePersonalNotifications
             ? "/personal/notifications"
-            : "/org/customer-link-notifications";
+            : "/org/notifications";
         await OfflineNav.NavigateAsync(href);
     }
 

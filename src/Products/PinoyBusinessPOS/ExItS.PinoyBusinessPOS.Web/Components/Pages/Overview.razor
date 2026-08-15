@@ -25,8 +25,7 @@ else
         {
             <Alert Type="@AlertType.Info"
                    ShowIcon="true"
-                   Message="@L["Suppliers_IncomingBannerTitle"]"
-                   Description="@L["Suppliers_IncomingBannerBody", Shell.IncomingSupplierRequestCount]"
+                   Message="@L["Suppliers_IncomingCompact", Shell.IncomingSupplierRequestCount]"
                    Style="margin-bottom:12px;" />
             <div style="margin-bottom:12px;">
                 <Button Type="@ButtonType.Primary" OnClick='() => Nav.NavigateTo("/suppliers/requests")'>

@@ -19,7 +19,9 @@ public sealed class ShellNotificationBellGuardTests
         Assert.Contains("UsePersonalNotifications", header, StringComparison.Ordinal);
         Assert.Contains("/personal/notifications", File.ReadAllText(Path.Combine(MauiProject(),
             "Components", "Shared", "ShellNotificationBell.razor")), StringComparison.Ordinal);
-        Assert.Contains("/org/customer-link-notifications", File.ReadAllText(Path.Combine(MauiProject(),
+        Assert.Contains("/org/notifications", File.ReadAllText(Path.Combine(MauiProject(),
+            "Components", "Shared", "ShellNotificationBell.razor")), StringComparison.Ordinal);
+        Assert.DoesNotContain("/org/customer-link-notifications", File.ReadAllText(Path.Combine(MauiProject(),
             "Components", "Shared", "ShellNotificationBell.razor")), StringComparison.Ordinal);
     }
 

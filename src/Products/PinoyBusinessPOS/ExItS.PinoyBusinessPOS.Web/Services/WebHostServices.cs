@@ -554,7 +554,8 @@ public sealed class OrgWebShellState
         {
             "overview" => IsOrgOwner || IsOrgManager || Can(UtangCapability.ViewDashboard),
             "ownership-transfer" or "sales-documents" or "subscription" => IsExactOrgOwner,
-            "profile" or "notifications" => IsOrgOwner,
+            "profile" => IsOrgOwner,
+            "notifications" => IsOrgOwner || IsOrgManager,
             "branches" or "staff" or "roles" => IsOrgOwner || IsOrgManager,
             "products" => Can(UtangCapability.ViewCatalog) || IsOrgOwner || IsOrgManager,
             "inventory" => Can(UtangCapability.ViewInventory) || IsOrgOwner || IsOrgManager,

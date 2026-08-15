@@ -54,6 +54,7 @@ Development Quick Login one-click auto-auth is **removed** from Admin picker and
 | Operational settings | Yes | Yes | Denied |
 | Sales documents / Owner education | Exact Owner | No | Denied |
 | Ownership transfer | Exact Owner | No | Denied |
+| Notifications (org inbox) | Yes (Owner) | Yes (Administrator / Manager) | Denied |
 | Subscription | Exact Owner | No | Denied |
 | POS checkout / CreateSale | **No** (unless separate product-local selling role) | Only if POS role allows | Per Cashier POS role |
 

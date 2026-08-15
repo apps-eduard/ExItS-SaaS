@@ -2649,6 +2649,18 @@
   <data name="CustomerLink_OrgNotificationsEmptyTitle" xml:space="preserve"><value>No link responses yet</value></data>
   <data name="CustomerLink_OrgNotificationsEmptyMessage" xml:space="preserve"><value>When customers accept or decline link requests, responses appear here.</value></data>
   <data name="CustomerLink_OrgNotificationsLoadFailed" xml:space="preserve"><value>Organization notifications could not be loaded. Try again.</value></data>
+  <data name="OrgNotifications_Title" xml:space="preserve"><value>Notifications</value></data>
+  <data name="OrgNotifications_Subtitle" xml:space="preserve"><value>Customer link responses and supplier connection alerts for this organization.</value></data>
+  <data name="OrgNotifications_FilterUnread" xml:space="preserve"><value>Unread</value></data>
+  <data name="OrgNotifications_FilterAll" xml:space="preserve"><value>All</value></data>
+  <data name="OrgNotifications_ErrorTitle" xml:space="preserve"><value>Could not load notifications</value></data>
+  <data name="OrgNotifications_EmptyTitle" xml:space="preserve"><value>No notifications</value></data>
+  <data name="OrgNotifications_EmptyMessage" xml:space="preserve"><value>Organization alerts appear here when customers respond to link requests or suppliers send connection updates.</value></data>
+  <data name="OrgNotifications_LoadFailed" xml:space="preserve"><value>Organization notifications could not be loaded. Try again.</value></data>
+  <data name="OrgNotifications_OfflineRespond" xml:space="preserve"><value>Connect to the internet to respond.</value></data>
+  <data name="OrgNotifications_StatusConnected" xml:space="preserve"><value>Connected</value></data>
+  <data name="OrgNotifications_StatusDeclined" xml:space="preserve"><value>Declined</value></data>
+  <data name="OrgNotifications_StatusUnavailable" xml:space="preserve"><value>No longer available</value></data>
   <data name="Personal_Nav_CustomerLinkRequests" xml:space="preserve"><value>Customer link requests</value></data>
   <data name="Personal_Nav_Notifications" xml:space="preserve"><value>Notifications</value></data>
   <data name="Personal_NotificationsTitle" xml:space="preserve"><value>Notifications</value></data>
@@ -2679,6 +2691,7 @@
   <data name="ConnectedSuppliers_RespondRequestFailed" xml:space="preserve"><value>The connection response could not be saved.</value></data>
   <data name="ConnectedSuppliers_IncomingBannerTitle" xml:space="preserve"><value>Supplier connection request waiting</value></data>
   <data name="ConnectedSuppliers_IncomingBannerBody" xml:space="preserve"><value>{0} business(es) want to connect with you as their supplier. Review and Accept or Decline.</value></data>
+  <data name="ConnectedSuppliers_IncomingCompact" xml:space="preserve"><value>{0} supplier requests need your review</value></data>
   <data name="ConnectedSuppliers_ReviewIncoming" xml:space="preserve"><value>Review connection requests</value></data>
   <data name="ConnectedSuppliers_RequestConnection" xml:space="preserve"><value>Connect supplier</value></data>
   <data name="ConnectedSuppliers_RequestTitle" xml:space="preserve"><value>Connect an ExItS supplier</value></data>

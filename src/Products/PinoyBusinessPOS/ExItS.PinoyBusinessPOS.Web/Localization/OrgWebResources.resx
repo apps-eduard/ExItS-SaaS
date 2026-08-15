@@ -149,10 +149,21 @@
   <data name="Subscription_Subtitle" xml:space="preserve"><value>View your current plan and entitlements.</value></data>
   <data name="Ownership_Title" xml:space="preserve"><value>Ownership</value></data>
   <data name="Ownership_Subtitle" xml:space="preserve"><value>Transfer ownership of this business to another ExItS member.</value></data>
-  <data name="Notifications_Title" xml:space="preserve"><value>Alerts</value></data>
-  <data name="Notifications_Subtitle" xml:space="preserve"><value>Organization alerts for managers and owners.</value></data>
-  <data name="Notifications_EmptyTitle" xml:space="preserve"><value>No alerts</value></data>
+  <data name="Notifications_Title" xml:space="preserve"><value>Notifications</value></data>
+  <data name="Notifications_Subtitle" xml:space="preserve"><value>Organization alerts for managers and owners, including supplier connections.</value></data>
+  <data name="Notifications_EmptyTitle" xml:space="preserve"><value>No notifications</value></data>
   <data name="Notifications_EmptyMessage" xml:space="preserve"><value>Management alerts will appear here when available.</value></data>
+  <data name="Notifications_FilterUnread" xml:space="preserve"><value>Unread</value></data>
+  <data name="Notifications_FilterAll" xml:space="preserve"><value>All</value></data>
+  <data name="Notifications_Accept" xml:space="preserve"><value>Accept</value></data>
+  <data name="Notifications_Decline" xml:space="preserve"><value>Decline</value></data>
+  <data name="Notifications_MarkRead" xml:space="preserve"><value>Mark read</value></data>
+  <data name="Notifications_Open" xml:space="preserve"><value>Open</value></data>
+  <data name="Notifications_StatusConnected" xml:space="preserve"><value>Connected</value></data>
+  <data name="Notifications_StatusDeclined" xml:space="preserve"><value>Declined</value></data>
+  <data name="Notifications_StatusUnavailable" xml:space="preserve"><value>No longer available</value></data>
+  <data name="Notifications_Aria" xml:space="preserve"><value>Notifications</value></data>
+  <data name="Notifications_AriaUnread" xml:space="preserve"><value>Notifications, {0} unread</value></data>
   <data name="SelectOrg_Title" xml:space="preserve"><value>Select organization</value></data>
   <data name="SelectOrg_Subtitle" xml:space="preserve"><value>Choose which business workspace to manage.</value></data>
   <data name="SalesDocuments_Subtitle" xml:space="preserve"><value>Review how sales documents currently work for this business.</value></data>
@@ -214,5 +225,6 @@
   <data name="Suppliers_RequestSentPending" xml:space="preserve"><value>Connection request sent. Waiting for the supplier to accept.</value></data>
   <data name="Suppliers_IncomingBannerTitle" xml:space="preserve"><value>Supplier connection request waiting</value></data>
   <data name="Suppliers_IncomingBannerBody" xml:space="preserve"><value>{0} business(es) want to connect with you as their supplier.</value></data>
+  <data name="Suppliers_IncomingCompact" xml:space="preserve"><value>{0} supplier requests need your review</value></data>
   <data name="Suppliers_ReviewIncoming" xml:space="preserve"><value>Review connection requests</value></data>
 </root>

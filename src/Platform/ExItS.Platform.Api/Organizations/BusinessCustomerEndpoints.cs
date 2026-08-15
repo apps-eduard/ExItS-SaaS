@@ -312,7 +312,7 @@ internal static class BusinessCustomerEndpoints
                     StatusCodes.Status401Unauthorized);
             }
 
-            var denied = await membershipAuthz.EnsureCanManageMembershipsAsync(
+            var denied = await membershipAuthz.EnsureCanAccessOrganizationNotificationsAsync(
                 PlatformAuditActions.PlatformAccessChecked,
                 nameof(OrganizationInAppNotification),
                 organizationId.ToString("D"),
@@ -346,7 +346,7 @@ internal static class BusinessCustomerEndpoints
                     StatusCodes.Status401Unauthorized);
             }
 
-            var denied = await membershipAuthz.EnsureCanManageMembershipsAsync(
+            var denied = await membershipAuthz.EnsureCanAccessOrganizationNotificationsAsync(
                 PlatformAuditActions.PlatformAccessChecked,
                 nameof(OrganizationInAppNotification),
                 notificationId.ToString("D"),
@@ -364,6 +364,56 @@ internal static class BusinessCustomerEndpoints
                     actor.PlatformUserId,
                     notificationId,
                     ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
+        app.MapPost("/api/v1/organizations/{organizationId:guid}/business-notifications", async (
+            Guid organizationId,
+            PublishOrganizationBusinessNotificationRequest body,
+            PublishOrganizationBusinessNotification useCase,
+            PlatformMembershipAuthz membershipAuthz,
+            CancellationToken ct) =>
+        {
+            var denied = await membershipAuthz.EnsureActiveOrganizationMemberAsync(
+                PlatformAuditActions.PlatformAccessChecked,
+                nameof(OrganizationInAppNotification),
+                organizationId.ToString("D"),
+                organizationId,
+                summary: "Publish organization business notification.",
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var result = await useCase
+                .ExecuteAsync(PlatformOrganizationId.From(organizationId), body, ct)
+                .ConfigureAwait(false);
+            return PlatformApiResults.FromResult(result, Results.Ok);
+        });
+
+        app.MapPost("/api/v1/organizations/{organizationId:guid}/notifications/related/read", async (
+            Guid organizationId,
+            MarkRelatedOrganizationNotificationsReadRequest body,
+            MarkRelatedOrganizationNotificationsRead useCase,
+            PlatformMembershipAuthz membershipAuthz,
+            CancellationToken ct) =>
+        {
+            var denied = await membershipAuthz.EnsureCanAccessOrganizationNotificationsAsync(
+                PlatformAuditActions.PlatformAccessChecked,
+                nameof(OrganizationInAppNotification),
+                organizationId.ToString("D"),
+                organizationId,
+                summary: "Mark related organization notifications read.",
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var result = await useCase
+                .ExecuteAsync(PlatformOrganizationId.From(organizationId), body, ct)
                 .ConfigureAwait(false);
             return PlatformApiResults.FromResult(result, Results.Ok);
         });

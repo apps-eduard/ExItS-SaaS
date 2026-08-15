@@ -163,3 +163,23 @@ public static class CustomerLinkNotificationTypes
     public const string OrganizationAccepted = "CustomerLinkAccepted";
     public const string OrganizationDeclined = "CustomerLinkDeclined";
 }
+
+/// <summary>RelatedType values for Connected ExItS supplier connection lifecycle.</summary>
+public static class SupplierConnectionNotificationTypes
+{
+    public const string Requested = "SupplierConnectionRequested";
+    public const string Accepted = "SupplierConnectionAccepted";
+    public const string Declined = "SupplierConnectionDeclined";
+
+    public static bool IsKnown(string? relatedType) =>
+        string.Equals(relatedType, Requested, StringComparison.Ordinal)
+        || string.Equals(relatedType, Accepted, StringComparison.Ordinal)
+        || string.Equals(relatedType, Declined, StringComparison.Ordinal);
+}
+
+/// <summary>Allowlisted RelatedType values products may publish into the organization inbox.</summary>
+public static class OrganizationBusinessNotificationTypes
+{
+    public static bool IsPublishable(string? relatedType) =>
+        SupplierConnectionNotificationTypes.IsKnown(relatedType);
+}

@@ -363,6 +363,8 @@ builder.Services.AddScoped<AcceptCustomerLinkRequestById>();
 builder.Services.AddScoped<ListPendingCustomerLinkRequestsForPersonalUser>();
 builder.Services.AddScoped<ListOrganizationInAppNotifications>();
 builder.Services.AddScoped<MarkOrganizationInAppNotificationRead>();
+builder.Services.AddScoped<PublishOrganizationBusinessNotification>();
+builder.Services.AddScoped<MarkRelatedOrganizationNotificationsRead>();
 builder.Services.AddScoped<UnlinkAcceptedCustomerLink>();
 builder.Services.AddScoped<ListLinkedMerchantsForPersonalUser>();
 builder.Services.AddScoped<AuthorizeLinkedCustomerAccess>();

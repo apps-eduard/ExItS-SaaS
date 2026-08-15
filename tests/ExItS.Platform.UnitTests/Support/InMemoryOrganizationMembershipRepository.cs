@@ -103,6 +103,20 @@ internal sealed class InMemoryOrganizationMembershipRepository : IOrganizationMe
         return Task.FromResult(count);
     }
 
+    public Task<IReadOnlyList<OrganizationMembership>> ListActiveBusinessInboxRecipientsAsync(
+        PlatformOrganizationId organizationId,
+        CancellationToken cancellationToken = default)
+    {
+        var items = _byId.Values
+            .Where(m => m.OrganizationId == organizationId
+                        && m.Status == MembershipStatus.Active
+                        && (m.Role == OrganizationRole.OrganizationOwner
+                            || m.Role == OrganizationRole.OrganizationAdministrator))
+            .OrderByDescending(m => m.UpdatedAtUtc)
+            .ToList();
+        return Task.FromResult<IReadOnlyList<OrganizationMembership>>(items);
+    }
+
     public Task AddAsync(OrganizationMembership membership, CancellationToken cancellationToken = default)
     {
         _byId[membership.Id.Value] = membership;

@@ -663,7 +663,7 @@ The following are deferred unless separately approved:
 - advanced branch-specific administration;
 - custom product roles;
 - offline synchronization;
-- advanced cross-client notifications;
+- advanced cross-client notifications (SignalR); Organization in-app bell for customer-link + Connected Supplier connection requests is live via Platform `OrganizationInAppNotification` (see [unified-organization-business-notifications.md](../reports/unified-organization-business-notifications.md));
 - delegated Organization Administrators beyond the approved MVP role model.
 
 ---

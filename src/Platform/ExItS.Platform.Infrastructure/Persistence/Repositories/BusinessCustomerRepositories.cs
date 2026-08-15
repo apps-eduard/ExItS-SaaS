@@ -439,6 +439,22 @@ internal sealed class OrganizationInAppNotificationRepository(PlatformDbContext 
         return record is null ? null : ToDomain(record);
     }
 
+    public async Task<IReadOnlyList<OrganizationInAppNotification>> ListByOrganizationRelatedAsync(
+        PlatformOrganizationId organizationId,
+        string relatedType,
+        string relatedId,
+        CancellationToken cancellationToken = default)
+    {
+        var records = await db.OrganizationInAppNotifications.AsNoTracking()
+            .Where(x =>
+                x.OrganizationId == organizationId.Value
+                && x.RelatedType == relatedType
+                && x.RelatedId == relatedId)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return records.Select(ToDomain).ToList();
+    }
+
     public Task AddAsync(OrganizationInAppNotification notification, CancellationToken cancellationToken = default)
     {
         db.OrganizationInAppNotifications.Add(ToRecord(notification));

@@ -1,8 +1,12 @@
 @page "/notifications"
 @attribute [Authorize]
+@using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers
 @inject OrgWebShellState Shell
 @inject ICurrentUserContext CurrentUser
 @inject IPlatformAccessClient Platform
+@inject IPosConnectedSupplierClient ConnectedSuppliers
+@inject IUtangCapabilityEvaluator Capabilities
+@inject NavigationManager Nav
 @inject IStringLocalizer<OrgWebResources> L
 
 <PageTitle>@L["Notifications_Title"]</PageTitle>
@@ -16,8 +20,20 @@ else
     <div class="org-page">
     <ExitsPageHeader Title="@L["Notifications_Title"]" Subtitle="@L["Notifications_Subtitle"]" />
     <OrgAlert Error="@_error" RetryLabel="@L["Common_Retry"]" OnRetry="LoadAsync" />
+
+    <div style="margin-bottom:12px;display:flex;gap:8px;">
+        <Button Type="@(_unreadOnly ? ButtonType.Primary : ButtonType.Default)"
+                OnClick="() => SetFilter(true)">
+            @L["Notifications_FilterUnread"]
+        </Button>
+        <Button Type="@(!_unreadOnly ? ButtonType.Primary : ButtonType.Default)"
+                OnClick="() => SetFilter(false)">
+            @L["Notifications_FilterAll"]
+        </Button>
+    </div>
+
     <OrgLoading Active="_loading" />
-    @if (!_loading && _items.Count == 0)
+    @if (!_loading && Filtered.Count == 0)
     {
         <OrgEmpty Title="@L["Notifications_EmptyTitle"]" Message="@L["Notifications_EmptyMessage"]" />
     }
@@ -27,16 +43,58 @@ else
             <table class="org-table">
                 <thead><tr><th>When</th><th>Title</th><th>Preview</th><th></th></tr></thead>
                 <tbody>
-                    @foreach (var n in _items)
+                    @foreach (var n in Filtered)
                     {
+                        var relationship = ResolveRelationship(n);
                         <tr>
                             <td>@n.CreatedAtUtc.LocalDateTime</td>
-                            <td>@n.Title @if (!n.IsRead) { <OrgStatusBadge Text="Unread" Tone="info" /> }</td>
-                            <td>@n.Preview</td>
                             <td>
+                                @n.Title
                                 @if (!n.IsRead)
                                 {
-                                    <button type="button" class="ant-btn ant-btn-sm" @onclick="() => ReadAsync(n)">Mark read</button>
+                                    <OrgStatusBadge Text="Unread" Tone="info" />
+                                }
+                            </td>
+                            <td>@n.Preview</td>
+                            <td>
+                                @if (IsSupplierRequested(n))
+                                {
+                                    @if (string.Equals(relationship?.Status, "Pending", StringComparison.OrdinalIgnoreCase)
+                                         && Capabilities.IsAllowed(UtangCapability.ManageSuppliers)
+                                         && relationship is not null)
+                                    {
+                                        <Space>
+                                            <Button Type="@ButtonType.Primary"
+                                                    Size="@ButtonSize.Small"
+                                                    Loading="_busy"
+                                                    OnClick="() => RespondAsync(n, relationship.RelationshipId, true)">
+                                                @L["Notifications_Accept"]
+                                            </Button>
+                                            <Button Size="@ButtonSize.Small"
+                                                    Loading="_busy"
+                                                    OnClick="() => RespondAsync(n, relationship.RelationshipId, false)">
+                                                @L["Notifications_Decline"]
+                                            </Button>
+                                        </Space>
+                                    }
+                                    else
+                                    {
+                                        <span>@StatusLabel(relationship?.Status)</span>
+                                    }
+                                }
+                                else if (IsSupplierAcceptedOrDeclined(n))
+                                {
+                                    <Button Type="@ButtonType.Link"
+                                            Size="@ButtonSize.Small"
+                                            OnClick="() => OpenSupplierAsync(n)">
+                                        @L["Notifications_Open"]
+                                    </Button>
+                                }
+                                else if (!n.IsRead)
+                                {
+                                    <button type="button" class="ant-btn ant-btn-sm" @onclick="() => ReadAsync(n)">
+                                        @L["Notifications_MarkRead"]
+                                    </button>
                                 }
                             </td>
                         </tr>
@@ -51,9 +109,19 @@ else
 @code {
     private string? _error;
     private bool _loading = true;
+    private bool _busy;
+    private bool _unreadOnly = true;
     private List<OrganizationInAppNotificationDto> _items = [];
+    private Dictionary<Guid, ConnectedSupplierRelationshipDto> _relationshipsById = new();
+
+    private IReadOnlyList<OrganizationInAppNotificationDto> Filtered =>
+        _unreadOnly
+            ? _items.Where(n => !n.IsRead).ToList()
+            : _items;
 
     protected override Task OnInitializedAsync() => LoadAsync();
+
+    private void SetFilter(bool unreadOnly) => _unreadOnly = unreadOnly;
 
     private async Task LoadAsync()
     {
@@ -69,9 +137,19 @@ else
                 return;
             }
 
-            _items = result.Data.ToList();
+            _items = result.Data.OrderByDescending(n => n.CreatedAtUtc).ToList();
             Shell.UnreadNotificationCount = _items.Count(n => !n.IsRead);
             _error = null;
+
+            _relationshipsById = new Dictionary<Guid, ConnectedSupplierRelationshipDto>();
+            if (_items.Any(IsSupplierConnection) && Capabilities.IsAllowed(UtangCapability.ViewSuppliers))
+            {
+                var relationships = await ConnectedSuppliers.ListRelationshipsAsync("supplier");
+                if (relationships.IsSuccess && relationships.Data is not null)
+                {
+                    _relationshipsById = relationships.Data.ToDictionary(x => x.RelationshipId);
+                }
+            }
         }
         finally
         {
@@ -79,18 +157,93 @@ else
         }
     }
 
-    private async Task ReadAsync(OrganizationInAppNotificationDto note)
+    private ConnectedSupplierRelationshipDto? ResolveRelationship(OrganizationInAppNotificationDto item) =>
+        Guid.TryParse(item.RelatedId, out var id) && _relationshipsById.TryGetValue(id, out var relationship)
+            ? relationship
+            : null;
+
+    private static bool IsSupplierConnection(OrganizationInAppNotificationDto item) =>
+        SupplierConnectionNotificationTypes.IsSupplierConnection(item.RelatedType);
+
+    private static bool IsSupplierRequested(OrganizationInAppNotificationDto item) =>
+        string.Equals(item.RelatedType, SupplierConnectionNotificationTypes.Requested, StringComparison.Ordinal);
+
+    private static bool IsSupplierAcceptedOrDeclined(OrganizationInAppNotificationDto item) =>
+        string.Equals(item.RelatedType, SupplierConnectionNotificationTypes.Accepted, StringComparison.Ordinal)
+        || string.Equals(item.RelatedType, SupplierConnectionNotificationTypes.Declined, StringComparison.Ordinal);
+
+    private string StatusLabel(string? status) =>
+        string.Equals(status, "Accepted", StringComparison.OrdinalIgnoreCase)
+            ? L["Notifications_StatusConnected"]
+            : string.Equals(status, "Declined", StringComparison.OrdinalIgnoreCase)
+                ? L["Notifications_StatusDeclined"]
+                : L["Notifications_StatusUnavailable"];
+
+    private async Task RespondAsync(OrganizationInAppNotificationDto note, Guid relationshipId, bool accept)
+    {
+        if (!Capabilities.IsAllowed(UtangCapability.ManageSuppliers) || _busy)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var result = accept
+                ? await ConnectedSuppliers.ApproveAsync(relationshipId, new RespondConnectionRequest())
+                : await ConnectedSuppliers.DeclineAsync(relationshipId, new RespondConnectionRequest());
+            if (!result.IsSuccess)
+            {
+                _error = OrgWebUi.Error(result.Error);
+                return;
+            }
+
+            await MarkReadInternalAsync(note);
+            await LoadAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task OpenSupplierAsync(OrganizationInAppNotificationDto note)
+    {
+        await MarkReadInternalAsync(note);
+        Nav.NavigateTo("/suppliers/requests");
+    }
+
+    private async Task ReadAsync(OrganizationInAppNotificationDto note) => await MarkReadInternalAsync(note, reload: true);
+
+    private async Task MarkReadInternalAsync(OrganizationInAppNotificationDto note, bool reload = false)
     {
         var orgId = CurrentUser.Session?.OrganizationId;
         if (orgId is null) return;
-        var result = await Platform.MarkOrganizationNotificationReadAsync(orgId.Value, note.Id);
-        if (result.IsSuccess)
+
+        if (!note.IsRead)
+        {
+            var result = await Platform.MarkOrganizationNotificationReadAsync(orgId.Value, note.Id);
+            if (!result.IsSuccess)
+            {
+                _error = OrgWebUi.Error(result.Error);
+                return;
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(note.RelatedType)
+            && !string.IsNullOrWhiteSpace(note.RelatedId)
+            && IsSupplierConnection(note))
+        {
+            await Platform.MarkRelatedOrganizationNotificationsReadAsync(orgId.Value, note.RelatedType, note.RelatedId);
+        }
+
+        if (reload)
         {
             await LoadAsync();
         }
         else
         {
-            _error = OrgWebUi.Error(result.Error);
+            Shell.UnreadNotificationCount = Math.Max(0, Shell.UnreadNotificationCount - (note.IsRead ? 0 : 1));
         }
     }
 }

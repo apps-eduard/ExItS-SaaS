@@ -4,7 +4,7 @@
 
 | Field | Value |
 |---|---|
-| Status | **Open** — WP01–WP09 Code Complete / Owner Validation Pending; Connected ExItS supplier request lifecycle visibility Code Complete ([report](../reports/connected-supplier-connection-request-lifecycle.md)) |
+| Status | **Open** — WP01–WP09 Code Complete / Owner Validation Pending; Connected ExItS supplier request lifecycle + unified org business notifications Code Complete ([lifecycle](../reports/connected-supplier-connection-request-lifecycle.md); [notifications](../reports/unified-organization-business-notifications.md)) |
 | Device Verified | **No** |
 | Browser Verified | **No** |
 | Production Ready | **No** |

@@ -1,0 +1,347 @@
+@page "/org/notifications"
+@page "/org/customer-link-notifications"
+@using ExItS.DesignSystem.Components.Internal
+@using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers
+@inject ICurrentUserContext CurrentUser
+@inject IPlatformAccessClient Platform
+@inject IPosConnectedSupplierClient ConnectedSuppliers
+@inject IUtangCapabilityEvaluator Capabilities
+@inject IConnectivityService Connectivity
+@inject OnlineRequiredGuard OnlineRequired
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject ShellNotificationUnreadState UnreadState
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else
+{
+    <StoreHeaderBack Href="/org" />
+    <div class="pos-personal-invitations">
+    <Page>
+        <header class="pos-personal-invitations__header">
+            <h1 class="pos-personal-invitations__title">@L["OrgNotifications_Title"]</h1>
+            <p class="pos-personal-invitations__subtitle">@L["OrgNotifications_Subtitle"]</p>
+        </header>
+
+        <div class="pos-registers__segments" role="tablist" aria-label="@L["OrgNotifications_Title"]">
+            <button type="button"
+                    class="pos-registers__segment @(_unreadOnly ? "pos-registers__segment--selected" : null)"
+                    role="tab"
+                    aria-selected="@_unreadOnly"
+                    disabled="@_loading"
+                    @onclick="() => SetFilter(true)">
+                @L["OrgNotifications_FilterUnread"]
+            </button>
+            <button type="button"
+                    class="pos-registers__segment @(!_unreadOnly ? "pos-registers__segment--selected" : null)"
+                    role="tab"
+                    aria-selected="@(!_unreadOnly)"
+                    disabled="@_loading"
+                    @onclick="() => SetFilter(false)">
+                @L["OrgNotifications_FilterAll"]
+            </button>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(_actionError))
+        {
+            <Alert Tone="AlertTone.Danger" Title="@L["ConnectedSuppliers_Error"]" Message="@_actionError" />
+        }
+
+        @if (_loading)
+        {
+            <Spinner />
+        }
+        else if (_loadFailed)
+        {
+            <ErrorState Title="@L["OrgNotifications_ErrorTitle"]"
+                        Message="@(_error ?? L["Personal_LoadErrorMessage"])"
+                        RetryLabel="@L["Common_Retry"]"
+                        OnRetry="LoadAsync" />
+        }
+        else if (Filtered.Count == 0)
+        {
+            <EmptyState Title="@L["OrgNotifications_EmptyTitle"]"
+                        Message="@L["OrgNotifications_EmptyMessage"]" />
+        }
+        else
+        {
+            <div class="pos-personal-list" role="list">
+                @foreach (var item in Filtered)
+                {
+                    var relationship = ResolveRelationship(item);
+                    var isRequested = IsSupplierRequested(item);
+                    if (isRequested)
+                    {
+                        <div class="pos-personal-row pos-personal-row--static" role="listitem">
+                            <span class="pos-personal-row__body">
+                                <span class="pos-personal-row__title">
+                                    @item.Title
+                                    @if (!item.IsRead)
+                                    {
+                                        <span class="pos-muted"> · @L["Personal_NotificationsUnread"]</span>
+                                    }
+                                </span>
+                                <span class="pos-personal-row__meta">
+                                    @item.Preview
+                                    · @item.CreatedAtUtc.LocalDateTime.ToString("g")
+                                </span>
+                                <div class="pos-sell-customer__actions" role="group" style="margin-top:0.75rem;">
+                                    @if (!_isOnline)
+                                    {
+                                        <p class="pos-muted">@L["OrgNotifications_OfflineRespond"]</p>
+                                    }
+                                    else if (string.Equals(relationship?.Status, "Pending", StringComparison.OrdinalIgnoreCase)
+                                             && Capabilities.IsAllowed(UtangCapability.ManageSuppliers)
+                                             && relationship is not null)
+                                    {
+                                        <button type="button"
+                                                class="pos-action-tile pos-action-tile--primary"
+                                                disabled="@_busy"
+                                                @onclick="() => RespondAsync(item, relationship.RelationshipId, true)">
+                                            <span class="pos-action-tile__label">@L["ConnectedSuppliers_Accept"]</span>
+                                        </button>
+                                        <button type="button"
+                                                class="pos-action-tile"
+                                                disabled="@_busy"
+                                                @onclick="() => RespondAsync(item, relationship.RelationshipId, false)">
+                                            <span class="pos-action-tile__label">@L["ConnectedSuppliers_Decline"]</span>
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <p class="pos-muted">@StatusLabel(relationship?.Status)</p>
+                                    }
+                                </div>
+                            </span>
+                        </div>
+                    }
+                    else
+                    {
+                        <button type="button"
+                                class="pos-personal-row"
+                                role="listitem"
+                                disabled="_busy"
+                                @onclick="() => OpenAsync(item)">
+                            <span class="pos-personal-row__body">
+                                <span class="pos-personal-row__title">
+                                    @item.Title
+                                    @if (!item.IsRead)
+                                    {
+                                        <span class="pos-muted"> · @L["Personal_NotificationsUnread"]</span>
+                                    }
+                                </span>
+                                <span class="pos-personal-row__meta">
+                                    @item.Preview
+                                    · @item.CreatedAtUtc.LocalDateTime.ToString("g")
+                                </span>
+                            </span>
+                            <span class="pos-personal-row__chevron" aria-hidden="true">›</span>
+                        </button>
+                    }
+                }
+            </div>
+        }
+    </Page>
+    </div>
+}
+
+@code {
+    private bool _ready;
+    private bool _loading = true;
+    private bool _loadFailed;
+    private bool _busy;
+    private bool _unreadOnly = true;
+    private bool _isOnline;
+    private string? _error;
+    private string? _actionError;
+    private IReadOnlyList<OrganizationInAppNotificationDto> _notifications = [];
+    private Dictionary<Guid, ConnectedSupplierRelationshipDto> _relationshipsById = new();
+
+    private IReadOnlyList<OrganizationInAppNotificationDto> Filtered =>
+        _unreadOnly
+            ? _notifications.Where(n => !n.IsRead).ToList()
+            : _notifications;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell || CurrentUser.Session?.OrganizationId is null)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        _ready = true;
+        await LoadAsync();
+    }
+
+    private void SetFilter(bool unreadOnly) => _unreadOnly = unreadOnly;
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _loadFailed = false;
+        _error = null;
+        _actionError = null;
+        try
+        {
+            if (CurrentUser.Session?.OrganizationId is not Guid orgId)
+            {
+                _loadFailed = true;
+                _error = L["Org_MissingMessage"];
+                return;
+            }
+
+            if (!await OnlineRequired.EnsureOnlineForRouteAsync("/org/notifications"))
+            {
+                _loadFailed = true;
+                _error = L["OnlineRequired_Message"];
+                return;
+            }
+
+            _isOnline = await Connectivity.IsConnectedAsync();
+
+            var result = await Platform.GetOrganizationNotificationsAsync(orgId);
+            if (!result.IsSuccess || result.Data is null)
+            {
+                _loadFailed = true;
+                _error = result.Error?.Detail ?? L["OrgNotifications_LoadFailed"];
+                return;
+            }
+
+            _notifications = result.Data
+                .OrderByDescending(n => n.CreatedAtUtc)
+                .ToList();
+
+            _relationshipsById = new Dictionary<Guid, ConnectedSupplierRelationshipDto>();
+            if (_isOnline
+                && Capabilities.IsAllowed(UtangCapability.ViewSuppliers)
+                && _notifications.Any(IsSupplierConnection))
+            {
+                var relationships = await ConnectedSuppliers.ListRelationshipsAsync("supplier");
+                if (relationships.IsSuccess && relationships.Data is not null)
+                {
+                    _relationshipsById = relationships.Data.ToDictionary(x => x.RelationshipId);
+                }
+            }
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private string StatusLabel(string? status) =>
+        string.Equals(status, "Accepted", StringComparison.OrdinalIgnoreCase)
+            ? L["OrgNotifications_StatusConnected"]
+            : string.Equals(status, "Declined", StringComparison.OrdinalIgnoreCase)
+                ? L["OrgNotifications_StatusDeclined"]
+                : L["OrgNotifications_StatusUnavailable"];
+
+    private ConnectedSupplierRelationshipDto? ResolveRelationship(OrganizationInAppNotificationDto item) =>
+        Guid.TryParse(item.RelatedId, out var id) && _relationshipsById.TryGetValue(id, out var relationship)
+            ? relationship
+            : null;
+
+    private static bool IsSupplierConnection(OrganizationInAppNotificationDto item) =>
+        SupplierConnectionNotificationTypes.IsSupplierConnection(item.RelatedType);
+
+    private static bool IsSupplierRequested(OrganizationInAppNotificationDto item) =>
+        string.Equals(item.RelatedType, SupplierConnectionNotificationTypes.Requested, StringComparison.Ordinal);
+
+    private static bool IsSupplierAcceptedOrDeclined(OrganizationInAppNotificationDto item) =>
+        string.Equals(item.RelatedType, SupplierConnectionNotificationTypes.Accepted, StringComparison.Ordinal)
+        || string.Equals(item.RelatedType, SupplierConnectionNotificationTypes.Declined, StringComparison.Ordinal);
+
+    private async Task OpenAsync(OrganizationInAppNotificationDto item)
+    {
+        if (_busy)
+        {
+            return;
+        }
+
+        await MarkReadAsync(item);
+
+        if (IsSupplierAcceptedOrDeclined(item))
+        {
+            Nav.NavigateTo("/suppliers/connected/requests");
+        }
+    }
+
+    private async Task RespondAsync(OrganizationInAppNotificationDto item, Guid relationshipId, bool accept)
+    {
+        if (!Capabilities.IsAllowed(UtangCapability.ManageSuppliers) || _busy)
+        {
+            return;
+        }
+
+        if (!await Connectivity.IsConnectedAsync())
+        {
+            _actionError = L["OrgNotifications_OfflineRespond"];
+            return;
+        }
+
+        _busy = true;
+        _actionError = null;
+        try
+        {
+            var result = accept
+                ? await ConnectedSuppliers.ApproveAsync(relationshipId, new RespondConnectionRequest())
+                : await ConnectedSuppliers.DeclineAsync(relationshipId, new RespondConnectionRequest());
+            if (!result.IsSuccess)
+            {
+                _actionError = result.Error?.Detail ?? L["ConnectedSuppliers_RespondRequestFailed"];
+                return;
+            }
+
+            await MarkReadAfterRespondAsync(item);
+            UnreadState.NotifyChanged();
+            await LoadAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task MarkReadAfterRespondAsync(OrganizationInAppNotificationDto item)
+    {
+        if (CurrentUser.Session?.OrganizationId is not Guid orgId)
+        {
+            return;
+        }
+
+        if (!item.IsRead)
+        {
+            await Platform.MarkOrganizationNotificationReadAsync(orgId, item.Id);
+        }
+
+        if (!string.IsNullOrWhiteSpace(item.RelatedType) && !string.IsNullOrWhiteSpace(item.RelatedId))
+        {
+            await Platform.MarkRelatedOrganizationNotificationsReadAsync(orgId, item.RelatedType, item.RelatedId);
+        }
+    }
+
+    private async Task MarkReadAsync(OrganizationInAppNotificationDto item)
+    {
+        if (_busy || item.IsRead || CurrentUser.Session?.OrganizationId is not Guid orgId)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            await Platform.MarkOrganizationNotificationReadAsync(orgId, item.Id);
+            UnreadState.NotifyChanged();
+            await LoadAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

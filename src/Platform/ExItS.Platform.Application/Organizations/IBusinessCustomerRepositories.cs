@@ -101,6 +101,12 @@ public interface IOrganizationInAppNotificationRepository
         string relatedId,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<OrganizationInAppNotification>> ListByOrganizationRelatedAsync(
+        PlatformOrganizationId organizationId,
+        string relatedType,
+        string relatedId,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(OrganizationInAppNotification notification, CancellationToken cancellationToken = default);
 
     Task UpdateAsync(OrganizationInAppNotification notification, CancellationToken cancellationToken = default);

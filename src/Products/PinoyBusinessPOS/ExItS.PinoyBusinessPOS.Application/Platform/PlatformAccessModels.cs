@@ -725,6 +725,11 @@ public sealed record OrganizationInAppNotificationDto(
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset? ReadAtUtc);
 
+public sealed record MarkRelatedOrganizationNotificationsReadResultDto(
+    string RelatedType,
+    string RelatedId,
+    int MarkedCount);
+
 public sealed record PersonalInAppNotificationDto(
     Guid Id,
     string Title,
@@ -1140,6 +1145,13 @@ public interface IPlatformAccessClient
         Guid organizationId,
         Guid notificationId,
         CancellationToken ct = default);
+
+    Task<ApiResult<MarkRelatedOrganizationNotificationsReadResultDto>> MarkRelatedOrganizationNotificationsReadAsync(
+        Guid organizationId,
+        string relatedType,
+        string relatedId,
+        CancellationToken ct = default) =>
+        Task.FromResult(ApiResult<MarkRelatedOrganizationNotificationsReadResultDto>.Unavailable());
 
     Task<ApiResult<IReadOnlyList<PersonalPendingCustomerLinkRequestDto>>> GetPersonalCustomerLinkRequestsAsync(
         CancellationToken ct = default);

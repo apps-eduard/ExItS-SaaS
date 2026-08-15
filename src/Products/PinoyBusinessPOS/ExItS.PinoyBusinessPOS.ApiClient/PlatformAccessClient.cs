@@ -612,6 +612,17 @@ public sealed class PlatformAccessClient(IPosApiClient api) : IPlatformAccessCli
             null,
             ct);
 
+    public Task<ApiResult<MarkRelatedOrganizationNotificationsReadResultDto>> MarkRelatedOrganizationNotificationsReadAsync(
+        Guid organizationId,
+        string relatedType,
+        string relatedId,
+        CancellationToken ct = default) =>
+        api.SendAsync<MarkRelatedOrganizationNotificationsReadResultDto>(
+            HttpMethod.Post,
+            $"/api/v1/organizations/{organizationId:D}/notifications/related/read",
+            new { RelatedType = relatedType, RelatedId = relatedId },
+            ct);
+
     public Task<ApiResult<IReadOnlyList<PersonalPendingCustomerLinkRequestDto>>> GetPersonalCustomerLinkRequestsAsync(
         CancellationToken ct = default) =>
         api.GetAsync<IReadOnlyList<PersonalPendingCustomerLinkRequestDto>>(

@@ -102,6 +102,7 @@ public sealed class OrganizationOwnerManagementMatrixTests
         Assert.True(shell.CanSee("overview"));
         Assert.True(shell.CanSee("branches"));
         Assert.True(shell.CanSee("staff"));
+        Assert.True(shell.CanSee("notifications"));
         Assert.True(shell.CanSee("products"));
         Assert.False(shell.CanSee("ownership-transfer"));
         Assert.False(shell.CanSee("subscription"));

@@ -159,7 +159,11 @@
                 @if (Shell.CanSee("notifications"))
                 {
                     <Badge Count="Shell.UnreadNotificationCount" Size="@BadgeSize.Small">
-                        <Button Type="@ButtonType.Text" Icon="bell" OnClick='() => Nav.NavigateTo("/notifications")' />
+                        <Button Type="@ButtonType.Text"
+                                Icon="bell"
+                                Title="@NotificationBellTitle"
+                                AriaLabel="@NotificationBellTitle"
+                                OnClick='() => Nav.NavigateTo("/notifications")' />
                     </Badge>
                 }
                 <ExitsThemeSelector />
@@ -333,6 +337,11 @@
     private bool _collapsed;
     private bool _mobile;
     private bool _drawer;
+
+    private string NotificationBellTitle =>
+        Shell.UnreadNotificationCount > 0
+            ? string.Format(L["Notifications_AriaUnread"].Value, Shell.UnreadNotificationCount)
+            : L["Notifications_Aria"];
 
     // AntDesign 1.6.2: SubMenu has no Icon parameter — use TitleTemplate (same pattern as Platform Admin).
     private RenderFragment BusinessTitle => SubMenuTitle("shop", L["Nav_Business"]);

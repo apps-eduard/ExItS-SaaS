@@ -149,10 +149,21 @@
   <data name="Subscription_Subtitle" xml:space="preserve"><value>Tingnan ang kasalukuyang plan at entitlements.</value></data>
   <data name="Ownership_Title" xml:space="preserve"><value>Ownership</value></data>
   <data name="Ownership_Subtitle" xml:space="preserve"><value>I-transfer ang ownership ng negosyo sa ibang ExItS member.</value></data>
-  <data name="Notifications_Title" xml:space="preserve"><value>Mga alerto</value></data>
-  <data name="Notifications_Subtitle" xml:space="preserve"><value>Mga alerto ng organisasyon para sa managers at owners.</value></data>
-  <data name="Notifications_EmptyTitle" xml:space="preserve"><value>Walang alerto</value></data>
+  <data name="Notifications_Title" xml:space="preserve"><value>Mga notification</value></data>
+  <data name="Notifications_Subtitle" xml:space="preserve"><value>Mga alerto ng organisasyon para sa managers at owners, kasama ang supplier connections.</value></data>
+  <data name="Notifications_EmptyTitle" xml:space="preserve"><value>Walang notification</value></data>
   <data name="Notifications_EmptyMessage" xml:space="preserve"><value>Lalabas dito ang mga management alert kapag available.</value></data>
+  <data name="Notifications_FilterUnread" xml:space="preserve"><value>Hindi pa nabasa</value></data>
+  <data name="Notifications_FilterAll" xml:space="preserve"><value>Lahat</value></data>
+  <data name="Notifications_Accept" xml:space="preserve"><value>Tanggapin</value></data>
+  <data name="Notifications_Decline" xml:space="preserve"><value>Tanggihan</value></data>
+  <data name="Notifications_MarkRead" xml:space="preserve"><value>Markahan bilang nabasa</value></data>
+  <data name="Notifications_Open" xml:space="preserve"><value>Buksan</value></data>
+  <data name="Notifications_StatusConnected" xml:space="preserve"><value>Nakakonekta</value></data>
+  <data name="Notifications_StatusDeclined" xml:space="preserve"><value>Tinanggihan</value></data>
+  <data name="Notifications_StatusUnavailable" xml:space="preserve"><value>Hindi na available</value></data>
+  <data name="Notifications_Aria" xml:space="preserve"><value>Mga notification</value></data>
+  <data name="Notifications_AriaUnread" xml:space="preserve"><value>Mga notification, {0} hindi pa nabasa</value></data>
   <data name="SelectOrg_Title" xml:space="preserve"><value>Pumili ng organisasyon</value></data>
   <data name="SelectOrg_Subtitle" xml:space="preserve"><value>Piliin kung aling business workspace ang pamamahalaan.</value></data>
   <data name="SalesDocuments_Subtitle" xml:space="preserve"><value>Suriin kung paano gumagana ang sales documents para sa negosyong ito.</value></data>
@@ -214,5 +225,6 @@
   <data name="Suppliers_RequestSentPending" xml:space="preserve"><value>Naipadala ang connection request. Hinihintay ang pagsang-ayon ng supplier.</value></data>
   <data name="Suppliers_IncomingBannerTitle" xml:space="preserve"><value>May hinihintay na supplier connection request</value></data>
   <data name="Suppliers_IncomingBannerBody" xml:space="preserve"><value>{0} (na) negosyo ang gustong kumonekta sa inyo bilang supplier.</value></data>
+  <data name="Suppliers_IncomingCompact" xml:space="preserve"><value>{0} (na) supplier request ang kailangan suriin</value></data>
   <data name="Suppliers_ReviewIncoming" xml:space="preserve"><value>Suriin ang connection requests</value></data>
 </root>

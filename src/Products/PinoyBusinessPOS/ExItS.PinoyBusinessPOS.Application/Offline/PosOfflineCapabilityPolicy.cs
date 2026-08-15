@@ -80,6 +80,7 @@ public sealed class PosOfflineCapabilityPolicy : IPosOfflineCapabilityPolicy
             ["/personal/utang/invitations"] = PosConnectivityRequirement.OnlineRequired,
             ["/personal/customer-link-requests"] = PosConnectivityRequirement.OnlineRequired,
             ["/personal/notifications"] = PosConnectivityRequirement.OnlineRequired,
+            ["/org/notifications"] = PosConnectivityRequirement.OnlineRequired,
             ["/org/customer-link-notifications"] = PosConnectivityRequirement.OnlineRequired,
             ["/personal/explore-pos"] = PosConnectivityRequirement.OnlineRequired,
             ["/personal/start-business"] = PosConnectivityRequirement.OnlineRequired,

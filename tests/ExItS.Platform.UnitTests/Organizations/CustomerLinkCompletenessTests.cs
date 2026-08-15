@@ -709,6 +709,18 @@ public sealed class CustomerLinkCompletenessTests
                 && string.Equals(n.RelatedType, relatedType, StringComparison.Ordinal)
                 && string.Equals(n.RelatedId, relatedId, StringComparison.Ordinal)));
 
+        public Task<IReadOnlyList<OrganizationInAppNotification>> ListByOrganizationRelatedAsync(
+            PlatformOrganizationId organizationId,
+            string relatedType,
+            string relatedId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<OrganizationInAppNotification>>(
+                _items.Where(n =>
+                        n.OrganizationId == organizationId
+                        && string.Equals(n.RelatedType, relatedType, StringComparison.Ordinal)
+                        && string.Equals(n.RelatedId, relatedId, StringComparison.Ordinal))
+                    .ToList());
+
         public Task AddAsync(OrganizationInAppNotification notification, CancellationToken cancellationToken = default)
         {
             _items.Add(notification);

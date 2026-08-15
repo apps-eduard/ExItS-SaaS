@@ -119,6 +119,55 @@ internal sealed class PlatformMembershipAuthz(
         return membership is null ? denied : null;
     }
 
+    /// <summary>
+    /// Organization business notification inbox: Platform ManageMemberships, Organization Owner,
+    /// or Organization Administrator (Manager) in trusted organization context.
+    /// Cashiers and other staff cannot open the org inbox.
+    /// </summary>
+    public async Task<IResult?> EnsureCanAccessOrganizationNotificationsAsync(
+        string actionCode,
+        string targetType,
+        string targetId,
+        Guid organizationId,
+        string? summary = null,
+        CancellationToken cancellationToken = default)
+    {
+        var denied = await EnsureCanManageMembershipsAsync(
+            actionCode,
+            targetType,
+            targetId,
+            organizationId,
+            summary: summary,
+            cancellationToken: cancellationToken).ConfigureAwait(false);
+        if (denied is null)
+        {
+            return null;
+        }
+
+        var actor = authz.CurrentActor;
+        if (actor.PlatformUserId is null
+            || actor.OrganizationId is null
+            || actor.OrganizationId.Value != organizationId)
+        {
+            return denied;
+        }
+
+        var membership = await memberships
+            .FindActiveByUserAndOrganizationAsync(
+                actor.PlatformUserId,
+                PlatformOrganizationId.From(organizationId),
+                cancellationToken)
+            .ConfigureAwait(false);
+        if (membership is not null
+            && (membership.Role == OrganizationRole.OrganizationOwner
+                || membership.Role == OrganizationRole.OrganizationAdministrator))
+        {
+            return null;
+        }
+
+        return denied;
+    }
+
     public async Task<(OrganizationRole? ActorMembershipRole, bool HasPlatformManageMemberships)> ResolveActorMembershipAuthorityAsync(
         Guid organizationId,
         CancellationToken cancellationToken = default)

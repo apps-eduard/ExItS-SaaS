@@ -2649,6 +2649,18 @@
   <data name="CustomerLink_OrgNotificationsEmptyTitle" xml:space="preserve"><value>Wala pang link responses</value></data>
   <data name="CustomerLink_OrgNotificationsEmptyMessage" xml:space="preserve"><value>Kapag tumanggap o tumanggi ang customers, lalabas dito ang responses.</value></data>
   <data name="CustomerLink_OrgNotificationsLoadFailed" xml:space="preserve"><value>Hindi ma-load ang organization notifications. Subukan ulit.</value></data>
+  <data name="OrgNotifications_Title" xml:space="preserve"><value>Mga notification</value></data>
+  <data name="OrgNotifications_Subtitle" xml:space="preserve"><value>Mga customer link response at supplier connection alert para sa organisasyong ito.</value></data>
+  <data name="OrgNotifications_FilterUnread" xml:space="preserve"><value>Hindi pa nabasa</value></data>
+  <data name="OrgNotifications_FilterAll" xml:space="preserve"><value>Lahat</value></data>
+  <data name="OrgNotifications_ErrorTitle" xml:space="preserve"><value>Hindi ma-load ang notifications</value></data>
+  <data name="OrgNotifications_EmptyTitle" xml:space="preserve"><value>Walang notification</value></data>
+  <data name="OrgNotifications_EmptyMessage" xml:space="preserve"><value>Lalabas dito ang mga alerto kapag may customer link response o supplier connection update.</value></data>
+  <data name="OrgNotifications_LoadFailed" xml:space="preserve"><value>Hindi ma-load ang organization notifications. Subukan ulit.</value></data>
+  <data name="OrgNotifications_OfflineRespond" xml:space="preserve"><value>Kumonekta sa internet para makasagot.</value></data>
+  <data name="OrgNotifications_StatusConnected" xml:space="preserve"><value>Nakakonekta</value></data>
+  <data name="OrgNotifications_StatusDeclined" xml:space="preserve"><value>Tinanggihan</value></data>
+  <data name="OrgNotifications_StatusUnavailable" xml:space="preserve"><value>Hindi na available</value></data>
   <data name="Personal_Nav_CustomerLinkRequests" xml:space="preserve"><value>Customer link requests</value></data>
   <data name="Personal_Nav_Notifications" xml:space="preserve"><value>Notifications</value></data>
   <data name="Personal_NotificationsTitle" xml:space="preserve"><value>Notifications</value></data>
@@ -2679,6 +2691,7 @@
   <data name="ConnectedSuppliers_RespondRequestFailed" xml:space="preserve"><value>Hindi ma-save ang tugon sa koneksyon.</value></data>
   <data name="ConnectedSuppliers_IncomingBannerTitle" xml:space="preserve"><value>May hinihintay na supplier connection request</value></data>
   <data name="ConnectedSuppliers_IncomingBannerBody" xml:space="preserve"><value>{0} (na) negosyo ang gustong kumonekta sa inyo bilang supplier. Suriin at Tanggapin o Tanggihan.</value></data>
+  <data name="ConnectedSuppliers_IncomingCompact" xml:space="preserve"><value>{0} (na) supplier request ang kailangan suriin</value></data>
   <data name="ConnectedSuppliers_ReviewIncoming" xml:space="preserve"><value>Suriin ang connection requests</value></data>
   <data name="ConnectedSuppliers_RequestConnection" xml:space="preserve"><value>Ikonekta ang supplier</value></data>
   <data name="ConnectedSuppliers_RequestTitle" xml:space="preserve"><value>Ikonekta ang ExItS supplier</value></data>

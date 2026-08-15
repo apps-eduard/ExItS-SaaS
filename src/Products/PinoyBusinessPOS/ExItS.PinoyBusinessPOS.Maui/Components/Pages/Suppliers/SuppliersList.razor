@@ -36,8 +36,7 @@ else
         @if (!_isOffline && _incomingPendingCount > 0)
         {
             <Alert Tone="AlertTone.Info"
-                   Title="@L["ConnectedSuppliers_IncomingBannerTitle"]"
-                   Message="@L["ConnectedSuppliers_IncomingBannerBody", _incomingPendingCount]" />
+                   Title="@L["ConnectedSuppliers_IncomingCompact", _incomingPendingCount]" />
             <div class="pos-action-grid pos-action-grid--single pos-suppliers__actions" role="group">
                 <button type="button"
                         class="pos-action-tile pos-action-tile--primary"

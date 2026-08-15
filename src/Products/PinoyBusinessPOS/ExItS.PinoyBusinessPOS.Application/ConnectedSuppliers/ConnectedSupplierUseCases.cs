@@ -120,6 +120,7 @@ public sealed class RequestConnection
     private readonly IPosUnitOfWork _uow;
     private readonly IPosCommercialAccessAccessor _access;
     private readonly IPlatformOrganizationPublicResolve _organizationResolve;
+    private readonly IOrganizationBusinessNotificationPublisher _notifications;
     private readonly TimeProvider _clock;
 
     public RequestConnection(
@@ -128,6 +129,7 @@ public sealed class RequestConnection
         IPosUnitOfWork uow,
         IPosCommercialAccessAccessor access,
         IPlatformOrganizationPublicResolve organizationResolve,
+        IOrganizationBusinessNotificationPublisher? notifications = null,
         TimeProvider? clock = null)
     {
         _relationships = relationships;
@@ -135,6 +137,7 @@ public sealed class RequestConnection
         _uow = uow;
         _access = access;
         _organizationResolve = organizationResolve;
+        _notifications = notifications ?? new NoOpOrganizationBusinessNotificationPublisher();
         _clock = clock ?? TimeProvider.System;
     }
 
@@ -227,6 +230,19 @@ public sealed class RequestConnection
             await _suppliers.AddAsync(buyerSupplier, ct).ConfigureAwait(false);
 
             await _uow.SaveChangesAsync(ct).ConfigureAwait(false);
+
+            var buyerName = string.IsNullOrWhiteSpace(buyerDisplayName)
+                ? (buyerPublicId ?? "A business")
+                : buyerDisplayName;
+            await _notifications.PublishAsync(
+                organizationId,
+                supplier.Value,
+                SupplierConnectionNotificationTypes.Requested,
+                relationship.Id.Value.ToString("D"),
+                "Supplier connection request",
+                $"{buyerName} wants to connect with your business as a supplier.",
+                ct).ConfigureAwait(false);
+
             return ApplicationResult<ConnectedSupplierRelationshipDto>.Success(
                 ConnectedSupplierMapper.Map(relationship, supplierView: false));
         }
@@ -321,27 +337,107 @@ public sealed class RequestConnection
 
 public sealed class RespondConnection
 {
-    private readonly IConnectedSupplierRelationshipRepository _relationships;private readonly IPosUnitOfWork _uow;
-    private readonly IPosCommercialAccessAccessor _access;private readonly TimeProvider _clock;
-    public RespondConnection(IConnectedSupplierRelationshipRepository r,IPosUnitOfWork u,IPosCommercialAccessAccessor a,TimeProvider? c=null)
-    {_relationships=r;_uow=u;_access=a;_clock=c??TimeProvider.System;}
-    public async Task<ApplicationResult<ConnectedSupplierRelationshipDto>> ExecuteAsync(Guid orgId,Guid relationshipId,bool approve,RespondConnectionRequest request,CancellationToken ct=default)
+    private readonly IConnectedSupplierRelationshipRepository _relationships;
+    private readonly IPosUnitOfWork _uow;
+    private readonly IPosCommercialAccessAccessor _access;
+    private readonly IOrganizationBusinessNotificationPublisher _notifications;
+    private readonly TimeProvider _clock;
+
+    public RespondConnection(
+        IConnectedSupplierRelationshipRepository relationships,
+        IPosUnitOfWork uow,
+        IPosCommercialAccessAccessor access,
+        IOrganizationBusinessNotificationPublisher? notifications = null,
+        TimeProvider? clock = null)
     {
-        var gate=ConnectedSupplierUseCaseGuard.Access(_access,UtangCapability.ManageSuppliers);
-        if(!gate.IsSuccess)return ConnectedSupplierUseCaseGuard.Failure<ConnectedSupplierRelationshipDto>(gate.ErrorCode!,gate.ErrorMessage!);
-        var r=await _relationships.GetAsync(ConnectedSupplierRelationshipId.From(relationshipId),ct);
-        var org=PosOrganizationId.From(orgId);
-        if(r is null||r.SupplierOrganizationId!=org)
+        _relationships = relationships;
+        _uow = uow;
+        _access = access;
+        _notifications = notifications ?? new NoOpOrganizationBusinessNotificationPublisher();
+        _clock = clock ?? TimeProvider.System;
+    }
+
+    public async Task<ApplicationResult<ConnectedSupplierRelationshipDto>> ExecuteAsync(
+        Guid orgId,
+        Guid relationshipId,
+        bool approve,
+        RespondConnectionRequest request,
+        CancellationToken ct = default)
+    {
+        var gate = ConnectedSupplierUseCaseGuard.Access(_access, UtangCapability.ManageSuppliers);
+        if (!gate.IsSuccess)
+        {
             return ConnectedSupplierUseCaseGuard.Failure<ConnectedSupplierRelationshipDto>(
-                ConnectedSupplierErrorCodes.NotFound,"This connection request is no longer available.");
-        try {if(approve)r.Approve(_clock.GetUtcNow(),request.RespondedByUserId);else r.Decline(_clock.GetUtcNow(),request.RespondedByUserId);
-            await _relationships.UpdateAsync(r,ct);await _uow.SaveChangesAsync(ct);return ApplicationResult<ConnectedSupplierRelationshipDto>.Success(ConnectedSupplierMapper.Map(r,supplierView:true));
-        }catch(DomainException ex)
+                gate.ErrorCode!,
+                gate.ErrorMessage!);
+        }
+
+        var r = await _relationships.GetAsync(ConnectedSupplierRelationshipId.From(relationshipId), ct);
+        var org = PosOrganizationId.From(orgId);
+        if (r is null || r.SupplierOrganizationId != org)
+        {
+            return ConnectedSupplierUseCaseGuard.Failure<ConnectedSupplierRelationshipDto>(
+                ConnectedSupplierErrorCodes.NotFound,
+                "This connection request is no longer available.");
+        }
+
+        try
+        {
+            if (approve)
+            {
+                r.Approve(_clock.GetUtcNow(), request.RespondedByUserId);
+            }
+            else
+            {
+                r.Decline(_clock.GetUtcNow(), request.RespondedByUserId);
+            }
+
+            await _relationships.UpdateAsync(r, ct);
+            await _uow.SaveChangesAsync(ct);
+
+            var relatedId = r.Id.Value.ToString("D");
+            await _notifications.MarkRelatedReadAsync(
+                orgId,
+                SupplierConnectionNotificationTypes.Requested,
+                relatedId,
+                ct).ConfigureAwait(false);
+
+            var supplierName = string.IsNullOrWhiteSpace(r.SupplierDisplayNameSnapshot)
+                ? (r.SupplierPublicOrganizationIdSnapshot ?? "The supplier")
+                : r.SupplierDisplayNameSnapshot;
+
+            if (approve)
+            {
+                await _notifications.PublishAsync(
+                    orgId,
+                    r.BuyerOrganizationId.Value,
+                    SupplierConnectionNotificationTypes.Accepted,
+                    relatedId,
+                    "Supplier connection accepted",
+                    $"{supplierName} accepted your supplier connection request.",
+                    ct).ConfigureAwait(false);
+            }
+            else
+            {
+                await _notifications.PublishAsync(
+                    orgId,
+                    r.BuyerOrganizationId.Value,
+                    SupplierConnectionNotificationTypes.Declined,
+                    relatedId,
+                    "Supplier connection declined",
+                    $"{supplierName} declined your supplier connection request.",
+                    ct).ConfigureAwait(false);
+            }
+
+            return ApplicationResult<ConnectedSupplierRelationshipDto>.Success(
+                ConnectedSupplierMapper.Map(r, supplierView: true));
+        }
+        catch (DomainException ex)
         {
             var message = ex.ErrorCode == ConnectedSupplierDomainErrorCodes.InvalidTransition
                 ? "This connection request is no longer available."
                 : ex.Message;
-            return ConnectedSupplierUseCaseGuard.Failure<ConnectedSupplierRelationshipDto>(ex.ErrorCode,message);
+            return ConnectedSupplierUseCaseGuard.Failure<ConnectedSupplierRelationshipDto>(ex.ErrorCode, message);
         }
     }
 }

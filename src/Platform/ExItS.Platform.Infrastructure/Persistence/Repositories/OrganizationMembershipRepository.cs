@@ -136,6 +136,23 @@ internal sealed class OrganizationMembershipRepository : IOrganizationMembership
             .ConfigureAwait(false);
     }
 
+    public async Task<IReadOnlyList<OrganizationMembership>> ListActiveBusinessInboxRecipientsAsync(
+        PlatformOrganizationId organizationId,
+        CancellationToken cancellationToken = default)
+    {
+        var active = nameof(MembershipStatus.Active);
+        var owner = nameof(OrganizationRole.OrganizationOwner);
+        var administrator = nameof(OrganizationRole.OrganizationAdministrator);
+        var records = await _db.OrganizationMemberships.AsNoTracking()
+            .Where(m => m.OrganizationId == organizationId.Value
+                        && m.Status == active
+                        && (m.Role == owner || m.Role == administrator))
+            .OrderByDescending(m => m.UpdatedAtUtc)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return records.Select(IdentityAccessEntityMapper.ToMembershipDomain).ToList();
+    }
+
     public Task AddAsync(OrganizationMembership membership, CancellationToken cancellationToken = default)
     {
         _db.OrganizationMemberships.Add(IdentityAccessEntityMapper.ToMembershipRecord(membership));
