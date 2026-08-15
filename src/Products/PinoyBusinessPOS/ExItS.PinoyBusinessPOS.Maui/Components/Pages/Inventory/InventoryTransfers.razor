@@ -51,20 +51,23 @@ else
             </button>
         </div>
 
-        <div class="pos-action-grid pos-action-grid--three" role="tablist" aria-label="@L["Inventory_TransfersTitle"]">
+        <div class="pos-action-grid pos-action-grid--three pos-stock-counts__tabs" role="tablist" aria-label="@L["Inventory_TransfersTitle"]">
             @foreach (var tab in new[] { "outgoing", "incoming", "history" })
             {
                 <button type="button"
                         class="pos-action-tile @(_direction == tab ? "pos-action-tile--primary" : null)"
+                        role="tab"
+                        aria-selected="@(_direction == tab)"
                         disabled="@_loading"
                         @onclick="() => SetDirectionAsync(tab)">
+                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get(TabIcon(tab))</span>
                     <span class="pos-action-tile__label">@TabLabel(tab)</span>
                 </button>
             }
         </div>
 
         <section class="pos-stock-counts__panel" aria-labelledby="inventory-transfers-heading">
-            <h2 id="inventory-transfers-heading" class="pos-stock-counts__section-title">@L["Inventory_TransfersTitle"]</h2>
+            <h2 id="inventory-transfers-heading" class="pos-stock-counts__section-title">@TabLabel(_direction)</h2>
             @if (_loading)
             {
                 <div class="pos-stock-counts__loading"><Spinner /><span>@L["Inventory_Loading"]</span></div>
@@ -181,6 +184,13 @@ else
         "incoming" => L["Inventory_TransfersIncoming"],
         "history" => L["Inventory_TransfersHistory"],
         _ => L["Inventory_TransfersOutgoing"]
+    };
+
+    private static string TabIcon(string tab) => tab switch
+    {
+        "incoming" => "borrowed",
+        "history" => "list",
+        _ => "lent"
     };
 
     private void GoNew() => Nav.NavigateTo("/inventory/transfers/new");

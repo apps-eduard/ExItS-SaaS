@@ -3848,10 +3848,10 @@
     <value>Mga transfer</value>
   </data>
   <data name="Inventory_TransfersSubtitle" xml:space="preserve">
-    <value>Magpadala ng stock sa ibang branch. Dapat i-receive muna ng destinasyon bago ito maibenta.</value>
+    <value>Magpadala ng stock sa ibang branch. Kailangan nilang tumanggap bago maibenta.</value>
   </data>
   <data name="Inventory_TransfersAdd" xml:space="preserve">
-    <value>Bagong transfer</value>
+    <value>Transfer</value>
   </data>
   <data name="Inventory_TransfersEmptyTitle" xml:space="preserve">
     <value>Walang transfer</value>

@@ -153,7 +153,24 @@ public sealed class InventoryPageGuardTests
         Assert.Contains("outgoing", transfers, StringComparison.Ordinal);
         Assert.Contains("incoming", transfers, StringComparison.Ordinal);
         Assert.Contains("history", transfers, StringComparison.Ordinal);
+        Assert.Contains("pos-stock-counts__tabs", transfers, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(TabIcon(tab))", transfers, StringComparison.Ordinal);
+        Assert.Contains("\"lent\"", transfers, StringComparison.Ordinal);
+        Assert.Contains("\"borrowed\"", transfers, StringComparison.Ordinal);
+        Assert.Contains("\"list\"", transfers, StringComparison.Ordinal);
         Assert.DoesNotContain("PageHeader", transfers, StringComparison.Ordinal);
+
+        var en = File.ReadAllText(Path.Combine(
+            FindRepoRoot(),
+            "src", "Products", "PinoyBusinessPOS", "ExItS.PinoyBusinessPOS.Maui",
+            "Localization", "PosResources.resx"));
+        Assert.Contains("<data name=\"Inventory_TransfersAdd\"", en, StringComparison.Ordinal);
+        Assert.Matches(
+            """<data name="Inventory_TransfersAdd"[^>]*>\s*<value>Transfer</value>""",
+            en);
+        Assert.DoesNotMatch(
+            """<data name="Inventory_TransfersAdd"[^>]*>\s*<value>New transfer</value>""",
+            en);
 
         var transferCreate = File.ReadAllText(Path.Combine(pages, "InventoryTransferCreate.razor"));
         Assert.Contains("@page \"/inventory/transfers/new\"", transferCreate, StringComparison.Ordinal);

@@ -3848,10 +3848,10 @@
     <value>Transfers</value>
   </data>
   <data name="Inventory_TransfersSubtitle" xml:space="preserve">
-    <value>Send stock to another branch. Destination must receive it before it can be sold.</value>
+    <value>Send stock to another branch. They must receive it before selling.</value>
   </data>
   <data name="Inventory_TransfersAdd" xml:space="preserve">
-    <value>New transfer</value>
+    <value>Transfer</value>
   </data>
   <data name="Inventory_TransfersEmptyTitle" xml:space="preserve">
     <value>No transfers</value>
