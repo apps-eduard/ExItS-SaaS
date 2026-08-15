@@ -68,14 +68,16 @@ Server APIs remain authoritative (`OrganizationManagementAuthority` + `PosRoleMa
 | POS checkout (`CreateSale` / `EnterPos`) | None unless product-local selling role | Only if role allows | Per POS role |
 | Platform operator (`view_portfolio`, etc.) | None unless separately Platform staff | None | None |
 
-**Invariant:** Platform `OrganizationOwner` membership ≠ automatic POS Cashier/Owner checkout role. Token issue may set `OrganizationManagementAuthority=true` when commercial entitlement is active but product-local role is missing — Org Web Bearer binds; checkout remains denied until a product-local selling role is assigned.
+**Invariant:** Platform `OrganizationOwner` membership ≠ automatic POS Cashier/Owner checkout role. Token issue may set `OrganizationManagementAuthority=true` for Owner/Administrator **from membership alone** (commercial entitlement is a separate paid-feature gate) when product-local role is missing — Org Web Bearer binds; checkout remains denied until a product-local selling role is assigned.
 
 ### Session grant / Bearer (Owner fix)
 
-1. `IssueToken` (session grant) allows Organization Owner/Administrator with active commercial entitlement even when `ProductLocalRoleMissing`.
+1. `IssueToken` (session grant) allows Organization Owner/Administrator even when `ProductLocalRoleMissing` (entitlement not required for core management tokens).
 2. Introspection returns `organizationManagementAuthority` + `membershipRole` without inventing `MappedPosRoleCode=Owner`.
 3. POS `PosRoleAuth` honors management authority for management capabilities; denies `CreateSale` / `EnterPos`.
 4. Org Web hydrator binds Bearer from successful session grant — **not** from admin `/access/evaluate`.
+5. Tokens persist on `OrgWebCircuitSession` and are re-applied via `CreateInboundActivityHandler` so Blazor Server AsyncLocal loss does not drop PlatformSession/Bearer on page calls.
+6. See [runtime remediation](../reports/P25-org-web-runtime-owner-auth-and-icon-nav-remediation.md).
 
 ## Navigation map (implemented)
 
@@ -112,4 +114,6 @@ No Personal Utang, no other Organizations, no device secrets, no Platform review
 
 2. `Actor 'development-operator:unauthenticated' does not hold permission 'platform.permission.view_portfolio'` on Branches — `DevPlatformUserHeaderHandler` cleared `Authorization: PlatformSession` when the scheme was not Bearer, leaving Platform APIs unauthenticated. Fixed by preserving PlatformSession and not attaching product Bearer to `/api/v1/platform/*` from Org Web outer auth handler. Membership-based `EnsureCanViewOrganizationAsync` remains sufficient; Org users are **not** granted `ViewPortfolio`.
 
-3. Organization Owner authenticated and routed to Org Web but Overview/business APIs returned unauthorized — session hydrator required `/access/evaluate` Allowed and `IssueToken` refused product entry without a product-local role, so Bearer stayed null and POS fell through to Development-stage headers. Fixed by **Organization management authority**: Owner/Administrator with commercial entitlement receive session-grant Bearer and POS management capabilities without automatic `CreateSale`/`EnterPos`.
+3. Organization Owner authenticated and routed to Org Web but Overview/business APIs returned unauthorized — session hydrator required `/access/evaluate` Allowed and `IssueToken` refused product entry without a product-local role, so Bearer stayed null and POS fell through to Development-stage headers. Fixed by **Organization management authority**: Owner/Administrator receive session-grant Bearer and POS management capabilities without automatic `CreateSale`/`EnterPos`.
+
+4. After the first management-authority fix, Local Validation still failed because Blazor Server lost `AsyncLocal` ambient PlatformSession/Bearer between hydrate and page HttpClient calls (`IHttpClientFactory` handlers are not circuit-scoped). Fixed by `OrgWebCircuitSession` + `CreateInboundActivityHandler` re-apply. Commercial entitlement is **not** required for core management token qualification. See [P25-org-web-runtime-owner-auth-and-icon-nav-remediation.md](../reports/P25-org-web-runtime-owner-auth-and-icon-nav-remediation.md).

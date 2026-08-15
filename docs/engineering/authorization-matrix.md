@@ -214,7 +214,8 @@ Identity comes from authenticated Platform session + selected Organization + pro
 **Organization Owner effective authority**
 
 - Full Organization Web management for the selected Organization (membership + ownership relation).
-- POS **management** APIs via `OrganizationManagementAuthority` when commercial entitlement is active — **does not** require `platform.permission.view_portfolio`.
+- POS **management** APIs via `OrganizationManagementAuthority` from Organization Owner/Administrator **membership** (commercial entitlement gates paid features separately) — **does not** require `platform.permission.view_portfolio`.
+- Org Web Blazor restores PlatformSession/Bearer ambient on every circuit inbound activity (`OrgWebCircuitSession`) so Local Validation Staging does not fall through to Development-stage headers or `view_portfolio`.
 - POS **checkout** (`CreateSale` / `EnterPos`) remains denied unless a separate product-local selling role is assigned.
 - Ownership transfer recomputes authority per selected Organization (never cache Owner globally per UserId).
 

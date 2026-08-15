@@ -21,11 +21,16 @@ Organization Owner (e.g. Mica Uy → Mica Store) successfully authenticated and 
 
 ## Fix
 
-- Introduce `OrganizationManagementAuthority` for Platform `OrganizationOwner` / `OrganizationAdministrator` with active commercial entitlement.
+- Introduce `OrganizationManagementAuthority` for Platform `OrganizationOwner` / `OrganizationAdministrator`.
 - Session grant / bind / introspect may issue org+product Bearer for management without inventing a POS checkout role.
+- Commercial entitlement is **not** required for core management qualification (superseded by [runtime remediation](P25-org-web-runtime-owner-auth-and-icon-nav-remediation.md)); paid features remain feature-gated.
 - POS `PosRoleAuth` allows management capabilities under that authority; **denies** `CreateSale` and `EnterPos`.
 - Org Web hydrator binds Bearer from session grant success (not admin evaluate).
 - Sanitized error no longer tells Org workspace users to open Platform Admin.
+
+## Follow-up runtime fix
+
+Local Validation still failed after this package because Blazor circuit AsyncLocal dropped PlatformSession/Bearer on page calls. See [P25-org-web-runtime-owner-auth-and-icon-nav-remediation.md](P25-org-web-runtime-owner-auth-and-icon-nav-remediation.md).
 
 ## Invariants preserved
 

@@ -58,9 +58,25 @@ Owner checklist: [organization-web-responsive-owner-checklist.md](../validation/
 
 | Condition | Message |
 |-----------|---------|
-| 403 | You don't have permission to view this section. |
-| Session | Your session has expired. Please sign in again. |
-| Generic | We couldn't load this information. Try again. |
+| 401 / session | Your session has expired. Please sign in again. |
+| 403 plan/entitlement | This feature requires an active plan. Organization management remains available. |
+| 403 `view_portfolio` fallthrough (missing session actor) | We couldn't verify your access… (sign out / sign in) |
+| 403 other permission | You don't have permission to view this section. |
+| Empty authorized list | OrgEmpty (not an auth error) |
+| Partial Overview | Metrics unavailable warning; Platform management cards may still load |
+
+## Shell / navigation (Ant Design Pro–inspired)
+
+| Item | Standard |
+|------|----------|
+| Expanded sider | Width 220; icon + localized label |
+| Collapsed sider | Width 64; icons remain; `Title` tooltips; no blank rows |
+| Top-level icons | Overview `dashboard`, Business `shop`, People `team`, Catalog `appstore`, Inventory `database`, Sales `dollar`, Operations `control`, Settings `setting` |
+| Child icons | Meaningful AntDesign icons per route (profile `idcard`, branches `apartment`, …) |
+| Mobile | Drawer with the same icon+label items |
+| Mutation buttons | Shown only after effective capability / list authorization succeeds |
+
+Do not grant `view_portfolio` to Owners. Cashier never sees Org Web nav.
 
 ## Privacy
 
