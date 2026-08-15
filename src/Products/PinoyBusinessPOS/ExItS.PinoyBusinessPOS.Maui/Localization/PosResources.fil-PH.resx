@@ -4676,7 +4676,7 @@
     <value>Pamahalaan ang contact at reference data ng supplier (online lang).</value>
   </data>
   <data name="Suppliers_Add" xml:space="preserve">
-    <value>Magdagdag ng supplier</value>
+    <value>Supplier</value>
   </data>
   <data name="Suppliers_Refresh" xml:space="preserve">
     <value>I-refresh</value>

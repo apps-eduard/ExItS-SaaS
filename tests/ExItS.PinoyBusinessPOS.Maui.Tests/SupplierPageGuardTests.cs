@@ -14,9 +14,20 @@ public sealed class SupplierPageGuardTests
         Assert.Contains("pos-suppliers__list", list, StringComparison.Ordinal);
         Assert.Contains("IPosSupplierClient", list, StringComparison.Ordinal);
         Assert.Contains("IconGlyphs.Get(\"plus\")", list, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"qr\")", list, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"inbox\")", list, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"customers\")", list, StringComparison.Ordinal);
         Assert.Contains("IconGlyphs.Get(\"refresh\")", list, StringComparison.Ordinal);
         Assert.Contains("IconGlyphs.Get(\"search\")", list, StringComparison.Ordinal);
         Assert.DoesNotContain("PageHeader", list, StringComparison.Ordinal);
+
+        var en = File.ReadAllText(Path.Combine(
+            FindRepoRoot(),
+            "src", "Products", "PinoyBusinessPOS", "ExItS.PinoyBusinessPOS.Maui",
+            "Localization", "PosResources.resx"));
+        Assert.Contains("<data name=\"Suppliers_Add\"", en, StringComparison.Ordinal);
+        Assert.Contains("<value>Supplier</value>", en, StringComparison.Ordinal);
+        Assert.DoesNotContain("<value>Add supplier</value>", en, StringComparison.Ordinal);
 
         var create = File.ReadAllText(Path.Combine(suppliers, "SupplierCreate.razor"));
         Assert.Contains("@page \"/suppliers/new\"", create, StringComparison.Ordinal);

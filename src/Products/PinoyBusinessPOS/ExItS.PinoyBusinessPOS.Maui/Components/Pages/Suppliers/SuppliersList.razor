@@ -41,6 +41,7 @@ else
                 <button type="button"
                         class="pos-action-tile pos-action-tile--primary"
                         @onclick="GoIncomingRequests">
+                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("inbox")</span>
                     <span class="pos-action-tile__label">@L["ConnectedSuppliers_ReviewIncoming"]</span>
                 </button>
             </div>
@@ -58,12 +59,14 @@ else
                     class="pos-action-tile"
                     disabled="@(!canManage || _isOffline)"
                     @onclick="GoConnect">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("qr")</span>
                 <span class="pos-action-tile__label">@L["ConnectedSuppliers_RequestConnection"]</span>
             </button>
             <button type="button"
                     class="pos-action-tile @(_incomingPendingCount > 0 ? "pos-action-tile--primary" : null)"
                     disabled="@(_loading || _isOffline)"
                     @onclick="GoIncomingRequests">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("inbox")</span>
                 <span class="pos-action-tile__label">
                     @L["ConnectedSuppliers_IncomingRequests"]
                     @if (_incomingPendingCount > 0)
@@ -76,6 +79,7 @@ else
                     class="pos-action-tile"
                     disabled="@(_loading || _isOffline)"
                     @onclick="GoConnectedBuyers">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("customers")</span>
                 <span class="pos-action-tile__label">@L["ConnectedBuyers_Title"]</span>
             </button>
             <button type="button"
