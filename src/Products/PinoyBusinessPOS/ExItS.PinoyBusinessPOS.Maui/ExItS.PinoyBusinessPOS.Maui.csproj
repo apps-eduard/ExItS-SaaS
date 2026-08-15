@@ -33,8 +33,14 @@
     <!-- Sideloaded Debug APKs (adb install without Fast Deployment) need assemblies embedded;
          otherwise monodroid aborts with "No assemblies found ... Assuming this is part of Fast Deployment". -->
     <EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
-    <!-- Emulator (default): 127.0.0.1 + adb reverse. PhysicalDevice: Tailscale/LAN PublicHost URLs. -->
-    <PosLocalValidationTarget Condition="'$(PosLocalValidationTarget)' == ''">Emulator</PosLocalValidationTarget>
+    <!-- Default Debug Local Validation uses Tailscale/LAN PublicHost (100.120.79.81).
+         Pass -p:PosLocalValidationTarget=Emulator only for legacy 10.0.2.2 loopback experiments. -->
+    <PosLocalValidationTarget Condition="'$(PosLocalValidationTarget)' == ''">PhysicalDevice</PosLocalValidationTarget>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug' AND '$(PosLocalValidationTarget)' == 'Emulator'">
+    <!-- Legacy emulator host-loopback URLs (override defaults when explicitly requested). -->
+    <DefineConstants>$(DefineConstants);POS_LOCAL_VALIDATION_EMULATOR_LOOPBACK</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Debug' AND '$(PosLocalValidationTarget)' == 'PhysicalDevice'">

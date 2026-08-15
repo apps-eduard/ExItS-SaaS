@@ -1,9 +1,16 @@
 # MAUI POS — Android emulator build + install
 
 **Local Validation / Debug only. Not Production.**  
-Default emulator profile talks to host APIs via `http://10.0.2.2:8091` (Platform) and `http://10.0.2.2:8092` (POS).
+Default Debug profile (emulator **and** physical) uses Tailscale/LAN PublicHost:
 
-Start Local Validation first: [Start-LocalValidation.md](Start-LocalValidation.md).
+- Platform: `http://100.120.79.81:8091`
+- POS: `http://100.120.79.81:8092`
+
+Start Local Validation with the same host: [Start-LocalValidation.md](Start-LocalValidation.md).
+
+```powershell
+.\tools\Start-LocalValidation.ps1 -PublicHost 100.120.79.81
+```
 
 ## 1. Android SDK on PATH (this PowerShell session)
 
@@ -34,21 +41,25 @@ adb devices
 
 dotnet build "src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/ExItS.PinoyBusinessPOS.Maui.csproj" `
   -c Debug -f net10.0-android `
-  -p:PosLocalValidationTarget=Emulator `
+  -p:PosLocalValidationTarget=PhysicalDevice `
   -p:AndroidSdkDirectory="$env:ANDROID_HOME" `
   -t:Install
 ```
+
+`PosLocalValidationTarget=PhysicalDevice` is now the **default** when omitted. Explicit flag is fine for clarity.
 
 `adb devices` should list an emulator (`emulator-5554` or similar) as `device` before Install.
 
 ## Notes
 
-- **Emulator** profile = `10.0.2.2` → PC loopback. Do **not** use this APK on a physical phone.
-- For a **physical phone** + Tailscale PublicHost, see [Maui-PhysicalDevice-Install.md](Maui-PhysicalDevice-Install.md).
+- Emulator and physical phone use the **same** Tailscale PublicHost URLs by default.
+- Host PC Tailscale must be up; Local Validation must be started with `-PublicHost 100.120.79.81`.
+- Legacy host-loopback (`10.0.2.2`) only if you pass `-p:PosLocalValidationTarget=Emulator` **and** change URLs back — not the default Owner path.
 - Shared Local Validation password is in `deploy/docker/.env.local-validation` (never commit).
-- If sign-in says server unreachable: confirm Local Validation is running and health returns 200 on `http://127.0.0.1:8091/health`.
+- If sign-in says server unreachable: from the emulator/browser open `http://100.120.79.81:8091/health` and confirm Local Validation health is 200.
 
 ## Related
 
+- [Maui-PhysicalDevice-Install.md](Maui-PhysicalDevice-Install.md)
 - [Start-LocalValidation.md](Start-LocalValidation.md)
 - [Reset-LocalValidation.md](Reset-LocalValidation.md)

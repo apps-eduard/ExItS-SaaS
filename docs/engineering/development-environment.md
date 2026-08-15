@@ -90,32 +90,31 @@ dotnet build "src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/ExItS.Pi
 
 Phone must reach Platform/POS on the Tailscale/LAN host ports **8091** / **8092**. Keep `AllowedHosts` / cleartext domains aligned with that public host.
 
-## PinoyBusinessPOS MAUI — Emulator (optional / secondary)
+## PinoyBusinessPOS MAUI — Emulator
 
-Use only when a physical device is unavailable. Do **not** use any historical HealthCare AVD name.
+Emulator uses the **same** Tailscale PublicHost as physical devices (`100.120.79.81`). Start Local Validation with `-PublicHost 100.120.79.81`.
 
 | Item | Value |
 |---|---|
 | Package id | `com.exits.pinoybusinesspos` |
-| Profile | `-p:PosLocalValidationTarget=Emulator` (default Debug) |
-| API base URLs | `http://10.0.2.2:8091` / `http://10.0.2.2:8092` (emulator → host loopback) |
+| Profile | `-p:PosLocalValidationTarget=PhysicalDevice` (**default** Debug) |
+| API base URLs | `http://100.120.79.81:8091` / `http://100.120.79.81:8092` |
 | AVD | Create/use an ExItS-named AVD (for example `ExItS_Pixel_API34`) — never `HealthCare_*` |
 
 ```powershell
 $env:ANDROID_HOME = "$env:LOCALAPPDATA\Android\Sdk"
 $env:PATH = "$env:ANDROID_HOME\platform-tools;$env:ANDROID_HOME\emulator;$env:PATH"
 
-# Optional: start an ExItS-named AVD (rename/create — do not use HealthCare_* AVDs)
 emulator -avd ExItS_Pixel_API34
 
 dotnet build "src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/ExItS.PinoyBusinessPOS.Maui.csproj" `
   -c Debug -f net10.0-android `
-  -p:PosLocalValidationTarget=Emulator `
+  -p:PosLocalValidationTarget=PhysicalDevice `
   -p:AndroidSdkDirectory="$env:ANDROID_HOME" `
   -t:Install
 ```
 
-Ensure Platform/POS `AllowedHosts` includes `10.0.2.2` for Debug Local Validation. `adb reverse` to `127.0.0.1` is optional and may be unreliable on some Windows/ADB setups.
+Legacy `10.0.2.2` loopback is no longer the default; only use `-p:PosLocalValidationTarget=Emulator` for experiments.
 
 ## Secrets
 
