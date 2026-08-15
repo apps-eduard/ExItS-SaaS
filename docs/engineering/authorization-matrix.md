@@ -200,6 +200,17 @@ The resulting Organization session is newly issued or explicitly selected.
 | Bypass payment result | No | Local Validation simulation only | No |
 | Change another Organization | No | Yes only through Platform permission | No |
 
+### Organization Web host (`:8093`)
+
+| Role | Organization Web |
+|---|---|
+| Organization Owner / Administrator | Allowed (management center) |
+| StoreManager (POS) | Allowed (day-to-day; Owner-only surfaces denied) |
+| Cashier (POS) | **Denied** — use PinoyBusinessPOS MAUI |
+| InventoryStaff / ReportingUser | Allowed with limited navigation |
+
+Identity comes from authenticated Platform session + selected Organization + product Bearer introspection. Development-only organization/actor/commercial headers are not required outside Development/Testing. See [organization-web-role-and-workflow-matrix.md](organization-web-role-and-workflow-matrix.md).
+
 ### Test payment
 
 A Local Validation payment simulation requires:

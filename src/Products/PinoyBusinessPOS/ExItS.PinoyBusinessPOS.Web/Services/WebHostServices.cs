@@ -6,26 +6,49 @@ using ExItS.PinoyBusinessPOS.Application.Auth;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Offline;
 using ExItS.PinoyBusinessPOS.Application.Platform;
+using ExItS.PinoyBusinessPOS.Domain.Permissions;
 using ExItS.Web.UI;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Server.Circuits;
+using Microsoft.Extensions.Http;
 
 namespace ExItS.PinoyBusinessPOS.Web.Services;
 
 /// <summary>
 /// Blazor Server <see cref="IHttpClientFactory"/> handlers are not resolved from the circuit DI
-/// scope, so they cannot see circuit <see cref="ICurrentUserContext"/>. Flow the Platform session
-/// token via <see cref="AsyncLocal{T}"/> for Org Web API calls.
+/// scope, so they cannot see circuit <see cref="ICurrentUserContext"/>. Flow Platform session and
+/// product Bearer tokens via <see cref="AsyncLocal{T}"/> for Org Web API calls.
 /// </summary>
 public static class OrgWebSessionAmbient
 {
-    private static readonly AsyncLocal<string?> Token = new();
+    private static readonly AsyncLocal<string?> Session = new();
+    private static readonly AsyncLocal<string?> Access = new();
+    private static readonly AsyncLocal<Guid?> Organization = new();
 
     public static string? SessionToken
     {
-        get => Token.Value;
-        set => Token.Value = string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+        get => Session.Value;
+        set => Session.Value = string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    }
+
+    public static string? AccessToken
+    {
+        get => Access.Value;
+        set => Access.Value = string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    }
+
+    public static Guid? OrganizationId
+    {
+        get => Organization.Value;
+        set => Organization.Value = value is Guid id && id != Guid.Empty ? id : null;
+    }
+
+    public static void Clear()
+    {
+        SessionToken = null;
+        AccessToken = null;
+        OrganizationId = null;
     }
 }
 
@@ -52,6 +75,57 @@ public sealed class OrgWebCircuitSessionHeaderHandler : DelegatingHandler
 
         return base.SendAsync(request, cancellationToken);
     }
+}
+
+/// <summary>
+/// Attaches product Bearer + organization scope from ambient for POS business APIs.
+/// Staging/Production POS APIs reject development-only headers; Bearer introspection is required.
+/// </summary>
+public sealed class OrgWebPosAuthHeaderHandler : DelegatingHandler
+{
+    public const string OrganizationHeaderName = "X-Pos-Organization-Id";
+
+    protected override Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken)
+    {
+        var accessToken = OrgWebSessionAmbient.AccessToken;
+        if (!string.IsNullOrWhiteSpace(accessToken))
+        {
+            // Outer-most: set Bearer first. Platform client inner handlers may replace with PlatformSession.
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        }
+
+        if (OrgWebSessionAmbient.OrganizationId is Guid organizationId)
+        {
+            request.Headers.Remove(OrganizationHeaderName);
+            request.Headers.TryAddWithoutValidation(OrganizationHeaderName, organizationId.ToString("D"));
+        }
+
+        var sessionToken = OrgWebSessionAmbient.SessionToken;
+        if (!string.IsNullOrWhiteSpace(sessionToken) && !request.Headers.Contains("X-ExItS-Session-Token"))
+        {
+            request.Headers.TryAddWithoutValidation("X-ExItS-Session-Token", sessionToken);
+        }
+
+        return base.SendAsync(request, cancellationToken);
+    }
+}
+
+/// <summary>Inserts <see cref="OrgWebPosAuthHeaderHandler"/> as the outermost handler for typed clients.</summary>
+public sealed class OrgWebPosAuthHandlerFilter(IServiceProvider services) : IHttpMessageHandlerBuilderFilter
+{
+    public Action<HttpMessageHandlerBuilder> Configure(Action<HttpMessageHandlerBuilder> next) =>
+        builder =>
+        {
+            next(builder);
+            if (string.Equals(builder.Name, "PlatformApiUnauthenticated", StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            builder.AdditionalHandlers.Insert(0, services.GetRequiredService<OrgWebPosAuthHeaderHandler>());
+        };
 }
 
 public sealed class WebAppInfoService(IHostEnvironment environment) : IAppInfoService
@@ -349,6 +423,8 @@ public sealed class OrgWebShellState
     public bool Ready { get; set; }
     public string? Error { get; set; }
     public string? MembershipRole { get; set; }
+    /// <summary>POS product role code (Owner, StoreManager, Cashier, …) when commercial access issued.</summary>
+    public string? PosRole { get; set; }
     public IReadOnlyList<PlatformAuthEligibleOrganizationDto> Organizations { get; set; } = [];
     public IReadOnlyList<string> AllowedCapabilities { get; set; } = [];
     public int UnreadNotificationCount { get; set; }
@@ -364,25 +440,84 @@ public sealed class OrgWebShellState
             OrganizationMembershipRoles.Owner,
             StringComparison.OrdinalIgnoreCase);
 
+    /// <summary>Day-to-day Organization Manager (org Administrator membership or StoreManager POS role).</summary>
+    public bool IsOrgManager =>
+        string.Equals(MembershipRole, OrganizationMembershipRoles.Administrator, StringComparison.OrdinalIgnoreCase)
+        || string.Equals(PosRole, PosRoleCodes.StoreManager, StringComparison.OrdinalIgnoreCase)
+        || string.Equals(PosRole, "Manager", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Cashier POS role without Owner/Manager authority — Organization Web denied.</summary>
+    public bool IsCashierDenied =>
+        !IsOrgOwner
+        && !IsOrgManager
+        && string.Equals(PosRole, PosRoleCodes.Cashier, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Organization Web is for Owner/Manager (and other management POS roles), not Cashier POS staff.
+    /// Org Owners may enter without POS commercial access (membership-only essentials).
+    /// </summary>
+    public bool CanAccessOrganizationWeb
+    {
+        get
+        {
+            if (IsCashierDenied)
+            {
+                return false;
+            }
+
+            if (IsOrgOwner || IsOrgManager)
+            {
+                return true;
+            }
+
+            // Inventory/Reporting staff: management center with limited nav — not cashiers.
+            if (string.Equals(PosRole, PosRoleCodes.InventoryStaff, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(PosRole, PosRoleCodes.ReportingUser, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(PosRole, PosRoleCodes.Owner, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(PosRole, PosRoleCodes.Admin, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            // Capability-based fallback when role code is missing but grants are management-shaped.
+            return Can(UtangCapability.ViewDashboard)
+                   || Can(UtangCapability.ViewReports)
+                   || Can(UtangCapability.ManageCatalog)
+                   || Can(UtangCapability.ManageInventory)
+                   || Can(UtangCapability.ViewPurchasing)
+                   || Can(UtangCapability.ManageOperationalSetup);
+        }
+    }
+
     public bool Can(UtangCapability capability) =>
         AllowedCapabilities.Contains(capability.ToString(), StringComparer.OrdinalIgnoreCase);
 
-    public bool CanSee(string section) => section switch
+    public bool CanSee(string section)
     {
-        "overview" => IsOrgOwner || Can(UtangCapability.ViewDashboard),
-        "profile" or "branches" or "staff" or "subscription" or "notifications"
-            or "ownership-transfer" => IsOrgOwner,
-        "sales-documents" => IsExactOrgOwner,
-        "roles" => IsOrgOwner,
-        "products" => Can(UtangCapability.ViewCatalog),
-        "inventory" => Can(UtangCapability.ViewInventory),
-        "customers" => Can(UtangCapability.ViewCustomersAndHistory),
-        "devices" or "registers" => Can(UtangCapability.ViewRegisters) || IsOrgOwner,
-        "shifts" => Can(UtangCapability.ViewShifts),
-        "reports" => Can(UtangCapability.ViewReports) || Can(UtangCapability.ViewDashboard),
-        "settings" => Can(UtangCapability.ViewOperationalSetup) || IsOrgOwner,
-        _ => false
-    };
+        if (!CanAccessOrganizationWeb)
+        {
+            return false;
+        }
+
+        return section switch
+        {
+            "overview" => IsOrgOwner || IsOrgManager || Can(UtangCapability.ViewDashboard),
+            "ownership-transfer" or "sales-documents" or "subscription" => IsExactOrgOwner,
+            "profile" or "notifications" => IsOrgOwner,
+            "branches" or "staff" or "roles" => IsOrgOwner || IsOrgManager,
+            "products" => Can(UtangCapability.ViewCatalog) || IsOrgOwner || IsOrgManager,
+            "inventory" => Can(UtangCapability.ViewInventory) || IsOrgOwner || IsOrgManager,
+            "customers" => Can(UtangCapability.ViewCustomersAndHistory) || IsOrgOwner || IsOrgManager,
+            "suppliers" or "purchasing" => Can(UtangCapability.ViewSuppliers) || Can(UtangCapability.ViewPurchasing)
+                                          || IsOrgOwner || IsOrgManager,
+            "devices" or "registers" => Can(UtangCapability.ViewRegisters) || IsOrgOwner || IsOrgManager,
+            "shifts" => Can(UtangCapability.ViewShifts) || IsOrgOwner || IsOrgManager,
+            "reports" or "sales" => Can(UtangCapability.ViewReports) || Can(UtangCapability.ViewDashboard)
+                                    || IsOrgOwner || IsOrgManager,
+            "settings" => Can(UtangCapability.ViewOperationalSetup) || IsOrgOwner || IsOrgManager,
+            _ => false
+        };
+    }
 }
 
 public sealed class OrgWebSessionHydrator(
@@ -413,7 +548,9 @@ public sealed class OrgWebSessionHydrator(
 
         if (string.IsNullOrWhiteSpace(token))
         {
-            OrgWebSessionAmbient.SessionToken = null;
+            OrgWebSessionAmbient.Clear();
+            shell.PosRole = null;
+            shell.AllowedCapabilities = [];
             currentUser.Clear();
             shell.Ready = true;
             return;
@@ -421,6 +558,8 @@ public sealed class OrgWebSessionHydrator(
 
         circuitSession.SessionToken = token;
         OrgWebSessionAmbient.SessionToken = token;
+        OrgWebSessionAmbient.AccessToken = null;
+        OrgWebSessionAmbient.OrganizationId = null;
 
         if (currentUser.Session is null ||
             !string.Equals(currentUser.Session.PlatformSessionToken, token, StringComparison.Ordinal))
@@ -463,6 +602,8 @@ public sealed class OrgWebSessionHydrator(
 
             var org = shell.Organizations.FirstOrDefault(o => o.OrganizationId == orgId);
             shell.MembershipRole = org?.MembershipRole;
+            shell.PosRole = null;
+            OrgWebSessionAmbient.OrganizationId = orgId;
 
             var tokenResult = await platform.IssueTokenAsync(
                 new IssuePlatformAccessTokenRequest(
@@ -483,6 +624,9 @@ public sealed class OrgWebSessionHydrator(
                 && tokenResult.Data is not null
                 && access.IsSuccess
                 && access.Data?.Allowed == true;
+
+            // Bind product Bearer for POS business APIs before permission calls (Staging rejects Dev headers).
+            OrgWebSessionAmbient.AccessToken = hasPos ? tokenResult.Data!.AccessToken : null;
 
             currentUser.Set(new AuthSession(
                 me.Data.UserId,
@@ -509,6 +653,7 @@ public sealed class OrgWebSessionHydrator(
                 if (effective.IsSuccess && effective.Data is not null)
                 {
                     shell.AllowedCapabilities = effective.Data.AllowedCapabilities;
+                    shell.PosRole = effective.Data.Role;
                     currentUser.Set(currentUser.Session! with
                     {
                         EnabledFeatureCodes = effective.Data.AllowedFeatureCodes
@@ -518,6 +663,7 @@ public sealed class OrgWebSessionHydrator(
             else if (shell.IsOrgOwner)
             {
                 shell.AllowedCapabilities = [];
+                shell.PosRole = null;
             }
 
             var notes = await platform.GetOrganizationNotificationsAsync(orgId, ct).ConfigureAwait(false);
@@ -528,6 +674,9 @@ public sealed class OrgWebSessionHydrator(
         }
         else
         {
+            OrgWebSessionAmbient.OrganizationId = null;
+            OrgWebSessionAmbient.AccessToken = null;
+            shell.PosRole = null;
             currentUser.Set(new AuthSession(
                 me.Data.UserId,
                 me.Data.DisplayName,

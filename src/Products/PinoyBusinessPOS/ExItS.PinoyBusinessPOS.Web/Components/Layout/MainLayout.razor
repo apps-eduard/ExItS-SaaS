@@ -32,9 +32,41 @@
                 {
                     <MenuItem Key="overview" RouterLink="/overview" RouterMatch="NavLinkMatch.All" Icon="dashboard">@L["Nav_Overview"]</MenuItem>
                 }
+                @if (Shell.CanSee("profile") || Shell.CanSee("branches") || Shell.CanSee("devices"))
+                {
+                    <SubMenu Key="business" Title="Business">
+                        @if (Shell.CanSee("profile"))
+                        {
+                            <MenuItem Key="profile" RouterLink="/organization/profile">Business profile</MenuItem>
+                        }
+                        @if (Shell.CanSee("branches"))
+                        {
+                            <MenuItem Key="branches" RouterLink="/organization/branches" Icon="bank">@L["Nav_Branches"]</MenuItem>
+                        }
+                        @if (Shell.CanSee("devices"))
+                        {
+                            <MenuItem Key="devices" RouterLink="/operations/devices">Devices</MenuItem>
+                            <MenuItem Key="registers" RouterLink="/operations/registers">Registers</MenuItem>
+                        }
+                    </SubMenu>
+                }
+                @if (Shell.CanSee("staff") || Shell.CanSee("customers") || Shell.CanSee("suppliers"))
+                {
+                    <SubMenu Key="people" Title="People">
+                        @if (Shell.CanSee("staff"))
+                        {
+                            <MenuItem Key="staff-list" RouterLink="/staff">Staff</MenuItem>
+                            <MenuItem Key="roles" RouterLink="/staff/roles">Roles</MenuItem>
+                        }
+                        @if (Shell.CanSee("customers"))
+                        {
+                            <MenuItem Key="customers" RouterLink="/customers" Icon="team">@L["Nav_Customers"]</MenuItem>
+                        }
+                    </SubMenu>
+                }
                 @if (Shell.CanSee("products"))
                 {
-                    <SubMenu Key="products" Title="Products">
+                    <SubMenu Key="catalog" Title="Catalog">
                         <MenuItem Key="product-list" RouterLink="/products" Icon="appstore">Products</MenuItem>
                         <MenuItem Key="categories" RouterLink="/categories">Categories</MenuItem>
                         <MenuItem Key="catalog" RouterLink="/catalog">Global Catalog</MenuItem>
@@ -48,67 +80,50 @@
                         <MenuItem Key="lots" RouterLink="/inventory/lots">Expiration</MenuItem>
                     </SubMenu>
                 }
-                @if (Shell.CanSee("customers"))
+                @if (Shell.CanSee("reports") || Shell.CanSee("sales"))
                 {
-                    <MenuItem Key="customers" RouterLink="/customers" Icon="team">@L["Nav_Customers"]</MenuItem>
-                }
-                @if (Shell.CanSee("branches"))
-                {
-                    <MenuItem Key="branches" RouterLink="/organization/branches" Icon="bank">@L["Nav_Branches"]</MenuItem>
-                }
-                @if (Shell.CanSee("staff"))
-                {
-                    <SubMenu Key="staff" Title="@L["Nav_Staff"]">
-                        <MenuItem Key="staff-list" RouterLink="/staff">Staff</MenuItem>
-                        <MenuItem Key="roles" RouterLink="/staff/roles">Roles</MenuItem>
-                    </SubMenu>
-                }
-                @if (Shell.CanSee("reports"))
-                {
-                    <SubMenu Key="reports" Title="@L["Nav_Reports"]">
-                        <MenuItem Key="sales-report" RouterLink="/reports/sales">Sales</MenuItem>
+                    <SubMenu Key="sales" Title="Sales">
                         <MenuItem Key="sales-history" RouterLink="/sales">Sales history</MenuItem>
-                        <MenuItem Key="utang" RouterLink="/reports/utang">Utang</MenuItem>
-                        <MenuItem Key="inv-report" RouterLink="/reports/inventory">Inventory</MenuItem>
-                        <MenuItem Key="shift-report" RouterLink="/reports/shifts">Cashier / shift</MenuItem>
+                        <MenuItem Key="sales-report" RouterLink="/reports/sales">Sales report</MenuItem>
+                        <MenuItem Key="utang" RouterLink="/reports/utang">Business credit</MenuItem>
                     </SubMenu>
                 }
-                @if (Shell.CanSee("devices") || Shell.CanSee("shifts"))
+                @if (Shell.CanSee("shifts") || Shell.CanSee("reports"))
                 {
                     <SubMenu Key="ops" Title="@L["Nav_Operations"]">
-                        @if (Shell.CanSee("devices"))
-                        {
-                            <MenuItem Key="devices" RouterLink="/operations/devices">Devices</MenuItem>
-                            <MenuItem Key="registers" RouterLink="/operations/registers">Registers</MenuItem>
-                        }
                         @if (Shell.CanSee("shifts"))
                         {
                             <MenuItem Key="shifts" RouterLink="/operations/shifts">Shifts</MenuItem>
+                            <MenuItem Key="shift-report" RouterLink="/reports/shifts">Cash / shift report</MenuItem>
+                        }
+                        @if (Shell.CanSee("reports"))
+                        {
+                            <MenuItem Key="inv-report" RouterLink="/reports/inventory">Inventory report</MenuItem>
                         }
                     </SubMenu>
                 }
-                @if (Shell.CanSee("settings") || Shell.CanSee("subscription"))
+                @if (Shell.CanSee("settings") || Shell.CanSee("subscription") || Shell.CanSee("sales-documents") || Shell.CanSee("ownership-transfer"))
                 {
                     <SubMenu Key="settings" Title="@L["Nav_Settings"]">
-                        @if (Shell.CanSee("profile"))
+                        @if (Shell.CanSee("settings"))
                         {
-                            <MenuItem Key="profile" RouterLink="/organization/profile">Profile</MenuItem>
-                        }
-                        @if (Shell.CanSee("ownership-transfer"))
-                        {
-                            <MenuItem Key="ownership" RouterLink="/organization/ownership-transfer">Ownership transfer</MenuItem>
+                            <MenuItem Key="general" RouterLink="/settings">Operational settings</MenuItem>
                         }
                         @if (Shell.CanSee("sales-documents"))
                         {
                             <MenuItem Key="sales-documents" RouterLink="/organization/sales-documents">@L["SalesDocument_EducationTitle"]</MenuItem>
                         }
-                        @if (Shell.CanSee("settings"))
+                        @if (Shell.CanSee("ownership-transfer"))
                         {
-                            <MenuItem Key="general" RouterLink="/settings">General / POS</MenuItem>
+                            <MenuItem Key="ownership" RouterLink="/organization/ownership-transfer">Ownership</MenuItem>
                         }
                         @if (Shell.CanSee("subscription"))
                         {
                             <MenuItem Key="sub" RouterLink="/account/subscription">@L["Nav_Subscription"]</MenuItem>
+                        }
+                        @if (Shell.CanSee("notifications"))
+                        {
+                            <MenuItem Key="notifications" RouterLink="/notifications">Alerts</MenuItem>
                         }
                     </SubMenu>
                 }
@@ -183,6 +198,20 @@
                             Personal workspace (Start a Business)
                         </Button>
                     }
+                </Space>
+            }
+            else if (!Shell.CanAccessOrganizationWeb)
+            {
+                <ExitsPageHeader
+                    Title="Organization Admin is for managers"
+                    Subtitle="POS cashier staff use the PinoyBusinessPOS mobile app. This workspace is for Organization Owners and Managers only." />
+                <Space Direction="SpaceDirection.Vertical" Style="margin-top:1rem;">
+                    <Button Type="@ButtonType.Primary" OnClick='() => Nav.NavigateTo("/handoff/personal", forceLoad: true)'>
+                        Personal workspace
+                    </Button>
+                    <Button OnClick='() => Nav.NavigateTo("/logout", forceLoad: true)'>
+                        Sign out
+                    </Button>
                 </Space>
             }
             else

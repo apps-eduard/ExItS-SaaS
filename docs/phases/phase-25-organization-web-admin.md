@@ -25,9 +25,12 @@ Deliver a professional Organization Web Admin for **management, control, and rep
 
 ## Navigation
 
-Overview · Products (catalog / categories / global catalog) · Inventory (stock / transfers / lots) · Customers · Branches · Staff · Reports · Operations · Settings · Ownership transfer · Subscription · Notifications
+Overview · Business (profile / branches / devices) · People (staff / customers) · Catalog · Inventory · Sales (history / reports / business credit) · Operations (shifts / reports) · Settings (operational / sales documents / ownership / subscription)
 
-Unauthorized sections are hidden in navigation and still denied by server APIs.
+Unauthorized sections are hidden in navigation. Cashier POS role is denied the host (`CanAccessOrganizationWeb`). Server APIs remain authoritative.
+
+Role/workflow matrix: [organization-web-role-and-workflow-matrix.md](../engineering/organization-web-role-and-workflow-matrix.md).
+
 
 ## Performance / bandwidth
 

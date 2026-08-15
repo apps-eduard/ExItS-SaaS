@@ -407,6 +407,8 @@ Over the project you went through these UI approaches:
 | P25-WP08 | Organization profile independence + multi-org ownership | Code Complete / Validation Pending |
 | P25-WP09 | Organization ownership transfer | Code Complete / Validation Pending |
 
+Engineering remediation (not a phase closeout WP): [organization-web-role-and-workflow-matrix.md](../engineering/organization-web-role-and-workflow-matrix.md) — Owner/Manager access, Cashier host denial, ambient Bearer session binding for Staging/Production.
+
 ## Phase 26 — Sales Documents and Compliance Readiness
 
 **Status:** **OPEN** — P26-WP01–WP05 Code Complete / Owner Validation Pending. Not phase closeout.

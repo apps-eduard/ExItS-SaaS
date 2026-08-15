@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components.Server.Circuits;
 using Microsoft.AspNetCore.Localization;
+using Microsoft.Extensions.Http;
 using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -103,6 +104,8 @@ builder.Services.AddHttpClient("PlatformApiUnauthenticated", (services, client) 
 
 builder.Services.AddPosApiClient(builder.Configuration);
 builder.Services.AddTransient<OrgWebCircuitSessionHeaderHandler>();
+builder.Services.AddTransient<OrgWebPosAuthHeaderHandler>();
+builder.Services.AddSingleton<IHttpMessageHandlerBuilderFilter, OrgWebPosAuthHandlerFilter>();
 // Re-register typed Platform client so Blazor circuit session flows (factory handlers ≠ circuit scope).
 builder.Services.AddHttpClient<IPosApiClient, PosApiClient>((provider, client) =>
     {
