@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <resheader name="resmimetype">
     <value>text/microsoft-resx</value>
@@ -337,10 +337,10 @@
     <value>Tingnan ang published products at i-import sa catalog mo.</value>
   </data>
   <data name="Stock_Title" xml:space="preserve">
-    <value>Stock</value>
+    <value>Inventory</value>
   </data>
   <data name="Stock_Subtitle" xml:space="preserve">
-    <value>Tingnan ang stock levels at aktibidad ng imbentaryo.</value>
+    <value>Tingnan, bilangin, at kontrolin ang stock mo.</value>
   </data>
   <data name="Stock_EmptyTitle" xml:space="preserve">
     <value>Walang stock record</value>
@@ -415,7 +415,7 @@
     <value>Ulat ng cash / shift</value>
   </data>
   <data name="ShiftsReport_Subtitle" xml:space="preserve">
-    <value>Ihambing ang expected at counted cash. Ang skipped counts ay blank â€” hindi zero.</value>
+    <value>Ihambing ang expected at counted cash. Ang skipped counts ay blank ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â hindi zero.</value>
   </data>
   <data name="Utang_Title" xml:space="preserve">
     <value>Business credit</value>
@@ -634,7 +634,7 @@
     <value>Walang ipinadalang hiling</value>
   </data>
   <data name="Suppliers_NoSentMessage" xml:space="preserve">
-    <value>Lalabas dito ang mga connection request na ipinadala ninyo â€” Pending, Connected, o Declined.</value>
+    <value>Lalabas dito ang mga connection request na ipinadala ninyo ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Pending, Connected, o Declined.</value>
   </data>
   <data name="Suppliers_RequestingBusiness" xml:space="preserve">
     <value>Humihiling na negosyo</value>

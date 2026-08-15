@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <resheader name="resmimetype">
     <value>text/microsoft-resx</value>
@@ -337,10 +337,10 @@
     <value>Browse published products and import them into your catalog.</value>
   </data>
   <data name="Stock_Title" xml:space="preserve">
-    <value>Stock</value>
+    <value>Inventory</value>
   </data>
   <data name="Stock_Subtitle" xml:space="preserve">
-    <value>See stock levels and inventory activity.</value>
+    <value>View, count, and control the stock you have.</value>
   </data>
   <data name="Stock_EmptyTitle" xml:space="preserve">
     <value>No stock records found</value>
@@ -415,7 +415,7 @@
     <value>Cash / shift report</value>
   </data>
   <data name="ShiftsReport_Subtitle" xml:space="preserve">
-    <value>Compare expected and counted cash. Skipped counts stay blank â€” they are not zero.</value>
+    <value>Compare expected and counted cash. Skipped counts stay blank ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â they are not zero.</value>
   </data>
   <data name="Utang_Title" xml:space="preserve">
     <value>Business credit</value>

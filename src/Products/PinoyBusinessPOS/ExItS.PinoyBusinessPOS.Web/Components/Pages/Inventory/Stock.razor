@@ -17,10 +17,11 @@ else
     <div class="org-page">
     <ExitsPageHeader Title="@L["Stock_Title"]" Subtitle="@L["Stock_Subtitle"]" />
     <div class="org-subnav">
-        <a href="/inventory">Stock</a>
+        <a href="/inventory">Stock on hand</a>
         <a href="/inventory/transfers">Transfers</a>
         <a href="/inventory/lots">Expiration</a>
     </div>
+    <p class="org-note">Inventory is for viewing and controlling stock you already have. To buy or receive goods, use Purchasing on POS (Receive stock, Purchase orders, Goods receipts).</p>
     <div class="org-toolbar">
         <ExitsField Label="Search"><Input @bind-Value="_search" /></ExitsField>
         <label><input type="checkbox" @bind="_lowStock" /> Low stock</label>
@@ -60,12 +61,12 @@ else
     @if (_detail is not null)
     {
         <Card Size="@CardSize.Small" Title="@($"Adjust {_detail.Name}")">
-            <p class="org-note">Direction Stock in / Stock out creates a stock movement. Quantity overwrite is not allowed.</p>
+            <p class="org-note">Direction Receive stock / Stock out creates a stock movement. Quantity overwrite is not allowed. Stock increases when you confirm a Receive stock adjustment.</p>
             @if (Shell.Can(UtangCapability.ManageInventory))
             {
                 <div class="org-form">
                     <select @bind="_direction">
-                        <option value="In">Stock in</option>
+                        <option value="In">Receive stock</option>
                         <option value="Out">Stock out</option>
                     </select>
                     <ExitsField Label="Quantity"><Input @bind-Value="_qty" /></ExitsField>
