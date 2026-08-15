@@ -110,6 +110,7 @@ Buyer sends request
   → Counterparty display/public-id snapshots stored on relationship
 Buyer Suppliers list shows Pending + “Waiting for supplier approval”
 Supplier Incoming requests (MAUI `/suppliers/connected/requests` or Org Web `/suppliers/requests`) shows Accept/Decline
+Discoverability: pending count banners on Owner home, More, Suppliers list (MAUI) and Overview + People → Supplier requests badge (Org Web)
 Supplier Accept → Active (catalog/PO enabled for buyer)
 Supplier Decline → Declined (no catalog/PO)
 Inventory unchanged until buyer Goods Receipt
@@ -117,7 +118,7 @@ Inventory unchanged until buyer Goods Receipt
 
 ### Notification / bell
 
-Organization in-app notifications exist for **customer-link** events on Platform. Connected-supplier request events are **not** emitted into the bell yet (would require a POS→Platform cross-product notify path for supplier-org recipients). Visibility is via Suppliers UI + incoming count badge. Bell integration is **deferred**.
+Organization in-app notifications exist for **customer-link** events on Platform. Connected-supplier request events are **not** emitted into the bell yet (would require a POS→Platform cross-product notify path for supplier-org recipients). Visibility is via Owner/More/Suppliers banners, Org Web Overview banner, and menu count on Supplier requests. Bell integration is **deferred**.
 
 ## Deferred
 Marketplace discovery, inter-org payments, AP/invoices, live stock sharing, logistics, images in sync, Redis, brokers, auto-accept, auto-receive, full offline supplier catalog, connection-request cancellation while Pending (Disconnect remains Active-only), organization-notification bell for supplier connections.

@@ -477,6 +477,8 @@ public sealed class OrgWebShellState
     public IReadOnlyList<PlatformAuthEligibleOrganizationDto> Organizations { get; set; } = [];
     public IReadOnlyList<string> AllowedCapabilities { get; set; } = [];
     public int UnreadNotificationCount { get; set; }
+    /// <summary>Pending Connected ExItS supplier connection requests where this org is the supplier.</summary>
+    public int IncomingSupplierRequestCount { get; set; }
     public bool SidebarCollapsed { get; set; }
     public bool DrawerOpen { get; set; }
 
@@ -575,6 +577,7 @@ public sealed class OrgWebSessionHydrator(
     OrgWebShellState shell,
     IPlatformAccessClient platform,
     IPosPermissionClient permissions,
+    IPosConnectedSupplierClient connectedSuppliers,
     IHttpContextAccessor httpContextAccessor,
     ILogger<OrgWebSessionHydrator> logger)
 {
@@ -748,6 +751,17 @@ public sealed class OrgWebSessionHydrator(
             {
                 shell.UnreadNotificationCount = notes.Data.Count(n => !n.IsRead);
             }
+
+            shell.IncomingSupplierRequestCount = 0;
+            if (hasPos)
+            {
+                var incoming = await connectedSuppliers.ListRelationshipsAsync("supplier", ct).ConfigureAwait(false);
+                if (incoming.IsSuccess && incoming.Data is not null)
+                {
+                    shell.IncomingSupplierRequestCount = incoming.Data.Count(x =>
+                        string.Equals(x.Status, "Pending", StringComparison.OrdinalIgnoreCase));
+                }
+            }
         }
         else
         {
@@ -755,6 +769,7 @@ public sealed class OrgWebSessionHydrator(
             circuitSession.AccessToken = null;
             circuitSession.ApplyToAmbient();
             shell.PosRole = null;
+            shell.IncomingSupplierRequestCount = 0;
             currentUser.Set(new AuthSession(
                 me.Data.UserId,
                 me.Data.DisplayName,

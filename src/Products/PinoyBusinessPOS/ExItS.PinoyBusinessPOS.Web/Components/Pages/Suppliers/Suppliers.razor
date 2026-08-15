@@ -41,6 +41,19 @@ else
         </div>
 
         <OrgAlert Error="@_error" OnRetry="LoadAsync" RetryLabel="@L["Common_Retry"]" OnDismissError="() => _error = null" />
+        @if (!_loading && _incomingPending.Count > 0 && _tab == "list")
+        {
+            <Alert Type="@AlertType.Info"
+                   ShowIcon="true"
+                   Message="@L["Suppliers_IncomingBannerTitle"]"
+                   Description="@L["Suppliers_IncomingBannerBody", _incomingPending.Count]"
+                   Style="margin-bottom:12px;" />
+            <div style="margin-bottom:12px;">
+                <Button Type="@ButtonType.Primary" OnClick='() => SwitchTab("requests")'>
+                    @L["Suppliers_ReviewIncoming"]
+                </Button>
+            </div>
+        }
         <OrgLoading Active="_loading" />
 
         @if (!_loading && _tab == "list")
@@ -293,6 +306,7 @@ else
             }
 
             await LoadAsync();
+            Shell.IncomingSupplierRequestCount = _incomingPending.Count;
         }
         finally
         {

@@ -5,6 +5,8 @@
 @inject RoleHomeResolver RoleHome
 @inject SellingModeService SellingMode
 @inject IPosOperationalSetupClient Setup
+@inject IPosConnectedSupplierClient ConnectedSuppliers
+@inject IConnectivityService Connectivity
 @inject IUtangCapabilityEvaluator Capabilities
 @inject ICurrentUserContext CurrentUser
 @inject IStringLocalizer<PosResources> L
@@ -27,6 +29,18 @@ else
                 <h1 class="pos-dash__title">@L["Owner_Title"]</h1>
                 <p class="pos-dash__subtitle">@L["Owner_Subtitle"]</p>
             </header>
+
+            @if (_incomingPendingCount > 0)
+            {
+                <Alert Tone="AlertTone.Info"
+                       Title="@L["ConnectedSuppliers_IncomingBannerTitle"]"
+                       Message="@L["ConnectedSuppliers_IncomingBannerBody", _incomingPendingCount]" />
+                <div class="pos-action-grid pos-action-grid--single" role="group">
+                    <button type="button" class="pos-action-tile pos-action-tile--primary" @onclick="GoIncomingRequests">
+                        <span class="pos-action-tile__label">@L["ConnectedSuppliers_ReviewIncoming"]</span>
+                    </button>
+                </div>
+            }
 
             <Section Title="@L["Owner_QuickActionsSection"]">
                 <div class="pos-action-grid" role="group" aria-label="@L["Owner_QuickActionsSection"]">
@@ -89,6 +103,13 @@ else
                         <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("check")</span>
                         <span class="pos-action-tile__label">@L["Nav_Permissions"]</span>
                     </button>
+                    @if (Capabilities.IsAllowed(UtangCapability.ViewSuppliers))
+                    {
+                        <button type="button" class="pos-action-tile" @onclick="GoSuppliers">
+                            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("customers")</span>
+                            <span class="pos-action-tile__label">@L["Nav_Suppliers"]</span>
+                        </button>
+                    }
                 </div>
             </Section>
 
@@ -112,6 +133,7 @@ else
     private bool _ready;
     private bool _authorized;
     private bool _setupCompleted;
+    private int _incomingPendingCount;
 
     protected override async Task OnInitializedAsync()
     {
@@ -162,6 +184,17 @@ else
             _setupCompleted = setup.IsSuccess && setup.Data?.IsCompleted == true;
         }
 
+        if (Capabilities.IsAllowed(UtangCapability.ViewSuppliers)
+            && await Connectivity.IsConnectedAsync())
+        {
+            var incoming = await ConnectedSuppliers.ListRelationshipsAsync("supplier");
+            if (incoming.IsSuccess && incoming.Data is not null)
+            {
+                _incomingPendingCount = incoming.Data.Count(x =>
+                    string.Equals(x.Status, "Pending", StringComparison.OrdinalIgnoreCase));
+            }
+        }
+
         _ready = true;
     }
 
@@ -183,4 +216,6 @@ else
     private void GoSales() => Nav.NavigateTo("/sales");
     private void GoReports() => Nav.NavigateTo("/reports");
     private void GoSettings() => Nav.NavigateTo("/settings");
+    private void GoSuppliers() => Nav.NavigateTo("/suppliers");
+    private void GoIncomingRequests() => Nav.NavigateTo("/suppliers/connected/requests");
 }

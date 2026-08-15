@@ -35,7 +35,11 @@ Send request → Pending visible to buyer → Incoming visible to supplier → A
 
 ## Notification / bell
 
-**Deferred** — reuse Platform `OrganizationInAppNotification` later; surface requests in Suppliers UI now.
+**Deferred** — reuse Platform `OrganizationInAppNotification` later; surface requests in Suppliers UI + home/More/Overview banners now (no bell).
+
+## Discoverability follow-up
+
+Pending incoming count is also surfaced on MAUI Owner home, More hub, and Suppliers list; Org Web Overview banner and People → Supplier requests menu count.
 
 ## Privacy impact
 

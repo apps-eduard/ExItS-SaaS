@@ -212,4 +212,7 @@
   <data name="Suppliers_SendRequest" xml:space="preserve"><value>Send request</value></data>
   <data name="Suppliers_RequestFailed" xml:space="preserve"><value>The connection request could not be sent.</value></data>
   <data name="Suppliers_RequestSentPending" xml:space="preserve"><value>Connection request sent. Waiting for the supplier to accept.</value></data>
+  <data name="Suppliers_IncomingBannerTitle" xml:space="preserve"><value>Supplier connection request waiting</value></data>
+  <data name="Suppliers_IncomingBannerBody" xml:space="preserve"><value>{0} business(es) want to connect with you as their supplier.</value></data>
+  <data name="Suppliers_ReviewIncoming" xml:space="preserve"><value>Review connection requests</value></data>
 </root>

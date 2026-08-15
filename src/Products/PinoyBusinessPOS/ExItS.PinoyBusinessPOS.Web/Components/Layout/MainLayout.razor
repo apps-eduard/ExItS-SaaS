@@ -69,7 +69,13 @@
                         @if (Shell.CanSee("suppliers"))
                         {
                             <MenuItem Key="suppliers" RouterLink="/suppliers" Icon="shop" Title="@L["Nav_Suppliers"]">@L["Nav_Suppliers"]</MenuItem>
-                            <MenuItem Key="supplier-requests" RouterLink="/suppliers/requests" Icon="mail" Title="@L["Nav_SupplierRequests"]">@L["Nav_SupplierRequests"]</MenuItem>
+                            <MenuItem Key="supplier-requests" RouterLink="/suppliers/requests" Icon="mail" Title="@L["Nav_SupplierRequests"]">
+                                @L["Nav_SupplierRequests"]
+                                @if (Shell.IncomingSupplierRequestCount > 0)
+                                {
+                                    <span> (@Shell.IncomingSupplierRequestCount)</span>
+                                }
+                            </MenuItem>
                         }
                     </SubMenu>
                 }
@@ -264,7 +270,13 @@
             @if (Shell.CanSee("suppliers"))
             {
                 <MenuItem RouterLink="/suppliers" Icon="shop">@L["Nav_Suppliers"]</MenuItem>
-                <MenuItem RouterLink="/suppliers/requests" Icon="mail">@L["Nav_SupplierRequests"]</MenuItem>
+                <MenuItem RouterLink="/suppliers/requests" Icon="mail">
+                    @L["Nav_SupplierRequests"]
+                    @if (Shell.IncomingSupplierRequestCount > 0)
+                    {
+                        <span> (@Shell.IncomingSupplierRequestCount)</span>
+                    }
+                </MenuItem>
             }
             @if (Shell.CanSee("products"))
             {

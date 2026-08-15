@@ -212,4 +212,7 @@
   <data name="Suppliers_SendRequest" xml:space="preserve"><value>Ipadala ang hiling</value></data>
   <data name="Suppliers_RequestFailed" xml:space="preserve"><value>Hindi naipadala ang connection request.</value></data>
   <data name="Suppliers_RequestSentPending" xml:space="preserve"><value>Naipadala ang connection request. Hinihintay ang pagsang-ayon ng supplier.</value></data>
+  <data name="Suppliers_IncomingBannerTitle" xml:space="preserve"><value>May hinihintay na supplier connection request</value></data>
+  <data name="Suppliers_IncomingBannerBody" xml:space="preserve"><value>{0} (na) negosyo ang gustong kumonekta sa inyo bilang supplier.</value></data>
+  <data name="Suppliers_ReviewIncoming" xml:space="preserve"><value>Suriin ang connection requests</value></data>
 </root>

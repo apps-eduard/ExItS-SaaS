@@ -4,6 +4,8 @@
 @inject ICurrentUserContext CurrentUser
 @inject IPosReportingClient Reporting
 @inject IPlatformAccessClient Platform
+@inject IPosConnectedSupplierClient ConnectedSuppliers
+@inject NavigationManager Nav
 @inject IStringLocalizer<OrgWebResources> L
 
 <PageTitle>@L["Overview_Title"]</PageTitle>
@@ -19,6 +21,19 @@ else
         <p class="org-note">@L["Boundary_NotPos"]</p>
 
         <OrgAlert Error="@_error" OnRetry="LoadAsync" RetryLabel="@L["Common_Retry"]" OnDismissError="() => _error = null" />
+        @if (!_loading && Shell.IncomingSupplierRequestCount > 0)
+        {
+            <Alert Type="@AlertType.Info"
+                   ShowIcon="true"
+                   Message="@L["Suppliers_IncomingBannerTitle"]"
+                   Description="@L["Suppliers_IncomingBannerBody", Shell.IncomingSupplierRequestCount]"
+                   Style="margin-bottom:12px;" />
+            <div style="margin-bottom:12px;">
+                <Button Type="@ButtonType.Primary" OnClick='() => Nav.NavigateTo("/suppliers/requests")'>
+                    @L["Suppliers_ReviewIncoming"]
+                </Button>
+            </div>
+        }
         @if (!_loading && _overviewUnavailable && _hasCore)
         {
             <Alert Type="@AlertType.Warning"
@@ -114,7 +129,8 @@ else
         var membersTask = Platform.GetOrganizationMembersAsync(orgId.Value, page: 1, pageSize: 1);
         var devicesTask = Platform.GetPosDevicesAsync(orgId.Value);
         var linksTask = Platform.GetCustomerLinkRequestStatsAsync(orgId.Value);
-        await Task.WhenAll(overviewTask, branchesTask, membersTask, devicesTask, linksTask);
+        var incomingTask = ConnectedSuppliers.ListRelationshipsAsync("supplier");
+        await Task.WhenAll(overviewTask, branchesTask, membersTask, devicesTask, linksTask, incomingTask);
 
         var overview = await overviewTask;
         _overviewUnavailable = !overview.IsSuccess || overview.Data is null;
@@ -145,6 +161,12 @@ else
 
         // Core Owner workspace is usable when Platform management data or POS overview succeeds.
         _hasCore = !_overviewUnavailable || !_branchesUnavailable || !_staffUnavailable;
+
+        var incoming = await incomingTask;
+        Shell.IncomingSupplierRequestCount = incoming.IsSuccess && incoming.Data is not null
+            ? incoming.Data.Count(x => string.Equals(x.Status, "Pending", StringComparison.OrdinalIgnoreCase))
+            : 0;
+
         if (!_hasCore)
         {
             _error = OrgWebUi.Error(

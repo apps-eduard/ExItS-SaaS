@@ -2677,6 +2677,9 @@
   <data name="ConnectedSuppliers_IncomingRequestMessage" xml:space="preserve"><value>Gusto ni {0} na kumonekta sa inyong negosyo bilang supplier.</value></data>
   <data name="ConnectedSuppliers_LoadIncomingRequestsFailed" xml:space="preserve"><value>Hindi ma-load ang mga papasok na connection request.</value></data>
   <data name="ConnectedSuppliers_RespondRequestFailed" xml:space="preserve"><value>Hindi ma-save ang tugon sa koneksyon.</value></data>
+  <data name="ConnectedSuppliers_IncomingBannerTitle" xml:space="preserve"><value>May hinihintay na supplier connection request</value></data>
+  <data name="ConnectedSuppliers_IncomingBannerBody" xml:space="preserve"><value>{0} (na) negosyo ang gustong kumonekta sa inyo bilang supplier. Suriin at Tanggapin o Tanggihan.</value></data>
+  <data name="ConnectedSuppliers_ReviewIncoming" xml:space="preserve"><value>Suriin ang connection requests</value></data>
   <data name="ConnectedSuppliers_RequestConnection" xml:space="preserve"><value>Ikonekta ang supplier</value></data>
   <data name="ConnectedSuppliers_RequestTitle" xml:space="preserve"><value>Ikonekta ang ExItS supplier</value></data>
   <data name="ConnectedSuppliers_RequestHelp" xml:space="preserve"><value>I-scan ang Business QR ng supplier o ilagay ang organization ID (ORG######). Kailangan nilang aprubahan ang hiling.</value></data>
