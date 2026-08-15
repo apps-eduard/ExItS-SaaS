@@ -1,0 +1,173 @@
+@page "/purchasing/receive-stock"
+@using System.Globalization
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosInventoryClient Inventory
+@inject IUtangCapabilityEvaluator Capabilities
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else if (!_allowed)
+{
+    <Page>
+        <StoreHeaderBack Href="/purchasing" />
+        <EmptyState IconName="lock"
+                    Title="@L["Purchasing_ReceiveStock"]"
+                    Message="@L["Access_RestrictedMessage"]" />
+    </Page>
+}
+else
+{
+<div class="pos-purchasing">
+    <StoreHeaderBack Href="/purchasing" />
+    <Page>
+        <header class="pos-purchasing__header">
+            <div class="pos-purchasing__heading">
+                <h1 class="pos-purchasing__title">@L["Purchasing_ReceiveStock"]</h1>
+                <p class="pos-purchasing__subtitle">@L["Purchasing_ReceiveStockDescription"]</p>
+                <p class="pos-muted">@L["Purchasing_ReceiveStockHelper"]</p>
+                <p class="pos-muted">@L["Purchasing_ReceiveStockSecondary"]</p>
+            </div>
+        </header>
+
+        @if (_isOffline)
+        {
+            <Alert Tone="AlertTone.Warning" Title="@L["Inventory_OfflineTitle"]" Message="@L["Inventory_OfflineMessage"]" />
+        }
+
+        <div class="pos-search" role="search">
+            <label class="visually-hidden" for="receive-stock-search">@L["Inventory_SearchPlaceholder"]</label>
+            <input id="receive-stock-search"
+                   class="pos-search__input"
+                   type="search"
+                   value="@_search"
+                   placeholder="@L["Inventory_SearchPlaceholder"]"
+                   @oninput="OnSearchInput" />
+        </div>
+
+        <section class="pos-purchasing__panel" aria-labelledby="receive-stock-list-heading">
+            <h2 id="receive-stock-list-heading" class="pos-purchasing__section-title">@L["Purchasing_ReceiveStockPickProduct"]</h2>
+            @if (_loading)
+            {
+                <div class="pos-purchasing__loading"><Spinner /><span>@L["Inventory_Loading"]</span></div>
+            }
+            else if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <ErrorState Title="@(_errorTitle ?? L["Purchasing_ReceiveStock"])"
+                            Message="@_errorMessage"
+                            RetryLabel="@L["Api_Retry"]"
+                            OnRetry="ReloadAsync" />
+            }
+            else if (_items.Count == 0)
+            {
+                <EmptyState IconName="products"
+                            Title="@L["Purchasing_ReceiveStockEmptyTitle"]"
+                            Message="@L["Purchasing_ReceiveStockEmptyMessage"]" />
+            }
+            else
+            {
+                <div class="pos-purchasing__list" role="list" aria-label="@L["Purchasing_ReceiveStock"]">
+                    @foreach (var item in _items.Where(x => x.IsTracked))
+                    {
+                        <a class="pos-purchasing__row"
+                           role="listitem"
+                           href="@($"/inventory/{item.ProductId:D}/adjust?intent=receive")">
+                            <div class="pos-purchasing__row-main">
+                                <div class="pos-purchasing__row-top">
+                                    <span class="pos-purchasing__row-name">@item.Name</span>
+                                </div>
+                                <span class="pos-purchasing__row-meta">
+                                    @item.UnitOfMeasure
+                                    · @L["Inventory_OnHand"] @item.OnHandQuantity.ToString("0.###", CultureInfo.InvariantCulture)
+                                </span>
+                            </div>
+                            <span class="pos-purchasing__view">@L["Purchasing_ReceiveStock"]</span>
+                        </a>
+                    }
+                </div>
+            }
+        </section>
+    </Page>
+</div>
+}
+
+@code {
+    private bool _ready;
+    private bool _allowed;
+    private bool _loading;
+    private bool _isOffline;
+    private string _search = string.Empty;
+    private IReadOnlyList<PosInventoryAccountDto> _items = Array.Empty<PosInventoryAccountDto>();
+    private string? _errorTitle;
+    private string? _errorMessage;
+    private CancellationTokenSource? _searchCts;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        _allowed = Capabilities.IsAllowed(UtangCapability.ManageInventory);
+        _ready = true;
+        if (_allowed)
+        {
+            await ReloadAsync();
+        }
+    }
+
+    private async Task OnSearchInput(ChangeEventArgs e)
+    {
+        _search = e.Value?.ToString() ?? string.Empty;
+        _searchCts?.Cancel();
+        _searchCts = new CancellationTokenSource();
+        var token = _searchCts.Token;
+        try
+        {
+            await Task.Delay(300, token);
+            await ReloadAsync();
+        }
+        catch (TaskCanceledException)
+        {
+        }
+    }
+
+    private async Task ReloadAsync()
+    {
+        _loading = true;
+        _errorTitle = null;
+        _errorMessage = null;
+        _isOffline = !await Connectivity.IsConnectedAsync();
+        if (_isOffline)
+        {
+            _items = Array.Empty<PosInventoryAccountDto>();
+            _loading = false;
+            return;
+        }
+
+        var result = await Inventory.ListAsync(
+            search: string.IsNullOrWhiteSpace(_search) ? null : _search,
+            page: 1,
+            pageSize: 50);
+        if (result.Status == ApiCallStatus.Success && result.Data is not null)
+        {
+            _items = result.Data.Items;
+        }
+        else
+        {
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorTitle = described.Title;
+            _errorMessage = result.Error?.Detail ?? described.Message;
+            _items = Array.Empty<PosInventoryAccountDto>();
+        }
+
+        _loading = false;
+    }
+}

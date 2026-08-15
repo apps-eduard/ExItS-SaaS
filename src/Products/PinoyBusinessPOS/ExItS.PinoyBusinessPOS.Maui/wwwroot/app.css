@@ -8743,6 +8743,20 @@ html.pos-keyboard-open .pos-content {
     margin: 0.2rem 0 0;
 }
 
+.pos-inventory__receive-link {
+    margin: 0.75rem 0 0;
+}
+
+.pos-link-button {
+    background: none;
+    border: none;
+    color: var(--exits-color-primary, #0b57d0);
+    cursor: pointer;
+    font: inherit;
+    padding: 0;
+    text-decoration: underline;
+}
+
 .pos-inventory__panel {
     margin-bottom: var(--exits-space-3, 0.75rem);
 }

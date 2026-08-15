@@ -29,7 +29,7 @@ else
     <Page>
         <header class="pos-inventory__header">
             <h1 class="pos-inventory__title">@L["Inventory_Title"]</h1>
-            <p class="pos-inventory__subtitle">@L["Inventory_Subtitle"]</p>
+            <p class="pos-inventory__subtitle">@L["Inventory_HubSubtitle"]</p>
         </header>
 
         @if (_isOffline)
@@ -39,18 +39,28 @@ else
 
         <div class="pos-action-grid pos-action-grid--four pos-inventory__actions" role="group" aria-label="@L["Inventory_Title"]">
             <button type="button"
-                    class="pos-action-tile"
-                    disabled="@_isOffline"
-                    @onclick="GoLowStock">
-                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("warning")</span>
-                <span class="pos-action-tile__label">@L["Inventory_OpenLowStock"]</span>
+                    class="pos-action-tile pos-action-tile--primary"
+                    disabled="@(_loading || _isOffline)"
+                    @onclick="FocusStockOnHandAsync">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("inbox")</span>
+                <span class="pos-action-tile__label">@L["Inventory_StockOnHand"]</span>
+                <span class="pos-action-tile__meta pos-muted">@L["Inventory_StockOnHandHint"]</span>
             </button>
             <button type="button"
                     class="pos-action-tile"
                     disabled="@(!canManage || _isOffline)"
                     @onclick="GoCounts">
                 <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("check")</span>
-                <span class="pos-action-tile__label">@L["Inventory_OpenCounts"]</span>
+                <span class="pos-action-tile__label">@L["Inventory_StockCount"]</span>
+                <span class="pos-action-tile__meta pos-muted">@L["Inventory_StockCountHint"]</span>
+            </button>
+            <button type="button"
+                    class="pos-action-tile"
+                    disabled="@(!canManage || _isOffline)"
+                    @onclick="EnableAdjustPick">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("edit")</span>
+                <span class="pos-action-tile__label">@L["Inventory_AdjustStock"]</span>
+                <span class="pos-action-tile__meta pos-muted">@L["Inventory_AdjustStockHint"]</span>
             </button>
             <button type="button"
                     class="pos-action-tile"
@@ -58,15 +68,30 @@ else
                     @onclick="GoTransfers">
                 <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("lent")</span>
                 <span class="pos-action-tile__label">@L["Inventory_OpenTransfers"]</span>
+                <span class="pos-action-tile__meta pos-muted">@L["Inventory_TransfersHint"]</span>
             </button>
             <button type="button"
                     class="pos-action-tile"
-                    disabled="@(_loading || _isOffline)"
-                    @onclick="ReloadAsync">
-                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("refresh")</span>
-                <span class="pos-action-tile__label">@L["Inventory_Refresh"]</span>
+                    disabled="@_isOffline"
+                    @onclick="GoExpiration">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("warning")</span>
+                <span class="pos-action-tile__label">@L["Inventory_Expiration"]</span>
+                <span class="pos-action-tile__meta pos-muted">@L["Inventory_ExpirationHint"]</span>
             </button>
         </div>
+
+        @if (canManage)
+        {
+            <p class="pos-muted pos-inventory__receive-link">
+                @L["Inventory_NeedReceiveStock"]
+                <button type="button" class="pos-link-button" @onclick="GoReceiveStock">@L["Purchasing_ReceiveStock"]</button>
+            </p>
+        }
+
+        @if (_pickAdjust)
+        {
+            <Alert Tone="AlertTone.Info" Title="@L["Inventory_AdjustStock"]" Message="@L["Inventory_AdjustPickMessage"]" />
+        }
 
         <div class="pos-inventory__toolbar">
             <div class="pos-inventory__search">
@@ -81,7 +106,7 @@ else
         </div>
 
         <section class="pos-inventory__panel" aria-labelledby="inventory-list-heading">
-            <h2 id="inventory-list-heading" class="pos-inventory__section-title">@L["Inventory_ListSection"]</h2>
+            <h2 id="inventory-list-heading" class="pos-inventory__section-title">@L["Inventory_StockOnHand"]</h2>
             @if (_loading)
             {
                 <div class="pos-inventory__loading"><Spinner /><span>@L["Inventory_Loading"]</span></div>
@@ -106,7 +131,7 @@ else
                     {
                         <a class="pos-inventory__row @(item.IsLowStock ? "pos-inventory__row--low" : null)"
                            role="listitem"
-                           href="@($"/inventory/{item.ProductId:D}")">
+                           href="@ProductRowHref(item)">
                             <div class="pos-inventory__row-main">
                                 <div class="pos-inventory__row-top">
                                     <span class="pos-inventory__row-name">@item.Name</span>
@@ -153,6 +178,7 @@ else
     private bool _allowed;
     private bool _loading;
     private bool _isOffline;
+    private bool _pickAdjust;
     private string _search = string.Empty;
     private int _page = 1;
     private const int _pageSize = 20;
@@ -246,9 +272,26 @@ else
         await ReloadAsync();
     }
 
-    private void GoLowStock() => Nav.NavigateTo("/inventory/low-stock");
     private void GoCounts() => Nav.NavigateTo("/inventory/counts");
     private void GoTransfers() => Nav.NavigateTo("/inventory/transfers");
+    private void GoExpiration() => Nav.NavigateTo("/inventory/expiration");
+    private void GoReceiveStock() => Nav.NavigateTo("/purchasing/receive-stock");
+
+    private void EnableAdjustPick()
+    {
+        _pickAdjust = true;
+    }
+
+    private async Task FocusStockOnHandAsync()
+    {
+        _pickAdjust = false;
+        await ReloadAsync();
+    }
+
+    private string ProductRowHref(PosInventoryAccountDto item) =>
+        _pickAdjust && item.IsTracked
+            ? $"/inventory/{item.ProductId:D}/adjust"
+            : $"/inventory/{item.ProductId:D}";
 
     private static BadgeTone StockBadgeTone(PosInventoryAccountDto item) =>
         item.StockStatus switch

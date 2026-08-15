@@ -1,0 +1,171 @@
+@page "/inventory/expiration"
+@using System.Globalization
+@using ExItS.DesignSystem.Components.Internal
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosInventoryClient Inventory
+@inject IUtangCapabilityEvaluator Capabilities
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else if (!_allowed)
+{
+    <Page>
+        <StoreHeaderBack Href="/inventory" />
+        <ErrorState Title="@L["Access_RestrictedTitle"]"
+                    Message="@L["Access_RestrictedMessage"]"
+                    RetryLabel="@L["Nav_Home"]"
+                    OnRetry="GoHomeAsync" />
+    </Page>
+}
+else
+{
+<div class="pos-inventory">
+    <StoreHeaderBack Href="/inventory" />
+    <Page>
+        <header class="pos-inventory__header">
+            <h1 class="pos-inventory__title">@L["Inventory_Expiration"]</h1>
+            <p class="pos-inventory__subtitle">@L["Inventory_ExpirationHint"]</p>
+        </header>
+
+        @if (_isOffline)
+        {
+            <Alert Tone="AlertTone.Warning" Title="@L["Inventory_OfflineTitle"]" Message="@L["Inventory_OfflineMessage"]" />
+        }
+
+        <div class="pos-action-grid pos-action-grid--single pos-inventory__actions" role="group" aria-label="@L["Inventory_Expiration"]">
+            <button type="button"
+                    class="pos-action-tile"
+                    disabled="@(_loading || _isOffline)"
+                    @onclick="ReloadAsync">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("refresh")</span>
+                <span class="pos-action-tile__label">@L["Inventory_Refresh"]</span>
+            </button>
+        </div>
+
+        <section class="pos-inventory__panel" aria-labelledby="expiration-list-heading">
+            <h2 id="expiration-list-heading" class="pos-inventory__section-title">@L["Inventory_Expiration"]</h2>
+            @if (_loading)
+            {
+                <div class="pos-inventory__loading"><Spinner /><span>@L["Inventory_Loading"]</span></div>
+            }
+            else if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <ErrorState Title="@(_errorTitle ?? L["Inventory_Expiration"])"
+                            Message="@_errorMessage"
+                            RetryLabel="@L["Api_Retry"]"
+                            OnRetry="ReloadAsync" />
+            }
+            else if (_items.Count == 0)
+            {
+                <EmptyState IconName="warning"
+                            Title="@L["Inventory_ExpirationEmptyTitle"]"
+                            Message="@L["Inventory_ExpirationEmptyMessage"]" />
+            }
+            else
+            {
+                <div class="pos-inventory__list" role="list" aria-label="@L["Inventory_Expiration"]">
+                    @foreach (var item in _items)
+                    {
+                        <a class="pos-inventory__row"
+                           role="listitem"
+                           href="@($"/inventory/{item.ProductId:D}")">
+                            <div class="pos-inventory__row-main">
+                                <div class="pos-inventory__row-top">
+                                    <span class="pos-inventory__row-name">@item.Name</span>
+                                    <div class="pos-inventory__row-badges">
+                                        @if ((item.ExpiredQuantity ?? 0m) > 0m)
+                                        {
+                                            <Badge Tone="BadgeTone.Danger">@L["Inventory_Expired"]</Badge>
+                                        }
+                                        else if ((item.NearExpiryQuantity ?? 0m) > 0m)
+                                        {
+                                            <Badge Tone="BadgeTone.Warning">@L["Inventory_NearExpiry"]</Badge>
+                                        }
+                                    </div>
+                                </div>
+                                <span class="pos-inventory__row-meta">
+                                    @item.UnitOfMeasure
+                                    · @L["Inventory_NearExpiry"] @((item.NearExpiryQuantity ?? 0m).ToString("0.###", CultureInfo.InvariantCulture))
+                                    · @L["Inventory_Expired"] @((item.ExpiredQuantity ?? 0m).ToString("0.###", CultureInfo.InvariantCulture))
+                                </span>
+                            </div>
+                            <div class="pos-inventory__row-side">
+                                <span class="pos-inventory__on-hand">@item.OnHandQuantity.ToString("0.###", CultureInfo.InvariantCulture)</span>
+                                <span class="pos-inventory__on-hand-label">@L["Inventory_OnHand"]</span>
+                            </div>
+                        </a>
+                    }
+                </div>
+            }
+        </section>
+    </Page>
+</div>
+}
+
+@code {
+    private bool _ready;
+    private bool _allowed;
+    private bool _loading;
+    private bool _isOffline;
+    private IReadOnlyList<PosInventoryAccountDto> _items = Array.Empty<PosInventoryAccountDto>();
+    private string? _errorTitle;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        _allowed = Capabilities.IsAllowed(UtangCapability.ViewInventory);
+        _ready = true;
+        if (_allowed)
+        {
+            await ReloadAsync();
+        }
+    }
+
+    private async Task GoHomeAsync() => Nav.NavigateTo(await Gate.ResolveStartRouteAsync());
+
+    private async Task ReloadAsync()
+    {
+        _loading = true;
+        _errorTitle = null;
+        _errorMessage = null;
+        _isOffline = !await Connectivity.IsConnectedAsync();
+        if (_isOffline)
+        {
+            _items = Array.Empty<PosInventoryAccountDto>();
+            _loading = false;
+            return;
+        }
+
+        var result = await Inventory.ListAsync(tracked: true, page: 1, pageSize: 100);
+        if (result.Status == ApiCallStatus.Success && result.Data is not null)
+        {
+            _items = result.Data.Items
+                .Where(x => x.TracksExpiration)
+                .OrderByDescending(x => x.ExpiredQuantity ?? 0m)
+                .ThenByDescending(x => x.NearExpiryQuantity ?? 0m)
+                .ThenBy(x => x.Name, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+        else
+        {
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorTitle = described.Title;
+            _errorMessage = result.Error?.Detail ?? described.Message;
+            _items = Array.Empty<PosInventoryAccountDto>();
+        }
+
+        _loading = false;
+    }
+}

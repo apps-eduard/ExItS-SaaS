@@ -8,11 +8,31 @@
 @inject IConnectivityService Connectivity
 @inject IStringLocalizer<PosResources> L
 
-<StoreHeaderBack Href="@($"/inventory/{ProductId:D}")" />
+<StoreHeaderBack Href="@BackHref" />
 
 @if (!_ready)
 {
     <Page><Spinner /></Page>
+}
+else if (_receiveSuccess)
+{
+<div class="pos-inventory-adjust">
+<Page>
+    <header class="pos-inventory-adjust__header">
+        <h1 class="pos-inventory-adjust__title">@L["Purchasing_ReceiveStockSuccessTitle"]</h1>
+        <p class="pos-inventory-adjust__subtitle">@L["Purchasing_ReceiveStockSuccessMessage"]</p>
+    </header>
+    <section class="pos-inventory-adjust__panel">
+        <p>@L["Purchasing_ReceiveStockSuccessDetail", _successQuantityText, _account?.Name ?? L["Inventory_Title"]]</p>
+        <p class="pos-muted">@L["Purchasing_ReceiveStockEffectDone"]</p>
+    </section>
+    <FormActions>
+        <Button Variant="ButtonVariant.Secondary" OnClick="GoReceiveMore">@L["Purchasing_ReceiveMoreStock"]</Button>
+        <Button Variant="ButtonVariant.Secondary" OnClick="GoViewInventory">@L["Purchasing_ViewInventory"]</Button>
+        <Button Variant="ButtonVariant.Primary" OnClick="GoPurchasingDone">@L["Common_OK"]</Button>
+    </FormActions>
+</Page>
+</div>
 }
 else
 {
@@ -21,9 +41,15 @@ else
 <div class="pos-inventory-adjust">
 <Page>
     <header class="pos-inventory-adjust__header">
-        <h1 class="pos-inventory-adjust__title">@L["Inventory_AdjustTitle"]</h1>
+        <h1 class="pos-inventory-adjust__title">@(IsReceiveStock ? L["Purchasing_ReceiveStock"] : L["Inventory_AdjustTitle"])</h1>
         <p class="pos-inventory-adjust__subtitle">@(_account?.Name ?? L["Inventory_Title"])</p>
-        <p class="pos-inventory-adjust__intro">@L["Inventory_AdjustIntro"]</p>
+        <p class="pos-inventory-adjust__intro">@(IsReceiveStock ? L["Purchasing_ReceiveStockDescription"] : L["Inventory_AdjustIntro"])</p>
+        @if (IsReceiveStock)
+        {
+            <p class="pos-muted">@L["Purchasing_ReceiveStockHelper"]</p>
+            <p class="pos-muted">@L["Purchasing_ReceiveStockSecondary"]</p>
+            <p class="pos-inventory-adjust__intro">@L["Purchasing_ReceiveStockWillIncrease"]</p>
+        }
     </header>
 
     @if (_isOffline)
@@ -33,17 +59,20 @@ else
 
     @if (!string.IsNullOrEmpty(_errorMessage))
     {
-        <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Inventory_AdjustTitle"])" Message="@_errorMessage" />
+        <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? (IsReceiveStock ? L["Purchasing_ReceiveStock"] : L["Inventory_AdjustTitle"]))" Message="@_errorMessage" />
     }
 
     <section class="pos-inventory-adjust__panel" aria-labelledby="inventory-adjust-heading">
-        <h2 id="inventory-adjust-heading" class="pos-inventory-adjust__section-title">@L["Inventory_AdjustDetails"]</h2>
+        <h2 id="inventory-adjust-heading" class="pos-inventory-adjust__section-title">@(IsReceiveStock ? L["Purchasing_ReceiveStockDetails"] : L["Inventory_AdjustDetails"])</h2>
         <div class="pos-inventory-adjust__form">
-            <Select Label="@L["Inventory_Direction"]"
-                    Value="@_direction"
-                    ValueChanged="OnDirectionChanged"
-                    Options="@DirectionOptions"
-                    Disabled="@(_isOffline || _busy)" />
+            @if (!IsReceiveStock)
+            {
+                <Select Label="@L["Inventory_Direction"]"
+                        Value="@_direction"
+                        ValueChanged="OnDirectionChanged"
+                        Options="@DirectionOptions"
+                        Disabled="@(_isOffline || _busy)" />
+            }
             <TextInput Label="@L["Inventory_Quantity"]"
                        Value="@_quantityText"
                        ValueChanged="v => _quantityText = v"
@@ -52,7 +81,7 @@ else
             <TextInput Label="@L["Inventory_Remarks"]"
                        Value="@_reason"
                        ValueChanged="v => _reason = v"
-                       Hint="@L["Inventory_RemarksHint"]"
+                       Hint="@(IsReceiveStock ? L["Purchasing_ReceiveStockRemarksHint"] : L["Inventory_RemarksHint"])"
                        Required="true"
                        Disabled="@(_isOffline || _busy)" />
         </div>
@@ -122,7 +151,7 @@ else
         <Button Variant="ButtonVariant.Primary"
                 Disabled="@(_isOffline || _busy)"
                 IsLoading="@_busy"
-                OnClick="SaveAsync">@L["Inventory_SaveAdjustment"]</Button>
+                OnClick="SaveAsync">@(IsReceiveStock ? L["Purchasing_ReceiveStock"] : L["Inventory_SaveAdjustment"])</Button>
     </FormActions>
 </Page>
 </div>
@@ -139,9 +168,20 @@ else
 
     [Parameter] public Guid ProductId { get; set; }
 
+    [SupplyParameterFromQuery(Name = "intent")]
+    public string? Intent { get; set; }
+
+    private bool IsReceiveStock =>
+        string.Equals(Intent, "receive", StringComparison.OrdinalIgnoreCase);
+
+    private string BackHref =>
+        IsReceiveStock ? "/purchasing/receive-stock" : $"/inventory/{ProductId:D}";
+
     private bool _ready;
     private bool _busy;
     private bool _isOffline;
+    private bool _receiveSuccess;
+    private string _successQuantityText = string.Empty;
     private PosInventoryAccountDto? _account;
     private PosCatalogProductDto? _product;
     private bool _productAlreadyTracksExpiration;
@@ -177,6 +217,12 @@ else
         }
 
         _ready = true;
+        _receiveSuccess = false;
+        if (IsReceiveStock)
+        {
+            _direction = "In";
+        }
+
         _isOffline = !await Connectivity.IsConnectedAsync();
         if (_isOffline)
         {
@@ -244,7 +290,16 @@ else
         _lots = lots.Data?.Items.ToList() ?? [];
     }
 
-    private void Cancel() => Nav.NavigateTo($"/inventory/{ProductId:D}");
+    private void Cancel() => Nav.NavigateTo(BackHref);
+
+    private void GoReceiveMore() => Nav.NavigateTo("/purchasing/receive-stock");
+
+    private void GoViewInventory() => Nav.NavigateTo($"/inventory/{ProductId:D}");
+
+    private void GoPurchasingDone() => Nav.NavigateTo("/purchasing");
+
+    private string PageErrorTitle =>
+        IsReceiveStock ? L["Purchasing_ReceiveStock"] : L["Inventory_AdjustTitle"];
 
     private async Task SaveAsync()
     {
@@ -252,10 +307,15 @@ else
         _errorTitle = null;
         _errorMessage = null;
 
+        if (IsReceiveStock)
+        {
+            _direction = "In";
+        }
+
         if (!decimal.TryParse(_quantityText, System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out var qty)
             || qty <= 0)
         {
-            _errorTitle = L["Inventory_AdjustTitle"];
+            _errorTitle = PageErrorTitle;
             _errorMessage = L["Sales_Checkout_QuantityPrecision"];
             _busy = false;
             return;
@@ -263,7 +323,7 @@ else
 
         if (string.IsNullOrWhiteSpace(_reason))
         {
-            _errorTitle = L["Inventory_AdjustTitle"];
+            _errorTitle = PageErrorTitle;
             _errorMessage = L["Inventory_RemarksRequired"];
             _busy = false;
             return;
@@ -271,7 +331,7 @@ else
 
         if (_trackExpiration && _direction == "In" && _expirationDate is null)
         {
-            _errorTitle = L["Inventory_AdjustTitle"];
+            _errorTitle = PageErrorTitle;
             _errorMessage = L["Inventory_ExpirationDateRequired"];
             _busy = false;
             return;
@@ -281,7 +341,7 @@ else
             && _lots.Count > 0
             && string.IsNullOrWhiteSpace(_selectedLotId))
         {
-            _errorTitle = L["Inventory_AdjustTitle"];
+            _errorTitle = PageErrorTitle;
             _errorMessage = L["Inventory_LotRequired"];
             _busy = false;
             return;
@@ -291,7 +351,7 @@ else
             && _lots.Count == 0
             && _expirationDate is null)
         {
-            _errorTitle = L["Inventory_AdjustTitle"];
+            _errorTitle = PageErrorTitle;
             _errorMessage = L["Inventory_ExpirationDateRequired"];
             _busy = false;
             return;
@@ -303,7 +363,7 @@ else
             {
                 if (!Capabilities.IsAllowed(UtangCapability.ManageCatalog) || _product is null)
                 {
-                    _errorTitle = L["Inventory_AdjustTitle"];
+                    _errorTitle = PageErrorTitle;
                     _errorMessage = L["Inventory_EnableExpiryNeedsCatalog"];
                     return;
                 }
@@ -346,6 +406,13 @@ else
 
             if (result.Status == ApiCallStatus.Success)
             {
+                if (IsReceiveStock)
+                {
+                    _successQuantityText = qty.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
+                    _receiveSuccess = true;
+                    return;
+                }
+
                 Nav.NavigateTo($"/inventory/{ProductId:D}");
                 return;
             }

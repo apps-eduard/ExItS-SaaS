@@ -94,6 +94,21 @@ else
                         <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("inbox")</span>
                         <span class="pos-action-tile__label">@L["Nav_Inventory"]</span>
                     </button>
+                    @if (Capabilities.IsAllowed(UtangCapability.ViewPurchasing)
+                        || Capabilities.IsAllowed(UtangCapability.ManageInventory))
+                    {
+                        <button type="button" class="pos-action-tile" @onclick="GoPurchasing">
+                            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("plus")</span>
+                            <span class="pos-action-tile__label">@L["Nav_Purchasing"]</span>
+                        </button>
+                    }
+                    @if (Capabilities.IsAllowed(UtangCapability.ViewSuppliers))
+                    {
+                        <button type="button" class="pos-action-tile" @onclick="GoSuppliers">
+                            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("customers")</span>
+                            <span class="pos-action-tile__label">@L["Nav_Suppliers"]</span>
+                        </button>
+                    }
                     <button type="button" class="pos-action-tile" @onclick="GoStaff">
                         <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("customers")</span>
                         <span class="pos-action-tile__label">@L["Org_StaffLink"]</span>
@@ -114,13 +129,6 @@ else
                         <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("check")</span>
                         <span class="pos-action-tile__label">@L["Nav_Permissions"]</span>
                     </button>
-                    @if (Capabilities.IsAllowed(UtangCapability.ViewSuppliers))
-                    {
-                        <button type="button" class="pos-action-tile" @onclick="GoSuppliers">
-                            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("customers")</span>
-                            <span class="pos-action-tile__label">@L["Nav_Suppliers"]</span>
-                        </button>
-                    }
                 </div>
             </Section>
 
@@ -281,6 +289,7 @@ else
     private void GoCatalog() => Nav.NavigateTo("/catalog");
     private void GoCategories() => Nav.NavigateTo("/catalog/categories");
     private void GoInventory() => Nav.NavigateTo("/inventory");
+    private void GoPurchasing() => Nav.NavigateTo("/purchasing");
     private void GoPermissions() => Nav.NavigateTo("/permissions");
     private void GoStaff() => Nav.NavigateTo("/org/staff");
     private void GoRegisters() => Nav.NavigateTo("/registers");

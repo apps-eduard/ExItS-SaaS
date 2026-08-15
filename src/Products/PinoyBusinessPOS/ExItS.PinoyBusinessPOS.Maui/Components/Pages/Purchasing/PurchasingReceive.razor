@@ -36,8 +36,9 @@ else
 <div class="pos-purchasing-receive">
         <Page>
             <header class="pos-purchasing-receive__header">
-                <h1 class="pos-purchasing-receive__title">@L["Purchasing_ReceiveTitle"]</h1>
+                <h1 class="pos-purchasing-receive__title">@L["Purchasing_ReceiveAgainstPoTitle"]</h1>
                 <p class="pos-purchasing-receive__subtitle">@(_po.PoNumber ?? L["Purchasing_ReceiveSubtitle"])</p>
+                <p class="pos-muted">@L["Purchasing_GoodsReceiptsStockNote"]</p>
             </header>
 
             @if (_isOffline)

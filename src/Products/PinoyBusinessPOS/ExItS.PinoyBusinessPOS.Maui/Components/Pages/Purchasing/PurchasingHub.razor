@@ -1,0 +1,90 @@
+@page "/purchasing"
+@using ExItS.DesignSystem.Components.Internal
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IUtangCapabilityEvaluator Capabilities
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else
+{
+<div class="pos-purchasing">
+    <Page>
+        <header class="pos-purchasing__header">
+            <div class="pos-purchasing__heading">
+                <h1 class="pos-purchasing__title">@L["Purchasing_Title"]</h1>
+                <p class="pos-purchasing__subtitle">@L["Purchasing_HubSubtitle"]</p>
+            </div>
+        </header>
+
+        <div class="pos-action-grid pos-action-grid--two pos-purchasing__actions" role="group" aria-label="@L["Purchasing_Title"]">
+            @if (Capabilities.IsAllowed(UtangCapability.ManageInventory))
+            {
+                <button type="button" class="pos-action-tile pos-action-tile--primary" @onclick="GoReceiveStock">
+                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("plus")</span>
+                    <span class="pos-action-tile__label">@L["Purchasing_ReceiveStock"]</span>
+                    <span class="pos-action-tile__meta pos-muted">@L["Purchasing_ReceiveStockHint"]</span>
+                </button>
+            }
+            @if (Capabilities.IsAllowed(UtangCapability.ViewPurchasing))
+            {
+                <button type="button" class="pos-action-tile" @onclick="GoOrders">
+                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("inbox")</span>
+                    <span class="pos-action-tile__label">@L["Purchasing_Orders"]</span>
+                    <span class="pos-action-tile__meta pos-muted">@L["Purchasing_OrdersHint"]</span>
+                </button>
+                <button type="button" class="pos-action-tile" @onclick="GoReceipts">
+                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("check")</span>
+                    <span class="pos-action-tile__label">@L["Purchasing_GoodsReceipts"]</span>
+                    <span class="pos-action-tile__meta pos-muted">@L["Purchasing_GoodsReceiptsHint"]</span>
+                </button>
+            }
+            @if (Capabilities.IsAllowed(UtangCapability.ViewSuppliers))
+            {
+                <button type="button" class="pos-action-tile" @onclick="GoSuppliers">
+                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("customers")</span>
+                    <span class="pos-action-tile__label">@L["Purchasing_Suppliers"]</span>
+                    <span class="pos-action-tile__meta pos-muted">@L["Purchasing_SuppliersHint"]</span>
+                </button>
+            }
+        </div>
+
+        <section class="pos-purchasing__panel" aria-labelledby="purchasing-choice-heading">
+            <h2 id="purchasing-choice-heading" class="pos-purchasing__section-title">@L["Purchasing_ChoiceTitle"]</h2>
+            <p class="pos-muted">@L["Purchasing_ChoiceReceive"]</p>
+            <p class="pos-muted">@L["Purchasing_ChoiceOrder"]</p>
+        </section>
+    </Page>
+</div>
+}
+
+@code {
+    private bool _ready;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        if (!Capabilities.IsAllowed(UtangCapability.ViewPurchasing)
+            && !Capabilities.IsAllowed(UtangCapability.ManageInventory)
+            && !Capabilities.IsAllowed(UtangCapability.ViewSuppliers))
+        {
+            Nav.NavigateTo("/home", replace: true);
+            return;
+        }
+
+        _ready = true;
+    }
+
+    private void GoReceiveStock() => Nav.NavigateTo("/purchasing/receive-stock");
+    private void GoOrders() => Nav.NavigateTo("/purchasing/orders");
+    private void GoReceipts() => Nav.NavigateTo("/purchasing/receipts");
+    private void GoSuppliers() => Nav.NavigateTo("/suppliers");
+}

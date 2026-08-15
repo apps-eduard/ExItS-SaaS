@@ -1,4 +1,4 @@
-@page "/purchasing/orders"
+@page "/purchasing/receipts"
 @using ExItS.DesignSystem.Components.Internal
 @inject NavigationManager Nav
 @inject NavigationGate Gate
@@ -12,28 +12,26 @@
 {
     <Page><Spinner /></Page>
 }
+else if (!_allowed)
+{
+    <Page>
+        <StoreHeaderBack Href="/purchasing" />
+        <EmptyState IconName="lock"
+                    Title="@L["Purchasing_GoodsReceipts"]"
+                    Message="@L["Access_RestrictedMessage"]" />
+    </Page>
+}
 else
 {
-    var canManage = Capabilities.IsAllowed(UtangCapability.ManagePurchasing);
 <div class="pos-purchasing">
     <StoreHeaderBack Href="/purchasing" />
     <Page>
         <header class="pos-purchasing__header">
             <div class="pos-purchasing__heading">
-                <h1 class="pos-purchasing__title">@L["Purchasing_Orders"]</h1>
-                <p class="pos-purchasing__subtitle">@L["Purchasing_OrdersHint"]</p>
-                <p class="pos-muted">@L["Purchasing_OrdersNoStockNote"]</p>
+                <h1 class="pos-purchasing__title">@L["Purchasing_GoodsReceipts"]</h1>
+                <p class="pos-purchasing__subtitle">@L["Purchasing_GoodsReceiptsHint"]</p>
+                <p class="pos-muted">@L["Purchasing_GoodsReceiptsStockNote"]</p>
             </div>
-            @if (canManage)
-            {
-                <button type="button"
-                        class="pos-purchasing__add"
-                        disabled="@_isOffline"
-                        @onclick="GoNew">
-                    <span class="pos-purchasing__add-icon" aria-hidden="true">@IconGlyphs.Get("plus")</span>
-                    <span>@L["Purchasing_Add"]</span>
-                </button>
-            }
         </header>
 
         @if (_isOffline)
@@ -41,7 +39,7 @@ else
             <Alert Tone="AlertTone.Warning" Title="@L["Purchasing_OfflineTitle"]" Message="@L["Purchasing_OfflineMessage"]" />
         }
 
-        <div class="pos-action-grid pos-action-grid--single pos-purchasing__actions" role="group" aria-label="@L["Purchasing_Orders"]">
+        <div class="pos-action-grid pos-action-grid--single pos-purchasing__actions" role="group" aria-label="@L["Purchasing_GoodsReceipts"]">
             <button type="button"
                     class="pos-action-tile"
                     disabled="@(_loading || _isOffline)"
@@ -51,15 +49,15 @@ else
             </button>
         </div>
 
-        <section class="pos-purchasing__panel" aria-labelledby="purchasing-list-heading">
-            <h2 id="purchasing-list-heading" class="pos-purchasing__section-title">@L["Purchasing_Orders"]</h2>
+        <section class="pos-purchasing__panel" aria-labelledby="receipts-list-heading">
+            <h2 id="receipts-list-heading" class="pos-purchasing__section-title">@L["Purchasing_GoodsReceiptsReady"]</h2>
             @if (_loading)
             {
                 <div class="pos-purchasing__loading"><Spinner /><span>@L["Inventory_Loading"]</span></div>
             }
             else if (!string.IsNullOrEmpty(_errorMessage))
             {
-                <ErrorState Title="@(_errorTitle ?? L["Purchasing_Orders"])"
+                <ErrorState Title="@(_errorTitle ?? L["Purchasing_GoodsReceipts"])"
                             Message="@_errorMessage"
                             RetryLabel="@L["Api_Retry"]"
                             OnRetry="ReloadAsync" />
@@ -67,17 +65,17 @@ else
             else if (_items.Count == 0)
             {
                 <EmptyState IconName="inbox"
-                            Title="@L["Purchasing_EmptyTitle"]"
-                            Message="@L["Purchasing_EmptyMessage"]" />
+                            Title="@L["Purchasing_GoodsReceiptsEmptyTitle"]"
+                            Message="@L["Purchasing_GoodsReceiptsEmptyMessage"]" />
             }
             else
             {
-                <div class="pos-purchasing__list" role="list" aria-label="@L["Purchasing_Orders"]">
+                <div class="pos-purchasing__list" role="list" aria-label="@L["Purchasing_GoodsReceipts"]">
                     @foreach (var item in _items)
                     {
                         <a class="pos-purchasing__row"
                            role="listitem"
-                           href="@($"/purchasing/{item.PurchaseOrderId:D}")">
+                           href="@($"/purchasing/{item.PurchaseOrderId:D}/receive")">
                             <div class="pos-purchasing__row-main">
                                 <div class="pos-purchasing__row-top">
                                     <span class="pos-purchasing__row-name">@(item.PoNumber ?? L["Purchasing_DetailTitle"])</span>
@@ -88,7 +86,7 @@ else
                                     · @L["Purchasing_LinesCount", item.Lines.Count]
                                 </span>
                             </div>
-                            <span class="pos-purchasing__view">@L["Customers_View"]</span>
+                            <span class="pos-purchasing__view">@L["Purchasing_ReceiveAgainstPo"]</span>
                         </a>
                     }
                 </div>
@@ -100,6 +98,7 @@ else
 
 @code {
     private bool _ready;
+    private bool _allowed;
     private bool _loading;
     private bool _isOffline;
     private IReadOnlyList<PosPurchaseOrderDto> _items = Array.Empty<PosPurchaseOrderDto>();
@@ -114,15 +113,12 @@ else
             return;
         }
 
-        if (!Capabilities.IsAllowed(UtangCapability.ViewPurchasing))
-        {
-            Nav.NavigateTo("/home", replace: true);
-            return;
-        }
-
-        _isOffline = !await Connectivity.IsConnectedAsync();
+        _allowed = Capabilities.IsAllowed(UtangCapability.ViewPurchasing);
         _ready = true;
-        await ReloadAsync();
+        if (_allowed)
+        {
+            await ReloadAsync();
+        }
     }
 
     private static BadgeTone StatusTone(string status) =>
@@ -152,7 +148,9 @@ else
             var result = await Purchasing.ListAsync();
             if (result.IsSuccess && result.Data is not null)
             {
-                _items = result.Data.Items;
+                _items = result.Data.Items
+                    .Where(x => x.Status is "Ordered" or "PartiallyReceived")
+                    .ToList();
             }
             else
             {
@@ -167,6 +165,4 @@ else
             _loading = false;
         }
     }
-
-    private void GoNew() => Nav.NavigateTo("/purchasing/new");
 }
