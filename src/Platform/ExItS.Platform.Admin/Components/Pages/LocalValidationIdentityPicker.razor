@@ -1,13 +1,13 @@
 @using AntDesign
 @using ExItS.Platform.Admin.Services
 @inject LocalValidationSignInService LocalValidationSignIn
-@inject NavigationManager Nav
+@inject IJSRuntime Js
 @inject IStringLocalizer<AdminResources> L
 
 @if (_show)
 {
     <div class="ant-form-item exits-lv-identity" style="margin-bottom: 1rem;">
-        <label class="ant-form-item-label">@L["Login_LocalValidationSelect"]</label>
+        <label class="ant-form-item-label">@L["Login_TestUserSelect"]</label>
 
         @if (_loading)
         {
@@ -18,16 +18,17 @@
             <div class="exits-lv-identity__list" role="list">
                 @foreach (var identity in _identities)
                 {
-                    @* Plain GET links — full browser navigation sets auth cookies.
-                       Avoid AntDesign Select ValueChanged (first pick was swallowed by circuit dispose). *@
-                    <a role="listitem"
-                       class="ant-btn ant-btn-default ant-btn-block ant-btn-sm exits-lv-identity__item"
-                       data-enhance-nav="false"
-                       href="@BuildLoginAsHref(identity.Key)">
-                        @identity.DisplayName
-                    </a>
+                    <button type="button"
+                            role="listitem"
+                            class="ant-btn ant-btn-default ant-btn-block ant-btn-sm exits-lv-identity__item"
+                            @onclick="() => OnTestUserSelectedAsync(identity)">
+                        @FormatLabel(identity)
+                    </button>
                 }
             </div>
+            <Paragraph Type="@TextElementType.Secondary" Style="margin:.35rem 0 0; font-size:12px;">
+                @L["Login_TestUserHint"]
+            </Paragraph>
         }
 
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:.35rem;gap:8px;">
@@ -88,10 +89,25 @@
         }
     }
 
-    private string BuildLoginAsHref(string key)
+    private static string FormatLabel(LocalValidationIdentityOption identity)
     {
-        // Identity AccountClass owns the destination. Do not carry returnApp/returnPath from
-        // a prior Org/Personal redirect — that forced the workspace chooser or empty Org Web.
-        return $"/admin/login/as/{Uri.EscapeDataString(key)}";
+        var name = string.IsNullOrWhiteSpace(identity.DisplayName)
+            ? identity.Username
+            : identity.DisplayName;
+        if (!string.IsNullOrWhiteSpace(identity.ScopeLabel))
+        {
+            return $"{name} — {identity.ScopeLabel}";
+        }
+
+        return name;
+    }
+
+    private async Task OnTestUserSelectedAsync(LocalValidationIdentityOption identity)
+    {
+        // Username convenience only — never authenticate or navigate from this control.
+        var loginId = !string.IsNullOrWhiteSpace(identity.Email)
+            ? identity.Email
+            : identity.Username;
+        await Js.InvokeVoidAsync("exitsFillTestUserLogin", loginId ?? string.Empty);
     }
 }

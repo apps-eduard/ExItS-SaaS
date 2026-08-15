@@ -926,6 +926,9 @@
   <data name="Login_LocalValidationTitle" xml:space="preserve"><value>Local Validation identities</value></data>
   <data name="Login_LocalValidationHint" xml:space="preserve"><value>Pumili ng approved identity. Ang sign-in ay normal Platform credential login sa server (hindi ipinapakita ang password sa browser).</value></data>
   <data name="Login_LocalValidationSelect" xml:space="preserve"><value>Mag-sign in bilang…</value></data>
+  <data name="Login_TestUserSelect" xml:space="preserve"><value>Development Test User</value></data>
+  <data name="Login_TestUserPlaceholder" xml:space="preserve"><value>Pumili ng test user…</value></data>
+  <data name="Login_TestUserHint" xml:space="preserve"><value>Pinupunan lang ang username. I-type ang Local Validation password at pindutin ang Sign in.</value></data>
   <data name="Login_LocalValidationUnavailable" xml:space="preserve"><value>Hindi pa handa ang identities. Maghintay sa Platform API seed, tapos i-refresh.</value></data>
   <data name="Login_OrContinueWith" xml:space="preserve"><value>O magpatuloy gamit ang</value></data>
   <data name="Login_ContinueGoogle" xml:space="preserve"><value>Magpatuloy sa Google</value></data>

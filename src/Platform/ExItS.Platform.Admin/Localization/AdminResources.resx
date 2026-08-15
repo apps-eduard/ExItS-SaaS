@@ -927,6 +927,9 @@
   <data name="Login_LocalValidationTitle" xml:space="preserve"><value>Local Validation identities</value></data>
   <data name="Login_LocalValidationHint" xml:space="preserve"><value>Choose an approved identity. Sign-in uses normal Platform credential login on the server (password is not shown in the browser).</value></data>
   <data name="Login_LocalValidationSelect" xml:space="preserve"><value>Sign in as…</value></data>
+  <data name="Login_TestUserSelect" xml:space="preserve"><value>Development Test User</value></data>
+  <data name="Login_TestUserPlaceholder" xml:space="preserve"><value>Choose a test user…</value></data>
+  <data name="Login_TestUserHint" xml:space="preserve"><value>Fills the username only. Enter the Local Validation password and click Sign in.</value></data>
   <data name="Login_LocalValidationUnavailable" xml:space="preserve"><value>Identities are not ready yet. Wait for Platform API seed, then refresh.</value></data>
   <data name="Login_OrContinueWith" xml:space="preserve"><value>Or continue with</value></data>
   <data name="Login_ContinueGoogle" xml:space="preserve"><value>Continue with Google</value></data>

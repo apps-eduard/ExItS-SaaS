@@ -61,15 +61,30 @@ public sealed class WebPostLoginRouter(
             target = workspaces[0];
         }
 
-        // Baseline Platform Administrators also have a Personal profile. Do not force the
-        // "Choose a workspace" page after every login — prefer Platform, then Personal.
-        // If returnApp=organization was requested but this identity has no org membership
-        // (common after Local Validation reset), fall back to Platform instead of Org Web
-        // with an empty organization context.
+        // Priority when no explicit returnApp:
+        // 1) Platform operator → Platform Admin
+        // 2) Qualifying Organization Web membership(s) → Org Web (or chooser if many)
+        // 3) Personal-only → Personal Web
+        // Cashier / OrganizationMember-only orgs are not listed as Organization workspaces.
         if (target is null)
         {
             target = workspaces.FirstOrDefault(w =>
                 string.Equals(w.App, WebApps.Platform, StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (target is null && requested is null)
+        {
+            var orgWorkspaces = workspaces
+                .Where(w => string.Equals(w.App, WebApps.Organization, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+            if (orgWorkspaces.Count == 1)
+            {
+                target = orgWorkspaces[0];
+            }
+            else if (orgWorkspaces.Count > 1)
+            {
+                return "/admin/workspaces";
+            }
         }
 
         if (target is null && requested is null)

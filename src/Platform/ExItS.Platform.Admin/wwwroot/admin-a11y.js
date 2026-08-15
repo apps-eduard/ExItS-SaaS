@@ -85,4 +85,18 @@
       console.error("exitsDownloadBase64 failed", e);
     }
   };
+  window.exitsFillTestUserLogin = function (username) {
+    var user = document.getElementById("login-email");
+    var pass = document.getElementById("login-password");
+    if (user) {
+      user.value = username || "";
+      user.dispatchEvent(new Event("input", { bubbles: true }));
+      user.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+    if (pass) {
+      pass.value = "";
+      pass.dispatchEvent(new Event("input", { bubbles: true }));
+      pass.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+  };
 })();

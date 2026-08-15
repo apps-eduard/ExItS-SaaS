@@ -294,10 +294,12 @@
   <data name="SignIn_Submit" xml:space="preserve"><value>Mag-sign in</value></data>
   <data name="SignIn_DevSubmit" xml:space="preserve"><value>Mag-sign in gamit ang User Id</value></data>
   <data name="SignIn_QuickLoginTitle" xml:space="preserve"><value>Mabilis na sign-in</value></data>
+  <data name="SignIn_TestUserTitle" xml:space="preserve"><value>Development Test User</value></data>
   <data name="SignIn_QuickLoginLabel" xml:space="preserve"><value>Local Validation identity</value></data>
   <data name="SignIn_QuickLoginHint" xml:space="preserve"><value>Isang entry bawat user. Gumagamit ng Local Validation shared password (tulad ng Admin Quick Login).</value></data>
+  <data name="SignIn_TestUserHint" xml:space="preserve"><value>Pinupunan lang ang username. I-type ang Local Validation password at pindutin ang Sign in.</value></data>
   <data name="SignIn_QuickLoginPlaceholder" xml:space="preserve"><value>Pumili ng user…</value></data>
-  <data name="SignIn_QuickLoginUnavailable" xml:space="preserve"><value>Walang available na Quick Login identities</value></data>
+  <data name="SignIn_QuickLoginUnavailable" xml:space="preserve"><value>Walang available na test user</value></data>
   <data name="SignIn_AccessTokenMissing" xml:space="preserve"><value>Nakapag-sign in, pero walang na-issue na POS access token. Tingnan ang Local Validation shared password at subukan ulit.</value></data>
   <data name="Auth_ExternalCancelled" xml:space="preserve"><value>Kinansela ang Google sign-in.</value></data>
   <data name="Auth_ExternalFailed" xml:space="preserve"><value>Hindi nagtagumpay ang Google sign-in. Subukan ulit o gamitin ang username at password.</value></data>
