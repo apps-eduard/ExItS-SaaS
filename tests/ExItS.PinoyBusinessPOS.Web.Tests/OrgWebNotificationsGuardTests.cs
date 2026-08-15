@@ -15,6 +15,32 @@ public sealed class OrgWebNotificationsGuardTests
         Assert.Contains("ListRelationshipsAsync(\"supplier\")", page, StringComparison.Ordinal);
         Assert.Contains("MarkRelatedOrganizationNotificationsReadAsync", page, StringComparison.Ordinal);
         Assert.Contains("UtangCapability.ManageSuppliers", page, StringComparison.Ordinal);
+        Assert.Contains("MarkReadOptimisticAsync", page, StringComparison.Ordinal);
+        Assert.Contains("ApplyLocalRead", page, StringComparison.Ordinal);
+        Assert.Contains("Nav.NavigateTo(\"/suppliers\")", page, StringComparison.Ordinal);
+        Assert.Contains("Nav.NavigateTo(\"/suppliers/buyers\")", page, StringComparison.Ordinal);
+        Assert.Contains("Notifications_ActionNeeded", page, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void OrgWebNotificationTapMarksRead_and_connected_buyers_nav_exists()
+    {
+        var page = File.ReadAllText(Path.Combine(WebProject(),
+            "Components", "Pages", "Notifications", "Notifications.razor"));
+        Assert.Contains("MarkOrganizationNotificationReadAsync", page, StringComparison.Ordinal);
+        Assert.Contains("Shell.UnreadNotificationCount = _items.Count(n => !n.IsRead)", page, StringComparison.Ordinal);
+
+        var suppliers = File.ReadAllText(Path.Combine(WebProject(),
+            "Components", "Pages", "Suppliers", "Suppliers.razor"));
+        Assert.Contains("@page \"/suppliers/buyers\"", suppliers, StringComparison.Ordinal);
+        Assert.Contains("Suppliers_TabBuyers", suppliers, StringComparison.Ordinal);
+        Assert.Contains("_connectedBuyers", suppliers, StringComparison.Ordinal);
+        Assert.Contains("Suppliers_BuyerNotCustomerNote", suppliers, StringComparison.Ordinal);
+
+        var layout = File.ReadAllText(Path.Combine(WebProject(),
+            "Components", "Layout", "MainLayout.razor"));
+        Assert.Contains("/suppliers/buyers", layout, StringComparison.Ordinal);
+        Assert.Contains("Nav_ConnectedBuyers", layout, StringComparison.Ordinal);
     }
 
     [Fact]

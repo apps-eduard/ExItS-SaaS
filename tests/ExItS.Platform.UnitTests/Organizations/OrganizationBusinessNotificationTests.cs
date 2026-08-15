@@ -132,6 +132,72 @@ public sealed class OrganizationBusinessNotificationTests
     }
 
     [Fact]
+    public async Task OpeningNotificationMarksRead_and_is_idempotent()
+    {
+        var org = PlatformOrganizationId.From(Guid.NewGuid());
+        var otherOrg = PlatformOrganizationId.From(Guid.NewGuid());
+        var owner = PlatformUserId.From(Guid.NewGuid());
+        var otherOwner = PlatformUserId.From(Guid.NewGuid());
+        var now = DateTimeOffset.UtcNow;
+        var notifications = new CustomerLinkCompletenessTests.InMemoryOrganizationInAppNotificationRepository();
+        var note = OrganizationInAppNotification.Create(
+            org,
+            owner,
+            "Supplier connection accepted",
+            "Paul Distribution accepted your supplier connection request.",
+            SupplierConnectionNotificationTypes.Accepted,
+            now,
+            Guid.NewGuid().ToString("D"));
+        var otherNote = OrganizationInAppNotification.Create(
+            otherOrg,
+            otherOwner,
+            "Other",
+            "Other preview",
+            SupplierConnectionNotificationTypes.Accepted,
+            now,
+            Guid.NewGuid().ToString("D"));
+        await notifications.AddAsync(note);
+        await notifications.AddAsync(otherNote);
+
+        var useCase = new MarkOrganizationInAppNotificationRead(
+            notifications, new FakeUow(), new FixedClock(now.AddMinutes(1)));
+
+        var first = await useCase.ExecuteAsync(org, owner, note.Id.Value);
+        Assert.True(first.IsSuccess);
+        Assert.True(first.Value!.IsRead);
+        Assert.True(note.IsRead);
+
+        var second = await useCase.ExecuteAsync(org, owner, note.Id.Value);
+        Assert.True(second.IsSuccess);
+        Assert.True(second.Value!.IsRead);
+
+        var scoped = await useCase.ExecuteAsync(otherOrg, owner, note.Id.Value);
+        Assert.False(scoped.IsSuccess);
+        Assert.False(otherNote.IsRead);
+    }
+
+    [Fact]
+    public async Task UnreadCount_excludes_read_notifications_for_organization()
+    {
+        var org = PlatformOrganizationId.From(Guid.NewGuid());
+        var owner = PlatformUserId.From(Guid.NewGuid());
+        var now = DateTimeOffset.UtcNow;
+        var notifications = new CustomerLinkCompletenessTests.InMemoryOrganizationInAppNotificationRepository();
+        var unread = OrganizationInAppNotification.Create(
+            org, owner, "A", "a", SupplierConnectionNotificationTypes.Accepted, now, Guid.NewGuid().ToString("D"));
+        var read = OrganizationInAppNotification.Create(
+            org, owner, "B", "b", SupplierConnectionNotificationTypes.Declined, now, Guid.NewGuid().ToString("D"));
+        read.MarkRead(now.AddMinutes(1));
+        await notifications.AddAsync(unread);
+        await notifications.AddAsync(read);
+
+        var listed = await notifications.ListForRecipientInOrganizationAsync(org, owner, take: 50);
+        Assert.Equal(1, listed.Count(n => !n.IsRead));
+        Assert.Equal(2, listed.Count);
+        Assert.Contains(listed, n => n.IsRead);
+    }
+
+    [Fact]
     public async Task Rejects_unknown_related_type_and_same_org()
     {
         var org = PlatformOrganizationId.From(Guid.NewGuid());
