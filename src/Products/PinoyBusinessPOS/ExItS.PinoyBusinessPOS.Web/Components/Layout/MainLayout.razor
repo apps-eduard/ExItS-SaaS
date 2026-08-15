@@ -159,11 +159,12 @@
                 @if (Shell.CanSee("notifications"))
                 {
                     <Badge Count="Shell.UnreadNotificationCount" Size="@BadgeSize.Small">
-                        <Button Type="@ButtonType.Text"
-                                Icon="bell"
-                                Title="@NotificationBellTitle"
-                                AriaLabel="@NotificationBellTitle"
-                                OnClick='() => Nav.NavigateTo("/notifications")' />
+                        <Tooltip Title="@NotificationBellTitle">
+                            <Button Type="@ButtonType.Text"
+                                    Icon="bell"
+                                    AriaLabel="@NotificationBellTitle"
+                                    OnClick='() => Nav.NavigateTo("/notifications")' />
+                        </Tooltip>
                     </Badge>
                 }
                 <ExitsThemeSelector />

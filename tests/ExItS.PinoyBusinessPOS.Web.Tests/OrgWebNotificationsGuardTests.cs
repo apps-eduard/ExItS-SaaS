@@ -33,6 +33,7 @@ public sealed class OrgWebNotificationsGuardTests
         Assert.Contains("/notifications", layout, StringComparison.Ordinal);
         Assert.Contains("UnreadNotificationCount", layout, StringComparison.Ordinal);
         Assert.Contains("AriaLabel", layout, StringComparison.Ordinal);
+        Assert.Contains("<Tooltip Title=\"@NotificationBellTitle\">", layout, StringComparison.Ordinal);
         Assert.Contains("Notifications_Aria", layout, StringComparison.Ordinal);
     }
 
