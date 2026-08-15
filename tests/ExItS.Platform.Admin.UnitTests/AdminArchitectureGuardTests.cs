@@ -510,13 +510,11 @@ public sealed class AdminArchitectureGuardTests
 
         Assert.Contains("exits-lv-identity", picker, StringComparison.Ordinal);
         Assert.Contains("DisplayName", picker, StringComparison.Ordinal);
-        Assert.Contains("/admin/login/as/", picker, StringComparison.Ordinal);
-        Assert.Contains("BuildLoginAsHref", picker, StringComparison.Ordinal);
-        Assert.Contains("data-enhance-nav=\"false\"", picker, StringComparison.Ordinal);
-        Assert.DoesNotContain("location.assign", picker, StringComparison.Ordinal);
+        Assert.Contains("exitsFillTestUserLogin", picker, StringComparison.Ordinal);
+        Assert.Contains("OnTestUserSelectedAsync", picker, StringComparison.Ordinal);
+        Assert.DoesNotContain("/admin/login/as/", picker, StringComparison.Ordinal);
+        Assert.DoesNotContain("BuildLoginAsHref", picker, StringComparison.Ordinal);
         Assert.DoesNotContain("ContinueQuickLoginNavigationAsync", picker, StringComparison.Ordinal);
-        Assert.DoesNotContain("<Select", picker, StringComparison.Ordinal);
-        Assert.DoesNotContain("Summary", picker, StringComparison.Ordinal);
         Assert.DoesNotContain("SharedPassword", picker, StringComparison.Ordinal);
         Assert.DoesNotContain("<select", picker, StringComparison.Ordinal);
         Assert.DoesNotContain("/local-validation/sessions", picker, StringComparison.OrdinalIgnoreCase);
@@ -532,6 +530,14 @@ public sealed class AdminArchitectureGuardTests
         Assert.Contains("/admin/login/as/{key}", program, StringComparison.Ordinal);
         Assert.Contains("LocalValidationSignInService", program, StringComparison.Ordinal);
 
+        var a11y = File.ReadAllText(Path.Combine(adminRoot, "wwwroot", "admin-a11y.js"));
+        Assert.Contains("exitsFillTestUserLogin", a11y, StringComparison.Ordinal);
+        Assert.Contains("login-password", a11y, StringComparison.Ordinal);
+        Assert.DoesNotContain("SharedPassword", a11y, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("closeDrawer", a11y, StringComparison.Ordinal);
+        Assert.DoesNotContain("exitsAdminShell", a11y, StringComparison.Ordinal);
+        Assert.Contains("dialogOpen", a11y, StringComparison.Ordinal);
+
         Assert.False(File.Exists(Path.Combine(adminRoot, "Services", "LivePreviewStaticWebAssetMaterializer.cs")));
         var servicesDir = Path.Combine(adminRoot, "Services");
         Assert.True(Directory.Exists(servicesDir));
@@ -541,11 +547,6 @@ public sealed class AdminArchitectureGuardTests
         Assert.DoesNotContain("exits-native-input", css, StringComparison.Ordinal);
         Assert.DoesNotContain("exits-native-select", css, StringComparison.Ordinal);
         Assert.DoesNotContain("org-context-select", css, StringComparison.Ordinal);
-
-        var a11y = File.ReadAllText(Path.Combine(adminRoot, "wwwroot", "admin-a11y.js"));
-        Assert.DoesNotContain("closeDrawer", a11y, StringComparison.Ordinal);
-        Assert.DoesNotContain("exitsAdminShell", a11y, StringComparison.Ordinal);
-        Assert.Contains("dialogOpen", a11y, StringComparison.Ordinal);
 
         var themeBoot = File.ReadAllText(Path.Combine(adminRoot, "wwwroot", "theme-boot.js"));
         Assert.DoesNotContain("closeDrawer", themeBoot, StringComparison.Ordinal);
