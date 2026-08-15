@@ -415,7 +415,7 @@
     <value>Ulat ng cash / shift</value>
   </data>
   <data name="ShiftsReport_Subtitle" xml:space="preserve">
-    <value>Ihambing ang expected at counted cash. Ang skipped counts ay blank ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â hindi zero.</value>
+    <value>Ihambing ang expected at counted cash. Ang skipped counts ay blank - hindi zero.</value>
   </data>
   <data name="Utang_Title" xml:space="preserve">
     <value>Business credit</value>
@@ -634,7 +634,7 @@
     <value>Walang ipinadalang hiling</value>
   </data>
   <data name="Suppliers_NoSentMessage" xml:space="preserve">
-    <value>Lalabas dito ang mga connection request na ipinadala ninyo ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Pending, Connected, o Declined.</value>
+    <value>Lalabas dito ang mga connection request na ipinadala ninyo - Pending, Connected, o Declined.</value>
   </data>
   <data name="Suppliers_RequestingBusiness" xml:space="preserve">
     <value>Humihiling na negosyo</value>

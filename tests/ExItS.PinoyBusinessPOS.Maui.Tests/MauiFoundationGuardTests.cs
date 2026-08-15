@@ -381,6 +381,35 @@ public sealed class MauiFoundationGuardTests
     }
 
     [Fact]
+    public void Localization_resources_have_no_mojibake_or_garbled_loading_copy()
+    {
+        var root = FindRepoRoot();
+        var loc = Path.Combine(root, "src", "Products", "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.Maui", "Localization");
+
+        foreach (var file in new[] { "PosResources.resx", "PosResources.fil-PH.resx" })
+        {
+            var path = Path.Combine(loc, file);
+            var text = File.ReadAllText(path);
+            Assert.DoesNotContain("Ãƒ", text, StringComparison.Ordinal);
+            Assert.DoesNotContain("Â¬", text, StringComparison.Ordinal);
+            Assert.DoesNotContain("â€¦", text, StringComparison.Ordinal);
+            Assert.Contains("<value>Loading", text, StringComparison.Ordinal);
+
+            var xml = System.Xml.Linq.XDocument.Load(path);
+            var loading = xml.Root!
+                .Elements("data")
+                .First(e => (string?)e.Attribute("name") == "Common_Loading")
+                .Element("value")!
+                .Value;
+            Assert.DoesNotContain('\u00C3', loading);
+            Assert.True(loading.StartsWith("Loading", StringComparison.Ordinal)
+                        || loading.StartsWith("Naglo-load", StringComparison.Ordinal));
+            Assert.True(loading.Length <= 24, $"{file} Common_Loading looks garbled: {loading}");
+        }
+    }
+
+    [Fact]
     public void Application_and_apiclient_have_no_ef_or_healthcare_refs()
     {
         foreach (var project in new[]

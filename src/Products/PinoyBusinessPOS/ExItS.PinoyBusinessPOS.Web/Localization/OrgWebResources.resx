@@ -415,7 +415,7 @@
     <value>Cash / shift report</value>
   </data>
   <data name="ShiftsReport_Subtitle" xml:space="preserve">
-    <value>Compare expected and counted cash. Skipped counts stay blank ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â they are not zero.</value>
+    <value>Compare expected and counted cash. Skipped counts stay blank - they are not zero.</value>
   </data>
   <data name="Utang_Title" xml:space="preserve">
     <value>Business credit</value>
