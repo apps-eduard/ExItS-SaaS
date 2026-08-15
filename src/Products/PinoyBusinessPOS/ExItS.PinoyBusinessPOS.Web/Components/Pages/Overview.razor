@@ -19,43 +19,62 @@ else
         <p class="org-note">@L["Boundary_NotPos"]</p>
 
         <OrgAlert Error="@_error" OnRetry="LoadAsync" RetryLabel="@L["Common_Retry"]" OnDismissError="() => _error = null" />
+        @if (!_loading && _overviewUnavailable && _hasCore)
+        {
+            <Alert Type="@AlertType.Warning"
+                   ShowIcon="true"
+                   Message="Sales metrics temporarily unavailable"
+                   Description="Organization branch and staff counts below still reflect live management data when loaded."
+                   Style="margin-bottom:12px;" />
+        }
         <OrgLoading Active="_loading" />
 
-        @if (!_loading && string.IsNullOrWhiteSpace(_error) && _overview is not null)
+        @if (!_loading && _hasCore)
         {
             <OrgSection Title="@L["Overview_SectionToday"]">
                 <div class="org-metrics">
-                    <OrgMetricCard Label="Sales" Value="@OrgWebUi.Money(_overview.TodaySalesTotal)" Hint="@($"{_overview.TodaySaleCount} sales")" />
-                    <OrgMetricCard Label="Cash sales" Value="@OrgWebUi.Money(_overview.TodayCashSalesTotal)" />
-                    <OrgMetricCard Label="Utang sales" Value="@OrgWebUi.Money(_overview.TodayUtangSalesTotal)" />
-                    <OrgMetricCard Label="Payments received" Value="@OrgWebUi.Money(_overview.TodayPaymentsReceived)" />
+                    <OrgMetricCard Label="Sales" Value="@(_overview is null ? "—" : OrgWebUi.Money(_overview.TodaySalesTotal))" Hint="@(_overview is null ? null : $"{_overview.TodaySaleCount} sales")" Unavailable="_overviewUnavailable" />
+                    <OrgMetricCard Label="Cash sales" Value="@(_overview is null ? "—" : OrgWebUi.Money(_overview.TodayCashSalesTotal))" Unavailable="_overviewUnavailable" />
+                    <OrgMetricCard Label="Utang sales" Value="@(_overview is null ? "—" : OrgWebUi.Money(_overview.TodayUtangSalesTotal))" Unavailable="_overviewUnavailable" />
+                    <OrgMetricCard Label="Payments received" Value="@(_overview is null ? "—" : OrgWebUi.Money(_overview.TodayPaymentsReceived))" Unavailable="_overviewUnavailable" />
                 </div>
             </OrgSection>
             <OrgSection Title="@L["Overview_SectionInventory"]">
                 <div class="org-metrics">
-                    <OrgMetricCard Label="Low stock" Value="@_overview.LowStockProductCount.ToString()" />
-                    <OrgMetricCard Label="Expired lots" Value="@_overview.ExpiredLotCount.ToString()" />
-                    <OrgMetricCard Label="Near expiry" Value="@_overview.NearExpiryLotCount.ToString()" />
-                    <OrgMetricCard Label="Pending transfers" Value="@_overview.PendingTransferCount.ToString()" />
+                    <OrgMetricCard Label="Low stock" Value="@(_overview?.LowStockProductCount.ToString() ?? "—")" Unavailable="_overviewUnavailable" />
+                    <OrgMetricCard Label="Expired lots" Value="@(_overview?.ExpiredLotCount.ToString() ?? "—")" Unavailable="_overviewUnavailable" />
+                    <OrgMetricCard Label="Near expiry" Value="@(_overview?.NearExpiryLotCount.ToString() ?? "—")" Unavailable="_overviewUnavailable" />
+                    <OrgMetricCard Label="Pending transfers" Value="@(_overview?.PendingTransferCount.ToString() ?? "—")" Unavailable="_overviewUnavailable" />
                 </div>
             </OrgSection>
             <OrgSection Title="@L["Overview_SectionOperations"]">
                 <div class="org-metrics">
-                    <OrgMetricCard Label="Open shifts" Value="@_overview.OpenShiftCount.ToString()" />
-                    <OrgMetricCard Label="Active registers" Value="@_overview.ActiveRegisterCount.ToString()" />
+                    <OrgMetricCard Label="Open shifts" Value="@(_overview?.OpenShiftCount.ToString() ?? "—")" Unavailable="_overviewUnavailable" />
+                    <OrgMetricCard Label="Active registers" Value="@(_overview?.ActiveRegisterCount.ToString() ?? "—")" Unavailable="_overviewUnavailable" />
                     <OrgMetricCard Label="Active branches" Value="@_activeBranches.ToString()" Unavailable="_branchesUnavailable" />
                     <OrgMetricCard Label="POS devices" Value="@_deviceCount.ToString()" Unavailable="_devicesUnavailable" />
                 </div>
             </OrgSection>
             <OrgSection Title="@L["Overview_SectionBusiness"]">
                 <div class="org-metrics">
-                    <OrgMetricCard Label="Open Utang" Value="@OrgWebUi.Money(_overview.OpenUtangOutstanding)" />
+                    <OrgMetricCard Label="Open Utang" Value="@(_overview is null ? "—" : OrgWebUi.Money(_overview.OpenUtangOutstanding))" Unavailable="_overviewUnavailable" />
                     <OrgMetricCard Label="Staff" Value="@_staffCount.ToString()" Unavailable="_staffUnavailable" />
-                    <OrgMetricCard Label="Pending customer links" Value="@_pendingLinks.ToString()" />
+                    <OrgMetricCard Label="Pending customer links" Value="@_pendingLinks.ToString()" Unavailable="_linksUnavailable" />
                     <OrgMetricCard Label="Unread alerts" Value="@Shell.UnreadNotificationCount.ToString()" />
                 </div>
             </OrgSection>
-            <p class="org-note">Business date @_overview.BusinessDate.</p>
+            @if (_overview is not null)
+            {
+                <p class="org-note">Business date @_overview.BusinessDate.</p>
+            }
+            else if (_overviewUnavailable)
+            {
+                <p class="org-note">Sales and inventory metrics are temporarily unavailable. Organization management below still reflects live branch and staff counts when loaded.</p>
+            }
+        }
+        else if (!_loading && !_hasCore && string.IsNullOrWhiteSpace(_error))
+        {
+            <OrgEmpty Title="@L["Overview_Title"]" Message="No organization metrics are available yet." />
         }
     </div>
 }
@@ -68,9 +87,12 @@ else
     private int _staffCount;
     private int _deviceCount;
     private int _pendingLinks;
+    private bool _overviewUnavailable;
     private bool _branchesUnavailable;
     private bool _staffUnavailable;
     private bool _devicesUnavailable;
+    private bool _linksUnavailable;
+    private bool _hasCore;
 
     protected override Task OnInitializedAsync() => LoadAsync();
 
@@ -78,6 +100,8 @@ else
     {
         _loading = true;
         _error = null;
+        _hasCore = false;
+        _overview = null;
         var orgId = CurrentUser.Session?.OrganizationId;
         if (orgId is null || !Shell.CanSee("overview"))
         {
@@ -93,14 +117,9 @@ else
         await Task.WhenAll(overviewTask, branchesTask, membersTask, devicesTask, linksTask);
 
         var overview = await overviewTask;
-        if (!overview.IsSuccess || overview.Data is null)
-        {
-            _error = OrgWebUi.Error(overview.Error, "Management overview is unavailable.");
-            _loading = false;
-            return;
-        }
-
+        _overviewUnavailable = !overview.IsSuccess || overview.Data is null;
         _overview = overview.Data;
+
         var branches = await branchesTask;
         _branchesUnavailable = !branches.IsSuccess || branches.Data is null;
         _activeBranches = branches.Data?.Count(b => string.Equals(b.Status, "Active", StringComparison.OrdinalIgnoreCase)) ?? 0;
@@ -111,6 +130,7 @@ else
         _devicesUnavailable = !devices.IsSuccess || devices.Data is null;
         _deviceCount = devices.Data?.Count(d => !string.Equals(d.Status, "Revoked", StringComparison.OrdinalIgnoreCase)) ?? 0;
         var links = await linksTask;
+        _linksUnavailable = !links.IsSuccess;
         _pendingLinks = 0;
         if (links.Data?.CountsByStatus is not null)
         {
@@ -121,6 +141,15 @@ else
                     _pendingLinks += pair.Value;
                 }
             }
+        }
+
+        // Core Owner workspace is usable when Platform management data or POS overview succeeds.
+        _hasCore = !_overviewUnavailable || !_branchesUnavailable || !_staffUnavailable;
+        if (!_hasCore)
+        {
+            _error = OrgWebUi.Error(
+                overview.Error ?? branches.Error ?? members.Error,
+                "Management overview is unavailable.");
         }
 
         _loading = false;

@@ -8,7 +8,50 @@ public static class OrgWebUi
 
     public static string Error(ApiError? error, string fallback = "Request failed.")
     {
-        var detail = error?.Detail ?? error?.Title;
+        if (error is null)
+        {
+            return fallback;
+        }
+
+        // Prefer HTTP semantics over raw Platform/POS detail jargon.
+        if (error.StatusCode is 401)
+        {
+            return "Your session has expired. Please sign in again.";
+        }
+
+        if (error.StatusCode is 403)
+        {
+            var detail403 = error.Detail ?? error.Title ?? string.Empty;
+            if (detail403.Contains("subscription", StringComparison.OrdinalIgnoreCase)
+                || detail403.Contains("entitlement", StringComparison.OrdinalIgnoreCase)
+                || detail403.Contains("plan", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(error.ErrorCode, "commercial_denied", StringComparison.OrdinalIgnoreCase))
+            {
+                return "This feature requires an active plan. Organization management remains available.";
+            }
+
+            // Org Web Owners never use view_portfolio. When Platform falls through to that
+            // permission after a missing session actor, surface a session recovery message.
+            if (detail403.Contains("platform.permission.view_portfolio", StringComparison.OrdinalIgnoreCase)
+                || detail403.Contains("Development-stage", StringComparison.OrdinalIgnoreCase)
+                || detail403.Contains("commercial headers", StringComparison.OrdinalIgnoreCase)
+                || detail403.Contains("X-Dev-Platform-User-Id", StringComparison.OrdinalIgnoreCase)
+                || detail403.Contains("X-Pos-Organization-Id", StringComparison.OrdinalIgnoreCase)
+                || detail403.Contains("development-operator", StringComparison.OrdinalIgnoreCase))
+            {
+                return "We couldn't verify your access to this business. Sign out and sign in again. If the problem continues, contact support.";
+            }
+
+            if (detail403.Contains("does not hold permission", StringComparison.OrdinalIgnoreCase)
+                || detail403.Contains("platform.permission.", StringComparison.OrdinalIgnoreCase))
+            {
+                return "You don't have permission to view this section.";
+            }
+
+            return "You don't have permission to view this section.";
+        }
+
+        var detail = error.Detail ?? error.Title;
         if (string.IsNullOrWhiteSpace(detail))
         {
             return fallback;

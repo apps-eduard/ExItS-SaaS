@@ -15,7 +15,10 @@ else
 {
     <div class="org-page">
     <ExitsPageHeader Title="@L["Branches_Title"]" Subtitle="@L["Branches_Subtitle"]">
-        <Button Type="@ButtonType.Primary" OnClick="OpenCreateAsync">@L["Branches_Add"]</Button>
+        @if (_authorized && !_loading)
+        {
+            <Button Type="@ButtonType.Primary" OnClick="OpenCreateAsync">@L["Branches_Add"]</Button>
+        }
     </ExitsPageHeader>
 
     @if (_capacity is not null)
@@ -27,7 +30,7 @@ else
               OnDismissError="() => _error = null" OnDismissSuccess="() => _success = null" />
     <OrgLoading Active="_loading" />
 
-    @if (!_loading && string.IsNullOrWhiteSpace(_error) && _items.Count == 0)
+    @if (!_loading && _authorized && string.IsNullOrWhiteSpace(_error) && _items.Count == 0)
     {
         <OrgEmpty Title="@L["Branches_EmptyTitle"]" Message="@L["Branches_EmptyMessage"]">
             <Button Type="@ButtonType.Primary" OnClick="OpenCreateAsync">@L["Branches_Add"]</Button>
@@ -99,6 +102,7 @@ else
     private bool _loading = true;
     private bool _busy;
     private bool _formOpen;
+    private bool _authorized;
     private string? _error;
     private string? _success;
     private string? _formCode;
@@ -113,6 +117,7 @@ else
     private async Task LoadAsync()
     {
         _loading = true;
+        _authorized = false;
         var orgId = CurrentUser.Session?.OrganizationId;
         if (orgId is null)
         {
@@ -127,10 +132,13 @@ else
         {
             _items = list.Data.ToList();
             _error = null;
+            _authorized = true;
         }
         else
         {
+            _items = [];
             _error = OrgWebUi.Error(list.Error, L["Error_GenericLoad"]);
+            _authorized = false;
         }
 
         _capacity = cap.IsSuccess ? cap.Data : null;

@@ -232,11 +232,34 @@ public sealed class MemorySecureTokenStore : ISecureTokenStore
 public sealed class OrgWebCircuitSession
 {
     public string? SessionToken { get; set; }
+    public string? AccessToken { get; set; }
+    public Guid? OrganizationId { get; set; }
+
+    public void ApplyToAmbient()
+    {
+        OrgWebSessionAmbient.SessionToken = SessionToken;
+        OrgWebSessionAmbient.AccessToken = AccessToken;
+        OrgWebSessionAmbient.OrganizationId = OrganizationId;
+    }
+
+    public void Clear()
+    {
+        SessionToken = null;
+        AccessToken = null;
+        OrganizationId = null;
+        OrgWebSessionAmbient.Clear();
+    }
 }
 
+/// <summary>
+/// Restores <see cref="OrgWebSessionAmbient"/> on every Blazor circuit inbound activity.
+/// HttpClient factory handlers are not circuit-scoped; AsyncLocal set only in OnCircuitOpened
+/// is lost before page loads, which dropped PlatformSession/Bearer and caused Owner 403s.
+/// </summary>
 public sealed class OrgWebSessionCircuitHandler(
     OrgWebCircuitSession circuitSession,
-    IHttpContextAccessor httpContextAccessor) : CircuitHandler
+    IHttpContextAccessor httpContextAccessor,
+    ILogger<OrgWebSessionCircuitHandler> logger) : CircuitHandler
 {
     public override Task OnCircuitOpenedAsync(Circuit circuit, CancellationToken cancellationToken)
     {
@@ -252,16 +275,24 @@ public sealed class OrgWebSessionCircuitHandler(
             if (!string.IsNullOrWhiteSpace(token))
             {
                 circuitSession.SessionToken = token;
-                OrgWebSessionAmbient.SessionToken = token;
+                circuitSession.ApplyToAmbient();
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // Never fail circuit open.
+            logger.LogDebug(ex, "Org Web circuit open session restore skipped.");
         }
 
         return Task.CompletedTask;
     }
+
+    public override Func<CircuitInboundActivityContext, Task> CreateInboundActivityHandler(
+        Func<CircuitInboundActivityContext, Task> next) =>
+        async context =>
+        {
+            circuitSession.ApplyToAmbient();
+            await next(context).ConfigureAwait(false);
+        };
 }
 
 public sealed class OrgWebBrowserSessionService(
@@ -544,7 +575,8 @@ public sealed class OrgWebSessionHydrator(
     OrgWebShellState shell,
     IPlatformAccessClient platform,
     IPosPermissionClient permissions,
-    IHttpContextAccessor httpContextAccessor)
+    IHttpContextAccessor httpContextAccessor,
+    ILogger<OrgWebSessionHydrator> logger)
 {
     public async Task HydrateAsync(CancellationToken ct = default)
     {
@@ -566,7 +598,7 @@ public sealed class OrgWebSessionHydrator(
 
         if (string.IsNullOrWhiteSpace(token))
         {
-            OrgWebSessionAmbient.Clear();
+            circuitSession.Clear();
             shell.PosRole = null;
             shell.AllowedCapabilities = [];
             currentUser.Clear();
@@ -575,9 +607,9 @@ public sealed class OrgWebSessionHydrator(
         }
 
         circuitSession.SessionToken = token;
-        OrgWebSessionAmbient.SessionToken = token;
-        OrgWebSessionAmbient.AccessToken = null;
-        OrgWebSessionAmbient.OrganizationId = null;
+        circuitSession.AccessToken = null;
+        circuitSession.OrganizationId = null;
+        circuitSession.ApplyToAmbient();
 
         if (currentUser.Session is null ||
             !string.Equals(currentUser.Session.PlatformSessionToken, token, StringComparison.Ordinal))
@@ -621,6 +653,7 @@ public sealed class OrgWebSessionHydrator(
             var org = shell.Organizations.FirstOrDefault(o => o.OrganizationId == orgId);
             shell.MembershipRole = org?.MembershipRole;
             shell.PosRole = null;
+            circuitSession.OrganizationId = orgId;
             OrgWebSessionAmbient.OrganizationId = orgId;
 
             var tokenResult = await platform.IssueTokenAsync(
@@ -632,16 +665,38 @@ public sealed class OrgWebSessionHydrator(
                     ProductCode: PosProductCodes.PinoyBusinessPos),
                 ct).ConfigureAwait(false);
 
-            // Session grant already evaluates product entry + Organization management authority.
-            // Do not gate on /access/evaluate (admin-oriented commercial evaluate); that path
-            // previously left Owners without a product-local role unbound to Bearer and POS APIs
-            // fell through to Development-stage headers.
-            var hasPos = tokenResult.IsSuccess
+            // Session grant evaluates product operate OR Organization management authority.
+            // HttpClient factory handlers are not circuit-scoped; tokens must live on
+            // OrgWebCircuitSession and be re-applied via CreateInboundActivityHandler.
+            var issued = tokenResult.IsSuccess
                 && tokenResult.Data is not null
-                && !string.IsNullOrWhiteSpace(tokenResult.Data.AccessToken)
-                && tokenResult.Data.ProductAccessAllowed != false;
+                && !string.IsNullOrWhiteSpace(tokenResult.Data.AccessToken);
+            var managementAuthorityClaim = issued && tokenResult.Data!.OrganizationManagementAuthority;
+            var hasManagementAuthority = issued
+                && (managementAuthorityClaim
+                    || tokenResult.Data!.ProductAccessAllowed != false
+                    || shell.IsOrgOwner
+                    || shell.IsOrgManager);
+            var hasPos = issued && hasManagementAuthority;
 
-            OrgWebSessionAmbient.AccessToken = hasPos ? tokenResult.Data!.AccessToken : null;
+            circuitSession.AccessToken = hasPos ? tokenResult.Data!.AccessToken : null;
+            circuitSession.ApplyToAmbient();
+
+            // Safe diagnostics — never log session/access tokens or passwords.
+            logger.LogInformation(
+                "OrgWeb hydrate user={UserId} org={OrganizationId} owner={IsOwner} manager={IsManager} " +
+                "membership={MembershipRole} tokenIssued={Issued} managementAuthorityClaim={MgmtClaim} " +
+                "bearerBound={BearerBound} reason={Reason} errorCode={ErrorCode}",
+                me.Data.UserId,
+                orgId,
+                shell.IsOrgOwner,
+                shell.IsOrgManager,
+                shell.MembershipRole,
+                issued,
+                managementAuthorityClaim,
+                hasPos,
+                tokenResult.Data?.ProductAccessReasonCode ?? tokenResult.Error?.Detail,
+                tokenResult.Error?.ErrorCode);
 
             currentUser.Set(new AuthSession(
                 me.Data.UserId,
@@ -656,7 +711,7 @@ public sealed class OrgWebSessionHydrator(
                 tokenResult.Data?.ProductAccessReasonCode,
                 SubscriptionStatus: null,
                 EnabledFeatureCodes: null,
-                AccessToken: tokenResult.Data?.AccessToken,
+                AccessToken: hasPos ? tokenResult.Data?.AccessToken : null,
                 PlatformSessionToken: token,
                 AccountClass: me.Data.AccountClass,
                 AccountProfileId: me.Data.AccountProfileId,
@@ -676,8 +731,6 @@ public sealed class OrgWebSessionHydrator(
                 }
                 else if (shell.IsOrgOwner || shell.IsOrgManager)
                 {
-                    // Server GetEffective may still be empty before first management projection;
-                    // keep management shell usable from membership alone for nav gates.
                     shell.AllowedCapabilities = [];
                     shell.PosRole = tokenResult.Data?.OrganizationManagementAuthority == true
                         ? (shell.IsOrgOwner ? "OrganizationOwner" : "OrganizationAdministrator")
@@ -698,8 +751,9 @@ public sealed class OrgWebSessionHydrator(
         }
         else
         {
-            OrgWebSessionAmbient.OrganizationId = null;
-            OrgWebSessionAmbient.AccessToken = null;
+            circuitSession.OrganizationId = null;
+            circuitSession.AccessToken = null;
+            circuitSession.ApplyToAmbient();
             shell.PosRole = null;
             currentUser.Set(new AuthSession(
                 me.Data.UserId,

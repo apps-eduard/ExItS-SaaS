@@ -85,6 +85,7 @@ internal sealed class PosPlatformBearerMiddleware(RequestDelegate next)
             // Local Validation / Dev: Platform Start-Business snapshots historically omitted
             // Registers/Shifts (and other Full POS) features. Merge the approved Dev grant set so
             // Open Shift / Registers do not 403 while role remains Owner.
+            // Also covers OrganizationManagementAuthority tokens that arrive with empty feature lists.
             if (ShouldMergeDevelopmentGrants(environment, configuration))
             {
                 grants = UtangCapabilityPolicy.MergeWithDevelopmentDefaults(grants);

@@ -460,7 +460,8 @@ public sealed class IssuePlatformAccessToken
         }
 
         // Owner/Administrator manage the business without an automatic POS checkout role.
-        if (OrganizationManagementAuthority.Qualifies(membership.Role, access.EntitlementAllowed))
+        // Do not require commercial entitlement for core Organization Web management tokens.
+        if (OrganizationManagementAuthority.Qualifies(membership.Role))
         {
             return new ProductEntryResolution(
                 true,
@@ -636,10 +637,11 @@ public sealed class BindPlatformAccessTokenProductContext
         {
             // Product-local operate (may include checkout when role grants CreateSale).
         }
-        else if (OrganizationManagementAuthority.Qualifies(membership.Role, access.EntitlementAllowed))
+        else if (OrganizationManagementAuthority.Qualifies(membership.Role))
         {
             // Organization Owner/Administrator manage Org Web without an automatic POS checkout role.
             // Do not bootstrap ProductLocalRoleGrant.Owner here — that would grant CreateSale.
+            // Commercial entitlement is not required for management token bind.
             organizationManagementAuthority = true;
             productLocalRole = null;
             mappedPosRole = null;
@@ -857,10 +859,11 @@ public sealed class IntrospectPlatformAccessToken
                         allowed = true;
                         reason = access.ReasonCode;
                     }
-                    else if (OrganizationManagementAuthority.Qualifies(membership.Role, access.EntitlementAllowed))
+                    else if (OrganizationManagementAuthority.Qualifies(membership.Role))
                     {
                         // Keep product org binding for Organization Web management APIs.
                         // Do not clear context — Owner management ≠ POS checkout role.
+                        // Commercial entitlement remains a separate feature gate on POS APIs.
                         allowed = true;
                         reason = OrganizationManagementAuthority.ReasonCode;
                         organizationManagementAuthority = true;
