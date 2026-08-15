@@ -55,8 +55,27 @@ Development Quick Login one-click auto-auth is **removed** from Admin picker and
 | Sales documents / Owner education | Exact Owner | No | Denied |
 | Ownership transfer | Exact Owner | No | Denied |
 | Subscription | Exact Owner | No | Denied |
+| POS checkout / CreateSale | **No** (unless separate product-local selling role) | Only if POS role allows | Per Cashier POS role |
 
-Server APIs remain authoritative (`PosRoleMatrix`, Platform membership). Nav hide is not sufficient; Cashier is blocked in `MainLayout` via `CanAccessOrganizationWeb`.
+Server APIs remain authoritative (`OrganizationManagementAuthority` + `PosRoleMatrix`, Platform membership). Nav hide is not sufficient; Cashier is blocked in `MainLayout` via `CanAccessOrganizationWeb`.
+
+### Effective authority dimensions (do not mix)
+
+| Dimension | Organization Owner | Organization Manager | Cashier |
+|---|---|---|---|
+| Organization Web management | **FULL** (membership) | Day-to-day subset | **NONE** (host denied) |
+| POS management APIs | Full management projection (no automatic checkout) | Manager subset | Denied |
+| POS checkout (`CreateSale` / `EnterPos`) | None unless product-local selling role | Only if role allows | Per POS role |
+| Platform operator (`view_portfolio`, etc.) | None unless separately Platform staff | None | None |
+
+**Invariant:** Platform `OrganizationOwner` membership ≠ automatic POS Cashier/Owner checkout role. Token issue may set `OrganizationManagementAuthority=true` when commercial entitlement is active but product-local role is missing — Org Web Bearer binds; checkout remains denied until a product-local selling role is assigned.
+
+### Session grant / Bearer (Owner fix)
+
+1. `IssueToken` (session grant) allows Organization Owner/Administrator with active commercial entitlement even when `ProductLocalRoleMissing`.
+2. Introspection returns `organizationManagementAuthority` + `membershipRole` without inventing `MappedPosRoleCode=Owner`.
+3. POS `PosRoleAuth` honors management authority for management capabilities; denies `CreateSale` / `EnterPos`.
+4. Org Web hydrator binds Bearer from successful session grant — **not** from admin `/access/evaluate`.
 
 ## Navigation map (implemented)
 
@@ -92,3 +111,5 @@ No Personal Utang, no other Organizations, no device secrets, no Platform review
 1. `Development-stage organization, actor, and commercial headers are unavailable outside Development/Testing` — POS `PosOrganizationScope` when Bearer org/actor was missing on Staging. Fixed via ambient Bearer + organization binding.
 
 2. `Actor 'development-operator:unauthenticated' does not hold permission 'platform.permission.view_portfolio'` on Branches — `DevPlatformUserHeaderHandler` cleared `Authorization: PlatformSession` when the scheme was not Bearer, leaving Platform APIs unauthenticated. Fixed by preserving PlatformSession and not attaching product Bearer to `/api/v1/platform/*` from Org Web outer auth handler. Membership-based `EnsureCanViewOrganizationAsync` remains sufficient; Org users are **not** granted `ViewPortfolio`.
+
+3. Organization Owner authenticated and routed to Org Web but Overview/business APIs returned unauthorized — session hydrator required `/access/evaluate` Allowed and `IssueToken` refused product entry without a product-local role, so Bearer stayed null and POS fell through to Development-stage headers. Fixed by **Organization management authority**: Owner/Administrator with commercial entitlement receive session-grant Bearer and POS management capabilities without automatic `CreateSale`/`EnterPos`.

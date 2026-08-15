@@ -211,6 +211,17 @@ The resulting Organization session is newly issued or explicitly selected.
 
 Identity comes from authenticated Platform session + selected Organization + product Bearer introspection. Development-only organization/actor/commercial headers are not required outside Development/Testing. Post-login workspace list includes Organization entries for **Owner / Administrator** only (Cashier `OrganizationMember` excluded). Development Test User fills username only. See [organization-web-role-and-workflow-matrix.md](organization-web-role-and-workflow-matrix.md), [organization-web-ui-responsive-standard.md](organization-web-ui-responsive-standard.md), and [owner checklist](../validation/organization-web-responsive-owner-checklist.md).
 
+**Organization Owner effective authority**
+
+- Full Organization Web management for the selected Organization (membership + ownership relation).
+- POS **management** APIs via `OrganizationManagementAuthority` when commercial entitlement is active — **does not** require `platform.permission.view_portfolio`.
+- POS **checkout** (`CreateSale` / `EnterPos`) remains denied unless a separate product-local selling role is assigned.
+- Ownership transfer recomputes authority per selected Organization (never cache Owner globally per UserId).
+
+**Organization Manager** — day-to-day management subset; Owner-only surfaces (ownership transfer, sales-document acknowledgment, Owner subscription controls) denied.
+
+**Cashier** — Organization Web host and management APIs denied.
+
 ### Test payment
 
 A Local Validation payment simulation requires:

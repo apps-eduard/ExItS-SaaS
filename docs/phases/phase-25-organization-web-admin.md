@@ -38,6 +38,8 @@ Owner checklist (unchecked): [organization-web-responsive-owner-checklist.md](..
 
 - Development **Test User** fills username only; password is manual; normal credentials login.
 - Post-login: Platform → Org Web (Owner / Organization Administrator) → Personal; multi-org → chooser; Cashier org workspaces excluded.
+- Organization Owner has **full Organization management authority** for the selected Organization (Platform membership + ownership). POS management APIs use `OrganizationManagementAuthority` when commercial entitlement is active; **CreateSale / EnterPos remain denied** unless a separate product-local selling role is assigned. Owners do **not** need `view_portfolio`.
+- Owner API authorization fix report: [P25-owner-organization-management-authority-fix.md](../reports/P25-owner-organization-management-authority-fix.md).
 - Management pages share `OrgAlert` / `OrgLoading` / `OrgEmpty` / localized headers; mobile drawer covers all sections.
 - Phase 25 remains **OPEN** (no closeout).
 
