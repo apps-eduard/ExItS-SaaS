@@ -2,6 +2,7 @@
 
 Date: 2026-08-15  
 Starting SHA: `02b924d6053d67d1f3aac65e63466d2d506b6029`  
+Feature SHA: `a0f61da6102b8d7a95d1b36313bad8845eb4443d`  
 Feature: polish/complete supplier-side Connected Buyers (MAUI + Org Web)
 
 ## Status
