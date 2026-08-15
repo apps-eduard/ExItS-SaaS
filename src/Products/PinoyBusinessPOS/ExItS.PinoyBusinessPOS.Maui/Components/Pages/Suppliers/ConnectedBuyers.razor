@@ -74,7 +74,7 @@
                     <button type="button"
                             class="pos-personal-row"
                             role="listitem"
-                            @onclick="() => Nav.NavigateTo($"/suppliers/connected/buyers/{item.RelationshipId:D}")">
+                            @onclick="() => OpenBuyerDetail(item.RelationshipId)">
                         <span class="pos-personal-row__body">
                             <span class="pos-personal-row__title">@name</span>
                             <span class="pos-personal-row__meta">
@@ -160,6 +160,9 @@
             }
         }
     }
+
+    private void OpenBuyerDetail(Guid relationshipId) =>
+        Nav.NavigateTo($"/suppliers/connected/buyers/{relationshipId:D}");
 
     private string DisplayName(ConnectedSupplierRelationshipDto item) =>
         string.IsNullOrWhiteSpace(item.CounterpartyDisplayName)
