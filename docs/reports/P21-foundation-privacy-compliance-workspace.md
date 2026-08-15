@@ -18,6 +18,7 @@
 - Idempotent seed catalog (`EnsurePrivacyComplianceCatalog`)
 - QuestPDF export with **DRAFT / NOT APPROVED** unless Approved
 - Standing Privacy Impact documentation rule
+- Follow-on: [P21 privacy readiness visibility UI](P21-privacy-readiness-visibility-product-status-ui.md) (Admin / Org Web / MAUI)
 
 ## Explicit non-claims
 

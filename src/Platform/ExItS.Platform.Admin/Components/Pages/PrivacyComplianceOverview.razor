@@ -19,6 +19,12 @@ else
                      Breadcrumb="@($"{L["Brand_Name"]} / {L["Nav_PrivacyCompliance"]}")"
                      Description="@L["PrivacyCompliance_OverviewDescription"]" />
 
+    <Alert Type="@AlertType.Info"
+           ShowIcon="true"
+           Message="@L["PrivacyCompliance_ReadinessBannerTitle"]"
+           Description="@ReadinessBannerDescription"
+           Style="margin-bottom:16px;" />
+
     <Alert Type="@AlertType.Warning"
            ShowIcon="true"
            Message="@L["PrivacyCompliance_DisclaimerTitle"]"
@@ -36,15 +42,50 @@ else
     else
     {
         var data = _overview.Data!;
+        <Card Size="@CardSize.Small" Style="margin-bottom:16px;">
+            <p style="margin:0 0 8px 0;"><strong>@L["PrivacyCompliance_ReadinessLabel"]</strong>
+                <PrivacyComplianceStatusTag Value="@data.OverallReadiness" />
+            </p>
+            <Row Gutter="(12, 8)">
+                <AntDesign.Col Xs="24" Md="12">
+                    <span class="muted">@L["PrivacyCompliance_TechnicalSafeguardsLabel"]: </span>
+                    <strong>@TechnicalSummaryLabel(data.TechnicalSafeguardsSummary)</strong>
+                </AntDesign.Col>
+                <AntDesign.Col Xs="24" Md="12">
+                    <span class="muted">@L["PrivacyCompliance_GovernanceLabel"]: </span>
+                    <strong>@data.GovernanceDocumentationSummary</strong>
+                </AntDesign.Col>
+                <AntDesign.Col Xs="24" Md="12">
+                    <span class="muted">@L["PrivacyCompliance_LegalReviewLabel"]: </span>
+                    <strong>@LegalSummaryLabel(data.LegalReviewSummary)</strong>
+                </AntDesign.Col>
+                <AntDesign.Col Xs="24" Md="12">
+                    <span class="muted">@L["PrivacyCompliance_NpcLabel"]: </span>
+                    <strong>@NpcSummaryLabel(data.NpcVerificationSummary)</strong>
+                </AntDesign.Col>
+            </Row>
+        </Card>
+
         <Row Gutter="(12, 12)" Style="margin-bottom:16px;">
-            <AntDesign.Col Xs="24" Sm="12" Md="8">
+            <AntDesign.Col Xs="24" Sm="12" Md="8" Lg="4">
                 <AdminSummaryCard Label="@L["PrivacyCompliance_TotalRequirements"]">@data.TotalRequirements</AdminSummaryCard>
             </AntDesign.Col>
-            <AntDesign.Col Xs="24" Sm="12" Md="8">
-                <AdminSummaryCard Label="@L["PrivacyCompliance_TotalSystems"]">@data.TotalSystems</AdminSummaryCard>
+            <AntDesign.Col Xs="24" Sm="12" Md="8" Lg="4">
+                <AdminSummaryCard Label="@L["PrivacyCompliance_ReadyCount"]">@data.ReadyCount</AdminSummaryCard>
             </AntDesign.Col>
-            <AntDesign.Col Xs="24" Sm="12" Md="8">
-                <AdminSummaryCard Label="@L["PrivacyCompliance_TotalEvidence"]">@data.TotalEvidence</AdminSummaryCard>
+            <AntDesign.Col Xs="24" Sm="12" Md="8" Lg="4">
+                <AdminSummaryCard Label="@L["PrivacyCompliance_ActionNeededCount"]">@data.ActionNeededCount</AdminSummaryCard>
+            </AntDesign.Col>
+            <AntDesign.Col Xs="24" Sm="12" Md="8" Lg="4">
+                <AdminSummaryCard Label="@L["PrivacyCompliance_ExternalLegalCount"]">@data.ExternalLegalReviewCount</AdminSummaryCard>
+            </AntDesign.Col>
+            <AntDesign.Col Xs="24" Sm="12" Md="8" Lg="4">
+                <AdminSummaryCard Label="@L["PrivacyCompliance_EvidenceCoverage"]">
+                    @data.RequirementsWithEvidenceCount / @data.TotalRequirements
+                </AdminSummaryCard>
+            </AntDesign.Col>
+            <AntDesign.Col Xs="24" Sm="12" Md="8" Lg="4">
+                <AdminSummaryCard Label="@L["PrivacyCompliance_TotalSystems"]">@data.TotalSystems</AdminSummaryCard>
             </AntDesign.Col>
         </Row>
 
@@ -52,6 +93,76 @@ else
         {
             <p class="muted" style="margin-bottom:16px;">@L["PrivacyCompliance_LastUpdated"]: <UtcTimestamp Value="@updated" /></p>
         }
+
+        <Card Title="@L["PrivacyCompliance_CategoryReadiness"]" Size="@CardSize.Small" Style="margin-bottom:16px;">
+            @if (data.CategorySummaries is null || data.CategorySummaries.Count == 0)
+            {
+                <Empty Description="@L["PrivacyCompliance_NoData"].Value" />
+            }
+            else
+            {
+                <Table TItem="PrivacyReadinessCategorySummaryDto"
+                       DataSource="data.CategorySummaries"
+                       HidePagination
+                       Bordered
+                       Size="@TableSize.Small"
+                       ScrollX="960">
+                    <Column TData="string" Title="@L["PrivacyCompliance_ColumnCategory"]">
+                        @CategoryGroupLabel(context.Group)
+                    </Column>
+                    <Column TData="string" Title="@L["Common_Status"]">
+                        <PrivacyComplianceStatusTag Value="@context.Status" />
+                    </Column>
+                    <Column TData="int" Title="@L["Common_Count"]" DataIndex="RequirementCount">@context.RequirementCount</Column>
+                    <Column TData="int" Title="@L["PrivacyCompliance_ReadyCount"]" DataIndex="ReadyCount">@context.ReadyCount</Column>
+                    <Column TData="int" Title="@L["PrivacyCompliance_ActionNeededCount"]" DataIndex="ActionNeededCount">@context.ActionNeededCount</Column>
+                    <Column TData="int" Title="@L["PrivacyCompliance_EvidenceCoverage"]">
+                        @context.EvidenceCoveredCount / @context.RequirementCount
+                    </Column>
+                    <Column TData="DateOnly?" Title="@L["PrivacyCompliance_LastReviewed"]">
+                        @(context.LastReviewedDate?.ToString("yyyy-MM-dd") ?? L["PrivacyCompliance_NotAssessed"].Value)
+                    </Column>
+                    <ActionColumn Title="@L["Common_Actions"]">
+                        <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" OnClick="() => Nav.NavigateTo(context.DetailRoute)">
+                            @L["Common_ViewDetails"]
+                        </Button>
+                    </ActionColumn>
+                </Table>
+            }
+        </Card>
+
+        <Card Title="@L["PrivacyCompliance_PrivacyImpactFollowUps"]" Size="@CardSize.Small" Style="margin-bottom:16px;">
+            @if (data.PrivacyImpactFollowUps is null || data.PrivacyImpactFollowUps.Count == 0)
+            {
+                <Empty Description="@L["PrivacyCompliance_NoPrivacyImpacts"].Value" />
+            }
+            else
+            {
+                <Table TItem="PrivacyImpactFollowUpDto"
+                       DataSource="data.PrivacyImpactFollowUps"
+                       HidePagination
+                       Bordered
+                       Size="@TableSize.Small"
+                       ScrollX="960">
+                    <Column TData="string" Title="@L["Common_Name"]" DataIndex="Title">@context.Title</Column>
+                    <Column TData="string" Title="@L["PrivacyCompliance_ColumnCode"]" DataIndex="Code">
+                        <span class="muted">@context.Code</span>
+                    </Column>
+                    <Column TData="string" Title="@L["Common_Status"]">
+                        <PrivacyComplianceStatusTag Value="@context.Status" />
+                    </Column>
+                    <Column TData="bool" Title="@L["PrivacyCompliance_LegalReviewRequired"]">
+                        @(context.RequiresDpoLegalVerification ? L["Common_Yes"] : L["Common_No"])
+                    </Column>
+                    <Column TData="int" Title="@L["PrivacyCompliance_ColumnEvidence"]" DataIndex="EvidenceCount">@context.EvidenceCount</Column>
+                    <ActionColumn Title="@L["Common_Actions"]">
+                        <Button Size="@ButtonSize.Small" Type="@ButtonType.Link" OnClick='() => Nav.NavigateTo("/admin/privacy-compliance/pias")'>
+                            @L["Common_ViewDetails"]
+                        </Button>
+                    </ActionColumn>
+                </Table>
+            }
+        </Card>
 
         <Row Gutter="(12, 12)" Style="margin-bottom:16px;">
             <AntDesign.Col Xs="24" Md="12">
@@ -78,26 +189,14 @@ else
                 </Card>
             </AntDesign.Col>
             <AntDesign.Col Xs="24" Md="12">
-                <Card Title="@L["PrivacyCompliance_RequirementsByCategory"]" Size="@CardSize.Small">
-                    @if (data.RequirementsByCategory.Count == 0)
-                    {
-                        <Empty Description="@L["PrivacyCompliance_NoData"].Value" />
-                    }
-                    else
-                    {
-                        <Table TItem="KeyValuePair<string, int>"
-                               DataSource="@CategoryRows(data.RequirementsByCategory)"
-                               HidePagination
-                               Bordered
-                               Size="@TableSize.Small">
-                            <Column TData="string" Title="@L["PrivacyCompliance_ColumnCategory"]" DataIndex="Key">
-                                @CategoryLabel(context.Key)
-                            </Column>
-                            <Column TData="int" Title="@L["Common_Count"]" DataIndex="Value">
-                                @context.Value
-                            </Column>
-                        </Table>
-                    }
+                <Card Title="@L["PrivacyCompliance_QuickLinks"]" Size="@CardSize.Small">
+                    <Space Direction="SpaceDirection.Vertical" Style="width:100%;">
+                        <Button Block OnClick='() => Nav.NavigateTo("/admin/privacy-compliance/documents")'>@L["Nav_PrivacyComplianceDocuments"]</Button>
+                        <Button Block OnClick='() => Nav.NavigateTo("/admin/privacy-compliance/systems")'>@L["Nav_PrivacyComplianceSystems"]</Button>
+                        <Button Block OnClick='() => Nav.NavigateTo("/admin/privacy-compliance/pias")'>@L["Nav_PrivacyCompliancePias"]</Button>
+                        <Button Block OnClick='() => Nav.NavigateTo("/admin/privacy-compliance/evidence")'>@L["Nav_PrivacyComplianceEvidence"]</Button>
+                        <Button Block OnClick='() => Nav.NavigateTo("/admin/privacy-compliance/dpo-npc")'>@L["Nav_PrivacyComplianceDpoNpc"]</Button>
+                    </Space>
                 </Card>
             </AntDesign.Col>
         </Row>
@@ -119,8 +218,10 @@ else
                        Bordered
                        Size="@TableSize.Small"
                        ScrollX="960">
-                    <Column TData="string" Title="@L["PrivacyCompliance_ColumnCode"]" DataIndex="Code">@context.Code</Column>
                     <Column TData="string" Title="@L["Common_Name"]" DataIndex="Title">@context.Title</Column>
+                    <Column TData="string" Title="@L["PrivacyCompliance_ColumnCode"]" DataIndex="Code">
+                        <span class="muted">@context.Code</span>
+                    </Column>
                     <Column TData="string" Title="@L["Common_Status"]">
                         <PrivacyComplianceStatusTag Value="@context.Status" />
                     </Column>
@@ -140,6 +241,9 @@ else
     private IReadOnlyList<ComplianceRequirementDto>? _gaps;
 
     private bool CanView => Permissions.HasPermission(PlatformPermissionCodes.ViewPrivacyCompliance);
+
+    private string ReadinessBannerDescription =>
+        $"{L["PrivacyCompliance_ReadinessBannerMessage"]} {L["PrivacyCompliance_NoCertificationClaim"]}";
 
     protected override async Task OnInitializedAsync()
     {
@@ -170,20 +274,40 @@ else
     private static List<KeyValuePair<string, int>> StatusRows(IReadOnlyDictionary<string, int> source) =>
         source.OrderBy(x => x.Key, StringComparer.OrdinalIgnoreCase).ToList();
 
-    private static List<KeyValuePair<string, int>> CategoryRows(IReadOnlyDictionary<string, int> source) =>
-        source.OrderBy(x => x.Key, StringComparer.OrdinalIgnoreCase).ToList();
-
-    private string CategoryLabel(string category) => category switch
+    private string TechnicalSummaryLabel(string value) => value switch
     {
-        "CustomerFacing" => L["PrivacyCompliance_Category_CustomerFacing"],
-        "Internal" => L["PrivacyCompliance_Category_Internal"],
-        "RegulatoryReadiness" => L["PrivacyCompliance_Category_RegulatoryReadiness"],
-        "PrivacyImpactAssessment" => L["PrivacyCompliance_Category_PrivacyImpactAssessment"],
-        "DataInventory" => L["PrivacyCompliance_Category_DataInventory"],
-        "Retention" => L["PrivacyCompliance_Category_Retention"],
-        "IncidentBreach" => L["PrivacyCompliance_Category_IncidentBreach"],
-        "VendorProcessor" => L["PrivacyCompliance_Category_VendorProcessor"],
-        "DpoNpc" => L["PrivacyCompliance_Category_DpoNpc"],
-        _ => category
+        "Implemented" => L["PrivacyCompliance_Technical_Implemented"],
+        "Partial" => L["PrivacyCompliance_Technical_Partial"],
+        "ActionNeeded" => L["PrivacyCompliance_Technical_ActionNeeded"],
+        "Unavailable" => L["PrivacyCompliance_Unavailable"],
+        _ => value
+    };
+
+    private string LegalSummaryLabel(string value) =>
+        string.Equals(value, "Required", StringComparison.OrdinalIgnoreCase)
+            ? L["PrivacyCompliance_LegalReviewRequired"]
+            : value;
+
+    private string NpcSummaryLabel(string value) => value switch
+    {
+        "NotVerified" => L["PrivacyCompliance_Npc_NotVerified"],
+        "InternalRecordApproved" => L["PrivacyCompliance_Npc_InternalRecord"],
+        _ => value
+    };
+
+    private string CategoryGroupLabel(string group) => group switch
+    {
+        "NoticesAndConsent" => L["PrivacyCompliance_Group_NoticesAndConsent"],
+        "Governance" => L["PrivacyCompliance_Group_Governance"],
+        "DataInventory" => L["PrivacyCompliance_Group_DataInventory"],
+        "RetentionAndDeletion" => L["PrivacyCompliance_Group_Retention"],
+        "DataSubjectRequests" => L["PrivacyCompliance_Group_Dsar"],
+        "SecurityAndAccess" => L["PrivacyCompliance_Group_Security"],
+        "IncidentResponse" => L["PrivacyCompliance_Group_Incidents"],
+        "BusinessContinuity" => L["PrivacyCompliance_Group_Bcp"],
+        "VendorsAndProcessors" => L["PrivacyCompliance_Group_Vendors"],
+        "DpoRegulatoryReadiness" => L["PrivacyCompliance_Group_Dpo"],
+        "PrivacyImpact" => L["PrivacyCompliance_Group_PrivacyImpact"],
+        _ => group
     };
 }

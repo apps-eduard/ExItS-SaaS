@@ -1,245 +1,885 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
-  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
-  <resheader name="version"><value>2.0</value></resheader>
-  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
-  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
-  <data name="Brand" xml:space="preserve"><value>Admin ng Organisasyon</value></data>
-  <data name="Nav_Overview" xml:space="preserve"><value>Pangkalahatan</value></data>
-  <data name="Nav_Products" xml:space="preserve"><value>Mga Produkto</value></data>
-  <data name="Nav_Inventory" xml:space="preserve"><value>Imbentaryo</value></data>
-  <data name="Nav_Customers" xml:space="preserve"><value>Mga Customer</value></data>
-  <data name="Nav_Branches" xml:space="preserve"><value>Mga Sangay</value></data>
-  <data name="Nav_Staff" xml:space="preserve"><value>Tauhan</value></data>
-  <data name="Nav_Reports" xml:space="preserve"><value>Mga Ulat</value></data>
-  <data name="Nav_Operations" xml:space="preserve"><value>Operasyon</value></data>
-  <data name="Nav_Settings" xml:space="preserve"><value>Mga Setting</value></data>
-  <data name="Nav_More" xml:space="preserve"><value>Higit pa</value></data>
-  <data name="Nav_Subscription" xml:space="preserve"><value>Subscription</value></data>
-  <data name="Boundary_NotPos" xml:space="preserve"><value>Ang Organization Web Admin ay hindi POS checkout. Ang pagbebenta ay nananatili sa POS app.</value></data>
-  <data name="SalesDocument_EducationTitle" xml:space="preserve"><value>Tungkol sa mga rekord ng benta mo</value></data>
-  <data name="SalesDocument_EducationBody1" xml:space="preserve"><value>Sa ngayon, gumagawa ang ExItS ng Buod ng Transaksyon para sa rekord ng negosyo at customer.</value></data>
-  <data name="SalesDocument_EducationBody2" xml:space="preserve"><value>Ang Buod ng Transaksyon ay hindi ipinapakita bilang Official Receipt o tax invoice na awtorisado ng BIR.</value></data>
-  <data name="SalesDocument_EducationBody3" xml:space="preserve"><value>Ang mga tax setting para sa pagkalkula ay hindi nagpapagana ng pag-isyu ng tax document.</value></data>
-  <data name="SalesDocument_EducationBody4" xml:space="preserve"><value>Itinatala lang ng pagkilala mo na nabasa mo ang impormasyong ito. Hindi nito pinapagana ang BIR invoicing.</value></data>
-  <data name="SalesDocument_EducationAckCheckbox" xml:space="preserve"><value>Nauunawaan ko kung paano kasalukuyang hinahawakan ng ExItS ang mga rekord ng benta.</value></data>
-  <data name="SalesDocument_EducationContinue" xml:space="preserve"><value>Magpatuloy</value></data>
-  <data name="SalesDocument_EducationActionNeeded" xml:space="preserve"><value>Kailangang basahin</value></data>
-  <data name="SalesDocument_EducationAcknowledged" xml:space="preserve"><value>Nabasa na</value></data>
-  <data name="SalesDocument_EducationOwnerRequired" xml:space="preserve"><value>Kailangang basahin ng may-ari ng negosyo ang impormasyon tungkol sa sales document bago magpatuloy sa setup.</value></data>
-  <data name="SalesDocument_BirInvoicingNotEnabled" xml:space="preserve"><value>BIR invoicing: Hindi naka-enable para sa negosyong ito</value></data>
-  <data name="SalesDocument_CurrentDocument" xml:space="preserve"><value>Kasalukuyang dokumento: Buod ng Transaksyon</value></data>
-  <data name="SalesDocument_ComplianceTitle" xml:space="preserve"><value>Suporta sa BIR invoicing</value></data>
-  <data name="SalesDocument_ComplianceReview" xml:space="preserve"><value>Compliance review</value></data>
-  <data name="SalesDocument_ComplianceIssuance" xml:space="preserve"><value>Tax-document issuance</value></data>
-  <data name="SalesDocument_ComplianceIssuanceEnabled" xml:space="preserve"><value>Naka-enable ang capability (hindi pa available ang implementation)</value></data>
-  <data name="SalesDocument_ComplianceIssuanceDisabled" xml:space="preserve"><value>Naka-disable</value></data>
-  <data name="SalesDocument_ComplianceNeedHelp" xml:space="preserve"><value>Kailangan ng BIR-enabled invoicing sa ExItS? Makipag-ugnayan sa ExItS Support sa pamamagitan ng pagre-record ng request para sa negosyong ito.</value></data>
-  <data name="SalesDocument_ComplianceContactSupport" xml:space="preserve"><value>Makipag-ugnayan sa ExItS Support</value></data>
-  <data name="SalesDocument_ComplianceRequestRecorded" xml:space="preserve"><value>May naitala nang support request para sa negosyong ito.</value></data>
-  <data name="Branches_Title" xml:space="preserve"><value>Mga sangay</value></data>
-  <data name="Branches_Subtitle" xml:space="preserve"><value>Pamahalaan ang mga lokasyon at setting ng sangay ng iyong negosyo.</value></data>
-  <data name="Branches_Add" xml:space="preserve"><value>Magdagdag ng sangay</value></data>
-  <data name="Branches_Edit" xml:space="preserve"><value>I-edit ang sangay</value></data>
-  <data name="Branches_Archive" xml:space="preserve"><value>I-archive</value></data>
-  <data name="Branches_Primary" xml:space="preserve"><value>Pangunahin</value></data>
-  <data name="Branches_Capacity" xml:space="preserve"><value>Capacity {0} / {1}. I-archive ang mga sangay na may history sa halip na burahin.</value></data>
-  <data name="Branches_EmptyTitle" xml:space="preserve"><value>Wala pang sangay</value></data>
-  <data name="Branches_EmptyMessage" xml:space="preserve"><value>Idagdag ang unang sangay para ayusin ang mga lokasyon ng negosyo.</value></data>
-  <data name="Branches_ColName" xml:space="preserve"><value>Pangalan</value></data>
-  <data name="Branches_ColCode" xml:space="preserve"><value>Code</value></data>
-  <data name="Branches_ColAddress" xml:space="preserve"><value>Address</value></data>
-  <data name="Branches_ColStatus" xml:space="preserve"><value>Status</value></data>
-  <data name="Branches_FieldCode" xml:space="preserve"><value>Code</value></data>
-  <data name="Branches_FieldName" xml:space="preserve"><value>Pangalan</value></data>
-  <data name="Branches_FieldAddress" xml:space="preserve"><value>Address</value></data>
-  <data name="Branches_ValidationRequired" xml:space="preserve"><value>Kailangan ang code at pangalan.</value></data>
-  <data name="Branches_Saved" xml:space="preserve"><value>Na-save ang sangay.</value></data>
-  <data name="Branches_Archived" xml:space="preserve"><value>Na-archive ang sangay.</value></data>
-  <data name="Common_Edit" xml:space="preserve"><value>I-edit</value></data>
-  <data name="Common_Save" xml:space="preserve"><value>I-save</value></data>
-  <data name="Common_Cancel" xml:space="preserve"><value>Cancel</value></data>
-  <data name="Error_SessionExpired" xml:space="preserve"><value>Nag-expire ang session. Mag-sign in ulit.</value></data>
-  <data name="Error_GenericLoad" xml:space="preserve"><value>Hindi namin ma-load ang impormasyon. Subukan ulit.</value></data>
-  <data name="Error_Permission" xml:space="preserve"><value>Wala kang permiso na tingnan ang seksyong ito.</value></data>
-  <data name="Common_Retry" xml:space="preserve"><value>Subukan ulit</value></data>
-  <data name="Common_Filter" xml:space="preserve"><value>I-filter</value></data>
-  <data name="Common_Search" xml:space="preserve"><value>Maghanap</value></data>
-  <data name="Common_Clear" xml:space="preserve"><value>I-clear</value></data>
-  <data name="Common_Status" xml:space="preserve"><value>Status</value></data>
-  <data name="Common_Actions" xml:space="preserve"><value>Mga aksyon</value></data>
-  <data name="Common_Unavailable" xml:space="preserve"><value>Hindi available</value></data>
-  <data name="Overview_Title" xml:space="preserve"><value>Overview</value></data>
-  <data name="Overview_Subtitle" xml:space="preserve"><value>Tingnan kung paano ang negosyo mo ngayon.</value></data>
-  <data name="Overview_SectionToday" xml:space="preserve"><value>Ngayon</value></data>
-  <data name="Overview_SectionInventory" xml:space="preserve"><value>Imbentaryo</value></data>
-  <data name="Overview_SectionOperations" xml:space="preserve"><value>Operasyon</value></data>
-  <data name="Overview_SectionBusiness" xml:space="preserve"><value>Negosyo</value></data>
-  <data name="Profile_Title" xml:space="preserve"><value>Profile ng negosyo</value></data>
-  <data name="Profile_Subtitle" xml:space="preserve"><value>I-update kung paano nakikita ang negosyo ng staff at customers.</value></data>
-  <data name="Devices_Title" xml:space="preserve"><value>Mga device</value></data>
-  <data name="Devices_Subtitle" xml:space="preserve"><value>Pamahalaan ang mga POS terminal ng negosyong ito.</value></data>
-  <data name="Devices_EmptyTitle" xml:space="preserve"><value>Wala pang device</value></data>
-  <data name="Devices_EmptyMessage" xml:space="preserve"><value>Magrehistro ng POS device mula sa mobile app para makita ito dito.</value></data>
-  <data name="Registers_Title" xml:space="preserve"><value>Mga register</value></data>
-  <data name="Registers_Subtitle" xml:space="preserve"><value>Mga cash register para sa cashier shifts sa POS.</value></data>
-  <data name="Registers_EmptyTitle" xml:space="preserve"><value>Wala pang register</value></data>
-  <data name="Registers_EmptyMessage" xml:space="preserve"><value>Gumawa ng register para makapagbukas ng shift ang cashier sa POS.</value></data>
-  <data name="Staff_Title" xml:space="preserve"><value>Staff</value></data>
-  <data name="Staff_Subtitle" xml:space="preserve"><value>Mag-invite at pamahalaan ang mga taong nagtatrabaho sa negosyong ito.</value></data>
-  <data name="Staff_Invite" xml:space="preserve"><value>Mag-invite ng staff</value></data>
-  <data name="Staff_EmptyTitle" xml:space="preserve"><value>Walang nakitang staff</value></data>
-  <data name="Staff_EmptyMessage" xml:space="preserve"><value>I-invite ang unang miyembro ng team para tumulong sa negosyo.</value></data>
-  <data name="StaffInvite_Title" xml:space="preserve"><value>Mag-invite ng staff</value></data>
-  <data name="StaffInvite_Subtitle" xml:space="preserve"><value>Gumawa ng staff login para sa organisasyong ito. Hindi ginagawang staff ang Personal account.</value></data>
-  <data name="Roles_Title" xml:space="preserve"><value>Mga role</value></data>
-  <data name="Roles_Subtitle" xml:space="preserve"><value>Tingnan kung ano ang magagawa ng bawat POS role sa tindahan.</value></data>
-  <data name="Customers_Title" xml:space="preserve"><value>Mga customer</value></data>
-  <data name="Customers_Subtitle" xml:space="preserve"><value>Pamahalaan ang mga customer at business credit.</value></data>
-  <data name="Customers_EmptyTitle" xml:space="preserve"><value>Wala pang customer</value></data>
-  <data name="Customers_EmptyMessage" xml:space="preserve"><value>Lalabas ang mga customer pagkatapos ng benta o kapag idinagdag sa POS.</value></data>
-  <data name="Products_Title" xml:space="preserve"><value>Mga produkto</value></data>
-  <data name="Products_Subtitle" xml:space="preserve"><value>Pamahalaan ang mga item na ibinebenta mo.</value></data>
-  <data name="Products_New" xml:space="preserve"><value>Bagong produkto</value></data>
-  <data name="Products_EmptyTitle" xml:space="preserve"><value>Wala pang produkto</value></data>
-  <data name="Products_EmptyMessage" xml:space="preserve"><value>Magdagdag ng produkto o mag-import mula sa Global Catalog.</value></data>
-  <data name="ProductEdit_NewTitle" xml:space="preserve"><value>Bagong produkto</value></data>
-  <data name="ProductEdit_EditTitle" xml:space="preserve"><value>I-edit ang produkto</value></data>
-  <data name="ProductEdit_Subtitle" xml:space="preserve"><value>I-set ang detalye para sa catalog at imbentaryo. Ang pagbebenta ay sa POS pa rin.</value></data>
-  <data name="Categories_Title" xml:space="preserve"><value>Mga kategorya</value></data>
-  <data name="Categories_Subtitle" xml:space="preserve"><value>Ayusin ang mga produkto sa mga kategorya.</value></data>
-  <data name="Categories_EmptyTitle" xml:space="preserve"><value>Wala pang kategorya</value></data>
-  <data name="Categories_EmptyMessage" xml:space="preserve"><value>Gumawa ng kategorya para pagsama-samahin ang mga produkto.</value></data>
-  <data name="GlobalCatalog_Title" xml:space="preserve"><value>Global Catalog</value></data>
-  <data name="GlobalCatalog_Subtitle" xml:space="preserve"><value>Tingnan ang published products at i-import sa catalog mo.</value></data>
-  <data name="Stock_Title" xml:space="preserve"><value>Stock</value></data>
-  <data name="Stock_Subtitle" xml:space="preserve"><value>Tingnan ang stock levels at aktibidad ng imbentaryo.</value></data>
-  <data name="Stock_EmptyTitle" xml:space="preserve"><value>Walang stock record</value></data>
-  <data name="Stock_EmptyMessage" xml:space="preserve"><value>Lalabas ang stock kapag may tracked products at inventory.</value></data>
-  <data name="Transfers_Title" xml:space="preserve"><value>Mga transfer</value></data>
-  <data name="Transfers_Subtitle" xml:space="preserve"><value>Ilipat ang imbentaryo sa iba't ibang sangay.</value></data>
-  <data name="Transfers_EmptyTitle" xml:space="preserve"><value>Wala pang transfer</value></data>
-  <data name="Transfers_EmptyMessage" xml:space="preserve"><value>Gumawa ng transfer kapag kailangan maglipat ng stock.</value></data>
-  <data name="Lots_Title" xml:space="preserve"><value>Expiration</value></data>
-  <data name="Lots_Subtitle" xml:space="preserve"><value>Subaybayan ang expiry dates at dami ng mga lot.</value></data>
-  <data name="Lots_EmptyTitle" xml:space="preserve"><value>Walang lot</value></data>
-  <data name="Lots_EmptyMessage" xml:space="preserve"><value>Lalabas ang mga lot para sa products na may expiration tracking.</value></data>
-  <data name="SalesHistory_Title" xml:space="preserve"><value>Kasaysayan ng benta</value></data>
-  <data name="SalesHistory_Subtitle" xml:space="preserve"><value>Suriin ang mga natapos na benta at transaction summaries.</value></data>
-  <data name="SalesHistory_EmptyTitle" xml:space="preserve"><value>Walang nakitang benta</value></data>
-  <data name="SalesHistory_EmptyMessage" xml:space="preserve"><value>Lalabas dito ang mga natapos na benta mula sa POS.</value></data>
-  <data name="SalesHistory_ViewSummary" xml:space="preserve"><value>Tingnan ang Transaction Summary</value></data>
-  <data name="SalesReport_Title" xml:space="preserve"><value>Ulat ng benta</value></data>
-  <data name="SalesReport_Subtitle" xml:space="preserve"><value>Ibuod ang benta ayon sa petsa at sangay.</value></data>
-  <data name="InventoryReport_Title" xml:space="preserve"><value>Ulat ng imbentaryo</value></data>
-  <data name="InventoryReport_Subtitle" xml:space="preserve"><value>Tingnan ang low-stock at status ng stock.</value></data>
-  <data name="Shifts_Title" xml:space="preserve"><value>Mga shift</value></data>
-  <data name="Shifts_Subtitle" xml:space="preserve"><value>Suriin ang cashier shifts at cash counts. Ang pagbukas/pagsara ay sa POS pa rin.</value></data>
-  <data name="Shifts_EmptyTitle" xml:space="preserve"><value>Walang nakitang shift</value></data>
-  <data name="Shifts_EmptyMessage" xml:space="preserve"><value>Lalabas ang history pagkatapos magbukas ng shift ang cashier sa POS.</value></data>
-  <data name="ShiftsReport_Title" xml:space="preserve"><value>Ulat ng cash / shift</value></data>
-  <data name="ShiftsReport_Subtitle" xml:space="preserve"><value>Ihambing ang expected at counted cash. Ang skipped counts ay blank — hindi zero.</value></data>
-  <data name="Utang_Title" xml:space="preserve"><value>Business credit</value></data>
-  <data name="Utang_Subtitle" xml:space="preserve"><value>Suriin ang outstanding business credit balances.</value></data>
-  <data name="Utang_EmptyTitle" xml:space="preserve"><value>Walang credit balance</value></data>
-  <data name="Utang_EmptyMessage" xml:space="preserve"><value>Lalabas ang balances kapag ginamit ang business credit sa POS.</value></data>
-  <data name="Settings_Title" xml:space="preserve"><value>Operational settings</value></data>
-  <data name="Settings_Subtitle" xml:space="preserve"><value>I-configure ang POS at cash-handling rules para sa susunod na shifts.</value></data>
-  <data name="Subscription_Title" xml:space="preserve"><value>Subscription</value></data>
-  <data name="Subscription_Subtitle" xml:space="preserve"><value>Tingnan ang kasalukuyang plan at entitlements.</value></data>
-  <data name="Ownership_Title" xml:space="preserve"><value>Ownership</value></data>
-  <data name="Ownership_Subtitle" xml:space="preserve"><value>I-transfer ang ownership ng negosyo sa ibang ExItS member.</value></data>
-  <data name="Notifications_Title" xml:space="preserve"><value>Mga notification</value></data>
-  <data name="Notifications_Subtitle" xml:space="preserve"><value>Mga alerto ng organisasyon para sa managers at owners, kasama ang supplier connections.</value></data>
-  <data name="Notifications_EmptyTitle" xml:space="preserve"><value>Walang notification</value></data>
-  <data name="Notifications_EmptyMessage" xml:space="preserve"><value>Lalabas dito ang mga management alert kapag available.</value></data>
-  <data name="Notifications_FilterUnread" xml:space="preserve"><value>Hindi pa nabasa</value></data>
-  <data name="Notifications_FilterAll" xml:space="preserve"><value>Lahat</value></data>
-  <data name="Notifications_Accept" xml:space="preserve"><value>Tanggapin</value></data>
-  <data name="Notifications_Decline" xml:space="preserve"><value>Tanggihan</value></data>
-  <data name="Notifications_MarkRead" xml:space="preserve"><value>Markahan bilang nabasa</value></data>
-  <data name="Notifications_Open" xml:space="preserve"><value>Buksan</value></data>
-  <data name="Notifications_StatusConnected" xml:space="preserve"><value>Nakakonekta</value></data>
-  <data name="Notifications_StatusDeclined" xml:space="preserve"><value>Tinanggihan</value></data>
-  <data name="Notifications_StatusUnavailable" xml:space="preserve"><value>Hindi na available</value></data>
-  <data name="Notifications_ActionNeeded" xml:space="preserve"><value>Kailangan ng aksyon</value></data>
-  <data name="Notifications_Aria" xml:space="preserve"><value>Mga notification</value></data>
-  <data name="Notifications_AriaUnread" xml:space="preserve"><value>Mga notification, {0} hindi pa nabasa</value></data>
-  <data name="SelectOrg_Title" xml:space="preserve"><value>Pumili ng organisasyon</value></data>
-  <data name="SelectOrg_Subtitle" xml:space="preserve"><value>Piliin kung aling business workspace ang pamamahalaan.</value></data>
-  <data name="SalesDocuments_Subtitle" xml:space="preserve"><value>Suriin kung paano gumagana ang sales documents para sa negosyong ito.</value></data>
-  <data name="Nav_Business" xml:space="preserve"><value>Negosyo</value></data>
-  <data name="Nav_People" xml:space="preserve"><value>Tao</value></data>
-  <data name="Nav_Catalog" xml:space="preserve"><value>Catalog</value></data>
-  <data name="Nav_Sales" xml:space="preserve"><value>Benta</value></data>
-  <data name="Nav_Devices" xml:space="preserve"><value>Mga device</value></data>
-  <data name="Nav_Registers" xml:space="preserve"><value>Mga register</value></data>
-  <data name="Nav_Profile" xml:space="preserve"><value>Profile ng negosyo</value></data>
-  <data name="Nav_Ownership" xml:space="preserve"><value>Ownership</value></data>
-  <data name="Nav_Alerts" xml:space="preserve"><value>Mga alerto</value></data>
-  <data name="Nav_Roles" xml:space="preserve"><value>Mga role</value></data>
-  <data name="Nav_OperationalSettings" xml:space="preserve"><value>Operational settings</value></data>
-  <data name="Nav_Suppliers" xml:space="preserve"><value>Mga supplier</value></data>
-  <data name="Nav_SupplierRequests" xml:space="preserve"><value>Mga hiling ng supplier</value></data>
-  <data name="Nav_ConnectedBuyers" xml:space="preserve"><value>Mga connected buyer</value></data>
-  <data name="Suppliers_Title" xml:space="preserve"><value>Mga supplier</value></data>
-  <data name="Suppliers_Subtitle" xml:space="preserve"><value>Panlabas na supplier at Connected ExItS na ugnayan.</value></data>
-  <data name="Suppliers_TabList" xml:space="preserve"><value>Mga supplier</value></data>
-  <data name="Suppliers_TabRequests" xml:space="preserve"><value>Mga hiling</value></data>
-  <data name="Suppliers_TabBuyers" xml:space="preserve"><value>Mga connected buyer</value></data>
-  <data name="Suppliers_ConnectExIts" xml:space="preserve"><value>Ikonekta ang ExItS supplier</value></data>
-  <data name="Suppliers_EmptyTitle" xml:space="preserve"><value>Wala pang supplier</value></data>
-  <data name="Suppliers_EmptyMessage" xml:space="preserve"><value>Magdagdag ng panlabas na supplier o magpadala ng Connected ExItS connection request.</value></data>
-  <data name="Suppliers_ColName" xml:space="preserve"><value>Pangalan</value></data>
-  <data name="Suppliers_ColType" xml:space="preserve"><value>Uri</value></data>
-  <data name="Suppliers_ColStatus" xml:space="preserve"><value>Status</value></data>
-  <data name="Suppliers_ColConnection" xml:space="preserve"><value>Koneksyon</value></data>
-  <data name="Suppliers_ColRequester" xml:space="preserve"><value>Humihiling na negosyo</value></data>
-  <data name="Suppliers_ColPublicId" xml:space="preserve"><value>Public organization ID</value></data>
-  <data name="Suppliers_ColRequested" xml:space="preserve"><value>Hiniling</value></data>
-  <data name="Suppliers_ColSupplier" xml:space="preserve"><value>Supplier</value></data>
-  <data name="Suppliers_TypeConnected" xml:space="preserve"><value>Connected ExItS</value></data>
-  <data name="Suppliers_TypeExternal" xml:space="preserve"><value>Panlabas</value></data>
-  <data name="Suppliers_StatusConnected" xml:space="preserve"><value>Konektado</value></data>
-  <data name="Suppliers_StatusPending" xml:space="preserve"><value>Nakabinbin</value></data>
-  <data name="Suppliers_StatusDeclined" xml:space="preserve"><value>Tinanggihan</value></data>
-  <data name="Suppliers_StatusDisconnected" xml:space="preserve"><value>Hindi na konektado</value></data>
-  <data name="Suppliers_WaitingApproval" xml:space="preserve"><value>Hinihintay ang pagsang-ayon ng supplier</value></data>
-  <data name="Suppliers_RequestDeclined" xml:space="preserve"><value>Tinanggihan ang hiling</value></data>
-  <data name="Suppliers_IncomingSection" xml:space="preserve"><value>Mga papasok na hiling</value></data>
-  <data name="Suppliers_SentSection" xml:space="preserve"><value>Mga ipinadalang hiling</value></data>
-  <data name="Suppliers_NoIncomingTitle" xml:space="preserve"><value>Walang papasok na hiling</value></data>
-  <data name="Suppliers_NoIncomingMessage" xml:space="preserve"><value>Kapag may ibang ExItS na negosyo na gusto kayo bilang supplier, lalabas ang hiling dito.</value></data>
-  <data name="Suppliers_NoSentTitle" xml:space="preserve"><value>Walang ipinadalang hiling</value></data>
-  <data name="Suppliers_NoSentMessage" xml:space="preserve"><value>Lalabas dito ang mga connection request na ipinadala ninyo — Pending, Connected, o Declined.</value></data>
-  <data name="Suppliers_RequestingBusiness" xml:space="preserve"><value>Humihiling na negosyo</value></data>
-  <data name="Suppliers_IncomingPlain" xml:space="preserve"><value>Gusto ni {0} na kumonekta sa inyong negosyo bilang supplier.</value></data>
-  <data name="Suppliers_Accept" xml:space="preserve"><value>Tanggapin</value></data>
-  <data name="Suppliers_Decline" xml:space="preserve"><value>Tanggihan</value></data>
-  <data name="Suppliers_ViewOnly" xml:space="preserve"><value>Tingnan lamang</value></data>
-  <data name="Suppliers_RespondFailed" xml:space="preserve"><value>Hindi ma-save ang tugon sa koneksyon.</value></data>
-  <data name="Suppliers_ConnectTitle" xml:space="preserve"><value>Ikonekta ang ExItS supplier</value></data>
-  <data name="Suppliers_ConnectSubtitle" xml:space="preserve"><value>I-scan o ilagay ang Business QR / organization ID ng supplier. Kailangan nilang tumanggap bago maging Active ang koneksyon.</value></data>
-  <data name="Suppliers_BusinessQrOrOrgId" xml:space="preserve"><value>Business QR o organization ID</value></data>
-  <data name="Suppliers_BusinessQrHint" xml:space="preserve"><value>ORG###### o Business QR payload</value></data>
-  <data name="Suppliers_BusinessQrRequired" xml:space="preserve"><value>Ilagay ang Business QR o organization ID ng supplier.</value></data>
-  <data name="Suppliers_SendRequest" xml:space="preserve"><value>Ipadala ang hiling</value></data>
-  <data name="Suppliers_RequestFailed" xml:space="preserve"><value>Hindi naipadala ang connection request.</value></data>
-  <data name="Suppliers_RequestSentPending" xml:space="preserve"><value>Naipadala ang connection request. Hinihintay ang pagsang-ayon ng supplier.</value></data>
-  <data name="Suppliers_IncomingBannerTitle" xml:space="preserve"><value>May hinihintay na supplier connection request</value></data>
-  <data name="Suppliers_IncomingBannerBody" xml:space="preserve"><value>{0} (na) negosyo ang gustong kumonekta sa inyo bilang supplier.</value></data>
-  <data name="Suppliers_IncomingCompact" xml:space="preserve"><value>{0} (na) supplier request ang kailangan suriin</value></data>
-  <data name="Suppliers_ReviewIncoming" xml:space="preserve"><value>Suriin ang connection requests</value></data>
-  <data name="Suppliers_BuyersSection" xml:space="preserve"><value>Mga connected buyer</value></data>
-  <data name="Suppliers_BuyersHelp" xml:space="preserve"><value>Mga negosyo na gumagamit sa organisasyon mo bilang Connected ExItS supplier.</value></data>
-  <data name="Suppliers_NoBuyersTitle" xml:space="preserve"><value>Wala pang connected buyer</value></data>
-  <data name="Suppliers_NoBuyersMessage" xml:space="preserve"><value>Kapag tinanggap mo ang supplier connection request, lalabas dito ang negosyo.</value></data>
-  <data name="Suppliers_ColBuyer" xml:space="preserve"><value>Negosyo ng buyer</value></data>
-  <data name="Suppliers_ColConnectedSince" xml:space="preserve"><value>Nakakonekta mula</value></data>
-  <data name="Suppliers_ColDirection" xml:space="preserve"><value>Ugnayan</value></data>
-  <data name="Suppliers_BuyerDirection" xml:space="preserve"><value>Sila ang bumibili mula sa negosyo mo.</value></data>
-  <data name="Suppliers_BuyerNotCustomerNote" xml:space="preserve"><value>Ang connected buyers ay org relationship, hindi Customers. Tahasang Add as customer ay deferred.</value></data>
-  <data name="Suppliers_UnknownBusiness" xml:space="preserve"><value>Connected na negosyo</value></data>
-  <data name="Suppliers_ViewBuyer" xml:space="preserve"><value>Tingnan</value></data>
-  <data name="Suppliers_BackToBuyers" xml:space="preserve"><value>Bumalik sa connected buyers</value></data>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Brand" xml:space="preserve">
+    <value>Admin ng Organisasyon</value>
+  </data>
+  <data name="Nav_Overview" xml:space="preserve">
+    <value>Pangkalahatan</value>
+  </data>
+  <data name="Nav_Products" xml:space="preserve">
+    <value>Mga Produkto</value>
+  </data>
+  <data name="Nav_Inventory" xml:space="preserve">
+    <value>Imbentaryo</value>
+  </data>
+  <data name="Nav_Customers" xml:space="preserve">
+    <value>Mga Customer</value>
+  </data>
+  <data name="Nav_Branches" xml:space="preserve">
+    <value>Mga Sangay</value>
+  </data>
+  <data name="Nav_Staff" xml:space="preserve">
+    <value>Tauhan</value>
+  </data>
+  <data name="Nav_Reports" xml:space="preserve">
+    <value>Mga Ulat</value>
+  </data>
+  <data name="Nav_Operations" xml:space="preserve">
+    <value>Operasyon</value>
+  </data>
+  <data name="Nav_Settings" xml:space="preserve">
+    <value>Mga Setting</value>
+  </data>
+  <data name="Nav_More" xml:space="preserve">
+    <value>Higit pa</value>
+  </data>
+  <data name="Nav_Subscription" xml:space="preserve">
+    <value>Subscription</value>
+  </data>
+  <data name="Boundary_NotPos" xml:space="preserve">
+    <value>Ang Organization Web Admin ay hindi POS checkout. Ang pagbebenta ay nananatili sa POS app.</value>
+  </data>
+  <data name="SalesDocument_EducationTitle" xml:space="preserve">
+    <value>Tungkol sa mga rekord ng benta mo</value>
+  </data>
+  <data name="SalesDocument_EducationBody1" xml:space="preserve">
+    <value>Sa ngayon, gumagawa ang ExItS ng Buod ng Transaksyon para sa rekord ng negosyo at customer.</value>
+  </data>
+  <data name="SalesDocument_EducationBody2" xml:space="preserve">
+    <value>Ang Buod ng Transaksyon ay hindi ipinapakita bilang Official Receipt o tax invoice na awtorisado ng BIR.</value>
+  </data>
+  <data name="SalesDocument_EducationBody3" xml:space="preserve">
+    <value>Ang mga tax setting para sa pagkalkula ay hindi nagpapagana ng pag-isyu ng tax document.</value>
+  </data>
+  <data name="SalesDocument_EducationBody4" xml:space="preserve">
+    <value>Itinatala lang ng pagkilala mo na nabasa mo ang impormasyong ito. Hindi nito pinapagana ang BIR invoicing.</value>
+  </data>
+  <data name="SalesDocument_EducationAckCheckbox" xml:space="preserve">
+    <value>Nauunawaan ko kung paano kasalukuyang hinahawakan ng ExItS ang mga rekord ng benta.</value>
+  </data>
+  <data name="SalesDocument_EducationContinue" xml:space="preserve">
+    <value>Magpatuloy</value>
+  </data>
+  <data name="SalesDocument_EducationActionNeeded" xml:space="preserve">
+    <value>Kailangang basahin</value>
+  </data>
+  <data name="SalesDocument_EducationAcknowledged" xml:space="preserve">
+    <value>Nabasa na</value>
+  </data>
+  <data name="SalesDocument_EducationOwnerRequired" xml:space="preserve">
+    <value>Kailangang basahin ng may-ari ng negosyo ang impormasyon tungkol sa sales document bago magpatuloy sa setup.</value>
+  </data>
+  <data name="SalesDocument_BirInvoicingNotEnabled" xml:space="preserve">
+    <value>BIR invoicing: Hindi naka-enable para sa negosyong ito</value>
+  </data>
+  <data name="SalesDocument_CurrentDocument" xml:space="preserve">
+    <value>Kasalukuyang dokumento: Buod ng Transaksyon</value>
+  </data>
+  <data name="SalesDocument_ComplianceTitle" xml:space="preserve">
+    <value>Suporta sa BIR invoicing</value>
+  </data>
+  <data name="SalesDocument_ComplianceReview" xml:space="preserve">
+    <value>Compliance review</value>
+  </data>
+  <data name="SalesDocument_ComplianceIssuance" xml:space="preserve">
+    <value>Tax-document issuance</value>
+  </data>
+  <data name="SalesDocument_ComplianceIssuanceEnabled" xml:space="preserve">
+    <value>Naka-enable ang capability (hindi pa available ang implementation)</value>
+  </data>
+  <data name="SalesDocument_ComplianceIssuanceDisabled" xml:space="preserve">
+    <value>Naka-disable</value>
+  </data>
+  <data name="SalesDocument_ComplianceNeedHelp" xml:space="preserve">
+    <value>Kailangan ng BIR-enabled invoicing sa ExItS? Makipag-ugnayan sa ExItS Support sa pamamagitan ng pagre-record ng request para sa negosyong ito.</value>
+  </data>
+  <data name="SalesDocument_ComplianceContactSupport" xml:space="preserve">
+    <value>Makipag-ugnayan sa ExItS Support</value>
+  </data>
+  <data name="SalesDocument_ComplianceRequestRecorded" xml:space="preserve">
+    <value>May naitala nang support request para sa negosyong ito.</value>
+  </data>
+  <data name="Branches_Title" xml:space="preserve">
+    <value>Mga sangay</value>
+  </data>
+  <data name="Branches_Subtitle" xml:space="preserve">
+    <value>Pamahalaan ang mga lokasyon at setting ng sangay ng iyong negosyo.</value>
+  </data>
+  <data name="Branches_Add" xml:space="preserve">
+    <value>Magdagdag ng sangay</value>
+  </data>
+  <data name="Branches_Edit" xml:space="preserve">
+    <value>I-edit ang sangay</value>
+  </data>
+  <data name="Branches_Archive" xml:space="preserve">
+    <value>I-archive</value>
+  </data>
+  <data name="Branches_Primary" xml:space="preserve">
+    <value>Pangunahin</value>
+  </data>
+  <data name="Branches_Capacity" xml:space="preserve">
+    <value>Capacity {0} / {1}. I-archive ang mga sangay na may history sa halip na burahin.</value>
+  </data>
+  <data name="Branches_EmptyTitle" xml:space="preserve">
+    <value>Wala pang sangay</value>
+  </data>
+  <data name="Branches_EmptyMessage" xml:space="preserve">
+    <value>Idagdag ang unang sangay para ayusin ang mga lokasyon ng negosyo.</value>
+  </data>
+  <data name="Branches_ColName" xml:space="preserve">
+    <value>Pangalan</value>
+  </data>
+  <data name="Branches_ColCode" xml:space="preserve">
+    <value>Code</value>
+  </data>
+  <data name="Branches_ColAddress" xml:space="preserve">
+    <value>Address</value>
+  </data>
+  <data name="Branches_ColStatus" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="Branches_FieldCode" xml:space="preserve">
+    <value>Code</value>
+  </data>
+  <data name="Branches_FieldName" xml:space="preserve">
+    <value>Pangalan</value>
+  </data>
+  <data name="Branches_FieldAddress" xml:space="preserve">
+    <value>Address</value>
+  </data>
+  <data name="Branches_ValidationRequired" xml:space="preserve">
+    <value>Kailangan ang code at pangalan.</value>
+  </data>
+  <data name="Branches_Saved" xml:space="preserve">
+    <value>Na-save ang sangay.</value>
+  </data>
+  <data name="Branches_Archived" xml:space="preserve">
+    <value>Na-archive ang sangay.</value>
+  </data>
+  <data name="Common_Edit" xml:space="preserve">
+    <value>I-edit</value>
+  </data>
+  <data name="Common_Save" xml:space="preserve">
+    <value>I-save</value>
+  </data>
+  <data name="Common_Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Error_SessionExpired" xml:space="preserve">
+    <value>Nag-expire ang session. Mag-sign in ulit.</value>
+  </data>
+  <data name="Error_GenericLoad" xml:space="preserve">
+    <value>Hindi namin ma-load ang impormasyon. Subukan ulit.</value>
+  </data>
+  <data name="Error_Permission" xml:space="preserve">
+    <value>Wala kang permiso na tingnan ang seksyong ito.</value>
+  </data>
+  <data name="Common_Retry" xml:space="preserve">
+    <value>Subukan ulit</value>
+  </data>
+  <data name="Common_Filter" xml:space="preserve">
+    <value>I-filter</value>
+  </data>
+  <data name="Common_Search" xml:space="preserve">
+    <value>Maghanap</value>
+  </data>
+  <data name="Common_Clear" xml:space="preserve">
+    <value>I-clear</value>
+  </data>
+  <data name="Common_Status" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="Common_Actions" xml:space="preserve">
+    <value>Mga aksyon</value>
+  </data>
+  <data name="Common_Unavailable" xml:space="preserve">
+    <value>Hindi available</value>
+  </data>
+  <data name="Overview_Title" xml:space="preserve">
+    <value>Overview</value>
+  </data>
+  <data name="Overview_Subtitle" xml:space="preserve">
+    <value>Tingnan kung paano ang negosyo mo ngayon.</value>
+  </data>
+  <data name="Overview_SectionToday" xml:space="preserve">
+    <value>Ngayon</value>
+  </data>
+  <data name="Overview_SectionInventory" xml:space="preserve">
+    <value>Imbentaryo</value>
+  </data>
+  <data name="Overview_SectionOperations" xml:space="preserve">
+    <value>Operasyon</value>
+  </data>
+  <data name="Overview_SectionBusiness" xml:space="preserve">
+    <value>Negosyo</value>
+  </data>
+  <data name="Profile_Title" xml:space="preserve">
+    <value>Profile ng negosyo</value>
+  </data>
+  <data name="Profile_Subtitle" xml:space="preserve">
+    <value>I-update kung paano nakikita ang negosyo ng staff at customers.</value>
+  </data>
+  <data name="Devices_Title" xml:space="preserve">
+    <value>Mga device</value>
+  </data>
+  <data name="Devices_Subtitle" xml:space="preserve">
+    <value>Pamahalaan ang mga POS terminal ng negosyong ito.</value>
+  </data>
+  <data name="Devices_EmptyTitle" xml:space="preserve">
+    <value>Wala pang device</value>
+  </data>
+  <data name="Devices_EmptyMessage" xml:space="preserve">
+    <value>Magrehistro ng POS device mula sa mobile app para makita ito dito.</value>
+  </data>
+  <data name="Registers_Title" xml:space="preserve">
+    <value>Mga register</value>
+  </data>
+  <data name="Registers_Subtitle" xml:space="preserve">
+    <value>Mga cash register para sa cashier shifts sa POS.</value>
+  </data>
+  <data name="Registers_EmptyTitle" xml:space="preserve">
+    <value>Wala pang register</value>
+  </data>
+  <data name="Registers_EmptyMessage" xml:space="preserve">
+    <value>Gumawa ng register para makapagbukas ng shift ang cashier sa POS.</value>
+  </data>
+  <data name="Staff_Title" xml:space="preserve">
+    <value>Staff</value>
+  </data>
+  <data name="Staff_Subtitle" xml:space="preserve">
+    <value>Mag-invite at pamahalaan ang mga taong nagtatrabaho sa negosyong ito.</value>
+  </data>
+  <data name="Staff_Invite" xml:space="preserve">
+    <value>Mag-invite ng staff</value>
+  </data>
+  <data name="Staff_EmptyTitle" xml:space="preserve">
+    <value>Walang nakitang staff</value>
+  </data>
+  <data name="Staff_EmptyMessage" xml:space="preserve">
+    <value>I-invite ang unang miyembro ng team para tumulong sa negosyo.</value>
+  </data>
+  <data name="StaffInvite_Title" xml:space="preserve">
+    <value>Mag-invite ng staff</value>
+  </data>
+  <data name="StaffInvite_Subtitle" xml:space="preserve">
+    <value>Gumawa ng staff login para sa organisasyong ito. Hindi ginagawang staff ang Personal account.</value>
+  </data>
+  <data name="Roles_Title" xml:space="preserve">
+    <value>Mga role</value>
+  </data>
+  <data name="Roles_Subtitle" xml:space="preserve">
+    <value>Tingnan kung ano ang magagawa ng bawat POS role sa tindahan.</value>
+  </data>
+  <data name="Customers_Title" xml:space="preserve">
+    <value>Mga customer</value>
+  </data>
+  <data name="Customers_Subtitle" xml:space="preserve">
+    <value>Pamahalaan ang mga customer at business credit.</value>
+  </data>
+  <data name="Customers_EmptyTitle" xml:space="preserve">
+    <value>Wala pang customer</value>
+  </data>
+  <data name="Customers_EmptyMessage" xml:space="preserve">
+    <value>Lalabas ang mga customer pagkatapos ng benta o kapag idinagdag sa POS.</value>
+  </data>
+  <data name="Products_Title" xml:space="preserve">
+    <value>Mga produkto</value>
+  </data>
+  <data name="Products_Subtitle" xml:space="preserve">
+    <value>Pamahalaan ang mga item na ibinebenta mo.</value>
+  </data>
+  <data name="Products_New" xml:space="preserve">
+    <value>Bagong produkto</value>
+  </data>
+  <data name="Products_EmptyTitle" xml:space="preserve">
+    <value>Wala pang produkto</value>
+  </data>
+  <data name="Products_EmptyMessage" xml:space="preserve">
+    <value>Magdagdag ng produkto o mag-import mula sa Global Catalog.</value>
+  </data>
+  <data name="ProductEdit_NewTitle" xml:space="preserve">
+    <value>Bagong produkto</value>
+  </data>
+  <data name="ProductEdit_EditTitle" xml:space="preserve">
+    <value>I-edit ang produkto</value>
+  </data>
+  <data name="ProductEdit_Subtitle" xml:space="preserve">
+    <value>I-set ang detalye para sa catalog at imbentaryo. Ang pagbebenta ay sa POS pa rin.</value>
+  </data>
+  <data name="Categories_Title" xml:space="preserve">
+    <value>Mga kategorya</value>
+  </data>
+  <data name="Categories_Subtitle" xml:space="preserve">
+    <value>Ayusin ang mga produkto sa mga kategorya.</value>
+  </data>
+  <data name="Categories_EmptyTitle" xml:space="preserve">
+    <value>Wala pang kategorya</value>
+  </data>
+  <data name="Categories_EmptyMessage" xml:space="preserve">
+    <value>Gumawa ng kategorya para pagsama-samahin ang mga produkto.</value>
+  </data>
+  <data name="GlobalCatalog_Title" xml:space="preserve">
+    <value>Global Catalog</value>
+  </data>
+  <data name="GlobalCatalog_Subtitle" xml:space="preserve">
+    <value>Tingnan ang published products at i-import sa catalog mo.</value>
+  </data>
+  <data name="Stock_Title" xml:space="preserve">
+    <value>Stock</value>
+  </data>
+  <data name="Stock_Subtitle" xml:space="preserve">
+    <value>Tingnan ang stock levels at aktibidad ng imbentaryo.</value>
+  </data>
+  <data name="Stock_EmptyTitle" xml:space="preserve">
+    <value>Walang stock record</value>
+  </data>
+  <data name="Stock_EmptyMessage" xml:space="preserve">
+    <value>Lalabas ang stock kapag may tracked products at inventory.</value>
+  </data>
+  <data name="Transfers_Title" xml:space="preserve">
+    <value>Mga transfer</value>
+  </data>
+  <data name="Transfers_Subtitle" xml:space="preserve">
+    <value>Ilipat ang imbentaryo sa iba't ibang sangay.</value>
+  </data>
+  <data name="Transfers_EmptyTitle" xml:space="preserve">
+    <value>Wala pang transfer</value>
+  </data>
+  <data name="Transfers_EmptyMessage" xml:space="preserve">
+    <value>Gumawa ng transfer kapag kailangan maglipat ng stock.</value>
+  </data>
+  <data name="Lots_Title" xml:space="preserve">
+    <value>Expiration</value>
+  </data>
+  <data name="Lots_Subtitle" xml:space="preserve">
+    <value>Subaybayan ang expiry dates at dami ng mga lot.</value>
+  </data>
+  <data name="Lots_EmptyTitle" xml:space="preserve">
+    <value>Walang lot</value>
+  </data>
+  <data name="Lots_EmptyMessage" xml:space="preserve">
+    <value>Lalabas ang mga lot para sa products na may expiration tracking.</value>
+  </data>
+  <data name="SalesHistory_Title" xml:space="preserve">
+    <value>Kasaysayan ng benta</value>
+  </data>
+  <data name="SalesHistory_Subtitle" xml:space="preserve">
+    <value>Suriin ang mga natapos na benta at transaction summaries.</value>
+  </data>
+  <data name="SalesHistory_EmptyTitle" xml:space="preserve">
+    <value>Walang nakitang benta</value>
+  </data>
+  <data name="SalesHistory_EmptyMessage" xml:space="preserve">
+    <value>Lalabas dito ang mga natapos na benta mula sa POS.</value>
+  </data>
+  <data name="SalesHistory_ViewSummary" xml:space="preserve">
+    <value>Tingnan ang Transaction Summary</value>
+  </data>
+  <data name="SalesReport_Title" xml:space="preserve">
+    <value>Ulat ng benta</value>
+  </data>
+  <data name="SalesReport_Subtitle" xml:space="preserve">
+    <value>Ibuod ang benta ayon sa petsa at sangay.</value>
+  </data>
+  <data name="InventoryReport_Title" xml:space="preserve">
+    <value>Ulat ng imbentaryo</value>
+  </data>
+  <data name="InventoryReport_Subtitle" xml:space="preserve">
+    <value>Tingnan ang low-stock at status ng stock.</value>
+  </data>
+  <data name="Shifts_Title" xml:space="preserve">
+    <value>Mga shift</value>
+  </data>
+  <data name="Shifts_Subtitle" xml:space="preserve">
+    <value>Suriin ang cashier shifts at cash counts. Ang pagbukas/pagsara ay sa POS pa rin.</value>
+  </data>
+  <data name="Shifts_EmptyTitle" xml:space="preserve">
+    <value>Walang nakitang shift</value>
+  </data>
+  <data name="Shifts_EmptyMessage" xml:space="preserve">
+    <value>Lalabas ang history pagkatapos magbukas ng shift ang cashier sa POS.</value>
+  </data>
+  <data name="ShiftsReport_Title" xml:space="preserve">
+    <value>Ulat ng cash / shift</value>
+  </data>
+  <data name="ShiftsReport_Subtitle" xml:space="preserve">
+    <value>Ihambing ang expected at counted cash. Ang skipped counts ay blank â€” hindi zero.</value>
+  </data>
+  <data name="Utang_Title" xml:space="preserve">
+    <value>Business credit</value>
+  </data>
+  <data name="Utang_Subtitle" xml:space="preserve">
+    <value>Suriin ang outstanding business credit balances.</value>
+  </data>
+  <data name="Utang_EmptyTitle" xml:space="preserve">
+    <value>Walang credit balance</value>
+  </data>
+  <data name="Utang_EmptyMessage" xml:space="preserve">
+    <value>Lalabas ang balances kapag ginamit ang business credit sa POS.</value>
+  </data>
+  <data name="Settings_Title" xml:space="preserve">
+    <value>Operational settings</value>
+  </data>
+  <data name="Settings_Subtitle" xml:space="preserve">
+    <value>I-configure ang POS at cash-handling rules para sa susunod na shifts.</value>
+  </data>
+  <data name="Subscription_Title" xml:space="preserve">
+    <value>Subscription</value>
+  </data>
+  <data name="Subscription_Subtitle" xml:space="preserve">
+    <value>Tingnan ang kasalukuyang plan at entitlements.</value>
+  </data>
+  <data name="Ownership_Title" xml:space="preserve">
+    <value>Ownership</value>
+  </data>
+  <data name="Ownership_Subtitle" xml:space="preserve">
+    <value>I-transfer ang ownership ng negosyo sa ibang ExItS member.</value>
+  </data>
+  <data name="Notifications_Title" xml:space="preserve">
+    <value>Mga notification</value>
+  </data>
+  <data name="Notifications_Subtitle" xml:space="preserve">
+    <value>Mga alerto ng organisasyon para sa managers at owners, kasama ang supplier connections.</value>
+  </data>
+  <data name="Notifications_EmptyTitle" xml:space="preserve">
+    <value>Walang notification</value>
+  </data>
+  <data name="Notifications_EmptyMessage" xml:space="preserve">
+    <value>Lalabas dito ang mga management alert kapag available.</value>
+  </data>
+  <data name="Notifications_FilterUnread" xml:space="preserve">
+    <value>Hindi pa nabasa</value>
+  </data>
+  <data name="Notifications_FilterAll" xml:space="preserve">
+    <value>Lahat</value>
+  </data>
+  <data name="Notifications_Accept" xml:space="preserve">
+    <value>Tanggapin</value>
+  </data>
+  <data name="Notifications_Decline" xml:space="preserve">
+    <value>Tanggihan</value>
+  </data>
+  <data name="Notifications_MarkRead" xml:space="preserve">
+    <value>Markahan bilang nabasa</value>
+  </data>
+  <data name="Notifications_Open" xml:space="preserve">
+    <value>Buksan</value>
+  </data>
+  <data name="Notifications_StatusConnected" xml:space="preserve">
+    <value>Nakakonekta</value>
+  </data>
+  <data name="Notifications_StatusDeclined" xml:space="preserve">
+    <value>Tinanggihan</value>
+  </data>
+  <data name="Notifications_StatusUnavailable" xml:space="preserve">
+    <value>Hindi na available</value>
+  </data>
+  <data name="Notifications_ActionNeeded" xml:space="preserve">
+    <value>Kailangan ng aksyon</value>
+  </data>
+  <data name="Notifications_Aria" xml:space="preserve">
+    <value>Mga notification</value>
+  </data>
+  <data name="Notifications_AriaUnread" xml:space="preserve">
+    <value>Mga notification, {0} hindi pa nabasa</value>
+  </data>
+  <data name="SelectOrg_Title" xml:space="preserve">
+    <value>Pumili ng organisasyon</value>
+  </data>
+  <data name="SelectOrg_Subtitle" xml:space="preserve">
+    <value>Piliin kung aling business workspace ang pamamahalaan.</value>
+  </data>
+  <data name="SalesDocuments_Subtitle" xml:space="preserve">
+    <value>Suriin kung paano gumagana ang sales documents para sa negosyong ito.</value>
+  </data>
+  <data name="Nav_Business" xml:space="preserve">
+    <value>Negosyo</value>
+  </data>
+  <data name="Nav_People" xml:space="preserve">
+    <value>Tao</value>
+  </data>
+  <data name="Nav_Catalog" xml:space="preserve">
+    <value>Catalog</value>
+  </data>
+  <data name="Nav_Sales" xml:space="preserve">
+    <value>Benta</value>
+  </data>
+  <data name="Nav_Devices" xml:space="preserve">
+    <value>Mga device</value>
+  </data>
+  <data name="Nav_Registers" xml:space="preserve">
+    <value>Mga register</value>
+  </data>
+  <data name="Nav_Profile" xml:space="preserve">
+    <value>Profile ng negosyo</value>
+  </data>
+  <data name="Nav_Ownership" xml:space="preserve">
+    <value>Ownership</value>
+  </data>
+  <data name="Nav_Alerts" xml:space="preserve">
+    <value>Mga alerto</value>
+  </data>
+  <data name="Nav_Roles" xml:space="preserve">
+    <value>Mga role</value>
+  </data>
+  <data name="Nav_OperationalSettings" xml:space="preserve">
+    <value>Operational settings</value>
+  </data>
+  <data name="Nav_Suppliers" xml:space="preserve">
+    <value>Mga supplier</value>
+  </data>
+  <data name="Nav_SupplierRequests" xml:space="preserve">
+    <value>Mga hiling ng supplier</value>
+  </data>
+  <data name="Nav_ConnectedBuyers" xml:space="preserve">
+    <value>Mga connected buyer</value>
+  </data>
+  <data name="Suppliers_Title" xml:space="preserve">
+    <value>Mga supplier</value>
+  </data>
+  <data name="Suppliers_Subtitle" xml:space="preserve">
+    <value>Panlabas na supplier at Connected ExItS na ugnayan.</value>
+  </data>
+  <data name="Suppliers_TabList" xml:space="preserve">
+    <value>Mga supplier</value>
+  </data>
+  <data name="Suppliers_TabRequests" xml:space="preserve">
+    <value>Mga hiling</value>
+  </data>
+  <data name="Suppliers_TabBuyers" xml:space="preserve">
+    <value>Mga connected buyer</value>
+  </data>
+  <data name="Suppliers_ConnectExIts" xml:space="preserve">
+    <value>Ikonekta ang ExItS supplier</value>
+  </data>
+  <data name="Suppliers_EmptyTitle" xml:space="preserve">
+    <value>Wala pang supplier</value>
+  </data>
+  <data name="Suppliers_EmptyMessage" xml:space="preserve">
+    <value>Magdagdag ng panlabas na supplier o magpadala ng Connected ExItS connection request.</value>
+  </data>
+  <data name="Suppliers_ColName" xml:space="preserve">
+    <value>Pangalan</value>
+  </data>
+  <data name="Suppliers_ColType" xml:space="preserve">
+    <value>Uri</value>
+  </data>
+  <data name="Suppliers_ColStatus" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="Suppliers_ColConnection" xml:space="preserve">
+    <value>Koneksyon</value>
+  </data>
+  <data name="Suppliers_ColRequester" xml:space="preserve">
+    <value>Humihiling na negosyo</value>
+  </data>
+  <data name="Suppliers_ColPublicId" xml:space="preserve">
+    <value>Public organization ID</value>
+  </data>
+  <data name="Suppliers_ColRequested" xml:space="preserve">
+    <value>Hiniling</value>
+  </data>
+  <data name="Suppliers_ColSupplier" xml:space="preserve">
+    <value>Supplier</value>
+  </data>
+  <data name="Suppliers_TypeConnected" xml:space="preserve">
+    <value>Connected ExItS</value>
+  </data>
+  <data name="Suppliers_TypeExternal" xml:space="preserve">
+    <value>Panlabas</value>
+  </data>
+  <data name="Suppliers_StatusConnected" xml:space="preserve">
+    <value>Konektado</value>
+  </data>
+  <data name="Suppliers_StatusPending" xml:space="preserve">
+    <value>Nakabinbin</value>
+  </data>
+  <data name="Suppliers_StatusDeclined" xml:space="preserve">
+    <value>Tinanggihan</value>
+  </data>
+  <data name="Suppliers_StatusDisconnected" xml:space="preserve">
+    <value>Hindi na konektado</value>
+  </data>
+  <data name="Suppliers_WaitingApproval" xml:space="preserve">
+    <value>Hinihintay ang pagsang-ayon ng supplier</value>
+  </data>
+  <data name="Suppliers_RequestDeclined" xml:space="preserve">
+    <value>Tinanggihan ang hiling</value>
+  </data>
+  <data name="Suppliers_IncomingSection" xml:space="preserve">
+    <value>Mga papasok na hiling</value>
+  </data>
+  <data name="Suppliers_SentSection" xml:space="preserve">
+    <value>Mga ipinadalang hiling</value>
+  </data>
+  <data name="Suppliers_NoIncomingTitle" xml:space="preserve">
+    <value>Walang papasok na hiling</value>
+  </data>
+  <data name="Suppliers_NoIncomingMessage" xml:space="preserve">
+    <value>Kapag may ibang ExItS na negosyo na gusto kayo bilang supplier, lalabas ang hiling dito.</value>
+  </data>
+  <data name="Suppliers_NoSentTitle" xml:space="preserve">
+    <value>Walang ipinadalang hiling</value>
+  </data>
+  <data name="Suppliers_NoSentMessage" xml:space="preserve">
+    <value>Lalabas dito ang mga connection request na ipinadala ninyo â€” Pending, Connected, o Declined.</value>
+  </data>
+  <data name="Suppliers_RequestingBusiness" xml:space="preserve">
+    <value>Humihiling na negosyo</value>
+  </data>
+  <data name="Suppliers_IncomingPlain" xml:space="preserve">
+    <value>Gusto ni {0} na kumonekta sa inyong negosyo bilang supplier.</value>
+  </data>
+  <data name="Suppliers_Accept" xml:space="preserve">
+    <value>Tanggapin</value>
+  </data>
+  <data name="Suppliers_Decline" xml:space="preserve">
+    <value>Tanggihan</value>
+  </data>
+  <data name="Suppliers_ViewOnly" xml:space="preserve">
+    <value>Tingnan lamang</value>
+  </data>
+  <data name="Suppliers_RespondFailed" xml:space="preserve">
+    <value>Hindi ma-save ang tugon sa koneksyon.</value>
+  </data>
+  <data name="Suppliers_ConnectTitle" xml:space="preserve">
+    <value>Ikonekta ang ExItS supplier</value>
+  </data>
+  <data name="Suppliers_ConnectSubtitle" xml:space="preserve">
+    <value>I-scan o ilagay ang Business QR / organization ID ng supplier. Kailangan nilang tumanggap bago maging Active ang koneksyon.</value>
+  </data>
+  <data name="Suppliers_BusinessQrOrOrgId" xml:space="preserve">
+    <value>Business QR o organization ID</value>
+  </data>
+  <data name="Suppliers_BusinessQrHint" xml:space="preserve">
+    <value>ORG###### o Business QR payload</value>
+  </data>
+  <data name="Suppliers_BusinessQrRequired" xml:space="preserve">
+    <value>Ilagay ang Business QR o organization ID ng supplier.</value>
+  </data>
+  <data name="Suppliers_SendRequest" xml:space="preserve">
+    <value>Ipadala ang hiling</value>
+  </data>
+  <data name="Suppliers_RequestFailed" xml:space="preserve">
+    <value>Hindi naipadala ang connection request.</value>
+  </data>
+  <data name="Suppliers_RequestSentPending" xml:space="preserve">
+    <value>Naipadala ang connection request. Hinihintay ang pagsang-ayon ng supplier.</value>
+  </data>
+  <data name="Suppliers_IncomingBannerTitle" xml:space="preserve">
+    <value>May hinihintay na supplier connection request</value>
+  </data>
+  <data name="Suppliers_IncomingBannerBody" xml:space="preserve">
+    <value>{0} (na) negosyo ang gustong kumonekta sa inyo bilang supplier.</value>
+  </data>
+  <data name="Suppliers_IncomingCompact" xml:space="preserve">
+    <value>{0} (na) supplier request ang kailangan suriin</value>
+  </data>
+  <data name="Suppliers_ReviewIncoming" xml:space="preserve">
+    <value>Suriin ang connection requests</value>
+  </data>
+  <data name="Suppliers_BuyersSection" xml:space="preserve">
+    <value>Mga connected buyer</value>
+  </data>
+  <data name="Suppliers_BuyersHelp" xml:space="preserve">
+    <value>Mga negosyo na gumagamit sa organisasyon mo bilang Connected ExItS supplier.</value>
+  </data>
+  <data name="Suppliers_NoBuyersTitle" xml:space="preserve">
+    <value>Wala pang connected buyer</value>
+  </data>
+  <data name="Suppliers_NoBuyersMessage" xml:space="preserve">
+    <value>Kapag tinanggap mo ang supplier connection request, lalabas dito ang negosyo.</value>
+  </data>
+  <data name="Suppliers_ColBuyer" xml:space="preserve">
+    <value>Negosyo ng buyer</value>
+  </data>
+  <data name="Suppliers_ColConnectedSince" xml:space="preserve">
+    <value>Nakakonekta mula</value>
+  </data>
+  <data name="Suppliers_ColDirection" xml:space="preserve">
+    <value>Ugnayan</value>
+  </data>
+  <data name="Suppliers_BuyerDirection" xml:space="preserve">
+    <value>Sila ang bumibili mula sa negosyo mo.</value>
+  </data>
+  <data name="Suppliers_BuyerNotCustomerNote" xml:space="preserve">
+    <value>Ang connected buyers ay org relationship, hindi Customers. Tahasang Add as customer ay deferred.</value>
+  </data>
+  <data name="Suppliers_UnknownBusiness" xml:space="preserve">
+    <value>Connected na negosyo</value>
+  </data>
+  <data name="Suppliers_ViewBuyer" xml:space="preserve">
+    <value>Tingnan</value>
+  </data>
+  <data name="Suppliers_BackToBuyers" xml:space="preserve">
+    <value>Bumalik sa connected buyers</value>
+  </data>
+  <data name="Privacy_Action_StaffAccess" xml:space="preserve">
+    <value>Staff access review</value>
+  </data>
+  <data name="Privacy_Evidence_SupplierScope" xml:space="preserve">
+    <value>Connected supplier organization scope rules</value>
+  </data>
+  <data name="Privacy_LegalVerification_Default" xml:space="preserve">
+    <value>Nagbibigay ang ExItS ng technical at operational privacy safeguards, pero hindi ito legal o NPC certification ng inyong negosyo.</value>
+  </data>
+  <data name="Privacy_ActionsSection" xml:space="preserve">
+    <value>Privacy setup ng inyong negosyo</value>
+  </data>
+  <data name="Privacy_Safeguard_PersonalOrgBoundary" xml:space="preserve">
+    <value>Personal vs organization data boundaries</value>
+  </data>
+  <data name="Privacy_ResponsibilitySection" xml:space="preserve">
+    <value>Sino ang namamahala</value>
+  </data>
+  <data name="Privacy_Safeguard_SupplierScope" xml:space="preserve">
+    <value>Organization-scoped na supplier connections</value>
+  </data>
+  <data name="Privacy_Status_NotVerified" xml:space="preserve">
+    <value>Hindi verified</value>
+  </data>
+  <data name="Privacy_Action_VendorAwareness_Detail" xml:space="preserve">
+    <value>Alamin kung aling connected suppliers o processors ang tumatanggap ng business data.</value>
+  </data>
+  <data name="Privacy_ReadinessLabel" xml:space="preserve">
+    <value>Privacy readiness</value>
+  </data>
+  <data name="Privacy_AttentionTitle" xml:space="preserve">
+    <value>Kailangan ng pansin ang privacy setup</value>
+  </data>
+  <data name="Privacy_ManagedBy_Business" xml:space="preserve">
+    <value>Pinamamahalaan ng inyong negosyo</value>
+  </data>
+  <data name="Privacy_SafeguardsSection" xml:space="preserve">
+    <value>Mga data protection safeguard</value>
+  </data>
+  <data name="Privacy_Status_ReviewRecommended" xml:space="preserve">
+    <value>Inirerekomendang i-review</value>
+  </data>
+  <data name="Privacy_Status_InProgress" xml:space="preserve">
+    <value>Kasalukuyang ginagawa</value>
+  </data>
+  <data name="Privacy_Evidence_Roles" xml:space="preserve">
+    <value>POS role at capability evaluation</value>
+  </data>
+  <data name="Privacy_Action_CustomerData" xml:space="preserve">
+    <value>Gabay sa customer-data handling</value>
+  </data>
+  <data name="Privacy_Action_StaffAccess_Detail" xml:space="preserve">
+    <value>I-review kung sino sa staff ang makakakita ng customer at sales information.</value>
+  </data>
+  <data name="Privacy_Safeguard_OrgIsolation" xml:space="preserve">
+    <value>Organization-isolated na business data</value>
+  </data>
+  <data name="Privacy_Subtitle" xml:space="preserve">
+    <value>Tingnan ang privacy safeguards para sa inyong negosyo at anumang aksyon na kailangan pa.</value>
+  </data>
+  <data name="Privacy_NpcLabel" xml:space="preserve">
+    <value>NPC verification</value>
+  </data>
+  <data name="Privacy_Action_SalesDocumentEducation_Detail" xml:space="preserve">
+    <value>Owner acknowledgment na ang Transaction Summary ay hindi BIR tax document issuance.</value>
+  </data>
+  <data name="Nav_PrivacyDataProtection" xml:space="preserve">
+    <value>Privacy at Data Protection</value>
+  </data>
+  <data name="Privacy_Safeguard_AuthSession" xml:space="preserve">
+    <value>Protektadong account at session access</value>
+  </data>
+  <data name="Privacy_Status_Complete" xml:space="preserve">
+    <value>Kumpleto</value>
+  </data>
+  <data name="Privacy_SafeguardsSubtitle" xml:space="preserve">
+    <value>Mga technical control na ibinibigay ng ExItS para sa organization workspace.</value>
+  </data>
+  <data name="Privacy_NoCertificationClaim" xml:space="preserve">
+    <value>Hindi ito legal o NPC certification ng inyong negosyo.</value>
+  </data>
+  <data name="Privacy_Evidence_DeviceSecrets" xml:space="preserve">
+    <value>Secure token store / device-bound grants</value>
+  </data>
+  <data name="Privacy_Title" xml:space="preserve">
+    <value>Privacy at Data Protection</value>
+  </data>
+  <data name="Privacy_Evidence_OrgIsolation" xml:space="preserve">
+    <value>Organization database at authorization scope</value>
+  </data>
+  <data name="Privacy_Action_CustomerData_Detail" xml:space="preserve">
+    <value>Ituring na business-confidential ang customer contact at credit information.</value>
+  </data>
+  <data name="Privacy_ReviewAction" xml:space="preserve">
+    <value>I-review</value>
+  </data>
+  <data name="Privacy_LegalStatusLabel" xml:space="preserve">
+    <value>Legal verification</value>
+  </data>
+  <data name="Privacy_Action_VendorAwareness" xml:space="preserve">
+    <value>Vendor / processor awareness</value>
+  </data>
+  <data name="Privacy_Status_ActionNeeded" xml:space="preserve">
+    <value>Kailangan ng aksyon</value>
+  </data>
+  <data name="Privacy_LegalSection" xml:space="preserve">
+    <value>Privacy / legal verification</value>
+  </data>
+  <data name="Privacy_ActionsSubtitle" xml:space="preserve">
+    <value>Mga item na dapat i-review o kumpletuhin ng inyong negosyo.</value>
+  </data>
+  <data name="Privacy_ManagedBy_Platform" xml:space="preserve">
+    <value>Pinamamahalaan ng ExItS</value>
+  </data>
+  <data name="Privacy_Action_SalesDocumentEducation" xml:space="preserve">
+    <value>Sales document information acknowledgment</value>
+  </data>
+  <data name="Privacy_ResponsibilitySubtitle" xml:space="preserve">
+    <value>Platform safeguards kumpara sa responsibilidad ng inyong negosyo.</value>
+  </data>
+  <data name="Privacy_Responsibility_PlatformGovernance" xml:space="preserve">
+    <value>Platform privacy governance</value>
+  </data>
+  <data name="Privacy_LegalSubtitle" xml:space="preserve">
+    <value>Legal at NPC verification status para sa inyong organization.</value>
+  </data>
+  <data name="Privacy_Responsibility_AccountSecurity" xml:space="preserve">
+    <value>Account security</value>
+  </data>
+  <data name="Privacy_Evidence_AuthSession" xml:space="preserve">
+    <value>Authenticated session at offline PIN grant model</value>
+  </data>
+  <data name="Privacy_LoadFailed" xml:space="preserve">
+    <value>Hindi ma-load ang privacy readiness.</value>
+  </data>
+  <data name="Privacy_Evidence_PersonalOrgBoundary" xml:space="preserve">
+    <value>Personal/organization identity separation</value>
+  </data>
+  <data name="Privacy_DeniedMessage" xml:space="preserve">
+    <value>Wala kang access sa organization privacy readiness.</value>
+  </data>
+  <data name="Privacy_Responsibility_CustomerInfo" xml:space="preserve">
+    <value>Customer information na inilagay ng inyong staff</value>
+  </data>
+  <data name="Privacy_Status_Implemented" xml:space="preserve">
+    <value>Implemented</value>
+  </data>
+  <data name="Privacy_Safeguard_Roles" xml:space="preserve">
+    <value>Mga user role at permission</value>
+  </data>
+  <data name="Privacy_Responsibility_StaffPermissions" xml:space="preserve">
+    <value>Staff permissions</value>
+  </data>
+  <data name="Privacy_Safeguard_DeviceSecrets" xml:space="preserve">
+    <value>Restricted device secrets sa POS</value>
+  </data>
 </root>

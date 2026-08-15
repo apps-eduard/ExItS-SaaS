@@ -567,6 +567,7 @@ public sealed class OrgWebShellState
             "reports" or "sales" => Can(UtangCapability.ViewReports) || Can(UtangCapability.ViewDashboard)
                                     || IsOrgOwner || IsOrgManager,
             "settings" => Can(UtangCapability.ViewOperationalSetup) || IsOrgOwner || IsOrgManager,
+            "privacy" => Can(UtangCapability.ViewOperationalSetup) || IsOrgOwner || IsOrgManager,
             _ => false
         };
     }

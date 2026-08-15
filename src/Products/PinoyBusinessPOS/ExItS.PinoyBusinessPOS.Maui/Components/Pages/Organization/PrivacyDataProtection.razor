@@ -1,0 +1,152 @@
+@page "/org/privacy"
+@using ExItS.DesignSystem.Components.Internal
+@using ExItS.PinoyBusinessPOS.Application.Privacy
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject ICurrentUserContext CurrentUser
+@inject IOrganizationOwnerProbe OrganizationOwner
+@inject IPosPrivacyReadinessClient Privacy
+@inject IUtangCapabilityEvaluator Capabilities
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else if (!_authorized)
+{
+    <Page>
+        <ErrorState Title="@L["Access_DeniedTitle"]" Message="@L["Privacy_DeniedMessage"]" />
+    </Page>
+}
+else
+{
+    <div class="pos-dash">
+        <Page>
+            <header class="pos-dash__header">
+                <h1 class="pos-dash__title">@L["Privacy_Title"]</h1>
+                <p class="pos-dash__subtitle">@L["Privacy_Subtitle"]</p>
+            </header>
+
+            @if (!string.IsNullOrWhiteSpace(_error))
+            {
+                <Alert Tone="AlertTone.Danger" Title="@L["Privacy_LoadFailed"]" Message="@_error" />
+            }
+            else if (_dto is not null)
+            {
+                <Alert Tone="AlertTone.Info"
+                       Title="@L["Privacy_ReadinessLabel"]"
+                       Message="@($"{StatusLabel(_dto.OverallReadiness)}. {L["Privacy_NoCertificationClaim"]}")" />
+
+                <Section Title="@L["Privacy_SafeguardsSection"]">
+                    <ul class="pos-muted">
+                        @foreach (var item in _dto.TechnicalSafeguards)
+                        {
+                            <li>
+                                <strong>@L[item.TitleKey]</strong> — @StatusLabel(item.Status)
+                                <span>(@ManagedByLabel(item.ManagedBy))</span>
+                            </li>
+                        }
+                    </ul>
+                </Section>
+
+                <Section Title="@L["Privacy_ActionsSection"]">
+                    @foreach (var action in _dto.BusinessActions.Where(a => !a.OwnerOnly || _isOwner))
+                    {
+                        <p>
+                            <strong>@L[action.TitleKey]</strong> — @StatusLabel(action.Status)
+                            <br />
+                            <span class="pos-muted">@L[action.DetailKey]</span>
+                        </p>
+                        @if (action.NeedsAttention && action.Code == "SALES_DOCUMENT_EDUCATION")
+                        {
+                            <button type="button" class="pos-btn pos-btn--primary" @onclick="GoSalesDocumentEducation">
+                                @L["Privacy_ReviewAction"]
+                            </button>
+                        }
+                    }
+                </Section>
+
+                <Section Title="@L["Privacy_ResponsibilitySection"]">
+                    <ul class="pos-muted">
+                        @foreach (var item in _dto.Responsibilities)
+                        {
+                            <li><strong>@L[item.TitleKey]</strong> — @ManagedByLabel(item.ManagedBy)</li>
+                        }
+                    </ul>
+                </Section>
+
+                <Section Title="@L["Privacy_LegalSection"]">
+                    <Alert Tone="AlertTone.Warning"
+                           Title="@L["Privacy_LegalStatusLabel"]"
+                           Message="@($"{StatusLabel(_dto.LegalVerificationStatus)}. {L[_dto.LegalVerificationMessageKey]}")" />
+                    <p class="pos-muted">@L["Privacy_NpcLabel"]: @StatusLabel(_dto.NpcVerificationStatus)</p>
+                </Section>
+            }
+        </Page>
+    </div>
+}
+
+@code {
+    private bool _ready;
+    private bool _authorized;
+    private bool _isOwner;
+    private string? _error;
+    private OrganizationPrivacyReadinessDto? _dto;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (CurrentUser.Session?.OrganizationId is null)
+        {
+            Nav.NavigateTo("/signin", replace: true);
+            return;
+        }
+
+        if (!Gate.CanEnterProtectedShell)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        _isOwner = await OrganizationOwner.IsExactOrganizationOwnerAsync(
+            CurrentUser.Session,
+            CurrentUser.Session.OrganizationId.Value);
+
+        _authorized = Capabilities.IsAllowed(UtangCapability.ViewOperationalSetup) || _isOwner;
+        if (!_authorized)
+        {
+            _ready = true;
+            return;
+        }
+
+        var result = await Privacy.GetAsync();
+        if (!result.IsSuccess || result.Data is null)
+        {
+            _error = result.Error?.Detail ?? result.Error?.Title ?? L["Privacy_LoadFailed"];
+        }
+        else
+        {
+            _dto = result.Data;
+        }
+
+        _ready = true;
+    }
+
+    private void GoSalesDocumentEducation() => Nav.NavigateTo("/sales-document-education");
+
+    private string StatusLabel(string status) => status switch
+    {
+        OrganizationPrivacyReadinessStatuses.Implemented => L["Privacy_Status_Implemented"],
+        OrganizationPrivacyReadinessStatuses.ActionNeeded => L["Privacy_Status_ActionNeeded"],
+        OrganizationPrivacyReadinessStatuses.ReviewRecommended => L["Privacy_Status_ReviewRecommended"],
+        OrganizationPrivacyReadinessStatuses.Complete => L["Privacy_Status_Complete"],
+        OrganizationPrivacyReadinessStatuses.NotVerified => L["Privacy_Status_NotVerified"],
+        OrganizationPrivacyReadinessStatuses.InProgress => L["Privacy_Status_InProgress"],
+        _ => status
+    };
+
+    private string ManagedByLabel(string managedBy) =>
+        string.Equals(managedBy, OrganizationPrivacyReadinessStatuses.ManagedByPlatform, StringComparison.Ordinal)
+            ? L["Privacy_ManagedBy_Platform"]
+            : L["Privacy_ManagedBy_Business"];
+}

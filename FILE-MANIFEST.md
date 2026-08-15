@@ -120,6 +120,7 @@ docs/phases/phase-25-organization-web-admin.md
 docs/phases/phase-26-sales-documents-compliance-readiness.md
 docs/phases/phase-21-privacy-compliance-and-regulatory-readiness.md
 docs/reports/P21-foundation-privacy-compliance-workspace.md
+docs/reports/P21-privacy-readiness-visibility-product-status-ui.md
 docs/reports/P21-WP01-requirements-and-privacy-inventory.md
 docs/reports/P21-WP11-post-phase21-privacy-impact-refresh.md
 docs/compliance/post-phase21-privacy-impact-refresh.md

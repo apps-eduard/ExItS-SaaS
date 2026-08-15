@@ -10,9 +10,13 @@
         "NotStarted" => L["PrivacyCompliance_Status_NotStarted"],
         "InProgress" => L["PrivacyCompliance_Status_InProgress"],
         "ReadyForReview" => L["PrivacyCompliance_Status_ReadyForReview"],
-        "Approved" => L["PrivacyCompliance_Status_Approved"],
+        "Approved" => L["PrivacyCompliance_Status_VerifiedInternally"],
         "NeedsUpdate" => L["PrivacyCompliance_Status_NeedsUpdate"],
         "NotApplicable" => L["PrivacyCompliance_Status_NotApplicable"],
+        "ActionNeeded" => L["PrivacyCompliance_Status_ActionNeeded"],
+        "VerifiedInternally" => L["PrivacyCompliance_Status_VerifiedInternally"],
+        "ExternalLegalReviewRequired" => L["PrivacyCompliance_Status_ExternalLegalReview"],
+        "NotAssessed" => L["PrivacyCompliance_Status_NotAssessed"],
         "Required" => L["PrivacyCompliance_Level_Required"],
         "Conditional" => L["PrivacyCompliance_Level_Conditional"],
         "Optional" => L["PrivacyCompliance_Level_Optional"],
@@ -21,14 +25,13 @@
 
     private string Color => Value switch
     {
-        "Approved" => "success",
-        "InProgress" or "ReadyForReview" => "processing",
-        "NeedsUpdate" => "warning",
-        "NotStarted" => "default",
+        "Approved" or "VerifiedInternally" or "ReadyForReview" => "processing",
+        "InProgress" => "processing",
+        "NeedsUpdate" or "ActionNeeded" or "ExternalLegalReviewRequired" => "warning",
+        "NotStarted" or "NotAssessed" or "NotApplicable" => "default",
         "Required" => "error",
         "Conditional" => "gold",
         "Optional" => "default",
-        "NotApplicable" => "default",
         _ => "default"
     };
 }

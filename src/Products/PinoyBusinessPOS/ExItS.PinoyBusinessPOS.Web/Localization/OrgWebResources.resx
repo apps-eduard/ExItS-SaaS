@@ -1,245 +1,885 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
-  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
-  <resheader name="version"><value>2.0</value></resheader>
-  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
-  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
-  <data name="Brand" xml:space="preserve"><value>Organization Admin</value></data>
-  <data name="Nav_Overview" xml:space="preserve"><value>Overview</value></data>
-  <data name="Nav_Products" xml:space="preserve"><value>Products</value></data>
-  <data name="Nav_Inventory" xml:space="preserve"><value>Inventory</value></data>
-  <data name="Nav_Customers" xml:space="preserve"><value>Customers</value></data>
-  <data name="Nav_Branches" xml:space="preserve"><value>Branches</value></data>
-  <data name="Nav_Staff" xml:space="preserve"><value>Staff</value></data>
-  <data name="Nav_Reports" xml:space="preserve"><value>Reports</value></data>
-  <data name="Nav_Operations" xml:space="preserve"><value>Operations</value></data>
-  <data name="Nav_Settings" xml:space="preserve"><value>Settings</value></data>
-  <data name="Nav_More" xml:space="preserve"><value>More</value></data>
-  <data name="Nav_Subscription" xml:space="preserve"><value>Subscription</value></data>
-  <data name="Boundary_NotPos" xml:space="preserve"><value>Organization Web Admin is not a POS checkout client. Operational selling remains in the POS app.</value></data>
-  <data name="SalesDocument_EducationTitle" xml:space="preserve"><value>About your sales records</value></data>
-  <data name="SalesDocument_EducationBody1" xml:space="preserve"><value>ExItS currently creates a Transaction Summary for business and customer record purposes.</value></data>
-  <data name="SalesDocument_EducationBody2" xml:space="preserve"><value>The Transaction Summary is not presented as an Official Receipt or a BIR-authorized tax invoice.</value></data>
-  <data name="SalesDocument_EducationBody3" xml:space="preserve"><value>Tax settings used for calculations do not enable tax-document issuance.</value></data>
-  <data name="SalesDocument_EducationBody4" xml:space="preserve"><value>Your acknowledgment records that you reviewed this information. It does not enable BIR invoicing.</value></data>
-  <data name="SalesDocument_EducationAckCheckbox" xml:space="preserve"><value>I understand how ExItS currently handles sales records.</value></data>
-  <data name="SalesDocument_EducationContinue" xml:space="preserve"><value>Continue</value></data>
-  <data name="SalesDocument_EducationActionNeeded" xml:space="preserve"><value>Review needed</value></data>
-  <data name="SalesDocument_EducationAcknowledged" xml:space="preserve"><value>Acknowledged</value></data>
-  <data name="SalesDocument_EducationOwnerRequired" xml:space="preserve"><value>The business owner needs to review the sales-document information before setup can continue.</value></data>
-  <data name="SalesDocument_BirInvoicingNotEnabled" xml:space="preserve"><value>BIR invoicing: Not enabled for this business</value></data>
-  <data name="SalesDocument_CurrentDocument" xml:space="preserve"><value>Current document: Transaction Summary</value></data>
-  <data name="SalesDocument_ComplianceTitle" xml:space="preserve"><value>BIR invoicing support</value></data>
-  <data name="SalesDocument_ComplianceReview" xml:space="preserve"><value>Compliance review</value></data>
-  <data name="SalesDocument_ComplianceIssuance" xml:space="preserve"><value>Tax-document issuance</value></data>
-  <data name="SalesDocument_ComplianceIssuanceEnabled" xml:space="preserve"><value>Capability enabled (implementation still unavailable)</value></data>
-  <data name="SalesDocument_ComplianceIssuanceDisabled" xml:space="preserve"><value>Disabled</value></data>
-  <data name="SalesDocument_ComplianceNeedHelp" xml:space="preserve"><value>Need BIR-enabled invoicing through ExItS? Contact ExItS Support by recording a request for this business.</value></data>
-  <data name="SalesDocument_ComplianceContactSupport" xml:space="preserve"><value>Contact ExItS Support</value></data>
-  <data name="SalesDocument_ComplianceRequestRecorded" xml:space="preserve"><value>A support request is already recorded for this business.</value></data>
-  <data name="Branches_Title" xml:space="preserve"><value>Branches</value></data>
-  <data name="Branches_Subtitle" xml:space="preserve"><value>Manage your business locations and branch settings.</value></data>
-  <data name="Branches_Add" xml:space="preserve"><value>Add branch</value></data>
-  <data name="Branches_Edit" xml:space="preserve"><value>Edit branch</value></data>
-  <data name="Branches_Archive" xml:space="preserve"><value>Archive</value></data>
-  <data name="Branches_Primary" xml:space="preserve"><value>Primary</value></data>
-  <data name="Branches_Capacity" xml:space="preserve"><value>Capacity {0} / {1}. Archive branches with history instead of deleting them.</value></data>
-  <data name="Branches_EmptyTitle" xml:space="preserve"><value>No branches yet</value></data>
-  <data name="Branches_EmptyMessage" xml:space="preserve"><value>Add your first branch to organize your business locations.</value></data>
-  <data name="Branches_ColName" xml:space="preserve"><value>Name</value></data>
-  <data name="Branches_ColCode" xml:space="preserve"><value>Code</value></data>
-  <data name="Branches_ColAddress" xml:space="preserve"><value>Address</value></data>
-  <data name="Branches_ColStatus" xml:space="preserve"><value>Status</value></data>
-  <data name="Branches_FieldCode" xml:space="preserve"><value>Code</value></data>
-  <data name="Branches_FieldName" xml:space="preserve"><value>Name</value></data>
-  <data name="Branches_FieldAddress" xml:space="preserve"><value>Address</value></data>
-  <data name="Branches_ValidationRequired" xml:space="preserve"><value>Code and name are required.</value></data>
-  <data name="Branches_Saved" xml:space="preserve"><value>Branch saved.</value></data>
-  <data name="Branches_Archived" xml:space="preserve"><value>Branch archived.</value></data>
-  <data name="Common_Edit" xml:space="preserve"><value>Edit</value></data>
-  <data name="Common_Save" xml:space="preserve"><value>Save</value></data>
-  <data name="Common_Cancel" xml:space="preserve"><value>Cancel</value></data>
-  <data name="Error_SessionExpired" xml:space="preserve"><value>Your session has expired. Please sign in again.</value></data>
-  <data name="Error_GenericLoad" xml:space="preserve"><value>We couldn't load this information. Try again.</value></data>
-  <data name="Error_Permission" xml:space="preserve"><value>You don't have permission to view this section.</value></data>
-  <data name="Common_Retry" xml:space="preserve"><value>Try again</value></data>
-  <data name="Common_Filter" xml:space="preserve"><value>Filter</value></data>
-  <data name="Common_Search" xml:space="preserve"><value>Search</value></data>
-  <data name="Common_Clear" xml:space="preserve"><value>Clear</value></data>
-  <data name="Common_Status" xml:space="preserve"><value>Status</value></data>
-  <data name="Common_Actions" xml:space="preserve"><value>Actions</value></data>
-  <data name="Common_Unavailable" xml:space="preserve"><value>Unavailable</value></data>
-  <data name="Overview_Title" xml:space="preserve"><value>Overview</value></data>
-  <data name="Overview_Subtitle" xml:space="preserve"><value>See how your business is doing today.</value></data>
-  <data name="Overview_SectionToday" xml:space="preserve"><value>Today</value></data>
-  <data name="Overview_SectionInventory" xml:space="preserve"><value>Inventory</value></data>
-  <data name="Overview_SectionOperations" xml:space="preserve"><value>Operations</value></data>
-  <data name="Overview_SectionBusiness" xml:space="preserve"><value>Business</value></data>
-  <data name="Profile_Title" xml:space="preserve"><value>Business profile</value></data>
-  <data name="Profile_Subtitle" xml:space="preserve"><value>Update how your business appears to staff and customers.</value></data>
-  <data name="Devices_Title" xml:space="preserve"><value>Devices</value></data>
-  <data name="Devices_Subtitle" xml:space="preserve"><value>Manage POS terminals registered to this business.</value></data>
-  <data name="Devices_EmptyTitle" xml:space="preserve"><value>No devices yet</value></data>
-  <data name="Devices_EmptyMessage" xml:space="preserve"><value>Register a POS device from the mobile app to see it here.</value></data>
-  <data name="Registers_Title" xml:space="preserve"><value>Registers</value></data>
-  <data name="Registers_Subtitle" xml:space="preserve"><value>Cash registers used for cashier shifts on POS.</value></data>
-  <data name="Registers_EmptyTitle" xml:space="preserve"><value>No registers yet</value></data>
-  <data name="Registers_EmptyMessage" xml:space="preserve"><value>Create a register so cashiers can open shifts on POS.</value></data>
-  <data name="Staff_Title" xml:space="preserve"><value>Staff</value></data>
-  <data name="Staff_Subtitle" xml:space="preserve"><value>Invite and manage people who work in this business.</value></data>
-  <data name="Staff_Invite" xml:space="preserve"><value>Invite staff</value></data>
-  <data name="Staff_EmptyTitle" xml:space="preserve"><value>No staff found</value></data>
-  <data name="Staff_EmptyMessage" xml:space="preserve"><value>Invite your first team member to help run this business.</value></data>
-  <data name="StaffInvite_Title" xml:space="preserve"><value>Invite staff</value></data>
-  <data name="StaffInvite_Subtitle" xml:space="preserve"><value>Create a staff login for this organization. Personal accounts are never converted into staff.</value></data>
-  <data name="Roles_Title" xml:space="preserve"><value>Roles</value></data>
-  <data name="Roles_Subtitle" xml:space="preserve"><value>See what each POS role can do in your store.</value></data>
-  <data name="Customers_Title" xml:space="preserve"><value>Customers</value></data>
-  <data name="Customers_Subtitle" xml:space="preserve"><value>Manage business customers and credit relationships.</value></data>
-  <data name="Customers_EmptyTitle" xml:space="preserve"><value>No customers yet</value></data>
-  <data name="Customers_EmptyMessage" xml:space="preserve"><value>Customers appear here after sales or when you add them on POS.</value></data>
-  <data name="Products_Title" xml:space="preserve"><value>Products</value></data>
-  <data name="Products_Subtitle" xml:space="preserve"><value>Manage the items you sell.</value></data>
-  <data name="Products_New" xml:space="preserve"><value>New product</value></data>
-  <data name="Products_EmptyTitle" xml:space="preserve"><value>No products yet</value></data>
-  <data name="Products_EmptyMessage" xml:space="preserve"><value>Add a product or import from the Global Catalog.</value></data>
-  <data name="ProductEdit_NewTitle" xml:space="preserve"><value>New product</value></data>
-  <data name="ProductEdit_EditTitle" xml:space="preserve"><value>Edit product</value></data>
-  <data name="ProductEdit_Subtitle" xml:space="preserve"><value>Set product details for catalog and inventory. Selling stays on POS.</value></data>
-  <data name="Categories_Title" xml:space="preserve"><value>Categories</value></data>
-  <data name="Categories_Subtitle" xml:space="preserve"><value>Organize products into categories.</value></data>
-  <data name="Categories_EmptyTitle" xml:space="preserve"><value>No categories yet</value></data>
-  <data name="Categories_EmptyMessage" xml:space="preserve"><value>Create categories to group products in your catalog.</value></data>
-  <data name="GlobalCatalog_Title" xml:space="preserve"><value>Global Catalog</value></data>
-  <data name="GlobalCatalog_Subtitle" xml:space="preserve"><value>Browse published products and import them into your catalog.</value></data>
-  <data name="Stock_Title" xml:space="preserve"><value>Stock</value></data>
-  <data name="Stock_Subtitle" xml:space="preserve"><value>See stock levels and inventory activity.</value></data>
-  <data name="Stock_EmptyTitle" xml:space="preserve"><value>No stock records found</value></data>
-  <data name="Stock_EmptyMessage" xml:space="preserve"><value>Stock appears after products are tracked and receive inventory.</value></data>
-  <data name="Transfers_Title" xml:space="preserve"><value>Transfers</value></data>
-  <data name="Transfers_Subtitle" xml:space="preserve"><value>Move inventory between branches.</value></data>
-  <data name="Transfers_EmptyTitle" xml:space="preserve"><value>No transfers yet</value></data>
-  <data name="Transfers_EmptyMessage" xml:space="preserve"><value>Create a transfer when you need to move stock between locations.</value></data>
-  <data name="Lots_Title" xml:space="preserve"><value>Expiration</value></data>
-  <data name="Lots_Subtitle" xml:space="preserve"><value>Track lot expiry dates and quantities on hand.</value></data>
-  <data name="Lots_EmptyTitle" xml:space="preserve"><value>No lots found</value></data>
-  <data name="Lots_EmptyMessage" xml:space="preserve"><value>Lots appear for products that track expiration.</value></data>
-  <data name="SalesHistory_Title" xml:space="preserve"><value>Sales history</value></data>
-  <data name="SalesHistory_Subtitle" xml:space="preserve"><value>Review completed sales and transaction summaries.</value></data>
-  <data name="SalesHistory_EmptyTitle" xml:space="preserve"><value>No sales found</value></data>
-  <data name="SalesHistory_EmptyMessage" xml:space="preserve"><value>Completed POS sales will appear here for review.</value></data>
-  <data name="SalesHistory_ViewSummary" xml:space="preserve"><value>View Transaction Summary</value></data>
-  <data name="SalesReport_Title" xml:space="preserve"><value>Sales report</value></data>
-  <data name="SalesReport_Subtitle" xml:space="preserve"><value>Summarize sales by date range and branch.</value></data>
-  <data name="InventoryReport_Title" xml:space="preserve"><value>Inventory report</value></data>
-  <data name="InventoryReport_Subtitle" xml:space="preserve"><value>See low-stock and stock status summaries.</value></data>
-  <data name="Shifts_Title" xml:space="preserve"><value>Shifts</value></data>
-  <data name="Shifts_Subtitle" xml:space="preserve"><value>Inspect cashier shifts and cash counts. Opening and closing stays on POS.</value></data>
-  <data name="Shifts_EmptyTitle" xml:space="preserve"><value>No shifts found</value></data>
-  <data name="Shifts_EmptyMessage" xml:space="preserve"><value>Shift history appears after cashiers open shifts on POS.</value></data>
-  <data name="ShiftsReport_Title" xml:space="preserve"><value>Cash / shift report</value></data>
-  <data name="ShiftsReport_Subtitle" xml:space="preserve"><value>Compare expected and counted cash. Skipped counts stay blank — they are not zero.</value></data>
-  <data name="Utang_Title" xml:space="preserve"><value>Business credit</value></data>
-  <data name="Utang_Subtitle" xml:space="preserve"><value>Review outstanding business credit balances.</value></data>
-  <data name="Utang_EmptyTitle" xml:space="preserve"><value>No credit balances</value></data>
-  <data name="Utang_EmptyMessage" xml:space="preserve"><value>Customer credit balances appear when business credit is used on POS.</value></data>
-  <data name="Settings_Title" xml:space="preserve"><value>Operational settings</value></data>
-  <data name="Settings_Subtitle" xml:space="preserve"><value>Configure POS and cash-handling rules for future shifts.</value></data>
-  <data name="Subscription_Title" xml:space="preserve"><value>Subscription</value></data>
-  <data name="Subscription_Subtitle" xml:space="preserve"><value>View your current plan and entitlements.</value></data>
-  <data name="Ownership_Title" xml:space="preserve"><value>Ownership</value></data>
-  <data name="Ownership_Subtitle" xml:space="preserve"><value>Transfer ownership of this business to another ExItS member.</value></data>
-  <data name="Notifications_Title" xml:space="preserve"><value>Notifications</value></data>
-  <data name="Notifications_Subtitle" xml:space="preserve"><value>Organization alerts for managers and owners, including supplier connections.</value></data>
-  <data name="Notifications_EmptyTitle" xml:space="preserve"><value>No notifications</value></data>
-  <data name="Notifications_EmptyMessage" xml:space="preserve"><value>Management alerts will appear here when available.</value></data>
-  <data name="Notifications_FilterUnread" xml:space="preserve"><value>Unread</value></data>
-  <data name="Notifications_FilterAll" xml:space="preserve"><value>All</value></data>
-  <data name="Notifications_Accept" xml:space="preserve"><value>Accept</value></data>
-  <data name="Notifications_Decline" xml:space="preserve"><value>Decline</value></data>
-  <data name="Notifications_MarkRead" xml:space="preserve"><value>Mark read</value></data>
-  <data name="Notifications_Open" xml:space="preserve"><value>Open</value></data>
-  <data name="Notifications_StatusConnected" xml:space="preserve"><value>Connected</value></data>
-  <data name="Notifications_StatusDeclined" xml:space="preserve"><value>Declined</value></data>
-  <data name="Notifications_StatusUnavailable" xml:space="preserve"><value>No longer available</value></data>
-  <data name="Notifications_ActionNeeded" xml:space="preserve"><value>Action needed</value></data>
-  <data name="Notifications_Aria" xml:space="preserve"><value>Notifications</value></data>
-  <data name="Notifications_AriaUnread" xml:space="preserve"><value>Notifications, {0} unread</value></data>
-  <data name="SelectOrg_Title" xml:space="preserve"><value>Select organization</value></data>
-  <data name="SelectOrg_Subtitle" xml:space="preserve"><value>Choose which business workspace to manage.</value></data>
-  <data name="SalesDocuments_Subtitle" xml:space="preserve"><value>Review how sales documents currently work for this business.</value></data>
-  <data name="Nav_Business" xml:space="preserve"><value>Business</value></data>
-  <data name="Nav_People" xml:space="preserve"><value>People</value></data>
-  <data name="Nav_Catalog" xml:space="preserve"><value>Catalog</value></data>
-  <data name="Nav_Sales" xml:space="preserve"><value>Sales</value></data>
-  <data name="Nav_Devices" xml:space="preserve"><value>Devices</value></data>
-  <data name="Nav_Registers" xml:space="preserve"><value>Registers</value></data>
-  <data name="Nav_Profile" xml:space="preserve"><value>Business profile</value></data>
-  <data name="Nav_Ownership" xml:space="preserve"><value>Ownership</value></data>
-  <data name="Nav_Alerts" xml:space="preserve"><value>Alerts</value></data>
-  <data name="Nav_Roles" xml:space="preserve"><value>Roles</value></data>
-  <data name="Nav_OperationalSettings" xml:space="preserve"><value>Operational settings</value></data>
-  <data name="Nav_Suppliers" xml:space="preserve"><value>Suppliers</value></data>
-  <data name="Nav_SupplierRequests" xml:space="preserve"><value>Supplier requests</value></data>
-  <data name="Nav_ConnectedBuyers" xml:space="preserve"><value>Connected buyers</value></data>
-  <data name="Suppliers_Title" xml:space="preserve"><value>Suppliers</value></data>
-  <data name="Suppliers_Subtitle" xml:space="preserve"><value>External suppliers and Connected ExItS supplier relationships.</value></data>
-  <data name="Suppliers_TabList" xml:space="preserve"><value>Suppliers</value></data>
-  <data name="Suppliers_TabRequests" xml:space="preserve"><value>Requests</value></data>
-  <data name="Suppliers_TabBuyers" xml:space="preserve"><value>Connected buyers</value></data>
-  <data name="Suppliers_ConnectExIts" xml:space="preserve"><value>Connect ExItS supplier</value></data>
-  <data name="Suppliers_EmptyTitle" xml:space="preserve"><value>No suppliers yet</value></data>
-  <data name="Suppliers_EmptyMessage" xml:space="preserve"><value>Add an external supplier or send a Connected ExItS connection request.</value></data>
-  <data name="Suppliers_ColName" xml:space="preserve"><value>Name</value></data>
-  <data name="Suppliers_ColType" xml:space="preserve"><value>Type</value></data>
-  <data name="Suppliers_ColStatus" xml:space="preserve"><value>Status</value></data>
-  <data name="Suppliers_ColConnection" xml:space="preserve"><value>Connection</value></data>
-  <data name="Suppliers_ColRequester" xml:space="preserve"><value>Requesting business</value></data>
-  <data name="Suppliers_ColPublicId" xml:space="preserve"><value>Public organization ID</value></data>
-  <data name="Suppliers_ColRequested" xml:space="preserve"><value>Requested</value></data>
-  <data name="Suppliers_ColSupplier" xml:space="preserve"><value>Supplier</value></data>
-  <data name="Suppliers_TypeConnected" xml:space="preserve"><value>Connected ExItS</value></data>
-  <data name="Suppliers_TypeExternal" xml:space="preserve"><value>External</value></data>
-  <data name="Suppliers_StatusConnected" xml:space="preserve"><value>Connected</value></data>
-  <data name="Suppliers_StatusPending" xml:space="preserve"><value>Pending</value></data>
-  <data name="Suppliers_StatusDeclined" xml:space="preserve"><value>Declined</value></data>
-  <data name="Suppliers_StatusDisconnected" xml:space="preserve"><value>Disconnected</value></data>
-  <data name="Suppliers_WaitingApproval" xml:space="preserve"><value>Waiting for supplier approval</value></data>
-  <data name="Suppliers_RequestDeclined" xml:space="preserve"><value>Request declined</value></data>
-  <data name="Suppliers_IncomingSection" xml:space="preserve"><value>Incoming requests</value></data>
-  <data name="Suppliers_SentSection" xml:space="preserve"><value>Sent requests</value></data>
-  <data name="Suppliers_NoIncomingTitle" xml:space="preserve"><value>No incoming requests</value></data>
-  <data name="Suppliers_NoIncomingMessage" xml:space="preserve"><value>When another ExItS business wants you as their supplier, the request appears here.</value></data>
-  <data name="Suppliers_NoSentTitle" xml:space="preserve"><value>No sent requests</value></data>
-  <data name="Suppliers_NoSentMessage" xml:space="preserve"><value>Connection requests you send will appear here with Pending, Connected, or Declined status.</value></data>
-  <data name="Suppliers_RequestingBusiness" xml:space="preserve"><value>Requesting business</value></data>
-  <data name="Suppliers_IncomingPlain" xml:space="preserve"><value>{0} wants to connect with your business as a supplier.</value></data>
-  <data name="Suppliers_Accept" xml:space="preserve"><value>Accept</value></data>
-  <data name="Suppliers_Decline" xml:space="preserve"><value>Decline</value></data>
-  <data name="Suppliers_ViewOnly" xml:space="preserve"><value>View only</value></data>
-  <data name="Suppliers_RespondFailed" xml:space="preserve"><value>The connection response could not be saved.</value></data>
-  <data name="Suppliers_ConnectTitle" xml:space="preserve"><value>Connect an ExItS supplier</value></data>
-  <data name="Suppliers_ConnectSubtitle" xml:space="preserve"><value>Scan or enter the supplier Business QR / organization ID. The supplier must accept before the connection becomes active.</value></data>
-  <data name="Suppliers_BusinessQrOrOrgId" xml:space="preserve"><value>Business QR or organization ID</value></data>
-  <data name="Suppliers_BusinessQrHint" xml:space="preserve"><value>ORG###### or Business QR payload</value></data>
-  <data name="Suppliers_BusinessQrRequired" xml:space="preserve"><value>Enter the supplier Business QR or organization ID.</value></data>
-  <data name="Suppliers_SendRequest" xml:space="preserve"><value>Send request</value></data>
-  <data name="Suppliers_RequestFailed" xml:space="preserve"><value>The connection request could not be sent.</value></data>
-  <data name="Suppliers_RequestSentPending" xml:space="preserve"><value>Connection request sent. Waiting for the supplier to accept.</value></data>
-  <data name="Suppliers_IncomingBannerTitle" xml:space="preserve"><value>Supplier connection request waiting</value></data>
-  <data name="Suppliers_IncomingBannerBody" xml:space="preserve"><value>{0} business(es) want to connect with you as their supplier.</value></data>
-  <data name="Suppliers_IncomingCompact" xml:space="preserve"><value>{0} supplier requests need your review</value></data>
-  <data name="Suppliers_ReviewIncoming" xml:space="preserve"><value>Review connection requests</value></data>
-  <data name="Suppliers_BuyersSection" xml:space="preserve"><value>Connected buyers</value></data>
-  <data name="Suppliers_BuyersHelp" xml:space="preserve"><value>Businesses that currently use your organization as their Connected ExItS supplier.</value></data>
-  <data name="Suppliers_NoBuyersTitle" xml:space="preserve"><value>No connected buyers yet</value></data>
-  <data name="Suppliers_NoBuyersMessage" xml:space="preserve"><value>When you accept a supplier connection request, that business appears here.</value></data>
-  <data name="Suppliers_ColBuyer" xml:space="preserve"><value>Buyer business</value></data>
-  <data name="Suppliers_ColConnectedSince" xml:space="preserve"><value>Connected since</value></data>
-  <data name="Suppliers_ColDirection" xml:space="preserve"><value>Relationship</value></data>
-  <data name="Suppliers_BuyerDirection" xml:space="preserve"><value>They buy from your business.</value></data>
-  <data name="Suppliers_BuyerNotCustomerNote" xml:space="preserve"><value>Connected buyers are organization relationships, not Customers. Explicit Add as customer is deferred.</value></data>
-  <data name="Suppliers_UnknownBusiness" xml:space="preserve"><value>Connected business</value></data>
-  <data name="Suppliers_ViewBuyer" xml:space="preserve"><value>View</value></data>
-  <data name="Suppliers_BackToBuyers" xml:space="preserve"><value>Back to connected buyers</value></data>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Brand" xml:space="preserve">
+    <value>Organization Admin</value>
+  </data>
+  <data name="Nav_Overview" xml:space="preserve">
+    <value>Overview</value>
+  </data>
+  <data name="Nav_Products" xml:space="preserve">
+    <value>Products</value>
+  </data>
+  <data name="Nav_Inventory" xml:space="preserve">
+    <value>Inventory</value>
+  </data>
+  <data name="Nav_Customers" xml:space="preserve">
+    <value>Customers</value>
+  </data>
+  <data name="Nav_Branches" xml:space="preserve">
+    <value>Branches</value>
+  </data>
+  <data name="Nav_Staff" xml:space="preserve">
+    <value>Staff</value>
+  </data>
+  <data name="Nav_Reports" xml:space="preserve">
+    <value>Reports</value>
+  </data>
+  <data name="Nav_Operations" xml:space="preserve">
+    <value>Operations</value>
+  </data>
+  <data name="Nav_Settings" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="Nav_More" xml:space="preserve">
+    <value>More</value>
+  </data>
+  <data name="Nav_Subscription" xml:space="preserve">
+    <value>Subscription</value>
+  </data>
+  <data name="Boundary_NotPos" xml:space="preserve">
+    <value>Organization Web Admin is not a POS checkout client. Operational selling remains in the POS app.</value>
+  </data>
+  <data name="SalesDocument_EducationTitle" xml:space="preserve">
+    <value>About your sales records</value>
+  </data>
+  <data name="SalesDocument_EducationBody1" xml:space="preserve">
+    <value>ExItS currently creates a Transaction Summary for business and customer record purposes.</value>
+  </data>
+  <data name="SalesDocument_EducationBody2" xml:space="preserve">
+    <value>The Transaction Summary is not presented as an Official Receipt or a BIR-authorized tax invoice.</value>
+  </data>
+  <data name="SalesDocument_EducationBody3" xml:space="preserve">
+    <value>Tax settings used for calculations do not enable tax-document issuance.</value>
+  </data>
+  <data name="SalesDocument_EducationBody4" xml:space="preserve">
+    <value>Your acknowledgment records that you reviewed this information. It does not enable BIR invoicing.</value>
+  </data>
+  <data name="SalesDocument_EducationAckCheckbox" xml:space="preserve">
+    <value>I understand how ExItS currently handles sales records.</value>
+  </data>
+  <data name="SalesDocument_EducationContinue" xml:space="preserve">
+    <value>Continue</value>
+  </data>
+  <data name="SalesDocument_EducationActionNeeded" xml:space="preserve">
+    <value>Review needed</value>
+  </data>
+  <data name="SalesDocument_EducationAcknowledged" xml:space="preserve">
+    <value>Acknowledged</value>
+  </data>
+  <data name="SalesDocument_EducationOwnerRequired" xml:space="preserve">
+    <value>The business owner needs to review the sales-document information before setup can continue.</value>
+  </data>
+  <data name="SalesDocument_BirInvoicingNotEnabled" xml:space="preserve">
+    <value>BIR invoicing: Not enabled for this business</value>
+  </data>
+  <data name="SalesDocument_CurrentDocument" xml:space="preserve">
+    <value>Current document: Transaction Summary</value>
+  </data>
+  <data name="SalesDocument_ComplianceTitle" xml:space="preserve">
+    <value>BIR invoicing support</value>
+  </data>
+  <data name="SalesDocument_ComplianceReview" xml:space="preserve">
+    <value>Compliance review</value>
+  </data>
+  <data name="SalesDocument_ComplianceIssuance" xml:space="preserve">
+    <value>Tax-document issuance</value>
+  </data>
+  <data name="SalesDocument_ComplianceIssuanceEnabled" xml:space="preserve">
+    <value>Capability enabled (implementation still unavailable)</value>
+  </data>
+  <data name="SalesDocument_ComplianceIssuanceDisabled" xml:space="preserve">
+    <value>Disabled</value>
+  </data>
+  <data name="SalesDocument_ComplianceNeedHelp" xml:space="preserve">
+    <value>Need BIR-enabled invoicing through ExItS? Contact ExItS Support by recording a request for this business.</value>
+  </data>
+  <data name="SalesDocument_ComplianceContactSupport" xml:space="preserve">
+    <value>Contact ExItS Support</value>
+  </data>
+  <data name="SalesDocument_ComplianceRequestRecorded" xml:space="preserve">
+    <value>A support request is already recorded for this business.</value>
+  </data>
+  <data name="Branches_Title" xml:space="preserve">
+    <value>Branches</value>
+  </data>
+  <data name="Branches_Subtitle" xml:space="preserve">
+    <value>Manage your business locations and branch settings.</value>
+  </data>
+  <data name="Branches_Add" xml:space="preserve">
+    <value>Add branch</value>
+  </data>
+  <data name="Branches_Edit" xml:space="preserve">
+    <value>Edit branch</value>
+  </data>
+  <data name="Branches_Archive" xml:space="preserve">
+    <value>Archive</value>
+  </data>
+  <data name="Branches_Primary" xml:space="preserve">
+    <value>Primary</value>
+  </data>
+  <data name="Branches_Capacity" xml:space="preserve">
+    <value>Capacity {0} / {1}. Archive branches with history instead of deleting them.</value>
+  </data>
+  <data name="Branches_EmptyTitle" xml:space="preserve">
+    <value>No branches yet</value>
+  </data>
+  <data name="Branches_EmptyMessage" xml:space="preserve">
+    <value>Add your first branch to organize your business locations.</value>
+  </data>
+  <data name="Branches_ColName" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="Branches_ColCode" xml:space="preserve">
+    <value>Code</value>
+  </data>
+  <data name="Branches_ColAddress" xml:space="preserve">
+    <value>Address</value>
+  </data>
+  <data name="Branches_ColStatus" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="Branches_FieldCode" xml:space="preserve">
+    <value>Code</value>
+  </data>
+  <data name="Branches_FieldName" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="Branches_FieldAddress" xml:space="preserve">
+    <value>Address</value>
+  </data>
+  <data name="Branches_ValidationRequired" xml:space="preserve">
+    <value>Code and name are required.</value>
+  </data>
+  <data name="Branches_Saved" xml:space="preserve">
+    <value>Branch saved.</value>
+  </data>
+  <data name="Branches_Archived" xml:space="preserve">
+    <value>Branch archived.</value>
+  </data>
+  <data name="Common_Edit" xml:space="preserve">
+    <value>Edit</value>
+  </data>
+  <data name="Common_Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Common_Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Error_SessionExpired" xml:space="preserve">
+    <value>Your session has expired. Please sign in again.</value>
+  </data>
+  <data name="Error_GenericLoad" xml:space="preserve">
+    <value>We couldn't load this information. Try again.</value>
+  </data>
+  <data name="Error_Permission" xml:space="preserve">
+    <value>You don't have permission to view this section.</value>
+  </data>
+  <data name="Common_Retry" xml:space="preserve">
+    <value>Try again</value>
+  </data>
+  <data name="Common_Filter" xml:space="preserve">
+    <value>Filter</value>
+  </data>
+  <data name="Common_Search" xml:space="preserve">
+    <value>Search</value>
+  </data>
+  <data name="Common_Clear" xml:space="preserve">
+    <value>Clear</value>
+  </data>
+  <data name="Common_Status" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="Common_Actions" xml:space="preserve">
+    <value>Actions</value>
+  </data>
+  <data name="Common_Unavailable" xml:space="preserve">
+    <value>Unavailable</value>
+  </data>
+  <data name="Overview_Title" xml:space="preserve">
+    <value>Overview</value>
+  </data>
+  <data name="Overview_Subtitle" xml:space="preserve">
+    <value>See how your business is doing today.</value>
+  </data>
+  <data name="Overview_SectionToday" xml:space="preserve">
+    <value>Today</value>
+  </data>
+  <data name="Overview_SectionInventory" xml:space="preserve">
+    <value>Inventory</value>
+  </data>
+  <data name="Overview_SectionOperations" xml:space="preserve">
+    <value>Operations</value>
+  </data>
+  <data name="Overview_SectionBusiness" xml:space="preserve">
+    <value>Business</value>
+  </data>
+  <data name="Profile_Title" xml:space="preserve">
+    <value>Business profile</value>
+  </data>
+  <data name="Profile_Subtitle" xml:space="preserve">
+    <value>Update how your business appears to staff and customers.</value>
+  </data>
+  <data name="Devices_Title" xml:space="preserve">
+    <value>Devices</value>
+  </data>
+  <data name="Devices_Subtitle" xml:space="preserve">
+    <value>Manage POS terminals registered to this business.</value>
+  </data>
+  <data name="Devices_EmptyTitle" xml:space="preserve">
+    <value>No devices yet</value>
+  </data>
+  <data name="Devices_EmptyMessage" xml:space="preserve">
+    <value>Register a POS device from the mobile app to see it here.</value>
+  </data>
+  <data name="Registers_Title" xml:space="preserve">
+    <value>Registers</value>
+  </data>
+  <data name="Registers_Subtitle" xml:space="preserve">
+    <value>Cash registers used for cashier shifts on POS.</value>
+  </data>
+  <data name="Registers_EmptyTitle" xml:space="preserve">
+    <value>No registers yet</value>
+  </data>
+  <data name="Registers_EmptyMessage" xml:space="preserve">
+    <value>Create a register so cashiers can open shifts on POS.</value>
+  </data>
+  <data name="Staff_Title" xml:space="preserve">
+    <value>Staff</value>
+  </data>
+  <data name="Staff_Subtitle" xml:space="preserve">
+    <value>Invite and manage people who work in this business.</value>
+  </data>
+  <data name="Staff_Invite" xml:space="preserve">
+    <value>Invite staff</value>
+  </data>
+  <data name="Staff_EmptyTitle" xml:space="preserve">
+    <value>No staff found</value>
+  </data>
+  <data name="Staff_EmptyMessage" xml:space="preserve">
+    <value>Invite your first team member to help run this business.</value>
+  </data>
+  <data name="StaffInvite_Title" xml:space="preserve">
+    <value>Invite staff</value>
+  </data>
+  <data name="StaffInvite_Subtitle" xml:space="preserve">
+    <value>Create a staff login for this organization. Personal accounts are never converted into staff.</value>
+  </data>
+  <data name="Roles_Title" xml:space="preserve">
+    <value>Roles</value>
+  </data>
+  <data name="Roles_Subtitle" xml:space="preserve">
+    <value>See what each POS role can do in your store.</value>
+  </data>
+  <data name="Customers_Title" xml:space="preserve">
+    <value>Customers</value>
+  </data>
+  <data name="Customers_Subtitle" xml:space="preserve">
+    <value>Manage business customers and credit relationships.</value>
+  </data>
+  <data name="Customers_EmptyTitle" xml:space="preserve">
+    <value>No customers yet</value>
+  </data>
+  <data name="Customers_EmptyMessage" xml:space="preserve">
+    <value>Customers appear here after sales or when you add them on POS.</value>
+  </data>
+  <data name="Products_Title" xml:space="preserve">
+    <value>Products</value>
+  </data>
+  <data name="Products_Subtitle" xml:space="preserve">
+    <value>Manage the items you sell.</value>
+  </data>
+  <data name="Products_New" xml:space="preserve">
+    <value>New product</value>
+  </data>
+  <data name="Products_EmptyTitle" xml:space="preserve">
+    <value>No products yet</value>
+  </data>
+  <data name="Products_EmptyMessage" xml:space="preserve">
+    <value>Add a product or import from the Global Catalog.</value>
+  </data>
+  <data name="ProductEdit_NewTitle" xml:space="preserve">
+    <value>New product</value>
+  </data>
+  <data name="ProductEdit_EditTitle" xml:space="preserve">
+    <value>Edit product</value>
+  </data>
+  <data name="ProductEdit_Subtitle" xml:space="preserve">
+    <value>Set product details for catalog and inventory. Selling stays on POS.</value>
+  </data>
+  <data name="Categories_Title" xml:space="preserve">
+    <value>Categories</value>
+  </data>
+  <data name="Categories_Subtitle" xml:space="preserve">
+    <value>Organize products into categories.</value>
+  </data>
+  <data name="Categories_EmptyTitle" xml:space="preserve">
+    <value>No categories yet</value>
+  </data>
+  <data name="Categories_EmptyMessage" xml:space="preserve">
+    <value>Create categories to group products in your catalog.</value>
+  </data>
+  <data name="GlobalCatalog_Title" xml:space="preserve">
+    <value>Global Catalog</value>
+  </data>
+  <data name="GlobalCatalog_Subtitle" xml:space="preserve">
+    <value>Browse published products and import them into your catalog.</value>
+  </data>
+  <data name="Stock_Title" xml:space="preserve">
+    <value>Stock</value>
+  </data>
+  <data name="Stock_Subtitle" xml:space="preserve">
+    <value>See stock levels and inventory activity.</value>
+  </data>
+  <data name="Stock_EmptyTitle" xml:space="preserve">
+    <value>No stock records found</value>
+  </data>
+  <data name="Stock_EmptyMessage" xml:space="preserve">
+    <value>Stock appears after products are tracked and receive inventory.</value>
+  </data>
+  <data name="Transfers_Title" xml:space="preserve">
+    <value>Transfers</value>
+  </data>
+  <data name="Transfers_Subtitle" xml:space="preserve">
+    <value>Move inventory between branches.</value>
+  </data>
+  <data name="Transfers_EmptyTitle" xml:space="preserve">
+    <value>No transfers yet</value>
+  </data>
+  <data name="Transfers_EmptyMessage" xml:space="preserve">
+    <value>Create a transfer when you need to move stock between locations.</value>
+  </data>
+  <data name="Lots_Title" xml:space="preserve">
+    <value>Expiration</value>
+  </data>
+  <data name="Lots_Subtitle" xml:space="preserve">
+    <value>Track lot expiry dates and quantities on hand.</value>
+  </data>
+  <data name="Lots_EmptyTitle" xml:space="preserve">
+    <value>No lots found</value>
+  </data>
+  <data name="Lots_EmptyMessage" xml:space="preserve">
+    <value>Lots appear for products that track expiration.</value>
+  </data>
+  <data name="SalesHistory_Title" xml:space="preserve">
+    <value>Sales history</value>
+  </data>
+  <data name="SalesHistory_Subtitle" xml:space="preserve">
+    <value>Review completed sales and transaction summaries.</value>
+  </data>
+  <data name="SalesHistory_EmptyTitle" xml:space="preserve">
+    <value>No sales found</value>
+  </data>
+  <data name="SalesHistory_EmptyMessage" xml:space="preserve">
+    <value>Completed POS sales will appear here for review.</value>
+  </data>
+  <data name="SalesHistory_ViewSummary" xml:space="preserve">
+    <value>View Transaction Summary</value>
+  </data>
+  <data name="SalesReport_Title" xml:space="preserve">
+    <value>Sales report</value>
+  </data>
+  <data name="SalesReport_Subtitle" xml:space="preserve">
+    <value>Summarize sales by date range and branch.</value>
+  </data>
+  <data name="InventoryReport_Title" xml:space="preserve">
+    <value>Inventory report</value>
+  </data>
+  <data name="InventoryReport_Subtitle" xml:space="preserve">
+    <value>See low-stock and stock status summaries.</value>
+  </data>
+  <data name="Shifts_Title" xml:space="preserve">
+    <value>Shifts</value>
+  </data>
+  <data name="Shifts_Subtitle" xml:space="preserve">
+    <value>Inspect cashier shifts and cash counts. Opening and closing stays on POS.</value>
+  </data>
+  <data name="Shifts_EmptyTitle" xml:space="preserve">
+    <value>No shifts found</value>
+  </data>
+  <data name="Shifts_EmptyMessage" xml:space="preserve">
+    <value>Shift history appears after cashiers open shifts on POS.</value>
+  </data>
+  <data name="ShiftsReport_Title" xml:space="preserve">
+    <value>Cash / shift report</value>
+  </data>
+  <data name="ShiftsReport_Subtitle" xml:space="preserve">
+    <value>Compare expected and counted cash. Skipped counts stay blank â€” they are not zero.</value>
+  </data>
+  <data name="Utang_Title" xml:space="preserve">
+    <value>Business credit</value>
+  </data>
+  <data name="Utang_Subtitle" xml:space="preserve">
+    <value>Review outstanding business credit balances.</value>
+  </data>
+  <data name="Utang_EmptyTitle" xml:space="preserve">
+    <value>No credit balances</value>
+  </data>
+  <data name="Utang_EmptyMessage" xml:space="preserve">
+    <value>Customer credit balances appear when business credit is used on POS.</value>
+  </data>
+  <data name="Settings_Title" xml:space="preserve">
+    <value>Operational settings</value>
+  </data>
+  <data name="Settings_Subtitle" xml:space="preserve">
+    <value>Configure POS and cash-handling rules for future shifts.</value>
+  </data>
+  <data name="Subscription_Title" xml:space="preserve">
+    <value>Subscription</value>
+  </data>
+  <data name="Subscription_Subtitle" xml:space="preserve">
+    <value>View your current plan and entitlements.</value>
+  </data>
+  <data name="Ownership_Title" xml:space="preserve">
+    <value>Ownership</value>
+  </data>
+  <data name="Ownership_Subtitle" xml:space="preserve">
+    <value>Transfer ownership of this business to another ExItS member.</value>
+  </data>
+  <data name="Notifications_Title" xml:space="preserve">
+    <value>Notifications</value>
+  </data>
+  <data name="Notifications_Subtitle" xml:space="preserve">
+    <value>Organization alerts for managers and owners, including supplier connections.</value>
+  </data>
+  <data name="Notifications_EmptyTitle" xml:space="preserve">
+    <value>No notifications</value>
+  </data>
+  <data name="Notifications_EmptyMessage" xml:space="preserve">
+    <value>Management alerts will appear here when available.</value>
+  </data>
+  <data name="Notifications_FilterUnread" xml:space="preserve">
+    <value>Unread</value>
+  </data>
+  <data name="Notifications_FilterAll" xml:space="preserve">
+    <value>All</value>
+  </data>
+  <data name="Notifications_Accept" xml:space="preserve">
+    <value>Accept</value>
+  </data>
+  <data name="Notifications_Decline" xml:space="preserve">
+    <value>Decline</value>
+  </data>
+  <data name="Notifications_MarkRead" xml:space="preserve">
+    <value>Mark read</value>
+  </data>
+  <data name="Notifications_Open" xml:space="preserve">
+    <value>Open</value>
+  </data>
+  <data name="Notifications_StatusConnected" xml:space="preserve">
+    <value>Connected</value>
+  </data>
+  <data name="Notifications_StatusDeclined" xml:space="preserve">
+    <value>Declined</value>
+  </data>
+  <data name="Notifications_StatusUnavailable" xml:space="preserve">
+    <value>No longer available</value>
+  </data>
+  <data name="Notifications_ActionNeeded" xml:space="preserve">
+    <value>Action needed</value>
+  </data>
+  <data name="Notifications_Aria" xml:space="preserve">
+    <value>Notifications</value>
+  </data>
+  <data name="Notifications_AriaUnread" xml:space="preserve">
+    <value>Notifications, {0} unread</value>
+  </data>
+  <data name="SelectOrg_Title" xml:space="preserve">
+    <value>Select organization</value>
+  </data>
+  <data name="SelectOrg_Subtitle" xml:space="preserve">
+    <value>Choose which business workspace to manage.</value>
+  </data>
+  <data name="SalesDocuments_Subtitle" xml:space="preserve">
+    <value>Review how sales documents currently work for this business.</value>
+  </data>
+  <data name="Nav_Business" xml:space="preserve">
+    <value>Business</value>
+  </data>
+  <data name="Nav_People" xml:space="preserve">
+    <value>People</value>
+  </data>
+  <data name="Nav_Catalog" xml:space="preserve">
+    <value>Catalog</value>
+  </data>
+  <data name="Nav_Sales" xml:space="preserve">
+    <value>Sales</value>
+  </data>
+  <data name="Nav_Devices" xml:space="preserve">
+    <value>Devices</value>
+  </data>
+  <data name="Nav_Registers" xml:space="preserve">
+    <value>Registers</value>
+  </data>
+  <data name="Nav_Profile" xml:space="preserve">
+    <value>Business profile</value>
+  </data>
+  <data name="Nav_Ownership" xml:space="preserve">
+    <value>Ownership</value>
+  </data>
+  <data name="Nav_Alerts" xml:space="preserve">
+    <value>Alerts</value>
+  </data>
+  <data name="Nav_Roles" xml:space="preserve">
+    <value>Roles</value>
+  </data>
+  <data name="Nav_OperationalSettings" xml:space="preserve">
+    <value>Operational settings</value>
+  </data>
+  <data name="Nav_Suppliers" xml:space="preserve">
+    <value>Suppliers</value>
+  </data>
+  <data name="Nav_SupplierRequests" xml:space="preserve">
+    <value>Supplier requests</value>
+  </data>
+  <data name="Nav_ConnectedBuyers" xml:space="preserve">
+    <value>Connected buyers</value>
+  </data>
+  <data name="Suppliers_Title" xml:space="preserve">
+    <value>Suppliers</value>
+  </data>
+  <data name="Suppliers_Subtitle" xml:space="preserve">
+    <value>External suppliers and Connected ExItS supplier relationships.</value>
+  </data>
+  <data name="Suppliers_TabList" xml:space="preserve">
+    <value>Suppliers</value>
+  </data>
+  <data name="Suppliers_TabRequests" xml:space="preserve">
+    <value>Requests</value>
+  </data>
+  <data name="Suppliers_TabBuyers" xml:space="preserve">
+    <value>Connected buyers</value>
+  </data>
+  <data name="Suppliers_ConnectExIts" xml:space="preserve">
+    <value>Connect ExItS supplier</value>
+  </data>
+  <data name="Suppliers_EmptyTitle" xml:space="preserve">
+    <value>No suppliers yet</value>
+  </data>
+  <data name="Suppliers_EmptyMessage" xml:space="preserve">
+    <value>Add an external supplier or send a Connected ExItS connection request.</value>
+  </data>
+  <data name="Suppliers_ColName" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="Suppliers_ColType" xml:space="preserve">
+    <value>Type</value>
+  </data>
+  <data name="Suppliers_ColStatus" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="Suppliers_ColConnection" xml:space="preserve">
+    <value>Connection</value>
+  </data>
+  <data name="Suppliers_ColRequester" xml:space="preserve">
+    <value>Requesting business</value>
+  </data>
+  <data name="Suppliers_ColPublicId" xml:space="preserve">
+    <value>Public organization ID</value>
+  </data>
+  <data name="Suppliers_ColRequested" xml:space="preserve">
+    <value>Requested</value>
+  </data>
+  <data name="Suppliers_ColSupplier" xml:space="preserve">
+    <value>Supplier</value>
+  </data>
+  <data name="Suppliers_TypeConnected" xml:space="preserve">
+    <value>Connected ExItS</value>
+  </data>
+  <data name="Suppliers_TypeExternal" xml:space="preserve">
+    <value>External</value>
+  </data>
+  <data name="Suppliers_StatusConnected" xml:space="preserve">
+    <value>Connected</value>
+  </data>
+  <data name="Suppliers_StatusPending" xml:space="preserve">
+    <value>Pending</value>
+  </data>
+  <data name="Suppliers_StatusDeclined" xml:space="preserve">
+    <value>Declined</value>
+  </data>
+  <data name="Suppliers_StatusDisconnected" xml:space="preserve">
+    <value>Disconnected</value>
+  </data>
+  <data name="Suppliers_WaitingApproval" xml:space="preserve">
+    <value>Waiting for supplier approval</value>
+  </data>
+  <data name="Suppliers_RequestDeclined" xml:space="preserve">
+    <value>Request declined</value>
+  </data>
+  <data name="Suppliers_IncomingSection" xml:space="preserve">
+    <value>Incoming requests</value>
+  </data>
+  <data name="Suppliers_SentSection" xml:space="preserve">
+    <value>Sent requests</value>
+  </data>
+  <data name="Suppliers_NoIncomingTitle" xml:space="preserve">
+    <value>No incoming requests</value>
+  </data>
+  <data name="Suppliers_NoIncomingMessage" xml:space="preserve">
+    <value>When another ExItS business wants you as their supplier, the request appears here.</value>
+  </data>
+  <data name="Suppliers_NoSentTitle" xml:space="preserve">
+    <value>No sent requests</value>
+  </data>
+  <data name="Suppliers_NoSentMessage" xml:space="preserve">
+    <value>Connection requests you send will appear here with Pending, Connected, or Declined status.</value>
+  </data>
+  <data name="Suppliers_RequestingBusiness" xml:space="preserve">
+    <value>Requesting business</value>
+  </data>
+  <data name="Suppliers_IncomingPlain" xml:space="preserve">
+    <value>{0} wants to connect with your business as a supplier.</value>
+  </data>
+  <data name="Suppliers_Accept" xml:space="preserve">
+    <value>Accept</value>
+  </data>
+  <data name="Suppliers_Decline" xml:space="preserve">
+    <value>Decline</value>
+  </data>
+  <data name="Suppliers_ViewOnly" xml:space="preserve">
+    <value>View only</value>
+  </data>
+  <data name="Suppliers_RespondFailed" xml:space="preserve">
+    <value>The connection response could not be saved.</value>
+  </data>
+  <data name="Suppliers_ConnectTitle" xml:space="preserve">
+    <value>Connect an ExItS supplier</value>
+  </data>
+  <data name="Suppliers_ConnectSubtitle" xml:space="preserve">
+    <value>Scan or enter the supplier Business QR / organization ID. The supplier must accept before the connection becomes active.</value>
+  </data>
+  <data name="Suppliers_BusinessQrOrOrgId" xml:space="preserve">
+    <value>Business QR or organization ID</value>
+  </data>
+  <data name="Suppliers_BusinessQrHint" xml:space="preserve">
+    <value>ORG###### or Business QR payload</value>
+  </data>
+  <data name="Suppliers_BusinessQrRequired" xml:space="preserve">
+    <value>Enter the supplier Business QR or organization ID.</value>
+  </data>
+  <data name="Suppliers_SendRequest" xml:space="preserve">
+    <value>Send request</value>
+  </data>
+  <data name="Suppliers_RequestFailed" xml:space="preserve">
+    <value>The connection request could not be sent.</value>
+  </data>
+  <data name="Suppliers_RequestSentPending" xml:space="preserve">
+    <value>Connection request sent. Waiting for the supplier to accept.</value>
+  </data>
+  <data name="Suppliers_IncomingBannerTitle" xml:space="preserve">
+    <value>Supplier connection request waiting</value>
+  </data>
+  <data name="Suppliers_IncomingBannerBody" xml:space="preserve">
+    <value>{0} business(es) want to connect with you as their supplier.</value>
+  </data>
+  <data name="Suppliers_IncomingCompact" xml:space="preserve">
+    <value>{0} supplier requests need your review</value>
+  </data>
+  <data name="Suppliers_ReviewIncoming" xml:space="preserve">
+    <value>Review connection requests</value>
+  </data>
+  <data name="Suppliers_BuyersSection" xml:space="preserve">
+    <value>Connected buyers</value>
+  </data>
+  <data name="Suppliers_BuyersHelp" xml:space="preserve">
+    <value>Businesses that currently use your organization as their Connected ExItS supplier.</value>
+  </data>
+  <data name="Suppliers_NoBuyersTitle" xml:space="preserve">
+    <value>No connected buyers yet</value>
+  </data>
+  <data name="Suppliers_NoBuyersMessage" xml:space="preserve">
+    <value>When you accept a supplier connection request, that business appears here.</value>
+  </data>
+  <data name="Suppliers_ColBuyer" xml:space="preserve">
+    <value>Buyer business</value>
+  </data>
+  <data name="Suppliers_ColConnectedSince" xml:space="preserve">
+    <value>Connected since</value>
+  </data>
+  <data name="Suppliers_ColDirection" xml:space="preserve">
+    <value>Relationship</value>
+  </data>
+  <data name="Suppliers_BuyerDirection" xml:space="preserve">
+    <value>They buy from your business.</value>
+  </data>
+  <data name="Suppliers_BuyerNotCustomerNote" xml:space="preserve">
+    <value>Connected buyers are organization relationships, not Customers. Explicit Add as customer is deferred.</value>
+  </data>
+  <data name="Suppliers_UnknownBusiness" xml:space="preserve">
+    <value>Connected business</value>
+  </data>
+  <data name="Suppliers_ViewBuyer" xml:space="preserve">
+    <value>View</value>
+  </data>
+  <data name="Suppliers_BackToBuyers" xml:space="preserve">
+    <value>Back to connected buyers</value>
+  </data>
+  <data name="Privacy_Action_StaffAccess" xml:space="preserve">
+    <value>Staff access review</value>
+  </data>
+  <data name="Privacy_Evidence_SupplierScope" xml:space="preserve">
+    <value>Connected supplier organization scope rules</value>
+  </data>
+  <data name="Privacy_LegalVerification_Default" xml:space="preserve">
+    <value>ExItS provides technical and operational privacy safeguards, but this status is not a legal or NPC certification of your business.</value>
+  </data>
+  <data name="Privacy_ActionsSection" xml:space="preserve">
+    <value>Your business privacy setup</value>
+  </data>
+  <data name="Privacy_Safeguard_PersonalOrgBoundary" xml:space="preserve">
+    <value>Personal vs organization data boundaries</value>
+  </data>
+  <data name="Privacy_ResponsibilitySection" xml:space="preserve">
+    <value>Who manages what</value>
+  </data>
+  <data name="Privacy_Safeguard_SupplierScope" xml:space="preserve">
+    <value>Organization-scoped supplier connections</value>
+  </data>
+  <data name="Privacy_Status_NotVerified" xml:space="preserve">
+    <value>Not verified</value>
+  </data>
+  <data name="Privacy_Action_VendorAwareness_Detail" xml:space="preserve">
+    <value>Know which connected suppliers or processors receive business data.</value>
+  </data>
+  <data name="Privacy_ReadinessLabel" xml:space="preserve">
+    <value>Privacy readiness</value>
+  </data>
+  <data name="Privacy_AttentionTitle" xml:space="preserve">
+    <value>Privacy setup needs attention</value>
+  </data>
+  <data name="Privacy_ManagedBy_Business" xml:space="preserve">
+    <value>Managed by your business</value>
+  </data>
+  <data name="Privacy_SafeguardsSection" xml:space="preserve">
+    <value>Data protection safeguards</value>
+  </data>
+  <data name="Privacy_Status_ReviewRecommended" xml:space="preserve">
+    <value>Review recommended</value>
+  </data>
+  <data name="Privacy_Status_InProgress" xml:space="preserve">
+    <value>In progress</value>
+  </data>
+  <data name="Privacy_Evidence_Roles" xml:space="preserve">
+    <value>POS role and capability evaluation</value>
+  </data>
+  <data name="Privacy_Action_CustomerData" xml:space="preserve">
+    <value>Customer-data handling guidance</value>
+  </data>
+  <data name="Privacy_Action_StaffAccess_Detail" xml:space="preserve">
+    <value>Review which staff can see customer and sales information.</value>
+  </data>
+  <data name="Privacy_Safeguard_OrgIsolation" xml:space="preserve">
+    <value>Organization-isolated business data</value>
+  </data>
+  <data name="Privacy_Subtitle" xml:space="preserve">
+    <value>See the privacy safeguards active for your business and any actions that still need attention.</value>
+  </data>
+  <data name="Privacy_NpcLabel" xml:space="preserve">
+    <value>NPC verification</value>
+  </data>
+  <data name="Privacy_Action_SalesDocumentEducation_Detail" xml:space="preserve">
+    <value>Owner acknowledgment that Transaction Summary is not BIR tax document issuance.</value>
+  </data>
+  <data name="Nav_PrivacyDataProtection" xml:space="preserve">
+    <value>Privacy &amp; Data Protection</value>
+  </data>
+  <data name="Privacy_Safeguard_AuthSession" xml:space="preserve">
+    <value>Protected account and session access</value>
+  </data>
+  <data name="Privacy_Status_Complete" xml:space="preserve">
+    <value>Complete</value>
+  </data>
+  <data name="Privacy_SafeguardsSubtitle" xml:space="preserve">
+    <value>Technical controls provided by ExItS for your organization workspace.</value>
+  </data>
+  <data name="Privacy_NoCertificationClaim" xml:space="preserve">
+    <value>This status is not a legal or NPC certification of your business.</value>
+  </data>
+  <data name="Privacy_Evidence_DeviceSecrets" xml:space="preserve">
+    <value>Secure token store / device-bound grants</value>
+  </data>
+  <data name="Privacy_Title" xml:space="preserve">
+    <value>Privacy &amp; Data Protection</value>
+  </data>
+  <data name="Privacy_Evidence_OrgIsolation" xml:space="preserve">
+    <value>Organization database and authorization scope</value>
+  </data>
+  <data name="Privacy_Action_CustomerData_Detail" xml:space="preserve">
+    <value>Treat customer contact and credit information as business-confidential.</value>
+  </data>
+  <data name="Privacy_ReviewAction" xml:space="preserve">
+    <value>Review</value>
+  </data>
+  <data name="Privacy_LegalStatusLabel" xml:space="preserve">
+    <value>Legal verification</value>
+  </data>
+  <data name="Privacy_Action_VendorAwareness" xml:space="preserve">
+    <value>Vendor / processor awareness</value>
+  </data>
+  <data name="Privacy_Status_ActionNeeded" xml:space="preserve">
+    <value>Action needed</value>
+  </data>
+  <data name="Privacy_LegalSection" xml:space="preserve">
+    <value>Privacy / legal verification</value>
+  </data>
+  <data name="Privacy_ActionsSubtitle" xml:space="preserve">
+    <value>Items your business should review or complete.</value>
+  </data>
+  <data name="Privacy_ManagedBy_Platform" xml:space="preserve">
+    <value>Managed by ExItS</value>
+  </data>
+  <data name="Privacy_Action_SalesDocumentEducation" xml:space="preserve">
+    <value>Sales document information acknowledgment</value>
+  </data>
+  <data name="Privacy_ResponsibilitySubtitle" xml:space="preserve">
+    <value>Platform safeguards vs responsibilities that stay with your business.</value>
+  </data>
+  <data name="Privacy_Responsibility_PlatformGovernance" xml:space="preserve">
+    <value>Platform privacy governance</value>
+  </data>
+  <data name="Privacy_LegalSubtitle" xml:space="preserve">
+    <value>Legal and NPC verification status for your organization.</value>
+  </data>
+  <data name="Privacy_Responsibility_AccountSecurity" xml:space="preserve">
+    <value>Account security</value>
+  </data>
+  <data name="Privacy_Evidence_AuthSession" xml:space="preserve">
+    <value>Authenticated session and offline PIN grant model</value>
+  </data>
+  <data name="Privacy_LoadFailed" xml:space="preserve">
+    <value>Privacy readiness could not be loaded.</value>
+  </data>
+  <data name="Privacy_Evidence_PersonalOrgBoundary" xml:space="preserve">
+    <value>Personal/organization identity separation</value>
+  </data>
+  <data name="Privacy_DeniedMessage" xml:space="preserve">
+    <value>You do not have access to organization privacy readiness.</value>
+  </data>
+  <data name="Privacy_Responsibility_CustomerInfo" xml:space="preserve">
+    <value>Customer information entered by your staff</value>
+  </data>
+  <data name="Privacy_Status_Implemented" xml:space="preserve">
+    <value>Implemented</value>
+  </data>
+  <data name="Privacy_Safeguard_Roles" xml:space="preserve">
+    <value>User roles and permissions</value>
+  </data>
+  <data name="Privacy_Responsibility_StaffPermissions" xml:space="preserve">
+    <value>Staff permissions</value>
+  </data>
+  <data name="Privacy_Safeguard_DeviceSecrets" xml:space="preserve">
+    <value>Restricted device secrets on POS</value>
+  </data>
 </root>

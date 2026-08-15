@@ -5,6 +5,7 @@
 @inject RoleHomeResolver RoleHome
 @inject SellingModeService SellingMode
 @inject IPosOperationalSetupClient Setup
+@inject IPosPrivacyReadinessClient Privacy
 @inject IPosConnectedSupplierClient ConnectedSuppliers
 @inject IConnectivityService Connectivity
 @inject IUtangCapabilityEvaluator Capabilities
@@ -29,6 +30,17 @@ else
                 <h1 class="pos-dash__title">@L["Owner_Title"]</h1>
                 <p class="pos-dash__subtitle">@L["Owner_Subtitle"]</p>
             </header>
+
+            @if (_privacyNeedsAttention)
+            {
+                <Alert Tone="AlertTone.Info"
+                       Title="@L["Privacy_AttentionTitle"]" />
+                <div class="pos-action-grid pos-action-grid--single" role="group">
+                    <button type="button" class="pos-action-tile" @onclick="GoPrivacy">
+                        <span class="pos-action-tile__label">@L["Privacy_ReviewAction"]</span>
+                    </button>
+                </div>
+            }
 
             @if (_incomingPendingCount > 0)
             {
@@ -132,6 +144,7 @@ else
     private bool _ready;
     private bool _authorized;
     private bool _setupCompleted;
+    private bool _privacyNeedsAttention;
     private int _incomingPendingCount;
 
     protected override async Task OnInitializedAsync()
@@ -197,7 +210,8 @@ else
                 }
             }
 
-            // Optional supplier inbox must not block first paint.
+            // Optional privacy attention + supplier inbox must not block first paint.
+            _ = LoadPrivacyAttentionAsync();
             _ = LoadIncomingSupplierCountAsync();
         }
         finally
@@ -206,6 +220,28 @@ else
             {
                 _ready = true;
             }
+        }
+    }
+
+    private async Task LoadPrivacyAttentionAsync()
+    {
+        try
+        {
+            if (!await Connectivity.IsConnectedAsync())
+            {
+                return;
+            }
+
+            var result = await Privacy.GetAsync();
+            if (result.IsSuccess && result.Data?.HasOwnerAttentionItems == true)
+            {
+                _privacyNeedsAttention = true;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch
+        {
+            // Optional attention card only.
         }
     }
 
@@ -240,6 +276,7 @@ else
     }
 
     private void GoSetup() => Nav.NavigateTo("/setup");
+    private void GoPrivacy() => Nav.NavigateTo("/org/privacy");
     private void GoOrg() => Nav.NavigateTo("/org");
     private void GoCatalog() => Nav.NavigateTo("/catalog");
     private void GoCategories() => Nav.NavigateTo("/catalog/categories");

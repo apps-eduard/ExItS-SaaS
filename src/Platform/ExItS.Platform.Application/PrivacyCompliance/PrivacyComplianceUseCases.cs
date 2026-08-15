@@ -93,10 +93,12 @@ public sealed class GetPrivacyComplianceOverview
             .GroupBy(r => r.Category.ToString())
             .ToDictionary(g => g.Key, g => g.Count(), StringComparer.Ordinal);
 
+        var evidenceCounts = new Dictionary<Guid, int>();
         var totalEvidence = 0;
         foreach (var requirement in requirements)
         {
             var items = await _evidence.ListByRequirementIdAsync(requirement.Id, ct).ConfigureAwait(false);
+            evidenceCounts[requirement.Id] = items.Count;
             totalEvidence += items.Count;
         }
 
@@ -104,13 +106,114 @@ public sealed class GetPrivacyComplianceOverview
             ? (DateTimeOffset?)null
             : requirements.Max(r => r.UpdatedAtUtc);
 
+        var readyCount = requirements.Count(r => PrivacyReadinessDerivation.IsReadyStatus(r.Status));
+        var actionNeededCount = requirements.Count(r => PrivacyReadinessDerivation.IsActionNeededStatus(r.Status));
+        var externalLegalCount = requirements.Count(PrivacyReadinessDerivation.CountsAsExternalLegalReview);
+        var withEvidence = requirements.Count(r => evidenceCounts.GetValueOrDefault(r.Id) > 0);
+
+        var overall = PrivacyReadinessDerivation.DeriveOverall(requirements);
+
+        var security = requirements.FirstOrDefault(r =>
+            string.Equals(r.Code, "SECURITY_ACCESS_CONTROL", StringComparison.OrdinalIgnoreCase));
+        var technicalSummary = security is null
+            ? "Unavailable"
+            : security.Status switch
+            {
+                ComplianceItemStatus.Approved => "Implemented",
+                ComplianceItemStatus.ReadyForReview or ComplianceItemStatus.InProgress => "Partial",
+                _ => "ActionNeeded"
+            };
+
+        static bool IsGovernanceGroup(PrivacyReadinessCategoryGroup group) =>
+            group is PrivacyReadinessCategoryGroup.NoticesAndConsent
+                or PrivacyReadinessCategoryGroup.Governance
+                or PrivacyReadinessCategoryGroup.DataInventory
+                or PrivacyReadinessCategoryGroup.RetentionAndDeletion
+                or PrivacyReadinessCategoryGroup.DataSubjectRequests
+                or PrivacyReadinessCategoryGroup.VendorsAndProcessors;
+
+        var governanceReady = requirements.Count(r =>
+            IsGovernanceGroup(PrivacyReadinessDerivation.ResolveCategoryGroup(r.Code, r.Category))
+            && PrivacyReadinessDerivation.IsReadyStatus(r.Status));
+        var governanceTotal = requirements.Count(r =>
+            IsGovernanceGroup(PrivacyReadinessDerivation.ResolveCategoryGroup(r.Code, r.Category)));
+        var governanceSummary = governanceTotal == 0
+            ? "Unavailable"
+            : $"{governanceReady} of {governanceTotal} ready";
+
+        var legalSummary = externalLegalCount > 0 ? "Required" : "No outstanding legal-review flags";
+        var npcSummary = requirements.Any(r =>
+            r.Category == ComplianceItemCategory.RegulatoryReadiness
+            && r.Status == ComplianceItemStatus.Approved)
+            ? "InternalRecordApproved"
+            : "NotVerified";
+
+        var categorySummaries = requirements
+            .GroupBy(r => PrivacyReadinessDerivation.ResolveCategoryGroup(r.Code, r.Category))
+            .OrderBy(g => (int)g.Key)
+            .Select(g =>
+            {
+                var items = g.ToArray();
+                var ready = items.Count(r => PrivacyReadinessDerivation.IsReadyStatus(r.Status));
+                var action = items.Count(r => PrivacyReadinessDerivation.IsActionNeededStatus(r.Status));
+                var covered = items.Count(r => evidenceCounts.GetValueOrDefault(r.Id) > 0);
+                var lastReview = items
+                    .Select(r => r.LastReviewedDate)
+                    .Where(d => d is not null)
+                    .OrderByDescending(d => d)
+                    .FirstOrDefault();
+                var status = action > 0
+                    ? nameof(PrivacyReadinessOverallStatus.ActionNeeded)
+                    : items.Any(r => r.Status == ComplianceItemStatus.InProgress)
+                        ? nameof(PrivacyReadinessOverallStatus.InProgress)
+                        : ready == items.Length
+                            ? nameof(PrivacyReadinessOverallStatus.ReadyForReview)
+                            : nameof(PrivacyReadinessOverallStatus.InProgress);
+                return new PrivacyReadinessCategorySummaryDto(
+                    g.Key.ToString(),
+                    PrivacyReadinessDerivation.ResolveDetailRoute(g.Key),
+                    items.Length,
+                    ready,
+                    action,
+                    covered,
+                    lastReview,
+                    status,
+                    action > 0);
+            })
+            .ToArray();
+
+        var privacyImpacts = requirements
+            .Where(r =>
+                PrivacyReadinessDerivation.ResolveCategoryGroup(r.Code, r.Category)
+                == PrivacyReadinessCategoryGroup.PrivacyImpact)
+            .Select(r => new PrivacyImpactFollowUpDto(
+                r.Code,
+                r.Title,
+                r.Status.ToString(),
+                r.RequiresDpoLegalVerification,
+                evidenceCounts.GetValueOrDefault(r.Id),
+                r.LastReviewedDate))
+            .OrderBy(r => r.Code, StringComparer.Ordinal)
+            .ToArray();
+
         return new PrivacyComplianceOverviewDto(
             requirements.Count,
             systems.Count,
             totalEvidence,
             byStatus,
             byCategory,
-            lastUpdated);
+            lastUpdated,
+            overall,
+            readyCount,
+            actionNeededCount,
+            externalLegalCount,
+            withEvidence,
+            technicalSummary,
+            governanceSummary,
+            legalSummary,
+            npcSummary,
+            categorySummaries,
+            privacyImpacts);
     }
 }
 

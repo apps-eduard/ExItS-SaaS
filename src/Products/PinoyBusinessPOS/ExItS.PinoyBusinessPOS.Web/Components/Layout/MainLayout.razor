@@ -120,12 +120,16 @@
                         }
                     </SubMenu>
                 }
-                @if (Shell.CanSee("settings") || Shell.CanSee("subscription") || Shell.CanSee("sales-documents") || Shell.CanSee("ownership-transfer"))
+                @if (Shell.CanSee("settings") || Shell.CanSee("privacy") || Shell.CanSee("subscription") || Shell.CanSee("sales-documents") || Shell.CanSee("ownership-transfer"))
                 {
                     <SubMenu Key="settings" TitleTemplate="@SettingsTitle">
                         @if (Shell.CanSee("settings"))
                         {
                             <MenuItem Key="general" RouterLink="/settings" Icon="tool" Title="@L["Nav_OperationalSettings"]">@L["Nav_OperationalSettings"]</MenuItem>
+                        }
+                        @if (Shell.CanSee("privacy"))
+                        {
+                            <MenuItem Key="privacy" RouterLink="/settings/privacy" Icon="safety-certificate" Title="@L["Nav_PrivacyDataProtection"]">@L["Nav_PrivacyDataProtection"]</MenuItem>
                         }
                         @if (Shell.CanSee("sales-documents"))
                         {
@@ -317,6 +321,10 @@
             @if (Shell.CanSee("settings"))
             {
                 <MenuItem RouterLink="/settings" Icon="setting">@L["Nav_OperationalSettings"]</MenuItem>
+            }
+            @if (Shell.CanSee("privacy"))
+            {
+                <MenuItem RouterLink="/settings/privacy" Icon="safety-certificate">@L["Nav_PrivacyDataProtection"]</MenuItem>
             }
             @if (Shell.CanSee("sales-documents"))
             {

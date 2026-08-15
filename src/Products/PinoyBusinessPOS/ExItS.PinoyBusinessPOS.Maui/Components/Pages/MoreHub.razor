@@ -115,6 +115,15 @@
                         </button>
                     }
 
+                    @if (_isOrganizationOwner
+                        || Capabilities.IsAllowed(UtangCapability.ViewOperationalSetup))
+                    {
+                        <button type="button" class="pos-action-tile" @onclick="GoPrivacy">
+                            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("info")</span>
+                            <span class="pos-action-tile__label">@L["Privacy_Title"]</span>
+                        </button>
+                    }
+
                     @if (Capabilities.IsAllowed(UtangCapability.ManageOperationalSetup))
                     {
                         <button type="button" class="pos-action-tile" @onclick="GoSetup">
@@ -210,6 +219,7 @@
     private Task GoRegisters() => OfflineNav.NavigateAsync("/registers");
     private async Task GoSetup() =>
         await OfflineNav.NavigateAsync(await Gate.ResolveOperationalSetupRouteAsync());
+    private Task GoPrivacy() => OfflineNav.NavigateAsync("/org/privacy");
     private Task GoShifts() => OfflineNav.NavigateAsync("/shifts");
     private Task GoPermissions() => OfflineNav.NavigateAsync("/permissions");
     private Task GoReports() => OfflineNav.NavigateAsync("/reports");

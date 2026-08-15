@@ -52,7 +52,37 @@ public sealed record PrivacyComplianceOverviewDto(
     int TotalEvidence,
     IReadOnlyDictionary<string, int> RequirementsByStatus,
     IReadOnlyDictionary<string, int> RequirementsByCategory,
-    DateTimeOffset? LastUpdatedUtc);
+    DateTimeOffset? LastUpdatedUtc,
+    string OverallReadiness = "NotAssessed",
+    int ReadyCount = 0,
+    int ActionNeededCount = 0,
+    int ExternalLegalReviewCount = 0,
+    int RequirementsWithEvidenceCount = 0,
+    string TechnicalSafeguardsSummary = "Partial",
+    string GovernanceDocumentationSummary = "Unavailable",
+    string LegalReviewSummary = "Required",
+    string NpcVerificationSummary = "NotVerified",
+    IReadOnlyList<PrivacyReadinessCategorySummaryDto>? CategorySummaries = null,
+    IReadOnlyList<PrivacyImpactFollowUpDto>? PrivacyImpactFollowUps = null);
+
+public sealed record PrivacyReadinessCategorySummaryDto(
+    string Group,
+    string DetailRoute,
+    int RequirementCount,
+    int ReadyCount,
+    int ActionNeededCount,
+    int EvidenceCoveredCount,
+    DateOnly? LastReviewedDate,
+    string Status,
+    bool HasActionNeeded);
+
+public sealed record PrivacyImpactFollowUpDto(
+    string Code,
+    string Title,
+    string Status,
+    bool RequiresDpoLegalVerification,
+    int EvidenceCount,
+    DateOnly? LastReviewedDate);
 
 public sealed record EnsurePrivacyComplianceCatalogResultDto(
     int RequirementsAdded,

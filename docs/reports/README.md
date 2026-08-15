@@ -65,6 +65,7 @@ The dashboard links to the latest accepted report.
 | [P8-WP07-basic-store-closeout.md](P8-WP07-basic-store-closeout.md) | Basic Store Closeout | Complete with documented risks (Phase 8 closed) |
 | [P9-WP01-security-and-privacy-hardening.md](P9-WP01-security-and-privacy-hardening.md) | Security and Privacy Hardening | Complete with documented risks |
 | [P21-foundation-privacy-compliance-workspace.md](P21-foundation-privacy-compliance-workspace.md) | Phase 21 Privacy Compliance workspace foundation | Code Complete (readiness tooling; not NPC compliant) |
+| [P21-privacy-readiness-visibility-product-status-ui.md](P21-privacy-readiness-visibility-product-status-ui.md) | Phase 21 privacy readiness visibility in Admin / Org Web / MAUI | Code Complete / Validation Pending |
 | [P21-WP01-requirements-and-privacy-inventory.md](P21-WP01-requirements-and-privacy-inventory.md) | P21-WP01 Requirements and privacy inventory | Code Complete |
 | [P21-WP11-post-phase21-privacy-impact-refresh.md](P21-WP11-post-phase21-privacy-impact-refresh.md) | P21-WP11 Post–Phase-21 privacy impact refresh (P25/P26) | Code Complete / Validation Pending |
 | [P9-WP02-performance-and-reliability.md](P9-WP02-performance-and-reliability.md) | Performance and Reliability | Complete with documented risks |

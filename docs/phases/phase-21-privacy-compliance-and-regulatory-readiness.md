@@ -5,9 +5,9 @@
 | Field | Value |
 |---|---|
 | Status | **Open** |
-| Overall | **Foundation + Post–Phase-21 privacy delta updated — readiness tooling only; legal review pending** |
-| Feature tip | `7f6795b` (foundation); P21-WP11 feature SHA **pending commit** |
-| Tests tip | `26ec821` (foundation); `PostPhase21PublicIdentityPrivacyGuardTests` (WP11) |
+| Overall | **Foundation + readiness visibility UI — not legal certification** |
+| Feature tip | Privacy readiness visibility (see P21 readiness visibility report) |
+| Tests tip | `PrivacyReadinessDerivationTests` + Admin/Maui privacy UI guards |
 | Device Verified | **No** |
 | Production Ready | **No** |
 | Legal / NPC Compliant | **No — not claimed** |
@@ -89,4 +89,5 @@ Catalog seeds are additive via `EnsurePrivacyComplianceCatalog`. **NPC complianc
 | Foundation | [P21-foundation-privacy-compliance-workspace](../reports/P21-foundation-privacy-compliance-workspace.md) |
 | WP01 inventory | [P21-WP01-requirements-and-privacy-inventory](../reports/P21-WP01-requirements-and-privacy-inventory.md) |
 | WP11 privacy delta | [P21-WP11-post-phase21-privacy-impact-refresh](../reports/P21-WP11-post-phase21-privacy-impact-refresh.md) |
+| Readiness visibility UI | [P21-privacy-readiness-visibility-product-status-ui](../reports/P21-privacy-readiness-visibility-product-status-ui.md) |
 | P25/P26 engineering reference | [post-phase21-privacy-impact-refresh](../compliance/post-phase21-privacy-impact-refresh.md) |
