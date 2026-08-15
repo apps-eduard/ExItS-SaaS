@@ -117,10 +117,16 @@ public sealed class ConnectedSupplierNotificationLifecycleTests
         Assert.Single(publisher.Marked);
         Assert.Equal(SupplierConnectionNotificationTypes.Requested, publisher.Marked[0].Type);
         Assert.Equal(relationship.Id.Value.ToString("D"), publisher.Marked[0].RelatedId);
-        Assert.Single(publisher.Published);
-        Assert.Equal(SupplierConnectionNotificationTypes.Accepted, publisher.Published[0].Type);
-        Assert.Equal(buyer.Value, publisher.Published[0].Recipient);
-        Assert.Contains("Paul Distribution accepted", publisher.Published[0].Preview, StringComparison.Ordinal);
+        Assert.Equal(2, publisher.Published.Count);
+        Assert.Contains(publisher.Published, p =>
+            p.Type == SupplierConnectionNotificationTypes.Accepted && p.Recipient == buyer.Value);
+        Assert.Contains(publisher.Published, p =>
+            p.Type == SupplierConnectionNotificationTypes.AcceptedConfirmation
+            && p.Recipient == supplier.Value
+            && p.Source == supplier.Value);
+        Assert.Contains("connected buyer", publisher.Published
+            .Single(p => p.Type == SupplierConnectionNotificationTypes.AcceptedConfirmation).Preview,
+            StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -145,7 +151,12 @@ public sealed class ConnectedSupplierNotificationLifecycleTests
             new RespondConnectionRequest());
 
         Assert.True(result.IsSuccess);
-        Assert.Equal(SupplierConnectionNotificationTypes.Declined, publisher.Published[0].Type);
-        Assert.Contains("declined", publisher.Published[0].Preview, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(2, publisher.Published.Count);
+        Assert.Contains(publisher.Published, p => p.Type == SupplierConnectionNotificationTypes.Declined);
+        Assert.Contains(publisher.Published, p => p.Type == SupplierConnectionNotificationTypes.DeclinedConfirmation);
+        Assert.Contains(
+            "declined",
+            publisher.Published.Single(p => p.Type == SupplierConnectionNotificationTypes.Declined).Preview,
+            StringComparison.OrdinalIgnoreCase);
     }
 }

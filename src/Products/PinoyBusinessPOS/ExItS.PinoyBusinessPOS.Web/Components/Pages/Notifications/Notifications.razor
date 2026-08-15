@@ -184,6 +184,9 @@ else
         string.Equals(item.RelatedType, SupplierConnectionNotificationTypes.Accepted, StringComparison.Ordinal)
         || string.Equals(item.RelatedType, SupplierConnectionNotificationTypes.Declined, StringComparison.Ordinal);
 
+    private static bool IsSupplierAcceptedConfirmation(OrganizationInAppNotificationDto item) =>
+        string.Equals(item.RelatedType, SupplierConnectionNotificationTypes.AcceptedConfirmation, StringComparison.Ordinal);
+
     private string StatusLabel(string? status) =>
         string.Equals(status, "Active", StringComparison.OrdinalIgnoreCase)
             ? L["Notifications_StatusConnected"]
@@ -198,6 +201,13 @@ else
         if (IsSupplierRequested(note))
         {
             await MarkReadOptimisticAsync(note);
+            return;
+        }
+
+        if (IsSupplierAcceptedConfirmation(note))
+        {
+            await MarkReadOptimisticAsync(note);
+            Nav.NavigateTo("/suppliers/buyers");
             return;
         }
 

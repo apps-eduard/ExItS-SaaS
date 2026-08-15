@@ -405,6 +405,9 @@ public sealed class RespondConnection
             var supplierName = string.IsNullOrWhiteSpace(r.SupplierDisplayNameSnapshot)
                 ? (r.SupplierPublicOrganizationIdSnapshot ?? "The supplier")
                 : r.SupplierDisplayNameSnapshot;
+            var buyerName = string.IsNullOrWhiteSpace(r.BuyerDisplayNameSnapshot)
+                ? (r.BuyerPublicOrganizationIdSnapshot ?? "A business")
+                : r.BuyerDisplayNameSnapshot;
 
             if (approve)
             {
@@ -416,6 +419,16 @@ public sealed class RespondConnection
                     "Supplier connection accepted",
                     $"{supplierName} accepted your supplier connection request.",
                     ct).ConfigureAwait(false);
+
+                // Supplier-side inbox history (same org). Requested may be missing if publish failed earlier.
+                await _notifications.PublishAsync(
+                    orgId,
+                    orgId,
+                    SupplierConnectionNotificationTypes.AcceptedConfirmation,
+                    relatedId,
+                    "Connection accepted",
+                    $"{buyerName} is now a connected buyer.",
+                    ct).ConfigureAwait(false);
             }
             else
             {
@@ -426,6 +439,15 @@ public sealed class RespondConnection
                     relatedId,
                     "Supplier connection declined",
                     $"{supplierName} declined your supplier connection request.",
+                    ct).ConfigureAwait(false);
+
+                await _notifications.PublishAsync(
+                    orgId,
+                    orgId,
+                    SupplierConnectionNotificationTypes.DeclinedConfirmation,
+                    relatedId,
+                    "Connection declined",
+                    $"You declined the connection request from {buyerName}.",
                     ct).ConfigureAwait(false);
             }
 

@@ -140,6 +140,7 @@ Connected supplier lifecycle publishes into the same inbox as customer-link resp
 - All tab = notification history (newest first); read items remain without permanent “Unread” label
 - Deep links: Accepted/Declined (buyer) → `/suppliers`; Requested open → mark read (Accept/Decline stay if Pending); Accept success → Connected buyers
 - Accept/Decline call existing Connected Supplier relationship APIs (not duplicated in notification code)
+- After Accept/Decline, supplier org also receives a **local confirmation** in All history (`SupplierConnectionAcceptedConfirmation` / `DeclinedConfirmation`) — “{Buyer} is now a connected buyer.”
 - Actioned requests mark related notifications read; rows remain in All/history
 - **Suppliers → Requests / Connected buyers** remain domain source of truth
 - Dashboard banner is a compact secondary attention card only

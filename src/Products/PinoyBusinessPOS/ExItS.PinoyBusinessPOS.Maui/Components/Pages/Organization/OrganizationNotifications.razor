@@ -269,6 +269,12 @@ else
         string.Equals(item.RelatedType, SupplierConnectionNotificationTypes.Accepted, StringComparison.Ordinal)
         || string.Equals(item.RelatedType, SupplierConnectionNotificationTypes.Declined, StringComparison.Ordinal);
 
+    private static bool IsSupplierAcceptedConfirmation(OrganizationInAppNotificationDto item) =>
+        string.Equals(item.RelatedType, SupplierConnectionNotificationTypes.AcceptedConfirmation, StringComparison.Ordinal);
+
+    private static bool IsSupplierDeclinedConfirmation(OrganizationInAppNotificationDto item) =>
+        string.Equals(item.RelatedType, SupplierConnectionNotificationTypes.DeclinedConfirmation, StringComparison.Ordinal);
+
     private async Task OpenRequestedAsync(OrganizationInAppNotificationDto item)
     {
         await MarkReadOptimisticAsync(item);
@@ -282,6 +288,18 @@ else
         }
 
         await MarkReadOptimisticAsync(item);
+
+        if (IsSupplierAcceptedConfirmation(item))
+        {
+            Nav.NavigateTo("/suppliers/connected/buyers");
+            return;
+        }
+
+        if (IsSupplierDeclinedConfirmation(item))
+        {
+            Nav.NavigateTo("/suppliers/connected/requests");
+            return;
+        }
 
         if (IsSupplierAcceptedOrDeclined(item))
         {

@@ -170,11 +170,22 @@ public static class SupplierConnectionNotificationTypes
     public const string Requested = "SupplierConnectionRequested";
     public const string Accepted = "SupplierConnectionAccepted";
     public const string Declined = "SupplierConnectionDeclined";
+    /// <summary>Supplier-org local activity after Accept (same-org publish allowed).</summary>
+    public const string AcceptedConfirmation = "SupplierConnectionAcceptedConfirmation";
+    /// <summary>Supplier-org local activity after Decline (same-org publish allowed).</summary>
+    public const string DeclinedConfirmation = "SupplierConnectionDeclinedConfirmation";
 
     public static bool IsKnown(string? relatedType) =>
         string.Equals(relatedType, Requested, StringComparison.Ordinal)
         || string.Equals(relatedType, Accepted, StringComparison.Ordinal)
-        || string.Equals(relatedType, Declined, StringComparison.Ordinal);
+        || string.Equals(relatedType, Declined, StringComparison.Ordinal)
+        || string.Equals(relatedType, AcceptedConfirmation, StringComparison.Ordinal)
+        || string.Equals(relatedType, DeclinedConfirmation, StringComparison.Ordinal);
+
+    /// <summary>Types that may be published into the same organization (supplier activity history).</summary>
+    public static bool IsLocalActivity(string? relatedType) =>
+        string.Equals(relatedType, AcceptedConfirmation, StringComparison.Ordinal)
+        || string.Equals(relatedType, DeclinedConfirmation, StringComparison.Ordinal);
 }
 
 /// <summary>Allowlisted RelatedType values products may publish into the organization inbox.</summary>

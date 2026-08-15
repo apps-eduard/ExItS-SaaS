@@ -84,7 +84,8 @@ public sealed class PublishOrganizationBusinessNotification
             return ApplicationResult<PublishOrganizationBusinessNotificationResult>.Failure(ex.ErrorCode, ex.Message);
         }
 
-        if (recipientOrganizationId == sourceOrganizationId)
+        if (recipientOrganizationId == sourceOrganizationId
+            && !SupplierConnectionNotificationTypes.IsLocalActivity(request.RelatedType))
         {
             return ApplicationResult<PublishOrganizationBusinessNotificationResult>.Failure(
                 ApplicationErrorCodes.CrossOrganizationMismatch,

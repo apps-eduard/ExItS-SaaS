@@ -228,4 +228,32 @@ public sealed class OrganizationBusinessNotificationTests
         Assert.False(sameOrg.IsSuccess);
         Assert.Equal(ApplicationErrorCodes.CrossOrganizationMismatch, sameOrg.ErrorCode);
     }
+
+    [Fact]
+    public async Task Local_activity_confirmation_may_publish_to_same_organization()
+    {
+        var org = PlatformOrganizationId.From(Guid.NewGuid());
+        var owner = PlatformUserId.From(Guid.NewGuid());
+        var now = DateTimeOffset.UtcNow;
+        var memberships = new InMemoryOrganizationMembershipRepository();
+        await memberships.AddAsync(OrganizationMembership.Create(org, owner, OrganizationRole.OrganizationOwner, now));
+        var notifications = new CustomerLinkCompletenessTests.InMemoryOrganizationInAppNotificationRepository();
+        var useCase = new PublishOrganizationBusinessNotification(
+            memberships, notifications, new FakeUow(), new FixedClock(now));
+
+        var result = await useCase.ExecuteAsync(
+            org,
+            new PublishOrganizationBusinessNotificationRequest(
+                org.Value,
+                SupplierConnectionNotificationTypes.AcceptedConfirmation,
+                Guid.NewGuid().ToString("D"),
+                "Connection accepted",
+                "Mica Store is now a connected buyer."));
+
+        Assert.True(result.IsSuccess, $"{result.ErrorCode}: {result.ErrorMessage}");
+        Assert.Equal(1, result.Value!.CreatedCount);
+        Assert.Single(notifications.Items);
+        Assert.Equal(SupplierConnectionNotificationTypes.AcceptedConfirmation, notifications.Items[0].RelatedType);
+        Assert.Equal(org, notifications.Items[0].OrganizationId);
+    }
 }
