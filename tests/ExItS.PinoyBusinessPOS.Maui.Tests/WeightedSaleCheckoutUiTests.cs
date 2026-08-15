@@ -14,6 +14,8 @@ public sealed class WeightedSaleCheckoutUiTests
         // ByWeight path must open dialog before any Cart.Add of a default 1 kg.
         Assert.Contains("OpenWeightEntry(product, existing > 0m ? existing : null, unit);", checkout, StringComparison.Ordinal);
         Assert.Contains("SellingUnitPickerDialog", checkout, StringComparison.Ordinal);
+        Assert.Contains("SellingUnitEntryDialog", checkout, StringComparison.Ordinal);
+        Assert.Contains("OpenSellingUnitEntry", checkout, StringComparison.Ordinal);
         Assert.Contains("OpenSellingUnitPicker", checkout, StringComparison.Ordinal);
         Assert.DoesNotContain("Cart.Add(product, 1m, preferred);", checkout, StringComparison.Ordinal);
     }
@@ -58,7 +60,7 @@ public sealed class WeightedSaleCheckoutUiTests
             MauiProject(), "Components", "Sales", "SaleCartPanel.razor"));
         Assert.Contains("Sales_Checkout_PricePerKg", panel, StringComparison.Ordinal);
         Assert.Contains("Sales_Checkout_WeightEdit", panel, StringComparison.Ordinal);
-        Assert.Contains("FormatCartQuantity", panel, StringComparison.Ordinal);
+        Assert.Contains("item.SellingUnitName", panel, StringComparison.Ordinal);
         Assert.Contains("EditWeight", panel, StringComparison.Ordinal);
     }
 
