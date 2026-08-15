@@ -29,12 +29,24 @@ On `RequestConnection` success: publish Requested to supplier org with public bu
 ## Bell unread count
 
 Server list `Count(!IsRead)` for selected Organization — MAUI `ShellNotificationBell` and Org Web `UnreadNotificationCount`.
+Format: hide at 0, exact 1–99, `99+` above.
+
+## Notification tap → Read
+
+Opening a notification calls `MarkOrganizationNotificationRead` immediately, updates the local list (`IsRead=true`), refreshes the bell, removes the row from Unread, and keeps it under All. **Unread ≠ Pending Action** — a Requested row can be read while the relationship stays Pending with Accept/Decline available.
+
+Deep links: buyer Accepted/Declined → Suppliers; supplier Accept success → Connected buyers; customer-link → Customers.
+
+## Connected buyers (supplier-side)
+
+Active relationships where current Organization is `SupplierOrganizationId`. Not Customers. Explicit “Add as customer” deferred.
 
 ## MAUI / Org Web centers
 
 - MAUI `/org/notifications` (compat `/org/customer-link-notifications`)
 - Org Web `/notifications`
 - Unread | All filters; Accept/Decline via Connected Supplier APIs when Pending
+- MAUI `/suppliers/connected/buyers`; Org Web `/suppliers/buyers` (+ nav under People → Suppliers)
 
 ## Privacy impact
 

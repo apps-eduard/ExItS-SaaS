@@ -77,7 +77,7 @@ The dashboard links to the latest accepted report.
 | [P10-WP02-purchasing.md](P10-WP02-purchasing.md) | P10-WP02 Purchasing | Complete |
 | [connected-exits-suppliers-phase-1.md](connected-exits-suppliers-phase-1.md) | Connected ExItS Suppliers Phase 1 | Code Complete |
 | [connected-supplier-connection-request-lifecycle.md](connected-supplier-connection-request-lifecycle.md) | Connected supplier request visibility (buyer Pending + supplier incoming) | Code Complete |
-| [unified-organization-business-notifications.md](unified-organization-business-notifications.md) | Unified org bell inbox (customer link + supplier connection) | Code Complete |
+| [unified-organization-business-notifications.md](unified-organization-business-notifications.md) | Unified org bell inbox (customer link + supplier connection); Read-on-open + Connected buyers | Code Complete |
 | [P11-WP01-web-ui-audit-and-component-inventory.md](P11-WP01-web-ui-audit-and-component-inventory.md) | P11-WP01 Web UI Audit | Complete |
 | [P11-WP02-global-web-layout-and-navigation.md](P11-WP02-global-web-layout-and-navigation.md) | P11-WP02 Global Web Layout and Navigation | Complete |
 | [P11-WP03-shared-forms-validation-and-dialogs.md](P11-WP03-shared-forms-validation-and-dialogs.md) | P11-WP03 Shared Forms, Validation, and Dialogs | Complete |

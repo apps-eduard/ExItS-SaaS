@@ -90,6 +90,8 @@ Schema **v9** adds `multiplier_to_base` / `package_label` on linked products so 
 - `/suppliers` — supplier list with Pending/Connected/Declined relationship status + incoming-request count badge
 - `/suppliers/connected/request` — request an organization connection (online)
 - `/suppliers/connected/requests` — **supplier-side** incoming connection requests (Accept / Decline)
+- `/suppliers/connected/buyers` — **supplier-side** Active connected buyers (not Customers)
+- `/suppliers/connected/buyers/{relationshipId}` — connected buyer relationship detail
 - `/suppliers/{id}/connected-catalog?relationshipId=…` — paged supplier catalog search (online only; **Active** only)
 - `/suppliers/{id}/linked-products?relationshipId=…` — selective local linked-product browse (offline capable)
 - `/purchasing/new` — external supplier picker remains unchanged; connected suppliers use online catalog search or local linked products offline
@@ -99,6 +101,8 @@ Schema **v9** adds `multiplier_to_base` / `package_label` on linked products so 
 
 - `/suppliers` — supplier masters + connection status (Pending visible after send)
 - `/suppliers/requests` — Incoming (supplier view) and Sent (buyer view) connection requests
+- `/suppliers/buyers` — **Connected buyers** (Active relationships where current org is supplier)
+- `/suppliers/buyers/{relationshipId}` — connected buyer detail
 - `/suppliers/connect` — send Connected ExItS connection request (Business QR / ORG######)
 
 ## Connection-request lifecycle (authoritative)
@@ -111,8 +115,9 @@ Buyer sends request
 Buyer Suppliers list shows Pending + “Waiting for supplier approval”
 Supplier Incoming requests (MAUI `/suppliers/connected/requests` or Org Web `/suppliers/requests`) shows Accept/Decline
 Discoverability: pending count banners on Owner home, More, Suppliers list (MAUI) and Overview + People → Supplier requests badge (Org Web)
-Supplier Accept → Active (catalog/PO enabled for buyer)
+Supplier Accept → Active (catalog/PO enabled for buyer); buyer appears under **Connected buyers**
 Supplier Decline → Declined (no catalog/PO)
+**Connected buyer ≠ Customer** — Accept does **not** create a seller-owned Customer; explicit Add as customer is deferred
 Inventory unchanged until buyer Goods Receipt
 ```
 
@@ -130,13 +135,18 @@ Connected supplier lifecycle publishes into the same inbox as customer-link resp
 
 - MAUI: header bell → `/org/notifications` (Unread / All; Accept/Decline when Pending + `ManageSuppliers`)
 - Org Web: header bell → `/notifications` (same semantics; Owner + Manager)
-- Unread badge counts server `!IsRead` for the selected Organization only
+- **Tap/open marks `IsRead=true` immediately** (optimistic local update + bell refresh). Unread ≠ Pending Action.
+- Unread badge counts server `!IsRead` for the selected Organization only (0 hidden, 1–99 exact, >99 → `99+`)
+- All tab = notification history (newest first); read items remain without permanent “Unread” label
+- Deep links: Accepted/Declined (buyer) → `/suppliers`; Requested open → mark read (Accept/Decline stay if Pending); Accept success → Connected buyers
 - Accept/Decline call existing Connected Supplier relationship APIs (not duplicated in notification code)
 - Actioned requests mark related notifications read; rows remain in All/history
-- **Suppliers → Requests** remains domain source of truth / relationship history
+- **Suppliers → Requests / Connected buyers** remain domain source of truth
 - Dashboard banner is a compact secondary attention card only
 
 POS publishes via `POST /api/v1/organizations/{sourceOrgId}/business-notifications` (session-forwarded, best-effort). No second notification table.
+
+Retention: notifications are not hard-deleted on read; no separate retention enforcement beyond existing Platform storage.
 
 ## Deferred
 Marketplace discovery, inter-org payments, AP/invoices, live stock sharing, logistics, images in sync, Redis, brokers, auto-accept, auto-receive, full offline supplier catalog, connection-request cancellation while Pending (Disconnect remains Active-only), SignalR/realtime bell push.
