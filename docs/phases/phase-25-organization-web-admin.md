@@ -30,12 +30,15 @@ Overview · Business (profile / branches / devices) · People (staff / customers
 Unauthorized sections are hidden in navigation. Cashier POS role is denied the host (`CanAccessOrganizationWeb`). Server APIs remain authoritative.
 
 Role/workflow matrix: [organization-web-role-and-workflow-matrix.md](../engineering/organization-web-role-and-workflow-matrix.md).  
-UI / responsive / Development Test User: [organization-web-ui-responsive-standard.md](../engineering/organization-web-ui-responsive-standard.md).
+UI / responsive / Development Test User: [organization-web-ui-responsive-standard.md](../engineering/organization-web-ui-responsive-standard.md).  
+Full responsive UX pass: [P25-org-web-full-responsive-ux-completion.md](../reports/P25-org-web-full-responsive-ux-completion.md).  
+Owner checklist (unchecked): [organization-web-responsive-owner-checklist.md](../validation/organization-web-responsive-owner-checklist.md).
 
 ### Authentication & routing (remediation)
 
 - Development **Test User** fills username only; password is manual; normal credentials login.
 - Post-login: Platform → Org Web (Owner / Organization Administrator) → Personal; multi-org → chooser; Cashier org workspaces excluded.
+- Management pages share `OrgAlert` / `OrgLoading` / `OrgEmpty` / localized headers; mobile drawer covers all sections.
 - Phase 25 remains **OPEN** (no closeout).
 
 
