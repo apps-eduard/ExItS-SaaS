@@ -16,7 +16,8 @@
 
         @if (_loading)
         {
-            <p>@L["Common_Loading"]</p>
+            <Spinner />
+            <p class="pos-muted">@L["Common_Loading"]</p>
         }
         else if (!string.IsNullOrWhiteSpace(_error))
         {
@@ -138,6 +139,29 @@
         }
     }
 
-    private async Task ContinueAsync() =>
-        Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+    private async Task ContinueAsync()
+    {
+        // After ack (or when already acknowledged), avoid full cold ResolveStartRoute — it re-queries
+        // education and can leave the shell on an empty spinner while restore/setup calls stack.
+        _loading = true;
+        try
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            string route;
+            try
+            {
+                route = await Gate.ResolveRouteAfterSalesDocumentEducationAsync(cts.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                route = "/setup";
+            }
+
+            Nav.NavigateTo(string.IsNullOrWhiteSpace(route) ? "/setup" : route, replace: true);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
 }

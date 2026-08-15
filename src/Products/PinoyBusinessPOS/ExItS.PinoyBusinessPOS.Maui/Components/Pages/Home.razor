@@ -11,7 +11,20 @@
 @code {
     protected override async Task OnInitializedAsync()
     {
-        var route = await Gate.ResolveStartRouteAsync();
-        Nav.NavigateTo(route == "/home" ? "/owner" : route, replace: true);
+        // Match Boot: never wait forever on cold resolve (education/setup/permissions).
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        string route;
+        try
+        {
+            route = await Gate.ResolveStartRouteAsync(cts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            route = "/owner";
+        }
+
+        Nav.NavigateTo(
+            string.IsNullOrWhiteSpace(route) || route == "/home" ? "/owner" : route,
+            replace: true);
     }
 }

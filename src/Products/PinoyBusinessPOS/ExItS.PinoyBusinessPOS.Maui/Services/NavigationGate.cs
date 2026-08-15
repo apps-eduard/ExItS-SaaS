@@ -164,25 +164,7 @@ public sealed class NavigationGate(
             return false;
         }
 
-        if (session.PosDeviceId is null || session.BranchId is null)
-        {
-            if (await preferences.GetBusinessTypeActivationPromptPendingAsync(session.OrganizationId.Value, ct)
-                    .ConfigureAwait(false))
-            {
-                return true;
-            }
-
-            return true;
-        }
-
-        await auth.EnsureOfflineOperateGrantAsync(ct).ConfigureAwait(false);
-        if (!await auth.HasOfflinePinConfiguredAsync(ct).ConfigureAwait(false))
-        {
-            return true;
-        }
-
-        if (await preferences.GetBusinessTemplatePromptPendingAsync(session.OrganizationId.Value, ct)
-                .ConfigureAwait(false))
+        if (await HasEarlierOrgPosFirstTimeSetupStepAsync(session, ct).ConfigureAwait(false))
         {
             return true;
         }
@@ -197,6 +179,87 @@ public sealed class NavigationGate(
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// Device / PIN / starter-template steps that must finish before operational setup.
+    /// Does not call Platform education or operational-setup APIs.
+    /// </summary>
+    public async Task<bool> HasEarlierOrgPosFirstTimeSetupStepAsync(CancellationToken ct = default)
+    {
+        var session = currentUser.Session;
+        if (session?.OrganizationId is null || !currentUser.HasPosAccess)
+        {
+            return false;
+        }
+
+        return await HasEarlierOrgPosFirstTimeSetupStepAsync(session, ct).ConfigureAwait(false);
+    }
+
+    private async Task<bool> HasEarlierOrgPosFirstTimeSetupStepAsync(
+        AuthSession session,
+        CancellationToken ct)
+    {
+        if (session.OrganizationId is null)
+        {
+            return false;
+        }
+
+        if (session.PosDeviceId is null || session.BranchId is null)
+        {
+            return true;
+        }
+
+        await auth.EnsureOfflineOperateGrantAsync(ct).ConfigureAwait(false);
+        if (!await auth.HasOfflinePinConfiguredAsync(ct).ConfigureAwait(false))
+        {
+            return true;
+        }
+
+        return await preferences
+            .GetBusinessTemplatePromptPendingAsync(session.OrganizationId.Value, ct)
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// After the owner acknowledges sales-document education — skip re-querying education status
+    /// and avoid a full cold <see cref="ResolveStartRouteAsync"/> (restore/session). Continues at
+    /// operational setup when incomplete, otherwise the role home.
+    /// </summary>
+    public async Task<string> ResolveRouteAfterSalesDocumentEducationAsync(CancellationToken ct = default)
+    {
+        if (currentUser.Session?.OrganizationId is null || !currentUser.HasPosAccess)
+        {
+            return await ResolveStartRouteAsync(ct).ConfigureAwait(false);
+        }
+
+        if (await HasEarlierOrgPosFirstTimeSetupStepAsync(currentUser.Session, ct).ConfigureAwait(false))
+        {
+            return await ResolveStartRouteAsync(ct).ConfigureAwait(false);
+        }
+
+        if (capabilities.IsAllowed(UtangCapability.ManageOperationalSetup))
+        {
+            try
+            {
+                var setupResult = await operationalSetup.GetAsync(ct).ConfigureAwait(false);
+                if (!setupResult.IsSuccess || setupResult.Data is { IsCompleted: false })
+                {
+                    return "/setup";
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch
+            {
+                // Prefer setup so the owner can retry loading the form instead of hanging.
+                return "/setup";
+            }
+        }
+
+        return await roleHome.ResolvePosHomeAsync(ct).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -254,7 +317,8 @@ public sealed class NavigationGate(
             || path.Equals("/organization-select", StringComparison.OrdinalIgnoreCase)
             || path.Equals("/org", StringComparison.OrdinalIgnoreCase)
             || path.Equals("/onboarding/business-types", StringComparison.OrdinalIgnoreCase)
-            || path.Equals("/org/business-types", StringComparison.OrdinalIgnoreCase))
+            || path.Equals("/org/business-types", StringComparison.OrdinalIgnoreCase)
+            || path.StartsWith("/catalog/import/jobs", StringComparison.OrdinalIgnoreCase))
         {
             return true;
         }

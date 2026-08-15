@@ -269,7 +269,19 @@ else
         try
         {
             await Task.Delay(1500, token);
-            await InvokeAsync(() => Nav.NavigateTo("/catalog"));
+            // First-run: do not land on /catalog (PosShell will bounce via ResolveStartRoute and can
+            // leave an empty spinner). Continue the gate (education → setup → role home).
+            await InvokeAsync(async () =>
+            {
+                if (await Gate.IsOrgPosFirstTimeSetupIncompleteAsync(token))
+                {
+                    Nav.NavigateTo(await Gate.ResolveStartRouteAsync(token), replace: true);
+                }
+                else
+                {
+                    Nav.NavigateTo("/catalog");
+                }
+            });
         }
         catch (TaskCanceledException)
         {

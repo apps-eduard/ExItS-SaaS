@@ -149,52 +149,88 @@ else
             return;
         }
 
-        // Owner working-as from org select — trust preferred home even if effective-role API lags.
-        if (string.Equals(SellingMode.PreferredHomeRoute, RoleHomeResolver.OwnerHome, StringComparison.Ordinal))
+        var stayOnPage = false;
+        try
         {
-            _authorized = true;
-        }
-        else
-        {
+            // Owner working-as from org select — trust preferred home even if effective-role API lags.
+            if (string.Equals(SellingMode.PreferredHomeRoute, RoleHomeResolver.OwnerHome, StringComparison.Ordinal))
+            {
+                _authorized = true;
+            }
+            else
+            {
+                if (!Gate.CanEnterProtectedShell)
+                {
+                    Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+                    return;
+                }
+
+                var home = await RoleHome.ResolvePosHomeAsync();
+                _authorized = home == RoleHomeResolver.OwnerHome;
+                if (!_authorized)
+                {
+                    Nav.NavigateTo(home, replace: true);
+                    return;
+                }
+            }
+
             if (!Gate.CanEnterProtectedShell)
             {
                 Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
                 return;
             }
 
-            var home = await RoleHome.ResolvePosHomeAsync();
-            _authorized = home == RoleHomeResolver.OwnerHome;
-            if (!_authorized)
+            stayOnPage = true;
+            _ready = true;
+
+            if (Capabilities.IsAllowed(UtangCapability.ManageOperationalSetup))
             {
-                Nav.NavigateTo(home, replace: true);
-                return;
+                try
+                {
+                    var setup = await Setup.GetAsync();
+                    _setupCompleted = setup.IsSuccess && setup.Data?.IsCompleted == true;
+                    await InvokeAsync(StateHasChanged);
+                }
+                catch
+                {
+                    _setupCompleted = false;
+                }
+            }
+
+            // Optional supplier inbox must not block first paint.
+            _ = LoadIncomingSupplierCountAsync();
+        }
+        finally
+        {
+            if (stayOnPage)
+            {
+                _ready = true;
             }
         }
+    }
 
-        if (!Gate.CanEnterProtectedShell)
+    private async Task LoadIncomingSupplierCountAsync()
+    {
+        try
         {
-            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
-            return;
-        }
+            if (!Capabilities.IsAllowed(UtangCapability.ViewSuppliers)
+                || !await Connectivity.IsConnectedAsync())
+            {
+                return;
+            }
 
-        if (Capabilities.IsAllowed(UtangCapability.ManageOperationalSetup))
-        {
-            var setup = await Setup.GetAsync();
-            _setupCompleted = setup.IsSuccess && setup.Data?.IsCompleted == true;
-        }
-
-        if (Capabilities.IsAllowed(UtangCapability.ViewSuppliers)
-            && await Connectivity.IsConnectedAsync())
-        {
             var incoming = await ConnectedSuppliers.ListRelationshipsAsync("supplier");
             if (incoming.IsSuccess && incoming.Data is not null)
             {
                 _incomingPendingCount = incoming.Data.Count(x =>
                     string.Equals(x.Status, "Pending", StringComparison.OrdinalIgnoreCase));
+                await InvokeAsync(StateHasChanged);
             }
         }
-
-        _ready = true;
+        catch
+        {
+            // Optional badge — never keep the owner on an empty spinner.
+        }
     }
 
     private void StartSelling()

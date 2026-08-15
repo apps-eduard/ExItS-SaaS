@@ -54,7 +54,10 @@ public sealed class SalesDocumentUiGuardTests
         var more = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Pages", "MoreHub.razor"));
         Assert.Contains("ResolveOperationalSetupRouteAsync", gate, StringComparison.Ordinal);
         Assert.Contains("RequiresSalesDocumentEducationAsync", gate, StringComparison.Ordinal);
+        Assert.Contains("ResolveRouteAfterSalesDocumentEducationAsync", gate, StringComparison.Ordinal);
         Assert.Contains("Gate.ResolveOperationalSetupRouteAsync()", more, StringComparison.Ordinal);
+        Assert.Contains("ResolveRouteAfterSalesDocumentEducationAsync", page, StringComparison.Ordinal);
+        Assert.Contains("/catalog/import/jobs", gate, StringComparison.Ordinal);
     }
 
     [Fact]
