@@ -8426,13 +8426,25 @@
     <value>Nandito na ang mga kalakal.</value>
   </data>
   <data name="Purchasing_ReceiveStockDescription" xml:space="preserve">
-    <value>Itala ang mga kalakal na natanggap mo na at idagdag sa stock.</value>
+    <value>Idagdag sa stock ang mga kalakal na nandito na.</value>
   </data>
   <data name="Purchasing_ReceiveStockHelper" xml:space="preserve">
-    <value>Gamitin ito kapag nandito na ang mga kalakal.</value>
+    <value>Nag-oorder pa? Gamitin ang</value>
   </data>
   <data name="Purchasing_ReceiveStockSecondary" xml:space="preserve">
     <value>Kung hindi pa natatanggap, gumawa muna ng purchase order.</value>
+  </data>
+  <data name="Purchasing_ReceiveStockSearchPlaceholder" xml:space="preserve">
+    <value>Pangalan, SKU, o barcode</value>
+  </data>
+  <data name="Purchasing_ReceiveStockAction" xml:space="preserve">
+    <value>Tanggapin</value>
+  </data>
+  <data name="Purchasing_ReceiveStockNoMatchTitle" xml:space="preserve">
+    <value>Walang tumugmang produkto</value>
+  </data>
+  <data name="Purchasing_ReceiveStockNoMatchMessage" xml:space="preserve">
+    <value>Subukan ang ibang pangalan, SKU, o barcode.</value>
   </data>
   <data name="Purchasing_ReceiveStockPickProduct" xml:space="preserve">
     <value>Pumili ng produkto</value>

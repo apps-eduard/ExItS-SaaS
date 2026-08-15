@@ -46,9 +46,7 @@ else
         <p class="pos-inventory-adjust__intro">@(IsReceiveStock ? L["Purchasing_ReceiveStockDescription"] : L["Inventory_AdjustIntro"])</p>
         @if (IsReceiveStock)
         {
-            <p class="pos-muted">@L["Purchasing_ReceiveStockHelper"]</p>
-            <p class="pos-muted">@L["Purchasing_ReceiveStockSecondary"]</p>
-            <p class="pos-inventory-adjust__intro">@L["Purchasing_ReceiveStockWillIncrease"]</p>
+            <p class="pos-muted">@L["Purchasing_ReceiveStockWillIncrease"]</p>
         }
     </header>
 

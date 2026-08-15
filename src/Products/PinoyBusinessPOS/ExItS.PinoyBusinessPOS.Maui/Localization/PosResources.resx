@@ -8426,13 +8426,25 @@
     <value>Goods are already here.</value>
   </data>
   <data name="Purchasing_ReceiveStockDescription" xml:space="preserve">
-    <value>Record goods you already received and add them to stock.</value>
+    <value>Add goods that are already here to on-hand stock.</value>
   </data>
   <data name="Purchasing_ReceiveStockHelper" xml:space="preserve">
-    <value>Use this when the goods are already with you.</value>
+    <value>Still ordering? Use</value>
   </data>
   <data name="Purchasing_ReceiveStockSecondary" xml:space="preserve">
     <value>For orders you have not received yet, create a purchase order instead.</value>
+  </data>
+  <data name="Purchasing_ReceiveStockSearchPlaceholder" xml:space="preserve">
+    <value>Name, SKU, or barcode</value>
+  </data>
+  <data name="Purchasing_ReceiveStockAction" xml:space="preserve">
+    <value>Receive</value>
+  </data>
+  <data name="Purchasing_ReceiveStockNoMatchTitle" xml:space="preserve">
+    <value>No matching products</value>
+  </data>
+  <data name="Purchasing_ReceiveStockNoMatchMessage" xml:space="preserve">
+    <value>Try another name, SKU, or barcode.</value>
   </data>
   <data name="Purchasing_ReceiveStockPickProduct" xml:space="preserve">
     <value>Choose a product</value>

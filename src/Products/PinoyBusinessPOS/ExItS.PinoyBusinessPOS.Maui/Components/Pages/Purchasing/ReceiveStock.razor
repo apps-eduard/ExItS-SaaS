@@ -1,5 +1,6 @@
 @page "/purchasing/receive-stock"
 @using System.Globalization
+@using ExItS.DesignSystem.Components.Internal
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IPosInventoryClient Inventory
@@ -23,31 +24,38 @@ else if (!_allowed)
 }
 else
 {
-<div class="pos-purchasing">
+<div class="pos-purchasing pos-receive-stock">
     <StoreHeaderBack Href="/purchasing" />
     <Page>
         <header class="pos-purchasing__header">
             <div class="pos-purchasing__heading">
                 <h1 class="pos-purchasing__title">@L["Purchasing_ReceiveStock"]</h1>
                 <p class="pos-purchasing__subtitle">@L["Purchasing_ReceiveStockDescription"]</p>
-                <p class="pos-muted">@L["Purchasing_ReceiveStockHelper"]</p>
-                <p class="pos-muted">@L["Purchasing_ReceiveStockSecondary"]</p>
             </div>
         </header>
+
+        <p class="pos-receive-stock__tip">
+            @L["Purchasing_ReceiveStockHelper"]
+            <button type="button" class="pos-link-button" @onclick="GoOrders">@L["Purchasing_Orders"]</button>
+        </p>
 
         @if (_isOffline)
         {
             <Alert Tone="AlertTone.Warning" Title="@L["Inventory_OfflineTitle"]" Message="@L["Inventory_OfflineMessage"]" />
         }
 
-        <div class="pos-search" role="search">
-            <label class="visually-hidden" for="receive-stock-search">@L["Inventory_SearchPlaceholder"]</label>
-            <input id="receive-stock-search"
-                   class="pos-search__input"
-                   type="search"
-                   value="@_search"
-                   placeholder="@L["Inventory_SearchPlaceholder"]"
-                   @oninput="OnSearchInput" />
+        <div class="pos-receive-stock__toolbar">
+            <div class="pos-receive-stock__search" role="search">
+                <span class="pos-receive-stock__search-icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
+                <label class="visually-hidden" for="receive-stock-search">@L["Purchasing_ReceiveStockSearchPlaceholder"]</label>
+                <input id="receive-stock-search"
+                       class="pos-receive-stock__search-input"
+                       type="search"
+                       value="@_search"
+                       placeholder="@L["Purchasing_ReceiveStockSearchPlaceholder"]"
+                       disabled="@(_loading || _isOffline)"
+                       @oninput="OnSearchInput" />
+            </div>
         </div>
 
         <section class="pos-purchasing__panel" aria-labelledby="receive-stock-list-heading">
@@ -63,16 +71,16 @@ else
                             RetryLabel="@L["Api_Retry"]"
                             OnRetry="ReloadAsync" />
             }
-            else if (_items.Count == 0)
+            else if (TrackedItems.Count == 0)
             {
                 <EmptyState IconName="products"
-                            Title="@L["Purchasing_ReceiveStockEmptyTitle"]"
-                            Message="@L["Purchasing_ReceiveStockEmptyMessage"]" />
+                            Title="@(HasSearch ? L["Purchasing_ReceiveStockNoMatchTitle"] : L["Purchasing_ReceiveStockEmptyTitle"])"
+                            Message="@(HasSearch ? L["Purchasing_ReceiveStockNoMatchMessage"] : L["Purchasing_ReceiveStockEmptyMessage"])" />
             }
             else
             {
                 <div class="pos-purchasing__list" role="list" aria-label="@L["Purchasing_ReceiveStock"]">
-                    @foreach (var item in _items.Where(x => x.IsTracked))
+                    @foreach (var item in TrackedItems)
                     {
                         <a class="pos-purchasing__row"
                            role="listitem"
@@ -86,7 +94,7 @@ else
                                     · @L["Inventory_OnHand"] @item.OnHandQuantity.ToString("0.###", CultureInfo.InvariantCulture)
                                 </span>
                             </div>
-                            <span class="pos-purchasing__view">@L["Purchasing_ReceiveStock"]</span>
+                            <span class="pos-purchasing__view">@L["Purchasing_ReceiveStockAction"]</span>
                         </a>
                     }
                 </div>
@@ -107,6 +115,11 @@ else
     private string? _errorMessage;
     private CancellationTokenSource? _searchCts;
 
+    private bool HasSearch => !string.IsNullOrWhiteSpace(_search);
+
+    private IReadOnlyList<PosInventoryAccountDto> TrackedItems =>
+        _items.Where(x => x.IsTracked).ToList();
+
     protected override async Task OnInitializedAsync()
     {
         if (!Gate.CanEnterProtectedShell)
@@ -122,6 +135,8 @@ else
             await ReloadAsync();
         }
     }
+
+    private void GoOrders() => Nav.NavigateTo("/purchasing/orders");
 
     private async Task OnSearchInput(ChangeEventArgs e)
     {
