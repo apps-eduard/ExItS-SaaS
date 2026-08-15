@@ -4,6 +4,7 @@
 |---|---|
 | Status | **Code Complete / Validation Pending** |
 | Starting SHA | `57e155ec` |
+| Feature SHA | `da26870d` |
 | Phase 21 | **OPEN** — Legal/DPO/Owner Validation Pending |
 | Legal / NPC Compliant | **No — not claimed** |
 | Browser Verified | **No** |
