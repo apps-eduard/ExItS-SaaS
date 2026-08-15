@@ -3,8 +3,9 @@
 @inject OrgWebShellState Shell
 @inject ICurrentUserContext CurrentUser
 @inject IPlatformAccessClient Platform
+@inject IStringLocalizer<OrgWebResources> L
 
-<PageTitle>Branches</PageTitle>
+<PageTitle>@L["Branches_Title"]</PageTitle>
 
 @if (!Shell.CanSee("branches"))
 {
@@ -12,55 +13,68 @@
 }
 else
 {
-    <ExitsPageHeader Title="Branches" Subtitle="Location-specific operational state. Products remain organization-level." />
+    <ExitsPageHeader Title="@L["Branches_Title"]" Subtitle="@L["Branches_Subtitle"]">
+        <Button Type="@ButtonType.Primary" OnClick="OpenCreateAsync">@L["Branches_Add"]</Button>
+    </ExitsPageHeader>
 
     @if (_capacity is not null)
     {
-        <p class="org-note">Capacity @_capacity.Used / @_capacity.Allowed. Archive instead of deleting branches that have history.</p>
+        <p class="org-note">@string.Format(L["Branches_Capacity"].Value, _capacity.Used, _capacity.Allowed)</p>
     }
 
-    <div class="org-form" style="margin-bottom:1rem">
-        <ExitsField Label="Code"><Input @bind-Value="_code" /></ExitsField>
-        <ExitsField Label="Name"><Input @bind-Value="_name" /></ExitsField>
-        <ExitsField Label="Address"><Input @bind-Value="_address" /></ExitsField>
-        <Button Type="@ButtonType.Primary" Loading="_busy" OnClick="CreateAsync">Create branch</Button>
-    </div>
+    @if (!string.IsNullOrWhiteSpace(_success))
+    {
+        <Alert Type="@AlertType.Success" Message="@_success" ShowIcon="true" Closable="true" OnClose="() => _success = null" Style="margin-bottom:1rem;" />
+    }
 
     @if (!string.IsNullOrWhiteSpace(_error))
     {
-        <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" />
+        <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" Closable="true" OnClose="() => _error = null" Style="margin-bottom:1rem;" />
     }
 
     @if (_loading)
     {
-        <p class="org-note">Loading…</p>
+        <Skeleton Active="true" />
     }
     else if (_items.Count == 0)
     {
-        <ExitsEmptyState Title="No branches" Message="Create the first branch for this organization." />
+        <ExitsEmptyState Title="@L["Branches_EmptyTitle"]" Message="@L["Branches_EmptyMessage"]" />
+        <div style="margin-top:1rem">
+            <Button Type="@ButtonType.Primary" OnClick="OpenCreateAsync">@L["Branches_Add"]</Button>
+        </div>
     }
     else
     {
         <div class="org-table-wrap">
             <table class="org-table">
                 <thead>
-                    <tr><th>Code</th><th>Name</th><th>Status</th><th>Address</th><th></th></tr>
+                    <tr>
+                        <th>@L["Branches_ColName"]</th>
+                        <th>@L["Branches_ColCode"]</th>
+                        <th>@L["Branches_ColAddress"]</th>
+                        <th>@L["Branches_ColStatus"]</th>
+                        <th></th>
+                    </tr>
                 </thead>
                 <tbody>
                     @foreach (var b in _items)
                     {
                         <tr>
-                            <td>@b.Code @(b.IsPrimary ? "(primary)" : "")</td>
                             <td>
-                                <input value="@b.Name" @onchange="e => _names[b.Id] = e.Value?.ToString() ?? b.Name" />
+                                @b.Name
+                                @if (b.IsPrimary)
+                                {
+                                    <span class="org-badge" style="margin-left:.35rem">@L["Branches_Primary"]</span>
+                                }
                             </td>
-                            <td><span class="org-badge">@b.Status</span></td>
-                            <td>@b.AddressLine1 @b.City</td>
-                            <td>
-                                <button type="button" class="ant-btn ant-btn-sm" disabled="@_busy" @onclick="() => SaveAsync(b)">Save</button>
+                            <td>@b.Code</td>
+                            <td>@(string.Join(" ", new[] { b.AddressLine1, b.City }.Where(s => !string.IsNullOrWhiteSpace(s))))</td>
+                            <td><span class="org-badge">@OrgWebUi.Badge(b.Status)</span></td>
+                            <td class="org-actions">
+                                <Button Size="@ButtonSize.Small" Disabled="_busy" OnClick="() => OpenEditAsync(b)">@L["Common_Edit"]</Button>
                                 @if (!b.IsPrimary && !string.Equals(b.Status, "Archived", StringComparison.OrdinalIgnoreCase))
                                 {
-                                    <button type="button" class="ant-btn ant-btn-sm" disabled="@_busy" @onclick="() => ArchiveAsync(b)">Archive</button>
+                                    <Button Size="@ButtonSize.Small" Danger Disabled="_busy" OnClick="() => ArchiveAsync(b)">@L["Branches_Archive"]</Button>
                                 }
                             </td>
                         </tr>
@@ -69,27 +83,50 @@ else
             </table>
         </div>
     }
+
+    <Modal Title="@(_editing is null ? L["Branches_Add"].Value : L["Branches_Edit"].Value)"
+           Visible="_formOpen"
+           ConfirmLoading="_busy"
+           OnOk="SaveFormAsync"
+           OnCancel="CloseForm"
+           OkText="@L["Common_Save"].Value"
+           CancelText="@L["Common_Cancel"].Value"
+           DestroyOnClose>
+        <ExitsField Label="@L["Branches_FieldCode"]">
+            <Input @bind-Value="_formCode" Disabled="_editing is not null || _busy" Placeholder="@L["Branches_FieldCode"]" />
+        </ExitsField>
+        <ExitsField Label="@L["Branches_FieldName"]">
+            <Input @bind-Value="_formName" Disabled="_busy" Placeholder="@L["Branches_FieldName"]" />
+        </ExitsField>
+        <ExitsField Label="@L["Branches_FieldAddress"]">
+            <Input @bind-Value="_formAddress" Disabled="_busy" Placeholder="@L["Branches_FieldAddress"]" />
+        </ExitsField>
+    </Modal>
 }
 
 @code {
     private bool _loading = true;
     private bool _busy;
+    private bool _formOpen;
     private string? _error;
-    private string? _code;
-    private string? _name;
-    private string? _address;
+    private string? _success;
+    private string? _formCode;
+    private string? _formName;
+    private string? _formAddress;
+    private OrganizationBranchDto? _editing;
     private BranchCapacityDto? _capacity;
     private List<OrganizationBranchDto> _items = [];
-    private readonly Dictionary<Guid, string> _names = [];
 
     protected override Task OnInitializedAsync() => LoadAsync();
 
     private async Task LoadAsync()
     {
+        _loading = true;
         var orgId = CurrentUser.Session?.OrganizationId;
         if (orgId is null)
         {
             _loading = false;
+            _error = L["Error_SessionExpired"];
             return;
         }
 
@@ -98,72 +135,93 @@ else
         if (list.IsSuccess && list.Data is not null)
         {
             _items = list.Data.ToList();
-            foreach (var b in _items)
-            {
-                _names[b.Id] = b.Name;
-            }
+            _error = null;
         }
         else
         {
-            _error = OrgWebUi.Error(list.Error);
+            _error = OrgWebUi.Error(list.Error, L["Error_GenericLoad"]);
         }
 
-        _capacity = cap.Data;
+        _capacity = cap.IsSuccess ? cap.Data : null;
         _loading = false;
     }
 
-    private async Task CreateAsync()
+    private Task OpenCreateAsync()
     {
-        var orgId = CurrentUser.Session?.OrganizationId;
-        if (orgId is null || string.IsNullOrWhiteSpace(_code) || string.IsNullOrWhiteSpace(_name))
+        _editing = null;
+        _formCode = _formName = _formAddress = null;
+        _formOpen = true;
+        return Task.CompletedTask;
+    }
+
+    private Task OpenEditAsync(OrganizationBranchDto branch)
+    {
+        _editing = branch;
+        _formCode = branch.Code;
+        _formName = branch.Name;
+        _formAddress = string.Join(" ", new[] { branch.AddressLine1, branch.City }.Where(s => !string.IsNullOrWhiteSpace(s)));
+        _formOpen = true;
+        return Task.CompletedTask;
+    }
+
+    private void CloseForm()
+    {
+        if (_busy)
         {
-            _error = "Code and name are required.";
             return;
         }
 
-        _busy = true;
-        try
-        {
-            var result = await Platform.CreateBranchAsync(
-                orgId.Value,
-                new CreateBranchRequest(_code.Trim(), _name.Trim(), _address));
-            if (!result.IsSuccess)
-            {
-                _error = OrgWebUi.Error(result.Error);
-                return;
-            }
-
-            _code = _name = _address = null;
-            _error = null;
-            await LoadAsync();
-        }
-        finally
-        {
-            _busy = false;
-        }
+        _formOpen = false;
+        _editing = null;
     }
 
-    private async Task SaveAsync(OrganizationBranchDto branch)
+    private async Task SaveFormAsync()
     {
         var orgId = CurrentUser.Session?.OrganizationId;
         if (orgId is null)
         {
+            _error = L["Error_SessionExpired"];
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_formName) || (_editing is null && string.IsNullOrWhiteSpace(_formCode)))
+        {
+            _error = L["Branches_ValidationRequired"];
             return;
         }
 
         _busy = true;
         try
         {
-            var name = _names.GetValueOrDefault(branch.Id, branch.Name);
-            var result = await Platform.UpdateBranchAsync(
-                orgId.Value,
-                branch.Id,
-                new UpdateBranchRequest(Name: name));
-            _error = result.IsSuccess ? null : OrgWebUi.Error(result.Error);
-            if (result.IsSuccess)
+            if (_editing is null)
             {
-                await LoadAsync();
+                var result = await Platform.CreateBranchAsync(
+                    orgId.Value,
+                    new CreateBranchRequest(_formCode!.Trim(), _formName.Trim(), _formAddress));
+                if (!result.IsSuccess)
+                {
+                    _error = OrgWebUi.Error(result.Error, L["Error_GenericLoad"]);
+                    return;
+                }
             }
+            else
+            {
+                var result = await Platform.UpdateBranchAsync(
+                    orgId.Value,
+                    _editing.Id,
+                    new UpdateBranchRequest(Name: _formName.Trim()));
+                if (!result.IsSuccess)
+                {
+                    _error = OrgWebUi.Error(result.Error, L["Error_GenericLoad"]);
+                    return;
+                }
+            }
+
+            _formOpen = false;
+            _editing = null;
+            _error = null;
+            _success = L["Branches_Saved"];
+            await LoadAsync();
         }
         finally
         {
@@ -183,10 +241,15 @@ else
         try
         {
             var result = await Platform.ArchiveBranchAsync(orgId.Value, branch.Id);
-            _error = result.IsSuccess ? null : OrgWebUi.Error(result.Error);
             if (result.IsSuccess)
             {
+                _error = null;
+                _success = L["Branches_Archived"];
                 await LoadAsync();
+            }
+            else
+            {
+                _error = OrgWebUi.Error(result.Error, L["Error_GenericLoad"]);
             }
         }
         finally

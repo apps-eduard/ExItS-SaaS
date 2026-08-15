@@ -37,4 +37,28 @@
   <data name="SalesDocument_ComplianceNeedHelp" xml:space="preserve"><value>Kailangan ng BIR-enabled invoicing sa ExItS? Makipag-ugnayan sa ExItS Support sa pamamagitan ng pagre-record ng request para sa negosyong ito.</value></data>
   <data name="SalesDocument_ComplianceContactSupport" xml:space="preserve"><value>Makipag-ugnayan sa ExItS Support</value></data>
   <data name="SalesDocument_ComplianceRequestRecorded" xml:space="preserve"><value>May naitala nang support request para sa negosyong ito.</value></data>
+  <data name="Branches_Title" xml:space="preserve"><value>Mga sangay</value></data>
+  <data name="Branches_Subtitle" xml:space="preserve"><value>Pamahalaan ang mga lokasyon at setting ng sangay ng iyong negosyo.</value></data>
+  <data name="Branches_Add" xml:space="preserve"><value>Magdagdag ng sangay</value></data>
+  <data name="Branches_Edit" xml:space="preserve"><value>I-edit ang sangay</value></data>
+  <data name="Branches_Archive" xml:space="preserve"><value>I-archive</value></data>
+  <data name="Branches_Primary" xml:space="preserve"><value>Pangunahin</value></data>
+  <data name="Branches_Capacity" xml:space="preserve"><value>Capacity {0} / {1}. I-archive ang mga sangay na may history sa halip na burahin.</value></data>
+  <data name="Branches_EmptyTitle" xml:space="preserve"><value>Wala pang sangay</value></data>
+  <data name="Branches_EmptyMessage" xml:space="preserve"><value>Idagdag ang unang sangay para ayusin ang mga lokasyon ng negosyo.</value></data>
+  <data name="Branches_ColName" xml:space="preserve"><value>Pangalan</value></data>
+  <data name="Branches_ColCode" xml:space="preserve"><value>Code</value></data>
+  <data name="Branches_ColAddress" xml:space="preserve"><value>Address</value></data>
+  <data name="Branches_ColStatus" xml:space="preserve"><value>Status</value></data>
+  <data name="Branches_FieldCode" xml:space="preserve"><value>Code</value></data>
+  <data name="Branches_FieldName" xml:space="preserve"><value>Pangalan</value></data>
+  <data name="Branches_FieldAddress" xml:space="preserve"><value>Address</value></data>
+  <data name="Branches_ValidationRequired" xml:space="preserve"><value>Kailangan ang code at pangalan.</value></data>
+  <data name="Branches_Saved" xml:space="preserve"><value>Na-save ang sangay.</value></data>
+  <data name="Branches_Archived" xml:space="preserve"><value>Na-archive ang sangay.</value></data>
+  <data name="Common_Edit" xml:space="preserve"><value>I-edit</value></data>
+  <data name="Common_Save" xml:space="preserve"><value>I-save</value></data>
+  <data name="Common_Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Error_SessionExpired" xml:space="preserve"><value>Nag-expire ang session. Mag-sign in ulit.</value></data>
+  <data name="Error_GenericLoad" xml:space="preserve"><value>Hindi namin ma-load ang impormasyon. Subukan ulit.</value></data>
 </root>

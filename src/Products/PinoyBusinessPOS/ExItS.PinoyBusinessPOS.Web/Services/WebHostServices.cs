@@ -89,11 +89,19 @@ public sealed class OrgWebPosAuthHeaderHandler : DelegatingHandler
         HttpRequestMessage request,
         CancellationToken cancellationToken)
     {
-        var accessToken = OrgWebSessionAmbient.AccessToken;
-        if (!string.IsNullOrWhiteSpace(accessToken))
+        var sessionToken = OrgWebSessionAmbient.SessionToken;
+        var isPlatformApi = IsPlatformApiPath(request.RequestUri);
+
+        // Platform management APIs must use PlatformSession (inner handler). Do not attach product
+        // Bearer first — Dev/Staging handlers previously treated non-Bearer auth as missing and
+        // cleared the session, producing development-operator:unauthenticated.
+        if (!isPlatformApi)
         {
-            // Outer-most: set Bearer first. Platform client inner handlers may replace with PlatformSession.
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+            var accessToken = OrgWebSessionAmbient.AccessToken;
+            if (!string.IsNullOrWhiteSpace(accessToken))
+            {
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+            }
         }
 
         if (OrgWebSessionAmbient.OrganizationId is Guid organizationId)
@@ -102,13 +110,23 @@ public sealed class OrgWebPosAuthHeaderHandler : DelegatingHandler
             request.Headers.TryAddWithoutValidation(OrganizationHeaderName, organizationId.ToString("D"));
         }
 
-        var sessionToken = OrgWebSessionAmbient.SessionToken;
         if (!string.IsNullOrWhiteSpace(sessionToken) && !request.Headers.Contains("X-ExItS-Session-Token"))
         {
             request.Headers.TryAddWithoutValidation("X-ExItS-Session-Token", sessionToken);
         }
 
         return base.SendAsync(request, cancellationToken);
+    }
+
+    private static bool IsPlatformApiPath(Uri? uri)
+    {
+        if (uri is null)
+        {
+            return false;
+        }
+
+        var path = uri.IsAbsoluteUri ? uri.AbsolutePath : uri.OriginalString;
+        return path.StartsWith("/api/v1/platform/", StringComparison.OrdinalIgnoreCase);
     }
 }
 

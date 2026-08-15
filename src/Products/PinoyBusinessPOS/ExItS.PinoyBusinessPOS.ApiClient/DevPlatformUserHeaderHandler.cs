@@ -15,8 +15,17 @@ public sealed class DevPlatformUserHeaderHandler(
 
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
-        var hasBearer = request.Headers.Authorization?.Scheme.Equals("Bearer", StringComparison.OrdinalIgnoreCase) == true
-                        && !string.IsNullOrWhiteSpace(request.Headers.Authorization.Parameter);
+        var auth = request.Headers.Authorization;
+        // Platform session is authoritative for Platform API routes. Never replace or clear it
+        // with product Bearer / X-Dev-Platform-User-Id — that yields development-operator:unauthenticated.
+        if (auth?.Scheme.Equals("PlatformSession", StringComparison.OrdinalIgnoreCase) == true
+            && !string.IsNullOrWhiteSpace(auth.Parameter))
+        {
+            return base.SendAsync(request, cancellationToken);
+        }
+
+        var hasBearer = auth?.Scheme.Equals("Bearer", StringComparison.OrdinalIgnoreCase) == true
+                        && !string.IsNullOrWhiteSpace(auth.Parameter);
 
         if (!hasBearer && !string.IsNullOrWhiteSpace(currentUser.Session?.AccessToken))
         {

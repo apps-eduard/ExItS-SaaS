@@ -14,13 +14,30 @@ public static class OrgWebUi
             return fallback;
         }
 
-        // Never surface development-pipeline jargon to Organization operators.
+        // Never surface development-pipeline jargon, actor ids, or permission codes.
         if (detail.Contains("Development-stage", StringComparison.OrdinalIgnoreCase)
             || detail.Contains("commercial headers", StringComparison.OrdinalIgnoreCase)
             || detail.Contains("X-Dev-Platform-User-Id", StringComparison.OrdinalIgnoreCase)
-            || detail.Contains("X-Pos-Organization-Id", StringComparison.OrdinalIgnoreCase))
+            || detail.Contains("X-Pos-Organization-Id", StringComparison.OrdinalIgnoreCase)
+            || detail.Contains("development-operator", StringComparison.OrdinalIgnoreCase)
+            || detail.Contains("does not hold permission", StringComparison.OrdinalIgnoreCase)
+            || detail.Contains("platform.permission.", StringComparison.OrdinalIgnoreCase)
+            || detail.Contains("Actor '", StringComparison.OrdinalIgnoreCase))
         {
+            if (detail.Contains("does not hold permission", StringComparison.OrdinalIgnoreCase)
+                || detail.Contains("platform.permission.", StringComparison.OrdinalIgnoreCase))
+            {
+                return "You don't have permission to view this section.";
+            }
+
             return "This business workspace could not authorize the request. Sign in again, or open Platform Admin if your account is Platform-only.";
+        }
+
+        if (detail.Contains("session", StringComparison.OrdinalIgnoreCase)
+            && (detail.Contains("expired", StringComparison.OrdinalIgnoreCase)
+                || detail.Contains("invalid", StringComparison.OrdinalIgnoreCase)))
+        {
+            return "Your session has expired. Please sign in again.";
         }
 
         return detail;

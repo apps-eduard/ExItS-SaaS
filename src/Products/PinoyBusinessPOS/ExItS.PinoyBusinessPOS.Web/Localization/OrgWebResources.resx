@@ -37,4 +37,28 @@
   <data name="SalesDocument_ComplianceNeedHelp" xml:space="preserve"><value>Need BIR-enabled invoicing through ExItS? Contact ExItS Support by recording a request for this business.</value></data>
   <data name="SalesDocument_ComplianceContactSupport" xml:space="preserve"><value>Contact ExItS Support</value></data>
   <data name="SalesDocument_ComplianceRequestRecorded" xml:space="preserve"><value>A support request is already recorded for this business.</value></data>
+  <data name="Branches_Title" xml:space="preserve"><value>Branches</value></data>
+  <data name="Branches_Subtitle" xml:space="preserve"><value>Manage your business locations and branch settings.</value></data>
+  <data name="Branches_Add" xml:space="preserve"><value>Add branch</value></data>
+  <data name="Branches_Edit" xml:space="preserve"><value>Edit branch</value></data>
+  <data name="Branches_Archive" xml:space="preserve"><value>Archive</value></data>
+  <data name="Branches_Primary" xml:space="preserve"><value>Primary</value></data>
+  <data name="Branches_Capacity" xml:space="preserve"><value>Capacity {0} / {1}. Archive branches with history instead of deleting them.</value></data>
+  <data name="Branches_EmptyTitle" xml:space="preserve"><value>No branches yet</value></data>
+  <data name="Branches_EmptyMessage" xml:space="preserve"><value>Add your first branch to organize your business locations.</value></data>
+  <data name="Branches_ColName" xml:space="preserve"><value>Name</value></data>
+  <data name="Branches_ColCode" xml:space="preserve"><value>Code</value></data>
+  <data name="Branches_ColAddress" xml:space="preserve"><value>Address</value></data>
+  <data name="Branches_ColStatus" xml:space="preserve"><value>Status</value></data>
+  <data name="Branches_FieldCode" xml:space="preserve"><value>Code</value></data>
+  <data name="Branches_FieldName" xml:space="preserve"><value>Name</value></data>
+  <data name="Branches_FieldAddress" xml:space="preserve"><value>Address</value></data>
+  <data name="Branches_ValidationRequired" xml:space="preserve"><value>Code and name are required.</value></data>
+  <data name="Branches_Saved" xml:space="preserve"><value>Branch saved.</value></data>
+  <data name="Branches_Archived" xml:space="preserve"><value>Branch archived.</value></data>
+  <data name="Common_Edit" xml:space="preserve"><value>Edit</value></data>
+  <data name="Common_Save" xml:space="preserve"><value>Save</value></data>
+  <data name="Common_Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Error_SessionExpired" xml:space="preserve"><value>Your session has expired. Please sign in again.</value></data>
+  <data name="Error_GenericLoad" xml:space="preserve"><value>We couldn't load this information. Try again.</value></data>
 </root>
