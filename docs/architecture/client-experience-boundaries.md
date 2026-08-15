@@ -611,7 +611,8 @@ Phase 18 is **Complete (implementation/scope)** for Mobile Personal Account, Org
 
 Phase 19 is **Open** and owns remaining Mobile POS operations and Cashier experience completion:
 
-- Inventory;
+- Inventory (stock on hand, counts, adjust, transfers, expiration);
+- Purchasing hub (Receive stock, purchase orders, goods receipts, suppliers);
 - Registers;
 - Shift operations;
 - Cashier selling experience completion;
@@ -619,6 +620,8 @@ Phase 19 is **Open** and owns remaining Mobile POS operations and Cashier experi
 - Customers;
 - Reports, authorization, navigation, and UX hardening;
 - end-to-end validation and user closeout checklist.
+
+**Purchasing vs Inventory UX:** Purchasing is the primary entry for buying/receiving goods; Inventory is stock control. User-facing “Receive stock” replaces informal “Direct Stock In” / “Manual Purchase” labels. Canonical detail: [purchasing-inventory-ux-mental-model.md](../engineering/purchasing-inventory-ux-mental-model.md).
 
 Phase 19 reuses existing Phase 8–18 APIs and screens. It remains Open until user phone confirmation after WP08. Not Device Verified. Not production-ready. Phase 14 remains separate and unfinished.
 

@@ -79,6 +79,7 @@ The dashboard links to the latest accepted report.
 | [connected-exits-suppliers-phase-1.md](connected-exits-suppliers-phase-1.md) | Connected ExItS Suppliers Phase 1 | Code Complete |
 | [connected-supplier-connection-request-lifecycle.md](connected-supplier-connection-request-lifecycle.md) | Connected supplier request visibility (buyer Pending + supplier incoming) | Code Complete |
 | [connected-buyers-directory.md](connected-buyers-directory.md) | Dedicated Connected Buyers directory (supplier-side Active relationships) | Code Complete |
+| [../engineering/purchasing-inventory-ux-mental-model.md](../engineering/purchasing-inventory-ux-mental-model.md) | Purchasing vs Inventory UX (Receive stock / PO / goods receipt) | Code Complete |
 | [unified-organization-business-notifications.md](unified-organization-business-notifications.md) | Unified org bell inbox (customer link + supplier connection); Read-on-open + Connected buyers | Code Complete |
 | [P11-WP01-web-ui-audit-and-component-inventory.md](P11-WP01-web-ui-audit-and-component-inventory.md) | P11-WP01 Web UI Audit | Complete |
 | [P11-WP02-global-web-layout-and-navigation.md](P11-WP02-global-web-layout-and-navigation.md) | P11-WP02 Global Web Layout and Navigation | Complete |

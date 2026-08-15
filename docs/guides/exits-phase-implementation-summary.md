@@ -335,6 +335,8 @@
 
 **Approach:** Reuse existing Phase 8–18 APIs/screens; complete MAUI ops UX. Remains Open until user phone confirmation after WP08.
 
+**Purchasing / Inventory UX clarification (Code Complete):** MAUI Purchasing hub (`/purchasing`) with Receive stock / Purchase orders / Goods receipts / Suppliers; Inventory focused on stock control. Domain behavior unchanged (Receive stock → ManualIncrease; PO ≠ stock; GR → stock). See [purchasing-inventory-ux-mental-model.md](../engineering/purchasing-inventory-ux-mental-model.md). Not Device Verified.
+
 ---
 
 ### Phase 20 — Global Product Catalog and Business Template Onboarding

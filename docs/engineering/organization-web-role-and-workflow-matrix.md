@@ -86,10 +86,18 @@ Server APIs remain authoritative (`OrganizationManagementAuthority` + `PosRoleMa
 - Business → profile, branches, devices, registers  
 - People → staff, roles, customers  
 - Catalog → products, categories, global catalog  
-- Inventory → stock, transfers, expiration  
+- Inventory → stock on hand, transfers, expiration (stock control; purchasing/receive remains POS-primary)
 - Sales → history, sales report, business credit  
 - Operations → shifts, cash/shift report, inventory report  
 - Settings → operational settings, sales documents, ownership, subscription, alerts  
+
+## Purchasing vs Inventory (shared product language)
+
+- **Purchasing** = buy/receive goods (Receive stock, Purchase orders, Goods receipts, Suppliers) — primarily MAUI `/purchasing`.
+- **Inventory** = view/count/control existing stock.
+- **Receive stock** = goods already physically received (immediate on-hand increase).
+- **Purchase order** = order first; stock does not change until **Goods receipt**.
+- See [purchasing-inventory-ux-mental-model.md](purchasing-inventory-ux-mental-model.md).
 
 ## Deferred (APIs exist / thin UI)
 
