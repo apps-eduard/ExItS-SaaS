@@ -597,7 +597,9 @@ internal static class ReportingEndpoints
             return false;
         }
 
-        if (!PosRoleRequestContext.HasActorHeader || PosRoleRequestContext.CurrentRole is null)
+        if (!PosRoleRequestContext.HasActorHeader
+            || (PosRoleRequestContext.CurrentRole is null
+                && !PosRoleRequestContext.OrganizationManagementAuthority))
         {
             problem = PosApiResults.Problem(
                 Domain.Common.DomainErrorCodes.PosRoleRequired,
@@ -606,11 +608,24 @@ internal static class ReportingEndpoints
             return false;
         }
 
-        if (!OperationalReportService.ActorMayAccessReport(PosRoleRequestContext.CurrentRole, kind))
+        if (PosRoleRequestContext.CurrentRole is { } role)
+        {
+            if (!OperationalReportService.ActorMayAccessReport(role, kind))
+            {
+                problem = PosApiResults.Problem(
+                    Domain.Common.DomainErrorCodes.PosRoleDenied,
+                    "The active POS role cannot access this report.",
+                    StatusCodes.Status403Forbidden);
+                return false;
+            }
+        }
+        else if (!PosRoleMatrix.AllowsOrganizationManagementReport(
+                     PosRoleRequestContext.OrganizationManagementIsExactOwner,
+                     kind))
         {
             problem = PosApiResults.Problem(
                 Domain.Common.DomainErrorCodes.PosRoleDenied,
-                "The active POS role cannot access this report.",
+                "Organization management authority cannot access this report.",
                 StatusCodes.Status403Forbidden);
             return false;
         }

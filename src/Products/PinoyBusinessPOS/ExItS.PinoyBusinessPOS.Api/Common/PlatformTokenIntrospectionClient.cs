@@ -52,7 +52,9 @@ internal sealed class PlatformTokenIntrospectionClient(
             dto.SubscriptionStatus,
             dto.EnabledFeatureCodes,
             dto.ProductLocalRoleCode,
-            dto.MappedPosRoleCode);
+            dto.MappedPosRoleCode,
+            dto.MembershipRole,
+            dto.OrganizationManagementAuthority);
     }
 
     private static PlatformTokenIntrospectionResult Inactive() =>
@@ -67,5 +69,7 @@ internal sealed class PlatformTokenIntrospectionClient(
         string? SubscriptionStatus,
         IReadOnlyList<string>? EnabledFeatureCodes,
         string? ProductLocalRoleCode,
-        string? MappedPosRoleCode);
+        string? MappedPosRoleCode,
+        string? MembershipRole = null,
+        bool OrganizationManagementAuthority = false);
 }

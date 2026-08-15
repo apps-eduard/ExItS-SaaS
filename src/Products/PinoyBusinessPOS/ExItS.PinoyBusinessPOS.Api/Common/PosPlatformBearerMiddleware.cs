@@ -69,6 +69,16 @@ internal sealed class PosPlatformBearerMiddleware(RequestDelegate next)
             context.Items[PosAuthItems.MappedPosRoleCode] = result.MappedPosRoleCode;
         }
 
+        if (!string.IsNullOrWhiteSpace(result.MembershipRole))
+        {
+            context.Items[PosAuthItems.MembershipRole] = result.MembershipRole;
+        }
+
+        if (result.OrganizationManagementAuthority)
+        {
+            context.Items[PosAuthItems.OrganizationManagementAuthority] = true;
+        }
+
         if (productAllowed && result.OrganizationId is Guid boundOrg && boundOrg != Guid.Empty)
         {
             var grants = result.EnabledFeatureCodes ?? Array.Empty<string>();

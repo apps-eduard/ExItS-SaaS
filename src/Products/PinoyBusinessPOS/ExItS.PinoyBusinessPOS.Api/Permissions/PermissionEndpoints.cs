@@ -195,6 +195,27 @@ internal static class PermissionEndpoints
 
         if (PosRoleRequestContext.CurrentRole is not { } role)
         {
+            if (PosRoleRequestContext.OrganizationManagementAuthority)
+            {
+                var caps = PosRoleMatrix.OrganizationManagementCapabilities(
+                    PosRoleRequestContext.OrganizationManagementIsExactOwner);
+                return new PosEffectivePermissionsDto(
+                    result.OrganizationId,
+                    actorId,
+                    Role: PosRoleRequestContext.OrganizationManagementIsExactOwner
+                        ? "OrganizationOwner"
+                        : "OrganizationAdministrator",
+                    RoleDisplayName: PosRoleRequestContext.OrganizationManagementIsExactOwner
+                        ? "Organization Owner"
+                        : "Organization Administrator",
+                    Status: "Active",
+                    AllowedCapabilities: caps.Select(c => c.ToString()).ToArray(),
+                    AllowedFeatureCodes: [],
+                    CanManageAssignments: PosRoleRequestContext.OrganizationManagementIsExactOwner
+                        || result.IsBootstrapEligible,
+                    IsBootstrapEligible: result.IsBootstrapEligible);
+            }
+
             return result;
         }
 

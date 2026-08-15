@@ -30,7 +30,7 @@ public static class OrgWebUi
                 return "You don't have permission to view this section.";
             }
 
-            return "This business workspace could not authorize the request. Sign in again, or open Platform Admin if your account is Platform-only.";
+            return "We couldn't verify your access to this business. Sign out and sign in again. If the problem continues, contact support.";
         }
 
         if (detail.Contains("session", StringComparison.OrdinalIgnoreCase)

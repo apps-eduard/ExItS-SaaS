@@ -134,7 +134,12 @@ public sealed record PlatformAccessTokenIssueDto(
     string OrganizationSelectionState,
     int ActiveOrganizationCount,
     bool? ProductAccessAllowed,
-    string? ProductAccessReasonCode);
+    string? ProductAccessReasonCode,
+    object? Mfa = null,
+    string? ProductLocalRoleCode = null,
+    string? MappedPosRoleCode = null,
+    string? MembershipRole = null,
+    bool OrganizationManagementAuthority = false);
 
 public sealed record PlatformAccessTokenIntrospectionDto(
     bool Active,
@@ -149,7 +154,12 @@ public sealed record PlatformAccessTokenIntrospectionDto(
     bool? ProductAccessAllowed,
     string? ProductAccessReasonCode,
     string? SubscriptionStatus,
-    IReadOnlyList<string>? EnabledFeatureCodes);
+    IReadOnlyList<string>? EnabledFeatureCodes,
+    object? Mfa = null,
+    string? ProductLocalRoleCode = null,
+    string? MappedPosRoleCode = null,
+    string? MembershipRole = null,
+    bool OrganizationManagementAuthority = false);
 
 public sealed record PlatformAuthEligibleOrganizationDto(
     Guid OrganizationId,

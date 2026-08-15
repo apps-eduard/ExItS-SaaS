@@ -10,6 +10,8 @@ namespace ExItS.PinoyBusinessPOS.Api.Common;
 /// Resolves the active POS role for the request actor.
 /// WP09: Platform-mapped product-local roles sync into the POS DB when present on bearer introspection.
 /// Development/Testing Owner auto-bootstrap remains when no Platform mapped role is available (R-091).
+/// Organization management authority (Owner/Administrator without POS checkout role) is preserved
+/// without inventing a product-local Owner assignment.
 /// </summary>
 internal sealed class PosRoleResolutionMiddleware(RequestDelegate next)
 {
@@ -21,6 +23,7 @@ internal sealed class PosRoleResolutionMiddleware(RequestDelegate next)
         IHostEnvironment environment)
     {
         PosRoleRequestContext.Clear();
+        Guid? organizationIdForLog = null;
 
         try
         {
@@ -31,19 +34,28 @@ internal sealed class PosRoleResolutionMiddleware(RequestDelegate next)
                 return;
             }
 
+            organizationIdForLog = organizationId;
             PosRoleRequestContext.HasActorHeader = true;
+
+            if (context.Items.TryGetValue(PosAuthItems.OrganizationManagementAuthority, out var mgmt)
+                && mgmt is true)
+            {
+                PosRoleRequestContext.OrganizationManagementAuthority = true;
+                if (context.Items.TryGetValue(PosAuthItems.MembershipRole, out var roleRaw)
+                    && roleRaw is string membershipRole
+                    && string.Equals(membershipRole, "OrganizationOwner", StringComparison.OrdinalIgnoreCase))
+                {
+                    PosRoleRequestContext.OrganizationManagementIsExactOwner = true;
+                }
+            }
 
             var org = PosOrganizationId.From(organizationId);
             var active = await roles.GetActiveForActorAsync(org, actorId, context.RequestAborted).ConfigureAwait(false);
             if (active is not null)
             {
-                // POS DB assignment remains authoritative once present.
                 PosRoleRequestContext.CurrentRole = active.Role;
-                await next(context).ConfigureAwait(false);
-                return;
             }
-
-            if (TryGetMappedPlatformRole(context, out var platformRole))
+            else if (TryGetMappedPlatformRole(context, out var platformRole))
             {
                 try
                 {
@@ -63,54 +75,79 @@ internal sealed class PosRoleResolutionMiddleware(RequestDelegate next)
                         .ConfigureAwait(false);
                     PosRoleRequestContext.CurrentRole = active?.Role ?? platformRole;
                 }
-
-                await next(context).ConfigureAwait(false);
-                return;
             }
-
-            // Owner auto-bootstrap remains Development/Testing only.
-            if (!PosDevelopmentEnvironment.IsApprovedDevelopmentEnvironment(environment))
+            else if (!PosRoleRequestContext.OrganizationManagementAuthority
+                     && PosDevelopmentEnvironment.IsApprovedDevelopmentEnvironment(environment))
             {
-                await next(context).ConfigureAwait(false);
-                return;
-            }
-
-            var ownerCount = await roles.CountActiveOwnersAsync(org, context.RequestAborted).ConfigureAwait(false);
-            if (ownerCount == 0)
-            {
-                try
+                // Owner auto-bootstrap remains Development/Testing only (not for management-authority actors).
+                var ownerCount = await roles.CountActiveOwnersAsync(org, context.RequestAborted).ConfigureAwait(false);
+                if (ownerCount == 0)
                 {
-                    var assignment = PosRoleAssignment.Assign(
-                        org,
-                        actorId,
-                        PosRole.Owner,
-                        actorId,
-                        clock.UtcNow);
-                    await roles.AddAsync(assignment, context.RequestAborted).ConfigureAwait(false);
-                    await unitOfWork.SaveChangesAsync(context.RequestAborted).ConfigureAwait(false);
+                    try
+                    {
+                        var assignment = PosRoleAssignment.Assign(
+                            org,
+                            actorId,
+                            PosRole.Owner,
+                            actorId,
+                            clock.UtcNow);
+                        await roles.AddAsync(assignment, context.RequestAborted).ConfigureAwait(false);
+                        await unitOfWork.SaveChangesAsync(context.RequestAborted).ConfigureAwait(false);
+                        PosRoleRequestContext.CurrentRole = PosRole.Owner;
+                    }
+                    catch
+                    {
+                        active = await roles.GetActiveForActorAsync(org, actorId, context.RequestAborted)
+                            .ConfigureAwait(false);
+                        PosRoleRequestContext.CurrentRole = active?.Role;
+                    }
+                }
+                else
+                {
+                    // Trusted Dev/Testing aid for shared-org fixtures: unassigned actors act as Owner.
                     PosRoleRequestContext.CurrentRole = PosRole.Owner;
                 }
-                catch
-                {
-                    active = await roles.GetActiveForActorAsync(org, actorId, context.RequestAborted)
-                        .ConfigureAwait(false);
-                    PosRoleRequestContext.CurrentRole = active?.Role;
-                }
-            }
-            else
-            {
-                // Trusted Dev/Testing aid for shared-org fixtures: unassigned actors act as Owner.
-                // Persisted assignments (Cashier, InventoryStaff, …) always win above.
-                // Production identity provisioning remains out of scope (R-091).
-                PosRoleRequestContext.CurrentRole = PosRole.Owner;
             }
 
             await next(context).ConfigureAwait(false);
+            LogDenialIfNeeded(context, environment, organizationIdForLog);
         }
         finally
         {
             PosRoleRequestContext.Clear();
         }
+    }
+
+    private static void LogDenialIfNeeded(
+        HttpContext context,
+        IHostEnvironment environment,
+        Guid? organizationId)
+    {
+        if (!(environment.IsDevelopment() || environment.IsEnvironment("Testing")))
+        {
+            return;
+        }
+
+        if (context.Response.StatusCode is not (StatusCodes.Status401Unauthorized or StatusCodes.Status403Forbidden))
+        {
+            return;
+        }
+
+        var hint = PosAuthorizationDiagnostics.ConsumeLast();
+        if (string.IsNullOrWhiteSpace(hint))
+        {
+            return;
+        }
+
+        var logger = context.RequestServices.GetService<ILoggerFactory>()
+            ?.CreateLogger("ExItS.Pos.Authorization");
+        logger?.LogInformation(
+            "POS authorization denied. platformUserId={UserId}; organizationId={OrganizationId}; membershipRole={MembershipRole}; ownerManagement={OwnerMgmt}; {Hint}",
+            context.Items.TryGetValue(PosAuthItems.UserId, out var uid) ? uid : null,
+            organizationId,
+            context.Items.TryGetValue(PosAuthItems.MembershipRole, out var mr) ? mr : null,
+            context.Items.TryGetValue(PosAuthItems.OrganizationManagementAuthority, out var om) && om is true,
+            hint);
     }
 
     private static bool TryGetMappedPlatformRole(HttpContext context, out PosRole role)

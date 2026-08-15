@@ -11,6 +11,8 @@ internal static class PosRoleRequestContext
     private static readonly AsyncLocal<PosRole?> Role = new();
     private static readonly AsyncLocal<bool> ActorPresent = new();
     private static readonly AsyncLocal<bool> Bypass = new();
+    private static readonly AsyncLocal<bool> OrgManagement = new();
+    private static readonly AsyncLocal<bool> OrgManagementOwner = new();
 
     public static PosRole? CurrentRole
     {
@@ -36,11 +38,28 @@ internal static class PosRoleRequestContext
         set => Bypass.Value = value;
     }
 
+    /// <summary>
+    /// Platform Organization Owner/Administrator management authority without a POS checkout role.
+    /// </summary>
+    public static bool OrganizationManagementAuthority
+    {
+        get => OrgManagement.Value;
+        set => OrgManagement.Value = value;
+    }
+
+    public static bool OrganizationManagementIsExactOwner
+    {
+        get => OrgManagementOwner.Value;
+        set => OrgManagementOwner.Value = value;
+    }
+
     public static void Clear()
     {
         Role.Value = null;
         ActorPresent.Value = false;
         Bypass.Value = false;
+        OrgManagement.Value = false;
+        OrgManagementOwner.Value = false;
     }
 }
 
@@ -61,24 +80,67 @@ internal static class PosRoleAuth
         }
 
         var role = PosRoleRequestContext.CurrentRole;
-        if (role is null)
+        if (role is not null)
         {
-            problem = PosApiResults.Problem(
-                DomainErrorCodes.PosRoleRequired,
-                "An active POS role assignment is required.",
-                StatusCodes.Status403Forbidden);
-            return false;
+            if (!PosRoleMatrix.Allows(role.Value, capability))
+            {
+                problem = PosApiResults.Problem(
+                    DomainErrorCodes.PosRoleDenied,
+                    $"Role {PosRoleCodes.ToCode(role.Value)} is not permitted for this operation.",
+                    StatusCodes.Status403Forbidden);
+                PosAuthorizationDiagnostics.Record(
+                    capability.ToString(),
+                    PosRoleCodes.ToCode(role.Value),
+                    "pos_role_denied",
+                    false);
+                return false;
+            }
+
+            return true;
         }
 
-        if (!PosRoleMatrix.Allows(role.Value, capability))
+        if (PosRoleRequestContext.OrganizationManagementAuthority)
         {
-            problem = PosApiResults.Problem(
-                DomainErrorCodes.PosRoleDenied,
-                $"Role {PosRoleCodes.ToCode(role.Value)} is not permitted for this operation.",
-                StatusCodes.Status403Forbidden);
-            return false;
+            if (!PosRoleMatrix.AllowsOrganizationManagement(
+                    PosRoleRequestContext.OrganizationManagementIsExactOwner,
+                    capability))
+            {
+                problem = PosApiResults.Problem(
+                    DomainErrorCodes.PosRoleDenied,
+                    "Organization management authority does not permit this operation.",
+                    StatusCodes.Status403Forbidden);
+                PosAuthorizationDiagnostics.Record(
+                    capability.ToString(),
+                    "OrganizationManagement",
+                    "organization_management_denied",
+                    true);
+                return false;
+            }
+
+            return true;
         }
 
-        return true;
+        problem = PosApiResults.Problem(
+            DomainErrorCodes.PosRoleRequired,
+            "An active POS role assignment is required.",
+            StatusCodes.Status403Forbidden);
+        PosAuthorizationDiagnostics.Record(capability.ToString(), null, "pos_role_required", false);
+        return false;
+    }
+}
+
+/// <summary>Safe Development diagnostics for authorization denials (no tokens/passwords).</summary>
+internal static class PosAuthorizationDiagnostics
+{
+    private static readonly AsyncLocal<string?> Last = new();
+
+    public static void Record(string policy, string? role, string reason, bool orgManagement) =>
+        Last.Value = $"policy={policy}; role={role ?? "none"}; orgManagement={orgManagement}; reason={reason}";
+
+    public static string? ConsumeLast()
+    {
+        var value = Last.Value;
+        Last.Value = null;
+        return value;
     }
 }

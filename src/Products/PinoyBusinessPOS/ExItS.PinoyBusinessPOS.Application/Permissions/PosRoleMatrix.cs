@@ -103,6 +103,45 @@ public static class PosRoleMatrix
         _ => false
     };
 
+    /// <summary>
+    /// Platform Organization Owner/Administrator management projection for Org Web.
+    /// Full (Owner) or day-to-day (Administrator) management — never automatic checkout.
+    /// </summary>
+    public static bool AllowsOrganizationManagement(bool isExactOwner, UtangCapability capability)
+    {
+        if (capability is UtangCapability.CreateSale or UtangCapability.EnterPos)
+        {
+            return false;
+        }
+
+        if (isExactOwner)
+        {
+            return true;
+        }
+
+        return StoreManagerCapabilities.Contains(capability)
+            && capability is not UtangCapability.CreateSale;
+    }
+
+    public static IReadOnlyList<UtangCapability> OrganizationManagementCapabilities(bool isExactOwner)
+    {
+        if (isExactOwner)
+        {
+            return OwnerCapabilities
+                .Where(c => c is not UtangCapability.CreateSale and not UtangCapability.EnterPos)
+                .OrderBy(c => c)
+                .ToArray();
+        }
+
+        return StoreManagerCapabilities
+            .Where(c => c is not UtangCapability.CreateSale and not UtangCapability.EnterPos)
+            .OrderBy(c => c)
+            .ToArray();
+    }
+
+    public static bool AllowsOrganizationManagementReport(bool isExactOwner, PosOperationalReportKind kind) =>
+        isExactOwner || AllowsReport(PosRole.StoreManager, kind);
+
     public static IReadOnlyList<UtangCapability> CapabilitiesFor(PosRole role) => role switch
     {
         PosRole.Owner or PosRole.Admin => OwnerCapabilities,

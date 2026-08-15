@@ -22,6 +22,7 @@ public sealed class IssuePlatformAccessToken
     private readonly IOrganizationMembershipRepository _memberships;
     private readonly IPlatformOrganizationRepository _organizations;
     private readonly EvaluateProductAuthorization _authorize;
+    private readonly GrantProductAccess _grantProductAccess;
     private readonly IPlatformPasswordHasher _hasher;
     private readonly IPlatformSessionTokenService _tokenService;
     private readonly IAuditWriter _auditWriter;
@@ -40,6 +41,7 @@ public sealed class IssuePlatformAccessToken
         IOrganizationMembershipRepository memberships,
         IPlatformOrganizationRepository organizations,
         EvaluateProductAuthorization authorize,
+        GrantProductAccess grantProductAccess,
         IPlatformPasswordHasher hasher,
         IPlatformSessionTokenService tokenService,
         IAuditWriter auditWriter,
@@ -57,6 +59,7 @@ public sealed class IssuePlatformAccessToken
         _memberships = memberships;
         _organizations = organizations;
         _authorize = authorize;
+        _grantProductAccess = grantProductAccess;
         _hasher = hasher;
         _tokenService = tokenService;
         _auditWriter = auditWriter;
@@ -238,6 +241,9 @@ public sealed class IssuePlatformAccessToken
         string? productReason = null;
         string? productLocalRole = null;
         string? mappedPosRole = null;
+        string? membershipRole = null;
+        var organizationManagementAuthority = false;
+        OrganizationMembership? resolvedMembership = null;
         string? normalizedProduct = string.IsNullOrWhiteSpace(productCode) ? null : productCode.Trim();
 
         if (organizationId is Guid requestedOrg)
@@ -270,46 +276,73 @@ public sealed class IssuePlatformAccessToken
             }
 
             orgName = organization.DisplayName;
+            resolvedMembership = membership;
+            membershipRole = membership.Role.ToString();
 
             if (normalizedProduct is not null)
             {
-                var access = await _authorize
-                    .ExecuteAsync(user.Id, orgId, normalizedProduct, cancellationToken)
+                var resolved = await ResolveProductEntryAsync(
+                        user.Id,
+                        orgId,
+                        normalizedProduct,
+                        membership,
+                        cancellationToken)
                     .ConfigureAwait(false);
-                productAllowed = access.CanOperate;
-                productReason = access.ReasonCode;
-                productLocalRole = access.ProductLocalRoleCode;
-                mappedPosRole = access.MappedPosRoleCode;
-                if (!access.CanOperate)
+                if (!resolved.Allowed)
                 {
                     return ApplicationResult<PlatformAccessTokenIssueDto>.Failure(
                         ApplicationErrorCodes.ProductEntryDenied,
-                        ProductEntryDenialMessages.Format(access.ReasonCode));
+                        ProductEntryDenialMessages.Format(resolved.ReasonCode));
                 }
+
+                productAllowed = true;
+                productReason = resolved.ReasonCode;
+                productLocalRole = resolved.ProductLocalRoleCode;
+                mappedPosRole = resolved.MappedPosRoleCode;
+                organizationManagementAuthority = resolved.OrganizationManagementAuthority;
             }
         }
         else if (eligible.Count == 1 && normalizedProduct is null)
         {
             orgId = PlatformOrganizationId.From(eligible[0].OrganizationId);
             orgName = eligible[0].DisplayName;
+            membershipRole = eligible[0].MembershipRole;
         }
         else if (eligible.Count == 1 && normalizedProduct is not null)
         {
             orgId = PlatformOrganizationId.From(eligible[0].OrganizationId);
             orgName = eligible[0].DisplayName;
-            var access = await _authorize
-                .ExecuteAsync(user.Id, orgId, normalizedProduct, cancellationToken)
+            var membership = await _memberships
+                .FindActiveByUserAndOrganizationAsync(user.Id, orgId, cancellationToken)
                 .ConfigureAwait(false);
-            productAllowed = access.CanOperate;
-            productReason = access.ReasonCode;
-            productLocalRole = access.ProductLocalRoleCode;
-            mappedPosRole = access.MappedPosRoleCode;
-            if (!access.CanOperate)
+            if (membership is null)
+            {
+                return ApplicationResult<PlatformAccessTokenIssueDto>.Failure(
+                    ApplicationErrorCodes.OrganizationContextNotEligible,
+                    "Active organization membership is required for organization context.");
+            }
+
+            resolvedMembership = membership;
+            membershipRole = membership.Role.ToString();
+            var resolved = await ResolveProductEntryAsync(
+                    user.Id,
+                    orgId,
+                    normalizedProduct,
+                    membership,
+                    cancellationToken)
+                .ConfigureAwait(false);
+            if (!resolved.Allowed)
             {
                 return ApplicationResult<PlatformAccessTokenIssueDto>.Failure(
                     ApplicationErrorCodes.ProductEntryDenied,
-                    ProductEntryDenialMessages.Format(access.ReasonCode));
+                    ProductEntryDenialMessages.Format(resolved.ReasonCode));
             }
+
+            productAllowed = true;
+            productReason = resolved.ReasonCode;
+            productLocalRole = resolved.ProductLocalRoleCode;
+            mappedPosRole = resolved.MappedPosRoleCode;
+            organizationManagementAuthority = resolved.OrganizationManagementAuthority;
         }
         else if (normalizedProduct is not null)
         {
@@ -341,7 +374,9 @@ public sealed class IssuePlatformAccessToken
             token.Id.Value.ToString("D"),
             AuditOutcome.Succeeded,
             organizationId: orgId,
-            summary: "Platform API access token issued (raw token not recorded).",
+            summary: organizationManagementAuthority
+                ? "Platform API access token issued for organization management (raw token not recorded)."
+                : "Platform API access token issued (raw token not recorded).",
             cancellationToken: cancellationToken).ConfigureAwait(false);
 
         var selectionState = SetSessionOrganizationContext.ResolveSelectionState(orgId, eligible.Count);
@@ -364,8 +399,91 @@ public sealed class IssuePlatformAccessToken
             productReason,
             mfa,
             productLocalRole,
-            mappedPosRole));
+            mappedPosRole,
+            membershipRole ?? resolvedMembership?.Role.ToString(),
+            organizationManagementAuthority));
     }
+
+    private async Task<ProductEntryResolution> ResolveProductEntryAsync(
+        PlatformUserId userId,
+        PlatformOrganizationId organizationId,
+        string productCode,
+        OrganizationMembership membership,
+        CancellationToken cancellationToken)
+    {
+        var access = await _authorize
+            .ExecuteAsync(userId, organizationId, productCode, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (!access.CanOperate
+            && access.ReasonCode == EffectiveAccessReasonCodes.ProductAssignmentMissing
+            && OrganizationManagementAuthority.IsManagementMembership(membership.Role))
+        {
+            var accessGrant = await _grantProductAccess
+                .ExecuteAsync(
+                    organizationId,
+                    userId,
+                    productCode,
+                    grantedByActor: $"platform-user:{userId.Value:D}",
+                    reason: "Product access granted on token issue for Organization management membership.",
+                    cancellationToken: cancellationToken,
+                    ensureExisting: true)
+                .ConfigureAwait(false);
+            if (accessGrant.IsSuccess)
+            {
+                await _auditWriter.WriteAsync(
+                    $"platform-user:{userId.Value:D}",
+                    AuditActorType.PlatformUser,
+                    PlatformAuditActions.ProductAccessGranted,
+                    "ProductAccessAssignment",
+                    accessGrant.Value!.Id.Value.ToString("D"),
+                    AuditOutcome.Succeeded,
+                    organizationId: organizationId,
+                    productCode: ProductCode.Create(productCode),
+                    summary: "POS product access granted on token issue for Organization Owner/Administrator.",
+                    cancellationToken: cancellationToken).ConfigureAwait(false);
+
+                access = await _authorize
+                    .ExecuteAsync(userId, organizationId, productCode, cancellationToken)
+                    .ConfigureAwait(false);
+            }
+        }
+
+        if (access.CanOperate)
+        {
+            return new ProductEntryResolution(
+                true,
+                access.ReasonCode,
+                access.ProductLocalRoleCode,
+                access.MappedPosRoleCode,
+                OrganizationManagementAuthority: false);
+        }
+
+        // Owner/Administrator manage the business without an automatic POS checkout role.
+        if (OrganizationManagementAuthority.Qualifies(membership.Role, access.EntitlementAllowed))
+        {
+            return new ProductEntryResolution(
+                true,
+                OrganizationManagementAuthority.ReasonCode,
+                ProductLocalRoleCode: null,
+                MappedPosRoleCode: null,
+                OrganizationManagementAuthority: true);
+        }
+
+        return new ProductEntryResolution(
+            false,
+            access.ReasonCode,
+            access.ProductLocalRoleCode,
+            access.MappedPosRoleCode,
+            OrganizationManagementAuthority: false);
+    }
+
+    private sealed record ProductEntryResolution(
+        bool Allowed,
+        string ReasonCode,
+        string? ProductLocalRoleCode,
+        string? MappedPosRoleCode,
+        bool OrganizationManagementAuthority);
 }
 
 public sealed class BindPlatformAccessTokenProductContext
@@ -462,57 +580,17 @@ public sealed class BindPlatformAccessTokenProductContext
             .ExecuteAsync(user.Id, orgId, productCode, cancellationToken)
             .ConfigureAwait(false);
 
-        // Organization Owner + active POS entitlement without a product-local role is a provisioning gap
-        // (Start a Business normally grants first POS Owner). Bootstrap once on bind so Mobile matches Web.
-        if (!access.CanOperate
-            && access.EntitlementAllowed
-            && access.ReasonCode == EffectiveAccessReasonCodes.ProductLocalRoleMissing
-            && membership.Role is OrganizationRole.OrganizationOwner)
-        {
-            var existingGrant = await _roleGrants
-                .FindActiveByUserOrganizationProductAsync(orgId, user.Id, access.ProductCode, cancellationToken)
-                .ConfigureAwait(false);
-            if (existingGrant is null)
-            {
-                var grant = ProductLocalRoleGrant.Create(
-                    orgId,
-                    user.Id,
-                    access.ProductCode,
-                    ProductLocalRoleGrant.PosOwnerRoleCode,
-                    user.Id,
-                    _clock.UtcNow,
-                    source: "OrganizationOwnerBindBootstrap");
-                await _roleGrants.AddAsync(grant, cancellationToken).ConfigureAwait(false);
-                await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-
-                await _auditWriter.WriteAsync(
-                    $"platform-user:{user.Id.Value:D}",
-                    AuditActorType.PlatformUser,
-                    PlatformAuditActions.ProductLocalRoleGranted,
-                    nameof(ProductLocalRoleGrant),
-                    grant.Id.Value.ToString("D"),
-                    AuditOutcome.Succeeded,
-                    organizationId: orgId,
-                    productCode: ProductCode.Create(access.ProductCode),
-                    summary: "POS Owner product-local role granted on bind for Organization Owner.",
-                    cancellationToken: cancellationToken).ConfigureAwait(false);
-            }
-
-            access = await _authorize
-                .ExecuteAsync(user.Id, orgId, productCode, cancellationToken)
-                .ConfigureAwait(false);
-        }
-
-        // Staff with an active product-local role but no ProductAccessAssignment cannot bind
-        // (Home + More only). Bootstrap commercial assignment on bind — same gap as historical
-        // Mobile/invite flows that assigned Manager/Cashier without granting product access.
+        // Staff/Owner with an active product-local role but no ProductAccessAssignment cannot bind.
+        // Bootstrap commercial assignment on bind — same gap as historical Mobile/invite flows.
         if (!access.CanOperate
             && access.ReasonCode == EffectiveAccessReasonCodes.ProductAssignmentMissing)
         {
             var existingRole = await _roleGrants
                 .FindActiveByUserOrganizationProductAsync(orgId, user.Id, access.ProductCode, cancellationToken)
                 .ConfigureAwait(false);
-            if (existingRole is not null)
+            var mayBootstrapAssignment = existingRole is not null
+                || OrganizationManagementAuthority.IsManagementMembership(membership.Role);
+            if (mayBootstrapAssignment)
             {
                 var accessGrant = await _grantProductAccess
                     .ExecuteAsync(
@@ -520,7 +598,9 @@ public sealed class BindPlatformAccessTokenProductContext
                         user.Id,
                         access.ProductCode,
                         grantedByActor: $"platform-user:{user.Id.Value:D}",
-                        reason: "Product access granted on bind for staff with an active product-local role.",
+                        reason: existingRole is not null
+                            ? "Product access granted on bind for staff with an active product-local role."
+                            : "Product access granted on bind for Organization management membership.",
                         cancellationToken: cancellationToken,
                         ensureExisting: true)
                     .ConfigureAwait(false);
@@ -535,7 +615,9 @@ public sealed class BindPlatformAccessTokenProductContext
                         AuditOutcome.Succeeded,
                         organizationId: orgId,
                         productCode: ProductCode.Create(access.ProductCode),
-                        summary: "POS product access granted on bind for staff with product-local role.",
+                        summary: existingRole is not null
+                            ? "POS product access granted on bind for staff with product-local role."
+                            : "POS product access granted on bind for Organization Owner/Administrator.",
                         cancellationToken: cancellationToken).ConfigureAwait(false);
 
                     access = await _authorize
@@ -545,7 +627,25 @@ public sealed class BindPlatformAccessTokenProductContext
             }
         }
 
-        if (!access.CanOperate)
+        var organizationManagementAuthority = false;
+        string? productLocalRole = access.ProductLocalRoleCode;
+        string? mappedPosRole = access.MappedPosRoleCode;
+        string reasonCode = access.ReasonCode;
+
+        if (access.CanOperate)
+        {
+            // Product-local operate (may include checkout when role grants CreateSale).
+        }
+        else if (OrganizationManagementAuthority.Qualifies(membership.Role, access.EntitlementAllowed))
+        {
+            // Organization Owner/Administrator manage Org Web without an automatic POS checkout role.
+            // Do not bootstrap ProductLocalRoleGrant.Owner here — that would grant CreateSale.
+            organizationManagementAuthority = true;
+            productLocalRole = null;
+            mappedPosRole = null;
+            reasonCode = OrganizationManagementAuthority.ReasonCode;
+        }
+        else
         {
             return ApplicationResult<PlatformAccessTokenIssueDto>.Failure(
                 ApplicationErrorCodes.ProductEntryDenied,
@@ -572,7 +672,9 @@ public sealed class BindPlatformAccessTokenProductContext
             token.Id.Value.ToString("D"),
             AuditOutcome.Succeeded,
             organizationId: orgId,
-            summary: "Platform API access token bound to organization/product context.",
+            summary: organizationManagementAuthority
+                ? "Platform API access token bound for organization management (no POS checkout role)."
+                : "Platform API access token bound to organization/product context.",
             cancellationToken: cancellationToken).ConfigureAwait(false);
 
         var eligible = await _eligible.LoadEligibleAsync(user.Id, cancellationToken).ConfigureAwait(false);
@@ -592,10 +694,12 @@ public sealed class BindPlatformAccessTokenProductContext
             OrganizationSelectionStates.Selected,
             eligible.Count,
             true,
-            access.ReasonCode,
+            reasonCode,
             mfa,
-            access.ProductLocalRoleCode,
-            access.MappedPosRoleCode));
+            productLocalRole,
+            mappedPosRole,
+            membership.Role.ToString(),
+            organizationManagementAuthority));
     }
 
     private async Task<ApplicationResult<(PlatformAccessToken Token, PlatformUser User)>> ResolveActiveTokenAsync(
@@ -714,6 +818,8 @@ public sealed class IntrospectPlatformAccessToken
         IReadOnlyList<string>? features = null;
         string? productLocalRole = null;
         string? mappedPosRole = null;
+        string? membershipRole = null;
+        var organizationManagementAuthority = false;
 
         if (token.OrganizationId is not null)
         {
@@ -735,24 +841,41 @@ public sealed class IntrospectPlatformAccessToken
             else
             {
                 orgName = organization.DisplayName;
+                membershipRole = membership.Role.ToString();
                 if (!string.IsNullOrWhiteSpace(token.ProductCode))
                 {
                     var access = await _authorize
                         .ExecuteAsync(user.Id, token.OrganizationId, token.ProductCode, cancellationToken)
                         .ConfigureAwait(false);
-                    allowed = access.CanOperate;
-                    reason = access.ReasonCode;
                     subscriptionStatus = access.SubscriptionStatus;
                     features = access.EnabledFeatureCodes;
                     productLocalRole = access.ProductLocalRoleCode;
                     mappedPosRole = access.MappedPosRoleCode;
-                    if (!access.CanOperate)
+
+                    if (access.CanOperate)
+                    {
+                        allowed = true;
+                        reason = access.ReasonCode;
+                    }
+                    else if (OrganizationManagementAuthority.Qualifies(membership.Role, access.EntitlementAllowed))
+                    {
+                        // Keep product org binding for Organization Web management APIs.
+                        // Do not clear context — Owner management ≠ POS checkout role.
+                        allowed = true;
+                        reason = OrganizationManagementAuthority.ReasonCode;
+                        organizationManagementAuthority = true;
+                        productLocalRole = null;
+                        mappedPosRole = null;
+                    }
+                    else
                     {
                         token.ClearProductContext();
                         await _tokens.UpdateAsync(token, cancellationToken).ConfigureAwait(false);
                         await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
                         orgName = null;
+                        membershipRole = null;
                         allowed = false;
+                        reason = access.ReasonCode;
                     }
                 }
             }
@@ -775,7 +898,9 @@ public sealed class IntrospectPlatformAccessToken
             features,
             mfa,
             productLocalRole,
-            mappedPosRole);
+            mappedPosRole,
+            membershipRole,
+            organizationManagementAuthority);
     }
 
     private static PlatformAccessTokenIntrospectionDto Inactive() =>

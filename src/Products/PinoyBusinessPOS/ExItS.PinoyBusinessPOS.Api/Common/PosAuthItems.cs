@@ -12,4 +12,6 @@ internal static class PosAuthItems
     public const string CommercialBound = "PosAuth:CommercialBound";
     public const string ProductLocalRoleCode = "PosAuth:ProductLocalRoleCode";
     public const string MappedPosRoleCode = "PosAuth:MappedPosRoleCode";
+    public const string MembershipRole = "PosAuth:MembershipRole";
+    public const string OrganizationManagementAuthority = "PosAuth:OrganizationManagementAuthority";
 }

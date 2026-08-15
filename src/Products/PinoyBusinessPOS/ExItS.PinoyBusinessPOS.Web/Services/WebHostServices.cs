@@ -632,18 +632,15 @@ public sealed class OrgWebSessionHydrator(
                     ProductCode: PosProductCodes.PinoyBusinessPos),
                 ct).ConfigureAwait(false);
 
-            var access = await platform.EvaluateAccessAsync(
-                me.Data.UserId,
-                orgId,
-                PosProductCodes.PinoyBusinessPos,
-                ct).ConfigureAwait(false);
-
+            // Session grant already evaluates product entry + Organization management authority.
+            // Do not gate on /access/evaluate (admin-oriented commercial evaluate); that path
+            // previously left Owners without a product-local role unbound to Bearer and POS APIs
+            // fell through to Development-stage headers.
             var hasPos = tokenResult.IsSuccess
                 && tokenResult.Data is not null
-                && access.IsSuccess
-                && access.Data?.Allowed == true;
+                && !string.IsNullOrWhiteSpace(tokenResult.Data.AccessToken)
+                && tokenResult.Data.ProductAccessAllowed != false;
 
-            // Bind product Bearer for POS business APIs before permission calls (Staging rejects Dev headers).
             OrgWebSessionAmbient.AccessToken = hasPos ? tokenResult.Data!.AccessToken : null;
 
             currentUser.Set(new AuthSession(
@@ -656,8 +653,8 @@ public sealed class OrgWebSessionHydrator(
                 DateTimeOffset.UtcNow,
                 me.Data.ExpiresAtUtc,
                 hasPos,
-                access.Data?.ReasonCode,
-                access.Data?.SubscriptionStatus,
+                tokenResult.Data?.ProductAccessReasonCode,
+                SubscriptionStatus: null,
                 EnabledFeatureCodes: null,
                 AccessToken: tokenResult.Data?.AccessToken,
                 PlatformSessionToken: token,
@@ -676,6 +673,15 @@ public sealed class OrgWebSessionHydrator(
                     {
                         EnabledFeatureCodes = effective.Data.AllowedFeatureCodes
                     });
+                }
+                else if (shell.IsOrgOwner || shell.IsOrgManager)
+                {
+                    // Server GetEffective may still be empty before first management projection;
+                    // keep management shell usable from membership alone for nav gates.
+                    shell.AllowedCapabilities = [];
+                    shell.PosRole = tokenResult.Data?.OrganizationManagementAuthority == true
+                        ? (shell.IsOrgOwner ? "OrganizationOwner" : "OrganizationAdministrator")
+                        : null;
                 }
             }
             else if (shell.IsOrgOwner)
