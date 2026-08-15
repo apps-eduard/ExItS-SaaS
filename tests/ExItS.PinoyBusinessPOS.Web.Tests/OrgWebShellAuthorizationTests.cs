@@ -131,6 +131,7 @@ public sealed class OrgWebShellAuthorizationTests
                 CorrelationId: null,
                 StatusCode: 403));
         Assert.DoesNotContain("Development-stage", sanitized, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("authorize", sanitized, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Platform Admin", sanitized, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Sign out and sign in again", sanitized, StringComparison.OrdinalIgnoreCase);
     }
 }
