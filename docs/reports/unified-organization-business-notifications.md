@@ -2,6 +2,7 @@
 
 Date: 2026-08-15  
 Starting SHA: `22180c41b7cef74571d3804ca344fb9704519f5a`  
+Feature SHA: `b8826e11`  
 Phase markers: Phase 21 / 25 / 26 remain **OPEN** — Owner Validation Pending.
 
 ## Feature
