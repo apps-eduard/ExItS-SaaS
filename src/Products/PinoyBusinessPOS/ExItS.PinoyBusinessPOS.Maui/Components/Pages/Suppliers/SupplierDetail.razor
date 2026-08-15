@@ -131,7 +131,9 @@ else
         </dl>
     </section>
 
-    @if (isConnected && supplier.ConnectedRelationshipId is Guid relationshipId)
+    @if (isConnected
+         && supplier.ConnectedRelationshipId is Guid relationshipId
+         && string.Equals(_relationship?.Status, "Active", StringComparison.OrdinalIgnoreCase))
     {
         <div class="pos-action-grid pos-action-grid--two pos-supplier-detail__actions" role="group">
             <button type="button" class="pos-action-tile pos-action-tile--primary"
@@ -145,6 +147,18 @@ else
                 <span class="pos-action-tile__label">@L["ConnectedSuppliers_PurchaseOrders"]</span>
             </button>
         </div>
+    }
+    else if (isConnected && string.Equals(_relationship?.Status, "Pending", StringComparison.OrdinalIgnoreCase))
+    {
+        <Alert Tone="AlertTone.Info"
+               Title="@L["ConnectedSuppliers_Status_Pending"]"
+               Message="@L["ConnectedSuppliers_WaitingForApproval"]" />
+    }
+    else if (isConnected && string.Equals(_relationship?.Status, "Declined", StringComparison.OrdinalIgnoreCase))
+    {
+        <Alert Tone="AlertTone.Warning"
+               Title="@L["ConnectedSuppliers_Status_Declined"]"
+               Message="@L["ConnectedSuppliers_RequestDeclinedHelp"]" />
     }
 
     <div class="pos-action-grid pos-action-grid--two pos-supplier-detail__actions" role="group">
@@ -314,7 +328,7 @@ else
     private string RelationshipStatusLabel(string status) => status switch
     {
         "Active" => L["ConnectedSuppliers_Status_Connected"],
-        "Pending" => L["ConnectedSuppliers_Status_Requested"],
+        "Pending" => L["ConnectedSuppliers_Status_Pending"],
         "Declined" => L["ConnectedSuppliers_Status_Declined"],
         "Disconnected" => L["ConnectedSuppliers_Status_Disconnected"],
         _ => status

@@ -3,11 +3,12 @@ using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Application.Identity;
-using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
+using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Suppliers;
 
 namespace ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 
@@ -22,9 +23,20 @@ public static class ConnectedSupplierErrorCodes
     public const string OrganizationMismatch = "pos.connected_supplier.organization_mismatch";
 }
 
-public sealed record ConnectedSupplierRelationshipDto(Guid RelationshipId, Guid BuyerOrganizationId, Guid SupplierOrganizationId,
-    string Status, DateTimeOffset RequestedAtUtc, Guid? RequestedByUserId, DateTimeOffset? RespondedAtUtc,
-    Guid? RespondedByUserId, DateTimeOffset? DisconnectedAtUtc, DateTimeOffset CreatedAtUtc, DateTimeOffset UpdatedAtUtc);
+public sealed record ConnectedSupplierRelationshipDto(
+    Guid RelationshipId,
+    Guid BuyerOrganizationId,
+    Guid SupplierOrganizationId,
+    string Status,
+    DateTimeOffset RequestedAtUtc,
+    Guid? RequestedByUserId,
+    DateTimeOffset? RespondedAtUtc,
+    Guid? RespondedByUserId,
+    DateTimeOffset? DisconnectedAtUtc,
+    DateTimeOffset CreatedAtUtc,
+    DateTimeOffset UpdatedAtUtc,
+    string? CounterpartyDisplayName = null,
+    string? CounterpartyPublicOrganizationId = null);
 public sealed record RequestConnectionRequest(
     Guid? SupplierOrganizationId = null,
     string? SupplierPublicOrganizationIdOrQrPayload = null,
@@ -62,9 +74,22 @@ public sealed record ConnectedPoDraftReviewDto(ConnectedPoDraftReviewStatus Over
 
 public static class ConnectedSupplierMapper
 {
-    public static ConnectedSupplierRelationshipDto Map(ConnectedSupplierRelationship x) => new(x.Id.Value,
-        x.BuyerOrganizationId.Value,x.SupplierOrganizationId.Value,x.Status.ToString(),x.RequestedAtUtc,x.RequestedByUserId,
-        x.RespondedAtUtc,x.RespondedByUserId,x.DisconnectedAtUtc,x.CreatedAtUtc,x.UpdatedAtUtc);
+    public static ConnectedSupplierRelationshipDto Map(ConnectedSupplierRelationship x, bool supplierView = false) => new(
+        x.Id.Value,
+        x.BuyerOrganizationId.Value,
+        x.SupplierOrganizationId.Value,
+        x.Status.ToString(),
+        x.RequestedAtUtc,
+        x.RequestedByUserId,
+        x.RespondedAtUtc,
+        x.RespondedByUserId,
+        x.DisconnectedAtUtc,
+        x.CreatedAtUtc,
+        x.UpdatedAtUtc,
+        CounterpartyDisplayName: supplierView ? x.BuyerDisplayNameSnapshot : x.SupplierDisplayNameSnapshot,
+        CounterpartyPublicOrganizationId: supplierView
+            ? x.BuyerPublicOrganizationIdSnapshot
+            : x.SupplierPublicOrganizationIdSnapshot);
     public static SupplierProductExposureDto Map(SupplierProductExposure x) => new(x.Id.Value,x.SupplierOrganizationId.Value,
         x.ProductId.Value,x.SkuSnapshot,x.NameSnapshot,x.CategoryNameSnapshot,x.UnitOfMeasureCode,x.SupplierOrderPrice,
         x.IsOrderable,x.IsExposed,x.SyncVersion,x.CreatedAtUtc,x.UpdatedAtUtc);
@@ -91,6 +116,7 @@ internal static class ConnectedSupplierUseCaseGuard
 public sealed class RequestConnection
 {
     private readonly IConnectedSupplierRelationshipRepository _relationships;
+    private readonly ISupplierRepository _suppliers;
     private readonly IPosUnitOfWork _uow;
     private readonly IPosCommercialAccessAccessor _access;
     private readonly IPlatformOrganizationPublicResolve _organizationResolve;
@@ -98,12 +124,14 @@ public sealed class RequestConnection
 
     public RequestConnection(
         IConnectedSupplierRelationshipRepository relationships,
+        ISupplierRepository suppliers,
         IPosUnitOfWork uow,
         IPosCommercialAccessAccessor access,
         IPlatformOrganizationPublicResolve organizationResolve,
         TimeProvider? clock = null)
     {
         _relationships = relationships;
+        _suppliers = suppliers;
         _uow = uow;
         _access = access;
         _organizationResolve = organizationResolve;
@@ -135,24 +163,78 @@ public sealed class RequestConnection
 
             var buyer = PosOrganizationId.From(organizationId);
             var supplier = PosOrganizationId.From(resolvedSupplier.Value!.OrganizationId);
-            if (await _relationships.FindOpenAsync(buyer, supplier, ct).ConfigureAwait(false) is not null)
+            if (buyer == supplier)
             {
                 return ConnectedSupplierUseCaseGuard.Failure<ConnectedSupplierRelationshipDto>(
+                    ConnectedSupplierDomainErrorCodes.SelfConnection,
+                    "You can't connect your business to itself.");
+            }
+
+            if (await _relationships.FindOpenAsync(buyer, supplier, ct).ConfigureAwait(false) is { } existing)
+            {
+                var message = existing.Status == ConnectedSupplierRelationshipStatus.Active
+                    ? "Your businesses are already connected."
+                    : "A connection request has already been sent to this supplier.";
+                return ConnectedSupplierUseCaseGuard.Failure<ConnectedSupplierRelationshipDto>(
                     ConnectedSupplierErrorCodes.DuplicateRelationship,
-                    "A pending or active relationship already exists.");
+                    message);
+            }
+
+            var utcNow = _clock.GetUtcNow();
+            string? buyerDisplayName = null;
+            string? buyerPublicId = null;
+            var buyerIdentity = await _organizationResolve
+                .GetOrganizationPublicIdentityAsync(organizationId, ct)
+                .ConfigureAwait(false);
+            if (buyerIdentity.IsSuccess && buyerIdentity.Value is not null)
+            {
+                buyerDisplayName = buyerIdentity.Value.DisplayName;
+                buyerPublicId = buyerIdentity.Value.PublicOrganizationId;
             }
 
             var relationship = ConnectedSupplierRelationship.Request(
                 buyer,
                 supplier,
-                _clock.GetUtcNow(),
-                request.RequestedByUserId);
+                utcNow,
+                request.RequestedByUserId,
+                buyerDisplayName: buyerDisplayName,
+                buyerPublicOrganizationId: buyerPublicId,
+                supplierDisplayName: resolvedSupplier.Value.DisplayName,
+                supplierPublicOrganizationId: resolvedSupplier.Value.PublicOrganizationId);
             await _relationships.AddAsync(relationship, ct).ConfigureAwait(false);
+
+            // Buyer-side Supplier master so Pending/Active relationships appear on Suppliers list.
+            var supplierName = string.IsNullOrWhiteSpace(resolvedSupplier.Value.DisplayName)
+                ? resolvedSupplier.Value.PublicOrganizationId
+                : resolvedSupplier.Value.DisplayName;
+            var normalizedName = Supplier.Normalize(Supplier.NormalizeName(supplierName));
+            var nameConflict = await _suppliers
+                .FindActiveByNormalizedNameAsync(buyer, normalizedName, ct)
+                .ConfigureAwait(false);
+            if (nameConflict is not null)
+            {
+                supplierName = $"{supplierName} ({resolvedSupplier.Value.PublicOrganizationId})";
+            }
+
+            var code = await _suppliers.AllocateNextSupplierCodeAsync(buyer, ct).ConfigureAwait(false);
+            var buyerSupplier = Supplier.Create(
+                buyer,
+                code,
+                supplierName,
+                utcNow,
+                notes: resolvedSupplier.Value.PublicOrganizationId);
+            buyerSupplier.AttachConnectedRelationship(relationship.Id, utcNow);
+            await _suppliers.AddAsync(buyerSupplier, ct).ConfigureAwait(false);
+
             await _uow.SaveChangesAsync(ct).ConfigureAwait(false);
             return ApplicationResult<ConnectedSupplierRelationshipDto>.Success(
-                ConnectedSupplierMapper.Map(relationship));
+                ConnectedSupplierMapper.Map(relationship, supplierView: false));
         }
         catch (DomainException ex)
+        {
+            return ConnectedSupplierUseCaseGuard.Failure<ConnectedSupplierRelationshipDto>(ex.ErrorCode, ex.Message);
+        }
+        catch (PersistenceConflictException ex)
         {
             return ConnectedSupplierUseCaseGuard.Failure<ConnectedSupplierRelationshipDto>(ex.ErrorCode, ex.Message);
         }
@@ -249,10 +331,18 @@ public sealed class RespondConnection
         if(!gate.IsSuccess)return ConnectedSupplierUseCaseGuard.Failure<ConnectedSupplierRelationshipDto>(gate.ErrorCode!,gate.ErrorMessage!);
         var r=await _relationships.GetAsync(ConnectedSupplierRelationshipId.From(relationshipId),ct);
         var org=PosOrganizationId.From(orgId);
-        if(r is null||r.SupplierOrganizationId!=org)return ConnectedSupplierUseCaseGuard.Failure<ConnectedSupplierRelationshipDto>(ConnectedSupplierErrorCodes.NotFound,"Relationship was not found.");
+        if(r is null||r.SupplierOrganizationId!=org)
+            return ConnectedSupplierUseCaseGuard.Failure<ConnectedSupplierRelationshipDto>(
+                ConnectedSupplierErrorCodes.NotFound,"This connection request is no longer available.");
         try {if(approve)r.Approve(_clock.GetUtcNow(),request.RespondedByUserId);else r.Decline(_clock.GetUtcNow(),request.RespondedByUserId);
-            await _relationships.UpdateAsync(r,ct);await _uow.SaveChangesAsync(ct);return ApplicationResult<ConnectedSupplierRelationshipDto>.Success(ConnectedSupplierMapper.Map(r));
-        }catch(DomainException ex){return ConnectedSupplierUseCaseGuard.Failure<ConnectedSupplierRelationshipDto>(ex.ErrorCode,ex.Message);}
+            await _relationships.UpdateAsync(r,ct);await _uow.SaveChangesAsync(ct);return ApplicationResult<ConnectedSupplierRelationshipDto>.Success(ConnectedSupplierMapper.Map(r,supplierView:true));
+        }catch(DomainException ex)
+        {
+            var message = ex.ErrorCode == ConnectedSupplierDomainErrorCodes.InvalidTransition
+                ? "This connection request is no longer available."
+                : ex.Message;
+            return ConnectedSupplierUseCaseGuard.Failure<ConnectedSupplierRelationshipDto>(ex.ErrorCode,message);
+        }
     }
 }
 
@@ -269,7 +359,7 @@ public sealed class DisconnectConnectedSupplier
         var r=await _relationships.GetAsync(ConnectedSupplierRelationshipId.From(id),ct);var org=PosOrganizationId.From(orgId);
         if(r is null||!ConnectedSupplierUseCaseGuard.BelongsTo(r,org))return ConnectedSupplierUseCaseGuard.Failure<ConnectedSupplierRelationshipDto>(ConnectedSupplierErrorCodes.NotFound,"Relationship was not found.");
         try {r.Disconnect(_clock.GetUtcNow());await _relationships.UpdateAsync(r,ct);await _uow.SaveChangesAsync(ct);
-            return ApplicationResult<ConnectedSupplierRelationshipDto>.Success(ConnectedSupplierMapper.Map(r));}
+            return ApplicationResult<ConnectedSupplierRelationshipDto>.Success(ConnectedSupplierMapper.Map(r,supplierView:r.SupplierOrganizationId==org));}
         catch(DomainException ex){return ConnectedSupplierUseCaseGuard.Failure<ConnectedSupplierRelationshipDto>(ex.ErrorCode,ex.Message);}
     }
 }
@@ -282,7 +372,8 @@ public sealed class ListRelationships
     {var gate=ConnectedSupplierUseCaseGuard.Access(_access,UtangCapability.ViewSuppliers);
      if(!gate.IsSuccess)return ConnectedSupplierUseCaseGuard.Failure<IReadOnlyList<ConnectedSupplierRelationshipDto>>(gate.ErrorCode!,gate.ErrorMessage!);
      var items=await _relationships.ListAsync(PosOrganizationId.From(orgId),supplierView,ct);
-     return ApplicationResult<IReadOnlyList<ConnectedSupplierRelationshipDto>>.Success(items.Select(ConnectedSupplierMapper.Map).ToList());}
+     return ApplicationResult<IReadOnlyList<ConnectedSupplierRelationshipDto>>.Success(
+         items.Select(x=>ConnectedSupplierMapper.Map(x,supplierView)).ToList());}
 }
 
 public sealed class ExposeProduct

@@ -94,7 +94,7 @@ Server APIs remain authoritative (`OrganizationManagementAuthority` + `PosRoleMa
 
 | Item | Reason |
 |---|---|
-| Suppliers / purchase orders / goods receipt pages | Clients registered; dedicated Org Web pages not shipped in this pass |
+| Suppliers / purchase orders / goods receipt pages | Suppliers list + Connected ExItS connect + Incoming/Sent connection requests shipped (`/suppliers`, `/suppliers/requests`, `/suppliers/connect`); PO/goods-receipt Org Web pages still deferred |
 | Expenses UI | Same |
 | Sale returns management UI | Read history only today |
 | Billing / plan change | Subscription is read-only |

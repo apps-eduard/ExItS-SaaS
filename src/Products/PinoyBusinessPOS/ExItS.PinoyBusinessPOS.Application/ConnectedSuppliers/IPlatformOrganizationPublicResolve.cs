@@ -11,6 +11,14 @@ public interface IPlatformOrganizationPublicResolve
     Task<ApplicationResult<PlatformOrganizationPublicResolveResult>> ResolveOrganizationForConnectedSupplierAsync(
         string publicOrganizationIdOrQrPayload,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Loads the authenticated actor's own organization public identity (display name + ORG######).
+    /// Used to snapshot buyer identity onto connection requests for the supplier inbox.
+    /// </summary>
+    Task<ApplicationResult<PlatformOrganizationPublicResolveResult>> GetOrganizationPublicIdentityAsync(
+        Guid organizationId,
+        CancellationToken cancellationToken = default);
 }
 
 public sealed record PlatformOrganizationPublicResolveResult(

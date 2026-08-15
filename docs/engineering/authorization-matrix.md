@@ -221,6 +221,8 @@ Identity comes from authenticated Platform session + selected Organization + pro
 
 **Organization Manager** — day-to-day management subset; Owner-only surfaces (ownership transfer, sales-document acknowledgment, Owner subscription controls) denied.
 
+**Connected ExItS supplier relationships** — Owner/Manager with `store-suppliers-manage` may request/accept/decline org↔org connections (server-enforced). Cashier cannot manage. Pending must be visible to buyer (outgoing) and supplier (incoming). See [connected-exits-suppliers.md](connected-exits-suppliers.md).
+
 **Cashier** — Organization Web host and management APIs denied.
 
 ### Test payment

@@ -1,0 +1,145 @@
+@page "/suppliers/connected/requests"
+@using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosConnectedSupplierClient ConnectedSuppliers
+@inject IUtangCapabilityEvaluator Capabilities
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+<StoreHeaderBack Href="/suppliers" />
+<Page>
+    <h1>@L["ConnectedSuppliers_IncomingRequests"]</h1>
+    <p>@L["ConnectedSuppliers_IncomingRequestsHelp"]</p>
+
+    @if (_loading)
+    {
+        <Spinner />
+    }
+    else if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <Alert Tone="AlertTone.Danger" Title="@L["ConnectedSuppliers_Error"]" Message="@_error" />
+    }
+    else if (_pending.Count == 0)
+    {
+        <EmptyState IconName="customers"
+                    Title="@L["ConnectedSuppliers_NoIncomingRequests"]"
+                    Message="@L["ConnectedSuppliers_NoIncomingRequestsHelp"]" />
+    }
+    else
+    {
+        @foreach (var item in _pending)
+        {
+            var name = string.IsNullOrWhiteSpace(item.CounterpartyDisplayName)
+                ? L["ConnectedSuppliers_RequestingBusiness"].Value
+                : item.CounterpartyDisplayName;
+            <section class="pos-settings__panel">
+                <h2>@name</h2>
+                @if (!string.IsNullOrWhiteSpace(item.CounterpartyPublicOrganizationId))
+                {
+                    <p>@item.CounterpartyPublicOrganizationId</p>
+                }
+                <p>@L["ConnectedSuppliers_RequestedAt", item.RequestedAtUtc.ToLocalTime().ToString("g")]</p>
+                <p>@L["ConnectedSuppliers_IncomingRequestMessage", name]</p>
+                @if (Capabilities.IsAllowed(UtangCapability.ManageSuppliers))
+                {
+                    <div class="pos-sell-customer__actions" role="group">
+                        <button type="button"
+                                class="pos-action-tile pos-action-tile--primary"
+                                disabled="@_busy"
+                                @onclick="() => RespondAsync(item.RelationshipId, true)">
+                            <span class="pos-action-tile__label">@L["ConnectedSuppliers_Accept"]</span>
+                        </button>
+                        <button type="button"
+                                class="pos-action-tile"
+                                disabled="@_busy"
+                                @onclick="() => RespondAsync(item.RelationshipId, false)">
+                            <span class="pos-action-tile__label">@L["ConnectedSuppliers_Decline"]</span>
+                        </button>
+                    </div>
+                }
+            </section>
+        }
+    }
+</Page>
+
+@code {
+    private bool _loading = true;
+    private bool _busy;
+    private string? _error;
+    private IReadOnlyList<ConnectedSupplierRelationshipDto> _pending = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        if (!Capabilities.IsAllowed(UtangCapability.ViewSuppliers))
+        {
+            Nav.NavigateTo("/home", replace: true);
+            return;
+        }
+
+        if (!await Connectivity.IsConnectedAsync())
+        {
+            _loading = false;
+            _error = L["Suppliers_OfflineMessage"];
+            return;
+        }
+
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+        StateHasChanged();
+
+        var result = await ConnectedSuppliers.ListRelationshipsAsync("supplier");
+        _loading = false;
+        if (!result.IsSuccess || result.Data is null)
+        {
+            _pending = [];
+            _error = result.Error?.Detail ?? L["ConnectedSuppliers_LoadIncomingRequestsFailed"];
+            return;
+        }
+
+        _pending = result.Data
+            .Where(x => string.Equals(x.Status, "Pending", StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(x => x.RequestedAtUtc)
+            .ToList();
+    }
+
+    private async Task RespondAsync(Guid relationshipId, bool accept)
+    {
+        if (!Capabilities.IsAllowed(UtangCapability.ManageSuppliers) || _busy)
+        {
+            return;
+        }
+
+        _busy = true;
+        _error = null;
+        try
+        {
+            var result = accept
+                ? await ConnectedSuppliers.ApproveAsync(relationshipId, new RespondConnectionRequest())
+                : await ConnectedSuppliers.DeclineAsync(relationshipId, new RespondConnectionRequest());
+            if (result.IsSuccess)
+            {
+                await LoadAsync();
+            }
+            else
+            {
+                _error = result.Error?.Detail ?? L["ConnectedSuppliers_RespondRequestFailed"];
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

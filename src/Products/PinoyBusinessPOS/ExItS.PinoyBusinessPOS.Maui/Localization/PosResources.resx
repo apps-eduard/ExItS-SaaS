@@ -2662,8 +2662,21 @@
   <data name="ConnectedSuppliers_ConnectedViaExits" xml:space="preserve"><value>Connected via ExItS</value></data>
   <data name="ConnectedSuppliers_Status_Connected" xml:space="preserve"><value>Connected</value></data>
   <data name="ConnectedSuppliers_Status_Requested" xml:space="preserve"><value>Connection requested</value></data>
+  <data name="ConnectedSuppliers_Status_Pending" xml:space="preserve"><value>Pending</value></data>
   <data name="ConnectedSuppliers_Status_Declined" xml:space="preserve"><value>Declined</value></data>
   <data name="ConnectedSuppliers_Status_Disconnected" xml:space="preserve"><value>Disconnected</value></data>
+  <data name="ConnectedSuppliers_WaitingForApproval" xml:space="preserve"><value>Waiting for supplier approval</value></data>
+  <data name="ConnectedSuppliers_RequestDeclinedHelp" xml:space="preserve"><value>Request declined</value></data>
+  <data name="ConnectedSuppliers_RequestSentPendingMessage" xml:space="preserve"><value>Connection request sent. Waiting for the supplier to accept.</value></data>
+  <data name="ConnectedSuppliers_IncomingRequests" xml:space="preserve"><value>Incoming requests</value></data>
+  <data name="ConnectedSuppliers_IncomingRequestsHelp" xml:space="preserve"><value>Businesses that want to connect with you as their supplier.</value></data>
+  <data name="ConnectedSuppliers_NoIncomingRequests" xml:space="preserve"><value>No incoming requests</value></data>
+  <data name="ConnectedSuppliers_NoIncomingRequestsHelp" xml:space="preserve"><value>When another ExItS business sends a supplier connection request, it will appear here.</value></data>
+  <data name="ConnectedSuppliers_RequestingBusiness" xml:space="preserve"><value>Requesting business</value></data>
+  <data name="ConnectedSuppliers_RequestedAt" xml:space="preserve"><value>Requested {0}</value></data>
+  <data name="ConnectedSuppliers_IncomingRequestMessage" xml:space="preserve"><value>{0} wants to connect with your business as a supplier.</value></data>
+  <data name="ConnectedSuppliers_LoadIncomingRequestsFailed" xml:space="preserve"><value>Incoming connection requests could not be loaded.</value></data>
+  <data name="ConnectedSuppliers_RespondRequestFailed" xml:space="preserve"><value>The connection response could not be saved.</value></data>
   <data name="ConnectedSuppliers_RequestConnection" xml:space="preserve"><value>Connect supplier</value></data>
   <data name="ConnectedSuppliers_RequestTitle" xml:space="preserve"><value>Connect an ExItS supplier</value></data>
   <data name="ConnectedSuppliers_RequestHelp" xml:space="preserve"><value>Scan the supplier Business QR or enter their organization ID (ORG######). The supplier must approve your request.</value></data>

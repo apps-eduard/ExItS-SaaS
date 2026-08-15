@@ -1134,6 +1134,16 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("buyer_organization_id");
 
+                    b.Property<string>("BuyerDisplayNameSnapshot")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("buyer_display_name_snapshot");
+
+                    b.Property<string>("BuyerPublicOrganizationIdSnapshot")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("buyer_public_organization_id_snapshot");
+
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
@@ -1162,9 +1172,19 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("status");
 
+                    b.Property<string>("SupplierDisplayNameSnapshot")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("supplier_display_name_snapshot");
+
                     b.Property<Guid>("SupplierOrganizationId")
                         .HasColumnType("uuid")
                         .HasColumnName("supplier_organization_id");
+
+                    b.Property<string>("SupplierPublicOrganizationIdSnapshot")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("supplier_public_organization_id_snapshot");
 
                     b.Property<DateTimeOffset>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone")

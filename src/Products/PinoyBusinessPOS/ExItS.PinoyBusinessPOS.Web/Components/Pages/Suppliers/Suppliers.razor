@@ -1,0 +1,311 @@
+@page "/suppliers"
+@page "/suppliers/requests"
+@attribute [Authorize]
+@using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers
+@using ExItS.PinoyBusinessPOS.Application.Suppliers
+@inject OrgWebShellState Shell
+@inject IPosSupplierClient SupplierApi
+@inject IPosConnectedSupplierClient ConnectedApi
+@inject IUtangCapabilityEvaluator Capabilities
+@inject NavigationManager Nav
+@inject IStringLocalizer<OrgWebResources> L
+
+<PageTitle>@L["Suppliers_Title"]</PageTitle>
+
+@if (!Shell.CanSee("suppliers"))
+{
+    <AccessDeniedPanel />
+}
+else
+{
+    <div class="org-page">
+        <ExitsPageHeader Title="@L["Suppliers_Title"]" Subtitle="@L["Suppliers_Subtitle"]" />
+
+        <div class="org-toolbar">
+            <Space>
+                <Button Type="@(_tab == "list" ? ButtonType.Primary : ButtonType.Default)" OnClick='() => SwitchTab("list")'>
+                    @L["Suppliers_TabList"]
+                </Button>
+                <Button Type="@(_tab == "requests" ? ButtonType.Primary : ButtonType.Default)" OnClick='() => SwitchTab("requests")'>
+                    @L["Suppliers_TabRequests"]
+                    @if (_incomingPending.Count > 0)
+                    {
+                        <span> (@_incomingPending.Count)</span>
+                    }
+                </Button>
+                @if (Capabilities.IsAllowed(UtangCapability.ManageSuppliers))
+                {
+                    <Button OnClick='() => Nav.NavigateTo("/suppliers/connect")'>@L["Suppliers_ConnectExIts"]</Button>
+                }
+            </Space>
+        </div>
+
+        <OrgAlert Error="@_error" OnRetry="LoadAsync" RetryLabel="@L["Common_Retry"]" OnDismissError="() => _error = null" />
+        <OrgLoading Active="_loading" />
+
+        @if (!_loading && _tab == "list")
+        {
+            @if (_suppliers.Count == 0)
+            {
+                <OrgEmpty Title="@L["Suppliers_EmptyTitle"]" Message="@L["Suppliers_EmptyMessage"]" />
+            }
+            else
+            {
+                <div class="org-table-wrap">
+                    <table class="org-table">
+                        <thead>
+                            <tr>
+                                <th>@L["Suppliers_ColName"]</th>
+                                <th>@L["Suppliers_ColType"]</th>
+                                <th>@L["Suppliers_ColStatus"]</th>
+                                <th>@L["Suppliers_ColConnection"]</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var s in _suppliers)
+                            {
+                                var relStatus = s.ConnectedRelationshipId is Guid rid
+                                    && _buyerStatuses.TryGetValue(rid, out var st) ? st : null;
+                                <tr>
+                                    <td>@s.Name</td>
+                                    <td>@(string.Equals(s.ConnectionType, "ConnectedOrganization", StringComparison.OrdinalIgnoreCase)
+                                        ? L["Suppliers_TypeConnected"]
+                                        : L["Suppliers_TypeExternal"])</td>
+                                    <td><OrgStatusBadge Text="@s.Status" Tone="@s.Status" /></td>
+                                    <td>
+                                        @if (relStatus is null)
+                                        {
+                                            <span>—</span>
+                                        }
+                                        else
+                                        {
+                                            <OrgStatusBadge Name="@ConnectionLabel(relStatus)" Tone="@relStatus" />
+                                            @if (string.Equals(relStatus, "Pending", StringComparison.OrdinalIgnoreCase))
+                                            {
+                                                <div class="org-note">@L["Suppliers_WaitingApproval"]</div>
+                                            }
+                                            else if (string.Equals(relStatus, "Declined", StringComparison.OrdinalIgnoreCase))
+                                            {
+                                                <div class="org-note">@L["Suppliers_RequestDeclined"]</div>
+                                            }
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        }
+
+        @if (!_loading && _tab == "requests")
+        {
+            <h3 class="org-section-title">@L["Suppliers_IncomingSection"]</h3>
+            @if (_incomingPending.Count == 0)
+            {
+                <OrgEmpty Title="@L["Suppliers_NoIncomingTitle"]" Message="@L["Suppliers_NoIncomingMessage"]" />
+            }
+            else
+            {
+                <div class="org-table-wrap">
+                    <table class="org-table">
+                        <thead>
+                            <tr>
+                                <th>@L["Suppliers_ColRequester"]</th>
+                                <th>@L["Suppliers_ColPublicId"]</th>
+                                <th>@L["Suppliers_ColRequested"]</th>
+                                <th>@L["Common_Actions"]</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var r in _incomingPending)
+                            {
+                                var name = string.IsNullOrWhiteSpace(r.CounterpartyDisplayName)
+                                    ? L["Suppliers_RequestingBusiness"].Value
+                                    : r.CounterpartyDisplayName;
+                                <tr>
+                                    <td>
+                                        <div>@name</div>
+                                        <div class="org-note">@L["Suppliers_IncomingPlain", name]</div>
+                                    </td>
+                                    <td>@(r.CounterpartyPublicOrganizationId ?? "—")</td>
+                                    <td>@r.RequestedAtUtc.ToLocalTime().ToString("g")</td>
+                                    <td>
+                                        @if (Capabilities.IsAllowed(UtangCapability.ManageSuppliers))
+                                        {
+                                            <Space>
+                                                <Button Type="@ButtonType.Primary"
+                                                        Loading="_busy"
+                                                        OnClick="() => RespondAsync(r.RelationshipId, true)">
+                                                    @L["Suppliers_Accept"]
+                                                </Button>
+                                                <Button Danger Loading="_busy"
+                                                        OnClick="() => RespondAsync(r.RelationshipId, false)">
+                                                    @L["Suppliers_Decline"]
+                                                </Button>
+                                            </Space>
+                                        }
+                                        else
+                                        {
+                                            <span class="org-note">@L["Suppliers_ViewOnly"]</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+
+            <h3 class="org-section-title" style="margin-top:1.5rem;">@L["Suppliers_SentSection"]</h3>
+            @if (_sent.Count == 0)
+            {
+                <OrgEmpty Title="@L["Suppliers_NoSentTitle"]" Message="@L["Suppliers_NoSentMessage"]" />
+            }
+            else
+            {
+                <div class="org-table-wrap">
+                    <table class="org-table">
+                        <thead>
+                            <tr>
+                                <th>@L["Suppliers_ColSupplier"]</th>
+                                <th>@L["Suppliers_ColPublicId"]</th>
+                                <th>@L["Suppliers_ColConnection"]</th>
+                                <th>@L["Suppliers_ColRequested"]</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var r in _sent)
+                            {
+                                <tr>
+                                    <td>@(r.CounterpartyDisplayName ?? L["Suppliers_TypeConnected"])</td>
+                                    <td>@(r.CounterpartyPublicOrganizationId ?? "—")</td>
+                                    <td><OrgStatusBadge Name="@ConnectionLabel(r.Status)" Tone="@r.Status" /></td>
+                                    <td>@r.RequestedAtUtc.ToLocalTime().ToString("g")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        }
+    </div>
+}
+
+@code {
+    private bool _loading = true;
+    private bool _busy;
+    private string? _error;
+    private string _tab = "list";
+    private List<PosSupplierDto> _suppliers = [];
+    private Dictionary<Guid, string> _buyerStatuses = [];
+    private List<ConnectedSupplierRelationshipDto> _incomingPending = [];
+    private List<ConnectedSupplierRelationshipDto> _sent = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Nav.Uri.Contains("/suppliers/requests", StringComparison.OrdinalIgnoreCase))
+        {
+            _tab = "requests";
+        }
+
+        await LoadAsync();
+    }
+
+    private async Task SwitchTab(string tab)
+    {
+        _tab = tab;
+        if (tab == "requests")
+        {
+            Nav.NavigateTo("/suppliers/requests");
+        }
+        else
+        {
+            Nav.NavigateTo("/suppliers");
+        }
+
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+        try
+        {
+            var list = await SupplierApi.ListAsync(page: 1, pageSize: 100);
+            if (!list.IsSuccess || list.Data is null)
+            {
+                _error = OrgWebUi.Error(list.Error);
+                _suppliers = [];
+            }
+            else
+            {
+                _suppliers = list.Data.Items.ToList();
+            }
+
+            var buyerRels = await ConnectedApi.ListRelationshipsAsync("buyer");
+            if (buyerRels.IsSuccess && buyerRels.Data is not null)
+            {
+                _buyerStatuses = buyerRels.Data.ToDictionary(x => x.RelationshipId, x => x.Status);
+                _sent = buyerRels.Data
+                    .OrderByDescending(x => x.RequestedAtUtc)
+                    .ToList();
+            }
+            else
+            {
+                _buyerStatuses = [];
+                _sent = [];
+            }
+
+            var supplierRels = await ConnectedApi.ListRelationshipsAsync("supplier");
+            _incomingPending = supplierRels.IsSuccess && supplierRels.Data is not null
+                ? supplierRels.Data
+                    .Where(x => string.Equals(x.Status, "Pending", StringComparison.OrdinalIgnoreCase))
+                    .OrderByDescending(x => x.RequestedAtUtc)
+                    .ToList()
+                : [];
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task RespondAsync(Guid relationshipId, bool accept)
+    {
+        if (!Capabilities.IsAllowed(UtangCapability.ManageSuppliers) || _busy)
+        {
+            return;
+        }
+
+        _busy = true;
+        _error = null;
+        try
+        {
+            var result = accept
+                ? await ConnectedApi.ApproveAsync(relationshipId, new RespondConnectionRequest())
+                : await ConnectedApi.DeclineAsync(relationshipId, new RespondConnectionRequest());
+            if (!result.IsSuccess)
+            {
+                _error = result.Error?.Detail ?? L["Suppliers_RespondFailed"];
+                return;
+            }
+
+            await LoadAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private string ConnectionLabel(string status) => status switch
+    {
+        "Active" => L["Suppliers_StatusConnected"],
+        "Pending" => L["Suppliers_StatusPending"],
+        "Declined" => L["Suppliers_StatusDeclined"],
+        "Disconnected" => L["Suppliers_StatusDisconnected"],
+        _ => status
+    };
+}

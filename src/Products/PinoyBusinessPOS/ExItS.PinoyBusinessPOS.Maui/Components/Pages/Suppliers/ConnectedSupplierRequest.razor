@@ -159,8 +159,13 @@
                     SupplierPublicOrganizationIdOrQrPayload: publicIdOrQr));
             _succeeded = result.IsSuccess;
             _message = result.IsSuccess
-                ? L["ConnectedSuppliers_RequestSentMessage"]
+                ? L["ConnectedSuppliers_RequestSentPendingMessage"]
                 : result.Error?.Detail ?? L["ConnectedSuppliers_RequestFailed"];
+            if (result.IsSuccess)
+            {
+                await Task.Delay(600);
+                Nav.NavigateTo("/suppliers");
+            }
         }
         finally
         {

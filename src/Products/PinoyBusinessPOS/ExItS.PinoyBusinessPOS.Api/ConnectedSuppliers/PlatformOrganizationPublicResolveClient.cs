@@ -116,6 +116,42 @@ public sealed class PlatformOrganizationPublicResolveClient(
                 string.IsNullOrWhiteSpace(dto.DisplayName) ? dto.PublicOrganizationId : dto.DisplayName.Trim()));
     }
 
+    public async Task<ApplicationResult<PlatformOrganizationPublicResolveResult>> GetOrganizationPublicIdentityAsync(
+        Guid organizationId,
+        CancellationToken cancellationToken = default)
+    {
+        if (organizationId == Guid.Empty)
+        {
+            return ApplicationResult<PlatformOrganizationPublicResolveResult>.Failure(
+                ConnectedSupplierErrorCodes.NotFound,
+                "Organization was not found.");
+        }
+
+        EnsureBaseAddress();
+        using var request = CreateRequest(HttpMethod.Get, $"api/v1/organizations/{organizationId:D}/public-identity");
+        using var response = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        if (!response.IsSuccessStatusCode)
+        {
+            return await FailureFromResponseAsync(response, cancellationToken).ConfigureAwait(false);
+        }
+
+        var dto = await response.Content
+            .ReadFromJsonAsync<PlatformPublicIdentityDto>(JsonOptions, cancellationToken)
+            .ConfigureAwait(false);
+        if (dto is null || string.IsNullOrWhiteSpace(dto.PublicOrganizationId))
+        {
+            return ApplicationResult<PlatformOrganizationPublicResolveResult>.Failure(
+                ConnectedSupplierErrorCodes.NotFound,
+                "Platform did not return a public organization identity.");
+        }
+
+        return ApplicationResult<PlatformOrganizationPublicResolveResult>.Success(
+            new PlatformOrganizationPublicResolveResult(
+                organizationId,
+                dto.PublicOrganizationId.Trim().ToUpperInvariant(),
+                string.IsNullOrWhiteSpace(dto.DisplayName) ? dto.PublicOrganizationId : dto.DisplayName.Trim()));
+    }
+
     private void EnsureBaseAddress()
     {
         if (httpClient.BaseAddress is not null)
@@ -242,4 +278,9 @@ public sealed class PlatformOrganizationPublicResolveClient(
         Guid OrganizationId,
         string DisplayName,
         string? Status);
+
+    private sealed record PlatformPublicIdentityDto(
+        string PublicOrganizationId,
+        string? QrPayload,
+        string DisplayName);
 }

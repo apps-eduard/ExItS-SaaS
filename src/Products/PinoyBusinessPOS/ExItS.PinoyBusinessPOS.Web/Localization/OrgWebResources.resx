@@ -167,4 +167,49 @@
   <data name="Nav_Alerts" xml:space="preserve"><value>Alerts</value></data>
   <data name="Nav_Roles" xml:space="preserve"><value>Roles</value></data>
   <data name="Nav_OperationalSettings" xml:space="preserve"><value>Operational settings</value></data>
+  <data name="Nav_Suppliers" xml:space="preserve"><value>Suppliers</value></data>
+  <data name="Nav_SupplierRequests" xml:space="preserve"><value>Supplier requests</value></data>
+  <data name="Suppliers_Title" xml:space="preserve"><value>Suppliers</value></data>
+  <data name="Suppliers_Subtitle" xml:space="preserve"><value>External suppliers and Connected ExItS supplier relationships.</value></data>
+  <data name="Suppliers_TabList" xml:space="preserve"><value>Suppliers</value></data>
+  <data name="Suppliers_TabRequests" xml:space="preserve"><value>Requests</value></data>
+  <data name="Suppliers_ConnectExIts" xml:space="preserve"><value>Connect ExItS supplier</value></data>
+  <data name="Suppliers_EmptyTitle" xml:space="preserve"><value>No suppliers yet</value></data>
+  <data name="Suppliers_EmptyMessage" xml:space="preserve"><value>Add an external supplier or send a Connected ExItS connection request.</value></data>
+  <data name="Suppliers_ColName" xml:space="preserve"><value>Name</value></data>
+  <data name="Suppliers_ColType" xml:space="preserve"><value>Type</value></data>
+  <data name="Suppliers_ColStatus" xml:space="preserve"><value>Status</value></data>
+  <data name="Suppliers_ColConnection" xml:space="preserve"><value>Connection</value></data>
+  <data name="Suppliers_ColRequester" xml:space="preserve"><value>Requesting business</value></data>
+  <data name="Suppliers_ColPublicId" xml:space="preserve"><value>Public organization ID</value></data>
+  <data name="Suppliers_ColRequested" xml:space="preserve"><value>Requested</value></data>
+  <data name="Suppliers_ColSupplier" xml:space="preserve"><value>Supplier</value></data>
+  <data name="Suppliers_TypeConnected" xml:space="preserve"><value>Connected ExItS</value></data>
+  <data name="Suppliers_TypeExternal" xml:space="preserve"><value>External</value></data>
+  <data name="Suppliers_StatusConnected" xml:space="preserve"><value>Connected</value></data>
+  <data name="Suppliers_StatusPending" xml:space="preserve"><value>Pending</value></data>
+  <data name="Suppliers_StatusDeclined" xml:space="preserve"><value>Declined</value></data>
+  <data name="Suppliers_StatusDisconnected" xml:space="preserve"><value>Disconnected</value></data>
+  <data name="Suppliers_WaitingApproval" xml:space="preserve"><value>Waiting for supplier approval</value></data>
+  <data name="Suppliers_RequestDeclined" xml:space="preserve"><value>Request declined</value></data>
+  <data name="Suppliers_IncomingSection" xml:space="preserve"><value>Incoming requests</value></data>
+  <data name="Suppliers_SentSection" xml:space="preserve"><value>Sent requests</value></data>
+  <data name="Suppliers_NoIncomingTitle" xml:space="preserve"><value>No incoming requests</value></data>
+  <data name="Suppliers_NoIncomingMessage" xml:space="preserve"><value>When another ExItS business wants you as their supplier, the request appears here.</value></data>
+  <data name="Suppliers_NoSentTitle" xml:space="preserve"><value>No sent requests</value></data>
+  <data name="Suppliers_NoSentMessage" xml:space="preserve"><value>Connection requests you send will appear here with Pending, Connected, or Declined status.</value></data>
+  <data name="Suppliers_RequestingBusiness" xml:space="preserve"><value>Requesting business</value></data>
+  <data name="Suppliers_IncomingPlain" xml:space="preserve"><value>{0} wants to connect with your business as a supplier.</value></data>
+  <data name="Suppliers_Accept" xml:space="preserve"><value>Accept</value></data>
+  <data name="Suppliers_Decline" xml:space="preserve"><value>Decline</value></data>
+  <data name="Suppliers_ViewOnly" xml:space="preserve"><value>View only</value></data>
+  <data name="Suppliers_RespondFailed" xml:space="preserve"><value>The connection response could not be saved.</value></data>
+  <data name="Suppliers_ConnectTitle" xml:space="preserve"><value>Connect an ExItS supplier</value></data>
+  <data name="Suppliers_ConnectSubtitle" xml:space="preserve"><value>Scan or enter the supplier Business QR / organization ID. The supplier must accept before the connection becomes active.</value></data>
+  <data name="Suppliers_BusinessQrOrOrgId" xml:space="preserve"><value>Business QR or organization ID</value></data>
+  <data name="Suppliers_BusinessQrHint" xml:space="preserve"><value>ORG###### or Business QR payload</value></data>
+  <data name="Suppliers_BusinessQrRequired" xml:space="preserve"><value>Enter the supplier Business QR or organization ID.</value></data>
+  <data name="Suppliers_SendRequest" xml:space="preserve"><value>Send request</value></data>
+  <data name="Suppliers_RequestFailed" xml:space="preserve"><value>The connection request could not be sent.</value></data>
+  <data name="Suppliers_RequestSentPending" xml:space="preserve"><value>Connection request sent. Waiting for the supplier to accept.</value></data>
 </root>

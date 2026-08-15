@@ -167,4 +167,49 @@
   <data name="Nav_Alerts" xml:space="preserve"><value>Mga alerto</value></data>
   <data name="Nav_Roles" xml:space="preserve"><value>Mga role</value></data>
   <data name="Nav_OperationalSettings" xml:space="preserve"><value>Operational settings</value></data>
+  <data name="Nav_Suppliers" xml:space="preserve"><value>Mga supplier</value></data>
+  <data name="Nav_SupplierRequests" xml:space="preserve"><value>Mga hiling ng supplier</value></data>
+  <data name="Suppliers_Title" xml:space="preserve"><value>Mga supplier</value></data>
+  <data name="Suppliers_Subtitle" xml:space="preserve"><value>Panlabas na supplier at Connected ExItS na ugnayan.</value></data>
+  <data name="Suppliers_TabList" xml:space="preserve"><value>Mga supplier</value></data>
+  <data name="Suppliers_TabRequests" xml:space="preserve"><value>Mga hiling</value></data>
+  <data name="Suppliers_ConnectExIts" xml:space="preserve"><value>Ikonekta ang ExItS supplier</value></data>
+  <data name="Suppliers_EmptyTitle" xml:space="preserve"><value>Wala pang supplier</value></data>
+  <data name="Suppliers_EmptyMessage" xml:space="preserve"><value>Magdagdag ng panlabas na supplier o magpadala ng Connected ExItS connection request.</value></data>
+  <data name="Suppliers_ColName" xml:space="preserve"><value>Pangalan</value></data>
+  <data name="Suppliers_ColType" xml:space="preserve"><value>Uri</value></data>
+  <data name="Suppliers_ColStatus" xml:space="preserve"><value>Status</value></data>
+  <data name="Suppliers_ColConnection" xml:space="preserve"><value>Koneksyon</value></data>
+  <data name="Suppliers_ColRequester" xml:space="preserve"><value>Humihiling na negosyo</value></data>
+  <data name="Suppliers_ColPublicId" xml:space="preserve"><value>Public organization ID</value></data>
+  <data name="Suppliers_ColRequested" xml:space="preserve"><value>Hiniling</value></data>
+  <data name="Suppliers_ColSupplier" xml:space="preserve"><value>Supplier</value></data>
+  <data name="Suppliers_TypeConnected" xml:space="preserve"><value>Connected ExItS</value></data>
+  <data name="Suppliers_TypeExternal" xml:space="preserve"><value>Panlabas</value></data>
+  <data name="Suppliers_StatusConnected" xml:space="preserve"><value>Konektado</value></data>
+  <data name="Suppliers_StatusPending" xml:space="preserve"><value>Nakabinbin</value></data>
+  <data name="Suppliers_StatusDeclined" xml:space="preserve"><value>Tinanggihan</value></data>
+  <data name="Suppliers_StatusDisconnected" xml:space="preserve"><value>Hindi na konektado</value></data>
+  <data name="Suppliers_WaitingApproval" xml:space="preserve"><value>Hinihintay ang pagsang-ayon ng supplier</value></data>
+  <data name="Suppliers_RequestDeclined" xml:space="preserve"><value>Tinanggihan ang hiling</value></data>
+  <data name="Suppliers_IncomingSection" xml:space="preserve"><value>Mga papasok na hiling</value></data>
+  <data name="Suppliers_SentSection" xml:space="preserve"><value>Mga ipinadalang hiling</value></data>
+  <data name="Suppliers_NoIncomingTitle" xml:space="preserve"><value>Walang papasok na hiling</value></data>
+  <data name="Suppliers_NoIncomingMessage" xml:space="preserve"><value>Kapag may ibang ExItS na negosyo na gusto kayo bilang supplier, lalabas ang hiling dito.</value></data>
+  <data name="Suppliers_NoSentTitle" xml:space="preserve"><value>Walang ipinadalang hiling</value></data>
+  <data name="Suppliers_NoSentMessage" xml:space="preserve"><value>Lalabas dito ang mga connection request na ipinadala ninyo — Pending, Connected, o Declined.</value></data>
+  <data name="Suppliers_RequestingBusiness" xml:space="preserve"><value>Humihiling na negosyo</value></data>
+  <data name="Suppliers_IncomingPlain" xml:space="preserve"><value>Gusto ni {0} na kumonekta sa inyong negosyo bilang supplier.</value></data>
+  <data name="Suppliers_Accept" xml:space="preserve"><value>Tanggapin</value></data>
+  <data name="Suppliers_Decline" xml:space="preserve"><value>Tanggihan</value></data>
+  <data name="Suppliers_ViewOnly" xml:space="preserve"><value>Tingnan lamang</value></data>
+  <data name="Suppliers_RespondFailed" xml:space="preserve"><value>Hindi ma-save ang tugon sa koneksyon.</value></data>
+  <data name="Suppliers_ConnectTitle" xml:space="preserve"><value>Ikonekta ang ExItS supplier</value></data>
+  <data name="Suppliers_ConnectSubtitle" xml:space="preserve"><value>I-scan o ilagay ang Business QR / organization ID ng supplier. Kailangan nilang tumanggap bago maging Active ang koneksyon.</value></data>
+  <data name="Suppliers_BusinessQrOrOrgId" xml:space="preserve"><value>Business QR o organization ID</value></data>
+  <data name="Suppliers_BusinessQrHint" xml:space="preserve"><value>ORG###### o Business QR payload</value></data>
+  <data name="Suppliers_BusinessQrRequired" xml:space="preserve"><value>Ilagay ang Business QR o organization ID ng supplier.</value></data>
+  <data name="Suppliers_SendRequest" xml:space="preserve"><value>Ipadala ang hiling</value></data>
+  <data name="Suppliers_RequestFailed" xml:space="preserve"><value>Hindi naipadala ang connection request.</value></data>
+  <data name="Suppliers_RequestSentPending" xml:space="preserve"><value>Naipadala ang connection request. Hinihintay ang pagsang-ayon ng supplier.</value></data>
 </root>

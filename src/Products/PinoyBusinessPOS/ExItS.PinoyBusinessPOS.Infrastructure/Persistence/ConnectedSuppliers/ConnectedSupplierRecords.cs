@@ -10,7 +10,12 @@ internal sealed class ConnectedSupplierRelationshipRecord
     public Guid Id { get; set; } public Guid BuyerOrganizationId { get; set; } public Guid SupplierOrganizationId { get; set; }
     public int Status { get; set; } public DateTimeOffset RequestedAtUtc { get; set; } public Guid? RequestedByUserId { get; set; }
     public DateTimeOffset? RespondedAtUtc { get; set; } public Guid? RespondedByUserId { get; set; }
-    public DateTimeOffset? DisconnectedAtUtc { get; set; } public DateTimeOffset CreatedAtUtc { get; set; }
+    public DateTimeOffset? DisconnectedAtUtc { get; set; }
+    public string? BuyerDisplayNameSnapshot { get; set; }
+    public string? BuyerPublicOrganizationIdSnapshot { get; set; }
+    public string? SupplierDisplayNameSnapshot { get; set; }
+    public string? SupplierPublicOrganizationIdSnapshot { get; set; }
+    public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset UpdatedAtUtc { get; set; } public uint Xmin { get; set; }
 }
 internal sealed class SupplierProductExposureRecord
@@ -55,11 +60,16 @@ internal static class ConnectedSupplierEntityMapper
     public static ConnectedSupplierRelationship ToDomain(ConnectedSupplierRelationshipRecord r)=>ConnectedSupplierRelationship.Rehydrate(
         ConnectedSupplierRelationshipId.From(r.Id),PosOrganizationId.From(r.BuyerOrganizationId),PosOrganizationId.From(r.SupplierOrganizationId),
         (ConnectedSupplierRelationshipStatus)r.Status,r.RequestedAtUtc,r.RequestedByUserId,r.RespondedAtUtc,r.RespondedByUserId,
-        r.DisconnectedAtUtc,r.CreatedAtUtc,r.UpdatedAtUtc);
+        r.DisconnectedAtUtc,r.CreatedAtUtc,r.UpdatedAtUtc,
+        r.BuyerDisplayNameSnapshot,r.BuyerPublicOrganizationIdSnapshot,
+        r.SupplierDisplayNameSnapshot,r.SupplierPublicOrganizationIdSnapshot);
     public static ConnectedSupplierRelationshipRecord ToRecord(ConnectedSupplierRelationship x)=>new(){Id=x.Id.Value,
         BuyerOrganizationId=x.BuyerOrganizationId.Value,SupplierOrganizationId=x.SupplierOrganizationId.Value,Status=(int)x.Status,
         RequestedAtUtc=x.RequestedAtUtc,RequestedByUserId=x.RequestedByUserId,RespondedAtUtc=x.RespondedAtUtc,
-        RespondedByUserId=x.RespondedByUserId,DisconnectedAtUtc=x.DisconnectedAtUtc,CreatedAtUtc=x.CreatedAtUtc,UpdatedAtUtc=x.UpdatedAtUtc};
+        RespondedByUserId=x.RespondedByUserId,DisconnectedAtUtc=x.DisconnectedAtUtc,
+        BuyerDisplayNameSnapshot=x.BuyerDisplayNameSnapshot,BuyerPublicOrganizationIdSnapshot=x.BuyerPublicOrganizationIdSnapshot,
+        SupplierDisplayNameSnapshot=x.SupplierDisplayNameSnapshot,SupplierPublicOrganizationIdSnapshot=x.SupplierPublicOrganizationIdSnapshot,
+        CreatedAtUtc=x.CreatedAtUtc,UpdatedAtUtc=x.UpdatedAtUtc};
     public static void Apply(ConnectedSupplierRelationship x,ConnectedSupplierRelationshipRecord r)
     {r.Status=(int)x.Status;r.RespondedAtUtc=x.RespondedAtUtc;r.RespondedByUserId=x.RespondedByUserId;r.DisconnectedAtUtc=x.DisconnectedAtUtc;r.UpdatedAtUtc=x.UpdatedAtUtc;}
 

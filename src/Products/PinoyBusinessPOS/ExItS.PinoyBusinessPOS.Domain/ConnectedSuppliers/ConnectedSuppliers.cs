@@ -69,27 +69,50 @@ public sealed class ConnectedSupplierRelationship
     public DateTimeOffset? RespondedAtUtc { get; private set; }
     public Guid? RespondedByUserId { get; private set; }
     public DateTimeOffset? DisconnectedAtUtc { get; private set; }
+    /// <summary>Public business display name of the buyer at request time (safe for supplier inbox).</summary>
+    public string? BuyerDisplayNameSnapshot { get; }
+    /// <summary>Public organization id (ORG######) of the buyer at request time.</summary>
+    public string? BuyerPublicOrganizationIdSnapshot { get; }
+    /// <summary>Public business display name of the supplier at request time (safe for buyer list).</summary>
+    public string? SupplierDisplayNameSnapshot { get; }
+    /// <summary>Public organization id (ORG######) of the supplier at request time.</summary>
+    public string? SupplierPublicOrganizationIdSnapshot { get; }
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
 
     private ConnectedSupplierRelationship(ConnectedSupplierRelationshipId id, PosOrganizationId buyerOrganizationId,
         PosOrganizationId supplierOrganizationId, ConnectedSupplierRelationshipStatus status, DateTimeOffset requestedAtUtc,
         Guid? requestedByUserId, DateTimeOffset? respondedAtUtc, Guid? respondedByUserId,
-        DateTimeOffset? disconnectedAtUtc, DateTimeOffset createdAtUtc, DateTimeOffset updatedAtUtc)
+        DateTimeOffset? disconnectedAtUtc, DateTimeOffset createdAtUtc, DateTimeOffset updatedAtUtc,
+        string? buyerDisplayNameSnapshot = null, string? buyerPublicOrganizationIdSnapshot = null,
+        string? supplierDisplayNameSnapshot = null, string? supplierPublicOrganizationIdSnapshot = null)
     {
         Id = id; BuyerOrganizationId = buyerOrganizationId; SupplierOrganizationId = supplierOrganizationId;
         Status = status; RequestedAtUtc = requestedAtUtc; RequestedByUserId = requestedByUserId;
         RespondedAtUtc = respondedAtUtc; RespondedByUserId = respondedByUserId; DisconnectedAtUtc = disconnectedAtUtc;
+        BuyerDisplayNameSnapshot = CleanSnapshot(buyerDisplayNameSnapshot, 128);
+        BuyerPublicOrganizationIdSnapshot = CleanSnapshot(buyerPublicOrganizationIdSnapshot, 32);
+        SupplierDisplayNameSnapshot = CleanSnapshot(supplierDisplayNameSnapshot, 128);
+        SupplierPublicOrganizationIdSnapshot = CleanSnapshot(supplierPublicOrganizationIdSnapshot, 32);
         CreatedAtUtc = createdAtUtc; UpdatedAtUtc = updatedAtUtc;
     }
 
     public static ConnectedSupplierRelationship Request(PosOrganizationId buyer, PosOrganizationId supplier,
-        DateTimeOffset utcNow, Guid? requestedByUserId = null, ConnectedSupplierRelationshipId? id = null)
+        DateTimeOffset utcNow, Guid? requestedByUserId = null, ConnectedSupplierRelationshipId? id = null,
+        string? buyerDisplayName = null, string? buyerPublicOrganizationId = null,
+        string? supplierDisplayName = null, string? supplierPublicOrganizationId = null)
     {
         EnsureUtc(utcNow);
-        if (buyer == supplier) throw new DomainException(ConnectedSupplierDomainErrorCodes.SelfConnection, "An organization cannot connect to itself.");
+        if (buyer == supplier)
+        {
+            throw new DomainException(
+                ConnectedSupplierDomainErrorCodes.SelfConnection,
+                "You can't connect your business to itself.");
+        }
+
         return new(id ?? ConnectedSupplierRelationshipId.New(), buyer, supplier,
-            ConnectedSupplierRelationshipStatus.Pending, utcNow, requestedByUserId, null, null, null, utcNow, utcNow);
+            ConnectedSupplierRelationshipStatus.Pending, utcNow, requestedByUserId, null, null, null, utcNow, utcNow,
+            buyerDisplayName, buyerPublicOrganizationId, supplierDisplayName, supplierPublicOrganizationId);
     }
 
     public void Approve(DateTimeOffset utcNow, Guid? actorId = null) => Respond(ConnectedSupplierRelationshipStatus.Active, utcNow, actorId);
@@ -109,8 +132,23 @@ public sealed class ConnectedSupplierRelationship
     public static ConnectedSupplierRelationship Rehydrate(ConnectedSupplierRelationshipId id, PosOrganizationId buyer,
         PosOrganizationId supplier, ConnectedSupplierRelationshipStatus status, DateTimeOffset requestedAtUtc,
         Guid? requestedBy, DateTimeOffset? respondedAtUtc, Guid? respondedBy, DateTimeOffset? disconnectedAtUtc,
-        DateTimeOffset createdAtUtc, DateTimeOffset updatedAtUtc) =>
-        new(id, buyer, supplier, status, requestedAtUtc, requestedBy, respondedAtUtc, respondedBy, disconnectedAtUtc, createdAtUtc, updatedAtUtc);
+        DateTimeOffset createdAtUtc, DateTimeOffset updatedAtUtc,
+        string? buyerDisplayNameSnapshot = null, string? buyerPublicOrganizationIdSnapshot = null,
+        string? supplierDisplayNameSnapshot = null, string? supplierPublicOrganizationIdSnapshot = null) =>
+        new(id, buyer, supplier, status, requestedAtUtc, requestedBy, respondedAtUtc, respondedBy, disconnectedAtUtc,
+            createdAtUtc, updatedAtUtc, buyerDisplayNameSnapshot, buyerPublicOrganizationIdSnapshot,
+            supplierDisplayNameSnapshot, supplierPublicOrganizationIdSnapshot);
+
+    private static string? CleanSnapshot(string? value, int maxLength)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        var trimmed = value.Trim();
+        return trimmed.Length <= maxLength ? trimmed : trimmed[..maxLength];
+    }
     private static void InvalidTransition() => throw new DomainException(ConnectedSupplierDomainErrorCodes.InvalidTransition, "Connected supplier relationship transition is not allowed.");
     internal static void EnsureUtc(DateTimeOffset value)
     {

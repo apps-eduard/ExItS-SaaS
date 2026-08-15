@@ -32,7 +32,7 @@
 | 19 | Mobile POS Operations and Cashier Experience Completion | **Open** |
 | 20–24 | Catalog / Privacy / Production / Entitlements / Statements | **Open** (see portfolio) |
 | 21 | Privacy, Compliance, and Regulatory Readiness | **Open** — Foundation + P21-WP11 P25/P26 privacy delta; legal/DPO review pending; **not** NPC compliant |
-| 25 | Organization Web / Identity / Organization Management | **Open** — WP01–WP09 Code Complete / Owner Validation Pending (**not closed**); Owner management authority + runtime ambient/session remediation Code Complete |
+| 25 | Organization Web / Identity / Organization Management | **Open** — WP01–WP09 Code Complete / Owner Validation Pending (**not closed**); Owner management authority + runtime ambient/session remediation Code Complete; Connected supplier Pending/incoming UI Code Complete |
 | 26 | Sales Documents and Compliance Readiness | **Open** — WP01–WP05 Code Complete / Owner Validation Pending |
 
 **Current focus:** Phase 26 Owner validation pending ([checklist](../validation/phase-26-owner-validation-checklist.md)); future confirmed BIR implementation deferred. Phase 25 remains Open with owner validation pending. Phase 21 P21-WP11 privacy delta documented; DPO/legal review pending; NPC compliance not claimed.
@@ -407,7 +407,7 @@ Over the project you went through these UI approaches:
 | P25-WP08 | Organization profile independence + multi-org ownership | Code Complete / Validation Pending |
 | P25-WP09 | Organization ownership transfer | Code Complete / Validation Pending |
 
-Engineering remediation (not a phase closeout WP): [organization-web-role-and-workflow-matrix.md](../engineering/organization-web-role-and-workflow-matrix.md), [organization-web-ui-responsive-standard.md](../engineering/organization-web-ui-responsive-standard.md), [P25-org-web-full-responsive-ux-completion.md](../reports/P25-org-web-full-responsive-ux-completion.md) — shared responsive management patterns across all Org Web routes; Development Test User (username-only); Owner/Administrator → Org Web; Cashier denial.
+Engineering remediation (not a phase closeout WP): [organization-web-role-and-workflow-matrix.md](../engineering/organization-web-role-and-workflow-matrix.md), [organization-web-ui-responsive-standard.md](../engineering/organization-web-ui-responsive-standard.md), [P25-org-web-full-responsive-ux-completion.md](../reports/P25-org-web-full-responsive-ux-completion.md), [connected-supplier-connection-request-lifecycle.md](../reports/connected-supplier-connection-request-lifecycle.md) — shared responsive management patterns across all Org Web routes; Development Test User (username-only); Owner/Administrator → Org Web; Cashier denial; Connected ExItS supplier Pending/incoming request surfaces.
 
 ## Phase 26 — Sales Documents and Compliance Readiness
 

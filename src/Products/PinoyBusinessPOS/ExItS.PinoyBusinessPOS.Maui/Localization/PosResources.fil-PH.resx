@@ -2662,8 +2662,21 @@
   <data name="ConnectedSuppliers_ConnectedViaExits" xml:space="preserve"><value>Konektado sa ExItS</value></data>
   <data name="ConnectedSuppliers_Status_Connected" xml:space="preserve"><value>Konektado</value></data>
   <data name="ConnectedSuppliers_Status_Requested" xml:space="preserve"><value>Hiniling ang koneksyon</value></data>
+  <data name="ConnectedSuppliers_Status_Pending" xml:space="preserve"><value>Nakabinbin</value></data>
   <data name="ConnectedSuppliers_Status_Declined" xml:space="preserve"><value>Tinanggihan</value></data>
   <data name="ConnectedSuppliers_Status_Disconnected" xml:space="preserve"><value>Hindi na konektado</value></data>
+  <data name="ConnectedSuppliers_WaitingForApproval" xml:space="preserve"><value>Hinihintay ang pagsang-ayon ng supplier</value></data>
+  <data name="ConnectedSuppliers_RequestDeclinedHelp" xml:space="preserve"><value>Tinanggihan ang hiling</value></data>
+  <data name="ConnectedSuppliers_RequestSentPendingMessage" xml:space="preserve"><value>Naipadala ang hiling sa koneksyon. Hinihintay ang pagsang-ayon ng supplier.</value></data>
+  <data name="ConnectedSuppliers_IncomingRequests" xml:space="preserve"><value>Mga papasok na hiling</value></data>
+  <data name="ConnectedSuppliers_IncomingRequestsHelp" xml:space="preserve"><value>Mga negosyo na gustong kumonekta sa inyo bilang kanilang supplier.</value></data>
+  <data name="ConnectedSuppliers_NoIncomingRequests" xml:space="preserve"><value>Walang papasok na hiling</value></data>
+  <data name="ConnectedSuppliers_NoIncomingRequestsHelp" xml:space="preserve"><value>Kapag may ibang ExItS na negosyo na magpapadala ng supplier connection request, lalabas ito dito.</value></data>
+  <data name="ConnectedSuppliers_RequestingBusiness" xml:space="preserve"><value>Humihiling na negosyo</value></data>
+  <data name="ConnectedSuppliers_RequestedAt" xml:space="preserve"><value>Hiniling noong {0}</value></data>
+  <data name="ConnectedSuppliers_IncomingRequestMessage" xml:space="preserve"><value>Gusto ni {0} na kumonekta sa inyong negosyo bilang supplier.</value></data>
+  <data name="ConnectedSuppliers_LoadIncomingRequestsFailed" xml:space="preserve"><value>Hindi ma-load ang mga papasok na connection request.</value></data>
+  <data name="ConnectedSuppliers_RespondRequestFailed" xml:space="preserve"><value>Hindi ma-save ang tugon sa koneksyon.</value></data>
   <data name="ConnectedSuppliers_RequestConnection" xml:space="preserve"><value>Ikonekta ang supplier</value></data>
   <data name="ConnectedSuppliers_RequestTitle" xml:space="preserve"><value>Ikonekta ang ExItS supplier</value></data>
   <data name="ConnectedSuppliers_RequestHelp" xml:space="preserve"><value>I-scan ang Business QR ng supplier o ilagay ang organization ID (ORG######). Kailangan nilang aprubahan ang hiling.</value></data>

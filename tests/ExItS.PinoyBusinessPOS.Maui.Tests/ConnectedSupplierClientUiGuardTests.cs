@@ -9,6 +9,12 @@ public sealed class ConnectedSupplierClientUiGuardTests
         var purchasing = Path.Combine(MauiProject(), "Components", "Pages", "Purchasing");
         Assert.Contains("@page \"/suppliers/connected/request\"",
             File.ReadAllText(Path.Combine(suppliers, "ConnectedSupplierRequest.razor")), StringComparison.Ordinal);
+        Assert.Contains("@page \"/suppliers/connected/requests\"",
+            File.ReadAllText(Path.Combine(suppliers, "ConnectedSupplierIncomingRequests.razor")), StringComparison.Ordinal);
+        Assert.Contains("ListRelationshipsAsync(\"supplier\")",
+            File.ReadAllText(Path.Combine(suppliers, "ConnectedSupplierIncomingRequests.razor")), StringComparison.Ordinal);
+        Assert.Contains("ApproveAsync",
+            File.ReadAllText(Path.Combine(suppliers, "ConnectedSupplierIncomingRequests.razor")), StringComparison.Ordinal);
         Assert.Contains("@page \"/suppliers/{SupplierId:guid}/connected-catalog\"",
             File.ReadAllText(Path.Combine(suppliers, "ConnectedSupplierCatalog.razor")), StringComparison.Ordinal);
         Assert.Contains("@page \"/suppliers/{SupplierId:guid}/linked-products\"",

@@ -50,6 +50,18 @@ else
             <button type="button"
                     class="pos-action-tile"
                     disabled="@(_loading || _isOffline)"
+                    @onclick="GoIncomingRequests">
+                <span class="pos-action-tile__label">
+                    @L["ConnectedSuppliers_IncomingRequests"]
+                    @if (_incomingPendingCount > 0)
+                    {
+                        <text> · @_incomingPendingCount</text>
+                    }
+                </span>
+            </button>
+            <button type="button"
+                    class="pos-action-tile"
+                    disabled="@(_loading || _isOffline)"
                     @onclick="ReloadAsync">
                 <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("refresh")</span>
                 <span class="pos-action-tile__label">@L["Suppliers_Refresh"]</span>
@@ -137,6 +149,18 @@ else
                                         <text> · @RelationshipStatusLabel(relationshipStatus)</text>
                                     }
                                 </span>
+                                @if (item.ConnectedRelationshipId is Guid pendingRelId
+                                    && _relationshipStatuses.TryGetValue(pendingRelId, out var pendingStatus)
+                                    && string.Equals(pendingStatus, "Pending", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    <span class="pos-suppliers__row-meta">@L["ConnectedSuppliers_WaitingForApproval"]</span>
+                                }
+                                else if (item.ConnectedRelationshipId is Guid declinedRelId
+                                    && _relationshipStatuses.TryGetValue(declinedRelId, out var declinedStatus)
+                                    && string.Equals(declinedStatus, "Declined", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    <span class="pos-suppliers__row-meta">@L["ConnectedSuppliers_RequestDeclinedHelp"]</span>
+                                }
                                 <span class="pos-suppliers__row-meta">
                                     @item.SupplierCode
                                     @if (!string.IsNullOrWhiteSpace(item.ContactPerson))
@@ -178,6 +202,7 @@ else
     private string? _errorMessage;
     private CancellationTokenSource? _searchCts;
     private Dictionary<Guid, string> _relationshipStatuses = [];
+    private int _incomingPendingCount;
 
     protected override async Task OnInitializedAsync()
     {
@@ -266,6 +291,11 @@ else
             {
                 _relationshipStatuses = relationships.Data.ToDictionary(x => x.RelationshipId, x => x.Status);
             }
+
+            var incoming = await ConnectedSuppliers.ListRelationshipsAsync("supplier");
+            _incomingPendingCount = incoming.IsSuccess && incoming.Data is not null
+                ? incoming.Data.Count(x => string.Equals(x.Status, "Pending", StringComparison.OrdinalIgnoreCase))
+                : 0;
         }
         else
         {
@@ -300,10 +330,11 @@ else
 
     private void GoNew() => Nav.NavigateTo("/suppliers/new");
     private void GoConnect() => Nav.NavigateTo("/suppliers/connected/request");
+    private void GoIncomingRequests() => Nav.NavigateTo("/suppliers/connected/requests");
     private string RelationshipStatusLabel(string status) => status switch
     {
         "Active" => L["ConnectedSuppliers_Status_Connected"],
-        "Pending" => L["ConnectedSuppliers_Status_Requested"],
+        "Pending" => L["ConnectedSuppliers_Status_Pending"],
         "Declined" => L["ConnectedSuppliers_Status_Declined"],
         "Disconnected" => L["ConnectedSuppliers_Status_Disconnected"],
         _ => status

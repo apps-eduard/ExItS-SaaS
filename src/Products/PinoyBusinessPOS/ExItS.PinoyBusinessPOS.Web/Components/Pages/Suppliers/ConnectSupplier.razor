@@ -1,0 +1,118 @@
+@page "/suppliers/connect"
+@attribute [Authorize]
+@using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers
+@using ExItS.PinoyBusinessPOS.Application.Identity
+@inject OrgWebShellState Shell
+@inject IPosConnectedSupplierClient ConnectedApi
+@inject IPlatformAccessClient Platform
+@inject IUtangCapabilityEvaluator Capabilities
+@inject NavigationManager Nav
+@inject IStringLocalizer<OrgWebResources> L
+
+<PageTitle>@L["Suppliers_ConnectTitle"]</PageTitle>
+
+@if (!Shell.CanSee("suppliers") || !Capabilities.IsAllowed(UtangCapability.ManageSuppliers))
+{
+    <AccessDeniedPanel />
+}
+else
+{
+    <div class="org-page">
+        <ExitsPageHeader Title="@L["Suppliers_ConnectTitle"]" Subtitle="@L["Suppliers_ConnectSubtitle"]" />
+        <OrgAlert Error="@_error" OnDismissError="() => _error = null" />
+        @if (!string.IsNullOrWhiteSpace(_success))
+        {
+            <Alert Type="@AlertType.Success" Message="@_success" ShowIcon="true" />
+        }
+
+        <ExitsField Label="@L["Suppliers_BusinessQrOrOrgId"]">
+            <Input @bind-Value="_payload" Placeholder="@L["Suppliers_BusinessQrHint"]" Disabled="_saving" />
+        </ExitsField>
+        <Space Style="margin-top:1rem;">
+            <Button Type="@ButtonType.Primary" Loading="_saving" OnClick="SendAsync">@L["Suppliers_SendRequest"]</Button>
+            <Button OnClick='() => Nav.NavigateTo("/suppliers")'>@L["Common_Cancel"]</Button>
+        </Space>
+    </div>
+}
+
+@code {
+    private string? _payload;
+    private string? _error;
+    private string? _success;
+    private bool _saving;
+
+    private async Task SendAsync()
+    {
+        _error = null;
+        _success = null;
+        if (string.IsNullOrWhiteSpace(_payload))
+        {
+            _error = L["Suppliers_BusinessQrRequired"];
+            return;
+        }
+
+        var payload = _payload.Trim();
+        if (payload.Contains("://", StringComparison.Ordinal)
+            && !ExItsQrPurposeGuard.TryValidateOrRoute(
+                payload,
+                ExItsQrPurposeGuard.Organization,
+                out _,
+                out var mismatch))
+        {
+            _error = mismatch ?? L["Suppliers_BusinessQrRequired"];
+            return;
+        }
+
+        _saving = true;
+        try
+        {
+            Guid? supplierOrganizationId = null;
+            string publicIdOrQr = payload;
+            if (payload.Contains("://", StringComparison.Ordinal)
+                || payload.StartsWith("exits://", StringComparison.OrdinalIgnoreCase))
+            {
+                var resolved = await Platform.ResolveQrAsync(
+                    new ResolveExItsQrRequest(payload, ExItsQrPurposeGuard.Organization));
+                if (!resolved.IsSuccess || resolved.Data?.OrganizationId is null)
+                {
+                    _error = resolved.Error?.Detail ?? L["Suppliers_RequestFailed"];
+                    return;
+                }
+
+                supplierOrganizationId = resolved.Data.OrganizationId;
+                publicIdOrQr = resolved.Data.PublicOrganizationId ?? payload;
+            }
+            else
+            {
+                var resolved = await Platform.ResolveOrganizationPublicIdAsync(
+                    new ResolvePublicOrganizationIdRequest(payload, Purpose: "Organization"));
+                if (!resolved.IsSuccess || resolved.Data is null)
+                {
+                    _error = resolved.Error?.Detail ?? L["Suppliers_RequestFailed"];
+                    return;
+                }
+
+                supplierOrganizationId = resolved.Data.OrganizationId;
+                publicIdOrQr = resolved.Data.PublicOrganizationId;
+            }
+
+            var result = await ConnectedApi.RequestConnectionAsync(
+                new RequestConnectionRequest(
+                    SupplierOrganizationId: supplierOrganizationId,
+                    SupplierPublicOrganizationIdOrQrPayload: publicIdOrQr));
+            if (!result.IsSuccess)
+            {
+                _error = result.Error?.Detail ?? L["Suppliers_RequestFailed"];
+                return;
+            }
+
+            _success = L["Suppliers_RequestSentPending"];
+            await Task.Delay(500);
+            Nav.NavigateTo("/suppliers");
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}

@@ -87,13 +87,37 @@ Schema **v9** adds `multiplier_to_base` / `package_label` on linked products so 
 
 ## MAUI routes
 
+- `/suppliers` — supplier list with Pending/Connected/Declined relationship status + incoming-request count badge
 - `/suppliers/connected/request` — request an organization connection (online)
-- `/suppliers/{id}/connected-catalog?relationshipId=…` — paged supplier catalog search (online only)
+- `/suppliers/connected/requests` — **supplier-side** incoming connection requests (Accept / Decline)
+- `/suppliers/{id}/connected-catalog?relationshipId=…` — paged supplier catalog search (online only; **Active** only)
 - `/suppliers/{id}/linked-products?relationshipId=…` — selective local linked-product browse (offline capable)
 - `/purchasing/new` — external supplier picker remains unchanged; connected suppliers use online catalog search or local linked products offline
-- `/connected-suppliers/incoming` — supplier incoming-order list with Accept/Decline (online)
+- `/connected-suppliers/incoming` — supplier **incoming purchase orders** with Accept/Decline (online) — distinct from connection requests
 
-Connected PO submission is online-only. Before creation, MAUI revalidates supplier price and availability and presents Update and continue, Review order, and Remove unavailable items choices. Offline save text is explicitly “Saved on this device” / “Waiting to sync”; it does not imply submission.
+## Organization Web routes
+
+- `/suppliers` — supplier masters + connection status (Pending visible after send)
+- `/suppliers/requests` — Incoming (supplier view) and Sent (buyer view) connection requests
+- `/suppliers/connect` — send Connected ExItS connection request (Business QR / ORG######)
+
+## Connection-request lifecycle (authoritative)
+
+```text
+Buyer sends request
+  → ConnectedSupplierRelationship Status=Pending (persisted)
+  → Buyer Supplier master created (ConnectionType=ConnectedOrganization, ConnectedRelationshipId set)
+  → Counterparty display/public-id snapshots stored on relationship
+Buyer Suppliers list shows Pending + “Waiting for supplier approval”
+Supplier Incoming requests (MAUI `/suppliers/connected/requests` or Org Web `/suppliers/requests`) shows Accept/Decline
+Supplier Accept → Active (catalog/PO enabled for buyer)
+Supplier Decline → Declined (no catalog/PO)
+Inventory unchanged until buyer Goods Receipt
+```
+
+### Notification / bell
+
+Organization in-app notifications exist for **customer-link** events on Platform. Connected-supplier request events are **not** emitted into the bell yet (would require a POS→Platform cross-product notify path for supplier-org recipients). Visibility is via Suppliers UI + incoming count badge. Bell integration is **deferred**.
 
 ## Deferred
-Marketplace discovery, inter-org payments, AP/invoices, live stock sharing, logistics, images in sync, Redis, brokers, auto-accept, auto-receive, full offline supplier catalog.
+Marketplace discovery, inter-org payments, AP/invoices, live stock sharing, logistics, images in sync, Redis, brokers, auto-accept, auto-receive, full offline supplier catalog, connection-request cancellation while Pending (Disconnect remains Active-only), organization-notification bell for supplier connections.
