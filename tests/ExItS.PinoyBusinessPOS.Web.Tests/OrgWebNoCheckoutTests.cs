@@ -49,10 +49,11 @@ public sealed class OrgWebNoCheckoutTests
     public void Sales_history_is_explicitly_read_only()
     {
         var page = File.ReadAllText(Path.Combine(FindWebRoot(), "Components", "Pages", "Reports", "SalesHistory.razor"));
-        Assert.Contains("Read-only", page, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("no web checkout", page, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("SalesHistory_Subtitle", page, StringComparison.Ordinal);
+        Assert.Contains("SalesHistory_ViewSummary", page, StringComparison.Ordinal);
         Assert.DoesNotContain("CheckoutAsync", page, StringComparison.Ordinal);
         Assert.DoesNotContain("href=\"/checkout\"", page, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Official Receipt", page, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
