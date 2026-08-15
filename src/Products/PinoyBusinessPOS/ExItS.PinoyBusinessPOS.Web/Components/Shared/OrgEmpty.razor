@@ -1,0 +1,19 @@
+@namespace ExItS.PinoyBusinessPOS.Web.Components.Shared
+@using AntDesign
+@using ExItS.Web.UI.Components
+
+<div class="org-empty">
+    <ExitsEmptyState Title="@Title" Message="@Message" />
+    @if (ChildContent is not null)
+    {
+        <div class="org-empty__actions">
+            @ChildContent
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Message { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

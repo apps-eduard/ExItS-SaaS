@@ -61,4 +61,110 @@
   <data name="Common_Cancel" xml:space="preserve"><value>Cancel</value></data>
   <data name="Error_SessionExpired" xml:space="preserve"><value>Nag-expire ang session. Mag-sign in ulit.</value></data>
   <data name="Error_GenericLoad" xml:space="preserve"><value>Hindi namin ma-load ang impormasyon. Subukan ulit.</value></data>
+  <data name="Error_Permission" xml:space="preserve"><value>Wala kang permiso na tingnan ang seksyong ito.</value></data>
+  <data name="Common_Retry" xml:space="preserve"><value>Subukan ulit</value></data>
+  <data name="Common_Filter" xml:space="preserve"><value>I-filter</value></data>
+  <data name="Common_Search" xml:space="preserve"><value>Maghanap</value></data>
+  <data name="Common_Clear" xml:space="preserve"><value>I-clear</value></data>
+  <data name="Common_Status" xml:space="preserve"><value>Status</value></data>
+  <data name="Common_Actions" xml:space="preserve"><value>Mga aksyon</value></data>
+  <data name="Common_Unavailable" xml:space="preserve"><value>Hindi available</value></data>
+  <data name="Overview_Title" xml:space="preserve"><value>Overview</value></data>
+  <data name="Overview_Subtitle" xml:space="preserve"><value>Tingnan kung paano ang negosyo mo ngayon.</value></data>
+  <data name="Overview_SectionToday" xml:space="preserve"><value>Ngayon</value></data>
+  <data name="Overview_SectionInventory" xml:space="preserve"><value>Imbentaryo</value></data>
+  <data name="Overview_SectionOperations" xml:space="preserve"><value>Operasyon</value></data>
+  <data name="Overview_SectionBusiness" xml:space="preserve"><value>Negosyo</value></data>
+  <data name="Profile_Title" xml:space="preserve"><value>Profile ng negosyo</value></data>
+  <data name="Profile_Subtitle" xml:space="preserve"><value>I-update kung paano nakikita ang negosyo ng staff at customers.</value></data>
+  <data name="Devices_Title" xml:space="preserve"><value>Mga device</value></data>
+  <data name="Devices_Subtitle" xml:space="preserve"><value>Pamahalaan ang mga POS terminal ng negosyong ito.</value></data>
+  <data name="Devices_EmptyTitle" xml:space="preserve"><value>Wala pang device</value></data>
+  <data name="Devices_EmptyMessage" xml:space="preserve"><value>Magrehistro ng POS device mula sa mobile app para makita ito dito.</value></data>
+  <data name="Registers_Title" xml:space="preserve"><value>Mga register</value></data>
+  <data name="Registers_Subtitle" xml:space="preserve"><value>Mga cash register para sa cashier shifts sa POS.</value></data>
+  <data name="Registers_EmptyTitle" xml:space="preserve"><value>Wala pang register</value></data>
+  <data name="Registers_EmptyMessage" xml:space="preserve"><value>Gumawa ng register para makapagbukas ng shift ang cashier sa POS.</value></data>
+  <data name="Staff_Title" xml:space="preserve"><value>Staff</value></data>
+  <data name="Staff_Subtitle" xml:space="preserve"><value>Mag-invite at pamahalaan ang mga taong nagtatrabaho sa negosyong ito.</value></data>
+  <data name="Staff_Invite" xml:space="preserve"><value>Mag-invite ng staff</value></data>
+  <data name="Staff_EmptyTitle" xml:space="preserve"><value>Walang nakitang staff</value></data>
+  <data name="Staff_EmptyMessage" xml:space="preserve"><value>I-invite ang unang miyembro ng team para tumulong sa negosyo.</value></data>
+  <data name="StaffInvite_Title" xml:space="preserve"><value>Mag-invite ng staff</value></data>
+  <data name="StaffInvite_Subtitle" xml:space="preserve"><value>Gumawa ng staff login para sa organisasyong ito. Hindi ginagawang staff ang Personal account.</value></data>
+  <data name="Roles_Title" xml:space="preserve"><value>Mga role</value></data>
+  <data name="Roles_Subtitle" xml:space="preserve"><value>Tingnan kung ano ang magagawa ng bawat POS role sa tindahan.</value></data>
+  <data name="Customers_Title" xml:space="preserve"><value>Mga customer</value></data>
+  <data name="Customers_Subtitle" xml:space="preserve"><value>Pamahalaan ang mga customer at business credit.</value></data>
+  <data name="Customers_EmptyTitle" xml:space="preserve"><value>Wala pang customer</value></data>
+  <data name="Customers_EmptyMessage" xml:space="preserve"><value>Lalabas ang mga customer pagkatapos ng benta o kapag idinagdag sa POS.</value></data>
+  <data name="Products_Title" xml:space="preserve"><value>Mga produkto</value></data>
+  <data name="Products_Subtitle" xml:space="preserve"><value>Pamahalaan ang mga item na ibinebenta mo.</value></data>
+  <data name="Products_New" xml:space="preserve"><value>Bagong produkto</value></data>
+  <data name="Products_EmptyTitle" xml:space="preserve"><value>Wala pang produkto</value></data>
+  <data name="Products_EmptyMessage" xml:space="preserve"><value>Magdagdag ng produkto o mag-import mula sa Global Catalog.</value></data>
+  <data name="ProductEdit_NewTitle" xml:space="preserve"><value>Bagong produkto</value></data>
+  <data name="ProductEdit_EditTitle" xml:space="preserve"><value>I-edit ang produkto</value></data>
+  <data name="ProductEdit_Subtitle" xml:space="preserve"><value>I-set ang detalye para sa catalog at imbentaryo. Ang pagbebenta ay sa POS pa rin.</value></data>
+  <data name="Categories_Title" xml:space="preserve"><value>Mga kategorya</value></data>
+  <data name="Categories_Subtitle" xml:space="preserve"><value>Ayusin ang mga produkto sa mga kategorya.</value></data>
+  <data name="Categories_EmptyTitle" xml:space="preserve"><value>Wala pang kategorya</value></data>
+  <data name="Categories_EmptyMessage" xml:space="preserve"><value>Gumawa ng kategorya para pagsama-samahin ang mga produkto.</value></data>
+  <data name="GlobalCatalog_Title" xml:space="preserve"><value>Global Catalog</value></data>
+  <data name="GlobalCatalog_Subtitle" xml:space="preserve"><value>Tingnan ang published products at i-import sa catalog mo.</value></data>
+  <data name="Stock_Title" xml:space="preserve"><value>Stock</value></data>
+  <data name="Stock_Subtitle" xml:space="preserve"><value>Tingnan ang stock levels at aktibidad ng imbentaryo.</value></data>
+  <data name="Stock_EmptyTitle" xml:space="preserve"><value>Walang stock record</value></data>
+  <data name="Stock_EmptyMessage" xml:space="preserve"><value>Lalabas ang stock kapag may tracked products at inventory.</value></data>
+  <data name="Transfers_Title" xml:space="preserve"><value>Mga transfer</value></data>
+  <data name="Transfers_Subtitle" xml:space="preserve"><value>Ilipat ang imbentaryo sa iba't ibang sangay.</value></data>
+  <data name="Transfers_EmptyTitle" xml:space="preserve"><value>Wala pang transfer</value></data>
+  <data name="Transfers_EmptyMessage" xml:space="preserve"><value>Gumawa ng transfer kapag kailangan maglipat ng stock.</value></data>
+  <data name="Lots_Title" xml:space="preserve"><value>Expiration</value></data>
+  <data name="Lots_Subtitle" xml:space="preserve"><value>Subaybayan ang expiry dates at dami ng mga lot.</value></data>
+  <data name="Lots_EmptyTitle" xml:space="preserve"><value>Walang lot</value></data>
+  <data name="Lots_EmptyMessage" xml:space="preserve"><value>Lalabas ang mga lot para sa products na may expiration tracking.</value></data>
+  <data name="SalesHistory_Title" xml:space="preserve"><value>Kasaysayan ng benta</value></data>
+  <data name="SalesHistory_Subtitle" xml:space="preserve"><value>Suriin ang mga natapos na benta at transaction summaries.</value></data>
+  <data name="SalesHistory_EmptyTitle" xml:space="preserve"><value>Walang nakitang benta</value></data>
+  <data name="SalesHistory_EmptyMessage" xml:space="preserve"><value>Lalabas dito ang mga natapos na benta mula sa POS.</value></data>
+  <data name="SalesHistory_ViewSummary" xml:space="preserve"><value>Tingnan ang Transaction Summary</value></data>
+  <data name="SalesReport_Title" xml:space="preserve"><value>Ulat ng benta</value></data>
+  <data name="SalesReport_Subtitle" xml:space="preserve"><value>Ibuod ang benta ayon sa petsa at sangay.</value></data>
+  <data name="InventoryReport_Title" xml:space="preserve"><value>Ulat ng imbentaryo</value></data>
+  <data name="InventoryReport_Subtitle" xml:space="preserve"><value>Tingnan ang low-stock at status ng stock.</value></data>
+  <data name="Shifts_Title" xml:space="preserve"><value>Mga shift</value></data>
+  <data name="Shifts_Subtitle" xml:space="preserve"><value>Suriin ang cashier shifts at cash counts. Ang pagbukas/pagsara ay sa POS pa rin.</value></data>
+  <data name="Shifts_EmptyTitle" xml:space="preserve"><value>Walang nakitang shift</value></data>
+  <data name="Shifts_EmptyMessage" xml:space="preserve"><value>Lalabas ang history pagkatapos magbukas ng shift ang cashier sa POS.</value></data>
+  <data name="ShiftsReport_Title" xml:space="preserve"><value>Ulat ng cash / shift</value></data>
+  <data name="ShiftsReport_Subtitle" xml:space="preserve"><value>Ihambing ang expected at counted cash. Ang skipped counts ay blank — hindi zero.</value></data>
+  <data name="Utang_Title" xml:space="preserve"><value>Business credit</value></data>
+  <data name="Utang_Subtitle" xml:space="preserve"><value>Suriin ang outstanding business credit balances.</value></data>
+  <data name="Utang_EmptyTitle" xml:space="preserve"><value>Walang credit balance</value></data>
+  <data name="Utang_EmptyMessage" xml:space="preserve"><value>Lalabas ang balances kapag ginamit ang business credit sa POS.</value></data>
+  <data name="Settings_Title" xml:space="preserve"><value>Operational settings</value></data>
+  <data name="Settings_Subtitle" xml:space="preserve"><value>I-configure ang POS at cash-handling rules para sa susunod na shifts.</value></data>
+  <data name="Subscription_Title" xml:space="preserve"><value>Subscription</value></data>
+  <data name="Subscription_Subtitle" xml:space="preserve"><value>Tingnan ang kasalukuyang plan at entitlements.</value></data>
+  <data name="Ownership_Title" xml:space="preserve"><value>Ownership</value></data>
+  <data name="Ownership_Subtitle" xml:space="preserve"><value>I-transfer ang ownership ng negosyo sa ibang ExItS member.</value></data>
+  <data name="Notifications_Title" xml:space="preserve"><value>Mga alerto</value></data>
+  <data name="Notifications_Subtitle" xml:space="preserve"><value>Mga alerto ng organisasyon para sa managers at owners.</value></data>
+  <data name="Notifications_EmptyTitle" xml:space="preserve"><value>Walang alerto</value></data>
+  <data name="Notifications_EmptyMessage" xml:space="preserve"><value>Lalabas dito ang mga management alert kapag available.</value></data>
+  <data name="SelectOrg_Title" xml:space="preserve"><value>Pumili ng organisasyon</value></data>
+  <data name="SelectOrg_Subtitle" xml:space="preserve"><value>Piliin kung aling business workspace ang pamamahalaan.</value></data>
+  <data name="SalesDocuments_Subtitle" xml:space="preserve"><value>Suriin kung paano gumagana ang sales documents para sa negosyong ito.</value></data>
+  <data name="Nav_Business" xml:space="preserve"><value>Negosyo</value></data>
+  <data name="Nav_People" xml:space="preserve"><value>Tao</value></data>
+  <data name="Nav_Catalog" xml:space="preserve"><value>Catalog</value></data>
+  <data name="Nav_Sales" xml:space="preserve"><value>Benta</value></data>
+  <data name="Nav_Devices" xml:space="preserve"><value>Mga device</value></data>
+  <data name="Nav_Registers" xml:space="preserve"><value>Mga register</value></data>
+  <data name="Nav_Profile" xml:space="preserve"><value>Profile ng negosyo</value></data>
+  <data name="Nav_Ownership" xml:space="preserve"><value>Ownership</value></data>
+  <data name="Nav_Alerts" xml:space="preserve"><value>Mga alerto</value></data>
+  <data name="Nav_Roles" xml:space="preserve"><value>Mga role</value></data>
+  <data name="Nav_OperationalSettings" xml:space="preserve"><value>Operational settings</value></data>
 </root>

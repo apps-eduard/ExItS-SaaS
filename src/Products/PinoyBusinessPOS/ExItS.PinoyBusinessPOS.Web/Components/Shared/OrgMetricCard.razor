@@ -1,0 +1,25 @@
+@namespace ExItS.PinoyBusinessPOS.Web.Components.Shared
+
+<div class="org-metric" role="group" aria-label="@Label">
+    <div class="org-metric__label">@Label</div>
+    @if (Unavailable)
+    {
+        <div class="org-metric__value org-metric__value--muted">—</div>
+        <div class="org-note">Unavailable</div>
+    }
+    else
+    {
+        <div class="org-metric__value">@Value</div>
+        @if (!string.IsNullOrWhiteSpace(Hint))
+        {
+            <div class="org-note">@Hint</div>
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public string? Hint { get; set; }
+    [Parameter] public bool Unavailable { get; set; }
+}

@@ -1,0 +1,30 @@
+@namespace ExItS.PinoyBusinessPOS.Web.Components.Shared
+@using AntDesign
+
+@if (!string.IsNullOrWhiteSpace(Error))
+{
+    <div class="org-alert">
+        <Alert Type="@AlertType.Error" Message="@Error" ShowIcon="true" Closable="Closable" OnClose="OnDismissError" />
+        @if (OnRetry.HasDelegate)
+        {
+            <Button Size="@ButtonSize.Small" OnClick="OnRetry" Style="margin-top:.5rem;">@RetryLabel</Button>
+        }
+    </div>
+}
+
+@if (!string.IsNullOrWhiteSpace(Success))
+{
+    <div class="org-alert">
+        <Alert Type="@AlertType.Success" Message="@Success" ShowIcon="true" Closable="true" OnClose="OnDismissSuccess" />
+    </div>
+}
+
+@code {
+    [Parameter] public string? Error { get; set; }
+    [Parameter] public string? Success { get; set; }
+    [Parameter] public bool Closable { get; set; } = true;
+    [Parameter] public string RetryLabel { get; set; } = "Try again";
+    [Parameter] public EventCallback OnRetry { get; set; }
+    [Parameter] public EventCallback OnDismissError { get; set; }
+    [Parameter] public EventCallback OnDismissSuccess { get; set; }
+}

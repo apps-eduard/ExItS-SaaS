@@ -1,0 +1,21 @@
+@namespace ExItS.PinoyBusinessPOS.Web.Components.Shared
+
+<section class="org-section">
+    @if (!string.IsNullOrWhiteSpace(Title))
+    {
+        <h2 class="org-section__title">@Title</h2>
+    }
+    @if (!string.IsNullOrWhiteSpace(Subtitle))
+    {
+        <p class="org-section__subtitle">@Subtitle</p>
+    }
+    <div class="org-section__body">
+        @ChildContent
+    </div>
+</section>
+
+@code {
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Subtitle { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

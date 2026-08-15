@@ -61,4 +61,110 @@
   <data name="Common_Cancel" xml:space="preserve"><value>Cancel</value></data>
   <data name="Error_SessionExpired" xml:space="preserve"><value>Your session has expired. Please sign in again.</value></data>
   <data name="Error_GenericLoad" xml:space="preserve"><value>We couldn't load this information. Try again.</value></data>
+  <data name="Error_Permission" xml:space="preserve"><value>You don't have permission to view this section.</value></data>
+  <data name="Common_Retry" xml:space="preserve"><value>Try again</value></data>
+  <data name="Common_Filter" xml:space="preserve"><value>Filter</value></data>
+  <data name="Common_Search" xml:space="preserve"><value>Search</value></data>
+  <data name="Common_Clear" xml:space="preserve"><value>Clear</value></data>
+  <data name="Common_Status" xml:space="preserve"><value>Status</value></data>
+  <data name="Common_Actions" xml:space="preserve"><value>Actions</value></data>
+  <data name="Common_Unavailable" xml:space="preserve"><value>Unavailable</value></data>
+  <data name="Overview_Title" xml:space="preserve"><value>Overview</value></data>
+  <data name="Overview_Subtitle" xml:space="preserve"><value>See how your business is doing today.</value></data>
+  <data name="Overview_SectionToday" xml:space="preserve"><value>Today</value></data>
+  <data name="Overview_SectionInventory" xml:space="preserve"><value>Inventory</value></data>
+  <data name="Overview_SectionOperations" xml:space="preserve"><value>Operations</value></data>
+  <data name="Overview_SectionBusiness" xml:space="preserve"><value>Business</value></data>
+  <data name="Profile_Title" xml:space="preserve"><value>Business profile</value></data>
+  <data name="Profile_Subtitle" xml:space="preserve"><value>Update how your business appears to staff and customers.</value></data>
+  <data name="Devices_Title" xml:space="preserve"><value>Devices</value></data>
+  <data name="Devices_Subtitle" xml:space="preserve"><value>Manage POS terminals registered to this business.</value></data>
+  <data name="Devices_EmptyTitle" xml:space="preserve"><value>No devices yet</value></data>
+  <data name="Devices_EmptyMessage" xml:space="preserve"><value>Register a POS device from the mobile app to see it here.</value></data>
+  <data name="Registers_Title" xml:space="preserve"><value>Registers</value></data>
+  <data name="Registers_Subtitle" xml:space="preserve"><value>Cash registers used for cashier shifts on POS.</value></data>
+  <data name="Registers_EmptyTitle" xml:space="preserve"><value>No registers yet</value></data>
+  <data name="Registers_EmptyMessage" xml:space="preserve"><value>Create a register so cashiers can open shifts on POS.</value></data>
+  <data name="Staff_Title" xml:space="preserve"><value>Staff</value></data>
+  <data name="Staff_Subtitle" xml:space="preserve"><value>Invite and manage people who work in this business.</value></data>
+  <data name="Staff_Invite" xml:space="preserve"><value>Invite staff</value></data>
+  <data name="Staff_EmptyTitle" xml:space="preserve"><value>No staff found</value></data>
+  <data name="Staff_EmptyMessage" xml:space="preserve"><value>Invite your first team member to help run this business.</value></data>
+  <data name="StaffInvite_Title" xml:space="preserve"><value>Invite staff</value></data>
+  <data name="StaffInvite_Subtitle" xml:space="preserve"><value>Create a staff login for this organization. Personal accounts are never converted into staff.</value></data>
+  <data name="Roles_Title" xml:space="preserve"><value>Roles</value></data>
+  <data name="Roles_Subtitle" xml:space="preserve"><value>See what each POS role can do in your store.</value></data>
+  <data name="Customers_Title" xml:space="preserve"><value>Customers</value></data>
+  <data name="Customers_Subtitle" xml:space="preserve"><value>Manage business customers and credit relationships.</value></data>
+  <data name="Customers_EmptyTitle" xml:space="preserve"><value>No customers yet</value></data>
+  <data name="Customers_EmptyMessage" xml:space="preserve"><value>Customers appear here after sales or when you add them on POS.</value></data>
+  <data name="Products_Title" xml:space="preserve"><value>Products</value></data>
+  <data name="Products_Subtitle" xml:space="preserve"><value>Manage the items you sell.</value></data>
+  <data name="Products_New" xml:space="preserve"><value>New product</value></data>
+  <data name="Products_EmptyTitle" xml:space="preserve"><value>No products yet</value></data>
+  <data name="Products_EmptyMessage" xml:space="preserve"><value>Add a product or import from the Global Catalog.</value></data>
+  <data name="ProductEdit_NewTitle" xml:space="preserve"><value>New product</value></data>
+  <data name="ProductEdit_EditTitle" xml:space="preserve"><value>Edit product</value></data>
+  <data name="ProductEdit_Subtitle" xml:space="preserve"><value>Set product details for catalog and inventory. Selling stays on POS.</value></data>
+  <data name="Categories_Title" xml:space="preserve"><value>Categories</value></data>
+  <data name="Categories_Subtitle" xml:space="preserve"><value>Organize products into categories.</value></data>
+  <data name="Categories_EmptyTitle" xml:space="preserve"><value>No categories yet</value></data>
+  <data name="Categories_EmptyMessage" xml:space="preserve"><value>Create categories to group products in your catalog.</value></data>
+  <data name="GlobalCatalog_Title" xml:space="preserve"><value>Global Catalog</value></data>
+  <data name="GlobalCatalog_Subtitle" xml:space="preserve"><value>Browse published products and import them into your catalog.</value></data>
+  <data name="Stock_Title" xml:space="preserve"><value>Stock</value></data>
+  <data name="Stock_Subtitle" xml:space="preserve"><value>See stock levels and inventory activity.</value></data>
+  <data name="Stock_EmptyTitle" xml:space="preserve"><value>No stock records found</value></data>
+  <data name="Stock_EmptyMessage" xml:space="preserve"><value>Stock appears after products are tracked and receive inventory.</value></data>
+  <data name="Transfers_Title" xml:space="preserve"><value>Transfers</value></data>
+  <data name="Transfers_Subtitle" xml:space="preserve"><value>Move inventory between branches.</value></data>
+  <data name="Transfers_EmptyTitle" xml:space="preserve"><value>No transfers yet</value></data>
+  <data name="Transfers_EmptyMessage" xml:space="preserve"><value>Create a transfer when you need to move stock between locations.</value></data>
+  <data name="Lots_Title" xml:space="preserve"><value>Expiration</value></data>
+  <data name="Lots_Subtitle" xml:space="preserve"><value>Track lot expiry dates and quantities on hand.</value></data>
+  <data name="Lots_EmptyTitle" xml:space="preserve"><value>No lots found</value></data>
+  <data name="Lots_EmptyMessage" xml:space="preserve"><value>Lots appear for products that track expiration.</value></data>
+  <data name="SalesHistory_Title" xml:space="preserve"><value>Sales history</value></data>
+  <data name="SalesHistory_Subtitle" xml:space="preserve"><value>Review completed sales and transaction summaries.</value></data>
+  <data name="SalesHistory_EmptyTitle" xml:space="preserve"><value>No sales found</value></data>
+  <data name="SalesHistory_EmptyMessage" xml:space="preserve"><value>Completed POS sales will appear here for review.</value></data>
+  <data name="SalesHistory_ViewSummary" xml:space="preserve"><value>View Transaction Summary</value></data>
+  <data name="SalesReport_Title" xml:space="preserve"><value>Sales report</value></data>
+  <data name="SalesReport_Subtitle" xml:space="preserve"><value>Summarize sales by date range and branch.</value></data>
+  <data name="InventoryReport_Title" xml:space="preserve"><value>Inventory report</value></data>
+  <data name="InventoryReport_Subtitle" xml:space="preserve"><value>See low-stock and stock status summaries.</value></data>
+  <data name="Shifts_Title" xml:space="preserve"><value>Shifts</value></data>
+  <data name="Shifts_Subtitle" xml:space="preserve"><value>Inspect cashier shifts and cash counts. Opening and closing stays on POS.</value></data>
+  <data name="Shifts_EmptyTitle" xml:space="preserve"><value>No shifts found</value></data>
+  <data name="Shifts_EmptyMessage" xml:space="preserve"><value>Shift history appears after cashiers open shifts on POS.</value></data>
+  <data name="ShiftsReport_Title" xml:space="preserve"><value>Cash / shift report</value></data>
+  <data name="ShiftsReport_Subtitle" xml:space="preserve"><value>Compare expected and counted cash. Skipped counts stay blank — they are not zero.</value></data>
+  <data name="Utang_Title" xml:space="preserve"><value>Business credit</value></data>
+  <data name="Utang_Subtitle" xml:space="preserve"><value>Review outstanding business credit balances.</value></data>
+  <data name="Utang_EmptyTitle" xml:space="preserve"><value>No credit balances</value></data>
+  <data name="Utang_EmptyMessage" xml:space="preserve"><value>Customer credit balances appear when business credit is used on POS.</value></data>
+  <data name="Settings_Title" xml:space="preserve"><value>Operational settings</value></data>
+  <data name="Settings_Subtitle" xml:space="preserve"><value>Configure POS and cash-handling rules for future shifts.</value></data>
+  <data name="Subscription_Title" xml:space="preserve"><value>Subscription</value></data>
+  <data name="Subscription_Subtitle" xml:space="preserve"><value>View your current plan and entitlements.</value></data>
+  <data name="Ownership_Title" xml:space="preserve"><value>Ownership</value></data>
+  <data name="Ownership_Subtitle" xml:space="preserve"><value>Transfer ownership of this business to another ExItS member.</value></data>
+  <data name="Notifications_Title" xml:space="preserve"><value>Alerts</value></data>
+  <data name="Notifications_Subtitle" xml:space="preserve"><value>Organization alerts for managers and owners.</value></data>
+  <data name="Notifications_EmptyTitle" xml:space="preserve"><value>No alerts</value></data>
+  <data name="Notifications_EmptyMessage" xml:space="preserve"><value>Management alerts will appear here when available.</value></data>
+  <data name="SelectOrg_Title" xml:space="preserve"><value>Select organization</value></data>
+  <data name="SelectOrg_Subtitle" xml:space="preserve"><value>Choose which business workspace to manage.</value></data>
+  <data name="SalesDocuments_Subtitle" xml:space="preserve"><value>Review how sales documents currently work for this business.</value></data>
+  <data name="Nav_Business" xml:space="preserve"><value>Business</value></data>
+  <data name="Nav_People" xml:space="preserve"><value>People</value></data>
+  <data name="Nav_Catalog" xml:space="preserve"><value>Catalog</value></data>
+  <data name="Nav_Sales" xml:space="preserve"><value>Sales</value></data>
+  <data name="Nav_Devices" xml:space="preserve"><value>Devices</value></data>
+  <data name="Nav_Registers" xml:space="preserve"><value>Registers</value></data>
+  <data name="Nav_Profile" xml:space="preserve"><value>Business profile</value></data>
+  <data name="Nav_Ownership" xml:space="preserve"><value>Ownership</value></data>
+  <data name="Nav_Alerts" xml:space="preserve"><value>Alerts</value></data>
+  <data name="Nav_Roles" xml:space="preserve"><value>Roles</value></data>
+  <data name="Nav_OperationalSettings" xml:space="preserve"><value>Operational settings</value></data>
 </root>

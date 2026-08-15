@@ -1,0 +1,17 @@
+@namespace ExItS.PinoyBusinessPOS.Web.Components.Shared
+
+<span class="org-badge @ToneClass" title="@Text">@Text</span>
+
+@code {
+    [Parameter] public string? Text { get; set; }
+    [Parameter] public string? Tone { get; set; }
+
+    private string ToneClass => (Tone ?? string.Empty).Trim().ToLowerInvariant() switch
+    {
+        "success" or "active" or "ok" or "normal" => "org-badge--success",
+        "warning" or "low" or "near" or "expiring" => "org-badge--warning",
+        "danger" or "error" or "expired" or "out" or "suspended" or "archived" => "org-badge--danger",
+        "info" or "pending" or "draft" => "org-badge--info",
+        _ => string.Empty
+    };
+}

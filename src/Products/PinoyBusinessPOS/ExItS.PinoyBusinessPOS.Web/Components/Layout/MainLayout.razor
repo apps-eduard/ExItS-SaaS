@@ -34,10 +34,10 @@
                 }
                 @if (Shell.CanSee("profile") || Shell.CanSee("branches") || Shell.CanSee("devices"))
                 {
-                    <SubMenu Key="business" Title="Business">
+                    <SubMenu Key="business" Title="@L["Nav_Business"]">
                         @if (Shell.CanSee("profile"))
                         {
-                            <MenuItem Key="profile" RouterLink="/organization/profile">Business profile</MenuItem>
+                            <MenuItem Key="profile" RouterLink="/organization/profile">@L["Nav_Profile"]</MenuItem>
                         }
                         @if (Shell.CanSee("branches"))
                         {
@@ -45,18 +45,18 @@
                         }
                         @if (Shell.CanSee("devices"))
                         {
-                            <MenuItem Key="devices" RouterLink="/operations/devices">Devices</MenuItem>
-                            <MenuItem Key="registers" RouterLink="/operations/registers">Registers</MenuItem>
+                            <MenuItem Key="devices" RouterLink="/operations/devices">@L["Nav_Devices"]</MenuItem>
+                            <MenuItem Key="registers" RouterLink="/operations/registers">@L["Nav_Registers"]</MenuItem>
                         }
                     </SubMenu>
                 }
                 @if (Shell.CanSee("staff") || Shell.CanSee("customers") || Shell.CanSee("suppliers"))
                 {
-                    <SubMenu Key="people" Title="People">
+                    <SubMenu Key="people" Title="@L["Nav_People"]">
                         @if (Shell.CanSee("staff"))
                         {
-                            <MenuItem Key="staff-list" RouterLink="/staff">Staff</MenuItem>
-                            <MenuItem Key="roles" RouterLink="/staff/roles">Roles</MenuItem>
+                            <MenuItem Key="staff-list" RouterLink="/staff">@L["Nav_Staff"]</MenuItem>
+                            <MenuItem Key="roles" RouterLink="/staff/roles">@L["Nav_Roles"]</MenuItem>
                         }
                         @if (Shell.CanSee("customers"))
                         {
@@ -66,26 +66,26 @@
                 }
                 @if (Shell.CanSee("products"))
                 {
-                    <SubMenu Key="catalog" Title="Catalog">
-                        <MenuItem Key="product-list" RouterLink="/products" Icon="appstore">Products</MenuItem>
-                        <MenuItem Key="categories" RouterLink="/categories">Categories</MenuItem>
-                        <MenuItem Key="catalog" RouterLink="/catalog">Global Catalog</MenuItem>
+                    <SubMenu Key="catalog" Title="@L["Nav_Catalog"]">
+                        <MenuItem Key="product-list" RouterLink="/products" Icon="appstore">@L["Nav_Products"]</MenuItem>
+                        <MenuItem Key="categories" RouterLink="/categories">@L["Categories_Title"]</MenuItem>
+                        <MenuItem Key="catalog" RouterLink="/catalog">@L["GlobalCatalog_Title"]</MenuItem>
                     </SubMenu>
                 }
                 @if (Shell.CanSee("inventory"))
                 {
                     <SubMenu Key="inventory" Title="@L["Nav_Inventory"]">
-                        <MenuItem Key="stock" RouterLink="/inventory">Stock</MenuItem>
-                        <MenuItem Key="transfers" RouterLink="/inventory/transfers">Transfers</MenuItem>
-                        <MenuItem Key="lots" RouterLink="/inventory/lots">Expiration</MenuItem>
+                        <MenuItem Key="stock" RouterLink="/inventory">@L["Stock_Title"]</MenuItem>
+                        <MenuItem Key="transfers" RouterLink="/inventory/transfers">@L["Transfers_Title"]</MenuItem>
+                        <MenuItem Key="lots" RouterLink="/inventory/lots">@L["Lots_Title"]</MenuItem>
                     </SubMenu>
                 }
                 @if (Shell.CanSee("reports") || Shell.CanSee("sales"))
                 {
-                    <SubMenu Key="sales" Title="Sales">
-                        <MenuItem Key="sales-history" RouterLink="/sales">Sales history</MenuItem>
-                        <MenuItem Key="sales-report" RouterLink="/reports/sales">Sales report</MenuItem>
-                        <MenuItem Key="utang" RouterLink="/reports/utang">Business credit</MenuItem>
+                    <SubMenu Key="sales" Title="@L["Nav_Sales"]">
+                        <MenuItem Key="sales-history" RouterLink="/sales">@L["SalesHistory_Title"]</MenuItem>
+                        <MenuItem Key="sales-report" RouterLink="/reports/sales">@L["SalesReport_Title"]</MenuItem>
+                        <MenuItem Key="utang" RouterLink="/reports/utang">@L["Utang_Title"]</MenuItem>
                     </SubMenu>
                 }
                 @if (Shell.CanSee("shifts") || Shell.CanSee("reports"))
@@ -93,12 +93,12 @@
                     <SubMenu Key="ops" Title="@L["Nav_Operations"]">
                         @if (Shell.CanSee("shifts"))
                         {
-                            <MenuItem Key="shifts" RouterLink="/operations/shifts">Shifts</MenuItem>
-                            <MenuItem Key="shift-report" RouterLink="/reports/shifts">Cash / shift report</MenuItem>
+                            <MenuItem Key="shifts" RouterLink="/operations/shifts">@L["Shifts_Title"]</MenuItem>
+                            <MenuItem Key="shift-report" RouterLink="/reports/shifts">@L["ShiftsReport_Title"]</MenuItem>
                         }
                         @if (Shell.CanSee("reports"))
                         {
-                            <MenuItem Key="inv-report" RouterLink="/reports/inventory">Inventory report</MenuItem>
+                            <MenuItem Key="inv-report" RouterLink="/reports/inventory">@L["InventoryReport_Title"]</MenuItem>
                         }
                     </SubMenu>
                 }
@@ -107,7 +107,7 @@
                     <SubMenu Key="settings" Title="@L["Nav_Settings"]">
                         @if (Shell.CanSee("settings"))
                         {
-                            <MenuItem Key="general" RouterLink="/settings">Operational settings</MenuItem>
+                            <MenuItem Key="general" RouterLink="/settings">@L["Nav_OperationalSettings"]</MenuItem>
                         }
                         @if (Shell.CanSee("sales-documents"))
                         {
@@ -115,7 +115,7 @@
                         }
                         @if (Shell.CanSee("ownership-transfer"))
                         {
-                            <MenuItem Key="ownership" RouterLink="/organization/ownership-transfer">Ownership</MenuItem>
+                            <MenuItem Key="ownership" RouterLink="/organization/ownership-transfer">@L["Nav_Ownership"]</MenuItem>
                         }
                         @if (Shell.CanSee("subscription"))
                         {
@@ -123,7 +123,7 @@
                         }
                         @if (Shell.CanSee("notifications"))
                         {
-                            <MenuItem Key="notifications" RouterLink="/notifications">Alerts</MenuItem>
+                            <MenuItem Key="notifications" RouterLink="/notifications">@L["Nav_Alerts"]</MenuItem>
                         }
                     </SubMenu>
                 }
@@ -224,16 +224,81 @@
 
 @if (_mobile)
 {
-    <Drawer Visible="_drawer" Placement="DrawerPlacement.Left" Closable="true" OnClose="() => _drawer = false" Title="@L["Brand"].Value">
+    <Drawer Visible="_drawer" Placement="DrawerPlacement.Left" Closable="true" OnClose="() => _drawer = false" Title="@L["Brand"].Value" Class="org-mobile-drawer">
         <Menu Mode="MenuMode.Inline" OnMenuItemClicked="() => _drawer = false">
-            @if (Shell.CanSee("overview")) { <MenuItem RouterLink="/overview">@L["Nav_Overview"]</MenuItem> }
-            @if (Shell.CanSee("products")) { <MenuItem RouterLink="/products">Products</MenuItem> }
-            @if (Shell.CanSee("inventory")) { <MenuItem RouterLink="/inventory">Inventory</MenuItem> }
-            @if (Shell.CanSee("customers")) { <MenuItem RouterLink="/customers">Customers</MenuItem> }
-            @if (Shell.CanSee("staff")) { <MenuItem RouterLink="/staff">Staff</MenuItem> }
-            @if (Shell.CanSee("reports")) { <MenuItem RouterLink="/reports/sales">Reports</MenuItem> }
-            @if (Shell.CanSee("settings")) { <MenuItem RouterLink="/settings">Settings</MenuItem> }
-            @if (Shell.CanSee("sales-documents")) { <MenuItem RouterLink="/organization/sales-documents">@L["SalesDocument_EducationTitle"]</MenuItem> }
+            @if (Shell.CanSee("overview"))
+            {
+                <MenuItem RouterLink="/overview">@L["Nav_Overview"]</MenuItem>
+            }
+            @if (Shell.CanSee("profile"))
+            {
+                <MenuItem RouterLink="/organization/profile">@L["Nav_Profile"]</MenuItem>
+            }
+            @if (Shell.CanSee("branches"))
+            {
+                <MenuItem RouterLink="/organization/branches">@L["Nav_Branches"]</MenuItem>
+            }
+            @if (Shell.CanSee("devices"))
+            {
+                <MenuItem RouterLink="/operations/devices">@L["Nav_Devices"]</MenuItem>
+                <MenuItem RouterLink="/operations/registers">@L["Nav_Registers"]</MenuItem>
+            }
+            @if (Shell.CanSee("staff"))
+            {
+                <MenuItem RouterLink="/staff">@L["Nav_Staff"]</MenuItem>
+                <MenuItem RouterLink="/staff/roles">@L["Nav_Roles"]</MenuItem>
+            }
+            @if (Shell.CanSee("customers"))
+            {
+                <MenuItem RouterLink="/customers">@L["Nav_Customers"]</MenuItem>
+            }
+            @if (Shell.CanSee("products"))
+            {
+                <MenuItem RouterLink="/products">@L["Nav_Products"]</MenuItem>
+                <MenuItem RouterLink="/categories">@L["Categories_Title"]</MenuItem>
+                <MenuItem RouterLink="/catalog">@L["GlobalCatalog_Title"]</MenuItem>
+            }
+            @if (Shell.CanSee("inventory"))
+            {
+                <MenuItem RouterLink="/inventory">@L["Stock_Title"]</MenuItem>
+                <MenuItem RouterLink="/inventory/transfers">@L["Transfers_Title"]</MenuItem>
+                <MenuItem RouterLink="/inventory/lots">@L["Lots_Title"]</MenuItem>
+            }
+            @if (Shell.CanSee("sales") || Shell.CanSee("reports"))
+            {
+                <MenuItem RouterLink="/sales">@L["SalesHistory_Title"]</MenuItem>
+                <MenuItem RouterLink="/reports/sales">@L["SalesReport_Title"]</MenuItem>
+                <MenuItem RouterLink="/reports/utang">@L["Utang_Title"]</MenuItem>
+            }
+            @if (Shell.CanSee("shifts"))
+            {
+                <MenuItem RouterLink="/operations/shifts">@L["Shifts_Title"]</MenuItem>
+                <MenuItem RouterLink="/reports/shifts">@L["ShiftsReport_Title"]</MenuItem>
+            }
+            @if (Shell.CanSee("reports"))
+            {
+                <MenuItem RouterLink="/reports/inventory">@L["InventoryReport_Title"]</MenuItem>
+            }
+            @if (Shell.CanSee("settings"))
+            {
+                <MenuItem RouterLink="/settings">@L["Nav_OperationalSettings"]</MenuItem>
+            }
+            @if (Shell.CanSee("sales-documents"))
+            {
+                <MenuItem RouterLink="/organization/sales-documents">@L["SalesDocument_EducationTitle"]</MenuItem>
+            }
+            @if (Shell.CanSee("ownership-transfer"))
+            {
+                <MenuItem RouterLink="/organization/ownership-transfer">@L["Nav_Ownership"]</MenuItem>
+            }
+            @if (Shell.CanSee("subscription"))
+            {
+                <MenuItem RouterLink="/account/subscription">@L["Nav_Subscription"]</MenuItem>
+            }
+            @if (Shell.CanSee("notifications"))
+            {
+                <MenuItem RouterLink="/notifications">@L["Nav_Alerts"]</MenuItem>
+            }
         </Menu>
     </Drawer>
 }

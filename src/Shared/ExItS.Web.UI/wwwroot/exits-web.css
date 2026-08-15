@@ -128,6 +128,12 @@ html, body {
     align-items: center;
     margin-bottom: 12px;
 }
+@media (max-width: 767px) {
+    .exits-field {
+        grid-template-columns: 1fr;
+        align-items: stretch;
+    }
+}
 .exits-field__control { min-width: 0; }
 .exits-field__control .ant-input,
 .exits-field__control .ant-select { width: 100%; }

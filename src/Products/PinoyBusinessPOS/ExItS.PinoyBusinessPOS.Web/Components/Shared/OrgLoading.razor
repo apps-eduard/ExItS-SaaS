@@ -1,0 +1,14 @@
+@namespace ExItS.PinoyBusinessPOS.Web.Components.Shared
+@using AntDesign
+
+@if (Active)
+{
+    <div class="org-loading" aria-busy="true" aria-live="polite">
+        <Skeleton Active="true" ParagraphRows="ParagraphRows" />
+    </div>
+}
+
+@code {
+    [Parameter] public bool Active { get; set; }
+    [Parameter] public int ParagraphRows { get; set; } = 4;
+}
