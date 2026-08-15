@@ -601,7 +601,7 @@ Organization users must not:
 
 ## 7.5 Organization Navigation
 
-Browser Organization Web (`:8093`) is the management host for Owner / Organization Administrator. After central sign-in, qualifying memberships route to Organization Web (or the workspace chooser when multiple); Cashier / OrganizationMember-only memberships do not appear as Organization Web workspaces. Development Test User fills username only — password entry uses the normal login pipeline. See [organization-web-ui-responsive-standard.md](../engineering/organization-web-ui-responsive-standard.md).
+Browser Organization Web (`:8093`) is the management host for Owner / Organization Administrator. After central sign-in, qualifying memberships route to Organization Web (or the workspace chooser when multiple); Cashier / OrganizationMember-only memberships do not appear as Organization Web workspaces. Development Test User fills username only — password entry uses the normal login pipeline. Responsive management UX: [organization-web-ui-responsive-standard.md](../engineering/organization-web-ui-responsive-standard.md); [completion report](../reports/P25-org-web-full-responsive-ux-completion.md).
 
 ```text
 Organization Administration

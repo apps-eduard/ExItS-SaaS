@@ -209,7 +209,7 @@ The resulting Organization session is newly issued or explicitly selected.
 | Cashier (POS) | **Denied** — use PinoyBusinessPOS MAUI |
 | InventoryStaff / ReportingUser | Allowed with limited navigation |
 
-Identity comes from authenticated Platform session + selected Organization + product Bearer introspection. Development-only organization/actor/commercial headers are not required outside Development/Testing. Post-login workspace list includes Organization entries for **Owner / Administrator** only (Cashier `OrganizationMember` excluded). Development Test User fills username only. See [organization-web-role-and-workflow-matrix.md](organization-web-role-and-workflow-matrix.md) and [organization-web-ui-responsive-standard.md](organization-web-ui-responsive-standard.md).
+Identity comes from authenticated Platform session + selected Organization + product Bearer introspection. Development-only organization/actor/commercial headers are not required outside Development/Testing. Post-login workspace list includes Organization entries for **Owner / Administrator** only (Cashier `OrganizationMember` excluded). Development Test User fills username only. See [organization-web-role-and-workflow-matrix.md](organization-web-role-and-workflow-matrix.md), [organization-web-ui-responsive-standard.md](organization-web-ui-responsive-standard.md), and [owner checklist](../validation/organization-web-responsive-owner-checklist.md).
 
 ### Test payment
 
