@@ -22,8 +22,21 @@ Selling remains on PinoyBusinessPOS MAUI.
 2. Selected Organization from Platform session / eligible memberships.
 3. Product access Bearer from `IssueToken` (session grant) for POS business APIs.
 4. Ambient flow (`OrgWebSessionAmbient`) bridges Blazor circuit → `IHttpClientFactory` handlers so Staging/Production POS APIs receive Bearer introspection — **not** Development-only headers.
+5. Platform management APIs (`/api/v1/platform/...`) use **PlatformSession**; product Bearer must not clear that session (see `DevPlatformUserHeaderHandler` preserve rule).
 
-Development Quick Login may still use Dev helpers on Development/Testing hosts. Normal authenticated runtime must not require `X-Dev-Platform-User-Id` / commercial Dev headers.
+### Development Test User (not Quick Login bypass)
+
+| Rule | Behavior |
+|---|---|
+| Selector | Development/Testing only |
+| Selection | Fills username only |
+| Password | Manual entry |
+| Auth | Normal login pipeline |
+| Routing | Server workspaces: Platform → Org (Owner/Administrator) → Personal; Cashier org workspaces excluded |
+
+See [organization-web-ui-responsive-standard.md](organization-web-ui-responsive-standard.md).
+
+Development Quick Login one-click auto-auth is **removed** from Admin picker and MAUI Sign-In. Legacy `GET /admin/login/as/{key}` may remain for tooling but is not linked from the login UI.
 
 ## Role matrix (UI gate + existing server permissions)
 
@@ -74,6 +87,8 @@ Switch organization recalculates membership + POS role + capabilities. Owner in 
 
 No Personal Utang, no other Organizations, no device secrets, no Platform reviewer notes on Org Web. Management data stays Organization-scoped.
 
-## Root cause (user-facing Staging error)
+## Root cause (user-facing Staging / Branches errors)
 
-`Development-stage organization, actor, and commercial headers are unavailable outside Development/Testing` came from POS `PosOrganizationScope` when Bearer org/actor was missing on Staging. Org Web HttpClient handlers could not see circuit `AccessToken`, so business calls fell through to Dev-header path and failed. Fixed via ambient Bearer + organization binding.
+1. `Development-stage organization, actor, and commercial headers are unavailable outside Development/Testing` — POS `PosOrganizationScope` when Bearer org/actor was missing on Staging. Fixed via ambient Bearer + organization binding.
+
+2. `Actor 'development-operator:unauthenticated' does not hold permission 'platform.permission.view_portfolio'` on Branches — `DevPlatformUserHeaderHandler` cleared `Authorization: PlatformSession` when the scheme was not Bearer, leaving Platform APIs unauthenticated. Fixed by preserving PlatformSession and not attaching product Bearer to `/api/v1/platform/*` from Org Web outer auth handler. Membership-based `EnsureCanViewOrganizationAsync` remains sufficient; Org users are **not** granted `ViewPortfolio`.

@@ -147,6 +147,7 @@ docs/engineering/sales-buyer-party-model.md
 docs/engineering/organization-profile-independence.md
 docs/engineering/organization-ownership-transfer.md
 docs/engineering/organization-web-role-and-workflow-matrix.md
+docs/engineering/organization-web-ui-responsive-standard.md
 docs/engineering/sales-document-compliance-boundary.md
 docs/engineering/organization-sales-document-acknowledgment.md
 docs/engineering/platform-organization-compliance-eligibility.md

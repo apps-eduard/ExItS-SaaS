@@ -122,6 +122,7 @@ The dashboard links to the latest accepted report.
 | [P24-WP24-owner-user-final-validation-and-acceptance.md](P24-WP24-owner-user-final-validation-and-acceptance.md) | P24-WP24 Owner validation | Awaiting Owner Validation |
 | [organization-ownership-transfer.md](../engineering/organization-ownership-transfer.md) | Ownership transfer engineering note | Implemented (Device Verified No) |
 | [organization-web-role-and-workflow-matrix.md](../engineering/organization-web-role-and-workflow-matrix.md) | Org Web Owner/Manager/Cashier matrix, nav, session Bearer binding | Remediation (Phase 25 Open) |
+| [organization-web-ui-responsive-standard.md](../engineering/organization-web-ui-responsive-standard.md) | Org Web responsive UI + Development Test User (username-only) + routing | Remediation (Phase 25 Open) |
 | [pos-branch-inventory-transfers.md](../engineering/pos-branch-inventory-transfers.md) | Intra-org branch inventory transfers | Implemented (Device Verified No) |
 | [pos-cashier-cash-count.md](../engineering/pos-cashier-cash-count.md) | Cash count policy (Required / Optional) and denomination-assisted reconciliation | Implemented (Device Verified No) |
 | [pos-expiration-aware-inventory.md](../engineering/pos-expiration-aware-inventory.md) | Optional per-product expiration lots (FEFO) | Implemented (Device Verified No) |
