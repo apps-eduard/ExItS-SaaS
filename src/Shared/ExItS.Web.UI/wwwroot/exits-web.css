@@ -121,6 +121,22 @@ html, body {
     line-height: 36px !important;
     margin: 2px 0 !important;
 }
+/* SubMenu TitleTemplate: icon + label (AntDesign 1.6.2 has no SubMenu Icon parameter). */
+.exits-submenu-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    max-width: 100%;
+}
+.exits-submenu-title .anticon {
+    font-size: 16px;
+    line-height: 1;
+}
+.exits-submenu-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
 /* Collapsed Pro-like rail: keep icons centered and focusable; blank rows are a defect. */
 .exits-web-sider.ant-layout-sider-collapsed .exits-brand {
     justify-content: center;
@@ -133,6 +149,13 @@ html, body {
 .exits-web-sider.ant-layout-sider-collapsed .exits-web-menu .anticon {
     font-size: 16px;
     line-height: 1;
+}
+.exits-web-sider.ant-layout-sider-collapsed .exits-submenu-label {
+    display: none;
+}
+.exits-web-sider.ant-layout-sider-collapsed .exits-submenu-title {
+    gap: 0;
+    justify-content: center;
 }
 .exits-web-menu .ant-menu-item-selected,
 .exits-web-menu .ant-menu-submenu-selected > .ant-menu-submenu-title {

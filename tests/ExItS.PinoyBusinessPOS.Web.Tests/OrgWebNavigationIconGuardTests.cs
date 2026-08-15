@@ -10,23 +10,53 @@ public sealed class OrgWebNavigationIconGuardTests
     public void OrgWebTopLevelNavigationHasIcons()
     {
         var layout = ReadMainLayout();
-        foreach (var icon in new[]
-                 {
-                     "Icon=\"dashboard\"",
-                     "Icon=\"shop\"",
-                     "Icon=\"team\"",
-                     "Icon=\"appstore\"",
-                     "Icon=\"database\"",
-                     "Icon=\"dollar\"",
-                     "Icon=\"control\"",
-                     "Icon=\"setting\""
-                 })
+        Assert.Contains("Icon=\"dashboard\"", layout, StringComparison.Ordinal);
+        foreach (var icon in new[] { "shop", "team", "appstore", "database", "dollar", "control", "setting" })
         {
-            Assert.Contains(icon, layout, StringComparison.Ordinal);
+            Assert.Contains($"SubMenuTitle(\"{icon}\"", layout, StringComparison.Ordinal);
         }
 
-        Assert.Contains("<SubMenu Key=\"business\"", layout, StringComparison.Ordinal);
-        Assert.Contains("Icon=\"shop\"", layout, StringComparison.Ordinal);
+        Assert.Contains("<SubMenu Key=\"business\" TitleTemplate=\"@BusinessTitle\">", layout, StringComparison.Ordinal);
+        Assert.Contains("ShowCollapsedTooltip=\"true\"", layout, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void OrgWebSubMenuUsesSupportedAntDesignApi()
+    {
+        var layout = ReadMainLayout();
+        // AntDesign 1.6.2 SubMenu has no Icon parameter — TitleTemplate only.
+        foreach (var line in layout.Split('\n'))
+        {
+            if (line.Contains("<SubMenu", StringComparison.Ordinal)
+                && !line.Contains("</SubMenu", StringComparison.Ordinal))
+            {
+                Assert.DoesNotContain(" Icon=", line, StringComparison.Ordinal);
+                Assert.Contains("TitleTemplate=", line, StringComparison.Ordinal);
+            }
+        }
+
+        Assert.Contains("OpenComponent<Icon>", layout, StringComparison.Ordinal);
+        Assert.Contains("exits-submenu-title", layout, StringComparison.Ordinal);
+        Assert.Contains("exits-submenu-label", layout, StringComparison.Ordinal);
+
+        // Other AntDesign hosts must not reintroduce SubMenu Icon=.
+        foreach (var relative in new[]
+                 {
+                     Path.Combine("src", "Platform", "ExItS.Platform.Admin", "Components", "Layout", "AdminNav.razor"),
+                     Path.Combine("src", "Platform", "ExItS.Personal.Web", "Components", "Layout", "MainLayout.razor")
+                 })
+        {
+            var path = Path.Combine(FindRepoRoot(), relative);
+            if (!File.Exists(path))
+            {
+                continue;
+            }
+
+            var text = File.ReadAllText(path);
+            Assert.DoesNotMatch(
+                new System.Text.RegularExpressions.Regex(@"<SubMenu\b[^>]*\bIcon\s*=", System.Text.RegularExpressions.RegexOptions.IgnoreCase),
+                text);
+        }
     }
 
     [Fact]
@@ -35,8 +65,10 @@ public sealed class OrgWebNavigationIconGuardTests
         var layout = ReadMainLayout();
         Assert.Contains("InlineCollapsed=\"_collapsed\"", layout, StringComparison.Ordinal);
         Assert.Contains("CollapsedWidth=\"64\"", layout, StringComparison.Ordinal);
+        Assert.Contains("ShowCollapsedTooltip=\"true\"", layout, StringComparison.Ordinal);
         Assert.Contains("Title=\"@L[\"Nav_Overview\"]\"", layout, StringComparison.Ordinal);
         Assert.Contains("Title=\"@L[\"Nav_Branches\"]\"", layout, StringComparison.Ordinal);
+        Assert.Contains("Nav_Business", layout, StringComparison.Ordinal);
     }
 
     [Fact]

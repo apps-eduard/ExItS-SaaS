@@ -27,14 +27,18 @@
                     <span>@L["Brand"]</span>
                 }
             </div>
-            <Menu Theme="MenuTheme.Dark" Mode="MenuMode.Inline" InlineCollapsed="_collapsed" Class="exits-web-menu">
+            <Menu Theme="MenuTheme.Dark"
+                  Mode="MenuMode.Inline"
+                  InlineCollapsed="_collapsed"
+                  ShowCollapsedTooltip="true"
+                  Class="exits-web-menu">
                 @if (Shell.CanSee("overview"))
                 {
                     <MenuItem Key="overview" RouterLink="/overview" RouterMatch="NavLinkMatch.All" Icon="dashboard" Title="@L["Nav_Overview"]">@L["Nav_Overview"]</MenuItem>
                 }
                 @if (Shell.CanSee("profile") || Shell.CanSee("branches") || Shell.CanSee("devices"))
                 {
-                    <SubMenu Key="business" Title="@L["Nav_Business"]" Icon="shop">
+                    <SubMenu Key="business" TitleTemplate="@BusinessTitle">
                         @if (Shell.CanSee("profile"))
                         {
                             <MenuItem Key="profile" RouterLink="/organization/profile" Icon="idcard" Title="@L["Nav_Profile"]">@L["Nav_Profile"]</MenuItem>
@@ -52,7 +56,7 @@
                 }
                 @if (Shell.CanSee("staff") || Shell.CanSee("customers") || Shell.CanSee("suppliers"))
                 {
-                    <SubMenu Key="people" Title="@L["Nav_People"]" Icon="team">
+                    <SubMenu Key="people" TitleTemplate="@PeopleTitle">
                         @if (Shell.CanSee("staff"))
                         {
                             <MenuItem Key="staff-list" RouterLink="/staff" Icon="usergroup-add" Title="@L["Nav_Staff"]">@L["Nav_Staff"]</MenuItem>
@@ -66,7 +70,7 @@
                 }
                 @if (Shell.CanSee("products"))
                 {
-                    <SubMenu Key="catalog" Title="@L["Nav_Catalog"]" Icon="appstore">
+                    <SubMenu Key="catalog" TitleTemplate="@CatalogTitle">
                         <MenuItem Key="product-list" RouterLink="/products" Icon="barcode" Title="@L["Nav_Products"]">@L["Nav_Products"]</MenuItem>
                         <MenuItem Key="categories" RouterLink="/categories" Icon="tags" Title="@L["Categories_Title"]">@L["Categories_Title"]</MenuItem>
                         <MenuItem Key="catalog" RouterLink="/catalog" Icon="global" Title="@L["GlobalCatalog_Title"]">@L["GlobalCatalog_Title"]</MenuItem>
@@ -74,7 +78,7 @@
                 }
                 @if (Shell.CanSee("inventory"))
                 {
-                    <SubMenu Key="inventory" Title="@L["Nav_Inventory"]" Icon="database">
+                    <SubMenu Key="inventory" TitleTemplate="@InventoryTitle">
                         <MenuItem Key="stock" RouterLink="/inventory" Icon="inbox" Title="@L["Stock_Title"]">@L["Stock_Title"]</MenuItem>
                         <MenuItem Key="transfers" RouterLink="/inventory/transfers" Icon="swap" Title="@L["Transfers_Title"]">@L["Transfers_Title"]</MenuItem>
                         <MenuItem Key="lots" RouterLink="/inventory/lots" Icon="clock-circle" Title="@L["Lots_Title"]">@L["Lots_Title"]</MenuItem>
@@ -82,7 +86,7 @@
                 }
                 @if (Shell.CanSee("reports") || Shell.CanSee("sales"))
                 {
-                    <SubMenu Key="sales" Title="@L["Nav_Sales"]" Icon="dollar">
+                    <SubMenu Key="sales" TitleTemplate="@SalesTitle">
                         <MenuItem Key="sales-history" RouterLink="/sales" Icon="history" Title="@L["SalesHistory_Title"]">@L["SalesHistory_Title"]</MenuItem>
                         <MenuItem Key="sales-report" RouterLink="/reports/sales" Icon="bar-chart" Title="@L["SalesReport_Title"]">@L["SalesReport_Title"]</MenuItem>
                         <MenuItem Key="utang" RouterLink="/reports/utang" Icon="wallet" Title="@L["Utang_Title"]">@L["Utang_Title"]</MenuItem>
@@ -90,7 +94,7 @@
                 }
                 @if (Shell.CanSee("shifts") || Shell.CanSee("reports"))
                 {
-                    <SubMenu Key="ops" Title="@L["Nav_Operations"]" Icon="control">
+                    <SubMenu Key="ops" TitleTemplate="@OperationsTitle">
                         @if (Shell.CanSee("shifts"))
                         {
                             <MenuItem Key="shifts" RouterLink="/operations/shifts" Icon="field-time" Title="@L["Shifts_Title"]">@L["Shifts_Title"]</MenuItem>
@@ -104,7 +108,7 @@
                 }
                 @if (Shell.CanSee("settings") || Shell.CanSee("subscription") || Shell.CanSee("sales-documents") || Shell.CanSee("ownership-transfer"))
                 {
-                    <SubMenu Key="settings" Title="@L["Nav_Settings"]" Icon="setting">
+                    <SubMenu Key="settings" TitleTemplate="@SettingsTitle">
                         @if (Shell.CanSee("settings"))
                         {
                             <MenuItem Key="general" RouterLink="/settings" Icon="tool" Title="@L["Nav_OperationalSettings"]">@L["Nav_OperationalSettings"]</MenuItem>
@@ -307,6 +311,30 @@
     private bool _collapsed;
     private bool _mobile;
     private bool _drawer;
+
+    // AntDesign 1.6.2: SubMenu has no Icon parameter — use TitleTemplate (same pattern as Platform Admin).
+    private RenderFragment BusinessTitle => SubMenuTitle("shop", L["Nav_Business"]);
+    private RenderFragment PeopleTitle => SubMenuTitle("team", L["Nav_People"]);
+    private RenderFragment CatalogTitle => SubMenuTitle("appstore", L["Nav_Catalog"]);
+    private RenderFragment InventoryTitle => SubMenuTitle("database", L["Nav_Inventory"]);
+    private RenderFragment SalesTitle => SubMenuTitle("dollar", L["Nav_Sales"]);
+    private RenderFragment OperationsTitle => SubMenuTitle("control", L["Nav_Operations"]);
+    private RenderFragment SettingsTitle => SubMenuTitle("setting", L["Nav_Settings"]);
+
+    private static RenderFragment SubMenuTitle(string iconType, string label) => builder =>
+    {
+        builder.OpenElement(0, "span");
+        builder.AddAttribute(1, "class", "exits-submenu-title");
+        builder.AddAttribute(2, "title", label);
+        builder.OpenComponent<Icon>(3);
+        builder.AddAttribute(4, "Type", iconType);
+        builder.CloseComponent();
+        builder.OpenElement(5, "span");
+        builder.AddAttribute(6, "class", "exits-submenu-label");
+        builder.AddContent(7, label);
+        builder.CloseElement();
+        builder.CloseElement();
+    };
 
     protected override async Task OnInitializedAsync()
     {

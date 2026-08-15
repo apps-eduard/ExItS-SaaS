@@ -69,8 +69,11 @@ Owner checklist: [organization-web-responsive-owner-checklist.md](../validation/
 
 | Item | Standard |
 |------|----------|
+| AntDesign package | **1.6.2** (pinned in `Directory.Packages.props`) |
 | Expanded sider | Width 220; icon + localized label |
-| Collapsed sider | Width 64; icons remain; `Title` tooltips; no blank rows |
+| Collapsed sider | Width 64; icons remain; `ShowCollapsedTooltip`; `Title` / `title` for labels; no blank rows |
+| `MenuItem` icons | `Icon="…"` is supported |
+| `SubMenu` icons | **Do not use `Icon=`** — use `TitleTemplate` with `<Icon Type="…" />` + label (same as Platform Admin) |
 | Top-level icons | Overview `dashboard`, Business `shop`, People `team`, Catalog `appstore`, Inventory `database`, Sales `dollar`, Operations `control`, Settings `setting` |
 | Child icons | Meaningful AntDesign icons per route (profile `idcard`, branches `apartment`, …) |
 | Mobile | Drawer with the same icon+label items |

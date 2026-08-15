@@ -51,9 +51,19 @@ Owner management (A) must not require C. A must not globally require B for the O
 
 ## Navigation icon standard
 
+AntDesign **1.6.2**:
+
+- `MenuItem` supports `Icon="…"`.
+- `SubMenu` does **not** support `Icon` — use `TitleTemplate` with `<Icon Type="…" />` + localized label (Platform Admin pattern).
+- Menu: `InlineCollapsed` + `ShowCollapsedTooltip`.
+
 Top-level: Overview `dashboard`, Business `shop`, People `team`, Catalog `appstore`, Inventory `database`, Sales `dollar`, Operations `control`, Settings `setting`.
 
-Collapsed: icons remain; `Title` provides labels; drawer on phone.
+Collapsed: icons remain; labels via tooltip / `title`; drawer on phone.
+
+## Follow-up: SubMenu Icon runtime exception
+
+A subsequent patch removed invalid `<SubMenu Icon=…>` parameters that threw `InvalidOperationException` at runtime after login. See commits after this report’s initial push.
 
 ## Tests
 
