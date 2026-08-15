@@ -3,12 +3,18 @@ namespace ExItS.PinoyBusinessPOS.Maui.Tests;
 public sealed class PurchasingPageGuardTests
 {
     [Fact]
-    public void Purchasing_routes_cover_list_create_detail_and_receive()
+    public void Purchasing_routes_cover_hub_orders_create_detail_and_receive()
     {
         var pages = PurchasingPagesDirectory();
 
+        var hub = File.ReadAllText(Path.Combine(pages, "PurchasingHub.razor"));
+        Assert.Contains("@page \"/purchasing\"", hub, StringComparison.Ordinal);
+        Assert.Contains("Purchasing_ReceiveStock", hub, StringComparison.Ordinal);
+        Assert.Contains("Purchasing_Orders", hub, StringComparison.Ordinal);
+        Assert.Contains("Purchasing_GoodsReceipts", hub, StringComparison.Ordinal);
+
         var list = File.ReadAllText(Path.Combine(pages, "PurchasingList.razor"));
-        Assert.Contains("@page \"/purchasing\"", list, StringComparison.Ordinal);
+        Assert.Contains("@page \"/purchasing/orders\"", list, StringComparison.Ordinal);
         Assert.Contains("IPosPurchaseOrderClient", list, StringComparison.Ordinal);
         Assert.Contains("pos-purchasing__header", list, StringComparison.Ordinal);
         Assert.Contains("pos-purchasing__row", list, StringComparison.Ordinal);
@@ -70,11 +76,11 @@ public sealed class PurchasingPageGuardTests
     }
 
     [Fact]
-    public void Purchasing_pages_guard_entry_and_gate_capabilities()
+    public void Purchasing_po_workflow_pages_guard_entry_and_gate_capabilities()
     {
-        foreach (var file in Directory.EnumerateFiles(PurchasingPagesDirectory(), "*.razor"))
+        foreach (var name in new[] { "PurchasingList.razor", "PurchasingCreate.razor", "PurchasingDetail.razor", "PurchasingReceive.razor" })
         {
-            var text = File.ReadAllText(file);
+            var text = File.ReadAllText(Path.Combine(PurchasingPagesDirectory(), name));
             Assert.Contains("Gate.CanEnterProtectedShell", text, StringComparison.Ordinal);
             Assert.Contains("ResolveStartRouteAsync", text, StringComparison.Ordinal);
             Assert.Contains("UtangCapability.ViewPurchasing", text, StringComparison.Ordinal);
@@ -83,11 +89,11 @@ public sealed class PurchasingPageGuardTests
     }
 
     [Fact]
-    public void Purchasing_pages_are_online_only()
+    public void Purchasing_po_workflow_pages_are_online_only()
     {
-        foreach (var file in Directory.EnumerateFiles(PurchasingPagesDirectory(), "*.razor"))
+        foreach (var name in new[] { "PurchasingList.razor", "PurchasingCreate.razor", "PurchasingDetail.razor", "PurchasingReceive.razor", "GoodsReceipts.razor" })
         {
-            var text = File.ReadAllText(file);
+            var text = File.ReadAllText(Path.Combine(PurchasingPagesDirectory(), name));
             Assert.DoesNotContain("IOfflineOperationQueue", text, StringComparison.Ordinal);
             Assert.DoesNotContain("LocalStore", text, StringComparison.OrdinalIgnoreCase);
             Assert.Contains("Connectivity.IsConnectedAsync", text, StringComparison.Ordinal);
@@ -127,7 +133,11 @@ public sealed class PurchasingPageGuardTests
                      "Purchasing_EditLine",
                      "Purchasing_DeleteLine",
                      "Purchasing_SaveChanges",
-                     "Purchasing_LineTotalLabel"
+                     "Purchasing_LineTotalLabel",
+                     "Purchasing_ReceiveStock",
+                     "Purchasing_Orders",
+                     "Purchasing_GoodsReceipts",
+                     "Purchasing_HubSubtitle"
                  })
         {
             Assert.Contains($"name=\"{key}\"", en, StringComparison.Ordinal);

@@ -15,11 +15,15 @@ public sealed class InventoryPageGuardTests
         Assert.Contains("Access_RestrictedTitle", list, StringComparison.Ordinal);
         Assert.Contains("Access_RestrictedMessage", list, StringComparison.Ordinal);
         Assert.Contains("pos-action-grid--four", list, StringComparison.Ordinal);
-        Assert.Contains("IconGlyphs.Get(\"warning\")", list, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"inbox\")", list, StringComparison.Ordinal);
         Assert.Contains("IconGlyphs.Get(\"check\")", list, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"edit\")", list, StringComparison.Ordinal);
         Assert.Contains("IconGlyphs.Get(\"lent\")", list, StringComparison.Ordinal);
-        Assert.Contains("IconGlyphs.Get(\"refresh\")", list, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"warning\")", list, StringComparison.Ordinal);
         Assert.Contains("/inventory/transfers", list, StringComparison.Ordinal);
+        Assert.Contains("/inventory/expiration", list, StringComparison.Ordinal);
+        Assert.Contains("Inventory_StockOnHand", list, StringComparison.Ordinal);
+        Assert.Contains("Inventory_AdjustStock", list, StringComparison.Ordinal);
         Assert.Contains("pos-inventory__row", list, StringComparison.Ordinal);
         Assert.Contains("pos-inventory__header", list, StringComparison.Ordinal);
         Assert.DoesNotContain("PageHeader", list, StringComparison.Ordinal);
@@ -271,12 +275,24 @@ public sealed class InventoryPageGuardTests
             "ExItS.PinoyBusinessPOS.Maui",
             "Localization",
             "PosResources.resx"));
-        Assert.Contains("<data name=\"Inventory_CountsCreate\" xml:space=\"preserve\"><value>Create count</value></data>", resources, StringComparison.Ordinal);
-        Assert.Contains("<data name=\"Inventory_CountsStatus_Draft\" xml:space=\"preserve\"><value>Preparing</value></data>", resources, StringComparison.Ordinal);
-        Assert.Contains("<data name=\"Inventory_CountsStatus_InProgress\" xml:space=\"preserve\"><value>Counting</value></data>", resources, StringComparison.Ordinal);
-        Assert.Contains("<data name=\"Inventory_CountsDifference\" xml:space=\"preserve\"><value>Difference</value></data>", resources, StringComparison.Ordinal);
-        Assert.DoesNotContain("<data name=\"Inventory_CountsCreate\" xml:space=\"preserve\"><value>Create draft</value></data>", resources, StringComparison.Ordinal);
-        Assert.DoesNotContain("<data name=\"Inventory_CountsVariance\" xml:space=\"preserve\"><value>Variance</value></data>", resources, StringComparison.Ordinal);
+        var countsCreate = System.Text.RegularExpressions.Regex.Match(
+            resources,
+            @"name=""Inventory_CountsCreate""[^>]*>\s*<value>([^<]*)</value>",
+            System.Text.RegularExpressions.RegexOptions.Multiline);
+        Assert.True(countsCreate.Success);
+        Assert.Equal("Create count", countsCreate.Groups[1].Value);
+        Assert.Contains("name=\"Inventory_CountsStatus_Draft\"", resources, StringComparison.Ordinal);
+        Assert.Contains("<value>Preparing</value>", resources, StringComparison.Ordinal);
+        Assert.Contains("name=\"Inventory_CountsStatus_InProgress\"", resources, StringComparison.Ordinal);
+        Assert.Contains("<value>Counting</value>", resources, StringComparison.Ordinal);
+        Assert.Contains("name=\"Inventory_CountsDifference\"", resources, StringComparison.Ordinal);
+        Assert.Contains("<value>Difference</value>", resources, StringComparison.Ordinal);
+        var countsVariance = System.Text.RegularExpressions.Regex.Match(
+            resources,
+            @"name=""Inventory_CountsVariance""[^>]*>\s*<value>([^<]*)</value>",
+            System.Text.RegularExpressions.RegexOptions.Multiline);
+        Assert.True(countsVariance.Success);
+        Assert.Equal("Difference", countsVariance.Groups[1].Value);
     }
 
     private static string InventoryPagesDirectory() => Path.Combine(
