@@ -87,22 +87,85 @@ public sealed class ApiAccessTokenTests(PostgreSqlFixture fixture) : IAsyncLifet
     }
 
     [Fact]
-    public async Task Session_grant_and_bind_requires_active_membership_and_product_access()
+    public async Task Owner_session_grant_issues_management_authority_without_selling_role()
     {
+        // Mica-like: Organization Owner, no product-local POS checkout role.
         var (userId, username, password) = await SeedUserWithPasswordAsync();
         var org = await _admin.PostAsJsonAsync(
             "/api/v1/platform/organizations",
-            new { displayName = "Token Org", slug = UniqueToken("tokorg") });
+            new { displayName = "Mica Store Test", slug = UniqueToken("mica") });
         org.EnsureSuccessStatusCode();
         var organizationId = (await org.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
 
         (await _admin.PostAsJsonAsync(
             $"/api/v1/platform/organizations/{organizationId}/members",
-            new { userId, role = "OrganizationMember", reason = "integration-test-link" })).EnsureSuccessStatusCode();
+            new { userId, role = "OrganizationOwner", reason = "integration-test-owner" })).EnsureSuccessStatusCode();
 
         var login = await _client.PostAsJsonAsync(
             "/api/v1/platform/auth/login",
             new { usernameOrEmail = username, password });
+        Assert.Equal(HttpStatusCode.OK, login.StatusCode);
+        var sessionToken = (await login.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("sessionToken").GetString();
+
+        using var select = new HttpRequestMessage(HttpMethod.Put, "/api/v1/platform/auth/organization-context");
+        select.Headers.Add("X-ExItS-Session-Token", sessionToken);
+        select.Content = JsonContent.Create(new { organizationId });
+        (await _client.SendAsync(select)).EnsureSuccessStatusCode();
+
+        using var sessionGrant = new HttpRequestMessage(HttpMethod.Post, "/api/v1/platform/auth/token");
+        sessionGrant.Headers.Add("X-ExItS-Session-Token", sessionToken);
+        sessionGrant.Content = JsonContent.Create(new
+        {
+            grantType = "session",
+            organizationId,
+            productCode = "pinoy-business-pos"
+        });
+        var issued = await _client.SendAsync(sessionGrant);
+        Assert.Equal(HttpStatusCode.OK, issued.StatusCode);
+        var body = await issued.Content.ReadFromJsonAsync<JsonElement>();
+        var accessToken = body.GetProperty("accessToken").GetString();
+        Assert.False(string.IsNullOrWhiteSpace(accessToken));
+        Assert.True(body.GetProperty("organizationManagementAuthority").GetBoolean());
+        Assert.True(body.GetProperty("productAccessAllowed").GetBoolean());
+        Assert.Equal("organization_management_authority", body.GetProperty("productAccessReasonCode").GetString());
+        Assert.True(
+            !body.TryGetProperty("productLocalRoleCode", out var roleEl)
+            || roleEl.ValueKind is JsonValueKind.Null
+            || string.IsNullOrWhiteSpace(roleEl.GetString()));
+        Assert.True(
+            !body.TryGetProperty("mappedPosRoleCode", out var mappedEl)
+            || mappedEl.ValueKind is JsonValueKind.Null
+            || string.IsNullOrWhiteSpace(mappedEl.GetString()));
+
+        var introspect = await _client.PostAsJsonAsync(
+            "/api/v1/platform/auth/introspect",
+            new { token = accessToken });
+        Assert.Equal(HttpStatusCode.OK, introspect.StatusCode);
+        var info = await introspect.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.True(info.GetProperty("active").GetBoolean());
+        Assert.True(info.GetProperty("organizationManagementAuthority").GetBoolean());
+        Assert.True(info.GetProperty("productAccessAllowed").GetBoolean());
+        Assert.Equal(organizationId, info.GetProperty("organizationId").GetGuid());
+
+        // Owner may list own org branches via PlatformSession (membership), not view_portfolio.
+        using var branches = new HttpRequestMessage(
+            HttpMethod.Get,
+            $"/api/v1/platform/organizations/{organizationId}/branches");
+        branches.Headers.Add("X-ExItS-Session-Token", sessionToken);
+        var branchesResponse = await _client.SendAsync(branches);
+        Assert.Equal(HttpStatusCode.OK, branchesResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task Session_grant_and_bind_requires_active_membership_and_product_access()
+    {
+        // OrganizationMember must be an org-scoped staff identity (invite accept), not Platform staff.
+        var (userId, _, staffLogin, password, organizationId) = await PlatformIntegrationTestUsers
+            .SeedOrgMemberViaInvitationAsync(_admin, _client, "atokm");
+
+        var login = await _client.PostAsJsonAsync(
+            "/api/v1/platform/auth/login",
+            new { usernameOrEmail = staffLogin, password });
         Assert.Equal(HttpStatusCode.OK, login.StatusCode);
         var sessionToken = (await login.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("sessionToken").GetString();
 
@@ -129,6 +192,7 @@ public sealed class ApiAccessTokenTests(PostgreSqlFixture fixture) : IAsyncLifet
         bind.Content = JsonContent.Create(new { organizationId, productCode = "pinoy-business-pos" });
         var bindDenied = await _client.SendAsync(bind);
         Assert.Equal(HttpStatusCode.Forbidden, bindDenied.StatusCode);
+        _ = userId;
     }
 
     [Fact]

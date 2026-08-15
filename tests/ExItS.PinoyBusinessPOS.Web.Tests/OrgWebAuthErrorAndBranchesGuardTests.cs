@@ -15,7 +15,8 @@ public sealed class OrgWebAuthErrorAndBranchesGuardTests
             "forbidden",
             null,
             403));
-        Assert.Equal("You don't have permission to view this section.", actor);
+        // view_portfolio fallthrough after missing PlatformSession → session recovery, not "permission".
+        Assert.Contains("verify your access", actor, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("development-operator", actor, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("view_portfolio", actor, StringComparison.OrdinalIgnoreCase);
 

@@ -13,15 +13,19 @@ public sealed class OrganizationManagementAuthorityTests
         Assert.Equal(expected, OrganizationManagementAuthority.IsManagementMembership(role));
 
     [Theory]
-    [InlineData(OrganizationRole.OrganizationOwner, true, true)]
-    [InlineData(OrganizationRole.OrganizationOwner, false, false)]
-    [InlineData(OrganizationRole.OrganizationAdministrator, true, true)]
-    [InlineData(OrganizationRole.OrganizationMember, true, false)]
-    public void Qualifies_requires_entitlement(
-        OrganizationRole role,
-        bool entitlementAllowed,
-        bool expected) =>
-        Assert.Equal(expected, OrganizationManagementAuthority.Qualifies(role, entitlementAllowed));
+    [InlineData(OrganizationRole.OrganizationOwner, true)]
+    [InlineData(OrganizationRole.OrganizationAdministrator, true)]
+    [InlineData(OrganizationRole.OrganizationMember, false)]
+    public void Qualifies_from_membership_alone(OrganizationRole role, bool expected) =>
+        Assert.Equal(expected, OrganizationManagementAuthority.Qualifies(role));
+
+    [Fact]
+    public void Qualifies_ignores_entitlement_flag_for_owners()
+    {
+        Assert.True(OrganizationManagementAuthority.Qualifies(OrganizationRole.OrganizationOwner, entitlementAllowed: false));
+        Assert.True(OrganizationManagementAuthority.Qualifies(OrganizationRole.OrganizationAdministrator, entitlementAllowed: false));
+        Assert.False(OrganizationManagementAuthority.Qualifies(OrganizationRole.OrganizationMember, entitlementAllowed: true));
+    }
 
     [Fact]
     public void Exact_owner_is_distinct_from_administrator()
