@@ -13,6 +13,7 @@
 }
 else
 {
+    <div class="org-page">
     <ExitsPageHeader Title="@L["Branches_Title"]" Subtitle="@L["Branches_Subtitle"]">
         <Button Type="@ButtonType.Primary" OnClick="OpenCreateAsync">@L["Branches_Add"]</Button>
     </ExitsPageHeader>
@@ -22,28 +23,17 @@ else
         <p class="org-note">@string.Format(L["Branches_Capacity"].Value, _capacity.Used, _capacity.Allowed)</p>
     }
 
-    @if (!string.IsNullOrWhiteSpace(_success))
-    {
-        <Alert Type="@AlertType.Success" Message="@_success" ShowIcon="true" Closable="true" OnClose="() => _success = null" Style="margin-bottom:1rem;" />
-    }
+    <OrgAlert Error="@_error" Success="@_success" OnRetry="LoadAsync" RetryLabel="@L["Common_Retry"]"
+              OnDismissError="() => _error = null" OnDismissSuccess="() => _success = null" />
+    <OrgLoading Active="_loading" />
 
-    @if (!string.IsNullOrWhiteSpace(_error))
+    @if (!_loading && string.IsNullOrWhiteSpace(_error) && _items.Count == 0)
     {
-        <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" Closable="true" OnClose="() => _error = null" Style="margin-bottom:1rem;" />
-    }
-
-    @if (_loading)
-    {
-        <Skeleton Active="true" />
-    }
-    else if (_items.Count == 0)
-    {
-        <ExitsEmptyState Title="@L["Branches_EmptyTitle"]" Message="@L["Branches_EmptyMessage"]" />
-        <div style="margin-top:1rem">
+        <OrgEmpty Title="@L["Branches_EmptyTitle"]" Message="@L["Branches_EmptyMessage"]">
             <Button Type="@ButtonType.Primary" OnClick="OpenCreateAsync">@L["Branches_Add"]</Button>
-        </div>
+        </OrgEmpty>
     }
-    else
+    else if (!_loading && _items.Count > 0)
     {
         <div class="org-table-wrap">
             <table class="org-table">
@@ -69,7 +59,7 @@ else
                             </td>
                             <td>@b.Code</td>
                             <td>@(string.Join(" ", new[] { b.AddressLine1, b.City }.Where(s => !string.IsNullOrWhiteSpace(s))))</td>
-                            <td><span class="org-badge">@OrgWebUi.Badge(b.Status)</span></td>
+                            <td><OrgStatusBadge Text="@OrgWebUi.Badge(b.Status)" Tone="@b.Status" /></td>
                             <td class="org-actions">
                                 <Button Size="@ButtonSize.Small" Disabled="_busy" OnClick="() => OpenEditAsync(b)">@L["Common_Edit"]</Button>
                                 @if (!b.IsPrimary && !string.Equals(b.Status, "Archived", StringComparison.OrdinalIgnoreCase))
@@ -102,6 +92,7 @@ else
             <Input @bind-Value="_formAddress" Disabled="_busy" Placeholder="@L["Branches_FieldAddress"]" />
         </ExitsField>
     </Modal>
+    </div>
 }
 
 @code {

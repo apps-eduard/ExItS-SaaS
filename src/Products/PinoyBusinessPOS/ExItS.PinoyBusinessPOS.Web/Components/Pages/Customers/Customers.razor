@@ -6,8 +6,9 @@
 @inject IPlatformAccessClient Platform
 @inject ICurrentUserContext CurrentUser
 @inject NavigationManager Nav
+@inject IStringLocalizer<OrgWebResources> L
 
-<PageTitle>Customers</PageTitle>
+<PageTitle>@L["Customers_Title"]</PageTitle>
 
 @if (!Shell.CanSee("customers"))
 {
@@ -15,16 +16,22 @@
 }
 else
 {
-    <ExitsPageHeader Title="Customer directory" Subtitle="Business customers for this organization. Personal private data beyond the authorized contract is not shown." />
-    <div class="org-toolbar">
-        <ExitsField Label="Search"><Input @bind-Value="_search" /></ExitsField>
-        <Button OnClick="SearchAsync">Search</Button>
-    </div>
-    @if (!string.IsNullOrWhiteSpace(_error))
-    {
-        <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" />
-    }
-    <div class="org-table-wrap">
+    <div class="org-page">
+        <ExitsPageHeader Title="@L["Customers_Title"]" Subtitle="@L["Customers_Subtitle"]" />
+        <div class="org-toolbar">
+            <ExitsField Label="@L["Common_Search"]"><Input @bind-Value="_search" /></ExitsField>
+            <Button OnClick="SearchAsync">@L["Common_Search"]</Button>
+        </div>
+        <OrgAlert Error="@_error" OnRetry="LoadAsync" RetryLabel="@L["Common_Retry"]" OnDismissError="() => _error = null" />
+        <OrgLoading Active="_loading" />
+
+        @if (!_loading && string.IsNullOrWhiteSpace(_error) && _items.Count == 0)
+        {
+            <OrgEmpty Title="@L["Customers_EmptyTitle"]" Message="@L["Customers_EmptyMessage"]" />
+        }
+        else if (!_loading && _items.Count > 0)
+        {
+        <div class="org-table-wrap">
         <table class="org-table">
             <thead>
                 <tr><th>Name</th><th>Mobile</th><th>Status</th><th>Linked</th></tr>
@@ -35,38 +42,41 @@ else
                     <tr>
                         <td><a href="@($"/customers/{c.CustomerId:D}")">@c.DisplayName</a></td>
                         <td>@c.MobileNumber</td>
-                        <td>@c.Status</td>
-                        <td>@(c.PlatformBusinessCustomerId is null ? "Unlinked" : "Platform customer")</td>
+                        <td><OrgStatusBadge Text="@c.Status" Tone="@c.Status" /></td>
+                        <td><OrgStatusBadge Text="@(c.PlatformBusinessCustomerId is null ? "Unlinked" : "Platform customer")" Tone="@(c.PlatformBusinessCustomerId is null ? null : "success")" /></td>
                     </tr>
                 }
             </tbody>
         </table>
-    </div>
-    <OrgPager Page="_page" PageSize="20" TotalCount="_total" PageChanged="ChangePageAsync" />
+        </div>
+        <OrgPager Page="_page" PageSize="20" TotalCount="_total" PageChanged="ChangePageAsync" />
+        }
 
-    @if (_detail is not null)
-    {
+        @if (!_loading && _detail is not null)
+        {
         <Card Size="@CardSize.Small" Title="@_detail.DisplayName">
-            <p class="org-note">Mobile: @_detail.MobileNumber · Status: @_detail.Status</p>
+            <p class="org-note">Mobile: @_detail.MobileNumber · <OrgStatusBadge Text="@_detail.Status" Tone="@_detail.Status" /></p>
             @if (_credit is not null)
             {
                 <p>Outstanding Utang: @OrgWebUi.Money(_credit.OutstandingAmount) (@_credit.ActiveEntryCount open entries)</p>
             }
             @if (_link is not null)
             {
-                <p>Link status: @_link.Status</p>
+                <p>Link status: <OrgStatusBadge Text="@_link.Status" Tone="@_link.Status" /></p>
             }
             else
             {
                 <p class="org-note">No Personal identity link on file for this customer.</p>
             }
         </Card>
-    }
+        }
+    </div>
 }
 
 @code {
     [Parameter] public Guid CustomerId { get; set; }
 
+    private bool _loading = true;
     private string? _error;
     private string? _search;
     private int _page = 1;
@@ -92,10 +102,12 @@ else
 
     private async Task LoadAsync()
     {
+        _loading = true;
         var list = await CustomerApi.ListAsync(_search, page: _page, pageSize: 20);
         if (!list.IsSuccess || list.Data is null)
         {
             _error = OrgWebUi.Error(list.Error);
+            _loading = false;
             return;
         }
 
@@ -105,6 +117,7 @@ else
         if (CustomerId == Guid.Empty)
         {
             _detail = null;
+            _loading = false;
             return;
         }
 
@@ -122,5 +135,6 @@ else
         {
             _link = null;
         }
+        _loading = false;
     }
 }

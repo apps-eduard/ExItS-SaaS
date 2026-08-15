@@ -13,19 +13,14 @@
 }
 else
 {
+    <div class="org-page">
     <ExitsPageHeader
         Title="@L["SalesDocument_EducationTitle"]"
-        Subtitle="Review how sales documents currently work for this business." />
+        Subtitle="@L["SalesDocuments_Subtitle"]" />
 
-    @if (!string.IsNullOrWhiteSpace(_error))
-    {
-        <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" Style="margin-bottom: 1rem;" />
-    }
-    else if (_loading)
-    {
-        <Spin />
-    }
-    else if (_status is not null)
+    <OrgAlert Error="@_error" RetryLabel="@L["Common_Retry"]" OnRetry="LoadAsync" />
+    <OrgLoading Active="_loading" />
+    @if (!_loading && _status is not null)
     {
         @if (_status.RequiresOwnerAction)
         {
@@ -75,7 +70,7 @@ else
         </Card>
 
         <Card Size="@CardSize.Small" Title="@L["SalesDocument_ComplianceTitle"]">
-            <p><strong>@L["SalesDocument_ComplianceReview"]:</strong> @(_compliance?.ComplianceEligibilityStatus ?? "NotRequested")</p>
+            <p><strong>@L["SalesDocument_ComplianceReview"]:</strong> <OrgStatusBadge Text="@(_compliance?.ComplianceEligibilityStatus ?? "NotRequested")" Tone="@(_compliance?.ComplianceEligibilityStatus ?? "pending")" /></p>
             <p><strong>@L["SalesDocument_ComplianceIssuance"]:</strong>
                 @((_compliance?.TaxDocumentIssuanceEnabled ?? false)
                     ? L["SalesDocument_ComplianceIssuanceEnabled"]
@@ -99,6 +94,11 @@ else
             }
         </Card>
     }
+    else if (!_loading && string.IsNullOrWhiteSpace(_error))
+    {
+        <OrgEmpty Title="@L["Common_Unavailable"]" Message="@L["Error_GenericLoad"]" />
+    }
+    </div>
 }
 
 @code {

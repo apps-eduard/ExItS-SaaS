@@ -4,8 +4,9 @@
 @inject IPosInventoryClient Inventory
 @inject IPlatformAccessClient Platform
 @inject ICurrentUserContext CurrentUser
+@inject IStringLocalizer<OrgWebResources> L
 
-<PageTitle>Expiration lots</PageTitle>
+<PageTitle>@L["Lots_Title"]</PageTitle>
 
 @if (!Shell.CanSee("inventory"))
 {
@@ -13,7 +14,8 @@
 }
 else
 {
-    <ExitsPageHeader Title="Expiration / lots" Subtitle="On-hand lots only. Expired inventory is not sellable stock." />
+    <div class="org-page">
+    <ExitsPageHeader Title="@L["Lots_Title"]" Subtitle="@L["Lots_Subtitle"]" />
     <div class="org-toolbar">
         <select @bind="_window">
             <option value="Expired">Expired</option>
@@ -38,10 +40,14 @@ else
     {
         <p class="org-note">Expired @_result.ExpiredCount · Near expiry @_result.NearExpiryCount (page totals from server).</p>
     }
-    @if (!string.IsNullOrWhiteSpace(_error))
+    <OrgAlert Error="@_error" RetryLabel="@L["Common_Retry"]" OnRetry="LoadAsync" />
+    <OrgLoading Active="_loading" />
+    @if (!_loading && (_result is null || _result.Items.Count == 0))
     {
-        <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" />
+        <OrgEmpty Title="@L["Lots_EmptyTitle"]" Message="@L["Lots_EmptyMessage"]" />
     }
+    else if (!_loading)
+    {
     <div class="org-table-wrap">
         <table class="org-table">
             <thead>
@@ -58,7 +64,7 @@ else
                             <td>@lot.LotNumber</td>
                             <td>@lot.ExpirationDate</td>
                             <td>@lot.QuantityOnHand</td>
-                            <td><span class="org-badge">@lot.ExpiryStatus</span></td>
+                            <td><OrgStatusBadge Text="@lot.ExpiryStatus" Tone="@lot.ExpiryStatus" /></td>
                         </tr>
                     }
                 }
@@ -66,10 +72,13 @@ else
         </table>
     </div>
     <OrgPager Page="_page" PageSize="20" TotalCount="@(_result?.TotalCount ?? 0)" PageChanged="ChangePageAsync" />
+    }
+    </div>
 }
 
 @code {
     private string? _error;
+    private bool _loading = true;
     private string _window = "Days7";
     private string? _from;
     private string? _to;
@@ -105,17 +114,25 @@ else
 
     private async Task LoadAsync()
     {
-        Guid? branch = Guid.TryParse(_branchId, out var id) ? id : null;
-        DateOnly? from = DateOnly.TryParse(_from, out var f) ? f : null;
-        DateOnly? to = DateOnly.TryParse(_to, out var t) ? t : null;
-        var result = await Inventory.ListExpiringLotsAsync(_window, from, to, branch, _search, _page, 20);
-        if (!result.IsSuccess)
+        _loading = true;
+        try
         {
-            _error = OrgWebUi.Error(result.Error);
-            return;
-        }
+            Guid? branch = Guid.TryParse(_branchId, out var id) ? id : null;
+            DateOnly? from = DateOnly.TryParse(_from, out var f) ? f : null;
+            DateOnly? to = DateOnly.TryParse(_to, out var t) ? t : null;
+            var result = await Inventory.ListExpiringLotsAsync(_window, from, to, branch, _search, _page, 20);
+            if (!result.IsSuccess)
+            {
+                _error = OrgWebUi.Error(result.Error);
+                return;
+            }
 
-        _result = result.Data;
-        _error = null;
+            _result = result.Data;
+            _error = null;
+        }
+        finally
+        {
+            _loading = false;
+        }
     }
 }

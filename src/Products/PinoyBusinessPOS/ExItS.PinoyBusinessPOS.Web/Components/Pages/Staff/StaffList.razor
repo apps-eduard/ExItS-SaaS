@@ -5,8 +5,9 @@
 @inject IPlatformAccessClient Platform
 @inject IPosPermissionClient Permissions
 @inject NavigationManager Nav
+@inject IStringLocalizer<OrgWebResources> L
 
-<PageTitle>Staff</PageTitle>
+<PageTitle>@L["Staff_Title"]</PageTitle>
 
 @if (!Shell.CanSee("staff"))
 {
@@ -14,26 +15,27 @@
 }
 else
 {
-    <ExitsPageHeader Title="Staff & users" Subtitle="Organization-scoped staff identities. Passwords are never shown. Personal customers are not staff.">
-        <a class="ant-btn ant-btn-sm" href="/staff/invite">Invite staff</a>
-    </ExitsPageHeader>
+    <div class="org-page">
+        <ExitsPageHeader Title="@L["Staff_Title"]" Subtitle="@L["Staff_Subtitle"]">
+            <a class="ant-btn ant-btn-sm" href="/staff/invite">@L["Staff_Invite"]</a>
+        </ExitsPageHeader>
 
-    <div class="org-toolbar">
-        <ExitsField Label="Status"><Input @bind-Value="_status" Placeholder="Active / Suspended" /></ExitsField>
-        <Button OnClick="LoadAsync">Filter</Button>
-    </div>
+        <div class="org-toolbar">
+            <ExitsField Label="@L["Common_Status"]"><Input @bind-Value="_status" Placeholder="Active / Suspended" /></ExitsField>
+            <Button OnClick="LoadAsync">@L["Common_Filter"]</Button>
+        </div>
 
-    @if (!string.IsNullOrWhiteSpace(_error))
-    {
-        <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" />
-    }
+        <OrgAlert Error="@_error" OnRetry="LoadAsync" RetryLabel="@L["Common_Retry"]" OnDismissError="() => _error = null" />
+        <OrgLoading Active="_loading" />
 
-    @if (_loading)
-    {
-        <p class="org-note">Loading…</p>
-    }
-    else
-    {
+        @if (!_loading && string.IsNullOrWhiteSpace(_error) && _rows.Count == 0)
+        {
+            <OrgEmpty Title="@L["Staff_EmptyTitle"]" Message="@L["Staff_EmptyMessage"]">
+                <a class="ant-btn ant-btn-primary" href="/staff/invite">@L["Staff_Invite"]</a>
+            </OrgEmpty>
+        }
+        else if (!_loading && _rows.Count > 0)
+        {
         <div class="org-table-wrap">
             <table class="org-table">
                 <thead>
@@ -47,7 +49,7 @@ else
                             <td>@row.Member.Email</td>
                             <td>@row.Member.Role</td>
                             <td>@(row.PosRole ?? "—")</td>
-                            <td><span class="org-badge">@row.Member.Status</span></td>
+                            <td><OrgStatusBadge Text="@row.Member.Status" Tone="@row.Member.Status" /></td>
                             <td>
                                 <a href="@($"/staff/{row.Member.Id:D}")">Manage</a>
                             </td>
@@ -57,7 +59,8 @@ else
             </table>
         </div>
         <OrgPager Page="_page" PageSize="_pageSize" TotalCount="_total" Busy="_loading" PageChanged="ChangePageAsync" />
-    }
+        }
+    </div>
 }
 
 @code {

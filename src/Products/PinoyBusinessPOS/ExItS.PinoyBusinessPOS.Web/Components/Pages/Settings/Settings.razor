@@ -2,8 +2,9 @@
 @attribute [Authorize]
 @inject OrgWebShellState Shell
 @inject IPosOperationalSetupClient Setup
+@inject IStringLocalizer<OrgWebResources> L
 
-<PageTitle>Settings</PageTitle>
+<PageTitle>@L["Settings_Title"]</PageTitle>
 
 @if (!Shell.CanSee("settings"))
 {
@@ -11,18 +12,13 @@
 }
 else
 {
-    <ExitsPageHeader Title="Settings" Subtitle="Organization POS and cash-handling configuration. Changes apply to future shifts." />
-    @if (!string.IsNullOrWhiteSpace(_error))
+    <div class="org-page org-page--form">
+    <ExitsPageHeader Title="@L["Settings_Title"]" Subtitle="@L["Settings_Subtitle"]" />
+    <OrgAlert Error="@_error" Success="@_ok" RetryLabel="@L["Common_Retry"]" OnRetry="LoadAsync" />
+    <OrgLoading Active="_loading" />
+    @if (!_loading && _dto is not null)
     {
-        <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" />
-    }
-    @if (!string.IsNullOrWhiteSpace(_ok))
-    {
-        <Alert Type="@AlertType.Success" Message="@_ok" ShowIcon="true" />
-    }
-    @if (_dto is not null)
-    {
-        <Card Size="@CardSize.Small" Title="General / POS">
+        <OrgSection Title="General and POS" Subtitle="Set the business details shown by POS.">
             <div class="org-form">
                 <ExitsField Label="Store display name"><Input @bind-Value="_store" /></ExitsField>
                 <ExitsField Label="Currency"><Input @bind-Value="_currency" /></ExitsField>
@@ -33,8 +29,8 @@ else
                 <ExitsField Label="Business address"><Input @bind-Value="_address" /></ExitsField>
                 <ExitsField Label="Contact phone"><Input @bind-Value="_phone" /></ExitsField>
             </div>
-        </Card>
-        <Card Size="@CardSize.Small" Title="Cash handling">
+        </OrgSection>
+        <OrgSection Title="Cash handling" Subtitle="Configure counting rules and denomination helpers for future shifts.">
             <p class="org-note">Cash Count Policy. Changes apply to the next shift. An already-open shift keeps the policy it started with.</p>
             <label>
                 Cash Count Policy
@@ -72,7 +68,7 @@ else
                     <Button Type="@ButtonType.Default" Loading="_denomBusy" OnClick="AddDenominationAsync">Add denomination</Button>
                 </div>
             }
-        </Card>
+        </OrgSection>
         @if (CanManage)
         {
             <Button Type="@ButtonType.Primary" Loading="_busy" OnClick="SaveAsync">Save settings</Button>
@@ -82,10 +78,12 @@ else
             <p class="org-note">You can view these settings but cannot change them.</p>
         }
     }
+    </div>
 }
 
 @code {
     private bool _busy;
+    private bool _loading = true;
     private bool _denomBusy;
     private string? _error;
     private string? _ok;
@@ -104,17 +102,28 @@ else
 
     private bool CanManage => Shell.Can(UtangCapability.ManageOperationalSetup) || Shell.IsOrgOwner;
 
-    protected override async Task OnInitializedAsync()
-    {
-        var result = await Setup.GetAsync();
-        if (!result.IsSuccess || result.Data is null)
-        {
-            _error = OrgWebUi.Error(result.Error);
-            return;
-        }
+    protected override Task OnInitializedAsync() => LoadAsync();
 
-        Apply(result.Data);
-        await LoadDenominationsAsync();
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        try
+        {
+            var result = await Setup.GetAsync();
+            if (!result.IsSuccess || result.Data is null)
+            {
+                _error = OrgWebUi.Error(result.Error);
+                return;
+            }
+
+            Apply(result.Data);
+            await LoadDenominationsAsync();
+            _error = null;
+        }
+        finally
+        {
+            _loading = false;
+        }
     }
 
     private void Apply(PosOperationalSetupDto dto)

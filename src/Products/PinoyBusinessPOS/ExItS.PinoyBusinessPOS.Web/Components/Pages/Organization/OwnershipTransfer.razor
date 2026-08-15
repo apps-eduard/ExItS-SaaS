@@ -3,8 +3,9 @@
 @inject OrgWebShellState Shell
 @inject ICurrentUserContext CurrentUser
 @inject IPlatformAccessClient Platform
+@inject IStringLocalizer<OrgWebResources> L
 
-<PageTitle>Ownership transfer</PageTitle>
+<PageTitle>@L["Ownership_Title"]</PageTitle>
 
 @if (!Shell.CanSee("ownership-transfer"))
 {
@@ -12,20 +13,12 @@
 }
 else
 {
-    <ExitsPageHeader
-        Title="Ownership transfer"
-        Subtitle="Transfer ownership gives another ExItS member control of this business. The business keeps its records; only the Owner relationship changes." />
+    <div class="org-page org-page--form">
+    <ExitsPageHeader Title="@L["Ownership_Title"]" Subtitle="@L["Ownership_Subtitle"]" />
+    <OrgAlert Error="@_error" Success="@_ok" RetryLabel="@L["Common_Retry"]" OnRetry="LoadPendingAsync" />
+    <OrgLoading Active="_loading" />
 
-    @if (!string.IsNullOrWhiteSpace(_error))
-    {
-        <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" />
-    }
-    @if (!string.IsNullOrWhiteSpace(_ok))
-    {
-        <Alert Type="@AlertType.Success" Message="@_ok" ShowIcon="true" />
-    }
-
-    @if (_pending is not null)
+    @if (!_loading && _pending is not null)
     {
         <Card Size="@CardSize.Small" Title="Ownership transfer pending">
             <p class="org-note">
@@ -35,7 +28,7 @@ else
             <Button Type="@ButtonType.Default" Danger Loading="_busy" OnClick="CancelAsync">Cancel transfer</Button>
         </Card>
     }
-    else
+    else if (!_loading)
     {
         <Card Size="@CardSize.Small" Title="Transfer ownership">
             <Alert Type="@AlertType.Warning"
@@ -65,10 +58,12 @@ else
             }
         </Card>
     }
+    </div>
 }
 
 @code {
     private bool _busy;
+    private bool _loading = true;
     private string? _error;
     private string? _ok;
     private string? _targetInput;
@@ -83,21 +78,29 @@ else
 
     private async Task LoadPendingAsync()
     {
+        _loading = true;
         _error = null;
-        var orgId = CurrentUser.Session?.OrganizationId;
-        if (orgId is null)
+        try
         {
-            return;
-        }
+            var orgId = CurrentUser.Session?.OrganizationId;
+            if (orgId is null)
+            {
+                return;
+            }
 
-        var result = await Platform.GetPendingOwnershipTransferAsync(orgId.Value);
-        if (!result.IsSuccess)
+            var result = await Platform.GetPendingOwnershipTransferAsync(orgId.Value);
+            if (!result.IsSuccess)
+            {
+                _error = OrgWebUi.Error(result.Error);
+                return;
+            }
+
+            _pending = result.Data;
+        }
+        finally
         {
-            _error = OrgWebUi.Error(result.Error);
-            return;
+            _loading = false;
         }
-
-        _pending = result.Data;
     }
 
     private async Task ResolveAsync()

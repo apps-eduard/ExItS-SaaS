@@ -2,8 +2,9 @@
 @attribute [Authorize]
 @inject OrgWebShellState Shell
 @inject IPosPermissionClient Permissions
+@inject IStringLocalizer<OrgWebResources> L
 
-<PageTitle>Roles</PageTitle>
+<PageTitle>@L["Roles_Title"]</PageTitle>
 
 @if (!Shell.CanSee("roles"))
 {
@@ -11,15 +12,19 @@
 }
 else
 {
-    <ExitsPageHeader Title="Roles & permissions" Subtitle="POS roles are system-defined. Organization Admin does not invent a custom RBAC designer." />
-    <p class="org-note">Authorization is always enforced on the server. Navigation hides sections the current user cannot use.</p>
+    <div class="org-page">
+        <ExitsPageHeader Title="@L["Roles_Title"]" Subtitle="@L["Roles_Subtitle"]" />
+        <p class="org-note">Permissions are enforced on the server. Navigation reflects the sections available to the signed-in user.</p>
 
-    @if (_roles.Count == 0)
-    {
-        <p class="org-note">@(_error ?? "Loading…")</p>
-    }
-    else
-    {
+        <OrgAlert Error="@_error" OnRetry="LoadAsync" RetryLabel="@L["Common_Retry"]" OnDismissError="() => _error = null" />
+        <OrgLoading Active="_loading" />
+
+        @if (!_loading && string.IsNullOrWhiteSpace(_error) && _roles.Count == 0)
+        {
+            <OrgEmpty Title="No roles available" Message="No POS roles are currently available for this organization." />
+        }
+        else if (!_loading && _roles.Count > 0)
+        {
         <div class="org-table-wrap">
             <table class="org-table">
                 <thead>
@@ -43,15 +48,21 @@ else
             <li>Inventory Staff — stock, transfers, lots</li>
             <li>Reporting User — reports without operational selling</li>
         </ul>
-    }
+        }
+    </div>
 }
 
 @code {
+    private bool _loading = true;
     private string? _error;
     private List<PosRoleDto> _roles = [];
 
-    protected override async Task OnInitializedAsync()
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
     {
+        _loading = true;
+        _error = null;
         var result = await Permissions.ListRolesAsync();
         if (result.IsSuccess && result.Data is not null)
         {
@@ -61,5 +72,6 @@ else
         {
             _error = OrgWebUi.Error(result.Error);
         }
+        _loading = false;
     }
 }

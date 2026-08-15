@@ -3,8 +3,9 @@
 @inject OrgWebShellState Shell
 @inject ICurrentUserContext CurrentUser
 @inject IPlatformAccessClient Platform
+@inject IStringLocalizer<OrgWebResources> L
 
-<PageTitle>Subscription</PageTitle>
+<PageTitle>@L["Subscription_Title"]</PageTitle>
 
 @if (!Shell.CanSee("subscription"))
 {
@@ -12,20 +13,23 @@
 }
 else
 {
-    <ExitsPageHeader Title="Subscription & entitlements" Subtitle="Read-only commercial status. Purchasing is not implemented in Organization Admin." />
-    @if (!string.IsNullOrWhiteSpace(_error))
-    {
-        <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" />
-    }
-    @if (_sub is not null)
+    <div class="org-page">
+    <ExitsPageHeader Title="@L["Subscription_Title"]" Subtitle="@L["Subscription_Subtitle"]" />
+    <OrgAlert Error="@_error" RetryLabel="@L["Common_Retry"]" OnRetry="LoadAsync" />
+    <OrgLoading Active="_loading" />
+    @if (!_loading && _sub is not null)
     {
         <div class="org-metrics">
-            <div class="org-metric"><div class="org-metric__label">Plan</div><div class="org-metric__value">@(_sub.PlanDisplayName ?? _sub.PlanKey ?? "—")</div></div>
-            <div class="org-metric"><div class="org-metric__label">Status</div><div class="org-metric__value">@_sub.Status</div></div>
-            <div class="org-metric"><div class="org-metric__label">Period end</div><div class="org-metric__value">@(_sub.CurrentPeriodEndUtc?.LocalDateTime.ToString("d") ?? "—")</div></div>
+            <OrgMetricCard Label="Plan" Value="@(_sub.PlanDisplayName ?? _sub.PlanKey ?? "—")" />
+            <OrgMetricCard Label="Status" Value="@_sub.Status" />
+            <OrgMetricCard Label="Period end" Value="@(_sub.CurrentPeriodEndUtc?.LocalDateTime.ToString("d") ?? "—")" />
         </div>
     }
-    @if (_entitlement is not null)
+    else if (!_loading && string.IsNullOrWhiteSpace(_error))
+    {
+        <OrgEmpty Title="@L["Common_Unavailable"]" Message="@L["Error_GenericLoad"]" />
+    }
+    @if (!_loading && _entitlement is not null)
     {
         <p class="org-note">Entitlement @_entitlement.PlanCode v@_entitlement.SnapshotVersion · @_entitlement.SubscriptionStatus · expires @_entitlement.ExpiresAtUtc</p>
     }
@@ -40,24 +44,33 @@ else
             </ul>
         </Card>
     }
+    </div>
 }
 
 @code {
     private string? _error;
+    private bool _loading = true;
     private PlatformSubscriptionDto? _sub;
     private PlatformEntitlementSnapshotDto? _entitlement;
 
-    protected override async Task OnInitializedAsync()
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
     {
-        var orgId = CurrentUser.Session?.OrganizationId;
-        if (orgId is null) return;
-        var sub = await Platform.GetCurrentSubscriptionAsync(orgId.Value, PosProductCodes.PinoyBusinessPos);
-        var ent = await Platform.GetLatestEntitlementAsync(orgId.Value, PosProductCodes.PinoyBusinessPos);
-        _sub = sub.Data;
-        _entitlement = ent.Data;
-        if (!sub.IsSuccess && !ent.IsSuccess)
+        _loading = true;
+        try
         {
-            _error = OrgWebUi.Error(sub.Error);
+            var orgId = CurrentUser.Session?.OrganizationId;
+            if (orgId is null) return;
+            var sub = await Platform.GetCurrentSubscriptionAsync(orgId.Value, PosProductCodes.PinoyBusinessPos);
+            var ent = await Platform.GetLatestEntitlementAsync(orgId.Value, PosProductCodes.PinoyBusinessPos);
+            _sub = sub.Data;
+            _entitlement = ent.Data;
+            _error = !sub.IsSuccess && !ent.IsSuccess ? OrgWebUi.Error(sub.Error) : null;
+        }
+        finally
+        {
+            _loading = false;
         }
     }
 }

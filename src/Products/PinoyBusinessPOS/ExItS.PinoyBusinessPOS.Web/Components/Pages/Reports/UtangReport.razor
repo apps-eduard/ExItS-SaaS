@@ -3,8 +3,9 @@
 @inject OrgWebShellState Shell
 @inject IPosReportingClient Reporting
 @inject IPosCustomerClient Customers
+@inject IStringLocalizer<OrgWebResources> L
 
-<PageTitle>Utang report</PageTitle>
+<PageTitle>@L["Utang_Title"]</PageTitle>
 
 @if (!Shell.CanSee("reports"))
 {
@@ -12,23 +13,22 @@
 }
 else
 {
-    <ExitsPageHeader Title="Utang / receivables" Subtitle="Business Utang remains on the POS ledger. This is a management view of outstanding balances." />
+    <div class="org-page">
+    <ExitsPageHeader Title="@L["Utang_Title"]" Subtitle="@L["Utang_Subtitle"]" />
     <div class="org-toolbar">
         <ExitsField Label="From"><Input @bind-Value="_from" /></ExitsField>
         <ExitsField Label="To"><Input @bind-Value="_to" /></ExitsField>
         <Button OnClick="LoadAsync">Run</Button>
     </div>
-    @if (!string.IsNullOrWhiteSpace(_error))
-    {
-        <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" />
-    }
-    else if (_report is not null)
+    <OrgAlert Error="@_error" RetryLabel="@L["Common_Retry"]" OnRetry="LoadAsync" />
+    <OrgLoading Active="_loading" />
+    @if (!_loading && _report is not null)
     {
         <div class="org-metrics">
-            <div class="org-metric"><div class="org-metric__label">Outstanding</div><div class="org-metric__value">@OrgWebUi.Money(_report.ActiveCustomerOutstanding)</div></div>
-            <div class="org-metric"><div class="org-metric__label">Overdue</div><div class="org-metric__value">@OrgWebUi.Money(_report.OverdueAmount)</div></div>
-            <div class="org-metric"><div class="org-metric__label">Customers</div><div class="org-metric__value">@_report.CustomersWithBalances</div></div>
-            <div class="org-metric"><div class="org-metric__label">Repayments</div><div class="org-metric__value">@OrgWebUi.Money(_report.RepaymentsRecordedInPeriod)</div></div>
+            <OrgMetricCard Label="Outstanding" Value="@OrgWebUi.Money(_report.ActiveCustomerOutstanding)" />
+            <OrgMetricCard Label="Overdue" Value="@OrgWebUi.Money(_report.OverdueAmount)" />
+            <OrgMetricCard Label="Customers" Value="@_report.CustomersWithBalances.ToString()" />
+            <OrgMetricCard Label="Repayments" Value="@OrgWebUi.Money(_report.RepaymentsRecordedInPeriod)" />
         </div>
         <h3>Customer balances</h3>
         <div class="org-table-wrap">
@@ -43,7 +43,13 @@ else
             </table>
         </div>
     }
+    else if (!_loading && string.IsNullOrWhiteSpace(_error))
+    {
+        <OrgEmpty Title="@L["Utang_EmptyTitle"]" Message="@L["Utang_EmptyMessage"]" />
+    }
 
+    @if (!_loading)
+    {
     <Card Size="@CardSize.Small" Title="Overdue customers (paged)">
         <div class="org-table-wrap">
             <table class="org-table">
@@ -58,12 +64,15 @@ else
         </div>
         <OrgPager Page="_page" PageSize="20" TotalCount="_overdueTotal" PageChanged="ChangePageAsync" />
     </Card>
+    }
+    </div>
 }
 
 @code {
     private string? _from;
     private string? _to;
     private string? _error;
+    private bool _loading = true;
     private PosUtangReportDto? _report;
     private int _page = 1;
     private int _overdueTotal;
@@ -79,18 +88,26 @@ else
 
     private async Task LoadAsync()
     {
-        DateOnly? from = DateOnly.TryParse(_from, out var f) ? f : null;
-        DateOnly? to = DateOnly.TryParse(_to, out var t) ? t : null;
-        var result = await Reporting.GetUtangReportAsync(from, to);
-        if (!result.IsSuccess)
+        _loading = true;
+        try
         {
-            _error = OrgWebUi.Error(result.Error);
-            return;
-        }
+            DateOnly? from = DateOnly.TryParse(_from, out var f) ? f : null;
+            DateOnly? to = DateOnly.TryParse(_to, out var t) ? t : null;
+            var result = await Reporting.GetUtangReportAsync(from, to);
+            if (!result.IsSuccess)
+            {
+                _error = OrgWebUi.Error(result.Error);
+                return;
+            }
 
-        _report = result.Data;
-        _error = null;
-        await LoadOverdueAsync();
+            _report = result.Data;
+            _error = null;
+            await LoadOverdueAsync();
+        }
+        finally
+        {
+            _loading = false;
+        }
     }
 
     private async Task LoadOverdueAsync()

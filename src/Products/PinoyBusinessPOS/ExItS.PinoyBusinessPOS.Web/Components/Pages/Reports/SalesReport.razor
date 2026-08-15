@@ -2,8 +2,9 @@
 @attribute [Authorize]
 @inject OrgWebShellState Shell
 @inject IPosReportingClient Reporting
+@inject IStringLocalizer<OrgWebResources> L
 
-<PageTitle>Sales report</PageTitle>
+<PageTitle>@L["SalesReport_Title"]</PageTitle>
 
 @if (!Shell.CanSee("reports"))
 {
@@ -11,7 +12,8 @@
 }
 else
 {
-    <ExitsPageHeader Title="Sales report" Subtitle="Server-side aggregates. The browser never loads the full sales history." />
+    <div class="org-page">
+    <ExitsPageHeader Title="@L["SalesReport_Title"]" Subtitle="@L["SalesReport_Subtitle"]" />
     <div class="org-toolbar">
         <ExitsField Label="From"><Input @bind-Value="_from" Placeholder="yyyy-MM-dd" /></ExitsField>
         <ExitsField Label="To"><Input @bind-Value="_to" Placeholder="yyyy-MM-dd" /></ExitsField>
@@ -23,17 +25,15 @@ else
         </select>
         <Button OnClick="LoadAsync">Run</Button>
     </div>
-    @if (!string.IsNullOrWhiteSpace(_error))
-    {
-        <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" />
-    }
-    else if (_report is not null)
+    <OrgAlert Error="@_error" RetryLabel="@L["Common_Retry"]" OnRetry="LoadAsync" />
+    <OrgLoading Active="_loading" />
+    @if (!_loading && _report is not null)
     {
         <div class="org-metrics">
-            <div class="org-metric"><div class="org-metric__label">Completed</div><div class="org-metric__value">@OrgWebUi.Money(_report.CompletedSalesTotal)</div></div>
-            <div class="org-metric"><div class="org-metric__label">Sales</div><div class="org-metric__value">@_report.CompletedSaleCount</div></div>
-            <div class="org-metric"><div class="org-metric__label">Utang</div><div class="org-metric__value">@OrgWebUi.Money(_report.UtangSalesTotal)</div></div>
-            <div class="org-metric"><div class="org-metric__label">Voided</div><div class="org-metric__value">@_report.VoidedSaleCount</div></div>
+            <OrgMetricCard Label="Completed" Value="@OrgWebUi.Money(_report.CompletedSalesTotal)" />
+            <OrgMetricCard Label="Sales" Value="@_report.CompletedSaleCount.ToString()" />
+            <OrgMetricCard Label="Business credit" Value="@OrgWebUi.Money(_report.UtangSalesTotal)" />
+            <OrgMetricCard Label="Voided" Value="@_report.VoidedSaleCount.ToString()" />
         </div>
         <h3>By payment</h3>
         <div class="org-table-wrap">
@@ -72,6 +72,11 @@ else
             </table>
         </div>
     }
+    else if (!_loading && string.IsNullOrWhiteSpace(_error))
+    {
+        <OrgEmpty Title="@L["Common_Unavailable"]" Message="@L["Error_GenericLoad"]" />
+    }
+    </div>
 }
 
 @code {
@@ -79,22 +84,31 @@ else
     private string? _to;
     private string? _payment;
     private string? _error;
+    private bool _loading = true;
     private PosSalesReportDto? _report;
 
     protected override Task OnInitializedAsync() => LoadAsync();
 
     private async Task LoadAsync()
     {
-        DateOnly? from = DateOnly.TryParse(_from, out var f) ? f : null;
-        DateOnly? to = DateOnly.TryParse(_to, out var t) ? t : null;
-        var result = await Reporting.GetSalesReportAsync(from, to, string.IsNullOrWhiteSpace(_payment) ? null : _payment);
-        if (!result.IsSuccess)
+        _loading = true;
+        try
         {
-            _error = OrgWebUi.Error(result.Error);
-            return;
-        }
+            DateOnly? from = DateOnly.TryParse(_from, out var f) ? f : null;
+            DateOnly? to = DateOnly.TryParse(_to, out var t) ? t : null;
+            var result = await Reporting.GetSalesReportAsync(from, to, string.IsNullOrWhiteSpace(_payment) ? null : _payment);
+            if (!result.IsSuccess)
+            {
+                _error = OrgWebUi.Error(result.Error);
+                return;
+            }
 
-        _report = result.Data;
-        _error = null;
+            _report = result.Data;
+            _error = null;
+        }
+        finally
+        {
+            _loading = false;
+        }
     }
 }

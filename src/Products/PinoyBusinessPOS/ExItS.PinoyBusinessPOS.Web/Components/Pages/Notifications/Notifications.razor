@@ -3,8 +3,9 @@
 @inject OrgWebShellState Shell
 @inject ICurrentUserContext CurrentUser
 @inject IPlatformAccessClient Platform
+@inject IStringLocalizer<OrgWebResources> L
 
-<PageTitle>Notifications</PageTitle>
+<PageTitle>@L["Notifications_Title"]</PageTitle>
 
 @if (!Shell.CanSee("notifications"))
 {
@@ -12,16 +13,15 @@
 }
 else
 {
-    <ExitsPageHeader Title="Notifications" Subtitle="Organization in-app alerts from the existing Platform notification store." />
-    @if (!string.IsNullOrWhiteSpace(_error))
+    <div class="org-page">
+    <ExitsPageHeader Title="@L["Notifications_Title"]" Subtitle="@L["Notifications_Subtitle"]" />
+    <OrgAlert Error="@_error" RetryLabel="@L["Common_Retry"]" OnRetry="LoadAsync" />
+    <OrgLoading Active="_loading" />
+    @if (!_loading && _items.Count == 0)
     {
-        <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" />
+        <OrgEmpty Title="@L["Notifications_EmptyTitle"]" Message="@L["Notifications_EmptyMessage"]" />
     }
-    @if (_items.Count == 0)
-    {
-        <ExitsEmptyState Title="No alerts" Message="Management events will appear here when the Platform notification APIs emit them." />
-    }
-    else
+    else if (!_loading)
     {
         <div class="org-table-wrap">
             <table class="org-table">
@@ -31,7 +31,7 @@ else
                     {
                         <tr>
                             <td>@n.CreatedAtUtc.LocalDateTime</td>
-                            <td>@n.Title @(n.IsRead ? "" : "(unread)")</td>
+                            <td>@n.Title @if (!n.IsRead) { <OrgStatusBadge Text="Unread" Tone="info" /> }</td>
                             <td>@n.Preview</td>
                             <td>
                                 @if (!n.IsRead)
@@ -45,27 +45,38 @@ else
             </table>
         </div>
     }
+    </div>
 }
 
 @code {
     private string? _error;
+    private bool _loading = true;
     private List<OrganizationInAppNotificationDto> _items = [];
 
     protected override Task OnInitializedAsync() => LoadAsync();
 
     private async Task LoadAsync()
     {
-        var orgId = CurrentUser.Session?.OrganizationId;
-        if (orgId is null) return;
-        var result = await Platform.GetOrganizationNotificationsAsync(orgId.Value);
-        if (!result.IsSuccess || result.Data is null)
+        _loading = true;
+        try
         {
-            _error = OrgWebUi.Error(result.Error);
-            return;
-        }
+            var orgId = CurrentUser.Session?.OrganizationId;
+            if (orgId is null) return;
+            var result = await Platform.GetOrganizationNotificationsAsync(orgId.Value);
+            if (!result.IsSuccess || result.Data is null)
+            {
+                _error = OrgWebUi.Error(result.Error);
+                return;
+            }
 
-        _items = result.Data.ToList();
-        Shell.UnreadNotificationCount = _items.Count(n => !n.IsRead);
+            _items = result.Data.ToList();
+            Shell.UnreadNotificationCount = _items.Count(n => !n.IsRead);
+            _error = null;
+        }
+        finally
+        {
+            _loading = false;
+        }
     }
 
     private async Task ReadAsync(OrganizationInAppNotificationDto note)

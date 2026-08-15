@@ -2,8 +2,9 @@
 @attribute [Authorize]
 @inject OrgWebShellState Shell
 @inject IPosReportingClient Reporting
+@inject IStringLocalizer<OrgWebResources> L
 
-<PageTitle>Inventory report</PageTitle>
+<PageTitle>@L["InventoryReport_Title"]</PageTitle>
 
 @if (!Shell.CanSee("reports"))
 {
@@ -11,17 +12,16 @@
 }
 else
 {
-    <ExitsPageHeader Title="Inventory report" Subtitle="Server-side stock status. Low-stock rows are a bounded report payload, not the entire catalog history." />
-    @if (!string.IsNullOrWhiteSpace(_error))
-    {
-        <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" />
-    }
-    else if (_report is not null)
+    <div class="org-page">
+    <ExitsPageHeader Title="@L["InventoryReport_Title"]" Subtitle="@L["InventoryReport_Subtitle"]" />
+    <OrgAlert Error="@_error" RetryLabel="@L["Common_Retry"]" OnRetry="LoadAsync" />
+    <OrgLoading Active="_loading" />
+    @if (!_loading && _report is not null)
     {
         <div class="org-metrics">
-            <div class="org-metric"><div class="org-metric__label">Tracked</div><div class="org-metric__value">@_report.TrackedCount</div></div>
-            <div class="org-metric"><div class="org-metric__label">Low stock</div><div class="org-metric__value">@_report.LowStockCount</div></div>
-            <div class="org-metric"><div class="org-metric__label">Out of stock</div><div class="org-metric__value">@_report.OutOfStockCount</div></div>
+            <OrgMetricCard Label="Tracked" Value="@_report.TrackedCount.ToString()" />
+            <OrgMetricCard Label="Low stock" Value="@_report.LowStockCount.ToString()" />
+            <OrgMetricCard Label="Out of stock" Value="@_report.OutOfStockCount.ToString()" />
         </div>
         <div class="org-table-wrap">
             <table class="org-table">
@@ -34,28 +34,45 @@ else
                             <td>@row.Sku</td>
                             <td>@row.OnHandQuantity</td>
                             <td>@row.ReorderLevel</td>
-                            <td>@(row.IsLowStock ? "Low" : "") @(row.IsOutOfStock ? "Out" : "")</td>
+                            <td><OrgStatusBadge Text="@(row.IsOutOfStock ? "Out of stock" : row.IsLowStock ? "Low stock" : "Normal")" Tone="@(row.IsOutOfStock ? "out" : row.IsLowStock ? "low" : "normal")" /></td>
                         </tr>
                     }
                 </tbody>
             </table>
         </div>
     }
+    else if (!_loading && string.IsNullOrWhiteSpace(_error))
+    {
+        <OrgEmpty Title="@L["Stock_EmptyTitle"]" Message="@L["Stock_EmptyMessage"]" />
+    }
+    </div>
 }
 
 @code {
     private string? _error;
+    private bool _loading = true;
     private PosInventoryStatusReportDto? _report;
 
-    protected override async Task OnInitializedAsync()
-    {
-        var result = await Reporting.GetInventoryStatusReportAsync();
-        if (!result.IsSuccess)
-        {
-            _error = OrgWebUi.Error(result.Error);
-            return;
-        }
+    protected override Task OnInitializedAsync() => LoadAsync();
 
-        _report = result.Data;
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        try
+        {
+            var result = await Reporting.GetInventoryStatusReportAsync();
+            if (!result.IsSuccess)
+            {
+                _error = OrgWebUi.Error(result.Error);
+                return;
+            }
+
+            _report = result.Data;
+            _error = null;
+        }
+        finally
+        {
+            _loading = false;
+        }
     }
 }

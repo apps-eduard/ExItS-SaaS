@@ -4,8 +4,9 @@
 @inject OrgWebShellState Shell
 @inject IPosInventoryClient Inventory
 @inject NavigationManager Nav
+@inject IStringLocalizer<OrgWebResources> L
 
-<PageTitle>Inventory</PageTitle>
+<PageTitle>@L["Stock_Title"]</PageTitle>
 
 @if (!Shell.CanSee("inventory"))
 {
@@ -13,7 +14,8 @@
 }
 else
 {
-    <ExitsPageHeader Title="Stock overview" Subtitle="Organization-level tracked stock. Branch overlay appears on lots and transfers. Adjustments are audited stock movements." />
+    <div class="org-page">
+    <ExitsPageHeader Title="@L["Stock_Title"]" Subtitle="@L["Stock_Subtitle"]" />
     <div class="org-subnav">
         <a href="/inventory">Stock</a>
         <a href="/inventory/transfers">Transfers</a>
@@ -24,10 +26,14 @@ else
         <label><input type="checkbox" @bind="_lowStock" /> Low stock</label>
         <Button OnClick="SearchAsync">Filter</Button>
     </div>
-    @if (!string.IsNullOrWhiteSpace(_error))
+    <OrgAlert Error="@_error" RetryLabel="@L["Common_Retry"]" OnRetry="LoadAsync" />
+    <OrgLoading Active="_loading" />
+    @if (!_loading && _items.Count == 0)
     {
-        <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" />
+        <OrgEmpty Title="@L["Stock_EmptyTitle"]" Message="@L["Stock_EmptyMessage"]" />
     }
+    else if (!_loading)
+    {
     <div class="org-table-wrap">
         <table class="org-table">
             <thead>
@@ -41,7 +47,7 @@ else
                         <td>@row.OnHandQuantity</td>
                         <td>@(row.SellableQuantity?.ToString("N2") ?? "—")</td>
                         <td>@(row.ExpiredQuantity?.ToString("N2") ?? "—")</td>
-                        <td>@row.StockStatus @(row.IsLowStock ? "· low" : "")</td>
+                        <td><OrgStatusBadge Text="@(row.IsLowStock ? $"{row.StockStatus} · low" : row.StockStatus)" Tone="@(row.IsLowStock ? "warning" : row.StockStatus)" /></td>
                         <td><a href="@($"/inventory/{row.ProductId:D}")">Adjust / history</a></td>
                     </tr>
                 }
@@ -49,6 +55,7 @@ else
         </table>
     </div>
     <OrgPager Page="_page" PageSize="20" TotalCount="_total" Busy="_busy" PageChanged="ChangePageAsync" />
+    }
 
     @if (_detail is not null)
     {
@@ -92,12 +99,14 @@ else
             </div>
         </Card>
     }
+    </div>
 }
 
 @code {
     [Parameter] public Guid ProductId { get; set; }
 
     private bool _busy;
+    private bool _loading = true;
     private string? _error;
     private string? _search;
     private bool _lowStock;
@@ -128,28 +137,36 @@ else
 
     private async Task LoadAsync()
     {
-        var list = await Inventory.ListAsync(_search, tracked: true, lowStock: _lowStock ? true : null, page: _page, pageSize: 20);
-        if (!list.IsSuccess || list.Data is null)
+        _loading = true;
+        try
         {
-            _error = OrgWebUi.Error(list.Error);
-            return;
-        }
+            var list = await Inventory.ListAsync(_search, tracked: true, lowStock: _lowStock ? true : null, page: _page, pageSize: 20);
+            if (!list.IsSuccess || list.Data is null)
+            {
+                _error = OrgWebUi.Error(list.Error);
+                return;
+            }
 
-        _items = list.Data.Items;
-        _total = list.Data.TotalCount;
-        _error = null;
+            _items = list.Data.Items;
+            _total = list.Data.TotalCount;
+            _error = null;
 
-        if (ProductId != Guid.Empty)
-        {
-            var detail = await Inventory.GetAsync(ProductId);
-            _detail = detail.Data;
-            var moves = await Inventory.ListMovementsAsync(ProductId, page: 1, pageSize: 20);
-            _movements = moves.Data?.Items ?? [];
+            if (ProductId != Guid.Empty)
+            {
+                var detail = await Inventory.GetAsync(ProductId);
+                _detail = detail.Data;
+                var moves = await Inventory.ListMovementsAsync(ProductId, page: 1, pageSize: 20);
+                _movements = moves.Data?.Items ?? [];
+            }
+            else
+            {
+                _detail = null;
+                _movements = [];
+            }
         }
-        else
+        finally
         {
-            _detail = null;
-            _movements = [];
+            _loading = false;
         }
     }
 

@@ -2,8 +2,9 @@
 @attribute [Authorize]
 @inject OrgWebShellState Shell
 @inject IPosReportingClient Reporting
+@inject IStringLocalizer<OrgWebResources> L
 
-<PageTitle>Shift report</PageTitle>
+<PageTitle>@L["ShiftsReport_Title"]</PageTitle>
 
 @if (!Shell.CanSee("reports"))
 {
@@ -11,22 +12,21 @@
 }
 else
 {
-    <ExitsPageHeader Title="Cashier / shift report" Subtitle="Expected vs counted cash and variance. Skipped counts stay null — they are not zero." />
+    <div class="org-page">
+    <ExitsPageHeader Title="@L["ShiftsReport_Title"]" Subtitle="@L["ShiftsReport_Subtitle"]" />
     <div class="org-toolbar">
         <ExitsField Label="From"><Input @bind-Value="_from" /></ExitsField>
         <ExitsField Label="To"><Input @bind-Value="_to" /></ExitsField>
         <Button OnClick="LoadAsync">Run</Button>
     </div>
-    @if (!string.IsNullOrWhiteSpace(_error))
-    {
-        <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" />
-    }
-    else if (_shifts is not null && _variance is not null)
+    <OrgAlert Error="@_error" RetryLabel="@L["Common_Retry"]" OnRetry="LoadAsync" />
+    <OrgLoading Active="_loading" />
+    @if (!_loading && _shifts is not null && _variance is not null)
     {
         <div class="org-metrics">
-            <div class="org-metric"><div class="org-metric__label">Shifts</div><div class="org-metric__value">@_shifts.ShiftCount</div></div>
-            <div class="org-metric"><div class="org-metric__label">Signed variance</div><div class="org-metric__value">@OrgWebUi.Money(_variance.TotalSignedVariance)</div></div>
-            <div class="org-metric"><div class="org-metric__label">Absolute variance</div><div class="org-metric__value">@OrgWebUi.Money(_variance.TotalAbsoluteVariance)</div></div>
+            <OrgMetricCard Label="Shifts" Value="@_shifts.ShiftCount.ToString()" />
+            <OrgMetricCard Label="Signed variance" Value="@OrgWebUi.Money(_variance.TotalSignedVariance)" />
+            <OrgMetricCard Label="Absolute variance" Value="@OrgWebUi.Money(_variance.TotalAbsoluteVariance)" />
         </div>
         <div class="org-table-wrap">
             <table class="org-table">
@@ -41,19 +41,25 @@ else
                             <td>@(row.ExpectedCashAmount?.ToString("N2") ?? "—")</td>
                             <td>@(row.ClosingCashAmount?.ToString("N2") ?? "—")</td>
                             <td>@(row.CashVarianceAmount?.ToString("N2") ?? "—")</td>
-                            <td>@row.CashCountState</td>
+                            <td><OrgStatusBadge Text="@row.CashCountState" Tone="@row.CashCountState" /></td>
                         </tr>
                     }
                 </tbody>
             </table>
         </div>
     }
+    else if (!_loading && string.IsNullOrWhiteSpace(_error))
+    {
+        <OrgEmpty Title="@L["Shifts_EmptyTitle"]" Message="@L["Shifts_EmptyMessage"]" />
+    }
+    </div>
 }
 
 @code {
     private string? _from;
     private string? _to;
     private string? _error;
+    private bool _loading = true;
     private PosShiftSummaryReportDto? _shifts;
     private PosCashVarianceReportDto? _variance;
 
@@ -61,21 +67,29 @@ else
 
     private async Task LoadAsync()
     {
-        DateOnly? from = DateOnly.TryParse(_from, out var f) ? f : null;
-        DateOnly? to = DateOnly.TryParse(_to, out var t) ? t : null;
-        var shifts = Reporting.GetShiftSummaryReportAsync(from, to);
-        var variance = Reporting.GetCashVarianceReportAsync(from, to);
-        await Task.WhenAll(shifts, variance);
-        var s = await shifts;
-        var v = await variance;
-        if (!s.IsSuccess || !v.IsSuccess)
+        _loading = true;
+        try
         {
-            _error = OrgWebUi.Error(s.Error ?? v.Error);
-            return;
-        }
+            DateOnly? from = DateOnly.TryParse(_from, out var f) ? f : null;
+            DateOnly? to = DateOnly.TryParse(_to, out var t) ? t : null;
+            var shifts = Reporting.GetShiftSummaryReportAsync(from, to);
+            var variance = Reporting.GetCashVarianceReportAsync(from, to);
+            await Task.WhenAll(shifts, variance);
+            var s = await shifts;
+            var v = await variance;
+            if (!s.IsSuccess || !v.IsSuccess)
+            {
+                _error = OrgWebUi.Error(s.Error ?? v.Error);
+                return;
+            }
 
-        _shifts = s.Data;
-        _variance = v.Data;
-        _error = null;
+            _shifts = s.Data;
+            _variance = v.Data;
+            _error = null;
+        }
+        finally
+        {
+            _loading = false;
+        }
     }
 }

@@ -4,63 +4,68 @@
 @inject ICurrentUserContext CurrentUser
 @inject IPlatformAccessClient Platform
 @inject IPosPermissionClient Permissions
+@inject IStringLocalizer<OrgWebResources> L
 
-<PageTitle>Staff detail</PageTitle>
+<PageTitle>@L["Staff_Title"]</PageTitle>
 
 @if (!Shell.CanSee("staff"))
 {
     <AccessDeniedPanel />
 }
-else if (_member is null)
-{
-    <p class="org-note">@(_error ?? "Loading…")</p>
-}
 else
 {
-    <ExitsPageHeader Title="@(_member.DisplayName ?? _member.Username ?? "Staff")" Subtitle="Organization membership and POS role. Passwords are never displayed." />
-    <p class="org-note">Org role: @_member.Role · Status: @_member.Status · Contact: @_member.Email</p>
-    @if (!string.IsNullOrWhiteSpace(_error))
-    {
-        <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" />
-    }
-    @if (!string.IsNullOrWhiteSpace(_ok))
-    {
-        <Alert Type="@AlertType.Success" Message="@_ok" ShowIcon="true" />
-    }
+    <div class="org-page org-page--narrow">
+        <ExitsPageHeader Title="@L["Staff_Title"]" Subtitle="@L["Staff_Subtitle"]" />
+        <OrgAlert Error="@_error" Success="@_ok" OnRetry="LoadAsync" RetryLabel="@L["Common_Retry"]"
+                  OnDismissError="() => _error = null" OnDismissSuccess="() => _ok = null" />
+        <OrgLoading Active="_loading" />
 
-    <Card Size="@CardSize.Small" Title="POS role">
-        <p class="org-note">System-defined roles only. There is no custom RBAC designer.</p>
-        <select @bind="_posRole">
-            <option value="Cashier">Cashier</option>
-            <option value="InventoryStaff">Inventory Staff</option>
-            <option value="ReportingUser">Reporting User</option>
-            <option value="StoreManager">Store Manager</option>
-            <option value="Admin">Admin</option>
-            <option value="Owner">Owner</option>
-        </select>
-        <Button Loading="_busy" OnClick="AssignPosRoleAsync">Assign POS role</Button>
-        @if (_assignment is not null)
+        @if (!_loading && _member is not null)
         {
-            <p class="org-note">Current: @_assignment.RoleDisplayName (@_assignment.Status)</p>
-            <Button Danger="true" Loading="_busy" OnClick="RevokePosRoleAsync">Revoke POS role</Button>
-        }
-    </Card>
+            <OrgSection Title="@(_member.DisplayName ?? _member.Username ?? L["Staff_Title"].Value)">
+                <p class="org-note">
+                    Organization role: @_member.Role ·
+                    <OrgStatusBadge Text="@_member.Status" Tone="@_member.Status" /> ·
+                    Contact: @_member.Email
+                </p>
+            </OrgSection>
 
-    <Card Size="@CardSize.Small" Title="Membership">
-        @if (string.Equals(_member.Status, "Active", StringComparison.OrdinalIgnoreCase))
-        {
-            <Button Danger="true" Loading="_busy" OnClick="SuspendAsync">Deactivate</Button>
+            <Card Size="@CardSize.Small" Title="POS role">
+                <p class="org-note">Choose one of the system-defined roles for this staff member.</p>
+                <select @bind="_posRole">
+                    <option value="Cashier">Cashier</option>
+                    <option value="InventoryStaff">Inventory Staff</option>
+                    <option value="ReportingUser">Reporting User</option>
+                    <option value="StoreManager">Store Manager</option>
+                    <option value="Admin">Admin</option>
+                    <option value="Owner">Owner</option>
+                </select>
+                <Button Loading="_busy" OnClick="AssignPosRoleAsync">Assign POS role</Button>
+                @if (_assignment is not null)
+                {
+                    <p class="org-note">Current: @_assignment.RoleDisplayName <OrgStatusBadge Text="@_assignment.Status" Tone="@_assignment.Status" /></p>
+                    <Button Danger="true" Loading="_busy" OnClick="RevokePosRoleAsync">Revoke POS role</Button>
+                }
+            </Card>
+
+            <Card Size="@CardSize.Small" Title="Membership">
+                @if (string.Equals(_member.Status, "Active", StringComparison.OrdinalIgnoreCase))
+                {
+                    <Button Danger="true" Loading="_busy" OnClick="SuspendAsync">Deactivate</Button>
+                }
+                else
+                {
+                    <Button Loading="_busy" OnClick="ReactivateAsync">Reactivate</Button>
+                }
+            </Card>
         }
-        else
-        {
-            <Button Loading="_busy" OnClick="ReactivateAsync">Reactivate</Button>
-        }
-    </Card>
+    </div>
 }
 
 @code {
     [Parameter] public Guid MembershipId { get; set; }
 
+    private bool _loading = true;
     private bool _busy;
     private string? _error;
     private string? _ok;
@@ -68,19 +73,33 @@ else
     private PlatformMembershipDto? _member;
     private PosRoleAssignmentDto? _assignment;
 
-    protected override async Task OnParametersSetAsync()
+    protected override Task OnParametersSetAsync() => LoadAsync();
+
+    private async Task LoadAsync()
     {
+        _loading = true;
+        _error = null;
         var orgId = CurrentUser.Session?.OrganizationId;
         if (orgId is null)
         {
+            _error = L["Error_SessionExpired"];
+            _loading = false;
             return;
         }
 
         var members = await Platform.GetOrganizationMembersAsync(orgId.Value, 1, 100);
+        if (!members.IsSuccess || members.Data is null)
+        {
+            _error = OrgWebUi.Error(members.Error, L["Error_GenericLoad"]);
+            _loading = false;
+            return;
+        }
+
         _member = members.Data?.Items.FirstOrDefault(m => m.Id == MembershipId);
         if (_member is null)
         {
             _error = "Staff membership was not found in this organization.";
+            _loading = false;
             return;
         }
 
@@ -90,6 +109,7 @@ else
         {
             _posRole = _assignment.Role;
         }
+        _loading = false;
     }
 
     private async Task AssignPosRoleAsync()

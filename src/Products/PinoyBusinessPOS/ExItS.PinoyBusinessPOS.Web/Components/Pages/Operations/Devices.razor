@@ -3,8 +3,9 @@
 @inject OrgWebShellState Shell
 @inject ICurrentUserContext CurrentUser
 @inject IPlatformAccessClient Platform
+@inject IStringLocalizer<OrgWebResources> L
 
-<PageTitle>POS devices</PageTitle>
+<PageTitle>@L["Devices_Title"]</PageTitle>
 
 @if (!Shell.CanSee("devices"))
 {
@@ -12,15 +13,20 @@
 }
 else
 {
-    <ExitsPageHeader Title="POS devices / registers" Subtitle="Registered POS terminals. This browser is not a POS device. Offline PIN secrets are never shown." />
+    <div class="org-page">
+    <ExitsPageHeader Title="@L["Devices_Title"]" Subtitle="@L["Devices_Subtitle"]" />
     @if (_capacity is not null)
     {
         <p class="org-note">Capacity @_capacity.Used / @_capacity.Allowed</p>
     }
-    @if (!string.IsNullOrWhiteSpace(_error))
+    <OrgAlert Error="@_error" RetryLabel="@L["Common_Retry"]" OnRetry="LoadAsync" />
+    <OrgLoading Active="_loading" />
+    @if (!_loading && _items.Count == 0)
     {
-        <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" />
+        <OrgEmpty Title="@L["Devices_EmptyTitle"]" Message="@L["Devices_EmptyMessage"]" />
     }
+    else if (!_loading)
+    {
     <div class="org-table-wrap">
         <table class="org-table">
             <thead>
@@ -33,8 +39,8 @@ else
                         <td>
                             <input value="@d.FriendlyName" @onchange="e => _names[d.Id] = e.Value?.ToString() ?? d.FriendlyName" />
                         </td>
-                        <td>@d.BranchId.ToString("N")[..8]</td>
-                        <td><span class="org-badge">@d.Status</span></td>
+                        <td>@BranchLabel(d.BranchId)</td>
+                        <td><OrgStatusBadge Text="@d.Status" Tone="@d.Status" /></td>
                         <td>@d.LastSeenAtUtc.LocalDateTime</td>
                         <td>@d.Platform @d.Model</td>
                         <td>
@@ -49,25 +55,48 @@ else
             </tbody>
         </table>
     </div>
+    }
+    </div>
 }
 
 @code {
     private string? _error;
+    private bool _loading = true;
     private PosDeviceCapacityDto? _capacity;
     private List<PosDeviceDto> _items = [];
     private readonly Dictionary<Guid, string> _names = [];
+    private readonly Dictionary<Guid, string> _branchNames = [];
 
-    protected override async Task OnInitializedAsync()
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
     {
-        var orgId = CurrentUser.Session?.OrganizationId;
-        if (orgId is null) return;
-        var list = await Platform.GetPosDevicesAsync(orgId.Value);
-        var cap = await Platform.GetPosDeviceCapacityAsync(orgId.Value);
-        _items = list.Data?.ToList() ?? [];
-        foreach (var d in _items) _names[d.Id] = d.FriendlyName;
-        _capacity = cap.Data;
-        if (!list.IsSuccess) _error = OrgWebUi.Error(list.Error);
+        _loading = true;
+        try
+        {
+            var orgId = CurrentUser.Session?.OrganizationId;
+            if (orgId is null) return;
+            var list = await Platform.GetPosDevicesAsync(orgId.Value);
+            var cap = await Platform.GetPosDeviceCapacityAsync(orgId.Value);
+            var branches = await Platform.GetBranchesAsync(orgId.Value);
+            _items = list.Data?.ToList() ?? [];
+            foreach (var d in _items) _names[d.Id] = d.FriendlyName;
+            _branchNames.Clear();
+            foreach (var branch in branches.Data ?? [])
+            {
+                _branchNames[branch.Id] = branch.Name;
+            }
+            _capacity = cap.Data;
+            _error = list.IsSuccess ? null : OrgWebUi.Error(list.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
     }
+
+    private string BranchLabel(Guid branchId) =>
+        _branchNames.GetValueOrDefault(branchId, L["Common_Unavailable"]);
 
     private async Task RenameAsync(PosDeviceDto device)
     {

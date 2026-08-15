@@ -4,8 +4,9 @@
 @inject ICurrentUserContext CurrentUser
 @inject IPlatformAccessClient Platform
 @inject NavigationManager Nav
+@inject IStringLocalizer<OrgWebResources> L
 
-<PageTitle>Invite staff</PageTitle>
+<PageTitle>@L["StaffInvite_Title"]</PageTitle>
 
 @if (!Shell.CanSee("staff"))
 {
@@ -13,27 +14,26 @@
 }
 else
 {
-    <ExitsPageHeader Title="Invite staff" Subtitle="Creates an organization-scoped staff identity. Never attaches Staff membership to a Personal login." />
-    <p class="org-note">Invite role is Organization Member. Assign a POS role after the staff identity exists. Passwords are set by the invitee.</p>
-    @if (_errors.Count > 0)
-    {
-        <Alert Type="@AlertType.Error" Message="@string.Join(" ", _errors)" ShowIcon="true" />
-    }
-    <div class="org-form">
-        <ExitsField Label="Contact email"><Input @bind-Value="_email" /></ExitsField>
-        <ExitsField Label="Display name"><Input @bind-Value="_displayName" /></ExitsField>
-        <label>
-            POS role (optional)
-            <select @bind="_productRole">
-                <option value="">Assign later</option>
-                <option value="Cashier">Cashier</option>
-                <option value="InventoryStaff">Inventory Staff</option>
-                <option value="ReportingUser">Reporting User</option>
-                <option value="StoreManager">Store Manager</option>
-                <option value="Admin">Admin</option>
-            </select>
-        </label>
-        <Button Type="@ButtonType.Primary" Loading="_busy" OnClick="InviteAsync">Send invite</Button>
+    <div class="org-page org-page--narrow">
+        <ExitsPageHeader Title="@L["StaffInvite_Title"]" Subtitle="@L["StaffInvite_Subtitle"]" />
+        <p class="org-note">The invitee sets a password for a separate staff login. You can assign or change the POS role later.</p>
+        <OrgAlert Error="@(_errors.Count == 0 ? null : string.Join(" ", _errors))" OnDismissError="() => _errors = []" />
+        <div class="org-form">
+            <ExitsField Label="Contact email"><Input @bind-Value="_email" /></ExitsField>
+            <ExitsField Label="Display name"><Input @bind-Value="_displayName" /></ExitsField>
+            <label>
+                POS role (optional)
+                <select @bind="_productRole">
+                    <option value="">Assign later</option>
+                    <option value="Cashier">Cashier</option>
+                    <option value="InventoryStaff">Inventory Staff</option>
+                    <option value="ReportingUser">Reporting User</option>
+                    <option value="StoreManager">Store Manager</option>
+                    <option value="Admin">Admin</option>
+                </select>
+            </label>
+            <Button Type="@ButtonType.Primary" Loading="_busy" OnClick="InviteAsync">Send invite</Button>
+        </div>
     </div>
 }
 

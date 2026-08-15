@@ -6,8 +6,9 @@
 @inject IPosInventoryClient Inventory
 @inject IPlatformAccessClient Platform
 @inject NavigationManager Nav
+@inject IStringLocalizer<OrgWebResources> L
 
-<PageTitle>Transfers</PageTitle>
+<PageTitle>@L["Transfers_Title"]</PageTitle>
 
 @if (!Shell.CanSee("inventory"))
 {
@@ -15,7 +16,8 @@
 }
 else
 {
-    <ExitsPageHeader Title="Branch transfers" Subtitle="Intra-organization inventory transfers. Statuses: Draft, InTransit, PartiallyReceived, Received, Cancelled." />
+    <div class="org-page">
+    <ExitsPageHeader Title="@L["Transfers_Title"]" Subtitle="@L["Transfers_Subtitle"]" />
     <div class="org-toolbar">
         <select @bind="_status">
             <option value="">All statuses</option>
@@ -27,10 +29,14 @@ else
         </select>
         <Button OnClick="LoadAsync">Filter</Button>
     </div>
-    @if (!string.IsNullOrWhiteSpace(_error))
+    <OrgAlert Error="@_error" RetryLabel="@L["Common_Retry"]" OnRetry="LoadAsync" />
+    <OrgLoading Active="_loading" />
+    @if (!_loading && _items.Count == 0)
     {
-        <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" />
+        <OrgEmpty Title="@L["Transfers_EmptyTitle"]" Message="@L["Transfers_EmptyMessage"]" />
     }
+    else if (!_loading)
+    {
     <div class="org-table-wrap">
         <table class="org-table">
             <thead>
@@ -43,7 +49,7 @@ else
                         <td><a href="@($"/inventory/transfers/{t.TransferId:D}")">@(t.TransferNumber ?? t.TransferId.ToString("N")[..8])</a></td>
                         <td>@t.SourceBranchName</td>
                         <td>@t.DestinationBranchName</td>
-                        <td>@t.Status</td>
+                        <td><OrgStatusBadge Text="@t.Status" Tone="@t.Status" /></td>
                         <td>@t.TotalSentQty</td>
                         <td>@t.TotalReceivedQty</td>
                         <td>@t.TotalDifferenceQty</td>
@@ -53,6 +59,7 @@ else
         </table>
     </div>
     <OrgPager Page="_page" PageSize="20" TotalCount="_total" Busy="_busy" PageChanged="ChangePageAsync" />
+    }
 
     @if (Shell.Can(UtangCapability.ManageInventory))
     {
@@ -70,7 +77,7 @@ else
     @if (_detail is not null)
     {
         <Card Size="@CardSize.Small" Title="@($"Transfer {_detail.TransferNumber}")">
-            <p class="org-note">@_detail.SourceBranchName → @_detail.DestinationBranchName · @_detail.Status</p>
+            <p class="org-note">@_detail.SourceBranchName → @_detail.DestinationBranchName · <OrgStatusBadge Text="@_detail.Status" Tone="@_detail.Status" /></p>
             <div class="org-table-wrap">
                 <table class="org-table">
                     <thead>
@@ -106,12 +113,14 @@ else
             }
         </Card>
     }
+    </div>
 }
 
 @code {
     [Parameter] public Guid TransferId { get; set; }
 
     private bool _busy;
+    private bool _loading = true;
     private string? _error;
     private string? _status;
     private int _page = 1;
@@ -146,20 +155,28 @@ else
 
     private async Task LoadAsync()
     {
-        var list = await Inventory.ListTransfersAsync(string.IsNullOrWhiteSpace(_status) ? null : _status, page: _page, pageSize: 20);
-        if (!list.IsSuccess || list.Data is null)
+        _loading = true;
+        try
         {
-            _error = OrgWebUi.Error(list.Error);
-            return;
-        }
+            var list = await Inventory.ListTransfersAsync(string.IsNullOrWhiteSpace(_status) ? null : _status, page: _page, pageSize: 20);
+            if (!list.IsSuccess || list.Data is null)
+            {
+                _error = OrgWebUi.Error(list.Error);
+                return;
+            }
 
-        _items = list.Data.Items.ToList();
-        _total = list.Data.TotalCount;
-        _error = null;
-        if (TransferId != Guid.Empty)
+            _items = list.Data.Items.ToList();
+            _total = list.Data.TotalCount;
+            _error = null;
+            if (TransferId != Guid.Empty)
+            {
+                var detail = await Inventory.GetTransferAsync(TransferId);
+                _detail = detail.Data;
+            }
+        }
+        finally
         {
-            var detail = await Inventory.GetTransferAsync(TransferId);
-            _detail = detail.Data;
+            _loading = false;
         }
     }
 

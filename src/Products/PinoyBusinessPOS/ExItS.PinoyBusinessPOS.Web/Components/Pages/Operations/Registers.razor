@@ -2,8 +2,9 @@
 @attribute [Authorize]
 @inject OrgWebShellState Shell
 @inject IPosRegisterClient RegisterApi
+@inject IStringLocalizer<OrgWebResources> L
 
-<PageTitle>Registers</PageTitle>
+<PageTitle>@L["Registers_Title"]</PageTitle>
 
 @if (!Shell.CanSee("devices"))
 {
@@ -11,7 +12,8 @@
 }
 else
 {
-    <ExitsPageHeader Title="Registers" Subtitle="POS registers for cashier shifts. Opening a shift remains a POS operation." />
+    <div class="org-page">
+    <ExitsPageHeader Title="@L["Registers_Title"]" Subtitle="@L["Registers_Subtitle"]" />
     @if (Shell.Can(UtangCapability.ManageRegisters))
     {
         <div class="org-toolbar">
@@ -19,10 +21,14 @@ else
             <Button Type="@ButtonType.Primary" Loading="_busy" OnClick="CreateAsync">Create</Button>
         </div>
     }
-    @if (!string.IsNullOrWhiteSpace(_error))
+    <OrgAlert Error="@_error" RetryLabel="@L["Common_Retry"]" OnRetry="LoadAsync" />
+    <OrgLoading Active="_loading" />
+    @if (!_loading && _items.Count == 0)
     {
-        <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" />
+        <OrgEmpty Title="@L["Registers_EmptyTitle"]" Message="@L["Registers_EmptyMessage"]" />
     }
+    else if (!_loading)
+    {
     <div class="org-table-wrap">
         <table class="org-table">
             <thead>
@@ -34,7 +40,7 @@ else
                     <tr>
                         <td>@r.RegisterCode</td>
                         <td>@r.Name</td>
-                        <td>@r.Status</td>
+                        <td><OrgStatusBadge Text="@r.Status" Tone="@r.Status" /></td>
                         <td>@(r.HasOpenShift ? "Yes" : "No")</td>
                         <td>
                             @if (Shell.Can(UtangCapability.ManageRegisters) && string.Equals(r.Status, "Active", StringComparison.OrdinalIgnoreCase))
@@ -48,10 +54,13 @@ else
         </table>
     </div>
     <OrgPager Page="_page" PageSize="20" TotalCount="_total" Busy="_busy" PageChanged="ChangePageAsync" />
+    }
+    </div>
 }
 
 @code {
     private bool _busy;
+    private bool _loading = true;
     private string? _error;
     private string? _name;
     private int _page = 1;
@@ -68,13 +77,22 @@ else
 
     private async Task LoadAsync()
     {
-        var result = await RegisterApi.ListAsync(page: _page, pageSize: 20);
-        if (result.IsSuccess && result.Data is not null)
+        _loading = true;
+        try
         {
-            _items = result.Data.Items.ToList();
-            _total = result.Data.TotalCount;
+            var result = await RegisterApi.ListAsync(page: _page, pageSize: 20);
+            if (result.IsSuccess && result.Data is not null)
+            {
+                _items = result.Data.Items.ToList();
+                _total = result.Data.TotalCount;
+                _error = null;
+            }
+            else _error = OrgWebUi.Error(result.Error);
         }
-        else _error = OrgWebUi.Error(result.Error);
+        finally
+        {
+            _loading = false;
+        }
     }
 
     private async Task CreateAsync()

@@ -3,8 +3,9 @@
 @inject OrgWebShellState Shell
 @inject IPosCatalogClient Catalog
 @inject NavigationManager Nav
+@inject IStringLocalizer<OrgWebResources> L
 
-<PageTitle>Products</PageTitle>
+<PageTitle>@L["Products_Title"]</PageTitle>
 
 @if (!Shell.CanSee("products"))
 {
@@ -12,10 +13,11 @@
 }
 else
 {
-    <ExitsPageHeader Title="Products" Subtitle="Catalog management. This is not a selling screen.">
+    <div class="org-page">
+    <ExitsPageHeader Title="@L["Products_Title"]" Subtitle="@L["Products_Subtitle"]">
         @if (Shell.Can(UtangCapability.ManageCatalog))
         {
-            <a class="ant-btn ant-btn-sm" href="/products/new">New product</a>
+            <a class="ant-btn ant-btn-sm" href="/products/new">@L["Products_New"]</a>
         }
     </ExitsPageHeader>
     <div class="org-subnav">
@@ -23,19 +25,22 @@ else
         <a href="/catalog">Global Catalog</a>
     </div>
     <div class="org-toolbar">
-        <ExitsField Label="Search"><Input @bind-Value="_search" Placeholder="Name, SKU, barcode" /></ExitsField>
-        <ExitsField Label="Status"><Input @bind-Value="_status" Placeholder="Active" /></ExitsField>
-        <Button OnClick="SearchAsync">Search</Button>
+        <ExitsField Label="@L["Common_Search"]"><Input @bind-Value="_search" Placeholder="Name, SKU, barcode" /></ExitsField>
+        <ExitsField Label="@L["Common_Status"]"><Input @bind-Value="_status" Placeholder="Active" /></ExitsField>
+        <Button OnClick="SearchAsync">@L["Common_Search"]</Button>
     </div>
-    @if (!string.IsNullOrWhiteSpace(_error))
+    <OrgAlert Error="@_error" OnRetry="LoadAsync" RetryLabel="@L["Common_Retry"]" OnDismissError="() => _error = null" />
+    <OrgLoading Active="_loading" />
+    @if (!_loading && string.IsNullOrWhiteSpace(_error) && _items.Count == 0)
     {
-        <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" />
+        <OrgEmpty Title="@L["Products_EmptyTitle"]" Message="@L["Products_EmptyMessage"]">
+            @if (Shell.Can(UtangCapability.ManageCatalog))
+            {
+                <a class="ant-btn ant-btn-primary" href="/products/new">@L["Products_New"]</a>
+            }
+        </OrgEmpty>
     }
-    @if (_loading)
-    {
-        <p class="org-note">Loading…</p>
-    }
-    else
+    else if (!_loading && _items.Count > 0)
     {
         <div class="org-table-wrap">
             <table class="org-table">
@@ -52,7 +57,7 @@ else
                             <td>@OrgWebUi.Money(p.SellingPrice)</td>
                             <td>@p.CatalogSource @(p.PlatformGlobalProductId is null ? "" : "· global")</td>
                             <td>@(p.TracksExpiration ? $"Yes ({p.ExpirationWarningDays ?? 7}d)" : "No")</td>
-                            <td>@p.Status</td>
+                            <td><OrgStatusBadge Text="@p.Status" Tone="@p.Status" /></td>
                         </tr>
                     }
                 </tbody>
@@ -60,6 +65,7 @@ else
         </div>
         <OrgPager Page="_page" PageSize="_pageSize" TotalCount="_total" Busy="_loading" PageChanged="ChangePageAsync" />
     }
+    </div>
 }
 
 @code {

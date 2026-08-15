@@ -2,8 +2,9 @@
 @attribute [Authorize]
 @inject OrgWebShellState Shell
 @inject IPosCatalogClient Catalog
+@inject IStringLocalizer<OrgWebResources> L
 
-<PageTitle>Categories</PageTitle>
+<PageTitle>@L["Categories_Title"]</PageTitle>
 
 @if (!Shell.CanSee("products"))
 {
@@ -11,7 +12,8 @@
 }
 else
 {
-    <ExitsPageHeader Title="Categories" Subtitle="Organization product categories." />
+    <div class="org-page">
+    <ExitsPageHeader Title="@L["Categories_Title"]" Subtitle="@L["Categories_Subtitle"]" />
     @if (Shell.Can(UtangCapability.ManageCatalog))
     {
         <div class="org-toolbar">
@@ -19,10 +21,14 @@ else
             <Button Type="@ButtonType.Primary" Loading="_busy" OnClick="CreateAsync">Create</Button>
         </div>
     }
-    @if (!string.IsNullOrWhiteSpace(_error))
+    <OrgAlert Error="@_error" OnRetry="LoadAsync" RetryLabel="@L["Common_Retry"]" OnDismissError="() => _error = null" />
+    <OrgLoading Active="_loading" />
+    @if (!_loading && string.IsNullOrWhiteSpace(_error) && _items.Count == 0)
     {
-        <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" />
+        <OrgEmpty Title="@L["Categories_EmptyTitle"]" Message="@L["Categories_EmptyMessage"]" />
     }
+    else if (!_loading && _items.Count > 0)
+    {
     <div class="org-table-wrap">
         <table class="org-table">
             <thead>
@@ -33,7 +39,7 @@ else
                 {
                     <tr>
                         <td>@c.Name</td>
-                        <td>@c.Status</td>
+                        <td><OrgStatusBadge Text="@c.Status" Tone="@c.Status" /></td>
                         <td>
                             @if (Shell.Can(UtangCapability.ManageCatalog) && string.Equals(c.Status, "Active", StringComparison.OrdinalIgnoreCase))
                             {
@@ -46,9 +52,12 @@ else
         </table>
     </div>
     <OrgPager Page="_page" PageSize="20" TotalCount="_total" Busy="_busy" PageChanged="ChangePageAsync" />
+    }
+    </div>
 }
 
 @code {
+    private bool _loading = true;
     private bool _busy;
     private string? _error;
     private string? _name;
@@ -66,16 +75,19 @@ else
 
     private async Task LoadAsync()
     {
+        _loading = true;
         var result = await Catalog.ListCategoriesAsync(page: _page, pageSize: 20);
         if (result.IsSuccess && result.Data is not null)
         {
             _items = result.Data.Items;
             _total = result.Data.TotalCount;
+            _error = null;
         }
         else
         {
             _error = OrgWebUi.Error(result.Error);
         }
+        _loading = false;
     }
 
     private async Task CreateAsync()

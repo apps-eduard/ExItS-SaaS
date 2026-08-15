@@ -4,8 +4,9 @@
 @inject OrgWebShellState Shell
 @inject IPosCatalogClient Catalog
 @inject NavigationManager Nav
+@inject IStringLocalizer<OrgWebResources> L
 
-<PageTitle>Product</PageTitle>
+<PageTitle>@(_isNew ? L["ProductEdit_NewTitle"] : L["ProductEdit_EditTitle"])</PageTitle>
 
 @if (!Shell.CanSee("products"))
 {
@@ -13,38 +14,41 @@
 }
 else
 {
-    <ExitsPageHeader Title="@(_isNew ? "New product" : "Edit product")" Subtitle="Management fields only. Selling happens in the POS app." />
-    @if (!string.IsNullOrWhiteSpace(_error))
-    {
-        <Alert Type="@AlertType.Error" Message="@_error" ShowIcon="true" />
-    }
-    <div class="org-form">
-        <ExitsField Label="Name"><Input @bind-Value="_name" /></ExitsField>
-        <ExitsField Label="SKU"><Input @bind-Value="_sku" /></ExitsField>
-        <ExitsField Label="Barcode"><Input @bind-Value="_barcode" /></ExitsField>
-        <ExitsField Label="Unit"><Input @bind-Value="_unit" /></ExitsField>
-        <ExitsField Label="Selling price"><Input @bind-Value="_price" /></ExitsField>
-        <ExitsField Label="Description"><Input @bind-Value="_description" /></ExitsField>
-        <label>
-            <input type="checkbox" @bind="_tracksExpiration" />
-            Tracks expiration
-        </label>
-        <ExitsField Label="Expiration warning days"><Input @bind-Value="_warningDays" /></ExitsField>
-        @if (_existing is not null)
+    <div class="org-page org-page--form">
+        <ExitsPageHeader Title="@(_isNew ? L["ProductEdit_NewTitle"] : L["ProductEdit_EditTitle"])" Subtitle="@L["ProductEdit_Subtitle"]" />
+        <OrgAlert Error="@_error" OnRetry="LoadAsync" RetryLabel="@L["Common_Retry"]" OnDismissError="() => _error = null" />
+        <OrgLoading Active="_loading" />
+        @if (!_loading)
         {
-            <p class="org-note">Status: @_existing.Status · Source: @_existing.CatalogSource · Global: @(_existing.PlatformGlobalProductId is null ? "No" : "Yes")</p>
-        }
-        @if (Shell.Can(UtangCapability.ManageCatalog))
-        {
-            <Button Type="@ButtonType.Primary" Loading="_busy" OnClick="SaveAsync">Save</Button>
-            @if (_existing is not null && string.Equals(_existing.Status, "Active", StringComparison.OrdinalIgnoreCase))
-            {
-                <Button Danger="true" Loading="_busy" OnClick="DeactivateAsync">Deactivate</Button>
-            }
-            else if (_existing is not null)
-            {
-                <Button Loading="_busy" OnClick="ReactivateAsync">Reactivate</Button>
-            }
+            <div class="org-form">
+                <ExitsField Label="Name"><Input @bind-Value="_name" /></ExitsField>
+                <ExitsField Label="SKU"><Input @bind-Value="_sku" /></ExitsField>
+                <ExitsField Label="Barcode"><Input @bind-Value="_barcode" /></ExitsField>
+                <ExitsField Label="Unit"><Input @bind-Value="_unit" /></ExitsField>
+                <ExitsField Label="Selling price"><Input @bind-Value="_price" /></ExitsField>
+                <ExitsField Label="Description"><Input @bind-Value="_description" /></ExitsField>
+                <label>
+                    <input type="checkbox" @bind="_tracksExpiration" />
+                    Tracks expiration
+                </label>
+                <ExitsField Label="Expiration warning days"><Input @bind-Value="_warningDays" /></ExitsField>
+                @if (_existing is not null)
+                {
+                    <p class="org-note">Status: <OrgStatusBadge Text="@_existing.Status" Tone="@_existing.Status" /> · Source: @_existing.CatalogSource · Global: @(_existing.PlatformGlobalProductId is null ? "No" : "Yes")</p>
+                }
+                @if (Shell.Can(UtangCapability.ManageCatalog))
+                {
+                    <Button Type="@ButtonType.Primary" Loading="_busy" OnClick="SaveAsync">@L["Common_Save"]</Button>
+                    @if (_existing is not null && string.Equals(_existing.Status, "Active", StringComparison.OrdinalIgnoreCase))
+                    {
+                        <Button Danger="true" Loading="_busy" OnClick="DeactivateAsync">Deactivate</Button>
+                    }
+                    else if (_existing is not null)
+                    {
+                        <Button Loading="_busy" OnClick="ReactivateAsync">Reactivate</Button>
+                    }
+                }
+            </div>
         }
     </div>
 }
@@ -52,6 +56,7 @@ else
 @code {
     [Parameter] public Guid ProductId { get; set; }
 
+    private bool _loading = true;
     private bool _isNew;
     private bool _busy;
     private string? _error;
@@ -65,14 +70,19 @@ else
     private string? _warningDays;
     private PosCatalogProductDto? _existing;
 
-    protected override async Task OnParametersSetAsync()
+    protected override Task OnParametersSetAsync() => LoadAsync();
+
+    private async Task LoadAsync()
     {
+        _loading = true;
+        _error = null;
         _isNew = !Nav.ToBaseRelativePath(Nav.Uri).Contains("/products/", StringComparison.OrdinalIgnoreCase)
                  || ProductId == Guid.Empty;
         var path = Nav.ToBaseRelativePath(Nav.Uri);
         _isNew = path.StartsWith("products/new", StringComparison.OrdinalIgnoreCase);
         if (_isNew)
         {
+            _loading = false;
             return;
         }
 
@@ -80,6 +90,7 @@ else
         if (!result.IsSuccess || result.Data is null)
         {
             _error = OrgWebUi.Error(result.Error);
+            _loading = false;
             return;
         }
 
@@ -92,6 +103,7 @@ else
         _description = _existing.Description;
         _tracksExpiration = _existing.TracksExpiration;
         _warningDays = _existing.ExpirationWarningDays?.ToString();
+        _loading = false;
     }
 
     private async Task SaveAsync()
