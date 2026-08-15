@@ -1,5 +1,7 @@
 @page "/suppliers"
 @page "/suppliers/requests"
+@page "/suppliers/buyers"
+@page "/suppliers/buyers/{RelationshipId:guid}"
 @attribute [Authorize]
 @using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers
 @using ExItS.PinoyBusinessPOS.Application.Suppliers
@@ -31,6 +33,13 @@ else
                     @if (_incomingPending.Count > 0)
                     {
                         <span> (@_incomingPending.Count)</span>
+                    }
+                </Button>
+                <Button Type="@(_tab == "buyers" ? ButtonType.Primary : ButtonType.Default)" OnClick='() => SwitchTab("buyers")'>
+                    @L["Suppliers_TabBuyers"]
+                    @if (_connectedBuyers.Count > 0)
+                    {
+                        <span> (@_connectedBuyers.Count)</span>
                     }
                 </Button>
                 @if (Capabilities.IsAllowed(UtangCapability.ManageSuppliers))
@@ -202,10 +211,94 @@ else
                 </div>
             }
         }
+
+        @if (!_loading && _tab == "buyers")
+        {
+            @if (_selectedBuyer is not null)
+            {
+                <div style="margin-bottom:12px;">
+                    <Button OnClick="ClearBuyerDetail">@L["Suppliers_BackToBuyers"]</Button>
+                </div>
+                <h3 class="org-section-title">@_selectedBuyer.CounterpartyDisplayName</h3>
+                <div class="org-table-wrap">
+                    <table class="org-table">
+                        <tbody>
+                            <tr>
+                                <th>@L["Suppliers_ColPublicId"]</th>
+                                <td>@(_selectedBuyer.CounterpartyPublicOrganizationId ?? "—")</td>
+                            </tr>
+                            <tr>
+                                <th>@L["Suppliers_ColConnection"]</th>
+                                <td><OrgStatusBadge Name="@ConnectionLabel(_selectedBuyer.Status)" Tone="@_selectedBuyer.Status" /></td>
+                            </tr>
+                            <tr>
+                                <th>@L["Suppliers_ColDirection"]</th>
+                                <td>@L["Suppliers_BuyerDirection"]</td>
+                            </tr>
+                            <tr>
+                                <th>@L["Suppliers_ColConnectedSince"]</th>
+                                <td>
+                                    @(_selectedBuyer.RespondedAtUtc?.ToLocalTime().ToString("d") ?? "—")
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p class="org-note" style="margin-top:12px;">@L["Suppliers_BuyerNotCustomerNote"]</p>
+            }
+            else
+            {
+                <h3 class="org-section-title">@L["Suppliers_BuyersSection"]</h3>
+                <p class="org-note">@L["Suppliers_BuyersHelp"]</p>
+                @if (_connectedBuyers.Count == 0)
+                {
+                    <OrgEmpty Title="@L["Suppliers_NoBuyersTitle"]" Message="@L["Suppliers_NoBuyersMessage"]" />
+                }
+                else
+                {
+                    <div class="org-table-wrap">
+                        <table class="org-table">
+                            <thead>
+                                <tr>
+                                    <th>@L["Suppliers_ColBuyer"]</th>
+                                    <th>@L["Suppliers_ColPublicId"]</th>
+                                    <th>@L["Suppliers_ColConnection"]</th>
+                                    <th>@L["Suppliers_ColConnectedSince"]</th>
+                                    <th>@L["Common_Actions"]</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var b in _connectedBuyers)
+                                {
+                                    var name = string.IsNullOrWhiteSpace(b.CounterpartyDisplayName)
+                                        ? L["Suppliers_UnknownBusiness"].Value
+                                        : b.CounterpartyDisplayName;
+                                    <tr>
+                                        <td>@name</td>
+                                        <td>@(b.CounterpartyPublicOrganizationId ?? "—")</td>
+                                        <td><OrgStatusBadge Name="@ConnectionLabel(b.Status)" Tone="@b.Status" /></td>
+                                        <td>@(b.RespondedAtUtc?.ToLocalTime().ToString("d") ?? "—")</td>
+                                        <td>
+                                            <Button Type="@ButtonType.Link"
+                                                    Size="@ButtonSize.Small"
+                                                    OnClick="() => OpenBuyer(b)">
+                                                @L["Suppliers_ViewBuyer"]
+                                            </Button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            }
+        }
     </div>
 }
 
 @code {
+    [Parameter] public Guid? RelationshipId { get; set; }
+
     private bool _loading = true;
     private bool _busy;
     private string? _error;
@@ -214,23 +307,55 @@ else
     private Dictionary<Guid, string> _buyerStatuses = [];
     private List<ConnectedSupplierRelationshipDto> _incomingPending = [];
     private List<ConnectedSupplierRelationshipDto> _sent = [];
+    private List<ConnectedSupplierRelationshipDto> _connectedBuyers = [];
+    private ConnectedSupplierRelationshipDto? _selectedBuyer;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnParametersSetAsync()
     {
-        if (Nav.Uri.Contains("/suppliers/requests", StringComparison.OrdinalIgnoreCase))
+        if (Nav.Uri.Contains("/suppliers/buyers", StringComparison.OrdinalIgnoreCase))
+        {
+            _tab = "buyers";
+        }
+        else if (Nav.Uri.Contains("/suppliers/requests", StringComparison.OrdinalIgnoreCase))
         {
             _tab = "requests";
         }
+        else
+        {
+            _tab = "list";
+        }
 
         await LoadAsync();
+
+        if (_tab == "buyers" && RelationshipId is Guid id)
+        {
+            _selectedBuyer = _connectedBuyers.FirstOrDefault(x => x.RelationshipId == id);
+            if (_selectedBuyer is null)
+            {
+                var all = await ConnectedApi.ListRelationshipsAsync("supplier");
+                if (all.IsSuccess && all.Data is not null)
+                {
+                    _selectedBuyer = all.Data.FirstOrDefault(x => x.RelationshipId == id);
+                }
+            }
+        }
+        else if (_tab == "buyers")
+        {
+            _selectedBuyer = null;
+        }
     }
 
     private async Task SwitchTab(string tab)
     {
         _tab = tab;
+        _selectedBuyer = null;
         if (tab == "requests")
         {
             Nav.NavigateTo("/suppliers/requests");
+        }
+        else if (tab == "buyers")
+        {
+            Nav.NavigateTo("/suppliers/buyers");
         }
         else
         {
@@ -272,12 +397,22 @@ else
             }
 
             var supplierRels = await ConnectedApi.ListRelationshipsAsync("supplier");
-            _incomingPending = supplierRels.IsSuccess && supplierRels.Data is not null
-                ? supplierRels.Data
+            if (supplierRels.IsSuccess && supplierRels.Data is not null)
+            {
+                _incomingPending = supplierRels.Data
                     .Where(x => string.Equals(x.Status, "Pending", StringComparison.OrdinalIgnoreCase))
                     .OrderByDescending(x => x.RequestedAtUtc)
-                    .ToList()
-                : [];
+                    .ToList();
+                _connectedBuyers = supplierRels.Data
+                    .Where(x => string.Equals(x.Status, "Active", StringComparison.OrdinalIgnoreCase))
+                    .OrderByDescending(x => x.RespondedAtUtc ?? x.RequestedAtUtc)
+                    .ToList();
+            }
+            else
+            {
+                _incomingPending = [];
+                _connectedBuyers = [];
+            }
         }
         finally
         {
@@ -307,11 +442,28 @@ else
 
             await LoadAsync();
             Shell.IncomingSupplierRequestCount = _incomingPending.Count;
+            if (accept)
+            {
+                _tab = "buyers";
+                Nav.NavigateTo("/suppliers/buyers");
+            }
         }
         finally
         {
             _busy = false;
         }
+    }
+
+    private void OpenBuyer(ConnectedSupplierRelationshipDto buyer)
+    {
+        _selectedBuyer = buyer;
+        Nav.NavigateTo($"/suppliers/buyers/{buyer.RelationshipId:D}");
+    }
+
+    private void ClearBuyerDetail()
+    {
+        _selectedBuyer = null;
+        Nav.NavigateTo("/suppliers/buyers");
     }
 
     private string ConnectionLabel(string status) => status switch

@@ -76,7 +76,7 @@ else
                     var isRequested = IsSupplierRequested(item);
                     if (isRequested)
                     {
-                        <div class="pos-personal-row pos-personal-row--static" role="listitem">
+                        <div class="pos-personal-row pos-personal-row--static" role="listitem" @onclick="() => OpenRequestedAsync(item)">
                             <span class="pos-personal-row__body">
                                 <span class="pos-personal-row__title">
                                     @item.Title
@@ -84,12 +84,16 @@ else
                                     {
                                         <span class="pos-muted"> · @L["Personal_NotificationsUnread"]</span>
                                     }
+                                    else if (string.Equals(relationship?.Status, "Pending", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        <span class="pos-muted"> · @L["OrgNotifications_ActionNeeded"]</span>
+                                    }
                                 </span>
                                 <span class="pos-personal-row__meta">
                                     @item.Preview
                                     · @item.CreatedAtUtc.LocalDateTime.ToString("g")
                                 </span>
-                                <div class="pos-sell-customer__actions" role="group" style="margin-top:0.75rem;">
+                                <div class="pos-sell-customer__actions" role="group" style="margin-top:0.75rem;" @onclick:stopPropagation="true">
                                     @if (!_isOnline)
                                     {
                                         <p class="pos-muted">@L["OrgNotifications_OfflineRespond"]</p>
@@ -221,10 +225,17 @@ else
                 && Capabilities.IsAllowed(UtangCapability.ViewSuppliers)
                 && _notifications.Any(IsSupplierConnection))
             {
-                var relationships = await ConnectedSuppliers.ListRelationshipsAsync("supplier");
-                if (relationships.IsSuccess && relationships.Data is not null)
+                var supplierView = await ConnectedSuppliers.ListRelationshipsAsync("supplier");
+                var buyerView = await ConnectedSuppliers.ListRelationshipsAsync("buyer");
+                foreach (var list in new[] { supplierView, buyerView })
                 {
-                    _relationshipsById = relationships.Data.ToDictionary(x => x.RelationshipId);
+                    if (list.IsSuccess && list.Data is not null)
+                    {
+                        foreach (var row in list.Data)
+                        {
+                            _relationshipsById[row.RelationshipId] = row;
+                        }
+                    }
                 }
             }
         }
@@ -235,11 +246,13 @@ else
     }
 
     private string StatusLabel(string? status) =>
-        string.Equals(status, "Accepted", StringComparison.OrdinalIgnoreCase)
+        string.Equals(status, "Active", StringComparison.OrdinalIgnoreCase)
             ? L["OrgNotifications_StatusConnected"]
             : string.Equals(status, "Declined", StringComparison.OrdinalIgnoreCase)
                 ? L["OrgNotifications_StatusDeclined"]
-                : L["OrgNotifications_StatusUnavailable"];
+                : string.Equals(status, "Pending", StringComparison.OrdinalIgnoreCase)
+                    ? L["OrgNotifications_ActionNeeded"]
+                    : L["OrgNotifications_StatusUnavailable"];
 
     private ConnectedSupplierRelationshipDto? ResolveRelationship(OrganizationInAppNotificationDto item) =>
         Guid.TryParse(item.RelatedId, out var id) && _relationshipsById.TryGetValue(id, out var relationship)
@@ -256,6 +269,11 @@ else
         string.Equals(item.RelatedType, SupplierConnectionNotificationTypes.Accepted, StringComparison.Ordinal)
         || string.Equals(item.RelatedType, SupplierConnectionNotificationTypes.Declined, StringComparison.Ordinal);
 
+    private async Task OpenRequestedAsync(OrganizationInAppNotificationDto item)
+    {
+        await MarkReadOptimisticAsync(item);
+    }
+
     private async Task OpenAsync(OrganizationInAppNotificationDto item)
     {
         if (_busy)
@@ -263,11 +281,24 @@ else
             return;
         }
 
-        await MarkReadAsync(item);
+        await MarkReadOptimisticAsync(item);
 
         if (IsSupplierAcceptedOrDeclined(item))
         {
+            // Buyer-side Accepted/Declined → suppliers list (domain source of truth).
+            Nav.NavigateTo("/suppliers");
+            return;
+        }
+
+        if (IsSupplierRequested(item))
+        {
             Nav.NavigateTo("/suppliers/connected/requests");
+            return;
+        }
+
+        if (item.RelatedType.Contains("CustomerLink", StringComparison.OrdinalIgnoreCase))
+        {
+            Nav.NavigateTo("/customers");
         }
     }
 
@@ -298,8 +329,13 @@ else
             }
 
             await MarkReadAfterRespondAsync(item);
+            ApplyLocalRead(item.Id);
             UnreadState.NotifyChanged();
             await LoadAsync();
+            if (accept)
+            {
+                Nav.NavigateTo("/suppliers/connected/buyers");
+            }
         }
         finally
         {
@@ -325,7 +361,7 @@ else
         }
     }
 
-    private async Task MarkReadAsync(OrganizationInAppNotificationDto item)
+    private async Task MarkReadOptimisticAsync(OrganizationInAppNotificationDto item)
     {
         if (_busy || item.IsRead || CurrentUser.Session?.OrganizationId is not Guid orgId)
         {
@@ -333,15 +369,33 @@ else
         }
 
         _busy = true;
+        _actionError = null;
         try
         {
-            await Platform.MarkOrganizationNotificationReadAsync(orgId, item.Id);
+            var result = await Platform.MarkOrganizationNotificationReadAsync(orgId, item.Id);
+            if (!result.IsSuccess)
+            {
+                _actionError = result.Error?.Detail ?? L["OrgNotifications_MarkReadFailed"];
+                return;
+            }
+
+            ApplyLocalRead(item.Id);
             UnreadState.NotifyChanged();
-            await LoadAsync();
+            await InvokeAsync(StateHasChanged);
         }
         finally
         {
             _busy = false;
         }
+    }
+
+    private void ApplyLocalRead(Guid notificationId)
+    {
+        _notifications = _notifications
+            .Select(n => n.Id == notificationId
+                ? n with { IsRead = true, ReadAtUtc = DateTimeOffset.UtcNow }
+                : n)
+            .OrderByDescending(n => n.CreatedAtUtc)
+            .ToList();
     }
 }

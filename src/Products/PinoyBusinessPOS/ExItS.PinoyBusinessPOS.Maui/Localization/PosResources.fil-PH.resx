@@ -2661,6 +2661,8 @@
   <data name="OrgNotifications_StatusConnected" xml:space="preserve"><value>Nakakonekta</value></data>
   <data name="OrgNotifications_StatusDeclined" xml:space="preserve"><value>Tinanggihan</value></data>
   <data name="OrgNotifications_StatusUnavailable" xml:space="preserve"><value>Hindi na available</value></data>
+  <data name="OrgNotifications_ActionNeeded" xml:space="preserve"><value>Kailangan ng aksyon</value></data>
+  <data name="OrgNotifications_MarkReadFailed" xml:space="preserve"><value>Hindi ma-mark bilang nabasa ang notification. Subukan ulit.</value></data>
   <data name="Personal_Nav_CustomerLinkRequests" xml:space="preserve"><value>Customer link requests</value></data>
   <data name="Personal_Nav_Notifications" xml:space="preserve"><value>Notifications</value></data>
   <data name="Personal_NotificationsTitle" xml:space="preserve"><value>Notifications</value></data>
@@ -2748,6 +2750,19 @@
   <data name="ConnectedSuppliers_BuyerProduct" xml:space="preserve"><value>Produkto mo</value></data>
   <data name="ConnectedSuppliers_BuyerProductRequired" xml:space="preserve"><value>Piliin ang katumbas na produkto mula sa catalog mo.</value></data>
   <data name="ConnectedSuppliers_LinkFailed" xml:space="preserve"><value>Hindi ma-link ang produkto.</value></data>
+  <data name="ConnectedBuyers_Title" xml:space="preserve"><value>Mga connected buyer</value></data>
+  <data name="ConnectedBuyers_Help" xml:space="preserve"><value>Mga negosyo na gumagamit sa organisasyon mo bilang Connected ExItS supplier.</value></data>
+  <data name="ConnectedBuyers_DetailTitle" xml:space="preserve"><value>Connected buyer</value></data>
+  <data name="ConnectedBuyers_EmptyTitle" xml:space="preserve"><value>Wala pang connected buyer</value></data>
+  <data name="ConnectedBuyers_EmptyMessage" xml:space="preserve"><value>Kapag tinanggap mo ang supplier connection request, lalabas dito ang negosyo.</value></data>
+  <data name="ConnectedBuyers_NotFoundTitle" xml:space="preserve"><value>Hindi nahanap ang koneksyon</value></data>
+  <data name="ConnectedBuyers_NotFoundMessage" xml:space="preserve"><value>Hindi na available ang buyer connection na ito.</value></data>
+  <data name="ConnectedBuyers_Direction" xml:space="preserve"><value>Sila ang bumibili mula sa negosyo mo.</value></data>
+  <data name="ConnectedBuyers_Status" xml:space="preserve"><value>Status: {0}</value></data>
+  <data name="ConnectedBuyers_ConnectedSince" xml:space="preserve"><value>Nakakonekta mula {0}</value></data>
+  <data name="ConnectedBuyers_NotCustomerNote" xml:space="preserve"><value>Ang connected buyers ay org relationship, hindi Customers. Magdagdag bilang customer sa pamamagitan ng tahasang aksyon lamang sa hinaharap.</value></data>
+  <data name="ConnectedBuyers_UnknownBusiness" xml:space="preserve"><value>Connected na negosyo</value></data>
+  <data name="ConnectedBuyers_LoadFailed" xml:space="preserve"><value>Hindi ma-load ang connected buyers.</value></data>
   <data name="Catalog_HowUsed" xml:space="preserve"><value>Paano ginagamit ang item na ito?</value></data>
   <data name="Catalog_Usage_BuyAndSell" xml:space="preserve"><value>Bumili at magbenta</value></data>
   <data name="Catalog_Usage_Bulk" xml:space="preserve"><value>Bumili ng marami, magbenta ng mas maliit</value></data>

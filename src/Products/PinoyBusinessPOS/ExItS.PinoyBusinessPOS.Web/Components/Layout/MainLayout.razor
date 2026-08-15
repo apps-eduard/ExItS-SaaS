@@ -76,6 +76,9 @@
                                     <span> (@Shell.IncomingSupplierRequestCount)</span>
                                 }
                             </MenuItem>
+                            <MenuItem Key="connected-buyers" RouterLink="/suppliers/buyers" Icon="team" Title="@L["Nav_ConnectedBuyers"]">
+                                @L["Nav_ConnectedBuyers"]
+                            </MenuItem>
                         }
                     </SubMenu>
                 }
@@ -282,6 +285,7 @@
                         <span> (@Shell.IncomingSupplierRequestCount)</span>
                     }
                 </MenuItem>
+                <MenuItem RouterLink="/suppliers/buyers" Icon="team">@L["Nav_ConnectedBuyers"]</MenuItem>
             }
             @if (Shell.CanSee("products"))
             {

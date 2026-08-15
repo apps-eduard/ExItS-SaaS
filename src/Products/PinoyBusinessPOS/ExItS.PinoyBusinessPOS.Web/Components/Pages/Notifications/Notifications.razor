@@ -46,17 +46,22 @@ else
                     @foreach (var n in Filtered)
                     {
                         var relationship = ResolveRelationship(n);
-                        <tr>
+                        <tr class="org-clickable-row" style="cursor:pointer;" @onclick="() => OpenRowAsync(n)">
                             <td>@n.CreatedAtUtc.LocalDateTime</td>
                             <td>
                                 @n.Title
                                 @if (!n.IsRead)
                                 {
-                                    <OrgStatusBadge Text="Unread" Tone="info" />
+                                    <OrgStatusBadge Name="Unread" Tone="info" />
+                                }
+                                else if (IsSupplierRequested(n)
+                                         && string.Equals(relationship?.Status, "Pending", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    <OrgStatusBadge Name="@L["Notifications_ActionNeeded"]" Tone="warning" />
                                 }
                             </td>
                             <td>@n.Preview</td>
-                            <td>
+                            <td @onclick:stopPropagation="true">
                                 @if (IsSupplierRequested(n))
                                 {
                                     @if (string.Equals(relationship?.Status, "Pending", StringComparison.OrdinalIgnoreCase)
@@ -144,10 +149,17 @@ else
             _relationshipsById = new Dictionary<Guid, ConnectedSupplierRelationshipDto>();
             if (_items.Any(IsSupplierConnection) && Capabilities.IsAllowed(UtangCapability.ViewSuppliers))
             {
-                var relationships = await ConnectedSuppliers.ListRelationshipsAsync("supplier");
-                if (relationships.IsSuccess && relationships.Data is not null)
+                var supplierView = await ConnectedSuppliers.ListRelationshipsAsync("supplier");
+                var buyerView = await ConnectedSuppliers.ListRelationshipsAsync("buyer");
+                foreach (var list in new[] { supplierView, buyerView })
                 {
-                    _relationshipsById = relationships.Data.ToDictionary(x => x.RelationshipId);
+                    if (list.IsSuccess && list.Data is not null)
+                    {
+                        foreach (var row in list.Data)
+                        {
+                            _relationshipsById[row.RelationshipId] = row;
+                        }
+                    }
                 }
             }
         }
@@ -173,11 +185,34 @@ else
         || string.Equals(item.RelatedType, SupplierConnectionNotificationTypes.Declined, StringComparison.Ordinal);
 
     private string StatusLabel(string? status) =>
-        string.Equals(status, "Accepted", StringComparison.OrdinalIgnoreCase)
+        string.Equals(status, "Active", StringComparison.OrdinalIgnoreCase)
             ? L["Notifications_StatusConnected"]
             : string.Equals(status, "Declined", StringComparison.OrdinalIgnoreCase)
                 ? L["Notifications_StatusDeclined"]
-                : L["Notifications_StatusUnavailable"];
+                : string.Equals(status, "Pending", StringComparison.OrdinalIgnoreCase)
+                    ? L["Notifications_ActionNeeded"]
+                    : L["Notifications_StatusUnavailable"];
+
+    private async Task OpenRowAsync(OrganizationInAppNotificationDto note)
+    {
+        if (IsSupplierRequested(note))
+        {
+            await MarkReadOptimisticAsync(note);
+            return;
+        }
+
+        if (IsSupplierAcceptedOrDeclined(note))
+        {
+            await OpenSupplierAsync(note);
+            return;
+        }
+
+        await MarkReadOptimisticAsync(note);
+        if (note.RelatedType.Contains("CustomerLink", StringComparison.OrdinalIgnoreCase))
+        {
+            Nav.NavigateTo("/customers");
+        }
+    }
 
     private async Task RespondAsync(OrganizationInAppNotificationDto note, Guid relationshipId, bool accept)
     {
@@ -198,8 +233,22 @@ else
                 return;
             }
 
-            await MarkReadInternalAsync(note);
+            await MarkReadOptimisticAsync(note);
+            if (!string.IsNullOrWhiteSpace(note.RelatedType) && !string.IsNullOrWhiteSpace(note.RelatedId))
+            {
+                var orgId = CurrentUser.Session?.OrganizationId;
+                if (orgId is not null)
+                {
+                    await Platform.MarkRelatedOrganizationNotificationsReadAsync(
+                        orgId.Value, note.RelatedType, note.RelatedId);
+                }
+            }
+
             await LoadAsync();
+            if (accept)
+            {
+                Nav.NavigateTo("/suppliers/buyers");
+            }
         }
         finally
         {
@@ -209,41 +258,40 @@ else
 
     private async Task OpenSupplierAsync(OrganizationInAppNotificationDto note)
     {
-        await MarkReadInternalAsync(note);
-        Nav.NavigateTo("/suppliers/requests");
+        await MarkReadOptimisticAsync(note);
+        // Buyer-side Accepted/Declined → suppliers list (domain source of truth).
+        Nav.NavigateTo("/suppliers");
     }
 
-    private async Task ReadAsync(OrganizationInAppNotificationDto note) => await MarkReadInternalAsync(note, reload: true);
+    private async Task ReadAsync(OrganizationInAppNotificationDto note) => await MarkReadOptimisticAsync(note);
 
-    private async Task MarkReadInternalAsync(OrganizationInAppNotificationDto note, bool reload = false)
+    private async Task MarkReadOptimisticAsync(OrganizationInAppNotificationDto note)
     {
         var orgId = CurrentUser.Session?.OrganizationId;
-        if (orgId is null) return;
-
-        if (!note.IsRead)
+        if (orgId is null || note.IsRead)
         {
-            var result = await Platform.MarkOrganizationNotificationReadAsync(orgId.Value, note.Id);
-            if (!result.IsSuccess)
-            {
-                _error = OrgWebUi.Error(result.Error);
-                return;
-            }
+            return;
         }
 
-        if (!string.IsNullOrWhiteSpace(note.RelatedType)
-            && !string.IsNullOrWhiteSpace(note.RelatedId)
-            && IsSupplierConnection(note))
+        var result = await Platform.MarkOrganizationNotificationReadAsync(orgId.Value, note.Id);
+        if (!result.IsSuccess)
         {
-            await Platform.MarkRelatedOrganizationNotificationsReadAsync(orgId.Value, note.RelatedType, note.RelatedId);
+            _error = OrgWebUi.Error(result.Error);
+            return;
         }
 
-        if (reload)
-        {
-            await LoadAsync();
-        }
-        else
-        {
-            Shell.UnreadNotificationCount = Math.Max(0, Shell.UnreadNotificationCount - (note.IsRead ? 0 : 1));
-        }
+        ApplyLocalRead(note.Id);
+        Shell.UnreadNotificationCount = _items.Count(n => !n.IsRead);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void ApplyLocalRead(Guid notificationId)
+    {
+        _items = _items
+            .Select(n => n.Id == notificationId
+                ? n with { IsRead = true, ReadAtUtc = DateTimeOffset.UtcNow }
+                : n)
+            .OrderByDescending(n => n.CreatedAtUtc)
+            .ToList();
     }
 }

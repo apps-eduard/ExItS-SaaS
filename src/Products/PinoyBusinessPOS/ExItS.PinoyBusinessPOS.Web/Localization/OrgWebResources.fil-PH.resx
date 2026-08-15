@@ -162,6 +162,7 @@
   <data name="Notifications_StatusConnected" xml:space="preserve"><value>Nakakonekta</value></data>
   <data name="Notifications_StatusDeclined" xml:space="preserve"><value>Tinanggihan</value></data>
   <data name="Notifications_StatusUnavailable" xml:space="preserve"><value>Hindi na available</value></data>
+  <data name="Notifications_ActionNeeded" xml:space="preserve"><value>Kailangan ng aksyon</value></data>
   <data name="Notifications_Aria" xml:space="preserve"><value>Mga notification</value></data>
   <data name="Notifications_AriaUnread" xml:space="preserve"><value>Mga notification, {0} hindi pa nabasa</value></data>
   <data name="SelectOrg_Title" xml:space="preserve"><value>Pumili ng organisasyon</value></data>
@@ -180,10 +181,12 @@
   <data name="Nav_OperationalSettings" xml:space="preserve"><value>Operational settings</value></data>
   <data name="Nav_Suppliers" xml:space="preserve"><value>Mga supplier</value></data>
   <data name="Nav_SupplierRequests" xml:space="preserve"><value>Mga hiling ng supplier</value></data>
+  <data name="Nav_ConnectedBuyers" xml:space="preserve"><value>Mga connected buyer</value></data>
   <data name="Suppliers_Title" xml:space="preserve"><value>Mga supplier</value></data>
   <data name="Suppliers_Subtitle" xml:space="preserve"><value>Panlabas na supplier at Connected ExItS na ugnayan.</value></data>
   <data name="Suppliers_TabList" xml:space="preserve"><value>Mga supplier</value></data>
   <data name="Suppliers_TabRequests" xml:space="preserve"><value>Mga hiling</value></data>
+  <data name="Suppliers_TabBuyers" xml:space="preserve"><value>Mga connected buyer</value></data>
   <data name="Suppliers_ConnectExIts" xml:space="preserve"><value>Ikonekta ang ExItS supplier</value></data>
   <data name="Suppliers_EmptyTitle" xml:space="preserve"><value>Wala pang supplier</value></data>
   <data name="Suppliers_EmptyMessage" xml:space="preserve"><value>Magdagdag ng panlabas na supplier o magpadala ng Connected ExItS connection request.</value></data>
@@ -227,4 +230,16 @@
   <data name="Suppliers_IncomingBannerBody" xml:space="preserve"><value>{0} (na) negosyo ang gustong kumonekta sa inyo bilang supplier.</value></data>
   <data name="Suppliers_IncomingCompact" xml:space="preserve"><value>{0} (na) supplier request ang kailangan suriin</value></data>
   <data name="Suppliers_ReviewIncoming" xml:space="preserve"><value>Suriin ang connection requests</value></data>
+  <data name="Suppliers_BuyersSection" xml:space="preserve"><value>Mga connected buyer</value></data>
+  <data name="Suppliers_BuyersHelp" xml:space="preserve"><value>Mga negosyo na gumagamit sa organisasyon mo bilang Connected ExItS supplier.</value></data>
+  <data name="Suppliers_NoBuyersTitle" xml:space="preserve"><value>Wala pang connected buyer</value></data>
+  <data name="Suppliers_NoBuyersMessage" xml:space="preserve"><value>Kapag tinanggap mo ang supplier connection request, lalabas dito ang negosyo.</value></data>
+  <data name="Suppliers_ColBuyer" xml:space="preserve"><value>Negosyo ng buyer</value></data>
+  <data name="Suppliers_ColConnectedSince" xml:space="preserve"><value>Nakakonekta mula</value></data>
+  <data name="Suppliers_ColDirection" xml:space="preserve"><value>Ugnayan</value></data>
+  <data name="Suppliers_BuyerDirection" xml:space="preserve"><value>Sila ang bumibili mula sa negosyo mo.</value></data>
+  <data name="Suppliers_BuyerNotCustomerNote" xml:space="preserve"><value>Ang connected buyers ay org relationship, hindi Customers. Tahasang Add as customer ay deferred.</value></data>
+  <data name="Suppliers_UnknownBusiness" xml:space="preserve"><value>Connected na negosyo</value></data>
+  <data name="Suppliers_ViewBuyer" xml:space="preserve"><value>Tingnan</value></data>
+  <data name="Suppliers_BackToBuyers" xml:space="preserve"><value>Bumalik sa connected buyers</value></data>
 </root>

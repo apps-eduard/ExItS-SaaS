@@ -2661,6 +2661,8 @@
   <data name="OrgNotifications_StatusConnected" xml:space="preserve"><value>Connected</value></data>
   <data name="OrgNotifications_StatusDeclined" xml:space="preserve"><value>Declined</value></data>
   <data name="OrgNotifications_StatusUnavailable" xml:space="preserve"><value>No longer available</value></data>
+  <data name="OrgNotifications_ActionNeeded" xml:space="preserve"><value>Action needed</value></data>
+  <data name="OrgNotifications_MarkReadFailed" xml:space="preserve"><value>Could not mark this notification as read. Try again.</value></data>
   <data name="Personal_Nav_CustomerLinkRequests" xml:space="preserve"><value>Customer link requests</value></data>
   <data name="Personal_Nav_Notifications" xml:space="preserve"><value>Notifications</value></data>
   <data name="Personal_NotificationsTitle" xml:space="preserve"><value>Notifications</value></data>
@@ -2748,6 +2750,19 @@
   <data name="ConnectedSuppliers_BuyerProduct" xml:space="preserve"><value>Your product</value></data>
   <data name="ConnectedSuppliers_BuyerProductRequired" xml:space="preserve"><value>Choose the matching product from your catalog.</value></data>
   <data name="ConnectedSuppliers_LinkFailed" xml:space="preserve"><value>The product could not be linked.</value></data>
+  <data name="ConnectedBuyers_Title" xml:space="preserve"><value>Connected buyers</value></data>
+  <data name="ConnectedBuyers_Help" xml:space="preserve"><value>Businesses that currently use your organization as their Connected ExItS supplier.</value></data>
+  <data name="ConnectedBuyers_DetailTitle" xml:space="preserve"><value>Connected buyer</value></data>
+  <data name="ConnectedBuyers_EmptyTitle" xml:space="preserve"><value>No connected buyers yet</value></data>
+  <data name="ConnectedBuyers_EmptyMessage" xml:space="preserve"><value>When you accept a supplier connection request, that business appears here.</value></data>
+  <data name="ConnectedBuyers_NotFoundTitle" xml:space="preserve"><value>Connection not found</value></data>
+  <data name="ConnectedBuyers_NotFoundMessage" xml:space="preserve"><value>This buyer connection is no longer available.</value></data>
+  <data name="ConnectedBuyers_Direction" xml:space="preserve"><value>They buy from your business.</value></data>
+  <data name="ConnectedBuyers_Status" xml:space="preserve"><value>Status: {0}</value></data>
+  <data name="ConnectedBuyers_ConnectedSince" xml:space="preserve"><value>Connected {0}</value></data>
+  <data name="ConnectedBuyers_NotCustomerNote" xml:space="preserve"><value>Connected buyers are organization relationships, not Customers. Add as customer only with an explicit action later.</value></data>
+  <data name="ConnectedBuyers_UnknownBusiness" xml:space="preserve"><value>Connected business</value></data>
+  <data name="ConnectedBuyers_LoadFailed" xml:space="preserve"><value>Connected buyers could not be loaded.</value></data>
   <data name="Catalog_HowUsed" xml:space="preserve"><value>How is this item used?</value></data>
   <data name="Catalog_Usage_BuyAndSell" xml:space="preserve"><value>Buy and sell</value></data>
   <data name="Catalog_Usage_Bulk" xml:space="preserve"><value>Buy in bulk, sell smaller</value></data>

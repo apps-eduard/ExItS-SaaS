@@ -130,6 +130,12 @@
                 : await ConnectedSuppliers.DeclineAsync(relationshipId, new RespondConnectionRequest());
             if (result.IsSuccess)
             {
+                if (accept)
+                {
+                    Nav.NavigateTo("/suppliers/connected/buyers");
+                    return;
+                }
+
                 await LoadAsync();
             }
             else

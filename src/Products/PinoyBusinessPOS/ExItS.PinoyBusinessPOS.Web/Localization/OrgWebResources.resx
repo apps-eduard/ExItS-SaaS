@@ -162,6 +162,7 @@
   <data name="Notifications_StatusConnected" xml:space="preserve"><value>Connected</value></data>
   <data name="Notifications_StatusDeclined" xml:space="preserve"><value>Declined</value></data>
   <data name="Notifications_StatusUnavailable" xml:space="preserve"><value>No longer available</value></data>
+  <data name="Notifications_ActionNeeded" xml:space="preserve"><value>Action needed</value></data>
   <data name="Notifications_Aria" xml:space="preserve"><value>Notifications</value></data>
   <data name="Notifications_AriaUnread" xml:space="preserve"><value>Notifications, {0} unread</value></data>
   <data name="SelectOrg_Title" xml:space="preserve"><value>Select organization</value></data>
@@ -180,10 +181,12 @@
   <data name="Nav_OperationalSettings" xml:space="preserve"><value>Operational settings</value></data>
   <data name="Nav_Suppliers" xml:space="preserve"><value>Suppliers</value></data>
   <data name="Nav_SupplierRequests" xml:space="preserve"><value>Supplier requests</value></data>
+  <data name="Nav_ConnectedBuyers" xml:space="preserve"><value>Connected buyers</value></data>
   <data name="Suppliers_Title" xml:space="preserve"><value>Suppliers</value></data>
   <data name="Suppliers_Subtitle" xml:space="preserve"><value>External suppliers and Connected ExItS supplier relationships.</value></data>
   <data name="Suppliers_TabList" xml:space="preserve"><value>Suppliers</value></data>
   <data name="Suppliers_TabRequests" xml:space="preserve"><value>Requests</value></data>
+  <data name="Suppliers_TabBuyers" xml:space="preserve"><value>Connected buyers</value></data>
   <data name="Suppliers_ConnectExIts" xml:space="preserve"><value>Connect ExItS supplier</value></data>
   <data name="Suppliers_EmptyTitle" xml:space="preserve"><value>No suppliers yet</value></data>
   <data name="Suppliers_EmptyMessage" xml:space="preserve"><value>Add an external supplier or send a Connected ExItS connection request.</value></data>
@@ -227,4 +230,16 @@
   <data name="Suppliers_IncomingBannerBody" xml:space="preserve"><value>{0} business(es) want to connect with you as their supplier.</value></data>
   <data name="Suppliers_IncomingCompact" xml:space="preserve"><value>{0} supplier requests need your review</value></data>
   <data name="Suppliers_ReviewIncoming" xml:space="preserve"><value>Review connection requests</value></data>
+  <data name="Suppliers_BuyersSection" xml:space="preserve"><value>Connected buyers</value></data>
+  <data name="Suppliers_BuyersHelp" xml:space="preserve"><value>Businesses that currently use your organization as their Connected ExItS supplier.</value></data>
+  <data name="Suppliers_NoBuyersTitle" xml:space="preserve"><value>No connected buyers yet</value></data>
+  <data name="Suppliers_NoBuyersMessage" xml:space="preserve"><value>When you accept a supplier connection request, that business appears here.</value></data>
+  <data name="Suppliers_ColBuyer" xml:space="preserve"><value>Buyer business</value></data>
+  <data name="Suppliers_ColConnectedSince" xml:space="preserve"><value>Connected since</value></data>
+  <data name="Suppliers_ColDirection" xml:space="preserve"><value>Relationship</value></data>
+  <data name="Suppliers_BuyerDirection" xml:space="preserve"><value>They buy from your business.</value></data>
+  <data name="Suppliers_BuyerNotCustomerNote" xml:space="preserve"><value>Connected buyers are organization relationships, not Customers. Explicit Add as customer is deferred.</value></data>
+  <data name="Suppliers_UnknownBusiness" xml:space="preserve"><value>Connected business</value></data>
+  <data name="Suppliers_ViewBuyer" xml:space="preserve"><value>View</value></data>
+  <data name="Suppliers_BackToBuyers" xml:space="preserve"><value>Back to connected buyers</value></data>
 </root>

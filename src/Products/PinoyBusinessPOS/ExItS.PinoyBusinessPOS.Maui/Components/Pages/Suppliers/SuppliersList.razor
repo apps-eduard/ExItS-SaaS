@@ -75,6 +75,12 @@ else
             <button type="button"
                     class="pos-action-tile"
                     disabled="@(_loading || _isOffline)"
+                    @onclick="GoConnectedBuyers">
+                <span class="pos-action-tile__label">@L["ConnectedBuyers_Title"]</span>
+            </button>
+            <button type="button"
+                    class="pos-action-tile"
+                    disabled="@(_loading || _isOffline)"
                     @onclick="ReloadAsync">
                 <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("refresh")</span>
                 <span class="pos-action-tile__label">@L["Suppliers_Refresh"]</span>
@@ -344,6 +350,7 @@ else
     private void GoNew() => Nav.NavigateTo("/suppliers/new");
     private void GoConnect() => Nav.NavigateTo("/suppliers/connected/request");
     private void GoIncomingRequests() => Nav.NavigateTo("/suppliers/connected/requests");
+    private void GoConnectedBuyers() => Nav.NavigateTo("/suppliers/connected/buyers");
     private string RelationshipStatusLabel(string status) => status switch
     {
         "Active" => L["ConnectedSuppliers_Status_Connected"],

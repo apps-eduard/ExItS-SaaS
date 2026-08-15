@@ -1,0 +1,177 @@
+@page "/suppliers/connected/buyers"
+@page "/suppliers/connected/buyers/{RelationshipId:guid}"
+@using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosConnectedSupplierClient ConnectedSuppliers
+@inject IUtangCapabilityEvaluator Capabilities
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+<StoreHeaderBack Href="/suppliers" />
+<Page>
+    @if (RelationshipId is Guid detailId)
+    {
+        <h1>@L["ConnectedBuyers_DetailTitle"]</h1>
+        @if (_loading)
+        {
+            <Spinner />
+        }
+        else if (!string.IsNullOrWhiteSpace(_error))
+        {
+            <Alert Tone="AlertTone.Danger" Title="@L["ConnectedSuppliers_Error"]" Message="@_error" />
+        }
+        else if (_selected is null)
+        {
+            <EmptyState IconName="customers"
+                        Title="@L["ConnectedBuyers_NotFoundTitle"]"
+                        Message="@L["ConnectedBuyers_NotFoundMessage"]" />
+        }
+        else
+        {
+            var name = DisplayName(_selected);
+            <section class="pos-settings__panel">
+                <h2>@name</h2>
+                @if (!string.IsNullOrWhiteSpace(_selected.CounterpartyPublicOrganizationId))
+                {
+                    <p>@_selected.CounterpartyPublicOrganizationId</p>
+                }
+                <p>@L["ConnectedBuyers_Direction"]</p>
+                <p>@L["ConnectedBuyers_Status", StatusLabel(_selected.Status)]</p>
+                @if (_selected.RespondedAtUtc is DateTimeOffset connectedAt)
+                {
+                    <p>@L["ConnectedBuyers_ConnectedSince", connectedAt.ToLocalTime().ToString("d")]</p>
+                }
+                <p class="pos-muted">@L["ConnectedBuyers_NotCustomerNote"]</p>
+            </section>
+        }
+    }
+    else
+    {
+        <h1>@L["ConnectedBuyers_Title"]</h1>
+        <p>@L["ConnectedBuyers_Help"]</p>
+
+        @if (_loading)
+        {
+            <Spinner />
+        }
+        else if (!string.IsNullOrWhiteSpace(_error))
+        {
+            <Alert Tone="AlertTone.Danger" Title="@L["ConnectedSuppliers_Error"]" Message="@_error" />
+        }
+        else if (_active.Count == 0)
+        {
+            <EmptyState IconName="customers"
+                        Title="@L["ConnectedBuyers_EmptyTitle"]"
+                        Message="@L["ConnectedBuyers_EmptyMessage"]" />
+        }
+        else
+        {
+            <div class="pos-personal-list" role="list">
+                @foreach (var item in _active)
+                {
+                    var name = DisplayName(item);
+                    <button type="button"
+                            class="pos-personal-row"
+                            role="listitem"
+                            @onclick="() => Nav.NavigateTo($"/suppliers/connected/buyers/{item.RelationshipId:D}")">
+                        <span class="pos-personal-row__body">
+                            <span class="pos-personal-row__title">@name</span>
+                            <span class="pos-personal-row__meta">
+                                @(item.CounterpartyPublicOrganizationId ?? "—")
+                                · @L["ConnectedSuppliers_Status_Connected"]
+                                @if (item.RespondedAtUtc is DateTimeOffset since)
+                                {
+                                    <text> · @L["ConnectedBuyers_ConnectedSince", since.ToLocalTime().ToString("d")]</text>
+                                }
+                            </span>
+                        </span>
+                        <span class="pos-personal-row__chevron" aria-hidden="true">›</span>
+                    </button>
+                }
+            </div>
+        }
+    }
+</Page>
+
+@code {
+    [Parameter] public Guid? RelationshipId { get; set; }
+
+    private bool _loading = true;
+    private string? _error;
+    private IReadOnlyList<ConnectedSupplierRelationshipDto> _active = [];
+    private ConnectedSupplierRelationshipDto? _selected;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!Gate.CanEnterProtectedShell)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        if (!Capabilities.IsAllowed(UtangCapability.ViewSuppliers))
+        {
+            Nav.NavigateTo("/home", replace: true);
+            return;
+        }
+
+        if (!await Connectivity.IsConnectedAsync())
+        {
+            _loading = false;
+            _error = L["Suppliers_OfflineMessage"];
+            return;
+        }
+
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+        _selected = null;
+        StateHasChanged();
+
+        var result = await ConnectedSuppliers.ListRelationshipsAsync("supplier");
+        _loading = false;
+        if (!result.IsSuccess || result.Data is null)
+        {
+            _active = [];
+            _error = result.Error?.Detail ?? L["ConnectedBuyers_LoadFailed"];
+            return;
+        }
+
+        _active = result.Data
+            .Where(x => string.Equals(x.Status, "Active", StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(x => x.RespondedAtUtc ?? x.RequestedAtUtc)
+            .ToList();
+
+        if (RelationshipId is Guid id)
+        {
+            _selected = result.Data.FirstOrDefault(x => x.RelationshipId == id);
+            if (_selected is not null
+                && !string.Equals(_selected.Status, "Active", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(_selected.Status, "Disconnected", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(_selected.Status, "Declined", StringComparison.OrdinalIgnoreCase))
+            {
+                // Pending belongs under Incoming requests, not Connected buyers detail.
+                _selected = null;
+            }
+        }
+    }
+
+    private string DisplayName(ConnectedSupplierRelationshipDto item) =>
+        string.IsNullOrWhiteSpace(item.CounterpartyDisplayName)
+            ? L["ConnectedBuyers_UnknownBusiness"].Value
+            : item.CounterpartyDisplayName;
+
+    private string StatusLabel(string status) => status switch
+    {
+        "Active" => L["ConnectedSuppliers_Status_Connected"],
+        "Pending" => L["ConnectedSuppliers_Status_Pending"],
+        "Declined" => L["ConnectedSuppliers_Status_Declined"],
+        "Disconnected" => L["ConnectedSuppliers_Status_Disconnected"],
+        _ => status
+    };
+}
