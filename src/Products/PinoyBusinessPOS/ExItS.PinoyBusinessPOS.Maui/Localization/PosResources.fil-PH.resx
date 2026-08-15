@@ -8087,7 +8087,7 @@
     <value>Mga connected buyer</value>
   </data>
   <data name="ConnectedBuyers_Help" xml:space="preserve">
-    <value>Mga negosyo na gumagamit sa organisasyon mo bilang Connected ExItS supplier.</value>
+    <value>Mga negosyong bumibili sa iyong negosyo gamit ang supplier connection.</value>
   </data>
   <data name="ConnectedBuyers_DetailTitle" xml:space="preserve">
     <value>Connected buyer</value>
@@ -8096,7 +8096,7 @@
     <value>Wala pang connected buyer</value>
   </data>
   <data name="ConnectedBuyers_EmptyMessage" xml:space="preserve">
-    <value>Kapag tinanggap mo ang supplier connection request, lalabas dito ang negosyo.</value>
+    <value>Lalabas dito ang mga negosyo pagkatapos mong tanggapin ang kanilang supplier connection request.</value>
   </data>
   <data name="ConnectedBuyers_NotFoundTitle" xml:space="preserve">
     <value>Hindi nahanap ang koneksyon</value>
@@ -8105,7 +8105,7 @@
     <value>Hindi na available ang buyer connection na ito.</value>
   </data>
   <data name="ConnectedBuyers_Direction" xml:space="preserve">
-    <value>Sila ang bumibili mula sa negosyo mo.</value>
+    <value>Sila ang bumibili mula sa negosyo mo</value>
   </data>
   <data name="ConnectedBuyers_Status" xml:space="preserve">
     <value>Status: {0}</value>
@@ -8114,13 +8114,19 @@
     <value>Nakakonekta mula {0}</value>
   </data>
   <data name="ConnectedBuyers_NotCustomerNote" xml:space="preserve">
-    <value>Ang connected buyers ay org relationship, hindi Customers. Magdagdag bilang customer sa pamamagitan ng tahasang aksyon lamang sa hinaharap.</value>
+    <value>Ito ay koneksyon ng negosyo, hindi customer record.</value>
   </data>
   <data name="ConnectedBuyers_UnknownBusiness" xml:space="preserve">
     <value>Connected na negosyo</value>
   </data>
   <data name="ConnectedBuyers_LoadFailed" xml:space="preserve">
     <value>Hindi ma-load ang connected buyers.</value>
+  </data>
+  <data name="ConnectedBuyers_ReviewRequests" xml:space="preserve">
+    <value>Tingnan ang mga request</value>
+  </data>
+  <data name="ConnectedBuyers_ViewConnection" xml:space="preserve">
+    <value>Tingnan ang koneksyon</value>
   </data>
   <data name="Catalog_HowUsed" xml:space="preserve">
     <value>Paano ginagamit ang item na ito?</value>

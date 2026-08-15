@@ -8087,7 +8087,7 @@
     <value>Connected buyers</value>
   </data>
   <data name="ConnectedBuyers_Help" xml:space="preserve">
-    <value>Businesses that currently use your organization as their Connected ExItS supplier.</value>
+    <value>Businesses that buy from you through ExItS supplier connections.</value>
   </data>
   <data name="ConnectedBuyers_DetailTitle" xml:space="preserve">
     <value>Connected buyer</value>
@@ -8096,7 +8096,7 @@
     <value>No connected buyers yet</value>
   </data>
   <data name="ConnectedBuyers_EmptyMessage" xml:space="preserve">
-    <value>When you accept a supplier connection request, that business appears here.</value>
+    <value>Businesses will appear here after you accept their supplier connection request.</value>
   </data>
   <data name="ConnectedBuyers_NotFoundTitle" xml:space="preserve">
     <value>Connection not found</value>
@@ -8105,7 +8105,7 @@
     <value>This buyer connection is no longer available.</value>
   </data>
   <data name="ConnectedBuyers_Direction" xml:space="preserve">
-    <value>They buy from your business.</value>
+    <value>They buy from your business</value>
   </data>
   <data name="ConnectedBuyers_Status" xml:space="preserve">
     <value>Status: {0}</value>
@@ -8114,13 +8114,19 @@
     <value>Connected {0}</value>
   </data>
   <data name="ConnectedBuyers_NotCustomerNote" xml:space="preserve">
-    <value>Connected buyers are organization relationships, not Customers. Add as customer only with an explicit action later.</value>
+    <value>These are business connections, not customer records.</value>
   </data>
   <data name="ConnectedBuyers_UnknownBusiness" xml:space="preserve">
     <value>Connected business</value>
   </data>
   <data name="ConnectedBuyers_LoadFailed" xml:space="preserve">
     <value>Connected buyers could not be loaded.</value>
+  </data>
+  <data name="ConnectedBuyers_ReviewRequests" xml:space="preserve">
+    <value>Review requests</value>
+  </data>
+  <data name="ConnectedBuyers_ViewConnection" xml:space="preserve">
+    <value>View connection</value>
   </data>
   <data name="Catalog_HowUsed" xml:space="preserve">
     <value>How is this item used?</value>

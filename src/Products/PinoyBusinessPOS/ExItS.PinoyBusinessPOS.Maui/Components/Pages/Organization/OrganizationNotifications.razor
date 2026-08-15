@@ -287,7 +287,12 @@ else
             return;
         }
 
-        await MarkReadOptimisticAsync(item);
+        var marked = await MarkReadOptimisticAsync(item);
+        if (!marked && !item.IsRead)
+        {
+            // Stay on the list so the user can see why Unread did not clear.
+            return;
+        }
 
         if (IsSupplierAcceptedConfirmation(item))
         {
@@ -348,6 +353,20 @@ else
 
             await MarkReadAfterRespondAsync(item);
             ApplyLocalRead(item.Id);
+            // Accept/Decline already creates a same-org confirmation notification; mark it read
+            // immediately so the actor who just responded is not left with an Unread badge.
+            if (CurrentUser.Session?.OrganizationId is Guid orgId
+                && !string.IsNullOrWhiteSpace(item.RelatedId))
+            {
+                var confirmationType = accept
+                    ? SupplierConnectionNotificationTypes.AcceptedConfirmation
+                    : SupplierConnectionNotificationTypes.DeclinedConfirmation;
+                await Platform.MarkRelatedOrganizationNotificationsReadAsync(
+                    orgId,
+                    confirmationType,
+                    item.RelatedId);
+            }
+
             UnreadState.NotifyChanged();
             await LoadAsync();
             if (accept)
@@ -379,11 +398,16 @@ else
         }
     }
 
-    private async Task MarkReadOptimisticAsync(OrganizationInAppNotificationDto item)
+    private async Task<bool> MarkReadOptimisticAsync(OrganizationInAppNotificationDto item)
     {
-        if (_busy || item.IsRead || CurrentUser.Session?.OrganizationId is not Guid orgId)
+        if (item.IsRead)
         {
-            return;
+            return true;
+        }
+
+        if (_busy || CurrentUser.Session?.OrganizationId is not Guid orgId)
+        {
+            return false;
         }
 
         _busy = true;
@@ -407,7 +431,19 @@ else
                 UnreadState.NotifyChanged();
                 _actionError = result.Error?.Detail ?? L["OrgNotifications_MarkReadFailed"];
                 await InvokeAsync(StateHasChanged);
+                return false;
             }
+
+            if (!string.IsNullOrWhiteSpace(item.RelatedType) && !string.IsNullOrWhiteSpace(item.RelatedId))
+            {
+                await Platform.MarkRelatedOrganizationNotificationsReadAsync(
+                    orgId,
+                    item.RelatedType,
+                    item.RelatedId);
+            }
+
+            UnreadState.NotifyChanged();
+            return true;
         }
         finally
         {

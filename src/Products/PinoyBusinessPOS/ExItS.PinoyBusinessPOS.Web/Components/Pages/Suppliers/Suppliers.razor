@@ -21,7 +21,7 @@
 else
 {
     <div class="org-page">
-        <ExitsPageHeader Title="@L["Suppliers_Title"]" Subtitle="@L["Suppliers_Subtitle"]" />
+        <ExitsPageHeader Title="@HeaderTitle" Subtitle="@HeaderSubtitle" />
 
         <div class="org-toolbar">
             <Space>
@@ -309,6 +309,20 @@ else
     private List<ConnectedSupplierRelationshipDto> _sent = [];
     private List<ConnectedSupplierRelationshipDto> _connectedBuyers = [];
     private ConnectedSupplierRelationshipDto? _selectedBuyer;
+
+    private string HeaderTitle => _tab switch
+    {
+        "buyers" => L["Suppliers_BuyersSection"],
+        "requests" => L["Suppliers_TabRequests"],
+        _ => L["Suppliers_Title"]
+    };
+
+    private string HeaderSubtitle => _tab switch
+    {
+        "buyers" => L["Suppliers_BuyersHelp"],
+        "requests" => L["Suppliers_NoIncomingMessage"],
+        _ => L["Suppliers_Subtitle"]
+    };
 
     protected override async Task OnParametersSetAsync()
     {

@@ -694,13 +694,13 @@
     <value>Connected buyers</value>
   </data>
   <data name="Suppliers_BuyersHelp" xml:space="preserve">
-    <value>Businesses that currently use your organization as their Connected ExItS supplier.</value>
+    <value>Businesses that buy from you through ExItS supplier connections.</value>
   </data>
   <data name="Suppliers_NoBuyersTitle" xml:space="preserve">
     <value>No connected buyers yet</value>
   </data>
   <data name="Suppliers_NoBuyersMessage" xml:space="preserve">
-    <value>When you accept a supplier connection request, that business appears here.</value>
+    <value>Businesses will appear here after you accept their supplier connection request.</value>
   </data>
   <data name="Suppliers_ColBuyer" xml:space="preserve">
     <value>Buyer business</value>

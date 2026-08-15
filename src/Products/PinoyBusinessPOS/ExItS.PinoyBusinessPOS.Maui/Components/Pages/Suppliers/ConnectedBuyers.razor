@@ -12,7 +12,9 @@
 <Page>
     @if (RelationshipId is Guid detailId)
     {
-        <h1>@L["ConnectedBuyers_DetailTitle"]</h1>
+        <header class="pos-suppliers__header">
+            <h1 class="pos-suppliers__title">@L["ConnectedBuyers_DetailTitle"]</h1>
+        </header>
         @if (_loading)
         {
             <Spinner />
@@ -30,7 +32,7 @@
         else
         {
             var name = DisplayName(_selected);
-            <section class="pos-settings__panel">
+            <section class="pos-settings__panel" aria-label="@L["ConnectedBuyers_DetailTitle"]">
                 <h2>@name</h2>
                 @if (!string.IsNullOrWhiteSpace(_selected.CounterpartyPublicOrganizationId))
                 {
@@ -48,8 +50,11 @@
     }
     else
     {
-        <h1>@L["ConnectedBuyers_Title"]</h1>
-        <p>@L["ConnectedBuyers_Help"]</p>
+        <header class="pos-suppliers__header">
+            <h1 class="pos-suppliers__title">@L["ConnectedBuyers_Title"]</h1>
+            <p class="pos-suppliers__subtitle">@L["ConnectedBuyers_Help"]</p>
+        </header>
+        <p class="pos-muted">@L["ConnectedBuyers_NotCustomerNote"]</p>
 
         @if (_loading)
         {
@@ -64,6 +69,17 @@
             <EmptyState IconName="customers"
                         Title="@L["ConnectedBuyers_EmptyTitle"]"
                         Message="@L["ConnectedBuyers_EmptyMessage"]" />
+            @if (_incomingPendingCount > 0)
+            {
+                <div class="pos-sell-customer__actions" role="group" style="margin-top:1rem;">
+                    <button type="button" class="pos-action-tile pos-action-tile--primary" @onclick="GoReviewRequests">
+                        <span class="pos-action-tile__label">
+                            @L["ConnectedBuyers_ReviewRequests"]
+                            <text> · @_incomingPendingCount</text>
+                        </span>
+                    </button>
+                </div>
+            }
         }
         else
         {
@@ -79,12 +95,16 @@
                             <span class="pos-personal-row__title">@name</span>
                             <span class="pos-personal-row__meta">
                                 @(item.CounterpartyPublicOrganizationId ?? "—")
-                                · @L["ConnectedSuppliers_Status_Connected"]
+                            </span>
+                            <span class="pos-personal-row__meta">
+                                @L["ConnectedSuppliers_Status_Connected"]
+                                · @L["ConnectedBuyers_Direction"]
                                 @if (item.RespondedAtUtc is DateTimeOffset since)
                                 {
                                     <text> · @L["ConnectedBuyers_ConnectedSince", since.ToLocalTime().ToString("d")]</text>
                                 }
                             </span>
+                            <span class="pos-personal-row__meta pos-muted">@L["ConnectedBuyers_ViewConnection"]</span>
                         </span>
                         <span class="pos-personal-row__chevron" aria-hidden="true">›</span>
                     </button>
@@ -99,6 +119,7 @@
 
     private bool _loading = true;
     private string? _error;
+    private int _incomingPendingCount;
     private IReadOnlyList<ConnectedSupplierRelationshipDto> _active = [];
     private ConnectedSupplierRelationshipDto? _selected;
 
@@ -138,9 +159,13 @@
         if (!result.IsSuccess || result.Data is null)
         {
             _active = [];
+            _incomingPendingCount = 0;
             _error = result.Error?.Detail ?? L["ConnectedBuyers_LoadFailed"];
             return;
         }
+
+        _incomingPendingCount = result.Data
+            .Count(x => string.Equals(x.Status, "Pending", StringComparison.OrdinalIgnoreCase));
 
         _active = result.Data
             .Where(x => string.Equals(x.Status, "Active", StringComparison.OrdinalIgnoreCase))
@@ -163,6 +188,8 @@
 
     private void OpenBuyerDetail(Guid relationshipId) =>
         Nav.NavigateTo($"/suppliers/connected/buyers/{relationshipId:D}");
+
+    private void GoReviewRequests() => Nav.NavigateTo("/suppliers/connected/requests");
 
     private string DisplayName(ConnectedSupplierRelationshipDto item) =>
         string.IsNullOrWhiteSpace(item.CounterpartyDisplayName)

@@ -279,6 +279,58 @@ public sealed class ConnectedSupplierRequestLifecycleTests
         Assert.DoesNotContain("Customer.Create", body, StringComparison.Ordinal);
         Assert.DoesNotContain("CreateCustomer", body, StringComparison.Ordinal);
         Assert.DoesNotContain("MergeCustomer", body, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("BusinessCredit", body, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Inventory", body, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("StockMovement", body, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task ConnectedBuyerIsNotCustomer_and_accept_does_not_change_inventory()
+    {
+        var buyer = PosOrganizationId.From(Guid.NewGuid());
+        var supplier = PosOrganizationId.From(Guid.NewGuid());
+        var repo = new InMemoryRelationships();
+        var relationship = ConnectedSupplierRelationship.Request(buyer, supplier, DateTimeOffset.UtcNow);
+        await repo.AddAsync(relationship);
+
+        var respond = new RespondConnection(repo, new FakeUow(), new FakeAccess());
+        Assert.True((await respond.ExecuteAsync(supplier.Value, relationship.Id.Value, true, new RespondConnectionRequest())).IsSuccess);
+
+        // Relationship is org↔org Active — there is no Customer id on the DTO / aggregate.
+        Assert.Equal(ConnectedSupplierRelationshipStatus.Active, relationship.Status);
+        Assert.Null(typeof(ConnectedSupplierRelationshipDto).GetProperty("CustomerId"));
+        Assert.DoesNotContain(
+            "CustomerId",
+            File.ReadAllText(Path.Combine(
+                FindRepoRoot(),
+                "src",
+                "Products",
+                "PinoyBusinessPOS",
+                "ExItS.PinoyBusinessPOS.Domain",
+                "ConnectedSuppliers",
+                "ConnectedSuppliers.cs")),
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task DeclinedBuyerNotInActiveConnectedBuyers()
+    {
+        var buyer = PosOrganizationId.From(Guid.NewGuid());
+        var supplier = PosOrganizationId.From(Guid.NewGuid());
+        var repo = new InMemoryRelationships();
+        var relationship = ConnectedSupplierRelationship.Request(buyer, supplier, DateTimeOffset.UtcNow);
+        await repo.AddAsync(relationship);
+
+        var respond = new RespondConnection(repo, new FakeUow(), new FakeAccess());
+        Assert.True((await respond.ExecuteAsync(supplier.Value, relationship.Id.Value, false, new RespondConnectionRequest())).IsSuccess);
+
+        var active = (await new ListRelationships(repo, new FakeAccess())
+                .ExecuteAsync(supplier.Value, supplierView: true)).Value!
+            .Where(x => x.Status == "Active")
+            .ToList();
+        Assert.Empty(active);
+        Assert.Equal("Declined", (await new ListRelationships(repo, new FakeAccess())
+                .ExecuteAsync(supplier.Value, supplierView: true)).Value![0].Status);
     }
 
     private static string FindRepoRoot()

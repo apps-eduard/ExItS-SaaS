@@ -86,6 +86,9 @@
                             <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("customers")</span>
                             <span class="pos-action-tile__label">@L["Nav_Suppliers"]</span>
                         </button>
+                        <button type="button" class="pos-action-tile" @onclick="GoConnectedBuyers">
+                            <span class="pos-action-tile__label">@L["ConnectedBuyers_Title"]</span>
+                        </button>
                         <button type="button"
                                 class="pos-action-tile @(_incomingPendingCount > 0 ? "pos-action-tile--primary" : null)"
                                 @onclick="GoIncomingRequests">
@@ -214,6 +217,7 @@
     private Task GoInventory() => OfflineNav.NavigateAsync("/inventory");
     private Task GoExpenses() => OfflineNav.NavigateAsync("/expenses");
     private Task GoSuppliers() => OfflineNav.NavigateAsync("/suppliers");
+    private Task GoConnectedBuyers() => OfflineNav.NavigateAsync("/suppliers/connected/buyers");
     private Task GoIncomingRequests() => OfflineNav.NavigateAsync("/suppliers/connected/requests");
     private Task GoPurchasing() => OfflineNav.NavigateAsync("/purchasing");
     private Task GoRegisters() => OfflineNav.NavigateAsync("/registers");

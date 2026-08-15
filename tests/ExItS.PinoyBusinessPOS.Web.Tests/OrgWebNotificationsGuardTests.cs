@@ -36,6 +36,9 @@ public sealed class OrgWebNotificationsGuardTests
         Assert.Contains("Suppliers_TabBuyers", suppliers, StringComparison.Ordinal);
         Assert.Contains("_connectedBuyers", suppliers, StringComparison.Ordinal);
         Assert.Contains("Suppliers_BuyerNotCustomerNote", suppliers, StringComparison.Ordinal);
+        Assert.Contains("HeaderTitle", suppliers, StringComparison.Ordinal);
+        Assert.Contains("Suppliers_BuyersHelp", suppliers, StringComparison.Ordinal);
+        Assert.Contains("string.Equals(x.Status, \"Active\"", suppliers, StringComparison.Ordinal);
 
         var layout = File.ReadAllText(Path.Combine(WebProject(),
             "Components", "Layout", "MainLayout.razor"));

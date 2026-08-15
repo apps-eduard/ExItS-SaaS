@@ -29,6 +29,8 @@ public sealed class OrganizationNotificationsUiGuardTests
         Assert.Contains("OrgNotifications_ActionNeeded", page, StringComparison.Ordinal);
         Assert.Contains("MarkOrganizationNotificationReadAsync", page, StringComparison.Ordinal);
         Assert.Contains("MarkRelatedOrganizationNotificationsReadAsync", page, StringComparison.Ordinal);
+        Assert.Contains("AcceptedConfirmation", page, StringComparison.Ordinal);
+        Assert.Contains("DeclinedConfirmation", page, StringComparison.Ordinal);
         Assert.Contains("UnreadState.NotifyChanged", page, StringComparison.Ordinal);
         Assert.Contains("ApplyLocalRead", page, StringComparison.Ordinal);
         Assert.Contains("/suppliers/connected/requests", page, StringComparison.Ordinal);

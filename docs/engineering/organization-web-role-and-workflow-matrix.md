@@ -95,7 +95,7 @@ Server APIs remain authoritative (`OrganizationManagementAuthority` + `PosRoleMa
 
 | Item | Reason |
 |---|---|
-| Suppliers / purchase orders / goods receipt pages | Suppliers list + Connected ExItS connect + Incoming/Sent requests + **Connected buyers** (`/suppliers`, `/suppliers/requests`, `/suppliers/buyers`, `/suppliers/connect`); PO/goods-receipt Org Web pages still deferred |
+| Suppliers / purchase orders / goods receipt pages | Suppliers list + Connected ExItS connect + Incoming/Sent requests + **Connected buyers** Active-only (`/suppliers`, `/suppliers/requests`, `/suppliers/buyers`, `/suppliers/connect`); Connected Buyer ≠ Customer; PO/goods-receipt Org Web pages still deferred |
 | Expenses UI | Same |
 | Sale returns management UI | Read history only today |
 | Billing / plan change | Subscription is read-only |

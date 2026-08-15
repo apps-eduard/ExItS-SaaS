@@ -30,7 +30,18 @@ Page-based `ListProductsAsync` (`PosPagination`: default 20, max 100). Connected
 
 **Connect UX / server rule:** requesting a connected supplier requires the supplier **Business QR** / `ORG######`. Personal QR and POS device-registration QR are rejected in MAUI and in `RequestConnection` (Guid-only is no longer accepted).
 
-## Conceptual model
+## Connected Buyer vs Connected Supplier vs Customer
+
+| Term | Meaning |
+|---|---|
+| **Connected Supplier** | Who supplies **my** Organization (buyer-side directory under Suppliers) |
+| **Connected Buyer** | Who buys **from** my Organization through an Active supplier connection (supplier-side directory) |
+| **Customer** | Seller-owned sales/customer master (Utang/credit ledger). Separate from Connected Buyer |
+
+**Critical:** Accepting a Connected Supplier request creates / activates `ConnectedSupplierRelationship` only. It does **not** create a Customer, merge Customer records, create Business Utang, or change inventory. Explicit “Add as customer” remains deferred.
+
+Supplier-side MAUI: `/suppliers/connected/buyers` (+ detail). Org Web: `/suppliers/buyers`. Active-only in both UIs; Pending stays under Requests.
+
 
 ```text
 Supplier Organization
