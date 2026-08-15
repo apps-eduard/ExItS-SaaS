@@ -13,31 +13,64 @@ else
         @foreach (var item in Cart.Items)
         {
             var byWeight = SalesUiOptions.IsByWeight(item.SellingMode);
+            var usesSellUnit = item.SellingUnitId is not null;
+            var displayQty = item.EnteredQuantity ?? item.Quantity;
+            var displayUnit = usesSellUnit
+                ? (item.SellingUnitName ?? item.UnitOfMeasure)
+                : item.UnitOfMeasure;
             <div class="pos-cart-line">
                 <div>
                     <div class="pos-cart-line__name">@item.Name</div>
                     <div class="pos-cart-line__meta">
+                        <span class="pos-tabular">@displayQty.ToString("0.###") @displayUnit</span>
+                        <span> × </span>
                         <MoneyDisplay Amount="@item.UnitPrice" CurrencyCode="PHP" />
-                        @if (byWeight)
+                        @if (byWeight && !usesSellUnit)
                         {
                             <span> @L["Sales_Checkout_PricePerKg"]</span>
                         }
-                        <span> × </span>
-                        <span class="pos-tabular">
-                            @SalesUiOptions.FormatCartQuantity(L, item.Quantity, item.UnitOfMeasure, item.SellingMode)
-                        </span>
+                        else if (usesSellUnit)
+                        {
+                            <span> / @displayUnit</span>
+                        }
                         <span> · </span>
                         <MoneyDisplay Amount="@item.LineTotal" CurrencyCode="PHP" />
                     </div>
+                    @if (usesSellUnit && item.MultiplierToBase != 1m)
+                    {
+                        <div class="pos-cart-line__stock-hint pos-muted">
+                            @string.Format(
+                                L["Sales_Checkout_CartStockFromBase"].Value,
+                                item.Quantity.ToString("0.###"),
+                                item.UnitOfMeasure)
+                        </div>
+                    }
                 </div>
                 <div class="pos-cart-line__actions">
-                    @if (byWeight)
+                    @if (byWeight && !usesSellUnit)
                     {
                         <Button Variant="ButtonVariant.Secondary"
                                 Disabled="@Disabled"
                                 OnClick="() => OnEditWeight(item.ProductId)">
                             @L["Sales_Checkout_WeightEdit"]
                         </Button>
+                        <Button Variant="ButtonVariant.Ghost"
+                                Disabled="@Disabled"
+                                OnClick="() => Cart.Remove(item.ProductId)">@L["Sales_Checkout_Remove"]</Button>
+                    }
+                    else if (usesSellUnit)
+                    {
+                        <QuantityStepper Value="@displayQty"
+                                         ValueChanged="v => OnEnteredQuantityChanged(item, v)"
+                                         Step="@(item.MultiplierToBase != 1m && !byWeight ? 1m : 0.001m)"
+                                         DecimalPlaces="@(item.MultiplierToBase != 1m && !byWeight ? 0 : 3)"
+                                         Disabled="@Disabled"
+                                         AriaLabel="@L["Sales_Checkout_Quantity"]"
+                                         DecreaseLabel="@L["Sales_Checkout_DecreaseQty"]"
+                                         IncreaseLabel="@L["Sales_Checkout_IncreaseQty"]" />
+                        <Button Variant="ButtonVariant.Ghost"
+                                Disabled="@Disabled"
+                                OnClick="() => Cart.Remove(item.ProductId, item.SellingUnitId)">@L["Sales_Checkout_Remove"]</Button>
                     }
                     else
                     {
@@ -49,10 +82,10 @@ else
                                          AriaLabel="@L["Sales_Checkout_Quantity"]"
                                          DecreaseLabel="@L["Sales_Checkout_DecreaseQty"]"
                                          IncreaseLabel="@L["Sales_Checkout_IncreaseQty"]" />
+                        <Button Variant="ButtonVariant.Ghost"
+                                Disabled="@Disabled"
+                                OnClick="() => Cart.Remove(item.ProductId)">@L["Sales_Checkout_Remove"]</Button>
                     }
-                    <Button Variant="ButtonVariant.Ghost"
-                            Disabled="@Disabled"
-                            OnClick="() => Cart.Remove(item.ProductId)">@L["Sales_Checkout_Remove"]</Button>
                 </div>
             </div>
         }
@@ -93,6 +126,14 @@ else
         Cart.SetQuantity(productId, quantity);
         return QuantityChanged.HasDelegate
             ? QuantityChanged.InvokeAsync(productId)
+            : Task.CompletedTask;
+    }
+
+    private Task OnEnteredQuantityChanged(SaleCartItem item, decimal quantity)
+    {
+        Cart.SetEnteredQuantity(item.ProductId, item.SellingUnitId, quantity);
+        return QuantityChanged.HasDelegate
+            ? QuantityChanged.InvokeAsync(item.ProductId)
             : Task.CompletedTask;
     }
 

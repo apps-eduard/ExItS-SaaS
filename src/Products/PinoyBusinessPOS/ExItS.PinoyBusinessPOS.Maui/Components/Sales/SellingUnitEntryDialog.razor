@@ -1,0 +1,274 @@
+@using ExItS.DesignSystem.Components.Forms
+@using ExItS.DesignSystem.Components.Overlay
+@using ExItS.DesignSystem.Components.Primitives
+@using ExItS.PinoyBusinessPOS.Application.Catalog
+@using ExItS.PinoyBusinessPOS.Application.Sales
+@inject IStringLocalizer<PosResources> L
+
+<Dialog Visible="@Visible"
+        Title="@L["Sales_SellAs"]"
+        OnClose="CancelAsync">
+    <ChildContent>
+        @if (Product is not null && SelectedUnit is not null)
+        {
+            <div class="pos-selling-unit-entry">
+                <div class="pos-selling-unit-entry__product">
+                    <span class="pos-selling-unit-entry__name">@Product.Name</span>
+                    @if (Product.IsTracked)
+                    {
+                        <span class="pos-selling-unit-entry__available">
+                            @L["Sales_Checkout_Available"]
+                            <span class="pos-tabular">@Product.OnHandQuantity.ToString("0.###") @Product.UnitOfMeasure</span>
+                        </span>
+                    }
+                </div>
+
+                @if (Options.Count > 1)
+                {
+                    <div class="pos-selling-unit-entry__sell-as" role="group" aria-label="@L["Sales_SellAs"]">
+                        <span class="pos-selling-unit-entry__label">@L["Sales_SellAs"]</span>
+                        <div class="pos-selling-unit-entry__chips">
+                            @foreach (var unit in Options)
+                            {
+                                var selected = SelectedUnit.UnitId == unit.UnitId;
+                                <button type="button"
+                                        class="@($"pos-selling-unit-entry__chip{(selected ? " pos-selling-unit-entry__chip--selected" : string.Empty)}")"
+                                        aria-pressed="@selected"
+                                        @onclick="() => SelectUnit(unit)">
+                                    <span class="pos-selling-unit-entry__chip-name">@unit.DisplayName</span>
+                                    <span class="pos-selling-unit-entry__chip-price">
+                                        <MoneyDisplay Amount="@(unit.SellingPrice ?? Product.SellingPrice)" CurrencyCode="PHP" />
+                                        <span> / @unit.DisplayName</span>
+                                    </span>
+                                    @if (unit.MultiplierToBase != 1m)
+                                    {
+                                        <span class="pos-selling-unit-entry__chip-conv">
+                                            @string.Format(L["Sales_Checkout_UnitEqualsBase"].Value, 1.ToString("0.###"), unit.DisplayName, unit.MultiplierToBase.ToString("0.###"), Product.UnitOfMeasure)
+                                        </span>
+                                    }
+                                </button>
+                            }
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="pos-selling-unit-entry__single">
+                        <span class="pos-selling-unit-entry__label">@L["Sales_SellAs"]</span>
+                        <span class="pos-selling-unit-entry__single-value">@SelectedUnit.DisplayName</span>
+                        @if (SelectedUnit.MultiplierToBase != 1m)
+                        {
+                            <span class="pos-muted">
+                                @string.Format(L["Sales_Checkout_UnitEqualsBase"].Value, 1.ToString("0.###"), SelectedUnit.DisplayName, SelectedUnit.MultiplierToBase.ToString("0.###"), Product.UnitOfMeasure)
+                            </span>
+                        }
+                    </div>
+                }
+
+                <div class="pos-selling-unit-entry__qty">
+                    <span class="pos-selling-unit-entry__label">@L["Sales_Checkout_Quantity"]</span>
+                    <QuantityStepper Value="@_quantity"
+                                     ValueChanged="OnQuantityChanged"
+                                     Step="@Step"
+                                     Min="0"
+                                     DecimalPlaces="@DecimalPlaces"
+                                     AriaLabel="@L["Sales_Checkout_Quantity"]"
+                                     DecreaseLabel="@L["Sales_Checkout_DecreaseQty"]"
+                                     IncreaseLabel="@L["Sales_Checkout_IncreaseQty"]" />
+                </div>
+
+                <div class="pos-selling-unit-entry__price">
+                    <span class="pos-selling-unit-entry__label">@L["Sales_Checkout_UnitPrice"]</span>
+                    <span>
+                        <MoneyDisplay Amount="@UnitPrice" CurrencyCode="PHP" />
+                        <span> / @SelectedUnit.DisplayName</span>
+                    </span>
+                </div>
+
+                @if (SelectedUnit.MultiplierToBase != 1m && _quantity > 0m)
+                {
+                    <div class="pos-selling-unit-entry__stock-used">
+                        <span class="pos-selling-unit-entry__label">@L["Sales_Checkout_StockUsed"]</span>
+                        <span class="pos-tabular">@BaseQuantityNeeded.ToString("0.###") @Product.UnitOfMeasure</span>
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(_error))
+                {
+                    <InlineMessage Tone="InlineMessageTone.Danger">@_error</InlineMessage>
+                }
+
+                <div class="pos-selling-unit-entry__subtotal" aria-live="polite">
+                    <span class="pos-selling-unit-entry__label">@L["Sales_Field_Subtotal"]</span>
+                    <MoneyDisplay Amount="@Subtotal" CurrencyCode="PHP" Emphasized="true" />
+                </div>
+            </div>
+        }
+    </ChildContent>
+    <Footer>
+        <FormActions>
+            <Button Variant="ButtonVariant.Secondary" OnClick="CancelAsync">@L["Sales_Cancel"]</Button>
+            <Button Variant="ButtonVariant.Primary"
+                    Disabled="@(_quantity <= 0m || !string.IsNullOrEmpty(_error))"
+                    OnClick="ConfirmAsync">@L["Sales_Checkout_AddToCart"]</Button>
+        </FormActions>
+    </Footer>
+</Dialog>
+
+@code {
+    [Parameter] public bool Visible { get; set; }
+    [Parameter] public EventCallback<bool> VisibleChanged { get; set; }
+    [Parameter] public PosCatalogProductDto? Product { get; set; }
+    [Parameter] public IReadOnlyList<PosCatalogProductUnitDto> Options { get; set; } = Array.Empty<PosCatalogProductUnitDto>();
+    /// <summary>Base quantity already in cart for this product excluding the selected unit line.</summary>
+    [Parameter] public decimal OtherBaseQuantityInCart { get; set; }
+    [Parameter] public decimal InitialEnteredQuantity { get; set; } = 1m;
+    [Parameter] public Guid? InitialUnitId { get; set; }
+    [Parameter] public EventCallback<(PosCatalogProductUnitDto Unit, decimal EnteredQuantity)> Confirmed { get; set; }
+    [Parameter] public EventCallback Cancelled { get; set; }
+
+    private PosCatalogProductUnitDto? SelectedUnit { get; set; }
+    private decimal _quantity = 1m;
+    private string? _error;
+    private bool _opened;
+
+    private decimal UnitPrice =>
+        SelectedUnit?.SellingPrice ?? Product?.SellingPrice ?? 0m;
+
+    private decimal Multiplier =>
+        SelectedUnit is null || SelectedUnit.MultiplierToBase <= 0m ? 1m : SelectedUnit.MultiplierToBase;
+
+    private decimal BaseQuantityNeeded =>
+        decimal.Round(_quantity * Multiplier, 3, MidpointRounding.AwayFromZero);
+
+    private decimal Subtotal =>
+        PosSaleOptions.RoundMoney(UnitPrice * _quantity);
+
+    private decimal Step =>
+        SelectedUnit is null
+            ? 1m
+            : (RequiresWholeEnteredQuantity(SelectedUnit) ? 1m : 0.001m);
+
+    private int DecimalPlaces =>
+        SelectedUnit is null
+            ? 0
+            : (RequiresWholeEnteredQuantity(SelectedUnit) ? 0 : 3);
+
+    protected override void OnParametersSet()
+    {
+        if (Visible && !_opened)
+        {
+            _opened = true;
+            SelectedUnit = Options.FirstOrDefault(u => u.UnitId == InitialUnitId)
+                ?? Options.OrderBy(u => u.SortOrder).ThenBy(u => u.DisplayName).FirstOrDefault();
+            _quantity = InitialEnteredQuantity > 0m ? InitialEnteredQuantity : 1m;
+            _error = null;
+            Validate();
+        }
+        else if (!Visible)
+        {
+            _opened = false;
+        }
+    }
+
+    private void SelectUnit(PosCatalogProductUnitDto unit)
+    {
+        SelectedUnit = unit;
+        if (RequiresWholeEnteredQuantity(unit) && _quantity != decimal.Truncate(_quantity))
+        {
+            _quantity = Math.Max(1m, decimal.Truncate(_quantity));
+        }
+
+        Validate();
+    }
+
+    private void OnQuantityChanged(decimal value)
+    {
+        _quantity = value;
+        Validate();
+    }
+
+    private void Validate()
+    {
+        _error = null;
+        if (Product is null || SelectedUnit is null)
+        {
+            return;
+        }
+
+        if (_quantity <= 0m)
+        {
+            return;
+        }
+
+        if (!PosSaleOptions.IsValidQuantity(
+                _quantity,
+                RequiresWholeEnteredQuantity(SelectedUnit) ? "Piece" : Product.UnitOfMeasure,
+                Product.SellingMode)
+            && RequiresWholeEnteredQuantity(SelectedUnit)
+            && _quantity != decimal.Truncate(_quantity))
+        {
+            _error = L["Sales_Checkout_QuantityWhole"];
+            return;
+        }
+
+        if (!Product.IsTracked)
+        {
+            return;
+        }
+
+        var totalBase = OtherBaseQuantityInCart + BaseQuantityNeeded;
+        if (totalBase > Product.OnHandQuantity)
+        {
+            _error = string.Format(
+                L["Sales_Checkout_InsufficientStockForUnit"].Value,
+                _quantity.ToString("0.###"),
+                SelectedUnit.DisplayName,
+                BaseQuantityNeeded.ToString("0.###"),
+                Product.UnitOfMeasure,
+                Product.OnHandQuantity.ToString("0.###"),
+                Product.UnitOfMeasure);
+        }
+    }
+
+    private async Task ConfirmAsync()
+    {
+        Validate();
+        if (SelectedUnit is null || _quantity <= 0m || !string.IsNullOrEmpty(_error))
+        {
+            return;
+        }
+
+        if (Confirmed.HasDelegate)
+        {
+            await Confirmed.InvokeAsync((SelectedUnit, _quantity));
+        }
+
+        await SetVisibleAsync(false);
+    }
+
+    private async Task CancelAsync()
+    {
+        if (Cancelled.HasDelegate)
+        {
+            await Cancelled.InvokeAsync();
+        }
+
+        await SetVisibleAsync(false);
+    }
+
+    private async Task SetVisibleAsync(bool visible)
+    {
+        if (VisibleChanged.HasDelegate)
+        {
+            await VisibleChanged.InvokeAsync(visible);
+        }
+    }
+
+    /// <summary>
+    /// Pack-style units (multiplier ≠ 1, not custom) default to whole entered quantities.
+    /// Measured sell (custom qty / ByWeight) allows decimals.
+    /// </summary>
+    private static bool RequiresWholeEnteredQuantity(PosCatalogProductUnitDto unit) =>
+        !unit.AllowsCustomQuantity && unit.MultiplierToBase != 1m;
+}

@@ -63,6 +63,12 @@ public sealed class SaleCartService : IDisposable
         return index >= 0 ? _items[index].Quantity : 0m;
     }
 
+    public decimal GetBaseQuantity(Guid productId) =>
+        _items.Where(i => i.ProductId == productId).Sum(i => i.Quantity);
+
+    public decimal GetBaseQuantityExcluding(Guid productId, Guid? sellingUnitId) =>
+        _items.Where(i => i.ProductId == productId && i.SellingUnitId != sellingUnitId).Sum(i => i.Quantity);
+
     public decimal GetEnteredQuantity(Guid productId, Guid? sellingUnitId)
     {
         var index = _items.FindIndex(i => i.ProductId == productId && i.SellingUnitId == sellingUnitId);
@@ -72,6 +78,32 @@ public sealed class SaleCartService : IDisposable
         }
 
         return _items[index].EnteredQuantity ?? _items[index].Quantity;
+    }
+
+    public void SetEnteredQuantity(Guid productId, Guid? sellingUnitId, decimal enteredQuantity)
+    {
+        var index = _items.FindIndex(i => i.ProductId == productId && i.SellingUnitId == sellingUnitId);
+        if (index < 0)
+        {
+            return;
+        }
+
+        if (enteredQuantity <= 0m)
+        {
+            _items.RemoveAt(index);
+            Changed?.Invoke();
+            return;
+        }
+
+        var existing = _items[index];
+        var multiplier = existing.MultiplierToBase <= 0m ? 1m : existing.MultiplierToBase;
+        var nextBase = decimal.Round(enteredQuantity * multiplier, 3, MidpointRounding.AwayFromZero);
+        _items[index] = existing with
+        {
+            EnteredQuantity = existing.SellingUnitId is null ? null : enteredQuantity,
+            Quantity = existing.SellingUnitId is null ? enteredQuantity : nextBase
+        };
+        Changed?.Invoke();
     }
 
     /// <summary>

@@ -32,6 +32,13 @@ public static class SaleReturnRefundable
             return remainingAmount;
         }
 
+        // Pack-priced lines: UnitPrice is per entered sell unit; quantityReturned is base inventory.
+        if (saleLine.MultiplierToBaseSnapshot is > 0m and not 1m)
+        {
+            var enteredReturned = quantityReturned / saleLine.MultiplierToBaseSnapshot.Value;
+            return SaleMoney.RoundMoney(enteredReturned * saleLine.UnitPrice);
+        }
+
         return SaleMoney.RoundMoney(quantityReturned * saleLine.UnitPrice);
     }
 }

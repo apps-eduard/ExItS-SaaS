@@ -24,9 +24,16 @@
                             class="pos-selling-unit-picker__option"
                             role="listitem"
                             @onclick="() => SelectAsync(unit)">
-                        <span class="pos-selling-unit-picker__option-name">@unit.DisplayName</span>
+                            <span class="pos-selling-unit-picker__option-name">@unit.DisplayName</span>
                         <span class="pos-selling-unit-picker__option-price">
                             <MoneyDisplay Amount="@price" CurrencyCode="PHP" />
+                            <span> / @unit.DisplayName</span>
+                            @if (unit.MultiplierToBase != 1m && Product is not null)
+                            {
+                                <span class="pos-selling-unit-picker__option-note">
+                                    @string.Format(L["Sales_Checkout_UnitEqualsBase"].Value, 1.ToString("0.###"), unit.DisplayName, unit.MultiplierToBase.ToString("0.###"), Product.UnitOfMeasure)
+                                </span>
+                            }
                             @if (unit.AllowsCustomQuantity)
                             {
                                 <span class="pos-selling-unit-picker__option-note">@L["Catalog_CustomAmount"]</span>

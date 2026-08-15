@@ -295,9 +295,11 @@ else
         <section class="pos-sell-payment__summary" aria-label="@L["Sales_Checkout_CartSection"]">
             @foreach (var item in Cart.Items)
             {
+                var payQty = item.EnteredQuantity ?? item.Quantity;
+                var payUnit = item.SellingUnitName ?? item.UnitOfMeasure;
                 <div class="pos-sell-payment__line">
                     <span class="pos-sell-payment__line-name">@item.Name</span>
-                    <span class="pos-sell-payment__line-qty pos-tabular">×@item.Quantity</span>
+                    <span class="pos-sell-payment__line-qty pos-tabular">@payQty.ToString("0.###") @payUnit</span>
                     <span class="pos-sell-payment__line-total"><MoneyDisplay Amount="@item.LineTotal" CurrencyCode="PHP" /></span>
                 </div>
             }
@@ -612,12 +614,19 @@ else
                        Removed="OnWeightRemoved"
                        Cancelled="CloseWeightEntry" />
 
-    <SellingUnitPickerDialog Visible="@_sellingUnitPickerOpen"
-                             VisibleChanged="v => { if (!v) CloseSellingUnitPicker(); else _sellingUnitPickerOpen = v; }"
+    <SellingUnitEntryDialog Visible="@_sellingUnitPickerOpen"
+                            VisibleChanged="v => { if (!v) CloseSellingUnitPicker(); else _sellingUnitPickerOpen = v; }"
+                            Product="@_sellingUnitProduct"
+                            Options="@_sellingUnitOptions"
+                            OtherBaseQuantityInCart="@_sellingUnitOtherBase"
+                            InitialEnteredQuantity="@_sellingUnitInitialEntered"
+                            InitialUnitId="@_sellingUnitInitialId"
+                            Confirmed="OnSellingUnitEntryConfirmed"
+                            Cancelled="CloseSellingUnitPicker" />
+    @* SellingUnitPickerDialog retained for single-tap option lists when needed by weight/custom flows. *@
+    <SellingUnitPickerDialog Visible="false"
                              Product="@_sellingUnitProduct"
-                             Options="@_sellingUnitOptions"
-                             Selected="OnSellingUnitSelected"
-                             Cancelled="CloseSellingUnitPicker" />
+                             Options="@_sellingUnitOptions" />
 </Page>
 }
 @code {
@@ -711,6 +720,9 @@ else
     private bool _sellingUnitPickerOpen;
     private PosCatalogProductDto? _sellingUnitProduct;
     private IReadOnlyList<PosCatalogProductUnitDto> _sellingUnitOptions = Array.Empty<PosCatalogProductUnitDto>();
+    private decimal _sellingUnitOtherBase;
+    private decimal _sellingUnitInitialEntered = 1m;
+    private Guid? _sellingUnitInitialId;
     private bool _customerSearchAttempted;
     private string? _customerPickerMessage;
     private CancellationTokenSource? _lookupDebounceCts;
@@ -1071,18 +1083,23 @@ else
 
     private RenderFragment ProductRow(PosCatalogProductDto product, bool blocked)
     {
-        var qty = Cart.GetQuantity(product.ProductId);
+        var sellUnits = ActiveSellUnits(product);
+        var hasSellUnitChoice = sellUnits.Count > 1
+            || (sellUnits.Count == 1 && (sellUnits[0].MultiplierToBase != 1m || sellUnits[0].AllowsCustomQuantity));
+        var baseInCart = Cart.GetBaseQuantity(product.ProductId);
+        var qty = hasSellUnitChoice ? baseInCart : Cart.GetQuantity(product.ProductId);
         var inCart = qty > 0m;
         var byWeight = SalesUiOptions.IsByWeight(product.SellingMode);
         var outOfStock = SalesUiOptions.IsOutOfStock(product.IsTracked, product.StockStatus, product.OnHandQuantity);
-        // PerItem: tap adds +1. ByWeight: tap opens weight entry (any remaining stock > 0).
-        var canAddMore = byWeight
+        // PerItem classic: tap adds +1. Multi-unit / pack: tap opens sell-unit entry. ByWeight: weight dialog.
+        var canAddMore = byWeight || hasSellUnitChoice
             ? SalesUiOptions.CanAcceptQuantity(product.IsTracked, product.OnHandQuantity, 0.001m)
             : SalesUiOptions.CanAcceptQuantity(product.IsTracked, product.OnHandQuantity, qty + 1m);
-        // ByWeight lines already in cart remain tappable to edit weight even when stock is tight.
         var tapDisabled = blocked || outOfStock || (!byWeight && !canAddMore) || (byWeight && !inCart && !canAddMore);
         var maxQty = product.IsTracked ? product.OnHandQuantity : (decimal?)null;
         var priceSuffix = SalesUiOptions.PriceUnitSuffix(L, product.SellingMode);
+        var displayPrice = PrimarySellPrice(product);
+        var displayPriceUnit = PrimarySellUnitLabel(product);
 
         return @<div @key="product.ProductId"
                      class="@($"pos-product-row{(inCart ? " pos-product-row--in-cart" : string.Empty)}{(outOfStock ? " pos-product-row--unavailable" : string.Empty)}")"
@@ -1101,16 +1118,12 @@ else
                         @if (product.IsTracked && !outOfStock)
                         {
                             <span aria-hidden="true"> · </span>
-                            <span class="pos-tabular">@product.OnHandQuantity.ToString("0.###")</span>
-                            @if (byWeight)
-                            {
-                                <span> @L["Sales_Checkout_WeightUnitKg"]</span>
-                            }
+                            <span class="pos-tabular">@product.OnHandQuantity.ToString("0.###") @product.UnitOfMeasure</span>
                         }
                     </span>
                 </div>
                 <div class="pos-product-row__side">
-                    @if (inCart && byWeight)
+                    @if (inCart && byWeight && !hasSellUnitChoice)
                     {
                         <span class="pos-product-row__price">
                             <MoneyDisplay Amount="@PosSaleOptions.RoundMoney(product.SellingPrice * qty)" CurrencyCode="PHP" />
@@ -1126,14 +1139,18 @@ else
                     else
                     {
                         <span class="pos-product-row__price">
-                            <MoneyDisplay Amount="@product.SellingPrice" CurrencyCode="PHP" />
-                            @if (!string.IsNullOrEmpty(priceSuffix))
+                            <MoneyDisplay Amount="@displayPrice" CurrencyCode="PHP" />
+                            @if (!string.IsNullOrEmpty(displayPriceUnit))
+                            {
+                                <span class="pos-type-helper"> / @displayPriceUnit</span>
+                            }
+                            else if (!string.IsNullOrEmpty(priceSuffix))
                             {
                                 <span class="pos-type-helper"> @priceSuffix</span>
                             }
                         </span>
                     }
-                    @if (inCart && !byWeight)
+                    @if (inCart && !byWeight && !hasSellUnitChoice)
                     {
                         <div class="pos-product-row__stepper"
                              @onclick:stopPropagation="true"
@@ -1148,6 +1165,18 @@ else
                                              AriaLabel="@L["Sales_Checkout_Quantity"]"
                                              DecreaseLabel="@L["Sales_Checkout_DecreaseQty"]"
                                              IncreaseLabel="@L["Sales_Checkout_IncreaseQty"]" />
+                        </div>
+                    }
+                    else if (inCart && hasSellUnitChoice)
+                    {
+                        <div class="pos-product-row__stepper"
+                             @onclick:stopPropagation="true"
+                             @onkeydown:stopPropagation="true">
+                            <Button Variant="ButtonVariant.Secondary"
+                                    Disabled="@blocked"
+                                    OnClick="() => OpenSellingUnitEntry(product, sellUnits)">
+                                @L["Sales_SellAs"]
+                            </Button>
                         </div>
                     }
                     else if (inCart && byWeight)
@@ -1291,7 +1320,14 @@ else
         PosCatalogProductUnitDto? sellingUnit = null)
     {
         RememberProducts([product]);
-        if (!SalesUiOptions.CanAcceptQuantity(product.IsTracked, product.OnHandQuantity, kilograms))
+        var multiplier = sellingUnit is null || sellingUnit.MultiplierToBase <= 0m
+            ? 1m
+            : sellingUnit.MultiplierToBase;
+        var baseNeeded = decimal.Round(kilograms * multiplier, 3, MidpointRounding.AwayFromZero);
+        var otherBase = sellingUnit is null
+            ? 0m
+            : Cart.GetBaseQuantityExcluding(product.ProductId, sellingUnit.UnitId);
+        if (!SalesUiOptions.CanAcceptQuantity(product.IsTracked, product.OnHandQuantity, otherBase + baseNeeded))
         {
             _errorTitle = L["Sales_Checkout_InsufficientStockTitle"];
             _errorMessage = L["Sales_Checkout_InsufficientStock"];
@@ -1323,11 +1359,51 @@ else
         _errorMessage = null;
     }
 
-    private void OpenSellingUnitPicker(PosCatalogProductDto product, IReadOnlyList<PosCatalogProductUnitDto> options)
+    private static List<PosCatalogProductUnitDto> ActiveSellUnits(PosCatalogProductDto product) =>
+        (product.Units ?? [])
+            .Where(u => string.Equals(u.Kind, "Sell", StringComparison.OrdinalIgnoreCase) && u.IsActive)
+            .OrderBy(u => u.SortOrder)
+            .ThenBy(u => u.DisplayName)
+            .ToList();
+
+    private static decimal PrimarySellPrice(PosCatalogProductDto product)
+    {
+        var units = ActiveSellUnits(product);
+        if (units.Count == 0)
+        {
+            return product.SellingPrice;
+        }
+
+        return units[0].SellingPrice ?? product.SellingPrice;
+    }
+
+    private static string? PrimarySellUnitLabel(PosCatalogProductDto product)
+    {
+        var units = ActiveSellUnits(product);
+        return units.Count == 0 ? null : units[0].DisplayName;
+    }
+
+    private void OpenSellingUnitPicker(PosCatalogProductDto product, IReadOnlyList<PosCatalogProductUnitDto> options) =>
+        OpenSellingUnitEntry(product, options);
+
+    private void OpenSellingUnitEntry(PosCatalogProductDto product, IReadOnlyList<PosCatalogProductUnitDto> options)
     {
         RememberProducts([product]);
         _sellingUnitProduct = product;
         _sellingUnitOptions = options;
+        var preferred = options.OrderBy(u => u.SortOrder).ThenBy(u => u.DisplayName).FirstOrDefault();
+        _sellingUnitInitialId = preferred?.UnitId;
+        _sellingUnitInitialEntered = preferred is null
+            ? 1m
+            : Math.Max(1m, Cart.GetEnteredQuantity(product.ProductId, preferred.UnitId));
+        if (_sellingUnitInitialEntered <= 0m)
+        {
+            _sellingUnitInitialEntered = 1m;
+        }
+
+        _sellingUnitOtherBase = preferred is null
+            ? Cart.GetBaseQuantity(product.ProductId)
+            : Cart.GetBaseQuantityExcluding(product.ProductId, preferred.UnitId);
         _sellingUnitPickerOpen = true;
         _errorTitle = null;
         _errorMessage = null;
@@ -1338,9 +1414,12 @@ else
         _sellingUnitPickerOpen = false;
         _sellingUnitProduct = null;
         _sellingUnitOptions = Array.Empty<PosCatalogProductUnitDto>();
+        _sellingUnitOtherBase = 0m;
+        _sellingUnitInitialEntered = 1m;
+        _sellingUnitInitialId = null;
     }
 
-    private void OnSellingUnitSelected(PosCatalogProductUnitDto unit)
+    private void OnSellingUnitEntryConfirmed((PosCatalogProductUnitDto Unit, decimal EnteredQuantity) selection)
     {
         var product = _sellingUnitProduct;
         CloseSellingUnitPicker();
@@ -1349,29 +1428,44 @@ else
             return;
         }
 
+        var unit = selection.Unit;
+        var entered = selection.EnteredQuantity;
         if (unit.AllowsCustomQuantity || SalesUiOptions.IsByWeight(product.SellingMode))
         {
-            var existing = Cart.GetEnteredQuantity(product.ProductId, unit.UnitId);
-            OpenWeightEntry(product, existing > 0m ? existing : null, unit);
+            OpenWeightEntry(product, entered > 0m ? entered : null, unit);
             return;
         }
 
-        if (!SalesUiOptions.CanAcceptQuantity(
-                product.IsTracked,
-                product.OnHandQuantity,
-                Cart.GetEnteredQuantity(product.ProductId, unit.UnitId) + 1m))
+        var multiplier = unit.MultiplierToBase <= 0m ? 1m : unit.MultiplierToBase;
+        var baseNeeded = decimal.Round(entered * multiplier, 3, MidpointRounding.AwayFromZero);
+        var otherBase = Cart.GetBaseQuantityExcluding(product.ProductId, unit.UnitId);
+        if (!SalesUiOptions.CanAcceptQuantity(product.IsTracked, product.OnHandQuantity, otherBase + baseNeeded))
         {
             _errorTitle = L["Sales_Checkout_InsufficientStockTitle"];
-            _errorMessage = L["Sales_Checkout_InsufficientStock"];
+            _errorMessage = string.Format(
+                L["Sales_Checkout_InsufficientStockForUnit"].Value,
+                entered.ToString("0.###"),
+                unit.DisplayName,
+                baseNeeded.ToString("0.###"),
+                product.UnitOfMeasure,
+                product.OnHandQuantity.ToString("0.###"),
+                product.UnitOfMeasure);
             return;
         }
 
-        Cart.Add(product, 1m, unit);
+        Cart.Remove(product.ProductId, unit.UnitId);
+        Cart.Add(product, entered, unit);
         _matches = Array.Empty<PosCatalogProductDto>();
         _lookupText = null;
         _lookupHelper = null;
         _errorTitle = null;
         _errorMessage = null;
+    }
+
+    private void OnSellingUnitSelected(PosCatalogProductUnitDto unit)
+    {
+        // Legacy hook kept for WeightedSaleCheckoutUiTests / picker-only paths.
+        OnSellingUnitEntryConfirmed((unit, 1m));
     }
 
     private async Task OnPaymentMethodChangedAsync(string? value)
@@ -1721,34 +1815,40 @@ else
     private void AddToCart(PosCatalogProductDto product)
     {
         RememberProducts([product]);
-        var sellUnits = (product.Units ?? [])
-            .Where(u => string.Equals(u.Kind, "Sell", StringComparison.OrdinalIgnoreCase) && u.IsActive)
-            .OrderBy(u => u.SortOrder)
-            .ThenBy(u => u.DisplayName)
-            .ToList();
+        var sellUnits = ActiveSellUnits(product);
 
-        // Multiple sell options: never auto-pick a pack — cashier chooses.
-        if (sellUnits.Count > 1 && !sellUnits.All(u => u.AllowsCustomQuantity))
+        // Multiple sell options or a non-1:1 pack: open sell-as entry (quantity + conversion preview).
+        if (sellUnits.Count > 1
+            || (sellUnits.Count == 1 && (sellUnits[0].MultiplierToBase != 1m || sellUnits[0].AllowsCustomQuantity)))
         {
-            OpenSellingUnitPicker(product, sellUnits);
-            return;
+            if (sellUnits.Count == 1
+                && (sellUnits[0].AllowsCustomQuantity || SalesUiOptions.IsByWeight(product.SellingMode)))
+            {
+                var unit = sellUnits[0];
+                var existing = Cart.GetEnteredQuantity(product.ProductId, unit.UnitId);
+                OpenWeightEntry(product, existing > 0m ? existing : null, unit);
+                return;
+            }
+
+            if (sellUnits.Count == 1
+                && sellUnits[0].MultiplierToBase != 1m
+                && !sellUnits[0].AllowsCustomQuantity)
+            {
+                OpenSellingUnitEntry(product, sellUnits);
+                return;
+            }
+
+            if (sellUnits.Count > 1)
+            {
+                OpenSellingUnitEntry(product, sellUnits);
+                return;
+            }
         }
 
-        if (sellUnits.Count > 1)
+        if (SalesUiOptions.IsByWeight(product.SellingMode))
         {
-            // All custom-quantity options still need an explicit choice.
-            OpenSellingUnitPicker(product, sellUnits);
-            return;
-        }
-
-        if (SalesUiOptions.IsByWeight(product.SellingMode)
-            || (sellUnits.Count == 1 && sellUnits[0].AllowsCustomQuantity))
-        {
-            var unit = sellUnits.Count == 1 ? sellUnits[0] : null;
-            var existing = unit is null
-                ? Cart.GetQuantity(product.ProductId)
-                : Cart.GetEnteredQuantity(product.ProductId, unit.UnitId);
-            OpenWeightEntry(product, existing > 0m ? existing : null, unit);
+            var existing = Cart.GetQuantity(product.ProductId);
+            OpenWeightEntry(product, existing > 0m ? existing : null);
             return;
         }
 
@@ -1761,18 +1861,7 @@ else
             return;
         }
 
-        var singleUnit = sellUnits.Count == 1 && (sellUnits[0].MultiplierToBase != 1m || sellUnits[0].UnitId != Guid.Empty)
-            ? sellUnits[0]
-            : null;
-        // Keep 1:1 single sell unit on the classic path (no SellingUnitId) so server combine behavior stays unchanged.
-        if (singleUnit is not null
-            && singleUnit.MultiplierToBase == 1m
-            && !singleUnit.AllowsCustomQuantity)
-        {
-            singleUnit = null;
-        }
-
-        Cart.Add(product, addQuantity, singleUnit);
+        Cart.Add(product, addQuantity);
         _matches = Array.Empty<PosCatalogProductDto>();
         _lookupText = null;
         _lookupHelper = null;
