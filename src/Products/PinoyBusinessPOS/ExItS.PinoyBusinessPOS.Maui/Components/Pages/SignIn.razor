@@ -166,18 +166,35 @@
 
     @if (_quickLoginAvailable && !_isOffline)
     {
-        <details class="pos-signin__dev">
+        <details class="pos-signin__dev" open>
             <summary class="pos-signin__dev-summary">
                 @L["SignIn_DevelopmentAccess"]
             </summary>
             <div class="pos-quick-login pos-signin__dev-body">
                 <FormGroup Title="@L["SignIn_QuickLoginTitle"]">
-                    <Select Label="@L["SignIn_QuickLoginLabel"]"
-                            Hint="@(_quickLoginHint ?? L["SignIn_QuickLoginHint"].Value)"
-                            Value="@_selectedQuickKey"
-                            ValueChanged="OnQuickLoginSelectedAsync"
-                            Options="_quickLoginOptions"
-                            Disabled="_busy || _quickLoginLoading || _quickLoginOptions.Count == 0" />
+                    @if (!string.IsNullOrWhiteSpace(_quickLoginHint))
+                    {
+                        <p class="pos-muted">@_quickLoginHint</p>
+                    }
+                    else if (_quickLoginLoading)
+                    {
+                        <p class="pos-muted">@L["Common_Loading"]</p>
+                    }
+                    else
+                    {
+                        <div class="pos-quick-login__list" role="list">
+                            @foreach (var identity in _quickLoginIdentities)
+                            {
+                                <button type="button"
+                                        class="pos-btn pos-btn--secondary pos-quick-login__item"
+                                        role="listitem"
+                                        disabled="@_busy"
+                                        @onclick="() => OnQuickLoginSelectedAsync(identity.Key)">
+                                    @FormatQuickLoginLabel(identity)
+                                </button>
+                            }
+                        </div>
+                    }
                 </FormGroup>
             </div>
         </details>
@@ -199,9 +216,8 @@
 
     private bool _quickLoginAvailable;
     private bool _quickLoginLoading;
-    private string? _selectedQuickKey;
     private string? _quickLoginHint;
-    private List<SelectOption> _quickLoginOptions = [];
+    private List<LocalValidationQuickLoginIdentityDto> _quickLoginIdentities = [];
     private Dictionary<string, LocalValidationQuickLoginIdentityDto> _quickLoginByKey = new(StringComparer.Ordinal);
 
     protected override async Task OnInitializedAsync()
@@ -242,7 +258,7 @@
         await InvokeAsync(async () =>
         {
             await RefreshOfflineStateAsync();
-            if (!_isOffline && _quickLoginAvailable && _quickLoginOptions.Count == 0)
+            if (!_isOffline && _quickLoginAvailable && _quickLoginIdentities.Count == 0)
             {
                 await LoadQuickLoginIdentitiesAsync();
             }
@@ -285,7 +301,7 @@
             var result = await Platform.GetLocalValidationQuickLoginIdentitiesAsync();
             if (!result.IsSuccess || result.Data is null)
             {
-                _quickLoginOptions = [];
+                _quickLoginIdentities = [];
                 _quickLoginByKey = new(StringComparer.Ordinal);
                 _quickLoginHint = L["SignIn_QuickLoginUnavailable"];
                 return;
@@ -302,11 +318,7 @@
                 .ToList();
 
             _quickLoginByKey = identities.ToDictionary(i => i.Key, StringComparer.OrdinalIgnoreCase);
-            _quickLoginOptions =
-            [
-                new SelectOption(string.Empty, L["SignIn_QuickLoginPlaceholder"]),
-                .. identities.Select(i => new SelectOption(i.Key, FormatQuickLoginLabel(i)))
-            ];
+            _quickLoginIdentities = identities;
 
             if (identities.Count == 0)
             {
@@ -360,7 +372,6 @@
 
     private async Task OnQuickLoginSelectedAsync(string? key)
     {
-        _selectedQuickKey = key;
         if (string.IsNullOrWhiteSpace(key) || _busy)
         {
             return;

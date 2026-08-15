@@ -77,7 +77,8 @@
                                 class="@($"exds-select-option{(selected ? " exds-select-option--selected" : string.Empty)}")"
                                 role="option"
                                 aria-selected="@selected"
-                                @onclick="() => ChooseAsync(option.Value)">
+                                @onclick="() => ChooseAsync(option.Value)"
+                                @onclick:stopPropagation="true">
                             <span class="exds-select-option__label">@option.Text</span>
                             <span class="exds-select-option__indicator exds-select-option__indicator--radio" aria-hidden="true"></span>
                         </button>
@@ -137,11 +138,14 @@
 
     private async Task ChooseAsync(string value)
     {
-        _open = false;
+        // Invoke before closing: on MAUI/WebView, closing the overlay first can let the
+        // originating tap fall through / cancel so the first pick appears to do nothing.
         if (ValueChanged.HasDelegate)
         {
             await ValueChanged.InvokeAsync(value);
         }
+
+        _open = false;
     }
 
     private async Task HandleNativeChange(ChangeEventArgs args)

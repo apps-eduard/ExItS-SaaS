@@ -40,7 +40,7 @@
             return;
         }
 
-        var (ok, error) = await SessionService.EstablishFromSessionTokenAsync(tokenValues.First()!);
+        var (ok, error, _) = await SessionService.EstablishFromSessionTokenAsync(tokenValues.First()!);
         if (!ok)
         {
             _error = error ?? "External sign-in failed.";

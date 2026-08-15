@@ -1,3 +1,4 @@
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Security.Claims;
 using ExItS.PinoyBusinessPOS.Application.Abstractions;
@@ -11,6 +12,47 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Server.Circuits;
 
 namespace ExItS.PinoyBusinessPOS.Web.Services;
+
+/// <summary>
+/// Blazor Server <see cref="IHttpClientFactory"/> handlers are not resolved from the circuit DI
+/// scope, so they cannot see circuit <see cref="ICurrentUserContext"/>. Flow the Platform session
+/// token via <see cref="AsyncLocal{T}"/> for Org Web API calls.
+/// </summary>
+public static class OrgWebSessionAmbient
+{
+    private static readonly AsyncLocal<string?> Token = new();
+
+    public static string? SessionToken
+    {
+        get => Token.Value;
+        set => Token.Value = string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    }
+}
+
+/// <summary>
+/// Prefers <see cref="OrgWebSessionAmbient"/> over scoped current-user state for Platform session
+/// headers (fixes empty Org Web after handoff).
+/// </summary>
+public sealed class OrgWebCircuitSessionHeaderHandler : DelegatingHandler
+{
+    protected override Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken)
+    {
+        var sessionToken = OrgWebSessionAmbient.SessionToken;
+        if (!string.IsNullOrWhiteSpace(sessionToken))
+        {
+            request.Headers.Remove("Authorization");
+            request.Headers.Authorization = new AuthenticationHeaderValue("PlatformSession", sessionToken);
+            if (!request.Headers.Contains("X-ExItS-Session-Token"))
+            {
+                request.Headers.TryAddWithoutValidation("X-ExItS-Session-Token", sessionToken);
+            }
+        }
+
+        return base.SendAsync(request, cancellationToken);
+    }
+}
 
 public sealed class WebAppInfoService(IHostEnvironment environment) : IAppInfoService
 {
@@ -118,6 +160,7 @@ public sealed class OrgWebSessionCircuitHandler(
             if (!string.IsNullOrWhiteSpace(token))
             {
                 circuitSession.SessionToken = token;
+                OrgWebSessionAmbient.SessionToken = token;
             }
         }
         catch
@@ -284,6 +327,8 @@ public sealed class OrgWebBrowserSessionService(
                 ExpiresUtc = expiresAtUtc,
                 AllowRefresh = true
             }).ConfigureAwait(false);
+        // Same-request consumers (and circuit open) must see the principal immediately.
+        http.User = principal;
 
         http.Response.Cookies.Append(
             SessionTokenCookieName,
@@ -345,7 +390,8 @@ public sealed class OrgWebSessionHydrator(
     OrgWebCircuitSession circuitSession,
     OrgWebShellState shell,
     IPlatformAccessClient platform,
-    IPosPermissionClient permissions)
+    IPosPermissionClient permissions,
+    IHttpContextAccessor httpContextAccessor)
 {
     public async Task HydrateAsync(CancellationToken ct = default)
     {
@@ -353,10 +399,28 @@ public sealed class OrgWebSessionHydrator(
         var token = circuitSession.SessionToken;
         if (string.IsNullOrWhiteSpace(token))
         {
+            // Prerender / first paint: circuit handler may not have run yet — read cookies.
+            var http = httpContextAccessor.HttpContext;
+            if (http is not null)
+            {
+                token = OrgWebBrowserSessionService.ResolveSessionToken(http);
+                if (!string.IsNullOrWhiteSpace(token))
+                {
+                    circuitSession.SessionToken = token;
+                }
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            OrgWebSessionAmbient.SessionToken = null;
             currentUser.Clear();
             shell.Ready = true;
             return;
         }
+
+        circuitSession.SessionToken = token;
+        OrgWebSessionAmbient.SessionToken = token;
 
         if (currentUser.Session is null ||
             !string.Equals(currentUser.Session.PlatformSessionToken, token, StringComparison.Ordinal))

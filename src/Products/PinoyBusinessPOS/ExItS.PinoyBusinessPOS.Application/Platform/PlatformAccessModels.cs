@@ -468,6 +468,8 @@ public sealed record PlatformAccountProfileDto(
     string AllowedScope,
     string Status);
 
+public sealed record EnsureAccountProfileRequest(string AccountClass);
+
 public sealed record PendingOrganizationInvitationDto(
     Guid Id,
     Guid OrganizationId,
@@ -1010,6 +1012,10 @@ public interface IPlatformAccessClient
         CancellationToken ct = default);
 
     Task<ApiResult<IReadOnlyList<PlatformAccountProfileDto>>> GetAccountProfilesAsync(
+        CancellationToken ct = default);
+
+    Task<ApiResult<PlatformAccountProfileDto>> EnsureAccountProfileAsync(
+        EnsureAccountProfileRequest request,
         CancellationToken ct = default);
 
     Task<ApiResult<IReadOnlyList<PendingOrganizationInvitationDto>>> GetPendingOrganizationInvitationsAsync(

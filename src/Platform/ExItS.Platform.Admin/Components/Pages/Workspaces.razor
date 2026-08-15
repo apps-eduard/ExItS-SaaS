@@ -56,6 +56,23 @@
         }
 
         _loading = false;
+
+        // Auto-continue when the chooser would only add friction (baseline Platform admins).
+        if (_items.Count == 1)
+        {
+            Open(_items[0]);
+            return;
+        }
+
+        if (!_items.Any(i => string.Equals(i.App, WebApps.Organization, StringComparison.OrdinalIgnoreCase)))
+        {
+            var platform = _items.FirstOrDefault(i =>
+                string.Equals(i.App, WebApps.Platform, StringComparison.OrdinalIgnoreCase));
+            if (platform is not null)
+            {
+                Open(platform);
+            }
+        }
     }
 
     private void Open(WebWorkspaceItemResponse item)

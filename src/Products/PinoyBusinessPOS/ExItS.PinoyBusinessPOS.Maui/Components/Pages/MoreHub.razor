@@ -5,6 +5,7 @@
 @inject NavigationGate Gate
 @inject RoleHomeResolver RoleHome
 @inject ICurrentUserContext CurrentUser
+@inject IOrganizationOwnerProbe OrganizationOwner
 @inject IUtangCapabilityEvaluator Capabilities
 @inject IStringLocalizer<PosResources> L
 
@@ -37,7 +38,7 @@
         {
             <Section Title="@L["More_ToolsSection"]">
                 <div class="pos-action-grid" role="group" aria-label="@L["More_ToolsSection"]">
-                    @if (IsOrganizationOwner)
+                    @if (_isOrganizationOwner)
                     {
                         <button type="button" class="pos-action-tile" @onclick="GoSalesDocumentEducation">
                             <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("info")</span>
@@ -130,18 +131,21 @@
 </div>
 
 @code {
-    private bool IsOrganizationOwner =>
-        string.Equals(
-            CurrentUser.Session?.MembershipRole,
-            OrganizationMembershipRoles.Owner,
-            StringComparison.OrdinalIgnoreCase);
+    private bool _isOrganizationOwner;
 
     protected override async Task OnInitializedAsync()
     {
-        if (CurrentUser.Session?.OrganizationId is null)
+        if (CurrentUser.Session?.OrganizationId is not Guid organizationId)
         {
             Nav.NavigateTo(RoleHomeResolver.PersonalHome, replace: true);
             return;
+        }
+
+        if (CurrentUser.Session is not null)
+        {
+            _isOrganizationOwner = await OrganizationOwner.IsExactOrganizationOwnerAsync(
+                CurrentUser.Session,
+                organizationId);
         }
 
         // Without POS access this hub stays reachable as the organization-context destination

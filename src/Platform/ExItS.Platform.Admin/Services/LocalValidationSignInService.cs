@@ -52,16 +52,16 @@ public sealed class LocalValidationSignInService(
             .ToList();
     }
 
-    public async Task<(bool Ok, string? Error)> SignInAsKeyAsync(string key, CancellationToken ct = default)
+    public async Task<(bool Ok, string? Error, string? SessionToken)> SignInAsKeyAsync(string key, CancellationToken ct = default)
     {
         if (!IsAvailable)
         {
-            return (false, "Local Validation sign-in is unavailable.");
+            return (false, "Local Validation sign-in is unavailable.", null);
         }
 
         if (string.IsNullOrWhiteSpace(key))
         {
-            return (false, "Choose a Local Validation identity.");
+            return (false, "Choose a Local Validation identity.", null);
         }
 
         var list = await FetchQuickLoginIdentitiesAsync(ct).ConfigureAwait(false);
@@ -69,7 +69,7 @@ public sealed class LocalValidationSignInService(
             string.Equals(i.Key, key, StringComparison.OrdinalIgnoreCase));
         if (identity is null)
         {
-            return (false, "Unknown Local Validation identity.");
+            return (false, "Unknown Local Validation identity.", null);
         }
 
         var password = options.Value.SharedPassword;
@@ -110,7 +110,7 @@ public sealed class LocalValidationSignInService(
 
         if (string.IsNullOrWhiteSpace(sessionToken))
         {
-            return (false, lastError ?? "Invalid username/email or password.");
+            return (false, lastError ?? "Invalid username/email or password.", null);
         }
 
         if (identity.AccountProfileId is Guid profileId && profileId != Guid.Empty)
@@ -118,7 +118,7 @@ public sealed class LocalValidationSignInService(
             var selected = await SelectProfileAsync(sessionToken, profileId, ct).ConfigureAwait(false);
             if (selected is null)
             {
-                return (false, "Could not establish the selected account profile session.");
+                return (false, "Could not establish the selected account profile session.", null);
             }
 
             sessionToken = selected.SessionToken;
@@ -133,11 +133,11 @@ public sealed class LocalValidationSignInService(
             var orgOk = await SetOrganizationContextAsync(sessionToken, orgId, ct).ConfigureAwait(false);
             if (!orgOk)
             {
-                return (false, "Could not select the organization context for Quick Login.");
+                return (false, "Could not select the organization context for Quick Login.", null);
             }
         }
 
-        var (ok, error) = await sessions.EstablishFromSessionTokenAsync(sessionToken, ct).ConfigureAwait(false);
+        var (ok, error, _) = await sessions.EstablishFromSessionTokenAsync(sessionToken, ct).ConfigureAwait(false);
         if (!ok)
         {
             // Fallback: establish from login payload fields when /me shape differs.
@@ -145,10 +145,10 @@ public sealed class LocalValidationSignInService(
             _ = username;
             _ = email;
             _ = expiresAtUtc;
-            return (false, error ?? "Could not establish the browser session.");
+            return (false, error ?? "Could not establish the browser session.", null);
         }
 
-        return (true, null);
+        return (true, null, sessionToken);
     }
 
     private async Task<LoginResponse?> LoginRawAsync(string usernameOrEmail, string password, CancellationToken ct)

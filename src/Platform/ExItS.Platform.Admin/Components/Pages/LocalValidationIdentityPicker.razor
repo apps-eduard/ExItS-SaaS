@@ -2,32 +2,34 @@
 @using ExItS.Platform.Admin.Services
 @inject LocalValidationSignInService LocalValidationSignIn
 @inject NavigationManager Nav
-@inject IJSRuntime Js
 @inject IStringLocalizer<AdminResources> L
 
 @if (_show)
 {
-    <div class="ant-form-item" style="margin-bottom: 1rem;">
-        <label class="ant-form-item-label" for="lv-identity">@L["Login_LocalValidationSelect"]</label>
-        <Select TItemValue="string"
-                TItem="string"
-                Id="lv-identity"
-                Placeholder="@L["Login_LocalValidationSelect"]"
-                Disabled="_busy || _identities.Count == 0"
-                Loading="_loading"
-                Style="width:100%;"
-                Value="@(_selectedKey ?? string.Empty)"
-                ValueChanged="OnIdentitySelectedAsync">
-            <SelectOptions>
+    <div class="ant-form-item exits-lv-identity" style="margin-bottom: 1rem;">
+        <label class="ant-form-item-label">@L["Login_LocalValidationSelect"]</label>
+
+        @if (_loading)
+        {
+            <Paragraph Type="@TextElementType.Secondary" Style="margin:0;">@L["Common_Loading"]</Paragraph>
+        }
+        else if (_identities.Count > 0)
+        {
+            <div class="exits-lv-identity__list" role="list">
                 @foreach (var identity in _identities)
                 {
-                    <SelectOption TItemValue="string"
-                                  TItem="string"
-                                  Value="@identity.Key"
-                                  Label="@identity.DisplayName" />
+                    @* Plain GET links — full browser navigation sets auth cookies.
+                       Avoid AntDesign Select ValueChanged (first pick was swallowed by circuit dispose). *@
+                    <a role="listitem"
+                       class="ant-btn ant-btn-default ant-btn-block ant-btn-sm exits-lv-identity__item"
+                       data-enhance-nav="false"
+                       href="@BuildLoginAsHref(identity.Key)">
+                        @identity.DisplayName
+                    </a>
                 }
-            </SelectOptions>
-        </Select>
+            </div>
+        }
+
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:.35rem;gap:8px;">
             @if (!string.IsNullOrWhiteSpace(_loadNote))
             {
@@ -43,7 +45,7 @@
             {
                 <span></span>
             }
-            <Button Type="@ButtonType.Link" Size="@ButtonSize.Small" Disabled="_loading || _busy" OnClick="ReloadAsync">
+            <Button Type="@ButtonType.Link" Size="@ButtonSize.Small" Disabled="_loading" OnClick="ReloadAsync">
                 Refresh
             </Button>
         </div>
@@ -53,8 +55,6 @@
 @code {
     private bool _show;
     private bool _loading;
-    private bool _busy;
-    private string? _selectedKey;
     private string? _loadNote;
     private IReadOnlyList<LocalValidationIdentityOption> _identities = [];
 
@@ -88,22 +88,10 @@
         }
     }
 
-    private async Task OnIdentitySelectedAsync(string value)
+    private string BuildLoginAsHref(string key)
     {
-        _selectedKey = value;
-        if (string.IsNullOrWhiteSpace(value) || _busy)
-        {
-            return;
-        }
-
-        _busy = true;
-        // Defer navigation: AntDesign DomEventListener is still enumerating handlers when
-        // ValueChanged returns; forceLoad dispose races with that and throws
-        // "Collection was modified; enumeration operation may not execute."
-        await Task.Yield();
-        await Task.Delay(1);
-        var current = new Uri(Nav.Uri);
-        var url = Nav.ToAbsoluteUri($"/admin/login/as/{Uri.EscapeDataString(value)}{current.Query}").AbsoluteUri;
-        await Js.InvokeVoidAsync("location.assign", url);
+        // Identity AccountClass owns the destination. Do not carry returnApp/returnPath from
+        // a prior Org/Personal redirect — that forced the workspace chooser or empty Org Web.
+        return $"/admin/login/as/{Uri.EscapeDataString(key)}";
     }
 }

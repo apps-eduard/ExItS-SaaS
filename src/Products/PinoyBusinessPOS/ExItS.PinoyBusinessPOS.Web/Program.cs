@@ -102,6 +102,19 @@ builder.Services.AddHttpClient("PlatformApiUnauthenticated", (services, client) 
 });
 
 builder.Services.AddPosApiClient(builder.Configuration);
+builder.Services.AddTransient<OrgWebCircuitSessionHeaderHandler>();
+// Re-register typed Platform client so Blazor circuit session flows (factory handlers ≠ circuit scope).
+builder.Services.AddHttpClient<IPosApiClient, PosApiClient>((provider, client) =>
+    {
+        var options = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<ExItS.PinoyBusinessPOS.Application.Options.PosApiOptions>>().Value;
+        client.BaseAddress = new Uri(options.BaseUrl, UriKind.Absolute);
+        client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
+    })
+    .AddHttpMessageHandler<OrgWebCircuitSessionHeaderHandler>()
+    .AddHttpMessageHandler<PlatformSessionHeaderHandler>()
+    .AddHttpMessageHandler<DevPlatformUserHeaderHandler>()
+    .AddHttpMessageHandler<PlatformBearerHandler>()
+    .AddHttpMessageHandler<PosApiReachabilityHandler>();
 builder.Services.AddScoped<IPlatformAccessClient, PlatformAccessClient>();
 builder.Services.AddScoped<IMerchantCatalogDiscoveryClient, MerchantCatalogDiscoveryClient>();
 

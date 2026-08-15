@@ -2,6 +2,7 @@ using ExItS.PinoyBusinessPOS.Application.Abstractions;
 using ExItS.PinoyBusinessPOS.Application.Auth;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Platform;
+using ExItS.PinoyBusinessPOS.Application.Support;
 
 namespace ExItS.PinoyBusinessPOS.Maui.Services;
 
@@ -14,6 +15,7 @@ public sealed class NavigationGate(
     IPosSyncStatusService syncStatus,
     IPosOperationalSetupClient operationalSetup,
     IPlatformAccessClient platformAccess,
+    IOrganizationOwnerProbe organizationOwner,
     IUtangCapabilityEvaluator capabilities,
     RoleHomeResolver roleHome)
 {
@@ -324,10 +326,9 @@ public sealed class NavigationGate(
     private async Task<bool> RequiresSalesDocumentEducationAsync(CancellationToken ct)
     {
         if (currentUser.Session?.OrganizationId is not Guid organizationId
-            || !string.Equals(
-                currentUser.Session.MembershipRole,
-                OrganizationMembershipRoles.Owner,
-                StringComparison.OrdinalIgnoreCase))
+            || !await organizationOwner
+                .IsExactOrganizationOwnerAsync(currentUser.Session, organizationId, ct)
+                .ConfigureAwait(false))
         {
             return false;
         }

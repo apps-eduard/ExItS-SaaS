@@ -271,19 +271,39 @@
             // Personal → Organization: bind Organization account profile before listing.
             // Auth/organizations works for Personal, but SelectOrganization requires Organization
             // session — and after personal switch the Platform token must be rebound.
+            // Soft-bind: never wipe the chooser when profile switch is deferred; Personal can list.
             if (CurrentUser.Session.OrganizationId is null
                 && !string.Equals(CurrentUser.Session.AccountClass, "Organization", StringComparison.OrdinalIgnoreCase))
             {
-                var orgProfile = await Auth.EnsureOrganizationAccountProfileAsync();
-                if (!orgProfile.Succeeded)
-                {
-                    _error = L[orgProfile.SafeMessageKey ?? "Access_Denied"];
-                    _organizations = [];
-                    return;
-                }
+                _ = await Auth.EnsureOrganizationAccountProfileAsync();
             }
 
             _organizations = await Access.ListEligibleOrganizationsAsync(CurrentUser.Session.UserId);
+            if (_organizations.Count == 0)
+            {
+                // Fallback: memberships may still exist when auth/organizations is empty.
+                var memberships = await Platform.GetUserMembershipsAsync(CurrentUser.Session.UserId);
+                if (memberships.IsSuccess && memberships.Data is not null)
+                {
+                    var list = new List<EligibleOrganization>();
+                    foreach (var m in memberships.Data.Items.Where(x =>
+                                 string.Equals(x.Status, "Active", StringComparison.OrdinalIgnoreCase)))
+                    {
+                        var org = await Platform.GetOrganizationAsync(m.OrganizationId);
+                        list.Add(new EligibleOrganization(
+                            m.OrganizationId,
+                            org.Data?.DisplayName ?? m.OrganizationId.ToString("D"),
+                            m.Id,
+                            m.Status,
+                            AccessAllowed: true,
+                            AccessReasonCode: "membership_eligible",
+                            MembershipRole: m.Role));
+                    }
+
+                    _organizations = list;
+                }
+            }
+
             _isOwner = OrganizationMembershipRoles.HasOrganizationOwner(_organizations);
             await LoadOrganizationLogosAsync();
             ResolveFocusOrganization();

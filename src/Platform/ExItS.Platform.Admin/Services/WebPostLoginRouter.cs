@@ -5,6 +5,7 @@ namespace ExItS.Platform.Admin.Services;
 
 /// <summary>
 /// After central sign-in, route to the authorized workspace host via one-time handoff.
+/// Prefers a concrete destination over the workspace chooser whenever one is safe.
 /// </summary>
 public sealed class WebPostLoginRouter(
     IHttpClientFactory httpClientFactory,
@@ -15,9 +16,14 @@ public sealed class WebPostLoginRouter(
         string? returnApp,
         string? returnPath,
         Guid? organizationId = null,
+        string? sessionToken = null,
         CancellationToken ct = default)
     {
-        var token = PlatformBrowserSessionService.ResolveSessionToken(http);
+        // Prefer an explicit token from the just-completed SignIn — Request.Cookies / User
+        // may still reflect the previous request when called in the same pipeline turn.
+        var token = string.IsNullOrWhiteSpace(sessionToken)
+            ? PlatformBrowserSessionService.ResolveSessionToken(http)
+            : sessionToken.Trim();
         if (string.IsNullOrWhiteSpace(token))
         {
             return "/admin/login";
@@ -53,6 +59,23 @@ public sealed class WebPostLoginRouter(
         if (target is null && workspaces.Count == 1)
         {
             target = workspaces[0];
+        }
+
+        // Baseline Platform Administrators also have a Personal profile. Do not force the
+        // "Choose a workspace" page after every login — prefer Platform, then Personal.
+        // If returnApp=organization was requested but this identity has no org membership
+        // (common after Local Validation reset), fall back to Platform instead of Org Web
+        // with an empty organization context.
+        if (target is null)
+        {
+            target = workspaces.FirstOrDefault(w =>
+                string.Equals(w.App, WebApps.Platform, StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (target is null && requested is null)
+        {
+            target = workspaces.FirstOrDefault(w =>
+                string.Equals(w.App, WebApps.Personal, StringComparison.OrdinalIgnoreCase));
         }
 
         if (target is null)

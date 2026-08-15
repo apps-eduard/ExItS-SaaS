@@ -1253,15 +1253,38 @@ public sealed class AuthenticationService(
             return new AuthResult(true, AuthFailureReason.None, session);
         }
 
+        // Prefer Active Organization; otherwise reactivate a deactivated Organization profile.
         var orgProfile = profiles.Data.FirstOrDefault(p =>
-            string.Equals(p.AccountClass, "Organization", StringComparison.OrdinalIgnoreCase)
-            && string.Equals(p.Status, "Active", StringComparison.OrdinalIgnoreCase));
+                             string.Equals(p.AccountClass, "Organization", StringComparison.OrdinalIgnoreCase)
+                             && string.Equals(p.Status, "Active", StringComparison.OrdinalIgnoreCase))
+                         ?? profiles.Data.FirstOrDefault(p =>
+                             string.Equals(p.AccountClass, "Organization", StringComparison.OrdinalIgnoreCase));
+
         if (orgProfile is null)
         {
-            return new AuthResult(
-                false,
-                AuthFailureReason.AccessDenied,
-                SafeMessageKey: "Access_Denied");
+            // Create/reactivate Organization profile when the user already has memberships
+            // (Personal → Organization after Start a Business).
+            var memberships = await accessClient.GetUserMembershipsAsync(session.UserId, ct)
+                .ConfigureAwait(false);
+            var hasActiveMembership = memberships.IsSuccess
+                && memberships.Data?.Items.Any(m =>
+                    string.Equals(m.Status, "Active", StringComparison.OrdinalIgnoreCase)) == true;
+            if (hasActiveMembership)
+            {
+                var ensured = await accessClient
+                    .EnsureAccountProfileAsync(new EnsureAccountProfileRequest("Organization"), ct)
+                    .ConfigureAwait(false);
+                if (ensured.IsSuccess && ensured.Data is not null)
+                {
+                    orgProfile = ensured.Data;
+                }
+            }
+        }
+
+        if (orgProfile is null)
+        {
+            // No Organization profile and no memberships — Personal chooser stays empty honestly.
+            return new AuthResult(true, AuthFailureReason.None, session);
         }
 
         var selected = await accessClient
@@ -1269,10 +1292,8 @@ public sealed class AuthenticationService(
             .ConfigureAwait(false);
         if (!selected.IsSuccess || selected.Data is null)
         {
-            return new AuthResult(
-                false,
-                AuthFailureReason.AccessDenied,
-                SafeMessageKey: "Access_Denied");
+            // Do not hard-fail Personal → Organization navigation; listing still works under Personal.
+            return new AuthResult(true, AuthFailureReason.None, session);
         }
 
         var updated = session with

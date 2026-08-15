@@ -14,6 +14,42 @@ cd C:\Users\speed\Desktop\ExItS-SaaS
 
 Replace `100.120.79.81` with your current Tailscale or LAN host if it changed.
 
+### Five PowerShell windows (expected)
+
+Start **always opens 5 separate PowerShell windows** — one per app:
+
+| Window title | App | Port |
+|---|---|---|
+| ExItS LocalValidation - Platform API | Platform API | 8091 |
+| ExItS LocalValidation - POS API | POS API | 8092 |
+| ExItS LocalValidation - Admin | Platform Admin | 8090 |
+| ExItS LocalValidation - Org Web | Organization Web | 8093 |
+| ExItS LocalValidation - Personal Web | Personal Web | 8094 |
+
+That is normal. Leave those windows open while you work; closing one stops that app.
+
+**There is no `-SingleWindow` switch.** This parameter does **not** exist and must not be used:
+
+```powershell
+# NOT supported — do not run
+.\tools\Start-LocalValidation.ps1 -PublicHost 100.120.79.81 -SingleWindow
+```
+
+### Restart
+
+Run Start again. It stops stale repo-scoped apps first, then opens the 5 windows again:
+
+```powershell
+.\tools\Start-LocalValidation.ps1 -PublicHost 100.120.79.81
+```
+
+Or stop explicitly, then start:
+
+```powershell
+.\tools\Stop-LocalValidation.ps1
+.\tools\Start-LocalValidation.ps1 -PublicHost 100.120.79.81
+```
+
 ### Printed URLs (example)
 
 - Admin: `http://100.120.79.81:8090` (canonical sign-in)

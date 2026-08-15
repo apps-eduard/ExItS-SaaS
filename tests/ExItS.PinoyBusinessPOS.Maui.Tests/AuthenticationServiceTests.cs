@@ -1375,6 +1375,11 @@ public sealed class AuthenticationServiceTests
         public Task<ApiResult<IReadOnlyList<PlatformAccountProfileDto>>> GetAccountProfilesAsync(CancellationToken ct = default) =>
             Task.FromResult(AccountProfilesResult);
 
+        public Task<ApiResult<PlatformAccountProfileDto>> EnsureAccountProfileAsync(
+            EnsureAccountProfileRequest request,
+            CancellationToken ct = default) =>
+            Task.FromResult(ApiResult<PlatformAccountProfileDto>.Unavailable());
+
         public Task<ApiResult<IReadOnlyList<PendingOrganizationInvitationDto>>> GetPendingOrganizationInvitationsAsync(CancellationToken ct = default) =>
             Task.FromResult(ApiResult<IReadOnlyList<PendingOrganizationInvitationDto>>.Success(
                 Array.Empty<PendingOrganizationInvitationDto>()));

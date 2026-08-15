@@ -175,6 +175,11 @@ public sealed class PlatformAccessClient(IPosApiClient api) : IPlatformAccessCli
         CancellationToken ct = default) =>
         api.SendAsync<PlatformLoginResultDto>(HttpMethod.Post, "/api/v1/platform/auth/account-profiles/select", request, ct);
 
+    public Task<ApiResult<PlatformAccountProfileDto>> EnsureAccountProfileAsync(
+        EnsureAccountProfileRequest request,
+        CancellationToken ct = default) =>
+        api.SendAsync<PlatformAccountProfileDto>(HttpMethod.Post, "/api/v1/platform/auth/account-profiles/ensure", request, ct);
+
     public Task<ApiResult<StartBusinessResultDto>> StartBusinessAsync(
         StartBusinessRequest request,
         CancellationToken ct = default) =>

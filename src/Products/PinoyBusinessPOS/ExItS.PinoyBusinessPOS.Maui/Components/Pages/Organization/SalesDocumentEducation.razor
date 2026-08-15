@@ -2,6 +2,7 @@
 @using ExItS.DesignSystem.Components.Internal
 @inject ICurrentUserContext CurrentUser
 @inject IPlatformAccessClient Platform
+@inject IOrganizationOwnerProbe OrganizationOwner
 @inject NavigationGate Gate
 @inject NavigationManager Nav
 @inject IStringLocalizer<PosResources> L
@@ -70,22 +71,24 @@
     private bool _loading = true;
     private bool _busy;
     private bool _understood;
+    private bool _isCurrentOwner;
     private string? _error;
     private OrganizationSalesDocumentEducationStatusDto? _status;
 
-    private bool IsCurrentOwner =>
-        string.Equals(
-            CurrentUser.Session?.MembershipRole,
-            OrganizationMembershipRoles.Owner,
-            StringComparison.OrdinalIgnoreCase);
+    private bool IsCurrentOwner => _isCurrentOwner;
 
     protected override async Task OnInitializedAsync()
     {
-        if (CurrentUser.Session?.OrganizationId is not Guid organizationId)
+        if (CurrentUser.Session?.OrganizationId is not Guid organizationId
+            || CurrentUser.Session is null)
         {
             Nav.NavigateTo("/signin", replace: true);
             return;
         }
+
+        _isCurrentOwner = await OrganizationOwner.IsExactOrganizationOwnerAsync(
+            CurrentUser.Session,
+            organizationId);
 
         var result = await Platform.GetSalesDocumentEducationStatusAsync(organizationId);
         if (!result.IsSuccess || result.Data is null)

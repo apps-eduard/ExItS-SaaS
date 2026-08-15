@@ -10,6 +10,15 @@ namespace ExItS.PinoyBusinessPOS.Application.Support;
 public interface IOrganizationOwnerProbe
 {
     Task<bool> IsOwnerAsync(AuthSession session, Guid organizationId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Exact Platform <c>OrganizationOwner</c> only (not Administrator). Used for sales-document education.
+    /// Does not use offline POS Owner grants — Platform ownership is authoritative.
+    /// </summary>
+    Task<bool> IsExactOrganizationOwnerAsync(
+        AuthSession session,
+        Guid organizationId,
+        CancellationToken ct = default);
 }
 
 /// <summary>
@@ -22,10 +31,37 @@ public sealed class PlatformOrganizationOwnerProbe(
     IOfflineOperatingGrantService offlineGrant,
     TimeProvider time) : IOrganizationOwnerProbe
 {
-    public async Task<bool> IsOwnerAsync(
+    public Task<bool> IsOwnerAsync(
         AuthSession session,
         Guid organizationId,
-        CancellationToken ct = default)
+        CancellationToken ct = default) =>
+        ResolveOnlineOwnerAsync(
+            session,
+            organizationId,
+            OrganizationMembershipRoles.IsOwnerRole,
+            allowOfflinePosOwnerFallback: true,
+            ct);
+
+    public Task<bool> IsExactOrganizationOwnerAsync(
+        AuthSession session,
+        Guid organizationId,
+        CancellationToken ct = default) =>
+        ResolveOnlineOwnerAsync(
+            session,
+            organizationId,
+            role => string.Equals(
+                role,
+                OrganizationMembershipRoles.Owner,
+                StringComparison.OrdinalIgnoreCase),
+            allowOfflinePosOwnerFallback: false,
+            ct);
+
+    private async Task<bool> ResolveOnlineOwnerAsync(
+        AuthSession session,
+        Guid organizationId,
+        Func<string?, bool> roleMatches,
+        bool allowOfflinePosOwnerFallback,
+        CancellationToken ct)
     {
         try
         {
@@ -34,7 +70,7 @@ public sealed class PlatformOrganizationOwnerProbe(
                 .ConfigureAwait(false);
             if (eligible.Any(o =>
                     o.OrganizationId == organizationId
-                    && OrganizationMembershipRoles.IsOwnerRole(o.MembershipRole)))
+                    && roleMatches(o.MembershipRole)))
             {
                 return true;
             }
@@ -53,7 +89,7 @@ public sealed class PlatformOrganizationOwnerProbe(
                 && memberships.Data.Items.Any(m =>
                     m.OrganizationId == organizationId
                     && string.Equals(m.Status, "Active", StringComparison.OrdinalIgnoreCase)
-                    && OrganizationMembershipRoles.IsOwnerRole(m.Role)))
+                    && roleMatches(m.Role)))
             {
                 return true;
             }
@@ -61,6 +97,11 @@ public sealed class PlatformOrganizationOwnerProbe(
         catch
         {
             // Fall through.
+        }
+
+        if (!allowOfflinePosOwnerFallback)
+        {
+            return false;
         }
 
         var grant = session.UserId != Guid.Empty

@@ -412,6 +412,54 @@ internal static class AuthEndpoints
             return Results.Ok(result.Value);
         });
 
+        app.MapPost("/api/v1/platform/auth/account-profiles/ensure", async (
+            EnsureAccountProfileRequest body,
+            HttpContext http,
+            EnsureAccountProfilesForUser ensureProfiles,
+            CancellationToken ct) =>
+        {
+            if (!TryGetAuthenticatedUserId(http, out var userId))
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.SessionInvalid,
+                    "Authentication is required.",
+                    StatusCodes.Status401Unauthorized);
+            }
+
+            if (string.IsNullOrWhiteSpace(body.AccountClass)
+                || !Enum.TryParse<AccountClass>(body.AccountClass.Trim(), ignoreCase: true, out var accountClass)
+                || accountClass is not (AccountClass.Personal or AccountClass.Organization))
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.AccountProfileNotAvailable,
+                    "Only Personal or Organization account profiles can be ensured by the signed-in user.",
+                    StatusCodes.Status400BadRequest);
+            }
+
+            try
+            {
+                // Never exclusive: Personal ↔ Organization switching must keep both profiles usable.
+                var profile = await ensureProfiles
+                    .ExecuteAsync(
+                        PlatformUserId.From(userId),
+                        accountClass,
+                        exclusivePreferredClass: false,
+                        cancellationToken: ct)
+                    .ConfigureAwait(false);
+
+                return Results.Ok(new AccountProfileDto(
+                    profile.Id.Value,
+                    profile.UserIdentityId.Value,
+                    profile.AccountClass.ToString(),
+                    AccountClassScope.ToScope(profile.AccountClass).ToString(),
+                    profile.Status));
+            }
+            catch (DomainException ex)
+            {
+                return PlatformApiResults.Problem(ex.ErrorCode, ex.Message, StatusCodes.Status400BadRequest);
+            }
+        });
+
         // Org-scoped staff membership-repair surfaces (Personal identities never list/attach staff invites).
         app.MapGet("/api/v1/platform/auth/organization-invitations/pending", async (
             HttpContext http,
@@ -529,6 +577,7 @@ internal static class AuthEndpoints
     }
 
     private sealed record SelectAccountProfileRequest(Guid AccountProfileId);
+    private sealed record EnsureAccountProfileRequest(string? AccountClass);
     private sealed record CreateWebHandoffRequest(string? TargetApp, Guid? OrganizationId, string? ReturnPath);
     private sealed record RedeemWebHandoffRequest(string? Ticket);
 

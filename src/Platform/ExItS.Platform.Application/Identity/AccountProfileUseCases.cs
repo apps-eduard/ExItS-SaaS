@@ -140,8 +140,11 @@ public sealed class ListAccountProfilesForUser
         CancellationToken cancellationToken = default)
     {
         var list = await _profiles.ListByUserAsync(userId, cancellationToken).ConfigureAwait(false);
+        // Include deactivated Organization profiles so Personal → Organization can reactivate
+        // after a prior exclusive-profile reconciliation. Personal/Platform stay active-only.
         return list
-            .Where(p => p.IsActive)
+            .Where(p => p.IsActive
+                        || p.AccountClass is AccountClass.Organization)
             .OrderBy(p => p.AccountClass)
             .Select(p => new AccountProfileDto(
                 p.Id.Value,
@@ -215,11 +218,19 @@ public sealed class SelectAccountProfileSession
 
         var profile = await _profiles.GetByIdAsync(AccountProfileId.From(accountProfileId), cancellationToken)
             .ConfigureAwait(false);
-        if (profile is null || !profile.IsActive || profile.UserIdentityId != userId)
+        if (profile is null || profile.UserIdentityId != userId)
         {
             return ApplicationResult<PlatformLoginResultDto>.Failure(
                 ApplicationErrorCodes.AccountProfileNotAvailable,
                 "Account profile is not available for this identity.");
+        }
+
+        // Personal ↔ Organization switching must revive a deactivated Organization profile
+        // (e.g. after exclusive PreferredClass reconciliation) instead of Access Denied.
+        if (!profile.IsActive)
+        {
+            profile.Activate(utcNow);
+            await _profiles.UpdateAsync(profile, cancellationToken).ConfigureAwait(false);
         }
 
         var credential = await _credentials.GetByUserIdAsync(userId, cancellationToken).ConfigureAwait(false);

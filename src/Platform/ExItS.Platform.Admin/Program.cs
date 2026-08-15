@@ -204,14 +204,14 @@ app.MapPost("/admin/login/credentials", async (
     var password = form["Password"].ToString();
     var returnApp = form["ReturnApp"].ToString();
     var returnPath = form["ReturnPath"].ToString();
-    var (ok, error) = await sessions.LoginAsync(email, password).ConfigureAwait(false);
+    var (ok, error, sessionToken) = await sessions.LoginAsync(email, password).ConfigureAwait(false);
     if (!ok)
     {
         return Results.Redirect(
             "/admin/login?error=" + Uri.EscapeDataString(error ?? "Invalid email or password."));
     }
 
-    var next = await router.ResolveAsync(http, returnApp, returnPath).ConfigureAwait(false);
+    var next = await router.ResolveAsync(http, returnApp, returnPath, sessionToken: sessionToken).ConfigureAwait(false);
     return Results.Redirect(next);
 }).AllowAnonymous().DisableAntiforgery();
 
@@ -230,7 +230,7 @@ app.MapGet("/admin/login/as/{key}", async (
         return Results.NotFound();
     }
 
-    var (ok, error) = await localValidation.SignInAsKeyAsync(key).ConfigureAwait(false);
+    var (ok, error, sessionToken) = await localValidation.SignInAsKeyAsync(key).ConfigureAwait(false);
     if (!ok)
     {
         return Results.Redirect(
@@ -253,7 +253,8 @@ app.MapGet("/admin/login/as/{key}", async (
             http,
             appFromIdentity ?? returnApp,
             returnPath,
-            selected?.OrganizationId)
+            selected?.OrganizationId,
+            sessionToken)
         .ConfigureAwait(false);
     return Results.Redirect(next);
 }).AllowAnonymous();
@@ -322,7 +323,7 @@ app.MapGet("/admin/session/establish", async (
             "/admin/login?error=" + Uri.EscapeDataString("Session token is missing."));
     }
 
-    var (ok, error) = await sessions.EstablishFromSessionTokenAsync(sessionToken).ConfigureAwait(false);
+    var (ok, error, _) = await sessions.EstablishFromSessionTokenAsync(sessionToken).ConfigureAwait(false);
     if (!ok)
     {
         return Results.Redirect(

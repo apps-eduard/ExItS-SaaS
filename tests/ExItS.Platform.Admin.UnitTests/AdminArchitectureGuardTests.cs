@@ -508,10 +508,14 @@ public sealed class AdminArchitectureGuardTests
         Assert.DoesNotContain("FluentUI", login, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("exits-native-select", login, StringComparison.Ordinal);
 
-        Assert.Contains("<Select", picker, StringComparison.Ordinal);
+        Assert.Contains("exits-lv-identity", picker, StringComparison.Ordinal);
         Assert.Contains("DisplayName", picker, StringComparison.Ordinal);
         Assert.Contains("/admin/login/as/", picker, StringComparison.Ordinal);
-        Assert.Contains("location.assign", picker, StringComparison.Ordinal);
+        Assert.Contains("BuildLoginAsHref", picker, StringComparison.Ordinal);
+        Assert.Contains("data-enhance-nav=\"false\"", picker, StringComparison.Ordinal);
+        Assert.DoesNotContain("location.assign", picker, StringComparison.Ordinal);
+        Assert.DoesNotContain("ContinueQuickLoginNavigationAsync", picker, StringComparison.Ordinal);
+        Assert.DoesNotContain("<Select", picker, StringComparison.Ordinal);
         Assert.DoesNotContain("Summary", picker, StringComparison.Ordinal);
         Assert.DoesNotContain("SharedPassword", picker, StringComparison.Ordinal);
         Assert.DoesNotContain("<select", picker, StringComparison.Ordinal);

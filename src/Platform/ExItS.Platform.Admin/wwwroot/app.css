@@ -367,6 +367,18 @@ html, body {
     font-weight: 600;
     font-size: 12px;
 }
+.exits-lv-identity__list {
+    display: flex;
+    flex-direction: column;
+    gap: .35rem;
+}
+.exits-lv-identity__item {
+    text-align: left !important;
+    height: auto !important;
+    white-space: normal;
+    line-height: 1.35;
+    padding: .45rem .75rem;
+}
 .exits-login-links { margin-top: .75rem; }
 .exits-field-error {
     display: block;

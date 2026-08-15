@@ -164,7 +164,26 @@
             }
             else if (CurrentUser.Session?.OrganizationId is null)
             {
-                <ExitsPageHeader Title="No organization" Subtitle="Organization Admin requires an active organization membership. Linked customers cannot use this console." />
+                <ExitsPageHeader
+                    Title="No organization"
+                    Subtitle="Organization Admin needs an active organization membership. After a Local Validation reset, Olivia and Rafael are Platform Administrators only — they are not organization accounts until you Start a Business (or seed Full demo orgs)." />
+                <Space Direction="SpaceDirection.Vertical" Style="margin-top:1rem;">
+                    @if (Shell.Organizations.Count > 0)
+                    {
+                        <Button Type="@ButtonType.Primary" OnClick='() => Nav.NavigateTo("/select-organization")'>
+                            Select organization
+                        </Button>
+                    }
+                    else
+                    {
+                        <Button Type="@ButtonType.Primary" OnClick="GoPlatformAdmin">
+                            Open Platform Admin
+                        </Button>
+                        <Button OnClick='() => Nav.NavigateTo("/handoff/personal", forceLoad: true)'>
+                            Personal workspace (Start a Business)
+                        </Button>
+                    }
+                </Space>
             }
             else
             {
@@ -209,5 +228,29 @@
         }
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        // Interactive circuit: re-hydrate when prerender ran without the session cookie token.
+        if (CurrentUser.Session?.OrganizationId is null && Shell.Organizations.Count == 0)
+        {
+            await Hydrator.HydrateAsync();
+            if (CurrentUser.Session?.OrganizationId is not null || Shell.Organizations.Count > 0)
+            {
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+    }
+
     private void OnBreakpoint(bool broken) => _mobile = broken;
+
+    private void GoPlatformAdmin()
+    {
+        var origin = Hosts.Value.GetOrigin(WebApps.Platform).TrimEnd('/');
+        Nav.NavigateTo($"{origin}/admin", forceLoad: true);
+    }
 }

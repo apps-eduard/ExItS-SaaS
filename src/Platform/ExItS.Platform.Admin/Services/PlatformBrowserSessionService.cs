@@ -17,7 +17,7 @@ public sealed class PlatformBrowserSessionService(
 
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
 
-    public async Task<(bool Ok, string? Error)> LoginAsync(string usernameOrEmail, string password, CancellationToken ct = default)
+    public async Task<(bool Ok, string? Error, string? SessionToken)> LoginAsync(string usernameOrEmail, string password, CancellationToken ct = default)
     {
         var http = httpContextAccessor.HttpContext
             ?? throw new InvalidOperationException("HTTP context is required for login.");
@@ -30,14 +30,14 @@ public sealed class PlatformBrowserSessionService(
 
         if (!response.IsSuccessStatusCode)
         {
-            return (false, "Invalid email or password.");
+            return (false, "Invalid email or password.", null);
         }
 
         await using var stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
         var login = await JsonSerializer.DeserializeAsync<LoginResponse>(stream, JsonOptions, ct).ConfigureAwait(false);
         if (login is null || string.IsNullOrWhiteSpace(login.SessionToken))
         {
-            return (false, "Login response was invalid.");
+            return (false, "Login response was invalid.", null);
         }
 
         await EstablishBrowserSessionAsync(
@@ -47,16 +47,16 @@ public sealed class PlatformBrowserSessionService(
             login.Email,
             login.SessionToken,
             login.ExpiresAtUtc).ConfigureAwait(false);
-        return (true, null);
+        return (true, null, login.SessionToken);
     }
 
-    public async Task<(bool Ok, string? Error)> EstablishFromSessionTokenAsync(
+    public async Task<(bool Ok, string? Error, string? SessionToken)> EstablishFromSessionTokenAsync(
         string sessionToken,
         CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(sessionToken))
         {
-            return (false, "Session token is missing.");
+            return (false, "Session token is missing.", null);
         }
 
         // Interactive Server circuit events have no HttpContext — callers must use a full
@@ -64,7 +64,7 @@ public sealed class PlatformBrowserSessionService(
         var http = httpContextAccessor.HttpContext;
         if (http is null)
         {
-            return (false, "HTTP context is required to establish the browser session.");
+            return (false, "HTTP context is required to establish the browser session.", null);
         }
 
         var client = httpClientFactory.CreateClient("PlatformApiUnauthenticated");
@@ -73,14 +73,14 @@ public sealed class PlatformBrowserSessionService(
         using var response = await client.SendAsync(request, ct).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
         {
-            return (false, "External session is invalid.");
+            return (false, "External session is invalid.", null);
         }
 
         await using var stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
         var me = await JsonSerializer.DeserializeAsync<MeResponse>(stream, JsonOptions, ct).ConfigureAwait(false);
         if (me is null || me.UserId == Guid.Empty)
         {
-            return (false, "External session response was invalid.");
+            return (false, "External session response was invalid.", null);
         }
 
         await EstablishBrowserSessionAsync(
@@ -90,7 +90,7 @@ public sealed class PlatformBrowserSessionService(
             me.Email,
             sessionToken,
             me.ExpiresAtUtc).ConfigureAwait(false);
-        return (true, null);
+        return (true, null, sessionToken);
     }
 
     public async Task LogoutAsync(CancellationToken ct = default)
@@ -154,6 +154,9 @@ public sealed class PlatformBrowserSessionService(
         };
 
         await http.SignInAsync(CookieScheme, principal, props).ConfigureAwait(false);
+        // SignInAsync only writes the response cookie — same-request post-login routing
+        // (WebPostLoginRouter) must see the token without waiting for the next HTTP round-trip.
+        http.User = principal;
         AppendSessionTokenCookie(http, sessionToken, expiresAtUtc);
     }
 

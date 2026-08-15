@@ -6429,6 +6429,19 @@ html.pos-keyboard-open .pos-content {
     margin-top: var(--exits-space-2);
 }
 
+.pos-quick-login__list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--exits-space-2, 0.5rem);
+}
+
+.pos-quick-login__item {
+    width: 100%;
+    text-align: left;
+    white-space: normal;
+    line-height: 1.35;
+}
+
 .pos-shell--auth .pos-content {
     display: flex;
     flex-direction: column;

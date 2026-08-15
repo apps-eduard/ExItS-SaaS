@@ -290,6 +290,12 @@ public sealed class SupportDiagnosticsTests
     {
         public Task<bool> IsOwnerAsync(AuthSession session, Guid organizationId, CancellationToken ct = default) =>
             Task.FromResult(owner);
+
+        public Task<bool> IsExactOrganizationOwnerAsync(
+            AuthSession session,
+            Guid organizationId,
+            CancellationToken ct = default) =>
+            Task.FromResult(owner);
     }
 
     private sealed class FixedRoleReader(string? role) : ISupportDiagnosticsRoleReader
