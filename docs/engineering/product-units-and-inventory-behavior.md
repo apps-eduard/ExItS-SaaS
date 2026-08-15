@@ -61,6 +61,24 @@ Do not maintain separate authoritative pools per package size unless they are se
 - `AllowsCustomQuantity` for measured sales (meat, loose rice, oil)
 - ByWeight products map to custom measured sell in kilograms for backward compatibility
 
+### Canonical example — Rice
+
+| | |
+|--|--|
+| Base inventory | kg |
+| Buy | Sack = 50 kg (purchase unit; cost independent) |
+| Sell kg | 1 kg = 1 kg base · **₱55 / kg** |
+| Sell Sack | 1 Sack = 50 kg base · **₱2,600 / Sack** |
+
+50 × ₱55 = ₱2,750 is **not** required to equal Sack price. Selling 1 Sack deducts **50 kg** from shared on-hand and charges **₱2,600**.
+
+MAUI checkout:
+
+- one enabled sell unit → tap-to-add (or weight dialog when custom/ByWeight)
+- multiple sell units → **Sell as** entry dialog (unit chips, quantity, stock used when conversion ≠ 1, subtotal)
+- cart shows entered sell-unit quantity × unit price; optional “from stock” base hint
+- offline LocalStore **v9** carries sell units; checkout payload snapshots `SellingUnitId` + `EnteredQuantity`; server recomputes base
+
 ## Custom quantity sales
 
 Entered quantity × unit price (per selling option) → line total.  

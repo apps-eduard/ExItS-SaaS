@@ -337,6 +337,8 @@
 
 **Purchasing / Inventory UX clarification (Code Complete):** MAUI Purchasing hub (`/purchasing`) with Receive stock / Purchase orders / Goods receipts / Suppliers; Inventory focused on stock control. Domain behavior unchanged (Receive stock → ManualIncrease; PO ≠ stock; GR → stock). See [purchasing-inventory-ux-mental-model.md](../engineering/purchasing-inventory-ux-mental-model.md). Not Device Verified.
 
+**Multi-unit POS selling UX (Code Complete):** MAUI checkout Sell-as entry for products with multiple/pack sell units; independent unit prices (Rice kg ₱55 / Sack ₱2,600); base inventory deduction via conversion. See [product-units-and-inventory-behavior.md](../engineering/product-units-and-inventory-behavior.md). Not Device Verified.
+
 ---
 
 ### Phase 20 — Global Product Catalog and Business Template Onboarding

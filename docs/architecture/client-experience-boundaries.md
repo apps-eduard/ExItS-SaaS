@@ -623,6 +623,8 @@ Phase 19 is **Open** and owns remaining Mobile POS operations and Cashier experi
 
 **Purchasing vs Inventory UX:** Purchasing is the primary entry for buying/receiving goods; Inventory is stock control. User-facing “Receive stock” replaces informal “Direct Stock In” / “Manual Purchase” labels. Canonical detail: [purchasing-inventory-ux-mental-model.md](../engineering/purchasing-inventory-ux-mental-model.md).
 
+**Multi-unit selling:** Checkout supports independent sell-unit prices and base-inventory conversion (e.g. Rice kg ₱55 / Sack ₱2,600). See [product-units-and-inventory-behavior.md](../engineering/product-units-and-inventory-behavior.md).
+
 Phase 19 reuses existing Phase 8–18 APIs and screens. It remains Open until user phone confirmation after WP08. Not Device Verified. Not production-ready. Phase 14 remains separate and unfinished.
 
 ---
