@@ -4,7 +4,7 @@
 
 | Field | Value |
 |---|---|
-| Status | **Open / In Progress** — WP01 Stage A implementation; WP02–WP10 Not Started |
+| Status | **Open / In Progress** — WP01 Stage A Code Complete; WP02–WP10 Stage B in progress |
 | Device Verified | **No** |
 | Browser Verified | **No** |
 | Production Ready | **No** |
@@ -18,7 +18,7 @@ Deliver customer ordering with explicit branch pickup and local-delivery fulfill
 
 | Work package | Scope | Status |
 |---|---|---|
-| **P28-WP01** | Branch & Fulfillment Location Foundation (Stage A) | **Implementation Complete / Validation Pending** |
+| **P28-WP01** | Branch & Fulfillment Location Foundation (Stage A) | **Code Complete** (`8d0be5eb`…`6feb518f`) |
 | P28-WP02 | Customer ordering identity and organization storefront access | **Not Started** |
 | P28-WP03 | Customer-facing catalog and branch availability | **Not Started** |
 | P28-WP04 | Cart, pricing, and order quote | **Not Started** |
@@ -43,4 +43,4 @@ WP02–WP10 customer ordering, storefront, checkout, payment, dispatch, courier 
 
 ## Exact next
 
-Validate P28-WP01 on a physical device and browser. Do not start P28-WP02 without explicit authorization. Phase 27 remains Open.
+Implement Stage B starting at P28-WP02 (CustomerOrder domain + Personal/Organization party). Phase 27 remains Open.

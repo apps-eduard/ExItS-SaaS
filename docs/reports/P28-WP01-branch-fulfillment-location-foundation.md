@@ -2,10 +2,10 @@
 
 | Field | Value |
 |---|---|
-| Status | **Implementation Complete / Validation Pending** |
+| Status | **Code Complete** |
 | Phase | Phase 28 — Open |
 | Starting SHA | `f73f237f3cc409677e31aa7167cc32c8d9d5a616` |
-| Feature commit(s) | **TBD** |
+| Feature commit(s) | `8d0be5eb` platform · `c01c2e1b` maui · `7bc63852` org-web · `f7b7c88d` tests · `6feb518f` docs |
 | Device Verified | **No** |
 | Browser Verified | **No** |
 | Production Ready | **No** |
@@ -52,8 +52,8 @@ Root `HealthCare/` is absent, `git ls-files -- HealthCare/` is empty, and the so
 
 ## Files and documentation
 
-See the task handoff and Git diff. Commit and push hashes remain **TBD**.
+Stage A hashes: `8d0be5eb`, `c01c2e1b`, `7bc63852`, `f7b7c88d`, `6feb518f` (plus this hash-record commit).
 
 ## Exact next
 
-Validate P28-WP01. Do not begin P28-WP02 without authorization. Phase 27 remains Open.
+Master task Stage B begins at P28-WP02 (CustomerOrder domain). Phase 27 remains Open.
