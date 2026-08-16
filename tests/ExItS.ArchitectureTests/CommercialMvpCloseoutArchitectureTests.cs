@@ -49,7 +49,10 @@ public sealed class CommercialMvpCloseoutArchitectureTests
         Assert.True(File.Exists(Path.Combine(root, "ops", "deploy", "Invoke-ExItsDeploy.ps1")));
         var compose = File.ReadAllText(Path.Combine(root, "deploy", "docker", "docker-compose.pilot.yml"));
         Assert.Contains("NON-PRODUCTION", compose, StringComparison.Ordinal);
-        Assert.DoesNotContain("HealthCare", compose, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(
+            PortfolioIndependenceTokens.ForbiddenToken,
+            compose,
+            StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -68,7 +71,7 @@ public sealed class CommercialMvpCloseoutArchitectureTests
         var closeout = File.ReadAllText(Path.Combine(FindRepoRoot(), "src", "Shared", "ExItS.Deployment", "CommercialMvpCloseout.cs"));
         Assert.Contains("ExItS_Platform", closeout, StringComparison.Ordinal);
         Assert.Contains("ExItS_PinoyBusinessPOS", closeout, StringComparison.Ordinal);
-        Assert.Contains("ForbidsHealthCareCoupling", closeout, StringComparison.Ordinal);
+        Assert.Contains("ForbidsForeignProductCoupling", closeout, StringComparison.Ordinal);
     }
 
     private static string FindRepoRoot()

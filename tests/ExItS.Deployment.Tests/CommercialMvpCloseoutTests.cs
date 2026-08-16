@@ -79,16 +79,18 @@ public sealed class CommercialMvpCloseoutTests
     }
 
     [Fact]
-    public void Database_boundaries_forbid_healthcare_and_cross_db_fks()
+    public void Database_boundaries_forbid_foreign_product_coupling_and_cross_db_fks()
     {
         Assert.Equal("ExItS_Platform", DatabaseOwnershipBoundaries.PlatformDatabase);
         Assert.Equal("ExItS_PinoyBusinessPOS", DatabaseOwnershipBoundaries.PosDatabase);
         Assert.True(DatabaseOwnershipBoundaries.ForbidsCrossDatabaseForeignKeys);
-        Assert.True(DatabaseOwnershipBoundaries.ForbidsHealthCareCoupling);
+        Assert.True(DatabaseOwnershipBoundaries.ForbidsForeignProductCoupling);
         Assert.Contains("organizations", DatabaseOwnershipBoundaries.PlatformOwns);
         Assert.Contains("sales", DatabaseOwnershipBoundaries.PosOwns);
         Assert.DoesNotContain(DatabaseOwnershipBoundaries.PlatformOwns, o =>
-            o.Contains("HealthCare", StringComparison.OrdinalIgnoreCase));
+            o.Contains(
+                ForeignProductNaming.ForbiddenNestedProductToken,
+                StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]

@@ -80,13 +80,15 @@ public sealed class BackupRestoreArchitectureTests
     }
 
     [Fact]
-    public void Solution_includes_backup_projects_and_excludes_healthcare_root()
+    public void Solution_includes_backup_projects_and_excludes_forbidden_foreign_product_root()
     {
         var root = RepoRoot();
         var slnx = File.ReadAllText(Path.Combine(root, "ExItS.slnx"));
         Assert.Contains("ExItS.BackupRestore", slnx, StringComparison.Ordinal);
         Assert.Contains("ExItS.BackupRestore.Tests", slnx, StringComparison.Ordinal);
-        Assert.DoesNotContain("HealthCare/", slnx, StringComparison.Ordinal);
-        Assert.DoesNotMatch(@"HealthCare[/\\].*\.csproj", slnx);
+        Assert.DoesNotContain(
+            PortfolioIndependenceTokens.ForbiddenToken,
+            slnx,
+            StringComparison.OrdinalIgnoreCase);
     }
 }

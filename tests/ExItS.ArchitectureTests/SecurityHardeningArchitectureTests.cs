@@ -95,11 +95,14 @@ public sealed class SecurityHardeningArchitectureTests
     }
 
     [Fact]
-    public void No_healthcare_or_phi_coupling_in_pos_security_pipeline()
+    public void No_forbidden_foreign_product_or_phi_coupling_in_pos_security_pipeline()
     {
         var pipeline = File.ReadAllText(Path.Combine(FindRepositoryRoot(),
             "src", "Products", "PinoyBusinessPOS", "ExItS.PinoyBusinessPOS.Api", "Common", "PosSecurityPipeline.cs"));
-        Assert.DoesNotContain("HealthCare", pipeline, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(
+            PortfolioIndependenceTokens.ForbiddenToken,
+            pipeline,
+            StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("PHI", pipeline, StringComparison.Ordinal);
         Assert.DoesNotContain("Patient", pipeline, StringComparison.Ordinal);
     }

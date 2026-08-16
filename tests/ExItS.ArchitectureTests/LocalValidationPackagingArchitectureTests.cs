@@ -26,7 +26,10 @@ public sealed class LocalValidationPackagingArchitectureTests
         Assert.Contains("LocalValidation__Enabled", live, StringComparison.Ordinal);
         Assert.DoesNotContain("live-preview", live, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("LivePreview", live, StringComparison.Ordinal);
-        Assert.DoesNotContain("HealthCare/", live, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(
+            PortfolioIndependenceTokens.ForbiddenToken,
+            live,
+            StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain(".Migrate(", live, StringComparison.Ordinal);
 
         Assert.Contains("mailpit", live, StringComparison.OrdinalIgnoreCase);

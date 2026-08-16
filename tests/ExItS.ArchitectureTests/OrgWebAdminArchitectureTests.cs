@@ -28,7 +28,10 @@ public sealed class OrgWebAdminArchitectureTests
         var slnx = File.ReadAllText(Path.Combine(FindRepositoryRoot(), "ExItS.slnx"));
         Assert.Contains("ExItS.PinoyBusinessPOS.Web.csproj", slnx, StringComparison.Ordinal);
         Assert.Contains("ExItS.PinoyBusinessPOS.Web.Tests.csproj", slnx, StringComparison.Ordinal);
-        Assert.DoesNotContain("HealthCare", slnx, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(
+            PortfolioIndependenceTokens.ForbiddenToken,
+            slnx,
+            StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

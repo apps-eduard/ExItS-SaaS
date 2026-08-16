@@ -7,7 +7,7 @@ alwaysApply: true
 
 ## Repository Safety
 
-- ExItS is an independent multi-product portfolio repository. Do not recreate, clone, import, or nest a HealthCare (or other external product) source tree into this workspace without explicit authorization.
+- ExItS is an independent multi-product portfolio repository. Do not recreate, clone, import, or nest an external product source tree into this workspace without explicit authorization.
 - Preserve ownership boundaries: product operational data belongs in the product database; no cross-product database access or foreign keys; POS must not contain PHI; future products require separate authorization.
 - Do not implement future work packages or adjacent product capability without explicit authorization.
 - Do not implement PinoyBusinessPOS unless explicitly authorized.
@@ -23,7 +23,7 @@ alwaysApply: true
 - A small documentation hash-record commit is allowed.
 - Push only after restore, Release build, tests, and required validation succeed.
 - Final local and remote `main` must match; final working tree must be clean.
-- Verify portfolio independence before and after material changes: no root `HealthCare/` directory; `git ls-files -- HealthCare/` empty; `dotnet sln ExItS.slnx list` has no HealthCare project.
+- Verify portfolio independence before and after material changes: architecture guards must confirm no forbidden nested foreign product directory, tracked path, or solution project.
 
 ## Build and Test Workflow
 

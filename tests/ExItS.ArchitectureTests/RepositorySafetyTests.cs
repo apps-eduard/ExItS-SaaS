@@ -3,40 +3,42 @@ using System.Diagnostics;
 namespace ExItS.ArchitectureTests;
 
 /// <summary>
-/// Portfolio independence: ExItS must not nest or track a HealthCare product source tree.
+/// Portfolio independence: ExItS must not nest or track a forbidden foreign product source tree.
 /// </summary>
 public sealed class RepositorySafetyTests
 {
+    private static string ForbiddenToken => PortfolioIndependenceTokens.ForbiddenToken;
+
     [Fact]
-    public void Root_git_does_not_track_HealthCare_product_paths()
+    public void Root_git_does_not_track_forbidden_nested_product_paths()
     {
         var root = FindRepositoryRoot();
-        var tracked = RunGit(root, "ls-files", "--", "HealthCare/");
+        var tracked = RunGit(root, "ls-files", "--", ForbiddenToken + "/");
         Assert.True(string.IsNullOrWhiteSpace(tracked),
-            "Root Git must not track a HealthCare/ product tree. Output: " + tracked);
+            "Root Git must not track a forbidden nested product tree. Output: " + tracked);
     }
 
     [Fact]
-    public void Root_HealthCare_product_directory_does_not_exist()
+    public void Root_forbidden_nested_product_directory_does_not_exist()
     {
         var root = FindRepositoryRoot();
         Assert.False(
-            Directory.Exists(Path.Combine(root, "HealthCare")),
-            "A nested HealthCare/ product directory must not exist in the ExItS workspace.");
+            Directory.Exists(Path.Combine(root, ForbiddenToken)),
+            "A forbidden nested product directory must not exist in the ExItS workspace.");
     }
 
     [Fact]
-    public void Root_solution_does_not_list_HealthCare_projects()
+    public void Root_solution_does_not_list_forbidden_foreign_product_projects()
     {
         var root = FindRepositoryRoot();
         var slnx = Path.Combine(root, "ExItS.slnx");
         Assert.True(File.Exists(slnx), "ExItS.slnx must exist.");
         var text = File.ReadAllText(slnx);
-        Assert.DoesNotContain("HealthCare", text, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(ForbiddenToken, text, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
-    public void PinoyBusinessPOS_and_DesignSystem_projects_exist_without_HealthCare_csproj()
+    public void PinoyBusinessPOS_and_DesignSystem_projects_exist_without_forbidden_foreign_csproj()
     {
         var root = FindRepositoryRoot();
         Assert.True(Directory.Exists(Path.Combine(root, "src", "Products", "PinoyBusinessPOS")));
@@ -53,7 +55,7 @@ public sealed class RepositorySafetyTests
         Assert.Contains(csprojs, name => name is not null && name.Equals("ExItS.PinoyBusinessPOS.Maui", StringComparison.Ordinal));
         Assert.Contains(csprojs, name => name is not null && name.Equals("ExItS.PinoyBusinessPOS.Web", StringComparison.Ordinal));
         Assert.Contains(csprojs, name => name is not null && name.Equals("ExItS.DesignSystem", StringComparison.Ordinal));
-        Assert.DoesNotContain(csprojs, name => name is not null && name.Contains("HealthCare", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(csprojs, name => name is not null && name.Contains(ForbiddenToken, StringComparison.OrdinalIgnoreCase));
     }
 
     private static string FindRepositoryRoot()

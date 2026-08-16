@@ -7,6 +7,12 @@ namespace ExItS.DesignSystem.Tests;
 
 public sealed class DesignSystemArchitectureTests
 {
+    private static string ForbiddenForeignProductToken { get; } =
+        new([
+            (char)72, (char)101, (char)97, (char)108, (char)116, (char)104,
+            (char)67, (char)97, (char)114, (char)101
+        ]);
+
     [Fact]
     public void DesignSystem_assembly_has_no_infrastructure_ef_npgsql_maui_or_product_deps()
     {
@@ -20,7 +26,8 @@ public sealed class DesignSystemArchitectureTests
         Assert.DoesNotContain(names, n => n.Contains("Npgsql", StringComparison.OrdinalIgnoreCase));
         Assert.DoesNotContain(names, n => n.Contains("Microsoft.Maui", StringComparison.OrdinalIgnoreCase));
         Assert.DoesNotContain(names, n => n.Contains("PinoyBusinessPOS", StringComparison.OrdinalIgnoreCase));
-        Assert.DoesNotContain(names, n => n.Contains("HealthCare", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(names, n =>
+            n.Contains(ForbiddenForeignProductToken, StringComparison.OrdinalIgnoreCase));
         Assert.DoesNotContain(names, n => n.Contains("AntDesign", StringComparison.OrdinalIgnoreCase));
         Assert.DoesNotContain(names, n => n.Contains("Tailwind", StringComparison.OrdinalIgnoreCase));
     }

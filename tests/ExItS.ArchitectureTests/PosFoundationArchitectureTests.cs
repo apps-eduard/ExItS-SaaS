@@ -28,7 +28,10 @@ public sealed class PosFoundationArchitectureTests
             Assert.DoesNotContain("ExItS.Platform.Infrastructure", text, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("EntityFrameworkCore", text, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("Npgsql", text, StringComparison.OrdinalIgnoreCase);
-            Assert.DoesNotContain("HealthCare", text, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain(
+                PortfolioIndependenceTokens.ForbiddenToken,
+                text,
+                StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("AntDesign", text, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("Tailwind", text, StringComparison.OrdinalIgnoreCase);
         }
@@ -37,7 +40,10 @@ public sealed class PosFoundationArchitectureTests
             "ExItS.PinoyBusinessPOS.Infrastructure", "ExItS.PinoyBusinessPOS.Infrastructure.csproj"));
         Assert.Contains("EntityFrameworkCore", infra, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Npgsql", infra, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("HealthCare", infra, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(
+            PortfolioIndependenceTokens.ForbiddenToken,
+            infra,
+            StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

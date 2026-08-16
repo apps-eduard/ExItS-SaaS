@@ -1,9 +1,8 @@
-# Keep image contexts lean and free of secrets / frozen HealthCare content.
+# Keep image contexts lean and free of secrets and unrelated source content.
 **/bin/
 **/obj/
 **/.git/
 **/.vs/
-**/HealthCare/
 **/node_modules/
 **/*.user
 **/.env

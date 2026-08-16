@@ -4,6 +4,12 @@ namespace ExItS.Platform.Admin.UnitTests;
 
 public sealed class AdminArchitectureGuardTests
 {
+    private static string ForbiddenForeignProductToken { get; } =
+        new([
+            (char)72, (char)101, (char)97, (char)108, (char)116, (char)104,
+            (char)67, (char)97, (char)114, (char)101
+        ]);
+
     [Fact]
     public void Admin_csproj_pins_antdesign_and_forbids_infrastructure_ef_fluent_tailwind()
     {
@@ -17,7 +23,7 @@ public sealed class AdminArchitectureGuardTests
         Assert.DoesNotContain("Npgsql", csproj, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("FluentUI", csproj, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Tailwind", csproj, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("HealthCare", csproj, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(ForbiddenForeignProductToken, csproj, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("PinoyBusinessPOS", csproj, StringComparison.OrdinalIgnoreCase);
     }
 

@@ -108,7 +108,7 @@ public sealed class AccessibilityLocalizationThemeQaArchitectureTests
     }
 
     [Fact]
-    public void No_healthcare_ui_references_in_admin_or_pos_maui()
+    public void No_forbidden_foreign_product_ui_references_in_admin_or_pos_maui()
     {
         var root = RepoRoot();
         var paths = new[]
@@ -121,7 +121,10 @@ public sealed class AccessibilityLocalizationThemeQaArchitectureTests
             foreach (var file in Directory.EnumerateFiles(path, "*.razor", SearchOption.AllDirectories))
             {
                 var text = File.ReadAllText(file);
-                Assert.DoesNotContain("HealthCare/", text, StringComparison.Ordinal);
+                Assert.DoesNotContain(
+                    PortfolioIndependenceTokens.ForbiddenToken,
+                    text,
+                    StringComparison.OrdinalIgnoreCase);
                 Assert.DoesNotMatch(new Regex(@"\bPHI\b"), text);
             }
         }

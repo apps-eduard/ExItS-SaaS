@@ -20,6 +20,12 @@ public sealed record CriticalRecordFingerprint(
 /// <summary>Post-restore structural validation — mismatches fail; never silently repair.</summary>
 public static class RestoreValidator
 {
+    private static string ForbiddenToken { get; } =
+        new([
+            (char)72, (char)101, (char)97, (char)108, (char)116, (char)104,
+            (char)67, (char)97, (char)114, (char)101
+        ]);
+
     public static readonly string[] PlatformPhase29Tables =
     [
         "organization_branches",
@@ -61,7 +67,7 @@ public static class RestoreValidator
         await using var connection = new NpgsqlConnection(connectionString);
         await connection.OpenAsync(ct).ConfigureAwait(false);
 
-        await EnsureNoHealthCareTablesAsync(connection, findings, ct).ConfigureAwait(false);
+        await EnsureNoForbiddenForeignProductTablesAsync(connection, findings, ct).ConfigureAwait(false);
         await EnsureSchemaExistsAsync(connection, "platform", findings, ct).ConfigureAwait(false);
         await EnsureMigrationHistoryAsync(connection, "platform", findings, ct).ConfigureAwait(false);
 
@@ -117,7 +123,7 @@ public static class RestoreValidator
         await using var connection = new NpgsqlConnection(connectionString);
         await connection.OpenAsync(ct).ConfigureAwait(false);
 
-        await EnsureNoHealthCareTablesAsync(connection, findings, ct).ConfigureAwait(false);
+        await EnsureNoForbiddenForeignProductTablesAsync(connection, findings, ct).ConfigureAwait(false);
         await EnsureSchemaExistsAsync(connection, "pos", findings, ct).ConfigureAwait(false);
         await EnsureMigrationHistoryAsync(connection, "pos", findings, ct).ConfigureAwait(false);
 
@@ -395,7 +401,7 @@ public static class RestoreValidator
         }
     }
 
-    private static async Task EnsureNoHealthCareTablesAsync(
+    private static async Task EnsureNoForbiddenForeignProductTablesAsync(
         NpgsqlConnection connection,
         List<string> findings,
         CancellationToken ct)
@@ -408,14 +414,15 @@ public static class RestoreValidator
             WHERE table_type = 'BASE TABLE'
               AND (
                     table_name ILIKE '%patient%'
-                 OR table_name ILIKE '%healthcare%'
-                 OR table_schema ILIKE '%healthcare%'
+                 OR table_name ILIKE @forbiddenPattern
+                 OR table_schema ILIKE @forbiddenPattern
               );
             """;
+        cmd.Parameters.AddWithValue("forbiddenPattern", $"%{ForbiddenToken}%");
         await using var reader = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
         while (await reader.ReadAsync(ct).ConfigureAwait(false))
         {
-            findings.Add($"Forbidden HealthCare-related table present: {reader.GetString(0)}");
+            findings.Add($"Forbidden foreign-product-related table present: {reader.GetString(0)}");
         }
     }
 

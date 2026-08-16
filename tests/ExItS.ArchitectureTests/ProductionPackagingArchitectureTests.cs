@@ -19,7 +19,10 @@ public sealed class ProductionPackagingArchitectureTests
         Assert.Contains("exits_platform", compose, StringComparison.Ordinal);
         Assert.Contains("exits_pos", compose, StringComparison.Ordinal);
         Assert.Contains("ASPNETCORE_ENVIRONMENT: Staging", compose, StringComparison.Ordinal);
-        Assert.DoesNotContain("HealthCare/", compose, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(
+            PortfolioIndependenceTokens.ForbiddenToken,
+            compose,
+            StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain(".Migrate(", compose, StringComparison.Ordinal);
         Assert.DoesNotContain("MigrateAsync(", compose, StringComparison.Ordinal);
     }

@@ -52,8 +52,7 @@ Desktop.ini
 .DS_Store
 *.log
 
-# Portfolio safety — never nest an external HealthCare product tree
-/HealthCare/
+# Portfolio safety is enforced by architecture tests that reject nested foreign product trees.
 
 tools/node_modules/
 artifacts/

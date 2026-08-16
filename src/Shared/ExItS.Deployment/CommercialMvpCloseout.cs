@@ -256,7 +256,7 @@ public static class DatabaseOwnershipBoundaries
     ];
 
     public static bool ForbidsCrossDatabaseForeignKeys => true;
-    public static bool ForbidsHealthCareCoupling => true;
+    public static bool ForbidsForeignProductCoupling => true;
 }
 
 public static class Phase9ReconciliationGuard

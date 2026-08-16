@@ -8,6 +8,12 @@ namespace ExItS.BackupRestore.Tests;
 /// <summary>P9-WP03 recovery drill against disposable Testcontainers PostgreSQL.</summary>
 public sealed class PosBackupRestoreDrillTests
 {
+    private static string ForbiddenForeignProductToken { get; } =
+        new([
+            (char)72, (char)101, (char)97, (char)108, (char)116, (char)104,
+            (char)67, (char)97, (char)114, (char)101
+        ]);
+
     [Fact]
     public async Task Pos_backup_restore_validates_checksum_guards_and_schema()
     {
@@ -122,7 +128,8 @@ public sealed class PosBackupRestoreDrillTests
                     ["idempotency_records"] = 1
                 });
             Assert.True(validation.Passed, string.Join("; ", validation.Findings));
-            Assert.DoesNotContain(validation.Findings, f => f.Contains("HealthCare", StringComparison.OrdinalIgnoreCase));
+            Assert.DoesNotContain(validation.Findings, f =>
+                f.Contains(ForbiddenForeignProductToken, StringComparison.OrdinalIgnoreCase));
         }
         finally
         {

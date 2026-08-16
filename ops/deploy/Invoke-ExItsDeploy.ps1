@@ -195,7 +195,7 @@ switch ($Action) {
             commit = $commit
             utc = $stamp
             note = 'Evidence stub — fill durations/backup-set IDs after rehearsal steps.'
-            healthcareUntouched = $true
+            foreignProductUntouched = $true
         } | ConvertTo-Json -Depth 4
         Set-Content -Path $path -Value $payload -Encoding utf8
         Write-ExItsInfo "Wrote $path"

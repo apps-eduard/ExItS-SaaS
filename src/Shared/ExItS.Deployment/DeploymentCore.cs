@@ -241,12 +241,11 @@ public static class DeploymentConfigValidator
                 true));
         }
 
-        if (connectionString.Contains("Healthcare", StringComparison.OrdinalIgnoreCase)
-            || connectionString.Contains("HealthCare", StringComparison.OrdinalIgnoreCase))
+        if (ForeignProductNaming.ContainsForbiddenToken(connectionString))
         {
             findings.Add(new ValidationFinding(
-                $"db.{name}.healthcare",
-                "Deployment must not target HealthCare databases.",
+                $"db.{name}.foreign_product",
+                "Deployment must not target foreign-product databases outside the active ExItS portfolio.",
                 true));
         }
     }
@@ -511,10 +510,9 @@ public static class EnvironmentMatrix
         };
 }
 
-public static class HealthCareExclusion
+/// <summary>Blocks deploy/migration targets that name a forbidden foreign product database.</summary>
+public static class ForeignProductExclusion
 {
     public static bool IsForbiddenTarget(string? connectionOrName) =>
-        !string.IsNullOrWhiteSpace(connectionOrName)
-        && (connectionOrName.Contains("HealthCare", StringComparison.OrdinalIgnoreCase)
-            || connectionOrName.Contains("Healthcare", StringComparison.OrdinalIgnoreCase));
+        ForeignProductNaming.ContainsForbiddenToken(connectionOrName);
 }

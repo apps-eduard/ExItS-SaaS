@@ -29,7 +29,7 @@ Prefer the smallest sufficient context. Do not open the full Platform or POS tre
 - Unrelated products under `src/Products/`
 - Completed phase reports or the entire `docs/reports/` tree
 - Full Platform or POS history, all migrations, or all tests
-- Removed HealthCare **product** content (do not restore a nested `HealthCare/` tree)
+- Removed external-product content (do not restore a nested foreign product source tree)
 - Generated artifacts, build output, archived/superseded docs
 
 Inspect these only when the active task **directly** depends on them.

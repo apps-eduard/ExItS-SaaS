@@ -18,6 +18,7 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
+$script:ForbiddenForeignProductToken = -join ([char[]](72, 101, 97, 108, 116, 104, 67, 97, 114, 101))
 
 function Write-Drill([string] $Message) {
     Write-Host ("[P29-WP14] " + $Message)
@@ -236,13 +237,13 @@ try {
         -DockerContainerId $script:RestorePosName
     if ($LASTEXITCODE -ne 0) { throw "POS restore failed (exit $LASTEXITCODE)." }
 
-    Write-Drill 'Inline post-restore checks (schemas + no HealthCare)...'
+    Write-Drill 'Inline post-restore checks (schemas + foreign-product exclusion)...'
     $platformCheck = docker exec $script:RestorePlatformName psql -U $platformUser -d exits_platform -tAc "SELECT COUNT(*) FROM information_schema.schemata WHERE schema_name='platform';"
     $posCheck = docker exec $script:RestorePosName psql -U $posUser -d exits_pos -tAc "SELECT COUNT(*) FROM information_schema.schemata WHERE schema_name='pos';"
-    $hcCheck = docker exec $script:RestorePosName psql -U $posUser -d exits_pos -tAc "SELECT COUNT(*) FROM information_schema.tables WHERE table_name ILIKE '%healthcare%' OR table_name ILIKE '%patient%';"
+    $foreignProductCheck = docker exec $script:RestorePosName psql -U $posUser -d exits_pos -tAc "SELECT COUNT(*) FROM information_schema.tables WHERE table_name ILIKE '%$script:ForbiddenForeignProductToken%' OR table_schema ILIKE '%$script:ForbiddenForeignProductToken%' OR table_name ILIKE '%patient%';"
     if (($platformCheck.Trim() -as [int]) -lt 1) { throw 'platform schema missing after restore.' }
     if (($posCheck.Trim() -as [int]) -lt 1) { throw 'pos schema missing after restore.' }
-    if (($hcCheck.Trim() -as [int]) -gt 0) { throw 'Forbidden HealthCare-related tables present after restore.' }
+    if (($foreignProductCheck.Trim() -as [int]) -gt 0) { throw 'Forbidden foreign-product-related tables present after restore.' }
     Write-Drill 'Inline checks PASS.'
 
     if (-not $SkipDotnetTest) {

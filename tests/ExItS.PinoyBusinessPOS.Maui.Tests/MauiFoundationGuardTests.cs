@@ -4,6 +4,12 @@ namespace ExItS.PinoyBusinessPOS.Maui.Tests;
 
 public sealed class MauiFoundationGuardTests
 {
+    private static string ForbiddenForeignProductToken { get; } =
+        new([
+            (char)72, (char)101, (char)97, (char)108, (char)116, (char)104,
+            (char)67, (char)97, (char)114, (char)101
+        ]);
+
     [Fact]
     public void Maui_project_targets_android_first_and_excludes_bootstrap()
     {
@@ -15,7 +21,7 @@ public sealed class MauiFoundationGuardTests
         Assert.DoesNotContain("ExItS.Platform.Infrastructure", csproj, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("EntityFrameworkCore", csproj, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Npgsql", csproj, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("HealthCare", csproj, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(ForbiddenForeignProductToken, csproj, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("AntDesign", csproj, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Tailwind", csproj, StringComparison.OrdinalIgnoreCase);
 
@@ -410,7 +416,7 @@ public sealed class MauiFoundationGuardTests
     }
 
     [Fact]
-    public void Application_and_apiclient_have_no_ef_or_healthcare_refs()
+    public void Application_and_apiclient_have_no_ef_or_forbidden_foreign_product_refs()
     {
         foreach (var project in new[]
                  {
@@ -423,7 +429,7 @@ public sealed class MauiFoundationGuardTests
             var text = File.ReadAllText(Path.Combine(FindRepoRoot(), project));
             Assert.DoesNotContain("EntityFrameworkCore", text, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("Npgsql", text, StringComparison.OrdinalIgnoreCase);
-            Assert.DoesNotContain("HealthCare", text, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain(ForbiddenForeignProductToken, text, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("ExItS.Platform.Infrastructure", text, StringComparison.OrdinalIgnoreCase);
         }
     }

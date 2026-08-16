@@ -33,7 +33,10 @@ public sealed class ProductionProxyTlsArchitectureTests
         Assert.DoesNotContain("15433", compose, StringComparison.Ordinal);
         Assert.DoesNotContain("LocalValidation__Enabled", compose, StringComparison.Ordinal);
         Assert.DoesNotContain(".Migrate(", compose, StringComparison.Ordinal);
-        Assert.DoesNotContain("HealthCare/", compose, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(
+            PortfolioIndependenceTokens.ForbiddenToken,
+            compose,
+            StringComparison.OrdinalIgnoreCase);
         Assert.Contains("8090–8092", compose, StringComparison.Ordinal); // Local Validation ports cited as preserved, not published
     }
 

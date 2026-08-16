@@ -67,13 +67,13 @@ public sealed class LayerDependencyTests
     }
 
     [Fact]
-    public void Platform_assemblies_do_not_reference_HealthCare_or_AntDesign()
+    public void Platform_assemblies_do_not_reference_forbidden_foreign_product_or_AntDesign()
     {
         foreach (var assembly in new[] { Domain, Application, Infrastructure, Api })
         {
             var referenced = assembly.GetReferencedAssemblies().Select(a => a.Name ?? string.Empty).ToArray();
             Assert.DoesNotContain(referenced, name =>
-                name.Contains("HealthCare", StringComparison.OrdinalIgnoreCase));
+                name.Contains(PortfolioIndependenceTokens.ForbiddenToken, StringComparison.OrdinalIgnoreCase));
             Assert.DoesNotContain(referenced, name =>
                 name.Contains("AntDesign", StringComparison.OrdinalIgnoreCase));
             Assert.DoesNotContain(referenced, name =>

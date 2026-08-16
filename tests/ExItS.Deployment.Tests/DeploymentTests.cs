@@ -85,14 +85,15 @@ public sealed class DeploymentConfigValidatorTests
     }
 
     [Fact]
-    public void Rejects_HealthCare_database_target()
+    public void Rejects_forbidden_foreign_product_database_target()
     {
         var result = DeploymentConfigValidator.Validate(ValidPilot() with
         {
-            PlatformConnectionString = "Host=db;Password=secret;Database=HealthCare"
+            PlatformConnectionString =
+                $"Host=db;Password=secret;Database={ForeignProductNaming.ForbiddenNestedProductToken}"
         });
         Assert.False(result.IsValid);
-        Assert.Contains(result.Findings, f => f.Code.Contains("healthcare", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(result.Findings, f => f.Code.Contains("foreign_product", StringComparison.Ordinal));
     }
 
     private static DeploymentSettings ValidPilot() => Base(ExItsEnvironmentKind.StagingPilot) with
@@ -143,7 +144,9 @@ public sealed class BackupGateAndMigrationTests
         Assert.Equal("Platform", MigrationOrder.RequiredSteps[0].DatabaseKind);
         Assert.Equal("PinoyBusinessPos", MigrationOrder.RequiredSteps[2].DatabaseKind);
         Assert.DoesNotContain(MigrationOrder.RequiredSteps, s =>
-            s.DatabaseKind.Contains("HealthCare", StringComparison.OrdinalIgnoreCase));
+            s.DatabaseKind.Contains(
+                ForeignProductNaming.ForbiddenNestedProductToken,
+                StringComparison.OrdinalIgnoreCase));
     }
 }
 
@@ -281,10 +284,11 @@ public sealed class AndroidAndCompatibilityTests
     }
 
     [Fact]
-    public void HealthCare_exclusion_detects_forbidden_names()
+    public void Foreign_product_exclusion_detects_forbidden_names()
     {
-        Assert.True(HealthCareExclusion.IsForbiddenTarget("Server=x;Database=HealthCare"));
-        Assert.False(HealthCareExclusion.IsForbiddenTarget("Server=x;Database=exits_platform"));
+        Assert.True(ForeignProductExclusion.IsForbiddenTarget(
+            $"Server=x;Database={ForeignProductNaming.ForbiddenNestedProductToken}"));
+        Assert.False(ForeignProductExclusion.IsForbiddenTarget("Server=x;Database=exits_platform"));
     }
 
     [Fact]

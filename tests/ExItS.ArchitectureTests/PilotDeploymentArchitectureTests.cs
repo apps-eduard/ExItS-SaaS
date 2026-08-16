@@ -20,13 +20,16 @@ public sealed class PilotDeploymentArchitectureTests
     }
 
     [Fact]
-    public void Pilot_compose_and_dockerfiles_exist_without_healthcare()
+    public void Pilot_compose_and_dockerfiles_exist_without_forbidden_foreign_product()
     {
         var root = FindRepoRoot();
         var compose = File.ReadAllText(Path.Combine(root, "deploy", "docker", "docker-compose.pilot.yml"));
         Assert.Contains("exits-pilot", compose, StringComparison.Ordinal);
         Assert.Contains("NON-PRODUCTION", compose, StringComparison.Ordinal);
-        Assert.DoesNotContain("HealthCare", compose, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(
+            PortfolioIndependenceTokens.ForbiddenToken,
+            compose,
+            StringComparison.OrdinalIgnoreCase);
         Assert.True(File.Exists(Path.Combine(root, "deploy", "docker", "Dockerfile.platform-api")));
         Assert.True(File.Exists(Path.Combine(root, "deploy", "docker", "Dockerfile.pos-api")));
         Assert.True(File.Exists(Path.Combine(root, "deploy", "docker", "Dockerfile.platform-admin")));
