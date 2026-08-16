@@ -34,7 +34,10 @@ public sealed class ConnectedBuyersBulkShareUiGuardTests
         Assert.Contains("pos-manage-share__clear", manage, StringComparison.Ordinal);
         Assert.Contains("pos-manage-share__action--primary", manage, StringComparison.Ordinal);
         Assert.Contains("pos-denom-sheet", manage, StringComparison.Ordinal);
+        Assert.Contains("pos-manage-share__sheet-body", manage, StringComparison.Ordinal);
+        Assert.Contains("pos-manage-share__line3", manage, StringComparison.Ordinal);
         Assert.Contains("pos-denom-sheet__panel--fit", manage, StringComparison.Ordinal);
+        Assert.DoesNotContain("Emphasized=\"true\"", manage, StringComparison.Ordinal);
         Assert.Contains("ConnectedBuyers_SetBuyerPriceTitle", manage, StringComparison.Ordinal);
         Assert.Contains("ConnectedBuyers_ReviewPricesTitle", manage, StringComparison.Ordinal);
         Assert.Contains("ConnectedBuyers_UseDefaultPoHelp", manage, StringComparison.Ordinal);

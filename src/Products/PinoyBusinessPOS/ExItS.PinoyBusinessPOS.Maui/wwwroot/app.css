@@ -10917,11 +10917,17 @@ html:has(.pos-denom-sheet) .pos-denom-sheet {
     width: min(28rem, 100%);
 }
 .pos-denom-sheet__panel--fit {
-    height: auto;
+    /* Content-sized sheets: avoid flex-grow tricks that leave a blank middle on mobile WebViews. */
+    height: fit-content;
     max-height: min(100%, 40rem);
+    flex: 0 1 auto;
+    align-self: flex-end;
 }
+.pos-denom-sheet__panel--fit .pos-denom-sheet__list,
 .pos-denom-sheet__list--fit {
     flex: 0 1 auto;
+    min-height: 0;
+    max-height: min(52vh, 22rem);
 }
 .pos-denom-sheet__header {
     align-items: flex-start;

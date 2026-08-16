@@ -141,18 +141,19 @@
                                     ? L["ConnectedBuyers_FilterUncategorized"]
                                     : product.Category)
                             </span>
-                            <span class="pos-manage-share__prices">
+                            <span class="pos-manage-share__line3">
                                 <span class="pos-manage-share__buyer-price">
                                     <span class="pos-manage-share__price-label">@L["ConnectedBuyers_BuyerPrice"]</span>
                                     @if (effective is decimal buyerPay)
                                     {
-                                        <MoneyDisplay Amount="@buyerPay" CurrencyCode="PHP" Emphasized="true" />
+                                        <MoneyDisplay Amount="@buyerPay" CurrencyCode="PHP" />
                                     }
                                     else
                                     {
                                         <span class="pos-muted">—</span>
                                     }
                                 </span>
+                                <span class="pos-muted" aria-hidden="true">·</span>
                                 <span class="pos-manage-share__price-note pos-muted">
                                     @if (product.HasCustomPrice)
                                     {
@@ -165,13 +166,14 @@
                                         @L["ConnectedBuyers_UsesDefaultPo"]
                                     }
                                 </span>
-                            </span>
-                            <span class="pos-manage-share__state @(product.IsShared ? "pos-manage-share__state--shared" : null)">
-                                @(product.IsShared ? L["ConnectedBuyers_FilterShared"] : L["ConnectedBuyers_FilterNotShared"])
-                                @if (product.IsShared && product.HasCustomPrice)
-                                {
-                                    <text> · @L["ConnectedBuyers_FilterCustomPrice"]</text>
-                                }
+                                <span class="pos-muted" aria-hidden="true">·</span>
+                                <span class="pos-manage-share__state @(product.IsShared ? "pos-manage-share__state--shared" : null)">
+                                    @(product.IsShared ? L["ConnectedBuyers_FilterShared"] : L["ConnectedBuyers_FilterNotShared"])
+                                    @if (product.IsShared && product.HasCustomPrice)
+                                    {
+                                        <text> · @L["ConnectedBuyers_FilterCustomPrice"]</text>
+                                    }
+                                </span>
                             </span>
                         </button>
                     </article>
@@ -248,16 +250,15 @@
 @if (_priceSheetOpen)
 {
     <div class="pos-denom-sheet" role="dialog" aria-modal="true" aria-label="@L["ConnectedBuyers_SetBuyerPriceTitle"]">
-        <div class="pos-denom-sheet__panel pos-denom-sheet__panel--fit">
+        <div class="pos-denom-sheet__panel pos-denom-sheet__panel--fit pos-manage-share__price-panel">
             <header class="pos-denom-sheet__header pos-manage-share__sheet-header">
                 <div>
                     <h2 class="pos-denom-sheet__title">@L["ConnectedBuyers_SetBuyerPriceTitle"]</h2>
                     <p class="pos-manage-share__sheet-count" aria-live="polite">@SelectionProductsLabel</p>
-                    <p class="pos-denom-sheet__hint">@L["ConnectedBuyers_PriceRuleIntro"]</p>
                     <p class="pos-denom-sheet__hint">@L["ConnectedBuyers_PriceRuleBaseline"]</p>
                 </div>
             </header>
-            <div class="pos-denom-sheet__list pos-denom-sheet__list--fit">
+            <div class="pos-manage-share__sheet-body" role="radiogroup" aria-label="@L["ConnectedBuyers_SetBuyerPriceTitle"]">
                 <label class="pos-manage-share__price-option">
                     <input type="radio" name="price-mode" checked="@(_priceMode == "UseDefault")" @onchange="SetUseDefaultMode" />
                     <span>
@@ -316,7 +317,7 @@
                     <p class="pos-manage-share__banner" role="alert">@_priceError</p>
                 }
             </div>
-            <div class="pos-denom-sheet__bar">
+            <div class="pos-denom-sheet__bar pos-manage-share__sheet-bar">
                 <button type="button" class="pos-action-tile" disabled="@_busy" @onclick="() => _priceSheetOpen = false">
                     <span class="pos-action-tile__label">@L["Common_Cancel"]</span>
                 </button>
@@ -331,14 +332,14 @@
 @if (_preview is not null)
 {
     <div class="pos-denom-sheet" role="dialog" aria-modal="true" aria-label="@L["ConnectedBuyers_ReviewPricesTitle"]">
-        <div class="pos-denom-sheet__panel pos-denom-sheet__panel--fit">
+        <div class="pos-denom-sheet__panel pos-denom-sheet__panel--fit pos-manage-share__price-panel">
             <header class="pos-denom-sheet__header pos-manage-share__sheet-header">
                 <div>
                     <h2 class="pos-denom-sheet__title">@L["ConnectedBuyers_ReviewPricesTitle"]</h2>
                     <p class="pos-manage-share__sheet-count">@L["ConnectedBuyers_PricePreviewCount", _preview.AffectedCount]</p>
                 </div>
             </header>
-            <div class="pos-denom-sheet__list pos-denom-sheet__list--fit">
+            <div class="pos-manage-share__sheet-body">
                 @foreach (var item in _preview.Items)
                 {
                     var useDefault = item.ProposedBuyerPrice is null;
@@ -360,7 +361,7 @@
                                 }
                                 <span class="pos-manage-share__price-label pos-manage-share__price-label--new">@L["ConnectedBuyers_NewBuyerPrice"]</span>
                                 <span class="pos-manage-share__new-price">
-                                    <MoneyDisplay Amount="@item.ProposedEffectivePrice" CurrencyCode="PHP" Emphasized="true" />
+                                    <MoneyDisplay Amount="@item.ProposedEffectivePrice" CurrencyCode="PHP" />
                                 </span>
                                 <span class="pos-manage-share__price-label">@L["ConnectedBuyers_UsesDefaultPo"]</span>
                                 <span></span>
@@ -371,7 +372,7 @@
                                 <MoneyDisplay Amount="@item.DefaultPoPrice" CurrencyCode="PHP" />
                                 <span class="pos-manage-share__price-label pos-manage-share__price-label--new">@L["ConnectedBuyers_BuyerPrice"]</span>
                                 <span class="pos-manage-share__new-price">
-                                    <MoneyDisplay Amount="@item.ProposedEffectivePrice" CurrencyCode="PHP" Emphasized="true" />
+                                    <MoneyDisplay Amount="@item.ProposedEffectivePrice" CurrencyCode="PHP" />
                                 </span>
                             }
                         </div>
@@ -382,7 +383,7 @@
                     <p class="pos-muted">@L["ConnectedBuyers_PricePreviewTruncated"]</p>
                 }
             </div>
-            <div class="pos-denom-sheet__bar">
+            <div class="pos-denom-sheet__bar pos-manage-share__sheet-bar">
                 <button type="button" class="pos-action-tile" disabled="@_busy" @onclick="BackToPriceSheet">
                     <span class="pos-action-tile__label">@L["Common_Cancel"]</span>
                 </button>
@@ -397,7 +398,7 @@
 @if (_detail is not null)
 {
     <div class="pos-denom-sheet" role="dialog" aria-modal="true" aria-label="@_detail.Name">
-        <div class="pos-denom-sheet__panel pos-denom-sheet__panel--fit">
+        <div class="pos-denom-sheet__panel pos-denom-sheet__panel--fit pos-manage-share__price-panel">
             <header class="pos-denom-sheet__header pos-manage-share__sheet-header">
                 <div>
                     <h2 class="pos-denom-sheet__title">@_detail.Name</h2>
@@ -407,7 +408,7 @@
                     }
                 </div>
             </header>
-            <div class="pos-denom-sheet__list pos-denom-sheet__list--fit">
+            <div class="pos-manage-share__sheet-body">
                 <div class="pos-manage-share__detail-block">
                     <span class="pos-manage-share__price-label">@L["ConnectedBuyers_DefaultPoShort"]</span>
                     <span class="pos-manage-share__detail-value">
@@ -454,7 +455,7 @@
                     }
                 </div>
             </div>
-            <div class="pos-denom-sheet__bar">
+            <div class="pos-denom-sheet__bar pos-manage-share__sheet-bar">
                 <button type="button" class="pos-action-tile" disabled="@_busy" @onclick="() => _detail = null">
                     <span class="pos-action-tile__label">@L["Common_Cancel"]</span>
                 </button>
@@ -469,15 +470,15 @@
 
 <style>
     .pos-manage-share { width: 100%; padding-bottom: 0.5rem; }
-    .pos-manage-share--has-selection { padding-bottom: 7.5rem; }
-    .pos-manage-share__header { margin-bottom: 0.45rem; }
-    .pos-manage-share__title { margin: 0; font-size: 1.2rem; font-weight: 700; line-height: 1.2; color: var(--exits-text, #15201a); }
-    .pos-manage-share__buyer { margin: 0.15rem 0 0; font-size: 0.875rem; font-weight: 650; color: var(--exits-text, #15201a); }
-    .pos-manage-share__summary { margin: 0.2rem 0 0; font-size: 0.8125rem; }
-    .pos-manage-share__subtitle { margin: 0.15rem 0 0; font-size: 0.75rem; line-height: 1.35; }
+    .pos-manage-share--has-selection { padding-bottom: 7.25rem; }
+    .pos-manage-share__header { margin-bottom: 0.4rem; }
+    .pos-manage-share__title { margin: 0; font-size: 1.15rem; font-weight: 700; line-height: 1.2; color: var(--exits-text, #15201a); }
+    .pos-manage-share__buyer { margin: 0.1rem 0 0; font-size: 0.875rem; font-weight: 650; color: var(--exits-text, #15201a); }
+    .pos-manage-share__summary { margin: 0.15rem 0 0; font-size: 0.8125rem; }
+    .pos-manage-share__subtitle { margin: 0.1rem 0 0; font-size: 0.75rem; line-height: 1.3; }
     .pos-manage-share__search {
         display: flex; align-items: center; gap: 0.4rem;
-        margin: 0 0 0.45rem; padding: 0.3rem 0.5rem;
+        margin: 0 0 0.4rem; padding: 0.28rem 0.5rem;
         border: 1px solid var(--exits-border, #c9d4cd); border-radius: 0.5rem;
         background: var(--exits-surface, #fff);
     }
@@ -487,19 +488,19 @@
     }
     .pos-manage-share__search-clear { appearance: none; border: 0; background: transparent; font: inherit; font-size: 0.75rem; font-weight: 650; color: var(--exits-primary, #1b7a3d); }
     .pos-manage-share__filters {
-        display: flex; flex-wrap: nowrap; gap: 0.35rem; margin: 0 0 0.35rem;
+        display: flex; flex-wrap: nowrap; gap: 0.35rem; margin: 0 0 0.3rem;
         overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: thin;
     }
-    .pos-manage-share__category-row { margin: 0 0 0.45rem; }
+    .pos-manage-share__category-row { margin: 0 0 0.4rem; }
     .pos-manage-share__category-btn {
-        appearance: none; width: 100%; min-height: 2.4rem; padding: 0.35rem 0.65rem;
+        appearance: none; width: 100%; min-height: 2.25rem; padding: 0.3rem 0.6rem;
         border: 1px solid var(--exits-border, #c9d4cd); border-radius: 0.5rem;
         background: var(--exits-bg, #f3f6f4); font: inherit; font-size: 0.8125rem; font-weight: 650;
         text-align: left; color: var(--exits-text, #15201a);
     }
     .pos-manage-share__select-banner {
         display: flex; flex-wrap: wrap; gap: 0.45rem; align-items: center;
-        margin: 0 0 0.45rem; padding: 0.4rem 0.5rem; border-radius: 0.45rem;
+        margin: 0 0 0.4rem; padding: 0.35rem 0.5rem; border-radius: 0.45rem;
         background: var(--exits-bg, #f3f6f4); font-size: 0.8125rem;
     }
     .pos-link-button { appearance: none; border: 0; background: transparent; color: var(--exits-primary, #1b7a3d); font: inherit; font-weight: 700; padding: 0; }
@@ -508,33 +509,37 @@
         overflow: hidden; background: var(--exits-surface, #fff);
     }
     .pos-manage-share__select-all {
-        display: flex; align-items: center; gap: 0.45rem; margin: 0; padding: 0.45rem 0.6rem;
+        display: flex; align-items: center; gap: 0.45rem; margin: 0; padding: 0.4rem 0.55rem;
         border-bottom: 1px solid var(--pos-border-subtle, #d7e0da); font-size: 0.8125rem; font-weight: 650;
-        min-height: 2.75rem;
+        min-height: 2.5rem;
     }
     .pos-manage-share__row {
-        display: grid; grid-template-columns: auto 1fr; gap: 0.4rem; padding: 0.45rem 0.6rem; align-items: start;
+        display: grid; grid-template-columns: auto 1fr; gap: 0.3rem; padding: 0.35rem 0.55rem; align-items: start;
     }
     .pos-manage-share__row + .pos-manage-share__row { border-top: 1px solid var(--pos-border-subtle, #d7e0da); }
     .pos-manage-share__row--selected { background: rgba(27, 122, 61, 0.06); }
     .pos-manage-share__check {
         display: flex; align-items: center; justify-content: center;
-        margin: 0; min-width: 2.75rem; min-height: 2.75rem;
+        margin: 0; min-width: 2.5rem; min-height: 2.5rem;
     }
     .pos-manage-share__body {
         appearance: none; border: 0; background: transparent; text-align: left;
-        display: flex; flex-direction: column; gap: 0.1rem; flex: 1 1 auto; min-width: 0;
-        padding: 0.1rem 0; font: inherit; color: inherit; cursor: pointer;
+        display: flex; flex-direction: column; gap: 0.05rem; flex: 1 1 auto; min-width: 0;
+        padding: 0.05rem 0; font: inherit; color: inherit; cursor: pointer;
     }
-    .pos-manage-share__name { font-size: 0.9375rem; font-weight: 650; line-height: 1.25; color: var(--exits-text, #15201a); }
-    .pos-manage-share__meta { font-size: 0.75rem; line-height: 1.3; }
-    .pos-manage-share__prices {
-        display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.2rem 0.45rem;
-        margin-top: 0.05rem; font-size: 0.75rem; line-height: 1.3;
+    .pos-manage-share__name { font-size: 0.9rem; font-weight: 650; line-height: 1.2; color: var(--exits-text, #15201a); }
+    .pos-manage-share__meta { font-size: 0.72rem; line-height: 1.25; }
+    .pos-manage-share__line3 {
+        display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.15rem 0.35rem;
+        margin-top: 0.05rem; font-size: 0.75rem; line-height: 1.25;
     }
     .pos-manage-share__buyer-price {
-        display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem;
+        display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 0.2rem;
         font-weight: 700; color: var(--exits-text, #15201a);
+    }
+    .pos-manage-share__buyer-price ::deep .exds-money,
+    .pos-manage-share__buyer-price .exds-money {
+        font-size: 0.8125rem; font-weight: 700;
     }
     .pos-manage-share__price-label {
         font-size: 0.6875rem; font-weight: 650; letter-spacing: 0.01em;
@@ -545,14 +550,14 @@
     .pos-manage-share__state { font-size: 0.75rem; font-weight: 700; color: var(--exits-text-muted, #5b6b62); }
     .pos-manage-share__state--shared { color: var(--exits-primary, #1b7a3d); }
     .pos-manage-share__more { margin-top: 0.65rem; }
-    .pos-manage-share__banner { margin: 0.55rem 0 0; font-size: 0.8125rem; color: var(--exits-text, #15201a); }
+    .pos-manage-share__banner { margin: 0.45rem 0 0; font-size: 0.8125rem; color: var(--exits-text, #15201a); }
     .pos-manage-share__sticky {
         position: fixed; left: 0; right: 0; bottom: calc(var(--pos-bottom-nav-height, 3.5rem) + env(safe-area-inset-bottom, 0px));
-        z-index: 40; padding: 0.5rem 0.75rem 0.55rem;
+        z-index: 40; padding: 0.45rem 0.75rem 0.5rem;
         border-top: 1px solid var(--exits-border, #c9d4cd); background: var(--exits-surface, #fff);
         box-shadow: 0 -4px 16px rgba(21, 32, 26, 0.08);
     }
-    .pos-manage-share__sticky-meta { font-size: 0.8125rem; font-weight: 700; margin-bottom: 0.35rem; }
+    .pos-manage-share__sticky-meta { font-size: 0.8125rem; font-weight: 700; margin-bottom: 0.3rem; }
     .pos-manage-share__sticky-actions { display: flex; flex-wrap: nowrap; gap: 0.35rem; }
     .pos-manage-share__action {
         appearance: none; flex: 1 1 0; min-height: 2.75rem; min-width: 0; padding: 0.35rem 0.45rem;
@@ -565,20 +570,29 @@
     }
     .pos-manage-share__action--danger { color: #8a1f1f; border-color: #e0b4b4; }
     .pos-manage-share__clear {
-        appearance: none; border: 0; background: transparent; width: 100%; margin-top: 0.2rem;
-        min-height: 2.5rem; font: inherit; font-size: 0.8125rem; font-weight: 650;
+        appearance: none; border: 0; background: transparent; width: 100%; margin-top: 0.15rem;
+        min-height: 2.4rem; font: inherit; font-size: 0.8125rem; font-weight: 650;
         color: var(--exits-text-muted, #5b6b62); text-decoration: underline;
     }
+    .pos-manage-share__price-panel { width: min(28rem, 100%); }
     .pos-manage-share__sheet-header { width: 100%; }
-    .pos-manage-share__sheet-count { margin: 0.2rem 0 0; font-size: 0.8125rem; font-weight: 700; color: var(--exits-text, #15201a); }
-    .pos-manage-share__price-option {
-        display: grid; grid-template-columns: auto 1fr; gap: 0.55rem; align-items: start;
-        margin: 0.1rem 0; padding: 0.35rem 0.05rem; font-size: 0.875rem; font-weight: 600;
+    .pos-manage-share__sheet-count { margin: 0.15rem 0 0; font-size: 0.8125rem; font-weight: 700; color: var(--exits-text, #15201a); }
+    .pos-manage-share__sheet-body {
+        display: flex; flex-direction: column; gap: 0.15rem;
+        flex: 0 1 auto; margin: 0.45rem 0 0; min-height: 0;
+        max-height: min(52vh, 22rem); overflow-y: auto; -webkit-overflow-scrolling: touch;
     }
-    .pos-manage-share__price-option input { margin-top: 0.2rem; }
+    .pos-manage-share__sheet-bar { margin-top: 0.4rem; }
+    .pos-manage-share__price-option {
+        display: grid; grid-template-columns: auto 1fr; gap: 0.5rem; align-items: start;
+        margin: 0; padding: 0.4rem 0.15rem; font-size: 0.875rem; font-weight: 600;
+        border-bottom: 1px solid var(--pos-border-subtle, #d7e0da);
+    }
+    .pos-manage-share__price-option:last-of-type { border-bottom: 0; }
+    .pos-manage-share__price-option input { margin-top: 0.2rem; min-width: 1.1rem; min-height: 1.1rem; }
     .pos-manage-share__option-help {
-        display: block; margin-top: 0.15rem; font-size: 0.75rem; font-weight: 500;
-        color: var(--exits-text-muted, #5b6b62); line-height: 1.35;
+        display: block; margin-top: 0.12rem; font-size: 0.72rem; font-weight: 500;
+        color: var(--exits-text-muted, #5b6b62); line-height: 1.3;
     }
     .pos-manage-share__field {
         display: flex; flex-direction: column; gap: 0.25rem; margin: 0 0 0.35rem 1.7rem;
@@ -593,22 +607,20 @@
         border: 1px solid var(--exits-border, #c9d4cd); border-radius: 0.45rem; font: inherit;
     }
     .pos-manage-share__preview-card {
-        padding: 0.45rem 0; border-bottom: 1px solid var(--pos-border-subtle, #d7e0da);
+        padding: 0.4rem 0; border-bottom: 1px solid var(--pos-border-subtle, #d7e0da);
     }
-    .pos-manage-share__preview-title {
-        margin-bottom: 0.3rem; font-size: 0.875rem;
-    }
+    .pos-manage-share__preview-title { margin-bottom: 0.25rem; font-size: 0.875rem; }
     .pos-manage-share__preview-grid {
-        display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.15rem 0.75rem;
+        display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.12rem 0.75rem;
         align-items: baseline; font-size: 0.8125rem;
     }
     .pos-manage-share__new-price { font-weight: 700; }
     .pos-manage-share__detail-block {
-        display: flex; flex-direction: column; gap: 0.25rem; margin: 0 0 0.55rem;
+        display: flex; flex-direction: column; gap: 0.2rem; margin: 0 0 0.45rem;
     }
     .pos-manage-share__detail-value { font-size: 0.9375rem; font-weight: 700; }
     .pos-manage-share__toggle {
-        display: flex; align-items: center; gap: 0.5rem; min-height: 2.75rem;
+        display: flex; align-items: center; gap: 0.5rem; min-height: 2.5rem;
         font-size: 0.875rem; font-weight: 650;
     }
     .pos-denom-sheet__item { display: flex; justify-content: space-between; gap: 0.75rem; width: 100%; }
