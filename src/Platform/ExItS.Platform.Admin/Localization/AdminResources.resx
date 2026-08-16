@@ -1409,7 +1409,7 @@
     <value>Sales document compliance</value>
   </data>
   <data name="Organizations_ComplianceHint" xml:space="preserve">
-    <value>Platform-controlled eligibility and issuance capability. Enabling capability does not create BIR tax documents while implementation is unavailable.</value>
+    <value>Platform-controlled eligibility, readiness profile, and issuance capability. Enabling capability does not create BIR tax documents while implementation is unavailable. This is not a BIR certification claim.</value>
   </data>
   <data name="Organizations_ComplianceLoadFailed" xml:space="preserve">
     <value>Could not load compliance status.</value>
@@ -1515,6 +1515,66 @@
   </data>
   <data name="Organizations_ComplianceActionFailed" xml:space="preserve">
     <value>Compliance action failed.</value>
+  </data>
+  <data name="Organizations_ComplianceRegisteredName" xml:space="preserve">
+    <value>Registered taxpayer name</value>
+  </data>
+  <data name="Organizations_ComplianceMaskedTin" xml:space="preserve">
+    <value>TIN (masked)</value>
+  </data>
+  <data name="Organizations_ComplianceSetupStatus" xml:space="preserve">
+    <value>Setup status</value>
+  </data>
+  <data name="Organizations_ComplianceReadinessOverall" xml:space="preserve">
+    <value>Readiness overall</value>
+  </data>
+  <data name="Organizations_ComplianceReadinessChecklist" xml:space="preserve">
+    <value>Activation readiness checklist</value>
+  </data>
+  <data name="Organizations_ComplianceChecklistDone" xml:space="preserve">
+    <value>Done</value>
+  </data>
+  <data name="Organizations_ComplianceChecklistPending" xml:space="preserve">
+    <value>Pending</value>
+  </data>
+  <data name="Organizations_ComplianceBlocking" xml:space="preserve">
+    <value>Blocking reasons</value>
+  </data>
+  <data name="Organizations_ComplianceBranchProfiles" xml:space="preserve">
+    <value>Branch compliance profiles</value>
+  </data>
+  <data name="Organizations_ComplianceBranchProfilesEmpty" xml:space="preserve">
+    <value>No branch compliance profiles yet.</value>
+  </data>
+  <data name="Organizations_ComplianceBirBranchCode" xml:space="preserve">
+    <value>BIR branch code</value>
+  </data>
+  <data name="Organizations_ComplianceRegistrations" xml:space="preserve">
+    <value>Registration records</value>
+  </data>
+  <data name="Organizations_ComplianceRegistrationsEmpty" xml:space="preserve">
+    <value>No registration records yet.</value>
+  </data>
+  <data name="Organizations_ComplianceRegistrationType" xml:space="preserve">
+    <value>Type</value>
+  </data>
+  <data name="Organizations_ComplianceReferenceNumber" xml:space="preserve">
+    <value>Reference</value>
+  </data>
+  <data name="Organizations_ComplianceAcceptRegistration" xml:space="preserve">
+    <value>Accept for readiness</value>
+  </data>
+  <data name="Organizations_ComplianceRejectRegistration" xml:space="preserve">
+    <value>Reject for readiness</value>
+  </data>
+  <data name="Organizations_ComplianceConfirmAcceptRegistration" xml:space="preserve">
+    <value>Accept this registration for ExItS readiness? This is not a BIR certification.</value>
+  </data>
+  <data name="Organizations_ComplianceConfirmRejectRegistration" xml:space="preserve">
+    <value>Reject this registration for ExItS readiness?</value>
+  </data>
+  <data name="Organizations_ComplianceIssuanceRuntimeNote" xml:space="preserve">
+    <value>TaxDocument issuance enable remains blocked while runtime implementation is unavailable. Do not treat eligibility or readiness acceptance as BIR certification.</value>
   </data>
   <data name="Organizations_OpenMembers" xml:space="preserve">
     <value>Open members and invitations</value>

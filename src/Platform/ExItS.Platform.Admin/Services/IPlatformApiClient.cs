@@ -74,6 +74,15 @@ public interface IPlatformApiClient
     Task<ApiCallResult<OrganizationComplianceStatusDto>> TransitionOrganizationComplianceAsync(Guid organizationId, ComplianceTransitionRequest request, CancellationToken ct = default);
     Task<ApiCallResult<OrganizationComplianceStatusDto>> SetOrganizationTaxDocumentCapabilityAsync(Guid organizationId, TaxDocumentCapabilityRequest request, CancellationToken ct = default);
     Task<ApiCallResult<OrganizationComplianceStatusDto>> SetOrganizationTaxConfigurationCapabilityAsync(Guid organizationId, TaxConfigurationCapabilityRequest request, CancellationToken ct = default);
+    Task<ApiCallResult<OrganizationComplianceProfileDto>> GetOrganizationComplianceProfileAsync(Guid organizationId, CancellationToken ct = default);
+    Task<ApiCallResult<ComplianceActivationReadinessDto>> GetComplianceActivationReadinessAsync(Guid organizationId, CancellationToken ct = default);
+    Task<ApiCallResult<IReadOnlyList<BranchComplianceProfileDto>>> ListBranchComplianceProfilesAsync(Guid organizationId, CancellationToken ct = default);
+    Task<ApiCallResult<IReadOnlyList<ComplianceRegistrationRecordDto>>> ListComplianceRegistrationRecordsAsync(Guid organizationId, CancellationToken ct = default);
+    Task<ApiCallResult<ComplianceRegistrationRecordDto>> ReviewComplianceRegistrationRecordAsync(
+        Guid organizationId,
+        Guid recordId,
+        ComplianceRegistrationReviewRequest request,
+        CancellationToken ct = default);
     Task<ApiCallResult<OrganizationCommercialSummaryDto>> GetOrganizationCommercialSummaryAsync(Guid id, CancellationToken ct = default);
     Task<ApiCallResult<OrganizationCurrentPlanDto>> GetOrganizationCurrentPlanAsync(Guid organizationId, string? productCode = null, CancellationToken ct = default);
     Task<ApiCallResult<PagedResult<SubscriptionDto>>> GetSubscriptionsAsync(

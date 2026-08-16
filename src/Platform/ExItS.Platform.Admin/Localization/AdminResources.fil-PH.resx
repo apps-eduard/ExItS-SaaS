@@ -1403,7 +1403,7 @@
     <value>Sales document compliance</value>
   </data>
   <data name="Organizations_ComplianceHint" xml:space="preserve">
-    <value>Kontrolado ng Platform ang eligibility at issuance capability. Ang pag-enable ng capability ay hindi gumagawa ng BIR tax document habang hindi pa available ang implementation.</value>
+    <value>Kontrolado ng Platform ang eligibility, readiness profile, at issuance capability. Ang pag-enable ng capability ay hindi gumagawa ng BIR tax document habang hindi pa available ang implementation. Hindi ito BIR certification claim.</value>
   </data>
   <data name="Organizations_ComplianceLoadFailed" xml:space="preserve">
     <value>Hindi ma-load ang compliance status.</value>
@@ -1509,6 +1509,66 @@
   </data>
   <data name="Organizations_ComplianceActionFailed" xml:space="preserve">
     <value>Nabigo ang compliance action.</value>
+  </data>
+  <data name="Organizations_ComplianceRegisteredName" xml:space="preserve">
+    <value>Rehistradong pangalan ng taxpayer</value>
+  </data>
+  <data name="Organizations_ComplianceMaskedTin" xml:space="preserve">
+    <value>TIN (nakatago)</value>
+  </data>
+  <data name="Organizations_ComplianceSetupStatus" xml:space="preserve">
+    <value>Setup status</value>
+  </data>
+  <data name="Organizations_ComplianceReadinessOverall" xml:space="preserve">
+    <value>Kabuuang readiness</value>
+  </data>
+  <data name="Organizations_ComplianceReadinessChecklist" xml:space="preserve">
+    <value>Activation readiness checklist</value>
+  </data>
+  <data name="Organizations_ComplianceChecklistDone" xml:space="preserve">
+    <value>Tapos</value>
+  </data>
+  <data name="Organizations_ComplianceChecklistPending" xml:space="preserve">
+    <value>Nakabinbin</value>
+  </data>
+  <data name="Organizations_ComplianceBlocking" xml:space="preserve">
+    <value>Mga hadlang</value>
+  </data>
+  <data name="Organizations_ComplianceBranchProfiles" xml:space="preserve">
+    <value>Branch compliance profiles</value>
+  </data>
+  <data name="Organizations_ComplianceBranchProfilesEmpty" xml:space="preserve">
+    <value>Wala pang branch compliance profile.</value>
+  </data>
+  <data name="Organizations_ComplianceBirBranchCode" xml:space="preserve">
+    <value>BIR branch code</value>
+  </data>
+  <data name="Organizations_ComplianceRegistrations" xml:space="preserve">
+    <value>Mga registration record</value>
+  </data>
+  <data name="Organizations_ComplianceRegistrationsEmpty" xml:space="preserve">
+    <value>Wala pang registration record.</value>
+  </data>
+  <data name="Organizations_ComplianceRegistrationType" xml:space="preserve">
+    <value>Uri</value>
+  </data>
+  <data name="Organizations_ComplianceReferenceNumber" xml:space="preserve">
+    <value>Reference</value>
+  </data>
+  <data name="Organizations_ComplianceAcceptRegistration" xml:space="preserve">
+    <value>Tanggapin para sa readiness</value>
+  </data>
+  <data name="Organizations_ComplianceRejectRegistration" xml:space="preserve">
+    <value>Tanggihan para sa readiness</value>
+  </data>
+  <data name="Organizations_ComplianceConfirmAcceptRegistration" xml:space="preserve">
+    <value>Tanggapin ang registration na ito para sa ExItS readiness? Hindi ito BIR certification.</value>
+  </data>
+  <data name="Organizations_ComplianceConfirmRejectRegistration" xml:space="preserve">
+    <value>Tanggihan ang registration na ito para sa ExItS readiness?</value>
+  </data>
+  <data name="Organizations_ComplianceIssuanceRuntimeNote" xml:space="preserve">
+    <value>Nanatiling naka-block ang TaxDocument issuance enable habang hindi available ang runtime. Huwag ituring ang eligibility o readiness acceptance bilang BIR certification.</value>
   </data>
   <data name="Organizations_OpenMembers" xml:space="preserve">
     <value>Buksan ang members at invitations</value>

@@ -138,6 +138,24 @@ public sealed class PlatformApiClient(
         SendAsync<OrganizationComplianceStatusDto>(HttpMethod.Post, $"/api/v1/platform/organizations/{organizationId}/compliance/tax-document-capability", request, ct);
     public Task<ApiCallResult<OrganizationComplianceStatusDto>> SetOrganizationTaxConfigurationCapabilityAsync(Guid organizationId, TaxConfigurationCapabilityRequest request, CancellationToken ct = default) =>
         SendAsync<OrganizationComplianceStatusDto>(HttpMethod.Post, $"/api/v1/platform/organizations/{organizationId}/compliance/tax-configuration-capability", request, ct);
+    public Task<ApiCallResult<OrganizationComplianceProfileDto>> GetOrganizationComplianceProfileAsync(Guid organizationId, CancellationToken ct = default) =>
+        GetAsync<OrganizationComplianceProfileDto>($"/api/v1/platform/organizations/{organizationId}/compliance-profile", ct);
+    public Task<ApiCallResult<ComplianceActivationReadinessDto>> GetComplianceActivationReadinessAsync(Guid organizationId, CancellationToken ct = default) =>
+        GetAsync<ComplianceActivationReadinessDto>($"/api/v1/platform/organizations/{organizationId}/compliance/readiness", ct);
+    public Task<ApiCallResult<IReadOnlyList<BranchComplianceProfileDto>>> ListBranchComplianceProfilesAsync(Guid organizationId, CancellationToken ct = default) =>
+        GetAsync<IReadOnlyList<BranchComplianceProfileDto>>($"/api/v1/platform/organizations/{organizationId}/compliance/branch-profiles", ct);
+    public Task<ApiCallResult<IReadOnlyList<ComplianceRegistrationRecordDto>>> ListComplianceRegistrationRecordsAsync(Guid organizationId, CancellationToken ct = default) =>
+        GetAsync<IReadOnlyList<ComplianceRegistrationRecordDto>>($"/api/v1/platform/organizations/{organizationId}/compliance/registration-records", ct);
+    public Task<ApiCallResult<ComplianceRegistrationRecordDto>> ReviewComplianceRegistrationRecordAsync(
+        Guid organizationId,
+        Guid recordId,
+        ComplianceRegistrationReviewRequest request,
+        CancellationToken ct = default) =>
+        SendAsync<ComplianceRegistrationRecordDto>(
+            HttpMethod.Post,
+            $"/api/v1/platform/organizations/{organizationId}/compliance/registration-records/{recordId}/review",
+            request,
+            ct);
     public Task<ApiCallResult<OrganizationCommercialSummaryDto>> GetOrganizationCommercialSummaryAsync(Guid id, CancellationToken ct = default) =>
         GetAsync<OrganizationCommercialSummaryDto>($"/api/v1/platform/admin/organizations/{id}/commercial-summary", ct);
     public Task<ApiCallResult<OrganizationCurrentPlanDto>> GetOrganizationCurrentPlanAsync(Guid organizationId, string? productCode = null, CancellationToken ct = default) =>

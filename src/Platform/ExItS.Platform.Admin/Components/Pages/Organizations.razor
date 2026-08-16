@@ -373,7 +373,16 @@ else
                 }
                 else
                 {
-                    <Descriptions Bordered Size="@DescriptionsSize.Small" Column="1">
+                    <Descriptions Bordered Size="@DescriptionsSize.Small" Column="2">
+                        <DescriptionsItem Title="@L["Organizations_ComplianceRegisteredName"]">
+                            @(_complianceProfile?.RegisteredTaxpayerName ?? "—")
+                        </DescriptionsItem>
+                        <DescriptionsItem Title="@L["Organizations_ComplianceMaskedTin"]">
+                            @(_complianceProfile?.MaskedTin ?? "—")
+                        </DescriptionsItem>
+                        <DescriptionsItem Title="@L["Organizations_ComplianceSetupStatus"]">
+                            @(_complianceProfile?.SetupStatus ?? "—")
+                        </DescriptionsItem>
                         <DescriptionsItem Title="@L["Organizations_ComplianceStatus"]">@_compliance.ComplianceEligibilityStatus</DescriptionsItem>
                         <DescriptionsItem Title="@L["Organizations_ComplianceIssuance"]">
                             @(_compliance.TaxDocumentIssuanceEnabled ? L["Organizations_ComplianceIssuanceEnabled"] : L["Organizations_ComplianceIssuanceDisabled"])
@@ -385,11 +394,93 @@ else
                             @(_compliance.CurrentOwnerEducationAcknowledged ? L["Organizations_ComplianceEducationAcknowledged"] : L["Organizations_ComplianceEducationActionNeeded"])
                             (@_compliance.EducationVersion)
                         </DescriptionsItem>
+                        <DescriptionsItem Title="@L["Organizations_ComplianceReadinessOverall"]">
+                            @(_readiness?.OverallStatus ?? "—")
+                            @if (_readiness is not null)
+                            {
+                                <span> · @_readiness.Checklist.Count(c => c.Done)/@_readiness.Checklist.Count</span>
+                            }
+                        </DescriptionsItem>
                     </Descriptions>
 
-                    <Card Title="@L["Organizations_ComplianceTaxConfiguration"]" Size="@CardSize.Small" Style="margin-top: 1rem;">
+                    @if (_readiness is not null)
+                    {
+                        <Card Title="@L["Organizations_ComplianceReadinessChecklist"]" Size="@CardSize.Small" Style="margin-top: .75rem;">
+                            <Descriptions Bordered Size="@DescriptionsSize.Small" Column="1">
+                                @foreach (var item in _readiness.Checklist)
+                                {
+                                    <DescriptionsItem Title="@item.Label">@(item.Done ? L["Organizations_ComplianceChecklistDone"] : L["Organizations_ComplianceChecklistPending"])</DescriptionsItem>
+                                }
+                            </Descriptions>
+                            @if (_readiness.BlockingReasons.Count > 0)
+                            {
+                                <Paragraph Type="@TextElementType.Secondary" Style="margin-top:.5rem;">@L["Organizations_ComplianceBlocking"]</Paragraph>
+                                <ul style="margin:0;padding-left:1.1rem;">
+                                    @foreach (var reason in _readiness.BlockingReasons)
+                                    {
+                                        <li>@reason</li>
+                                    }
+                                </ul>
+                            }
+                        </Card>
+                    }
+
+                    <Card Title="@L["Organizations_ComplianceBranchProfiles"]" Size="@CardSize.Small" Style="margin-top: .75rem;">
+                        @if (_branchProfiles.Count == 0)
+                        {
+                            <Paragraph Type="@TextElementType.Secondary">@L["Organizations_ComplianceBranchProfilesEmpty"]</Paragraph>
+                        }
+                        else
+                        {
+                            <Table TItem="BranchComplianceProfileDto"
+                                   DataSource="@_branchProfiles"
+                                   Size="@TableSize.Small"
+                                   HidePagination
+                                   Bordered>
+                                <Column TData="Guid" Title="Branch Id" DataIndex="OrganizationBranchId">@context.OrganizationBranchId</Column>
+                                <Column TData="string" Title="@L["Organizations_ComplianceBirBranchCode"]" DataIndex="BirBranchCode">@(context.BirBranchCode ?? "—")</Column>
+                                <Column TData="string" Title="@L["Organizations_ComplianceSetupStatus"]" DataIndex="SetupStatus">@context.SetupStatus</Column>
+                            </Table>
+                        }
+                    </Card>
+
+                    <Card Title="@L["Organizations_ComplianceRegistrations"]" Size="@CardSize.Small" Style="margin-top: .75rem;">
+                        @if (_registrationRecords.Count == 0)
+                        {
+                            <Paragraph Type="@TextElementType.Secondary">@L["Organizations_ComplianceRegistrationsEmpty"]</Paragraph>
+                        }
+                        else
+                        {
+                            <Table TItem="ComplianceRegistrationRecordDto"
+                                   DataSource="@_registrationRecords"
+                                   Size="@TableSize.Small"
+                                   HidePagination
+                                   Bordered>
+                                <Column TData="string" Title="@L["Organizations_ComplianceRegistrationType"]" DataIndex="RegistrationType">@context.RegistrationType</Column>
+                                <Column TData="string" Title="@L["Organizations_ComplianceReferenceNumber"]" DataIndex="ReferenceNumber">@(context.ReferenceNumber ?? "—")</Column>
+                                <Column TData="string" Title="@L["Common_Status"]" DataIndex="Status">@context.Status</Column>
+                                <ActionColumn Title="">
+                                    @if (CanManageLifecycle
+                                         && context.Status is "Provided" or "UnderReview")
+                                    {
+                                        <Space>
+                                            <Popconfirm Title="@L["Organizations_ComplianceConfirmAcceptRegistration"]"
+                                                        OnConfirm="() => ReviewRegistrationAsync(context.Id, true)">
+                                                <Button Size="@ButtonSize.Small" Type="@ButtonType.Primary">@L["Organizations_ComplianceAcceptRegistration"]</Button>
+                                            </Popconfirm>
+                                            <Popconfirm Title="@L["Organizations_ComplianceConfirmRejectRegistration"]"
+                                                        OnConfirm="() => ReviewRegistrationAsync(context.Id, false)">
+                                                <Button Size="@ButtonSize.Small" Danger>@L["Organizations_ComplianceRejectRegistration"]</Button>
+                                            </Popconfirm>
+                                        </Space>
+                                    }
+                                </ActionColumn>
+                            </Table>
+                        }
+                    </Card>
+
+                    <Card Title="@L["Organizations_ComplianceTaxConfiguration"]" Size="@CardSize.Small" Style="margin-top: .75rem;">
                         <Descriptions Bordered Size="@DescriptionsSize.Small" Column="1">
-                            <DescriptionsItem Title="@L["Organizations_ComplianceStatus"]">@_compliance.ComplianceEligibilityStatus</DescriptionsItem>
                             <DescriptionsItem Title="@L["Organizations_ComplianceTaxConfigurationStatus"]">
                                 @TaxConfigurationStatusLabel
                             </DescriptionsItem>
@@ -447,13 +538,18 @@ else
                             </Popconfirm>
                             <Popconfirm Title="@L["Organizations_ComplianceConfirmEnableIssuance"]"
                                         OnConfirm="EnableIssuanceAsync">
-                                <Button Type="@ButtonType.Primary" Danger>@L["Organizations_ComplianceEnableIssuance"]</Button>
+                                <Button Type="@ButtonType.Primary" Danger Disabled="@(!_compliance.TaxDocumentImplementationAvailable)">
+                                    @L["Organizations_ComplianceEnableIssuance"]
+                                </Button>
                             </Popconfirm>
                             <Popconfirm Title="@L["Organizations_ComplianceConfirmDisableIssuance"]"
                                         OnConfirm="DisableIssuanceAsync">
                                 <Button>@L["Organizations_ComplianceDisableIssuance"]</Button>
                             </Popconfirm>
                         </Space>
+                        <Paragraph Type="@TextElementType.Secondary" Style="margin-top:.5rem;">
+                            @L["Organizations_ComplianceIssuanceRuntimeNote"]
+                        </Paragraph>
                         @if (!string.IsNullOrWhiteSpace(_complianceError))
                         {
                             <Alert Type="@AlertType.Error" Message="@_complianceError" ShowIcon="true" Style="margin-top: 1rem;" />
@@ -477,6 +573,10 @@ else
     private ApiCallResult<OrganizationDto>? _org;
     private ApiCallResult<OrganizationCommercialSummaryDto>? _detail;
     private OrganizationComplianceStatusDto? _compliance;
+    private OrganizationComplianceProfileDto? _complianceProfile;
+    private ComplianceActivationReadinessDto? _readiness;
+    private IReadOnlyList<BranchComplianceProfileDto> _branchProfiles = [];
+    private IReadOnlyList<ComplianceRegistrationRecordDto> _registrationRecords = [];
     private bool _complianceBusy;
     private string? _complianceError;
     private int _page = 1;
@@ -668,12 +768,64 @@ else
         _complianceError = null;
         try
         {
-            var result = await Api.GetOrganizationComplianceStatusAsync(Id.Value);
+            var statusTask = Api.GetOrganizationComplianceStatusAsync(Id.Value);
+            var profileTask = Api.GetOrganizationComplianceProfileAsync(Id.Value);
+            var readinessTask = Api.GetComplianceActivationReadinessAsync(Id.Value);
+            var branchesTask = Api.ListBranchComplianceProfilesAsync(Id.Value);
+            var regsTask = Api.ListComplianceRegistrationRecordsAsync(Id.Value);
+            await Task.WhenAll(statusTask, profileTask, readinessTask, branchesTask, regsTask);
+
+            var result = await statusTask;
             _compliance = result.IsSuccess ? result.Data : null;
             if (!result.IsSuccess)
             {
                 _complianceError = AdminFormErrorMapper.MapPageError(result);
             }
+
+            var profile = await profileTask;
+            _complianceProfile = profile.IsSuccess ? profile.Data : null;
+
+            var readiness = await readinessTask;
+            _readiness = readiness.IsSuccess ? readiness.Data : null;
+
+            var branches = await branchesTask;
+            _branchProfiles = branches.IsSuccess && branches.Data is not null
+                ? branches.Data
+                : [];
+
+            var regs = await regsTask;
+            _registrationRecords = regs.IsSuccess && regs.Data is not null
+                ? regs.Data
+                : [];
+        }
+        finally
+        {
+            _complianceBusy = false;
+        }
+    }
+
+    private async Task ReviewRegistrationAsync(Guid recordId, bool accept)
+    {
+        if (Id is null || !CanManageLifecycle)
+        {
+            return;
+        }
+
+        _complianceBusy = true;
+        _complianceError = null;
+        try
+        {
+            var result = await Api.ReviewComplianceRegistrationRecordAsync(
+                Id.Value,
+                recordId,
+                new ComplianceRegistrationReviewRequest(accept, null));
+            if (!result.IsSuccess)
+            {
+                _complianceError = AdminFormErrorMapper.MapPageError(result) ?? L["Organizations_ComplianceActionFailed"];
+                return;
+            }
+
+            await LoadComplianceAsync();
         }
         finally
         {

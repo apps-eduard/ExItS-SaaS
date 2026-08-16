@@ -180,6 +180,70 @@ public sealed record OrganizationComplianceStatusDto(
     DateTimeOffset? UpdatedAtUtc,
     string? UpdatedByActorReference);
 
+public sealed record OrganizationComplianceProfileDto(
+    Guid OrganizationId,
+    bool ProfileInitialized,
+    DateTimeOffset? ProfileCreatedAtUtc,
+    DateTimeOffset? ProfileUpdatedAtUtc,
+    string? LegalName,
+    string? RegisteredAddressLine1,
+    string? RegisteredCity,
+    string? RegisteredRegion,
+    string? RegisteredPostalCode,
+    string? RegisteredCountryCode,
+    string? RegisteredTaxpayerName,
+    string? MaskedTin,
+    string SetupStatus,
+    string ComplianceEligibilityStatus,
+    bool TaxDocumentIssuanceEnabled,
+    bool TaxConfigurationEnabled,
+    bool TaxDocumentImplementationAvailable,
+    string DocumentMode,
+    string SnapshotGuidance);
+
+public sealed record BranchComplianceProfileDto(
+    Guid Id,
+    Guid OrganizationId,
+    Guid OrganizationBranchId,
+    string? BirBranchCode,
+    string SetupStatus,
+    string? Notes,
+    DateTimeOffset CreatedAtUtc,
+    DateTimeOffset UpdatedAtUtc,
+    string? UpdatedByActorReference);
+
+public sealed record ComplianceRegistrationRecordDto(
+    Guid Id,
+    Guid OrganizationId,
+    Guid? OrganizationBranchId,
+    string RegistrationType,
+    string? ReferenceNumber,
+    string Status,
+    string? EvidenceReference,
+    string? DocumentType,
+    DateOnly? IssuedAt,
+    DateOnly? EffectiveAt,
+    DateOnly? ExpiresAt,
+    DateTimeOffset RecordedAtUtc,
+    string RecordedBy,
+    DateTimeOffset? ReviewedAtUtc,
+    string? ReviewedBy,
+    string? ReviewNotes);
+
+public sealed record ComplianceActivationReadinessDto(
+    Guid OrganizationId,
+    string OverallStatus,
+    bool IsReadyForTaxDocumentActivation,
+    IReadOnlyList<string> BlockingReasons,
+    IReadOnlyList<string> Warnings,
+    IReadOnlyList<string> CompletedRequirements,
+    IReadOnlyList<string> PendingRequirements,
+    IReadOnlyList<ComplianceReadinessChecklistItemDto> Checklist);
+
+public sealed record ComplianceReadinessChecklistItemDto(string Code, string Label, bool Done);
+
+public sealed record ComplianceRegistrationReviewRequest(bool Accept, string? ReviewNotes);
+
 public sealed record ComplianceTransitionRequest(string TargetStatus);
 public sealed record TaxDocumentCapabilityRequest(bool Enabled);
 public sealed record TaxConfigurationCapabilityRequest(bool Enabled);
