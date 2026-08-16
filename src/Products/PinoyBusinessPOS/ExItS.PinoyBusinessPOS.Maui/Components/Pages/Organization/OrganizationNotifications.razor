@@ -20,29 +20,31 @@
 else
 {
     <StoreHeaderBack Href="/org" />
-    <div class="pos-personal-invitations">
+    <div class="pos-notifications">
     <Page>
-        <header class="pos-personal-invitations__header">
-            <h1 class="pos-personal-invitations__title">@L["OrgNotifications_Title"]</h1>
-            <p class="pos-personal-invitations__subtitle">@L["OrgNotifications_Subtitle"]</p>
+        <header class="pos-notifications__header">
+            <h1 class="pos-notifications__title">@L["OrgNotifications_Title"]</h1>
+            <p class="pos-notifications__subtitle">@L["OrgNotifications_Subtitle"]</p>
         </header>
 
-        <div class="pos-registers__segments" role="tablist" aria-label="@L["OrgNotifications_Title"]">
+        <div class="pos-notifications__segments" role="tablist" aria-label="@L["OrgNotifications_Title"]">
             <button type="button"
-                    class="pos-registers__segment @(_unreadOnly ? "pos-registers__segment--selected" : null)"
+                    class="pos-notifications__segment @(_unreadOnly ? "pos-notifications__segment--selected" : null)"
                     role="tab"
                     aria-selected="@_unreadOnly"
                     disabled="@_loading"
                     @onclick="() => SetFilter(true)">
-                @L["OrgNotifications_FilterUnread"]
+                <span class="pos-notifications__segment-icon" aria-hidden="true">@IconGlyphs.Get("bell")</span>
+                <span>@L["OrgNotifications_FilterUnread"]</span>
             </button>
             <button type="button"
-                    class="pos-registers__segment @(!_unreadOnly ? "pos-registers__segment--selected" : null)"
+                    class="pos-notifications__segment @(!_unreadOnly ? "pos-notifications__segment--selected" : null)"
                     role="tab"
                     aria-selected="@(!_unreadOnly)"
                     disabled="@_loading"
                     @onclick="() => SetFilter(false)">
-                @L["OrgNotifications_FilterAll"]
+                <span class="pos-notifications__segment-icon" aria-hidden="true">@IconGlyphs.Get("list")</span>
+                <span>@L["OrgNotifications_FilterAll"]</span>
             </button>
         </div>
 
@@ -53,7 +55,7 @@ else
 
         @if (_loading)
         {
-            <Spinner />
+            <div class="pos-notifications__loading"><Spinner /><span>@L["Common_Loading"]</span></div>
         }
         else if (_loadFailed)
         {
@@ -64,36 +66,38 @@ else
         }
         else if (Filtered.Count == 0)
         {
-            <EmptyState Title="@L["OrgNotifications_EmptyTitle"]"
-                        Message="@L["OrgNotifications_EmptyMessage"]" />
+            <EmptyState IconName="bell"
+                        Title="@(_unreadOnly ? L["OrgNotifications_EmptyUnreadTitle"] : L["OrgNotifications_EmptyTitle"])"
+                        Message="@(_unreadOnly ? L["OrgNotifications_EmptyUnreadMessage"] : L["OrgNotifications_EmptyMessage"])" />
         }
         else
         {
-            <div class="pos-personal-list" role="list">
+            <div class="pos-notifications__list pos-personal-list" role="list">
                 @foreach (var item in Filtered)
                 {
                     var relationship = ResolveRelationship(item);
                     var isRequested = IsSupplierRequested(item);
                     if (isRequested)
                     {
-                        <div class="pos-personal-row pos-personal-row--static" role="listitem" @onclick="() => OpenRequestedAsync(item)">
+                        <div class="pos-personal-row pos-personal-row--static pos-notifications__row" role="listitem" @onclick="() => OpenRequestedAsync(item)">
+                            <span class="pos-notifications__row-icon" aria-hidden="true">@IconGlyphs.Get("inbox")</span>
                             <span class="pos-personal-row__body">
                                 <span class="pos-personal-row__title">
                                     @item.Title
                                     @if (!item.IsRead)
                                     {
-                                        <span class="pos-muted"> · @L["Personal_NotificationsUnread"]</span>
+                                        <span class="pos-notifications__badge">@L["Personal_NotificationsUnread"]</span>
                                     }
                                     else if (string.Equals(relationship?.Status, "Pending", StringComparison.OrdinalIgnoreCase))
                                     {
-                                        <span class="pos-muted"> · @L["OrgNotifications_ActionNeeded"]</span>
+                                        <span class="pos-notifications__badge pos-notifications__badge--action">@L["OrgNotifications_ActionNeeded"]</span>
                                     }
                                 </span>
                                 <span class="pos-personal-row__meta">
                                     @item.Preview
                                     · @item.CreatedAtUtc.LocalDateTime.ToString("g")
                                 </span>
-                                <div class="pos-sell-customer__actions" role="group" style="margin-top:0.75rem;" @onclick:stopPropagation="true">
+                                <div class="pos-action-grid pos-action-grid--two pos-notifications__row-actions" role="group" @onclick:stopPropagation="true">
                                     @if (!_isOnline)
                                     {
                                         <p class="pos-muted">@L["OrgNotifications_OfflineRespond"]</p>
@@ -106,12 +110,14 @@ else
                                                 class="pos-action-tile pos-action-tile--primary"
                                                 disabled="@_busy"
                                                 @onclick="() => RespondAsync(item, relationship.RelationshipId, true)">
+                                            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("check")</span>
                                             <span class="pos-action-tile__label">@L["ConnectedSuppliers_Accept"]</span>
                                         </button>
                                         <button type="button"
                                                 class="pos-action-tile"
                                                 disabled="@_busy"
                                                 @onclick="() => RespondAsync(item, relationship.RelationshipId, false)">
+                                            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("close")</span>
                                             <span class="pos-action-tile__label">@L["ConnectedSuppliers_Decline"]</span>
                                         </button>
                                     }
@@ -126,16 +132,17 @@ else
                     else
                     {
                         <button type="button"
-                                class="pos-personal-row"
+                                class="pos-personal-row pos-notifications__row"
                                 role="listitem"
                                 disabled="@_busy"
                                 @onclick="() => OpenAsync(item)">
+                            <span class="pos-notifications__row-icon" aria-hidden="true">@IconGlyphs.Get("bell")</span>
                             <span class="pos-personal-row__body">
                                 <span class="pos-personal-row__title">
                                     @item.Title
                                     @if (!item.IsRead)
                                     {
-                                        <span class="pos-muted"> · @L["Personal_NotificationsUnread"]</span>
+                                        <span class="pos-notifications__badge">@L["Personal_NotificationsUnread"]</span>
                                     }
                                 </span>
                                 <span class="pos-personal-row__meta">

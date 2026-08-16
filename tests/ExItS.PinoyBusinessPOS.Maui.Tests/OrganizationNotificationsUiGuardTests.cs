@@ -15,6 +15,10 @@ public sealed class OrganizationNotificationsUiGuardTests
         Assert.Contains("OrgNotifications_Title", page, StringComparison.Ordinal);
         Assert.Contains("OrgNotifications_FilterUnread", page, StringComparison.Ordinal);
         Assert.Contains("OrgNotifications_FilterAll", page, StringComparison.Ordinal);
+        Assert.Contains("pos-notifications", page, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"bell\")", page, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"inbox\")", page, StringComparison.Ordinal);
+        Assert.Contains("OrgNotifications_EmptyUnreadTitle", page, StringComparison.Ordinal);
         Assert.Contains(nameof(SupplierConnectionNotificationTypes), page, StringComparison.Ordinal);
         Assert.Contains("SupplierConnectionNotificationTypes.Requested", page, StringComparison.Ordinal);
         Assert.Contains("ListRelationshipsAsync(\"supplier\")", page, StringComparison.Ordinal);

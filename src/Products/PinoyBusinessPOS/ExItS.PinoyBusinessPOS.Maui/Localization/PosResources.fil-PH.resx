@@ -7835,7 +7835,7 @@
     <value>Mga notification</value>
   </data>
   <data name="OrgNotifications_Subtitle" xml:space="preserve">
-    <value>Mga customer link response at supplier connection alert para sa organisasyong ito.</value>
+    <value>Mga customer link at supplier connection update para sa negosyong ito.</value>
   </data>
   <data name="OrgNotifications_FilterUnread" xml:space="preserve">
     <value>Hindi pa nabasa</value>
@@ -7850,7 +7850,13 @@
     <value>Walang notification</value>
   </data>
   <data name="OrgNotifications_EmptyMessage" xml:space="preserve">
-    <value>Lalabas dito ang mga alerto kapag may customer link response o supplier connection update.</value>
+    <value>Lalabas dito ang alert kapag may tumugon sa link request o may supplier connection update.</value>
+  </data>
+  <data name="OrgNotifications_EmptyUnreadTitle" xml:space="preserve">
+    <value>Walang unread alert</value>
+  </data>
+  <data name="OrgNotifications_EmptyUnreadMessage" xml:space="preserve">
+    <value>Updated ka na. Pumunta sa All para makita ang mga naunang notification.</value>
   </data>
   <data name="OrgNotifications_LoadFailed" xml:space="preserve">
     <value>Hindi ma-load ang organization notifications. Subukan ulit.</value>

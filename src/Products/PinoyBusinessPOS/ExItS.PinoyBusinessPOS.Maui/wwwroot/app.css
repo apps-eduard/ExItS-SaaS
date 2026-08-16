@@ -13646,3 +13646,145 @@ html:has(.pos-denom-sheet) .pos-denom-sheet {
 .pos-device-register__actions .exds-btn {
     width: 100%;
 }
+
+/* ========== Organization notifications ============================== */
+.pos-notifications { width: 100%; }
+
+.pos-notifications__header { margin-bottom: var(--exits-space-3, 0.75rem); }
+
+.pos-notifications__title {
+    color: var(--exits-text, #15201a);
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.25;
+    margin: 0;
+}
+
+.pos-notifications__subtitle {
+    color: var(--exits-text-muted, #5b6b62);
+    font-size: var(--exits-text-sm, 0.875rem);
+    line-height: 1.35;
+    margin: 0.35rem 0 0;
+}
+
+.pos-notifications__segments {
+    background: var(--exits-surface-muted, color-mix(in srgb, var(--exits-surface) 88%, var(--exits-border)));
+    border: 1px solid var(--exits-border, #c9d4cd);
+    border-radius: var(--exits-radius-md, 0.5rem);
+    display: grid;
+    gap: 0.25rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: 0 0 var(--exits-space-3);
+    padding: 0.25rem;
+}
+
+.pos-notifications__segment {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: var(--exits-radius-sm, 0.35rem);
+    color: var(--exits-text-muted, #5b6b62);
+    cursor: pointer;
+    display: inline-flex;
+    font: inherit;
+    font-size: var(--exits-text-xs, 0.75rem);
+    font-weight: 650;
+    gap: 0.35rem;
+    justify-content: center;
+    line-height: 1.2;
+    min-height: 2.75rem;
+    padding: 0.4rem 0.5rem;
+}
+
+.pos-notifications__segment--selected {
+    background: var(--exits-surface, #fff);
+    box-shadow: 0 0 0 1px var(--exits-border, #c9d4cd);
+    color: var(--exits-text, #15201a);
+}
+
+.pos-notifications__segment:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
+.pos-notifications__segment-icon {
+    color: inherit;
+    display: inline-flex;
+    height: 1rem;
+    width: 1rem;
+}
+
+.pos-notifications__segment-icon svg {
+    display: block;
+    height: 100%;
+    width: 100%;
+}
+
+.pos-notifications__loading {
+    align-items: center;
+    color: var(--exits-text-muted, #5b6b62);
+    display: flex;
+    gap: 0.5rem;
+}
+
+.pos-notifications__row {
+    align-items: flex-start;
+    gap: 0.65rem;
+}
+
+.pos-notifications__row-icon {
+    color: var(--exits-primary, #1b7a3d);
+    display: inline-flex;
+    flex: 0 0 auto;
+    height: 1.2rem;
+    margin-top: 0.15rem;
+    width: 1.2rem;
+}
+
+.pos-notifications__row-icon svg {
+    display: block;
+    height: 100%;
+    width: 100%;
+}
+
+.pos-notifications__badge {
+    background: color-mix(in srgb, var(--exits-primary, #1b7a3d) 14%, #fff);
+    border-radius: 999px;
+    color: var(--exits-primary, #1b7a3d);
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 650;
+    line-height: 1.2;
+    margin-left: 0.35rem;
+    padding: 0.12rem 0.45rem;
+    vertical-align: middle;
+}
+
+.pos-notifications__badge--action {
+    background: color-mix(in srgb, #b45309 14%, #fff);
+    color: #9a3412;
+}
+
+.pos-notifications__row-actions {
+    margin-top: 0.65rem;
+}
+
+.pos-notifications__row-actions .pos-action-tile {
+    align-items: center;
+    flex-direction: column;
+    gap: 0.3rem;
+    justify-content: center;
+    min-height: 3.75rem;
+    padding: 0.55rem 0.35rem;
+    text-align: center;
+}
+
+.pos-notifications__row-actions .pos-action-tile__icon {
+    height: 1.1rem;
+    width: 1.1rem;
+}
+
+.pos-notifications__row-actions .pos-action-tile__label {
+    font-size: var(--exits-text-xs, 0.75rem);
+    font-weight: 650;
+}

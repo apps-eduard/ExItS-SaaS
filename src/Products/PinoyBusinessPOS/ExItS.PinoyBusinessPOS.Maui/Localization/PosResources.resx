@@ -7835,7 +7835,7 @@
     <value>Notifications</value>
   </data>
   <data name="OrgNotifications_Subtitle" xml:space="preserve">
-    <value>Customer link responses and supplier connection alerts for this organization.</value>
+    <value>Customer links and supplier connection updates for this business.</value>
   </data>
   <data name="OrgNotifications_FilterUnread" xml:space="preserve">
     <value>Unread</value>
@@ -7850,7 +7850,13 @@
     <value>No notifications</value>
   </data>
   <data name="OrgNotifications_EmptyMessage" xml:space="preserve">
-    <value>Organization alerts appear here when customers respond to link requests or suppliers send connection updates.</value>
+    <value>Alerts show up here when customers reply to link requests or suppliers send connection updates.</value>
+  </data>
+  <data name="OrgNotifications_EmptyUnreadTitle" xml:space="preserve">
+    <value>No unread alerts</value>
+  </data>
+  <data name="OrgNotifications_EmptyUnreadMessage" xml:space="preserve">
+    <value>You are caught up. Switch to All to review earlier notifications.</value>
   </data>
   <data name="OrgNotifications_LoadFailed" xml:space="preserve">
     <value>Organization notifications could not be loaded. Try again.</value>
