@@ -2,25 +2,13 @@
 @layout Layout.AuthShell
 @inject IOnboardingPreferenceStore Prefs
 @inject NavigationManager Nav
-@inject IStringLocalizer<PosResources> L
 
-<div class="pos-welcome">
-<Page>
-    <header class="pos-welcome__header">
-        <h1 class="pos-welcome__title">@L["Welcome_Title"]</h1>
-        <p class="pos-welcome__subtitle">@L["Welcome_Subtitle"]</p>
-    </header>
-    <Alert Tone="AlertTone.Info" Title="@L["Welcome_NoticeTitle"]" Message="@L["Welcome_NoticeMessage"]" />
-    <FormActions>
-        <Button OnClick="ContinueAsync">@L["Welcome_Continue"]</Button>
-    </FormActions>
-</Page>
-</div>
+@* First-run preference wizard removed — open Sign-In directly. *@
 
 @code {
-    private async Task ContinueAsync()
+    protected override async Task OnInitializedAsync()
     {
-        await Prefs.SetOnboardingStepAsync(nameof(OnboardingStep.Language));
-        Nav.NavigateTo("/onboarding/language");
+        await Prefs.SetOnboardingStepAsync(nameof(OnboardingStep.SignIn));
+        Nav.NavigateTo("/signin", replace: true);
     }
 }

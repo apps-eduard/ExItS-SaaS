@@ -1,55 +1,14 @@
 @page "/onboarding/language"
 @layout Layout.AuthShell
-@inject CultureController CultureCtl
 @inject IOnboardingPreferenceStore Prefs
 @inject NavigationManager Nav
-@inject IStringLocalizer<PosResources> L
 
-<div class="pos-onboarding">
-<Page>
-    <header class="pos-onboarding__header">
-        <h1 class="pos-onboarding__title">@L["Onboarding_LanguageTitle"]</h1>
-        <p class="pos-onboarding__subtitle">@L["Onboarding_LanguageSubtitle"]</p>
-    </header>
-    <FormGroup>
-        <Select Label="@L["Settings_LanguageLabel"]"
-                Value="@_culture"
-                ValueChanged="OnCultureChanged"
-                Options="_options" />
-    </FormGroup>
-    <FormActions>
-        <Button OnClick="ContinueAsync">@L["Common_Continue"]</Button>
-    </FormActions>
-</Page>
-</div>
+@* Preference wizard removed — open Sign-In directly. *@
 
 @code {
-    private string? _culture = "en";
-    private IReadOnlyList<SelectOption> _options = [];
-
     protected override async Task OnInitializedAsync()
     {
-        await CultureCtl.InitializeAsync();
-        _culture = CultureCtl.Current;
-        _options =
-        [
-            new("en", L["Settings_Language_English"]),
-            new("fil-PH", L["Settings_Language_Filipino"]),
-        ];
-    }
-
-    private async Task OnCultureChanged(string? value)
-    {
-        _culture = value;
-        if (!string.IsNullOrWhiteSpace(value))
-        {
-            await CultureCtl.SetCultureAsync(value);
-        }
-    }
-
-    private async Task ContinueAsync()
-    {
-        await Prefs.SetOnboardingStepAsync(nameof(OnboardingStep.Theme));
-        Nav.NavigateTo("/onboarding/theme");
+        await Prefs.SetOnboardingStepAsync(nameof(OnboardingStep.SignIn));
+        Nav.NavigateTo("/signin", replace: true);
     }
 }

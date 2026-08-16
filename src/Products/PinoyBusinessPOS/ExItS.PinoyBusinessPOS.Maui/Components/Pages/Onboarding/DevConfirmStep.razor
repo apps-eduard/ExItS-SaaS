@@ -2,32 +2,13 @@
 @layout Layout.AuthShell
 @inject IOnboardingPreferenceStore Prefs
 @inject NavigationManager Nav
-@inject IStringLocalizer<PosResources> L
 
-<div class="pos-onboarding">
-<Page>
-    <header class="pos-onboarding__header">
-        <h1 class="pos-onboarding__title">@L["Onboarding_DevTitle"]</h1>
-        <p class="pos-onboarding__subtitle">@L["Onboarding_DevSubtitle"]</p>
-    </header>
-    <Alert Tone="AlertTone.Warning" Title="@L["Onboarding_DevNoticeTitle"]" Message="@L["Onboarding_DevNoticeMessage"]" />
-    <Checkbox @bind-Value="_confirmed">@L["Onboarding_DevConfirmLabel"]</Checkbox>
-    <FormActions>
-        <Button Variant="ButtonVariant.Ghost" OnClick="Back">@L["Common_Back"]</Button>
-        <Button Disabled="!_confirmed" OnClick="ContinueAsync">@L["Common_Continue"]</Button>
-    </FormActions>
-</Page>
-</div>
+@* Preference wizard removed — open Sign-In directly. *@
 
 @code {
-    private bool _confirmed;
-
-    private void Back() => Nav.NavigateTo("/onboarding/density");
-
-    private async Task ContinueAsync()
+    protected override async Task OnInitializedAsync()
     {
-        await Prefs.SetDevEnvironmentConfirmedAsync(true);
         await Prefs.SetOnboardingStepAsync(nameof(OnboardingStep.SignIn));
-        Nav.NavigateTo("/signin");
+        Nav.NavigateTo("/signin", replace: true);
     }
 }

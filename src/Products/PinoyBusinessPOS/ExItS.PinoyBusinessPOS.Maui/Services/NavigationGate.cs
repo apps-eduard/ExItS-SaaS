@@ -27,17 +27,25 @@ public sealed class NavigationGate(
         if (!await preferences.GetOnboardingCompletedAsync(ct).ConfigureAwait(false))
         {
             var step = await preferences.GetOnboardingStepAsync(ct).ConfigureAwait(false);
-            return step switch
+            // Skip Welcome / Language / Theme / Density / Dev preference wizard — defaults apply
+            // (Compact density, system theme). Open Sign-In directly for a faster first launch.
+            if (string.Equals(step, nameof(OnboardingStep.OrganizationSelect), StringComparison.Ordinal))
             {
-                nameof(OnboardingStep.Language) => "/onboarding/language",
-                nameof(OnboardingStep.Theme) => "/onboarding/theme",
-                nameof(OnboardingStep.Density) => "/onboarding/density",
-                nameof(OnboardingStep.DevEnvironment) => "/onboarding/dev-confirm",
-                nameof(OnboardingStep.SignIn) => "/signin",
-                nameof(OnboardingStep.OrganizationSelect) => "/organization-select",
-                nameof(OnboardingStep.AccessConfirm) => "/onboarding/access-confirm",
-                _ => "/welcome"
-            };
+                return "/organization-select";
+            }
+
+            if (string.Equals(step, nameof(OnboardingStep.AccessConfirm), StringComparison.Ordinal))
+            {
+                return "/onboarding/access-confirm";
+            }
+
+            if (!string.Equals(step, nameof(OnboardingStep.SignIn), StringComparison.Ordinal))
+            {
+                await preferences.SetOnboardingStepAsync(nameof(OnboardingStep.SignIn), ct)
+                    .ConfigureAwait(false);
+            }
+
+            return "/signin";
         }
 
         var restore = await auth.RestoreSessionAsync(ct).ConfigureAwait(false);

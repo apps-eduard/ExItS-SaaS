@@ -1,59 +1,14 @@
 @page "/onboarding/theme"
 @layout Layout.AuthShell
-@inject ThemeController ThemeCtl
 @inject IOnboardingPreferenceStore Prefs
 @inject NavigationManager Nav
-@inject IStringLocalizer<PosResources> L
 
-<div class="pos-onboarding">
-<Page>
-    <header class="pos-onboarding__header">
-        <h1 class="pos-onboarding__title">@L["Onboarding_ThemeTitle"]</h1>
-        <p class="pos-onboarding__subtitle">@L["Onboarding_ThemeSubtitle"]</p>
-    </header>
-    <FormGroup>
-        <Select Label="@L["Settings_ThemeLabel"]"
-                Value="@_theme"
-                ValueChanged="OnThemeChanged"
-                Options="_options" />
-    </FormGroup>
-    <FormActions>
-        <Button Variant="ButtonVariant.Ghost" OnClick="Back">@L["Common_Back"]</Button>
-        <Button OnClick="ContinueAsync">@L["Common_Continue"]</Button>
-    </FormActions>
-</Page>
-</div>
+@* Preference wizard removed — open Sign-In directly. *@
 
 @code {
-    private string? _theme = "system";
-    private IReadOnlyList<SelectOption> _options = [];
-
     protected override async Task OnInitializedAsync()
     {
-        await ThemeCtl.InitializeAsync();
-        _theme = ThemeCtl.Current.ToString().ToLowerInvariant();
-        _options =
-        [
-            new("system", L["Settings_Theme_System"]),
-            new("light", L["Settings_Theme_Light"]),
-            new("dark", L["Settings_Theme_Dark"]),
-        ];
-    }
-
-    private async Task OnThemeChanged(string? value)
-    {
-        _theme = value;
-        if (Enum.TryParse<ThemePreference>(value, true, out var preference))
-        {
-            await ThemeCtl.SetThemeAsync(preference);
-        }
-    }
-
-    private void Back() => Nav.NavigateTo("/onboarding/language");
-
-    private async Task ContinueAsync()
-    {
-        await Prefs.SetOnboardingStepAsync(nameof(OnboardingStep.Density));
-        Nav.NavigateTo("/onboarding/density");
+        await Prefs.SetOnboardingStepAsync(nameof(OnboardingStep.SignIn));
+        Nav.NavigateTo("/signin", replace: true);
     }
 }

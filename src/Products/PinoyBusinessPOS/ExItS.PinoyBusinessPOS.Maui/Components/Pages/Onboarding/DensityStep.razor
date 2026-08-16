@@ -1,69 +1,14 @@
 @page "/onboarding/density"
 @layout Layout.AuthShell
-@inject DensityController DensityCtl
 @inject IOnboardingPreferenceStore Prefs
-@inject IAppInfoService AppInfo
 @inject NavigationManager Nav
-@inject IStringLocalizer<PosResources> L
 
-<div class="pos-onboarding">
-<Page>
-    <header class="pos-onboarding__header">
-        <h1 class="pos-onboarding__title">@L["Onboarding_DensityTitle"]</h1>
-        <p class="pos-onboarding__subtitle">@L["Onboarding_DensitySubtitle"]</p>
-    </header>
-    <FormGroup>
-        <Select Label="@L["Settings_DensityLabel"]"
-                Value="@_density"
-                ValueChanged="OnDensityChanged"
-                Options="_options" />
-    </FormGroup>
-    <FormActions>
-        <Button Variant="ButtonVariant.Ghost" OnClick="Back">@L["Common_Back"]</Button>
-        <Button OnClick="ContinueAsync">@L["Common_Continue"]</Button>
-    </FormActions>
-</Page>
-</div>
+@* Preference wizard removed — Compact is the default; density remains in Settings. *@
 
 @code {
-    private string? _density = "compact";
-    private IReadOnlyList<SelectOption> _options = [];
-
     protected override async Task OnInitializedAsync()
     {
-        await DensityCtl.InitializeAsync();
-        _density = DensityCtl.Current.ToString().ToLowerInvariant();
-        _options =
-        [
-            new("compact", L["Settings_Density_Compact"]),
-            new("comfortable", L["Settings_Density_Comfortable"]),
-        ];
-    }
-
-    private async Task OnDensityChanged(string? value)
-    {
-        _density = value;
-        if (Enum.TryParse<DensityMode>(value, true, out var mode))
-        {
-            await DensityCtl.SetDensityAsync(mode);
-        }
-    }
-
-    private void Back() => Nav.NavigateTo("/onboarding/theme");
-
-    private async Task ContinueAsync()
-    {
-        var isDev = string.Equals(AppInfo.EnvironmentName, "Development", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(AppInfo.EnvironmentName, "Testing", StringComparison.OrdinalIgnoreCase);
-        if (isDev)
-        {
-            await Prefs.SetOnboardingStepAsync(nameof(OnboardingStep.DevEnvironment));
-            Nav.NavigateTo("/onboarding/dev-confirm");
-        }
-        else
-        {
-            await Prefs.SetOnboardingStepAsync(nameof(OnboardingStep.SignIn));
-            Nav.NavigateTo("/signin");
-        }
+        await Prefs.SetOnboardingStepAsync(nameof(OnboardingStep.SignIn));
+        Nav.NavigateTo("/signin", replace: true);
     }
 }
