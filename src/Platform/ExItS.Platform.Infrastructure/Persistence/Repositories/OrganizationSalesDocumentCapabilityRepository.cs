@@ -22,6 +22,7 @@ internal sealed class OrganizationSalesDocumentCapabilityRepository(PlatformDbCo
                 PlatformOrganizationId.From(record.OrganizationId),
                 record.ComplianceEligibilityStatus,
                 record.TaxDocumentIssuanceEnabled,
+                record.TaxConfigurationEnabled,
                 record.UpdatedAtUtc,
                 record.UpdatedByActorReference);
     }
@@ -35,6 +36,7 @@ internal sealed class OrganizationSalesDocumentCapabilityRepository(PlatformDbCo
             OrganizationId = capability.OrganizationId.Value,
             ComplianceEligibilityStatus = capability.ComplianceEligibilityStatus,
             TaxDocumentIssuanceEnabled = capability.TaxDocumentIssuanceEnabled,
+            TaxConfigurationEnabled = capability.TaxConfigurationEnabled,
             UpdatedAtUtc = capability.UpdatedAtUtc,
             UpdatedByActorReference = capability.UpdatedByActorReference
         });
@@ -56,6 +58,7 @@ internal sealed class OrganizationSalesDocumentCapabilityRepository(PlatformDbCo
 
         record.ComplianceEligibilityStatus = capability.ComplianceEligibilityStatus;
         record.TaxDocumentIssuanceEnabled = capability.TaxDocumentIssuanceEnabled;
+        record.TaxConfigurationEnabled = capability.TaxConfigurationEnabled;
         record.UpdatedAtUtc = capability.UpdatedAtUtc;
         record.UpdatedByActorReference = capability.UpdatedByActorReference;
     }

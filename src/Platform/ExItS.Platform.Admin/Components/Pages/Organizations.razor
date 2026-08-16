@@ -387,6 +387,41 @@ else
                         </DescriptionsItem>
                     </Descriptions>
 
+                    <Card Title="@L["Organizations_ComplianceTaxConfiguration"]" Size="@CardSize.Small" Style="margin-top: 1rem;">
+                        <Descriptions Bordered Size="@DescriptionsSize.Small" Column="1">
+                            <DescriptionsItem Title="@L["Organizations_ComplianceStatus"]">@_compliance.ComplianceEligibilityStatus</DescriptionsItem>
+                            <DescriptionsItem Title="@L["Organizations_ComplianceTaxConfigurationStatus"]">
+                                @TaxConfigurationStatusLabel
+                            </DescriptionsItem>
+                        </Descriptions>
+                        @if (CanManageLifecycle)
+                        {
+                            <Space Wrap Style="margin-top: 0.75rem;">
+                                @if (IsComplianceApproved)
+                                {
+                                    <Popconfirm Title="@L["Organizations_ComplianceConfirmEnableTaxConfiguration"]"
+                                                OnConfirm="EnableTaxConfigurationAsync">
+                                        <Button Type="@ButtonType.Primary" Disabled="@_compliance.TaxConfigurationEnabled">
+                                            @L["Organizations_ComplianceEnableTaxConfiguration"]
+                                        </Button>
+                                    </Popconfirm>
+                                }
+                                else
+                                {
+                                    <Button Type="@ButtonType.Primary" Disabled>
+                                        @L["Organizations_ComplianceEnableTaxConfiguration"]
+                                    </Button>
+                                }
+                                <Popconfirm Title="@L["Organizations_ComplianceConfirmDisableTaxConfiguration"]"
+                                            OnConfirm="DisableTaxConfigurationAsync">
+                                    <Button Disabled="@(!_compliance.TaxConfigurationEnabled)">
+                                        @L["Organizations_ComplianceDisableTaxConfiguration"]
+                                    </Button>
+                                </Popconfirm>
+                            </Space>
+                        }
+                    </Card>
+
                     @if (CanManageLifecycle)
                     {
                         <Space Wrap Style="margin-top: 1rem;">
@@ -474,6 +509,14 @@ else
 
     private bool CanManageLifecycle => Permissions.HasPermission(PlatformPermissionCodes.ManageOrganizations);
     private bool CanViewOrganizations => Permissions.HasPermission(PlatformPermissionCodes.ViewPortfolio);
+    private bool IsComplianceApproved =>
+        string.Equals(_compliance?.ComplianceEligibilityStatus, "Approved", StringComparison.Ordinal);
+    private string TaxConfigurationStatusLabel =>
+        !IsComplianceApproved
+            ? L["Organizations_ComplianceTaxConfigurationNotAvailable"]
+            : _compliance!.TaxConfigurationEnabled
+                ? L["Organizations_ComplianceTaxConfigurationEnabled"]
+                : L["Organizations_ComplianceTaxConfigurationDisabled"];
 
     private bool CanEditProfile =>
         _org?.IsSuccess == true
@@ -645,6 +688,8 @@ else
     private Task RevokeComplianceAsync() => TransitionComplianceAsync("Revoked");
     private Task EnableIssuanceAsync() => SetIssuanceAsync(true);
     private Task DisableIssuanceAsync() => SetIssuanceAsync(false);
+    private Task EnableTaxConfigurationAsync() => SetTaxConfigurationAsync(true);
+    private Task DisableTaxConfigurationAsync() => SetTaxConfigurationAsync(false);
 
     private async Task TransitionComplianceAsync(string targetStatus)
     {
@@ -688,6 +733,34 @@ else
             var result = await Api.SetOrganizationTaxDocumentCapabilityAsync(
                 Id.Value,
                 new TaxDocumentCapabilityRequest(enabled));
+            if (!result.IsSuccess || result.Data is null)
+            {
+                _complianceError = AdminFormErrorMapper.MapPageError(result) ?? L["Organizations_ComplianceActionFailed"];
+                return;
+            }
+
+            _compliance = result.Data;
+        }
+        finally
+        {
+            _complianceBusy = false;
+        }
+    }
+
+    private async Task SetTaxConfigurationAsync(bool enabled)
+    {
+        if (Id is null || !CanManageLifecycle)
+        {
+            return;
+        }
+
+        _complianceBusy = true;
+        _complianceError = null;
+        try
+        {
+            var result = await Api.SetOrganizationTaxConfigurationCapabilityAsync(
+                Id.Value,
+                new TaxConfigurationCapabilityRequest(enabled));
             if (!result.IsSuccess || result.Data is null)
             {
                 _complianceError = AdminFormErrorMapper.MapPageError(result) ?? L["Organizations_ComplianceActionFailed"];

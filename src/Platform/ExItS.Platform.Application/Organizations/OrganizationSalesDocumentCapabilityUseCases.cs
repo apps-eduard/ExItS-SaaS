@@ -20,6 +20,8 @@ public sealed record OrganizationSalesDocumentCapabilityDto(
     string ComplianceEligibilityStatus,
     string TaxDocumentIssuanceStatus,
     bool TaxDocumentIssuanceEnabled,
+    bool TaxConfigurationEnabled,
+    string TaxConfigurationStatus,
     bool TaxDocumentImplementationAvailable,
     DateTimeOffset? UpdatedAtUtc,
     string? UpdatedByActorReference);
@@ -29,6 +31,8 @@ public sealed record OrganizationComplianceStatusDto(
     string ComplianceEligibilityStatus,
     bool TaxDocumentIssuanceEnabled,
     string TaxDocumentIssuanceStatus,
+    bool TaxConfigurationEnabled,
+    string TaxConfigurationStatus,
     bool TaxDocumentImplementationAvailable,
     bool CurrentOwnerEducationAcknowledged,
     string EducationVersion,
@@ -68,14 +72,19 @@ public sealed class GetOrganizationSalesDocumentCapability(
         PlatformOrganizationId organizationId,
         OrganizationSalesDocumentCapability? capability)
     {
-        var enabled = capability?.TaxDocumentIssuanceEnabled == true;
+        var issuanceEnabled = capability?.TaxDocumentIssuanceEnabled == true;
+        var taxConfigurationEnabled = capability?.TaxConfigurationEnabled == true;
         return new(
             organizationId.Value,
             TransactionSummaryAvailable: true,
             capability?.ComplianceEligibilityStatus
                 ?? OrganizationComplianceEligibilityStatuses.NotRequested,
-            enabled ? SalesDocumentCapabilityStatuses.Enabled : SalesDocumentCapabilityStatuses.NotEnabled,
-            enabled,
+            issuanceEnabled ? SalesDocumentCapabilityStatuses.Enabled : SalesDocumentCapabilityStatuses.NotEnabled,
+            issuanceEnabled,
+            taxConfigurationEnabled,
+            taxConfigurationEnabled
+                ? SalesDocumentCapabilityStatuses.Enabled
+                : SalesDocumentCapabilityStatuses.NotEnabled,
             TaxDocumentIssuanceRuntime.ImplementationAvailable,
             capability?.UpdatedAtUtc,
             capability?.UpdatedByActorReference);
@@ -161,14 +170,19 @@ public sealed class GetOrganizationComplianceStatus(
             : await acknowledgments
                 .FindAsync(organizationId, owner.UserId, versions.CurrentVersion, cancellationToken)
                 .ConfigureAwait(false);
-        var enabled = capability?.TaxDocumentIssuanceEnabled == true;
+        var issuanceEnabled = capability?.TaxDocumentIssuanceEnabled == true;
+        var taxConfigurationEnabled = capability?.TaxConfigurationEnabled == true;
 
         return ApplicationResult<OrganizationComplianceStatusDto>.Success(new(
             organizationId.Value,
             capability?.ComplianceEligibilityStatus
                 ?? OrganizationComplianceEligibilityStatuses.NotRequested,
-            enabled,
-            enabled ? SalesDocumentCapabilityStatuses.Enabled : SalesDocumentCapabilityStatuses.NotEnabled,
+            issuanceEnabled,
+            issuanceEnabled ? SalesDocumentCapabilityStatuses.Enabled : SalesDocumentCapabilityStatuses.NotEnabled,
+            taxConfigurationEnabled,
+            taxConfigurationEnabled
+                ? SalesDocumentCapabilityStatuses.Enabled
+                : SalesDocumentCapabilityStatuses.NotEnabled,
             TaxDocumentIssuanceRuntime.ImplementationAvailable,
             acknowledgment is not null,
             versions.CurrentVersion,
@@ -386,6 +400,64 @@ public sealed class SetOrganizationTaxDocumentIssuanceCapability(
             summary: enabled
                 ? "Tax-document issuance capability enabled (implementation still unavailable)."
                 : "Tax-document issuance capability disabled.",
+            cancellationToken: cancellationToken).ConfigureAwait(false);
+
+        return await new GetOrganizationComplianceStatus(
+                capabilities,
+                memberships,
+                acknowledgments,
+                versions)
+            .ExecuteAsync(organizationId, cancellationToken)
+            .ConfigureAwait(false);
+    }
+}
+
+public sealed class SetOrganizationTaxConfigurationCapability(
+    EnsureOrganizationSalesDocumentCapability ensureCapability,
+    IOrganizationSalesDocumentCapabilityRepository capabilities,
+    IOrganizationMembershipRepository memberships,
+    IOrganizationSalesDocumentAcknowledgmentRepository acknowledgments,
+    ISalesDocumentEducationVersionProvider versions,
+    IPlatformUnitOfWork unitOfWork,
+    IClock clock,
+    IAuditWriter audit)
+{
+    public async Task<ApplicationResult<OrganizationComplianceStatusDto>> ExecuteAsync(
+        PlatformOrganizationId organizationId,
+        bool enabled,
+        string actorReference,
+        CancellationToken cancellationToken = default)
+    {
+        var capability = await ensureCapability.ExecuteAsync(organizationId, cancellationToken).ConfigureAwait(false);
+
+        try
+        {
+            capability.SetTaxConfigurationEnabled(enabled, actorReference, clock.UtcNow);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return ApplicationResult<OrganizationComplianceStatusDto>.Failure(
+                ApplicationErrorCodes.TaxConfigurationPreconditionFailed,
+                ex.Message);
+        }
+
+        await capabilities.UpdateAsync(capability, cancellationToken).ConfigureAwait(false);
+        await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        await audit.WriteAsync(
+            actorReference.StartsWith("platform-user:", StringComparison.Ordinal)
+                ? actorReference
+                : $"platform-user:{actorReference}",
+            AuditActorType.PlatformUser,
+            enabled
+                ? PlatformAuditActions.OrganizationTaxConfigurationCapabilityEnabled
+                : PlatformAuditActions.OrganizationTaxConfigurationCapabilityDisabled,
+            nameof(OrganizationSalesDocumentCapability),
+            organizationId.Value.ToString("D"),
+            AuditOutcome.Succeeded,
+            organizationId,
+            summary: enabled
+                ? "Tax configuration capability enabled."
+                : "Tax configuration capability disabled.",
             cancellationToken: cancellationToken).ConfigureAwait(false);
 
         return await new GetOrganizationComplianceStatus(

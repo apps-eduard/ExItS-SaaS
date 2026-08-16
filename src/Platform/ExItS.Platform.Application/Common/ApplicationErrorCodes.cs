@@ -21,6 +21,10 @@ public static class ApplicationErrorCodes
         "application.compliance.invalid_transition";
     public const string ComplianceIssuancePreconditionFailed =
         "application.compliance.issuance_precondition_failed";
+    public const string TaxConfigurationPreconditionFailed =
+        "application.compliance.tax_configuration_precondition_failed";
+    public const string TaxConfigurationNotEnabled =
+        "application.compliance.tax_configuration_not_enabled";
     public const string EmailConflict = "application.user.email_conflict";
     public const string UsernameConflict = "application.user.username_conflict";
     public const string SlugConflict = "application.organization.slug_conflict";

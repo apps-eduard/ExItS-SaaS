@@ -28,6 +28,7 @@ public sealed class OrganizationComplianceEligibilityTests
         Assert.True(result.IsSuccess);
         Assert.Equal(OrganizationComplianceEligibilityStatuses.Requested, result.Value!.ComplianceEligibilityStatus);
         Assert.False(result.Value.TaxDocumentIssuanceEnabled);
+        Assert.False(result.Value.TaxConfigurationEnabled);
         Assert.False(result.Value.TaxDocumentImplementationAvailable);
         Assert.Contains(PlatformAuditActions.OrganizationComplianceRequested, fixture.Audit.Actions);
     }
@@ -98,7 +99,85 @@ public sealed class OrganizationComplianceEligibilityTests
             "platform-admin");
         Assert.True(suspend.IsSuccess);
         Assert.False(suspend.Value!.TaxDocumentIssuanceEnabled);
+        Assert.False(suspend.Value.TaxConfigurationEnabled);
         Assert.Equal(OrganizationComplianceEligibilityStatuses.Suspended, suspend.Value.ComplianceEligibilityStatus);
+    }
+
+    [Fact]
+    public async Task PlatformAdminCanEnableTaxConfigurationWhenEligible()
+    {
+        var fixture = await Fixture.CreateAsync();
+        await Fixture.ApproveAsync(fixture);
+
+        var enable = await fixture.SetTaxConfiguration.ExecuteAsync(
+            fixture.OrganizationId, enabled: true, "platform-admin");
+
+        Assert.True(enable.IsSuccess);
+        Assert.True(enable.Value!.TaxConfigurationEnabled);
+        Assert.Equal(SalesDocumentCapabilityStatuses.Enabled, enable.Value.TaxConfigurationStatus);
+        Assert.Contains(
+            PlatformAuditActions.OrganizationTaxConfigurationCapabilityEnabled,
+            fixture.Audit.Actions);
+    }
+
+    [Fact]
+    public async Task PlatformAdminCannotEnableTaxConfigurationWhenIneligible()
+    {
+        var fixture = await Fixture.CreateAsync();
+
+        var notRequested = await fixture.SetTaxConfiguration.ExecuteAsync(
+            fixture.OrganizationId, enabled: true, "platform-admin");
+        Assert.False(notRequested.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.TaxConfigurationPreconditionFailed, notRequested.ErrorCode);
+
+        Assert.True((await fixture.Request.ExecuteAsync(
+            fixture.OrganizationId, fixture.OwnerId, "owner")).IsSuccess);
+        Assert.True((await fixture.Transition.ExecuteAsync(
+            fixture.OrganizationId,
+            OrganizationComplianceEligibilityStatuses.UnderReview,
+            "platform-admin")).IsSuccess);
+
+        var underReview = await fixture.SetTaxConfiguration.ExecuteAsync(
+            fixture.OrganizationId, enabled: true, "platform-admin");
+        Assert.False(underReview.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.TaxConfigurationPreconditionFailed, underReview.ErrorCode);
+    }
+
+    [Fact]
+    public async Task PlatformAdminCanDisableTaxConfiguration()
+    {
+        var fixture = await Fixture.CreateAsync();
+        await Fixture.ApproveAsync(fixture);
+        Assert.True((await fixture.SetTaxConfiguration.ExecuteAsync(
+            fixture.OrganizationId, true, "platform-admin")).IsSuccess);
+
+        var disable = await fixture.SetTaxConfiguration.ExecuteAsync(
+            fixture.OrganizationId, enabled: false, "platform-admin");
+
+        Assert.True(disable.IsSuccess);
+        Assert.False(disable.Value!.TaxConfigurationEnabled);
+        Assert.Equal(SalesDocumentCapabilityStatuses.NotEnabled, disable.Value.TaxConfigurationStatus);
+        Assert.Contains(
+            PlatformAuditActions.OrganizationTaxConfigurationCapabilityDisabled,
+            fixture.Audit.Actions);
+    }
+
+    [Fact]
+    public async Task Leaving_Approved_disables_TaxConfigurationEnabled()
+    {
+        var fixture = await Fixture.CreateAsync();
+        await Fixture.ApproveAsync(fixture);
+        Assert.True((await fixture.SetTaxConfiguration.ExecuteAsync(
+            fixture.OrganizationId, true, "platform-admin")).IsSuccess);
+
+        var suspend = await fixture.Transition.ExecuteAsync(
+            fixture.OrganizationId,
+            OrganizationComplianceEligibilityStatuses.Suspended,
+            "platform-admin");
+
+        Assert.True(suspend.IsSuccess);
+        Assert.False(suspend.Value!.TaxConfigurationEnabled);
+        Assert.Equal(SalesDocumentCapabilityStatuses.NotEnabled, suspend.Value.TaxConfigurationStatus);
     }
 
     [Fact]
@@ -205,6 +284,7 @@ public sealed class OrganizationComplianceEligibilityTests
         public required RequestOrganizationComplianceReview Request { get; init; }
         public required TransitionOrganizationComplianceEligibility Transition { get; init; }
         public required SetOrganizationTaxDocumentIssuanceCapability SetIssuance { get; init; }
+        public required SetOrganizationTaxConfigurationCapability SetTaxConfiguration { get; init; }
         public required GetOrganizationComplianceStatus GetStatus { get; init; }
 
         public static async Task<Fixture> CreateAsync()
@@ -245,8 +325,24 @@ public sealed class OrganizationComplianceEligibilityTests
                 Transition = new TransitionOrganizationComplianceEligibility(
                     ensure, capabilities, memberships, acknowledgments, versions, uow, clock, audit),
                 SetIssuance = new SetOrganizationTaxDocumentIssuanceCapability(
+                    ensure, capabilities, memberships, acknowledgments, versions, uow, clock, audit),
+                SetTaxConfiguration = new SetOrganizationTaxConfigurationCapability(
                     ensure, capabilities, memberships, acknowledgments, versions, uow, clock, audit)
             };
+        }
+
+        public static async Task ApproveAsync(Fixture fixture)
+        {
+            Assert.True((await fixture.Request.ExecuteAsync(
+                fixture.OrganizationId, fixture.OwnerId, "owner")).IsSuccess);
+            Assert.True((await fixture.Transition.ExecuteAsync(
+                fixture.OrganizationId,
+                OrganizationComplianceEligibilityStatuses.UnderReview,
+                "platform-admin")).IsSuccess);
+            Assert.True((await fixture.Transition.ExecuteAsync(
+                fixture.OrganizationId,
+                OrganizationComplianceEligibilityStatuses.Approved,
+                "platform-admin")).IsSuccess);
         }
     }
 

@@ -1486,6 +1486,33 @@
   <data name="Organizations_ComplianceConfirmDisableIssuance" xml:space="preserve">
     <value>Disable TaxDocument issuance capability?</value>
   </data>
+  <data name="Organizations_ComplianceTaxConfiguration" xml:space="preserve">
+    <value>Tax configuration</value>
+  </data>
+  <data name="Organizations_ComplianceTaxConfigurationStatus" xml:space="preserve">
+    <value>Tax configuration status</value>
+  </data>
+  <data name="Organizations_ComplianceTaxConfigurationEnabled" xml:space="preserve">
+    <value>Enabled</value>
+  </data>
+  <data name="Organizations_ComplianceTaxConfigurationDisabled" xml:space="preserve">
+    <value>Disabled</value>
+  </data>
+  <data name="Organizations_ComplianceTaxConfigurationNotAvailable" xml:space="preserve">
+    <value>Not available</value>
+  </data>
+  <data name="Organizations_ComplianceEnableTaxConfiguration" xml:space="preserve">
+    <value>Enable tax configuration</value>
+  </data>
+  <data name="Organizations_ComplianceDisableTaxConfiguration" xml:space="preserve">
+    <value>Disable tax configuration</value>
+  </data>
+  <data name="Organizations_ComplianceConfirmEnableTaxConfiguration" xml:space="preserve">
+    <value>This allows the organization to configure tax calculation settings. It does not certify the organization or confirm regulatory compliance.</value>
+  </data>
+  <data name="Organizations_ComplianceConfirmDisableTaxConfiguration" xml:space="preserve">
+    <value>The organization will no longer be able to edit or apply tax settings. Existing historical sales are unchanged.</value>
+  </data>
   <data name="Organizations_ComplianceActionFailed" xml:space="preserve">
     <value>Compliance action failed.</value>
   </data>

@@ -21,8 +21,22 @@ public sealed class OrganizationSalesDocumentCapabilityTests
         Assert.True(result.Value!.TransactionSummaryAvailable);
         Assert.False(result.Value.TaxDocumentIssuanceEnabled);
         Assert.Equal(SalesDocumentCapabilityStatuses.NotEnabled, result.Value.TaxDocumentIssuanceStatus);
+        Assert.False(result.Value.TaxConfigurationEnabled);
+        Assert.Equal(SalesDocumentCapabilityStatuses.NotEnabled, result.Value.TaxConfigurationStatus);
         Assert.Equal(OrganizationComplianceEligibilityStatuses.NotRequested, result.Value.ComplianceEligibilityStatus);
         Assert.False(result.Value.TaxDocumentImplementationAvailable);
+    }
+
+    [Fact]
+    public void CreateDefault_tax_configuration_enabled_is_false()
+    {
+        var capability = OrganizationSalesDocumentCapability.CreateDefault(
+            PlatformOrganizationId.New(),
+            new DateTimeOffset(2026, 8, 16, 12, 0, 0, TimeSpan.Zero));
+
+        Assert.False(capability.TaxConfigurationEnabled);
+        Assert.False(capability.TaxDocumentIssuanceEnabled);
+        Assert.Equal(OrganizationComplianceEligibilityStatuses.NotRequested, capability.ComplianceEligibilityStatus);
     }
 
     [Fact]

@@ -180,9 +180,46 @@ internal static class SalesDocumentCapabilityEndpoints
                 return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
             });
 
+        app.MapPost(
+            "/api/v1/platform/organizations/{organizationId:guid}/compliance/tax-configuration-capability",
+            async (
+                Guid organizationId,
+                TaxConfigurationCapabilityRequest body,
+                SetOrganizationTaxConfigurationCapability useCase,
+                PlatformOrganizationAuthz orgAuthz,
+                CancellationToken ct) =>
+            {
+                var action = body.Enabled
+                    ? PlatformAuditActions.OrganizationTaxConfigurationCapabilityEnabled
+                    : PlatformAuditActions.OrganizationTaxConfigurationCapabilityDisabled;
+                var denied = await orgAuthz
+                    .EnsureCanManageOrganizationLifecycleAsync(organizationId, action, ct)
+                    .ConfigureAwait(false);
+                if (denied is not null)
+                {
+                    return denied;
+                }
+
+                var actor = orgAuthz.Inner.CurrentActor;
+                if (actor.PlatformUserId is null)
+                {
+                    return Results.Unauthorized();
+                }
+
+                var result = await useCase
+                    .ExecuteAsync(
+                        PlatformOrganizationId.From(organizationId),
+                        body.Enabled,
+                        actorReference: actor.PlatformUserId.Value.ToString("D"),
+                        ct)
+                    .ConfigureAwait(false);
+                return PlatformApiResults.FromResult(result, dto => Results.Ok(dto));
+            });
+
         return app;
     }
 
     private sealed record ComplianceTransitionRequest(string TargetStatus);
     private sealed record TaxDocumentCapabilityRequest(bool Enabled);
+    private sealed record TaxConfigurationCapabilityRequest(bool Enabled);
 }

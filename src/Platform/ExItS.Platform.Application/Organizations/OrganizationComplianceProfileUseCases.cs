@@ -33,6 +33,7 @@ public sealed record OrganizationComplianceProfileDto(
     string? RegisteredCountryCode,
     string ComplianceEligibilityStatus,
     bool TaxDocumentIssuanceEnabled,
+    bool TaxConfigurationEnabled,
     bool TaxDocumentImplementationAvailable,
     string DocumentMode,
     string SnapshotGuidance);
@@ -103,6 +104,7 @@ public sealed class GetOrganizationComplianceProfile(
             capability?.ComplianceEligibilityStatus
                 ?? OrganizationComplianceEligibilityStatuses.NotRequested,
             capability?.TaxDocumentIssuanceEnabled == true,
+            capability?.TaxConfigurationEnabled == true,
             TaxDocumentIssuanceRuntime.ImplementationAvailable,
             DocumentMode: "TransactionSummary",
             SnapshotGuidance:

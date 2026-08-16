@@ -2454,6 +2454,12 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                         .HasDefaultValue("NotRequested")
                         .HasColumnName("compliance_eligibility_status");
 
+                    b.Property<bool>("TaxConfigurationEnabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("tax_configuration_enabled");
+
                     b.Property<bool>("TaxDocumentIssuanceEnabled")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")

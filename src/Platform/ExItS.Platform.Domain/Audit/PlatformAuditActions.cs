@@ -121,6 +121,10 @@ public static class PlatformAuditActions
         "platform.organization.tax_document_capability_enabled";
     public const string OrganizationTaxDocumentCapabilityDisabled =
         "platform.organization.tax_document_capability_disabled";
+    public const string OrganizationTaxConfigurationCapabilityEnabled =
+        "platform.organization.tax_configuration_capability_enabled";
+    public const string OrganizationTaxConfigurationCapabilityDisabled =
+        "platform.organization.tax_configuration_capability_disabled";
 
     public const string BusinessCustomerCreated = "platform.business_customer.created";
     public const string BusinessCustomerUpdated = "platform.business_customer.updated";

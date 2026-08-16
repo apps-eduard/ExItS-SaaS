@@ -1480,6 +1480,33 @@
   <data name="Organizations_ComplianceConfirmDisableIssuance" xml:space="preserve">
     <value>I-disable ang TaxDocument issuance capability?</value>
   </data>
+  <data name="Organizations_ComplianceTaxConfiguration" xml:space="preserve">
+    <value>Tax configuration</value>
+  </data>
+  <data name="Organizations_ComplianceTaxConfigurationStatus" xml:space="preserve">
+    <value>Status ng tax configuration</value>
+  </data>
+  <data name="Organizations_ComplianceTaxConfigurationEnabled" xml:space="preserve">
+    <value>Enabled</value>
+  </data>
+  <data name="Organizations_ComplianceTaxConfigurationDisabled" xml:space="preserve">
+    <value>Disabled</value>
+  </data>
+  <data name="Organizations_ComplianceTaxConfigurationNotAvailable" xml:space="preserve">
+    <value>Hindi available</value>
+  </data>
+  <data name="Organizations_ComplianceEnableTaxConfiguration" xml:space="preserve">
+    <value>I-enable ang tax configuration</value>
+  </data>
+  <data name="Organizations_ComplianceDisableTaxConfiguration" xml:space="preserve">
+    <value>I-disable ang tax configuration</value>
+  </data>
+  <data name="Organizations_ComplianceConfirmEnableTaxConfiguration" xml:space="preserve">
+    <value>Pinapayagan nito ang organisasyon na i-configure ang tax calculation settings. Hindi nito sine-certify ang organisasyon o kinukumpirma ang regulatory compliance.</value>
+  </data>
+  <data name="Organizations_ComplianceConfirmDisableTaxConfiguration" xml:space="preserve">
+    <value>Hindi na maaaring i-edit o i-apply ng organisasyon ang tax settings. Hindi magbabago ang existing historical sales.</value>
+  </data>
   <data name="Organizations_ComplianceActionFailed" xml:space="preserve">
     <value>Nabigo ang compliance action.</value>
   </data>

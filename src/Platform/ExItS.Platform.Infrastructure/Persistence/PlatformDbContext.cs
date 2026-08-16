@@ -322,6 +322,9 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.TaxDocumentIssuanceEnabled)
                 .HasColumnName("tax_document_issuance_enabled")
                 .HasDefaultValue(false);
+            entity.Property(e => e.TaxConfigurationEnabled)
+                .HasColumnName("tax_configuration_enabled")
+                .HasDefaultValue(false);
             entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
             entity.Property(e => e.UpdatedByActorReference)
                 .HasColumnName("updated_by_actor_reference")

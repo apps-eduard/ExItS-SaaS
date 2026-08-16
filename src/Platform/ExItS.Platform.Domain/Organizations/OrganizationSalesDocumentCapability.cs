@@ -2,14 +2,17 @@ namespace ExItS.Platform.Domain.Organizations;
 
 /// <summary>
 /// Platform-controlled, organization-scoped sales-document compliance authority.
-/// Holds both compliance eligibility review state and TaxDocument issuance capability.
-/// Tax calculation configuration does not grant either authority.
+/// Holds compliance eligibility review state, TaxDocument issuance capability, and
+/// Tax Configuration enablement (separate from issuance and from POS tax values).
+/// Tax calculation values do not grant any of these authorities.
+/// Enablement is product authorization — not BIR, NPC, or other regulatory certification.
 /// </summary>
 public sealed class OrganizationSalesDocumentCapability
 {
     public PlatformOrganizationId OrganizationId { get; }
     public string ComplianceEligibilityStatus { get; private set; }
     public bool TaxDocumentIssuanceEnabled { get; private set; }
+    public bool TaxConfigurationEnabled { get; private set; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
     public string? UpdatedByActorReference { get; private set; }
 
@@ -17,12 +20,14 @@ public sealed class OrganizationSalesDocumentCapability
         PlatformOrganizationId organizationId,
         string complianceEligibilityStatus,
         bool taxDocumentIssuanceEnabled,
+        bool taxConfigurationEnabled,
         DateTimeOffset updatedAtUtc,
         string? updatedByActorReference)
     {
         OrganizationId = organizationId;
         ComplianceEligibilityStatus = NormalizeStatus(complianceEligibilityStatus);
         TaxDocumentIssuanceEnabled = taxDocumentIssuanceEnabled;
+        TaxConfigurationEnabled = taxConfigurationEnabled;
         UpdatedAtUtc = EnsureUtc(updatedAtUtc);
         UpdatedByActorReference = updatedByActorReference;
     }
@@ -34,6 +39,7 @@ public sealed class OrganizationSalesDocumentCapability
             organizationId,
             OrganizationComplianceEligibilityStatuses.NotRequested,
             taxDocumentIssuanceEnabled: false,
+            taxConfigurationEnabled: false,
             EnsureUtc(utcNow),
             null);
 
@@ -41,12 +47,14 @@ public sealed class OrganizationSalesDocumentCapability
         PlatformOrganizationId organizationId,
         string complianceEligibilityStatus,
         bool taxDocumentIssuanceEnabled,
+        bool taxConfigurationEnabled,
         DateTimeOffset updatedAtUtc,
         string? updatedByActorReference) =>
         new(
             organizationId,
             complianceEligibilityStatus,
             taxDocumentIssuanceEnabled,
+            taxConfigurationEnabled,
             updatedAtUtc,
             updatedByActorReference);
 
@@ -69,9 +77,10 @@ public sealed class OrganizationSalesDocumentCapability
         }
 
         ComplianceEligibilityStatus = target;
-        if (RequiresIssuanceDisabled(target))
+        if (RequiresPlatformCapabilitiesDisabled(target))
         {
             TaxDocumentIssuanceEnabled = false;
+            TaxConfigurationEnabled = false;
         }
 
         Touch(actorReference, utcNow);
@@ -103,6 +112,31 @@ public sealed class OrganizationSalesDocumentCapability
         return true;
     }
 
+    public bool SetTaxConfigurationEnabled(
+        bool enabled,
+        string actorReference,
+        DateTimeOffset utcNow)
+    {
+        if (enabled)
+        {
+            if (ComplianceEligibilityStatus != OrganizationComplianceEligibilityStatuses.Approved)
+            {
+                throw new InvalidOperationException(
+                    "Tax configuration can be enabled only when compliance eligibility is Approved.");
+            }
+        }
+
+        if (TaxConfigurationEnabled == enabled)
+        {
+            Touch(actorReference, utcNow);
+            return false;
+        }
+
+        TaxConfigurationEnabled = enabled;
+        Touch(actorReference, utcNow);
+        return true;
+    }
+
     private void Touch(string actorReference, DateTimeOffset utcNow)
     {
         if (string.IsNullOrWhiteSpace(actorReference))
@@ -114,7 +148,7 @@ public sealed class OrganizationSalesDocumentCapability
         UpdatedByActorReference = actorReference.Trim();
     }
 
-    private static bool RequiresIssuanceDisabled(string status) =>
+    private static bool RequiresPlatformCapabilitiesDisabled(string status) =>
         status is OrganizationComplianceEligibilityStatuses.Rejected
             or OrganizationComplianceEligibilityStatuses.Suspended
             or OrganizationComplianceEligibilityStatuses.Revoked

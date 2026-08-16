@@ -172,6 +172,8 @@ public sealed record OrganizationComplianceStatusDto(
     string ComplianceEligibilityStatus,
     bool TaxDocumentIssuanceEnabled,
     string TaxDocumentIssuanceStatus,
+    bool TaxConfigurationEnabled,
+    string TaxConfigurationStatus,
     bool TaxDocumentImplementationAvailable,
     bool CurrentOwnerEducationAcknowledged,
     string EducationVersion,
@@ -180,6 +182,7 @@ public sealed record OrganizationComplianceStatusDto(
 
 public sealed record ComplianceTransitionRequest(string TargetStatus);
 public sealed record TaxDocumentCapabilityRequest(bool Enabled);
+public sealed record TaxConfigurationCapabilityRequest(bool Enabled);
 
 public sealed record OrganizationCatalogVisibilityDto(
     Guid OrganizationId,

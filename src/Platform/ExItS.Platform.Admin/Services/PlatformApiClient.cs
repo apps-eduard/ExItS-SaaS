@@ -136,6 +136,8 @@ public sealed class PlatformApiClient(
         SendAsync<OrganizationComplianceStatusDto>(HttpMethod.Post, $"/api/v1/platform/organizations/{organizationId}/compliance/transition", request, ct);
     public Task<ApiCallResult<OrganizationComplianceStatusDto>> SetOrganizationTaxDocumentCapabilityAsync(Guid organizationId, TaxDocumentCapabilityRequest request, CancellationToken ct = default) =>
         SendAsync<OrganizationComplianceStatusDto>(HttpMethod.Post, $"/api/v1/platform/organizations/{organizationId}/compliance/tax-document-capability", request, ct);
+    public Task<ApiCallResult<OrganizationComplianceStatusDto>> SetOrganizationTaxConfigurationCapabilityAsync(Guid organizationId, TaxConfigurationCapabilityRequest request, CancellationToken ct = default) =>
+        SendAsync<OrganizationComplianceStatusDto>(HttpMethod.Post, $"/api/v1/platform/organizations/{organizationId}/compliance/tax-configuration-capability", request, ct);
     public Task<ApiCallResult<OrganizationCommercialSummaryDto>> GetOrganizationCommercialSummaryAsync(Guid id, CancellationToken ct = default) =>
         GetAsync<OrganizationCommercialSummaryDto>($"/api/v1/platform/admin/organizations/{id}/commercial-summary", ct);
     public Task<ApiCallResult<OrganizationCurrentPlanDto>> GetOrganizationCurrentPlanAsync(Guid organizationId, string? productCode = null, CancellationToken ct = default) =>

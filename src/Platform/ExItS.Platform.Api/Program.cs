@@ -335,6 +335,7 @@ builder.Services.AddScoped<GetOrganizationComplianceStatus>();
 builder.Services.AddScoped<RequestOrganizationComplianceReview>();
 builder.Services.AddScoped<TransitionOrganizationComplianceEligibility>();
 builder.Services.AddScoped<SetOrganizationTaxDocumentIssuanceCapability>();
+builder.Services.AddScoped<SetOrganizationTaxConfigurationCapability>();
 builder.Services.AddScoped<GetOrganizationComplianceProfile>();
 builder.Services.AddScoped<EnsureOrganizationComplianceProfile>();
 builder.Services.AddSingleton<ISalesDocumentEducationVersionProvider, SalesDocumentEducationVersionProvider>();

@@ -39,6 +39,7 @@ public sealed class OrganizationComplianceProfileTests
         Assert.Equal(OrganizationComplianceEligibilityStatuses.Requested, a.Value.ComplianceEligibilityStatus);
         Assert.Equal(OrganizationComplianceEligibilityStatuses.NotRequested, b.Value!.ComplianceEligibilityStatus);
         Assert.False(a.Value.TaxDocumentIssuanceEnabled);
+        Assert.False(a.Value.TaxConfigurationEnabled);
         Assert.Equal("TransactionSummary", a.Value.DocumentMode);
         Assert.Contains(
             a.Value.GetType().GetProperties(),
@@ -69,6 +70,7 @@ public sealed class OrganizationComplianceProfileTests
         Assert.Equal(created.OrganizationId, again.OrganizationId);
         Assert.True(dto.Value!.ProfileInitialized);
         Assert.False(dto.Value.TaxDocumentIssuanceEnabled);
+        Assert.False(dto.Value.TaxConfigurationEnabled);
         Assert.False(dto.Value.TaxDocumentImplementationAvailable);
         Assert.Single(profiles.Items);
     }
