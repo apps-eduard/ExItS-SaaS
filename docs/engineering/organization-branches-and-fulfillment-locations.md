@@ -21,4 +21,4 @@ Branch capacity remains entitlement-controlled. Primary branches cannot be treat
 
 ## Boundaries
 
-This foundation does not implement storefronts, customer orders, couriers, routing, payments, or live tracking. POS remains free of PHI and no cross-product database access or foreign keys are introduced.
+Customer ordering (Phase 28 Stage B) consumes branch fulfillment capabilities and delivery policy. Storefront catalog UX, couriers, routing, and payment rails remain separate work. POS remains free of PHI and no cross-product database access or foreign keys are introduced.

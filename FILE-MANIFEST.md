@@ -146,9 +146,11 @@ docs/reports/P27-WP03-supplier-response-synchronization.md
 docs/reports/P27-WP04-connected-po-cancellation-and-withdrawal.md
 docs/reports/P27-WP05-fulfillment-goods-receipt-and-discrepancies.md
 docs/reports/P28-WP01-branch-fulfillment-location-foundation.md
+docs/reports/P28-WP02-customer-ordering-stage-b-slice.md
 docs/engineering/connected-exits-suppliers.md
 docs/engineering/organization-branches-and-fulfillment-locations.md
 docs/engineering/branch-delivery-pricing.md
+docs/engineering/customer-ordering-pickup-and-delivery.md
 docs/engineering/purchasing-inventory-ux-mental-model.md
 docs/validation/phase-26-owner-validation-checklist.md
 docs/compliance/bir-compliance-activation-roadmap.md
