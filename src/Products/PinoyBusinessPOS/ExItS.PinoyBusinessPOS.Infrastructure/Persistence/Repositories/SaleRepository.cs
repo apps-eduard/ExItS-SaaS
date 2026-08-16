@@ -197,6 +197,143 @@ internal sealed class SaleRepository : ISaleRepository
             .ToList();
     }
 
+    public async Task<SalePeriodAggregate> AggregatePeriodAsync(
+        PosOrganizationId organizationId,
+        DateOnly fromDateUtc,
+        DateOnly toDateUtc,
+        SaleStatus? status = null,
+        SalePaymentMethod? paymentMethod = null,
+        Guid? customerId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var query = BuildReportHeaderQuery(organizationId, fromDateUtc, toDateUtc, status, paymentMethod, customerId);
+        const string completed = nameof(SaleStatus.Completed);
+        const string voided = nameof(SaleStatus.Voided);
+        var cash = SalePaymentMethods.ToCode(SalePaymentMethod.Cash);
+        var gcash = SalePaymentMethods.ToCode(SalePaymentMethod.ManualGCash);
+        var utang = SalePaymentMethods.ToCode(SalePaymentMethod.Utang);
+
+        var rows = await query
+            .GroupBy(_ => 1)
+            .Select(g => new
+            {
+                CompletedTotal = g.Where(s => s.Status == completed).Sum(s => (decimal?)s.Total) ?? 0m,
+                CompletedCount = g.Count(s => s.Status == completed),
+                VoidedTotal = g.Where(s => s.Status == voided).Sum(s => (decimal?)s.Total) ?? 0m,
+                VoidedCount = g.Count(s => s.Status == voided),
+                CashTotal = g.Where(s => s.Status == completed && s.PaymentMethod == cash)
+                    .Sum(s => (decimal?)s.Total) ?? 0m,
+                ManualGCashTotal = g.Where(s => s.Status == completed && s.PaymentMethod == gcash)
+                    .Sum(s => (decimal?)s.Total) ?? 0m,
+                UtangTotal = g.Where(s => s.Status == completed && s.PaymentMethod == utang)
+                    .Sum(s => (decimal?)s.Total) ?? 0m,
+                UtangCount = g.Count(s => s.Status == completed && s.PaymentMethod == utang)
+            })
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        if (rows is null)
+        {
+            return new SalePeriodAggregate(0m, 0, 0m, 0, 0m, 0m, 0m, 0);
+        }
+
+        return new SalePeriodAggregate(
+            SaleMoney.RoundMoney(rows.CompletedTotal),
+            rows.CompletedCount,
+            SaleMoney.RoundMoney(rows.VoidedTotal),
+            rows.VoidedCount,
+            SaleMoney.RoundMoney(rows.CashTotal),
+            SaleMoney.RoundMoney(rows.ManualGCashTotal),
+            SaleMoney.RoundMoney(rows.UtangTotal),
+            rows.UtangCount);
+    }
+
+    public async Task<IReadOnlyList<SalePaymentAggregate>> AggregateCompletedByPaymentAsync(
+        PosOrganizationId organizationId,
+        DateOnly fromDateUtc,
+        DateOnly toDateUtc,
+        CancellationToken cancellationToken = default)
+    {
+        const string completed = nameof(SaleStatus.Completed);
+        var query = BuildReportHeaderQuery(organizationId, fromDateUtc, toDateUtc)
+            .Where(s => s.Status == completed);
+
+        var rows = await query
+            .GroupBy(s => s.PaymentMethod)
+            .Select(g => new { PaymentMethod = g.Key, Total = g.Sum(s => s.Total), Count = g.Count() })
+            .OrderBy(r => r.PaymentMethod)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return rows
+            .Select(r => new SalePaymentAggregate(r.PaymentMethod, SaleMoney.RoundMoney(r.Total), r.Count))
+            .ToList();
+    }
+
+    public async Task<IReadOnlyList<SaleDailyAggregate>> AggregateCompletedByDayAsync(
+        PosOrganizationId organizationId,
+        DateOnly fromDateUtc,
+        DateOnly toDateUtc,
+        CancellationToken cancellationToken = default)
+    {
+        const string completed = nameof(SaleStatus.Completed);
+        var query = BuildReportHeaderQuery(organizationId, fromDateUtc, toDateUtc)
+            .Where(s => s.Status == completed);
+
+        // Project timestamps only (no lines), then aggregate in-memory by UTC calendar day.
+        var stamps = await query
+            .Select(s => new { s.RecordedAtUtc, s.Total })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return stamps
+            .GroupBy(s => DateOnly.FromDateTime(s.RecordedAtUtc.UtcDateTime))
+            .OrderBy(g => g.Key)
+            .Select(g => new SaleDailyAggregate(
+                g.Key,
+                SaleMoney.RoundMoney(g.Sum(x => x.Total)),
+                g.Count()))
+            .ToList();
+    }
+
+    private IQueryable<SaleRecord> BuildReportHeaderQuery(
+        PosOrganizationId organizationId,
+        DateOnly fromDateUtc,
+        DateOnly toDateUtc,
+        SaleStatus? status = null,
+        SalePaymentMethod? paymentMethod = null,
+        Guid? customerId = null)
+    {
+        var from = new DateTimeOffset(fromDateUtc.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+        var exclusiveTo = new DateTimeOffset(
+            toDateUtc.AddDays(1).ToDateTime(TimeOnly.MinValue),
+            TimeSpan.Zero);
+
+        var query = _db.Sales.AsNoTracking()
+            .Where(s => s.OrganizationId == organizationId.Value
+                        && s.RecordedAtUtc >= from
+                        && s.RecordedAtUtc < exclusiveTo);
+
+        if (status is not null)
+        {
+            var statusName = status.Value.ToString();
+            query = query.Where(s => s.Status == statusName);
+        }
+
+        if (paymentMethod is not null)
+        {
+            var methodCode = SalePaymentMethods.ToCode(paymentMethod.Value);
+            query = query.Where(s => s.PaymentMethod == methodCode);
+        }
+
+        if (customerId is not null)
+        {
+            query = query.Where(s => s.CustomerId == customerId.Value);
+        }
+
+        return query;
+    }
+
     public async Task<Sale> CheckoutAsync(
         PosOrganizationId organizationId,
         DateOnly businessDateUtc,

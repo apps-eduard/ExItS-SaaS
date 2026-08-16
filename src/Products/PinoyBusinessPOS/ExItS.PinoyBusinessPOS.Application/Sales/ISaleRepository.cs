@@ -11,6 +11,21 @@ public sealed record SaleFilter(
     DateOnly? ToDateUtc = null,
     string? SaleNumber = null);
 
+/// <summary>Header totals for a reporting period without loading sale lines.</summary>
+public sealed record SalePeriodAggregate(
+    decimal CompletedTotal,
+    int CompletedCount,
+    decimal VoidedTotal,
+    int VoidedCount,
+    decimal CashTotal,
+    decimal ManualGCashTotal,
+    decimal UtangTotal,
+    int UtangCount);
+
+public sealed record SalePaymentAggregate(string PaymentMethod, decimal Total, int Count);
+
+public sealed record SaleDailyAggregate(DateOnly Day, decimal Amount, int Count);
+
 public interface ISaleRepository
 {
     Task<Sale?> GetByIdAsync(
@@ -42,6 +57,36 @@ public interface ISaleRepository
         SalePaymentMethod? paymentMethod = null,
         Guid? productId = null,
         Guid? customerId = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Computes period sale header totals in SQL (no sale lines loaded).
+    /// </summary>
+    Task<SalePeriodAggregate> AggregatePeriodAsync(
+        PosOrganizationId organizationId,
+        DateOnly fromDateUtc,
+        DateOnly toDateUtc,
+        SaleStatus? status = null,
+        SalePaymentMethod? paymentMethod = null,
+        Guid? customerId = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Completed-sale payment breakdown in SQL for the inclusive UTC date range.
+    /// </summary>
+    Task<IReadOnlyList<SalePaymentAggregate>> AggregateCompletedByPaymentAsync(
+        PosOrganizationId organizationId,
+        DateOnly fromDateUtc,
+        DateOnly toDateUtc,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Completed-sale daily totals in SQL for the inclusive UTC date range.
+    /// </summary>
+    Task<IReadOnlyList<SaleDailyAggregate>> AggregateCompletedByDayAsync(
+        PosOrganizationId organizationId,
+        DateOnly fromDateUtc,
+        DateOnly toDateUtc,
         CancellationToken cancellationToken = default);
 
     /// <summary>

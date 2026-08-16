@@ -252,17 +252,15 @@ public sealed class OperationalReportService(
 
         var range = rangeResult.Value!;
         var org = PosOrganizationId.From(organizationId);
-        var saleRows = await sales.ListForReportAsync(org, range.FromDate, range.ToDate, cancellationToken: ct)
+        var saleTotals = await sales.AggregatePeriodAsync(org, range.FromDate, range.ToDate, cancellationToken: ct)
             .ConfigureAwait(false);
         var returnRows = await ListReturnsInRangeAsync(org, range, ct).ConfigureAwait(false);
 
-        var completed = saleRows.Where(s => s.Status == SaleStatus.Completed).ToList();
-        var voided = saleRows.Where(s => s.Status == SaleStatus.Voided).ToList();
-        var completedGross = ReportMath.RoundMoney(completed.Sum(s => s.Total));
-        var voidedTotal = ReportMath.RoundMoney(voided.Sum(s => s.Total));
+        var completedGross = saleTotals.CompletedTotal;
+        var voidedTotal = saleTotals.VoidedTotal;
         var refunds = ReportMath.RoundMoney(returnRows.Sum(r => r.TotalRefundAmount));
         var net = ReportMath.RoundMoney(completedGross - voidedTotal - refunds);
-        var count = completed.Count;
+        var count = saleTotals.CompletedCount;
         var avg = count == 0 ? 0m : ReportMath.RoundMoney(completedGross / count);
 
         return ApplicationResult<PosSalesSummaryReportDto>.Success(
@@ -336,23 +334,37 @@ public sealed class OperationalReportService(
 
         var range = rangeResult.Value!;
         var org = PosOrganizationId.From(organizationId);
-        var saleRows = await sales.ListForReportAsync(org, range.FromDate, range.ToDate, cancellationToken: ct)
+        var paymentAgg = await sales
+            .AggregateCompletedByPaymentAsync(org, range.FromDate, range.ToDate, ct)
             .ConfigureAwait(false);
         var returnRows = await ListReturnsInRangeAsync(org, range, ct).ConfigureAwait(false);
 
+        var completedByMethod = paymentAgg.ToDictionary(p => p.PaymentMethod, StringComparer.Ordinal);
         var methods = new[] { SalePaymentMethod.Cash, SalePaymentMethod.ManualGCash, SalePaymentMethod.Utang };
         var rows = new List<PosPaymentMethodBreakdownDto>();
         foreach (var method in methods)
         {
-            var completed = saleRows.Where(s => s.Status == SaleStatus.Completed && s.PaymentMethod == method).Sum(s => s.Total);
-            var voided = saleRows.Where(s => s.Status == SaleStatus.Voided && s.PaymentMethod == method).Sum(s => s.Total);
+            var code = SalePaymentMethods.ToCode(method);
+            completedByMethod.TryGetValue(code, out var completedRow);
+            var completed = completedRow?.Total ?? 0m;
+            var voidedSales = await sales
+                .AggregatePeriodAsync(
+                    org,
+                    range.FromDate,
+                    range.ToDate,
+                    SaleStatus.Voided,
+                    method,
+                    cancellationToken: ct)
+                .ConfigureAwait(false);
+            var voided = voidedSales.VoidedTotal;
             var refunded = returnRows.Where(r => r.RefundMethod == method).Sum(r => r.TotalRefundAmount);
-            rows.Add(new PosPaymentMethodBreakdownDto(
-                SalePaymentMethods.ToCode(method),
-                ReportMath.RoundMoney(completed),
-                ReportMath.RoundMoney(voided),
-                ReportMath.RoundMoney(refunded),
-                ReportMath.RoundMoney(completed - voided - refunded)));
+            rows.Add(
+                new PosPaymentMethodBreakdownDto(
+                    code,
+                    completed,
+                    ReportMath.RoundMoney(voided),
+                    ReportMath.RoundMoney(refunded),
+                    ReportMath.RoundMoney(completed - voided - refunded)));
         }
 
         return ApplicationResult<PosSalesByPaymentReportDto>.Success(

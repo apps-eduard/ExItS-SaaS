@@ -110,25 +110,26 @@ public sealed class DashboardQueryService
         var range = rangeResult.Value!;
         var orgId = PosOrganizationId.From(organizationId);
 
-        var sales = await _sales
-            .ListForReportAsync(orgId, range.FromDate, range.ToDate, cancellationToken: cancellationToken)
+        var saleTotals = await _sales
+            .AggregatePeriodAsync(orgId, range.FromDate, range.ToDate, cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+        var paymentBreakdownRows = await _sales
+            .AggregateCompletedByPaymentAsync(orgId, range.FromDate, range.ToDate, cancellationToken)
+            .ConfigureAwait(false);
+        var salesDailyRows = await _sales
+            .AggregateCompletedByDayAsync(orgId, range.FromDate, range.ToDate, cancellationToken)
             .ConfigureAwait(false);
         var expenses = await _expenses
             .ListForSummaryAsync(orgId, range.FromDate, range.ToDate, cancellationToken)
             .ConfigureAwait(false);
 
-        var completed = sales.Where(s => s.Status == SaleStatus.Completed).ToList();
-        var voidedSales = sales.Where(s => s.Status == SaleStatus.Voided).ToList();
         var recordedExpenses = expenses.Where(e => e.Status == ExpenseStatus.Recorded).ToList();
         var voidedExpenses = expenses.Where(e => e.Status == ExpenseStatus.Voided).ToList();
 
-        var completedTotal = ReportMath.RoundMoney(completed.Sum(s => s.Total));
-        var cashTotal = ReportMath.RoundMoney(
-            completed.Where(s => s.PaymentMethod == SalePaymentMethod.Cash).Sum(s => s.Total));
-        var gcashTotal = ReportMath.RoundMoney(
-            completed.Where(s => s.PaymentMethod == SalePaymentMethod.ManualGCash).Sum(s => s.Total));
-        var utangTotal = ReportMath.RoundMoney(
-            completed.Where(s => s.PaymentMethod == SalePaymentMethod.Utang).Sum(s => s.Total));
+        var completedTotal = saleTotals.CompletedTotal;
+        var cashTotal = saleTotals.CashTotal;
+        var gcashTotal = saleTotals.ManualGCashTotal;
+        var utangTotal = saleTotals.UtangTotal;
         var expenseTotal = ReportMath.RoundMoney(recordedExpenses.Sum(e => e.Amount));
 
         var (outstanding, overdue) = await ComputeUtangTotalsAsync(orgId, cancellationToken).ConfigureAwait(false);
@@ -138,38 +139,27 @@ public sealed class DashboardQueryService
 
         var salesByDay = ReportMath.FillDailySeries(
             range,
-            completed.Select(s => (
-                DateOnly.FromDateTime(s.RecordedAtUtc.UtcDateTime),
-                s.Total,
-                1)));
+            salesDailyRows.Select(s => (s.Day, s.Amount, s.Count)));
         var expensesByDay = ReportMath.FillDailySeries(
             range,
             recordedExpenses.Select(e => (e.ExpenseDate, e.Amount, 1)));
         var salesCountByDay = ReportMath.FillDailySeries(
             range,
-            completed.Select(s => (
-                DateOnly.FromDateTime(s.RecordedAtUtc.UtcDateTime),
-                0m,
-                1)));
+            salesDailyRows.Select(s => (s.Day, 0m, s.Count)));
 
-        var paymentBreakdown = completed
-            .GroupBy(s => SalePaymentMethods.ToCode(s.PaymentMethod))
-            .OrderBy(g => g.Key, StringComparer.Ordinal)
-            .Select(g => new ReportPaymentBreakdownDto(
-                g.Key,
-                ReportMath.RoundMoney(g.Sum(s => s.Total)),
-                g.Count()))
+        var paymentBreakdown = paymentBreakdownRows
+            .OrderBy(g => g.PaymentMethod, StringComparer.Ordinal)
+            .Select(g => new ReportPaymentBreakdownDto(g.PaymentMethod, g.Total, g.Count))
             .ToList();
 
         var prior = range.PrecedingEqualLengthPeriod();
-        var priorSales = await _sales
-            .ListForReportAsync(orgId, prior.FromDate, prior.ToDate, cancellationToken: cancellationToken)
+        var priorSaleTotals = await _sales
+            .AggregatePeriodAsync(orgId, prior.FromDate, prior.ToDate, cancellationToken: cancellationToken)
             .ConfigureAwait(false);
         var priorExpenses = await _expenses
             .ListForSummaryAsync(orgId, prior.FromDate, prior.ToDate, cancellationToken)
             .ConfigureAwait(false);
-        var priorCompletedTotal = ReportMath.RoundMoney(
-            priorSales.Where(s => s.Status == SaleStatus.Completed).Sum(s => s.Total));
+        var priorCompletedTotal = priorSaleTotals.CompletedTotal;
         var priorExpenseTotal = ReportMath.RoundMoney(
             priorExpenses.Where(e => e.Status == ExpenseStatus.Recorded).Sum(e => e.Amount));
 
@@ -178,7 +168,7 @@ public sealed class DashboardQueryService
                 range.FromDate,
                 range.ToDate,
                 completedTotal,
-                completed.Count,
+                saleTotals.CompletedCount,
                 cashTotal,
                 gcashTotal,
                 utangTotal,
@@ -186,7 +176,7 @@ public sealed class DashboardQueryService
                 overdue,
                 expenseTotal,
                 lowStockCount,
-                voidedSales.Count,
+                saleTotals.VoidedCount,
                 voidedExpenses.Count,
                 salesByDay,
                 expensesByDay,
