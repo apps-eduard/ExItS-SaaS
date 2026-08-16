@@ -348,7 +348,7 @@ else
                         <p class="pos-connected-catalog__banner" role="alert">@_linkError</p>
                     }
                 </div>
-                <div class="pos-denom-sheet__bar">
+                <div class="pos-denom-sheet__bar pos-connected-catalog__sheet-bar">
                     <button type="button" class="pos-action-tile" disabled="@_busy" @onclick="CancelFlow">
                         <span class="pos-action-tile__label">@L["Common_Cancel"]</span>
                     </button>
@@ -428,6 +428,21 @@ else
     .pos-connected-catalog__link-btn { width: 100%; min-height: 2.75rem; }
     .pos-connected-catalog__sheet-product { margin: 0.25rem 0 0; font-weight: 700; }
     .pos-connected-catalog__sheet-meta { margin: 0.15rem 0 0; font-size: 0.8125rem; }
+    .pos-connected-catalog__sheet-bar {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+        align-items: stretch;
+    }
+    .pos-connected-catalog__sheet-bar .pos-action-tile {
+        width: auto;
+        min-width: 0;
+        justify-content: center;
+        text-align: center;
+    }
+    .pos-connected-catalog__sheet-bar .pos-action-tile__label {
+        text-align: center;
+    }
     .pos-connected-catalog__section-title { margin: 0.55rem 0 0.35rem; font-size: 0.8125rem; font-weight: 700; }
     .pos-connected-catalog__candidate {
         display: flex; flex-direction: column; gap: 0.15rem; padding: 0.55rem 0.65rem;
