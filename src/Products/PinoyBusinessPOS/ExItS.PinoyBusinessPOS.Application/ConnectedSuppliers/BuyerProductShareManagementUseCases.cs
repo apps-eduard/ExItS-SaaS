@@ -24,9 +24,17 @@ public sealed record BulkBuyerProductShareMutationRequest(
     bool SelectAllMatching = false,
     string? Query = null,
     string? Category = null,
-    string? ShareFilter = null);
+    string? ShareFilter = null,
+    IReadOnlyDictionary<Guid, decimal>? EstablishDefaultPoPrices = null);
 
-public sealed record BulkBuyerProductShareMutationResultDto(int AffectedCount);
+public sealed record MissingDefaultPoProductDto(
+    Guid ProductId,
+    string Name,
+    decimal SellingPrice);
+
+public sealed record BulkBuyerProductShareMutationResultDto(
+    int AffectedCount,
+    IReadOnlyList<MissingDefaultPoProductDto>? NeedsDefaultPo = null);
 
 public sealed record BulkBuyerPricingRequest(
     string Mode,
@@ -99,35 +107,17 @@ public sealed class QueryBuyerProductShares
             relationship.Id, supplier, query, category, shareFilter, skip, take, idsOnly: false, ct)
             .ConfigureAwait(false);
 
-        var items = new List<ConnectedBuyerProductShareDto>(result.Exposures.Count);
-        for (var i = 0; i < result.Exposures.Count; i++)
+        var items = new List<ConnectedBuyerProductShareDto>(result.Rows.Count);
+        foreach (var row in result.Rows)
         {
-            var exposure = result.Exposures[i];
-            var share = result.Shares[i];
-            if (share is null)
+            if (row.Share is null)
             {
-                items.Add(new(
-                    Guid.Empty,
-                    relationship.Id.Value,
-                    relationship.BuyerOrganizationId.Value,
-                    supplier.Value,
-                    exposure.ProductId.Value,
-                    false,
-                    null,
-                    null,
-                    0,
-                    exposure.CreatedAtUtc,
-                    exposure.UpdatedAtUtc,
-                    exposure.SkuSnapshot,
-                    exposure.NameSnapshot,
-                    exposure.UnitOfMeasureCode,
-                    null,
-                    exposure.CategoryNameSnapshot,
-                    exposure.SupplierOrderPrice));
+                items.Add(ConnectedSupplierMapper.MapUnshared(
+                    relationship, supplier, row.Product, row.Exposure, row.CategoryName));
             }
             else
             {
-                items.Add(ConnectedSupplierMapper.Map(share, exposure, categoryName: exposure.CategoryNameSnapshot));
+                items.Add(ConnectedSupplierMapper.Map(row.Share, row.Exposure, row.Product, row.CategoryName));
             }
         }
 
@@ -147,21 +137,21 @@ public sealed class QueryBuyerProductShares
 public sealed class BulkMutateBuyerProductShares
 {
     private readonly IConnectedSupplierRelationshipRepository _relationships;
-    private readonly ISupplierProductExposureRepository _exposures;
     private readonly IConnectedBuyerProductShareRepository _shares;
+    private readonly ICatalogProductRepository _products;
     private readonly SetBuyerProductShares _setShares;
     private readonly IPosCommercialAccessAccessor _access;
 
     public BulkMutateBuyerProductShares(
         IConnectedSupplierRelationshipRepository relationships,
-        ISupplierProductExposureRepository exposures,
         IConnectedBuyerProductShareRepository shares,
+        ICatalogProductRepository products,
         SetBuyerProductShares setShares,
         IPosCommercialAccessAccessor access)
     {
         _relationships = relationships;
-        _exposures = exposures;
         _shares = shares;
+        _products = products;
         _setShares = setShares;
         _access = access;
     }
@@ -206,19 +196,61 @@ public sealed class BulkMutateBuyerProductShares
             .ConfigureAwait(false);
         var supplier = PosOrganizationId.From(orgId);
         var items = new List<SetBuyerProductShareItem>();
+        var needsDefaultPo = new List<MissingDefaultPoProductDto>();
+
         foreach (var productId in productIds)
         {
+            var product = await _products.GetByIdAsync(supplier, CatalogProductId.From(productId), ct)
+                .ConfigureAwait(false);
+            if (product is null
+                || product.OrganizationId != supplier
+                || product.Status != CatalogProductStatus.Active)
+            {
+                return ConnectedSupplierUseCaseGuard.Failure<BulkBuyerProductShareMutationResultDto>(
+                    ConnectedSupplierErrorCodes.NotFound, "Product was not found.");
+            }
+
+            if (share && product.IsBlockedFromConnectedBuyers)
+            {
+                continue;
+            }
+
             var existing = await _shares.FindAsync(relationship!.Id, CatalogProductId.From(productId), ct)
                 .ConfigureAwait(false);
             if (share)
             {
-                // Preserve any existing buyer-specific price when (re)sharing.
-                items.Add(new(productId, true, existing?.BuyerSpecificPoPrice));
+                decimal? establish = null;
+                if (product.DefaultConnectedPoPrice is null)
+                {
+                    if (request.EstablishDefaultPoPrices is not null
+                        && request.EstablishDefaultPoPrices.TryGetValue(productId, out var price))
+                    {
+                        establish = price;
+                    }
+                    else
+                    {
+                        needsDefaultPo.Add(new(productId, product.Name, product.SellingPrice));
+                        continue;
+                    }
+                }
+
+                items.Add(new(productId, true, existing?.BuyerSpecificPoPrice, establish));
             }
             else
             {
                 items.Add(new(productId, false, null));
             }
+        }
+
+        if (share && needsDefaultPo.Count > 0)
+        {
+            return ApplicationResult<BulkBuyerProductShareMutationResultDto>.Success(
+                new(0, needsDefaultPo));
+        }
+
+        if (items.Count == 0)
+        {
+            return ApplicationResult<BulkBuyerProductShareMutationResultDto>.Success(new(0));
         }
 
         var result = await _setShares.ExecuteAsync(orgId, relationshipId, items, ct).ConfigureAwait(false);
@@ -285,16 +317,16 @@ public sealed class BulkMutateBuyerProductShares
                 $"Too many products selected (max {BuyerProductShareBulkPricing.MaxBulkProductIds}). Use select-all matching.");
         }
 
-        // Fail closed: every product must belong to this supplier and be exposable.
         foreach (var id in ids)
         {
-            var exposure = await _exposures.GetByProductAsync(supplier, CatalogProductId.From(id), ct)
+            var product = await _products.GetByIdAsync(supplier, CatalogProductId.From(id), ct)
                 .ConfigureAwait(false);
-            if (exposure is null || !exposure.IsExposed)
+            if (product is null
+                || product.OrganizationId != supplier
+                || product.Status != CatalogProductStatus.Active)
             {
                 return ConnectedSupplierUseCaseGuard.Failure<IReadOnlyList<Guid>>(
-                    ConnectedSupplierErrorCodes.ExposureNotFound,
-                    "An eligible exposure was not found.");
+                    ConnectedSupplierErrorCodes.NotFound, "Product was not found.");
             }
         }
 
@@ -305,19 +337,19 @@ public sealed class BulkMutateBuyerProductShares
 public sealed class PreviewBuyerProductPricing
 {
     private readonly IConnectedSupplierRelationshipRepository _relationships;
-    private readonly ISupplierProductExposureRepository _exposures;
     private readonly IConnectedBuyerProductShareRepository _shares;
+    private readonly ICatalogProductRepository _products;
     private readonly IPosCommercialAccessAccessor _access;
 
     public PreviewBuyerProductPricing(
         IConnectedSupplierRelationshipRepository relationships,
-        ISupplierProductExposureRepository exposures,
         IConnectedBuyerProductShareRepository shares,
+        ICatalogProductRepository products,
         IPosCommercialAccessAccessor access)
     {
         _relationships = relationships;
-        _exposures = exposures;
         _shares = shares;
+        _products = products;
         _access = access;
     }
 
@@ -395,49 +427,43 @@ public sealed class PreviewBuyerProductPricing
         }
 
         var previewItems = new List<BuyerPricePreviewItemDto>();
-        var mutations = new List<SetBuyerProductShareItem>();
         foreach (var productId in productIds)
         {
-            var exposure = await _exposures.GetByProductAsync(supplier, CatalogProductId.From(productId), ct)
+            var product = await _products.GetByIdAsync(supplier, CatalogProductId.From(productId), ct)
                 .ConfigureAwait(false);
-            if (exposure is null || !exposure.IsExposed)
+            if (product is null
+                || product.OrganizationId != supplier
+                || product.Status != CatalogProductStatus.Active
+                || product.DefaultConnectedPoPrice is null)
             {
                 return ConnectedSupplierUseCaseGuard.Failure<BulkBuyerPricingPreviewDto>(
-                    ConnectedSupplierErrorCodes.ExposureNotFound,
-                    "An eligible exposure was not found.");
+                    ConnectedSupplierErrorCodes.MissingDefaultPo,
+                    "A Default PO price is required before buyer pricing can be set.");
             }
 
+            var baseline = product.DefaultConnectedPoPrice.Value;
             if (!BuyerProductShareBulkPricing.TryComputeBuyerPrice(
-                    mode, exposure.SupplierOrderPrice, request.Percent, request.Amount, request.FixedPrice,
+                    mode, baseline, request.Percent, request.Amount, request.FixedPrice,
                     out var proposed, out var error))
             {
                 return ConnectedSupplierUseCaseGuard.Failure<BulkBuyerPricingPreviewDto>(
                     ConnectedSupplierErrorCodes.BulkValidation,
-                    $"{exposure.NameSnapshot}: {error}");
+                    $"{product.Name}: {error}");
             }
 
-            var share = await _shares.FindAsync(relationship.Id, exposure.ProductId, ct).ConfigureAwait(false);
+            var share = await _shares.FindAsync(relationship.Id, product.Id, ct).ConfigureAwait(false);
             var current = share?.BuyerSpecificPoPrice;
-            var effective = proposed ?? exposure.SupplierOrderPrice;
+            var effective = proposed ?? baseline;
             if (previewItems.Count < BuyerProductShareBulkPricing.PreviewItemLimit)
             {
                 previewItems.Add(new(
-                    exposure.ProductId.Value,
-                    exposure.NameSnapshot,
-                    exposure.SupplierOrderPrice,
+                    product.Id.Value,
+                    product.Name,
+                    baseline,
                     current,
                     proposed,
                     effective));
             }
-
-            // Pricing apply keeps share state; UseDefault clears override only.
-            var isShared = share?.IsShared ?? true;
-            if (mode != BulkBuyerPricingMode.UseDefault && share is null)
-            {
-                isShared = true;
-            }
-
-            mutations.Add(new(exposure.ProductId.Value, isShared || mode != BulkBuyerPricingMode.UseDefault, proposed));
         }
 
         return ApplicationResult<BulkBuyerPricingPreviewDto>.Success(new(
@@ -452,23 +478,23 @@ public sealed class ApplyBuyerProductPricing
     private readonly PreviewBuyerProductPricing _preview;
     private readonly SetBuyerProductShares _setShares;
     private readonly IConnectedSupplierRelationshipRepository _relationships;
-    private readonly ISupplierProductExposureRepository _exposures;
     private readonly IConnectedBuyerProductShareRepository _shares;
+    private readonly ICatalogProductRepository _products;
     private readonly IPosCommercialAccessAccessor _access;
 
     public ApplyBuyerProductPricing(
         PreviewBuyerProductPricing preview,
         SetBuyerProductShares setShares,
         IConnectedSupplierRelationshipRepository relationships,
-        ISupplierProductExposureRepository exposures,
         IConnectedBuyerProductShareRepository shares,
+        ICatalogProductRepository products,
         IPosCommercialAccessAccessor access)
     {
         _preview = preview;
         _setShares = setShares;
         _relationships = relationships;
-        _exposures = exposures;
         _shares = shares;
+        _products = products;
         _access = access;
     }
 
@@ -512,23 +538,27 @@ public sealed class ApplyBuyerProductPricing
         var items = new List<SetBuyerProductShareItem>();
         foreach (var productId in productIds)
         {
-            var exposure = await _exposures.GetByProductAsync(supplier, CatalogProductId.From(productId), ct)
+            var product = await _products.GetByIdAsync(supplier, CatalogProductId.From(productId), ct)
                 .ConfigureAwait(false);
-            if (exposure is null || !exposure.IsExposed)
+            if (product is null
+                || product.OrganizationId != supplier
+                || product.Status != CatalogProductStatus.Active
+                || product.DefaultConnectedPoPrice is null)
             {
                 return ConnectedSupplierUseCaseGuard.Failure<BulkBuyerProductShareMutationResultDto>(
-                    ConnectedSupplierErrorCodes.ExposureNotFound, "An eligible exposure was not found.");
+                    ConnectedSupplierErrorCodes.MissingDefaultPo,
+                    "A Default PO price is required before buyer pricing can be set.");
             }
 
             if (!BuyerProductShareBulkPricing.TryComputeBuyerPrice(
-                    mode, exposure.SupplierOrderPrice, request.Percent, request.Amount, request.FixedPrice,
+                    mode, product.DefaultConnectedPoPrice.Value, request.Percent, request.Amount, request.FixedPrice,
                     out var proposed, out var error))
             {
                 return ConnectedSupplierUseCaseGuard.Failure<BulkBuyerProductShareMutationResultDto>(
-                    ConnectedSupplierErrorCodes.BulkValidation, $"{exposure.NameSnapshot}: {error}");
+                    ConnectedSupplierErrorCodes.BulkValidation, $"{product.Name}: {error}");
             }
 
-            var share = await _shares.FindAsync(relationship!.Id, exposure.ProductId, ct).ConfigureAwait(false);
+            var share = await _shares.FindAsync(relationship!.Id, product.Id, ct).ConfigureAwait(false);
             var isShared = share?.IsShared == true;
             if (!isShared && mode != BulkBuyerPricingMode.UseDefault)
             {
@@ -537,12 +567,11 @@ public sealed class ApplyBuyerProductPricing
 
             if (mode == BulkBuyerPricingMode.UseDefault)
             {
-                // Clearing price does not auto-share; keep current share state.
-                items.Add(new(exposure.ProductId.Value, isShared, null));
+                items.Add(new(product.Id.Value, isShared, null));
             }
             else
             {
-                items.Add(new(exposure.ProductId.Value, isShared, proposed));
+                items.Add(new(product.Id.Value, isShared, proposed));
             }
         }
 

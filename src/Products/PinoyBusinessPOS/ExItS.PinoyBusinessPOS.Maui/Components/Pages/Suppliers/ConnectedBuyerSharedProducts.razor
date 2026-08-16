@@ -116,19 +116,21 @@
                 {
                     var selected = _selectAllMatching || _pageSelected.Contains(product.SupplierProductId);
                     var effective = product.EffectiveBuyerPrice;
-                    <article class="pos-manage-share__row @(selected ? "pos-manage-share__row--selected" : null)"
+                    var rowDisabled = product.IsBlocked;
+                    <article class="pos-manage-share__row @(selected ? "pos-manage-share__row--selected" : null) @(rowDisabled ? "pos-manage-share__row--disabled" : null)"
                              role="listitem"
-                             aria-selected="@selected">
+                             aria-selected="@selected"
+                             aria-disabled="@rowDisabled">
                         <label class="pos-manage-share__check">
                             <input type="checkbox"
                                    checked="@selected"
-                                   disabled="@(_busy || !CanManage || _selectAllMatching)"
+                                   disabled="@(_busy || !CanManage || _selectAllMatching || rowDisabled)"
                                    aria-label="@L["ConnectedBuyers_SelectProduct", product.Name]"
                                    @onchange="args => ToggleOne(product.SupplierProductId, args)" />
                         </label>
                         <button type="button"
                                 class="pos-manage-share__body"
-                                disabled="@_busy"
+                                disabled="@(_busy || rowDisabled)"
                                 @onclick="() => OpenDetail(product)">
                             <span class="pos-manage-share__name">@product.Name</span>
                             <span class="pos-manage-share__meta pos-muted">
@@ -142,38 +144,53 @@
                                     : product.Category)
                             </span>
                             <span class="pos-manage-share__line3">
-                                <span class="pos-manage-share__buyer-price">
-                                    <span class="pos-manage-share__price-label">@L["ConnectedBuyers_BuyerPrice"]</span>
-                                    @if (effective is decimal buyerPay)
-                                    {
-                                        <MoneyDisplay Amount="@buyerPay" CurrencyCode="PHP" />
-                                    }
-                                    else
-                                    {
-                                        <span class="pos-muted">—</span>
-                                    }
-                                </span>
-                                <span class="pos-muted" aria-hidden="true">·</span>
-                                <span class="pos-manage-share__price-note pos-muted">
-                                    @if (product.HasCustomPrice)
-                                    {
-                                        @L["ConnectedBuyers_DefaultPoShort"]
-                                        <text> </text>
-                                        <MoneyDisplay Amount="@(product.DefaultPoPrice ?? 0m)" CurrencyCode="PHP" />
-                                    }
-                                    else
-                                    {
-                                        @L["ConnectedBuyers_UsesDefaultPo"]
-                                    }
-                                </span>
-                                <span class="pos-muted" aria-hidden="true">·</span>
-                                <span class="pos-manage-share__state @(product.IsShared ? "pos-manage-share__state--shared" : null)">
-                                    @(product.IsShared ? L["ConnectedBuyers_FilterShared"] : L["ConnectedBuyers_FilterNotShared"])
-                                    @if (product.IsShared && product.HasCustomPrice)
-                                    {
-                                        <text> · @L["ConnectedBuyers_FilterCustomPrice"]</text>
-                                    }
-                                </span>
+                                @if (product.IsBlocked)
+                                {
+                                    <span class="pos-manage-share__state">@L["ConnectedBuyers_BlockedForConnectedBuyers"]</span>
+                                }
+                                else
+                                {
+                                    <span class="pos-manage-share__buyer-price">
+                                        <span class="pos-manage-share__price-label">@L["ConnectedBuyers_BuyerPrice"]</span>
+                                        @if (effective is decimal buyerPay)
+                                        {
+                                            <MoneyDisplay Amount="@buyerPay" CurrencyCode="PHP" />
+                                        }
+                                        else if (product.DefaultPoPrice is null)
+                                        {
+                                            <span class="pos-muted">@L["ConnectedBuyers_DefaultPoNotSet"]</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="pos-muted">—</span>
+                                        }
+                                    </span>
+                                    <span class="pos-muted" aria-hidden="true">·</span>
+                                    <span class="pos-manage-share__price-note pos-muted">
+                                        @if (product.DefaultPoPrice is null)
+                                        {
+                                            @L["ConnectedBuyers_DefaultPoNotSet"]
+                                        }
+                                        else if (product.HasCustomPrice)
+                                        {
+                                            @L["ConnectedBuyers_DefaultPoShort"]
+                                            <text> </text>
+                                            <MoneyDisplay Amount="@(product.DefaultPoPrice ?? 0m)" CurrencyCode="PHP" />
+                                        }
+                                        else
+                                        {
+                                            @L["ConnectedBuyers_UsesDefaultPo"]
+                                        }
+                                    </span>
+                                    <span class="pos-muted" aria-hidden="true">·</span>
+                                    <span class="pos-manage-share__state @(product.IsShared ? "pos-manage-share__state--shared" : null)">
+                                        @(product.IsShared ? L["ConnectedBuyers_FilterShared"] : L["ConnectedBuyers_FilterNotShared"])
+                                        @if (product.IsShared && product.HasCustomPrice)
+                                        {
+                                            <text> · @L["ConnectedBuyers_FilterCustomPrice"]</text>
+                                        }
+                                    </span>
+                                }
                             </span>
                         </button>
                     </article>
@@ -406,14 +423,34 @@
                     {
                         <p class="pos-manage-share__sheet-count pos-muted">@_detail.Sku</p>
                     }
+                    @if (_detail.NeedsEstablishDefaultPo)
+                    {
+                        <p class="pos-denom-sheet__hint">@L["ConnectedBuyers_EstablishDefaultPoHelp"]</p>
+                    }
                 </div>
             </header>
             <div class="pos-manage-share__sheet-body">
                 <div class="pos-manage-share__detail-block">
                     <span class="pos-manage-share__price-label">@L["ConnectedBuyers_DefaultPoShort"]</span>
-                    <span class="pos-manage-share__detail-value">
-                        <MoneyDisplay Amount="@(_detail.DefaultPoPrice ?? 0m)" CurrencyCode="PHP" />
-                    </span>
+                    @if (_detail.NeedsEstablishDefaultPo)
+                    {
+                        <p class="pos-muted">@L["ConnectedBuyers_RetailReference", _detail.SellingPrice]</p>
+                        <CurrencyInput Label="@L["Catalog_ConnectedBuyers_DefaultPoPrice"]"
+                                       Value="@_detail.EstablishDefaultPoPrice"
+                                       ValueChanged="v => _detail.EstablishDefaultPoPrice = v"
+                                       CurrencyCode="PHP"
+                                       Disabled="@(_busy || !CanManage)" />
+                    }
+                    else if (_detail.DefaultPoPrice is decimal existingPo)
+                    {
+                        <span class="pos-manage-share__detail-value">
+                            <MoneyDisplay Amount="@existingPo" CurrencyCode="PHP" />
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="pos-muted">@L["ConnectedBuyers_DefaultPoNotSet"]</span>
+                    }
                 </div>
 
                 <div class="pos-manage-share__detail-block">
@@ -427,40 +464,93 @@
                     </label>
                 </div>
 
-                <div class="pos-manage-share__detail-block">
-                    <span class="pos-manage-share__price-label">@L["ConnectedBuyers_BuyerPrice"]</span>
-                    <label class="pos-manage-share__price-option">
-                        <input type="radio" name="detail-price" checked="@(!_detail.UseOverride)" @onchange="() => _detail.UseOverride = false" />
-                        <span>
-                            <strong>@L["ConnectedBuyers_UseDefaultPoPrice"]</strong>
-                            @if (_detail.DefaultPoPrice is decimal defPo)
-                            {
-                                <span class="pos-manage-share__option-help">
-                                    <MoneyDisplay Amount="@defPo" CurrencyCode="PHP" />
-                                </span>
-                            }
-                        </span>
-                    </label>
-                    <label class="pos-manage-share__price-option">
-                        <input type="radio" name="detail-price" checked="@_detail.UseOverride" @onchange="() => _detail.UseOverride = true" />
-                        <span><strong>@L["ConnectedBuyers_CustomBuyerPrice"]</strong></span>
-                    </label>
-                    @if (_detail.UseOverride)
-                    {
-                        <CurrencyInput Label="@L["ConnectedBuyers_BuyerPrice"]"
-                                       Value="@_detail.BuyerSpecificPoPrice"
-                                       ValueChanged="v => _detail.BuyerSpecificPoPrice = v"
-                                       CurrencyCode="PHP"
-                                       Disabled="@(_busy || !CanManage)" />
-                    }
-                </div>
+                @if (!_detail.NeedsEstablishDefaultPo)
+                {
+                    <div class="pos-manage-share__detail-block">
+                        <span class="pos-manage-share__price-label">@L["ConnectedBuyers_BuyerPrice"]</span>
+                        <label class="pos-manage-share__price-option">
+                            <input type="radio" name="detail-price" checked="@(!_detail.UseOverride)" @onchange="() => _detail.UseOverride = false" />
+                            <span>
+                                <strong>@L["ConnectedBuyers_UseDefaultPoPrice"]</strong>
+                                @if (_detail.DefaultPoPrice is decimal defPo)
+                                {
+                                    <span class="pos-manage-share__option-help">
+                                        <MoneyDisplay Amount="@defPo" CurrencyCode="PHP" />
+                                    </span>
+                                }
+                            </span>
+                        </label>
+                        <label class="pos-manage-share__price-option">
+                            <input type="radio" name="detail-price" checked="@_detail.UseOverride" @onchange="() => _detail.UseOverride = true" />
+                            <span><strong>@L["ConnectedBuyers_CustomBuyerPrice"]</strong></span>
+                        </label>
+                        @if (_detail.UseOverride)
+                        {
+                            <CurrencyInput Label="@L["ConnectedBuyers_BuyerPrice"]"
+                                           Value="@_detail.BuyerSpecificPoPrice"
+                                           ValueChanged="v => _detail.BuyerSpecificPoPrice = v"
+                                           CurrencyCode="PHP"
+                                           Disabled="@(_busy || !CanManage)" />
+                        }
+                    </div>
+                }
+                @if (!string.IsNullOrWhiteSpace(_detailError))
+                {
+                    <p class="pos-manage-share__banner" role="alert">@_detailError</p>
+                }
             </div>
             <div class="pos-denom-sheet__bar pos-manage-share__sheet-bar">
-                <button type="button" class="pos-action-tile" disabled="@_busy" @onclick="() => _detail = null">
+                <button type="button" class="pos-action-tile" disabled="@_busy" @onclick="CloseDetail">
                     <span class="pos-action-tile__label">@L["Common_Cancel"]</span>
                 </button>
                 <button type="button" class="pos-action-tile pos-action-tile--primary" disabled="@(_busy || !CanManage)" @onclick="SaveDetailAsync">
-                    <span class="pos-action-tile__label">@L["Common_Save"]</span>
+                    <span class="pos-action-tile__label">
+                        @(_detail.NeedsEstablishDefaultPo && _detail.IsShared
+                            ? L["ConnectedBuyers_ConfirmShareWithDefaultPo"]
+                            : L["Common_Save"])
+                    </span>
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@if (_missingPoSheet is { Count: > 0 })
+{
+    <div class="pos-denom-sheet" role="dialog" aria-modal="true" aria-label="@L["ConnectedBuyers_MissingDefaultPoTitle", _missingPoSheet.Count]">
+        <div class="pos-denom-sheet__panel pos-denom-sheet__panel--fit">
+            <header class="pos-denom-sheet__header pos-manage-share__sheet-header">
+                <div>
+                    <h2 class="pos-denom-sheet__title">@L["ConnectedBuyers_MissingDefaultPoTitle", _missingPoSheet.Count]</h2>
+                    <p class="pos-denom-sheet__hint">@L["ConnectedBuyers_EstablishDefaultPoHelp"]</p>
+                </div>
+            </header>
+            <div class="pos-denom-sheet__list pos-denom-sheet__list--fit">
+                @foreach (var item in _missingPoSheet)
+                {
+                    <div class="pos-manage-share__preview-row" role="listitem">
+                        <div class="pos-manage-share__preview-meta">
+                            <strong>@item.Name</strong>
+                            <span class="pos-muted">@L["ConnectedBuyers_RetailReference", item.SellingPrice]</span>
+                        </div>
+                        <CurrencyInput Label="@L["Catalog_ConnectedBuyers_DefaultPoPrice"]"
+                                       Value="@item.EstablishDefaultPoPrice"
+                                       ValueChanged="v => item.EstablishDefaultPoPrice = v"
+                                       CurrencyCode="PHP"
+                                       Disabled="@_busy" />
+                    </div>
+                }
+                @if (!string.IsNullOrWhiteSpace(_missingPoError))
+                {
+                    <p class="pos-manage-share__banner" role="alert">@_missingPoError</p>
+                }
+            </div>
+            <div class="pos-denom-sheet__bar pos-manage-share__sheet-bar">
+                <button type="button" class="pos-action-tile" disabled="@_busy" @onclick="CloseMissingPoSheet">
+                    <span class="pos-action-tile__label">@L["Common_Cancel"]</span>
+                </button>
+                <button type="button" class="pos-action-tile pos-action-tile--primary" disabled="@_busy" @onclick="ConfirmMissingPoShareAsync">
+                    <span class="pos-action-tile__label">@L["ConnectedBuyers_ConfirmShareWithDefaultPo"]</span>
                 </button>
             </div>
         </div>
@@ -518,6 +608,7 @@
     }
     .pos-manage-share__row + .pos-manage-share__row { border-top: 1px solid var(--pos-border-subtle, #d7e0da); }
     .pos-manage-share__row--selected { background: rgba(27, 122, 61, 0.06); }
+    .pos-manage-share__row--disabled { opacity: 0.55; }
     .pos-manage-share__check {
         display: flex; align-items: center; justify-content: center;
         margin: 0; min-width: 2.5rem; min-height: 2.5rem;
@@ -671,7 +762,11 @@
     private CancellationTokenSource? _searchCts;
     private BulkBuyerPricingPreviewDto? _preview;
     private DetailEdit? _detail;
+    private string? _detailError;
     private BulkBuyerPricingRequest? _pendingPriceRequest;
+    private List<MissingPoDraft>? _missingPoSheet;
+    private string? _missingPoError;
+    private BulkBuyerProductShareMutationRequest? _pendingShareRequest;
 
     private bool CanManage => Capabilities.IsAllowed(UtangCapability.ManageSuppliers);
     private bool PageAllSelected => _items.Count > 0 && _items.All(x => _pageSelected.Contains(x.SupplierProductId));
@@ -708,6 +803,7 @@
                 "shared" => L["ConnectedBuyers_EmptySharedFilter"],
                 "not-shared" => L["ConnectedBuyers_EmptyNotSharedFilter"],
                 "custom-price" => L["ConnectedBuyers_EmptyCustomPriceFilter"],
+                "blocked" => L["ConnectedBuyers_EmptyBlockedFilter"],
                 _ => L["ConnectedBuyers_NoProductsMatchFilters"]
             };
         }
@@ -718,7 +814,8 @@
         ("all", L["ConnectedBuyers_FilterAll"]),
         ("shared", L["ConnectedBuyers_FilterShared"]),
         ("not-shared", L["ConnectedBuyers_FilterNotShared"]),
-        ("custom-price", L["ConnectedBuyers_FilterCustomPrice"])
+        ("custom-price", L["ConnectedBuyers_FilterCustomPrice"]),
+        ("blocked", L["ConnectedBuyers_FilterBlocked"])
     ];
 
     private string CategoryButtonLabel =>
@@ -943,9 +1040,71 @@
                 return;
             }
 
+            if (share && result.Data?.NeedsDefaultPo is { Count: > 0 } missing)
+            {
+                _pendingShareRequest = request;
+                _missingPoSheet = missing
+                    .Select(x => new MissingPoDraft(x.ProductId, x.Name, x.SellingPrice))
+                    .ToList();
+                _missingPoError = null;
+                return;
+            }
+
             _banner = share
                 ? L["ConnectedBuyers_BulkShareSucceeded", result.Data?.AffectedCount ?? 0]
                 : L["ConnectedBuyers_BulkUnshareSucceeded", result.Data?.AffectedCount ?? 0];
+            ClearSelection();
+            await ReloadAsync(resetPage: true);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void CloseMissingPoSheet()
+    {
+        _missingPoSheet = null;
+        _missingPoError = null;
+        _pendingShareRequest = null;
+    }
+
+    private async Task ConfirmMissingPoShareAsync()
+    {
+        if (_busy || !CanManage || _missingPoSheet is null || _pendingShareRequest is null) return;
+        if (_missingPoSheet.Any(x => x.EstablishDefaultPoPrice is null or <= 0m))
+        {
+            _missingPoError = L["ConnectedBuyers_MissingDefaultPoRequired"];
+            return;
+        }
+
+        if (!await Connectivity.IsConnectedAsync())
+        {
+            _missingPoError = L["Suppliers_OfflineMessage"];
+            return;
+        }
+
+        _busy = true;
+        _missingPoError = null;
+        try
+        {
+            var prices = _missingPoSheet.ToDictionary(x => x.ProductId, x => x.EstablishDefaultPoPrice!.Value);
+            var request = _pendingShareRequest with { EstablishDefaultPoPrices = prices };
+            var result = await ConnectedSuppliers.BulkMutateBuyerProductSharesAsync(RelationshipId, request);
+            if (!result.IsSuccess)
+            {
+                _missingPoError = result.Error?.Detail ?? L["ConnectedBuyers_SaveSharingFailed"];
+                return;
+            }
+
+            if (result.Data?.NeedsDefaultPo is { Count: > 0 })
+            {
+                _missingPoError = L["ConnectedBuyers_MissingDefaultPoRequired"];
+                return;
+            }
+
+            _banner = L["ConnectedBuyers_BulkShareSucceeded", result.Data?.AffectedCount ?? 0];
+            CloseMissingPoSheet();
             ClearSelection();
             await ReloadAsync(resetPage: true);
         }
@@ -1054,34 +1213,61 @@
         }
     }
 
-    private void OpenDetail(ShareProductRow product) =>
+    private void OpenDetail(ShareProductRow product)
+    {
+        if (product.IsBlocked) return;
+        _detailError = null;
         _detail = new DetailEdit(product);
+    }
+
+    private void CloseDetail()
+    {
+        _detail = null;
+        _detailError = null;
+    }
 
     private async Task SaveDetailAsync()
     {
         if (_detail is null || _busy || !CanManage) return;
         if (!await Connectivity.IsConnectedAsync())
         {
-            _banner = L["Suppliers_OfflineMessage"];
+            _detailError = L["Suppliers_OfflineMessage"];
             return;
         }
 
+        decimal? establish = null;
+        if (_detail.IsShared && _detail.NeedsEstablishDefaultPo)
+        {
+            if (_detail.EstablishDefaultPoPrice is null or <= 0m)
+            {
+                _detailError = L["ConnectedBuyers_MissingDefaultPoRequired"];
+                return;
+            }
+
+            establish = _detail.EstablishDefaultPoPrice;
+        }
+
         _busy = true;
+        _detailError = null;
         try
         {
             var price = _detail.UseOverride ? _detail.BuyerSpecificPoPrice : null;
             var result = await ConnectedSuppliers.SetBuyerProductSharesAsync(
                 RelationshipId,
                 new SetBuyerProductSharesRequest([
-                    new SetBuyerProductShareItem(_detail.SupplierProductId, _detail.IsShared, price)
+                    new SetBuyerProductShareItem(
+                        _detail.SupplierProductId,
+                        _detail.IsShared,
+                        price,
+                        establish)
                 ]));
             if (!result.IsSuccess)
             {
-                _banner = result.Error?.Detail ?? L["ConnectedBuyers_SaveSharingFailed"];
+                _detailError = result.Error?.Detail ?? L["ConnectedBuyers_SaveSharingFailed"];
                 return;
             }
 
-            _detail = null;
+            CloseDetail();
             await ReloadAsync(resetPage: true);
         }
         finally
@@ -1104,6 +1290,8 @@
             DefaultPoPrice = dto.DefaultPoPrice;
             BuyerSpecificPoPrice = dto.BuyerSpecificPoPrice;
             IsShared = dto.IsShared;
+            IsBlocked = dto.IsBlockedFromConnectedBuyers;
+            SellingPrice = dto.SellingPrice ?? 0m;
         }
 
         public Guid SupplierProductId { get; }
@@ -1113,6 +1301,8 @@
         public decimal? DefaultPoPrice { get; }
         public decimal? BuyerSpecificPoPrice { get; }
         public bool IsShared { get; }
+        public bool IsBlocked { get; }
+        public decimal SellingPrice { get; }
         public bool HasCustomPrice => BuyerSpecificPoPrice is not null;
         public decimal? EffectiveBuyerPrice => BuyerSpecificPoPrice ?? DefaultPoPrice;
     }
@@ -1125,17 +1315,38 @@
             Name = row.Name;
             Sku = row.Sku;
             DefaultPoPrice = row.DefaultPoPrice;
+            SellingPrice = row.SellingPrice;
             IsShared = row.IsShared;
             BuyerSpecificPoPrice = row.BuyerSpecificPoPrice;
             UseOverride = row.BuyerSpecificPoPrice is not null;
+            NeedsEstablishDefaultPo = row.DefaultPoPrice is null;
+            EstablishDefaultPoPrice = null;
         }
 
         public Guid SupplierProductId { get; }
         public string Name { get; }
         public string? Sku { get; }
         public decimal? DefaultPoPrice { get; }
+        public decimal SellingPrice { get; }
+        public bool NeedsEstablishDefaultPo { get; }
+        public decimal? EstablishDefaultPoPrice { get; set; }
         public bool IsShared { get; set; }
         public bool UseOverride { get; set; }
         public decimal? BuyerSpecificPoPrice { get; set; }
+    }
+
+    private sealed class MissingPoDraft
+    {
+        public MissingPoDraft(Guid productId, string name, decimal sellingPrice)
+        {
+            ProductId = productId;
+            Name = name;
+            SellingPrice = sellingPrice;
+        }
+
+        public Guid ProductId { get; }
+        public string Name { get; }
+        public decimal SellingPrice { get; }
+        public decimal? EstablishDefaultPoPrice { get; set; }
     }
 }

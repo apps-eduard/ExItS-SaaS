@@ -23,6 +23,8 @@ public static class ConnectedSupplierErrorCodes
     public const string IncomingOrderNotFound = "pos.connected_supplier.incoming_order.not_found";
     public const string OrganizationMismatch = "pos.connected_supplier.organization_mismatch";
     public const string BulkValidation = "pos.connected_supplier.buyer_share.bulk_validation";
+    public const string ProductBlocked = "pos.connected_supplier.buyer_share.product_blocked";
+    public const string MissingDefaultPo = "pos.connected_supplier.buyer_share.missing_default_po";
 }
 
 public sealed record ConnectedSupplierRelationshipDto(
@@ -54,10 +56,16 @@ public sealed record ConnectedBuyerProductShareDto(Guid ShareId, Guid Relationsh
     Guid SupplierOrganizationId, Guid SupplierProductId, bool IsShared, decimal? BuyerSpecificPoPrice,
     decimal? EffectiveSupplierOrderPrice, long SyncVersion, DateTimeOffset CreatedAtUtc, DateTimeOffset UpdatedAtUtc,
     string? SkuSnapshot = null, string? NameSnapshot = null, string? UnitOfMeasureCode = null, decimal? SellingPrice = null,
-    string? CategoryNameSnapshot = null, decimal? DefaultPoPrice = null);
-public sealed record SetBuyerProductShareItem(Guid SupplierProductId, bool IsShared, decimal? BuyerSpecificPoPrice = null);
+    string? CategoryNameSnapshot = null, decimal? DefaultPoPrice = null, bool IsBlockedFromConnectedBuyers = false);
+public sealed record SetBuyerProductShareItem(
+    Guid SupplierProductId,
+    bool IsShared,
+    decimal? BuyerSpecificPoPrice = null,
+    decimal? EstablishDefaultPoPrice = null);
 public sealed record SetBuyerProductSharesRequest(IReadOnlyList<SetBuyerProductShareItem> Products);
-public sealed record ConfirmBuyerProductSharingRequest(IReadOnlyList<Guid> ProductIds);
+public sealed record ConfirmBuyerProductSharingRequest(
+    IReadOnlyList<Guid> ProductIds,
+    IReadOnlyDictionary<Guid, decimal>? EstablishDefaultPoPrices = null);
 public sealed record BuyerSupplierProductLinkDto(Guid LinkId, Guid RelationshipId, Guid BuyerOrganizationId,
     Guid SupplierOrganizationId, Guid BuyerProductId, Guid SupplierProductId, string? SupplierSkuSnapshot,
     string SupplierNameSnapshot, string UnitOfMeasureCode, decimal LastKnownOrderPrice, bool IsActive,
@@ -135,10 +143,47 @@ public static class ConnectedSupplierMapper
         var category = !string.IsNullOrWhiteSpace(categoryName)
             ? categoryName
             : exposure?.CategoryNameSnapshot;
+        var defaultPo = product?.DefaultConnectedPoPrice
+            ?? (exposure is { IsExposed: true } ? exposure.SupplierOrderPrice : null);
         return new(x.Id.Value,x.RelationshipId.Value,x.BuyerOrganizationId.Value,x.SupplierOrganizationId.Value,
             x.SupplierProductId.Value,x.IsShared,x.BuyerSpecificPoPrice,effective,x.SyncVersion,x.CreatedAtUtc,x.UpdatedAtUtc,
-            exposure?.SkuSnapshot,exposure?.NameSnapshot,exposure?.UnitOfMeasureCode,product?.SellingPrice,
-            category,exposure?.SupplierOrderPrice);
+            product?.Sku ?? exposure?.SkuSnapshot,
+            product?.Name ?? exposure?.NameSnapshot,
+            product is not null ? product.UnitOfMeasure.ToString() : exposure?.UnitOfMeasureCode,
+            product?.SellingPrice,
+            category,
+            defaultPo,
+            product?.IsBlockedFromConnectedBuyers ?? false);
+    }
+
+    public static ConnectedBuyerProductShareDto MapUnshared(
+        ConnectedSupplierRelationship relationship,
+        PosOrganizationId supplier,
+        CatalogProduct product,
+        SupplierProductExposure? exposure,
+        string? categoryName)
+    {
+        var defaultPo = product.DefaultConnectedPoPrice
+            ?? (exposure is { IsExposed: true } ? exposure.SupplierOrderPrice : null);
+        return new(
+            Guid.Empty,
+            relationship.Id.Value,
+            relationship.BuyerOrganizationId.Value,
+            supplier.Value,
+            product.Id.Value,
+            false,
+            null,
+            null,
+            0,
+            product.CreatedAtUtc,
+            product.UpdatedAtUtc,
+            product.Sku,
+            product.Name,
+            product.UnitOfMeasure.ToString(),
+            product.SellingPrice,
+            categoryName,
+            defaultPo,
+            product.IsBlockedFromConnectedBuyers);
     }
     public static BuyerSupplierProductLinkDto Map(BuyerSupplierProductLink x) => new(x.Id.Value,x.RelationshipId.Value,
         x.BuyerOrganizationId.Value,x.SupplierOrganizationId.Value,x.BuyerProductId.Value,x.SupplierProductId.Value,
@@ -613,72 +658,55 @@ public sealed class ListExposures
 public sealed class ListBuyerProductShares
 {
     private readonly IConnectedSupplierRelationshipRepository _relationships;
-    private readonly ISupplierProductExposureRepository _exposures;
     private readonly IConnectedBuyerProductShareRepository _shares;
-    private readonly ICatalogProductRepository _products;
-    private readonly IProductCategoryRepository _categories;
     private readonly IPosCommercialAccessAccessor _access;
-    public ListBuyerProductShares(IConnectedSupplierRelationshipRepository relationships,ISupplierProductExposureRepository exposures,
-        IConnectedBuyerProductShareRepository shares,ICatalogProductRepository products,IProductCategoryRepository categories,IPosCommercialAccessAccessor access)
-    {_relationships=relationships;_exposures=exposures;_shares=shares;_products=products;_categories=categories;_access=access;}
-    public async Task<ApplicationResult<IReadOnlyList<ConnectedBuyerProductShareDto>>> ExecuteAsync(Guid orgId,Guid relationshipId,CancellationToken ct=default)
+    public ListBuyerProductShares(
+        IConnectedSupplierRelationshipRepository relationships,
+        IConnectedBuyerProductShareRepository shares,
+        IPosCommercialAccessAccessor access)
     {
-        var gate=ConnectedSupplierUseCaseGuard.Access(_access,UtangCapability.ViewSuppliers);
-        if(!gate.IsSuccess)return ConnectedSupplierUseCaseGuard.Failure<IReadOnlyList<ConnectedBuyerProductShareDto>>(gate.ErrorCode!,gate.ErrorMessage!);
-        var relationship=await _relationships.GetAsync(ConnectedSupplierRelationshipId.From(relationshipId),ct);
-        var supplier=PosOrganizationId.From(orgId);
-        if(relationship is null||relationship.SupplierOrganizationId!=supplier)
-            return ConnectedSupplierUseCaseGuard.Failure<IReadOnlyList<ConnectedBuyerProductShareDto>>(ConnectedSupplierErrorCodes.NotFound,"Relationship was not found.");
-        var exposures=await _exposures.ListAsync(supplier,ct);
-        var shares=(await _shares.ListAsync(relationship.Id,ct)).ToDictionary(x=>x.SupplierProductId.Value);
-        var exposed=exposures.Where(x=>x.IsExposed).ToList();
-        var products=new Dictionary<Guid,CatalogProduct?>();
-        foreach(var exposure in exposed)
-        {
-            products[exposure.ProductId.Value]=await _products.GetByIdAsync(supplier,exposure.ProductId,ct);
-        }
-
-        var categoryIds=products.Values
-            .Where(p=>p?.CategoryId is not null)
-            .Select(p=>p!.CategoryId!)
-            .Distinct()
-            .ToList();
-        var categoryNames=(await _categories.ListByIdsAsync(supplier,categoryIds,ct))
-            .ToDictionary(x=>x.Id,x=>x.Name);
-        var result=new List<ConnectedBuyerProductShareDto>();
-        foreach(var exposure in exposed)
-        {
-            products.TryGetValue(exposure.ProductId.Value,out var product);
-            var categoryName=ResolveCategoryName(exposure,product,categoryNames);
-            shares.TryGetValue(exposure.ProductId.Value,out var share);
-            if(share is null)
-            {
-                result.Add(new(Guid.Empty,relationship.Id.Value,relationship.BuyerOrganizationId.Value,supplier.Value,
-                    exposure.ProductId.Value,false,null,null,0,exposure.CreatedAtUtc,exposure.UpdatedAtUtc,
-                    exposure.SkuSnapshot,exposure.NameSnapshot,exposure.UnitOfMeasureCode,product?.SellingPrice,
-                    categoryName,exposure.SupplierOrderPrice));
-            }
-            else result.Add(ConnectedSupplierMapper.Map(share,exposure,product,categoryName));
-        }
-        return ApplicationResult<IReadOnlyList<ConnectedBuyerProductShareDto>>.Success(result);
+        _relationships = relationships;
+        _shares = shares;
+        _access = access;
     }
 
-    private static string? ResolveCategoryName(
-        SupplierProductExposure exposure,
-        CatalogProduct? product,
-        IReadOnlyDictionary<ProductCategoryId,string> categoryNames)
+    public async Task<ApplicationResult<IReadOnlyList<ConnectedBuyerProductShareDto>>> ExecuteAsync(
+        Guid orgId, Guid relationshipId, CancellationToken ct = default)
     {
-        if (!string.IsNullOrWhiteSpace(exposure.CategoryNameSnapshot))
+        var gate = ConnectedSupplierUseCaseGuard.Access(_access, UtangCapability.ViewSuppliers);
+        if (!gate.IsSuccess)
         {
-            return exposure.CategoryNameSnapshot;
+            return ConnectedSupplierUseCaseGuard.Failure<IReadOnlyList<ConnectedBuyerProductShareDto>>(
+                gate.ErrorCode!, gate.ErrorMessage!);
         }
 
-        if (product?.CategoryId is null)
+        var relationship = await _relationships.GetAsync(ConnectedSupplierRelationshipId.From(relationshipId), ct)
+            .ConfigureAwait(false);
+        var supplier = PosOrganizationId.From(orgId);
+        if (relationship is null || relationship.SupplierOrganizationId != supplier)
         {
-            return null;
+            return ConnectedSupplierUseCaseGuard.Failure<IReadOnlyList<ConnectedBuyerProductShareDto>>(
+                ConnectedSupplierErrorCodes.NotFound, "Relationship was not found.");
         }
 
-        return categoryNames.TryGetValue(product.CategoryId, out var name) ? name : null;
+        var page = await _shares.SearchForSupplierManagementAsync(
+                relationship.Id, supplier, null, null, null, 0, 10_000, idsOnly: false, ct)
+            .ConfigureAwait(false);
+        var result = new List<ConnectedBuyerProductShareDto>(page.Rows.Count);
+        foreach (var row in page.Rows)
+        {
+            if (row.Share is null)
+            {
+                result.Add(ConnectedSupplierMapper.MapUnshared(
+                    relationship, supplier, row.Product, row.Exposure, row.CategoryName));
+            }
+            else
+            {
+                result.Add(ConnectedSupplierMapper.Map(row.Share, row.Exposure, row.Product, row.CategoryName));
+            }
+        }
+
+        return ApplicationResult<IReadOnlyList<ConnectedBuyerProductShareDto>>.Success(result);
     }
 }
 
@@ -693,44 +721,134 @@ public sealed class SetBuyerProductShares
     private readonly IConnectedSupplierRelationshipRepository _relationships;
     private readonly ISupplierProductExposureRepository _exposures;
     private readonly IConnectedBuyerProductShareRepository _shares;
+    private readonly ICatalogProductRepository _products;
     private readonly IPosUnitOfWork _uow;
     private readonly IPosCommercialAccessAccessor _access;
     private readonly TimeProvider _clock;
-    public SetBuyerProductShares(IConnectedSupplierRelationshipRepository relationships,ISupplierProductExposureRepository exposures,
-        IConnectedBuyerProductShareRepository shares,IPosUnitOfWork uow,IPosCommercialAccessAccessor access,TimeProvider? clock=null)
-    {_relationships=relationships;_exposures=exposures;_shares=shares;_uow=uow;_access=access;_clock=clock??TimeProvider.System;}
-    public async Task<ApplicationResult<IReadOnlyList<ConnectedBuyerProductShareDto>>> ExecuteAsync(
-        Guid orgId,Guid relationshipId,IReadOnlyList<SetBuyerProductShareItem> products,CancellationToken ct=default)
+    public SetBuyerProductShares(
+        IConnectedSupplierRelationshipRepository relationships,
+        ISupplierProductExposureRepository exposures,
+        IConnectedBuyerProductShareRepository shares,
+        ICatalogProductRepository products,
+        IPosUnitOfWork uow,
+        IPosCommercialAccessAccessor access,
+        TimeProvider? clock = null)
     {
-        var gate=ConnectedSupplierUseCaseGuard.Access(_access,UtangCapability.ManageSuppliers);
-        if(!gate.IsSuccess)return ConnectedSupplierUseCaseGuard.Failure<IReadOnlyList<ConnectedBuyerProductShareDto>>(gate.ErrorCode!,gate.ErrorMessage!);
-        var relationship=await _relationships.GetAsync(ConnectedSupplierRelationshipId.From(relationshipId),ct);
-        var supplier=PosOrganizationId.From(orgId);
-        if(relationship is null||relationship.SupplierOrganizationId!=supplier||relationship.Status!=ConnectedSupplierRelationshipStatus.Active)
-            return ConnectedSupplierUseCaseGuard.Failure<IReadOnlyList<ConnectedBuyerProductShareDto>>(ConnectedSupplierErrorCodes.NotFound,"Active relationship was not found.");
-        var now=_clock.GetUtcNow();var result=new List<ConnectedBuyerProductShareDto>();
-        foreach(var item in products.GroupBy(x=>x.SupplierProductId).Select(x=>x.Last()))
+        _relationships = relationships;
+        _exposures = exposures;
+        _shares = shares;
+        _products = products;
+        _uow = uow;
+        _access = access;
+        _clock = clock ?? TimeProvider.System;
+    }
+
+    public async Task<ApplicationResult<IReadOnlyList<ConnectedBuyerProductShareDto>>> ExecuteAsync(
+        Guid orgId, Guid relationshipId, IReadOnlyList<SetBuyerProductShareItem> products, CancellationToken ct = default)
+    {
+        var gate = ConnectedSupplierUseCaseGuard.Access(_access, UtangCapability.ManageSuppliers);
+        if (!gate.IsSuccess)
         {
-            var productId=CatalogProductId.From(item.SupplierProductId);
-            var exposure=await _exposures.GetByProductAsync(supplier,productId,ct);
-            if(exposure is null||!exposure.IsExposed)
-                return ConnectedSupplierUseCaseGuard.Failure<IReadOnlyList<ConnectedBuyerProductShareDto>>(ConnectedSupplierErrorCodes.ExposureNotFound,"An eligible exposure was not found.");
-            var share=await _shares.FindAsync(relationship.Id,productId,ct);
-            if(share is null)
+            return ConnectedSupplierUseCaseGuard.Failure<IReadOnlyList<ConnectedBuyerProductShareDto>>(
+                gate.ErrorCode!, gate.ErrorMessage!);
+        }
+
+        var relationship = await _relationships.GetAsync(ConnectedSupplierRelationshipId.From(relationshipId), ct)
+            .ConfigureAwait(false);
+        var supplier = PosOrganizationId.From(orgId);
+        if (relationship is null
+            || relationship.SupplierOrganizationId != supplier
+            || relationship.Status != ConnectedSupplierRelationshipStatus.Active)
+        {
+            return ConnectedSupplierUseCaseGuard.Failure<IReadOnlyList<ConnectedBuyerProductShareDto>>(
+                ConnectedSupplierErrorCodes.NotFound, "Active relationship was not found.");
+        }
+
+        var now = _clock.GetUtcNow();
+        var result = new List<ConnectedBuyerProductShareDto>();
+        foreach (var item in products.GroupBy(x => x.SupplierProductId).Select(x => x.Last()))
+        {
+            var productId = CatalogProductId.From(item.SupplierProductId);
+            var product = await _products.GetByIdAsync(supplier, productId, ct).ConfigureAwait(false);
+            if (product is null
+                || product.OrganizationId != supplier
+                || product.Status != CatalogProductStatus.Active)
             {
-                share=ConnectedBuyerProductShare.Share(relationship.Id,relationship.BuyerOrganizationId,supplier,productId,now,item.BuyerSpecificPoPrice);
-                if(!item.IsShared)share.Unshare(now);
-                await _shares.AddAsync(share,ct);
+                return ConnectedSupplierUseCaseGuard.Failure<IReadOnlyList<ConnectedBuyerProductShareDto>>(
+                    ConnectedSupplierErrorCodes.NotFound, "Product was not found.");
+            }
+
+            if (item.IsShared && product.IsBlockedFromConnectedBuyers)
+            {
+                return ConnectedSupplierUseCaseGuard.Failure<IReadOnlyList<ConnectedBuyerProductShareDto>>(
+                    ConnectedSupplierErrorCodes.ProductBlocked,
+                    $"'{product.Name}' is blocked from connected buyers.");
+            }
+
+            if (item.IsShared)
+            {
+                if (product.DefaultConnectedPoPrice is null)
+                {
+                    if (item.EstablishDefaultPoPrice is null)
+                    {
+                        return ConnectedSupplierUseCaseGuard.Failure<IReadOnlyList<ConnectedBuyerProductShareDto>>(
+                            ConnectedSupplierErrorCodes.MissingDefaultPo,
+                            $"'{product.Name}' needs a Default PO price before it can be shared.");
+                    }
+
+                    try
+                    {
+                        product.SetDefaultConnectedPoPrice(item.EstablishDefaultPoPrice.Value, now);
+                        product.AllowForConnectedBuyers(now);
+                    }
+                    catch (DomainException ex)
+                    {
+                        return ConnectedSupplierUseCaseGuard.Failure<IReadOnlyList<ConnectedBuyerProductShareDto>>(
+                            ex.ErrorCode, ex.Message);
+                    }
+
+                    await _products.UpdateAsync(product, ct).ConfigureAwait(false);
+                    await Catalog.ConnectedProductExposureSync.SyncAsync(product, _exposures, now, ct)
+                        .ConfigureAwait(false);
+                }
+                else if (!product.IsBlockedFromConnectedBuyers)
+                {
+                    await Catalog.ConnectedProductExposureSync.SyncAsync(product, _exposures, now, ct)
+                        .ConfigureAwait(false);
+                }
+            }
+
+            var exposure = await _exposures.GetByProductAsync(supplier, productId, ct).ConfigureAwait(false);
+            if (item.IsShared && (exposure is null || !exposure.IsExposed))
+            {
+                return ConnectedSupplierUseCaseGuard.Failure<IReadOnlyList<ConnectedBuyerProductShareDto>>(
+                    ConnectedSupplierErrorCodes.MissingDefaultPo,
+                    $"'{product.Name}' needs a Default PO price before it can be shared.");
+            }
+
+            var share = await _shares.FindAsync(relationship.Id, productId, ct).ConfigureAwait(false);
+            if (share is null)
+            {
+                share = ConnectedBuyerProductShare.Share(
+                    relationship.Id, relationship.BuyerOrganizationId, supplier, productId, now, item.BuyerSpecificPoPrice);
+                if (!item.IsShared)
+                {
+                    share.Unshare(now);
+                }
+
+                await _shares.AddAsync(share, ct).ConfigureAwait(false);
             }
             else
             {
-                share.SetBuyerSpecificPoPrice(item.BuyerSpecificPoPrice,now);
-                share.SetShared(item.IsShared,now);
-                await _shares.UpdateAsync(share,ct);
+                share.SetBuyerSpecificPoPrice(item.BuyerSpecificPoPrice, now);
+                share.SetShared(item.IsShared, now);
+                await _shares.UpdateAsync(share, ct).ConfigureAwait(false);
             }
-            result.Add(ConnectedSupplierMapper.Map(share,exposure));
+
+            result.Add(ConnectedSupplierMapper.Map(share, exposure, product));
         }
-        await _uow.SaveChangesAsync(ct);
+
+        await _uow.SaveChangesAsync(ct).ConfigureAwait(false);
         return ApplicationResult<IReadOnlyList<ConnectedBuyerProductShareDto>>.Success(result);
     }
 }
@@ -749,8 +867,23 @@ public sealed class UpsertBuyerProductShare(SetBuyerProductShares inner)
 public sealed class ConfirmBuyerProductSharing(SetBuyerProductShares inner)
 {
     public Task<ApplicationResult<IReadOnlyList<ConnectedBuyerProductShareDto>>> ExecuteAsync(
-        Guid orgId,Guid relationshipId,ConfirmBuyerProductSharingRequest request,CancellationToken ct=default)=>
-        inner.ExecuteAsync(orgId,relationshipId,(request.ProductIds??[]).Select(x=>new SetBuyerProductShareItem(x,true)).ToList(),ct);
+        Guid orgId, Guid relationshipId, ConfirmBuyerProductSharingRequest request, CancellationToken ct = default)
+    {
+        var prices = request.EstablishDefaultPoPrices;
+        var items = (request.ProductIds ?? [])
+            .Select(id =>
+            {
+                decimal? establish = null;
+                if (prices is not null && prices.TryGetValue(id, out var price))
+                {
+                    establish = price;
+                }
+
+                return new SetBuyerProductShareItem(id, true, BuyerSpecificPoPrice: null, EstablishDefaultPoPrice: establish);
+            })
+            .ToList();
+        return inner.ExecuteAsync(orgId, relationshipId, items, ct);
+    }
 }
 
 public sealed class SearchExposedCatalog

@@ -8957,16 +8957,16 @@
     <value>Mga Connected Buyer</value>
   </data>
   <data name="Catalog_ConnectedBuyers_Available" xml:space="preserve">
-    <value>Available sa mga connected buyer</value>
+    <value>Pinapayagan para sa connected buyers</value>
   </data>
   <data name="Catalog_ConnectedBuyers_DefaultPoPrice" xml:space="preserve">
     <value>Default na Presyo ng PO</value>
   </data>
   <data name="Catalog_ConnectedBuyers_DefaultPoHelp" xml:space="preserve">
-    <value>Ito ang default na presyong gagamitin ng mga connected buyer maliban kung magtakda ka ng espesyal na presyo para sa isang buyer.</value>
+    <value>Opsyonal na default PO price para sa connected buyers. Kailangan sa unang pag-share. Hindi kailanman kinokopya nang tahimik mula sa retail.</value>
   </data>
   <data name="Catalog_ConnectedBuyers_VisibilityHelp" xml:space="preserve">
-    <value>Hindi awtomatikong makikita ng lahat ng buyer ang produkto kapag in-enable ito. Kinokontrol ang visibility ng produkto para sa bawat connected buyer.</value>
+    <value>Ang pagiging pinapayagan ay hindi nangangahulugang shared. Bawat connected buyer ay hiwalay na pinamamahalaan. Ang pag-block ay nagtatago ng produkto sa lahat ng connected-buyer sharing.</value>
   </data>
   <data name="ConnectedBuyers_SharePromptTitle" xml:space="preserve">
     <value>Matagumpay na nakakonekta ang buyer</value>
@@ -9008,10 +9008,10 @@
     <value>Maaari nang tumanggap si {0} ng mga produktong pipiliin mong i-share.</value>
   </data>
   <data name="ConnectedBuyers_EligibleAvailableCount" xml:space="preserve">
-    <value>May {0} produktong available sa mga connected buyer.</value>
+    <value>{0} eligible na produkto ang maaaring i-share sa buyer na ito.</value>
   </data>
   <data name="ConnectedBuyers_ShareAllAvailable" xml:space="preserve">
-    <value>I-share ang lahat ng {0} available na produkto</value>
+    <value>I-share ang lahat ng {0} eligible na produkto</value>
   </data>
   <data name="ConnectedBuyers_ReviewProducts" xml:space="preserve">
     <value>Suriin ang mga produkto</value>
@@ -9023,7 +9023,7 @@
     <value>Manage products</value>
   </data>
   <data name="ConnectedBuyers_ShareSummary" xml:space="preserve">
-    <value>{0} shared · {1} available to share</value>
+    <value>{0} shared · {1} eligible</value>
   </data>
   <data name="ConnectedBuyers_ManageProductsSubtitle" xml:space="preserve">
     <value>Kontrolin kung ano ang maaaring i-order ng buyer at ang PO price na makikita nila.</value>
@@ -9140,7 +9140,7 @@
     <value>Custom buyer price</value>
   </data>
   <data name="ConnectedBuyers_EmptyNoEligible" xml:space="preserve">
-    <value>Walang produktong available na i-share sa ngayon.</value>
+    <value>Walang aktibong produktong maaaring i-share. Magdagdag ng produkto o i-unblock muna.</value>
   </data>
   <data name="ConnectedBuyers_EmptySharedFilter" xml:space="preserve">
     <value>Walang shared na produktong tumutugma sa filters.</value>
@@ -9254,25 +9254,25 @@
     <value>Availability sa Connected Buyers</value>
   </data>
   <data name="Catalog_ConnectedAvailability_Intro" xml:space="preserve">
-    <value>Piliin kung aling produkto ang maaaring i-order ng connected buyers at i-manage ang default PO prices nila.</value>
+    <value>Ang mga aktibong produkto ay eligible i-share bilang default. Gamitin ang page na ito para sa global restrictions at opsyonal na Default PO. Ang Allowed ay hindi automatic na nagsha-share sa buyer.</value>
   </data>
   <data name="Catalog_ConnectedAvailability_Summary" xml:space="preserve">
-    <value>{0} available · {1} unavailable</value>
+    <value>{0} pinapayagan · {1} naka-block</value>
   </data>
   <data name="Catalog_ConnectedAvailability_FilterAll" xml:space="preserve">
     <value>Lahat</value>
   </data>
   <data name="Catalog_ConnectedAvailability_FilterAvailable" xml:space="preserve">
-    <value>Available</value>
+    <value>Pinapayagan</value>
   </data>
   <data name="Catalog_ConnectedAvailability_FilterNotAvailable" xml:space="preserve">
-    <value>Unavailable</value>
+    <value>Naka-block</value>
   </data>
   <data name="Catalog_ConnectedAvailability_Enable" xml:space="preserve">
-    <value>I-enable</value>
+    <value>Payagan</value>
   </data>
   <data name="Catalog_ConnectedAvailability_Disable" xml:space="preserve">
-    <value>I-disable</value>
+    <value>I-block</value>
   </data>
   <data name="Catalog_ConnectedAvailability_PoPrice" xml:space="preserve">
     <value>PO Price</value>
@@ -9341,10 +9341,10 @@
     <value>Hindi pa naka-set</value>
   </data>
   <data name="Catalog_ConnectedAvailability_Available" xml:space="preserve">
-    <value>Available</value>
+    <value>Pinapayagan</value>
   </data>
   <data name="Catalog_ConnectedAvailability_NotAvailable" xml:space="preserve">
-    <value>Unavailable</value>
+    <value>Naka-block</value>
   </data>
   <data name="Catalog_ConnectedAvailability_OfflineMessage" xml:space="preserve">
     <value>Kailangan ng internet connection para sa connected buyer availability.</value>
@@ -9718,4 +9718,37 @@
   <data name="Orders_Timeline" xml:space="preserve"><value>Timeline ng status</value></data>
   <data name="Orders_Timeline_Placed" xml:space="preserve"><value>Nailagay</value></data>
   <data name="Orders_Timeline_Accepted" xml:space="preserve"><value>Tinanggap</value></data>
+  <data name="Catalog_ConnectedBuyers_Block" xml:space="preserve">
+    <value>I-block sa connected buyers</value>
+  </data>
+  <data name="ConnectedBuyers_DefaultPoNotSet" xml:space="preserve">
+    <value>Walang Default PO</value>
+  </data>
+  <data name="ConnectedBuyers_BlockedForConnectedBuyers" xml:space="preserve">
+    <value>Naka-block para sa connected buyers</value>
+  </data>
+  <data name="ConnectedBuyers_FirstShareTitle" xml:space="preserve">
+    <value>I-share ang {0}</value>
+  </data>
+  <data name="ConnectedBuyers_EstablishDefaultPoHelp" xml:space="preserve">
+    <value>Magtakda ng Default PO price para makapag-share. Ang retail ay reference lang at hindi ginagamit bilang order price.</value>
+  </data>
+  <data name="ConnectedBuyers_MissingDefaultPoTitle" xml:space="preserve">
+    <value>{0} produktong kailangan ng Default PO price</value>
+  </data>
+  <data name="ConnectedBuyers_ConfirmShareWithDefaultPo" xml:space="preserve">
+    <value>Kumpirmahin at i-share</value>
+  </data>
+  <data name="ConnectedBuyers_MissingDefaultPoRequired" xml:space="preserve">
+    <value>Maglagay ng Default PO price para sa bawat produkto.</value>
+  </data>
+  <data name="ConnectedBuyers_RetailReference" xml:space="preserve">
+    <value>Retail: {0:C}</value>
+  </data>
+  <data name="ConnectedBuyers_FilterBlocked" xml:space="preserve">
+    <value>Naka-block</value>
+  </data>
+  <data name="ConnectedBuyers_EmptyBlockedFilter" xml:space="preserve">
+    <value>Walang naka-block na produktong tumutugma sa filter.</value>
+  </data>
 </root>

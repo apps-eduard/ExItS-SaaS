@@ -559,6 +559,10 @@ public sealed class PosDbContext : DbContext
                 .IsRequired();
             entity.Property(e => e.CanExposeToConnectedBuyers)
                 .HasColumnName("can_expose_to_connected_buyers")
+                .HasDefaultValue(true)
+                .IsRequired();
+            entity.Property(e => e.IsBlockedFromConnectedBuyers)
+                .HasColumnName("is_blocked_from_connected_buyers")
                 .HasDefaultValue(false)
                 .IsRequired();
             entity.Property(e => e.DefaultConnectedPoPrice)

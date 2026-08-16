@@ -255,7 +255,7 @@ public sealed class CreateCatalogProduct
         bool? isProduced = null,
         string? usagePreset = null,
         IReadOnlyList<PosCatalogProductUnitInput>? units = null,
-        bool canExposeToConnectedBuyers = false,
+        bool canExposeToConnectedBuyers = true,
         decimal? defaultConnectedPoPrice = null,
         CancellationToken cancellationToken = default)
     {
@@ -545,7 +545,7 @@ internal static class ConnectedProductExposureSync
     {
         if (exposures is null) return;
         var existing = await exposures.GetByProductAsync(product.OrganizationId, product.Id, ct).ConfigureAwait(false);
-        if (!product.CanExposeToConnectedBuyers)
+        if (product.IsBlockedFromConnectedBuyers || !product.CanExposeToConnectedBuyers)
         {
             if (existing is not null && existing.IsExposed)
             {
@@ -555,8 +555,18 @@ internal static class ConnectedProductExposureSync
             return;
         }
 
-        var price = product.DefaultConnectedPoPrice
-            ?? throw new InvalidOperationException("Enabled connected buyer availability requires a default PO price.");
+        if (product.DefaultConnectedPoPrice is null)
+        {
+            // Eligible but no staged PO price yet — do not throw; deactivate any prior exposure.
+            if (existing is not null && existing.IsExposed)
+            {
+                existing.Deactivate(utcNow);
+                await exposures.UpdateAsync(existing, ct).ConfigureAwait(false);
+            }
+            return;
+        }
+
+        var price = product.DefaultConnectedPoPrice.Value;
         if (existing is null)
         {
             existing = SupplierProductExposure.Expose(
@@ -957,6 +967,17 @@ internal static class CatalogProductCreateCore
         if (canExposeToConnectedBuyers)
         {
             product.EnableConnectedBuyerAvailability(now);
+            if (defaultConnectedPoPrice is not null)
+            {
+                product.SetDefaultConnectedPoPrice(defaultConnectedPoPrice.Value, now);
+            }
+
+            await products.UpdateAsync(product, cancellationToken).ConfigureAwait(false);
+        }
+        else
+        {
+            // Explicit false: global-block (Create defaults to eligible).
+            product.DisableConnectedBuyerAvailability(now);
             if (defaultConnectedPoPrice is not null)
             {
                 product.SetDefaultConnectedPoPrice(defaultConnectedPoPrice.Value, now);

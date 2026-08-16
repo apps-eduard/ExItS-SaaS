@@ -27,7 +27,8 @@ internal sealed class CatalogProductRecord
     public bool CanBeUsedAsIngredient { get; set; }
     public bool IsProduced { get; set; }
     public string? UsagePreset { get; set; } = "BuyAndSell";
-    public bool CanExposeToConnectedBuyers { get; set; }
+    public bool CanExposeToConnectedBuyers { get; set; } = true;
+    public bool IsBlockedFromConnectedBuyers { get; set; }
     public decimal? DefaultConnectedPoPrice { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset UpdatedAtUtc { get; set; }

@@ -102,23 +102,20 @@ else
                 <h2 id="catalog-connected-buyers-heading">@L["Catalog_ConnectedBuyers_Section"]</h2>
                 <label class="pos-catalog-connected__toggle">
                     <input type="checkbox"
-                           checked="@_canExposeToConnectedBuyers"
+                           checked="@_isBlockedFromConnectedBuyers"
                            disabled="@(!canManage || _isOffline || _saving)"
-                           @onchange="OnConnectedBuyerAvailabilityChanged" />
-                    @L["Catalog_ConnectedBuyers_Available"]
+                           @onchange="OnBlockedFromConnectedBuyersChanged" />
+                    @L["Catalog_ConnectedBuyers_Block"]
                 </label>
                 <p class="pos-catalog-connected__help pos-muted">@L["Catalog_ConnectedBuyers_VisibilityHelp"]</p>
-                @if (_canExposeToConnectedBuyers)
-                {
-                    <div class="pos-catalog-connected__price">
-                        <CurrencyInput Label="@L["Catalog_ConnectedBuyers_DefaultPoPrice"]"
-                                       Value="@_defaultConnectedPoPrice"
-                                       ValueChanged="v => _defaultConnectedPoPrice = v"
-                                       CurrencyCode="PHP"
-                                       Hint="@L["Catalog_ConnectedBuyers_DefaultPoHelp"]"
-                                       Disabled="@(!canManage || _isOffline || _saving)" />
-                    </div>
-                }
+                <div class="pos-catalog-connected__price">
+                    <CurrencyInput Label="@L["Catalog_ConnectedBuyers_DefaultPoPrice"]"
+                                   Value="@_defaultConnectedPoPrice"
+                                   ValueChanged="v => _defaultConnectedPoPrice = v"
+                                   CurrencyCode="PHP"
+                                   Hint="@L["Catalog_ConnectedBuyers_DefaultPoHelp"]"
+                                   Disabled="@(!canManage || _isOffline || _saving)" />
+                </div>
             </section>
         </div>
     </section>
@@ -147,7 +144,7 @@ else
     private readonly List<ProductUnitDraft> _sellUnits = [];
     private string? _sellingMode = PosCatalogOptions.DefaultSellingModeCode;
     private decimal? _sellingPrice;
-    private bool _canExposeToConnectedBuyers;
+    private bool _isBlockedFromConnectedBuyers;
     private decimal? _defaultConnectedPoPrice;
     private bool _trackStock;
     private bool _initialTrackStock;
@@ -214,7 +211,7 @@ else
                 ? PosCatalogOptions.DefaultSellingModeCode
                 : _product.SellingMode;
             _sellingPrice = _product.SellingPrice;
-            _canExposeToConnectedBuyers = _product.CanExposeToConnectedBuyers;
+            _isBlockedFromConnectedBuyers = !_product.CanExposeToConnectedBuyers;
             _defaultConnectedPoPrice = _product.DefaultConnectedPoPrice;
             _trackStock = _product.IsTracked;
             _initialTrackStock = _product.IsTracked;
@@ -351,8 +348,8 @@ else
                 ExpirationWarningDays: _tracksExpiration && int.TryParse(_warningDaysText, out var days) ? days : null,
                 UsagePreset: ResolveUsagePresetForSave(),
                 Units: units,
-                CanExposeToConnectedBuyers: _canExposeToConnectedBuyers,
-                DefaultConnectedPoPrice: _canExposeToConnectedBuyers ? _defaultConnectedPoPrice : null));
+                CanExposeToConnectedBuyers: !_isBlockedFromConnectedBuyers,
+                DefaultConnectedPoPrice: _defaultConnectedPoPrice));
 
             if (!result.IsSuccess || result.Data is null)
             {
@@ -400,14 +397,10 @@ else
 
     private void GoDetail() => Nav.NavigateTo($"/catalog/products/{ProductId:D}");
 
-    private void OnConnectedBuyerAvailabilityChanged(ChangeEventArgs args)
+    private void OnBlockedFromConnectedBuyersChanged(ChangeEventArgs args)
     {
-        _canExposeToConnectedBuyers = args.Value is true
+        _isBlockedFromConnectedBuyers = args.Value is true
             || string.Equals(args.Value?.ToString(), "true", StringComparison.OrdinalIgnoreCase);
-        if (_canExposeToConnectedBuyers && _defaultConnectedPoPrice is null)
-        {
-            _defaultConnectedPoPrice = _sellingPrice;
-        }
     }
 
     private Task OnUsagePresetChanged(string? value)

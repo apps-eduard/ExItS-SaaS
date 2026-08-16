@@ -8957,16 +8957,16 @@
     <value>Connected Buyers</value>
   </data>
   <data name="Catalog_ConnectedBuyers_Available" xml:space="preserve">
-    <value>Available to connected buyers</value>
+    <value>Allowed for connected buyers</value>
   </data>
   <data name="Catalog_ConnectedBuyers_DefaultPoPrice" xml:space="preserve">
     <value>Default PO Price</value>
   </data>
   <data name="Catalog_ConnectedBuyers_DefaultPoHelp" xml:space="preserve">
-    <value>This is the default price connected buyers will use unless you set a special price for a specific buyer.</value>
+    <value>Optional default purchase-order price for connected buyers. Required the first time you share a product. Never copied silently from retail.</value>
   </data>
   <data name="Catalog_ConnectedBuyers_VisibilityHelp" xml:space="preserve">
-    <value>Enabling this does not automatically make the product visible to every buyer. Product visibility is controlled per connected buyer.</value>
+    <value>Allowed does not mean shared. Each connected buyer is managed separately. Blocking hides the product from all connected-buyer sharing.</value>
   </data>
   <data name="ConnectedBuyers_SharePromptTitle" xml:space="preserve">
     <value>Buyer connected successfully</value>
@@ -9008,10 +9008,10 @@
     <value>{0} can now receive products you choose to share.</value>
   </data>
   <data name="ConnectedBuyers_EligibleAvailableCount" xml:space="preserve">
-    <value>{0} products are currently available to connected buyers.</value>
+    <value>{0} eligible products can be shared with this buyer.</value>
   </data>
   <data name="ConnectedBuyers_ShareAllAvailable" xml:space="preserve">
-    <value>Share all {0} available products</value>
+    <value>Share all {0} eligible products</value>
   </data>
   <data name="ConnectedBuyers_ReviewProducts" xml:space="preserve">
     <value>Review products</value>
@@ -9023,7 +9023,7 @@
     <value>Manage products</value>
   </data>
   <data name="ConnectedBuyers_ShareSummary" xml:space="preserve">
-    <value>{0} shared · {1} available to share</value>
+    <value>{0} shared · {1} eligible</value>
   </data>
   <data name="ConnectedBuyers_ManageProductsSubtitle" xml:space="preserve">
     <value>Control what this buyer can order and the PO price they see.</value>
@@ -9140,7 +9140,7 @@
     <value>Custom buyer price</value>
   </data>
   <data name="ConnectedBuyers_EmptyNoEligible" xml:space="preserve">
-    <value>No products are currently available to share.</value>
+    <value>No active products are available to share. Add catalog products or unblock products first.</value>
   </data>
   <data name="ConnectedBuyers_EmptySharedFilter" xml:space="preserve">
     <value>No shared products match these filters.</value>
@@ -9254,25 +9254,25 @@
     <value>Connected Buyer Availability</value>
   </data>
   <data name="Catalog_ConnectedAvailability_Intro" xml:space="preserve">
-    <value>Choose which products connected buyers can order and manage their default PO prices.</value>
+    <value>Active products are eligible to share by default. Use this page for global restrictions and optional Default PO prices. Allowed does not automatically share with any buyer.</value>
   </data>
   <data name="Catalog_ConnectedAvailability_Summary" xml:space="preserve">
-    <value>{0} available · {1} unavailable</value>
+    <value>{0} allowed · {1} blocked</value>
   </data>
   <data name="Catalog_ConnectedAvailability_FilterAll" xml:space="preserve">
     <value>All</value>
   </data>
   <data name="Catalog_ConnectedAvailability_FilterAvailable" xml:space="preserve">
-    <value>Available</value>
+    <value>Allowed</value>
   </data>
   <data name="Catalog_ConnectedAvailability_FilterNotAvailable" xml:space="preserve">
-    <value>Unavailable</value>
+    <value>Blocked</value>
   </data>
   <data name="Catalog_ConnectedAvailability_Enable" xml:space="preserve">
-    <value>Enable</value>
+    <value>Allow</value>
   </data>
   <data name="Catalog_ConnectedAvailability_Disable" xml:space="preserve">
-    <value>Disable</value>
+    <value>Block</value>
   </data>
   <data name="Catalog_ConnectedAvailability_PoPrice" xml:space="preserve">
     <value>PO Price</value>
@@ -9341,10 +9341,10 @@
     <value>Not set</value>
   </data>
   <data name="Catalog_ConnectedAvailability_Available" xml:space="preserve">
-    <value>Available</value>
+    <value>Allowed</value>
   </data>
   <data name="Catalog_ConnectedAvailability_NotAvailable" xml:space="preserve">
-    <value>Unavailable</value>
+    <value>Blocked</value>
   </data>
   <data name="Catalog_ConnectedAvailability_OfflineMessage" xml:space="preserve">
     <value>Connected buyer availability requires an internet connection.</value>
@@ -9718,4 +9718,37 @@
   <data name="Orders_Timeline" xml:space="preserve"><value>Status timeline</value></data>
   <data name="Orders_Timeline_Placed" xml:space="preserve"><value>Placed</value></data>
   <data name="Orders_Timeline_Accepted" xml:space="preserve"><value>Accepted</value></data>
+  <data name="Catalog_ConnectedBuyers_Block" xml:space="preserve">
+    <value>Block from connected buyers</value>
+  </data>
+  <data name="ConnectedBuyers_DefaultPoNotSet" xml:space="preserve">
+    <value>Default PO not set</value>
+  </data>
+  <data name="ConnectedBuyers_BlockedForConnectedBuyers" xml:space="preserve">
+    <value>Blocked for connected buyers</value>
+  </data>
+  <data name="ConnectedBuyers_FirstShareTitle" xml:space="preserve">
+    <value>Share {0}</value>
+  </data>
+  <data name="ConnectedBuyers_EstablishDefaultPoHelp" xml:space="preserve">
+    <value>Set a Default PO price to share. Retail is shown for reference only and is never used as the order price.</value>
+  </data>
+  <data name="ConnectedBuyers_MissingDefaultPoTitle" xml:space="preserve">
+    <value>{0} products need a Default PO price</value>
+  </data>
+  <data name="ConnectedBuyers_ConfirmShareWithDefaultPo" xml:space="preserve">
+    <value>Confirm &amp; share</value>
+  </data>
+  <data name="ConnectedBuyers_MissingDefaultPoRequired" xml:space="preserve">
+    <value>Enter a Default PO price for each product.</value>
+  </data>
+  <data name="ConnectedBuyers_RetailReference" xml:space="preserve">
+    <value>Retail: {0:C}</value>
+  </data>
+  <data name="ConnectedBuyers_FilterBlocked" xml:space="preserve">
+    <value>Blocked</value>
+  </data>
+  <data name="ConnectedBuyers_EmptyBlockedFilter" xml:space="preserve">
+    <value>No blocked products match these filters.</value>
+  </data>
 </root>

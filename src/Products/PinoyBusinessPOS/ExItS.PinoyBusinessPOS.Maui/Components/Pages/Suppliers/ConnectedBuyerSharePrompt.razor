@@ -166,6 +166,13 @@
                 return;
             }
 
+            if (result.Data?.NeedsDefaultPo is { Count: > 0 })
+            {
+                Draft.BeginAcceptDraft(RelationshipId, []);
+                Nav.NavigateTo($"/suppliers/connected/buyers/{RelationshipId:D}/shared-products?fromAccept=1", replace: true);
+                return;
+            }
+
             Draft.Clear();
             Nav.NavigateTo($"/suppliers/connected/buyers/{RelationshipId:D}", replace: true);
         }

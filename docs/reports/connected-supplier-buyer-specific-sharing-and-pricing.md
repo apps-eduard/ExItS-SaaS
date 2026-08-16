@@ -24,19 +24,20 @@ This file retains engineering-detail Q&A and migration notes. Status and roadmap
 
 ## Business model
 
-### Level 1 — product eligibility (supplier-wide)
+### Level 1 — global eligibility / block (supplier-wide)
 
-- `CatalogProduct.CanExposeToConnectedBuyers`
-- `CatalogProduct.DefaultConnectedPoPrice`
-- Synced to `SupplierProductExposure` (`IsExposed` + `SupplierOrderPrice` = Default PO Price)
-- Primary MAUI path: **Catalog → Connected Buyer Availability** (bulk Enable / Disable / Default PO Price)
-- Product create/edit B2B fields remain as the secondary one-off path
+- Active catalog products are **eligible by default** (`IsBlockedFromConnectedBuyers = false`, `CanExposeToConnectedBuyers = true`).
+- Optional **global block** hides a product from all connected-buyer Level-2 sharing without deleting share rows.
+- `CatalogProduct.DefaultConnectedPoPrice` is optional until first share; it is **never** silently copied from retail `SellingPrice`.
+- Synced to `SupplierProductExposure` only when allowed **and** Default PO is set (`IsExposed` + `SupplierOrderPrice` = Default PO Price).
+- Primary MAUI path: **Catalog → Connected Buyer Availability** (bulk Allow / Block / Default PO Price).
+- Product create/edit: default allowed; optional “Block from connected buyers”; Default PO always optional.
 
-**EXPOSABLE ≠ SHARED.** Eligibility alone does not make a product visible to any buyer. Bulk Level-1 Enable does **not** create `ConnectedBuyerProductShare` rows.
+**GLOBALLY ALLOWED ≠ SHARED.** Eligibility alone does not make a product visible to any buyer. Bulk Level-1 Allow does **not** create `ConnectedBuyerProductShare` rows.
 
-### Default PO Price initialization
+### Default PO Price (first share)
 
-When availability is first enabled and `DefaultConnectedPoPrice` is null, it is initialized from current retail `SellingPrice`. After that, Default PO Price is independent — later retail price changes do not rewrite it. Runtime order pricing never falls back to `SellingPrice`.
+Default PO may be staged anytime (including while blocked). The first time a product is shared to a buyer without a Default PO, the supplier must confirm `EstablishDefaultPoPrice` in the same save as the share (exposure + share atomic). Runtime order pricing never falls back to `SellingPrice`.
 
 ### Level 2 — per-buyer sharing
 
@@ -46,6 +47,8 @@ New entity `ConnectedBuyerProductShare`:
 - `IsShared`
 - `BuyerSpecificPoPrice` (nullable)
 
+Manage Products lists **all active** supplier products (including blocked, for UI disable), left-joined to shares/exposures.
+
 ### Effective PO price
 
 1. Buyer-specific PO price, if set  
@@ -54,26 +57,30 @@ New entity `ConnectedBuyerProductShare`:
 
 ### Connection acceptance
 
-Accept only activates the relationship. MAUI opens a share prompt with **all currently exposable products selected by default**. Sharing persists only after Confirm. **Not now** leaves Active with zero new assignments.
+Accept only activates the relationship. MAUI opens a share prompt with **eligible (non-blocked) active products**. Sharing persists only after Confirm (and may collect Default PO for unconfigured products). **Not now** leaves Active with zero new assignments.
 
-Future products made exposable later are **not** auto-shared to existing buyers.
+New products after connection remain **Not shared** until the supplier explicitly shares them.
 
 ## Schema / migration
 
-Migration: `20260816070746_AddConnectedBuyerProductSharingAndPricing`
-
-| Change | Detail |
+| Migration | Detail |
 |---|---|
-| `pos.products` | `can_expose_to_connected_buyers` (bool, default false), `default_connected_po_price` (nullable) |
-| `pos.connected_buyer_product_shares` | new table + unique relationship/product |
+| `20260816070746_AddConnectedBuyerProductSharingAndPricing` | `can_expose` / `default_connected_po_price`; `connected_buyer_product_shares`; backfilled exposed products + Active-relationship shares |
+| `20260816205520_AddConnectedBuyerGlobalBlock` | `is_blocked_from_connected_buyers`; default-eligible model |
 
-### Backward compatibility
+### Global-block backfill (`AddConnectedBuyerGlobalBlock`)
 
-1. Existing `IsExposed` exposures → product flags + Default PO Price backfilled from `supplier_order_price`.
-2. Every **Active** relationship receives explicit `IsShared=true` shares for currently exposed products (preserve historical visibility).
-3. Future Active relationships do **not** inherit shares automatically.
+| Legacy state | Result |
+|---|---|
+| `can_expose=false` **and** exposure row exists | **Blocked** (intentional historical disable) |
+| `can_expose=false`, **no** exposure row | **Eligible** (unconfigured → default allowed) |
+| `can_expose=true` | **Eligible** |
 
-Disabling product exposability deactivates the supplier-wide exposure; buyer browse/revalidate fail closed (Unavailable) even if a share row remains.
+Ambiguous staged-price-never-enabled rows (price set, no exposure, can_expose=false) are treated as **eligible** (not blocked). Default PO is preserved.
+
+`can_expose` is kept as the inverse of the block flag for API compatibility (`can_expose = NOT is_blocked`). Column default for `can_expose` becomes **true**.
+
+Global block deactivates supplier-wide exposure; buyer browse/revalidate fail closed even if share rows remain. Unblock restores prior explicit share intent without creating new shares.
 
 ## API changes
 
@@ -97,21 +104,21 @@ Disabling product exposability deactivates the supplier-wide exposure; buyer bro
 
 ## MAUI
 
-- Catalog hub tile → `/catalog/connected-buyer-availability` (Level-1 bulk eligibility + Default PO)
-- Catalog create/edit/detail: Available to connected buyers + Default PO Price (secondary one-off)
-- Accept → lightweight `/share-products` card (Share all / Review / Confirm & share / Not now)
-- Manage: `/shared-products` mobile bulk list (search, share chips, category sheet, multi-select, sticky Share/Unshare/Price + preview)
-- Browse empty copy: supplier hasn’t shared with your business yet
+- Catalog hub tile → `/catalog/connected-buyer-availability` (global Allow/Block + optional Default PO)
+- Catalog create/edit/detail: default allowed; optional block; Default PO optional
+- Accept → `/share-products` (Confirm / Review / Not now); missing Default PO collected before share
+- Manage: `/shared-products` lists all active products; first-share / bulk Default PO sheets when needed
+- Browse: only products explicitly shared to that buyer
 
 ## UX hardening notes
 
-### Level 2 (2026-08-16) — per-buyer Manage Products
+### Level 2 — Manage Products (default-eligible)
 
-P27-WP01 follow-up only — **not** WP02. Domain rules unchanged (Exposable ≠ Shared; buyer price → Default PO; Accept ≠ auto-share).
+No Level-1 visit required before share. First share may establish Default PO inline. Bulk share returns `NeedsDefaultPo` for products missing a confirmed Default PO.
 
-### Level 1 (2026-08-16) — Connected Buyer Availability bulk
+### Level 1 — Connected Buyer Availability (global restriction)
 
-Mobile bulk eligibility management so suppliers are not forced through Product Edit one-by-one. First Enable still initializes Default PO from each product's own retail; Disable/re-enable preserves Default PO; bulk Enable creates zero shares.
+Reframed as optional global block + optional Default PO administration. Allow/Block labels. Bulk Allow creates zero shares.
 
 ## Organization Web
 

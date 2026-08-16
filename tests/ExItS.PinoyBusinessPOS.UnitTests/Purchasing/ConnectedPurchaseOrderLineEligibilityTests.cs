@@ -486,7 +486,7 @@ public sealed class ConnectedPurchaseOrderLineEligibilityTests
             Task.FromResult<(IReadOnlyList<SupplierProductExposure>, IReadOnlyList<ConnectedBuyerProductShare>, int)>(([], [], 0));
         public Task<BuyerProductShareSearchPage> SearchForSupplierManagementAsync(
             ConnectedSupplierRelationshipId relationshipId, PosOrganizationId supplier, string? query, string? category, string? shareFilter, int skip, int take, bool idsOnly, CancellationToken ct = default) =>
-            Task.FromResult(new BuyerProductShareSearchPage([], [], [], 0, 0, 0, []));
+            Task.FromResult(new BuyerProductShareSearchPage([], [], 0, 0, 0, []));
         public Task UpdateAsync(ConnectedBuyerProductShare share, CancellationToken ct = default) => Task.CompletedTask;
     }
 

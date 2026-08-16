@@ -44,7 +44,10 @@ public sealed class ConnectedBuyersBulkShareUiGuardTests
         Assert.Contains("ConnectedBuyers_EmptySearch", manage, StringComparison.Ordinal);
         Assert.Contains("EffectiveBuyerPrice", manage, StringComparison.Ordinal);
         Assert.DoesNotContain("ConnectedBuyers_UsesDefaultPrice", manage, StringComparison.Ordinal);
-        Assert.DoesNotContain("SellingPrice", manage, StringComparison.Ordinal);
+        Assert.Contains("EstablishDefaultPoPrice", manage, StringComparison.Ordinal);
+        Assert.Contains("NeedsDefaultPo", manage, StringComparison.Ordinal);
+        Assert.Contains("ConnectedBuyers_BlockedForConnectedBuyers", manage, StringComparison.Ordinal);
+        Assert.Contains("SellingPrice", manage, StringComparison.Ordinal); // retail reference only in first-share sheet
         Assert.DoesNotContain("<table", manage, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("DataGrid", manage, StringComparison.Ordinal);
     }

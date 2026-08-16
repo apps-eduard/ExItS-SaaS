@@ -46,8 +46,9 @@ public interface IConnectedBuyerProductShareRepository
             CancellationToken ct = default);
 
     /// <summary>
-    /// Supplier-side share management: exposed products left-joined to relationship shares,
-    /// with optional query / category / share-state filters and paging.
+    /// Supplier-side share management: active catalog products left-joined to relationship shares
+    /// and exposures, with optional query / category / share-state filters and paging.
+    /// Includes globally blocked products for UI; EligibleCount counts active !blocked only.
     /// </summary>
     Task<BuyerProductShareSearchPage> SearchForSupplierManagementAsync(
         ConnectedSupplierRelationshipId relationshipId,
@@ -64,9 +65,15 @@ public interface IConnectedBuyerProductShareRepository
     Task UpdateAsync(ConnectedBuyerProductShare share, CancellationToken ct = default);
 }
 
+/// <summary>One Manage-Products row: catalog product with optional share and exposure.</summary>
+public sealed record BuyerProductShareManagementRow(
+    CatalogProduct Product,
+    SupplierProductExposure? Exposure,
+    ConnectedBuyerProductShare? Share,
+    string? CategoryName);
+
 public sealed record BuyerProductShareSearchPage(
-    IReadOnlyList<SupplierProductExposure> Exposures,
-    IReadOnlyList<ConnectedBuyerProductShare?> Shares,
+    IReadOnlyList<BuyerProductShareManagementRow> Rows,
     IReadOnlyList<Guid> MatchingProductIds,
     int MatchingCount,
     int EligibleCount,

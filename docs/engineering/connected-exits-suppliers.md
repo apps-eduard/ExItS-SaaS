@@ -113,13 +113,13 @@ Schema **v9** adds `multiplier_to_base` / `package_label` on linked products so 
 
 | Screen | Behavior |
 |---|---|
-| **Browse products** | Online only. Returns products that are **globally exposable**, **explicitly shared to this relationship**, orderable, and have a valid effective PO price. Empty = this supplier has not shared products with your business yet. Search optional (Enter or short debounce). **Use product** opens an explicit match sheet: link an existing buyer catalog product, or **Create & link** a new buyer-owned product. Suggestions (SKU/name/UOM) never auto-link. |
+| **Browse products** | Online only. Returns products that are **not globally blocked**, **explicitly shared to this relationship**, orderable, and have a valid effective PO price. Empty = this supplier has not shared products with your business yet. Search optional (Enter or short debounce). **Use product** opens an explicit match sheet: link an existing buyer catalog product, or **Create & link** a new buyer-owned product. Suggestions (SKU/name/UOM) never auto-link. |
 | **Create & link** | Single transactional API (`POST …/links/create-and-link`) requiring `ManageCatalog` + `ManagePurchasing`. Creates buyer `CatalogProduct` + `BuyerSupplierProductLink` in one save. Buyer SellingPrice is independent of supplier PO price. Does **not** change inventory, create a PO/GR, or set `CanExposeToConnectedBuyers`. Duplicate retries return the existing active link for that supplier product. |
 | **Linked products** | Device cache of **explicitly linked** items only. Never downloads the full supplier catalog. |
-| **Product create/edit** | Available to connected buyers + Default PO Price (initialized from SellingPrice only on first enable; then independent). Secondary one-off path. |
-| **Catalog → Connected Buyer Availability** | Primary Level-1 mobile bulk Enable/Disable/Default PO Price (search, availability chips, category, select-all matching, price preview). Does **not** create buyer shares. |
-| **Accept connection** | Activates relationship only, then opens share prompt with all exposable products selected by default. Confirm persists shares; Not now shares nothing. |
-| **Connected buyer → Manage products** | Mobile bulk share/unshare/price (search, filters, category, select-all matching, price preview). |
+| **Product create/edit** | Default eligible (not blocked). Optional “Block from connected buyers”. Default PO always optional (required only on first share). |
+| **Catalog → Connected Buyer Availability** | Global Allow / Block + optional Default PO admin. Does **not** create buyer shares. Allowed ≠ shared. |
+| **Accept connection** | Activates relationship only, then opens share prompt with eligible (active, not blocked) products. Confirm persists shares; products missing Default PO open Manage / first-share pricing. Not now shares nothing. |
+| **Connected buyer → Manage products** | Lists all active products; blocked rows disabled; first-share Default PO sheet when needed; bulk share/unshare/price. |
 
 `relationshipId` may be omitted on buyer entry; screens resolve `ConnectedRelationshipId` from the supplier master when online.
 
@@ -150,7 +150,7 @@ New ──→ Accepted ──→ Preparing ──→ Fulfilled
 - `ConnectedPoDisplayStatus` derives buyer/supplier labels from both aggregates: Waiting for Supplier, Supplier Accepted/Declined, Preparing, Ready, Partially Received, Received, Received With Issues, and Withdrawn.
 - Preparing/Fulfilled never changes buyer inventory. Buyer stock changes only through Goods Receipt, and only for good received quantity.
 - Lifecycle notifications (submitted, accepted, declined, preparing, fulfilled, withdrawn, received/receiving issue) publish through `IOrganizationBusinessNotificationPublisher`; the persisted orders remain the source of truth.
-- WP01 exposable/shared eligibility and buyer-specific → Default PO pricing are unchanged.
+- WP01 default-eligible / global-block / buyer-specific → Default PO pricing remain authoritative (**GLOBALLY ALLOWED ≠ SHARED**).
 
 ## Organization Web routes
 

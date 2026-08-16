@@ -33,60 +33,72 @@ public sealed class CatalogDomainTests
     }
 
     [Fact]
-    public void Connected_buyer_availability_initializes_default_once_and_keeps_it_independent()
+    public void Connected_buyer_availability_does_not_auto_init_retail_and_preserves_staged_price()
     {
         var product = CatalogProduct.Create(OrgA, "Rice", UnitOfMeasure.Kilogram, 55.13m, Now);
 
         product.EnableConnectedBuyerAvailability(Now.AddMinutes(1));
         Assert.True(product.CanExposeToConnectedBuyers);
+        Assert.False(product.IsBlockedFromConnectedBuyers);
+        Assert.Null(product.DefaultConnectedPoPrice);
+
+        product.SetDefaultConnectedPoPrice(55.13m, Now.AddMinutes(2));
+        product.UpdateSellingPrice(60m, Now.AddMinutes(3));
+        product.DisableConnectedBuyerAvailability(Now.AddMinutes(4));
+        Assert.True(product.IsBlockedFromConnectedBuyers);
         Assert.Equal(55.13m, product.DefaultConnectedPoPrice);
 
-        product.UpdateSellingPrice(60m, Now.AddMinutes(2));
-        product.DisableConnectedBuyerAvailability(Now.AddMinutes(3));
-        product.EnableConnectedBuyerAvailability(Now.AddMinutes(4));
+        product.EnableConnectedBuyerAvailability(Now.AddMinutes(5));
+        Assert.False(product.IsBlockedFromConnectedBuyers);
         Assert.Equal(55.13m, product.DefaultConnectedPoPrice);
 
-        product.SetDefaultConnectedPoPrice(48.456m, Now.AddMinutes(5));
+        product.SetDefaultConnectedPoPrice(48.456m, Now.AddMinutes(6));
         Assert.Equal(48.46m, product.DefaultConnectedPoPrice);
         Assert.Equal(60m, product.SellingPrice);
     }
 
     [Fact]
-    public void Create_product_defaults_to_not_exposable_for_connected_buyers()
+    public void Create_product_defaults_to_eligible_for_connected_buyers()
     {
         var product = CatalogProduct.Create(OrgA, "Coke", UnitOfMeasure.Piece, 65m, Now);
-        Assert.False(product.CanExposeToConnectedBuyers);
+        Assert.True(product.CanExposeToConnectedBuyers);
+        Assert.False(product.IsBlockedFromConnectedBuyers);
         Assert.Null(product.DefaultConnectedPoPrice);
     }
 
     [Fact]
-    public void Bulk_enable_semantics_initialize_each_product_from_own_selling_price()
+    public void Allow_does_not_initialize_default_po_from_selling_price()
     {
         var coke = CatalogProduct.Create(OrgA, "Coke", UnitOfMeasure.Piece, 65m, Now);
         var sprite = CatalogProduct.Create(OrgA, "Sprite", UnitOfMeasure.Piece, 63m, Now);
         var pepsi = CatalogProduct.Create(OrgA, "Pepsi", UnitOfMeasure.Piece, 60m, Now);
 
         coke.EnableConnectedBuyerAvailability(Now.AddMinutes(1));
-        sprite.EnableConnectedBuyerAvailability(Now.AddMinutes(1));
+        sprite.AllowForConnectedBuyers(Now.AddMinutes(1));
         pepsi.EnableConnectedBuyerAvailability(Now.AddMinutes(1));
 
-        Assert.Equal(65m, coke.DefaultConnectedPoPrice);
-        Assert.Equal(63m, sprite.DefaultConnectedPoPrice);
-        Assert.Equal(60m, pepsi.DefaultConnectedPoPrice);
+        Assert.Null(coke.DefaultConnectedPoPrice);
+        Assert.Null(sprite.DefaultConnectedPoPrice);
+        Assert.Null(pepsi.DefaultConnectedPoPrice);
+        Assert.True(coke.CanExposeToConnectedBuyers);
+        Assert.False(sprite.IsBlockedFromConnectedBuyers);
     }
 
     [Fact]
-    public void Default_po_price_can_be_staged_while_unavailable()
+    public void Default_po_price_can_be_staged_while_blocked()
     {
         var product = CatalogProduct.Create(OrgA, "Coke", UnitOfMeasure.Piece, 100m, Now);
+        product.BlockFromConnectedBuyers(Now.AddMinutes(1));
         Assert.False(product.CanExposeToConnectedBuyers);
+        Assert.True(product.IsBlockedFromConnectedBuyers);
 
-        product.SetDefaultConnectedPoPrice(88m, Now.AddMinutes(1));
-        Assert.False(product.CanExposeToConnectedBuyers);
+        product.SetDefaultConnectedPoPrice(88m, Now.AddMinutes(2));
+        Assert.True(product.IsBlockedFromConnectedBuyers);
         Assert.Equal(88m, product.DefaultConnectedPoPrice);
 
-        product.EnableConnectedBuyerAvailability(Now.AddMinutes(2));
+        product.AllowForConnectedBuyers(Now.AddMinutes(3));
         Assert.True(product.CanExposeToConnectedBuyers);
+        Assert.False(product.IsBlockedFromConnectedBuyers);
         Assert.Equal(88m, product.DefaultConnectedPoPrice);
     }
 
@@ -94,28 +106,44 @@ public sealed class CatalogDomainTests
     public void Disable_and_reenable_preserves_initialized_default_po_price()
     {
         var product = CatalogProduct.Create(OrgA, "Coke", UnitOfMeasure.Piece, 100m, Now);
-        product.EnableConnectedBuyerAvailability(Now.AddMinutes(1));
-        product.SetDefaultConnectedPoPrice(90m, Now.AddMinutes(2));
-        product.UpdateSellingPrice(110m, Now.AddMinutes(3));
-        product.DisableConnectedBuyerAvailability(Now.AddMinutes(4));
+        product.SetDefaultConnectedPoPrice(90m, Now.AddMinutes(1));
+        product.UpdateSellingPrice(110m, Now.AddMinutes(2));
+        product.DisableConnectedBuyerAvailability(Now.AddMinutes(3));
         Assert.False(product.CanExposeToConnectedBuyers);
+        Assert.True(product.IsBlockedFromConnectedBuyers);
         Assert.Equal(90m, product.DefaultConnectedPoPrice);
 
-        product.EnableConnectedBuyerAvailability(Now.AddMinutes(5));
+        product.EnableConnectedBuyerAvailability(Now.AddMinutes(4));
         Assert.True(product.CanExposeToConnectedBuyers);
+        Assert.False(product.IsBlockedFromConnectedBuyers);
         Assert.Equal(90m, product.DefaultConnectedPoPrice);
         Assert.Equal(110m, product.SellingPrice);
     }
 
     [Fact]
-    public void Re_enable_already_enabled_does_not_overwrite_default_po()
+    public void Re_allow_already_allowed_does_not_overwrite_default_po()
     {
         var product = CatalogProduct.Create(OrgA, "Coke", UnitOfMeasure.Piece, 100m, Now);
-        product.EnableConnectedBuyerAvailability(Now.AddMinutes(1));
-        product.SetDefaultConnectedPoPrice(90m, Now.AddMinutes(2));
-        product.UpdateSellingPrice(110m, Now.AddMinutes(3));
-        product.EnableConnectedBuyerAvailability(Now.AddMinutes(4));
+        product.SetDefaultConnectedPoPrice(90m, Now.AddMinutes(1));
+        product.UpdateSellingPrice(110m, Now.AddMinutes(2));
+        product.EnableConnectedBuyerAvailability(Now.AddMinutes(3));
         Assert.Equal(90m, product.DefaultConnectedPoPrice);
+        Assert.False(product.IsBlockedFromConnectedBuyers);
+    }
+
+    [Fact]
+    public void Block_and_allow_keep_can_expose_as_inverse()
+    {
+        var product = CatalogProduct.Create(OrgA, "Coke", UnitOfMeasure.Piece, 100m, Now);
+        Assert.Equal(!product.IsBlockedFromConnectedBuyers, product.CanExposeToConnectedBuyers);
+
+        product.BlockFromConnectedBuyers(Now.AddMinutes(1));
+        Assert.True(product.IsBlockedFromConnectedBuyers);
+        Assert.False(product.CanExposeToConnectedBuyers);
+
+        product.AllowForConnectedBuyers(Now.AddMinutes(2));
+        Assert.False(product.IsBlockedFromConnectedBuyers);
+        Assert.True(product.CanExposeToConnectedBuyers);
     }
 
 

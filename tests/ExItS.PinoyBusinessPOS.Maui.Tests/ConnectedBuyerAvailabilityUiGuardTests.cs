@@ -83,7 +83,9 @@ public sealed class ConnectedBuyerAvailabilityUiGuardTests
             Assert.Contains($"name=\"{key}\"", fil, StringComparison.Ordinal);
         }
 
-        Assert.Contains("<value>{0} available · {1} unavailable</value>", en, StringComparison.Ordinal);
+        Assert.Contains("<value>{0} allowed · {1} blocked</value>", en, StringComparison.Ordinal);
+        Assert.Contains("<value>Allow</value>", en, StringComparison.Ordinal);
+        Assert.Contains("<value>Block</value>", en, StringComparison.Ordinal);
         Assert.Contains("<value>Apply to {0} products</value>", en, StringComparison.Ordinal);
         Assert.Contains("<value>Review prices</value>", en, StringComparison.Ordinal);
     }

@@ -37,6 +37,16 @@ public sealed class CatalogProduct
     public Guid? SourceGlobalCategoryId { get; private set; }
     public bool TracksExpiration { get; private set; }
     public int? ExpirationWarningDays { get; private set; }
+    /// <summary>
+    /// When true, the product is globally blocked from connected-buyer eligibility (Level-2).
+    /// Source of truth for the block; <see cref="CanExposeToConnectedBuyers"/> is the persisted inverse.
+    /// </summary>
+    public bool IsBlockedFromConnectedBuyers { get; private set; }
+
+    /// <summary>
+    /// Eligible for connected-buyer Level-2 when not blocked. Always <c>== !IsBlockedFromConnectedBuyers</c>.
+    /// Eligibility does not auto-share; sharing still requires an exposure row and Level-2 share.
+    /// </summary>
     public bool CanExposeToConnectedBuyers { get; private set; }
     public decimal? DefaultConnectedPoPrice { get; private set; }
 
@@ -80,7 +90,8 @@ public sealed class CatalogProduct
         bool canBeUsedAsIngredient = false,
         bool isProduced = false,
         string? usagePreset = null,
-        bool canExposeToConnectedBuyers = false,
+        bool isBlockedFromConnectedBuyers = false,
+        bool canExposeToConnectedBuyers = true,
         decimal? defaultConnectedPoPrice = null)
     {
         Id = id;
@@ -112,7 +123,10 @@ public sealed class CatalogProduct
         CanBeUsedAsIngredient = canBeUsedAsIngredient;
         IsProduced = isProduced;
         UsagePreset = usagePreset;
-        CanExposeToConnectedBuyers = canExposeToConnectedBuyers;
+        // IsBlocked is the persisted source of truth; CanExpose is always the inverse.
+        // Legacy rehydrate callers that only pass canExpose:false still resolve to blocked.
+        IsBlockedFromConnectedBuyers = isBlockedFromConnectedBuyers || !canExposeToConnectedBuyers;
+        CanExposeToConnectedBuyers = !IsBlockedFromConnectedBuyers;
         DefaultConnectedPoPrice = defaultConnectedPoPrice is null
             ? null
             : NormalizeConnectedPoPrice(defaultConnectedPoPrice.Value);
@@ -269,7 +283,8 @@ public sealed class CatalogProduct
         bool canBeUsedAsIngredient = false,
         bool isProduced = false,
         string? usagePreset = null,
-        bool canExposeToConnectedBuyers = false,
+        bool isBlockedFromConnectedBuyers = false,
+        bool canExposeToConnectedBuyers = true,
         decimal? defaultConnectedPoPrice = null) =>
         new(
             id,
@@ -299,6 +314,7 @@ public sealed class CatalogProduct
             canBeUsedAsIngredient,
             isProduced,
             usagePreset,
+            isBlockedFromConnectedBuyers,
             canExposeToConnectedBuyers,
             defaultConnectedPoPrice);
 
@@ -399,29 +415,39 @@ public sealed class CatalogProduct
         return true;
     }
 
-    public void EnableConnectedBuyerAvailability(DateTimeOffset utcNow)
+    /// <summary>Allows connected-buyer eligibility (clears global block). Does not auto-init PO price.</summary>
+    public void AllowForConnectedBuyers(DateTimeOffset utcNow)
     {
         CatalogGuards.EnsureUtc(utcNow);
-        DefaultConnectedPoPrice ??= NormalizeConnectedPoPrice(SellingPrice);
+        IsBlockedFromConnectedBuyers = false;
         CanExposeToConnectedBuyers = true;
         UpdatedAtUtc = utcNow;
     }
 
+    /// <summary>Globally blocks the product from connected-buyer eligibility. Preserves staged PO price.</summary>
+    public void BlockFromConnectedBuyers(DateTimeOffset utcNow)
+    {
+        CatalogGuards.EnsureUtc(utcNow);
+        IsBlockedFromConnectedBuyers = true;
+        CanExposeToConnectedBuyers = false;
+        UpdatedAtUtc = utcNow;
+    }
+
+    /// <summary>Allow semantics without auto-copying retail into default connected PO price.</summary>
+    public void EnableConnectedBuyerAvailability(DateTimeOffset utcNow) =>
+        AllowForConnectedBuyers(utcNow);
+
     public void SetDefaultConnectedPoPrice(decimal price, DateTimeOffset utcNow)
     {
         CatalogGuards.EnsureUtc(utcNow);
-        // Default PO may be staged while unavailable; EnableConnectedBuyerAvailability preserves an
-        // existing value (??=) and Disable leaves the price intact for re-enable.
+        // Default PO may be staged while blocked or allowed; block/allow leave the price intact.
         DefaultConnectedPoPrice = NormalizeConnectedPoPrice(price);
         UpdatedAtUtc = utcNow;
     }
 
-    public void DisableConnectedBuyerAvailability(DateTimeOffset utcNow)
-    {
-        CatalogGuards.EnsureUtc(utcNow);
-        CanExposeToConnectedBuyers = false;
-        UpdatedAtUtc = utcNow;
-    }
+    /// <summary>Block semantics; preserves staged default connected PO price.</summary>
+    public void DisableConnectedBuyerAvailability(DateTimeOffset utcNow) =>
+        BlockFromConnectedBuyers(utcNow);
 
     public void Deactivate(DateTimeOffset utcNow)
     {

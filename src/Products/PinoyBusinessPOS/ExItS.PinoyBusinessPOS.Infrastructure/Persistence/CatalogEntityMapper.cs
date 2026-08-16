@@ -70,6 +70,7 @@ internal static class CatalogEntityMapper
             canBeUsedAsIngredient: record.CanBeUsedAsIngredient,
             isProduced: record.IsProduced,
             usagePreset: record.UsagePreset,
+            isBlockedFromConnectedBuyers: record.IsBlockedFromConnectedBuyers,
             canExposeToConnectedBuyers: record.CanExposeToConnectedBuyers,
             defaultConnectedPoPrice: record.DefaultConnectedPoPrice);
 
@@ -102,6 +103,7 @@ internal static class CatalogEntityMapper
             IsProduced = product.IsProduced,
             UsagePreset = product.UsagePreset,
             CanExposeToConnectedBuyers = product.CanExposeToConnectedBuyers,
+            IsBlockedFromConnectedBuyers = product.IsBlockedFromConnectedBuyers,
             DefaultConnectedPoPrice = product.DefaultConnectedPoPrice,
             CreatedAtUtc = product.CreatedAtUtc,
             UpdatedAtUtc = product.UpdatedAtUtc
@@ -133,6 +135,7 @@ internal static class CatalogEntityMapper
         record.IsProduced = product.IsProduced;
         record.UsagePreset = product.UsagePreset;
         record.CanExposeToConnectedBuyers = product.CanExposeToConnectedBuyers;
+        record.IsBlockedFromConnectedBuyers = product.IsBlockedFromConnectedBuyers;
         record.DefaultConnectedPoPrice = product.DefaultConnectedPoPrice;
         record.UpdatedAtUtc = product.UpdatedAtUtc;
     }

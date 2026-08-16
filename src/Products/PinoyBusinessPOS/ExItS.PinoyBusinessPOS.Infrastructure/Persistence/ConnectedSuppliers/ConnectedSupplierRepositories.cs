@@ -92,59 +92,69 @@ internal sealed class ConnectedBuyerProductShareRepository(PosDbContext db) : IC
         bool idsOnly,
         CancellationToken ct = default)
     {
-        var exposures = db.SupplierProductExposures.AsNoTracking()
-            .Where(x => x.SupplierOrganizationId == supplier.Value && x.IsExposed);
+        var activeStatus = nameof(CatalogProductStatus.Active);
+        var products = db.CatalogProducts.AsNoTracking()
+            .Where(x => x.OrganizationId == supplier.Value && x.Status == activeStatus);
         var shares = db.ConnectedBuyerProductShares.AsNoTracking()
             .Where(x => x.RelationshipId == relationshipId.Value);
+        var exposures = db.SupplierProductExposures.AsNoTracking()
+            .Where(x => x.SupplierOrganizationId == supplier.Value);
+        var categories = db.ProductCategories.AsNoTracking();
 
-        var joined = from exposure in exposures
-                     join share in shares on exposure.ProductId equals share.SupplierProductId into shareGroup
-                     from share in shareGroup.DefaultIfEmpty()
-                     select new { exposure, share };
+        var joined =
+            from product in products
+            join categoryRow in categories on product.CategoryId equals categoryRow.Id into categoryGroup
+            from categoryRow in categoryGroup.DefaultIfEmpty()
+            join share in shares on product.Id equals share.SupplierProductId into shareGroup
+            from share in shareGroup.DefaultIfEmpty()
+            join exposure in exposures on product.Id equals exposure.ProductId into exposureGroup
+            from exposure in exposureGroup.DefaultIfEmpty()
+            select new { product, categoryRow, share, exposure };
 
         if (!string.IsNullOrWhiteSpace(query))
         {
             var term = query.Trim().ToUpper();
             joined = joined.Where(x =>
-                x.exposure.NameSnapshot.ToUpper().Contains(term)
-                || (x.exposure.SkuSnapshot != null && x.exposure.SkuSnapshot.ToUpper().Contains(term)));
+                x.product.Name.ToUpper().Contains(term)
+                || (x.product.Sku != null && x.product.Sku.ToUpper().Contains(term)));
         }
 
         if (!string.IsNullOrWhiteSpace(category))
         {
             if (string.Equals(category.Trim(), "__uncategorized__", StringComparison.OrdinalIgnoreCase))
             {
-                joined = joined.Where(x => x.exposure.CategoryNameSnapshot == null
-                    || x.exposure.CategoryNameSnapshot == string.Empty);
+                joined = joined.Where(x => x.product.CategoryId == null);
             }
             else
             {
                 var term = category.Trim().ToUpper();
-                joined = joined.Where(x => x.exposure.CategoryNameSnapshot != null
-                    && x.exposure.CategoryNameSnapshot.ToUpper() == term);
+                joined = joined.Where(x => x.categoryRow != null && x.categoryRow.Name.ToUpper() == term);
             }
         }
 
-        var filter = (shareFilter ?? "all").Trim().ToLowerInvariant();
+        var filter = NormalizeShareFilter(shareFilter);
         joined = filter switch
         {
             "shared" => joined.Where(x => x.share != null && x.share.IsShared),
-            "not-shared" => joined.Where(x => x.share == null || !x.share.IsShared),
-            "custom-price" => joined.Where(x => x.share != null && x.share.IsShared && x.share.BuyerSpecificPoPrice != null),
+            "notshared" => joined.Where(x => x.share == null || !x.share.IsShared),
+            "customprice" => joined.Where(x =>
+                x.share != null && x.share.IsShared && x.share.BuyerSpecificPoPrice != null),
+            "blocked" => joined.Where(x => x.product.IsBlockedFromConnectedBuyers),
             _ => joined
         };
 
-        var eligibleCount = await exposures.CountAsync(ct).ConfigureAwait(false);
+        var eligibleCount = await products.CountAsync(x => !x.IsBlockedFromConnectedBuyers, ct)
+            .ConfigureAwait(false);
         var sharedCount = await (
-            from exposure in exposures
-            join share in shares on exposure.ProductId equals share.SupplierProductId
+            from product in products
+            join share in shares on product.Id equals share.SupplierProductId
             where share.IsShared
-            select exposure.ProductId).CountAsync(ct).ConfigureAwait(false);
+            select product.Id).CountAsync(ct).ConfigureAwait(false);
 
         var matchingCount = await joined.CountAsync(ct).ConfigureAwait(false);
 
         var facetRows = await joined
-            .GroupBy(x => x.exposure.CategoryNameSnapshot)
+            .GroupBy(x => x.categoryRow != null ? x.categoryRow.Name : null)
             .Select(g => new { Category = g.Key, Count = g.Count() })
             .OrderBy(x => x.Category == null || x.Category == string.Empty ? 1 : 0)
             .ThenBy(x => x.Category)
@@ -157,28 +167,50 @@ internal sealed class ConnectedBuyerProductShareRepository(PosDbContext db) : IC
         if (idsOnly)
         {
             var ids = await joined
-                .OrderBy(x => x.exposure.NameSnapshot).ThenBy(x => x.exposure.ProductId)
-                .Select(x => x.exposure.ProductId)
+                .OrderBy(x => x.product.Name).ThenBy(x => x.product.Id)
+                .Select(x => x.product.Id)
                 .Take(BuyerProductShareBulkPricing.MaxSelectAllMatching + 1)
                 .ToListAsync(ct)
                 .ConfigureAwait(false);
-            return new BuyerProductShareSearchPage([], [], ids, matchingCount, eligibleCount, sharedCount, facets);
+            return new BuyerProductShareSearchPage([], ids, matchingCount, eligibleCount, sharedCount, facets);
         }
 
         var pageRows = await joined
-            .OrderBy(x => x.exposure.NameSnapshot).ThenBy(x => x.exposure.ProductId)
+            .OrderBy(x => x.product.Name).ThenBy(x => x.product.Id)
             .Skip(skip).Take(take)
             .ToListAsync(ct)
             .ConfigureAwait(false);
 
+        var rows = pageRows.Select(x => new BuyerProductShareManagementRow(
+            CatalogEntityMapper.ToDomain(x.product),
+            x.exposure is null ? null : ConnectedSupplierEntityMapper.ToDomain(x.exposure),
+            x.share is null ? null : ConnectedSupplierEntityMapper.ToDomain(x.share),
+            x.categoryRow is null || string.IsNullOrWhiteSpace(x.categoryRow.Name)
+                ? null
+                : x.categoryRow.Name)).ToList();
+
         return new BuyerProductShareSearchPage(
-            pageRows.Select(x => ConnectedSupplierEntityMapper.ToDomain(x.exposure)).ToList(),
-            pageRows.Select(x => x.share is null ? null : ConnectedSupplierEntityMapper.ToDomain(x.share)).ToList(),
-            pageRows.Select(x => x.exposure.ProductId).ToList(),
+            rows,
+            rows.Select(x => x.Product.Id.Value).ToList(),
             matchingCount,
             eligibleCount,
             sharedCount,
             facets);
+    }
+
+    private static string NormalizeShareFilter(string? shareFilter)
+    {
+        var raw = (shareFilter ?? "all").Trim().ToLowerInvariant()
+            .Replace("-", string.Empty, StringComparison.Ordinal)
+            .Replace("_", string.Empty, StringComparison.Ordinal);
+        return raw switch
+        {
+            "shared" => "shared",
+            "notshared" => "notshared",
+            "customprice" => "customprice",
+            "blocked" => "blocked",
+            _ => "all"
+        };
     }
 
     public Task AddAsync(ConnectedBuyerProductShare x,CancellationToken ct=default)
