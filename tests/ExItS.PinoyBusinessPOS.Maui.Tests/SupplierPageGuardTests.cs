@@ -46,6 +46,12 @@ public sealed class SupplierPageGuardTests
         Assert.Contains("ReactivateAsync", detail, StringComparison.Ordinal);
         Assert.Contains("pos-supplier-detail__header", detail, StringComparison.Ordinal);
         Assert.Contains("pos-supplier-detail__facts", detail, StringComparison.Ordinal);
+        Assert.Contains("pos-supplier-detail__code", detail, StringComparison.Ordinal);
+        Assert.Contains("Suppliers_ContactSection", detail, StringComparison.Ordinal);
+        Assert.Contains("Suppliers_AddressSection", detail, StringComparison.Ordinal);
+        Assert.Contains("Suppliers_DetailsEmptyTitle", detail, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"edit\")", detail, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"products\")", detail, StringComparison.Ordinal);
         Assert.Contains("pos-action-grid--two", detail, StringComparison.Ordinal);
         Assert.Contains("IconGlyphs.Get(\"edit\")", detail, StringComparison.Ordinal);
         Assert.DoesNotContain("PageHeader", detail, StringComparison.Ordinal);

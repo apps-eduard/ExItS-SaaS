@@ -4742,7 +4742,7 @@
     <value>Create supplier</value>
   </data>
   <data name="Suppliers_Edit" xml:space="preserve">
-    <value>Edit supplier</value>
+    <value>Edit</value>
   </data>
   <data name="Suppliers_Deactivate" xml:space="preserve">
     <value>Deactivate</value>
@@ -4782,6 +4782,18 @@
   </data>
   <data name="Suppliers_DetailsSection" xml:space="preserve">
     <value>Supplier details</value>
+  </data>
+  <data name="Suppliers_AddressSection" xml:space="preserve">
+    <value>Address</value>
+  </data>
+  <data name="Suppliers_DetailsEmptyTitle" xml:space="preserve">
+    <value>No contact details yet</value>
+  </data>
+  <data name="Suppliers_DetailsEmptyMessage" xml:space="preserve">
+    <value>Edit this supplier to add phone, email, or address.</value>
+  </data>
+  <data name="Suppliers_ContactSection" xml:space="preserve">
+    <value>Contact</value>
   </data>
   <data name="Suppliers_Field_Code" xml:space="preserve">
     <value>Supplier code</value>

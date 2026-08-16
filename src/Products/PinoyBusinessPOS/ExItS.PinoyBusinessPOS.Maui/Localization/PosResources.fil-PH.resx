@@ -4742,7 +4742,7 @@
     <value>Gumawa ng supplier</value>
   </data>
   <data name="Suppliers_Edit" xml:space="preserve">
-    <value>I-edit ang supplier</value>
+    <value>I-edit</value>
   </data>
   <data name="Suppliers_Deactivate" xml:space="preserve">
     <value>I-deactivate</value>
@@ -4782,6 +4782,18 @@
   </data>
   <data name="Suppliers_DetailsSection" xml:space="preserve">
     <value>Detalye ng supplier</value>
+  </data>
+  <data name="Suppliers_AddressSection" xml:space="preserve">
+    <value>Address</value>
+  </data>
+  <data name="Suppliers_DetailsEmptyTitle" xml:space="preserve">
+    <value>Wala pang contact details</value>
+  </data>
+  <data name="Suppliers_DetailsEmptyMessage" xml:space="preserve">
+    <value>I-edit ang supplier para magdagdag ng phone, email, o address.</value>
+  </data>
+  <data name="Suppliers_ContactSection" xml:space="preserve">
+    <value>Contact</value>
   </data>
   <data name="Suppliers_Field_Code" xml:space="preserve">
     <value>Supplier code</value>

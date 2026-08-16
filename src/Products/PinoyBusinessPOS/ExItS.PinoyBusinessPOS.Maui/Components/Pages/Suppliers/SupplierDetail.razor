@@ -35,11 +35,16 @@ else
     var canManage = Capabilities.IsAllowed(UtangCapability.ManageSuppliers);
     var isActive = supplier.Status == SupplierUiOptions.ActiveStatus;
     var isConnected = string.Equals(supplier.ConnectionType, "ConnectedOrganization", StringComparison.OrdinalIgnoreCase);
+    var contactFacts = BuildContactFacts(supplier);
+    var addressFacts = BuildAddressFacts(supplier);
+    var hasNotes = !string.IsNullOrWhiteSpace(supplier.Notes);
+    var hasExtra = contactFacts.Count > 0 || addressFacts.Count > 0 || hasNotes;
 <div class="pos-supplier-detail">
 <Page>
     <header class="pos-supplier-detail__header">
         <h1 class="pos-supplier-detail__title">@supplier.Name</h1>
         <p class="pos-supplier-detail__subtitle">@L["Suppliers_DetailSubtitle"]</p>
+        <p class="pos-supplier-detail__code">@supplier.SupplierCode</p>
         <div class="pos-supplier-detail__status-row">
             <Badge Tone="@(isActive ? BadgeTone.Success : BadgeTone.Neutral)">@SupplierUiOptions.StatusLabel(L, supplier.Status)</Badge>
             <Badge Tone="@(isConnected ? BadgeTone.Success : BadgeTone.Neutral)">
@@ -69,99 +74,7 @@ else
         <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Suppliers_ErrorTitle"])" Message="@_errorMessage" />
     }
 
-    <section class="pos-supplier-detail__panel" aria-labelledby="supplier-detail-heading">
-        <h2 id="supplier-detail-heading" class="pos-supplier-detail__section-title">@L["Suppliers_DetailsSection"]</h2>
-        <dl class="pos-supplier-detail__facts">
-            <div class="pos-supplier-detail__fact">
-                <dt>@L["Suppliers_Field_Code"]</dt>
-                <dd>@supplier.SupplierCode</dd>
-            </div>
-            <div class="pos-supplier-detail__fact">
-                <dt>@L["Suppliers_Field_Name"]</dt>
-                <dd class="pos-wrap">@supplier.Name</dd>
-            </div>
-            <div class="pos-supplier-detail__fact">
-                <dt>@L["Suppliers_Field_ContactPerson"]</dt>
-                <dd>@(string.IsNullOrWhiteSpace(supplier.ContactPerson) ? L["Suppliers_NoValue"] : supplier.ContactPerson)</dd>
-            </div>
-            <div class="pos-supplier-detail__fact">
-                <dt>@L["Suppliers_Field_Mobile"]</dt>
-                <dd>@(string.IsNullOrWhiteSpace(supplier.MobileNumber) ? L["Suppliers_NoValue"] : supplier.MobileNumber)</dd>
-            </div>
-            <div class="pos-supplier-detail__fact">
-                <dt>@L["Suppliers_Field_Telephone"]</dt>
-                <dd>@(string.IsNullOrWhiteSpace(supplier.TelephoneNumber) ? L["Suppliers_NoValue"] : supplier.TelephoneNumber)</dd>
-            </div>
-            <div class="pos-supplier-detail__fact">
-                <dt>@L["Suppliers_Field_Email"]</dt>
-                <dd class="pos-wrap">@(string.IsNullOrWhiteSpace(supplier.Email) ? L["Suppliers_NoValue"] : supplier.Email)</dd>
-            </div>
-            <div class="pos-supplier-detail__fact">
-                <dt>@L["Suppliers_Field_AddressLine1"]</dt>
-                <dd class="pos-wrap">@(string.IsNullOrWhiteSpace(supplier.AddressLine1) ? L["Suppliers_NoValue"] : supplier.AddressLine1)</dd>
-            </div>
-            <div class="pos-supplier-detail__fact">
-                <dt>@L["Suppliers_Field_AddressLine2"]</dt>
-                <dd class="pos-wrap">@(string.IsNullOrWhiteSpace(supplier.AddressLine2) ? L["Suppliers_NoValue"] : supplier.AddressLine2)</dd>
-            </div>
-            <div class="pos-supplier-detail__fact">
-                <dt>@L["Suppliers_Field_City"]</dt>
-                <dd>@(string.IsNullOrWhiteSpace(supplier.CityMunicipality) ? L["Suppliers_NoValue"] : supplier.CityMunicipality)</dd>
-            </div>
-            <div class="pos-supplier-detail__fact">
-                <dt>@L["Suppliers_Field_Province"]</dt>
-                <dd>@(string.IsNullOrWhiteSpace(supplier.Province) ? L["Suppliers_NoValue"] : supplier.Province)</dd>
-            </div>
-            <div class="pos-supplier-detail__fact">
-                <dt>@L["Suppliers_Field_PostalCode"]</dt>
-                <dd>@(string.IsNullOrWhiteSpace(supplier.PostalCode) ? L["Suppliers_NoValue"] : supplier.PostalCode)</dd>
-            </div>
-            <div class="pos-supplier-detail__fact">
-                <dt>@L["Suppliers_Field_TaxNumber"]</dt>
-                <dd>@(string.IsNullOrWhiteSpace(supplier.TaxOrRegistrationNumber) ? L["Suppliers_NoValue"] : supplier.TaxOrRegistrationNumber)</dd>
-            </div>
-            <div class="pos-supplier-detail__fact">
-                <dt>@L["Suppliers_Field_Notes"]</dt>
-                <dd class="pos-wrap">@(string.IsNullOrWhiteSpace(supplier.Notes) ? L["Suppliers_NoValue"] : supplier.Notes)</dd>
-            </div>
-            <div class="pos-supplier-detail__fact">
-                <dt>@L["Suppliers_Field_Status"]</dt>
-                <dd>@SupplierUiOptions.StatusLabel(L, supplier.Status)</dd>
-            </div>
-        </dl>
-    </section>
-
-    @if (isConnected
-         && supplier.ConnectedRelationshipId is Guid relationshipId
-         && string.Equals(_relationship?.Status, "Active", StringComparison.OrdinalIgnoreCase))
-    {
-        <div class="pos-action-grid pos-action-grid--two pos-supplier-detail__actions" role="group">
-            <button type="button" class="pos-action-tile pos-action-tile--primary"
-                    disabled="@(_isOffline)" @onclick="() => GoConnectedCatalog(relationshipId)">
-                <span class="pos-action-tile__label">@L["ConnectedSuppliers_BrowseProducts"]</span>
-            </button>
-            <button type="button" class="pos-action-tile" @onclick="() => GoLinkedProducts(relationshipId)">
-                <span class="pos-action-tile__label">@L["ConnectedSuppliers_LinkedProducts"]</span>
-            </button>
-            <button type="button" class="pos-action-tile" disabled="@(_isOffline)" @onclick="GoPurchaseOrders">
-                <span class="pos-action-tile__label">@L["ConnectedSuppliers_PurchaseOrders"]</span>
-            </button>
-        </div>
-    }
-    else if (isConnected && string.Equals(_relationship?.Status, "Pending", StringComparison.OrdinalIgnoreCase))
-    {
-        <Alert Tone="AlertTone.Info"
-               Title="@L["ConnectedSuppliers_Status_Pending"]"
-               Message="@L["ConnectedSuppliers_WaitingForApproval"]" />
-    }
-    else if (isConnected && string.Equals(_relationship?.Status, "Declined", StringComparison.OrdinalIgnoreCase))
-    {
-        <Alert Tone="AlertTone.Warning"
-               Title="@L["ConnectedSuppliers_Status_Declined"]"
-               Message="@L["ConnectedSuppliers_RequestDeclinedHelp"]" />
-    }
-
-    <div class="pos-action-grid pos-action-grid--two pos-supplier-detail__actions" role="group">
+    <div class="pos-action-grid pos-action-grid--two pos-supplier-detail__actions" role="group" aria-label="@L["Suppliers_DetailsSection"]">
         <button type="button"
                 class="pos-action-tile pos-action-tile--primary"
                 disabled="@(!canManage || _isOffline)"
@@ -190,6 +103,90 @@ else
             </button>
         }
     </div>
+
+    @if (isConnected
+         && supplier.ConnectedRelationshipId is Guid relationshipId
+         && string.Equals(_relationship?.Status, "Active", StringComparison.OrdinalIgnoreCase))
+    {
+        <div class="pos-action-grid pos-action-grid--two pos-supplier-detail__actions" role="group" aria-label="@L["ConnectedSuppliers_BrowseProducts"]">
+            <button type="button" class="pos-action-tile pos-action-tile--primary"
+                    disabled="@(_isOffline)" @onclick="() => GoConnectedCatalog(relationshipId)">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("products")</span>
+                <span class="pos-action-tile__label">@L["ConnectedSuppliers_BrowseProducts"]</span>
+            </button>
+            <button type="button" class="pos-action-tile" @onclick="() => GoLinkedProducts(relationshipId)">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("list")</span>
+                <span class="pos-action-tile__label">@L["ConnectedSuppliers_LinkedProducts"]</span>
+            </button>
+            <button type="button" class="pos-action-tile" disabled="@(_isOffline)" @onclick="GoPurchaseOrders">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("inbox")</span>
+                <span class="pos-action-tile__label">@L["ConnectedSuppliers_PurchaseOrders"]</span>
+            </button>
+        </div>
+    }
+    else if (isConnected && string.Equals(_relationship?.Status, "Pending", StringComparison.OrdinalIgnoreCase))
+    {
+        <Alert Tone="AlertTone.Info"
+               Title="@L["ConnectedSuppliers_Status_Pending"]"
+               Message="@L["ConnectedSuppliers_WaitingForApproval"]" />
+    }
+    else if (isConnected && string.Equals(_relationship?.Status, "Declined", StringComparison.OrdinalIgnoreCase))
+    {
+        <Alert Tone="AlertTone.Warning"
+               Title="@L["ConnectedSuppliers_Status_Declined"]"
+               Message="@L["ConnectedSuppliers_RequestDeclinedHelp"]" />
+    }
+
+    <section class="pos-supplier-detail__panel" aria-labelledby="supplier-detail-heading">
+        <h2 id="supplier-detail-heading" class="pos-supplier-detail__section-title">@L["Suppliers_DetailsSection"]</h2>
+        @if (!hasExtra)
+        {
+            <EmptyState IconName="customers"
+                        Title="@L["Suppliers_DetailsEmptyTitle"]"
+                        Message="@L["Suppliers_DetailsEmptyMessage"]" />
+        }
+        else
+        {
+            @if (contactFacts.Count > 0)
+            {
+                <h3 class="pos-supplier-detail__group-title">@L["Suppliers_ContactSection"]</h3>
+                <dl class="pos-supplier-detail__facts">
+                    @foreach (var fact in contactFacts)
+                    {
+                        <div class="pos-supplier-detail__fact">
+                            <dt>@fact.Label</dt>
+                            <dd>@fact.Value</dd>
+                        </div>
+                    }
+                </dl>
+            }
+
+            @if (addressFacts.Count > 0)
+            {
+                <h3 class="pos-supplier-detail__group-title">@L["Suppliers_AddressSection"]</h3>
+                <dl class="pos-supplier-detail__facts">
+                    @foreach (var fact in addressFacts)
+                    {
+                        <div class="pos-supplier-detail__fact">
+                            <dt>@fact.Label</dt>
+                            <dd>@fact.Value</dd>
+                        </div>
+                    }
+                </dl>
+            }
+
+            @if (hasNotes)
+            {
+                <h3 class="pos-supplier-detail__group-title">@L["Suppliers_Field_Notes"]</h3>
+                <dl class="pos-supplier-detail__facts">
+                    <div class="pos-supplier-detail__fact">
+                        <dt>@L["Suppliers_Field_Notes"]</dt>
+                        <dd>@supplier.Notes</dd>
+                    </div>
+                </dl>
+            }
+        }
+    </section>
 
     <ConfirmDialog Visible="@_confirmDeactivate"
                    VisibleChanged="v => _confirmDeactivate = v"
@@ -226,6 +223,8 @@ else
     private string? _errorMessage;
     private string? _banner;
 
+    private sealed record FactRow(string Label, string Value);
+
     protected override async Task OnInitializedAsync()
     {
         if (!Gate.CanEnterProtectedShell || CurrentUser.Session?.OrganizationId is null)
@@ -242,6 +241,38 @@ else
 
         _ready = true;
         await LoadAsync();
+    }
+
+    private List<FactRow> BuildContactFacts(PosSupplierDto supplier)
+    {
+        var rows = new List<FactRow>();
+        AddFact(rows, L["Suppliers_Field_ContactPerson"], supplier.ContactPerson);
+        AddFact(rows, L["Suppliers_Field_Mobile"], supplier.MobileNumber);
+        AddFact(rows, L["Suppliers_Field_Telephone"], supplier.TelephoneNumber);
+        AddFact(rows, L["Suppliers_Field_Email"], supplier.Email);
+        AddFact(rows, L["Suppliers_Field_TaxNumber"], supplier.TaxOrRegistrationNumber);
+        return rows;
+    }
+
+    private List<FactRow> BuildAddressFacts(PosSupplierDto supplier)
+    {
+        var rows = new List<FactRow>();
+        AddFact(rows, L["Suppliers_Field_AddressLine1"], supplier.AddressLine1);
+        AddFact(rows, L["Suppliers_Field_AddressLine2"], supplier.AddressLine2);
+        AddFact(rows, L["Suppliers_Field_City"], supplier.CityMunicipality);
+        AddFact(rows, L["Suppliers_Field_Province"], supplier.Province);
+        AddFact(rows, L["Suppliers_Field_PostalCode"], supplier.PostalCode);
+        return rows;
+    }
+
+    private static void AddFact(List<FactRow> rows, string label, string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return;
+        }
+
+        rows.Add(new FactRow(label, value.Trim()));
     }
 
     private async Task LoadAsync()
@@ -324,7 +355,7 @@ else
         Nav.NavigateTo($"/suppliers/{SupplierId:D}/connected-catalog?relationshipId={relationshipId:D}");
     private void GoLinkedProducts(Guid relationshipId) =>
         Nav.NavigateTo($"/suppliers/{SupplierId:D}/linked-products?relationshipId={relationshipId:D}");
-    private void GoPurchaseOrders() => Nav.NavigateTo("/purchasing");
+    private void GoPurchaseOrders() => Nav.NavigateTo("/purchasing/orders");
     private string RelationshipStatusLabel(string status) => status switch
     {
         "Active" => L["ConnectedSuppliers_Status_Connected"],
