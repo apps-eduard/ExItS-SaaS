@@ -13,7 +13,8 @@ Phase 1 baseline: [connected-exits-suppliers-phase-1.md](connected-exits-supplie
 | SHA | Message |
 |---|---|
 | `3a63a015` | `feat(maui): improve connected supplier browse catalog UX` |
-| _(this tip)_ | `feat(maui): polish browse and linked products UX` |
+| `c6e669fc` | `feat(maui): polish browse and linked products UX` |
+| _(docs tip)_ | `docs(maui): record browse/linked products UX feature hashes` |
 
 ## Delivered capability
 
