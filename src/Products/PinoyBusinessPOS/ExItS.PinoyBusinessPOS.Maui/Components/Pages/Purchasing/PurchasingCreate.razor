@@ -175,27 +175,37 @@ else
                             {
                                 var selected = string.Equals(_selectedProductId, product.BuyerProductId.ToString("D"), StringComparison.Ordinal);
                                 <button type="button" role="option" aria-selected="@selected"
-                                        class="@($"pos-purchasing-create__product{(selected ? " pos-purchasing-create__product--selected" : string.Empty)}")"
+                                        class="@($"pos-purchasing-create__hit{(selected ? " pos-purchasing-create__hit--selected" : string.Empty)}")"
                                         disabled="@(blocked || _saving)" @onclick="() => SelectConnectedProduct(product)">
-                                    <span class="pos-purchasing-create__product-name">@product.ProductName</span>
-                                    <span class="pos-purchasing-create__product-meta pos-muted">
-                                        @(product.SupplierSku ?? L["ConnectedSuppliers_NoSku"]) · @product.UnitOfMeasure · @product.LastKnownOrderPrice.ToString("C")
+                                    <span class="pos-purchasing-create__hit-name">@product.ProductName</span>
+                                    <span class="pos-purchasing-create__hit-meta pos-muted">
+                                        @(product.SupplierSku ?? L["ConnectedSuppliers_NoSku"])
+                                        <text> · </text>@product.UnitOfMeasure
+                                        <text> · </text><MoneyDisplay Amount="@product.LastKnownOrderPrice" CurrencyCode="PHP" />
                                     </span>
-                                    <small>@L["ConnectedSuppliers_LastUpdated", product.SupplierUpdatedAtUtc.ToLocalTime().ToString("g")]</small>
+                                    <span class="pos-purchasing-create__hit-meta pos-muted">
+                                        @L["ConnectedSuppliers_LastUpdated", product.SupplierUpdatedAtUtc.ToLocalTime().ToString("g")]
+                                    </span>
                                 </button>
                             }
                             @foreach (var exposure in _supplierCatalogProducts)
                             {
-                                <div class="pos-purchasing-create__product" role="option">
-                                    <span class="pos-purchasing-create__product-name">@exposure.NameSnapshot</span>
-                                    <span class="pos-purchasing-create__product-meta pos-muted">
-                                        @(exposure.SkuSnapshot ?? L["ConnectedSuppliers_NoSku"]) · @exposure.UnitOfMeasureCode · @exposure.SupplierOrderPrice.ToString("C")
-                                    </span>
-                                    <button type="button" disabled="@(_isOffline || _saving)"
+                                <article class="pos-purchasing-create__hit pos-purchasing-create__hit--action" role="option">
+                                    <div class="pos-purchasing-create__hit-body">
+                                        <span class="pos-purchasing-create__hit-name">@exposure.NameSnapshot</span>
+                                        <span class="pos-purchasing-create__hit-meta pos-muted">
+                                            @(exposure.SkuSnapshot ?? L["ConnectedSuppliers_NoSku"])
+                                            <text> · </text>@exposure.UnitOfMeasureCode
+                                            <text> · </text><MoneyDisplay Amount="@exposure.SupplierOrderPrice" CurrencyCode="PHP" />
+                                        </span>
+                                    </div>
+                                    <button type="button"
+                                            class="pos-purchasing-create__hit-cta"
+                                            disabled="@(_isOffline || _saving)"
                                             @onclick="() => BeginLinkProduct(exposure)">
-                                        @L["ConnectedSuppliers_LinkAndUse"]
+                                        @L["ConnectedSuppliers_UseProduct"]
                                     </button>
-                                </div>
+                                </article>
                             }
                             }
                             else
@@ -206,14 +216,14 @@ else
                                 <button type="button"
                                         role="option"
                                         aria-selected="@selected"
-                                        class="@($"pos-purchasing-create__product{(selected ? " pos-purchasing-create__product--selected" : string.Empty)}")"
+                                        class="@($"pos-purchasing-create__hit{(selected ? " pos-purchasing-create__hit--selected" : string.Empty)}")"
                                         disabled="@(blocked || _saving)"
                                         @onclick="() => SelectProduct(product)">
-                                    <span class="pos-purchasing-create__product-name">@product.Name</span>
+                                    <span class="pos-purchasing-create__hit-name">@product.Name</span>
                                     @if (product.CategoryId is { } categoryId
                                          && _categoryNames.TryGetValue(categoryId, out var categoryName))
                                     {
-                                        <span class="pos-purchasing-create__product-meta pos-muted">@categoryName</span>
+                                        <span class="pos-purchasing-create__hit-meta pos-muted">@categoryName</span>
                                     }
                                 </button>
                             }
@@ -222,14 +232,22 @@ else
                     }
                     @if (_pendingExposure is not null)
                     {
-                        <div class="pos-settings__panel">
-                            <strong>@L["ConnectedSuppliers_LinkProductTitle", _pendingExposure.NameSnapshot]</strong>
+                        <div class="pos-purchasing-create__link-panel" role="region" aria-label="@L["ConnectedSuppliers_LinkProductTitle", _pendingExposure.NameSnapshot]">
+                            <p class="pos-purchasing-create__link-title">
+                                @L["ConnectedSuppliers_LinkProductTitle", _pendingExposure.NameSnapshot]
+                            </p>
                             <Select Label="@L["ConnectedSuppliers_BuyerProduct"]"
                                     Value="@_buyerProductForLink"
                                     ValueChanged="v => _buyerProductForLink = v"
                                     Options="@BuyerCatalogChoices" />
-                            <button type="button" @onclick="ConfirmLinkProductAsync">@L["ConnectedSuppliers_LinkAndUse"]</button>
-                            <button type="button" @onclick="CancelLinkProduct">@L["Purchasing_CancelEdit"]</button>
+                            <div class="pos-purchasing-create__link-actions">
+                                <button type="button" class="pos-action-tile" disabled="@_saving" @onclick="CancelLinkProduct">
+                                    <span class="pos-action-tile__label">@L["Purchasing_CancelEdit"]</span>
+                                </button>
+                                <button type="button" class="pos-action-tile pos-action-tile--primary" disabled="@_saving" @onclick="ConfirmLinkProductAsync">
+                                    <span class="pos-action-tile__label">@L["ConnectedSuppliers_LinkAndUse"]</span>
+                                </button>
+                            </div>
                         </div>
                     }
                 </div>
