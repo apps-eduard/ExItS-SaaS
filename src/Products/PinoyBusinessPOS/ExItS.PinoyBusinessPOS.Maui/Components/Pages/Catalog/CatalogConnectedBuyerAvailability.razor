@@ -1,0 +1,766 @@
+@page "/catalog/connected-buyer-availability"
+@using ExItS.PinoyBusinessPOS.Application.Catalog
+@using ExItS.PinoyBusinessPOS.Maui.Services
+@using ExItS.DesignSystem.Components.Internal
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosCatalogClient Catalog
+@inject IUtangCapabilityEvaluator Capabilities
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+<StoreHeaderBack Href="/catalog" />
+
+<div class="pos-manage-share @(_selectedCount > 0 || _selectAllMatching ? "pos-manage-share--has-selection" : null)">
+<Page>
+    <header class="pos-manage-share__header">
+        <h1 class="pos-manage-share__title">@L["Catalog_ConnectedAvailability_Title"]</h1>
+        @if (!_loading && string.IsNullOrWhiteSpace(_error))
+        {
+            <p class="pos-manage-share__summary pos-muted">
+                @L["Catalog_ConnectedAvailability_Summary", _availableCount, _notAvailableCount]
+            </p>
+        }
+    </header>
+
+    @if (_loading && _items.Count == 0)
+    {
+        <Spinner />
+    }
+    else if (!string.IsNullOrWhiteSpace(_error) && _items.Count == 0)
+    {
+        <ErrorState Title="@L["Catalog_OfflineTitle"]"
+                    Message="@_error"
+                    RetryLabel="@L["Common_Retry"]"
+                    OnRetry="() => ReloadAsync(resetPage: true)" />
+    }
+    else
+    {
+        <div class="pos-manage-share__search" role="search">
+            <span class="pos-manage-share__search-icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
+            <input class="pos-manage-share__search-input"
+                   type="search"
+                   value="@_query"
+                   placeholder="@L["ConnectedBuyers_SearchProducts"]"
+                   disabled="@_busy"
+                   @oninput="OnSearchInput" />
+            @if (!string.IsNullOrWhiteSpace(_query))
+            {
+                <button type="button" class="pos-manage-share__search-clear" @onclick="ClearSearch">@L["Common_Clear"]</button>
+            }
+        </div>
+
+        <div class="pos-manage-share__filters" role="tablist" aria-label="@L["Catalog_ConnectedAvailability_Title"]">
+            @foreach (var filter in AvailabilityFilters)
+            {
+                <button type="button"
+                        class="pos-category-chip @(_availabilityFilter == filter.Value ? "pos-category-chip--selected" : null)"
+                        role="tab"
+                        aria-selected="@(_availabilityFilter == filter.Value)"
+                        disabled="@_busy"
+                        @onclick="() => SetAvailabilityFilterAsync(filter.Value)">
+                    @filter.Label
+                </button>
+            }
+        </div>
+
+        <div class="pos-manage-share__category-row">
+            <button type="button"
+                    class="pos-manage-share__category-btn"
+                    disabled="@_busy"
+                    @onclick="() => _categorySheetOpen = true">
+                @CategoryButtonLabel
+            </button>
+        </div>
+
+        @if (_selectAllMatching)
+        {
+            <p class="pos-manage-share__select-banner" role="status">
+                @L["ConnectedBuyers_AllMatchingSelected", _matchingCount]
+                <button type="button" class="pos-link-button" disabled="@_busy" @onclick="ClearSelection">@L["ConnectedBuyers_ClearSelection"]</button>
+            </p>
+        }
+        else if (_matchingCount > _items.Count && _pageSelected.Count == _items.Count && _items.Count > 0)
+        {
+            <p class="pos-manage-share__select-banner" role="status">
+                @L["ConnectedBuyers_PageSelectedCount", _pageSelected.Count]
+                <button type="button" class="pos-link-button" disabled="@_busy" @onclick="SelectAllMatching">
+                    @L["ConnectedBuyers_SelectAllMatching", _matchingCount]
+                </button>
+            </p>
+        }
+
+        @if (_items.Count == 0)
+        {
+            <EmptyState IconName="products"
+                        Title="@L["Catalog_ConnectedAvailability_EmptyTitle"]"
+                        Message="@L["Catalog_ConnectedAvailability_EmptyMessage"]" />
+        }
+        else
+        {
+            <div class="pos-manage-share__list" role="list">
+                <label class="pos-manage-share__select-all">
+                    <input type="checkbox"
+                           checked="@PageAllSelected"
+                           disabled="@(_busy || !CanManage)"
+                           @onchange="OnTogglePageSelect" />
+                    <span>@L["ConnectedBuyers_SelectVisible", _items.Count]</span>
+                </label>
+                @foreach (var product in _items)
+                {
+                    var selected = _selectAllMatching || _pageSelected.Contains(product.ProductId);
+                    <article class="pos-manage-share__row @(selected ? "pos-manage-share__row--selected" : null)" role="listitem">
+                        <label class="pos-manage-share__check">
+                            <input type="checkbox"
+                                   checked="@selected"
+                                   disabled="@(_busy || !CanManage || _selectAllMatching)"
+                                   @onchange="args => ToggleOne(product.ProductId, args)" />
+                        </label>
+                        <div class="pos-manage-share__body">
+                            <span class="pos-manage-share__name">@product.Name</span>
+                            <span class="pos-manage-share__meta pos-muted">
+                                @if (!string.IsNullOrWhiteSpace(product.CategoryName))
+                                {
+                                    @product.CategoryName
+                                }
+                                else
+                                {
+                                    @L["ConnectedBuyers_FilterUncategorized"]
+                                }
+                                @if (!string.IsNullOrWhiteSpace(product.Sku))
+                                {
+                                    <text> · @product.Sku</text>
+                                }
+                            </span>
+                            <span class="pos-manage-share__prices pos-muted">
+                                @L["ConnectedBuyers_RetailShort"]
+                                <MoneyDisplay Amount="@product.SellingPrice" CurrencyCode="PHP" />
+                                <text> · </text>
+                                @L["ConnectedBuyers_DefaultPoShort"]
+                                @if (product.DefaultConnectedPoPrice is decimal po)
+                                {
+                                    <MoneyDisplay Amount="@po" CurrencyCode="PHP" />
+                                }
+                                else
+                                {
+                                    @L["Catalog_ConnectedAvailability_DefaultPoNotSet"]
+                                }
+                            </span>
+                            <span class="pos-manage-share__state @(product.CanExposeToConnectedBuyers ? "pos-manage-share__state--shared" : null)">
+                                @(product.CanExposeToConnectedBuyers
+                                    ? L["Catalog_ConnectedAvailability_Available"]
+                                    : L["Catalog_ConnectedAvailability_NotAvailable"])
+                            </span>
+                        </div>
+                    </article>
+                }
+            </div>
+
+            @if (_hasMore)
+            {
+                <div class="pos-manage-share__more">
+                    <button type="button" class="pos-action-tile" disabled="@_busy" @onclick="LoadMoreAsync">
+                        <span class="pos-action-tile__label">@L["Common_LoadMore"]</span>
+                    </button>
+                </div>
+            }
+        }
+
+        @if (!string.IsNullOrWhiteSpace(_banner))
+        {
+            <p class="pos-manage-share__banner" role="status">@_banner</p>
+        }
+    }
+</Page>
+
+@if (CanManage && (_selectedCount > 0 || _selectAllMatching))
+{
+    <div class="pos-manage-share__sticky" role="region" aria-label="@L["ConnectedBuyers_BulkActions"]">
+        <div class="pos-manage-share__sticky-meta">
+            @(_selectAllMatching
+                ? L["ConnectedBuyers_AllMatchingSelected", _matchingCount]
+                : L["ConnectedBuyers_SelectedCount", _selectedCount])
+        </div>
+        <div class="pos-manage-share__sticky-actions">
+            <button type="button" class="pos-manage-share__action" disabled="@_busy" @onclick="() => BulkAvailabilityAsync(true)">@L["Catalog_ConnectedAvailability_Enable"]</button>
+            <button type="button" class="pos-manage-share__action pos-manage-share__action--danger" disabled="@_busy" @onclick="() => BulkAvailabilityAsync(false)">@L["Catalog_ConnectedAvailability_Disable"]</button>
+            <button type="button" class="pos-manage-share__action" disabled="@_busy" @onclick="OpenPriceSheet">@L["Catalog_ConnectedAvailability_PoPrice"]</button>
+            <button type="button" class="pos-manage-share__action" disabled="@_busy" @onclick="ClearSelection">@L["ConnectedBuyers_ClearSelection"]</button>
+        </div>
+    </div>
+}
+
+@if (_categorySheetOpen)
+{
+    <div class="pos-denom-sheet" role="dialog" aria-modal="true" aria-label="@L["ConnectedBuyers_FilterCategory"]">
+        <div class="pos-denom-sheet__panel">
+            <header class="pos-denom-sheet__header">
+                <h2 class="pos-denom-sheet__title">@L["ConnectedBuyers_FilterCategory"]</h2>
+            </header>
+            <div class="pos-denom-sheet__list">
+                <button type="button" class="pos-denom-sheet__item @(_categoryId is null ? "pos-denom-sheet__item--active" : null)"
+                        @onclick="SelectAllCategoriesAsync">
+                    <span>@L["ConnectedBuyers_FilterAllCategories"]</span>
+                    <span class="pos-muted">@_matchingCount</span>
+                </button>
+                @foreach (var facet in _categories)
+                {
+                    var isUncategorized = facet.CategoryId is null;
+                    var selected = isUncategorized
+                        ? _categoryUncategorized
+                        : _categoryId == facet.CategoryId;
+                    var label = isUncategorized
+                        ? L["ConnectedBuyers_FilterUncategorized"].Value
+                        : (facet.CategoryName ?? facet.CategoryId!.Value.ToString("D"));
+                    <button type="button" class="pos-denom-sheet__item @(selected ? "pos-denom-sheet__item--active" : null)"
+                            @onclick="() => SetCategoryAsync(facet.CategoryId, isUncategorized)">
+                        <span>@label</span>
+                        <span class="pos-muted">@facet.Count</span>
+                    </button>
+                }
+            </div>
+            <div class="pos-denom-sheet__bar">
+                <button type="button" class="pos-action-tile" @onclick="() => _categorySheetOpen = false">
+                    <span class="pos-action-tile__label">@L["Common_Close"]</span>
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@if (_priceSheetOpen)
+{
+    <div class="pos-denom-sheet" role="dialog" aria-modal="true" aria-label="@L["Catalog_ConnectedAvailability_PoPrice"]">
+        <div class="pos-denom-sheet__panel">
+            <header class="pos-denom-sheet__header">
+                <h2 class="pos-denom-sheet__title">@L["Catalog_ConnectedAvailability_PoPrice"]</h2>
+                <p class="pos-denom-sheet__hint">@L["Catalog_ConnectedAvailability_PriceRuleHelp"]</p>
+            </header>
+            <div class="pos-denom-sheet__list">
+                <label class="pos-manage-share__price-option">
+                    <input type="radio" name="avail-price-mode" checked="@(_priceMode == "SetFromRetail")" @onchange="SetFromRetailMode" />
+                    @L["Catalog_ConnectedAvailability_SetFromRetail"]
+                </label>
+                <label class="pos-manage-share__price-option">
+                    <input type="radio" name="avail-price-mode" checked="@(_priceMode == "DiscountFromRetailPercent")" @onchange="SetDiscountMode" />
+                    @L["Catalog_ConnectedAvailability_DiscountFromRetail"]
+                </label>
+                @if (_priceMode == "DiscountFromRetailPercent")
+                {
+                    <input class="pos-manage-share__price-input" type="number" min="0" max="100" step="0.01" @bind="_percentText" />
+                }
+                <label class="pos-manage-share__price-option">
+                    <input type="radio" name="avail-price-mode" checked="@(_priceMode == "AdjustFromRetailAmount")" @onchange="SetAdjustMode" />
+                    @L["Catalog_ConnectedAvailability_AdjustRetail"]
+                </label>
+                @if (_priceMode == "AdjustFromRetailAmount")
+                {
+                    <input class="pos-manage-share__price-input" type="number" step="0.01" @bind="_amountText" />
+                }
+                <label class="pos-manage-share__price-option">
+                    <input type="radio" name="avail-price-mode" checked="@(_priceMode == "FixedPrice")" @onchange="SetFixedMode" />
+                    @L["Catalog_ConnectedAvailability_SetSamePrice"]
+                </label>
+                @if (_priceMode == "FixedPrice")
+                {
+                    <input class="pos-manage-share__price-input" type="number" min="0.01" step="0.01" @bind="_fixedPriceText" />
+                }
+                @if (!string.IsNullOrWhiteSpace(_priceError))
+                {
+                    <p class="pos-manage-share__banner">@_priceError</p>
+                }
+            </div>
+            <div class="pos-denom-sheet__bar">
+                <button type="button" class="pos-action-tile" disabled="@_busy" @onclick="() => _priceSheetOpen = false">
+                    <span class="pos-action-tile__label">@L["Common_Cancel"]</span>
+                </button>
+                <button type="button" class="pos-action-tile pos-action-tile--primary" disabled="@_busy" @onclick="PreviewPriceAsync">
+                    <span class="pos-action-tile__label">@L["ConnectedBuyers_PricePreview"]</span>
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@if (_preview is not null)
+{
+    <div class="pos-denom-sheet" role="dialog" aria-modal="true" aria-label="@L["ConnectedBuyers_PricePreview"]">
+        <div class="pos-denom-sheet__panel">
+            <header class="pos-denom-sheet__header">
+                <h2 class="pos-denom-sheet__title">@L["ConnectedBuyers_PricePreview"]</h2>
+                <p class="pos-denom-sheet__hint">@L["ConnectedBuyers_PricePreviewCount", _preview.AffectedCount]</p>
+            </header>
+            <div class="pos-denom-sheet__list">
+                @foreach (var item in _preview.Items)
+                {
+                    <div class="pos-manage-share__preview-row pos-manage-share__preview-row--stack">
+                        <strong>@item.Name</strong>
+                        <span class="pos-muted">
+                            @L["ConnectedBuyers_RetailShort"]
+                            <MoneyDisplay Amount="@item.SellingPrice" CurrencyCode="PHP" />
+                        </span>
+                        <span class="pos-muted">
+                            @L["ConnectedBuyers_DefaultPoShort"]
+                            @if (item.CurrentDefaultPoPrice is decimal current)
+                            {
+                                <MoneyDisplay Amount="@current" CurrencyCode="PHP" />
+                            }
+                            else
+                            {
+                                @L["Catalog_ConnectedAvailability_DefaultPoNotSet"]
+                            }
+                            →
+                            <MoneyDisplay Amount="@item.ProposedDefaultPoPrice" CurrencyCode="PHP" />
+                        </span>
+                    </div>
+                }
+                @if (_preview.Truncated)
+                {
+                    <p class="pos-muted">@L["ConnectedBuyers_PricePreviewTruncated"]</p>
+                }
+            </div>
+            <div class="pos-denom-sheet__bar">
+                <button type="button" class="pos-action-tile" disabled="@_busy" @onclick="() => _preview = null">
+                    <span class="pos-action-tile__label">@L["Common_Cancel"]</span>
+                </button>
+                <button type="button" class="pos-action-tile pos-action-tile--primary" disabled="@_busy" @onclick="ApplyPriceAsync">
+                    <span class="pos-action-tile__label">@L["ConnectedBuyers_ApplyToCount", _preview.AffectedCount]</span>
+                </button>
+            </div>
+        </div>
+    </div>
+}
+</div>
+
+<style>
+    .pos-manage-share { width: 100%; padding-bottom: 0.5rem; }
+    .pos-manage-share--has-selection { padding-bottom: 5.5rem; }
+    .pos-manage-share__header { margin-bottom: 0.55rem; }
+    .pos-manage-share__title { margin: 0; font-size: 1.2rem; font-weight: 700; line-height: 1.2; color: var(--exits-text, #15201a); }
+    .pos-manage-share__summary { margin: 0.25rem 0 0; font-size: 0.8125rem; }
+    .pos-manage-share__search {
+        display: flex; align-items: center; gap: 0.45rem; margin: 0 0 0.55rem;
+        padding: 0.45rem 0.55rem; border: 1px solid var(--exits-border, #c9d4cd); border-radius: 0.55rem;
+        background: var(--exits-surface, #fff);
+    }
+    .pos-manage-share__search-input {
+        flex: 1; border: 0; outline: none; background: transparent; font: inherit; font-size: 0.95rem;
+    }
+    .pos-manage-share__search-clear { appearance: none; border: 0; background: transparent; font: inherit; font-size: 0.75rem; font-weight: 650; color: var(--exits-primary, #1b7a3d); }
+    .pos-manage-share__filters {
+        display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0 0 0.55rem;
+    }
+    .pos-manage-share__category-row { margin: 0 0 0.55rem; }
+    .pos-manage-share__category-btn {
+        appearance: none; width: 100%; text-align: left; font: inherit; font-size: 0.875rem; font-weight: 650;
+        padding: 0.55rem 0.7rem; border-radius: 0.55rem; border: 1px solid var(--exits-border, #c9d4cd);
+        background: var(--exits-surface, #fff); color: var(--exits-text, #15201a);
+    }
+    .pos-manage-share__select-banner {
+        margin: 0 0 0.55rem; padding: 0.45rem 0.55rem; border-radius: 0.45rem;
+        background: rgba(27, 122, 61, 0.08); font-size: 0.8125rem;
+    }
+    .pos-manage-share__list {
+        border: 1px solid var(--exits-border, #c9d4cd); border-radius: 0.65rem; overflow: hidden;
+        background: var(--exits-surface, #fff);
+    }
+    .pos-manage-share__select-all {
+        display: flex; align-items: center; gap: 0.55rem; padding: 0.55rem 0.7rem;
+        border-bottom: 1px solid var(--pos-border-subtle, #d7e0da); font-size: 0.8125rem; font-weight: 650;
+    }
+    .pos-manage-share__row {
+        display: grid; grid-template-columns: auto 1fr; gap: 0.55rem; padding: 0.6rem 0.7rem; align-items: start;
+    }
+    .pos-manage-share__row + .pos-manage-share__row { border-top: 1px solid var(--pos-border-subtle, #d7e0da); }
+    .pos-manage-share__row--selected { background: rgba(27, 122, 61, 0.06); }
+    .pos-manage-share__check { margin: 0.15rem 0 0; }
+    .pos-manage-share__body {
+        display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; text-align: left;
+        appearance: none; border: 0; background: transparent; padding: 0; font: inherit;
+    }
+    .pos-manage-share__name { font-size: 0.95rem; font-weight: 650; line-height: 1.25; color: var(--exits-text, #15201a); }
+    .pos-manage-share__meta, .pos-manage-share__prices { font-size: 0.75rem; line-height: 1.3; }
+    .pos-manage-share__state { font-size: 0.75rem; font-weight: 700; color: var(--exits-text-muted, #5b6b62); }
+    .pos-manage-share__state--shared { color: var(--exits-primary, #1b7a3d); }
+    .pos-manage-share__more { margin-top: 0.65rem; }
+    .pos-manage-share__banner { margin: 0.55rem 0 0; font-size: 0.8125rem; color: var(--exits-text, #15201a); }
+    .pos-manage-share__sticky {
+        position: sticky; bottom: 0; z-index: 20; margin-top: 0.75rem;
+        padding: 0.65rem 0.75rem calc(0.65rem + env(safe-area-inset-bottom, 0px));
+        border-top: 1px solid var(--exits-border, #c9d4cd); background: var(--exits-surface, #fff);
+        box-shadow: 0 -6px 18px rgba(21, 32, 26, 0.08);
+    }
+    .pos-manage-share__sticky-meta { font-size: 0.8125rem; font-weight: 700; margin-bottom: 0.4rem; }
+    .pos-manage-share__sticky-actions { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+    .pos-manage-share__action {
+        appearance: none; border: 1px solid var(--exits-border, #c9d4cd); background: #fff;
+        border-radius: 999px; padding: 0.4rem 0.7rem; font: inherit; font-size: 0.8125rem; font-weight: 700;
+        color: var(--exits-primary, #1b7a3d);
+    }
+    .pos-manage-share__action--danger { color: #8a1f1f; border-color: #e0b4b4; }
+    .pos-manage-share__price-option { display: flex; align-items: center; gap: 0.45rem; margin: 0.35rem 0; font-size: 0.875rem; font-weight: 600; }
+    .pos-manage-share__price-input {
+        width: 100%; margin: 0.2rem 0 0.45rem; padding: 0.45rem 0.55rem;
+        border: 1px solid var(--exits-border, #c9d4cd); border-radius: 0.45rem; font: inherit;
+    }
+    .pos-manage-share__preview-row {
+        display: flex; justify-content: space-between; gap: 0.75rem; padding: 0.45rem 0;
+        border-bottom: 1px solid var(--pos-border-subtle, #d7e0da); font-size: 0.875rem;
+    }
+    .pos-manage-share__preview-row--stack { flex-direction: column; align-items: flex-start; }
+    .pos-denom-sheet__item { display: flex; justify-content: space-between; gap: 0.75rem; width: 100%; }
+</style>
+
+@code {
+    private readonly List<ConnectedBuyerAvailabilityItemDto> _items = [];
+    private readonly HashSet<Guid> _pageSelected = [];
+    private IReadOnlyList<ConnectedBuyerAvailabilityCategoryFacetDto> _categories = [];
+    private bool _loading = true;
+    private bool _busy;
+    private bool _hasMore;
+    private bool _selectAllMatching;
+    private bool _categorySheetOpen;
+    private bool _priceSheetOpen;
+    private bool _categoryUncategorized;
+    private string? _error;
+    private string? _banner;
+    private string? _priceError;
+    private string _query = "";
+    private string _availabilityFilter = "all";
+    private string _priceMode = "SetFromRetail";
+    private string _percentText = "5";
+    private string _amountText = "-5";
+    private string _fixedPriceText = "";
+    private Guid? _categoryId;
+    private int _page = 1;
+    private int _matchingCount;
+    private int _availableCount;
+    private int _notAvailableCount;
+    private CancellationTokenSource? _searchCts;
+    private BulkDefaultConnectedPoPricingPreviewDto? _preview;
+    private BulkDefaultConnectedPoPricingRequest? _pendingPriceRequest;
+
+    private bool CanManage => Capabilities.IsAllowed(UtangCapability.ManageCatalog);
+    private bool PageAllSelected => _items.Count > 0 && _items.All(x => _pageSelected.Contains(x.ProductId));
+    private int _selectedCount => _pageSelected.Count;
+
+    private IReadOnlyList<(string Value, string Label)> AvailabilityFilters =>
+    [
+        ("all", L["Catalog_ConnectedAvailability_FilterAll"]),
+        ("available", L["Catalog_ConnectedAvailability_FilterAvailable"]),
+        ("notavailable", L["Catalog_ConnectedAvailability_FilterNotAvailable"])
+    ];
+
+    private string CategoryButtonLabel
+    {
+        get
+        {
+            if (_categoryUncategorized)
+            {
+                return L["ConnectedBuyers_FilterUncategorized"];
+            }
+
+            if (_categoryId is null)
+            {
+                return L["ConnectedBuyers_FilterAllCategories"];
+            }
+
+            var match = _categories.FirstOrDefault(c => c.CategoryId == _categoryId);
+            return match?.CategoryName ?? _categoryId.Value.ToString("D");
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        if (!Capabilities.IsAllowed(UtangCapability.ViewCatalog)
+            && !Capabilities.IsAllowed(UtangCapability.ManageCatalog))
+        {
+            Nav.NavigateTo("/home", replace: true);
+            return;
+        }
+
+        await ReloadAsync(resetPage: true);
+    }
+
+    private async Task OnSearchInput(ChangeEventArgs args)
+    {
+        _query = args.Value?.ToString() ?? "";
+        _searchCts?.Cancel();
+        _searchCts = new CancellationTokenSource();
+        var token = _searchCts.Token;
+        try
+        {
+            await Task.Delay(280, token);
+            await ReloadAsync(resetPage: true);
+        }
+        catch (TaskCanceledException)
+        {
+        }
+    }
+
+    private Task ClearSearch()
+    {
+        _query = "";
+        return ReloadAsync(resetPage: true);
+    }
+
+    private Task SetAvailabilityFilterAsync(string value)
+    {
+        _availabilityFilter = value;
+        ClearSelection();
+        return ReloadAsync(resetPage: true);
+    }
+
+    private Task SelectAllCategoriesAsync()
+    {
+        _categoryId = null;
+        _categoryUncategorized = false;
+        _categorySheetOpen = false;
+        ClearSelection();
+        return ReloadAsync(resetPage: true);
+    }
+
+    private Task SetCategoryAsync(Guid? categoryId, bool uncategorized)
+    {
+        _categoryUncategorized = uncategorized;
+        _categoryId = uncategorized ? null : categoryId;
+        _categorySheetOpen = false;
+        ClearSelection();
+        return ReloadAsync(resetPage: true);
+    }
+
+    private async Task ReloadAsync(bool resetPage)
+    {
+        if (resetPage)
+        {
+            _page = 1;
+            _items.Clear();
+            if (!_selectAllMatching)
+            {
+                _pageSelected.Clear();
+            }
+        }
+
+        _loading = _items.Count == 0;
+        _error = null;
+        if (!await Connectivity.IsConnectedAsync())
+        {
+            _error = L["Catalog_ConnectedAvailability_OfflineMessage"];
+            _loading = false;
+            return;
+        }
+
+        var availability = _availabilityFilter is "all" ? null : _availabilityFilter;
+        var result = await Catalog.QueryConnectedBuyerAvailabilityAsync(
+            _query, _categoryId, availability, _page, 25, _categoryUncategorized);
+        _loading = false;
+        if (!result.IsSuccess || result.Data is null)
+        {
+            _error = result.Error?.Detail ?? L["Catalog_ConnectedAvailability_LoadFailed"];
+            return;
+        }
+
+        var data = result.Data;
+        _matchingCount = data.MatchingCount;
+        _availableCount = data.AvailableCount;
+        _notAvailableCount = data.NotAvailableCount;
+        _categories = data.Categories;
+        _hasMore = data.Items.Count + ((_page - 1) * data.PageSize) < data.MatchingCount;
+        if (resetPage)
+        {
+            _items.Clear();
+        }
+
+        _items.AddRange(data.Items);
+    }
+
+    private async Task LoadMoreAsync()
+    {
+        if (_busy || !_hasMore) return;
+        _busy = true;
+        try
+        {
+            _page += 1;
+            await ReloadAsync(resetPage: false);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void OnTogglePageSelect(ChangeEventArgs args)
+    {
+        if (_selectAllMatching) return;
+        if (Checked(args))
+        {
+            foreach (var item in _items)
+            {
+                _pageSelected.Add(item.ProductId);
+            }
+        }
+        else
+        {
+            foreach (var item in _items)
+            {
+                _pageSelected.Remove(item.ProductId);
+            }
+        }
+    }
+
+    private void ToggleOne(Guid productId, ChangeEventArgs args)
+    {
+        if (_selectAllMatching) return;
+        if (Checked(args)) _pageSelected.Add(productId);
+        else _pageSelected.Remove(productId);
+    }
+
+    private void SelectAllMatching()
+    {
+        _selectAllMatching = true;
+        _pageSelected.Clear();
+    }
+
+    private void ClearSelection()
+    {
+        _selectAllMatching = false;
+        _pageSelected.Clear();
+    }
+
+    private async Task BulkAvailabilityAsync(bool enable)
+    {
+        if (_busy || !CanManage) return;
+        if (!await Connectivity.IsConnectedAsync())
+        {
+            _banner = L["Catalog_ConnectedAvailability_OfflineMessage"];
+            return;
+        }
+
+        _busy = true;
+        _banner = null;
+        try
+        {
+            var request = BuildMutationRequest(enable ? "Enable" : "Disable");
+            var result = await Catalog.BulkMutateConnectedBuyerAvailabilityAsync(request);
+            if (!result.IsSuccess)
+            {
+                _banner = result.Error?.Detail ?? L["Catalog_ConnectedAvailability_LoadFailed"];
+                return;
+            }
+
+            _banner = enable
+                ? L["Catalog_ConnectedAvailability_EnableSucceeded", result.Data?.AffectedCount ?? 0]
+                : L["Catalog_ConnectedAvailability_DisableSucceeded", result.Data?.AffectedCount ?? 0];
+            ClearSelection();
+            await ReloadAsync(resetPage: true);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private BulkConnectedBuyerAvailabilityMutationRequest BuildMutationRequest(string operation) =>
+        _selectAllMatching
+            ? new(operation, SelectAllMatching: true, Query: _query, CategoryId: _categoryId, AvailabilityFilter: AvailabilityOrNull(), UncategorizedOnly: _categoryUncategorized)
+            : new(operation, ProductIds: _pageSelected.ToList());
+
+    private BulkDefaultConnectedPoPricingRequest BuildPricingRequest()
+    {
+        decimal? percent = null;
+        decimal? amount = null;
+        decimal? fixedPrice = null;
+        if (_priceMode == "DiscountFromRetailPercent" && decimal.TryParse(_percentText, out var p)) percent = p;
+        if (_priceMode == "AdjustFromRetailAmount" && decimal.TryParse(_amountText, out var a)) amount = a;
+        if (_priceMode == "FixedPrice" && decimal.TryParse(_fixedPriceText, out var f)) fixedPrice = f;
+
+        return _selectAllMatching
+            ? new(_priceMode, SelectAllMatching: true, Query: _query, CategoryId: _categoryId, AvailabilityFilter: AvailabilityOrNull(), UncategorizedOnly: _categoryUncategorized, Percent: percent, Amount: amount, FixedPrice: fixedPrice)
+            : new(_priceMode, ProductIds: _pageSelected.ToList(), Percent: percent, Amount: amount, FixedPrice: fixedPrice);
+    }
+
+    private string? AvailabilityOrNull() => _availabilityFilter is "all" ? null : _availabilityFilter;
+
+    private void SetFromRetailMode() => _priceMode = "SetFromRetail";
+    private void SetDiscountMode() => _priceMode = "DiscountFromRetailPercent";
+    private void SetAdjustMode() => _priceMode = "AdjustFromRetailAmount";
+    private void SetFixedMode() => _priceMode = "FixedPrice";
+
+    private void OpenPriceSheet()
+    {
+        _priceError = null;
+        _priceSheetOpen = true;
+        _preview = null;
+    }
+
+    private async Task PreviewPriceAsync()
+    {
+        if (_busy || !CanManage) return;
+        if (!await Connectivity.IsConnectedAsync())
+        {
+            _priceError = L["Catalog_ConnectedAvailability_OfflineMessage"];
+            return;
+        }
+
+        _busy = true;
+        _priceError = null;
+        try
+        {
+            var request = BuildPricingRequest();
+            var result = await Catalog.PreviewDefaultConnectedPoPricingAsync(request);
+            if (!result.IsSuccess || result.Data is null)
+            {
+                _priceError = result.Error?.Detail ?? L["Catalog_ConnectedAvailability_LoadFailed"];
+                return;
+            }
+
+            _pendingPriceRequest = request;
+            _preview = result.Data;
+            _priceSheetOpen = false;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task ApplyPriceAsync()
+    {
+        if (_busy || !CanManage || _pendingPriceRequest is null) return;
+        if (!await Connectivity.IsConnectedAsync())
+        {
+            _banner = L["Catalog_ConnectedAvailability_OfflineMessage"];
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var result = await Catalog.ApplyDefaultConnectedPoPricingAsync(_pendingPriceRequest);
+            if (!result.IsSuccess)
+            {
+                _banner = result.Error?.Detail ?? L["Catalog_ConnectedAvailability_LoadFailed"];
+                return;
+            }
+
+            _banner = L["Catalog_ConnectedAvailability_PriceSucceeded", result.Data?.AffectedCount ?? 0];
+            _preview = null;
+            _pendingPriceRequest = null;
+            ClearSelection();
+            await ReloadAsync(resetPage: true);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private static bool Checked(ChangeEventArgs args) =>
+        args.Value is true || string.Equals(args.Value?.ToString(), "true", StringComparison.OrdinalIgnoreCase);
+}

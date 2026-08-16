@@ -9004,4 +9004,76 @@
   <data name="ConnectedBuyers_NoProductsForFilter" xml:space="preserve">
     <value>Walang produktong tumutugma sa filter na ito.</value>
   </data>
+  <data name="Catalog_Quick_ConnectedAvailability" xml:space="preserve">
+    <value>Availability sa Connected Buyers</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_Title" xml:space="preserve">
+    <value>Availability sa Connected Buyers</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_Summary" xml:space="preserve">
+    <value>{0} available · {1} hindi available</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_FilterAll" xml:space="preserve">
+    <value>Lahat</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_FilterAvailable" xml:space="preserve">
+    <value>Available</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_FilterNotAvailable" xml:space="preserve">
+    <value>Hindi available</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_Enable" xml:space="preserve">
+    <value>I-enable</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_Disable" xml:space="preserve">
+    <value>I-disable</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_PoPrice" xml:space="preserve">
+    <value>PO Price</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_SetFromRetail" xml:space="preserve">
+    <value>Itakda mula sa retail price</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_DiscountFromRetail" xml:space="preserve">
+    <value>Diskwento mula sa retail</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_AdjustRetail" xml:space="preserve">
+    <value>I-adjust ang retail price</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_SetSamePrice" xml:space="preserve">
+    <value>Itakda ang parehong Default PO price</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_DefaultPoNotSet" xml:space="preserve">
+    <value>Hindi pa naka-set</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_Available" xml:space="preserve">
+    <value>Available</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_NotAvailable" xml:space="preserve">
+    <value>Hindi available</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_OfflineMessage" xml:space="preserve">
+    <value>Kailangan ng internet connection para sa connected buyer availability.</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_EnableSucceeded" xml:space="preserve">
+    <value>Na-enable ang {0} produkto para sa connected buyers.</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_DisableSucceeded" xml:space="preserve">
+    <value>Na-disable ang {0} produkto para sa connected buyers.</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_PriceSucceeded" xml:space="preserve">
+    <value>Na-update ang Default PO price para sa {0} produkto.</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_LoadFailed" xml:space="preserve">
+    <value>Hindi ma-load ang connected buyer availability.</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_EmptyTitle" xml:space="preserve">
+    <value>Walang nahanap na produkto</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_EmptyMessage" xml:space="preserve">
+    <value>Walang produktong tumutugma sa search o filter.</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_PriceRuleHelp" xml:space="preserve">
+    <value>Piliin kung paano itatakda ang Default PO price mula sa kasalukuyang retail selling price ng bawat produkto.</value>
+  </data>
 </root>

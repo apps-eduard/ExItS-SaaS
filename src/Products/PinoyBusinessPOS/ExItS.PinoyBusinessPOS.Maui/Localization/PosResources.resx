@@ -9004,4 +9004,76 @@
   <data name="ConnectedBuyers_NoProductsForFilter" xml:space="preserve">
     <value>No products match this filter.</value>
   </data>
+  <data name="Catalog_Quick_ConnectedAvailability" xml:space="preserve">
+    <value>Connected Buyer Availability</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_Title" xml:space="preserve">
+    <value>Connected Buyer Availability</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_Summary" xml:space="preserve">
+    <value>{0} available · {1} not available</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_FilterAll" xml:space="preserve">
+    <value>All</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_FilterAvailable" xml:space="preserve">
+    <value>Available</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_FilterNotAvailable" xml:space="preserve">
+    <value>Not available</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_Enable" xml:space="preserve">
+    <value>Enable</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_Disable" xml:space="preserve">
+    <value>Disable</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_PoPrice" xml:space="preserve">
+    <value>PO Price</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_SetFromRetail" xml:space="preserve">
+    <value>Set from retail price</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_DiscountFromRetail" xml:space="preserve">
+    <value>Discount from retail</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_AdjustRetail" xml:space="preserve">
+    <value>Adjust retail price</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_SetSamePrice" xml:space="preserve">
+    <value>Set same Default PO price</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_DefaultPoNotSet" xml:space="preserve">
+    <value>Not set</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_Available" xml:space="preserve">
+    <value>Available</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_NotAvailable" xml:space="preserve">
+    <value>Not available</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_OfflineMessage" xml:space="preserve">
+    <value>Connected buyer availability requires an internet connection.</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_EnableSucceeded" xml:space="preserve">
+    <value>Enabled {0} products for connected buyers.</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_DisableSucceeded" xml:space="preserve">
+    <value>Disabled {0} products for connected buyers.</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_PriceSucceeded" xml:space="preserve">
+    <value>Updated Default PO price for {0} products.</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_LoadFailed" xml:space="preserve">
+    <value>Could not load connected buyer availability.</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_EmptyTitle" xml:space="preserve">
+    <value>No products found</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_EmptyMessage" xml:space="preserve">
+    <value>No products match your search or filters.</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_PriceRuleHelp" xml:space="preserve">
+    <value>Choose how to set Default PO price from each product's current retail selling price.</value>
+  </data>
 </root>
