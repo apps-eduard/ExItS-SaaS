@@ -117,7 +117,7 @@ Schema **v9** adds `multiplier_to_base` / `package_label` on linked products so 
 | **Linked products** | Device cache of **explicitly linked** items only. Never downloads the full supplier catalog. |
 | **Product create/edit** | Available to connected buyers + Default PO Price (initialized from SellingPrice only on first enable; then independent). |
 | **Accept connection** | Activates relationship only, then opens share prompt with all exposable products selected by default. Confirm persists shares; Not now shares nothing. |
-| **Connected buyer → Shared products** | Per-buyer share toggles + optional buyer-specific PO prices. |
+| **Connected buyer → Manage products** | Mobile bulk share/unshare/price (search, filters, category, select-all matching, price preview). |
 
 `relationshipId` may be omitted on buyer entry; screens resolve `ConnectedRelationshipId` from the supplier master when online.
 

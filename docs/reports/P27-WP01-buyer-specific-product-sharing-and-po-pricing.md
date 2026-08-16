@@ -7,7 +7,7 @@ Companion detail: [connected-supplier-buyer-specific-sharing-and-pricing.md](con
 
 ## Status
 
-**Code Complete.** Phase 27 remains **Open / In Progress**. WP02–WP07 **Not Started**.
+**Code Complete + UX Hardening Complete.** Phase 27 remains **Open / In Progress**. WP02–WP07 **Not Started**. This UX hardening is **not** P27-WP02.
 
 | Gate | Value |
 |---|---|
@@ -15,8 +15,9 @@ Companion detail: [connected-supplier-buyer-specific-sharing-and-pricing.md](con
 | Browser Verified | **No** |
 | Production Ready | **No** |
 
-**Starting SHA:** `62b73307c753388d0006acc8d580db52dc483434`  
-**Feature tip (docs hash record):** `cbd0005bf811c183f361444884dc328b40d0e393`  
+**Starting SHA (original WP01):** `62b73307c753388d0006acc8d580db52dc483434`
+**UX hardening starting SHA:** `8e2ef20e5bb3ef9be42404fc8e983b1355691880`
+**Feature tip (docs hash record):** `cbd0005bf811c183f361444884dc328b40d0e393`
 **Roadmap registration tip:** `22c8b6d5`
 
 ## Implementation commits
@@ -44,6 +45,31 @@ Companion detail: [connected-supplier-buyer-specific-sharing-and-pricing.md](con
 - Post-accept share prompt: all exposable products selected by default; Confirm / Not now
 - Connected buyer → Shared products management (filters, toggles, buyer-specific prices)
 - Buyer Browse returns only shared + exposable + orderable products with effective price
+
+## UX hardening (2026-08-16 follow-up — not WP02)
+
+Mobile bulk product management replaced the cumbersome one-by-one save-all editor while preserving WP01 domain rules.
+
+### Delivered UX
+
+- Post-Accept lightweight card: Share all N / Review products / Confirm & share / Not now (Accept still creates **zero** shares until Confirm)
+- Single reusable Manage Products screen for Accept→Review and Connected Buyers → Manage
+- Search + chips (All / Shared / Not shared / Custom price) + category bottom sheet
+- Multi-select, select visible, select-all matching (distinct from page selection)
+- Sticky bulk Share / Unshare / Price actions
+- Bulk price preview (Use default / % discount / amount adjust from **Default PO only**) then Apply
+- Individual exception editor via product bottom sheet
+
+### API / application additions (no new migration)
+
+- Query buyer-product-shares with paging/filters (`query`, `category`, `shareFilter`, `page`, `pageSize`)
+- Bulk mutate Share/Unshare (`SelectAllMatching` or product IDs) — fail closed on foreign/non-exposable IDs
+- Pricing preview + apply endpoints
+- Legacy full-list GET retained when no filter/page params are supplied
+
+### UX hardening commits
+
+Recorded after push in the Implementation commits table below.
 
 ### Pricing & PO safety (WP01-required)
 

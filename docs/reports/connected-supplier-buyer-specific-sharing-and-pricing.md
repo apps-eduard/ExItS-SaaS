@@ -79,19 +79,26 @@ Disabling product exposability deactivates the supplier-wide exposure; buyer bro
 |---|---|
 | `POST /connected-suppliers/exposures` | Level 1 supplier-wide expose/update |
 | Legacy `POST /relationships/{id}/exposures` | Guidance error (no longer creates ambiguous relationship-scoped exposure) |
-| `GET /relationships/{id}/buyer-product-shares` | Eligible exposures + share state |
+| `GET /relationships/{id}/buyer-product-shares` | Eligible exposures + share state (legacy full list when unfiltered) |
+| `GET /relationships/{id}/buyer-product-shares?query&category&shareFilter&page&pageSize` | Paged supplier Manage Products query + category facets |
 | `GET /relationships/{id}/eligible-products` | Same for post-accept UI |
 | `PUT /relationships/{id}/buyer-product-shares` | Batch share/unshare + buyer prices |
 | `POST /relationships/{id}/buyer-product-shares/confirm` | Confirm selected products after Accept |
+| `POST /relationships/{id}/buyer-product-shares/bulk` | Bulk Share/Unshare (IDs or SelectAllMatching) |
+| `POST /relationships/{id}/buyer-product-shares/pricing/preview` | Bulk pricing preview (Default PO baseline) |
+| `POST /relationships/{id}/buyer-product-shares/pricing/apply` | Apply previewed pricing rule |
 | `GET /relationships/{id}/catalog` | **Only shared** products; `SupplierOrderPrice` = effective price |
 
 ## MAUI
 
 - Catalog create/edit/detail: Available to connected buyers + Default PO Price
-- Accept → `/suppliers/connected/buyers/{id}/share-products` (default all selected; Confirm / Not now)
-- Manage: `/suppliers/connected/buyers/{id}/shared-products`
+- Accept → lightweight `/share-products` card (Share all / Review / Confirm & share / Not now)
+- Manage: `/shared-products` mobile bulk list (search, share chips, category sheet, multi-select, sticky Share/Unshare/Price + preview)
 - Browse empty copy: supplier hasn’t shared with your business yet
 
+## UX hardening note (2026-08-16)
+
+P27-WP01 follow-up only — **not** WP02. Domain rules unchanged (Exposable ≠ Shared; buyer price → Default PO; Accept ≠ auto-share).
 ## Organization Web
 
 Backend rules apply. Org Web Connected buyers UI does **not** yet include share/price management (gap). Suppliers must use MAUI for sharing UX.
