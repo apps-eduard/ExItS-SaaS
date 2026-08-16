@@ -1,0 +1,114 @@
+@page "/organization/tax-compliance"
+@using ExItS.DesignSystem.Components.Internal
+@inject ICurrentUserContext CurrentUser
+@inject IPlatformAccessClient Platform
+@inject IOrganizationOwnerProbe OrganizationOwner
+@inject NavigationManager Nav
+@inject IStringLocalizer<PosResources> L
+
+<div class="pos-dash pos-tax-compliance">
+    <StoreHeaderBack Href="/more" />
+    <Page>
+        <header class="pos-more__header pos-tax-compliance__header">
+            <h1 class="pos-more__title">@L["TaxCompliance_Title"]</h1>
+            <p class="pos-more__subtitle">@L["TaxCompliance_Subtitle"]</p>
+        </header>
+
+        @if (_loading)
+        {
+            <Spinner />
+            <p class="pos-muted">@L["Common_Loading"]</p>
+        }
+        else if (!_isOrganizationOwner)
+        {
+            <div role="alert"><strong>@L["TaxCompliance_OwnerOnly"]</strong></div>
+        }
+        else if (!string.IsNullOrWhiteSpace(_error))
+        {
+            <div role="alert"><strong>@_error</strong></div>
+        }
+        else if (_readiness is not null)
+        {
+            <article class="pos-tax-compliance__card pos-tax-compliance__card--compact" role="status">
+                <strong>@_readiness.OverallStatus</strong>
+                <div class="pos-muted">
+                    @string.Format(L["TaxCompliance_Progress"].Value, CompletedCount, ChecklistCount)
+                </div>
+                <div class="pos-muted">
+                    @(_readiness.IsReadyForTaxDocumentActivation
+                        ? L["TaxCompliance_ReadyYes"]
+                        : L["TaxCompliance_ReadyNo"])
+                </div>
+            </article>
+
+            @if (_readiness.BlockingReasons.Count > 0)
+            {
+                <Section Title="@L["TaxCompliance_BlockingTitle"]">
+                    <ul class="pos-tax-compliance__list">
+                        @foreach (var reason in _readiness.BlockingReasons.Take(5))
+                        {
+                            <li>@reason</li>
+                        }
+                    </ul>
+                </Section>
+            }
+
+            <Section Title="@L["TaxCompliance_ChecklistTitle"]">
+                <div class="pos-tax-compliance__cards">
+                    @foreach (var item in _readiness.Checklist)
+                    {
+                        <article class="pos-tax-compliance__card pos-tax-compliance__card--compact">
+                            <strong>@item.Label</strong>
+                            <div class="pos-muted">@(item.Done ? L["TaxCompliance_Done"] : L["TaxCompliance_Pending"])</div>
+                        </article>
+                    }
+                </div>
+            </Section>
+
+            <p class="pos-muted pos-tax-compliance__note">@L["TaxCompliance_WebAdminNote"]</p>
+            <p class="pos-muted">@L["TaxCompliance_IssuanceUnavailable"]</p>
+        }
+    </Page>
+</div>
+
+@code {
+    private bool _loading = true;
+    private bool _isOrganizationOwner;
+    private string? _error;
+    private ComplianceActivationReadinessDto? _readiness;
+
+    private int ChecklistCount => _readiness?.Checklist.Count ?? 0;
+    private int CompletedCount => _readiness?.Checklist.Count(c => c.Done) ?? 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (CurrentUser.Session?.OrganizationId is not Guid organizationId
+            || CurrentUser.Session is null)
+        {
+            Nav.NavigateTo("/signin", replace: true);
+            return;
+        }
+
+        _isOrganizationOwner = await OrganizationOwner.IsExactOrganizationOwnerAsync(
+            CurrentUser.Session,
+            organizationId);
+
+        if (!_isOrganizationOwner)
+        {
+            _loading = false;
+            return;
+        }
+
+        var result = await Platform.GetComplianceActivationReadinessAsync(organizationId);
+        if (!result.IsSuccess || result.Data is null)
+        {
+            _error = result.Error?.Detail ?? result.Error?.Title ?? L["TaxCompliance_LoadFailed"];
+        }
+        else
+        {
+            _readiness = result.Data;
+        }
+
+        _loading = false;
+    }
+}

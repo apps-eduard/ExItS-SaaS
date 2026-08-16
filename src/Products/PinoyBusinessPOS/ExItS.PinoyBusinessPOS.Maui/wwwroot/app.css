@@ -14157,6 +14157,31 @@ html:has(.pos-denom-sheet) .pos-denom-sheet {
     }
 }
 
+/* P26-WP06: compact Tax & Compliance owner summary (MAUI). */
+.pos-tax-compliance__header {
+    margin-bottom: .75rem;
+}
+
+.pos-tax-compliance__cards {
+    display: grid;
+    gap: .5rem;
+}
+
+.pos-tax-compliance__card--compact {
+    border: 1px solid var(--pos-border, #d9d9d9);
+    border-radius: .35rem;
+    padding: .55rem .7rem;
+}
+
+.pos-tax-compliance__list {
+    margin: 0;
+    padding-left: 1.1rem;
+}
+
+.pos-tax-compliance__note {
+    margin-top: .75rem;
+}
+
 /* Phase 28 Stage B: compact customer-order seller/personal UX. */
 .pos-orders__header,
 .pos-orders__card-top,

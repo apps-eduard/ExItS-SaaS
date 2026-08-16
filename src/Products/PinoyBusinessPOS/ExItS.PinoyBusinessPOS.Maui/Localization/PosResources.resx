@@ -8416,6 +8416,48 @@
   <data name="SalesDocument_CurrentDocument" xml:space="preserve">
     <value>Current document: Transaction Summary</value>
   </data>
+  <data name="More_BusinessSection" xml:space="preserve">
+    <value>Business</value>
+  </data>
+  <data name="TaxCompliance_Title" xml:space="preserve">
+    <value>Tax &amp; Compliance</value>
+  </data>
+  <data name="TaxCompliance_Subtitle" xml:space="preserve">
+    <value>Compact readiness summary. Detailed admin is on Organization Web.</value>
+  </data>
+  <data name="TaxCompliance_Progress" xml:space="preserve">
+    <value>{0} of {1} complete</value>
+  </data>
+  <data name="TaxCompliance_BlockingTitle" xml:space="preserve">
+    <value>Blocking reasons</value>
+  </data>
+  <data name="TaxCompliance_ChecklistTitle" xml:space="preserve">
+    <value>Checklist</value>
+  </data>
+  <data name="TaxCompliance_Done" xml:space="preserve">
+    <value>Done</value>
+  </data>
+  <data name="TaxCompliance_Pending" xml:space="preserve">
+    <value>Pending</value>
+  </data>
+  <data name="TaxCompliance_ReadyYes" xml:space="preserve">
+    <value>Ready for TaxDocument activation: Yes</value>
+  </data>
+  <data name="TaxCompliance_ReadyNo" xml:space="preserve">
+    <value>Ready for TaxDocument activation: No</value>
+  </data>
+  <data name="TaxCompliance_IssuanceUnavailable" xml:space="preserve">
+    <value>TaxDocument issuance runtime is unavailable.</value>
+  </data>
+  <data name="TaxCompliance_WebAdminNote" xml:space="preserve">
+    <value>For taxpayer details, branch codes, and registration records, use Organization Web Tax &amp; Compliance.</value>
+  </data>
+  <data name="TaxCompliance_OwnerOnly" xml:space="preserve">
+    <value>Only the organization owner can view this summary.</value>
+  </data>
+  <data name="TaxCompliance_LoadFailed" xml:space="preserve">
+    <value>Tax &amp; Compliance readiness is temporarily unavailable.</value>
+  </data>
   <data name="Privacy_Action_StaffAccess" xml:space="preserve">
     <value>Staff access review</value>
   </data>
