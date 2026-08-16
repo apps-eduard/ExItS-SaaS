@@ -26,7 +26,8 @@ After the original Phase 21 foundation inventory, these processing surfaces were
 | Org profile independence | Organization contact/profile not live-synced from Personal; multi-org ownership | Covered under `DATA_INV_ORG_IDENTITY_MEMBERSHIP` |
 | Sales-document education ack | Owner-only versioned acknowledgment (`transaction-summary-v1`); not legal certification | `PIA_P26_SALES_DOC_EDUCATION` |
 | Compliance eligibility | Platform-controlled lifecycle; default off; cashiers see no review detail | `PIA_P26_COMPLIANCE_ELIGIBILITY` |
-| Compliance profile anchor | Org-scoped anchor; no invented TIN/BIR fields | `PIA_P26_COMPLIANCE_PROFILE` |
+| Compliance profile anchor | Org-scoped profile with registered taxpayer name + masked TIN; branch profiles separate | `PIA_P26_COMPLIANCE_PROFILE` |
+| BIR registration readiness (WP06) | Registration records + readiness evaluator; TIN is RESTRICTED COMPLIANCE (masked on DTOs) | `PIA_P26_COMPLIANCE_PROFILE` (extend) |
 | Future evidence intake | Architecture / roadmap only — **not implemented** | `PIA_P26_FUTURE_EVIDENCE` |
 
 Phase 21 foundation workspace (documents, systems, PIA views, PDF DRAFT export) remains readiness tooling only.
@@ -41,8 +42,8 @@ Phase 21 foundation workspace (documents, systems, PIA views, PDF DRAFT export) 
 | **PERSONAL ACCOUNT DATA** | Display name, `PublicUserId`, minimal self-resolution status; masked email only where self-resolution allows | Personal QR: identity-minimal only |
 | **ORGANIZATION INTERNAL** | Membership, ownership transfer status/actors/timestamps, org profile contact | No |
 | **TRANSACTIONAL** | Sales, buyer-party snapshots, seller-owned customer records | No |
-| **RESTRICTED COMPLIANCE** | Eligibility status, issuance capability flag, compliance profile timestamps/actors, reviewer audit | No |
-| **HIGHER-SENSITIVITY FUTURE** | Future government refs, addresses, signatures, taxpayer identifiers, uploaded evidence files | No — collect only when confirmed required |
+| **RESTRICTED COMPLIANCE** | Eligibility status, issuance capability flag, compliance profile timestamps/actors, **registered taxpayer name**, **TIN (normalized at rest; MaskedTin on DTOs)**, registration reference numbers, reviewer audit | No |
+| **HIGHER-SENSITIVITY FUTURE** | Future government refs beyond current readiness types, signatures, uploaded evidence files | No — collect only when confirmed required |
 
 ---
 
@@ -53,7 +54,7 @@ Phase 21 foundation workspace (documents, systems, PIA views, PDF DRAFT export) 
 | Ownership transfer | Secure Organization control-plane handoff; audit/security of actor history |
 | Education acknowledgment | Record that current Owner reviewed current ExItS sales-document product behavior (not legal/BIR certification) |
 | Compliance eligibility | Internal Platform review/authorization for future tax-document *eligibility* (issuance runtime still unavailable) |
-| Compliance profile | Organization-scoped readiness anchor for future confirmed fields |
+| Compliance profile | Organization-scoped readiness (taxpayer name, masked TIN, branch profiles, registration records) |
 | Future evidence | Private intake for eligibility verification when implemented — see [BIR roadmap](bir-compliance-activation-roadmap.md) |
 
 Lawful basis / PIC–PIP conclusions: **LEGAL/DPO CLASSIFICATION REQUIRED** (`PIC_PIP_ROLE_CLASSIFICATION`). Do not hard-code one global legal role for ExItS.

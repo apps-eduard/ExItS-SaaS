@@ -140,6 +140,7 @@ docs/reports/P26-WP02-organization-compliance-education-and-acknowledgment.md
 docs/reports/P26-WP03-platform-controlled-compliance-capability-and-eligibility.md
 docs/reports/P26-WP04-organization-tax-compliance-profile-and-activation-foundation.md
 docs/reports/P26-WP05-sales-document-compliance-integration-hardening.md
+docs/reports/P26-WP06-bir-registration-profile-and-activation-readiness.md
 docs/reports/P27-WP01-buyer-specific-product-sharing-and-po-pricing.md
 docs/reports/P27-WP02-connected-po-delivery-and-reliability.md
 docs/reports/P27-WP03-supplier-response-synchronization.md
@@ -154,6 +155,8 @@ docs/engineering/customer-ordering-pickup-and-delivery.md
 docs/engineering/purchasing-inventory-ux-mental-model.md
 docs/validation/phase-26-owner-validation-checklist.md
 docs/compliance/bir-compliance-activation-roadmap.md
+docs/compliance/bir-authoritative-source-register.md
+docs/engineering/bir-registration-readiness-and-activation.md
 docs/reports/personal-organization-identity-isolation.md
 docs/reports/organization-profile-independence.md
 docs/reports/sales-buyer-party-isolation.md

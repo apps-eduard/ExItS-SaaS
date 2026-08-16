@@ -251,17 +251,18 @@ P19-WP08 ? End-to-End Validation and User Closeout Checklist (Retest � awaitin
 | P25-WP08 — Organization profile independence + multi-org ownership | **Code Complete / Owner Validation Pending** | `a3dfda28`, `5fd997e0` — [report](reports/P25-WP08-organization-profile-independence.md) |
 | P25-WP09 — Organization ownership transfer | **Code Complete / Owner Validation Pending** | `67bd59bd`, `f20b6dc3`, `5f51e35a` — [report](reports/P25-WP09-organization-ownership-transfer.md) |
 
-**Phase 26 Sales Documents / Compliance Readiness:** **Open** ([phase](phases/phase-26-sales-documents-compliance-readiness.md); [roadmap](compliance/bir-compliance-activation-roadmap.md); [checklist](validation/phase-26-owner-validation-checklist.md); [tax configuration](engineering/platform-controlled-organization-tax-configuration.md)) — WP01–WP05 Code Complete / Owner Validation Pending; TaxDocument unavailable; TaxConfigurationEnabled Platform-gated (default off); no BIR claim; Phase 25 remains Open.
+**Phase 26 Sales Documents / Compliance Readiness:** **Open** ([phase](phases/phase-26-sales-documents-compliance-readiness.md); [roadmap](compliance/bir-compliance-activation-roadmap.md); [source register](compliance/bir-authoritative-source-register.md); [readiness design](engineering/bir-registration-readiness-and-activation.md); [checklist](validation/phase-26-owner-validation-checklist.md); [tax configuration](engineering/platform-controlled-organization-tax-configuration.md)) — WP01–WP06 Code Complete / Owner Validation Pending (WP06 also Regulatory Validation Pending); TaxDocument unavailable; TaxConfigurationEnabled Platform-gated (default off); no BIR claim; Phase 25 remains Open.
 
 ## Phase 26 work packages
 
-| WP | Status | Key commit |
+| Work package | Status | Evidence |
 |---|---|---|
-| P26-WP01 — Sales-document kinds / capability foundation | **Code Complete / Validation Pending** | [report](reports/P26-WP01-sales-document-compliance-readiness-foundation.md) |
-| P26-WP02 — Owner education and acknowledgment | **Code Complete / Validation Pending** | [report](reports/P26-WP02-organization-compliance-education-and-acknowledgment.md) |
-| P26-WP03 — Platform-controlled compliance eligibility / grant-revoke | **Code Complete / Validation Pending** | `73b5822c` — [report](reports/P26-WP03-platform-controlled-compliance-capability-and-eligibility.md) |
-| P26-WP04 — Organization Tax/Compliance Profile & Future Activation Foundation | **Code Complete / Validation Pending** | `c794707e` — [report](reports/P26-WP04-organization-tax-compliance-profile-and-activation-foundation.md); [roadmap](compliance/bir-compliance-activation-roadmap.md) |
+| P26-WP01 — Sales document compliance readiness foundation | **Code Complete / Validation Pending** | See [report](reports/P26-WP01-sales-document-compliance-readiness-foundation.md) |
+| P26-WP02 — Organization compliance education and acknowledgment | **Code Complete / Validation Pending** | See [report](reports/P26-WP02-organization-compliance-education-and-acknowledgment.md) |
+| P26-WP03 — Platform-controlled compliance capability and eligibility | **Code Complete / Validation Pending** | See [report](reports/P26-WP03-platform-controlled-compliance-capability-and-eligibility.md) |
+| P26-WP04 — Organization tax/compliance profile and activation foundation | **Code Complete / Validation Pending** | See [report](reports/P26-WP04-organization-tax-compliance-profile-and-activation-foundation.md) |
 | P26-WP05 — Integration Hardening & Validation Readiness | **Code Complete / Owner Validation Pending** | `254424df` — [report](reports/P26-WP05-sales-document-compliance-integration-hardening.md); [checklist](validation/phase-26-owner-validation-checklist.md) |
+| P26-WP06 — BIR registration profile & activation readiness | **Code Complete / Owner + Regulatory Validation Pending** | Feature SHA **TBD** — [report](reports/P26-WP06-bir-registration-profile-and-activation-readiness.md); starting `1f81cb63` |
 
 **Phase 27 Connected Supplier Commerce & Purchasing:** **Open / In Progress** ([phase](phases/phase-27-connected-supplier-commerce-and-purchasing.md); [design](engineering/connected-exits-suppliers.md)) — P27-WP01–WP05 Code Complete; WP06–WP07 Not Started; active next P27-WP06; **Device Verified: No**; **Browser Verified: No**; **Production Ready: No**; no phase closeout.
 

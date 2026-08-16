@@ -2,41 +2,60 @@
 
 ## Purpose
 
-P26-WP04 introduces an organization-scoped **compliance profile anchor** and a living activation playbook. The profile prepares Platform data ownership for future confirmed tax/compliance fields without inventing BIR requirements.
+Organization-scoped **compliance profile** for ExItS registration readiness and future TaxDocument activation. Confirmed fields are added only with explicit work packages. Canonical playbook: [bir-compliance-activation-roadmap.md](../compliance/bir-compliance-activation-roadmap.md). Design: [bir-registration-readiness-and-activation.md](bir-registration-readiness-and-activation.md).
 
-Canonical playbook: [bir-compliance-activation-roadmap.md](../compliance/bir-compliance-activation-roadmap.md).
-
-## What exists today
+## What exists today (P26-WP04 + P26-WP06)
 
 `OrganizationComplianceProfile` (Platform, one row per organization):
 
 | Field | Role |
 |---|---|
 | `OrganizationId` | Organization scope key (not Owner / Personal user) |
-| `CreatedAtUtc` | Anchor creation |
-| `UpdatedAtUtc` | Last touch |
-| `UpdatedByActorReference` | Optional Platform actor reference |
+| `RegisteredTaxpayerName` | Registered taxpayer / business name for readiness |
+| `TinNormalized` | 9-digit TIN (Platform persistence only) |
+| `MaskedTin` | Derived display (`***-***-123`) — **only** TIN form on DTOs |
+| `SetupStatus` | Org readiness lifecycle (`NotConfigured` … `ActivationBlocked` / `Activated`) |
+| `CreatedAtUtc` / `UpdatedAtUtc` / `UpdatedByActorReference` | Audit metadata |
 
-Business identity currently continues to live on `OrganizationProfile` (legal name, registered address lines, city/region/postal/country). Tax calculation remains on POS `OperationalSetup`. Eligibility and issuance remain on `OrganizationSalesDocumentCapability`.
+Business address identity continues to live on `OrganizationProfile`. Tax calculation remains on POS `OperationalSetup`. Eligibility and issuance flags remain on `OrganizationSalesDocumentCapability`.
+
+### Branch compliance profiles (separate)
+
+`BranchComplianceProfile` is **branch-scoped** and does not replace the org profile:
+
+| Field | Role |
+|---|---|
+| `OrganizationBranchId` | Branch key |
+| `BirBranchCode` | Branch code for readiness |
+| `SetupStatus` | Branch subset of setup statuses |
+| `Notes` | Optional operational notes |
+
+### Registration records
+
+`ComplianceRegistrationRecord` stores organization-provided registration evidence references (PTU, CAS registration, EIS types, Other) with Platform Accept/Reject for **ExItS readiness** — not BIR certification.
 
 `GetOrganizationComplianceProfile` combines:
 
-- profile initialization timestamps (if the anchor exists)
+- profile fields above (masked TIN only)
 - `OrganizationProfile` identity fields already stored
-- capability eligibility / `TaxDocumentIssuanceEnabled`
+- capability eligibility / issuance / tax-configuration flags
 - `TaxDocumentIssuanceRuntime.ImplementationAvailable` (currently `false`)
 - `DocumentMode = TransactionSummary`
 - snapshot guidance for future TaxDocument issuance
 
-Missing anchors do not invent regulatory identity. Ensure creates the empty anchor only; it does not enable TaxDocument.
+## TIN privacy
 
-## What is deliberately absent
+- Full TIN is never returned on application/API DTOs.
+- Authorized org/Platform clients may see `MaskedTin` only.
+- Public QR / public organization identity contracts must not expose TIN or compliance profile fields.
+- Classification: **RESTRICTED COMPLIANCE**. See [post-phase21 privacy refresh](../compliance/post-phase21-privacy-impact-refresh.md).
 
-- No TIN / BIR registration / permit / series fields invented “just in case”
+## What remains deliberately absent
+
 - No TaxDocument generation or runtime enablement
-- No public QR exposure of the profile
 - No fake evidence verification or public document URLs
 - No Personal-profile storage of business regulatory identity
+- No cashier UI for TIN / registration detail
 
 ## Ownership and transfer
 
@@ -44,18 +63,17 @@ The profile belongs to the organization. Ownership transfer changes membership a
 
 ## Authorization
 
-- **GET** `.../compliance-profile` — Platform organization view **or** active organization member.
+- **GET** `.../compliance-profile` / readiness / registrations — Platform organization view **or** active organization member.
+- **Mutations** (taxpayer, branch profile, registrations, submit readiness) — Organization **Owner** or Platform `ManageOrganizations`.
+- **Registration review (Accept/Reject)** — Platform `ManageOrganizations` only.
 - **POST** `.../compliance-profile/ensure` — Platform `ManageOrganizations` only.
 
-Sensitive management of future confirmed regulatory fields (when added) remains Platform-controlled. See [platform-organization-compliance-eligibility.md](platform-organization-compliance-eligibility.md).
+## Migrations
 
-## Migration
+- `20260814205652_AddOrganizationComplianceProfiles` — anchor
+- `20260816110906_AddBirRegistrationReadinessProfiles` — taxpayer/TIN, branch profiles, registration records
 
-`20260814205652_AddOrganizationComplianceProfiles` creates `platform.organization_compliance_profiles`. No enabling backfill. LocalStore unchanged.
-
-## Branch extension point
-
-Organization-level profile/capability does not automatically determine every branch’s future regulatory configuration. Branch-scoped fields may be added only after requirements are confirmed in the [activation roadmap](../compliance/bir-compliance-activation-roadmap.md). Do not invent branch rules in this package.
+No enabling backfill. LocalStore unchanged.
 
 ## Historical snapshot invariant
 
