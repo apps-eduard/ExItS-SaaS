@@ -6,8 +6,8 @@ Phase marker: `P10-WP06-advanced-permissions-operational-reports`
 
 **Complete.** Product-local POS operational roles (org-scoped assignments), role×capability matrix, InventoryStaff receive-only purchasing mutations, fifteen role-aware operational reports, migration `AddPosOperationalRoles`, typed permissions API/MAUI surfaces, and focused tests. **Product-local POS-ROLES gap closed.** **R-091 remains open.** Do **not** begin P10-WP07.
 
-Authorize commit: `98264fc`  
-Feature tip: `1e46f6eb142d1c14455f954e7c8286abeb1ddff3`  
+Authorize commit: `98264fc`
+Feature tip: `1e46f6eb142d1c14455f954e7c8286abeb1ddff3`
 
 ## Delivered capability
 
@@ -29,16 +29,16 @@ Production auth (R-091), MFA/IdP, Platform membership admin, Windows MAUI, Phase
 
 ## Persistence
 
-Database: `ExItS_PinoyBusinessPOS` · Schema: `pos`  
-Migration: `20260731061054_AddPosOperationalRoles`  
-Prior: `20260731052329_AddPosSaleReturns`  
-Table: `pos_role_assignments`  
+Database: `ExItS_PinoyBusinessPOS` · Schema: `pos`
+Migration: `20260731061054_AddPosOperationalRoles`
+Prior: `20260731052329_AddPosSaleReturns`
+Table: `pos_role_assignments`
 Validated: apply → rollback → re-apply (`AddPosOperationalRolesMigrationTests`).
 
 ## API / UI
 
-- Permissions: list/get/effective/assign/revoke; online-only mutations  
-- Operational reports: role + commercial capability gated; Cashier shift reports restricted to own actor  
+- Permissions: list/get/effective/assign/revoke; online-only mutations
+- Operational reports: role + commercial capability gated; Cashier shift reports restricted to own actor
 - MAUI capability gates remain commercial; server enforces role matrix
 
 ## Build / test evidence
@@ -51,22 +51,22 @@ Validated: apply → rollback → re-apply (`AddPosOperationalRolesMigrationTest
 
 ## Security limitations
 
-- Development/Testing actor + commercial headers are **not** production authentication (R-091 open).  
-- Unassigned Dev/Testing actors may act as Owner when org already has owners (fixture compatibility); explicit assignments always win.  
+- Development/Testing actor + commercial headers are **not** production authentication (R-091 open).
+- Unassigned Dev/Testing actors may act as Owner when org already has owners (fixture compatibility); explicit assignments always win.
 - Product-local POS-ROLES closed; Platform IdP/JWT/MFA not delivered.
 
 ## Portfolio independence
 
-- No root `HealthCare/` directory  
-- `git ls-files -- HealthCare/` empty  
-- `dotnet sln ExItS.slnx list` has no HealthCare project  
+- No root a nested foreign product tree directory
+- Git tracking shows no nested foreign product tree empty
+- `dotnet sln ExItS.slnx list` has no legacy product project
 - Untracked `docs/phases/phase-11-web-ui-reporting-design-system.md` left alone (not committed; WP07/Phase 11 not started)
 
 ## Risks / open decisions
 
-- **R-091** production auth remains open  
-- **POS-ROLES** product-local gap **closed** in this WP  
-- R-109, R-129/NU1903, TLS-PROD, MAUI-HTTPS remain open  
+- **R-091** production auth remains open
+- **POS-ROLES** product-local gap **closed** in this WP
+- R-109, R-129/NU1903, TLS-PROD, MAUI-HTTPS remain open
 - Report export deferred; Phase 11 web redesign deferred
 
 ## Exact next work package

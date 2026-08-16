@@ -6,7 +6,7 @@ Broken links: none found in spot-check of new paths
 
 ## Root foundation (tracked)
 
-.gitignore (also ignores `*.dump` / encrypted backup artifacts; no nested HealthCare product path)
+.gitignore (also ignores `*.dump` / encrypted backup artifacts; no nested foreign product path)
 .cursor/rules/exits-workflow.mdc
 .cursor/rules/exits-product-context.mdc
 .dockerignore
@@ -214,6 +214,7 @@ docs/product/portfolio-vision.md
 docs/product/subscriptions-and-billing.md
 docs/release-plan.md
 docs/reports/README.md
+docs/reports/repository-legacy-reference-neutralization.md
 docs/reports/P0-WP01-completion.md
 docs/reports/P0-WP02-baseline-runtime-map.md
 docs/reports/P0-WP03-ui-reuse-review.md

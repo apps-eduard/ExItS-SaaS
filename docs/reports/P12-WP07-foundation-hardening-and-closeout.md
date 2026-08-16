@@ -40,23 +40,23 @@ Exact next phase: **Phase 13 — Production Authentication and Identity** (do **
 
 ## 3. Contracts locked
 
-1. Platform owns SaaS administration; product owns operational domain  
-2. Independent subscription per product  
-3. Separate database and migrations per product  
-4. No direct Platform table reads; no cross-product FKs  
-5. Product-local roles/grants; Platform access ≠ operational permission  
-6. SaaS billing ≠ product operational money  
-7. Shared primitives ≠ authoritative domain model  
-8. No customer-specific source forks  
-9. PHI defaults to none unless explicitly authorized  
-10. Narrow context loading; bootstrap stops before implementation by default  
-11. Do not copy POS domain into new products  
-12. No HealthCare product dependency (contracts-only Integration path remains)
+1. Platform owns SaaS administration; product owns operational domain
+2. Independent subscription per product
+3. Separate database and migrations per product
+4. No direct Platform table reads; no cross-product FKs
+5. Product-local roles/grants; Platform access ≠ operational permission
+6. SaaS billing ≠ product operational money
+7. Shared primitives ≠ authoritative domain model
+8. No customer-specific source forks
+9. PHI defaults to none unless explicitly authorized
+10. Narrow context loading; bootstrap stops before implementation by default
+11. Do not copy POS domain into new products
+12. No foreign product dependency (contracts-only Integration path remains)
 
 ## 4. Context-loading behavior
 
-Order: workflow rule → product-context rule → foundation reference → active product Docs → current WP/prompt → task-needed files.  
-Default exclusions: unrelated products, old reports tree, full Platform/POS history, removed HealthCare product content, build artifacts.
+Order: workflow rule → product-context rule → foundation reference → active product Docs → current WP/prompt → task-needed files.
+Default exclusions: unrelated products, old reports tree, full Platform/POS history, removed foreign product content, build artifacts.
 
 ## 5. Bootstrap behavior
 
@@ -93,18 +93,18 @@ No speculative policy expansion. No Phase 11 file changes. Also updated stale re
 | Full Release tests | **1186 passed / 0 failed / 0 skipped** |
 | No app/infra code in Phase 12 closeout | Pass |
 | No `src/Products/ReferenceLoan/`; only PinoyBusinessPOS | Pass |
-| No HealthCare product tree | Pass |
+| No foreign product tree | Pass |
 | No unresolved `{{…}}` in Reference-Product | Pass (templates retain intentional placeholders) |
 | Foundation package links | Pass after hardening |
 | `main = origin/main` | After push |
 
 ## 10. Readiness statement
 
-- **Phase 12 documentation foundation is complete** and ready to bootstrap **future** products when explicitly authorized.  
-- **No production authentication** was implemented (R-091 open).  
-- **No real product** was created; ReferenceLoan is fictional only.  
-- **No deployment infrastructure** was added by Phase 12.  
-- Future products still require **explicit authorization** and their own architecture/security/product-owner decisions.  
+- **Phase 12 documentation foundation is complete** and ready to bootstrap **future** products when explicitly authorized.
+- **No production authentication** was implemented (R-091 open).
+- **No real product** was created; ReferenceLoan is fictional only.
+- **No deployment infrastructure** was added by Phase 12.
+- Future products still require **explicit authorization** and their own architecture/security/product-owner decisions.
 - **Not Production-ready** as a portfolio.
 
 ## Exact next phase

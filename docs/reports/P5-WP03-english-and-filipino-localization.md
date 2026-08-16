@@ -62,9 +62,9 @@ Baseline 447 not reduced (net +15).
 
 Release `net10.0-android` build succeeded. `adb devices` empty — interactive validation not claimed.
 
-## 10. HealthCare freeze
+## 10. portfolio independence verification
 
-Root `HealthCare/` must remain absent/untracked and outside `ExItS.slnx`.
+Root a nested foreign product tree must remain absent/untracked and outside `ExItS.slnx`.
 
 ## 11. Exact next work package
 

@@ -17,8 +17,8 @@ Exact next phase: **Phase 11 — Web UI and Reporting Design System** (do **not*
 
 Prior tip before closeout: `43bea6fc003bdde05af484f5fe7b5d9d5055850e`
 
-Closeout validation commit: `32395ff1a03b56949f81a33f850308a26cc50429`  
-Docs tip commit: `de09f97b0045636f9da004f1b7cc95bf7be17441`  
+Closeout validation commit: `32395ff1a03b56949f81a33f850308a26cc50429`
+Docs tip commit: `de09f97b0045636f9da004f1b7cc95bf7be17441`
 Final Phase 10 tip (after hash-record, if any): recorded on portfolio dashboard.
 
 ## 1. Phase 10 objective
@@ -71,7 +71,7 @@ Confirmed from repository evidence:
 | POS schema `pos` | Preserved |
 | No cross-product DB access/FKs | Preserved (architecture + migration forbidden-table checks) |
 | No PHI in POS | Preserved |
-| No HealthCare workspace dependency | Preserved (`HealthCare/` absent; sln has no HC projects) |
+| No legacy product workspace dependency | Preserved (a nested foreign product tree absent; sln has no legacy product projects) |
 | Platform SaaS billing ≠ store money | Preserved |
 | POS roles product-local ≠ Platform roles | Preserved (P10-WP06) |
 | Production authentication open | **R-091 Open** |
@@ -182,7 +182,7 @@ Unresolved continuity risks (honest): ambiguous offline close/sync conflicts; lo
 - No PHI introduced; no secrets committed; no full sensitive body logging introduced
 - Org/actor trusted; cross-org concealed; financial/inventory workflows atomic; retries do not duplicate stock/cash/refunds/receipts/role assignments (idempotency retained)
 - Phase 9 security, backup, deployment, privacy controls remain active
-- HealthCare workspace remains absent and non-required
+- legacy product workspace remains absent and non-required
 - Architecture tests: existing suite + `PosFullPosCloseoutArchitectureTests`
 - Deployment phase marker: `P10-WP08-phase-10-closeout`
 
@@ -234,7 +234,7 @@ Do not claim Production readiness while blockers remain open.
 
 ## 16. Explicit exclusions (phase-level)
 
-Accounts payable; inventory valuation/COGS/P&L; tax/VAT fiscal devices; payment gateways / GCash API verification; warehouses/branches/lots/serials/expiry; physical cash drawers/devices/printers; second cash authority on Register; exchanges/store credit; report export/CSV/PDF; Windows MAUI; production authentication; manager approval workflows; HealthCare product tree; Phase 11/12 implementation.
+Accounts payable; inventory valuation/COGS/P&L; tax/VAT fiscal devices; payment gateways / GCash API verification; warehouses/branches/lots/serials/expiry; physical cash drawers/devices/printers; second cash authority on Register; exchanges/store credit; report export/CSV/PDF; Windows MAUI; production authentication; manager approval workflows; foreign product tree; Phase 11/12 implementation.
 
 ## 17. Exact next phase
 

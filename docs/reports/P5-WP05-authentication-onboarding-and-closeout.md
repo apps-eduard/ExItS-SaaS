@@ -81,7 +81,7 @@ R-091 (production auth), R-098 (dev identity), R-106 (secure storage), R-109 (em
 
 ## 9. Portfolio independence
 
-Root `HealthCare/` must remain absent/untracked and outside `ExItS.slnx`.
+Root a nested foreign product tree must remain absent/untracked and outside `ExItS.slnx`.
 
 ## 10. Exact next work package
 

@@ -16,9 +16,9 @@
 
 **Close Phase 2 with documented non-blocking risks.**
 
-P2-WP01 through P2-WP05 are accepted. Root Platform foundation, identity/organization boundary, commercial/entitlement domain, HealthCare contract boundaries, and migration dry-run validation are implemented and tested. No nested HealthCare product tree in this repository. No authentication, persistence, real HealthCare integration, migration, cutover, Platform Admin, or PinoyBusinessPOS was delivered — and must not be assumed complete.
+P2-WP01 through P2-WP05 are accepted. Root Platform foundation, identity/organization boundary, commercial/entitlement domain, legacy product contract boundaries, and migration dry-run validation are implemented and tested. No nested foreign product tree in this repository. No authentication, persistence, real legacy product integration, migration, cutover, Platform Admin, or PinoyBusinessPOS was delivered — and must not be assumed complete.
 
-Deferred items (auth, EF/PostgreSQL, HC Integration/E2E, restore rehearsal, calendar EOM rule, stale entitlement windows) belong to later phases and have safe defaults for continuing Platform work.
+Deferred items (auth, EF/PostgreSQL, legacy product Integration/E2E, restore rehearsal, calendar EOM rule, stale entitlement windows) belong to later phases and have safe defaults for continuing Platform work.
 
 **Exact next work:** Phase 3 — Portfolio Billing, Plans and Entitlements → **P3-WP01 — Product and Plan Catalog** (do not begin until authorized).
 
@@ -29,7 +29,7 @@ Deferred items (auth, EF/PostgreSQL, HC Integration/E2E, restore rehearsal, cale
 - Tracking: README, FILE-MANIFEST, index, portfolio-progress, phase-02, release-plan, risks
 - Reports: P2-WP01 through P2-WP05
 - Engineering: approved architecture, architecture, repository boundaries, capability/contracts/data/entitlement/security/authorization matrices, extraction rollback, risk/gate matrices, readiness checklist, standards, testing strategy
-- Reuse: extraction sequence/rules, HC reuse assessment, runtime baseline
+- Reuse: extraction sequence/rules, legacy product reuse assessment, runtime baseline
 - Product: subscriptions-and-billing, pinoy-business-pos-requirements
 - Decisions: ADR-011 through ADR-014
 - Next phase: `docs/phases/phase-03-billing-entitlements.md`
@@ -43,7 +43,7 @@ Deferred items (auth, EF/PostgreSQL, HC Integration/E2E, restore rehearsal, cale
 | P2-WP01 | **Complete / Accepted** | `4827b7f` — root solution, freeze safety |
 | P2-WP02 | **Complete / Accepted** | `49f8ae8` — identity/org domain (no auth) |
 | P2-WP03 | **Complete / Accepted** | `6e866d7` + `10f99c5` — catalog/subs/entitlements; configurable trial |
-| P2-WP04 | **Complete / Accepted** | `3b66095` + `eb9fdfe` — HC projection contracts/interfaces |
+| P2-WP04 | **Complete / Accepted** | `3b66095` + `eb9fdfe` — legacy product projection contracts/interfaces |
 | P2-WP05 | **Complete / Accepted** | `e001f3d` — migration dry-run + remote publish |
 | P2-WP06 | **Ready for Review** | This closeout |
 
@@ -56,7 +56,7 @@ Deferred items (auth, EF/PostgreSQL, HC Integration/E2E, restore rehearsal, cale
 - Identity: `PlatformUser`, IDs, account lifecycle (no credentials)
 - Organizations: org + membership + Platform-only `OrganizationRole` + `ProductAccess` concept
 - Commercial: products, features, plans, immutable plan versions, trials, subscriptions, overrides, entitlement snapshots/composer
-- HealthCare-facing contracts: envelope, versioning, projections, apply policy, delivery/reconciliation **interfaces**
+- legacy product-facing contracts: envelope, versioning, projections, apply policy, delivery/reconciliation **interfaces**
 - Migration validation: preflight, simulation, compatibility, rollback-readiness (**no executor**)
 - Unit + architecture/safety tests (121 total at closeout)
 
@@ -64,31 +64,31 @@ Deferred items (auth, EF/PostgreSQL, HC Integration/E2E, restore rehearsal, cale
 
 ## 5. Explicitly unimplemented capabilities
 
-Login · password/JWT/refresh/MFA · EF Core · PostgreSQL · migrations · persistence · Platform business APIs · Platform Admin UI · SaaS invoice generation · Platform payment collection · Platform GCash · PinoyBusinessPOS · POS Cash/GCash/Utang ledger · offline sync · production message transport · HealthCare adapter **implementation** · HealthCare auth cutover · HealthCare DB migration · HealthCare source movement · HealthCare legacy retirement · production deployment
+Login · password/JWT/refresh/MFA · EF Core · PostgreSQL · migrations · persistence · Platform business APIs · Platform Admin UI · SaaS invoice generation · Platform payment collection · Platform GCash · PinoyBusinessPOS · POS Cash/GCash/Utang ledger · offline sync · production message transport · legacy product adapter **implementation** · legacy product auth cutover · legacy product DB migration · legacy product source movement · legacy product legacy retirement · production deployment
 
 ---
 
-## 6. HealthCare freeze evidence
+## 6. portfolio independence verification evidence
 
 | Check | Result |
 |---|---|
-| `git ls-files -- HealthCare/` | Empty |
-| `git check-ignore -v HealthCare/` | `.gitignore:7:/HealthCare/` |
-| `ExItS.slnx` | No HealthCare projects |
-| Project references | No HealthCare assemblies |
+| Git tracking shows no nested foreign product tree | Empty |
+| `git check-ignore -v legacy product/` | `.gitignore:7:/legacy product/` |
+| `ExItS.slnx` | No legacy product projects |
+| Project references | No legacy product assemblies |
 | Root product folder | Unmoved, unchanged, no code removed/retired |
-| Platform `Integration/HealthCare/` | Tracked contracts/interfaces only |
+| Platform `Integration/legacy product/` | Tracked contracts/interfaces only |
 
-**HealthCare baseline 1,102 tests were not rerun during this closeout** (HealthCare untouched by design).
+**legacy product baseline 1,102 tests were not rerun during this closeout** (legacy product untouched by design).
 
 ---
 
 ## 7. Contract and migration-validation findings
 
-- Contracts are **transport-independent boundaries**, not completed HealthCare integration (R-040).
+- Contracts are **transport-independent boundaries**, not completed legacy product integration (R-040).
 - Migration validation is **deterministic simulation only** — no real user/org/membership/entitlement migration (R-043).
 - Rollback readiness validates evidence; **does not execute rollback** and does not prove restore rehearsal (R-027, R-044).
-- Anchored `/HealthCare/` ignores nested product; Platform Integration path remains tracked.
+- Anchored `/legacy product/` ignores nested product; Platform Integration path remains tracked.
 
 ---
 
@@ -119,7 +119,7 @@ Trial grep: no `FromDays(90)` in `src`; docs/tests mention prohibition of 90-day
 | Port | `5288` |
 | `GET /` | `phase=P2-WP05-regression-migration-validation` (retained; P2-WP06 is docs-only) |
 | `GET /health` | Healthy |
-| External deps | None (no DB, HC, broker, auth) |
+| External deps | None (no DB, legacy product, broker, auth) |
 | Shutdown | Clean |
 
 ---
@@ -133,18 +133,18 @@ Phase 2 page exit criteria plus reconnection intent:
 | Every WP complete or deferred | **Satisfied** | P2-WP01–06 closed/accepted | No | — |
 | Risks and decisions recorded | **Satisfied** | Risk register + ODs | No | Ongoing |
 | Required Platform regression/security architecture tests pass | **Satisfied** | 121/0/0; architecture tests | No | Continuous |
-| HealthCare Integration/E2E re-baseline | **Deferred by design** | R-020; 1102 not rerun | No for Phase 2 close | Before HC cutover |
+| legacy product Integration/E2E re-baseline | **Deferred by design** | R-020; 1102 not rerun | No for Phase 2 close | Before legacy product cutover |
 | Next phase explicitly identified | **Satisfied** | Phase 3 / P3-WP01 | No | Authorization to start |
 | Platform foundation buildable | **Satisfied** | Release build | No | — |
 | Identity/org boundary | **Satisfied** (foundation) | P2-WP02 | No | Auth/persistence later |
 | Commercial/entitlement foundation | **Satisfied** (domain) | P2-WP03 | No | Phase 3 catalog/billing |
-| HealthCare contracts exist | **Satisfied** | P2-WP04 | No | Transport later |
-| HealthCare integrated / cut over | **Not satisfied** / **Deferred** | Explicitly out of Phase 2 | No for close | Dedicated cutover WP |
+| legacy product contracts exist | **Satisfied** | P2-WP04 | No | Transport later |
+| legacy product integrated / cut over | **Not satisfied** / **Deferred** | Explicitly out of Phase 2 | No for close | Dedicated cutover WP |
 | Migration simulation exists | **Satisfied** | P2-WP05 | No | — |
 | Production migration completed | **Not satisfied** / N/A Phase 2 | Prohibited | — | Future |
 | Rollback model exists | **Satisfied** | P2-WP05 + L0–L6 plan | No | — |
 | DB restore rehearsed | **Not satisfied** | R-027 | No for Phase 2 close | Before cutover |
-| HealthCare code retirement | **Not applicable** / **Prohibited** | None retired | — | After proven cutover |
+| legacy product code retirement | **Not applicable** / **Prohibited** | None retired | — | After proven cutover |
 
 **Totals:** Satisfied **9** · Partially satisfied **0** · Deferred by design **2** · Not satisfied **3** · Not applicable **1**
 
@@ -167,16 +167,16 @@ Non-satisfied items are **by design** for Phase 2 scope (integration, migration,
 
 | ID | Owner | Target |
 |---|---|---|
-| R-020 | HC eng | Before HC cutover |
+| R-020 | legacy product eng | Before legacy product cutover |
 | R-022 | Platform | Phase 3 / 7 |
 | R-026 | Portfolio | Continuous (mitigated) |
-| R-027 | Platform + HC | Before cutover (G6–G7) |
+| R-027 | Platform + legacy product | Before cutover (G6–G7) |
 | R-031 | Platform | Auth WP (post Phase 2) |
 | R-032–R-033 | Platform | Persistence WP |
 | R-034 | Platform | Phase 3 entitlement tuning |
 | R-035 | Platform / POS | Catalog config WP (Phase 3+) |
 | R-036–R-040 | Platform | Transport / mapping / docs discipline |
-| R-041–R-044 | Platform + HC | Real mapping / cutover WPs |
+| R-041–R-044 | Platform + legacy product | Real mapping / cutover WPs |
 | R-012 | Platform | Phase 3 (domain foundation exists; billing/persistence incomplete) |
 
 ---
@@ -185,8 +185,8 @@ Non-satisfied items are **by design** for Phase 2 scope (integration, migration,
 
 - OD: Calendar-month end-of-month rule for POS trial (R-035)
 - OD: Exact entitlement stale/refresh windows (R-022)
-- OD: HealthCare import strategy (submodule/subtree/copy) — still deferred
-- OD: When to authorize HC auth cutover and legacy retirement (after gates G2–G7)
+- OD: legacy product import strategy (submodule/subtree/copy) — still deferred
+- OD: When to authorize legacy product auth cutover and legacy retirement (after gates G2–G7)
 
 ---
 
@@ -211,7 +211,7 @@ Non-satisfied items are **by design** for Phase 2 scope (integration, migration,
 - Rollback-readiness validator exists (simulation)
 - **Cutover not authorized**
 - Restore rehearsal **not performed**
-- HealthCare code retirement **not authorized**
+- legacy product code retirement **not authorized**
 
 ---
 
@@ -231,7 +231,7 @@ Non-satisfied items are **by design** for Phase 2 scope (integration, migration,
 | First WP name | Product and Plan Catalog |
 | Purpose | Implement portfolio product/plan catalog work for billing/entitlements phase |
 | Permitted (when authorized) | Per Phase 3 scope — catalog/plans evolution toward portfolio billing |
-| Explicit exclusions until authorized | Do not start Phase 3 in this WP; HC remains frozen unless a Phase 3 WP explicitly says otherwise |
+| Explicit exclusions until authorized | Do not start Phase 3 in this WP; portfolio independence remains verified unless a Phase 3 WP explicitly says otherwise |
 | Depends on Phase 2 | Domain catalog/entitlement foundations, contracts, freeze discipline |
 | Database / auth / UI / POS | Not begun by Phase 2 closeout; Phase 3 may introduce persistence when its WPs authorize it |
 | Required tests | As specified by P3-WP01 when started |

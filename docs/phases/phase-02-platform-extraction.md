@@ -1,10 +1,10 @@
-# Phase 2 — Platform Extraction and HealthCare Reconnection
+# Phase 2 — Platform Extraction and legacy product Reconnection
 
 [Dashboard](../portfolio-progress.md) | [All Phases](README.md) | [Previous](phase-01-platform-boundary.md) | [Next](phase-03-billing-entitlements.md) | [Phase 2 readiness](../engineering/phase-02-readiness-checklist.md) | [Approved architecture](../engineering/approved-architecture-summary.md)
 
 ## Objective
 
-Extract/adapt generic Platform capabilities while preserving and reconnecting HealthCare.
+Extract/adapt generic Platform capabilities while preserving and reconnecting legacy product.
 
 ## Phase 1 prerequisite
 
@@ -18,20 +18,20 @@ Status: **Complete**
 
 #### Goal
 
-Establish a **narrow root repository and solution foundation** plus baseline tag and HealthCare freeze safety checks before identity or product work.
+Establish a **narrow root repository and solution foundation** plus baseline tag and portfolio independence verification safety checks before identity or product work.
 
 #### Outcomes delivered
 
 - Annotated local tag `phase-1-approved` → `01ab65b511721d5dd2173188bc6d962a5feea803`.
 - Root `ExItS.slnx`, `global.json`, `Directory.Build.props`, `Directory.Packages.props`.
 - Platform Domain / Application / Infrastructure / Api (+ markers only).
-- Unit + architecture tests (dependency + HealthCare freeze safety).
+- Unit + architecture tests (dependency + portfolio independence verification safety).
 - API `/` and `/health` without database (port 5288).
 - Release restore/build/test: **11/0/0** at closeout (superseded by later WPs).
 
 #### Explicit exclusions (honored)
 
-- HealthCare unmodified / not in solution / not referenced.
+- legacy product unmodified / not in solution / not referenced.
 - No identity, billing, entitlements, Admin UI, POS, shared projects, EF/migrations.
 
 #### Definition of Done
@@ -42,7 +42,7 @@ Establish a **narrow root repository and solution foundation** plus baseline tag
 - [x] Completion report created.
 - [x] Focused commit created and hash recorded (see below).
 - [x] Working tree clean (after hash-record).
-- [x] HealthCare freeze verified.
+- [x] portfolio independence verification verified.
 
 #### Artifacts
 
@@ -77,7 +77,7 @@ Create the first Platform domain and application boundary for global users, plat
 
 #### Explicit exclusions (honored)
 
-- No login/JWT/Identity/EF/Npgsql/migrations/business API/catalog/plans/subs/entitlements/Admin UI/POS/HealthCare changes.
+- No login/JWT/Identity/EF/Npgsql/migrations/business API/catalog/plans/subs/entitlements/Admin UI/POS/legacy product changes.
 
 #### Definition of Done
 
@@ -87,7 +87,7 @@ Create the first Platform domain and application boundary for global users, plat
 - [x] Completion report created.
 - [x] Focused commit created and hash recorded (see below).
 - [x] Working tree clean (after hash-record).
-- [x] HealthCare freeze verified.
+- [x] portfolio independence verification verified.
 
 #### Artifacts
 
@@ -120,7 +120,7 @@ Create Platform domain/application foundation for products, features, plans, pla
 
 #### Explicit exclusions (honored)
 
-- No EF/Npgsql/auth/billing invoices/payment/GCash/Admin UI/product APIs/brokers/POS/HealthCare changes.
+- No EF/Npgsql/auth/billing invoices/payment/GCash/Admin UI/product APIs/brokers/POS/legacy product changes.
 
 #### Definition of Done
 
@@ -130,7 +130,7 @@ Create Platform domain/application foundation for products, features, plans, pla
 - [x] Completion report created.
 - [x] Focused commit created and hash recorded (see below).
 - [x] Working tree clean (after hash-record).
-- [x] HealthCare freeze verified.
+- [x] portfolio independence verification verified.
 
 #### Artifacts
 
@@ -145,25 +145,25 @@ Create Platform domain/application foundation for products, features, plans, pla
 | Hash | `6e866d710afc09c8ddca1893a720073dc8dadfa1` (foundation); correction `10f99c5f549d2161c1f033be6223ccc26a6e0eaf` |
 | Message | `feat(platform): add products plans entitlement foundation`; `fix(platform): keep trial duration configurable` |
 
-### P2-WP04 — HealthCare Contract Adaptation
+### P2-WP04 — legacy product Contract Adaptation
 
 Status: **Complete**
 
 #### Goal
 
-Create Platform-side versioned contracts, projection apply rules, and HealthCare adapter interfaces for future reconnection — without modifying or importing HealthCare.
+Create Platform-side versioned contracts, projection apply rules, and legacy product adapter interfaces for future reconnection — without modifying or importing legacy product.
 
 #### Outcomes delivered
 
 - `ContractEnvelope` / `ContractVersion` + identity, membership, org-mapping, product-access, subscription, entitlement projections.
 - Projection checkpoint / apply outcomes / applicability evaluator (idempotency, ordering, gap, conflict).
-- HealthCare delivery + reconciliation interfaces (no implementation/transport).
-- Architecture + unit tests; API phase marker `P2-WP04-healthcare-contract-adaptation`.
-- No nested HealthCare product tree in this repository.
+- legacy product delivery + reconciliation interfaces (no implementation/transport).
+- Architecture + unit tests; API phase marker `P2-WP04-legacy product-contract-adaptation`.
+- No nested foreign product tree in this repository.
 
 #### Explicit exclusions (honored)
 
-- No HealthCare edits/import/DB/auth changes; no messaging/EF/business API routes/persistence.
+- No legacy product edits/import/DB/auth changes; no messaging/EF/business API routes/persistence.
 
 #### Definition of Done
 
@@ -173,7 +173,7 @@ Create Platform-side versioned contracts, projection apply rules, and HealthCare
 - [x] Completion report created.
 - [x] Focused commit created and hash recorded (see below).
 - [x] Working tree clean (after hash-record).
-- [x] HealthCare freeze verified.
+- [x] portfolio independence verification verified.
 
 #### Artifacts
 
@@ -186,7 +186,7 @@ Create Platform-side versioned contracts, projection apply rules, and HealthCare
 | Field | Value |
 |---|---|
 | Hash | `3b660956bfe5f5ce522c09c9cd19c614fb6602ef` (foundation); follow-up `eb9fdfeab80e1e602587b810b91cb79e71e491e4` |
-| Message | `feat(platform): add healthcare contract adaptation boundary`; `fix(platform): scope HealthCare gitignore to repo root` |
+| Message | `feat(platform): add legacy product contract adaptation boundary`; `fix(platform): scope legacy product gitignore to repo root` |
 
 ### P2-WP05 — Regression and Migration Validation
 
@@ -194,7 +194,7 @@ Status: **Complete**
 
 #### Goal
 
-Validate Platform regression coverage and HealthCare mapping dry-run readiness without modifying HealthCare or performing a real migration; publish existing remote history first.
+Validate Platform regression coverage and legacy product mapping dry-run readiness without modifying legacy product or performing a real migration; publish existing remote history first.
 
 #### Outcomes delivered
 
@@ -202,11 +202,11 @@ Validate Platform regression coverage and HealthCare mapping dry-run readiness w
 - Migration batch + identity/organization/membership mapping candidates.
 - Preflight validator, compatibility report, simulation service, rollback-readiness models (no executor).
 - Architecture + unit tests; API phase marker `P2-WP05-regression-migration-validation`.
-- No nested HealthCare product tree in this repository.
+- No nested foreign product tree in this repository.
 
 #### Explicit exclusions (honored)
 
-- No HealthCare edits/import/DB/auth; no EF/SQL/real migration/transport/persistence/migration APIs.
+- No legacy product edits/import/DB/auth; no EF/SQL/real migration/transport/persistence/migration APIs.
 
 #### Definition of Done
 
@@ -216,7 +216,7 @@ Validate Platform regression coverage and HealthCare mapping dry-run readiness w
 - [x] Completion report created.
 - [x] Focused commit created and hash recorded (see below).
 - [x] Working tree clean (after hash-record).
-- [x] HealthCare freeze verified.
+- [x] portfolio independence verification verified.
 - [x] Remote publication verified; P2-WP05 commit pushed after validation.
 
 #### Artifacts
@@ -245,12 +245,12 @@ Close Phase 2 by reconciling evidence from P2-WP01–05, validating freeze/build
 - Phase 2 closeout report + evidence matrix + P2-WP06 completion report.
 - Recommendation: **Close with documented non-blocking risks**.
 - Next phase/WP identified: Phase 3 / P3-WP01.
-- Root validation: 121/0/0; API healthy on 5288; HealthCare frozen.
+- Root validation: 121/0/0; API healthy on 5288; legacy product frozen.
 - No source changes.
 
 #### Explicit exclusions (honored)
 
-- No HealthCare edits; no implementation expansion; no auth/persistence/cutover claims.
+- No legacy product edits; no implementation expansion; no auth/persistence/cutover claims.
 
 #### Definition of Done
 
@@ -260,7 +260,7 @@ Close Phase 2 by reconciling evidence from P2-WP01–05, validating freeze/build
 - [x] Completion report created.
 - [x] Focused commit created and hash recorded (see below).
 - [x] Working tree clean (after hash-record).
-- [x] HealthCare freeze verified.
+- [x] portfolio independence verification verified.
 - [x] Validated commits pushed to `origin/main`.
 
 #### Artifacts
@@ -282,7 +282,7 @@ Close Phase 2 by reconciling evidence from P2-WP01–05, validating freeze/build
 
 - [x] Every work package is complete or explicitly deferred.
 - [x] Risks and decisions are recorded.
-- [x] Required regression/security tests pass (Platform root; HC 1102 not rerun by design).
+- [x] Required regression/security tests pass (Platform root; legacy product 1102 not rerun by design).
 - [x] Next phase is explicitly identified (Phase 3 / P3-WP01; start requires separate authorization).
 
 **Phase recommendation:** Close with documented non-blocking risks. See [phase-02-extraction-closeout.md](../reports/phase-02-extraction-closeout.md).

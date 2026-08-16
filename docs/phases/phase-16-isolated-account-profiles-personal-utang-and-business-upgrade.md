@@ -164,7 +164,7 @@ Phase 16 does not:
 - treat Business Customers as Organization Staff
 - grant product roles from subscriptions alone
 - implement every advanced lending feature in the first Personal Utang work package
-- restore the historical HealthCare product without separate approval
+- restore the historical foreign product without separate approval
 - replace product-owned operational databases with the Platform database
 
 ---

@@ -67,7 +67,7 @@ English (`en`) default and Tagalog (`fil-PH`) via ASP.NET Core localization + `A
 
 ### Migration
 
-`AddPlatformAuthorizationAndAudit` — tables `platform.platform_role_assignments`, `platform.audit_records`. Validated apply → rollback to `AddPlatformUsersMembershipsAndProductAccess` → re-apply. No HealthCare/POS/gateway/invoice/product-local tables.
+`AddPlatformAuthorizationAndAudit` — tables `platform.platform_role_assignments`, `platform.audit_records`. Validated apply → rollback to `AddPlatformUsersMembershipsAndProductAccess` → re-apply. No legacy product/POS/gateway/invoice/product-local tables.
 
 ### API
 
@@ -99,12 +99,12 @@ Runtime: API phase marker `P4-WP04-audit-authorization-closeout`; `/authorizatio
 
 - Production authentication (JWT/MFA/SSO/AD)
 - Payment gateways, invoices, entitlement delivery
-- Product-local roles; HealthCare/POS authorization
+- Product-local roles; legacy product/POS authorization
 - Phase 5 POS MAUI
 
 ### Portfolio independence
 
-Root `HealthCare/` must remain absent/untracked and outside `ExItS.slnx`.
+Root a nested foreign product tree must remain absent/untracked and outside `ExItS.slnx`.
 
 ### Exact next work package
 

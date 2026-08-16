@@ -1,7 +1,7 @@
 # ExITS SaaS — Phase Implementation Summary
 
-**Purpose:** Human-readable overview of what was actually implemented in each phase.  
-**Audience:** You (project owner) and future planning with Grok / Cursor.  
+**Purpose:** Human-readable overview of what was actually implemented in each phase.
+**Audience:** You (project owner) and future planning with Grok / Cursor.
 **Last updated from docs:** August 2026 (Phase 18 Complete (implementation/scope); Phase 19 Open)
 
 ---
@@ -10,7 +10,7 @@
 
 | Phase | Name | Status |
 |-------|------|--------|
-| 0 | HealthCare Assessment | Complete |
+| 0 | legacy product Assessment | Complete |
 | 1 | Platform Boundary & Architecture | Complete |
 | 2 | Platform Extraction | Complete |
 | 3 | Billing, Plans & Entitlements | Complete |
@@ -42,11 +42,11 @@
 
 ## Phase-by-Phase Implementation Summary
 
-### Phase 0 — Existing HealthCare Assessment
+### Phase 0 — Existing legacy product Assessment
 **What was done:**
-- Assessed the existing HealthCare SaaS MVP
+- Assessed the existing legacy product MVP
 - Identified reusable platform capabilities
-- Defined what should stay in HealthCare vs move to Platform
+- Defined what should stay in legacy product vs move to Platform
 - Created reuse classification and extraction rules
 
 **Result:** Clear understanding of what could be extracted into a shared Platform.
@@ -65,12 +65,12 @@
 
 ---
 
-### Phase 2 — Platform Extraction and HealthCare Reconnection
+### Phase 2 — Platform Extraction and legacy product Reconnection
 **What was done:**
-- Extracted shared Platform capabilities from HealthCare thinking
+- Extracted shared Platform capabilities from legacy product thinking
 - Created Platform domain models (Product, Plan, Subscription, Entitlement, etc.)
 - Defined contracts between Platform and Products
-- Prepared for HealthCare to reconnect later via contracts (not direct code sharing)
+- Prepared for legacy product to reconnect later via contracts (not direct code sharing)
 
 **Result:** Platform foundation exists independently.
 

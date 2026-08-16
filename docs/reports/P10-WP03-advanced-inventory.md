@@ -6,8 +6,8 @@ Phase marker: `P10-WP03-advanced-inventory`
 
 **Complete.** Reorder configuration with audit trail, derived stock states, stock counts with variance movements, enhanced movement filters, reconciliation, API/MAUI surfaces, PostgreSQL migration, and tests. **P10-WP04 not started.**
 
-Feature commit: `5c62133`  
-Docs commit: `8af7a14`  
+Feature commit: `5c62133`
+Docs commit: `8af7a14`
 Gap-fix: `31d809c` (stock status alignment, CountDate, migration Down safety)
 
 ## Delivered capability
@@ -61,7 +61,7 @@ Release build of POS API succeeds; MAUI `net10.0-android` compiles after CreateS
 
 ## Portfolio independence
 
-- No `HealthCare/` tree; `git ls-files -- HealthCare/` empty.
+- No a nested foreign product tree tree; Git tracking shows no nested foreign product tree empty.
 - No cross-product DB access.
 
 ## Exact next work package

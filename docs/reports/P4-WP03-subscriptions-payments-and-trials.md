@@ -2,7 +2,7 @@
 
 ## 1. Status
 
-**Complete.** Platform Admin subscription lifecycle, trial start, and manual SaaS payment workflows delivered by reusing Phase 3 domain/application/API behavior. No new persistence migration. No nested HealthCare product tree in this repository. Authentication, payment gateways, invoices, entitlement delivery, and product-local roles remain out of scope.
+**Complete.** Platform Admin subscription lifecycle, trial start, and manual SaaS payment workflows delivered by reusing Phase 3 domain/application/API behavior. No new persistence migration. No nested foreign product tree in this repository. Authentication, payment gateways, invoices, entitlement delivery, and product-local roles remain out of scope.
 
 | Field | Value |
 |---|---|
@@ -43,7 +43,7 @@ Subscription state continues to drive fail-closed effective commercial access (T
 
 ## 3. Persistence / migration
 
-**No new migration.** Reused Phase 3 subscription and SaaS payment tables/repositories. No authentication, invoice, gateway, POS, or HealthCare schema changes.
+**No new migration.** Reused Phase 3 subscription and SaaS payment tables/repositories. No authentication, invoice, gateway, POS, or legacy product schema changes.
 
 ## 4. API
 
@@ -57,7 +57,7 @@ Existing Phase 3 subscription and payment mutation endpoints reused. Admin typed
 | Confirm/reject/void | `POST .../payments/{id}/confirm\|reject\|void` |
 | Confirm + activate | `POST .../payments/{id}/activate-subscription` |
 
-DTOs only; stable ProblemDetails; concurrency conflicts remain explicit. Payment activate response maps full subscription DTO for Admin deserialization. No gateway, webhook, invoice, QR, card, POS, or HealthCare APIs added.
+DTOs only; stable ProblemDetails; concurrency conflicts remain explicit. Payment activate response maps full subscription DTO for Admin deserialization. No gateway, webhook, invoice, QR, card, POS, or legacy product APIs added.
 
 ## 5. Platform Admin UI
 
@@ -106,9 +106,9 @@ Focused commercial API integration evidence: `ApiSubscriptionLifecycleTests` + `
 
 APIs and Admin remain **development-stage and unauthenticated**. Manual confirmation is operator judgment, not provider verification. Subscription Admin changes are not completed product provisioning.
 
-## 10. HealthCare freeze
+## 10. portfolio independence verification
 
-`/HealthCare/` remains ignored, untracked, outside `ExItS.slnx`, unchanged.
+`/legacy product/` remains ignored, untracked, outside `ExItS.slnx`, unchanged.
 
 ## 11. Exact next work package
 

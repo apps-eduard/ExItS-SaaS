@@ -29,7 +29,7 @@ Implemented persistent Platform organizations (subscription ownership only) and 
 | Active-like uniqueness | Partial unique index `ux_subscriptions_one_active_like` on `(organization_id, product_code)` WHERE status ∈ Trialing, Active, GracePeriod, PastDue, Suspended |
 | Concurrency | PostgreSQL `xmin` row version on organizations and subscriptions; conflicts → `application.concurrency_conflict` |
 | Check constraints | `ck_subscriptions_trial_range`, `ck_subscriptions_paid_range` |
-| Explicitly excluded tables | users, memberships, payments, invoices, entitlement snapshots, HealthCare, POS |
+| Explicitly excluded tables | users, memberships, payments, invoices, entitlement snapshots, legacy product, POS |
 
 ## 4. Trial lifecycle
 
@@ -89,7 +89,7 @@ Development-stage, unauthenticated:
 - `POST /api/v1/platform/subscriptions/{subscriptionId}/cancel`
 - `POST /api/v1/platform/subscriptions/{subscriptionId}/expire`
 
-Confirmed absent: payment, invoice, GCash, entitlement-delivery, HealthCare, POS routes.
+Confirmed absent: payment, invoice, GCash, entitlement-delivery, legacy product, POS routes.
 
 Phase marker: `P3-WP02-trials-subscription-lifecycle`. Retained: `GET /`, `GET /health`.
 
@@ -143,12 +143,12 @@ History table: `public.__EFMigrationsHistory`. Partial unique index verified. No
 - No fake production authentication.
 - Routes remain development-stage until auth WP (R-045, R-047+).
 
-## 13. HealthCare freeze
+## 13. portfolio independence verification
 
-- `git ls-files -- HealthCare/` empty
-- `/HealthCare/` ignored
-- No HealthCare project in `ExItS.slnx`
-- Tracked contracts under `src/Platform/.../Integration/HealthCare/` unchanged in purpose
+- Git tracking shows no nested foreign product tree empty
+- `/legacy product/` ignored
+- No legacy product project in `ExItS.slnx`
+- Tracked contracts under `src/Platform/.../Integration/legacy product/` unchanged in purpose
 
 ## 14. Risks
 

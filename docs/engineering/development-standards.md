@@ -4,7 +4,7 @@
 
 - One approved work package per Cursor prompt.
 - Inspect before changing.
-- Preserve existing HealthCare behavior during extraction.
+- Preserve existing legacy product behavior during extraction.
 - No unrelated refactoring.
 - Server-side security and tenant isolation are mandatory.
 - No direct cross-product database access.

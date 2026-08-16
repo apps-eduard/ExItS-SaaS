@@ -6,8 +6,8 @@ Phase marker: `P10-WP05-returns-refunds`
 
 **Complete.** Atomic Completed-only sale returns, refund-method matching, cash-shift impact, Utang credit reduction, optional restock, void/return mutual exclusion, grants, PostgreSQL migration, typed API/MAUI surfaces, and focused tests. **P10-WP06 not started.** R-091 and POS-ROLES remain open.
 
-Feature commit: `58dd6bf`  
-Docs commit: `485f23e`  
+Feature commit: `58dd6bf`
+Docs commit: `485f23e`
 Android using gap-fix: `6cb06cc`
 
 ## Delivered capability
@@ -32,11 +32,11 @@ Exchanges, store credit, gift cards, split/different refund methods, unlinked re
 
 ## Persistence
 
-Database: `ExItS_PinoyBusinessPOS` · Schema: `pos`  
+Database: `ExItS_PinoyBusinessPOS` · Schema: `pos`
 Migration: `20260731052329_AddPosSaleReturns`
 
-Tables: `sale_returns`, `sale_return_lines`, `sale_return_number_sequences`  
-Stock: extended check constraints + `ux_stock_movements_sale_return_source`  
+Tables: `sale_returns`, `sale_return_lines`, `sale_return_number_sequences`
+Stock: extended check constraints + `ux_stock_movements_sale_return_source`
 Down migration deletes SaleReturn stock movements before narrowing constraints.
 
 ## Build and test evidence
@@ -57,8 +57,8 @@ Development/Testing actor only; no production POS role model. Refund method enfo
 
 ## Portfolio independence
 
-- No `HealthCare/` tree; `git ls-files -- HealthCare/` empty.
-- No cross-product DB access; no HealthCare projects in `ExItS.slnx`.
+- No a nested foreign product tree tree; Git tracking shows no nested foreign product tree empty.
+- No cross-product DB access; no legacy product projects in `ExItS.slnx`.
 
 ## Risks / open decisions
 

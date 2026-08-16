@@ -6,7 +6,7 @@ Phase marker: `P10-WP04-cashier-shifts`
 
 **Complete.** Cashier shift aggregate, cash movements, sale linkage, expected-cash close with variance, grants, PostgreSQL migration, typed API/MAUI surfaces, and focused tests. **P10-WP05 not started.** R-091 and POS-ROLES remain open.
 
-Feature commit: `4076485`  
+Feature commit: `4076485`
 Docs commit: `df0a092`
 
 ## Delivered capability
@@ -29,11 +29,11 @@ Payroll, accounting journals, bank reconciliation, cash deposits, branch registe
 
 ## Persistence
 
-Database: `ExItS_PinoyBusinessPOS` · Schema: `pos`  
+Database: `ExItS_PinoyBusinessPOS` · Schema: `pos`
 Migration: `20260731035548_AddPosCashierShifts`
 
-Tables: `cashier_shifts`, `cashier_shift_movements`, `cashier_shift_number_sequences`  
-FK: `sales.cashier_shift_id` nullable, `Restrict`  
+Tables: `cashier_shifts`, `cashier_shift_movements`, `cashier_shift_number_sequences`
+FK: `sales.cashier_shift_id` nullable, `Restrict`
 Index: `ux_cashier_shifts_org_actor_open` (filtered unique on Open)
 
 Down migration clears shift-linked sale FKs and shift data before dropping constraints.
@@ -56,8 +56,8 @@ Development/Testing actor only; no production POS role model. Checkout shift res
 
 ## Portfolio independence
 
-- No `HealthCare/` tree; `git ls-files -- HealthCare/` empty.
-- No cross-product DB access; no HealthCare projects in `ExItS.slnx`.
+- No a nested foreign product tree tree; Git tracking shows no nested foreign product tree empty.
+- No cross-product DB access; no legacy product projects in `ExItS.slnx`.
 
 ## Risks / open decisions
 

@@ -1,16 +1,16 @@
 # First Cursor Command — P0-WP01
 
-Copy everything below and paste it into Cursor after opening the **ExITS SaaS** repository that contains the copied completed HealthCare SaaS and this documentation folder.
+Copy everything below and paste it into Cursor after opening the **ExITS SaaS** repository that contains the copied completed legacy product and this documentation folder.
 
 ---
 
-# ExITS SaaS — Repository and HealthCare Reuse Inventory
+# ExITS SaaS — Repository and legacy product Reuse Inventory
 
 ## Assignment
 
 Execute only:
 
-- Phase: `Phase 0 — Existing HealthCare Assessment`
+- Phase: `Phase 0 — Existing legacy product Assessment`
 - Work package: `P0-WP01 — Repository and Reuse Inventory`
 
 This is an assessment-first task. Do not move, rename, extract, generalize or refactor production code.
@@ -32,13 +32,13 @@ Read:
 ## Repository inspection
 
 1. Run `git status` and identify the current branch.
-2. Discover the exact folder and solution names. Do not assume the HealthCare folder name.
+2. Discover the exact folder and solution names. Do not assume the legacy product folder name.
 3. Inspect all `.sln`, `.slnx`, `.csproj`, package-management, Docker, CI and deployment files.
-4. Identify whether the copied HealthCare source is tracked, untracked or nested as another Git repository. Report this clearly; do not delete `.git` metadata without approval.
+4. Identify whether the copied legacy product source is tracked, untracked or nested as another Git repository. Report this clearly; do not delete `.git` metadata without approval.
 5. Identify the current .NET version, database provider, authentication model, web render mode and major packages.
 6. Search for Ant Design Blazor usage, wrappers, theme configuration and direct component coupling.
 7. Search for identity, organizations, memberships, platform admin, subscriptions, feature entitlements, auditing, tenant isolation and tests.
-8. Search for HealthCare-only domains including clinics, patients, appointments, medical notes and patient self-scope.
+8. Search for legacy product-only domains including clinics, patients, appointments, medical notes and patient self-scope.
 
 ## Approved outputs
 
@@ -53,7 +53,7 @@ Record:
 
 - Repository tree and project inventory
 - Generic SaaS capabilities and exact locations
-- HealthCare-specific capabilities and exact locations
+- legacy product-specific capabilities and exact locations
 - Ant Design usage and whether it is isolated or spread across pages
 - Existing reusable table, select/dropdown, date/calendar, modal, validation and theme components
 - Existing localization support
@@ -68,7 +68,7 @@ Record:
 
 Do not:
 
-- Move or rename the HealthCare folder or projects
+- Move or rename the legacy product folder or projects
 - Create `Platform/` or `Products/` implementation folders
 - Change namespaces
 - Extract NuGet packages or shared libraries
@@ -94,11 +94,11 @@ Do not:
 3. Commit only documentation/report changes with:
 
 ```text
-chore(docs): assess healthcare platform reuse
+chore(docs): assess legacy product platform reuse
 ```
 
 4. Record the commit hash in the dashboard, phase page and completion report.
-5. Confirm the final working tree state. If copied HealthCare files remain intentionally untracked, report that honestly rather than claiming clean.
+5. Confirm the final working tree state. If copied legacy product files remain intentionally untracked, report that honestly rather than claiming clean.
 
 ## Required final response
 
@@ -107,7 +107,7 @@ Return exactly:
 1. Work package status
 2. Repository and solution inventory
 3. Reusable platform capabilities
-4. HealthCare-specific capabilities
+4. legacy product-specific capabilities
 5. Ant Design and reusable UI findings
 6. Localization and theme findings
 7. Database, migration and deployment findings

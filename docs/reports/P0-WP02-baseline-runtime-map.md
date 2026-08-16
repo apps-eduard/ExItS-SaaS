@@ -4,7 +4,7 @@
 
 | Field | Value |
 |---|---|
-| Phase | Phase 0 — Existing HealthCare Assessment |
+| Phase | Phase 0 — Existing legacy product Assessment |
 | Work package | P0-WP02 — Baseline Build, Tests, Runtime and Repository Safety Map |
 | Status | Ready for Review |
 | Branch | `main` |
@@ -12,7 +12,7 @@
 
 ## 2. Summary
 
-Established a safe root-repository baseline: root `.gitignore` excludes nested `HealthCare/`, toolchain and runtime maps were documented, and the Windows-safe HealthCare restore/build/test baseline was re-verified without modifying any HealthCare files. Root remote `origin` points at an **empty** GitHub repository; `origin/main` is gone until the first authorized push.
+Established a safe root-repository baseline: root `.gitignore` excludes nested a nested foreign product tree, toolchain and runtime maps were documented, and the Windows-safe legacy product restore/build/test baseline was re-verified without modifying any legacy product files. Root remote `origin` points at an **empty** GitHub repository; `origin/main` is gone until the first authorized push.
 
 ## 3. Acceptance criteria and evidence
 
@@ -20,28 +20,28 @@ Established a safe root-repository baseline: root `.gitignore` excludes nested `
 |---|---|---|
 | P0-WP01 recorded Complete | Met | Dashboard + phase page |
 | Root topology / nested Git documented | Met | Runtime baseline + repository-boundaries |
-| Root `.gitignore` excludes HealthCare + secrets/build | Met | Root `.gitignore`; `git check-ignore -v HealthCare/` |
-| No HealthCare tracked or modified | Met | `git ls-files HealthCare` empty; nested dirty files unchanged |
+| Root `.gitignore` excludes legacy product + secrets/build | Met | Root `.gitignore`; `git check-ignore -v legacy product/` |
+| No legacy product tracked or modified | Met | `git ls-files legacy product` empty; nested dirty files unchanged |
 | Remote/upstream documented | Met | Empty remote; `[origin/main: gone]`; push recommendation only |
 | Tooling documented | Met | development-environment.md |
 | Non-MAUI build verified | Met | All listed non-MAUI projects build Release OK |
 | Full solution + MAUI classification | Met | XA5300 without ANDROID_HOME; XA0035 with SDK path + win-x64 RID |
 | Safe tests re-executed | Met | 1102 / 0 / 0 |
-| Runtime/DB/config maps | Met | historical healthcare-runtime-baseline.md (later removed) |
+| Runtime/DB/config maps | Met | historical legacy product-runtime-baseline.md (later removed) |
 | Docs + report + dashboard + risks | Met | This WP |
 | Focused commit | Met | See Git evidence after commit |
-| HealthCare freeze held | Met | No HC file edits from this WP |
+| portfolio independence verification held | Met | No legacy product file edits from this WP |
 
 ## 4. Files changed
 
 Root only:
 
 - `.gitignore` (added)
-- `docs/reuse/healthcare-runtime-baseline.md` *(later removed)*
+- `docs/reuse/legacy product-runtime-baseline.md` *(later removed)*
 - `docs/engineering/repository-boundaries.md`
 - `docs/engineering/development-environment.md`
 - `docs/portfolio-progress.md`
-- `docs/phases/phase-00-healthcare-assessment.md` *(later removed; see [phase-00 final assessment](phase-00-final-assessment-and-recommendation.md))*
+- `docs/phases/phase-00-legacy product-assessment.md` *(later removed; see [phase-00 final assessment](phase-00-final-assessment-and-recommendation.md))*
 - `docs/risks-and-issues.md`
 - `docs/reports/P0-WP02-baseline-runtime-map.md`
 - `docs/reports/README.md`
@@ -60,9 +60,9 @@ None. Ownership map documented only; no migrations applied or edited.
 
 | Command | Passed | Failed | Skipped | Exit code |
 |---|---:|---:|---:|---:|
-| `dotnet restore HealthCare.sln` | n/a | n/a | n/a | 0 |
+| `dotnet restore legacy product solution` | n/a | n/a | n/a | 0 |
 | Non-MAUI Release builds (Api, Web, PatientWeb, Mobile.Core, tests, DbMigrate) | n/a | n/a | n/a | 0 |
-| `dotnet build HealthCare.sln -c Release` | n/a | n/a | n/a | **1** (XA5300) |
+| `dotnet build legacy product solution -c Release` | n/a | n/a | n/a | **1** (XA5300) |
 | UnitTests | 566 | 0 | 0 | 0 |
 | ArchitectureTests | 20 | 0 | 0 | 0 |
 | Web.Tests | 340 | 0 | 0 | 0 |
@@ -74,7 +74,7 @@ Not run: IntegrationTests, EndToEndTests (infrastructure / README guidance).
 
 ## 8. Security and tenant review
 
-- Root ignore prevents accidental tracking of nested secrets and HC sources.
+- Root ignore prevents accidental tracking of nested secrets and legacy product sources.
 - Config inventory lists **names only**.
 - Nested dirty PatientWeb files left untouched.
 - Empty remote means no published root history yet — first push is a user action.
@@ -93,15 +93,15 @@ Runtime baseline, repository boundaries, development environment, dashboard, Pha
 - R-010 partially mitigated (ignored, not integrated).
 - R-016 added: empty root remote / gone upstream.
 - R-014 refined: SDK folder present but env/RID wiring incomplete.
-- Deferred: authorized first push; Integration/E2E; Android env for Mobile host; nested HC dirty files; P0-WP03.
+- Deferred: authorized first push; Integration/E2E; Android env for Mobile host; nested legacy product dirty files; P0-WP03.
 
 ## 12. Git evidence
 
 | Field | Value |
 |---|---|
 | Commit hash | `6b56e6dfec93f49e43a9c1a92baea1300d148b28` |
-| Commit message | `chore(repo): establish safe healthcare baseline` |
-| Final working tree | Clean; `HealthCare/` ignored (not tracked) |
+| Commit message | `chore(repo): establish safe legacy product baseline` |
+| Final working tree | Clean; no nested foreign product tree tracked |
 
 ## 13. Progress update
 

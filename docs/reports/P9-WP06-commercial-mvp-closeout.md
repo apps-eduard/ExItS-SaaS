@@ -4,7 +4,7 @@ Phase marker: `P9-WP06-commercial-mvp-closeout`
 
 ## Status
 
-**Complete with documented risks. Phase 9 closed.** Reconciled P9-WP01 through P9-WP05 plus prior Platform and PinoyBusinessPOS MVP capabilities as one Commercial MVP release-candidate evidence package. **No new business functionality.** No nested HealthCare product tree in this repository.
+**Complete with documented risks. Phase 9 closed.** Reconciled P9-WP01 through P9-WP05 plus prior Platform and PinoyBusinessPOS MVP capabilities as one Commercial MVP release-candidate evidence package. **No new business functionality.** No nested foreign product tree in this repository.
 
 Final environment decisions:
 
@@ -31,7 +31,7 @@ Mark Phase 9 **complete with documented risks** when:
 - Full `ExItS.slnx` Release tests pass
 - Android Release packaging remains buildable; R-109 retained if no device
 - Documentation matches implementation
-- No nested HealthCare product tree in this repository
+- No nested foreign product tree in this repository
 - Git is clean; `main` matches `origin/main` after push
 
 **Do not claim Production or restricted external pilot readiness** while mandatory release blockers remain open.
@@ -127,7 +127,7 @@ ExItS_PinoyBusinessPOS
     expenses, idempotency, operational projections
 ```
 
-Rules: no cross-database FKs; no HealthCare coupling; least-privilege accounts; independently backupable/migratable.
+Rules: no cross-database FKs; no legacy product coupling; least-privilege accounts; independently backupable/migratable.
 
 ## Build / test evidence
 
@@ -136,11 +136,11 @@ Rules: no cross-database FKs; no HealthCare coupling; least-privilege accounts; 
 | `dotnet test ExItS.slnx -c Release` | **1001 passed / 0 failed / 0 skipped** (baseline 987) |
 | Closeout board CLI | Production + restricted external **Blocked**; internal pilot Ready with documented risks |
 | Android Release | Buildable (prior P9-WP05 Signed APK path); R-109 retained without interactive device |
-| HealthCare freeze | Ignored / untracked / outside `ExItS.slnx` |
+| portfolio independence verification | Ignored / untracked / outside `ExItS.slnx` |
 
 ## Explicit exclusions
 
-No new tax/VAT/refunds/returns/accounting/purchasing/suppliers/payroll; no payment gateway; no PITR; no fake production auth; no Phase 10 work; no HealthCare changes.
+No new tax/VAT/refunds/returns/accounting/purchasing/suppliers/payroll; no payment gateway; no PITR; no fake production auth; no Phase 10 work; no legacy product changes.
 
 ## Exact next phase
 

@@ -98,4 +98,4 @@ Exact next work package: **P7-WP02 — Offline Queue and Idempotency** (do not b
 
 ## Portfolio independence
 
-Root `HealthCare/` must remain absent/untracked and outside `ExItS.slnx`.
+Root a nested foreign product tree must remain absent/untracked and outside `ExItS.slnx`.

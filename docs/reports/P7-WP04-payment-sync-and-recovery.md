@@ -101,7 +101,7 @@ Updated Phase 7, offline-sync design, portfolio, FILE-MANIFEST, README, security
 
 ## Portfolio independence
 
-Root `HealthCare/` must remain absent/untracked and outside `ExItS.slnx`.
+Root a nested foreign product tree must remain absent/untracked and outside `ExItS.slnx`.
 
 ## Exact next work package
 

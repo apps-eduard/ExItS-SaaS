@@ -122,7 +122,7 @@ Organization-isolated purchasing for PinoyBusinessPOS using P10-WP01 suppliers:
 
 Status: **Complete**
 
-Prior tip: `882050c` (docs authorize). Feature: `5c62133`. Docs: `8af7a14`. Baseline: **1067 / 0 / 0**. Tests: **1073 / 0 / 0**. Part A HealthCare cleanup remains closed at `fd77f88`.
+Prior tip: `882050c` (docs authorize). Feature: `5c62133`. Docs: `8af7a14`. Baseline: **1067 / 0 / 0**. Tests: **1073 / 0 / 0**. Part A legacy product cleanup remains closed at `fd77f88`.
 
 #### Required outcomes (approved)
 
@@ -168,7 +168,7 @@ Organization-isolated cashier shifts for operational cash control:
 - One Open shift per OrganizationId + trusted cashier ActorId
 - New Cash / ManualGCash / Utang sales require an active Open shift and immutable `CashierShiftId` linkage
 - Immutable CashIn / CashOut movements on Open shifts (deny CashOut that would make expected cash negative)
-- Expected physical cash = OpeningCash + NetCashSales + CashIn − CashOut  
+- Expected physical cash = OpeningCash + NetCashSales + CashIn − CashOut
   where NetCashSales = completed Cash sales − voided Cash sales (ManualGCash/Utang reported, not in physical cash)
 - Close with closing cash declaration, expected snapshot, variance; Closed/Cancelled terminal
 - Cancel Open only when no linked financial activity
@@ -208,7 +208,7 @@ Organization-isolated post-sale returns/refunds that preserve the original sale:
 - Void vs return mutual exclusion: voided sales cannot be returned; sales with completed returns cannot be voided
 - Idempotency/concurrency; grants `store-returns-view` / `store-returns-manage`
 - PostgreSQL migration, typed API, MAUI return screens, tests, docs
-- Online-only; ExItS remains independent of removed HealthCare workspace
+- Online-only; ExItS remains independent of removed legacy product workspace
 
 #### Explicit exclusions
 

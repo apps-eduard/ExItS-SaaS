@@ -2,7 +2,7 @@
 
 ## 1. Status
 
-**Complete.** Permanent Cursor workflow rules added; read-only Platform Admin Blazor shell delivered; focused Admin read APIs added; validation passed; No nested HealthCare product tree in this repository.
+**Complete.** Permanent Cursor workflow rules added; read-only Platform Admin Blazor shell delivered; focused Admin read APIs added; validation passed; No nested foreign product tree in this repository.
 
 | Field | Value |
 |---|---|
@@ -27,7 +27,7 @@
 ## 3. Explicit exclusions
 
 - Authentication / JWT / MFA / identity or membership persistence
-- Entitlement delivery to HealthCare or POS
+- Entitlement delivery to legacy product or POS
 - PinoyBusinessPOS
 - Invoices, payment gateways, webhooks, QR, card processing
 - Catalog / subscription / payment / override mutation Admin workflows
@@ -86,11 +86,11 @@ Baseline maintained above prior 302 tests.
 - Entitlement views warn that snapshot ≠ product delivery.
 - No card/CVV/PIN/OTP/gateway secrets collected or displayed.
 
-## 8. HealthCare freeze evidence
+## 8. portfolio independence verification evidence
 
-- `git ls-files -- HealthCare/` → empty
-- `git check-ignore -v HealthCare/` → `.gitignore:7:/HealthCare/`
-- `ExItS.slnx` contains only approved ExItS Platform/Admin/test projects (no HealthCare, no POS)
+- Git tracking shows no nested foreign product tree → empty
+- `git check-ignore -v legacy product/` → `.gitignore:7:/legacy product/`
+- `ExItS.slnx` contains only approved ExItS Platform/Admin/test projects (no legacy product, no POS)
 
 ## 9. Risks / open decisions
 

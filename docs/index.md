@@ -13,7 +13,7 @@
 - [Products, plans, trials and billing](product/subscriptions-and-billing.md)
 - [Release plan](release-plan.md)
 
-## Reuse (historical assessments — HealthCare not in this workspace)
+## Reuse (historical assessments — legacy product not in this workspace)
 
 - [Reuse classification matrix](reuse/reuse-classification-matrix.md)
 - [Extraction and migration rules](reuse/extraction-rules.md)
@@ -92,6 +92,7 @@
 ## Delivery
 
 - [Portfolio progress](portfolio-progress.md)
+- [Repository legacy reference neutralization](reports/repository-legacy-reference-neutralization.md)
 - [Phase 0 final assessment](reports/phase-00-final-assessment-and-recommendation.md)
 - [Phase 1 architecture approval](reports/phase-01-architecture-approval.md)
 - [P2-WP01 foundation report](reports/P2-WP01-extraction-baseline-and-safety.md)

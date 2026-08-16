@@ -14,6 +14,7 @@ The dashboard links to the latest accepted report.
 
 | Report | Work package | Status |
 |---|---|---|
+| [repository-legacy-reference-neutralization.md](repository-legacy-reference-neutralization.md) | Current-tree obsolete workspace reference neutralization | Complete |
 | [P0-WP01-completion.md](P0-WP01-completion.md) | Repository and Reuse Inventory | Complete |
 | [P0-WP02-baseline-runtime-map.md](P0-WP02-baseline-runtime-map.md) | Baseline Build, Tests, Runtime and Repository Safety Map | Complete |
 | [P0-WP03-ui-reuse-review.md](P0-WP03-ui-reuse-review.md) | Ant Design and UI Reuse Review | Complete |

@@ -1,9 +1,9 @@
 # P11-WP01 — Web UI Audit and Component Inventory
 
-Package: **P11-WP01 — Web UI Audit and Component Inventory**  
-Phase: Phase 11 — Web UI and Reporting Design System  
-Baseline tip (Pre-P11 theme persistence): `46b99a7f6baa87977fb0ed37e678231fa1eb1344`  
-Feature tip (this WP): `221fe69ab179956e8a73411cf3eb58fd6f199c3c`  
+Package: **P11-WP01 — Web UI Audit and Component Inventory**
+Phase: Phase 11 — Web UI and Reporting Design System
+Baseline tip (Pre-P11 theme persistence): `46b99a7f6baa87977fb0ed37e678231fa1eb1344`
+Feature tip (this WP): `221fe69ab179956e8a73411cf3eb58fd6f199c3c`
 Docs tip: `221fe69ab179956e8a73411cf3eb58fd6f199c3c`
 
 ## Status
@@ -202,19 +202,19 @@ Open / incomplete (not newly introduced):
 
 ### Highest-priority consolidation candidates (later WPs)
 
-1. ConfirmDialog / PageHeader / EmptyState / ErrorState / ToastHost / FilterBar  
-2. StatusBadge ↔ Badge/StatusCell  
-3. SearchInput (unused Admin) ↔ SearchBox  
-4. Dual Admin shells: retire or justify `AppShell` vs `MainLayout`  
-5. Inline `_toast` on mutation pages vs `ToastService`/`ToastHost`  
+1. ConfirmDialog / PageHeader / EmptyState / ErrorState / ToastHost / FilterBar
+2. StatusBadge ↔ Badge/StatusCell
+3. SearchInput (unused Admin) ↔ SearchBox
+4. Dual Admin shells: retire or justify `AppShell` vs `MainLayout`
+5. Inline `_toast` on mutation pages vs `ToastService`/`ToastHost`
 6. Theme boot **kernel** shared conceptually — **adapters must stay separate** (Admin enhanced nav vs POS Preferences)
 
 ### Explicit non-consolidation (keep separate)
 
-- Admin sidebar/top-bar locked dimensions and theme authority  
-- POS bottom nav / sync chrome / safe-area  
-- Admin EnvironmentBanner, UnauthorizedPanel, AccessStateIndicator, AuditTimeline  
-- MAUI device APIs  
+- Admin sidebar/top-bar locked dimensions and theme authority
+- POS bottom nav / sync chrome / safe-area
+- Admin EnvironmentBanner, UnauthorizedPanel, AccessStateIndicator, AuditTimeline
+- MAUI device APIs
 
 ### CSS duplication
 
@@ -262,7 +262,7 @@ POS MAUI
 | Admin shared (Web-only) | `Platform.Admin/Components/Shared` | PascalCase; CSS in `app.css` without inventing a second design system |
 | Admin shell | `Platform.Admin/Components/Layout` | Keep MainLayout as authority |
 | POS feature | `Maui/Components/Pages/...` | Feature folders |
-| Do not | Nest HealthCare / Ant Design into Admin or DesignSystem | — |
+| Do not | Nest legacy product / Ant Design into Admin or DesignSystem | — |
 
 ---
 
@@ -306,15 +306,15 @@ Theme mechanism files were **not** modified in this WP.
 
 ## 17. Portfolio independence
 
-- No root `HealthCare/`  
-- `git ls-files -- HealthCare/` empty  
-- Solution has no HealthCare project  
+- No root a nested foreign product tree
+- Git tracking shows no nested foreign product tree empty
+- Solution has no legacy product project
 
 ## 18. Risks / open decisions
 
-- R-091 production auth; R-109 Android interactive; R-129 / NU1903; TLS; contrast/a11y residual risks  
-- Whether Admin should ever reference DesignSystem (open decision — not decided here)  
-- Token palette convergence Admin teal vs DS green (open)  
+- R-091 production auth; R-109 Android interactive; R-129 / NU1903; TLS; contrast/a11y residual risks
+- Whether Admin should ever reference DesignSystem (open decision — not decided here)
+- Token palette convergence Admin teal vs DS green (open)
 - Unused Admin `SearchInput` and dual toast patterns (debt for later WP)
 
 ## Exact next

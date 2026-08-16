@@ -78,7 +78,7 @@ Does **not** duplicate subscription lifecycle logic. Uses existing `Subscription
 | Check constraint | `ck_saas_payments_positive_amount` (amount > 0) |
 | Unique index | `ux_saas_payments_reference` partial (method, normalized_reference, organization_id) WHERE status NOT IN ('Rejected','Voided') |
 | Concurrency | PostgreSQL `xmin` row version; conflicts → `application.concurrency_conflict` |
-| Excluded tables | POS payments, Utang payments, invoices, cards, webhooks, gateway tokens, HealthCare |
+| Excluded tables | POS payments, Utang payments, invoices, cards, webhooks, gateway tokens, legacy product |
 
 ## 8. Application capability
 
@@ -102,7 +102,7 @@ Development-stage, unauthenticated:
 | `POST /api/v1/platform/payments/{paymentId}/void` | Void |
 | `POST /api/v1/platform/payments/{paymentId}/activate-subscription` | Confirm + activate |
 
-Confirmed absent: gateway, webhook, QR, card, POS, Utang, HealthCare, invoice routes.
+Confirmed absent: gateway, webhook, QR, card, POS, Utang, legacy product, invoice routes.
 
 Phase marker: `P3-WP03-manual-payment-activation`. Retained: `GET /`, `GET /health`.
 
@@ -164,11 +164,11 @@ History table: `public.__EFMigrationsHistory`. Partial unique index verified. Po
 - Actor references accept plain strings — **production blocker** requiring authenticated Platform operator.
 - Routes remain development-stage until auth WP (R-045, R-050+).
 
-## 14. HealthCare freeze
+## 14. portfolio independence verification
 
-- `git ls-files -- HealthCare/` empty
-- `/HealthCare/` ignored
-- No HealthCare project in `ExItS.slnx`
+- Git tracking shows no nested foreign product tree empty
+- `/legacy product/` ignored
+- No legacy product project in `ExItS.slnx`
 
 ## 15. Risks
 

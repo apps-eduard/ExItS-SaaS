@@ -26,7 +26,7 @@ Stop after documentation. Do not implement code, projects, solution entries, ent
 3. Files you create under the new product Docs/
 4. Nothing else by default
 
-Do not scan: PinoyBusinessPOS / other products, `docs/reports/` history, full Platform, all migrations/tests, removed HealthCare product content, build artifacts.
+Do not scan: PinoyBusinessPOS / other products, `docs/reports/` history, full Platform, all migrations/tests, removed foreign product content, build artifacts.
 
 Do not copy POS domain entities, roles, money models, or architecture into the new product. Use templates + product-owner inputs only.
 

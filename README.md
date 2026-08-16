@@ -2,10 +2,10 @@
 
 ExITS SaaS is a multi-product SaaS ecosystem.
 
-Initial products:
+Active portfolio:
 
-- **HealthCare SaaS** — separate completed MVP (historical assessment source for reusable platform capabilities; not present in this workspace).
-- **PinoyBusinessPOS** — offline-capable SaaS for Sari-Sari Stores and Mini Groceries (in this repository).
+- **ExITS Platform** — shared identity, organization, subscription, entitlement, administration, and audit capabilities.
+- **PinoyBusinessPOS** — offline-capable SaaS for Sari-Sari Stores and Mini Groceries.
 
 The shared **ExITS Platform** manages global identity, organizations, product subscriptions, plans, trials, payments, product entitlements, platform administrators, and platform-wide audit/support operations.
 
@@ -46,7 +46,7 @@ ExItS-SaaS/
 └── README.md
 ```
 
-This workspace does **not** contain a nested HealthCare product tree. Do not recreate or import external product source without an approved work package. Active portfolio: Platform + PinoyBusinessPOS.
+This workspace contains no nested foreign product source tree. Do not recreate or import external product source without an approved work package. `ExItS.slnx` lists only active portfolio projects.
 
 **Phase 6** is **complete** with documented risks ([P6-WP06 closeout](docs/reports/P6-WP06-utang-mvp-closeout.md)). Utang MVP (customers, credit, repayments/ledger, due dates/overdue, statements/receipts, trial/continuity rules) is closed.
 

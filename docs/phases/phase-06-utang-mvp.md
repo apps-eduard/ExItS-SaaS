@@ -214,7 +214,7 @@ Close Phase 6 Utang MVP by reconciling delivered capability, hardening confirmed
 
 - OD-07 / OD-08 / OD-09 recorded as resolved in P6-WP05; historical WP report drift corrected
 - P6-WP01–P6-WP05 delivered capability reconciled against architecture and exclusions
-- HealthCare freeze and Platform / product boundaries confirmed
+- portfolio independence verification and Platform / product boundaries confirmed
 
 **Harden**
 

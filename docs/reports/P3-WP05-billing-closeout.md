@@ -15,7 +15,7 @@
 
 Closed Phase 3 by reconciling P3-WP01–P4 implementation against documentation and risks, validating the full PostgreSQL migration chain, adding a deterministic end-to-end commercial API scenario, updating the phase marker to `P3-WP05-billing-closeout`, and recording evidence-based risk dispositions.
 
-No new business module was added. No authentication, product delivery, payment gateway, invoice engine, Hangfire, broker, HealthCare, or POS implementation was introduced.
+No new business module was added. No authentication, product delivery, payment gateway, invoice engine, Hangfire, broker, legacy product, or POS implementation was introduced.
 
 ## 3. Phase 3 scope delivered
 
@@ -31,12 +31,12 @@ No new business module was added. No authentication, product delivery, payment g
 
 - Authentication / JWT / MFA
 - Platform Admin UI
-- Product entitlement delivery (HealthCare or POS)
+- Product entitlement delivery (legacy product or POS)
 - Message brokers / outbox / Hangfire
 - Payment gateways, webhooks, QR, card storage
 - Invoices / automated reconciliation / price engine
 - PinoyBusinessPOS product implementation
-- HealthCare operational databases or cutover
+- legacy product operational databases or cutover
 - Fixed 90-day trial substitute (R-035 remains open)
 
 ## 5. API inventory (development-stage, unauthenticated)
@@ -88,7 +88,7 @@ All routes under `/api/v1/platform/...` unless noted.
 | GET | `/entitlements/snapshots/{snapshotId}` |
 | POST/GET | `.../feature-overrides`, `/feature-overrides/{id}`, `.../revoke` |
 
-**Absent:** HealthCare, POS, gateway, webhook, QR, invoice, delivery, broker routes.
+**Absent:** legacy product, POS, gateway, webhook, QR, invoice, delivery, broker routes.
 
 ## 6. Database and migration inventory
 
@@ -112,7 +112,7 @@ dotnet ef database update InitialPlatformCatalog → 7 tables
 dotnet ef database update → re-applied to 13 tables
 ```
 
-No HealthCare/POS/users/memberships/invoices/gateway/Hangfire tables. No `Migrate()` at API startup.
+No legacy product/POS/users/memberships/invoices/gateway/Hangfire tables. No `Migrate()` at API startup.
 
 ## 7. End-to-end commercial scenario
 
@@ -143,11 +143,11 @@ Covered: catalog → org → trial → trial snapshot → manual GCash payment �
 - No credentials/PHI/card/gateway/broker in Platform src (intentional test/doc matches only).
 - **Not production-ready.**
 
-## 10. HealthCare freeze
+## 10. portfolio independence verification
 
-- `git ls-files -- HealthCare/` empty
-- `/HealthCare/` ignored
-- No HealthCare project in `ExItS.slnx`
+- Git tracking shows no nested foreign product tree empty
+- `/legacy product/` ignored
+- No legacy product project in `ExItS.slnx`
 
 ## 11. Risk disposition (evidence-based)
 

@@ -14,7 +14,7 @@
 
 Persisted authoritative Platform feature overrides and immutable entitlement snapshots (with grants), wired composition through the existing `EntitlementSnapshotComposer`, added configurable provisional refresh policy (R-022 remains open), development-stage REST APIs, migration `AddEntitlementSnapshotsAndOverrides`, and expanded unit/architecture/integration tests.
 
-**Snapshots are authoritative Platform records only.** No product delivery, broker, Hangfire, HealthCare, or POS projection implementation exists.
+**Snapshots are authoritative Platform records only.** No product delivery, broker, Hangfire, legacy product, or POS projection implementation exists.
 
 **Security note:** Entitlement and override mutation endpoints are **development-stage and unauthenticated** (R-045 expanded). Actor references accept `PlatformUserId` GUIDs without authentication — production blocker.
 
@@ -109,11 +109,11 @@ dotnet ef database update
 | Reconcile | new immutable version |
 | Delivery | none |
 
-## 11. HealthCare freeze
+## 11. portfolio independence verification
 
-- `git ls-files -- HealthCare/` empty
-- `/HealthCare/` ignored
-- No HealthCare project in `ExItS.slnx`
+- Git tracking shows no nested foreign product tree empty
+- `/legacy product/` ignored
+- No legacy product project in `ExItS.slnx`
 
 ## 12. Risks
 

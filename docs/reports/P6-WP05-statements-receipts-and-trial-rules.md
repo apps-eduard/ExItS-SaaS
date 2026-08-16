@@ -59,7 +59,7 @@ Feature grants required in addition to subscription state (both product entry an
 
 ## Explicit exclusions
 
-Interest, penalties, credit limits, write-offs, installments, sales, inventory, gateways, QR/cards, tax invoices / tax numbering, offline sync, payment-allocation persistence. No Platform/HealthCare tables or cross-database FKs. Platform SaaS payments remain separate.
+Interest, penalties, credit limits, write-offs, installments, sales, inventory, gateways, QR/cards, tax invoices / tax numbering, offline sync, payment-allocation persistence. No Platform/legacy product tables or cross-database FKs. Platform SaaS payments remain separate.
 
 ## Persistence and migration
 
@@ -111,7 +111,7 @@ Baseline preserved and exceeded (prior 521). Focused coverage: `UtangCapabilityP
 
 ## Portfolio independence
 
-`git ls-files -- HealthCare/` empty; ignored via `.gitignore`; not in `ExItS.slnx`.
+Git tracking shows no nested foreign product tree empty; ignored via `.gitignore`; not in `ExItS.slnx`.
 
 ## Risks and open decisions
 

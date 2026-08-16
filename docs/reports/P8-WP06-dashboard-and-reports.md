@@ -75,7 +75,7 @@ Validated against MVP-scale integration data (single-org sales/expense fixtures)
 
 ## Portfolio independence
 
-Root `HealthCare/` must remain absent/untracked and outside `ExItS.slnx`.
+Root a nested foreign product tree must remain absent/untracked and outside `ExItS.slnx`.
 
 ## Documentation and Git
 

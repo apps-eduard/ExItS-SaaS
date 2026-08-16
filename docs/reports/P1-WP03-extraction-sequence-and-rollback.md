@@ -12,20 +12,20 @@
 
 ## 2. Summary
 
-Documented the safe sequence to build a **new** ExITS Platform in root Git by adapting HealthCare patterns selectively, without importing or modifying HealthCare. Defined stages 1–7, dependency direction, identity/org/authz/DB continuity, feature-flag concept, test/observability/rollout gates, POS readiness gate, rollback levels L0–L6, risk and gate matrices, and ADR-013. P1-WP02 and Cash/GCash correction recorded Complete/accepted. No extraction or code executed.
+Documented the safe sequence to build a **new** ExITS Platform in root Git by adapting legacy product patterns selectively, without importing or modifying legacy product. Defined stages 1–7, dependency direction, identity/org/authz/DB continuity, feature-flag concept, test/observability/rollout gates, POS readiness gate, rollback levels L0–L6, risk and gate matrices, and ADR-013. P1-WP02 and Cash/GCash correction recorded Complete/accepted. No extraction or code executed.
 
 ## 3. Acceptance criteria and evidence
 
 | Criterion | Status | Evidence |
 |---|---|---|
 | P1-WP02 Complete; payment correction accepted | Met | portfolio-progress; phase-01 |
-| New-build vs extraction; HC frozen | Met | extraction-sequence §§2–3; ADR-013 |
+| New-build vs extraction; legacy product frozen | Met | extraction-sequence §§2–3; ADR-013 |
 | Sequence, dependencies, continuity | Met | §§4–8 |
 | DB sequence; rollback levels/triggers/backups | Met | §9; rollback plan |
 | Feature flags conceptual; test/obs/rollout gates | Met | §§10–12; gate matrix |
 | POS readiness; open decisions assigned | Met | §§13, 15 |
 | Risk + gate matrices; ADR-013 | Met | engineering matrices; ADR-013 |
-| Tracking / report / MD-only / HC freeze | Met | This report; validation §7 |
+| Tracking / report / MD-only / portfolio independence verification | Met | This report; validation §7 |
 
 ## 4. Files changed
 
@@ -35,7 +35,7 @@ Added:
 - `docs/engineering/extraction-rollback-plan.md`
 - `docs/engineering/platform-extraction-risk-matrix.md`
 - `docs/engineering/implementation-gate-matrix.md`
-- `docs/decisions/ADR-013-build-new-platform-before-healthcare-reconnection.md` *(later removed; historical ADR-013 retained in [decisions README](../decisions/README.md))*
+- `docs/decisions/ADR-013-build-new-platform-before-legacy product-reconnection.md` *(later removed; historical ADR-013 retained in [decisions README](../decisions/README.md))*
 - `docs/reports/P1-WP03-extraction-sequence-and-rollback.md`
 
 Modified:
@@ -55,7 +55,7 @@ Modified:
 
 ## 5. Architecture/reuse impact
 
-Confirms ADR-002/003 direction without executing extraction. Protects HC MVP; enables POS after Platform contract readiness.
+Confirms ADR-002/003 direction without executing extraction. Protects legacy product MVP; enables POS after Platform contract readiness.
 
 ## 6. Database and migration impact
 
@@ -65,9 +65,9 @@ None executed. Target DBs and future migration process documented only.
 
 | Check | Result |
 |---|---|
-| HC runtime tests | Skipped (docs-only + freeze) |
-| `git ls-files HealthCare` empty | Yes |
-| `git check-ignore -v HealthCare/` | Yes |
+| legacy product runtime tests | Skipped (docs-only + freeze) |
+| `git ls-files legacy product` empty | Yes |
+| `git check-ignore -v legacy product/` | Yes |
 | Markdown-only | Yes |
 | Link/ADR/manifest spot-check | Yes |
 

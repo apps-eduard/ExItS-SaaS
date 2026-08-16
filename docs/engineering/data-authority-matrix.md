@@ -4,8 +4,8 @@
 
 | Data | Authoritative Owner | Stable ID | Referenced By | Replicated Data | Update Authority | Audit Owner | Deletion Owner |
 |---|---|---|---|---|---|---|---|
-| Platform user | Platform | PlatformUserId (Guid) | HC, POS, Admin | Display name/email cache | Platform | Platform | Platform (+ retention policy) |
-| Organization | Platform | PlatformOrganizationId | HC, POS | Name, status, slug | Platform | Platform | Platform |
+| Platform user | Platform | PlatformUserId (Guid) | Products, Admin | Display name/email cache | Platform | Platform | Platform (+ retention policy) |
+| Organization | Platform | PlatformOrganizationId | Products | Name, status, slug | Platform | Platform | Platform |
 | Membership | Platform | OrganizationMembershipId | Products (access) | Role codes for access | Platform | Platform | Platform |
 | Product | Platform | ProductCode | All | Name, status | Platform | Platform | Platform |
 | Plan | Platform | PlanCode + PlanVersion | Products | Limits/features list | Platform | Platform | Platform |
@@ -14,10 +14,6 @@
 > **P3-WP02:** Organization (minimal ownership fields) and Subscription rows are persisted. SaaS payment rows are **not**. Entitlement snapshot tables are **not**.
 | Entitlement | Platform | EntitlementVersion + org+product | Products | Feature map, limits, grace | Platform | Platform | Platform |
 | SaaS payment | Platform | SaaSPaymentId | Admin, org billing UI | Status, reference | Platform | Platform | Platform |
-| Clinic | HealthCare | ClinicId | HC only | — | HealthCare | HealthCare | HealthCare |
-| Patient | HealthCare | PatientId | HC; may link UserId | — | HealthCare | HealthCare | HealthCare |
-| Appointment | HealthCare | AppointmentId | HC | — | HealthCare | HealthCare | HealthCare |
-| Medical note | HealthCare | NoteId | HC | — | HealthCare | HealthCare | HealthCare |
 | POS business | POS | POSBusinessId | POS; links OrgId | — | POS | POS | POS |
 | Organization branch (master) | Platform | OrganizationBranchId | POS / Admin (opaque GUID refs) | Name/status/coords via Platform APIs | Platform | Platform | Platform |
 | Branch-scoped POS operations | POS | uses Platform OrganizationBranchId | POS inventory/orders/transfers | — | POS | POS | POS |

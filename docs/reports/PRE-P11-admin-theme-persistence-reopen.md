@@ -1,9 +1,9 @@
 # Pre-Phase-11 — Admin Theme Persistence and Light-Mode Visibility Reopen
 
-Package: **Pre-Phase-11 Admin Theme Persistence and Light-Mode Visibility Reopen**  
-Prior reported (incomplete) tip: `4b02252187cecadfee9a97db63d4de6e65724f57`  
-Feature tip (this reopen): `46b99a7f6baa87977fb0ed37e678231fa1eb1344`  
-Docs tip: `cc82081e02f21d9db229dd4d40c7d34dba42f384`  
+Package: **Pre-Phase-11 Admin Theme Persistence and Light-Mode Visibility Reopen**
+Prior reported (incomplete) tip: `4b02252187cecadfee9a97db63d4de6e65724f57`
+Feature tip (this reopen): `46b99a7f6baa87977fb0ed37e678231fa1eb1344`
+Docs tip: `cc82081e02f21d9db229dd4d40c7d34dba42f384`
 Phase marker: unchanged (`P10-WP08-phase-10-closeout`) — Phase 11 not started.
 
 ## Status
@@ -66,7 +66,7 @@ No Phase 11 / P11-WP01; no business features; no report redesign; untracked Phas
 
 ## Portfolio independence
 
-- No root `HealthCare/` tree; `git ls-files -- HealthCare/` empty; solution has no HealthCare project
+- No root a nested foreign product tree tree; Git tracking shows no nested foreign product tree empty; solution has no legacy product project
 
 ## Exact next
 

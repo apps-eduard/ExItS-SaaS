@@ -59,7 +59,7 @@ Visible `:focus-visible`, semantic nav `aria-label`, icon-button labels, status 
 
 ## 9. Architecture boundaries preserved
 
-MAUI / DesignSystem still have no Infrastructure, EF Core, Npgsql, or DbContext. DesignSystem has no product business logic or host storage APIs. No HealthCare coupling. No Ant Design / Tailwind framework.
+MAUI / DesignSystem still have no Infrastructure, EF Core, Npgsql, or DbContext. DesignSystem has no product business logic or host storage APIs. No legacy product coupling. No Ant Design / Tailwind framework.
 
 ## 10. Tests
 
@@ -80,9 +80,9 @@ Baseline 443 not reduced (net +4 focused tests).
 
 Release `net10.0-android` build succeeded with `AndroidSdkDirectory` set. `adb devices` listed **no emulator/device**. Interactive runtime validation (theme flash, density restart, Tagalog wrap on device) is **not claimed**; limitation recorded; risk R-109 remains open.
 
-## 12. HealthCare freeze
+## 12. portfolio independence verification
 
-Root `HealthCare/` must remain absent/untracked and outside `ExItS.slnx`.
+Root a nested foreign product tree must remain absent/untracked and outside `ExItS.slnx`.
 
 ## 13. Exact next work package
 

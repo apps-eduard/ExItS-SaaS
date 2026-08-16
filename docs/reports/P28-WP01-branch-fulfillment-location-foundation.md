@@ -41,7 +41,7 @@ Customer storefront, cart, checkout, order lifecycle, payment, dispatch, courier
 
 ## Portfolio independence
 
-Root `HealthCare/` is absent, `git ls-files -- HealthCare/` is empty, and the solution project list contains no HealthCare project.
+Root a nested foreign product tree is absent, Git tracking shows no nested foreign product tree is empty, and the solution project list contains no legacy product project.
 
 ## Risks and open decisions
 

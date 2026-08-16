@@ -9,7 +9,7 @@
 | Field | Value |
 |---|---|
 | Portfolio | ExITS SaaS |
-| Existing product | Historical HealthCare SaaS MVP (separate product; **not** in this workspace ? do not restore) |
+| Existing product | Historical legacy product MVP (separate product; **not** in this workspace ? do not restore) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
 | Current phase | Phase 29 **Open / Partial Closeout** â€” cross-cutting data/performance hardening. Phases 14 / 19â€“28 remain **Open** with prior statuses (including Phase 28 Stage B Code Complete / Validation Pending). |
 | Current work package | **P29-WP14** PostgreSQL backup/restore recovery validation - Code Complete / Validation Evidence Recorded ([phase](phases/phase-29-data-integrity-query-performance-and-database-hardening.md)). |
@@ -196,9 +196,9 @@ P19-WP08 ? End-to-End Validation and User Closeout Checklist (Retest ï¿½ awai
 
 | Phase | Name | Status | Completed | Total | Progress | Link |
 |---:|---|---|---:|---:|---:|---|
-| 0 | Existing HealthCare Assessment | **Complete with documented risks** | 4 | 4 | 100% | [Open](reports/phase-00-final-assessment-and-recommendation.md) |
+| 0 | Existing legacy product Assessment | **Complete with documented risks** | 4 | 4 | 100% | [Open](reports/phase-00-final-assessment-and-recommendation.md) |
 | 1 | Platform Boundary and Architecture | **Complete with documented risks** | 4 | 4 | 100% | [Open](phases/phase-01-platform-boundary.md) |
-| 2 | Platform Extraction and HealthCare Reconnection | **Complete with documented risks** | 6 | 6 | 100% | [Open](phases/phase-02-platform-extraction.md) |
+| 2 | Platform Extraction and legacy product Reconnection | **Complete with documented risks** | 6 | 6 | 100% | [Open](phases/phase-02-platform-extraction.md) |
 | 3 | Portfolio Billing, Plans and Entitlements | **Complete with documented risks** | 5 | 5 | 100% | [Open](phases/phase-03-billing-entitlements.md) |
 | 4 | Platform Admin Expansion | **Complete with documented risks** | 4 | 4 | 100% | [Open](phases/phase-04-platform-admin.md) |
 | 5 | PinoyBusinessPOS MAUI Foundation | **Complete with documented risks** | 5 | 5 | 100% | [Open](phases/phase-05-pos-maui-foundation.md) |

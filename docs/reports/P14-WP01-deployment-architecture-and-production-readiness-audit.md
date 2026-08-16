@@ -61,7 +61,7 @@ Primary open Production blockers: **TLS-PROD**, **MAUI-HTTPS**, **R-109**, **R-1
 
 ## 5. Explicit exclusions
 
-All implementation listed in the work-package charter; HealthCare nesting; inventing D-P12-03; claiming Production-ready; beginning P14-WP02+.
+All implementation listed in the work-package charter; legacy product nesting; inventing D-P12-03; claiming Production-ready; beginning P14-WP02+.
 
 ## 6. Validation
 
@@ -71,7 +71,7 @@ All implementation listed in the work-package charter; HealthCare nesting; inven
 | Working tree at start | Clean |
 | Docs-only change set | No `src/` / `deploy/` / `ops/` implementation edits |
 | Full Release tests | **1261 passed / 0 failed / 0 skipped** (baseline confirmed) |
-| Portfolio independence | No root `HealthCare/`; `git ls-files -- HealthCare/` empty; no HealthCare projects in `ExItS.slnx` |
+| Portfolio independence | No root a nested foreign product tree; Git tracking shows no nested foreign product tree empty; no legacy product projects in `ExItS.slnx` |
 
 ## 7. Files / docs changed
 

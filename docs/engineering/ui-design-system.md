@@ -2,7 +2,7 @@
 
 [Home](../index.md) | [Component catalog](reusable-component-catalog.md) | [Localization](localization.md) | [Themes](theme-system.md) | [ADR-010](../decisions/ADR-010-separate-ui-implementations-platform-and-pos.md) | [Approved architecture](approved-architecture-summary.md)
 
-Validated against HealthCare evidence in **P0-WP03**. No application UI was implemented in this work package.
+Validated against legacy product evidence in **P0-WP03**. No application UI was implemented in this work package.
 
 ---
 
@@ -10,9 +10,9 @@ Validated against HealthCare evidence in **P0-WP03**. No application UI was impl
 
 | Product | UI stack | Notes |
 |---|---|---|
-| HealthCare Staff Web | **Ant Design Blazor** (retain) | No rewrite/modernization in current ExITS work |
-| HealthCare PatientWeb | Native CSS (retain) | Product-specific; pattern source for new native apps |
-| HealthCare MAUI | Existing native CSS (retain) | No rewrite in current work |
+| legacy product Staff Web | **Ant Design Blazor** (retain) | No rewrite/modernization in current ExITS work |
+| legacy product PatientWeb | Native CSS (retain) | Product-specific; pattern source for new native apps |
+| legacy product MAUI | Existing native CSS (retain) | No rewrite in current work |
 | **New ExItS Platform Admin** | **Ant Design Blazor** (`AntDesign`, ADR-015) | Pro Blazor as design reference only; **no Tailwind**; **no Fluent UI**; compact enterprise console |
 | PinoyBusinessPOS | **Native foundation** (MAUI Blazor Hybrid) | Shared DesignSystem tokens/localization with POS; **no Ant**; **no Tailwind** |
 | Shared | Models, token **names**, localization keys, validation/formatting | Not one framework-switching component; Admin uses Ant; POS uses DesignSystem |
@@ -101,7 +101,7 @@ density-compact-* / density-comfortable-*
 motion-fast / motion-base / motion-slow
 ```
 
-New Platform Admin and POS both use CSS custom properties (`--exits-*`) per [theme-system.md](theme-system.md). Existing HealthCare Staff Web may keep its Ant/`--hc-*` styling unchanged.
+New Platform Admin and POS both use CSS custom properties (`--exits-*`) per [theme-system.md](theme-system.md). Existing legacy product Staff Web may keep its Ant/`--hc-*` styling unchanged.
 
 ---
 
@@ -123,7 +123,7 @@ Required modes: **Light**, **Dark**, **System**.
 - Theme change must not restart the app or lose form state.
 - See [theme-system.md](theme-system.md).
 
-**P4-WP04:** Platform Admin implements System / Light / Dark via semantic CSS tokens, header selector, `localStorage` persistence, and `theme-boot.js` flash prevention. HealthCare today: light canvas tokens + dark **sider only** — not a product theme system.
+**P4-WP04:** Platform Admin implements System / Light / Dark via semantic CSS tokens, header selector, `localStorage` persistence, and `theme-boot.js` flash prevention. legacy product today: light canvas tokens + dark **sider only** — not a product theme system.
 
 **P5-WP01:** PinoyBusinessPOS MAUI implements System / Light / Dark via DesignSystem `--exits-*` tokens, Settings selector, MAUI Preferences + `localStorage` mirror, and `theme-boot.js`. Density tokens exist; compact layout polish is P5-WP02.
 
@@ -139,7 +139,7 @@ Initial languages: **English (`en`)** and **Filipino (`fil` / `fil-PH`)**.
 - Configuration language name: **Filipino**; Tagalog wording may appear in copy.
 - Do **not** claim all Philippine languages.
 
-**P4-WP04:** Platform Admin ships `AdminResources` (`en` + `fil-PH`) for shell/nav/shared components; see [localization.md](localization.md) and [admin-terminology-guide.md](admin-terminology-guide.md). HealthCare today: **no** localization foundation (do not add during Phase 0).
+**P4-WP04:** Platform Admin ships `AdminResources` (`en` + `fil-PH`) for shell/nav/shared components; see [localization.md](localization.md) and [admin-terminology-guide.md](admin-terminology-guide.md). legacy product today: **no** localization foundation (do not add during Phase 0).
 
 **P5-WP01:** PinoyBusinessPOS ships `PosResources` + DesignSystem `DesignSystemResources` (`en` + `fil-PH`); see [localization.md](localization.md) and [pos-terminology-guide.md](pos-terminology-guide.md).
 
@@ -160,7 +160,7 @@ Use motion for hierarchy and feedback, not decoration.
 
 Prefer CSS `transform`/`opacity`. Honor **`prefers-reduced-motion`**: full usability with motion disabled. Never block cashier operations. Do not animate every table row or large datasets.
 
-HealthCare lesson: staff `--hc-motion` + reduced-motion disable page enter; Mobile lacks reduced-motion.
+legacy product lesson: staff `--hc-motion` + reduced-motion disable page enter; Mobile lacks reduced-motion.
 
 ---
 
@@ -215,7 +215,7 @@ Do not implement in P0-WP03.
 
 Generic `SelectField<T>`: label, placeholder, required/disabled/loading/empty, validation, single select (multi later), searchable later, keyboard, clear, localized text, both densities and themes.
 
-HealthCare picker lesson: debounced search, permission gates, **no free-text IDs** (`ClinicPicker`, `OrganizationPicker`, `PatientPicker`) — reuse the **API**, not Ant `Select`.
+legacy product picker lesson: debounced search, permission gates, **no free-text IDs** (`ClinicPicker`, `OrganizationPicker`, `PatientPicker`) — reuse the **API**, not Ant `Select`.
 
 ---
 
@@ -229,7 +229,7 @@ HealthCare picker lesson: debounced search, permission gates, **no free-text IDs
 
 Only when approved needs require range, presets, disabled dates, overdue highlighting, full keyboard calendar grid, etc.
 
-Do **not** copy Ant `DatePicker` into POS. Appointment calendar pages remain HealthCare-specific UX lessons only.
+Do **not** copy Ant `DatePicker` into POS. Appointment calendar pages remain legacy product-specific UX lessons only.
 
 ---
 
@@ -246,5 +246,5 @@ Naming in earlier drafts (`ExTextField`, …) remains the documentation conventi
 - No Tailwind in POS or **new** Platform Admin.
 - No Ant Design in PinoyBusinessPOS or **new** Platform Admin.
 - No single component that switches Ant vs native at runtime.
-- No HealthCare UI rewrite in current ExITS MVP work.
+- No legacy product UI rewrite in current ExITS MVP work.
 - No implementation of tokens/components in P0-WP03.

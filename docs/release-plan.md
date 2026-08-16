@@ -4,7 +4,7 @@
 
 ## R0 — Assessment baseline
 
-**Complete with documented risks (Phase 0).** HealthCare MVP inventoried; reuse, UI, runtime, and closeout recommendations recorded. Open risks documented.
+**Complete with documented risks (Phase 0).** legacy product MVP inventoried; reuse, UI, runtime, and closeout recommendations recorded. Open risks documented.
 
 ## R0.5 — Platform/product capability boundary (Phase 1 docs)
 
@@ -20,11 +20,11 @@
 
 ## R1 — ExITS Platform extraction
 
-**Complete with documented risks (Phase 2 / P2-WP06).** Root Platform foundation, identity/org, commercial domain, HC contract boundaries, and migration dry-run validation delivered. No nested HealthCare product tree in this repository. Auth, persistence, real HC integration/cutover, Admin UI, and POS were **not** delivered. See [phase-02-extraction-closeout.md](reports/phase-02-extraction-closeout.md).
+**Complete with documented risks (Phase 2 / P2-WP06).** Root Platform foundation, identity/org, commercial domain, legacy product contract boundaries, and migration dry-run validation delivered. No nested foreign product tree in this repository. Auth, persistence, real legacy product integration/cutover, Admin UI, and POS were **not** delivered. See [phase-02-extraction-closeout.md](reports/phase-02-extraction-closeout.md).
 
 ## R2 — Platform portfolio administration
 
-**Complete with documented risks (Phase 4 / P4-WP04).** HealthCare and PinoyBusinessPOS product plans, subscriptions, trials, manual payment activation, Platform Admin UI, audit, and system-role authorization delivered for development. Production authentication, gateways, invoices, and entitlement delivery remain open. See [P4-WP04 report](reports/P4-WP04-audit-authorization-and-closeout.md).
+**Complete with documented risks (Phase 4 / P4-WP04).** legacy product and PinoyBusinessPOS product plans, subscriptions, trials, manual payment activation, Platform Admin UI, audit, and system-role authorization delivered for development. Production authentication, gateways, invoices, and entitlement delivery remain open. See [P4-WP04 report](reports/P4-WP04-audit-authorization-and-closeout.md).
 
 ## R2.5 — PinoyBusinessPOS MAUI foundation (Phase 5)
 

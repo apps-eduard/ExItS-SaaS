@@ -1,8 +1,8 @@
 # P27-WP01 — Buyer-Specific Product Sharing & PO Pricing
 
-Package: **P27-WP01 — Buyer-Specific Product Sharing & PO Pricing**  
-Phase: [Phase 27 — Connected Supplier Commerce & Purchasing](../phases/phase-27-connected-supplier-commerce-and-purchasing.md)  
-Design: [connected-exits-suppliers.md](../engineering/connected-exits-suppliers.md)  
+Package: **P27-WP01 — Buyer-Specific Product Sharing & PO Pricing**
+Phase: [Phase 27 — Connected Supplier Commerce & Purchasing](../phases/phase-27-connected-supplier-commerce-and-purchasing.md)
+Design: [connected-exits-suppliers.md](../engineering/connected-exits-suppliers.md)
 Companion detail: [connected-supplier-buyer-specific-sharing-and-pricing.md](connected-supplier-buyer-specific-sharing-and-pricing.md)
 
 ## Status
@@ -167,4 +167,4 @@ Device Verified: **No**. Browser Verified: **No**. Production Ready: **No**.
 
 ## Portfolio independence
 
-No HealthCare tree; Platform/Product DB boundaries unchanged; no secrets committed.
+No legacy product tree; Platform/Product DB boundaries unchanged; no secrets committed.

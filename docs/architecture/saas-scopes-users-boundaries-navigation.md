@@ -1,8 +1,8 @@
 # SaaS Platform Architecture
 ## Scopes, Accounts, Boundaries, Navigation, and Product Evolution
 
-**Version:** 1.5  
-**Status:** Accepted for Phase 16 implementation (2026-08-02)  
+**Version:** 1.5
+**Status:** Accepted for Phase 16 implementation (2026-08-02)
 **Recommended project path:** `docs/architecture/saas-scopes-users-boundaries-navigation.md`
 
 > **Security decision**
@@ -69,8 +69,8 @@ Platform session
 → Platform APIs only
 ```
 
-A Platform account never becomes an Organization user through ordinary navigation.  
-An Organization account never enters Platform Administration.  
+A Platform account never becomes an Organization user through ordinary navigation.
+An Organization account never enters Platform Administration.
 A Personal account never operates business products directly.
 
 The main product journey is:
@@ -639,7 +639,7 @@ Support
 └── Contact Support
 ```
 
-Sales, Inventory, Pawnshop, Healthcare, and similar operations belong inside their respective products.
+Sales, Inventory, Pawnshop, legacy product, and similar operations belong inside their respective products.
 
 ---
 
@@ -1015,7 +1015,7 @@ Both ledgers remain independently active.
 
 ### Archive Personal Record
 
-Personal record becomes read-only.  
+Personal record becomes read-only.
 Organization record becomes authoritative.
 
 ### Mark as Transferred

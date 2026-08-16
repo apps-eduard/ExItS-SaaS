@@ -1,9 +1,9 @@
 # P10-WP02 — Purchasing
 
-Date: 2026-07-31  
-Phase marker: `P10-WP02-purchasing`  
-Status: **Complete**  
-Branch: `main`  
+Date: 2026-07-31
+Phase marker: `P10-WP02-purchasing`
+Status: **Complete**
+Branch: `main`
 Prior tip (Part A cleanup): `fd77f8892c363e48c40b4b35a6c9f4430af2d090`
 
 ## 1. Summary
@@ -54,7 +54,7 @@ Grants: `store-purchasing-view`, `store-purchasing-manage`
 
 ## 6. Migration and indexes
 
-Database: `ExItS_PinoyBusinessPOS` · Schema: `pos`  
+Database: `ExItS_PinoyBusinessPOS` · Schema: `pos`
 Migrations: `AddPosPurchasing` (after `AddPosSuppliers`), then `EnrichPosGoodsReceiptFields`
 
 Tables: `pos.purchase_orders`, `pos.purchase_order_lines`, `pos.purchase_order_number_sequences`, `pos.goods_receipts`, `pos.goods_receipt_lines`, `pos.grn_number_sequences`
@@ -129,9 +129,9 @@ New focused coverage: domain lifecycle, `AddPosPurchasing`/`EnrichPosGoodsReceip
 
 ## 13. Portfolio independence
 
-- No root `HealthCare/` directory
-- `git ls-files -- HealthCare/` empty
-- `dotnet sln ExItS.slnx list` — no HealthCare project
+- No root a nested foreign product tree directory
+- Git tracking shows no nested foreign product tree empty
+- `dotnet sln ExItS.slnx list` — no legacy product project
 
 ## 14. Open risks
 

@@ -62,7 +62,7 @@ Status: **Ready for Review**
 - Approved architecture summary and Phase 2 readiness checklist.
 - ADR-014 Approve ExItS Portfolio Architecture for Controlled Implementation.
 - Mark P1-WP03 Complete; identify **P2-WP01** without starting it.
-- Markdown-only; HealthCare frozen.
+- Markdown-only; legacy product frozen.
 
 #### Definition of Done
 

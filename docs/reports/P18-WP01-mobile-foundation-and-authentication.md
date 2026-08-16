@@ -68,7 +68,7 @@ Auth establishes identity and optional organization context; POS org isolation r
 | Password sign-in with Platform session + POS bearer | Pass |
 | Logout clears secure session | Pass (unit + emulator sign-out observed) |
 
-Physical/user confirmation still required (P18-WP08). Prefer PhysicalDevice / Tailscale Local Validation. Emulator Debug (secondary) uses `http://10.0.2.2:8091` / `:8092`; do not use HealthCare-named AVDs.
+Physical/user confirmation still required (P18-WP08). Prefer PhysicalDevice / Tailscale Local Validation. Emulator Debug (secondary) uses `http://10.0.2.2:8091` / `:8092`; do not use legacy product-named AVDs.
 
 ## 11. Known limitations
 

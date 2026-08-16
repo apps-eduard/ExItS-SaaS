@@ -12,7 +12,7 @@
 
 ## 2. Summary
 
-Defined authoritative data ownership and versioned Platform↔product contracts: stable IDs, identity/org/subscription/entitlement/payment projections, event envelope, versioning, idempotency/ordering, projection states, reconciliation, audit correlation, deletion/retention, and privacy exclusions. Created ADR-012. P1-WP01 recorded Complete. No schemas, APIs, brokers, or application code. HealthCare unchanged.
+Defined authoritative data ownership and versioned Platform↔product contracts: stable IDs, identity/org/subscription/entitlement/payment projections, event envelope, versioning, idempotency/ordering, projection states, reconciliation, audit correlation, deletion/retention, and privacy exclusions. Created ADR-012. P1-WP01 recorded Complete. No schemas, APIs, brokers, or application code. legacy product unchanged.
 
 ## 3. Acceptance criteria and evidence
 
@@ -26,7 +26,7 @@ Defined authoritative data ownership and versioned Platform↔product contracts:
 | API/event/projection rules | Met | §19 |
 | Matrices + ADR-012 | Met | contract / state / classification matrices; ADR-012 |
 | Open decisions carried | Met | contracts §20 |
-| Tracking / report / MD-only / HC freeze | Met | This report; validation §7 |
+| Tracking / report / MD-only / portfolio independence verification | Met | This report; validation §7 |
 
 ## 4. Files changed
 
@@ -65,9 +65,9 @@ None (documentation only). Confirms no cross-DB FKs and projection-only commerci
 
 | Check | Result |
 |---|---|
-| HealthCare runtime tests | Skipped (docs-only + freeze) |
-| `git ls-files HealthCare` empty | Yes |
-| `git check-ignore -v HealthCare/` | Yes |
+| legacy product runtime tests | Skipped (docs-only + freeze) |
+| `git ls-files legacy product` empty | Yes |
+| `git check-ignore -v legacy product/` | Yes |
 | Markdown-only changes | Yes |
 | Link/path/ADR/manifest spot-check | Yes |
 

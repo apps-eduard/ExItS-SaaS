@@ -4,7 +4,7 @@
 
 ## Objective
 
-Build a **new** native-CSS ExITS Platform Admin (Blazor Web App) for multi-product operations. Do **not** extend HealthCare Staff Web Ant Design as the long-term Platform Admin UI.
+Build a **new** native-CSS ExITS Platform Admin (Blazor Web App) for multi-product operations. Do **not** extend legacy product Staff Web Ant Design as the long-term Platform Admin UI.
 
 ## Phase status
 
@@ -51,7 +51,7 @@ Report: [P4-WP02-organizations-users-and-product-access.md](../reports/P4-WP02-o
 - Effective commercial access evaluation (Trialing/Active only for new grants)
 - PostgreSQL persistence + migration apply/rollback/re-apply
 - Admin APIs and UI for users/memberships/product access
-- Tests, docs, runtime evidence; no auth / product-local roles / HealthCare / POS
+- Tests, docs, runtime evidence; no auth / product-local roles / legacy product / POS
 
 #### Definition of Done
 
@@ -102,7 +102,7 @@ Report: [P4-WP04-audit-authorization-and-closeout.md](../reports/P4-WP04-audit-a
 - [x] Theme System / Light / Dark with persistence and flash prevention
 - [x] Localization English (`en`) + Tagalog (`fil-PH`) via `AdminResources`
 - [x] Migration `AddPlatformAuthorizationAndAudit` apply → rollback → re-apply
-- [x] Tests, docs, runtime evidence; HealthCare freeze preserved
+- [x] Tests, docs, runtime evidence; portfolio independence verification preserved
 - [x] Phase 4 closed with documented risks (not production-ready)
 
 #### Definition of Done

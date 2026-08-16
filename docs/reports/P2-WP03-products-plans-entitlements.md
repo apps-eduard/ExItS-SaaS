@@ -4,7 +4,7 @@
 
 | Field | Value |
 |---|---|
-| Phase | Phase 2 — Platform Extraction and HealthCare Reconnection |
+| Phase | Phase 2 — Platform Extraction and legacy product Reconnection |
 | Work package | P2-WP03 — Products, Plans and Entitlement Foundation |
 | Status | Ready for Review |
 | Branch | `main` |
@@ -12,7 +12,7 @@
 
 ## 2. Summary
 
-Implemented Platform Domain and Application foundation for the commercial catalog and entitlement model: Product, FeatureDefinition, Plan, PlanVersion (published immutable), TrialDefinition, Subscription lifecycle, EntitlementGrant, FeatureOverride, EntitlementSnapshot, and deterministic `EntitlementSnapshotComposer`. No persistence, billing/payment collection, GCash, auth, Admin UI, product APIs, brokers, HealthCare integration, or POS entities.
+Implemented Platform Domain and Application foundation for the commercial catalog and entitlement model: Product, FeatureDefinition, Plan, PlanVersion (published immutable), TrialDefinition, Subscription lifecycle, EntitlementGrant, FeatureOverride, EntitlementSnapshot, and deterministic `EntitlementSnapshotComposer`. No persistence, billing/payment collection, GCash, auth, Admin UI, product APIs, brokers, legacy product integration, or POS entities.
 
 ## 3. Acceptance criteria and evidence
 
@@ -28,7 +28,7 @@ Implemented Platform Domain and Application foundation for the commercial catalo
 | Explicit repos + use cases; no generic repo | Met | Application Catalog/Subscriptions |
 | No EF/auth/payment/business API | Met | packages + API routes |
 | Tests pass | Met | See latest totals after trial-duration correction |
-| HealthCare freeze | Met | ignored, untracked, not in solution |
+| portfolio independence verification | Met | ignored, untracked, not in solution |
 
 ## Trial duration correction
 
@@ -88,7 +88,7 @@ Reused: `ProductCode` (P2-WP02).
 
 ## 9. Portfolio independence
 
-`git ls-files HealthCare` empty; ignored; not in solution; unchanged.
+`git ls-files legacy product` empty; ignored; not in solution; unchanged.
 
 ## 10. Risks
 
@@ -100,7 +100,7 @@ Reused: `ProductCode` (P2-WP02).
 
 ## 11. Next work package
 
-**P2-WP04 — HealthCare Contract Adaptation** (do not begin until authorized).
+**P2-WP04 — legacy product Contract Adaptation** (do not begin until authorized).
 
 ## 12. Commit
 

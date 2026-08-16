@@ -22,10 +22,10 @@ Run Git status, inspect existing implementation/tests and preserve unrelated cha
 
 ## Mandatory rules
 
-- Preserve HealthCare regression safety.
+- Preserve legacy product regression safety.
 - Enforce platform/product/database boundaries.
 - Enforce tenant isolation and server authorization.
-- Keep Ant Design confined to **existing HealthCare Staff Web** only (not new Platform Admin or POS).
+- Keep Ant Design confined to **existing legacy product Staff Web** only (not new Platform Admin or POS).
 - Use native CSS/CSS isolation for POS UI.
 - Localize all new user-facing POS strings in English and Filipino.
 - Support light/dark/system themes for new POS UI.

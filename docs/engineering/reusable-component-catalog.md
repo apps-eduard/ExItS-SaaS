@@ -2,7 +2,7 @@
 
 [UI design system](ui-design-system.md) | [ADR-010](../decisions/ADR-010-separate-ui-implementations-platform-and-pos.md)
 
-Documentation-only catalog originally authored in P0-WP03. **P5-WP04 implemented** the shared DesignSystem MVP foundation components listed below (forms, validation, responsive data, money, confirm/feedback). Ant Design remains only inside existing HealthCare Staff Web. Business-specific POS controls (PasswordBox, cart, pickers, Utang, payments) remain deferred.
+Documentation-only catalog originally authored in P0-WP03. **P5-WP04 implemented** the shared DesignSystem MVP foundation components listed below (forms, validation, responsive data, money, confirm/feedback). Ant Design remains only inside existing legacy product Staff Web. Business-specific POS controls (PasswordBox, cart, pickers, Utang, payments) remain deferred.
 
 **P11-WP01** produced an authoritative runtime inventory of Admin, DesignSystem, and POS MAUI surfaces, including consolidation candidates and the recommended shared-component boundary. See [P11-WP01 report](../reports/P11-WP01-web-ui-audit-and-component-inventory.md). This catalog remains the historical planned-component list; P11-WP01 is the source of truth for *what exists today*.
 
@@ -106,9 +106,9 @@ Phase labels:
 
 ---
 
-## HealthCare mapping (informational)
+## legacy product mapping (informational)
 
-| Future POS component | Closest HealthCare lesson | Do not copy |
+| Future POS component | Closest legacy product lesson | Do not copy |
 |---|---|---|
 | Modal / Confirm / Toast | `IUiModalService`, `IUserNotificationService` | Ant implementations |
 | SelectField / pickers | Clinic/Org/Patient pickers | Ant `Select` markup |
@@ -121,4 +121,4 @@ Phase labels:
 
 ## Build rule
 
-Before creating a component in a later phase, search HealthCare and classify: reusable model, pattern only, product-specific, or unsuitable — then implement in the **native** Platform Admin / POS libraries. Never add Ant Design wrappers to the new Platform Admin.
+Before creating a component in a later phase, search legacy product and classify: reusable model, pattern only, product-specific, or unsuitable — then implement in the **native** Platform Admin / POS libraries. Never add Ant Design wrappers to the new Platform Admin.

@@ -4,7 +4,7 @@ Phase marker: `P9-WP05-pilot-and-deployment`
 
 ## Status
 
-**Complete with documented risks.** Delivered repeatable non-production deployment packaging, environment/config validation, backup-before-migrate gates, migration order, smoke contracts, pilot criteria/runbooks, Android Release packaging instructions, rehearsal automation, and an honest release-readiness decision. **No new business features.** No nested HealthCare product tree in this repository. **Not Production-ready.**
+**Complete with documented risks.** Delivered repeatable non-production deployment packaging, environment/config validation, backup-before-migrate gates, migration order, smoke contracts, pilot criteria/runbooks, Android Release packaging instructions, rehearsal automation, and an honest release-readiness decision. **No new business features.** No nested foreign product tree in this repository. **Not Production-ready.**
 
 Final readiness state: **Ready for controlled internal technical pilot** (StagingPilot). **Blocked** for restricted external pilot and Production while R-091, R-109, R-129, Production TLS, POS operational roles, Manual GCash verification, online-only limits, and PITR deferral remain open.
 
@@ -32,7 +32,7 @@ Docs commit: 58b3c7413d5ccb29f0e0ee62007671217f7ff7f5
 - Production TLS completion claim without real cert + tested endpoint
 - New POS business workflows; tax/VAT/refunds/accounting/purchasing/payroll
 - Payment gateway / verified GCash; report export; new offline business ops; PITR
-- HealthCare deployment; Kubernetes introduction; P9-WP06
+- legacy product deployment; Kubernetes introduction; P9-WP06
 
 ## Deployment architecture
 
@@ -75,7 +75,7 @@ Non-production:
 3. `Invoke-ExItsDeploy.ps1 -Environment StagingPilot -Action Plan -ConfirmPhrase DEPLOY_PILOT_CONFIRMED` (migration order + smoke catalog)
 4. Dirty-tree refusal proven for StagingPilot Rehearsal before commit
 5. Unit/CLI gates: Production config remains invalid while blockers open; BackupGate blocks when unverified
-6. HealthCare untouched
+6. legacy product untouched
 
 Disposable DB migrate+backup+live health smoke remains operator-run against provisioned pilot/Testing hosts using `ops/backup` + `WaitHealth`/`SmokeHealth` after secrets and TLS material are provisioned. No Production deployment performed.
 
@@ -110,7 +110,7 @@ Disposable DB migrate+backup+live health smoke remains operator-run against prov
 
 ## Portfolio independence
 
-`git ls-files -- HealthCare/` empty; `git check-ignore -v HealthCare/` shows ignored; Deployment projects in `ExItS.slnx`; HealthCare absent from solution and compose.
+Git tracking shows no nested foreign product tree empty; `git check-ignore -v legacy product/` shows ignored; Deployment projects in `ExItS.slnx`; legacy product absent from solution and compose.
 
 ## Risks / open decisions
 

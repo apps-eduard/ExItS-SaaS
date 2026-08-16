@@ -4,7 +4,7 @@
 
 | Field | Value |
 |---|---|
-| Phase | Phase 2 — Platform Extraction and HealthCare Reconnection |
+| Phase | Phase 2 — Platform Extraction and legacy product Reconnection |
 | Work package | P2-WP05 — Regression and Migration Validation |
 | Status | Complete |
 | Branch | `main` |
@@ -12,7 +12,7 @@
 
 ## 2. Summary
 
-Published existing local history to `origin`, then implemented **validation-only** migration dry-run models: identity/organization/membership mapping candidates, preflight validator, compatibility reporter, simulation service, and rollback-readiness checks. **No** HealthCare edits, real migration, EF/SQL, transport, persistence, or migration API routes.
+Published existing local history to `origin`, then implemented **validation-only** migration dry-run models: identity/organization/membership mapping candidates, preflight validator, compatibility reporter, simulation service, and rollback-readiness checks. **No** legacy product edits, real migration, EF/SQL, transport, persistence, or migration API routes.
 
 ## 3. Initial remote publication (Part A)
 
@@ -65,9 +65,9 @@ Published existing local history to `origin`, then implemented **validation-only
 | `dotnet build ExItS.slnx -c Release` | 0 (0 warnings/errors) |
 | `dotnet test ExItS.slnx -c Release --no-build` | 0 |
 
-## 8. HealthCare freeze
+## 8. portfolio independence verification
 
-`/HealthCare/` ignored; `git ls-files -- HealthCare/` empty; not in solution; unchanged. Dry-run ≠ migration/integration.
+`/legacy product/` ignored; Git tracking shows no nested foreign product tree empty; not in solution; unchanged. Dry-run ≠ migration/integration.
 
 ## 9. Risks
 

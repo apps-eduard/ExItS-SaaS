@@ -45,7 +45,7 @@ Reversed credits are never overdue. Fully FIFO-offset credits are not overdue (s
 
 ## Explicit exclusions
 
-Statements, printable receipts, trial-expiry rules, interest, penalties, credit limits, write-offs, installments, sales, inventory, gateways, QR/cards, offline sync, payment-allocation persistence. No Platform/HealthCare tables or cross-database FKs.
+Statements, printable receipts, trial-expiry rules, interest, penalties, credit limits, write-offs, installments, sales, inventory, gateways, QR/cards, offline sync, payment-allocation persistence. No Platform/legacy product tables or cross-database FKs.
 
 ## Persistence and migration
 
@@ -106,7 +106,7 @@ Android Release APK path unchanged under MAUI `bin/Release/net10.0-android/`. No
 
 ## Portfolio independence
 
-`git ls-files -- HealthCare/` empty; ignored via `.gitignore`; not in `ExItS.slnx`.
+Git tracking shows no nested foreign product tree empty; ignored via `.gitignore`; not in `ExItS.slnx`.
 
 ## Risks and open decisions
 
@@ -126,7 +126,7 @@ POS Domain/Application/Infrastructure/Api/ApiClient/Maui due-date + overdue slic
 - Feature commit: `9947d95cba27c8311091f95ea51c79be1de0acb9`
 - Docs commit: `345bfdd1f98d953b2f6c54eb454a4a28d0f17ef5`
 - Phase marker: `P6-WP04-due-dates-and-overdue-monitoring`
-- Hashes recorded after authorized commit/push; HealthCare freeze re-verified at that time
+- Hashes recorded after authorized commit/push; portfolio independence verification re-verified at that time
 
 ## Exact next work package
 

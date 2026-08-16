@@ -227,7 +227,7 @@ Do **not** routinely scan:
 - unrelated products (including full POS when building a different product)
 - old phase completion reports
 - full Platform history or unrelated migrations
-- removed HealthCare product content
+- removed foreign product content
 - completed product implementation history unless directly required
 
 Before expanding context, state the reason (contract reference, project dependency, compile/test failure, architecture invariant, or approved shared component).
@@ -240,18 +240,18 @@ Conflict precedence and expansion gate: see `exits-product-context.mdc`.
 
 Guidance only — not scaffold implementation.
 
-- [ ] Product name and Platform product code/identifier  
-- [ ] Independent subscription / plans / entitlements defined with Platform  
-- [ ] Database name and schema chosen (separate from Platform and other products)  
-- [ ] Organization boundary (Platform Org Guid references only)  
-- [ ] Product-local roles and grants defined  
-- [ ] Operational-money model defined (not SaaS billing)  
-- [ ] API and UI ownership clear  
-- [ ] Deployable image boundary planned  
-- [ ] Documentation root under `src/Products/<Name>/Docs/`  
-- [ ] Security/privacy classification (including PHI: default none)  
-- [ ] Explicit exclusions listed  
-- [ ] Material missing decisions reported to product owner — do not invent  
+- [ ] Product name and Platform product code/identifier
+- [ ] Independent subscription / plans / entitlements defined with Platform
+- [ ] Database name and schema chosen (separate from Platform and other products)
+- [ ] Organization boundary (Platform Org Guid references only)
+- [ ] Product-local roles and grants defined
+- [ ] Operational-money model defined (not SaaS billing)
+- [ ] API and UI ownership clear
+- [ ] Deployable image boundary planned
+- [ ] Documentation root under `src/Products/<Name>/Docs/`
+- [ ] Security/privacy classification (including PHI: default none)
+- [ ] Explicit exclusions listed
+- [ ] Material missing decisions reported to product owner — do not invent
 
 ---
 
@@ -259,21 +259,21 @@ Guidance only — not scaffold implementation.
 
 ### Correct (**Example**)
 
-- Platform + POS  
-- Platform + Loan (separate DB, roles, money)  
-- Platform + POS + Loan (independent subscriptions)  
-- Separate databases and product-local roles  
+- Platform + POS
+- Platform + Loan (separate DB, roles, money)
+- Platform + POS + Loan (independent subscriptions)
+- Separate databases and product-local roles
 
 ### Incorrect (**Required** prohibitions)
 
-- Product directly querying Platform tables  
-- Shared operational database across products  
-- Platform role automatically granting POS (or other product) operational permissions  
-- One subscription unlocking every product  
-- Customer-specific source forks  
-- Copying POS domain entities into Loan/Pawnshop/BNPL  
-- Storing operational money in Platform SaaS billing tables  
-- Treating Dev headers as production authentication  
+- Product directly querying Platform tables
+- Shared operational database across products
+- Platform role automatically granting POS (or other product) operational permissions
+- One subscription unlocking every product
+- Customer-specific source forks
+- Copying POS domain entities into Loan/Pawnshop/BNPL
+- Storing operational money in Platform SaaS billing tables
+- Treating Dev headers as production authentication
 
 ---
 

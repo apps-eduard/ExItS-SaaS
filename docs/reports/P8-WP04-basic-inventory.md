@@ -81,7 +81,7 @@ Interactive device validation **not** claimed (`adb` unavailable) — **R-109** 
 
 ## Portfolio independence
 
-Root `HealthCare/` must remain absent/untracked and outside `ExItS.slnx`.
+Root a nested foreign product tree must remain absent/untracked and outside `ExItS.slnx`.
 
 ## Documentation and Git
 

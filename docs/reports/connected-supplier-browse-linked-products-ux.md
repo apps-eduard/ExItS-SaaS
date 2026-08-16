@@ -1,7 +1,7 @@
 # Connected supplier Browse / Linked products UX
 
-Date: 2026-08-16  
-Related design: [connected-exits-suppliers.md](../engineering/connected-exits-suppliers.md)  
+Date: 2026-08-16
+Related design: [connected-exits-suppliers.md](../engineering/connected-exits-suppliers.md)
 Phase 1 baseline: [connected-exits-suppliers-phase-1.md](connected-exits-suppliers-phase-1.md)
 
 ## Status
@@ -41,7 +41,7 @@ Unchanged. Selective linked-product LocalStore projection and online catalog sea
 ## Security / portfolio independence
 
 - No credentials or PHI committed
-- No HealthCare tree; Platform/Product DB boundaries unchanged
+- No legacy product tree; Platform/Product DB boundaries unchanged
 
 ## Exact next
 

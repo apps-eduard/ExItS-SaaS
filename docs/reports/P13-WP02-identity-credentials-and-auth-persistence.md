@@ -68,7 +68,7 @@ Login/logout UI; cookies; bearer/refresh tokens; email delivery; MFA; Admin auth
 | Migration apply/rollback/reapply | Credential migration tests |
 | Hasher uses `PasswordHasher<TUser>` | Architecture + unit tests |
 | Bootstrap hardening | Integration + architecture tests |
-| No HealthCare product tree | Pass |
+| No foreign product tree | Pass |
 | Portfolio independence | Pass |
 
 ## 6. Open decisions / risks

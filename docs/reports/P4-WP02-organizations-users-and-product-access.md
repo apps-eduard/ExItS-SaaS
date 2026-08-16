@@ -2,7 +2,7 @@
 
 ## 1. Status
 
-**Complete.** Platform users, organization memberships, Platform organization roles, product-access assignments, effective commercial access evaluation, PostgreSQL persistence, Admin APIs/UI, tests, and documentation delivered. No nested HealthCare product tree in this repository. Authentication and product-local roles remain out of scope.
+**Complete.** Platform users, organization memberships, Platform organization roles, product-access assignments, effective commercial access evaluation, PostgreSQL persistence, Admin APIs/UI, tests, and documentation delivered. No nested foreign product tree in this repository. Authentication and product-local roles remain out of scope.
 
 | Field | Value |
 |---|---|
@@ -48,7 +48,7 @@ Migration: `AddPlatformUsersMembershipsAndProductAccess`
 | `platform.organization_memberships` | FKs; filtered unique current membership |
 | `platform.product_access_assignments` | FKs; filtered unique active assignment; product_code → products.code |
 
-No password/AspNet Identity/HealthCare/POS tables. Apply → rollback to `AddEntitlementSnapshotsAndOverrides` → re-apply validated in integration tests.
+No password/AspNet Identity/legacy product/POS tables. Apply → rollback to `AddEntitlementSnapshotsAndOverrides` → re-apply validated in integration tests.
 
 ## 4. API routes (development-stage, unauthenticated)
 
@@ -91,7 +91,7 @@ Responsive native CSS (mobile cards, confirm dialogs, access-state indicator, to
 ## 6. Explicit exclusions
 
 - Login, passwords, JWT, MFA, SSO, Active Directory, AspNet Identity
-- Product-local roles/permissions; HealthCare/POS operational users
+- Product-local roles/permissions; legacy product/POS operational users
 - Entitlement delivery / messaging / background jobs
 - Payment/invoice/gateway changes
 - Bulk import, invitations, SCIM
@@ -115,9 +115,9 @@ Isolated API/Admin smoke: create user; duplicate username/email → 409; members
 
 APIs and Admin remain **development-stage and unauthenticated**. Do not expose as production. Platform Admin role ≠ product operational authorization. Product-access assignment ≠ completed provisioning or product-local role.
 
-## 10. HealthCare freeze
+## 10. portfolio independence verification
 
-`/HealthCare/` remains ignored, untracked, outside `ExItS.slnx`, unchanged.
+`/legacy product/` remains ignored, untracked, outside `ExItS.slnx`, unchanged.
 
 ## 11. Exact next work package
 

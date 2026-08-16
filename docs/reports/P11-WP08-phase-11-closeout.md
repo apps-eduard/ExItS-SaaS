@@ -104,7 +104,7 @@ Authoritative paths under `src/Platform/ExItS.Platform.Admin/Components/`:
 | English + Filipino | LanguageSelector + resx; WP07/closeout scripts |
 | Keyboard / focus / a11y hardening | WP07 `admin-a11y.js`, ConfirmDialog trap — **not** formal WCAG cert |
 | Tailwind-inspired appearance without Tailwind | Semantic CSS + tokens; package guards |
-| No HealthCare / Phase 12 implementation | Portfolio independence check; Phase 12 files untracked unused |
+| No legacy product / Phase 12 implementation | Portfolio independence check; Phase 12 files untracked unused |
 
 ## 6. Browser matrix and screenshots
 
@@ -146,7 +146,7 @@ Confirmed unchanged by Phase 11 (UI-only Admin work):
 | Inventory / payment / subscription / entitlement / POS behavior | Preserved |
 | Production authentication | Still **open** (R-091) — not falsely closed |
 | No Tailwind / shadcn / Flowbite / DaisyUI | Preserved |
-| No HealthCare workspace dependency | Preserved (`HealthCare/` absent; `git ls-files -- HealthCare/` empty) |
+| No legacy product workspace dependency | Preserved (a nested foreign product tree absent; Git tracking shows no nested foreign product tree empty) |
 | No Phase 12 implementation | Preserved |
 
 ## 9. Remaining debt and risks (honest)
@@ -182,9 +182,9 @@ No listed item was closed without repository evidence.
 
 ## 12. Portfolio independence
 
-- No root `HealthCare/` directory
-- `git ls-files -- HealthCare/` empty
-- Solution projects do not include HealthCare product sources
+- No root a nested foreign product tree directory
+- Git tracking shows no nested foreign product tree empty
+- Solution projects do not include foreign product sources
 
 ## 13. Git evidence
 

@@ -2,19 +2,19 @@
 
 [Extraction sequence](../reuse/extraction-sequence.md) | [Risk matrix](platform-extraction-risk-matrix.md) | [Gate matrix](implementation-gate-matrix.md) | [ADR-014](../decisions/ADR-014-approve-exits-portfolio-architecture-for-controlled-implementation.md)
 
-**Work package:** P1-WP03  
+**Work package:** P1-WP03
 **Status:** Planning only — no cutover authorized
 
 ---
 
 ## Rollback levels
 
-| Level | Scope | Action | Affects HealthCare? |
+| Level | Scope | Action | Affects legacy product? |
 |---|---|---|---|
 | L0 | Documentation / architecture | Revert focused docs commit(s) | No |
-| L1 | New Platform foundation | Revert/remove root Platform projects; keep root ignore of `HealthCare/` | No |
-| L2 | Identity integration | Disable Platform auth adapter; HealthCare uses existing auth authority | HC returns to prior auth |
-| L3 | Organization mapping | Disable mapping adapter; HC uses existing org behavior | Mapping off only |
+| L1 | New Platform foundation | Revert/remove root Platform projects; keep root ignore of a nested foreign product tree | No |
+| L2 | Identity integration | Disable Platform auth adapter; legacy product uses existing auth authority | legacy product returns to prior auth |
+| L3 | Organization mapping | Disable mapping adapter; legacy product uses existing org behavior | Mapping off only |
 | L4 | Entitlement integration | Use last trusted projection or disable new integration per fail-safe | Product ops continue within policy |
 | L5 | Database cutover | Restore verified backup or reverse approved migration steps | Yes — restore path |
 | L6 | UI rollout | Revert Platform Admin deployment independently | No |
@@ -28,8 +28,8 @@
 - Entitlement mismatch granting unpaid features or blocking all ops incorrectly
 - Contract major-version incompatibility
 - Migration partial failure or restore failure
-- HealthCare regression below accepted baseline
-- Accidental root tracking of HealthCare
+- legacy product regression below accepted baseline
+- Accidental root tracking of legacy product
 - Clinical data in Platform logs/contracts
 - Inability to complete rollback rehearsal before cutover
 
@@ -37,16 +37,16 @@
 
 Before any L2+ cutover attempt:
 
-- HealthCare database backup verified by **restore rehearsal**
+- legacy product database backup verified by **restore rehearsal**
 - Platform database backup (if exists)
 - Mapping export / snapshot
 - Configuration / feature-flag state snapshot
-- Git tags for Platform and (separately) HealthCare baselines
+- Git tags for Platform and (separately) legacy product baselines
 
 ## Authentication rollback (L2)
 
 1. Disable Platform integration flag / issuer switch.
-2. Confirm HC clients use prior authority.
+2. Confirm legacy product clients use prior authority.
 3. Invalidate or tolerate transitional sessions per approved plan.
 4. Verify login for staff and patient paths.
 5. Audit rollback actor/reason.
@@ -57,7 +57,7 @@ Before any L2+ cutover attempt:
 
 1. Disable organization/user mapping adapter.
 2. Leave mapping tables intact for forensics (prefer soft-disable).
-3. Confirm HC operational queries use HC org IDs only.
+3. Confirm legacy product operational queries use legacy product org IDs only.
 4. Audit disablement.
 
 ## Entitlement rollback (L4)
@@ -78,19 +78,19 @@ Before any L2+ cutover attempt:
 ## Deployment rollback (L6)
 
 1. Redeploy previous Platform Admin / API artifacts.
-2. Confirm HC deployment unchanged unless HC change was part of approved WP.
+2. Confirm legacy product deployment unchanged unless legacy product change was part of approved WP.
 3. Smoke-test independent surfaces.
 
 ## Verification after rollback
 
 | Check | Evidence |
 |---|---|
-| HC auth works | Login/refresh smoke |
+| legacy product auth works | Login/refresh smoke |
 | No cross-tenant access | Tenant denial tests |
 | Clinical permissions intact | Permission matrix sample |
 | Baseline tests | 1102 safe suite (or current agreed baseline) |
 | No Platform secrets in logs | Log sample review |
-| `git ls-files HealthCare` empty | Root freeze check |
+| `git ls-files legacy product` empty | Root freeze check |
 | Mapping disabled if required | Config audit |
 
 ## Audit requirements
@@ -103,7 +103,7 @@ Record: who authorized rollback, trigger, level, start/end UTC, backups used, ve
 |---|---|
 | L0–L1 | Engineering lead |
 | L2–L4 | Engineering lead + Platform owner |
-| L5 | Engineering lead + Platform owner + product owner (HC); compliance if PHI risk |
+| L5 | Engineering lead + Platform owner + product owner (legacy product); compliance if PHI risk |
 | L6 | Platform owner |
 
 Exact names/roles finalized in Phase 2/9 runbooks — not assigned as people in this WP.
@@ -112,6 +112,6 @@ Exact names/roles finalized in Phase 2/9 runbooks — not assigned as people in 
 
 Backup verification · Test totals · Migration report · Mapping report · Security tests · Smoke tests · Rollback rehearsal · Written approval record
 
-**P2-WP05:** Platform-side dry-run validators and rollback-evidence checks exist. They do **not** prove database restore rehearsal (R-027) or completed HealthCare migration.
+**P2-WP05:** Platform-side dry-run validators and rollback-evidence checks exist. They do **not** prove database restore rehearsal (R-027) or completed legacy product migration.
 
-**P2-WP06:** Phase 2 closed with documented risks. Cutover and legacy HealthCare code retirement remain unauthorized until persistence, auth, adapters, mapping validation, HC regression/E2E, and restore rehearsal gates pass under dedicated future work packages.
+**P2-WP06:** Phase 2 closed with documented risks. Cutover and legacy product code retirement remain unauthorized until persistence, auth, adapters, mapping validation, legacy product regression/E2E, and restore rehearsal gates pass under dedicated future work packages.

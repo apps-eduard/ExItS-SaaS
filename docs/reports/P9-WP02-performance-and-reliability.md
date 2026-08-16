@@ -92,7 +92,7 @@ No Redis / distributed cache introduced. Prefer query + index fixes.
 
 ## Explicit exclusions
 
-- New business features; HealthCare changes
+- New business features; legacy product changes
 - Redis/distributed cache
 - Weakening P9-WP01 security
 - Automatic destructive offline cleanup

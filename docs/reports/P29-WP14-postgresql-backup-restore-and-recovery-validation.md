@@ -100,7 +100,7 @@ Does **not** claim Production Backup/Restore Proven or Production Ready (no prod
 | Wrapper on Windows PS 5.1 without `pwsh` | **SKIPPED** (documented; `#Requires -Version 7.0`) |
 | Equivalent CLI/Docker drill | **PASS** |
 | Backup sizes (approx, redacted) | Platform ~506 188 bytes; POS ~267 066 bytes; both `VERIFY_OK` |
-| Post-restore inline | `platform` + `pos` schemas present; healthcare/patient tables = 0 |
+| Post-restore inline | `platform` + `pos` schemas present; legacy product/patient tables = 0 |
 | Cleanup | Disposable restore containers removed; source local-validation left running |
 | Artifacts | `ops/backup/local/p29-wp14-*` (gitignored) |
 

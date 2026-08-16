@@ -16,7 +16,7 @@
 | Architecture | **Approved** for controlled implementation |
 | Implementation readiness | **Approved with documented non-blocking risks** |
 | First Phase 2 WP | **P2-WP01 — Extraction Baseline Tag and Safety Checks** (narrow root solution foundation; not started) |
-| HealthCare | Remains frozen / ignored; no import in P2-WP01 |
+| legacy product | Remains frozen / ignored; no import in P2-WP01 |
 | Migration status | **Not started** — planning only through Phase 1 |
 
 ## 2. Evidence reviewed
@@ -29,7 +29,7 @@ P1-WP01 capability boundary and matrices · P1-WP02 contracts/ownership/classifi
 ExItS Platform — identity, orgs/memberships, catalog, plans/trials, subscriptions,
                  SaaS payments, entitlements/overrides, Admin, audit, support
 
-HealthCare — clinics, workforce, patients, appointments, notes, clinical authz/audit, existing UIs
+legacy product — clinics, workforce, patients, appointments, notes, clinical authz/audit, existing UIs
 
 PinoyBusinessPOS — businesses, stores/branches/registers, local roles, customers,
                    Utang, retail payments, catalog/sales/inventory, expenses, suppliers,
@@ -40,7 +40,7 @@ PinoyBusinessPOS — businesses, stores/branches/registers, local roles, custome
 
 ## 4. Identity and organization
 
-Platform User = global auth identity. Platform Organization = SaaS account boundary. Multi-org users and multi-product orgs: **yes** (target). Multiple clinics/stores/branches via product-local entities. Patient ≠ User; Customer ≠ User; customers may exist without login. Customer login linkage deferred (OD-01). HC IDs preserved early; mapping reversible and auditable.
+Platform User = global auth identity. Platform Organization = SaaS account boundary. Multi-org users and multi-product orgs: **yes** (target). Multiple clinics/stores/branches via product-local entities. Patient ≠ User; Customer ≠ User; customers may exist without login. Customer login linkage deferred (OD-01). legacy product IDs preserved early; mapping reversible and auditable.
 
 ## 5. Authorization
 
@@ -49,11 +49,11 @@ Authentication → account status → membership → product access → entitlem
 → product-local role → permission → resource scope → business rule
 ```
 
-Platform owns account/membership/product access. Products own operational roles/permissions. Roles are bundles, not sole API checks. Server-derived tenant/resource scope; client OrganizationId not authoritative. Platform Admin does not auto-gain clinical/POS ops. Patient self-scope HC-only. Break-glass deferred (OD-02). Role/permission changes audited.
+Platform owns account/membership/product access. Products own operational roles/permissions. Roles are bundles, not sole API checks. Server-derived tenant/resource scope; client OrganizationId not authoritative. Platform Admin does not auto-gain clinical/POS ops. Patient self-scope legacy product-only. Break-glass deferred (OD-02). Role/permission changes audited.
 
 ## 6. Data ownership
 
-Platform SoR: identity, orgs, catalog, plans, subscriptions, SaaS payments, entitlements. HC SoR: clinical ops. POS SoR: retail ops. No cross-DB FKs; no shared DbContext/domain entities. Stable ID references only. Minimal controlled replication. See [data-ownership.md](../engineering/data-ownership.md).
+Platform SoR: identity, orgs, catalog, plans, subscriptions, SaaS payments, entitlements. legacy product SoR: clinical ops. POS SoR: retail ops. No cross-DB FKs; no shared DbContext/domain entities. Stable ID references only. Minimal controlled replication. See [data-ownership.md](../engineering/data-ownership.md).
 
 ## 7. Contracts and projections
 
@@ -78,15 +78,15 @@ GCash MVP: manual confirmation; reference required/normalized; warn on duplicate
 
 ## 10. UI architecture
 
-HC Staff: Ant retained. PatientWeb/MAUI: existing native retained. **New Platform Admin:** Blazor Web App, native Razor/CSS/isolation, tokens, density, themes, `en`/`fil`, motion + reduced-motion, a11y, responsive — **no Ant, no Tailwind**. **POS:** MAUI Blazor Hybrid, same native foundation; Android/Windows first; iOS/MacCatalyst later — **no Ant, no Tailwind**. Share models/conventions/tokens/a11y/motion — not Ant↔native switcher components. ADR-010.
+legacy product Staff: Ant retained. PatientWeb/MAUI: existing native retained. **New Platform Admin:** Blazor Web App, native Razor/CSS/isolation, tokens, density, themes, `en`/`fil`, motion + reduced-motion, a11y, responsive — **no Ant, no Tailwind**. **POS:** MAUI Blazor Hybrid, same native foundation; Android/Windows first; iOS/MacCatalyst later — **no Ant, no Tailwind**. Share models/conventions/tokens/a11y/motion — not Ant↔native switcher components. ADR-010.
 
 ## 11. Repository and dependencies
 
-Root Git owns docs + future Platform projects. `HealthCare/` ignored nested Git. New Platform built in root; no import/submodule/subtree now; selective pattern adaptation; no wholesale copy. Shared code only with two consumers + neutrality rules. No product→Platform Infra/DbContext; no Platform→product domain; no UI→product entities; no cycles. Architecture tests later.
+Root Git owns docs + future Platform projects. No nested foreign product source tree is tracked. New Platform built in root; no import/submodule/subtree now; selective pattern adaptation; no wholesale copy. Shared code only with two consumers + neutrality rules. No product→Platform Infra/DbContext; no Platform→product domain; no UI→product entities; no cycles. Architecture tests later.
 
 ## 12. Extraction and rollback
 
-Stages 1–7 approved (foundation→identity→org→catalog→Admin→HC adapter→POS). Full HC reconnection not required before POS. No auth/DB cutover without compatibility, restore rehearsal, and rollback evidence. Rollback L0–L6 documented. ADR-013.
+Stages 1–7 approved (foundation→identity→org→catalog→Admin→legacy product adapter→POS). Full legacy product reconnection not required before POS. No auth/DB cutover without compatibility, restore rehearsal, and rollback evidence. Rollback L0–L6 documented. ADR-013.
 
 ## 13. Security
 
@@ -106,7 +106,7 @@ See [extraction-sequence.md §15](../reuse/extraction-sequence.md) and [phase-02
 |---|---|---|
 | Every Phase 1 WP complete | **Satisfied** | P1-WP01–04 (this closeout) |
 | Risks and decisions recorded | **Satisfied** | Register + ADRs + OD table |
-| Required regression/security tests pass | **Deferred by design** | Docs-only Phase 1; 1102 baseline recorded; Integration/E2E before HC cutover (R-020) |
+| Required regression/security tests pass | **Deferred by design** | Docs-only Phase 1; 1102 baseline recorded; Integration/E2E before legacy product cutover (R-020) |
 | Next phase explicitly approved | **Satisfied** | Phase 2 / **P2-WP01** identified; not started |
 
 **Counts:** Satisfied **3** · Partially satisfied **0** · Deferred by design **1** · Not satisfied **0**
@@ -115,9 +115,9 @@ See [extraction-sequence.md §15](../reuse/extraction-sequence.md) and [phase-02
 
 **Approved with documented non-blocking risks.**
 
-**Permitted next (P2-WP01 only, when authorized):** baseline tag/safety checks; narrow root solution and Platform project skeleton; build conventions; dependency/architecture tests; HealthCare freeze verification.
+**Permitted next (P2-WP01 only, when authorized):** baseline tag/safety checks; narrow root solution and Platform project skeleton; build conventions; dependency/architecture tests; portfolio independence verification.
 
-**Not permitted in P2-WP01:** HC modify/import; full Platform modules; POS; billing/GCash; offline sync; HC adapters; complete UI library; DB migration/cutover.
+**Not permitted in P2-WP01:** legacy product modify/import; full Platform modules; POS; billing/GCash; offline sync; legacy product adapters; complete UI library; DB migration/cutover.
 
 ## 18. Exact next work package
 
@@ -128,7 +128,7 @@ See [extraction-sequence.md §15](../reuse/extraction-sequence.md) and [phase-02
 | Goal | Establish safe root solution foundation + baseline/safety gates before identity work |
 | Expected (future) | Root `.sln` / Platform project skeleton / test projects / Directory.Build conventions / architecture dependency tests — **when authorized** |
 | Exclusions | See §17 |
-| Tests | Build; architecture boundary tests; `git ls-files HealthCare` empty |
-| Git | Focused commits; no push without authorization; HC never staged |
-| Risks | R-016 empty remote; R-017 accidental HC tracking; R-026 premature import |
+| Tests | Build; architecture boundary tests; `git ls-files legacy product` empty |
+| Git | Focused commits; no push without authorization; legacy product never staged |
+| Risks | R-016 empty remote; R-017 accidental legacy product tracking; R-026 premature import |
 | Status | **Not Started** — do not begin in P1-WP04 |

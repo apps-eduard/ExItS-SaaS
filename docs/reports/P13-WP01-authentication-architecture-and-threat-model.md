@@ -78,7 +78,7 @@ No identity entities/migrations; login/logout; cookies/tokens; Razor auth pages;
 |---|---|
 | Full Release tests | **1186 passed / 0 failed / 0 skipped** (baseline held; docs-only) |
 | No `src/` auth implementation in this WP | Pass |
-| No HealthCare product tree | Pass |
+| No foreign product tree | Pass |
 | Portfolio independence | Pass |
 | `main = origin/main` | After push |
 

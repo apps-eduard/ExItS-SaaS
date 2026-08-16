@@ -78,9 +78,9 @@ Baseline 462 not reduced (net +12).
 
 Release `net10.0-android` build/publish succeeded (`com.exits.pinoybusinesspos-Signed.apk`). `adb devices` empty — interactive validation not claimed; R-109 remains open.
 
-## 11. HealthCare freeze
+## 11. portfolio independence verification
 
-Root `HealthCare/` must remain absent/untracked and outside `ExItS.slnx`.
+Root a nested foreign product tree must remain absent/untracked and outside `ExItS.slnx`.
 
 ## 12. Exact next work package
 

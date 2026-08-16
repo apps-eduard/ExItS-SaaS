@@ -4,7 +4,7 @@
 
 | Field | Value |
 |---|---|
-| Phase | Phase 2 — Platform Extraction and HealthCare Reconnection |
+| Phase | Phase 2 — Platform Extraction and legacy product Reconnection |
 | Work package | P2-WP02 — Shared Identity and Organization Boundary |
 | Status | Ready for Review |
 | Branch | `main` |
@@ -12,7 +12,7 @@
 
 ## 2. Summary
 
-Implemented the first Platform **Domain** and **Application** boundary for global users, platform organizations, organization memberships, platform organization roles, product-access concepts (`ProductCode` + minimal `ProductAccess`), account/membership/organization statuses, strongly typed identifiers, domain invariants, explicit repository contracts, and use cases. Behavior is proven with unit and architecture tests. No authentication, persistence, EF/Npgsql, business API routes, catalog, plans, subscriptions, entitlements, HealthCare integration, or POS.
+Implemented the first Platform **Domain** and **Application** boundary for global users, platform organizations, organization memberships, platform organization roles, product-access concepts (`ProductCode` + minimal `ProductAccess`), account/membership/organization statuses, strongly typed identifiers, domain invariants, explicit repository contracts, and use cases. Behavior is proven with unit and architecture tests. No authentication, persistence, EF/Npgsql, business API routes, catalog, plans, subscriptions, entitlements, legacy product integration, or POS.
 
 ## 3. Acceptance criteria and evidence
 
@@ -29,7 +29,7 @@ Implemented the first Platform **Domain** and **Application** boundary for globa
 | No persistence / EF / auth / business API | Met | No packages; API still `/` + `/health` |
 | API starts without DB; health works | Met | Runtime on `http://127.0.0.1:5288` |
 | Architecture + unit tests pass | Met | **61** passed / 0 failed / 0 skipped |
-| HealthCare freeze | Met | `git ls-files` empty; ignored; not in solution |
+| portfolio independence verification | Met | `git ls-files` empty; ignored; not in solution |
 | Docs + focused commit | Met | This report / hash section |
 
 ## 4. Types created
@@ -98,14 +98,14 @@ Port **5288**. No database configuration. Clean shutdown verified.
 | `dotnet build ExItS.slnx -c Release` | 0 (0 warnings, 0 errors) |
 | `dotnet test ExItS.slnx -c Release --no-build` | 0 |
 
-## 10. HealthCare freeze
+## 10. portfolio independence verification
 
 | Check | Result |
 |---|---|
-| `git ls-files HealthCare` | empty |
-| `git check-ignore -v HealthCare/` | `.gitignore:6:HealthCare/` |
+| `git ls-files legacy product` | empty |
+| `git check-ignore -v legacy product/` | `.gitignore:6:legacy product/` |
 | `dotnet sln ExItS.slnx list` | Platform + test projects only |
-| HC files modified | No |
+| legacy product files modified | No |
 
 ## 11. Risks and open decisions
 

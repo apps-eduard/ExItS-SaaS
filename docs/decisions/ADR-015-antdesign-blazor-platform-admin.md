@@ -18,9 +18,6 @@ ExItS Platform Admin
 PinoyBusinessPOS
 → Native / DesignSystem (no Ant Design requirement)
 
-HealthCare Staff Web
-→ Retains its historical Ant Design usage (separate product)
-
 Fluent UI for Platform Admin
 → Cancelled / superseded (never shipped)
 ```

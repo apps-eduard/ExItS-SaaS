@@ -56,7 +56,7 @@ Customer On-Prem Server
 3. **Platform API ↔ Product API** — HTTP contracts only; never shared DbContext or DB credentials across products.
 4. **Platform DB ↔ Product DB** — separate instances (or strictly isolated instances/containers); backups independent.
 5. **Device (MAUI)** — local SQLite/SecureStorage is **not** the server backup SoR; unsynced local loss remains disclosed risk (**LOCAL-UNSYNCED**).
-6. **HealthCare** — out of this workspace; Production must never target HealthCare connection strings or trees.
+6. **legacy product** — out of this workspace; Production must never target legacy product connection strings or trees.
 
 Locked commercial/identity chain (unchanged):
 
@@ -157,7 +157,7 @@ Later Phase 14 WPs may add monitoring agents/runbooks **when authorized** — no
 - New Dockerfiles, Compose files, CI/CD, reverse-proxy conf, TLS certs, secrets, DB containers, monitoring agents
 - Application feature code, migrations, NuGet packages
 - Claiming Production-ready or closing R-109 / R-129 / TLS-PROD / MAUI-HTTPS without evidence
-- HealthCare deployment or nesting HealthCare source
+- legacy product deployment or nesting legacy product source
 
 ---
 

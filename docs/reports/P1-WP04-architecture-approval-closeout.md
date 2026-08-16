@@ -12,7 +12,7 @@
 
 ## 2. Summary
 
-Closed Phase 1 by reconciling P1-WP01–03 and Cash/GCash evidence into an architecture approval package. Recommendation: **Close with documented risks**. Implementation readiness: **Approved with documented non-blocking risks**. Exact next WP: **P2-WP01 — Extraction Baseline Tag and Safety Checks** (not started). ADR-014 accepted. No application code; HealthCare unchanged.
+Closed Phase 1 by reconciling P1-WP01–03 and Cash/GCash evidence into an architecture approval package. Recommendation: **Close with documented risks**. Implementation readiness: **Approved with documented non-blocking risks**. Exact next WP: **P2-WP01 — Extraction Baseline Tag and Safety Checks** (not started). ADR-014 accepted. No application code; legacy product unchanged.
 
 ## 3. Acceptance criteria and evidence
 
@@ -23,7 +23,7 @@ Closed Phase 1 by reconciling P1-WP01–03 and Cash/GCash evidence into an archi
 | Cash/GCash/Utang; UI; repo; extraction/rollback; security; shared-code | Met | §§9–14 approval report |
 | Open decisions owned; exit criteria reviewed | Met | §15–16; counts 3/0/1/0 |
 | Readiness decision + exact P2-WP01 | Met | §17–18; Phase 2 page |
-| Deliverables + ADR-014 + MD-only + HC freeze | Met | This report; validation §7 |
+| Deliverables + ADR-014 + MD-only + portfolio independence verification | Met | This report; validation §7 |
 
 ## 4. Files changed
 
@@ -49,9 +49,9 @@ None. No migration claimed or executed.
 
 | Check | Result |
 |---|---|
-| HC runtime tests | Skipped (docs-only + freeze) |
-| `git ls-files HealthCare` empty | Yes |
-| HealthCare ignored | Yes |
+| legacy product runtime tests | Skipped (docs-only + freeze) |
+| `git ls-files legacy product` empty | Yes |
+| legacy product ignored | Yes |
 | Markdown-only | Yes |
 | Link/ADR/manifest spot-check | Yes |
 

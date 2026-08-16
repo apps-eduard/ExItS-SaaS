@@ -62,7 +62,7 @@ Retained under `docs/Product-Foundation/Reference-Product/`:
 ## Context-efficiency result
 
 Loaded: workflow + product-context rules, foundation, templates, generated Reference-Product docs.
-Did **not** open POS source, historical reports tree, or HealthCare product content.
+Did **not** open POS source, historical reports tree, or foreign product content.
 
 ## Cleanup / retention decision
 
@@ -76,7 +76,7 @@ Reason: durable proof artifact for closeout; clearly not an active product tree.
 | No `src/Products/ReferenceLoan/` | Pass |
 | No `{{PLACEHOLDER}}` in retained example | Pass |
 | R-091 / D-P12-03 open | Pass |
-| No HealthCare / POS copy | Pass |
+| No legacy product / POS copy | Pass |
 | Release tests | **1186 passed / 0 failed / 0 skipped** |
 
 ## Exact next

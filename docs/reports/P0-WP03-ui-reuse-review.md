@@ -4,7 +4,7 @@
 
 | Field | Value |
 |---|---|
-| Phase | Phase 0 — Existing HealthCare Assessment |
+| Phase | Phase 0 — Existing legacy product Assessment |
 | Work package | P0-WP03 — Ant Design and UI Reuse Review |
 | Status | Ready for Review |
 | Branch | `main` |
@@ -12,11 +12,11 @@
 
 ## 2. Summary
 
-Completed a read-only UI assessment of HealthCare Staff Web (Ant Design 1.6.2), PatientWeb (native CSS), and Mobile (native CSS).
+Completed a read-only UI assessment of legacy product Staff Web (Ant Design 1.6.2), PatientWeb (native CSS), and Mobile (native CSS).
 
-**Approved UI decision (corrected):** existing HealthCare apps retain their current UI stacks; **new ExItS Platform Admin** and **PinoyBusinessPOS** share a **native** CSS/Razor foundation (**no Ant Design**, **no Tailwind**), with Compact/Comfortable density, `en`/`fil`, Light/Dark/System themes, purposeful motion, and native `DateField` first. Reuse from HealthCare is limited to framework-independent patterns and contracts.
+**Approved UI decision (corrected):** existing legacy product apps retain their current UI stacks; **new ExItS Platform Admin** and **PinoyBusinessPOS** share a **native** CSS/Razor foundation (**no Ant Design**, **no Tailwind**), with Compact/Comfortable density, `en`/`fil`, Light/Dark/System themes, purposeful motion, and native `DateField` first. Reuse from legacy product is limited to framework-independent patterns and contracts.
 
-No HealthCare files and no application projects were created or modified.
+No legacy product files and no application projects were created or modified.
 
 ### Decision correction
 
@@ -27,10 +27,10 @@ An earlier draft of this report incorrectly stated that Platform Admin would ret
 | Criterion | Status | Evidence |
 |---|---|---|
 | P0-WP02 recorded Complete | Met | Dashboard / phase page |
-| UI apps inventoried | Met | historical healthcare-ui-reuse-assessment.md (later removed) |
+| UI apps inventoried | Met | historical legacy product-ui-reuse-assessment.md (later removed) |
 | Ant Design usage evidenced | Met | Assessment §2 |
 | Wrappers/models classified | Met | Assessment §3 |
-| Platform Admin + POS decisions | Met (corrected) | ADR-010: HC Staff Ant; **new** Platform Admin + POS native |
+| Platform Admin + POS decisions | Met (corrected) | ADR-010: legacy product Staff Ant; **new** Platform Admin + POS native |
 | No Tailwind / No Ant in POS **and new Platform Admin** | Met | Design system + ADR-010 |
 | Density, theme, i18n, motion, a11y, responsive | Met | Design system |
 | Table / dropdown / calendar specs | Met | Design system |
@@ -38,21 +38,21 @@ An earlier draft of this report incorrectly stated that Platform Admin would ret
 | ADR created | Met | ADR-010 |
 | Matrix / dashboard / phase / risks updated | Met | This WP |
 | Completion report | Met | This file |
-| HealthCare unmodified | Met | `git ls-files HealthCare` empty; ignore rule |
+| legacy product unmodified | Met | `git ls-files legacy product` empty; ignore rule |
 | Documentation commit | Met | After commit |
 
 ## 4. Files changed
 
 Documentation only (root):
 
-- `docs/reuse/healthcare-ui-reuse-assessment.md` *(later removed)*
+- `docs/reuse/legacy product-ui-reuse-assessment.md` *(later removed)*
 - `docs/engineering/ui-design-system.md`
 - `docs/engineering/reusable-component-catalog.md`
 - `docs/decisions/ADR-010-separate-ui-implementations-platform-and-pos.md`
 - `docs/decisions/README.md`
 - `docs/reuse/reuse-classification-matrix.md`
 - `docs/portfolio-progress.md`
-- `docs/phases/phase-00-healthcare-assessment.md` *(later removed; see [phase-00 final assessment](phase-00-final-assessment-and-recommendation.md))*
+- `docs/phases/phase-00-legacy product-assessment.md` *(later removed; see [phase-00 final assessment](phase-00-final-assessment-and-recommendation.md))*
 - `docs/risks-and-issues.md`
 - `docs/reports/P0-WP03-ui-reuse-review.md`
 - `docs/reports/README.md`
@@ -72,7 +72,7 @@ None.
 | Command | Passed | Failed | Skipped | Exit code |
 |---|---:|---:|---:|---:|
 | Documentation-only validation (links/paths/Git freeze) | n/a | n/a | n/a | 0 |
-| HealthCare automated tests | — | — | — | Not re-run (docs-only WP; no HC changes) |
+| legacy product automated tests | — | — | — | Not re-run (docs-only WP; no legacy product changes) |
 
 ## 8. Security and tenant review
 
@@ -90,8 +90,8 @@ Listed in §4.
 
 - Dual UI stacks maintenance (R-005 mitigated by ADR; remains watch).
 - Component-catalog scope creep (R-006) — phase gating documented.
-- Missing HC i18n/theme remain product gaps; POS builds greenfield.
-- Deferred: implement components (Phase 5+); HC Ant modernization; P0-WP04 closeout.
+- Missing legacy product i18n/theme remain product gaps; POS builds greenfield.
+- Deferred: implement components (Phase 5+); legacy product Ant modernization; P0-WP04 closeout.
 
 ## 12. Git evidence
 
@@ -99,7 +99,7 @@ Listed in §4.
 |---|---|
 | Commit hash | Assessment `5d628dd60b3793108cc6645992ed0a014e034e27`; **correction** `e310cf87cb03befdd55962b8c858ed19dfe5add1` |
 | Commit message | `docs(ui): define platform and POS design strategy` / `docs(ui): correct platform admin UI decision` |
-| Final working tree | Clean; HealthCare ignored |
+| Final working tree | Clean; legacy product ignored |
 
 ## 13. Progress update
 

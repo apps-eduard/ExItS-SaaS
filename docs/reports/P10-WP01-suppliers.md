@@ -1,10 +1,10 @@
 # P10-WP01 — Suppliers
 
-Date: 2026-07-31  
-Phase marker: `P10-WP01-suppliers`  
-Status: **Complete**  
-Branch: `main`  
-Prior tip (ambiguity docs): `97e17c248ddd1c0af588eafaa41ac7ab6910ec2f`  
+Date: 2026-07-31
+Phase marker: `P10-WP01-suppliers`
+Status: **Complete**
+Branch: `main`
+Prior tip (ambiguity docs): `97e17c248ddd1c0af588eafaa41ac7ab6910ec2f`
 Authorized scope: **Option A — Supplier master data only**
 
 ## 1. Summary
@@ -113,7 +113,7 @@ Unchanged release blockers: R-091, R-109, R-129, TLS-PROD, MAUI-HTTPS, POS-ROLES
 | Feature message | `feat(pos): add organization-owned supplier master data (P10-WP01 Option A)` |
 | Docs commit | `55469c60802d11273669efa10494ff1632efa84d` |
 | Docs message | `docs(pos): record P10-WP01 suppliers Option A completion evidence` |
-| Foreign product trees | Root `HealthCare/` must remain absent/untracked and outside `ExItS.slnx` |
+| Foreign product trees | Root a nested foreign product tree must remain absent/untracked and outside `ExItS.slnx` |
 
 Exact next: **P10-WP02 — Purchasing** (do not begin until authorized).
 

@@ -2,8 +2,8 @@
 
 Phase marker: `P12-WP02-authoritative-product-foundation-reference`
 
-Package: **P12-WP02 — Authoritative Product Foundation Reference**  
-Prior tip: `9f239d35ec659fcbb15edd933497031228d2537a`  
+Package: **P12-WP02 — Authoritative Product Foundation Reference**
+Prior tip: `9f239d35ec659fcbb15edd933497031228d2537a`
 Docs tip: `8f151d658011a3ad0854aab9f8774361f8a788a6`
 
 ## Status
@@ -14,7 +14,7 @@ Exact next: **P12-WP03 — Product Documentation Templates** (do not begin until
 
 ## Foundation path
 
-**Authoritative file:** `docs/Product-Foundation/exits-product-foundation-reference.md`  
+**Authoritative file:** `docs/Product-Foundation/exits-product-foundation-reference.md`
 **Index:** `docs/Product-Foundation/README.md`
 
 ## Delivered scope
@@ -26,18 +26,18 @@ Exact next: **P12-WP03 — Product Documentation Templates** (do not begin until
 
 ## Contracts locked
 
-1. Platform owns SaaS administration, not operational workflows  
-2. Independent subscription per product  
-3. Independent database per product + separate Platform DB  
-4. No direct product↔Platform operational table access; Guid org IDs only  
-5. Platform product access ≠ product operational permission  
-6. Product-local roles/grants authoritative inside the product  
-7. SaaS billing money ≠ product operational money  
-8. Share technical primitives only — not authoritative domain state  
-9. Independently versioned product images; config not forks  
-10. Narrow context-loading rule for product work  
-11. No PHI unless a product explicitly designs for it  
-12. Scope gate: do not invent missing product-owner policy  
+1. Platform owns SaaS administration, not operational workflows
+2. Independent subscription per product
+3. Independent database per product + separate Platform DB
+4. No direct product↔Platform operational table access; Guid org IDs only
+5. Platform product access ≠ product operational permission
+6. Product-local roles/grants authoritative inside the product
+7. SaaS billing money ≠ product operational money
+8. Share technical primitives only — not authoritative domain state
+9. Independently versioned product images; config not forks
+10. Narrow context-loading rule for product work
+11. No PHI unless a product explicitly designs for it
+12. Scope gate: do not invent missing product-owner policy
 
 ## Decisions resolved / open
 
@@ -51,7 +51,7 @@ Exact next: **P12-WP03 — Product Documentation Templates** (do not begin until
 
 ## Context-loading rule
 
-For product WPs, read only: workflow rules → this foundation reference → active product docs → current WP prompt → files needed for the task. Do not routinely scan unrelated products, old reports, full Platform history, or HealthCare product content. Permanent `.mdc` packaging remains **P12-WP04**.
+For product WPs, read only: workflow rules → this foundation reference → active product docs → current WP prompt → files needed for the task. Do not routinely scan unrelated products, old reports, full Platform history, or foreign product content. Permanent `.mdc` packaging remains **P12-WP04**.
 
 ## Validation
 
@@ -59,7 +59,7 @@ For product WPs, read only: workflow rules → this foundation reference → act
 |---|---|
 | Matches P12-WP01 audit | Pass |
 | Aligned with Platform/POS isolation | Pass |
-| No HealthCare product dependency | Pass |
+| No foreign product dependency | Pass |
 | No Phase 11 / app / infrastructure changes | Pass |
 | No scaffold / `_ProductTemplate` | Pass |
 | Paths resolve under `docs/Product-Foundation/` | Pass |
@@ -67,11 +67,11 @@ For product WPs, read only: workflow rules → this foundation reference → act
 
 ## Explicit exclusions
 
-- Product documentation templates (P12-WP03)  
-- Cursor context rule `.mdc` packaging (P12-WP04)  
-- Bootstrap prompt / dry run / skeleton (later WPs)  
-- Final commercial-state transport implementation  
-- Production authentication  
+- Product documentation templates (P12-WP03)
+- Cursor context rule `.mdc` packaging (P12-WP04)
+- Bootstrap prompt / dry run / skeleton (later WPs)
+- Final commercial-state transport implementation
+- Production authentication
 
 ## Files changed
 

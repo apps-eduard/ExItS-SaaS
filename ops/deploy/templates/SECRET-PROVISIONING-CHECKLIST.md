@@ -4,7 +4,7 @@
 1. Identify target environment (Development | Testing | StagingPilot | Production). Refuse ambiguous targets.
 2. Confirm Git commit SHA and clean working tree for StagingPilot/Production.
 3. Provision Platform DB credentials in environment-owned secret storage (not repo, not shared chat).
-4. Provision POS DB credentials separately (least privilege; no cross-DB rights; never HealthCare).
+4. Provision POS DB credentials separately (least privilege; no cross-DB rights; never legacy product).
 5. Provision TLS private key + certificate chain for reverse proxy (pilot or Production CA as applicable).
 6. Provision CORS allowed origins list (explicit; Production deny-by-default if empty).
 7. Provision AllowedHosts (never `*`).

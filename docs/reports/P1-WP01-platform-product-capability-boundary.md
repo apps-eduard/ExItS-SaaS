@@ -12,14 +12,14 @@
 
 ## 2. Summary
 
-Defined the authoritative capability boundary between ExITS Platform, HealthCare, PinoyBusinessPOS, shared contracts, and engineering conventions. Confirmed Platform authority for identity/orgs/catalog/subscriptions/entitlements; product ownership of operational data and permissions; local entitlement projections; prohibited cross-DB FKs and clinical/POS coupling. Created ADR-011. Phase 0 recorded as **Complete with documented risks**. No application code; HealthCare unchanged.
+Defined the authoritative capability boundary between ExITS Platform, legacy product, PinoyBusinessPOS, shared contracts, and engineering conventions. Confirmed Platform authority for identity/orgs/catalog/subscriptions/entitlements; product ownership of operational data and permissions; local entitlement projections; prohibited cross-DB FKs and clinical/POS coupling. Created ADR-011. Phase 0 recorded as **Complete with documented risks**. No application code; legacy product unchanged.
 
 ## 3. Acceptance criteria and evidence
 
 | Criterion | Status | Evidence |
 |---|---|---|
 | Phase 0 Complete with documented risks | Met | [portfolio-progress.md](../portfolio-progress.md), phase-00 |
-| Platform / HC / POS ownership explicit | Met | [capability boundary](../engineering/platform-product-capability-boundary.md) §§4–6 |
+| Platform / legacy product / POS ownership explicit | Met | [capability boundary](../engineering/platform-product-capability-boundary.md) §§4–6 |
 | Identity / org / membership explicit | Met | §§10–11 |
 | Platform vs product roles; access vs ops perms | Met | §12 |
 | Customer ≠ User; SaaS ≠ retail payment | Met | §§10, 13 |
@@ -28,7 +28,7 @@ Defined the authoritative capability boundary between ExITS Platform, HealthCare
 | Data authority matrix | Met | [data-authority-matrix.md](../engineering/data-authority-matrix.md) |
 | Contracts / failure / prohibited / shared-code rules | Met | §§9, 20, 22 + ownership matrix |
 | New ADR | Met | ADR-011 |
-| Tracking / report / Markdown-only / HC freeze | Met | This report; validation §7 |
+| Tracking / report / Markdown-only / portfolio independence verification | Met | This report; validation §7 |
 | Focused commit + hash | Met | §12 (hash after commit) |
 
 ## 4. Files changed
@@ -45,7 +45,7 @@ Modified (tracking/reconcile):
 
 - `docs/portfolio-progress.md`
 - `docs/phases/phase-01-platform-boundary.md`
-- `docs/phases/phase-00-healthcare-assessment.md` *(later removed; see [phase-00 final assessment](phase-00-final-assessment-and-recommendation.md))*
+- `docs/phases/phase-00-legacy product-assessment.md` *(later removed; see [phase-00 final assessment](phase-00-final-assessment-and-recommendation.md))*
 - `docs/index.md`
 - `docs/decisions/README.md`
 - `docs/reports/README.md`
@@ -71,9 +71,9 @@ None (documentation only). Confirms target DBs and no cross-DB FKs.
 
 | Command / check | Passed | Failed | Skipped | Exit code |
 |---|---:|---:|---:|---:|
-| HealthCare runtime tests | — | — | Yes (docs-only + freeze) | — |
-| `git ls-files HealthCare` empty | Yes | 0 | — | 0 |
-| `git check-ignore -v HealthCare/` | Yes | 0 | — | 0 |
+| legacy product runtime tests | — | — | Yes (docs-only + freeze) | — |
+| `git ls-files legacy product` empty | Yes | 0 | — | 0 |
+| `git check-ignore -v legacy product/` | Yes | 0 | — | 0 |
 | Markdown-only `git diff --name-only` | Yes | 0 | — | 0 |
 | Link/path/ADR/manifest spot-check | Yes | 0 | — | — |
 
@@ -83,7 +83,7 @@ Reaffirmed: server-derived org context; no client-trusted OrganizationId; clinic
 
 ## 9. UI, localization and theme review
 
-Consistent with ADR-010: HC Staff Ant retained; Platform Admin + POS native; no shared Ant↔native component.
+Consistent with ADR-010: legacy product Staff Ant retained; Platform Admin + POS native; no shared Ant↔native component.
 
 ## 10. Documentation updated
 
@@ -97,8 +97,8 @@ Dashboard, Phase 1, ADR index, index, manifest, risks, release plan, and pointer
 | OD-02 Break-glass support | Deferred |
 | OD-03 Entitlement transport | P1-WP02 / Phase 3 |
 | OD-04 MFA | Deferred |
-| OD-05 HealthCare import timing | After Platform foundation |
-| OD-06 Multi-org from HC StaffMember | Phase 2 |
+| OD-05 legacy product import timing | After Platform foundation |
+| OD-06 Multi-org from legacy product StaffMember | Phase 2 |
 | R-003 / R-022 | Projection staleness policy detail still for later WPs |
 | R-016 | Root remote empty — do not push without authorization |
 

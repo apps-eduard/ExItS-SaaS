@@ -19,7 +19,7 @@ Phase marker: `P6-WP01-customers`
 
 ## Explicit exclusions
 
-Credit accounts, remarks-based credit, balances, ledger, repayments, due dates, statements, receipts, credit limits, interest/penalties, sales, inventory, offline sync. No global customer identity across stores. No PHI/HealthCare data.
+Credit accounts, remarks-based credit, balances, ledger, repayments, due dates, statements, receipts, credit limits, interest/penalties, sales, inventory, offline sync. No global customer identity across stores. No PHI/legacy product data.
 
 ## Duplicate policy (MVP)
 
@@ -29,7 +29,7 @@ Display names need not be unique. Active customers cannot share the same normali
 
 - Database: `ExItS_PinoyBusinessPOS` / schema `pos` / table `customers`
 - Migration apply / rollback-to-0 / re-apply validated in Testcontainers
-- No Platform or HealthCare tables; no cross-database FKs
+- No Platform or legacy product tables; no cross-database FKs
 
 ## API capability
 
@@ -77,7 +77,7 @@ Android Release APK: `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/
 
 ## Portfolio independence
 
-`git ls-files -- HealthCare/` empty; `git check-ignore -v HealthCare/` → `.gitignore:/HealthCare/`; HealthCare not in `ExItS.slnx`.
+Git tracking shows no nested foreign product tree empty; `git check-ignore -v legacy product/` → `.gitignore:/legacy product/`; legacy product not in `ExItS.slnx`.
 
 ## Risks / open decisions
 

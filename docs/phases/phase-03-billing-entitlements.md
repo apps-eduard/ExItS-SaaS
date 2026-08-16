@@ -8,7 +8,7 @@ Implement portfolio products, plans, trials, payments and resilient entitlement 
 
 ## Phase 2 prerequisite
 
-Phase 2 is **Close with documented risks** (P2-WP06). Domain foundations for catalog/subscriptions/entitlements exist. **P3-WP01** adds catalog persistence and API. SaaS payment collection and HealthCare cutover remain out of scope until later WPs. Do **not** begin a Phase 3 WP until explicitly authorized.
+Phase 2 is **Close with documented risks** (P2-WP06). Domain foundations for catalog/subscriptions/entitlements exist. **P3-WP01** adds catalog persistence and API. SaaS payment collection and legacy product cutover remain out of scope until later WPs. Do **not** begin a Phase 3 WP until explicitly authorized.
 
 ## First work package
 
@@ -30,11 +30,11 @@ Persist the Platform product/plan catalog and expose it via Platform API without
 - Repository + unit-of-work implementations; expanded catalog commands/queries.
 - Catalog REST API under `/api/v1/platform/catalog` (development-stage, unauthenticated).
 - Integration tests via Testcontainers PostgreSQL; 140 root tests passing at acceptance.
-- No nested HealthCare product tree in this repository.
+- No nested foreign product tree in this repository.
 
 #### Explicit exclusions (honored)
 
-- No subscription purchase/activation, invoices, GCash, entitlement delivery, Admin UI, HC adapter, POS.
+- No subscription purchase/activation, invoices, GCash, entitlement delivery, Admin UI, legacy product adapter, POS.
 
 #### Definition of Done
 
@@ -44,7 +44,7 @@ Persist the Platform product/plan catalog and expose it via Platform API without
 - [x] Completion report created.
 - [x] Focused commit created and hash recorded (see below).
 - [x] Working tree clean (after hash-record).
-- [x] HealthCare freeze verified.
+- [x] portfolio independence verification verified.
 - [x] Validated commit pushed to `origin/main`.
 
 #### Artifacts
@@ -75,11 +75,11 @@ Persist Platform organizations (subscription ownership) and the commercial subsc
 - Trial start/expire; paid activation without payment processing; grace/past-due/suspend/reactivate/cancel/expire.
 - APIs under `/api/v1/platform/organizations` and `/api/v1/platform/subscriptions` (development-stage, unauthenticated).
 - 185 root tests passing; isolated PostgreSQL apply/rollback/re-apply validated.
-- No nested HealthCare product tree in this repository.
+- No nested foreign product tree in this repository.
 
 #### Explicit exclusions (honored)
 
-- No auth/JWT, invoices, GCash, entitlement delivery, Hangfire, Admin UI, HC adapter, POS, `FromDays(90)`.
+- No auth/JWT, invoices, GCash, entitlement delivery, Hangfire, Admin UI, legacy product adapter, POS, `FromDays(90)`.
 
 #### Definition of Done
 
@@ -89,7 +89,7 @@ Persist Platform organizations (subscription ownership) and the commercial subsc
 - [x] Completion report created.
 - [x] Focused commit created and hash recorded (see below).
 - [x] Working tree clean (after hash-record).
-- [x] HealthCare freeze verified.
+- [x] portfolio independence verification verified.
 - [x] Validated commit pushed to `origin/main`.
 
 #### Artifacts
@@ -121,13 +121,13 @@ Implement persistent Platform SaaS manual payment records, confirmation lifecycl
 - ConfirmPaymentAndActivateSubscription: atomic confirm + subscription activation.
 - APIs under `/api/v1/platform/payments` (development-stage, unauthenticated).
 - 251 root tests passing; isolated PostgreSQL apply/rollback/re-apply validated.
-- No nested HealthCare product tree in this repository.
+- No nested foreign product tree in this repository.
 
 #### Explicit exclusions (honored)
 
 - No payment gateway, webhook, QR, card storage, GCash API, automatic verification.
 - No invoices, tax, discount, proration, credit notes, reconciliation engine.
-- No POS/Utang/retail/HealthCare payment entities.
+- No POS/Utang/retail/legacy product payment entities.
 - No authentication — actor references accept plain strings (production blocker).
 
 #### Definition of Done
@@ -138,7 +138,7 @@ Implement persistent Platform SaaS manual payment records, confirmation lifecycl
 - [x] Completion report created.
 - [x] Focused commit created and hash recorded (see below).
 - [x] Working tree clean (after hash-record).
-- [x] HealthCare freeze verified.
+- [x] portfolio independence verification verified.
 - [x] Validated commit pushed to `origin/main`.
 
 #### Artifacts
@@ -170,11 +170,11 @@ Persist authoritative Platform entitlement snapshots and feature overrides with 
 - Provisional `IEntitlementRefreshPolicy` (24h); R-022 remains open.
 - APIs under entitlements and feature-overrides routes (development-stage, unauthenticated).
 - 301 root tests; isolated PostgreSQL apply/rollback/re-apply validated.
-- No nested HealthCare product tree in this repository.
+- No nested foreign product tree in this repository.
 
 #### Explicit exclusions (honored)
 
-- No product delivery, broker, outbox, Hangfire, HealthCare/POS projection tables.
+- No product delivery, broker, outbox, Hangfire, legacy product/POS projection tables.
 - No Admin UI, authentication, payment-gateway changes.
 
 #### Definition of Done
@@ -185,7 +185,7 @@ Persist authoritative Platform entitlement snapshots and feature overrides with 
 - [x] Completion report created.
 - [x] Focused commit created and hash recorded (see below).
 - [x] Working tree clean (after hash-record).
-- [x] HealthCare freeze verified.
+- [x] portfolio independence verification verified.
 - [x] Validated commit pushed to `origin/main`.
 
 #### Artifacts
@@ -217,11 +217,11 @@ Close Phase 3 by validating the commercial foundation (catalog, subscriptions, m
 - API and database inventories recorded.
 - Risk dispositions evidence-based; authentication/delivery/R-022/R-035 remain open.
 - 302 root tests passing.
-- No nested HealthCare product tree in this repository.
+- No nested foreign product tree in this repository.
 
 #### Explicit exclusions (honored)
 
-- No Auth, Admin UI, delivery, gateway, invoice, Hangfire, POS, HealthCare implementation.
+- No Auth, Admin UI, delivery, gateway, invoice, Hangfire, POS, legacy product implementation.
 
 #### Definition of Done
 
@@ -231,7 +231,7 @@ Close Phase 3 by validating the commercial foundation (catalog, subscriptions, m
 - [x] Completion report created.
 - [x] Focused commit created and hash recorded (see below).
 - [x] Working tree clean (after hash-record).
-- [x] HealthCare freeze verified.
+- [x] portfolio independence verification verified.
 - [x] Validated commit pushed to `origin/main`.
 
 #### Artifacts

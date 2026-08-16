@@ -58,7 +58,7 @@ The web application must provide a consistent experience across desktop, tablet,
 6. Platform and POS databases remain separate.
 7. No cross-product database access or foreign keys.
 8. No PHI is introduced into POS.
-9. ExItS remains independent from the removed HealthCare workspace.
+9. ExItS remains independent from the removed legacy product workspace.
 10. Production authentication and POS operational roles remain separate roadmap items unless explicitly authorized.
 
 ## Phase Scope
