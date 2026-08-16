@@ -157,6 +157,8 @@ The dashboard links to the latest accepted report.
 | [P27-WP05-fulfillment-goods-receipt-and-discrepancies.md](P27-WP05-fulfillment-goods-receipt-and-discrepancies.md) | P27-WP05 Fulfillment, goods receipt & discrepancies | Code Complete |
 | [connected-supplier-buyer-specific-sharing-and-pricing.md](connected-supplier-buyer-specific-sharing-and-pricing.md) | Companion engineering detail for P27-WP01 | Code Complete |
 | [phase-27-connected-supplier-commerce-and-purchasing.md](../phases/phase-27-connected-supplier-commerce-and-purchasing.md) | Phase 27 Connected Supplier Commerce & Purchasing | Open / In Progress |
+| [P28-WP01-branch-fulfillment-location-foundation.md](P28-WP01-branch-fulfillment-location-foundation.md) | P28-WP01 Branch & Fulfillment Location Foundation | Implementation Complete / Validation Pending |
+| [phase-28-customer-ordering-pickup-and-delivery.md](../phases/phase-28-customer-ordering-pickup-and-delivery.md) | Phase 28 Customer Ordering, Pickup & Delivery | Open / In Progress |
 
 Related engineering (not a WP closeout): [platform-controlled-organization-tax-configuration.md](../engineering/platform-controlled-organization-tax-configuration.md) — Platform `TaxConfigurationEnabled` gate for Operational Setup tax settings (default off; Approved eligibility required; not certification).
 

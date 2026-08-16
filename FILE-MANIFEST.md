@@ -119,6 +119,7 @@ docs/phases/phase-24-linked-customer-statements-and-personal-monetization.md
 docs/phases/phase-25-organization-web-admin.md
 docs/phases/phase-26-sales-documents-compliance-readiness.md
 docs/phases/phase-27-connected-supplier-commerce-and-purchasing.md
+docs/phases/phase-28-customer-ordering-pickup-and-delivery.md
 docs/phases/phase-21-privacy-compliance-and-regulatory-readiness.md
 docs/reports/P21-foundation-privacy-compliance-workspace.md
 docs/reports/P21-privacy-readiness-visibility-product-status-ui.md
@@ -144,7 +145,10 @@ docs/reports/P27-WP02-connected-po-delivery-and-reliability.md
 docs/reports/P27-WP03-supplier-response-synchronization.md
 docs/reports/P27-WP04-connected-po-cancellation-and-withdrawal.md
 docs/reports/P27-WP05-fulfillment-goods-receipt-and-discrepancies.md
+docs/reports/P28-WP01-branch-fulfillment-location-foundation.md
 docs/engineering/connected-exits-suppliers.md
+docs/engineering/organization-branches-and-fulfillment-locations.md
+docs/engineering/branch-delivery-pricing.md
 docs/engineering/purchasing-inventory-ux-mental-model.md
 docs/validation/phase-26-owner-validation-checklist.md
 docs/compliance/bir-compliance-activation-roadmap.md

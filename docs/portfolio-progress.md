@@ -11,10 +11,10 @@
 | Portfolio | ExITS SaaS |
 | Existing product | Historical HealthCare SaaS MVP (separate product; **not** in this workspace ? do not restore) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
-| Current phase | Phase 27 **Open / In Progress — P27-WP01–WP05 Code Complete; WP06–WP07 Not Started**; Phase 26 remains **Open — Owner Validation Pending**; Phase 25 remains **Open — Owner Validation Pending**; Phase 22/24/19/20/21 remain Open; Phase 14 still open |
-| Current work package | **P27-WP06** Connected Purchasing UX & Notifications — **Not Started / active next** ([phase](phases/phase-27-connected-supplier-commerce-and-purchasing.md)). P27-WP01–WP05 are Code Complete; Phase 26/25 owner validation remains pending. |
-| Overall status | **P27-WP01–WP05 Code Complete**; WP06–WP07 Not Started. Connected PO delivery, supplier response lifecycle, New-only withdrawal, fulfillment, and discrepancy-aware receiving are implemented. **Not Device Verified. Not Browser Verified.** Production remains **Blocked / Not production-ready.** |
-| Latest verified commit | P27-WP02–WP05 commit hashes **TBD — recorded after commit** |
+| Current phase | Phase 28 **Open / In Progress — WP01 Stage A Implementation Complete / Validation Pending; WP02–WP10 Not Started**. Phase 27 remains **Open / In Progress**; earlier open phases remain unchanged. |
+| Current work package | **P28-WP01** Branch & Fulfillment Location Foundation — **Implementation Complete / Validation Pending** ([phase](phases/phase-28-customer-ordering-pickup-and-delivery.md); [report](reports/P28-WP01-branch-fulfillment-location-foundation.md)). |
+| Overall status | Branch fulfillment-location management and V1 delivery-policy foundation are implemented. **Not Device Verified. Not Browser Verified. Not Production Ready.** Phase 27 remains Open. |
+| Latest verified commit | P28-WP01 commit hashes **TBD — recorded after commit** |
 | Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA deferred; Phase 19/20/22/24/25/26/27 owner/physical validation pending |
 | Last updated | 2026-08-16 |
 
@@ -264,6 +264,8 @@ P19-WP08 ? End-to-End Validation and User Closeout Checklist (Retest � awaitin
 | P26-WP05 — Integration Hardening & Validation Readiness | **Code Complete / Owner Validation Pending** | `254424df` — [report](reports/P26-WP05-sales-document-compliance-integration-hardening.md); [checklist](validation/phase-26-owner-validation-checklist.md) |
 
 **Phase 27 Connected Supplier Commerce & Purchasing:** **Open / In Progress** ([phase](phases/phase-27-connected-supplier-commerce-and-purchasing.md); [design](engineering/connected-exits-suppliers.md)) — P27-WP01–WP05 Code Complete; WP06–WP07 Not Started; active next P27-WP06; **Device Verified: No**; **Browser Verified: No**; **Production Ready: No**; no phase closeout.
+
+**Phase 28 Customer Ordering, Pickup & Delivery:** **Open / In Progress** ([phase](phases/phase-28-customer-ordering-pickup-and-delivery.md)) — P28-WP01 Stage A Implementation Complete / Validation Pending; WP02–WP10 Not Started; Phase 27 remains Open; **Device Verified: No**; **Browser Verified: No**; **Production Ready: No**.
 
 ## Phase 27 work packages
 
