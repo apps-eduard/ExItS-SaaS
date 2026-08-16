@@ -51,6 +51,18 @@ else
             </button>
         </div>
 
+        <div class="pos-purchasing__filters" role="group" aria-label="@L["Purchasing_FilterStatus"]">
+            @foreach (var filter in StatusFilters)
+            {
+                <button type="button"
+                        class="pos-purchasing__filter @(string.Equals(_statusFilter, filter.Value, StringComparison.Ordinal) ? "pos-purchasing__filter--active" : null)"
+                        aria-pressed="@string.Equals(_statusFilter, filter.Value, StringComparison.Ordinal)"
+                        @onclick="() => _statusFilter = filter.Value">
+                    @L[filter.LabelKey]
+                </button>
+            }
+        </div>
+
         <section class="pos-purchasing__panel" aria-labelledby="purchasing-list-heading">
             <h2 id="purchasing-list-heading" class="pos-purchasing__section-title">@L["Purchasing_Orders"]</h2>
             @if (_loading)
@@ -64,7 +76,7 @@ else
                             RetryLabel="@L["Api_Retry"]"
                             OnRetry="ReloadAsync" />
             }
-            else if (_items.Count == 0)
+            else if (FilteredItems.Count == 0)
             {
                 <EmptyState IconName="inbox"
                             Title="@L["Purchasing_EmptyTitle"]"
@@ -73,7 +85,7 @@ else
             else
             {
                 <div class="pos-purchasing__list" role="list" aria-label="@L["Purchasing_Orders"]">
-                    @foreach (var item in _items)
+                    @foreach (var item in FilteredItems)
                     {
                         <a class="pos-purchasing__row"
                            role="listitem"
@@ -81,7 +93,7 @@ else
                             <div class="pos-purchasing__row-main">
                                 <div class="pos-purchasing__row-top">
                                     <span class="pos-purchasing__row-name">@(item.PoNumber ?? L["Purchasing_DetailTitle"])</span>
-                                    <Badge Tone="@StatusTone(item.Status)">@item.Status</Badge>
+                                    <Badge Tone="@StatusTone(DisplayStatus(item))">@StatusLabel(DisplayStatus(item))</Badge>
                                 </div>
                                 <span class="pos-purchasing__row-meta">
                                     @item.OrderDate.ToString("d")
@@ -103,6 +115,7 @@ else
     private bool _loading;
     private bool _isOffline;
     private IReadOnlyList<PosPurchaseOrderDto> _items = Array.Empty<PosPurchaseOrderDto>();
+    private string _statusFilter = "All";
     private string? _errorTitle;
     private string? _errorMessage;
 
@@ -125,15 +138,45 @@ else
         await ReloadAsync();
     }
 
+    private IReadOnlyList<PosPurchaseOrderDto> FilteredItems =>
+        _statusFilter == "All"
+            ? _items
+            : _items.Where(item => string.Equals(StatusGroup(DisplayStatus(item)), _statusFilter, StringComparison.Ordinal)).ToList();
+
+    private static IReadOnlyList<StatusFilter> StatusFilters =>
+    [
+        new("All", "Purchasing_FilterAll"),
+        new("NeedsAction", "Purchasing_FilterNeedsAction"),
+        new("InProgress", "Purchasing_FilterInProgress"),
+        new("Complete", "Purchasing_FilterComplete")
+    ];
+
+    private static string DisplayStatus(PosPurchaseOrderDto po) =>
+        string.IsNullOrWhiteSpace(po.DisplayStatus) ? po.Status : po.DisplayStatus;
+
+    private string StatusLabel(string status) =>
+        L[$"Purchasing_Status_{status.Replace(" ", string.Empty, StringComparison.Ordinal)}"];
+
+    private static string StatusGroup(string status) =>
+        status switch
+        {
+            "Draft" or "SupplierDeclined" => "NeedsAction",
+            "WaitingForSupplier" or "SupplierAccepted" or "Preparing" or "Ready" or "PartiallyReceived" => "InProgress",
+            "Received" or "ReceivedWithIssues" or "Cancelled" or "Withdrawn" => "Complete",
+            _ => "InProgress"
+        };
+
     private static BadgeTone StatusTone(string status) =>
         status switch
         {
-            "Ordered" => BadgeTone.Primary,
-            "PartiallyReceived" => BadgeTone.Warning,
+            "WaitingForSupplier" or "SupplierAccepted" => BadgeTone.Info,
+            "Preparing" or "Ready" or "PartiallyReceived" => BadgeTone.Warning,
             "Received" => BadgeTone.Success,
-            "Cancelled" => BadgeTone.Neutral,
+            "SupplierDeclined" or "ReceivedWithIssues" => BadgeTone.Danger,
             _ => BadgeTone.Neutral
         };
+
+    private sealed record StatusFilter(string Value, string LabelKey);
 
     private async Task ReloadAsync()
     {

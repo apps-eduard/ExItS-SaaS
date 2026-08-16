@@ -7,8 +7,24 @@
 @inject IStringLocalizer<PosResources> L
 
 <StoreHeaderBack Href="/purchasing" />
+<div class="pos-incoming-orders">
 <Page>
-    <h1>@L["ConnectedSuppliers_IncomingOrders"]</h1>
+    <header class="pos-incoming-orders__header">
+        <h1>@L["ConnectedSuppliers_IncomingOrders"]</h1>
+        <p class="pos-muted">@L["ConnectedSuppliers_IncomingOrdersHelp"]</p>
+    </header>
+    <div class="pos-incoming-orders__filters" role="group" aria-label="@L["Purchasing_FilterStatus"]">
+        @foreach (var filter in Filters)
+        {
+            <button type="button"
+                    class="pos-incoming-orders__filter @(_filter == filter.Value ? "pos-incoming-orders__filter--active" : null)"
+                    aria-pressed="@(_filter == filter.Value)"
+                    disabled="@_loading"
+                    @onclick="() => ChangeFilterAsync(filter.Value)">
+                @L[filter.LabelKey]
+            </button>
+        }
+    </div>
     @if (_loading)
     {
         <Spinner />
@@ -25,32 +41,41 @@
     {
         @foreach (var order in _orders)
         {
-            <section class="pos-settings__panel">
-                <h2>@(order.BuyerPoNumber ?? L["ConnectedSuppliers_PurchaseOrder"])</h2>
-                <p>@order.OrderDate.ToString("d") · <MoneyDisplay Amount="@order.TotalAmount" CurrencyCode="PHP" /></p>
-                @foreach (var line in order.Lines)
-                {
-                    <div>@line.NameSnapshot · @line.Qty @line.UnitOfMeasureCode</div>
-                }
-                @if (string.Equals(order.Status, "New", StringComparison.OrdinalIgnoreCase))
-                {
-                    <button type="button" @onclick="() => RespondAsync(order.ConnectedPurchaseOrderId, true)">@L["ConnectedSuppliers_Accept"]</button>
-                    <button type="button" @onclick="() => RespondAsync(order.ConnectedPurchaseOrderId, false)">@L["ConnectedSuppliers_Decline"]</button>
-                }
-                else
-                {
-                    <Badge>@L[$"ConnectedSuppliers_OrderStatus_{order.Status}"]</Badge>
-                }
-            </section>
+            <a class="pos-incoming-orders__card"
+               href="@($"/connected-suppliers/incoming/{order.ConnectedPurchaseOrderId:D}")">
+                <span class="pos-incoming-orders__card-top">
+                    <strong>@(string.IsNullOrWhiteSpace(order.BuyerDisplayName) ? L["ConnectedSuppliers_Buyer"] : order.BuyerDisplayName)</strong>
+                    <Badge Tone="@StatusTone(EffectiveStatus(order))">@StatusLabel(order)</Badge>
+                </span>
+                <span class="pos-incoming-orders__po">@(order.BuyerPoNumber ?? L["ConnectedSuppliers_PurchaseOrder"])</span>
+                <span class="pos-incoming-orders__meta">
+                    @order.OrderDate.ToString("d") · @L["Purchasing_LinesCount", order.Lines.Count]
+                </span>
+                <span class="pos-incoming-orders__total"><MoneyDisplay Amount="@order.TotalAmount" CurrencyCode="PHP" Emphasized="true" /></span>
+            </a>
         }
     }
 </Page>
+</div>
 
 @code {
     private bool _loading = true;
     private bool _offline;
     private string? _error;
     private IReadOnlyList<ConnectedPurchaseOrderDto> _orders = [];
+    private string _filter = "ActionNeeded";
+
+    private static IReadOnlyList<OrderFilter> Filters =>
+    [
+        new("ActionNeeded", "ConnectedSuppliers_Filter_ActionNeeded"),
+        new("New", "ConnectedSuppliers_Filter_New"),
+        new("Accepted", "ConnectedSuppliers_Filter_Accepted"),
+        new("Preparing", "ConnectedSuppliers_Filter_Preparing"),
+        new("Fulfilled", "ConnectedSuppliers_Filter_Fulfilled"),
+        new("Declined", "ConnectedSuppliers_Filter_Declined"),
+        new("Withdrawn", "ConnectedSuppliers_Filter_Withdrawn"),
+        new("All", "ConnectedSuppliers_Filter_All")
+    ];
 
     protected override async Task OnInitializedAsync()
     {
@@ -77,19 +102,38 @@
     private async Task LoadAsync()
     {
         _loading = true;
-        var result = await ConnectedSuppliers.ListIncomingOrdersAsync();
+        _error = null;
+        var result = await ConnectedSuppliers.ListIncomingOrdersAsync(_filter);
         _loading = false;
         _orders = result.IsSuccess && result.Data is not null ? result.Data : [];
         _error = result.IsSuccess ? null : result.Error?.Detail ?? L["ConnectedSuppliers_LoadIncomingFailed"];
     }
 
-    private async Task RespondAsync(Guid id, bool accept)
+    private async Task ChangeFilterAsync(string filter)
     {
-        if (!Capabilities.IsAllowed(UtangCapability.ManagePurchasing)) return;
-        var result = accept
-            ? await ConnectedSuppliers.AcceptIncomingAsync(id)
-            : await ConnectedSuppliers.DeclineIncomingAsync(id);
-        if (result.IsSuccess) await LoadAsync();
-        else _error = result.Error?.Detail ?? L["ConnectedSuppliers_RespondFailed"];
+        _filter = filter;
+        await LoadAsync();
     }
+
+    private string StatusLabel(ConnectedPurchaseOrderDto order)
+    {
+        var status = EffectiveStatus(order);
+        return L[$"ConnectedSuppliers_OrderStatus_{status.Replace(" ", string.Empty, StringComparison.Ordinal)}"];
+    }
+
+    private static string EffectiveStatus(ConnectedPurchaseOrderDto order) =>
+        string.IsNullOrWhiteSpace(order.DisplayStatus) ? order.Status : order.DisplayStatus;
+
+    private static BadgeTone StatusTone(string status) =>
+        status switch
+        {
+            "New" => BadgeTone.Primary,
+            "Accepted" => BadgeTone.Info,
+            "Preparing" => BadgeTone.Warning,
+            "Fulfilled" or "Received" => BadgeTone.Success,
+            "Declined" => BadgeTone.Danger,
+            _ => BadgeTone.Neutral
+        };
+
+    private sealed record OrderFilter(string Value, string LabelKey);
 }

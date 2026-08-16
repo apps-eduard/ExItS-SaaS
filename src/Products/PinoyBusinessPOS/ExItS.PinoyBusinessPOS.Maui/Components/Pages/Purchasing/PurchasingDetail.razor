@@ -32,8 +32,10 @@ else
     {
         var canManage = Capabilities.IsAllowed(UtangCapability.ManagePurchasing);
         var canSubmit = canManage && !_isOffline && _po.Status == "Draft";
-        var canCancel = canManage && !_isOffline && (_po.Status == "Draft" || _po.Status == "Ordered");
-        var canReceive = canManage && !_isOffline && (_po.Status == "Ordered" || _po.Status == "PartiallyReceived");
+        var canCancel = canManage && !_isOffline && (_po.Status == "Draft" || _po.CanWithdrawConnected);
+        var canReceive = canManage && !_isOffline && _po.CanReceiveConnected
+            && (_po.Status == "Ordered" || _po.Status == "PartiallyReceived")
+            && _po.Lines.Any(line => line.OutstandingQty > 0m);
         var actionCount = (canSubmit ? 1 : 0) + (canReceive ? 1 : 0) + (canCancel ? 1 : 0);
 <div class="pos-purchasing-detail">
         <Page>
@@ -41,7 +43,7 @@ else
                 <h1 class="pos-purchasing-detail__title">@(_po.PoNumber ?? L["Purchasing_DetailTitle"])</h1>
                 <p class="pos-purchasing-detail__subtitle">@L["Purchasing_DetailSubtitle"]</p>
                 <div class="pos-purchasing-detail__status-row">
-                    <Badge Tone="@StatusTone(_po.Status)">@_po.Status</Badge>
+                    <Badge Tone="@StatusTone(DisplayStatus(_po))">@StatusLabel(DisplayStatus(_po))</Badge>
                 </div>
             </header>
 
@@ -60,12 +62,41 @@ else
                 <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Purchasing_ErrorTitle"])" Message="@_errorMessage" />
             }
 
+            @if (string.Equals(_po.ConnectedStatus, "Declined", StringComparison.OrdinalIgnoreCase))
+            {
+                <Alert Tone="AlertTone.Danger"
+                       Title="@L["Purchasing_SupplierDeclined"]"
+                       Message="@DeclineMessage(_po)" />
+            }
+
+            @if (_po.ConnectedPurchaseOrderId is not null)
+            {
+                <section class="pos-purchasing-detail__panel" aria-labelledby="purchasing-timeline-heading">
+                    <h2 id="purchasing-timeline-heading" class="pos-purchasing-detail__section-title">@L["Purchasing_Timeline"]</h2>
+                    <ol class="pos-purchasing-detail__timeline">
+                        @foreach (var step in Timeline(_po))
+                        {
+                            <li class="pos-purchasing-detail__timeline-step @(step.Completed ? "pos-purchasing-detail__timeline-step--done" : null)">
+                                <span class="pos-purchasing-detail__timeline-marker" aria-hidden="true">@(step.Completed ? "✓" : "○")</span>
+                                <span>
+                                    <strong>@step.Label</strong>
+                                    @if (step.AtUtc is { } at)
+                                    {
+                                        <small>@at.ToLocalTime().ToString("g")</small>
+                                    }
+                                </span>
+                            </li>
+                        }
+                    </ol>
+                </section>
+            }
+
             <section class="pos-purchasing-detail__panel" aria-labelledby="purchasing-detail-heading">
                 <h2 id="purchasing-detail-heading" class="pos-purchasing-detail__section-title">@L["Purchasing_DetailsSection"]</h2>
                 <dl class="pos-purchasing-detail__facts">
                     <div class="pos-purchasing-detail__fact">
                         <dt>@L["Purchasing_Field_Status"]</dt>
-                        <dd>@_po.Status</dd>
+                        <dd>@StatusLabel(DisplayStatus(_po))</dd>
                     </div>
                     <div class="pos-purchasing-detail__fact">
                         <dt>@L["Purchasing_Field_OrderDate"]</dt>
@@ -154,7 +185,7 @@ else
                                 disabled="@_busy"
                                 @onclick="CancelAsync">
                             <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("close")</span>
-                            <span class="pos-action-tile__label">@L["Purchasing_Cancel"]</span>
+                            <span class="pos-action-tile__label">@(_po.Status == "Draft" ? L["Purchasing_Cancel"] : L["Purchasing_Withdraw"])</span>
                         </button>
                     }
                 </div>
@@ -194,15 +225,52 @@ else
         await LoadAsync();
     }
 
+    private static string DisplayStatus(PosPurchaseOrderDto po) =>
+        string.IsNullOrWhiteSpace(po.DisplayStatus) ? po.Status : po.DisplayStatus;
+
+    private string StatusLabel(string status) =>
+        L[$"Purchasing_Status_{status.Replace(" ", string.Empty, StringComparison.Ordinal)}"];
+
     private static BadgeTone StatusTone(string status) =>
         status switch
         {
-            "Ordered" => BadgeTone.Primary,
-            "PartiallyReceived" => BadgeTone.Warning,
+            "WaitingForSupplier" or "SupplierAccepted" => BadgeTone.Info,
+            "Preparing" or "Ready" or "PartiallyReceived" => BadgeTone.Warning,
             "Received" => BadgeTone.Success,
-            "Cancelled" => BadgeTone.Neutral,
+            "SupplierDeclined" or "ReceivedWithIssues" => BadgeTone.Danger,
             _ => BadgeTone.Neutral
         };
+
+    private string DeclineMessage(PosPurchaseOrderDto po)
+    {
+        var reason = string.IsNullOrWhiteSpace(po.DeclineReason)
+            ? L["Purchasing_DeclineReasonNotProvided"].Value
+            : L[$"Purchasing_DeclineReason_{po.DeclineReason}"].Value;
+        return string.IsNullOrWhiteSpace(po.DeclineNote) ? reason : $"{reason} — {po.DeclineNote}";
+    }
+
+    private IReadOnlyList<TimelineStep> Timeline(PosPurchaseOrderDto po)
+    {
+        var declined = string.Equals(po.ConnectedStatus, "Declined", StringComparison.OrdinalIgnoreCase);
+        var received = po.Lines.Any(line => line.ReceivedQty > 0m || line.ClosedShortQty > 0m);
+        var steps = new List<TimelineStep>
+        {
+            new(L["Purchasing_TimelineCreated"].Value, po.CreatedAtUtc, true),
+            new(L["Purchasing_TimelineSent"].Value, po.OrderedAtUtc, po.OrderedAtUtc is not null),
+            new(declined ? L["Purchasing_TimelineDeclined"].Value : L["Purchasing_TimelineAccepted"].Value,
+                declined ? po.SupplierDeclinedAtUtc : po.SupplierAcceptedAtUtc,
+                declined ? po.SupplierDeclinedAtUtc is not null : po.SupplierAcceptedAtUtc is not null)
+        };
+        if (!declined)
+        {
+            steps.Add(new(L["Purchasing_TimelinePreparing"].Value, po.SupplierPreparingAtUtc, po.SupplierPreparingAtUtc is not null));
+            steps.Add(new(L["Purchasing_TimelineReady"].Value, po.SupplierFulfilledAtUtc, po.SupplierFulfilledAtUtc is not null));
+            steps.Add(new(L["Purchasing_TimelineReceiving"].Value, received ? po.UpdatedAtUtc : null, received));
+        }
+        return steps;
+    }
+
+    private sealed record TimelineStep(string Label, DateTimeOffset? AtUtc, bool Completed);
 
     private async Task LoadAsync()
     {

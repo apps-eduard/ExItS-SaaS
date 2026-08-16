@@ -31,6 +31,7 @@ else
     {
         var canManage = Capabilities.IsAllowed(UtangCapability.ManagePurchasing);
         var canReceive = canManage && !_isOffline
+            && _po.CanReceiveConnected
             && (_po.Status == "Ordered" || _po.Status == "PartiallyReceived")
             && _lines.Any(l => l.OutstandingQty > 0m);
 <div class="pos-purchasing-receive">
@@ -52,7 +53,9 @@ else
             }
 
             <section class="pos-purchasing-receive__panel" aria-labelledby="purchasing-receive-heading">
-                <h2 id="purchasing-receive-heading" class="pos-purchasing-receive__section-title">@L["Purchasing_ReceiveLinesSection"]</h2>
+                <h2 id="purchasing-receive-heading" class="pos-purchasing-receive__section-title">
+                    @(_reviewing ? L["Purchasing_ReviewReceipt"] : L["Purchasing_ReceiveLinesSection"])
+                </h2>
                 <div class="pos-purchasing-receive__list" role="list">
                     @foreach (var line in _lines)
                     {
@@ -61,18 +64,37 @@ else
                                 <span class="pos-purchasing-receive__entry-name">@(line.NameSnapshot ?? line.ProductId.ToString("D"))</span>
                             </div>
                             <p class="pos-purchasing-receive__entry-meta">@L["Purchasing_Outstanding", line.OutstandingQty, line.UomSnapshot ?? ""]</p>
-                            @if (canReceive && line.OutstandingQty > 0m)
+                            @if (_reviewing)
                             {
-                                <div class="pos-purchasing-receive__entry-field">
-                                    <TextInput Label="@L["Purchasing_ReceiveQty"]"
-                                               Value="@line.QtyText"
-                                               ValueChanged="v => line.QtyText = v" />
+                                <dl class="pos-purchasing-receive__review">
+                                    <div><dt>@L["Purchasing_GoodReceived"]</dt><dd>@line.GoodQty</dd></div>
+                                    <div><dt>@L["Purchasing_Damaged"]</dt><dd>@line.DamagedQty</dd></div>
+                                    <div><dt>@L["Purchasing_OutstandingLabel"]</dt><dd>@line.RemainingQty</dd></div>
+                                    <div><dt>@L["Purchasing_CloseAsShort"]</dt><dd>@(line.CloseRemaining ? L["Common_Yes"] : L["Common_No"])</dd></div>
+                                </dl>
+                            }
+                            else if (canReceive && line.OutstandingQty > 0m)
+                            {
+                                <div class="pos-purchasing-receive__entry-fields">
+                                    <TextInput Label="@L["Purchasing_GoodReceived"]"
+                                               Value="@line.GoodQtyText"
+                                               ValueChanged="v => line.GoodQtyText = v" />
+                                    <TextInput Label="@L["Purchasing_Damaged"]"
+                                               Value="@line.DamagedQtyText"
+                                               ValueChanged="v => line.DamagedQtyText = v" />
                                 </div>
+                                <label class="pos-purchasing-receive__short-toggle">
+                                    <input type="checkbox" checked="@line.CloseRemaining" @onchange="e => line.CloseRemaining = e.Value is true" />
+                                    <span>
+                                        <strong>@L["Purchasing_CloseAsShort"]</strong>
+                                        <small>@L["Purchasing_CloseRemainingHelp"]</small>
+                                    </span>
+                                </label>
                             }
                         </div>
                     }
                 </div>
-                @if (canReceive)
+                @if (canReceive && !_reviewing)
                 {
                     <div class="pos-purchasing-receive__form">
                         <TextInput Label="@L["Purchasing_DeliveryReference"]" Value="@_deliveryReference" ValueChanged="v => _deliveryReference = v" />
@@ -82,10 +104,20 @@ else
             </section>
 
             <FormActions>
-                <Button Variant="ButtonVariant.Primary"
-                        Disabled="@(!canReceive || _busy)"
-                        IsLoading="@_busy"
-                        OnClick="ReceiveAsync">@L["Purchasing_Receive"]</Button>
+                @if (_reviewing)
+                {
+                    <Button Disabled="@_busy" OnClick="() => _reviewing = false">@L["Purchasing_BackToReceipt"]</Button>
+                    <Button Variant="ButtonVariant.Primary"
+                            Disabled="@(!canReceive || _busy)"
+                            IsLoading="@_busy"
+                            OnClick="ReceiveAsync">@L["Purchasing_ConfirmGoodsReceipt"]</Button>
+                }
+                else
+                {
+                    <Button Variant="ButtonVariant.Primary"
+                            Disabled="@(!canReceive || _busy)"
+                            OnClick="ReviewAsync">@L["Purchasing_ReviewReceipt"]</Button>
+                }
             </FormActions>
         </Page>
 </div>
@@ -99,6 +131,7 @@ else
     private bool _loading;
     private bool _busy;
     private bool _isOffline;
+    private bool _reviewing;
     private PosPurchaseOrderDto? _po;
     private List<ReceiveLineEdit> _lines = [];
     private string _deliveryReference = string.Empty;
@@ -158,6 +191,16 @@ else
         _loading = false;
     }
 
+    private Task ReviewAsync()
+    {
+        if (!TryBuildReceiveLines(out _))
+        {
+            return Task.CompletedTask;
+        }
+        _reviewing = true;
+        return Task.CompletedTask;
+    }
+
     private async Task ReceiveAsync()
     {
         if (_po is null || _isOffline || _busy)
@@ -168,37 +211,8 @@ else
         _busy = true;
         _errorMessage = null;
 
-        var receiveLines = new List<ReceivePurchaseOrderLineRequest>();
-        foreach (var line in _lines)
+        if (!TryBuildReceiveLines(out var receiveLines))
         {
-            if (string.IsNullOrWhiteSpace(line.QtyText))
-            {
-                continue;
-            }
-
-            if (!decimal.TryParse(line.QtyText.Trim(), out var qty) || qty <= 0m)
-            {
-                _errorTitle = L["Purchasing_ErrorTitle"];
-                _errorMessage = L["Purchasing_InvalidReceiveQty"];
-                _busy = false;
-                return;
-            }
-
-            if (qty > line.OutstandingQty)
-            {
-                _errorTitle = L["Purchasing_ErrorTitle"];
-                _errorMessage = L["Purchasing_OverReceiveQty"];
-                _busy = false;
-                return;
-            }
-
-            receiveLines.Add(new ReceivePurchaseOrderLineRequest(line.ProductId, qty));
-        }
-
-        if (receiveLines.Count == 0)
-        {
-            _errorTitle = L["Purchasing_ErrorTitle"];
-            _errorMessage = L["Purchasing_ReceiveRequiresLines"];
             _busy = false;
             return;
         }
@@ -222,6 +236,66 @@ else
         _busy = false;
     }
 
+    private bool TryBuildReceiveLines(out List<ReceivePurchaseOrderLineRequest> receiveLines)
+    {
+        receiveLines = [];
+        _errorMessage = null;
+        foreach (var line in _lines)
+        {
+            if (!TryQty(line.GoodQtyText, out var good) || !TryQty(line.DamagedQtyText, out var damaged))
+            {
+                _errorTitle = L["Purchasing_ErrorTitle"];
+                _errorMessage = L["Purchasing_InvalidReceiveQty"];
+                return false;
+            }
+
+            if (good + damaged > line.OutstandingQty)
+            {
+                _errorTitle = L["Purchasing_ErrorTitle"];
+                _errorMessage = L["Purchasing_OverReceiveQty"];
+                return false;
+            }
+
+            var remaining = line.OutstandingQty - good - damaged;
+            var shortClosed = line.CloseRemaining ? remaining : 0m;
+            line.GoodQty = good;
+            line.DamagedQty = damaged;
+            line.RemainingQty = remaining;
+            if (good + damaged + shortClosed <= 0m)
+            {
+                continue;
+            }
+
+            var kind = damaged > 0m ? "Damaged" : shortClosed > 0m ? "Short" : null;
+            receiveLines.Add(new ReceivePurchaseOrderLineRequest(
+                line.ProductId,
+                good,
+                DamagedQty: damaged,
+                ShortClosedQty: shortClosed,
+                DiscrepancyKind: kind,
+                DiscrepancyNote: kind is null || string.IsNullOrWhiteSpace(_notes) ? null : _notes.Trim()));
+        }
+
+        if (receiveLines.Count == 0)
+        {
+            _errorTitle = L["Purchasing_ErrorTitle"];
+            _errorMessage = L["Purchasing_ReceiveRequiresLines"];
+            return false;
+        }
+
+        return true;
+    }
+
+    private static bool TryQty(string value, out decimal qty)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            qty = 0m;
+            return true;
+        }
+        return decimal.TryParse(value.Trim(), out qty) && qty >= 0m;
+    }
+
     private sealed class ReceiveLineEdit
     {
         public ReceiveLineEdit(PosPurchaseOrderLineDto line)
@@ -230,13 +304,19 @@ else
             NameSnapshot = line.NameSnapshot;
             UomSnapshot = line.UomSnapshot;
             OutstandingQty = line.OutstandingQty;
-            QtyText = line.OutstandingQty > 0m ? line.OutstandingQty.ToString("0.###") : string.Empty;
+            GoodQtyText = line.OutstandingQty > 0m ? line.OutstandingQty.ToString("0.###") : string.Empty;
+            DamagedQtyText = string.Empty;
         }
 
         public Guid ProductId { get; }
         public string? NameSnapshot { get; }
         public string? UomSnapshot { get; }
         public decimal OutstandingQty { get; }
-        public string QtyText { get; set; }
+        public string GoodQtyText { get; set; }
+        public string DamagedQtyText { get; set; }
+        public bool CloseRemaining { get; set; }
+        public decimal GoodQty { get; set; }
+        public decimal DamagedQty { get; set; }
+        public decimal RemainingQty { get; set; }
     }
 }

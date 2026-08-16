@@ -9076,4 +9076,211 @@
   <data name="Catalog_ConnectedAvailability_PriceRuleHelp" xml:space="preserve">
     <value>Choose how to set Default PO price from each product's current retail selling price.</value>
   </data>
+  <data name="Purchasing_Withdraw" xml:space="preserve">
+    <value>Withdraw order</value>
+  </data>
+  <data name="Purchasing_Timeline" xml:space="preserve">
+    <value>Order progress</value>
+  </data>
+  <data name="Purchasing_TimelineCreated" xml:space="preserve">
+    <value>Created</value>
+  </data>
+  <data name="Purchasing_TimelineSent" xml:space="preserve">
+    <value>Sent</value>
+  </data>
+  <data name="Purchasing_TimelineAccepted" xml:space="preserve">
+    <value>Supplier accepted</value>
+  </data>
+  <data name="Purchasing_TimelineDeclined" xml:space="preserve">
+    <value>Supplier declined</value>
+  </data>
+  <data name="Purchasing_TimelinePreparing" xml:space="preserve">
+    <value>Preparing</value>
+  </data>
+  <data name="Purchasing_TimelineReady" xml:space="preserve">
+    <value>Ready</value>
+  </data>
+  <data name="Purchasing_TimelineReceiving" xml:space="preserve">
+    <value>Receiving</value>
+  </data>
+  <data name="Purchasing_SupplierDeclined" xml:space="preserve">
+    <value>Supplier declined</value>
+  </data>
+  <data name="Purchasing_DeclineReasonNotProvided" xml:space="preserve">
+    <value>No reason was provided.</value>
+  </data>
+  <data name="Purchasing_DeclineReason_OutOfStock" xml:space="preserve">
+    <value>Out of stock</value>
+  </data>
+  <data name="Purchasing_DeclineReason_CannotFulfillQuantity" xml:space="preserve">
+    <value>Cannot fulfill the requested quantity</value>
+  </data>
+  <data name="Purchasing_DeclineReason_PriceOrOrderIssue" xml:space="preserve">
+    <value>Price or order issue</value>
+  </data>
+  <data name="Purchasing_DeclineReason_UnableToFulfill" xml:space="preserve">
+    <value>Unable to fulfill</value>
+  </data>
+  <data name="Purchasing_DeclineReason_Other" xml:space="preserve">
+    <value>Other</value>
+  </data>
+  <data name="Purchasing_Status_Draft" xml:space="preserve">
+    <value>Draft</value>
+  </data>
+  <data name="Purchasing_Status_Sent" xml:space="preserve">
+    <value>Sent</value>
+  </data>
+  <data name="Purchasing_Status_WaitingForSupplier" xml:space="preserve">
+    <value>Waiting for supplier</value>
+  </data>
+  <data name="Purchasing_Status_SupplierAccepted" xml:space="preserve">
+    <value>Supplier accepted</value>
+  </data>
+  <data name="Purchasing_Status_SupplierDeclined" xml:space="preserve">
+    <value>Supplier declined</value>
+  </data>
+  <data name="Purchasing_Status_Preparing" xml:space="preserve">
+    <value>Preparing</value>
+  </data>
+  <data name="Purchasing_Status_Ready" xml:space="preserve">
+    <value>Ready</value>
+  </data>
+  <data name="Purchasing_Status_PartiallyReceived" xml:space="preserve">
+    <value>Partially received</value>
+  </data>
+  <data name="Purchasing_Status_Received" xml:space="preserve">
+    <value>Received</value>
+  </data>
+  <data name="Purchasing_Status_ReceivedWithIssues" xml:space="preserve">
+    <value>Received with issues</value>
+  </data>
+  <data name="Purchasing_Status_ReceivedByBuyer" xml:space="preserve">
+    <value>Received by buyer</value>
+  </data>
+  <data name="Purchasing_Status_Withdrawn" xml:space="preserve">
+    <value>Withdrawn</value>
+  </data>
+  <data name="Purchasing_Status_Cancelled" xml:space="preserve">
+    <value>Cancelled</value>
+  </data>
+  <data name="Purchasing_FilterStatus" xml:space="preserve">
+    <value>Filter by status</value>
+  </data>
+  <data name="Purchasing_FilterAll" xml:space="preserve">
+    <value>All</value>
+  </data>
+  <data name="Purchasing_FilterNeedsAction" xml:space="preserve">
+    <value>Needs action</value>
+  </data>
+  <data name="Purchasing_FilterInProgress" xml:space="preserve">
+    <value>In progress</value>
+  </data>
+  <data name="Purchasing_FilterComplete" xml:space="preserve">
+    <value>Complete</value>
+  </data>
+  <data name="Purchasing_GoodReceived" xml:space="preserve">
+    <value>Good received</value>
+  </data>
+  <data name="Purchasing_Damaged" xml:space="preserve">
+    <value>Damaged</value>
+  </data>
+  <data name="Purchasing_OutstandingLabel" xml:space="preserve">
+    <value>Outstanding</value>
+  </data>
+  <data name="Purchasing_CloseAsShort" xml:space="preserve">
+    <value>Close as short</value>
+  </data>
+  <data name="Purchasing_CloseRemainingHelp" xml:space="preserve">
+    <value>Close the remaining quantity as short, or leave unchecked to keep it outstanding.</value>
+  </data>
+  <data name="Purchasing_ReviewReceipt" xml:space="preserve">
+    <value>Review receipt</value>
+  </data>
+  <data name="Purchasing_ConfirmGoodsReceipt" xml:space="preserve">
+    <value>Confirm goods receipt</value>
+  </data>
+  <data name="Purchasing_BackToReceipt" xml:space="preserve">
+    <value>Back to quantities</value>
+  </data>
+  <data name="Common_Yes" xml:space="preserve">
+    <value>Yes</value>
+  </data>
+  <data name="Common_No" xml:space="preserve">
+    <value>No</value>
+  </data>
+  <data name="ConnectedSuppliers_IncomingOrdersHelp" xml:space="preserve">
+    <value>Review and fulfill purchase orders from connected buyers.</value>
+  </data>
+  <data name="ConnectedSuppliers_Buyer" xml:space="preserve">
+    <value>Connected buyer</value>
+  </data>
+  <data name="ConnectedSuppliers_Filter_ActionNeeded" xml:space="preserve">
+    <value>Action needed</value>
+  </data>
+  <data name="ConnectedSuppliers_Filter_New" xml:space="preserve">
+    <value>New</value>
+  </data>
+  <data name="ConnectedSuppliers_Filter_Accepted" xml:space="preserve">
+    <value>Accepted</value>
+  </data>
+  <data name="ConnectedSuppliers_Filter_Preparing" xml:space="preserve">
+    <value>Preparing</value>
+  </data>
+  <data name="ConnectedSuppliers_Filter_Fulfilled" xml:space="preserve">
+    <value>Fulfilled</value>
+  </data>
+  <data name="ConnectedSuppliers_Filter_Declined" xml:space="preserve">
+    <value>Declined</value>
+  </data>
+  <data name="ConnectedSuppliers_Filter_Withdrawn" xml:space="preserve">
+    <value>Withdrawn</value>
+  </data>
+  <data name="ConnectedSuppliers_Filter_All" xml:space="preserve">
+    <value>All</value>
+  </data>
+  <data name="ConnectedSuppliers_OrderStatus_New" xml:space="preserve">
+    <value>New</value>
+  </data>
+  <data name="ConnectedSuppliers_OrderStatus_Preparing" xml:space="preserve">
+    <value>Preparing</value>
+  </data>
+  <data name="ConnectedSuppliers_OrderStatus_Fulfilled" xml:space="preserve">
+    <value>Fulfilled</value>
+  </data>
+  <data name="ConnectedSuppliers_OrderStatus_Withdrawn" xml:space="preserve">
+    <value>Withdrawn</value>
+  </data>
+  <data name="ConnectedSuppliers_OrderStatus_PartiallyReceived" xml:space="preserve">
+    <value>Partially received</value>
+  </data>
+  <data name="ConnectedSuppliers_OrderStatus_ReceivedWithIssues" xml:space="preserve">
+    <value>Received with issues</value>
+  </data>
+  <data name="ConnectedSuppliers_OrderStatus_ReceivedByBuyer" xml:space="preserve">
+    <value>Received by buyer</value>
+  </data>
+  <data name="ConnectedSuppliers_IncomingOrderNotFound" xml:space="preserve">
+    <value>Incoming order not found</value>
+  </data>
+  <data name="ConnectedSuppliers_IncomingOrderNotFoundHelp" xml:space="preserve">
+    <value>This incoming purchase order is no longer available.</value>
+  </data>
+  <data name="ConnectedSuppliers_BuyerReceivingStatus" xml:space="preserve">
+    <value>Buyer receiving status</value>
+  </data>
+  <data name="ConnectedSuppliers_DeclineReason" xml:space="preserve">
+    <value>Decline reason</value>
+  </data>
+  <data name="ConnectedSuppliers_DeclineReasonOptional" xml:space="preserve">
+    <value>Select a reason (optional)</value>
+  </data>
+  <data name="ConnectedSuppliers_DeclineNote" xml:space="preserve">
+    <value>Note to buyer (optional)</value>
+  </data>
+  <data name="ConnectedSuppliers_StartPreparing" xml:space="preserve">
+    <value>Start preparing</value>
+  </data>
+  <data name="ConnectedSuppliers_MarkFulfilled" xml:space="preserve">
+    <value>Mark fulfilled</value>
+  </data>
 </root>

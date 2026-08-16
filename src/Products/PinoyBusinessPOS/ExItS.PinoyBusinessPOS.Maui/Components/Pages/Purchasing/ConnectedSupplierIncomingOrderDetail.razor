@@ -1,0 +1,230 @@
+@page "/connected-suppliers/incoming/{OrderId:guid}"
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosConnectedSupplierClient ConnectedSuppliers
+@inject IUtangCapabilityEvaluator Capabilities
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+<StoreHeaderBack Href="/connected-suppliers/incoming" />
+<div class="pos-incoming-order-detail">
+<Page>
+    @if (_loading)
+    {
+        <Spinner />
+    }
+    else if (_order is null)
+    {
+        <ErrorState Title="@L["ConnectedSuppliers_IncomingOrderNotFound"]"
+                    Message="@(_error ?? L["ConnectedSuppliers_IncomingOrderNotFoundHelp"])"
+                    RetryLabel="@L["Api_Retry"]"
+                    OnRetry="LoadAsync" />
+    }
+    else
+    {
+        var canManage = Capabilities.IsAllowed(UtangCapability.ManagePurchasing) && !_offline;
+        <header class="pos-incoming-order-detail__header">
+            <h1>@(_order.BuyerPoNumber ?? L["ConnectedSuppliers_PurchaseOrder"])</h1>
+            <p class="pos-muted">@(string.IsNullOrWhiteSpace(_order.BuyerDisplayName) ? L["ConnectedSuppliers_Buyer"] : _order.BuyerDisplayName)</p>
+            <Badge Tone="@StatusTone(_order.Status)">@StatusLabel(_order)</Badge>
+        </header>
+
+        @if (!string.IsNullOrWhiteSpace(_error))
+        {
+            <Alert Tone="AlertTone.Danger" Title="@L["ConnectedSuppliers_Error"]" Message="@_error" />
+        }
+
+        @if (!string.IsNullOrWhiteSpace(_order.BuyerReceivingStatus))
+        {
+            <Alert Tone="AlertTone.Info"
+                   Title="@L["ConnectedSuppliers_BuyerReceivingStatus"]"
+                   Message="@BuyerReceivingLabel(_order.BuyerReceivingStatus)" />
+        }
+
+        <section class="pos-incoming-order-detail__panel">
+            <div class="pos-incoming-order-detail__facts">
+                <span>@L["Purchasing_Field_OrderDate"]</span><strong>@_order.OrderDate.ToString("d")</strong>
+                <span>@L["Purchasing_LinesTotal"]</span><strong><MoneyDisplay Amount="@_order.TotalAmount" CurrencyCode="PHP" /></strong>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(_order.Notes))
+            {
+                <p class="pos-muted">@_order.Notes</p>
+            }
+        </section>
+
+        <section class="pos-incoming-order-detail__panel" aria-labelledby="incoming-lines-heading">
+            <h2 id="incoming-lines-heading">@L["Purchasing_LinesSection"]</h2>
+            <div class="pos-incoming-order-detail__lines" role="list">
+                @foreach (var line in _order.Lines)
+                {
+                    <article class="pos-incoming-order-detail__line" role="listitem">
+                        <div>
+                            <strong>@line.NameSnapshot</strong>
+                            @if (!string.IsNullOrWhiteSpace(line.SkuSnapshot))
+                            {
+                                <small>@line.SkuSnapshot</small>
+                            }
+                        </div>
+                        <span>@line.Qty @line.UnitOfMeasureCode × <MoneyDisplay Amount="@line.UnitPriceSnapshot" CurrencyCode="PHP" /></span>
+                        <strong><MoneyDisplay Amount="@line.LineTotal" CurrencyCode="PHP" /></strong>
+                    </article>
+                }
+            </div>
+        </section>
+
+        @if (string.Equals(_order.Status, "New", StringComparison.OrdinalIgnoreCase) && _showDecline)
+        {
+            <section class="pos-incoming-order-detail__panel">
+                <label class="pos-incoming-order-detail__field">
+                    <span>@L["ConnectedSuppliers_DeclineReason"]</span>
+                    <select value="@_declineReason" @onchange="e => _declineReason = e.Value?.ToString() ?? string.Empty">
+                        <option value="">@L["ConnectedSuppliers_DeclineReasonOptional"]</option>
+                        @foreach (var reason in DeclineReasons)
+                        {
+                            <option value="@reason.Value">@L[reason.LabelKey]</option>
+                        }
+                    </select>
+                </label>
+                <TextInput Label="@L["ConnectedSuppliers_DeclineNote"]" Value="@_declineNote" ValueChanged="v => _declineNote = v" />
+                <FormActions>
+                    <Button Disabled="@_busy" OnClick="() => _showDecline = false">@L["Purchasing_CancelEdit"]</Button>
+                    <Button Variant="ButtonVariant.Danger" Disabled="@(_busy || !canManage)" IsLoading="@_busy" OnClick="DeclineAsync">
+                        @L["ConnectedSuppliers_Decline"]
+                    </Button>
+                </FormActions>
+            </section>
+        }
+        else
+        {
+            <FormActions>
+                @if (string.Equals(_order.Status, "New", StringComparison.OrdinalIgnoreCase))
+                {
+                    <Button Variant="ButtonVariant.Primary" Disabled="@(_busy || !canManage)" IsLoading="@_busy" OnClick="AcceptAsync">
+                        @L["ConnectedSuppliers_Accept"]
+                    </Button>
+                    <Button Variant="ButtonVariant.Danger" Disabled="@(_busy || !canManage)" OnClick="() => _showDecline = true">
+                        @L["ConnectedSuppliers_Decline"]
+                    </Button>
+                }
+                else if (string.Equals(_order.Status, "Accepted", StringComparison.OrdinalIgnoreCase))
+                {
+                    <Button Variant="ButtonVariant.Primary" Disabled="@(_busy || !canManage)" IsLoading="@_busy" OnClick="PrepareAsync">
+                        @L["ConnectedSuppliers_StartPreparing"]
+                    </Button>
+                }
+                else if (string.Equals(_order.Status, "Preparing", StringComparison.OrdinalIgnoreCase))
+                {
+                    <Button Variant="ButtonVariant.Primary" Disabled="@(_busy || !canManage)" IsLoading="@_busy" OnClick="FulfillAsync">
+                        @L["ConnectedSuppliers_MarkFulfilled"]
+                    </Button>
+                }
+            </FormActions>
+        }
+    }
+</Page>
+</div>
+
+@code {
+    [Parameter] public Guid OrderId { get; set; }
+
+    private ConnectedPurchaseOrderDto? _order;
+    private bool _loading = true;
+    private bool _busy;
+    private bool _offline;
+    private bool _showDecline;
+    private string _declineReason = string.Empty;
+    private string _declineNote = string.Empty;
+    private string? _error;
+
+    private static IReadOnlyList<DeclineReasonOption> DeclineReasons =>
+    [
+        new("OutOfStock", "Purchasing_DeclineReason_OutOfStock"),
+        new("CannotFulfillQuantity", "Purchasing_DeclineReason_CannotFulfillQuantity"),
+        new("PriceOrOrderIssue", "Purchasing_DeclineReason_PriceOrOrderIssue"),
+        new("UnableToFulfill", "Purchasing_DeclineReason_UnableToFulfill"),
+        new("Other", "Purchasing_DeclineReason_Other")
+    ];
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+        if (!Capabilities.IsAllowed(UtangCapability.ViewPurchasing))
+        {
+            Nav.NavigateTo("/home", replace: true);
+            return;
+        }
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+        _offline = !await Connectivity.IsConnectedAsync();
+        if (_offline)
+        {
+            _order = null;
+            _error = L["Purchasing_OfflineMessage"];
+            _loading = false;
+            return;
+        }
+        var result = await ConnectedSuppliers.GetIncomingOrderAsync(OrderId);
+        _order = result.IsSuccess ? result.Data : null;
+        _error = result.IsSuccess ? null : result.Error?.Detail ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
+        _loading = false;
+    }
+
+    private Task AcceptAsync() => MutateAsync(() => ConnectedSuppliers.AcceptIncomingAsync(OrderId));
+    private Task PrepareAsync() => MutateAsync(() => ConnectedSuppliers.PrepareIncomingAsync(OrderId));
+    private Task FulfillAsync() => MutateAsync(() => ConnectedSuppliers.FulfillIncomingAsync(OrderId));
+    private Task DeclineAsync() => MutateAsync(() => ConnectedSuppliers.DeclineIncomingAsync(
+        OrderId,
+        new DeclineIncomingOrderRequest(
+            string.IsNullOrWhiteSpace(_declineReason) ? null : _declineReason,
+            string.IsNullOrWhiteSpace(_declineNote) ? null : _declineNote.Trim())));
+
+    private async Task MutateAsync(Func<Task<ApiResult<ConnectedPurchaseOrderDto>>> mutation)
+    {
+        if (_busy || _offline || !Capabilities.IsAllowed(UtangCapability.ManagePurchasing)) return;
+        _busy = true;
+        _error = null;
+        var result = await mutation();
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _order = result.Data;
+            _showDecline = false;
+        }
+        else
+        {
+            _error = result.Error?.Detail ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
+        }
+        _busy = false;
+    }
+
+    private string StatusLabel(ConnectedPurchaseOrderDto order)
+    {
+        var status = string.IsNullOrWhiteSpace(order.DisplayStatus) ? order.Status : order.DisplayStatus;
+        return L[$"ConnectedSuppliers_OrderStatus_{status.Replace(" ", string.Empty, StringComparison.Ordinal)}"];
+    }
+
+    private string BuyerReceivingLabel(string status) =>
+        L[$"Purchasing_Status_{status.Replace(" ", string.Empty, StringComparison.Ordinal)}"];
+
+    private static BadgeTone StatusTone(string status) =>
+        status switch
+        {
+            "New" => BadgeTone.Primary,
+            "Accepted" => BadgeTone.Info,
+            "Preparing" => BadgeTone.Warning,
+            "Fulfilled" => BadgeTone.Success,
+            "Declined" => BadgeTone.Danger,
+            _ => BadgeTone.Neutral
+        };
+
+    private sealed record DeclineReasonOption(string Value, string LabelKey);
+}

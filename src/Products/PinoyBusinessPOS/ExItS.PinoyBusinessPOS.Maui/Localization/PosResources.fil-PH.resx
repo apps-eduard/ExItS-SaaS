@@ -9076,4 +9076,211 @@
   <data name="Catalog_ConnectedAvailability_PriceRuleHelp" xml:space="preserve">
     <value>Piliin kung paano itatakda ang Default PO price mula sa kasalukuyang retail selling price ng bawat produkto.</value>
   </data>
+  <data name="Purchasing_Withdraw" xml:space="preserve">
+    <value>Bawiin ang order</value>
+  </data>
+  <data name="Purchasing_Timeline" xml:space="preserve">
+    <value>Takbo ng order</value>
+  </data>
+  <data name="Purchasing_TimelineCreated" xml:space="preserve">
+    <value>Ginawa</value>
+  </data>
+  <data name="Purchasing_TimelineSent" xml:space="preserve">
+    <value>Ipinadala</value>
+  </data>
+  <data name="Purchasing_TimelineAccepted" xml:space="preserve">
+    <value>Tinanggap ng supplier</value>
+  </data>
+  <data name="Purchasing_TimelineDeclined" xml:space="preserve">
+    <value>Tinanggihan ng supplier</value>
+  </data>
+  <data name="Purchasing_TimelinePreparing" xml:space="preserve">
+    <value>Inihahanda</value>
+  </data>
+  <data name="Purchasing_TimelineReady" xml:space="preserve">
+    <value>Handa na</value>
+  </data>
+  <data name="Purchasing_TimelineReceiving" xml:space="preserve">
+    <value>Pagtanggap</value>
+  </data>
+  <data name="Purchasing_SupplierDeclined" xml:space="preserve">
+    <value>Tinanggihan ng supplier</value>
+  </data>
+  <data name="Purchasing_DeclineReasonNotProvided" xml:space="preserve">
+    <value>Walang ibinigay na dahilan.</value>
+  </data>
+  <data name="Purchasing_DeclineReason_OutOfStock" xml:space="preserve">
+    <value>Walang stock</value>
+  </data>
+  <data name="Purchasing_DeclineReason_CannotFulfillQuantity" xml:space="preserve">
+    <value>Hindi makukumpleto ang hinihinging dami</value>
+  </data>
+  <data name="Purchasing_DeclineReason_PriceOrOrderIssue" xml:space="preserve">
+    <value>May problema sa presyo o order</value>
+  </data>
+  <data name="Purchasing_DeclineReason_UnableToFulfill" xml:space="preserve">
+    <value>Hindi kayang tuparin</value>
+  </data>
+  <data name="Purchasing_DeclineReason_Other" xml:space="preserve">
+    <value>Iba pa</value>
+  </data>
+  <data name="Purchasing_Status_Draft" xml:space="preserve">
+    <value>Draft</value>
+  </data>
+  <data name="Purchasing_Status_Sent" xml:space="preserve">
+    <value>Ipinadala</value>
+  </data>
+  <data name="Purchasing_Status_WaitingForSupplier" xml:space="preserve">
+    <value>Naghihintay sa supplier</value>
+  </data>
+  <data name="Purchasing_Status_SupplierAccepted" xml:space="preserve">
+    <value>Tinanggap ng supplier</value>
+  </data>
+  <data name="Purchasing_Status_SupplierDeclined" xml:space="preserve">
+    <value>Tinanggihan ng supplier</value>
+  </data>
+  <data name="Purchasing_Status_Preparing" xml:space="preserve">
+    <value>Inihahanda</value>
+  </data>
+  <data name="Purchasing_Status_Ready" xml:space="preserve">
+    <value>Handa na</value>
+  </data>
+  <data name="Purchasing_Status_PartiallyReceived" xml:space="preserve">
+    <value>Bahagyang natanggap</value>
+  </data>
+  <data name="Purchasing_Status_Received" xml:space="preserve">
+    <value>Natanggap</value>
+  </data>
+  <data name="Purchasing_Status_ReceivedWithIssues" xml:space="preserve">
+    <value>Natanggap na may problema</value>
+  </data>
+  <data name="Purchasing_Status_ReceivedByBuyer" xml:space="preserve">
+    <value>Natanggap ng buyer</value>
+  </data>
+  <data name="Purchasing_Status_Withdrawn" xml:space="preserve">
+    <value>Binawi</value>
+  </data>
+  <data name="Purchasing_Status_Cancelled" xml:space="preserve">
+    <value>Kinansela</value>
+  </data>
+  <data name="Purchasing_FilterStatus" xml:space="preserve">
+    <value>I-filter ayon sa status</value>
+  </data>
+  <data name="Purchasing_FilterAll" xml:space="preserve">
+    <value>Lahat</value>
+  </data>
+  <data name="Purchasing_FilterNeedsAction" xml:space="preserve">
+    <value>Kailangang aksyunan</value>
+  </data>
+  <data name="Purchasing_FilterInProgress" xml:space="preserve">
+    <value>Isinasagawa</value>
+  </data>
+  <data name="Purchasing_FilterComplete" xml:space="preserve">
+    <value>Tapos</value>
+  </data>
+  <data name="Purchasing_GoodReceived" xml:space="preserve">
+    <value>Maayos na natanggap</value>
+  </data>
+  <data name="Purchasing_Damaged" xml:space="preserve">
+    <value>Sira</value>
+  </data>
+  <data name="Purchasing_OutstandingLabel" xml:space="preserve">
+    <value>Natitira</value>
+  </data>
+  <data name="Purchasing_CloseAsShort" xml:space="preserve">
+    <value>Isara bilang kulang</value>
+  </data>
+  <data name="Purchasing_CloseRemainingHelp" xml:space="preserve">
+    <value>Isara ang natitirang dami bilang kulang, o huwag piliin para manatili itong outstanding.</value>
+  </data>
+  <data name="Purchasing_ReviewReceipt" xml:space="preserve">
+    <value>Suriin ang pagtanggap</value>
+  </data>
+  <data name="Purchasing_ConfirmGoodsReceipt" xml:space="preserve">
+    <value>Kumpirmahin ang goods receipt</value>
+  </data>
+  <data name="Purchasing_BackToReceipt" xml:space="preserve">
+    <value>Bumalik sa mga dami</value>
+  </data>
+  <data name="Common_Yes" xml:space="preserve">
+    <value>Oo</value>
+  </data>
+  <data name="Common_No" xml:space="preserve">
+    <value>Hindi</value>
+  </data>
+  <data name="ConnectedSuppliers_IncomingOrdersHelp" xml:space="preserve">
+    <value>Suriin at kumpletuhin ang mga purchase order mula sa connected buyers.</value>
+  </data>
+  <data name="ConnectedSuppliers_Buyer" xml:space="preserve">
+    <value>Connected buyer</value>
+  </data>
+  <data name="ConnectedSuppliers_Filter_ActionNeeded" xml:space="preserve">
+    <value>Kailangang aksyunan</value>
+  </data>
+  <data name="ConnectedSuppliers_Filter_New" xml:space="preserve">
+    <value>Bago</value>
+  </data>
+  <data name="ConnectedSuppliers_Filter_Accepted" xml:space="preserve">
+    <value>Tinanggap</value>
+  </data>
+  <data name="ConnectedSuppliers_Filter_Preparing" xml:space="preserve">
+    <value>Inihahanda</value>
+  </data>
+  <data name="ConnectedSuppliers_Filter_Fulfilled" xml:space="preserve">
+    <value>Natupad</value>
+  </data>
+  <data name="ConnectedSuppliers_Filter_Declined" xml:space="preserve">
+    <value>Tinanggihan</value>
+  </data>
+  <data name="ConnectedSuppliers_Filter_Withdrawn" xml:space="preserve">
+    <value>Binawi</value>
+  </data>
+  <data name="ConnectedSuppliers_Filter_All" xml:space="preserve">
+    <value>Lahat</value>
+  </data>
+  <data name="ConnectedSuppliers_OrderStatus_New" xml:space="preserve">
+    <value>Bago</value>
+  </data>
+  <data name="ConnectedSuppliers_OrderStatus_Preparing" xml:space="preserve">
+    <value>Inihahanda</value>
+  </data>
+  <data name="ConnectedSuppliers_OrderStatus_Fulfilled" xml:space="preserve">
+    <value>Natupad</value>
+  </data>
+  <data name="ConnectedSuppliers_OrderStatus_Withdrawn" xml:space="preserve">
+    <value>Binawi</value>
+  </data>
+  <data name="ConnectedSuppliers_OrderStatus_PartiallyReceived" xml:space="preserve">
+    <value>Bahagyang natanggap</value>
+  </data>
+  <data name="ConnectedSuppliers_OrderStatus_ReceivedWithIssues" xml:space="preserve">
+    <value>Natanggap na may problema</value>
+  </data>
+  <data name="ConnectedSuppliers_OrderStatus_ReceivedByBuyer" xml:space="preserve">
+    <value>Natanggap ng buyer</value>
+  </data>
+  <data name="ConnectedSuppliers_IncomingOrderNotFound" xml:space="preserve">
+    <value>Hindi nahanap ang incoming order</value>
+  </data>
+  <data name="ConnectedSuppliers_IncomingOrderNotFoundHelp" xml:space="preserve">
+    <value>Hindi na available ang incoming purchase order na ito.</value>
+  </data>
+  <data name="ConnectedSuppliers_BuyerReceivingStatus" xml:space="preserve">
+    <value>Status ng pagtanggap ng buyer</value>
+  </data>
+  <data name="ConnectedSuppliers_DeclineReason" xml:space="preserve">
+    <value>Dahilan ng pagtanggi</value>
+  </data>
+  <data name="ConnectedSuppliers_DeclineReasonOptional" xml:space="preserve">
+    <value>Pumili ng dahilan (opsyonal)</value>
+  </data>
+  <data name="ConnectedSuppliers_DeclineNote" xml:space="preserve">
+    <value>Tala para sa buyer (opsyonal)</value>
+  </data>
+  <data name="ConnectedSuppliers_StartPreparing" xml:space="preserve">
+    <value>Simulang ihanda</value>
+  </data>
+  <data name="ConnectedSuppliers_MarkFulfilled" xml:space="preserve">
+    <value>Markahang natupad</value>
+  </data>
 </root>
