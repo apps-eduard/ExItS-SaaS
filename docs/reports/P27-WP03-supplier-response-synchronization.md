@@ -89,4 +89,4 @@ Commit hashes:
 
 ## Exact next
 
-**P27-WP04 — Connected PO Cancellation & Withdrawal.**
+**P27-WP06 — Connected Purchasing UX & Notifications.**
