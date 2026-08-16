@@ -77,6 +77,9 @@ else
                     : L["SalesDocument_ComplianceIssuanceDisabled"])
             </p>
             <p>@L["SalesDocument_ComplianceNeedHelp"]</p>
+            <p class="org-note">
+                <a href="/organization/tax-compliance">@L["TaxCompliance_Title"]</a>
+            </p>
             @if (Shell.IsExactOrgOwner
                  && (_compliance is null
                      || _compliance.ComplianceEligibilityStatus is "NotRequested" or "Rejected" or "Revoked"))

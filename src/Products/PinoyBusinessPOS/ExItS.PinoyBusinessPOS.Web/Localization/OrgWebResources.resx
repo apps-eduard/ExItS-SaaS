@@ -882,4 +882,121 @@
   <data name="Privacy_Safeguard_DeviceSecrets" xml:space="preserve">
     <value>Restricted device secrets on POS</value>
   </data>
+  <data name="TaxCompliance_Title" xml:space="preserve">
+    <value>Tax &amp; Compliance</value>
+  </data>
+  <data name="TaxCompliance_Subtitle" xml:space="preserve">
+    <value>Registration readiness for ExItS tax-document activation. Not a BIR certification claim.</value>
+  </data>
+  <data name="TaxCompliance_Progress" xml:space="preserve">
+    <value>{0} of {1} complete</value>
+  </data>
+  <data name="TaxCompliance_BlockingTitle" xml:space="preserve">
+    <value>Blocking reasons</value>
+  </data>
+  <data name="TaxCompliance_BlockingSubtitle" xml:space="preserve">
+    <value>These items must be resolved before ExItS can consider activation readiness.</value>
+  </data>
+  <data name="TaxCompliance_BusinessRegistration" xml:space="preserve">
+    <value>Business registration</value>
+  </data>
+  <data name="TaxCompliance_BusinessRegistrationSubtitle" xml:space="preserve">
+    <value>Registered taxpayer name and TIN. Full TIN is never shown after save.</value>
+  </data>
+  <data name="TaxCompliance_RegisteredName" xml:space="preserve">
+    <value>Registered taxpayer name</value>
+  </data>
+  <data name="TaxCompliance_MaskedTin" xml:space="preserve">
+    <value>TIN (masked)</value>
+  </data>
+  <data name="TaxCompliance_TinInput" xml:space="preserve">
+    <value>TIN (9 digits)</value>
+  </data>
+  <data name="TaxCompliance_TinPlaceholder" xml:space="preserve">
+    <value>Enter to replace; leave blank to keep</value>
+  </data>
+  <data name="TaxCompliance_SetupStatus" xml:space="preserve">
+    <value>Setup status</value>
+  </data>
+  <data name="TaxCompliance_Branches" xml:space="preserve">
+    <value>Branches</value>
+  </data>
+  <data name="TaxCompliance_BranchesSubtitle" xml:space="preserve">
+    <value>BIR branch code and setup status per active branch.</value>
+  </data>
+  <data name="TaxCompliance_BranchesEmpty" xml:space="preserve">
+    <value>No branches found.</value>
+  </data>
+  <data name="TaxCompliance_BirBranchCode" xml:space="preserve">
+    <value>BIR branch code</value>
+  </data>
+  <data name="TaxCompliance_EditBranch" xml:space="preserve">
+    <value>Edit branch compliance</value>
+  </data>
+  <data name="TaxCompliance_BranchNotes" xml:space="preserve">
+    <value>Notes</value>
+  </data>
+  <data name="TaxCompliance_Registrations" xml:space="preserve">
+    <value>Registrations</value>
+  </data>
+  <data name="TaxCompliance_RegistrationsSubtitle" xml:space="preserve">
+    <value>Registration records for readiness review. Acceptance is Platform-controlled.</value>
+  </data>
+  <data name="TaxCompliance_RegistrationsEmpty" xml:space="preserve">
+    <value>No registration records yet.</value>
+  </data>
+  <data name="TaxCompliance_RegistrationType" xml:space="preserve">
+    <value>Type</value>
+  </data>
+  <data name="TaxCompliance_ReferenceNumber" xml:space="preserve">
+    <value>Reference number</value>
+  </data>
+  <data name="TaxCompliance_RecordedAt" xml:space="preserve">
+    <value>Recorded</value>
+  </data>
+  <data name="TaxCompliance_AddRegistration" xml:space="preserve">
+    <value>Add registration</value>
+  </data>
+  <data name="TaxCompliance_ExItsStatus" xml:space="preserve">
+    <value>ExItS status</value>
+  </data>
+  <data name="TaxCompliance_ExItsStatusSubtitle" xml:space="preserve">
+    <value>Eligibility, tax configuration, and issuance runtime. TaxDocument issuance remains unavailable.</value>
+  </data>
+  <data name="TaxCompliance_TaxConfiguration" xml:space="preserve">
+    <value>Tax configuration</value>
+  </data>
+  <data name="TaxCompliance_IssuanceRuntime" xml:space="preserve">
+    <value>TaxDocument runtime</value>
+  </data>
+  <data name="TaxCompliance_IssuanceUnavailable" xml:space="preserve">
+    <value>Unavailable (not implemented)</value>
+  </data>
+  <data name="TaxCompliance_ActivationReady" xml:space="preserve">
+    <value>Ready for TaxDocument activation</value>
+  </data>
+  <data name="TaxCompliance_ReadyYes" xml:space="preserve">
+    <value>Yes</value>
+  </data>
+  <data name="TaxCompliance_ReadyNo" xml:space="preserve">
+    <value>No</value>
+  </data>
+  <data name="TaxCompliance_ChecklistItem" xml:space="preserve">
+    <value>Requirement</value>
+  </data>
+  <data name="TaxCompliance_Done" xml:space="preserve">
+    <value>Done</value>
+  </data>
+  <data name="TaxCompliance_Pending" xml:space="preserve">
+    <value>Pending</value>
+  </data>
+  <data name="TaxCompliance_SubmitReadiness" xml:space="preserve">
+    <value>Submit readiness for review</value>
+  </data>
+  <data name="TaxCompliance_Saved" xml:space="preserve">
+    <value>Saved.</value>
+  </data>
+  <data name="TaxCompliance_Submitted" xml:space="preserve">
+    <value>Readiness submitted for Platform review.</value>
+  </data>
 </root>

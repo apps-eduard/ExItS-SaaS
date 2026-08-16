@@ -1,0 +1,484 @@
+@page "/organization/tax-compliance"
+@attribute [Authorize]
+@inject OrgWebShellState Shell
+@inject ICurrentUserContext CurrentUser
+@inject IPlatformAccessClient Platform
+@inject IStringLocalizer<OrgWebResources> L
+
+<PageTitle>@L["TaxCompliance_Title"]</PageTitle>
+
+@if (!Shell.CanSee("tax-compliance"))
+{
+    <AccessDeniedPanel />
+}
+else
+{
+    <div class="org-page">
+    <ExitsPageHeader Title="@L["TaxCompliance_Title"]" Subtitle="@L["TaxCompliance_Subtitle"]">
+        @if (_readiness is not null)
+        {
+            <span class="org-badge">@_readiness.OverallStatus</span>
+            <span class="org-note">@string.Format(L["TaxCompliance_Progress"].Value, CompletedCount, ChecklistCount)</span>
+        }
+    </ExitsPageHeader>
+
+    <OrgAlert Error="@_error" Success="@_success" OnRetry="LoadAsync" RetryLabel="@L["Common_Retry"]"
+              OnDismissError="() => _error = null" OnDismissSuccess="() => _success = null" />
+    <OrgLoading Active="_loading" />
+
+    @if (!_loading && _readiness is not null)
+    {
+        @if (_readiness.BlockingReasons.Count > 0)
+        {
+            <OrgSection Title="@L["TaxCompliance_BlockingTitle"]" Subtitle="@L["TaxCompliance_BlockingSubtitle"]">
+                <ul class="org-note" style="margin:0;padding-left:1.1rem;">
+                    @foreach (var reason in _readiness.BlockingReasons)
+                    {
+                        <li>@reason</li>
+                    }
+                </ul>
+            </OrgSection>
+        }
+
+        <OrgSection Title="@L["TaxCompliance_BusinessRegistration"]" Subtitle="@L["TaxCompliance_BusinessRegistrationSubtitle"]">
+            <Descriptions Bordered Size="@DescriptionsSize.Small" Column="2">
+                <DescriptionsItem Title="@L["TaxCompliance_RegisteredName"]">
+                    @(_profile?.RegisteredTaxpayerName ?? "—")
+                </DescriptionsItem>
+                <DescriptionsItem Title="@L["TaxCompliance_MaskedTin"]">
+                    @(_profile?.MaskedTin ?? "—")
+                </DescriptionsItem>
+                <DescriptionsItem Title="@L["TaxCompliance_SetupStatus"]">
+                    @(_profile?.SetupStatus ?? "—")
+                </DescriptionsItem>
+            </Descriptions>
+            @if (CanEdit)
+            {
+                <div class="org-form-grid" style="margin-top:.75rem;">
+                    <ExitsField Label="@L["TaxCompliance_RegisteredName"]">
+                        <Input @bind-Value="_editName" Disabled="_busy" />
+                    </ExitsField>
+                    <ExitsField Label="@L["TaxCompliance_TinInput"]">
+                        <Input @bind-Value="_editTin" Disabled="_busy" Placeholder="@L["TaxCompliance_TinPlaceholder"]" />
+                    </ExitsField>
+                </div>
+                <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" Loading="_busy" OnClick="SaveTaxpayerAsync" Style="margin-top:.5rem;">
+                    @L["Common_Save"]
+                </Button>
+            }
+        </OrgSection>
+
+        <OrgSection Title="@L["TaxCompliance_Branches"]" Subtitle="@L["TaxCompliance_BranchesSubtitle"]">
+            @if (_branchRows.Count == 0)
+            {
+                <p class="org-note">@L["TaxCompliance_BranchesEmpty"]</p>
+            }
+            else
+            {
+                <div class="org-table-wrap">
+                    <table class="org-table">
+                        <thead>
+                            <tr>
+                                <th>@L["Branches_ColName"]</th>
+                                <th>@L["TaxCompliance_BirBranchCode"]</th>
+                                <th>@L["TaxCompliance_SetupStatus"]</th>
+                                @if (CanEdit) { <th></th> }
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var row in _branchRows)
+                            {
+                                <tr>
+                                    <td>@row.Name <span class="org-note">(@row.Code)</span></td>
+                                    <td>@(row.BirBranchCode ?? "—")</td>
+                                    <td><OrgStatusBadge Text="@row.SetupStatus" Tone="@row.SetupStatus" /></td>
+                                    @if (CanEdit)
+                                    {
+                                        <td class="org-actions">
+                                            <Button Size="@ButtonSize.Small" Disabled="_busy" OnClick="() => OpenBranchEdit(row)">@L["Common_Edit"]</Button>
+                                        </td>
+                                    }
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </OrgSection>
+
+        <OrgSection Title="@L["TaxCompliance_Registrations"]" Subtitle="@L["TaxCompliance_RegistrationsSubtitle"]">
+            @if (_registrations.Count == 0)
+            {
+                <p class="org-note">@L["TaxCompliance_RegistrationsEmpty"]</p>
+            }
+            else
+            {
+                <div class="org-table-wrap">
+                    <table class="org-table">
+                        <thead>
+                            <tr>
+                                <th>@L["TaxCompliance_RegistrationType"]</th>
+                                <th>@L["TaxCompliance_ReferenceNumber"]</th>
+                                <th>@L["Common_Status"]</th>
+                                <th>@L["TaxCompliance_RecordedAt"]</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var r in _registrations)
+                            {
+                                <tr>
+                                    <td>@r.RegistrationType</td>
+                                    <td>@(r.ReferenceNumber ?? "—")</td>
+                                    <td><OrgStatusBadge Text="@r.Status" Tone="@r.Status" /></td>
+                                    <td>@r.RecordedAtUtc.LocalDateTime.ToString("g")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            @if (CanEdit)
+            {
+                <div class="org-form-grid" style="margin-top:.75rem;">
+                    <ExitsField Label="@L["TaxCompliance_RegistrationType"]">
+                        <select @bind="_newRegType" disabled="@_busy">
+                            <option value="PosPermitToUse">PosPermitToUse</option>
+                            <option value="CasRegistration">CasRegistration</option>
+                            <option value="EisCertification">EisCertification</option>
+                            <option value="EisPermitToTransmit">EisPermitToTransmit</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </ExitsField>
+                    <ExitsField Label="@L["TaxCompliance_ReferenceNumber"]">
+                        <Input @bind-Value="_newRegRef" Disabled="_busy" />
+                    </ExitsField>
+                </div>
+                <Button Size="@ButtonSize.Small" Loading="_busy" OnClick="AddRegistrationAsync" Style="margin-top:.5rem;">
+                    @L["TaxCompliance_AddRegistration"]
+                </Button>
+            }
+        </OrgSection>
+
+        <OrgSection Title="@L["TaxCompliance_ExItsStatus"]" Subtitle="@L["TaxCompliance_ExItsStatusSubtitle"]">
+            <Descriptions Bordered Size="@DescriptionsSize.Small" Column="2">
+                <DescriptionsItem Title="@L["SalesDocument_ComplianceReview"]">
+                    @(_profile?.ComplianceEligibilityStatus ?? "—")
+                </DescriptionsItem>
+                <DescriptionsItem Title="@L["TaxCompliance_TaxConfiguration"]">
+                    @((_profile?.TaxConfigurationEnabled ?? false)
+                        ? L["SalesDocument_ComplianceIssuanceEnabled"]
+                        : L["SalesDocument_ComplianceIssuanceDisabled"])
+                </DescriptionsItem>
+                <DescriptionsItem Title="@L["TaxCompliance_IssuanceRuntime"]">
+                    @L["TaxCompliance_IssuanceUnavailable"]
+                </DescriptionsItem>
+                <DescriptionsItem Title="@L["TaxCompliance_ActivationReady"]">
+                    @(_readiness.IsReadyForTaxDocumentActivation
+                        ? L["TaxCompliance_ReadyYes"]
+                        : L["TaxCompliance_ReadyNo"])
+                </DescriptionsItem>
+            </Descriptions>
+            <div class="org-table-wrap" style="margin-top:.75rem;">
+                <table class="org-table">
+                    <thead>
+                        <tr>
+                            <th>@L["TaxCompliance_ChecklistItem"]</th>
+                            <th>@L["Common_Status"]</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in _readiness.Checklist)
+                        {
+                            <tr>
+                                <td>@item.Label</td>
+                                <td>@(item.Done ? L["TaxCompliance_Done"] : L["TaxCompliance_Pending"])</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            @if (CanEdit)
+            {
+                <Button Type="@ButtonType.Primary"
+                        Size="@ButtonSize.Small"
+                        Loading="_busy"
+                        OnClick="SubmitReadinessAsync"
+                        Style="margin-top:.75rem;">
+                    @L["TaxCompliance_SubmitReadiness"]
+                </Button>
+            }
+            <p class="org-note" style="margin-top:.75rem;">
+                <a href="/organization/sales-documents">@L["SalesDocument_EducationTitle"]</a>
+            </p>
+        </OrgSection>
+    }
+    </div>
+
+    <Modal Title="@L["TaxCompliance_EditBranch"]"
+           Visible="_branchEditOpen"
+           ConfirmLoading="_busy"
+           OnOk="SaveBranchAsync"
+           OnCancel="CloseBranchEdit"
+           OkText="@L["Common_Save"].Value"
+           CancelText="@L["Common_Cancel"].Value"
+           DestroyOnClose>
+        <ExitsField Label="@L["TaxCompliance_BirBranchCode"]">
+            <Input @bind-Value="_editBranchCode" Disabled="_busy" />
+        </ExitsField>
+        <ExitsField Label="@L["TaxCompliance_BranchNotes"]">
+            <Input @bind-Value="_editBranchNotes" Disabled="_busy" />
+        </ExitsField>
+    </Modal>
+}
+
+@code {
+    private bool _loading = true;
+    private bool _busy;
+    private string? _error;
+    private string? _success;
+    private OrganizationComplianceProfileDto? _profile;
+    private ComplianceActivationReadinessDto? _readiness;
+    private IReadOnlyList<ComplianceRegistrationRecordDto> _registrations = [];
+    private List<BranchRow> _branchRows = [];
+
+    private string? _editName;
+    private string? _editTin;
+    private string _newRegType = "PosPermitToUse";
+    private string? _newRegRef;
+
+    private bool _branchEditOpen;
+    private Guid? _editBranchId;
+    private string? _editBranchCode;
+    private string? _editBranchNotes;
+
+    private bool CanEdit => Shell.IsExactOrgOwner;
+    private int ChecklistCount => _readiness?.Checklist.Count ?? 0;
+    private int CompletedCount => _readiness?.Checklist.Count(c => c.Done) ?? 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Shell.CanSee("tax-compliance"))
+        {
+            _loading = false;
+            return;
+        }
+
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+        try
+        {
+            var orgId = CurrentUser.Session?.OrganizationId;
+            if (orgId is null)
+            {
+                _error = "No organization selected.";
+                return;
+            }
+
+            var profileTask = Platform.GetOrganizationComplianceProfileAsync(orgId.Value);
+            var readinessTask = Platform.GetComplianceActivationReadinessAsync(orgId.Value);
+            var regsTask = Platform.ListComplianceRegistrationRecordsAsync(orgId.Value);
+            var branchProfilesTask = Platform.ListBranchComplianceProfilesAsync(orgId.Value);
+            var branchesTask = Platform.GetBranchesAsync(orgId.Value);
+
+            await Task.WhenAll(profileTask, readinessTask, regsTask, branchProfilesTask, branchesTask);
+
+            var profile = await profileTask;
+            var readiness = await readinessTask;
+            var regs = await regsTask;
+            var branchProfiles = await branchProfilesTask;
+            var branches = await branchesTask;
+
+            if (!profile.IsSuccess || profile.Data is null)
+            {
+                _error = OrgWebUi.Error(profile.Error);
+                return;
+            }
+
+            if (!readiness.IsSuccess || readiness.Data is null)
+            {
+                _error = OrgWebUi.Error(readiness.Error);
+                return;
+            }
+
+            _profile = profile.Data;
+            _readiness = readiness.Data;
+            _editName = _profile.RegisteredTaxpayerName;
+            _editTin = null;
+            _registrations = regs.IsSuccess && regs.Data is not null ? regs.Data : [];
+
+            var profileByBranch = (branchProfiles.IsSuccess && branchProfiles.Data is not null
+                    ? branchProfiles.Data
+                    : Array.Empty<BranchComplianceProfileDto>())
+                .ToDictionary(p => p.OrganizationBranchId);
+
+            _branchRows = [];
+            if (branches.IsSuccess && branches.Data is not null)
+            {
+                foreach (var b in branches.Data.Where(x =>
+                             !string.Equals(x.Status, "Archived", StringComparison.OrdinalIgnoreCase)))
+                {
+                    profileByBranch.TryGetValue(b.Id, out var bp);
+                    _branchRows.Add(new BranchRow(
+                        b.Id,
+                        b.Name,
+                        b.Code,
+                        bp?.BirBranchCode,
+                        bp?.SetupStatus ?? "NotConfigured",
+                        bp?.Notes));
+                }
+            }
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task SaveTaxpayerAsync()
+    {
+        if (!CanEdit || CurrentUser.Session?.OrganizationId is not Guid orgId)
+        {
+            return;
+        }
+
+        _busy = true;
+        _error = null;
+        _success = null;
+        try
+        {
+            var result = await Platform.UpdateRegisteredTaxpayerAsync(
+                orgId,
+                new UpdateRegisteredTaxpayerRequest(_editName, _editTin));
+            if (!result.IsSuccess || result.Data is null)
+            {
+                _error = OrgWebUi.Error(result.Error);
+                return;
+            }
+
+            _success = L["TaxCompliance_Saved"];
+            await LoadAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void OpenBranchEdit(BranchRow row)
+    {
+        _editBranchId = row.BranchId;
+        _editBranchCode = row.BirBranchCode;
+        _editBranchNotes = row.Notes;
+        _branchEditOpen = true;
+    }
+
+    private void CloseBranchEdit()
+    {
+        _branchEditOpen = false;
+        _editBranchId = null;
+    }
+
+    private async Task SaveBranchAsync()
+    {
+        if (!CanEdit
+            || CurrentUser.Session?.OrganizationId is not Guid orgId
+            || _editBranchId is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        _error = null;
+        try
+        {
+            var result = await Platform.UpsertBranchComplianceProfileAsync(
+                orgId,
+                _editBranchId.Value,
+                new UpsertBranchComplianceProfileRequest(_editBranchCode, "SetupInProgress", _editBranchNotes));
+            if (!result.IsSuccess)
+            {
+                _error = OrgWebUi.Error(result.Error);
+                return;
+            }
+
+            _branchEditOpen = false;
+            _success = L["TaxCompliance_Saved"];
+            await LoadAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task AddRegistrationAsync()
+    {
+        if (!CanEdit || CurrentUser.Session?.OrganizationId is not Guid orgId)
+        {
+            return;
+        }
+
+        _busy = true;
+        _error = null;
+        try
+        {
+            var result = await Platform.AddComplianceRegistrationRecordAsync(
+                orgId,
+                new CreateComplianceRegistrationRequest(_newRegType, ReferenceNumber: _newRegRef));
+            if (!result.IsSuccess)
+            {
+                _error = OrgWebUi.Error(result.Error);
+                return;
+            }
+
+            _newRegRef = null;
+            _success = L["TaxCompliance_Saved"];
+            await LoadAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task SubmitReadinessAsync()
+    {
+        if (!CanEdit || CurrentUser.Session?.OrganizationId is not Guid orgId)
+        {
+            return;
+        }
+
+        _busy = true;
+        _error = null;
+        try
+        {
+            var result = await Platform.SubmitComplianceReadinessForReviewAsync(orgId);
+            if (!result.IsSuccess || result.Data is null)
+            {
+                _error = OrgWebUi.Error(result.Error);
+                return;
+            }
+
+            _readiness = result.Data;
+            _success = L["TaxCompliance_Submitted"];
+            await LoadAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private sealed record BranchRow(
+        Guid BranchId,
+        string Name,
+        string Code,
+        string? BirBranchCode,
+        string SetupStatus,
+        string? Notes);
+}

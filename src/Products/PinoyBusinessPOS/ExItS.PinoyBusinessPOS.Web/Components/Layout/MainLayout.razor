@@ -120,7 +120,7 @@
                         }
                     </SubMenu>
                 }
-                @if (Shell.CanSee("settings") || Shell.CanSee("privacy") || Shell.CanSee("subscription") || Shell.CanSee("sales-documents") || Shell.CanSee("ownership-transfer"))
+                @if (Shell.CanSee("settings") || Shell.CanSee("privacy") || Shell.CanSee("subscription") || Shell.CanSee("sales-documents") || Shell.CanSee("tax-compliance") || Shell.CanSee("ownership-transfer"))
                 {
                     <SubMenu Key="settings" TitleTemplate="@SettingsTitle">
                         @if (Shell.CanSee("settings"))
@@ -134,6 +134,10 @@
                         @if (Shell.CanSee("sales-documents"))
                         {
                             <MenuItem Key="sales-documents" RouterLink="/organization/sales-documents" Icon="file-text" Title="@L["SalesDocument_EducationTitle"]">@L["SalesDocument_EducationTitle"]</MenuItem>
+                        }
+                        @if (Shell.CanSee("tax-compliance"))
+                        {
+                            <MenuItem Key="tax-compliance" RouterLink="/organization/tax-compliance" Icon="audit" Title="@L["TaxCompliance_Title"]">@L["TaxCompliance_Title"]</MenuItem>
                         }
                         @if (Shell.CanSee("ownership-transfer"))
                         {
@@ -329,6 +333,10 @@
             @if (Shell.CanSee("sales-documents"))
             {
                 <MenuItem RouterLink="/organization/sales-documents" Icon="file-text">@L["SalesDocument_EducationTitle"]</MenuItem>
+            }
+            @if (Shell.CanSee("tax-compliance"))
+            {
+                <MenuItem RouterLink="/organization/tax-compliance" Icon="audit">@L["TaxCompliance_Title"]</MenuItem>
             }
             @if (Shell.CanSee("ownership-transfer"))
             {
