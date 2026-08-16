@@ -4,7 +4,7 @@
 |---|---|
 | Status | **Code Complete / Validation Pending** |
 | Starting SHA | `fcc5eee1de074baadf5b2644ab1d6d1a3af22163` |
-| Feature commit(s) | `d534d4ec`…`20e0904c` |
+| Feature commit(s) | `d534d4ec`â€¦`20e0904c` |
 | Device Verified | **No** |
 | Browser Verified | **No** |
 | Production Ready | **No** |

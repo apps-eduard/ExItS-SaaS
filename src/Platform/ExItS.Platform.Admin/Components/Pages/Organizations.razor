@@ -187,9 +187,9 @@ else
                     <DescriptionsItem Title="@L["Common_Status"]">
                         <AdminStatusTag Value="@o.Status" />
                     </DescriptionsItem>
-                    <DescriptionsItem Title="@L["Organizations_LegalName"]">@(o.Profile?.LegalName ?? "â€”")</DescriptionsItem>
-                    <DescriptionsItem Title="@L["Common_Email"]">@(o.Profile?.ContactEmail ?? "â€”")</DescriptionsItem>
-                    <DescriptionsItem Title="@L["Organizations_Phone"]">@(o.Profile?.ContactPhone ?? "â€”")</DescriptionsItem>
+                    <DescriptionsItem Title="@L["Organizations_LegalName"]">@(o.Profile?.LegalName ?? "—")</DescriptionsItem>
+                    <DescriptionsItem Title="@L["Common_Email"]">@(o.Profile?.ContactEmail ?? "—")</DescriptionsItem>
+                    <DescriptionsItem Title="@L["Organizations_Phone"]">@(o.Profile?.ContactPhone ?? "—")</DescriptionsItem>
                     <DescriptionsItem Title="@L["Common_CreatedUtc"]"><UtcTimestamp Value="@o.CreatedAtUtc" /></DescriptionsItem>
                     <DescriptionsItem Title="@L["Common_UpdatedUtc"]"><UtcTimestamp Value="@o.UpdatedAtUtc" /></DescriptionsItem>
                 </Descriptions>

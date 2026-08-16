@@ -263,7 +263,7 @@
     <value>Retry</value>
   </data>
   <data name="Common_Saving" xml:space="preserve">
-    <value>Savingâ€¦</value>
+    <value>Saving…</value>
   </data>
   <data name="Form_Required" xml:space="preserve">
     <value>required</value>
@@ -335,7 +335,7 @@
     <value>Date range cannot exceed {0} inclusive days.</value>
   </data>
   <data name="Report_PaidRangeHelp" xml:space="preserve">
-    <value>Date range is validated for apply/reset UX. List results use status, product, and organization on the server. Paid-at date query is not on this API yet â€” values stay server-authoritative.</value>
+    <value>Date range is validated for apply/reset UX. List results use status, product, and organization on the server. Paid-at date query is not on this API yet — values stay server-authoritative.</value>
   </data>
   <data name="Report_PaymentsSection" xml:space="preserve">
     <value>Payment results</value>
@@ -470,7 +470,7 @@
     <value>No</value>
   </data>
   <data name="State_Loading" xml:space="preserve">
-    <value>Loadingâ€¦</value>
+    <value>Loading…</value>
   </data>
   <data name="State_Empty" xml:space="preserve">
     <value>No records found.</value>
@@ -572,13 +572,13 @@
     <value>You don't have access to this section</value>
   </data>
   <data name="Unauthorized_Message" xml:space="preserve">
-    <value>Your current Platform permissions do not include this section. This is a UI convenience check only â€” the Platform API remains the source of truth and enforces its own authorization.</value>
+    <value>Your current Platform permissions do not include this section. This is a UI convenience check only — the Platform API remains the source of truth and enforces its own authorization.</value>
   </data>
   <data name="Footer_Text" xml:space="preserve">
-    <value>ExItS Platform Admin â€” portfolio, subscriptions, payments, trials, authorization, and audit.</value>
+    <value>ExItS Platform Admin — portfolio, subscriptions, payments, trials, authorization, and audit.</value>
   </data>
   <data name="Footer_ActorContext" xml:space="preserve">
-    <value>Actor context (dev only): {0} â€” not authorization.</value>
+    <value>Actor context (dev only): {0} — not authorization.</value>
   </data>
   <data name="Aria_AdminNav" xml:space="preserve">
     <value>Platform Admin navigation</value>
@@ -824,7 +824,7 @@
     <value>Pending</value>
   </data>
   <data name="Common_Loading" xml:space="preserve">
-    <value>Loadingâ€¦</value>
+    <value>Loading…</value>
   </data>
   <data name="Status_Cancelled" xml:space="preserve">
     <value>Cancelled</value>
@@ -884,10 +884,10 @@
     <value>Portfolio dashboard</value>
   </data>
   <data name="Dashboard_Description" xml:space="preserve">
-    <value>Commercial portfolio landing â€” server-authored counts from Platform APIs. Failed sections show as unavailable, never as invented zeros.</value>
+    <value>Commercial portfolio landing — server-authored counts from Platform APIs. Failed sections show as unavailable, never as invented zeros.</value>
   </data>
   <data name="Dashboard_Loading" xml:space="preserve">
-    <value>Loading portfolio summaryâ€¦</value>
+    <value>Loading portfolio summary…</value>
   </data>
   <data name="Dashboard_AriaPortfolioCounts" xml:space="preserve">
     <value>Portfolio counts</value>
@@ -917,7 +917,7 @@
     <value>Continue in Admin</value>
   </data>
   <data name="Dashboard_Section_OperationsDetail" xml:space="preserve">
-    <value>Shortcuts to existing authorized Admin surfaces â€” no new calculations.</value>
+    <value>Shortcuts to existing authorized Admin surfaces — no new calculations.</value>
   </data>
   <data name="Dashboard_Support_Catalog" xml:space="preserve">
     <value>Active product catalog</value>
@@ -1004,7 +1004,7 @@
     <value>Platform product catalog with create, rename, and lifecycle administration.</value>
   </data>
   <data name="Products_Loading" xml:space="preserve">
-    <value>Loading productsâ€¦</value>
+    <value>Loading products…</value>
   </data>
   <data name="Products_Empty" xml:space="preserve">
     <value>No products are registered in the Platform catalog.</value>
@@ -1016,7 +1016,7 @@
     <value>Overview, plans, features, published versions, trials, and audit navigation.</value>
   </data>
   <data name="Products_DetailLoading" xml:space="preserve">
-    <value>Loading product overviewâ€¦</value>
+    <value>Loading product overview…</value>
   </data>
   <data name="Products_Create" xml:space="preserve">
     <value>Create product</value>
@@ -1136,7 +1136,7 @@
     <value>Personal Features</value>
   </data>
   <data name="PersonalFeatures_Description" xml:space="preserve">
-    <value>Configure Personal-only feature catalog values. Costs and durations load from the server â€” not hard-coded in this UI.</value>
+    <value>Configure Personal-only feature catalog values. Costs and durations load from the server — not hard-coded in this UI.</value>
   </data>
   <data name="PersonalFeatures_Empty" xml:space="preserve">
     <value>No Personal feature definitions were returned.</value>
@@ -1172,7 +1172,7 @@
     <value>Clear the value to disable reward-point redemption. Future redemptions debit this server price.</value>
   </data>
   <data name="PersonalFeatures_DurationHint" xml:space="preserve">
-    <value>Clear for indefinite grants. Applies to future reward redemptions only â€” existing entitlements are not rewritten.</value>
+    <value>Clear for indefinite grants. Applies to future reward redemptions only — existing entitlements are not rewritten.</value>
   </data>
   <data name="PersonalFeatures_DevEconomicsNote" xml:space="preserve">
     <value>Displayed values are administrative configuration (including development defaults). They are not a production price catalog claim.</value>
@@ -1202,7 +1202,7 @@
     <value>No plans match the current filters.</value>
   </data>
   <data name="Plans_Loading" xml:space="preserve">
-    <value>Loading plansâ€¦</value>
+    <value>Loading plans…</value>
   </data>
   <data name="Plans_DetailTitle" xml:space="preserve">
     <value>Plan detail</value>
@@ -1211,7 +1211,7 @@
     <value>Plan metadata, rename, lifecycle actions, and version history.</value>
   </data>
   <data name="Plans_DetailLoading" xml:space="preserve">
-    <value>Loading planâ€¦</value>
+    <value>Loading plan…</value>
   </data>
   <data name="Plans_Create" xml:space="preserve">
     <value>Create plan</value>
@@ -1277,7 +1277,7 @@
     <value>Platform Organizations with lifecycle, profile, membership, and commercial administration.</value>
   </data>
   <data name="Organizations_Loading" xml:space="preserve">
-    <value>Loading organizationsâ€¦</value>
+    <value>Loading organizations…</value>
   </data>
   <data name="Organizations_Empty" xml:space="preserve">
     <value>No organizations have been created.</value>
@@ -1289,7 +1289,7 @@
     <value>Profile, lifecycle, members, subscriptions, product access, and audit summaries.</value>
   </data>
   <data name="Organizations_DetailLoading" xml:space="preserve">
-    <value>Loading organizationâ€¦</value>
+    <value>Loading organization…</value>
   </data>
   <data name="Organizations_CommercialAdmin" xml:space="preserve">
     <value>Commercial admin</value>
@@ -1343,7 +1343,7 @@
     <value>Organization created.</value>
   </data>
   <data name="Organizations_SearchPlaceholder" xml:space="preserve">
-    <value>Search name, slug, emailâ€¦</value>
+    <value>Search name, slug, email…</value>
   </data>
   <data name="Organizations_SaveFailed" xml:space="preserve">
     <value>Save failed</value>
@@ -1601,7 +1601,7 @@
     <value>Back to organization</value>
   </data>
   <data name="OrgCatalog_Loading" xml:space="preserve">
-    <value>Loading organization catalogâ€¦</value>
+    <value>Loading organization catalog…</value>
   </data>
   <data name="OrgCatalog_SearchPlaceholder" xml:space="preserve">
     <value>Search name, SKU, or barcode</value>
@@ -1724,7 +1724,7 @@
     <value>Organization roles (Owner, Staff) are not product-local roles. Removing membership revokes product-access assignments for this organization.</value>
   </data>
   <data name="OrgMembers_Loading" xml:space="preserve">
-    <value>Loading organizationâ€¦</value>
+    <value>Loading organization…</value>
   </data>
   <data name="OrgMembers_AddSection" xml:space="preserve">
     <value>Link existing identity (advanced)</value>
@@ -1775,7 +1775,7 @@
     <value>Existing identity linked to this organization (audited).</value>
   </data>
   <data name="OrgMembers_LoadingMembers" xml:space="preserve">
-    <value>Loading staffâ€¦</value>
+    <value>Loading staff…</value>
   </data>
   <data name="OrgMembers_Unavailable" xml:space="preserve">
     <value>Staff unavailable</value>
@@ -1850,7 +1850,7 @@
     <value>Product access grants commercial entry eligibility only. It does not assign Cashier, Store Manager, POS Administrator, or any other product-local role. Effective access also requires active user, membership, product, Trialing/Active subscription, and a current entitlement snapshot.</value>
   </data>
   <data name="OrgProductAccess_Loading" xml:space="preserve">
-    <value>Loading organizationâ€¦</value>
+    <value>Loading organization…</value>
   </data>
   <data name="OrgProductAccess_GrantSection" xml:space="preserve">
     <value>Grant product access</value>
@@ -1871,7 +1871,7 @@
     <value>Evaluation failed</value>
   </data>
   <data name="OrgProductAccess_LoadingAssignments" xml:space="preserve">
-    <value>Loading assignmentsâ€¦</value>
+    <value>Loading assignments…</value>
   </data>
   <data name="OrgProductAccess_AssignmentsUnavailable" xml:space="preserve">
     <value>Assignments unavailable</value>
@@ -1904,7 +1904,7 @@
     <value>Revoked from Admin</value>
   </data>
   <data name="Common_EmDash" xml:space="preserve">
-    <value>â€”</value>
+    <value>—</value>
   </data>
   <data name="Common_BackToSummary" xml:space="preserve">
     <value>Back to commercial summary</value>
@@ -2015,7 +2015,7 @@
     <value>Initial password is required when email verification is enabled.</value>
   </data>
   <data name="Users_Loading" xml:space="preserve">
-    <value>Loading usersâ€¦</value>
+    <value>Loading users…</value>
   </data>
   <data name="Users_Empty" xml:space="preserve">
     <value>No Platform users match the current filters.</value>
@@ -2027,7 +2027,7 @@
     <value>Profile, memberships, and commercial product-access assignments.</value>
   </data>
   <data name="Users_DetailLoading" xml:space="preserve">
-    <value>Loading userâ€¦</value>
+    <value>Loading user…</value>
   </data>
   <data name="Users_SuspendedUtc" xml:space="preserve">
     <value>Suspended (UTC)</value>
@@ -2087,7 +2087,7 @@
     <value>Move this deactivated account to Suspended? Login remains blocked.</value>
   </data>
   <data name="Users_ReactivateDeactivatedConfirmMessage" xml:space="preserve">
-    <value>High-risk reactivation. Enter your administrator password (and MFA when enabled). Do not enter the deactivated userâ€™s password.</value>
+    <value>High-risk reactivation. Enter your administrator password (and MFA when enabled). Do not enter the deactivated user’s password.</value>
   </data>
   <data name="Users_GlobalSuspendConfirmMessage" xml:space="preserve">
     <value>Global Account Suspension blocks login across all scopes. Use only for compromise, fraud, abuse, or compliance. Routine Org staff restriction must use Suspend Membership.</value>
@@ -2123,10 +2123,10 @@
     <value>Organization memberships</value>
   </data>
   <data name="Users_OrgMembershipsHint" xml:space="preserve">
-    <value>Platform organization roles only â€” not Cashier, Store Manager, or other product-local roles.</value>
+    <value>Platform organization roles only — not Cashier, Store Manager, or other product-local roles.</value>
   </data>
   <data name="Users_LoadingMemberships" xml:space="preserve">
-    <value>Loading membershipsâ€¦</value>
+    <value>Loading memberships…</value>
   </data>
   <data name="Users_MembershipsUnavailable" xml:space="preserve">
     <value>Memberships unavailable</value>
@@ -2141,7 +2141,7 @@
     <value>Product access means commercial entry eligibility only. It does not assign product-local roles or permissions.</value>
   </data>
   <data name="Users_LoadingProductAccess" xml:space="preserve">
-    <value>Loading product accessâ€¦</value>
+    <value>Loading product access…</value>
   </data>
   <data name="Users_ProductAccessUnavailable" xml:space="preserve">
     <value>Product access unavailable</value>
@@ -2162,7 +2162,7 @@
     <value>Start organization trial</value>
   </data>
   <data name="Subscriptions_StartTrialHint" xml:space="preserve">
-    <value>Trial duration comes from the selected trial definition. Repeat-trial policy is provisional â€” review before starting another trial for the same organization and product.</value>
+    <value>Trial duration comes from the selected trial definition. Repeat-trial policy is provisional — review before starting another trial for the same organization and product.</value>
   </data>
   <data name="Subscriptions_StartTrialFailed" xml:space="preserve">
     <value>Could not start trial</value>
@@ -2174,7 +2174,7 @@
     <value>Start trial</value>
   </data>
   <data name="Subscriptions_Loading" xml:space="preserve">
-    <value>Loading subscriptionsâ€¦</value>
+    <value>Loading subscriptions…</value>
   </data>
   <data name="Subscriptions_Empty" xml:space="preserve">
     <value>No subscriptions match the current filters.</value>
@@ -2189,7 +2189,7 @@
     <value>Cancelled and Expired are terminal. Subscription eligibility is not product provisioning and does not assign product-local roles.</value>
   </data>
   <data name="Subscriptions_DetailLoading" xml:space="preserve">
-    <value>Loading subscriptionâ€¦</value>
+    <value>Loading subscription…</value>
   </data>
   <data name="Subscriptions_AriaStartTrial" xml:space="preserve">
     <value>Start organization trial</value>
@@ -2210,7 +2210,7 @@
     <value>Review and manage manual SaaS subscription payments.</value>
   </data>
   <data name="Payments_Warning" xml:space="preserve">
-    <value>Manual attestation only â€” not provider verification. Never displays card numbers, CVV, PIN, OTP, gateway secrets, or GCash credentials. No payment gateway, webhook, QR, invoice engine, or POS payment integration.</value>
+    <value>Manual attestation only — not provider verification. Never displays card numbers, CVV, PIN, OTP, gateway secrets, or GCash credentials. No payment gateway, webhook, QR, invoice engine, or POS payment integration.</value>
   </data>
   <data name="Payments_CreateSection" xml:space="preserve">
     <value>Create manual SaaS payment</value>
@@ -2222,7 +2222,7 @@
     <value>Record Payment</value>
   </data>
   <data name="Payments_Loading" xml:space="preserve">
-    <value>Loading paymentsâ€¦</value>
+    <value>Loading payments…</value>
   </data>
   <data name="Payments_Empty" xml:space="preserve">
     <value>No payments match the current filters.</value>
@@ -2237,7 +2237,7 @@
     <value>Manual confirmation is not automatic provider verification. Confirmed payments may activate an eligible subscription atomically. Confirmed payments cannot be reused. No gateway, card, or invoice payment behavior.</value>
   </data>
   <data name="Payments_DetailLoading" xml:space="preserve">
-    <value>Loading paymentâ€¦</value>
+    <value>Loading payment…</value>
   </data>
   <data name="Payments_AriaCreate" xml:space="preserve">
     <value>Create manual SaaS payment</value>
@@ -2255,7 +2255,7 @@
     <value>Listed snapshots are Platform state only and do not prove product-local delivery.</value>
   </data>
   <data name="Entitlements_Loading" xml:space="preserve">
-    <value>Loading latest entitlementsâ€¦</value>
+    <value>Loading latest entitlements…</value>
   </data>
   <data name="Entitlements_Empty" xml:space="preserve">
     <value>No entitlement snapshots exist yet.</value>
@@ -2270,7 +2270,7 @@
     <value>This snapshot is authoritative Platform state only. It is not evidence that a product application received or applied entitlements. Provisional refresh policy remains open where applicable.</value>
   </data>
   <data name="Entitlements_DetailLoading" xml:space="preserve">
-    <value>Loading snapshotâ€¦</value>
+    <value>Loading snapshot…</value>
   </data>
   <data name="Entitlements_HistoryTitle" xml:space="preserve">
     <value>Entitlement history</value>
@@ -2279,7 +2279,7 @@
     <value>Immutable snapshot versions for an organization/product pair.</value>
   </data>
   <data name="Entitlements_HistoryLoading" xml:space="preserve">
-    <value>Loading historyâ€¦</value>
+    <value>Loading history…</value>
   </data>
   <data name="Entitlements_HistoryEmpty" xml:space="preserve">
     <value>No snapshots in history.</value>
@@ -2294,7 +2294,7 @@
     <value>Feature override history</value>
   </data>
   <data name="Entitlements_OverridesLoading" xml:space="preserve">
-    <value>Loading feature overridesâ€¦</value>
+    <value>Loading feature overrides…</value>
   </data>
   <data name="Entitlements_OverridesUnavailable" xml:space="preserve">
     <value>Overrides unavailable</value>
@@ -2468,7 +2468,7 @@
     <value>Personal Home</value>
   </data>
   <data name="Personal_HomeDescription" xml:space="preserve">
-    <value>Your Personal Scope dashboard â€” Utang Tracker and account tools for this session only.</value>
+    <value>Your Personal Scope dashboard — Utang Tracker and account tools for this session only.</value>
   </data>
   <data name="Personal_ShellRequired" xml:space="preserve">
     <value>This page requires a Personal account session.</value>
@@ -2495,7 +2495,7 @@
     <value>Entitlement enables the Product for the Organization. Product Role authorizes a person inside that Product. Organization Owner alone does not grant Product access without a Product Role Assignment.</value>
   </data>
   <data name="OrgEnabledProducts_Loading" xml:space="preserve">
-    <value>Loading enabled productsâ€¦</value>
+    <value>Loading enabled products…</value>
   </data>
   <data name="OrgEnabledProducts_Empty" xml:space="preserve">
     <value>No enabled products for this organization.</value>
@@ -2564,7 +2564,7 @@
     <value>Assign Role</value>
   </data>
   <data name="OrgEnabledProducts_LoadingRoles" xml:space="preserve">
-    <value>Loading staff Product rolesâ€¦</value>
+    <value>Loading staff Product roles…</value>
   </data>
   <data name="OrgEnabledProducts_RolesEmpty" xml:space="preserve">
     <value>No active Product role assignments.</value>
@@ -2669,13 +2669,13 @@
     <value>Choose an approved identity. Sign-in uses normal Platform credential login on the server (password is not shown in the browser).</value>
   </data>
   <data name="Login_LocalValidationSelect" xml:space="preserve">
-    <value>Sign in asâ€¦</value>
+    <value>Sign in as…</value>
   </data>
   <data name="Login_TestUserSelect" xml:space="preserve">
     <value>Development Test User</value>
   </data>
   <data name="Login_TestUserPlaceholder" xml:space="preserve">
-    <value>Choose a test userâ€¦</value>
+    <value>Choose a test user…</value>
   </data>
   <data name="Login_TestUserHint" xml:space="preserve">
     <value>Fills the username only. Enter the Local Validation password and click Sign in.</value>
@@ -2696,7 +2696,7 @@
     <value>Social sign-in creates or links a Platform User only. It does not grant administrator, membership, or product access.</value>
   </data>
   <data name="OrgSwitcher_Loading" xml:space="preserve">
-    <value>Orgâ€¦</value>
+    <value>Org…</value>
   </data>
   <data name="OrgSwitcher_NoOrganization" xml:space="preserve">
     <value>No organization</value>
@@ -2705,7 +2705,7 @@
     <value>No active organization membership</value>
   </data>
   <data name="OrgSwitcher_SelectPlaceholder" xml:space="preserve">
-    <value>Select organizationâ€¦</value>
+    <value>Select organization…</value>
   </data>
   <data name="OrgSwitcher_ChangeFailed" xml:space="preserve">
     <value>Unable to change organization context.</value>
@@ -2750,7 +2750,7 @@
     <value>Edit metadata and archive or reactivate this business type.</value>
   </data>
   <data name="GlobalBusinessTypes_DetailLoading" xml:space="preserve">
-    <value>Loading business typeâ€¦</value>
+    <value>Loading business type…</value>
   </data>
   <data name="GlobalBusinessTypes_EditSection" xml:space="preserve">
     <value>Edit business type</value>
@@ -2798,7 +2798,7 @@
     <value>archived</value>
   </data>
   <data name="GlobalBusinessTypes_HistoricalTypeNote" xml:space="preserve">
-    <value>Current reference â€œ{0}â€ is not Active. Choose an Active type to replace it, or keep the historical selection.</value>
+    <value>Current reference “{0}” is not Active. Choose an Active type to replace it, or keep the historical selection.</value>
   </data>
   <data name="GlobalCategories_BulkAssignTitle" xml:space="preserve">
     <value>Bulk assign business types</value>
@@ -2861,7 +2861,7 @@
     <value>Edit category metadata and lifecycle status.</value>
   </data>
   <data name="GlobalCategories_DetailLoading" xml:space="preserve">
-    <value>Loading categoryâ€¦</value>
+    <value>Loading category…</value>
   </data>
   <data name="GlobalCategories_EditSection" xml:space="preserve">
     <value>Edit category</value>
@@ -2942,7 +2942,7 @@
     <value>Edit product metadata and archive or reactivate.</value>
   </data>
   <data name="GlobalProducts_DetailLoading" xml:space="preserve">
-    <value>Loading productâ€¦</value>
+    <value>Loading product…</value>
   </data>
   <data name="GlobalProducts_EditSection" xml:space="preserve">
     <value>Edit product</value>
@@ -2963,7 +2963,7 @@
     <value>Barcode</value>
   </data>
   <data name="GlobalProducts_BarcodeHint" xml:space="preserve">
-    <value>Optional GS1 digits (8â€“14)</value>
+    <value>Optional GS1 digits (8–14)</value>
   </data>
   <data name="GlobalProducts_Brand" xml:space="preserve">
     <value>Brand</value>
@@ -2978,7 +2978,7 @@
     <value>Barcode is required.</value>
   </data>
   <data name="GlobalProducts_InvalidBarcode" xml:space="preserve">
-    <value>Barcode must be 8â€“14 digits (optional). Use SKU for codes like BAKERY000001.</value>
+    <value>Barcode must be 8–14 digits (optional). Use SKU for codes like BAKERY000001.</value>
   </data>
   <data name="GlobalProducts_RequiredBrand" xml:space="preserve">
     <value>Brand is required.</value>
@@ -3092,7 +3092,7 @@
     <value>Edit metadata, composition, and publication lifecycle.</value>
   </data>
   <data name="GlobalTemplates_DetailLoading" xml:space="preserve">
-    <value>Loading templateâ€¦</value>
+    <value>Loading template…</value>
   </data>
   <data name="GlobalTemplates_EditSection" xml:space="preserve">
     <value>Template details</value>
@@ -3191,10 +3191,10 @@
     <value>Search assigned products</value>
   </data>
   <data name="GlobalTemplates_AvailableLoading" xml:space="preserve">
-    <value>Loading available productsâ€¦</value>
+    <value>Loading available products…</value>
   </data>
   <data name="GlobalTemplates_AssignedLoading" xml:space="preserve">
-    <value>Loading assigned productsâ€¦</value>
+    <value>Loading assigned products…</value>
   </data>
   <data name="GlobalTemplates_AvailableEmpty" xml:space="preserve">
     <value>No matching available products.</value>
@@ -3287,10 +3287,10 @@
     <value>Could not download the CSV template.</value>
   </data>
   <data name="GlobalImports_TemplateHint" xml:space="preserve">
-    <value>Columns marked * require a cell value: ProductName, Category, Brand, Unit, SuggestedSku, SellingPrice, CostPrice. Optional: Description, Barcode (GS1 digits 8â€“14 with check digit when present; use SuggestedSku for codes like BAKERY000001), TaxHint, Tags, BusinessTypes, Status (blank = Draft). Keep header order. Multi-value Tags/BusinessTypes use |. Decimals: 25.50. Max 5 MB / 5000 rows.</value>
+    <value>Columns marked * require a cell value: ProductName, Category, Brand, Unit, SuggestedSku, SellingPrice, CostPrice. Optional: Description, Barcode (GS1 digits 8–14 with check digit when present; use SuggestedSku for codes like BAKERY000001), TaxHint, Tags, BusinessTypes, Status (blank = Draft). Keep header order. Multi-value Tags/BusinessTypes use |. Decimals: 25.50. Max 5 MB / 5000 rows.</value>
   </data>
   <data name="GlobalImports_TemplateInstructions" xml:space="preserve">
-    <value>1) Download the CSV template. 2) Keep header names (the trailing * marks required values; you may leave * in place or remove it). 3) Fill required (*) columns; leave optional columns blank when unused. 4) Barcode is optional â€” digits only with a valid GS1 check digit; put merchant codes in SuggestedSku. 5) Remove or replace the SAMPLE rows. 6) Save as CSV UTF-8 and upload. 7) Import starts only after Confirm.</value>
+    <value>1) Download the CSV template. 2) Keep header names (the trailing * marks required values; you may leave * in place or remove it). 3) Fill required (*) columns; leave optional columns blank when unused. 4) Barcode is optional — digits only with a valid GS1 check digit; put merchant codes in SuggestedSku. 5) Remove or replace the SAMPLE rows. 6) Save as CSV UTF-8 and upload. 7) Import starts only after Confirm.</value>
   </data>
   <data name="GlobalImports_FileName" xml:space="preserve">
     <value>File</value>
@@ -3374,7 +3374,7 @@
     <value>Code</value>
   </data>
   <data name="GlobalImports_Polling" xml:space="preserve">
-    <value>Processing in the backgroundâ€¦ this page refreshes automatically.</value>
+    <value>Processing in the background… this page refreshes automatically.</value>
   </data>
   <data name="Nav_PrivacyCompliance" xml:space="preserve">
     <value>Privacy &amp; Compliance</value>
@@ -3476,7 +3476,7 @@
     <value>This module helps track internal privacy readiness. It does not constitute legal advice, regulatory certification, or proof of legal compliance. Consult qualified legal counsel for DPO/legal verification.</value>
   </data>
   <data name="PrivacyCompliance_LoadingOverview" xml:space="preserve">
-    <value>Loading privacy compliance overviewâ€¦</value>
+    <value>Loading privacy compliance overview…</value>
   </data>
   <data name="PrivacyCompliance_LoadFailed" xml:space="preserve">
     <value>Could not load privacy compliance data.</value>

@@ -263,7 +263,7 @@
     <value>Subukan muli</value>
   </data>
   <data name="Common_Saving" xml:space="preserve">
-    <value>Sinese-saveâ€¦</value>
+    <value>Sinese-save…</value>
   </data>
   <data name="Form_Required" xml:space="preserve">
     <value>kailangan</value>
@@ -335,7 +335,7 @@
     <value>Hindi maaaring lumampas sa {0} araw ang saklaw ng petsa.</value>
   </data>
   <data name="Report_PaidRangeHelp" xml:space="preserve">
-    <value>Na-validate ang saklaw ng petsa para sa apply/reset. Ginagamit ng listahan ang status, produkto, at organisasyon sa server. Wala pang paid-at date query sa API na ito â€” nananatiling authoritative ang mga halaga mula sa server.</value>
+    <value>Na-validate ang saklaw ng petsa para sa apply/reset. Ginagamit ng listahan ang status, produkto, at organisasyon sa server. Wala pang paid-at date query sa API na ito — nananatiling authoritative ang mga halaga mula sa server.</value>
   </data>
   <data name="Report_PaymentsSection" xml:space="preserve">
     <value>Mga resulta ng payment</value>
@@ -464,7 +464,7 @@
     <value>Lahat</value>
   </data>
   <data name="State_Loading" xml:space="preserve">
-    <value>Naglo-loadâ€¦</value>
+    <value>Naglo-load…</value>
   </data>
   <data name="State_Empty" xml:space="preserve">
     <value>Walang nahanap na record.</value>
@@ -512,7 +512,7 @@
     <value>Audit log</value>
   </data>
   <data name="Audit_Description" xml:space="preserve">
-    <value>Talaan ng lahat ng pagbabago sa Platform â€” sino ang gumawa, ano ang ginawa, kailan, at ano ang resulta.</value>
+    <value>Talaan ng lahat ng pagbabago sa Platform — sino ang gumawa, ano ang ginawa, kailan, at ano ang resulta.</value>
   </data>
   <data name="Audit_DetailTitle" xml:space="preserve">
     <value>Detalye ng audit record</value>
@@ -566,13 +566,13 @@
     <value>Wala kang access sa seksyong ito</value>
   </data>
   <data name="Unauthorized_Message" xml:space="preserve">
-    <value>Ang iyong kasalukuyang mga Platform permission ay hindi kasama ang seksyong ito. Ito ay UI convenience check lamang â€” ang Platform API pa rin ang source of truth at nagpapatupad ng sarili nitong authorization.</value>
+    <value>Ang iyong kasalukuyang mga Platform permission ay hindi kasama ang seksyong ito. Ito ay UI convenience check lamang — ang Platform API pa rin ang source of truth at nagpapatupad ng sarili nitong authorization.</value>
   </data>
   <data name="Footer_Text" xml:space="preserve">
-    <value>ExItS Platform Admin â€” portfolio, subscriptions, payments, trials, authorization, and audit.</value>
+    <value>ExItS Platform Admin — portfolio, subscriptions, payments, trials, authorization, and audit.</value>
   </data>
   <data name="Footer_ActorContext" xml:space="preserve">
-    <value>Konteksto ng actor (dev lang): {0} â€” hindi ito authorization.</value>
+    <value>Konteksto ng actor (dev lang): {0} — hindi ito authorization.</value>
   </data>
   <data name="Aria_AdminNav" xml:space="preserve">
     <value>Platform Admin navigation</value>
@@ -818,7 +818,7 @@
     <value>Pending</value>
   </data>
   <data name="Common_Loading" xml:space="preserve">
-    <value>Naglo-loadâ€¦</value>
+    <value>Naglo-load…</value>
   </data>
   <data name="Status_Cancelled" xml:space="preserve">
     <value>Cancelled</value>
@@ -878,10 +878,10 @@
     <value>Portfolio dashboard</value>
   </data>
   <data name="Dashboard_Description" xml:space="preserve">
-    <value>Landing ng commercial portfolio â€” mga bilang mula sa Platform APIs. Ang nabigong seksyon ay unavailable, hindi ginagawang zero.</value>
+    <value>Landing ng commercial portfolio — mga bilang mula sa Platform APIs. Ang nabigong seksyon ay unavailable, hindi ginagawang zero.</value>
   </data>
   <data name="Dashboard_Loading" xml:space="preserve">
-    <value>Naglo-load ng portfolio summaryâ€¦</value>
+    <value>Naglo-load ng portfolio summary…</value>
   </data>
   <data name="Dashboard_AriaPortfolioCounts" xml:space="preserve">
     <value>Mga portfolio count</value>
@@ -911,7 +911,7 @@
     <value>Magpatuloy sa Admin</value>
   </data>
   <data name="Dashboard_Section_OperationsDetail" xml:space="preserve">
-    <value>Mga shortcut sa umiiral na awtorisadong Admin surfaces â€” walang bagong kalkulasyon.</value>
+    <value>Mga shortcut sa umiiral na awtorisadong Admin surfaces — walang bagong kalkulasyon.</value>
   </data>
   <data name="Dashboard_Support_Catalog" xml:space="preserve">
     <value>Active product catalog</value>
@@ -998,7 +998,7 @@
     <value>Platform product catalog na may create, rename, at lifecycle administration.</value>
   </data>
   <data name="Products_Loading" xml:space="preserve">
-    <value>Naglo-load ng mga produktoâ€¦</value>
+    <value>Naglo-load ng mga produkto…</value>
   </data>
   <data name="Products_Empty" xml:space="preserve">
     <value>Walang produktong nakarehistro sa Platform catalog.</value>
@@ -1010,7 +1010,7 @@
     <value>Overview, mga plan, feature, published version, trial, at audit navigation.</value>
   </data>
   <data name="Products_DetailLoading" xml:space="preserve">
-    <value>Naglo-load ng product overviewâ€¦</value>
+    <value>Naglo-load ng product overview…</value>
   </data>
   <data name="Products_Create" xml:space="preserve">
     <value>Gumawa ng produkto</value>
@@ -1130,7 +1130,7 @@
     <value>Mga Personal Feature</value>
   </data>
   <data name="PersonalFeatures_Description" xml:space="preserve">
-    <value>I-configure ang Personal feature catalog. Ang gastos at duration ay galing sa server â€” hindi hard-coded sa UI.</value>
+    <value>I-configure ang Personal feature catalog. Ang gastos at duration ay galing sa server — hindi hard-coded sa UI.</value>
   </data>
   <data name="PersonalFeatures_Empty" xml:space="preserve">
     <value>Walang Personal feature definition na ibinalik.</value>
@@ -1166,7 +1166,7 @@
     <value>I-clear ang value para i-disable ang reward-point redemption. Ang susunod na redemption ay magde-debit ng server price na ito.</value>
   </data>
   <data name="PersonalFeatures_DurationHint" xml:space="preserve">
-    <value>I-clear para sa indefinite grant. Para sa future reward redemption lang â€” hindi nire-rewrite ang existing entitlements.</value>
+    <value>I-clear para sa indefinite grant. Para sa future reward redemption lang — hindi nire-rewrite ang existing entitlements.</value>
   </data>
   <data name="PersonalFeatures_DevEconomicsNote" xml:space="preserve">
     <value>Ang mga value ay administrative configuration (kasama ang development defaults). Hindi ito production price catalog claim.</value>
@@ -1196,7 +1196,7 @@
     <value>Walang plan na tumutugma sa kasalukuyang filter.</value>
   </data>
   <data name="Plans_Loading" xml:space="preserve">
-    <value>Naglo-load ng mga planâ€¦</value>
+    <value>Naglo-load ng mga plan…</value>
   </data>
   <data name="Plans_DetailTitle" xml:space="preserve">
     <value>Detalye ng plan</value>
@@ -1205,7 +1205,7 @@
     <value>Plan metadata, rename, lifecycle actions, at version history.</value>
   </data>
   <data name="Plans_DetailLoading" xml:space="preserve">
-    <value>Naglo-load ng planâ€¦</value>
+    <value>Naglo-load ng plan…</value>
   </data>
   <data name="Plans_Create" xml:space="preserve">
     <value>Gumawa ng plan</value>
@@ -1271,7 +1271,7 @@
     <value>Mga Platform Organization na may lifecycle, profile, membership, at commercial administration.</value>
   </data>
   <data name="Organizations_Loading" xml:space="preserve">
-    <value>Naglo-load ng mga organisasyonâ€¦</value>
+    <value>Naglo-load ng mga organisasyon…</value>
   </data>
   <data name="Organizations_Empty" xml:space="preserve">
     <value>Walang organisasyong nagawa.</value>
@@ -1283,7 +1283,7 @@
     <value>Profile, lifecycle, members, subscriptions, product access, at audit summaries.</value>
   </data>
   <data name="Organizations_DetailLoading" xml:space="preserve">
-    <value>Naglo-load ng organisasyonâ€¦</value>
+    <value>Naglo-load ng organisasyon…</value>
   </data>
   <data name="Organizations_CommercialAdmin" xml:space="preserve">
     <value>Commercial admin</value>
@@ -1337,7 +1337,7 @@
     <value>Nagawa ang organisasyon.</value>
   </data>
   <data name="Organizations_SearchPlaceholder" xml:space="preserve">
-    <value>Maghanap ng pangalan, slug, emailâ€¦</value>
+    <value>Maghanap ng pangalan, slug, email…</value>
   </data>
   <data name="Organizations_SaveFailed" xml:space="preserve">
     <value>Nabigo ang pag-save</value>
@@ -1595,7 +1595,7 @@
     <value>Bumalik sa organisasyon</value>
   </data>
   <data name="OrgCatalog_Loading" xml:space="preserve">
-    <value>Naglo-load ng catalog ng organisasyonâ€¦</value>
+    <value>Naglo-load ng catalog ng organisasyon…</value>
   </data>
   <data name="OrgCatalog_SearchPlaceholder" xml:space="preserve">
     <value>Maghanap ng name, SKU, o barcode</value>
@@ -1718,7 +1718,7 @@
     <value>Ang mga Organization role (Owner, Staff) ay hindi product-local role. Ang pag-alis ng membership ay nagre-revoke ng product-access assignment para sa organisasyong ito.</value>
   </data>
   <data name="OrgMembers_Loading" xml:space="preserve">
-    <value>Naglo-load ng organisasyonâ€¦</value>
+    <value>Naglo-load ng organisasyon…</value>
   </data>
   <data name="OrgMembers_AddSection" xml:space="preserve">
     <value>I-link ang umiiral na identity (advanced)</value>
@@ -1769,7 +1769,7 @@
     <value>Na-link ang umiiral na identity sa organisasyong ito (may audit).</value>
   </data>
   <data name="OrgMembers_LoadingMembers" xml:space="preserve">
-    <value>Naglo-load ng staffâ€¦</value>
+    <value>Naglo-load ng staff…</value>
   </data>
   <data name="OrgMembers_Unavailable" xml:space="preserve">
     <value>Hindi available ang staff</value>
@@ -1844,7 +1844,7 @@
     <value>Ang product access ay nagbibigay ng commercial entry eligibility lamang. Hindi ito nag-a-assign ng Cashier, Store Manager, POS Administrator, o anumang product-local role. Kailangan din ng active user, membership, produkto, Trialing/Active subscription, at current entitlement snapshot para maging epektibo ang access.</value>
   </data>
   <data name="OrgProductAccess_Loading" xml:space="preserve">
-    <value>Naglo-load ng organisasyonâ€¦</value>
+    <value>Naglo-load ng organisasyon…</value>
   </data>
   <data name="OrgProductAccess_GrantSection" xml:space="preserve">
     <value>I-grant ang product access</value>
@@ -1865,7 +1865,7 @@
     <value>Nabigo ang evaluation</value>
   </data>
   <data name="OrgProductAccess_LoadingAssignments" xml:space="preserve">
-    <value>Naglo-load ng mga assignmentâ€¦</value>
+    <value>Naglo-load ng mga assignment…</value>
   </data>
   <data name="OrgProductAccess_AssignmentsUnavailable" xml:space="preserve">
     <value>Hindi available ang mga assignment</value>
@@ -1898,7 +1898,7 @@
     <value>Binawi mula sa Admin</value>
   </data>
   <data name="Common_EmDash" xml:space="preserve">
-    <value>â€”</value>
+    <value>—</value>
   </data>
   <data name="Common_BackToSummary" xml:space="preserve">
     <value>Bumalik sa commercial summary</value>
@@ -2009,7 +2009,7 @@
     <value>Kailangan ang initial password kapag naka-enable ang email verification.</value>
   </data>
   <data name="Users_Loading" xml:space="preserve">
-    <value>Naglo-load ng mga userâ€¦</value>
+    <value>Naglo-load ng mga user…</value>
   </data>
   <data name="Users_Empty" xml:space="preserve">
     <value>Walang Platform user na tumugma sa kasalukuyang filter.</value>
@@ -2021,7 +2021,7 @@
     <value>Profile, membership, at commercial product-access assignment.</value>
   </data>
   <data name="Users_DetailLoading" xml:space="preserve">
-    <value>Naglo-load ng userâ€¦</value>
+    <value>Naglo-load ng user…</value>
   </data>
   <data name="Users_SuspendedUtc" xml:space="preserve">
     <value>Na-suspend (UTC)</value>
@@ -2117,10 +2117,10 @@
     <value>Mga organization membership</value>
   </data>
   <data name="Users_OrgMembershipsHint" xml:space="preserve">
-    <value>Platform organization role lamang â€” hindi Cashier, Store Manager, o iba pang product-local role.</value>
+    <value>Platform organization role lamang — hindi Cashier, Store Manager, o iba pang product-local role.</value>
   </data>
   <data name="Users_LoadingMemberships" xml:space="preserve">
-    <value>Naglo-load ng mga membershipâ€¦</value>
+    <value>Naglo-load ng mga membership…</value>
   </data>
   <data name="Users_MembershipsUnavailable" xml:space="preserve">
     <value>Hindi available ang mga membership</value>
@@ -2135,7 +2135,7 @@
     <value>Ang product access ay commercial entry eligibility lamang. Hindi ito nag-a-assign ng product-local role o permission.</value>
   </data>
   <data name="Users_LoadingProductAccess" xml:space="preserve">
-    <value>Naglo-load ng product accessâ€¦</value>
+    <value>Naglo-load ng product access…</value>
   </data>
   <data name="Users_ProductAccessUnavailable" xml:space="preserve">
     <value>Hindi available ang product access</value>
@@ -2156,7 +2156,7 @@
     <value>Simulan ang organization trial</value>
   </data>
   <data name="Subscriptions_StartTrialHint" xml:space="preserve">
-    <value>Ang tagal ng trial ay mula sa napiling trial definition. Ang repeat-trial policy ay provisional â€” suriin bago magsimula ng isa pang trial para sa parehong organisasyon at produkto.</value>
+    <value>Ang tagal ng trial ay mula sa napiling trial definition. Ang repeat-trial policy ay provisional — suriin bago magsimula ng isa pang trial para sa parehong organisasyon at produkto.</value>
   </data>
   <data name="Subscriptions_StartTrialFailed" xml:space="preserve">
     <value>Hindi masimulan ang trial</value>
@@ -2168,7 +2168,7 @@
     <value>Simulan ang trial</value>
   </data>
   <data name="Subscriptions_Loading" xml:space="preserve">
-    <value>Naglo-load ng mga subscriptionâ€¦</value>
+    <value>Naglo-load ng mga subscription…</value>
   </data>
   <data name="Subscriptions_Empty" xml:space="preserve">
     <value>Walang subscription na tumugma sa kasalukuyang filter.</value>
@@ -2183,7 +2183,7 @@
     <value>Ang Cancelled at Expired ay terminal. Ang subscription eligibility ay hindi product provisioning at hindi nag-a-assign ng product-local role.</value>
   </data>
   <data name="Subscriptions_DetailLoading" xml:space="preserve">
-    <value>Naglo-load ng subscriptionâ€¦</value>
+    <value>Naglo-load ng subscription…</value>
   </data>
   <data name="Subscriptions_AriaStartTrial" xml:space="preserve">
     <value>Simulan ang organization trial</value>
@@ -2204,7 +2204,7 @@
     <value>Suriin at pamahalaan ang mga manual SaaS subscription payment.</value>
   </data>
   <data name="Payments_Warning" xml:space="preserve">
-    <value>Manual attestation lamang â€” hindi provider verification. Hindi kailanman nagpapakita ng card number, CVV, PIN, OTP, gateway secret, o GCash credential. Walang payment gateway, webhook, QR, invoice engine, o POS payment integration.</value>
+    <value>Manual attestation lamang — hindi provider verification. Hindi kailanman nagpapakita ng card number, CVV, PIN, OTP, gateway secret, o GCash credential. Walang payment gateway, webhook, QR, invoice engine, o POS payment integration.</value>
   </data>
   <data name="Payments_CreateSection" xml:space="preserve">
     <value>Gumawa ng manual SaaS payment</value>
@@ -2216,7 +2216,7 @@
     <value>I-record ang Bayad</value>
   </data>
   <data name="Payments_Loading" xml:space="preserve">
-    <value>Naglo-load ng mga bayadâ€¦</value>
+    <value>Naglo-load ng mga bayad…</value>
   </data>
   <data name="Payments_Empty" xml:space="preserve">
     <value>Walang bayad na tumugma sa kasalukuyang filter.</value>
@@ -2231,7 +2231,7 @@
     <value>Ang manual confirmation ay hindi automatic provider verification. Maaaring i-activate ng confirmed payment ang eligible subscription nang sabay-sabay. Hindi maaaring gamitin muli ang confirmed payment. Walang gateway, card, o invoice payment behavior.</value>
   </data>
   <data name="Payments_DetailLoading" xml:space="preserve">
-    <value>Naglo-load ng bayadâ€¦</value>
+    <value>Naglo-load ng bayad…</value>
   </data>
   <data name="Payments_AriaCreate" xml:space="preserve">
     <value>Gumawa ng manual SaaS payment</value>
@@ -2249,7 +2249,7 @@
     <value>Ang mga nakalistang snapshot ay Platform state lamang at hindi patunay ng product-local delivery.</value>
   </data>
   <data name="Entitlements_Loading" xml:space="preserve">
-    <value>Naglo-load ng pinakabagong entitlementâ€¦</value>
+    <value>Naglo-load ng pinakabagong entitlement…</value>
   </data>
   <data name="Entitlements_Empty" xml:space="preserve">
     <value>Wala pang entitlement snapshot.</value>
@@ -2264,7 +2264,7 @@
     <value>Ang snapshot na ito ay authoritative Platform state lamang. Hindi ito ebidensya na natanggap o na-apply ng isang product application ang mga entitlement. Ang provisional refresh policy ay nananatiling bukas kung naaangkop.</value>
   </data>
   <data name="Entitlements_DetailLoading" xml:space="preserve">
-    <value>Naglo-load ng snapshotâ€¦</value>
+    <value>Naglo-load ng snapshot…</value>
   </data>
   <data name="Entitlements_HistoryTitle" xml:space="preserve">
     <value>Kasaysayan ng entitlement</value>
@@ -2273,7 +2273,7 @@
     <value>Mga immutable snapshot version para sa pares ng organisasyon/produkto.</value>
   </data>
   <data name="Entitlements_HistoryLoading" xml:space="preserve">
-    <value>Naglo-load ng kasaysayanâ€¦</value>
+    <value>Naglo-load ng kasaysayan…</value>
   </data>
   <data name="Entitlements_HistoryEmpty" xml:space="preserve">
     <value>Walang snapshot sa kasaysayan.</value>
@@ -2288,7 +2288,7 @@
     <value>Kasaysayan ng feature override</value>
   </data>
   <data name="Entitlements_OverridesLoading" xml:space="preserve">
-    <value>Naglo-load ng feature overrideâ€¦</value>
+    <value>Naglo-load ng feature override…</value>
   </data>
   <data name="Entitlements_OverridesUnavailable" xml:space="preserve">
     <value>Hindi available ang mga override</value>
@@ -2462,7 +2462,7 @@
     <value>Personal Home</value>
   </data>
   <data name="Personal_HomeDescription" xml:space="preserve">
-    <value>Personal Scope dashboard â€” Utang Tracker at account tools para sa session na ito lamang.</value>
+    <value>Personal Scope dashboard — Utang Tracker at account tools para sa session na ito lamang.</value>
   </data>
   <data name="Personal_ShellRequired" xml:space="preserve">
     <value>Kailangan ng Personal account session ang page na ito.</value>
@@ -2495,7 +2495,7 @@
     <value>Ang entitlement ay nagbibigay-daan sa Produkto para sa Organisasyon. Ang Product Role ang nagbibigay-pahintulot sa tao sa loob ng Produkto.</value>
   </data>
   <data name="OrgEnabledProducts_Loading" xml:space="preserve">
-    <value>Naglo-load ng mga produktoâ€¦</value>
+    <value>Naglo-load ng mga produkto…</value>
   </data>
   <data name="OrgEnabledProducts_Empty" xml:space="preserve">
     <value>Walang naka-enable na produkto para sa organisasyong ito.</value>
@@ -2564,7 +2564,7 @@
     <value>Italaga ang Role</value>
   </data>
   <data name="OrgEnabledProducts_LoadingRoles" xml:space="preserve">
-    <value>Naglo-load ng mga Product roleâ€¦</value>
+    <value>Naglo-load ng mga Product role…</value>
   </data>
   <data name="OrgEnabledProducts_RolesEmpty" xml:space="preserve">
     <value>Walang aktibong Product role assignment.</value>
@@ -2669,13 +2669,13 @@
     <value>Pumili ng approved identity. Ang sign-in ay normal Platform credential login sa server (hindi ipinapakita ang password sa browser).</value>
   </data>
   <data name="Login_LocalValidationSelect" xml:space="preserve">
-    <value>Mag-sign in bilangâ€¦</value>
+    <value>Mag-sign in bilang…</value>
   </data>
   <data name="Login_TestUserSelect" xml:space="preserve">
     <value>Development Test User</value>
   </data>
   <data name="Login_TestUserPlaceholder" xml:space="preserve">
-    <value>Pumili ng test userâ€¦</value>
+    <value>Pumili ng test user…</value>
   </data>
   <data name="Login_TestUserHint" xml:space="preserve">
     <value>Pinupunan lang ang username. I-type ang Local Validation password at pindutin ang Sign in.</value>
@@ -2696,7 +2696,7 @@
     <value>Ang social sign-in ay lumilikha o nagli-link lamang ng Platform User. Hindi ito nagbibigay ng administrator, membership, o product access.</value>
   </data>
   <data name="OrgSwitcher_Loading" xml:space="preserve">
-    <value>Orgâ€¦</value>
+    <value>Org…</value>
   </data>
   <data name="OrgSwitcher_NoOrganization" xml:space="preserve">
     <value>Walang organization</value>
@@ -2705,7 +2705,7 @@
     <value>Walang aktibong organization membership</value>
   </data>
   <data name="OrgSwitcher_SelectPlaceholder" xml:space="preserve">
-    <value>Pumili ng organizationâ€¦</value>
+    <value>Pumili ng organization…</value>
   </data>
   <data name="OrgSwitcher_ChangeFailed" xml:space="preserve">
     <value>Hindi mabago ang organization context.</value>
@@ -2750,7 +2750,7 @@
     <value>I-edit ang metadata at i-archive o i-reactivate ang uri ng negosyo.</value>
   </data>
   <data name="GlobalBusinessTypes_DetailLoading" xml:space="preserve">
-    <value>Naglo-load ang uri ng negosyoâ€¦</value>
+    <value>Naglo-load ang uri ng negosyo…</value>
   </data>
   <data name="GlobalBusinessTypes_EditSection" xml:space="preserve">
     <value>I-edit ang uri ng negosyo</value>
@@ -2798,7 +2798,7 @@
     <value>naka-archive</value>
   </data>
   <data name="GlobalBusinessTypes_HistoricalTypeNote" xml:space="preserve">
-    <value>Ang kasalukuyang reference na â€œ{0}â€ ay hindi Active. Pumili ng Active na uri para palitan, o panatilihin ang historical selection.</value>
+    <value>Ang kasalukuyang reference na “{0}” ay hindi Active. Pumili ng Active na uri para palitan, o panatilihin ang historical selection.</value>
   </data>
   <data name="GlobalCategories_BulkAssignTitle" xml:space="preserve">
     <value>Bulk assign ng mga uri ng negosyo</value>
@@ -2861,7 +2861,7 @@
     <value>I-edit ang metadata at status ng kategorya.</value>
   </data>
   <data name="GlobalCategories_DetailLoading" xml:space="preserve">
-    <value>Naglo-load ang kategoryaâ€¦</value>
+    <value>Naglo-load ang kategorya…</value>
   </data>
   <data name="GlobalCategories_EditSection" xml:space="preserve">
     <value>I-edit ang kategorya</value>
@@ -2942,7 +2942,7 @@
     <value>I-edit ang metadata at i-archive o i-reactivate.</value>
   </data>
   <data name="GlobalProducts_DetailLoading" xml:space="preserve">
-    <value>Naglo-load ang produktoâ€¦</value>
+    <value>Naglo-load ang produkto…</value>
   </data>
   <data name="GlobalProducts_EditSection" xml:space="preserve">
     <value>I-edit ang produkto</value>
@@ -2963,7 +2963,7 @@
     <value>Barcode</value>
   </data>
   <data name="GlobalProducts_BarcodeHint" xml:space="preserve">
-    <value>Opsyonal na GS1 digits (8â€“14)</value>
+    <value>Opsyonal na GS1 digits (8–14)</value>
   </data>
   <data name="GlobalProducts_Brand" xml:space="preserve">
     <value>Brand</value>
@@ -2978,7 +2978,7 @@
     <value>Kailangan ang barcode.</value>
   </data>
   <data name="GlobalProducts_InvalidBarcode" xml:space="preserve">
-    <value>Ang barcode ay dapat 8â€“14 digits (opsyonal). Gamitin ang SKU para sa code tulad ng BAKERY000001.</value>
+    <value>Ang barcode ay dapat 8–14 digits (opsyonal). Gamitin ang SKU para sa code tulad ng BAKERY000001.</value>
   </data>
   <data name="GlobalProducts_RequiredBrand" xml:space="preserve">
     <value>Kailangan ang brand.</value>
@@ -3092,7 +3092,7 @@
     <value>I-edit ang metadata, composition, at publication lifecycle.</value>
   </data>
   <data name="GlobalTemplates_DetailLoading" xml:space="preserve">
-    <value>Naglo-load ng templateâ€¦</value>
+    <value>Naglo-load ng template…</value>
   </data>
   <data name="GlobalTemplates_EditSection" xml:space="preserve">
     <value>Detalye ng template</value>
@@ -3191,10 +3191,10 @@
     <value>Maghanap sa naka-assign</value>
   </data>
   <data name="GlobalTemplates_AvailableLoading" xml:space="preserve">
-    <value>Naglo-load ng available productsâ€¦</value>
+    <value>Naglo-load ng available products…</value>
   </data>
   <data name="GlobalTemplates_AssignedLoading" xml:space="preserve">
-    <value>Naglo-load ng assigned productsâ€¦</value>
+    <value>Naglo-load ng assigned products…</value>
   </data>
   <data name="GlobalTemplates_AvailableEmpty" xml:space="preserve">
     <value>Walang tumutugmang available products.</value>
@@ -3287,10 +3287,10 @@
     <value>Hindi ma-download ang CSV template.</value>
   </data>
   <data name="GlobalImports_TemplateHint" xml:space="preserve">
-    <value>Columns na may *: kailangan ang value â€” ProductName, Category, Brand, Unit, SuggestedSku, SellingPrice, CostPrice. Opsyonal: Description, Barcode (GS1 digits 8â€“14 + check digit kung may laman; gamitin ang SuggestedSku para sa code tulad ng BAKERY000001), TaxHint, Tags, BusinessTypes, Status (blank = Draft). Panatilihin ang order ng headers. Tags/BusinessTypes: |. Decimals: 25.50. Max 5 MB / 5000 rows.</value>
+    <value>Columns na may *: kailangan ang value — ProductName, Category, Brand, Unit, SuggestedSku, SellingPrice, CostPrice. Opsyonal: Description, Barcode (GS1 digits 8–14 + check digit kung may laman; gamitin ang SuggestedSku para sa code tulad ng BAKERY000001), TaxHint, Tags, BusinessTypes, Status (blank = Draft). Panatilihin ang order ng headers. Tags/BusinessTypes: |. Decimals: 25.50. Max 5 MB / 5000 rows.</value>
   </data>
   <data name="GlobalImports_TemplateInstructions" xml:space="preserve">
-    <value>1) I-download ang CSV template. 2) Panatilihin ang header names (* = required value; puwedeng iwan o tanggalin ang *). 3) Punan ang required (*) columns; iwanang blank ang optional kung hindi gagamitin. 4) Opsyonal ang Barcode â€” digits lang na may valid GS1 check digit; ilagay ang merchant code sa SuggestedSku. 5) Alisin o palitan ang SAMPLE rows. 6) I-save bilang CSV UTF-8 at i-upload. 7) Magsisimula ang import pagkatapos ng Confirm.</value>
+    <value>1) I-download ang CSV template. 2) Panatilihin ang header names (* = required value; puwedeng iwan o tanggalin ang *). 3) Punan ang required (*) columns; iwanang blank ang optional kung hindi gagamitin. 4) Opsyonal ang Barcode — digits lang na may valid GS1 check digit; ilagay ang merchant code sa SuggestedSku. 5) Alisin o palitan ang SAMPLE rows. 6) I-save bilang CSV UTF-8 at i-upload. 7) Magsisimula ang import pagkatapos ng Confirm.</value>
   </data>
   <data name="GlobalImports_FileName" xml:space="preserve">
     <value>File</value>
@@ -3374,7 +3374,7 @@
     <value>Code</value>
   </data>
   <data name="GlobalImports_Polling" xml:space="preserve">
-    <value>Nagpo-proseso sa backgroundâ€¦ awtomatikong nire-refresh ang page na ito.</value>
+    <value>Nagpo-proseso sa background… awtomatikong nire-refresh ang page na ito.</value>
   </data>
   <data name="Nav_PrivacyCompliance" xml:space="preserve">
     <value>Privacy at Compliance</value>
@@ -3476,7 +3476,7 @@
     <value>Tumutulong ang module na ito sa internal privacy readiness tracking. Hindi ito legal advice, regulatory certification, o patunay ng legal compliance. Kumonsulta sa kwalipikadong legal counsel para sa DPO/legal verification.</value>
   </data>
   <data name="PrivacyCompliance_LoadingOverview" xml:space="preserve">
-    <value>Nilo-load ang privacy compliance overviewâ€¦</value>
+    <value>Nilo-load ang privacy compliance overview…</value>
   </data>
   <data name="PrivacyCompliance_LoadFailed" xml:space="preserve">
     <value>Hindi ma-load ang privacy compliance data.</value>
