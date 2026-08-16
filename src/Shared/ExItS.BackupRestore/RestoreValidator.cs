@@ -7,12 +7,54 @@ public sealed record RestoreValidationResult(
     bool Passed,
     IReadOnlyList<string> Findings);
 
+/// <summary>
+/// Critical row fingerprint for post-restore identity checks (IDs + key column values).
+/// </summary>
+public sealed record CriticalRecordFingerprint(
+    string Schema,
+    string Table,
+    Guid Id,
+    IReadOnlyDictionary<string, object?> KeyValues,
+    string IdColumn = "id");
+
 /// <summary>Post-restore structural validation — mismatches fail; never silently repair.</summary>
 public static class RestoreValidator
 {
+    public static readonly string[] PlatformPhase29Tables =
+    [
+        "organization_branches",
+        "branch_delivery_policies"
+    ];
+
+    public static readonly string[] PosPhase29Tables =
+    [
+        "customer_orders",
+        "customer_order_lines",
+        "payment_attempts"
+    ];
+
+    public static readonly string[] PlatformPhase29ConstraintNames =
+    [
+        "ck_branch_delivery_policies_free_threshold_nonneg",
+        "ck_branch_delivery_policies_min_order_nonneg",
+        "ck_organization_branches_lat_long_pair"
+    ];
+
+    public static readonly string[] PosPhase29ConstraintNames =
+    [
+        "ck_sales_stock_reservation",
+        "ck_customer_orders_money_identity",
+        "ck_customer_orders_party_xor",
+        "ck_customer_orders_totals_non_negative",
+        "ck_inventory_accounts_reserved_non_negative",
+        "ck_inventory_accounts_reserved_not_over_on_hand"
+    ];
+
     public static async Task<RestoreValidationResult> ValidatePlatformAsync(
         string connectionString,
         IReadOnlyDictionary<string, long>? expectedMinCounts = null,
+        bool requirePhase29Tables = false,
+        bool checkPhase29ConstraintsBestEffort = false,
         CancellationToken ct = default)
     {
         var findings = new List<string>();
@@ -29,6 +71,24 @@ public static class RestoreValidator
             "subscriptions", "saas_payments", "entitlement_snapshots", "audit_records"
         };
         await EnsureTablesExistAsync(connection, required, findings, ct, schema: "platform").ConfigureAwait(false);
+
+        if (requirePhase29Tables)
+        {
+            await EnsureTablesExistAsync(connection, PlatformPhase29Tables, findings, ct, schema: "platform")
+                .ConfigureAwait(false);
+        }
+
+        if (checkPhase29ConstraintsBestEffort)
+        {
+            await EnsureNamedObjectsBestEffortAsync(
+                    connection,
+                    "platform",
+                    PlatformPhase29ConstraintNames,
+                    findings,
+                    require: false,
+                    ct)
+                .ConfigureAwait(false);
+        }
 
         if (expectedMinCounts is not null)
         {
@@ -48,6 +108,9 @@ public static class RestoreValidator
     public static async Task<RestoreValidationResult> ValidatePosAsync(
         string connectionString,
         IReadOnlyDictionary<string, long>? expectedMinCounts = null,
+        bool requirePhase29Tables = false,
+        bool checkPhase29ConstraintsBestEffort = false,
+        bool validateInventoryReservations = true,
         CancellationToken ct = default)
     {
         var findings = new List<string>();
@@ -65,6 +128,33 @@ public static class RestoreValidator
             "idempotency_records"
         };
         await EnsureTablesExistAsync(connection, required, findings, ct, schema: "pos").ConfigureAwait(false);
+
+        if (requirePhase29Tables)
+        {
+            await EnsureTablesExistAsync(connection, PosPhase29Tables, findings, ct, schema: "pos")
+                .ConfigureAwait(false);
+            await EnsureColumnExistsAsync(
+                    connection,
+                    "pos",
+                    "sales",
+                    "stock_reservation_state",
+                    findings,
+                    require: true,
+                    ct)
+                .ConfigureAwait(false);
+        }
+
+        if (checkPhase29ConstraintsBestEffort)
+        {
+            await EnsureNamedObjectsBestEffortAsync(
+                    connection,
+                    "pos",
+                    PosPhase29ConstraintNames,
+                    findings,
+                    require: false,
+                    ct)
+                .ConfigureAwait(false);
+        }
 
         if (expectedMinCounts is not null)
         {
@@ -101,7 +191,208 @@ public static class RestoreValidator
             }
         }
 
+        if (validateInventoryReservations)
+        {
+            await ValidateInventoryReservationInvariantsAsync(connection, findings, ct).ConfigureAwait(false);
+        }
+
         return new RestoreValidationResult(findings.Count == 0, findings);
+    }
+
+    /// <summary>
+    /// Best-effort: report missing named constraints/indexes without failing when absent (older dumps).
+    /// When <paramref name="require"/> is true, missing names become findings.
+    /// </summary>
+    public static async Task<RestoreValidationResult> EnsureNamedConstraintsBestEffortAsync(
+        string connectionString,
+        string schema,
+        IEnumerable<string> constraintOrIndexNames,
+        bool require = false,
+        CancellationToken ct = default)
+    {
+        var findings = new List<string>();
+        await using var connection = new NpgsqlConnection(connectionString);
+        await connection.OpenAsync(ct).ConfigureAwait(false);
+        await EnsureNamedObjectsBestEffortAsync(connection, schema, constraintOrIndexNames, findings, require, ct)
+            .ConfigureAwait(false);
+        return new RestoreValidationResult(findings.Count == 0, findings);
+    }
+
+    /// <summary>
+    /// Inventory reservation invariants: reserved &gt;= 0; reserved &lt;= on_hand for tracked accounts.
+    /// </summary>
+    public static async Task<RestoreValidationResult> ValidateInventoryReservationsAsync(
+        string connectionString,
+        CancellationToken ct = default)
+    {
+        var findings = new List<string>();
+        await using var connection = new NpgsqlConnection(connectionString);
+        await connection.OpenAsync(ct).ConfigureAwait(false);
+        await ValidateInventoryReservationInvariantsAsync(connection, findings, ct).ConfigureAwait(false);
+        return new RestoreValidationResult(findings.Count == 0, findings);
+    }
+
+    /// <summary>
+    /// Compare expected critical record fingerprints (IDs + key values) after restore.
+    /// </summary>
+    public static async Task<RestoreValidationResult> CompareCriticalFingerprintsAsync(
+        string connectionString,
+        IReadOnlyList<CriticalRecordFingerprint> expected,
+        CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(expected);
+        var findings = new List<string>();
+        await using var connection = new NpgsqlConnection(connectionString);
+        await connection.OpenAsync(ct).ConfigureAwait(false);
+
+        foreach (var fp in expected)
+        {
+            if (fp.KeyValues.Count == 0)
+            {
+                findings.Add($"{fp.Schema}.{fp.Table} fingerprint {fp.Id} has no key values.");
+                continue;
+            }
+
+            var selectCols = string.Join(", ", fp.KeyValues.Keys.Select(QuoteIdent));
+            await using var cmd = connection.CreateCommand();
+            cmd.CommandText =
+                $"""
+                 SELECT {selectCols}
+                 FROM {QuoteIdent(fp.Schema)}.{QuoteIdent(fp.Table)}
+                 WHERE {QuoteIdent(fp.IdColumn)} = @id;
+                 """;
+            cmd.Parameters.AddWithValue("id", fp.Id);
+
+            try
+            {
+                await using var reader = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
+                if (!await reader.ReadAsync(ct).ConfigureAwait(false))
+                {
+                    findings.Add($"Missing fingerprint row {fp.Schema}.{fp.Table}.{fp.IdColumn}={fp.Id}.");
+                    continue;
+                }
+
+                var ordinal = 0;
+                foreach (var (column, expectedValue) in fp.KeyValues)
+                {
+                    var actual = reader.IsDBNull(ordinal) ? null : reader.GetValue(ordinal);
+                    if (!FingerprintValuesEqual(expectedValue, actual))
+                    {
+                        findings.Add(
+                            $"{fp.Schema}.{fp.Table} id={fp.Id} column '{column}' expected '{FormatValue(expectedValue)}' but was '{FormatValue(actual)}'.");
+                    }
+
+                    ordinal++;
+                }
+            }
+            catch (PostgresException ex)
+            {
+                findings.Add($"Unable to read fingerprint {fp.Schema}.{fp.Table} id={fp.Id}: {ex.SqlState}");
+            }
+        }
+
+        return new RestoreValidationResult(findings.Count == 0, findings);
+    }
+
+    private static async Task ValidateInventoryReservationInvariantsAsync(
+        NpgsqlConnection connection,
+        List<string> findings,
+        CancellationToken ct)
+    {
+        await using var cmd = connection.CreateCommand();
+        cmd.CommandText =
+            """
+            SELECT COUNT(*)::int
+            FROM pos.inventory_accounts
+            WHERE is_tracked = TRUE
+              AND (reserved_quantity < 0 OR reserved_quantity > on_hand_quantity);
+            """;
+        try
+        {
+            var bad = Convert.ToInt32(await cmd.ExecuteScalarAsync(ct).ConfigureAwait(false), CultureInfo.InvariantCulture);
+            if (bad > 0)
+            {
+                findings.Add(
+                    $"Found {bad} tracked inventory accounts with reserved_quantity < 0 or reserved > on_hand.");
+            }
+        }
+        catch (PostgresException)
+        {
+            // Older schemas may lack reserved_quantity — skip rather than fail hard.
+        }
+    }
+
+    private static async Task EnsureNamedObjectsBestEffortAsync(
+        NpgsqlConnection connection,
+        string schema,
+        IEnumerable<string> names,
+        List<string> findings,
+        bool require,
+        CancellationToken ct)
+    {
+        foreach (var name in names)
+        {
+            var exists = await NamedConstraintOrIndexExistsAsync(connection, schema, name, ct).ConfigureAwait(false);
+            if (!exists)
+            {
+                if (require)
+                {
+                    findings.Add($"Required constraint/index missing: {schema}.{name}");
+                }
+                // best-effort: silence when not required (older dumps)
+            }
+        }
+    }
+
+    private static async Task<bool> NamedConstraintOrIndexExistsAsync(
+        NpgsqlConnection connection,
+        string schema,
+        string name,
+        CancellationToken ct)
+    {
+        await using var cmd = connection.CreateCommand();
+        cmd.CommandText =
+            """
+            SELECT EXISTS (
+              SELECT 1
+              FROM pg_constraint c
+              JOIN pg_namespace n ON n.oid = c.connamespace
+              WHERE n.nspname = @schema AND c.conname = @name
+            ) OR EXISTS (
+              SELECT 1
+              FROM pg_indexes
+              WHERE schemaname = @schema AND indexname = @name
+            );
+            """;
+        cmd.Parameters.AddWithValue("schema", schema);
+        cmd.Parameters.AddWithValue("name", name);
+        return Convert.ToBoolean(await cmd.ExecuteScalarAsync(ct).ConfigureAwait(false), CultureInfo.InvariantCulture);
+    }
+
+    private static async Task EnsureColumnExistsAsync(
+        NpgsqlConnection connection,
+        string schema,
+        string table,
+        string column,
+        List<string> findings,
+        bool require,
+        CancellationToken ct)
+    {
+        await using var cmd = connection.CreateCommand();
+        cmd.CommandText =
+            """
+            SELECT 1
+            FROM information_schema.columns
+            WHERE table_schema = @schema AND table_name = @table AND column_name = @column;
+            """;
+        cmd.Parameters.AddWithValue("schema", schema);
+        cmd.Parameters.AddWithValue("table", table);
+        cmd.Parameters.AddWithValue("column", column);
+        var exists = await cmd.ExecuteScalarAsync(ct).ConfigureAwait(false);
+        if (exists is null && require)
+        {
+            findings.Add($"Required column missing: {schema}.{table}.{column}");
+        }
     }
 
     private static async Task EnsureNoHealthCareTablesAsync(
@@ -238,6 +529,52 @@ public static class RestoreValidator
         cmd.CommandText = $"SELECT COUNT(*)::bigint FROM {qualified};";
         return Convert.ToInt64(await cmd.ExecuteScalarAsync(ct).ConfigureAwait(false), CultureInfo.InvariantCulture);
     }
+
+    private static bool FingerprintValuesEqual(object? expected, object? actual)
+    {
+        if (expected is null && actual is null)
+        {
+            return true;
+        }
+
+        if (expected is null || actual is null)
+        {
+            return false;
+        }
+
+        if (expected is Guid eg && actual is Guid ag)
+        {
+            return eg == ag;
+        }
+
+        if (expected is decimal ed)
+        {
+            return Convert.ToDecimal(actual, CultureInfo.InvariantCulture) == ed;
+        }
+
+        if (expected is int ei)
+        {
+            return Convert.ToInt32(actual, CultureInfo.InvariantCulture) == ei;
+        }
+
+        if (expected is long el)
+        {
+            return Convert.ToInt64(actual, CultureInfo.InvariantCulture) == el;
+        }
+
+        if (expected is bool eb)
+        {
+            return Convert.ToBoolean(actual, CultureInfo.InvariantCulture) == eb;
+        }
+
+        return string.Equals(
+            Convert.ToString(expected, CultureInfo.InvariantCulture),
+            Convert.ToString(actual, CultureInfo.InvariantCulture),
+            StringComparison.Ordinal);
+    }
+
+    private static string FormatValue(object? value) =>
+        value is null ? "<null>" : Convert.ToString(value, CultureInfo.InvariantCulture) ?? "<null>";
 
     private static string QuoteIdent(string ident) => "\"" + ident.Replace("\"", "\"\"", StringComparison.Ordinal) + "\"";
 }
