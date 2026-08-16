@@ -9,15 +9,15 @@
 
 ## Outcome
 
-Phase 29 delivered measurable integrity and performance hardening (tenant CHECKs/composite FK, ListBranches N+1 removal, SQL dashboard aggregates, reservation locks, buyer indexes, authority doc reconciliation). **P29-WP11** recorded Testcontainers migration apply/rollback and constraint corruption evidence; full load harness and EXPLAIN latency baselines remain partial.
+Phase 29 delivered measurable integrity and performance hardening (tenant CHECKs/composite FK, ListBranches N+1 removal, SQL dashboard aggregates, reservation locks, buyer indexes, authority doc reconciliation). **P29-WP11** recorded migration apply/rollback evidence; **P29-WP12** electronic payment reservation; **P29-WP13** true concurrent payment races + SMOKE EXPLAIN (ANALYZE, BUFFERS). Broader load harness and Production backup/restore remain open.
 
 ## Readiness honesty
 
 | Gate | Value |
 |---|---|
 | Database Architecture Hardened | **Partial** |
-| Performance Benchmarked | **Partial** |
-| Concurrency Validated | **Partial** |
+| Performance Benchmarked | **Partial** (WP13 SMOKE EXPLAIN recorded; STANDARD latency not claimed) |
+| Concurrency Validated | **Partial → stronger** (WP13 Barrier-synchronized payment races **PASS**; broader load residual) |
 | Migration Validated | **Partial** (WP11 Testcontainers apply/rollback/re-apply **PASS**; Production backup/restore **No**) |
 | Production Backup/Restore Proven | **No** |
 | Device Verified | **No** |
@@ -26,4 +26,4 @@ Phase 29 delivered measurable integrity and performance hardening (tenant CHECKs
 
 Phases 14 / 19–28 remain open with their prior statuses.
 
-See [P29-WP11](P29-WP11-database-verification-and-constraint-closeout.md).
+See [P29-WP11](P29-WP11-database-verification-and-constraint-closeout.md), [P29-WP12](P29-WP12-electronic-payment-transaction-reliability-hardening.md), [P29-WP13](P29-WP13-concurrency-and-postgresql-execution-plan-validation.md).

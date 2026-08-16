@@ -22,6 +22,10 @@
 - Sales report product/category detail still materializes lines.
 - Latency p50/p95 not claimed.
 
+## WP13 SMOKE EXPLAIN follow-up
+
+[P29-WP13](P29-WP13-concurrency-and-postgresql-execution-plan-validation.md) / [snippets](P29-WP13-explain-plan-snippets.md) captured Testcontainers `EXPLAIN (ANALYZE, BUFFERS)` for sales history, payment-attempt lookups, inventory, buyer orders, and dashboard aggregates. **Still not** Production / STANDARD latency proof.
+
 ## Exact next
 
-Capture EXPLAIN on Testcontainers SMOKE profile for ListBranches, dashboard aggregates, and ListMine orders.
+Optional larger STANDARD profile EXPLAIN; keep Production backup incomplete.

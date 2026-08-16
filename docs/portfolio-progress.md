@@ -12,9 +12,9 @@
 | Existing product | Historical HealthCare SaaS MVP (separate product; **not** in this workspace ? do not restore) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
 | Current phase | Phase 29 **Open / Partial Closeout** â€” cross-cutting data/performance hardening. Phases 14 / 19â€“28 remain **Open** with prior statuses (including Phase 28 Stage B Code Complete / Validation Pending). |
-| Current work package | **P29-WP12** electronic payment reliability - Code Complete / Validation Evidence Recorded ([phase](phases/phase-29-data-integrity-query-performance-and-database-hardening.md)). |
-| Overall status | WP11 DB verification + WP12 electronic payment reservation/recovery (FakePaymentGateway) delivered. Load/EXPLAIN latency drills partial. **Not Device Verified. Not Browser Verified. Not Production Ready. Not Production Payment Ready.** |
-| Latest verified commit | Phase 29 WP12 `b8bcb21c`/`d5b102ce`/`863c533e`/`fc8b8c8c` (preflight `73b3f06e`) |
+| Current work package | **P29-WP13** concurrency + EXPLAIN validation - Code Complete / Validation Evidence Recorded ([phase](phases/phase-29-data-integrity-query-performance-and-database-hardening.md)). |
+| Overall status | WP11-WP13 database verification, electronic payment reservation, and true concurrent/EXPLAIN SMOKE evidence delivered. Broader load + Production backup residuals open. **Not Device Verified. Not Browser Verified. Not Production Ready. Not Production Payment Ready.** |
+| Latest verified commit | Phase 29 WP13 pending stamp (preflight `7b75f44d`) |
 | Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA deferred; Phase 19/20/22/24/25/26/27 owner/physical validation pending |
 | Last updated | 2026-08-16 |
 
@@ -268,7 +268,7 @@ P19-WP08 ? End-to-End Validation and User Closeout Checklist (Retest ï¿½ awai
 
 **Phase 28 Customer Ordering, Pickup & Delivery:** **Open / In Progress** ([phase](phases/phase-28-customer-ordering-pickup-and-delivery.md)) â€” WP01 Code Complete; WP02â€“WP09 Stage B Code Complete / Validation Pending; WP10 Not Started; Phase 27 remains Open; **Device Verified: No**; **Browser Verified: No**; **Production Ready: No**.
 
-**Phase 29 Data Integrity / Query Performance / DB Ops Hardening:** **Open / Partial Closeout** ([phase](phases/phase-29-data-integrity-query-performance-and-database-hardening.md)) - WP01-WP07 Code Complete / Validation Pending; WP03/WP08-WP10 Partial; WP11 recorded; **WP12** Code Complete / Validation Evidence Recorded ([report](reports/P29-WP12-electronic-payment-transaction-reliability-hardening.md)); earlier open phases unchanged; **Device Verified: No**; **Browser Verified: No**; **Production Ready: No**; **Production Payment Ready: No**.
+**Phase 29 Data Integrity / Query Performance / DB Ops Hardening:** **Open / Partial Closeout** ([phase](phases/phase-29-data-integrity-query-performance-and-database-hardening.md)) - WP11-WP13 Code Complete / Validation Evidence Recorded ([WP13](reports/P29-WP13-concurrency-and-postgresql-execution-plan-validation.md)); WP08 load residual; earlier open phases unchanged; **Device Verified: No**; **Browser Verified: No**; **Production Ready: No**; **Production Payment Ready: No**.
 
 ## Phase 27 work packages
 

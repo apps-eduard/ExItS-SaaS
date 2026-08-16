@@ -4,7 +4,7 @@
 
 | Field | Value |
 |---|---|
-| Status | **Open / Partial Closeout** — WP01–WP07 largely Code Complete / Validation Pending; WP03/WP08 Partial; WP09 Partial (verification in WP11); WP10 Partial; **WP11 Code Complete / Validation Evidence Recorded**; **WP12 Code Complete / Validation Evidence Recorded** |
+| Status | **Open / Partial Closeout** — WP01–WP07 largely Code Complete / Validation Pending; WP03 Partial; WP08 Partial (WP13 concurrency evidence); WP09 Partial (verification in WP11); WP10 Partial; **WP11–WP13 Code Complete / Validation Evidence Recorded** |
 | Kind | Cross-cutting enterprise hardening (not feature expansion) |
 | Device Verified | **No** |
 | Browser Verified | **No** |
@@ -28,11 +28,12 @@ Strengthen database and data-domain integrity, eliminate proven N+1 and over-fet
 | **P29-WP05** | Query Performance & N+1 Elimination | **Code Complete / Validation Pending** |
 | **P29-WP06** | Reporting & Aggregation Performance | **Code Complete / Validation Pending** (dashboard/summary) |
 | **P29-WP07** | Indexing, Search, Pagination & Execution Plans | **Code Complete / Validation Pending** (buyer indexes) |
-| **P29-WP08** | Concurrency, Load & Reliability Validation | **Partial** |
+| **P29-WP08** | Concurrency, Load & Reliability Validation | **Partial** (true concurrent payment races + EXPLAIN SMOKE in **WP13**; broader load harness residual) |
 | **P29-WP09** | Migration, Backup/Restore & DB Operations Hardening | **Partial** (migration apply/rollback evidence in **WP11**) |
 | **P29-WP10** | E2E Database Hardening Closeout | **Partial** |
 | **P29-WP11** | Database Verification & Constraint Closeout | **Code Complete / Validation Evidence Recorded** — [report](../reports/P29-WP11-database-verification-and-constraint-closeout.md) |
 | **P29-WP12** | Electronic Payment Reservation & Reliability Hardening | **Code Complete / Validation Evidence Recorded** — [report](../reports/P29-WP12-electronic-payment-transaction-reliability-hardening.md) |
+| **P29-WP13** | Concurrency & PostgreSQL Execution Plan Validation | **Code Complete / Validation Evidence Recorded** — [report](../reports/P29-WP13-concurrency-and-postgresql-execution-plan-validation.md) |
 
 ## Explicit exclusions
 
@@ -44,4 +45,4 @@ Strengthen database and data-domain integrity, eliminate proven N+1 and over-fet
 
 ## Exact next
 
-EXPLAIN baselines on SMOKE; optional concurrent Accept / WP08 load harness; keep earlier phases open; Phase 14 Production backup remains incomplete. Do **not** integrate a real payment provider without explicit authorization.
+Optional broader WP08 load harness; keep Phase 14 Production backup incomplete; do **not** integrate a real payment provider; do **not** open Phase 30. Phase 29 remains Open / Partial until Production backup/restore and remaining residuals are addressed.
