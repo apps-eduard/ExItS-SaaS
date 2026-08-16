@@ -7,7 +7,7 @@ Companion detail: [connected-supplier-buyer-specific-sharing-and-pricing.md](con
 
 ## Status
 
-**Code Complete + UX Hardening Complete.** Phase 27 remains **Open / In Progress**. WP02–WP07 **Not Started**. This UX hardening is **not** P27-WP02.
+**Code Complete + Level-1 + Level-2 Mobile UX Hardening Complete.** Phase 27 remains **Open / In Progress**. WP02–WP07 **Not Started**. This UX hardening is **not** P27-WP02.
 
 | Gate | Value |
 |---|---|
@@ -16,7 +16,8 @@ Companion detail: [connected-supplier-buyer-specific-sharing-and-pricing.md](con
 | Production Ready | **No** |
 
 **Starting SHA (original WP01):** `62b73307c753388d0006acc8d580db52dc483434`
-**UX hardening starting SHA:** `8e2ef20e5bb3ef9be42404fc8e983b1355691880`
+**Level-2 UX hardening starting SHA:** `8e2ef20e5bb3ef9be42404fc8e983b1355691880`
+**Level-1 bulk availability UX hardening starting SHA:** `ba0d616ef39044cb77b5ec960b065398a6cd8f4a`
 **Feature tip (docs hash record):** `cbd0005bf811c183f361444884dc328b40d0e393`
 **Roadmap registration tip:** `22c8b6d5`
 
@@ -41,7 +42,8 @@ Companion detail: [connected-supplier-buyer-specific-sharing-and-pricing.md](con
 - `CatalogProduct.CanExposeToConnectedBuyers` + `DefaultConnectedPoPrice`
 - Synced to supplier-wide `SupplierProductExposure` (Default PO Price = `SupplierOrderPrice`)
 - First enable initializes Default PO Price from retail `SellingPrice`; afterward independent
-- MAUI catalog create/edit/detail B2B section (EN + fil-PH)
+- Primary MAUI: **Catalog → Connected Buyer Availability** (bulk Enable / Disable / Default PO with preview)
+- Secondary: MAUI catalog create/edit/detail B2B section (EN + fil-PH)
 
 ### Level 2 — per-buyer sharing
 
@@ -73,7 +75,54 @@ Mobile bulk product management replaced the cumbersome one-by-one save-all edito
 
 ### UX hardening commits
 
-Recorded after push in the Implementation commits table below.
+| SHA | Message |
+|---|---|
+| `4b67ce0a` | `feat(suppliers): add safe bulk buyer sharing and pricing operations` |
+| `5b4cb814` | `feat(maui): add bulk connected buyer product management` |
+| `84d3d688` | `test(suppliers): cover bulk buyer product management` |
+| `22be62cf` | `docs(p27): document WP01 mobile sharing UX hardening` |
+
+## Level 1 Bulk Availability UX Hardening — 2026-08-16
+
+Follow-up only — **not** P27-WP02. Domain semantics unchanged.
+
+### Problem
+
+Suppliers with large catalogs were forced through Product → Edit → “Available to connected buyers” one-by-one.
+
+### Delivered UX
+
+- Catalog hub tile → `/catalog/connected-buyer-availability`
+- Mobile list: search, All / Available / Not available chips, category sheet
+- Multi-select, select visible, select-all matching
+- Sticky Enable / Disable / PO Price
+- Default PO bulk pricing with preview (set from retail / % discount / adjust amount / fixed price)
+- Product create/edit B2B fields retained as secondary one-off path
+
+### Locked rules preserved
+
+- First Enable (`false→true`) with null Default PO → initialize from **that product's** SellingPrice
+- Later retail changes do not rewrite Default PO
+- Disable / re-enable preserves Default PO
+- Bulk Enable does **not** overwrite existing Default PO
+- Bulk Enable creates **zero** `ConnectedBuyerProductShare` rows (Exposable ≠ Shared)
+- Runtime pricing remains BuyerSpecific → Default PO (never SellingPrice)
+- No inventory mutation; no migration
+
+### API / application additions (no migration)
+
+- `GET /api/v1/pos/catalog/products/connected-buyer-availability`
+- `POST .../connected-buyer-availability/bulk`
+- `POST .../connected-buyer-availability/pricing/preview`
+- `POST .../connected-buyer-availability/pricing/apply`
+
+### Level-1 UX hardening commits
+
+| SHA | Message |
+|---|---|
+| `b6a34d92` | `feat(catalog): add bulk connected buyer availability management` |
+| `230dad4f` | `feat(maui): add mobile bulk B2B catalog availability UX` |
+| `a8832f46` | `test(catalog): cover bulk connected buyer availability rules` |
 
 ### Pricing & PO safety (WP01-required)
 

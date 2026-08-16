@@ -29,8 +29,10 @@ This file retains engineering-detail Q&A and migration notes. Status and roadmap
 - `CatalogProduct.CanExposeToConnectedBuyers`
 - `CatalogProduct.DefaultConnectedPoPrice`
 - Synced to `SupplierProductExposure` (`IsExposed` + `SupplierOrderPrice` = Default PO Price)
+- Primary MAUI path: **Catalog → Connected Buyer Availability** (bulk Enable / Disable / Default PO Price)
+- Product create/edit B2B fields remain as the secondary one-off path
 
-**EXPOSABLE ≠ SHARED.** Eligibility alone does not make a product visible to any buyer.
+**EXPOSABLE ≠ SHARED.** Eligibility alone does not make a product visible to any buyer. Bulk Level-1 Enable does **not** create `ConnectedBuyerProductShare` rows.
 
 ### Default PO Price initialization
 
@@ -77,7 +79,11 @@ Disabling product exposability deactivates the supplier-wide exposure; buyer bro
 
 | Route | Role |
 |---|---|
-| `POST /connected-suppliers/exposures` | Level 1 supplier-wide expose/update |
+| `GET /catalog/products/connected-buyer-availability` | Level-1 paged eligibility list (search, category, available/not) |
+| `POST /catalog/products/connected-buyer-availability/bulk` | Bulk Enable/Disable (IDs or SelectAllMatching) |
+| `POST /catalog/products/connected-buyer-availability/pricing/preview` | Bulk Default PO preview (retail baseline) |
+| `POST /catalog/products/connected-buyer-availability/pricing/apply` | Apply Default PO pricing rule |
+| `POST /connected-suppliers/exposures` | Level 1 supplier-wide expose/update (legacy single-product path) |
 | Legacy `POST /relationships/{id}/exposures` | Guidance error (no longer creates ambiguous relationship-scoped exposure) |
 | `GET /relationships/{id}/buyer-product-shares` | Eligible exposures + share state (legacy full list when unfiltered) |
 | `GET /relationships/{id}/buyer-product-shares?query&category&shareFilter&page&pageSize` | Paged supplier Manage Products query + category facets |
@@ -91,14 +97,22 @@ Disabling product exposability deactivates the supplier-wide exposure; buyer bro
 
 ## MAUI
 
-- Catalog create/edit/detail: Available to connected buyers + Default PO Price
+- Catalog hub tile → `/catalog/connected-buyer-availability` (Level-1 bulk eligibility + Default PO)
+- Catalog create/edit/detail: Available to connected buyers + Default PO Price (secondary one-off)
 - Accept → lightweight `/share-products` card (Share all / Review / Confirm & share / Not now)
 - Manage: `/shared-products` mobile bulk list (search, share chips, category sheet, multi-select, sticky Share/Unshare/Price + preview)
 - Browse empty copy: supplier hasn’t shared with your business yet
 
-## UX hardening note (2026-08-16)
+## UX hardening notes
+
+### Level 2 (2026-08-16) — per-buyer Manage Products
 
 P27-WP01 follow-up only — **not** WP02. Domain rules unchanged (Exposable ≠ Shared; buyer price → Default PO; Accept ≠ auto-share).
+
+### Level 1 (2026-08-16) — Connected Buyer Availability bulk
+
+Mobile bulk eligibility management so suppliers are not forced through Product Edit one-by-one. First Enable still initializes Default PO from each product's own retail; Disable/re-enable preserves Default PO; bulk Enable creates zero shares.
+
 ## Organization Web
 
 Backend rules apply. Org Web Connected buyers UI does **not** yet include share/price management (gap). Suppliers must use MAUI for sharing UX.

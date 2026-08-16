@@ -4,7 +4,7 @@
 
 | Field | Value |
 |---|---|
-| Status | **Open / In Progress** — P27-WP01 Code Complete + UX Hardening Complete; WP02–WP07 Not Started |
+| Status | **Open / In Progress** — P27-WP01 Code Complete + Level-1 + Level-2 Mobile UX Hardening Complete; WP02–WP07 Not Started |
 | Device Verified | **No** |
 | Browser Verified | **No** |
 | Production Ready | **No** |
@@ -20,7 +20,7 @@ This phase builds on Phase 1 connected-supplier foundations ([connected-exits-su
 
 | Work package | Scope | Status |
 |---|---|---|
-| **P27-WP01** | Buyer-Specific Product Sharing & PO Pricing (+ mobile bulk UX hardening) | **Code Complete + UX Hardening Complete** ([report](../reports/P27-WP01-buyer-specific-product-sharing-and-po-pricing.md)) |
+| **P27-WP01** | Buyer-Specific Product Sharing & PO Pricing (+ Level-1 + Level-2 mobile bulk UX hardening) | **Code Complete + Level-1 + Level-2 Mobile UX Hardening Complete** ([report](../reports/P27-WP01-buyer-specific-product-sharing-and-po-pricing.md)) |
 | P27-WP02 | Connected PO Delivery & Atomic Submission | **Not Started** |
 | P27-WP03 | Supplier Accept/Decline Synchronization | **Not Started** |
 | P27-WP04 | PO Cancellation & Withdrawal | **Not Started** |
@@ -28,7 +28,7 @@ This phase builds on Phase 1 connected-supplier foundations ([connected-exits-su
 | P27-WP06 | Connected Purchasing UX & Notifications | **Not Started** |
 | P27-WP07 | E2E Hardening & Phase 27 Closeout | **Not Started** |
 
-**Current / active work package:** P27-WP01 (domain + mobile bulk sharing UX delivered; owner device validation still outstanding). Do **not** begin WP02–WP07 unless explicitly authorized, except for fixes strictly required to keep WP01 correct and safe.
+**Current / active work package:** P27-WP01 (Level-1 + Level-2 mobile bulk UX delivered; owner device validation still outstanding). Do **not** begin WP02–WP07 unless explicitly authorized, except for fixes strictly required to keep WP01 correct and safe.
 
 ## Invariants
 
@@ -37,6 +37,7 @@ This phase builds on Phase 1 connected-supplier foundations ([connected-exits-su
 - Accepting a connection does not silently share products; post-accept confirmation (Share all / Review products / Not now) is required.
 - Newly exposable products are not auto-shared to existing buyers.
 - Per-buyer product management is a **mobile-first bulk** experience (search, filters, category sheet, multi-select, bulk share/unshare/price with preview) — not one-by-one save-all editing.
+- Level-1 eligibility management is also **mobile-first bulk** (Catalog → Connected Buyer Availability → Enable/Disable/Default PO) — Product Edit remains secondary.
 - Buyer inventory changes only through Goods Receipt / Receive Purchase Order — never on expose, share, price change, connection Accept/Decline, PO draft, PO submit, or supplier Accept/Decline of a connected PO.
 - No full supplier catalog offline download; selective linked-product projection only.
 - No cross-product DB access; POS holds connected-supplier operational data.
@@ -57,4 +58,4 @@ Marketplace, inter-org payments, AP/invoices, live stock sharing, logistics/ship
 
 ## Exact next
 
-Owner device validation of P27-WP01 (Accept → share prompt → Manage Products bulk share/price → Browse). Then **P27-WP02 — Connected PO Delivery & Atomic Submission** when authorized (WP01 already includes atomic submit safety for connected lines; WP02 covers remaining delivery/sync gaps).
+Owner device validation of P27-WP01 (Catalog → Connected Buyer Availability bulk enable → Accept → share prompt → Manage Products bulk share/price → Browse). Then **P27-WP02 — Connected PO Delivery & Atomic Submission** when authorized (WP01 already includes atomic submit safety for connected lines; WP02 covers remaining delivery/sync gaps).

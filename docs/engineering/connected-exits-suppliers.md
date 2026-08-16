@@ -115,7 +115,8 @@ Schema **v9** adds `multiplier_to_base` / `package_label` on linked products so 
 |---|---|
 | **Browse products** | Online only. Returns products that are **globally exposable**, **explicitly shared to this relationship**, orderable, and have a valid effective PO price. Empty = this supplier has not shared products with your business yet. Search optional. Link and use maps a shared item to a buyer catalog product. |
 | **Linked products** | Device cache of **explicitly linked** items only. Never downloads the full supplier catalog. |
-| **Product create/edit** | Available to connected buyers + Default PO Price (initialized from SellingPrice only on first enable; then independent). |
+| **Product create/edit** | Available to connected buyers + Default PO Price (initialized from SellingPrice only on first enable; then independent). Secondary one-off path. |
+| **Catalog → Connected Buyer Availability** | Primary Level-1 mobile bulk Enable/Disable/Default PO Price (search, availability chips, category, select-all matching, price preview). Does **not** create buyer shares. |
 | **Accept connection** | Activates relationship only, then opens share prompt with all exposable products selected by default. Confirm persists shares; Not now shares nothing. |
 | **Connected buyer → Manage products** | Mobile bulk share/unshare/price (search, filters, category, select-all matching, price preview). |
 
