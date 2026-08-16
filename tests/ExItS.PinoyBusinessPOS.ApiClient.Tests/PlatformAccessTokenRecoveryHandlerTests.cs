@@ -2,6 +2,7 @@ using System.Net;
 using System.Text;
 using ExItS.PinoyBusinessPOS.Application.Abstractions;
 using ExItS.PinoyBusinessPOS.Application.Common;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace ExItS.PinoyBusinessPOS.ApiClient.Tests;
@@ -163,11 +164,19 @@ public sealed class PlatformAccessTokenRecoveryHandlerTests
     private static PlatformAccessTokenRecoveryHandler CreateHandler(
         CountingRecovery recovery,
         HttpMessageHandler inner,
-        bool online) =>
-        new(recovery, new StubConnectivity(online), NullLogger<PlatformAccessTokenRecoveryHandler>.Instance)
+        bool online)
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<IPlatformAccessTokenRecovery>(recovery);
+        var sp = services.BuildServiceProvider();
+        return new PlatformAccessTokenRecoveryHandler(
+            sp,
+            new StubConnectivity(online),
+            NullLogger<PlatformAccessTokenRecoveryHandler>.Instance)
         {
             InnerHandler = inner
         };
+    }
 
     private sealed class CountingRecovery(bool succeed) : IPlatformAccessTokenRecovery
     {

@@ -40,7 +40,7 @@ Same intended host; different ports. Honor `MauiProgram` / Local Validation `Pub
 `PlatformAccessTokenRecoveryHandler` (outermost on Platform `HttpClient`):
 
 - Attaches nothing itself; runs after existing `PlatformSessionHeaderHandler` / `PlatformBearerHandler` on the outbound path via pipeline order.
-- On **401** while online: calls `IPlatformAccessTokenRecovery.TryReissueAccessTokenAsync` once.
+- On **401** while online: resolves `IPlatformAccessTokenRecovery` **lazily** from `IServiceProvider` (avoids Auth ↔ HttpClient DI cycles that crash MAUI Android at startup), then calls `TryReissueAccessTokenAsync` once.
 - On success: retries the original request once (Authorization re-attached from updated `CurrentUserContext`).
 - Never loops (`X-ExItS-Platform-Recovery-Attempt`); skips auth bootstrap paths (`/auth/token`, login, logout, introspect, revoke).
 - Does **not** clear session on failure.

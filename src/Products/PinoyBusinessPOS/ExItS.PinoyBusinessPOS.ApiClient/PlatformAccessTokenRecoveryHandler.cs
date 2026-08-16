@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Headers;
 using ExItS.PinoyBusinessPOS.Application.Abstractions;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace ExItS.PinoyBusinessPOS.ApiClient;
@@ -11,8 +12,15 @@ namespace ExItS.PinoyBusinessPOS.ApiClient;
 /// Explicit 401 may safely retry POST/PUT/PATCH/DELETE because the server rejected auth before processing.
 /// Ambiguous transport failures are not retried here.
 /// </summary>
+/// <remarks>
+/// Resolves <see cref="IPlatformAccessTokenRecovery"/> lazily via <see cref="IServiceProvider"/> so
+/// HttpClient construction does not create a circular dependency with <c>AuthenticationService</c>
+/// (Auth → PlatformAccessClient → HttpClient → this handler → Auth).
+/// Only one public constructor is registered with DI — do not add an
+/// <see cref="IPlatformAccessTokenRecovery"/> constructor or the cycle returns.
+/// </remarks>
 public sealed class PlatformAccessTokenRecoveryHandler(
-    IPlatformAccessTokenRecovery recovery,
+    IServiceProvider services,
     IConnectivityService connectivity,
     ILogger<PlatformAccessTokenRecoveryHandler>? logger = null) : DelegatingHandler
 {
@@ -47,6 +55,7 @@ public sealed class PlatformAccessTokenRecoveryHandler(
         var refreshed = false;
         try
         {
+            var recovery = services.GetRequiredService<IPlatformAccessTokenRecovery>();
             refreshed = await recovery.TryReissueAccessTokenAsync(cancellationToken).ConfigureAwait(false);
         }
         catch (Exception ex)
