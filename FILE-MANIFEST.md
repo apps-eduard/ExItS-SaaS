@@ -163,6 +163,8 @@ docs/reports/P29-WP11-database-verification-and-constraint-closeout.md
 docs/reports/P29-WP12-electronic-payment-transaction-reliability-hardening.md
 docs/reports/P29-WP13-concurrency-and-postgresql-execution-plan-validation.md
 docs/reports/P29-WP13-explain-plan-snippets.md
+docs/reports/P29-WP14-postgresql-backup-restore-and-recovery-validation.md
+docs/runbooks/postgresql-backup-and-restore.md
 docs/reports/P29-performance-baseline.md
 docs/engineering/data-integrity-query-performance-and-database-hardening.md
 docs/engineering/connected-exits-suppliers.md

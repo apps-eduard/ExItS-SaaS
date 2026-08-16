@@ -19,7 +19,7 @@ Cross-cutting engineering guidance for Phase 29. Complements [data-ownership](da
 7. Concurrency + migration validation with PostgreSQL/Testcontainers (apply/rollback/re-apply evidence in [P29-WP11](../reports/P29-WP11-database-verification-and-constraint-closeout.md)).
 8. Electronic Card/GCash payment reservation + durable attempt before FakePaymentGateway ([P29-WP12](../reports/P29-WP12-electronic-payment-transaction-reliability-hardening.md)) — **not** Production Payment Ready.
 9. True concurrent payment races + SMOKE EXPLAIN (ANALYZE, BUFFERS) ([P29-WP13](../reports/P29-WP13-concurrency-and-postgresql-execution-plan-validation.md)).
-8. Backup/restore evidence without falsely closing Phase 14 Production criteria.
+10. Development backup → clean restore → migrate → EF readback ([P29-WP14](../reports/P29-WP14-postgresql-backup-restore-and-recovery-validation.md)) — **not** Production Backup/Restore Proven.
 
 ## FUTURE tenant composite FK candidates
 

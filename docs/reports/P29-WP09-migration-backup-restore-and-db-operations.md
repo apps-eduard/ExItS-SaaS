@@ -26,6 +26,10 @@ Clean apply / rollback / re-apply and constraint corruption drills for the WP09 
 - Production `pg_dump` rehearsal — Phase 14 Production exit criteria remain open.
 - No `Database.Migrate()` on production startup paths introduced.
 
+## Development restore evidence (cross-link)
+
+Non-production backup → disposable restore drills (Testcontainers + local-validation script) are tracked under **[P29-WP14](P29-WP14-postgresql-backup-restore-and-recovery-validation.md)** / [runbook](../runbooks/postgresql-backup-and-restore.md). That work does **not** change **Production Backup/Restore Proven = No**.
+
 ## Exact next
 
-Keep Phase 14 Production backup incomplete until its own criteria; see WP11 for Testcontainers migration evidence.
+Keep Phase 14 Production backup incomplete until its own criteria; see WP11 for Testcontainers migration evidence; see WP14 for development restore drill evidence.

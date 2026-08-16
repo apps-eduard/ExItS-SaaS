@@ -47,6 +47,8 @@
 - [P29-WP11 database verification & constraint closeout](reports/P29-WP11-database-verification-and-constraint-closeout.md)
 - [P29-WP12 electronic payment transaction reliability](reports/P29-WP12-electronic-payment-transaction-reliability-hardening.md)
 - [P29-WP13 concurrency & PostgreSQL EXPLAIN validation](reports/P29-WP13-concurrency-and-postgresql-execution-plan-validation.md)
+- [P29-WP14 PostgreSQL backup/restore recovery validation](reports/P29-WP14-postgresql-backup-restore-and-recovery-validation.md)
+- [PostgreSQL backup/restore runbook](runbooks/postgresql-backup-and-restore.md)
 - [Data integrity / query performance engineering](engineering/data-integrity-query-performance-and-database-hardening.md)
 - [Organization branches and fulfillment locations](engineering/organization-branches-and-fulfillment-locations.md)
 - [Branch delivery pricing](engineering/branch-delivery-pricing.md)
