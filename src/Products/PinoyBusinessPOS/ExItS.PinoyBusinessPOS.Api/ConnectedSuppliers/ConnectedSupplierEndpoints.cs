@@ -33,13 +33,22 @@ internal static class ConnectedSupplierEndpoints
         {if(!Authorize(req,access,UtangCapability.ViewSuppliers,out var org,out var problem))return problem!;return PosApiResults.FromResult(await use.ExecuteAsync(org,ct),Results.Ok);});
         group.MapPut("/exposures/{id:guid}",async(HttpRequest req,Guid id,UpdateExposureRequest body,UpdateExposure use,IPosCommercialAccessAccessor access,CancellationToken ct)=>
         {if(!Authorize(req,access,UtangCapability.ManageSuppliers,out var org,out var problem))return problem!;return PosApiResults.FromResult(await use.ExecuteAsync(org,id,body,ct),Results.Ok);});
-        group.MapGet("/relationships/{id:guid}/buyer-product-shares",async(HttpRequest req,Guid id,ListBuyerProductShares use,IPosCommercialAccessAccessor access,CancellationToken ct)=>
-        {if(!Authorize(req,access,UtangCapability.ViewSuppliers,out var org,out var problem))return problem!;return PosApiResults.FromResult(await use.ExecuteAsync(org,id,ct),Results.Ok);});
+        group.MapGet("/relationships/{id:guid}/buyer-product-shares",async(HttpRequest req,Guid id,string? query,string? category,string? shareFilter,int? page,int? pageSize,QueryBuyerProductShares queryUse,ListBuyerProductShares legacy,IPosCommercialAccessAccessor access,CancellationToken ct)=>
+        {if(!Authorize(req,access,UtangCapability.ViewSuppliers,out var org,out var problem))return problem!;
+         if(page is not null||pageSize is not null||!string.IsNullOrWhiteSpace(query)||!string.IsNullOrWhiteSpace(category)||!string.IsNullOrWhiteSpace(shareFilter))
+             return PosApiResults.FromResult(await queryUse.ExecuteAsync(org,id,query,category,shareFilter,page,pageSize,ct),Results.Ok);
+         return PosApiResults.FromResult(await legacy.ExecuteAsync(org,id,ct),Results.Ok);});
         group.MapGet("/relationships/{id:guid}/eligible-products",async(HttpRequest req,Guid id,ListEligibleProductsForSharing use,IPosCommercialAccessAccessor access,CancellationToken ct)=>
         {if(!Authorize(req,access,UtangCapability.ViewSuppliers,out var org,out var problem))return problem!;return PosApiResults.FromResult(await use.ExecuteAsync(org,id,ct),Results.Ok);});
         group.MapPut("/relationships/{id:guid}/buyer-product-shares",async(HttpRequest req,Guid id,SetBuyerProductSharesRequest body,SetBuyerProductShares use,IPosCommercialAccessAccessor access,CancellationToken ct)=>
         {if(!Authorize(req,access,UtangCapability.ManageSuppliers,out var org,out var problem))return problem!;return PosApiResults.FromResult(await use.ExecuteAsync(org,id,body.Products??[],ct),Results.Ok);});
         group.MapPost("/relationships/{id:guid}/buyer-product-shares/confirm",async(HttpRequest req,Guid id,ConfirmBuyerProductSharingRequest body,ConfirmBuyerProductSharing use,IPosCommercialAccessAccessor access,CancellationToken ct)=>
+        {if(!Authorize(req,access,UtangCapability.ManageSuppliers,out var org,out var problem))return problem!;return PosApiResults.FromResult(await use.ExecuteAsync(org,id,body,ct),Results.Ok);});
+        group.MapPost("/relationships/{id:guid}/buyer-product-shares/bulk",async(HttpRequest req,Guid id,BulkBuyerProductShareMutationRequest body,BulkMutateBuyerProductShares use,IPosCommercialAccessAccessor access,CancellationToken ct)=>
+        {if(!Authorize(req,access,UtangCapability.ManageSuppliers,out var org,out var problem))return problem!;return PosApiResults.FromResult(await use.ExecuteAsync(org,id,body,ct),Results.Ok);});
+        group.MapPost("/relationships/{id:guid}/buyer-product-shares/pricing/preview",async(HttpRequest req,Guid id,BulkBuyerPricingRequest body,PreviewBuyerProductPricing use,IPosCommercialAccessAccessor access,CancellationToken ct)=>
+        {if(!Authorize(req,access,UtangCapability.ViewSuppliers,out var org,out var problem))return problem!;return PosApiResults.FromResult(await use.ExecuteAsync(org,id,body,ct),Results.Ok);});
+        group.MapPost("/relationships/{id:guid}/buyer-product-shares/pricing/apply",async(HttpRequest req,Guid id,BulkBuyerPricingRequest body,ApplyBuyerProductPricing use,IPosCommercialAccessAccessor access,CancellationToken ct)=>
         {if(!Authorize(req,access,UtangCapability.ManageSuppliers,out var org,out var problem))return problem!;return PosApiResults.FromResult(await use.ExecuteAsync(org,id,body,ct),Results.Ok);});
         group.MapPost("/relationships/{id:guid}/links",async(HttpRequest req,Guid id,LinkProductRequest body,LinkProduct use,IPosCommercialAccessAccessor access,CancellationToken ct)=>
         {if(!Authorize(req,access,UtangCapability.ManagePurchasing,out var org,out var problem))return problem!;return PosApiResults.FromResult(await use.ExecuteAsync(org,id,body,ct),Results.Ok);});

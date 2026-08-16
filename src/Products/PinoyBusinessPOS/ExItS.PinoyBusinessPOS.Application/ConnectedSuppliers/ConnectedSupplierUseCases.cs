@@ -21,6 +21,7 @@ public static class ConnectedSupplierErrorCodes
     public const string LinkNotFound = "pos.connected_supplier.link.not_found";
     public const string IncomingOrderNotFound = "pos.connected_supplier.incoming_order.not_found";
     public const string OrganizationMismatch = "pos.connected_supplier.organization_mismatch";
+    public const string BulkValidation = "pos.connected_supplier.buyer_share.bulk_validation";
 }
 
 public sealed record ConnectedSupplierRelationshipDto(

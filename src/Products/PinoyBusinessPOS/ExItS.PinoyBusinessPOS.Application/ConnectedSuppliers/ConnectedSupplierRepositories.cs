@@ -44,9 +44,34 @@ public interface IConnectedBuyerProductShareRepository
             int skip,
             int take,
             CancellationToken ct = default);
+
+    /// <summary>
+    /// Supplier-side share management: exposed products left-joined to relationship shares,
+    /// with optional query / category / share-state filters and paging.
+    /// </summary>
+    Task<BuyerProductShareSearchPage> SearchForSupplierManagementAsync(
+        ConnectedSupplierRelationshipId relationshipId,
+        PosOrganizationId supplier,
+        string? query,
+        string? category,
+        string? shareFilter,
+        int skip,
+        int take,
+        bool idsOnly,
+        CancellationToken ct = default);
+
     Task AddAsync(ConnectedBuyerProductShare share, CancellationToken ct = default);
     Task UpdateAsync(ConnectedBuyerProductShare share, CancellationToken ct = default);
 }
+
+public sealed record BuyerProductShareSearchPage(
+    IReadOnlyList<SupplierProductExposure> Exposures,
+    IReadOnlyList<ConnectedBuyerProductShare?> Shares,
+    IReadOnlyList<Guid> MatchingProductIds,
+    int MatchingCount,
+    int EligibleCount,
+    int SharedCount,
+    IReadOnlyList<(string? CategoryName, int Count)> CategoryFacets);
 
 public interface IBuyerSupplierProductLinkRepository
 {
