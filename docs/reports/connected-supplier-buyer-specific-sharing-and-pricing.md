@@ -2,12 +2,16 @@
 
 Date: 2026-08-16  
 Starting SHA: `62b73307c753388d0006acc8d580db52dc483434`  
+**Canonical WP report:** [P27-WP01-buyer-specific-product-sharing-and-po-pricing.md](P27-WP01-buyer-specific-product-sharing-and-po-pricing.md)  
+Phase: [Phase 27](../phases/phase-27-connected-supplier-commerce-and-purchasing.md)  
 Related design: [connected-exits-suppliers.md](../engineering/connected-exits-suppliers.md)  
 Phase 1 baseline: [connected-exits-suppliers-phase-1.md](connected-exits-suppliers-phase-1.md)
 
 ## Status
 
-**Code Complete (buyer-specific sharing + PO pricing).** Not Device Verified. Not Browser Verified. **Not Production Ready.**
+**Code Complete (P27-WP01).** Phase 27 **Open / In Progress**. Not Device Verified. Not Browser Verified. **Not Production Ready.**
+
+This file retains engineering-detail Q&A and migration notes. Status and roadmap authority live on the P27-WP01 report and phase page.
 
 ## Implementation commits
 

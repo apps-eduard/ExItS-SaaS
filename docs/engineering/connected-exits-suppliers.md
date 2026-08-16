@@ -1,7 +1,8 @@
 # Connected ExItS Suppliers — Phase 1 Design
 
 Phase marker: `connected-exits-suppliers-phase-1`  
-Status: **Code Complete (Phase 1)** — see [completion report](../reports/connected-exits-suppliers-phase-1.md)  
+Status: **Code Complete (Phase 1 foundation)** — see [completion report](../reports/connected-exits-suppliers-phase-1.md)  
+Commerce follow-on: **Phase 27 Open / In Progress** — [phase](../phases/phase-27-connected-supplier-commerce-and-purchasing.md); P27-WP01 Code Complete ([report](../reports/P27-WP01-buyer-specific-product-sharing-and-po-pricing.md))  
 Starting SHA: `f67c2763c3e30a7a2b77847f23a101f57c403ca6`
 
 ## Architecture audit (authoritative)

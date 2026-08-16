@@ -150,6 +150,9 @@ The dashboard links to the latest accepted report.
 | [P26-WP03-platform-controlled-compliance-capability-and-eligibility.md](P26-WP03-platform-controlled-compliance-capability-and-eligibility.md) | P26-WP03 Platform-controlled compliance capability and eligibility | Code Complete / Validation Pending |
 | [P26-WP04-organization-tax-compliance-profile-and-activation-foundation.md](P26-WP04-organization-tax-compliance-profile-and-activation-foundation.md) | P26-WP04 Organization tax/compliance profile and activation foundation | Code Complete / Validation Pending |
 | [P26-WP05-sales-document-compliance-integration-hardening.md](P26-WP05-sales-document-compliance-integration-hardening.md) | P26-WP05 Sales document compliance integration hardening & validation readiness | Code Complete / Owner Validation Pending |
+| [P27-WP01-buyer-specific-product-sharing-and-po-pricing.md](P27-WP01-buyer-specific-product-sharing-and-po-pricing.md) | P27-WP01 Buyer-specific product sharing & PO pricing | Code Complete |
+| [connected-supplier-buyer-specific-sharing-and-pricing.md](connected-supplier-buyer-specific-sharing-and-pricing.md) | Companion engineering detail for P27-WP01 | Code Complete |
+| [phase-27-connected-supplier-commerce-and-purchasing.md](../phases/phase-27-connected-supplier-commerce-and-purchasing.md) | Phase 27 Connected Supplier Commerce & Purchasing | Open / In Progress |
 
 Related engineering (not a WP closeout): [platform-controlled-organization-tax-configuration.md](../engineering/platform-controlled-organization-tax-configuration.md) — Platform `TaxConfigurationEnabled` gate for Operational Setup tax settings (default off; Approved eligibility required; not certification).
 
