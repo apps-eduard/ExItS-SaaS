@@ -14,7 +14,7 @@
 | Current phase | Phase 28 **Open / In Progress — WP01 Code Complete; WP02–WP09 Stage B Code Complete / Validation Pending; WP10 Not Started**. Phase 27 remains **Open / In Progress**; earlier open phases remain unchanged. |
 | Current work package | **P28-WP10** E2E validation and Phase 28 closeout — **Not Started** ([phase](phases/phase-28-customer-ordering-pickup-and-delivery.md); [Stage B report](reports/P28-WP02-customer-ordering-stage-b-slice.md)). |
 | Overall status | Branch fulfillment foundation and CustomerOrder pickup/delivery Stage B slice are implemented. Storefront checkout UX and E2E closeout remain. **Not Device Verified. Not Browser Verified. Not Production Ready.** Phase 27 remains Open. |
-| Latest verified commit | Stage A through `3ca38d43`; Stage B `30f4fa93`…`d692772d` |
+| Latest verified commit | P26-WP06 `69fd132f`…`fe63a6f6` (Phase 28 Stage B also on main through `1f81cb63`) |
 | Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA deferred; Phase 19/20/22/24/25/26/27 owner/physical validation pending |
 | Last updated | 2026-08-16 |
 
