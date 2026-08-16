@@ -3,6 +3,7 @@ using ExItS.PinoyBusinessPOS.Application.Options;
 using ExItS.PinoyBusinessPOS.Application.Platform;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 
 namespace ExItS.PinoyBusinessPOS.ApiClient;
@@ -13,6 +14,8 @@ public static class DependencyInjection
     /// Registers Platform API client (health/access), POS business API customer client,
     /// Bearer token forwarding, Development/Testing <c>X-Dev-Platform-User-Id</c>, and organization scope header.
     /// Register <see cref="ICurrentUserContext"/> and <see cref="IConnectivityService"/> beforehand.
+    /// Register <see cref="IPlatformAccessTokenRecovery"/> before this call to enable 401 session recovery;
+    /// otherwise a no-op recovery is used.
     /// </summary>
     public static IServiceCollection AddPosApiClient(this IServiceCollection services, IConfiguration configuration)
     {
@@ -32,6 +35,8 @@ public static class DependencyInjection
             .Validate(o => o.TimeoutSeconds > 0, "PosBusinessApi:TimeoutSeconds must be greater than zero.")
             .Validate(o => !requireHttps || IsHttpsAbsoluteUri(o.BaseUrl), "PosBusinessApi:BaseUrl must use HTTPS in Production (MAUI-HTTPS).");
 
+        services.TryAddSingleton<IPlatformAccessTokenRecovery, NoOpPlatformAccessTokenRecovery>();
+
         services.AddTransient<PlatformBearerHandler>();
         services.AddTransient<PlatformSessionHeaderHandler>();
         services.AddTransient<PosPlatformSessionForwardingHandler>();
@@ -40,6 +45,7 @@ public static class DependencyInjection
         services.AddTransient<PosInstallationDeviceHeaderHandler>();
         services.AddTransient<PosCommercialHeaderHandler>();
         services.AddTransient<PosApiReachabilityHandler>();
+        services.AddTransient<PlatformAccessTokenRecoveryHandler>();
 
         services.AddHttpClient<IPosApiClient, PosApiClient>((provider, client) =>
             {
@@ -47,6 +53,7 @@ public static class DependencyInjection
                 client.BaseAddress = new Uri(options.BaseUrl, UriKind.Absolute);
                 client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
             })
+            .AddHttpMessageHandler<PlatformAccessTokenRecoveryHandler>()
             .AddHttpMessageHandler<PlatformSessionHeaderHandler>()
             .AddHttpMessageHandler<DevPlatformUserHeaderHandler>()
             .AddHttpMessageHandler<PlatformBearerHandler>()

@@ -116,13 +116,19 @@ public sealed class PosApiClient(HttpClient httpClient, IConnectivityService? co
         }
         catch (HttpRequestException ex)
         {
-            // Any transport-level failure (no route to host, connection refused, DNS failure, TLS
-            // failure) is treated as an offline condition for a client application: the API cannot
-            // be reached, regardless of the precise transport reason.
+            // Device network up but host unreachable → service unavailable (not session expiry).
+            // Device network down is already short-circuited above as Offline.
+            var connected = connectivityService is null
+                || await connectivityService.IsConnectedAsync(ct).ConfigureAwait(false);
             return new ApiResult<string>
             {
-                Status = ApiCallStatus.Offline,
-                Error = new ApiError("Network unavailable", ex.Message, null, null, null)
+                Status = connected ? ApiCallStatus.Unavailable : ApiCallStatus.Offline,
+                Error = new ApiError(
+                    connected ? "Service unavailable" : "Network unavailable",
+                    ex.Message,
+                    null,
+                    null,
+                    null)
             };
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)

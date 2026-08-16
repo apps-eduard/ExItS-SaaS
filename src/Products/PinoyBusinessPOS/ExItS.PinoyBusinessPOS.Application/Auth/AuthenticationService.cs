@@ -24,7 +24,8 @@ public sealed class AuthenticationService(
     IOfflineOperatingGrantService? offlineGrant = null,
     IDeviceIdentityProvider? deviceIdentity = null,
     OfflineSessionUxState? offlineSessionUx = null,
-    SellingModeService? sellingMode = null) : IAuthenticationService
+    SellingModeService? sellingMode = null,
+    IConnectivityService? connectivity = null) : IAuthenticationService, IPlatformAccessTokenRecovery
 {
     private static readonly TimeSpan SessionLifetime = TimeSpan.FromHours(12);
     private readonly TimeProvider _clock = timeProvider ?? TimeProvider.System;
@@ -34,6 +35,8 @@ public sealed class AuthenticationService(
     private readonly IDeviceIdentityProvider? _deviceIdentity = deviceIdentity;
     private readonly OfflineSessionUxState? _offlineSessionUx = offlineSessionUx;
     private readonly SellingModeService? _sellingMode = sellingMode;
+    private readonly IConnectivityService? _connectivity = connectivity;
+    private readonly SemaphoreSlim _reissueGate = new(1, 1);
 
     public bool IsDevelopmentAuthenticationEnabled =>
         string.Equals(appInfo.EnvironmentName, "Development", StringComparison.OrdinalIgnoreCase)
@@ -457,6 +460,21 @@ public sealed class AuthenticationService(
 
         if (shell.ExpiresAtUtc <= _clock.GetUtcNow())
         {
+            if (!await IsDeviceOnlineAsync(ct).ConfigureAwait(false))
+            {
+                // Nominal expiry while offline is not logout — keep stored identity for offline work.
+                events.Record("session_nominal_expiry_while_offline", Dict(("userId", shell.UserId.ToString("D"))));
+                return await RestoreOfflineOperatingFallbackAsync(shell, ct).ConfigureAwait(false);
+            }
+
+            currentUser.Set(shell);
+            if (await TryReissueAccessTokenAsync(ct).ConfigureAwait(false)
+                && currentUser.Session is { } renewed
+                && !string.IsNullOrWhiteSpace(renewed.AccessToken))
+            {
+                return await RestoreBearerSessionAsync(renewed, ct).ConfigureAwait(false);
+            }
+
             await LogoutAsync(ct).ConfigureAwait(false);
             events.Record("session_expired", EmptyProps());
             return new AuthResult(false, AuthFailureReason.SessionExpired, SafeMessageKey: "Auth_SessionExpired");
@@ -867,6 +885,19 @@ public sealed class AuthenticationService(
 
         if (existing.ExpiresAtUtc <= _clock.GetUtcNow())
         {
+            if (!await IsDeviceOnlineAsync(ct).ConfigureAwait(false))
+            {
+                events.Record("refresh_deferred_offline", Dict(("reason", "expired_while_offline")));
+                return new AuthResult(true, AuthFailureReason.None, existing, SafeMessageKey: "SyncStatus_Offline");
+            }
+
+            if (await TryReissueAccessTokenAsync(ct).ConfigureAwait(false)
+                && currentUser.Session is { } renewed
+                && !string.IsNullOrWhiteSpace(renewed.AccessToken))
+            {
+                return await RestoreBearerSessionAsync(renewed, ct).ConfigureAwait(false);
+            }
+
             await LogoutAsync(ct).ConfigureAwait(false);
             events.Record("refresh_failure", Dict(("reason", "expired")));
             return new AuthResult(false, AuthFailureReason.SessionExpired, SafeMessageKey: "Auth_SessionExpired");
@@ -874,7 +905,28 @@ public sealed class AuthenticationService(
 
         if (!string.IsNullOrWhiteSpace(existing.AccessToken))
         {
-            return await RestoreBearerSessionAsync(existing, ct).ConfigureAwait(false);
+            var bearer = await RestoreBearerSessionAsync(existing, ct).ConfigureAwait(false);
+            if (bearer.Succeeded)
+            {
+                return bearer;
+            }
+
+            if (await IsDeviceOnlineAsync(ct).ConfigureAwait(false)
+                && await TryReissueAccessTokenAsync(ct).ConfigureAwait(false)
+                && currentUser.Session is { } reissued
+                && !string.IsNullOrWhiteSpace(reissued.AccessToken))
+            {
+                return await RestoreBearerSessionAsync(reissued, ct).ConfigureAwait(false);
+            }
+
+            return bearer;
+        }
+
+        if (await TryReissueAccessTokenAsync(ct).ConfigureAwait(false)
+            && currentUser.Session is { } issued
+            && !string.IsNullOrWhiteSpace(issued.AccessToken))
+        {
+            return await RestoreBearerSessionAsync(issued, ct).ConfigureAwait(false);
         }
 
         var now = _clock.GetUtcNow();
@@ -884,11 +936,96 @@ public sealed class AuthenticationService(
         if (!result.Succeeded)
         {
             events.Record("refresh_failure", Dict(("reason", result.FailureReason.ToString())));
-            await LogoutAsync(ct).ConfigureAwait(false);
+            if (await IsDeviceOnlineAsync(ct).ConfigureAwait(false))
+            {
+                await LogoutAsync(ct).ConfigureAwait(false);
+            }
+
             return result with { FailureReason = AuthFailureReason.RefreshFailed };
         }
 
         return result;
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> TryReissueAccessTokenAsync(CancellationToken ct = default)
+    {
+        await _reissueGate.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            var session = currentUser.Session;
+            if (session is null || string.IsNullOrWhiteSpace(session.PlatformSessionToken))
+            {
+                events.Record("token_reissue_skipped", Dict(("reason", "missing_platform_session")));
+                return false;
+            }
+
+            if (!await IsDeviceOnlineAsync(ct).ConfigureAwait(false))
+            {
+                events.Record("token_reissue_skipped", Dict(("reason", "offline")));
+                return false;
+            }
+
+            var reissue = await accessClient
+                .IssueTokenAsync(
+                    new IssuePlatformAccessTokenRequest(
+                        GrantType: "session",
+                        UsernameOrEmail: null,
+                        Password: null,
+                        OrganizationId: null,
+                        ProductCode: null),
+                    ct)
+                .ConfigureAwait(false);
+
+            if (!reissue.IsSuccess
+                || reissue.Data is null
+                || string.IsNullOrWhiteSpace(reissue.Data.AccessToken))
+            {
+                events.Record("token_reissue_failure", Dict(
+                    ("status", reissue.Status.ToString()),
+                    ("errorCode", reissue.Error?.ErrorCode)));
+                return false;
+            }
+
+            var updated = session with
+            {
+                AccessToken = reissue.Data.AccessToken,
+                ExpiresAtUtc = reissue.Data.ExpiresAtUtc == default
+                    ? _clock.GetUtcNow().Add(SessionLifetime)
+                    : reissue.Data.ExpiresAtUtc
+            };
+
+            try
+            {
+                var (_, marker) = await sessionStore.LoadAsync(ct).ConfigureAwait(false);
+                marker ??= Guid.NewGuid().ToString("N");
+                await sessionStore.SaveAsync(updated, marker, ct).ConfigureAwait(false);
+            }
+            catch
+            {
+                events.Record("secure_storage_failure", Dict(("operation", "token_reissue_save")));
+                return false;
+            }
+
+            currentUser.Set(updated);
+            events.Record("token_reissue_success", Dict(("userId", updated.UserId.ToString("D"))));
+            return true;
+        }
+        finally
+        {
+            _reissueGate.Release();
+        }
+    }
+
+    private async Task<bool> IsDeviceOnlineAsync(CancellationToken ct)
+    {
+        if (_connectivity is null)
+        {
+            // Fail closed for expiry/reissue decisions when connectivity is unknown (unit tests).
+            return true;
+        }
+
+        return await _connectivity.IsConnectedAsync(ct).ConfigureAwait(false);
     }
 
     public async Task LogoutAsync(CancellationToken ct = default)

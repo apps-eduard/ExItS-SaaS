@@ -144,7 +144,10 @@ public static class MauiProgram
                 sp.GetRequiredService<IProtectedShellAccessPolicy>(),
                 sp.GetRequiredService<IOfflineOperationQueue>()));
         services.AddSingleton<SellingModeService>();
-        services.AddSingleton<IAuthenticationService, AuthenticationService>();
+        services.AddSingleton<AuthenticationService>();
+        services.AddSingleton<IAuthenticationService>(sp => sp.GetRequiredService<AuthenticationService>());
+        services.AddSingleton<IPlatformAccessTokenRecovery>(sp => sp.GetRequiredService<AuthenticationService>());
+        services.AddSingleton<PostSignInReturnRoute>();
         services.AddSingleton<IUtangCapabilityEvaluator, UtangCapabilityEvaluator>();
         services.Configure<LocalValidationClientOptions>(configuration.GetSection(LocalValidationClientOptions.SectionName));
         services.AddSingleton<IDocumentHandoffService, MauiDocumentHandoffService>();
