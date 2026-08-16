@@ -102,6 +102,20 @@ else
                     <Badge Tone="@(isActive ? BadgeTone.Success : BadgeTone.Neutral)">@CatalogUiOptions.StatusLabel(L, product.Status)</Badge>
                 </dd>
             </div>
+            @if (product.CanExposeToConnectedBuyers)
+            {
+                <div class="pos-catalog-product-detail__fact">
+                    <dt>@L["Catalog_ConnectedBuyers_Section"]</dt>
+                    <dd>@L["Catalog_ConnectedBuyers_Available"]</dd>
+                </div>
+                @if (product.DefaultConnectedPoPrice is decimal connectedPoPrice)
+                {
+                    <div class="pos-catalog-product-detail__fact">
+                        <dt>@L["Catalog_ConnectedBuyers_DefaultPoPrice"]</dt>
+                        <dd><MoneyDisplay Amount="@connectedPoPrice" CurrencyCode="PHP" /></dd>
+                    </div>
+                }
+            }
         </dl>
     </section>
 

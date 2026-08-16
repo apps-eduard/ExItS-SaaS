@@ -378,7 +378,7 @@ else
             await LoadAsync();
             if (accept)
             {
-                Nav.NavigateTo("/suppliers/connected/buyers");
+                Nav.NavigateTo($"/suppliers/connected/buyers/{relationshipId:D}/share-products");
             }
         }
         finally

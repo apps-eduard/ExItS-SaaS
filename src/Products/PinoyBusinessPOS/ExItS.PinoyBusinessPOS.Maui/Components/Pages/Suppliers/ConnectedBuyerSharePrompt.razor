@@ -1,0 +1,162 @@
+@page "/suppliers/connected/buyers/{RelationshipId:guid}/share-products"
+@using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosConnectedSupplierClient ConnectedSuppliers
+@inject IUtangCapabilityEvaluator Capabilities
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+<StoreHeaderBack Href="@($"/suppliers/connected/buyers/{RelationshipId:D}")" />
+<Page>
+    <header class="pos-suppliers__header">
+        <h1 class="pos-suppliers__title">@L["ConnectedBuyers_SharePromptTitle"]</h1>
+        <p class="pos-suppliers__subtitle">@L["ConnectedBuyers_SharePromptHelp"]</p>
+    </header>
+
+    @if (_loading)
+    {
+        <Spinner />
+    }
+    else if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <ErrorState Title="@L["ConnectedSuppliers_Error"]"
+                    Message="@_error"
+                    RetryLabel="@L["Common_Retry"]"
+                    OnRetry="LoadAsync" />
+    }
+    else
+    {
+        <p class="pos-muted">@L["ConnectedBuyers_ShareEligibleCount", _products.Count]</p>
+        @if (_products.Count > 0)
+        {
+            <div class="pos-personal-list" role="list">
+                @foreach (var product in _products)
+                {
+                    <label class="pos-personal-row pos-personal-row--static" role="listitem">
+                        <input type="checkbox"
+                               checked="@_selected.Contains(product.SupplierProductId)"
+                               disabled="@_saving"
+                               @onchange="args => SetSelected(product.SupplierProductId, args)" />
+                        <span class="pos-personal-row__body">
+                            <span class="pos-personal-row__title">@ProductName(product)</span>
+                            <span class="pos-personal-row__meta">@(product.SkuSnapshot ?? "—") · @product.UnitOfMeasureCode</span>
+                            @if (product.EffectiveSupplierOrderPrice is decimal price)
+                            {
+                                <MoneyDisplay Amount="@price" CurrencyCode="PHP" />
+                            }
+                        </span>
+                    </label>
+                }
+            </div>
+        }
+
+        <div class="pos-action-grid pos-action-grid--single" role="group">
+            <button type="button"
+                    class="pos-action-tile pos-action-tile--primary"
+                    disabled="@(_saving || _selected.Count == 0)"
+                    @onclick="ConfirmAsync">
+                <span class="pos-action-tile__label">@L["ConnectedBuyers_ShareAllConfirm"]</span>
+            </button>
+            <button type="button" class="pos-action-tile" disabled="@_saving" @onclick="GoManage">
+                <span class="pos-action-tile__label">@L["ConnectedBuyers_CustomizeProducts"]</span>
+            </button>
+            <button type="button" class="pos-action-tile" disabled="@_saving" @onclick="GoBuyer">
+                <span class="pos-action-tile__label">@L["ConnectedBuyers_NotNow"]</span>
+            </button>
+        </div>
+    }
+</Page>
+
+@code {
+    [Parameter] public Guid RelationshipId { get; set; }
+
+    private bool _loading = true;
+    private bool _saving;
+    private string? _error;
+    private IReadOnlyList<ConnectedBuyerProductShareDto> _products = [];
+    private HashSet<Guid> _selected = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        if (!Capabilities.IsAllowed(UtangCapability.ManageSuppliers))
+        {
+            Nav.NavigateTo("/home", replace: true);
+            return;
+        }
+
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+        if (!await Connectivity.IsConnectedAsync())
+        {
+            _error = L["Suppliers_OfflineMessage"];
+            _loading = false;
+            return;
+        }
+
+        var result = await ConnectedSuppliers.ListEligibleProductsForSharingAsync(RelationshipId);
+        _loading = false;
+        if (!result.IsSuccess || result.Data is null)
+        {
+            _products = [];
+            _selected = [];
+            _error = result.Error?.Detail ?? L["ConnectedBuyers_SharingLoadFailed"];
+            return;
+        }
+
+        _products = result.Data.OrderBy(ProductName, StringComparer.OrdinalIgnoreCase).ToList();
+        _selected = _products.Select(x => x.SupplierProductId).ToHashSet();
+    }
+
+    private void SetSelected(Guid productId, ChangeEventArgs args)
+    {
+        var selected = args.Value is true
+            || string.Equals(args.Value?.ToString(), "true", StringComparison.OrdinalIgnoreCase);
+        if (selected) _selected.Add(productId);
+        else _selected.Remove(productId);
+    }
+
+    private async Task ConfirmAsync()
+    {
+        if (_saving || _selected.Count == 0) return;
+        _saving = true;
+        _error = null;
+        try
+        {
+            var result = await ConnectedSuppliers.ConfirmBuyerProductSharingAsync(
+                RelationshipId,
+                new ConfirmBuyerProductSharingRequest(_selected.ToList()));
+            if (!result.IsSuccess)
+            {
+                _error = result.Error?.Detail ?? L["ConnectedBuyers_SaveSharingFailed"];
+                return;
+            }
+
+            GoBuyer();
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private string ProductName(ConnectedBuyerProductShareDto product) =>
+        string.IsNullOrWhiteSpace(product.NameSnapshot) ? product.SupplierProductId.ToString("D") : product.NameSnapshot;
+
+    private void GoManage() =>
+        Nav.NavigateTo($"/suppliers/connected/buyers/{RelationshipId:D}/shared-products");
+
+    private void GoBuyer() =>
+        Nav.NavigateTo($"/suppliers/connected/buyers/{RelationshipId:D}", replace: true);
+}

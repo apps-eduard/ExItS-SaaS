@@ -98,6 +98,26 @@ else
                                 SaveLabel="@L["Catalog_Save"]"
                                 OnSave="SaveAsync"
                                 OnCancel="GoDetail" />
+            <section class="pos-settings__panel" aria-labelledby="catalog-connected-buyers-heading">
+                <h2 id="catalog-connected-buyers-heading">@L["Catalog_ConnectedBuyers_Section"]</h2>
+                <label>
+                    <input type="checkbox"
+                           checked="@_canExposeToConnectedBuyers"
+                           disabled="@(!canManage || _isOffline || _saving)"
+                           @onchange="OnConnectedBuyerAvailabilityChanged" />
+                    @L["Catalog_ConnectedBuyers_Available"]
+                </label>
+                <p class="pos-muted">@L["Catalog_ConnectedBuyers_VisibilityHelp"]</p>
+                @if (_canExposeToConnectedBuyers)
+                {
+                    <CurrencyInput Label="@L["Catalog_ConnectedBuyers_DefaultPoPrice"]"
+                                   Value="@_defaultConnectedPoPrice"
+                                   ValueChanged="v => _defaultConnectedPoPrice = v"
+                                   CurrencyCode="PHP"
+                                   Hint="@L["Catalog_ConnectedBuyers_DefaultPoHelp"]"
+                                   Disabled="@(!canManage || _isOffline || _saving)" />
+                }
+            </section>
         </div>
     </section>
 </Page>
@@ -125,6 +145,8 @@ else
     private readonly List<ProductUnitDraft> _sellUnits = [];
     private string? _sellingMode = PosCatalogOptions.DefaultSellingModeCode;
     private decimal? _sellingPrice;
+    private bool _canExposeToConnectedBuyers;
+    private decimal? _defaultConnectedPoPrice;
     private bool _trackStock;
     private bool _initialTrackStock;
     private decimal _onHandQuantity;
@@ -190,6 +212,8 @@ else
                 ? PosCatalogOptions.DefaultSellingModeCode
                 : _product.SellingMode;
             _sellingPrice = _product.SellingPrice;
+            _canExposeToConnectedBuyers = _product.CanExposeToConnectedBuyers;
+            _defaultConnectedPoPrice = _product.DefaultConnectedPoPrice;
             _trackStock = _product.IsTracked;
             _initialTrackStock = _product.IsTracked;
             _onHandQuantity = _product.OnHandQuantity;
@@ -324,7 +348,9 @@ else
                 TracksExpiration: _tracksExpiration,
                 ExpirationWarningDays: _tracksExpiration && int.TryParse(_warningDaysText, out var days) ? days : null,
                 UsagePreset: ResolveUsagePresetForSave(),
-                Units: units));
+                Units: units,
+                CanExposeToConnectedBuyers: _canExposeToConnectedBuyers,
+                DefaultConnectedPoPrice: _canExposeToConnectedBuyers ? _defaultConnectedPoPrice : null));
 
             if (!result.IsSuccess || result.Data is null)
             {
@@ -371,6 +397,16 @@ else
     }
 
     private void GoDetail() => Nav.NavigateTo($"/catalog/products/{ProductId:D}");
+
+    private void OnConnectedBuyerAvailabilityChanged(ChangeEventArgs args)
+    {
+        _canExposeToConnectedBuyers = args.Value is true
+            || string.Equals(args.Value?.ToString(), "true", StringComparison.OrdinalIgnoreCase);
+        if (_canExposeToConnectedBuyers && _defaultConnectedPoPrice is null)
+        {
+            _defaultConnectedPoPrice = _sellingPrice;
+        }
+    }
 
     private Task OnUsagePresetChanged(string? value)
     {

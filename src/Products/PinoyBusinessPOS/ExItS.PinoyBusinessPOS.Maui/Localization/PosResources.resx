@@ -8204,7 +8204,7 @@
     <value>No shared products yet</value>
   </data>
   <data name="ConnectedSuppliers_CatalogEmptyMessage" xml:space="preserve">
-    <value>This supplier has not shared any products for ordering. Ask them to expose items, or open linked products you already saved.</value>
+    <value>This supplier hasn't shared any products with your business yet.</value>
   </data>
   <data name="ConnectedSuppliers_NoMatchTitle" xml:space="preserve">
     <value>No matching products</value>
@@ -8796,5 +8796,86 @@
   </data>
   <data name="Auth_SignInAgain" xml:space="preserve">
     <value>Sign in again</value>
+  </data>
+  <data name="Catalog_ConnectedBuyers_Section" xml:space="preserve">
+    <value>Connected Buyers</value>
+  </data>
+  <data name="Catalog_ConnectedBuyers_Available" xml:space="preserve">
+    <value>Available to connected buyers</value>
+  </data>
+  <data name="Catalog_ConnectedBuyers_DefaultPoPrice" xml:space="preserve">
+    <value>Default PO Price</value>
+  </data>
+  <data name="Catalog_ConnectedBuyers_DefaultPoHelp" xml:space="preserve">
+    <value>This is the default price connected buyers will use unless you set a special price for a specific buyer.</value>
+  </data>
+  <data name="Catalog_ConnectedBuyers_VisibilityHelp" xml:space="preserve">
+    <value>Enabling this does not automatically make the product visible to every buyer. Product visibility is controlled per connected buyer.</value>
+  </data>
+  <data name="ConnectedBuyers_SharePromptTitle" xml:space="preserve">
+    <value>Buyer connected successfully</value>
+  </data>
+  <data name="ConnectedBuyers_SharePromptHelp" xml:space="preserve">
+    <value>Choose which eligible products to share with this buyer.</value>
+  </data>
+  <data name="ConnectedBuyers_ShareEligibleCount" xml:space="preserve">
+    <value>{0} eligible products</value>
+  </data>
+  <data name="ConnectedBuyers_ShareAllConfirm" xml:space="preserve">
+    <value>Confirm sharing</value>
+  </data>
+  <data name="ConnectedBuyers_CustomizeProducts" xml:space="preserve">
+    <value>Customize products</value>
+  </data>
+  <data name="ConnectedBuyers_NotNow" xml:space="preserve">
+    <value>Not now</value>
+  </data>
+  <data name="ConnectedBuyers_ManageSharedProducts" xml:space="preserve">
+    <value>Manage shared products</value>
+  </data>
+  <data name="ConnectedBuyers_SharedProductsTitle" xml:space="preserve">
+    <value>Shared products</value>
+  </data>
+  <data name="ConnectedBuyers_FilterAll" xml:space="preserve">
+    <value>All</value>
+  </data>
+  <data name="ConnectedBuyers_FilterShared" xml:space="preserve">
+    <value>Shared</value>
+  </data>
+  <data name="ConnectedBuyers_FilterNotShared" xml:space="preserve">
+    <value>Not shared</value>
+  </data>
+  <data name="ConnectedBuyers_ShareWithBuyer" xml:space="preserve">
+    <value>Share with buyer</value>
+  </data>
+  <data name="ConnectedBuyers_BuyerSpecificPoPrice" xml:space="preserve">
+    <value>Buyer-specific PO price</value>
+  </data>
+  <data name="ConnectedBuyers_UsesDefaultPrice" xml:space="preserve">
+    <value>Leave blank to use the default price.</value>
+  </data>
+  <data name="ConnectedBuyers_DefaultPoPrice" xml:space="preserve">
+    <value>Default PO price</value>
+  </data>
+  <data name="ConnectedBuyers_RetailPriceReference" xml:space="preserve">
+    <value>Retail price (reference)</value>
+  </data>
+  <data name="ConnectedBuyers_SaveSharing" xml:space="preserve">
+    <value>Save sharing</value>
+  </data>
+  <data name="ConnectedBuyers_ShareSelected" xml:space="preserve">
+    <value>Share selected</value>
+  </data>
+  <data name="ConnectedBuyers_StopSharingSelected" xml:space="preserve">
+    <value>Stop sharing selected</value>
+  </data>
+  <data name="ConnectedBuyers_SharingLoadFailed" xml:space="preserve">
+    <value>Shared products could not be loaded.</value>
+  </data>
+  <data name="ConnectedBuyers_SaveSharingFailed" xml:space="preserve">
+    <value>Product sharing could not be saved.</value>
+  </data>
+  <data name="ConnectedBuyers_NoProductsForFilter" xml:space="preserve">
+    <value>No products match this filter.</value>
   </data>
 </root>

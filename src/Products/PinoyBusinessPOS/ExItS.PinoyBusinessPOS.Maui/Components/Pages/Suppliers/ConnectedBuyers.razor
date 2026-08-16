@@ -45,6 +45,17 @@
                     <p>@L["ConnectedBuyers_ConnectedSince", connectedAt.ToLocalTime().ToString("d")]</p>
                 }
                 <p class="pos-muted">@L["ConnectedBuyers_NotCustomerNote"]</p>
+                @if (string.Equals(_selected.Status, "Active", StringComparison.OrdinalIgnoreCase)
+                     && Capabilities.IsAllowed(UtangCapability.ManageSuppliers))
+                {
+                    <div class="pos-action-grid pos-action-grid--single">
+                        <button type="button"
+                                class="pos-action-tile pos-action-tile--primary"
+                                @onclick="() => GoManageSharedProducts(_selected.RelationshipId)">
+                            <span class="pos-action-tile__label">@L["ConnectedBuyers_ManageSharedProducts"]</span>
+                        </button>
+                    </div>
+                }
             </section>
         }
     }
@@ -188,6 +199,9 @@
 
     private void OpenBuyerDetail(Guid relationshipId) =>
         Nav.NavigateTo($"/suppliers/connected/buyers/{relationshipId:D}");
+
+    private void GoManageSharedProducts(Guid relationshipId) =>
+        Nav.NavigateTo($"/suppliers/connected/buyers/{relationshipId:D}/shared-products");
 
     private void GoReviewRequests() => Nav.NavigateTo("/suppliers/connected/requests");
 

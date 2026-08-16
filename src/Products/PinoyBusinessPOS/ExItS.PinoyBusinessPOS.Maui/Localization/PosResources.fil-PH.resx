@@ -8204,7 +8204,7 @@
     <value>Wala pang ibinahaging produkto</value>
   </data>
   <data name="ConnectedSuppliers_CatalogEmptyMessage" xml:space="preserve">
-    <value>Hindi pa nagbabahagi ng produkto ang supplier para sa order. Hilingin na i-expose ang items, o buksan ang mga naka-link na naka-save mo na.</value>
+    <value>Wala pang produktong ibinahagi ang supplier na ito sa iyong negosyo.</value>
   </data>
   <data name="ConnectedSuppliers_NoMatchTitle" xml:space="preserve">
     <value>Walang tumugmang produkto</value>
@@ -8796,5 +8796,86 @@
   </data>
   <data name="Auth_SignInAgain" xml:space="preserve">
     <value>Mag-sign in ulit</value>
+  </data>
+  <data name="Catalog_ConnectedBuyers_Section" xml:space="preserve">
+    <value>Mga Connected Buyer</value>
+  </data>
+  <data name="Catalog_ConnectedBuyers_Available" xml:space="preserve">
+    <value>Available sa mga connected buyer</value>
+  </data>
+  <data name="Catalog_ConnectedBuyers_DefaultPoPrice" xml:space="preserve">
+    <value>Default na Presyo ng PO</value>
+  </data>
+  <data name="Catalog_ConnectedBuyers_DefaultPoHelp" xml:space="preserve">
+    <value>Ito ang default na presyong gagamitin ng mga connected buyer maliban kung magtakda ka ng espesyal na presyo para sa isang buyer.</value>
+  </data>
+  <data name="Catalog_ConnectedBuyers_VisibilityHelp" xml:space="preserve">
+    <value>Hindi awtomatikong makikita ng lahat ng buyer ang produkto kapag in-enable ito. Kinokontrol ang visibility ng produkto para sa bawat connected buyer.</value>
+  </data>
+  <data name="ConnectedBuyers_SharePromptTitle" xml:space="preserve">
+    <value>Matagumpay na nakakonekta ang buyer</value>
+  </data>
+  <data name="ConnectedBuyers_SharePromptHelp" xml:space="preserve">
+    <value>Piliin ang mga eligible na produktong ibabahagi sa buyer na ito.</value>
+  </data>
+  <data name="ConnectedBuyers_ShareEligibleCount" xml:space="preserve">
+    <value>{0} eligible na produkto</value>
+  </data>
+  <data name="ConnectedBuyers_ShareAllConfirm" xml:space="preserve">
+    <value>Kumpirmahin ang pagbabahagi</value>
+  </data>
+  <data name="ConnectedBuyers_CustomizeProducts" xml:space="preserve">
+    <value>I-customize ang mga produkto</value>
+  </data>
+  <data name="ConnectedBuyers_NotNow" xml:space="preserve">
+    <value>Hindi muna</value>
+  </data>
+  <data name="ConnectedBuyers_ManageSharedProducts" xml:space="preserve">
+    <value>Pamahalaan ang shared products</value>
+  </data>
+  <data name="ConnectedBuyers_SharedProductsTitle" xml:space="preserve">
+    <value>Mga shared product</value>
+  </data>
+  <data name="ConnectedBuyers_FilterAll" xml:space="preserve">
+    <value>Lahat</value>
+  </data>
+  <data name="ConnectedBuyers_FilterShared" xml:space="preserve">
+    <value>Shared</value>
+  </data>
+  <data name="ConnectedBuyers_FilterNotShared" xml:space="preserve">
+    <value>Hindi shared</value>
+  </data>
+  <data name="ConnectedBuyers_ShareWithBuyer" xml:space="preserve">
+    <value>I-share sa buyer</value>
+  </data>
+  <data name="ConnectedBuyers_BuyerSpecificPoPrice" xml:space="preserve">
+    <value>Presyo ng PO para sa buyer</value>
+  </data>
+  <data name="ConnectedBuyers_UsesDefaultPrice" xml:space="preserve">
+    <value>Iwang blangko para gamitin ang default na presyo.</value>
+  </data>
+  <data name="ConnectedBuyers_DefaultPoPrice" xml:space="preserve">
+    <value>Default na presyo ng PO</value>
+  </data>
+  <data name="ConnectedBuyers_RetailPriceReference" xml:space="preserve">
+    <value>Retail price (reference)</value>
+  </data>
+  <data name="ConnectedBuyers_SaveSharing" xml:space="preserve">
+    <value>I-save ang sharing</value>
+  </data>
+  <data name="ConnectedBuyers_ShareSelected" xml:space="preserve">
+    <value>I-share ang napili</value>
+  </data>
+  <data name="ConnectedBuyers_StopSharingSelected" xml:space="preserve">
+    <value>Ihinto ang sharing sa napili</value>
+  </data>
+  <data name="ConnectedBuyers_SharingLoadFailed" xml:space="preserve">
+    <value>Hindi ma-load ang mga shared product.</value>
+  </data>
+  <data name="ConnectedBuyers_SaveSharingFailed" xml:space="preserve">
+    <value>Hindi ma-save ang product sharing.</value>
+  </data>
+  <data name="ConnectedBuyers_NoProductsForFilter" xml:space="preserve">
+    <value>Walang produktong tumutugma sa filter na ito.</value>
   </data>
 </root>

@@ -1,0 +1,268 @@
+@page "/suppliers/connected/buyers/{RelationshipId:guid}/shared-products"
+@using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosConnectedSupplierClient ConnectedSuppliers
+@inject IUtangCapabilityEvaluator Capabilities
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+<StoreHeaderBack Href="@($"/suppliers/connected/buyers/{RelationshipId:D}")" />
+<Page>
+    <header class="pos-suppliers__header">
+        <h1 class="pos-suppliers__title">@L["ConnectedBuyers_SharedProductsTitle"]</h1>
+    </header>
+
+    @if (_loading)
+    {
+        <Spinner />
+    }
+    else if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <ErrorState Title="@L["ConnectedSuppliers_Error"]"
+                    Message="@_error"
+                    RetryLabel="@L["Common_Retry"]"
+                    OnRetry="LoadAsync" />
+    }
+    else
+    {
+        <div class="pos-notifications__segments" role="tablist" aria-label="@L["ConnectedBuyers_SharedProductsTitle"]">
+            @foreach (var filter in Filters)
+            {
+                <button type="button"
+                        class="pos-notifications__segment @(_filter == filter.Value ? "pos-notifications__segment--selected" : null)"
+                        role="tab"
+                        aria-selected="@(_filter == filter.Value)"
+                        @onclick="() => _filter = filter.Value">
+                    @filter.Label
+                </button>
+            }
+        </div>
+
+        @if (FilteredProducts.Count == 0)
+        {
+            <EmptyState IconName="products"
+                        Title="@L["ConnectedBuyers_SharedProductsTitle"]"
+                        Message="@L["ConnectedBuyers_NoProductsForFilter"]" />
+        }
+        else
+        {
+            <div class="pos-personal-list" role="list">
+                @foreach (var product in FilteredProducts)
+                {
+                    <section class="pos-settings__panel" role="listitem">
+                        <label>
+                            <input type="checkbox"
+                                   checked="@_bulkSelected.Contains(product.SupplierProductId)"
+                                   disabled="@_saving"
+                                   @onchange="args => SetBulkSelected(product.SupplierProductId, args)" />
+                            <strong>@product.Name</strong>
+                        </label>
+                        <p class="pos-muted">@(product.Sku ?? "—") · @product.Unit</p>
+                        @if (product.SellingPrice is decimal retailPrice)
+                        {
+                            <p>
+                                @L["ConnectedBuyers_RetailPriceReference"]:
+                                <MoneyDisplay Amount="@retailPrice" CurrencyCode="PHP" />
+                            </p>
+                        }
+                        @if (product.EffectivePrice is decimal effectivePrice)
+                        {
+                            <p>
+                                @(product.BuyerSpecificPoPrice is null
+                                    ? L["ConnectedBuyers_DefaultPoPrice"]
+                                    : L["ConnectedBuyers_BuyerSpecificPoPrice"]):
+                                <MoneyDisplay Amount="@effectivePrice" CurrencyCode="PHP" />
+                            </p>
+                        }
+                        else if (product.BuyerSpecificPoPrice is null)
+                        {
+                            <p class="pos-muted">@L["ConnectedBuyers_UsesDefaultPrice"]</p>
+                        }
+                        <label>
+                            <input type="checkbox"
+                                   checked="@product.IsShared"
+                                   disabled="@(_saving || !CanManage)"
+                                   @onchange="args => SetShared(product, args)" />
+                            @L["ConnectedBuyers_ShareWithBuyer"]
+                        </label>
+                        <CurrencyInput Label="@L["ConnectedBuyers_BuyerSpecificPoPrice"]"
+                                       Value="@product.BuyerSpecificPoPrice"
+                                       ValueChanged="v => product.BuyerSpecificPoPrice = v"
+                                       CurrencyCode="PHP"
+                                       Hint="@L["ConnectedBuyers_UsesDefaultPrice"]"
+                                       Disabled="@(_saving || !CanManage || !product.IsShared)" />
+                    </section>
+                }
+            </div>
+        }
+
+        @if (CanManage)
+        {
+            <div class="pos-action-grid pos-action-grid--two" role="group">
+                <button type="button"
+                        class="pos-action-tile"
+                        disabled="@(_saving || _bulkSelected.Count == 0)"
+                        @onclick="() => SetBulkSharing(true)">
+                    <span class="pos-action-tile__label">@L["ConnectedBuyers_ShareSelected"]</span>
+                </button>
+                <button type="button"
+                        class="pos-action-tile"
+                        disabled="@(_saving || _bulkSelected.Count == 0)"
+                        @onclick="() => SetBulkSharing(false)">
+                    <span class="pos-action-tile__label">@L["ConnectedBuyers_StopSharingSelected"]</span>
+                </button>
+            </div>
+            <div class="pos-action-grid pos-action-grid--single">
+                <button type="button"
+                        class="pos-action-tile pos-action-tile--primary"
+                        disabled="@_saving"
+                        @onclick="SaveAsync">
+                    <span class="pos-action-tile__label">@L["ConnectedBuyers_SaveSharing"]</span>
+                </button>
+            </div>
+        }
+    }
+</Page>
+
+@code {
+    [Parameter] public Guid RelationshipId { get; set; }
+
+    private bool _loading = true;
+    private bool _saving;
+    private string? _error;
+    private string _filter = "all";
+    private List<ShareProductRow> _products = [];
+    private HashSet<Guid> _bulkSelected = [];
+
+    private bool CanManage => Capabilities.IsAllowed(UtangCapability.ManageSuppliers);
+    private IReadOnlyList<ShareProductRow> FilteredProducts => _filter switch
+    {
+        "shared" => _products.Where(x => x.IsShared).ToList(),
+        "not-shared" => _products.Where(x => !x.IsShared).ToList(),
+        _ => _products
+    };
+    private IReadOnlyList<(string Value, string Label)> Filters =>
+    [
+        ("all", L["ConnectedBuyers_FilterAll"]),
+        ("shared", L["ConnectedBuyers_FilterShared"]),
+        ("not-shared", L["ConnectedBuyers_FilterNotShared"])
+    ];
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        if (!Capabilities.IsAllowed(UtangCapability.ViewSuppliers))
+        {
+            Nav.NavigateTo("/home", replace: true);
+            return;
+        }
+
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+        if (!await Connectivity.IsConnectedAsync())
+        {
+            _error = L["Suppliers_OfflineMessage"];
+            _loading = false;
+            return;
+        }
+
+        var result = await ConnectedSuppliers.ListBuyerProductSharesAsync(RelationshipId);
+        _loading = false;
+        if (!result.IsSuccess || result.Data is null)
+        {
+            _products = [];
+            _error = result.Error?.Detail ?? L["ConnectedBuyers_SharingLoadFailed"];
+            return;
+        }
+
+        _products = result.Data
+            .Select(x => new ShareProductRow(x))
+            .OrderBy(x => x.Name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        _bulkSelected.Clear();
+    }
+
+    private void SetBulkSelected(Guid productId, ChangeEventArgs args)
+    {
+        var selected = Checked(args);
+        if (selected) _bulkSelected.Add(productId);
+        else _bulkSelected.Remove(productId);
+    }
+
+    private static void SetShared(ShareProductRow product, ChangeEventArgs args) =>
+        product.IsShared = Checked(args);
+
+    private void SetBulkSharing(bool shared)
+    {
+        foreach (var product in _products.Where(x => _bulkSelected.Contains(x.SupplierProductId)))
+        {
+            product.IsShared = shared;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        if (_saving || !CanManage) return;
+        _saving = true;
+        _error = null;
+        try
+        {
+            var request = new SetBuyerProductSharesRequest(_products
+                .Select(x => new SetBuyerProductShareItem(
+                    x.SupplierProductId,
+                    x.IsShared,
+                    x.IsShared ? x.BuyerSpecificPoPrice : null))
+                .ToList());
+            var result = await ConnectedSuppliers.SetBuyerProductSharesAsync(RelationshipId, request);
+            if (!result.IsSuccess)
+            {
+                _error = result.Error?.Detail ?? L["ConnectedBuyers_SaveSharingFailed"];
+                return;
+            }
+
+            await LoadAsync();
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private static bool Checked(ChangeEventArgs args) =>
+        args.Value is true || string.Equals(args.Value?.ToString(), "true", StringComparison.OrdinalIgnoreCase);
+
+    private sealed class ShareProductRow
+    {
+        public ShareProductRow(ConnectedBuyerProductShareDto dto)
+        {
+            SupplierProductId = dto.SupplierProductId;
+            Name = string.IsNullOrWhiteSpace(dto.NameSnapshot) ? dto.SupplierProductId.ToString("D") : dto.NameSnapshot;
+            Sku = dto.SkuSnapshot;
+            Unit = dto.UnitOfMeasureCode ?? "—";
+            SellingPrice = dto.SellingPrice;
+            EffectivePrice = dto.EffectiveSupplierOrderPrice;
+            IsShared = dto.IsShared;
+            BuyerSpecificPoPrice = dto.BuyerSpecificPoPrice;
+        }
+
+        public Guid SupplierProductId { get; }
+        public string Name { get; }
+        public string? Sku { get; }
+        public string Unit { get; }
+        public decimal? SellingPrice { get; }
+        public decimal? EffectivePrice { get; }
+        public bool IsShared { get; set; }
+        public decimal? BuyerSpecificPoPrice { get; set; }
+    }
+}
