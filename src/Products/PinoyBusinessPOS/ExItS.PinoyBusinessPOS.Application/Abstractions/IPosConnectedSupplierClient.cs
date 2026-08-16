@@ -24,8 +24,11 @@ public interface IPosConnectedSupplierClient
     Task<ApiResult<BuyerSupplierProductLinkDto>> LinkProductAsync(Guid relationshipId,LinkProductRequest request,CancellationToken ct=default);
     Task<ApiResult<IReadOnlyList<BuyerSupplierProductLinkDto>>> ListLinksAsync(Guid relationshipId,CancellationToken ct=default);
     Task<ApiResult<LinkedProductsDeltaDto>> SyncLinksAsync(Guid relationshipId,long sinceVersion,CancellationToken ct=default);
-    Task<ApiResult<IReadOnlyList<ConnectedPurchaseOrderDto>>> ListIncomingOrdersAsync(CancellationToken ct=default);
+    Task<ApiResult<IReadOnlyList<ConnectedPurchaseOrderDto>>> ListIncomingOrdersAsync(string? status=null,CancellationToken ct=default);
+    Task<ApiResult<ConnectedPurchaseOrderDto>> GetIncomingOrderAsync(Guid orderId,CancellationToken ct=default);
     Task<ApiResult<ConnectedPurchaseOrderDto>> AcceptIncomingAsync(Guid orderId,CancellationToken ct=default);
-    Task<ApiResult<ConnectedPurchaseOrderDto>> DeclineIncomingAsync(Guid orderId,CancellationToken ct=default);
+    Task<ApiResult<ConnectedPurchaseOrderDto>> DeclineIncomingAsync(Guid orderId,DeclineIncomingOrderRequest? request=null,CancellationToken ct=default);
+    Task<ApiResult<ConnectedPurchaseOrderDto>> PrepareIncomingAsync(Guid orderId,CancellationToken ct=default);
+    Task<ApiResult<ConnectedPurchaseOrderDto>> FulfillIncomingAsync(Guid orderId,CancellationToken ct=default);
     Task<ApiResult<ConnectedPoDraftReviewDto>> RevalidateDraftAsync(Guid relationshipId,RevalidateConnectedPoDraftRequest request,CancellationToken ct=default);
 }
