@@ -123,6 +123,7 @@ Suppliers with large catalogs were forced through Product → Edit → “Availa
 | `b6a34d92` | `feat(catalog): add bulk connected buyer availability management` |
 | `230dad4f` | `feat(maui): add mobile bulk B2B catalog availability UX` |
 | `a8832f46` | `test(catalog): cover bulk connected buyer availability rules` |
+| `36a08afa` | `docs(p27): document Level 1 bulk availability UX` |
 
 ### Pricing & PO safety (WP01-required)
 
@@ -148,16 +149,16 @@ Backfill: existing exposed products → product flags; Active relationships → 
 
 | Suite | Result |
 |---|---|
-| Unit (`ConnectedSupplier` + `CatalogDomain` filters) | **53 passed**, 0 failed |
-| MAUI guards (ConnectedBuyer / Catalog / Browse-related) | **15 passed**, 0 failed |
-| Integration migration (`AddConnectedBuyerProductSharing*`, connected suppliers) | **2 passed**, 0 failed |
+| Unit (`CatalogDomain` + `ConnectedBuyerAvailability` + `BuyerProductShareBulk` + ConnectedSuppliers) | **36 + 35 passed** (targeted), 0 failed |
+| MAUI guards (ConnectedBuyer / Catalog / ConnectedBuyerAvailability) | **20 passed**, 0 failed |
+| Migration | **No** (Level-1 bulk UX) |
 
-Full-solution Android packaging may still hit local SDK/AAR environment issues unrelated to this WP.
+Device Verified: **No**. Browser Verified: **No**. Production Ready: **No**.
 
 ## Risks / open decisions
 
 - Org Web share management parity deferred
-- Owner must validate Accept → share prompt → Browse/pricing on device
+- Owner must validate Catalog → Connected Buyer Availability → Accept → share prompt → Browse/pricing on device
 - Remaining connected-PO delivery/sync gaps tracked under P27-WP02+
 
 ## Exact next
