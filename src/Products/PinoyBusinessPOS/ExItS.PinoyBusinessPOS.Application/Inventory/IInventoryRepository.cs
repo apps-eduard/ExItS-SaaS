@@ -43,6 +43,18 @@ public interface IInventoryRepository
 
     Task UpdateAccountAsync(InventoryAccount account, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Runs <paramref name="action"/> under a transaction with advisory locks keyed by
+    /// organization + product. Reloads accounts inside the lock before invoking the action.
+    /// When an ambient transaction exists, locks join that transaction; otherwise a new
+    /// ReadCommitted transaction is opened and committed after SaveChanges.
+    /// </summary>
+    Task ExecuteWithProductReservationLocksAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyCollection<CatalogProductId> productIds,
+        Func<IReadOnlyList<InventoryAccount>, CancellationToken, Task> action,
+        CancellationToken cancellationToken = default);
+
     Task AddMovementAsync(StockMovement movement, CancellationToken cancellationToken = default);
 
     Task<bool> HasAnyMovementAsync(

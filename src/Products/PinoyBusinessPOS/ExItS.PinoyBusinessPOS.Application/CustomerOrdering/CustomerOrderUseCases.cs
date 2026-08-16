@@ -1,6 +1,7 @@
 using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
+using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
@@ -459,16 +460,19 @@ public sealed class AcceptCustomerOrder
     private readonly ICustomerOrderRepository _orders;
     private readonly ICustomerOrderStockService _stock;
     private readonly IOrganizationBusinessNotificationPublisher _notifications;
+    private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
     public AcceptCustomerOrder(
         ICustomerOrderRepository orders,
         ICustomerOrderStockService stock,
+        IPosUnitOfWork unitOfWork,
         IClock clock,
         IOrganizationBusinessNotificationPublisher? notifications = null)
     {
         _orders = orders;
         _stock = stock;
+        _unitOfWork = unitOfWork;
         _clock = clock;
         _notifications = notifications ?? new NoOpOrganizationBusinessNotificationPublisher();
     }
@@ -481,26 +485,43 @@ public sealed class AcceptCustomerOrder
     {
         try
         {
-            var orgId = PosOrganizationId.From(sellerOrganizationId);
-            var order = await _orders
-                .GetByIdAsync(orgId, CustomerOrderId.From(orderId), cancellationToken)
+            CustomerOrder? accepted = null;
+            var result = await _unitOfWork
+                .ExecuteInSerializableTransactionAsync(async ct =>
+                {
+                    var orgId = PosOrganizationId.From(sellerOrganizationId);
+                    var order = await _orders
+                        .GetByIdAsync(orgId, CustomerOrderId.From(orderId), ct)
+                        .ConfigureAwait(false);
+                    if (order is null)
+                    {
+                        return ApplicationResult<CustomerOrderDto>.Failure(
+                            ApplicationErrorCodes.CustomerOrderNotFound,
+                            "Customer order was not found.");
+                    }
+
+                    var now = _clock.UtcNow;
+                    order.Accept(actorId, now);
+                    await _stock.ReserveForAcceptAsync(order, actorId, now, ct).ConfigureAwait(false);
+                    await _orders.UpdateAsync(order, ct).ConfigureAwait(false);
+                    accepted = order;
+                    return ApplicationResult<CustomerOrderDto>.Success(CustomerOrderMaps.Map(order));
+                }, cancellationToken)
                 .ConfigureAwait(false);
-            if (order is null)
+
+            if (result.IsSuccess && accepted is not null)
             {
-                return ApplicationResult<CustomerOrderDto>.Failure(
-                    ApplicationErrorCodes.CustomerOrderNotFound,
-                    "Customer order was not found.");
+                await NotifyCustomerAsync(accepted, CustomerOrderNotificationTypes.Accepted, "Order accepted", cancellationToken)
+                    .ConfigureAwait(false);
             }
 
-            var now = _clock.UtcNow;
-            order.Accept(actorId, now);
-            await _stock.ReserveForAcceptAsync(order, actorId, now, cancellationToken).ConfigureAwait(false);
-            await _orders.UpdateAsync(order, cancellationToken).ConfigureAwait(false);
-            await NotifyCustomerAsync(order, CustomerOrderNotificationTypes.Accepted, "Order accepted", cancellationToken)
-                .ConfigureAwait(false);
-            return ApplicationResult<CustomerOrderDto>.Success(CustomerOrderMaps.Map(order));
+            return result;
         }
         catch (DomainException ex)
+        {
+            return ApplicationResult<CustomerOrderDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+        catch (PersistenceConflictException ex)
         {
             return ApplicationResult<CustomerOrderDto>.Failure(ex.ErrorCode, ex.Message);
         }
@@ -519,16 +540,19 @@ public sealed class RejectCustomerOrder
     private readonly ICustomerOrderRepository _orders;
     private readonly ICustomerOrderStockService _stock;
     private readonly IOrganizationBusinessNotificationPublisher _notifications;
+    private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
     public RejectCustomerOrder(
         ICustomerOrderRepository orders,
         ICustomerOrderStockService stock,
+        IPosUnitOfWork unitOfWork,
         IClock clock,
         IOrganizationBusinessNotificationPublisher? notifications = null)
     {
         _orders = orders;
         _stock = stock;
+        _unitOfWork = unitOfWork;
         _clock = clock;
         _notifications = notifications ?? new NoOpOrganizationBusinessNotificationPublisher();
     }
@@ -549,27 +573,44 @@ public sealed class RejectCustomerOrder
                     "Reject reason is invalid.");
             }
 
-            var orgId = PosOrganizationId.From(sellerOrganizationId);
-            var order = await _orders
-                .GetByIdAsync(orgId, CustomerOrderId.From(orderId), cancellationToken)
+            CustomerOrder? rejected = null;
+            var result = await _unitOfWork
+                .ExecuteInSerializableTransactionAsync(async ct =>
+                {
+                    var orgId = PosOrganizationId.From(sellerOrganizationId);
+                    var order = await _orders
+                        .GetByIdAsync(orgId, CustomerOrderId.From(orderId), ct)
+                        .ConfigureAwait(false);
+                    if (order is null)
+                    {
+                        return ApplicationResult<CustomerOrderDto>.Failure(
+                            ApplicationErrorCodes.CustomerOrderNotFound,
+                            "Customer order was not found.");
+                    }
+
+                    var now = _clock.UtcNow;
+                    order.Reject(reason, request.Notes, actorId, now);
+                    await _stock.ReleaseIfReservedAsync(order, now, ct).ConfigureAwait(false);
+                    await _orders.UpdateAsync(order, ct).ConfigureAwait(false);
+                    rejected = order;
+                    return ApplicationResult<CustomerOrderDto>.Success(CustomerOrderMaps.Map(order));
+                }, cancellationToken)
                 .ConfigureAwait(false);
-            if (order is null)
+
+            if (result.IsSuccess && rejected is not null)
             {
-                return ApplicationResult<CustomerOrderDto>.Failure(
-                    ApplicationErrorCodes.CustomerOrderNotFound,
-                    "Customer order was not found.");
+                await CustomerOrderLifecycleNotifier
+                    .NotifyCustomerAsync(_notifications, rejected, CustomerOrderNotificationTypes.Rejected, "Order rejected", cancellationToken)
+                    .ConfigureAwait(false);
             }
 
-            var now = _clock.UtcNow;
-            order.Reject(reason, request.Notes, actorId, now);
-            await _stock.ReleaseIfReservedAsync(order, now, cancellationToken).ConfigureAwait(false);
-            await _orders.UpdateAsync(order, cancellationToken).ConfigureAwait(false);
-            await CustomerOrderLifecycleNotifier
-                .NotifyCustomerAsync(_notifications, order, CustomerOrderNotificationTypes.Rejected, "Order rejected", cancellationToken)
-                .ConfigureAwait(false);
-            return ApplicationResult<CustomerOrderDto>.Success(CustomerOrderMaps.Map(order));
+            return result;
         }
         catch (DomainException ex)
+        {
+            return ApplicationResult<CustomerOrderDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+        catch (PersistenceConflictException ex)
         {
             return ApplicationResult<CustomerOrderDto>.Failure(ex.ErrorCode, ex.Message);
         }
@@ -581,16 +622,19 @@ public sealed class CancelCustomerOrder
     private readonly ICustomerOrderRepository _orders;
     private readonly ICustomerOrderStockService _stock;
     private readonly IOrganizationBusinessNotificationPublisher _notifications;
+    private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
     public CancelCustomerOrder(
         ICustomerOrderRepository orders,
         ICustomerOrderStockService stock,
+        IPosUnitOfWork unitOfWork,
         IClock clock,
         IOrganizationBusinessNotificationPublisher? notifications = null)
     {
         _orders = orders;
         _stock = stock;
+        _unitOfWork = unitOfWork;
         _clock = clock;
         _notifications = notifications ?? new NoOpOrganizationBusinessNotificationPublisher();
     }
@@ -603,34 +647,51 @@ public sealed class CancelCustomerOrder
     {
         try
         {
-            var orgId = PosOrganizationId.From(sellerOrganizationId);
-            var order = await _orders
-                .GetByIdAsync(orgId, CustomerOrderId.From(orderId), cancellationToken)
+            CustomerOrder? cancelled = null;
+            var result = await _unitOfWork
+                .ExecuteInSerializableTransactionAsync(async ct =>
+                {
+                    var orgId = PosOrganizationId.From(sellerOrganizationId);
+                    var order = await _orders
+                        .GetByIdAsync(orgId, CustomerOrderId.From(orderId), ct)
+                        .ConfigureAwait(false);
+                    if (order is null)
+                    {
+                        return ApplicationResult<CustomerOrderDto>.Failure(
+                            ApplicationErrorCodes.CustomerOrderNotFound,
+                            "Customer order was not found.");
+                    }
+
+                    var now = _clock.UtcNow;
+                    order.Cancel(actorId, now);
+                    await _stock.ReleaseIfReservedAsync(order, now, ct).ConfigureAwait(false);
+                    await _orders.UpdateAsync(order, ct).ConfigureAwait(false);
+                    cancelled = order;
+                    return ApplicationResult<CustomerOrderDto>.Success(CustomerOrderMaps.Map(order));
+                }, cancellationToken)
                 .ConfigureAwait(false);
-            if (order is null)
+
+            if (result.IsSuccess && cancelled is not null)
             {
-                return ApplicationResult<CustomerOrderDto>.Failure(
-                    ApplicationErrorCodes.CustomerOrderNotFound,
-                    "Customer order was not found.");
+                await _notifications
+                    .PublishAsync(
+                        sellerOrganizationId,
+                        sellerOrganizationId,
+                        CustomerOrderNotificationTypes.Cancelled,
+                        cancelled.Id.Value.ToString("D"),
+                        "Order cancelled",
+                        $"{cancelled.OrderNumber} was cancelled.",
+                        cancellationToken)
+                    .ConfigureAwait(false);
             }
 
-            var now = _clock.UtcNow;
-            order.Cancel(actorId, now);
-            await _stock.ReleaseIfReservedAsync(order, now, cancellationToken).ConfigureAwait(false);
-            await _orders.UpdateAsync(order, cancellationToken).ConfigureAwait(false);
-            await _notifications
-                .PublishAsync(
-                    sellerOrganizationId,
-                    sellerOrganizationId,
-                    CustomerOrderNotificationTypes.Cancelled,
-                    order.Id.Value.ToString("D"),
-                    "Order cancelled",
-                    $"{order.OrderNumber} was cancelled.",
-                    cancellationToken)
-                .ConfigureAwait(false);
-            return ApplicationResult<CustomerOrderDto>.Success(CustomerOrderMaps.Map(order));
+            return result;
         }
         catch (DomainException ex)
+        {
+            return ApplicationResult<CustomerOrderDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+        catch (PersistenceConflictException ex)
         {
             return ApplicationResult<CustomerOrderDto>.Failure(ex.ErrorCode, ex.Message);
         }
@@ -747,18 +808,21 @@ public sealed class CompleteCustomerOrder
     private readonly ICatalogProductRepository _products;
     private readonly ICustomerOrderStockService _stock;
     private readonly IOrganizationBusinessNotificationPublisher _notifications;
+    private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
     public CompleteCustomerOrder(
         ICustomerOrderRepository orders,
         ICatalogProductRepository products,
         ICustomerOrderStockService stock,
+        IPosUnitOfWork unitOfWork,
         IClock clock,
         IOrganizationBusinessNotificationPublisher? notifications = null)
     {
         _orders = orders;
         _products = products;
         _stock = stock;
+        _unitOfWork = unitOfWork;
         _clock = clock;
         _notifications = notifications ?? new NoOpOrganizationBusinessNotificationPublisher();
     }
@@ -771,31 +835,48 @@ public sealed class CompleteCustomerOrder
     {
         try
         {
-            var orgId = PosOrganizationId.From(sellerOrganizationId);
-            var order = await _orders
-                .GetByIdAsync(orgId, CustomerOrderId.From(orderId), cancellationToken)
+            CustomerOrder? completed = null;
+            var result = await _unitOfWork
+                .ExecuteInSerializableTransactionAsync(async ct =>
+                {
+                    var orgId = PosOrganizationId.From(sellerOrganizationId);
+                    var order = await _orders
+                        .GetByIdAsync(orgId, CustomerOrderId.From(orderId), ct)
+                        .ConfigureAwait(false);
+                    if (order is null)
+                    {
+                        return ApplicationResult<CustomerOrderDto>.Failure(
+                            ApplicationErrorCodes.CustomerOrderNotFound,
+                            "Customer order was not found.");
+                    }
+
+                    var now = _clock.UtcNow;
+                    order.Complete(actorId, now);
+
+                    var productIds = order.Lines.Select(l => l.ProductId).Distinct().ToList();
+                    var products = await _products.ListByIdsAsync(orgId, productIds, ct).ConfigureAwait(false);
+                    var byId = products.ToDictionary(p => p.Id.Value);
+                    await _stock.ConsumeOnCompleteAsync(order, byId, actorId, now, ct).ConfigureAwait(false);
+                    await _orders.UpdateAsync(order, ct).ConfigureAwait(false);
+                    completed = order;
+                    return ApplicationResult<CustomerOrderDto>.Success(CustomerOrderMaps.Map(order));
+                }, cancellationToken)
                 .ConfigureAwait(false);
-            if (order is null)
+
+            if (result.IsSuccess && completed is not null)
             {
-                return ApplicationResult<CustomerOrderDto>.Failure(
-                    ApplicationErrorCodes.CustomerOrderNotFound,
-                    "Customer order was not found.");
+                await CustomerOrderLifecycleNotifier
+                    .NotifyCustomerAsync(_notifications, completed, CustomerOrderNotificationTypes.Completed, "Order completed", cancellationToken)
+                    .ConfigureAwait(false);
             }
 
-            var now = _clock.UtcNow;
-            order.Complete(actorId, now);
-
-            var productIds = order.Lines.Select(l => l.ProductId).Distinct().ToList();
-            var products = await _products.ListByIdsAsync(orgId, productIds, cancellationToken).ConfigureAwait(false);
-            var byId = products.ToDictionary(p => p.Id.Value);
-            await _stock.ConsumeOnCompleteAsync(order, byId, actorId, now, cancellationToken).ConfigureAwait(false);
-            await _orders.UpdateAsync(order, cancellationToken).ConfigureAwait(false);
-            await CustomerOrderLifecycleNotifier
-                .NotifyCustomerAsync(_notifications, order, CustomerOrderNotificationTypes.Completed, "Order completed", cancellationToken)
-                .ConfigureAwait(false);
-            return ApplicationResult<CustomerOrderDto>.Success(CustomerOrderMaps.Map(order));
+            return result;
         }
         catch (DomainException ex)
+        {
+            return ApplicationResult<CustomerOrderDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+        catch (PersistenceConflictException ex)
         {
             return ApplicationResult<CustomerOrderDto>.Failure(ex.ErrorCode, ex.Message);
         }

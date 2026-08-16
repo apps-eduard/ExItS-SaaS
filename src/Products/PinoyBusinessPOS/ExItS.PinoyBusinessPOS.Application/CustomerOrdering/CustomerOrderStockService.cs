@@ -83,22 +83,27 @@ public sealed class CustomerOrderStockService : ICustomerOrderStockService
         }
 
         var productIds = order.Lines.Select(l => l.ProductId).Distinct().ToList();
-        var accounts = await _inventory
-            .ListByProductIdsAsync(order.SellerOrganizationId, productIds, cancellationToken)
+        await _inventory
+            .ExecuteWithProductReservationLocksAsync(
+                order.SellerOrganizationId,
+                productIds,
+                async (accounts, ct) =>
+                {
+                    var byProduct = accounts.ToDictionary(a => a.ProductId.Value);
+                    foreach (var line in order.Lines.OrderBy(l => l.LineNumber))
+                    {
+                        if (!byProduct.TryGetValue(line.ProductId.Value, out var account) || !account.IsTracked)
+                        {
+                            continue;
+                        }
+
+                        account.Reserve(line.Quantity);
+                        account.Touch(utcNow);
+                        await _inventory.UpdateAccountAsync(account, ct).ConfigureAwait(false);
+                    }
+                },
+                cancellationToken)
             .ConfigureAwait(false);
-        var byProduct = accounts.ToDictionary(a => a.ProductId.Value);
-
-        foreach (var line in order.Lines.OrderBy(l => l.LineNumber))
-        {
-            if (!byProduct.TryGetValue(line.ProductId.Value, out var account) || !account.IsTracked)
-            {
-                continue;
-            }
-
-            account.Reserve(line.Quantity);
-            account.Touch(utcNow);
-            await _inventory.UpdateAccountAsync(account, cancellationToken).ConfigureAwait(false);
-        }
 
         order.MarkStockReserved(utcNow);
     }
@@ -114,22 +119,27 @@ public sealed class CustomerOrderStockService : ICustomerOrderStockService
         }
 
         var productIds = order.Lines.Select(l => l.ProductId).Distinct().ToList();
-        var accounts = await _inventory
-            .ListByProductIdsAsync(order.SellerOrganizationId, productIds, cancellationToken)
+        await _inventory
+            .ExecuteWithProductReservationLocksAsync(
+                order.SellerOrganizationId,
+                productIds,
+                async (accounts, ct) =>
+                {
+                    var byProduct = accounts.ToDictionary(a => a.ProductId.Value);
+                    foreach (var line in order.Lines.OrderBy(l => l.LineNumber))
+                    {
+                        if (!byProduct.TryGetValue(line.ProductId.Value, out var account) || !account.IsTracked)
+                        {
+                            continue;
+                        }
+
+                        account.Release(line.Quantity);
+                        account.Touch(utcNow);
+                        await _inventory.UpdateAccountAsync(account, ct).ConfigureAwait(false);
+                    }
+                },
+                cancellationToken)
             .ConfigureAwait(false);
-        var byProduct = accounts.ToDictionary(a => a.ProductId.Value);
-
-        foreach (var line in order.Lines.OrderBy(l => l.LineNumber))
-        {
-            if (!byProduct.TryGetValue(line.ProductId.Value, out var account) || !account.IsTracked)
-            {
-                continue;
-            }
-
-            account.Release(line.Quantity);
-            account.Touch(utcNow);
-            await _inventory.UpdateAccountAsync(account, cancellationToken).ConfigureAwait(false);
-        }
 
         order.MarkStockReleased(utcNow);
     }
@@ -152,51 +162,56 @@ public sealed class CustomerOrderStockService : ICustomerOrderStockService
         }
 
         var productIds = order.Lines.Select(l => l.ProductId).Distinct().ToList();
-        var accounts = await _inventory
-            .ListByProductIdsAsync(order.SellerOrganizationId, productIds, cancellationToken)
-            .ConfigureAwait(false);
-        var byProduct = accounts.ToDictionary(a => a.ProductId.Value);
-
-        foreach (var line in order.Lines.OrderBy(l => l.LineNumber))
-        {
-            if (!byProduct.TryGetValue(line.ProductId.Value, out var account) || !account.IsTracked)
-            {
-                continue;
-            }
-
-            if (await _inventory
-                    .HasCustomerOrderDeductionAsync(
-                        order.SellerOrganizationId,
-                        order.Id,
-                        line.ProductId,
-                        cancellationToken)
-                    .ConfigureAwait(false))
-            {
-                continue;
-            }
-
-            if (!productsById.TryGetValue(line.ProductId.Value, out var product))
-            {
-                throw new DomainException(
-                    ApplicationErrorCodes.SaleProductNotFound,
-                    "One or more products on the order were not found.");
-            }
-
-            account.ConsumeReservation(line.Quantity);
-            account.Touch(utcNow);
-            var movement = StockMovement.CustomerOrderDeduction(
+        await _inventory
+            .ExecuteWithProductReservationLocksAsync(
                 order.SellerOrganizationId,
-                line.ProductId,
-                account.Id,
-                line.Quantity,
-                line.UnitSnapshot,
-                order.Id.Value,
-                actorId,
-                utcNow,
-                sellingMode: product.SellingMode);
-            await _inventory.UpdateAccountAsync(account, cancellationToken).ConfigureAwait(false);
-            await _inventory.AddMovementAsync(movement, cancellationToken).ConfigureAwait(false);
-        }
+                productIds,
+                async (accounts, ct) =>
+                {
+                    var byProduct = accounts.ToDictionary(a => a.ProductId.Value);
+                    foreach (var line in order.Lines.OrderBy(l => l.LineNumber))
+                    {
+                        if (!byProduct.TryGetValue(line.ProductId.Value, out var account) || !account.IsTracked)
+                        {
+                            continue;
+                        }
+
+                        if (await _inventory
+                                .HasCustomerOrderDeductionAsync(
+                                    order.SellerOrganizationId,
+                                    order.Id,
+                                    line.ProductId,
+                                    ct)
+                                .ConfigureAwait(false))
+                        {
+                            continue;
+                        }
+
+                        if (!productsById.TryGetValue(line.ProductId.Value, out var product))
+                        {
+                            throw new DomainException(
+                                ApplicationErrorCodes.SaleProductNotFound,
+                                "One or more products on the order were not found.");
+                        }
+
+                        account.ConsumeReservation(line.Quantity);
+                        account.Touch(utcNow);
+                        var movement = StockMovement.CustomerOrderDeduction(
+                            order.SellerOrganizationId,
+                            line.ProductId,
+                            account.Id,
+                            line.Quantity,
+                            line.UnitSnapshot,
+                            order.Id.Value,
+                            actorId,
+                            utcNow,
+                            sellingMode: product.SellingMode);
+                        await _inventory.UpdateAccountAsync(account, ct).ConfigureAwait(false);
+                        await _inventory.AddMovementAsync(movement, ct).ConfigureAwait(false);
+                    }
+                },
+                cancellationToken)
+            .ConfigureAwait(false);
 
         order.MarkStockConsumed(utcNow);
     }

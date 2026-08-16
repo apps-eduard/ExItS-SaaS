@@ -14,6 +14,12 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Repositories;
 
 internal sealed class InventoryRepository : IInventoryRepository
 {
+    /// <summary>
+    /// Transaction-scoped advisory lock for customer-order reservation mutations on one
+    /// organization+product pair. Distinct namespace from sale/PO/register sequence locks.
+    /// </summary>
+    private const string LockProductSql = "SELECT pg_advisory_xact_lock({0})";
+
     private readonly PosDbContext _db;
 
     public InventoryRepository(PosDbContext db) => _db = db;
@@ -196,6 +202,95 @@ internal sealed class InventoryRepository : IInventoryRepository
         }
 
         InventoryEntityMapper.ApplyToRecord(account, record);
+    }
+
+    public async Task ExecuteWithProductReservationLocksAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyCollection<CatalogProductId> productIds,
+        Func<IReadOnlyList<InventoryAccount>, CancellationToken, Task> action,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        var orderedIds = productIds
+            .Select(p => p.Value)
+            .Distinct()
+            .OrderBy(id => id)
+            .ToList();
+
+        if (_db.Database.CurrentTransaction is not null)
+        {
+            await RunLockedAsync(organizationId, orderedIds, action, cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
+        var strategy = _db.Database.CreateExecutionStrategy();
+        await strategy.ExecuteAsync(async () =>
+        {
+            await using var transaction = await _db.Database
+                .BeginTransactionAsync(System.Data.IsolationLevel.ReadCommitted, cancellationToken)
+                .ConfigureAwait(false);
+            try
+            {
+                await RunLockedAsync(organizationId, orderedIds, action, cancellationToken).ConfigureAwait(false);
+                await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+                await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch
+            {
+                await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
+                throw;
+            }
+        }).ConfigureAwait(false);
+    }
+
+    private async Task RunLockedAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyList<Guid> orderedProductIds,
+        Func<IReadOnlyList<InventoryAccount>, CancellationToken, Task> action,
+        CancellationToken cancellationToken)
+    {
+        foreach (var productId in orderedProductIds)
+        {
+            await _db.Database
+                .ExecuteSqlRawAsync(
+                    LockProductSql,
+                    [ProductReservationLockKey(organizationId, productId)],
+                    cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        IReadOnlyList<InventoryAccount> accounts = [];
+        if (orderedProductIds.Count > 0)
+        {
+            var records = await _db.InventoryAccounts
+                .Where(a => a.OrganizationId == organizationId.Value && orderedProductIds.Contains(a.ProductId))
+                .ToListAsync(cancellationToken)
+                .ConfigureAwait(false);
+            accounts = records.Select(InventoryEntityMapper.ToDomain).ToList();
+        }
+
+        await action(accounts, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Stable 64-bit advisory-lock key for one organization's inventory account for one product.
+    /// </summary>
+    private static long ProductReservationLockKey(PosOrganizationId organizationId, Guid productId)
+    {
+        Span<byte> bytes = stackalloc byte[32];
+        organizationId.Value.TryWriteBytes(bytes[..16]);
+        productId.TryWriteBytes(bytes[16..]);
+        unchecked
+        {
+            var hash = 0xcbf29ce484222325UL;
+            foreach (var b in bytes)
+            {
+                hash = (hash ^ b) * 0x100000001b3UL;
+            }
+
+            // Distinct namespace from sale / PO / customer-order number locks.
+            return (long)(hash ^ 0x1A7E7E5E11EEDUL);
+        }
     }
 
     public Task AddMovementAsync(StockMovement movement, CancellationToken cancellationToken = default)
