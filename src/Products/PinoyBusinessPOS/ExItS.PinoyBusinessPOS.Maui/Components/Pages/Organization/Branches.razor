@@ -13,7 +13,7 @@
                 <h1>@L["Branches_Title"]</h1>
                 <p class="pos-muted">@L["Branches_Subtitle"]</p>
             </div>
-            <Button Type="@ButtonType.Primary" OnClick="ToggleCreate">@L["Branches_Add"]</Button>
+            <Button Variant="ButtonVariant.Primary" OnClick="ToggleCreate">@L["Branches_Add"]</Button>
         </header>
 
         @if (_capacity is not null)
@@ -36,7 +36,7 @@
                     <TextInput Label="@L["Branches_FieldCity"]" @bind-Value="_newCity" />
                 </div>
                 <div class="pos-branches__actions">
-                    <Button Type="@ButtonType.Primary" Disabled="_busy" OnClick="CreateAsync">@L["Common_Save"]</Button>
+                    <Button Variant="ButtonVariant.Primary" Disabled="_busy" OnClick="CreateAsync">@L["Common_Save"]</Button>
                     <Button Disabled="_busy" OnClick="ToggleCreate">@L["Common_Cancel"]</Button>
                 </div>
             </section>
@@ -70,7 +70,7 @@
                             @if (branch.PickupEnabled) { <Badge Tone="BadgeTone.Info">@L["Branches_Pickup"]</Badge> }
                             @if (branch.DeliveryEnabled) { <Badge Tone="BadgeTone.Success">@L["Branches_Delivery"]</Badge> }
                         </div>
-                        <Button Size="@ButtonSize.Small" OnClick="() => Edit(branch.Id)">@L["Common_Edit"]</Button>
+                        <Button Size="ButtonSize.Sm" OnClick="() => Edit(branch.Id)">@L["Common_Edit"]</Button>
                     </article>
                 }
             </div>

@@ -104,7 +104,7 @@
                 <section class="pos-orders__section">
                     <label class="pos-orders__field">
                         <span>@L["Orders_RejectReason"]</span>
-                        <select value="@_rejectReason" @onchange="e => _rejectReason = e.Value?.ToString() ?? "UnableToFulfill"">
+                        <select value="@_rejectReason" @onchange="OnRejectReasonChanged">
                             <option value="OutOfStock">@L["Orders_Reject_OutOfStock"]</option>
                             <option value="StoreTooBusy">@L["Orders_Reject_StoreTooBusy"]</option>
                             <option value="DeliveryUnavailable">@L["Orders_Reject_DeliveryUnavailable"]</option>
@@ -249,6 +249,9 @@
 
         _busy = false;
     }
+
+    private void OnRejectReasonChanged(ChangeEventArgs e) =>
+        _rejectReason = e.Value?.ToString() ?? "UnableToFulfill";
 
     private async Task RejectAsync()
     {
