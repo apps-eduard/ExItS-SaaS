@@ -582,7 +582,22 @@
         flex: 0 1 auto; margin: 0.45rem 0 0; min-height: 0;
         max-height: min(52vh, 22rem); overflow-y: auto; -webkit-overflow-scrolling: touch;
     }
-    .pos-manage-share__sheet-bar { margin-top: 0.4rem; }
+    .pos-manage-share__sheet-bar {
+        margin-top: 0.4rem;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+        align-items: stretch;
+    }
+    .pos-manage-share__sheet-bar .pos-action-tile {
+        width: auto;
+        min-width: 0;
+        justify-content: center;
+        text-align: center;
+    }
+    .pos-manage-share__sheet-bar .pos-action-tile__label {
+        text-align: center;
+    }
     .pos-manage-share__price-option {
         display: grid; grid-template-columns: auto 1fr; gap: 0.5rem; align-items: start;
         margin: 0; padding: 0.4rem 0.15rem; font-size: 0.875rem; font-weight: 600;
