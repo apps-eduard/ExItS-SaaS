@@ -132,6 +132,172 @@ public sealed class AuthenticationServiceTests
     }
 
     [Fact]
+    public async Task Expired_nominal_session_while_offline_does_not_force_immediate_login()
+    {
+        var userId = Guid.NewGuid();
+        var tokens = new MemorySecureTokenStore();
+        var current = new CurrentUserContext();
+        var clock = new FakeTimeProvider(DateTimeOffset.Parse("2026-01-01T00:00:00Z"));
+        var access = new FakeAccessClient
+        {
+            UserResult = ApiResult<PlatformUserDto>.Success(User(userId, "Active")),
+            IssueTokenResult = ApiResult<PlatformAccessTokenIssueDto>.Unauthorized()
+        };
+        var sessionStore = new SecureSessionStore(tokens);
+        var session = new AuthSession(
+            userId,
+            "Owner",
+            "owner",
+            "o@example.com",
+            OrganizationId: null,
+            OrganizationDisplayName: null,
+            IssuedAtUtc: clock.GetUtcNow(),
+            ExpiresAtUtc: clock.GetUtcNow().AddHours(1),
+            HasPosAccess: false,
+            AccessReasonCode: null,
+            AccessToken: "access-token",
+            PlatformSessionToken: "platform-session");
+        await sessionStore.SaveAsync(session, Guid.NewGuid().ToString("N"));
+        clock.SetUtcNow(DateTimeOffset.Parse("2026-01-02T00:00:00Z"));
+
+        var sut = CreateSut(
+            "Development",
+            access,
+            tokens,
+            currentUser: current,
+            time: clock,
+            connectivity: new FakeConnectivity(online: false));
+
+        var restore = await sut.RestoreSessionAsync();
+
+        Assert.NotNull(await tokens.GetAsync(SecureTokenKeys.UserId));
+        Assert.NotNull(await tokens.GetAsync(SecureTokenKeys.PlatformSessionToken));
+        Assert.NotNull(current.Session);
+        Assert.NotEqual(AuthFailureReason.SessionExpired, restore.FailureReason);
+    }
+
+    [Fact]
+    public async Task Offline_refresh_does_not_clear_platform_session()
+    {
+        var userId = Guid.NewGuid();
+        var tokens = new MemorySecureTokenStore();
+        var current = new CurrentUserContext();
+        var clock = new FakeTimeProvider(DateTimeOffset.Parse("2026-01-01T00:00:00Z"));
+        var access = new FakeAccessClient();
+        var session = new AuthSession(
+            userId,
+            "Owner",
+            "owner",
+            "o@example.com",
+            null,
+            null,
+            clock.GetUtcNow(),
+            clock.GetUtcNow().AddHours(8),
+            false,
+            null,
+            AccessToken: "access-token",
+            PlatformSessionToken: "platform-session");
+        current.Set(session);
+        await new SecureSessionStore(tokens).SaveAsync(session, Guid.NewGuid().ToString("N"));
+
+        var sut = CreateSut(
+            "Development",
+            access,
+            tokens,
+            currentUser: current,
+            time: clock,
+            connectivity: new FakeConnectivity(online: false));
+
+        clock.SetUtcNow(DateTimeOffset.Parse("2026-01-02T00:00:00Z"));
+        var refresh = await sut.RefreshSessionAsync();
+
+        Assert.True(refresh.Succeeded);
+        Assert.Equal("platform-session", await tokens.GetAsync(SecureTokenKeys.PlatformSessionToken));
+        Assert.NotNull(current.Session);
+    }
+
+    [Fact]
+    public async Task TryReissue_updates_access_token_from_session_grant()
+    {
+        var userId = Guid.NewGuid();
+        var tokens = new MemorySecureTokenStore();
+        var current = new CurrentUserContext();
+        var now = DateTimeOffset.UtcNow;
+        var access = new FakeAccessClient
+        {
+            IssueTokenResult = ApiResult<PlatformAccessTokenIssueDto>.Success(new PlatformAccessTokenIssueDto(
+                AccessToken: "new-access",
+                TokenType: "Bearer",
+                TokenId: Guid.NewGuid(),
+                UserId: userId,
+                Username: "owner",
+                DisplayName: "Owner",
+                Email: "o@example.com",
+                ExpiresAtUtc: now.AddHours(8),
+                OrganizationId: null,
+                OrganizationDisplayName: null,
+                ProductCode: null,
+                OrganizationSelectionState: "None",
+                ActiveOrganizationCount: 0,
+                ProductAccessAllowed: false,
+                ProductAccessReasonCode: null))
+        };
+        var session = new AuthSession(
+            userId,
+            "Owner",
+            "owner",
+            "o@example.com",
+            null,
+            null,
+            now,
+            now.AddHours(1),
+            false,
+            null,
+            AccessToken: "old-access",
+            PlatformSessionToken: "platform-session");
+        current.Set(session);
+        await new SecureSessionStore(tokens).SaveAsync(session, Guid.NewGuid().ToString("N"));
+
+        var sut = CreateSut("Development", access, tokens, currentUser: current, connectivity: new FakeConnectivity(true));
+        Assert.True(await sut.TryReissueAccessTokenAsync());
+        Assert.Equal("new-access", current.Session?.AccessToken);
+        Assert.Equal("new-access", await tokens.GetAsync(SecureTokenKeys.AccessToken));
+    }
+
+    [Fact]
+    public async Task TryReissue_fails_without_resurrecting_when_session_grant_denied()
+    {
+        var userId = Guid.NewGuid();
+        var tokens = new MemorySecureTokenStore();
+        var current = new CurrentUserContext();
+        var now = DateTimeOffset.UtcNow;
+        var access = new FakeAccessClient
+        {
+            IssueTokenResult = ApiResult<PlatformAccessTokenIssueDto>.Unauthorized()
+        };
+        var session = new AuthSession(
+            userId,
+            "Owner",
+            "owner",
+            "o@example.com",
+            null,
+            null,
+            now,
+            now.AddHours(1),
+            false,
+            null,
+            AccessToken: "old-access",
+            PlatformSessionToken: "revoked-session");
+        current.Set(session);
+        await new SecureSessionStore(tokens).SaveAsync(session, Guid.NewGuid().ToString("N"));
+
+        var sut = CreateSut("Development", access, tokens, currentUser: current, connectivity: new FakeConnectivity(true));
+        Assert.False(await sut.TryReissueAccessTokenAsync());
+        Assert.Equal("old-access", current.Session?.AccessToken);
+        Assert.Equal("revoked-session", await tokens.GetAsync(SecureTokenKeys.PlatformSessionToken));
+    }
+
+    [Fact]
     public async Task SelectOrganization_with_token_bind_loads_commercial_grants()
     {
         var userId = Guid.NewGuid();
@@ -1138,7 +1304,8 @@ public sealed class AuthenticationServiceTests
         ISecureTokenStore? tokens = null,
         IOnboardingPreferenceStore? prefs = null,
         ICurrentUserContext? currentUser = null,
-        TimeProvider? time = null)
+        TimeProvider? time = null,
+        IConnectivityService? connectivity = null)
     {
         tokens ??= new MemorySecureTokenStore();
         prefs ??= new MemoryOnboardingStore();
@@ -1153,7 +1320,8 @@ public sealed class AuthenticationServiceTests
             access,
             events,
             localContext: null,
-            timeProvider: time);
+            timeProvider: time,
+            connectivity: connectivity);
     }
 
     private static PlatformUserDto User(Guid id, string status) =>

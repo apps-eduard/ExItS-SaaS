@@ -103,14 +103,31 @@ public sealed class PosApiClientTests
     }
 
     [Fact]
-    public async Task Http_request_exception_is_classified_as_offline()
+    public async Task Http_request_exception_when_connected_is_unavailable()
     {
         var handler = new StubHandler(_ => throw new HttpRequestException("no route to host"));
-        var client = CreateClient(handler);
+        var client = new PosApiClient(
+            new HttpClient(handler) { BaseAddress = new Uri("http://pos.test") },
+            new StubConnectivityService(isConnected: true));
 
         var result = await client.GetAsync<ProductDto>("/api/products/1");
 
+        Assert.Equal(ApiCallStatus.Unavailable, result.Status);
+    }
+
+    [Fact]
+    public async Task Http_request_exception_when_offline_is_offline()
+    {
+        var handler = new StubHandler(_ => throw new HttpRequestException("no route to host"));
+        var client = new PosApiClient(
+            new HttpClient(handler) { BaseAddress = new Uri("http://pos.test") },
+            new StubConnectivityService(isConnected: false));
+
+        var result = await client.GetAsync<ProductDto>("/api/products/1");
+
+        // Short-circuit before network when connectivity reports offline.
         Assert.Equal(ApiCallStatus.Offline, result.Status);
+        Assert.Equal(0, handler.CallCount);
     }
 
     [Fact]
