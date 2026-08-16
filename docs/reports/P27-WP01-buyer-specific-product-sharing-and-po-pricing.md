@@ -29,6 +29,10 @@ Companion detail: [connected-supplier-buyer-specific-sharing-and-pricing.md](con
 | `9988fb16` | `test(suppliers): cover connected buyer sharing and pricing rules` |
 | `337df110` | `docs(suppliers): document buyer-specific sharing and pricing` |
 | `cbd0005b` | `docs(suppliers): record buyer-sharing feature commit hashes` |
+| `4b67ce0a` | `feat(suppliers): add safe bulk buyer sharing and pricing operations` |
+| `5b4cb814` | `feat(maui): add bulk connected buyer product management` |
+| `84d3d688` | `test(suppliers): cover bulk buyer product management` |
+| `22be62cf` | `docs(p27): document WP01 mobile sharing UX hardening` |
 
 ## Delivered capability
 
