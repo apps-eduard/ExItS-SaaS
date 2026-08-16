@@ -5,6 +5,7 @@ using ExItS.PinoyBusinessPOS.Api.Common;
 using ExItS.PinoyBusinessPOS.Api.Credit;
 using ExItS.PinoyBusinessPOS.Api.Customers;
 using ExItS.PinoyBusinessPOS.Api.ConnectedSuppliers;
+using ExItS.PinoyBusinessPOS.Api.CustomerOrdering;
 using ExItS.PinoyBusinessPOS.Api.Expenses;
 using ExItS.PinoyBusinessPOS.Api.Inventory;
 using ExItS.PinoyBusinessPOS.Api.Offline;
@@ -21,6 +22,7 @@ using ExItS.PinoyBusinessPOS.Application.Options;
 using ExItS.PinoyBusinessPOS.Application.Credit;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
+using ExItS.PinoyBusinessPOS.Application.CustomerOrdering;
 using ExItS.PinoyBusinessPOS.Application.Expenses;
 using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Application.Payments;
@@ -205,6 +207,24 @@ builder.Services.AddHostedService<ExItS.PinoyBusinessPOS.Infrastructure.Catalog.
 builder.Services.AddScoped<SaleQueryService>();
 builder.Services.AddScoped<CheckoutSale>();
 builder.Services.AddScoped<VoidSale>();
+builder.Services.AddScoped<CustomerOrderQueryService>();
+builder.Services.AddScoped<PlaceCustomerOrder>();
+builder.Services.AddScoped<QuoteCustomerOrderDelivery>();
+builder.Services.AddScoped<AcceptCustomerOrder>();
+builder.Services.AddScoped<RejectCustomerOrder>();
+builder.Services.AddScoped<CancelCustomerOrder>();
+builder.Services.AddScoped<AdvanceCustomerOrderFulfillment>();
+builder.Services.AddScoped<CompleteCustomerOrder>();
+builder.Services.AddHttpClient<ICustomerOrderBranchDirectory, PosCustomerOrderBranchDirectory>((provider, client) =>
+{
+    var options = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<PlatformAuthOptions>>().Value;
+    if (!string.IsNullOrWhiteSpace(options.BaseUrl))
+    {
+        client.BaseAddress = new Uri(options.BaseUrl.TrimEnd('/') + "/", UriKind.Absolute);
+    }
+
+    client.Timeout = TimeSpan.FromSeconds(3);
+});
 builder.Services.AddScoped<SaleReturnQueryService>();
 builder.Services.AddScoped<ProcessSaleReturn>();
 builder.Services.AddScoped<InventoryQueryService>();
@@ -348,6 +368,7 @@ app.MapCatalogEndpoints();
 app.MapCatalogImportEndpoints();
 app.MapPlatformSupportCatalogEndpoints();
 app.MapSaleEndpoints();
+app.MapCustomerOrderEndpoints();
 app.MapSaleReturnEndpoints();
 app.MapInventoryEndpoints();
 app.MapExpenseEndpoints();

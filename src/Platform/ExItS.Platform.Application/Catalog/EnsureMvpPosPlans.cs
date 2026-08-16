@@ -52,7 +52,9 @@ public sealed class EnsureMvpPosPlans
         (FeatureCode.StoreReturnsView, FeatureValueType.Boolean),
         (FeatureCode.StoreReturnsManage, FeatureValueType.Boolean),
         (FeatureCode.StoreRegistersView, FeatureValueType.Boolean),
-        (FeatureCode.StoreRegistersManage, FeatureValueType.Boolean)
+        (FeatureCode.StoreRegistersManage, FeatureValueType.Boolean),
+        (FeatureCode.StoreCustomerOrdering, FeatureValueType.Boolean),
+        (FeatureCode.StoreDeliveryOrders, FeatureValueType.Boolean)
     ];
 
     private static readonly string[] BasicStoreFeatureCodes =
@@ -77,7 +79,10 @@ public sealed class EnsureMvpPosPlans
         FeatureCode.StoreReturnsView,
         FeatureCode.StoreReturnsManage,
         FeatureCode.StoreRegistersView,
-        FeatureCode.StoreRegistersManage
+        FeatureCode.StoreRegistersManage,
+        // V1: grant on all commercial BasicStore plans so tests/dev work; capability checks remain for future Pro-only.
+        FeatureCode.StoreCustomerOrdering,
+        FeatureCode.StoreDeliveryOrders
     ];
 
     private readonly IProductRepository _products;

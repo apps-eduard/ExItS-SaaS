@@ -96,6 +96,12 @@ public sealed partial class FeatureCode : IEquatable<FeatureCode>
     /// <summary>POS data export capability.</summary>
     public const string StoreExport = "store-export";
 
+    /// <summary>POS customer ordering (pickup/delivery storefront orders).</summary>
+    public const string StoreCustomerOrdering = "store-customer-ordering";
+
+    /// <summary>POS delivery-order fulfillment capability (paired with customer ordering).</summary>
+    public const string StoreDeliveryOrders = "store-delivery-orders";
+
     private static readonly Regex ValidPattern = CreateValidPattern();
 
     public string Value { get; }

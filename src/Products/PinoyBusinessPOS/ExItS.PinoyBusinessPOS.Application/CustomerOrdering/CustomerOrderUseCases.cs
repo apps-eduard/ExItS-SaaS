@@ -1,0 +1,832 @@
+using ExItS.PinoyBusinessPOS.Application.Catalog;
+using ExItS.PinoyBusinessPOS.Application.Common;
+using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
+using ExItS.PinoyBusinessPOS.Domain.Abstractions;
+using ExItS.PinoyBusinessPOS.Domain.Catalog;
+using ExItS.PinoyBusinessPOS.Domain.Common;
+using ExItS.PinoyBusinessPOS.Domain.CustomerOrdering;
+using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Sales;
+
+namespace ExItS.PinoyBusinessPOS.Application.CustomerOrdering;
+
+public sealed class CustomerOrderQueryService
+{
+    private readonly ICustomerOrderRepository _orders;
+
+    public CustomerOrderQueryService(ICustomerOrderRepository orders) => _orders = orders;
+
+    public async Task<CustomerOrderDto?> GetByIdAsync(
+        Guid sellerOrganizationId,
+        Guid orderId,
+        CancellationToken cancellationToken = default)
+    {
+        var order = await _orders
+            .GetByIdAsync(
+                PosOrganizationId.From(sellerOrganizationId),
+                CustomerOrderId.From(orderId),
+                cancellationToken)
+            .ConfigureAwait(false);
+        return order is null ? null : CustomerOrderMaps.Map(order);
+    }
+
+    public async Task<CustomerOrderPagedResult> ListAsync(
+        Guid sellerOrganizationId,
+        CustomerOrderFilter filter,
+        int? page,
+        int? pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var (skip, take) = PosPagination.Normalize(page, pageSize);
+        var (items, total) = await _orders
+            .ListAsync(PosOrganizationId.From(sellerOrganizationId), filter, skip, take, cancellationToken)
+            .ConfigureAwait(false);
+        return new CustomerOrderPagedResult(
+            items.Select(CustomerOrderMaps.MapListItem).ToList(),
+            total,
+            page ?? 1,
+            take);
+    }
+
+    public async Task<CustomerOrderPagedResult> ListMineAsync(
+        CustomerPartyType partyType,
+        Guid? platformUserId,
+        Guid? buyerOrganizationId,
+        int? page,
+        int? pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var (skip, take) = PosPagination.Normalize(page, pageSize);
+        var (items, total) = await _orders
+            .ListForCustomerPartyAsync(partyType, platformUserId, buyerOrganizationId, skip, take, cancellationToken)
+            .ConfigureAwait(false);
+        return new CustomerOrderPagedResult(
+            items.Select(CustomerOrderMaps.MapListItem).ToList(),
+            total,
+            page ?? 1,
+            take);
+    }
+
+    public async Task<CustomerOrderDto?> GetMineByIdAsync(
+        Guid orderId,
+        CustomerPartyType partyType,
+        Guid? platformUserId,
+        Guid? buyerOrganizationId,
+        CancellationToken cancellationToken = default)
+    {
+        var order = await _orders
+            .GetForCustomerPartyAsync(
+                CustomerOrderId.From(orderId),
+                partyType,
+                platformUserId,
+                buyerOrganizationId,
+                cancellationToken)
+            .ConfigureAwait(false);
+        return order is null ? null : CustomerOrderMaps.Map(order);
+    }
+}
+
+public sealed class PlaceCustomerOrder
+{
+    private readonly ICustomerOrderRepository _orders;
+    private readonly ICatalogProductRepository _products;
+    private readonly ICustomerOrderBranchDirectory _branches;
+    private readonly ICustomerOrderStockService _stock;
+    private readonly IOrganizationBusinessNotificationPublisher _notifications;
+    private readonly IClock _clock;
+
+    public PlaceCustomerOrder(
+        ICustomerOrderRepository orders,
+        ICatalogProductRepository products,
+        ICustomerOrderBranchDirectory branches,
+        ICustomerOrderStockService stock,
+        IClock clock,
+        IOrganizationBusinessNotificationPublisher? notifications = null)
+    {
+        _orders = orders;
+        _products = products;
+        _branches = branches;
+        _stock = stock;
+        _clock = clock;
+        _notifications = notifications ?? new NoOpOrganizationBusinessNotificationPublisher();
+    }
+
+    public async Task<ApplicationResult<CustomerOrderDto>> ExecuteAsync(
+        Guid sellerOrganizationId,
+        PlaceCustomerOrderRequest request,
+        Guid actorId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var orgId = PosOrganizationId.From(sellerOrganizationId);
+            if (!string.IsNullOrWhiteSpace(request.IdempotencyKey))
+            {
+                var existing = await _orders
+                    .FindByIdempotencyKeyAsync(orgId, request.IdempotencyKey, cancellationToken)
+                    .ConfigureAwait(false);
+                if (existing is not null)
+                {
+                    return ApplicationResult<CustomerOrderDto>.Success(CustomerOrderMaps.Map(existing));
+                }
+            }
+
+            if (!Enum.TryParse<CustomerOrderFulfillmentType>(request.FulfillmentType, true, out var fulfillmentType))
+            {
+                return ApplicationResult<CustomerOrderDto>.Failure(
+                    DomainErrorCodes.InvalidCustomerOrderFulfillmentType,
+                    "Fulfillment type is invalid.");
+            }
+
+            if (!Enum.TryParse<CustomerPartyType>(request.CustomerPartyType, true, out var partyType))
+            {
+                return ApplicationResult<CustomerOrderDto>.Failure(
+                    DomainErrorCodes.InvalidCustomerOrderParty,
+                    "Customer party type is invalid.");
+            }
+
+            var party = partyType == CustomerPartyType.Personal
+                ? CustomerOrderParty.Personal(
+                    request.CustomerPlatformUserId ?? Guid.Empty,
+                    request.CustomerDisplayName)
+                : CustomerOrderParty.Organization(
+                    request.CustomerBuyerOrganizationId ?? Guid.Empty,
+                    request.CustomerBuyerPublicOrganizationId ?? string.Empty,
+                    request.CustomerDisplayName);
+
+            var branch = await _branches
+                .GetBranchAsync(sellerOrganizationId, request.FulfillmentBranchId, cancellationToken)
+                .ConfigureAwait(false);
+            if (branch is null)
+            {
+                return ApplicationResult<CustomerOrderDto>.Failure(
+                    ApplicationErrorCodes.CustomerOrderBranchNotFound,
+                    "Fulfillment branch was not found for this organization.");
+            }
+
+            if (fulfillmentType == CustomerOrderFulfillmentType.Pickup && !branch.PickupEnabled)
+            {
+                return ApplicationResult<CustomerOrderDto>.Failure(
+                    ApplicationErrorCodes.CustomerOrderBranchCapability,
+                    "Pickup is not enabled for this branch.");
+            }
+
+            if (fulfillmentType == CustomerOrderFulfillmentType.Delivery && !branch.DeliveryEnabled)
+            {
+                return ApplicationResult<CustomerOrderDto>.Failure(
+                    ApplicationErrorCodes.CustomerOrderBranchCapability,
+                    "Delivery is not enabled for this branch.");
+            }
+
+            if (request.Lines is null || request.Lines.Count == 0)
+            {
+                return ApplicationResult<CustomerOrderDto>.Failure(
+                    DomainErrorCodes.CustomerOrderRequiresAtLeastOneLine,
+                    "A customer order must contain at least one line.");
+            }
+
+            var productIds = request.Lines.Select(l => CatalogProductId.From(l.ProductId)).Distinct().ToList();
+            var products = await _products.ListByIdsAsync(orgId, productIds, cancellationToken).ConfigureAwait(false);
+            var byId = products.ToDictionary(p => p.Id.Value);
+
+            var drafts = new List<CustomerOrderLineDraft>(request.Lines.Count);
+            foreach (var line in request.Lines)
+            {
+                if (!byId.TryGetValue(line.ProductId, out var product))
+                {
+                    return ApplicationResult<CustomerOrderDto>.Failure(
+                        ApplicationErrorCodes.SaleProductNotFound,
+                        "One or more products were not found in this organization.");
+                }
+
+                if (product.Status != CatalogProductStatus.Active || !product.CanBeSold)
+                {
+                    return ApplicationResult<CustomerOrderDto>.Failure(
+                        ApplicationErrorCodes.SaleProductNotActive,
+                        "One or more products are not available for sale.");
+                }
+
+                // Server-side catalog price — never trust client unit price.
+                drafts.Add(new CustomerOrderLineDraft(
+                    product.Id,
+                    product.Name,
+                    product.Sku,
+                    product.UnitOfMeasure,
+                    line.Quantity,
+                    product.SellingPrice,
+                    line.Discount));
+            }
+
+            await _stock.EnsureAvailableAsync(orgId, drafts, cancellationToken).ConfigureAwait(false);
+
+            CustomerOrderDeliverySnapshot? delivery = null;
+            if (fulfillmentType == CustomerOrderFulfillmentType.Delivery)
+            {
+                if (request.Delivery is null)
+                {
+                    return ApplicationResult<CustomerOrderDto>.Failure(
+                        DomainErrorCodes.InvalidCustomerOrderDelivery,
+                        "Delivery details are required for delivery orders.");
+                }
+
+                var merchandiseSubtotal = SaleMoney.RoundMoney(
+                    drafts.Sum(d => SaleMoney.RoundMoney(d.UnitPrice * d.Quantity) - d.Discount));
+                var quote = await BuildDeliverySnapshotAsync(
+                        sellerOrganizationId,
+                        branch,
+                        request.Delivery,
+                        merchandiseSubtotal,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+                if (!quote.IsSuccess)
+                {
+                    return ApplicationResult<CustomerOrderDto>.Failure(quote.ErrorCode!, quote.ErrorMessage!);
+                }
+
+                delivery = quote.Value;
+            }
+
+            var now = _clock.UtcNow;
+            var orderId = request.ClientOrderId is Guid id && id != Guid.Empty
+                ? CustomerOrderId.From(id)
+                : null;
+
+            var created = await _orders
+                .PlaceAsync(
+                    orgId,
+                    number => CustomerOrder.CreateSubmitted(
+                        orgId,
+                        number,
+                        party,
+                        fulfillmentType,
+                        branch.BranchId,
+                        branch.Name,
+                        drafts,
+                        actorId,
+                        now,
+                        delivery,
+                        request.IdempotencyKey,
+                        orderId),
+                    cancellationToken: cancellationToken)
+                .ConfigureAwait(false);
+
+            await _notifications
+                .PublishAsync(
+                    sellerOrganizationId,
+                    sellerOrganizationId,
+                    CustomerOrderNotificationTypes.Submitted,
+                    created.Id.Value.ToString("D"),
+                    "New customer order",
+                    $"{created.OrderNumber} · {created.CustomerParty.DisplayNameSnapshot} · {created.Total:0.00}",
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+            if (party.PartyType == CustomerPartyType.Organization
+                && party.BuyerOrganizationId is Guid buyerOrg
+                && buyerOrg != Guid.Empty
+                && buyerOrg != sellerOrganizationId)
+            {
+                await _notifications
+                    .PublishAsync(
+                        sellerOrganizationId,
+                        buyerOrg,
+                        CustomerOrderNotificationTypes.Submitted,
+                        created.Id.Value.ToString("D"),
+                        "Order placed",
+                        $"{created.OrderNumber} was submitted.",
+                        cancellationToken)
+                    .ConfigureAwait(false);
+            }
+
+            return ApplicationResult<CustomerOrderDto>.Success(CustomerOrderMaps.Map(created));
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<CustomerOrderDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+        catch (PersistenceConflictException ex)
+        {
+            return ApplicationResult<CustomerOrderDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+    }
+
+    private async Task<ApplicationResult<CustomerOrderDeliverySnapshot>> BuildDeliverySnapshotAsync(
+        Guid sellerOrganizationId,
+        CustomerOrderBranchSnapshot branch,
+        PlaceCustomerOrderDeliveryRequest delivery,
+        decimal merchandiseSubtotal,
+        CancellationToken cancellationToken)
+    {
+        if (branch.Latitude is null || branch.Longitude is null)
+        {
+            return ApplicationResult<CustomerOrderDeliverySnapshot>.Failure(
+                ApplicationErrorCodes.CustomerOrderDeliveryUnavailable,
+                "Branch coordinates are required for delivery fee calculation.");
+        }
+
+        if (branch.DeliveryPolicy is null)
+        {
+            return ApplicationResult<CustomerOrderDeliverySnapshot>.Failure(
+                ApplicationErrorCodes.CustomerOrderDeliveryUnavailable,
+                "Branch delivery policy is not configured.");
+        }
+
+        var distanceKm = StraightLineDeliveryDistance.CalculateKm(
+            branch.Latitude.Value,
+            branch.Longitude.Value,
+            delivery.DestinationLatitude,
+            delivery.DestinationLongitude);
+
+        CustomerOrderDeliveryFeeCalculator.Quote local;
+        try
+        {
+            local = CustomerOrderDeliveryFeeCalculator.Calculate(
+                branch.DeliveryPolicy,
+                merchandiseSubtotal,
+                distanceKm);
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<CustomerOrderDeliverySnapshot>.Failure(ex.ErrorCode, ex.Message);
+        }
+
+        var policy = branch.DeliveryPolicy;
+        var snapshot = CustomerOrderDeliverySnapshot.Create(
+            delivery.RecipientName,
+            delivery.RecipientPhone,
+            delivery.AddressLine1,
+            delivery.AddressLine2,
+            delivery.City,
+            delivery.DeliveryNotes,
+            delivery.DestinationLatitude,
+            delivery.DestinationLongitude,
+            branch.Latitude.Value,
+            branch.Longitude.Value,
+            local.DistanceKm,
+            policy.MinimumOrderAmount,
+            policy.BaseDeliveryFee,
+            policy.IncludedDistanceKm,
+            policy.AdditionalFeePerKm,
+            policy.MaximumDeliveryDistanceKm,
+            policy.FreeDeliveryThreshold,
+            local.DistanceCharge,
+            local.DeliveryFee,
+            local.FreeDeliveryApplied);
+        return ApplicationResult<CustomerOrderDeliverySnapshot>.Success(snapshot);
+    }
+}
+
+public sealed class QuoteCustomerOrderDelivery
+{
+    private readonly ICustomerOrderBranchDirectory _branches;
+
+    public QuoteCustomerOrderDelivery(ICustomerOrderBranchDirectory branches) => _branches = branches;
+
+    public async Task<ApplicationResult<QuoteCustomerOrderDeliveryDto>> ExecuteAsync(
+        Guid sellerOrganizationId,
+        QuoteCustomerOrderDeliveryRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var branch = await _branches
+                .GetBranchAsync(sellerOrganizationId, request.FulfillmentBranchId, cancellationToken)
+                .ConfigureAwait(false);
+            if (branch is null)
+            {
+                return ApplicationResult<QuoteCustomerOrderDeliveryDto>.Failure(
+                    ApplicationErrorCodes.CustomerOrderBranchNotFound,
+                    "Fulfillment branch was not found for this organization.");
+            }
+
+            if (!branch.DeliveryEnabled || branch.DeliveryPolicy is null
+                || branch.Latitude is null || branch.Longitude is null)
+            {
+                return ApplicationResult<QuoteCustomerOrderDeliveryDto>.Success(
+                    new QuoteCustomerOrderDeliveryDto(
+                        Available: false,
+                        UnavailableReason: "Delivery is not available for this branch.",
+                        DistanceKm: 0m,
+                        ExtraDistanceKm: 0m,
+                        DistanceCharge: 0m,
+                        DeliveryFee: 0m,
+                        FreeDeliveryApplied: false,
+                        MinimumOrderAmount: branch.DeliveryPolicy?.MinimumOrderAmount ?? 0m,
+                        MaximumDeliveryDistanceKm: branch.DeliveryPolicy?.MaximumDeliveryDistanceKm ?? 0m));
+            }
+
+            var distanceKm = StraightLineDeliveryDistance.CalculateKm(
+                branch.Latitude.Value,
+                branch.Longitude.Value,
+                request.DestinationLatitude,
+                request.DestinationLongitude);
+
+            var local = CustomerOrderDeliveryFeeCalculator.Calculate(
+                branch.DeliveryPolicy,
+                request.MerchandiseSubtotal,
+                distanceKm);
+            return ApplicationResult<QuoteCustomerOrderDeliveryDto>.Success(
+                new QuoteCustomerOrderDeliveryDto(
+                    Available: true,
+                    UnavailableReason: null,
+                    local.DistanceKm,
+                    local.ExtraDistanceKm,
+                    local.DistanceCharge,
+                    local.DeliveryFee,
+                    local.FreeDeliveryApplied,
+                    branch.DeliveryPolicy.MinimumOrderAmount,
+                    branch.DeliveryPolicy.MaximumDeliveryDistanceKm));
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<QuoteCustomerOrderDeliveryDto>.Success(
+                new QuoteCustomerOrderDeliveryDto(
+                    Available: false,
+                    UnavailableReason: ex.Message,
+                    DistanceKm: 0m,
+                    ExtraDistanceKm: 0m,
+                    DistanceCharge: 0m,
+                    DeliveryFee: 0m,
+                    FreeDeliveryApplied: false,
+                    MinimumOrderAmount: 0m,
+                    MaximumDeliveryDistanceKm: 0m));
+        }
+    }
+}
+
+public sealed class AcceptCustomerOrder
+{
+    private readonly ICustomerOrderRepository _orders;
+    private readonly ICustomerOrderStockService _stock;
+    private readonly IOrganizationBusinessNotificationPublisher _notifications;
+    private readonly IClock _clock;
+
+    public AcceptCustomerOrder(
+        ICustomerOrderRepository orders,
+        ICustomerOrderStockService stock,
+        IClock clock,
+        IOrganizationBusinessNotificationPublisher? notifications = null)
+    {
+        _orders = orders;
+        _stock = stock;
+        _clock = clock;
+        _notifications = notifications ?? new NoOpOrganizationBusinessNotificationPublisher();
+    }
+
+    public async Task<ApplicationResult<CustomerOrderDto>> ExecuteAsync(
+        Guid sellerOrganizationId,
+        Guid orderId,
+        Guid actorId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var orgId = PosOrganizationId.From(sellerOrganizationId);
+            var order = await _orders
+                .GetByIdAsync(orgId, CustomerOrderId.From(orderId), cancellationToken)
+                .ConfigureAwait(false);
+            if (order is null)
+            {
+                return ApplicationResult<CustomerOrderDto>.Failure(
+                    ApplicationErrorCodes.CustomerOrderNotFound,
+                    "Customer order was not found.");
+            }
+
+            var now = _clock.UtcNow;
+            order.Accept(actorId, now);
+            await _stock.ReserveForAcceptAsync(order, actorId, now, cancellationToken).ConfigureAwait(false);
+            await _orders.UpdateAsync(order, cancellationToken).ConfigureAwait(false);
+            await NotifyCustomerAsync(order, CustomerOrderNotificationTypes.Accepted, "Order accepted", cancellationToken)
+                .ConfigureAwait(false);
+            return ApplicationResult<CustomerOrderDto>.Success(CustomerOrderMaps.Map(order));
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<CustomerOrderDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+    }
+
+    private Task NotifyCustomerAsync(
+        CustomerOrder order,
+        string relatedType,
+        string title,
+        CancellationToken cancellationToken) =>
+        CustomerOrderLifecycleNotifier.NotifyCustomerAsync(_notifications, order, relatedType, title, cancellationToken);
+}
+
+public sealed class RejectCustomerOrder
+{
+    private readonly ICustomerOrderRepository _orders;
+    private readonly ICustomerOrderStockService _stock;
+    private readonly IOrganizationBusinessNotificationPublisher _notifications;
+    private readonly IClock _clock;
+
+    public RejectCustomerOrder(
+        ICustomerOrderRepository orders,
+        ICustomerOrderStockService stock,
+        IClock clock,
+        IOrganizationBusinessNotificationPublisher? notifications = null)
+    {
+        _orders = orders;
+        _stock = stock;
+        _clock = clock;
+        _notifications = notifications ?? new NoOpOrganizationBusinessNotificationPublisher();
+    }
+
+    public async Task<ApplicationResult<CustomerOrderDto>> ExecuteAsync(
+        Guid sellerOrganizationId,
+        Guid orderId,
+        RejectCustomerOrderRequest request,
+        Guid actorId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            if (!Enum.TryParse<CustomerOrderRejectReason>(request.Reason, true, out var reason))
+            {
+                return ApplicationResult<CustomerOrderDto>.Failure(
+                    DomainErrorCodes.InvalidCustomerOrderRejectReason,
+                    "Reject reason is invalid.");
+            }
+
+            var orgId = PosOrganizationId.From(sellerOrganizationId);
+            var order = await _orders
+                .GetByIdAsync(orgId, CustomerOrderId.From(orderId), cancellationToken)
+                .ConfigureAwait(false);
+            if (order is null)
+            {
+                return ApplicationResult<CustomerOrderDto>.Failure(
+                    ApplicationErrorCodes.CustomerOrderNotFound,
+                    "Customer order was not found.");
+            }
+
+            var now = _clock.UtcNow;
+            order.Reject(reason, request.Notes, actorId, now);
+            await _stock.ReleaseIfReservedAsync(order, now, cancellationToken).ConfigureAwait(false);
+            await _orders.UpdateAsync(order, cancellationToken).ConfigureAwait(false);
+            await CustomerOrderLifecycleNotifier
+                .NotifyCustomerAsync(_notifications, order, CustomerOrderNotificationTypes.Rejected, "Order rejected", cancellationToken)
+                .ConfigureAwait(false);
+            return ApplicationResult<CustomerOrderDto>.Success(CustomerOrderMaps.Map(order));
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<CustomerOrderDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+    }
+}
+
+public sealed class CancelCustomerOrder
+{
+    private readonly ICustomerOrderRepository _orders;
+    private readonly ICustomerOrderStockService _stock;
+    private readonly IOrganizationBusinessNotificationPublisher _notifications;
+    private readonly IClock _clock;
+
+    public CancelCustomerOrder(
+        ICustomerOrderRepository orders,
+        ICustomerOrderStockService stock,
+        IClock clock,
+        IOrganizationBusinessNotificationPublisher? notifications = null)
+    {
+        _orders = orders;
+        _stock = stock;
+        _clock = clock;
+        _notifications = notifications ?? new NoOpOrganizationBusinessNotificationPublisher();
+    }
+
+    public async Task<ApplicationResult<CustomerOrderDto>> ExecuteAsync(
+        Guid sellerOrganizationId,
+        Guid orderId,
+        Guid actorId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var orgId = PosOrganizationId.From(sellerOrganizationId);
+            var order = await _orders
+                .GetByIdAsync(orgId, CustomerOrderId.From(orderId), cancellationToken)
+                .ConfigureAwait(false);
+            if (order is null)
+            {
+                return ApplicationResult<CustomerOrderDto>.Failure(
+                    ApplicationErrorCodes.CustomerOrderNotFound,
+                    "Customer order was not found.");
+            }
+
+            var now = _clock.UtcNow;
+            order.Cancel(actorId, now);
+            await _stock.ReleaseIfReservedAsync(order, now, cancellationToken).ConfigureAwait(false);
+            await _orders.UpdateAsync(order, cancellationToken).ConfigureAwait(false);
+            await _notifications
+                .PublishAsync(
+                    sellerOrganizationId,
+                    sellerOrganizationId,
+                    CustomerOrderNotificationTypes.Cancelled,
+                    order.Id.Value.ToString("D"),
+                    "Order cancelled",
+                    $"{order.OrderNumber} was cancelled.",
+                    cancellationToken)
+                .ConfigureAwait(false);
+            return ApplicationResult<CustomerOrderDto>.Success(CustomerOrderMaps.Map(order));
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<CustomerOrderDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+    }
+}
+
+public sealed class AdvanceCustomerOrderFulfillment
+{
+    private readonly ICustomerOrderRepository _orders;
+    private readonly IOrganizationBusinessNotificationPublisher _notifications;
+    private readonly IClock _clock;
+
+    public AdvanceCustomerOrderFulfillment(
+        ICustomerOrderRepository orders,
+        IClock clock,
+        IOrganizationBusinessNotificationPublisher? notifications = null)
+    {
+        _orders = orders;
+        _clock = clock;
+        _notifications = notifications ?? new NoOpOrganizationBusinessNotificationPublisher();
+    }
+
+    public Task<ApplicationResult<CustomerOrderDto>> StartPreparingAsync(
+        Guid sellerOrganizationId,
+        Guid orderId,
+        CancellationToken cancellationToken = default) =>
+        MutateAsync(sellerOrganizationId, orderId, o => o.StartPreparing(_clock.UtcNow), null, cancellationToken);
+
+    public Task<ApplicationResult<CustomerOrderDto>> MarkReadyAsync(
+        Guid sellerOrganizationId,
+        Guid orderId,
+        CancellationToken cancellationToken = default) =>
+        MutateAsync(
+            sellerOrganizationId,
+            orderId,
+            o => o.MarkReady(_clock.UtcNow),
+            CustomerOrderNotificationTypes.Ready,
+            cancellationToken);
+
+    public Task<ApplicationResult<CustomerOrderDto>> MarkOutForDeliveryAsync(
+        Guid sellerOrganizationId,
+        Guid orderId,
+        CancellationToken cancellationToken = default) =>
+        MutateAsync(
+            sellerOrganizationId,
+            orderId,
+            o => o.MarkOutForDelivery(_clock.UtcNow),
+            CustomerOrderNotificationTypes.OutForDelivery,
+            cancellationToken);
+
+    public Task<ApplicationResult<CustomerOrderDto>> MarkDeliveredAsync(
+        Guid sellerOrganizationId,
+        Guid orderId,
+        CancellationToken cancellationToken = default) =>
+        MutateAsync(
+            sellerOrganizationId,
+            orderId,
+            o => o.MarkDelivered(_clock.UtcNow),
+            CustomerOrderNotificationTypes.Delivered,
+            cancellationToken);
+
+    public Task<ApplicationResult<CustomerOrderDto>> MarkCollectedAsync(
+        Guid sellerOrganizationId,
+        Guid orderId,
+        CancellationToken cancellationToken = default) =>
+        MutateAsync(
+            sellerOrganizationId,
+            orderId,
+            o => o.MarkCollected(_clock.UtcNow),
+            CustomerOrderNotificationTypes.Collected,
+            cancellationToken);
+
+    private async Task<ApplicationResult<CustomerOrderDto>> MutateAsync(
+        Guid sellerOrganizationId,
+        Guid orderId,
+        Action<CustomerOrder> mutate,
+        string? notifyType,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var orgId = PosOrganizationId.From(sellerOrganizationId);
+            var order = await _orders
+                .GetByIdAsync(orgId, CustomerOrderId.From(orderId), cancellationToken)
+                .ConfigureAwait(false);
+            if (order is null)
+            {
+                return ApplicationResult<CustomerOrderDto>.Failure(
+                    ApplicationErrorCodes.CustomerOrderNotFound,
+                    "Customer order was not found.");
+            }
+
+            mutate(order);
+            await _orders.UpdateAsync(order, cancellationToken).ConfigureAwait(false);
+            if (notifyType is not null)
+            {
+                await CustomerOrderLifecycleNotifier
+                    .NotifyCustomerAsync(_notifications, order, notifyType, "Order update", cancellationToken)
+                    .ConfigureAwait(false);
+            }
+
+            return ApplicationResult<CustomerOrderDto>.Success(CustomerOrderMaps.Map(order));
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<CustomerOrderDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+    }
+}
+
+public sealed class CompleteCustomerOrder
+{
+    private readonly ICustomerOrderRepository _orders;
+    private readonly ICatalogProductRepository _products;
+    private readonly ICustomerOrderStockService _stock;
+    private readonly IOrganizationBusinessNotificationPublisher _notifications;
+    private readonly IClock _clock;
+
+    public CompleteCustomerOrder(
+        ICustomerOrderRepository orders,
+        ICatalogProductRepository products,
+        ICustomerOrderStockService stock,
+        IClock clock,
+        IOrganizationBusinessNotificationPublisher? notifications = null)
+    {
+        _orders = orders;
+        _products = products;
+        _stock = stock;
+        _clock = clock;
+        _notifications = notifications ?? new NoOpOrganizationBusinessNotificationPublisher();
+    }
+
+    public async Task<ApplicationResult<CustomerOrderDto>> ExecuteAsync(
+        Guid sellerOrganizationId,
+        Guid orderId,
+        Guid actorId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var orgId = PosOrganizationId.From(sellerOrganizationId);
+            var order = await _orders
+                .GetByIdAsync(orgId, CustomerOrderId.From(orderId), cancellationToken)
+                .ConfigureAwait(false);
+            if (order is null)
+            {
+                return ApplicationResult<CustomerOrderDto>.Failure(
+                    ApplicationErrorCodes.CustomerOrderNotFound,
+                    "Customer order was not found.");
+            }
+
+            var now = _clock.UtcNow;
+            order.Complete(actorId, now);
+
+            var productIds = order.Lines.Select(l => l.ProductId).Distinct().ToList();
+            var products = await _products.ListByIdsAsync(orgId, productIds, cancellationToken).ConfigureAwait(false);
+            var byId = products.ToDictionary(p => p.Id.Value);
+            await _stock.ConsumeOnCompleteAsync(order, byId, actorId, now, cancellationToken).ConfigureAwait(false);
+            await _orders.UpdateAsync(order, cancellationToken).ConfigureAwait(false);
+            await CustomerOrderLifecycleNotifier
+                .NotifyCustomerAsync(_notifications, order, CustomerOrderNotificationTypes.Completed, "Order completed", cancellationToken)
+                .ConfigureAwait(false);
+            return ApplicationResult<CustomerOrderDto>.Success(CustomerOrderMaps.Map(order));
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<CustomerOrderDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+    }
+}
+
+internal static class CustomerOrderLifecycleNotifier
+{
+    public static async Task NotifyCustomerAsync(
+        IOrganizationBusinessNotificationPublisher notifications,
+        CustomerOrder order,
+        string relatedType,
+        string title,
+        CancellationToken cancellationToken)
+    {
+        if (order.CustomerParty.PartyType != CustomerPartyType.Organization
+            || order.CustomerParty.BuyerOrganizationId is not Guid buyerOrg
+            || buyerOrg == Guid.Empty)
+        {
+            return;
+        }
+
+        await notifications
+            .PublishAsync(
+                order.SellerOrganizationId.Value,
+                buyerOrg,
+                relatedType,
+                order.Id.Value.ToString("D"),
+                title,
+                $"{order.OrderNumber} · {order.Status}",
+                cancellationToken)
+            .ConfigureAwait(false);
+    }
+}

@@ -1,4 +1,5 @@
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
+using ExItS.PinoyBusinessPOS.Domain.CustomerOrdering;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Purchasing;
@@ -99,6 +100,12 @@ public interface IInventoryRepository
     Task<bool> HasSaleDeductionAsync(
         PosOrganizationId organizationId,
         SaleId saleId,
+        CatalogProductId productId,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> HasCustomerOrderDeductionAsync(
+        PosOrganizationId organizationId,
+        CustomerOrderId orderId,
         CatalogProductId productId,
         CancellationToken cancellationToken = default);
 

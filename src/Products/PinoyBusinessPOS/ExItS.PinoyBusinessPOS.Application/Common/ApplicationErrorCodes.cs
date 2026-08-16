@@ -119,6 +119,13 @@ public static class ApplicationErrorCodes
     public const string CatalogImportNoProducts = "pos.catalog_import.no_products";
     public const string CatalogImportProductAlreadyImported = "pos.catalog_import.product.already_imported";
     public const string CatalogImportDuplicateGlobalProduct = "pos.catalog_import.product.duplicate_global";
+
+    public const string CustomerOrderNotFound = "pos.customer_order.not_found";
+    public const string CustomerOrderNumberConflict = "pos.customer_order.number.conflict";
+    public const string CustomerOrderBranchNotFound = "pos.customer_order.branch.not_found";
+    public const string CustomerOrderBranchCapability = "pos.customer_order.branch.capability";
+    public const string CustomerOrderPartyMismatch = "pos.customer_order.party.mismatch";
+    public const string CustomerOrderDeliveryUnavailable = "pos.customer_order.delivery.unavailable";
 }
 
 public sealed class PersistenceConflictException : Exception

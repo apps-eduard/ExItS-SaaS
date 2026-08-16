@@ -1,6 +1,7 @@
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
+using ExItS.PinoyBusinessPOS.Domain.CustomerOrdering;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Purchasing;
@@ -360,6 +361,19 @@ internal sealed class InventoryRepository : IInventoryRepository
                 && m.SourceId == saleId.Value
                 && m.ProductId == productId.Value
                 && m.SourceType == nameof(StockMovementSourceType.Sale)
+                && m.MovementType == nameof(StockMovementType.SaleDeduction),
+            cancellationToken);
+
+    public Task<bool> HasCustomerOrderDeductionAsync(
+        PosOrganizationId organizationId,
+        CustomerOrderId orderId,
+        CatalogProductId productId,
+        CancellationToken cancellationToken = default) =>
+        _db.StockMovements.AsNoTracking().AnyAsync(
+            m => m.OrganizationId == organizationId.Value
+                && m.SourceId == orderId.Value
+                && m.ProductId == productId.Value
+                && m.SourceType == nameof(StockMovementSourceType.CustomerOrder)
                 && m.MovementType == nameof(StockMovementType.SaleDeduction),
             cancellationToken);
 

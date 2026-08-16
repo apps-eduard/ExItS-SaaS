@@ -29,6 +29,9 @@ public static class PosFeatureCodes
     public const string StorePermissionsManage = "store-permissions-manage";
     public const string StoreRegistersView = "store-registers-view";
     public const string StoreRegistersManage = "store-registers-manage";
+    // Entitlement-ready; granted on BasicStore plans for V1 (future Pro-only downgrade possible).
+    public const string StoreCustomerOrdering = "store-customer-ordering";
+    public const string StoreDeliveryOrders = "store-delivery-orders";
 }
 
 /// <summary>Subscription status names mirrored from Platform (string-stable for headers/session).</summary>
@@ -81,7 +84,10 @@ public enum UtangCapability
     ViewRegisters = 32,
     ManageRegisters = 33,
     ViewOperationalSetup = 34,
-    ManageOperationalSetup = 35
+    ManageOperationalSetup = 35,
+    ViewCustomerOrders = 36,
+    ManageCustomerOrders = 37,
+    PlaceCustomerOrders = 38
 }
 
 /// <summary>
@@ -237,6 +243,17 @@ public static class UtangCapabilityPolicy
 
             UtangCapability.ManageOperationalSetup => IsFullCommercialState(status),
 
+            UtangCapability.ViewCustomerOrders =>
+                CanEnter(status, grants) && HasFeature(grants, PosFeatureCodes.StoreCustomerOrdering),
+
+            UtangCapability.ManageCustomerOrders =>
+                IsFullCommercialState(status)
+                && HasFeature(grants, PosFeatureCodes.StoreCustomerOrdering)
+                && HasFeature(grants, PosFeatureCodes.StoreDeliveryOrders),
+
+            UtangCapability.PlaceCustomerOrders =>
+                CanEnter(status, grants) && HasFeature(grants, PosFeatureCodes.StoreCustomerOrdering),
+
             _ => false
         };
     }
@@ -279,7 +296,9 @@ public static class UtangCapabilityPolicy
                 || HasFeature(grants, PosFeatureCodes.StorePermissionsView)
                 || HasFeature(grants, PosFeatureCodes.StorePermissionsManage)
                 || HasFeature(grants, PosFeatureCodes.StoreRegistersView)
-                || HasFeature(grants, PosFeatureCodes.StoreRegistersManage),
+                || HasFeature(grants, PosFeatureCodes.StoreRegistersManage)
+                || HasFeature(grants, PosFeatureCodes.StoreCustomerOrdering)
+                || HasFeature(grants, PosFeatureCodes.StoreDeliveryOrders),
             _ => false
         };
     }
@@ -311,7 +330,9 @@ public static class UtangCapabilityPolicy
         PosFeatureCodes.StorePermissionsView,
         PosFeatureCodes.StorePermissionsManage,
         PosFeatureCodes.StoreRegistersView,
-        PosFeatureCodes.StoreRegistersManage
+        PosFeatureCodes.StoreRegistersManage,
+        PosFeatureCodes.StoreCustomerOrdering,
+        PosFeatureCodes.StoreDeliveryOrders
     ];
 
     /// <summary>
