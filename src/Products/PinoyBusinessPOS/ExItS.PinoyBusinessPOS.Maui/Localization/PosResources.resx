@@ -8741,28 +8741,31 @@
     <value>Goods are already here.</value>
   </data>
   <data name="Purchasing_ReceiveStockDescription" xml:space="preserve">
-    <value>Goods already here - add them to stock.</value>
+    <value>Record goods you bought directly and add them to stock.</value>
   </data>
   <data name="Purchasing_ReceiveStockHelper" xml:space="preserve">
-    <value>Still ordering? Open</value>
+    <value>Have a purchase order? Open</value>
   </data>
   <data name="Purchasing_ReceiveStockSecondary" xml:space="preserve">
     <value>For orders you have not received yet, create a purchase order instead.</value>
   </data>
   <data name="Purchasing_ReceiveStockSearchPlaceholder" xml:space="preserve">
-    <value>Search products</value>
+    <value>Search name, SKU, or barcode</value>
   </data>
   <data name="Purchasing_ReceiveStockAction" xml:space="preserve">
-    <value>Receive</value>
+    <value>Add</value>
   </data>
   <data name="Purchasing_ReceiveStockNoMatchTitle" xml:space="preserve">
     <value>No matching products</value>
   </data>
   <data name="Purchasing_ReceiveStockNoMatchMessage" xml:space="preserve">
-    <value>Try another name, SKU, or barcode.</value>
+    <value>Try another name, SKU, or barcode — or create a new product.</value>
+  </data>
+  <data name="Purchasing_ReceiveStockNoMatchNoCatalog" xml:space="preserve">
+    <value>No matching tracked products. Ask someone with catalog access to add the product.</value>
   </data>
   <data name="Purchasing_ReceiveStockPickProduct" xml:space="preserve">
-    <value>Choose a product</value>
+    <value>Add products</value>
   </data>
   <data name="Purchasing_ReceiveStockEmptyTitle" xml:space="preserve">
     <value>No tracked products</value>
@@ -8771,7 +8774,85 @@
     <value>Enable inventory tracking on a product before you can receive stock.</value>
   </data>
   <data name="Purchasing_ReceiveStockDetails" xml:space="preserve">
-    <value>Receive details</value>
+    <value>Purchase details</value>
+  </data>
+  <data name="Purchasing_ReceiveStockPurchaseDate" xml:space="preserve">
+    <value>Purchase date</value>
+  </data>
+  <data name="Purchasing_ReceiveStockBoughtFrom" xml:space="preserve">
+    <value>Bought from</value>
+  </data>
+  <data name="Purchasing_ReceiveStockBoughtFromHint" xml:space="preserve">
+    <value>Pick a supplier, type a shop name, or leave empty.</value>
+  </data>
+  <data name="Purchasing_ReceiveStockBoughtFromPlaceholder" xml:space="preserve">
+    <value>Supplier or shop name</value>
+  </data>
+  <data name="Purchasing_ReceiveStockUseAnotherSource" xml:space="preserve">
+    <value>+ Use another shop/source</value>
+  </data>
+  <data name="Purchasing_ReceiveStockReference" xml:space="preserve">
+    <value>Receipt / reference</value>
+  </data>
+  <data name="Purchasing_ReceiveStockShowNotes" xml:space="preserve">
+    <value>Add notes</value>
+  </data>
+  <data name="Purchasing_ReceiveStockDraft" xml:space="preserve">
+    <value>Draft lines</value>
+  </data>
+  <data name="Purchasing_ReceiveStockDraftEmpty" xml:space="preserve">
+    <value>Add products below. Stock changes only when you confirm receive.</value>
+  </data>
+  <data name="Purchasing_ReceiveStockInDraft" xml:space="preserve">
+    <value>In draft</value>
+  </data>
+  <data name="Purchasing_ReceiveStockReview" xml:space="preserve">
+    <value>Review &amp; receive</value>
+  </data>
+  <data name="Purchasing_ReceiveStockReviewTitle" xml:space="preserve">
+    <value>Review receive</value>
+  </data>
+  <data name="Purchasing_ReceiveStockConfirm" xml:space="preserve">
+    <value>Receive stock</value>
+  </data>
+  <data name="Purchasing_ReceiveStockNotTracked" xml:space="preserve">
+    <value>Enable inventory tracking on this product before receiving stock.</value>
+  </data>
+  <data name="Purchasing_ReceiveStockNewProduct" xml:space="preserve">
+    <value>New product</value>
+  </data>
+  <data name="Purchasing_ReceiveStockPurchaseUnit" xml:space="preserve">
+    <value>Purchase unit</value>
+  </data>
+  <data name="Purchasing_ReceiveStockSourceEmpty" xml:space="preserve">
+    <value>No source</value>
+  </data>
+  <data name="Purchasing_DirectPurchasesTitle" xml:space="preserve">
+    <value>Direct purchases</value>
+  </data>
+  <data name="Purchasing_DirectPurchasesHint" xml:space="preserve">
+    <value>History of goods received without a PO.</value>
+  </data>
+  <data name="Purchasing_DirectPurchasesSubtitle" xml:space="preserve">
+    <value>Goods received without a purchase order.</value>
+  </data>
+  <data name="Purchasing_DirectPurchasesHistoryLink" xml:space="preserve">
+    <value>View direct purchase history</value>
+  </data>
+  <data name="Purchasing_DirectPurchasesEmptyTitle" xml:space="preserve">
+    <value>No direct purchases yet</value>
+  </data>
+  <data name="Purchasing_DirectPurchasesEmptyMessage" xml:space="preserve">
+    <value>Stock you receive from markets or shops will show here.</value>
+  </data>
+  <data name="Purchasing_DirectPurchasesSearch" xml:space="preserve">
+    <value>Search source or reference</value>
+  </data>
+  <data name="Purchasing_DirectPurchaseDetailTitle" xml:space="preserve">
+    <value>Direct purchase</value>
+  </data>
+  <data name="Purchasing_DirectPurchaseProducts" xml:space="preserve">
+    <value>{0} products</value>
   </data>
   <data name="Purchasing_ReceiveStockRemarksHint" xml:space="preserve">
     <value>Optional note such as market, receipt number, or why you received stock.</value>

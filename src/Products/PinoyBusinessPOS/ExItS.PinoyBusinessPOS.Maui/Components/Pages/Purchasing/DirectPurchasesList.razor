@@ -1,0 +1,205 @@
+@page "/purchasing/direct-purchases"
+@using System.Globalization
+@using ExItS.DesignSystem.Components.Internal
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosDirectPurchaseReceiptClient DirectPurchases
+@inject IUtangCapabilityEvaluator Capabilities
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else if (!_allowed)
+{
+    <Page>
+        <StoreHeaderBack Href="/purchasing" />
+        <EmptyState IconName="lock"
+                    Title="@L["Purchasing_DirectPurchasesTitle"]"
+                    Message="@L["Access_RestrictedMessage"]" />
+    </Page>
+}
+else
+{
+<div class="pos-purchasing pos-direct-purchases">
+    <StoreHeaderBack Href="/purchasing" />
+    <Page>
+        <header class="pos-purchasing__header">
+            <div class="pos-purchasing__heading">
+                <h1 class="pos-purchasing__title">@L["Purchasing_DirectPurchasesTitle"]</h1>
+                <p class="pos-purchasing__subtitle">@L["Purchasing_DirectPurchasesSubtitle"]</p>
+            </div>
+            @if (Capabilities.IsAllowed(UtangCapability.ManageInventory))
+            {
+                <button type="button"
+                        class="pos-purchasing__add"
+                        disabled="@_isOffline"
+                        @onclick="GoReceive">
+                    <span class="pos-purchasing__add-icon" aria-hidden="true">@IconGlyphs.Get("plus")</span>
+                    <span>@L["Purchasing_ReceiveStock"]</span>
+                </button>
+            }
+        </header>
+
+        @if (_isOffline)
+        {
+            <Alert Tone="AlertTone.Warning" Title="@L["Inventory_OfflineTitle"]" Message="@L["Inventory_OfflineMessage"]" />
+        }
+
+        <div class="pos-receive-stock__toolbar">
+            <div class="pos-receive-stock__search" role="search">
+                <span class="pos-receive-stock__search-icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
+                <label class="visually-hidden" for="direct-purchases-search">@L["Purchasing_DirectPurchasesSearch"]</label>
+                <input id="direct-purchases-search"
+                       class="pos-receive-stock__search-input"
+                       type="search"
+                       value="@_search"
+                       placeholder="@L["Purchasing_DirectPurchasesSearch"]"
+                       disabled="@(_loading || _isOffline)"
+                       @oninput="OnSearchInput" />
+            </div>
+        </div>
+
+        <section class="pos-purchasing__panel" aria-labelledby="direct-purchases-list-heading">
+            <h2 id="direct-purchases-list-heading" class="pos-purchasing__section-title">@L["Purchasing_DirectPurchasesTitle"]</h2>
+            @if (_loading)
+            {
+                <div class="pos-purchasing__loading"><Spinner /><span>@L["Inventory_Loading"]</span></div>
+            }
+            else if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <ErrorState Title="@(_errorTitle ?? L["Purchasing_DirectPurchasesTitle"])"
+                            Message="@_errorMessage"
+                            RetryLabel="@L["Api_Retry"]"
+                            OnRetry="ReloadAsync" />
+            }
+            else if (_items.Count == 0)
+            {
+                <EmptyState IconName="inbox"
+                            Title="@L["Purchasing_DirectPurchasesEmptyTitle"]"
+                            Message="@L["Purchasing_DirectPurchasesEmptyMessage"]" />
+            }
+            else
+            {
+                <div class="pos-purchasing__list" role="list" aria-label="@L["Purchasing_DirectPurchasesTitle"]">
+                    @foreach (var item in _items)
+                    {
+                        <a class="pos-purchasing__row"
+                           role="listitem"
+                           href="@($"/purchasing/direct-purchases/{item.DirectPurchaseReceiptId:D}")">
+                            <div class="pos-purchasing__row-main">
+                                <div class="pos-purchasing__row-top">
+                                    <span class="pos-purchasing__row-name">
+                                        @(string.IsNullOrWhiteSpace(item.SourceNameSnapshot)
+                                            ? L["Purchasing_ReceiveStockSourceEmpty"]
+                                            : item.SourceNameSnapshot)
+                                    </span>
+                                </div>
+                                <span class="pos-purchasing__row-meta">
+                                    @item.PurchaseDate.ToString("d")
+                                    · @L["Purchasing_DirectPurchaseProducts", item.LineCount]
+                                    @if (!string.IsNullOrWhiteSpace(item.ReferenceNumber))
+                                    {
+                                        <text> · @item.ReferenceNumber</text>
+                                    }
+                                    · <MoneyDisplay Amount="@item.TotalCost" CurrencyCode="PHP" />
+                                </span>
+                            </div>
+                            <span class="pos-purchasing__view">@item.ReceiptNumber</span>
+                        </a>
+                    }
+                </div>
+            }
+        </section>
+    </Page>
+</div>
+}
+
+@code {
+    private bool _ready;
+    private bool _allowed;
+    private bool _loading;
+    private bool _isOffline;
+    private string _search = string.Empty;
+    private IReadOnlyList<DirectPurchaseReceiptListItemDto> _items = Array.Empty<DirectPurchaseReceiptListItemDto>();
+    private string? _errorTitle;
+    private string? _errorMessage;
+    private CancellationTokenSource? _searchCts;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        _allowed = Capabilities.IsAllowed(UtangCapability.ViewInventory)
+            || Capabilities.IsAllowed(UtangCapability.ManageInventory);
+        _ready = true;
+        if (_allowed)
+        {
+            await ReloadAsync();
+        }
+    }
+
+    private void GoReceive() => Nav.NavigateTo("/purchasing/receive-stock");
+
+    private async Task OnSearchInput(ChangeEventArgs e)
+    {
+        _search = e.Value?.ToString() ?? string.Empty;
+        _searchCts?.Cancel();
+        _searchCts = new CancellationTokenSource();
+        var token = _searchCts.Token;
+        try
+        {
+            await Task.Delay(300, token);
+            await ReloadAsync();
+        }
+        catch (TaskCanceledException)
+        {
+        }
+    }
+
+    private async Task ReloadAsync()
+    {
+        _loading = true;
+        _errorTitle = null;
+        _errorMessage = null;
+        _isOffline = !await Connectivity.IsConnectedAsync();
+        if (_isOffline)
+        {
+            _items = Array.Empty<DirectPurchaseReceiptListItemDto>();
+            _loading = false;
+            return;
+        }
+
+        var result = await DirectPurchases.ListAsync(page: 1, pageSize: 50);
+        if (result.IsSuccess && result.Data is not null)
+        {
+            var search = string.IsNullOrWhiteSpace(_search) ? null : _search.Trim();
+            _items = string.IsNullOrWhiteSpace(search)
+                ? result.Data.Items
+                : result.Data.Items
+                    .Where(i =>
+                        (!string.IsNullOrWhiteSpace(i.SourceNameSnapshot)
+                         && i.SourceNameSnapshot.Contains(search, StringComparison.OrdinalIgnoreCase))
+                        || (!string.IsNullOrWhiteSpace(i.ReferenceNumber)
+                            && i.ReferenceNumber.Contains(search, StringComparison.OrdinalIgnoreCase))
+                        || i.ReceiptNumber.Contains(search, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+        }
+        else
+        {
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorTitle = described.Title;
+            _errorMessage = result.Error?.Detail ?? described.Message;
+            _items = Array.Empty<DirectPurchaseReceiptListItemDto>();
+        }
+
+        _loading = false;
+    }
+}

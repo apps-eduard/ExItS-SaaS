@@ -34,6 +34,7 @@ public static class StockMovementPresentation
             StockMovementType.TransferOut => "Transfer out",
             StockMovementType.TransferIn => "Transfer in",
             StockMovementType.TransferCancelRestore => "Transfer cancelled",
+            StockMovementType.DirectPurchaseReceipt => "Direct purchase",
             _ => type.ToString()
         };
     }

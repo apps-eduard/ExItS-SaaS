@@ -8741,28 +8741,31 @@
     <value>Nandito na ang mga kalakal.</value>
   </data>
   <data name="Purchasing_ReceiveStockDescription" xml:space="preserve">
-    <value>Nandito na ang kalakal - idagdag sa stock.</value>
+    <value>Itala ang direktang binili at idagdag sa stock.</value>
   </data>
   <data name="Purchasing_ReceiveStockHelper" xml:space="preserve">
-    <value>Nag-oorder pa? Buksan ang</value>
+    <value>May purchase order? Buksan ang</value>
   </data>
   <data name="Purchasing_ReceiveStockSecondary" xml:space="preserve">
     <value>Kung hindi pa natatanggap, gumawa muna ng purchase order.</value>
   </data>
   <data name="Purchasing_ReceiveStockSearchPlaceholder" xml:space="preserve">
-    <value>Maghanap ng produkto</value>
+    <value>Maghanap ng pangalan, SKU, o barcode</value>
   </data>
   <data name="Purchasing_ReceiveStockAction" xml:space="preserve">
-    <value>Tanggapin</value>
+    <value>Idagdag</value>
   </data>
   <data name="Purchasing_ReceiveStockNoMatchTitle" xml:space="preserve">
     <value>Walang tumugmang produkto</value>
   </data>
   <data name="Purchasing_ReceiveStockNoMatchMessage" xml:space="preserve">
-    <value>Subukan ang ibang pangalan, SKU, o barcode.</value>
+    <value>Subukan ang ibang pangalan, SKU, o barcode — o gumawa ng bagong produkto.</value>
+  </data>
+  <data name="Purchasing_ReceiveStockNoMatchNoCatalog" xml:space="preserve">
+    <value>Walang tumugmang tracked na produkto. Humingi ng tulong sa may access sa catalog.</value>
   </data>
   <data name="Purchasing_ReceiveStockPickProduct" xml:space="preserve">
-    <value>Pumili ng produkto</value>
+    <value>Magdagdag ng produkto</value>
   </data>
   <data name="Purchasing_ReceiveStockEmptyTitle" xml:space="preserve">
     <value>Walang tracked na produkto</value>
@@ -8771,7 +8774,85 @@
     <value>I-enable muna ang inventory tracking sa produkto bago tumanggap ng stock.</value>
   </data>
   <data name="Purchasing_ReceiveStockDetails" xml:space="preserve">
-    <value>Detalye ng pagtanggap</value>
+    <value>Detalye ng pagbili</value>
+  </data>
+  <data name="Purchasing_ReceiveStockPurchaseDate" xml:space="preserve">
+    <value>Petsa ng pagbili</value>
+  </data>
+  <data name="Purchasing_ReceiveStockBoughtFrom" xml:space="preserve">
+    <value>Binili mula kay</value>
+  </data>
+  <data name="Purchasing_ReceiveStockBoughtFromHint" xml:space="preserve">
+    <value>Pumili ng supplier, mag-type ng tindahan, o iwanang blangko.</value>
+  </data>
+  <data name="Purchasing_ReceiveStockBoughtFromPlaceholder" xml:space="preserve">
+    <value>Supplier o pangalan ng tindahan</value>
+  </data>
+  <data name="Purchasing_ReceiveStockUseAnotherSource" xml:space="preserve">
+    <value>+ Gumamit ng ibang tindahan/source</value>
+  </data>
+  <data name="Purchasing_ReceiveStockReference" xml:space="preserve">
+    <value>Resibo / reference</value>
+  </data>
+  <data name="Purchasing_ReceiveStockShowNotes" xml:space="preserve">
+    <value>Magdagdag ng notes</value>
+  </data>
+  <data name="Purchasing_ReceiveStockDraft" xml:space="preserve">
+    <value>Draft na linya</value>
+  </data>
+  <data name="Purchasing_ReceiveStockDraftEmpty" xml:space="preserve">
+    <value>Magdagdag ng produkto sa ibaba. Babago ang stock kapag kinumpirma ang pagtanggap.</value>
+  </data>
+  <data name="Purchasing_ReceiveStockInDraft" xml:space="preserve">
+    <value>Nasa draft</value>
+  </data>
+  <data name="Purchasing_ReceiveStockReview" xml:space="preserve">
+    <value>I-review at tanggapin</value>
+  </data>
+  <data name="Purchasing_ReceiveStockReviewTitle" xml:space="preserve">
+    <value>I-review ang pagtanggap</value>
+  </data>
+  <data name="Purchasing_ReceiveStockConfirm" xml:space="preserve">
+    <value>Tanggapin ang stock</value>
+  </data>
+  <data name="Purchasing_ReceiveStockNotTracked" xml:space="preserve">
+    <value>I-enable muna ang inventory tracking sa produktong ito bago tumanggap ng stock.</value>
+  </data>
+  <data name="Purchasing_ReceiveStockNewProduct" xml:space="preserve">
+    <value>Bagong produkto</value>
+  </data>
+  <data name="Purchasing_ReceiveStockPurchaseUnit" xml:space="preserve">
+    <value>Unit ng pagbili</value>
+  </data>
+  <data name="Purchasing_ReceiveStockSourceEmpty" xml:space="preserve">
+    <value>Walang source</value>
+  </data>
+  <data name="Purchasing_DirectPurchasesTitle" xml:space="preserve">
+    <value>Direktang pagbili</value>
+  </data>
+  <data name="Purchasing_DirectPurchasesHint" xml:space="preserve">
+    <value>Kasaysayan ng natanggap nang walang PO.</value>
+  </data>
+  <data name="Purchasing_DirectPurchasesSubtitle" xml:space="preserve">
+    <value>Mga kalakal na natanggap nang walang purchase order.</value>
+  </data>
+  <data name="Purchasing_DirectPurchasesHistoryLink" xml:space="preserve">
+    <value>Tingnan ang kasaysayan ng direktang pagbili</value>
+  </data>
+  <data name="Purchasing_DirectPurchasesEmptyTitle" xml:space="preserve">
+    <value>Wala pang direktang pagbili</value>
+  </data>
+  <data name="Purchasing_DirectPurchasesEmptyMessage" xml:space="preserve">
+    <value>Dito lalabas ang stock na tinanggap mula sa palengke o tindahan.</value>
+  </data>
+  <data name="Purchasing_DirectPurchasesSearch" xml:space="preserve">
+    <value>Maghanap ng source o reference</value>
+  </data>
+  <data name="Purchasing_DirectPurchaseDetailTitle" xml:space="preserve">
+    <value>Direktang pagbili</value>
+  </data>
+  <data name="Purchasing_DirectPurchaseProducts" xml:space="preserve">
+    <value>{0} produkto</value>
   </data>
   <data name="Purchasing_ReceiveStockRemarksHint" xml:space="preserve">
     <value>Opsyonal na tala tulad ng palengke, resibo, o dahilan.</value>

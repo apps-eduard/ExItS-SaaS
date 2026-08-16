@@ -1,0 +1,191 @@
+@page "/purchasing/direct-purchases/{ReceiptId:guid}"
+@using System.Globalization
+@using ExItS.DesignSystem.Components.Internal
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject IPosDirectPurchaseReceiptClient DirectPurchases
+@inject IUtangCapabilityEvaluator Capabilities
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IConnectivityService Connectivity
+@inject IStringLocalizer<PosResources> L
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else if (!_allowed)
+{
+    <Page>
+        <StoreHeaderBack Href="/purchasing/direct-purchases" />
+        <EmptyState IconName="lock"
+                    Title="@L["Purchasing_DirectPurchaseDetailTitle"]"
+                    Message="@L["Access_RestrictedMessage"]" />
+    </Page>
+}
+else
+{
+<div class="pos-purchasing-detail pos-direct-purchase-detail">
+    <StoreHeaderBack Href="/purchasing/direct-purchases" />
+    <Page>
+        @if (_loading)
+        {
+            <div class="pos-purchasing__loading"><Spinner /><span>@L["Inventory_Loading"]</span></div>
+        }
+        else if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <ErrorState Title="@(_errorTitle ?? L["Purchasing_DirectPurchaseDetailTitle"])"
+                        Message="@_errorMessage"
+                        RetryLabel="@L["Api_Retry"]"
+                        OnRetry="ReloadAsync" />
+        }
+        else if (_receipt is null)
+        {
+            <EmptyState IconName="inbox"
+                        Title="@L["Purchasing_NotFoundTitle"]"
+                        Message="@L["Purchasing_NotFoundMessage"]" />
+        }
+        else
+        {
+            <header class="pos-purchasing-detail__header">
+                <h1 class="pos-purchasing-detail__title">@_receipt.ReceiptNumber</h1>
+                <p class="pos-purchasing-detail__subtitle">@L["Purchasing_DirectPurchaseDetailTitle"]</p>
+            </header>
+
+            @if (_isOffline)
+            {
+                <Alert Tone="AlertTone.Warning" Title="@L["Inventory_OfflineTitle"]" Message="@L["Inventory_OfflineMessage"]" />
+            }
+
+            <section class="pos-purchasing-detail__panel" aria-labelledby="direct-purchase-details-heading">
+                <h2 id="direct-purchase-details-heading" class="pos-purchasing-detail__section-title">@L["Purchasing_DetailsSection"]</h2>
+                <dl class="pos-purchasing-detail__facts">
+                    <div class="pos-purchasing-detail__fact">
+                        <dt>@L["Purchasing_ReceiveStockPurchaseDate"]</dt>
+                        <dd>@_receipt.PurchaseDate.ToString("d")</dd>
+                    </div>
+                    <div class="pos-purchasing-detail__fact">
+                        <dt>@L["Purchasing_ReceiveStockBoughtFrom"]</dt>
+                        <dd>@(string.IsNullOrWhiteSpace(_receipt.SourceNameSnapshot)
+                            ? L["Purchasing_ReceiveStockSourceEmpty"]
+                            : _receipt.SourceNameSnapshot)</dd>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(_receipt.ReferenceNumber))
+                    {
+                        <div class="pos-purchasing-detail__fact">
+                            <dt>@L["Purchasing_ReceiveStockReference"]</dt>
+                            <dd>@_receipt.ReferenceNumber</dd>
+                        </div>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(_receipt.Notes))
+                    {
+                        <div class="pos-purchasing-detail__fact">
+                            <dt>@L["Purchasing_Field_Notes"]</dt>
+                            <dd>@_receipt.Notes</dd>
+                        </div>
+                    }
+                    <div class="pos-purchasing-detail__fact">
+                        <dt>@L["Purchasing_LinesTotal"]</dt>
+                        <dd><MoneyDisplay Amount="@_receipt.TotalCost" CurrencyCode="PHP" Emphasized="true" /></dd>
+                    </div>
+                </dl>
+            </section>
+
+            <section class="pos-purchasing-detail__panel" aria-labelledby="direct-purchase-lines-heading">
+                <h2 id="direct-purchase-lines-heading" class="pos-purchasing-detail__section-title">@L["Purchasing_LinesSection"]</h2>
+                @if (_receipt.Lines.Count == 0)
+                {
+                    <p class="pos-purchasing-detail__empty">—</p>
+                }
+                else
+                {
+                    <div class="pos-purchasing-detail__list" role="list">
+                        @foreach (var line in _receipt.Lines.OrderBy(l => l.LineNumber))
+                        {
+                            <div class="pos-purchasing-detail__entry" role="listitem">
+                                <div class="pos-purchasing-detail__entry-top">
+                                    <span class="pos-purchasing-detail__entry-name">@line.ProductNameSnapshot</span>
+                                    <MoneyDisplay Amount="@line.LineTotal" CurrencyCode="PHP" Emphasized="true" />
+                                </div>
+                                <p class="pos-purchasing-detail__entry-meta">
+                                    @line.Quantity.ToString("0.###", CultureInfo.CurrentCulture) @line.UnitOfMeasure
+                                    × <MoneyDisplay Amount="@line.UnitCost" CurrencyCode="PHP" />
+                                    @if (!string.IsNullOrWhiteSpace(line.SkuSnapshot))
+                                    {
+                                        <text> · @line.SkuSnapshot</text>
+                                    }
+                                    @if (line.ExpiryDate is { } expiry)
+                                    {
+                                        <text> · @expiry.ToString("d")</text>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(line.LotNumber))
+                                    {
+                                        <text> · @line.LotNumber</text>
+                                    }
+                                </p>
+                            </div>
+                        }
+                    </div>
+                }
+            </section>
+        }
+    </Page>
+</div>
+}
+
+@code {
+    [Parameter] public Guid ReceiptId { get; set; }
+
+    private bool _ready;
+    private bool _allowed;
+    private bool _loading;
+    private bool _isOffline;
+    private DirectPurchaseReceiptDto? _receipt;
+    private string? _errorTitle;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Gate.CanEnterProtectedShell)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        _allowed = Capabilities.IsAllowed(UtangCapability.ViewInventory)
+            || Capabilities.IsAllowed(UtangCapability.ManageInventory);
+        _ready = true;
+        if (_allowed)
+        {
+            await ReloadAsync();
+        }
+    }
+
+    private async Task ReloadAsync()
+    {
+        _loading = true;
+        _errorTitle = null;
+        _errorMessage = null;
+        _isOffline = !await Connectivity.IsConnectedAsync();
+        if (_isOffline)
+        {
+            _receipt = null;
+            _loading = false;
+            return;
+        }
+
+        var result = await DirectPurchases.GetAsync(ReceiptId);
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _receipt = result.Data;
+        }
+        else
+        {
+            _receipt = null;
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorTitle = described.Title;
+            _errorMessage = result.Error?.Detail ?? described.Message;
+        }
+
+        _loading = false;
+    }
+}

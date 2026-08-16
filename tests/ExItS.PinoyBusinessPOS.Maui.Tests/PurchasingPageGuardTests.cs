@@ -28,7 +28,8 @@ public sealed class PurchasingPageGuardTests
         Assert.Contains("IPosSupplierClient", create, StringComparison.Ordinal);
         Assert.Contains("IPosCatalogClient", create, StringComparison.Ordinal);
         Assert.Contains("Purchasing_AddLine", create, StringComparison.Ordinal);
-        Assert.Contains("Purchasing_SearchProducts", create, StringComparison.Ordinal);
+        Assert.Contains("Purchasing_SearchYourProducts", create, StringComparison.Ordinal);
+        Assert.Contains("Purchasing_SearchSupplierProducts", create, StringComparison.Ordinal);
         Assert.Contains("Purchasing_SaveChanges", create, StringComparison.Ordinal);
         Assert.Contains("IconGlyphs.Get(\"trash\")", create, StringComparison.Ordinal);
         Assert.Contains("IconGlyphs.Get(\"edit\")", create, StringComparison.Ordinal);

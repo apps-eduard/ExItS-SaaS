@@ -48,6 +48,17 @@ else
                     </span>
                 </button>
             }
+            @if (Capabilities.IsAllowed(UtangCapability.ViewInventory)
+                || Capabilities.IsAllowed(UtangCapability.ManageInventory))
+            {
+                <button type="button" class="pos-action-tile" @onclick="GoDirectPurchases">
+                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("inbox")</span>
+                    <span class="pos-action-tile__body">
+                        <span class="pos-action-tile__label">@L["Purchasing_DirectPurchasesTitle"]</span>
+                        <span class="pos-action-tile__meta">@L["Purchasing_DirectPurchasesHint"]</span>
+                    </span>
+                </button>
+            }
             @if (Capabilities.IsAllowed(UtangCapability.ViewSuppliers))
             {
                 <button type="button" class="pos-action-tile" @onclick="GoSuppliers">
@@ -94,5 +105,6 @@ else
     private void GoReceiveStock() => Nav.NavigateTo("/purchasing/receive-stock");
     private void GoOrders() => Nav.NavigateTo("/purchasing/orders");
     private void GoReceipts() => Nav.NavigateTo("/purchasing/receipts");
+    private void GoDirectPurchases() => Nav.NavigateTo("/purchasing/direct-purchases");
     private void GoSuppliers() => Nav.NavigateTo("/suppliers");
 }

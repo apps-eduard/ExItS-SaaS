@@ -17,6 +17,7 @@ public sealed class StockMovement
     public const string CustomerOrderFulfillmentReason = "Customer order fulfillment";
     public const string SaleVoidRestorationReason = "Sale void restoration";
     public const string PurchaseReceiptReason = "Purchase receipt";
+    public const string DirectPurchaseReceiptReason = "Direct purchase receipt";
     public const string StockCountVarianceReason = "Stock count variance";
     public const string SaleReturnRestockReason = "Sale return restock";
     public const string TransferOutReasonPrefix = "Transfer out";
@@ -298,6 +299,42 @@ public sealed class StockMovement
             PurchaseReceiptReason,
             StockMovementSourceType.PurchaseReceipt,
             goodsReceiptId,
+            utcNow,
+            actorId);
+    }
+
+    public static StockMovement DirectPurchaseReceipt(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        InventoryAccountId inventoryAccountId,
+        decimal quantity,
+        UnitOfMeasure unitOfMeasure,
+        Guid directPurchaseReceiptId,
+        Guid actorId,
+        DateTimeOffset utcNow,
+        StockMovementId? id = null,
+        SellingMode sellingMode = SellingMode.PerItem)
+    {
+        EnsureUtc(utcNow);
+        EnsureActor(actorId);
+        if (directPurchaseReceiptId == Guid.Empty)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidDirectPurchaseReceiptId,
+                "DirectPurchaseReceiptId cannot be an empty GUID.");
+        }
+
+        var absolute = SaleLine.NormalizeQuantity(quantity, unitOfMeasure, sellingMode);
+        return new StockMovement(
+            id ?? StockMovementId.New(),
+            organizationId,
+            productId,
+            inventoryAccountId,
+            StockMovementType.DirectPurchaseReceipt,
+            absolute,
+            DirectPurchaseReceiptReason,
+            StockMovementSourceType.DirectPurchase,
+            directPurchaseReceiptId,
             utcNow,
             actorId);
     }

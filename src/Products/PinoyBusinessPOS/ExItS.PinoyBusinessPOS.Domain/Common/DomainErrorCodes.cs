@@ -236,6 +236,18 @@ public static class DomainErrorCodes
     public const string InvalidGoodsReceiptLine = "pos.goods_receipt.line.invalid";
     public const string InvalidGoodsReceiptNotes = "pos.goods_receipt.notes.invalid";
 
+    public const string InvalidDirectPurchaseReceiptId = "pos.direct_purchase_receipt.id.invalid";
+    public const string InvalidDirectPurchaseReceiptLineId = "pos.direct_purchase_receipt_line.id.invalid";
+    public const string InvalidDirectPurchaseReceiptNumber = "pos.direct_purchase_receipt.number.invalid";
+    public const string DirectPurchaseRequiresLines = "pos.direct_purchase_receipt.lines.required";
+    public const string InvalidDirectPurchaseQuantity = "pos.direct_purchase_receipt.quantity.invalid";
+    public const string InvalidDirectPurchaseUnitCost = "pos.direct_purchase_receipt.unit_cost.invalid";
+    public const string InvalidDirectPurchaseReceiptLine = "pos.direct_purchase_receipt.line.invalid";
+    public const string InvalidDirectPurchaseSourceName = "pos.direct_purchase_receipt.source_name.invalid";
+    public const string InvalidDirectPurchaseReference = "pos.direct_purchase_receipt.reference.invalid";
+    public const string InvalidDirectPurchaseNotes = "pos.direct_purchase_receipt.notes.invalid";
+    public const string InvalidDirectPurchaseIdempotencyKey = "pos.direct_purchase_receipt.idempotency_key.invalid";
+
     public const string InvalidCashierShiftId = "pos.cashier_shift.id.invalid";
     public const string InvalidCashierShiftMovementId = "pos.cashier_shift_movement.id.invalid";
     public const string InvalidCashierShiftNumber = "pos.cashier_shift.number.invalid";

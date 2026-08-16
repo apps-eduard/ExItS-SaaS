@@ -13,7 +13,8 @@ public enum StockMovementSourceType
     StockCount = 5,
     SaleReturn = 6,
     InventoryTransfer = 7,
-    CustomerOrder = 8
+    CustomerOrder = 8,
+    DirectPurchase = 9
 }
 
 public static class StockMovementSourceTypes
@@ -30,7 +31,8 @@ public static class StockMovementSourceTypes
         nameof(StockMovementSourceType.StockCount),
         nameof(StockMovementSourceType.SaleReturn),
         nameof(StockMovementSourceType.InventoryTransfer),
-        nameof(StockMovementSourceType.CustomerOrder)
+        nameof(StockMovementSourceType.CustomerOrder),
+        nameof(StockMovementSourceType.DirectPurchase)
     ];
 
     public static string ToCode(StockMovementSourceType type) => type.ToString();

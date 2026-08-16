@@ -254,6 +254,12 @@ public sealed class PlatformSupportCatalogTests
             CatalogProductId productId,
             CancellationToken cancellationToken = default) => throw new NotSupportedException();
 
+        public Task<bool> HasDirectPurchaseReceiptAsync(
+            PosOrganizationId organizationId,
+            Domain.Inventory.DirectPurchaseReceiptId receiptId,
+            CatalogProductId productId,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
         public Task<bool> HasSaleReturnRestockAsync(
             PosOrganizationId organizationId,
             Domain.Returns.SaleReturnId saleReturnId,

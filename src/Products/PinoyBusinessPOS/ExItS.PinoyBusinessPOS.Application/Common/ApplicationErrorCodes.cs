@@ -90,6 +90,10 @@ public static class ApplicationErrorCodes
     public const string PurchaseProductNotFound = "pos.purchase_order.product.not_found";
     public const string PurchaseProductNotActive = "pos.purchase_order.product.not_active";
 
+    public const string DirectPurchaseReceiptNotFound = "pos.direct_purchase_receipt.not_found";
+    public const string DirectPurchaseReceiptNumberConflict = "pos.direct_purchase_receipt.number.conflict";
+    public const string DirectPurchaseProductNotPurchasable = "pos.direct_purchase_receipt.product.not_purchasable";
+
     public const string CashierShiftNotFound = "pos.cashier_shift.not_found";
     public const string CashierShiftNumberConflict = "pos.cashier_shift.number.conflict";
     public const string CashierShiftOpenConflict = "pos.cashier_shift.open.conflict";

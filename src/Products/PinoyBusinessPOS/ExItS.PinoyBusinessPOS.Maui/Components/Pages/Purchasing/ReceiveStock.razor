@@ -1,9 +1,12 @@
 @page "/purchasing/receive-stock"
 @using System.Globalization
 @using ExItS.DesignSystem.Components.Internal
+@using ExItS.PinoyBusinessPOS.Application.Purchasing
 @inject NavigationManager Nav
 @inject NavigationGate Gate
-@inject IPosInventoryClient Inventory
+@inject IPosDirectPurchaseReceiptClient DirectPurchases
+@inject IPosCatalogClient Catalog
+@inject IPosSupplierClient Suppliers
 @inject IUtangCapabilityEvaluator Capabilities
 @inject ApiStatusLocalizer ApiLocalizer
 @inject IConnectivityService Connectivity
@@ -24,6 +27,13 @@ else if (!_allowed)
 }
 else
 {
+    var canManageCatalog = Capabilities.IsAllowed(UtangCapability.ManageCatalog);
+    var canViewHistory = Capabilities.IsAllowed(UtangCapability.ViewInventory)
+        || Capabilities.IsAllowed(UtangCapability.ManageInventory);
+    var eligibleProducts = EligibleProducts;
+    var categoryChips = CategoryChips;
+    var supplierHits = SupplierHits;
+    var draftTotal = DraftTotal;
 <div class="pos-purchasing pos-receive-stock">
     <StoreHeaderBack Href="/purchasing" />
     <Page>
@@ -35,6 +45,12 @@ else
                     @L["Purchasing_ReceiveStockHelper"]
                     <button type="button" class="pos-receive-stock__link" @onclick="GoOrders">@L["Purchasing_Orders"]</button>
                 </p>
+                @if (canViewHistory)
+                {
+                    <p class="pos-receive-stock__tip">
+                        <button type="button" class="pos-receive-stock__link" @onclick="GoHistory">@L["Purchasing_DirectPurchasesHistoryLink"]</button>
+                    </p>
+                }
             </div>
         </header>
 
@@ -43,47 +59,192 @@ else
             <Alert Tone="AlertTone.Warning" Title="@L["Inventory_OfflineTitle"]" Message="@L["Inventory_OfflineMessage"]" />
         }
 
-        <div class="pos-receive-stock__toolbar">
-            <div class="pos-receive-stock__search" role="search">
-                <span class="pos-receive-stock__search-icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
-                <label class="visually-hidden" for="receive-stock-search">@L["Purchasing_ReceiveStockSearchPlaceholder"]</label>
-                <input id="receive-stock-search"
-                       class="pos-receive-stock__search-input"
-                       type="search"
-                       value="@_search"
-                       placeholder="@L["Purchasing_ReceiveStockSearchPlaceholder"]"
-                       disabled="@(_loading || _isOffline)"
-                       @oninput="OnSearchInput" />
-            </div>
-        </div>
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <Alert Tone="AlertTone.Danger" Title="@(_errorTitle ?? L["Purchasing_ReceiveStock"])" Message="@_errorMessage" />
+        }
 
-        <section class="pos-purchasing__panel" aria-labelledby="receive-stock-list-heading">
-            <h2 id="receive-stock-list-heading" class="pos-purchasing__section-title">@L["Purchasing_ReceiveStockPickProduct"]</h2>
-            @if (_loading)
+        <section class="pos-purchasing__panel pos-receive-stock__details" aria-labelledby="receive-stock-details-heading">
+            <h2 id="receive-stock-details-heading" class="pos-purchasing__section-title">@L["Purchasing_ReceiveStockDetails"]</h2>
+            <div class="pos-receive-stock__form pos-settings__panel">
+                <DateInput Label="@L["Purchasing_ReceiveStockPurchaseDate"]"
+                           Value="@_purchaseDate"
+                           ValueChanged="v => _purchaseDate = v"
+                           Required="true"
+                           IsInvalid="@(!string.IsNullOrEmpty(_purchaseDateError))"
+                           ErrorText="@_purchaseDateError"
+                           Disabled="@(_saving || _isOffline)" />
+
+                <div class="pos-receive-stock__source" role="group" aria-label="@L["Purchasing_ReceiveStockBoughtFrom"]">
+                    <label class="pos-receive-stock__label" for="receive-stock-source">@L["Purchasing_ReceiveStockBoughtFrom"]</label>
+                    <p class="pos-receive-stock__field-hint">@L["Purchasing_ReceiveStockBoughtFromHint"]</p>
+                    @if (_selectedSupplierId is { } selectedId)
+                    {
+                        var selected = _suppliers.FirstOrDefault(s => s.SupplierId == selectedId);
+                        <div class="pos-receive-stock__source-selected">
+                            <span class="pos-receive-stock__source-name">@(selected?.Name ?? _sourceText)</span>
+                            <button type="button"
+                                    class="pos-receive-stock__link"
+                                    disabled="@_saving"
+                                    @onclick="UseAnotherSourceAsync">
+                                @L["Purchasing_ReceiveStockUseAnotherSource"]
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="pos-receive-stock__source-input-wrap">
+                            <input id="receive-stock-source"
+                                   @ref="_sourceInput"
+                                   class="pos-receive-stock__source-input"
+                                   type="text"
+                                   value="@_sourceText"
+                                   placeholder="@L["Purchasing_ReceiveStockBoughtFromPlaceholder"]"
+                                   disabled="@(_saving || _isOffline || _loadingLookups)"
+                                   autocomplete="off"
+                                   @oninput="OnSourceInput"
+                                   @onfocus="() => _supplierPickerOpen = true" />
+                            @if (_supplierPickerOpen && supplierHits.Count > 0)
+                            {
+                                <div class="pos-receive-stock__source-hits" role="listbox" aria-label="@L["Purchasing_Field_Supplier"]">
+                                    @foreach (var supplier in supplierHits)
+                                    {
+                                        <button type="button"
+                                                role="option"
+                                                class="pos-receive-stock__source-hit"
+                                                @onclick="() => SelectSupplier(supplier)">
+                                            <span class="pos-receive-stock__source-hit-name">@supplier.Name</span>
+                                            @if (!string.IsNullOrWhiteSpace(supplier.SupplierCode))
+                                            {
+                                                <span class="pos-muted">@supplier.SupplierCode</span>
+                                            }
+                                        </button>
+                                    }
+                                </div>
+                            }
+                        </div>
+                        @if (_suppliers.Count > 0)
+                        {
+                            <button type="button"
+                                    class="pos-receive-stock__link pos-receive-stock__source-clear"
+                                    disabled="@(_saving || string.IsNullOrWhiteSpace(_sourceText))"
+                                    @onclick="UseAnotherSourceAsync">
+                                @L["Purchasing_ReceiveStockUseAnotherSource"]
+                            </button>
+                        }
+                    }
+                </div>
+
+                <TextInput Label="@L["Purchasing_ReceiveStockReference"]"
+                           Value="@_referenceNumber"
+                           ValueChanged="v => _referenceNumber = v"
+                           Disabled="@(_saving || _isOffline)" />
+
+                @if (_showNotes)
+                {
+                    <TextInput Label="@L["Purchasing_Field_Notes"]"
+                               Value="@_notes"
+                               ValueChanged="v => _notes = v"
+                               Disabled="@(_saving || _isOffline)" />
+                }
+                else
+                {
+                    <button type="button"
+                            class="pos-receive-stock__link"
+                            disabled="@_saving"
+                            @onclick="() => _showNotes = true">
+                        @L["Purchasing_ReceiveStockShowNotes"]
+                    </button>
+                }
+            </div>
+        </section>
+
+        <section class="pos-purchasing__panel" aria-labelledby="receive-stock-products-heading">
+            <div class="pos-receive-stock__section-head">
+                <h2 id="receive-stock-products-heading" class="pos-purchasing__section-title">@L["Purchasing_ReceiveStockPickProduct"]</h2>
+                @if (canManageCatalog)
+                {
+                    <button type="button"
+                            class="pos-receive-stock__new-product"
+                            disabled="@(_saving || _isOffline)"
+                            @onclick="GoNewProduct">
+                        <span aria-hidden="true">@IconGlyphs.Get("plus")</span>
+                        <span>@L["Purchasing_ReceiveStockNewProduct"]</span>
+                    </button>
+                }
+            </div>
+
+            <div class="pos-receive-stock__toolbar">
+                <div class="pos-receive-stock__search" role="search">
+                    <span class="pos-receive-stock__search-icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
+                    <label class="visually-hidden" for="receive-stock-search">@L["Purchasing_ReceiveStockSearchPlaceholder"]</label>
+                    <input id="receive-stock-search"
+                           class="pos-receive-stock__search-input"
+                           type="search"
+                           value="@_productSearch"
+                           placeholder="@L["Purchasing_ReceiveStockSearchPlaceholder"]"
+                           disabled="@(_loadingLookups || _isOffline || _saving)"
+                           autocomplete="off"
+                           @oninput="OnProductSearchInput" />
+                </div>
+            </div>
+
+            <aside class="pos-sell-categories pos-receive-stock__categories" aria-label="@L["Purchasing_CategoryFilter"]">
+                <button type="button"
+                        class="@($"pos-category-chip{(_categoryFilterId is null ? " pos-category-chip--selected" : string.Empty)}")"
+                        disabled="@(_loadingLookups || _isOffline || _saving || _products.Count == 0)"
+                        aria-pressed="@(_categoryFilterId is null)"
+                        @onclick="() => SetCategoryFilter(null)">
+                    @L["Purchasing_AllCategories"]
+                </button>
+                @foreach (var category in categoryChips)
+                {
+                    var selected = _categoryFilterId == category.CategoryId;
+                    <button type="button"
+                            class="@($"pos-category-chip{(selected ? " pos-category-chip--selected" : string.Empty)}")"
+                            disabled="@(_loadingLookups || _isOffline || _saving)"
+                            aria-pressed="@selected"
+                            @onclick="() => SetCategoryFilter(category.CategoryId)">
+                        @category.Name
+                    </button>
+                }
+            </aside>
+
+            @if (_loadingLookups)
             {
                 <div class="pos-purchasing__loading"><Spinner /><span>@L["Inventory_Loading"]</span></div>
             }
-            else if (!string.IsNullOrEmpty(_errorMessage))
+            else if (_products.Count == 0 && !_isOffline)
             {
-                <ErrorState Title="@(_errorTitle ?? L["Purchasing_ReceiveStock"])"
-                            Message="@_errorMessage"
-                            RetryLabel="@L["Api_Retry"]"
-                            OnRetry="ReloadAsync" />
+                <EmptyState IconName="products"
+                            Title="@L["Purchasing_ReceiveStockEmptyTitle"]"
+                            Message="@L["Purchasing_ReceiveStockEmptyMessage"]" />
             }
-            else if (TrackedItems.Count == 0)
+            else if (eligibleProducts.Count == 0)
             {
                 <EmptyState IconName="products"
                             Title="@(HasSearch ? L["Purchasing_ReceiveStockNoMatchTitle"] : L["Purchasing_ReceiveStockEmptyTitle"])"
-                            Message="@(HasSearch ? L["Purchasing_ReceiveStockNoMatchMessage"] : L["Purchasing_ReceiveStockEmptyMessage"])" />
+                            Message="@(HasSearch
+                                ? (canManageCatalog
+                                    ? L["Purchasing_ReceiveStockNoMatchMessage"]
+                                    : L["Purchasing_ReceiveStockNoMatchNoCatalog"])
+                                : L["Purchasing_ReceiveStockEmptyMessage"])" />
+                @if (HasSearch && UntrackedSearchHits.Count > 0)
+                {
+                    <InlineMessage Tone="InlineMessageTone.Warning">@L["Purchasing_ReceiveStockNotTracked"]</InlineMessage>
+                }
             }
             else
             {
                 <div class="pos-purchasing__list pos-receive-stock__list" role="list" aria-label="@L["Purchasing_ReceiveStock"]">
-                    @foreach (var item in TrackedItems)
+                    @foreach (var item in eligibleProducts)
                     {
-                        <a class="pos-purchasing__row pos-receive-stock__row"
-                           role="listitem"
-                           href="@($"/inventory/{item.ProductId:D}/adjust?intent=receive")">
+                        var already = _lines.Any(l => l.ProductId == item.ProductId);
+                        <button type="button"
+                                class="pos-purchasing__row pos-receive-stock__row"
+                                role="listitem"
+                                disabled="@(_saving || _isOffline)"
+                                @onclick="() => BeginAddOrEdit(item)">
                             <div class="pos-purchasing__row-main">
                                 <div class="pos-purchasing__row-top">
                                     <span class="pos-purchasing__row-name">@item.Name</span>
@@ -91,36 +252,309 @@ else
                                 <span class="pos-purchasing__row-meta">
                                     @item.UnitOfMeasure
                                     · @L["Inventory_OnHand"] @item.OnHandQuantity.ToString("0.###", CultureInfo.InvariantCulture)
+                                    @if (already)
+                                    {
+                                        <text> · @L["Purchasing_ReceiveStockInDraft"]</text>
+                                    }
                                 </span>
                             </div>
                             <span class="pos-receive-stock__row-action">
                                 <span class="pos-receive-stock__row-action-icon" aria-hidden="true">@IconGlyphs.Get("plus")</span>
                                 <span>@L["Purchasing_ReceiveStockAction"]</span>
                             </span>
-                        </a>
+                        </button>
                     }
                 </div>
             }
         </section>
+
+        <section class="pos-purchasing__panel" aria-labelledby="receive-stock-draft-heading">
+            <h2 id="receive-stock-draft-heading" class="pos-purchasing__section-title">@L["Purchasing_ReceiveStockDraft"]</h2>
+            @if (_lines.Count == 0)
+            {
+                <InlineMessage Tone="InlineMessageTone.Info">@L["Purchasing_ReceiveStockDraftEmpty"]</InlineMessage>
+            }
+            else
+            {
+                <div class="pos-purchasing-create__lines-summary pos-muted">
+                    @L["Purchasing_LinesCount", _lines.Count]
+                    · @L["Purchasing_LinesTotal"]
+                    <MoneyDisplay Amount="@draftTotal" CurrencyCode="PHP" />
+                </div>
+                <div class="pos-purchasing-create__lines" role="list">
+                    @foreach (var line in _lines)
+                    {
+                        var lineTotal = PurchaseOrderCreateUi.LineTotal(line.Quantity, line.UnitCost);
+                        <div class="pos-po-line" role="listitem">
+                            <div class="pos-po-line__main">
+                                <div class="pos-po-line__title">@line.Name</div>
+                                <div class="pos-po-line__meta pos-muted">
+                                    <span>@L["Purchasing_LineQtyPrefix", FormatQty(line.Quantity)] @line.UnitOfMeasure</span>
+                                    <span aria-hidden="true"> × </span>
+                                    <MoneyDisplay Amount="@line.UnitCost" CurrencyCode="PHP" />
+                                    @if (line.ExpiryDate is { } expiry)
+                                    {
+                                        <span> · @expiry.ToString("d")</span>
+                                    }
+                                </div>
+                                <div class="pos-po-line__total">
+                                    <span class="pos-muted">@L["Purchasing_LineTotalLabel"]</span>
+                                    <MoneyDisplay Amount="@lineTotal" CurrencyCode="PHP" Emphasized="true" />
+                                </div>
+                            </div>
+                            <div class="pos-po-line__actions">
+                                <button type="button"
+                                        class="pos-po-line__action"
+                                        disabled="@_saving"
+                                        aria-label="@L["Purchasing_EditLine"]"
+                                        title="@L["Purchasing_EditLine"]"
+                                        @onclick="() => BeginEditLine(line)">
+                                    <span aria-hidden="true">@IconGlyphs.Get("edit")</span>
+                                    <span class="pos-po-line__action-label">@L["Purchasing_EditLine"]</span>
+                                </button>
+                                <button type="button"
+                                        class="pos-po-line__action pos-po-line__action--danger"
+                                        disabled="@_saving"
+                                        aria-label="@L["Purchasing_DeleteLine"]"
+                                        title="@L["Purchasing_DeleteLine"]"
+                                        @onclick="() => RemoveLine(line.ProductId)">
+                                    <span aria-hidden="true">@IconGlyphs.Get("trash")</span>
+                                    <span class="pos-po-line__action-label">@L["Purchasing_DeleteLine"]</span>
+                                </button>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </section>
+
+        <div class="pos-receive-stock__cta" role="group" aria-label="@L["Purchasing_ReceiveStock"]">
+            <div class="pos-receive-stock__cta-meta">
+                <span class="pos-receive-stock__cta-count">@L["Purchasing_LinesCount", _lines.Count]</span>
+                <strong class="pos-receive-stock__cta-total"><MoneyDisplay Amount="@draftTotal" CurrencyCode="PHP" /></strong>
+            </div>
+            <button type="button"
+                    class="pos-action-tile pos-action-tile--primary pos-receive-stock__cta-btn"
+                    disabled="@(_saving || _isOffline || _lines.Count == 0)"
+                    @onclick="OpenReview">
+                <span class="pos-action-tile__label">@L["Purchasing_ReceiveStockReview"]</span>
+            </button>
+        </div>
     </Page>
+
+    @if (_addSheetOpen && _sheetProduct is not null)
+    {
+        <div class="pos-denom-sheet" role="dialog" aria-modal="true" aria-label="@_sheetProduct.Name">
+            <div class="pos-denom-sheet__panel pos-denom-sheet__panel--fit">
+                <header class="pos-denom-sheet__header">
+                    <div>
+                        <h2 class="pos-denom-sheet__title">@_sheetProduct.Name</h2>
+                        <p class="pos-denom-sheet__hint">
+                            @L["Purchasing_ReceiveStockPurchaseUnit"]: @_sheetProduct.UnitOfMeasure
+                            · @L["Inventory_OnHand"] @_sheetProduct.OnHandQuantity.ToString("0.###", CultureInfo.InvariantCulture)
+                        </p>
+                    </div>
+                </header>
+                <div class="pos-receive-stock__sheet-form">
+                    @if (!string.IsNullOrEmpty(_sheetError))
+                    {
+                        <InlineMessage Tone="InlineMessageTone.Danger">@_sheetError</InlineMessage>
+                    }
+                    <TextInput Label="@L["Inventory_Quantity"]"
+                               Value="@_sheetQtyText"
+                               ValueChanged="v => _sheetQtyText = v"
+                               Required="true"
+                               Disabled="@_saving"
+                               AdditionalAttributes="@DecimalFieldAttributes" />
+                    <CurrencyInput Label="@L["Purchasing_Field_UnitCost"]"
+                                   Value="@_sheetUnitCost"
+                                   ValueChanged="v => _sheetUnitCost = v"
+                                   CurrencyCode="PHP"
+                                   Required="true"
+                                   Hint="@L["Purchasing_UnitCostHint"]"
+                                   Disabled="@_saving" />
+                    @if (_sheetProduct.TracksExpiration)
+                    {
+                        <DateInput Label="@L["Inventory_ExpirationDate"]"
+                                   Value="@_sheetExpiry"
+                                   ValueChanged="v => _sheetExpiry = v"
+                                   Required="true"
+                                   Disabled="@_saving" />
+                        <TextInput Label="@L["Inventory_LotNumber"]"
+                                   Value="@_sheetLot"
+                                   ValueChanged="v => _sheetLot = v"
+                                   Hint="@L["Inventory_LotNumberOptionalHint"]"
+                                   Disabled="@_saving" />
+                    }
+                </div>
+                <div class="pos-denom-sheet__bar">
+                    <div class="pos-denom-sheet__actions">
+                        <Button Variant="ButtonVariant.Secondary" Disabled="@_saving" OnClick="CloseAddSheet">@L["Common_Cancel"]</Button>
+                        <Button Variant="ButtonVariant.Primary" Disabled="@_saving" OnClick="ConfirmAddSheet">@L["Purchasing_AddLine"]</Button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (_reviewOpen)
+    {
+        <div class="pos-denom-sheet" role="dialog" aria-modal="true" aria-label="@L["Purchasing_ReceiveStockReviewTitle"]">
+            <div class="pos-denom-sheet__panel pos-denom-sheet__panel--fit">
+                <header class="pos-denom-sheet__header">
+                    <div>
+                        <h2 class="pos-denom-sheet__title">@L["Purchasing_ReceiveStockReviewTitle"]</h2>
+                        <p class="pos-denom-sheet__hint">@L["Purchasing_ReceiveStockWillIncrease"]</p>
+                    </div>
+                </header>
+                <dl class="pos-receive-stock__review-facts">
+                    <div class="pos-receive-stock__review-fact">
+                        <dt>@L["Purchasing_ReceiveStockPurchaseDate"]</dt>
+                        <dd>@(_purchaseDate?.ToString("d") ?? "—")</dd>
+                    </div>
+                    <div class="pos-receive-stock__review-fact">
+                        <dt>@L["Purchasing_ReceiveStockBoughtFrom"]</dt>
+                        <dd>@(ResolveSourceName() ?? L["Purchasing_ReceiveStockSourceEmpty"])</dd>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(_referenceNumber))
+                    {
+                        <div class="pos-receive-stock__review-fact">
+                            <dt>@L["Purchasing_ReceiveStockReference"]</dt>
+                            <dd>@_referenceNumber.Trim()</dd>
+                        </div>
+                    }
+                </dl>
+                <div class="pos-denom-sheet__list pos-denom-sheet__list--fit" role="list">
+                    @foreach (var line in _lines)
+                    {
+                        <div class="pos-receive-stock__review-line" role="listitem">
+                            <strong>@line.Name</strong>
+                            <span class="pos-muted">
+                                @FormatQty(line.Quantity) @line.UnitOfMeasure
+                                × <MoneyDisplay Amount="@line.UnitCost" CurrencyCode="PHP" />
+                                = <MoneyDisplay Amount="@PurchaseOrderCreateUi.LineTotal(line.Quantity, line.UnitCost)" CurrencyCode="PHP" />
+                            </span>
+                        </div>
+                    }
+                </div>
+                <div class="pos-denom-sheet__bar">
+                    <div class="pos-denom-sheet__total">
+                        <span>@L["Purchasing_LinesTotal"]</span>
+                        <strong><MoneyDisplay Amount="@draftTotal" CurrencyCode="PHP" /></strong>
+                    </div>
+                    <div class="pos-denom-sheet__actions">
+                        <Button Variant="ButtonVariant.Secondary" Disabled="@_saving" OnClick="() => _reviewOpen = false">@L["Common_Cancel"]</Button>
+                        <Button Variant="ButtonVariant.Primary"
+                                Disabled="@(_saving || _isOffline)"
+                                IsLoading="@_saving"
+                                OnClick="SubmitAsync">@L["Purchasing_ReceiveStockConfirm"]</Button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
 </div>
 }
 
 @code {
+    private static readonly IReadOnlyDictionary<string, object> DecimalFieldAttributes =
+        new Dictionary<string, object>(StringComparer.Ordinal)
+        {
+            ["inputmode"] = "decimal",
+            ["autocomplete"] = "off"
+        };
+
+    [SupplyParameterFromQuery(Name = "addedProductId")]
+    public Guid? AddedProductId { get; set; }
+
     private bool _ready;
     private bool _allowed;
-    private bool _loading;
+    private bool _loadingLookups;
     private bool _isOffline;
-    private string _search = string.Empty;
-    private IReadOnlyList<PosInventoryAccountDto> _items = Array.Empty<PosInventoryAccountDto>();
+    private bool _saving;
+    private bool _showNotes;
+    private bool _supplierPickerOpen;
+    private bool _addSheetOpen;
+    private bool _reviewOpen;
+    private Guid? _handledAddedProductId;
+    private DateOnly? _purchaseDate = DateOnly.FromDateTime(DateTime.Today);
+    private string? _purchaseDateError;
+    private Guid? _selectedSupplierId;
+    private string _sourceText = string.Empty;
+    private bool _focusSourcePending;
+    private string? _referenceNumber;
+    private string? _notes;
+    private string _productSearch = string.Empty;
+    private Guid? _categoryFilterId;
+    private ElementReference _sourceInput;
+    private IReadOnlyList<PosSupplierDto> _suppliers = Array.Empty<PosSupplierDto>();
+    private IReadOnlyList<PosCatalogProductDto> _products = Array.Empty<PosCatalogProductDto>();
+    private Dictionary<Guid, string> _categoryNames = new();
+    private List<DraftLine> _lines = [];
+    private PosCatalogProductDto? _sheetProduct;
+    private string _sheetQtyText = "1";
+    private decimal? _sheetUnitCost;
+    private DateOnly? _sheetExpiry;
+    private string? _sheetLot;
+    private string? _sheetError;
     private string? _errorTitle;
     private string? _errorMessage;
-    private CancellationTokenSource? _searchCts;
 
-    private bool HasSearch => !string.IsNullOrWhiteSpace(_search);
+    private bool HasSearch => !string.IsNullOrWhiteSpace(_productSearch);
 
-    private IReadOnlyList<PosInventoryAccountDto> TrackedItems =>
-        _items.Where(x => x.IsTracked).ToList();
+    private IReadOnlyList<(Guid CategoryId, string Name)> CategoryChips =>
+        PurchaseOrderCreateUi.RelevantCategories(
+            TrackedPurchasable.Select(p => (
+                p.CategoryId,
+                p.CategoryId is { } id && _categoryNames.TryGetValue(id, out var name) ? name : null)),
+            L["Purchasing_Uncategorized"].Value);
+
+    private IEnumerable<PosCatalogProductDto> TrackedPurchasable =>
+        _products.Where(p =>
+            p.IsTracked
+            && p.CanBePurchased
+            && string.Equals(p.Status, PosCatalogOptions.ActiveStatus, StringComparison.OrdinalIgnoreCase));
+
+    private IReadOnlyList<PosCatalogProductDto> EligibleProducts =>
+        TrackedPurchasable
+            .Where(p => MatchesProductSearch(p) && PurchaseOrderCreateUi.MatchesCategory(p.CategoryId, _categoryFilterId))
+            .OrderBy(p => p.Name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+    private IReadOnlyList<PosCatalogProductDto> UntrackedSearchHits =>
+        !HasSearch
+            ? Array.Empty<PosCatalogProductDto>()
+            : _products
+                .Where(p =>
+                    !p.IsTracked
+                    && p.CanBePurchased
+                    && string.Equals(p.Status, PosCatalogOptions.ActiveStatus, StringComparison.OrdinalIgnoreCase)
+                    && MatchesProductSearch(p))
+                .Take(5)
+                .ToList();
+
+    private IReadOnlyList<PosSupplierDto> SupplierHits
+    {
+        get
+        {
+            if (_selectedSupplierId is not null || string.IsNullOrWhiteSpace(_sourceText))
+            {
+                return _suppliers.Take(8).ToList();
+            }
+
+            var q = _sourceText.Trim();
+            return _suppliers
+                .Where(s =>
+                    s.Name.Contains(q, StringComparison.OrdinalIgnoreCase)
+                    || (!string.IsNullOrWhiteSpace(s.SupplierCode)
+                        && s.SupplierCode.Contains(q, StringComparison.OrdinalIgnoreCase)))
+                .Take(8)
+                .ToList();
+        }
+    }
+
+    private decimal DraftTotal =>
+        PurchaseOrderCreateUi.OrderTotal(_lines.Select(l => (l.Quantity, l.UnitCost)));
 
     protected override async Task OnInitializedAsync()
     {
@@ -132,59 +566,398 @@ else
 
         _allowed = Capabilities.IsAllowed(UtangCapability.ManageInventory);
         _ready = true;
-        if (_allowed)
+        if (!_allowed)
         {
-            await ReloadAsync();
+            return;
         }
+
+        await ReloadLookupsAsync();
+        await TryOpenAddedProductAsync();
+    }
+
+    protected override async Task OnParametersSetAsync() => await TryOpenAddedProductAsync();
+
+    private async Task TryOpenAddedProductAsync()
+    {
+        if (!_allowed || AddedProductId is not { } id || id == Guid.Empty || _handledAddedProductId == id)
+        {
+            return;
+        }
+
+        _handledAddedProductId = id;
+        await OpenProductByIdAsync(id);
+        Nav.NavigateTo("/purchasing/receive-stock", replace: true);
     }
 
     private void GoOrders() => Nav.NavigateTo("/purchasing/orders");
+    private void GoHistory() => Nav.NavigateTo("/purchasing/direct-purchases");
 
-    private async Task OnSearchInput(ChangeEventArgs e)
+    private void GoNewProduct()
     {
-        _search = e.Value?.ToString() ?? string.Empty;
-        _searchCts?.Cancel();
-        _searchCts = new CancellationTokenSource();
-        var token = _searchCts.Token;
+        var returnUrl = Uri.EscapeDataString("/purchasing/receive-stock");
+        Nav.NavigateTo($"/catalog/products/new?returnUrl={returnUrl}&preferTrack=true");
+    }
+
+    private void SetCategoryFilter(Guid? categoryId) => _categoryFilterId = categoryId;
+
+    private void OnProductSearchInput(ChangeEventArgs e) =>
+        _productSearch = e.Value?.ToString() ?? string.Empty;
+
+    private void OnSourceInput(ChangeEventArgs e)
+    {
+        _sourceText = e.Value?.ToString() ?? string.Empty;
+        _selectedSupplierId = null;
+        _supplierPickerOpen = true;
+    }
+
+    private void SelectSupplier(PosSupplierDto supplier)
+    {
+        _selectedSupplierId = supplier.SupplierId;
+        _sourceText = supplier.Name;
+        _supplierPickerOpen = false;
+    }
+
+    private async Task UseAnotherSourceAsync()
+    {
+        _selectedSupplierId = null;
+        _supplierPickerOpen = true;
+        _focusSourcePending = true;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_focusSourcePending)
+        {
+            return;
+        }
+
+        _focusSourcePending = false;
         try
         {
-            await Task.Delay(300, token);
-            await ReloadAsync();
+            await _sourceInput.FocusAsync();
         }
-        catch (TaskCanceledException)
+        catch (InvalidOperationException)
         {
         }
     }
 
-    private async Task ReloadAsync()
+    private void BeginAddOrEdit(PosCatalogProductDto product)
     {
-        _loading = true;
+        if (!product.IsTracked)
+        {
+            _errorTitle = L["Purchasing_ReceiveStock"];
+            _errorMessage = L["Purchasing_ReceiveStockNotTracked"];
+            return;
+        }
+
+        _errorMessage = null;
+        _sheetProduct = product;
+        var existing = _lines.FirstOrDefault(l => l.ProductId == product.ProductId);
+        if (existing is not null)
+        {
+            _sheetQtyText = FormatQty(existing.Quantity);
+            _sheetUnitCost = existing.UnitCost;
+            _sheetExpiry = existing.ExpiryDate;
+            _sheetLot = existing.LotNumber;
+        }
+        else
+        {
+            _sheetQtyText = "1";
+            _sheetUnitCost = null;
+            _sheetExpiry = null;
+            _sheetLot = null;
+        }
+
+        _sheetError = null;
+        _addSheetOpen = true;
+    }
+
+    private void BeginEditLine(DraftLine line)
+    {
+        var product = _products.FirstOrDefault(p => p.ProductId == line.ProductId);
+        if (product is not null)
+        {
+            BeginAddOrEdit(product);
+            return;
+        }
+
+        _sheetProduct = new PosCatalogProductDto(
+            line.ProductId,
+            Guid.Empty,
+            line.Name,
+            null,
+            null,
+            null,
+            null,
+            line.UnitOfMeasure,
+            PosCatalogOptions.DefaultSellingModeCode,
+            0m,
+            PosCatalogOptions.ActiveStatus,
+            DateTimeOffset.MinValue,
+            DateTimeOffset.MinValue,
+            IsTracked: true,
+            TracksExpiration: line.TracksExpiration);
+        _sheetQtyText = FormatQty(line.Quantity);
+        _sheetUnitCost = line.UnitCost;
+        _sheetExpiry = line.ExpiryDate;
+        _sheetLot = line.LotNumber;
+        _sheetError = null;
+        _addSheetOpen = true;
+    }
+
+    private void CloseAddSheet()
+    {
+        _addSheetOpen = false;
+        _sheetProduct = null;
+        _sheetError = null;
+    }
+
+    private void ConfirmAddSheet()
+    {
+        if (_sheetProduct is null)
+        {
+            return;
+        }
+
+        _sheetError = null;
+        if (!_sheetProduct.IsTracked)
+        {
+            _sheetError = L["Purchasing_ReceiveStockNotTracked"];
+            return;
+        }
+
+        if (!decimal.TryParse(_sheetQtyText, NumberStyles.Number, CultureInfo.CurrentCulture, out var qty)
+            && !decimal.TryParse(_sheetQtyText, NumberStyles.Number, CultureInfo.InvariantCulture, out qty))
+        {
+            _sheetError = L["Purchasing_InvalidOrderedQty"];
+            return;
+        }
+
+        if (qty <= 0m)
+        {
+            _sheetError = L["Purchasing_InvalidOrderedQty"];
+            return;
+        }
+
+        if (_sheetUnitCost is null || _sheetUnitCost <= 0m)
+        {
+            _sheetError = L["Purchasing_InvalidUnitCost"];
+            return;
+        }
+
+        if (_sheetProduct.TracksExpiration && _sheetExpiry is null)
+        {
+            _sheetError = L["Inventory_ExpirationDateRequired"];
+            return;
+        }
+
+        var line = new DraftLine(
+            _sheetProduct.ProductId,
+            _sheetProduct.Name,
+            _sheetProduct.UnitOfMeasure,
+            qty,
+            _sheetUnitCost.Value,
+            _sheetProduct.TracksExpiration,
+            _sheetProduct.TracksExpiration ? _sheetExpiry : null,
+            string.IsNullOrWhiteSpace(_sheetLot) ? null : _sheetLot.Trim());
+
+        _lines = PurchaseOrderCreateUi.UpsertLine(_lines, l => l.ProductId, line, replaceExisting: true).ToList();
+        CloseAddSheet();
+    }
+
+    private void RemoveLine(Guid productId) =>
+        _lines = PurchaseOrderCreateUi.RemoveLine(_lines, l => l.ProductId, productId).ToList();
+
+    private void OpenReview()
+    {
+        _errorMessage = null;
+        _purchaseDateError = null;
+        if (_purchaseDate is null)
+        {
+            _purchaseDateError = L["Purchasing_OrderDateRequired"];
+            return;
+        }
+
+        if (_lines.Count == 0)
+        {
+            _errorTitle = L["Purchasing_ReceiveStock"];
+            _errorMessage = L["Purchasing_LinesRequired"];
+            return;
+        }
+
+        _reviewOpen = true;
+    }
+
+    private async Task SubmitAsync()
+    {
+        if (_saving || _isOffline || _lines.Count == 0 || _purchaseDate is null)
+        {
+            return;
+        }
+
+        _saving = true;
+        _errorMessage = null;
+        try
+        {
+            _isOffline = !await Connectivity.IsConnectedAsync();
+            if (_isOffline)
+            {
+                _reviewOpen = false;
+                return;
+            }
+
+            var sourceName = ResolveSourceName();
+            var request = new CreateDirectPurchaseReceiptRequest(
+                _purchaseDate.Value,
+                _lines.Select(l => new CreateDirectPurchaseReceiptLineRequest(
+                    l.ProductId,
+                    l.Quantity,
+                    l.UnitCost,
+                    l.ExpiryDate,
+                    l.LotNumber)).ToList(),
+                SupplierId: _selectedSupplierId,
+                SourceName: sourceName,
+                ReferenceNumber: string.IsNullOrWhiteSpace(_referenceNumber) ? null : _referenceNumber.Trim(),
+                Notes: string.IsNullOrWhiteSpace(_notes) ? null : _notes.Trim(),
+                IdempotencyKey: Guid.NewGuid().ToString("N"));
+
+            var result = await DirectPurchases.CreateAsync(request);
+            if (result.IsSuccess && result.Data is not null)
+            {
+                Nav.NavigateTo($"/purchasing/direct-purchases/{result.Data.DirectPurchaseReceiptId:D}", replace: true);
+                return;
+            }
+
+            var described = ApiLocalizer.Describe(result.Status, result.Error);
+            _errorTitle = described.Title;
+            _errorMessage = result.Error?.Detail ?? described.Message;
+            _reviewOpen = false;
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private string? ResolveSourceName()
+    {
+        if (_selectedSupplierId is { } id)
+        {
+            var supplier = _suppliers.FirstOrDefault(s => s.SupplierId == id);
+            return supplier?.Name ?? (string.IsNullOrWhiteSpace(_sourceText) ? null : _sourceText.Trim());
+        }
+
+        return string.IsNullOrWhiteSpace(_sourceText) ? null : _sourceText.Trim();
+    }
+
+    private async Task OpenProductByIdAsync(Guid productId)
+    {
+        var existing = _products.FirstOrDefault(p => p.ProductId == productId);
+        if (existing is not null)
+        {
+            BeginAddOrEdit(existing);
+            return;
+        }
+
+        if (_isOffline)
+        {
+            return;
+        }
+
+        var result = await Catalog.GetProductAsync(productId);
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _products = _products.Concat([result.Data]).GroupBy(p => p.ProductId).Select(g => g.First()).ToList();
+            BeginAddOrEdit(result.Data);
+        }
+    }
+
+    private async Task ReloadLookupsAsync()
+    {
+        _loadingLookups = true;
         _errorTitle = null;
         _errorMessage = null;
         _isOffline = !await Connectivity.IsConnectedAsync();
         if (_isOffline)
         {
-            _items = Array.Empty<PosInventoryAccountDto>();
-            _loading = false;
+            _products = Array.Empty<PosCatalogProductDto>();
+            _suppliers = Array.Empty<PosSupplierDto>();
+            _loadingLookups = false;
             return;
         }
 
-        var result = await Inventory.ListAsync(
-            search: string.IsNullOrWhiteSpace(_search) ? null : _search,
-            page: 1,
-            pageSize: 50);
-        if (result.Status == ApiCallStatus.Success && result.Data is not null)
+        try
         {
-            _items = result.Data.Items;
+            var suppliersTask = Suppliers.ListAsync(status: "Active", page: 1, pageSize: 200);
+            var productsTask = Catalog.ListProductsAsync(
+                status: PosCatalogOptions.ActiveStatus,
+                page: 1,
+                pageSize: 200);
+            var categoriesTask = Catalog.ListCategoriesAsync(
+                status: PosCatalogOptions.ActiveStatus,
+                page: 1,
+                pageSize: 100);
+            await Task.WhenAll(suppliersTask, productsTask, categoriesTask);
+
+            var suppliers = await suppliersTask;
+            var products = await productsTask;
+            var categories = await categoriesTask;
+
+            if (suppliers.IsSuccess && suppliers.Data is not null)
+            {
+                _suppliers = suppliers.Data.Items;
+            }
+
+            if (products.IsSuccess && products.Data is not null)
+            {
+                _products = products.Data.Items;
+            }
+            else
+            {
+                var described = ApiLocalizer.Describe(products.Status, products.Error);
+                _errorTitle = described.Title;
+                _errorMessage = products.Error?.Detail ?? described.Message;
+                _products = Array.Empty<PosCatalogProductDto>();
+            }
+
+            if (categories.IsSuccess && categories.Data is not null)
+            {
+                _categoryNames = categories.Data.Items
+                    .ToDictionary(c => c.CategoryId, c => c.Name);
+            }
         }
-        else
+        finally
         {
-            var described = ApiLocalizer.Describe(result.Status, result.Error);
-            _errorTitle = described.Title;
-            _errorMessage = result.Error?.Detail ?? described.Message;
-            _items = Array.Empty<PosInventoryAccountDto>();
+            _loadingLookups = false;
+        }
+    }
+
+    private bool MatchesProductSearch(PosCatalogProductDto product)
+    {
+        if (!HasSearch)
+        {
+            return true;
         }
 
-        _loading = false;
+        var q = _productSearch.Trim();
+        return product.Name.Contains(q, StringComparison.OrdinalIgnoreCase)
+            || (!string.IsNullOrWhiteSpace(product.Sku)
+                && product.Sku.Contains(q, StringComparison.OrdinalIgnoreCase))
+            || (!string.IsNullOrWhiteSpace(product.Barcode)
+                && product.Barcode.Contains(q, StringComparison.OrdinalIgnoreCase));
     }
+
+    private static string FormatQty(decimal qty) =>
+        qty.ToString("0.###", CultureInfo.CurrentCulture);
+
+    private sealed record DraftLine(
+        Guid ProductId,
+        string Name,
+        string UnitOfMeasure,
+        decimal Quantity,
+        decimal UnitCost,
+        bool TracksExpiration,
+        DateOnly? ExpiryDate,
+        string? LotNumber);
 }

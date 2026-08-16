@@ -117,6 +117,12 @@ else
 }
 
 @code {
+    [SupplyParameterFromQuery(Name = "returnUrl")]
+    public string? ReturnUrl { get; set; }
+
+    [SupplyParameterFromQuery(Name = "preferTrack")]
+    public bool PreferTrack { get; set; }
+
     private bool _ready;
     private bool _saving;
     private bool _isOffline;
@@ -159,6 +165,11 @@ else
 
         _ready = true;
         _isOffline = !await Connectivity.IsConnectedAsync();
+        if (PreferTrack && Capabilities.IsAllowed(UtangCapability.ManageInventory))
+        {
+            _trackStock = true;
+        }
+
         if (!_isOffline)
         {
             var categories = await Catalog.ListCategoriesAsync(
@@ -256,7 +267,7 @@ else
                 return;
             }
 
-            GoProduct(productId);
+            NavigateAfterCreate(productId);
         }
         finally
         {
@@ -273,9 +284,56 @@ else
     private int? ParseWarningDays() =>
         _tracksExpiration && int.TryParse(_warningDaysText, out var days) ? days : null;
 
+    private void NavigateAfterCreate(Guid productId)
+    {
+        if (TryBuildReturnNavigation(ReturnUrl, productId, out var target))
+        {
+            Nav.NavigateTo(target, replace: true);
+            return;
+        }
+
+        GoProduct(productId);
+    }
+
+    private static bool TryBuildReturnNavigation(string? returnUrl, Guid productId, out string target)
+    {
+        target = string.Empty;
+        if (string.IsNullOrWhiteSpace(returnUrl))
+        {
+            return false;
+        }
+
+        var decoded = Uri.UnescapeDataString(returnUrl.Trim());
+        if (!decoded.StartsWith('/')
+            || decoded.StartsWith("//", StringComparison.Ordinal)
+            || decoded.Contains("://", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        var separator = decoded.Contains('?', StringComparison.Ordinal) ? '&' : '?';
+        target = $"{decoded}{separator}addedProductId={productId:D}";
+        return true;
+    }
+
     private void GoProduct(Guid productId) => Nav.NavigateTo($"/catalog/products/{productId:D}", replace: true);
 
-    private void GoBack() => Nav.NavigateTo("/catalog");
+    private void GoBack()
+    {
+        if (!string.IsNullOrWhiteSpace(ReturnUrl))
+        {
+            var decoded = Uri.UnescapeDataString(ReturnUrl.Trim());
+            if (decoded.StartsWith('/')
+                && !decoded.StartsWith("//", StringComparison.Ordinal)
+                && !decoded.Contains("://", StringComparison.Ordinal))
+            {
+                Nav.NavigateTo(decoded);
+                return;
+            }
+        }
+
+        Nav.NavigateTo("/catalog");
+    }
 
     private void OnBlockedFromConnectedBuyersChanged(ChangeEventArgs args)
     {

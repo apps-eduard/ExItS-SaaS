@@ -71,6 +71,9 @@ public sealed class PosDbContext : DbContext
     internal DbSet<InventoryTransferRecord> InventoryTransfers => Set<InventoryTransferRecord>();
     internal DbSet<InventoryTransferLineRecord> InventoryTransferLines => Set<InventoryTransferLineRecord>();
     internal DbSet<InventoryTransferNumberSequenceRecord> InventoryTransferNumberSequences => Set<InventoryTransferNumberSequenceRecord>();
+    internal DbSet<DirectPurchaseReceiptRecord> DirectPurchaseReceipts => Set<DirectPurchaseReceiptRecord>();
+    internal DbSet<DirectPurchaseReceiptLineRecord> DirectPurchaseReceiptLines => Set<DirectPurchaseReceiptLineRecord>();
+    internal DbSet<DirectPurchaseReceiptNumberSequenceRecord> DirectPurchaseReceiptNumberSequences => Set<DirectPurchaseReceiptNumberSequenceRecord>();
     internal DbSet<InventoryBranchBalanceRecord> InventoryBranchBalances => Set<InventoryBranchBalanceRecord>();
     internal DbSet<InventoryLotRecord> InventoryLots => Set<InventoryLotRecord>();
     internal DbSet<InventoryLotMovementRecord> InventoryLotMovements => Set<InventoryLotMovementRecord>();
@@ -1972,6 +1975,139 @@ public sealed class PosDbContext : DbContext
 
             entity.HasKey(e => new { e.OrganizationId, e.BusinessDate })
                 .HasName("pk_inventory_transfer_number_sequences");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.BusinessDate).HasColumnName("business_date").HasColumnType("date");
+            entity.Property(e => e.LastValue).HasColumnName("last_value").IsRequired();
+        });
+
+        modelBuilder.Entity<DirectPurchaseReceiptRecord>(entity =>
+        {
+            entity.ToTable("direct_purchase_receipts", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_direct_purchase_receipts_total_cost_non_negative",
+                    "total_cost >= 0");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.ReceiptNumber)
+                .HasColumnName("receipt_number")
+                .HasMaxLength(DirectPurchaseReceiptNumbers.MaxLength)
+                .IsRequired();
+            entity.Property(e => e.PurchaseDate).HasColumnName("purchase_date").HasColumnType("date").IsRequired();
+            entity.Property(e => e.SupplierId).HasColumnName("supplier_id");
+            entity.Property(e => e.SourceNameSnapshot)
+                .HasColumnName("source_name_snapshot")
+                .HasMaxLength(DirectPurchaseReceipt.SourceNameMaxLength);
+            entity.Property(e => e.ReferenceNumber)
+                .HasColumnName("reference_number")
+                .HasMaxLength(DirectPurchaseReceipt.ReferenceNumberMaxLength);
+            entity.Property(e => e.Notes)
+                .HasColumnName("notes")
+                .HasMaxLength(DirectPurchaseReceipt.NotesMaxLength);
+            entity.Property(e => e.TotalCost)
+                .HasColumnName("total_cost")
+                .HasPrecision(18, 2)
+                .IsRequired();
+            entity.Property(e => e.CreatedByUserId).HasColumnName("created_by_user_id").IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.IdempotencyKey)
+                .HasColumnName("idempotency_key")
+                .HasMaxLength(DirectPurchaseReceipt.IdempotencyKeyMaxLength);
+
+            entity.HasIndex(e => new { e.OrganizationId, e.ReceiptNumber })
+                .IsUnique()
+                .HasDatabaseName("ux_direct_purchase_receipts_org_receipt_number");
+            entity.HasIndex(e => new { e.OrganizationId, e.IdempotencyKey })
+                .IsUnique()
+                .HasDatabaseName("ux_direct_purchase_receipts_org_idempotency_key")
+                .HasFilter("idempotency_key IS NOT NULL");
+            entity.HasIndex(e => new { e.OrganizationId, e.PurchaseDate })
+                .HasDatabaseName("ix_direct_purchase_receipts_org_purchase_date");
+            entity.HasIndex(e => new { e.OrganizationId, e.SupplierId })
+                .HasDatabaseName("ix_direct_purchase_receipts_org_supplier_id");
+            entity.HasIndex(e => new { e.OrganizationId, e.ReferenceNumber })
+                .HasDatabaseName("ix_direct_purchase_receipts_org_reference");
+            entity.HasIndex(e => new { e.OrganizationId, e.CreatedAtUtc })
+                .HasDatabaseName("ix_direct_purchase_receipts_org_created_at");
+
+            entity.HasOne<SupplierRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.SupplierId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_direct_purchase_receipts_suppliers")
+                .IsRequired(false);
+        });
+
+        modelBuilder.Entity<DirectPurchaseReceiptLineRecord>(entity =>
+        {
+            entity.ToTable("direct_purchase_receipt_lines", tb =>
+            {
+                tb.HasCheckConstraint("ck_direct_purchase_receipt_lines_quantity_positive", "quantity > 0");
+                tb.HasCheckConstraint("ck_direct_purchase_receipt_lines_unit_cost_positive", "unit_cost > 0");
+                tb.HasCheckConstraint("ck_direct_purchase_receipt_lines_line_total_non_negative", "line_total >= 0");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.ReceiptId).HasColumnName("receipt_id").IsRequired();
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.ProductId).HasColumnName("product_id").IsRequired();
+            entity.Property(e => e.LineNumber).HasColumnName("line_number").IsRequired();
+            entity.Property(e => e.ProductNameSnapshot)
+                .HasColumnName("product_name_snapshot")
+                .HasMaxLength(PurchaseOrderLine.NameSnapshotMaxLength)
+                .IsRequired();
+            entity.Property(e => e.SkuSnapshot)
+                .HasColumnName("sku_snapshot")
+                .HasMaxLength(CatalogProduct.SkuMaxLength);
+            entity.Property(e => e.UnitOfMeasureSnapshot)
+                .HasColumnName("unit_of_measure_snapshot")
+                .HasMaxLength(UnitOfMeasures.CodeMaxLength)
+                .IsRequired();
+            entity.Property(e => e.Quantity).HasColumnName("quantity").HasPrecision(18, 3).IsRequired();
+            entity.Property(e => e.UnitCost).HasColumnName("unit_cost").HasPrecision(18, 2).IsRequired();
+            entity.Property(e => e.LineTotal).HasColumnName("line_total").HasPrecision(18, 2).IsRequired();
+            entity.Property(e => e.ExpiryDate).HasColumnName("expiry_date").HasColumnType("date");
+            entity.Property(e => e.LotNumber)
+                .HasColumnName("lot_number")
+                .HasMaxLength(DirectPurchaseReceiptLine.LotNumberMaxLength);
+            entity.Property(e => e.InventoryMovementId).HasColumnName("inventory_movement_id");
+
+            entity.HasIndex(e => new { e.ReceiptId, e.LineNumber })
+                .IsUnique()
+                .HasDatabaseName("ux_direct_purchase_receipt_lines_receipt_line_number");
+            entity.HasIndex(e => e.InventoryMovementId)
+                .IsUnique()
+                .HasDatabaseName("ux_direct_purchase_receipt_lines_inventory_movement_id")
+                .HasFilter("inventory_movement_id IS NOT NULL");
+
+            entity.HasOne<DirectPurchaseReceiptRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.ReceiptId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("fk_direct_purchase_receipt_lines_receipts");
+
+            entity.HasOne<CatalogProductRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.ProductId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_direct_purchase_receipt_lines_products");
+        });
+
+        modelBuilder.Entity<DirectPurchaseReceiptNumberSequenceRecord>(entity =>
+        {
+            entity.ToTable("direct_purchase_receipt_number_sequences", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_direct_purchase_receipt_number_sequences_last_value_positive",
+                    "last_value > 0");
+            });
+
+            entity.HasKey(e => new { e.OrganizationId, e.BusinessDate })
+                .HasName("pk_direct_purchase_receipt_number_sequences");
             entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
             entity.Property(e => e.BusinessDate).HasColumnName("business_date").HasColumnType("date");
             entity.Property(e => e.LastValue).HasColumnName("last_value").IsRequired();

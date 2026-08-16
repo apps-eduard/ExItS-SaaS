@@ -43,19 +43,39 @@ public sealed class PurchasingInventoryUxGuardTests
         Assert.Contains("Purchasing_ReceiveStockHelper", receive, StringComparison.Ordinal);
         Assert.Contains("Purchasing_ReceiveStockSearchPlaceholder", receive, StringComparison.Ordinal);
         Assert.Contains("Purchasing_ReceiveStockAction", receive, StringComparison.Ordinal);
+        Assert.Contains("IPosDirectPurchaseReceiptClient", receive, StringComparison.Ordinal);
+        Assert.Contains("CreateDirectPurchaseReceiptRequest", receive, StringComparison.Ordinal);
+        Assert.Contains("IdempotencyKey", receive, StringComparison.Ordinal);
         Assert.Contains("pos-receive-stock__search", receive, StringComparison.Ordinal);
         Assert.Contains("pos-receive-stock__row-action", receive, StringComparison.Ordinal);
-        Assert.Contains("intent=receive", receive, StringComparison.Ordinal);
+        Assert.Contains("Purchasing_ReceiveStockReview", receive, StringComparison.Ordinal);
+        Assert.DoesNotContain("intent=receive", receive, StringComparison.Ordinal);
+        Assert.DoesNotContain("/inventory/", receive, StringComparison.Ordinal);
         Assert.Contains("IsReceiveStock", adjust, StringComparison.Ordinal);
         Assert.Contains("Purchasing_ReceiveStockWillIncrease", adjust, StringComparison.Ordinal);
         Assert.Contains("Purchasing_ReceiveStockSuccessTitle", adjust, StringComparison.Ordinal);
         Assert.Contains("<value>Receive stock</value>", en, StringComparison.Ordinal);
-        Assert.Contains("<value>Receive</value>", en, StringComparison.Ordinal);
-        Assert.Contains("<value>Search products</value>", en, StringComparison.Ordinal);
+        Assert.Contains("<value>Search name, SKU, or barcode</value>", en, StringComparison.Ordinal);
         Assert.Contains("<value>Stock received</value>", en, StringComparison.Ordinal);
         Assert.DoesNotContain("Direct Stock In", receive, StringComparison.Ordinal);
         Assert.DoesNotContain("Manual Purchase", receive, StringComparison.Ordinal);
         Assert.DoesNotContain("Direct Stock In", adjust, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void DirectPurchaseHistoryRoutesExist()
+    {
+        var list = File.ReadAllText(Path.Combine(PurchasingPages(), "DirectPurchasesList.razor"));
+        var detail = File.ReadAllText(Path.Combine(PurchasingPages(), "DirectPurchaseDetail.razor"));
+        var hub = File.ReadAllText(Path.Combine(PurchasingPages(), "PurchasingHub.razor"));
+
+        Assert.Contains("@page \"/purchasing/direct-purchases\"", list, StringComparison.Ordinal);
+        Assert.Contains("@page \"/purchasing/direct-purchases/{ReceiptId:guid}\"", detail, StringComparison.Ordinal);
+        Assert.Contains("IPosDirectPurchaseReceiptClient", list, StringComparison.Ordinal);
+        Assert.Contains("IPosDirectPurchaseReceiptClient", detail, StringComparison.Ordinal);
+        Assert.Contains("ViewInventory", list, StringComparison.Ordinal);
+        Assert.Contains("/purchasing/direct-purchases", hub, StringComparison.Ordinal);
+        Assert.Contains("Purchasing_DirectPurchasesTitle", hub, StringComparison.Ordinal);
     }
 
     [Fact]
