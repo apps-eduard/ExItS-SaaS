@@ -1,10 +1,10 @@
 # Phase 27 — Connected Supplier Commerce & Purchasing
 
-[Phases](README.md) | [Portfolio](../portfolio-progress.md) | [Design](../engineering/connected-exits-suppliers.md) | [P27-WP01](../reports/P27-WP01-buyer-specific-product-sharing-and-po-pricing.md)
+[Phases](README.md) | [Portfolio](../portfolio-progress.md) | [Design](../engineering/connected-exits-suppliers.md) | [P27-WP01](../reports/P27-WP01-buyer-specific-product-sharing-and-po-pricing.md) | [WP02](../reports/P27-WP02-connected-po-delivery-and-reliability.md) | [WP03](../reports/P27-WP03-supplier-response-synchronization.md) | [WP04](../reports/P27-WP04-connected-po-cancellation-and-withdrawal.md) | [WP05](../reports/P27-WP05-fulfillment-goods-receipt-and-discrepancies.md)
 
 | Field | Value |
 |---|---|
-| Status | **Open / In Progress** — P27-WP01 Code Complete + Level-1 + Level-2 Mobile UX Hardening Complete; WP02–WP07 Not Started |
+| Status | **Open / In Progress** — P27-WP01 through P27-WP05 Code Complete; WP06–WP07 Not Started |
 | Device Verified | **No** |
 | Browser Verified | **No** |
 | Production Ready | **No** |
@@ -21,14 +21,14 @@ This phase builds on Phase 1 connected-supplier foundations ([connected-exits-su
 | Work package | Scope | Status |
 |---|---|---|
 | **P27-WP01** | Buyer-Specific Product Sharing & PO Pricing (+ Level-1 + Level-2 mobile bulk UX hardening) | **Code Complete + Level-1 + Level-2 Mobile UX Hardening Complete** ([report](../reports/P27-WP01-buyer-specific-product-sharing-and-po-pricing.md)) |
-| P27-WP02 | Connected PO Delivery & Atomic Submission | **Not Started** |
-| P27-WP03 | Supplier Accept/Decline Synchronization | **Not Started** |
-| P27-WP04 | PO Cancellation & Withdrawal | **Not Started** |
-| P27-WP05 | Fulfillment & Goods Receipt Flow | **Not Started** |
+| P27-WP02 | Connected PO Delivery & Reliability | **Code Complete** ([report](../reports/P27-WP02-connected-po-delivery-and-reliability.md)) |
+| P27-WP03 | Supplier Response Synchronization | **Code Complete** ([report](../reports/P27-WP03-supplier-response-synchronization.md)) |
+| P27-WP04 | Connected PO Cancellation & Withdrawal | **Code Complete** ([report](../reports/P27-WP04-connected-po-cancellation-and-withdrawal.md)) |
+| P27-WP05 | Fulfillment, Goods Receipt & Discrepancies | **Code Complete** ([report](../reports/P27-WP05-fulfillment-goods-receipt-and-discrepancies.md)) |
 | P27-WP06 | Connected Purchasing UX & Notifications | **Not Started** |
 | P27-WP07 | E2E Hardening & Phase 27 Closeout | **Not Started** |
 
-**Current / active work package:** P27-WP01 (Level-1 + Level-2 mobile bulk UX delivered; owner device validation still outstanding). Do **not** begin WP02–WP07 unless explicitly authorized, except for fixes strictly required to keep WP01 correct and safe.
+**Current / active work package:** **P27-WP06 — Connected Purchasing UX & Notifications** (Not Started). P27-WP01–WP05 are Code Complete; owner device/browser validation remains outstanding. Do not begin WP06 or WP07 unless explicitly authorized.
 
 ## Invariants
 
@@ -39,6 +39,9 @@ This phase builds on Phase 1 connected-supplier foundations ([connected-exits-su
 - Per-buyer product management is a **mobile-first bulk** experience (search, filters, category sheet, multi-select, bulk share/unshare/price with preview) — not one-by-one save-all editing.
 - Level-1 eligibility management is also **mobile-first bulk** (Catalog → Connected Buyer Availability → Enable/Disable/Default PO) — Product Edit remains secondary.
 - Buyer inventory changes only through Goods Receipt / Receive Purchase Order — never on expose, share, price change, connection Accept/Decline, PO draft, PO submit, or supplier Accept/Decline of a connected PO.
+- Connected PO lifecycle is `New → Accepted → Preparing → Fulfilled`, with terminal `Declined` or `Withdrawn`; buyer withdrawal is permitted only from `New`.
+- Supplier Preparing/Fulfilled never mutates buyer inventory. During receipt, only good quantity enters stock; damaged/rejected/short-closed quantities do not.
+- A short-closed completed receipt is displayed as **Received With Issues**.
 - No full supplier catalog offline download; selective linked-product projection only.
 - No cross-product DB access; POS holds connected-supplier operational data.
 - No marketplace discovery, inter-org payments, AP/invoicing, shipping/logistics, live-stock sharing, or auto-receive in this phase unless a later WP explicitly authorizes it.
@@ -58,4 +61,4 @@ Marketplace, inter-org payments, AP/invoices, live stock sharing, logistics/ship
 
 ## Exact next
 
-Owner device validation of P27-WP01 (Catalog → Connected Buyer Availability bulk enable → Accept → share prompt → Manage Products bulk share/price → Browse). Then **P27-WP02 — Connected PO Delivery & Atomic Submission** when authorized (WP01 already includes atomic submit safety for connected lines; WP02 covers remaining delivery/sync gaps).
+**P27-WP06 — Connected Purchasing UX & Notifications** when authorized. P27-WP01–WP05 require owner device/browser validation; Phase 27 remains Open and is not Production Ready.

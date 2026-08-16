@@ -2,7 +2,7 @@
 
 Phase marker: `connected-exits-suppliers-phase-1`  
 Status: **Code Complete (Phase 1 foundation)** — see [completion report](../reports/connected-exits-suppliers-phase-1.md)  
-Commerce follow-on: **Phase 27 Open / In Progress** — [phase](../phases/phase-27-connected-supplier-commerce-and-purchasing.md); P27-WP01 Code Complete ([report](../reports/P27-WP01-buyer-specific-product-sharing-and-po-pricing.md))  
+Commerce follow-on: **Phase 27 Open / In Progress** — [phase](../phases/phase-27-connected-supplier-commerce-and-purchasing.md); P27-WP01–WP05 Code Complete ([WP01](../reports/P27-WP01-buyer-specific-product-sharing-and-po-pricing.md), [WP02](../reports/P27-WP02-connected-po-delivery-and-reliability.md), [WP03](../reports/P27-WP03-supplier-response-synchronization.md), [WP04](../reports/P27-WP04-connected-po-cancellation-and-withdrawal.md), [WP05](../reports/P27-WP05-fulfillment-goods-receipt-and-discrepancies.md))
 Starting SHA: `f67c2763c3e30a7a2b77847f23a101f57c403ca6`
 
 ## Architecture audit (authoritative)
@@ -131,6 +131,25 @@ Buyer-specific PO price → Default PO Price (`SupplierProductExposure.SupplierO
 ### Connected PO submission
 
 For connected suppliers, submit validates every line (Active relationship + active link + shared + effective price) before Ordering and creates `ConnectedPurchaseOrder` with effective price snapshots in the same path. External suppliers unchanged. Inventory still changes only on Goods Receipt.
+
+### Connected PO lifecycle (P27-WP02–WP05)
+
+`PurchaseOrderStatus` remains the buyer purchasing aggregate state. `ConnectedPurchaseOrderStatus` tracks supplier-side commercial progress:
+
+```text
+New ──→ Accepted ──→ Preparing ──→ Fulfilled
+ │          └────────────────────────→ Fulfilled
+ ├──→ Declined
+ └──→ Withdrawn
+```
+
+- Buyer withdrawal is valid only from `New`; supplier Accept/Decline and buyer Withdraw compete for that same transition.
+- Persistence compares the stored and requested statuses against the transition matrix, so an Accept/Withdraw race has one winner and rejects the contradictory write.
+- Supplier decline may include a bounded reason and note.
+- `ConnectedPoDisplayStatus` derives buyer/supplier labels from both aggregates: Waiting for Supplier, Supplier Accepted/Declined, Preparing, Ready, Partially Received, Received, Received With Issues, and Withdrawn.
+- Preparing/Fulfilled never changes buyer inventory. Buyer stock changes only through Goods Receipt, and only for good received quantity.
+- Lifecycle notifications (submitted, accepted, declined, preparing, fulfilled, withdrawn, received/receiving issue) publish through `IOrganizationBusinessNotificationPublisher`; the persisted orders remain the source of truth.
+- WP01 exposable/shared eligibility and buyer-specific → Default PO pricing are unchanged.
 
 ## Organization Web routes
 

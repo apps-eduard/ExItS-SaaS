@@ -151,6 +151,10 @@ The dashboard links to the latest accepted report.
 | [P26-WP04-organization-tax-compliance-profile-and-activation-foundation.md](P26-WP04-organization-tax-compliance-profile-and-activation-foundation.md) | P26-WP04 Organization tax/compliance profile and activation foundation | Code Complete / Validation Pending |
 | [P26-WP05-sales-document-compliance-integration-hardening.md](P26-WP05-sales-document-compliance-integration-hardening.md) | P26-WP05 Sales document compliance integration hardening & validation readiness | Code Complete / Owner Validation Pending |
 | [P27-WP01-buyer-specific-product-sharing-and-po-pricing.md](P27-WP01-buyer-specific-product-sharing-and-po-pricing.md) | P27-WP01 Buyer-specific product sharing & PO pricing | Code Complete |
+| [P27-WP02-connected-po-delivery-and-reliability.md](P27-WP02-connected-po-delivery-and-reliability.md) | P27-WP02 Connected PO delivery & reliability | Code Complete |
+| [P27-WP03-supplier-response-synchronization.md](P27-WP03-supplier-response-synchronization.md) | P27-WP03 Supplier response synchronization | Code Complete |
+| [P27-WP04-connected-po-cancellation-and-withdrawal.md](P27-WP04-connected-po-cancellation-and-withdrawal.md) | P27-WP04 Connected PO cancellation & withdrawal | Code Complete |
+| [P27-WP05-fulfillment-goods-receipt-and-discrepancies.md](P27-WP05-fulfillment-goods-receipt-and-discrepancies.md) | P27-WP05 Fulfillment, goods receipt & discrepancies | Code Complete |
 | [connected-supplier-buyer-specific-sharing-and-pricing.md](connected-supplier-buyer-specific-sharing-and-pricing.md) | Companion engineering detail for P27-WP01 | Code Complete |
 | [phase-27-connected-supplier-commerce-and-purchasing.md](../phases/phase-27-connected-supplier-commerce-and-purchasing.md) | Phase 27 Connected Supplier Commerce & Purchasing | Open / In Progress |
 

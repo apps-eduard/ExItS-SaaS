@@ -11,10 +11,10 @@
 | Portfolio | ExITS SaaS |
 | Existing product | Historical HealthCare SaaS MVP (separate product; **not** in this workspace ? do not restore) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
-| Current phase | Phase 27 **Open / In Progress — P27-WP01 Code Complete + Level-1 + Level-2 Mobile UX Hardening Complete**; Phase 26 remains **Open — Owner Validation Pending**; Phase 25 remains **Open — Owner Validation Pending**; Phase 22/24/19/20/21 remain Open; Phase 14 still open |
-| Current work package | **P27-WP01** Buyer-Specific Product Sharing & PO Pricing — **Code Complete + Level-1 + Level-2 Mobile UX Hardening Complete** ([phase](phases/phase-27-connected-supplier-commerce-and-purchasing.md); [report](reports/P27-WP01-buyer-specific-product-sharing-and-po-pricing.md)). Exact next when authorized: **P27-WP02**. Phase 26/25 owner validation remains pending. |
-| Overall status | **P27-WP01 Code Complete + Level-1 + Level-2 Mobile UX Hardening Complete**; WP02–WP07 Not Started. Mobile bulk Level-1 availability and Level-2 per-buyer share/price management delivered. Phase 26 WP01–WP05 and Phase 25 WP01–WP09 remain Code Complete / Owner Validation Pending. **Not Device Verified**. Production remains **Blocked**. **Not production-ready.** |
-| Latest verified commit | `cbd0005b` (P27-WP01 buyer-specific sharing/pricing tip) |
+| Current phase | Phase 27 **Open / In Progress — P27-WP01–WP05 Code Complete; WP06–WP07 Not Started**; Phase 26 remains **Open — Owner Validation Pending**; Phase 25 remains **Open — Owner Validation Pending**; Phase 22/24/19/20/21 remain Open; Phase 14 still open |
+| Current work package | **P27-WP06** Connected Purchasing UX & Notifications — **Not Started / active next** ([phase](phases/phase-27-connected-supplier-commerce-and-purchasing.md)). P27-WP01–WP05 are Code Complete; Phase 26/25 owner validation remains pending. |
+| Overall status | **P27-WP01–WP05 Code Complete**; WP06–WP07 Not Started. Connected PO delivery, supplier response lifecycle, New-only withdrawal, fulfillment, and discrepancy-aware receiving are implemented. **Not Device Verified. Not Browser Verified.** Production remains **Blocked / Not production-ready.** |
+| Latest verified commit | P27-WP02–WP05 commit hashes **TBD — recorded after commit** |
 | Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA deferred; Phase 19/20/22/24/25/26/27 owner/physical validation pending |
 | Last updated | 2026-08-16 |
 
@@ -219,7 +219,7 @@ P19-WP08 ? End-to-End Validation and User Closeout Checklist (Retest � awaitin
 | 24 | Linked Customer Statements and Personal Monetization | **Open** (WP01–WP23 Complete; WP24 Awaiting Owner Validation) | 23 | 24 |  -  | [Open](phases/phase-24-linked-customer-statements-and-personal-monetization.md) |
 | 25 | Organization Web Admin, AntDesign hosts, unified web auth + identity/org management | **Open** (WP01–WP09 Code Complete; Owner Validation Pending; not Device Verified; **no closeout**) | 9 | 9 |  -  | [Open](phases/phase-25-organization-web-admin.md) |
 | 26 | Sales Documents and Compliance Readiness | **Open** (WP01–WP05 Code Complete / Owner Validation Pending; no closeout) | 5 | 5 |  -  | [Open](phases/phase-26-sales-documents-compliance-readiness.md) |
-| 27 | Connected Supplier Commerce & Purchasing | **Open / In Progress** (P27-WP01 Code Complete + Level-1 + Level-2 UX Hardening; WP02–WP07 Not Started) | 1 | 7 |  -  | [Open](phases/phase-27-connected-supplier-commerce-and-purchasing.md) |
+| 27 | Connected Supplier Commerce & Purchasing | **Open / In Progress** (P27-WP01–WP05 Code Complete; WP06–WP07 Not Started; not Device/Browser Verified) | 5 | 7 |  -  | [Open](phases/phase-27-connected-supplier-commerce-and-purchasing.md) |
 
 **MVP phases 0-9:** 52 / 52 = **100%** (with documented risks; not Production-ready).
 **Phase 10 Full POS:** 8 / 8 = **100%** (with documented risks; not Production-ready).
@@ -263,17 +263,17 @@ P19-WP08 ? End-to-End Validation and User Closeout Checklist (Retest � awaitin
 | P26-WP04 — Organization Tax/Compliance Profile & Future Activation Foundation | **Code Complete / Validation Pending** | `c794707e` — [report](reports/P26-WP04-organization-tax-compliance-profile-and-activation-foundation.md); [roadmap](compliance/bir-compliance-activation-roadmap.md) |
 | P26-WP05 — Integration Hardening & Validation Readiness | **Code Complete / Owner Validation Pending** | `254424df` — [report](reports/P26-WP05-sales-document-compliance-integration-hardening.md); [checklist](validation/phase-26-owner-validation-checklist.md) |
 
-**Phase 27 Connected Supplier Commerce & Purchasing:** **Open / In Progress** ([phase](phases/phase-27-connected-supplier-commerce-and-purchasing.md); [design](engineering/connected-exits-suppliers.md)) — P27-WP01 Code Complete + Level-1 + Level-2 Mobile UX Hardening Complete; WP02–WP07 Not Started; **Device Verified: No**; **Production Ready: No**; no phase closeout.
+**Phase 27 Connected Supplier Commerce & Purchasing:** **Open / In Progress** ([phase](phases/phase-27-connected-supplier-commerce-and-purchasing.md); [design](engineering/connected-exits-suppliers.md)) — P27-WP01–WP05 Code Complete; WP06–WP07 Not Started; active next P27-WP06; **Device Verified: No**; **Browser Verified: No**; **Production Ready: No**; no phase closeout.
 
 ## Phase 27 work packages
 
 | WP | Status | Key commit |
 |---|---|---|
 | P27-WP01 — Buyer-Specific Product Sharing & PO Pricing | **Code Complete + Level-1 + Level-2 Mobile UX Hardening Complete** | original tip `cbd0005b`; Level-1 + Level-2 UX hardening commits recorded on WP01 report — [report](reports/P27-WP01-buyer-specific-product-sharing-and-po-pricing.md) |
-| P27-WP02 — Connected PO Delivery & Atomic Submission | **Not Started** | — |
-| P27-WP03 — Supplier Accept/Decline Synchronization | **Not Started** | — |
-| P27-WP04 — PO Cancellation & Withdrawal | **Not Started** | — |
-| P27-WP05 — Fulfillment & Goods Receipt Flow | **Not Started** | — |
+| P27-WP02 — Connected PO Delivery & Reliability | **Code Complete** | TBD after commit — [report](reports/P27-WP02-connected-po-delivery-and-reliability.md) |
+| P27-WP03 — Supplier Response Synchronization | **Code Complete** | TBD after commit — [report](reports/P27-WP03-supplier-response-synchronization.md) |
+| P27-WP04 — Connected PO Cancellation & Withdrawal | **Code Complete** | TBD after commit — [report](reports/P27-WP04-connected-po-cancellation-and-withdrawal.md) |
+| P27-WP05 — Fulfillment, Goods Receipt & Discrepancies | **Code Complete** | TBD after commit — [report](reports/P27-WP05-fulfillment-goods-receipt-and-discrepancies.md) |
 | P27-WP06 — Connected Purchasing UX & Notifications | **Not Started** | — |
 | P27-WP07 — E2E Hardening & Phase 27 Closeout | **Not Started** | — |
 

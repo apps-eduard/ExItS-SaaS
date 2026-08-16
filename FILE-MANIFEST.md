@@ -36,13 +36,13 @@ tools/ExItS.Deployment.Cli/ (validate-config / backup-gate / readiness / smoke-c
 ops/backup/ (PowerShell operators scripts + disabled schedule notes + config.example.env)
 ops/deploy/ (pilot deploy orchestration, smoke, pre-deploy backup, env templates)
 deploy/docker/ (packaging + local-validation + production compose, Dockerfiles, nginx; local-validation default = DBs only)
-src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Domain/ (POSCustomer + CreditEntry + CreditDueDateChange + Repayment + CatalogProduct + ProductCategory + Supplier + **PurchaseOrder/GoodsReceipt** aggregates; FIFO aging helpers)
-src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Application/ (+ Auth; Customers; Credit; due dates/overdue; Payments/ledger; Statements/receipts; Catalog; Suppliers; **Purchasing**; ConnectedSuppliers client contracts + linked-product delta sync; Commercial/UtangCapabilityPolicy; Reporting batch lookups)
-src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Infrastructure/ (PosDbContext schema `pos`; migrations through `AddPosPurchasing`, **`AddPosInventoryTransfers`**, **`AddPosInventoryLots`**; `Health/PosDatabaseReadyHealthCheck`)
+src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Domain/ (POSCustomer + CreditEntry + CreditDueDateChange + Repayment + CatalogProduct + ProductCategory + Supplier + **PurchaseOrder/GoodsReceipt** aggregates; connected PO lifecycle + receiving discrepancies; FIFO aging helpers)
+src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Application/ (+ Auth; Customers; Credit; due dates/overdue; Payments/ledger; Statements/receipts; Catalog; Suppliers; **Purchasing**; ConnectedSuppliers client contracts + `ConnectedPoDisplayStatus` + linked-product delta sync; Commercial/UtangCapabilityPolicy; Reporting batch lookups)
+src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Infrastructure/ (PosDbContext schema `pos`; migrations through **`20260816094758_AddConnectedPoLifecycleAndReceivingDiscrepancies`**; `Health/PosDatabaseReadyHealthCheck`)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Api/ (`/health` + `/health/ready` + customers + credit + repayments/ledger + due dates/overdue + statements/receipts + catalog + sales + inventory + expenses + suppliers + purchase-orders/goods-receipts + cashier-shifts + sale-returns + permissions + registers + dashboard/reports; commercial header gates; Production security pipeline; phase marker `P10-WP08-phase-10-closeout`)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.ApiClient/ (+ Platform access client incl. org public-identity, `/api/v1/qr/resolve`, POS device registration-token create/redeem; PosCommercialHeaderHandler; PosCustomerClient; PosSaleClient/PosExpenseClient/**PosPurchaseOrderClient** idempotency headers; PosCatalogClient online-only; PosSupplierClient online-only)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.LocalStore/ (Microsoft.Data.Sqlite schema v9 + generic encrypted offline_operations outbox + BlockedByAccess reclaim + encrypted customer/credit/repayment projections + selective connected-supplier linked products and local PO drafts + product usage/sell-unit offline cache; never a full supplier catalog; **not** part of server backup sets)
-src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/ (Android-first MAUI Blazor Hybrid; Customers + credit + repayments + ledger + overdue/due dates + statement/receipt preview/share + catalog/barcode + sales (**multi-unit Sell as checkout**) + inventory + expenses + suppliers + **purchasing hub (Receive stock / POs / goods receipts)** + connected supplier request/catalog/linked products/incoming orders + **connected buyers + post-accept share prompt + per-buyer shared products/pricing** + **unified org notifications (Read-on-open)** + dashboard/reports; onboarding/auth; sync-status shell; offline foundation diagnostics; PosResources en/fil-PH)
+src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/ (Android-first MAUI Blazor Hybrid; Customers + credit + repayments + ledger + overdue/due dates + statement/receipt preview/share + catalog/barcode + sales (**multi-unit Sell as checkout**) + inventory + expenses + suppliers + **purchasing hub (Receive stock / POs / discrepancy-aware goods receipts)** + connected supplier request/catalog/linked products/incoming order list/detail + lifecycle actions + **connected buyers + post-accept share prompt + per-buyer shared products/pricing** + **unified org notifications (Read-on-open)** + dashboard/reports; onboarding/auth; sync-status shell; offline foundation diagnostics; PosResources en/fil-PH)
 src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Web/ (Organization Web Admin — AntDesign Blazor Server management/reporting per ADR-022; **not a POS checkout client**; unified org notifications + Connected buyers; Local Validation :8093)
 tests/ExItS.Platform.UnitTests/
 tests/ExItS.ArchitectureTests/
@@ -118,6 +118,7 @@ docs/phases/phase-10-full-pos.md
 docs/phases/phase-24-linked-customer-statements-and-personal-monetization.md
 docs/phases/phase-25-organization-web-admin.md
 docs/phases/phase-26-sales-documents-compliance-readiness.md
+docs/phases/phase-27-connected-supplier-commerce-and-purchasing.md
 docs/phases/phase-21-privacy-compliance-and-regulatory-readiness.md
 docs/reports/P21-foundation-privacy-compliance-workspace.md
 docs/reports/P21-privacy-readiness-visibility-product-status-ui.md
@@ -138,6 +139,13 @@ docs/reports/P26-WP02-organization-compliance-education-and-acknowledgment.md
 docs/reports/P26-WP03-platform-controlled-compliance-capability-and-eligibility.md
 docs/reports/P26-WP04-organization-tax-compliance-profile-and-activation-foundation.md
 docs/reports/P26-WP05-sales-document-compliance-integration-hardening.md
+docs/reports/P27-WP01-buyer-specific-product-sharing-and-po-pricing.md
+docs/reports/P27-WP02-connected-po-delivery-and-reliability.md
+docs/reports/P27-WP03-supplier-response-synchronization.md
+docs/reports/P27-WP04-connected-po-cancellation-and-withdrawal.md
+docs/reports/P27-WP05-fulfillment-goods-receipt-and-discrepancies.md
+docs/engineering/connected-exits-suppliers.md
+docs/engineering/purchasing-inventory-ux-mental-model.md
 docs/validation/phase-26-owner-validation-checklist.md
 docs/compliance/bir-compliance-activation-roadmap.md
 docs/reports/personal-organization-identity-isolation.md
