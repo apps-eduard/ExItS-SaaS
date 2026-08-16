@@ -372,7 +372,7 @@ dotnet watch --project '$Project' run --no-launch-profile --non-interactive
 }
 
 # --- main ---
-$repoRoot = Get-RepoRoot
+$repoRoot = Get-LocalValidationRepoRoot
 $dockerDir = Join-Path $repoRoot 'deploy\docker'
 $envFile = Join-Path $dockerDir $LocalValidationStack.EnvFileName
 $composeFile = Join-Path $dockerDir $LocalValidationStack.ComposeFileName
@@ -382,7 +382,7 @@ $stateFile = Join-Path $stateDir 'launcher-state.json'
 
 Write-Step "Repository: $repoRoot"
 Write-Ok ("Compose project={0} file={1}" -f $LocalValidationStack.ComposeProjectName, $LocalValidationStack.ComposeFileName)
-Test-DockerAvailable
+Test-LocalValidationDockerAvailable
 Write-Ok 'Docker Desktop is available'
 
 if (-not (Test-Path -LiteralPath $envFile)) {
@@ -412,22 +412,20 @@ $mailpitSmtpPort = if ($envMap['LOCAL_VALIDATION_MAILPIT_SMTP_HOST_PORT']) { [in
 New-Item -ItemType Directory -Force -Path $dpKeys | Out-Null
 Write-Ok "DataProtection keys directory: $dpKeys"
 
-Write-Step 'Stopping stale repo-scoped local ExItS apps (Api/Admin only; DBs untouched)...'
-Stop-RepoScopedApps -RepoRoot $repoRoot
+Write-Step 'Stopping Docker app services before host mode (infrastructure and volumes preserved)...'
+$null = Stop-LocalValidationDockerAppServices -ComposeFile $composeFile -EnvFile $envFile
 
-$conflicts = @(Report-PortConflicts -Ports @($adminPort, $platformApiPort, $posApiPort, $orgWebPort, $personalWebPort))
+Write-Step 'Stopping stale repo-scoped local ExItS host apps (DBs untouched)...'
+$null = Stop-LocalValidationRepoScopedHostApps -RepoRoot $repoRoot
+
+$conflicts = @(Report-LocalValidationPortConflicts -Ports @($adminPort, $platformApiPort, $posApiPort, $orgWebPort, $personalWebPort))
 if ($conflicts.Count -gt 0) {
     throw 'Ports 8090/8091/8092/8093/8094 still occupied after stopping repo-scoped apps. Free them and retry.'
 }
 Write-Ok 'App ports 8090/8091/8092/8093/8094 are free'
 
-Write-Step 'Starting local-validation PostgreSQL + Mailpit (volumes preserved; never compose down with -v)...'
-$composeExit = Invoke-LocalValidationDocker -DockerArgs @(
-    'compose', '-p', $LocalValidationStack.ComposeProjectName,
-    '-f', $composeFile, '--env-file', $envFile,
-    'up', '-d', 'platform-db', 'pos-db', 'mailpit'
-)
-if ($composeExit -ne 0) { throw "docker compose up platform-db pos-db mailpit failed ($composeExit)." }
+Write-Step 'Starting local-validation PostgreSQL + Mailpit (volumes preserved)...'
+Start-LocalValidationInfrastructure -ComposeFile $composeFile -EnvFile $envFile
 
 Wait-ContainerHealthy -Name $LocalValidationStack.PlatformDbContainer -TimeoutSeconds $DbHealthySeconds
 Wait-ContainerHealthy -Name $LocalValidationStack.PosDbContainer -TimeoutSeconds $DbHealthySeconds
@@ -634,6 +632,7 @@ $windowPids += Start-AppWindow -Title 'ExItS LocalValidation - Personal Web' -Re
 Wait-TcpPort -Label 'Personal Web' -HostName '127.0.0.1' -Port $personalWebPort -TimeoutSeconds $PortWaitSeconds
 
 $state = @{
+    Mode = 'HostApps'
     RepoRoot = $repoRoot
     WindowPids = $windowPids
     StartedAtUtc = (Get-Date).ToUniversalTime().ToString('o')

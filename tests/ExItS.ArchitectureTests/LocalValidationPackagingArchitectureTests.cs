@@ -18,6 +18,10 @@ public sealed class LocalValidationPackagingArchitectureTests
         Assert.Contains("name: exits-packaging", packaging, StringComparison.Ordinal);
         Assert.Contains("admin-web:", live, StringComparison.Ordinal);
         Assert.Contains("exits-local-validation-admin-web", live, StringComparison.Ordinal);
+        Assert.Contains("org-web:", live, StringComparison.Ordinal);
+        Assert.Contains("exits-local-validation-org-web", live, StringComparison.Ordinal);
+        Assert.Contains("personal-web:", live, StringComparison.Ordinal);
+        Assert.Contains("exits-local-validation-personal-web", live, StringComparison.Ordinal);
         Assert.Contains("profiles: [\"apps\"]", live, StringComparison.Ordinal);
         Assert.Contains("exits_local_validation_platform_db_data", live, StringComparison.Ordinal);
         Assert.Contains("exits_local_validation_pos_db_data", live, StringComparison.Ordinal);
@@ -41,12 +45,18 @@ public sealed class LocalValidationPackagingArchitectureTests
         Assert.True(File.Exists(Path.Combine(root, "deploy", "docker", "README.local-validation-workflow.md")));
         Assert.True(File.Exists(Path.Combine(root, "tools", "Start-LocalValidation.ps1")));
         Assert.True(File.Exists(Path.Combine(root, "tools", "Stop-LocalValidation.ps1")));
+        Assert.True(File.Exists(Path.Combine(root, "tools", "Start-DockerLocalValidation.ps1")));
+        Assert.True(File.Exists(Path.Combine(root, "tools", "Stop-DockerLocalValidation.ps1")));
         Assert.True(File.Exists(Path.Combine(root, "tools", "Reset-LocalValidation.ps1")));
+        Assert.True(File.Exists(Path.Combine(root, "deploy", "docker", "Dockerfile.organization-web")));
+        Assert.True(File.Exists(Path.Combine(root, "deploy", "docker", "Dockerfile.personal-web")));
         Assert.True(File.Exists(Path.Combine(root, "deploy", "docker", "Start-LocalValidation.ps1")));
         Assert.True(File.Exists(Path.Combine(root, "deploy", "docker", "Stop-LocalValidation.ps1")));
         Assert.True(File.Exists(Path.Combine(root, "deploy", "docker", "Reset-LocalValidation.ps1")));
 
         var startScript = File.ReadAllText(Path.Combine(root, "tools", "Start-LocalValidation.ps1"));
+        var dockerStartScript = File.ReadAllText(Path.Combine(root, "tools", "Start-DockerLocalValidation.ps1"));
+        var dockerStopScript = File.ReadAllText(Path.Combine(root, "tools", "Stop-DockerLocalValidation.ps1"));
         var stackScript = File.ReadAllText(Path.Combine(root, "tools", "LocalValidation.stack.ps1"));
         Assert.Contains("Mailpit", startScript, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("PlatformEmail__SmtpHost", startScript, StringComparison.Ordinal);
@@ -75,6 +85,10 @@ public sealed class LocalValidationPackagingArchitectureTests
         Assert.DoesNotContain("LocalPort 15533", startScript, StringComparison.Ordinal);
         Assert.DoesNotContain("LocalPort 15534", startScript, StringComparison.Ordinal);
         Assert.DoesNotContain("docker compose down -v", startScript, StringComparison.Ordinal);
+        Assert.DoesNotContain("down -v", dockerStartScript, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("down -v", dockerStopScript, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Mode = 'DockerApps'", dockerStartScript, StringComparison.Ordinal);
+        Assert.Contains("Stop-LocalValidationDockerAppServices", dockerStopScript, StringComparison.Ordinal);
 
         var platformLaunch = File.ReadAllText(Path.Combine(
             root, "src", "Platform", "ExItS.Platform.Api", "Properties", "launchSettings.json"));
@@ -102,6 +116,8 @@ public sealed class LocalValidationPackagingArchitectureTests
         Assert.Contains("${LOCAL_VALIDATION_ADMIN_HOST_PORT:-8090}:8080", live, StringComparison.Ordinal);
         Assert.Contains("${LOCAL_VALIDATION_PLATFORM_API_HOST_PORT:-8091}:8080", live, StringComparison.Ordinal);
         Assert.Contains("${LOCAL_VALIDATION_POS_API_HOST_PORT:-8092}:8080", live, StringComparison.Ordinal);
+        Assert.Contains("${LOCAL_VALIDATION_ORG_WEB_HOST_PORT:-8093}:8080", live, StringComparison.Ordinal);
+        Assert.Contains("${LOCAL_VALIDATION_PERSONAL_WEB_HOST_PORT:-8094}:8080", live, StringComparison.Ordinal);
         Assert.Contains("${LOCAL_VALIDATION_PLATFORM_DB_HOST_PORT:-15533}:5432", live, StringComparison.Ordinal);
         Assert.Contains("${LOCAL_VALIDATION_POS_DB_HOST_PORT:-15534}:5432", live, StringComparison.Ordinal);
         Assert.DoesNotContain("PLATFORM_API_HOST_PORT:-8081", live, StringComparison.Ordinal);

@@ -13,7 +13,8 @@
 #   docker compose -f compose.local-validation.yaml --env-file .env.local-validation --profile apps up -d --build
 #
 # Default host ports (do not collide with packaging baseline):
-#   admin-web 8090 · platform-api 8091 · pos-api 8092 · platform-db 15533 · pos-db 15534
+#   admin-web 8090 · platform-api 8091 · pos-api 8092 · org-web 8093 · personal-web 8094
+#   platform-db 15533 · pos-db 15534
 #
 # Boundaries: separate Platform and POS databases; no nested clinical product tree.
 # ASPNETCORE_ENVIRONMENT=Staging + LocalValidation:Enabled=true seeds approved Local Validation identities;
@@ -87,10 +88,14 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Staging
       ConnectionStrings__PlatformDatabase: Host=platform-db;Port=5432;Database=exits_platform;Username=${LOCAL_VALIDATION_PLATFORM_DB_USER};Password=${LOCAL_VALIDATION_PLATFORM_DB_PASSWORD}
-      AllowedHosts: ${LOCAL_VALIDATION_ALLOWED_HOSTS:-localhost;127.0.0.1;10.0.2.2;platform-api;admin-web;pos-api}
+      AllowedHosts: ${LOCAL_VALIDATION_ALLOWED_HOSTS:-localhost;127.0.0.1;10.0.2.2;platform-api;admin-web;pos-api;org-web;personal-web}
       Cors__AllowedOrigins__0: ${LOCAL_VALIDATION_ADMIN_ORIGIN:-http://localhost:8090}
+      Cors__AllowedOrigins__1: ${LOCAL_VALIDATION_ORG_WEB_ORIGIN:-http://localhost:8093}
+      Cors__AllowedOrigins__2: ${LOCAL_VALIDATION_PERSONAL_WEB_ORIGIN:-http://localhost:8094}
       Security__EnforceHttps: "false"
       LocalValidation__Enabled: "true"
+      LocalValidation__SeedScope: ${LOCAL_VALIDATION_SEED_SCOPE:-PlatformAdministratorsOnly}
+      LocalValidation__PurgeTransactionalOnSeed: ${LOCAL_VALIDATION_PURGE_TRANSACTIONAL:-false}
       LocalValidation__SharedPassword: ${LOCAL_VALIDATION_SHARED_PASSWORD}
       PlatformAuthentication__Password__MinimumLength: "1"
       PlatformAuthentication__Password__RequireUppercase: "false"
@@ -129,11 +134,14 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Staging
       ConnectionStrings__PosDatabase: Host=pos-db;Port=5432;Database=exits_pos;Username=${LOCAL_VALIDATION_POS_DB_USER};Password=${LOCAL_VALIDATION_POS_DB_PASSWORD}
-      AllowedHosts: ${LOCAL_VALIDATION_ALLOWED_HOSTS:-localhost;127.0.0.1;10.0.2.2;platform-api;admin-web;pos-api}
+      AllowedHosts: ${LOCAL_VALIDATION_ALLOWED_HOSTS:-localhost;127.0.0.1;10.0.2.2;platform-api;admin-web;pos-api;org-web;personal-web}
       Cors__AllowedOrigins__0: ${LOCAL_VALIDATION_ADMIN_ORIGIN:-http://localhost:8090}
+      Cors__AllowedOrigins__1: ${LOCAL_VALIDATION_ORG_WEB_ORIGIN:-http://localhost:8093}
+      Cors__AllowedOrigins__2: ${LOCAL_VALIDATION_PERSONAL_WEB_ORIGIN:-http://localhost:8094}
       Security__EnforceHttps: "false"
       LocalValidation__Enabled: "true"
       LocalValidation__PlatformApiBaseUrl: ${LOCAL_VALIDATION_PLATFORM_API_INTERNAL_URL:-http://platform-api:8080}
+      PlatformAuth__BaseUrl: ${LOCAL_VALIDATION_PLATFORM_API_INTERNAL_URL:-http://platform-api:8080}
     ports:
       - "${LOCAL_VALIDATION_POS_API_HOST_PORT:-8092}:8080"
     networks:
@@ -154,13 +162,74 @@ services:
       - platform-api
     environment:
       ASPNETCORE_ENVIRONMENT: Staging
-      AllowedHosts: ${LOCAL_VALIDATION_ALLOWED_HOSTS:-localhost;127.0.0.1;10.0.2.2;platform-api;admin-web;pos-api}
-      PlatformApi__BaseUrl: ${LOCAL_VALIDATION_PLATFORM_API_INTERNAL_URL:-http://platform-api:8080}
+      AllowedHosts: ${LOCAL_VALIDATION_ALLOWED_HOSTS:-localhost;127.0.0.1;10.0.2.2;platform-api;admin-web;pos-api;org-web;personal-web}
+      # Browser-visible Platform API (OAuth / absolute links). Prefer public host URL from launcher.
+      PlatformApi__BaseUrl: ${LOCAL_VALIDATION_PLATFORM_API_PUBLIC_URL:-http://localhost:8091}
       PlatformApi__TimeoutSeconds: "30"
       LocalValidation__Enabled: "true"
+      LocalValidation__SharedPassword: ${LOCAL_VALIDATION_SHARED_PASSWORD}
+      ExItSWebHosts__PlatformAdmin: ${LOCAL_VALIDATION_ADMIN_ORIGIN:-http://localhost:8090}
+      ExItSWebHosts__OrganizationWeb: ${LOCAL_VALIDATION_ORG_WEB_ORIGIN:-http://localhost:8093}
+      ExItSWebHosts__PersonalWeb: ${LOCAL_VALIDATION_PERSONAL_WEB_ORIGIN:-http://localhost:8094}
       DataProtection__KeysPath: /tmp/exits-admin-dp-keys
     ports:
       - "${LOCAL_VALIDATION_ADMIN_HOST_PORT:-8090}:8080"
+    networks:
+      - exits-local-validation
+    read_only: true
+    tmpfs:
+      - /tmp
+    stop_grace_period: 30s
+
+  org-web:
+    profiles: ["apps"]
+    container_name: exits-local-validation-org-web
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.organization-web
+    image: exits/organization-web:${LOCAL_VALIDATION_IMAGE_TAG:-local-validation}
+    depends_on:
+      - platform-api
+      - pos-api
+    environment:
+      ASPNETCORE_ENVIRONMENT: Staging
+      AllowedHosts: ${LOCAL_VALIDATION_ALLOWED_HOSTS:-localhost;127.0.0.1;10.0.2.2;platform-api;admin-web;pos-api;org-web;personal-web}
+      LocalValidation__Enabled: "true"
+      Security__RequireHttpsApiUrls: "false"
+      # Server-to-server on Compose DNS (not host PublicHost).
+      PosApi__BaseUrl: ${LOCAL_VALIDATION_PLATFORM_API_INTERNAL_URL:-http://platform-api:8080}
+      PosBusinessApi__BaseUrl: ${LOCAL_VALIDATION_POS_API_INTERNAL_URL:-http://pos-api:8080}
+      ExItSWebHosts__PlatformAdmin: ${LOCAL_VALIDATION_ADMIN_ORIGIN:-http://localhost:8090}
+      ExItSWebHosts__OrganizationWeb: ${LOCAL_VALIDATION_ORG_WEB_ORIGIN:-http://localhost:8093}
+      ExItSWebHosts__PersonalWeb: ${LOCAL_VALIDATION_PERSONAL_WEB_ORIGIN:-http://localhost:8094}
+    ports:
+      - "${LOCAL_VALIDATION_ORG_WEB_HOST_PORT:-8093}:8080"
+    networks:
+      - exits-local-validation
+    read_only: true
+    tmpfs:
+      - /tmp
+    stop_grace_period: 30s
+
+  personal-web:
+    profiles: ["apps"]
+    container_name: exits-local-validation-personal-web
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.personal-web
+    image: exits/personal-web:${LOCAL_VALIDATION_IMAGE_TAG:-local-validation}
+    depends_on:
+      - platform-api
+    environment:
+      ASPNETCORE_ENVIRONMENT: Staging
+      AllowedHosts: ${LOCAL_VALIDATION_ALLOWED_HOSTS:-localhost;127.0.0.1;10.0.2.2;platform-api;admin-web;pos-api;org-web;personal-web}
+      LocalValidation__Enabled: "true"
+      PlatformApi__BaseUrl: ${LOCAL_VALIDATION_PLATFORM_API_INTERNAL_URL:-http://platform-api:8080}
+      ExItSWebHosts__PlatformAdmin: ${LOCAL_VALIDATION_ADMIN_ORIGIN:-http://localhost:8090}
+      ExItSWebHosts__OrganizationWeb: ${LOCAL_VALIDATION_ORG_WEB_ORIGIN:-http://localhost:8093}
+      ExItSWebHosts__PersonalWeb: ${LOCAL_VALIDATION_PERSONAL_WEB_ORIGIN:-http://localhost:8094}
+    ports:
+      - "${LOCAL_VALIDATION_PERSONAL_WEB_HOST_PORT:-8094}:8080"
     networks:
       - exits-local-validation
     read_only: true

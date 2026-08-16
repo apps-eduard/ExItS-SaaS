@@ -64,7 +64,7 @@ function Get-RepoScopedAppProcesses([string]$RepoRoot) {
     return $results
 }
 
-$repoRoot = Get-RepoRoot
+$repoRoot = Get-LocalValidationRepoRoot
 $stateDir = Join-Path $env:LOCALAPPDATA 'ExItS\LocalValidation'
 $stateFile = Join-Path $stateDir 'launcher-state.json'
 $dockerDir = Join-Path $repoRoot 'deploy\docker'
@@ -73,13 +73,17 @@ $composeFile = Join-Path $dockerDir $LocalValidationStack.ComposeFileName
 
 Write-Step "Repository: $repoRoot"
 
+$stateMode = ''
 if (Test-Path -LiteralPath $stateFile) {
     try {
         $state = Get-Content -LiteralPath $stateFile -Raw | ConvertFrom-Json
-        foreach ($windowPid in @($state.WindowPids)) {
-            if ($windowPid -and (Get-Process -Id $windowPid -ErrorAction SilentlyContinue)) {
-                Write-Step "Stopping launcher window PID $windowPid"
-                Stop-Process -Id $windowPid -Force -ErrorAction SilentlyContinue
+        $stateMode = [string]$state.Mode
+        if ($stateMode -ne 'DockerApps') {
+            foreach ($windowPid in @($state.WindowPids)) {
+                if ($windowPid -and (Get-Process -Id $windowPid -ErrorAction SilentlyContinue)) {
+                    Write-Step "Stopping launcher window PID $windowPid"
+                    Stop-Process -Id $windowPid -Force -ErrorAction SilentlyContinue
+                }
             }
         }
     } catch {
@@ -87,13 +91,9 @@ if (Test-Path -LiteralPath $stateFile) {
     }
 }
 
-$apps = @(Get-RepoScopedAppProcesses -RepoRoot $repoRoot)
-foreach ($p in $apps) {
-    Write-Step ("Stopping app PID {0}" -f $p.ProcessId)
-    Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue
-}
+$null = Stop-LocalValidationRepoScopedHostApps -RepoRoot $repoRoot
 
-if (Test-Path -LiteralPath $stateFile) {
+if ($stateMode -ne 'DockerApps' -and (Test-Path -LiteralPath $stateFile)) {
     Remove-Item -LiteralPath $stateFile -Force -ErrorAction SilentlyContinue
 }
 

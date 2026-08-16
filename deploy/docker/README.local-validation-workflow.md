@@ -1,13 +1,57 @@
-# Local Validation — local development (Docker DBs + host apps)
+# Local Validation — host and Docker workflows
 
 Personal Staging preview only. **Not Production.** Does **not** start P14-WP03.
 
-## One command (preferred)
+## FAST host mode (preferred daily workflow)
 
 From the repository root:
 
 ```powershell
 .\tools\Start-LocalValidation.ps1
+```
+
+FAST mode runs PostgreSQL and Mailpit in Docker and all five applications under local
+`dotnet watch`. Keep this as the daily coding default for quick edit/rebuild cycles.
+
+Mode switching is automatic: FAST startup stops only FULL mode's five app containers
+before it starts host apps. PostgreSQL, Mailpit, and database volumes remain in place.
+
+## FULL Docker mode
+
+Use FULL mode to validate application images and Docker service wiring:
+
+```powershell
+.\tools\Start-DockerLocalValidation.ps1
+```
+
+FULL startup stops only this repository's host app processes, verifies that no unknown
+process owns ports 8090-8094, starts infrastructure, then starts the five app containers.
+It does not replace FAST mode as the normal coding workflow.
+
+Build controls:
+
+```powershell
+# Rebuild images as part of startup
+.\tools\Start-DockerLocalValidation.ps1 -Build
+
+# Rebuild all app images without cache, then start them
+.\tools\Start-DockerLocalValidation.ps1 -CleanBuild
+```
+
+Both preserve PostgreSQL volumes. API startup continues to run the existing
+LocalValidation migration hosted services; the launcher does not add startup migration
+calls to application code.
+
+Stop only Docker apps (infrastructure keeps running):
+
+```powershell
+.\tools\Stop-DockerLocalValidation.ps1
+```
+
+Stop Docker apps, PostgreSQL, and Mailpit while retaining volumes:
+
+```powershell
+.\tools\Stop-DockerLocalValidation.ps1 -StopInfrastructure
 ```
 
 Tailscale / LAN (bind `0.0.0.0`, print public URLs, CORS + AllowedHosts for the host):
@@ -44,20 +88,21 @@ New-NetFirewallRule -DisplayName "ExItS Local Validation Personal Web 8094" -Dir
 
 Requires an elevated PowerShell. The start script prints the same guidance after a successful launch.
 
-This script:
+The FAST host launcher:
 
 1. Checks Docker Desktop
-2. Starts **only** Platform + POS PostgreSQL (ports **15533** / **15534**); preserves volumes; never `down -v`
-3. Stops stale repo-scoped `ExItS.Platform.Api` / `ExItS.PinoyBusinessPOS.Api` / `ExItS.Platform.Admin` / `ExItS.PinoyBusinessPOS.Web` / `ExItS.Personal.Web` processes
-4. Starts, in order, with `dotnet watch` bound to **0.0.0.0**:
+2. Stops FULL mode's app containers only
+3. Starts Platform + POS PostgreSQL and Mailpit; preserves volumes
+4. Stops stale repo-scoped `ExItS.Platform.Api` / `ExItS.PinoyBusinessPOS.Api` / `ExItS.Platform.Admin` / `ExItS.PinoyBusinessPOS.Web` / `ExItS.Personal.Web` processes
+5. Starts, in order, with `dotnet watch` bound to **0.0.0.0**:
    - Platform API → http://localhost:8091 (or `http://<PublicHost>:8091`)
    - POS API → http://localhost:8092 (or `http://<PublicHost>:8092`)
    - Platform Admin → http://localhost:8090
    - Organization Web → http://localhost:8093
    - Personal Web → http://localhost:8094
    - Platform Admin → http://localhost:8090 (or `http://<PublicHost>:8090`)
-5. Waits for ports, runs health checks, prints URLs
-6. Configures CORS for `http://localhost:8090`, `http://127.0.0.1:8090`, and `http://<PublicHost>:8090` when `-PublicHost` is set
+6. Waits for ports, runs health checks, prints URLs
+7. Configures CORS for Admin, Organization Web, and Personal Web localhost/public origins
 
 Stop local apps (DBs keep running):
 
@@ -89,17 +134,20 @@ Copy-Item .env.local-validation.example .env.local-validation
 # Fill REPLACE_* (DB passwords + LOCAL_VALIDATION_SHARED_PASSWORD, min 12 chars). Never commit.
 ```
 
-## Shape
+## FAST mode shape
 
 ```text
 Docker
 ├── Platform PostgreSQL  :15533
-└── POS PostgreSQL       :15534
+├── POS PostgreSQL       :15534
+└── Mailpit              :8025 / :1025
 
 Local (dotnet watch)
 ├── Platform API         :8091
 ├── POS API              :8092
-└── Platform Admin       :8090
+├── Platform Admin       :8090
+├── Organization Web     :8093
+└── Personal Web         :8094
 ```
 
 ## Data Protection (Admin)
@@ -119,6 +167,7 @@ If an old antiforgery cookie still fails: use Incognito or clear localhost site 
 ## Related
 
 - [README.local-validation.md](README.local-validation.md) — compose overview
-- `tools/Start-LocalValidation.ps1` / `tools/Stop-LocalValidation.ps1`
+- `tools/Start-LocalValidation.ps1` / `tools/Stop-LocalValidation.ps1` (FAST host mode)
+- `tools/Start-DockerLocalValidation.ps1` / `tools/Stop-DockerLocalValidation.ps1` (FULL Docker mode)
 - [P14-WP02A report (historical; superseded by Local Validation)](../../docs/reports/P14-WP02A-live-preview-test-users-and-quick-login.md)
 - [P16-WP11 Local Validation report](../../docs/reports/P16-WP11-local-validation-replaces-live-preview.md)

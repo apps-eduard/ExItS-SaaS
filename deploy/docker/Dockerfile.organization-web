@@ -1,0 +1,17 @@
+# ExItS Organization / POS Web Admin (Blazor) — Local Validation / packaging image.
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+COPY Directory.Build.props Directory.Packages.props global.json ./
+COPY src/ ./src/
+RUN dotnet restore src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Web/ExItS.PinoyBusinessPOS.Web.csproj
+RUN dotnet publish src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Web/ExItS.PinoyBusinessPOS.Web.csproj -c Release -o /app/publish --no-restore /p:UseAppHost=false
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
+WORKDIR /app
+RUN groupadd --system exits && useradd --system --gid exits --create-home exits
+COPY --from=build /app/publish .
+USER exits
+ENV ASPNETCORE_URLS=http://0.0.0.0:8080
+ENV DOTNET_EnableDiagnostics=0
+EXPOSE 8080
+ENTRYPOINT ["dotnet", "ExItS.PinoyBusinessPOS.Web.dll"]
