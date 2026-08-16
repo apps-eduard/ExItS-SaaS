@@ -534,9 +534,9 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
             entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
             entity.HasIndex(e => new { e.OrganizationId, e.Code }).IsUnique();
-            entity.HasIndex(e => new { e.Id, e.OrganizationId })
-                .IsUnique()
-                .HasDatabaseName("ux_organization_branches_id_organization_id");
+            // Alternate key backs composite tenant FKs; do not also declare a redundant unique HasIndex.
+            entity.HasAlternateKey(e => new { e.Id, e.OrganizationId })
+                .HasName("AK_organization_branches_id_organization_id");
             entity.HasIndex(e => e.Status);
             entity.HasOne<PlatformOrganizationRecord>().WithMany().HasForeignKey(e => e.OrganizationId).OnDelete(DeleteBehavior.Restrict);
         });
@@ -550,6 +550,9 @@ public sealed class PlatformDbContext : DbContext
                 tb.HasCheckConstraint("ck_branch_delivery_policies_included_nonneg", "included_distance_km >= 0");
                 tb.HasCheckConstraint("ck_branch_delivery_policies_per_km_nonneg", "additional_fee_per_km >= 0");
                 tb.HasCheckConstraint("ck_branch_delivery_policies_max_positive", "maximum_delivery_distance_km > 0");
+                tb.HasCheckConstraint(
+                    "ck_branch_delivery_policies_free_threshold_nonneg",
+                    "free_delivery_threshold IS NULL OR free_delivery_threshold >= 0");
             });
             entity.HasKey(e => e.BranchId);
             entity.Property(e => e.BranchId).HasColumnName("branch_id");
