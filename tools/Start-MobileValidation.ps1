@@ -5,10 +5,12 @@
 
 .DESCRIPTION
   Dedicated dual-emulator mobile validation helper.
-  - Does not destroy HealthCare_* or other AVDs.
   - Maps AVD name → adb serial at runtime (ports are not hard-coded).
   - Builds once with android-x64 (emulator ABI) while keeping Local Validation Tailscale PublicHost.
   - Installs/updates the same APK on both devices.
+
+.PARAMETER BootOnly
+  Start the two AVDs and wait until boot_completed; skip build/install/launch.
 
 .PARAMETER SkipBuild
   Skip the MAUI build and reuse the newest matching APK under the Maui project bin folder.
@@ -21,9 +23,13 @@
 
 .EXAMPLE
   .\tools\Start-MobileValidation.ps1
+
+.EXAMPLE
+  .\tools\Start-MobileValidation.ps1 -BootOnly
 #>
 [CmdletBinding()]
 param(
+    [switch]$BootOnly,
     [switch]$SkipBuild,
     [switch]$SkipLaunch,
     [int]$AvdBootSeconds = 240
@@ -212,6 +218,20 @@ foreach ($avd in $script:AvdNames) {
 $serialByAvd = @{}
 foreach ($avd in $script:AvdNames) {
     $serialByAvd[$avd] = Wait-ForAvdBoot -Adb $sdk.Adb -AvdName $avd -TimeoutSeconds $AvdBootSeconds
+}
+
+if ($BootOnly) {
+    Write-Host ''
+    Write-Host 'ExItS Mobile Validation (boot only)' -ForegroundColor White
+    Write-Host ''
+    foreach ($avd in $script:AvdNames) {
+        Write-Host $avd
+        Write-Host "Serial: $($serialByAvd[$avd])"
+        Write-Host 'Status: Ready'
+        Write-Host ''
+    }
+    Write-Ok 'Both ExItS validation emulators are booted.'
+    return
 }
 
 $mauiProj = Join-Path $repoRoot 'src\Products\PinoyBusinessPOS\ExItS.PinoyBusinessPOS.Maui\ExItS.PinoyBusinessPOS.Maui.csproj'

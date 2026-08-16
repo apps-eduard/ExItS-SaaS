@@ -5,7 +5,7 @@
 
 .DESCRIPTION
   Maps adb serials to AVD names at runtime and kills only ExItS-M01 and ExItS-M02.
-  Leaves physical devices and other emulators (for example HealthCare_*) running.
+  Leaves physical devices and unrelated emulators running.
 
 .EXAMPLE
   .\tools\Stop-MobileValidation.ps1
