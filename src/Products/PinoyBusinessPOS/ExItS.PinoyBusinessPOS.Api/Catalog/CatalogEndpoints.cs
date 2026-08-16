@@ -269,6 +269,83 @@ internal static class CatalogEndpoints
             return PosApiResults.FromResult(result, Results.Ok);
         });
 
+        // Level-1 connected buyer availability — paged query + bulk enable/disable/Default PO pricing.
+        group.MapGet("/connected-buyer-availability", async (
+            HttpRequest request,
+            string? query,
+            Guid? categoryId,
+            string? availabilityFilter,
+            bool? uncategorizedOnly,
+            int? page,
+            int? pageSize,
+            QueryConnectedBuyerAvailability useCase,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!TryAuthorize(request, access, UtangCapability.ViewCatalog, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            return PosApiResults.FromResult(
+                await useCase.ExecuteAsync(
+                        organizationId, query, categoryId, availabilityFilter, page, pageSize,
+                        uncategorizedOnly == true, ct)
+                    .ConfigureAwait(false),
+                Results.Ok);
+        });
+
+        group.MapPost("/connected-buyer-availability/bulk", async (
+            HttpRequest request,
+            BulkConnectedBuyerAvailabilityMutationRequest body,
+            BulkMutateConnectedBuyerAvailability useCase,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!TryAuthorize(request, access, UtangCapability.ManageCatalog, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            return PosApiResults.FromResult(
+                await useCase.ExecuteAsync(organizationId, body, ct).ConfigureAwait(false),
+                Results.Ok);
+        });
+
+        group.MapPost("/connected-buyer-availability/pricing/preview", async (
+            HttpRequest request,
+            BulkDefaultConnectedPoPricingRequest body,
+            PreviewDefaultConnectedPoPricing useCase,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!TryAuthorize(request, access, UtangCapability.ViewCatalog, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            return PosApiResults.FromResult(
+                await useCase.ExecuteAsync(organizationId, body, ct).ConfigureAwait(false),
+                Results.Ok);
+        });
+
+        group.MapPost("/connected-buyer-availability/pricing/apply", async (
+            HttpRequest request,
+            BulkDefaultConnectedPoPricingRequest body,
+            ApplyDefaultConnectedPoPricing useCase,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!TryAuthorize(request, access, UtangCapability.ManageCatalog, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            return PosApiResults.FromResult(
+                await useCase.ExecuteAsync(organizationId, body, ct).ConfigureAwait(false),
+                Results.Ok);
+        });
+
         group.MapGet("/{productId:guid}", async (
             HttpRequest request,
             Guid productId,

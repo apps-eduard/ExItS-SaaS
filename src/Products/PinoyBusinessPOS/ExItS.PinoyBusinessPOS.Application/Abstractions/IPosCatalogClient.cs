@@ -55,6 +55,27 @@ public interface IPosCatalogClient
         UpdatePosCatalogProductPricesRequest request,
         CancellationToken ct = default);
 
+    Task<ApiResult<ConnectedBuyerAvailabilityQueryResultDto>> QueryConnectedBuyerAvailabilityAsync(
+        string? query = null,
+        Guid? categoryId = null,
+        string? availabilityFilter = null,
+        int page = 1,
+        int pageSize = 25,
+        bool uncategorizedOnly = false,
+        CancellationToken ct = default);
+
+    Task<ApiResult<BulkConnectedBuyerAvailabilityMutationResultDto>> BulkMutateConnectedBuyerAvailabilityAsync(
+        BulkConnectedBuyerAvailabilityMutationRequest request,
+        CancellationToken ct = default);
+
+    Task<ApiResult<BulkDefaultConnectedPoPricingPreviewDto>> PreviewDefaultConnectedPoPricingAsync(
+        BulkDefaultConnectedPoPricingRequest request,
+        CancellationToken ct = default);
+
+    Task<ApiResult<BulkConnectedBuyerAvailabilityMutationResultDto>> ApplyDefaultConnectedPoPricingAsync(
+        BulkDefaultConnectedPoPricingRequest request,
+        CancellationToken ct = default);
+
     Task<ApiResult<PosCatalogProductDto>> DeactivateProductAsync(Guid productId, CancellationToken ct = default);
 
     Task<ApiResult<PosCatalogProductDto>> ReactivateProductAsync(Guid productId, CancellationToken ct = default);

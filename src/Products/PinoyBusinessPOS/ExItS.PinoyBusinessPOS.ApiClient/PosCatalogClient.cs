@@ -106,6 +106,50 @@ public sealed class PosCatalogClient(HttpClient httpClient, IConnectivityService
         CancellationToken ct = default) =>
         SendAsync<UpdatePosCatalogProductPricesResponse>(HttpMethod.Post, $"{ProductsPath}/prices", request, ct);
 
+    public Task<ApiResult<ConnectedBuyerAvailabilityQueryResultDto>> QueryConnectedBuyerAvailabilityAsync(
+        string? query = null,
+        Guid? categoryId = null,
+        string? availabilityFilter = null,
+        int page = 1,
+        int pageSize = 25,
+        bool uncategorizedOnly = false,
+        CancellationToken ct = default)
+    {
+        var q = new StringBuilder($"{ProductsPath}/connected-buyer-availability?");
+        q.Append("page=").Append(page.ToString(CultureInfo.InvariantCulture));
+        q.Append("&pageSize=").Append(pageSize.ToString(CultureInfo.InvariantCulture));
+        AppendOptional(q, "query", query);
+        AppendOptional(q, "availabilityFilter", availabilityFilter);
+        if (uncategorizedOnly)
+        {
+            q.Append("&uncategorizedOnly=true");
+        }
+        else if (categoryId is not null && categoryId.Value != Guid.Empty)
+        {
+            q.Append("&categoryId=").Append(categoryId.Value.ToString("D"));
+        }
+
+        return SendAsync<ConnectedBuyerAvailabilityQueryResultDto>(HttpMethod.Get, q.ToString(), null, ct);
+    }
+
+    public Task<ApiResult<BulkConnectedBuyerAvailabilityMutationResultDto>> BulkMutateConnectedBuyerAvailabilityAsync(
+        BulkConnectedBuyerAvailabilityMutationRequest request,
+        CancellationToken ct = default) =>
+        SendAsync<BulkConnectedBuyerAvailabilityMutationResultDto>(
+            HttpMethod.Post, $"{ProductsPath}/connected-buyer-availability/bulk", request, ct);
+
+    public Task<ApiResult<BulkDefaultConnectedPoPricingPreviewDto>> PreviewDefaultConnectedPoPricingAsync(
+        BulkDefaultConnectedPoPricingRequest request,
+        CancellationToken ct = default) =>
+        SendAsync<BulkDefaultConnectedPoPricingPreviewDto>(
+            HttpMethod.Post, $"{ProductsPath}/connected-buyer-availability/pricing/preview", request, ct);
+
+    public Task<ApiResult<BulkConnectedBuyerAvailabilityMutationResultDto>> ApplyDefaultConnectedPoPricingAsync(
+        BulkDefaultConnectedPoPricingRequest request,
+        CancellationToken ct = default) =>
+        SendAsync<BulkConnectedBuyerAvailabilityMutationResultDto>(
+            HttpMethod.Post, $"{ProductsPath}/connected-buyer-availability/pricing/apply", request, ct);
+
     public Task<ApiResult<PosCatalogProductDto>> DeactivateProductAsync(
         Guid productId,
         CancellationToken ct = default) =>

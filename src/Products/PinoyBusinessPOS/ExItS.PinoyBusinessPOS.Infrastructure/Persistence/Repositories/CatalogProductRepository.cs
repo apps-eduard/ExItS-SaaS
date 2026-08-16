@@ -2,6 +2,7 @@ using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Catalog;
 using Microsoft.EntityFrameworkCore;
 
 namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Repositories;
@@ -112,9 +113,81 @@ internal sealed class CatalogProductRepository : ICatalogProductRepository
         int take,
         CancellationToken cancellationToken = default)
     {
-        var query = _db.CatalogProducts.AsNoTracking()
-            .Where(p => p.OrganizationId == organizationId.Value);
+        var query = ApplyFilter(_db.CatalogProducts.AsNoTracking()
+            .Where(p => p.OrganizationId == organizationId.Value), filter);
 
+        var total = await query.CountAsync(cancellationToken).ConfigureAwait(false);
+        var records = await query
+            .OrderBy(p => p.Name)
+            .ThenBy(p => p.Id)
+            .Skip(skip)
+            .Take(take)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return (records.Select(CatalogEntityMapper.ToDomain).ToList(), total);
+    }
+
+    public async Task<IReadOnlyList<Guid>> ListIdsAsync(
+        PosOrganizationId organizationId,
+        CatalogProductFilter filter,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default)
+    {
+        var query = ApplyFilter(_db.CatalogProducts.AsNoTracking()
+            .Where(p => p.OrganizationId == organizationId.Value), filter);
+
+        return await query
+            .OrderBy(p => p.Name)
+            .ThenBy(p => p.Id)
+            .Skip(skip)
+            .Take(take)
+            .Select(p => p.Id)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    public async Task<(int TotalCount, int AvailableCount, int NotAvailableCount)> CountConnectedBuyerAvailabilityAsync(
+        PosOrganizationId organizationId,
+        CancellationToken cancellationToken = default)
+    {
+        var statusName = CatalogProductStatus.Active.ToString();
+        var baseQuery = _db.CatalogProducts.AsNoTracking()
+            .Where(p => p.OrganizationId == organizationId.Value && p.Status == statusName);
+
+        var total = await baseQuery.CountAsync(cancellationToken).ConfigureAwait(false);
+        var available = await baseQuery
+            .CountAsync(p => p.CanExposeToConnectedBuyers, cancellationToken)
+            .ConfigureAwait(false);
+        return (total, available, total - available);
+    }
+
+    public async Task<IReadOnlyList<(Guid? CategoryId, int Count)>> ListConnectedBuyerAvailabilityCategoryFacetsAsync(
+        PosOrganizationId organizationId,
+        CatalogProductFilter filter,
+        CancellationToken cancellationToken = default)
+    {
+        // Facets ignore the category filter so the picker can show alternate categories.
+        var facetFilter = filter with { CategoryId = null, UncategorizedOnly = false };
+        var query = ApplyFilter(_db.CatalogProducts.AsNoTracking()
+            .Where(p => p.OrganizationId == organizationId.Value), facetFilter);
+
+        var rows = await query
+            .GroupBy(p => p.CategoryId)
+            .Select(g => new { CategoryId = g.Key, Count = g.Count() })
+            .OrderByDescending(x => x.Count)
+            .ThenBy(x => x.CategoryId)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return rows.Select(x => ((Guid?)x.CategoryId, x.Count)).ToList();
+    }
+
+    private static IQueryable<CatalogProductRecord> ApplyFilter(
+        IQueryable<CatalogProductRecord> query,
+        CatalogProductFilter filter)
+    {
         if (filter.Status is not null)
         {
             var statusName = filter.Status.Value.ToString();
@@ -126,11 +199,21 @@ internal sealed class CatalogProductRepository : ICatalogProductRepository
             var categoryId = filter.CategoryId.Value;
             query = query.Where(p => p.CategoryId == categoryId);
         }
+        else if (filter.UncategorizedOnly)
+        {
+            query = query.Where(p => p.CategoryId == null);
+        }
 
         if (filter.UnitOfMeasure is not null)
         {
             var unitCode = UnitOfMeasures.ToCode(filter.UnitOfMeasure.Value);
             query = query.Where(p => p.UnitOfMeasure == unitCode);
+        }
+
+        if (filter.CanExposeToConnectedBuyers is not null)
+        {
+            var canExpose = filter.CanExposeToConnectedBuyers.Value;
+            query = query.Where(p => p.CanExposeToConnectedBuyers == canExpose);
         }
 
         if (!string.IsNullOrWhiteSpace(filter.Search))
@@ -145,16 +228,7 @@ internal sealed class CatalogProductRepository : ICatalogProductRepository
                 || (digits.Length > 0 && p.Barcode != null && p.Barcode.Contains(digits)));
         }
 
-        var total = await query.CountAsync(cancellationToken).ConfigureAwait(false);
-        var records = await query
-            .OrderBy(p => p.Name)
-            .ThenBy(p => p.Id)
-            .Skip(skip)
-            .Take(take)
-            .ToListAsync(cancellationToken)
-            .ConfigureAwait(false);
-
-        return (records.Select(CatalogEntityMapper.ToDomain).ToList(), total);
+        return query;
     }
 
     public Task AddAsync(CatalogProduct product, CancellationToken cancellationToken = default)
