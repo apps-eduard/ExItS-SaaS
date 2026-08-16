@@ -1,17 +1,30 @@
 @page "/org"
 @using ExItS.DesignSystem.Components.Internal
+@using ExItS.PinoyBusinessPOS.Application.Common
 @inject IAuthenticationService Auth
 @inject ICurrentUserContext CurrentUser
 @inject IPlatformAccessClient Platform
 @inject IProductAccessResolver Access
 @inject IPosPermissionClient Permissions
+@inject IConnectivityService Connectivity
 @inject NavigationGate Gate
 @inject NavigationManager Nav
+@inject PostSignInReturnRoute ReturnRoute
+@inject ApiStatusLocalizer StatusLocalizer
 @inject IStringLocalizer<PosResources> L
 
 @if (!_ready)
 {
     <Page><Spinner /></Page>
+}
+else if (_sessionExpired)
+{
+    <Page>
+        <ErrorState Title="@L["Auth_SessionExpiredTitle"]"
+                    Message="@L["Auth_SessionExpired"]"
+                    RetryLabel="@L["Auth_SignInAgain"]"
+                    OnRetry="GoSignIn" />
+    </Page>
 }
 else if (CurrentUser.Session?.OrganizationId is null)
 {
@@ -30,7 +43,11 @@ else
                 <h1 class="pos-org__title">@L["Org_SummaryTitle"]</h1>
             </header>
 
-            @if (!string.IsNullOrEmpty(_error))
+            @if (_isOffline)
+            {
+                <Alert Tone="AlertTone.Info" Title="@L["Platform_OfflineTitle"]" Message="@L["Org_OfflinePlatformHint"]" />
+            }
+            else if (!string.IsNullOrEmpty(_error))
             {
                 <Alert Tone="AlertTone.Danger" Title="@L["Org_ErrorTitle"]" Message="@_error" />
             }
@@ -268,6 +285,8 @@ else
     private bool _ready;
     private bool _enablingPos;
     private bool _enteringPos;
+    private bool _isOffline;
+    private bool _sessionExpired;
     private string? _error;
     private string? _posAccessHint;
     private bool _posRoleMissing;
@@ -276,18 +295,49 @@ else
     private PlatformEntitlementSnapshotDto? _entitlement;
     private bool _isOrganizationOwner;
 
-    private string OrganizationStatusText =>
-        string.IsNullOrWhiteSpace(_org?.Status) ? "—" : _org!.Status;
+    private string OrganizationStatusText
+    {
+        get
+        {
+            if (!string.IsNullOrWhiteSpace(_org?.Status))
+            {
+                return _org!.Status;
+            }
 
-    private string SubscriptionStatusText =>
-        string.IsNullOrWhiteSpace(_subscription?.Status)
-            ? L["Org_SubscriptionUnknown"]
-            : _subscription!.Status;
+            if (!string.IsNullOrWhiteSpace(CurrentUser.Session?.OrganizationDisplayName))
+            {
+                return CurrentUser.Session!.OrganizationDisplayName!;
+            }
 
-    private string EntitlementStatusText =>
-        string.IsNullOrWhiteSpace(_entitlement?.SubscriptionStatus)
-            ? L["Org_EntitlementUnknown"]
-            : _entitlement!.SubscriptionStatus!;
+            return _isOffline ? L["Org_OfflineCachedUnknown"] : "—";
+        }
+    }
+
+    private string SubscriptionStatusText
+    {
+        get
+        {
+            if (!string.IsNullOrWhiteSpace(_subscription?.Status))
+            {
+                return _subscription!.Status;
+            }
+
+            return _isOffline ? L["Org_SubscriptionOffline"] : L["Org_SubscriptionUnknown"];
+        }
+    }
+
+    private string EntitlementStatusText
+    {
+        get
+        {
+            if (!string.IsNullOrWhiteSpace(_entitlement?.SubscriptionStatus))
+            {
+                return _entitlement!.SubscriptionStatus!;
+            }
+
+            return _isOffline ? L["Org_EntitlementOffline"] : L["Org_EntitlementUnknown"];
+        }
+    }
 
     private string PosAccessStatusText =>
         CurrentUser.HasPosAccess ? L["Org_PosAccessYes"] : L["Org_PosAccessNo"];
@@ -299,7 +349,15 @@ else
             var restore = await Auth.RestoreSessionAsync();
             if (!restore.Succeeded)
             {
-                Nav.NavigateTo("/signin", replace: true);
+                if (restore.FailureReason is AuthFailureReason.Offline)
+                {
+                    _isOffline = true;
+                    _ready = true;
+                    return;
+                }
+
+                _sessionExpired = true;
+                _ready = true;
                 return;
             }
         }
@@ -321,10 +379,34 @@ else
     private async Task LoadAccessStateAsync(Guid organizationId)
     {
         _error = null;
+        _sessionExpired = false;
+        _isOffline = !await Connectivity.IsConnectedAsync();
+
+        if (_isOffline)
+        {
+            // Keep local session/org identity; Platform-only sections show offline copy.
+            return;
+        }
+
         var orgResult = await Platform.GetOrganizationAsync(organizationId);
         if (orgResult.IsSuccess)
         {
             _org = orgResult.Data;
+        }
+        else if (orgResult.Status == ApiCallStatus.Unauthorized)
+        {
+            _sessionExpired = true;
+            return;
+        }
+        else if (orgResult.Status is ApiCallStatus.Offline)
+        {
+            _isOffline = true;
+            return;
+        }
+        else if (orgResult.Status is ApiCallStatus.Unavailable or ApiCallStatus.Timeout)
+        {
+            var described = StatusLocalizer.Describe(orgResult.Status, orgResult.Error);
+            _error = described.Message;
         }
         else
         {
@@ -336,11 +418,29 @@ else
         {
             _subscription = sub.Data;
         }
+        else if (sub.Status == ApiCallStatus.Unauthorized)
+        {
+            _sessionExpired = true;
+            return;
+        }
+        else if (sub.Status == ApiCallStatus.Offline)
+        {
+            _isOffline = true;
+        }
 
         var ent = await Platform.GetLatestEntitlementAsync(organizationId, PosProductCodes.PinoyBusinessPos);
         if (ent.IsSuccess)
         {
             _entitlement = ent.Data;
+        }
+        else if (ent.Status == ApiCallStatus.Unauthorized)
+        {
+            _sessionExpired = true;
+            return;
+        }
+        else if (ent.Status == ApiCallStatus.Offline)
+        {
+            _isOffline = true;
         }
 
         _posAccessHint = ResolvePosAccessHint();
@@ -527,4 +627,10 @@ else
     private void GoBusinessTypes() => Nav.NavigateTo("/org/business-types");
     private void GoCustomerLinkNotifications() => Nav.NavigateTo("/org/notifications");
     private void GoSelect() => Nav.NavigateTo("/organization-select");
+
+    private void GoSignIn()
+    {
+        ReturnRoute.Capture("/org");
+        Nav.NavigateTo("/signin", replace: true);
+    }
 }

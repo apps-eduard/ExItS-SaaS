@@ -254,9 +254,9 @@
     private string ConnectionSubtitle => SyncKind switch
     {
         PosSyncStatusKind.ReconnectRequired => L["SyncStatus_ConnectionReconnecting"],
-        PosSyncStatusKind.Offline => L["SyncStatus_OfflineDeviceStored"],
+        PosSyncStatusKind.Offline => L["Platform_OfflineBody"],
         _ when _isConnected => L["SyncStatus_ConnectionOnlineDetail"],
-        _ => L["SyncStatus_ConnectionOfflineDetail"],
+        _ => L["Platform_OfflineBody"],
     };
 
     private string SyncSectionToneClass => SyncKind switch

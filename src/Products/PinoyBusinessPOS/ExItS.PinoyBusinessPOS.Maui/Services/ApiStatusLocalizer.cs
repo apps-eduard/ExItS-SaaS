@@ -32,10 +32,10 @@ public sealed class ApiStatusLocalizer(
         return status switch
         {
             ApiCallStatus.Success => (pos["Api_Available"], pos["Home_ApiHealthy"], diagnostic),
-            ApiCallStatus.Offline => (errors["Offline_Title"], pos["Api_Offline"], diagnostic),
-            ApiCallStatus.Timeout => (errors["Timeout_Title"], errors["Timeout_Message"], diagnostic),
-            ApiCallStatus.Unavailable => (errors["Unavailable_Title"], errors["Unavailable_Message"], diagnostic),
-            ApiCallStatus.Unauthorized => (errors["Unauthorized_Title"], errors["Unauthorized_Message"], diagnostic),
+            ApiCallStatus.Offline => (pos["Platform_OfflineTitle"], pos["Platform_OfflineBody"], diagnostic),
+            ApiCallStatus.Timeout => (pos["Platform_ServiceUnavailableTitle"], pos["Platform_ServiceUnavailableMessage"], diagnostic),
+            ApiCallStatus.Unavailable => (pos["Platform_ServiceUnavailableTitle"], pos["Platform_ServiceUnavailableMessage"], diagnostic),
+            ApiCallStatus.Unauthorized => (pos["Auth_SessionExpiredTitle"], pos["Auth_SessionExpired"], diagnostic),
             ApiCallStatus.Forbidden => (errors["Forbidden_Title"], errors["Forbidden_Message"], diagnostic),
             ApiCallStatus.Validation => (
                 PreferText(error?.Title, errors["Validation_Title"]),

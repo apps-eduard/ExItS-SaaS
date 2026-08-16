@@ -14,6 +14,7 @@
 @inject IOptions<PosApiOptions> PosApi
 @inject NavigationManager Nav
 @inject NavigationGate Gate
+@inject PostSignInReturnRoute ReturnRoute
 @inject IStringLocalizer<PosResources> L
 
 <div class="pos-signin">
@@ -554,6 +555,13 @@
 
     private async Task NavigateAfterSignInAsync(AuthSession session)
     {
+        var pending = ReturnRoute.Take();
+        if (!string.IsNullOrWhiteSpace(pending))
+        {
+            Nav.NavigateTo(pending, replace: true);
+            return;
+        }
+
         var orgs = await Access.ListEligibleOrganizationsAsync(session.UserId);
 
         // No org membership → Personal workspace (may force offline PIN enrollment first).
