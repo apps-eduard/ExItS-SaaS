@@ -4427,6 +4427,17 @@ html.pos-keyboard-open .pos-content {
 .pos-catalog-product-edit__subtitle { color: var(--exits-text-muted, #5b6b62); font-size: var(--exits-text-sm, 0.875rem); line-height: 1.3; margin: 0.2rem 0 0; }
 .pos-catalog-product-edit__panel { margin-bottom: var(--exits-space-3, 0.75rem); }
 .pos-catalog-product-edit__form { display: flex; flex-direction: column; gap: 0.65rem; }
+.pos-catalog-connected { padding-top: 0.55rem; padding-bottom: 0.55rem; }
+.pos-catalog-connected h2 { font-size: 0.95rem; margin: 0 0 0.4rem; }
+.pos-catalog-connected__toggle {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    margin: 0; font-size: 0.875rem; font-weight: 600;
+}
+.pos-catalog-connected__help {
+    margin: 0.25rem 0 0; font-size: 0.75rem; line-height: 1.3;
+}
+.pos-catalog-connected__price { margin-top: 0.45rem; max-width: 16rem; }
+.pos-catalog-connected__price .pos-field { margin-bottom: 0; }
 
 /* Catalog barcode lookup */
 .pos-catalog-lookup { width: 100%; }

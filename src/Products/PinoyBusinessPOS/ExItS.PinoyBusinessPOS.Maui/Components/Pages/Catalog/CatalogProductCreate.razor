@@ -92,24 +92,26 @@ else
                                 SaveLabel="@L["Catalog_Product_Create"]"
                                 OnSave="SaveAsync"
                                 OnCancel="GoBack" />
-            <section class="pos-settings__panel" aria-labelledby="catalog-connected-buyers-heading">
+            <section class="pos-settings__panel pos-catalog-connected" aria-labelledby="catalog-connected-buyers-heading">
                 <h2 id="catalog-connected-buyers-heading">@L["Catalog_ConnectedBuyers_Section"]</h2>
-                <label>
+                <label class="pos-catalog-connected__toggle">
                     <input type="checkbox"
                            checked="@_canExposeToConnectedBuyers"
                            disabled="@(!canManage || _isOffline || _saving)"
                            @onchange="OnConnectedBuyerAvailabilityChanged" />
                     @L["Catalog_ConnectedBuyers_Available"]
                 </label>
-                <p class="pos-muted">@L["Catalog_ConnectedBuyers_VisibilityHelp"]</p>
+                <p class="pos-catalog-connected__help pos-muted">@L["Catalog_ConnectedBuyers_VisibilityHelp"]</p>
                 @if (_canExposeToConnectedBuyers)
                 {
-                    <CurrencyInput Label="@L["Catalog_ConnectedBuyers_DefaultPoPrice"]"
-                                   Value="@_defaultConnectedPoPrice"
-                                   ValueChanged="v => _defaultConnectedPoPrice = v"
-                                   CurrencyCode="PHP"
-                                   Hint="@L["Catalog_ConnectedBuyers_DefaultPoHelp"]"
-                                   Disabled="@(!canManage || _isOffline || _saving)" />
+                    <div class="pos-catalog-connected__price">
+                        <CurrencyInput Label="@L["Catalog_ConnectedBuyers_DefaultPoPrice"]"
+                                       Value="@_defaultConnectedPoPrice"
+                                       ValueChanged="v => _defaultConnectedPoPrice = v"
+                                       CurrencyCode="PHP"
+                                       Hint="@L["Catalog_ConnectedBuyers_DefaultPoHelp"]"
+                                       Disabled="@(!canManage || _isOffline || _saving)" />
+                    </div>
                 }
             </section>
         }

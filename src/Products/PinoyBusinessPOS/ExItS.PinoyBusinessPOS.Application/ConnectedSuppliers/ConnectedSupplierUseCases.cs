@@ -51,7 +51,8 @@ public sealed record UpdateExposureRequest(decimal SupplierOrderPrice, bool IsOr
 public sealed record ConnectedBuyerProductShareDto(Guid ShareId, Guid RelationshipId, Guid BuyerOrganizationId,
     Guid SupplierOrganizationId, Guid SupplierProductId, bool IsShared, decimal? BuyerSpecificPoPrice,
     decimal? EffectiveSupplierOrderPrice, long SyncVersion, DateTimeOffset CreatedAtUtc, DateTimeOffset UpdatedAtUtc,
-    string? SkuSnapshot = null, string? NameSnapshot = null, string? UnitOfMeasureCode = null, decimal? SellingPrice = null);
+    string? SkuSnapshot = null, string? NameSnapshot = null, string? UnitOfMeasureCode = null, decimal? SellingPrice = null,
+    string? CategoryNameSnapshot = null, decimal? DefaultPoPrice = null);
 public sealed record SetBuyerProductShareItem(Guid SupplierProductId, bool IsShared, decimal? BuyerSpecificPoPrice = null);
 public sealed record SetBuyerProductSharesRequest(IReadOnlyList<SetBuyerProductShareItem> Products);
 public sealed record ConfirmBuyerProductSharingRequest(IReadOnlyList<Guid> ProductIds);
@@ -104,13 +105,17 @@ public static class ConnectedSupplierMapper
     public static SupplierProductExposureDto Map(SupplierProductExposure x, decimal effectivePrice) =>
         Map(x) with { SupplierOrderPrice = effectivePrice, EffectiveSupplierOrderPrice = effectivePrice };
     public static ConnectedBuyerProductShareDto Map(ConnectedBuyerProductShare x, SupplierProductExposure? exposure = null,
-        CatalogProduct? product = null)
+        CatalogProduct? product = null, string? categoryName = null)
     {
         decimal? effective = exposure is not null && ConnectedPoPricing.TryResolveEffectivePrice(exposure, x, out var price)
             ? price : null;
+        var category = !string.IsNullOrWhiteSpace(categoryName)
+            ? categoryName
+            : exposure?.CategoryNameSnapshot;
         return new(x.Id.Value,x.RelationshipId.Value,x.BuyerOrganizationId.Value,x.SupplierOrganizationId.Value,
             x.SupplierProductId.Value,x.IsShared,x.BuyerSpecificPoPrice,effective,x.SyncVersion,x.CreatedAtUtc,x.UpdatedAtUtc,
-            exposure?.SkuSnapshot,exposure?.NameSnapshot,exposure?.UnitOfMeasureCode,product?.SellingPrice);
+            exposure?.SkuSnapshot,exposure?.NameSnapshot,exposure?.UnitOfMeasureCode,product?.SellingPrice,
+            category,exposure?.SupplierOrderPrice);
     }
     public static BuyerSupplierProductLinkDto Map(BuyerSupplierProductLink x) => new(x.Id.Value,x.RelationshipId.Value,
         x.BuyerOrganizationId.Value,x.SupplierOrganizationId.Value,x.BuyerProductId.Value,x.SupplierProductId.Value,
@@ -567,10 +572,11 @@ public sealed class ListBuyerProductShares
     private readonly ISupplierProductExposureRepository _exposures;
     private readonly IConnectedBuyerProductShareRepository _shares;
     private readonly ICatalogProductRepository _products;
+    private readonly IProductCategoryRepository _categories;
     private readonly IPosCommercialAccessAccessor _access;
     public ListBuyerProductShares(IConnectedSupplierRelationshipRepository relationships,ISupplierProductExposureRepository exposures,
-        IConnectedBuyerProductShareRepository shares,ICatalogProductRepository products,IPosCommercialAccessAccessor access)
-    {_relationships=relationships;_exposures=exposures;_shares=shares;_products=products;_access=access;}
+        IConnectedBuyerProductShareRepository shares,ICatalogProductRepository products,IProductCategoryRepository categories,IPosCommercialAccessAccessor access)
+    {_relationships=relationships;_exposures=exposures;_shares=shares;_products=products;_categories=categories;_access=access;}
     public async Task<ApplicationResult<IReadOnlyList<ConnectedBuyerProductShareDto>>> ExecuteAsync(Guid orgId,Guid relationshipId,CancellationToken ct=default)
     {
         var gate=ConnectedSupplierUseCaseGuard.Access(_access,UtangCapability.ViewSuppliers);
@@ -581,20 +587,54 @@ public sealed class ListBuyerProductShares
             return ConnectedSupplierUseCaseGuard.Failure<IReadOnlyList<ConnectedBuyerProductShareDto>>(ConnectedSupplierErrorCodes.NotFound,"Relationship was not found.");
         var exposures=await _exposures.ListAsync(supplier,ct);
         var shares=(await _shares.ListAsync(relationship.Id,ct)).ToDictionary(x=>x.SupplierProductId.Value);
-        var result=new List<ConnectedBuyerProductShareDto>();
-        foreach(var exposure in exposures.Where(x=>x.IsExposed))
+        var exposed=exposures.Where(x=>x.IsExposed).ToList();
+        var products=new Dictionary<Guid,CatalogProduct?>();
+        foreach(var exposure in exposed)
         {
-            var product=await _products.GetByIdAsync(supplier,exposure.ProductId,ct);
+            products[exposure.ProductId.Value]=await _products.GetByIdAsync(supplier,exposure.ProductId,ct);
+        }
+
+        var categoryIds=products.Values
+            .Where(p=>p?.CategoryId is not null)
+            .Select(p=>p!.CategoryId!)
+            .Distinct()
+            .ToList();
+        var categoryNames=(await _categories.ListByIdsAsync(supplier,categoryIds,ct))
+            .ToDictionary(x=>x.Id,x=>x.Name);
+        var result=new List<ConnectedBuyerProductShareDto>();
+        foreach(var exposure in exposed)
+        {
+            products.TryGetValue(exposure.ProductId.Value,out var product);
+            var categoryName=ResolveCategoryName(exposure,product,categoryNames);
             shares.TryGetValue(exposure.ProductId.Value,out var share);
             if(share is null)
             {
                 result.Add(new(Guid.Empty,relationship.Id.Value,relationship.BuyerOrganizationId.Value,supplier.Value,
                     exposure.ProductId.Value,false,null,null,0,exposure.CreatedAtUtc,exposure.UpdatedAtUtc,
-                    exposure.SkuSnapshot,exposure.NameSnapshot,exposure.UnitOfMeasureCode,product?.SellingPrice));
+                    exposure.SkuSnapshot,exposure.NameSnapshot,exposure.UnitOfMeasureCode,product?.SellingPrice,
+                    categoryName,exposure.SupplierOrderPrice));
             }
-            else result.Add(ConnectedSupplierMapper.Map(share,exposure,product));
+            else result.Add(ConnectedSupplierMapper.Map(share,exposure,product,categoryName));
         }
         return ApplicationResult<IReadOnlyList<ConnectedBuyerProductShareDto>>.Success(result);
+    }
+
+    private static string? ResolveCategoryName(
+        SupplierProductExposure exposure,
+        CatalogProduct? product,
+        IReadOnlyDictionary<ProductCategoryId,string> categoryNames)
+    {
+        if (!string.IsNullOrWhiteSpace(exposure.CategoryNameSnapshot))
+        {
+            return exposure.CategoryNameSnapshot;
+        }
+
+        if (product?.CategoryId is null)
+        {
+            return null;
+        }
+
+        return categoryNames.TryGetValue(product.CategoryId, out var name) ? name : null;
     }
 }
 

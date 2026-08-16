@@ -8,10 +8,12 @@
 @inject IStringLocalizer<PosResources> L
 
 <StoreHeaderBack Href="@($"/suppliers/connected/buyers/{RelationshipId:D}")" />
+
+<div class="pos-share-prompt">
 <Page>
-    <header class="pos-suppliers__header">
-        <h1 class="pos-suppliers__title">@L["ConnectedBuyers_SharePromptTitle"]</h1>
-        <p class="pos-suppliers__subtitle">@L["ConnectedBuyers_SharePromptHelp"]</p>
+    <header class="pos-share-prompt__header">
+        <h1 class="pos-share-prompt__title">@L["ConnectedBuyers_SharePromptTitle"]</h1>
+        <p class="pos-share-prompt__subtitle">@L["ConnectedBuyers_SharePromptHelp"]</p>
     </header>
 
     @if (_loading)
@@ -27,25 +29,49 @@
     }
     else
     {
-        <p class="pos-muted">@L["ConnectedBuyers_ShareEligibleCount", _products.Count]</p>
-        @if (_products.Count > 0)
+        <p class="pos-share-prompt__count pos-muted">@L["ConnectedBuyers_ShareEligibleCount", _products.Count]</p>
+
+        @if (CategoryFilters.Count > 1)
         {
-            <div class="pos-personal-list" role="list">
-                @foreach (var product in _products)
+            <aside class="pos-share-prompt__categories" aria-label="@L["ConnectedBuyers_FilterCategory"]">
+                @foreach (var category in CategoryFilters)
                 {
-                    <label class="pos-personal-row pos-personal-row--static" role="listitem">
+                    <button type="button"
+                            class="pos-share-prompt__chip @(_categoryFilter == category.Value ? "pos-share-prompt__chip--selected" : null)"
+                            aria-pressed="@(_categoryFilter == category.Value)"
+                            @onclick="() => _categoryFilter = category.Value">
+                        @category.Label
+                    </button>
+                }
+            </aside>
+        }
+
+        @if (VisibleProducts.Count > 0)
+        {
+            <div class="pos-share-prompt__list" role="list">
+                @foreach (var product in VisibleProducts)
+                {
+                    <label class="pos-share-prompt__row" role="listitem">
                         <input type="checkbox"
                                checked="@_selected.Contains(product.SupplierProductId)"
                                disabled="@_saving"
                                @onchange="args => SetSelected(product.SupplierProductId, args)" />
-                        <span class="pos-personal-row__body">
-                            <span class="pos-personal-row__title">@ProductName(product)</span>
-                            <span class="pos-personal-row__meta">@(product.SkuSnapshot ?? "—") · @product.UnitOfMeasureCode</span>
-                            @if (product.EffectiveSupplierOrderPrice is decimal price)
-                            {
-                                <MoneyDisplay Amount="@price" CurrencyCode="PHP" />
-                            }
+                        <span class="pos-share-prompt__body">
+                            <span class="pos-share-prompt__name">@ProductName(product)</span>
+                            <span class="pos-share-prompt__meta pos-muted">
+                                @(product.SkuSnapshot ?? "—") · @(product.UnitOfMeasureCode ?? "—")
+                                @if (!string.IsNullOrWhiteSpace(product.CategoryNameSnapshot))
+                                {
+                                    <text> · @product.CategoryNameSnapshot</text>
+                                }
+                            </span>
                         </span>
+                        @if (product.DefaultPoPrice is decimal price || product.EffectiveSupplierOrderPrice is decimal effective)
+                        {
+                            <span class="pos-share-prompt__price">
+                                <MoneyDisplay Amount="@(product.DefaultPoPrice ?? product.EffectiveSupplierOrderPrice ?? 0m)" CurrencyCode="PHP" />
+                            </span>
+                        }
                     </label>
                 }
             </div>
@@ -67,15 +93,116 @@
         </div>
     }
 </Page>
+</div>
+
+<style>
+    .pos-share-prompt { width: 100%; }
+    .pos-share-prompt__header { margin-bottom: 0.55rem; }
+    .pos-share-prompt__title {
+        margin: 0; font-size: 1.2rem; font-weight: 700; line-height: 1.2;
+        color: var(--exits-text, #15201a);
+    }
+    .pos-share-prompt__subtitle {
+        margin: 0.3rem 0 0; font-size: 0.875rem; line-height: 1.35;
+        color: var(--exits-text-muted, #5b6b62);
+    }
+    .pos-share-prompt__count { margin: 0 0 0.45rem; font-size: 0.8125rem; }
+    .pos-share-prompt__categories {
+        display: flex; flex-wrap: nowrap; gap: 0.4rem;
+        margin: 0 0 0.55rem; overflow-x: auto; padding-bottom: 0.1rem;
+        -webkit-overflow-scrolling: touch; scrollbar-width: thin;
+    }
+    .pos-share-prompt__chip {
+        appearance: none; flex: 0 0 auto;
+        min-height: 2.15rem; padding: 0.3rem 0.7rem;
+        border: 1px solid var(--exits-border, #c9d4cd);
+        border-radius: 999px; background: var(--exits-bg, #f3f6f4);
+        color: var(--exits-text, #15201a); font: inherit; font-size: 0.8125rem; font-weight: 600;
+        white-space: nowrap; cursor: pointer;
+    }
+    .pos-share-prompt__chip--selected {
+        border-color: var(--exits-primary, #1b7a3d);
+        background: var(--exits-surface, #fff);
+        color: var(--exits-primary, #1b7a3d);
+    }
+    .pos-share-prompt__list {
+        display: flex; flex-direction: column;
+        margin-bottom: 0.75rem;
+        border: 1px solid var(--exits-border, #c9d4cd);
+        border-radius: var(--exits-radius-md, 0.5rem);
+        overflow: hidden; background: var(--exits-surface, #fff);
+    }
+    .pos-share-prompt__row {
+        display: flex; align-items: center; gap: 0.55rem;
+        margin: 0; padding: 0.55rem 0.65rem; cursor: pointer;
+    }
+    .pos-share-prompt__row + .pos-share-prompt__row {
+        border-top: 1px solid var(--pos-border-subtle, #d7e0da);
+    }
+    .pos-share-prompt__body {
+        display: flex; flex-direction: column; gap: 0.1rem;
+        flex: 1 1 auto; min-width: 0;
+    }
+    .pos-share-prompt__name {
+        font-size: 0.95rem; font-weight: 650; line-height: 1.25;
+        color: var(--exits-text, #15201a);
+    }
+    .pos-share-prompt__meta { font-size: 0.75rem; line-height: 1.3; }
+    .pos-share-prompt__price {
+        flex: 0 0 auto; font-size: 0.8125rem; font-weight: 650;
+        color: var(--exits-text, #15201a);
+    }
+</style>
 
 @code {
     [Parameter] public Guid RelationshipId { get; set; }
 
+    private const string UncategorizedKey = "__uncategorized__";
+
     private bool _loading = true;
     private bool _saving;
     private string? _error;
+    private string _categoryFilter = "all";
     private IReadOnlyList<ConnectedBuyerProductShareDto> _products = [];
     private HashSet<Guid> _selected = [];
+
+    private IReadOnlyList<(string Value, string Label)> CategoryFilters
+    {
+        get
+        {
+            var categories = _products
+                .Select(x => string.IsNullOrWhiteSpace(x.CategoryNameSnapshot) ? UncategorizedKey : x.CategoryNameSnapshot!)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(x => x == UncategorizedKey ? "\uFFFF" : x, StringComparer.OrdinalIgnoreCase)
+                .Select(x => (
+                    Value: x,
+                    Label: x == UncategorizedKey ? L["ConnectedBuyers_FilterUncategorized"].Value : x))
+                .ToList();
+            if (categories.Count == 0)
+            {
+                return [("all", L["ConnectedBuyers_FilterAllCategories"])];
+            }
+
+            return [("all", L["ConnectedBuyers_FilterAllCategories"].Value), .. categories];
+        }
+    }
+
+    private IReadOnlyList<ConnectedBuyerProductShareDto> VisibleProducts
+    {
+        get
+        {
+            if (_categoryFilter is "all")
+            {
+                return _products;
+            }
+
+            return _products.Where(x =>
+                _categoryFilter == UncategorizedKey
+                    ? string.IsNullOrWhiteSpace(x.CategoryNameSnapshot)
+                    : string.Equals(x.CategoryNameSnapshot, _categoryFilter, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -115,15 +242,16 @@
             return;
         }
 
-        _products = result.Data.OrderBy(ProductName, StringComparer.OrdinalIgnoreCase).ToList();
+        _products = result.Data
+            .OrderBy(x => ProductName(x), StringComparer.OrdinalIgnoreCase)
+            .ToList();
         _selected = _products.Select(x => x.SupplierProductId).ToHashSet();
+        _categoryFilter = "all";
     }
 
     private void SetSelected(Guid productId, ChangeEventArgs args)
     {
-        var selected = args.Value is true
-            || string.Equals(args.Value?.ToString(), "true", StringComparison.OrdinalIgnoreCase);
-        if (selected) _selected.Add(productId);
+        if (Checked(args)) _selected.Add(productId);
         else _selected.Remove(productId);
     }
 
@@ -151,12 +279,17 @@
         }
     }
 
-    private string ProductName(ConnectedBuyerProductShareDto product) =>
-        string.IsNullOrWhiteSpace(product.NameSnapshot) ? product.SupplierProductId.ToString("D") : product.NameSnapshot;
-
     private void GoManage() =>
         Nav.NavigateTo($"/suppliers/connected/buyers/{RelationshipId:D}/shared-products");
 
     private void GoBuyer() =>
         Nav.NavigateTo($"/suppliers/connected/buyers/{RelationshipId:D}", replace: true);
+
+    private static string ProductName(ConnectedBuyerProductShareDto product) =>
+        string.IsNullOrWhiteSpace(product.NameSnapshot)
+            ? product.SupplierProductId.ToString("D")
+            : product.NameSnapshot;
+
+    private static bool Checked(ChangeEventArgs args) =>
+        args.Value is true || string.Equals(args.Value?.ToString(), "true", StringComparison.OrdinalIgnoreCase);
 }

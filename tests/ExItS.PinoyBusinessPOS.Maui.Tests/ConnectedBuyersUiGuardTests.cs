@@ -83,7 +83,13 @@ public sealed class ConnectedBuyersUiGuardTests
         Assert.Contains("ListBuyerProductSharesAsync", manage, StringComparison.Ordinal);
         Assert.Contains("SetBuyerProductSharesAsync", manage, StringComparison.Ordinal);
         Assert.Contains("ConnectedBuyers_FilterNotShared", manage, StringComparison.Ordinal);
+        Assert.Contains("ConnectedBuyers_FilterCategory", manage, StringComparison.Ordinal);
+        Assert.Contains("ConnectedBuyers_FilterAllCategories", manage, StringComparison.Ordinal);
+        Assert.Contains("pos-share-products__row", manage, StringComparison.Ordinal);
         Assert.Contains("BuyerSpecificPoPrice", manage, StringComparison.Ordinal);
+
+        Assert.Contains("ConnectedBuyers_FilterCategory", prompt, StringComparison.Ordinal);
+        Assert.Contains("pos-share-prompt__row", prompt, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -103,7 +109,13 @@ public sealed class ConnectedBuyersUiGuardTests
                      "ConnectedBuyers_SharePromptTitle",
                      "ConnectedBuyers_ManageSharedProducts",
                      "ConnectedBuyers_SharedProductsTitle",
-                     "ConnectedBuyers_BuyerSpecificPoPrice"
+                     "ConnectedBuyers_BuyerSpecificPoPrice",
+                     "ConnectedBuyers_FilterCategory",
+                     "ConnectedBuyers_FilterAllCategories",
+                     "ConnectedBuyers_FilterUncategorized",
+                     "ConnectedBuyers_ShareShort",
+                     "ConnectedBuyers_RetailShort",
+                     "ConnectedBuyers_DefaultPoShort"
                  })
         {
             Assert.Contains($"name=\"{key}\"", en, StringComparison.Ordinal);

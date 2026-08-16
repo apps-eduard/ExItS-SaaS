@@ -8833,6 +8833,24 @@
   <data name="ConnectedBuyers_ManageSharedProducts" xml:space="preserve">
     <value>Pamahalaan ang shared products</value>
   </data>
+  <data name="ConnectedBuyers_FilterCategory" xml:space="preserve">
+    <value>Kategorya</value>
+  </data>
+  <data name="ConnectedBuyers_FilterAllCategories" xml:space="preserve">
+    <value>Lahat ng kategorya</value>
+  </data>
+  <data name="ConnectedBuyers_FilterUncategorized" xml:space="preserve">
+    <value>Walang kategorya</value>
+  </data>
+  <data name="ConnectedBuyers_ShareShort" xml:space="preserve">
+    <value>I-share</value>
+  </data>
+  <data name="ConnectedBuyers_RetailShort" xml:space="preserve">
+    <value>Retail</value>
+  </data>
+  <data name="ConnectedBuyers_DefaultPoShort" xml:space="preserve">
+    <value>Default PO</value>
+  </data>
   <data name="ConnectedBuyers_SharedProductsTitle" xml:space="preserve">
     <value>Mga shared product</value>
   </data>

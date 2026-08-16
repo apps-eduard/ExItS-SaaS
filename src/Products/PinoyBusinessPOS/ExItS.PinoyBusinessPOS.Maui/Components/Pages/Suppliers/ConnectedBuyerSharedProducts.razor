@@ -8,9 +8,11 @@
 @inject IStringLocalizer<PosResources> L
 
 <StoreHeaderBack Href="@($"/suppliers/connected/buyers/{RelationshipId:D}")" />
+
+<div class="pos-share-products">
 <Page>
-    <header class="pos-suppliers__header">
-        <h1 class="pos-suppliers__title">@L["ConnectedBuyers_SharedProductsTitle"]</h1>
+    <header class="pos-share-products__header">
+        <h1 class="pos-share-products__title">@L["ConnectedBuyers_SharedProductsTitle"]</h1>
     </header>
 
     @if (_loading)
@@ -26,18 +28,33 @@
     }
     else
     {
-        <div class="pos-notifications__segments" role="tablist" aria-label="@L["ConnectedBuyers_SharedProductsTitle"]">
-            @foreach (var filter in Filters)
+        <div class="pos-share-products__filters" role="tablist" aria-label="@L["ConnectedBuyers_SharedProductsTitle"]">
+            @foreach (var filter in ShareFilters)
             {
                 <button type="button"
-                        class="pos-notifications__segment @(_filter == filter.Value ? "pos-notifications__segment--selected" : null)"
+                        class="pos-share-products__chip @(_shareFilter == filter.Value ? "pos-share-products__chip--selected" : null)"
                         role="tab"
-                        aria-selected="@(_filter == filter.Value)"
-                        @onclick="() => _filter = filter.Value">
+                        aria-selected="@(_shareFilter == filter.Value)"
+                        @onclick="() => SetShareFilter(filter.Value)">
                     @filter.Label
                 </button>
             }
         </div>
+
+        @if (CategoryFilters.Count > 1)
+        {
+            <aside class="pos-share-products__categories" aria-label="@L["ConnectedBuyers_FilterCategory"]">
+                @foreach (var category in CategoryFilters)
+                {
+                    <button type="button"
+                            class="pos-share-products__chip @(_categoryFilter == category.Value ? "pos-share-products__chip--selected" : null)"
+                            aria-pressed="@(_categoryFilter == category.Value)"
+                            @onclick="() => SetCategoryFilter(category.Value)">
+                        @category.Label
+                    </button>
+                }
+            </aside>
+        }
 
         @if (FilteredProducts.Count == 0)
         {
@@ -47,107 +64,232 @@
         }
         else
         {
-            <div class="pos-personal-list" role="list">
+            <div class="pos-share-products__list" role="list">
                 @foreach (var product in FilteredProducts)
                 {
-                    <section class="pos-settings__panel" role="listitem">
-                        <label>
+                    <article class="pos-share-products__row" role="listitem">
+                        <label class="pos-share-products__select">
                             <input type="checkbox"
                                    checked="@_bulkSelected.Contains(product.SupplierProductId)"
                                    disabled="@_saving"
                                    @onchange="args => SetBulkSelected(product.SupplierProductId, args)" />
-                            <strong>@product.Name</strong>
                         </label>
-                        <p class="pos-muted">@(product.Sku ?? "—") · @product.Unit</p>
-                        @if (product.SellingPrice is decimal retailPrice)
-                        {
-                            <p>
-                                @L["ConnectedBuyers_RetailPriceReference"]:
-                                <MoneyDisplay Amount="@retailPrice" CurrencyCode="PHP" />
-                            </p>
-                        }
-                        @if (product.EffectivePrice is decimal effectivePrice)
-                        {
-                            <p>
-                                @(product.BuyerSpecificPoPrice is null
-                                    ? L["ConnectedBuyers_DefaultPoPrice"]
-                                    : L["ConnectedBuyers_BuyerSpecificPoPrice"]):
-                                <MoneyDisplay Amount="@effectivePrice" CurrencyCode="PHP" />
-                            </p>
-                        }
-                        else if (product.BuyerSpecificPoPrice is null)
-                        {
-                            <p class="pos-muted">@L["ConnectedBuyers_UsesDefaultPrice"]</p>
-                        }
-                        <label>
-                            <input type="checkbox"
-                                   checked="@product.IsShared"
-                                   disabled="@(_saving || !CanManage)"
-                                   @onchange="args => SetShared(product, args)" />
-                            @L["ConnectedBuyers_ShareWithBuyer"]
-                        </label>
-                        <CurrencyInput Label="@L["ConnectedBuyers_BuyerSpecificPoPrice"]"
-                                       Value="@product.BuyerSpecificPoPrice"
-                                       ValueChanged="v => product.BuyerSpecificPoPrice = v"
-                                       CurrencyCode="PHP"
-                                       Hint="@L["ConnectedBuyers_UsesDefaultPrice"]"
-                                       Disabled="@(_saving || !CanManage || !product.IsShared)" />
-                    </section>
+                        <div class="pos-share-products__body">
+                            <div class="pos-share-products__top">
+                                <div class="pos-share-products__identity">
+                                    <span class="pos-share-products__name">@product.Name</span>
+                                    <span class="pos-share-products__meta pos-muted">
+                                        @(product.Sku ?? "—") · @product.Unit
+                                        @if (!string.IsNullOrWhiteSpace(product.Category))
+                                        {
+                                            <text> · @product.Category</text>
+                                        }
+                                    </span>
+                                    <span class="pos-share-products__prices pos-muted">
+                                        @if (product.SellingPrice is decimal retail)
+                                        {
+                                            <text>@L["ConnectedBuyers_RetailShort"] </text>
+                                            <MoneyDisplay Amount="@retail" CurrencyCode="PHP" />
+                                            <text> · </text>
+                                        }
+                                        @if (product.DefaultPoPrice is decimal defaultPo)
+                                        {
+                                            <text>@L["ConnectedBuyers_DefaultPoShort"] </text>
+                                            <MoneyDisplay Amount="@defaultPo" CurrencyCode="PHP" />
+                                        }
+                                    </span>
+                                </div>
+                                <label class="pos-share-products__share">
+                                    <input type="checkbox"
+                                           checked="@product.IsShared"
+                                           disabled="@(_saving || !CanManage)"
+                                           @onchange="args => SetShared(product, args)" />
+                                    <span>@L["ConnectedBuyers_ShareShort"]</span>
+                                </label>
+                            </div>
+                            @if (product.IsShared && CanManage)
+                            {
+                                <div class="pos-share-products__override">
+                                    <CurrencyInput Label="@L["ConnectedBuyers_BuyerSpecificPoPrice"]"
+                                                   Value="@product.BuyerSpecificPoPrice"
+                                                   ValueChanged="v => product.BuyerSpecificPoPrice = v"
+                                                   CurrencyCode="PHP"
+                                                   Disabled="@_saving" />
+                                </div>
+                            }
+                        </div>
+                    </article>
                 }
             </div>
         }
 
         @if (CanManage)
         {
-            <div class="pos-action-grid pos-action-grid--two" role="group">
-                <button type="button"
-                        class="pos-action-tile"
-                        disabled="@(_saving || _bulkSelected.Count == 0)"
-                        @onclick="() => SetBulkSharing(true)">
-                    <span class="pos-action-tile__label">@L["ConnectedBuyers_ShareSelected"]</span>
-                </button>
-                <button type="button"
-                        class="pos-action-tile"
-                        disabled="@(_saving || _bulkSelected.Count == 0)"
-                        @onclick="() => SetBulkSharing(false)">
-                    <span class="pos-action-tile__label">@L["ConnectedBuyers_StopSharingSelected"]</span>
-                </button>
-            </div>
-            <div class="pos-action-grid pos-action-grid--single">
-                <button type="button"
-                        class="pos-action-tile pos-action-tile--primary"
-                        disabled="@_saving"
-                        @onclick="SaveAsync">
-                    <span class="pos-action-tile__label">@L["ConnectedBuyers_SaveSharing"]</span>
-                </button>
+            <div class="pos-share-products__actions">
+                <div class="pos-action-grid pos-action-grid--two" role="group">
+                    <button type="button"
+                            class="pos-action-tile"
+                            disabled="@(_saving || _bulkSelected.Count == 0)"
+                            @onclick="() => SetBulkSharing(true)">
+                        <span class="pos-action-tile__label">@L["ConnectedBuyers_ShareSelected"]</span>
+                    </button>
+                    <button type="button"
+                            class="pos-action-tile"
+                            disabled="@(_saving || _bulkSelected.Count == 0)"
+                            @onclick="() => SetBulkSharing(false)">
+                        <span class="pos-action-tile__label">@L["ConnectedBuyers_StopSharingSelected"]</span>
+                    </button>
+                </div>
+                <div class="pos-action-grid pos-action-grid--single">
+                    <button type="button"
+                            class="pos-action-tile pos-action-tile--primary"
+                            disabled="@_saving"
+                            @onclick="SaveAsync">
+                        <span class="pos-action-tile__label">@L["ConnectedBuyers_SaveSharing"]</span>
+                    </button>
+                </div>
             </div>
         }
     }
 </Page>
+</div>
+
+<style>
+    .pos-share-products { width: 100%; }
+    .pos-share-products__header { margin-bottom: 0.65rem; }
+    .pos-share-products__title {
+        margin: 0; font-size: 1.2rem; font-weight: 700; line-height: 1.2;
+        color: var(--exits-text, #15201a);
+    }
+    .pos-share-products__filters,
+    .pos-share-products__categories {
+        display: flex; flex-wrap: nowrap; gap: 0.4rem;
+        margin: 0 0 0.55rem; overflow-x: auto; padding-bottom: 0.1rem;
+        -webkit-overflow-scrolling: touch; scrollbar-width: thin;
+    }
+    .pos-share-products__chip {
+        appearance: none; flex: 0 0 auto;
+        min-height: 2.15rem; padding: 0.3rem 0.7rem;
+        border: 1px solid var(--exits-border, #c9d4cd);
+        border-radius: 999px; background: var(--exits-bg, #f3f6f4);
+        color: var(--exits-text, #15201a); font: inherit; font-size: 0.8125rem; font-weight: 600;
+        white-space: nowrap; cursor: pointer;
+    }
+    .pos-share-products__chip--selected {
+        border-color: var(--exits-primary, #1b7a3d);
+        background: var(--exits-surface, #fff);
+        color: var(--exits-primary, #1b7a3d);
+        box-shadow: 0 1px 2px rgba(21, 32, 26, 0.08);
+    }
+    .pos-share-products__list {
+        display: flex; flex-direction: column;
+        border: 1px solid var(--exits-border, #c9d4cd);
+        border-radius: var(--exits-radius-md, 0.5rem);
+        overflow: hidden; background: var(--exits-surface, #fff);
+    }
+    .pos-share-products__row {
+        display: flex; align-items: flex-start; gap: 0.55rem;
+        padding: 0.55rem 0.65rem;
+    }
+    .pos-share-products__row + .pos-share-products__row {
+        border-top: 1px solid var(--pos-border-subtle, #d7e0da);
+    }
+    .pos-share-products__select {
+        display: inline-flex; align-items: center; justify-content: center;
+        min-height: 2.25rem; margin: 0; padding-top: 0.15rem;
+    }
+    .pos-share-products__body { flex: 1 1 auto; min-width: 0; }
+    .pos-share-products__top {
+        display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem;
+    }
+    .pos-share-products__identity {
+        display: flex; flex-direction: column; gap: 0.12rem; min-width: 0;
+    }
+    .pos-share-products__name {
+        font-size: 0.95rem; font-weight: 650; line-height: 1.25;
+        color: var(--exits-text, #15201a);
+    }
+    .pos-share-products__meta,
+    .pos-share-products__prices {
+        font-size: 0.75rem; line-height: 1.3;
+    }
+    .pos-share-products__share {
+        display: inline-flex; align-items: center; gap: 0.3rem;
+        flex: 0 0 auto; margin: 0; font-size: 0.75rem; font-weight: 650;
+        color: var(--exits-text, #15201a); white-space: nowrap;
+    }
+    .pos-share-products__override { margin-top: 0.35rem; max-width: 14rem; }
+    .pos-share-products__override ::deep .pos-field { margin-bottom: 0; }
+    .pos-share-products__override ::deep .pos-field__hint { display: none; }
+    .pos-share-products__actions { margin-top: 0.75rem; }
+</style>
 
 @code {
     [Parameter] public Guid RelationshipId { get; set; }
 
+    private const string UncategorizedKey = "__uncategorized__";
+
     private bool _loading = true;
     private bool _saving;
     private string? _error;
-    private string _filter = "all";
+    private string _shareFilter = "all";
+    private string _categoryFilter = "all";
     private List<ShareProductRow> _products = [];
     private HashSet<Guid> _bulkSelected = [];
 
     private bool CanManage => Capabilities.IsAllowed(UtangCapability.ManageSuppliers);
-    private IReadOnlyList<ShareProductRow> FilteredProducts => _filter switch
-    {
-        "shared" => _products.Where(x => x.IsShared).ToList(),
-        "not-shared" => _products.Where(x => !x.IsShared).ToList(),
-        _ => _products
-    };
-    private IReadOnlyList<(string Value, string Label)> Filters =>
+
+    private IReadOnlyList<(string Value, string Label)> ShareFilters =>
     [
         ("all", L["ConnectedBuyers_FilterAll"]),
         ("shared", L["ConnectedBuyers_FilterShared"]),
         ("not-shared", L["ConnectedBuyers_FilterNotShared"])
     ];
+
+    private IReadOnlyList<(string Value, string Label)> CategoryFilters
+    {
+        get
+        {
+            var categories = _products
+                .Select(x => string.IsNullOrWhiteSpace(x.Category) ? UncategorizedKey : x.Category!)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(x => x == UncategorizedKey ? "\uFFFF" : x, StringComparer.OrdinalIgnoreCase)
+                .Select(x => (
+                    Value: x,
+                    Label: x == UncategorizedKey ? L["ConnectedBuyers_FilterUncategorized"].Value : x))
+                .ToList();
+            if (categories.Count == 0)
+            {
+                return [("all", L["ConnectedBuyers_FilterAllCategories"])];
+            }
+
+            return [("all", L["ConnectedBuyers_FilterAllCategories"].Value), .. categories];
+        }
+    }
+
+    private IReadOnlyList<ShareProductRow> FilteredProducts
+    {
+        get
+        {
+            IEnumerable<ShareProductRow> query = _products;
+            query = _shareFilter switch
+            {
+                "shared" => query.Where(x => x.IsShared),
+                "not-shared" => query.Where(x => !x.IsShared),
+                _ => query
+            };
+
+            if (_categoryFilter is not "all")
+            {
+                query = query.Where(x =>
+                    _categoryFilter == UncategorizedKey
+                        ? string.IsNullOrWhiteSpace(x.Category)
+                        : string.Equals(x.Category, _categoryFilter, StringComparison.OrdinalIgnoreCase));
+            }
+
+            return query.ToList();
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -165,6 +307,9 @@
 
         await LoadAsync();
     }
+
+    private void SetShareFilter(string value) => _shareFilter = value;
+    private void SetCategoryFilter(string value) => _categoryFilter = value;
 
     private async Task LoadAsync()
     {
@@ -191,6 +336,11 @@
             .OrderBy(x => x.Name, StringComparer.OrdinalIgnoreCase)
             .ToList();
         _bulkSelected.Clear();
+        if (_categoryFilter is not "all"
+            && CategoryFilters.All(x => !string.Equals(x.Value, _categoryFilter, StringComparison.OrdinalIgnoreCase)))
+        {
+            _categoryFilter = "all";
+        }
     }
 
     private void SetBulkSelected(Guid productId, ChangeEventArgs args)
@@ -250,7 +400,9 @@
             Name = string.IsNullOrWhiteSpace(dto.NameSnapshot) ? dto.SupplierProductId.ToString("D") : dto.NameSnapshot;
             Sku = dto.SkuSnapshot;
             Unit = dto.UnitOfMeasureCode ?? "—";
+            Category = string.IsNullOrWhiteSpace(dto.CategoryNameSnapshot) ? null : dto.CategoryNameSnapshot.Trim();
             SellingPrice = dto.SellingPrice;
+            DefaultPoPrice = dto.DefaultPoPrice;
             EffectivePrice = dto.EffectiveSupplierOrderPrice;
             IsShared = dto.IsShared;
             BuyerSpecificPoPrice = dto.BuyerSpecificPoPrice;
@@ -260,7 +412,9 @@
         public string Name { get; }
         public string? Sku { get; }
         public string Unit { get; }
+        public string? Category { get; }
         public decimal? SellingPrice { get; }
+        public decimal? DefaultPoPrice { get; }
         public decimal? EffectivePrice { get; }
         public bool IsShared { get; set; }
         public decimal? BuyerSpecificPoPrice { get; set; }
