@@ -7,7 +7,7 @@
 | Field | Value |
 |---|---|
 | Starting SHA | `1f81cb637dda648fbe56ba78dfaf69e5115b821f` |
-| Feature SHA | **TBD** (do not commit in this pass unless owner requests) |
+| Feature SHA | `69fd132f` · `2f0dd78c` · `adde2715` · `589f4ec8` · `19768550` · `fe63a6f6` (+ hash-record commits) |
 | Device Verified | **No** |
 | Browser Verified | **No** |
 | Regulatory Validated | **No** |
