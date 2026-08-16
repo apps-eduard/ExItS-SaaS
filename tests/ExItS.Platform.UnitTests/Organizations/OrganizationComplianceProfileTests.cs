@@ -12,7 +12,7 @@ public sealed class OrganizationComplianceProfileTests
     private static readonly DateTimeOffset Now = new(2026, 8, 14, 22, 0, 0, TimeSpan.Zero);
 
     [Fact]
-    public async Task Profiles_are_organization_scoped_and_do_not_invent_tin_fields()
+    public async Task Profiles_are_organization_scoped_and_do_not_expose_full_tin()
     {
         var orgA = PlatformOrganizationId.New();
         var orgB = PlatformOrganizationId.New();
@@ -41,13 +41,16 @@ public sealed class OrganizationComplianceProfileTests
         Assert.False(a.Value.TaxDocumentIssuanceEnabled);
         Assert.False(a.Value.TaxConfigurationEnabled);
         Assert.Equal("TransactionSummary", a.Value.DocumentMode);
+        Assert.Equal(ComplianceSetupStatuses.NotConfigured, a.Value.SetupStatus);
         Assert.Contains(
             a.Value.GetType().GetProperties(),
             p => p.Name == "SnapshotGuidance");
         Assert.DoesNotContain(
             typeof(OrganizationComplianceProfileDto).GetProperties(),
-            p => p.Name.Contains("Tin", StringComparison.OrdinalIgnoreCase)
-                 || p.Name.Contains("Bir", StringComparison.OrdinalIgnoreCase));
+            p => p.Name is "Tin" or "TinNormalized" or "FullTin");
+        Assert.Contains(
+            typeof(OrganizationComplianceProfileDto).GetProperties(),
+            p => p.Name == "MaskedTin");
         AssertNoTaxIdentityProperties(typeof(OrganizationPublicIdentityDto));
         AssertNoTaxIdentityProperties(typeof(ResolvedPublicOrganizationDto));
     }
@@ -72,6 +75,7 @@ public sealed class OrganizationComplianceProfileTests
         Assert.False(dto.Value.TaxDocumentIssuanceEnabled);
         Assert.False(dto.Value.TaxConfigurationEnabled);
         Assert.False(dto.Value.TaxDocumentImplementationAvailable);
+        Assert.Equal(ComplianceSetupStatuses.NotConfigured, created.SetupStatus);
         Assert.Single(profiles.Items);
     }
 
@@ -89,6 +93,25 @@ public sealed class OrganizationComplianceProfileTests
             typeof(OrganizationComplianceProfile).GetProperties(),
             p => p.Name.Contains("Owner", StringComparison.OrdinalIgnoreCase)
                  || p.Name.Contains("User", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void Rehydrate_preserves_registered_taxpayer_fields()
+    {
+        var orgId = PlatformOrganizationId.New();
+        var rehydrated = OrganizationComplianceProfile.Rehydrate(
+            orgId,
+            "Acme Corp",
+            "123456789",
+            ComplianceSetupStatuses.SetupInProgress,
+            Now,
+            Now,
+            "actor");
+
+        Assert.Equal("Acme Corp", rehydrated.RegisteredTaxpayerName);
+        Assert.Equal("123456789", rehydrated.TinNormalized);
+        Assert.Equal("***-***-789", rehydrated.MaskedTin);
+        Assert.Equal(ComplianceSetupStatuses.SetupInProgress, rehydrated.SetupStatus);
     }
 
     private static PlatformOrganization CreateOrg(PlatformOrganizationId id, string legalName) =>
@@ -137,6 +160,14 @@ public sealed class OrganizationComplianceProfileTests
         }
 
         public Task AddAsync(
+            OrganizationComplianceProfile profile,
+            CancellationToken cancellationToken = default)
+        {
+            Items[profile.OrganizationId.Value] = profile;
+            return Task.CompletedTask;
+        }
+
+        public Task UpdateAsync(
             OrganizationComplianceProfile profile,
             CancellationToken cancellationToken = default)
         {

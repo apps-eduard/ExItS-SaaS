@@ -21,6 +21,7 @@ public sealed class Phase26ComplianceWordingGuardTests
 
         Assert.Contains("SalesDocument_EducationTitle", page, StringComparison.Ordinal);
         Assert.Contains("SalesDocument_BirInvoicingNotEnabled", page, StringComparison.Ordinal);
+        Assert.Contains("/organization/tax-compliance", page, StringComparison.Ordinal);
         Assert.DoesNotContain("BIR compliant", page, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("BIR accredited", page, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("legally exempt", page, StringComparison.OrdinalIgnoreCase);

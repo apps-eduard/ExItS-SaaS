@@ -327,6 +327,14 @@ public sealed class Phase26SalesDocumentComplianceHardeningTests
             _items[profile.OrganizationId.Value] = profile;
             return Task.CompletedTask;
         }
+
+        public Task UpdateAsync(
+            OrganizationComplianceProfile profile,
+            CancellationToken cancellationToken = default)
+        {
+            _items[profile.OrganizationId.Value] = profile;
+            return Task.CompletedTask;
+        }
     }
 
     private sealed class RecordingAuditWriter : IAuditWriter

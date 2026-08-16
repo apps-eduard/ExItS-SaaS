@@ -43,11 +43,14 @@ public sealed class PostPhase21PublicIdentityPrivacyGuardTests
                  || p.Name.Contains("Fingerprint", StringComparison.OrdinalIgnoreCase)
                  || p.Name.Contains("Gps", StringComparison.OrdinalIgnoreCase)
                  || p.Name.Contains("Latitude", StringComparison.OrdinalIgnoreCase));
+        // Authorized org compliance DTO may expose MaskedTin only — never full TIN / TinNormalized.
         Assert.DoesNotContain(
             typeof(OrganizationComplianceProfileDto).GetProperties(),
-            p => p.Name.Contains("Tin", StringComparison.OrdinalIgnoreCase)
-                 || p.Name.Contains("Bir", StringComparison.OrdinalIgnoreCase)
+            p => p.Name is "Tin" or "TinNormalized" or "FullTin"
                  || p.Name.Contains("Evidence", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(
+            typeof(OrganizationComplianceProfileDto).GetProperties(),
+            p => p.Name == "MaskedTin");
     }
 
     [Fact]
