@@ -6,8 +6,6 @@
 **Date:** 2026-07-29
 **Commit:** `01ab65b511721d5dd2173188bc6d962a5feea803`
 
----
-
 ## 1. Executive approval
 
 | Field | Decision |
@@ -15,58 +13,46 @@
 | Phase 1 recommendation | **Close with documented risks** |
 | Architecture | **Approved** for controlled implementation |
 | Implementation readiness | **Approved with documented non-blocking risks** |
-| First Phase 2 WP | **P2-WP01 — Extraction Baseline Tag and Safety Checks** (narrow root solution foundation; not started) |
-| legacy product | Remains frozen / ignored; no import in P2-WP01 |
-| Migration status | **Not started** — planning only through Phase 1 |
+| First Phase 2 work package | **P2-WP01 — Platform Foundation Baseline and Safety Checks** |
+| Migration status | **Not started** |
 
-## 2. Evidence reviewed
-
-P1-WP01 capability boundary and matrices · P1-WP02 contracts/ownership/classification/entitlement states · Cash/GCash MVP correction (`c5472e8`) · P1-WP03 extraction sequence, rollback, risk/gate matrices · ADR-009–013 · Phase 0 final assessment · product requirements and subscriptions · repository boundaries · UI design system (ADR-010) · risk register · release plan · FILE-MANIFEST / index / portfolio dashboard.
-
-## 3. Portfolio architecture
+## 2. Portfolio architecture
 
 ```text
-ExItS Platform — identity, orgs/memberships, catalog, plans/trials, subscriptions,
-                 SaaS payments, entitlements/overrides, Admin, audit, support
+ExItS Platform — identity, organizations, memberships, catalog, plans, trials,
+                 subscriptions, SaaS payments, entitlements, Admin, audit
 
-legacy product — clinics, workforce, patients, appointments, notes, clinical authz/audit, existing UIs
-
-PinoyBusinessPOS — businesses, stores/branches/registers, local roles, customers,
-                   Utang, retail payments, catalog/sales/inventory, expenses, suppliers,
-                   shifts, returns, reports, offline, sync
+PinoyBusinessPOS — businesses, stores, branches, registers, local roles,
+                   customers, Utang, retail payments, catalog, sales,
+                   inventory, expenses, suppliers, shifts, returns, reports
 ```
 
-**Confirmed:** Products do not own Platform subscriptions. Platform does not own clinical/retail ops data. Products do not access each other’s DBs. Platform is not a generic operational mega-app.
+Products do not own Platform subscriptions. Platform does not own retail operational data. Products do not access each other’s databases.
 
-## 4. Identity and organization
+## 3. Identity, organizations, and authorization
 
-Platform User = global auth identity. Platform Organization = SaaS account boundary. Multi-org users and multi-product orgs: **yes** (target). Multiple clinics/stores/branches via product-local entities. Patient ≠ User; Customer ≠ User; customers may exist without login. Customer login linkage deferred (OD-01). legacy product IDs preserved early; mapping reversible and auditable.
-
-## 5. Authorization
+Platform User is the authentication identity. Platform Organization is the SaaS account boundary. Platform owns account, membership, and product access; products own operational roles, permissions, and resource scope.
 
 ```text
 Authentication → account status → membership → product access → entitlement
 → product-local role → permission → resource scope → business rule
 ```
 
-Platform owns account/membership/product access. Products own operational roles/permissions. Roles are bundles, not sole API checks. Server-derived tenant/resource scope; client OrganizationId not authoritative. Platform Admin does not auto-gain clinical/POS ops. Patient self-scope legacy product-only. Break-glass deferred (OD-02). Role/permission changes audited.
+Tenant and resource scope are server-derived. Client-supplied organization identifiers are not authoritative. Platform administrators do not automatically receive product-operational access.
 
-## 6. Data ownership
+## 4. Data ownership and contracts
 
-Platform SoR: identity, orgs, catalog, plans, subscriptions, SaaS payments, entitlements. legacy product SoR: clinical ops. POS SoR: retail ops. No cross-DB FKs; no shared DbContext/domain entities. Stable ID references only. Minimal controlled replication. See [data-ownership.md](../engineering/data-ownership.md).
+Platform is system of record for identity, organizations, catalog, plans, subscriptions, SaaS payments, and entitlements. PinoyBusinessPOS is system of record for retail operations.
 
-## 7. Contracts and projections
+Boundaries use stable identifiers and versioned additive contracts. Consumers must support idempotent at-least-once delivery, out-of-order handling, and fail-closed unsupported major versions. No cross-database foreign keys or shared `DbContext`/domain entities are permitted.
 
-Versioned additive contracts; at-least-once; idempotent consumers; out-of-order tolerance; unsupported majors quarantined. No sensitive product payloads in Platform commercial contracts. Transport deferred (OD-03). Manual reconciliation replaces commercial projection only. ADR-012.
+## 5. Entitlements and availability
 
-## 8. Entitlements
+Platform is authoritative for entitlements; products use validated local projections. Ordinary product transactions must not synchronously depend on Platform availability. Never-initialized, unknown, financial, privacy, and administrative capabilities fail closed.
 
-Platform authoritative; products use local projections; no sync Platform call per transaction. Never-initialized / unknown paid features **fail closed**. Financial/privacy/admin fail closed. Stale durations TBD (R-022). Reconciliation does not overwrite operational records.
+For Utang trial expiry, viewing balances/history and repaying existing debt remain available; creating or increasing debt is blocked.
 
-**Utang trial expiry — allowed:** view customers/balances/history; Cash or GCash repayment on existing debt; view payment history; renew/upgrade.
-**Blocked:** new credit; increase debt; new credit entries. Post-expiry UX OD-07–09 remain open.
-
-## 9. Payment boundaries
+## 6. Payment boundaries
 
 | Concept | Owner | MVP |
 |---|---|---|
@@ -74,61 +60,35 @@ Platform authoritative; products use local projections; no sync Platform call pe
 | Retail Sale Payment | POS | `cash`, `gcash`, `customer-credit` |
 | Credit Payment | POS | `cash`, `gcash` |
 
-GCash MVP: manual confirmation; reference required/normalized; warn on duplicates (OD-11 hard-block later); no secrets stored; API/QR/webhook/gateway deferred. Platform GCash (future) ≠ POS GCash. Split tender deferred (OD-12). Voids/corrections need authz, reason, audit.
+GCash MVP uses manual confirmation with normalized references and duplicate warnings. Provider APIs, QR/webhooks, gateways, and split tender remained deferred at this milestone.
 
-## 10. UI architecture
+## 7. UI architecture
 
-legacy product Staff: Ant retained. PatientWeb/MAUI: existing native retained. **New Platform Admin:** Blazor Web App, native Razor/CSS/isolation, tokens, density, themes, `en`/`fil`, motion + reduced-motion, a11y, responsive — **no Ant, no Tailwind**. **POS:** MAUI Blazor Hybrid, same native foundation; Android/Windows first; iOS/MacCatalyst later — **no Ant, no Tailwind**. Share models/conventions/tokens/a11y/motion — not Ant↔native switcher components. ADR-010.
+- **Platform Admin:** Blazor Web App with Ant Design Blazor under ADR-015; no Tailwind or Fluent UI.
+- **PinoyBusinessPOS:** MAUI Blazor Hybrid using native CSS and DesignSystem conventions.
+- Share models, token semantics, localization, accessibility, and formatting conventions; keep framework components in their owning UI.
 
-## 11. Repository and dependencies
+## 8. Repository and dependency rules
 
-Root Git owns docs + future Platform projects. No nested foreign product source tree is tracked. New Platform built in root; no import/submodule/subtree now; selective pattern adaptation; no wholesale copy. Shared code only with two consumers + neutrality rules. No product→Platform Infra/DbContext; no Platform→product domain; no UI→product entities; no cycles. Architecture tests later.
+The root Git repository owns Platform and PinoyBusinessPOS. Shared code requires two verified consumers, product-neutral behavior, clear ownership, and no framework-specific UI coupling.
 
-## 12. Extraction and rollback
+Forbidden dependencies include product → Platform Infrastructure/`DbContext`, Platform → product domain, UI → persistence entities, and cycles. Architecture tests enforce these boundaries.
 
-Stages 1–7 approved (foundation→identity→org→catalog→Admin→legacy product adapter→POS). Full legacy product reconnection not required before POS. No auth/DB cutover without compatibility, restore rehearsal, and rollback evidence. Rollback L0–L6 documented. ADR-013.
+## 9. Security requirements
 
-## 13. Security
+Server-derived scope, least privilege, permission APIs, credential/session revocation, audit, redaction, secret exclusion, contract version validation, idempotent events, and offline financial integrity are mandatory. These requirements were architecture decisions at Phase 1 and were not yet implementation claims.
 
-Mandatory future safeguards recorded (server scope, least privilege, permission APIs, hashed refresh, revocation, suspension, audit, redaction, no secrets in Git/contracts, no PHI/POS details in Platform logs, version validation, idempotent events, offline financial integrity, no silent financial conflict resolution, dev-only test users, controlled support). Not yet implemented — risks remain open where applicable.
-
-## 14. Shared-code governance
-
-Two consumers, product-neutral, no product entities, no framework UI libs, clear ownership/versioning. Prefer contracts/primitives/conventions/patterns. Avoid generic repos, shared DbContext, mega-utilities, shared permission catalogs, shared UI pages. **No shared source project in Phase 1.**
-
-## 15. Open decisions
-
-See [extraction-sequence.md §15](../reuse/extraction-sequence.md) and [phase-02-readiness-checklist.md](../engineering/phase-02-readiness-checklist.md). None block P2-WP01 solution foundation. OD-01–13, R-016/022/024/025–027 remain with owners and defaults.
-
-## 16. Exit-criteria assessment
+## 10. Exit-criteria assessment
 
 | Criterion | Classification | Notes |
 |---|---|---|
-| Every Phase 1 WP complete | **Satisfied** | P1-WP01–04 (this closeout) |
-| Risks and decisions recorded | **Satisfied** | Register + ADRs + OD table |
-| Required regression/security tests pass | **Deferred by design** | Docs-only Phase 1; 1102 baseline recorded; Integration/E2E before legacy product cutover (R-020) |
-| Next phase explicitly approved | **Satisfied** | Phase 2 / **P2-WP01** identified; not started |
+| Every Phase 1 work package complete | **Satisfied** | P1-WP01, P1-WP02, and P1-WP04 evidence accepted; obsolete transition-only P1-WP03 report removed |
+| Risks and decisions recorded | **Satisfied** | Risk register and ADRs |
+| Runtime regression/security tests | **Deferred by design** | Phase 1 was documentation-only |
+| Next phase approved | **Satisfied** | Phase 2 / P2-WP01 |
 
-**Counts:** Satisfied **3** · Partially satisfied **0** · Deferred by design **1** · Not satisfied **0**
-
-## 17. Implementation readiness
+## 11. Implementation readiness
 
 **Approved with documented non-blocking risks.**
 
-**Permitted next (P2-WP01 only, when authorized):** baseline tag/safety checks; narrow root solution and Platform project skeleton; build conventions; dependency/architecture tests; portfolio independence verification.
-
-**Not permitted in P2-WP01:** legacy product modify/import; full Platform modules; POS; billing/GCash; offline sync; legacy product adapters; complete UI library; DB migration/cutover.
-
-## 18. Exact next work package
-
-| Field | Value |
-|---|---|
-| ID | **P2-WP01** |
-| Name | **Extraction Baseline Tag and Safety Checks** |
-| Goal | Establish safe root solution foundation + baseline/safety gates before identity work |
-| Expected (future) | Root `.sln` / Platform project skeleton / test projects / Directory.Build conventions / architecture dependency tests — **when authorized** |
-| Exclusions | See §17 |
-| Tests | Build; architecture boundary tests; `git ls-files legacy product` empty |
-| Git | Focused commits; no push without authorization; legacy product never staged |
-| Risks | R-016 empty remote; R-017 accidental legacy product tracking; R-026 premature import |
-| Status | **Not Started** — do not begin in P1-WP04 |
+The authorized next slice was a narrow root solution and Platform project foundation with build conventions, dependency tests, and repository safety checks. Identity, billing, POS, production authentication, persistence, and migration remained outside P2-WP01.

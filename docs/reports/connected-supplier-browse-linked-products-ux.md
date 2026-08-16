@@ -41,7 +41,7 @@ Unchanged. Selective linked-product LocalStore projection and online catalog sea
 ## Security / portfolio independence
 
 - No credentials or PHI committed
-- No legacy product tree; Platform/Product DB boundaries unchanged
+- Platform/product database boundaries unchanged
 
 ## Exact next
 

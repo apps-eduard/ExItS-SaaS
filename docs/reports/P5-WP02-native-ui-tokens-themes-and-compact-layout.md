@@ -59,7 +59,7 @@ Visible `:focus-visible`, semantic nav `aria-label`, icon-button labels, status 
 
 ## 9. Architecture boundaries preserved
 
-MAUI / DesignSystem still have no Infrastructure, EF Core, Npgsql, or DbContext. DesignSystem has no product business logic or host storage APIs. No legacy product coupling. No Ant Design / Tailwind framework.
+MAUI / DesignSystem still have no Infrastructure, EF Core, Npgsql, or DbContext. DesignSystem has no product business logic or host storage APIs. No unrelated product coupling. No Ant Design / Tailwind framework.
 
 ## 10. Tests
 
@@ -82,7 +82,7 @@ Release `net10.0-android` build succeeded with `AndroidSdkDirectory` set. `adb d
 
 ## 12. portfolio independence verification
 
-Root a nested foreign product tree must remain absent/untracked and outside `ExItS.slnx`.
+No unauthorized nested product tree at repo root; keep `ExItS.slnx` to authorized products only.
 
 ## 13. Exact next work package
 

@@ -4,7 +4,7 @@
 
 | Field | Value |
 |---|---|
-| Phase | Phase 2 — Platform Extraction and legacy product Reconnection |
+| Phase | Phase 2 — Platform Foundation |
 | Work package | P2-WP02 — Shared Identity and Organization Boundary |
 | Status | Ready for Review |
 | Branch | `main` |
@@ -12,7 +12,7 @@
 
 ## 2. Summary
 
-Implemented the first Platform **Domain** and **Application** boundary for global users, platform organizations, organization memberships, platform organization roles, product-access concepts (`ProductCode` + minimal `ProductAccess`), account/membership/organization statuses, strongly typed identifiers, domain invariants, explicit repository contracts, and use cases. Behavior is proven with unit and architecture tests. No authentication, persistence, EF/Npgsql, business API routes, catalog, plans, subscriptions, entitlements, legacy product integration, or POS.
+Implemented the first Platform **Domain** and **Application** boundary for global users, platform organizations, organization memberships, platform organization roles, product-access concepts (`ProductCode` + minimal `ProductAccess`), account/membership/organization statuses, strongly typed identifiers, domain invariants, explicit repository contracts, and use cases. Behavior is proven with unit and architecture tests. No authentication, persistence, EF/Npgsql, business API routes, catalog, plans, subscriptions, entitlements, product integration, or POS.
 
 ## 3. Acceptance criteria and evidence
 
@@ -102,10 +102,8 @@ Port **5288**. No database configuration. Clean shutdown verified.
 
 | Check | Result |
 |---|---|
-| `git ls-files legacy product` | empty |
-| `git check-ignore -v legacy product/` | `.gitignore:6:legacy product/` |
 | `dotnet sln ExItS.slnx list` | Platform + test projects only |
-| legacy product files modified | No |
+| Unrelated product files modified | No |
 
 ## 11. Risks and open decisions
 

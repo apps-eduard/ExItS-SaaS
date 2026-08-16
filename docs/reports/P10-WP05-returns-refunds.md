@@ -57,8 +57,8 @@ Development/Testing actor only; no production POS role model. Refund method enfo
 
 ## Portfolio independence
 
-- No a nested foreign product tree tree; Git tracking shows no nested foreign product tree empty.
-- No cross-product DB access; no legacy product projects in `ExItS.slnx`.
+- No unauthorized nested product tree; No unauthorized nested product tree is tracked.
+- No cross-product database access; `ExItS.slnx` contains approved portfolio projects only.
 
 ## Risks / open decisions
 

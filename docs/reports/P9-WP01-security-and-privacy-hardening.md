@@ -103,7 +103,7 @@ Baseline **882** preserved and exceeded.
 
 ## Portfolio independence
 
-Root a nested foreign product tree must remain absent/untracked and outside `ExItS.slnx`.
+No unauthorized nested product tree at repo root; keep `ExItS.slnx` to authorized products only.
 
 ## Documentation and Git
 

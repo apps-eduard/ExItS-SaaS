@@ -1,6 +1,6 @@
 # Target Architecture
 
-[Home](../index.md) | [Dashboard](../portfolio-progress.md) | [Approved summary](approved-architecture-summary.md) | [Capability boundary](platform-product-capability-boundary.md) | [Contracts](platform-product-contracts.md) | [Extraction sequence](../reuse/extraction-sequence.md) | [ADR-011](../decisions/ADR-011-platform-authority-and-product-local-projections.md) | [ADR-012](../decisions/ADR-012-versioned-platform-contracts-and-local-projections.md) | [ADR-014](../decisions/ADR-014-approve-exits-portfolio-architecture-for-controlled-implementation.md)
+[Home](../index.md) | [Dashboard](../portfolio-progress.md) | [Approved summary](approved-architecture-summary.md) | [Capability boundary](platform-product-capability-boundary.md) | [Contracts](platform-product-contracts.md) | [ADR-011](../decisions/ADR-011-platform-authority-and-product-local-projections.md) | [ADR-012](../decisions/ADR-012-versioned-platform-contracts-and-local-projections.md) | [ADR-014](../decisions/ADR-014-approve-exits-portfolio-architecture-for-controlled-implementation.md)
 
 ## Portfolio architecture
 
@@ -17,19 +17,19 @@
                     + device SQLite foundation/outbox (P7-WP01/P7-WP02; business cache deferred)
 ```
 
-Active portfolio products: **Platform** + **PinoyBusinessPOS** only. Do not nest or reconnect an external foreign product tree in this workspace.
+Active portfolio products: **Platform** + **PinoyBusinessPOS** only.
 
 ## Repository direction
 
-A controlled monorepo coordinates Platform and PinoyBusinessPOS development. Product boundaries remain deployable independently. Sequence history: [extraction-sequence.md](../reuse/extraction-sequence.md).
+A controlled monorepo coordinates Platform and PinoyBusinessPOS development. Product boundaries remain deployable independently.
 
-**P2-WP01:** root `ExItS.slnx` + `src/Platform/{Domain,Application,Infrastructure,Api}` + architecture/unit tests exist. Dependency direction enforced by tests. No legacy product project references.
+**P2-WP01:** root `ExItS.slnx` + `src/Platform/{Domain,Application,Infrastructure,Api}` + architecture/unit tests exist. Dependency direction is enforced by tests.
 
 **P2-WP02:** Domain identity/organization boundary (`PlatformUser`, `PlatformOrganization`, `OrganizationMembership`, `ProductCode`) plus Application contracts/use cases. No persistence, authentication, or business API routes.
 
 **P2-WP03:** Commercial catalog and entitlement foundation (`Product`, `Plan`, `PlanVersion`, `TrialDefinition`, `Subscription`, `FeatureOverride`, `EntitlementSnapshot`, composer). No persistence, payments, or business API routes.
 
-**P2-WP04:** Platform-side product contract adaptation (envelopes, projections, apply policy). No legacy product Integration folder; no transport/persistence in that WP.
+**P2-WP04:** Platform-side product contract foundation (envelopes, projections, apply policy); no transport or persistence in that work package.
 
 **P2-WP05:** Migration dry-run / regression validation models in Application (`MigrationValidation`). Simulation only — product-agnostic preflight; no real migration or SQL cutover.
 

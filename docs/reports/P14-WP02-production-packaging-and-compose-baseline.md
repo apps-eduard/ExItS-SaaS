@@ -30,7 +30,7 @@ platform-api  →  platform-db (exits_platform)
 pos-api       →  pos-db (exits_pos)
 ```
 
-Separate databases; no legacy product; `ASPNETCORE_ENVIRONMENT=Staging` (no Dev/Testing identity headers). No app-startup `Migrate()`.
+Separate Platform and POS databases; `ASPNETCORE_ENVIRONMENT=Staging` (no Dev/Testing identity headers). No app-startup `Migrate()`.
 
 ## 3. Operator commands (validated)
 
@@ -63,7 +63,7 @@ Evidence this session: images `exits/platform-api:local` and `exits/pos-api:loca
 | `docker compose up -d` / `ps` / `down` | Succeeded |
 | Host `/health` | 200 Healthy (Platform + POS) |
 | Full Release tests | **1264 passed / 0 failed / 0 skipped** |
-| Portfolio independence | No legacy product root / solution projects |
+| Portfolio independence | Approved root and solution projects only |
 
 ## Exact next work package
 

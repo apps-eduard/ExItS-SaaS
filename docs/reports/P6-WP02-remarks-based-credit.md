@@ -22,7 +22,7 @@ Phase marker: `P6-WP02-remarks-based-credit`
 
 ## Explicit exclusions
 
-Repayments, payment allocation, full payment ledger, due dates, statements, receipts, interest, penalties, credit limits, sales, inventory, gateways, QR/cards, offline sync. No Platform/legacy product tables or cross-database FKs. No nested foreign product tree in this repository.
+Repayments, payment allocation, full payment ledger, due dates, statements, receipts, interest, penalties, credit limits, sales, inventory, gateways, QR/cards, offline sync. No Platform tables or cross-database foreign keys.
 
 ## Persistence and migration
 
@@ -80,7 +80,7 @@ Android Release APK: `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/
 
 ## Portfolio independence
 
-Git tracking shows no nested foreign product tree empty; `git check-ignore -v legacy product/` → `.gitignore:/legacy product/`; legacy product not in `ExItS.slnx`.
+Repository project-boundary checks passed; `ExItS.slnx` contained only approved portfolio projects.
 
 ## Risks and open decisions
 

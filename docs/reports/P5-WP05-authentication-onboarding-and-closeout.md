@@ -81,7 +81,7 @@ R-091 (production auth), R-098 (dev identity), R-106 (secure storage), R-109 (em
 
 ## 9. Portfolio independence
 
-Root a nested foreign product tree must remain absent/untracked and outside `ExItS.slnx`.
+No unauthorized nested product tree at repo root; keep `ExItS.slnx` to authorized products only.
 
 ## 10. Exact next work package
 

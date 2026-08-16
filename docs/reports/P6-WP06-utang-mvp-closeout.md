@@ -19,7 +19,7 @@ Phase 6 is **complete** for the approved Utang MVP scope:
 - Migration chain apply / stepwise rollback / re-apply validated
 - Full solution tests pass; Android Release APK builds
 - Documentation matches implementation
-- No nested foreign product tree in this repository
+- Portfolio independence preserved (Platform + authorized products only)
 - Working tree clean and `main` matches `origin/main` after push
 
 ## Final delivered Utang MVP scope
@@ -42,7 +42,7 @@ Sales, inventory, interest, penalties, credit limits, installments, write-offs, 
 1. **Production commercial headers ignored** — outside Development/Testing, `X-Pos-Subscription-Status` / `X-Pos-Feature-Grants` are ignored and access fails closed (`pos.commercial.access_unknown`).
 2. **fil-PH statement/receipt localization** — remaining English keys and share-text labels localized; MAUI shows localized receipt disclaimer body.
 3. **Full lifecycle API test** — customer → credit → due date → partial/exact repay → overpayment reject → reverse repayment → overdue → clear due date → reverse credit → statement → idempotent reversed receipt → cross-org 404.
-4. **Phase 6 migration chain test** — apply to latest → rollback through each WP migration → re-apply; asserts `pos` schema tables, no Platform/legacy product/statement/receipt/ledger_entries tables, filtered unique mobile index `ux_customers_org_active_mobile`.
+4. **Phase 6 migration chain test** — apply to latest → rollback through each WP migration → re-apply; asserts `pos` schema tables, no Platform/statement/receipt/ledger_entries tables, filtered unique mobile index `ux_customers_org_active_mobile`.
 5. **Docs OD drift** — WP01–WP04 and phase exclusions no longer claim OD-07/08 remain open (resolved in P6-WP05).
 
 ## Financial integrity and domain invariants
@@ -90,7 +90,7 @@ Sales, inventory, interest, penalties, credit limits, installments, write-offs, 
 | `20260730091301_AddPosCreditDueDates` | Due dates + history |
 
 - Database: `ExItS_PinoyBusinessPOS`, schema `pos`
-- No Platform/legacy product tables; no cross-database FKs
+- No Platform tables or cross-database foreign keys
 - No statement/receipt/ledger_entries persistence
 - No new migration in P6-WP06
 - `Migrate()` is not called on POS API startup
@@ -151,7 +151,7 @@ Baseline 541 preserved and exceeded (+3 closeout tests). Release Android APK: `s
 
 ## Portfolio independence
 
-Git tracking shows no nested foreign product tree empty; ignored; not in `ExItS.slnx`.
+No unauthorized nested product tree is tracked; ignored; not in `ExItS.slnx`.
 
 ## Git evidence
 

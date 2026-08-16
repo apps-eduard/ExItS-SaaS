@@ -6,7 +6,7 @@ Broken links: none found in spot-check of new paths
 
 ## Root foundation (tracked)
 
-.gitignore (also ignores `*.dump` / encrypted backup artifacts; no nested foreign product path)
+.gitignore (also ignores `*.dump` / encrypted backup artifacts)
 .cursor/rules/exits-workflow.mdc
 .cursor/rules/exits-product-context.mdc
 .dockerignore
@@ -63,7 +63,6 @@ tests/ExItS.Deployment.Tests/
 docs/cursor/README.md
 docs/cursor/completion-report-template.md
 docs/cursor/cursor-prompt-template.md
-docs/cursor/first-cursor-command.md
 docs/decisions/ADR-010-separate-ui-implementations-platform-and-pos.md
 docs/decisions/ADR-011-platform-authority-and-product-local-projections.md
 docs/decisions/ADR-012-versioned-platform-contracts-and-local-projections.md
@@ -81,9 +80,7 @@ docs/engineering/data-ownership.md
 docs/engineering/development-environment.md
 docs/engineering/development-standards.md
 docs/engineering/entitlement-state-matrix.md
-docs/engineering/extraction-rollback-plan.md
 docs/engineering/final-portfolio-boundaries.md
-docs/engineering/implementation-gate-matrix.md
 docs/engineering/localization.md
 docs/engineering/pos-terminology-guide.md
 docs/engineering/pos-branch-inventory-transfers.md
@@ -93,7 +90,6 @@ docs/engineering/offline-sync-design.md
 docs/engineering/product-units-and-inventory-behavior.md
 docs/engineering/phase-02-evidence-matrix.md
 docs/engineering/phase-02-readiness-checklist.md
-docs/engineering/platform-extraction-risk-matrix.md
 docs/engineering/platform-product-capability-boundary.md
 docs/engineering/platform-product-contract-matrix.md
 docs/engineering/platform-product-contracts.md
@@ -214,14 +210,8 @@ docs/product/portfolio-vision.md
 docs/product/subscriptions-and-billing.md
 docs/release-plan.md
 docs/reports/README.md
-docs/reports/repository-legacy-reference-neutralization.md
-docs/reports/P0-WP01-completion.md
-docs/reports/P0-WP02-baseline-runtime-map.md
-docs/reports/P0-WP03-ui-reuse-review.md
-docs/reports/P0-WP04-assessment-closeout.md
 docs/reports/P1-WP01-platform-product-capability-boundary.md
 docs/reports/P1-WP02-data-ownership-and-contracts.md
-docs/reports/P1-WP03-extraction-sequence-and-rollback.md
 docs/reports/P1-WP04-architecture-approval-closeout.md
 docs/reports/P2-WP01-extraction-baseline-and-safety.md
 docs/reports/P2-WP02-identity-organization-boundary.md
@@ -329,11 +319,7 @@ docs/reports/PRE-P11-admin-theme-visual-polish.md
 docs/operations/backup-restore/README.md
 docs/operations/pilot-and-deployment/README.md
 docs/reports/phase-02-extraction-closeout.md
-docs/reports/phase-00-final-assessment-and-recommendation.md
 docs/reports/phase-01-architecture-approval.md
-docs/reuse/extraction-rules.md
-docs/reuse/extraction-sequence.md
-docs/reuse/reuse-classification-matrix.md
 docs/risks-and-issues.md
 
 ## Not tracked

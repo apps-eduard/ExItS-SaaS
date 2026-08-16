@@ -67,7 +67,7 @@ English (`en`) default and Tagalog (`fil-PH`) via ASP.NET Core localization + `A
 
 ### Migration
 
-`AddPlatformAuthorizationAndAudit` — tables `platform.platform_role_assignments`, `platform.audit_records`. Validated apply → rollback to `AddPlatformUsersMembershipsAndProductAccess` → re-apply. No legacy product/POS/gateway/invoice/product-local tables.
+`AddPlatformAuthorizationAndAudit` — tables `platform.platform_role_assignments`, `platform.audit_records`. Validated apply → rollback to `AddPlatformUsersMembershipsAndProductAccess` → re-apply. No POS/gateway/invoice/product-local tables.
 
 ### API
 
@@ -99,12 +99,12 @@ Runtime: API phase marker `P4-WP04-audit-authorization-closeout`; `/authorizatio
 
 - Production authentication (JWT/MFA/SSO/AD)
 - Payment gateways, invoices, entitlement delivery
-- Product-local roles; legacy product/POS authorization
+- Product-local roles and POS authorization
 - Phase 5 POS MAUI
 
 ### Portfolio independence
 
-Root a nested foreign product tree must remain absent/untracked and outside `ExItS.slnx`.
+No unauthorized nested product tree at repo root; keep `ExItS.slnx` to authorized products only.
 
 ### Exact next work package
 

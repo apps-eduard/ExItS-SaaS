@@ -80,7 +80,7 @@ Platform owns:
 - session / security metadata needed for revocation (security stamp stored; session revoke later)
 - **authentication audit events** (password set / unlock / email verified / bootstrap; login events later)
 
-Platform User is **not** a POS Customer, legacy product Patient, or org-local duplicate account.
+Platform User is **not** a POS Customer or an organization-local duplicate account.
 
 ### 4.2 Organization Membership
 

@@ -2,42 +2,25 @@
 
 [Capability boundary](platform-product-capability-boundary.md) | [Data authority](data-authority-matrix.md) | [Contracts](platform-product-contracts.md) | [Contract matrix](platform-product-contract-matrix.md)
 
-Primary ownership only. Projection ≠ system of record.
+Primary ownership only. A projection is not a system of record.
 
-| Capability | System of Record | Platform Responsibility | Product Responsibility | Local Projection | Shared Contract | Prohibited Coupling |
-|---|---|---|---|---|---|---|
-| Global user ID / email / credentials | Platform | Authenticate, suspend, verify | Reference UserId; product profiles | Optional user display cache | UserId, claims shape | Product-owned passwords |
-| Password reset / verification / MFA later | Platform | Own flows | Deep links/UI only | — | Status events | Product identity stores |
-| Login attempts / sessions / refresh / revoke | Platform | Own | Consume tokens/sessions | Session hints only | Token contracts | Product refresh-token tables as SoR |
-| User security events | Platform | Own | May emit product security events | — | Correlation | PHI in Platform |
-| Dev-only test identities | Dev/Test config | Policy | Must disable outside Dev/Test | — | — | Prod seed users |
-| Platform Organization | Platform | CRUD, status | Link via PlatformOrganizationId | Org name/status cache | OrgId DTO | Product as SaaS account SoR |
-| Organization membership | Platform | Org↔user↔product access | Assign operational roles locally | Membership summary | Membership DTO | Mixing legacy product StaffMember as Platform SoR |
-| Clinic | legacy product | — | Own | — | — | Platform clinic tables |
-| POS Business / Store / Branch / Register | POS | — | Own | — | — | Platform store tables |
-| Platform roles | Platform | Define/assign | — | — | Role codes | Auto clinical/POS powers |
-| legacy product clinical roles / permissions | legacy product | Product access only | Own catalog & enforcement | — | — | Shared permission mega-catalog |
-| POS roles / permissions | POS | Product access only | Own catalog & enforcement | — | — | Patient self-scope copy |
-| Patient self-scope | legacy product | — | Own | — | — | POS customer rule |
-| Product catalog / plans / trials | Platform | Own | Consume feature codes | Plan display | Product/Plan DTOs | Product pricing SoR |
-| Subscriptions / grace / suspend | Platform | Own | Enforce via projection | Full commercial snapshot | Subscription status | Product billing ledger |
-| SaaS payments / invoices | Platform | Own | Show status only | Payment status refs | Payment status DTO | POS sale as SaaS payment |
-| POS retail / credit payments (cash, gcash, customer-credit) | POS | — | Own; MVP GCash manual | — | — | Reuse POS entities for Platform GCash; GCash API in MVP |
-| Entitlements / overrides | Platform | Authoritative | Enforce locally | EntitlementSnapshot | Snapshot schema | Sync call every txn |
-| Feature vs local setting | Split | Feature codes | Operational settings | Features only | Feature code list | Settings as entitlements |
-| Platform admin UI | Platform | Native Admin | — | — | Admin APIs | Ant Design Admin |
-| legacy product Staff / Patient / Mobile UI | legacy product | — | Own stacks | — | — | Shared Ant to POS |
-| POS UI | POS | — | Native MAUI | — | Token/i18n conventions | Ant / Tailwind |
-| Platform audit | Platform | Own | — | — | Correlation fields | Clinical payloads |
-| legacy product clinical audit | legacy product | — | Own | — | Correlation | Platform PHI store |
-| POS operational audit | POS | — | Own | — | Correlation | Mixed SaaS/retail payment audit |
-| Platform notifications | Platform | Own triggers | — | — | Optional delivery contract later | Product content in Platform |
-| legacy product / POS notifications | Product | — | Own | — | — | Shared mega-notifier now |
-| Platform jobs | Platform | Own | — | — | — | One Hangfire DB for all |
-| legacy product reminder/summary jobs | legacy product | — | Own | — | — | Shared worker with POS |
-| POS sync / offline jobs | POS | — | Own | — | Sync contracts later | Platform owns device DB |
-| Validation / ProblemDetails / pagination | Convention | Use | Use | — | DTO shapes | Shared DbContext |
-| BFF / session patterns | Pattern | Admin may use | legacy product BFF; MAUI session | — | Pattern docs | Shared BFF host for all |
-| Offline sync / device state | POS | — | Own | — | Sync policy later | legacy product offline assumptions |
-| Appointments / notes / patients | legacy product | — | Own | — | — | POS domain rename |
-| Customers / CustomerCredit / sales / inventory | POS | — | Own | — | — | legacy product clinical reuse |
+| Capability | System of Record | Platform Responsibility | POS Responsibility | Shared Contract | Prohibited Coupling |
+|---|---|---|---|---|---|
+| User identity and credentials | Platform | Authenticate, suspend, verify, revoke | Reference trusted UserId | User and claim contracts | Product-owned passwords |
+| Platform organization | Platform | Lifecycle and membership | Link by PlatformOrganizationId | Organization DTO | POS as SaaS account authority |
+| Product access | Platform | Commercial grant and entitlement | Enforce before operational roles | Access projection | Commercial grant as POS role |
+| POS business/store/branch/register | POS | None | Own | Stable references where required | Platform store tables |
+| Platform roles | Platform | Define and assign | None | Platform role codes | Automatic POS powers |
+| POS roles and permissions | POS | Product access only | Own catalog and enforcement | Product-local contracts | Shared permission mega-catalog |
+| Product catalog/plans/trials | Platform | Own commercial catalog | Consume feature codes | Product/Plan DTOs | POS pricing as Platform authority |
+| Subscriptions and SaaS payments | Platform | Own | Show and enforce projected status | Subscription/payment status | POS sale as SaaS payment |
+| Retail and credit payments | POS | None | Own | None | Reusing retail entities for SaaS billing |
+| Entitlements and overrides | Platform | Authoritative composition | Enforce local snapshot | EntitlementSnapshot | Platform call on every transaction |
+| Platform Admin UI | Platform | Own Ant Design surface | None | Admin APIs | POS UI dependencies |
+| POS UI | POS | None | Own native DesignSystem surface | Token/i18n conventions | Ant or Tailwind in POS |
+| Platform audit | Platform | Own commercial/security audit | Emit product correlation where needed | Correlation fields | Product payloads in Platform |
+| POS operational audit | POS | None | Own | Correlation fields | Mixed SaaS/retail audit authority |
+| Notifications and jobs | Owning system | Platform commercial triggers | POS operational triggers and sync | Optional delivery contracts | Shared operational database |
+| Validation/ProblemDetails/pagination | Convention | Use | Use | DTO shapes | Shared DbContext |
+| Offline sync/device state | POS | None | Own | Sync policy and idempotency | Platform-owned device database |
+| Customers, Utang, sales, inventory | POS | None | Own | Product-owned | Platform operational entities |

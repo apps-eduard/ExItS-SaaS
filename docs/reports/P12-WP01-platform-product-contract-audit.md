@@ -42,9 +42,9 @@ ExItS-SaaS/
 ### Solution / independence — Implemented
 
 - `ExItS.slnx` contains Platform, PinoyBusinessPOS, Shared, tests, and tools projects only.
-- No foreign product projects in the solution.
-- No root a nested foreign product tree directory; Git tracking shows no nested foreign product tree empty.
-- Portfolio independence: no nested a nested foreign product tree product tree (`RepositorySafetyTests`); Platform + PinoyBusinessPOS only.
+- Solution contains only authorized ExItS portfolio projects.
+- No unauthorized nested product tree at repo root; No unauthorized nested product tree is tracked.
+- Portfolio independence: no unauthorized nested product tree (`RepositorySafetyTests`); Platform + PinoyBusinessPOS only.
 
 ### Only in-repo product today — Implemented
 
@@ -185,7 +185,7 @@ WP01 does **not** add Dockerfiles or deployment profiles.
 4. Platform product access ≠ product-local roles.
 5. Admin and MAUI UI do not reference Infrastructure/EF.
 6. Shared libraries limited to DesignSystem / BackupRestore / Deployment (technical primitives).
-7. legacy product present only as Platform integration contracts.
+7. Product integration contracts remain Platform-owned boundaries.
 8. Architecture tests enforce isolation (`RepositorySafetyTests`, `PosFoundationArchitectureTests`, `LayerDependencyTests`, `AdminArchitectureGuardTests`, `PilotDeploymentArchitectureTests`).
 9. Phase 11 Admin UI remains a Platform surface only — no POS operational UI merge.
 
@@ -244,7 +244,7 @@ No business-policy invention for Loan/Pawnshop/BNPL is authorized here.
 | Check | Result |
 |---|---|
 | Contract matches repository boundaries | **Pass** |
-| No foreign product dependency | **Pass** |
+| No unauthorized external product dependency | **Pass** |
 | Platform and POS remain independent | **Pass** |
 | Phase 11 UI untouched | **Pass** (no Admin/app code changes) |
 | No application / infrastructure code in WP01 | **Pass** |

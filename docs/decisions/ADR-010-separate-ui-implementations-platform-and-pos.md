@@ -4,7 +4,7 @@
 
 | Field | Value |
 |---|---|
-| Status | **Accepted** (validated P0-WP03; corrected 2026-07-29) |
+| Status | **Accepted** (UI separation validated; corrected 2026-07-29) |
 | Date | 2026-07-29 |
 | Related | ADR-004, ADR-005, ADR-006, ADR-007, ADR-008 |
 
@@ -32,7 +32,7 @@ Platform Admin and PinoyBusinessPOS serve different interaction models and do no
 2. **PinoyBusinessPOS MAUI** retains the **native UI foundation** (MAUI Blazor Hybrid + native CSS / DesignSystem). **No Ant Design requirement. No Tailwind.** Organization Web and Personal Web use Ant Design Blazor per **ADR-022**.
 3. **Shared consistency** comes from semantic design principles, terminology, and UI-independent contracts, not from forcing one component library into POS.
 4. Platform Admin may reuse domain-neutral, framework-independent patterns such as authorization, organization and user workflows, pagination, search, status semantics, modal contracts, notification contracts, and page-state patterns.
-5. No UI project may depend on a foreign product project or presentation model.
+5. No UI project may depend on an unauthorized external product project or presentation model.
 6. **MVP date control** remains a controlled wrapper; rich calendars require an approved need (ADR-008).
 
 ## Consequences
@@ -51,7 +51,7 @@ Platform Admin and PinoyBusinessPOS serve different interaction models and do no
 - Shared semantic design principles, branding guidance, terminology, and UI-independent contracts.
 - Separate framework-specific implementations.
 
-## Validation evidence (P0-WP03)
+## Validation evidence
 
 - Framework-specific components were not suitable as a cross-product shared UI layer.
 - Reusable value resides in domain-neutral contracts and interaction patterns.
@@ -60,11 +60,11 @@ Platform Admin and PinoyBusinessPOS serve different interaction models and do no
 
 - Tailwind in Platform Admin or POS — prohibited.
 - Fluent UI for Platform Admin — cancelled before push; superseded by ADR-015.
-- Sharing Ant Design Pro source or foreign product projects into ExItS Admin — rejected.
+- Sharing Ant Design Pro source or unauthorized external product projects into ExItS Admin — rejected.
 
 ## Correction note
 
-An earlier P0-WP03 draft incorrectly stated that interim Platform Admin would retain Ant Design. That statement was superseded by the native-Admin rule.
+An earlier draft incorrectly stated that interim Platform Admin would retain Ant Design. That statement was superseded by the native-Admin rule.
 
 ### P15-WP01 amendment (2026-08-01)
 

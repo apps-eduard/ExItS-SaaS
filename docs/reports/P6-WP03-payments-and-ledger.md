@@ -34,7 +34,7 @@ Read-only chronological union of credit entries and repayments ordered by `Recor
 
 ## Explicit exclusions
 
-Due dates, statements, printable receipts, trial-expiry behavior, interest, penalties, credit limits, write-offs, installments, sales, inventory, gateways, QR/cards, offline sync. No Platform/legacy product tables or cross-database FKs.
+Due dates, statements, printable receipts, trial-expiry behavior, interest, penalties, credit limits, write-offs, installments, sales, inventory, gateways, QR/cards, offline sync. No Platform tables or cross-database foreign keys.
 
 ## Persistence and migration
 
@@ -92,7 +92,7 @@ Android Release APK: `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/
 
 ## Portfolio independence
 
-Git tracking shows no nested foreign product tree empty; ignored via `.gitignore`; not in `ExItS.slnx`.
+No unauthorized nested product tree is tracked; ignored via `.gitignore`; not in `ExItS.slnx`.
 
 ## Risks and open decisions
 

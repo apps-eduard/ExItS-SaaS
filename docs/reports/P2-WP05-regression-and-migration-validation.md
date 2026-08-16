@@ -4,7 +4,7 @@
 
 | Field | Value |
 |---|---|
-| Phase | Phase 2 — Platform Extraction and legacy product Reconnection |
+| Phase | Phase 2 — Platform Foundation |
 | Work package | P2-WP05 — Regression and Migration Validation |
 | Status | Complete |
 | Branch | `main` |
@@ -12,7 +12,7 @@
 
 ## 2. Summary
 
-Published existing local history to `origin`, then implemented **validation-only** migration dry-run models: identity/organization/membership mapping candidates, preflight validator, compatibility reporter, simulation service, and rollback-readiness checks. **No** legacy product edits, real migration, EF/SQL, transport, persistence, or migration API routes.
+Published existing local history to `origin`, then implemented **validation-only** migration dry-run models: identity/organization/membership mapping candidates, preflight validator, compatibility reporter, simulation service, and rollback-readiness checks. **No** real migration, EF/SQL, transport, persistence, or migration API routes.
 
 ## 3. Initial remote publication (Part A)
 
@@ -67,7 +67,7 @@ Published existing local history to `origin`, then implemented **validation-only
 
 ## 8. portfolio independence verification
 
-`/legacy product/` ignored; Git tracking shows no nested foreign product tree empty; not in solution; unchanged. Dry-run ≠ migration/integration.
+Repository project-boundary checks passed. Dry-run validation is not a production migration or integration.
 
 ## 9. Risks
 

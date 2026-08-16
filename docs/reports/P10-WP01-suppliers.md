@@ -113,7 +113,7 @@ Unchanged release blockers: R-091, R-109, R-129, TLS-PROD, MAUI-HTTPS, POS-ROLES
 | Feature message | `feat(pos): add organization-owned supplier master data (P10-WP01 Option A)` |
 | Docs commit | `55469c60802d11273669efa10494ff1632efa84d` |
 | Docs message | `docs(pos): record P10-WP01 suppliers Option A completion evidence` |
-| Foreign product trees | Root a nested foreign product tree must remain absent/untracked and outside `ExItS.slnx` |
+| Unauthorized nested product trees | Root a unauthorized nested product tree must remain absent/untracked and outside `ExItS.slnx` |
 
 Exact next: **P10-WP02 — Purchasing** (do not begin until authorized).
 

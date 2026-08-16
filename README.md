@@ -46,7 +46,7 @@ ExItS-SaaS/
 └── README.md
 ```
 
-This workspace contains no nested foreign product source tree. Do not recreate or import external product source without an approved work package. `ExItS.slnx` lists only active portfolio projects.
+`ExItS.slnx` lists only active portfolio projects. Keep product ownership boundaries explicit and require an approved work package for any new portfolio product.
 
 **Phase 6** is **complete** with documented risks ([P6-WP06 closeout](docs/reports/P6-WP06-utang-mvp-closeout.md)). Utang MVP (customers, credit, repayments/ledger, due dates/overdue, statements/receipts, trial/continuity rules) is closed.
 

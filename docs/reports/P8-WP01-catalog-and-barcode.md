@@ -40,7 +40,7 @@ Required selling price: `decimal`, ≥ 0, ≤ 2 decimal places. Single price onl
 - System of record: PinoyBusinessPOS database `ExItS_PinoyBusinessPOS`, schema `pos`
 - `OrganizationId` is a Platform organization GUID value only (no cross-database FK)
 - All catalog queries/mutations scoped by organization; cross-org access fails closed (404)
-- No Platform or legacy product catalog tables in POS DB
+- No Platform catalog tables in the POS database
 
 ## Auth / continuity
 
@@ -119,7 +119,7 @@ Interactive device/emulator validation **not** claimed (`adb` unavailable) — *
 
 ## Portfolio independence
 
-Root a nested foreign product tree must remain absent/untracked and outside `ExItS.slnx`.
+No unauthorized nested product tree at repo root; keep `ExItS.slnx` to authorized products only.
 
 ## Documentation and Git
 

@@ -68,7 +68,7 @@ docker compose -f compose.live-preview.yaml --env-file .env.live-preview down
 | Admin `:8090` | 302 `/` → 200 `/admin` |
 | Platform `/health` `:8091`, POS `/health` `:8092` | 200 Healthy |
 | Full Release tests | **1266 passed / 0 failed / 0 skipped** |
-| Portfolio independence | No legacy product root / solution projects |
+| Portfolio independence | Approved root and solution projects only |
 
 ## Exact next work package
 

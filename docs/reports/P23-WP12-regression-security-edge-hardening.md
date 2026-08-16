@@ -236,7 +236,7 @@ Broader Platform integration filter (`BusinessType|Entitlement|CatalogTemplate|G
 
 ## Cross-org results
 
-- Today’s Prices foreign product → not found (no existence leak of other-org catalog semantics beyond existing ProductNotFound).
+- Today’s Prices other-organization product → not found (no existence leak of other-org catalog semantics beyond existing ProductNotFound).
 - Sale/catalog org scoping unchanged from prior phases.
 
 ## Migration impact

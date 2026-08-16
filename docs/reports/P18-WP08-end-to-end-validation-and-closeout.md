@@ -69,7 +69,7 @@ Regression added/updated in this validation pass:
 | Build | Path / notes |
 |---|---|
 | **PhysicalDevice Debug (preferred)** | `…\bin\Debug\net10.0-android\android-arm64\com.exits.pinoybusinesspos-Signed.apk` — also copied as `C:\Users\speed\Desktop\ExItS-POS-APK\ExItS-POS-PhysicalDevice-Debug.apk` (`PosLocalValidationTarget=PhysicalDevice`, Tailscale `100.120.79.81`) |
-| Emulator Debug (optional / secondary) | `…\bin\Debug\net10.0-android\com.exits.pinoybusinesspos-Signed.apk` — package `com.exits.pinoybusinesspos`; APIs via `http://10.0.2.2:8091` / `:8092` (emulator → host). Do **not** use historical legacy product AVD names. |
+| Emulator Debug (optional / secondary) | `…\bin\Debug\net10.0-android\com.exits.pinoybusinesspos-Signed.apk` — package `com.exits.pinoybusinesspos`; APIs via `http://10.0.2.2:8091` / `:8092` (emulator → host). Use an ExItS-named AVD. |
 
 ### Preferred PhysicalDevice install (ExItS POS)
 
@@ -90,7 +90,7 @@ Phone must reach Local Validation Platform/POS on Tailscale/LAN **8091** / **809
 
 Physical-device testing is preferred because the emulator is slow and unreliable here. If an emulator is required:
 
-- Use an ExItS-named AVD (for example `ExItS_Pixel_API34`) — **never** `legacy product_Pixel_API34` or other legacy product AVD names
+- Use an ExItS-named AVD (for example `ExItS_Pixel_API34`)
 - Package id remains `com.exits.pinoybusinesspos`
 - Host APIs: Platform `:8091`, POS `:8092`, Mailpit `:8025`
 - Prefer `10.0.2.2` host loopback (ensure Debug `AllowedHosts` includes `10.0.2.2`)
@@ -99,7 +99,7 @@ Physical-device testing is preferred because the emulator is slow and unreliable
 
 **Partial phone validation.** Phase 18 is **Complete (implementation/scope)**. **Not Device Verified.**
 
-Local Validation evidence used Platform `:8091` / POS `:8092` / Mailpit `:8025` with **PhysicalDevice Tailscale** as the preferred device path (plus earlier optional emulator evidence). Do not depend on legacy product-named AVDs.
+Local Validation evidence used Platform `:8091` / POS `:8092` / Mailpit `:8025` with **PhysicalDevice Tailscale** as the preferred device path (plus optional emulator evidence).
 
 Agent-assisted Local Validation evidence plus owner phone results:
 
@@ -264,7 +264,7 @@ Instructions: mark each item Pass / Fail / Blocked / Skipped / Deferred with not
 |---|---|
 | Validator | Owner |
 | Date / time | 2026-08-04 |
-| Device or emulator used | **Physical phone preferred** (partial validation) + PhysicalDevice Tailscale APK delivered; optional emulator evidence only (no legacy product AVD) |
+| Device or emulator used | **Physical phone preferred** (partial validation) + PhysicalDevice Tailscale APK delivered; optional emulator evidence only |
 | Overall outcome | **Partial phone validation** — Products and Categories phone-validated; Quick Login / access routing fixed pending final retest; operational UIs deferred to Phase 19 |
 | Explicit confirmation to close Phase 18 | **Yes — scope closed by owner request 2026-08-04 without full Device Verified** |
 | Device Verified claimed | **No** |

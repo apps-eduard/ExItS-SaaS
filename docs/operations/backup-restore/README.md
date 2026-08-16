@@ -95,7 +95,7 @@ No cross-database FKs to repair.
 
 ## 11. Post-restore validation
 
-Structural (schemas, tables, migration history, indexes/constraints via restore, legacy product absence) + Platform/POS integrity + recalculated invariants where applicable. Mismatches **fail** validation — never silent repair.
+Structural validation (schemas, tables, migration history, indexes/constraints via restore) plus Platform/POS integrity and recalculated invariants where applicable. Mismatches **fail** validation — never silent repair.
 
 Automated evidence: `dotnet test tests/ExItS.BackupRestore.Tests -c Release`
 

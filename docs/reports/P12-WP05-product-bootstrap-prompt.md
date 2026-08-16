@@ -64,7 +64,7 @@ Hypothetical first WP (not started): documentation-approved domain baseline / pe
 | Check | Result |
 |---|---|
 | No code / scaffold / SampleProduct folder | Pass (`Test-Path src/Products/SampleProduct` = False) |
-| No Phase 11 / legacy product dependency | Pass |
+| No Phase 11 or unrelated product dependency | Pass |
 | Links resolve | Pass |
 | Release tests | **1186 passed / 0 failed / 0 skipped** |
 

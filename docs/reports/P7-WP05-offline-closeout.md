@@ -22,7 +22,7 @@ Mark Phase 7 **complete with documented risks** when:
 - Full `ExItS.slnx` Release tests pass (619 / 0 / 0)
 - Android Release APK builds
 - Documentation matches implementation
-- No nested foreign product tree in this repository
+- Portfolio independence preserved (Platform + authorized products only)
 - Git is clean; `main` matches `origin/main` after push
 
 **Do not claim production readiness** while documented blockers remain open.
@@ -224,7 +224,7 @@ Updated Phase 7, offline-sync design, portfolio, FILE-MANIFEST, README, security
 
 ## Portfolio independence
 
-Root a nested foreign product tree must remain absent/untracked and outside `ExItS.slnx`.
+No unauthorized nested product tree at repo root; keep `ExItS.slnx` to authorized products only.
 
 ## Exact next authorized phase / work package
 

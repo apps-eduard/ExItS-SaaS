@@ -2,7 +2,7 @@
 
 [Home](../index.md) | [Repository boundaries](repository-boundaries.md) | [Local Validation workflow](../../deploy/docker/README.local-validation-workflow.md) | [P2-WP01 report](../reports/P2-WP01-extraction-baseline-and-safety.md)
 
-ExItS-SaaS is an independent multi-product portfolio. The historical foreign product tree is **not** in this workspace and must **not** be restored. Use ExItS Platform + PinoyBusinessPOS Local Validation only.
+ExItS-SaaS is an independent multi-product portfolio. Use ExItS Platform + PinoyBusinessPOS Local Validation only.
 
 ## ExItS root Platform
 
@@ -99,7 +99,7 @@ Emulator uses the **same** Tailscale PublicHost as physical devices (`100.120.79
 | Package id | `com.exits.pinoybusinesspos` |
 | Profile | `-p:PosLocalValidationTarget=PhysicalDevice` (**default** Debug) |
 | API base URLs | `http://100.120.79.81:8091` / `http://100.120.79.81:8092` |
-| AVD | Create/use an ExItS-named AVD (for example `ExItS_Pixel_API34`) — never `legacy product_*` |
+| AVD | Create/use an ExItS-named AVD (for example `ExItS_Pixel_API34`) |
 
 ```powershell
 $env:ANDROID_HOME = "$env:LOCALAPPDATA\Android\Sdk"

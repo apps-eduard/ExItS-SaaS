@@ -2,7 +2,7 @@
 
 ## 1. Status
 
-**Complete.** Platform Admin subscription lifecycle, trial start, and manual SaaS payment workflows delivered by reusing Phase 3 domain/application/API behavior. No new persistence migration. No nested foreign product tree in this repository. Authentication, payment gateways, invoices, entitlement delivery, and product-local roles remain out of scope.
+**Complete.** Platform Admin subscription lifecycle, trial start, and manual SaaS payment workflows delivered by reusing Phase 3 domain/application/API behavior. No new persistence migration. Portfolio independence preserved (Platform + authorized products only). Authentication, payment gateways, invoices, entitlement delivery, and product-local roles remain out of scope.
 
 | Field | Value |
 |---|---|
@@ -43,7 +43,7 @@ Subscription state continues to drive fail-closed effective commercial access (T
 
 ## 3. Persistence / migration
 
-**No new migration.** Reused Phase 3 subscription and SaaS payment tables/repositories. No authentication, invoice, gateway, POS, or legacy product schema changes.
+**No new migration.** Reused Phase 3 subscription and SaaS payment tables/repositories. No authentication, invoice, gateway, or POS schema changes.
 
 ## 4. API
 
@@ -57,7 +57,7 @@ Existing Phase 3 subscription and payment mutation endpoints reused. Admin typed
 | Confirm/reject/void | `POST .../payments/{id}/confirm\|reject\|void` |
 | Confirm + activate | `POST .../payments/{id}/activate-subscription` |
 
-DTOs only; stable ProblemDetails; concurrency conflicts remain explicit. Payment activate response maps full subscription DTO for Admin deserialization. No gateway, webhook, invoice, QR, card, POS, or legacy product APIs added.
+DTOs only; stable ProblemDetails; concurrency conflicts remain explicit. Payment activate response maps full subscription DTO for Admin deserialization. No gateway, webhook, invoice, QR, card, or POS APIs added.
 
 ## 5. Platform Admin UI
 
@@ -108,7 +108,7 @@ APIs and Admin remain **development-stage and unauthenticated**. Manual confirma
 
 ## 10. portfolio independence verification
 
-`/legacy product/` remains ignored, untracked, outside `ExItS.slnx`, unchanged.
+Repository project-boundary checks passed.
 
 ## 11. Exact next work package
 

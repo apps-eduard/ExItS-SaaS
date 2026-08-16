@@ -2,7 +2,7 @@
 
 ## 1. Status
 
-**Complete.** Permanent Cursor workflow rules added; read-only Platform Admin Blazor shell delivered; focused Admin read APIs added; validation passed; No nested foreign product tree in this repository.
+**Complete.** Permanent Cursor workflow rules added; read-only Platform Admin Blazor shell delivered; focused Admin read APIs added; validation passed; Portfolio independence preserved (Platform + authorized products only).
 
 | Field | Value |
 |---|---|
@@ -27,7 +27,7 @@
 ## 3. Explicit exclusions
 
 - Authentication / JWT / MFA / identity or membership persistence
-- Entitlement delivery to legacy product or POS
+- Entitlement delivery to POS
 - PinoyBusinessPOS
 - Invoices, payment gateways, webhooks, QR, card processing
 - Catalog / subscription / payment / override mutation Admin workflows
@@ -88,9 +88,8 @@ Baseline maintained above prior 302 tests.
 
 ## 8. portfolio independence verification evidence
 
-- Git tracking shows no nested foreign product tree → empty
-- `git check-ignore -v legacy product/` → `.gitignore:7:/legacy product/`
-- `ExItS.slnx` contains only approved ExItS Platform/Admin/test projects (no legacy product, no POS)
+- No unauthorized nested product tree is tracked
+- `ExItS.slnx` contains only approved ExItS Platform/Admin/test projects (no POS)
 
 ## 9. Risks / open decisions
 

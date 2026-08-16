@@ -41,7 +41,7 @@ Customer storefront, cart, checkout, order lifecycle, payment, dispatch, courier
 
 ## Portfolio independence
 
-Root a nested foreign product tree is absent, Git tracking shows no nested foreign product tree is empty, and the solution project list contains no legacy product project.
+Repository and solution checks confirmed that only approved portfolio projects were present.
 
 ## Risks and open decisions
 

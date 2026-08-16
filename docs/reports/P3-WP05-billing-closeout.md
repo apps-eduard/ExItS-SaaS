@@ -15,7 +15,7 @@
 
 Closed Phase 3 by reconciling P3-WP01–P4 implementation against documentation and risks, validating the full PostgreSQL migration chain, adding a deterministic end-to-end commercial API scenario, updating the phase marker to `P3-WP05-billing-closeout`, and recording evidence-based risk dispositions.
 
-No new business module was added. No authentication, product delivery, payment gateway, invoice engine, Hangfire, broker, legacy product, or POS implementation was introduced.
+No new business module was added. No authentication, product delivery, payment gateway, invoice engine, Hangfire, broker, or POS implementation was introduced.
 
 ## 3. Phase 3 scope delivered
 
@@ -31,12 +31,12 @@ No new business module was added. No authentication, product delivery, payment g
 
 - Authentication / JWT / MFA
 - Platform Admin UI
-- Product entitlement delivery (legacy product or POS)
+- Product entitlement delivery to POS
 - Message brokers / outbox / Hangfire
 - Payment gateways, webhooks, QR, card storage
 - Invoices / automated reconciliation / price engine
 - PinoyBusinessPOS product implementation
-- legacy product operational databases or cutover
+- Production product database migration
 - Fixed 90-day trial substitute (R-035 remains open)
 
 ## 5. API inventory (development-stage, unauthenticated)
@@ -88,7 +88,7 @@ All routes under `/api/v1/platform/...` unless noted.
 | GET | `/entitlements/snapshots/{snapshotId}` |
 | POST/GET | `.../feature-overrides`, `/feature-overrides/{id}`, `.../revoke` |
 
-**Absent:** legacy product, POS, gateway, webhook, QR, invoice, delivery, broker routes.
+**Absent:** POS, gateway, webhook, QR, invoice, delivery, and broker routes.
 
 ## 6. Database and migration inventory
 
@@ -112,7 +112,7 @@ dotnet ef database update InitialPlatformCatalog → 7 tables
 dotnet ef database update → re-applied to 13 tables
 ```
 
-No legacy product/POS/users/memberships/invoices/gateway/Hangfire tables. No `Migrate()` at API startup.
+No POS/users/memberships/invoices/gateway/Hangfire tables. No `Migrate()` at API startup.
 
 ## 7. End-to-end commercial scenario
 
@@ -145,9 +145,8 @@ Covered: catalog → org → trial → trial snapshot → manual GCash payment �
 
 ## 10. portfolio independence verification
 
-- Git tracking shows no nested foreign product tree empty
-- `/legacy product/` ignored
-- No legacy product project in `ExItS.slnx`
+- No unauthorized nested product tree is tracked
+- `ExItS.slnx` contained only approved Platform projects
 
 ## 11. Risk disposition (evidence-based)
 

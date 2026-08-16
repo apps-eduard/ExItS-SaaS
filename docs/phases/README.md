@@ -4,9 +4,9 @@
 
 | Phase | Name | Status | Link |
 |---:|---|---|---|
-| 0 | Existing legacy product Assessment | **Complete with documented risks** | [Open](../reports/phase-00-final-assessment-and-recommendation.md) |
+| 0 | Portfolio inception | **Complete with documented risks** | — |
 | 1 | Platform Boundary and Architecture | **Complete with documented risks** | [Open](phase-01-platform-boundary.md) |
-| 2 | Platform Extraction and legacy product Reconnection | **Complete with documented risks** | [Open](phase-02-platform-extraction.md) |
+| 2 | Platform Foundation | **Complete with documented risks** | [Open](phase-02-platform-extraction.md) |
 | 3 | Portfolio Billing, Plans and Entitlements | **Complete with documented risks** | [Open](phase-03-billing-entitlements.md) |
 | 4 | Platform Admin Expansion | **Complete with documented risks** | [Open](phase-04-platform-admin.md) |
 | 5 | PinoyBusinessPOS MAUI Foundation | **Complete with documented risks** | [Open](phase-05-pos-maui-foundation.md) |

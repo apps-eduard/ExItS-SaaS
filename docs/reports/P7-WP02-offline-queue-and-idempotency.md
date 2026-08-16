@@ -76,4 +76,4 @@ Exact next work package: **P7-WP03 — Customer and Credit Sync** (do not begin 
 
 ## Portfolio independence
 
-Root a nested foreign product tree must remain absent/untracked and outside `ExItS.slnx`.
+No unauthorized nested product tree at repo root; keep `ExItS.slnx` to authorized products only.

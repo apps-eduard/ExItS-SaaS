@@ -12,7 +12,7 @@
 
 ## 2. Summary
 
-Implemented the first **persistent** Platform commercial catalog: EF Core + PostgreSQL (`ExItS_Platform` / schema `platform`), repositories, unit of work, expanded catalog commands/queries, REST API under `/api/v1/platform/catalog`, migration `InitialPlatformCatalog`, and Testcontainers integration tests. Subscriptions, payments, Admin UI, legacy product integration, and POS were **not** implemented.
+Implemented the first **persistent** Platform commercial catalog: EF Core + PostgreSQL (`ExItS_Platform` / schema `platform`), repositories, unit of work, expanded catalog commands/queries, REST API under `/api/v1/platform/catalog`, migration `InitialPlatformCatalog`, and Testcontainers integration tests. Subscriptions, payments, Admin UI, product integration, and POS were **not** implemented.
 
 **Security note:** Catalog endpoints are **development-stage and unauthenticated**. They are not production-ready (R-045).
 
@@ -43,7 +43,7 @@ Local Development uses Docker Postgres on port **5434** with a local-only passwo
 | `trial_definitions` | PK `id`; `duration_ticks` (configurable TimeSpan; **not** 90 days) |
 | `trial_definition_feature_grants` | PK (`trial_definition_id`,`feature_code`,`grant_kind`) |
 
-No identity, organization, subscription, payment, entitlement-projection, legacy product, or POS tables.
+No identity, organization, subscription, payment, entitlement-projection, or POS tables.
 
 ## 5. Application capability
 
@@ -57,7 +57,7 @@ Repositories: explicit EF implementations + `IPlatformUnitOfWork`. Conflicts map
 
 Products, features, plans, plan versions, trials as implemented in `CatalogEndpoints.cs`.
 
-Confirmed absent: subscription, payment, GCash, legacy product, POS routes.
+Confirmed absent: subscription, payment, GCash, and POS routes.
 
 Phase marker: `P3-WP01-product-plan-catalog`. Routes: `GET /`, `GET /health` retained.
 
@@ -101,7 +101,7 @@ Integration strategy: **Testcontainers PostgreSQL 18** (not EF InMemory).
 
 ## 11. portfolio independence verification
 
-`/legacy product/` ignored; Git tracking shows no nested foreign product tree empty; not in solution; unchanged. Platform `Integration/legacy product/` untouched.
+Repository project-boundary checks passed; the solution contained only approved Platform projects.
 
 ## 12. Risks
 

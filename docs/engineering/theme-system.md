@@ -43,7 +43,7 @@ Use semantic variables rather than page-specific colors:
 }
 ```
 
-New ExITS Platform Admin and PinoyBusinessPOS share the same semantic CSS custom-property approach (`--exits-*` / Admin `--color-*` tokens). Existing legacy product Staff Web keeps its Ant/`--hc-*` styling without a forced migration.
+ExITS Platform Admin and PinoyBusinessPOS share the same semantic CSS custom-property approach (`--exits-*` / Admin `--color-*` tokens) while retaining framework-specific implementations.
 
 ## Platform Admin themes (P4-WP04 + Pre-P11 theme persistence reopen)
 

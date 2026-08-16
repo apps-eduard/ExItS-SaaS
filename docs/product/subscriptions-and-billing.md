@@ -4,7 +4,7 @@
 
 ## Platform product catalog
 
-- legacy product
+- PinoyBusinessPOS
 - PinoyBusinessPOS
 
 ## PinoyBusinessPOS plans
@@ -51,7 +51,7 @@ Everything in Basic Store plus suppliers, purchasing, advanced inventory, cashie
 
 **P3-WP03:** Manual SaaS payment records are **persisted** (`platform.saas_payments`). Manual confirmation lifecycle (PendingConfirmation → Confirmed → Voided; PendingConfirmation → Rejected). Confirmed payment can atomically activate a subscription. Duplicate-reference detection enforced. No payment gateway, webhook, QR, card storage, or automatic verification. Payment amount reconciliation against catalog price is deferred.
 
-**P3-WP04:** Feature overrides and immutable entitlement snapshots are **persisted**. Composition applies plan/trial grants, overrides, and subscription-state restrictions (including Expired Utang view/repay/create). Snapshot versions are monotonic per organization+product. Refresh-by uses a provisional 24h policy (R-022 open). **No product delivery** — legacy product/POS local projections remain future work.
+**P3-WP04:** Feature overrides and immutable entitlement snapshots are **persisted**. Composition applies plan/trial grants, overrides, and subscription-state restrictions (including Expired Utang view/repay/create). Snapshot versions are monotonic per organization+product. Refresh-by uses a provisional 24h policy (R-022 open). Product delivery and POS local projections remained future work at this milestone.
 
 **P3-WP05:** Phase 3 commercial foundation **closed with documented risks**. End-to-end catalog → trial → payment activation → snapshots → grace/past-due → terminal/expired Utang path validated. Production auth, delivery, invoices, and gateways remain out of scope.
 

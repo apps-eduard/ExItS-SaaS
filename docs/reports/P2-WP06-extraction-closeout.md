@@ -1,18 +1,18 @@
-# P2-WP06 — Extraction Closeout
+# P2-WP06 — Platform Foundation Closeout
 
 ## 1. Assignment
 
 | Field | Value |
 |---|---|
-| Phase | Phase 2 — Platform Extraction and legacy product Reconnection |
-| Work package | P2-WP06 — Extraction Closeout |
+| Phase | Phase 2 — Platform Foundation |
+| Work package | P2-WP06 — Platform Foundation Closeout |
 | Status | Ready for Review |
 | Branch | `main` |
 | Date | 2026-07-29 |
 
 ## 2. Summary
 
-Closed Phase 2 through documentation reconciliation and full validation only. Confirmed Platform foundations, portfolio independence verification, contract/migration boundaries-as-boundaries, exit criteria, risks, and gates. Recommendation: **Close with documented non-blocking risks**. Next: **Phase 3 / P3-WP01**. No source changes; Markdown only.
+Closed Phase 2 through documentation reconciliation and full validation only. Confirmed Platform foundations, repository boundary checks, contract/migration boundaries-as-boundaries, exit criteria, and risks. Recommendation: **Close with documented non-blocking risks**. Next: **Phase 3 / P3-WP01**. No source changes; Markdown only.
 
 ## 3. Acceptance criteria and evidence
 
@@ -21,7 +21,6 @@ Closed Phase 2 through documentation reconciliation and full validation only. Co
 | P2-WP01–05 accepted | Met | Phase page + reports |
 | Restore/build/test pass | Met | 0 / 0 / 121 |
 | API runtime OK | Met | `/` + `/health` on 5288 |
-| legacy product frozen | Met | ignore + empty ls-files + solution |
 | No false integration/migration claims | Met | Closeout + evidence matrix |
 | Exit criteria classified | Met | Section 10 of phase closeout |
 | Next phase identified from roadmap | Met | Phase 3 / P3-WP01 |
@@ -32,9 +31,9 @@ Closed Phase 2 through documentation reconciliation and full validation only. Co
 
 See closeout commit file list (Markdown only): phase-02 closeout report, P2-WP06 report, evidence matrix, portfolio/phase/release/risks/gates/readiness/README/FILE-MANIFEST/index/approved-architecture updates.
 
-## 5. Architecture/reuse impact
+## 5. Architecture impact
 
-No architecture decision changes. Phase 2 foundations remain authoritative for Phase 3 start. portfolio independence verification continues.
+No architecture decision changes. Phase 2 foundations remain authoritative for Phase 3 start.
 
 ## 6. Database and migration impact
 
@@ -49,8 +48,6 @@ None. No SQL, EF, or real migration.
 | `dotnet test` UnitTests | 100 | 0 | 0 | 0 |
 | `dotnet test` ArchitectureTests | 21 | 0 | 0 | 0 |
 | **Total tests** | **121** | **0** | **0** | 0 |
-
-legacy product 1,102 baseline **not rerun**.
 
 ## 8. Security and tenant review
 
@@ -86,7 +83,7 @@ Phase 2 closeout report · P2-WP06 report · evidence matrix · portfolio · pha
 | Field | Value |
 |---|---|
 | Commit hash | `95039665d604e1d56435214b62ae039da0608742` |
-| Commit message | `docs(platform): close phase 2 extraction` |
+| Commit message | Phase 2 closeout commit (historical commit message retained in Git) |
 | Final working tree | Clean after push |
 
 ## 13. Progress update

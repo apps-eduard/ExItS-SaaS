@@ -91,8 +91,8 @@ No new migration in WP14. Production auto-`Migrate()` remains forbidden.
 
 ## Portfolio independence
 
-- No root a nested foreign product tree directory
-- Git tracking shows no nested foreign product tree empty
+- No unauthorized nested product tree at repo root
+- No unauthorized nested product tree is tracked
 - Phase 23 remains Open and unmixed
 
 ## Explicit non-claims
@@ -120,7 +120,7 @@ Mobile host: shared `ExItS.PinoyBusinessPOS.Maui` (Personal shell routes). ApiCl
 | Activity | Result |
 |---|---|
 | New code / tests | **None** |
-| Independence check | legacy product absent; clean |
+| Independence check | Approved portfolio projects only; clean |
 | WP12 regression baseline | Platform 824 / POS 578 passed (recorded in WP12); Admin 135/5 pre-existing |
 
 ## Exact next WP

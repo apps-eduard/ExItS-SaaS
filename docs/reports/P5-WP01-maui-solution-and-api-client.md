@@ -2,7 +2,7 @@
 
 ## 1. Status
 
-**Complete.** PinoyBusinessPOS Android-first MAUI Blazor Hybrid foundation delivered: shared DesignSystem library, shell, System/Light/Dark themes, EN/fil-PH resources, typed API client with connectivity/health classification, and Release Android APK evidence. Phase 5 remains **In Progress**. No nested foreign product tree in this repository.
+**Complete.** PinoyBusinessPOS Android-first MAUI Blazor Hybrid foundation delivered: shared DesignSystem library, shell, System/Light/Dark themes, EN/fil-PH resources, typed API client with connectivity/health classification, and Release Android APK evidence. Phase 5 remains **In Progress**. Portfolio independence preserved (Platform + authorized products only).
 
 | Field | Value |
 |---|---|
@@ -123,7 +123,7 @@ Release `net10.0-android` APK produced for `ExItS.PinoyBusinessPOS.Maui` (Androi
 
 ## 12. portfolio independence verification
 
-Root a nested foreign product tree must remain absent/untracked and outside `ExItS.slnx`. Platform Integration contracts under `src/Platform/.../Integration/legacy product/` remain tracked Platform files only.
+Repository project-boundary checks require `ExItS.slnx` to contain only approved portfolio projects. Platform integration contracts remain Platform-owned files.
 
 ## 13. Exact next work package
 

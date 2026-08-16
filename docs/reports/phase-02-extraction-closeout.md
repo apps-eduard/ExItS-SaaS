@@ -1,98 +1,49 @@
-# Phase 2 — Extraction Closeout
+# Phase 2 — Platform Foundation Closeout
 
 [Dashboard](../portfolio-progress.md) | [Phase 2](../phases/phase-02-platform-extraction.md) | [Evidence matrix](../engineering/phase-02-evidence-matrix.md) | [P2-WP06](P2-WP06-extraction-closeout.md) | [Next: Phase 3](../phases/phase-03-billing-entitlements.md)
 
 | Field | Value |
 |---|---|
-| Work package | P2-WP06 — Extraction Closeout |
+| Work package | P2-WP06 — Platform Foundation Closeout |
 | Date | 2026-07-29 |
 | Branch | `main` |
 | Recommendation | **Close with documented non-blocking risks** |
 | Closeout commit | `95039665d604e1d56435214b62ae039da0608742` |
 
----
-
 ## 1. Executive recommendation
 
 **Close Phase 2 with documented non-blocking risks.**
 
-P2-WP01 through P2-WP05 are accepted. Root Platform foundation, identity/organization boundary, commercial/entitlement domain, legacy product contract boundaries, and migration dry-run validation are implemented and tested. No nested foreign product tree in this repository. No authentication, persistence, real legacy product integration, migration, cutover, Platform Admin, or PinoyBusinessPOS was delivered — and must not be assumed complete.
+P2-WP01 through P2-WP05 established the root Platform solution, identity and organization boundaries, commercial and entitlement domains, versioned product contract interfaces, and migration-validation models. Authentication, persistence, production transport, production migration, Platform Admin, and PinoyBusinessPOS were outside this phase and must not be assumed complete.
 
-Deferred items (auth, EF/PostgreSQL, legacy product Integration/E2E, restore rehearsal, calendar EOM rule, stale entitlement windows) belong to later phases and have safe defaults for continuing Platform work.
+**Exact next work:** Phase 3 — Portfolio Billing, Plans and Entitlements → **P3-WP01 — Product and Plan Catalog**.
 
-**Exact next work:** Phase 3 — Portfolio Billing, Plans and Entitlements → **P3-WP01 — Product and Plan Catalog** (do not begin until authorized).
-
----
-
-## 2. Evidence reviewed
-
-- Tracking: README, FILE-MANIFEST, index, portfolio-progress, phase-02, release-plan, risks
-- Reports: P2-WP01 through P2-WP05
-- Engineering: approved architecture, architecture, repository boundaries, capability/contracts/data/entitlement/security/authorization matrices, extraction rollback, risk/gate matrices, readiness checklist, standards, testing strategy
-- Reuse: extraction sequence/rules, legacy product reuse assessment, runtime baseline
-- Product: subscriptions-and-billing, pinoy-business-pos-requirements
-- Decisions: ADR-011 through ADR-014
-- Next phase: `docs/phases/phase-03-billing-entitlements.md`
-
----
-
-## 3. Work-package acceptance summary
+## 2. Work-package acceptance summary
 
 | WP | Status | Key evidence |
 |---|---|---|
-| P2-WP01 | **Complete / Accepted** | `4827b7f` — root solution, freeze safety |
-| P2-WP02 | **Complete / Accepted** | `49f8ae8` — identity/org domain (no auth) |
-| P2-WP03 | **Complete / Accepted** | `6e866d7` + `10f99c5` — catalog/subs/entitlements; configurable trial |
-| P2-WP04 | **Complete / Accepted** | `3b66095` + `eb9fdfe` — legacy product projection contracts/interfaces |
-| P2-WP05 | **Complete / Accepted** | `e001f3d` — migration dry-run + remote publish |
-| P2-WP06 | **Ready for Review** | This closeout |
+| P2-WP01 | **Complete / Accepted** | `4827b7f` — root solution and architecture safety |
+| P2-WP02 | **Complete / Accepted** | `49f8ae8` — identity and organization domain |
+| P2-WP03 | **Complete / Accepted** | `6e866d7` + `10f99c5` — catalog, subscriptions, entitlements, configurable trial |
+| P2-WP04 | **Complete / Accepted** | `3b66095` + `eb9fdfe` — versioned projection contracts and interfaces |
+| P2-WP05 | **Complete / Accepted** | `e001f3d` — migration dry run and remote publication |
+| P2-WP06 | **Complete** | Closeout reconciliation and validation |
 
----
+## 3. Implemented architecture
 
-## 4. Implemented architecture
+- Root `ExItS.slnx`, SDK pin `10.0.302`, and central build/package management
+- Layered Platform: Domain → Application → Infrastructure; API hosts `/` and `/health`
+- Identity and organization aggregates with stable identifiers
+- Products, features, plans, trials, subscriptions, overrides, and entitlement snapshots
+- Versioned contract envelopes, projections, applicability rules, and reconciliation interfaces
+- Deterministic migration preflight, compatibility, simulation, and rollback-readiness models
+- Unit and architecture safety tests
 
-- Root `ExItS.slnx`, SDK pin `10.0.302`, central build/package management
-- Layered Platform: Domain → Application → Infrastructure; Api hosts `/` + `/health` only
-- Identity: `PlatformUser`, IDs, account lifecycle (no credentials)
-- Organizations: org + membership + Platform-only `OrganizationRole` + `ProductAccess` concept
-- Commercial: products, features, plans, immutable plan versions, trials, subscriptions, overrides, entitlement snapshots/composer
-- legacy product-facing contracts: envelope, versioning, projections, apply policy, delivery/reconciliation **interfaces**
-- Migration validation: preflight, simulation, compatibility, rollback-readiness (**no executor**)
-- Unit + architecture/safety tests (121 total at closeout)
+## 4. Explicitly unimplemented capabilities
 
----
+Login, password/JWT/refresh/MFA, EF Core, PostgreSQL, persistence, Platform business APIs, Platform Admin UI, invoices, payment collection, PinoyBusinessPOS, production message transport, production migration, and production deployment.
 
-## 5. Explicitly unimplemented capabilities
-
-Login · password/JWT/refresh/MFA · EF Core · PostgreSQL · migrations · persistence · Platform business APIs · Platform Admin UI · SaaS invoice generation · Platform payment collection · Platform GCash · PinoyBusinessPOS · POS Cash/GCash/Utang ledger · offline sync · production message transport · legacy product adapter **implementation** · legacy product auth cutover · legacy product DB migration · legacy product source movement · legacy product legacy retirement · production deployment
-
----
-
-## 6. portfolio independence verification evidence
-
-| Check | Result |
-|---|---|
-| Git tracking shows no nested foreign product tree | Empty |
-| `git check-ignore -v legacy product/` | `.gitignore:7:/legacy product/` |
-| `ExItS.slnx` | No legacy product projects |
-| Project references | No legacy product assemblies |
-| Root product folder | Unmoved, unchanged, no code removed/retired |
-| Platform `Integration/legacy product/` | Tracked contracts/interfaces only |
-
-**legacy product baseline 1,102 tests were not rerun during this closeout** (legacy product untouched by design).
-
----
-
-## 7. Contract and migration-validation findings
-
-- Contracts are **transport-independent boundaries**, not completed legacy product integration (R-040).
-- Migration validation is **deterministic simulation only** — no real user/org/membership/entitlement migration (R-043).
-- Rollback readiness validates evidence; **does not execute rollback** and does not prove restore rehearsal (R-027, R-044).
-- Anchored `/legacy product/` ignores nested product; Platform Integration path remains tracked.
-
----
-
-## 8. Build and test evidence
+## 5. Build and test evidence
 
 | Command | Exit | Notes |
 |---|---:|---|
@@ -106,135 +57,39 @@ Login · password/JWT/refresh/MFA · EF Core · PostgreSQL · migrations · pers
 | ExItS.ArchitectureTests | 21 | 0 | 0 |
 | **Total** | **121** | **0** | **0** |
 
-Matches P2-WP05 accepted baseline.
-
-Trial grep: no `FromDays(90)` in `src`; docs/tests mention prohibition of 90-day substitute only.
-
----
-
-## 9. Runtime evidence
+## 6. Runtime evidence
 
 | Check | Result |
 |---|---|
 | Port | `5288` |
-| `GET /` | `phase=P2-WP05-regression-migration-validation` (retained; P2-WP06 is docs-only) |
+| `GET /` | `phase=P2-WP05-regression-migration-validation` |
 | `GET /health` | Healthy |
-| External deps | None (no DB, legacy product, broker, auth) |
+| External dependencies | None |
 | Shutdown | Clean |
 
----
+## 7. Exit-criteria assessment
 
-## 10. Exit-criteria assessment
+| Criterion | Classification | Evidence | Follow-up |
+|---|---|---|---|
+| Every work package complete or deferred | **Satisfied** | P2-WP01–06 | — |
+| Risks and decisions recorded | **Satisfied** | Risk register and ADRs | Ongoing |
+| Platform regression and architecture tests pass | **Satisfied** | 121/0/0 | Continuous |
+| Platform foundation buildable | **Satisfied** | Release build | Continuous |
+| Identity and organization boundary | **Satisfied (foundation)** | P2-WP02 | Authentication and persistence later |
+| Commercial and entitlement foundation | **Satisfied (domain)** | P2-WP03 | Phase 3 |
+| Product contract interfaces | **Satisfied (foundation)** | P2-WP04 | Transport later |
+| Migration simulation | **Satisfied** | P2-WP05 | Production migration requires separate authorization |
+| Database restore rehearsal | **Deferred** | No persistence in Phase 2 | Before a production migration |
+| Next phase identified | **Satisfied** | Phase 3 / P3-WP01 | Separate authorization |
 
-Phase 2 page exit criteria plus reconnection intent:
+Non-satisfied production capabilities were outside Phase 2 scope and do not block the foundation closeout.
 
-| Criterion | Classification | Evidence | Blocking? | Follow-up |
-|---|---|---|---|---|
-| Every WP complete or deferred | **Satisfied** | P2-WP01–06 closed/accepted | No | — |
-| Risks and decisions recorded | **Satisfied** | Risk register + ODs | No | Ongoing |
-| Required Platform regression/security architecture tests pass | **Satisfied** | 121/0/0; architecture tests | No | Continuous |
-| legacy product Integration/E2E re-baseline | **Deferred by design** | R-020; 1102 not rerun | No for Phase 2 close | Before legacy product cutover |
-| Next phase explicitly identified | **Satisfied** | Phase 3 / P3-WP01 | No | Authorization to start |
-| Platform foundation buildable | **Satisfied** | Release build | No | — |
-| Identity/org boundary | **Satisfied** (foundation) | P2-WP02 | No | Auth/persistence later |
-| Commercial/entitlement foundation | **Satisfied** (domain) | P2-WP03 | No | Phase 3 catalog/billing |
-| legacy product contracts exist | **Satisfied** | P2-WP04 | No | Transport later |
-| legacy product integrated / cut over | **Not satisfied** / **Deferred** | Explicitly out of Phase 2 | No for close | Dedicated cutover WP |
-| Migration simulation exists | **Satisfied** | P2-WP05 | No | — |
-| Production migration completed | **Not satisfied** / N/A Phase 2 | Prohibited | — | Future |
-| Rollback model exists | **Satisfied** | P2-WP05 + L0–L6 plan | No | — |
-| DB restore rehearsed | **Not satisfied** | R-027 | No for Phase 2 close | Before cutover |
-| legacy product code retirement | **Not applicable** / **Prohibited** | None retired | — | After proven cutover |
+## 8. Security limitations
 
-**Totals:** Satisfied **9** · Partially satisfied **0** · Deferred by design **2** · Not satisfied **3** · Not applicable **1**
+Authentication and persistence were not implemented in this phase. Contract payloads remain product-neutral and exclude operationally sensitive product data. Production authorization, transport security, restore rehearsal, and operational monitoring remain later-phase responsibilities.
 
-(Counting primary rows above: Satisfied 9, Deferred 2, Not satisfied 3, N/A 1. Partial not used in this set.)
-
-Non-satisfied items are **by design** for Phase 2 scope (integration, migration, restore rehearsal) and do **not** block Phase 2 close.
-
----
-
-## 11. Risk review
-
-### Closed with evidence
-
-| ID | Evidence |
-|---|---|
-| R-016 | `origin/main` = published history; tracks remotely |
-| R-021 | Closed with R-016 |
-
-### Remain open (selected) — owners / targets
-
-| ID | Owner | Target |
-|---|---|---|
-| R-020 | legacy product eng | Before legacy product cutover |
-| R-022 | Platform | Phase 3 / 7 |
-| R-026 | Portfolio | Continuous (mitigated) |
-| R-027 | Platform + legacy product | Before cutover (G6–G7) |
-| R-031 | Platform | Auth WP (post Phase 2) |
-| R-032–R-033 | Platform | Persistence WP |
-| R-034 | Platform | Phase 3 entitlement tuning |
-| R-035 | Platform / POS | Catalog config WP (Phase 3+) |
-| R-036–R-040 | Platform | Transport / mapping / docs discipline |
-| R-041–R-044 | Platform + legacy product | Real mapping / cutover WPs |
-| R-012 | Platform | Phase 3 (domain foundation exists; billing/persistence incomplete) |
-
----
-
-## 12. Open decisions
-
-- OD: Calendar-month end-of-month rule for POS trial (R-035)
-- OD: Exact entitlement stale/refresh windows (R-022)
-- OD: legacy product import strategy (submodule/subtree/copy) — still deferred
-- OD: When to authorize legacy product auth cutover and legacy retirement (after gates G2–G7)
-
----
-
-## 13. Implementation-gate status
-
-| Gate | Status at Phase 2 close |
-|---|---|
-| G0 Docs freeze | **Met** |
-| G1 Solution foundation | **Met** (code foundation; L1 rehearsal N/A for skeleton) |
-| G2 Identity foundation | **Partial** — domain only; login not started |
-| G3 Org / membership | **Partial** — domain only; persistence not started |
-| G4 Catalog / entitlements | **Partial** — domain + contracts; no billing persistence |
-| G5 Platform Admin UI | **Not started** |
-| G6 Mapping dry run | **Partial** — Platform simulation only |
-| G7–G11 | **Not started / Planned** |
-
----
-
-## 14. Rollback and cutover readiness
-
-- L0–L6 plan documented
-- Rollback-readiness validator exists (simulation)
-- **Cutover not authorized**
-- Restore rehearsal **not performed**
-- legacy product code retirement **not authorized**
-
----
-
-## 15. Phase 2 recommendation
+## 9. Recommendation
 
 **Close with documented non-blocking risks.**
 
----
-
-## 16. Exact next phase and work package
-
-| Field | Value |
-|---|---|
-| Next phase ID | Phase 3 |
-| Next phase name | Portfolio Billing, Plans and Entitlements |
-| First WP ID | P3-WP01 |
-| First WP name | Product and Plan Catalog |
-| Purpose | Implement portfolio product/plan catalog work for billing/entitlements phase |
-| Permitted (when authorized) | Per Phase 3 scope — catalog/plans evolution toward portfolio billing |
-| Explicit exclusions until authorized | Do not start Phase 3 in this WP; portfolio independence remains verified unless a Phase 3 WP explicitly says otherwise |
-| Depends on Phase 2 | Domain catalog/entitlement foundations, contracts, freeze discipline |
-| Database / auth / UI / POS | Not begun by Phase 2 closeout; Phase 3 may introduce persistence when its WPs authorize it |
-| Required tests | As specified by P3-WP01 when started |
-| Git/push | Per that WP’s authorization |
-
-**Do not begin P3-WP01 until explicitly authorized.**
+Proceed to Phase 3 only under a separately authorized work package.

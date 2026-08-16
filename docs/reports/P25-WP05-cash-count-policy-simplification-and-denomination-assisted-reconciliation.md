@@ -81,7 +81,7 @@ Development-stage unauthenticated POS APIs remain development-stage. Authorizati
 
 ## 8. Portfolio independence
 
-No legacy product tree. POS remains the only product in this WP. Platform Admin has no product-facing cash-count implementation.
+POS remains the only product in this work package. Platform Admin has no product-facing cash-count implementation.
 
 ## 9. Risks / open decisions
 

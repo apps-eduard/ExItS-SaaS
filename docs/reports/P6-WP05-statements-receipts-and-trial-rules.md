@@ -59,7 +59,7 @@ Feature grants required in addition to subscription state (both product entry an
 
 ## Explicit exclusions
 
-Interest, penalties, credit limits, write-offs, installments, sales, inventory, gateways, QR/cards, tax invoices / tax numbering, offline sync, payment-allocation persistence. No Platform/legacy product tables or cross-database FKs. Platform SaaS payments remain separate.
+Interest, penalties, credit limits, write-offs, installments, sales, inventory, gateways, QR/cards, tax invoices / tax numbering, offline sync, payment-allocation persistence. No Platform tables or cross-database foreign keys. Platform SaaS payments remain separate.
 
 ## Persistence and migration
 
@@ -111,7 +111,7 @@ Baseline preserved and exceeded (prior 521). Focused coverage: `UtangCapabilityP
 
 ## Portfolio independence
 
-Git tracking shows no nested foreign product tree empty; ignored via `.gitignore`; not in `ExItS.slnx`.
+No unauthorized nested product tree is tracked; ignored via `.gitignore`; not in `ExItS.slnx`.
 
 ## Risks and open decisions
 
@@ -123,7 +123,7 @@ Git tracking shows no nested foreign product tree empty; ignored via `.gitignore
 
 ## Files / docs changed
 
-Platform access eligibility continuity for POS; POS Commercial/Statements Application + API + ApiClient + Maui; phase-06; portfolio; README; FILE-MANIFEST; contracts §9/§20; extraction-sequence; testing-strategy; risks; release-plan; reports index; this report. Feature commit: `271c518cb8c4051502d6370ec71e6498fbbfd6b5`.
+Platform access eligibility continuity for POS; POS Commercial/Statements Application + API + ApiClient + Maui; phase-06; portfolio; README; FILE-MANIFEST; contracts §9/§20; testing-strategy; risks; release-plan; reports index; this report. Feature commit: `271c518cb8c4051502d6370ec71e6498fbbfd6b5`.
 
 ## Git evidence
 

@@ -57,9 +57,9 @@ Validated: apply → rollback → re-apply (`AddPosOperationalRolesMigrationTest
 
 ## Portfolio independence
 
-- No root a nested foreign product tree directory
-- Git tracking shows no nested foreign product tree empty
-- `dotnet sln ExItS.slnx list` has no legacy product project
+- No unauthorized nested product tree at repo root
+- No unauthorized nested product tree is tracked
+- `dotnet sln ExItS.slnx list` contains approved portfolio projects only
 - Untracked `docs/phases/phase-11-web-ui-reporting-design-system.md` left alone (not committed; WP07/Phase 11 not started)
 
 ## Risks / open decisions

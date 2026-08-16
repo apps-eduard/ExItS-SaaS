@@ -262,7 +262,7 @@ POS MAUI
 | Admin shared (Web-only) | `Platform.Admin/Components/Shared` | PascalCase; CSS in `app.css` without inventing a second design system |
 | Admin shell | `Platform.Admin/Components/Layout` | Keep MainLayout as authority |
 | POS feature | `Maui/Components/Pages/...` | Feature folders |
-| Do not | Nest legacy product / Ant Design into Admin or DesignSystem | — |
+| Do not | Nest unrelated product UI or couple Ant Design into DesignSystem | — |
 
 ---
 
@@ -306,9 +306,9 @@ Theme mechanism files were **not** modified in this WP.
 
 ## 17. Portfolio independence
 
-- No root a nested foreign product tree
-- Git tracking shows no nested foreign product tree empty
-- Solution has no legacy product project
+- No unauthorized nested product tree at repo root
+- No unauthorized nested product tree is tracked
+- Solution contains approved portfolio projects only
 
 ## 18. Risks / open decisions
 

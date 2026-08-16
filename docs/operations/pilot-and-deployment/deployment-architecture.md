@@ -20,7 +20,7 @@ Secrets      --> environment-owned secret storage (not repository)
 
 ## Boundaries
 
-- Platform and POS databases remain separate; no cross-product DB access; no legacy product coupling.
+- Platform and POS databases remain separate with no cross-product database access.
 - Platform and POS APIs are independently deployable (separate containers/processes).
 - Least-privilege DB accounts; environment isolation; no production secrets in repo or images.
 - Development/Testing identity headers only in Development/Testing environments.

@@ -80,7 +80,7 @@ Method: asset-centric STRIDE with ExItS trust boundaries. Residual risks remain 
 |---|---|---|
 | User enumeration via login errors | N/A | Generic failure messages; careful timing |
 | Secrets in logs/ProblemDetails | Hardened in P9 | Preserve; extend to auth endpoints |
-| PHI in Platform auth audit | POS non-PHI; legacy product contracts exclude PHI | Keep invariant |
+| Sensitive product data in Platform auth audit | POS remains non-PHI; product contracts exclude operational payloads | Keep invariant |
 
 ### 4.5 Denial of service
 

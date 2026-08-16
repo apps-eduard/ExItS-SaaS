@@ -1,14 +1,14 @@
 # Phase 1 — Platform Boundary and Architecture
 
-[Dashboard](../portfolio-progress.md) | [All Phases](README.md) | [Previous](../reports/phase-00-final-assessment-and-recommendation.md) | [Next](phase-02-platform-extraction.md) | [Architecture approval](../reports/phase-01-architecture-approval.md) | [Approved summary](../engineering/approved-architecture-summary.md)
+[Dashboard](../portfolio-progress.md) | [All Phases](README.md) | [Next](phase-02-platform-extraction.md) | [Architecture approval](../reports/phase-01-architecture-approval.md) | [Approved summary](../engineering/approved-architecture-summary.md)
 
 ## Objective
 
-Approve the target Platform/product boundary, data ownership, contracts and extraction sequence.
+Approve the target Platform/product boundary, data ownership, contracts, implementation sequence, and recovery requirements.
 
 ## Phase 0 prerequisite
 
-Phase 0 is **Complete with documented risks** (P0-WP04 accepted as closeout direction).
+Portfolio inception is **Complete with documented risks**.
 
 ## Work packages
 
@@ -41,7 +41,7 @@ Status: **Complete** (+ Cash/GCash MVP correction accepted)
 | Hash | `c5472e80a3045626672f88ddbe1973cb3f230f8c` |
 | Message | `docs(pos): add cash and gcash MVP payments` |
 
-### P1-WP03 — Extraction Sequence and Rollback Plan
+### P1-WP03 — Implementation Sequence and Recovery Requirements
 
 Status: **Complete**
 
@@ -50,7 +50,7 @@ Status: **Complete**
 | Field | Value |
 |---|---|
 | Hash | `b7f99ab6c25fb69f0820ba8bfe746b261e81fd14` |
-| Message | `docs(extraction): define sequence and rollback plan` |
+| Message | Sequencing and recovery documentation commit (historical message retained in Git) |
 
 ### P1-WP04 — Architecture Approval Closeout
 
@@ -61,13 +61,13 @@ Status: **Ready for Review**
 - Phase 1 architecture approval report.
 - Approved architecture summary and Phase 2 readiness checklist.
 - ADR-014 Approve ExItS Portfolio Architecture for Controlled Implementation.
-- Mark P1-WP03 Complete; identify **P2-WP01** without starting it.
-- Markdown-only; legacy product frozen.
+- Reconcile Phase 1 evidence and identify **P2-WP01**.
+- Markdown-only.
 
 #### Definition of Done
 
 - [x] Approved outcomes complete (docs).
-- [x] Applicable validation (Markdown-only, freeze, links) with evidence.
+- [x] Applicable validation (Markdown-only and links) with evidence.
 - [x] Dashboard and phase page updated.
 - [x] Completion report created.
 - [x] Focused commit created and hash recorded (see below).

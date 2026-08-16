@@ -12,14 +12,14 @@
 
 ## 2. Summary
 
-Defined the authoritative capability boundary between ExITS Platform, legacy product, PinoyBusinessPOS, shared contracts, and engineering conventions. Confirmed Platform authority for identity/orgs/catalog/subscriptions/entitlements; product ownership of operational data and permissions; local entitlement projections; prohibited cross-DB FKs and clinical/POS coupling. Created ADR-011. Phase 0 recorded as **Complete with documented risks**. No application code; legacy product unchanged.
+Defined the authoritative capability boundary between ExITS Platform, PinoyBusinessPOS, shared contracts, and engineering conventions. Confirmed Platform authority for identity, organizations, catalog, subscriptions, and entitlements; product ownership of operational data and permissions; local entitlement projections; and prohibited cross-database coupling. Created ADR-011. No application code was changed.
 
 ## 3. Acceptance criteria and evidence
 
 | Criterion | Status | Evidence |
 |---|---|---|
-| Phase 0 Complete with documented risks | Met | [portfolio-progress.md](../portfolio-progress.md), phase-00 |
-| Platform / legacy product / POS ownership explicit | Met | [capability boundary](../engineering/platform-product-capability-boundary.md) §§4–6 |
+| Portfolio inception complete with documented risks | Met | [portfolio-progress.md](../portfolio-progress.md) |
+| Platform / POS ownership explicit | Met | [capability boundary](../engineering/platform-product-capability-boundary.md) §§4–6 |
 | Identity / org / membership explicit | Met | §§10–11 |
 | Platform vs product roles; access vs ops perms | Met | §12 |
 | Customer ≠ User; SaaS ≠ retail payment | Met | §§10, 13 |
@@ -45,7 +45,6 @@ Modified (tracking/reconcile):
 
 - `docs/portfolio-progress.md`
 - `docs/phases/phase-01-platform-boundary.md`
-- `docs/phases/phase-00-legacy product-assessment.md` *(later removed; see [phase-00 final assessment](phase-00-final-assessment-and-recommendation.md))*
 - `docs/index.md`
 - `docs/decisions/README.md`
 - `docs/reports/README.md`
@@ -56,12 +55,11 @@ Modified (tracking/reconcile):
 - `docs/engineering/platform-product-contracts.md`
 - `docs/engineering/final-portfolio-boundaries.md`
 - `docs/engineering/authorization-matrix.md`
-- `docs/reuse/extraction-rules.md`
 - `FILE-MANIFEST.md`
 
-## 5. Architecture/reuse impact
+## 5. Architecture impact
 
-Documents ownership so extraction and greenfield work do not put product domain in Platform or share Ant/Tailwind across new surfaces. No runtime extraction performed.
+Documents ownership so product domains remain outside Platform and UI frameworks remain within their owning surfaces.
 
 ## 6. Database and migration impact
 
@@ -71,23 +69,20 @@ None (documentation only). Confirms target DBs and no cross-DB FKs.
 
 | Command / check | Passed | Failed | Skipped | Exit code |
 |---|---:|---:|---:|---:|
-| legacy product runtime tests | — | — | Yes (docs-only + freeze) | — |
-| `git ls-files legacy product` empty | Yes | 0 | — | 0 |
-| `git check-ignore -v legacy product/` | Yes | 0 | — | 0 |
 | Markdown-only `git diff --name-only` | Yes | 0 | — | 0 |
 | Link/path/ADR/manifest spot-check | Yes | 0 | — | — |
 
 ## 8. Security and tenant review
 
-Reaffirmed: server-derived org context; no client-trusted OrganizationId; clinical data out of Platform payloads; separate audit owners; Platform Admin does not auto-gain clinical/POS ops access.
+Reaffirmed: server-derived organization context; no client-trusted OrganizationId; product-operational data excluded from Platform commercial payloads; separate audit owners; Platform Admin does not auto-gain POS operational access.
 
 ## 9. UI, localization and theme review
 
-Consistent with ADR-010: legacy product Staff Ant retained; Platform Admin + POS native; no shared Ant↔native component.
+Consistent with ADR-010: Platform Admin and POS keep separate framework-specific components.
 
 ## 10. Documentation updated
 
-Dashboard, Phase 1, ADR index, index, manifest, risks, release plan, and pointers from architecture/contracts/data-ownership/final-boundaries/authorization/extraction-rules.
+Dashboard, Phase 1, ADR index, index, manifest, risks, release plan, and related architecture, contracts, data-ownership, boundary, and authorization documents.
 
 ## 11. Risks, blockers, unknowns and deferred items
 
@@ -97,8 +92,6 @@ Dashboard, Phase 1, ADR index, index, manifest, risks, release plan, and pointer
 | OD-02 Break-glass support | Deferred |
 | OD-03 Entitlement transport | P1-WP02 / Phase 3 |
 | OD-04 MFA | Deferred |
-| OD-05 legacy product import timing | After Platform foundation |
-| OD-06 Multi-org from legacy product StaffMember | Phase 2 |
 | R-003 / R-022 | Projection staleness policy detail still for later WPs |
 | R-016 | Root remote empty — do not push without authorization |
 

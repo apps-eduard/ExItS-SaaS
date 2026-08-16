@@ -122,7 +122,7 @@ Organization-isolated purchasing for PinoyBusinessPOS using P10-WP01 suppliers:
 
 Status: **Complete**
 
-Prior tip: `882050c` (docs authorize). Feature: `5c62133`. Docs: `8af7a14`. Baseline: **1067 / 0 / 0**. Tests: **1073 / 0 / 0**. Part A legacy product cleanup remains closed at `fd77f88`.
+Prior tip: `882050c` (docs authorize). Feature: `5c62133`. Docs: `8af7a14`. Baseline: **1067 / 0 / 0**. Tests: **1073 / 0 / 0**.
 
 #### Required outcomes (approved)
 
@@ -208,7 +208,7 @@ Organization-isolated post-sale returns/refunds that preserve the original sale:
 - Void vs return mutual exclusion: voided sales cannot be returned; sales with completed returns cannot be voided
 - Idempotency/concurrency; grants `store-returns-view` / `store-returns-manage`
 - PostgreSQL migration, typed API, MAUI return screens, tests, docs
-- Online-only; ExItS remains independent of removed legacy product workspace
+- Online-only; ExItS portfolio boundaries remain independently validated
 
 #### Explicit exclusions
 

@@ -129,9 +129,9 @@ New focused coverage: domain lifecycle, `AddPosPurchasing`/`EnrichPosGoodsReceip
 
 ## 13. Portfolio independence
 
-- No root a nested foreign product tree directory
-- Git tracking shows no nested foreign product tree empty
-- `dotnet sln ExItS.slnx list` — no legacy product project
+- No unauthorized nested product tree at repo root
+- No unauthorized nested product tree is tracked
+- `dotnet sln ExItS.slnx list` — approved portfolio projects only
 
 ## 14. Open risks
 

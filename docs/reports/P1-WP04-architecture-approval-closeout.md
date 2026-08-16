@@ -12,15 +12,15 @@
 
 ## 2. Summary
 
-Closed Phase 1 by reconciling P1-WP01–03 and Cash/GCash evidence into an architecture approval package. Recommendation: **Close with documented risks**. Implementation readiness: **Approved with documented non-blocking risks**. Exact next WP: **P2-WP01 — Extraction Baseline Tag and Safety Checks** (not started). ADR-014 accepted. No application code; legacy product unchanged.
+Closed Phase 1 by reconciling capability-boundary, contract, and Cash/GCash evidence into an architecture approval package. Recommendation: **Close with documented risks**. Implementation readiness: **Approved with documented non-blocking risks**. Exact next WP: **P2-WP01 — Platform Foundation Baseline and Safety Checks**. ADR-014 accepted. No application code changed.
 
 ## 3. Acceptance criteria and evidence
 
 | Criterion | Status | Evidence |
 |---|---|---|
-| P1-WP03 Complete; Phase 1 evidence reconciled | Met | portfolio; phase-01; approval report |
+| Phase 1 evidence reconciled | Met | portfolio; phase-01; approval report |
 | Architecture / ownership / authz / data / contracts / entitlements | Met | phase-01-architecture-approval.md |
-| Cash/GCash/Utang; UI; repo; extraction/rollback; security; shared-code | Met | §§9–14 approval report |
+| Cash/GCash/Utang; UI; repository; security; shared-code | Met | architecture approval report |
 | Open decisions owned; exit criteria reviewed | Met | §15–16; counts 3/0/1/0 |
 | Readiness decision + exact P2-WP01 | Met | §17–18; Phase 2 page |
 | Deliverables + ADR-014 + MD-only + portfolio independence verification | Met | This report; validation §7 |
@@ -37,9 +37,9 @@ Added:
 
 Modified: portfolio-progress, phase-01, phase-02, index, ADR index, reports README, risks, release-plan, architecture, final-portfolio-boundaries, repository-boundaries, ui-design-system (link), FILE-MANIFEST, and light pointers as needed.
 
-## 5. Architecture/reuse impact
+## 5. Architecture impact
 
-Authorizes controlled Phase 2 foundation only. Does not start extraction, import, or product implementation.
+Authorizes the controlled Phase 2 Platform foundation only. It does not start product implementation.
 
 ## 6. Database and migration impact
 
@@ -49,9 +49,6 @@ None. No migration claimed or executed.
 
 | Check | Result |
 |---|---|
-| legacy product runtime tests | Skipped (docs-only + freeze) |
-| `git ls-files legacy product` empty | Yes |
-| legacy product ignored | Yes |
 | Markdown-only | Yes |
 | Link/ADR/manifest spot-check | Yes |
 
@@ -83,8 +80,8 @@ Open ODs and R-016/020/022/024–027 non-blocking for P2-WP01 skeleton. No block
 
 ## 13. Progress update
 
-Phase 1 **Close with documented risks**. P1-WP03 Complete. P1-WP04 Ready for Review. Next: P2-WP01 when authorized — **do not begin**.
+Phase 1 **Close with documented risks**. P1-WP04 Ready for Review. Next: P2-WP01 when authorized.
 
 ## 14. Next approved work package
 
-**P2-WP01 — Extraction Baseline Tag and Safety Checks** — do not begin until explicitly authorized.
+**P2-WP01 — Platform Foundation Baseline and Safety Checks**.

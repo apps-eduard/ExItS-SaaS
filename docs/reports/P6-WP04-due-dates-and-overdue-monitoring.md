@@ -45,7 +45,7 @@ Reversed credits are never overdue. Fully FIFO-offset credits are not overdue (s
 
 ## Explicit exclusions
 
-Statements, printable receipts, trial-expiry rules, interest, penalties, credit limits, write-offs, installments, sales, inventory, gateways, QR/cards, offline sync, payment-allocation persistence. No Platform/legacy product tables or cross-database FKs.
+Statements, printable receipts, trial-expiry rules, interest, penalties, credit limits, write-offs, installments, sales, inventory, gateways, QR/cards, offline sync, payment-allocation persistence. No Platform tables or cross-database foreign keys.
 
 ## Persistence and migration
 
@@ -106,7 +106,7 @@ Android Release APK path unchanged under MAUI `bin/Release/net10.0-android/`. No
 
 ## Portfolio independence
 
-Git tracking shows no nested foreign product tree empty; ignored via `.gitignore`; not in `ExItS.slnx`.
+No unauthorized nested product tree is tracked; ignored via `.gitignore`; not in `ExItS.slnx`.
 
 ## Risks and open decisions
 

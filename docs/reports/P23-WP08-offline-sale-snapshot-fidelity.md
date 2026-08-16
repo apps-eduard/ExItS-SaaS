@@ -78,7 +78,7 @@ Examples preserved through sync:
 
 | Version | Meaning |
 |---|---|
-| 1 | Legacy ProductId + Quantity only (already-queued rows still sync via live catalog) |
+| 1 | Earlier ProductId + Quantity only (already-queued rows still sync via live catalog) |
 | **2 (Current)** | Immutable line snapshots |
 
 Dispatcher deserializes the same `CheckoutSaleRequest` shape; additive JSON fields are ignored by older readers and optional for v1.

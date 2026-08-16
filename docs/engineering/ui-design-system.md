@@ -2,7 +2,7 @@
 
 [Home](../index.md) | [Component catalog](reusable-component-catalog.md) | [Localization](localization.md) | [Themes](theme-system.md) | [ADR-010](../decisions/ADR-010-separate-ui-implementations-platform-and-pos.md) | [Approved architecture](approved-architecture-summary.md)
 
-Validated against legacy product evidence in **P0-WP03**. No application UI was implemented in this work package.
+This document defines the ExItS UI architecture and reusable presentation standards.
 
 ---
 
@@ -10,10 +10,7 @@ Validated against legacy product evidence in **P0-WP03**. No application UI was 
 
 | Product | UI stack | Notes |
 |---|---|---|
-| legacy product Staff Web | **Ant Design Blazor** (retain) | No rewrite/modernization in current ExITS work |
-| legacy product PatientWeb | Native CSS (retain) | Product-specific; pattern source for new native apps |
-| legacy product MAUI | Existing native CSS (retain) | No rewrite in current work |
-| **New ExItS Platform Admin** | **Ant Design Blazor** (`AntDesign`, ADR-015) | Pro Blazor as design reference only; **no Tailwind**; **no Fluent UI**; compact enterprise console |
+| **ExItS Platform Admin** | **Ant Design Blazor** (`AntDesign`, ADR-015) | Pro Blazor as design reference only; **no Tailwind**; **no Fluent UI**; compact enterprise console |
 | PinoyBusinessPOS | **Native foundation** (MAUI Blazor Hybrid) | Shared DesignSystem tokens/localization with POS; **no Ant**; **no Tailwind** |
 | Shared | Models, token **names**, localization keys, validation/formatting | Not one framework-switching component; Admin uses Ant; POS uses DesignSystem |
 
@@ -101,7 +98,7 @@ density-compact-* / density-comfortable-*
 motion-fast / motion-base / motion-slow
 ```
 
-New Platform Admin and POS both use CSS custom properties (`--exits-*`) per [theme-system.md](theme-system.md). Existing legacy product Staff Web may keep its Ant/`--hc-*` styling unchanged.
+Platform Admin and POS both use semantic CSS custom properties (`--exits-*`) per [theme-system.md](theme-system.md), with framework-specific implementations.
 
 ---
 
@@ -123,7 +120,7 @@ Required modes: **Light**, **Dark**, **System**.
 - Theme change must not restart the app or lose form state.
 - See [theme-system.md](theme-system.md).
 
-**P4-WP04:** Platform Admin implements System / Light / Dark via semantic CSS tokens, header selector, `localStorage` persistence, and `theme-boot.js` flash prevention. legacy product today: light canvas tokens + dark **sider only** — not a product theme system.
+**P4-WP04:** Platform Admin implements System / Light / Dark via semantic CSS tokens, header selector, `localStorage` persistence, and `theme-boot.js` flash prevention.
 
 **P5-WP01:** PinoyBusinessPOS MAUI implements System / Light / Dark via DesignSystem `--exits-*` tokens, Settings selector, MAUI Preferences + `localStorage` mirror, and `theme-boot.js`. Density tokens exist; compact layout polish is P5-WP02.
 
@@ -139,7 +136,7 @@ Initial languages: **English (`en`)** and **Filipino (`fil` / `fil-PH`)**.
 - Configuration language name: **Filipino**; Tagalog wording may appear in copy.
 - Do **not** claim all Philippine languages.
 
-**P4-WP04:** Platform Admin ships `AdminResources` (`en` + `fil-PH`) for shell/nav/shared components; see [localization.md](localization.md) and [admin-terminology-guide.md](admin-terminology-guide.md). legacy product today: **no** localization foundation (do not add during Phase 0).
+**P4-WP04:** Platform Admin ships `AdminResources` (`en` + `fil-PH`) for shell/nav/shared components; see [localization.md](localization.md) and [admin-terminology-guide.md](admin-terminology-guide.md).
 
 **P5-WP01:** PinoyBusinessPOS ships `PosResources` + DesignSystem `DesignSystemResources` (`en` + `fil-PH`); see [localization.md](localization.md) and [pos-terminology-guide.md](pos-terminology-guide.md).
 
@@ -160,7 +157,7 @@ Use motion for hierarchy and feedback, not decoration.
 
 Prefer CSS `transform`/`opacity`. Honor **`prefers-reduced-motion`**: full usability with motion disabled. Never block cashier operations. Do not animate every table row or large datasets.
 
-legacy product lesson: staff `--hc-motion` + reduced-motion disable page enter; Mobile lacks reduced-motion.
+All web and mobile surfaces must honor reduced-motion preferences.
 
 ---
 
@@ -207,15 +204,11 @@ Reusable native table must support: compact + comfortable density; sort; search;
 | Products / inventory / sales | Dense Windows; touch-friendly filters |
 | Subscriptions | Admin compact tables |
 
-Do not implement in P0-WP03.
-
----
-
 ## Dropdown / selection strategy
 
 Generic `SelectField<T>`: label, placeholder, required/disabled/loading/empty, validation, single select (multi later), searchable later, keyboard, clear, localized text, both densities and themes.
 
-legacy product picker lesson: debounced search, permission gates, **no free-text IDs** (`ClinicPicker`, `OrganizationPicker`, `PatientPicker`) — reuse the **API**, not Ant `Select`.
+Selection controls use debounced search where needed, permission gates, and typed identifiers rather than free-text IDs.
 
 ---
 
@@ -229,7 +222,7 @@ legacy product picker lesson: debounced search, permission gates, **no free-text
 
 Only when approved needs require range, presets, disabled dates, overdue highlighting, full keyboard calendar grid, etc.
 
-Do **not** copy Ant `DatePicker` into POS. Appointment calendar pages remain legacy product-specific UX lessons only.
+Do **not** couple POS date controls to Ant Design.
 
 ---
 
@@ -243,8 +236,6 @@ Naming in earlier drafts (`ExTextField`, …) remains the documentation conventi
 
 ## Explicit non-goals
 
-- No Tailwind in POS or **new** Platform Admin.
-- No Ant Design in PinoyBusinessPOS or **new** Platform Admin.
+- No Tailwind in POS or Platform Admin.
+- No Ant Design in PinoyBusinessPOS.
 - No single component that switches Ant vs native at runtime.
-- No legacy product UI rewrite in current ExITS MVP work.
-- No implementation of tokens/components in P0-WP03.

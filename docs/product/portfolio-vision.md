@@ -27,11 +27,11 @@ Domain language stays generic (`Store`, `Customer`, `CustomerCredit`, …). Do n
 
 ## Principles
 
-1. Reuse domain-neutral shared patterns only where ownership and dependency boundaries remain explicit.
-2. Do not copy foreign product assumptions into the Platform or POS.
+1. Share domain-neutral patterns only where ownership and dependency boundaries remain explicit.
+2. Keep product-specific assumptions out of the Platform and other products.
 3. Keep each product’s database, migrations, API, tests and deployment independently operable.
 4. Normal product operations must not synchronously depend on Platform availability.
 5. Use compact, accessible, multilingual interfaces.
 6. Support English and Filipino/Tagalog from the first PinoyBusinessPOS MVP.
 7. Support light, dark and system theme preferences.
-8. Keep the repository free of nested foreign product source trees; `ExItS.slnx` lists only active portfolio projects.
+8. Keep `ExItS.slnx` limited to active portfolio projects.

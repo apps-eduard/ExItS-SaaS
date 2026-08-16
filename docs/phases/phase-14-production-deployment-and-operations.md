@@ -46,7 +46,7 @@ Deliver honest, evidence-based **Production** deployment and operations for cust
 4. Backup-verify-migrate-validate; no Production startup `Migrate()` (**D-P14-03**).
 5. Pilot Docker/Compose ≠ Production (**D-P14-04**).
 6. Do not invent **D-P12-03** commercial transport under deployment work.
-7. Do not nest legacy product or cross product DBs.
+7. Do not nest unapproved product sources or cross product databases.
 8. UI/Admin remain native CSS — no Ant/Tailwind from ops work.
 
 ## Explicit exclusions (phase-level)
@@ -54,7 +54,7 @@ Deliver honest, evidence-based **Production** deployment and operations for cust
 Unless a later WP explicitly authorizes:
 
 - Kubernetes / multi-cloud control planes
-- legacy product deployment
+- Deployment of unapproved services
 - MFA enforcement / email vendor selection (auth residuals — may be separate authorization)
 - Product feature work (POS workflows, dashboards)
 - Claiming portfolio Production-ready without audit closure

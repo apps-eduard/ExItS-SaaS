@@ -44,7 +44,7 @@ Platform-only work outside these globs is not forced to load Product Foundation 
 |---|---|
 | Concise; no full workflow/foundation duplication | Pass |
 | Metadata/globs correct; links resolve | Pass |
-| No legacy product as active product; no `{{placeholders}}` | Pass |
+| Active portfolio products only; no `{{placeholders}}` | Pass |
 | No app/scaffold code | Pass |
 | `.mdc` unit tests | None in repo — not added |
 | Release tests | **1186 passed / 0 failed / 0 skipped** |

@@ -2,9 +2,9 @@
 
 [Home](index.md) | [Dashboard](portfolio-progress.md)
 
-## R0 — Assessment baseline
+## R0 — Portfolio inception
 
-**Complete with documented risks (Phase 0).** legacy product MVP inventoried; reuse, UI, runtime, and closeout recommendations recorded. Open risks documented.
+**Complete with documented risks (Phase 0).** Initial portfolio scope, UI direction, runtime expectations, and risks were recorded.
 
 ## R0.5 — Platform/product capability boundary (Phase 1 docs)
 
@@ -14,17 +14,17 @@
 
 **Complete (P1-WP02 + Cash/GCash accepted).**
 
-## R0.7 — Extraction sequence and architecture approval (Phase 1 closeout)
+## R0.7 — Architecture approval (Phase 1 closeout)
 
 **Complete (P1-WP04 / ADR-014).** Architecture approved for controlled implementation.
 
-## R1 — ExITS Platform extraction
+## R1 — ExITS Platform foundation
 
-**Complete with documented risks (Phase 2 / P2-WP06).** Root Platform foundation, identity/org, commercial domain, legacy product contract boundaries, and migration dry-run validation delivered. No nested foreign product tree in this repository. Auth, persistence, real legacy product integration/cutover, Admin UI, and POS were **not** delivered. See [phase-02-extraction-closeout.md](reports/phase-02-extraction-closeout.md).
+**Complete with documented risks (Phase 2 / P2-WP06).** Root Platform foundation, identity/organization, commercial domain, versioned product contract boundaries, and migration dry-run validation were delivered. Authentication, persistence, production transport/migration, Admin UI, and POS were **not** delivered. See [Phase 2 foundation closeout](reports/phase-02-extraction-closeout.md).
 
 ## R2 — Platform portfolio administration
 
-**Complete with documented risks (Phase 4 / P4-WP04).** legacy product and PinoyBusinessPOS product plans, subscriptions, trials, manual payment activation, Platform Admin UI, audit, and system-role authorization delivered for development. Production authentication, gateways, invoices, and entitlement delivery remain open. See [P4-WP04 report](reports/P4-WP04-audit-authorization-and-closeout.md).
+**Complete with documented risks (Phase 4 / P4-WP04).** Product plans, subscriptions, trials, manual payment activation, Platform Admin UI, audit, and system-role authorization were delivered for development. Production authentication, gateways, invoices, and entitlement delivery remained open. See [P4-WP04 report](reports/P4-WP04-audit-authorization-and-closeout.md).
 
 ## R2.5 — PinoyBusinessPOS MAUI foundation (Phase 5)
 

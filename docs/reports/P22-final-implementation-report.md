@@ -87,4 +87,4 @@ Before/after counts are printed by the script at runtime (not claimed here witho
 
 ## Portfolio independence
 
-No legacy product source tree; no cross-product DB access; POS talks to Platform via HTTP contracts only.
+No unapproved product source tree or cross-product database access; POS talks to Platform via HTTP contracts only.

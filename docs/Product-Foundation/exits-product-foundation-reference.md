@@ -227,7 +227,7 @@ Do **not** routinely scan:
 - unrelated products (including full POS when building a different product)
 - old phase completion reports
 - full Platform history or unrelated migrations
-- removed foreign product content
+- unauthorized nested product content
 - completed product implementation history unless directly required
 
 Before expanding context, state the reason (contract reference, project dependency, compile/test failure, architecture invariant, or approved shared component).

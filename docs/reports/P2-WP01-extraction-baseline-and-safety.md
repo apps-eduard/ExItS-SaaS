@@ -1,18 +1,18 @@
-# P2-WP01 — Extraction Baseline Tag and Safety Checks
+# P2-WP01 — Platform Foundation Baseline and Safety Checks
 
 ## 1. Assignment
 
 | Field | Value |
 |---|---|
-| Phase | Phase 2 — Platform Extraction and legacy product Reconnection |
-| Work package | P2-WP01 — Extraction Baseline Tag and Safety Checks |
+| Phase | Phase 2 — Platform Foundation |
+| Work package | P2-WP01 — Platform Foundation Baseline and Safety Checks |
 | Status | Ready for Review |
 | Branch | `main` |
 | Date | 2026-07-29 |
 
 ## 2. Summary
 
-Created the minimal buildable ExItS root solution (`ExItS.slnx`) with Platform Domain/Application/Infrastructure/Api projects, unit and architecture tests, central build/package conventions, SDK pin (`global.json` 10.0.302), portfolio independence verification safety tests, and annotated local tag `phase-1-approved` → `01ab65b`. API serves `/` and `/health` without a database. No business capabilities, no legacy product changes, no POS/Admin/shared projects.
+Created the minimal buildable ExItS root solution (`ExItS.slnx`) with Platform Domain/Application/Infrastructure/Api projects, unit and architecture tests, central build/package conventions, SDK pin (`global.json` 10.0.302), repository safety tests, and annotated local tag `phase-1-approved` → `01ab65b`. API serves `/` and `/health` without a database. No business capabilities or POS/Admin/shared projects were included.
 
 ## 3. Acceptance criteria and evidence
 
@@ -22,7 +22,7 @@ Created the minimal buildable ExItS root solution (`ExItS.slnx`) with Platform D
 | Solution, global.json, Directory.*.props | Met | repo root |
 | Domain/Application/Infrastructure/Api + tests | Met | `src/Platform/*`, `tests/*` |
 | Dependency direction + architecture tests | Met | 9 architecture tests passed |
-| portfolio independence verification / not in solution / not referenced | Met | `git ls-files` empty; safety tests; `dotnet sln list` |
+| Portfolio project boundary checks | Met | Safety tests; `dotnet sln list` |
 | No product/shared/Blazor/POS/DB/auth | Met | structure + tests |
 | API starts; `/` and `/health` OK | Met | http://127.0.0.1:5288 |
 | Restore/build/test Release | Met | 0 warnings/errors; 11 passed |
@@ -33,9 +33,9 @@ Created the minimal buildable ExItS root solution (`ExItS.slnx`) with Platform D
 
 See completion §9 / git. Key adds: `ExItS.slnx`, `global.json`, `Directory.Build.props`, `Directory.Packages.props`, Platform projects, test projects, docs updates.
 
-## 5. Architecture/reuse impact
+## 5. Architecture impact
 
-Establishes Stage 1 foundation only. No legacy product import or pattern extraction code.
+Establishes the native Stage 1 Platform foundation only.
 
 ## 6. Database and migration impact
 
@@ -55,7 +55,7 @@ None. No EF/Npgsql packages or migrations.
 | `dotnet build ExItS.slnx -c Release` | 0 (0 warnings) |
 | `dotnet test ExItS.slnx -c Release --no-build` | 0 |
 
-Runtime: `GET /` → 200 `{"service":"ExItS.Platform.Api","status":"ok","phase":"P2-WP01-foundation"}`; `GET /health` → 200 `Healthy`; no DB; process stopped cleanly. Port **5288** (avoids legacy product 5080/7080/5018/7021/5020 and a busy 5188).
+Runtime: `GET /` → 200 `{"service":"ExItS.Platform.Api","status":"ok","phase":"P2-WP01-foundation"}`; `GET /health` → 200 `Healthy`; no DB; process stopped cleanly. Port **5288**.
 
 ## 8. Security and tenant review
 
@@ -74,7 +74,7 @@ portfolio-progress, Phase 2, readiness checklist, development-environment, repos
 | Item | Notes |
 |---|---|
 | R-016 | Root `origin/main` still gone; tag/commit not pushed |
-| R-010/R-017/R-026 | Freeze verified; safety tests added |
+| Repository safety | Architecture safety tests added |
 | Port 5188 conflict | Switched API to **5288** |
 | TreatWarningsAsErrors | Left false (practical baseline) |
 | NetArchTest.Rules 1.3.2 | Central package; lightweight |

@@ -12,7 +12,7 @@
 
 ## 2. Summary
 
-Defined authoritative data ownership and versioned Platform↔product contracts: stable IDs, identity/org/subscription/entitlement/payment projections, event envelope, versioning, idempotency/ordering, projection states, reconciliation, audit correlation, deletion/retention, and privacy exclusions. Created ADR-012. P1-WP01 recorded Complete. No schemas, APIs, brokers, or application code. legacy product unchanged.
+Defined authoritative data ownership and versioned Platform↔product contracts: stable IDs, identity/org/subscription/entitlement/payment projections, event envelope, versioning, idempotency/ordering, projection states, reconciliation, audit correlation, deletion/retention, and privacy exclusions. Created ADR-012. P1-WP01 recorded Complete. No schemas, APIs, brokers, or application code were changed.
 
 ## 3. Acceptance criteria and evidence
 
@@ -50,10 +50,10 @@ Modified (tracking/reconcile):
 - `docs/index.md`, `docs/decisions/README.md`, `docs/reports/README.md`
 - `docs/risks-and-issues.md`, `docs/release-plan.md`
 - `docs/engineering/architecture.md`, `security.md`, `final-portfolio-boundaries.md`, `platform-product-capability-boundary.md`
-- `docs/product/subscriptions-and-billing.md`, `docs/reuse/extraction-rules.md`
+- `docs/product/subscriptions-and-billing.md`
 - `FILE-MANIFEST.md`
 
-## 5. Architecture/reuse impact
+## 5. Architecture impact
 
 Gives Phase 2–3 implementers contract rules without choosing transport. Reinforces ADR-011 projections and privacy boundaries.
 
@@ -65,9 +65,6 @@ None (documentation only). Confirms no cross-DB FKs and projection-only commerci
 
 | Check | Result |
 |---|---|
-| legacy product runtime tests | Skipped (docs-only + freeze) |
-| `git ls-files legacy product` empty | Yes |
-| `git check-ignore -v legacy product/` | Yes |
 | Markdown-only changes | Yes |
 | Link/path/ADR/manifest spot-check | Yes |
 
@@ -103,7 +100,7 @@ P1-WP01 Complete. P1-WP02 **Complete** (accepted). Post-acceptance correction do
 
 ## 14. Next approved work package
 
-**P1-WP03 — Extraction Sequence and Rollback Plan** — do not begin until authorized.
+**P1-WP04 — Architecture Approval Closeout** followed after the architecture documentation was reconciled.
 
 ## 15. Post-acceptance correction — POS Cash / GCash MVP payments
 

@@ -56,7 +56,7 @@ Independent subscription; separate DB; no Platform table reads / cross-product F
 | Links to foundation resolve from Templates | Pass |
 | Aligns with P12-WP01 / WP02 | Pass |
 | No app / infra / scaffold | Pass |
-| No legacy product dependency | Pass |
+| No unrelated product dependency | Pass |
 | Release tests | **1186 passed / 0 failed / 0 skipped** |
 
 ## Files changed

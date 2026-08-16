@@ -98,4 +98,4 @@ Exact next work package: **P7-WP02 — Offline Queue and Idempotency** (do not b
 
 ## Portfolio independence
 
-Root a nested foreign product tree must remain absent/untracked and outside `ExItS.slnx`.
+No unauthorized nested product tree at repo root; keep `ExItS.slnx` to authorized products only.

@@ -4,7 +4,7 @@
 
 ## Reuse/extraction tests
 
-- Architecture dependency and portfolio-independence tests (no nested foreign product tree; no legacy product projects in solution)
+- Architecture dependency and portfolio project-inventory tests
 - Platform contract / projection tests for product consumers
 - Migration dry-run and rollback-readiness unit tests (product-agnostic preflight)
 - Platform and PinoyBusinessPOS regression tests as features land
@@ -20,18 +20,18 @@
 - **P2-WP02 (implemented):** domain ID/value-object tests; Platform User / Organization / Membership transition tests; ProductCode tests; application use-case tests with in-memory doubles; architecture layer, freeze, forbidden-type, and no-generic-repository tests
 - **P2-WP03 (implemented):** Product/Plan/PlanVersion/Trial/Subscription/Override/Snapshot tests; entitlement composer (override precedence, trial expiry view/repay vs create); commercial use-case tests; published plan-version immutability architecture check
 - **P2-WP04 (implemented):** contract envelope/version tests; projection idempotency/ordering/conflict/gap; security shape reflection tests; no messaging/EF dependencies
-- **P2-WP05 (implemented):** migration preflight/simulation/rollback-readiness unit tests; identity/org/membership duplicate & conflict detection; architecture checks for no SQL/migration routes; portfolio independence guards (no nested foreign product tree)
+- **P2-WP05 (implemented):** migration preflight/simulation/rollback-readiness unit tests; identity/org/membership duplicate & conflict detection; architecture checks for no SQL/migration routes; portfolio independence guards (no unauthorized nested product tree)
 - **P3-WP01 (implemented):** EF Core/Npgsql catalog persistence; Testcontainers PostgreSQL integration tests; catalog API tests; architecture rules for EF placement and no auto-migrate
 - **P3-WP02 (implemented):** Organization + subscription persistence; active-like uniqueness; lifecycle API/integration tests; no payment tables
 - **P4-WP01 (implemented):** Platform Admin unit/architecture guards (no Infrastructure/EF/Ant/Tailwind; no deferred commercial mutation controls); typed API client tests; Admin portfolio read API integration tests; Admin UI runtime smoke
 - **P4-WP02 (implemented):** Platform user/membership/product-access unit tests; effective-access evaluation; PostgreSQL migration apply/rollback/re-apply; identity/access API integration tests; Admin guards for no product-local role selectors / no login screens
-- **P4-WP03 (implemented):** Existing subscription/payment domain + API integration coverage retained; Admin typed-client mutation route tests; architecture guards for lifecycle/payment controls without gateway/card/POS/legacy product dependencies; no new commercial migration
+- **P4-WP03 (implemented):** Existing subscription/payment domain + API integration coverage retained; Admin typed-client mutation route tests; architecture guards for lifecycle/payment controls without gateway/card/POS dependencies; no new commercial migration
 - **P4-WP04 (implemented):** Platform role-assignment + permission catalog unit tests; audit domain/application tests; PostgreSQL migration apply/rollback/re-apply for `AddPlatformAuthorizationAndAudit`; API authorization + denied-audit integration tests; Admin architecture/localization resource tests; themes/i18n smoke via Admin unit coverage
 - **P5-WP05 (implemented):** AuthenticationService sign-in/restore/expiry/logout/org-select; SecureStorage session; Dev/Testing gate; commercial access fail-closed; Maui auth route guards; total Platform root **484** passed (261 unit / 41 architecture / 27 Admin unit / 28 DesignSystem / 17 ApiClient / 26 Maui / 84 integration)
 - **P5-WP04 (implemented):** DesignSystem forms/validation/confirm/feedback/responsive-data/money component existence + decimal money + no POS business logic + EN/fil-PH MVP keys; Maui Dev showcase gate + no production-nav link
 - **P5-WP03 (implemented):** DesignSystem/Validation/Error + Pos EN?fil-PH parity and critical-key tests; CultureFormatting unit coverage; Maui hard-coded-string and language-persistence guards
 - **P5-WP02 (implemented):** DesignSystem token/density/theme markers + touch-target + no hard-coded page colors; Maui density preference/boot + phone/tablet layout markers
-- **P5-WP01 (implemented):** DesignSystem architecture/token/component/localization tests; PosApiClient status classification + offline short-circuit + safe GET retry tests; Maui foundation guards (Android TFM, no Bootstrap/EF/Ant/Tailwind/legacy product, no sales/sync entry); POS architecture boundary tests
+- **P5-WP01 (implemented):** DesignSystem architecture/token/component/localization tests; PosApiClient status classification + offline short-circuit + safe GET retry tests; Maui foundation guards (Android TFM, no Bootstrap/EF/Ant/Tailwind, no sales/sync entry); POS architecture boundary tests
 
 ## POS tests
 
@@ -99,9 +99,9 @@
 - **P8-WP07:** consolidated store capability matrix; Phase 8 migration chain; deferred-scope architecture guards
 - **P9-WP01:** Production header/route guards; startup fail-closed; CORS/rate-limit/HTTPS pipeline source guards; empty base connection strings
 - **P9-WP02:** Liveness/readiness; performance index migration; reporting N+1 guards; sale idempotency headers; offline reclaim; provisional budget smoke
-- **P9-WP03:** Manifest/retention/redaction/encrypt unit tests; Platform+POS Testcontainers backup?empty restore drills; checksum/kind/overwrite guards; architecture no-dump/legacy product guards
+- **P9-WP03:** Manifest/retention/redaction/encrypt unit tests; Platform+POS Testcontainers backup/empty restore drills; checksum/kind/overwrite guards; architecture artifact-exclusion guards
 - **P9-WP04:** EN/fil resource parity; Admin page-header localization guards; DesignSystem contrast; dialog aria-labelledby; skip links; culture/theme preference fallback; MoneyDisplay accessible labels
-- **P9-WP05:** Deployment config/env isolation; Production blocker honesty; backup gate; migration order; secret redaction; package version; smoke catalog; rollback advisor; legacy product exclusion; compose/ops guards
+- **P9-WP05:** Deployment config/environment isolation; Production blocker honesty; backup gate; migration order; secret redaction; package version; smoke catalog; rollback advisor; compose/ops guards
 - **P9-WP06:** Closeout readiness board; risk register classifications; capability inventory; database ownership; Phase 9 control reconciliation; no deferred-feature claims
-- **P10-WP01:** Supplier domain/lifecycle; server `SUP-NNNNNN` codes; active-name + optional identifier conflicts; `store-suppliers-view`/`manage` matrix; `AddPosSuppliers` apply/rollback/re-apply; API isolation; MAUI online-only guards; no purchasing/offline/legacy product coupling
+- **P10-WP01:** Supplier domain/lifecycle; server `SUP-NNNNNN` codes; active-name + optional identifier conflicts; `store-suppliers-view`/`manage` matrix; `AddPosSuppliers` apply/rollback/re-apply; API isolation; MAUI online-only guards; no purchasing/offline coupling
 - **P10-WP02:** PO/GRN domain lifecycle; `PO-`/`GRN-` numbers; duplicate line products; over-receipt denial; idempotent submit/receive headers; `PurchaseReceipt` stock hook; `store-purchasing-view`/`manage` matrix; `AddPosPurchasing` apply/rollback/re-apply; API isolation; MAUI online-only guards; no AP/offline/COGS coupling

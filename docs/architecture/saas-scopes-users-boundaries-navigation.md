@@ -639,7 +639,7 @@ Support
 └── Contact Support
 ```
 
-Sales, Inventory, Pawnshop, legacy product, and similar operations belong inside their respective products.
+Sales, inventory, lending, and similar operations belong inside their respective products.
 
 ---
 

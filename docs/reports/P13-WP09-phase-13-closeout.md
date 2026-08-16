@@ -80,7 +80,7 @@ Migration `AddPlatformRecoveryEmail`: pending/verified recovery email columns + 
 | Full Release `ExItS.slnx` | **1261 passed / 0 failed / 0 skipped** |
 | Unit | `PlatformRecoveryEmailCredentialTests`, `RecoveryEmailUseCaseTests` |
 | Integration | `ApiRecoveryEmailTests`, `RecoveryEmailMigrationTests` |
-| Portfolio independence | No root a nested foreign product tree; Platform Integration contracts only |
+| Portfolio independence | No unauthorized nested product tree at repo root; Platform Integration contracts only |
 
 ## 7. Security limitations (honest)
 

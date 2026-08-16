@@ -39,7 +39,7 @@ Deliver:
 - Automated security/architecture tests
 - Threat model and release-blocker documentation
 
-No nested foreign product tree in this repository.
+Portfolio independence preserved (Platform + authorized products only).
 
 #### Explicit exclusions (this WP)
 
@@ -91,7 +91,7 @@ Deliver:
 
 #### Explicit exclusions
 
-- New business features; legacy product changes
+- New business features or unrelated product changes
 - Caching that exposes cross-org data or presents stale financial state as authoritative
 - Redis/distributed cache without measured justification and roadmap approval
 - Weakening authorization, org isolation, immutability, idempotency, or fail-closed behavior
@@ -138,7 +138,7 @@ Deliver:
 
 #### Explicit exclusions
 
-- New business features; legacy product changes
+- New business features or unrelated product changes
 - Combining Platform+POS into one non-independently-restorable artifact
 - Committing dumps, secrets, tokens, or keys
 - Claiming production DR/PITR beyond tested scenarios
@@ -169,7 +169,7 @@ Phase marker: `P9-WP04-accessibility-localization-theme-qa`
 
 #### Approved scope (clarified)
 
-Perform a complete accessibility, localization, responsive-layout, and theme-quality review across delivered Platform and PinoyBusinessPOS MVP. **QA and hardening only — no new business features.** Preserve P9-WP01–P9-WP03 security, isolation, idempotency, immutability, and reliability controls. No nested foreign product tree in this repository.
+Perform a complete accessibility, localization, responsive-layout, and theme-quality review across delivered Platform and PinoyBusinessPOS MVP. **QA and hardening only — no new business features.** Preserve P9-WP01–P9-WP03 security, isolation, idempotency, immutability, and reliability controls. Portfolio independence preserved (Platform + authorized products only).
 
 Deliver:
 
@@ -215,7 +215,7 @@ Phase marker: `P9-WP05-pilot-and-deployment`
 
 #### Approved scope (clarified)
 
-Prepare and validate a controlled deployment and pilot process for ExItS Platform and PinoyBusinessPOS MVP. **No new business features.** Preserve P9-WP01–P9-WP04 controls. No nested foreign product tree in this repository.
+Prepare and validate a controlled deployment and pilot process for ExItS Platform and PinoyBusinessPOS MVP. **No new business features.** Preserve P9-WP01–P9-WP04 controls. Portfolio independence preserved (Platform + authorized products only).
 
 Deliver:
 
@@ -235,7 +235,7 @@ Pilot may only be: controlled non-production, internal technical, or clearly res
 - Production authentication (R-091 remains open unless separately authorized)
 - New POS business workflows; tax/VAT/refunds/accounting/purchasing/payroll
 - Payment gateway / verified GCash; report export; new offline business ops; PITR
-- legacy product deployment; closing R-091/R-109/R-129 without genuine evidence
+- Unapproved service deployment; closing R-091/R-109/R-129 without genuine evidence
 - P9-WP06 or later / next phase
 
 #### Definition of Done
@@ -261,7 +261,7 @@ Phase marker: `P9-WP06-commercial-mvp-closeout`
 
 #### Approved scope (clarified)
 
-Close Phase 9 and produce the final Commercial MVP readiness decision for ExItS Platform and PinoyBusinessPOS. Reconcile P9-WP01–P9-WP05 plus prior Platform/POS MVP capabilities as one release-candidate evidence package. **No new business functionality** unless correcting a confirmed release-critical defect already inside approved MVP scope. No nested foreign product tree in this repository.
+Close Phase 9 and produce the final Commercial MVP readiness decision for ExItS Platform and PinoyBusinessPOS. Reconcile P9-WP01–P9-WP05 plus prior Platform/POS MVP capabilities as one release-candidate evidence package. **No new business functionality** unless correcting a confirmed release-critical defect already inside approved MVP scope. Portfolio independence preserved (Platform + authorized products only).
 
 Deliver:
 
@@ -281,7 +281,7 @@ Do **not** mark restricted external pilot or Production as Ready while R-091, R-
 - New POS business workflows; tax/VAT/refunds/returns/accounting/purchasing/suppliers/payroll
 - Payment gateway / verified GCash; report export; PITR; SQLCipher migration without approved decision
 - Fake production authentication; closing R-091/R-109/R-129 without genuine evidence
-- legacy product changes; Phase 10 / Full POS work
+- Unrelated product changes; Phase 10 / Full POS work
 
 #### Definition of Done
 

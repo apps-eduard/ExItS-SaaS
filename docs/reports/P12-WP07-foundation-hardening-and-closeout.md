@@ -51,12 +51,12 @@ Exact next phase: **Phase 13 — Production Authentication and Identity** (do **
 9. PHI defaults to none unless explicitly authorized
 10. Narrow context loading; bootstrap stops before implementation by default
 11. Do not copy POS domain into new products
-12. No foreign product dependency (contracts-only Integration path remains)
+12. No unauthorized external product dependency (contracts-only Integration path remains)
 
 ## 4. Context-loading behavior
 
 Order: workflow rule → product-context rule → foundation reference → active product Docs → current WP/prompt → task-needed files.
-Default exclusions: unrelated products, old reports tree, full Platform/POS history, removed foreign product content, build artifacts.
+Default exclusions: unrelated products, old reports tree, full Platform/POS history, unauthorized nested product content, build artifacts.
 
 ## 5. Bootstrap behavior
 
@@ -93,7 +93,7 @@ No speculative policy expansion. No Phase 11 file changes. Also updated stale re
 | Full Release tests | **1186 passed / 0 failed / 0 skipped** |
 | No app/infra code in Phase 12 closeout | Pass |
 | No `src/Products/ReferenceLoan/`; only PinoyBusinessPOS | Pass |
-| No foreign product tree | Pass |
+| No unauthorized nested product tree | Pass |
 | No unresolved `{{…}}` in Reference-Product | Pass (templates retain intentional placeholders) |
 | Foundation package links | Pass after hardening |
 | `main = origin/main` | After push |

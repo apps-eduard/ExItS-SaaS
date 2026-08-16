@@ -101,7 +101,7 @@ Updated Phase 7, offline-sync design, portfolio, FILE-MANIFEST, README, security
 
 ## Portfolio independence
 
-Root a nested foreign product tree must remain absent/untracked and outside `ExItS.slnx`.
+No unauthorized nested product tree at repo root; keep `ExItS.slnx` to authorized products only.
 
 ## Exact next work package
 

@@ -44,4 +44,4 @@ Organization/product access, customers, Utang, catalog/barcode, sales, Product-B
 
 ## Prohibited
 
-Public Production use with Dev/Testing headers; tax/VAT/refunds/accounting/purchasing/payroll; payment gateway claims; treating Manual GCash as verified; legacy product; PITR claims.
+Public Production use with Dev/Testing headers; tax/VAT/refunds/accounting/purchasing/payroll; payment gateway claims; treating Manual GCash as verified; or unsupported PITR claims.

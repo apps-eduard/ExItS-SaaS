@@ -1,6 +1,6 @@
 # Phase 2 Evidence Matrix
 
-[Phase 2 closeout](../reports/phase-02-extraction-closeout.md) | [Phase 2](../phases/phase-02-platform-extraction.md) | [Gate matrix](implementation-gate-matrix.md)
+[Phase 2 closeout](../reports/phase-02-extraction-closeout.md) | [Phase 2](../phases/phase-02-platform-extraction.md)
 
 Statuses reflect Phase 2 closeout (P2-WP06). **Foundation only** means domain/application models or interfaces exist without runtime auth, persistence, transport, or product cutover.
 
@@ -8,7 +8,7 @@ Statuses reflect Phase 2 closeout (P2-WP06). **Foundation only** means domain/ap
 |---|---|---|---|---|---|---|
 | Root solution | P2-WP01 | `ExItS.slnx`, `global.json`, Directory.* | Restore/build | Implemented / Validated | No | Continuous |
 | Dependency direction | P2-WP01 | ArchitectureTests | 21 arch tests | Validated | No | Continuous |
-| portfolio independence verification | P2-WP01–06 | `/legacy product/` ignore; empty `ls-files` | Repo safety tests | Validated | Yes (ongoing) | Until import WP |
+| Repository project boundaries | P2-WP01–06 | `ExItS.slnx` project inventory | Repo safety tests | Validated | Yes (ongoing) | Continuous |
 | Identity domain | P2-WP02 | PlatformUser + IDs | Unit tests | Foundation only | No | Auth WP |
 | Organization domain | P2-WP02 | PlatformOrganization | Unit tests | Foundation only | No | Persistence |
 | Membership domain | P2-WP02 | OrganizationMembership + roles | Unit tests | Foundation only | No | Persistence (R-032) |
@@ -29,12 +29,10 @@ Statuses reflect Phase 2 closeout (P2-WP06). **Foundation only** means domain/ap
 | Remote publication | P2-WP05 | origin/main + tag | ls-remote | Validated | No | Continuous |
 | Authentication | — | Absent by design | API routes / packages | Not started / Prohibited in Phase 2 | — | Post–Phase 2 auth WP |
 | Persistence | — | No EF/Npgsql | Grep + arch tests | Not started / Prohibited in Phase 2 | — | Persistence WP |
-| legacy product integration | P2-WP04 boundary only | Interfaces; no transport | Docs + freeze | Deferred | No for Phase 2 close | Cutover gates |
-| legacy product migration | P2-WP05 dry-run only | Simulation | Docs | Deferred | No for Phase 2 close | After G6–G7 |
-| legacy product code retirement | — | None removed | Freeze evidence | Prohibited in Phase 2 | — | After proven cutover |
+| Product contract integration | P2-WP04 boundary only | Interfaces; no transport | Architecture tests | Deferred | No for Phase 2 close | Transport phase |
+| Production data migration | P2-WP05 dry-run only | Simulation | Tests + docs | Deferred | No for Phase 2 close | Dedicated migration plan |
 | Platform Admin | Phase 4 | Absent | No UI projects | Not started | — | Phase 4 |
 | PinoyBusinessPOS | Phase 5+ | Absent | No POS projects | Not started | — | Phase 5 |
 | G1 Solution foundation | P2-WP01 | Build + arch tests | Release | Met | No | — |
-| G2 Identity (login) | Future | Domain only | — | Partial | Yes before legacy product auth cutover | Auth WP |
-| G6 Mapping dry run | P2-WP05 | Platform validators | Unit tests | Partial | Yes before legacy product adapter enable | legacy product data + backups |
-| G7 legacy product regression | Cutover | 1102 not rerun | Explicit | Not started | Yes before cutover | Supported env |
+| Identity login readiness | Future | Domain only | — | Partial | Yes before production authentication | Auth WP |
+| Mapping dry run | P2-WP05 | Platform validators | Unit tests | Partial | Yes before any production migration | Product data + backups |

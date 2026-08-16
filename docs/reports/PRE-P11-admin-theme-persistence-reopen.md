@@ -66,7 +66,7 @@ No Phase 11 / P11-WP01; no business features; no report redesign; untracked Phas
 
 ## Portfolio independence
 
-- No root a nested foreign product tree tree; Git tracking shows no nested foreign product tree empty; solution has no legacy product project
+- Repository and solution checks contain approved portfolio projects only
 
 ## Exact next
 

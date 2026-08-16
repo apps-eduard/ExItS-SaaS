@@ -61,7 +61,7 @@ Release build of POS API succeeds; MAUI `net10.0-android` compiles after CreateS
 
 ## Portfolio independence
 
-- No a nested foreign product tree tree; Git tracking shows no nested foreign product tree empty.
+- No unauthorized nested product tree; No unauthorized nested product tree is tracked.
 - No cross-product DB access.
 
 ## Exact next work package

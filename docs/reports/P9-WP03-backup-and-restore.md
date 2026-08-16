@@ -27,7 +27,7 @@ Feature commit: 3bbb0c716da60bd7d87a191c35bd0eced1bde380
 
 - PostgreSQL-native logical backups (`pg_dump -Fc`) per database
 - Independent restore order: Platform → POS → validate → start services → smoke → manual cutover
-- No cross-database FKs; legacy product excluded
+- No cross-database foreign keys; only approved Platform and POS databases
 - Passwords via `PGPASSWORD` env / Docker `-e`; not argv logs
 - UTC timestamps; unique backup-set IDs
 
@@ -52,7 +52,7 @@ Automated: `PosBackupRestoreDrillTests`, `PlatformBackupRestoreDrillTests`.
 4. Reject corrupt artifact and wrong-kind manifest
 5. Refuse restore over non-empty without confirmation
 6. Restore into **empty** disposable peer database
-7. Validate schema, migration history, required tables, legacy product absence, row-count sanity
+7. Validate schema, migration history, required tables, and row-count sanity
 
 APIs were not auto-cutover against restored DBs in CI (no Production traffic). Smoke against restored DBs remains operator-runbook step.
 
@@ -87,7 +87,7 @@ Backup freshness is an **operational readiness signal**, not application livenes
 
 ## Explicit exclusions
 
-- New business features; legacy product changes
+- New business features or unrelated product changes
 - Combined non-independently-restorable dump
 - Committed dumps/secrets/keys
 - Production DR/PITR claims beyond tested scenarios

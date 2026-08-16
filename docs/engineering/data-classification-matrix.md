@@ -13,7 +13,6 @@
 | Feature limits | Internal operational | Platform | Yes | Products | OK | Platform |
 | SaaSPayment amount / reference | Financial | Platform | Admin + status to product | Billing Admin; product status only | Redact instrument data | Platform |
 | Payment card / secrets | Security + financial | Platform / PSP | **No** in product contracts | Payment processor / Platform vault | Never | Platform / PSP |
-| Clinic / Patient / Note content | Clinical-sensitive | legacy product | **No** to Platform contracts | legacy product only | Redact PHI | legacy product (OD-10) |
 | POSCustomer / credit remarks | Product-confidential / personal | POS | **No** to Platform | POS | Redact remarks | POS (OD-10) |
 | Sale lines / inventory | Product-confidential | POS | **No** | POS | Aggregate OK; no dumps | POS |
 | RetailPayment / CreditPayment | Financial (retail) | POS | **No** as SaaSPayment | POS | Redact tender details as needed | POS |

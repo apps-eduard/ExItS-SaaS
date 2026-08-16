@@ -21,7 +21,7 @@ Mark Phase 8 **complete with documented risks** when:
 - Full `ExItS.slnx` Release tests pass (**882** / **0** / **0**; baseline 851)
 - Android Release APK builds
 - Documentation matches implementation
-- No nested foreign product tree in this repository
+- Portfolio independence preserved (Platform + authorized products only)
 - Git is clean; `main` matches `origin/main` after push
 
 **Do not claim production readiness** while documented blockers remain open.
@@ -126,7 +126,7 @@ Consolidated proof: `BasicStoreCapabilityMatrixTests` + existing per-WP commerci
 
 Pre-Phase-8 tip for chain tests: `AddPosIdempotencyRecords`.
 
-**No** dashboard/report migration. **No** supplier, tax, accounting, gateway, report-cache, Platform, or legacy product tables in `pos`.
+**No** dashboard/report migration. **No** supplier, tax, accounting, gateway, report-cache, or Platform tables in `pos`.
 
 Closeout proof: `PosPhase8MigrationChainTests` — apply latest → stepwise rollback Expenses→…→idempotency → re-apply; schema + deferred-table bans.
 
@@ -219,7 +219,7 @@ Do **not** mark these resolved without evidence.
 
 ## Portfolio independence
 
-Root a nested foreign product tree must remain absent/untracked and outside `ExItS.slnx`.
+No unauthorized nested product tree at repo root; keep `ExItS.slnx` to authorized products only.
 
 ## Documentation and Git
 

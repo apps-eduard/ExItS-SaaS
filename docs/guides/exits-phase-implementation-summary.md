@@ -10,9 +10,9 @@
 
 | Phase | Name | Status |
 |-------|------|--------|
-| 0 | legacy product Assessment | Complete |
+| 0 | Portfolio Inception | Complete |
 | 1 | Platform Boundary & Architecture | Complete |
-| 2 | Platform Extraction | Complete |
+| 2 | Platform Foundation | Complete |
 | 3 | Billing, Plans & Entitlements | Complete |
 | 4 | Platform Admin Expansion | Complete |
 | 5 | POS MAUI Foundation | Complete |
@@ -42,14 +42,13 @@
 
 ## Phase-by-Phase Implementation Summary
 
-### Phase 0 — Existing legacy product Assessment
+### Phase 0 — Portfolio Inception
 **What was done:**
-- Assessed the existing legacy product MVP
-- Identified reusable platform capabilities
-- Defined what should stay in legacy product vs move to Platform
-- Created reuse classification and extraction rules
+- Defined the initial portfolio scope
+- Identified Platform and product responsibilities
+- Recorded UI, runtime, repository, and risk expectations
 
-**Result:** Clear understanding of what could be extracted into a shared Platform.
+**Result:** Initial direction for the native ExItS Platform and product boundaries.
 
 ---
 
@@ -65,12 +64,12 @@
 
 ---
 
-### Phase 2 — Platform Extraction and legacy product Reconnection
+### Phase 2 — Platform Foundation
 **What was done:**
-- Extracted shared Platform capabilities from legacy product thinking
+- Created the native root Platform solution
 - Created Platform domain models (Product, Plan, Subscription, Entitlement, etc.)
 - Defined contracts between Platform and Products
-- Prepared for legacy product to reconnect later via contracts (not direct code sharing)
+- Added architecture and migration-validation foundations
 
 **Result:** Platform foundation exists independently.
 

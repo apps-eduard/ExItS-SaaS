@@ -51,7 +51,7 @@ Exact next: **P12-WP03 — Product Documentation Templates** (do not begin until
 
 ## Context-loading rule
 
-For product WPs, read only: workflow rules → this foundation reference → active product docs → current WP prompt → files needed for the task. Do not routinely scan unrelated products, old reports, full Platform history, or foreign product content. Permanent `.mdc` packaging remains **P12-WP04**.
+For product WPs, read only: workflow rules → this foundation reference → active product docs → current WP prompt → files needed for the task. Do not routinely scan unrelated products, old reports, full Platform history, or unauthorized nested product content. Permanent `.mdc` packaging remains **P12-WP04**.
 
 ## Validation
 
@@ -59,7 +59,7 @@ For product WPs, read only: workflow rules → this foundation reference → act
 |---|---|
 | Matches P12-WP01 audit | Pass |
 | Aligned with Platform/POS isolation | Pass |
-| No foreign product dependency | Pass |
+| No unauthorized external product dependency | Pass |
 | No Phase 11 / app / infrastructure changes | Pass |
 | No scaffold / `_ProductTemplate` | Pass |
 | Paths resolve under `docs/Product-Foundation/` | Pass |

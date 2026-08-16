@@ -29,7 +29,7 @@ Implemented persistent Platform organizations (subscription ownership only) and 
 | Active-like uniqueness | Partial unique index `ux_subscriptions_one_active_like` on `(organization_id, product_code)` WHERE status ∈ Trialing, Active, GracePeriod, PastDue, Suspended |
 | Concurrency | PostgreSQL `xmin` row version on organizations and subscriptions; conflicts → `application.concurrency_conflict` |
 | Check constraints | `ck_subscriptions_trial_range`, `ck_subscriptions_paid_range` |
-| Explicitly excluded tables | users, memberships, payments, invoices, entitlement snapshots, legacy product, POS |
+| Explicitly excluded tables | users, memberships, payments, invoices, entitlement snapshots, POS |
 
 ## 4. Trial lifecycle
 
@@ -89,7 +89,7 @@ Development-stage, unauthenticated:
 - `POST /api/v1/platform/subscriptions/{subscriptionId}/cancel`
 - `POST /api/v1/platform/subscriptions/{subscriptionId}/expire`
 
-Confirmed absent: payment, invoice, GCash, entitlement-delivery, legacy product, POS routes.
+Confirmed absent: payment, invoice, GCash, entitlement-delivery, and POS routes.
 
 Phase marker: `P3-WP02-trials-subscription-lifecycle`. Retained: `GET /`, `GET /health`.
 
@@ -145,10 +145,9 @@ History table: `public.__EFMigrationsHistory`. Partial unique index verified. No
 
 ## 13. portfolio independence verification
 
-- Git tracking shows no nested foreign product tree empty
-- `/legacy product/` ignored
-- No legacy product project in `ExItS.slnx`
-- Tracked contracts under `src/Platform/.../Integration/legacy product/` unchanged in purpose
+- No unauthorized nested product tree is tracked
+- `ExItS.slnx` contained only approved Platform projects
+- Versioned Platform contract interfaces remained unchanged in purpose
 
 ## 14. Risks
 

@@ -8,7 +8,7 @@ Implement portfolio products, plans, trials, payments and resilient entitlement 
 
 ## Phase 2 prerequisite
 
-Phase 2 is **Close with documented risks** (P2-WP06). Domain foundations for catalog/subscriptions/entitlements exist. **P3-WP01** adds catalog persistence and API. SaaS payment collection and legacy product cutover remain out of scope until later WPs. Do **not** begin a Phase 3 WP until explicitly authorized.
+Phase 2 is **Close with documented risks** (P2-WP06). Domain foundations for catalog, subscriptions, and entitlements exist. **P3-WP01** adds catalog persistence and API. SaaS payment collection and production migration remain out of scope until later work packages.
 
 ## First work package
 
@@ -30,11 +30,11 @@ Persist the Platform product/plan catalog and expose it via Platform API without
 - Repository + unit-of-work implementations; expanded catalog commands/queries.
 - Catalog REST API under `/api/v1/platform/catalog` (development-stage, unauthenticated).
 - Integration tests via Testcontainers PostgreSQL; 140 root tests passing at acceptance.
-- No nested foreign product tree in this repository.
+- Portfolio independence preserved (Platform + authorized products only).
 
 #### Explicit exclusions (honored)
 
-- No subscription purchase/activation, invoices, GCash, entitlement delivery, Admin UI, legacy product adapter, POS.
+- No subscription purchase/activation, invoices, GCash, entitlement delivery, Admin UI, product adapter, or POS.
 
 #### Definition of Done
 
@@ -75,11 +75,11 @@ Persist Platform organizations (subscription ownership) and the commercial subsc
 - Trial start/expire; paid activation without payment processing; grace/past-due/suspend/reactivate/cancel/expire.
 - APIs under `/api/v1/platform/organizations` and `/api/v1/platform/subscriptions` (development-stage, unauthenticated).
 - 185 root tests passing; isolated PostgreSQL apply/rollback/re-apply validated.
-- No nested foreign product tree in this repository.
+- Portfolio independence preserved (Platform + authorized products only).
 
 #### Explicit exclusions (honored)
 
-- No auth/JWT, invoices, GCash, entitlement delivery, Hangfire, Admin UI, legacy product adapter, POS, `FromDays(90)`.
+- No auth/JWT, invoices, GCash, entitlement delivery, Hangfire, Admin UI, product adapter, POS, or `FromDays(90)`.
 
 #### Definition of Done
 
@@ -121,13 +121,13 @@ Implement persistent Platform SaaS manual payment records, confirmation lifecycl
 - ConfirmPaymentAndActivateSubscription: atomic confirm + subscription activation.
 - APIs under `/api/v1/platform/payments` (development-stage, unauthenticated).
 - 251 root tests passing; isolated PostgreSQL apply/rollback/re-apply validated.
-- No nested foreign product tree in this repository.
+- Portfolio independence preserved (Platform + authorized products only).
 
 #### Explicit exclusions (honored)
 
 - No payment gateway, webhook, QR, card storage, GCash API, automatic verification.
 - No invoices, tax, discount, proration, credit notes, reconciliation engine.
-- No POS/Utang/retail/legacy product payment entities.
+- No POS, Utang, or retail payment entities.
 - No authentication — actor references accept plain strings (production blocker).
 
 #### Definition of Done
@@ -170,11 +170,11 @@ Persist authoritative Platform entitlement snapshots and feature overrides with 
 - Provisional `IEntitlementRefreshPolicy` (24h); R-022 remains open.
 - APIs under entitlements and feature-overrides routes (development-stage, unauthenticated).
 - 301 root tests; isolated PostgreSQL apply/rollback/re-apply validated.
-- No nested foreign product tree in this repository.
+- Portfolio independence preserved (Platform + authorized products only).
 
 #### Explicit exclusions (honored)
 
-- No product delivery, broker, outbox, Hangfire, legacy product/POS projection tables.
+- No product delivery, broker, outbox, Hangfire, or POS projection tables.
 - No Admin UI, authentication, payment-gateway changes.
 
 #### Definition of Done
@@ -217,11 +217,11 @@ Close Phase 3 by validating the commercial foundation (catalog, subscriptions, m
 - API and database inventories recorded.
 - Risk dispositions evidence-based; authentication/delivery/R-022/R-035 remain open.
 - 302 root tests passing.
-- No nested foreign product tree in this repository.
+- Portfolio independence preserved (Platform + authorized products only).
 
 #### Explicit exclusions (honored)
 
-- No Auth, Admin UI, delivery, gateway, invoice, Hangfire, POS, legacy product implementation.
+- No Auth, Admin UI, delivery, gateway, invoice, Hangfire, or POS implementation.
 
 #### Definition of Done
 

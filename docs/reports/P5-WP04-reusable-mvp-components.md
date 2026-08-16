@@ -80,7 +80,7 @@ Release `net10.0-android` build/publish succeeded (`com.exits.pinoybusinesspos-S
 
 ## 11. portfolio independence verification
 
-Root a nested foreign product tree must remain absent/untracked and outside `ExItS.slnx`.
+No unauthorized nested product tree at repo root; keep `ExItS.slnx` to authorized products only.
 
 ## 12. Exact next work package
 

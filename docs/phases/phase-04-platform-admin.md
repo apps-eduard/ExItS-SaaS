@@ -4,7 +4,7 @@
 
 ## Objective
 
-Build a **new** native-CSS ExITS Platform Admin (Blazor Web App) for multi-product operations. Do **not** extend legacy product Staff Web Ant Design as the long-term Platform Admin UI.
+Build the ExITS Platform Admin (Blazor Web App) for multi-product operations. The current authoritative UI stack is Ant Design Blazor under ADR-015.
 
 ## Phase status
 
@@ -51,7 +51,7 @@ Report: [P4-WP02-organizations-users-and-product-access.md](../reports/P4-WP02-o
 - Effective commercial access evaluation (Trialing/Active only for new grants)
 - PostgreSQL persistence + migration apply/rollback/re-apply
 - Admin APIs and UI for users/memberships/product access
-- Tests, docs, runtime evidence; no auth / product-local roles / legacy product / POS
+- Tests, docs, runtime evidence; no auth, product-local roles, or POS implementation
 
 #### Definition of Done
 

@@ -117,7 +117,7 @@ dotnet build "src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.Maui/ExItS.Pi
   -t:Install
 ```
 
-Do **not** use historical legacy product AVD names. Untracked `tools/p18-*.mjs` remain local.
+Use an ExItS-named AVD. Untracked `tools/p18-*.mjs` remain local.
 
 Restart Local Validation APIs after this fix so POS bearer commercial merge is live:
 
