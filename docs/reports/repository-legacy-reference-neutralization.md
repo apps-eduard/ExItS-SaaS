@@ -43,4 +43,5 @@ Remove obsolete legacy product and workspace references from the **current** rep
 
 ## Commits
 
-_(Recorded at push.)_
+| `36adca06` | `chore(repo): remove obsolete legacy product references` |
+| `23e8c8f4` | `docs(repo): neutralize legacy product history from current documentation` |
