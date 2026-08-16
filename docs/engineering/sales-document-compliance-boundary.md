@@ -4,14 +4,18 @@
 
 ExItS has one Sale engine. The current document projection is `TransactionSummary`; `TaxDocument` is reserved for future implementation and remains unavailable through P26-WP05 (`TaxDocumentIssuanceRuntime.ImplementationAvailable = false`).
 
-Tax calculation, education, eligibility, profile, and tax-document authority are separate:
+Tax calculation, education, eligibility, profile, tax-document authority, and tax-configuration enablement are separate:
 
-- POS `OperationalSetup.TaxRatePercent` and `TaxPricingMode` calculate sale totals.
-- Platform `OrganizationSalesDocumentCapability` holds `ComplianceEligibilityStatus` and `TaxDocumentIssuanceEnabled`.
+- POS `OperationalSetup.TaxRatePercent` and `TaxPricingMode` store tax calculation values.
+- Platform `OrganizationSalesDocumentCapability` holds `ComplianceEligibilityStatus`, `TaxDocumentIssuanceEnabled`, and `TaxConfigurationEnabled`.
+- `TaxConfigurationEnabled` defaults to `false`. Compliance eligibility alone does not enable it.
+- Only Platform Admin (`ManageOrganizations`) may enable tax configuration, and only when eligibility is `Approved`.
+- Enablement is product authorization — not BIR, NPC, or other regulatory certification.
+- When `TaxConfigurationEnabled` is false, POS hides tax settings and does not apply tax on new checkouts; stored tax values are preserved.
 - Platform `OrganizationComplianceProfile` is an organization-scoped anchor for future confirmed compliance fields (no invented TIN/BIR schema).
 - The capability defaults off, is organization-scoped, and is not a subscription, plan entitlement, or `FeatureOverride`.
-- Owner education acknowledgment is independent of eligibility and never enables issuance.
-- Owner may request compliance review; only Platform `ManageOrganizations` may transition eligibility, set issuance, or ensure the compliance profile anchor.
+- Owner education acknowledgment is independent of eligibility and never enables issuance or tax configuration.
+- Owner may request compliance review; only Platform `ManageOrganizations` may transition eligibility, set issuance, set tax configuration, or ensure the compliance profile anchor.
 
 ## Data ownership
 
@@ -20,12 +24,13 @@ Platform owns the capability row:
 - `OrganizationId`
 - `ComplianceEligibilityStatus` (default `NotRequested`)
 - `TaxDocumentIssuanceEnabled` (default `false`)
+- `TaxConfigurationEnabled` (default `false`)
 - `UpdatedAtUtc`
 - optional `UpdatedByActorReference`
 
-Missing capability rows mean disabled issuance. Ownership transfer changes membership authority only; it does not move or recreate organization capability or the org-scoped compliance profile.
+Missing capability rows mean disabled issuance and disabled tax configuration. Ownership transfer changes membership authority only; it does not move or recreate organization capability or the org-scoped compliance profile.
 
-POS owns Sale operational data. `PosSaleDto.DocumentKind` defaults to `TransactionSummary`, and current mappings set it explicitly. Historical records are interpreted as Transaction Summaries. Offline cash-sale storage and synchronization remain unchanged; no LocalStore version bump is needed.
+POS owns Sale operational data and tax *values*. Applying tax on checkout requires Platform `TaxConfigurationEnabled=true` (POS Api reads compliance-status; fail-closed). `PosSaleDto.DocumentKind` defaults to `TransactionSummary`, and current mappings set it explicitly. Historical records are interpreted as Transaction Summaries. Offline cash-sale storage does not sync operational/tax capability; after authoritative refresh, disabled capability stops applying tax. No LocalStore schema-version bump is needed.
 
 ## Document wording
 

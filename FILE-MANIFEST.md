@@ -155,6 +155,7 @@ docs/reports/P25-owner-organization-management-authority-fix.md
 docs/reports/P25-org-web-runtime-owner-auth-and-icon-nav-remediation.md
 docs/reports/connected-supplier-connection-request-lifecycle.md
 docs/engineering/sales-document-compliance-boundary.md
+docs/engineering/platform-controlled-organization-tax-configuration.md
 docs/engineering/organization-sales-document-acknowledgment.md
 docs/engineering/platform-organization-compliance-eligibility.md
 docs/engineering/organization-compliance-profile.md

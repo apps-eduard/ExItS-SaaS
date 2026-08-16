@@ -249,7 +249,7 @@ P19-WP08 ? End-to-End Validation and User Closeout Checklist (Retest � awaitin
 | P25-WP08 — Organization profile independence + multi-org ownership | **Code Complete / Owner Validation Pending** | `a3dfda28`, `5fd997e0` — [report](reports/P25-WP08-organization-profile-independence.md) |
 | P25-WP09 — Organization ownership transfer | **Code Complete / Owner Validation Pending** | `67bd59bd`, `f20b6dc3`, `5f51e35a` — [report](reports/P25-WP09-organization-ownership-transfer.md) |
 
-**Phase 26 Sales Documents / Compliance Readiness:** **Open** ([phase](phases/phase-26-sales-documents-compliance-readiness.md); [roadmap](compliance/bir-compliance-activation-roadmap.md); [checklist](validation/phase-26-owner-validation-checklist.md)) — WP01–WP05 Code Complete / Owner Validation Pending; TaxDocument unavailable; no BIR claim; Phase 25 remains Open.
+**Phase 26 Sales Documents / Compliance Readiness:** **Open** ([phase](phases/phase-26-sales-documents-compliance-readiness.md); [roadmap](compliance/bir-compliance-activation-roadmap.md); [checklist](validation/phase-26-owner-validation-checklist.md); [tax configuration](engineering/platform-controlled-organization-tax-configuration.md)) — WP01–WP05 Code Complete / Owner Validation Pending; TaxDocument unavailable; TaxConfigurationEnabled Platform-gated (default off); no BIR claim; Phase 25 remains Open.
 
 ## Phase 26 work packages
 

@@ -418,11 +418,11 @@ Engineering remediation (not a phase closeout WP): [organization-web-role-and-wo
 **Status:** **OPEN** — P26-WP01–WP05 Code Complete / Owner Validation Pending. Not phase closeout.
 
 - One Sale engine; current and historical sales are Transaction Summaries.
-- Platform owns a default-off, organization-scoped tax-document capability plus compliance eligibility lifecycle.
+- Platform owns a default-off, organization-scoped tax-document capability, compliance eligibility lifecycle, and **TaxConfigurationEnabled** (tax settings product gate — not certification). See [platform-controlled-organization-tax-configuration.md](../engineering/platform-controlled-organization-tax-configuration.md).
 - P26-WP04 adds an organization-scoped compliance profile **anchor** (no invented TIN/BIR fields) and the living [BIR activation roadmap](../compliance/bir-compliance-activation-roadmap.md).
 - P26-WP05 integration hardening + [owner validation checklist](../validation/phase-26-owner-validation-checklist.md); soft gate preserved; offline sales not per-sale compliance-checked.
-- Tax calculation settings do not authorize tax-document issuance.
-- P26-WP03: Owner may request review; Platform `ManageOrganizations` transitions eligibility and may enable issuance only when `Approved` plus current Owner education ack; Suspend/Revoke/non-approved disable issuance.
+- Tax calculation settings do not authorize tax-document issuance. Tax configuration is hidden until Platform enables it for an `Approved` organization.
+- P26-WP03: Owner may request review; Platform `ManageOrganizations` transitions eligibility and may enable issuance only when `Approved` plus current Owner education ack; Suspend/Revoke/non-approved disable issuance and tax configuration.
 - `TaxDocumentIssuanceRuntime.ImplementationAvailable = false` — org enable does not produce TaxDocuments.
 - TaxDocument generation, BIR rules, and invoice series remain unimplemented (**NOT AVAILABLE**).
 - Offline Transaction Summary behavior remains unchanged; no LocalStore version bump.

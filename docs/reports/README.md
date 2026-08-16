@@ -151,4 +151,6 @@ The dashboard links to the latest accepted report.
 | [P26-WP04-organization-tax-compliance-profile-and-activation-foundation.md](P26-WP04-organization-tax-compliance-profile-and-activation-foundation.md) | P26-WP04 Organization tax/compliance profile and activation foundation | Code Complete / Validation Pending |
 | [P26-WP05-sales-document-compliance-integration-hardening.md](P26-WP05-sales-document-compliance-integration-hardening.md) | P26-WP05 Sales document compliance integration hardening & validation readiness | Code Complete / Owner Validation Pending |
 
+Related engineering (not a WP closeout): [platform-controlled-organization-tax-configuration.md](../engineering/platform-controlled-organization-tax-configuration.md) — Platform `TaxConfigurationEnabled` gate for Operational Setup tax settings (default off; Approved eligibility required; not certification).
+
 Aliases (stable old paths): [personal-organization-identity-isolation.md](personal-organization-identity-isolation.md) · [sales-buyer-party-isolation.md](sales-buyer-party-isolation.md) · [organization-profile-independence.md](organization-profile-independence.md) · [organization-ownership-transfer.md](organization-ownership-transfer.md)

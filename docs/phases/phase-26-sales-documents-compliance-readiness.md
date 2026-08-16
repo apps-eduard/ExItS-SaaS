@@ -21,16 +21,18 @@ Establish a truthful sales-document boundary before any jurisdiction-specific ta
 ## Invariants
 
 - Tax calculation settings (`TaxRatePercent`, `TaxPricingMode`) do not authorize tax-document issuance.
-- Compliance eligibility and `TaxDocumentIssuanceEnabled` are Platform-controlled and organization-scoped, not plan entitlements or commercial feature overrides.
-- Missing capability state means `TaxDocumentIssuanceEnabled=false` and eligibility defaults to `NotRequested` when a row is ensured.
+- `TaxConfigurationEnabled` is Platform-controlled and distinct from eligibility and from stored tax values.
+- Tax configuration is hidden by default. Compliance eligibility alone does not enable it. Platform Admin explicitly enables Tax Configuration for an eligible (`Approved`) organization. Owner/Manager may configure tax only after enablement. Enablement is not regulatory certification.
+- Compliance eligibility and `TaxDocumentIssuanceEnabled` / `TaxConfigurationEnabled` are Platform-controlled and organization-scoped, not plan entitlements or commercial feature overrides.
+- Missing capability state means issuance and tax configuration are disabled; eligibility defaults to `NotRequested` when a row is ensured.
 - Ownership transfer preserves the capability and the org-scoped compliance profile because they belong to the organization, not its owner.
-- Historical and offline sales remain Transaction Summaries without a LocalStore schema-version change.
+- Historical and offline sales remain Transaction Summaries without a LocalStore schema-version change. Disabling tax configuration later does not rewrite completed sale tax snapshots.
 - A future TaxDocument must snapshot its document kind and compliance facts; it must not reinterpret historical sales.
 - Public QR and organization identity contracts expose no TIN or tax/compliance fields.
 - Current education version is `transaction-summary-v1`; only the exact current active Owner may acknowledge.
 - Ownership transfer and future version changes retain historical rows and require the current Owner to act.
 - Education is a soft prompt only; checkout, sales, sync, and offline operation remain available.
-- Acknowledgment never mutates eligibility or `TaxDocumentIssuanceEnabled`; enable issuance separately requires Approved eligibility plus current Owner acknowledgment.
+- Acknowledgment never mutates eligibility, `TaxDocumentIssuanceEnabled`, or `TaxConfigurationEnabled`; enable issuance separately requires Approved eligibility plus current Owner acknowledgment; enable tax configuration requires Approved eligibility only.
 - Organization enable of issuance does not produce TaxDocuments while runtime implementation remains unavailable.
 - Compliance profile anchor stores no invented TIN/BIR fields; confirmed requirements are tracked in the activation roadmap.
 
