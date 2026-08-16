@@ -13,10 +13,10 @@ Phase 1 baseline: [connected-exits-suppliers-phase-1.md](connected-exits-supplie
 
 | SHA | Message |
 |---|---|
-| _(feat tip)_ | `feat(suppliers): add buyer-specific product sharing and PO pricing` |
-| _(maui tip)_ | `feat(maui): add connected buyer product sharing workflow` |
-| _(test tip)_ | `test(suppliers): cover connected buyer sharing and pricing rules` |
-| _(docs tip)_ | `docs(suppliers): document buyer-specific sharing and pricing` |
+| `25a33bf5` | `feat(suppliers): add buyer-specific product sharing and PO pricing` |
+| `2b79c41d` | `feat(maui): add connected buyer product sharing workflow` |
+| `9988fb16` | `test(suppliers): cover connected buyer sharing and pricing rules` |
+| `337df110` | `docs(suppliers): document buyer-specific sharing and pricing` |
 
 ## Business model
 
