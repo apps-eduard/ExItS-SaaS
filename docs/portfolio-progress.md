@@ -14,7 +14,7 @@
 | Current phase | Phase 29 **Open / Partial Closeout** â€” cross-cutting data/performance hardening. Phases 14 / 19â€“28 remain **Open** with prior statuses (including Phase 28 Stage B Code Complete / Validation Pending). |
 | Current work package | **P29-WP14** PostgreSQL backup/restore recovery validation - Code Complete / Validation Evidence Recorded ([phase](phases/phase-29-data-integrity-query-performance-and-database-hardening.md)). |
 | Overall status | WP11-WP14 evidence recorded (constraints, electronic payment reservation, concurrency/EXPLAIN, **development** backup/restore). Broader load + **Production** backup residuals open. **Not Device Verified. Not Browser Verified. Not Production Ready. Not Production Payment Ready. Production Backup/Restore Proven = No.** |
-| Latest verified commit | Phase 29 WP14 _(stamp after push)_ (preflight `2dfb95da`) |
+| Latest verified commit | Phase 29 WP14 `4b5de978`/`1c3361bb`/`adeb2835`/`852ab186` (preflight `2dfb95da`) |
 | Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA deferred; Phase 19/20/22/24/25/26/27 owner/physical validation pending |
 | Last updated | 2026-08-16 |
 
