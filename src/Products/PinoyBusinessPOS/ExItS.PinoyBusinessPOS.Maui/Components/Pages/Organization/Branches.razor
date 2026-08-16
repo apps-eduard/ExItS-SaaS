@@ -1,0 +1,140 @@
+@page "/organization/branches"
+@using ExItS.DesignSystem.Components.Internal
+@inject ICurrentUserContext CurrentUser
+@inject IPlatformAccessClient Platform
+@inject IStringLocalizer<PosResources> L
+@inject NavigationManager Nav
+
+<div class="pos-branches">
+    <StoreHeaderBack Href="/more" />
+    <Page>
+        <header class="pos-branches__header">
+            <div>
+                <h1>@L["Branches_Title"]</h1>
+                <p class="pos-muted">@L["Branches_Subtitle"]</p>
+            </div>
+            <Button Type="@ButtonType.Primary" OnClick="ToggleCreate">@L["Branches_Add"]</Button>
+        </header>
+
+        @if (_capacity is not null)
+        {
+            <p class="pos-branches__capacity">@L["Branches_Capacity", _capacity.Used, _capacity.Allowed]</p>
+        }
+
+        @if (!string.IsNullOrWhiteSpace(_error))
+        {
+            <Alert Tone="AlertTone.Danger" Message="@_error" />
+        }
+
+        @if (_showCreate)
+        {
+            <section class="pos-branches__section">
+                <h2>@L["Branches_Add"]</h2>
+                <div class="pos-branches__grid">
+                    <TextInput Label="@L["Branches_FieldCode"]" @bind-Value="_newCode" Required />
+                    <TextInput Label="@L["Branches_FieldName"]" @bind-Value="_newName" Required />
+                    <TextInput Label="@L["Branches_FieldCity"]" @bind-Value="_newCity" />
+                </div>
+                <div class="pos-branches__actions">
+                    <Button Type="@ButtonType.Primary" Disabled="_busy" OnClick="CreateAsync">@L["Common_Save"]</Button>
+                    <Button Disabled="_busy" OnClick="ToggleCreate">@L["Common_Cancel"]</Button>
+                </div>
+            </section>
+        }
+
+        @if (_loading)
+        {
+            <div class="pos-branches__loading"><Spinner /><span>@L["Common_Loading"]</span></div>
+        }
+        else if (_branches.Count == 0)
+        {
+            <EmptyState IconName="home" Title="@L["Branches_EmptyTitle"]" Message="@L["Branches_EmptyMessage"]" />
+        }
+        else
+        {
+            <div class="pos-branches__list" role="list">
+                @foreach (var branch in _branches)
+                {
+                    <article class="pos-branches__card" role="listitem">
+                        <div class="pos-branches__card-top">
+                            <div>
+                                <strong>@branch.Name</strong>
+                                <div class="pos-muted">@branch.Code · @(branch.City ?? L["Branches_NoCity"].Value)</div>
+                            </div>
+                            <div class="pos-branches__chips">
+                                @if (branch.IsPrimary) { <Badge Tone="BadgeTone.Info">@L["Branches_Primary"]</Badge> }
+                                <Badge Tone="@(IsActive(branch) ? BadgeTone.Success : BadgeTone.Neutral)">@branch.Status.ToUpperInvariant()</Badge>
+                            </div>
+                        </div>
+                        <div class="pos-branches__chips">
+                            @if (branch.PickupEnabled) { <Badge Tone="BadgeTone.Info">@L["Branches_Pickup"]</Badge> }
+                            @if (branch.DeliveryEnabled) { <Badge Tone="BadgeTone.Success">@L["Branches_Delivery"]</Badge> }
+                        </div>
+                        <Button Size="@ButtonSize.Small" OnClick="() => Edit(branch.Id)">@L["Common_Edit"]</Button>
+                    </article>
+                }
+            </div>
+        }
+    </Page>
+</div>
+
+@code {
+    private IReadOnlyList<OrganizationBranchDto> _branches = [];
+    private BranchCapacityDto? _capacity;
+    private bool _loading = true;
+    private bool _busy;
+    private bool _showCreate;
+    private string? _newCode;
+    private string? _newName;
+    private string? _newCity;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        if (CurrentUser.Session?.OrganizationId is not Guid orgId)
+        {
+            Nav.NavigateTo("/organization-select", replace: true);
+            return;
+        }
+
+        _loading = true;
+        var branches = await Platform.GetBranchesAsync(orgId);
+        var capacity = await Platform.GetBranchCapacityAsync(orgId);
+        _branches = branches.IsSuccess && branches.Data is not null ? branches.Data : [];
+        _capacity = capacity.IsSuccess ? capacity.Data : null;
+        _error = branches.IsSuccess ? null : branches.Error?.Detail ?? L["Branches_LoadFailed"];
+        _loading = false;
+    }
+
+    private void ToggleCreate() => _showCreate = !_showCreate;
+    private void Edit(Guid id) => Nav.NavigateTo($"/organization/branches/{id:D}");
+    private static bool IsActive(OrganizationBranchDto branch) =>
+        string.Equals(branch.Status, "Active", StringComparison.OrdinalIgnoreCase);
+
+    private async Task CreateAsync()
+    {
+        if (CurrentUser.Session?.OrganizationId is not Guid orgId ||
+            string.IsNullOrWhiteSpace(_newCode) || string.IsNullOrWhiteSpace(_newName))
+        {
+            _error = L["Branches_ValidationRequired"];
+            return;
+        }
+
+        _busy = true;
+        var result = await Platform.CreateBranchAsync(
+            orgId,
+            new CreateBranchRequest(_newCode.Trim(), _newName.Trim(), City: _newCity?.Trim()));
+        _busy = false;
+        if (!result.IsSuccess)
+        {
+            _error = result.Error?.Detail ?? L["Branches_SaveFailed"];
+            return;
+        }
+
+        _newCode = _newName = _newCity = null;
+        _showCreate = false;
+        await LoadAsync();
+    }
+}

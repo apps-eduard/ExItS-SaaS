@@ -54,6 +54,10 @@
                 <div class="pos-action-grid" role="group" aria-label="@L["More_ToolsSection"]">
                     @if (_isOrganizationOwner)
                     {
+                        <button type="button" class="pos-action-tile" @onclick="GoBranches">
+                            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("home")</span>
+                            <span class="pos-action-tile__label">@L["Branches_Title"]</span>
+                        </button>
                         <button type="button" class="pos-action-tile" @onclick="GoSalesDocumentEducation">
                             <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("info")</span>
                             <span class="pos-action-tile__label">@L["SalesDocument_EducationTitle"]</span>
@@ -215,6 +219,7 @@
 
     private async Task GoRoleHome() => Nav.NavigateTo(await RoleHome.ResolvePosHomeAsync());
     private Task GoOrg() => OfflineNav.NavigateAsync("/org");
+    private Task GoBranches() => OfflineNav.NavigateAsync("/organization/branches");
     private Task GoSalesDocumentEducation() => OfflineNav.NavigateAsync("/sales-document-education");
     private Task GoOverdue() => OfflineNav.NavigateAsync("/overdue");
     private Task GoInventory() => OfflineNav.NavigateAsync("/inventory");

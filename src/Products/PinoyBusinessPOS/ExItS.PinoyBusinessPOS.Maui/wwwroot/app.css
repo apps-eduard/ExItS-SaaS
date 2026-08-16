@@ -14079,3 +14079,80 @@ html:has(.pos-denom-sheet) .pos-denom-sheet {
     font-weight: 650;
     white-space: normal;
 }
+
+/* Phase 28: compact branch and fulfillment-location management. */
+.pos-branches__header,
+.pos-branches__card-top,
+.pos-branches__actions {
+    align-items: center;
+    display: flex;
+    gap: .65rem;
+    justify-content: space-between;
+}
+
+.pos-branches h1,
+.pos-branches h2,
+.pos-branches p {
+    margin-top: 0;
+}
+
+.pos-branches__capacity {
+    font-size: .85rem;
+    font-weight: 650;
+}
+
+.pos-branches__list,
+.pos-branches__section,
+.pos-branches__grid,
+.pos-branches__estimates {
+    display: grid;
+    gap: .65rem;
+}
+
+.pos-branches__card,
+.pos-branches__section {
+    background: var(--exits-surface, #fff);
+    border: 1px solid var(--exits-border, #dce5df);
+    border-radius: .75rem;
+    padding: .8rem;
+}
+
+.pos-branches__chips {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .35rem;
+}
+
+.pos-branches__field,
+.pos-branches__toggle {
+    display: grid;
+    font-size: .85rem;
+    font-weight: 600;
+    gap: .3rem;
+}
+
+.pos-branches__toggle {
+    align-items: center;
+    grid-template-columns: auto 1fr;
+    min-height: 2.75rem;
+}
+
+.pos-branches__field select {
+    border: 1px solid var(--exits-border, #cbd8d0);
+    border-radius: .5rem;
+    min-height: 2.75rem;
+    padding: .5rem;
+}
+
+.pos-branches__loading {
+    align-items: center;
+    display: flex;
+    gap: .5rem;
+}
+
+@media (min-width: 720px) {
+    .pos-branches__grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}

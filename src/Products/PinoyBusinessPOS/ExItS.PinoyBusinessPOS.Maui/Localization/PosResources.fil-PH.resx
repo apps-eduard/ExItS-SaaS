@@ -9283,4 +9283,47 @@
   <data name="ConnectedSuppliers_MarkFulfilled" xml:space="preserve">
     <value>Markahang natupad</value>
   </data>
+  <data name="Branches_Title" xml:space="preserve"><value>Mga branch</value></data>
+  <data name="Branches_Subtitle" xml:space="preserve"><value>Pamahalaan ang mga lokasyon at pickup o delivery.</value></data>
+  <data name="Branches_Add" xml:space="preserve"><value>Magdagdag ng branch</value></data>
+  <data name="Branches_Edit" xml:space="preserve"><value>I-edit ang branch</value></data>
+  <data name="Branches_Capacity" xml:space="preserve"><value>{0} sa {1} branch slot ang gamit</value></data>
+  <data name="Branches_Primary" xml:space="preserve"><value>PANGUNAHIN</value></data>
+  <data name="Branches_Pickup" xml:space="preserve"><value>Pickup</value></data>
+  <data name="Branches_Delivery" xml:space="preserve"><value>Delivery</value></data>
+  <data name="Branches_FieldCode" xml:space="preserve"><value>Code ng branch</value></data>
+  <data name="Branches_FieldName" xml:space="preserve"><value>Pangalan ng branch</value></data>
+  <data name="Branches_FieldCity" xml:space="preserve"><value>Lungsod / munisipalidad</value></data>
+  <data name="Branches_EmptyTitle" xml:space="preserve"><value>Wala pang branch</value></data>
+  <data name="Branches_EmptyMessage" xml:space="preserve"><value>Magdagdag ng fulfillment location para magsimula.</value></data>
+  <data name="Branches_NoCity" xml:space="preserve"><value>Walang lungsod</value></data>
+  <data name="Branches_LoadFailed" xml:space="preserve"><value>Hindi ma-load ang mga branch.</value></data>
+  <data name="Branches_SaveFailed" xml:space="preserve"><value>Hindi ma-save ang branch.</value></data>
+  <data name="Branches_PolicySaveFailed" xml:space="preserve"><value>Na-save ang branch pero hindi ang delivery settings.</value></data>
+  <data name="Branches_ValidationRequired" xml:space="preserve"><value>Kailangan ang code at pangalan ng branch.</value></data>
+  <data name="Branches_NotFound" xml:space="preserve"><value>Hindi nakita ang branch.</value></data>
+  <data name="Branches_Saved" xml:space="preserve"><value>Na-save ang settings ng branch.</value></data>
+  <data name="Branches_Details" xml:space="preserve"><value>Detalye</value></data>
+  <data name="Branches_Address" xml:space="preserve"><value>Address</value></data>
+  <data name="Branches_AddressLine1" xml:space="preserve"><value>Address line 1</value></data>
+  <data name="Branches_AddressLine2" xml:space="preserve"><value>Address line 2</value></data>
+  <data name="Branches_Region" xml:space="preserve"><value>Probinsya / rehiyon</value></data>
+  <data name="Branches_PostalCode" xml:space="preserve"><value>Postal code</value></data>
+  <data name="Branches_CountryCode" xml:space="preserve"><value>Country code</value></data>
+  <data name="Branches_Location" xml:space="preserve"><value>Lokasyon</value></data>
+  <data name="Branches_LocationHint" xml:space="preserve"><value>Kailangan ang coordinates bago mag-alok ng delivery.</value></data>
+  <data name="Branches_Latitude" xml:space="preserve"><value>Latitude</value></data>
+  <data name="Branches_Longitude" xml:space="preserve"><value>Longitude</value></data>
+  <data name="Branches_Fulfillment" xml:space="preserve"><value>Fulfillment</value></data>
+  <data name="Branches_PickupEnabled" xml:space="preserve"><value>Payagan ang customer pickup</value></data>
+  <data name="Branches_DeliveryEnabled" xml:space="preserve"><value>Payagan ang lokal na delivery</value></data>
+  <data name="Branches_DeliverySettings" xml:space="preserve"><value>Delivery settings</value></data>
+  <data name="Branches_MinimumOrder" xml:space="preserve"><value>Minimum order (PHP)</value></data>
+  <data name="Branches_BaseFee" xml:space="preserve"><value>Base delivery fee</value></data>
+  <data name="Branches_IncludedKm" xml:space="preserve"><value>Kasamang distansya (km)</value></data>
+  <data name="Branches_AdditionalPerKm" xml:space="preserve"><value>Dagdag na bayad kada km</value></data>
+  <data name="Branches_MaximumKm" xml:space="preserve"><value>Pinakamalayong distansya (km)</value></data>
+  <data name="Branches_FreeThreshold" xml:space="preserve"><value>Halaga para sa libreng delivery</value></data>
+  <data name="Branches_FeeExamples" xml:space="preserve"><value>Halimbawa ng delivery fee</value></data>
+  <data name="Branches_ColStatus" xml:space="preserve"><value>Status</value></data>
 </root>

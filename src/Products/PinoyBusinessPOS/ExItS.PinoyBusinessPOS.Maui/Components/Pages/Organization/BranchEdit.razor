@@ -1,0 +1,162 @@
+@page "/organization/branches/{BranchId:guid}"
+@using ExItS.DesignSystem.Components.Internal
+@inject ICurrentUserContext CurrentUser
+@inject IPlatformAccessClient Platform
+@inject IStringLocalizer<PosResources> L
+@inject NavigationManager Nav
+
+<div class="pos-branches">
+    <StoreHeaderBack Href="/organization/branches" />
+    <Page>
+        <header><h1>@L["Branches_Edit"]</h1><p class="pos-muted">@_code</p></header>
+        @if (!string.IsNullOrWhiteSpace(_error)) { <Alert Tone="AlertTone.Danger" Message="@_error" /> }
+        @if (!string.IsNullOrWhiteSpace(_success)) { <Alert Tone="AlertTone.Success" Message="@_success" /> }
+
+        @if (_loading)
+        {
+            <div class="pos-branches__loading"><Spinner /><span>@L["Common_Loading"]</span></div>
+        }
+        else if (_branch is not null)
+        {
+            <section class="pos-branches__section">
+                <h2>@L["Branches_Details"]</h2>
+                <div class="pos-branches__grid">
+                    <TextInput Label="@L["Branches_FieldName"]" @bind-Value="_name" Required />
+                    <label class="pos-branches__field">@L["Branches_ColStatus"]
+                        <select @bind="_status" disabled="@_busy"><option>Active</option><option>Inactive</option></select>
+                    </label>
+                </div>
+            </section>
+
+            <section class="pos-branches__section">
+                <h2>@L["Branches_Address"]</h2>
+                <div class="pos-branches__grid">
+                    <TextInput Label="@L["Branches_AddressLine1"]" @bind-Value="_address1" />
+                    <TextInput Label="@L["Branches_AddressLine2"]" @bind-Value="_address2" />
+                    <TextInput Label="@L["Branches_FieldCity"]" @bind-Value="_city" />
+                    <TextInput Label="@L["Branches_Region"]" @bind-Value="_region" />
+                    <TextInput Label="@L["Branches_PostalCode"]" @bind-Value="_postalCode" />
+                    <TextInput Label="@L["Branches_CountryCode"]" @bind-Value="_countryCode" />
+                </div>
+            </section>
+
+            <section class="pos-branches__section">
+                <h2>@L["Branches_Location"]</h2>
+                <p class="pos-muted">@L["Branches_LocationHint"]</p>
+                <div class="pos-branches__grid">
+                    <TextInput Label="@L["Branches_Latitude"]" @bind-Value="_latitude" Type="number" />
+                    <TextInput Label="@L["Branches_Longitude"]" @bind-Value="_longitude" Type="number" />
+                </div>
+            </section>
+
+            <section class="pos-branches__section">
+                <h2>@L["Branches_Fulfillment"]</h2>
+                <label class="pos-branches__toggle"><input type="checkbox" @bind="_pickupEnabled" /> @L["Branches_PickupEnabled"]</label>
+                <label class="pos-branches__toggle"><input type="checkbox" @bind="_deliveryEnabled" /> @L["Branches_DeliveryEnabled"]</label>
+            </section>
+
+            @if (_deliveryEnabled)
+            {
+                <section class="pos-branches__section">
+                    <h2>@L["Branches_DeliverySettings"]</h2>
+                    <div class="pos-branches__grid">
+                        <TextInput Label="@L["Branches_MinimumOrder"]" @bind-Value="_minimumOrder" Type="number" />
+                        <TextInput Label="@L["Branches_BaseFee"]" @bind-Value="_baseFee" Type="number" />
+                        <TextInput Label="@L["Branches_IncludedKm"]" @bind-Value="_includedKm" Type="number" />
+                        <TextInput Label="@L["Branches_AdditionalPerKm"]" @bind-Value="_additionalPerKm" Type="number" />
+                        <TextInput Label="@L["Branches_MaximumKm"]" @bind-Value="_maximumKm" Type="number" />
+                        <TextInput Label="@L["Branches_FreeThreshold"]" @bind-Value="_freeThreshold" Type="number" />
+                    </div>
+                    <div class="pos-branches__estimates">
+                        <strong>@L["Branches_FeeExamples"]</strong>
+                        @foreach (var distance in new[] { 1m, 3m, 5m })
+                        {
+                            <span>@distance.ToString("0.#") km: <MoneyDisplay Amount="@Estimate(distance)" CurrencyCode="PHP" /></span>
+                        }
+                    </div>
+                </section>
+            }
+
+            <Button Type="@ButtonType.Primary" Disabled="_busy" OnClick="SaveAsync">@L["Common_Save"]</Button>
+        }
+    </Page>
+</div>
+
+@code {
+    [Parameter] public Guid BranchId { get; set; }
+    private OrganizationBranchDto? _branch;
+    private bool _loading = true;
+    private bool _busy;
+    private bool _pickupEnabled;
+    private bool _deliveryEnabled;
+    private string? _error;
+    private string? _success;
+    private string? _code;
+    private string? _name;
+    private string? _status;
+    private string? _address1;
+    private string? _address2;
+    private string? _city;
+    private string? _region;
+    private string? _postalCode;
+    private string? _countryCode;
+    private string? _latitude;
+    private string? _longitude;
+    private string _minimumOrder = "0";
+    private string _baseFee = "0";
+    private string _includedKm = "0";
+    private string _additionalPerKm = "0";
+    private string _maximumKm = "0";
+    private string? _freeThreshold;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (CurrentUser.Session?.OrganizationId is not Guid orgId) { Nav.NavigateTo("/organization-select", true); return; }
+        var result = await Platform.GetBranchesAsync(orgId);
+        _branch = result.Data?.FirstOrDefault(x => x.Id == BranchId);
+        if (_branch is null) { _error = result.Error?.Detail ?? L["Branches_NotFound"]; _loading = false; return; }
+        Map(_branch);
+        _loading = false;
+    }
+
+    private void Map(OrganizationBranchDto b)
+    {
+        _code = b.Code; _name = b.Name; _status = b.Status; _address1 = b.AddressLine1; _address2 = b.AddressLine2;
+        _city = b.City; _region = b.Region; _postalCode = b.PostalCode; _countryCode = b.CountryCode;
+        _latitude = b.Latitude?.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        _longitude = b.Longitude?.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        _pickupEnabled = b.PickupEnabled; _deliveryEnabled = b.DeliveryEnabled;
+        if (b.DeliveryPolicy is { } p)
+        {
+            _minimumOrder = F(p.MinimumOrderAmount); _baseFee = F(p.BaseDeliveryFee); _includedKm = F(p.IncludedDistanceKm);
+            _additionalPerKm = F(p.AdditionalFeePerKm); _maximumKm = F(p.MaximumDeliveryDistanceKm);
+            _freeThreshold = p.FreeDeliveryThreshold is null ? null : F(p.FreeDeliveryThreshold.Value);
+        }
+    }
+
+    private static string F(decimal value) => value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+    private static decimal D(string? value) => decimal.TryParse(value, System.Globalization.NumberStyles.Number,
+        System.Globalization.CultureInfo.InvariantCulture, out var parsed) ? parsed : 0m;
+    private decimal Estimate(decimal distance) => Math.Max(0m, D(_baseFee) + Math.Max(0m, distance - D(_includedKm)) * D(_additionalPerKm));
+
+    private async Task SaveAsync()
+    {
+        if (_branch is null || CurrentUser.Session?.OrganizationId is not Guid orgId || string.IsNullOrWhiteSpace(_name)) return;
+        _busy = true; _error = _success = null;
+        decimal? latitude = string.IsNullOrWhiteSpace(_latitude) ? null : D(_latitude);
+        decimal? longitude = string.IsNullOrWhiteSpace(_longitude) ? null : D(_longitude);
+        var updated = await Platform.UpdateBranchAsync(orgId, BranchId, new UpdateBranchRequest(
+            _name.Trim(), _address1?.Trim(), _address2?.Trim(), _city?.Trim(), _region?.Trim(), _postalCode?.Trim(),
+            _countryCode?.Trim(), _status, latitude, longitude, latitude is null && longitude is null, _pickupEnabled, _deliveryEnabled));
+        if (!updated.IsSuccess) { _error = updated.Error?.Detail ?? L["Branches_SaveFailed"]; _busy = false; return; }
+
+        if (_deliveryEnabled)
+        {
+            var policy = await Platform.UpsertBranchDeliveryPolicyAsync(orgId, BranchId, new UpsertBranchDeliveryPolicyRequest(
+                D(_minimumOrder), D(_baseFee), D(_includedKm), D(_additionalPerKm), D(_maximumKm),
+                string.IsNullOrWhiteSpace(_freeThreshold) ? null : D(_freeThreshold)));
+            if (!policy.IsSuccess) { _error = policy.Error?.Detail ?? L["Branches_PolicySaveFailed"]; _busy = false; return; }
+        }
+        _success = L["Branches_Saved"]; _busy = false;
+    }
+}
