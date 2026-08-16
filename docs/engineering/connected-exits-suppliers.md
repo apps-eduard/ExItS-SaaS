@@ -113,7 +113,8 @@ Schema **v9** adds `multiplier_to_base` / `package_label` on linked products so 
 
 | Screen | Behavior |
 |---|---|
-| **Browse products** | Online only. Returns products that are **globally exposable**, **explicitly shared to this relationship**, orderable, and have a valid effective PO price. Empty = this supplier has not shared products with your business yet. Search optional. Link and use maps a shared item to a buyer catalog product. |
+| **Browse products** | Online only. Returns products that are **globally exposable**, **explicitly shared to this relationship**, orderable, and have a valid effective PO price. Empty = this supplier has not shared products with your business yet. Search optional (Enter or short debounce). **Use product** opens an explicit match sheet: link an existing buyer catalog product, or **Create & link** a new buyer-owned product. Suggestions (SKU/name/UOM) never auto-link. |
+| **Create & link** | Single transactional API (`POST …/links/create-and-link`) requiring `ManageCatalog` + `ManagePurchasing`. Creates buyer `CatalogProduct` + `BuyerSupplierProductLink` in one save. Buyer SellingPrice is independent of supplier PO price. Does **not** change inventory, create a PO/GR, or set `CanExposeToConnectedBuyers`. Duplicate retries return the existing active link for that supplier product. |
 | **Linked products** | Device cache of **explicitly linked** items only. Never downloads the full supplier catalog. |
 | **Product create/edit** | Available to connected buyers + Default PO Price (initialized from SellingPrice only on first enable; then independent). Secondary one-off path. |
 | **Catalog → Connected Buyer Availability** | Primary Level-1 mobile bulk Enable/Disable/Default PO Price (search, availability chips, category, select-all matching, price preview). Does **not** create buyer shares. |

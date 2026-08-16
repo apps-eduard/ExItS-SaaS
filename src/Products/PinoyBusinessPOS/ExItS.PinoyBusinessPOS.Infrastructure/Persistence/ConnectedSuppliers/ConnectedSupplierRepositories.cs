@@ -193,6 +193,8 @@ internal sealed class BuyerSupplierProductLinkRepository(PosDbContext db) : IBuy
     {var r=await db.BuyerSupplierProductLinks.AsNoTracking().SingleOrDefaultAsync(x=>x.Id==id.Value,ct);return r is null?null:ConnectedSupplierEntityMapper.ToDomain(r);}
     public async Task<BuyerSupplierProductLink?> FindAsync(ConnectedSupplierRelationshipId relationshipId,CatalogProductId buyerProductId,CancellationToken ct=default)
     {var r=await db.BuyerSupplierProductLinks.AsNoTracking().SingleOrDefaultAsync(x=>x.RelationshipId==relationshipId.Value&&x.BuyerProductId==buyerProductId.Value&&x.IsActive,ct);return r is null?null:ConnectedSupplierEntityMapper.ToDomain(r);}
+    public async Task<BuyerSupplierProductLink?> FindBySupplierProductAsync(ConnectedSupplierRelationshipId relationshipId,CatalogProductId supplierProductId,CancellationToken ct=default)
+    {var r=await db.BuyerSupplierProductLinks.AsNoTracking().SingleOrDefaultAsync(x=>x.RelationshipId==relationshipId.Value&&x.SupplierProductId==supplierProductId.Value&&x.IsActive,ct);return r is null?null:ConnectedSupplierEntityMapper.ToDomain(r);}
     public async Task<IReadOnlyList<BuyerSupplierProductLink>> ListAsync(ConnectedSupplierRelationshipId relationshipId,PosOrganizationId buyer,CancellationToken ct=default)=>
         (await db.BuyerSupplierProductLinks.AsNoTracking().Where(x=>x.RelationshipId==relationshipId.Value&&x.BuyerOrganizationId==buyer.Value).OrderBy(x=>x.SupplierNameSnapshot).ToListAsync(ct)).Select(ConnectedSupplierEntityMapper.ToDomain).ToList();
     public async Task<IReadOnlyList<BuyerSupplierProductLink>> DeltaAsync(ConnectedSupplierRelationshipId relationshipId,PosOrganizationId buyer,long sinceVersion,CancellationToken ct=default)=>

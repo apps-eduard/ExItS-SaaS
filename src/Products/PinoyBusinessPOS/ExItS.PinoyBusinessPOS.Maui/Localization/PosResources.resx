@@ -8075,7 +8075,10 @@
     <value>Purchase orders</value>
   </data>
   <data name="ConnectedSuppliers_ServerSearchHelp" xml:space="preserve">
-    <value>Browse products this supplier has shared online. Search is optional.</value>
+    <value>Products this supplier has shared with your business.</value>
+  </data>
+  <data name="ConnectedSuppliers_BrowseSharedWith" xml:space="preserve">
+    <value>Products {0} has shared with your business.</value>
   </data>
   <data name="ConnectedSuppliers_OnlineRequired" xml:space="preserve">
     <value>Connect to search</value>
@@ -8174,7 +8177,88 @@
     <value>The order response could not be saved.</value>
   </data>
   <data name="ConnectedSuppliers_LinkAndUse" xml:space="preserve">
-    <value>Link and use</value>
+    <value>Use product</value>
+  </data>
+  <data name="ConnectedSuppliers_UseProduct" xml:space="preserve">
+    <value>Use product</value>
+  </data>
+  <data name="ConnectedSuppliers_ViewLinkedProduct" xml:space="preserve">
+    <value>View linked product</value>
+  </data>
+  <data name="ConnectedSuppliers_PoPriceLabel" xml:space="preserve">
+    <value>PO price</value>
+  </data>
+  <data name="ConnectedSuppliers_LinkedTo" xml:space="preserve">
+    <value>Linked to {0}</value>
+  </data>
+  <data name="ConnectedSuppliers_BuyerSkuLabel" xml:space="preserve">
+    <value>Buyer SKU: {0}</value>
+  </data>
+  <data name="ConnectedSuppliers_UseSupplierProductTitle" xml:space="preserve">
+    <value>Use supplier product</value>
+  </data>
+  <data name="ConnectedSuppliers_SupplierSkuLabel" xml:space="preserve">
+    <value>Supplier SKU</value>
+  </data>
+  <data name="ConnectedSuppliers_PossibleMatch" xml:space="preserve">
+    <value>Possible match in your catalog</value>
+  </data>
+  <data name="ConnectedSuppliers_PossibleMatches" xml:space="preserve">
+    <value>Possible products in your catalog</value>
+  </data>
+  <data name="ConnectedSuppliers_NoMatchInCatalog" xml:space="preserve">
+    <value>No matching product was found in your catalog.</value>
+  </data>
+  <data name="ConnectedSuppliers_LinkExistingProduct" xml:space="preserve">
+    <value>Link existing product</value>
+  </data>
+  <data name="ConnectedSuppliers_LinkSelectedProduct" xml:space="preserve">
+    <value>Link selected product</value>
+  </data>
+  <data name="ConnectedSuppliers_ChooseAnotherProduct" xml:space="preserve">
+    <value>Choose another product</value>
+  </data>
+  <data name="ConnectedSuppliers_ChooseExistingProduct" xml:space="preserve">
+    <value>Choose existing product</value>
+  </data>
+  <data name="ConnectedSuppliers_CreateNewProduct" xml:space="preserve">
+    <value>Create new product</value>
+  </data>
+  <data name="ConnectedSuppliers_CreateNewProductAndLink" xml:space="preserve">
+    <value>Create new product &amp; link</value>
+  </data>
+  <data name="ConnectedSuppliers_CreateAndLink" xml:space="preserve">
+    <value>Create &amp; link</value>
+  </data>
+  <data name="ConnectedSuppliers_CreateProductTitle" xml:space="preserve">
+    <value>Create product</value>
+  </data>
+  <data name="ConnectedSuppliers_FromSupplier" xml:space="preserve">
+    <value>From supplier</value>
+  </data>
+  <data name="ConnectedSuppliers_YourSku" xml:space="preserve">
+    <value>Your SKU</value>
+  </data>
+  <data name="ConnectedSuppliers_SellingPriceLabel" xml:space="preserve">
+    <value>Selling price</value>
+  </data>
+  <data name="ConnectedSuppliers_SellingPriceHelp" xml:space="preserve">
+    <value>This remains your purchase price. Your selling price is controlled by your business.</value>
+  </data>
+  <data name="ConnectedSuppliers_CatalogPermissionRequired" xml:space="preserve">
+    <value>You need product-management permission to add this item to your catalog.</value>
+  </data>
+  <data name="ConnectedSuppliers_CreateLinkSucceeded" xml:space="preserve">
+    <value>{0} was added to your catalog and linked to {1}.</value>
+  </data>
+  <data name="ConnectedSuppliers_LinkExistingSucceeded" xml:space="preserve">
+    <value>{0} was linked to your catalog product.</value>
+  </data>
+  <data name="ConnectedSuppliers_OtherOptions" xml:space="preserve">
+    <value>Other options</value>
+  </data>
+  <data name="ConnectedSuppliers_CreateInstead" xml:space="preserve">
+    <value>Create new product instead</value>
   </data>
   <data name="ConnectedSuppliers_LinkedOfflineHelp" xml:space="preserve">
     <value>You are offline. Showing linked products saved on this device.</value>
@@ -8198,7 +8282,7 @@
     <value>Linked products could not be updated. Try again when the connection is stable.</value>
   </data>
   <data name="ConnectedSuppliers_BrowseHint" xml:space="preserve">
-    <value>Leave blank to see the first page of shared products. Linked products stay available offline.</value>
+    <value>Leave blank to see shared products.</value>
   </data>
   <data name="ConnectedSuppliers_CatalogEmptyTitle" xml:space="preserve">
     <value>No shared products yet</value>

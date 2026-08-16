@@ -792,11 +792,20 @@ public sealed class LinkProduct
      if(r is null||r.BuyerOrganizationId!=buyer||r.Status!=ConnectedSupplierRelationshipStatus.Active)return ConnectedSupplierUseCaseGuard.Failure<BuyerSupplierProductLinkDto>(ConnectedSupplierErrorCodes.NotFound,"Active relationship was not found.");
      var product=await _products.GetByIdAsync(buyer,CatalogProductId.From(request.BuyerProductId),ct);
      var exposure=await _exposures.GetAsync(SupplierProductExposureId.From(request.ExposureId),ct);
-     if(product is null||exposure is null||exposure.SupplierOrganizationId!=r.SupplierOrganizationId||!exposure.IsExposed)
+     if(product is null||product.OrganizationId!=buyer||product.Status!=CatalogProductStatus.Active)
+       return ConnectedSupplierUseCaseGuard.Failure<BuyerSupplierProductLinkDto>(ConnectedSupplierErrorCodes.ExposureNotFound,"Buyer product was not found.");
+     if(exposure is null||exposure.SupplierOrganizationId!=r.SupplierOrganizationId||!exposure.IsExposed||!exposure.IsOrderable)
        return ConnectedSupplierUseCaseGuard.Failure<BuyerSupplierProductLinkDto>(ConnectedSupplierErrorCodes.ExposureNotFound,"Exposure was not found.");
      var share=await _shares.FindAsync(r.Id,exposure.ProductId,ct);
      if(!ConnectedPoPricing.TryResolveEffectivePrice(exposure,share,out var effectivePrice))
        return ConnectedSupplierUseCaseGuard.Failure<BuyerSupplierProductLinkDto>(ConnectedSupplierErrorCodes.ExposureNotFound,"This product is not shared with your business.");
+     var existingBySupplier=await _links.FindBySupplierProductAsync(r.Id,exposure.ProductId,ct);
+     if(existingBySupplier is not null)
+     {
+       if(existingBySupplier.BuyerProductId==product.Id)
+         return ApplicationResult<BuyerSupplierProductLinkDto>.Success(ConnectedSupplierMapper.Map(existingBySupplier));
+       return ConnectedSupplierUseCaseGuard.Failure<BuyerSupplierProductLinkDto>(ConnectedSupplierErrorCodes.BulkValidation,"This supplier product is already linked to another catalog product.");
+     }
      Guid? buyerPurchaseUnitId=request.BuyerPurchaseUnitId;
      var multiplier=request.MultiplierToBase??1m;
      if(buyerPurchaseUnitId is not null)

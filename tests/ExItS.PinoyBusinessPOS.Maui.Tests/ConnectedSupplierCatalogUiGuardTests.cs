@@ -8,13 +8,16 @@ public sealed class ConnectedSupplierCatalogUiGuardTests
         var page = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Pages", "Suppliers", "ConnectedSupplierCatalog.razor"));
         Assert.Contains("ConnectedSuppliers_CatalogEmptyTitle", page, StringComparison.Ordinal);
         Assert.Contains("ConnectedSuppliers_CatalogEmptyMessage", page, StringComparison.Ordinal);
-        Assert.Contains("ConnectedSuppliers_LinkAndUse", page, StringComparison.Ordinal);
+        Assert.Contains("ConnectedSuppliers_UseProduct", page, StringComparison.Ordinal);
+        Assert.Contains("CreateBuyerProductAndLinkAsync", page, StringComparison.Ordinal);
+        Assert.Contains("SuggestBuyerProductMatchesAsync", page, StringComparison.Ordinal);
+        Assert.Contains("ConnectedSuppliers_PoPriceLabel", page, StringComparison.Ordinal);
         Assert.Contains("ApiLocalizer.Describe", page, StringComparison.Ordinal);
         Assert.Contains("ResolveRelationshipIdAsync", page, StringComparison.Ordinal);
         Assert.Contains("EmptyState", page, StringComparison.Ordinal);
         Assert.Contains("pos-connected-catalog__search-field", page, StringComparison.Ordinal);
-        Assert.Contains("pos-connected-catalog__search-btn", page, StringComparison.Ordinal);
         Assert.Contains("ClearSearchAsync", page, StringComparison.Ordinal);
+        Assert.DoesNotContain("pos-connected-catalog__search-btn", page, StringComparison.Ordinal);
         Assert.DoesNotContain("pos-connected-catalog__search-row", page, StringComparison.Ordinal);
     }
 

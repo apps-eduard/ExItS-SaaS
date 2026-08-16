@@ -8075,7 +8075,10 @@
     <value>Mga purchase order</value>
   </data>
   <data name="ConnectedSuppliers_ServerSearchHelp" xml:space="preserve">
-    <value>Tingnan ang mga produktong ibinahagi online ng supplier. Opsyonal ang paghahanap.</value>
+    <value>Mga produktong ibinahagi ng supplier na ito sa inyong negosyo.</value>
+  </data>
+  <data name="ConnectedSuppliers_BrowseSharedWith" xml:space="preserve">
+    <value>Mga produktong ibinahagi ni {0} sa inyong negosyo.</value>
   </data>
   <data name="ConnectedSuppliers_OnlineRequired" xml:space="preserve">
     <value>Kumonekta para maghanap</value>
@@ -8174,7 +8177,88 @@
     <value>Hindi na-save ang sagot sa order.</value>
   </data>
   <data name="ConnectedSuppliers_LinkAndUse" xml:space="preserve">
-    <value>I-link at gamitin</value>
+    <value>Gamitin ang produkto</value>
+  </data>
+  <data name="ConnectedSuppliers_UseProduct" xml:space="preserve">
+    <value>Gamitin ang produkto</value>
+  </data>
+  <data name="ConnectedSuppliers_ViewLinkedProduct" xml:space="preserve">
+    <value>Tingnan ang naka-link na produkto</value>
+  </data>
+  <data name="ConnectedSuppliers_PoPriceLabel" xml:space="preserve">
+    <value>PO price</value>
+  </data>
+  <data name="ConnectedSuppliers_LinkedTo" xml:space="preserve">
+    <value>Naka-link sa {0}</value>
+  </data>
+  <data name="ConnectedSuppliers_BuyerSkuLabel" xml:space="preserve">
+    <value>Buyer SKU: {0}</value>
+  </data>
+  <data name="ConnectedSuppliers_UseSupplierProductTitle" xml:space="preserve">
+    <value>Gamitin ang supplier product</value>
+  </data>
+  <data name="ConnectedSuppliers_SupplierSkuLabel" xml:space="preserve">
+    <value>Supplier SKU</value>
+  </data>
+  <data name="ConnectedSuppliers_PossibleMatch" xml:space="preserve">
+    <value>Posibleng tugma sa inyong catalog</value>
+  </data>
+  <data name="ConnectedSuppliers_PossibleMatches" xml:space="preserve">
+    <value>Posibleng produkto sa inyong catalog</value>
+  </data>
+  <data name="ConnectedSuppliers_NoMatchInCatalog" xml:space="preserve">
+    <value>Walang nakitang tumutugmang produkto sa inyong catalog.</value>
+  </data>
+  <data name="ConnectedSuppliers_LinkExistingProduct" xml:space="preserve">
+    <value>I-link ang umiiral na produkto</value>
+  </data>
+  <data name="ConnectedSuppliers_LinkSelectedProduct" xml:space="preserve">
+    <value>I-link ang napiling produkto</value>
+  </data>
+  <data name="ConnectedSuppliers_ChooseAnotherProduct" xml:space="preserve">
+    <value>Pumili ng ibang produkto</value>
+  </data>
+  <data name="ConnectedSuppliers_ChooseExistingProduct" xml:space="preserve">
+    <value>Pumili ng umiiral na produkto</value>
+  </data>
+  <data name="ConnectedSuppliers_CreateNewProduct" xml:space="preserve">
+    <value>Gumawa ng bagong produkto</value>
+  </data>
+  <data name="ConnectedSuppliers_CreateNewProductAndLink" xml:space="preserve">
+    <value>Gumawa ng bagong produkto at i-link</value>
+  </data>
+  <data name="ConnectedSuppliers_CreateAndLink" xml:space="preserve">
+    <value>Gumawa at i-link</value>
+  </data>
+  <data name="ConnectedSuppliers_CreateProductTitle" xml:space="preserve">
+    <value>Gumawa ng produkto</value>
+  </data>
+  <data name="ConnectedSuppliers_FromSupplier" xml:space="preserve">
+    <value>Mula sa supplier</value>
+  </data>
+  <data name="ConnectedSuppliers_YourSku" xml:space="preserve">
+    <value>Inyong SKU</value>
+  </data>
+  <data name="ConnectedSuppliers_SellingPriceLabel" xml:space="preserve">
+    <value>Selling price</value>
+  </data>
+  <data name="ConnectedSuppliers_SellingPriceHelp" xml:space="preserve">
+    <value>Ito ang inyong purchase price. Ang selling price ay kontrolado ng inyong negosyo.</value>
+  </data>
+  <data name="ConnectedSuppliers_CatalogPermissionRequired" xml:space="preserve">
+    <value>Kailangan ng product-management permission para maidagdag ito sa catalog.</value>
+  </data>
+  <data name="ConnectedSuppliers_CreateLinkSucceeded" xml:space="preserve">
+    <value>Naidagdag ang {0} sa catalog at na-link kay {1}.</value>
+  </data>
+  <data name="ConnectedSuppliers_LinkExistingSucceeded" xml:space="preserve">
+    <value>Na-link ang {0} sa inyong catalog product.</value>
+  </data>
+  <data name="ConnectedSuppliers_OtherOptions" xml:space="preserve">
+    <value>Iba pang opsyon</value>
+  </data>
+  <data name="ConnectedSuppliers_CreateInstead" xml:space="preserve">
+    <value>Gumawa na lang ng bagong produkto</value>
   </data>
   <data name="ConnectedSuppliers_LinkedOfflineHelp" xml:space="preserve">
     <value>Offline ka. Ipinapakita ang mga naka-link na produkto na naka-save sa device na ito.</value>
@@ -8198,7 +8282,7 @@
     <value>Hindi ma-update ang mga naka-link na produkto. Subukan ulit kapag stable ang koneksyon.</value>
   </data>
   <data name="ConnectedSuppliers_BrowseHint" xml:space="preserve">
-    <value>Iwanang blangko para makita ang unang pahina ng ibinahaging produkto. Available offline ang mga naka-link.</value>
+    <value>Iwanang blangko para makita ang mga ibinahaging produkto.</value>
   </data>
   <data name="ConnectedSuppliers_CatalogEmptyTitle" xml:space="preserve">
     <value>Wala pang ibinahaging produkto</value>

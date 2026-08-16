@@ -261,102 +261,40 @@ public sealed class CreateCatalogProduct
     {
         try
         {
-            var orgId = PosOrganizationId.From(organizationId);
-
-            if (clientProductId is not null)
-            {
-                var existingById = await _products
-                    .GetByIdAsync(orgId, CatalogProductId.From(clientProductId.Value), cancellationToken)
-                    .ConfigureAwait(false);
-                if (existingById is not null)
-                {
-                    return ApplicationResult<CatalogProduct>.Success(existingById);
-                }
-            }
-
-            var unit = UnitOfMeasures.Parse(unitOfMeasure);
-            var mode = SellingModes.Parse(sellingMode);
-            var usage = CatalogProductUnitHelpers.ResolveUsage(
+            var staged = await CatalogProductCreateCore.StageAsync(
+                _products,
+                _units,
+                _categories,
+                _clock,
+                _exposures,
+                organizationId,
+                name,
+                unitOfMeasure,
+                sellingPrice,
+                description,
+                sku,
+                barcode,
+                categoryId,
+                clientProductId,
+                sellingMode,
+                tracksExpiration,
+                expirationWarningDays,
                 canBePurchased,
                 canBeSold,
                 canBeUsedAsIngredient,
                 isProduced,
-                usagePreset);
-            ProductCategoryId? category = null;
-            if (categoryId is not null)
+                usagePreset,
+                units,
+                canExposeToConnectedBuyers,
+                defaultConnectedPoPrice,
+                cancellationToken).ConfigureAwait(false);
+            if (!staged.IsSuccess)
             {
-                var assignable = await CatalogAssignment
-                    .EnsureAssignableCategoryAsync(_categories, orgId, categoryId.Value, cancellationToken)
-                    .ConfigureAwait(false);
-                if (!assignable.IsSuccess)
-                {
-                    return ApplicationResult<CatalogProduct>.Failure(assignable.ErrorCode!, assignable.ErrorMessage!);
-                }
-
-                category = ProductCategoryId.From(categoryId.Value);
+                return ApplicationResult<CatalogProduct>.Failure(staged.ErrorCode!, staged.ErrorMessage!);
             }
-
-            var now = _clock.UtcNow;
-            var product = CatalogProduct.Create(
-                orgId,
-                name,
-                unit,
-                sellingPrice,
-                now,
-                description,
-                sku,
-                barcode,
-                category,
-                clientProductId is null ? null : CatalogProductId.From(clientProductId.Value),
-                mode,
-                tracksExpiration,
-                expirationWarningDays,
-                usage);
-            var conflict = await CatalogAssignment
-                .FindIdentifierConflictAsync(
-                    _products,
-                    orgId,
-                    product.NormalizedSku,
-                    product.Barcode,
-                    selfId: null,
-                    cancellationToken)
-                .ConfigureAwait(false);
-            if (conflict is not null)
-            {
-                return ApplicationResult<CatalogProduct>.Failure(conflict.ErrorCode!, conflict.ErrorMessage!);
-            }
-
-            await _products.AddAsync(product, cancellationToken).ConfigureAwait(false);
-
-            var seedUnits = units is { Count: > 0 }
-                ? units.Select(u => CatalogProductUnitHelpers.CreateFromInput(orgId, product.Id, u, now)).ToList()
-                : CatalogProductUnitHelpers.CreateDefaultOneToOneUnits(orgId, product, now).ToList();
-
-            var primarySellPrice = CatalogProductUnitHelpers.PrimarySellUnitPrice(seedUnits);
-            if (primarySellPrice is not null && primarySellPrice.Value != product.SellingPrice)
-            {
-                product.UpdateSellingPrice(primarySellPrice.Value, now);
-                await _products.UpdateAsync(product, cancellationToken).ConfigureAwait(false);
-            }
-            if (canExposeToConnectedBuyers)
-            {
-                product.EnableConnectedBuyerAvailability(now);
-                if (defaultConnectedPoPrice is not null)
-                {
-                    product.SetDefaultConnectedPoPrice(defaultConnectedPoPrice.Value, now);
-                }
-                await _products.UpdateAsync(product, cancellationToken).ConfigureAwait(false);
-            }
-
-            foreach (var seed in seedUnits)
-            {
-                await _units.AddAsync(seed, cancellationToken).ConfigureAwait(false);
-            }
-
-            await ConnectedProductExposureSync.SyncAsync(product, _exposures, now, cancellationToken).ConfigureAwait(false);
 
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-            return ApplicationResult<CatalogProduct>.Success(product);
+            return ApplicationResult<CatalogProduct>.Success(staged.Value!);
         }
         catch (DomainException ex)
         {
@@ -902,6 +840,139 @@ public sealed class UpdateCatalogProductPrices
 
     private static UpdatePosCatalogProductPriceResultItem Fail(Guid productId, string code, string message) =>
         new(productId, Succeeded: false, Changed: false, Product: null, code, message);
+}
+
+/// <summary>
+/// Stages a new catalog product (and default units) without calling SaveChanges.
+/// Callers that need multi-aggregate atomicity must persist once after staging.
+/// </summary>
+internal static class CatalogProductCreateCore
+{
+    public static async Task<ApplicationResult<CatalogProduct>> StageAsync(
+        ICatalogProductRepository products,
+        ICatalogProductUnitRepository units,
+        IProductCategoryRepository categories,
+        IClock clock,
+        ISupplierProductExposureRepository? exposures,
+        Guid organizationId,
+        string name,
+        string unitOfMeasure,
+        decimal sellingPrice,
+        string? description,
+        string? sku,
+        string? barcode,
+        Guid? categoryId,
+        Guid? clientProductId,
+        string? sellingMode,
+        bool tracksExpiration,
+        int? expirationWarningDays,
+        bool? canBePurchased,
+        bool? canBeSold,
+        bool? canBeUsedAsIngredient,
+        bool? isProduced,
+        string? usagePreset,
+        IReadOnlyList<PosCatalogProductUnitInput>? unitInputs,
+        bool canExposeToConnectedBuyers,
+        decimal? defaultConnectedPoPrice,
+        CancellationToken cancellationToken)
+    {
+        var orgId = PosOrganizationId.From(organizationId);
+
+        if (clientProductId is not null)
+        {
+            var existingById = await products
+                .GetByIdAsync(orgId, CatalogProductId.From(clientProductId.Value), cancellationToken)
+                .ConfigureAwait(false);
+            if (existingById is not null)
+            {
+                return ApplicationResult<CatalogProduct>.Success(existingById);
+            }
+        }
+
+        var unit = UnitOfMeasures.Parse(unitOfMeasure);
+        var mode = SellingModes.Parse(sellingMode);
+        var usage = CatalogProductUnitHelpers.ResolveUsage(
+            canBePurchased,
+            canBeSold,
+            canBeUsedAsIngredient,
+            isProduced,
+            usagePreset);
+        ProductCategoryId? category = null;
+        if (categoryId is not null)
+        {
+            var assignable = await CatalogAssignment
+                .EnsureAssignableCategoryAsync(categories, orgId, categoryId.Value, cancellationToken)
+                .ConfigureAwait(false);
+            if (!assignable.IsSuccess)
+            {
+                return ApplicationResult<CatalogProduct>.Failure(assignable.ErrorCode!, assignable.ErrorMessage!);
+            }
+
+            category = ProductCategoryId.From(categoryId.Value);
+        }
+
+        var now = clock.UtcNow;
+        var product = CatalogProduct.Create(
+            orgId,
+            name,
+            unit,
+            sellingPrice,
+            now,
+            description,
+            sku,
+            barcode,
+            category,
+            clientProductId is null ? null : CatalogProductId.From(clientProductId.Value),
+            mode,
+            tracksExpiration,
+            expirationWarningDays,
+            usage);
+        var conflict = await CatalogAssignment
+            .FindIdentifierConflictAsync(
+                products,
+                orgId,
+                product.NormalizedSku,
+                product.Barcode,
+                selfId: null,
+                cancellationToken)
+            .ConfigureAwait(false);
+        if (conflict is not null)
+        {
+            return ApplicationResult<CatalogProduct>.Failure(conflict.ErrorCode!, conflict.ErrorMessage!);
+        }
+
+        await products.AddAsync(product, cancellationToken).ConfigureAwait(false);
+
+        var seedUnits = unitInputs is { Count: > 0 }
+            ? unitInputs.Select(u => CatalogProductUnitHelpers.CreateFromInput(orgId, product.Id, u, now)).ToList()
+            : CatalogProductUnitHelpers.CreateDefaultOneToOneUnits(orgId, product, now).ToList();
+
+        var primarySellPrice = CatalogProductUnitHelpers.PrimarySellUnitPrice(seedUnits);
+        if (primarySellPrice is not null && primarySellPrice.Value != product.SellingPrice)
+        {
+            product.UpdateSellingPrice(primarySellPrice.Value, now);
+            await products.UpdateAsync(product, cancellationToken).ConfigureAwait(false);
+        }
+
+        if (canExposeToConnectedBuyers)
+        {
+            product.EnableConnectedBuyerAvailability(now);
+            if (defaultConnectedPoPrice is not null)
+            {
+                product.SetDefaultConnectedPoPrice(defaultConnectedPoPrice.Value, now);
+            }
+
+            await products.UpdateAsync(product, cancellationToken).ConfigureAwait(false);
+        }
+
+        foreach (var seed in seedUnits)
+        {
+            await units.AddAsync(seed, cancellationToken).ConfigureAwait(false);
+        }
+
+        await ConnectedProductExposureSync.SyncAsync(product, exposures, now, cancellationToken).ConfigureAwait(false);
+        return ApplicationResult<CatalogProduct>.Success(product);
+    }
 }
 
 internal static class CatalogAssignment

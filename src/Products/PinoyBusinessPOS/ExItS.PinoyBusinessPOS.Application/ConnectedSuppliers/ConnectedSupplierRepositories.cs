@@ -77,6 +77,10 @@ public interface IBuyerSupplierProductLinkRepository
 {
     Task<BuyerSupplierProductLink?> GetAsync(BuyerSupplierProductLinkId id, CancellationToken ct = default);
     Task<BuyerSupplierProductLink?> FindAsync(ConnectedSupplierRelationshipId relationshipId, CatalogProductId buyerProductId, CancellationToken ct = default);
+    Task<BuyerSupplierProductLink?> FindBySupplierProductAsync(
+        ConnectedSupplierRelationshipId relationshipId,
+        CatalogProductId supplierProductId,
+        CancellationToken ct = default);
     Task<IReadOnlyList<BuyerSupplierProductLink>> ListAsync(ConnectedSupplierRelationshipId relationshipId, PosOrganizationId buyer, CancellationToken ct = default);
     Task<IReadOnlyList<BuyerSupplierProductLink>> DeltaAsync(ConnectedSupplierRelationshipId relationshipId, PosOrganizationId buyer, long sinceVersion, CancellationToken ct = default);
     Task AddAsync(BuyerSupplierProductLink link, CancellationToken ct = default);
