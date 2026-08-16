@@ -102,10 +102,12 @@ public sealed class ListBranches(IOrganizationBranchRepository branches, IBranch
         CancellationToken cancellationToken = default)
     {
         var list = await branches.ListByOrganizationAsync(organizationId, cancellationToken).ConfigureAwait(false);
+        var policyList = await policies.ListByOrganizationAsync(organizationId, cancellationToken).ConfigureAwait(false);
+        var policiesByBranchId = policyList.ToDictionary(p => p.BranchId.Value);
         var result = new List<OrganizationBranchDto>(list.Count);
         foreach (var branch in list)
         {
-            var policy = await policies.GetByBranchIdAsync(branch.Id, cancellationToken).ConfigureAwait(false);
+            policiesByBranchId.TryGetValue(branch.Id.Value, out var policy);
             result.Add(BranchMapper.ToDto(branch, policy));
         }
 
