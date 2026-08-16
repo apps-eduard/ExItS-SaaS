@@ -130,7 +130,7 @@ Automated schedule, retention, encryption at rest, off-site/immutable storage, s
 | `1c3361bb` | `ops(db): add repeatable development backup restore tooling` |
 | `adeb2835` | `docs(db): add PostgreSQL recovery runbook` |
 | `852ab186` | `docs(p29): record WP14 recovery validation evidence` |
-| _(stamp)_ | `docs(p29): stamp WP14 commit hashes` |
+| `71ac3f75` | `docs(p29): stamp WP14 commit hashes` |
 
 ## Residual / exact next
 
