@@ -1,21 +1,18 @@
 @page "/suppliers/connected/buyers/{RelationshipId:guid}/share-products"
 @using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers
+@using ExItS.PinoyBusinessPOS.Maui.Services
 @inject NavigationManager Nav
 @inject NavigationGate Gate
 @inject IPosConnectedSupplierClient ConnectedSuppliers
 @inject IUtangCapabilityEvaluator Capabilities
 @inject IConnectivityService Connectivity
+@inject BuyerShareDraftState Draft
 @inject IStringLocalizer<PosResources> L
 
 <StoreHeaderBack Href="@($"/suppliers/connected/buyers/{RelationshipId:D}")" />
 
-<div class="pos-share-prompt">
+<div class="pos-share-accept">
 <Page>
-    <header class="pos-share-prompt__header">
-        <h1 class="pos-share-prompt__title">@L["ConnectedBuyers_SharePromptTitle"]</h1>
-        <p class="pos-share-prompt__subtitle">@L["ConnectedBuyers_SharePromptHelp"]</p>
-    </header>
-
     @if (_loading)
     {
         <Spinner />
@@ -29,65 +26,36 @@
     }
     else
     {
-        <p class="pos-share-prompt__count pos-muted">@L["ConnectedBuyers_ShareEligibleCount", _products.Count]</p>
+        <section class="pos-share-accept__card" aria-labelledby="share-accept-title">
+            <h1 id="share-accept-title" class="pos-share-accept__title">@L["ConnectedBuyers_ConnectionAcceptedTitle"]</h1>
+            <p class="pos-share-accept__body">@L["ConnectedBuyers_ConnectionAcceptedBody", BuyerLabel]</p>
+            <p class="pos-share-accept__count pos-muted">
+                @L["ConnectedBuyers_EligibleAvailableCount", _eligibleCount]
+            </p>
 
-        @if (CategoryFilters.Count > 1)
-        {
-            <aside class="pos-share-prompt__categories" aria-label="@L["ConnectedBuyers_FilterCategory"]">
-                @foreach (var category in CategoryFilters)
-                {
-                    <button type="button"
-                            class="pos-share-prompt__chip @(_categoryFilter == category.Value ? "pos-share-prompt__chip--selected" : null)"
-                            aria-pressed="@(_categoryFilter == category.Value)"
-                            @onclick="() => _categoryFilter = category.Value">
-                        @category.Label
-                    </button>
-                }
-            </aside>
-        }
-
-        @if (VisibleProducts.Count > 0)
-        {
-            <div class="pos-share-prompt__list" role="list">
-                @foreach (var product in VisibleProducts)
-                {
-                    <label class="pos-share-prompt__row" role="listitem">
-                        <input type="checkbox"
-                               checked="@_selected.Contains(product.SupplierProductId)"
-                               disabled="@_saving"
-                               @onchange="args => SetSelected(product.SupplierProductId, args)" />
-                        <span class="pos-share-prompt__body">
-                            <span class="pos-share-prompt__name">@ProductName(product)</span>
-                            <span class="pos-share-prompt__meta pos-muted">
-                                @(product.SkuSnapshot ?? "—") · @(product.UnitOfMeasureCode ?? "—")
-                                @if (!string.IsNullOrWhiteSpace(product.CategoryNameSnapshot))
-                                {
-                                    <text> · @product.CategoryNameSnapshot</text>
-                                }
-                            </span>
-                        </span>
-                        @if (product.DefaultPoPrice is decimal price || product.EffectiveSupplierOrderPrice is decimal effective)
-                        {
-                            <span class="pos-share-prompt__price">
-                                <MoneyDisplay Amount="@(product.DefaultPoPrice ?? product.EffectiveSupplierOrderPrice ?? 0m)" CurrencyCode="PHP" />
-                            </span>
-                        }
-                    </label>
-                }
-            </div>
-        }
+            <label class="pos-share-accept__all">
+                <input type="checkbox"
+                       checked="@_shareAll"
+                       disabled="@(_saving || _eligibleCount == 0)"
+                       @onchange="args => _shareAll = Checked(args)" />
+                <span>@L["ConnectedBuyers_ShareAllAvailable", _eligibleCount]</span>
+            </label>
+        </section>
 
         <div class="pos-action-grid pos-action-grid--single" role="group">
             <button type="button"
+                    class="pos-action-tile"
+                    disabled="@_saving"
+                    @onclick="ReviewProducts">
+                <span class="pos-action-tile__label">@L["ConnectedBuyers_ReviewProducts"]</span>
+            </button>
+            <button type="button"
                     class="pos-action-tile pos-action-tile--primary"
-                    disabled="@(_saving || _selected.Count == 0)"
-                    @onclick="ConfirmAsync">
-                <span class="pos-action-tile__label">@L["ConnectedBuyers_ShareAllConfirm"]</span>
+                    disabled="@(_saving || !_shareAll || _eligibleCount == 0)"
+                    @onclick="ConfirmShareAllAsync">
+                <span class="pos-action-tile__label">@L["ConnectedBuyers_ConfirmAndShare"]</span>
             </button>
-            <button type="button" class="pos-action-tile" disabled="@_saving" @onclick="GoManage">
-                <span class="pos-action-tile__label">@L["ConnectedBuyers_CustomizeProducts"]</span>
-            </button>
-            <button type="button" class="pos-action-tile" disabled="@_saving" @onclick="GoBuyer">
+            <button type="button" class="pos-action-tile" disabled="@_saving" @onclick="NotNow">
                 <span class="pos-action-tile__label">@L["ConnectedBuyers_NotNow"]</span>
             </button>
         </div>
@@ -96,113 +64,42 @@
 </div>
 
 <style>
-    .pos-share-prompt { width: 100%; }
-    .pos-share-prompt__header { margin-bottom: 0.55rem; }
-    .pos-share-prompt__title {
-        margin: 0; font-size: 1.2rem; font-weight: 700; line-height: 1.2;
-        color: var(--exits-text, #15201a);
-    }
-    .pos-share-prompt__subtitle {
-        margin: 0.3rem 0 0; font-size: 0.875rem; line-height: 1.35;
-        color: var(--exits-text-muted, #5b6b62);
-    }
-    .pos-share-prompt__count { margin: 0 0 0.45rem; font-size: 0.8125rem; }
-    .pos-share-prompt__categories {
-        display: flex; flex-wrap: nowrap; gap: 0.4rem;
-        margin: 0 0 0.55rem; overflow-x: auto; padding-bottom: 0.1rem;
-        -webkit-overflow-scrolling: touch; scrollbar-width: thin;
-    }
-    .pos-share-prompt__chip {
-        appearance: none; flex: 0 0 auto;
-        min-height: 2.15rem; padding: 0.3rem 0.7rem;
-        border: 1px solid var(--exits-border, #c9d4cd);
-        border-radius: 999px; background: var(--exits-bg, #f3f6f4);
-        color: var(--exits-text, #15201a); font: inherit; font-size: 0.8125rem; font-weight: 600;
-        white-space: nowrap; cursor: pointer;
-    }
-    .pos-share-prompt__chip--selected {
-        border-color: var(--exits-primary, #1b7a3d);
-        background: var(--exits-surface, #fff);
-        color: var(--exits-primary, #1b7a3d);
-    }
-    .pos-share-prompt__list {
-        display: flex; flex-direction: column;
-        margin-bottom: 0.75rem;
+    .pos-share-accept { width: 100%; }
+    .pos-share-accept__card {
+        margin: 0 0 0.85rem; padding: 0.9rem 0.85rem;
         border: 1px solid var(--exits-border, #c9d4cd);
         border-radius: var(--exits-radius-md, 0.5rem);
-        overflow: hidden; background: var(--exits-surface, #fff);
+        background: var(--exits-surface, #fff);
     }
-    .pos-share-prompt__row {
-        display: flex; align-items: center; gap: 0.55rem;
-        margin: 0; padding: 0.55rem 0.65rem; cursor: pointer;
-    }
-    .pos-share-prompt__row + .pos-share-prompt__row {
-        border-top: 1px solid var(--pos-border-subtle, #d7e0da);
-    }
-    .pos-share-prompt__body {
-        display: flex; flex-direction: column; gap: 0.1rem;
-        flex: 1 1 auto; min-width: 0;
-    }
-    .pos-share-prompt__name {
-        font-size: 0.95rem; font-weight: 650; line-height: 1.25;
+    .pos-share-accept__title {
+        margin: 0; font-size: 1.2rem; font-weight: 700; line-height: 1.25;
         color: var(--exits-text, #15201a);
     }
-    .pos-share-prompt__meta { font-size: 0.75rem; line-height: 1.3; }
-    .pos-share-prompt__price {
-        flex: 0 0 auto; font-size: 0.8125rem; font-weight: 650;
+    .pos-share-accept__body {
+        margin: 0.45rem 0 0; font-size: 0.9rem; line-height: 1.4;
         color: var(--exits-text, #15201a);
     }
+    .pos-share-accept__count { margin: 0.45rem 0 0; font-size: 0.8125rem; }
+    .pos-share-accept__all {
+        display: flex; align-items: flex-start; gap: 0.5rem;
+        margin: 0.75rem 0 0; font-size: 0.9rem; font-weight: 650;
+        color: var(--exits-text, #15201a);
+    }
+    .pos-share-accept__all input { margin-top: 0.15rem; }
 </style>
 
 @code {
     [Parameter] public Guid RelationshipId { get; set; }
-
-    private const string UncategorizedKey = "__uncategorized__";
+    [SupplyParameterFromQuery(Name = "buyer")] public string? BuyerNameQuery { get; set; }
 
     private bool _loading = true;
     private bool _saving;
+    private bool _shareAll = true;
     private string? _error;
-    private string _categoryFilter = "all";
-    private IReadOnlyList<ConnectedBuyerProductShareDto> _products = [];
-    private HashSet<Guid> _selected = [];
+    private int _eligibleCount;
 
-    private IReadOnlyList<(string Value, string Label)> CategoryFilters
-    {
-        get
-        {
-            var categories = _products
-                .Select(x => string.IsNullOrWhiteSpace(x.CategoryNameSnapshot) ? UncategorizedKey : x.CategoryNameSnapshot!)
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .OrderBy(x => x == UncategorizedKey ? "\uFFFF" : x, StringComparer.OrdinalIgnoreCase)
-                .Select(x => (
-                    Value: x,
-                    Label: x == UncategorizedKey ? L["ConnectedBuyers_FilterUncategorized"].Value : x))
-                .ToList();
-            if (categories.Count == 0)
-            {
-                return [("all", L["ConnectedBuyers_FilterAllCategories"])];
-            }
-
-            return [("all", L["ConnectedBuyers_FilterAllCategories"].Value), .. categories];
-        }
-    }
-
-    private IReadOnlyList<ConnectedBuyerProductShareDto> VisibleProducts
-    {
-        get
-        {
-            if (_categoryFilter is "all")
-            {
-                return _products;
-            }
-
-            return _products.Where(x =>
-                _categoryFilter == UncategorizedKey
-                    ? string.IsNullOrWhiteSpace(x.CategoryNameSnapshot)
-                    : string.Equals(x.CategoryNameSnapshot, _categoryFilter, StringComparison.OrdinalIgnoreCase))
-                .ToList();
-        }
-    }
+    private string BuyerLabel =>
+        string.IsNullOrWhiteSpace(BuyerNameQuery) ? L["ConnectedBuyers_UnknownBusiness"].Value : BuyerNameQuery!;
 
     protected override async Task OnInitializedAsync()
     {
@@ -232,46 +129,45 @@
             return;
         }
 
-        var result = await ConnectedSuppliers.ListEligibleProductsForSharingAsync(RelationshipId);
+        var result = await ConnectedSuppliers.QueryBuyerProductSharesAsync(
+            RelationshipId, page: 1, pageSize: 1);
         _loading = false;
         if (!result.IsSuccess || result.Data is null)
         {
-            _products = [];
-            _selected = [];
+            _eligibleCount = 0;
             _error = result.Error?.Detail ?? L["ConnectedBuyers_SharingLoadFailed"];
             return;
         }
 
-        _products = result.Data
-            .OrderBy(x => ProductName(x), StringComparer.OrdinalIgnoreCase)
-            .ToList();
-        _selected = _products.Select(x => x.SupplierProductId).ToHashSet();
-        _categoryFilter = "all";
+        _eligibleCount = result.Data.EligibleCount;
+        _shareAll = _eligibleCount > 0;
+        Draft.BeginAcceptDraft(RelationshipId, []);
     }
 
-    private void SetSelected(Guid productId, ChangeEventArgs args)
+    private async Task ConfirmShareAllAsync()
     {
-        if (Checked(args)) _selected.Add(productId);
-        else _selected.Remove(productId);
-    }
-
-    private async Task ConfirmAsync()
-    {
-        if (_saving || _selected.Count == 0) return;
+        if (_saving || !_shareAll || _eligibleCount == 0) return;
         _saving = true;
         _error = null;
         try
         {
-            var result = await ConnectedSuppliers.ConfirmBuyerProductSharingAsync(
+            if (!await Connectivity.IsConnectedAsync())
+            {
+                _error = L["Suppliers_OfflineMessage"];
+                return;
+            }
+
+            var result = await ConnectedSuppliers.BulkMutateBuyerProductSharesAsync(
                 RelationshipId,
-                new ConfirmBuyerProductSharingRequest(_selected.ToList()));
+                new BulkBuyerProductShareMutationRequest("Share", SelectAllMatching: true));
             if (!result.IsSuccess)
             {
                 _error = result.Error?.Detail ?? L["ConnectedBuyers_SaveSharingFailed"];
                 return;
             }
 
-            GoBuyer();
+            Draft.Clear();
+            Nav.NavigateTo($"/suppliers/connected/buyers/{RelationshipId:D}", replace: true);
         }
         finally
         {
@@ -279,16 +175,17 @@
         }
     }
 
-    private void GoManage() =>
-        Nav.NavigateTo($"/suppliers/connected/buyers/{RelationshipId:D}/shared-products");
+    private void ReviewProducts()
+    {
+        Draft.BeginAcceptDraft(RelationshipId, []);
+        Nav.NavigateTo($"/suppliers/connected/buyers/{RelationshipId:D}/shared-products?fromAccept=1");
+    }
 
-    private void GoBuyer() =>
+    private void NotNow()
+    {
+        Draft.Clear();
         Nav.NavigateTo($"/suppliers/connected/buyers/{RelationshipId:D}", replace: true);
-
-    private static string ProductName(ConnectedBuyerProductShareDto product) =>
-        string.IsNullOrWhiteSpace(product.NameSnapshot)
-            ? product.SupplierProductId.ToString("D")
-            : product.NameSnapshot;
+    }
 
     private static bool Checked(ChangeEventArgs args) =>
         args.Value is true || string.Equals(args.Value?.ToString(), "true", StringComparison.OrdinalIgnoreCase);

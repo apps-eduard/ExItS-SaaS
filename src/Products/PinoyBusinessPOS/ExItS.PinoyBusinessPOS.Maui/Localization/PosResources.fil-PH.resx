@@ -278,7 +278,7 @@
     <value>I-save</value>
   </data>
   <data name="Common_Cancel" xml:space="preserve">
-    <value>Kanselahin</value>
+    <value>Cancel</value>
   </data>
   <data name="Common_Confirm" xml:space="preserve">
     <value>Kumpirmahin</value>
@@ -8832,6 +8832,114 @@
   </data>
   <data name="ConnectedBuyers_ManageSharedProducts" xml:space="preserve">
     <value>Pamahalaan ang shared products</value>
+  </data>
+  <data name="ConnectedBuyers_ConnectionAcceptedTitle" xml:space="preserve">
+    <value>Tinanggap ang connection</value>
+  </data>
+  <data name="ConnectedBuyers_ConnectionAcceptedBody" xml:space="preserve">
+    <value>Maaari nang tumanggap si {0} ng mga produktong pipiliin mong i-share.</value>
+  </data>
+  <data name="ConnectedBuyers_EligibleAvailableCount" xml:space="preserve">
+    <value>May {0} produktong available sa mga connected buyer.</value>
+  </data>
+  <data name="ConnectedBuyers_ShareAllAvailable" xml:space="preserve">
+    <value>I-share ang lahat ng {0} available na produkto</value>
+  </data>
+  <data name="ConnectedBuyers_ReviewProducts" xml:space="preserve">
+    <value>Suriin ang mga produkto</value>
+  </data>
+  <data name="ConnectedBuyers_ConfirmAndShare" xml:space="preserve">
+    <value>Kumpirmahin at i-share</value>
+  </data>
+  <data name="ConnectedBuyers_ManageProductsTitle" xml:space="preserve">
+    <value>Manage products</value>
+  </data>
+  <data name="ConnectedBuyers_ShareSummary" xml:space="preserve">
+    <value>{0} shared · {1} eligible</value>
+  </data>
+  <data name="ConnectedBuyers_SearchProducts" xml:space="preserve">
+    <value>Maghanap ng produkto...</value>
+  </data>
+  <data name="ConnectedBuyers_FilterCustomPrice" xml:space="preserve">
+    <value>Custom na presyo</value>
+  </data>
+  <data name="ConnectedBuyers_SelectVisible" xml:space="preserve">
+    <value>Piliin ang {0} na nakikita</value>
+  </data>
+  <data name="ConnectedBuyers_PageSelectedCount" xml:space="preserve">
+    <value>{0} ang selected sa page na ito</value>
+  </data>
+  <data name="ConnectedBuyers_SelectAllMatching" xml:space="preserve">
+    <value>Piliin ang lahat ng {0} tumutugmang produkto</value>
+  </data>
+  <data name="ConnectedBuyers_AllMatchingSelected" xml:space="preserve">
+    <value>Napili ang lahat ng {0} tumutugmang produkto</value>
+  </data>
+  <data name="ConnectedBuyers_ClearSelection" xml:space="preserve">
+    <value>I-clear ang selection</value>
+  </data>
+  <data name="ConnectedBuyers_SelectedCount" xml:space="preserve">
+    <value>{0} selected</value>
+  </data>
+  <data name="ConnectedBuyers_BulkActions" xml:space="preserve">
+    <value>Bulk actions</value>
+  </data>
+  <data name="ConnectedBuyers_BulkShare" xml:space="preserve">
+    <value>I-share</value>
+  </data>
+  <data name="ConnectedBuyers_BulkUnshare" xml:space="preserve">
+    <value>I-unshare</value>
+  </data>
+  <data name="ConnectedBuyers_BulkPrice" xml:space="preserve">
+    <value>Presyo</value>
+  </data>
+  <data name="ConnectedBuyers_BuyerPriceShort" xml:space="preserve">
+    <value>Buyer</value>
+  </data>
+  <data name="ConnectedBuyers_UseDefaultPoPrice" xml:space="preserve">
+    <value>Gamitin ang default PO price</value>
+  </data>
+  <data name="ConnectedBuyers_DiscountByPercent" xml:space="preserve">
+    <value>Bawasan ang default PO nang %</value>
+  </data>
+  <data name="ConnectedBuyers_AdjustByAmount" xml:space="preserve">
+    <value>I-adjust ang default PO nang amount</value>
+  </data>
+  <data name="ConnectedBuyers_PriceRuleHelp" xml:space="preserve">
+    <value>I-preview muna bago i-apply. Ginagamit ang Default PO, hindi ang retail.</value>
+  </data>
+  <data name="ConnectedBuyers_PricePreview" xml:space="preserve">
+    <value>Price preview</value>
+  </data>
+  <data name="ConnectedBuyers_PricePreviewCount" xml:space="preserve">
+    <value>{0} produktong maaapektuhan</value>
+  </data>
+  <data name="ConnectedBuyers_PricePreviewTruncated" xml:space="preserve">
+    <value>Sample lang ng mga apektadong produkto ang ipinapakita.</value>
+  </data>
+  <data name="ConnectedBuyers_ApplyToCount" xml:space="preserve">
+    <value>I-apply sa {0}</value>
+  </data>
+  <data name="ConnectedBuyers_NoProductsFound" xml:space="preserve">
+    <value>Walang nahanap na produkto</value>
+  </data>
+  <data name="ConnectedBuyers_NoProductsMatchFilters" xml:space="preserve">
+    <value>Walang produktong tumutugma sa filters.</value>
+  </data>
+  <data name="ConnectedBuyers_BulkShareSucceeded" xml:space="preserve">
+    <value>Na-share ang {0} produkto.</value>
+  </data>
+  <data name="ConnectedBuyers_BulkUnshareSucceeded" xml:space="preserve">
+    <value>Na-unshare ang {0} produkto.</value>
+  </data>
+  <data name="ConnectedBuyers_BulkPriceSucceeded" xml:space="preserve">
+    <value>Na-update ang pricing ng {0} produkto.</value>
+  </data>
+  <data name="Common_Clear" xml:space="preserve">
+    <value>I-clear</value>
+  </data>
+  <data name="Common_LoadMore" xml:space="preserve">
+    <value>Mag-load pa</value>
   </data>
   <data name="ConnectedBuyers_FilterCategory" xml:space="preserve">
     <value>Kategorya</value>

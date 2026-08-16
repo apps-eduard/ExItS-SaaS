@@ -8833,6 +8833,114 @@
   <data name="ConnectedBuyers_ManageSharedProducts" xml:space="preserve">
     <value>Manage shared products</value>
   </data>
+  <data name="ConnectedBuyers_ConnectionAcceptedTitle" xml:space="preserve">
+    <value>Connection accepted</value>
+  </data>
+  <data name="ConnectedBuyers_ConnectionAcceptedBody" xml:space="preserve">
+    <value>{0} can now receive products you choose to share.</value>
+  </data>
+  <data name="ConnectedBuyers_EligibleAvailableCount" xml:space="preserve">
+    <value>{0} products are currently available to connected buyers.</value>
+  </data>
+  <data name="ConnectedBuyers_ShareAllAvailable" xml:space="preserve">
+    <value>Share all {0} available products</value>
+  </data>
+  <data name="ConnectedBuyers_ReviewProducts" xml:space="preserve">
+    <value>Review products</value>
+  </data>
+  <data name="ConnectedBuyers_ConfirmAndShare" xml:space="preserve">
+    <value>Confirm &amp; share</value>
+  </data>
+  <data name="ConnectedBuyers_ManageProductsTitle" xml:space="preserve">
+    <value>Manage products</value>
+  </data>
+  <data name="ConnectedBuyers_ShareSummary" xml:space="preserve">
+    <value>{0} shared · {1} eligible</value>
+  </data>
+  <data name="ConnectedBuyers_SearchProducts" xml:space="preserve">
+    <value>Search products...</value>
+  </data>
+  <data name="ConnectedBuyers_FilterCustomPrice" xml:space="preserve">
+    <value>Custom price</value>
+  </data>
+  <data name="ConnectedBuyers_SelectVisible" xml:space="preserve">
+    <value>Select all {0} visible</value>
+  </data>
+  <data name="ConnectedBuyers_PageSelectedCount" xml:space="preserve">
+    <value>{0} selected on this page</value>
+  </data>
+  <data name="ConnectedBuyers_SelectAllMatching" xml:space="preserve">
+    <value>Select all {0} matching products</value>
+  </data>
+  <data name="ConnectedBuyers_AllMatchingSelected" xml:space="preserve">
+    <value>All {0} matching products selected</value>
+  </data>
+  <data name="ConnectedBuyers_ClearSelection" xml:space="preserve">
+    <value>Clear selection</value>
+  </data>
+  <data name="ConnectedBuyers_SelectedCount" xml:space="preserve">
+    <value>{0} selected</value>
+  </data>
+  <data name="ConnectedBuyers_BulkActions" xml:space="preserve">
+    <value>Bulk actions</value>
+  </data>
+  <data name="ConnectedBuyers_BulkShare" xml:space="preserve">
+    <value>Share</value>
+  </data>
+  <data name="ConnectedBuyers_BulkUnshare" xml:space="preserve">
+    <value>Unshare</value>
+  </data>
+  <data name="ConnectedBuyers_BulkPrice" xml:space="preserve">
+    <value>Price</value>
+  </data>
+  <data name="ConnectedBuyers_BuyerPriceShort" xml:space="preserve">
+    <value>Buyer</value>
+  </data>
+  <data name="ConnectedBuyers_UseDefaultPoPrice" xml:space="preserve">
+    <value>Use default PO price</value>
+  </data>
+  <data name="ConnectedBuyers_DiscountByPercent" xml:space="preserve">
+    <value>Discount from default PO by %</value>
+  </data>
+  <data name="ConnectedBuyers_AdjustByAmount" xml:space="preserve">
+    <value>Adjust default PO by amount</value>
+  </data>
+  <data name="ConnectedBuyers_PriceRuleHelp" xml:space="preserve">
+    <value>Preview before applying. Prices use Default PO, never retail.</value>
+  </data>
+  <data name="ConnectedBuyers_PricePreview" xml:space="preserve">
+    <value>Price preview</value>
+  </data>
+  <data name="ConnectedBuyers_PricePreviewCount" xml:space="preserve">
+    <value>{0} products affected</value>
+  </data>
+  <data name="ConnectedBuyers_PricePreviewTruncated" xml:space="preserve">
+    <value>Showing a sample of affected products.</value>
+  </data>
+  <data name="ConnectedBuyers_ApplyToCount" xml:space="preserve">
+    <value>Apply to {0}</value>
+  </data>
+  <data name="ConnectedBuyers_NoProductsFound" xml:space="preserve">
+    <value>No products found</value>
+  </data>
+  <data name="ConnectedBuyers_NoProductsMatchFilters" xml:space="preserve">
+    <value>No products match these filters.</value>
+  </data>
+  <data name="ConnectedBuyers_BulkShareSucceeded" xml:space="preserve">
+    <value>Shared {0} products.</value>
+  </data>
+  <data name="ConnectedBuyers_BulkUnshareSucceeded" xml:space="preserve">
+    <value>Unshared {0} products.</value>
+  </data>
+  <data name="ConnectedBuyers_BulkPriceSucceeded" xml:space="preserve">
+    <value>Updated pricing for {0} products.</value>
+  </data>
+  <data name="Common_Clear" xml:space="preserve">
+    <value>Clear</value>
+  </data>
+  <data name="Common_LoadMore" xml:space="preserve">
+    <value>Load more</value>
+  </data>
   <data name="ConnectedBuyers_FilterCategory" xml:space="preserve">
     <value>Category</value>
   </data>
