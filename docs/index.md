@@ -45,6 +45,7 @@
 - [Customer Ordering, Pickup & Delivery (Phase 28)](phases/phase-28-customer-ordering-pickup-and-delivery.md)
 - [Data Integrity & DB Hardening (Phase 29)](phases/phase-29-data-integrity-query-performance-and-database-hardening.md)
 - [P29-WP11 database verification & constraint closeout](reports/P29-WP11-database-verification-and-constraint-closeout.md)
+- [P29-WP12 electronic payment transaction reliability](reports/P29-WP12-electronic-payment-transaction-reliability-hardening.md)
 - [Data integrity / query performance engineering](engineering/data-integrity-query-performance-and-database-hardening.md)
 - [Organization branches and fulfillment locations](engineering/organization-branches-and-fulfillment-locations.md)
 - [Branch delivery pricing](engineering/branch-delivery-pricing.md)

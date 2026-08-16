@@ -106,4 +106,4 @@ Business residuals (Manual GCash, online-only limits, report export, tax/account
 
 **P14-WP03 — Reverse Proxy, TLS, and Network Hardening** when explicitly authorized.
 
-**Honesty note (Phase 29):** [P29-WP11](../reports/P29-WP11-database-verification-and-constraint-closeout.md) recorded PostgreSQL Testcontainers migration apply/rollback and constraint evidence. That does **not** close Production backup/restore rehearsal (**P14-WP04**) and does **not** change the portfolio **Production Ready = No** verdict.
+**Honesty note (Phase 29):** [P29-WP11](../reports/P29-WP11-database-verification-and-constraint-closeout.md) recorded PostgreSQL Testcontainers migration apply/rollback and constraint evidence. [P29-WP12](../reports/P29-WP12-electronic-payment-transaction-reliability-hardening.md) hardens FakePaymentGateway electronic reservation/recovery — that does **not** mean Production Payment Ready or Production Ready. Production backup/restore rehearsal (**P14-WP04**) remains open.

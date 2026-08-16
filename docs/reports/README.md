@@ -171,6 +171,7 @@ The dashboard links to the latest accepted report.
 | [P29-WP09-migration-backup-restore-and-db-operations.md](P29-WP09-migration-backup-restore-and-db-operations.md) | P29-WP09 Migration / Backup | Partial (verification in WP11) |
 | [P29-WP10-phase-29-closeout.md](P29-WP10-phase-29-closeout.md) | P29-WP10 Phase 29 Closeout | Partial |
 | [P29-WP11-database-verification-and-constraint-closeout.md](P29-WP11-database-verification-and-constraint-closeout.md) | P29-WP11 Database Verification & Constraint Closeout | Code Complete / Validation Evidence Recorded |
+| [P29-WP12-electronic-payment-transaction-reliability-hardening.md](P29-WP12-electronic-payment-transaction-reliability-hardening.md) | P29-WP12 Electronic Payment Transaction Reliability Hardening | Code Complete / Validation Evidence Recorded |
 | [P29-performance-baseline.md](P29-performance-baseline.md) | P29 Performance Baseline | Development Evidence |
 | [phase-29-data-integrity-query-performance-and-database-hardening.md](../phases/phase-29-data-integrity-query-performance-and-database-hardening.md) | Phase 29 | Open / Partial Closeout |
 | [phase-28-customer-ordering-pickup-and-delivery.md](../phases/phase-28-customer-ordering-pickup-and-delivery.md) | Phase 28 Customer Ordering, Pickup & Delivery | Open / In Progress |
