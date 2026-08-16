@@ -8,6 +8,8 @@ namespace ExItS.PinoyBusinessPOS.Domain.Inventory;
 /// <summary>
 /// One inventory account per organization/product. On-hand is a denormalized projection of
 /// immutable stock movements, updated only through <see cref="ApplyMovementEffect"/>.
+/// Reserved quantity reduces available stock for customer-order holds without changing on-hand
+/// until consumption.
 /// </summary>
 public sealed class InventoryAccount
 {
@@ -18,6 +20,8 @@ public sealed class InventoryAccount
     public decimal? ReorderLevel { get; private set; }
     public decimal? ReorderQuantity { get; private set; }
     public decimal OnHandQuantity { get; private set; }
+    public decimal ReservedQuantity { get; private set; }
+    public decimal AvailableQuantity => OnHandQuantity - ReservedQuantity;
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
 
@@ -29,6 +33,7 @@ public sealed class InventoryAccount
         decimal? reorderLevel,
         decimal? reorderQuantity,
         decimal onHandQuantity,
+        decimal reservedQuantity,
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc)
     {
@@ -39,6 +44,7 @@ public sealed class InventoryAccount
         ReorderLevel = reorderLevel;
         ReorderQuantity = reorderQuantity;
         OnHandQuantity = onHandQuantity;
+        ReservedQuantity = reservedQuantity;
         CreatedAtUtc = createdAtUtc;
         UpdatedAtUtc = updatedAtUtc;
     }
@@ -61,6 +67,7 @@ public sealed class InventoryAccount
             reorderLevel: null,
             reorderQuantity: null,
             onHandQuantity: 0m,
+            reservedQuantity: 0m,
             utcNow,
             utcNow);
     }
@@ -74,7 +81,8 @@ public sealed class InventoryAccount
         decimal? reorderQuantity,
         decimal onHandQuantity,
         DateTimeOffset createdAtUtc,
-        DateTimeOffset updatedAtUtc) =>
+        DateTimeOffset updatedAtUtc,
+        decimal reservedQuantity = 0m) =>
         new(
             id,
             organizationId,
@@ -83,6 +91,7 @@ public sealed class InventoryAccount
             reorderLevel,
             reorderQuantity,
             onHandQuantity,
+            reservedQuantity,
             createdAtUtc,
             updatedAtUtc);
 
@@ -146,11 +155,11 @@ public sealed class InventoryAccount
                 "Inventory is not tracked for this product.");
         }
 
-        if (OnHandQuantity != 0m)
+        if (OnHandQuantity != 0m || ReservedQuantity != 0m)
         {
             throw new DomainException(
                 DomainErrorCodes.InventoryDisableRequiresZero,
-                "Disable tracking only when on-hand quantity is zero.");
+                "Disable tracking only when on-hand and reserved quantities are zero.");
         }
 
         IsTracked = false;
@@ -174,8 +183,82 @@ public sealed class InventoryAccount
                 "Insufficient stock for this movement.");
         }
 
+        if (next < ReservedQuantity)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InventoryInsufficientStock,
+                "Stock movement would leave reserved quantity uncovered.");
+        }
+
         OnHandQuantity = next;
         // UpdatedAtUtc is set by callers that own the wall-clock (Enable/Disable/SetReorderLevel/sale hooks).
+    }
+
+    /// <summary>
+    /// Holds quantity for a customer order. Untracked accounts treat reservation as a no-op success.
+    /// </summary>
+    public void Reserve(decimal quantity)
+    {
+        EnsurePositiveReservationQuantity(quantity);
+
+        if (!IsTracked)
+        {
+            return;
+        }
+
+        if (AvailableQuantity < quantity)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InventoryInsufficientStock,
+                "Insufficient available stock to reserve.");
+        }
+
+        ReservedQuantity += quantity;
+    }
+
+    /// <summary>
+    /// Releases a prior reservation. Untracked accounts treat release as a no-op success.
+    /// </summary>
+    public void Release(decimal quantity)
+    {
+        EnsurePositiveReservationQuantity(quantity);
+
+        if (!IsTracked)
+        {
+            return;
+        }
+
+        if (ReservedQuantity < quantity)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidInventoryReservationQuantity,
+                "Cannot release more than the reserved quantity.");
+        }
+
+        ReservedQuantity -= quantity;
+    }
+
+    /// <summary>
+    /// Converts a reservation into an on-hand deduction (sale/fulfillment). Untracked accounts are a no-op.
+    /// </summary>
+    public void ConsumeReservation(decimal quantity)
+    {
+        EnsurePositiveReservationQuantity(quantity);
+
+        if (!IsTracked)
+        {
+            return;
+        }
+
+        if (ReservedQuantity < quantity)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidInventoryReservationQuantity,
+                "Cannot consume more than the reserved quantity.");
+        }
+
+        ReservedQuantity -= quantity;
+        ApplyMovementEffect(-quantity);
     }
 
     public void Touch(DateTimeOffset utcNow)
@@ -285,6 +368,16 @@ public sealed class InventoryAccount
         }
 
         return reorderQuantity.Value;
+    }
+
+    private static void EnsurePositiveReservationQuantity(decimal quantity)
+    {
+        if (quantity <= 0m)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidInventoryReservationQuantity,
+                "Reservation quantity must be greater than zero.");
+        }
     }
 
     private static void EnsureUtc(DateTimeOffset utcNow)

@@ -14,6 +14,7 @@ public sealed class StockMovement
     public const int ReasonMaxLength = 512;
     public const string OpeningStockReason = "Opening stock";
     public const string SaleDeductionReason = "Sale deduction";
+    public const string CustomerOrderFulfillmentReason = "Customer order fulfillment";
     public const string SaleVoidRestorationReason = "Sale void restoration";
     public const string PurchaseReceiptReason = "Purchase receipt";
     public const string StockCountVarianceReason = "Stock count variance";
@@ -184,6 +185,42 @@ public sealed class StockMovement
             SaleDeductionReason,
             StockMovementSourceType.Sale,
             saleId,
+            utcNow,
+            actorId);
+    }
+
+    public static StockMovement CustomerOrderDeduction(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        InventoryAccountId inventoryAccountId,
+        decimal quantity,
+        UnitOfMeasure unitOfMeasure,
+        Guid customerOrderId,
+        Guid actorId,
+        DateTimeOffset utcNow,
+        StockMovementId? id = null,
+        SellingMode sellingMode = SellingMode.PerItem)
+    {
+        EnsureUtc(utcNow);
+        EnsureActor(actorId);
+        if (customerOrderId == Guid.Empty)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCustomerOrderId,
+                "CustomerOrderId cannot be an empty GUID.");
+        }
+
+        var absolute = SaleLine.NormalizeQuantity(quantity, unitOfMeasure, sellingMode);
+        return new StockMovement(
+            id ?? StockMovementId.New(),
+            organizationId,
+            productId,
+            inventoryAccountId,
+            StockMovementType.SaleDeduction,
+            -absolute,
+            CustomerOrderFulfillmentReason,
+            StockMovementSourceType.CustomerOrder,
+            customerOrderId,
             utcNow,
             actorId);
     }

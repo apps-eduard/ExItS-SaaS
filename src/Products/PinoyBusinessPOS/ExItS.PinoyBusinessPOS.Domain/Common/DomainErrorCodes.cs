@@ -319,4 +319,28 @@ public static class DomainErrorCodes
     public const string CatalogImportTooLarge = "pos.catalog_import.too_large";
     public const string InvalidCatalogImportStatusTransition = "pos.catalog_import.status.invalid_transition";
     public const string InvalidCatalogSource = "pos.catalog.source.invalid";
+
+    public const string InvalidCustomerOrderId = "pos.customer_order.id.invalid";
+    public const string InvalidCustomerOrderLineId = "pos.customer_order.line.id.invalid";
+    public const string InvalidCustomerOrderNumber = "pos.customer_order.number.invalid";
+    public const string InvalidCustomerOrderStatusTransition = "pos.customer_order.status.invalid_transition";
+    public const string InvalidCustomerOrderFulfillmentTransition =
+        "pos.customer_order.fulfillment_status.invalid_transition";
+    public const string InvalidCustomerOrderFulfillmentType = "pos.customer_order.fulfillment_type.invalid";
+    public const string InvalidCustomerOrderParty = "pos.customer_order.party.invalid";
+    public const string CustomerOrderRequiresAtLeastOneLine = "pos.customer_order.lines.required";
+    public const string InvalidCustomerOrderTotal = "pos.customer_order.total.invalid";
+    public const string InvalidCustomerOrderDelivery = "pos.customer_order.delivery.invalid";
+    public const string InvalidCustomerOrderDeliveryFee = "pos.customer_order.delivery.fee.invalid";
+    public const string InvalidCustomerOrderActor = "pos.customer_order.actor.invalid";
+    public const string InvalidCustomerOrderRejectReason = "pos.customer_order.reject.reason.invalid";
+    public const string InvalidCustomerOrderRejectNotes = "pos.customer_order.reject.notes.invalid";
+    public const string InvalidCustomerOrderStockReservation = "pos.customer_order.stock_reservation.invalid";
+    public const string InvalidCustomerOrderLine = "pos.customer_order.line.invalid";
+    public const string InvalidCustomerOrderLineQuantity = "pos.customer_order.line.quantity.invalid";
+    public const string InvalidCustomerOrderLineUnitPrice = "pos.customer_order.line.unit_price.invalid";
+    public const string InvalidCustomerOrderLineDiscount = "pos.customer_order.line.discount.invalid";
+    public const string InvalidCustomerOrderBranch = "pos.customer_order.branch.invalid";
+    public const string InvalidCustomerOrderIdempotencyKey = "pos.customer_order.idempotency_key.invalid";
+    public const string InvalidInventoryReservationQuantity = "pos.inventory.reservation.quantity.invalid";
 }
