@@ -9,7 +9,9 @@ param(
     [string] $ApplicationGitCommit = '',
     [string] $MigrationSchemaVersion = '',
     # Optional override; otherwise EXITS_PLATFORM_DATABASE / EXITS_POS_DATABASE.
-    [string] $ConnectionString = ''
+    [string] $ConnectionString = '',
+    # When set, run pg_dump inside this Docker container (preferred for Testcontainers / local-validation).
+    [string] $DockerContainerId = ''
 )
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
@@ -26,5 +28,6 @@ $cli = Join-Path $repoRoot 'tools\ExItS.BackupRestore.Cli\ExItS.BackupRestore.Cl
 $argList = @('run', '--project', $cli, '-c', 'Release', '--no-build', '--', 'backup', $DatabaseKind, $OutputDirectory, $EnvironmentClassification)
 if ($ApplicationGitCommit) { $argList += @('--commit', $ApplicationGitCommit) }
 if ($MigrationSchemaVersion) { $argList += @('--migration', $MigrationSchemaVersion) }
+if ($DockerContainerId) { $argList += @('--docker-container', $DockerContainerId) }
 & dotnet @argList
 exit $LASTEXITCODE

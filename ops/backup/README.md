@@ -21,6 +21,7 @@ Operational tooling for **independent** Platform and PinoyBusinessPOS PostgreSQL
 | `Invoke-ExItsRetentionCleanup.ps1` | Retention decisions (**dry-run by default**) |
 | `Protect-ExItsBackup.ps1` | AES-256-GCM envelope using key file (key never beside artifact) |
 | `Invoke-ExItsRecoveryDrill.ps1` | Orchestrates backup → verify → restore guidance |
+| `Invoke-ExItsP29Wp14DevRecoveryDrill.ps1` | P29-WP14 local-validation → disposable restore containers (dev only) |
 
 Connection secrets must come from environment variables (`EXITS_PLATFORM_DATABASE`, `EXITS_POS_DATABASE`) or a `.pgpass` file — never committed.
 

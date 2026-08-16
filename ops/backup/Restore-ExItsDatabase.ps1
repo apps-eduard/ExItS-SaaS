@@ -8,7 +8,8 @@ param(
     [Parameter(Mandatory)] [string] $ManifestPath,
     [switch] $AllowDestructiveRestore,
     [string] $DestructiveConfirmation = '',
-    [string] $ConnectionString = ''
+    [string] $ConnectionString = '',
+    [string] $DockerContainerId = ''
 )
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
@@ -27,5 +28,6 @@ $cli = Join-Path $repoRoot 'tools\ExItS.BackupRestore.Cli\ExItS.BackupRestore.Cl
 & dotnet build $cli -c Release --nologo -v q | Out-Null
 $argList = @('run', '--project', $cli, '-c', 'Release', '--no-build', '--', 'restore', $DatabaseKind, $ArtifactPath, $ManifestPath)
 if ($AllowDestructiveRestore) { $argList += '--destructive' }
+if ($DockerContainerId) { $argList += @('--docker-container', $DockerContainerId) }
 & dotnet @argList
 exit $LASTEXITCODE

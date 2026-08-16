@@ -40,10 +40,10 @@ static string? ResolveConnectionString(ExItsBackupDatabaseKind kind)
 
 static async Task<int> RunBackupAsync(string[] args)
 {
-    // backup <Platform|PinoyBusinessPos> <outputDir> <envClass> [--commit sha] [--migration ver]
+    // backup <Platform|PinoyBusinessPos> <outputDir> <envClass> [--commit sha] [--migration ver] [--docker-container id]
     if (args.Length < 4)
     {
-        return Fail("backup <kind> <outputDir> <envClass>");
+        return Fail("backup <kind> <outputDir> <envClass> [--commit sha] [--migration ver] [--docker-container id]");
     }
 
     var kind = Enum.Parse<ExItsBackupDatabaseKind>(args[1], ignoreCase: true);
@@ -55,21 +55,25 @@ static async Task<int> RunBackupAsync(string[] args)
 
     string? commit = null;
     string? migration = null;
-    for (var i = 4; i < args.Length - 1; i++)
+    string? dockerContainer = null;
+    for (var i = 4; i < args.Length; i++)
     {
-        if (args[i] == "--commit")
+        if (args[i] == "--commit" && i + 1 < args.Length)
         {
             commit = args[++i];
         }
-
-        if (args[i] == "--migration")
+        else if (args[i] == "--migration" && i + 1 < args.Length)
         {
             migration = args[++i];
+        }
+        else if (args[i] == "--docker-container" && i + 1 < args.Length)
+        {
+            dockerContainer = args[++i];
         }
     }
 
     var result = await new PostgreSqlBackupService().CreateBackupAsync(new BackupRequest(
-        kind, cs, args[2], args[3], commit, migration));
+        kind, cs, args[2], args[3], commit, migration, DockerContainerId: dockerContainer));
     Console.WriteLine($"BackupSetId={result.Manifest.BackupSetId}");
     Console.WriteLine($"Artifact={Path.GetFileName(result.ArtifactPath)}");
     Console.WriteLine($"Sha256={result.Manifest.Sha256Checksum}");
@@ -92,10 +96,10 @@ static async Task<int> RunVerifyAsync(string[] args)
 
 static async Task<int> RunRestoreAsync(string[] args)
 {
-    // restore <kind> <artifact> <manifest> [--destructive]
+    // restore <kind> <artifact> <manifest> [--destructive] [--docker-container id]
     if (args.Length < 4)
     {
-        return Fail("restore <kind> <artifact> <manifest> [--destructive]");
+        return Fail("restore <kind> <artifact> <manifest> [--destructive] [--docker-container id]");
     }
 
     var kind = Enum.Parse<ExItsBackupDatabaseKind>(args[1], ignoreCase: true);
@@ -106,13 +110,23 @@ static async Task<int> RunRestoreAsync(string[] args)
     }
 
     var destructive = args.Contains("--destructive", StringComparer.OrdinalIgnoreCase);
+    string? dockerContainer = null;
+    for (var i = 4; i < args.Length; i++)
+    {
+        if (args[i] == "--docker-container" && i + 1 < args.Length)
+        {
+            dockerContainer = args[++i];
+        }
+    }
+
     var result = await new PostgreSqlBackupService().RestoreAsync(new RestoreRequest(
         kind,
         cs,
         args[2],
         args[3],
         AllowDestructiveRestore: destructive,
-        DestructiveConfirmation: destructive ? BackupConstants.DestructiveConfirmationToken : null));
+        DestructiveConfirmation: destructive ? BackupConstants.DestructiveConfirmationToken : null,
+        DockerContainerId: dockerContainer));
     Console.WriteLine($"Succeeded={result.Succeeded}");
     Console.WriteLine($"Message={result.Message}");
     Console.WriteLine($"DurationMs={(int)result.Duration.TotalMilliseconds}");

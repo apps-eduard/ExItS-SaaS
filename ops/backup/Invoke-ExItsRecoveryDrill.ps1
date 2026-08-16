@@ -3,6 +3,9 @@
 .SYNOPSIS
   Operator checklist wrapper for a non-production recovery drill.
   Does not target Production. Does not auto-cutover traffic.
+
+  For Phase 29 WP14 local-validation → disposable restore containers, prefer:
+    .\ops\backup\Invoke-ExItsP29Wp14DevRecoveryDrill.ps1
 #>
 [CmdletBinding()]
 param(
@@ -20,6 +23,7 @@ Write-Host '3) Backup POS'
 Write-Host '4) Verify each manifest/artifact with Verify-ExItsBackup.ps1'
 Write-Host '5) Restore Platform then POS into approved empty DBs (destructive flag only if required)'
 Write-Host '6) Run automated tests: dotnet test tests/ExItS.BackupRestore.Tests -c Release'
-Write-Host '7) Record timings, sizes, and validation results in the WP report'
+Write-Host '7) P29-WP14 development drill (local-validation → disposable containers): Invoke-ExItsP29Wp14DevRecoveryDrill.ps1'
+Write-Host '8) Record timings, sizes, and validation results in the WP report'
 Write-Host 'DRILL_CHECKLIST_PRINTED'
 exit 0
