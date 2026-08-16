@@ -12,8 +12,26 @@ internal sealed class OrganizationBranchRecord
     public string? Region { get; set; }
     public string? PostalCode { get; set; }
     public string? CountryCode { get; set; }
+    public decimal? Latitude { get; set; }
+    public decimal? Longitude { get; set; }
+    public bool PickupEnabled { get; set; } = true;
+    public bool DeliveryEnabled { get; set; }
     public bool IsPrimary { get; set; }
     public string Status { get; set; } = string.Empty;
+    public DateTimeOffset CreatedAtUtc { get; set; }
+    public DateTimeOffset UpdatedAtUtc { get; set; }
+}
+
+internal sealed class BranchDeliveryPolicyRecord
+{
+    public Guid BranchId { get; set; }
+    public Guid OrganizationId { get; set; }
+    public decimal MinimumOrderAmount { get; set; }
+    public decimal BaseDeliveryFee { get; set; }
+    public decimal IncludedDistanceKm { get; set; }
+    public decimal AdditionalFeePerKm { get; set; }
+    public decimal MaximumDeliveryDistanceKm { get; set; }
+    public decimal? FreeDeliveryThreshold { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset UpdatedAtUtc { get; set; }
 }

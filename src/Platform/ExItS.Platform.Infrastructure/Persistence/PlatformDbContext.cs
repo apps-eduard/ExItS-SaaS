@@ -54,6 +54,7 @@ public sealed class PlatformDbContext : DbContext
     internal DbSet<OrganizationBusinessTypeActivationRecord> OrganizationBusinessTypeActivations =>
         Set<OrganizationBusinessTypeActivationRecord>();
     internal DbSet<OrganizationBranchRecord> OrganizationBranches => Set<OrganizationBranchRecord>();
+    internal DbSet<BranchDeliveryPolicyRecord> BranchDeliveryPolicies => Set<BranchDeliveryPolicyRecord>();
     internal DbSet<PosDeviceRecord> PosDevices => Set<PosDeviceRecord>();
     internal DbSet<PosDeviceRegistrationTokenRecord> PosDeviceRegistrationTokens => Set<PosDeviceRegistrationTokenRecord>();
     internal DbSet<SubscriptionRecord> Subscriptions => Set<SubscriptionRecord>();
@@ -397,7 +398,15 @@ public sealed class PlatformDbContext : DbContext
 
         modelBuilder.Entity<OrganizationBranchRecord>(entity =>
         {
-            entity.ToTable("organization_branches");
+            entity.ToTable("organization_branches", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_organization_branches_latitude",
+                    "latitude IS NULL OR (latitude >= -90 AND latitude <= 90)");
+                tb.HasCheckConstraint(
+                    "ck_organization_branches_longitude",
+                    "longitude IS NULL OR (longitude >= -180 AND longitude <= 180)");
+            });
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
@@ -409,12 +418,42 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.Region).HasColumnName("region").HasMaxLength(100);
             entity.Property(e => e.PostalCode).HasColumnName("postal_code").HasMaxLength(32);
             entity.Property(e => e.CountryCode).HasColumnName("country_code").HasMaxLength(2);
+            entity.Property(e => e.Latitude).HasColumnName("latitude").HasPrecision(10, 7);
+            entity.Property(e => e.Longitude).HasColumnName("longitude").HasPrecision(10, 7);
+            entity.Property(e => e.PickupEnabled).HasColumnName("pickup_enabled").HasDefaultValue(true);
+            entity.Property(e => e.DeliveryEnabled).HasColumnName("delivery_enabled").HasDefaultValue(false);
             entity.Property(e => e.IsPrimary).HasColumnName("is_primary");
             entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(16).IsRequired();
             entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
             entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
             entity.HasIndex(e => new { e.OrganizationId, e.Code }).IsUnique();
             entity.HasIndex(e => e.Status);
+            entity.HasOne<PlatformOrganizationRecord>().WithMany().HasForeignKey(e => e.OrganizationId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<BranchDeliveryPolicyRecord>(entity =>
+        {
+            entity.ToTable("branch_delivery_policies", tb =>
+            {
+                tb.HasCheckConstraint("ck_branch_delivery_policies_min_order_nonneg", "minimum_order_amount >= 0");
+                tb.HasCheckConstraint("ck_branch_delivery_policies_base_fee_nonneg", "base_delivery_fee >= 0");
+                tb.HasCheckConstraint("ck_branch_delivery_policies_included_nonneg", "included_distance_km >= 0");
+                tb.HasCheckConstraint("ck_branch_delivery_policies_per_km_nonneg", "additional_fee_per_km >= 0");
+                tb.HasCheckConstraint("ck_branch_delivery_policies_max_positive", "maximum_delivery_distance_km > 0");
+            });
+            entity.HasKey(e => e.BranchId);
+            entity.Property(e => e.BranchId).HasColumnName("branch_id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.MinimumOrderAmount).HasColumnName("minimum_order_amount").HasPrecision(18, 2);
+            entity.Property(e => e.BaseDeliveryFee).HasColumnName("base_delivery_fee").HasPrecision(18, 2);
+            entity.Property(e => e.IncludedDistanceKm).HasColumnName("included_distance_km").HasPrecision(18, 3);
+            entity.Property(e => e.AdditionalFeePerKm).HasColumnName("additional_fee_per_km").HasPrecision(18, 2);
+            entity.Property(e => e.MaximumDeliveryDistanceKm).HasColumnName("maximum_delivery_distance_km").HasPrecision(18, 3);
+            entity.Property(e => e.FreeDeliveryThreshold).HasColumnName("free_delivery_threshold").HasPrecision(18, 2);
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.HasIndex(e => e.OrganizationId);
+            entity.HasOne<OrganizationBranchRecord>().WithMany().HasForeignKey(e => e.BranchId).OnDelete(DeleteBehavior.Cascade);
             entity.HasOne<PlatformOrganizationRecord>().WithMany().HasForeignKey(e => e.OrganizationId).OnDelete(DeleteBehavior.Restrict);
         });
 

@@ -26,7 +26,19 @@ internal static class BranchAndDeviceEndpoints
             var (denied, _) = await authz.EnsureCanEditOrganizationProfileAsync(organizationId, "platform.organization.branch_created", ct).ConfigureAwait(false);
             if (denied is not null) return denied;
             var result = await useCase.ExecuteAsync(PlatformOrganizationId.From(organizationId),
-                new(body.Code ?? string.Empty, body.Name ?? string.Empty, body.AddressLine1, body.AddressLine2, body.City, body.Region, body.PostalCode, body.CountryCode), ct).ConfigureAwait(false);
+                new CreateBranchCommand(
+                    body.Code ?? string.Empty,
+                    body.Name ?? string.Empty,
+                    body.AddressLine1,
+                    body.AddressLine2,
+                    body.City,
+                    body.Region,
+                    body.PostalCode,
+                    body.CountryCode,
+                    body.Latitude,
+                    body.Longitude,
+                    body.PickupEnabled ?? true,
+                    body.DeliveryEnabled ?? false), ct).ConfigureAwait(false);
             return PlatformApiResults.FromResult(result, x => Results.Created($"/api/v1/platform/organizations/{organizationId}/branches/{x.Id}", x));
         });
         root.MapPut("/branches/{branchId:guid}", async (Guid organizationId, Guid branchId, UpdateBranchRequest body, UpdateBranch useCase, PlatformOrganizationAuthz authz, CancellationToken ct) =>
@@ -36,13 +48,52 @@ internal static class BranchAndDeviceEndpoints
             var status = string.IsNullOrWhiteSpace(body.Status) ? null : Enum.TryParse<OrganizationBranchStatus>(body.Status, true, out var value) ? value : (OrganizationBranchStatus?)null;
             if (!string.IsNullOrWhiteSpace(body.Status) && status is null) return PlatformApiResults.Problem(ApplicationErrorCodes.DomainViolation, "Branch status is invalid.", StatusCodes.Status400BadRequest);
             return PlatformApiResults.FromResult(await useCase.ExecuteAsync(PlatformOrganizationId.From(organizationId), OrganizationBranchId.From(branchId),
-                new(body.Name ?? string.Empty, body.AddressLine1, body.AddressLine2, body.City, body.Region, body.PostalCode, body.CountryCode, status), ct).ConfigureAwait(false), Results.Ok);
+                new UpdateBranchCommand(
+                    body.Name ?? string.Empty,
+                    body.AddressLine1,
+                    body.AddressLine2,
+                    body.City,
+                    body.Region,
+                    body.PostalCode,
+                    body.CountryCode,
+                    status,
+                    body.Latitude,
+                    body.Longitude,
+                    body.ClearCoordinates,
+                    body.PickupEnabled,
+                    body.DeliveryEnabled), ct).ConfigureAwait(false), Results.Ok);
         });
         root.MapPost("/branches/{branchId:guid}/archive", async (Guid organizationId, Guid branchId, ArchiveBranch useCase, PlatformOrganizationAuthz authz, CancellationToken ct) =>
         {
             var (denied, _) = await authz.EnsureCanEditOrganizationProfileAsync(organizationId, "platform.organization.branch_archived", ct).ConfigureAwait(false);
             if (denied is not null) return denied;
             return PlatformApiResults.FromResult(await useCase.ExecuteAsync(PlatformOrganizationId.From(organizationId), OrganizationBranchId.From(branchId), ct).ConfigureAwait(false), Results.Ok);
+        });
+        root.MapPut("/branches/{branchId:guid}/delivery-policy", async (Guid organizationId, Guid branchId, UpsertBranchDeliveryPolicyRequest body, UpsertBranchDeliveryPolicy useCase, PlatformOrganizationAuthz authz, CancellationToken ct) =>
+        {
+            var (denied, _) = await authz.EnsureCanEditOrganizationProfileAsync(organizationId, "platform.organization.branch_delivery_policy_updated", ct).ConfigureAwait(false);
+            if (denied is not null) return denied;
+            return PlatformApiResults.FromResult(await useCase.ExecuteAsync(
+                PlatformOrganizationId.From(organizationId),
+                OrganizationBranchId.From(branchId),
+                new UpsertBranchDeliveryPolicyCommand(
+                    body.MinimumOrderAmount,
+                    body.BaseDeliveryFee,
+                    body.IncludedDistanceKm,
+                    body.AdditionalFeePerKm,
+                    body.MaximumDeliveryDistanceKm,
+                    body.FreeDeliveryThreshold),
+                ct).ConfigureAwait(false), Results.Ok);
+        });
+        root.MapPost("/branches/{branchId:guid}/delivery-fee-preview", async (Guid organizationId, Guid branchId, DeliveryFeePreviewRequest body, PreviewBranchDeliveryFee useCase, PlatformOrganizationAuthz authz, CancellationToken ct) =>
+        {
+            var denied = await authz.EnsureCanViewOrganizationAsync(organizationId, ct).ConfigureAwait(false);
+            if (denied is not null) return denied;
+            return PlatformApiResults.FromResult(await useCase.ExecuteAsync(
+                PlatformOrganizationId.From(organizationId),
+                OrganizationBranchId.From(branchId),
+                body,
+                ct).ConfigureAwait(false), Results.Ok);
         });
 
         root.MapGet("/pos-devices", async (Guid organizationId, ListDevices useCase, PlatformOrganizationAuthz authz, CancellationToken ct) =>
@@ -163,8 +214,40 @@ internal static class BranchAndDeviceEndpoints
     }
 }
 
-internal sealed record CreateBranchRequest(string? Code, string? Name, string? AddressLine1 = null, string? AddressLine2 = null, string? City = null, string? Region = null, string? PostalCode = null, string? CountryCode = null);
-internal sealed record UpdateBranchRequest(string? Name, string? AddressLine1 = null, string? AddressLine2 = null, string? City = null, string? Region = null, string? PostalCode = null, string? CountryCode = null, string? Status = null);
+internal sealed record CreateBranchRequest(
+    string? Code,
+    string? Name,
+    string? AddressLine1 = null,
+    string? AddressLine2 = null,
+    string? City = null,
+    string? Region = null,
+    string? PostalCode = null,
+    string? CountryCode = null,
+    decimal? Latitude = null,
+    decimal? Longitude = null,
+    bool? PickupEnabled = null,
+    bool? DeliveryEnabled = null);
+internal sealed record UpdateBranchRequest(
+    string? Name,
+    string? AddressLine1 = null,
+    string? AddressLine2 = null,
+    string? City = null,
+    string? Region = null,
+    string? PostalCode = null,
+    string? CountryCode = null,
+    string? Status = null,
+    decimal? Latitude = null,
+    decimal? Longitude = null,
+    bool? ClearCoordinates = null,
+    bool? PickupEnabled = null,
+    bool? DeliveryEnabled = null);
+internal sealed record UpsertBranchDeliveryPolicyRequest(
+    decimal MinimumOrderAmount,
+    decimal BaseDeliveryFee,
+    decimal IncludedDistanceKm,
+    decimal AdditionalFeePerKm,
+    decimal MaximumDeliveryDistanceKm,
+    decimal? FreeDeliveryThreshold = null);
 internal sealed record RegisterPosDeviceRequest(Guid BranchId, string? InstallationDeviceId, string? FriendlyName, string? Platform = null, string? Model = null, string? AppVersion = null);
 internal sealed record RedeemPosDeviceRegistrationTokenRequest(
     string? Token,

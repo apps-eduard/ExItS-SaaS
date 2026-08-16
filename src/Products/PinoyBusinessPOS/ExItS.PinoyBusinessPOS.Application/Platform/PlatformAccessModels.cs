@@ -44,12 +44,51 @@ public sealed record PlatformOrganizationDto(
     Guid? PrimaryBusinessTypeId = null,
     OrganizationProfileFieldsDto? Profile = null);
 
-public sealed record OrganizationBranchDto(Guid Id, Guid OrganizationId, string Code, string Name,
-    bool IsPrimary, string Status, string? AddressLine1 = null, string? AddressLine2 = null,
-    string? City = null, string? Region = null, string? PostalCode = null, string? CountryCode = null);
+public sealed record OrganizationBranchDto(
+    Guid Id,
+    Guid OrganizationId,
+    string Code,
+    string Name,
+    bool IsPrimary,
+    string Status,
+    string? AddressLine1 = null,
+    string? AddressLine2 = null,
+    string? City = null,
+    string? Region = null,
+    string? PostalCode = null,
+    string? CountryCode = null,
+    decimal? Latitude = null,
+    decimal? Longitude = null,
+    bool PickupEnabled = true,
+    bool DeliveryEnabled = false,
+    bool CanOfferPickup = false,
+    bool CanOfferDeliveryLocation = false,
+    BranchDeliveryPolicyDto? DeliveryPolicy = null);
+public sealed record BranchDeliveryPolicyDto(
+    Guid BranchId,
+    Guid OrganizationId,
+    decimal MinimumOrderAmount,
+    decimal BaseDeliveryFee,
+    decimal IncludedDistanceKm,
+    decimal AdditionalFeePerKm,
+    decimal MaximumDeliveryDistanceKm,
+    decimal? FreeDeliveryThreshold,
+    DateTimeOffset CreatedAtUtc,
+    DateTimeOffset UpdatedAtUtc);
 public sealed record BranchCapacityDto(int Used, int Allowed);
-public sealed record CreateBranchRequest(string Code, string Name, string? AddressLine1 = null, string? AddressLine2 = null,
-    string? City = null, string? Region = null, string? PostalCode = null, string? CountryCode = null);
+public sealed record CreateBranchRequest(
+    string Code,
+    string Name,
+    string? AddressLine1 = null,
+    string? AddressLine2 = null,
+    string? City = null,
+    string? Region = null,
+    string? PostalCode = null,
+    string? CountryCode = null,
+    decimal? Latitude = null,
+    decimal? Longitude = null,
+    bool PickupEnabled = true,
+    bool DeliveryEnabled = false);
 public sealed record PosDeviceDto(Guid Id, Guid OrganizationId, Guid BranchId, string InstallationDeviceId, string FriendlyName,
     string? Platform, string? Model, string? AppVersion, string Status, DateTimeOffset RegisteredAtUtc, DateTimeOffset LastSeenAtUtc,
     DateTimeOffset? RevokedAtUtc = null);
@@ -83,7 +122,31 @@ public sealed record UpdateBranchRequest(
     string? Region = null,
     string? PostalCode = null,
     string? CountryCode = null,
-    string? Status = null);
+    string? Status = null,
+    decimal? Latitude = null,
+    decimal? Longitude = null,
+    bool? ClearCoordinates = null,
+    bool? PickupEnabled = null,
+    bool? DeliveryEnabled = null);
+
+public sealed record UpsertBranchDeliveryPolicyRequest(
+    decimal MinimumOrderAmount,
+    decimal BaseDeliveryFee,
+    decimal IncludedDistanceKm,
+    decimal AdditionalFeePerKm,
+    decimal MaximumDeliveryDistanceKm,
+    decimal? FreeDeliveryThreshold = null);
+
+public sealed record DeliveryFeePreviewRequest(decimal MerchandiseSubtotal, decimal DistanceKm);
+
+public sealed record DeliveryFeePreviewDto(
+    decimal DistanceKm,
+    decimal ExtraDistanceKm,
+    decimal DistanceCharge,
+    decimal DeliveryFee,
+    bool FreeDeliveryApplied,
+    bool Available,
+    string? UnavailableReason = null);
 
 public sealed record PlatformMembershipDto(
     Guid Id,
@@ -1260,6 +1323,20 @@ public interface IPlatformAccessClient
         Guid branchId,
         CancellationToken ct = default) =>
         Task.FromResult(ApiResult<OrganizationBranchDto>.Unavailable());
+
+    Task<ApiResult<BranchDeliveryPolicyDto>> UpsertBranchDeliveryPolicyAsync(
+        Guid organizationId,
+        Guid branchId,
+        UpsertBranchDeliveryPolicyRequest request,
+        CancellationToken ct = default) =>
+        Task.FromResult(ApiResult<BranchDeliveryPolicyDto>.Unavailable());
+
+    Task<ApiResult<DeliveryFeePreviewDto>> PreviewBranchDeliveryFeeAsync(
+        Guid organizationId,
+        Guid branchId,
+        DeliveryFeePreviewRequest request,
+        CancellationToken ct = default) =>
+        Task.FromResult(ApiResult<DeliveryFeePreviewDto>.Unavailable());
 
     Task<ApiResult<PlatformPagedResult<OrganizationInvitationDto>>> GetOrganizationInvitationsAsync(
         Guid organizationId,

@@ -47,6 +47,28 @@ public sealed class PlatformAccessClient(IPosApiClient api) : IPlatformAccessCli
             null,
             ct);
 
+    public Task<ApiResult<BranchDeliveryPolicyDto>> UpsertBranchDeliveryPolicyAsync(
+        Guid organizationId,
+        Guid branchId,
+        UpsertBranchDeliveryPolicyRequest request,
+        CancellationToken ct = default) =>
+        api.SendAsync<BranchDeliveryPolicyDto>(
+            HttpMethod.Put,
+            $"/api/v1/platform/organizations/{organizationId:D}/branches/{branchId:D}/delivery-policy",
+            request,
+            ct);
+
+    public Task<ApiResult<DeliveryFeePreviewDto>> PreviewBranchDeliveryFeeAsync(
+        Guid organizationId,
+        Guid branchId,
+        DeliveryFeePreviewRequest request,
+        CancellationToken ct = default) =>
+        api.SendAsync<DeliveryFeePreviewDto>(
+            HttpMethod.Post,
+            $"/api/v1/platform/organizations/{organizationId:D}/branches/{branchId:D}/delivery-fee-preview",
+            request,
+            ct);
+
     public Task<ApiResult<IReadOnlyList<PosDeviceDto>>> GetPosDevicesAsync(Guid organizationId, CancellationToken ct = default) =>
         api.GetAsync<IReadOnlyList<PosDeviceDto>>($"/api/v1/platform/organizations/{organizationId:D}/pos-devices", ct);
 

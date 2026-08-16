@@ -204,6 +204,8 @@ builder.Services.AddScoped<CreateBranch>();
 builder.Services.AddScoped<UpdateBranch>();
 builder.Services.AddScoped<ArchiveBranch>();
 builder.Services.AddScoped<GetBranchCapacity>();
+builder.Services.AddScoped<UpsertBranchDeliveryPolicy>();
+builder.Services.AddScoped<PreviewBranchDeliveryFee>();
 builder.Services.AddScoped<EnsureMainBranchExists>();
 builder.Services.AddScoped<ListDevices>();
 builder.Services.AddScoped<RegisterCurrentDevice>();

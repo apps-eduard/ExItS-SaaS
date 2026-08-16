@@ -7,23 +7,101 @@ namespace ExItS.Platform.Infrastructure.Persistence;
 internal static class OrganizationBranchDeviceEntityMapper
 {
     public static OrganizationBranch ToDomain(OrganizationBranchRecord record) =>
-        OrganizationBranch.Rehydrate(OrganizationBranchId.From(record.Id), PlatformOrganizationId.From(record.OrganizationId), record.Code, record.Name,
-            record.AddressLine1, record.AddressLine2, record.City, record.Region, record.PostalCode, record.CountryCode, record.IsPrimary,
-            Enum.Parse<OrganizationBranchStatus>(record.Status), record.CreatedAtUtc, record.UpdatedAtUtc);
+        OrganizationBranch.Rehydrate(
+            OrganizationBranchId.From(record.Id),
+            PlatformOrganizationId.From(record.OrganizationId),
+            record.Code,
+            record.Name,
+            record.AddressLine1,
+            record.AddressLine2,
+            record.City,
+            record.Region,
+            record.PostalCode,
+            record.CountryCode,
+            record.IsPrimary,
+            Enum.Parse<OrganizationBranchStatus>(record.Status),
+            record.CreatedAtUtc,
+            record.UpdatedAtUtc,
+            record.Latitude,
+            record.Longitude,
+            record.PickupEnabled,
+            record.DeliveryEnabled);
 
     public static OrganizationBranchRecord ToRecord(OrganizationBranch branch) => new()
     {
-        Id = branch.Id.Value, OrganizationId = branch.OrganizationId.Value, Code = branch.Code, Name = branch.Name,
-        AddressLine1 = branch.AddressLine1, AddressLine2 = branch.AddressLine2, City = branch.City, Region = branch.Region,
-        PostalCode = branch.PostalCode, CountryCode = branch.CountryCode, IsPrimary = branch.IsPrimary, Status = branch.Status.ToString(),
-        CreatedAtUtc = branch.CreatedAtUtc, UpdatedAtUtc = branch.UpdatedAtUtc
+        Id = branch.Id.Value,
+        OrganizationId = branch.OrganizationId.Value,
+        Code = branch.Code,
+        Name = branch.Name,
+        AddressLine1 = branch.AddressLine1,
+        AddressLine2 = branch.AddressLine2,
+        City = branch.City,
+        Region = branch.Region,
+        PostalCode = branch.PostalCode,
+        CountryCode = branch.CountryCode,
+        Latitude = branch.Latitude,
+        Longitude = branch.Longitude,
+        PickupEnabled = branch.PickupEnabled,
+        DeliveryEnabled = branch.DeliveryEnabled,
+        IsPrimary = branch.IsPrimary,
+        Status = branch.Status.ToString(),
+        CreatedAtUtc = branch.CreatedAtUtc,
+        UpdatedAtUtc = branch.UpdatedAtUtc
     };
 
     public static void ApplyToRecord(OrganizationBranch branch, OrganizationBranchRecord record)
     {
-        record.Name = branch.Name; record.AddressLine1 = branch.AddressLine1; record.AddressLine2 = branch.AddressLine2; record.City = branch.City;
-        record.Region = branch.Region; record.PostalCode = branch.PostalCode; record.CountryCode = branch.CountryCode; record.Status = branch.Status.ToString();
+        record.Name = branch.Name;
+        record.AddressLine1 = branch.AddressLine1;
+        record.AddressLine2 = branch.AddressLine2;
+        record.City = branch.City;
+        record.Region = branch.Region;
+        record.PostalCode = branch.PostalCode;
+        record.CountryCode = branch.CountryCode;
+        record.Latitude = branch.Latitude;
+        record.Longitude = branch.Longitude;
+        record.PickupEnabled = branch.PickupEnabled;
+        record.DeliveryEnabled = branch.DeliveryEnabled;
+        record.Status = branch.Status.ToString();
         record.UpdatedAtUtc = branch.UpdatedAtUtc;
+    }
+
+    public static BranchDeliveryPolicy ToDomain(BranchDeliveryPolicyRecord record) =>
+        BranchDeliveryPolicy.Rehydrate(
+            OrganizationBranchId.From(record.BranchId),
+            PlatformOrganizationId.From(record.OrganizationId),
+            record.MinimumOrderAmount,
+            record.BaseDeliveryFee,
+            record.IncludedDistanceKm,
+            record.AdditionalFeePerKm,
+            record.MaximumDeliveryDistanceKm,
+            record.FreeDeliveryThreshold,
+            record.CreatedAtUtc,
+            record.UpdatedAtUtc);
+
+    public static BranchDeliveryPolicyRecord ToRecord(BranchDeliveryPolicy policy) => new()
+    {
+        BranchId = policy.BranchId.Value,
+        OrganizationId = policy.OrganizationId.Value,
+        MinimumOrderAmount = policy.MinimumOrderAmount,
+        BaseDeliveryFee = policy.BaseDeliveryFee,
+        IncludedDistanceKm = policy.IncludedDistanceKm,
+        AdditionalFeePerKm = policy.AdditionalFeePerKm,
+        MaximumDeliveryDistanceKm = policy.MaximumDeliveryDistanceKm,
+        FreeDeliveryThreshold = policy.FreeDeliveryThreshold,
+        CreatedAtUtc = policy.CreatedAtUtc,
+        UpdatedAtUtc = policy.UpdatedAtUtc
+    };
+
+    public static void ApplyToRecord(BranchDeliveryPolicy policy, BranchDeliveryPolicyRecord record)
+    {
+        record.MinimumOrderAmount = policy.MinimumOrderAmount;
+        record.BaseDeliveryFee = policy.BaseDeliveryFee;
+        record.IncludedDistanceKm = policy.IncludedDistanceKm;
+        record.AdditionalFeePerKm = policy.AdditionalFeePerKm;
+        record.MaximumDeliveryDistanceKm = policy.MaximumDeliveryDistanceKm;
+        record.FreeDeliveryThreshold = policy.FreeDeliveryThreshold;
+        record.UpdatedAtUtc = policy.UpdatedAtUtc;
     }
 
     public static PosDevice ToDomain(PosDeviceRecord record) =>

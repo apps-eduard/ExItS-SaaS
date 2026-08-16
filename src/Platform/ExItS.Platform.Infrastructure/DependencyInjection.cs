@@ -13,6 +13,7 @@ using ExItS.Platform.Application.Personal;
 using ExItS.Platform.Application.PrivacyCompliance;
 using ExItS.Platform.Application.Subscriptions;
 using ExItS.Platform.Domain.Abstractions;
+using ExItS.Platform.Domain.Organizations;
 using ExItS.Platform.Infrastructure.Authorization;
 using ExItS.Platform.Infrastructure.GlobalCatalog;
 using ExItS.Platform.Infrastructure.Identity;
@@ -58,6 +59,8 @@ public static class DependencyInjection
         services.AddScoped<IOrganizationSalesDocumentAcknowledgmentRepository, OrganizationSalesDocumentAcknowledgmentRepository>();
         services.AddScoped<IOrganizationBusinessTypeActivationRepository, OrganizationBusinessTypeActivationRepository>();
         services.AddScoped<IOrganizationBranchRepository, OrganizationBranchRepository>();
+        services.AddScoped<IBranchDeliveryPolicyRepository, BranchDeliveryPolicyRepository>();
+        services.AddSingleton<IDeliveryDistanceCalculator, HaversineDeliveryDistanceCalculator>();
         services.AddScoped<IPosDeviceRepository, PosDeviceRepository>();
         services.AddScoped<IPosDeviceRegistrationTokenRepository, PosDeviceRegistrationTokenRepository>();
         services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
