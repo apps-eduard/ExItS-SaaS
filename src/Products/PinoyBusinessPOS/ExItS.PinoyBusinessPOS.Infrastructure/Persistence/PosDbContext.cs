@@ -608,6 +608,10 @@ public sealed class PosDbContext : DbContext
                 .ValueGeneratedOnAddOrUpdate()
                 .IsConcurrencyToken();
 
+            // Alternate key for composite tenant FKs (e.g. customer_order_lines).
+            entity.HasAlternateKey(e => new { e.Id, e.OrganizationId })
+                .HasName("AK_products_id_organization_id");
+
             // No status filter: SKUs and barcodes of inactive products stay reserved.
             entity.HasIndex(e => new { e.OrganizationId, e.NormalizedSku })
                 .IsUnique()
@@ -1181,6 +1185,10 @@ public sealed class PosDbContext : DbContext
                 .ValueGeneratedOnAddOrUpdate()
                 .IsConcurrencyToken();
 
+            // Alternate key for composite tenant FKs from customer_order_lines.
+            entity.HasAlternateKey(e => new { e.Id, e.SellerOrganizationId })
+                .HasName("AK_customer_orders_id_seller_organization_id");
+
             entity.HasIndex(e => new { e.SellerOrganizationId, e.OrderNumber })
                 .IsUnique()
                 .HasDatabaseName("ux_customer_orders_org_order_number");
@@ -1252,15 +1260,17 @@ public sealed class PosDbContext : DbContext
 
             entity.HasOne<CustomerOrderRecord>()
                 .WithMany()
-                .HasForeignKey(e => e.OrderId)
+                .HasForeignKey(e => new { e.OrderId, e.SellerOrganizationId })
+                .HasPrincipalKey(o => new { o.Id, o.SellerOrganizationId })
                 .OnDelete(DeleteBehavior.Cascade)
-                .HasConstraintName("fk_customer_order_lines_orders");
+                .HasConstraintName("fk_customer_order_lines_orders_tenant");
 
             entity.HasOne<CatalogProductRecord>()
                 .WithMany()
-                .HasForeignKey(e => e.ProductId)
+                .HasForeignKey(e => new { e.ProductId, e.SellerOrganizationId })
+                .HasPrincipalKey(p => new { p.Id, p.OrganizationId })
                 .OnDelete(DeleteBehavior.Restrict)
-                .HasConstraintName("fk_customer_order_lines_products");
+                .HasConstraintName("fk_customer_order_lines_products_tenant");
         });
 
         modelBuilder.Entity<CustomerOrderNumberSequenceRecord>(entity =>
