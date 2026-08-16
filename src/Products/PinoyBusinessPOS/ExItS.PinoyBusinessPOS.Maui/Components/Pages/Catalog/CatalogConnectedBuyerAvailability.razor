@@ -179,7 +179,7 @@
     }
 </Page>
 
-@if (CanManage && (_selectedCount > 0 || _selectAllMatching))
+@if (CanManage && (_selectedCount > 0 || _selectAllMatching) && !_priceSheetOpen && _preview is null && !_categorySheetOpen)
 {
     <div class="pos-manage-share__sticky" role="region" aria-label="@L["ConnectedBuyers_BulkActions"]">
         <div class="pos-manage-share__sticky-meta" aria-live="polite">
@@ -327,7 +327,7 @@
                     <p class="pos-manage-share__banner" role="alert">@_priceError</p>
                 }
             </div>
-            <div class="pos-denom-sheet__bar">
+            <div class="pos-denom-sheet__bar pos-manage-share__sheet-bar">
                 <button type="button" class="pos-action-tile" disabled="@_busy" @onclick="() => _priceSheetOpen = false">
                     <span class="pos-action-tile__label">@L["Common_Cancel"]</span>
                 </button>
@@ -384,7 +384,7 @@
                     <p class="pos-muted">@L["ConnectedBuyers_PricePreviewTruncated"]</p>
                 }
             </div>
-            <div class="pos-denom-sheet__bar">
+            <div class="pos-denom-sheet__bar pos-manage-share__sheet-bar">
                 <button type="button" class="pos-action-tile" disabled="@_busy" @onclick="BackToPriceSheet">
                     <span class="pos-action-tile__label">@L["Common_Cancel"]</span>
                 </button>
@@ -399,7 +399,52 @@
 
 <style>
     .pos-manage-share { width: 100%; padding-bottom: 0.5rem; }
-    .pos-manage-share--has-selection { padding-bottom: 8.5rem; }
+    .pos-manage-share--has-selection { padding-bottom: 9.5rem; }
+    .pos-manage-share__sticky {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: calc(var(--pos-bottom-nav-height, 3.5rem) + env(safe-area-inset-bottom, 0px));
+        z-index: 40;
+        margin: 0;
+        padding: 0.55rem 0.75rem 0.55rem;
+        border-top: 1px solid var(--exits-border, #c9d4cd);
+        background: var(--exits-surface, #fff);
+        box-shadow: 0 -6px 18px rgba(21, 32, 26, 0.08);
+    }
+    .pos-manage-share__sticky-meta { font-size: 0.875rem; font-weight: 700; margin-bottom: 0.15rem; }
+    .pos-manage-share__sticky-hint { margin: 0 0 0.4rem; font-size: 0.75rem; line-height: 1.3; }
+    .pos-manage-share__sticky-actions { display: flex; flex-wrap: nowrap; gap: 0.4rem; }
+    .pos-manage-share__action {
+        appearance: none; border: 1px solid var(--exits-border, #c9d4cd); background: #fff;
+        border-radius: 0.55rem; min-height: 2.75rem; padding: 0.5rem 0.55rem; font: inherit;
+        font-size: 0.8125rem; font-weight: 700; color: var(--exits-primary, #1b7a3d);
+        flex: 1 1 0; min-width: 0;
+    }
+    .pos-manage-share__action--primary {
+        color: #fff; background: var(--exits-primary, #1b7a3d); border-color: var(--exits-primary, #1b7a3d);
+    }
+    .pos-manage-share__action--danger { color: #8a1f1f; border-color: #e0b4b4; }
+    .pos-manage-share__clear {
+        appearance: none; border: 0; background: transparent; width: 100%; margin-top: 0.25rem;
+        min-height: 2.4rem; font: inherit; font-size: 0.8125rem; font-weight: 650;
+        color: var(--exits-text-muted, #5b6b62); text-decoration: underline;
+    }
+    .pos-manage-share__sheet-bar {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+        align-items: stretch;
+    }
+    .pos-manage-share__sheet-bar .pos-action-tile {
+        width: auto;
+        min-width: 0;
+        justify-content: center;
+        text-align: center;
+    }
+    .pos-manage-share__sheet-bar .pos-action-tile__label {
+        text-align: center;
+    }
     .pos-manage-share__header { margin-bottom: 0.55rem; }
     .pos-manage-share__title { margin: 0; font-size: 1.2rem; font-weight: 700; line-height: 1.2; color: var(--exits-text, #15201a); }
     .pos-manage-share__intro { margin: 0.3rem 0 0; font-size: 0.8125rem; line-height: 1.35; }
@@ -465,30 +510,6 @@
     .pos-manage-share__state--shared { color: var(--exits-primary, #1b7a3d); }
     .pos-manage-share__more { margin-top: 0.65rem; }
     .pos-manage-share__banner { margin: 0.55rem 0 0; font-size: 0.8125rem; color: var(--exits-text, #15201a); }
-    .pos-manage-share__sticky {
-        position: sticky; bottom: 0; z-index: 20; margin-top: 0.75rem;
-        padding: 0.65rem 0.75rem calc(0.65rem + env(safe-area-inset-bottom, 0px));
-        border-top: 1px solid var(--exits-border, #c9d4cd); background: var(--exits-surface, #fff);
-        box-shadow: 0 -6px 18px rgba(21, 32, 26, 0.08);
-    }
-    .pos-manage-share__sticky-meta { font-size: 0.875rem; font-weight: 700; margin-bottom: 0.15rem; }
-    .pos-manage-share__sticky-hint { margin: 0 0 0.45rem; font-size: 0.75rem; line-height: 1.3; }
-    .pos-manage-share__sticky-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; }
-    .pos-manage-share__action {
-        appearance: none; border: 1px solid var(--exits-border, #c9d4cd); background: #fff;
-        border-radius: 0.55rem; min-height: 2.75rem; padding: 0.5rem 0.85rem; font: inherit;
-        font-size: 0.8125rem; font-weight: 700; color: var(--exits-primary, #1b7a3d);
-        flex: 1 1 auto;
-    }
-    .pos-manage-share__action--primary {
-        color: #fff; background: var(--exits-primary, #1b7a3d); border-color: var(--exits-primary, #1b7a3d);
-    }
-    .pos-manage-share__action--danger { color: #8a1f1f; border-color: #e0b4b4; }
-    .pos-manage-share__clear {
-        appearance: none; border: 0; background: transparent; width: 100%; margin-top: 0.35rem;
-        min-height: 2.75rem; font: inherit; font-size: 0.8125rem; font-weight: 650;
-        color: var(--exits-text-muted, #5b6b62); text-decoration: underline;
-    }
     .pos-manage-share__sheet-header { width: 100%; }
     .pos-manage-share__sheet-count { margin: 0.2rem 0 0; font-size: 0.8125rem; font-weight: 700; color: var(--exits-text, #15201a); }
     .pos-manage-share__price-option {
