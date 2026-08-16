@@ -16,7 +16,8 @@ Companion detail: [connected-supplier-buyer-specific-sharing-and-pricing.md](con
 | Production Ready | **No** |
 
 **Starting SHA:** `62b73307c753388d0006acc8d580db52dc483434`  
-**Feature tip (docs hash record):** `cbd0005bf811c183f361444884dc328b40d0e393`
+**Feature tip (docs hash record):** `cbd0005bf811c183f361444884dc328b40d0e393`  
+**Roadmap registration tip:** `22c8b6d5`
 
 ## Implementation commits
 
