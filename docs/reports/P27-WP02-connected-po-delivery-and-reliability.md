@@ -75,14 +75,15 @@ Commit hashes:
 - `d39b096021c0e45d20f3d4718ffed62fa6a77701` — feat(suppliers): synchronize connected PO response and fulfillment APIs
 - `0a1ab1bb90d77de949df5300f35787697b60e480` — feat(maui): add mobile connected PO lifecycle UX
 - `b38be37c6e777105820887353db6d90b0188ccdd` — test(p27): cover connected PO lifecycle and receiving
-- 
+- `d273553f76d3e7fd0c737f1703fea2cf63ad2832` — docs(p27): document connected PO lifecycle and discrepancies
+
 ## Residuals
 
 - Physical-device and browser workflow validation remain outstanding.
-- Full solution Release build/test and PostgreSQL migration apply/rollback/re-apply evidence must be recorded before push/closeout.
+- Full solution Release build/test and PostgreSQL migration apply/rollback/re-apply evidence must be recorded before closeout.
 - Notification delivery is best-effort; no realtime push or broker was added.
 - Phase 27 remains open.
 
 ## Exact next
 
-**P27-WP03 — Supplier Response Synchronization.**
+**P27-WP06 — Connected Purchasing UX & Notifications.**

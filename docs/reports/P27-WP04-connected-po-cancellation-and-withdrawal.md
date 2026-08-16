@@ -71,7 +71,12 @@ Device Verified: **No**. Browser Verified: **No**. Production Ready: **No**.
 
 ## Implementation commits
 
-Commit hashes: **TBD — recorded after commit**.
+Commit hashes:
+- `eef33cb8fb4b4afa00a7bc185d20de1664d9f4b4` — feat(purchasing): add connected PO lifecycle and receiving discrepancy model
+- `d39b096021c0e45d20f3d4718ffed62fa6a77701` — feat(suppliers): synchronize connected PO response and fulfillment APIs
+- `0a1ab1bb90d77de949df5300f35787697b60e480` — feat(maui): add mobile connected PO lifecycle UX
+- `b38be37c6e777105820887353db6d90b0188ccdd` — test(p27): cover connected PO lifecycle and receiving
+- `d273553f76d3e7fd0c737f1703fea2cf63ad2832` — docs(p27): document connected PO lifecycle and discrepancies
 
 ## Residuals
 
@@ -82,4 +87,4 @@ Commit hashes: **TBD — recorded after commit**.
 
 ## Exact next
 
-**P27-WP05 — Fulfillment, Goods Receipt & Discrepancies.**
+**P27-WP06 — Connected Purchasing UX & Notifications.**
