@@ -20,7 +20,7 @@ Feature: polish/complete supplier-side Connected Buyers (MAUI + Org Web)
 ## Explicit exclusions
 
 - Add as customer (deferred)
-- Catalog exposure UI for suppliers (separate gap)
+- Catalog exposure UI for suppliers — **superseded:** MAUI product B2B section + post-accept share + Shared products pages delivered in [buyer-specific sharing](connected-supplier-buyer-specific-sharing-and-pricing.md); Org Web share UI remains a gap
 - Phase closeout; Browser/Device Verified remain **NO**
 
 ## Domain

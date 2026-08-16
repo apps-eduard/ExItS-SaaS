@@ -172,7 +172,7 @@ Phase 7 closed as one subsystem. Confirmed defects hardened: rebuild after credi
 
 ## Connected suppliers Phase 1
 
-LocalStore schema v8 adds a selective linked-supplier-product projection and per-relationship delta cursor. Only products explicitly linked by the buyer are cached; connected supplier catalog search remains online-only and never performs a full catalog download.
+LocalStore schema v8 adds a selective linked-supplier-product projection and per-relationship delta cursor. Only products explicitly linked by the buyer are cached; connected supplier catalog search remains online-only and never performs a full catalog download. Buyer catalog visibility additionally requires an Active `ConnectedBuyerProductShare` for the relationship (see [buyer-specific sharing](../reports/connected-supplier-buyer-specific-sharing-and-pricing.md)).
 
 LocalStore schema **v9** adds product usage flags, offline sell units (`local_catalog_product_unit`), and linked-product conversion metadata (`multiplier_to_base`, `package_label`). Offline cash sale drafts may include selling-unit conversion snapshots consistent with online checkout.
 

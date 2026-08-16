@@ -8,6 +8,8 @@ Phase 1 baseline: [connected-exits-suppliers-phase-1.md](connected-exits-supplie
 
 **Code Complete (MAUI UX follow-up).** Not Device Verified. Not Browser Verified. **Not Production Ready.**
 
+**Follow-up:** Buyer catalog visibility and empty-state meaning are refined by [buyer-specific sharing and pricing](connected-supplier-buyer-specific-sharing-and-pricing.md) (per-buyer shares; empty = not shared with your business).
+
 ## Implementation commits
 
 | SHA | Message |

@@ -1,0 +1,133 @@
+# Connected supplier buyer-specific sharing and pricing
+
+Date: 2026-08-16  
+Starting SHA: `62b73307c753388d0006acc8d580db52dc483434`  
+Related design: [connected-exits-suppliers.md](../engineering/connected-exits-suppliers.md)  
+Phase 1 baseline: [connected-exits-suppliers-phase-1.md](connected-exits-suppliers-phase-1.md)
+
+## Status
+
+**Code Complete (buyer-specific sharing + PO pricing).** Not Device Verified. Not Browser Verified. **Not Production Ready.**
+
+## Implementation commits
+
+| SHA | Message |
+|---|---|
+| _(feat tip)_ | `feat(suppliers): add buyer-specific product sharing and PO pricing` |
+| _(maui tip)_ | `feat(maui): add connected buyer product sharing workflow` |
+| _(test tip)_ | `test(suppliers): cover connected buyer sharing and pricing rules` |
+| _(docs tip)_ | `docs(suppliers): document buyer-specific sharing and pricing` |
+
+## Business model
+
+### Level 1 — product eligibility (supplier-wide)
+
+- `CatalogProduct.CanExposeToConnectedBuyers`
+- `CatalogProduct.DefaultConnectedPoPrice`
+- Synced to `SupplierProductExposure` (`IsExposed` + `SupplierOrderPrice` = Default PO Price)
+
+**EXPOSABLE ≠ SHARED.** Eligibility alone does not make a product visible to any buyer.
+
+### Default PO Price initialization
+
+When availability is first enabled and `DefaultConnectedPoPrice` is null, it is initialized from current retail `SellingPrice`. After that, Default PO Price is independent — later retail price changes do not rewrite it. Runtime order pricing never falls back to `SellingPrice`.
+
+### Level 2 — per-buyer sharing
+
+New entity `ConnectedBuyerProductShare`:
+
+- Unique `(RelationshipId, SupplierProductId)`
+- `IsShared`
+- `BuyerSpecificPoPrice` (nullable)
+
+### Effective PO price
+
+1. Buyer-specific PO price, if set  
+2. Else Default PO Price (`SupplierProductExposure.SupplierOrderPrice`)  
+3. Never retail `SellingPrice`
+
+### Connection acceptance
+
+Accept only activates the relationship. MAUI opens a share prompt with **all currently exposable products selected by default**. Sharing persists only after Confirm. **Not now** leaves Active with zero new assignments.
+
+Future products made exposable later are **not** auto-shared to existing buyers.
+
+## Schema / migration
+
+Migration: `20260816070746_AddConnectedBuyerProductSharingAndPricing`
+
+| Change | Detail |
+|---|---|
+| `pos.products` | `can_expose_to_connected_buyers` (bool, default false), `default_connected_po_price` (nullable) |
+| `pos.connected_buyer_product_shares` | new table + unique relationship/product |
+
+### Backward compatibility
+
+1. Existing `IsExposed` exposures → product flags + Default PO Price backfilled from `supplier_order_price`.
+2. Every **Active** relationship receives explicit `IsShared=true` shares for currently exposed products (preserve historical visibility).
+3. Future Active relationships do **not** inherit shares automatically.
+
+Disabling product exposability deactivates the supplier-wide exposure; buyer browse/revalidate fail closed (Unavailable) even if a share row remains.
+
+## API changes
+
+| Route | Role |
+|---|---|
+| `POST /connected-suppliers/exposures` | Level 1 supplier-wide expose/update |
+| Legacy `POST /relationships/{id}/exposures` | Guidance error (no longer creates ambiguous relationship-scoped exposure) |
+| `GET /relationships/{id}/buyer-product-shares` | Eligible exposures + share state |
+| `GET /relationships/{id}/eligible-products` | Same for post-accept UI |
+| `PUT /relationships/{id}/buyer-product-shares` | Batch share/unshare + buyer prices |
+| `POST /relationships/{id}/buyer-product-shares/confirm` | Confirm selected products after Accept |
+| `GET /relationships/{id}/catalog` | **Only shared** products; `SupplierOrderPrice` = effective price |
+
+## MAUI
+
+- Catalog create/edit/detail: Available to connected buyers + Default PO Price
+- Accept → `/suppliers/connected/buyers/{id}/share-products` (default all selected; Confirm / Not now)
+- Manage: `/suppliers/connected/buyers/{id}/shared-products`
+- Browse empty copy: supplier hasn’t shared with your business yet
+
+## Organization Web
+
+Backend rules apply. Org Web Connected buyers UI does **not** yet include share/price management (gap). Suppliers must use MAUI for sharing UX.
+
+## Offline / PO
+
+- Selective linked-product offline cache unchanged (no full catalog download).
+- Revalidate uses effective price; unshare / non-exposable → Unavailable.
+- Connected PO submit validates links + shares + effective prices **before** Ordering; CPO lines snapshot effective price in the same submit path (no silent Ordered-without-CPO).
+- External supplier PO flow unchanged.
+- Inventory never mutates on expose/share/price/Accept/Decline — only Goods Receipt.
+
+## Security / IDOR
+
+Relationship ownership + org direction validated on share/catalog/link/revalidate/submit paths. Buyer A cannot read Buyer B assignments by guessing IDs.
+
+## Tests (this validation pass)
+
+| Suite | Result |
+|---|---|
+| Unit (`ConnectedSupplier` + `CatalogDomain`) | **53 passed**, 0 failed |
+| MAUI guards (ConnectedBuyer / Catalog / Browse) | **15 passed**, 0 failed |
+| Integration migration test | present (`AddConnectedBuyerProductSharingAndPricingMigrationTests`) |
+
+Device Verified: **No**. Browser Verified: **No**. Production Ready: **No**.
+
+## Explicit Q&A
+
+| Question | Answer |
+|---|---|
+| Does accepting a connection automatically share products? | **No.** Prompt defaults selection; confirmation required. |
+| What is selected by default after Accept? | All products already marked available to connected buyers. |
+| Can supplier deselect before confirming? | **Yes.** |
+| Different prices for Buyer A vs B? | **Yes** (buyer-specific override). |
+| No override price? | Default PO Price. |
+| Does SellingPrice stay synced to PO price? | **No.** |
+| Is SellingPrice a runtime fallback? | **No.** |
+| Future newly-exposable products auto-shared? | **No.** |
+| Inventory from exposure/share/pricing/Accept? | **No.** Goods Receipt only. |
+
+## Exact next
+
+Owner device validation of Accept → share prompt → Browse visibility + buyer-specific prices. Optional Org Web share UI when authorized.

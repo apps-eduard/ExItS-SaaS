@@ -112,12 +112,23 @@ Schema **v9** adds `multiplier_to_base` / `package_label` on linked products so 
 
 | Screen | Behavior |
 |---|---|
-| **Browse products** | Online only. Auto-loads first page of **supplier-shared exposures** when online (search optional). Empty = supplier has not shared products yet (not a search bug). Stacked full-width search field + Search. Link and use maps a shared item to a buyer catalog product. Offline → warning + link to Linked products. |
-| **Linked products** | Device cache of **explicitly linked** items only. Stacked search + Update linked products (online sync). Empty state + Browse CTA when nothing linked. Offline still shows local links with an offline banner. Never downloads the full supplier catalog. |
+| **Browse products** | Online only. Returns products that are **globally exposable**, **explicitly shared to this relationship**, orderable, and have a valid effective PO price. Empty = this supplier has not shared products with your business yet. Search optional. Link and use maps a shared item to a buyer catalog product. |
+| **Linked products** | Device cache of **explicitly linked** items only. Never downloads the full supplier catalog. |
+| **Product create/edit** | Available to connected buyers + Default PO Price (initialized from SellingPrice only on first enable; then independent). |
+| **Accept connection** | Activates relationship only, then opens share prompt with all exposable products selected by default. Confirm persists shares; Not now shares nothing. |
+| **Connected buyer → Shared products** | Per-buyer share toggles + optional buyer-specific PO prices. |
 
-`relationshipId` may be omitted on entry; both screens resolve `ConnectedRelationshipId` from the supplier master when online. EN + fil-PH strings cover empty/no-match/offline/sync-failed copy. UI guard tests: `ConnectedSupplierCatalogUiGuardTests`, `LinkedSupplierProductsUiGuardTests`.
+`relationshipId` may be omitted on buyer entry; screens resolve `ConnectedRelationshipId` from the supplier master when online.
 
-See [browse/linked UX report](../reports/connected-supplier-browse-linked-products-ux.md).
+See [buyer-specific sharing report](../reports/connected-supplier-buyer-specific-sharing-and-pricing.md).
+
+### Effective PO price
+
+Buyer-specific PO price → Default PO Price (`SupplierProductExposure.SupplierOrderPrice`). Retail `SellingPrice` is never a runtime fallback.
+
+### Connected PO submission
+
+For connected suppliers, submit validates every line (Active relationship + active link + shared + effective price) before Ordering and creates `ConnectedPurchaseOrder` with effective price snapshots in the same path. External suppliers unchanged. Inventory still changes only on Goods Receipt.
 
 ## Organization Web routes
 
@@ -172,4 +183,4 @@ POS publishes via `POST /api/v1/organizations/{sourceOrgId}/business-notificatio
 Retention: notifications are not hard-deleted on read; no separate retention enforcement beyond existing Platform storage.
 
 ## Deferred
-Marketplace discovery, inter-org payments, AP/invoices, live stock sharing, logistics, images in sync, Redis, brokers, auto-accept, auto-receive, full offline supplier catalog, connection-request cancellation while Pending (Disconnect remains Active-only), SignalR/realtime bell push.
+Marketplace discovery, inter-org payments, AP/invoices, live stock sharing, logistics, images in sync, Redis, brokers, auto-accept, auto-receive, full offline supplier catalog, connection-request cancellation while Pending (Disconnect remains Active-only), SignalR/realtime bell push, Organization Web per-buyer product sharing UI (MAUI is source of truth for share/price management).
