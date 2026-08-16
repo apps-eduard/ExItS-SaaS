@@ -122,7 +122,7 @@ public sealed class PosPaymentAttemptApiTests(PosPostgreSqlFixture fixture)
     }
 
     [Fact]
-    public async Task Webhook_is_idempotent_and_ignores_out_of_order_paid_after_failed()
+    public async Task Webhook_is_idempotent_and_authoritative_paid_overrides_failed()
     {
         await using var factory = new PosApiFactory(fixture.ConnectionString);
         var client = factory.CreateClient();
@@ -150,10 +150,11 @@ public sealed class PosPaymentAttemptApiTests(PosPostgreSqlFixture fixture)
         await PostWebhookAsync(client, bodyFail, FakePaymentGateway.ComputeSignature(bodyFail));
         Assert.Equal("Failed", (await GetAttemptAsync(client, org, attempt2.Id)).Status);
 
+        // Authoritative newer Paid overrides Failed (provider wins).
         var bodyLatePaid = FakePaymentGateway.BuildWebhookBody(attempt2.ProviderReference!, "Paid", 200);
         await PostWebhookAsync(client, bodyLatePaid, FakePaymentGateway.ComputeSignature(bodyLatePaid));
-        Assert.Equal("Failed", (await GetAttemptAsync(client, org, attempt2.Id)).Status);
-        Assert.Equal(PosSaleOptions.AwaitingPaymentStatus, (await GetSaleAsync(client, org, sale2.SaleId)).Status);
+        Assert.Equal("Paid", (await GetAttemptAsync(client, org, attempt2.Id)).Status);
+        Assert.Equal(PosSaleOptions.CompletedStatus, (await GetSaleAsync(client, org, sale2.SaleId)).Status);
     }
 
     [Fact]
