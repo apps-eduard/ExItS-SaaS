@@ -1,8 +1,7 @@
-# ExITS SaaS Documentation Package Manifest
+# ExItS SaaS Documentation Package Manifest
 
-Markdown documentation files plus root Platform foundation through Phase 10 Full POS (**P10-WP08 closeout complete**; Phase 10 complete with documented risks; Phase 9 MVP Hardening complete with documented risks).
-Internal links checked: spot-check P10-WP08
-Broken links: none found in spot-check of new paths
+Markdown documentation files and tracked foundation inventory for the ExItS portfolio.
+Broken links: none found in spot-check of presentation paths
 
 ## Root foundation (tracked)
 
@@ -11,6 +10,8 @@ Broken links: none found in spot-check of new paths
 .cursor/rules/exits-product-context.mdc
 .dockerignore
 README.md
+CONTRIBUTING.md
+SECURITY.md
 Start-LocalValidation.md
 Reset-LocalValidation.md
 Reset-Products-And-Business-Templates.md

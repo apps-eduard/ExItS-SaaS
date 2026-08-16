@@ -1,69 +1,142 @@
-# ExITS SaaS
+# ExItS SaaS
 
-ExITS SaaS is a multi-product SaaS ecosystem.
+Multi-product SaaS platform for shared identity, subscriptions, and entitlements, with PinoyBusinessPOS as the first retail product.
 
-Active portfolio:
+## Overview
 
-- **ExITS Platform** — shared identity, organization, subscription, entitlement, administration, and audit capabilities.
-- **PinoyBusinessPOS** — offline-capable SaaS for Sari-Sari Stores and Mini Groceries.
+ExItS is an independent multi-product portfolio. Shared commercial and identity capabilities live on the **Platform**. Product-specific operations and data stay inside each product.
 
-The shared **ExITS Platform** manages global identity, organizations, product subscriptions, plans, trials, payments, product entitlements, platform administrators, and platform-wide audit/support operations.
+| Surface | Responsibility |
+|---|---|
+| **ExItS Platform** | Identity, organizations, plans, subscriptions, entitlements, Platform Admin, audit |
+| **PinoyBusinessPOS** | Retail POS operations (catalog, sales, inventory, credit/utang, offline, mobile/web) |
+| **Personal Web** | Personal account experience (utang, business upgrade, linked-customer views) |
 
-Product-specific workflows and data remain inside each product.
+Platform and product databases are separate authorities. There are no cross-database foreign keys or joins. Authorization and entitlements are explicit; product operational data never becomes Platform data.
 
-## Start here
+## Current Status
 
-- [Documentation home](docs/index.md)
-- [Portfolio progress dashboard](docs/portfolio-progress.md)
-- [Approved architecture summary](docs/engineering/approved-architecture-summary.md)
-- [Root Platform solution](ExItS.slnx) (`dotnet restore/build/test ExItS.slnx`)
-- [All phases](docs/phases/README.md)
+| Area | Status |
+|---|---|
+| Development | Active |
+| Current delivery focus | [Phase 29](docs/phases/phase-29-data-integrity-query-performance-and-database-hardening.md) — Open / Partial Closeout |
+| Local Validation (host apps) | Available |
+| Full Docker Local Validation | Available |
+| Development PostgreSQL backup/restore | Proven |
+| Production payment provider | Not enabled |
+| Production Backup/Restore Proven | No |
+| Production Ready | No |
 
-### Local Validation operator commands (cheat sheets)
+Detailed status: [docs/portfolio-progress.md](docs/portfolio-progress.md)
 
-Copy-paste PowerShell for day-to-day Local Validation (not Production):
+## Architecture at a Glance
 
-- [Start / stop apps (PublicHost)](Start-LocalValidation.md)
-- [Reset → 2 Platform users only](Reset-LocalValidation.md)
-- [Reset products + business templates](Reset-Products-And-Business-Templates.md) (same volume wipe)
-- [MAUI emulator build + install](Maui-Emulator-Install.md)
-- [MAUI physical device + Tailscale](Maui-PhysicalDevice-Install.md)
-- Deeper workflow: [deploy/docker/README.local-validation-workflow.md](deploy/docker/README.local-validation-workflow.md)
+- **Boundaries:** Platform owns commercial/identity contracts; each product owns its operational domain and database.
+- **Data:** Separate Platform and POS PostgreSQL authorities; tenant isolation enforced in application services.
+- **Layering:** Domain → Application → Infrastructure → API/UI (no Infrastructure references from UI).
+- **Clients:** Platform Admin (Ant Design Blazor), Organization Web, Personal Web, POS API, Android-first .NET MAUI.
 
-## Repository layout (current)
+Details: [Approved architecture](docs/engineering/approved-architecture-summary.md) · [Architecture](docs/engineering/architecture.md) · [Repository boundaries](docs/engineering/repository-boundaries.md)
+
+## Technology
+
+Verified from repository configuration:
+
+| Area | Stack |
+|---|---|
+| Runtime | .NET SDK **10.0.302** (`global.json`) |
+| Backend | ASP.NET Core, Entity Framework Core, Npgsql / PostgreSQL |
+| Web UI | Blazor; Platform Admin uses **Ant Design** Blazor |
+| Mobile | .NET MAUI (Android-first) |
+| Containers | Docker / Docker Compose |
+| Tests | xUnit, Testcontainers (PostgreSQL) |
+
+Solution entry point: [`ExItS.slnx`](ExItS.slnx)
+
+## Repository Structure
 
 ```text
 ExItS-SaaS/
-├── ExItS.slnx                  # root Platform + POS foundation solution
-├── global.json                 # SDK 10.0.302
-├── src/Platform/               # Domain, Application, Infrastructure, Api, Admin
-├── src/Shared/                 # DesignSystem, BackupRestore, Deployment
-├── src/Products/PinoyBusinessPOS/  # Domain, Application, Infrastructure, Api, ApiClient, Maui (Android-first)
-├── tests/                      # Unit + architecture + Admin + DesignSystem + POS + Backup + Deployment tests
-├── ops/                        # backup + deploy operator scripts
-├── deploy/docker/              # NON-PRODUCTION pilot compose + Dockerfiles
-├── docs/                       # portfolio architecture and tracking
-└── README.md
+├── ExItS.slnx
+├── src/
+│   ├── Platform/          # Platform domain, API, Admin, Personal Web
+│   ├── Products/          # PinoyBusinessPOS (API, Web, MAUI, …)
+│   └── Shared/            # DesignSystem, BackupRestore, Deployment helpers
+├── tests/
+├── tools/                 # Local Validation launchers
+├── deploy/docker/         # Compose, Dockerfiles, Local Validation docs
+├── ops/                   # Backup and deploy operator scripts
+└── docs/                  # Architecture, phases, reports, runbooks
 ```
 
-`ExItS.slnx` lists only active portfolio projects. Keep product ownership boundaries explicit and require an approved work package for any new portfolio product.
+## Local Development
 
-**Phase 6** is **complete** with documented risks ([P6-WP06 closeout](docs/reports/P6-WP06-utang-mvp-closeout.md)). Utang MVP (customers, credit, repayments/ledger, due dates/overdue, statements/receipts, trial/continuity rules) is closed.
-
-**Phase 7** is **complete** with documented risks ([P7-WP05 closeout](docs/reports/P7-WP05-offline-closeout.md)). Offline subsystem (DeviceId/SQLite isolation, encrypted queue + idempotency, customer/credit/payment sync, recovery/UX closeout) is closed.
-
-**Phase 8** is **complete** with documented risks ([P8-WP07 closeout](docs/reports/P8-WP07-basic-store-closeout.md)). Online-only Basic Store MVP is closed.
-
-**Phase 9** is **complete with documented risks** ([P9-WP01](docs/reports/P9-WP01-security-and-privacy-hardening.md)–[P9-WP06](docs/reports/P9-WP06-commercial-mvp-closeout.md)). **Phase 10 — Full POS** is **complete with documented risks** ([P10-WP08 closeout](docs/reports/P10-WP08-phase-10-closeout.md)). **Phase 11 — Web UI and Reporting Design System** is **complete with documented risks** ([P11-WP08 closeout](docs/reports/P11-WP08-phase-11-closeout.md)). **Phase 12** is **in progress** — [P12-WP01](docs/reports/P12-WP01-platform-product-contract-audit.md)–[P12-WP06](docs/reports/P12-WP06-reference-product-dry-run.md) complete. Exact next: **P12-WP07 — Foundation Hardening and Closeout** (do not begin until authorized). **Not production-ready.**
-
-Permanent Cursor rules live at `.cursor/rules/exits-workflow.mdc`.
-
-### Platform database (local)
+**Preferred daily workflow** — Docker for PostgreSQL + Mailpit; application hosts under `dotnet watch`:
 
 ```powershell
-docker run -d --name exits-platform-pg-test -e POSTGRES_PASSWORD=exits_platform_dev_only -e POSTGRES_DB=ExItS_Platform -p 5434:5432 postgres:18
-dotnet ef database update --project src/Platform/ExItS.Platform.Infrastructure --startup-project src/Platform/ExItS.Platform.Api
-dotnet run --project src/Platform/ExItS.Platform.Api --urls http://127.0.0.1:5288
+.\tools\Start-LocalValidation.ps1 -PublicHost 100.120.79.81
 ```
 
-Connection string key: `ConnectionStrings:PlatformDatabase` (see `appsettings.Development.json`). Do **not** auto-migrate at API startup.
+Replace the host with your Tailscale or LAN address as needed. Omit `-PublicHost` for localhost-only.
+
+Operator cheat sheets (Local Validation only, not Production):
+
+- [Start / stop](Start-LocalValidation.md)
+- [Reset users](Reset-LocalValidation.md)
+- [Reset products / templates](Reset-Products-And-Business-Templates.md)
+- [Workflow details](deploy/docker/README.local-validation-workflow.md)
+
+## Full Docker Validation
+
+Deployment-like validation with application containers (slower than host `dotnet watch`). Database volumes are preserved.
+
+```powershell
+# Reuse existing images
+.\tools\Start-DockerLocalValidation.ps1 -PublicHost 100.120.79.81
+
+# Rebuild application images
+.\tools\Start-DockerLocalValidation.ps1 -PublicHost 100.120.79.81 -Build
+
+# Rebuild without cache, then start
+.\tools\Start-DockerLocalValidation.ps1 -PublicHost 100.120.79.81 -CleanBuild
+```
+
+Stop apps (keep infrastructure):
+
+```powershell
+.\tools\Stop-DockerLocalValidation.ps1
+```
+
+Do **not** use `docker compose down -v` for normal operation — that destroys database volumes.
+
+## Build and Test
+
+From the repository root:
+
+```powershell
+dotnet restore ExItS.slnx
+dotnet build ExItS.slnx -c Release
+dotnet test ExItS.slnx -c Release
+```
+
+## Documentation
+
+| Topic | Link |
+|---|---|
+| Documentation home | [docs/index.md](docs/index.md) |
+| Portfolio progress | [docs/portfolio-progress.md](docs/portfolio-progress.md) |
+| Phase roadmap | [docs/phases/README.md](docs/phases/README.md) |
+| Work-package reports | [docs/reports/README.md](docs/reports/README.md) |
+| Architecture | [docs/engineering/architecture.md](docs/engineering/architecture.md) |
+| Security | [docs/engineering/security.md](docs/engineering/security.md) |
+| Testing strategy | [docs/engineering/testing-strategy.md](docs/engineering/testing-strategy.md) |
+| Local Validation | [deploy/docker/README.local-validation-workflow.md](deploy/docker/README.local-validation-workflow.md) |
+| Production readiness | [docs/engineering/production-readiness-audit.md](docs/engineering/production-readiness-audit.md) |
+| Contributing | [CONTRIBUTING.md](CONTRIBUTING.md) |
+| Security policy | [SECURITY.md](SECURITY.md) |
+
+## Production Readiness
+
+ExItS is **not** claimed as Production-ready. Production payment providers are not enabled, and Production backup/restore is not proven.
+
+Authoritative assessment: [Production readiness audit](docs/engineering/production-readiness-audit.md)

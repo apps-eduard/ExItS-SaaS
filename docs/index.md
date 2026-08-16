@@ -1,4 +1,4 @@
-# ExITS SaaS Documentation
+# ExItS SaaS Documentation
 
 [Portfolio Dashboard](portfolio-progress.md) | [All Phases](phases/README.md) | [Cursor Workflow](cursor/README.md)
 
