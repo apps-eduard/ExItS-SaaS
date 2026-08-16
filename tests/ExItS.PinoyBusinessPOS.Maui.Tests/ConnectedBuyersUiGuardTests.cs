@@ -74,22 +74,21 @@ public sealed class ConnectedBuyersUiGuardTests
         var suppliers = Path.Combine(MauiProject(), "Components", "Pages", "Suppliers");
         var prompt = File.ReadAllText(Path.Combine(suppliers, "ConnectedBuyerSharePrompt.razor"));
         Assert.Contains("@page \"/suppliers/connected/buyers/{RelationshipId:guid}/share-products\"", prompt, StringComparison.Ordinal);
-        Assert.Contains("ListEligibleProductsForSharingAsync", prompt, StringComparison.Ordinal);
-        Assert.Contains("ConfirmBuyerProductSharingAsync", prompt, StringComparison.Ordinal);
-        Assert.Contains("GoBuyer", prompt, StringComparison.Ordinal);
+        Assert.Contains("BulkMutateBuyerProductSharesAsync", prompt, StringComparison.Ordinal);
+        Assert.Contains("ConnectedBuyers_NotNow", prompt, StringComparison.Ordinal);
+        Assert.Contains("NotNow", prompt, StringComparison.Ordinal);
 
         var manage = File.ReadAllText(Path.Combine(suppliers, "ConnectedBuyerSharedProducts.razor"));
         Assert.Contains("@page \"/suppliers/connected/buyers/{RelationshipId:guid}/shared-products\"", manage, StringComparison.Ordinal);
-        Assert.Contains("ListBuyerProductSharesAsync", manage, StringComparison.Ordinal);
-        Assert.Contains("SetBuyerProductSharesAsync", manage, StringComparison.Ordinal);
+        Assert.Contains("QueryBuyerProductSharesAsync", manage, StringComparison.Ordinal);
+        Assert.Contains("BulkMutateBuyerProductSharesAsync", manage, StringComparison.Ordinal);
         Assert.Contains("ConnectedBuyers_FilterNotShared", manage, StringComparison.Ordinal);
-        Assert.Contains("ConnectedBuyers_FilterCategory", manage, StringComparison.Ordinal);
-        Assert.Contains("ConnectedBuyers_FilterAllCategories", manage, StringComparison.Ordinal);
-        Assert.Contains("pos-share-products__row", manage, StringComparison.Ordinal);
+        Assert.Contains("ConnectedBuyers_FilterCustomPrice", manage, StringComparison.Ordinal);
+        Assert.Contains("pos-manage-share__row", manage, StringComparison.Ordinal);
         Assert.Contains("BuyerSpecificPoPrice", manage, StringComparison.Ordinal);
 
-        Assert.Contains("ConnectedBuyers_FilterCategory", prompt, StringComparison.Ordinal);
-        Assert.Contains("pos-share-prompt__row", prompt, StringComparison.Ordinal);
+        Assert.Contains("ConnectedBuyers_ReviewProducts", prompt, StringComparison.Ordinal);
+        Assert.Contains("pos-share-accept", prompt, StringComparison.Ordinal);
     }
 
     [Fact]
