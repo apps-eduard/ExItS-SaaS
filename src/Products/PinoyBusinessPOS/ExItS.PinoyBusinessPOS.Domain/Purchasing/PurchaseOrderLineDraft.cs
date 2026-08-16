@@ -1,5 +1,6 @@
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
+using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
 
 namespace ExItS.PinoyBusinessPOS.Domain.Purchasing;
@@ -27,8 +28,13 @@ public sealed record PurchaseOrderLineSnapshotInput(
     string? PurchaseUnitNameSnapshot = null,
     decimal MultiplierToBaseSnapshot = 1m);
 
-/// <summary>Receive quantity for one PO line during goods receipt.</summary>
+/// <summary>Receive quantities for one PO line during goods receipt. Only GoodQty enters usable inventory.</summary>
 public sealed record PurchaseOrderReceiveLineDraft(
     CatalogProductId ProductId,
     decimal ReceiveQty,
-    SellingMode SellingMode = SellingMode.PerItem);
+    SellingMode SellingMode = SellingMode.PerItem,
+    decimal DamagedQty = 0m,
+    decimal RejectedQty = 0m,
+    decimal ShortClosedQty = 0m,
+    ConnectedPoReceivingDiscrepancyKind DiscrepancyKind = ConnectedPoReceivingDiscrepancyKind.None,
+    string? DiscrepancyNote = null);

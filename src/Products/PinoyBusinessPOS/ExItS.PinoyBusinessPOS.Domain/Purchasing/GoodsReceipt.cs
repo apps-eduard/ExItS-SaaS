@@ -104,8 +104,7 @@ public sealed class GoodsReceipt
                 organizationId,
                 lineNumber++,
                 poLine,
-                receive.ReceiveQty,
-                sellingMode: receive.SellingMode));
+                receive));
         }
 
         return new GoodsReceipt(

@@ -1,4 +1,5 @@
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
+using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Purchasing;
 using ExItS.PinoyBusinessPOS.Domain.Suppliers;
@@ -28,7 +29,8 @@ internal static class PurchaseEntityMapper
                 l.LineNotes,
                 l.PurchaseUnitId is null ? null : ProductUnitId.From(l.PurchaseUnitId.Value),
                 l.PurchaseUnitNameSnapshot,
-                l.MultiplierToBaseSnapshot))
+                l.MultiplierToBaseSnapshot,
+                l.ClosedShortQty))
             .ToList();
 
         return PurchaseOrder.Rehydrate(
@@ -94,6 +96,7 @@ internal static class PurchaseEntityMapper
             UnitPurchaseCost = line.UnitPurchaseCost,
             LineTotal = line.LineTotal,
             ReceivedQty = line.ReceivedQty,
+            ClosedShortQty = line.ClosedShortQty,
             LineNotes = line.LineNotes,
             PurchaseUnitId = line.PurchaseUnitId?.Value,
             PurchaseUnitNameSnapshot = line.PurchaseUnitNameSnapshot,
@@ -119,7 +122,14 @@ internal static class PurchaseEntityMapper
                 l.UnitPurchaseCostSnapshot,
                 l.LineTotalSnapshot,
                 l.InventoryMovementId,
-                l.MultiplierToBaseSnapshot))
+                l.MultiplierToBaseSnapshot,
+                l.DamagedQty,
+                l.RejectedQty,
+                l.ShortClosedQty,
+                Enum.TryParse<ConnectedPoReceivingDiscrepancyKind>(l.DiscrepancyKind, true, out var kind)
+                    ? kind
+                    : ConnectedPoReceivingDiscrepancyKind.None,
+                l.DiscrepancyNote))
             .ToList();
 
         return GoodsReceipt.Rehydrate(
@@ -163,6 +173,11 @@ internal static class PurchaseEntityMapper
             NameSnapshot = line.NameSnapshot,
             UomSnapshot = UnitOfMeasures.ToCode(line.UomSnapshot),
             ReceivedQty = line.QuantityReceived,
+            DamagedQty = line.DamagedQty,
+            RejectedQty = line.RejectedQty,
+            ShortClosedQty = line.ShortClosedQty,
+            DiscrepancyKind = line.DiscrepancyKind.ToString(),
+            DiscrepancyNote = line.DiscrepancyNote,
             UnitPurchaseCostSnapshot = line.UnitPurchaseCostSnapshot,
             LineTotalSnapshot = line.LineTotalSnapshot,
             InventoryMovementId = line.InventoryMovementId,

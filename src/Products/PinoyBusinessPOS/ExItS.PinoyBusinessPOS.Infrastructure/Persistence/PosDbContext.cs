@@ -2055,6 +2055,7 @@ public sealed class PosDbContext : DbContext
                 tb.HasCheckConstraint("ck_purchase_order_lines_ordered_qty_positive", "ordered_qty > 0");
                 tb.HasCheckConstraint("ck_purchase_order_lines_unit_cost_nonnegative", "unit_purchase_cost >= 0");
                 tb.HasCheckConstraint("ck_purchase_order_lines_received_qty_nonnegative", "received_qty >= 0");
+                tb.HasCheckConstraint("ck_purchase_order_lines_closed_short_qty_nonnegative", "closed_short_qty >= 0");
             });
 
             entity.HasKey(e => e.Id);
@@ -2071,6 +2072,11 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.UnitPurchaseCost).HasColumnName("unit_purchase_cost").HasPrecision(18, 2).IsRequired();
             entity.Property(e => e.LineTotal).HasColumnName("line_total").HasPrecision(18, 2).IsRequired();
             entity.Property(e => e.ReceivedQty).HasColumnName("received_qty").HasPrecision(18, 3).IsRequired();
+            entity.Property(e => e.ClosedShortQty)
+                .HasColumnName("closed_short_qty")
+                .HasPrecision(18, 3)
+                .IsRequired()
+                .HasDefaultValue(0m);
             entity.Property(e => e.LineNotes).HasColumnName("line_notes").HasMaxLength(PurchaseOrderLine.LineNotesMaxLength);
             entity.Property(e => e.PurchaseUnitId).HasColumnName("purchase_unit_id");
             entity.Property(e => e.PurchaseUnitNameSnapshot)
@@ -2157,7 +2163,13 @@ public sealed class PosDbContext : DbContext
         {
             entity.ToTable("goods_receipt_lines", tb =>
             {
-                tb.HasCheckConstraint("ck_goods_receipt_lines_received_qty_positive", "received_qty > 0");
+                tb.HasCheckConstraint("ck_goods_receipt_lines_received_qty_nonnegative", "received_qty >= 0");
+                tb.HasCheckConstraint("ck_goods_receipt_lines_damaged_qty_nonnegative", "damaged_qty >= 0");
+                tb.HasCheckConstraint("ck_goods_receipt_lines_rejected_qty_nonnegative", "rejected_qty >= 0");
+                tb.HasCheckConstraint("ck_goods_receipt_lines_short_closed_qty_nonnegative", "short_closed_qty >= 0");
+                tb.HasCheckConstraint(
+                    "ck_goods_receipt_lines_activity_positive",
+                    "(received_qty + damaged_qty + rejected_qty + short_closed_qty) > 0");
                 tb.HasCheckConstraint("ck_goods_receipt_lines_unit_cost_non_negative", "unit_purchase_cost_snapshot >= 0");
                 tb.HasCheckConstraint("ck_goods_receipt_lines_line_total_non_negative", "line_total_snapshot >= 0");
             });
@@ -2172,6 +2184,11 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.NameSnapshot).HasColumnName("name_snapshot").HasMaxLength(PurchaseOrderLine.NameSnapshotMaxLength).IsRequired();
             entity.Property(e => e.UomSnapshot).HasColumnName("uom_snapshot").HasMaxLength(UnitOfMeasures.CodeMaxLength).IsRequired();
             entity.Property(e => e.ReceivedQty).HasColumnName("received_qty").HasPrecision(18, 3).IsRequired();
+            entity.Property(e => e.DamagedQty).HasColumnName("damaged_qty").HasPrecision(18, 3).IsRequired().HasDefaultValue(0m);
+            entity.Property(e => e.RejectedQty).HasColumnName("rejected_qty").HasPrecision(18, 3).IsRequired().HasDefaultValue(0m);
+            entity.Property(e => e.ShortClosedQty).HasColumnName("short_closed_qty").HasPrecision(18, 3).IsRequired().HasDefaultValue(0m);
+            entity.Property(e => e.DiscrepancyKind).HasColumnName("discrepancy_kind").HasMaxLength(32).IsRequired().HasDefaultValue("None");
+            entity.Property(e => e.DiscrepancyNote).HasColumnName("discrepancy_note").HasMaxLength(280);
             entity.Property(e => e.UnitPurchaseCostSnapshot).HasColumnName("unit_purchase_cost_snapshot").HasPrecision(18, 2).IsRequired();
             entity.Property(e => e.LineTotalSnapshot).HasColumnName("line_total_snapshot").HasPrecision(18, 2).IsRequired();
             entity.Property(e => e.InventoryMovementId).HasColumnName("inventory_movement_id");
@@ -2699,7 +2716,7 @@ public sealed class PosDbContext : DbContext
         });
         modelBuilder.Entity<ConnectedPurchaseOrderRecord>(entity =>
         {
-            entity.ToTable("connected_purchase_orders",tb=>tb.HasCheckConstraint("ck_connected_purchase_orders_status","status BETWEEN 0 AND 2"));
+            entity.ToTable("connected_purchase_orders",tb=>tb.HasCheckConstraint("ck_connected_purchase_orders_status","status BETWEEN 0 AND 5"));
             entity.HasKey(x=>x.Id);entity.Property(x=>x.Id).HasColumnName("id");entity.Property(x=>x.RelationshipId).HasColumnName("relationship_id");
             entity.Property(x=>x.BuyerOrganizationId).HasColumnName("buyer_organization_id");entity.Property(x=>x.SupplierOrganizationId).HasColumnName("supplier_organization_id");
             entity.Property(x=>x.BuyerPurchaseOrderId).HasColumnName("buyer_purchase_order_id");entity.Property(x=>x.BuyerPoNumber).HasColumnName("buyer_po_number").HasMaxLength(64);
@@ -2707,6 +2724,10 @@ public sealed class PosDbContext : DbContext
             entity.Property(x=>x.Status).HasColumnName("status");entity.Property(x=>x.TotalAmount).HasColumnName("total_amount").HasPrecision(18,2);
             entity.Property(x=>x.CreatedAtUtc).HasColumnName("created_at_utc");entity.Property(x=>x.UpdatedAtUtc).HasColumnName("updated_at_utc");
             entity.Property(x=>x.AcceptedAtUtc).HasColumnName("accepted_at_utc");entity.Property(x=>x.DeclinedAtUtc).HasColumnName("declined_at_utc");
+            entity.Property(x=>x.PreparingAtUtc).HasColumnName("preparing_at_utc");entity.Property(x=>x.FulfilledAtUtc).HasColumnName("fulfilled_at_utc");
+            entity.Property(x=>x.WithdrawnAtUtc).HasColumnName("withdrawn_at_utc");
+            entity.Property(x=>x.DeclineReason).HasColumnName("decline_reason");
+            entity.Property(x=>x.DeclineNote).HasColumnName("decline_note").HasMaxLength(280);
             entity.Property(x=>x.Xmin).HasColumnName("xmin").HasColumnType("xid").ValueGeneratedOnAddOrUpdate().IsConcurrencyToken();
             entity.HasIndex(x=>x.BuyerPurchaseOrderId).IsUnique().HasDatabaseName("ux_connected_purchase_orders_buyer_po");
             entity.HasIndex(x=>new{x.SupplierOrganizationId,x.Status}).HasDatabaseName("ix_connected_purchase_orders_supplier_status");

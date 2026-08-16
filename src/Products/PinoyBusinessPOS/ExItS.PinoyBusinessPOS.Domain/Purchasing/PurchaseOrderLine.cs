@@ -29,12 +29,15 @@ public sealed class PurchaseOrderLine
     public decimal UnitPurchaseCost { get; private set; }
     public decimal LineTotal { get; private set; }
     public decimal ReceivedQty { get; private set; }
+    /// <summary>Buyer-closed shortage that will not be received later.</summary>
+    public decimal ClosedShortQty { get; private set; }
     public string? LineNotes { get; private set; }
     public ProductUnitId? PurchaseUnitId { get; private set; }
     public string? PurchaseUnitNameSnapshot { get; private set; }
     public decimal MultiplierToBaseSnapshot { get; private set; }
 
-    public decimal OutstandingQty => OrderedQty - ReceivedQty;
+    public decimal OutstandingQty => OrderedQty - ReceivedQty - ClosedShortQty;
+    public bool HasReceivingIssues => ClosedShortQty > 0m;
 
     private PurchaseOrderLine(
         PurchaseOrderLineId id,
@@ -51,7 +54,8 @@ public sealed class PurchaseOrderLine
         string? lineNotes,
         ProductUnitId? purchaseUnitId,
         string? purchaseUnitNameSnapshot,
-        decimal multiplierToBaseSnapshot)
+        decimal multiplierToBaseSnapshot,
+        decimal closedShortQty = 0m)
     {
         Id = id;
         PurchaseOrderId = purchaseOrderId;
@@ -64,6 +68,7 @@ public sealed class PurchaseOrderLine
         UnitPurchaseCost = unitPurchaseCost;
         LineTotal = lineTotal;
         ReceivedQty = receivedQty;
+        ClosedShortQty = closedShortQty;
         LineNotes = lineNotes;
         PurchaseUnitId = purchaseUnitId;
         PurchaseUnitNameSnapshot = purchaseUnitNameSnapshot;
@@ -189,7 +194,7 @@ public sealed class PurchaseOrderLine
                 "Receive quantity must be greater than zero.");
         }
 
-        if (ReceivedQty + normalized > OrderedQty)
+        if (ReceivedQty + ClosedShortQty + normalized > OrderedQty)
         {
             throw new DomainException(
                 DomainErrorCodes.PurchaseOverReceipt,
@@ -197,6 +202,31 @@ public sealed class PurchaseOrderLine
         }
 
         ReceivedQty += normalized;
+    }
+
+    internal void ApplyShortClose(decimal shortQty, SellingMode sellingMode = SellingMode.PerItem)
+    {
+        if (UomSnapshot is null)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPurchaseOrderLine,
+                "Cannot close shortage against a line that has not been ordered.");
+        }
+
+        if (shortQty <= 0m)
+        {
+            return;
+        }
+
+        var normalized = NormalizeQuantity(shortQty, UomSnapshot.Value, sellingMode);
+        if (ReceivedQty + ClosedShortQty + normalized > OrderedQty)
+        {
+            throw new DomainException(
+                DomainErrorCodes.PurchaseOverReceipt,
+                $"Short-closed quantity exceeds outstanding quantity for '{NameSnapshot}'.");
+        }
+
+        ClosedShortQty += normalized;
     }
 
     public static PurchaseOrderLine Rehydrate(
@@ -214,7 +244,8 @@ public sealed class PurchaseOrderLine
         string? lineNotes,
         ProductUnitId? purchaseUnitId = null,
         string? purchaseUnitNameSnapshot = null,
-        decimal multiplierToBaseSnapshot = 1m) =>
+        decimal multiplierToBaseSnapshot = 1m,
+        decimal closedShortQty = 0m) =>
         new(
             id,
             purchaseOrderId,
@@ -230,7 +261,8 @@ public sealed class PurchaseOrderLine
             lineNotes,
             purchaseUnitId,
             purchaseUnitNameSnapshot,
-            multiplierToBaseSnapshot);
+            multiplierToBaseSnapshot,
+            closedShortQty);
 
     internal static decimal NormalizeUnitPurchaseCost(decimal cost)
     {

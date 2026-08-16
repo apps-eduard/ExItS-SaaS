@@ -8,7 +8,35 @@ namespace ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 
 public enum ConnectedSupplierRelationshipStatus { Pending = 0, Active = 1, Declined = 2, Disconnected = 3 }
 public enum SupplierConnectionType { External = 0, ConnectedOrganization = 1 }
-public enum ConnectedPurchaseOrderStatus { New = 0, Accepted = 1, Declined = 2 }
+public enum ConnectedPurchaseOrderStatus
+{
+    New = 0,
+    Accepted = 1,
+    Declined = 2,
+    Preparing = 3,
+    Fulfilled = 4,
+    Withdrawn = 5
+}
+
+public enum ConnectedPoDeclineReason
+{
+    OutOfStock = 0,
+    CannotFulfillQuantity = 1,
+    PriceOrOrderIssue = 2,
+    UnableToFulfill = 3,
+    Other = 4
+}
+
+public enum ConnectedPoReceivingDiscrepancyKind
+{
+    None = 0,
+    Short = 1,
+    Damaged = 2,
+    WrongItem = 3,
+    Expired = 4,
+    Rejected = 5,
+    Other = 6
+}
 
 public abstract class ConnectedSupplierGuidId<T> : IEquatable<T> where T : ConnectedSupplierGuidId<T>
 {
@@ -521,6 +549,8 @@ public sealed record ConnectedPurchaseOrderLine(CatalogProductId ProductId, stri
 
 public sealed class ConnectedPurchaseOrder
 {
+    public const int DeclineNoteMaxLength = 280;
+
     private readonly List<ConnectedPurchaseOrderLine> _lines;
     public ConnectedPurchaseOrderId Id { get; }
     public ConnectedSupplierRelationshipId RelationshipId { get; }
@@ -536,30 +566,236 @@ public sealed class ConnectedPurchaseOrder
     public DateTimeOffset UpdatedAtUtc { get; private set; }
     public DateTimeOffset? AcceptedAtUtc { get; private set; }
     public DateTimeOffset? DeclinedAtUtc { get; private set; }
+    public DateTimeOffset? PreparingAtUtc { get; private set; }
+    public DateTimeOffset? FulfilledAtUtc { get; private set; }
+    public DateTimeOffset? WithdrawnAtUtc { get; private set; }
+    public ConnectedPoDeclineReason? DeclineReason { get; private set; }
+    public string? DeclineNote { get; private set; }
     public IReadOnlyList<ConnectedPurchaseOrderLine> Lines => _lines;
-    private ConnectedPurchaseOrder(ConnectedPurchaseOrderId id,ConnectedSupplierRelationshipId relationshipId,PosOrganizationId buyer,
-        PosOrganizationId supplier,PurchaseOrderId buyerPoId,string? poNumber,DateOnly orderDate,string? notes,
-        ConnectedPurchaseOrderStatus status,decimal total,DateTimeOffset created,DateTimeOffset updated,
-        DateTimeOffset? accepted,DateTimeOffset? declined,List<ConnectedPurchaseOrderLine> lines)
-    { Id=id;RelationshipId=relationshipId;BuyerOrganizationId=buyer;SupplierOrganizationId=supplier;BuyerPurchaseOrderId=buyerPoId;
-      BuyerPoNumber=poNumber;OrderDate=orderDate;Notes=notes;Status=status;TotalAmount=total;CreatedAtUtc=created;UpdatedAtUtc=updated;
-      AcceptedAtUtc=accepted;DeclinedAtUtc=declined;_lines=lines; }
-    public static ConnectedPurchaseOrder CreateFromBuyerSubmission(ConnectedSupplierRelationship relationship,PurchaseOrderId buyerPoId,
-        string? poNumber,DateOnly orderDate,string? notes,IReadOnlyList<ConnectedPurchaseOrderLine> lines,DateTimeOffset utcNow,
-        ConnectedPurchaseOrderId? id=null)
+
+    private ConnectedPurchaseOrder(
+        ConnectedPurchaseOrderId id,
+        ConnectedSupplierRelationshipId relationshipId,
+        PosOrganizationId buyer,
+        PosOrganizationId supplier,
+        PurchaseOrderId buyerPoId,
+        string? poNumber,
+        DateOnly orderDate,
+        string? notes,
+        ConnectedPurchaseOrderStatus status,
+        decimal total,
+        DateTimeOffset created,
+        DateTimeOffset updated,
+        DateTimeOffset? accepted,
+        DateTimeOffset? declined,
+        DateTimeOffset? preparing,
+        DateTimeOffset? fulfilled,
+        DateTimeOffset? withdrawn,
+        ConnectedPoDeclineReason? declineReason,
+        string? declineNote,
+        List<ConnectedPurchaseOrderLine> lines)
     {
-        if (relationship.Status!=ConnectedSupplierRelationshipStatus.Active || lines.Count==0)
-            throw new DomainException(ConnectedSupplierDomainErrorCodes.InvalidOrder,"An active relationship and order lines are required.");
-        var total=SaleMoney.RoundMoney(lines.Sum(x=>x.LineTotal));
-        return new(id??ConnectedPurchaseOrderId.New(),relationship.Id,relationship.BuyerOrganizationId,relationship.SupplierOrganizationId,
-            buyerPoId,poNumber,orderDate,SupplierProductExposure.Clean(notes),ConnectedPurchaseOrderStatus.New,total,utcNow,utcNow,null,null,lines.ToList());
+        Id = id;
+        RelationshipId = relationshipId;
+        BuyerOrganizationId = buyer;
+        SupplierOrganizationId = supplier;
+        BuyerPurchaseOrderId = buyerPoId;
+        BuyerPoNumber = poNumber;
+        OrderDate = orderDate;
+        Notes = notes;
+        Status = status;
+        TotalAmount = total;
+        CreatedAtUtc = created;
+        UpdatedAtUtc = updated;
+        AcceptedAtUtc = accepted;
+        DeclinedAtUtc = declined;
+        PreparingAtUtc = preparing;
+        FulfilledAtUtc = fulfilled;
+        WithdrawnAtUtc = withdrawn;
+        DeclineReason = declineReason;
+        DeclineNote = declineNote;
+        _lines = lines;
     }
-    public void Accept(DateTimeOffset utcNow) { EnsureNew(); Status=ConnectedPurchaseOrderStatus.Accepted;AcceptedAtUtc=utcNow;UpdatedAtUtc=utcNow; }
-    public void Decline(DateTimeOffset utcNow) { EnsureNew(); Status=ConnectedPurchaseOrderStatus.Declined;DeclinedAtUtc=utcNow;UpdatedAtUtc=utcNow; }
-    private void EnsureNew() { if(Status!=ConnectedPurchaseOrderStatus.New) throw new DomainException(ConnectedSupplierDomainErrorCodes.InvalidTransition,"Incoming order has already been answered."); }
-    public static ConnectedPurchaseOrder Rehydrate(ConnectedPurchaseOrderId id,ConnectedSupplierRelationshipId relationshipId,
-        PosOrganizationId buyer,PosOrganizationId supplier,PurchaseOrderId buyerPoId,string? poNumber,DateOnly orderDate,string? notes,
-        ConnectedPurchaseOrderStatus status,decimal total,DateTimeOffset created,DateTimeOffset updated,DateTimeOffset? accepted,
-        DateTimeOffset? declined,IReadOnlyList<ConnectedPurchaseOrderLine> lines) =>
-        new(id,relationshipId,buyer,supplier,buyerPoId,poNumber,orderDate,notes,status,total,created,updated,accepted,declined,lines.ToList());
+
+    public static ConnectedPurchaseOrder CreateFromBuyerSubmission(
+        ConnectedSupplierRelationship relationship,
+        PurchaseOrderId buyerPoId,
+        string? poNumber,
+        DateOnly orderDate,
+        string? notes,
+        IReadOnlyList<ConnectedPurchaseOrderLine> lines,
+        DateTimeOffset utcNow,
+        ConnectedPurchaseOrderId? id = null)
+    {
+        if (relationship.Status != ConnectedSupplierRelationshipStatus.Active || lines.Count == 0)
+        {
+            throw new DomainException(
+                ConnectedSupplierDomainErrorCodes.InvalidOrder,
+                "An active relationship and order lines are required.");
+        }
+
+        var total = SaleMoney.RoundMoney(lines.Sum(x => x.LineTotal));
+        return new(
+            id ?? ConnectedPurchaseOrderId.New(),
+            relationship.Id,
+            relationship.BuyerOrganizationId,
+            relationship.SupplierOrganizationId,
+            buyerPoId,
+            poNumber,
+            orderDate,
+            SupplierProductExposure.Clean(notes),
+            ConnectedPurchaseOrderStatus.New,
+            total,
+            utcNow,
+            utcNow,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            lines.ToList());
+    }
+
+    public void Accept(DateTimeOffset utcNow)
+    {
+        ConnectedSupplierRelationship.EnsureUtc(utcNow);
+        EnsureNew();
+        Status = ConnectedPurchaseOrderStatus.Accepted;
+        AcceptedAtUtc = utcNow;
+        UpdatedAtUtc = utcNow;
+    }
+
+    public void Decline(DateTimeOffset utcNow, ConnectedPoDeclineReason? reason = null, string? note = null)
+    {
+        ConnectedSupplierRelationship.EnsureUtc(utcNow);
+        EnsureNew();
+        Status = ConnectedPurchaseOrderStatus.Declined;
+        DeclinedAtUtc = utcNow;
+        DeclineReason = reason;
+        DeclineNote = NormalizeDeclineNote(note);
+        UpdatedAtUtc = utcNow;
+    }
+
+    public void StartPreparing(DateTimeOffset utcNow)
+    {
+        ConnectedSupplierRelationship.EnsureUtc(utcNow);
+        if (Status != ConnectedPurchaseOrderStatus.Accepted)
+        {
+            throw new DomainException(
+                ConnectedSupplierDomainErrorCodes.InvalidTransition,
+                "Only an accepted order can move to preparing.");
+        }
+
+        Status = ConnectedPurchaseOrderStatus.Preparing;
+        PreparingAtUtc = utcNow;
+        UpdatedAtUtc = utcNow;
+    }
+
+    public void MarkFulfilled(DateTimeOffset utcNow)
+    {
+        ConnectedSupplierRelationship.EnsureUtc(utcNow);
+        if (Status is not (ConnectedPurchaseOrderStatus.Accepted or ConnectedPurchaseOrderStatus.Preparing))
+        {
+            throw new DomainException(
+                ConnectedSupplierDomainErrorCodes.InvalidTransition,
+                "Only accepted or preparing orders can be marked fulfilled.");
+        }
+
+        if (Status == ConnectedPurchaseOrderStatus.Accepted)
+        {
+            PreparingAtUtc ??= utcNow;
+        }
+
+        Status = ConnectedPurchaseOrderStatus.Fulfilled;
+        FulfilledAtUtc = utcNow;
+        UpdatedAtUtc = utcNow;
+    }
+
+    /// <summary>Buyer withdraw while supplier has not yet accepted (New only).</summary>
+    public void WithdrawByBuyer(DateTimeOffset utcNow)
+    {
+        ConnectedSupplierRelationship.EnsureUtc(utcNow);
+        EnsureNew();
+        Status = ConnectedPurchaseOrderStatus.Withdrawn;
+        WithdrawnAtUtc = utcNow;
+        UpdatedAtUtc = utcNow;
+    }
+
+    public bool CanBuyerWithdraw => Status == ConnectedPurchaseOrderStatus.New;
+    public bool CanBuyerReceive => Status is ConnectedPurchaseOrderStatus.Accepted
+        or ConnectedPurchaseOrderStatus.Preparing
+        or ConnectedPurchaseOrderStatus.Fulfilled;
+
+    private void EnsureNew()
+    {
+        if (Status != ConnectedPurchaseOrderStatus.New)
+        {
+            throw new DomainException(
+                ConnectedSupplierDomainErrorCodes.InvalidTransition,
+                "Incoming order has already been answered.");
+        }
+    }
+
+    private static string? NormalizeDeclineNote(string? note)
+    {
+        if (string.IsNullOrWhiteSpace(note))
+        {
+            return null;
+        }
+
+        var trimmed = note.Trim();
+        if (trimmed.Length > DeclineNoteMaxLength)
+        {
+            throw new DomainException(
+                ConnectedSupplierDomainErrorCodes.InvalidOrder,
+                $"Decline note must be at most {DeclineNoteMaxLength} characters.");
+        }
+
+        return trimmed;
+    }
+
+    public static ConnectedPurchaseOrder Rehydrate(
+        ConnectedPurchaseOrderId id,
+        ConnectedSupplierRelationshipId relationshipId,
+        PosOrganizationId buyer,
+        PosOrganizationId supplier,
+        PurchaseOrderId buyerPoId,
+        string? poNumber,
+        DateOnly orderDate,
+        string? notes,
+        ConnectedPurchaseOrderStatus status,
+        decimal total,
+        DateTimeOffset created,
+        DateTimeOffset updated,
+        DateTimeOffset? accepted,
+        DateTimeOffset? declined,
+        IReadOnlyList<ConnectedPurchaseOrderLine> lines,
+        DateTimeOffset? preparing = null,
+        DateTimeOffset? fulfilled = null,
+        DateTimeOffset? withdrawn = null,
+        ConnectedPoDeclineReason? declineReason = null,
+        string? declineNote = null) =>
+        new(
+            id,
+            relationshipId,
+            buyer,
+            supplier,
+            buyerPoId,
+            poNumber,
+            orderDate,
+            notes,
+            status,
+            total,
+            created,
+            updated,
+            accepted,
+            declined,
+            preparing,
+            fulfilled,
+            withdrawn,
+            declineReason,
+            declineNote,
+            lines.ToList());
 }

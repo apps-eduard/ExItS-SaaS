@@ -59,7 +59,13 @@ internal sealed class ConnectedPurchaseOrderRecord
     public Guid SupplierOrganizationId { get; set; } public Guid BuyerPurchaseOrderId { get; set; } public string? BuyerPoNumber { get; set; }
     public DateOnly OrderDate { get; set; } public string? Notes { get; set; } public int Status { get; set; }
     public decimal TotalAmount { get; set; } public DateTimeOffset CreatedAtUtc { get; set; } public DateTimeOffset UpdatedAtUtc { get; set; }
-    public DateTimeOffset? AcceptedAtUtc { get; set; } public DateTimeOffset? DeclinedAtUtc { get; set; }
+    public DateTimeOffset? AcceptedAtUtc { get; set; }
+    public DateTimeOffset? DeclinedAtUtc { get; set; }
+    public DateTimeOffset? PreparingAtUtc { get; set; }
+    public DateTimeOffset? FulfilledAtUtc { get; set; }
+    public DateTimeOffset? WithdrawnAtUtc { get; set; }
+    public int? DeclineReason { get; set; }
+    public string? DeclineNote { get; set; }
     public List<ConnectedPurchaseOrderLineRecord> Lines { get; set; }=[]; public uint Xmin { get; set; }
 }
 internal sealed class ConnectedPurchaseOrderLineRecord
@@ -145,14 +151,21 @@ internal static class ConnectedSupplierEntityMapper
         PosOrganizationId.From(r.SupplierOrganizationId),PurchaseOrderId.From(r.BuyerPurchaseOrderId),r.BuyerPoNumber,r.OrderDate,r.Notes,
         (ConnectedPurchaseOrderStatus)r.Status,r.TotalAmount,r.CreatedAtUtc,r.UpdatedAtUtc,r.AcceptedAtUtc,r.DeclinedAtUtc,
         r.Lines.OrderBy(x=>x.LineNumber).Select(x=>new ConnectedPurchaseOrderLine(CatalogProductId.From(x.ProductId),x.NameSnapshot,
-            x.SkuSnapshot,x.Qty,x.UnitPriceSnapshot,x.LineTotal,x.UnitOfMeasureCode)).ToList());
+            x.SkuSnapshot,x.Qty,x.UnitPriceSnapshot,x.LineTotal,x.UnitOfMeasureCode)).ToList(),
+        r.PreparingAtUtc,r.FulfilledAtUtc,r.WithdrawnAtUtc,
+        r.DeclineReason is int reason ? (ConnectedPoDeclineReason)reason : null,
+        r.DeclineNote);
     public static ConnectedPurchaseOrderRecord ToRecord(ConnectedPurchaseOrder x)=>new(){Id=x.Id.Value,RelationshipId=x.RelationshipId.Value,
         BuyerOrganizationId=x.BuyerOrganizationId.Value,SupplierOrganizationId=x.SupplierOrganizationId.Value,BuyerPurchaseOrderId=x.BuyerPurchaseOrderId.Value,
         BuyerPoNumber=x.BuyerPoNumber,OrderDate=x.OrderDate,Notes=x.Notes,Status=(int)x.Status,TotalAmount=x.TotalAmount,
         CreatedAtUtc=x.CreatedAtUtc,UpdatedAtUtc=x.UpdatedAtUtc,AcceptedAtUtc=x.AcceptedAtUtc,DeclinedAtUtc=x.DeclinedAtUtc,
+        PreparingAtUtc=x.PreparingAtUtc,FulfilledAtUtc=x.FulfilledAtUtc,WithdrawnAtUtc=x.WithdrawnAtUtc,
+        DeclineReason=x.DeclineReason is null ? null : (int)x.DeclineReason.Value,DeclineNote=x.DeclineNote,
         Lines=x.Lines.Select((l,i)=>new ConnectedPurchaseOrderLineRecord{ConnectedPurchaseOrderId=x.Id.Value,LineNumber=i+1,ProductId=l.ProductId.Value,
             NameSnapshot=l.NameSnapshot,SkuSnapshot=l.SkuSnapshot,Qty=l.Qty,UnitPriceSnapshot=l.UnitPriceSnapshot,LineTotal=l.LineTotal,
             UnitOfMeasureCode=l.UnitOfMeasureCode}).ToList()};
     public static void Apply(ConnectedPurchaseOrder x,ConnectedPurchaseOrderRecord r)
-    {r.Status=(int)x.Status;r.UpdatedAtUtc=x.UpdatedAtUtc;r.AcceptedAtUtc=x.AcceptedAtUtc;r.DeclinedAtUtc=x.DeclinedAtUtc;}
+    {r.Status=(int)x.Status;r.UpdatedAtUtc=x.UpdatedAtUtc;r.AcceptedAtUtc=x.AcceptedAtUtc;r.DeclinedAtUtc=x.DeclinedAtUtc;
+     r.PreparingAtUtc=x.PreparingAtUtc;r.FulfilledAtUtc=x.FulfilledAtUtc;r.WithdrawnAtUtc=x.WithdrawnAtUtc;
+     r.DeclineReason=x.DeclineReason is null ? null : (int)x.DeclineReason.Value;r.DeclineNote=x.DeclineNote;}
 }

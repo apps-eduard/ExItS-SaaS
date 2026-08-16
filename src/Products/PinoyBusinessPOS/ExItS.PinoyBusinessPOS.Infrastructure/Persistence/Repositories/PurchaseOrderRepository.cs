@@ -228,6 +228,7 @@ internal sealed class PurchaseOrderRepository : IPurchaseOrderRepository
                     }
 
                     lineRecord.ReceivedQty = line.ReceivedQty;
+                    lineRecord.ClosedShortQty = line.ClosedShortQty;
                 }
 
                 _db.GoodsReceipts.Add(PurchaseEntityMapper.ToRecord(receipt));

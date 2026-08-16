@@ -54,6 +54,12 @@ public sealed class PurchaseStockService : IPurchaseStockService
 
         foreach (var line in receipt.Lines.OrderBy(l => l.LineNumber))
         {
+            if (line.QuantityReceived <= 0m)
+            {
+                // Damaged/rejected/short-only lines never enter usable inventory.
+                continue;
+            }
+
             if (!accountsByProduct.TryGetValue(line.ProductId.Value, out var account) || !account.IsTracked)
             {
                 continue;

@@ -1,3 +1,4 @@
+using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
@@ -210,5 +211,17 @@ internal sealed class ConnectedPurchaseOrderRepository(PosDbContext db) : IConne
     public async Task<IReadOnlyList<ConnectedPurchaseOrder>> ListIncomingAsync(PosOrganizationId supplier,CancellationToken ct=default)=>
         (await Query().AsNoTracking().Where(x=>x.SupplierOrganizationId==supplier.Value).OrderByDescending(x=>x.CreatedAtUtc).ToListAsync(ct)).Select(ConnectedSupplierEntityMapper.ToDomain).ToList();
     public Task AddAsync(ConnectedPurchaseOrder x,CancellationToken ct=default){db.ConnectedPurchaseOrders.Add(ConnectedSupplierEntityMapper.ToRecord(x));return Task.CompletedTask;}
-    public async Task UpdateAsync(ConnectedPurchaseOrder x,CancellationToken ct=default){var r=await db.ConnectedPurchaseOrders.SingleAsync(y=>y.Id==x.Id.Value,ct);ConnectedSupplierEntityMapper.Apply(x,r);}
+    public async Task UpdateAsync(ConnectedPurchaseOrder x,CancellationToken ct=default)
+    {
+        var r=await db.ConnectedPurchaseOrders.SingleAsync(y=>y.Id==x.Id.Value,ct);
+        var dbStatus=(ConnectedPurchaseOrderStatus)r.Status;
+        if(!ConnectedPoDisplayStatus.IsValidConnectedStatusTransition(dbStatus,x.Status))
+        {
+            throw new PersistenceConflictException(
+                ConnectedSupplierDomainErrorCodes.InvalidTransition,
+                "Connected purchase order status changed concurrently. Refresh and try again.");
+        }
+
+        ConnectedSupplierEntityMapper.Apply(x,r);
+    }
 }

@@ -1,5 +1,6 @@
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
+using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
@@ -7,11 +8,14 @@ using ExItS.PinoyBusinessPOS.Domain.Sales;
 namespace ExItS.PinoyBusinessPOS.Domain.Purchasing;
 
 /// <summary>
-/// One immutable line on a goods receipt. <see cref="QuantityReceived"/> is in purchase-unit terms.
-/// Inventory movements should use <see cref="BaseQuantity"/>.
+/// One immutable line on a goods receipt. <see cref="QuantityReceived"/> is good/usable qty in purchase-unit terms
+/// and is the only quantity that may create inventory movements. Damaged/rejected/short-closed quantities are
+/// recorded for discrepancy visibility and do not enter sellable stock.
 /// </summary>
 public sealed class GoodsReceiptLine
 {
+    public const int DiscrepancyNoteMaxLength = 280;
+
     public GoodsReceiptLineId Id { get; }
     public GoodsReceiptId GoodsReceiptId { get; }
     public PosOrganizationId OrganizationId { get; }
@@ -21,6 +25,11 @@ public sealed class GoodsReceiptLine
     public string NameSnapshot { get; }
     public UnitOfMeasure UomSnapshot { get; }
     public decimal QuantityReceived { get; }
+    public decimal DamagedQty { get; }
+    public decimal RejectedQty { get; }
+    public decimal ShortClosedQty { get; }
+    public ConnectedPoReceivingDiscrepancyKind DiscrepancyKind { get; }
+    public string? DiscrepancyNote { get; }
     public decimal UnitPurchaseCostSnapshot { get; }
     public decimal LineTotalSnapshot { get; }
     public decimal MultiplierToBaseSnapshot { get; }
@@ -29,7 +38,7 @@ public sealed class GoodsReceiptLine
     /// <summary>Alias for persistence/DTO mapping compatibility.</summary>
     public decimal ReceivedQty => QuantityReceived;
 
-    /// <summary>Base inventory quantity = purchase-unit received qty × multiplier.</summary>
+    /// <summary>Base inventory quantity = purchase-unit good qty × multiplier.</summary>
     public decimal BaseQuantity =>
         ProductUnitConversion.ToBaseQuantity(QuantityReceived, MultiplierToBaseSnapshot);
 
@@ -43,6 +52,11 @@ public sealed class GoodsReceiptLine
         string nameSnapshot,
         UnitOfMeasure uomSnapshot,
         decimal quantityReceived,
+        decimal damagedQty,
+        decimal rejectedQty,
+        decimal shortClosedQty,
+        ConnectedPoReceivingDiscrepancyKind discrepancyKind,
+        string? discrepancyNote,
         decimal unitPurchaseCostSnapshot,
         decimal lineTotalSnapshot,
         decimal multiplierToBaseSnapshot,
@@ -57,6 +71,11 @@ public sealed class GoodsReceiptLine
         NameSnapshot = nameSnapshot;
         UomSnapshot = uomSnapshot;
         QuantityReceived = quantityReceived;
+        DamagedQty = damagedQty;
+        RejectedQty = rejectedQty;
+        ShortClosedQty = shortClosedQty;
+        DiscrepancyKind = discrepancyKind;
+        DiscrepancyNote = discrepancyNote;
         UnitPurchaseCostSnapshot = unitPurchaseCostSnapshot;
         LineTotalSnapshot = lineTotalSnapshot;
         MultiplierToBaseSnapshot = multiplierToBaseSnapshot;
@@ -68,9 +87,8 @@ public sealed class GoodsReceiptLine
         PosOrganizationId organizationId,
         int lineNumber,
         PurchaseOrderLine poLine,
-        decimal receiveQty,
-        GoodsReceiptLineId? id = null,
-        SellingMode sellingMode = SellingMode.PerItem)
+        PurchaseOrderReceiveLineDraft receive,
+        GoodsReceiptLineId? id = null)
     {
         if (poLine.NameSnapshot is null || poLine.UomSnapshot is null)
         {
@@ -79,15 +97,24 @@ public sealed class GoodsReceiptLine
                 "Cannot receive against an unordered line.");
         }
 
-        var normalized = PurchaseOrderLine.NormalizeQuantity(
-            receiveQty,
-            poLine.UomSnapshot.Value,
-            sellingMode);
-        if (normalized <= 0m)
+        var good = receive.ReceiveQty <= 0m
+            ? 0m
+            : PurchaseOrderLine.NormalizeQuantity(receive.ReceiveQty, poLine.UomSnapshot.Value, receive.SellingMode);
+        var damaged = receive.DamagedQty <= 0m
+            ? 0m
+            : PurchaseOrderLine.NormalizeQuantity(receive.DamagedQty, poLine.UomSnapshot.Value, receive.SellingMode);
+        var rejected = receive.RejectedQty <= 0m
+            ? 0m
+            : PurchaseOrderLine.NormalizeQuantity(receive.RejectedQty, poLine.UomSnapshot.Value, receive.SellingMode);
+        var shortClosed = receive.ShortClosedQty <= 0m
+            ? 0m
+            : PurchaseOrderLine.NormalizeQuantity(receive.ShortClosedQty, poLine.UomSnapshot.Value, receive.SellingMode);
+
+        if (good + damaged + rejected + shortClosed <= 0m)
         {
             throw new DomainException(
                 DomainErrorCodes.InvalidPurchaseReceiveQuantity,
-                "Receive quantity must be greater than zero.");
+                "Receive quantity must include good, damaged, rejected, or short-closed quantity.");
         }
 
         var multiplier = CatalogProductUnit.NormalizeMultiplier(poLine.MultiplierToBaseSnapshot);
@@ -101,9 +128,14 @@ public sealed class GoodsReceiptLine
             lineNumber,
             poLine.NameSnapshot,
             poLine.UomSnapshot.Value,
-            normalized,
+            good,
+            damaged,
+            rejected,
+            shortClosed,
+            receive.DiscrepancyKind,
+            NormalizeNote(receive.DiscrepancyNote),
             cost,
-            SaleMoney.RoundMoney(cost * normalized),
+            SaleMoney.RoundMoney(cost * good),
             multiplier,
             inventoryMovementId: null);
     }
@@ -115,6 +147,13 @@ public sealed class GoodsReceiptLine
             throw new DomainException(
                 DomainErrorCodes.InvalidGoodsReceiptLine,
                 "Inventory movement is already linked to this receipt line.");
+        }
+
+        if (QuantityReceived <= 0m)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidGoodsReceiptLine,
+                "Only good received quantity can create an inventory movement.");
         }
 
         InventoryMovementId = movementId.Value;
@@ -133,7 +172,12 @@ public sealed class GoodsReceiptLine
         decimal unitPurchaseCostSnapshot,
         decimal lineTotalSnapshot,
         Guid? inventoryMovementId,
-        decimal multiplierToBaseSnapshot = 1m) =>
+        decimal multiplierToBaseSnapshot = 1m,
+        decimal damagedQty = 0m,
+        decimal rejectedQty = 0m,
+        decimal shortClosedQty = 0m,
+        ConnectedPoReceivingDiscrepancyKind discrepancyKind = ConnectedPoReceivingDiscrepancyKind.None,
+        string? discrepancyNote = null) =>
         new(
             id,
             goodsReceiptId,
@@ -144,8 +188,31 @@ public sealed class GoodsReceiptLine
             nameSnapshot,
             uomSnapshot,
             quantityReceived,
+            damagedQty,
+            rejectedQty,
+            shortClosedQty,
+            discrepancyKind,
+            discrepancyNote,
             unitPurchaseCostSnapshot,
             lineTotalSnapshot,
             multiplierToBaseSnapshot,
             inventoryMovementId);
+
+    private static string? NormalizeNote(string? note)
+    {
+        if (string.IsNullOrWhiteSpace(note))
+        {
+            return null;
+        }
+
+        var trimmed = note.Trim();
+        if (trimmed.Length > DiscrepancyNoteMaxLength)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidGoodsReceiptNotes,
+                $"Discrepancy note must be at most {DiscrepancyNoteMaxLength} characters.");
+        }
+
+        return trimmed;
+    }
 }

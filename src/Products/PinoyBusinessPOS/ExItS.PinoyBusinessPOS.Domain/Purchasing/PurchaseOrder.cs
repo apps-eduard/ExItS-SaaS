@@ -216,7 +216,25 @@ public sealed class PurchaseOrder
                     "Receive line product is not on this purchase order.");
             }
 
-            line.ApplyReceipt(receive.ReceiveQty, receive.SellingMode);
+            if (receive.ReceiveQty > 0m)
+            {
+                line.ApplyReceipt(receive.ReceiveQty, receive.SellingMode);
+            }
+
+            if (receive.ShortClosedQty > 0m)
+            {
+                line.ApplyShortClose(receive.ShortClosedQty, receive.SellingMode);
+            }
+
+            if (receive.ReceiveQty <= 0m
+                && receive.ShortClosedQty <= 0m
+                && receive.DamagedQty <= 0m
+                && receive.RejectedQty <= 0m)
+            {
+                throw new DomainException(
+                    DomainErrorCodes.InvalidPurchaseReceiveQuantity,
+                    "Each receive line must include good, damaged, rejected, or short-closed quantity.");
+            }
         }
 
         Status = _lines.All(l => l.OutstandingQty <= 0m)
@@ -224,6 +242,9 @@ public sealed class PurchaseOrder
             : PurchaseOrderStatus.PartiallyReceived;
         UpdatedAtUtc = utcNow;
     }
+
+    /// <summary>True when any line has buyer-closed shortages (Received With Issues signal).</summary>
+    public bool HasReceivingIssues => _lines.Any(l => l.HasReceivingIssues);
 
     public static PurchaseOrder Rehydrate(
         PurchaseOrderId id,
