@@ -120,6 +120,7 @@ docs/phases/phase-25-organization-web-admin.md
 docs/phases/phase-26-sales-documents-compliance-readiness.md
 docs/phases/phase-27-connected-supplier-commerce-and-purchasing.md
 docs/phases/phase-28-customer-ordering-pickup-and-delivery.md
+docs/phases/phase-29-data-integrity-query-performance-and-database-hardening.md
 docs/phases/phase-21-privacy-compliance-and-regulatory-readiness.md
 docs/reports/P21-foundation-privacy-compliance-workspace.md
 docs/reports/P21-privacy-readiness-visibility-product-status-ui.md
@@ -148,6 +149,18 @@ docs/reports/P27-WP04-connected-po-cancellation-and-withdrawal.md
 docs/reports/P27-WP05-fulfillment-goods-receipt-and-discrepancies.md
 docs/reports/P28-WP01-branch-fulfillment-location-foundation.md
 docs/reports/P28-WP02-customer-ordering-stage-b-slice.md
+docs/reports/P29-WP01-data-authority-and-schema-consistency.md
+docs/reports/P29-WP02-tenant-isolation-and-relational-integrity.md
+docs/reports/P29-WP03-financial-and-transaction-integrity.md
+docs/reports/P29-WP04-inventory-reservation-concurrency.md
+docs/reports/P29-WP05-listbranches-n-plus-one-elimination.md
+docs/reports/P29-WP06-reporting-aggregation-performance.md
+docs/reports/P29-WP07-customer-order-buyer-indexes.md
+docs/reports/P29-WP08-concurrency-load-and-reliability.md
+docs/reports/P29-WP09-migration-backup-restore-and-db-operations.md
+docs/reports/P29-WP10-phase-29-closeout.md
+docs/reports/P29-performance-baseline.md
+docs/engineering/data-integrity-query-performance-and-database-hardening.md
 docs/engineering/connected-exits-suppliers.md
 docs/engineering/organization-branches-and-fulfillment-locations.md
 docs/engineering/branch-delivery-pricing.md

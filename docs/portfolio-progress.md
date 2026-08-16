@@ -11,10 +11,10 @@
 | Portfolio | ExITS SaaS |
 | Existing product | Historical HealthCare SaaS MVP (separate product; **not** in this workspace ? do not restore) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
-| Current phase | Phase 28 **Open / In Progress — WP01 Code Complete; WP02–WP09 Stage B Code Complete / Validation Pending; WP10 Not Started**. Phase 27 remains **Open / In Progress**; earlier open phases remain unchanged. |
-| Current work package | **P28-WP10** E2E validation and Phase 28 closeout — **Not Started** ([phase](phases/phase-28-customer-ordering-pickup-and-delivery.md); [Stage B report](reports/P28-WP02-customer-ordering-stage-b-slice.md)). |
-| Overall status | Branch fulfillment foundation and CustomerOrder pickup/delivery Stage B slice are implemented. Storefront checkout UX and E2E closeout remain. **Not Device Verified. Not Browser Verified. Not Production Ready.** Phase 27 remains Open. |
-| Latest verified commit | P26-WP06 `69fd132f`…`fe63a6f6` (Phase 28 Stage B also on main through `1f81cb63`) |
+| Current phase | Phase 29 **Open / Partial Closeout** — cross-cutting data/performance hardening. Phases 14 / 19–28 remain **Open** with prior statuses (including Phase 28 Stage B Code Complete / Validation Pending). |
+| Current work package | **P29** hardening stream — WP01–WP07 Code Complete / Validation Pending; WP03/WP08–WP10 Partial ([phase](phases/phase-29-data-integrity-query-performance-and-database-hardening.md)). |
+| Overall status | Tenant integrity constraints, ListBranches N+1 fix, SQL dashboard aggregates, reservation advisory locks, and ownership doc reconciliation delivered. Load/EXPLAIN/migration drills partial. **Not Device Verified. Not Browser Verified. Not Production Ready.** |
+| Latest verified commit | Phase 29 feature hashes **TBD after commit** (preflight `fcc5eee1`) |
 | Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA deferred; Phase 19/20/22/24/25/26/27 owner/physical validation pending |
 | Last updated | 2026-08-16 |
 
@@ -267,6 +267,8 @@ P19-WP08 ? End-to-End Validation and User Closeout Checklist (Retest � awaitin
 **Phase 27 Connected Supplier Commerce & Purchasing:** **Open / In Progress** ([phase](phases/phase-27-connected-supplier-commerce-and-purchasing.md); [design](engineering/connected-exits-suppliers.md)) — P27-WP01–WP05 Code Complete; WP06–WP07 Not Started; active next P27-WP06; **Device Verified: No**; **Browser Verified: No**; **Production Ready: No**; no phase closeout.
 
 **Phase 28 Customer Ordering, Pickup & Delivery:** **Open / In Progress** ([phase](phases/phase-28-customer-ordering-pickup-and-delivery.md)) — WP01 Code Complete; WP02–WP09 Stage B Code Complete / Validation Pending; WP10 Not Started; Phase 27 remains Open; **Device Verified: No**; **Browser Verified: No**; **Production Ready: No**.
+
+**Phase 29 Data Integrity / Query Performance / DB Ops Hardening:** **Open / Partial Closeout** ([phase](phases/phase-29-data-integrity-query-performance-and-database-hardening.md)) — WP01–WP07 Code Complete / Validation Pending; WP03/WP08–WP10 Partial; earlier open phases unchanged; **Device Verified: No**; **Browser Verified: No**; **Production Ready: No**.
 
 ## Phase 27 work packages
 

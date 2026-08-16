@@ -2,10 +2,12 @@
 
 [Architecture summary](approved-architecture-summary.md) | [Capability boundary](platform-product-capability-boundary.md) | [Contracts](platform-product-contracts.md)
 
-**Version:** 2.0  
+**Version:** 2.1  
 **Status:** Authoritative  
-**Current phase:** Phase 16 — P16-WP11 validation  
-**Last reconciled:** 2026-08-03
+**Current phase:** Phase 29 — data integrity hardening (cross-cutting)  
+**Last reconciled:** 2026-08-16
+
+> **Superseding note (P29-WP01):** `OrganizationBranch` is **Platform-owned**. POS and other products may store branch GUIDs as opaque operational references only. Earlier wording that listed “branches / stores” under POS operational ownership is superseded for the branch **master** identity; POS still owns branch-scoped operational balances, transfers, and order fulfillment references.
 
 ---
 
@@ -27,6 +29,8 @@ The Platform database owns:
 - sessions, refresh tokens, revocation, security stamps
 - Organizations
 - Organization memberships and Organization roles
+- OrganizationBranch (authoritative physical locations / fulfillment locations)
+- BranchDeliveryPolicy (Platform-owned delivery fee policy per branch)
 - Product catalog
 - Plans
 - Plan prices and limits
@@ -89,16 +93,16 @@ Schema: pos
 The POS database owns:
 
 - POS business workspace
-- branches
-- stores
 - registers
-- terminals/devices
+- terminals/devices (product registration state; Platform owns device registry where applicable)
 - Product-local staff profiles where required
 - POS Product-role assignments and Product permissions
 - customers
 - catalog, categories, SKU, barcode
 - inventory and stock movements
+- branch-scoped inventory balances and transfers (referencing Platform `OrganizationBranchId` as opaque GUID)
 - sales and sale lines
+- customer orders (fulfillment branch GUID is Platform-opaque)
 - returns and voids
 - retail payments
 - cash sessions
@@ -110,6 +114,7 @@ The POS database owns:
 - offline local/sync metadata
 - Product-local audit
 
+> Branch **master** identity (`OrganizationBranch`) is Platform-owned — see §2 and [organization-branches-and-fulfillment-locations.md](organization-branches-and-fulfillment-locations.md). Do not invent a POS branches master table.
 ---
 
 ## 6. Payment separation

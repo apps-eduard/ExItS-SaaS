@@ -160,6 +160,18 @@ The dashboard links to the latest accepted report.
 | [phase-27-connected-supplier-commerce-and-purchasing.md](../phases/phase-27-connected-supplier-commerce-and-purchasing.md) | Phase 27 Connected Supplier Commerce & Purchasing | Open / In Progress |
 | [P28-WP01-branch-fulfillment-location-foundation.md](P28-WP01-branch-fulfillment-location-foundation.md) | P28-WP01 Branch & Fulfillment Location Foundation | Code Complete |
 | [P28-WP02-customer-ordering-stage-b-slice.md](P28-WP02-customer-ordering-stage-b-slice.md) | P28-WP02–WP09 Customer Ordering Stage B Slice | Code Complete / Validation Pending |
+| [P29-WP01-data-authority-and-schema-consistency.md](P29-WP01-data-authority-and-schema-consistency.md) | P29-WP01 Data Authority & Schema Consistency | Code Complete / Validation Pending |
+| [P29-WP02-tenant-isolation-and-relational-integrity.md](P29-WP02-tenant-isolation-and-relational-integrity.md) | P29-WP02 Tenant Isolation & Relational Integrity | Code Complete / Validation Pending |
+| [P29-WP03-financial-and-transaction-integrity.md](P29-WP03-financial-and-transaction-integrity.md) | P29-WP03 Financial & Transaction Integrity | Partial |
+| [P29-WP04-inventory-reservation-concurrency.md](P29-WP04-inventory-reservation-concurrency.md) | P29-WP04 Inventory Reservation Concurrency | Code Complete / Validation Pending |
+| [P29-WP05-listbranches-n-plus-one-elimination.md](P29-WP05-listbranches-n-plus-one-elimination.md) | P29-WP05 ListBranches N+1 Elimination | Code Complete / Validation Pending |
+| [P29-WP06-reporting-aggregation-performance.md](P29-WP06-reporting-aggregation-performance.md) | P29-WP06 Reporting Aggregation Performance | Code Complete / Validation Pending |
+| [P29-WP07-customer-order-buyer-indexes.md](P29-WP07-customer-order-buyer-indexes.md) | P29-WP07 Customer Order Buyer Indexes | Code Complete / Validation Pending |
+| [P29-WP08-concurrency-load-and-reliability.md](P29-WP08-concurrency-load-and-reliability.md) | P29-WP08 Concurrency / Load | Partial |
+| [P29-WP09-migration-backup-restore-and-db-operations.md](P29-WP09-migration-backup-restore-and-db-operations.md) | P29-WP09 Migration / Backup | Partial |
+| [P29-WP10-phase-29-closeout.md](P29-WP10-phase-29-closeout.md) | P29-WP10 Phase 29 Closeout | Partial |
+| [P29-performance-baseline.md](P29-performance-baseline.md) | P29 Performance Baseline | Development Evidence |
+| [phase-29-data-integrity-query-performance-and-database-hardening.md](../phases/phase-29-data-integrity-query-performance-and-database-hardening.md) | Phase 29 | Open / Partial Closeout |
 | [phase-28-customer-ordering-pickup-and-delivery.md](../phases/phase-28-customer-ordering-pickup-and-delivery.md) | Phase 28 Customer Ordering, Pickup & Delivery | Open / In Progress |
 
 Related engineering (not a WP closeout): [platform-controlled-organization-tax-configuration.md](../engineering/platform-controlled-organization-tax-configuration.md) — Platform `TaxConfigurationEnabled` gate for Operational Setup tax settings (default off; Approved eligibility required; not certification).

@@ -43,6 +43,8 @@
 - [Organization compliance profile](engineering/organization-compliance-profile.md)
 - [Connected Supplier Commerce & Purchasing (Phase 27)](phases/phase-27-connected-supplier-commerce-and-purchasing.md)
 - [Customer Ordering, Pickup & Delivery (Phase 28)](phases/phase-28-customer-ordering-pickup-and-delivery.md)
+- [Data Integrity & DB Hardening (Phase 29)](phases/phase-29-data-integrity-query-performance-and-database-hardening.md)
+- [Data integrity / query performance engineering](engineering/data-integrity-query-performance-and-database-hardening.md)
 - [Organization branches and fulfillment locations](engineering/organization-branches-and-fulfillment-locations.md)
 - [Branch delivery pricing](engineering/branch-delivery-pricing.md)
 - [Customer ordering, pickup and delivery](engineering/customer-ordering-pickup-and-delivery.md)

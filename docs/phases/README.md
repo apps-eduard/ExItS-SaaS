@@ -33,3 +33,4 @@
 | 26 | Sales Documents and Compliance Readiness | **Open** (WP01–WP06 Code Complete / Owner Validation Pending; WP06 also Regulatory Validation Pending; no closeout; Phase 25 remains Open) | [Open](phase-26-sales-documents-compliance-readiness.md) |
 | 27 | Connected Supplier Commerce & Purchasing | **Open / In Progress** (P27-WP01–WP05 Code Complete; WP06–WP07 Not Started; not Device/Browser Verified; not Production Ready) | [Open](phase-27-connected-supplier-commerce-and-purchasing.md) |
 | 28 | Customer Ordering, Pickup & Delivery | **Open / In Progress** (WP01 Stage A Implementation Complete / Validation Pending; WP02–WP10 Not Started; Phase 27 remains Open) | [Open](phase-28-customer-ordering-pickup-and-delivery.md) |
+| 29 | Data Integrity, Query Performance, Concurrency & Database Operations Hardening | **Open / Partial Closeout** (cross-cutting; Phases 14 / 19–28 remain open) | [Open](phase-29-data-integrity-query-performance-and-database-hardening.md) |

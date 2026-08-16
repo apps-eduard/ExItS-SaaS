@@ -19,7 +19,8 @@
 | Appointment | HealthCare | AppointmentId | HC | — | HealthCare | HealthCare | HealthCare |
 | Medical note | HealthCare | NoteId | HC | — | HealthCare | HealthCare | HealthCare |
 | POS business | POS | POSBusinessId | POS; links OrgId | — | POS | POS | POS |
-| Store / branch | POS | StoreId / BranchId | POS | — | POS | POS | POS |
+| Organization branch (master) | Platform | OrganizationBranchId | POS / Admin (opaque GUID refs) | Name/status/coords via Platform APIs | Platform | Platform | Platform |
+| Branch-scoped POS operations | POS | uses Platform OrganizationBranchId | POS inventory/orders/transfers | — | POS | POS | POS |
 | Customer | POS | POSCustomerId | POS; optional UserId later | — | POS | POS | POS |
 | CustomerCredit / entries / payments | POS | CreditId / EntryId / CreditPaymentId | POS | — | POS | POS | POS |
 | Catalog product / barcode | POS | ProductId (POS) | POS | — | POS | POS | POS |
