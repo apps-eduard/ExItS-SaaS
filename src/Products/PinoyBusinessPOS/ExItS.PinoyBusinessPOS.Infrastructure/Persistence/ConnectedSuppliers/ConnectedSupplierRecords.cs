@@ -27,6 +27,20 @@ internal sealed class SupplierProductExposureRecord
     public long SyncVersion { get; set; } public DateTimeOffset CreatedAtUtc { get; set; } public DateTimeOffset UpdatedAtUtc { get; set; }
     public uint Xmin { get; set; }
 }
+internal sealed class ConnectedBuyerProductShareRecord
+{
+    public Guid Id { get; set; }
+    public Guid RelationshipId { get; set; }
+    public Guid BuyerOrganizationId { get; set; }
+    public Guid SupplierOrganizationId { get; set; }
+    public Guid SupplierProductId { get; set; }
+    public bool IsShared { get; set; }
+    public decimal? BuyerSpecificPoPrice { get; set; }
+    public long SyncVersion { get; set; }
+    public DateTimeOffset CreatedAtUtc { get; set; }
+    public DateTimeOffset UpdatedAtUtc { get; set; }
+    public uint Xmin { get; set; }
+}
 internal sealed class BuyerSupplierProductLinkRecord
 {
     public Guid Id { get; set; } public Guid RelationshipId { get; set; } public Guid BuyerOrganizationId { get; set; }
@@ -84,6 +98,31 @@ internal static class ConnectedSupplierEntityMapper
     public static void Apply(SupplierProductExposure x,SupplierProductExposureRecord r)
     {r.SkuSnapshot=x.SkuSnapshot;r.NameSnapshot=x.NameSnapshot;r.CategoryNameSnapshot=x.CategoryNameSnapshot;r.UnitOfMeasureCode=x.UnitOfMeasureCode;
      r.SupplierOrderPrice=x.SupplierOrderPrice;r.IsOrderable=x.IsOrderable;r.IsExposed=x.IsExposed;r.SyncVersion=x.SyncVersion;r.UpdatedAtUtc=x.UpdatedAtUtc;}
+
+    public static ConnectedBuyerProductShare ToDomain(ConnectedBuyerProductShareRecord r) =>
+        ConnectedBuyerProductShare.Rehydrate(
+            ConnectedBuyerProductShareId.From(r.Id),
+            ConnectedSupplierRelationshipId.From(r.RelationshipId),
+            PosOrganizationId.From(r.BuyerOrganizationId),
+            PosOrganizationId.From(r.SupplierOrganizationId),
+            CatalogProductId.From(r.SupplierProductId),
+            r.IsShared,
+            r.BuyerSpecificPoPrice,
+            r.SyncVersion,
+            r.CreatedAtUtc,
+            r.UpdatedAtUtc);
+    public static ConnectedBuyerProductShareRecord ToRecord(ConnectedBuyerProductShare x) => new()
+    {
+        Id=x.Id.Value, RelationshipId=x.RelationshipId.Value, BuyerOrganizationId=x.BuyerOrganizationId.Value,
+        SupplierOrganizationId=x.SupplierOrganizationId.Value, SupplierProductId=x.SupplierProductId.Value,
+        IsShared=x.IsShared, BuyerSpecificPoPrice=x.BuyerSpecificPoPrice, SyncVersion=x.SyncVersion,
+        CreatedAtUtc=x.CreatedAtUtc, UpdatedAtUtc=x.UpdatedAtUtc
+    };
+    public static void Apply(ConnectedBuyerProductShare x, ConnectedBuyerProductShareRecord r)
+    {
+        r.IsShared=x.IsShared; r.BuyerSpecificPoPrice=x.BuyerSpecificPoPrice;
+        r.SyncVersion=x.SyncVersion; r.UpdatedAtUtc=x.UpdatedAtUtc;
+    }
 
     public static BuyerSupplierProductLink ToDomain(BuyerSupplierProductLinkRecord r)=>BuyerSupplierProductLink.Rehydrate(
         BuyerSupplierProductLinkId.From(r.Id),ConnectedSupplierRelationshipId.From(r.RelationshipId),PosOrganizationId.From(r.BuyerOrganizationId),

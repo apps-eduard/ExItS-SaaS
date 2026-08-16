@@ -76,6 +76,7 @@ public sealed class PosDbContext : DbContext
     internal DbSet<SupplierCodeSequenceRecord> SupplierCodeSequences => Set<SupplierCodeSequenceRecord>();
     internal DbSet<ConnectedSupplierRelationshipRecord> ConnectedSupplierRelationships => Set<ConnectedSupplierRelationshipRecord>();
     internal DbSet<SupplierProductExposureRecord> SupplierProductExposures => Set<SupplierProductExposureRecord>();
+    internal DbSet<ConnectedBuyerProductShareRecord> ConnectedBuyerProductShares => Set<ConnectedBuyerProductShareRecord>();
     internal DbSet<BuyerSupplierProductLinkRecord> BuyerSupplierProductLinks => Set<BuyerSupplierProductLinkRecord>();
     internal DbSet<ConnectedPurchaseOrderRecord> ConnectedPurchaseOrders => Set<ConnectedPurchaseOrderRecord>();
     internal DbSet<ConnectedPurchaseOrderLineRecord> ConnectedPurchaseOrderLines => Set<ConnectedPurchaseOrderLineRecord>();
@@ -551,6 +552,13 @@ public sealed class PosDbContext : DbContext
                 .HasColumnName("selling_price")
                 .HasPrecision(18, 2)
                 .IsRequired();
+            entity.Property(e => e.CanExposeToConnectedBuyers)
+                .HasColumnName("can_expose_to_connected_buyers")
+                .HasDefaultValue(false)
+                .IsRequired();
+            entity.Property(e => e.DefaultConnectedPoPrice)
+                .HasColumnName("default_connected_po_price")
+                .HasPrecision(18, 2);
             entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
             entity.Property(e => e.PlatformGlobalProductId).HasColumnName("platform_global_product_id");
             entity.Property(e => e.PlatformTemplateId).HasColumnName("platform_template_id");
@@ -2653,6 +2661,24 @@ public sealed class PosDbContext : DbContext
             entity.HasIndex(x=>new{x.SupplierOrganizationId,x.SyncVersion}).HasDatabaseName("ix_supplier_product_exposures_sync");
             entity.HasIndex(x=>new{x.SupplierOrganizationId,x.NameSnapshot}).HasDatabaseName("ix_supplier_product_exposures_name");
             entity.HasIndex(x=>new{x.SupplierOrganizationId,x.SkuSnapshot}).HasDatabaseName("ix_supplier_product_exposures_sku");
+        });
+        modelBuilder.Entity<ConnectedBuyerProductShareRecord>(entity =>
+        {
+            entity.ToTable("connected_buyer_product_shares");
+            entity.HasKey(x=>x.Id); entity.Property(x=>x.Id).HasColumnName("id");
+            entity.Property(x=>x.RelationshipId).HasColumnName("relationship_id");
+            entity.Property(x=>x.BuyerOrganizationId).HasColumnName("buyer_organization_id");
+            entity.Property(x=>x.SupplierOrganizationId).HasColumnName("supplier_organization_id");
+            entity.Property(x=>x.SupplierProductId).HasColumnName("supplier_product_id");
+            entity.Property(x=>x.IsShared).HasColumnName("is_shared");
+            entity.Property(x=>x.BuyerSpecificPoPrice).HasColumnName("buyer_specific_po_price").HasPrecision(18,2);
+            entity.Property(x=>x.SyncVersion).HasColumnName("sync_version");
+            entity.Property(x=>x.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(x=>x.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(x=>x.Xmin).HasColumnName("xmin").HasColumnType("xid").ValueGeneratedOnAddOrUpdate().IsConcurrencyToken();
+            entity.HasIndex(x=>new{x.RelationshipId,x.SupplierProductId}).IsUnique().HasDatabaseName("ux_connected_buyer_product_shares_relationship_product");
+            entity.HasIndex(x=>new{x.RelationshipId,x.IsShared}).HasDatabaseName("ix_connected_buyer_product_shares_relationship_shared");
+            entity.HasIndex(x=>new{x.SupplierOrganizationId,x.SupplierProductId}).HasDatabaseName("ix_connected_buyer_product_shares_supplier_product");
         });
         modelBuilder.Entity<BuyerSupplierProductLinkRecord>(entity =>
         {

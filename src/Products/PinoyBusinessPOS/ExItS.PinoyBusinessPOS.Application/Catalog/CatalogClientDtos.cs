@@ -68,7 +68,9 @@ public sealed record PosCatalogProductDto(
     bool CanBeUsedAsIngredient = false,
     bool IsProduced = false,
     string? UsagePreset = "BuyAndSell",
-    IReadOnlyList<PosCatalogProductUnitDto>? Units = null);
+    IReadOnlyList<PosCatalogProductUnitDto>? Units = null,
+    bool CanExposeToConnectedBuyers = false,
+    decimal? DefaultConnectedPoPrice = null);
 
 public sealed record CreatePosProductCategoryRequest(string Name, Guid? CategoryId = null);
 
@@ -93,7 +95,9 @@ public sealed record CreatePosCatalogProductRequest(
     bool? CanBeUsedAsIngredient = null,
     bool? IsProduced = null,
     string? UsagePreset = null,
-    IReadOnlyList<PosCatalogProductUnitInput>? Units = null);
+    IReadOnlyList<PosCatalogProductUnitInput>? Units = null,
+    bool CanExposeToConnectedBuyers = false,
+    decimal? DefaultConnectedPoPrice = null);
 
 public sealed record UpdatePosCatalogProductRequest(
     string Name,
@@ -112,7 +116,9 @@ public sealed record UpdatePosCatalogProductRequest(
     bool? CanBeUsedAsIngredient = null,
     bool? IsProduced = null,
     string? UsagePreset = null,
-    IReadOnlyList<PosCatalogProductUnitInput>? Units = null);
+    IReadOnlyList<PosCatalogProductUnitInput>? Units = null,
+    bool? CanExposeToConnectedBuyers = null,
+    decimal? DefaultConnectedPoPrice = null);
 
 /// <summary>One row for Today's Prices bulk current-price update (price only).</summary>
 public sealed record UpdatePosCatalogProductPriceItem(

@@ -38,6 +38,53 @@ internal sealed class SupplierProductExposureRepository(PosDbContext db) : ISupp
     public async Task UpdateAsync(SupplierProductExposure x,CancellationToken ct=default){var r=await db.SupplierProductExposures.SingleAsync(y=>y.Id==x.Id.Value,ct);ConnectedSupplierEntityMapper.Apply(x,r);}
 }
 
+internal sealed class ConnectedBuyerProductShareRepository(PosDbContext db) : IConnectedBuyerProductShareRepository
+{
+    public async Task<ConnectedBuyerProductShare?> GetAsync(ConnectedBuyerProductShareId id,CancellationToken ct=default)
+    {
+        var row=await db.ConnectedBuyerProductShares.AsNoTracking().SingleOrDefaultAsync(x=>x.Id==id.Value,ct);
+        return row is null?null:ConnectedSupplierEntityMapper.ToDomain(row);
+    }
+    public async Task<ConnectedBuyerProductShare?> FindAsync(ConnectedSupplierRelationshipId relationshipId,CatalogProductId productId,CancellationToken ct=default)
+    {
+        var row=await db.ConnectedBuyerProductShares.AsNoTracking()
+            .SingleOrDefaultAsync(x=>x.RelationshipId==relationshipId.Value&&x.SupplierProductId==productId.Value,ct);
+        return row is null?null:ConnectedSupplierEntityMapper.ToDomain(row);
+    }
+    public async Task<IReadOnlyList<ConnectedBuyerProductShare>> ListAsync(ConnectedSupplierRelationshipId relationshipId,CancellationToken ct=default)=>
+        (await db.ConnectedBuyerProductShares.AsNoTracking().Where(x=>x.RelationshipId==relationshipId.Value)
+            .OrderBy(x=>x.SupplierProductId).ToListAsync(ct)).Select(ConnectedSupplierEntityMapper.ToDomain).ToList();
+    public async Task<(IReadOnlyList<SupplierProductExposure> Exposures,IReadOnlyList<ConnectedBuyerProductShare> Shares,int Total)>
+        SearchSharedCatalogAsync(ConnectedSupplierRelationshipId relationshipId,PosOrganizationId supplier,string? query,string? category,int skip,int take,CancellationToken ct=default)
+    {
+        var q=from exposure in db.SupplierProductExposures.AsNoTracking()
+              join share in db.ConnectedBuyerProductShares.AsNoTracking()
+                on exposure.ProductId equals share.SupplierProductId
+              where exposure.SupplierOrganizationId==supplier.Value&&exposure.IsExposed&&exposure.IsOrderable
+                    &&share.RelationshipId==relationshipId.Value&&share.IsShared
+              select new { exposure, share };
+        if(!string.IsNullOrWhiteSpace(query))
+        {
+            var term=query.Trim().ToUpper();
+            q=q.Where(x=>x.exposure.NameSnapshot.ToUpper().Contains(term)
+                ||(x.exposure.SkuSnapshot!=null&&x.exposure.SkuSnapshot.ToUpper().Contains(term)));
+        }
+        if(!string.IsNullOrWhiteSpace(category))
+        {
+            var term=category.Trim().ToUpper();
+            q=q.Where(x=>x.exposure.CategoryNameSnapshot!=null&&x.exposure.CategoryNameSnapshot.ToUpper()==term);
+        }
+        var total=await q.CountAsync(ct);
+        var rows=await q.OrderBy(x=>x.exposure.NameSnapshot).ThenBy(x=>x.exposure.Id).Skip(skip).Take(take).ToListAsync(ct);
+        return(rows.Select(x=>ConnectedSupplierEntityMapper.ToDomain(x.exposure)).ToList(),
+            rows.Select(x=>ConnectedSupplierEntityMapper.ToDomain(x.share)).ToList(),total);
+    }
+    public Task AddAsync(ConnectedBuyerProductShare x,CancellationToken ct=default)
+    {db.ConnectedBuyerProductShares.Add(ConnectedSupplierEntityMapper.ToRecord(x));return Task.CompletedTask;}
+    public async Task UpdateAsync(ConnectedBuyerProductShare x,CancellationToken ct=default)
+    {var row=await db.ConnectedBuyerProductShares.SingleAsync(y=>y.Id==x.Id.Value,ct);ConnectedSupplierEntityMapper.Apply(x,row);}
+}
+
 internal sealed class BuyerSupplierProductLinkRepository(PosDbContext db) : IBuyerSupplierProductLinkRepository
 {
     public async Task<BuyerSupplierProductLink?> GetAsync(BuyerSupplierProductLinkId id,CancellationToken ct=default)

@@ -36,6 +36,12 @@ public sealed class SupplierProductExposureId : ConnectedSupplierGuidId<Supplier
     public static SupplierProductExposureId New() => new(Guid.NewGuid());
     public static SupplierProductExposureId From(Guid value) => new(value);
 }
+public sealed class ConnectedBuyerProductShareId : ConnectedSupplierGuidId<ConnectedBuyerProductShareId>
+{
+    private ConnectedBuyerProductShareId(Guid value) : base(value) { }
+    public static ConnectedBuyerProductShareId New() => new(Guid.NewGuid());
+    public static ConnectedBuyerProductShareId From(Guid value) => new(value);
+}
 public sealed class BuyerSupplierProductLinkId : ConnectedSupplierGuidId<BuyerSupplierProductLinkId>
 {
     private BuyerSupplierProductLinkId(Guid value) : base(value) { }
@@ -215,6 +221,116 @@ public sealed class SupplierProductExposure
     internal static string? Clean(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }
 
+public sealed class ConnectedBuyerProductShare
+{
+    public ConnectedBuyerProductShareId Id { get; }
+    public ConnectedSupplierRelationshipId RelationshipId { get; }
+    public PosOrganizationId BuyerOrganizationId { get; }
+    public PosOrganizationId SupplierOrganizationId { get; }
+    public CatalogProductId SupplierProductId { get; }
+    public bool IsShared { get; private set; }
+    public decimal? BuyerSpecificPoPrice { get; private set; }
+    public long SyncVersion { get; private set; }
+    public DateTimeOffset CreatedAtUtc { get; }
+    public DateTimeOffset UpdatedAtUtc { get; private set; }
+
+    private ConnectedBuyerProductShare(
+        ConnectedBuyerProductShareId id,
+        ConnectedSupplierRelationshipId relationshipId,
+        PosOrganizationId buyer,
+        PosOrganizationId supplier,
+        CatalogProductId supplierProductId,
+        bool isShared,
+        decimal? buyerSpecificPoPrice,
+        long syncVersion,
+        DateTimeOffset createdAtUtc,
+        DateTimeOffset updatedAtUtc)
+    {
+        Id = id;
+        RelationshipId = relationshipId;
+        BuyerOrganizationId = buyer;
+        SupplierOrganizationId = supplier;
+        SupplierProductId = supplierProductId;
+        IsShared = isShared;
+        BuyerSpecificPoPrice = buyerSpecificPoPrice is null ? null : SupplierProductExposure.Money(buyerSpecificPoPrice.Value);
+        SyncVersion = syncVersion;
+        CreatedAtUtc = createdAtUtc;
+        UpdatedAtUtc = updatedAtUtc;
+    }
+
+    public static ConnectedBuyerProductShare Share(
+        ConnectedSupplierRelationshipId relationshipId,
+        PosOrganizationId buyer,
+        PosOrganizationId supplier,
+        CatalogProductId supplierProductId,
+        DateTimeOffset utcNow,
+        decimal? buyerSpecificPoPrice = null,
+        ConnectedBuyerProductShareId? id = null)
+    {
+        ConnectedSupplierRelationship.EnsureUtc(utcNow);
+        return new(id ?? ConnectedBuyerProductShareId.New(), relationshipId, buyer, supplier, supplierProductId,
+            true, buyerSpecificPoPrice, 1, utcNow, utcNow);
+    }
+
+    public void SetShared(bool isShared, DateTimeOffset utcNow)
+    {
+        IsShared = isShared;
+        Touch(utcNow);
+    }
+
+    public void SetBuyerSpecificPoPrice(decimal? price, DateTimeOffset utcNow)
+    {
+        BuyerSpecificPoPrice = price is null ? null : SupplierProductExposure.Money(price.Value);
+        Touch(utcNow);
+    }
+
+    public void Unshare(DateTimeOffset utcNow, bool clearPrice = false)
+    {
+        IsShared = false;
+        if (clearPrice) BuyerSpecificPoPrice = null;
+        Touch(utcNow);
+    }
+
+    public static ConnectedBuyerProductShare Rehydrate(
+        ConnectedBuyerProductShareId id,
+        ConnectedSupplierRelationshipId relationshipId,
+        PosOrganizationId buyer,
+        PosOrganizationId supplier,
+        CatalogProductId supplierProductId,
+        bool isShared,
+        decimal? buyerSpecificPoPrice,
+        long syncVersion,
+        DateTimeOffset createdAtUtc,
+        DateTimeOffset updatedAtUtc) =>
+        new(id, relationshipId, buyer, supplier, supplierProductId, isShared, buyerSpecificPoPrice,
+            syncVersion, createdAtUtc, updatedAtUtc);
+
+    private void Touch(DateTimeOffset utcNow)
+    {
+        ConnectedSupplierRelationship.EnsureUtc(utcNow);
+        SyncVersion++;
+        UpdatedAtUtc = utcNow;
+    }
+}
+
+public static class ConnectedPoPricing
+{
+    public static bool TryResolveEffectivePrice(
+        SupplierProductExposure exposure,
+        ConnectedBuyerProductShare? share,
+        out decimal price)
+    {
+        price = 0m;
+        if (!exposure.IsExposed || !exposure.IsOrderable || share is null || !share.IsShared)
+        {
+            return false;
+        }
+
+        price = share.BuyerSpecificPoPrice ?? exposure.SupplierOrderPrice;
+        return true;
+    }
+}
+
 public sealed class BuyerSupplierProductLink
 {
     public const int PackageLabelMaxLength = 64;
@@ -272,7 +388,8 @@ public sealed class BuyerSupplierProductLink
         BuyerSupplierProductLinkId? id = null,
         Guid? buyerPurchaseUnitId = null,
         decimal multiplierToBase = 1m,
-        string? packageLabel = null)
+        string? packageLabel = null,
+        decimal? effectiveOrderPrice = null)
     {
         if (exposure.SupplierOrganizationId != supplier)
         {
@@ -291,7 +408,7 @@ public sealed class BuyerSupplierProductLink
             exposure.SkuSnapshot,
             exposure.NameSnapshot,
             exposure.UnitOfMeasureCode,
-            exposure.SupplierOrderPrice,
+            SupplierProductExposure.Money(effectiveOrderPrice ?? exposure.SupplierOrderPrice),
             true,
             1,
             utcNow,

@@ -44,9 +44,17 @@ public sealed record RequestConnectionRequest(
 public sealed record RespondConnectionRequest(Guid? RespondedByUserId = null);
 public sealed record SupplierProductExposureDto(Guid ExposureId, Guid SupplierOrganizationId, Guid ProductId, string? SkuSnapshot,
     string NameSnapshot, string? CategoryNameSnapshot, string UnitOfMeasureCode, decimal SupplierOrderPrice,
-    bool IsOrderable, bool IsExposed, long SyncVersion, DateTimeOffset CreatedAtUtc, DateTimeOffset UpdatedAtUtc);
+    bool IsOrderable, bool IsExposed, long SyncVersion, DateTimeOffset CreatedAtUtc, DateTimeOffset UpdatedAtUtc,
+    decimal? EffectiveSupplierOrderPrice = null);
 public sealed record ExposeProductRequest(Guid ProductId, decimal SupplierOrderPrice, bool IsOrderable = true);
 public sealed record UpdateExposureRequest(decimal SupplierOrderPrice, bool IsOrderable, bool IsExposed);
+public sealed record ConnectedBuyerProductShareDto(Guid ShareId, Guid RelationshipId, Guid BuyerOrganizationId,
+    Guid SupplierOrganizationId, Guid SupplierProductId, bool IsShared, decimal? BuyerSpecificPoPrice,
+    decimal? EffectiveSupplierOrderPrice, long SyncVersion, DateTimeOffset CreatedAtUtc, DateTimeOffset UpdatedAtUtc,
+    string? SkuSnapshot = null, string? NameSnapshot = null, string? UnitOfMeasureCode = null, decimal? SellingPrice = null);
+public sealed record SetBuyerProductShareItem(Guid SupplierProductId, bool IsShared, decimal? BuyerSpecificPoPrice = null);
+public sealed record SetBuyerProductSharesRequest(IReadOnlyList<SetBuyerProductShareItem> Products);
+public sealed record ConfirmBuyerProductSharingRequest(IReadOnlyList<Guid> ProductIds);
 public sealed record BuyerSupplierProductLinkDto(Guid LinkId, Guid RelationshipId, Guid BuyerOrganizationId,
     Guid SupplierOrganizationId, Guid BuyerProductId, Guid SupplierProductId, string? SupplierSkuSnapshot,
     string SupplierNameSnapshot, string UnitOfMeasureCode, decimal LastKnownOrderPrice, bool IsActive,
@@ -93,6 +101,17 @@ public static class ConnectedSupplierMapper
     public static SupplierProductExposureDto Map(SupplierProductExposure x) => new(x.Id.Value,x.SupplierOrganizationId.Value,
         x.ProductId.Value,x.SkuSnapshot,x.NameSnapshot,x.CategoryNameSnapshot,x.UnitOfMeasureCode,x.SupplierOrderPrice,
         x.IsOrderable,x.IsExposed,x.SyncVersion,x.CreatedAtUtc,x.UpdatedAtUtc);
+    public static SupplierProductExposureDto Map(SupplierProductExposure x, decimal effectivePrice) =>
+        Map(x) with { SupplierOrderPrice = effectivePrice, EffectiveSupplierOrderPrice = effectivePrice };
+    public static ConnectedBuyerProductShareDto Map(ConnectedBuyerProductShare x, SupplierProductExposure? exposure = null,
+        CatalogProduct? product = null)
+    {
+        decimal? effective = exposure is not null && ConnectedPoPricing.TryResolveEffectivePrice(exposure, x, out var price)
+            ? price : null;
+        return new(x.Id.Value,x.RelationshipId.Value,x.BuyerOrganizationId.Value,x.SupplierOrganizationId.Value,
+            x.SupplierProductId.Value,x.IsShared,x.BuyerSpecificPoPrice,effective,x.SyncVersion,x.CreatedAtUtc,x.UpdatedAtUtc,
+            exposure?.SkuSnapshot,exposure?.NameSnapshot,exposure?.UnitOfMeasureCode,product?.SellingPrice);
+    }
     public static BuyerSupplierProductLinkDto Map(BuyerSupplierProductLink x) => new(x.Id.Value,x.RelationshipId.Value,
         x.BuyerOrganizationId.Value,x.SupplierOrganizationId.Value,x.BuyerProductId.Value,x.SupplierProductId.Value,
         x.SupplierSkuSnapshot,x.SupplierNameSnapshot,x.UnitOfMeasureCode,x.LastKnownOrderPrice,x.IsActive,x.SyncVersion,x.CreatedAtUtc,x.UpdatedAtUtc,
@@ -506,12 +525,11 @@ public sealed class ExposeProduct
         if(!gate.IsSuccess)return ConnectedSupplierUseCaseGuard.Failure<SupplierProductExposureDto>(gate.ErrorCode!,gate.ErrorMessage!);
         var org=PosOrganizationId.From(orgId);var product=await _products.GetByIdAsync(org,CatalogProductId.From(request.ProductId),ct);
         if(product is null)return ConnectedSupplierUseCaseGuard.Failure<SupplierProductExposureDto>(ApplicationErrorCodes.ProductNotFound,"Product was not found.");
-        try {var existing=await _exposures.GetByProductAsync(org,product.Id,ct);
-            if(existing is null){existing=SupplierProductExposure.Expose(org,product.Id,product.Name,product.UnitOfMeasure.ToString(),
-                request.SupplierOrderPrice,_clock.GetUtcNow(),product.Sku);if(!request.IsOrderable)existing.MarkNotOrderable(_clock.GetUtcNow());
-                await _exposures.AddAsync(existing,ct);}
-            else {existing.UpdateOffer(product.Name,product.UnitOfMeasure.ToString(),request.SupplierOrderPrice,request.IsOrderable,_clock.GetUtcNow(),product.Sku);
-                await _exposures.UpdateAsync(existing,ct);}
+        try {var now=_clock.GetUtcNow();product.EnableConnectedBuyerAvailability(now);product.SetDefaultConnectedPoPrice(request.SupplierOrderPrice,now);
+            await _products.UpdateAsync(product,ct);await Catalog.ConnectedProductExposureSync.SyncAsync(product,_exposures,now,ct);
+            var existing=await _exposures.GetByProductAsync(org,product.Id,ct)
+                ?? throw new InvalidOperationException("Exposure synchronization did not create an exposure.");
+            if(!request.IsOrderable){existing.MarkNotOrderable(now);await _exposures.UpdateAsync(existing,ct);}
             await _uow.SaveChangesAsync(ct);return ApplicationResult<SupplierProductExposureDto>.Success(ConnectedSupplierMapper.Map(existing));
         }catch(DomainException ex){return ConnectedSupplierUseCaseGuard.Failure<SupplierProductExposureDto>(ex.ErrorCode,ex.Message);}
     }
@@ -540,34 +558,149 @@ public sealed class ListExposures
     public async Task<ApplicationResult<IReadOnlyList<SupplierProductExposureDto>>> ExecuteAsync(Guid orgId,CancellationToken ct=default)
     {var gate=ConnectedSupplierUseCaseGuard.Access(_access,UtangCapability.ViewSuppliers);
      if(!gate.IsSuccess)return ConnectedSupplierUseCaseGuard.Failure<IReadOnlyList<SupplierProductExposureDto>>(gate.ErrorCode!,gate.ErrorMessage!);
-     var x=await _exposures.ListAsync(PosOrganizationId.From(orgId),ct);return ApplicationResult<IReadOnlyList<SupplierProductExposureDto>>.Success(x.Select(ConnectedSupplierMapper.Map).ToList());}
+     var x=await _exposures.ListAsync(PosOrganizationId.From(orgId),ct);return ApplicationResult<IReadOnlyList<SupplierProductExposureDto>>.Success(x.Select(item=>ConnectedSupplierMapper.Map(item)).ToList());}
+}
+
+public sealed class ListBuyerProductShares
+{
+    private readonly IConnectedSupplierRelationshipRepository _relationships;
+    private readonly ISupplierProductExposureRepository _exposures;
+    private readonly IConnectedBuyerProductShareRepository _shares;
+    private readonly ICatalogProductRepository _products;
+    private readonly IPosCommercialAccessAccessor _access;
+    public ListBuyerProductShares(IConnectedSupplierRelationshipRepository relationships,ISupplierProductExposureRepository exposures,
+        IConnectedBuyerProductShareRepository shares,ICatalogProductRepository products,IPosCommercialAccessAccessor access)
+    {_relationships=relationships;_exposures=exposures;_shares=shares;_products=products;_access=access;}
+    public async Task<ApplicationResult<IReadOnlyList<ConnectedBuyerProductShareDto>>> ExecuteAsync(Guid orgId,Guid relationshipId,CancellationToken ct=default)
+    {
+        var gate=ConnectedSupplierUseCaseGuard.Access(_access,UtangCapability.ViewSuppliers);
+        if(!gate.IsSuccess)return ConnectedSupplierUseCaseGuard.Failure<IReadOnlyList<ConnectedBuyerProductShareDto>>(gate.ErrorCode!,gate.ErrorMessage!);
+        var relationship=await _relationships.GetAsync(ConnectedSupplierRelationshipId.From(relationshipId),ct);
+        var supplier=PosOrganizationId.From(orgId);
+        if(relationship is null||relationship.SupplierOrganizationId!=supplier)
+            return ConnectedSupplierUseCaseGuard.Failure<IReadOnlyList<ConnectedBuyerProductShareDto>>(ConnectedSupplierErrorCodes.NotFound,"Relationship was not found.");
+        var exposures=await _exposures.ListAsync(supplier,ct);
+        var shares=(await _shares.ListAsync(relationship.Id,ct)).ToDictionary(x=>x.SupplierProductId.Value);
+        var result=new List<ConnectedBuyerProductShareDto>();
+        foreach(var exposure in exposures.Where(x=>x.IsExposed))
+        {
+            var product=await _products.GetByIdAsync(supplier,exposure.ProductId,ct);
+            shares.TryGetValue(exposure.ProductId.Value,out var share);
+            if(share is null)
+            {
+                result.Add(new(Guid.Empty,relationship.Id.Value,relationship.BuyerOrganizationId.Value,supplier.Value,
+                    exposure.ProductId.Value,false,null,null,0,exposure.CreatedAtUtc,exposure.UpdatedAtUtc,
+                    exposure.SkuSnapshot,exposure.NameSnapshot,exposure.UnitOfMeasureCode,product?.SellingPrice));
+            }
+            else result.Add(ConnectedSupplierMapper.Map(share,exposure,product));
+        }
+        return ApplicationResult<IReadOnlyList<ConnectedBuyerProductShareDto>>.Success(result);
+    }
+}
+
+public sealed class ListEligibleProductsForSharing(ListBuyerProductShares inner)
+{
+    public Task<ApplicationResult<IReadOnlyList<ConnectedBuyerProductShareDto>>> ExecuteAsync(Guid orgId,Guid relationshipId,CancellationToken ct=default)=>
+        inner.ExecuteAsync(orgId,relationshipId,ct);
+}
+
+public sealed class SetBuyerProductShares
+{
+    private readonly IConnectedSupplierRelationshipRepository _relationships;
+    private readonly ISupplierProductExposureRepository _exposures;
+    private readonly IConnectedBuyerProductShareRepository _shares;
+    private readonly IPosUnitOfWork _uow;
+    private readonly IPosCommercialAccessAccessor _access;
+    private readonly TimeProvider _clock;
+    public SetBuyerProductShares(IConnectedSupplierRelationshipRepository relationships,ISupplierProductExposureRepository exposures,
+        IConnectedBuyerProductShareRepository shares,IPosUnitOfWork uow,IPosCommercialAccessAccessor access,TimeProvider? clock=null)
+    {_relationships=relationships;_exposures=exposures;_shares=shares;_uow=uow;_access=access;_clock=clock??TimeProvider.System;}
+    public async Task<ApplicationResult<IReadOnlyList<ConnectedBuyerProductShareDto>>> ExecuteAsync(
+        Guid orgId,Guid relationshipId,IReadOnlyList<SetBuyerProductShareItem> products,CancellationToken ct=default)
+    {
+        var gate=ConnectedSupplierUseCaseGuard.Access(_access,UtangCapability.ManageSuppliers);
+        if(!gate.IsSuccess)return ConnectedSupplierUseCaseGuard.Failure<IReadOnlyList<ConnectedBuyerProductShareDto>>(gate.ErrorCode!,gate.ErrorMessage!);
+        var relationship=await _relationships.GetAsync(ConnectedSupplierRelationshipId.From(relationshipId),ct);
+        var supplier=PosOrganizationId.From(orgId);
+        if(relationship is null||relationship.SupplierOrganizationId!=supplier||relationship.Status!=ConnectedSupplierRelationshipStatus.Active)
+            return ConnectedSupplierUseCaseGuard.Failure<IReadOnlyList<ConnectedBuyerProductShareDto>>(ConnectedSupplierErrorCodes.NotFound,"Active relationship was not found.");
+        var now=_clock.GetUtcNow();var result=new List<ConnectedBuyerProductShareDto>();
+        foreach(var item in products.GroupBy(x=>x.SupplierProductId).Select(x=>x.Last()))
+        {
+            var productId=CatalogProductId.From(item.SupplierProductId);
+            var exposure=await _exposures.GetByProductAsync(supplier,productId,ct);
+            if(exposure is null||!exposure.IsExposed)
+                return ConnectedSupplierUseCaseGuard.Failure<IReadOnlyList<ConnectedBuyerProductShareDto>>(ConnectedSupplierErrorCodes.ExposureNotFound,"An eligible exposure was not found.");
+            var share=await _shares.FindAsync(relationship.Id,productId,ct);
+            if(share is null)
+            {
+                share=ConnectedBuyerProductShare.Share(relationship.Id,relationship.BuyerOrganizationId,supplier,productId,now,item.BuyerSpecificPoPrice);
+                if(!item.IsShared)share.Unshare(now);
+                await _shares.AddAsync(share,ct);
+            }
+            else
+            {
+                share.SetBuyerSpecificPoPrice(item.BuyerSpecificPoPrice,now);
+                share.SetShared(item.IsShared,now);
+                await _shares.UpdateAsync(share,ct);
+            }
+            result.Add(ConnectedSupplierMapper.Map(share,exposure));
+        }
+        await _uow.SaveChangesAsync(ct);
+        return ApplicationResult<IReadOnlyList<ConnectedBuyerProductShareDto>>.Success(result);
+    }
+}
+
+public sealed class UpsertBuyerProductShare(SetBuyerProductShares inner)
+{
+    public async Task<ApplicationResult<ConnectedBuyerProductShareDto>> ExecuteAsync(Guid orgId,Guid relationshipId,SetBuyerProductShareItem item,CancellationToken ct=default)
+    {
+        var result=await inner.ExecuteAsync(orgId,relationshipId,[item],ct);
+        return result.IsSuccess
+            ? ApplicationResult<ConnectedBuyerProductShareDto>.Success(result.Value![0])
+            : ApplicationResult<ConnectedBuyerProductShareDto>.Failure(result.ErrorCode!,result.ErrorMessage!);
+    }
+}
+
+public sealed class ConfirmBuyerProductSharing(SetBuyerProductShares inner)
+{
+    public Task<ApplicationResult<IReadOnlyList<ConnectedBuyerProductShareDto>>> ExecuteAsync(
+        Guid orgId,Guid relationshipId,ConfirmBuyerProductSharingRequest request,CancellationToken ct=default)=>
+        inner.ExecuteAsync(orgId,relationshipId,(request.ProductIds??[]).Select(x=>new SetBuyerProductShareItem(x,true)).ToList(),ct);
 }
 
 public sealed class SearchExposedCatalog
 {
     private readonly IConnectedSupplierRelationshipRepository _relationships;private readonly ISupplierProductExposureRepository _exposures;
+    private readonly IConnectedBuyerProductShareRepository _shares;
     private readonly IPosCommercialAccessAccessor _access;
-    public SearchExposedCatalog(IConnectedSupplierRelationshipRepository r,ISupplierProductExposureRepository e,IPosCommercialAccessAccessor a)
-    {_relationships=r;_exposures=e;_access=a;}
+    public SearchExposedCatalog(IConnectedSupplierRelationshipRepository r,ISupplierProductExposureRepository e,IPosCommercialAccessAccessor a,
+        IConnectedBuyerProductShareRepository shares)
+    {_relationships=r;_exposures=e;_access=a;_shares=shares;}
     public async Task<ApplicationResult<PagedResult<SupplierProductExposureDto>>> ExecuteAsync(Guid orgId,Guid relationshipId,string? query,string? category,int? page,int? pageSize,CancellationToken ct=default)
     {var gate=ConnectedSupplierUseCaseGuard.Access(_access,UtangCapability.ViewPurchasing);
      if(!gate.IsSuccess)return ConnectedSupplierUseCaseGuard.Failure<PagedResult<SupplierProductExposureDto>>(gate.ErrorCode!,gate.ErrorMessage!);
      var r=await _relationships.GetAsync(ConnectedSupplierRelationshipId.From(relationshipId),ct);var buyer=PosOrganizationId.From(orgId);
      if(r is null||r.BuyerOrganizationId!=buyer)return ConnectedSupplierUseCaseGuard.Failure<PagedResult<SupplierProductExposureDto>>(ConnectedSupplierErrorCodes.NotFound,"Relationship was not found.");
      if(r.Status!=ConnectedSupplierRelationshipStatus.Active)return ConnectedSupplierUseCaseGuard.Failure<PagedResult<SupplierProductExposureDto>>(ConnectedSupplierErrorCodes.RelationshipInactive,"Relationship is not active.");
-     var p=Math.Max(page??1,1);var size=Math.Clamp(pageSize??25,1,50);var (items,total)=await _exposures.SearchAsync(r.SupplierOrganizationId,query,category,(p-1)*size,size,ct);
-     return ApplicationResult<PagedResult<SupplierProductExposureDto>>.Success(new(items.Select(ConnectedSupplierMapper.Map).ToList(),total,p,size));}
+     var p=Math.Max(page??1,1);var size=Math.Clamp(pageSize??25,1,50);
+     var (items,shares,total)=await _shares.SearchSharedCatalogAsync(r.Id,r.SupplierOrganizationId,query,category,(p-1)*size,size,ct);
+     var sharesByProduct=shares.ToDictionary(x=>x.SupplierProductId.Value);
+     return ApplicationResult<PagedResult<SupplierProductExposureDto>>.Success(new(items.Select(x=>
+       ConnectedSupplierMapper.Map(x,ConnectedPoPricing.TryResolveEffectivePrice(x,sharesByProduct[x.ProductId.Value],out var price)?price:x.SupplierOrderPrice)).ToList(),total,p,size));}
 }
 
 public sealed class LinkProduct
 {
     private readonly IConnectedSupplierRelationshipRepository _relationships;private readonly ISupplierProductExposureRepository _exposures;
+    private readonly IConnectedBuyerProductShareRepository _shares;
     private readonly IBuyerSupplierProductLinkRepository _links;private readonly ICatalogProductRepository _products;
     private readonly ICatalogProductUnitRepository _units;
     private readonly IPosUnitOfWork _uow;private readonly IPosCommercialAccessAccessor _access;private readonly TimeProvider _clock;
     public LinkProduct(IConnectedSupplierRelationshipRepository r,ISupplierProductExposureRepository e,IBuyerSupplierProductLinkRepository l,
-        ICatalogProductRepository p,ICatalogProductUnitRepository units,IPosUnitOfWork u,IPosCommercialAccessAccessor a,TimeProvider? c=null)
-    {_relationships=r;_exposures=e;_links=l;_products=p;_units=units;_uow=u;_access=a;_clock=c??TimeProvider.System;}
+        ICatalogProductRepository p,ICatalogProductUnitRepository units,IPosUnitOfWork u,IPosCommercialAccessAccessor a,
+        IConnectedBuyerProductShareRepository shares,TimeProvider? c=null)
+    {_relationships=r;_exposures=e;_links=l;_products=p;_units=units;_uow=u;_access=a;_shares=shares;_clock=c??TimeProvider.System;}
     public async Task<ApplicationResult<BuyerSupplierProductLinkDto>> ExecuteAsync(Guid orgId,Guid relationshipId,LinkProductRequest request,CancellationToken ct=default)
     {var gate=ConnectedSupplierUseCaseGuard.Access(_access,UtangCapability.ManagePurchasing);
      if(!gate.IsSuccess)return ConnectedSupplierUseCaseGuard.Failure<BuyerSupplierProductLinkDto>(gate.ErrorCode!,gate.ErrorMessage!);
@@ -577,6 +710,9 @@ public sealed class LinkProduct
      var exposure=await _exposures.GetAsync(SupplierProductExposureId.From(request.ExposureId),ct);
      if(product is null||exposure is null||exposure.SupplierOrganizationId!=r.SupplierOrganizationId||!exposure.IsExposed)
        return ConnectedSupplierUseCaseGuard.Failure<BuyerSupplierProductLinkDto>(ConnectedSupplierErrorCodes.ExposureNotFound,"Exposure was not found.");
+     var share=await _shares.FindAsync(r.Id,exposure.ProductId,ct);
+     if(!ConnectedPoPricing.TryResolveEffectivePrice(exposure,share,out var effectivePrice))
+       return ConnectedSupplierUseCaseGuard.Failure<BuyerSupplierProductLinkDto>(ConnectedSupplierErrorCodes.ExposureNotFound,"This product is not shared with your business.");
      Guid? buyerPurchaseUnitId=request.BuyerPurchaseUnitId;
      var multiplier=request.MultiplierToBase??1m;
      if(buyerPurchaseUnitId is not null)
@@ -588,7 +724,7 @@ public sealed class LinkProduct
      }
      var existing=await _links.FindAsync(r.Id,product.Id,ct);if(existing is not null)return ApplicationResult<BuyerSupplierProductLinkDto>.Success(ConnectedSupplierMapper.Map(existing));
      var link=BuyerSupplierProductLink.Create(r.Id,buyer,r.SupplierOrganizationId,product.Id,exposure,_clock.GetUtcNow(),
-       buyerPurchaseUnitId:buyerPurchaseUnitId,multiplierToBase:multiplier,packageLabel:request.PackageLabel);
+       buyerPurchaseUnitId:buyerPurchaseUnitId,multiplierToBase:multiplier,packageLabel:request.PackageLabel,effectiveOrderPrice:effectivePrice);
      await _links.AddAsync(link,ct);await _uow.SaveChangesAsync(ct);return ApplicationResult<BuyerSupplierProductLinkDto>.Success(ConnectedSupplierMapper.Map(link));}
 }
 
@@ -650,15 +786,18 @@ public sealed class DeclineIncoming(RespondIncomingOrder inner)
 public sealed class RevalidateConnectedPoDraft
 {
     private readonly IConnectedSupplierRelationshipRepository _relationships;private readonly ISupplierProductExposureRepository _exposures;private readonly IPosCommercialAccessAccessor _access;
-    public RevalidateConnectedPoDraft(IConnectedSupplierRelationshipRepository r,ISupplierProductExposureRepository e,IPosCommercialAccessAccessor a){_relationships=r;_exposures=e;_access=a;}
+    private readonly IConnectedBuyerProductShareRepository _shares;
+    public RevalidateConnectedPoDraft(IConnectedSupplierRelationshipRepository r,ISupplierProductExposureRepository e,IPosCommercialAccessAccessor a,IConnectedBuyerProductShareRepository shares){_relationships=r;_exposures=e;_access=a;_shares=shares;}
     public async Task<ApplicationResult<ConnectedPoDraftReviewDto>> ExecuteAsync(Guid orgId,Guid relationshipId,RevalidateConnectedPoDraftRequest request,CancellationToken ct=default)
     {var gate=ConnectedSupplierUseCaseGuard.Access(_access,UtangCapability.ViewPurchasing);if(!gate.IsSuccess)return ConnectedSupplierUseCaseGuard.Failure<ConnectedPoDraftReviewDto>(gate.ErrorCode!,gate.ErrorMessage!);
      var r=await _relationships.GetAsync(ConnectedSupplierRelationshipId.From(relationshipId),ct);if(r is null||r.BuyerOrganizationId!=PosOrganizationId.From(orgId))return ConnectedSupplierUseCaseGuard.Failure<ConnectedPoDraftReviewDto>(ConnectedSupplierErrorCodes.NotFound,"Relationship was not found.");
      if(r.Status!=ConnectedSupplierRelationshipStatus.Active)return ApplicationResult<ConnectedPoDraftReviewDto>.Success(new(ConnectedPoDraftReviewStatus.RelationshipInactive,
        request.Lines.Select(l=>new ConnectedPoDraftReviewItem(l.SupplierProductId,ConnectedPoDraftReviewStatus.RelationshipInactive,l.UnitPriceSnapshot,null)).ToList()));
-     var items=new List<ConnectedPoDraftReviewItem>();foreach(var line in request.Lines){var e=await _exposures.GetByProductAsync(r.SupplierOrganizationId,CatalogProductId.From(line.SupplierProductId),ct);
-       var status=e is null||!e.IsExposed||!e.IsOrderable?ConnectedPoDraftReviewStatus.Unavailable:e.SupplierOrderPrice!=Domain.Sales.SaleMoney.RoundMoney(line.UnitPriceSnapshot)?ConnectedPoDraftReviewStatus.PriceChanged:ConnectedPoDraftReviewStatus.Unchanged;
-       items.Add(new(line.SupplierProductId,status,line.UnitPriceSnapshot,e?.SupplierOrderPrice));}
+     var items=new List<ConnectedPoDraftReviewItem>();foreach(var line in request.Lines){var productId=CatalogProductId.From(line.SupplierProductId);
+       var e=await _exposures.GetByProductAsync(r.SupplierOrganizationId,productId,ct);var share=await _shares.FindAsync(r.Id,productId,ct);
+       var price=0m;var available=e is not null&&ConnectedPoPricing.TryResolveEffectivePrice(e,share,out price);
+       var status=!available?ConnectedPoDraftReviewStatus.Unavailable:price!=Domain.Sales.SaleMoney.RoundMoney(line.UnitPriceSnapshot)?ConnectedPoDraftReviewStatus.PriceChanged:ConnectedPoDraftReviewStatus.Unchanged;
+       items.Add(new(line.SupplierProductId,status,line.UnitPriceSnapshot,available?price:null));}
      var overall=items.Any(i=>i.Status==ConnectedPoDraftReviewStatus.Unavailable)?ConnectedPoDraftReviewStatus.Unavailable:
        items.Any(i=>i.Status==ConnectedPoDraftReviewStatus.PriceChanged)?ConnectedPoDraftReviewStatus.PriceChanged:ConnectedPoDraftReviewStatus.Unchanged;
      return ApplicationResult<ConnectedPoDraftReviewDto>.Success(new(overall,items));}

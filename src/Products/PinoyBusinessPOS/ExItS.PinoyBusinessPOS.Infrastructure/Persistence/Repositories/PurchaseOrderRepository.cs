@@ -142,6 +142,7 @@ internal sealed class PurchaseOrderRepository : IPurchaseOrderRepository
         PurchaseOrderId purchaseOrderId,
         DateOnly businessDateUtc,
         Func<string, PurchaseOrder> applySubmit,
+        Func<PurchaseOrder, CancellationToken, Task>? beforeCommit = null,
         CancellationToken cancellationToken = default) =>
         ExecuteNumberedMutationAsync(
             organizationId,
@@ -171,6 +172,11 @@ internal sealed class PurchaseOrderRepository : IPurchaseOrderRepository
                 foreach (var line in po.Lines)
                 {
                     _db.PurchaseOrderLines.Add(PurchaseEntityMapper.ToRecord(line));
+                }
+
+                if (beforeCommit is not null)
+                {
+                    await beforeCommit(po, ct).ConfigureAwait(false);
                 }
 
                 await _db.SaveChangesAsync(ct).ConfigureAwait(false);

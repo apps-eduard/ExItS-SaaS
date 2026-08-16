@@ -37,6 +37,8 @@ public sealed class CatalogProduct
     public Guid? SourceGlobalCategoryId { get; private set; }
     public bool TracksExpiration { get; private set; }
     public int? ExpirationWarningDays { get; private set; }
+    public bool CanExposeToConnectedBuyers { get; private set; }
+    public decimal? DefaultConnectedPoPrice { get; private set; }
 
     /// <summary>Usage flags are authoritative; defaults match BuyAndSell.</summary>
     public bool CanBePurchased { get; private set; }
@@ -77,7 +79,9 @@ public sealed class CatalogProduct
         bool canBeSold = true,
         bool canBeUsedAsIngredient = false,
         bool isProduced = false,
-        string? usagePreset = null)
+        string? usagePreset = null,
+        bool canExposeToConnectedBuyers = false,
+        decimal? defaultConnectedPoPrice = null)
     {
         Id = id;
         OrganizationId = organizationId;
@@ -108,6 +112,10 @@ public sealed class CatalogProduct
         CanBeUsedAsIngredient = canBeUsedAsIngredient;
         IsProduced = isProduced;
         UsagePreset = usagePreset;
+        CanExposeToConnectedBuyers = canExposeToConnectedBuyers;
+        DefaultConnectedPoPrice = defaultConnectedPoPrice is null
+            ? null
+            : NormalizeConnectedPoPrice(defaultConnectedPoPrice.Value);
     }
 
     public static CatalogProduct Create(
@@ -260,7 +268,9 @@ public sealed class CatalogProduct
         bool canBeSold = true,
         bool canBeUsedAsIngredient = false,
         bool isProduced = false,
-        string? usagePreset = null) =>
+        string? usagePreset = null,
+        bool canExposeToConnectedBuyers = false,
+        decimal? defaultConnectedPoPrice = null) =>
         new(
             id,
             organizationId,
@@ -288,7 +298,9 @@ public sealed class CatalogProduct
             canBeSold,
             canBeUsedAsIngredient,
             isProduced,
-            usagePreset);
+            usagePreset,
+            canExposeToConnectedBuyers,
+            defaultConnectedPoPrice);
 
     /// <summary>Updates how the product participates in buy / sell / ingredient / production flows.</summary>
     public void UpdateUsage(ProductUsageCapabilities usage, DateTimeOffset utcNow)
@@ -385,6 +397,35 @@ public sealed class CatalogProduct
         SellingPrice = normalized;
         UpdatedAtUtc = utcNow;
         return true;
+    }
+
+    public void EnableConnectedBuyerAvailability(DateTimeOffset utcNow)
+    {
+        CatalogGuards.EnsureUtc(utcNow);
+        DefaultConnectedPoPrice ??= NormalizeConnectedPoPrice(SellingPrice);
+        CanExposeToConnectedBuyers = true;
+        UpdatedAtUtc = utcNow;
+    }
+
+    public void SetDefaultConnectedPoPrice(decimal price, DateTimeOffset utcNow)
+    {
+        CatalogGuards.EnsureUtc(utcNow);
+        if (!CanExposeToConnectedBuyers)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidProductSellingPrice,
+                "Connected buyer availability must be enabled before setting the default PO price.");
+        }
+
+        DefaultConnectedPoPrice = NormalizeConnectedPoPrice(price);
+        UpdatedAtUtc = utcNow;
+    }
+
+    public void DisableConnectedBuyerAvailability(DateTimeOffset utcNow)
+    {
+        CatalogGuards.EnsureUtc(utcNow);
+        CanExposeToConnectedBuyers = false;
+        UpdatedAtUtc = utcNow;
     }
 
     public void Deactivate(DateTimeOffset utcNow)
@@ -543,5 +584,17 @@ public sealed class CatalogProduct
         }
 
         return decimal.Round(sellingPrice, 2);
+    }
+
+    private static decimal NormalizeConnectedPoPrice(decimal price)
+    {
+        var rounded = Sales.SaleMoney.RoundMoney(price);
+        if (rounded < 0m || rounded > SellingPriceMax)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidProductSellingPrice,
+                "Connected PO price must be non-negative and within the supported money range.");
+        }
+        return rounded;
     }
 }

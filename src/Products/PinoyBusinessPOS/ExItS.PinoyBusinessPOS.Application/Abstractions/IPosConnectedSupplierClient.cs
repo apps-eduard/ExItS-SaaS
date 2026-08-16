@@ -13,6 +13,10 @@ public interface IPosConnectedSupplierClient
     Task<ApiResult<PagedResult<SupplierProductExposureDto>>> SearchCatalogAsync(Guid relationshipId,string? query=null,string? category=null,int page=1,int pageSize=25,CancellationToken ct=default);
     Task<ApiResult<SupplierProductExposureDto>> ExposeProductAsync(Guid relationshipId,ExposeProductRequest request,CancellationToken ct=default);
     Task<ApiResult<IReadOnlyList<SupplierProductExposureDto>>> ListExposuresAsync(CancellationToken ct=default);
+    Task<ApiResult<IReadOnlyList<ConnectedBuyerProductShareDto>>> ListBuyerProductSharesAsync(Guid relationshipId,CancellationToken ct=default);
+    Task<ApiResult<IReadOnlyList<ConnectedBuyerProductShareDto>>> ListEligibleProductsForSharingAsync(Guid relationshipId,CancellationToken ct=default);
+    Task<ApiResult<IReadOnlyList<ConnectedBuyerProductShareDto>>> SetBuyerProductSharesAsync(Guid relationshipId,SetBuyerProductSharesRequest request,CancellationToken ct=default);
+    Task<ApiResult<IReadOnlyList<ConnectedBuyerProductShareDto>>> ConfirmBuyerProductSharingAsync(Guid relationshipId,ConfirmBuyerProductSharingRequest request,CancellationToken ct=default);
     Task<ApiResult<BuyerSupplierProductLinkDto>> LinkProductAsync(Guid relationshipId,LinkProductRequest request,CancellationToken ct=default);
     Task<ApiResult<IReadOnlyList<BuyerSupplierProductLinkDto>>> ListLinksAsync(Guid relationshipId,CancellationToken ct=default);
     Task<ApiResult<LinkedProductsDeltaDto>> SyncLinksAsync(Guid relationshipId,long sinceVersion,CancellationToken ct=default);

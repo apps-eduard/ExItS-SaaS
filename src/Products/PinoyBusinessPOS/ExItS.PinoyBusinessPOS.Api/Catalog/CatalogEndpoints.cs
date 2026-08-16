@@ -235,6 +235,8 @@ internal static class CatalogEndpoints
                     body.IsProduced,
                     body.UsagePreset,
                     body.Units,
+                    body.CanExposeToConnectedBuyers,
+                    body.DefaultConnectedPoPrice,
                     ct)
                 .ConfigureAwait(false);
 
@@ -322,6 +324,8 @@ internal static class CatalogEndpoints
                     body.IsProduced,
                     body.UsagePreset,
                     body.Units,
+                    body.CanExposeToConnectedBuyers,
+                    body.DefaultConnectedPoPrice,
                     ct)
                 .ConfigureAwait(false);
 

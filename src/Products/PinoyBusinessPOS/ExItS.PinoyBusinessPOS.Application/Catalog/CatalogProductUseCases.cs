@@ -1,9 +1,11 @@
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Application.Inventory;
+using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
+using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
 
@@ -203,7 +205,9 @@ public sealed class CatalogProductQueryService
             product.CanBeUsedAsIngredient,
             product.IsProduced,
             product.UsagePreset,
-            units?.Select(CatalogProductUnitHelpers.MapUnit).ToList());
+            units?.Select(CatalogProductUnitHelpers.MapUnit).ToList(),
+            product.CanExposeToConnectedBuyers,
+            product.DefaultConnectedPoPrice);
     }
 }
 
@@ -214,19 +218,22 @@ public sealed class CreateCatalogProduct
     private readonly IProductCategoryRepository _categories;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly ISupplierProductExposureRepository? _exposures;
 
     public CreateCatalogProduct(
         ICatalogProductRepository products,
         ICatalogProductUnitRepository units,
         IProductCategoryRepository categories,
         IPosUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        ISupplierProductExposureRepository? exposures = null)
     {
         _products = products;
         _units = units;
         _categories = categories;
         _unitOfWork = unitOfWork;
         _clock = clock;
+        _exposures = exposures;
     }
 
     public async Task<ApplicationResult<CatalogProduct>> ExecuteAsync(
@@ -248,6 +255,8 @@ public sealed class CreateCatalogProduct
         bool? isProduced = null,
         string? usagePreset = null,
         IReadOnlyList<PosCatalogProductUnitInput>? units = null,
+        bool canExposeToConnectedBuyers = false,
+        decimal? defaultConnectedPoPrice = null,
         CancellationToken cancellationToken = default)
     {
         try
@@ -303,7 +312,6 @@ public sealed class CreateCatalogProduct
                 tracksExpiration,
                 expirationWarningDays,
                 usage);
-
             var conflict = await CatalogAssignment
                 .FindIdentifierConflictAsync(
                     _products,
@@ -330,11 +338,22 @@ public sealed class CreateCatalogProduct
                 product.UpdateSellingPrice(primarySellPrice.Value, now);
                 await _products.UpdateAsync(product, cancellationToken).ConfigureAwait(false);
             }
+            if (canExposeToConnectedBuyers)
+            {
+                product.EnableConnectedBuyerAvailability(now);
+                if (defaultConnectedPoPrice is not null)
+                {
+                    product.SetDefaultConnectedPoPrice(defaultConnectedPoPrice.Value, now);
+                }
+                await _products.UpdateAsync(product, cancellationToken).ConfigureAwait(false);
+            }
 
             foreach (var seed in seedUnits)
             {
                 await _units.AddAsync(seed, cancellationToken).ConfigureAwait(false);
             }
+
+            await ConnectedProductExposureSync.SyncAsync(product, _exposures, now, cancellationToken).ConfigureAwait(false);
 
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             return ApplicationResult<CatalogProduct>.Success(product);
@@ -358,6 +377,7 @@ public sealed class UpdateCatalogProduct
     private readonly IInventoryRepository _inventory;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly ISupplierProductExposureRepository? _exposures;
 
     public UpdateCatalogProduct(
         ICatalogProductRepository products,
@@ -365,7 +385,8 @@ public sealed class UpdateCatalogProduct
         IProductCategoryRepository categories,
         IInventoryRepository inventory,
         IPosUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        ISupplierProductExposureRepository? exposures = null)
     {
         _products = products;
         _units = units;
@@ -373,6 +394,7 @@ public sealed class UpdateCatalogProduct
         _inventory = inventory;
         _unitOfWork = unitOfWork;
         _clock = clock;
+        _exposures = exposures;
     }
 
     public async Task<ApplicationResult<CatalogProduct>> ExecuteAsync(
@@ -395,6 +417,8 @@ public sealed class UpdateCatalogProduct
         bool? isProduced = null,
         string? usagePreset = null,
         IReadOnlyList<PosCatalogProductUnitInput>? units = null,
+        bool? canExposeToConnectedBuyers = null,
+        decimal? defaultConnectedPoPrice = null,
         CancellationToken cancellationToken = default)
     {
         var orgId = PosOrganizationId.From(organizationId);
@@ -488,6 +512,23 @@ public sealed class UpdateCatalogProduct
                     now);
             }
 
+            if (canExposeToConnectedBuyers == true)
+            {
+                product.EnableConnectedBuyerAvailability(now);
+                if (defaultConnectedPoPrice is not null)
+                {
+                    product.SetDefaultConnectedPoPrice(defaultConnectedPoPrice.Value, now);
+                }
+            }
+            else if (canExposeToConnectedBuyers == false)
+            {
+                product.DisableConnectedBuyerAvailability(now);
+            }
+            else if (defaultConnectedPoPrice is not null)
+            {
+                product.SetDefaultConnectedPoPrice(defaultConnectedPoPrice.Value, now);
+            }
+
             if (canBePurchased is not null
                 || canBeSold is not null
                 || canBeUsedAsIngredient is not null
@@ -541,6 +582,7 @@ public sealed class UpdateCatalogProduct
             }
 
             await _products.UpdateAsync(product, cancellationToken).ConfigureAwait(false);
+            await ConnectedProductExposureSync.SyncAsync(product, _exposures, now, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             return ApplicationResult<CatalogProduct>.Success(product);
         }
@@ -551,6 +593,42 @@ public sealed class UpdateCatalogProduct
         catch (PersistenceConflictException ex)
         {
             return ApplicationResult<CatalogProduct>.Failure(ex.ErrorCode, ex.Message);
+        }
+    }
+}
+
+internal static class ConnectedProductExposureSync
+{
+    public static async Task SyncAsync(
+        CatalogProduct product,
+        ISupplierProductExposureRepository? exposures,
+        DateTimeOffset utcNow,
+        CancellationToken ct)
+    {
+        if (exposures is null) return;
+        var existing = await exposures.GetByProductAsync(product.OrganizationId, product.Id, ct).ConfigureAwait(false);
+        if (!product.CanExposeToConnectedBuyers)
+        {
+            if (existing is not null && existing.IsExposed)
+            {
+                existing.Deactivate(utcNow);
+                await exposures.UpdateAsync(existing, ct).ConfigureAwait(false);
+            }
+            return;
+        }
+
+        var price = product.DefaultConnectedPoPrice
+            ?? throw new InvalidOperationException("Enabled connected buyer availability requires a default PO price.");
+        if (existing is null)
+        {
+            existing = SupplierProductExposure.Expose(
+                product.OrganizationId, product.Id, product.Name, product.UnitOfMeasure.ToString(), price, utcNow, product.Sku);
+            await exposures.AddAsync(existing, ct).ConfigureAwait(false);
+        }
+        else
+        {
+            existing.UpdateOffer(product.Name, product.UnitOfMeasure.ToString(), price, true, utcNow, product.Sku);
+            await exposures.UpdateAsync(existing, ct).ConfigureAwait(false);
         }
     }
 }

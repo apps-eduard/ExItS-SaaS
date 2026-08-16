@@ -69,7 +69,9 @@ internal static class CatalogEntityMapper
             canBeSold: record.CanBeSold,
             canBeUsedAsIngredient: record.CanBeUsedAsIngredient,
             isProduced: record.IsProduced,
-            usagePreset: record.UsagePreset);
+            usagePreset: record.UsagePreset,
+            canExposeToConnectedBuyers: record.CanExposeToConnectedBuyers,
+            defaultConnectedPoPrice: record.DefaultConnectedPoPrice);
 
     public static CatalogProductRecord ToRecord(CatalogProduct product) =>
         new()
@@ -99,6 +101,8 @@ internal static class CatalogEntityMapper
             CanBeUsedAsIngredient = product.CanBeUsedAsIngredient,
             IsProduced = product.IsProduced,
             UsagePreset = product.UsagePreset,
+            CanExposeToConnectedBuyers = product.CanExposeToConnectedBuyers,
+            DefaultConnectedPoPrice = product.DefaultConnectedPoPrice,
             CreatedAtUtc = product.CreatedAtUtc,
             UpdatedAtUtc = product.UpdatedAtUtc
         };
@@ -128,6 +132,8 @@ internal static class CatalogEntityMapper
         record.CanBeUsedAsIngredient = product.CanBeUsedAsIngredient;
         record.IsProduced = product.IsProduced;
         record.UsagePreset = product.UsagePreset;
+        record.CanExposeToConnectedBuyers = product.CanExposeToConnectedBuyers;
+        record.DefaultConnectedPoPrice = product.DefaultConnectedPoPrice;
         record.UpdatedAtUtc = product.UpdatedAtUtc;
     }
 

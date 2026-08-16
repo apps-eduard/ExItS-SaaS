@@ -25,6 +25,29 @@ public interface ISupplierProductExposureRepository
     Task UpdateAsync(SupplierProductExposure exposure, CancellationToken ct = default);
 }
 
+public interface IConnectedBuyerProductShareRepository
+{
+    Task<ConnectedBuyerProductShare?> GetAsync(ConnectedBuyerProductShareId id, CancellationToken ct = default);
+    Task<ConnectedBuyerProductShare?> FindAsync(
+        ConnectedSupplierRelationshipId relationshipId,
+        CatalogProductId supplierProductId,
+        CancellationToken ct = default);
+    Task<IReadOnlyList<ConnectedBuyerProductShare>> ListAsync(
+        ConnectedSupplierRelationshipId relationshipId,
+        CancellationToken ct = default);
+    Task<(IReadOnlyList<SupplierProductExposure> Exposures, IReadOnlyList<ConnectedBuyerProductShare> Shares, int Total)>
+        SearchSharedCatalogAsync(
+            ConnectedSupplierRelationshipId relationshipId,
+            PosOrganizationId supplier,
+            string? query,
+            string? category,
+            int skip,
+            int take,
+            CancellationToken ct = default);
+    Task AddAsync(ConnectedBuyerProductShare share, CancellationToken ct = default);
+    Task UpdateAsync(ConnectedBuyerProductShare share, CancellationToken ct = default);
+}
+
 public interface IBuyerSupplierProductLinkRepository
 {
     Task<BuyerSupplierProductLink?> GetAsync(BuyerSupplierProductLinkId id, CancellationToken ct = default);

@@ -33,6 +33,7 @@ public interface IPurchaseOrderRepository
         PurchaseOrderId purchaseOrderId,
         DateOnly businessDateUtc,
         Func<string, PurchaseOrder> applySubmit,
+        Func<PurchaseOrder, CancellationToken, Task>? beforeCommit = null,
         CancellationToken cancellationToken = default);
 
     Task<(PurchaseOrder PurchaseOrder, GoodsReceipt GoodsReceipt)> ReceiveAsync(
