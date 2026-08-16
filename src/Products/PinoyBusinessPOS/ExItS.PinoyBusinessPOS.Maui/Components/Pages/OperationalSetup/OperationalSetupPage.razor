@@ -1,5 +1,6 @@
-@page "/setup"
+﻿@page "/setup"
 @layout Layout.AuthShell
+@using System.Globalization
 @using ExItS.DesignSystem.Components.Internal
 @inject NavigationManager Nav
 @inject NavigationGate Gate
@@ -25,7 +26,7 @@ else
         <div class="pos-setup__badge" aria-hidden="true">@IconGlyphs.Get("settings")</div>
         <div class="pos-setup__heading">
             <h1 class="pos-setup__title">@L["Setup_Title"]</h1>
-            <p class="pos-setup__subtitle">@L["Setup_Subtitle"]</p>
+            <p class="pos-setup__subtitle">@L["Setup_SubtitleEveryday"]</p>
             @if (isFirstRun)
             {
                 <p class="pos-setup__progress" role="status">@L["Setup_FirstRunHint"]</p>
@@ -57,36 +58,26 @@ else
 
     <div class="pos-setup__panel">
         <div class="pos-setup__panel-head">
-            <h2 class="pos-setup__panel-title">@L["Setup_StoreSection"]</h2>
-            <p class="pos-setup__panel-hint">@L["Setup_StoreSectionHint"]</p>
+            <h2 class="pos-setup__panel-title">@L["Setup_BusinessDetailsSection"]</h2>
+            <p class="pos-setup__panel-hint">@L["Setup_BusinessDetailsHint"]</p>
         </div>
         <div class="pos-setup__fields">
             <TextInput Label="@L["Setup_StoreDisplayName"]"
                        Value="@_storeDisplayName"
                        ValueChanged="v => _storeDisplayName = v"
                        Disabled="@readOnly" />
-            <div class="pos-setup__row">
-                <TextInput Label="@L["Setup_CurrencyCode"]"
-                           Value="@_currencyCode"
-                           ValueChanged="v => _currencyCode = v"
-                           Disabled="@readOnly" />
-                <TextInput Label="@L["Setup_TaxRatePercent"]"
-                           Value="@_taxRatePercentText"
-                           ValueChanged="v => _taxRatePercentText = v"
-                           Disabled="@readOnly" />
-            </div>
-            <Select Label="@L["Setup_TaxPricingMode"]"
-                    Value="@_taxPricingMode"
-                    ValueChanged="v => _taxPricingMode = v ?? TaxExclusive"
-                    Options="TaxModeOptions"
-                    Disabled="@readOnly" />
+            <TextInput Label="@L["Setup_CurrencyCode"]"
+                       Value="@_currencyCode"
+                       ValueChanged="v => _currencyCode = v"
+                       Hint="@L["Setup_CurrencyHint"]"
+                       Disabled="@readOnly" />
         </div>
     </div>
 
     <div class="pos-setup__panel">
         <div class="pos-setup__panel-head">
-            <h2 class="pos-setup__panel-title">@L["Setup_ReceiptSection"]</h2>
-            <p class="pos-setup__panel-hint">@L["Setup_ReceiptSectionHint"]</p>
+            <h2 class="pos-setup__panel-title">@L["Setup_ReceiptDetailsSection"]</h2>
+            <p class="pos-setup__panel-hint">@L["Setup_ReceiptDetailsHint"]</p>
         </div>
         <div class="pos-setup__fields">
             <TextInput Label="@L["Setup_ReceiptHeader"]"
@@ -107,6 +98,29 @@ else
                        Disabled="@readOnly" />
         </div>
     </div>
+
+    @if (_taxConfigurationEnabled)
+    {
+        <div class="pos-setup__panel" data-testid="setup-tax-settings">
+            <div class="pos-setup__panel-head">
+                <h2 class="pos-setup__panel-title">@L["Setup_TaxSettingsSection"]</h2>
+                <p class="pos-setup__panel-hint">@L["Setup_TaxSettingsHint"]</p>
+            </div>
+            <div class="pos-setup__fields">
+                <TextInput Label="@L["Setup_TaxRate"]"
+                           Value="@_taxRatePercentText"
+                           ValueChanged="v => _taxRatePercentText = v"
+                           Hint="@L["Setup_TaxRateSuffixHint"]"
+                           Disabled="@readOnly" />
+                <Select Label="@L["Setup_TaxPricing"]"
+                        Value="@_taxPricingMode"
+                        ValueChanged="v => _taxPricingMode = v ?? TaxExclusive"
+                        Options="TaxModeOptions"
+                        Hint="@TaxPricingHelper"
+                        Disabled="@readOnly" />
+            </div>
+        </div>
+    }
 
     <div class="pos-setup__panel">
         <div class="pos-setup__panel-head">
@@ -197,9 +211,14 @@ else
         }
     </div>
 
+    @if (!string.IsNullOrEmpty(_saveSuccess))
+    {
+        <Alert Tone="AlertTone.Success" Message="@_saveSuccess" />
+    }
+
     @if (canManage)
     {
-        <div class="pos-setup__footer" role="group" aria-label="@L["Setup_Title"]">
+        <div class="pos-setup__footer pos-setup__footer--sticky" role="group" aria-label="@L["Setup_Title"]">
             <Button Variant="ButtonVariant.Primary"
                     IsLoading="@_saving"
                     Disabled="@readOnly"
@@ -236,12 +255,19 @@ else
     private bool _denomBusy;
     private List<OrganizationCashDenominationDto> _denominations = [];
     private string? _formError;
+    private bool _taxConfigurationEnabled;
+    private string? _saveSuccess;
 
     private IReadOnlyList<SelectOption> TaxModeOptions =>
     [
-        new(TaxExclusive, L["Setup_TaxExclusive"].Value),
-        new(TaxInclusive, L["Setup_TaxInclusive"].Value)
+        new(TaxInclusive, L["Setup_TaxIncludedInPrice"].Value),
+        new(TaxExclusive, L["Setup_TaxAddedAtCheckout"].Value)
     ];
+
+    private string TaxPricingHelper =>
+        string.Equals(_taxPricingMode, TaxInclusive, StringComparison.OrdinalIgnoreCase)
+            ? L["Setup_TaxIncludedInPriceHelp"]
+            : L["Setup_TaxAddedAtCheckoutHelp"];
 
     private string CurrencyCode =>
         string.IsNullOrWhiteSpace(_currencyCode) ? "PHP" : _currencyCode.Trim().ToUpperInvariant();
@@ -314,7 +340,8 @@ else
         _setup = setup;
         _storeDisplayName = setup.StoreDisplayName;
         _currencyCode = setup.CurrencyCode;
-        _taxPricingMode = setup.TaxPricingMode;
+        _taxConfigurationEnabled = setup.TaxConfigurationEnabled;
+        _taxPricingMode = string.IsNullOrWhiteSpace(setup.TaxPricingMode) ? TaxExclusive : setup.TaxPricingMode;
         _taxRatePercentText = setup.TaxRatePercent.ToString("0.##");
         _receiptHeader = setup.ReceiptHeader;
         _receiptFooter = setup.ReceiptFooter;
@@ -427,10 +454,22 @@ else
         }
 
         _formError = null;
-        if (!decimal.TryParse(_taxRatePercentText, out var taxRate))
+        _saveSuccess = null;
+
+        decimal taxRate;
+        var taxMode = _taxPricingMode;
+        if (_taxConfigurationEnabled)
         {
-            _formError = L["Setup_InvalidTaxRate"];
-            return;
+            if (!decimal.TryParse(_taxRatePercentText, out taxRate))
+            {
+                _formError = L["Setup_InvalidTaxRate"];
+                return;
+            }
+        }
+        else
+        {
+            taxRate = _setup?.TaxRatePercent ?? 0m;
+            taxMode = string.IsNullOrWhiteSpace(_setup?.TaxPricingMode) ? TaxExclusive : _setup.TaxPricingMode;
         }
 
         _saving = true;
@@ -439,7 +478,7 @@ else
             var completeRequest = new CompleteOperationalSetupRequest(
                 _storeDisplayName ?? string.Empty,
                 _currencyCode ?? "PHP",
-                _taxPricingMode,
+                taxMode,
                 taxRate,
                 _receiptHeader,
                 _receiptFooter,
@@ -467,11 +506,18 @@ else
                 return;
             }
 
+            var wasIncomplete = _setup is not { IsCompleted: true };
             ApplySetup(result.Data);
-            if (result.Data.IsCompleted)
+            if (result.Data.IsCompleted && wasIncomplete)
             {
                 // Continue first-run chain (optional business template) instead of hard-landing home.
                 Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+                return;
+            }
+
+            if (result.Data.IsCompleted)
+            {
+                _saveSuccess = L["Setup_SavedSuccess"];
             }
         }
         finally

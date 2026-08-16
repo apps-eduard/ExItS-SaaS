@@ -5701,6 +5701,54 @@
   <data name="Setup_Subtitle" xml:space="preserve">
     <value>Configure store identity, tax, and receipt details before daily operations.</value>
   </data>
+  <data name="Setup_SubtitleEveryday" xml:space="preserve">
+    <value>Set up the basic details your store uses every day.</value>
+  </data>
+  <data name="Setup_BusinessDetailsSection" xml:space="preserve">
+    <value>Business details</value>
+  </data>
+  <data name="Setup_BusinessDetailsHint" xml:space="preserve">
+    <value>Store name and currency used across POS.</value>
+  </data>
+  <data name="Setup_CurrencyHint" xml:space="preserve">
+    <value>Used for prices, sales, and reports.</value>
+  </data>
+  <data name="Setup_ReceiptDetailsSection" xml:space="preserve">
+    <value>Receipt details</value>
+  </data>
+  <data name="Setup_ReceiptDetailsHint" xml:space="preserve">
+    <value>Shown on customer receipts.</value>
+  </data>
+  <data name="Setup_TaxSettingsSection" xml:space="preserve">
+    <value>Tax settings</value>
+  </data>
+  <data name="Setup_TaxSettingsHint" xml:space="preserve">
+    <value>Configure how tax is calculated for this business.</value>
+  </data>
+  <data name="Setup_TaxRate" xml:space="preserve">
+    <value>Tax rate</value>
+  </data>
+  <data name="Setup_TaxRateSuffixHint" xml:space="preserve">
+    <value>Percent (%)</value>
+  </data>
+  <data name="Setup_TaxPricing" xml:space="preserve">
+    <value>Tax pricing</value>
+  </data>
+  <data name="Setup_TaxIncludedInPrice" xml:space="preserve">
+    <value>Tax included in price</value>
+  </data>
+  <data name="Setup_TaxAddedAtCheckout" xml:space="preserve">
+    <value>Tax added at checkout</value>
+  </data>
+  <data name="Setup_TaxIncludedInPriceHelp" xml:space="preserve">
+    <value>The displayed price already includes tax.</value>
+  </data>
+  <data name="Setup_TaxAddedAtCheckoutHelp" xml:space="preserve">
+    <value>Tax is added to the displayed price.</value>
+  </data>
+  <data name="Setup_SavedSuccess" xml:space="preserve">
+    <value>Operational setup saved.</value>
+  </data>
   <data name="Setup_FirstRunHint" xml:space="preserve">
     <value>Required once before selling</value>
   </data>

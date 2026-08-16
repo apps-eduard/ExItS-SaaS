@@ -5701,6 +5701,54 @@
   <data name="Setup_Subtitle" xml:space="preserve">
     <value>I-configure ang store identity, tax, at receipt details bago ang daily operations.</value>
   </data>
+  <data name="Setup_SubtitleEveryday" xml:space="preserve">
+    <value>I-set up ang mga basic details na ginagamit ng tindahan araw-araw.</value>
+  </data>
+  <data name="Setup_BusinessDetailsSection" xml:space="preserve">
+    <value>Detalye ng negosyo</value>
+  </data>
+  <data name="Setup_BusinessDetailsHint" xml:space="preserve">
+    <value>Pangalan at currency ng store.</value>
+  </data>
+  <data name="Setup_CurrencyHint" xml:space="preserve">
+    <value>Ginagamit sa mga presyo, benta, at report.</value>
+  </data>
+  <data name="Setup_ReceiptDetailsSection" xml:space="preserve">
+    <value>Detalye ng resibo</value>
+  </data>
+  <data name="Setup_ReceiptDetailsHint" xml:space="preserve">
+    <value>Makikita sa resibo ng customer.</value>
+  </data>
+  <data name="Setup_TaxSettingsSection" xml:space="preserve">
+    <value>Setting ng buwis</value>
+  </data>
+  <data name="Setup_TaxSettingsHint" xml:space="preserve">
+    <value>I-configure kung paano kino-compute ang buwis para sa negosyong ito.</value>
+  </data>
+  <data name="Setup_TaxRate" xml:space="preserve">
+    <value>Rate ng buwis</value>
+  </data>
+  <data name="Setup_TaxRateSuffixHint" xml:space="preserve">
+    <value>Porsyento (%)</value>
+  </data>
+  <data name="Setup_TaxPricing" xml:space="preserve">
+    <value>Pricing ng buwis</value>
+  </data>
+  <data name="Setup_TaxIncludedInPrice" xml:space="preserve">
+    <value>Kasama na ang buwis sa presyo</value>
+  </data>
+  <data name="Setup_TaxAddedAtCheckout" xml:space="preserve">
+    <value>Idinadagdag ang buwis sa checkout</value>
+  </data>
+  <data name="Setup_TaxIncludedInPriceHelp" xml:space="preserve">
+    <value>Kasama na ang buwis sa ipinapakitang presyo.</value>
+  </data>
+  <data name="Setup_TaxAddedAtCheckoutHelp" xml:space="preserve">
+    <value>Idinadagdag ang buwis sa ipinapakitang presyo.</value>
+  </data>
+  <data name="Setup_SavedSuccess" xml:space="preserve">
+    <value>Na-save ang operational setup.</value>
+  </data>
   <data name="Setup_FirstRunHint" xml:space="preserve">
     <value>Kailangan isang beses bago magbenta</value>
   </data>

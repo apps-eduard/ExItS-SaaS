@@ -1008,7 +1008,9 @@ else
             return;
         }
 
-        _setupVatPercent = result.Data.TaxRatePercent;
+        _setupVatPercent = result.Data.TaxConfigurationEnabled
+            ? result.Data.TaxRatePercent
+            : 0m;
         _setupPricingMode = string.IsNullOrWhiteSpace(result.Data.TaxPricingMode)
             ? "TaxExclusive"
             : result.Data.TaxPricingMode;
