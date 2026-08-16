@@ -1,5 +1,6 @@
 @page "/suppliers/connected/buyers"
 @page "/suppliers/connected/buyers/{RelationshipId:guid}"
+@using System.Globalization
 @using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers
 @inject NavigationManager Nav
 @inject NavigationGate Gate
@@ -12,7 +13,7 @@
 <Page>
     @if (RelationshipId is Guid detailId)
     {
-        <header class="pos-suppliers__header">
+        <header class="pos-suppliers__header pos-cb-detail__page-header">
             <h1 class="pos-suppliers__title">@L["ConnectedBuyers_DetailTitle"]</h1>
         </header>
         @if (_loading)
@@ -32,22 +33,45 @@
         else
         {
             var name = DisplayName(_selected);
-            <section class="pos-settings__panel" aria-label="@L["ConnectedBuyers_DetailTitle"]">
-                <h2>@name</h2>
-                @if (!string.IsNullOrWhiteSpace(_selected.CounterpartyPublicOrganizationId))
-                {
-                    <p>@_selected.CounterpartyPublicOrganizationId</p>
-                }
-                <p>@L["ConnectedBuyers_Direction"]</p>
-                <p>@L["ConnectedBuyers_Status", StatusLabel(_selected.Status)]</p>
-                @if (_selected.RespondedAtUtc is DateTimeOffset connectedAt)
-                {
-                    <p>@L["ConnectedBuyers_ConnectedSince", connectedAt.ToLocalTime().ToString("d")]</p>
-                }
-                <p class="pos-muted">@L["ConnectedBuyers_NotCustomerNote"]</p>
+            var statusText = StatusLabel(_selected.Status);
+            <section class="pos-cb-detail" aria-label="@L["ConnectedBuyers_DetailTitle"]">
+                <div class="pos-cb-detail__identity">
+                    <div class="pos-cb-detail__identity-main">
+                        <h2 class="pos-cb-detail__name">@name</h2>
+                        @if (!string.IsNullOrWhiteSpace(_selected.CounterpartyPublicOrganizationId))
+                        {
+                            <p class="pos-cb-detail__org-id pos-muted">@_selected.CounterpartyPublicOrganizationId</p>
+                        }
+                    </div>
+                    <span class="pos-cb-detail__status"
+                          data-status="@_selected.Status"
+                          title="@L["ConnectedBuyers_Status", statusText]">
+                        @statusText
+                    </span>
+                </div>
+
+                <div class="pos-cb-detail__meta" role="list">
+                    <p class="pos-cb-detail__meta-row" role="listitem">@L["ConnectedBuyers_DirectionShort"]</p>
+                    @if (_selected.RespondedAtUtc is DateTimeOffset connectedAt)
+                    {
+                        <p class="pos-cb-detail__meta-row pos-muted" role="listitem">
+                            @L["ConnectedBuyers_ConnectedSinceDate", FormatConnectedDate(connectedAt)]
+                        </p>
+                    }
+                    @if (_sharedCount is int shared)
+                    {
+                        <p class="pos-cb-detail__meta-row pos-cb-detail__shared" role="listitem">
+                            @L["ConnectedBuyers_ProductsSharedCount", shared]
+                        </p>
+                    }
+                </div>
+
+                <p class="pos-cb-detail__note pos-muted">@L["ConnectedBuyers_NotCustomerNote"]</p>
+
                 @if (string.Equals(_selected.Status, "Active", StringComparison.OrdinalIgnoreCase)
                      && Capabilities.IsAllowed(UtangCapability.ManageSuppliers))
                 {
+                    <p class="pos-cb-detail__cta-help pos-muted">@L["ConnectedBuyers_ManageProductsCtaHelp"]</p>
                     <div class="pos-action-grid pos-action-grid--single">
                         <button type="button"
                                 class="pos-action-tile pos-action-tile--primary"
@@ -112,7 +136,7 @@
                                 · @L["ConnectedBuyers_Direction"]
                                 @if (item.RespondedAtUtc is DateTimeOffset since)
                                 {
-                                    <text> · @L["ConnectedBuyers_ConnectedSince", since.ToLocalTime().ToString("d")]</text>
+                                    <text> · @L["ConnectedBuyers_ConnectedSince", FormatConnectedDate(since)]</text>
                                 }
                             </span>
                             <span class="pos-personal-row__meta pos-muted">@L["ConnectedBuyers_ViewConnection"]</span>
@@ -125,12 +149,86 @@
     }
 </Page>
 
+<style>
+    .pos-cb-detail__page-header { margin-bottom: 0.45rem; }
+    .pos-cb-detail {
+        display: flex;
+        flex-direction: column;
+        gap: 0.55rem;
+        max-width: 28rem;
+    }
+    .pos-cb-detail__identity {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.75rem;
+    }
+    .pos-cb-detail__identity-main { min-width: 0; flex: 1 1 auto; }
+    .pos-cb-detail__name {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 700;
+        line-height: 1.2;
+        color: var(--exits-text, #15201a);
+        word-break: break-word;
+    }
+    .pos-cb-detail__org-id {
+        margin: 0.2rem 0 0;
+        font-size: 0.8125rem;
+        line-height: 1.3;
+        font-variant-numeric: tabular-nums;
+    }
+    .pos-cb-detail__status {
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        min-height: 1.75rem;
+        padding: 0.2rem 0.55rem;
+        border-radius: 999px;
+        border: 1px solid var(--exits-border, #c9d4cd);
+        background: var(--exits-bg, #f3f6f4);
+        font-size: 0.75rem;
+        font-weight: 700;
+        line-height: 1.2;
+        color: var(--exits-text, #15201a);
+    }
+    .pos-cb-detail__status[data-status="Active"] {
+        color: var(--exits-primary, #1b7a3d);
+        border-color: color-mix(in srgb, var(--exits-primary, #1b7a3d) 35%, #c9d4cd);
+        background: color-mix(in srgb, var(--exits-primary, #1b7a3d) 10%, #fff);
+    }
+    .pos-cb-detail__meta {
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+        margin: 0;
+    }
+    .pos-cb-detail__meta-row {
+        margin: 0;
+        font-size: 0.875rem;
+        line-height: 1.35;
+        color: var(--exits-text, #15201a);
+    }
+    .pos-cb-detail__shared { font-weight: 650; }
+    .pos-cb-detail__note {
+        margin: 0.1rem 0 0;
+        font-size: 0.75rem;
+        line-height: 1.35;
+    }
+    .pos-cb-detail__cta-help {
+        margin: 0.15rem 0 0;
+        font-size: 0.8125rem;
+        line-height: 1.35;
+    }
+</style>
+
 @code {
     [Parameter] public Guid? RelationshipId { get; set; }
 
     private bool _loading = true;
     private string? _error;
     private int _incomingPendingCount;
+    private int? _sharedCount;
     private IReadOnlyList<ConnectedSupplierRelationshipDto> _active = [];
     private ConnectedSupplierRelationshipDto? _selected;
 
@@ -163,6 +261,7 @@
         _loading = true;
         _error = null;
         _selected = null;
+        _sharedCount = null;
         StateHasChanged();
 
         var result = await ConnectedSuppliers.ListRelationshipsAsync("supplier");
@@ -194,6 +293,22 @@
                 // Pending belongs under Incoming requests, not Connected buyers detail.
                 _selected = null;
             }
+
+            if (_selected is not null
+                && string.Equals(_selected.Status, "Active", StringComparison.OrdinalIgnoreCase))
+            {
+                await LoadSharedCountAsync(id);
+            }
+        }
+    }
+
+    private async Task LoadSharedCountAsync(Guid relationshipId)
+    {
+        var shares = await ConnectedSuppliers.QueryBuyerProductSharesAsync(
+            relationshipId, query: null, category: null, shareFilter: null, page: 1, pageSize: 1);
+        if (shares.IsSuccess && shares.Data is not null)
+        {
+            _sharedCount = shares.Data.SharedCount;
         }
     }
 
@@ -209,6 +324,9 @@
         string.IsNullOrWhiteSpace(item.CounterpartyDisplayName)
             ? L["ConnectedBuyers_UnknownBusiness"].Value
             : item.CounterpartyDisplayName;
+
+    private static string FormatConnectedDate(DateTimeOffset utc) =>
+        utc.ToLocalTime().ToString("d", CultureInfo.CurrentCulture);
 
     private string StatusLabel(string status) => status switch
     {

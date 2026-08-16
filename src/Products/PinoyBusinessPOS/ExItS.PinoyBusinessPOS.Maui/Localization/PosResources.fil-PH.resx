@@ -8957,7 +8957,19 @@
     <value>Hindi muna</value>
   </data>
   <data name="ConnectedBuyers_ManageSharedProducts" xml:space="preserve">
-    <value>Pamahalaan ang shared products</value>
+    <value>Pamahalaan ang products</value>
+  </data>
+  <data name="ConnectedBuyers_ManageProductsCtaHelp" xml:space="preserve">
+    <value>Piliin kung ano ang maaaring i-order ng buyer at opsyonal na magtakda ng custom na PO price.</value>
+  </data>
+  <data name="ConnectedBuyers_DirectionShort" xml:space="preserve">
+    <value>Bumibili sa iyong negosyo</value>
+  </data>
+  <data name="ConnectedBuyers_ConnectedSinceDate" xml:space="preserve">
+    <value>Connected mula {0}</value>
+  </data>
+  <data name="ConnectedBuyers_ProductsSharedCount" xml:space="preserve">
+    <value>{0} produktong naka-share</value>
   </data>
   <data name="ConnectedBuyers_ConnectionAcceptedTitle" xml:space="preserve">
     <value>Tinanggap ang connection</value>
@@ -8981,7 +8993,13 @@
     <value>Manage products</value>
   </data>
   <data name="ConnectedBuyers_ShareSummary" xml:space="preserve">
-    <value>{0} shared · {1} eligible</value>
+    <value>{0} shared · {1} available to share</value>
+  </data>
+  <data name="ConnectedBuyers_ManageProductsSubtitle" xml:space="preserve">
+    <value>Kontrolin kung ano ang maaaring i-order ng buyer at ang PO price na makikita nila.</value>
+  </data>
+  <data name="ConnectedBuyers_CategoryControl" xml:space="preserve">
+    <value>Kategorya: {0}</value>
   </data>
   <data name="ConnectedBuyers_SearchProducts" xml:space="preserve">
     <value>Maghanap ng produkto...</value>
@@ -9025,20 +9043,86 @@
   <data name="ConnectedBuyers_BuyerPriceShort" xml:space="preserve">
     <value>Buyer</value>
   </data>
+  <data name="ConnectedBuyers_BuyerPrice" xml:space="preserve">
+    <value>Buyer price</value>
+  </data>
+  <data name="ConnectedBuyers_UsesDefaultPo" xml:space="preserve">
+    <value>Gumagamit ng Default PO</value>
+  </data>
+  <data name="ConnectedBuyers_SetBuyerPriceTitle" xml:space="preserve">
+    <value>Itakda ang buyer price</value>
+  </data>
+  <data name="ConnectedBuyers_SelectedProductsCount" xml:space="preserve">
+    <value>{0} selected na produkto</value>
+  </data>
+  <data name="ConnectedBuyers_MatchingProductsCount" xml:space="preserve">
+    <value>{0} tumutugmang produkto</value>
+  </data>
+  <data name="ConnectedBuyers_PriceRuleIntro" xml:space="preserve">
+    <value>Piliin kung paano kukwentahin ang PO price ng buyer na ito.</value>
+  </data>
+  <data name="ConnectedBuyers_PriceRuleBaseline" xml:space="preserve">
+    <value>Lahat ng kalkulasyon ay batay sa Default PO price ng bawat produkto.</value>
+  </data>
   <data name="ConnectedBuyers_UseDefaultPoPrice" xml:space="preserve">
-    <value>Gamitin ang default PO price</value>
+    <value>Gamitin ang Default PO price</value>
+  </data>
+  <data name="ConnectedBuyers_UseDefaultPoHelp" xml:space="preserve">
+    <value>Alisin ang custom buyer price at gamitin ang Default PO ng bawat produkto.</value>
   </data>
   <data name="ConnectedBuyers_DiscountByPercent" xml:space="preserve">
-    <value>Bawasan ang default PO nang %</value>
+    <value>Bawasan ang Default PO nang porsyento</value>
   </data>
   <data name="ConnectedBuyers_AdjustByAmount" xml:space="preserve">
-    <value>I-adjust ang default PO nang amount</value>
+    <value>I-adjust ang Default PO nang amount</value>
+  </data>
+  <data name="ConnectedBuyers_CalculatedSeparately" xml:space="preserve">
+    <value>Kinakalkula nang hiwalay para sa bawat selected na produkto.</value>
+  </data>
+  <data name="ConnectedBuyers_AdjustSeparately" xml:space="preserve">
+    <value>Ina-apply nang hiwalay sa Default PO ng bawat selected na produkto.</value>
+  </data>
+  <data name="ConnectedBuyers_DiscountLabel" xml:space="preserve">
+    <value>Diskwento</value>
+  </data>
+  <data name="ConnectedBuyers_AdjustmentLabel" xml:space="preserve">
+    <value>Adjustment</value>
   </data>
   <data name="ConnectedBuyers_PriceRuleHelp" xml:space="preserve">
-    <value>I-preview muna bago i-apply. Ginagamit ang Default PO, hindi ang retail.</value>
+    <value>Lahat ng kalkulasyon ay batay sa Default PO ng bawat produkto, hindi retail.</value>
   </data>
   <data name="ConnectedBuyers_PricePreview" xml:space="preserve">
-    <value>Price preview</value>
+    <value>Suriin ang mga presyo</value>
+  </data>
+  <data name="ConnectedBuyers_ReviewPricesTitle" xml:space="preserve">
+    <value>Suriin ang mga presyo</value>
+  </data>
+  <data name="ConnectedBuyers_CurrentBuyerPrice" xml:space="preserve">
+    <value>Kasalukuyang buyer</value>
+  </data>
+  <data name="ConnectedBuyers_NewBuyerPrice" xml:space="preserve">
+    <value>Bagong buyer price</value>
+  </data>
+  <data name="ConnectedBuyers_AvailabilityForBuyer" xml:space="preserve">
+    <value>Availability para sa buyer na ito</value>
+  </data>
+  <data name="ConnectedBuyers_CustomBuyerPrice" xml:space="preserve">
+    <value>Custom buyer price</value>
+  </data>
+  <data name="ConnectedBuyers_EmptyNoEligible" xml:space="preserve">
+    <value>Walang produktong available na i-share sa ngayon.</value>
+  </data>
+  <data name="ConnectedBuyers_EmptySharedFilter" xml:space="preserve">
+    <value>Walang shared na produktong tumutugma sa filters.</value>
+  </data>
+  <data name="ConnectedBuyers_EmptyNotSharedFilter" xml:space="preserve">
+    <value>Walang unshared na produktong tumutugma sa filters.</value>
+  </data>
+  <data name="ConnectedBuyers_EmptyCustomPriceFilter" xml:space="preserve">
+    <value>Walang produktong may custom buyer price na tumutugma sa filters.</value>
+  </data>
+  <data name="ConnectedBuyers_EmptySearch" xml:space="preserve">
+    <value>Walang produktong tumutugma sa iyong search.</value>
   </data>
   <data name="ConnectedBuyers_PricePreviewCount" xml:space="preserve">
     <value>{0} produkto</value>
@@ -9107,7 +9191,7 @@
     <value>Presyo ng PO para sa buyer</value>
   </data>
   <data name="ConnectedBuyers_UsesDefaultPrice" xml:space="preserve">
-    <value>Iwang blangko para gamitin ang default na presyo.</value>
+    <value>Iwang blangko para gamitin ang Default PO price.</value>
   </data>
   <data name="ConnectedBuyers_DefaultPoPrice" xml:space="preserve">
     <value>Default na presyo ng PO</value>

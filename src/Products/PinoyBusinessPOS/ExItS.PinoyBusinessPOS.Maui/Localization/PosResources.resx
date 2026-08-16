@@ -8957,7 +8957,19 @@
     <value>Not now</value>
   </data>
   <data name="ConnectedBuyers_ManageSharedProducts" xml:space="preserve">
-    <value>Manage shared products</value>
+    <value>Manage products</value>
+  </data>
+  <data name="ConnectedBuyers_ManageProductsCtaHelp" xml:space="preserve">
+    <value>Choose what this buyer can order and optionally set a custom PO price.</value>
+  </data>
+  <data name="ConnectedBuyers_DirectionShort" xml:space="preserve">
+    <value>Buys from your business</value>
+  </data>
+  <data name="ConnectedBuyers_ConnectedSinceDate" xml:space="preserve">
+    <value>Connected since {0}</value>
+  </data>
+  <data name="ConnectedBuyers_ProductsSharedCount" xml:space="preserve">
+    <value>{0} products shared</value>
   </data>
   <data name="ConnectedBuyers_ConnectionAcceptedTitle" xml:space="preserve">
     <value>Connection accepted</value>
@@ -8981,7 +8993,13 @@
     <value>Manage products</value>
   </data>
   <data name="ConnectedBuyers_ShareSummary" xml:space="preserve">
-    <value>{0} shared · {1} eligible</value>
+    <value>{0} shared · {1} available to share</value>
+  </data>
+  <data name="ConnectedBuyers_ManageProductsSubtitle" xml:space="preserve">
+    <value>Control what this buyer can order and the PO price they see.</value>
+  </data>
+  <data name="ConnectedBuyers_CategoryControl" xml:space="preserve">
+    <value>Category: {0}</value>
   </data>
   <data name="ConnectedBuyers_SearchProducts" xml:space="preserve">
     <value>Search products...</value>
@@ -9025,20 +9043,86 @@
   <data name="ConnectedBuyers_BuyerPriceShort" xml:space="preserve">
     <value>Buyer</value>
   </data>
+  <data name="ConnectedBuyers_BuyerPrice" xml:space="preserve">
+    <value>Buyer price</value>
+  </data>
+  <data name="ConnectedBuyers_UsesDefaultPo" xml:space="preserve">
+    <value>Uses Default PO</value>
+  </data>
+  <data name="ConnectedBuyers_SetBuyerPriceTitle" xml:space="preserve">
+    <value>Set buyer price</value>
+  </data>
+  <data name="ConnectedBuyers_SelectedProductsCount" xml:space="preserve">
+    <value>{0} selected products</value>
+  </data>
+  <data name="ConnectedBuyers_MatchingProductsCount" xml:space="preserve">
+    <value>{0} matching products</value>
+  </data>
+  <data name="ConnectedBuyers_PriceRuleIntro" xml:space="preserve">
+    <value>Choose how this buyer's PO price should be calculated.</value>
+  </data>
+  <data name="ConnectedBuyers_PriceRuleBaseline" xml:space="preserve">
+    <value>All calculations use each product's Default PO price.</value>
+  </data>
   <data name="ConnectedBuyers_UseDefaultPoPrice" xml:space="preserve">
-    <value>Use default PO price</value>
+    <value>Use Default PO price</value>
+  </data>
+  <data name="ConnectedBuyers_UseDefaultPoHelp" xml:space="preserve">
+    <value>Remove any custom buyer price and use each product's Default PO.</value>
   </data>
   <data name="ConnectedBuyers_DiscountByPercent" xml:space="preserve">
-    <value>Discount from default PO by %</value>
+    <value>Discount Default PO by percentage</value>
   </data>
   <data name="ConnectedBuyers_AdjustByAmount" xml:space="preserve">
-    <value>Adjust default PO by amount</value>
+    <value>Adjust Default PO by amount</value>
+  </data>
+  <data name="ConnectedBuyers_CalculatedSeparately" xml:space="preserve">
+    <value>Calculated separately for each selected product.</value>
+  </data>
+  <data name="ConnectedBuyers_AdjustSeparately" xml:space="preserve">
+    <value>Applied separately to each selected product's Default PO.</value>
+  </data>
+  <data name="ConnectedBuyers_DiscountLabel" xml:space="preserve">
+    <value>Discount</value>
+  </data>
+  <data name="ConnectedBuyers_AdjustmentLabel" xml:space="preserve">
+    <value>Adjustment</value>
   </data>
   <data name="ConnectedBuyers_PriceRuleHelp" xml:space="preserve">
-    <value>Preview before applying. Prices use Default PO, never retail.</value>
+    <value>All calculations use each product's Default PO price, never retail.</value>
   </data>
   <data name="ConnectedBuyers_PricePreview" xml:space="preserve">
-    <value>Price preview</value>
+    <value>Review prices</value>
+  </data>
+  <data name="ConnectedBuyers_ReviewPricesTitle" xml:space="preserve">
+    <value>Review prices</value>
+  </data>
+  <data name="ConnectedBuyers_CurrentBuyerPrice" xml:space="preserve">
+    <value>Current buyer</value>
+  </data>
+  <data name="ConnectedBuyers_NewBuyerPrice" xml:space="preserve">
+    <value>New buyer price</value>
+  </data>
+  <data name="ConnectedBuyers_AvailabilityForBuyer" xml:space="preserve">
+    <value>Availability for this buyer</value>
+  </data>
+  <data name="ConnectedBuyers_CustomBuyerPrice" xml:space="preserve">
+    <value>Custom buyer price</value>
+  </data>
+  <data name="ConnectedBuyers_EmptyNoEligible" xml:space="preserve">
+    <value>No products are currently available to share.</value>
+  </data>
+  <data name="ConnectedBuyers_EmptySharedFilter" xml:space="preserve">
+    <value>No shared products match these filters.</value>
+  </data>
+  <data name="ConnectedBuyers_EmptyNotSharedFilter" xml:space="preserve">
+    <value>No unshared products match these filters.</value>
+  </data>
+  <data name="ConnectedBuyers_EmptyCustomPriceFilter" xml:space="preserve">
+    <value>No products with a custom buyer price match these filters.</value>
+  </data>
+  <data name="ConnectedBuyers_EmptySearch" xml:space="preserve">
+    <value>No products match your search.</value>
   </data>
   <data name="ConnectedBuyers_PricePreviewCount" xml:space="preserve">
     <value>{0} products</value>
@@ -9107,7 +9191,7 @@
     <value>Buyer-specific PO price</value>
   </data>
   <data name="ConnectedBuyers_UsesDefaultPrice" xml:space="preserve">
-    <value>Leave blank to use the default price.</value>
+    <value>Leave blank to use the Default PO price.</value>
   </data>
   <data name="ConnectedBuyers_DefaultPoPrice" xml:space="preserve">
     <value>Default PO price</value>

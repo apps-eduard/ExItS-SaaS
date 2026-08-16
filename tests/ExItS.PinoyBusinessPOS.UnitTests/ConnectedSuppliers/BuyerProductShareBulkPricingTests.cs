@@ -24,6 +24,33 @@ public sealed class BuyerProductShareBulkPricingTests
     }
 
     [Fact]
+    public void Discount_and_adjust_use_each_products_own_default_po()
+    {
+        Assert.True(BuyerProductShareBulkPricing.TryComputeBuyerPrice(
+            BulkBuyerPricingMode.DiscountPercent, 200m, 10m, null, null, out var apple, out _));
+        Assert.True(BuyerProductShareBulkPricing.TryComputeBuyerPrice(
+            BulkBuyerPricingMode.DiscountPercent, 80m, 10m, null, null, out var banana, out _));
+        Assert.Equal(180m, apple);
+        Assert.Equal(72m, banana);
+
+        Assert.True(BuyerProductShareBulkPricing.TryComputeBuyerPrice(
+            BulkBuyerPricingMode.AdjustAmount, 200m, null, -20m, null, out var appleAdj, out _));
+        Assert.True(BuyerProductShareBulkPricing.TryComputeBuyerPrice(
+            BulkBuyerPricingMode.AdjustAmount, 80m, null, -20m, null, out var bananaAdj, out _));
+        Assert.Equal(180m, appleAdj);
+        Assert.Equal(60m, bananaAdj);
+    }
+
+    [Fact]
+    public void UseDefault_returns_null_override_without_requiring_fixed_snapshot()
+    {
+        // Clearing the buyer override must not invent a copied Default PO number.
+        Assert.True(BuyerProductShareBulkPricing.TryComputeBuyerPrice(
+            BulkBuyerPricingMode.UseDefault, 200m, null, null, null, out var cleared, out _));
+        Assert.Null(cleared);
+    }
+
+    [Fact]
     public void AdjustAmount_calculates_from_default_po()
     {
         Assert.True(BuyerProductShareBulkPricing.TryComputeBuyerPrice(

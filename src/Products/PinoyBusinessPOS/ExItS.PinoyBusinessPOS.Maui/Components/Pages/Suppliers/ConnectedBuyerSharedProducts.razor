@@ -16,11 +16,16 @@
 <Page>
     <header class="pos-manage-share__header">
         <h1 class="pos-manage-share__title">@L["ConnectedBuyers_ManageProductsTitle"]</h1>
+        @if (!string.IsNullOrWhiteSpace(_buyerDisplayName))
+        {
+            <p class="pos-manage-share__buyer">@_buyerDisplayName</p>
+        }
         @if (!_loading && string.IsNullOrWhiteSpace(_error))
         {
             <p class="pos-manage-share__summary pos-muted">
                 @L["ConnectedBuyers_ShareSummary", _sharedCount, _eligibleCount]
             </p>
+            <p class="pos-manage-share__subtitle pos-muted">@L["ConnectedBuyers_ManageProductsSubtitle"]</p>
         }
     </header>
 
@@ -70,7 +75,7 @@
                     class="pos-manage-share__category-btn"
                     disabled="@_busy"
                     @onclick="() => _categorySheetOpen = true">
-                @CategoryButtonLabel
+                @L["ConnectedBuyers_CategoryControl", CategoryButtonLabel]
             </button>
         </div>
 
@@ -94,8 +99,8 @@
         @if (_items.Count == 0)
         {
             <EmptyState IconName="products"
-                        Title="@L["ConnectedBuyers_NoProductsFound"]"
-                        Message="@L["ConnectedBuyers_NoProductsMatchFilters"]" />
+                        Title="@EmptyStateTitle"
+                        Message="@EmptyStateMessage" />
         }
         else
         {
@@ -110,11 +115,15 @@
                 @foreach (var product in _items)
                 {
                     var selected = _selectAllMatching || _pageSelected.Contains(product.SupplierProductId);
-                    <article class="pos-manage-share__row @(selected ? "pos-manage-share__row--selected" : null)" role="listitem">
+                    var effective = product.EffectiveBuyerPrice;
+                    <article class="pos-manage-share__row @(selected ? "pos-manage-share__row--selected" : null)"
+                             role="listitem"
+                             aria-selected="@selected">
                         <label class="pos-manage-share__check">
                             <input type="checkbox"
                                    checked="@selected"
                                    disabled="@(_busy || !CanManage || _selectAllMatching)"
+                                   aria-label="@L["ConnectedBuyers_SelectProduct", product.Name]"
                                    @onchange="args => ToggleOne(product.SupplierProductId, args)" />
                         </label>
                         <button type="button"
@@ -123,35 +132,46 @@
                                 @onclick="() => OpenDetail(product)">
                             <span class="pos-manage-share__name">@product.Name</span>
                             <span class="pos-manage-share__meta pos-muted">
-                                @if (!string.IsNullOrWhiteSpace(product.Category))
-                                {
-                                    @product.Category
-                                }
-                                else
-                                {
-                                    @L["ConnectedBuyers_FilterUncategorized"]
-                                }
                                 @if (!string.IsNullOrWhiteSpace(product.Sku))
                                 {
-                                    <text> · @product.Sku</text>
+                                    @product.Sku
+                                    <text> · </text>
                                 }
+                                @(string.IsNullOrWhiteSpace(product.Category)
+                                    ? L["ConnectedBuyers_FilterUncategorized"]
+                                    : product.Category)
                             </span>
-                            <span class="pos-manage-share__prices pos-muted">
-                                @L["ConnectedBuyers_DefaultPoShort"]
-                                <MoneyDisplay Amount="@(product.DefaultPoPrice ?? 0m)" CurrencyCode="PHP" />
-                                <text> · </text>
-                                @if (product.BuyerSpecificPoPrice is decimal buyerPrice)
-                                {
-                                    @L["ConnectedBuyers_BuyerPriceShort"]
-                                    <MoneyDisplay Amount="@buyerPrice" CurrencyCode="PHP" />
-                                }
-                                else
-                                {
-                                    @L["ConnectedBuyers_UsesDefaultPrice"]
-                                }
+                            <span class="pos-manage-share__prices">
+                                <span class="pos-manage-share__buyer-price">
+                                    <span class="pos-manage-share__price-label">@L["ConnectedBuyers_BuyerPrice"]</span>
+                                    @if (effective is decimal buyerPay)
+                                    {
+                                        <MoneyDisplay Amount="@buyerPay" CurrencyCode="PHP" Emphasized="true" />
+                                    }
+                                    else
+                                    {
+                                        <span class="pos-muted">—</span>
+                                    }
+                                </span>
+                                <span class="pos-manage-share__price-note pos-muted">
+                                    @if (product.HasCustomPrice)
+                                    {
+                                        @L["ConnectedBuyers_DefaultPoShort"]
+                                        <text> </text>
+                                        <MoneyDisplay Amount="@(product.DefaultPoPrice ?? 0m)" CurrencyCode="PHP" />
+                                    }
+                                    else
+                                    {
+                                        @L["ConnectedBuyers_UsesDefaultPo"]
+                                    }
+                                </span>
                             </span>
                             <span class="pos-manage-share__state @(product.IsShared ? "pos-manage-share__state--shared" : null)">
                                 @(product.IsShared ? L["ConnectedBuyers_FilterShared"] : L["ConnectedBuyers_FilterNotShared"])
+                                @if (product.IsShared && product.HasCustomPrice)
+                                {
+                                    <text> · @L["ConnectedBuyers_FilterCustomPrice"]</text>
+                                }
                             </span>
                         </button>
                     </article>
@@ -178,7 +198,7 @@
 @if (CanManage && (_selectedCount > 0 || _selectAllMatching))
 {
     <div class="pos-manage-share__sticky" role="region" aria-label="@L["ConnectedBuyers_BulkActions"]">
-        <div class="pos-manage-share__sticky-meta">
+        <div class="pos-manage-share__sticky-meta" aria-live="polite">
             @(_selectAllMatching
                 ? L["ConnectedBuyers_AllMatchingSelected", _matchingCount]
                 : L["ConnectedBuyers_SelectedCount", _selectedCount])
@@ -186,20 +206,20 @@
         <div class="pos-manage-share__sticky-actions">
             <button type="button" class="pos-manage-share__action" disabled="@_busy" @onclick="() => BulkShareAsync(true)">@L["ConnectedBuyers_BulkShare"]</button>
             <button type="button" class="pos-manage-share__action pos-manage-share__action--danger" disabled="@_busy" @onclick="() => BulkShareAsync(false)">@L["ConnectedBuyers_BulkUnshare"]</button>
-            <button type="button" class="pos-manage-share__action" disabled="@_busy" @onclick="OpenPriceSheet">@L["ConnectedBuyers_BulkPrice"]</button>
-            <button type="button" class="pos-manage-share__action" disabled="@_busy" @onclick="ClearSelection">@L["ConnectedBuyers_ClearSelection"]</button>
+            <button type="button" class="pos-manage-share__action pos-manage-share__action--primary" disabled="@_busy" @onclick="OpenPriceSheet">@L["ConnectedBuyers_BulkPrice"]</button>
         </div>
+        <button type="button" class="pos-manage-share__clear" disabled="@_busy" @onclick="ClearSelection">@L["ConnectedBuyers_ClearSelection"]</button>
     </div>
 }
 
 @if (_categorySheetOpen)
 {
     <div class="pos-denom-sheet" role="dialog" aria-modal="true" aria-label="@L["ConnectedBuyers_FilterCategory"]">
-        <div class="pos-denom-sheet__panel">
+        <div class="pos-denom-sheet__panel pos-denom-sheet__panel--fit">
             <header class="pos-denom-sheet__header">
                 <h2 class="pos-denom-sheet__title">@L["ConnectedBuyers_FilterCategory"]</h2>
             </header>
-            <div class="pos-denom-sheet__list">
+            <div class="pos-denom-sheet__list pos-denom-sheet__list--fit">
                 <button type="button" class="pos-denom-sheet__item @(_categoryFilter == "all" ? "pos-denom-sheet__item--active" : null)"
                         @onclick="SelectAllCategoriesAsync">
                     <span>@L["ConnectedBuyers_FilterAllCategories"]</span>
@@ -227,36 +247,73 @@
 
 @if (_priceSheetOpen)
 {
-    <div class="pos-denom-sheet" role="dialog" aria-modal="true" aria-label="@L["ConnectedBuyers_BulkPrice"]">
-        <div class="pos-denom-sheet__panel">
-            <header class="pos-denom-sheet__header">
-                <h2 class="pos-denom-sheet__title">@L["ConnectedBuyers_BulkPrice"]</h2>
-                <p class="pos-denom-sheet__hint">@L["ConnectedBuyers_PriceRuleHelp"]</p>
+    <div class="pos-denom-sheet" role="dialog" aria-modal="true" aria-label="@L["ConnectedBuyers_SetBuyerPriceTitle"]">
+        <div class="pos-denom-sheet__panel pos-denom-sheet__panel--fit">
+            <header class="pos-denom-sheet__header pos-manage-share__sheet-header">
+                <div>
+                    <h2 class="pos-denom-sheet__title">@L["ConnectedBuyers_SetBuyerPriceTitle"]</h2>
+                    <p class="pos-manage-share__sheet-count" aria-live="polite">@SelectionProductsLabel</p>
+                    <p class="pos-denom-sheet__hint">@L["ConnectedBuyers_PriceRuleIntro"]</p>
+                    <p class="pos-denom-sheet__hint">@L["ConnectedBuyers_PriceRuleBaseline"]</p>
+                </div>
             </header>
-            <div class="pos-denom-sheet__list">
+            <div class="pos-denom-sheet__list pos-denom-sheet__list--fit">
                 <label class="pos-manage-share__price-option">
                     <input type="radio" name="price-mode" checked="@(_priceMode == "UseDefault")" @onchange="SetUseDefaultMode" />
-                    @L["ConnectedBuyers_UseDefaultPoPrice"]
+                    <span>
+                        <strong>@L["ConnectedBuyers_UseDefaultPoPrice"]</strong>
+                        <span class="pos-manage-share__option-help">@L["ConnectedBuyers_UseDefaultPoHelp"]</span>
+                    </span>
                 </label>
                 <label class="pos-manage-share__price-option">
                     <input type="radio" name="price-mode" checked="@(_priceMode == "DiscountPercent")" @onchange="SetDiscountMode" />
-                    @L["ConnectedBuyers_DiscountByPercent"]
+                    <span>
+                        <strong>@L["ConnectedBuyers_DiscountByPercent"]</strong>
+                        <span class="pos-manage-share__option-help">@L["ConnectedBuyers_CalculatedSeparately"]</span>
+                    </span>
                 </label>
                 @if (_priceMode == "DiscountPercent")
                 {
-                    <input class="pos-manage-share__price-input" type="number" min="0" max="100" step="0.01" @bind="_percentText" />
+                    <label class="pos-manage-share__field">
+                        <span class="pos-manage-share__field-label">@L["ConnectedBuyers_DiscountLabel"]</span>
+                        <span class="pos-manage-share__field-control">
+                            <input class="pos-manage-share__price-input"
+                                   type="number"
+                                   min="0"
+                                   max="100"
+                                   step="0.01"
+                                   inputmode="decimal"
+                                   aria-label="@L["ConnectedBuyers_DiscountLabel"]"
+                                   @bind="_percentText" />
+                            <span class="pos-manage-share__unit" aria-hidden="true">%</span>
+                        </span>
+                    </label>
                 }
                 <label class="pos-manage-share__price-option">
                     <input type="radio" name="price-mode" checked="@(_priceMode == "AdjustAmount")" @onchange="SetAdjustMode" />
-                    @L["ConnectedBuyers_AdjustByAmount"]
+                    <span>
+                        <strong>@L["ConnectedBuyers_AdjustByAmount"]</strong>
+                        <span class="pos-manage-share__option-help">@L["ConnectedBuyers_AdjustSeparately"]</span>
+                    </span>
                 </label>
                 @if (_priceMode == "AdjustAmount")
                 {
-                    <input class="pos-manage-share__price-input" type="number" step="0.01" @bind="_amountText" />
+                    <label class="pos-manage-share__field">
+                        <span class="pos-manage-share__field-label">@L["ConnectedBuyers_AdjustmentLabel"]</span>
+                        <span class="pos-manage-share__field-control">
+                            <span class="pos-manage-share__unit" aria-hidden="true">PHP</span>
+                            <input class="pos-manage-share__price-input"
+                                   type="number"
+                                   step="0.01"
+                                   inputmode="decimal"
+                                   aria-label="@L["ConnectedBuyers_AdjustmentLabel"]"
+                                   @bind="_amountText" />
+                        </span>
+                    </label>
                 }
                 @if (!string.IsNullOrWhiteSpace(_priceError))
                 {
-                    <p class="pos-manage-share__banner">@_priceError</p>
+                    <p class="pos-manage-share__banner" role="alert">@_priceError</p>
                 }
             </div>
             <div class="pos-denom-sheet__bar">
@@ -273,22 +330,51 @@
 
 @if (_preview is not null)
 {
-    <div class="pos-denom-sheet" role="dialog" aria-modal="true" aria-label="@L["ConnectedBuyers_PricePreview"]">
-        <div class="pos-denom-sheet__panel">
-            <header class="pos-denom-sheet__header">
-                <h2 class="pos-denom-sheet__title">@L["ConnectedBuyers_PricePreview"]</h2>
-                <p class="pos-denom-sheet__hint">@L["ConnectedBuyers_PricePreviewCount", _preview.AffectedCount]</p>
+    <div class="pos-denom-sheet" role="dialog" aria-modal="true" aria-label="@L["ConnectedBuyers_ReviewPricesTitle"]">
+        <div class="pos-denom-sheet__panel pos-denom-sheet__panel--fit">
+            <header class="pos-denom-sheet__header pos-manage-share__sheet-header">
+                <div>
+                    <h2 class="pos-denom-sheet__title">@L["ConnectedBuyers_ReviewPricesTitle"]</h2>
+                    <p class="pos-manage-share__sheet-count">@L["ConnectedBuyers_PricePreviewCount", _preview.AffectedCount]</p>
+                </div>
             </header>
-            <div class="pos-denom-sheet__list">
+            <div class="pos-denom-sheet__list pos-denom-sheet__list--fit">
                 @foreach (var item in _preview.Items)
                 {
-                    <div class="pos-manage-share__preview-row">
-                        <strong>@item.Name</strong>
-                        <span class="pos-muted">
-                            <MoneyDisplay Amount="@item.DefaultPoPrice" CurrencyCode="PHP" />
-                            →
-                            <MoneyDisplay Amount="@item.ProposedEffectivePrice" CurrencyCode="PHP" />
-                        </span>
+                    var useDefault = item.ProposedBuyerPrice is null;
+                    <div class="pos-manage-share__preview-card">
+                        <div class="pos-manage-share__preview-title">
+                            <strong>@item.Name</strong>
+                        </div>
+                        <div class="pos-manage-share__preview-grid">
+                            @if (useDefault)
+                            {
+                                <span class="pos-manage-share__price-label">@L["ConnectedBuyers_CurrentBuyerPrice"]</span>
+                                @if (item.CurrentBuyerPrice is decimal current)
+                                {
+                                    <MoneyDisplay Amount="@current" CurrencyCode="PHP" />
+                                }
+                                else
+                                {
+                                    <MoneyDisplay Amount="@item.DefaultPoPrice" CurrencyCode="PHP" />
+                                }
+                                <span class="pos-manage-share__price-label pos-manage-share__price-label--new">@L["ConnectedBuyers_NewBuyerPrice"]</span>
+                                <span class="pos-manage-share__new-price">
+                                    <MoneyDisplay Amount="@item.ProposedEffectivePrice" CurrencyCode="PHP" Emphasized="true" />
+                                </span>
+                                <span class="pos-manage-share__price-label">@L["ConnectedBuyers_UsesDefaultPo"]</span>
+                                <span></span>
+                            }
+                            else
+                            {
+                                <span class="pos-manage-share__price-label">@L["ConnectedBuyers_DefaultPoShort"]</span>
+                                <MoneyDisplay Amount="@item.DefaultPoPrice" CurrencyCode="PHP" />
+                                <span class="pos-manage-share__price-label pos-manage-share__price-label--new">@L["ConnectedBuyers_BuyerPrice"]</span>
+                                <span class="pos-manage-share__new-price">
+                                    <MoneyDisplay Amount="@item.ProposedEffectivePrice" CurrencyCode="PHP" Emphasized="true" />
+                                </span>
+                            }
+                        </div>
                     </div>
                 }
                 @if (_preview.Truncated)
@@ -297,7 +383,7 @@
                 }
             </div>
             <div class="pos-denom-sheet__bar">
-                <button type="button" class="pos-action-tile" disabled="@_busy" @onclick="() => _preview = null">
+                <button type="button" class="pos-action-tile" disabled="@_busy" @onclick="BackToPriceSheet">
                     <span class="pos-action-tile__label">@L["Common_Cancel"]</span>
                 </button>
                 <button type="button" class="pos-action-tile pos-action-tile--primary" disabled="@_busy" @onclick="ApplyPriceAsync">
@@ -311,32 +397,62 @@
 @if (_detail is not null)
 {
     <div class="pos-denom-sheet" role="dialog" aria-modal="true" aria-label="@_detail.Name">
-        <div class="pos-denom-sheet__panel">
-            <header class="pos-denom-sheet__header">
-                <h2 class="pos-denom-sheet__title">@_detail.Name</h2>
-                <p class="pos-denom-sheet__hint">@L["ConnectedBuyers_DefaultPoShort"] · <MoneyDisplay Amount="@(_detail.DefaultPoPrice ?? 0m)" CurrencyCode="PHP" /></p>
+        <div class="pos-denom-sheet__panel pos-denom-sheet__panel--fit">
+            <header class="pos-denom-sheet__header pos-manage-share__sheet-header">
+                <div>
+                    <h2 class="pos-denom-sheet__title">@_detail.Name</h2>
+                    @if (!string.IsNullOrWhiteSpace(_detail.Sku))
+                    {
+                        <p class="pos-manage-share__sheet-count pos-muted">@_detail.Sku</p>
+                    }
+                </div>
             </header>
-            <div class="pos-denom-sheet__list">
-                <label class="pos-manage-share__price-option">
-                    <input type="checkbox" checked="@_detail.IsShared" disabled="@(_busy || !CanManage)" @onchange="args => _detail.IsShared = Checked(args)" />
-                    @L["ConnectedBuyers_FilterShared"]
-                </label>
-                <label class="pos-manage-share__price-option">
-                    <input type="radio" name="detail-price" checked="@(!_detail.UseOverride)" @onchange="() => _detail.UseOverride = false" />
-                    @L["ConnectedBuyers_UseDefaultPoPrice"]
-                </label>
-                <label class="pos-manage-share__price-option">
-                    <input type="radio" name="detail-price" checked="@_detail.UseOverride" @onchange="() => _detail.UseOverride = true" />
-                    @L["ConnectedBuyers_BuyerSpecificPoPrice"]
-                </label>
-                @if (_detail.UseOverride)
-                {
-                    <CurrencyInput Label="@L["ConnectedBuyers_BuyerSpecificPoPrice"]"
-                                   Value="@_detail.BuyerSpecificPoPrice"
-                                   ValueChanged="v => _detail.BuyerSpecificPoPrice = v"
-                                   CurrencyCode="PHP"
-                                   Disabled="@(_busy || !CanManage)" />
-                }
+            <div class="pos-denom-sheet__list pos-denom-sheet__list--fit">
+                <div class="pos-manage-share__detail-block">
+                    <span class="pos-manage-share__price-label">@L["ConnectedBuyers_DefaultPoShort"]</span>
+                    <span class="pos-manage-share__detail-value">
+                        <MoneyDisplay Amount="@(_detail.DefaultPoPrice ?? 0m)" CurrencyCode="PHP" />
+                    </span>
+                </div>
+
+                <div class="pos-manage-share__detail-block">
+                    <span class="pos-manage-share__price-label">@L["ConnectedBuyers_AvailabilityForBuyer"]</span>
+                    <label class="pos-manage-share__toggle">
+                        <input type="checkbox"
+                               checked="@_detail.IsShared"
+                               disabled="@(_busy || !CanManage)"
+                               @onchange="args => _detail.IsShared = Checked(args)" />
+                        <span>@(_detail.IsShared ? L["ConnectedBuyers_FilterShared"] : L["ConnectedBuyers_FilterNotShared"])</span>
+                    </label>
+                </div>
+
+                <div class="pos-manage-share__detail-block">
+                    <span class="pos-manage-share__price-label">@L["ConnectedBuyers_BuyerPrice"]</span>
+                    <label class="pos-manage-share__price-option">
+                        <input type="radio" name="detail-price" checked="@(!_detail.UseOverride)" @onchange="() => _detail.UseOverride = false" />
+                        <span>
+                            <strong>@L["ConnectedBuyers_UseDefaultPoPrice"]</strong>
+                            @if (_detail.DefaultPoPrice is decimal defPo)
+                            {
+                                <span class="pos-manage-share__option-help">
+                                    <MoneyDisplay Amount="@defPo" CurrencyCode="PHP" />
+                                </span>
+                            }
+                        </span>
+                    </label>
+                    <label class="pos-manage-share__price-option">
+                        <input type="radio" name="detail-price" checked="@_detail.UseOverride" @onchange="() => _detail.UseOverride = true" />
+                        <span><strong>@L["ConnectedBuyers_CustomBuyerPrice"]</strong></span>
+                    </label>
+                    @if (_detail.UseOverride)
+                    {
+                        <CurrencyInput Label="@L["ConnectedBuyers_BuyerPrice"]"
+                                       Value="@_detail.BuyerSpecificPoPrice"
+                                       ValueChanged="v => _detail.BuyerSpecificPoPrice = v"
+                                       CurrencyCode="PHP"
+                                       Disabled="@(_busy || !CanManage)" />
+                    }
+                </div>
             </div>
             <div class="pos-denom-sheet__bar">
                 <button type="button" class="pos-action-tile" disabled="@_busy" @onclick="() => _detail = null">
@@ -353,13 +469,15 @@
 
 <style>
     .pos-manage-share { width: 100%; padding-bottom: 0.5rem; }
-    .pos-manage-share--has-selection { padding-bottom: 5.5rem; }
-    .pos-manage-share__header { margin-bottom: 0.55rem; }
+    .pos-manage-share--has-selection { padding-bottom: 7.5rem; }
+    .pos-manage-share__header { margin-bottom: 0.45rem; }
     .pos-manage-share__title { margin: 0; font-size: 1.2rem; font-weight: 700; line-height: 1.2; color: var(--exits-text, #15201a); }
-    .pos-manage-share__summary { margin: 0.25rem 0 0; font-size: 0.8125rem; }
+    .pos-manage-share__buyer { margin: 0.15rem 0 0; font-size: 0.875rem; font-weight: 650; color: var(--exits-text, #15201a); }
+    .pos-manage-share__summary { margin: 0.2rem 0 0; font-size: 0.8125rem; }
+    .pos-manage-share__subtitle { margin: 0.15rem 0 0; font-size: 0.75rem; line-height: 1.35; }
     .pos-manage-share__search {
         display: flex; align-items: center; gap: 0.4rem;
-        margin: 0 0 0.55rem; padding: 0.35rem 0.55rem;
+        margin: 0 0 0.45rem; padding: 0.3rem 0.5rem;
         border: 1px solid var(--exits-border, #c9d4cd); border-radius: 0.5rem;
         background: var(--exits-surface, #fff);
     }
@@ -369,19 +487,19 @@
     }
     .pos-manage-share__search-clear { appearance: none; border: 0; background: transparent; font: inherit; font-size: 0.75rem; font-weight: 650; color: var(--exits-primary, #1b7a3d); }
     .pos-manage-share__filters {
-        display: flex; flex-wrap: nowrap; gap: 0.4rem; margin: 0 0 0.45rem;
+        display: flex; flex-wrap: nowrap; gap: 0.35rem; margin: 0 0 0.35rem;
         overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: thin;
     }
-    .pos-manage-share__category-row { margin: 0 0 0.55rem; }
+    .pos-manage-share__category-row { margin: 0 0 0.45rem; }
     .pos-manage-share__category-btn {
-        appearance: none; width: 100%; min-height: 2.4rem; padding: 0.4rem 0.7rem;
+        appearance: none; width: 100%; min-height: 2.4rem; padding: 0.35rem 0.65rem;
         border: 1px solid var(--exits-border, #c9d4cd); border-radius: 0.5rem;
-        background: var(--exits-bg, #f3f6f4); font: inherit; font-size: 0.875rem; font-weight: 650;
+        background: var(--exits-bg, #f3f6f4); font: inherit; font-size: 0.8125rem; font-weight: 650;
         text-align: left; color: var(--exits-text, #15201a);
     }
     .pos-manage-share__select-banner {
         display: flex; flex-wrap: wrap; gap: 0.45rem; align-items: center;
-        margin: 0 0 0.55rem; padding: 0.45rem 0.55rem; border-radius: 0.45rem;
+        margin: 0 0 0.45rem; padding: 0.4rem 0.5rem; border-radius: 0.45rem;
         background: var(--exits-bg, #f3f6f4); font-size: 0.8125rem;
     }
     .pos-link-button { appearance: none; border: 0; background: transparent; color: var(--exits-primary, #1b7a3d); font: inherit; font-weight: 700; padding: 0; }
@@ -390,48 +508,108 @@
         overflow: hidden; background: var(--exits-surface, #fff);
     }
     .pos-manage-share__select-all {
-        display: flex; align-items: center; gap: 0.45rem; margin: 0; padding: 0.5rem 0.65rem;
+        display: flex; align-items: center; gap: 0.45rem; margin: 0; padding: 0.45rem 0.6rem;
         border-bottom: 1px solid var(--pos-border-subtle, #d7e0da); font-size: 0.8125rem; font-weight: 650;
+        min-height: 2.75rem;
     }
     .pos-manage-share__row {
-        display: flex; align-items: flex-start; gap: 0.45rem; padding: 0.55rem 0.65rem;
+        display: grid; grid-template-columns: auto 1fr; gap: 0.4rem; padding: 0.45rem 0.6rem; align-items: start;
     }
     .pos-manage-share__row + .pos-manage-share__row { border-top: 1px solid var(--pos-border-subtle, #d7e0da); }
     .pos-manage-share__row--selected { background: rgba(27, 122, 61, 0.06); }
-    .pos-manage-share__check { margin: 0.15rem 0 0; }
+    .pos-manage-share__check {
+        display: flex; align-items: center; justify-content: center;
+        margin: 0; min-width: 2.75rem; min-height: 2.75rem;
+    }
     .pos-manage-share__body {
         appearance: none; border: 0; background: transparent; text-align: left;
-        display: flex; flex-direction: column; gap: 0.12rem; flex: 1 1 auto; min-width: 0;
-        padding: 0; font: inherit; color: inherit; cursor: pointer;
+        display: flex; flex-direction: column; gap: 0.1rem; flex: 1 1 auto; min-width: 0;
+        padding: 0.1rem 0; font: inherit; color: inherit; cursor: pointer;
     }
-    .pos-manage-share__name { font-size: 0.95rem; font-weight: 650; line-height: 1.25; color: var(--exits-text, #15201a); }
-    .pos-manage-share__meta, .pos-manage-share__prices { font-size: 0.75rem; line-height: 1.3; }
+    .pos-manage-share__name { font-size: 0.9375rem; font-weight: 650; line-height: 1.25; color: var(--exits-text, #15201a); }
+    .pos-manage-share__meta { font-size: 0.75rem; line-height: 1.3; }
+    .pos-manage-share__prices {
+        display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.2rem 0.45rem;
+        margin-top: 0.05rem; font-size: 0.75rem; line-height: 1.3;
+    }
+    .pos-manage-share__buyer-price {
+        display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem;
+        font-weight: 700; color: var(--exits-text, #15201a);
+    }
+    .pos-manage-share__price-label {
+        font-size: 0.6875rem; font-weight: 650; letter-spacing: 0.01em;
+        color: var(--exits-text-muted, #5b6b62);
+    }
+    .pos-manage-share__price-label--new { color: var(--exits-text, #15201a); }
+    .pos-manage-share__price-note { font-weight: 500; }
     .pos-manage-share__state { font-size: 0.75rem; font-weight: 700; color: var(--exits-text-muted, #5b6b62); }
     .pos-manage-share__state--shared { color: var(--exits-primary, #1b7a3d); }
     .pos-manage-share__more { margin-top: 0.65rem; }
     .pos-manage-share__banner { margin: 0.55rem 0 0; font-size: 0.8125rem; color: var(--exits-text, #15201a); }
     .pos-manage-share__sticky {
         position: fixed; left: 0; right: 0; bottom: calc(var(--pos-bottom-nav-height, 3.5rem) + env(safe-area-inset-bottom, 0px));
-        z-index: 40; padding: 0.55rem 0.75rem 0.65rem;
+        z-index: 40; padding: 0.5rem 0.75rem 0.55rem;
         border-top: 1px solid var(--exits-border, #c9d4cd); background: var(--exits-surface, #fff);
         box-shadow: 0 -4px 16px rgba(21, 32, 26, 0.08);
     }
-    .pos-manage-share__sticky-meta { font-size: 0.8125rem; font-weight: 700; margin-bottom: 0.4rem; }
-    .pos-manage-share__sticky-actions { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+    .pos-manage-share__sticky-meta { font-size: 0.8125rem; font-weight: 700; margin-bottom: 0.35rem; }
+    .pos-manage-share__sticky-actions { display: flex; flex-wrap: nowrap; gap: 0.35rem; }
     .pos-manage-share__action {
-        appearance: none; min-height: 2.25rem; padding: 0.3rem 0.65rem;
-        border: 1px solid var(--exits-border, #c9d4cd); border-radius: 999px;
-        background: var(--exits-bg, #f3f6f4); font: inherit; font-size: 0.8125rem; font-weight: 700;
+        appearance: none; flex: 1 1 0; min-height: 2.75rem; min-width: 0; padding: 0.35rem 0.45rem;
+        border: 1px solid var(--exits-border, #c9d4cd); border-radius: 0.55rem;
+        background: #fff; font: inherit; font-size: 0.8125rem; font-weight: 700;
+        color: var(--exits-primary, #1b7a3d);
+    }
+    .pos-manage-share__action--primary {
+        color: #fff; background: var(--exits-primary, #1b7a3d); border-color: var(--exits-primary, #1b7a3d);
     }
     .pos-manage-share__action--danger { color: #8a1f1f; border-color: #e0b4b4; }
-    .pos-manage-share__price-option { display: flex; align-items: center; gap: 0.45rem; margin: 0.35rem 0; font-size: 0.875rem; font-weight: 600; }
+    .pos-manage-share__clear {
+        appearance: none; border: 0; background: transparent; width: 100%; margin-top: 0.2rem;
+        min-height: 2.5rem; font: inherit; font-size: 0.8125rem; font-weight: 650;
+        color: var(--exits-text-muted, #5b6b62); text-decoration: underline;
+    }
+    .pos-manage-share__sheet-header { width: 100%; }
+    .pos-manage-share__sheet-count { margin: 0.2rem 0 0; font-size: 0.8125rem; font-weight: 700; color: var(--exits-text, #15201a); }
+    .pos-manage-share__price-option {
+        display: grid; grid-template-columns: auto 1fr; gap: 0.55rem; align-items: start;
+        margin: 0.1rem 0; padding: 0.35rem 0.05rem; font-size: 0.875rem; font-weight: 600;
+    }
+    .pos-manage-share__price-option input { margin-top: 0.2rem; }
+    .pos-manage-share__option-help {
+        display: block; margin-top: 0.15rem; font-size: 0.75rem; font-weight: 500;
+        color: var(--exits-text-muted, #5b6b62); line-height: 1.35;
+    }
+    .pos-manage-share__field {
+        display: flex; flex-direction: column; gap: 0.25rem; margin: 0 0 0.35rem 1.7rem;
+    }
+    .pos-manage-share__field-label { font-size: 0.75rem; font-weight: 700; color: var(--exits-text, #15201a); }
+    .pos-manage-share__field-control { display: flex; align-items: center; gap: 0.4rem; }
+    .pos-manage-share__unit {
+        flex-shrink: 0; font-size: 0.8125rem; font-weight: 700; color: var(--exits-text-muted, #5b6b62);
+    }
     .pos-manage-share__price-input {
-        width: 100%; min-height: 2.4rem; margin: 0.25rem 0 0.45rem; padding: 0.35rem 0.55rem;
+        width: 100%; min-height: 2.75rem; margin: 0; padding: 0.45rem 0.55rem;
         border: 1px solid var(--exits-border, #c9d4cd); border-radius: 0.45rem; font: inherit;
     }
-    .pos-manage-share__preview-row {
-        display: flex; justify-content: space-between; gap: 0.75rem; padding: 0.45rem 0;
-        border-bottom: 1px solid var(--pos-border-subtle, #d7e0da); font-size: 0.875rem;
+    .pos-manage-share__preview-card {
+        padding: 0.45rem 0; border-bottom: 1px solid var(--pos-border-subtle, #d7e0da);
+    }
+    .pos-manage-share__preview-title {
+        margin-bottom: 0.3rem; font-size: 0.875rem;
+    }
+    .pos-manage-share__preview-grid {
+        display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.15rem 0.75rem;
+        align-items: baseline; font-size: 0.8125rem;
+    }
+    .pos-manage-share__new-price { font-weight: 700; }
+    .pos-manage-share__detail-block {
+        display: flex; flex-direction: column; gap: 0.25rem; margin: 0 0 0.55rem;
+    }
+    .pos-manage-share__detail-value { font-size: 0.9375rem; font-weight: 700; }
+    .pos-manage-share__toggle {
+        display: flex; align-items: center; gap: 0.5rem; min-height: 2.75rem;
+        font-size: 0.875rem; font-weight: 650;
     }
     .pos-denom-sheet__item { display: flex; justify-content: space-between; gap: 0.75rem; width: 100%; }
 </style>
@@ -452,12 +630,13 @@
     private string? _error;
     private string? _banner;
     private string? _priceError;
+    private string? _buyerDisplayName;
     private string _query = "";
     private string _shareFilter = "all";
     private string _categoryFilter = "all";
     private string _priceMode = "UseDefault";
-    private string _percentText = "5";
-    private string _amountText = "-5";
+    private string _percentText = "10";
+    private string _amountText = "-20";
     private int _page = 1;
     private int _matchingCount;
     private int _eligibleCount;
@@ -470,6 +649,42 @@
     private bool CanManage => Capabilities.IsAllowed(UtangCapability.ManageSuppliers);
     private bool PageAllSelected => _items.Count > 0 && _items.All(x => _pageSelected.Contains(x.SupplierProductId));
     private int _selectedCount => _pageSelected.Count;
+
+    private string SelectionProductsLabel =>
+        _selectAllMatching
+            ? L["ConnectedBuyers_MatchingProductsCount", _matchingCount]
+            : L["ConnectedBuyers_SelectedProductsCount", _selectedCount];
+
+    private string EmptyStateTitle =>
+        !string.IsNullOrWhiteSpace(_query)
+            ? L["ConnectedBuyers_NoProductsFound"]
+            : _eligibleCount == 0 && _shareFilter is "all" && _categoryFilter is "all"
+                ? L["ConnectedBuyers_NoProductsFound"]
+                : L["ConnectedBuyers_NoProductsFound"];
+
+    private string EmptyStateMessage
+    {
+        get
+        {
+            if (!string.IsNullOrWhiteSpace(_query))
+            {
+                return L["ConnectedBuyers_EmptySearch"];
+            }
+
+            if (_eligibleCount == 0 && _shareFilter is "all" && _categoryFilter is "all")
+            {
+                return L["ConnectedBuyers_EmptyNoEligible"];
+            }
+
+            return _shareFilter switch
+            {
+                "shared" => L["ConnectedBuyers_EmptySharedFilter"],
+                "not-shared" => L["ConnectedBuyers_EmptyNotSharedFilter"],
+                "custom-price" => L["ConnectedBuyers_EmptyCustomPriceFilter"],
+                _ => L["ConnectedBuyers_NoProductsMatchFilters"]
+            };
+        }
+    }
 
     private IReadOnlyList<(string Value, string Label)> ShareFilters =>
     [
@@ -513,7 +728,30 @@
             }
         }
 
+        await LoadBuyerDisplayNameAsync();
         await ReloadAsync(resetPage: true);
+    }
+
+    private async Task LoadBuyerDisplayNameAsync()
+    {
+        if (!await Connectivity.IsConnectedAsync())
+        {
+            return;
+        }
+
+        var result = await ConnectedSuppliers.ListRelationshipsAsync("supplier");
+        if (!result.IsSuccess || result.Data is null)
+        {
+            return;
+        }
+
+        var match = result.Data.FirstOrDefault(x => x.RelationshipId == RelationshipId);
+        if (match is null || string.IsNullOrWhiteSpace(match.CounterpartyDisplayName))
+        {
+            return;
+        }
+
+        _buyerDisplayName = match.CounterpartyDisplayName;
     }
 
     private async Task OnSearchInput(ChangeEventArgs args)
@@ -721,6 +959,12 @@
         _preview = null;
     }
 
+    private void BackToPriceSheet()
+    {
+        _preview = null;
+        _priceSheetOpen = true;
+    }
+
     private async Task PreviewPriceAsync()
     {
         if (_busy || !CanManage) return;
@@ -842,6 +1086,8 @@
         public decimal? DefaultPoPrice { get; }
         public decimal? BuyerSpecificPoPrice { get; }
         public bool IsShared { get; }
+        public bool HasCustomPrice => BuyerSpecificPoPrice is not null;
+        public decimal? EffectiveBuyerPrice => BuyerSpecificPoPrice ?? DefaultPoPrice;
     }
 
     private sealed class DetailEdit
@@ -850,6 +1096,7 @@
         {
             SupplierProductId = row.SupplierProductId;
             Name = row.Name;
+            Sku = row.Sku;
             DefaultPoPrice = row.DefaultPoPrice;
             IsShared = row.IsShared;
             BuyerSpecificPoPrice = row.BuyerSpecificPoPrice;
@@ -858,6 +1105,7 @@
 
         public Guid SupplierProductId { get; }
         public string Name { get; }
+        public string? Sku { get; }
         public decimal? DefaultPoPrice { get; }
         public bool IsShared { get; set; }
         public bool UseOverride { get; set; }

@@ -31,7 +31,17 @@ public sealed class ConnectedBuyersBulkShareUiGuardTests
         Assert.Contains("PreviewBuyerProductPricingAsync", manage, StringComparison.Ordinal);
         Assert.Contains("ApplyBuyerProductPricingAsync", manage, StringComparison.Ordinal);
         Assert.Contains("pos-manage-share__sticky", manage, StringComparison.Ordinal);
+        Assert.Contains("pos-manage-share__clear", manage, StringComparison.Ordinal);
+        Assert.Contains("pos-manage-share__action--primary", manage, StringComparison.Ordinal);
         Assert.Contains("pos-denom-sheet", manage, StringComparison.Ordinal);
+        Assert.Contains("pos-denom-sheet__panel--fit", manage, StringComparison.Ordinal);
+        Assert.Contains("ConnectedBuyers_SetBuyerPriceTitle", manage, StringComparison.Ordinal);
+        Assert.Contains("ConnectedBuyers_ReviewPricesTitle", manage, StringComparison.Ordinal);
+        Assert.Contains("ConnectedBuyers_UseDefaultPoHelp", manage, StringComparison.Ordinal);
+        Assert.Contains("ConnectedBuyers_EmptySearch", manage, StringComparison.Ordinal);
+        Assert.Contains("EffectiveBuyerPrice", manage, StringComparison.Ordinal);
+        Assert.DoesNotContain("ConnectedBuyers_UsesDefaultPrice", manage, StringComparison.Ordinal);
+        Assert.DoesNotContain("SellingPrice", manage, StringComparison.Ordinal);
         Assert.DoesNotContain("<table", manage, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("DataGrid", manage, StringComparison.Ordinal);
     }
@@ -44,6 +54,7 @@ public sealed class ConnectedBuyersBulkShareUiGuardTests
         foreach (var key in new[]
                  {
                      "ConnectedBuyers_ManageProductsTitle",
+                     "ConnectedBuyers_ManageProductsSubtitle",
                      "ConnectedBuyers_SearchProducts",
                      "ConnectedBuyers_FilterCustomPrice",
                      "ConnectedBuyers_SelectAllMatching",
@@ -51,14 +62,25 @@ public sealed class ConnectedBuyersBulkShareUiGuardTests
                      "ConnectedBuyers_BulkUnshare",
                      "ConnectedBuyers_BulkPrice",
                      "ConnectedBuyers_PricePreview",
+                     "ConnectedBuyers_SetBuyerPriceTitle",
+                     "ConnectedBuyers_ReviewPricesTitle",
+                     "ConnectedBuyers_BuyerPrice",
+                     "ConnectedBuyers_UsesDefaultPo",
                      "ConnectedBuyers_UseDefaultPoPrice",
+                     "ConnectedBuyers_UseDefaultPoHelp",
                      "ConnectedBuyers_ConnectionAcceptedTitle",
-                     "ConnectedBuyers_ConfirmAndShare"
+                     "ConnectedBuyers_ConfirmAndShare",
+                     "ConnectedBuyers_ManageProductsCtaHelp",
+                     "ConnectedBuyers_EmptyNoEligible"
                  })
         {
             Assert.Contains($"name=\"{key}\"", en, StringComparison.Ordinal);
             Assert.Contains($"name=\"{key}\"", fil, StringComparison.Ordinal);
         }
+
+        Assert.Contains("<value>Review prices</value>", en, StringComparison.Ordinal);
+        Assert.Contains("<value>Manage products</value>", en, StringComparison.Ordinal);
+        Assert.Contains("available to share", en, StringComparison.Ordinal);
 
         // Guard against re-corruption of special-character strings.
         var unitStock = Extract(en, "Sales_Checkout_UnitStock");
