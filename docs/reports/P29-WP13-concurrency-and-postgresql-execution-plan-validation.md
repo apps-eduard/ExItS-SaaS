@@ -5,6 +5,7 @@
 | Status | **Code Complete / Validation Evidence Recorded** |
 | Phase | Phase 29 (Open / Partial Closeout — continued; **not** Phase 30) |
 | Starting SHA | `7b75f44d58b8db0ba8b94290baf77c4d21e3d42d` |
+| Feature commits | `387bb275`, `349fbd8f`, `48004459` |
 | Device Verified | **No** |
 | Browser Verified | **No** |
 | Production Ready | **No** |

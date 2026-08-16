@@ -14,7 +14,7 @@
 | Current phase | Phase 29 **Open / Partial Closeout** â€” cross-cutting data/performance hardening. Phases 14 / 19â€“28 remain **Open** with prior statuses (including Phase 28 Stage B Code Complete / Validation Pending). |
 | Current work package | **P29-WP13** concurrency + EXPLAIN validation - Code Complete / Validation Evidence Recorded ([phase](phases/phase-29-data-integrity-query-performance-and-database-hardening.md)). |
 | Overall status | WP11-WP13 database verification, electronic payment reservation, and true concurrent/EXPLAIN SMOKE evidence delivered. Broader load + Production backup residuals open. **Not Device Verified. Not Browser Verified. Not Production Ready. Not Production Payment Ready.** |
-| Latest verified commit | Phase 29 WP13 pending stamp (preflight `7b75f44d`) |
+| Latest verified commit | Phase 29 WP13 `387bb275`/`349fbd8f`/`48004459` (preflight `7b75f44d`) |
 | Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA deferred; Phase 19/20/22/24/25/26/27 owner/physical validation pending |
 | Last updated | 2026-08-16 |
 
