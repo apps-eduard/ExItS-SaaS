@@ -9331,6 +9331,18 @@
   <data name="Catalog_ConnectedAvailability_LoadFailed" xml:space="preserve">
     <value>Hindi ma-load ang connected buyer availability.</value>
   </data>
+  <data name="Catalog_ConnectedAvailability_NoProductsToPrice" xml:space="preserve">
+    <value>Walang produktong maaaring i-price sa selection na ito.</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_DiscountRequired" xml:space="preserve">
+    <value>Maglagay ng discount percent mula 0 hanggang 100.</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_AdjustmentRequired" xml:space="preserve">
+    <value>Maglagay ng adjustment amount.</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_FixedPriceRequired" xml:space="preserve">
+    <value>Maglagay ng PO price na higit sa zero.</value>
+  </data>
   <data name="Catalog_ConnectedAvailability_EmptyTitle" xml:space="preserve">
     <value>Walang available na produkto.</value>
   </data>

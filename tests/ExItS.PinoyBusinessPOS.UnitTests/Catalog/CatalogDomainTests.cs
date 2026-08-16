@@ -76,6 +76,21 @@ public sealed class CatalogDomainTests
     }
 
     [Fact]
+    public void Default_po_price_can_be_staged_while_unavailable()
+    {
+        var product = CatalogProduct.Create(OrgA, "Coke", UnitOfMeasure.Piece, 100m, Now);
+        Assert.False(product.CanExposeToConnectedBuyers);
+
+        product.SetDefaultConnectedPoPrice(88m, Now.AddMinutes(1));
+        Assert.False(product.CanExposeToConnectedBuyers);
+        Assert.Equal(88m, product.DefaultConnectedPoPrice);
+
+        product.EnableConnectedBuyerAvailability(Now.AddMinutes(2));
+        Assert.True(product.CanExposeToConnectedBuyers);
+        Assert.Equal(88m, product.DefaultConnectedPoPrice);
+    }
+
+    [Fact]
     public void Disable_and_reenable_preserves_initialized_default_po_price()
     {
         var product = CatalogProduct.Create(OrgA, "Coke", UnitOfMeasure.Piece, 100m, Now);

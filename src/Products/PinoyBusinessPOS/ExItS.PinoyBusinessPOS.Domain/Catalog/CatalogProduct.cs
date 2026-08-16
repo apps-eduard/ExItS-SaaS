@@ -410,13 +410,8 @@ public sealed class CatalogProduct
     public void SetDefaultConnectedPoPrice(decimal price, DateTimeOffset utcNow)
     {
         CatalogGuards.EnsureUtc(utcNow);
-        if (!CanExposeToConnectedBuyers)
-        {
-            throw new DomainException(
-                DomainErrorCodes.InvalidProductSellingPrice,
-                "Connected buyer availability must be enabled before setting the default PO price.");
-        }
-
+        // Default PO may be staged while unavailable; EnableConnectedBuyerAvailability preserves an
+        // existing value (??=) and Disable leaves the price intact for re-enable.
         DefaultConnectedPoPrice = NormalizeConnectedPoPrice(price);
         UpdatedAtUtc = utcNow;
     }

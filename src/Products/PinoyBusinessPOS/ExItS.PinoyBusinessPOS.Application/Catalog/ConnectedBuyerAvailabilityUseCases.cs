@@ -446,13 +446,6 @@ public sealed class PreviewDefaultConnectedPoPricing
                     $"{product.Name}: only active products can be priced.");
             }
 
-            if (!product.CanExposeToConnectedBuyers)
-            {
-                return ConnectedBuyerAvailabilityGuard.Failure<BulkDefaultConnectedPoPricingPreviewDto>(
-                    ApplicationErrorCodes.CatalogBulkValidation,
-                    $"{product.Name}: enable connected buyer availability before setting Default PO price.");
-            }
-
             if (!ConnectedBuyerAvailabilityBulkPricing.TryComputeDefaultPoPrice(
                     mode, product.SellingPrice, request.Percent, request.Amount, request.FixedPrice,
                     out var proposed, out var error))

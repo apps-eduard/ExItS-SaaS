@@ -9331,6 +9331,18 @@
   <data name="Catalog_ConnectedAvailability_LoadFailed" xml:space="preserve">
     <value>Could not load connected buyer availability.</value>
   </data>
+  <data name="Catalog_ConnectedAvailability_NoProductsToPrice" xml:space="preserve">
+    <value>No products in this selection can be priced.</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_DiscountRequired" xml:space="preserve">
+    <value>Enter a discount percent between 0 and 100.</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_AdjustmentRequired" xml:space="preserve">
+    <value>Enter an adjustment amount.</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_FixedPriceRequired" xml:space="preserve">
+    <value>Enter a PO price greater than zero.</value>
+  </data>
   <data name="Catalog_ConnectedAvailability_EmptyTitle" xml:space="preserve">
     <value>No products available.</value>
   </data>

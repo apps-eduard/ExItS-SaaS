@@ -1,4 +1,5 @@
 @page "/catalog/connected-buyer-availability"
+@using System.Globalization
 @using ExItS.PinoyBusinessPOS.Application.Catalog
 @using ExItS.PinoyBusinessPOS.Maui.Services
 @using ExItS.DesignSystem.Components.Internal
@@ -322,18 +323,20 @@
                         </span>
                     </label>
                 }
+            </div>
+            <div class="pos-manage-share__sheet-footer">
                 @if (!string.IsNullOrWhiteSpace(_priceError))
                 {
-                    <p class="pos-manage-share__banner" role="alert">@_priceError</p>
+                    <p class="pos-manage-share__sheet-error" role="alert">@_priceError</p>
                 }
-            </div>
-            <div class="pos-denom-sheet__bar pos-manage-share__sheet-bar">
-                <button type="button" class="pos-action-tile" disabled="@_busy" @onclick="() => _priceSheetOpen = false">
-                    <span class="pos-action-tile__label">@L["Common_Cancel"]</span>
-                </button>
-                <button type="button" class="pos-action-tile pos-action-tile--primary" disabled="@_busy" @onclick="PreviewPriceAsync">
-                    <span class="pos-action-tile__label">@L["Catalog_ConnectedAvailability_ReviewPrices"]</span>
-                </button>
+                <div class="pos-denom-sheet__bar pos-manage-share__sheet-bar">
+                    <button type="button" class="pos-action-tile" disabled="@_busy" @onclick="() => _priceSheetOpen = false">
+                        <span class="pos-action-tile__label">@L["Common_Cancel"]</span>
+                    </button>
+                    <button type="button" class="pos-action-tile pos-action-tile--primary" disabled="@_busy" @onclick="PreviewPriceAsync">
+                        <span class="pos-action-tile__label">@L["Catalog_ConnectedAvailability_ReviewPrices"]</span>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -444,6 +447,22 @@
     }
     .pos-manage-share__sheet-bar .pos-action-tile__label {
         text-align: center;
+    }
+    .pos-manage-share__sheet-footer {
+        flex-shrink: 0;
+        margin-top: 0.35rem;
+    }
+    .pos-manage-share__sheet-error {
+        margin: 0 0 0.45rem;
+        padding: 0.45rem 0.55rem;
+        border-radius: 0.45rem;
+        background: #fdecec;
+        color: #8a1f1f;
+        font-size: 0.8125rem;
+        line-height: 1.35;
+    }
+    .pos-manage-share__sheet-footer .pos-denom-sheet__bar {
+        margin-top: 0;
     }
     .pos-manage-share__header { margin-bottom: 0.55rem; }
     .pos-manage-share__title { margin: 0; font-size: 1.2rem; font-weight: 700; line-height: 1.2; color: var(--exits-text, #15201a); }
@@ -845,9 +864,23 @@
         decimal? percent = null;
         decimal? amount = null;
         decimal? fixedPrice = null;
-        if (_priceMode == "DiscountFromRetailPercent" && decimal.TryParse(_percentText, out var p)) percent = p;
-        if (_priceMode == "AdjustFromRetailAmount" && decimal.TryParse(_amountText, out var a)) amount = a;
-        if (_priceMode == "FixedPrice" && decimal.TryParse(_fixedPriceText, out var f)) fixedPrice = f;
+        if (_priceMode == "DiscountFromRetailPercent"
+            && decimal.TryParse(_percentText, NumberStyles.Number, CultureInfo.InvariantCulture, out var p))
+        {
+            percent = p;
+        }
+
+        if (_priceMode == "AdjustFromRetailAmount"
+            && decimal.TryParse(_amountText, NumberStyles.Number, CultureInfo.InvariantCulture, out var a))
+        {
+            amount = a;
+        }
+
+        if (_priceMode == "FixedPrice"
+            && decimal.TryParse(_fixedPriceText, NumberStyles.Number, CultureInfo.InvariantCulture, out var f))
+        {
+            fixedPrice = f;
+        }
 
         return _selectAllMatching
             ? new(_priceMode, SelectAllMatching: true, Query: _query, CategoryId: _categoryId, AvailabilityFilter: AvailabilityOrNull(), UncategorizedOnly: _categoryUncategorized, Percent: percent, Amount: amount, FixedPrice: fixedPrice)
@@ -885,6 +918,12 @@
             return;
         }
 
+        if (!TryValidatePriceInputs(out var validationError))
+        {
+            _priceError = validationError;
+            return;
+        }
+
         _busy = true;
         _priceError = null;
         try
@@ -897,6 +936,12 @@
                 return;
             }
 
+            if (result.Data.AffectedCount == 0)
+            {
+                _priceError = L["Catalog_ConnectedAvailability_NoProductsToPrice"];
+                return;
+            }
+
             _pendingPriceRequest = request;
             _preview = result.Data;
             _priceSheetOpen = false;
@@ -904,6 +949,43 @@
         finally
         {
             _busy = false;
+        }
+    }
+
+    private bool TryValidatePriceInputs(out string error)
+    {
+        error = "";
+        switch (_priceMode)
+        {
+            case "DiscountFromRetailPercent":
+                if (!decimal.TryParse(_percentText, NumberStyles.Number, CultureInfo.InvariantCulture, out var percent)
+                    || percent < 0m
+                    || percent > 100m)
+                {
+                    error = L["Catalog_ConnectedAvailability_DiscountRequired"];
+                    return false;
+                }
+
+                return true;
+            case "AdjustFromRetailAmount":
+                if (!decimal.TryParse(_amountText, NumberStyles.Number, CultureInfo.InvariantCulture, out _))
+                {
+                    error = L["Catalog_ConnectedAvailability_AdjustmentRequired"];
+                    return false;
+                }
+
+                return true;
+            case "FixedPrice":
+                if (!decimal.TryParse(_fixedPriceText, NumberStyles.Number, CultureInfo.InvariantCulture, out var fixedPrice)
+                    || fixedPrice <= 0m)
+                {
+                    error = L["Catalog_ConnectedAvailability_FixedPriceRequired"];
+                    return false;
+                }
+
+                return true;
+            default:
+                return true;
         }
     }
 
