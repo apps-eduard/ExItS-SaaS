@@ -5,7 +5,7 @@
 | Status | **Code Complete / Validation Pending** |
 | Phase | Phase 28 — Open |
 | Starting SHA (Stage B) | `3ca38d43610bf831d65eecbf96524a19263f247a` |
-| Feature commit(s) | **TBD after Stage B commits** |
+| Feature commit(s) | `30f4fa93` domain · `2488afcb` api/persist · `5c0215c0` maui · `4b39d4d8` tests · `d692772d` docs |
 | Device Verified | **No** |
 | Browser Verified | **No** |
 | Production Ready | **No** |
