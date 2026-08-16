@@ -8908,6 +8908,9 @@
   <data name="ConnectedBuyers_SelectVisible" xml:space="preserve">
     <value>Select all {0} visible</value>
   </data>
+  <data name="ConnectedBuyers_SelectProduct" xml:space="preserve">
+    <value>Select {0}</value>
+  </data>
   <data name="ConnectedBuyers_PageSelectedCount" xml:space="preserve">
     <value>{0} selected on this page</value>
   </data>
@@ -8954,13 +8957,13 @@
     <value>Price preview</value>
   </data>
   <data name="ConnectedBuyers_PricePreviewCount" xml:space="preserve">
-    <value>{0} products affected</value>
+    <value>{0} products</value>
   </data>
   <data name="ConnectedBuyers_PricePreviewTruncated" xml:space="preserve">
     <value>Showing a sample of affected products.</value>
   </data>
   <data name="ConnectedBuyers_ApplyToCount" xml:space="preserve">
-    <value>Apply to {0}</value>
+    <value>Apply to {0} products</value>
   </data>
   <data name="ConnectedBuyers_NoProductsFound" xml:space="preserve">
     <value>No products found</value>
@@ -9052,8 +9055,11 @@
   <data name="Catalog_ConnectedAvailability_Title" xml:space="preserve">
     <value>Connected Buyer Availability</value>
   </data>
+  <data name="Catalog_ConnectedAvailability_Intro" xml:space="preserve">
+    <value>Choose which products connected buyers can order and manage their default PO prices.</value>
+  </data>
   <data name="Catalog_ConnectedAvailability_Summary" xml:space="preserve">
-    <value>{0} available · {1} not available</value>
+    <value>{0} available · {1} unavailable</value>
   </data>
   <data name="Catalog_ConnectedAvailability_FilterAll" xml:space="preserve">
     <value>All</value>
@@ -9062,7 +9068,7 @@
     <value>Available</value>
   </data>
   <data name="Catalog_ConnectedAvailability_FilterNotAvailable" xml:space="preserve">
-    <value>Not available</value>
+    <value>Unavailable</value>
   </data>
   <data name="Catalog_ConnectedAvailability_Enable" xml:space="preserve">
     <value>Enable</value>
@@ -9073,17 +9079,65 @@
   <data name="Catalog_ConnectedAvailability_PoPrice" xml:space="preserve">
     <value>PO Price</value>
   </data>
+  <data name="Catalog_ConnectedAvailability_SetPoPriceTitle" xml:space="preserve">
+    <value>Set PO Price</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_SelectedProducts" xml:space="preserve">
+    <value>{0} selected products</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_BulkHint" xml:space="preserve">
+    <value>Actions apply to the current selection.</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_PriceSummary" xml:space="preserve">
+    <value>Retail and Default PO prices</value>
+  </data>
   <data name="Catalog_ConnectedAvailability_SetFromRetail" xml:space="preserve">
-    <value>Set from retail price</value>
+    <value>Match each product's retail price</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_SetFromRetailHelp" xml:space="preserve">
+    <value>Each product's Default PO price will match its own retail price.</value>
   </data>
   <data name="Catalog_ConnectedAvailability_DiscountFromRetail" xml:space="preserve">
-    <value>Discount from retail</value>
+    <value>Discount each product's retail price</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_DiscountFromRetailHelp" xml:space="preserve">
+    <value>Applied independently to each selected product's retail price.</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_DiscountLabel" xml:space="preserve">
+    <value>Discount</value>
   </data>
   <data name="Catalog_ConnectedAvailability_AdjustRetail" xml:space="preserve">
-    <value>Adjust retail price</value>
+    <value>Adjust each product's retail price</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_AdjustRetailHelp" xml:space="preserve">
+    <value>Applied independently to each selected product's retail price.</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_AdjustmentLabel" xml:space="preserve">
+    <value>Adjustment</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_AdjustmentHint" xml:space="preserve">
+    <value>Use a negative amount to decrease, or a positive amount to increase.</value>
   </data>
   <data name="Catalog_ConnectedAvailability_SetSamePrice" xml:space="preserve">
-    <value>Set same Default PO price</value>
+    <value>Set one PO price for all selected products</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_SetSamePriceHelp" xml:space="preserve">
+    <value>Every selected product will receive the same Default PO price.</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_OnePriceLabel" xml:space="preserve">
+    <value>PO Price</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_ReviewPrices" xml:space="preserve">
+    <value>Review prices</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_ReviewTitle" xml:space="preserve">
+    <value>Review PO Prices</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_CurrentDefaultPo" xml:space="preserve">
+    <value>Current Default PO</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_NewDefaultPo" xml:space="preserve">
+    <value>New Default PO</value>
   </data>
   <data name="Catalog_ConnectedAvailability_DefaultPoNotSet" xml:space="preserve">
     <value>Not set</value>
@@ -9092,16 +9146,16 @@
     <value>Available</value>
   </data>
   <data name="Catalog_ConnectedAvailability_NotAvailable" xml:space="preserve">
-    <value>Not available</value>
+    <value>Unavailable</value>
   </data>
   <data name="Catalog_ConnectedAvailability_OfflineMessage" xml:space="preserve">
     <value>Connected buyer availability requires an internet connection.</value>
   </data>
   <data name="Catalog_ConnectedAvailability_EnableSucceeded" xml:space="preserve">
-    <value>Enabled {0} products for connected buyers.</value>
+    <value>{0} products enabled for connected buyers.</value>
   </data>
   <data name="Catalog_ConnectedAvailability_DisableSucceeded" xml:space="preserve">
-    <value>Disabled {0} products for connected buyers.</value>
+    <value>{0} products disabled for connected buyers.</value>
   </data>
   <data name="Catalog_ConnectedAvailability_PriceSucceeded" xml:space="preserve">
     <value>Updated Default PO price for {0} products.</value>
@@ -9110,13 +9164,31 @@
     <value>Could not load connected buyer availability.</value>
   </data>
   <data name="Catalog_ConnectedAvailability_EmptyTitle" xml:space="preserve">
-    <value>No products found</value>
+    <value>No products available.</value>
   </data>
   <data name="Catalog_ConnectedAvailability_EmptyMessage" xml:space="preserve">
-    <value>No products match your search or filters.</value>
+    <value>Add products to your catalog, then choose which ones connected buyers can order.</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_EmptySearchTitle" xml:space="preserve">
+    <value>No products match your search.</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_EmptySearchMessage" xml:space="preserve">
+    <value>Try a different name, SKU, or clear the search.</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_EmptyAvailableTitle" xml:space="preserve">
+    <value>No available products match these filters.</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_EmptyAvailableMessage" xml:space="preserve">
+    <value>Change filters or enable products for connected buyers.</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_EmptyUnavailableTitle" xml:space="preserve">
+    <value>No unavailable products match these filters.</value>
+  </data>
+  <data name="Catalog_ConnectedAvailability_EmptyUnavailableMessage" xml:space="preserve">
+    <value>Change filters or check the Available list.</value>
   </data>
   <data name="Catalog_ConnectedAvailability_PriceRuleHelp" xml:space="preserve">
-    <value>Choose how to set Default PO price from each product's current retail selling price.</value>
+    <value>Choose how the Default PO price should be calculated for each selected product.</value>
   </data>
   <data name="Purchasing_Withdraw" xml:space="preserve">
     <value>Withdraw order</value>

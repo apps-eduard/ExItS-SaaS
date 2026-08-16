@@ -61,6 +61,7 @@ public sealed record BulkDefaultConnectedPoPricingRequest(
 public sealed record DefaultConnectedPoPricePreviewItemDto(
     Guid ProductId,
     string Name,
+    string? Sku,
     decimal SellingPrice,
     decimal? CurrentDefaultPoPrice,
     decimal ProposedDefaultPoPrice);
@@ -465,6 +466,7 @@ public sealed class PreviewDefaultConnectedPoPricing
                 previewItems.Add(new(
                     product.Id.Value,
                     product.Name,
+                    product.Sku,
                     product.SellingPrice,
                     product.DefaultConnectedPoPrice,
                     proposed));

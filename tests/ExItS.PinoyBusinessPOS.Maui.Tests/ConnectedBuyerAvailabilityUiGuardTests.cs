@@ -16,6 +16,10 @@ public sealed class ConnectedBuyerAvailabilityUiGuardTests
         Assert.Contains("SelectAllMatching", page, StringComparison.Ordinal);
         Assert.Contains("UtangCapability.ManageCatalog", page, StringComparison.Ordinal);
         Assert.Contains("Catalog_ConnectedAvailability_OfflineMessage", page, StringComparison.Ordinal);
+        Assert.Contains("Catalog_ConnectedAvailability_ReviewPrices", page, StringComparison.Ordinal);
+        Assert.Contains("Catalog_ConnectedAvailability_SetPoPriceTitle", page, StringComparison.Ordinal);
+        Assert.Contains("pos-manage-share__price-grid", page, StringComparison.Ordinal);
+        Assert.Contains("pos-denom-sheet__panel--fit", page, StringComparison.Ordinal);
         Assert.DoesNotContain("ResponsiveDataList", page, StringComparison.Ordinal);
         Assert.DoesNotContain("<table", page, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("ILocalCustomerCreditStore", page, StringComparison.Ordinal);
@@ -43,6 +47,7 @@ public sealed class ConnectedBuyerAvailabilityUiGuardTests
                  {
                      "Catalog_Quick_ConnectedAvailability",
                      "Catalog_ConnectedAvailability_Title",
+                     "Catalog_ConnectedAvailability_Intro",
                      "Catalog_ConnectedAvailability_Summary",
                      "Catalog_ConnectedAvailability_FilterAll",
                      "Catalog_ConnectedAvailability_FilterAvailable",
@@ -50,17 +55,37 @@ public sealed class ConnectedBuyerAvailabilityUiGuardTests
                      "Catalog_ConnectedAvailability_Enable",
                      "Catalog_ConnectedAvailability_Disable",
                      "Catalog_ConnectedAvailability_PoPrice",
+                     "Catalog_ConnectedAvailability_SetPoPriceTitle",
+                     "Catalog_ConnectedAvailability_SelectedProducts",
+                     "Catalog_ConnectedAvailability_BulkHint",
                      "Catalog_ConnectedAvailability_SetFromRetail",
+                     "Catalog_ConnectedAvailability_SetFromRetailHelp",
                      "Catalog_ConnectedAvailability_DiscountFromRetail",
+                     "Catalog_ConnectedAvailability_DiscountFromRetailHelp",
                      "Catalog_ConnectedAvailability_AdjustRetail",
+                     "Catalog_ConnectedAvailability_AdjustRetailHelp",
                      "Catalog_ConnectedAvailability_SetSamePrice",
+                     "Catalog_ConnectedAvailability_SetSamePriceHelp",
+                     "Catalog_ConnectedAvailability_ReviewPrices",
+                     "Catalog_ConnectedAvailability_ReviewTitle",
+                     "Catalog_ConnectedAvailability_CurrentDefaultPo",
+                     "Catalog_ConnectedAvailability_NewDefaultPo",
                      "Catalog_ConnectedAvailability_OfflineMessage",
-                     "Catalog_ConnectedAvailability_EmptyTitle"
+                     "Catalog_ConnectedAvailability_EmptyTitle",
+                     "Catalog_ConnectedAvailability_EmptySearchTitle",
+                     "Catalog_ConnectedAvailability_EmptyAvailableTitle",
+                     "Catalog_ConnectedAvailability_EmptyUnavailableTitle",
+                     "ConnectedBuyers_SelectProduct",
+                     "ConnectedBuyers_ApplyToCount"
                  })
         {
             Assert.Contains($"name=\"{key}\"", en, StringComparison.Ordinal);
             Assert.Contains($"name=\"{key}\"", fil, StringComparison.Ordinal);
         }
+
+        Assert.Contains("<value>{0} available · {1} unavailable</value>", en, StringComparison.Ordinal);
+        Assert.Contains("<value>Apply to {0} products</value>", en, StringComparison.Ordinal);
+        Assert.Contains("<value>Review prices</value>", en, StringComparison.Ordinal);
     }
 
     private static string CatalogPagesDirectory() => Path.Combine(

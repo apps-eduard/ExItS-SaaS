@@ -10916,6 +10916,13 @@ html:has(.pos-denom-sheet) .pos-denom-sheet {
     padding: 0.85rem 0.9rem 0;
     width: min(28rem, 100%);
 }
+.pos-denom-sheet__panel--fit {
+    height: auto;
+    max-height: min(100%, 40rem);
+}
+.pos-denom-sheet__list--fit {
+    flex: 0 1 auto;
+}
 .pos-denom-sheet__header {
     align-items: flex-start;
     display: flex;

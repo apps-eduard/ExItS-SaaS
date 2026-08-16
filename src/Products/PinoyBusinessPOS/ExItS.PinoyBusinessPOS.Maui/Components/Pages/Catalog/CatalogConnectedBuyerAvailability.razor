@@ -15,6 +15,7 @@
 <Page>
     <header class="pos-manage-share__header">
         <h1 class="pos-manage-share__title">@L["Catalog_ConnectedAvailability_Title"]</h1>
+        <p class="pos-manage-share__intro pos-muted">@L["Catalog_ConnectedAvailability_Intro"]</p>
         @if (!_loading && string.IsNullOrWhiteSpace(_error))
         {
             <p class="pos-manage-share__summary pos-muted">
@@ -93,8 +94,8 @@
         @if (_items.Count == 0)
         {
             <EmptyState IconName="products"
-                        Title="@L["Catalog_ConnectedAvailability_EmptyTitle"]"
-                        Message="@L["Catalog_ConnectedAvailability_EmptyMessage"]" />
+                        Title="@EmptyStateTitle"
+                        Message="@EmptyStateMessage" />
         }
         else
         {
@@ -103,6 +104,7 @@
                     <input type="checkbox"
                            checked="@PageAllSelected"
                            disabled="@(_busy || !CanManage)"
+                           aria-label="@L["ConnectedBuyers_SelectVisible", _items.Count]"
                            @onchange="OnTogglePageSelect" />
                     <span>@L["ConnectedBuyers_SelectVisible", _items.Count]</span>
                 </label>
@@ -114,6 +116,7 @@
                             <input type="checkbox"
                                    checked="@selected"
                                    disabled="@(_busy || !CanManage || _selectAllMatching)"
+                                   aria-label="@L["ConnectedBuyers_SelectProduct", product.Name]"
                                    @onchange="args => ToggleOne(product.ProductId, args)" />
                         </label>
                         <div class="pos-manage-share__body">
@@ -132,20 +135,23 @@
                                     <text> · @product.Sku</text>
                                 }
                             </span>
-                            <span class="pos-manage-share__prices pos-muted">
-                                @L["ConnectedBuyers_RetailShort"]
-                                <MoneyDisplay Amount="@product.SellingPrice" CurrencyCode="PHP" />
-                                <text> · </text>
-                                @L["ConnectedBuyers_DefaultPoShort"]
-                                @if (product.DefaultConnectedPoPrice is decimal po)
-                                {
-                                    <MoneyDisplay Amount="@po" CurrencyCode="PHP" />
-                                }
-                                else
-                                {
-                                    @L["Catalog_ConnectedAvailability_DefaultPoNotSet"]
-                                }
-                            </span>
+                            <div class="pos-manage-share__price-grid" aria-label="@L["Catalog_ConnectedAvailability_PriceSummary"]">
+                                <div class="pos-manage-share__price-cell">
+                                    <span class="pos-manage-share__price-label">@L["ConnectedBuyers_RetailShort"]</span>
+                                    <MoneyDisplay Amount="@product.SellingPrice" CurrencyCode="PHP" />
+                                </div>
+                                <div class="pos-manage-share__price-cell">
+                                    <span class="pos-manage-share__price-label">@L["ConnectedBuyers_DefaultPoShort"]</span>
+                                    @if (product.DefaultConnectedPoPrice is decimal po)
+                                    {
+                                        <MoneyDisplay Amount="@po" CurrencyCode="PHP" />
+                                    }
+                                    else
+                                    {
+                                        <span class="pos-muted">@L["Catalog_ConnectedAvailability_DefaultPoNotSet"]</span>
+                                    }
+                                </div>
+                            </div>
                             <span class="pos-manage-share__state @(product.CanExposeToConnectedBuyers ? "pos-manage-share__state--shared" : null)">
                                 @(product.CanExposeToConnectedBuyers
                                     ? L["Catalog_ConnectedAvailability_Available"]
@@ -176,17 +182,16 @@
 @if (CanManage && (_selectedCount > 0 || _selectAllMatching))
 {
     <div class="pos-manage-share__sticky" role="region" aria-label="@L["ConnectedBuyers_BulkActions"]">
-        <div class="pos-manage-share__sticky-meta">
-            @(_selectAllMatching
-                ? L["ConnectedBuyers_AllMatchingSelected", _matchingCount]
-                : L["ConnectedBuyers_SelectedCount", _selectedCount])
+        <div class="pos-manage-share__sticky-meta" aria-live="polite">
+            @SelectionSummaryLabel
         </div>
+        <p class="pos-manage-share__sticky-hint pos-muted">@L["Catalog_ConnectedAvailability_BulkHint"]</p>
         <div class="pos-manage-share__sticky-actions">
             <button type="button" class="pos-manage-share__action" disabled="@_busy" @onclick="() => BulkAvailabilityAsync(true)">@L["Catalog_ConnectedAvailability_Enable"]</button>
             <button type="button" class="pos-manage-share__action pos-manage-share__action--danger" disabled="@_busy" @onclick="() => BulkAvailabilityAsync(false)">@L["Catalog_ConnectedAvailability_Disable"]</button>
-            <button type="button" class="pos-manage-share__action" disabled="@_busy" @onclick="OpenPriceSheet">@L["Catalog_ConnectedAvailability_PoPrice"]</button>
-            <button type="button" class="pos-manage-share__action" disabled="@_busy" @onclick="ClearSelection">@L["ConnectedBuyers_ClearSelection"]</button>
+            <button type="button" class="pos-manage-share__action pos-manage-share__action--primary" disabled="@_busy" @onclick="OpenPriceSheet">@L["Catalog_ConnectedAvailability_PoPrice"]</button>
         </div>
+        <button type="button" class="pos-manage-share__clear" disabled="@_busy" @onclick="ClearSelection">@L["ConnectedBuyers_ClearSelection"]</button>
     </div>
 }
 
@@ -230,44 +235,96 @@
 
 @if (_priceSheetOpen)
 {
-    <div class="pos-denom-sheet" role="dialog" aria-modal="true" aria-label="@L["Catalog_ConnectedAvailability_PoPrice"]">
-        <div class="pos-denom-sheet__panel">
-            <header class="pos-denom-sheet__header">
-                <h2 class="pos-denom-sheet__title">@L["Catalog_ConnectedAvailability_PoPrice"]</h2>
-                <p class="pos-denom-sheet__hint">@L["Catalog_ConnectedAvailability_PriceRuleHelp"]</p>
+    <div class="pos-denom-sheet" role="dialog" aria-modal="true" aria-label="@L["Catalog_ConnectedAvailability_SetPoPriceTitle"]">
+        <div class="pos-denom-sheet__panel pos-denom-sheet__panel--fit">
+            <header class="pos-denom-sheet__header pos-manage-share__sheet-header">
+                <div>
+                    <h2 class="pos-denom-sheet__title">@L["Catalog_ConnectedAvailability_SetPoPriceTitle"]</h2>
+                    <p class="pos-manage-share__sheet-count" aria-live="polite">@SelectionProductsLabel</p>
+                    <p class="pos-denom-sheet__hint">@L["Catalog_ConnectedAvailability_PriceRuleHelp"]</p>
+                </div>
             </header>
-            <div class="pos-denom-sheet__list">
+            <div class="pos-denom-sheet__list pos-denom-sheet__list--fit">
                 <label class="pos-manage-share__price-option">
                     <input type="radio" name="avail-price-mode" checked="@(_priceMode == "SetFromRetail")" @onchange="SetFromRetailMode" />
-                    @L["Catalog_ConnectedAvailability_SetFromRetail"]
+                    <span>
+                        <strong>@L["Catalog_ConnectedAvailability_SetFromRetail"]</strong>
+                        <span class="pos-manage-share__option-help">@L["Catalog_ConnectedAvailability_SetFromRetailHelp"]</span>
+                    </span>
                 </label>
                 <label class="pos-manage-share__price-option">
                     <input type="radio" name="avail-price-mode" checked="@(_priceMode == "DiscountFromRetailPercent")" @onchange="SetDiscountMode" />
-                    @L["Catalog_ConnectedAvailability_DiscountFromRetail"]
+                    <span>
+                        <strong>@L["Catalog_ConnectedAvailability_DiscountFromRetail"]</strong>
+                        <span class="pos-manage-share__option-help">@L["Catalog_ConnectedAvailability_DiscountFromRetailHelp"]</span>
+                    </span>
                 </label>
                 @if (_priceMode == "DiscountFromRetailPercent")
                 {
-                    <input class="pos-manage-share__price-input" type="number" min="0" max="100" step="0.01" @bind="_percentText" />
+                    <label class="pos-manage-share__field">
+                        <span class="pos-manage-share__field-label">@L["Catalog_ConnectedAvailability_DiscountLabel"]</span>
+                        <span class="pos-manage-share__field-control">
+                            <input class="pos-manage-share__price-input"
+                                   type="number"
+                                   min="0"
+                                   max="100"
+                                   step="0.01"
+                                   inputmode="decimal"
+                                   aria-label="@L["Catalog_ConnectedAvailability_DiscountLabel"]"
+                                   @bind="_percentText" />
+                            <span class="pos-manage-share__unit" aria-hidden="true">%</span>
+                        </span>
+                    </label>
                 }
                 <label class="pos-manage-share__price-option">
                     <input type="radio" name="avail-price-mode" checked="@(_priceMode == "AdjustFromRetailAmount")" @onchange="SetAdjustMode" />
-                    @L["Catalog_ConnectedAvailability_AdjustRetail"]
+                    <span>
+                        <strong>@L["Catalog_ConnectedAvailability_AdjustRetail"]</strong>
+                        <span class="pos-manage-share__option-help">@L["Catalog_ConnectedAvailability_AdjustRetailHelp"]</span>
+                    </span>
                 </label>
                 @if (_priceMode == "AdjustFromRetailAmount")
                 {
-                    <input class="pos-manage-share__price-input" type="number" step="0.01" @bind="_amountText" />
+                    <label class="pos-manage-share__field">
+                        <span class="pos-manage-share__field-label">@L["Catalog_ConnectedAvailability_AdjustmentLabel"]</span>
+                        <span class="pos-manage-share__field-control">
+                            <span class="pos-manage-share__unit" aria-hidden="true">PHP</span>
+                            <input class="pos-manage-share__price-input"
+                                   type="number"
+                                   step="0.01"
+                                   inputmode="decimal"
+                                   aria-label="@L["Catalog_ConnectedAvailability_AdjustmentLabel"]"
+                                   @bind="_amountText" />
+                        </span>
+                        <span class="pos-manage-share__field-hint pos-muted">@L["Catalog_ConnectedAvailability_AdjustmentHint"]</span>
+                    </label>
                 }
                 <label class="pos-manage-share__price-option">
                     <input type="radio" name="avail-price-mode" checked="@(_priceMode == "FixedPrice")" @onchange="SetFixedMode" />
-                    @L["Catalog_ConnectedAvailability_SetSamePrice"]
+                    <span>
+                        <strong>@L["Catalog_ConnectedAvailability_SetSamePrice"]</strong>
+                        <span class="pos-manage-share__option-help">@L["Catalog_ConnectedAvailability_SetSamePriceHelp"]</span>
+                    </span>
                 </label>
                 @if (_priceMode == "FixedPrice")
                 {
-                    <input class="pos-manage-share__price-input" type="number" min="0.01" step="0.01" @bind="_fixedPriceText" />
+                    <label class="pos-manage-share__field">
+                        <span class="pos-manage-share__field-label">@L["Catalog_ConnectedAvailability_OnePriceLabel"]</span>
+                        <span class="pos-manage-share__field-control">
+                            <span class="pos-manage-share__unit" aria-hidden="true">PHP</span>
+                            <input class="pos-manage-share__price-input"
+                                   type="number"
+                                   min="0.01"
+                                   step="0.01"
+                                   inputmode="decimal"
+                                   aria-label="@L["Catalog_ConnectedAvailability_OnePriceLabel"]"
+                                   @bind="_fixedPriceText" />
+                        </span>
+                    </label>
                 }
                 @if (!string.IsNullOrWhiteSpace(_priceError))
                 {
-                    <p class="pos-manage-share__banner">@_priceError</p>
+                    <p class="pos-manage-share__banner" role="alert">@_priceError</p>
                 }
             </div>
             <div class="pos-denom-sheet__bar">
@@ -275,7 +332,7 @@
                     <span class="pos-action-tile__label">@L["Common_Cancel"]</span>
                 </button>
                 <button type="button" class="pos-action-tile pos-action-tile--primary" disabled="@_busy" @onclick="PreviewPriceAsync">
-                    <span class="pos-action-tile__label">@L["ConnectedBuyers_PricePreview"]</span>
+                    <span class="pos-action-tile__label">@L["Catalog_ConnectedAvailability_ReviewPrices"]</span>
                 </button>
             </div>
         </div>
@@ -284,34 +341,42 @@
 
 @if (_preview is not null)
 {
-    <div class="pos-denom-sheet" role="dialog" aria-modal="true" aria-label="@L["ConnectedBuyers_PricePreview"]">
-        <div class="pos-denom-sheet__panel">
-            <header class="pos-denom-sheet__header">
-                <h2 class="pos-denom-sheet__title">@L["ConnectedBuyers_PricePreview"]</h2>
-                <p class="pos-denom-sheet__hint">@L["ConnectedBuyers_PricePreviewCount", _preview.AffectedCount]</p>
+    <div class="pos-denom-sheet" role="dialog" aria-modal="true" aria-label="@L["Catalog_ConnectedAvailability_ReviewTitle"]">
+        <div class="pos-denom-sheet__panel pos-denom-sheet__panel--fit">
+            <header class="pos-denom-sheet__header pos-manage-share__sheet-header">
+                <div>
+                    <h2 class="pos-denom-sheet__title">@L["Catalog_ConnectedAvailability_ReviewTitle"]</h2>
+                    <p class="pos-manage-share__sheet-count">@L["ConnectedBuyers_PricePreviewCount", _preview.AffectedCount]</p>
+                </div>
             </header>
-            <div class="pos-denom-sheet__list">
+            <div class="pos-denom-sheet__list pos-denom-sheet__list--fit">
                 @foreach (var item in _preview.Items)
                 {
-                    <div class="pos-manage-share__preview-row pos-manage-share__preview-row--stack">
-                        <strong>@item.Name</strong>
-                        <span class="pos-muted">
-                            @L["ConnectedBuyers_RetailShort"]
+                    <div class="pos-manage-share__preview-card">
+                        <div class="pos-manage-share__preview-title">
+                            <strong>@item.Name</strong>
+                            @if (!string.IsNullOrWhiteSpace(item.Sku))
+                            {
+                                <span class="pos-muted">@item.Sku</span>
+                            }
+                        </div>
+                        <div class="pos-manage-share__preview-grid">
+                            <span class="pos-manage-share__price-label">@L["ConnectedBuyers_RetailShort"]</span>
                             <MoneyDisplay Amount="@item.SellingPrice" CurrencyCode="PHP" />
-                        </span>
-                        <span class="pos-muted">
-                            @L["ConnectedBuyers_DefaultPoShort"]
+                            <span class="pos-manage-share__price-label">@L["Catalog_ConnectedAvailability_CurrentDefaultPo"]</span>
                             @if (item.CurrentDefaultPoPrice is decimal current)
                             {
                                 <MoneyDisplay Amount="@current" CurrencyCode="PHP" />
                             }
                             else
                             {
-                                @L["Catalog_ConnectedAvailability_DefaultPoNotSet"]
+                                <span class="pos-muted">@L["Catalog_ConnectedAvailability_DefaultPoNotSet"]</span>
                             }
-                            →
-                            <MoneyDisplay Amount="@item.ProposedDefaultPoPrice" CurrencyCode="PHP" />
-                        </span>
+                            <span class="pos-manage-share__price-label pos-manage-share__price-label--new">@L["Catalog_ConnectedAvailability_NewDefaultPo"]</span>
+                            <span class="pos-manage-share__new-price">
+                                <MoneyDisplay Amount="@item.ProposedDefaultPoPrice" CurrencyCode="PHP" Emphasized="true" />
+                            </span>
+                        </div>
                     </div>
                 }
                 @if (_preview.Truncated)
@@ -320,7 +385,7 @@
                 }
             </div>
             <div class="pos-denom-sheet__bar">
-                <button type="button" class="pos-action-tile" disabled="@_busy" @onclick="() => _preview = null">
+                <button type="button" class="pos-action-tile" disabled="@_busy" @onclick="BackToPriceSheet">
                     <span class="pos-action-tile__label">@L["Common_Cancel"]</span>
                 </button>
                 <button type="button" class="pos-action-tile pos-action-tile--primary" disabled="@_busy" @onclick="ApplyPriceAsync">
@@ -334,9 +399,10 @@
 
 <style>
     .pos-manage-share { width: 100%; padding-bottom: 0.5rem; }
-    .pos-manage-share--has-selection { padding-bottom: 5.5rem; }
+    .pos-manage-share--has-selection { padding-bottom: 8.5rem; }
     .pos-manage-share__header { margin-bottom: 0.55rem; }
     .pos-manage-share__title { margin: 0; font-size: 1.2rem; font-weight: 700; line-height: 1.2; color: var(--exits-text, #15201a); }
+    .pos-manage-share__intro { margin: 0.3rem 0 0; font-size: 0.8125rem; line-height: 1.35; }
     .pos-manage-share__summary { margin: 0.25rem 0 0; font-size: 0.8125rem; }
     .pos-manage-share__search {
         display: flex; align-items: center; gap: 0.45rem; margin: 0 0 0.55rem;
@@ -353,7 +419,7 @@
     .pos-manage-share__category-row { margin: 0 0 0.55rem; }
     .pos-manage-share__category-btn {
         appearance: none; width: 100%; text-align: left; font: inherit; font-size: 0.875rem; font-weight: 650;
-        padding: 0.55rem 0.7rem; border-radius: 0.55rem; border: 1px solid var(--exits-border, #c9d4cd);
+        min-height: 2.75rem; padding: 0.55rem 0.7rem; border-radius: 0.55rem; border: 1px solid var(--exits-border, #c9d4cd);
         background: var(--exits-surface, #fff); color: var(--exits-text, #15201a);
     }
     .pos-manage-share__select-banner {
@@ -367,19 +433,34 @@
     .pos-manage-share__select-all {
         display: flex; align-items: center; gap: 0.55rem; padding: 0.55rem 0.7rem;
         border-bottom: 1px solid var(--pos-border-subtle, #d7e0da); font-size: 0.8125rem; font-weight: 650;
+        min-height: 2.75rem;
     }
     .pos-manage-share__row {
         display: grid; grid-template-columns: auto 1fr; gap: 0.55rem; padding: 0.6rem 0.7rem; align-items: start;
     }
     .pos-manage-share__row + .pos-manage-share__row { border-top: 1px solid var(--pos-border-subtle, #d7e0da); }
     .pos-manage-share__row--selected { background: rgba(27, 122, 61, 0.06); }
-    .pos-manage-share__check { margin: 0.15rem 0 0; }
+    .pos-manage-share__check {
+        display: flex; align-items: center; justify-content: center;
+        margin: 0.05rem 0 0; min-width: 2.75rem; min-height: 2.75rem;
+    }
     .pos-manage-share__body {
-        display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; text-align: left;
+        display: flex; flex-direction: column; gap: 0.2rem; min-width: 0; text-align: left;
         appearance: none; border: 0; background: transparent; padding: 0; font: inherit;
     }
     .pos-manage-share__name { font-size: 0.95rem; font-weight: 650; line-height: 1.25; color: var(--exits-text, #15201a); }
-    .pos-manage-share__meta, .pos-manage-share__prices { font-size: 0.75rem; line-height: 1.3; }
+    .pos-manage-share__meta { font-size: 0.75rem; line-height: 1.3; }
+    .pos-manage-share__price-grid {
+        display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem 0.75rem; margin-top: 0.1rem;
+    }
+    .pos-manage-share__price-cell {
+        display: flex; flex-direction: column; gap: 0.05rem; min-width: 0;
+    }
+    .pos-manage-share__price-label {
+        font-size: 0.6875rem; font-weight: 650; letter-spacing: 0.01em;
+        color: var(--exits-text-muted, #5b6b62); text-transform: none;
+    }
+    .pos-manage-share__price-label--new { color: var(--exits-text, #15201a); }
     .pos-manage-share__state { font-size: 0.75rem; font-weight: 700; color: var(--exits-text-muted, #5b6b62); }
     .pos-manage-share__state--shared { color: var(--exits-primary, #1b7a3d); }
     .pos-manage-share__more { margin-top: 0.65rem; }
@@ -390,24 +471,62 @@
         border-top: 1px solid var(--exits-border, #c9d4cd); background: var(--exits-surface, #fff);
         box-shadow: 0 -6px 18px rgba(21, 32, 26, 0.08);
     }
-    .pos-manage-share__sticky-meta { font-size: 0.8125rem; font-weight: 700; margin-bottom: 0.4rem; }
-    .pos-manage-share__sticky-actions { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+    .pos-manage-share__sticky-meta { font-size: 0.875rem; font-weight: 700; margin-bottom: 0.15rem; }
+    .pos-manage-share__sticky-hint { margin: 0 0 0.45rem; font-size: 0.75rem; line-height: 1.3; }
+    .pos-manage-share__sticky-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; }
     .pos-manage-share__action {
         appearance: none; border: 1px solid var(--exits-border, #c9d4cd); background: #fff;
-        border-radius: 999px; padding: 0.4rem 0.7rem; font: inherit; font-size: 0.8125rem; font-weight: 700;
-        color: var(--exits-primary, #1b7a3d);
+        border-radius: 0.55rem; min-height: 2.75rem; padding: 0.5rem 0.85rem; font: inherit;
+        font-size: 0.8125rem; font-weight: 700; color: var(--exits-primary, #1b7a3d);
+        flex: 1 1 auto;
+    }
+    .pos-manage-share__action--primary {
+        color: #fff; background: var(--exits-primary, #1b7a3d); border-color: var(--exits-primary, #1b7a3d);
     }
     .pos-manage-share__action--danger { color: #8a1f1f; border-color: #e0b4b4; }
-    .pos-manage-share__price-option { display: flex; align-items: center; gap: 0.45rem; margin: 0.35rem 0; font-size: 0.875rem; font-weight: 600; }
+    .pos-manage-share__clear {
+        appearance: none; border: 0; background: transparent; width: 100%; margin-top: 0.35rem;
+        min-height: 2.75rem; font: inherit; font-size: 0.8125rem; font-weight: 650;
+        color: var(--exits-text-muted, #5b6b62); text-decoration: underline;
+    }
+    .pos-manage-share__sheet-header { width: 100%; }
+    .pos-manage-share__sheet-count { margin: 0.2rem 0 0; font-size: 0.8125rem; font-weight: 700; color: var(--exits-text, #15201a); }
+    .pos-manage-share__price-option {
+        display: grid; grid-template-columns: auto 1fr; gap: 0.55rem; align-items: start;
+        margin: 0.15rem 0; padding: 0.45rem 0.1rem; font-size: 0.875rem; font-weight: 600;
+    }
+    .pos-manage-share__price-option input { margin-top: 0.2rem; }
+    .pos-manage-share__option-help {
+        display: block; margin-top: 0.15rem; font-size: 0.75rem; font-weight: 500;
+        color: var(--exits-text-muted, #5b6b62); line-height: 1.35;
+    }
+    .pos-manage-share__field {
+        display: flex; flex-direction: column; gap: 0.25rem; margin: 0 0 0.35rem 1.7rem;
+    }
+    .pos-manage-share__field-label { font-size: 0.75rem; font-weight: 700; color: var(--exits-text, #15201a); }
+    .pos-manage-share__field-control {
+        display: flex; align-items: center; gap: 0.4rem;
+    }
+    .pos-manage-share__field-hint { font-size: 0.75rem; line-height: 1.3; }
+    .pos-manage-share__unit {
+        flex-shrink: 0; font-size: 0.8125rem; font-weight: 700; color: var(--exits-text-muted, #5b6b62);
+    }
     .pos-manage-share__price-input {
-        width: 100%; margin: 0.2rem 0 0.45rem; padding: 0.45rem 0.55rem;
+        width: 100%; min-height: 2.75rem; margin: 0; padding: 0.45rem 0.55rem;
         border: 1px solid var(--exits-border, #c9d4cd); border-radius: 0.45rem; font: inherit;
     }
-    .pos-manage-share__preview-row {
-        display: flex; justify-content: space-between; gap: 0.75rem; padding: 0.45rem 0;
-        border-bottom: 1px solid var(--pos-border-subtle, #d7e0da); font-size: 0.875rem;
+    .pos-manage-share__preview-card {
+        padding: 0.55rem 0; border-bottom: 1px solid var(--pos-border-subtle, #d7e0da);
     }
-    .pos-manage-share__preview-row--stack { flex-direction: column; align-items: flex-start; }
+    .pos-manage-share__preview-title {
+        display: flex; flex-wrap: wrap; gap: 0.35rem 0.55rem; align-items: baseline;
+        margin-bottom: 0.35rem; font-size: 0.875rem;
+    }
+    .pos-manage-share__preview-grid {
+        display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.2rem 0.75rem;
+        align-items: baseline; font-size: 0.8125rem;
+    }
+    .pos-manage-share__new-price { font-weight: 700; }
     .pos-denom-sheet__item { display: flex; justify-content: space-between; gap: 0.75rem; width: 100%; }
 </style>
 
@@ -443,6 +562,35 @@
     private bool CanManage => Capabilities.IsAllowed(UtangCapability.ManageCatalog);
     private bool PageAllSelected => _items.Count > 0 && _items.All(x => _pageSelected.Contains(x.ProductId));
     private int _selectedCount => _pageSelected.Count;
+    private int EffectiveSelectionCount => _selectAllMatching ? _matchingCount : _pageSelected.Count;
+
+    private string SelectionSummaryLabel =>
+        _selectAllMatching
+            ? L["ConnectedBuyers_AllMatchingSelected", _matchingCount]
+            : L["ConnectedBuyers_SelectedCount", EffectiveSelectionCount];
+
+    private string SelectionProductsLabel =>
+        L["Catalog_ConnectedAvailability_SelectedProducts", EffectiveSelectionCount];
+
+    private string EmptyStateTitle =>
+        !string.IsNullOrWhiteSpace(_query)
+            ? L["Catalog_ConnectedAvailability_EmptySearchTitle"]
+            : _availabilityFilter switch
+            {
+                "available" => L["Catalog_ConnectedAvailability_EmptyAvailableTitle"],
+                "notavailable" => L["Catalog_ConnectedAvailability_EmptyUnavailableTitle"],
+                _ => L["Catalog_ConnectedAvailability_EmptyTitle"]
+            };
+
+    private string EmptyStateMessage =>
+        !string.IsNullOrWhiteSpace(_query)
+            ? L["Catalog_ConnectedAvailability_EmptySearchMessage"]
+            : _availabilityFilter switch
+            {
+                "available" => L["Catalog_ConnectedAvailability_EmptyAvailableMessage"],
+                "notavailable" => L["Catalog_ConnectedAvailability_EmptyUnavailableMessage"],
+                _ => L["Catalog_ConnectedAvailability_EmptyMessage"]
+            };
 
     private IReadOnlyList<(string Value, string Label)> AvailabilityFilters =>
     [
@@ -697,6 +845,14 @@
         _priceError = null;
         _priceSheetOpen = true;
         _preview = null;
+        _pendingPriceRequest = null;
+    }
+
+    private void BackToPriceSheet()
+    {
+        _preview = null;
+        _pendingPriceRequest = null;
+        _priceSheetOpen = true;
     }
 
     private async Task PreviewPriceAsync()
