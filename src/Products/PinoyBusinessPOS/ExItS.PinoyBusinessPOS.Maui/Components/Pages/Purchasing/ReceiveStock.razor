@@ -31,13 +31,12 @@ else
             <div class="pos-purchasing__heading">
                 <h1 class="pos-purchasing__title">@L["Purchasing_ReceiveStock"]</h1>
                 <p class="pos-purchasing__subtitle">@L["Purchasing_ReceiveStockDescription"]</p>
+                <p class="pos-receive-stock__tip">
+                    @L["Purchasing_ReceiveStockHelper"]
+                    <button type="button" class="pos-receive-stock__link" @onclick="GoOrders">@L["Purchasing_Orders"]</button>
+                </p>
             </div>
         </header>
-
-        <p class="pos-receive-stock__tip">
-            @L["Purchasing_ReceiveStockHelper"]
-            <button type="button" class="pos-link-button" @onclick="GoOrders">@L["Purchasing_Orders"]</button>
-        </p>
 
         @if (_isOffline)
         {
@@ -79,10 +78,10 @@ else
             }
             else
             {
-                <div class="pos-purchasing__list" role="list" aria-label="@L["Purchasing_ReceiveStock"]">
+                <div class="pos-purchasing__list pos-receive-stock__list" role="list" aria-label="@L["Purchasing_ReceiveStock"]">
                     @foreach (var item in TrackedItems)
                     {
-                        <a class="pos-purchasing__row"
+                        <a class="pos-purchasing__row pos-receive-stock__row"
                            role="listitem"
                            href="@($"/inventory/{item.ProductId:D}/adjust?intent=receive")">
                             <div class="pos-purchasing__row-main">
@@ -94,7 +93,10 @@ else
                                     · @L["Inventory_OnHand"] @item.OnHandQuantity.ToString("0.###", CultureInfo.InvariantCulture)
                                 </span>
                             </div>
-                            <span class="pos-purchasing__view">@L["Purchasing_ReceiveStockAction"]</span>
+                            <span class="pos-receive-stock__row-action">
+                                <span class="pos-receive-stock__row-action-icon" aria-hidden="true">@IconGlyphs.Get("plus")</span>
+                                <span>@L["Purchasing_ReceiveStockAction"]</span>
+                            </span>
                         </a>
                     }
                 </div>

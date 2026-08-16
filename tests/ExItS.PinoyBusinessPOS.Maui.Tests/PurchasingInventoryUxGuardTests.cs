@@ -44,13 +44,14 @@ public sealed class PurchasingInventoryUxGuardTests
         Assert.Contains("Purchasing_ReceiveStockSearchPlaceholder", receive, StringComparison.Ordinal);
         Assert.Contains("Purchasing_ReceiveStockAction", receive, StringComparison.Ordinal);
         Assert.Contains("pos-receive-stock__search", receive, StringComparison.Ordinal);
+        Assert.Contains("pos-receive-stock__row-action", receive, StringComparison.Ordinal);
         Assert.Contains("intent=receive", receive, StringComparison.Ordinal);
         Assert.Contains("IsReceiveStock", adjust, StringComparison.Ordinal);
         Assert.Contains("Purchasing_ReceiveStockWillIncrease", adjust, StringComparison.Ordinal);
         Assert.Contains("Purchasing_ReceiveStockSuccessTitle", adjust, StringComparison.Ordinal);
         Assert.Contains("<value>Receive stock</value>", en, StringComparison.Ordinal);
         Assert.Contains("<value>Receive</value>", en, StringComparison.Ordinal);
-        Assert.Contains("<value>Name, SKU, or barcode</value>", en, StringComparison.Ordinal);
+        Assert.Contains("<value>Search products</value>", en, StringComparison.Ordinal);
         Assert.Contains("<value>Stock received</value>", en, StringComparison.Ordinal);
         Assert.DoesNotContain("Direct Stock In", receive, StringComparison.Ordinal);
         Assert.DoesNotContain("Manual Purchase", receive, StringComparison.Ordinal);

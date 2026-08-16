@@ -8438,16 +8438,16 @@
     <value>Goods are already here.</value>
   </data>
   <data name="Purchasing_ReceiveStockDescription" xml:space="preserve">
-    <value>Add goods that are already here to on-hand stock.</value>
+    <value>Goods already here - add them to stock.</value>
   </data>
   <data name="Purchasing_ReceiveStockHelper" xml:space="preserve">
-    <value>Still ordering? Use</value>
+    <value>Still ordering? Open</value>
   </data>
   <data name="Purchasing_ReceiveStockSecondary" xml:space="preserve">
     <value>For orders you have not received yet, create a purchase order instead.</value>
   </data>
   <data name="Purchasing_ReceiveStockSearchPlaceholder" xml:space="preserve">
-    <value>Name, SKU, or barcode</value>
+    <value>Search products</value>
   </data>
   <data name="Purchasing_ReceiveStockAction" xml:space="preserve">
     <value>Receive</value>

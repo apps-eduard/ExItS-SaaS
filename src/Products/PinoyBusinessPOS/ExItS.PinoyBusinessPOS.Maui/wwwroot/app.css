@@ -8753,7 +8753,18 @@ html.pos-keyboard-open .pos-content {
     color: var(--exits-text-muted, #5b6b62);
     font-size: var(--exits-text-sm, 0.875rem);
     line-height: 1.35;
-    margin: 0 0 var(--exits-space-3, 0.75rem);
+    margin: 0.35rem 0 0;
+}
+
+.pos-receive-stock__link {
+    background: none;
+    border: none;
+    color: var(--exits-primary, #1b7a3d);
+    cursor: pointer;
+    font: inherit;
+    font-weight: 650;
+    padding: 0;
+    text-decoration: underline;
 }
 
 .pos-receive-stock__toolbar {
@@ -8799,6 +8810,29 @@ html.pos-keyboard-open .pos-content {
 
 .pos-receive-stock__search-input::placeholder {
     color: var(--exits-text-muted, #5b6b62);
+    opacity: 1;
+}
+
+.pos-receive-stock__row-action {
+    align-items: center;
+    color: var(--exits-primary, #1b7a3d);
+    display: inline-flex;
+    flex: 0 0 auto;
+    font-size: var(--exits-text-xs, 0.75rem);
+    font-weight: 650;
+    gap: 0.25rem;
+}
+
+.pos-receive-stock__row-action-icon {
+    display: inline-flex;
+    height: 1rem;
+    width: 1rem;
+}
+
+.pos-receive-stock__row-action-icon svg {
+    display: block;
+    height: 100%;
+    width: 100%;
 }
 
 /* Purchasing detail */

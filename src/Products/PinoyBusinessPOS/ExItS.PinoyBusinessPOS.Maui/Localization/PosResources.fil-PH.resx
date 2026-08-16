@@ -8438,16 +8438,16 @@
     <value>Nandito na ang mga kalakal.</value>
   </data>
   <data name="Purchasing_ReceiveStockDescription" xml:space="preserve">
-    <value>Idagdag sa stock ang mga kalakal na nandito na.</value>
+    <value>Nandito na ang kalakal - idagdag sa stock.</value>
   </data>
   <data name="Purchasing_ReceiveStockHelper" xml:space="preserve">
-    <value>Nag-oorder pa? Gamitin ang</value>
+    <value>Nag-oorder pa? Buksan ang</value>
   </data>
   <data name="Purchasing_ReceiveStockSecondary" xml:space="preserve">
     <value>Kung hindi pa natatanggap, gumawa muna ng purchase order.</value>
   </data>
   <data name="Purchasing_ReceiveStockSearchPlaceholder" xml:space="preserve">
-    <value>Pangalan, SKU, o barcode</value>
+    <value>Maghanap ng produkto</value>
   </data>
   <data name="Purchasing_ReceiveStockAction" xml:space="preserve">
     <value>Tanggapin</value>
