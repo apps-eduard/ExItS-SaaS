@@ -229,6 +229,12 @@ public sealed class PlatformSupportCatalogTests
             CatalogProductId productId,
             CancellationToken cancellationToken = default) => throw new NotSupportedException();
 
+        public Task<bool> HasCustomerOrderDeductionAsync(
+            PosOrganizationId organizationId,
+            Domain.CustomerOrdering.CustomerOrderId orderId,
+            CatalogProductId productId,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
         public Task<bool> HasSaleVoidRestorationAsync(
             PosOrganizationId organizationId,
             Domain.Sales.SaleId saleId,
