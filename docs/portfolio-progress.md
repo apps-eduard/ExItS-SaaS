@@ -14,7 +14,7 @@
 | Current phase | Phase 29 **Open / Partial Closeout** â€” cross-cutting data/performance hardening. Phases 14 / 19â€“28 remain **Open** with prior statuses (including Phase 28 Stage B Code Complete / Validation Pending). |
 | Current work package | **P29** hardening stream - WP01-WP07 Code Complete / Validation Pending; WP03/WP08-WP10 Partial; **WP11** Code Complete / Validation Evidence Recorded ([phase](phases/phase-29-data-integrity-query-performance-and-database-hardening.md)). |
 | Overall status | Tenant integrity constraints, ListBranches N+1 fix, SQL dashboard aggregates, reservation advisory locks, ownership doc reconciliation, and WP11 Testcontainers migration/constraint verification delivered. Load/EXPLAIN latency drills partial. **Not Device Verified. Not Browser Verified. Not Production Ready.** |
-| Latest verified commit | Phase 29 WP11 `1212dcd0`/`512f8749`/`7a866a5b`/`5b25c586` (preflight `390178f3`) |
+| Latest verified commit | Phase 29 WP11 `1212dcd0`/`512f8749`/`7a866a5b`/`5b25c586`/`1ad99fc0` (preflight `390178f3`) |
 | Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA deferred; Phase 19/20/22/24/25/26/27 owner/physical validation pending |
 | Last updated | 2026-08-16 |
 

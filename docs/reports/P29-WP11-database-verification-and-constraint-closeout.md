@@ -6,7 +6,7 @@
 | Phase | Phase 29 |
 | Starting SHA | `390178f39d74e37af8f8aa44d29b38612ca9d0cd` |
 | Feature commits | `1212dcd0` (platform), `512f8749` (orders), `7a866a5b` (tests) |
-| Docs commit | `5b25c586` (+ portfolio encoding repair stamp) |
+| Docs commits | `5b25c586`, `1ad99fc0` |
 | Cross-link | Migration verification residual from [P29-WP09](P29-WP09-migration-backup-restore-and-db-operations.md) |
 | Device Verified | **No** |
 | Browser Verified | **No** |

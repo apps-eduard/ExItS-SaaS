@@ -10,7 +10,7 @@
 | Browser Verified | **No** |
 | Production Ready | **No** |
 | Starting SHA | `fcc5eee1de074baadf5b2644ab1d6d1a3af22163` |
-| WP11 feature commits | `1212dcd0`, `512f8749`, `7a866a5b`, docs `5b25c586` |
+| WP11 feature commits | `1212dcd0`, `512f8749`, `7a866a5b`, docs `5b25c586`/`1ad99fc0` |
 
 ## Goal
 
