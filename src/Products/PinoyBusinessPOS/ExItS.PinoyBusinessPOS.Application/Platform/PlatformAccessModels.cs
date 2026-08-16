@@ -413,6 +413,8 @@ public sealed record OrganizationComplianceStatusDto(
     string ComplianceEligibilityStatus,
     bool TaxDocumentIssuanceEnabled,
     string TaxDocumentIssuanceStatus,
+    bool TaxConfigurationEnabled,
+    string TaxConfigurationStatus,
     bool TaxDocumentImplementationAvailable,
     bool CurrentOwnerEducationAcknowledged,
     string EducationVersion,

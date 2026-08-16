@@ -5,6 +5,13 @@ namespace ExItS.PinoyBusinessPOS.Application.OperationalSetup;
 
 public static class OperationalSetupTaxCalculator
 {
+    public static bool ShouldApplyConfiguredTax(
+        bool taxConfigurationEnabled,
+        PosOperationalSetup? setup) =>
+        taxConfigurationEnabled
+        && setup is { IsCompleted: true }
+        && setup.TaxRatePercent > 0;
+
     public static decimal ComputeTaxAmount(decimal subtotal, decimal taxRatePercent, TaxPricingMode taxPricingMode)
     {
         if (taxRatePercent <= 0 || subtotal <= 0)

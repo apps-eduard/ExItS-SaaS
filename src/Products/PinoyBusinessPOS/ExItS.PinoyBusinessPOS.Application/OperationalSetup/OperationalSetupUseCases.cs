@@ -27,7 +27,8 @@ public sealed record PosOperationalSetupDto(
     DateTimeOffset CreatedAtUtc,
     Guid CreatedBy,
     DateTimeOffset UpdatedAtUtc,
-    Guid UpdatedBy);
+    Guid UpdatedBy,
+    bool TaxConfigurationEnabled = false);
 
 public sealed record CompleteOperationalSetupRequest(
     string StoreDisplayName,
@@ -54,7 +55,9 @@ public sealed record UpdateOperationalSetupRequest(
 
 public static class OperationalSetupMapper
 {
-    public static PosOperationalSetupDto Map(PosOperationalSetup setup) =>
+    public static PosOperationalSetupDto Map(
+        PosOperationalSetup setup,
+        bool taxConfigurationEnabled = false) =>
         new(
             setup.OrganizationId.Value,
             setup.StoreDisplayName,
@@ -72,20 +75,32 @@ public static class OperationalSetupMapper
             setup.CreatedAtUtc,
             setup.CreatedBy,
             setup.UpdatedAtUtc,
-            setup.UpdatedBy);
+            setup.UpdatedBy,
+            taxConfigurationEnabled);
 
-    public static PosOperationalSetupDto MapIncompleteDefaults(Guid organizationId, DateTimeOffset utcNow, Guid actorId) =>
-        Map(PosOperationalSetup.CreateIncomplete(PosOrganizationId.From(organizationId), actorId, utcNow));
+    public static PosOperationalSetupDto MapIncompleteDefaults(
+        Guid organizationId,
+        DateTimeOffset utcNow,
+        Guid actorId,
+        bool taxConfigurationEnabled = false) =>
+        Map(
+            PosOperationalSetup.CreateIncomplete(PosOrganizationId.From(organizationId), actorId, utcNow),
+            taxConfigurationEnabled);
 }
 
 public sealed class GetOperationalSetupQuery
 {
     private readonly IPosOperationalSetupRepository _setups;
+    private readonly IOrganizationTaxConfigurationCapabilityReader _taxConfiguration;
     private readonly TimeProvider _clock;
 
-    public GetOperationalSetupQuery(IPosOperationalSetupRepository setups, TimeProvider? clock = null)
+    public GetOperationalSetupQuery(
+        IPosOperationalSetupRepository setups,
+        IOrganizationTaxConfigurationCapabilityReader taxConfiguration,
+        TimeProvider? clock = null)
     {
         _setups = setups;
+        _taxConfiguration = taxConfiguration;
         _clock = clock ?? TimeProvider.System;
     }
 
@@ -94,6 +109,10 @@ public sealed class GetOperationalSetupQuery
         Guid actorId,
         CancellationToken cancellationToken = default)
     {
+        var taxConfigurationEnabled = await _taxConfiguration
+            .IsTaxConfigurationEnabledAsync(organizationId, cancellationToken)
+            .ConfigureAwait(false);
+
         var org = PosOrganizationId.From(organizationId);
         var existing = await _setups
             .GetByOrganizationIdAsync(org, cancellationToken)
@@ -101,13 +120,14 @@ public sealed class GetOperationalSetupQuery
 
         if (existing is not null)
         {
-            return OperationalSetupMapper.Map(existing);
+            return OperationalSetupMapper.Map(existing, taxConfigurationEnabled);
         }
 
         return OperationalSetupMapper.MapIncompleteDefaults(
             organizationId,
             _clock.GetUtcNow(),
-            actorId == Guid.Empty ? Guid.Empty : actorId);
+            actorId == Guid.Empty ? Guid.Empty : actorId,
+            taxConfigurationEnabled);
     }
 }
 
@@ -120,6 +140,7 @@ public sealed class CompleteOperationalSetup
     private readonly IOrganizationCashDenominationRepository _denominations;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IPosCommercialAccessAccessor _access;
+    private readonly IOrganizationTaxConfigurationCapabilityReader _taxConfiguration;
     private readonly TimeProvider _clock;
 
     public CompleteOperationalSetup(
@@ -128,6 +149,7 @@ public sealed class CompleteOperationalSetup
         IOrganizationCashDenominationRepository denominations,
         IPosUnitOfWork unitOfWork,
         IPosCommercialAccessAccessor access,
+        IOrganizationTaxConfigurationCapabilityReader taxConfiguration,
         TimeProvider? clock = null)
     {
         _setups = setups;
@@ -135,6 +157,7 @@ public sealed class CompleteOperationalSetup
         _denominations = denominations;
         _unitOfWork = unitOfWork;
         _access = access;
+        _taxConfiguration = taxConfiguration;
         _clock = clock ?? TimeProvider.System;
     }
 
@@ -159,9 +182,14 @@ public sealed class CompleteOperationalSetup
 
         try
         {
+            var taxConfigurationEnabled = await _taxConfiguration
+                .IsTaxConfigurationEnabledAsync(organizationId, cancellationToken)
+                .ConfigureAwait(false);
+
             var org = PosOrganizationId.From(organizationId);
             var utcNow = _clock.GetUtcNow();
             var taxMode = ParseTaxPricingMode(request.TaxPricingMode);
+            var taxRate = request.TaxRatePercent;
 
             var existing = await _setups.GetByOrganizationIdAsync(org, cancellationToken).ConfigureAwait(false);
             var setup = existing ?? PosOperationalSetup.CreateIncomplete(org, actorId, utcNow);
@@ -169,7 +197,23 @@ public sealed class CompleteOperationalSetup
 
             if (setup.IsCompleted)
             {
-                return ApplicationResult<PosOperationalSetupDto>.Success(OperationalSetupMapper.Map(setup));
+                return ApplicationResult<PosOperationalSetupDto>.Success(
+                    OperationalSetupMapper.Map(setup, taxConfigurationEnabled));
+            }
+
+            if (!taxConfigurationEnabled)
+            {
+                if (OperationalSetupTaxWriteGuard.TaxSettingsDiffer(
+                        taxMode,
+                        taxRate,
+                        TaxPricingMode.TaxExclusive,
+                        0m))
+                {
+                    return OperationalSetupTaxWriteGuard.TaxConfigurationNotEnabledResult();
+                }
+
+                taxMode = TaxPricingMode.TaxExclusive;
+                taxRate = 0m;
             }
 
             var defaultRegister = await EnsureDefaultRegisterAsync(org, actorId, utcNow, cancellationToken)
@@ -179,7 +223,7 @@ public sealed class CompleteOperationalSetup
                 request.StoreDisplayName,
                 request.CurrencyCode,
                 taxMode,
-                request.TaxRatePercent,
+                taxRate,
                 request.ReceiptHeader,
                 request.ReceiptFooter,
                 request.BusinessAddress,
@@ -202,7 +246,8 @@ public sealed class CompleteOperationalSetup
                 .EnsureAsync(_denominations, org, utcNow, cancellationToken)
                 .ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-            return ApplicationResult<PosOperationalSetupDto>.Success(OperationalSetupMapper.Map(setup));
+            return ApplicationResult<PosOperationalSetupDto>.Success(
+                OperationalSetupMapper.Map(setup, taxConfigurationEnabled));
         }
         catch (DomainException ex)
         {
@@ -254,17 +299,20 @@ public sealed class UpdateOperationalSetup
     private readonly IPosOperationalSetupRepository _setups;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IPosCommercialAccessAccessor _access;
+    private readonly IOrganizationTaxConfigurationCapabilityReader _taxConfiguration;
     private readonly TimeProvider _clock;
 
     public UpdateOperationalSetup(
         IPosOperationalSetupRepository setups,
         IPosUnitOfWork unitOfWork,
         IPosCommercialAccessAccessor access,
+        IOrganizationTaxConfigurationCapabilityReader taxConfiguration,
         TimeProvider? clock = null)
     {
         _setups = setups;
         _unitOfWork = unitOfWork;
         _access = access;
+        _taxConfiguration = taxConfiguration;
         _clock = clock ?? TimeProvider.System;
     }
 
@@ -289,6 +337,10 @@ public sealed class UpdateOperationalSetup
 
         try
         {
+            var taxConfigurationEnabled = await _taxConfiguration
+                .IsTaxConfigurationEnabledAsync(organizationId, cancellationToken)
+                .ConfigureAwait(false);
+
             var org = PosOrganizationId.From(organizationId);
             var setup = await _setups.GetByOrganizationIdAsync(org, cancellationToken).ConfigureAwait(false);
             if (setup is null || !setup.IsCompleted)
@@ -306,11 +358,28 @@ public sealed class UpdateOperationalSetup
             }
 
             var taxMode = ParseTaxPricingMode(request.TaxPricingMode);
+            var taxRate = request.TaxRatePercent;
+
+            if (!taxConfigurationEnabled)
+            {
+                if (OperationalSetupTaxWriteGuard.TaxSettingsDiffer(
+                        taxMode,
+                        taxRate,
+                        setup.TaxPricingMode,
+                        setup.TaxRatePercent))
+                {
+                    return OperationalSetupTaxWriteGuard.TaxConfigurationNotEnabledResult();
+                }
+
+                taxMode = setup.TaxPricingMode;
+                taxRate = setup.TaxRatePercent;
+            }
+
             setup.Update(
                 request.StoreDisplayName,
                 request.CurrencyCode,
                 taxMode,
-                request.TaxRatePercent,
+                taxRate,
                 request.ReceiptHeader,
                 request.ReceiptFooter,
                 request.BusinessAddress,
@@ -321,7 +390,8 @@ public sealed class UpdateOperationalSetup
 
             await _setups.UpdateAsync(setup, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-            return ApplicationResult<PosOperationalSetupDto>.Success(OperationalSetupMapper.Map(setup));
+            return ApplicationResult<PosOperationalSetupDto>.Success(
+                OperationalSetupMapper.Map(setup, taxConfigurationEnabled));
         }
         catch (DomainException ex)
         {
@@ -345,4 +415,19 @@ public sealed class UpdateOperationalSetup
 
         return parsed;
     }
+}
+
+file static class OperationalSetupTaxWriteGuard
+{
+    public static bool TaxSettingsDiffer(
+        TaxPricingMode mode,
+        decimal rate,
+        TaxPricingMode baselineMode,
+        decimal baselineRate) =>
+        mode != baselineMode || rate != baselineRate;
+
+    public static ApplicationResult<PosOperationalSetupDto> TaxConfigurationNotEnabledResult() =>
+        ApplicationResult<PosOperationalSetupDto>.Failure(
+            ApplicationErrorCodes.TaxConfigurationNotEnabled,
+            "Tax configuration is not enabled for this organization.");
 }

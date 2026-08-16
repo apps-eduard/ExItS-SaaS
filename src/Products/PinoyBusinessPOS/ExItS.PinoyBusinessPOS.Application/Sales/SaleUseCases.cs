@@ -248,6 +248,7 @@ public sealed class CheckoutSale
     private readonly ISaleStockService _saleStock;
     private readonly ICashierShiftRepository _shifts;
     private readonly IPosOperationalSetupRepository _operationalSetups;
+    private readonly IOrganizationTaxConfigurationCapabilityReader _taxConfiguration;
     private readonly IClock _clock;
 
     public CheckoutSale(
@@ -260,6 +261,7 @@ public sealed class CheckoutSale
         ISaleStockService saleStock,
         ICashierShiftRepository shifts,
         IPosOperationalSetupRepository operationalSetups,
+        IOrganizationTaxConfigurationCapabilityReader taxConfiguration,
         IClock clock)
     {
         _sales = sales;
@@ -271,6 +273,7 @@ public sealed class CheckoutSale
         _saleStock = saleStock;
         _shifts = shifts;
         _operationalSetups = operationalSetups;
+        _taxConfiguration = taxConfiguration;
         _clock = clock;
     }
 
@@ -631,9 +634,12 @@ public sealed class CheckoutSale
             var setup = await _operationalSetups
                 .GetByOrganizationIdAsync(orgId, cancellationToken)
                 .ConfigureAwait(false);
-            if (setup is { IsCompleted: true } && setup.TaxRatePercent > 0)
+            var taxConfigurationEnabled = await _taxConfiguration
+                .IsTaxConfigurationEnabledAsync(organizationId, cancellationToken)
+                .ConfigureAwait(false);
+            if (OperationalSetupTaxCalculator.ShouldApplyConfiguredTax(taxConfigurationEnabled, setup))
             {
-                taxPricingMode = setup.TaxPricingMode;
+                taxPricingMode = setup!.TaxPricingMode;
                 taxAmount = OperationalSetupTaxCalculator.ComputeTaxAmount(
                     previewSubtotal,
                     setup.TaxRatePercent,

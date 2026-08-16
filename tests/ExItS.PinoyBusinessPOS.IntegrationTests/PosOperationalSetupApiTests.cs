@@ -51,7 +51,7 @@ public sealed class PosOperationalSetupApiTests(PosPostgreSqlFixture fixture)
                 "Sari-Sari Store",
                 "PHP",
                 "TaxExclusive",
-                12m,
+                0m,
                 ReceiptHeader: "Thank you"),
             options: JsonOptions);
         using var completeResponse = await client.SendAsync(complete);
@@ -59,6 +59,8 @@ public sealed class PosOperationalSetupApiTests(PosPostgreSqlFixture fixture)
         var completed = await completeResponse.Content.ReadFromJsonAsync<PosOperationalSetupDto>(JsonOptions);
         Assert.True(completed!.IsCompleted);
         Assert.Equal("Sari-Sari Store", completed.StoreDisplayName);
+        Assert.Equal(0m, completed.TaxRatePercent);
+        Assert.False(completed.TaxConfigurationEnabled);
         Assert.NotNull(completed.DefaultRegisterId);
         Assert.NotNull(completed.CompletedAtUtc);
 
@@ -68,6 +70,25 @@ public sealed class PosOperationalSetupApiTests(PosPostgreSqlFixture fixture)
         var mainRegister = Assert.Single(registers!.Items);
         Assert.Equal("Main Register", mainRegister.Name);
         Assert.Equal(completed.DefaultRegisterId, mainRegister.RegisterId);
+    }
+
+    [Fact]
+    public async Task Complete_rejects_tax_rate_when_platform_tax_configuration_unavailable()
+    {
+        await using var factory = new PosApiFactory(fixture.ConnectionString);
+        var client = factory.CreateClient();
+        var org = Guid.NewGuid();
+
+        using var bootstrap = PosIntegrationRequest.Scoped(HttpMethod.Get, $"{Permissions}/effective", org, OwnerActor);
+        using var _ = await client.SendAsync(bootstrap);
+
+        using var complete = PosIntegrationRequest.Scoped(HttpMethod.Post, $"{SetupPath}/complete", org, OwnerActor);
+        complete.Content = JsonContent.Create(
+            new CompleteOperationalSetupRequest("Tax Store", "PHP", "TaxExclusive", 12m),
+            options: JsonOptions);
+        using var completeResponse = await client.SendAsync(complete);
+        Assert.Equal(HttpStatusCode.BadRequest, completeResponse.StatusCode);
+        Assert.Equal(ApplicationErrorCodes.TaxConfigurationNotEnabled, await ReadErrorCodeAsync(completeResponse));
     }
 
     [Fact]

@@ -108,6 +108,7 @@ public static class ApplicationErrorCodes
     public const string RegisterConcurrencyConflict = "pos.register.concurrency_conflict";
 
     public const string OperationalSetupConcurrencyConflict = "pos.operational_setup.concurrency_conflict";
+    public const string TaxConfigurationNotEnabled = "pos.operational_setup.tax_configuration_not_enabled";
 
     public const string CatalogImportJobNotFound = "pos.catalog_import.job.not_found";
     public const string CatalogImportIdempotencyConflict = "pos.catalog_import.idempotency.conflict";

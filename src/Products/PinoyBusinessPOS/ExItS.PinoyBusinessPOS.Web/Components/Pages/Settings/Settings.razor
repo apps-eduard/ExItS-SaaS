@@ -22,8 +22,11 @@ else
             <div class="org-form">
                 <ExitsField Label="Store display name"><Input @bind-Value="_store" /></ExitsField>
                 <ExitsField Label="Currency"><Input @bind-Value="_currency" /></ExitsField>
-                <ExitsField Label="Tax mode"><Input @bind-Value="_taxMode" /></ExitsField>
-                <ExitsField Label="Tax rate %"><Input @bind-Value="_taxRate" /></ExitsField>
+                @if (_dto.TaxConfigurationEnabled)
+                {
+                    <ExitsField Label="Tax mode"><Input @bind-Value="_taxMode" /></ExitsField>
+                    <ExitsField Label="Tax rate %"><Input @bind-Value="_taxRate" /></ExitsField>
+                }
                 <ExitsField Label="Receipt header"><Input @bind-Value="_header" /></ExitsField>
                 <ExitsField Label="Receipt footer"><Input @bind-Value="_footer" /></ExitsField>
                 <ExitsField Label="Business address"><Input @bind-Value="_address" /></ExitsField>
@@ -204,10 +207,26 @@ else
 
     private async Task SaveAsync()
     {
-        if (_dto is null || string.IsNullOrWhiteSpace(_store) || !decimal.TryParse(_taxRate, out var rate))
+        if (_dto is null || string.IsNullOrWhiteSpace(_store))
         {
-            _error = "Store name and tax rate are required.";
+            _error = "Store name is required.";
             return;
+        }
+
+        decimal rate;
+        var taxMode = string.IsNullOrWhiteSpace(_taxMode) ? "TaxExclusive" : _taxMode.Trim();
+        if (_dto.TaxConfigurationEnabled)
+        {
+            if (!decimal.TryParse(_taxRate, out rate))
+            {
+                _error = "Store name and tax rate are required.";
+                return;
+            }
+        }
+        else
+        {
+            rate = _dto.TaxRatePercent;
+            taxMode = string.IsNullOrWhiteSpace(_dto.TaxPricingMode) ? "TaxExclusive" : _dto.TaxPricingMode;
         }
 
         _busy = true;
@@ -216,7 +235,7 @@ else
             var result = await Setup.UpdateAsync(new UpdateOperationalSetupRequest(
                 _store.Trim(),
                 string.IsNullOrWhiteSpace(_currency) ? "PHP" : _currency.Trim(),
-                string.IsNullOrWhiteSpace(_taxMode) ? "TaxExclusive" : _taxMode.Trim(),
+                taxMode,
                 rate,
                 _dto.UpdatedAtUtc,
                 _header,
