@@ -18,9 +18,11 @@ public sealed class CatalogPageGuardTests
         Assert.Contains("/catalog/global", list, StringComparison.Ordinal);
         Assert.Contains("/catalog/import", list, StringComparison.Ordinal);
         Assert.Contains("/catalog/todays-prices", list, StringComparison.Ordinal);
+        Assert.Contains("/catalog/connected-buyer-availability", list, StringComparison.Ordinal);
         Assert.Contains("Catalog_Quick_Global", list, StringComparison.Ordinal);
         Assert.Contains("Catalog_Quick_Template", list, StringComparison.Ordinal);
         Assert.Contains("Catalog_Quick_TodaysPrices", list, StringComparison.Ordinal);
+        Assert.Contains("Catalog_Quick_ConnectedAvailability", list, StringComparison.Ordinal);
         Assert.Contains("Catalog_FiltersTitle", list, StringComparison.Ordinal);
         Assert.Contains("ListProductsAsync", list, StringComparison.Ordinal);
         Assert.Contains("Pagination", list, StringComparison.Ordinal);
@@ -155,6 +157,10 @@ public sealed class CatalogPageGuardTests
             var text = File.ReadAllText(Path.Combine(CatalogPagesDirectory(), page));
             Assert.Contains("UtangCapability.ManageCatalog", text, StringComparison.Ordinal);
         }
+
+        var availability = File.ReadAllText(Path.Combine(CatalogPagesDirectory(), "CatalogConnectedBuyerAvailability.razor"));
+        Assert.Contains("UtangCapability.ManageCatalog", availability, StringComparison.Ordinal);
+        Assert.Contains("Gate.CanEnterProtectedShell", availability, StringComparison.Ordinal);
     }
 
     [Fact]

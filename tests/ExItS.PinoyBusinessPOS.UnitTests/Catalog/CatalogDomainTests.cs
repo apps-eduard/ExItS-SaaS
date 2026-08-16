@@ -52,6 +52,59 @@ public sealed class CatalogDomainTests
     }
 
     [Fact]
+    public void Create_product_defaults_to_not_exposable_for_connected_buyers()
+    {
+        var product = CatalogProduct.Create(OrgA, "Coke", UnitOfMeasure.Piece, 65m, Now);
+        Assert.False(product.CanExposeToConnectedBuyers);
+        Assert.Null(product.DefaultConnectedPoPrice);
+    }
+
+    [Fact]
+    public void Bulk_enable_semantics_initialize_each_product_from_own_selling_price()
+    {
+        var coke = CatalogProduct.Create(OrgA, "Coke", UnitOfMeasure.Piece, 65m, Now);
+        var sprite = CatalogProduct.Create(OrgA, "Sprite", UnitOfMeasure.Piece, 63m, Now);
+        var pepsi = CatalogProduct.Create(OrgA, "Pepsi", UnitOfMeasure.Piece, 60m, Now);
+
+        coke.EnableConnectedBuyerAvailability(Now.AddMinutes(1));
+        sprite.EnableConnectedBuyerAvailability(Now.AddMinutes(1));
+        pepsi.EnableConnectedBuyerAvailability(Now.AddMinutes(1));
+
+        Assert.Equal(65m, coke.DefaultConnectedPoPrice);
+        Assert.Equal(63m, sprite.DefaultConnectedPoPrice);
+        Assert.Equal(60m, pepsi.DefaultConnectedPoPrice);
+    }
+
+    [Fact]
+    public void Disable_and_reenable_preserves_initialized_default_po_price()
+    {
+        var product = CatalogProduct.Create(OrgA, "Coke", UnitOfMeasure.Piece, 100m, Now);
+        product.EnableConnectedBuyerAvailability(Now.AddMinutes(1));
+        product.SetDefaultConnectedPoPrice(90m, Now.AddMinutes(2));
+        product.UpdateSellingPrice(110m, Now.AddMinutes(3));
+        product.DisableConnectedBuyerAvailability(Now.AddMinutes(4));
+        Assert.False(product.CanExposeToConnectedBuyers);
+        Assert.Equal(90m, product.DefaultConnectedPoPrice);
+
+        product.EnableConnectedBuyerAvailability(Now.AddMinutes(5));
+        Assert.True(product.CanExposeToConnectedBuyers);
+        Assert.Equal(90m, product.DefaultConnectedPoPrice);
+        Assert.Equal(110m, product.SellingPrice);
+    }
+
+    [Fact]
+    public void Re_enable_already_enabled_does_not_overwrite_default_po()
+    {
+        var product = CatalogProduct.Create(OrgA, "Coke", UnitOfMeasure.Piece, 100m, Now);
+        product.EnableConnectedBuyerAvailability(Now.AddMinutes(1));
+        product.SetDefaultConnectedPoPrice(90m, Now.AddMinutes(2));
+        product.UpdateSellingPrice(110m, Now.AddMinutes(3));
+        product.EnableConnectedBuyerAvailability(Now.AddMinutes(4));
+        Assert.Equal(90m, product.DefaultConnectedPoPrice);
+    }
+
+
+    [Fact]
     public void Create_product_requires_name()
     {
         var ex = Assert.Throws<DomainException>(() =>

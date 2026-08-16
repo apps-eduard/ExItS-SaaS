@@ -101,6 +101,26 @@ public sealed class PlatformSupportCatalogTests
             CancellationToken cancellationToken = default) =>
             Task.FromResult<CatalogProduct?>(null);
 
+        public Task<IReadOnlyList<Guid>> ListIdsAsync(
+            PosOrganizationId organizationId,
+            CatalogProductFilter filter,
+            int skip,
+            int take,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<Guid>>([]);
+
+        public Task<(int TotalCount, int AvailableCount, int NotAvailableCount)> CountConnectedBuyerAvailabilityAsync(
+            PosOrganizationId organizationId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult((0, 0, 0));
+
+        public Task<IReadOnlyList<(Guid? CategoryId, int Count)>> ListConnectedBuyerAvailabilityCategoryFacetsAsync(
+            PosOrganizationId organizationId,
+            CatalogProductFilter filter,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<(Guid? CategoryId, int Count)>>([]);
+
+
         public Task<IReadOnlySet<Guid>> ListPlatformGlobalProductIdsAsync(
             PosOrganizationId organizationId,
             IReadOnlyCollection<Guid> platformGlobalProductIds,
