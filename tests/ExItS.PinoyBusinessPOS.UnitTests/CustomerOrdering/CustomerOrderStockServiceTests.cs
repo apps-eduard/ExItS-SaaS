@@ -68,6 +68,37 @@ public sealed class CustomerOrderStockServiceTests
         await stock.ReleaseIfReservedAsync(order, now.AddMinutes(1));
         Assert.Equal(0m, inventory.Account.ReservedQuantity);
         Assert.Equal(CustomerOrderStockReservationState.Released, order.StockReservationState);
+        Assert.Equal(2, inventory.LockCallCount);
+    }
+
+    [Fact]
+    public async Task Reserve_IsIdempotent_WhenAlreadyReserved_AndDocumentsLockAcquisition()
+    {
+        var org = PosOrganizationId.From(Guid.Parse("11111111-1111-1111-1111-111111111111"));
+        var productId = CatalogProductId.From(Guid.Parse("22222222-2222-2222-2222-222222222222"));
+        var now = DateTimeOffset.Parse("2026-08-16T10:00:00Z");
+        var account = InventoryAccount.CreateUntracked(org, productId, now);
+        account.Enable(10m, UnitOfMeasure.Piece, Guid.Parse("33333333-3333-3333-3333-333333333333"), now, false);
+        var inventory = new FakeInventoryRepository(account);
+        var stock = new CustomerOrderStockService(inventory);
+
+        var order = CustomerOrder.CreateSubmitted(
+            org,
+            "SO-000002",
+            CustomerOrderParty.Personal(Guid.Parse("44444444-4444-4444-4444-444444444444"), "Pat"),
+            CustomerOrderFulfillmentType.Pickup,
+            Guid.Parse("55555555-5555-5555-5555-555555555555"),
+            "Main",
+            [new CustomerOrderLineDraft(productId, "Rice", "SKU", UnitOfMeasure.Piece, 2m, 10m)],
+            Guid.Parse("66666666-6666-6666-6666-666666666666"),
+            now);
+
+        order.Accept(Guid.Parse("66666666-6666-6666-6666-666666666666"), now);
+        await stock.ReserveForAcceptAsync(order, Guid.Parse("66666666-6666-6666-6666-666666666666"), now);
+        await stock.ReserveForAcceptAsync(order, Guid.Parse("66666666-6666-6666-6666-666666666666"), now.AddSeconds(1));
+
+        Assert.Equal(2m, inventory.Account.ReservedQuantity);
+        Assert.Equal(1, inventory.LockCallCount);
     }
 
     private sealed class FakeInventoryRepository : IInventoryRepository
@@ -96,6 +127,20 @@ public sealed class CustomerOrderStockServiceTests
             Account = account;
             return Task.CompletedTask;
         }
+
+        public Task ExecuteWithProductReservationLocksAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<CatalogProductId> productIds,
+            Func<IReadOnlyList<InventoryAccount>, CancellationToken, Task> action,
+            CancellationToken cancellationToken = default)
+        {
+            LockCallCount++;
+            return action(
+                productIds.Any(p => p == Account.ProductId) ? [Account] : [],
+                cancellationToken);
+        }
+
+        public int LockCallCount { get; private set; }
 
         public Task AddMovementAsync(StockMovement movement, CancellationToken cancellationToken = default)
         {

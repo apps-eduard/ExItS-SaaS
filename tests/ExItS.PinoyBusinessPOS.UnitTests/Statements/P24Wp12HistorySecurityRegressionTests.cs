@@ -510,6 +510,10 @@ public sealed class P24Wp12HistorySecurityRegressionTests
             Guid? customerId = null, CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
 
+        public Task<SalePeriodAggregate> AggregatePeriodAsync(PosOrganizationId organizationId, DateOnly fromDateUtc, DateOnly toDateUtc, SaleStatus? status = null, SalePaymentMethod? paymentMethod = null, Guid? customerId = null, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public Task<IReadOnlyList<SalePaymentAggregate>> AggregateCompletedByPaymentAsync(PosOrganizationId organizationId, DateOnly fromDateUtc, DateOnly toDateUtc, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public Task<IReadOnlyList<SaleDailyAggregate>> AggregateCompletedByDayAsync(PosOrganizationId organizationId, DateOnly fromDateUtc, DateOnly toDateUtc, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
         public Task<Sale> CheckoutAsync(
             PosOrganizationId organizationId, DateOnly businessDateUtc, Func<string, Sale> createSale,
             Func<Sale, CancellationToken, Task>? afterSaleCreated = null,

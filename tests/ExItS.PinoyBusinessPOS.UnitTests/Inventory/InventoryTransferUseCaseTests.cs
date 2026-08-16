@@ -474,6 +474,13 @@ public sealed class InventoryTransferUseCaseTests
 
         public Task UpdateAccountAsync(InventoryAccount account, CancellationToken cancellationToken = default) => Task.CompletedTask;
 
+        public Task ExecuteWithProductReservationLocksAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<CatalogProductId> productIds,
+            Func<IReadOnlyList<InventoryAccount>, CancellationToken, Task> action,
+            CancellationToken cancellationToken = default) =>
+            action([], cancellationToken);
+
         public Task AddMovementAsync(StockMovement movement, CancellationToken cancellationToken = default)
         {
             Movements.Add(movement);

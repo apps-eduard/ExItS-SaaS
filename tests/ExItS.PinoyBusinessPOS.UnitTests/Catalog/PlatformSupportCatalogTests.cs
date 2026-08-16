@@ -172,6 +172,13 @@ public sealed class PlatformSupportCatalogTests
         public Task UpdateAccountAsync(InventoryAccount account, CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
 
+        public Task ExecuteWithProductReservationLocksAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<CatalogProductId> productIds,
+            Func<IReadOnlyList<InventoryAccount>, CancellationToken, Task> action,
+            CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+
         public Task AddMovementAsync(StockMovement movement, CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
 
