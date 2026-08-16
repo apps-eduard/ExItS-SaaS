@@ -23,6 +23,10 @@ public sealed class MoreHubUiGuardTests
         Assert.Contains("UtangCapability.ViewInventory", more, StringComparison.Ordinal);
         Assert.Contains("UtangCapability.ViewExpenses", more, StringComparison.Ordinal);
         Assert.Contains("UtangCapability.ViewSuppliers", more, StringComparison.Ordinal);
+        Assert.Contains("GoConnectedBuyers", more, StringComparison.Ordinal);
+        Assert.Contains("GoIncomingRequests", more, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"customers\")", more, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"inbox\")", more, StringComparison.Ordinal);
         Assert.Contains("UtangCapability.ViewPurchasing", more, StringComparison.Ordinal);
         Assert.Contains("UtangCapability.ViewRegisters", more, StringComparison.Ordinal);
         Assert.Contains("UtangCapability.ManageOperationalSetup", more, StringComparison.Ordinal);

@@ -24,6 +24,7 @@
                    Title="@L["ConnectedSuppliers_IncomingCompact", _incomingPendingCount]" />
             <div class="pos-action-grid pos-action-grid--single" role="group">
                 <button type="button" class="pos-action-tile pos-action-tile--primary" @onclick="GoIncomingRequests">
+                    <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("inbox")</span>
                     <span class="pos-action-tile__label">@L["ConnectedSuppliers_ReviewIncoming"]</span>
                 </button>
             </div>
@@ -87,11 +88,13 @@
                             <span class="pos-action-tile__label">@L["Nav_Suppliers"]</span>
                         </button>
                         <button type="button" class="pos-action-tile" @onclick="GoConnectedBuyers">
+                            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("customers")</span>
                             <span class="pos-action-tile__label">@L["ConnectedBuyers_Title"]</span>
                         </button>
                         <button type="button"
                                 class="pos-action-tile @(_incomingPendingCount > 0 ? "pos-action-tile--primary" : null)"
                                 @onclick="GoIncomingRequests">
+                            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("inbox")</span>
                             <span class="pos-action-tile__label">
                                 @L["ConnectedSuppliers_IncomingRequests"]
                                 @if (_incomingPendingCount > 0)
