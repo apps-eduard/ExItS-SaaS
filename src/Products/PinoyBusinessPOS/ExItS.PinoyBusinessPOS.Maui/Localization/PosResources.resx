@@ -8075,7 +8075,7 @@
     <value>Purchase orders</value>
   </data>
   <data name="ConnectedSuppliers_ServerSearchHelp" xml:space="preserve">
-    <value>Search this supplier's current catalog online. Only linked products are kept for offline use.</value>
+    <value>Browse products this supplier has shared online. Search is optional.</value>
   </data>
   <data name="ConnectedSuppliers_OnlineRequired" xml:space="preserve">
     <value>Connect to search</value>
@@ -8175,6 +8175,36 @@
   </data>
   <data name="ConnectedSuppliers_LinkAndUse" xml:space="preserve">
     <value>Link and use</value>
+  </data>
+  <data name="ConnectedSuppliers_BrowseHint" xml:space="preserve">
+    <value>Leave blank to see the first page of shared products. Linked products stay available offline.</value>
+  </data>
+  <data name="ConnectedSuppliers_CatalogEmptyTitle" xml:space="preserve">
+    <value>No shared products yet</value>
+  </data>
+  <data name="ConnectedSuppliers_CatalogEmptyMessage" xml:space="preserve">
+    <value>This supplier has not shared any products for ordering. Ask them to expose items, or open linked products you already saved.</value>
+  </data>
+  <data name="ConnectedSuppliers_NoMatchTitle" xml:space="preserve">
+    <value>No matching products</value>
+  </data>
+  <data name="ConnectedSuppliers_NoMatchMessage" xml:space="preserve">
+    <value>Try a different name or SKU, or clear the search to browse the full shared catalog.</value>
+  </data>
+  <data name="ConnectedSuppliers_CatalogResultCount" xml:space="preserve">
+    <value>{0} products shown</value>
+  </data>
+  <data name="ConnectedSuppliers_AlreadyLinked" xml:space="preserve">
+    <value>Already linked</value>
+  </data>
+  <data name="ConnectedSuppliers_NotOrderable" xml:space="preserve">
+    <value>Not orderable</value>
+  </data>
+  <data name="ConnectedSuppliers_OpenLinkedProducts" xml:space="preserve">
+    <value>Open linked products</value>
+  </data>
+  <data name="ConnectedSuppliers_LinkProductHelp" xml:space="preserve">
+    <value>Choose the matching product from your catalog so purchase orders use your item.</value>
   </data>
   <data name="ConnectedSuppliers_LinkProductTitle" xml:space="preserve">
     <value>Link {0} to your product</value>
