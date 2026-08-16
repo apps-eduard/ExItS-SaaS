@@ -1,6 +1,9 @@
 @page "/suppliers/{SupplierId:guid}/linked-products"
+@using ExItS.DesignSystem.Components.Internal
+@using ExItS.PinoyBusinessPOS.Maui.Services
 @inject NavigationManager Nav
 @inject NavigationGate Gate
+@inject IPosSupplierClient Suppliers
 @inject ILinkedSupplierProductStore LocalProducts
 @inject ILinkedSupplierProductSyncService SyncService
 @inject IConnectivityService Connectivity
@@ -8,72 +11,413 @@
 @inject IStringLocalizer<PosResources> L
 
 <StoreHeaderBack Href="@($"/suppliers/{SupplierId:D}")" />
-<Page>
-    <h1>@L["ConnectedSuppliers_LinkedProducts"]</h1>
-    <p>@L["ConnectedSuppliers_LinkedProductsHelp"]</p>
-    <input type="search" value="@_query" placeholder="@L["ConnectedSuppliers_SearchLinkedPlaceholder"]" @oninput="SearchAsync" />
-    @if (!_offline)
-    {
-        <button type="button" disabled="@_syncing" @onclick="SyncAsync">@L["ConnectedSuppliers_SyncLinked"]</button>
-    }
-    @if (_items.Count == 0)
-    {
-        <InlineMessage Tone="InlineMessageTone.Info">@L["ConnectedSuppliers_NoOfflineResult"]</InlineMessage>
-    }
-    else
-    {
-        <div role="list">
-            @foreach (var item in _items)
+
+@if (!_ready)
+{
+    <Page><Spinner /></Page>
+}
+else
+{
+<div class="pos-linked-products">
+    <Page>
+        <header class="pos-linked-products__header">
+            <h1 class="pos-linked-products__title">@L["ConnectedSuppliers_LinkedProducts"]</h1>
+            <p class="pos-linked-products__subtitle">@L["ConnectedSuppliers_LinkedProductsHelp"]</p>
+        </header>
+
+        @if (_relationshipId == Guid.Empty)
+        {
+            <ErrorState Title="@L["ConnectedSuppliers_Error"]"
+                        Message="@L["ConnectedSuppliers_RelationshipMissing"]"
+                        RetryLabel="@L["Common_Retry"]"
+                        OnRetry="InitializeAsync" />
+        }
+        else
+        {
+            @if (_offline)
             {
-                <article role="listitem" class="pos-purchasing-create__product">
-                    <strong>@item.ProductName</strong>
-                    <span>@(item.SupplierSku ?? L["ConnectedSuppliers_NoSku"]) · @item.UnitOfMeasure</span>
-                    <MoneyDisplay Amount="@item.LastKnownOrderPrice" CurrencyCode="PHP" />
-                    <small>@L["ConnectedSuppliers_LastUpdated", item.SupplierUpdatedAtUtc.ToLocalTime().ToString("g")]</small>
-                </article>
+                <Alert Tone="AlertTone.Warning"
+                       Title="@L["ConnectedSuppliers_OnlineRequired"]"
+                       Message="@L["ConnectedSuppliers_LinkedOfflineHelp"]" />
             }
-        </div>
+
+            <div class="pos-linked-products__search" role="search">
+                <label class="pos-linked-products__search-label" for="linked-products-search">
+                    @L["ConnectedSuppliers_SearchLinkedPlaceholder"]
+                </label>
+                <div class="pos-linked-products__search-field">
+                    <span class="pos-linked-products__search-icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
+                    <input id="linked-products-search"
+                           class="pos-linked-products__search-input"
+                           type="search"
+                           value="@_query"
+                           placeholder="@L["ConnectedSuppliers_SearchLinkedPlaceholder"]"
+                           disabled="@(_loading || _syncing)"
+                           autocomplete="off"
+                           @oninput="OnSearchInput"
+                           @onkeydown="OnSearchKeyDown" />
+                    @if (HasQuery)
+                    {
+                        <button type="button"
+                                class="pos-linked-products__clear"
+                                disabled="@(_loading || _syncing)"
+                                aria-label="@L["Catalog_Global_ClearSearch"]"
+                                @onclick="ClearSearchAsync">
+                            ×
+                        </button>
+                    }
+                </div>
+
+                @if (!_offline)
+                {
+                    <button type="button"
+                            class="pos-action-tile pos-action-tile--primary pos-linked-products__sync-btn"
+                            disabled="@(_loading || _syncing)"
+                            @onclick="SyncAsync">
+                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("refresh")</span>
+                        <span class="pos-action-tile__label">
+                            @(_syncing ? L["Common_Loading"] : L["ConnectedSuppliers_SyncLinked"])
+                        </span>
+                    </button>
+                }
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(_error))
+            {
+                <ErrorState Title="@L["ConnectedSuppliers_Error"]"
+                            Message="@_error"
+                            RetryLabel="@L["Common_Retry"]"
+                            OnRetry="RetryAsync" />
+            }
+            else if (_loading)
+            {
+                <Spinner />
+            }
+            else if (_items.Count == 0)
+            {
+                <EmptyState IconName="products"
+                            Title="@(HasQuery ? L["ConnectedSuppliers_LinkedNoMatchTitle"] : L["ConnectedSuppliers_LinkedEmptyTitle"])"
+                            Message="@(HasQuery ? L["ConnectedSuppliers_LinkedNoMatchMessage"] : L["ConnectedSuppliers_LinkedEmptyMessage"])" />
+                <div class="pos-action-grid pos-action-grid--single">
+                    <button type="button" class="pos-action-tile pos-action-tile--primary" @onclick="GoBrowseCatalog">
+                        <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
+                        <span class="pos-action-tile__label">@L["ConnectedSuppliers_BrowseProducts"]</span>
+                    </button>
+                </div>
+            }
+            else
+            {
+                <p class="pos-linked-products__count pos-muted" role="status">
+                    @string.Format(L["ConnectedSuppliers_LinkedResultCount"].Value, _items.Count)
+                </p>
+
+                <div class="pos-linked-products__list" role="list">
+                    @foreach (var item in _items)
+                    {
+                        <article role="listitem" class="pos-linked-products__row">
+                            <div class="pos-linked-products__row-body">
+                                <span class="pos-linked-products__name">@item.ProductName</span>
+                                <span class="pos-linked-products__meta pos-muted">
+                                    @(item.SupplierSku ?? L["ConnectedSuppliers_NoSku"])
+                                    · @item.UnitOfMeasure
+                                    @if (!string.IsNullOrWhiteSpace(item.PackageLabel))
+                                    {
+                                        <text> · @item.PackageLabel</text>
+                                    }
+                                </span>
+                                <MoneyDisplay Amount="@item.LastKnownOrderPrice" CurrencyCode="PHP" />
+                                <span class="pos-linked-products__updated pos-muted">
+                                    @string.Format(
+                                        L["ConnectedSuppliers_LastUpdated"].Value,
+                                        item.SupplierUpdatedAtUtc.ToLocalTime().ToString("g"))
+                                </span>
+                                @if (!item.IsOrderable)
+                                {
+                                    <span class="pos-linked-products__badge">@L["ConnectedSuppliers_NotOrderable"]</span>
+                                }
+                            </div>
+                        </article>
+                    }
+                </div>
+            }
+        }
+    </Page>
+</div>
+}
+
+<style>
+    .pos-linked-products { width: 100%; }
+    .pos-linked-products__header { margin-bottom: var(--exits-space-3, 0.75rem); }
+    .pos-linked-products__title {
+        margin: 0; font-size: 1.25rem; font-weight: 700; line-height: 1.25;
+        color: var(--exits-text, #15201a);
     }
-</Page>
+    .pos-linked-products__subtitle {
+        margin: 0.35rem 0 0; font-size: 0.875rem; line-height: 1.4;
+        color: var(--exits-text-muted, #5b6b62);
+    }
+    .pos-linked-products__search {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        margin-bottom: var(--exits-space-3, 0.75rem);
+    }
+    .pos-linked-products__search-label {
+        display: block; margin: 0;
+        font-size: 0.8125rem; font-weight: 650; color: var(--exits-text, #15201a);
+    }
+    .pos-linked-products__search-field {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        width: 100%;
+        min-width: 0;
+        min-height: var(--exits-touch-target-min, 3rem);
+        padding: 0 0.85rem;
+        border: 1px solid var(--exits-border, #c9d4cd);
+        border-radius: var(--exits-radius-md, 0.5rem);
+        background: var(--exits-surface, #fff);
+    }
+    .pos-linked-products__search-icon {
+        display: inline-flex;
+        flex-shrink: 0;
+        width: 1.15rem;
+        height: 1.15rem;
+        color: var(--exits-text-muted, #5b6b62);
+    }
+    .pos-linked-products__search-icon svg {
+        width: 100%;
+        height: 100%;
+        display: block;
+    }
+    .pos-linked-products__search-input {
+        appearance: none;
+        flex: 1 1 auto;
+        min-width: 0;
+        width: 100%;
+        border: 0;
+        outline: none;
+        background: transparent;
+        color: var(--exits-text, #15201a);
+        font: inherit;
+        font-size: 1rem;
+        padding: 0.65rem 0;
+    }
+    .pos-linked-products__search-input:disabled { opacity: 0.6; }
+    .pos-linked-products__clear {
+        appearance: none;
+        flex-shrink: 0;
+        border: 0;
+        background: transparent;
+        color: var(--exits-text-muted, #5b6b62);
+        cursor: pointer;
+        font: inherit;
+        font-size: 1.35rem;
+        line-height: 1;
+        min-height: 2.5rem;
+        min-width: 2.5rem;
+        padding: 0;
+    }
+    .pos-linked-products__sync-btn.pos-action-tile {
+        width: 100%;
+        justify-content: center;
+    }
+    .pos-linked-products__count {
+        margin: 0 0 0.5rem; font-size: 0.8125rem;
+    }
+    .pos-linked-products__list {
+        display: flex; flex-direction: column; gap: 0.5rem;
+    }
+    .pos-linked-products__row {
+        display: flex; flex-direction: column; gap: 0.55rem;
+        padding: 0.75rem 0.8rem;
+        border: 1px solid var(--exits-border, #c9d4cd);
+        border-radius: var(--exits-radius-md, 0.5rem);
+        background: var(--exits-surface, #fff);
+    }
+    .pos-linked-products__row-body {
+        display: flex; flex-direction: column; gap: 0.2rem;
+    }
+    .pos-linked-products__name {
+        font-size: 0.9875rem; font-weight: 650; color: var(--exits-text, #15201a);
+    }
+    .pos-linked-products__meta,
+    .pos-linked-products__updated {
+        font-size: 0.8125rem; line-height: 1.35;
+    }
+    .pos-linked-products__badge {
+        display: inline-flex; align-self: flex-start;
+        margin-top: 0.25rem; padding: 0.12rem 0.45rem;
+        border-radius: 999px; font-size: 0.6875rem; font-weight: 650;
+        border: 1px solid var(--exits-border, #c9d4cd);
+        background: var(--exits-bg, #f3f6f4);
+        color: var(--exits-text-muted, #5b6b62);
+    }
+</style>
 
 @code {
     [Parameter] public Guid SupplierId { get; set; }
     [SupplyParameterFromQuery(Name = "relationshipId")] public Guid RelationshipId { get; set; }
+
+    private bool _ready;
     private bool _offline;
+    private bool _loading;
     private bool _syncing;
+    private Guid _relationshipId;
     private string? _query;
+    private string? _error;
     private IReadOnlyList<LocalLinkedSupplierProduct> _items = [];
 
-    protected override async Task OnInitializedAsync()
+    private bool HasQuery => !string.IsNullOrWhiteSpace(_query);
+
+    protected override async Task OnInitializedAsync() => await InitializeAsync();
+
+    private async Task InitializeAsync()
     {
+        _ready = false;
         if (!Gate.CanEnterProtectedShell)
         {
             Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
             return;
         }
+
         if (!Capabilities.IsAllowed(UtangCapability.ViewPurchasing))
         {
             Nav.NavigateTo("/home", replace: true);
             return;
         }
+
         _offline = !await Connectivity.IsConnectedAsync();
-        if (!_offline && RelationshipId != Guid.Empty) await SyncAsync();
-        else await LoadLocalAsync();
+        _relationshipId = RelationshipId;
+        if (_relationshipId == Guid.Empty)
+        {
+            await ResolveRelationshipIdAsync();
+        }
+
+        if (_relationshipId != Guid.Empty)
+        {
+            if (!_offline)
+            {
+                await SyncAsync();
+            }
+            else
+            {
+                await LoadLocalAsync();
+            }
+        }
+
+        _ready = true;
     }
 
-    private async Task SearchAsync(ChangeEventArgs args)
+    private async Task ResolveRelationshipIdAsync()
+    {
+        if (_offline)
+        {
+            return;
+        }
+
+        var supplier = await Suppliers.GetAsync(SupplierId);
+        if (supplier.IsSuccess && supplier.Data?.ConnectedRelationshipId is Guid id && id != Guid.Empty)
+        {
+            _relationshipId = id;
+        }
+    }
+
+    private async Task OnSearchInput(ChangeEventArgs args)
     {
         _query = args.Value?.ToString();
-        await LoadLocalAsync();
+        await LoadLocalAsync(showSpinner: false);
     }
-    private async Task LoadLocalAsync() =>
-        _items = RelationshipId == Guid.Empty ? [] : await LocalProducts.SearchLocalAsync(RelationshipId, _query, 100);
+
+    private async Task OnSearchKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key is "Enter")
+        {
+            await LoadLocalAsync(showSpinner: false);
+        }
+    }
+
+    private async Task ClearSearchAsync()
+    {
+        _query = null;
+        await LoadLocalAsync(showSpinner: false);
+    }
+
+    private async Task RetryAsync()
+    {
+        if (_offline || _relationshipId == Guid.Empty)
+        {
+            await LoadLocalAsync();
+            return;
+        }
+
+        await SyncAsync();
+    }
+
+    private async Task LoadLocalAsync(bool showSpinner = true)
+    {
+        if (showSpinner)
+        {
+            _loading = true;
+        }
+
+        _error = null;
+        try
+        {
+            _items = _relationshipId == Guid.Empty
+                ? []
+                : await LocalProducts.SearchLocalAsync(
+                    _relationshipId,
+                    string.IsNullOrWhiteSpace(_query) ? null : _query.Trim(),
+                    100);
+        }
+        finally
+        {
+            if (showSpinner)
+            {
+                _loading = false;
+            }
+        }
+    }
+
     private async Task SyncAsync()
     {
-        if (RelationshipId == Guid.Empty) return;
+        if (_relationshipId == Guid.Empty)
+        {
+            return;
+        }
+
+        if (!await Connectivity.IsConnectedAsync())
+        {
+            _offline = true;
+            await LoadLocalAsync();
+            return;
+        }
+
+        _offline = false;
         _syncing = true;
-        await SyncService.SyncAsync(RelationshipId);
-        _syncing = false;
-        await LoadLocalAsync();
+        _error = null;
+        try
+        {
+            var result = await SyncService.SyncAsync(_relationshipId);
+            if (!result.Succeeded)
+            {
+                _error = L["ConnectedSuppliers_SyncFailed"];
+            }
+
+            await LoadLocalAsync(showSpinner: false);
+        }
+        finally
+        {
+            _syncing = false;
+        }
+    }
+
+    private void GoBrowseCatalog()
+    {
+        var query = _relationshipId == Guid.Empty
+            ? string.Empty
+            : $"?relationshipId={_relationshipId:D}";
+        Nav.NavigateTo($"/suppliers/{SupplierId:D}/connected-catalog{query}");
     }
 }

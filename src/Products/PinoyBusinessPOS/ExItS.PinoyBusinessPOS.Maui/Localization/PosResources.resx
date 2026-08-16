@@ -8176,6 +8176,27 @@
   <data name="ConnectedSuppliers_LinkAndUse" xml:space="preserve">
     <value>Link and use</value>
   </data>
+  <data name="ConnectedSuppliers_LinkedOfflineHelp" xml:space="preserve">
+    <value>You are offline. Showing linked products saved on this device.</value>
+  </data>
+  <data name="ConnectedSuppliers_LinkedEmptyTitle" xml:space="preserve">
+    <value>No linked products yet</value>
+  </data>
+  <data name="ConnectedSuppliers_LinkedEmptyMessage" xml:space="preserve">
+    <value>Link products from Browse, or tap Update when online to refresh what is saved on this device.</value>
+  </data>
+  <data name="ConnectedSuppliers_LinkedNoMatchTitle" xml:space="preserve">
+    <value>No matching linked products</value>
+  </data>
+  <data name="ConnectedSuppliers_LinkedNoMatchMessage" xml:space="preserve">
+    <value>Try a different name or SKU, or clear the search to see all linked products.</value>
+  </data>
+  <data name="ConnectedSuppliers_LinkedResultCount" xml:space="preserve">
+    <value>{0} linked products</value>
+  </data>
+  <data name="ConnectedSuppliers_SyncFailed" xml:space="preserve">
+    <value>Linked products could not be updated. Try again when the connection is stable.</value>
+  </data>
   <data name="ConnectedSuppliers_BrowseHint" xml:space="preserve">
     <value>Leave blank to see the first page of shared products. Linked products stay available offline.</value>
   </data>

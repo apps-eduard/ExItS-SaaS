@@ -13,6 +13,9 @@ public sealed class ConnectedSupplierCatalogUiGuardTests
         Assert.Contains("ResolveRelationshipIdAsync", page, StringComparison.Ordinal);
         Assert.Contains("EmptyState", page, StringComparison.Ordinal);
         Assert.Contains("pos-connected-catalog__search-field", page, StringComparison.Ordinal);
+        Assert.Contains("pos-connected-catalog__search-btn", page, StringComparison.Ordinal);
+        Assert.Contains("ClearSearchAsync", page, StringComparison.Ordinal);
+        Assert.DoesNotContain("pos-connected-catalog__search-row", page, StringComparison.Ordinal);
     }
 
     private static string MauiProject()

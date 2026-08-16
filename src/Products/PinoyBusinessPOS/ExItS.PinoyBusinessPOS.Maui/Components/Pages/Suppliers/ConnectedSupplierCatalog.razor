@@ -53,28 +53,36 @@ else
                 <label class="pos-connected-catalog__search-label" for="connected-catalog-search">
                     @L["ConnectedSuppliers_SearchPlaceholder"]
                 </label>
-                <div class="pos-connected-catalog__search-row">
-                    <div class="pos-connected-catalog__search-field">
-                        <span class="pos-connected-catalog__search-icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
-                        <input id="connected-catalog-search"
-                               class="pos-connected-catalog__search-input"
-                               type="search"
-                               value="@_query"
-                               placeholder="@L["ConnectedSuppliers_SearchPlaceholder"]"
-                               disabled="@_loading"
-                               autocomplete="off"
-                               @oninput="OnSearchInput"
-                               @onkeydown="OnSearchKeyDown" />
-                    </div>
-                    <button type="button"
-                            class="pos-action-tile pos-action-tile--primary pos-connected-catalog__search-btn"
-                            disabled="@_loading"
-                            @onclick="SearchAsync">
-                        <span class="pos-action-tile__label">
-                            @(_loading ? L["Common_Loading"] : L["ConnectedSuppliers_Search"])
-                        </span>
-                    </button>
+                <div class="pos-connected-catalog__search-field">
+                    <span class="pos-connected-catalog__search-icon" aria-hidden="true">@IconGlyphs.Get("search")</span>
+                    <input id="connected-catalog-search"
+                           class="pos-connected-catalog__search-input"
+                           type="search"
+                           value="@_query"
+                           placeholder="@L["ConnectedSuppliers_SearchPlaceholder"]"
+                           disabled="@_loading"
+                           autocomplete="off"
+                           @oninput="OnSearchInput"
+                           @onkeydown="OnSearchKeyDown" />
+                    @if (HasQuery)
+                    {
+                        <button type="button"
+                                class="pos-connected-catalog__clear"
+                                disabled="@_loading"
+                                aria-label="@L["Catalog_Global_ClearSearch"]"
+                                @onclick="ClearSearchAsync">
+                            ×
+                        </button>
+                    }
                 </div>
+                <button type="button"
+                        class="pos-action-tile pos-action-tile--primary pos-connected-catalog__search-btn"
+                        disabled="@_loading"
+                        @onclick="SearchAsync">
+                    <span class="pos-action-tile__label">
+                        @(_loading ? L["Common_Loading"] : L["ConnectedSuppliers_Search"])
+                    </span>
+                </button>
                 <p class="pos-connected-catalog__hint pos-muted">@L["ConnectedSuppliers_BrowseHint"]</p>
             </div>
 
@@ -198,42 +206,77 @@ else
         margin: 0.35rem 0 0; font-size: 0.875rem; line-height: 1.4;
         color: var(--exits-text-muted, #5b6b62);
     }
-    .pos-connected-catalog__search { margin-bottom: var(--exits-space-3, 0.75rem); }
+    .pos-connected-catalog__search {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        margin-bottom: var(--exits-space-3, 0.75rem);
+    }
     .pos-connected-catalog__search-label {
-        display: block; margin: 0 0 0.35rem;
+        display: block; margin: 0;
         font-size: 0.8125rem; font-weight: 650; color: var(--exits-text, #15201a);
     }
-    .pos-connected-catalog__search-row {
-        display: flex; align-items: stretch; gap: 0.5rem;
-    }
     .pos-connected-catalog__search-field {
-        flex: 1 1 auto; min-width: 0;
-        display: flex; align-items: center; gap: 0.45rem;
-        min-height: 2.75rem;
-        padding: 0 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        width: 100%;
+        min-width: 0;
+        min-height: var(--exits-touch-target-min, 3rem);
+        padding: 0 0.85rem;
         border: 1px solid var(--exits-border, #c9d4cd);
         border-radius: var(--exits-radius-md, 0.5rem);
         background: var(--exits-surface, #fff);
     }
     .pos-connected-catalog__search-icon {
-        display: inline-flex; flex-shrink: 0;
-        width: 1.1rem; height: 1.1rem;
+        display: inline-flex;
+        flex-shrink: 0;
+        width: 1.15rem;
+        height: 1.15rem;
         color: var(--exits-text-muted, #5b6b62);
     }
-    .pos-connected-catalog__search-icon :deep(svg) {
-        width: 100%; height: 100%;
+    .pos-connected-catalog__search-icon svg {
+        width: 100%;
+        height: 100%;
+        display: block;
     }
     .pos-connected-catalog__search-input {
-        flex: 1 1 auto; min-width: 0;
-        border: 0; outline: none; background: transparent;
+        appearance: none;
+        flex: 1 1 auto;
+        min-width: 0;
+        width: 100%;
+        border: 0;
+        outline: none;
+        background: transparent;
         color: var(--exits-text, #15201a);
-        font-size: 1rem; padding: 0.55rem 0;
+        font: inherit;
+        font-size: 1rem;
+        padding: 0.65rem 0;
     }
-    .pos-connected-catalog__search-btn {
-        flex: 0 0 auto; min-width: 5.5rem;
+    .pos-connected-catalog__search-input:disabled {
+        opacity: 0.6;
+    }
+    .pos-connected-catalog__clear {
+        appearance: none;
+        flex-shrink: 0;
+        border: 0;
+        background: transparent;
+        color: var(--exits-text-muted, #5b6b62);
+        cursor: pointer;
+        font: inherit;
+        font-size: 1.35rem;
+        line-height: 1;
+        min-height: 2.5rem;
+        min-width: 2.5rem;
+        padding: 0;
+    }
+    .pos-connected-catalog__search-btn.pos-action-tile {
+        width: 100%;
+        justify-content: center;
+        flex: 0 0 auto;
     }
     .pos-connected-catalog__hint {
-        margin: 0.45rem 0 0; font-size: 0.75rem; line-height: 1.4;
+        margin: 0; font-size: 0.75rem; line-height: 1.4;
     }
     .pos-connected-catalog__count {
         margin: 0 0 0.5rem; font-size: 0.8125rem;
@@ -369,6 +412,12 @@ else
 
     private void OnSearchInput(ChangeEventArgs args) =>
         _query = args.Value?.ToString();
+
+    private async Task ClearSearchAsync()
+    {
+        _query = null;
+        await SearchAsync();
+    }
 
     private async Task OnSearchKeyDown(KeyboardEventArgs args)
     {

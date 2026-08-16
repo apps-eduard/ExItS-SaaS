@@ -103,10 +103,21 @@ Schema **v9** adds `multiplier_to_base` / `package_label` on linked products so 
 - `/suppliers/connected/requests` — **supplier-side** incoming connection requests (Accept / Decline)
 - `/suppliers/connected/buyers` — **supplier-side** Active connected buyers (not Customers)
 - `/suppliers/connected/buyers/{relationshipId}` — connected buyer relationship detail
-- `/suppliers/{id}/connected-catalog?relationshipId=…` — paged supplier catalog search (online only; **Active** only)
-- `/suppliers/{id}/linked-products?relationshipId=…` — selective local linked-product browse (offline capable)
+- `/suppliers/{id}/connected-catalog?relationshipId=…` — **Browse products** (online only; **Active** only)
+- `/suppliers/{id}/linked-products?relationshipId=…` — **Linked products** selective local projection (offline capable)
 - `/purchasing/new` — external supplier picker remains unchanged; connected suppliers use online catalog search or local linked products offline
-- `/connected-suppliers/incoming` — supplier **incoming purchase orders** with Accept/Decline (online) — distinct from connection requests
+- `/connected-suppliers/incoming` — supplier **incoming purchase orders** with Accept / Decline (online) — distinct from connection requests
+
+### Buyer browse / linked UX (MAUI)
+
+| Screen | Behavior |
+|---|---|
+| **Browse products** | Online only. Auto-loads first page of **supplier-shared exposures** when online (search optional). Empty = supplier has not shared products yet (not a search bug). Stacked full-width search field + Search. Link and use maps a shared item to a buyer catalog product. Offline → warning + link to Linked products. |
+| **Linked products** | Device cache of **explicitly linked** items only. Stacked search + Update linked products (online sync). Empty state + Browse CTA when nothing linked. Offline still shows local links with an offline banner. Never downloads the full supplier catalog. |
+
+`relationshipId` may be omitted on entry; both screens resolve `ConnectedRelationshipId` from the supplier master when online. EN + fil-PH strings cover empty/no-match/offline/sync-failed copy. UI guard tests: `ConnectedSupplierCatalogUiGuardTests`, `LinkedSupplierProductsUiGuardTests`.
+
+See [browse/linked UX report](../reports/connected-supplier-browse-linked-products-ux.md).
 
 ## Organization Web routes
 

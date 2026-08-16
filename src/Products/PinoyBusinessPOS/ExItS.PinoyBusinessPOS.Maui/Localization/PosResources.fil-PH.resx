@@ -8176,6 +8176,27 @@
   <data name="ConnectedSuppliers_LinkAndUse" xml:space="preserve">
     <value>I-link at gamitin</value>
   </data>
+  <data name="ConnectedSuppliers_LinkedOfflineHelp" xml:space="preserve">
+    <value>Offline ka. Ipinapakita ang mga naka-link na produkto na naka-save sa device na ito.</value>
+  </data>
+  <data name="ConnectedSuppliers_LinkedEmptyTitle" xml:space="preserve">
+    <value>Wala pang naka-link na produkto</value>
+  </data>
+  <data name="ConnectedSuppliers_LinkedEmptyMessage" xml:space="preserve">
+    <value>Mag-link mula sa Browse, o i-tap ang Update kapag online para i-refresh ang naka-save sa device.</value>
+  </data>
+  <data name="ConnectedSuppliers_LinkedNoMatchTitle" xml:space="preserve">
+    <value>Walang tumugmang naka-link</value>
+  </data>
+  <data name="ConnectedSuppliers_LinkedNoMatchMessage" xml:space="preserve">
+    <value>Subukan ang ibang pangalan o SKU, o burahin ang search para makita lahat ng naka-link.</value>
+  </data>
+  <data name="ConnectedSuppliers_LinkedResultCount" xml:space="preserve">
+    <value>{0} naka-link na produkto</value>
+  </data>
+  <data name="ConnectedSuppliers_SyncFailed" xml:space="preserve">
+    <value>Hindi ma-update ang mga naka-link na produkto. Subukan ulit kapag stable ang koneksyon.</value>
+  </data>
   <data name="ConnectedSuppliers_BrowseHint" xml:space="preserve">
     <value>Iwanang blangko para makita ang unang pahina ng ibinahaging produkto. Available offline ang mga naka-link.</value>
   </data>

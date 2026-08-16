@@ -74,6 +74,7 @@ Marketplace discovery, inter-org payments, AP/invoices, live stock sharing, logi
 - `docs/engineering/connected-exits-suppliers.md`
 - `docs/engineering/offline-sync-design.md` (linked-product delta note)
 - `docs/reports/connected-exits-suppliers-phase-1.md` (this file)
+- `docs/reports/connected-supplier-browse-linked-products-ux.md` (MAUI Browse / Linked UX follow-up)
 - `FILE-MANIFEST.md`
 
 ## Exact next work package
