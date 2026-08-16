@@ -72,7 +72,12 @@ public sealed class ExItsQrPurposeGuardTests
         Assert.Contains("CreatePosDeviceRegistrationTokenAsync", page, StringComparison.Ordinal);
         Assert.Contains("Device_ShowRegistrationCode", page, StringComparison.Ordinal);
         Assert.Contains("Device_RegistrationExpiresIn", page, StringComparison.Ordinal);
+        Assert.Contains("Device_Revoke", page, StringComparison.Ordinal);
+        Assert.Contains("pos-devices__card", page, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"qr\")", page, StringComparison.Ordinal);
+        Assert.Contains("IconGlyphs.Get(\"warning\")", page, StringComparison.Ordinal);
         Assert.Contains("LocalQrCodeRenderer", page, StringComparison.Ordinal);
+        Assert.DoesNotContain("WP06", page, StringComparison.Ordinal);
     }
 
     [Fact]

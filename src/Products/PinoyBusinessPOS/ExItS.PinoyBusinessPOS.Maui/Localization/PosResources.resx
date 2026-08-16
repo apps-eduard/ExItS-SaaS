@@ -6902,7 +6902,46 @@
     <value>Business ID copied.</value>
   </data>
   <data name="Device_ShowRegistrationCode" xml:space="preserve">
-    <value>Show registration code</value>
+    <value>Registration code</value>
+  </data>
+  <data name="Device_PosDevicesTitle" xml:space="preserve">
+    <value>POS devices</value>
+  </data>
+  <data name="Device_PosDevicesSubtitle" xml:space="preserve">
+    <value>Revoking a device blocks new online sales right away. Queued offline work stays until the device reconnects.</value>
+  </data>
+  <data name="Device_SlotsUsed" xml:space="preserve">
+    <value>{0} of {1} active device slots used.</value>
+  </data>
+  <data name="Device_RegisteredSection" xml:space="preserve">
+    <value>Registered devices</value>
+  </data>
+  <data name="Device_EmptyTitle" xml:space="preserve">
+    <value>No devices yet</value>
+  </data>
+  <data name="Device_EmptyMessage" xml:space="preserve">
+    <value>Show a registration code on this phone, then scan it on the POS device to join.</value>
+  </data>
+  <data name="Device_Revoke" xml:space="preserve">
+    <value>Revoke</value>
+  </data>
+  <data name="Device_RevokeTitle" xml:space="preserve">
+    <value>Revoke this device?</value>
+  </data>
+  <data name="Device_RevokeMessage" xml:space="preserve">
+    <value>Revoke {0}? It will not be able to start new online transactions until it registers again.</value>
+  </data>
+  <data name="Device_RevokeFailed" xml:space="preserve">
+    <value>The device could not be revoked. Try again.</value>
+  </data>
+  <data name="Device_LoadFailedTitle" xml:space="preserve">
+    <value>Could not load devices</value>
+  </data>
+  <data name="Device_LoadFailedMessage" xml:space="preserve">
+    <value>Reconnect and try again.</value>
+  </data>
+  <data name="Device_RegistrationCreateFailed" xml:space="preserve">
+    <value>Could not create a registration code.</value>
   </data>
   <data name="Device_ScanRegistrationCode" xml:space="preserve">
     <value>Scan registration code</value>

@@ -13452,6 +13452,155 @@ html:has(.pos-denom-sheet) .pos-denom-sheet {
     padding: 0;
 }
 
+/* ========== POS devices (org list) ============================== */
+.pos-devices { width: 100%; }
+
+.pos-devices__header { margin-bottom: var(--exits-space-3, 0.75rem); }
+
+.pos-devices__title {
+    color: var(--exits-text, #15201a);
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.25;
+    margin: 0;
+}
+
+.pos-devices__subtitle {
+    color: var(--exits-text-muted, #5b6b62);
+    font-size: var(--exits-text-sm, 0.875rem);
+    line-height: 1.35;
+    margin: 0.35rem 0 0;
+}
+
+.pos-devices__actions { margin-bottom: var(--exits-space-3, 0.75rem); }
+
+.pos-devices__actions .pos-action-tile {
+    align-items: center;
+    flex-direction: column;
+    gap: 0.35rem;
+    justify-content: center;
+    min-height: 4.35rem;
+    padding: 0.65rem 0.4rem;
+    text-align: center;
+}
+
+.pos-devices__actions .pos-action-tile__label {
+    display: -webkit-box;
+    font-size: var(--exits-text-xs, 0.75rem);
+    font-weight: 650;
+    line-height: 1.15;
+    overflow: hidden;
+    text-align: center;
+    white-space: normal;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
+.pos-devices__capacity {
+    color: var(--exits-text-muted, #5b6b62);
+    font-size: var(--exits-text-sm, 0.875rem);
+    margin: 0 0 var(--exits-space-3, 0.75rem);
+}
+
+.pos-devices__panel { margin-bottom: var(--exits-space-3, 0.75rem); }
+
+.pos-devices__section-title {
+    color: var(--exits-text, #15201a);
+    font-size: var(--exits-type-section, 0.95rem);
+    font-weight: 650;
+    line-height: 1.25;
+    margin: 0 0 0.55rem;
+}
+
+.pos-devices__loading {
+    align-items: center;
+    color: var(--exits-text-muted, #5b6b62);
+    display: flex;
+    gap: 0.5rem;
+}
+
+.pos-devices__list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--exits-space-2, 0.5rem);
+}
+
+.pos-devices__card {
+    align-items: flex-start;
+    background: var(--exits-surface, #fff);
+    border: 1px solid var(--exits-border, #c9d5ce);
+    border-radius: var(--exits-radius-md, 0.5rem);
+    display: flex;
+    gap: var(--exits-space-3, 0.75rem);
+    padding: 0.75rem;
+}
+
+.pos-devices__card-icon {
+    color: var(--exits-primary, #1b7a3d);
+    display: inline-flex;
+    flex: 0 0 auto;
+    height: 1.35rem;
+    margin-top: 0.1rem;
+    width: 1.35rem;
+}
+
+.pos-devices__card-icon svg {
+    display: block;
+    height: 100%;
+    width: 100%;
+}
+
+.pos-devices__card-body {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-width: 0;
+}
+
+.pos-devices__card-top {
+    align-items: flex-start;
+    display: flex;
+    gap: 0.5rem;
+    justify-content: space-between;
+}
+
+.pos-devices__card-name {
+    color: var(--exits-text, #15201a);
+    font-size: var(--exits-text-sm, 0.875rem);
+    font-weight: 650;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.pos-devices__card-meta {
+    color: var(--exits-text-muted, #5b6b62);
+    font-size: var(--exits-text-xs, 0.75rem);
+    line-height: 1.3;
+    margin: 0;
+}
+
+.pos-devices__revoke {
+    align-items: center;
+    flex-direction: row;
+    gap: 0.4rem;
+    justify-content: center;
+    margin-top: 0.25rem;
+    min-height: var(--exits-touch-target-min, 3rem);
+    text-align: center;
+    width: 100%;
+}
+
+.pos-devices__revoke .pos-action-tile__icon {
+    height: 1.1rem;
+    width: 1.1rem;
+}
+
+.pos-devices__revoke .pos-action-tile__label {
+    font-size: var(--exits-text-sm, 0.875rem);
+    font-weight: 650;
+}
+
 /* ========== POS device registration ============================== */
 .pos-device-register__header {
     margin-bottom: var(--exits-space-4, 1rem);

@@ -6902,7 +6902,46 @@
     <value>Business ID copied.</value>
   </data>
   <data name="Device_ShowRegistrationCode" xml:space="preserve">
-    <value>Show registration code</value>
+    <value>Registration code</value>
+  </data>
+  <data name="Device_PosDevicesTitle" xml:space="preserve">
+    <value>Mga POS device</value>
+  </data>
+  <data name="Device_PosDevicesSubtitle" xml:space="preserve">
+    <value>Kapag na-revoke ang device, agad na mahihinto ang bagong online sales. Ang naka-queue na offline work ay mananatili hanggang mag-reconnect.</value>
+  </data>
+  <data name="Device_SlotsUsed" xml:space="preserve">
+    <value>{0} sa {1} active device slots ang gamit.</value>
+  </data>
+  <data name="Device_RegisteredSection" xml:space="preserve">
+    <value>Mga naka-register na device</value>
+  </data>
+  <data name="Device_EmptyTitle" xml:space="preserve">
+    <value>Wala pang device</value>
+  </data>
+  <data name="Device_EmptyMessage" xml:space="preserve">
+    <value>Ipakita ang registration code dito, tapos i-scan sa POS device para sumali.</value>
+  </data>
+  <data name="Device_Revoke" xml:space="preserve">
+    <value>I-revoke</value>
+  </data>
+  <data name="Device_RevokeTitle" xml:space="preserve">
+    <value>I-revoke ang device na ito?</value>
+  </data>
+  <data name="Device_RevokeMessage" xml:space="preserve">
+    <value>I-revoke ang {0}? Hindi na ito makakapagsimula ng bagong online transaction hanggang mag-register ulit.</value>
+  </data>
+  <data name="Device_RevokeFailed" xml:space="preserve">
+    <value>Hindi ma-revoke ang device. Subukan ulit.</value>
+  </data>
+  <data name="Device_LoadFailedTitle" xml:space="preserve">
+    <value>Hindi ma-load ang devices</value>
+  </data>
+  <data name="Device_LoadFailedMessage" xml:space="preserve">
+    <value>Mag-reconnect at subukan ulit.</value>
+  </data>
+  <data name="Device_RegistrationCreateFailed" xml:space="preserve">
+    <value>Hindi makagawa ng registration code.</value>
   </data>
   <data name="Device_ScanRegistrationCode" xml:space="preserve">
     <value>Scan registration code</value>

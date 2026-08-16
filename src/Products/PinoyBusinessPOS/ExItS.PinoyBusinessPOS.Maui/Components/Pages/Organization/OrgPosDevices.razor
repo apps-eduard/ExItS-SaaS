@@ -8,62 +8,108 @@
 @inject IStringLocalizer<PosResources> L
 @inject NavigationManager Nav
 
-<Page>
+<div class="pos-devices">
     <StoreHeaderBack Href="/org" />
-    <h1>POS devices</h1>
-    <p class="pos-muted">WP06 notice: revoking a device immediately blocks new online transactions. It does not erase locally queued work; reconnect is required to resolve it.</p>
+    <Page>
+        <header class="pos-devices__header">
+            <h1 class="pos-devices__title">@L["Device_PosDevicesTitle"]</h1>
+            <p class="pos-devices__subtitle">@L["Device_PosDevicesSubtitle"]</p>
+        </header>
 
-    <div class="pos-action-grid pos-action-grid--one" role="group" style="margin-bottom: 0.75rem;">
-        <button type="button" class="pos-action-tile pos-action-tile--primary" disabled="@_busy" @onclick="ShowRegistrationCodeAsync">
-            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("qr")</span>
-            <span class="pos-action-tile__label">@L["Device_ShowRegistrationCode"]</span>
-        </button>
-    </div>
+        <div class="pos-action-grid pos-action-grid--single pos-devices__actions" role="group" aria-label="@L["Device_PosDevicesTitle"]">
+            <button type="button"
+                    class="pos-action-tile pos-action-tile--primary"
+                    disabled="@_busy"
+                    @onclick="ShowRegistrationCodeAsync">
+                <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("qr")</span>
+                <span class="pos-action-tile__label">@L["Device_ShowRegistrationCode"]</span>
+            </button>
+        </div>
 
-    @if (_registrationToken is not null)
-    {
-        <Section Title="@L["Device_RegistrationCodeTitle"]">
-            @if (!string.IsNullOrWhiteSpace(_registrationQrDataUrl))
-            {
-                <div class="pos-qr-panel pos-my-qr__panel">
-                    <img class="pos-qr-image" src="@_registrationQrDataUrl" alt="@L["Device_RegistrationCodeTitle"]" width="220" height="220" />
-                    <span class="pos-muted">@L["Device_RegistrationQrHint"]</span>
-                    <p class="pos-muted" role="status">@_expiryLabel</p>
-                </div>
-            }
-            else
-            {
-                <Alert Tone="AlertTone.Warning" Message="@L["Org_BusinessQrRenderFailed"]" />
-            }
-        </Section>
-    }
-
-    @if (_loading)
-    {
-        <Spinner />
-    }
-    else if (!string.IsNullOrWhiteSpace(_error))
-    {
-        <Alert Tone="AlertTone.Danger" Title="Could not load devices" Message="@_error" />
-    }
-    else
-    {
-        <p class="pos-muted">@_used of @_allowed active device slots used.</p>
-        @foreach (var device in _devices)
+        @if (_registrationToken is not null)
         {
-            <article class="pos-staff__row">
-                <div class="pos-staff__body">
-                    <strong>@device.FriendlyName</strong>
-                    <p class="pos-muted">@device.Platform · @device.Status · @device.LastSeenAtUtc.LocalDateTime</p>
-                    @if (string.Equals(device.Status, "Active", StringComparison.OrdinalIgnoreCase))
-                    {
-                        <button type="button" disabled="@_busy" @onclick="() => RevokeAsync(device.Id)">Revoke device</button>
-                    }
-                </div>
-            </article>
+            <section class="pos-devices__panel" aria-labelledby="device-registration-heading">
+                <h2 id="device-registration-heading" class="pos-devices__section-title">@L["Device_RegistrationCodeTitle"]</h2>
+                @if (!string.IsNullOrWhiteSpace(_registrationQrDataUrl))
+                {
+                    <div class="pos-qr-panel pos-my-qr__panel">
+                        <img class="pos-qr-image" src="@_registrationQrDataUrl" alt="@L["Device_RegistrationCodeTitle"]" width="220" height="220" />
+                        <span class="pos-muted">@L["Device_RegistrationQrHint"]</span>
+                        <p class="pos-muted" role="status">@_expiryLabel</p>
+                    </div>
+                }
+                else
+                {
+                    <Alert Tone="AlertTone.Warning" Message="@L["Org_BusinessQrRenderFailed"]" />
+                }
+            </section>
         }
-    }
-</Page>
+
+        @if (_loading)
+        {
+            <div class="pos-devices__loading"><Spinner /><span>@L["Common_Loading"]</span></div>
+        }
+        else if (!string.IsNullOrWhiteSpace(_error))
+        {
+            <Alert Tone="AlertTone.Danger" Title="@L["Device_LoadFailedTitle"]" Message="@_error" />
+        }
+        else
+        {
+            <p class="pos-devices__capacity">@L["Device_SlotsUsed", _used, _allowed]</p>
+
+            <section class="pos-devices__panel" aria-labelledby="device-list-heading">
+                <h2 id="device-list-heading" class="pos-devices__section-title">@L["Device_RegisteredSection"]</h2>
+                @if (_devices.Count == 0)
+                {
+                    <EmptyState IconName="qr"
+                                Title="@L["Device_EmptyTitle"]"
+                                Message="@L["Device_EmptyMessage"]" />
+                }
+                else
+                {
+                    <div class="pos-devices__list" role="list">
+                        @foreach (var device in _devices)
+                        {
+                            var isActive = string.Equals(device.Status, "Active", StringComparison.OrdinalIgnoreCase);
+                            <article class="pos-devices__card" role="listitem">
+                                <div class="pos-devices__card-icon" aria-hidden="true">@IconGlyphs.Get("settings")</div>
+                                <div class="pos-devices__card-body">
+                                    <div class="pos-devices__card-top">
+                                        <strong class="pos-devices__card-name">@device.FriendlyName</strong>
+                                        <Badge Tone="@(isActive ? BadgeTone.Success : BadgeTone.Neutral)">@device.Status</Badge>
+                                    </div>
+                                    <p class="pos-devices__card-meta">
+                                        @device.Platform
+                                        · @device.LastSeenAtUtc.LocalDateTime.ToString("g")
+                                    </p>
+                                    @if (isActive)
+                                    {
+                                        <button type="button"
+                                                class="pos-action-tile pos-devices__revoke"
+                                                disabled="@_busy"
+                                                @onclick="() => AskRevoke(device)">
+                                            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("warning")</span>
+                                            <span class="pos-action-tile__label">@L["Device_Revoke"]</span>
+                                        </button>
+                                    }
+                                </div>
+                            </article>
+                        }
+                    </div>
+                }
+            </section>
+        }
+
+        <ConfirmDialog Visible="@(_revokeTarget is not null)"
+                       VisibleChanged="v => { if (!v) _revokeTarget = null; }"
+                       Title="@L["Device_RevokeTitle"]"
+                       Message="@L["Device_RevokeMessage", _revokeTarget?.FriendlyName ?? string.Empty]"
+                       Danger="true"
+                       ConfirmLabel="@L["Device_Revoke"]"
+                       IsLoading="@_busy"
+                       OnConfirm="ConfirmRevokeAsync" />
+    </Page>
+</div>
 
 @code {
     private IReadOnlyList<PosDeviceDto> _devices = [];
@@ -72,6 +118,7 @@
     private bool _loading = true;
     private bool _busy;
     private string? _error;
+    private PosDeviceDto? _revokeTarget;
     private PosDeviceRegistrationTokenDto? _registrationToken;
     private string? _registrationQrDataUrl;
     private string _expiryLabel = string.Empty;
@@ -84,11 +131,12 @@
             Nav.NavigateTo("/organization-select", replace: true);
             return;
         }
+
         var devices = await Platform.GetPosDevicesAsync(orgId);
         var capacity = await Platform.GetPosDeviceCapacityAsync(orgId);
         if (!devices.IsSuccess || devices.Data is null || !capacity.IsSuccess || capacity.Data is null)
         {
-            _error = "Reconnect and try again.";
+            _error = L["Device_LoadFailedMessage"];
         }
         else
         {
@@ -96,6 +144,7 @@
             _used = capacity.Data.Used;
             _allowed = capacity.Data.Allowed;
         }
+
         _loading = false;
     }
 
@@ -113,7 +162,7 @@
             var result = await Platform.CreatePosDeviceRegistrationTokenAsync(orgId);
             if (!result.IsSuccess || result.Data is null)
             {
-                _error = result.Error?.Detail ?? "Could not create a registration code.";
+                _error = result.Error?.Detail ?? L["Device_RegistrationCreateFailed"];
                 return;
             }
 
@@ -167,18 +216,34 @@
         }
     }
 
-    private async Task RevokeAsync(Guid deviceId)
+    private void AskRevoke(PosDeviceDto device) => _revokeTarget = device;
+
+    private async Task ConfirmRevokeAsync()
     {
-        if (CurrentUser.Session?.OrganizationId is not Guid orgId) return;
+        if (_revokeTarget is null || CurrentUser.Session?.OrganizationId is not Guid orgId)
+        {
+            return;
+        }
+
+        var deviceId = _revokeTarget.Id;
         _busy = true;
         try
         {
             var result = await Platform.RevokePosDeviceAsync(orgId, deviceId);
-            if (!result.IsSuccess) { _error = "The device could not be revoked."; return; }
+            if (!result.IsSuccess)
+            {
+                _error = L["Device_RevokeFailed"];
+                return;
+            }
+
             _devices = _devices.Select(x => x.Id == deviceId ? x with { Status = "Revoked" } : x).ToList();
             _used = Math.Max(0, _used - 1);
+            _revokeTarget = null;
         }
-        finally { _busy = false; }
+        finally
+        {
+            _busy = false;
+        }
     }
 
     public void Dispose()
