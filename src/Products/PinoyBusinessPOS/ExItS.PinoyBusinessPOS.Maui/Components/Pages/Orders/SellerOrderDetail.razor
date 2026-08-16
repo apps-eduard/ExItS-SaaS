@@ -1,0 +1,412 @@
+@page "/orders/{OrderId:guid}"
+@using ExItS.DesignSystem.Components.Internal
+@using ExItS.PinoyBusinessPOS.Application.CustomerOrdering
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject ICurrentUserContext CurrentUser
+@inject IUtangCapabilityEvaluator Capabilities
+@inject IPosCustomerOrderClient Orders
+@inject IConnectivityService Connectivity
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IStringLocalizer<PosResources> L
+
+<div class="pos-orders pos-orders-detail">
+    <StoreHeaderBack Href="/orders" />
+    <Page>
+        @if (_loading)
+        {
+            <div class="pos-orders__loading"><Spinner /><span>@L["Common_Loading"]</span></div>
+        }
+        else if (_order is null)
+        {
+            <ErrorState Title="@L["Orders_NotFound"]"
+                        Message="@(_error ?? L["Orders_NotFoundHelp"])"
+                        RetryLabel="@L["Api_Retry"]"
+                        OnRetry="LoadAsync" />
+        }
+        else
+        {
+            <header class="pos-orders__header">
+                <div>
+                    <h1>#@_order.OrderNumber</h1>
+                    <p class="pos-muted">@_order.CustomerDisplayName · @FulfillmentLabel(_order.FulfillmentType)</p>
+                </div>
+                <Badge Tone="@StatusTone(_order)">@DisplayStatus(_order)</Badge>
+            </header>
+
+            @if (!string.IsNullOrWhiteSpace(_error))
+            {
+                <Alert Tone="AlertTone.Danger" Title="@L["Orders_Error"]" Message="@_error" />
+            }
+
+            <section class="pos-orders__section">
+                <div class="pos-orders__facts">
+                    <span>@L["Orders_Branch"]</span><strong>@_order.BranchNameSnapshot</strong>
+                    <span>@L["Orders_Party"]</span><strong>@_order.CustomerDisplayName</strong>
+                    <span>@L["Orders_Status"]</span><strong>@DisplayStatus(_order)</strong>
+                </div>
+                @if (_order.Delivery is not null)
+                {
+                    <div class="pos-orders__address">
+                        <strong>@L["Orders_DeliveryAddress"]</strong>
+                        <p>@_order.Delivery.RecipientName</p>
+                        @if (!string.IsNullOrWhiteSpace(_order.Delivery.RecipientPhone))
+                        {
+                            <p class="pos-muted">@_order.Delivery.RecipientPhone</p>
+                        }
+                        <p>@_order.Delivery.AddressLine1</p>
+                        @if (!string.IsNullOrWhiteSpace(_order.Delivery.AddressLine2))
+                        {
+                            <p>@_order.Delivery.AddressLine2</p>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(_order.Delivery.City))
+                        {
+                            <p>@_order.Delivery.City</p>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(_order.Delivery.DeliveryNotes))
+                        {
+                            <p class="pos-muted">@_order.Delivery.DeliveryNotes</p>
+                        }
+                    </div>
+                }
+            </section>
+
+            <section class="pos-orders__section" aria-labelledby="orders-lines-heading">
+                <h2 id="orders-lines-heading">@L["Orders_Lines"]</h2>
+                <div class="pos-orders__lines" role="list">
+                    @foreach (var line in _order.Lines)
+                    {
+                        <article class="pos-orders__line" role="listitem">
+                            <div>
+                                <strong>@line.NameSnapshot</strong>
+                                @if (!string.IsNullOrWhiteSpace(line.SkuSnapshot))
+                                {
+                                    <div class="pos-muted">@line.SkuSnapshot</div>
+                                }
+                            </div>
+                            <span class="pos-orders__line-qty">
+                                @line.Quantity @line.UnitSnapshot ×
+                                <MoneyDisplay Amount="@line.UnitPrice" CurrencyCode="PHP" />
+                            </span>
+                            <strong><MoneyDisplay Amount="@line.LineTotal" CurrencyCode="PHP" /></strong>
+                        </article>
+                    }
+                </div>
+                <div class="pos-orders__totals">
+                    <div><span>@L["Orders_Subtotal"]</span><strong><MoneyDisplay Amount="@_order.MerchandiseSubtotal" CurrencyCode="PHP" /></strong></div>
+                    <div><span>@L["Orders_DeliveryFee"]</span><strong><MoneyDisplay Amount="@_order.DeliveryFee" CurrencyCode="PHP" /></strong></div>
+                    <div class="pos-orders__totals-total"><span>@L["Orders_Total"]</span><strong><MoneyDisplay Amount="@_order.Total" CurrencyCode="PHP" Emphasized="true" /></strong></div>
+                </div>
+            </section>
+
+            @if (_showReject)
+            {
+                <section class="pos-orders__section">
+                    <label class="pos-orders__field">
+                        <span>@L["Orders_RejectReason"]</span>
+                        <select value="@_rejectReason" @onchange="e => _rejectReason = e.Value?.ToString() ?? "UnableToFulfill"">
+                            <option value="OutOfStock">@L["Orders_Reject_OutOfStock"]</option>
+                            <option value="StoreTooBusy">@L["Orders_Reject_StoreTooBusy"]</option>
+                            <option value="DeliveryUnavailable">@L["Orders_Reject_DeliveryUnavailable"]</option>
+                            <option value="UnableToFulfill">@L["Orders_Reject_UnableToFulfill"]</option>
+                            <option value="Other">@L["Orders_Reject_Other"]</option>
+                        </select>
+                    </label>
+                    <TextInput Label="@L["Orders_RejectNotes"]" Value="@_rejectNotes" ValueChanged="v => _rejectNotes = v" />
+                    <div class="pos-orders__actions">
+                        <Button Disabled="@_busy" OnClick="() => _showReject = false">@L["Common_Cancel"]</Button>
+                        <Button Variant="ButtonVariant.Danger" Disabled="@(_busy || !CanManage)" IsLoading="@_busy" OnClick="RejectAsync">
+                            @L["Orders_Reject"]
+                        </Button>
+                    </div>
+                </section>
+            }
+            else
+            {
+                <div class="pos-orders__actions pos-orders__actions--sticky" role="group" aria-label="@L["Orders_Actions"]">
+                    @foreach (var action in AvailableActions(_order))
+                    {
+                        @if (action == SellerAction.Reject)
+                        {
+                            <Button Variant="ButtonVariant.Danger" Disabled="@(_busy || !CanManage)" OnClick="() => _showReject = true">
+                                @L["Orders_Reject"]
+                            </Button>
+                        }
+                        else
+                        {
+                            <Button Variant="ButtonVariant.Primary"
+                                    Disabled="@(_busy || !CanManage)"
+                                    IsLoading="@_busy"
+                                    OnClick="() => RunActionAsync(action)">
+                                @ActionLabel(action)
+                            </Button>
+                        }
+                    }
+                </div>
+            }
+        }
+    </Page>
+</div>
+
+@code {
+    [Parameter] public Guid OrderId { get; set; }
+
+    private CustomerOrderDto? _order;
+    private bool _loading = true;
+    private bool _busy;
+    private bool _offline;
+    private bool _showReject;
+    private string _rejectReason = "UnableToFulfill";
+    private string? _rejectNotes;
+    private string? _error;
+
+    private bool CanManage =>
+        Capabilities.IsAllowed(UtangCapability.ManageCustomerOrders) && !_offline;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (CurrentUser.Session?.OrganizationId is null)
+        {
+            Nav.NavigateTo("/organization-select", replace: true);
+            return;
+        }
+
+        if (!Gate.CanEnterProtectedShell)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        if (!Capabilities.IsAllowed(UtangCapability.ViewCustomerOrders)
+            && !Capabilities.IsAllowed(UtangCapability.ManageCustomerOrders))
+        {
+            Nav.NavigateTo("/more", replace: true);
+            return;
+        }
+
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        if (CurrentUser.Session?.OrganizationId is not Guid orgId)
+        {
+            return;
+        }
+
+        _loading = true;
+        _error = null;
+        _offline = !await Connectivity.IsConnectedAsync();
+        if (_offline)
+        {
+            _order = null;
+            _error = L["Orders_Offline"];
+            _loading = false;
+            return;
+        }
+
+        var result = await Orders.GetSellerOrderAsync(orgId, OrderId);
+        _order = result.IsSuccess ? result.Data : null;
+        _error = result.IsSuccess ? null : result.Error?.Detail ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
+        _loading = false;
+    }
+
+    private async Task RunActionAsync(SellerAction action)
+    {
+        if (CurrentUser.Session?.OrganizationId is not Guid orgId || _busy || !CanManage)
+        {
+            return;
+        }
+
+        _busy = true;
+        _error = null;
+        var result = action switch
+        {
+            SellerAction.Accept => await Orders.AcceptAsync(orgId, OrderId),
+            SellerAction.StartPreparing => await Orders.StartPreparingAsync(orgId, OrderId),
+            SellerAction.MarkReady => await Orders.MarkReadyAsync(orgId, OrderId),
+            SellerAction.OutForDelivery => await Orders.MarkOutForDeliveryAsync(orgId, OrderId),
+            SellerAction.MarkDelivered => await Orders.MarkDeliveredAsync(orgId, OrderId),
+            SellerAction.MarkCollected => await Orders.MarkCollectedAsync(orgId, OrderId),
+            SellerAction.Complete => await Orders.CompleteAsync(orgId, OrderId),
+            _ => null
+        };
+
+        if (result is null)
+        {
+            _busy = false;
+            return;
+        }
+
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _order = result.Data;
+        }
+        else
+        {
+            _error = result.Error?.Detail ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
+        }
+
+        _busy = false;
+    }
+
+    private async Task RejectAsync()
+    {
+        if (CurrentUser.Session?.OrganizationId is not Guid orgId || _busy || !CanManage)
+        {
+            return;
+        }
+
+        _busy = true;
+        _error = null;
+        var result = await Orders.RejectAsync(
+            orgId,
+            OrderId,
+            new RejectCustomerOrderRequest(_rejectReason, string.IsNullOrWhiteSpace(_rejectNotes) ? null : _rejectNotes.Trim()));
+        if (result.IsSuccess && result.Data is not null)
+        {
+            _order = result.Data;
+            _showReject = false;
+        }
+        else
+        {
+            _error = result.Error?.Detail ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
+        }
+
+        _busy = false;
+    }
+
+    private IEnumerable<SellerAction> AvailableActions(CustomerOrderDto order)
+    {
+        if (Is(order.Status, "Submitted"))
+        {
+            yield return SellerAction.Accept;
+            yield return SellerAction.Reject;
+            yield break;
+        }
+
+        if (!Is(order.Status, "Accepted"))
+        {
+            yield break;
+        }
+
+        if (Is(order.FulfillmentStatus, "Pending"))
+        {
+            yield return SellerAction.StartPreparing;
+        }
+
+        if (Is(order.FulfillmentStatus, "Preparing"))
+        {
+            yield return SellerAction.MarkReady;
+        }
+
+        if (Is(order.FulfillmentType, "Delivery") && Is(order.FulfillmentStatus, "Ready"))
+        {
+            yield return SellerAction.OutForDelivery;
+        }
+
+        if (Is(order.FulfillmentType, "Delivery") && Is(order.FulfillmentStatus, "OutForDelivery"))
+        {
+            yield return SellerAction.MarkDelivered;
+        }
+
+        if (Is(order.FulfillmentType, "Pickup") && Is(order.FulfillmentStatus, "ReadyForPickup"))
+        {
+            yield return SellerAction.MarkCollected;
+        }
+
+        if (Is(order.FulfillmentStatus, "Delivered") || Is(order.FulfillmentStatus, "Collected"))
+        {
+            yield return SellerAction.Complete;
+        }
+    }
+
+    private string ActionLabel(SellerAction action) =>
+        action switch
+        {
+            SellerAction.Accept => L["Orders_Accept"],
+            SellerAction.StartPreparing => L["Orders_StartPreparing"],
+            SellerAction.MarkReady => Is(_order?.FulfillmentType, "Pickup")
+                ? L["Orders_ReadyForPickup"]
+                : L["Orders_MarkReady"],
+            SellerAction.OutForDelivery => L["Orders_OutForDelivery"],
+            SellerAction.MarkDelivered => L["Orders_MarkDelivered"],
+            SellerAction.MarkCollected => L["Orders_MarkCollected"],
+            SellerAction.Complete => L["Orders_Complete"],
+            _ => action.ToString()
+        };
+
+    private string DisplayStatus(CustomerOrderDto order)
+    {
+        if (Is(order.Status, "Submitted"))
+        {
+            return L["Orders_Status_New"];
+        }
+
+        if (Is(order.Status, "Rejected"))
+        {
+            return L["Orders_Status_Rejected"];
+        }
+
+        if (Is(order.Status, "Cancelled"))
+        {
+            return L["Orders_Status_Cancelled"];
+        }
+
+        if (Is(order.Status, "Completed"))
+        {
+            return L["Orders_Status_Completed"];
+        }
+
+        return order.FulfillmentStatus switch
+        {
+            "Preparing" => L["Orders_Status_Preparing"],
+            "Ready" => L["Orders_Status_Ready"],
+            "ReadyForPickup" => L["Orders_Status_ReadyForPickup"],
+            "OutForDelivery" => L["Orders_Status_OutForDelivery"],
+            "Delivered" => L["Orders_Status_Delivered"],
+            "Collected" => L["Orders_Status_Collected"],
+            _ => order.FulfillmentStatus
+        };
+    }
+
+    private string FulfillmentLabel(string type) =>
+        Is(type, "Delivery") ? L["Orders_Delivery"] : L["Orders_Pickup"];
+
+    private static BadgeTone StatusTone(CustomerOrderDto order)
+    {
+        if (Is(order.Status, "Submitted"))
+        {
+            return BadgeTone.Primary;
+        }
+
+        if (Is(order.Status, "Rejected") || Is(order.Status, "Cancelled"))
+        {
+            return BadgeTone.Danger;
+        }
+
+        if (Is(order.Status, "Completed")
+            || Is(order.FulfillmentStatus, "Delivered")
+            || Is(order.FulfillmentStatus, "Collected"))
+        {
+            return BadgeTone.Success;
+        }
+
+        return BadgeTone.Warning;
+    }
+
+    private static bool Is(string? value, string expected) =>
+        string.Equals(value, expected, StringComparison.OrdinalIgnoreCase);
+
+    private enum SellerAction
+    {
+        Accept,
+        Reject,
+        StartPreparing,
+        MarkReady,
+        OutForDelivery,
+        MarkDelivered,
+        MarkCollected,
+        Complete
+    }
+}

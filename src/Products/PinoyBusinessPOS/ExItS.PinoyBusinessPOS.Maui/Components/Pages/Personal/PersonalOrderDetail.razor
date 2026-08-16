@@ -1,0 +1,300 @@
+@page "/personal/orders/{OrderId:guid}"
+@layout Layout.PersonalShell
+@using ExItS.DesignSystem.Components.Internal
+@using ExItS.PinoyBusinessPOS.Application.CustomerOrdering
+@inject NavigationManager Nav
+@inject IAuthenticationService Auth
+@inject ICurrentUserContext CurrentUser
+@inject IPosCustomerOrderClient Orders
+@inject IConnectivityService Connectivity
+@inject ApiStatusLocalizer ApiLocalizer
+@inject OfflineAwareNavigation OfflineNav
+@inject IStringLocalizer<PosResources> L
+
+<div class="pos-orders pos-personal-orders">
+    <Page>
+        @if (_loading)
+        {
+            <div class="pos-orders__loading"><Spinner /><span>@L["Common_Loading"]</span></div>
+        }
+        else if (!_authenticated)
+        {
+            <ErrorState Title="@L["Auth_SessionExpiredTitle"]" Message="@L["Auth_SessionExpired"]" RetryLabel="@L["SignIn_Submit"]" OnRetry="GoSignIn" />
+        }
+        else if (_order is null)
+        {
+            <ErrorState Title="@L["Orders_NotFound"]"
+                        Message="@(_error ?? L["Orders_NotFoundHelp"])"
+                        RetryLabel="@L["Api_Retry"]"
+                        OnRetry="LoadAsync" />
+        }
+        else
+        {
+            <header class="pos-orders__header">
+                <div>
+                    <button type="button" class="pos-orders__back" @onclick="GoBack">@L["Common_Back"]</button>
+                    <h1>#@_order.OrderNumber</h1>
+                    <p class="pos-muted">@_order.BranchNameSnapshot · @FulfillmentLabel(_order.FulfillmentType)</p>
+                </div>
+                <Badge Tone="@StatusTone(_order)">@DisplayStatus(_order)</Badge>
+            </header>
+
+            @if (!string.IsNullOrWhiteSpace(_error))
+            {
+                <Alert Tone="AlertTone.Danger" Title="@L["Orders_Error"]" Message="@_error" />
+            }
+
+            <section class="pos-orders__section">
+                <div class="pos-orders__facts">
+                    <span>@L["Orders_Total"]</span>
+                    <strong><MoneyDisplay Amount="@_order.Total" CurrencyCode="PHP" Emphasized="true" /></strong>
+                    <span>@L["Orders_Items"]</span>
+                    <strong>@L["Orders_ItemCount", _order.Lines.Count]</strong>
+                </div>
+            </section>
+
+            <section class="pos-orders__section" aria-labelledby="orders-lines-heading">
+                <h2 id="orders-lines-heading">@L["Orders_Items"]</h2>
+                <ul class="pos-orders__lines">
+                    @foreach (var line in _order.Lines)
+                    {
+                        <li class="pos-orders__line">
+                            <div>
+                                <strong>@line.NameSnapshot</strong>
+                                <div class="pos-muted">@line.Quantity.ToString("0.###") × @line.UnitPrice.ToString("0.00")</div>
+                            </div>
+                            <strong><MoneyDisplay Amount="@line.LineTotal" CurrencyCode="PHP" /></strong>
+                        </li>
+                    }
+                </ul>
+                <div class="pos-orders__facts">
+                    <span>@L["Orders_Merchandise"]</span>
+                    <strong><MoneyDisplay Amount="@_order.MerchandiseSubtotal" CurrencyCode="PHP" /></strong>
+                    <span>@L["Orders_DeliveryFee"]</span>
+                    <strong><MoneyDisplay Amount="@_order.DeliveryFee" CurrencyCode="PHP" /></strong>
+                </div>
+            </section>
+
+            <section class="pos-orders__section" aria-labelledby="orders-timeline-heading">
+                <h2 id="orders-timeline-heading">@L["Orders_Timeline"]</h2>
+                <ol class="pos-orders__timeline">
+                    @foreach (var step in TimelineSteps(_order))
+                    {
+                        <li class="pos-orders__timeline-step @(step.Reached ? "pos-orders__timeline-step--done" : null) @(step.Current ? "pos-orders__timeline-step--current" : null)">
+                            <span class="pos-orders__timeline-dot" aria-hidden="true"></span>
+                            <div>
+                                <strong>@L[step.LabelKey]</strong>
+                                @if (!string.IsNullOrWhiteSpace(step.WhenText))
+                                {
+                                    <div class="pos-muted">@step.WhenText</div>
+                                }
+                            </div>
+                        </li>
+                    }
+                </ol>
+            </section>
+        }
+    </Page>
+</div>
+
+@code {
+    [Parameter] public Guid OrderId { get; set; }
+
+    private bool _loading = true;
+    private bool _authenticated;
+    private string? _error;
+    private CustomerOrderDto? _order;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!CurrentUser.IsAuthenticated)
+        {
+            var restore = await Auth.RestoreSessionAsync();
+            _authenticated = restore.Succeeded;
+        }
+        else
+        {
+            _authenticated = true;
+        }
+
+        if (!_authenticated)
+        {
+            _loading = false;
+            return;
+        }
+
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+        if (!await Connectivity.IsConnectedAsync())
+        {
+            _order = null;
+            _error = L["Orders_Offline"];
+            _loading = false;
+            return;
+        }
+
+        var result = await Orders.GetMineAsync(OrderId, partyType: "Personal");
+        if (!result.IsSuccess || result.Data is null)
+        {
+            _order = null;
+            _error = result.Error?.Detail ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
+            _loading = false;
+            return;
+        }
+
+        _order = result.Data;
+        _loading = false;
+    }
+
+    private IReadOnlyList<TimelineStep> TimelineSteps(CustomerOrderDto order)
+    {
+        var steps = new List<TimelineStep>
+        {
+            new("Orders_Timeline_Placed", true, Is(order.Status, "Submitted"), FormatTime(order.SubmittedAtUtc ?? order.CreatedAtUtc))
+        };
+
+        if (Is(order.Status, "Cancelled"))
+        {
+            steps.Add(new("Orders_Status_Cancelled", true, true, FormatTime(order.UpdatedAtUtc)));
+            return steps;
+        }
+
+        if (Is(order.Status, "Rejected"))
+        {
+            steps.Add(new("Orders_Status_Rejected", true, true, FormatTime(order.UpdatedAtUtc)));
+            return steps;
+        }
+
+        var accepted = Is(order.Status, "Accepted") || Is(order.Status, "Completed");
+        steps.Add(new(
+            "Orders_Timeline_Accepted",
+            accepted,
+            accepted && Is(order.FulfillmentStatus, "Preparing"),
+            FormatTime(order.AcceptedAtUtc)));
+
+        if (!accepted)
+        {
+            steps[0] = steps[0] with { Current = Is(order.Status, "Submitted") };
+            steps.Add(new("Orders_WaitingForSeller", false, Is(order.Status, "Submitted"), null));
+            return steps;
+        }
+
+        steps.Add(new(
+            "Orders_Status_Preparing",
+            Rank(order) >= 1,
+            Rank(order) == 1,
+            null));
+
+        if (Is(order.FulfillmentType, "Delivery"))
+        {
+            steps.Add(new("Orders_Status_Ready", Rank(order) >= 2, Rank(order) == 2, null));
+            steps.Add(new("Orders_Status_OutForDelivery", Rank(order) >= 3, Rank(order) == 3, null));
+            steps.Add(new("Orders_Status_Delivered", Rank(order) >= 4, Rank(order) == 4, null));
+        }
+        else
+        {
+            steps.Add(new("Orders_Status_ReadyForPickup", Rank(order) >= 2, Rank(order) == 2, null));
+            steps.Add(new("Orders_Status_Collected", Rank(order) >= 4, Rank(order) == 4, null));
+        }
+
+        steps.Add(new(
+            "Orders_Status_Completed",
+            Is(order.Status, "Completed"),
+            Is(order.Status, "Completed"),
+            Is(order.Status, "Completed") ? FormatTime(order.CompletedAtUtc ?? order.UpdatedAtUtc) : null));
+
+        return steps;
+    }
+
+    private static int Rank(CustomerOrderDto order)
+    {
+        if (Is(order.Status, "Completed"))
+        {
+            return 5;
+        }
+
+        return order.FulfillmentStatus switch
+        {
+            "Preparing" or "Pending" => 1,
+            "Ready" or "ReadyForPickup" => 2,
+            "OutForDelivery" => 3,
+            "Delivered" or "Collected" => 4,
+            _ => 0
+        };
+    }
+
+    private string DisplayStatus(CustomerOrderDto order)
+    {
+        if (Is(order.Status, "Submitted"))
+        {
+            return L["Orders_WaitingForSeller"];
+        }
+
+        if (Is(order.Status, "Rejected"))
+        {
+            return L["Orders_Status_Rejected"];
+        }
+
+        if (Is(order.Status, "Cancelled"))
+        {
+            return L["Orders_Status_Cancelled"];
+        }
+
+        if (Is(order.Status, "Completed"))
+        {
+            return L["Orders_Status_Completed"];
+        }
+
+        return order.FulfillmentStatus switch
+        {
+            "Preparing" => L["Orders_Status_Preparing"],
+            "Ready" => L["Orders_Status_Ready"],
+            "ReadyForPickup" => L["Orders_Status_ReadyForPickup"],
+            "OutForDelivery" => L["Orders_Status_OutForDelivery"],
+            "Delivered" => L["Orders_Status_Delivered"],
+            "Collected" => L["Orders_Status_Collected"],
+            _ => order.Status
+        };
+    }
+
+    private string FulfillmentLabel(string type) =>
+        Is(type, "Delivery") ? L["Orders_Delivery"] : L["Orders_Pickup"];
+
+    private static BadgeTone StatusTone(CustomerOrderDto order)
+    {
+        if (Is(order.Status, "Submitted"))
+        {
+            return BadgeTone.Primary;
+        }
+
+        if (Is(order.Status, "Rejected") || Is(order.Status, "Cancelled"))
+        {
+            return BadgeTone.Danger;
+        }
+
+        if (Is(order.Status, "Completed")
+            || Is(order.FulfillmentStatus, "Delivered")
+            || Is(order.FulfillmentStatus, "Collected"))
+        {
+            return BadgeTone.Success;
+        }
+
+        return BadgeTone.Warning;
+    }
+
+    private static string? FormatTime(DateTimeOffset? utc) =>
+        utc is null ? null : utc.Value.ToLocalTime().ToString("g");
+
+    private static bool Is(string? value, string expected) =>
+        string.Equals(value, expected, StringComparison.OrdinalIgnoreCase);
+
+    private Task GoBack() => OfflineNav.NavigateAsync("/personal/orders");
+    private void GoSignIn() => Nav.NavigateTo("/signin");
+
+    private sealed record TimelineStep(string LabelKey, bool Reached, bool Current, string? WhenText);
+}

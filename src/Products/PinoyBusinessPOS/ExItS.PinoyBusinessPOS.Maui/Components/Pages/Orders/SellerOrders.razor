@@ -1,0 +1,277 @@
+@page "/orders"
+@using ExItS.DesignSystem.Components.Internal
+@using ExItS.PinoyBusinessPOS.Application.CustomerOrdering
+@inject NavigationManager Nav
+@inject NavigationGate Gate
+@inject ICurrentUserContext CurrentUser
+@inject IUtangCapabilityEvaluator Capabilities
+@inject IPosCustomerOrderClient Orders
+@inject IConnectivityService Connectivity
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IStringLocalizer<PosResources> L
+
+<div class="pos-orders">
+    <StoreHeaderBack Href="/more" />
+    <Page>
+        <header class="pos-orders__header">
+            <h1>@L["Orders_Title"]</h1>
+            <p class="pos-muted">@L["Orders_SellerSubtitle"]</p>
+        </header>
+
+        <div class="pos-orders__filters" role="group" aria-label="@L["Orders_FilterLabel"]">
+            @foreach (var filter in Filters)
+            {
+                <button type="button"
+                        class="pos-orders__filter @(_filter == filter.Value ? "pos-orders__filter--active" : null)"
+                        aria-pressed="@(_filter == filter.Value)"
+                        disabled="@_loading"
+                        @onclick="() => ChangeFilterAsync(filter.Value)">
+                    @L[filter.LabelKey]
+                </button>
+            }
+        </div>
+
+        @if (_loading)
+        {
+            <div class="pos-orders__loading"><Spinner /><span>@L["Common_Loading"]</span></div>
+        }
+        else if (!string.IsNullOrWhiteSpace(_error))
+        {
+            <Alert Tone="AlertTone.Danger" Title="@L["Orders_Error"]" Message="@_error" />
+        }
+        else if (_orders.Count == 0)
+        {
+            <EmptyState IconName="receipt" Title="@L["Orders_EmptyTitle"]" Message="@L["Orders_EmptyMessage"]" />
+        }
+        else
+        {
+            <div class="pos-orders__list" role="list">
+                @foreach (var order in _orders)
+                {
+                    <a class="pos-orders__card"
+                       role="listitem"
+                       href="@($"/orders/{order.OrderId:D}")">
+                        <div class="pos-orders__card-top">
+                            <strong>@order.CustomerDisplayName</strong>
+                            <Badge Tone="@StatusTone(order)">@DisplayStatus(order)</Badge>
+                        </div>
+                        <div class="pos-orders__meta">
+                            #@order.OrderNumber · @FulfillmentLabel(order.FulfillmentType)
+                        </div>
+                        <div class="pos-orders__meta">
+                            <MoneyDisplay Amount="@order.Total" CurrencyCode="PHP" />
+                            · @L["Orders_ItemCount", order.LineCount]
+                            · @RelativeTime(order.UpdatedAtUtc)
+                        </div>
+                    </a>
+                }
+            </div>
+        }
+    </Page>
+</div>
+
+@code {
+    private bool _loading = true;
+    private string? _error;
+    private string _filter = "New";
+    private IReadOnlyList<CustomerOrderListItemDto> _orders = [];
+
+    private static IReadOnlyList<OrderFilter> Filters =>
+    [
+        new("New", "Orders_Filter_New"),
+        new("Preparing", "Orders_Filter_Preparing"),
+        new("Ready", "Orders_Filter_Ready"),
+        new("Issues", "Orders_Filter_Issues"),
+        new("All", "Orders_Filter_All")
+    ];
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (CurrentUser.Session?.OrganizationId is null)
+        {
+            Nav.NavigateTo("/organization-select", replace: true);
+            return;
+        }
+
+        if (!Gate.CanEnterProtectedShell)
+        {
+            Nav.NavigateTo(await Gate.ResolveStartRouteAsync(), replace: true);
+            return;
+        }
+
+        if (!Capabilities.IsAllowed(UtangCapability.ViewCustomerOrders)
+            && !Capabilities.IsAllowed(UtangCapability.ManageCustomerOrders))
+        {
+            Nav.NavigateTo("/more", replace: true);
+            return;
+        }
+
+        await LoadAsync();
+    }
+
+    private async Task ChangeFilterAsync(string filter)
+    {
+        _filter = filter;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        if (CurrentUser.Session?.OrganizationId is not Guid orgId)
+        {
+            return;
+        }
+
+        _loading = true;
+        _error = null;
+
+        if (!await Connectivity.IsConnectedAsync())
+        {
+            _orders = [];
+            _error = L["Orders_Offline"];
+            _loading = false;
+            return;
+        }
+
+        var (apiStatus, pageSize) = ApiQueryForFilter(_filter);
+        var result = await Orders.ListSellerOrdersAsync(
+            orgId,
+            status: apiStatus,
+            page: 1,
+            pageSize: pageSize);
+
+        if (!result.IsSuccess || result.Data is null)
+        {
+            _orders = [];
+            _error = result.Error?.Detail ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
+            _loading = false;
+            return;
+        }
+
+        _orders = ApplyClientFilter(result.Data.Items, _filter);
+        _loading = false;
+    }
+
+    private static (string? Status, int PageSize) ApiQueryForFilter(string filter) =>
+        filter switch
+        {
+            "New" => ("Submitted", 40),
+            "Preparing" or "Ready" => ("Accepted", 80),
+            "Issues" => (null, 80),
+            _ => (null, 40)
+        };
+
+    private static IReadOnlyList<CustomerOrderListItemDto> ApplyClientFilter(
+        IReadOnlyList<CustomerOrderListItemDto> items,
+        string filter) =>
+        filter switch
+        {
+            "Preparing" => items
+                .Where(o => Is(o.FulfillmentStatus, "Preparing") || Is(o.FulfillmentStatus, "Pending"))
+                .ToList(),
+            "Ready" => items
+                .Where(o => Is(o.FulfillmentStatus, "Ready")
+                            || Is(o.FulfillmentStatus, "ReadyForPickup")
+                            || Is(o.FulfillmentStatus, "OutForDelivery"))
+                .ToList(),
+            "Issues" => items
+                .Where(o => Is(o.Status, "Rejected") || Is(o.Status, "Cancelled"))
+                .ToList(),
+            _ => items
+        };
+
+    private string DisplayStatus(CustomerOrderListItemDto order)
+    {
+        if (Is(order.Status, "Submitted"))
+        {
+            return L["Orders_Status_New"];
+        }
+
+        if (Is(order.Status, "Rejected"))
+        {
+            return L["Orders_Status_Rejected"];
+        }
+
+        if (Is(order.Status, "Cancelled"))
+        {
+            return L["Orders_Status_Cancelled"];
+        }
+
+        if (Is(order.Status, "Completed"))
+        {
+            return L["Orders_Status_Completed"];
+        }
+
+        return FulfillmentStatusLabel(order.FulfillmentStatus);
+    }
+
+    private string FulfillmentStatusLabel(string status) =>
+        status switch
+        {
+            "Preparing" => L["Orders_Status_Preparing"],
+            "Ready" => L["Orders_Status_Ready"],
+            "ReadyForPickup" => L["Orders_Status_ReadyForPickup"],
+            "OutForDelivery" => L["Orders_Status_OutForDelivery"],
+            "Delivered" => L["Orders_Status_Delivered"],
+            "Collected" => L["Orders_Status_Collected"],
+            _ => status
+        };
+
+    private string FulfillmentLabel(string type) =>
+        Is(type, "Delivery") ? L["Orders_Delivery"] : L["Orders_Pickup"];
+
+    private static BadgeTone StatusTone(CustomerOrderListItemDto order)
+    {
+        if (Is(order.Status, "Submitted"))
+        {
+            return BadgeTone.Primary;
+        }
+
+        if (Is(order.Status, "Rejected") || Is(order.Status, "Cancelled"))
+        {
+            return BadgeTone.Danger;
+        }
+
+        if (Is(order.Status, "Completed")
+            || Is(order.FulfillmentStatus, "Delivered")
+            || Is(order.FulfillmentStatus, "Collected"))
+        {
+            return BadgeTone.Success;
+        }
+
+        if (Is(order.FulfillmentStatus, "Ready")
+            || Is(order.FulfillmentStatus, "ReadyForPickup"))
+        {
+            return BadgeTone.Info;
+        }
+
+        return BadgeTone.Warning;
+    }
+
+    private string RelativeTime(DateTimeOffset utc)
+    {
+        var local = utc.ToLocalTime();
+        var span = DateTimeOffset.Now - local;
+        if (span.TotalMinutes < 1)
+        {
+            return L["Orders_JustNow"];
+        }
+
+        if (span.TotalHours < 1)
+        {
+            return L["Orders_MinutesAgo", Math.Max(1, (int)span.TotalMinutes)];
+        }
+
+        if (span.TotalHours < 24)
+        {
+            return L["Orders_HoursAgo", Math.Max(1, (int)span.TotalHours)];
+        }
+
+        return local.ToString("g");
+    }
+
+    private static bool Is(string? value, string expected) =>
+        string.Equals(value, expected, StringComparison.OrdinalIgnoreCase);
+
+    private sealed record OrderFilter(string Value, string LabelKey);
+}

@@ -14156,3 +14156,219 @@ html:has(.pos-denom-sheet) .pos-denom-sheet {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
+
+/* Phase 28 Stage B: compact customer-order seller/personal UX. */
+.pos-orders__header,
+.pos-orders__card-top,
+.pos-orders__totals > div {
+    align-items: flex-start;
+    display: flex;
+    gap: .5rem;
+    justify-content: space-between;
+}
+
+.pos-orders h1,
+.pos-orders h2,
+.pos-orders p {
+    margin-top: 0;
+}
+
+.pos-orders__header {
+    margin-bottom: .5rem;
+}
+
+.pos-orders__header h1 {
+    font-size: 1.15rem;
+    margin-bottom: .15rem;
+}
+
+.pos-orders__filters {
+    display: flex;
+    gap: .4rem;
+    margin: 0 0 .65rem;
+    overflow-x: auto;
+    padding-bottom: .15rem;
+    scrollbar-width: thin;
+}
+
+.pos-orders__filter {
+    background: var(--exits-surface, #fff);
+    border: 1px solid var(--exits-border, #c9d5ce);
+    border-radius: 999px;
+    color: var(--exits-text, #15201a);
+    cursor: pointer;
+    flex: 0 0 auto;
+    font: inherit;
+    font-size: .8rem;
+    min-height: 2.25rem;
+    padding: .35rem .7rem;
+}
+
+.pos-orders__filter--active {
+    background: var(--exits-primary, #1b7a3d);
+    border-color: var(--exits-primary, #1b7a3d);
+    color: #fff;
+    font-weight: 650;
+}
+
+.pos-orders__list,
+.pos-orders__section,
+.pos-orders__lines,
+.pos-orders__totals {
+    display: grid;
+    gap: .55rem;
+}
+
+.pos-orders__card,
+.pos-orders__section,
+.pos-orders__line {
+    background: var(--exits-surface, #fff);
+    border: 1px solid var(--exits-border, #dce5df);
+    border-radius: .7rem;
+    padding: .7rem .75rem;
+}
+
+.pos-orders__card {
+    color: inherit;
+    display: grid;
+    gap: .2rem;
+    text-decoration: none;
+}
+
+.pos-orders__card strong {
+    font-size: .9rem;
+}
+
+.pos-orders__meta {
+    color: var(--exits-text-muted, #5b6b62);
+    font-size: .75rem;
+    line-height: 1.3;
+}
+
+.pos-orders__facts {
+    display: grid;
+    gap: .35rem .75rem;
+    grid-template-columns: auto 1fr;
+    font-size: .85rem;
+}
+
+.pos-orders__address {
+    display: grid;
+    gap: .15rem;
+    margin-top: .55rem;
+}
+
+.pos-orders__address p {
+    margin: 0;
+}
+
+.pos-orders__line {
+    align-items: start;
+    display: grid;
+    gap: .35rem;
+    grid-template-columns: 1fr auto;
+}
+
+.pos-orders__line-qty {
+    color: var(--exits-text-muted, #5b6b62);
+    font-size: .75rem;
+    grid-column: 1 / -1;
+}
+
+.pos-orders__totals {
+    border-top: 1px solid var(--exits-border, #dce5df);
+    font-size: .85rem;
+    margin-top: .25rem;
+    padding-top: .55rem;
+}
+
+.pos-orders__totals-total {
+    font-size: .95rem;
+}
+
+.pos-orders__field {
+    display: grid;
+    font-size: .85rem;
+    font-weight: 600;
+    gap: .3rem;
+    margin-bottom: .55rem;
+}
+
+.pos-orders__field select {
+    border: 1px solid var(--exits-border, #cbd8d0);
+    border-radius: .5rem;
+    min-height: 2.75rem;
+    padding: .5rem;
+}
+
+.pos-orders__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .45rem;
+    margin-top: .65rem;
+}
+
+.pos-orders__actions--sticky {
+    background: var(--exits-bg, #f4f7f5);
+    bottom: 0;
+    margin-top: .85rem;
+    padding: .65rem 0 .25rem;
+    position: sticky;
+    z-index: var(--exits-z-sticky, 20);
+}
+
+.pos-orders__loading {
+    align-items: center;
+    display: flex;
+    gap: .5rem;
+}
+
+.pos-orders__back {
+    background: transparent;
+    border: 0;
+    color: var(--exits-primary, #1b7a3d);
+    cursor: pointer;
+    font: inherit;
+    font-size: .8rem;
+    font-weight: 650;
+    margin: 0 0 .25rem;
+    padding: 0;
+}
+
+.pos-orders__timeline {
+    display: grid;
+    gap: .55rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.pos-orders__timeline-step {
+    align-items: flex-start;
+    color: var(--exits-text-muted, #5b6b62);
+    display: flex;
+    gap: .55rem;
+}
+
+.pos-orders__timeline-step--done,
+.pos-orders__timeline-step--current {
+    color: var(--exits-text, #15201a);
+}
+
+.pos-orders__timeline-dot {
+    background: var(--exits-border, #c9d5ce);
+    border-radius: 999px;
+    flex: 0 0 auto;
+    height: .7rem;
+    margin-top: .35rem;
+    width: .7rem;
+}
+
+.pos-orders__timeline-step--done .pos-orders__timeline-dot,
+.pos-orders__timeline-step--current .pos-orders__timeline-dot {
+    background: var(--exits-primary, #1b7a3d);
+}
+
+.pos-orders__timeline-step--current strong {
+    font-weight: 750;
+}

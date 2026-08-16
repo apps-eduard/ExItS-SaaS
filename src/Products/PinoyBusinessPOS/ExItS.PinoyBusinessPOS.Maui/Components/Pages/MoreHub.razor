@@ -64,6 +64,15 @@
                         </button>
                     }
 
+                    @if (Capabilities.IsAllowed(UtangCapability.ViewCustomerOrders)
+                         || Capabilities.IsAllowed(UtangCapability.ManageCustomerOrders))
+                    {
+                        <button type="button" class="pos-action-tile" @onclick="GoOrders">
+                            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("receipt")</span>
+                            <span class="pos-action-tile__label">@L["Orders_Title"]</span>
+                        </button>
+                    }
+
                     <button type="button" class="pos-action-tile" @onclick="GoOverdue">
                         <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("warning")</span>
                         <span class="pos-action-tile__label">@L["Overdue_OpenOrg"]</span>
@@ -220,6 +229,7 @@
     private async Task GoRoleHome() => Nav.NavigateTo(await RoleHome.ResolvePosHomeAsync());
     private Task GoOrg() => OfflineNav.NavigateAsync("/org");
     private Task GoBranches() => OfflineNav.NavigateAsync("/organization/branches");
+    private Task GoOrders() => OfflineNav.NavigateAsync("/orders");
     private Task GoSalesDocumentEducation() => OfflineNav.NavigateAsync("/sales-document-education");
     private Task GoOverdue() => OfflineNav.NavigateAsync("/overdue");
     private Task GoInventory() => OfflineNav.NavigateAsync("/inventory");

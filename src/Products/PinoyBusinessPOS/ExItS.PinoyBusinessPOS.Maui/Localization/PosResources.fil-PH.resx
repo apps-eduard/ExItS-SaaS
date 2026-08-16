@@ -9326,4 +9326,72 @@
   <data name="Branches_FreeThreshold" xml:space="preserve"><value>Halaga para sa libreng delivery</value></data>
   <data name="Branches_FeeExamples" xml:space="preserve"><value>Halimbawa ng delivery fee</value></data>
   <data name="Branches_ColStatus" xml:space="preserve"><value>Status</value></data>
+  <data name="Orders_Title" xml:space="preserve"><value>Mga order</value></data>
+  <data name="Orders_SellerSubtitle" xml:space="preserve"><value>Suriin at tuparin ang pickup at delivery orders ng customer.</value></data>
+  <data name="Orders_PersonalSubtitle" xml:space="preserve"><value>Subaybayan ang mga order na inilagay mo sa mga merchant.</value></data>
+  <data name="Orders_FilterLabel" xml:space="preserve"><value>Mga filter ng order</value></data>
+  <data name="Orders_Filter_New" xml:space="preserve"><value>Bago</value></data>
+  <data name="Orders_Filter_Preparing" xml:space="preserve"><value>Inihahanda</value></data>
+  <data name="Orders_Filter_Ready" xml:space="preserve"><value>Handa</value></data>
+  <data name="Orders_Filter_Issues" xml:space="preserve"><value>Problema</value></data>
+  <data name="Orders_Filter_All" xml:space="preserve"><value>Lahat</value></data>
+  <data name="Orders_Pickup" xml:space="preserve"><value>Pickup</value></data>
+  <data name="Orders_Delivery" xml:space="preserve"><value>Delivery</value></data>
+  <data name="Orders_Accept" xml:space="preserve"><value>Tanggapin</value></data>
+  <data name="Orders_Reject" xml:space="preserve"><value>Tanggihan</value></data>
+  <data name="Orders_PlaceOrder" xml:space="preserve"><value>Mag-order</value></data>
+  <data name="Orders_WaitingForSeller" xml:space="preserve"><value>Naghihintay sa seller</value></data>
+  <data name="Orders_OutForDelivery" xml:space="preserve"><value>Papunta na</value></data>
+  <data name="Orders_MarkDelivered" xml:space="preserve"><value>Markahang naihatid</value></data>
+  <data name="Orders_MarkCollected" xml:space="preserve"><value>Markahang nakuha</value></data>
+  <data name="Orders_MarkReady" xml:space="preserve"><value>Markahang handa</value></data>
+  <data name="Orders_ReadyForPickup" xml:space="preserve"><value>Handa para sa pickup</value></data>
+  <data name="Orders_StartPreparing" xml:space="preserve"><value>Simulang ihanda</value></data>
+  <data name="Orders_Complete" xml:space="preserve"><value>Kumpletuhin</value></data>
+  <data name="Orders_Status_New" xml:space="preserve"><value>Bago</value></data>
+  <data name="Orders_Status_Preparing" xml:space="preserve"><value>Inihahanda</value></data>
+  <data name="Orders_Status_Ready" xml:space="preserve"><value>Handa</value></data>
+  <data name="Orders_Status_ReadyForPickup" xml:space="preserve"><value>Handa para sa pickup</value></data>
+  <data name="Orders_Status_OutForDelivery" xml:space="preserve"><value>Papunta na</value></data>
+  <data name="Orders_Status_Delivered" xml:space="preserve"><value>Naihatid</value></data>
+  <data name="Orders_Status_Collected" xml:space="preserve"><value>Nakuha</value></data>
+  <data name="Orders_Status_Completed" xml:space="preserve"><value>Tapos na</value></data>
+  <data name="Orders_Status_Cancelled" xml:space="preserve"><value>Kinansela</value></data>
+  <data name="Orders_Status_Rejected" xml:space="preserve"><value>Tinanggihan</value></data>
+  <data name="Orders_MinOrderHelper" xml:space="preserve"><value>Dapat maabot ng order ang minimum ng branch.</value></data>
+  <data name="Orders_OutsideDeliveryArea" xml:space="preserve"><value>Labas sa delivery area</value></data>
+  <data name="Orders_ChooseBranch" xml:space="preserve"><value>Pumili ng branch</value></data>
+  <data name="Orders_ItemCount" xml:space="preserve"><value>{0} items</value></data>
+  <data name="Orders_Items" xml:space="preserve"><value>Mga item</value></data>
+  <data name="Orders_JustNow" xml:space="preserve"><value>Ngayon lang</value></data>
+  <data name="Orders_MinutesAgo" xml:space="preserve"><value>{0}m ang nakalipas</value></data>
+  <data name="Orders_HoursAgo" xml:space="preserve"><value>{0}h ang nakalipas</value></data>
+  <data name="Orders_EmptyTitle" xml:space="preserve"><value>Wala pang order</value></data>
+  <data name="Orders_EmptyMessage" xml:space="preserve"><value>Lalabas dito ang mga bagong customer order.</value></data>
+  <data name="Orders_PersonalEmptyTitle" xml:space="preserve"><value>Wala pang order</value></data>
+  <data name="Orders_PersonalEmptyMessage" xml:space="preserve"><value>Lalabas dito ang mga order na inilagay mo sa mga merchant.</value></data>
+  <data name="Orders_Error" xml:space="preserve"><value>Mga order</value></data>
+  <data name="Orders_Offline" xml:space="preserve"><value>Kailangan ng network ang mga order.</value></data>
+  <data name="Orders_NotFound" xml:space="preserve"><value>Hindi nakita ang order</value></data>
+  <data name="Orders_NotFoundHelp" xml:space="preserve"><value>Hindi available o hindi na nakikita ang order na ito.</value></data>
+  <data name="Orders_Branch" xml:space="preserve"><value>Branch</value></data>
+  <data name="Orders_Party" xml:space="preserve"><value>Customer</value></data>
+  <data name="Orders_Status" xml:space="preserve"><value>Status</value></data>
+  <data name="Orders_DeliveryAddress" xml:space="preserve"><value>Address ng delivery</value></data>
+  <data name="Orders_Lines" xml:space="preserve"><value>Mga linya</value></data>
+  <data name="Orders_Subtotal" xml:space="preserve"><value>Subtotal</value></data>
+  <data name="Orders_DeliveryFee" xml:space="preserve"><value>Bayad sa delivery</value></data>
+  <data name="Orders_Merchandise" xml:space="preserve"><value>Mga produkto</value></data>
+  <data name="Orders_Total" xml:space="preserve"><value>Kabuuan</value></data>
+  <data name="Orders_Actions" xml:space="preserve"><value>Mga aksyon sa order</value></data>
+  <data name="Orders_RejectReason" xml:space="preserve"><value>Dahilan ng pagtanggi</value></data>
+  <data name="Orders_RejectNotes" xml:space="preserve"><value>Mga tala</value></data>
+  <data name="Orders_Reject_OutOfStock" xml:space="preserve"><value>Walang stock</value></data>
+  <data name="Orders_Reject_StoreTooBusy" xml:space="preserve"><value>Abala ang tindahan</value></data>
+  <data name="Orders_Reject_DeliveryUnavailable" xml:space="preserve"><value>Hindi available ang delivery</value></data>
+  <data name="Orders_Reject_UnableToFulfill" xml:space="preserve"><value>Hindi matupad</value></data>
+  <data name="Orders_Reject_Other" xml:space="preserve"><value>Iba pa</value></data>
+  <data name="Orders_Timeline" xml:space="preserve"><value>Timeline ng status</value></data>
+  <data name="Orders_Timeline_Placed" xml:space="preserve"><value>Nailagay</value></data>
+  <data name="Orders_Timeline_Accepted" xml:space="preserve"><value>Tinanggap</value></data>
 </root>

@@ -1,0 +1,170 @@
+@page "/personal/orders"
+@layout Layout.PersonalShell
+@using ExItS.DesignSystem.Components.Internal
+@using ExItS.PinoyBusinessPOS.Application.CustomerOrdering
+@inject NavigationManager Nav
+@inject IAuthenticationService Auth
+@inject ICurrentUserContext CurrentUser
+@inject IPosCustomerOrderClient Orders
+@inject IConnectivityService Connectivity
+@inject ApiStatusLocalizer ApiLocalizer
+@inject IStringLocalizer<PosResources> L
+
+<div class="pos-orders pos-personal-orders">
+    <Page>
+        <header class="pos-orders__header">
+            <h1>@L["Orders_Title"]</h1>
+            <p class="pos-muted">@L["Orders_PersonalSubtitle"]</p>
+        </header>
+
+        @if (_loading)
+        {
+            <div class="pos-orders__loading"><Spinner /><span>@L["Common_Loading"]</span></div>
+        }
+        else if (!_authenticated)
+        {
+            <ErrorState Title="@L["Auth_SessionExpiredTitle"]" Message="@L["Auth_SessionExpired"]" RetryLabel="@L["SignIn_Submit"]" OnRetry="GoSignIn" />
+        }
+        else if (!string.IsNullOrWhiteSpace(_error))
+        {
+            <Alert Tone="AlertTone.Danger" Title="@L["Orders_Error"]" Message="@_error" />
+        }
+        else if (_orders.Count == 0)
+        {
+            <EmptyState IconName="receipt" Title="@L["Orders_PersonalEmptyTitle"]" Message="@L["Orders_PersonalEmptyMessage"]" />
+        }
+        else
+        {
+            <div class="pos-orders__list" role="list">
+                @foreach (var order in _orders)
+                {
+                    <a class="pos-orders__card"
+                       role="listitem"
+                       href="@($"/personal/orders/{order.OrderId:D}")">
+                        <div class="pos-orders__card-top">
+                            <strong>#@order.OrderNumber</strong>
+                            <Badge Tone="@StatusTone(order)">@DisplayStatus(order)</Badge>
+                        </div>
+                        <div class="pos-orders__meta">
+                            @order.BranchNameSnapshot · @FulfillmentLabel(order.FulfillmentType)
+                        </div>
+                        <div class="pos-orders__meta">
+                            <MoneyDisplay Amount="@order.Total" CurrencyCode="PHP" />
+                            · @L["Orders_ItemCount", order.LineCount]
+                            · @order.UpdatedAtUtc.ToLocalTime().ToString("g")
+                        </div>
+                    </a>
+                }
+            </div>
+        }
+    </Page>
+</div>
+
+@code {
+    private bool _loading = true;
+    private bool _authenticated;
+    private string? _error;
+    private IReadOnlyList<CustomerOrderListItemDto> _orders = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!CurrentUser.IsAuthenticated)
+        {
+            var restore = await Auth.RestoreSessionAsync();
+            _authenticated = restore.Succeeded;
+        }
+        else
+        {
+            _authenticated = true;
+        }
+
+        if (!_authenticated)
+        {
+            _loading = false;
+            return;
+        }
+
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+        if (!await Connectivity.IsConnectedAsync())
+        {
+            _orders = [];
+            _error = L["Orders_Offline"];
+            _loading = false;
+            return;
+        }
+
+        var result = await Orders.ListMineAsync(partyType: "Personal", page: 1, pageSize: 40);
+        _orders = result.IsSuccess && result.Data is not null ? result.Data.Items : [];
+        _error = result.IsSuccess ? null : result.Error?.Detail ?? ApiLocalizer.Describe(result.Status, result.Error).Message;
+        _loading = false;
+    }
+
+    private string DisplayStatus(CustomerOrderListItemDto order)
+    {
+        if (Is(order.Status, "Submitted"))
+        {
+            return L["Orders_WaitingForSeller"];
+        }
+
+        if (Is(order.Status, "Rejected"))
+        {
+            return L["Orders_Status_Rejected"];
+        }
+
+        if (Is(order.Status, "Cancelled"))
+        {
+            return L["Orders_Status_Cancelled"];
+        }
+
+        if (Is(order.Status, "Completed"))
+        {
+            return L["Orders_Status_Completed"];
+        }
+
+        return order.FulfillmentStatus switch
+        {
+            "Preparing" => L["Orders_Status_Preparing"],
+            "Ready" or "ReadyForPickup" => L["Orders_Status_Ready"],
+            "OutForDelivery" => L["Orders_Status_OutForDelivery"],
+            "Delivered" => L["Orders_Status_Delivered"],
+            "Collected" => L["Orders_Status_Collected"],
+            _ => order.Status
+        };
+    }
+
+    private string FulfillmentLabel(string type) =>
+        Is(type, "Delivery") ? L["Orders_Delivery"] : L["Orders_Pickup"];
+
+    private static BadgeTone StatusTone(CustomerOrderListItemDto order)
+    {
+        if (Is(order.Status, "Submitted"))
+        {
+            return BadgeTone.Primary;
+        }
+
+        if (Is(order.Status, "Rejected") || Is(order.Status, "Cancelled"))
+        {
+            return BadgeTone.Danger;
+        }
+
+        if (Is(order.Status, "Completed")
+            || Is(order.FulfillmentStatus, "Delivered")
+            || Is(order.FulfillmentStatus, "Collected"))
+        {
+            return BadgeTone.Success;
+        }
+
+        return BadgeTone.Warning;
+    }
+
+    private static bool Is(string? value, string expected) =>
+        string.Equals(value, expected, StringComparison.OrdinalIgnoreCase);
+
+    private void GoSignIn() => Nav.NavigateTo("/signin");
+}

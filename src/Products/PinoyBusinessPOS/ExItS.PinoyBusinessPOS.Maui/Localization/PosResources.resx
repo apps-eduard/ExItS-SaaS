@@ -9326,4 +9326,72 @@
   <data name="Branches_FreeThreshold" xml:space="preserve"><value>Free delivery threshold</value></data>
   <data name="Branches_FeeExamples" xml:space="preserve"><value>Example delivery fees</value></data>
   <data name="Branches_ColStatus" xml:space="preserve"><value>Status</value></data>
+  <data name="Orders_Title" xml:space="preserve"><value>Orders</value></data>
+  <data name="Orders_SellerSubtitle" xml:space="preserve"><value>Review and fulfill customer pickup and delivery orders.</value></data>
+  <data name="Orders_PersonalSubtitle" xml:space="preserve"><value>Track orders you placed with merchants.</value></data>
+  <data name="Orders_FilterLabel" xml:space="preserve"><value>Order filters</value></data>
+  <data name="Orders_Filter_New" xml:space="preserve"><value>New</value></data>
+  <data name="Orders_Filter_Preparing" xml:space="preserve"><value>Preparing</value></data>
+  <data name="Orders_Filter_Ready" xml:space="preserve"><value>Ready</value></data>
+  <data name="Orders_Filter_Issues" xml:space="preserve"><value>Issues</value></data>
+  <data name="Orders_Filter_All" xml:space="preserve"><value>All</value></data>
+  <data name="Orders_Pickup" xml:space="preserve"><value>Pickup</value></data>
+  <data name="Orders_Delivery" xml:space="preserve"><value>Delivery</value></data>
+  <data name="Orders_Accept" xml:space="preserve"><value>Accept</value></data>
+  <data name="Orders_Reject" xml:space="preserve"><value>Reject</value></data>
+  <data name="Orders_PlaceOrder" xml:space="preserve"><value>Place order</value></data>
+  <data name="Orders_WaitingForSeller" xml:space="preserve"><value>Waiting for seller</value></data>
+  <data name="Orders_OutForDelivery" xml:space="preserve"><value>Out for delivery</value></data>
+  <data name="Orders_MarkDelivered" xml:space="preserve"><value>Mark delivered</value></data>
+  <data name="Orders_MarkCollected" xml:space="preserve"><value>Mark collected</value></data>
+  <data name="Orders_MarkReady" xml:space="preserve"><value>Mark ready</value></data>
+  <data name="Orders_ReadyForPickup" xml:space="preserve"><value>Ready for pickup</value></data>
+  <data name="Orders_StartPreparing" xml:space="preserve"><value>Start preparing</value></data>
+  <data name="Orders_Complete" xml:space="preserve"><value>Complete</value></data>
+  <data name="Orders_Status_New" xml:space="preserve"><value>New</value></data>
+  <data name="Orders_Status_Preparing" xml:space="preserve"><value>Preparing</value></data>
+  <data name="Orders_Status_Ready" xml:space="preserve"><value>Ready</value></data>
+  <data name="Orders_Status_ReadyForPickup" xml:space="preserve"><value>Ready for pickup</value></data>
+  <data name="Orders_Status_OutForDelivery" xml:space="preserve"><value>Out for delivery</value></data>
+  <data name="Orders_Status_Delivered" xml:space="preserve"><value>Delivered</value></data>
+  <data name="Orders_Status_Collected" xml:space="preserve"><value>Collected</value></data>
+  <data name="Orders_Status_Completed" xml:space="preserve"><value>Completed</value></data>
+  <data name="Orders_Status_Cancelled" xml:space="preserve"><value>Cancelled</value></data>
+  <data name="Orders_Status_Rejected" xml:space="preserve"><value>Rejected</value></data>
+  <data name="Orders_MinOrderHelper" xml:space="preserve"><value>Order total must meet the branch minimum.</value></data>
+  <data name="Orders_OutsideDeliveryArea" xml:space="preserve"><value>Outside delivery area</value></data>
+  <data name="Orders_ChooseBranch" xml:space="preserve"><value>Choose branch</value></data>
+  <data name="Orders_ItemCount" xml:space="preserve"><value>{0} items</value></data>
+  <data name="Orders_Items" xml:space="preserve"><value>Items</value></data>
+  <data name="Orders_JustNow" xml:space="preserve"><value>Just now</value></data>
+  <data name="Orders_MinutesAgo" xml:space="preserve"><value>{0}m ago</value></data>
+  <data name="Orders_HoursAgo" xml:space="preserve"><value>{0}h ago</value></data>
+  <data name="Orders_EmptyTitle" xml:space="preserve"><value>No orders yet</value></data>
+  <data name="Orders_EmptyMessage" xml:space="preserve"><value>New customer orders will show up here.</value></data>
+  <data name="Orders_PersonalEmptyTitle" xml:space="preserve"><value>No orders yet</value></data>
+  <data name="Orders_PersonalEmptyMessage" xml:space="preserve"><value>Orders you place with merchants will appear here.</value></data>
+  <data name="Orders_Error" xml:space="preserve"><value>Orders</value></data>
+  <data name="Orders_Offline" xml:space="preserve"><value>Orders need a network connection.</value></data>
+  <data name="Orders_NotFound" xml:space="preserve"><value>Order not found</value></data>
+  <data name="Orders_NotFoundHelp" xml:space="preserve"><value>This order is unavailable or no longer visible.</value></data>
+  <data name="Orders_Branch" xml:space="preserve"><value>Branch</value></data>
+  <data name="Orders_Party" xml:space="preserve"><value>Customer</value></data>
+  <data name="Orders_Status" xml:space="preserve"><value>Status</value></data>
+  <data name="Orders_DeliveryAddress" xml:space="preserve"><value>Delivery address</value></data>
+  <data name="Orders_Lines" xml:space="preserve"><value>Lines</value></data>
+  <data name="Orders_Subtotal" xml:space="preserve"><value>Subtotal</value></data>
+  <data name="Orders_DeliveryFee" xml:space="preserve"><value>Delivery fee</value></data>
+  <data name="Orders_Merchandise" xml:space="preserve"><value>Merchandise</value></data>
+  <data name="Orders_Total" xml:space="preserve"><value>Total</value></data>
+  <data name="Orders_Actions" xml:space="preserve"><value>Order actions</value></data>
+  <data name="Orders_RejectReason" xml:space="preserve"><value>Reject reason</value></data>
+  <data name="Orders_RejectNotes" xml:space="preserve"><value>Notes</value></data>
+  <data name="Orders_Reject_OutOfStock" xml:space="preserve"><value>Out of stock</value></data>
+  <data name="Orders_Reject_StoreTooBusy" xml:space="preserve"><value>Store too busy</value></data>
+  <data name="Orders_Reject_DeliveryUnavailable" xml:space="preserve"><value>Delivery unavailable</value></data>
+  <data name="Orders_Reject_UnableToFulfill" xml:space="preserve"><value>Unable to fulfill</value></data>
+  <data name="Orders_Reject_Other" xml:space="preserve"><value>Other</value></data>
+  <data name="Orders_Timeline" xml:space="preserve"><value>Status timeline</value></data>
+  <data name="Orders_Timeline_Placed" xml:space="preserve"><value>Placed</value></data>
+  <data name="Orders_Timeline_Accepted" xml:space="preserve"><value>Accepted</value></data>
 </root>
