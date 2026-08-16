@@ -82,26 +82,9 @@
 
 ## Delivery
 
-- [Portfolio progress](portfolio-progress.md)
-- [Phase 1 architecture approval](reports/phase-01-architecture-approval.md)
-- [P2-WP01 foundation report](reports/P2-WP01-extraction-baseline-and-safety.md)
-- [P2-WP02 identity/organization report](reports/P2-WP02-identity-organization-boundary.md)
-- [P2-WP03 products/plans/entitlements report](reports/P2-WP03-products-plans-entitlements.md)
-- [P2-WP05 regression and migration validation report](reports/P2-WP05-regression-and-migration-validation.md)
-- [P2-WP06 foundation closeout report](reports/P2-WP06-extraction-closeout.md)
-- [Phase 2 platform foundation closeout](reports/phase-02-extraction-closeout.md)
-- [Phase 2 evidence matrix](engineering/phase-02-evidence-matrix.md)
-- [P3-WP01 product and plan catalog report](reports/P3-WP01-product-and-plan-catalog.md)
-- [P3-WP02 trials and subscription lifecycle report](reports/P3-WP02-trials-and-subscription-lifecycle.md)
-- [P3-WP03 manual payment activation report](reports/P3-WP03-manual-payment-activation.md)
-- [P3-WP04 entitlement snapshots and grace rules report](reports/P3-WP04-entitlement-snapshots-and-grace-rules.md)
-- [P3-WP05 billing closeout report](reports/P3-WP05-billing-closeout.md)
-- [P4-WP01 portfolio navigation and product views report](reports/P4-WP01-portfolio-navigation-and-product-views.md)
-- [P4-WP02 organizations, users and product access report](reports/P4-WP02-organizations-users-and-product-access.md)
-- [P4-WP03 subscriptions, payments and trials report](reports/P4-WP03-subscriptions-payments-and-trials.md)
-- [P4-WP04 audit, authorization and closeout report](reports/P4-WP04-audit-authorization-and-closeout.md)
-- [P5-WP01 MAUI solution and API client report](reports/P5-WP01-maui-solution-and-api-client.md)
-- [All phases](phases/README.md)
+- [Portfolio progress](portfolio-progress.md) — current status and latest verified work
+- [All phases](phases/README.md) — authoritative phase roadmap (Phases 1–29)
+- [Completion / work-package reports](reports/README.md) — authoritative report index
+- [Phase 29 — Data Integrity & DB Hardening](phases/phase-29-data-integrity-query-performance-and-database-hardening.md) — current active phase (Open / Partial Closeout)
 - [Risks and issues](risks-and-issues.md)
 - [Decisions](decisions/README.md)
-- [Cursor reports](reports/README.md)
