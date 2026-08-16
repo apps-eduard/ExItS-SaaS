@@ -510,6 +510,9 @@ public sealed class PlatformDbContext : DbContext
                 tb.HasCheckConstraint(
                     "ck_organization_branches_longitude",
                     "longitude IS NULL OR (longitude >= -180 AND longitude <= 180)");
+                tb.HasCheckConstraint(
+                    "ck_organization_branches_lat_long_pair",
+                    "(latitude IS NULL AND longitude IS NULL) OR (latitude IS NOT NULL AND longitude IS NOT NULL)");
             });
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).HasColumnName("id");
@@ -531,6 +534,9 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
             entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
             entity.HasIndex(e => new { e.OrganizationId, e.Code }).IsUnique();
+            entity.HasIndex(e => new { e.Id, e.OrganizationId })
+                .IsUnique()
+                .HasDatabaseName("ux_organization_branches_id_organization_id");
             entity.HasIndex(e => e.Status);
             entity.HasOne<PlatformOrganizationRecord>().WithMany().HasForeignKey(e => e.OrganizationId).OnDelete(DeleteBehavior.Restrict);
         });
@@ -557,8 +563,12 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
             entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
             entity.HasIndex(e => e.OrganizationId);
-            entity.HasOne<OrganizationBranchRecord>().WithMany().HasForeignKey(e => e.BranchId).OnDelete(DeleteBehavior.Cascade);
-            entity.HasOne<PlatformOrganizationRecord>().WithMany().HasForeignKey(e => e.OrganizationId).OnDelete(DeleteBehavior.Restrict);
+            // Composite tenant FK: policy org must match the branch's organization.
+            entity.HasOne<OrganizationBranchRecord>()
+                .WithMany()
+                .HasForeignKey(e => new { e.BranchId, e.OrganizationId })
+                .HasPrincipalKey(b => new { b.Id, b.OrganizationId })
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<PosDeviceRecord>(entity =>

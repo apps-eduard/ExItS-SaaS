@@ -1074,6 +1074,21 @@ public sealed class PosDbContext : DbContext
                 tb.HasCheckConstraint(
                     "ck_customer_orders_totals_non_negative",
                     "merchandise_subtotal >= 0 AND delivery_fee >= 0 AND total >= 0");
+                tb.HasCheckConstraint(
+                    "ck_customer_orders_party_xor",
+                    "(customer_party_type = 'Personal' AND customer_platform_user_id IS NOT NULL AND customer_buyer_organization_id IS NULL)"
+                    + " OR (customer_party_type = 'Organization' AND customer_buyer_organization_id IS NOT NULL AND customer_platform_user_id IS NULL)");
+                tb.HasCheckConstraint(
+                    "ck_customer_orders_money_identity",
+                    "total = merchandise_subtotal + delivery_fee");
+                tb.HasCheckConstraint(
+                    "ck_customer_orders_delivery_destination_lat_long_pair",
+                    "(delivery_destination_latitude IS NULL AND delivery_destination_longitude IS NULL)"
+                    + " OR (delivery_destination_latitude IS NOT NULL AND delivery_destination_longitude IS NOT NULL)");
+                tb.HasCheckConstraint(
+                    "ck_customer_orders_delivery_branch_lat_long_pair",
+                    "(delivery_branch_latitude_snapshot IS NULL AND delivery_branch_longitude_snapshot IS NULL)"
+                    + " OR (delivery_branch_latitude_snapshot IS NOT NULL AND delivery_branch_longitude_snapshot IS NOT NULL)");
             });
 
             entity.HasKey(e => e.Id);
@@ -1179,6 +1194,14 @@ public sealed class PosDbContext : DbContext
             entity.HasIndex(e => new { e.SellerOrganizationId, e.CustomerBuyerOrganizationId })
                 .HasDatabaseName("ix_customer_orders_org_customer_buyer_org")
                 .HasFilter("customer_buyer_organization_id IS NOT NULL");
+            entity.HasIndex(e => new { e.CustomerPlatformUserId, e.CreatedAtUtc })
+                .HasDatabaseName("ix_customer_orders_customer_user_created_at")
+                .HasFilter("customer_platform_user_id IS NOT NULL")
+                .IsDescending(false, true);
+            entity.HasIndex(e => new { e.CustomerBuyerOrganizationId, e.CreatedAtUtc })
+                .HasDatabaseName("ix_customer_orders_customer_buyer_org_created_at")
+                .HasFilter("customer_buyer_organization_id IS NOT NULL")
+                .IsDescending(false, true);
             entity.HasIndex(e => new { e.SellerOrganizationId, e.IdempotencyKey })
                 .IsUnique()
                 .HasDatabaseName("ux_customer_orders_org_idempotency")
