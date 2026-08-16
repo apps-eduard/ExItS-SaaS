@@ -24,6 +24,45 @@ public sealed class ConnectedSupplierClientUiGuardTests
             File.ReadAllText(Path.Combine(suppliers, "LinkedSupplierProducts.razor")), StringComparison.Ordinal);
         Assert.Contains("@page \"/connected-suppliers/incoming\"",
             File.ReadAllText(Path.Combine(purchasing, "ConnectedSupplierIncomingOrders.razor")), StringComparison.Ordinal);
+        Assert.Contains("@page \"/connected-suppliers/incoming/{OrderId:guid}\"",
+            File.ReadAllText(Path.Combine(purchasing, "ConnectedSupplierIncomingOrderDetail.razor")), StringComparison.Ordinal);
+        Assert.Contains("PrepareIncomingAsync",
+            File.ReadAllText(Path.Combine(purchasing, "ConnectedSupplierIncomingOrderDetail.razor")), StringComparison.Ordinal);
+        Assert.Contains("FulfillIncomingAsync",
+            File.ReadAllText(Path.Combine(purchasing, "ConnectedSupplierIncomingOrderDetail.razor")), StringComparison.Ordinal);
+        Assert.Contains("DisplayStatus",
+            File.ReadAllText(Path.Combine(purchasing, "PurchasingDetail.razor")), StringComparison.Ordinal);
+        var receive = File.ReadAllText(Path.Combine(purchasing, "PurchasingReceive.razor"));
+        Assert.True(
+            receive.Contains("Purchasing_ReviewReceipt", StringComparison.Ordinal)
+            || receive.Contains("ReviewReceipt", StringComparison.Ordinal)
+            || receive.Contains("ConfirmGoodsReceipt", StringComparison.Ordinal),
+            "Receiving page must include a review/confirm step.");
+    }
+
+    [Fact]
+    public void Connected_po_lifecycle_localization_keys_exist_in_en_and_fil()
+    {
+        var localization = Path.Combine(MauiProject(), "Localization");
+        var en = File.ReadAllText(Path.Combine(localization, "PosResources.resx"));
+        var fil = File.ReadAllText(Path.Combine(localization, "PosResources.fil-PH.resx"));
+        foreach (var key in new[]
+                 {
+                     "Purchasing_Status_WaitingForSupplier",
+                     "Purchasing_Status_SupplierAccepted",
+                     "Purchasing_Status_SupplierDeclined",
+                     "Purchasing_Status_ReceivedWithIssues",
+                     "Purchasing_GoodReceived",
+                     "Purchasing_CloseAsShort",
+                     "Purchasing_ConfirmGoodsReceipt",
+                     "Purchasing_ReviewReceipt",
+                     "ConnectedSuppliers_StartPreparing",
+                     "ConnectedSuppliers_MarkFulfilled"
+                 })
+        {
+            Assert.Contains($"<data name=\"{key}\"", en, StringComparison.Ordinal);
+            Assert.Contains($"<data name=\"{key}\"", fil, StringComparison.Ordinal);
+        }
     }
 
     [Fact]
