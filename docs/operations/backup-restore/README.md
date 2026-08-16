@@ -99,6 +99,8 @@ Structural (schemas, tables, migration history, indexes/constraints via restore,
 
 Automated evidence: `dotnet test tests/ExItS.BackupRestore.Tests -c Release`
 
+**P29-WP14 development drill** (local-validation → disposable restore containers): see [postgresql-backup-and-restore runbook](../../runbooks/postgresql-backup-and-restore.md) and `ops/backup/Invoke-ExItsP29Wp14DevRecoveryDrill.ps1`. Does **not** prove Production backup/restore.
+
 ## 12. Service cutover decision
 
 Manual approval only after validation + smoke. Never auto-repoint Production. Rollback point = previous live databases/credentials retained until sign-off.
