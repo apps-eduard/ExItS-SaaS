@@ -56,6 +56,9 @@ public static class DependencyInjection
         services.AddScoped<IPlatformOrganizationRepository, PlatformOrganizationRepository>();
         services.AddScoped<IOrganizationSalesDocumentCapabilityRepository, OrganizationSalesDocumentCapabilityRepository>();
         services.AddScoped<IOrganizationComplianceProfileRepository, OrganizationComplianceProfileRepository>();
+        services.AddScoped<IBranchComplianceProfileRepository, BranchComplianceProfileRepository>();
+        services.AddScoped<IComplianceRegistrationRecordRepository, ComplianceRegistrationRecordRepository>();
+        services.AddSingleton<IComplianceActivationReadinessEvaluator, ComplianceActivationReadinessEvaluator>();
         services.AddScoped<IOrganizationSalesDocumentAcknowledgmentRepository, OrganizationSalesDocumentAcknowledgmentRepository>();
         services.AddScoped<IOrganizationBusinessTypeActivationRepository, OrganizationBusinessTypeActivationRepository>();
         services.AddScoped<IOrganizationBranchRepository, OrganizationBranchRepository>();

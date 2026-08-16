@@ -326,6 +326,29 @@ public static class DomainErrorCodes
     public const string ProcessingSystemNotFound =
         "platform.privacy_compliance.processing_system.not_found";
 
+    public const string InvalidTaxpayerTin = "platform.compliance.tin.invalid";
+    public const string InvalidRegisteredTaxpayerName =
+        "platform.compliance.registered_taxpayer_name.invalid";
+    public const string InvalidComplianceSetupStatus =
+        "platform.compliance.setup_status.invalid";
+    public const string InvalidBirBranchCode = "platform.compliance.bir_branch_code.invalid";
+    public const string InvalidBranchComplianceNotes =
+        "platform.compliance.branch_notes.invalid";
+    public const string InvalidComplianceRegistrationType =
+        "platform.compliance.registration.type.invalid";
+    public const string InvalidComplianceRegistrationField =
+        "platform.compliance.registration.field.invalid";
+    public const string InvalidComplianceRegistrationStatus =
+        "platform.compliance.registration.status.invalid";
+    public const string ComplianceRegistrationNotFound =
+        "platform.compliance.registration.not_found";
+    public const string ComplianceSelfReviewUnauthorized =
+        "platform.compliance.self_review.unauthorized";
+    public const string ComplianceReadinessNotReady =
+        "platform.compliance.readiness.not_ready";
+    public const string BranchComplianceOrganizationMismatch =
+        "platform.compliance.branch.organization_mismatch";
+
     public const string InvalidPersonalFeatureGrantSource =
         "platform.personal.feature.grant_source.invalid";
     public const string InvalidPersonalFeatureDuration =

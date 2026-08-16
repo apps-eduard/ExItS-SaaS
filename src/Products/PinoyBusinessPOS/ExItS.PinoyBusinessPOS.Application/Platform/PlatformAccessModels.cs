@@ -484,6 +484,87 @@ public sealed record OrganizationComplianceStatusDto(
     DateTimeOffset? UpdatedAtUtc,
     string? UpdatedByActorReference);
 
+/// <summary>Organization compliance profile. TIN is always masked — never full TIN.</summary>
+public sealed record OrganizationComplianceProfileDto(
+    Guid OrganizationId,
+    bool ProfileInitialized,
+    DateTimeOffset? ProfileCreatedAtUtc,
+    DateTimeOffset? ProfileUpdatedAtUtc,
+    string? LegalName,
+    string? RegisteredAddressLine1,
+    string? RegisteredCity,
+    string? RegisteredRegion,
+    string? RegisteredPostalCode,
+    string? RegisteredCountryCode,
+    string? RegisteredTaxpayerName,
+    string? MaskedTin,
+    string SetupStatus,
+    string ComplianceEligibilityStatus,
+    bool TaxDocumentIssuanceEnabled,
+    bool TaxConfigurationEnabled,
+    bool TaxDocumentImplementationAvailable,
+    string DocumentMode,
+    string SnapshotGuidance);
+
+public sealed record BranchComplianceProfileDto(
+    Guid Id,
+    Guid OrganizationId,
+    Guid OrganizationBranchId,
+    string? BirBranchCode,
+    string SetupStatus,
+    string? Notes,
+    DateTimeOffset CreatedAtUtc,
+    DateTimeOffset UpdatedAtUtc,
+    string? UpdatedByActorReference);
+
+public sealed record ComplianceRegistrationRecordDto(
+    Guid Id,
+    Guid OrganizationId,
+    Guid? OrganizationBranchId,
+    string RegistrationType,
+    string? ReferenceNumber,
+    string Status,
+    string? EvidenceReference,
+    string? DocumentType,
+    DateOnly? IssuedAt,
+    DateOnly? EffectiveAt,
+    DateOnly? ExpiresAt,
+    DateTimeOffset RecordedAtUtc,
+    string RecordedBy,
+    DateTimeOffset? ReviewedAtUtc,
+    string? ReviewedBy,
+    string? ReviewNotes);
+
+public sealed record ComplianceActivationReadinessDto(
+    Guid OrganizationId,
+    string OverallStatus,
+    bool IsReadyForTaxDocumentActivation,
+    IReadOnlyList<string> BlockingReasons,
+    IReadOnlyList<string> Warnings,
+    IReadOnlyList<string> CompletedRequirements,
+    IReadOnlyList<string> PendingRequirements,
+    IReadOnlyList<ComplianceReadinessChecklistItemDto> Checklist);
+
+public sealed record ComplianceReadinessChecklistItemDto(string Code, string Label, bool Done);
+
+public sealed record UpdateRegisteredTaxpayerRequest(string? RegisteredTaxpayerName, string? Tin);
+
+public sealed record UpsertBranchComplianceProfileRequest(
+    string? BirBranchCode,
+    string? SetupStatus,
+    string? Notes);
+
+public sealed record CreateComplianceRegistrationRequest(
+    string RegistrationType,
+    Guid? OrganizationBranchId = null,
+    string? ReferenceNumber = null,
+    string? Status = null,
+    string? EvidenceReference = null,
+    string? DocumentType = null,
+    DateOnly? IssuedAt = null,
+    DateOnly? EffectiveAt = null,
+    DateOnly? ExpiresAt = null);
+
 public sealed record ResolveOwnershipTransferTargetRequest(string Input);
 public sealed record RequestOwnershipTransferRequest(string TargetInput);
 
@@ -1310,6 +1391,50 @@ public interface IPlatformAccessClient
         Guid organizationId,
         CancellationToken ct = default) =>
         Task.FromResult(ApiResult<OrganizationComplianceStatusDto>.Unavailable());
+
+    Task<ApiResult<OrganizationComplianceProfileDto>> GetOrganizationComplianceProfileAsync(
+        Guid organizationId,
+        CancellationToken ct = default) =>
+        Task.FromResult(ApiResult<OrganizationComplianceProfileDto>.Unavailable());
+
+    Task<ApiResult<OrganizationComplianceProfileDto>> UpdateRegisteredTaxpayerAsync(
+        Guid organizationId,
+        UpdateRegisteredTaxpayerRequest request,
+        CancellationToken ct = default) =>
+        Task.FromResult(ApiResult<OrganizationComplianceProfileDto>.Unavailable());
+
+    Task<ApiResult<ComplianceActivationReadinessDto>> GetComplianceActivationReadinessAsync(
+        Guid organizationId,
+        CancellationToken ct = default) =>
+        Task.FromResult(ApiResult<ComplianceActivationReadinessDto>.Unavailable());
+
+    Task<ApiResult<ComplianceActivationReadinessDto>> SubmitComplianceReadinessForReviewAsync(
+        Guid organizationId,
+        CancellationToken ct = default) =>
+        Task.FromResult(ApiResult<ComplianceActivationReadinessDto>.Unavailable());
+
+    Task<ApiResult<IReadOnlyList<BranchComplianceProfileDto>>> ListBranchComplianceProfilesAsync(
+        Guid organizationId,
+        CancellationToken ct = default) =>
+        Task.FromResult(ApiResult<IReadOnlyList<BranchComplianceProfileDto>>.Unavailable());
+
+    Task<ApiResult<BranchComplianceProfileDto>> UpsertBranchComplianceProfileAsync(
+        Guid organizationId,
+        Guid branchId,
+        UpsertBranchComplianceProfileRequest request,
+        CancellationToken ct = default) =>
+        Task.FromResult(ApiResult<BranchComplianceProfileDto>.Unavailable());
+
+    Task<ApiResult<IReadOnlyList<ComplianceRegistrationRecordDto>>> ListComplianceRegistrationRecordsAsync(
+        Guid organizationId,
+        CancellationToken ct = default) =>
+        Task.FromResult(ApiResult<IReadOnlyList<ComplianceRegistrationRecordDto>>.Unavailable());
+
+    Task<ApiResult<ComplianceRegistrationRecordDto>> AddComplianceRegistrationRecordAsync(
+        Guid organizationId,
+        CreateComplianceRegistrationRequest request,
+        CancellationToken ct = default) =>
+        Task.FromResult(ApiResult<ComplianceRegistrationRecordDto>.Unavailable());
 
     Task<ApiResult<OrganizationBranchDto>> UpdateBranchAsync(
         Guid organizationId,

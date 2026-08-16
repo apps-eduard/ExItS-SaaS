@@ -95,6 +95,10 @@ public sealed class PlatformDbContext : DbContext
         Set<OrganizationSalesDocumentCapabilityRecord>();
     internal DbSet<OrganizationComplianceProfileRecord> OrganizationComplianceProfiles =>
         Set<OrganizationComplianceProfileRecord>();
+    internal DbSet<BranchComplianceProfileRecord> BranchComplianceProfiles =>
+        Set<BranchComplianceProfileRecord>();
+    internal DbSet<ComplianceRegistrationRecordEntity> ComplianceRegistrationRecords =>
+        Set<ComplianceRegistrationRecordEntity>();
     internal DbSet<OrganizationSalesDocumentAcknowledgmentRecord> OrganizationSalesDocumentAcknowledgments =>
         Set<OrganizationSalesDocumentAcknowledgmentRecord>();
     internal DbSet<PersonalAccountSettingsRecord> PersonalAccountSettings => Set<PersonalAccountSettingsRecord>();
@@ -341,6 +345,17 @@ public sealed class PlatformDbContext : DbContext
             entity.ToTable("organization_compliance_profiles");
             entity.HasKey(e => e.OrganizationId);
             entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.RegisteredTaxpayerName)
+                .HasColumnName("registered_taxpayer_name")
+                .HasMaxLength(200);
+            entity.Property(e => e.TinNormalized)
+                .HasColumnName("tin_normalized")
+                .HasMaxLength(9);
+            entity.Property(e => e.SetupStatus)
+                .HasColumnName("setup_status")
+                .HasMaxLength(64)
+                .HasDefaultValue("NotConfigured")
+                .IsRequired();
             entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
             entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
             entity.Property(e => e.UpdatedByActorReference)
@@ -350,6 +365,95 @@ public sealed class PlatformDbContext : DbContext
                 .WithOne()
                 .HasForeignKey<OrganizationComplianceProfileRecord>(e => e.OrganizationId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<BranchComplianceProfileRecord>(entity =>
+        {
+            entity.ToTable("branch_compliance_profiles");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.OrganizationBranchId).HasColumnName("organization_branch_id");
+            entity.Property(e => e.BirBranchCode)
+                .HasColumnName("bir_branch_code")
+                .HasMaxLength(10);
+            entity.Property(e => e.SetupStatus)
+                .HasColumnName("setup_status")
+                .HasMaxLength(64)
+                .HasDefaultValue("NotConfigured")
+                .IsRequired();
+            entity.Property(e => e.Notes)
+                .HasColumnName("notes")
+                .HasMaxLength(1000);
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.UpdatedByActorReference)
+                .HasColumnName("updated_by_actor_reference")
+                .HasMaxLength(256);
+            entity.HasIndex(e => e.OrganizationBranchId)
+                .IsUnique()
+                .HasDatabaseName("UX_branch_compliance_profiles_branch");
+            entity.HasIndex(e => e.OrganizationId)
+                .HasDatabaseName("IX_branch_compliance_profiles_org");
+            entity.HasOne<PlatformOrganizationRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.OrganizationId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne<OrganizationBranchRecord>()
+                .WithOne()
+                .HasForeignKey<BranchComplianceProfileRecord>(e => e.OrganizationBranchId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ComplianceRegistrationRecordEntity>(entity =>
+        {
+            entity.ToTable("compliance_registration_records");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.OrganizationBranchId).HasColumnName("organization_branch_id");
+            entity.Property(e => e.RegistrationType)
+                .HasColumnName("registration_type")
+                .HasMaxLength(64)
+                .IsRequired();
+            entity.Property(e => e.ReferenceNumber)
+                .HasColumnName("reference_number")
+                .HasMaxLength(128);
+            entity.Property(e => e.Status)
+                .HasColumnName("status")
+                .HasMaxLength(64)
+                .IsRequired();
+            entity.Property(e => e.EvidenceReference)
+                .HasColumnName("evidence_reference")
+                .HasMaxLength(256);
+            entity.Property(e => e.DocumentType)
+                .HasColumnName("document_type")
+                .HasMaxLength(64);
+            entity.Property(e => e.IssuedAt).HasColumnName("issued_at");
+            entity.Property(e => e.EffectiveAt).HasColumnName("effective_at");
+            entity.Property(e => e.ExpiresAt).HasColumnName("expires_at");
+            entity.Property(e => e.RecordedAtUtc).HasColumnName("recorded_at_utc");
+            entity.Property(e => e.RecordedBy)
+                .HasColumnName("recorded_by")
+                .HasMaxLength(256)
+                .IsRequired();
+            entity.Property(e => e.ReviewedAtUtc).HasColumnName("reviewed_at_utc");
+            entity.Property(e => e.ReviewedBy)
+                .HasColumnName("reviewed_by")
+                .HasMaxLength(256);
+            entity.Property(e => e.ReviewNotes)
+                .HasColumnName("review_notes")
+                .HasMaxLength(1000);
+            entity.HasIndex(e => e.OrganizationId)
+                .HasDatabaseName("IX_compliance_registration_records_org");
+            entity.HasOne<PlatformOrganizationRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.OrganizationId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne<OrganizationBranchRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.OrganizationBranchId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<OrganizationSalesDocumentAcknowledgmentRecord>(entity =>

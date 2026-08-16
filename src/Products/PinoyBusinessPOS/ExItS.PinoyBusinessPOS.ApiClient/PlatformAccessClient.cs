@@ -811,4 +811,72 @@ public sealed class PlatformAccessClient(IPosApiClient api) : IPlatformAccessCli
             $"/api/v1/platform/organizations/{organizationId:D}/compliance/request",
             null,
             ct);
+
+    public Task<ApiResult<OrganizationComplianceProfileDto>> GetOrganizationComplianceProfileAsync(
+        Guid organizationId,
+        CancellationToken ct = default) =>
+        api.GetAsync<OrganizationComplianceProfileDto>(
+            $"/api/v1/platform/organizations/{organizationId:D}/compliance-profile",
+            ct);
+
+    public Task<ApiResult<OrganizationComplianceProfileDto>> UpdateRegisteredTaxpayerAsync(
+        Guid organizationId,
+        UpdateRegisteredTaxpayerRequest request,
+        CancellationToken ct = default) =>
+        api.SendAsync<OrganizationComplianceProfileDto>(
+            HttpMethod.Put,
+            $"/api/v1/platform/organizations/{organizationId:D}/compliance-profile/registered-taxpayer",
+            request,
+            ct);
+
+    public Task<ApiResult<ComplianceActivationReadinessDto>> GetComplianceActivationReadinessAsync(
+        Guid organizationId,
+        CancellationToken ct = default) =>
+        api.GetAsync<ComplianceActivationReadinessDto>(
+            $"/api/v1/platform/organizations/{organizationId:D}/compliance/readiness",
+            ct);
+
+    public Task<ApiResult<ComplianceActivationReadinessDto>> SubmitComplianceReadinessForReviewAsync(
+        Guid organizationId,
+        CancellationToken ct = default) =>
+        api.SendAsync<ComplianceActivationReadinessDto>(
+            HttpMethod.Post,
+            $"/api/v1/platform/organizations/{organizationId:D}/compliance/readiness/submit",
+            null,
+            ct);
+
+    public Task<ApiResult<IReadOnlyList<BranchComplianceProfileDto>>> ListBranchComplianceProfilesAsync(
+        Guid organizationId,
+        CancellationToken ct = default) =>
+        api.GetAsync<IReadOnlyList<BranchComplianceProfileDto>>(
+            $"/api/v1/platform/organizations/{organizationId:D}/compliance/branch-profiles",
+            ct);
+
+    public Task<ApiResult<BranchComplianceProfileDto>> UpsertBranchComplianceProfileAsync(
+        Guid organizationId,
+        Guid branchId,
+        UpsertBranchComplianceProfileRequest request,
+        CancellationToken ct = default) =>
+        api.SendAsync<BranchComplianceProfileDto>(
+            HttpMethod.Put,
+            $"/api/v1/platform/organizations/{organizationId:D}/branches/{branchId:D}/compliance-profile",
+            request,
+            ct);
+
+    public Task<ApiResult<IReadOnlyList<ComplianceRegistrationRecordDto>>> ListComplianceRegistrationRecordsAsync(
+        Guid organizationId,
+        CancellationToken ct = default) =>
+        api.GetAsync<IReadOnlyList<ComplianceRegistrationRecordDto>>(
+            $"/api/v1/platform/organizations/{organizationId:D}/compliance/registration-records",
+            ct);
+
+    public Task<ApiResult<ComplianceRegistrationRecordDto>> AddComplianceRegistrationRecordAsync(
+        Guid organizationId,
+        CreateComplianceRegistrationRequest request,
+        CancellationToken ct = default) =>
+        api.SendAsync<ComplianceRegistrationRecordDto>(
+            HttpMethod.Post,
+            $"/api/v1/platform/organizations/{organizationId:D}/compliance/registration-records",
+            request,
+            ct);
 }

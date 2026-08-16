@@ -239,6 +239,13 @@ public static class ApplicationErrorCodes
     public const string ProcessingSystemNotFound =
         "application.privacy_compliance.processing_system.not_found";
 
+    public const string ComplianceRegistrationNotFound =
+        "application.compliance.registration.not_found";
+    public const string ComplianceReadinessNotReady =
+        "application.compliance.readiness.not_ready";
+    public const string BranchComplianceOrganizationMismatch =
+        "application.compliance.branch.organization_mismatch";
+
     public const string PersonalFeatureDefinitionNotFound =
         "application.personal.feature.definition.not_found";
     public const string PersonalFeatureEntitlementNotFound =

@@ -126,6 +126,20 @@ public static class PlatformAuditActions
     public const string OrganizationTaxConfigurationCapabilityDisabled =
         "platform.organization.tax_configuration_capability_disabled";
 
+    /// <summary>Never log full TIN — mask or omit.</summary>
+    public const string OrganizationComplianceProfileUpdated =
+        "platform.organization.compliance_profile.updated";
+    public const string OrganizationBranchComplianceUpdated =
+        "platform.organization.branch_compliance.updated";
+    public const string OrganizationComplianceRegistrationCreated =
+        "platform.organization.compliance_registration.created";
+    public const string OrganizationComplianceRegistrationUpdated =
+        "platform.organization.compliance_registration.updated";
+    public const string OrganizationComplianceRegistrationReviewed =
+        "platform.organization.compliance_registration.reviewed";
+    public const string OrganizationComplianceReadinessSubmitted =
+        "platform.organization.compliance_readiness.submitted";
+
     public const string BusinessCustomerCreated = "platform.business_customer.created";
     public const string BusinessCustomerUpdated = "platform.business_customer.updated";
     public const string BusinessCustomerArchived = "platform.business_customer.archived";
