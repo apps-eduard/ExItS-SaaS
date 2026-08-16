@@ -1,9 +1,18 @@
+using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 
 namespace ExItS.PinoyBusinessPOS.Application.Payments;
+
+public enum FakePaymentGatewayBehavior
+{
+    Success = 0,
+    DefiniteFailure = 1,
+    TimeoutBeforeCreate = 2,
+    TimeoutAfterCreate = 3
+}
 
 /// <summary>
 /// Deterministic fake gateway for Development/Testing. Never used for real card or GCash credentials.
@@ -20,13 +29,65 @@ public sealed class FakePaymentGateway : IPaymentGateway
         PropertyNameCaseInsensitive = true
     };
 
+    private readonly ConcurrentDictionary<string, StoredSession> _byIdempotencyKey = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, StoredSession> _byProviderReference = new(StringComparer.Ordinal);
+    private readonly object _behaviorGate = new();
+    private FakePaymentGatewayBehavior _behavior = FakePaymentGatewayBehavior.Success;
+
     public string ProviderCode => ProviderCodeValue;
+
+    public FakePaymentGatewayBehavior Behavior
+    {
+        get
+        {
+            lock (_behaviorGate)
+            {
+                return _behavior;
+            }
+        }
+    }
+
+    public void SetBehavior(FakePaymentGatewayBehavior behavior)
+    {
+        lock (_behaviorGate)
+        {
+            _behavior = behavior;
+        }
+    }
+
+    public void ResetBehavior() => SetBehavior(FakePaymentGatewayBehavior.Success);
+
+    public void ClearSessions()
+    {
+        _byIdempotencyKey.Clear();
+        _byProviderReference.Clear();
+    }
 
     public Task<PaymentGatewaySession> CreateSessionAsync(
         PaymentGatewayCreateRequest request,
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
+
+        var behavior = Behavior;
+        if (behavior == FakePaymentGatewayBehavior.TimeoutBeforeCreate)
+        {
+            throw PaymentGatewayException.TimeoutBeforeCreate(
+                "Fake gateway timed out before creating a provider session.");
+        }
+
+        if (behavior == FakePaymentGatewayBehavior.DefiniteFailure)
+        {
+            throw PaymentGatewayException.DefiniteFailure(
+                "Fake gateway refused to create a provider session.");
+        }
+
+        if (_byIdempotencyKey.TryGetValue(request.IdempotencyKey, out var existing))
+        {
+            EnsureIdempotentPayloadMatches(existing, request);
+            return Task.FromResult(existing.Session);
+        }
+
         var reference = $"fake_{request.PaymentAttemptId:N}";
         var method = request.Method.Trim().ToUpperInvariant();
         string? checkout = null;
@@ -49,12 +110,55 @@ public sealed class FakePaymentGateway : IPaymentGateway
                 $"Fake gateway does not support method '{request.Method}'.");
         }
 
-        return Task.FromResult(new PaymentGatewaySession(
+        var session = new PaymentGatewaySession(
             reference,
             checkout,
             deepLink,
             qr,
-            DateTimeOffset.UtcNow.AddMinutes(15)));
+            DateTimeOffset.UtcNow.AddMinutes(15));
+
+        var stored = new StoredSession(
+            session,
+            request.OrganizationId,
+            request.SaleId,
+            request.PaymentAttemptId,
+            method,
+            request.Amount,
+            request.Currency.Trim().ToUpperInvariant(),
+            request.IdempotencyKey);
+
+        if (!_byIdempotencyKey.TryAdd(request.IdempotencyKey, stored))
+        {
+            var raced = _byIdempotencyKey[request.IdempotencyKey];
+            EnsureIdempotentPayloadMatches(raced, request);
+            return Task.FromResult(raced.Session);
+        }
+
+        _byProviderReference[reference] = stored;
+
+        if (behavior == FakePaymentGatewayBehavior.TimeoutAfterCreate)
+        {
+            throw PaymentGatewayException.TimeoutAfterCreate(
+                "Fake gateway created a session then timed out before returning it.");
+        }
+
+        return Task.FromResult(session);
+    }
+
+    public Task<PaymentGatewaySession?> GetSessionAsync(
+        string providerReference,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (string.IsNullOrWhiteSpace(providerReference))
+        {
+            return Task.FromResult<PaymentGatewaySession?>(null);
+        }
+
+        return Task.FromResult(
+            _byProviderReference.TryGetValue(providerReference.Trim(), out var stored)
+                ? stored.Session
+                : null);
     }
 
     public bool ValidateWebhookSignature(string? signatureHeader, string rawBody)
@@ -121,6 +225,33 @@ public sealed class FakePaymentGateway : IPaymentGateway
                 cardBrand,
                 cardLastFour),
             JsonOptions);
+
+    private static void EnsureIdempotentPayloadMatches(StoredSession existing, PaymentGatewayCreateRequest request)
+    {
+        var method = request.Method.Trim().ToUpperInvariant();
+        var currency = request.Currency.Trim().ToUpperInvariant();
+        if (existing.OrganizationId != request.OrganizationId
+            || existing.SaleId != request.SaleId
+            || existing.PaymentAttemptId != request.PaymentAttemptId
+            || existing.Amount != request.Amount
+            || !string.Equals(existing.Method, method, StringComparison.Ordinal)
+            || !string.Equals(existing.Currency, currency, StringComparison.Ordinal))
+        {
+            throw new DomainException(
+                DomainErrorCodes.PaymentGatewayIdempotencyConflict,
+                "Fake gateway idempotency key was reused with a conflicting payload.");
+        }
+    }
+
+    private sealed record StoredSession(
+        PaymentGatewaySession Session,
+        Guid OrganizationId,
+        Guid SaleId,
+        Guid PaymentAttemptId,
+        string Method,
+        decimal Amount,
+        string Currency,
+        string IdempotencyKey);
 
     private sealed record FakeWebhookBody(
         string ProviderReference,

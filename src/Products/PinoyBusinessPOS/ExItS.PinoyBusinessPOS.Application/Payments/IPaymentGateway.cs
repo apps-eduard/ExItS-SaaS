@@ -9,6 +9,13 @@ public interface IPaymentGateway
         PaymentGatewayCreateRequest request,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Looks up an existing provider session by provider reference (recovery after ambiguous timeouts).
+    /// </summary>
+    Task<PaymentGatewaySession?> GetSessionAsync(
+        string providerReference,
+        CancellationToken cancellationToken = default);
+
     bool ValidateWebhookSignature(string? signatureHeader, string rawBody);
 
     PaymentWebhookEvent ParseWebhook(string rawBody);

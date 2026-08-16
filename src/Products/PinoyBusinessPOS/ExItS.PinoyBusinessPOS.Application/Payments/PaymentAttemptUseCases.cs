@@ -11,6 +11,7 @@ using ExItS.PinoyBusinessPOS.Domain.Payments;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace ExItS.PinoyBusinessPOS.Application.Payments;
 
@@ -19,24 +20,30 @@ public sealed class CreatePaymentAttempt
     private readonly ISaleRepository _sales;
     private readonly IPaymentAttemptRepository _attempts;
     private readonly IPaymentGateway _gateway;
+    private readonly ISaleStockService _saleStock;
     private readonly IPosUnitOfWork _uow;
     private readonly IClock _clock;
     private readonly IConfiguration _config;
+    private readonly ILogger<CreatePaymentAttempt> _logger;
 
     public CreatePaymentAttempt(
         ISaleRepository sales,
         IPaymentAttemptRepository attempts,
         IPaymentGateway gateway,
+        ISaleStockService saleStock,
         IPosUnitOfWork uow,
         IClock clock,
-        IConfiguration config)
+        IConfiguration config,
+        ILogger<CreatePaymentAttempt> logger)
     {
         _sales = sales;
         _attempts = attempts;
         _gateway = gateway;
+        _saleStock = saleStock;
         _uow = uow;
         _clock = clock;
         _config = config;
+        _logger = logger;
     }
 
     public async Task<ApplicationResult<PaymentAttemptDto>> ExecuteAsync(
@@ -70,6 +77,18 @@ public sealed class CreatePaymentAttempt
                 .ConfigureAwait(false);
             if (existingKey is not null)
             {
+                if (existingKey.Status == PaymentAttemptStatus.Created
+                    && string.IsNullOrWhiteSpace(existingKey.ProviderReference)
+                    && existingKey.Method is PaymentAttemptMethod.Card or PaymentAttemptMethod.GCash)
+                {
+                    return await AttachOrRecoverElectronicSessionAsync(
+                            sale,
+                            existingKey,
+                            actorId,
+                            cancellationToken)
+                        .ConfigureAwait(false);
+                }
+
                 return ApplicationResult<PaymentAttemptDto>.Success(PaymentAttemptMaps.Map(existingKey));
             }
 
@@ -83,7 +102,6 @@ public sealed class CreatePaymentAttempt
             }
 
             var now = _clock.UtcNow;
-            PaymentAttempt attempt;
             if (request.ManualGCashTransfer)
             {
                 if (!IsManualGCashTransferEnabled(_config))
@@ -102,7 +120,7 @@ public sealed class CreatePaymentAttempt
                         "This external GCash reference was already submitted.");
                 }
 
-                attempt = PaymentAttempt.CreateManualGCashTransfer(
+                var manual = PaymentAttempt.CreateManualGCashTransfer(
                     orgId,
                     sale.Id,
                     sale.Total,
@@ -111,55 +129,163 @@ public sealed class CreatePaymentAttempt
                     request.IdempotencyKey,
                     actorId,
                     now);
+
+                await _attempts.AddAsync(manual, cancellationToken).ConfigureAwait(false);
+                await _uow.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+                return ApplicationResult<PaymentAttemptDto>.Success(PaymentAttemptMaps.Map(manual));
             }
-            else
+
+            var method = ParseElectronicMethod(request.Method);
+            if ((method == PaymentAttemptMethod.Card && sale.PaymentMethod != SalePaymentMethod.Card)
+                || (method == PaymentAttemptMethod.GCash && sale.PaymentMethod != SalePaymentMethod.GCash))
             {
-                var method = ParseElectronicMethod(request.Method);
-                if ((method == PaymentAttemptMethod.Card && sale.PaymentMethod != SalePaymentMethod.Card)
-                    || (method == PaymentAttemptMethod.GCash && sale.PaymentMethod != SalePaymentMethod.GCash))
-                {
-                    return ApplicationResult<PaymentAttemptDto>.Failure(
-                        DomainErrorCodes.InvalidPaymentAttemptMethod,
-                        "Payment attempt method must match the sale payment method.");
-                }
-
-                attempt = PaymentAttempt.CreateElectronic(
-                    orgId,
-                    sale.Id,
-                    method,
-                    sale.Total,
-                    "PHP",
-                    request.IdempotencyKey,
-                    actorId,
-                    now);
-
-                var session = await _gateway.CreateSessionAsync(
-                        new PaymentGatewayCreateRequest(
-                            orgId.Value,
-                            sale.Id.Value,
-                            attempt.Id.Value,
-                            method.ToString(),
-                            sale.Total,
-                            "PHP",
-                            request.IdempotencyKey),
-                        cancellationToken)
-                    .ConfigureAwait(false);
-
-                attempt.AttachProviderSession(
-                    session.ProviderReference,
-                    session.CheckoutUrl,
-                    session.DeepLink,
-                    session.QrPayload,
-                    now);
+                return ApplicationResult<PaymentAttemptDto>.Failure(
+                    DomainErrorCodes.InvalidPaymentAttemptMethod,
+                    "Payment attempt method must match the sale payment method.");
             }
 
+            // Prior terminal attempt may have released reservation — re-hold before a new attempt.
+            if (sale.StockReservationState == SaleStockReservationState.Released)
+            {
+                await _saleStock
+                    .EnsureAvailableForSaleAsync(orgId, sale, cancellationToken)
+                    .ConfigureAwait(false);
+                await _saleStock
+                    .ReserveForAwaitingPaymentAsync(sale, actorId, now, cancellationToken)
+                    .ConfigureAwait(false);
+                await _sales.UpdateAsync(sale, cancellationToken).ConfigureAwait(false);
+                await _uow.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            }
+
+            var attempt = PaymentAttempt.CreateElectronic(
+                orgId,
+                sale.Id,
+                method,
+                sale.Total,
+                "PHP",
+                request.IdempotencyKey,
+                actorId,
+                now);
+
+            // Durable Created outside the gateway call (never hold inventory locks across provider I/O).
             await _attempts.AddAsync(attempt, cancellationToken).ConfigureAwait(false);
             await _uow.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-            return ApplicationResult<PaymentAttemptDto>.Success(PaymentAttemptMaps.Map(attempt));
+
+            _logger.LogInformation(
+                "Payment attempt created (Created) org={OrganizationId} sale={SaleId} attempt={AttemptId}",
+                orgId.Value,
+                sale.Id.Value,
+                attempt.Id.Value);
+
+            return await AttachOrRecoverElectronicSessionAsync(sale, attempt, actorId, cancellationToken)
+                .ConfigureAwait(false);
         }
         catch (DomainException ex)
         {
             return ApplicationResult<PaymentAttemptDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+    }
+
+    private async Task<ApplicationResult<PaymentAttemptDto>> AttachOrRecoverElectronicSessionAsync(
+        Sale sale,
+        PaymentAttempt attempt,
+        Guid actorId,
+        CancellationToken cancellationToken)
+    {
+        var now = _clock.UtcNow;
+        var createRequest = new PaymentGatewayCreateRequest(
+            attempt.OrganizationId.Value,
+            attempt.SaleId.Value,
+            attempt.Id.Value,
+            attempt.Method.ToString(),
+            attempt.Amount,
+            attempt.Currency,
+            attempt.IdempotencyKey);
+
+        try
+        {
+            var session = await _gateway.CreateSessionAsync(createRequest, cancellationToken)
+                .ConfigureAwait(false);
+            attempt.AttachProviderSession(
+                session.ProviderReference,
+                session.CheckoutUrl,
+                session.DeepLink,
+                session.QrPayload,
+                now);
+            await _attempts.UpdateAsync(attempt, cancellationToken).ConfigureAwait(false);
+            await _uow.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+            _logger.LogInformation(
+                "Payment session attached org={OrganizationId} sale={SaleId} attempt={AttemptId} providerRef={ProviderReference}",
+                attempt.OrganizationId.Value,
+                attempt.SaleId.Value,
+                attempt.Id.Value,
+                attempt.ProviderReference);
+
+            return ApplicationResult<PaymentAttemptDto>.Success(PaymentAttemptMaps.Map(attempt));
+        }
+        catch (PaymentGatewayException ex) when (!ex.SessionMayExist)
+        {
+            if (string.Equals(ex.ErrorCode, DomainErrorCodes.PaymentGatewayTimeout, StringComparison.Ordinal))
+            {
+                // Timeout before create — leave Created for retry; keep reservation.
+                _logger.LogInformation(
+                    "Payment gateway timeout before create org={OrganizationId} sale={SaleId} attempt={AttemptId}",
+                    attempt.OrganizationId.Value,
+                    attempt.SaleId.Value,
+                    attempt.Id.Value);
+                return ApplicationResult<PaymentAttemptDto>.Failure(ex.ErrorCode, ex.Message);
+            }
+
+            // Definite failure — mark failed and release reservation.
+            attempt.MarkFailedLocally(ex.ErrorCode, ex.Message, now);
+            await _attempts.UpdateAsync(attempt, cancellationToken).ConfigureAwait(false);
+            await _saleStock.ReleaseIfReservedAsync(sale, now, cancellationToken).ConfigureAwait(false);
+            await _sales.UpdateAsync(sale, cancellationToken).ConfigureAwait(false);
+            await _uow.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+            _logger.LogInformation(
+                "Payment gateway definite failure released reservation org={OrganizationId} sale={SaleId} attempt={AttemptId}",
+                attempt.OrganizationId.Value,
+                attempt.SaleId.Value,
+                attempt.Id.Value);
+
+            return ApplicationResult<PaymentAttemptDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+        catch (PaymentGatewayException ex) when (ex.SessionMayExist)
+        {
+            var expectedRef = $"fake_{attempt.Id.Value:N}";
+            var recovered = await _gateway.GetSessionAsync(expectedRef, cancellationToken)
+                .ConfigureAwait(false);
+            if (recovered is null)
+            {
+                _logger.LogInformation(
+                    "Payment gateway timeout after create; session not recovered org={OrganizationId} attempt={AttemptId}",
+                    attempt.OrganizationId.Value,
+                    attempt.Id.Value);
+                return ApplicationResult<PaymentAttemptDto>.Failure(ex.ErrorCode, ex.Message);
+            }
+
+            attempt.AttachProviderSession(
+                recovered.ProviderReference,
+                recovered.CheckoutUrl,
+                recovered.DeepLink,
+                recovered.QrPayload,
+                now);
+            await _attempts.UpdateAsync(attempt, cancellationToken).ConfigureAwait(false);
+            await _uow.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+            _logger.LogInformation(
+                "Payment session recovered after timeout org={OrganizationId} sale={SaleId} attempt={AttemptId}",
+                attempt.OrganizationId.Value,
+                attempt.SaleId.Value,
+                attempt.Id.Value);
+
+            return ApplicationResult<PaymentAttemptDto>.Success(PaymentAttemptMaps.Map(attempt));
+        }
+        finally
+        {
+            _ = actorId;
         }
     }
 
@@ -188,17 +314,20 @@ public sealed class CancelPaymentAttempt
 {
     private readonly IPaymentAttemptRepository _attempts;
     private readonly ISaleRepository _sales;
+    private readonly ISaleStockService _saleStock;
     private readonly IPosUnitOfWork _uow;
     private readonly IClock _clock;
 
     public CancelPaymentAttempt(
         IPaymentAttemptRepository attempts,
         ISaleRepository sales,
+        ISaleStockService saleStock,
         IPosUnitOfWork uow,
         IClock clock)
     {
         _attempts = attempts;
         _sales = sales;
+        _saleStock = saleStock;
         _uow = uow;
         _clock = clock;
     }
@@ -211,6 +340,7 @@ public sealed class CancelPaymentAttempt
     {
         try
         {
+            _ = actorId;
             var orgId = PosOrganizationId.From(organizationId);
             var attempt = await _attempts
                 .GetByIdAsync(orgId, PaymentAttemptId.From(attemptId), cancellationToken)
@@ -222,8 +352,18 @@ public sealed class CancelPaymentAttempt
                     "Payment attempt was not found.");
             }
 
-            attempt.Cancel(_clock.UtcNow, "Cancelled by cashier");
+            var now = _clock.UtcNow;
+            attempt.Cancel(now, "Cancelled by cashier");
             await _attempts.UpdateAsync(attempt, cancellationToken).ConfigureAwait(false);
+
+            var sale = await _sales.GetByIdAsync(orgId, attempt.SaleId, cancellationToken)
+                .ConfigureAwait(false);
+            if (sale is not null)
+            {
+                await _saleStock.ReleaseIfReservedAsync(sale, now, cancellationToken).ConfigureAwait(false);
+                await _sales.UpdateAsync(sale, cancellationToken).ConfigureAwait(false);
+            }
+
             await _uow.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             return ApplicationResult<PaymentAttemptDto>.Success(PaymentAttemptMaps.Map(attempt));
         }
@@ -237,12 +377,21 @@ public sealed class CancelPaymentAttempt
 public sealed class GetPaymentAttempt
 {
     private readonly IPaymentAttemptRepository _attempts;
+    private readonly ISaleRepository _sales;
+    private readonly ISaleStockService _saleStock;
     private readonly IClock _clock;
     private readonly IPosUnitOfWork _uow;
 
-    public GetPaymentAttempt(IPaymentAttemptRepository attempts, IClock clock, IPosUnitOfWork uow)
+    public GetPaymentAttempt(
+        IPaymentAttemptRepository attempts,
+        ISaleRepository sales,
+        ISaleStockService saleStock,
+        IClock clock,
+        IPosUnitOfWork uow)
     {
         _attempts = attempts;
+        _sales = sales;
+        _saleStock = saleStock;
         _clock = clock;
         _uow = uow;
     }
@@ -263,10 +412,20 @@ public sealed class GetPaymentAttempt
                 "Payment attempt was not found.");
         }
 
-        attempt.ExpireIfDue(_clock.UtcNow);
-        if (attempt.Status == PaymentAttemptStatus.Expired)
+        var now = _clock.UtcNow;
+        var prior = attempt.Status;
+        attempt.ExpireIfDue(now);
+        if (attempt.Status == PaymentAttemptStatus.Expired && prior != PaymentAttemptStatus.Expired)
         {
             await _attempts.UpdateAsync(attempt, cancellationToken).ConfigureAwait(false);
+            var sale = await _sales.GetByIdAsync(orgId, attempt.SaleId, cancellationToken)
+                .ConfigureAwait(false);
+            if (sale is not null)
+            {
+                await _saleStock.ReleaseIfReservedAsync(sale, now, cancellationToken).ConfigureAwait(false);
+                await _sales.UpdateAsync(sale, cancellationToken).ConfigureAwait(false);
+            }
+
             await _uow.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         }
 
@@ -283,6 +442,7 @@ public sealed class ProcessPaymentWebhook
     private readonly IPaymentGateway _gateway;
     private readonly IPosUnitOfWork _uow;
     private readonly IClock _clock;
+    private readonly ILogger<ProcessPaymentWebhook> _logger;
 
     public ProcessPaymentWebhook(
         IPaymentAttemptRepository attempts,
@@ -291,7 +451,8 @@ public sealed class ProcessPaymentWebhook
         ICatalogProductRepository products,
         IPaymentGateway gateway,
         IPosUnitOfWork uow,
-        IClock clock)
+        IClock clock,
+        ILogger<ProcessPaymentWebhook> logger)
     {
         _attempts = attempts;
         _sales = sales;
@@ -300,6 +461,7 @@ public sealed class ProcessPaymentWebhook
         _gateway = gateway;
         _uow = uow;
         _clock = clock;
+        _logger = logger;
     }
 
     public async Task<ApplicationResult<PaymentAttemptDto>> ExecuteAsync(
@@ -336,6 +498,7 @@ public sealed class ProcessPaymentWebhook
             }
 
             var now = _clock.UtcNow;
+            var priorStatus = attempt.Status;
             attempt.ExpireIfDue(now);
             var status = evt.Status.Trim();
             if (string.Equals(status, "Paid", StringComparison.OrdinalIgnoreCase)
@@ -360,6 +523,25 @@ public sealed class ProcessPaymentWebhook
             if (attempt.Status == PaymentAttemptStatus.Paid)
             {
                 await FinalizeSaleIfNeededAsync(attempt, now, cancellationToken).ConfigureAwait(false);
+            }
+            else if ((attempt.Status is PaymentAttemptStatus.Failed
+                      or PaymentAttemptStatus.Cancelled
+                      or PaymentAttemptStatus.Expired)
+                     && priorStatus != attempt.Status)
+            {
+                var sale = await _sales.GetByIdAsync(attempt.OrganizationId, attempt.SaleId, cancellationToken)
+                    .ConfigureAwait(false);
+                if (sale is not null)
+                {
+                    await _saleStock.ReleaseIfReservedAsync(sale, now, cancellationToken).ConfigureAwait(false);
+                    await _sales.UpdateAsync(sale, cancellationToken).ConfigureAwait(false);
+                    _logger.LogInformation(
+                        "Payment terminal non-paid released reservation org={OrganizationId} sale={SaleId} attempt={AttemptId} status={Status}",
+                        attempt.OrganizationId.Value,
+                        attempt.SaleId.Value,
+                        attempt.Id.Value,
+                        attempt.Status);
+                }
             }
 
             await _attempts.UpdateAsync(attempt, cancellationToken).ConfigureAwait(false);
@@ -387,15 +569,164 @@ public sealed class ProcessPaymentWebhook
         var safeRef = attempt.ProviderReference ?? attempt.ExternalReference;
         sale.FinalizeAfterPayment(safeRef, now);
 
-        // Deduct stock only once when leaving AwaitingPayment.
         var products = await _products
             .ListByIdsAsync(attempt.OrganizationId, sale.Lines.Select(l => l.ProductId).ToList(), cancellationToken)
             .ConfigureAwait(false);
         var byId = products.ToDictionary(p => p.Id.Value);
-        await _saleStock
-            .DeductForSaleAsync(attempt.OrganizationId, sale, byId, attempt.CreatedBy, now, cancellationToken)
-            .ConfigureAwait(false);
+
+        if (sale.StockReservationState == SaleStockReservationState.Reserved)
+        {
+            await _saleStock
+                .ConsumeReservedForPaidAsync(sale, byId, attempt.CreatedBy, now, cancellationToken)
+                .ConfigureAwait(false);
+        }
+        else
+        {
+            await _saleStock
+                .DeductForSaleAsync(attempt.OrganizationId, sale, byId, attempt.CreatedBy, now, cancellationToken)
+                .ConfigureAwait(false);
+            if (sale.StockReservationState == SaleStockReservationState.Released)
+            {
+                sale.MarkStockConsumed(now);
+            }
+        }
+
         await _sales.UpdateAsync(sale, cancellationToken).ConfigureAwait(false);
+        _logger.LogInformation(
+            "Sale finalized after Paid webhook org={OrganizationId} sale={SaleId} attempt={AttemptId} stockState={StockState}",
+            attempt.OrganizationId.Value,
+            attempt.SaleId.Value,
+            attempt.Id.Value,
+            sale.StockReservationState);
+    }
+}
+
+public sealed class ReconcilePaymentAttempt
+{
+    private readonly IPaymentAttemptRepository _attempts;
+    private readonly ISaleRepository _sales;
+    private readonly ISaleStockService _saleStock;
+    private readonly IPaymentGateway _gateway;
+    private readonly IPosUnitOfWork _uow;
+    private readonly IClock _clock;
+    private readonly ILogger<ReconcilePaymentAttempt> _logger;
+
+    public ReconcilePaymentAttempt(
+        IPaymentAttemptRepository attempts,
+        ISaleRepository sales,
+        ISaleStockService saleStock,
+        IPaymentGateway gateway,
+        IPosUnitOfWork uow,
+        IClock clock,
+        ILogger<ReconcilePaymentAttempt> logger)
+    {
+        _attempts = attempts;
+        _sales = sales;
+        _saleStock = saleStock;
+        _gateway = gateway;
+        _uow = uow;
+        _clock = clock;
+        _logger = logger;
+    }
+
+    public async Task<ApplicationResult<PaymentAttemptDto>> ExecuteAsync(
+        Guid organizationId,
+        Guid attemptId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var orgId = PosOrganizationId.From(organizationId);
+            var attempt = await _attempts
+                .GetByIdAsync(orgId, PaymentAttemptId.From(attemptId), cancellationToken)
+                .ConfigureAwait(false);
+            if (attempt is null)
+            {
+                return ApplicationResult<PaymentAttemptDto>.Failure(
+                    DomainErrorCodes.PaymentAttemptNotFound,
+                    "Payment attempt was not found.");
+            }
+
+            var now = _clock.UtcNow;
+            var prior = attempt.Status;
+            attempt.ExpireIfDue(now);
+            if (attempt.Status == PaymentAttemptStatus.Expired && prior != PaymentAttemptStatus.Expired)
+            {
+                await _attempts.UpdateAsync(attempt, cancellationToken).ConfigureAwait(false);
+                var sale = await _sales.GetByIdAsync(orgId, attempt.SaleId, cancellationToken)
+                    .ConfigureAwait(false);
+                if (sale is not null)
+                {
+                    await _saleStock.ReleaseIfReservedAsync(sale, now, cancellationToken).ConfigureAwait(false);
+                    await _sales.UpdateAsync(sale, cancellationToken).ConfigureAwait(false);
+                }
+
+                await _uow.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+                return ApplicationResult<PaymentAttemptDto>.Success(PaymentAttemptMaps.Map(attempt));
+            }
+
+            if (attempt.Status == PaymentAttemptStatus.Created
+                && string.IsNullOrWhiteSpace(attempt.ProviderReference)
+                && attempt.Method is PaymentAttemptMethod.Card or PaymentAttemptMethod.GCash)
+            {
+                var expectedRef = $"fake_{attempt.Id.Value:N}";
+                var session = await _gateway.GetSessionAsync(expectedRef, cancellationToken)
+                    .ConfigureAwait(false);
+                if (session is null)
+                {
+                    try
+                    {
+                        session = await _gateway
+                            .CreateSessionAsync(
+                                new PaymentGatewayCreateRequest(
+                                    attempt.OrganizationId.Value,
+                                    attempt.SaleId.Value,
+                                    attempt.Id.Value,
+                                    attempt.Method.ToString(),
+                                    attempt.Amount,
+                                    attempt.Currency,
+                                    attempt.IdempotencyKey),
+                                cancellationToken)
+                            .ConfigureAwait(false);
+                    }
+                    catch (PaymentGatewayException ex) when (ex.SessionMayExist)
+                    {
+                        session = await _gateway.GetSessionAsync(expectedRef, cancellationToken)
+                            .ConfigureAwait(false);
+                        if (session is null)
+                        {
+                            return ApplicationResult<PaymentAttemptDto>.Failure(ex.ErrorCode, ex.Message);
+                        }
+                    }
+                    catch (PaymentGatewayException ex)
+                    {
+                        return ApplicationResult<PaymentAttemptDto>.Failure(ex.ErrorCode, ex.Message);
+                    }
+                }
+
+                if (session is not null)
+                {
+                    attempt.AttachProviderSession(
+                        session.ProviderReference,
+                        session.CheckoutUrl,
+                        session.DeepLink,
+                        session.QrPayload,
+                        now);
+                    await _attempts.UpdateAsync(attempt, cancellationToken).ConfigureAwait(false);
+                    await _uow.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+                    _logger.LogInformation(
+                        "Payment attempt reconciled session org={OrganizationId} attempt={AttemptId}",
+                        orgId.Value,
+                        attempt.Id.Value);
+                }
+            }
+
+            return ApplicationResult<PaymentAttemptDto>.Success(PaymentAttemptMaps.Map(attempt));
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<PaymentAttemptDto>.Failure(ex.ErrorCode, ex.Message);
+        }
     }
 }
 
@@ -524,9 +855,20 @@ public sealed class VerifyManualGCashTransfer
                 var products = await _products
                     .ListByIdsAsync(orgId, sale.Lines.Select(l => l.ProductId).ToList(), cancellationToken)
                     .ConfigureAwait(false);
-                await _saleStock
-                    .DeductForSaleAsync(orgId, sale, products.ToDictionary(p => p.Id.Value), verifierId, now, cancellationToken)
-                    .ConfigureAwait(false);
+                var byId = products.ToDictionary(p => p.Id.Value);
+                if (sale.StockReservationState == SaleStockReservationState.Reserved)
+                {
+                    await _saleStock
+                        .ConsumeReservedForPaidAsync(sale, byId, verifierId, now, cancellationToken)
+                        .ConfigureAwait(false);
+                }
+                else
+                {
+                    await _saleStock
+                        .DeductForSaleAsync(orgId, sale, byId, verifierId, now, cancellationToken)
+                        .ConfigureAwait(false);
+                }
+
                 await _sales.UpdateAsync(sale, cancellationToken).ConfigureAwait(false);
             }
 

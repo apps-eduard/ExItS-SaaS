@@ -107,6 +107,7 @@ builder.Services.AddScoped<CreatePaymentAttempt>();
 builder.Services.AddScoped<CancelPaymentAttempt>();
 builder.Services.AddScoped<GetPaymentAttempt>();
 builder.Services.AddScoped<ProcessPaymentWebhook>();
+builder.Services.AddScoped<ReconcilePaymentAttempt>();
 builder.Services.AddScoped<SimulatePaymentOutcome>();
 builder.Services.AddScoped<VerifyManualGCashTransfer>();
 builder.Services.AddScoped<ICustomerStatementService, CustomerStatementService>();

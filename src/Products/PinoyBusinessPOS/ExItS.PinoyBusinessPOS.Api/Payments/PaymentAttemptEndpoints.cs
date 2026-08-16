@@ -84,6 +84,26 @@ internal static class PaymentAttemptEndpoints
             return PosApiResults.FromResult(result, Results.Ok);
         });
 
+        attempts.MapPost("/{id:guid}/reconcile", async (
+            HttpRequest request,
+            Guid id,
+            ReconcilePaymentAttempt useCase,
+            IPosCommercialAccessAccessor access,
+            IPosDeviceTransactionAuthorizer deviceAuthorization,
+            CancellationToken ct) =>
+        {
+            if (!TryAuthorizeCashier(request, access, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            var deviceDenied = await deviceAuthorization.EnsureAuthorizedAsync(request, organizationId, ct).ConfigureAwait(false);
+            if (deviceDenied is not null) return deviceDenied;
+
+            var result = await useCase.ExecuteAsync(organizationId, id, ct).ConfigureAwait(false);
+            return PosApiResults.FromResult(result, Results.Ok);
+        });
+
         attempts.MapPost("/{id:guid}/verify-manual-gcash", async (
             HttpRequest request,
             Guid id,
