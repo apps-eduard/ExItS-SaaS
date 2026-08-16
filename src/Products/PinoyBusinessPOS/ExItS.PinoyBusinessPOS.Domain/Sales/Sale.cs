@@ -80,6 +80,12 @@ public sealed class Sale
     /// <summary>Last write timestamp used for optimistic concurrency checks by callers.</summary>
     public DateTimeOffset UpdatedAtUtc { get; private set; }
 
+    /// <summary>
+    /// Inventory hold for provider-backed Card/GCash sales. Cash/Utang/ManualGCash remain
+    /// <see cref="SaleStockReservationState.None"/>.
+    /// </summary>
+    public SaleStockReservationState StockReservationState { get; private set; }
+
     public IReadOnlyList<SaleLine> Lines => _lines;
 
     private Sale(
@@ -105,7 +111,8 @@ public sealed class Sale
         Guid? voidedBy,
         string? voidReason,
         DateTimeOffset updatedAtUtc,
-        List<SaleLine> lines)
+        List<SaleLine> lines,
+        SaleStockReservationState stockReservationState)
     {
         Id = id;
         OrganizationId = organizationId;
@@ -129,6 +136,7 @@ public sealed class Sale
         VoidedBy = voidedBy;
         VoidReason = voidReason;
         UpdatedAtUtc = updatedAtUtc;
+        StockReservationState = stockReservationState;
         _lines = lines;
     }
 
@@ -252,7 +260,8 @@ public sealed class Sale
             null,
             null,
             utcNow,
-            saleLines);
+            saleLines,
+            SaleStockReservationState.None);
     }
 
     /// <summary>
@@ -327,7 +336,8 @@ public sealed class Sale
         CreditEntryId? linkedCreditEntryId = null,
         CashierShiftId? cashierShiftId = null,
         RegisterId? registerId = null,
-        SaleBuyerParty? buyerParty = null) =>
+        SaleBuyerParty? buyerParty = null,
+        SaleStockReservationState stockReservationState = SaleStockReservationState.None) =>
         new(
             id,
             organizationId,
@@ -351,7 +361,81 @@ public sealed class Sale
             voidedBy,
             voidReason,
             updatedAtUtc,
-            lines.OrderBy(l => l.LineNumber).ToList());
+            lines.OrderBy(l => l.LineNumber).ToList(),
+            stockReservationState);
+
+    /// <summary>
+    /// Marks inventory as reserved for an electronic sale awaiting payment.
+    /// Idempotent when already Reserved; Released may re-reserve for payment retry.
+    /// </summary>
+    public void MarkStockReserved(DateTimeOffset utcNow)
+    {
+        SaleMoney.EnsureUtc(utcNow);
+
+        if (StockReservationState == SaleStockReservationState.Reserved)
+        {
+            return;
+        }
+
+        if (StockReservationState is not (SaleStockReservationState.None or SaleStockReservationState.Released))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidSaleStockReservation,
+                "Stock can only be reserved from None or Released.");
+        }
+
+        StockReservationState = SaleStockReservationState.Reserved;
+        UpdatedAtUtc = utcNow;
+    }
+
+    /// <summary>
+    /// Releases a prior reservation (decline, cancel, expire, void while awaiting payment).
+    /// Idempotent when already Released.
+    /// </summary>
+    public void MarkStockReleased(DateTimeOffset utcNow)
+    {
+        SaleMoney.EnsureUtc(utcNow);
+
+        if (StockReservationState == SaleStockReservationState.Released)
+        {
+            return;
+        }
+
+        if (StockReservationState != SaleStockReservationState.Reserved)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidSaleStockReservation,
+                "Stock can only be released from the Reserved state.");
+        }
+
+        StockReservationState = SaleStockReservationState.Released;
+        UpdatedAtUtc = utcNow;
+    }
+
+    /// <summary>
+    /// Converts a reservation into a consumed deduction after Paid finalization.
+    /// Idempotent when already Consumed. Allows Released→Consumed when an authoritative
+    /// Paid arrives after a local release (provider wins; stock deducted via fallback path).
+    /// </summary>
+    public void MarkStockConsumed(DateTimeOffset utcNow)
+    {
+        SaleMoney.EnsureUtc(utcNow);
+
+        if (StockReservationState == SaleStockReservationState.Consumed)
+        {
+            return;
+        }
+
+        if (StockReservationState is not (SaleStockReservationState.Reserved or SaleStockReservationState.Released))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidSaleStockReservation,
+                "Stock can only be consumed from the Reserved or Released state.");
+        }
+
+        StockReservationState = SaleStockReservationState.Consumed;
+        UpdatedAtUtc = utcNow;
+    }
 
     /// <summary>
     /// Voids a completed sale. Voiding is the only correction available: it does not refund money

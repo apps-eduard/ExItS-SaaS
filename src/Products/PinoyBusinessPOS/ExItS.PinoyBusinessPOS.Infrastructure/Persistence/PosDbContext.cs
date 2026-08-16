@@ -838,6 +838,9 @@ public sealed class PosDbContext : DbContext
                 tb.HasCheckConstraint(
                     "ck_sales_buyer_party_kind",
                     "buyer_party_kind IN ('WalkIn', 'ExternalCustomer', 'Personal', 'Organization')");
+                tb.HasCheckConstraint(
+                    "ck_sales_stock_reservation",
+                    "stock_reservation_state IN ('None', 'Reserved', 'Released', 'Consumed')");
             });
 
             entity.HasKey(e => e.Id);
@@ -878,6 +881,10 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.LinkedCreditEntryId).HasColumnName("linked_credit_entry_id");
             entity.Property(e => e.CashierShiftId).HasColumnName("cashier_shift_id");
             entity.Property(e => e.RegisterId).HasColumnName("register_id");
+            entity.Property(e => e.StockReservationState)
+                .HasColumnName("stock_reservation_state")
+                .HasMaxLength(32)
+                .IsRequired();
             entity.Property(e => e.RecordedAtUtc).HasColumnName("recorded_at_utc");
             entity.Property(e => e.RecordedBy).HasColumnName("recorded_by").IsRequired();
             entity.Property(e => e.VoidedAtUtc).HasColumnName("voided_at_utc");

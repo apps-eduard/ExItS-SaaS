@@ -672,9 +672,15 @@ public sealed class CheckoutSale
                         resolvedBuyerParty),
                     async (createdSale, ct) =>
                     {
-                        // Electronic Card/GCash sales await payment — stock deducts only after Paid webhook.
+                        // Electronic Card/GCash sales await payment — reserve stock until Paid/Released.
                         if (isElectronic)
                         {
+                            await _saleStock
+                                .EnsureAvailableForSaleAsync(orgId, createdSale, ct)
+                                .ConfigureAwait(false);
+                            await _saleStock
+                                .ReserveForAwaitingPaymentAsync(createdSale, capturedActorId, utcNow, ct)
+                                .ConfigureAwait(false);
                             return;
                         }
 
@@ -884,6 +890,14 @@ public sealed class VoidSale
                     else
                     {
                         current.Void(reason, actorId, _clock.UtcNow);
+                        await _sales.UpdateAsync(current, ct).ConfigureAwait(false);
+                    }
+
+                    if (current.StockReservationState == SaleStockReservationState.Reserved)
+                    {
+                        await _saleStock
+                            .ReleaseIfReservedAsync(current, _clock.UtcNow, ct)
+                            .ConfigureAwait(false);
                         await _sales.UpdateAsync(current, ct).ConfigureAwait(false);
                     }
 

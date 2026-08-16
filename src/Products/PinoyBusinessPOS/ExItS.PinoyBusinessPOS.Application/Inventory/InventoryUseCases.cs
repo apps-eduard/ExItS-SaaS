@@ -688,6 +688,29 @@ public sealed class AdjustInventoryStock
 /// </summary>
 public interface ISaleStockService
 {
+    Task EnsureAvailableForSaleAsync(
+        PosOrganizationId organizationId,
+        Sale sale,
+        CancellationToken cancellationToken = default);
+
+    Task ReserveForAwaitingPaymentAsync(
+        Sale sale,
+        Guid actorId,
+        DateTimeOffset utcNow,
+        CancellationToken cancellationToken = default);
+
+    Task ReleaseIfReservedAsync(
+        Sale sale,
+        DateTimeOffset utcNow,
+        CancellationToken cancellationToken = default);
+
+    Task ConsumeReservedForPaidAsync(
+        Sale sale,
+        IReadOnlyDictionary<Guid, CatalogProduct> productsById,
+        Guid actorId,
+        DateTimeOffset utcNow,
+        CancellationToken cancellationToken = default);
+
     Task DeductForSaleAsync(
         PosOrganizationId organizationId,
         Sale sale,
@@ -714,6 +737,204 @@ public sealed class SaleStockService : ISaleStockService
     {
         _inventory = inventory;
         _lots = lots;
+    }
+
+    public async Task EnsureAvailableForSaleAsync(
+        PosOrganizationId organizationId,
+        Sale sale,
+        CancellationToken cancellationToken = default)
+    {
+        var productIds = sale.Lines.Select(l => l.ProductId).Distinct().ToList();
+        var accounts = await _inventory
+            .ListByProductIdsAsync(organizationId, productIds, cancellationToken)
+            .ConfigureAwait(false);
+        var byProduct = accounts.ToDictionary(a => a.ProductId.Value);
+
+        foreach (var group in sale.Lines.GroupBy(l => l.ProductId.Value))
+        {
+            if (!byProduct.TryGetValue(group.Key, out var account) || !account.IsTracked)
+            {
+                continue;
+            }
+
+            var needed = group.Sum(l => l.Quantity);
+            if (account.AvailableQuantity < needed)
+            {
+                throw new DomainException(
+                    ApplicationErrorCodes.InsufficientStock,
+                    "Insufficient available stock for one or more sale lines.");
+            }
+        }
+    }
+
+    public async Task ReserveForAwaitingPaymentAsync(
+        Sale sale,
+        Guid actorId,
+        DateTimeOffset utcNow,
+        CancellationToken cancellationToken = default)
+    {
+        _ = actorId;
+        if (sale.StockReservationState == SaleStockReservationState.Reserved)
+        {
+            return;
+        }
+
+        if (sale.StockReservationState == SaleStockReservationState.Consumed)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidSaleStockReservation,
+                "Cannot reserve stock for a sale that already consumed its reservation.");
+        }
+
+        var productIds = sale.Lines.Select(l => l.ProductId).Distinct().ToList();
+        await _inventory
+            .ExecuteWithProductReservationLocksAsync(
+                sale.OrganizationId,
+                productIds,
+                async (accounts, ct) =>
+                {
+                    var byProduct = accounts.ToDictionary(a => a.ProductId.Value);
+                    foreach (var line in sale.Lines.OrderBy(l => l.LineNumber))
+                    {
+                        if (!byProduct.TryGetValue(line.ProductId.Value, out var account) || !account.IsTracked)
+                        {
+                            continue;
+                        }
+
+                        account.Reserve(line.Quantity);
+                        account.Touch(utcNow);
+                        await _inventory.UpdateAccountAsync(account, ct).ConfigureAwait(false);
+                    }
+                },
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        sale.MarkStockReserved(utcNow);
+    }
+
+    public async Task ReleaseIfReservedAsync(
+        Sale sale,
+        DateTimeOffset utcNow,
+        CancellationToken cancellationToken = default)
+    {
+        if (sale.StockReservationState != SaleStockReservationState.Reserved)
+        {
+            return;
+        }
+
+        var productIds = sale.Lines.Select(l => l.ProductId).Distinct().ToList();
+        await _inventory
+            .ExecuteWithProductReservationLocksAsync(
+                sale.OrganizationId,
+                productIds,
+                async (accounts, ct) =>
+                {
+                    var byProduct = accounts.ToDictionary(a => a.ProductId.Value);
+                    foreach (var line in sale.Lines.OrderBy(l => l.LineNumber))
+                    {
+                        if (!byProduct.TryGetValue(line.ProductId.Value, out var account) || !account.IsTracked)
+                        {
+                            continue;
+                        }
+
+                        account.Release(line.Quantity);
+                        account.Touch(utcNow);
+                        await _inventory.UpdateAccountAsync(account, ct).ConfigureAwait(false);
+                    }
+                },
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        sale.MarkStockReleased(utcNow);
+    }
+
+    public async Task ConsumeReservedForPaidAsync(
+        Sale sale,
+        IReadOnlyDictionary<Guid, CatalogProduct> productsById,
+        Guid actorId,
+        DateTimeOffset utcNow,
+        CancellationToken cancellationToken = default)
+    {
+        if (sale.StockReservationState == SaleStockReservationState.Consumed)
+        {
+            return;
+        }
+
+        if (sale.StockReservationState != SaleStockReservationState.Reserved)
+        {
+            return;
+        }
+
+        var productIds = sale.Lines.Select(l => l.ProductId).Distinct().ToList();
+        await _inventory
+            .ExecuteWithProductReservationLocksAsync(
+                sale.OrganizationId,
+                productIds,
+                async (accounts, ct) =>
+                {
+                    var byProduct = accounts.ToDictionary(a => a.ProductId.Value);
+                    foreach (var line in sale.Lines.OrderBy(l => l.LineNumber))
+                    {
+                        if (!byProduct.TryGetValue(line.ProductId.Value, out var account) || !account.IsTracked)
+                        {
+                            continue;
+                        }
+
+                        if (await _inventory
+                                .HasSaleDeductionAsync(sale.OrganizationId, sale.Id, line.ProductId, ct)
+                                .ConfigureAwait(false))
+                        {
+                            continue;
+                        }
+
+                        if (!productsById.TryGetValue(line.ProductId.Value, out var product))
+                        {
+                            throw new DomainException(
+                                ApplicationErrorCodes.SaleProductNotFound,
+                                "One or more products in the cart were not found in this organization.");
+                        }
+
+                        if (product.TracksExpiration)
+                        {
+                            // ConsumeFefo updates lots only; account on-hand is applied by DeductForSale.
+                            // For reserved sales: release hold then reuse FEFO deduct path (avoids double on-hand).
+                            account.Release(line.Quantity);
+                            account.Touch(utcNow);
+                            await _inventory.UpdateAccountAsync(account, ct).ConfigureAwait(false);
+                            await DeductTrackedLineForSaleAsync(
+                                    sale.OrganizationId,
+                                    sale,
+                                    line,
+                                    product,
+                                    account,
+                                    actorId,
+                                    utcNow,
+                                    ct)
+                                .ConfigureAwait(false);
+                            continue;
+                        }
+
+                        account.ConsumeReservation(line.Quantity);
+                        account.Touch(utcNow);
+                        var movement = StockMovement.SaleDeduction(
+                            sale.OrganizationId,
+                            line.ProductId,
+                            account.Id,
+                            line.Quantity,
+                            line.UnitOfMeasureSnapshot,
+                            sale.Id.Value,
+                            actorId,
+                            utcNow,
+                            sellingMode: line.SellingModeSnapshot);
+                        // ConsumeReservation already applied on-hand effect — do not ApplyMovementEffect again.
+                        await _inventory.UpdateAccountAsync(account, ct).ConfigureAwait(false);
+                        await _inventory.AddMovementAsync(movement, ct).ConfigureAwait(false);
+                    }
+                },
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        sale.MarkStockConsumed(utcNow);
     }
 
     public async Task DeductForSaleAsync(
@@ -751,54 +972,76 @@ public sealed class SaleStockService : ISaleStockService
                     "One or more products in the cart were not found in this organization.");
             }
 
-            if (product.TracksExpiration)
+            await DeductTrackedLineForSaleAsync(
+                    organizationId,
+                    sale,
+                    line,
+                    product,
+                    account,
+                    actorId,
+                    utcNow,
+                    cancellationToken)
+                .ConfigureAwait(false);
+        }
+    }
+
+    private async Task DeductTrackedLineForSaleAsync(
+        PosOrganizationId organizationId,
+        Sale sale,
+        SaleLine line,
+        CatalogProduct product,
+        InventoryAccount account,
+        Guid actorId,
+        DateTimeOffset utcNow,
+        CancellationToken cancellationToken)
+    {
+        if (product.TracksExpiration)
+        {
+            var today = InventoryLot.BusinessDateOf(utcNow);
+            try
             {
-                var today = InventoryLot.BusinessDateOf(utcNow);
-                try
-                {
-                    await _lots
-                        .ConsumeFefoAsync(
-                            organizationId,
-                            line.ProductId,
-                            line.Quantity,
-                            today,
-                            actorId,
-                            utcNow,
-                            StockMovementType.SaleDeduction,
-                            StockMovementSourceType.Sale,
-                            sourceId: sale.Id.Value,
-                            cancellationToken: cancellationToken)
-                        .ConfigureAwait(false);
-                }
-                catch (DomainException)
-                {
-                    throw new DomainException(
-                        ApplicationErrorCodes.InsufficientStock,
-                        $"Insufficient non-expired stock for '{product.Name}'. Required: {line.Quantity}.");
-                }
+                await _lots
+                    .ConsumeFefoAsync(
+                        organizationId,
+                        line.ProductId,
+                        line.Quantity,
+                        today,
+                        actorId,
+                        utcNow,
+                        StockMovementType.SaleDeduction,
+                        StockMovementSourceType.Sale,
+                        sourceId: sale.Id.Value,
+                        cancellationToken: cancellationToken)
+                    .ConfigureAwait(false);
             }
-            else if (account.OnHandQuantity < line.Quantity)
+            catch (DomainException)
             {
                 throw new DomainException(
                     ApplicationErrorCodes.InsufficientStock,
-                    $"Insufficient stock for '{product.Name}'. On hand: {account.OnHandQuantity}, required: {line.Quantity}.");
+                    $"Insufficient non-expired stock for '{product.Name}'. Required: {line.Quantity}.");
             }
-
-            var movement = StockMovement.SaleDeduction(
-                organizationId,
-                line.ProductId,
-                account.Id,
-                line.Quantity,
-                line.UnitOfMeasureSnapshot,
-                sale.Id.Value,
-                actorId,
-                utcNow,
-                sellingMode: line.SellingModeSnapshot);
-            account.ApplyMovementEffect(movement.QuantityEffect);
-            account.Touch(utcNow);
-            await _inventory.UpdateAccountAsync(account, cancellationToken).ConfigureAwait(false);
-            await _inventory.AddMovementAsync(movement, cancellationToken).ConfigureAwait(false);
         }
+        else if (account.AvailableQuantity < line.Quantity)
+        {
+            throw new DomainException(
+                ApplicationErrorCodes.InsufficientStock,
+                $"Insufficient stock for '{product.Name}'. Available: {account.AvailableQuantity}, required: {line.Quantity}.");
+        }
+
+        var movement = StockMovement.SaleDeduction(
+            organizationId,
+            line.ProductId,
+            account.Id,
+            line.Quantity,
+            line.UnitOfMeasureSnapshot,
+            sale.Id.Value,
+            actorId,
+            utcNow,
+            sellingMode: line.SellingModeSnapshot);
+        account.ApplyMovementEffect(movement.QuantityEffect);
+        account.Touch(utcNow);
+        await _inventory.UpdateAccountAsync(account, cancellationToken).ConfigureAwait(false);
+        await _inventory.AddMovementAsync(movement, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task RestoreForSaleVoidAsync(

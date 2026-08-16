@@ -400,7 +400,8 @@ internal sealed class SaleRepository : ISaleRepository
                 .ConfigureAwait(false);
             var sale = createSale(SaleNumbers.Format(businessDateUtc, sequence));
 
-            _db.Sales.Add(SaleEntityMapper.ToRecord(sale));
+            var saleRecord = SaleEntityMapper.ToRecord(sale);
+            _db.Sales.Add(saleRecord);
             foreach (var line in sale.Lines)
             {
                 _db.SaleLines.Add(SaleEntityMapper.ToRecord(line));
@@ -409,6 +410,8 @@ internal sealed class SaleRepository : ISaleRepository
             if (afterSaleCreated is not null)
             {
                 await afterSaleCreated(sale, cancellationToken).ConfigureAwait(false);
+                // Sync mutable post-create state (e.g. electronic stock reservation) onto the tracked row.
+                SaleEntityMapper.ApplyToRecord(sale, saleRecord);
             }
 
             await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);

@@ -332,11 +332,16 @@ public sealed class PaymentAttempt
 
         if (IsTerminal)
         {
-            // Stale/out-of-order: never revive Failed/Cancelled/Expired into Paid.
-            return;
+            // Authoritative provider Paid may override Failed/Cancelled/Expired when newer.
+            if (Status is not (PaymentAttemptStatus.Failed
+                    or PaymentAttemptStatus.Cancelled
+                    or PaymentAttemptStatus.Expired)
+                || eventSequence <= ProviderEventSequence)
+            {
+                return;
+            }
         }
-
-        if (eventSequence < ProviderEventSequence)
+        else if (eventSequence < ProviderEventSequence)
         {
             return; // out-of-order older event
         }
@@ -374,6 +379,37 @@ public sealed class PaymentAttempt
         FailureMessage = NormalizeOptionalText(failureMessage, FailureMessageMaxLength, DomainErrorCodes.InvalidPaymentAttemptFailure);
         CompletedAtUtc = utcNow;
         ProviderEventSequence = eventSequence;
+        UpdatedAtUtc = utcNow;
+    }
+
+    /// <summary>
+    /// Marks a locally Created attempt as Failed without a provider event sequence
+    /// (definite gateway failure before/without a durable provider session).
+    /// </summary>
+    public void MarkFailedLocally(string code, string message, DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        if (Status == PaymentAttemptStatus.Paid)
+        {
+            return;
+        }
+
+        if (Status == PaymentAttemptStatus.Failed)
+        {
+            return;
+        }
+
+        if (Status != PaymentAttemptStatus.Created)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPaymentAttemptStatusTransition,
+                $"Cannot mark locally failed from status {Status}.");
+        }
+
+        Status = PaymentAttemptStatus.Failed;
+        FailureCode = NormalizeOptionalText(code, FailureCodeMaxLength, DomainErrorCodes.InvalidPaymentAttemptFailure);
+        FailureMessage = NormalizeOptionalText(message, FailureMessageMaxLength, DomainErrorCodes.InvalidPaymentAttemptFailure);
+        CompletedAtUtc = utcNow;
         UpdatedAtUtc = utcNow;
     }
 

@@ -65,7 +65,8 @@ internal static class SaleEntityMapper
                 record.BuyerDisplayNameSnapshot,
                 record.BuyerPersonalPublicUserId,
                 record.BuyerOrganizationId,
-                record.BuyerPublicOrganizationId));
+                record.BuyerPublicOrganizationId),
+            Enum.Parse<SaleStockReservationState>(record.StockReservationState, ignoreCase: true));
     }
 
     public static SaleRecord ToRecord(Sale sale) =>
@@ -91,6 +92,7 @@ internal static class SaleEntityMapper
             LinkedCreditEntryId = sale.LinkedCreditEntryId?.Value,
             CashierShiftId = sale.CashierShiftId?.Value,
             RegisterId = sale.RegisterId?.Value,
+            StockReservationState = sale.StockReservationState.ToString(),
             RecordedAtUtc = sale.RecordedAtUtc,
             RecordedBy = sale.RecordedBy,
             VoidedAtUtc = sale.VoidedAtUtc,
@@ -132,6 +134,7 @@ internal static class SaleEntityMapper
         record.VoidedAtUtc = sale.VoidedAtUtc;
         record.VoidedBy = sale.VoidedBy;
         record.VoidReason = sale.VoidReason;
+        record.StockReservationState = sale.StockReservationState.ToString();
         record.UpdatedAtUtc = sale.UpdatedAtUtc;
     }
 }

@@ -83,8 +83,13 @@ public static class DomainErrorCodes
     public const string SaleAwaitingPaymentCannotFinalize =
         "pos.sale.awaiting_payment.cannot_finalize";
     public const string SaleNotAwaitingPayment = "pos.sale.not_awaiting_payment";
+    public const string InvalidSaleStockReservation = "pos.sale.stock_reservation.invalid";
 
     public const string InvalidPaymentAttemptId = "pos.payment_attempt.id.invalid";
+    public const string PaymentGatewayIdempotencyConflict =
+        "pos.payment_gateway.idempotency.conflict";
+    public const string PaymentGatewayFailure = "pos.payment_gateway.failure";
+    public const string PaymentGatewayTimeout = "pos.payment_gateway.timeout";
     public const string InvalidPaymentAttemptMethod = "pos.payment_attempt.method.invalid";
     public const string InvalidPaymentAttemptStatusTransition =
         "pos.payment_attempt.status.invalid_transition";

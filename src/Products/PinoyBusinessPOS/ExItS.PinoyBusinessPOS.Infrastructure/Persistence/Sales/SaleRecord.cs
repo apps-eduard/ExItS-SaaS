@@ -22,6 +22,7 @@ internal sealed class SaleRecord
     public Guid? LinkedCreditEntryId { get; set; }
     public Guid? CashierShiftId { get; set; }
     public Guid? RegisterId { get; set; }
+    public string StockReservationState { get; set; } = "None";
     public DateTimeOffset RecordedAtUtc { get; set; }
     public Guid RecordedBy { get; set; }
     public DateTimeOffset? VoidedAtUtc { get; set; }
