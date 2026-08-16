@@ -76,4 +76,24 @@ public sealed class ConnectedSupplierDomainTests
         Assert.False(exposure.IsOrderable);
         Assert.Equal(2,exposure.SyncVersion);
     }
+
+    [Fact]
+    public void Effective_price_uses_buyer_override_then_supplier_default_and_requires_share()
+    {
+        var relationship=ConnectedSupplierRelationship.Request(Buyer,Supplier,Now);
+        relationship.Approve(Now.AddMinutes(1));
+        var productId=CatalogProductId.New();
+        var exposure=SupplierProductExposure.Expose(Supplier,productId,"Rice","Kilogram",50m,Now);
+        var share=ConnectedBuyerProductShare.Share(relationship.Id,Buyer,Supplier,productId,Now,45.126m);
+
+        Assert.True(ConnectedPoPricing.TryResolveEffectivePrice(exposure,share,out var overridden));
+        Assert.Equal(45.13m,overridden);
+
+        share.SetBuyerSpecificPoPrice(null,Now.AddMinutes(2));
+        Assert.True(ConnectedPoPricing.TryResolveEffectivePrice(exposure,share,out var fallback));
+        Assert.Equal(50m,fallback);
+
+        share.Unshare(Now.AddMinutes(3));
+        Assert.False(ConnectedPoPricing.TryResolveEffectivePrice(exposure,share,out _));
+    }
 }

@@ -49,21 +49,41 @@ public sealed class ConnectedBuyersUiGuardTests
         Assert.Contains("ConnectedBuyers_Direction", page, StringComparison.Ordinal);
         Assert.Contains("ConnectedBuyers_ConnectedSince", page, StringComparison.Ordinal);
         Assert.Contains("ConnectedBuyers_NotCustomerNote", page, StringComparison.Ordinal);
+        Assert.Contains("ConnectedBuyers_ManageSharedProducts", page, StringComparison.Ordinal);
+        Assert.Contains("/shared-products", page, StringComparison.Ordinal);
     }
 
     [Fact]
-    public void MauiAcceptNavigatesToConnectedBuyers()
+    public void MauiAcceptNavigatesToProductSharingPrompt()
     {
         var requests = File.ReadAllText(Path.Combine(MauiProject(),
             "Components", "Pages", "Suppliers", "ConnectedSupplierIncomingRequests.razor"));
         Assert.Contains("ApproveAsync", requests, StringComparison.Ordinal);
-        Assert.Contains("/suppliers/connected/buyers", requests, StringComparison.Ordinal);
+        Assert.Contains("/{relationshipId:D}/share-products", requests, StringComparison.Ordinal);
 
         var notifications = File.ReadAllText(Path.Combine(MauiProject(),
             "Components", "Pages", "Organization", "OrganizationNotifications.razor"));
         Assert.Contains("ApproveAsync", notifications, StringComparison.Ordinal);
-        Assert.Contains("/suppliers/connected/buyers", notifications, StringComparison.Ordinal);
+        Assert.Contains("/{relationshipId:D}/share-products", notifications, StringComparison.Ordinal);
         Assert.Contains("AcceptedConfirmation", notifications, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MauiBuyerProductSharingPagesWireClientOperations()
+    {
+        var suppliers = Path.Combine(MauiProject(), "Components", "Pages", "Suppliers");
+        var prompt = File.ReadAllText(Path.Combine(suppliers, "ConnectedBuyerSharePrompt.razor"));
+        Assert.Contains("@page \"/suppliers/connected/buyers/{RelationshipId:guid}/share-products\"", prompt, StringComparison.Ordinal);
+        Assert.Contains("ListEligibleProductsForSharingAsync", prompt, StringComparison.Ordinal);
+        Assert.Contains("ConfirmBuyerProductSharingAsync", prompt, StringComparison.Ordinal);
+        Assert.Contains("GoBuyer", prompt, StringComparison.Ordinal);
+
+        var manage = File.ReadAllText(Path.Combine(suppliers, "ConnectedBuyerSharedProducts.razor"));
+        Assert.Contains("@page \"/suppliers/connected/buyers/{RelationshipId:guid}/shared-products\"", manage, StringComparison.Ordinal);
+        Assert.Contains("ListBuyerProductSharesAsync", manage, StringComparison.Ordinal);
+        Assert.Contains("SetBuyerProductSharesAsync", manage, StringComparison.Ordinal);
+        Assert.Contains("ConnectedBuyers_FilterNotShared", manage, StringComparison.Ordinal);
+        Assert.Contains("BuyerSpecificPoPrice", manage, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -79,7 +99,11 @@ public sealed class ConnectedBuyersUiGuardTests
                      "ConnectedBuyers_NotCustomerNote",
                      "ConnectedBuyers_ReviewRequests",
                      "ConnectedBuyers_ViewConnection",
-                     "ConnectedBuyers_Direction"
+                     "ConnectedBuyers_Direction",
+                     "ConnectedBuyers_SharePromptTitle",
+                     "ConnectedBuyers_ManageSharedProducts",
+                     "ConnectedBuyers_SharedProductsTitle",
+                     "ConnectedBuyers_BuyerSpecificPoPrice"
                  })
         {
             Assert.Contains($"name=\"{key}\"", en, StringComparison.Ordinal);

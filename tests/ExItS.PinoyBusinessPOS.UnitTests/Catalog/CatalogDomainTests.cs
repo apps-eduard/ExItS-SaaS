@@ -33,6 +33,25 @@ public sealed class CatalogDomainTests
     }
 
     [Fact]
+    public void Connected_buyer_availability_initializes_default_once_and_keeps_it_independent()
+    {
+        var product = CatalogProduct.Create(OrgA, "Rice", UnitOfMeasure.Kilogram, 55.13m, Now);
+
+        product.EnableConnectedBuyerAvailability(Now.AddMinutes(1));
+        Assert.True(product.CanExposeToConnectedBuyers);
+        Assert.Equal(55.13m, product.DefaultConnectedPoPrice);
+
+        product.UpdateSellingPrice(60m, Now.AddMinutes(2));
+        product.DisableConnectedBuyerAvailability(Now.AddMinutes(3));
+        product.EnableConnectedBuyerAvailability(Now.AddMinutes(4));
+        Assert.Equal(55.13m, product.DefaultConnectedPoPrice);
+
+        product.SetDefaultConnectedPoPrice(48.456m, Now.AddMinutes(5));
+        Assert.Equal(48.46m, product.DefaultConnectedPoPrice);
+        Assert.Equal(60m, product.SellingPrice);
+    }
+
+    [Fact]
     public void Create_product_requires_name()
     {
         var ex = Assert.Throws<DomainException>(() =>

@@ -31,6 +31,8 @@ public sealed class CatalogPageGuardTests
         Assert.Contains("@page \"/catalog/products/new\"", create, StringComparison.Ordinal);
         Assert.Contains("StoreHeaderBack Href=\"/catalog\"", create, StringComparison.Ordinal);
         Assert.Contains("OnCancel=\"GoBack\"", create, StringComparison.Ordinal);
+        Assert.Contains("CanExposeToConnectedBuyers", create, StringComparison.Ordinal);
+        Assert.Contains("DefaultConnectedPoPrice", create, StringComparison.Ordinal);
 
         var detail = File.ReadAllText(Path.Combine(catalog, "CatalogProductDetail.razor"));
         Assert.Contains("@page \"/catalog/products/{ProductId:guid}\"", detail, StringComparison.Ordinal);
@@ -57,6 +59,9 @@ public sealed class CatalogPageGuardTests
         Assert.Contains("UtangCapability.ManageInventory", edit, StringComparison.Ordinal);
         Assert.Contains("pos-catalog-product-edit__header", edit, StringComparison.Ordinal);
         Assert.Contains("pos-catalog-product-edit__panel", edit, StringComparison.Ordinal);
+        Assert.Contains("CanExposeToConnectedBuyers", edit, StringComparison.Ordinal);
+        Assert.Contains("DefaultConnectedPoPrice", edit, StringComparison.Ordinal);
+        Assert.Contains("Catalog_ConnectedBuyers_VisibilityHelp", edit, StringComparison.Ordinal);
         Assert.DoesNotContain("PageHeader", edit, StringComparison.Ordinal);
         Assert.DoesNotContain("Catalog_BackToList", edit, StringComparison.Ordinal);
 
