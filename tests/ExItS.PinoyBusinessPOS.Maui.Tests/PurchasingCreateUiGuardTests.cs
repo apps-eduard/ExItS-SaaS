@@ -3,11 +3,30 @@ namespace ExItS.PinoyBusinessPOS.Maui.Tests;
 public sealed class PurchasingCreateUiGuardTests
 {
     [Fact]
+    public void Create_page_enforces_supplier_first_product_selection()
+    {
+        var create = CreatePage();
+
+        Assert.Contains("Purchasing_SelectSupplierFirst", create, StringComparison.Ordinal);
+        Assert.Contains("Purchasing_SelectSupplierFirstHelp", create, StringComparison.Ordinal);
+        Assert.Contains("HasSupplierSelected", create, StringComparison.Ordinal);
+        Assert.Contains("RequiresSupplierChangeConfirmation", create, StringComparison.Ordinal);
+        Assert.Contains("ClearSupplierDependentDraftState", create, StringComparison.Ordinal);
+        Assert.Contains("Purchasing_ChangeSupplierTitle", create, StringComparison.Ordinal);
+        Assert.Contains("Purchasing_PoPriceLabel", create, StringComparison.Ordinal);
+        Assert.Contains("Purchasing_ProductsFromSupplier", create, StringComparison.Ordinal);
+        Assert.Contains("Purchasing_SearchYourProducts", create, StringComparison.Ordinal);
+        Assert.Contains("Purchasing_SearchSupplierProducts", create, StringComparison.Ordinal);
+        Assert.Contains("!HasSupplierSelected", create, StringComparison.Ordinal);
+        Assert.Contains("_confirmSupplierChange", create, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Create_page_has_search_category_filter_and_product_list()
     {
         var create = CreatePage();
 
-        Assert.Contains("Purchasing_SearchProducts", create, StringComparison.Ordinal);
+        Assert.Contains("Purchasing_SearchYourProducts", create, StringComparison.Ordinal);
         Assert.Contains("pos-purchasing-create__search-input", create, StringComparison.Ordinal);
         Assert.Contains("Purchasing_CategoryFilter", create, StringComparison.Ordinal);
         Assert.Contains("Purchasing_AllCategories", create, StringComparison.Ordinal);
@@ -98,6 +117,16 @@ public sealed class PurchasingCreateUiGuardTests
         foreach (var key in new[]
                  {
                      "Purchasing_SearchProducts",
+                     "Purchasing_SearchYourProducts",
+                     "Purchasing_SearchSupplierProducts",
+                     "Purchasing_ProductsFromSupplier",
+                     "Purchasing_SelectSupplierFirst",
+                     "Purchasing_SelectSupplierFirstHelp",
+                     "Purchasing_PoPriceLabel",
+                     "Purchasing_ChangeSupplierTitle",
+                     "Purchasing_ChangeSupplierMessage",
+                     "Purchasing_ChangeSupplierConfirm",
+                     "Purchasing_ChangeSupplierCancel",
                      "Purchasing_CategoryFilter",
                      "Purchasing_AllCategories",
                      "Purchasing_Uncategorized",
@@ -120,6 +149,8 @@ public sealed class PurchasingCreateUiGuardTests
                  {
                      ".pos-purchasing-create__search",
                      ".pos-purchasing-create__product-list",
+                     ".pos-purchasing-create__supplier-first",
+                     ".pos-purchasing-create__po-price",
                      ".pos-po-line__actions",
                      ".pos-po-line__action--danger",
                      ".pos-po-line__total"

@@ -70,7 +70,7 @@ public sealed class ConnectedSupplierClientUiGuardTests
     {
         var page = File.ReadAllText(Path.Combine(
             MauiProject(), "Components", "Pages", "Purchasing", "PurchasingCreate.razor"));
-        Assert.Contains("Purchasing_SearchProducts", page, StringComparison.Ordinal);
+        Assert.Contains("Purchasing_SearchYourProducts", page, StringComparison.Ordinal);
         Assert.Contains("PurchaseOrderCreateUi.FilterEligibleProducts", page, StringComparison.Ordinal);
         Assert.Contains("Purchasing_AllCategories", page, StringComparison.Ordinal);
         Assert.Contains("SearchCatalogAsync", page, StringComparison.Ordinal);

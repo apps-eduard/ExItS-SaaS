@@ -8444,6 +8444,41 @@ html.pos-keyboard-open .pos-content {
     margin-bottom: var(--exits-space-2);
 }
 
+.pos-purchasing-create__supplier-first {
+    display: flex;
+    flex-direction: column;
+    gap: var(--exits-space-1);
+    padding: var(--exits-space-3) 0;
+}
+
+.pos-purchasing-create__supplier-first-title {
+    color: var(--exits-text, #15201a);
+    font-size: var(--exits-text-md, 1rem);
+    font-weight: 650;
+    margin: 0;
+}
+
+.pos-purchasing-create__supplier-context {
+    color: var(--exits-text, #15201a);
+    font-size: var(--exits-text-sm, 0.875rem);
+    font-weight: 650;
+    margin: 0 0 var(--exits-space-1);
+}
+
+.pos-purchasing-create__po-price {
+    align-items: baseline;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 0.5rem;
+    margin-bottom: var(--exits-space-2);
+}
+
+.pos-purchasing-create__po-price-label {
+    color: var(--exits-text, #15201a);
+    font-size: var(--exits-text-sm, 0.875rem);
+    font-weight: 650;
+}
+
 .pos-purchasing-create__search-label {
     color: var(--exits-text, #15201a);
     font-size: var(--exits-text-sm, 0.875rem);

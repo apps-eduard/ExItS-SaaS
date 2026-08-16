@@ -11,6 +11,33 @@ public static class PurchaseOrderCreateUi
     /// <summary>Sentinel category filter for products with no category.</summary>
     public static readonly Guid UncategorizedFilterId = Guid.Parse("ffffffff-ffff-ffff-ffff-ffffffffffff");
 
+    public static bool HasSupplierSelected(string? supplierId) =>
+        Guid.TryParse(supplierId, out var id) && id != Guid.Empty;
+
+    /// <summary>
+    /// True when the user is switching to a different supplier while draft lines already exist.
+    /// </summary>
+    public static bool RequiresSupplierChangeConfirmation(
+        string? currentSupplierId,
+        string? nextSupplierId,
+        int lineCount)
+    {
+        if (lineCount <= 0)
+        {
+            return false;
+        }
+
+        if (!HasSupplierSelected(currentSupplierId) || !HasSupplierSelected(nextSupplierId))
+        {
+            return false;
+        }
+
+        return !string.Equals(currentSupplierId, nextSupplierId, StringComparison.OrdinalIgnoreCase);
+    }
+
+    public static bool IsConnectedOrganizationSupplier(string? connectionType) =>
+        string.Equals(connectionType, "ConnectedOrganization", StringComparison.OrdinalIgnoreCase);
+
     public static decimal LineTotal(decimal orderedQuantity, decimal unitPurchaseCost) =>
         PosSaleOptions.RoundMoney(orderedQuantity * unitPurchaseCost);
 

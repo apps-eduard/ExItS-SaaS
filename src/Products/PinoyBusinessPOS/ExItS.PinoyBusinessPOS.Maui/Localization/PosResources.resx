@@ -5017,6 +5017,36 @@
   <data name="Purchasing_SearchProducts" xml:space="preserve">
     <value>Search products</value>
   </data>
+  <data name="Purchasing_SearchYourProducts" xml:space="preserve">
+    <value>Search your products</value>
+  </data>
+  <data name="Purchasing_SearchSupplierProducts" xml:space="preserve">
+    <value>Search {0} products</value>
+  </data>
+  <data name="Purchasing_ProductsFromSupplier" xml:space="preserve">
+    <value>Products from {0}</value>
+  </data>
+  <data name="Purchasing_SelectSupplierFirst" xml:space="preserve">
+    <value>Select a supplier first</value>
+  </data>
+  <data name="Purchasing_SelectSupplierFirstHelp" xml:space="preserve">
+    <value>Choose who you're ordering from before adding products.</value>
+  </data>
+  <data name="Purchasing_PoPriceLabel" xml:space="preserve">
+    <value>PO price</value>
+  </data>
+  <data name="Purchasing_ChangeSupplierTitle" xml:space="preserve">
+    <value>Change supplier?</value>
+  </data>
+  <data name="Purchasing_ChangeSupplierMessage" xml:space="preserve">
+    <value>This purchase order already contains {0} products for {1}. Changing the supplier will remove those lines.</value>
+  </data>
+  <data name="Purchasing_ChangeSupplierConfirm" xml:space="preserve">
+    <value>Change supplier</value>
+  </data>
+  <data name="Purchasing_ChangeSupplierCancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
   <data name="Purchasing_CategoryFilter" xml:space="preserve">
     <value>Category</value>
   </data>

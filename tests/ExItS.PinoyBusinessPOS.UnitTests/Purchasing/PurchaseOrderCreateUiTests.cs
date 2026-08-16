@@ -8,6 +8,35 @@ public sealed class PurchaseOrderCreateUiTests
     private sealed record Line(Guid ProductId, string Name, decimal OrderedQty, decimal UnitPurchaseCost);
 
     [Fact]
+    public void Supplier_selection_gates_product_picker()
+    {
+        Assert.False(PurchaseOrderCreateUi.HasSupplierSelected(null));
+        Assert.False(PurchaseOrderCreateUi.HasSupplierSelected(""));
+        Assert.False(PurchaseOrderCreateUi.HasSupplierSelected(Guid.Empty.ToString("D")));
+        Assert.True(PurchaseOrderCreateUi.HasSupplierSelected(Guid.NewGuid().ToString("D")));
+    }
+
+    [Fact]
+    public void Supplier_change_with_lines_requires_confirmation()
+    {
+        var a = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa").ToString("D");
+        var b = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb").ToString("D");
+
+        Assert.False(PurchaseOrderCreateUi.RequiresSupplierChangeConfirmation(a, b, lineCount: 0));
+        Assert.False(PurchaseOrderCreateUi.RequiresSupplierChangeConfirmation(a, a, lineCount: 3));
+        Assert.True(PurchaseOrderCreateUi.RequiresSupplierChangeConfirmation(a, b, lineCount: 2));
+        Assert.False(PurchaseOrderCreateUi.RequiresSupplierChangeConfirmation(null, b, lineCount: 2));
+    }
+
+    [Fact]
+    public void Connected_organization_connection_type_is_detected()
+    {
+        Assert.True(PurchaseOrderCreateUi.IsConnectedOrganizationSupplier("ConnectedOrganization"));
+        Assert.False(PurchaseOrderCreateUi.IsConnectedOrganizationSupplier("External"));
+        Assert.False(PurchaseOrderCreateUi.IsConnectedOrganizationSupplier(null));
+    }
+
+    [Fact]
     public void Filter_matches_product_name_case_insensitively()
     {
         var products = SampleProducts();
