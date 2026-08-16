@@ -197,6 +197,8 @@ Must not store: passwords, hashes, tokens, OTP secrets, full request bodies, PHI
 
 POS remains non-PHI by default (Product Foundation).
 
+**Related MAUI client behavior:** [MAUI Offline and Platform Session Recovery](maui-offline-platform-session-recovery.md) — Offline ≠ session expired; Platform 401 renews AccessToken once via session grant then retries once; service failure ≠ session expiry; `PosApi` ≠ `PosBusinessApi`.
+
 ---
 
 ## 10. Decisions (P13-WP01)
