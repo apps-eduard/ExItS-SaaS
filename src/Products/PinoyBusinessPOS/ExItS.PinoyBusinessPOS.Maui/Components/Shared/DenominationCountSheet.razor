@@ -155,7 +155,10 @@
         await SetVisibleAsync(false);
     }
 
-    private Task DismissAsync() => SetVisibleAsync(false);
+    /// <summary>
+    /// Closing with a counted total applies it (same as Use total). Empty dismiss cancels.
+    /// </summary>
+    private Task DismissAsync() => HasCount ? UseTotalAsync() : SetVisibleAsync(false);
 
     private async Task SetVisibleAsync(bool visible)
     {

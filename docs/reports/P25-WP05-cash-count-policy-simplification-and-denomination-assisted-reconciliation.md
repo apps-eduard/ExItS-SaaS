@@ -25,10 +25,10 @@
 - `Off` is not selectable in Org Web or MAUI. API rejects new Off writes (`CashCountModeOffRetired`).
 - Leftover org `Off` rows migrate to **Optional**. Historical shift snapshots may still store Off.
 - Only `ManageOperationalSetup` (owner/admin) may change policy or denominations. Server-enforced. Cashiers count with `ManageShifts` but cannot change policy. Personal/cross-org rejected.
-- Same setting from Organization Web Settings → Cash handling and MAUI Operational Setup.
+- Same setting from Organization Web Settings → Cash handling and MAUI **Settings → Cash handling** (owner/admin). Operational setup no longer hosts cash-count policy UI.
 - `EffectiveCashCountMode` remains snapshotted at shift open.
 - Optional denomination helper on MAUI open/close. Authoritative totals remain `OpeningCashAmount` / `ClosingCashAmount`. Server recalculates `sum(value * qty)` and rejects mismatch.
-- Organization-configurable denominations with PHP defaults **1000, 500, 200, 100, 50, 20, 10, 5, 1, 0.25, 0.05, 0.01** (not 0.50 / 0.10). Custom values such as 5000, 0.50, or 0.10 still require no code change. Historical breakdown snapshots denomination values used at count time. Existing org denomination rows are not rewritten. Denomination UI/UX was preserved in the centavo-default refinement.
+- Organization-configurable denominations with PHP defaults **1000, 500, 200, 100, 50, 20, 10, 5, 1, 0.25, 0.10, 0.05, 0.01** (not 0.50). Custom values such as 5000 or 0.50 still require no code change. Historical breakdown snapshots denomination values used at count time. Missing defaults are appended for older peso-only seeds; custom/disabled rows are preserved. Denomination UI/UX was preserved in the centavo-default refinement.
 - Closing UX hides expected cash until the cashier submits a count (except historical Off snapshots that skip counting).
 
 ## 3. Explicit exclusions
@@ -49,7 +49,7 @@ Migration `AddPosCashDenominationsAndRequiredDefault`:
 - `cashier_shift_cash_count_lines` (unique shift+kind+value)
 - `cashier_shifts.effective_cash_count_mode` still allows Off for history
 
-Existing Required/Optional unchanged. PHP denomination seed is idempotent in application code, not a one-time SQL dump. Centavo default refinement does **not** add a migration (`numeric(18,2)` already stores 0.25 / 0.05 / 0.01). Existing organization denomination rows are preserved.
+Existing Required/Optional unchanged. PHP denomination seed is idempotent in application code, not a one-time SQL dump. Centavo default refinement does **not** add a migration (`numeric(18,2)` already stores 0.25 / 0.10 / 0.05 / 0.01). Missing default values are appended; existing custom rows are preserved.
 
 ## 5. API / UI
 

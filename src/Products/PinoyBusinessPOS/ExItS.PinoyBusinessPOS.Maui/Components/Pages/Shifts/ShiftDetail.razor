@@ -4,6 +4,7 @@
 @using ExItS.PinoyBusinessPOS.Maui.Services
 @inject NavigationManager Nav
 @inject NavigationGate Gate
+@inject ICurrentUserContext CurrentUser
 @inject IPosCashierShiftClient Shifts
 @inject IPosOperationalSetupClient SetupClient
 @inject IPlatformAccessClient Platform
@@ -107,24 +108,72 @@ else
 
     <section class="pos-shift-detail__card" aria-labelledby="shift-cash-summary-heading">
         <h2 id="shift-cash-summary-heading" class="pos-shift-detail__section-title">@L["Shifts_CashSummarySection"]</h2>
+        @{
+            var hasOpeningDenom = (_shift.OpeningDenominationLines?.Count ?? 0) > 0;
+            var hasClosingDenom = (_shift.ClosingDenominationLines?.Count ?? 0) > 0;
+        }
         <dl class="pos-shift-detail__totals">
-            <div class="pos-shift-detail__total-row">
-                <dt>@L["Shifts_OpeningCashLabel"]</dt>
-                <dd>
-                    @if (_shift.OpeningCashCounted)
+            <div class="pos-shift-detail__total-block">
+                @if (hasOpeningDenom && _shift.OpeningCashCounted)
+                {
+                    <button type="button"
+                            class="pos-shift-detail__total-row pos-shift-detail__total-row--action"
+                            aria-expanded="@_showOpeningBreakdown"
+                            aria-label="@($"{L["Shifts_OpeningCashLabel"]}. {L["Shifts_TapDenominationHint"]}")"
+                            @onclick="() => _showOpeningBreakdown = !_showOpeningBreakdown">
+                        <span class="pos-shift-detail__total-label">
+                            <span>@L["Shifts_OpeningCashLabel"]</span>
+                            <span class="pos-shift-detail__total-hint">@L["Shifts_TapDenominationHint"]</span>
+                        </span>
+                        <span class="pos-shift-detail__total-value">
+                            <MoneyDisplay Amount="@_shift.OpeningCashAmount" CurrencyCode="PHP" />
+                            <span class="pos-shift-detail__total-chevron" aria-hidden="true">@(_showOpeningBreakdown ? "▾" : "›")</span>
+                        </span>
+                    </button>
+                    @if (_showOpeningBreakdown)
                     {
-                        <MoneyDisplay Amount="@_shift.OpeningCashAmount" CurrencyCode="PHP" />
+                        <ul class="pos-denom-sheet__rows" aria-label="@L["Shifts_ViewOpeningDenominationBreakdown"]">
+                            @foreach (var line in _shift.OpeningDenominationLines!)
+                            {
+                                <li class="pos-denom-sheet__row">
+                                    <span>@($"PHP {line.DenominationValue:N2}")</span>
+                                    <span>@line.Quantity</span>
+                                    <span>@($"PHP {line.LineTotal ?? line.DenominationValue * line.Quantity:N2}")</span>
+                                </li>
+                            }
+                        </ul>
                     }
-                    else
-                    {
-                        <span>@OpeningCountLabel(_shift.EffectiveCashCountMode)</span>
-                    }
-                </dd>
+                }
+                else
+                {
+                    <div class="pos-shift-detail__total-row">
+                        <dt>@L["Shifts_OpeningCashLabel"]</dt>
+                        <dd>
+                            @if (_shift.OpeningCashCounted)
+                            {
+                                <MoneyDisplay Amount="@_shift.OpeningCashAmount" CurrencyCode="PHP" />
+                            }
+                            else
+                            {
+                                <span>@OpeningCountLabel(_shift.EffectiveCashCountMode)</span>
+                            }
+                        </dd>
+                    </div>
+                }
             </div>
             <div class="pos-shift-detail__total-row">
                 <dt>@L["Shifts_CashSales"]</dt>
                 <dd><MoneyDisplay Amount="@(_summary?.CashSalesTotal ?? _summary?.NetCashSales ?? 0m)" CurrencyCode="PHP" /></dd>
             </div>
+            <div class="pos-shift-detail__total-row pos-shift-detail__total-row--info">
+                <dt>@L["Shifts_GCashSales"]</dt>
+                <dd><MoneyDisplay Amount="@(_summary?.GCashSalesTotal ?? 0m)" CurrencyCode="PHP" /></dd>
+            </div>
+            <div class="pos-shift-detail__total-row pos-shift-detail__total-row--info">
+                <dt>@L["Shifts_UtangSales"]</dt>
+                <dd><MoneyDisplay Amount="@(_summary?.UtangSalesTotal ?? 0m)" CurrencyCode="PHP" /></dd>
+            </div>
+            <p class="pos-shift-detail__info-hint pos-muted">@L["Shifts_NonCashInfoHint"]</p>
             <div class="pos-shift-detail__total-row">
                 <dt>@L["Shifts_CashIn"]</dt>
                 <dd><MoneyDisplay Amount="@(_summary?.TotalCashIn ?? 0m)" CurrencyCode="PHP" /></dd>
@@ -152,9 +201,44 @@ else
                 </div>
                 @if (_shift.ClosingCashAmount is not null)
                 {
-                    <div class="pos-shift-detail__total-row">
-                        <dt>@L["Shifts_CountedCash"]</dt>
-                        <dd><MoneyDisplay Amount="@_shift.ClosingCashAmount.Value" CurrencyCode="PHP" /></dd>
+                    <div class="pos-shift-detail__total-block">
+                        @if (hasClosingDenom)
+                        {
+                            <button type="button"
+                                    class="pos-shift-detail__total-row pos-shift-detail__total-row--action"
+                                    aria-expanded="@_showClosingBreakdown"
+                                    aria-label="@($"{L["Shifts_CountedCash"]}. {L["Shifts_TapDenominationHint"]}")"
+                                    @onclick="() => _showClosingBreakdown = !_showClosingBreakdown">
+                                <span class="pos-shift-detail__total-label">
+                                    <span>@L["Shifts_CountedCash"]</span>
+                                    <span class="pos-shift-detail__total-hint">@L["Shifts_TapDenominationHint"]</span>
+                                </span>
+                                <span class="pos-shift-detail__total-value">
+                                    <MoneyDisplay Amount="@_shift.ClosingCashAmount.Value" CurrencyCode="PHP" />
+                                    <span class="pos-shift-detail__total-chevron" aria-hidden="true">@(_showClosingBreakdown ? "▾" : "›")</span>
+                                </span>
+                            </button>
+                            @if (_showClosingBreakdown)
+                            {
+                                <ul class="pos-denom-sheet__rows" aria-label="@L["Shifts_ViewDenominationBreakdown"]">
+                                    @foreach (var line in _shift.ClosingDenominationLines!)
+                                    {
+                                        <li class="pos-denom-sheet__row">
+                                            <span>@($"PHP {line.DenominationValue:N2}")</span>
+                                            <span>@line.Quantity</span>
+                                            <span>@($"PHP {line.LineTotal ?? line.DenominationValue * line.Quantity:N2}")</span>
+                                        </li>
+                                    }
+                                </ul>
+                            }
+                        }
+                        else
+                        {
+                            <div class="pos-shift-detail__total-row">
+                                <dt>@L["Shifts_CountedCash"]</dt>
+                                <dd><MoneyDisplay Amount="@_shift.ClosingCashAmount.Value" CurrencyCode="PHP" /></dd>
+                            </div>
+                        }
                     </div>
                     <div class="pos-shift-detail__total-row pos-shift-detail__total-row--emphasis">
                         <dt>@L["Shifts_FinalDifference"]</dt>
@@ -167,25 +251,6 @@ else
                         <dt>@L["Shifts_VarianceStatus"]</dt>
                         <dd>@VarianceLabel(_shift.CashVarianceAmount ?? 0m)</dd>
                     </div>
-                    @if ((_shift.ClosingDenominationLines?.Count ?? 0) > 0)
-                    {
-                        <Button Variant="ButtonVariant.Ghost" OnClick="() => _showClosingBreakdown = !_showClosingBreakdown">
-                            @L["Shifts_ViewDenominationBreakdown"]
-                        </Button>
-                        @if (_showClosingBreakdown)
-                        {
-                            <ul class="pos-denom-sheet__rows">
-                                @foreach (var line in _shift.ClosingDenominationLines!)
-                                {
-                                    <li class="pos-denom-sheet__row">
-                                        <span>@($"PHP {line.DenominationValue:N2}")</span>
-                                        <span>@line.Quantity</span>
-                                        <span>@($"PHP {line.LineTotal ?? line.DenominationValue * line.Quantity:N2}")</span>
-                                    </li>
-                                }
-                            </ul>
-                        }
-                    }
                 }
                 @if (!string.IsNullOrWhiteSpace(_shift.ClosingNotes))
                 {
@@ -304,6 +369,20 @@ else
                 <Stack Gap="3">
                     @if (!closingOff)
                     {
+                        <div class="pos-shift-detail__noncash" role="note">
+                            <p class="pos-shift-detail__noncash-title">@L["Shifts_NonCashReferenceTitle"]</p>
+                            <dl class="pos-shift-detail__totals">
+                                <div class="pos-shift-detail__total-row pos-shift-detail__total-row--info">
+                                    <dt>@L["Shifts_GCashSales"]</dt>
+                                    <dd><MoneyDisplay Amount="@(_summary?.GCashSalesTotal ?? 0m)" CurrencyCode="PHP" /></dd>
+                                </div>
+                                <div class="pos-shift-detail__total-row pos-shift-detail__total-row--info">
+                                    <dt>@L["Shifts_UtangSales"]</dt>
+                                    <dd><MoneyDisplay Amount="@(_summary?.UtangSalesTotal ?? 0m)" CurrencyCode="PHP" /></dd>
+                                </div>
+                            </dl>
+                            <p class="pos-shift-detail__info-hint pos-muted">@L["Shifts_NonCashInfoHint"]</p>
+                        </div>
                         <p class="pos-shift-open__help">@(closingRequired ? L["Shifts_ClosingCashHelpRequired"] : L["Shifts_ClosingCashHelpOptional"])</p>
                         <div class="pos-shift-open__cash">
                             <CurrencyInput Label="@L["Shifts_CashOnHand"]"
@@ -379,6 +458,14 @@ else
                         <div class="pos-shift-detail__total-row">
                             <dt>@L["Shifts_ExpectedCash"]</dt>
                             <dd><MoneyDisplay Amount="@expectedCash" CurrencyCode="PHP" /></dd>
+                        </div>
+                        <div class="pos-shift-detail__total-row pos-shift-detail__total-row--info">
+                            <dt>@L["Shifts_GCashSales"]</dt>
+                            <dd><MoneyDisplay Amount="@(_summary?.GCashSalesTotal ?? 0m)" CurrencyCode="PHP" /></dd>
+                        </div>
+                        <div class="pos-shift-detail__total-row pos-shift-detail__total-row--info">
+                            <dt>@L["Shifts_UtangSales"]</dt>
+                            <dd><MoneyDisplay Amount="@(_summary?.UtangSalesTotal ?? 0m)" CurrencyCode="PHP" /></dd>
                         </div>
                         <div class="pos-shift-detail__total-row">
                             <dt>@L["Shifts_CountedCash"]</dt>
@@ -488,6 +575,7 @@ else
     private string? _closingNotes;
     private string? _closingCashError;
     private bool _showDenominationHelper;
+    private bool _showOpeningBreakdown;
     private bool _showClosingBreakdown;
     private IReadOnlyList<OrganizationCashDenominationDto> _denominations = Array.Empty<OrganizationCashDenominationDto>();
     private IReadOnlyList<CashCountDenominationLineDto>? _closingLines;
@@ -652,13 +740,21 @@ else
             }
         }
 
-        foreach (var id in ids)
+        SeedNamesFromSession(ids);
+        var missing = ids.Where(id => !_nameById.ContainsKey(id)).ToHashSet();
+        if (missing.Count == 0)
         {
-            if (_nameById.ContainsKey(id))
-            {
-                continue;
-            }
+            return;
+        }
 
+        // Org owners/admins cannot call GetUserAsync (ManagePlatformUsers). Resolve from
+        // organization membership / product-local role directory instead.
+        var orgId = CurrentUser.Session?.OrganizationId ?? _shift.OrganizationId;
+        await SeedNamesFromOrganizationDirectoryAsync(orgId, missing);
+
+        missing = ids.Where(id => !_nameById.ContainsKey(id)).ToHashSet();
+        foreach (var id in missing)
+        {
             try
             {
                 var userResult = await Platform.GetUserAsync(id);
@@ -678,6 +774,81 @@ else
             {
                 // Identity lookup is best-effort; never show the GUID.
             }
+        }
+    }
+
+    private void SeedNamesFromSession(IReadOnlySet<Guid> ids)
+    {
+        var session = CurrentUser.Session;
+        if (session is null || string.IsNullOrWhiteSpace(session.DisplayName) || !ids.Contains(session.UserId))
+        {
+            return;
+        }
+
+        _nameById.TryAdd(session.UserId, session.DisplayName.Trim());
+    }
+
+    private async Task SeedNamesFromOrganizationDirectoryAsync(Guid organizationId, IReadOnlySet<Guid> missing)
+    {
+        if (organizationId == Guid.Empty || missing.Count == 0)
+        {
+            return;
+        }
+
+        try
+        {
+            var members = await Platform.GetOrganizationMembersAsync(organizationId, page: 1, pageSize: 100);
+            if (members.IsSuccess && members.Data is not null)
+            {
+                foreach (var member in members.Data.Items)
+                {
+                    if (!missing.Contains(member.UserId) || _nameById.ContainsKey(member.UserId))
+                    {
+                        continue;
+                    }
+
+                    var name = FirstMeaningful(member.DisplayName, member.Username, member.Email);
+                    if (!string.IsNullOrWhiteSpace(name))
+                    {
+                        _nameById[member.UserId] = name;
+                    }
+                }
+            }
+        }
+        catch
+        {
+            // Best-effort directory lookup.
+        }
+
+        var stillMissing = missing.Where(id => !_nameById.ContainsKey(id)).ToHashSet();
+        if (stillMissing.Count == 0)
+        {
+            return;
+        }
+
+        try
+        {
+            var grants = await Platform.GetProductLocalRolesAsync(organizationId, status: "Active");
+            if (!grants.IsSuccess || grants.Data is null)
+            {
+                return;
+            }
+
+            foreach (var grant in grants.Data)
+            {
+                if (!stillMissing.Contains(grant.UserIdentityId)
+                    || _nameById.ContainsKey(grant.UserIdentityId)
+                    || string.IsNullOrWhiteSpace(grant.UserDisplayName))
+                {
+                    continue;
+                }
+
+                _nameById[grant.UserIdentityId] = grant.UserDisplayName.Trim();
+            }
+        }
+        catch
+        {
+            // Best-effort directory lookup.
         }
     }
 

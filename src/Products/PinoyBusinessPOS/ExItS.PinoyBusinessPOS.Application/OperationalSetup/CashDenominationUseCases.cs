@@ -79,19 +79,40 @@ public static class DefaultCashDenominationSeeder
         CancellationToken cancellationToken = default)
     {
         var existing = await repository.ListAsync(organizationId, cancellationToken).ConfigureAwait(false);
-        if (existing.Count > 0)
+        if (existing.Count == 0)
+        {
+            var seeded = PhilippineCashDenominationDefaults.Values
+                .Select((value, index) => OrganizationCashDenomination.Create(
+                    organizationId,
+                    value,
+                    index,
+                    utcNow))
+                .ToList();
+            await repository.ReplaceAsync(organizationId, seeded, cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
+        var existingValues = existing.Select(d => d.Value).ToHashSet();
+        var missing = PhilippineCashDenominationDefaults.Values
+            .Where(value => !existingValues.Contains(value))
+            .ToList();
+        if (missing.Count == 0)
         {
             return;
         }
 
-        var seeded = PhilippineCashDenominationDefaults.Values
-            .Select((value, index) => OrganizationCashDenomination.Create(
+        var nextSort = existing.Max(d => d.SortOrder) + 1;
+        var next = existing.ToList();
+        foreach (var value in missing)
+        {
+            next.Add(OrganizationCashDenomination.Create(
                 organizationId,
                 value,
-                index,
-                utcNow))
-            .ToList();
-        await repository.ReplaceAsync(organizationId, seeded, cancellationToken).ConfigureAwait(false);
+                nextSort++,
+                utcNow));
+        }
+
+        await repository.ReplaceAsync(organizationId, next, cancellationToken).ConfigureAwait(false);
     }
 }
 

@@ -28,7 +28,9 @@ Personal users cannot change it (`OrganizationRequired`). Cross-organization upd
 The same organization-level setting is presented in:
 
 - Organization Web → Settings → Cash handling → Cash Count Policy
-- MAUI → Operational setup → Cash Count Policy
+- MAUI → Settings → Cash handling (owner/admin with `ManageOperationalSetup` only)
+
+Operational setup remains store/receipt/tax first-run configuration. Cash Count Policy and denominations are **not** edited there after setup.
 
 Changes apply to the **next** shift. An already-open shift keeps `EffectiveCashCountMode` captured at open.
 
@@ -65,11 +67,11 @@ Entry method is implied: breakdown present = denomination-assisted; absent = man
 
 `OrganizationCashDenomination`: `Id`, `OrganizationId`, `Value`, `DisplayLabel`, `IsEnabled`, `SortOrder`.
 
-PHP defaults seeded **only when an organization has no denomination rows** (idempotent; repeated setup does not duplicate). Fresh default set:
+PHP defaults seeded when an organization has no denomination rows, and **missing defaults are appended** when an older peso-only seed is present (idempotent; does not duplicate or remove custom/disabled rows). Fresh default set:
 
-PHP 1000, 500, 200, 100, 50, 20, 10, 5, 1, **0.25**, **0.05**, **0.01**.
+PHP 1000, 500, 200, 100, 50, 20, 10, 5, 1, **0.25**, **0.10**, **0.05**, **0.01**.
 
-PHP **0.50** and PHP **0.10** are **not** part of this current default. Owners may still add `0.50`, `0.10`, `5000`, or another custom value from settings without a code change. Existing organization configurations are **not** rewritten: custom rows and previously seeded lists stay as stored. Historical shift breakdowns are untouched.
+PHP **0.50** is **not** part of this current default. Owners may still add `0.50`, `5000`, or another custom value from settings without a code change. Custom rows stay as stored. Historical shift breakdowns are untouched.
 
 Values are `decimal` money (`numeric(18,2)` / `SaleMoney`, 2 dp AwayFromZero). Centavos calculate exactly (`0.25 × 3 = 0.75`, `0.05 × 3 = 0.15`, `0.01 × 5 = 0.05`).
 
@@ -97,11 +99,11 @@ MAUI shift open/close remain **online-only**. Denomination quantities are local 
 
 Existing Required remains Required. Existing Optional remains Optional.
 
-No additional migration for centavo defaults: `value` is already `numeric(18,2)`. Application seed list change only; existing `organization_cash_denominations` rows are not rewritten.
+No additional migration for centavo defaults: `value` is already `numeric(18,2)`. Application seed list includes **0.25 / 0.10 / 0.05 / 0.01**; missing defaults are appended for organizations that still have an older peso-only list.
 
 ## Tests
 
-Covered in POS unit, integration, MAUI UI guards, and Org Web settings guards: new-org Required default; owner set Required/Optional from Org Web and MAUI; cashier/Personal/cross-org rejected; shift snapshot; Off retired for new configuration; denomination seed/add/5000/duplicates/zero/negative; centavo line totals (`0.25`, `0.05`, `0.01`); default set excludes `0.50`; custom `0.50`/`0.10`/`5000` still allowed; opening/closing denomination total becomes Cash on Hand; disabled not offered; manual vs assisted; server recalculate; mismatch rejected; repeated close does not duplicate lines; cash/GCash/Utang semantics; Required/Optional skip vs zero.
+Covered in POS unit, integration, MAUI UI guards, and Org Web settings guards: new-org Required default; owner set Required/Optional from Org Web and MAUI; cashier/Personal/cross-org rejected; shift snapshot; Off retired for new configuration; denomination seed/add/5000/duplicates/zero/negative; centavo line totals (`0.25`, `0.10`, `0.05`, `0.01`); default set includes `0.25`/`0.10`/`0.05` and excludes `0.50`; custom `0.50`/`5000` still allowed; missing-default append for older peso-only seeds; opening/closing denomination total becomes Cash on Hand; disabled not offered; manual vs assisted; server recalculate; mismatch rejected; repeated close does not duplicate lines; cash/GCash/Utang semantics; Required/Optional skip vs zero.
 
 ## Owner acceptance
 
@@ -123,16 +125,17 @@ Device Verified is **No** until the owner validates on a physical device. Browse
 ### C. Policy mobile
 
 8. Login MAUI as authorized owner/admin.
-9. Change Optional → Required.
-10. Confirm the same server setting updates.
-11. Confirm a cashier-only account cannot change it.
+9. Owner dashboard → Settings → Cash handling.
+10. Change Optional → Required and Save changes.
+11. Confirm the same server setting updates.
+12. Confirm a cashier-only account cannot see or open Cash handling.
 
 ### D. Required opening manual
 
-12. Open a new shift.
-13. Enter PHP 1,000 manually.
-14. Open shift.
-15. Confirm success.
+13. Open a new shift.
+14. Enter PHP 1,000 manually.
+15. Open shift.
+16. Confirm success.
 
 ### E. Required opening denomination
 

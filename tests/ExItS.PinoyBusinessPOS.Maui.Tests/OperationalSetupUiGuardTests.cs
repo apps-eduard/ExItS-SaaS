@@ -17,24 +17,22 @@ public sealed class OperationalSetupUiGuardTests
 
         Assert.Contains("pos-setup__badge", page, StringComparison.Ordinal);
         Assert.Contains("Setup_FirstRunHint", page, StringComparison.Ordinal);
-        Assert.Contains("Setup_StoreSectionHint", page, StringComparison.Ordinal);
-        Assert.Contains("Setup_ReceiptSectionHint", page, StringComparison.Ordinal);
-        Assert.Contains("Setup_CashHandlingSection", page, StringComparison.Ordinal);
-        Assert.Contains("Setup_CashCount", page, StringComparison.Ordinal);
+        Assert.Contains("Setup_BusinessDetailsSection", page, StringComparison.Ordinal);
+        Assert.Contains("Setup_BusinessDetailsHint", page, StringComparison.Ordinal);
+        Assert.Contains("Setup_ReceiptDetailsSection", page, StringComparison.Ordinal);
+        Assert.Contains("Setup_ReceiptDetailsHint", page, StringComparison.Ordinal);
+        Assert.DoesNotContain("Setup_CashHandlingSection", page, StringComparison.Ordinal);
+        Assert.DoesNotContain("pos-setup__policy", page, StringComparison.Ordinal);
         Assert.Contains("_cashCountMode", page, StringComparison.Ordinal);
         Assert.Contains("CashCountRequired", page, StringComparison.Ordinal);
-        Assert.Contains("CashCountOptional", page, StringComparison.Ordinal);
         Assert.DoesNotContain("CashCountOff", page, StringComparison.Ordinal);
-        Assert.Contains("Setup_CashCountSnapshotHint", page, StringComparison.Ordinal);
-        Assert.Contains("Setup_Denominations", page, StringComparison.Ordinal);
-        Assert.Contains("pos-setup__policy", page, StringComparison.Ordinal);
-        Assert.Contains("pos-setup__denom-grid", page, StringComparison.Ordinal);
-        Assert.Contains("pos-setup__composer", page, StringComparison.Ordinal);
-        Assert.Contains("CurrencyInput", page, StringComparison.Ordinal);
         Assert.Contains("ManageOperationalSetup", page, StringComparison.Ordinal);
         Assert.Contains("pos-setup__footer", page, StringComparison.Ordinal);
         Assert.Contains("SeedDefaultsFromSession", page, StringComparison.Ordinal);
         Assert.Contains("OrganizationDisplayName", page, StringComparison.Ordinal);
+        Assert.Contains("IsOrgPosFirstTimeSetupIncompleteAsync", page, StringComparison.Ordinal);
+        Assert.Contains("Setup_BackToHome", page, StringComparison.Ordinal);
+        Assert.Contains("Setup_SaveChanges", page, StringComparison.Ordinal);
 
         Assert.Contains(".pos-setup__panel", css, StringComparison.Ordinal);
         Assert.Contains(".pos-setup__footer", css, StringComparison.Ordinal);
@@ -50,6 +48,43 @@ public sealed class OperationalSetupUiGuardTests
         Assert.Contains("name=\"Setup_CashCountHelpOptional\"", fil, StringComparison.Ordinal);
         Assert.Contains("name=\"Setup_CashCountRecommended\"", en, StringComparison.Ordinal);
         Assert.Contains("name=\"Setup_AddDenominationShort\"", fil, StringComparison.Ordinal);
+        Assert.Contains("name=\"Settings_StoreSectionTitle\"", en, StringComparison.Ordinal);
+        Assert.Contains("name=\"Settings_CashHandlingSaved\"", fil, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Cash_handling_lives_under_settings_for_manage_operational_setup()
+    {
+        var settings = File.ReadAllText(Path.Combine(MauiProject(), "Components", "Pages", "Settings.razor"));
+        var cash = File.ReadAllText(Path.Combine(
+            MauiProject(),
+            "Components",
+            "Pages",
+            "CashHandlingSettings.razor"));
+        var policy = File.ReadAllText(Path.Combine(
+            FindRepoRoot(),
+            "src",
+            "Products",
+            "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.Application",
+            "Offline",
+            "PosOfflineCapabilityPolicy.cs"));
+
+        Assert.Contains("GoCashHandling", settings, StringComparison.Ordinal);
+        Assert.Contains("/settings/cash-handling", settings, StringComparison.Ordinal);
+        Assert.Contains("Setup_CashHandlingSection", settings, StringComparison.Ordinal);
+        Assert.Contains("ManageOperationalSetup", settings, StringComparison.Ordinal);
+
+        Assert.Contains("@page \"/settings/cash-handling\"", cash, StringComparison.Ordinal);
+        Assert.Contains("ManageOperationalSetup", cash, StringComparison.Ordinal);
+        Assert.Contains("pos-setup__policy", cash, StringComparison.Ordinal);
+        Assert.Contains("pos-setup__denom-grid", cash, StringComparison.Ordinal);
+        Assert.Contains("CashCountRequired", cash, StringComparison.Ordinal);
+        Assert.Contains("CashCountOptional", cash, StringComparison.Ordinal);
+        Assert.DoesNotContain("CashCountOff", cash, StringComparison.Ordinal);
+        Assert.Contains("StoreHeaderBack Href=\"/settings\"", cash, StringComparison.Ordinal);
+
+        Assert.Contains("[\"/settings/cash-handling\"] = PosConnectivityRequirement.OnlineRequired", policy, StringComparison.Ordinal);
     }
 
     private static string MauiProject()
@@ -72,5 +107,21 @@ public sealed class OperationalSetupUiGuardTests
         }
 
         throw new InvalidOperationException("Maui project root was not found.");
+    }
+
+    private static string FindRepoRoot()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null)
+        {
+            if (File.Exists(Path.Combine(dir.FullName, "ExItS.slnx")))
+            {
+                return dir.FullName;
+            }
+
+            dir = dir.Parent;
+        }
+
+        throw new InvalidOperationException("Repository root not found.");
     }
 }

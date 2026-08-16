@@ -5,6 +5,7 @@
 @inject NavigationGate Gate
 @inject ICurrentUserContext CurrentUser
 @inject IPosCashierShiftClient Shifts
+@inject IPlatformAccessClient Platform
 @inject IUtangCapabilityEvaluator Capabilities
 @inject ApiStatusLocalizer ApiLocalizer
 @inject IConnectivityService Connectivity
@@ -28,7 +29,6 @@ else
     var canManage = Capabilities.IsAllowed(UtangCapability.ManageShifts);
     var hasOpenShift = _current is not null;
     var onlineActionsEnabled = !_isOffline && !_loading;
-    var cashierName = CurrentCashierName;
 <div class="pos-shifts">
     <Page>
         <header class="pos-shifts__header">
@@ -65,14 +65,10 @@ else
                         @StatusLabel(_current.Status)
                     </span>
                 </div>
-                <p class="pos-shifts__current-register">@RegisterLabel(_current)</p>
+                <p class="pos-shifts__current-register">@RegisterCashierLine(_current)</p>
                 <p class="pos-shifts__current-opened pos-muted">
-                    @string.Format(L["Shifts_OpenedFormat"].Value, FormatOpenedDisplay(_current.OpenedAtUtc))
+                    @RowOpenCloseLine(_current)
                 </p>
-                @if (!string.IsNullOrWhiteSpace(cashierName))
-                {
-                    <p class="pos-shifts__current-cashier pos-muted">@cashierName</p>
-                }
                 <div class="pos-shifts__current-action">
                     <Button Variant="ButtonVariant.Primary"
                             Disabled="@_isOffline"
@@ -166,8 +162,8 @@ else
                                         @StatusLabel(item.Status)
                                     </span>
                                 </span>
-                                <span class="pos-shifts__row-register">@RegisterLabel(item)</span>
-                                <span class="pos-shifts__row-time pos-muted">@RowTimeLine(item)</span>
+                                <span class="pos-shifts__row-register">@RegisterCashierLine(item)</span>
+                                <span class="pos-shifts__row-time pos-muted">@RowOpenCloseLine(item)</span>
                             </span>
                             <span class="pos-shifts__chevron" aria-hidden="true">›</span>
                         </button>
@@ -200,6 +196,7 @@ else
     private string? _errorTitle;
     private string? _errorMessage;
     private CancellationTokenSource? _searchCts;
+    private readonly Dictionary<Guid, string> _nameById = new();
 
     private IReadOnlyList<SelectOption> ShiftStatusFilters =>
     [
@@ -285,6 +282,7 @@ else
             {
                 _items = result.Data.Items;
                 _totalCount = result.Data.TotalCount;
+                await ResolveCashierNamesAsync();
                 return;
             }
 
@@ -298,6 +296,134 @@ else
         {
             _loading = false;
         }
+    }
+
+    private async Task ResolveCashierNamesAsync()
+    {
+        var ids = new HashSet<Guid>();
+        if (_current is not null)
+        {
+            ids.Add(_current.OpenedBy);
+        }
+
+        foreach (var item in _items)
+        {
+            ids.Add(item.OpenedBy);
+        }
+
+        var session = CurrentUser.Session;
+        if (session is not null
+            && !string.IsNullOrWhiteSpace(session.DisplayName)
+            && ids.Contains(session.UserId))
+        {
+            _nameById.TryAdd(session.UserId, session.DisplayName.Trim());
+        }
+
+        var missing = ids.Where(id => !_nameById.ContainsKey(id)).ToHashSet();
+        if (missing.Count == 0)
+        {
+            return;
+        }
+
+        var orgId = session?.OrganizationId
+            ?? _current?.OrganizationId
+            ?? _items.FirstOrDefault()?.OrganizationId
+            ?? Guid.Empty;
+        if (orgId == Guid.Empty)
+        {
+            return;
+        }
+
+        // Org owners cannot use GetUserAsync; resolve from membership directory first.
+        try
+        {
+            var members = await Platform.GetOrganizationMembersAsync(orgId, page: 1, pageSize: 100);
+            if (members.IsSuccess && members.Data is not null)
+            {
+                foreach (var member in members.Data.Items)
+                {
+                    if (!missing.Contains(member.UserId) || _nameById.ContainsKey(member.UserId))
+                    {
+                        continue;
+                    }
+
+                    var name = FirstMeaningful(member.DisplayName, member.Username, member.Email);
+                    if (!string.IsNullOrWhiteSpace(name))
+                    {
+                        _nameById[member.UserId] = name;
+                    }
+                }
+            }
+        }
+        catch
+        {
+            // Best-effort.
+        }
+
+        missing = ids.Where(id => !_nameById.ContainsKey(id)).ToHashSet();
+        if (missing.Count == 0)
+        {
+            return;
+        }
+
+        try
+        {
+            var grants = await Platform.GetProductLocalRolesAsync(orgId, status: "Active");
+            if (grants.IsSuccess && grants.Data is not null)
+            {
+                foreach (var grant in grants.Data)
+                {
+                    if (!missing.Contains(grant.UserIdentityId)
+                        || _nameById.ContainsKey(grant.UserIdentityId)
+                        || string.IsNullOrWhiteSpace(grant.UserDisplayName))
+                    {
+                        continue;
+                    }
+
+                    _nameById[grant.UserIdentityId] = grant.UserDisplayName.Trim();
+                }
+            }
+        }
+        catch
+        {
+            // Best-effort.
+        }
+
+        foreach (var id in ids.Where(x => !_nameById.ContainsKey(x)))
+        {
+            try
+            {
+                var userResult = await Platform.GetUserAsync(id);
+                if (userResult.IsSuccess && userResult.Data is not null)
+                {
+                    var name = FirstMeaningful(
+                        userResult.Data.DisplayName,
+                        userResult.Data.Username,
+                        userResult.Data.Email);
+                    if (!string.IsNullOrWhiteSpace(name))
+                    {
+                        _nameById[id] = name;
+                    }
+                }
+            }
+            catch
+            {
+                // Keep register-only label when identity lookup fails.
+            }
+        }
+    }
+
+    private static string? FirstMeaningful(params string?[] values)
+    {
+        foreach (var value in values)
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                return value.Trim();
+            }
+        }
+
+        return null;
     }
 
     private async Task OnSearchInputAsync(ChangeEventArgs args)
@@ -429,13 +555,17 @@ else
                 return null;
             }
 
+            if (_nameById.TryGetValue(_current.OpenedBy, out var resolved))
+            {
+                return resolved;
+            }
+
             var session = CurrentUser.Session;
             if (session is null || string.IsNullOrWhiteSpace(session.DisplayName))
             {
                 return null;
             }
 
-            // GetCurrent returns this actor's open shift; show name only when it matches.
             if (session.UserId != _current.ActorId && session.UserId != _current.OpenedBy)
             {
                 return null;
@@ -443,6 +573,32 @@ else
 
             return session.DisplayName.Trim();
         }
+    }
+
+    private string RegisterCashierLine(PosCashierShiftDto item)
+    {
+        var register = RegisterLabel(item);
+        var cashier = ResolveCashierName(item);
+        return string.IsNullOrWhiteSpace(cashier)
+            ? register
+            : string.Format(L["Shifts_RegisterCashierFormat"].Value, register, cashier);
+    }
+
+    private string? ResolveCashierName(PosCashierShiftDto item)
+    {
+        if (_nameById.TryGetValue(item.OpenedBy, out var resolved))
+        {
+            return resolved;
+        }
+
+        if (_current is not null
+            && item.ShiftId == _current.ShiftId
+            && !string.IsNullOrWhiteSpace(CurrentCashierName))
+        {
+            return CurrentCashierName;
+        }
+
+        return null;
     }
 
     private static string RegisterLabel(PosCashierShiftDto item)
@@ -460,25 +616,38 @@ else
         return "—";
     }
 
-    private static string FormatOpened(DateTimeOffset openedAtUtc) =>
-        openedAtUtc.ToLocalTime().ToString("g");
+    private static string FormatDateTime(DateTimeOffset value) =>
+        value.ToLocalTime().ToString("M/d/yy h:mm tt");
 
-    private static string FormatOpenedDisplay(DateTimeOffset openedAtUtc) =>
-        openedAtUtc.ToLocalTime().ToString("MMM d, yyyy · h:mm tt");
-
-    private string RowTimeLine(PosCashierShiftDto item)
+    private string RowOpenCloseLine(PosCashierShiftDto item)
     {
+        var openedLocal = item.OpenedAtUtc.ToLocalTime();
+        var openedAt = FormatDateTime(item.OpenedAtUtc);
         if (string.Equals(item.Status, "Closed", StringComparison.OrdinalIgnoreCase)
             && item.ClosedAtUtc is { } closed)
         {
-            return string.Format(L["Shifts_ClosedFormat"].Value, closed.ToLocalTime().ToString("g"));
+            var closedLocal = closed.ToLocalTime();
+            var closedAt = openedLocal.Date == closedLocal.Date
+                ? closedLocal.ToString("h:mm tt")
+                : FormatDateTime(closed);
+            return string.Format(L["Shifts_OpenCloseFormat"].Value, openedAt, closedAt);
         }
 
-        return string.Format(L["Shifts_OpenedFormat"].Value, FormatOpened(item.OpenedAtUtc));
+        if (string.Equals(item.Status, "Cancelled", StringComparison.OrdinalIgnoreCase)
+            && item.CancelledAtUtc is { } cancelled)
+        {
+            var cancelledLocal = cancelled.ToLocalTime();
+            var cancelledAt = openedLocal.Date == cancelledLocal.Date
+                ? cancelledLocal.ToString("h:mm tt")
+                : FormatDateTime(cancelled);
+            return string.Format(L["Shifts_OpenCancelledFormat"].Value, openedAt, cancelledAt);
+        }
+
+        return string.Format(L["Shifts_OpenedFormat"].Value, openedAt);
     }
 
     private string RowAriaLabel(PosCashierShiftDto item) =>
-        $"{item.ShiftNumber}, {StatusLabel(item.Status)}, {RegisterLabel(item)}, {RowTimeLine(item)}";
+        $"{item.ShiftNumber}, {StatusLabel(item.Status)}, {RegisterCashierLine(item)}, {RowOpenCloseLine(item)}";
 
     public void Dispose()
     {

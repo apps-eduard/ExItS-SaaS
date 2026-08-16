@@ -126,7 +126,15 @@
 
         @if (Capabilities.IsAllowed(UtangCapability.ManageOperationalSetup))
         {
-            <Section Title="@L["Setup_Title"]">
+            <Section Title="@L["Settings_StoreSectionTitle"]">
+                <button type="button" class="pos-settings__nav pos-settings__nav--block" @onclick="GoCashHandling">
+                    <span class="pos-settings__nav-icon" aria-hidden="true">@IconGlyphs.Get("cash")</span>
+                    <span class="pos-settings__nav-body">
+                        <span class="pos-settings__nav-label">@L["Setup_CashHandlingSection"]</span>
+                        <span class="pos-settings__nav-meta">@L["Setup_CashHandlingHint"]</span>
+                    </span>
+                    <span class="pos-settings__chevron" aria-hidden="true">›</span>
+                </button>
                 <button type="button" class="pos-settings__nav pos-settings__nav--block" @onclick="GoSetup">
                     <span class="pos-settings__nav-icon" aria-hidden="true">@IconGlyphs.Get("settings")</span>
                     <span class="pos-settings__nav-body">
@@ -302,6 +310,8 @@
     private void GoDevOffline() => Nav.NavigateTo("/dev/offline-foundation");
 
     private void GoSetup() => Nav.NavigateTo("/setup");
+
+    private void GoCashHandling() => Nav.NavigateTo("/settings/cash-handling");
 
     private async Task OnThemeChangedAsync(string? value)
     {

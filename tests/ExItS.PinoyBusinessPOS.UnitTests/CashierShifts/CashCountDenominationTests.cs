@@ -1,3 +1,5 @@
+using ExItS.PinoyBusinessPOS.Application.OperationalSetup;
+using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.CashierShifts;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
@@ -17,13 +19,13 @@ public sealed class CashCountDenominationTests
     public void Default_php_seed_includes_current_useful_denominations()
     {
         Assert.Equal(
-            [1000.00m, 500.00m, 200.00m, 100.00m, 50.00m, 20.00m, 10.00m, 5.00m, 1.00m, 0.25m, 0.05m, 0.01m],
+            [1000.00m, 500.00m, 200.00m, 100.00m, 50.00m, 20.00m, 10.00m, 5.00m, 1.00m, 0.25m, 0.10m, 0.05m, 0.01m],
             PhilippineCashDenominationDefaults.Values);
         Assert.Contains(0.25m, PhilippineCashDenominationDefaults.Values);
+        Assert.Contains(0.10m, PhilippineCashDenominationDefaults.Values);
         Assert.Contains(0.05m, PhilippineCashDenominationDefaults.Values);
         Assert.Contains(0.01m, PhilippineCashDenominationDefaults.Values);
         Assert.DoesNotContain(0.50m, PhilippineCashDenominationDefaults.Values);
-        Assert.DoesNotContain(0.10m, PhilippineCashDenominationDefaults.Values);
     }
 
     [Fact]
@@ -229,5 +231,70 @@ public sealed class CashCountDenominationTests
         Assert.Empty(shift.ClosingDenominationLines);
         Assert.Equal(4750m, shift.ClosingCashAmount);
         Assert.Equal(3750m, shift.CashVarianceAmount);
+    }
+
+    [Fact]
+    public async Task Seeder_creates_full_default_set_when_empty()
+    {
+        var repo = new InMemoryCashDenominationRepository();
+        await DefaultCashDenominationSeeder.EnsureAsync(repo, Org, Now);
+
+        Assert.Equal(
+            PhilippineCashDenominationDefaults.Values,
+            repo.Items.OrderBy(d => d.SortOrder).Select(d => d.Value).ToArray());
+    }
+
+    [Fact]
+    public async Task Seeder_appends_missing_centavo_defaults_without_removing_existing()
+    {
+        var repo = new InMemoryCashDenominationRepository();
+        var pesoOnly = new[] { 1000m, 500m, 200m, 100m, 50m, 20m, 10m, 5m, 1m }
+            .Select((value, index) => OrganizationCashDenomination.Create(Org, value, index, Now))
+            .ToList();
+        await repo.ReplaceAsync(Org, pesoOnly);
+
+        await DefaultCashDenominationSeeder.EnsureAsync(repo, Org, Now);
+
+        var values = repo.Items.Select(d => d.Value).ToHashSet();
+        Assert.Equal(9 + 4, values.Count);
+        Assert.Contains(0.25m, values);
+        Assert.Contains(0.10m, values);
+        Assert.Contains(0.05m, values);
+        Assert.Contains(0.01m, values);
+        Assert.Contains(1000m, values);
+        Assert.Equal(9, repo.Items.Count(d => d.SortOrder < 9));
+    }
+
+    [Fact]
+    public async Task Seeder_is_idempotent_when_defaults_already_present()
+    {
+        var repo = new InMemoryCashDenominationRepository();
+        await DefaultCashDenominationSeeder.EnsureAsync(repo, Org, Now);
+        var firstCount = repo.Items.Count;
+
+        await DefaultCashDenominationSeeder.EnsureAsync(repo, Org, Now);
+
+        Assert.Equal(firstCount, repo.Items.Count);
+        Assert.Equal(PhilippineCashDenominationDefaults.Values.Length, firstCount);
+    }
+
+    private sealed class InMemoryCashDenominationRepository : IOrganizationCashDenominationRepository
+    {
+        public List<OrganizationCashDenomination> Items { get; } = [];
+
+        public Task<IReadOnlyList<OrganizationCashDenomination>> ListAsync(
+            PosOrganizationId organizationId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<OrganizationCashDenomination>>(Items.ToList());
+
+        public Task ReplaceAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyList<OrganizationCashDenomination> denominations,
+            CancellationToken cancellationToken = default)
+        {
+            Items.Clear();
+            Items.AddRange(denominations);
+            return Task.CompletedTask;
+        }
     }
 }

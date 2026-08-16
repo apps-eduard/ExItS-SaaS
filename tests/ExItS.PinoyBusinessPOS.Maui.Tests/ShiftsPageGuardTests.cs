@@ -29,6 +29,11 @@ public sealed class ShiftsPageGuardTests
         Assert.Contains("EmptyState", list, StringComparison.Ordinal);
         Assert.Contains("ErrorState", list, StringComparison.Ordinal);
         Assert.Contains("Shifts_OpenedFormat", list, StringComparison.Ordinal);
+        Assert.Contains("Shifts_OpenCloseFormat", list, StringComparison.Ordinal);
+        Assert.Contains("Shifts_RegisterCashierFormat", list, StringComparison.Ordinal);
+        Assert.Contains("RegisterCashierLine", list, StringComparison.Ordinal);
+        Assert.Contains("IPlatformAccessClient", list, StringComparison.Ordinal);
+        Assert.Contains("GetOrganizationMembersAsync", list, StringComparison.Ordinal);
         Assert.Contains("RegisterName", list, StringComparison.Ordinal);
         Assert.DoesNotContain("ShiftId.ToString", list, StringComparison.Ordinal);
         Assert.Contains("aria-label", list, StringComparison.Ordinal);
@@ -54,13 +59,11 @@ public sealed class ShiftsPageGuardTests
     {
         var list = File.ReadAllText(Path.Combine(ShiftsPagesDirectory(), "ShiftsList.razor"));
         Assert.Contains("_current.ShiftNumber", list, StringComparison.Ordinal);
-        Assert.Contains("RegisterLabel(_current)", list, StringComparison.Ordinal);
+        Assert.Contains("RegisterCashierLine(_current)", list, StringComparison.Ordinal);
         Assert.Contains("StatusLabel(_current.Status)", list, StringComparison.Ordinal);
         Assert.Contains("pos-shifts__current-top", list, StringComparison.Ordinal);
         Assert.Contains("pos-shifts__current-register", list, StringComparison.Ordinal);
-        Assert.Contains("FormatOpenedDisplay", list, StringComparison.Ordinal);
-        Assert.Contains("CurrentCashierName", list, StringComparison.Ordinal);
-        Assert.Contains("Shifts_OpenedFormat", list, StringComparison.Ordinal);
+        Assert.Contains("RowOpenCloseLine(_current)", list, StringComparison.Ordinal);
         Assert.Contains("GoCurrent", list, StringComparison.Ordinal);
         Assert.Contains("$\"/shifts/{_current.ShiftId:D}\"", list, StringComparison.Ordinal);
     }
@@ -123,6 +126,8 @@ public sealed class ShiftsPageGuardTests
         Assert.Contains("GetUserAsync", detail, StringComparison.Ordinal);
         Assert.DoesNotContain("OpenedBy.ToString", detail, StringComparison.Ordinal);
         Assert.DoesNotContain("RecordedBy.ToString", detail, StringComparison.Ordinal);
+        Assert.Contains("GetOrganizationMembersAsync", detail, StringComparison.Ordinal);
+        Assert.Contains("SeedNamesFromOrganizationDirectoryAsync", detail, StringComparison.Ordinal);
         Assert.Contains("_confirmClose", detail, StringComparison.Ordinal);
         Assert.Contains("Shifts_MoreActions", detail, StringComparison.Ordinal);
         Assert.Contains("Shifts_SkipClosingCash", detail, StringComparison.Ordinal);
@@ -131,6 +136,12 @@ public sealed class ShiftsPageGuardTests
         Assert.Contains("pos-shift-open__denom-action", detail, StringComparison.Ordinal);
         Assert.Contains("Shifts_CountedByDenomination", detail, StringComparison.Ordinal);
         Assert.Contains("Shifts_ViewDenominationBreakdown", detail, StringComparison.Ordinal);
+        Assert.Contains("Shifts_ViewOpeningDenominationBreakdown", detail, StringComparison.Ordinal);
+        Assert.Contains("Shifts_TapDenominationHint", detail, StringComparison.Ordinal);
+        Assert.Contains("pos-shift-detail__total-row--action", detail, StringComparison.Ordinal);
+        Assert.Contains("GCashSalesTotal", detail, StringComparison.Ordinal);
+        Assert.Contains("UtangSalesTotal", detail, StringComparison.Ordinal);
+        Assert.Contains("Shifts_NonCashInfoHint", detail, StringComparison.Ordinal);
         Assert.Contains("Shifts_CashCountNotPerformed", detail, StringComparison.Ordinal);
         Assert.Contains("EffectiveCashCountMode", detail, StringComparison.Ordinal);
         Assert.DoesNotContain("ClosingCashAmount ?? 0m", detail, StringComparison.Ordinal);
@@ -215,9 +226,13 @@ public sealed class ShiftsPageGuardTests
         Assert.Contains("inputmode=\"numeric\"", sheet, StringComparison.Ordinal);
         Assert.Contains("Shifts_DenominationUseTotal", sheet, StringComparison.Ordinal);
         Assert.Contains("Shifts_DenominationDecrease", sheet, StringComparison.Ordinal);
+        Assert.Contains("HasCount ? UseTotalAsync()", sheet, StringComparison.Ordinal);
         Assert.DoesNotContain("type=\"number\"", sheet, StringComparison.Ordinal);
         Assert.Contains(".pos-denom-sheet__step", css, StringComparison.Ordinal);
         Assert.Contains(".pos-denom-sheet__bar", css, StringComparison.Ordinal);
+        Assert.Contains("--pos-denom-nav-clearance", css, StringComparison.Ordinal);
+        Assert.Contains("html:has(.pos-denom-sheet) .pos-bottom-nav", css, StringComparison.Ordinal);
+        Assert.Contains("flex: 1 1 0", css, StringComparison.Ordinal);
         Assert.Contains("name=\"Shifts_DenominationIncrease\"", en, StringComparison.Ordinal);
         Assert.Contains("name=\"Shifts_DenominationDecrease\"", fil, StringComparison.Ordinal);
     }

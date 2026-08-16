@@ -56,6 +56,7 @@ public sealed class PosOfflineCapabilityPolicy : IPosOfflineCapabilityPolicy
             ["/forgot-password"] = PosConnectivityRequirement.OnlineRequired,
             ["/activate"] = PosConnectivityRequirement.OnlineRequired,
             ["/setup"] = PosConnectivityRequirement.OnlineRequired,
+            ["/settings/cash-handling"] = PosConnectivityRequirement.OnlineRequired,
             ["/org"] = PosConnectivityRequirement.OnlineRequired,
             ["/org/profile"] = PosConnectivityRequirement.OnlineRequired,
             ["/org/staff"] = PosConnectivityRequirement.OnlineRequired,
