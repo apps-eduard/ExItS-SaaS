@@ -101,7 +101,7 @@ else
             var result = await Privacy.GetAsync();
             if (!result.IsSuccess || result.Data is null)
             {
-                _error = OrgWebUi.Error(result.Error);
+                _error = OrgWebUi.Error(result.Error, L["Privacy_LoadFailed"]);
                 return;
             }
 

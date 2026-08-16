@@ -8451,7 +8451,7 @@
   </data>
   <data name="Privacy_LoadFailed" xml:space="preserve">
     <value>Hindi ma-load ang privacy readiness.</value>
-  </data>
+  </data><data name="Privacy_LoadFailedMessage" xml:space="preserve"><value>Hindi ma-load ang privacy readiness ngayon. Pakisubukan muli.</value></data>
   <data name="Privacy_Evidence_PersonalOrgBoundary" xml:space="preserve">
     <value>Personal/organization identity separation</value>
   </data>

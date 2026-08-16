@@ -57,6 +57,17 @@ public static class OrgWebUi
             return fallback;
         }
 
+        // Never dump ProblemDetails / raw JSON bodies to end users.
+        var trimmed = detail.TrimStart();
+        if (trimmed.StartsWith('{')
+            || trimmed.StartsWith('[')
+            || detail.Contains("\"traceId\"", StringComparison.Ordinal)
+            || detail.Contains("\"errorCode\"", StringComparison.Ordinal)
+            || detail.Contains("\"status\":", StringComparison.Ordinal))
+        {
+            return fallback;
+        }
+
         // Never surface development-pipeline jargon, actor ids, or permission codes.
         if (detail.Contains("Development-stage", StringComparison.OrdinalIgnoreCase)
             || detail.Contains("commercial headers", StringComparison.OrdinalIgnoreCase)

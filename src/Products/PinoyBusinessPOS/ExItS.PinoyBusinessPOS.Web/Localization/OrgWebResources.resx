@@ -860,7 +860,7 @@
   </data>
   <data name="Privacy_LoadFailed" xml:space="preserve">
     <value>Privacy readiness could not be loaded.</value>
-  </data>
+  </data><data name="Privacy_LoadFailedMessage" xml:space="preserve"><value>We could not load privacy readiness right now. Please try again.</value></data>
   <data name="Privacy_Evidence_PersonalOrgBoundary" xml:space="preserve">
     <value>Personal/organization identity separation</value>
   </data>

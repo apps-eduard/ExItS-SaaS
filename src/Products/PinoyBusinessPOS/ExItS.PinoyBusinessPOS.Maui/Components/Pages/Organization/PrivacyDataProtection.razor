@@ -7,6 +7,7 @@
 @inject IOrganizationOwnerProbe OrganizationOwner
 @inject IPosPrivacyReadinessClient Privacy
 @inject IUtangCapabilityEvaluator Capabilities
+@inject ApiStatusLocalizer ApiLocalizer
 @inject IStringLocalizer<PosResources> L
 
 @if (!_ready)
@@ -21,67 +22,121 @@ else if (!_authorized)
 }
 else
 {
-    <div class="pos-dash">
+    <div class="pos-privacy">
+        <StoreHeaderBack Href="/more" />
         <Page>
-            <header class="pos-dash__header">
-                <h1 class="pos-dash__title">@L["Privacy_Title"]</h1>
-                <p class="pos-dash__subtitle">@L["Privacy_Subtitle"]</p>
+            <header class="pos-privacy__header">
+                <h1 class="pos-privacy__title">@L["Privacy_Title"]</h1>
+                <p class="pos-privacy__subtitle">@L["Privacy_Subtitle"]</p>
             </header>
 
-            @if (!string.IsNullOrWhiteSpace(_error))
+            @if (_loading)
             {
-                <Alert Tone="AlertTone.Danger" Title="@L["Privacy_LoadFailed"]" Message="@_error" />
+                <div class="pos-privacy__loading"><Spinner /><span>@L["Common_Loading"]</span></div>
+            }
+            else if (_loadFailed)
+            {
+                <ErrorState Title="@(_errorTitle ?? L["Privacy_LoadFailed"])"
+                            Message="@(_errorMessage ?? L["Privacy_LoadFailedMessage"])"
+                            RetryLabel="@L["Common_Retry"]"
+                            OnRetry="LoadAsync" />
             }
             else if (_dto is not null)
             {
-                <Alert Tone="AlertTone.Info"
-                       Title="@L["Privacy_ReadinessLabel"]"
-                       Message="@($"{StatusLabel(_dto.OverallReadiness)}. {L["Privacy_NoCertificationClaim"]}")" />
+                <section class="pos-privacy__summary" aria-label="@L["Privacy_ReadinessLabel"]">
+                    <div class="pos-privacy__summary-icon" aria-hidden="true">@IconGlyphs.Get("lock")</div>
+                    <div class="pos-privacy__summary-body">
+                        <div class="pos-privacy__summary-top">
+                            <strong class="pos-privacy__summary-label">@L["Privacy_ReadinessLabel"]</strong>
+                            <Badge Tone="@StatusTone(_dto.OverallReadiness)">@StatusLabel(_dto.OverallReadiness)</Badge>
+                        </div>
+                        <p class="pos-privacy__summary-note">@L["Privacy_NoCertificationClaim"]</p>
+                    </div>
+                </section>
 
-                <Section Title="@L["Privacy_SafeguardsSection"]">
-                    <ul class="pos-muted">
+                <section class="pos-privacy__panel" aria-labelledby="privacy-safeguards-heading">
+                    <h2 id="privacy-safeguards-heading" class="pos-privacy__section-title">@L["Privacy_SafeguardsSection"]</h2>
+                    <p class="pos-privacy__section-subtitle">@L["Privacy_SafeguardsSubtitle"]</p>
+                    <div class="pos-privacy__list" role="list">
                         @foreach (var item in _dto.TechnicalSafeguards)
                         {
-                            <li>
-                                <strong>@L[item.TitleKey]</strong> — @StatusLabel(item.Status)
-                                <span>(@ManagedByLabel(item.ManagedBy))</span>
-                            </li>
+                            <article class="pos-privacy__card" role="listitem">
+                                <div class="pos-privacy__card-icon" aria-hidden="true">@IconGlyphs.Get("lock")</div>
+                                <div class="pos-privacy__card-body">
+                                    <div class="pos-privacy__card-top">
+                                        <strong class="pos-privacy__card-name">@L[item.TitleKey]</strong>
+                                        <Badge Tone="@StatusTone(item.Status)">@StatusLabel(item.Status)</Badge>
+                                    </div>
+                                    <p class="pos-privacy__card-meta">@ManagedByLabel(item.ManagedBy)</p>
+                                </div>
+                            </article>
                         }
-                    </ul>
-                </Section>
+                    </div>
+                </section>
 
-                <Section Title="@L["Privacy_ActionsSection"]">
-                    @foreach (var action in _dto.BusinessActions.Where(a => !a.OwnerOnly || _isOwner))
-                    {
-                        <p>
-                            <strong>@L[action.TitleKey]</strong> — @StatusLabel(action.Status)
-                            <br />
-                            <span class="pos-muted">@L[action.DetailKey]</span>
-                        </p>
-                        @if (action.NeedsAttention && action.Code == "SALES_DOCUMENT_EDUCATION")
+                <section class="pos-privacy__panel" aria-labelledby="privacy-actions-heading">
+                    <h2 id="privacy-actions-heading" class="pos-privacy__section-title">@L["Privacy_ActionsSection"]</h2>
+                    <p class="pos-privacy__section-subtitle">@L["Privacy_ActionsSubtitle"]</p>
+                    <div class="pos-privacy__list" role="list">
+                        @foreach (var action in _dto.BusinessActions.Where(a => !a.OwnerOnly || _isOwner))
                         {
-                            <button type="button" class="pos-btn pos-btn--primary" @onclick="GoSalesDocumentEducation">
-                                @L["Privacy_ReviewAction"]
-                            </button>
+                            <article class="pos-privacy__card" role="listitem">
+                                <div class="pos-privacy__card-icon" aria-hidden="true">@IconGlyphs.Get(action.NeedsAttention ? "warning" : "check")</div>
+                                <div class="pos-privacy__card-body">
+                                    <div class="pos-privacy__card-top">
+                                        <strong class="pos-privacy__card-name">@L[action.TitleKey]</strong>
+                                        <Badge Tone="@StatusTone(action.Status)">@StatusLabel(action.Status)</Badge>
+                                    </div>
+                                    <p class="pos-privacy__card-meta">@L[action.DetailKey]</p>
+                                    @if (action.NeedsAttention && action.Code == "SALES_DOCUMENT_EDUCATION")
+                                    {
+                                        <button type="button"
+                                                class="pos-action-tile pos-action-tile--primary pos-privacy__action"
+                                                @onclick="GoSalesDocumentEducation">
+                                            <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("receipt")</span>
+                                            <span class="pos-action-tile__label">@L["Privacy_ReviewAction"]</span>
+                                        </button>
+                                    }
+                                </div>
+                            </article>
                         }
-                    }
-                </Section>
+                    </div>
+                </section>
 
-                <Section Title="@L["Privacy_ResponsibilitySection"]">
-                    <ul class="pos-muted">
+                <section class="pos-privacy__panel" aria-labelledby="privacy-responsibility-heading">
+                    <h2 id="privacy-responsibility-heading" class="pos-privacy__section-title">@L["Privacy_ResponsibilitySection"]</h2>
+                    <p class="pos-privacy__section-subtitle">@L["Privacy_ResponsibilitySubtitle"]</p>
+                    <div class="pos-privacy__list" role="list">
                         @foreach (var item in _dto.Responsibilities)
                         {
-                            <li><strong>@L[item.TitleKey]</strong> — @ManagedByLabel(item.ManagedBy)</li>
+                            <article class="pos-privacy__card" role="listitem">
+                                <div class="pos-privacy__card-icon" aria-hidden="true">@IconGlyphs.Get("customers")</div>
+                                <div class="pos-privacy__card-body">
+                                    <strong class="pos-privacy__card-name">@L[item.TitleKey]</strong>
+                                    <p class="pos-privacy__card-meta">@ManagedByLabel(item.ManagedBy)</p>
+                                </div>
+                            </article>
                         }
-                    </ul>
-                </Section>
+                    </div>
+                </section>
 
-                <Section Title="@L["Privacy_LegalSection"]">
-                    <Alert Tone="AlertTone.Warning"
-                           Title="@L["Privacy_LegalStatusLabel"]"
-                           Message="@($"{StatusLabel(_dto.LegalVerificationStatus)}. {L[_dto.LegalVerificationMessageKey]}")" />
-                    <p class="pos-muted">@L["Privacy_NpcLabel"]: @StatusLabel(_dto.NpcVerificationStatus)</p>
-                </Section>
+                <section class="pos-privacy__panel" aria-labelledby="privacy-legal-heading">
+                    <h2 id="privacy-legal-heading" class="pos-privacy__section-title">@L["Privacy_LegalSection"]</h2>
+                    <p class="pos-privacy__section-subtitle">@L["Privacy_LegalSubtitle"]</p>
+                    <article class="pos-privacy__card pos-privacy__card--legal">
+                        <div class="pos-privacy__card-icon" aria-hidden="true">@IconGlyphs.Get("info")</div>
+                        <div class="pos-privacy__card-body">
+                            <div class="pos-privacy__card-top">
+                                <strong class="pos-privacy__card-name">@L["Privacy_LegalStatusLabel"]</strong>
+                                <Badge Tone="@StatusTone(_dto.LegalVerificationStatus)">@StatusLabel(_dto.LegalVerificationStatus)</Badge>
+                            </div>
+                            <p class="pos-privacy__card-meta">@L[_dto.LegalVerificationMessageKey]</p>
+                            <p class="pos-privacy__card-meta">
+                                @L["Privacy_NpcLabel"]: @StatusLabel(_dto.NpcVerificationStatus)
+                            </p>
+                        </div>
+                    </article>
+                </section>
             }
         </Page>
     </div>
@@ -91,7 +146,10 @@ else
     private bool _ready;
     private bool _authorized;
     private bool _isOwner;
-    private string? _error;
+    private bool _loading;
+    private bool _loadFailed;
+    private string? _errorTitle;
+    private string? _errorMessage;
     private OrganizationPrivacyReadinessDto? _dto;
 
     protected override async Task OnInitializedAsync()
@@ -113,23 +171,38 @@ else
             CurrentUser.Session.OrganizationId.Value);
 
         _authorized = Capabilities.IsAllowed(UtangCapability.ViewOperationalSetup) || _isOwner;
-        if (!_authorized)
+        _ready = true;
+        if (_authorized)
         {
-            _ready = true;
-            return;
+            await LoadAsync();
         }
+    }
 
-        var result = await Privacy.GetAsync();
-        if (!result.IsSuccess || result.Data is null)
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _loadFailed = false;
+        _errorTitle = null;
+        _errorMessage = null;
+        _dto = null;
+        try
         {
-            _error = result.Error?.Detail ?? result.Error?.Title ?? L["Privacy_LoadFailed"];
-        }
-        else
-        {
+            var result = await Privacy.GetAsync();
+            if (!result.IsSuccess || result.Data is null)
+            {
+                var described = ApiLocalizer.Describe(result.Status, result.Error);
+                _loadFailed = true;
+                _errorTitle = L["Privacy_LoadFailed"];
+                _errorMessage = described.Message;
+                return;
+            }
+
             _dto = result.Data;
         }
-
-        _ready = true;
+        finally
+        {
+            _loading = false;
+        }
     }
 
     private void GoSalesDocumentEducation() => Nav.NavigateTo("/sales-document-education");
@@ -143,6 +216,16 @@ else
         OrganizationPrivacyReadinessStatuses.NotVerified => L["Privacy_Status_NotVerified"],
         OrganizationPrivacyReadinessStatuses.InProgress => L["Privacy_Status_InProgress"],
         _ => status
+    };
+
+    private static BadgeTone StatusTone(string status) => status switch
+    {
+        OrganizationPrivacyReadinessStatuses.Implemented => BadgeTone.Success,
+        OrganizationPrivacyReadinessStatuses.Complete => BadgeTone.Success,
+        OrganizationPrivacyReadinessStatuses.ActionNeeded => BadgeTone.Warning,
+        OrganizationPrivacyReadinessStatuses.ReviewRecommended => BadgeTone.Warning,
+        OrganizationPrivacyReadinessStatuses.InProgress => BadgeTone.Info,
+        _ => BadgeTone.Neutral
     };
 
     private string ManagedByLabel(string managedBy) =>

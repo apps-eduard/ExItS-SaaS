@@ -25,6 +25,13 @@ public sealed class PrivacyDataProtectionUiGuardTests
 
         Assert.Contains("@page \"/org/privacy\"", maui, StringComparison.Ordinal);
         Assert.Contains("@page \"/settings/privacy\"", web, StringComparison.Ordinal);
+
+        Assert.Contains("ApiStatusLocalizer", maui, StringComparison.Ordinal);
+        Assert.Contains("ApiLocalizer.Describe", maui, StringComparison.Ordinal);
+        Assert.Contains("ErrorState", maui, StringComparison.Ordinal);
+        Assert.Contains("Privacy_LoadFailedMessage", maui, StringComparison.Ordinal);
+        Assert.DoesNotContain("result.Error?.Detail", maui, StringComparison.Ordinal);
+        Assert.DoesNotContain("Error?.Detail ??", maui, StringComparison.Ordinal);
     }
 
     [Fact]
