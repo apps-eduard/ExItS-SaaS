@@ -332,11 +332,12 @@ public sealed class PaymentAttempt
 
         if (IsTerminal)
         {
-            // Authoritative provider Paid may override Failed/Cancelled/Expired when newer.
+            // Authoritative provider Paid may override Failed/Cancelled/Expired when sequence
+            // is equal or newer (concurrent webhooks often share the same millisecond stamp).
             if (Status is not (PaymentAttemptStatus.Failed
                     or PaymentAttemptStatus.Cancelled
                     or PaymentAttemptStatus.Expired)
-                || eventSequence <= ProviderEventSequence)
+                || eventSequence < ProviderEventSequence)
             {
                 return;
             }

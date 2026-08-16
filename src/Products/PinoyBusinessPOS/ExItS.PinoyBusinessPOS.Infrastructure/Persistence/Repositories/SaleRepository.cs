@@ -379,6 +379,13 @@ internal sealed class SaleRepository : ISaleRepository
                     ApplicationErrorCodes.SaleNumberConflict,
                     "A sale number was allocated concurrently. Retry the checkout.");
             }
+            catch (DbUpdateConcurrencyException)
+            {
+                await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
+                throw new PersistenceConflictException(
+                    ApplicationErrorCodes.ConcurrencyConflict,
+                    "The sale or inventory was modified concurrently. Retry the checkout.");
+            }
             catch
             {
                 await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
@@ -435,6 +442,24 @@ internal sealed class SaleRepository : ISaleRepository
         if (record is null)
         {
             throw new PersistenceConflictException(ApplicationErrorCodes.SaleNotFound, "Sale was not found.");
+        }
+
+        // Protect Paid finalization from a concurrent cancel/expire that still holds a stale snapshot.
+        if (string.Equals(record.Status, nameof(SaleStatus.Completed), StringComparison.Ordinal)
+            && sale.Status != SaleStatus.Completed
+            && sale.Status != SaleStatus.Voided)
+        {
+            throw new PersistenceConflictException(
+                ApplicationErrorCodes.ConcurrencyConflict,
+                "Sale was completed concurrently and cannot be rolled back by a stale update.");
+        }
+
+        if (string.Equals(record.StockReservationState, nameof(SaleStockReservationState.Consumed), StringComparison.Ordinal)
+            && sale.StockReservationState != SaleStockReservationState.Consumed)
+        {
+            throw new PersistenceConflictException(
+                ApplicationErrorCodes.ConcurrencyConflict,
+                "Sale stock reservation was consumed concurrently and cannot be downgraded.");
         }
 
         SaleEntityMapper.ApplyToRecord(sale, record);

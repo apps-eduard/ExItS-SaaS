@@ -235,6 +235,13 @@ internal sealed class InventoryRepository : IInventoryRepository
                 await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
                 await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
             }
+            catch (DbUpdateConcurrencyException)
+            {
+                await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
+                throw new PersistenceConflictException(
+                    ApplicationErrorCodes.InventoryConcurrencyConflict,
+                    "Inventory was modified concurrently. Reload and try again.");
+            }
             catch
             {
                 await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);

@@ -234,6 +234,20 @@ internal sealed class PosUnitOfWork : IPosUnitOfWork
                 ApplicationErrorCodes.ConcurrencyConflict,
                 "The record was modified by another request. Reload and try again.");
         }
+        catch (InvalidOperationException ex) when (IsLikelyTransientExecutionStrategyFailure(ex))
+        {
+            _db.ChangeTracker.Clear();
+            throw new PersistenceConflictException(
+                ApplicationErrorCodes.ConcurrencyConflict,
+                "Concurrent activity conflicted. Reload and try again.");
+        }
+        catch (DbUpdateException ex) when (IsSerializationOrDeadlock(ex))
+        {
+            _db.ChangeTracker.Clear();
+            throw new PersistenceConflictException(
+                ApplicationErrorCodes.ConcurrencyConflict,
+                "Concurrent activity conflicted. Reload and try again.");
+        }
         catch (DbUpdateException ex) when (PersistenceExceptionMapper.TryMapUniqueViolation(ex, out var errorCode, out var message))
         {
             _db.ChangeTracker.Clear();
@@ -270,6 +284,28 @@ internal sealed class PosUnitOfWork : IPosUnitOfWork
                     ApplicationErrorCodes.ConcurrencyConflict,
                     "Concurrent balance activity changed the available outstanding. Reload and try again.");
             }
+            catch (DbUpdateException ex) when (IsSerializationOrDeadlock(ex))
+            {
+                await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
+                throw new PersistenceConflictException(
+                    ApplicationErrorCodes.ConcurrencyConflict,
+                    "Concurrent activity conflicted. Reload and try again.");
+            }
+            catch (InvalidOperationException ex) when (IsLikelyTransientExecutionStrategyFailure(ex))
+            {
+                try
+                {
+                    await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
+                }
+                catch
+                {
+                    // Transaction may already be unusable after a transient provider failure.
+                }
+
+                throw new PersistenceConflictException(
+                    ApplicationErrorCodes.ConcurrencyConflict,
+                    "Concurrent activity conflicted. Reload and try again.");
+            }
             catch
             {
                 await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
@@ -277,4 +313,13 @@ internal sealed class PosUnitOfWork : IPosUnitOfWork
             }
         }).ConfigureAwait(false);
     }
+
+    private static bool IsSerializationOrDeadlock(DbUpdateException exception) =>
+        exception.InnerException is PostgresException
+        {
+            SqlState: PostgresErrorCodes.SerializationFailure or PostgresErrorCodes.DeadlockDetected
+        };
+
+    private static bool IsLikelyTransientExecutionStrategyFailure(InvalidOperationException exception) =>
+        exception.Message.Contains("transient failure", StringComparison.OrdinalIgnoreCase);
 }

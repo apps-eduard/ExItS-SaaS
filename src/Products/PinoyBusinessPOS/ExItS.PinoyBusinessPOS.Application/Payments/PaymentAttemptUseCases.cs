@@ -184,6 +184,10 @@ public sealed class CreatePaymentAttempt
         {
             return ApplicationResult<PaymentAttemptDto>.Failure(ex.ErrorCode, ex.Message);
         }
+        catch (PersistenceConflictException ex)
+        {
+            return ApplicationResult<PaymentAttemptDto>.Failure(ex.ErrorCode, ex.Message);
+        }
     }
 
     private async Task<ApplicationResult<PaymentAttemptDto>> AttachOrRecoverElectronicSessionAsync(
@@ -342,32 +346,50 @@ public sealed class CancelPaymentAttempt
         {
             _ = actorId;
             var orgId = PosOrganizationId.From(organizationId);
-            var attempt = await _attempts
-                .GetByIdAsync(orgId, PaymentAttemptId.From(attemptId), cancellationToken)
+            return await _uow
+                .ExecuteInSerializableTransactionAsync(
+                    async ct =>
+                    {
+                        var attempt = await _attempts
+                            .GetByIdAsync(orgId, PaymentAttemptId.From(attemptId), ct)
+                            .ConfigureAwait(false);
+                        if (attempt is null)
+                        {
+                            return ApplicationResult<PaymentAttemptDto>.Failure(
+                                DomainErrorCodes.PaymentAttemptNotFound,
+                                "Payment attempt was not found.");
+                        }
+
+                        if (attempt.Status == PaymentAttemptStatus.Paid)
+                        {
+                            return ApplicationResult<PaymentAttemptDto>.Failure(
+                                DomainErrorCodes.InvalidPaymentAttemptStatusTransition,
+                                "A paid attempt cannot be cancelled.");
+                        }
+
+                        var now = _clock.UtcNow;
+                        attempt.Cancel(now, "Cancelled by cashier");
+                        await _attempts.UpdateAsync(attempt, ct).ConfigureAwait(false);
+
+                        var sale = await _sales.GetByIdAsync(orgId, attempt.SaleId, ct)
+                            .ConfigureAwait(false);
+                        if (sale is not null)
+                        {
+                            await _saleStock.ReleaseIfReservedAsync(sale, now, ct).ConfigureAwait(false);
+                            await _sales.UpdateAsync(sale, ct).ConfigureAwait(false);
+                        }
+
+                        await _uow.SaveChangesAsync(ct).ConfigureAwait(false);
+                        return ApplicationResult<PaymentAttemptDto>.Success(PaymentAttemptMaps.Map(attempt));
+                    },
+                    cancellationToken)
                 .ConfigureAwait(false);
-            if (attempt is null)
-            {
-                return ApplicationResult<PaymentAttemptDto>.Failure(
-                    DomainErrorCodes.PaymentAttemptNotFound,
-                    "Payment attempt was not found.");
-            }
-
-            var now = _clock.UtcNow;
-            attempt.Cancel(now, "Cancelled by cashier");
-            await _attempts.UpdateAsync(attempt, cancellationToken).ConfigureAwait(false);
-
-            var sale = await _sales.GetByIdAsync(orgId, attempt.SaleId, cancellationToken)
-                .ConfigureAwait(false);
-            if (sale is not null)
-            {
-                await _saleStock.ReleaseIfReservedAsync(sale, now, cancellationToken).ConfigureAwait(false);
-                await _sales.UpdateAsync(sale, cancellationToken).ConfigureAwait(false);
-            }
-
-            await _uow.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-            return ApplicationResult<PaymentAttemptDto>.Success(PaymentAttemptMaps.Map(attempt));
         }
         catch (DomainException ex)
+        {
+            return ApplicationResult<PaymentAttemptDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+        catch (PersistenceConflictException ex)
         {
             return ApplicationResult<PaymentAttemptDto>.Failure(ex.ErrorCode, ex.Message);
         }
@@ -487,71 +509,141 @@ public sealed class ProcessPaymentWebhook
             }
 
             var evt = _gateway.ParseWebhook(rawBody);
-            var attempt = await _attempts
-                .GetByProviderReferenceAsync(evt.Provider, evt.ProviderReference, cancellationToken)
-                .ConfigureAwait(false);
-            if (attempt is null)
+            var paidEvent = IsPaidWebhookStatus(evt.Status);
+            try
             {
-                return ApplicationResult<PaymentAttemptDto>.Failure(
-                    DomainErrorCodes.PaymentAttemptNotFound,
-                    "No payment attempt matches the provider reference.");
-            }
-
-            var now = _clock.UtcNow;
-            var priorStatus = attempt.Status;
-            attempt.ExpireIfDue(now);
-            var status = evt.Status.Trim();
-            if (string.Equals(status, "Paid", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(status, "Succeeded", StringComparison.OrdinalIgnoreCase))
-            {
-                attempt.MarkPaidFromProvider(evt.EventSequence, now, evt.CardBrand, evt.CardLastFour);
-            }
-            else if (string.Equals(status, "Failed", StringComparison.OrdinalIgnoreCase)
-                     || string.Equals(status, "Declined", StringComparison.OrdinalIgnoreCase))
-            {
-                attempt.MarkFailedFromProvider(evt.EventSequence, evt.FailureCode, evt.FailureMessage, now);
-            }
-            else if (string.Equals(status, "Cancelled", StringComparison.OrdinalIgnoreCase))
-            {
-                attempt.Cancel(now, evt.FailureMessage ?? "Cancelled by provider");
-            }
-            else if (string.Equals(status, "Expired", StringComparison.OrdinalIgnoreCase))
-            {
-                attempt.MarkExpiredFromProvider(evt.EventSequence, evt.FailureMessage, now);
-            }
-
-            if (attempt.Status == PaymentAttemptStatus.Paid)
-            {
-                await FinalizeSaleIfNeededAsync(attempt, now, cancellationToken).ConfigureAwait(false);
-            }
-            else if ((attempt.Status is PaymentAttemptStatus.Failed
-                      or PaymentAttemptStatus.Cancelled
-                      or PaymentAttemptStatus.Expired)
-                     && priorStatus != attempt.Status)
-            {
-                var sale = await _sales.GetByIdAsync(attempt.OrganizationId, attempt.SaleId, cancellationToken)
+                return await _uow
+                    .ExecuteInSerializableTransactionAsync(
+                        async ct => await ApplyWebhookEventAsync(evt, ct).ConfigureAwait(false),
+                        cancellationToken)
                     .ConfigureAwait(false);
-                if (sale is not null)
-                {
-                    await _saleStock.ReleaseIfReservedAsync(sale, now, cancellationToken).ConfigureAwait(false);
-                    await _sales.UpdateAsync(sale, cancellationToken).ConfigureAwait(false);
-                    _logger.LogInformation(
-                        "Payment terminal non-paid released reservation org={OrganizationId} sale={SaleId} attempt={AttemptId} status={Status}",
-                        attempt.OrganizationId.Value,
-                        attempt.SaleId.Value,
-                        attempt.Id.Value,
-                        attempt.Status);
-                }
             }
+            catch (PersistenceConflictException)
+            {
+                // Concurrent cancel/expire may win the first serialization round. Authoritative Paid
+                // must still apply (provider wins per WP12).
+                if (paidEvent)
+                {
+                    for (var attempt = 0; attempt < 3; attempt++)
+                    {
+                        try
+                        {
+                            return await _uow
+                                .ExecuteInSerializableTransactionAsync(
+                                    async ct => await ApplyWebhookEventAsync(evt, ct).ConfigureAwait(false),
+                                    cancellationToken)
+                                .ConfigureAwait(false);
+                        }
+                        catch (PersistenceConflictException)
+                        {
+                            // retry
+                        }
+                    }
 
-            await _attempts.UpdateAsync(attempt, cancellationToken).ConfigureAwait(false);
-            await _uow.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-            return ApplicationResult<PaymentAttemptDto>.Success(PaymentAttemptMaps.Map(attempt));
+                    var afterRetry = await _attempts
+                        .GetByProviderReferenceAsync(evt.Provider, evt.ProviderReference, cancellationToken)
+                        .ConfigureAwait(false);
+                    if (afterRetry?.Status == PaymentAttemptStatus.Paid)
+                    {
+                        return ApplicationResult<PaymentAttemptDto>.Success(
+                            PaymentAttemptMaps.Map(afterRetry));
+                    }
+
+                    return ApplicationResult<PaymentAttemptDto>.Failure(
+                        ApplicationErrorCodes.ConcurrencyConflict,
+                        "The payment attempt was modified concurrently while applying Paid. Reload and try again.");
+                }
+
+                var raced = await _attempts
+                    .GetByProviderReferenceAsync(evt.Provider, evt.ProviderReference, cancellationToken)
+                    .ConfigureAwait(false);
+                if (raced?.Status == PaymentAttemptStatus.Paid)
+                {
+                    return ApplicationResult<PaymentAttemptDto>.Success(PaymentAttemptMaps.Map(raced));
+                }
+
+                return ApplicationResult<PaymentAttemptDto>.Failure(
+                    ApplicationErrorCodes.ConcurrencyConflict,
+                    "The payment attempt was modified concurrently. Reload and try again.");
+            }
         }
         catch (DomainException ex)
         {
             return ApplicationResult<PaymentAttemptDto>.Failure(ex.ErrorCode, ex.Message);
         }
+    }
+
+    private static bool IsPaidWebhookStatus(string status) =>
+        string.Equals(status, "Paid", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(status, "Succeeded", StringComparison.OrdinalIgnoreCase);
+
+    private async Task<ApplicationResult<PaymentAttemptDto>> ApplyWebhookEventAsync(
+        PaymentWebhookEvent evt,
+        CancellationToken cancellationToken)
+    {
+        var attempt = await _attempts
+            .GetByProviderReferenceAsync(evt.Provider, evt.ProviderReference, cancellationToken)
+            .ConfigureAwait(false);
+        if (attempt is null)
+        {
+            return ApplicationResult<PaymentAttemptDto>.Failure(
+                DomainErrorCodes.PaymentAttemptNotFound,
+                "No payment attempt matches the provider reference.");
+        }
+
+        var now = _clock.UtcNow;
+        var priorStatus = attempt.Status;
+        attempt.ExpireIfDue(now);
+        var status = evt.Status.Trim();
+        if (IsPaidWebhookStatus(status))
+        {
+            // Authoritative Paid always advances past the current provider sequence so a concurrent
+            // expire/cancel timestamp cannot permanently block provider success.
+            var paidSequence = Math.Max(evt.EventSequence, attempt.ProviderEventSequence + 1);
+            attempt.MarkPaidFromProvider(paidSequence, now, evt.CardBrand, evt.CardLastFour);
+        }
+        else if (string.Equals(status, "Failed", StringComparison.OrdinalIgnoreCase)
+                 || string.Equals(status, "Declined", StringComparison.OrdinalIgnoreCase))
+        {
+            attempt.MarkFailedFromProvider(evt.EventSequence, evt.FailureCode, evt.FailureMessage, now);
+        }
+        else if (string.Equals(status, "Cancelled", StringComparison.OrdinalIgnoreCase))
+        {
+            attempt.Cancel(now, evt.FailureMessage ?? "Cancelled by provider");
+        }
+        else if (string.Equals(status, "Expired", StringComparison.OrdinalIgnoreCase))
+        {
+            attempt.MarkExpiredFromProvider(evt.EventSequence, evt.FailureMessage, now);
+        }
+
+        if (attempt.Status == PaymentAttemptStatus.Paid)
+        {
+            await FinalizeSaleIfNeededAsync(attempt, now, cancellationToken).ConfigureAwait(false);
+        }
+        else if ((attempt.Status is PaymentAttemptStatus.Failed
+                  or PaymentAttemptStatus.Cancelled
+                  or PaymentAttemptStatus.Expired)
+                 && priorStatus != attempt.Status)
+        {
+            var sale = await _sales
+                .GetByIdAsync(attempt.OrganizationId, attempt.SaleId, cancellationToken)
+                .ConfigureAwait(false);
+            if (sale is not null)
+            {
+                await _saleStock.ReleaseIfReservedAsync(sale, now, cancellationToken).ConfigureAwait(false);
+                await _sales.UpdateAsync(sale, cancellationToken).ConfigureAwait(false);
+                _logger.LogInformation(
+                    "Payment terminal non-paid released reservation org={OrganizationId} sale={SaleId} attempt={AttemptId} status={Status}",
+                    attempt.OrganizationId.Value,
+                    attempt.SaleId.Value,
+                    attempt.Id.Value,
+                    attempt.Status);
+            }
+        }
+
+        await _attempts.UpdateAsync(attempt, cancellationToken).ConfigureAwait(false);
+        await _uow.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        return ApplicationResult<PaymentAttemptDto>.Success(PaymentAttemptMaps.Map(attempt));
     }
 
     private async Task FinalizeSaleIfNeededAsync(
@@ -788,7 +880,10 @@ public sealed class SimulatePaymentOutcome
         var body = FakePaymentGateway.BuildWebhookBody(
             attempt.ProviderReference,
             status,
-            eventSequence: DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+            // Paid must beat concurrent expire/cancel simulations that share the same clock ms.
+            eventSequence: status == "Paid"
+                ? Math.Max(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() + 1, attempt.ProviderEventSequence + 1)
+                : DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
             failureCode: status == "Paid" ? null : status.ToLowerInvariant(),
             failureMessage: status == "Paid" ? null : $"Simulated {status}",
             cardBrand: attempt.Method == PaymentAttemptMethod.Card && status == "Paid" ? "Visa" : null,

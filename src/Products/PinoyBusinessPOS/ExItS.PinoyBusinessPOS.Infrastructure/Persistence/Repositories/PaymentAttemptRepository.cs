@@ -1,3 +1,4 @@
+using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Payments;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Payments;
@@ -114,6 +115,15 @@ internal sealed class PaymentAttemptRepository : IPaymentAttemptRepository
         if (record is null)
         {
             throw new InvalidOperationException($"Payment attempt {attempt.Id.Value:D} was not found for update.");
+        }
+
+        // Never allow a stale cancel/expire/fail domain object to downgrade an authoritative Paid row.
+        if (string.Equals(record.Status, nameof(PaymentAttemptStatus.Paid), StringComparison.Ordinal)
+            && attempt.Status != PaymentAttemptStatus.Paid)
+        {
+            throw new PersistenceConflictException(
+                ApplicationErrorCodes.ConcurrencyConflict,
+                "Payment attempt was paid concurrently and cannot be downgraded.");
         }
 
         PaymentAttemptEntityMapper.Apply(attempt, record);
