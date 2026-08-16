@@ -52,6 +52,7 @@ Development Quick Login one-click auto-auth is **removed** from Admin picker and
 | Sales history / reports | Yes | Yes | Denied |
 | Shifts (read/audit) | Yes | Yes | Denied |
 | Operational settings | Yes | Yes | Denied |
+| Tax settings (when Platform-enabled) | Yes | Yes | Denied |
 | Sales documents / Owner education | Exact Owner | No | Denied |
 | Ownership transfer | Exact Owner | No | Denied |
 | Notifications (org inbox) | Yes (Owner) | Yes (Administrator / Manager) | Denied |
