@@ -4,12 +4,13 @@
 
 | Field | Value |
 |---|---|
-| Status | **Open / Partial Closeout** — WP01–WP07 largely Code Complete / Validation Pending; WP03/WP08/WP09 Partial; WP10 Partial |
+| Status | **Open / Partial Closeout** — WP01–WP07 largely Code Complete / Validation Pending; WP03/WP08 Partial; WP09 Partial (verification in WP11); WP10 Partial; **WP11 Code Complete / Validation Evidence Recorded** |
 | Kind | Cross-cutting enterprise hardening (not feature expansion) |
 | Device Verified | **No** |
 | Browser Verified | **No** |
 | Production Ready | **No** |
 | Starting SHA | `fcc5eee1de074baadf5b2644ab1d6d1a3af22163` |
+| WP11 feature commits | `1212dcd0`, `512f8749`, `7a866a5b` (docs stamp follows) |
 
 ## Goal
 
@@ -27,8 +28,9 @@ Strengthen database and data-domain integrity, eliminate proven N+1 and over-fet
 | **P29-WP06** | Reporting & Aggregation Performance | **Code Complete / Validation Pending** (dashboard/summary) |
 | **P29-WP07** | Indexing, Search, Pagination & Execution Plans | **Code Complete / Validation Pending** (buyer indexes) |
 | **P29-WP08** | Concurrency, Load & Reliability Validation | **Partial** |
-| **P29-WP09** | Migration, Backup/Restore & DB Operations Hardening | **Partial** |
+| **P29-WP09** | Migration, Backup/Restore & DB Operations Hardening | **Partial** (migration apply/rollback evidence in **WP11**) |
 | **P29-WP10** | E2E Database Hardening Closeout | **Partial** |
+| **P29-WP11** | Database Verification & Constraint Closeout | **Code Complete / Validation Evidence Recorded** — [report](../reports/P29-WP11-database-verification-and-constraint-closeout.md) |
 
 ## Explicit exclusions
 
@@ -40,4 +42,4 @@ Strengthen database and data-domain integrity, eliminate proven N+1 and over-fet
 
 ## Exact next
 
-Testcontainers migration apply/rollback; EXPLAIN baselines on SMOKE; optional concurrent Accept integration; keep earlier phases open.
+EXPLAIN baselines on SMOKE; optional concurrent Accept integration; keep earlier phases open; Phase 14 Production backup remains incomplete.

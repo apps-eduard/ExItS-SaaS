@@ -105,3 +105,5 @@ Business residuals (Manual GCash, online-only limits, report export, tax/account
 ## 7. Recommended next work package
 
 **P14-WP03 — Reverse Proxy, TLS, and Network Hardening** when explicitly authorized.
+
+**Honesty note (Phase 29):** [P29-WP11](../reports/P29-WP11-database-verification-and-constraint-closeout.md) recorded PostgreSQL Testcontainers migration apply/rollback and constraint evidence. That does **not** close Production backup/restore rehearsal (**P14-WP04**) and does **not** change the portfolio **Production Ready = No** verdict.

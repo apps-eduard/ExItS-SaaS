@@ -29,5 +29,6 @@ Migration: `StrengthenCustomerOrderTenantAndMoneyIntegrity`
 ## Residuals
 
 - No additive fulfillment **address** snapshot columns beyond existing delivery destination / branch coordinate snapshots (already on `CustomerOrderDeliverySnapshot`). Documented skip — not invasive domain/Rehydrate change; no UI work.
-- Migration apply / rollback / re-apply against PostgreSQL pending.
+- Migration apply / rollback / re-apply against PostgreSQL: evidence in **[P29-WP11](P29-WP11-database-verification-and-constraint-closeout.md)**.
 - TaxDocument runtime unchanged.
+- **FUTURE** (not in WP02/WP11): composite tenant FKs for other line aggregates (`SaleLine`, inventory/PO line children, etc.) — do not silently refactor.

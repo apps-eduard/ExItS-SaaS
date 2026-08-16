@@ -16,8 +16,12 @@ Cross-cutting engineering guidance for Phase 29. Complements [data-ownership](da
 4. Eliminate N+1 and over-fetch on hot paths.
 5. Database-side reporting aggregates.
 6. Evidence-based indexes and pagination.
-7. Concurrency + migration validation with PostgreSQL/Testcontainers.
+7. Concurrency + migration validation with PostgreSQL/Testcontainers (apply/rollback/re-apply evidence in [P29-WP11](../reports/P29-WP11-database-verification-and-constraint-closeout.md)).
 8. Backup/restore evidence without falsely closing Phase 14 Production criteria.
+
+## FUTURE tenant composite FK candidates
+
+Do **not** silently expand composite tenant FKs beyond authorized packages. Remaining candidates (application-filtered today): `SaleLine`, inventory transfer/count lines, purchase-order / goods-receipt lines, and similar child rows.
 
 ## Performance honesty
 

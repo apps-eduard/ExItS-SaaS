@@ -1,4 +1,4 @@
-# ExITS SaaS Portfolio Progress Dashboard
+﻿# ExITS SaaS Portfolio Progress Dashboard
 
 > Primary status page. Cursor must update this file after every completed work package. Percentages are calculated from approved work packages, never estimated.
 
@@ -11,10 +11,10 @@
 | Portfolio | ExITS SaaS |
 | Existing product | Historical HealthCare SaaS MVP (separate product; **not** in this workspace ? do not restore) |
 | New product | PinoyBusinessPOS (SME retail; initial focus Sari-Sari / mini grocery) |
-| Current phase | Phase 29 **Open / Partial Closeout** — cross-cutting data/performance hardening. Phases 14 / 19–28 remain **Open** with prior statuses (including Phase 28 Stage B Code Complete / Validation Pending). |
-| Current work package | **P29** hardening stream — WP01–WP07 Code Complete / Validation Pending; WP03/WP08–WP10 Partial ([phase](phases/phase-29-data-integrity-query-performance-and-database-hardening.md)). |
-| Overall status | Tenant integrity constraints, ListBranches N+1 fix, SQL dashboard aggregates, reservation advisory locks, and ownership doc reconciliation delivered. Load/EXPLAIN/migration drills partial. **Not Device Verified. Not Browser Verified. Not Production Ready.** |
-| Latest verified commit | Phase 29 `d534d4ec`�`20e0904c` (preflight `fcc5eee1`) |
+| Current phase | Phase 29 **Open / Partial Closeout** â€” cross-cutting data/performance hardening. Phases 14 / 19â€“28 remain **Open** with prior statuses (including Phase 28 Stage B Code Complete / Validation Pending). |
+| Current work package | **P29** hardening stream â€” WP01â€“WP07 Code Complete / Validation Pending; WP03/WP08â€“WP10 Partial; **WP11** Code Complete / Validation Evidence Recorded ([phase](phases/phase-29-data-integrity-query-performance-and-database-hardening.md)). |
+| Overall status | Tenant integrity constraints, ListBranches N+1 fix, SQL dashboard aggregates, reservation advisory locks, ownership doc reconciliation, and WP11 Testcontainers migration/constraint verification delivered. Load/EXPLAIN latency drills partial. **Not Device Verified. Not Browser Verified. Not Production Ready.** |
+| Latest verified commit | Phase 29 WP11 `1212dcd0`/`512f8749`/`7a866a5b` (preflight `390178f3`) |
 | Open blockers | TLS-PROD; MAUI-HTTPS; R-109; R-129 / NU1903; auth email vendor; MFA deferred; Phase 19/20/22/24/25/26/27 owner/physical validation pending |
 | Last updated | 2026-08-16 |
 
@@ -173,7 +173,7 @@ P18-WP06 ? Cashier Selling Experience
         ?
 P18-WP07 ? Mobile Security, Resilience, and Localization
         ?
-P18-WP08 ? End-to-End Validation and Closeout (Complete � closeout recorded; partial phone validation; Phase 18 Complete (implementation/scope); Not Device Verified)
+P18-WP08 ? End-to-End Validation and Closeout (Complete ï¿½ closeout recorded; partial phone validation; Phase 18 Complete (implementation/scope); Not Device Verified)
         ?
 P19-WP01 ? Mobile Inventory UI (Code Complete)
         ?
@@ -189,7 +189,7 @@ P19-WP06 ? Mobile Customers UI (Code Complete)
         ?
 P19-WP07 ? Mobile Reports, Authorization, Navigation, and UX Hardening (Code Complete)
         ?
-P19-WP08 ? End-to-End Validation and User Closeout Checklist (Retest � awaiting phone confirmation; Phase 19 Open; Not Device Verified)
+P19-WP08 ? End-to-End Validation and User Closeout Checklist (Retest ï¿½ awaiting phone confirmation; Phase 19 Open; Not Device Verified)
 ```
 
 ## Phase progress
@@ -214,12 +214,12 @@ P19-WP08 ? End-to-End Validation and User Closeout Checklist (Retest � awaitin
 | 15 | Ant Design Platform Administration | **Complete** | 7 | 7 | 100% | [Open](phases/phase-15-ant-design-platform-admin.md) |
 | 16 | Isolated Account Profiles, Personal Utang, Business Upgrade | **Complete with documented residuals** | 10 | 10 | 100% | [Open](phases/phase-16-isolated-account-profiles-personal-utang-and-business-upgrade.md) |
 | 17 | POS MVP Operational Onboarding and First Sale | **Complete with documented residuals** | 8 | 8 | 100% | [Open](phases/phase-17-pos-mvp-operational-onboarding-and-first-sale.md) |
-| 18 | Mobile Personal, Organization, and POS Experience | **Complete (implementation/scope)** � partial phone validation; Not Device Verified | 8 | 8 | 100% | [Open](phases/phase-18-mobile-personal-organization-and-pos-experience.md) |
-| 19 | Mobile POS Operations and Cashier Experience Completion | **Open** (WP01�WP07 Code Complete; WP08 Retest) | 7 | 8 |  -  | [Open](phases/phase-19-mobile-pos-operations-and-cashier-experience.md) |
-| 24 | Linked Customer Statements and Personal Monetization | **Open** (WP01–WP23 Complete; WP24 Awaiting Owner Validation) | 23 | 24 |  -  | [Open](phases/phase-24-linked-customer-statements-and-personal-monetization.md) |
-| 25 | Organization Web Admin, AntDesign hosts, unified web auth + identity/org management | **Open** (WP01–WP09 Code Complete; Owner Validation Pending; not Device Verified; **no closeout**) | 9 | 9 |  -  | [Open](phases/phase-25-organization-web-admin.md) |
-| 26 | Sales Documents and Compliance Readiness | **Open** (WP01–WP05 Code Complete / Owner Validation Pending; no closeout) | 5 | 5 |  -  | [Open](phases/phase-26-sales-documents-compliance-readiness.md) |
-| 27 | Connected Supplier Commerce & Purchasing | **Open / In Progress** (P27-WP01–WP05 Code Complete; WP06–WP07 Not Started; not Device/Browser Verified) | 5 | 7 |  -  | [Open](phases/phase-27-connected-supplier-commerce-and-purchasing.md) |
+| 18 | Mobile Personal, Organization, and POS Experience | **Complete (implementation/scope)** ï¿½ partial phone validation; Not Device Verified | 8 | 8 | 100% | [Open](phases/phase-18-mobile-personal-organization-and-pos-experience.md) |
+| 19 | Mobile POS Operations and Cashier Experience Completion | **Open** (WP01ï¿½WP07 Code Complete; WP08 Retest) | 7 | 8 |  -  | [Open](phases/phase-19-mobile-pos-operations-and-cashier-experience.md) |
+| 24 | Linked Customer Statements and Personal Monetization | **Open** (WP01â€“WP23 Complete; WP24 Awaiting Owner Validation) | 23 | 24 |  -  | [Open](phases/phase-24-linked-customer-statements-and-personal-monetization.md) |
+| 25 | Organization Web Admin, AntDesign hosts, unified web auth + identity/org management | **Open** (WP01â€“WP09 Code Complete; Owner Validation Pending; not Device Verified; **no closeout**) | 9 | 9 |  -  | [Open](phases/phase-25-organization-web-admin.md) |
+| 26 | Sales Documents and Compliance Readiness | **Open** (WP01â€“WP05 Code Complete / Owner Validation Pending; no closeout) | 5 | 5 |  -  | [Open](phases/phase-26-sales-documents-compliance-readiness.md) |
+| 27 | Connected Supplier Commerce & Purchasing | **Open / In Progress** (P27-WP01â€“WP05 Code Complete; WP06â€“WP07 Not Started; not Device/Browser Verified) | 5 | 7 |  -  | [Open](phases/phase-27-connected-supplier-commerce-and-purchasing.md) |
 
 **MVP phases 0-9:** 52 / 52 = **100%** (with documented risks; not Production-ready).
 **Phase 10 Full POS:** 8 / 8 = **100%** (with documented risks; not Production-ready).
@@ -230,94 +230,94 @@ P19-WP08 ? End-to-End Validation and User Closeout Checklist (Retest � awaitin
 **Phase 15 Ant Design Platform Admin:** 7 / 7 WPs complete (closeout [P15-WP07](reports/P15-WP07-phase-15-closeout.md); Fluent UI direction cancelled/superseded).
 **Phase 16 Account Profiles / Personal Utang:** 10 / 10 WPs complete (closeout [P16-WP10](reports/P16-WP10-phase-16-closeout.md); Phase 14 unchanged; not Production-ready).
 **Phase 17 POS MVP Operational Onboarding:** 8 / 8 WPs complete (closeout [P17-WP08](reports/P17-WP08-reports-hardening-and-closeout.md); Phase 14 unchanged; not Production-ready).
-**Phase 18 Mobile Personal / Org / POS Experience:** **Complete (implementation/scope)** � WP01�WP08 closed ([checklist](reports/P18-WP08-end-to-end-validation-and-closeout.md)); Products/Categories phone-validated; Quick Login pending final retest; PhysicalDevice Tailscale APK delivered; **Not Device Verified**; Inventory/Registers/Shifts/Sales/Customers/Reports/full Cashier UI ? Phase 19; Phase 14 unchanged; not Production-ready.
-**Phase 19 Mobile POS Operations / Cashier Experience:** **Open** ([phase](phases/phase-19-mobile-pos-operations-and-cashier-experience.md); [P19-WP08](reports/P19-WP08-end-to-end-validation-and-closeout.md)) — WP01–WP07 Code Complete; WP08 Retest awaiting phone confirmation; offline operability foundation Code Complete with physical A–S incomplete ([report](reports/P19-offline-operability-foundation.md); commits `f476172`, `cc64ba3`, `10a1fc5`); Personal-scope offline sync hardening Code Complete ([report](reports/P19-personal-scope-offline-operability.md); tip `f3d87be`); Purchasing/Inventory UX mental model Code Complete ([engineering](engineering/purchasing-inventory-ux-mental-model.md)); Multi-unit POS selling UX Code Complete ([product units](engineering/product-units-and-inventory-behavior.md)); Connected supplier Browse/Linked products MAUI UX Code Complete ([report](reports/connected-supplier-browse-linked-products-ux.md); tip `c6e669fc`); Phase 14 unchanged; not Production-ready; **Not Device Verified**; **Not Complete**. Buyer-specific sharing & PO pricing moved to **Phase 27** ([P27-WP01](reports/P27-WP01-buyer-specific-product-sharing-and-po-pricing.md)).
-**Phase 21 Privacy, Compliance, and Regulatory Readiness:** **Open** ([phase](phases/phase-21-privacy-compliance-and-regulatory-readiness.md); [foundation report](reports/P21-foundation-privacy-compliance-workspace.md); [readiness visibility UI](reports/P21-privacy-readiness-visibility-product-status-ui.md); [P21-WP11](reports/P21-WP11-post-phase21-privacy-impact-refresh.md); [privacy delta](compliance/post-phase21-privacy-impact-refresh.md)) — Foundation + product readiness visibility (Platform Admin / Org Web / MAUI); readiness tooling only; **not** legal/NPC certification; DPO/legal review pending; Phase 25/26/27 remain **Open**; Phase 14/19/20 unchanged.
-**Phase 23 Multi-Business Entitlements / Variable-Quantity Selling:** **Open** ([phase](phases/phase-23-multi-business-entitlements-and-variable-quantity-selling.md)) — WP01–WP11 done; WP12 in progress; WP13 closeout **not started**; **Not Device Verified**. Phase 24 does not close Phase 23.
-**Phase 24 Linked Customer Statements / Personal Monetization:** **Open** — Implementation Complete / Owner Validation Pending ([phase](phases/phase-24-linked-customer-statements-and-personal-monetization.md); reports WP01–WP24; [ADR-021](decisions/ADR-021-linked-customer-statements-and-personal-monetization.md)) — WP24 Awaiting Owner Validation; **Device Verified: No**; **Production Ready: No**; Phase 24 **not** Closed.
-**Phase 25 Organization Web Admin / web hosts / SSO / identity:** **Open** ([phase](phases/phase-25-organization-web-admin.md); [P25-WP01](reports/P25-WP01-organization-web-admin-management-center.md)–[P25-WP09](reports/P25-WP09-organization-ownership-transfer.md); [responsive UX completion](reports/P25-org-web-full-responsive-ux-completion.md); [Owner management authority fix](reports/P25-owner-organization-management-authority-fix.md); [runtime auth + icon nav remediation](reports/P25-org-web-runtime-owner-auth-and-icon-nav-remediation.md); [connected supplier request lifecycle](reports/connected-supplier-connection-request-lifecycle.md); [unified organization business notifications](reports/unified-organization-business-notifications.md) (Read-on-open + Connected buyers); [role matrix](engineering/organization-web-role-and-workflow-matrix.md); [responsive UI standard](engineering/organization-web-ui-responsive-standard.md); [owner checklist](validation/organization-web-responsive-owner-checklist.md); [ADR-022](decisions/ADR-022-separated-antdesign-web-hosts-and-unified-auth.md)) — WP01–WP09 Code Complete; full management-page responsive UX pass Code Complete; Owner management authority + circuit ambient session restore Code Complete; Connected ExItS supplier Pending/incoming request surfaces (Org Web + MAUI); Development Test User username-only; Owner/Administrator → Organization Web; Cashier denied; Owner Validation Pending; **Device Verified: No**; **Production Ready: No**. **No Phase 25 closeout.**
+**Phase 18 Mobile Personal / Org / POS Experience:** **Complete (implementation/scope)** ï¿½ WP01ï¿½WP08 closed ([checklist](reports/P18-WP08-end-to-end-validation-and-closeout.md)); Products/Categories phone-validated; Quick Login pending final retest; PhysicalDevice Tailscale APK delivered; **Not Device Verified**; Inventory/Registers/Shifts/Sales/Customers/Reports/full Cashier UI ? Phase 19; Phase 14 unchanged; not Production-ready.
+**Phase 19 Mobile POS Operations / Cashier Experience:** **Open** ([phase](phases/phase-19-mobile-pos-operations-and-cashier-experience.md); [P19-WP08](reports/P19-WP08-end-to-end-validation-and-closeout.md)) â€” WP01â€“WP07 Code Complete; WP08 Retest awaiting phone confirmation; offline operability foundation Code Complete with physical Aâ€“S incomplete ([report](reports/P19-offline-operability-foundation.md); commits `f476172`, `cc64ba3`, `10a1fc5`); Personal-scope offline sync hardening Code Complete ([report](reports/P19-personal-scope-offline-operability.md); tip `f3d87be`); Purchasing/Inventory UX mental model Code Complete ([engineering](engineering/purchasing-inventory-ux-mental-model.md)); Multi-unit POS selling UX Code Complete ([product units](engineering/product-units-and-inventory-behavior.md)); Connected supplier Browse/Linked products MAUI UX Code Complete ([report](reports/connected-supplier-browse-linked-products-ux.md); tip `c6e669fc`); Phase 14 unchanged; not Production-ready; **Not Device Verified**; **Not Complete**. Buyer-specific sharing & PO pricing moved to **Phase 27** ([P27-WP01](reports/P27-WP01-buyer-specific-product-sharing-and-po-pricing.md)).
+**Phase 21 Privacy, Compliance, and Regulatory Readiness:** **Open** ([phase](phases/phase-21-privacy-compliance-and-regulatory-readiness.md); [foundation report](reports/P21-foundation-privacy-compliance-workspace.md); [readiness visibility UI](reports/P21-privacy-readiness-visibility-product-status-ui.md); [P21-WP11](reports/P21-WP11-post-phase21-privacy-impact-refresh.md); [privacy delta](compliance/post-phase21-privacy-impact-refresh.md)) â€” Foundation + product readiness visibility (Platform Admin / Org Web / MAUI); readiness tooling only; **not** legal/NPC certification; DPO/legal review pending; Phase 25/26/27 remain **Open**; Phase 14/19/20 unchanged.
+**Phase 23 Multi-Business Entitlements / Variable-Quantity Selling:** **Open** ([phase](phases/phase-23-multi-business-entitlements-and-variable-quantity-selling.md)) â€” WP01â€“WP11 done; WP12 in progress; WP13 closeout **not started**; **Not Device Verified**. Phase 24 does not close Phase 23.
+**Phase 24 Linked Customer Statements / Personal Monetization:** **Open** â€” Implementation Complete / Owner Validation Pending ([phase](phases/phase-24-linked-customer-statements-and-personal-monetization.md); reports WP01â€“WP24; [ADR-021](decisions/ADR-021-linked-customer-statements-and-personal-monetization.md)) â€” WP24 Awaiting Owner Validation; **Device Verified: No**; **Production Ready: No**; Phase 24 **not** Closed.
+**Phase 25 Organization Web Admin / web hosts / SSO / identity:** **Open** ([phase](phases/phase-25-organization-web-admin.md); [P25-WP01](reports/P25-WP01-organization-web-admin-management-center.md)â€“[P25-WP09](reports/P25-WP09-organization-ownership-transfer.md); [responsive UX completion](reports/P25-org-web-full-responsive-ux-completion.md); [Owner management authority fix](reports/P25-owner-organization-management-authority-fix.md); [runtime auth + icon nav remediation](reports/P25-org-web-runtime-owner-auth-and-icon-nav-remediation.md); [connected supplier request lifecycle](reports/connected-supplier-connection-request-lifecycle.md); [unified organization business notifications](reports/unified-organization-business-notifications.md) (Read-on-open + Connected buyers); [role matrix](engineering/organization-web-role-and-workflow-matrix.md); [responsive UI standard](engineering/organization-web-ui-responsive-standard.md); [owner checklist](validation/organization-web-responsive-owner-checklist.md); [ADR-022](decisions/ADR-022-separated-antdesign-web-hosts-and-unified-auth.md)) â€” WP01â€“WP09 Code Complete; full management-page responsive UX pass Code Complete; Owner management authority + circuit ambient session restore Code Complete; Connected ExItS supplier Pending/incoming request surfaces (Org Web + MAUI); Development Test User username-only; Owner/Administrator â†’ Organization Web; Cashier denied; Owner Validation Pending; **Device Verified: No**; **Production Ready: No**. **No Phase 25 closeout.**
 
 ## Phase 25 work packages
 
 | WP | Status | Key commit |
 |---|---|---|
-| P25-WP01 — Organization Web Admin management center | **Code Complete / Owner Validation Pending** | [report](reports/P25-WP01-organization-web-admin-management-center.md) |
-| P25-WP02 — AntDesign web standardization and host separation | **Code Complete / Owner Validation Pending** | [report](reports/P25-WP02-antdesign-web-standardization-and-host-separation.md) |
-| P25-WP03 — Unified web authentication, SSO, workspace routing | **Code Complete / Owner Validation Pending** | [report](reports/P25-WP03-unified-web-authentication-sso-and-workspace-routing.md) |
-| P25-WP04 — Web host legacy cleanup and Local Validation identity determinism | **Code Complete / Owner Validation Pending** | `9df02401` — [report](reports/P25-WP04-web-host-legacy-cleanup-and-local-validation-identity-determinism.md) |
-| P25-WP05 — Cash count policy simplification and denomination-assisted reconciliation | **Code Complete / Owner Validation Pending** | `cbcdb8a9` (feat), `8869a179` (test), `528de183` (docs), `a50413bc` (PHP centavo defaults) — [report](reports/P25-WP05-cash-count-policy-simplification-and-denomination-assisted-reconciliation.md) |
-| P25-WP06 — Personal / Organization identity isolation + typed QR | **Code Complete / Owner Validation Pending** | `3e1515b9`, `8f3875f5`, `66a972f8` — [report](reports/P25-WP06-personal-organization-identity-isolation.md) |
-| P25-WP07 — POS sales buyer-party / QR purpose isolation | **Code Complete / Owner Validation Pending** | `95f5744b`, `710426a9` — [report](reports/P25-WP07-sales-buyer-party-isolation.md) |
-| P25-WP08 — Organization profile independence + multi-org ownership | **Code Complete / Owner Validation Pending** | `a3dfda28`, `5fd997e0` — [report](reports/P25-WP08-organization-profile-independence.md) |
-| P25-WP09 — Organization ownership transfer | **Code Complete / Owner Validation Pending** | `67bd59bd`, `f20b6dc3`, `5f51e35a` — [report](reports/P25-WP09-organization-ownership-transfer.md) |
+| P25-WP01 â€” Organization Web Admin management center | **Code Complete / Owner Validation Pending** | [report](reports/P25-WP01-organization-web-admin-management-center.md) |
+| P25-WP02 â€” AntDesign web standardization and host separation | **Code Complete / Owner Validation Pending** | [report](reports/P25-WP02-antdesign-web-standardization-and-host-separation.md) |
+| P25-WP03 â€” Unified web authentication, SSO, workspace routing | **Code Complete / Owner Validation Pending** | [report](reports/P25-WP03-unified-web-authentication-sso-and-workspace-routing.md) |
+| P25-WP04 â€” Web host legacy cleanup and Local Validation identity determinism | **Code Complete / Owner Validation Pending** | `9df02401` â€” [report](reports/P25-WP04-web-host-legacy-cleanup-and-local-validation-identity-determinism.md) |
+| P25-WP05 â€” Cash count policy simplification and denomination-assisted reconciliation | **Code Complete / Owner Validation Pending** | `cbcdb8a9` (feat), `8869a179` (test), `528de183` (docs), `a50413bc` (PHP centavo defaults) â€” [report](reports/P25-WP05-cash-count-policy-simplification-and-denomination-assisted-reconciliation.md) |
+| P25-WP06 â€” Personal / Organization identity isolation + typed QR | **Code Complete / Owner Validation Pending** | `3e1515b9`, `8f3875f5`, `66a972f8` â€” [report](reports/P25-WP06-personal-organization-identity-isolation.md) |
+| P25-WP07 â€” POS sales buyer-party / QR purpose isolation | **Code Complete / Owner Validation Pending** | `95f5744b`, `710426a9` â€” [report](reports/P25-WP07-sales-buyer-party-isolation.md) |
+| P25-WP08 â€” Organization profile independence + multi-org ownership | **Code Complete / Owner Validation Pending** | `a3dfda28`, `5fd997e0` â€” [report](reports/P25-WP08-organization-profile-independence.md) |
+| P25-WP09 â€” Organization ownership transfer | **Code Complete / Owner Validation Pending** | `67bd59bd`, `f20b6dc3`, `5f51e35a` â€” [report](reports/P25-WP09-organization-ownership-transfer.md) |
 
-**Phase 26 Sales Documents / Compliance Readiness:** **Open** ([phase](phases/phase-26-sales-documents-compliance-readiness.md); [roadmap](compliance/bir-compliance-activation-roadmap.md); [source register](compliance/bir-authoritative-source-register.md); [readiness design](engineering/bir-registration-readiness-and-activation.md); [checklist](validation/phase-26-owner-validation-checklist.md); [tax configuration](engineering/platform-controlled-organization-tax-configuration.md)) — WP01–WP06 Code Complete / Owner Validation Pending (WP06 also Regulatory Validation Pending); TaxDocument unavailable; TaxConfigurationEnabled Platform-gated (default off); no BIR claim; Phase 25 remains Open.
+**Phase 26 Sales Documents / Compliance Readiness:** **Open** ([phase](phases/phase-26-sales-documents-compliance-readiness.md); [roadmap](compliance/bir-compliance-activation-roadmap.md); [source register](compliance/bir-authoritative-source-register.md); [readiness design](engineering/bir-registration-readiness-and-activation.md); [checklist](validation/phase-26-owner-validation-checklist.md); [tax configuration](engineering/platform-controlled-organization-tax-configuration.md)) â€” WP01â€“WP06 Code Complete / Owner Validation Pending (WP06 also Regulatory Validation Pending); TaxDocument unavailable; TaxConfigurationEnabled Platform-gated (default off); no BIR claim; Phase 25 remains Open.
 
 ## Phase 26 work packages
 
 | Work package | Status | Evidence |
 |---|---|---|
-| P26-WP01 — Sales document compliance readiness foundation | **Code Complete / Validation Pending** | See [report](reports/P26-WP01-sales-document-compliance-readiness-foundation.md) |
-| P26-WP02 — Organization compliance education and acknowledgment | **Code Complete / Validation Pending** | See [report](reports/P26-WP02-organization-compliance-education-and-acknowledgment.md) |
-| P26-WP03 — Platform-controlled compliance capability and eligibility | **Code Complete / Validation Pending** | See [report](reports/P26-WP03-platform-controlled-compliance-capability-and-eligibility.md) |
-| P26-WP04 — Organization tax/compliance profile and activation foundation | **Code Complete / Validation Pending** | See [report](reports/P26-WP04-organization-tax-compliance-profile-and-activation-foundation.md) |
-| P26-WP05 — Integration Hardening & Validation Readiness | **Code Complete / Owner Validation Pending** | `254424df` — [report](reports/P26-WP05-sales-document-compliance-integration-hardening.md); [checklist](validation/phase-26-owner-validation-checklist.md) |
-| P26-WP06 — BIR registration profile & activation readiness | **Code Complete / Owner + Regulatory Validation Pending** | `69fd132f`…`fe63a6f6` — [report](reports/P26-WP06-bir-registration-profile-and-activation-readiness.md); starting `1f81cb63` |
+| P26-WP01 â€” Sales document compliance readiness foundation | **Code Complete / Validation Pending** | See [report](reports/P26-WP01-sales-document-compliance-readiness-foundation.md) |
+| P26-WP02 â€” Organization compliance education and acknowledgment | **Code Complete / Validation Pending** | See [report](reports/P26-WP02-organization-compliance-education-and-acknowledgment.md) |
+| P26-WP03 â€” Platform-controlled compliance capability and eligibility | **Code Complete / Validation Pending** | See [report](reports/P26-WP03-platform-controlled-compliance-capability-and-eligibility.md) |
+| P26-WP04 â€” Organization tax/compliance profile and activation foundation | **Code Complete / Validation Pending** | See [report](reports/P26-WP04-organization-tax-compliance-profile-and-activation-foundation.md) |
+| P26-WP05 â€” Integration Hardening & Validation Readiness | **Code Complete / Owner Validation Pending** | `254424df` â€” [report](reports/P26-WP05-sales-document-compliance-integration-hardening.md); [checklist](validation/phase-26-owner-validation-checklist.md) |
+| P26-WP06 â€” BIR registration profile & activation readiness | **Code Complete / Owner + Regulatory Validation Pending** | `69fd132f`â€¦`fe63a6f6` â€” [report](reports/P26-WP06-bir-registration-profile-and-activation-readiness.md); starting `1f81cb63` |
 
-**Phase 27 Connected Supplier Commerce & Purchasing:** **Open / In Progress** ([phase](phases/phase-27-connected-supplier-commerce-and-purchasing.md); [design](engineering/connected-exits-suppliers.md)) — P27-WP01–WP05 Code Complete; WP06–WP07 Not Started; active next P27-WP06; **Device Verified: No**; **Browser Verified: No**; **Production Ready: No**; no phase closeout.
+**Phase 27 Connected Supplier Commerce & Purchasing:** **Open / In Progress** ([phase](phases/phase-27-connected-supplier-commerce-and-purchasing.md); [design](engineering/connected-exits-suppliers.md)) â€” P27-WP01â€“WP05 Code Complete; WP06â€“WP07 Not Started; active next P27-WP06; **Device Verified: No**; **Browser Verified: No**; **Production Ready: No**; no phase closeout.
 
-**Phase 28 Customer Ordering, Pickup & Delivery:** **Open / In Progress** ([phase](phases/phase-28-customer-ordering-pickup-and-delivery.md)) — WP01 Code Complete; WP02–WP09 Stage B Code Complete / Validation Pending; WP10 Not Started; Phase 27 remains Open; **Device Verified: No**; **Browser Verified: No**; **Production Ready: No**.
+**Phase 28 Customer Ordering, Pickup & Delivery:** **Open / In Progress** ([phase](phases/phase-28-customer-ordering-pickup-and-delivery.md)) â€” WP01 Code Complete; WP02â€“WP09 Stage B Code Complete / Validation Pending; WP10 Not Started; Phase 27 remains Open; **Device Verified: No**; **Browser Verified: No**; **Production Ready: No**.
 
-**Phase 29 Data Integrity / Query Performance / DB Ops Hardening:** **Open / Partial Closeout** ([phase](phases/phase-29-data-integrity-query-performance-and-database-hardening.md)) — WP01–WP07 Code Complete / Validation Pending; WP03/WP08–WP10 Partial; earlier open phases unchanged; **Device Verified: No**; **Browser Verified: No**; **Production Ready: No**.
+**Phase 29 Data Integrity / Query Performance / DB Ops Hardening:** **Open / Partial Closeout** ([phase](phases/phase-29-data-integrity-query-performance-and-database-hardening.md)) â€” WP01â€“WP07 Code Complete / Validation Pending; WP03/WP08â€“WP10 Partial; **WP11** Code Complete / Validation Evidence Recorded ([report](reports/P29-WP11-database-verification-and-constraint-closeout.md)); earlier open phases unchanged; **Device Verified: No**; **Browser Verified: No**; **Production Ready: No**.
 
 ## Phase 27 work packages
 
 | WP | Status | Key commit |
 |---|---|---|
-| P27-WP01 — Buyer-Specific Product Sharing & PO Pricing | **Code Complete + Level-1 + Level-2 Mobile UX Hardening Complete** | original tip `cbd0005b`; Level-1 + Level-2 UX hardening commits recorded on WP01 report — [report](reports/P27-WP01-buyer-specific-product-sharing-and-po-pricing.md) |
-| P27-WP02 — Connected PO Delivery & Reliability | **Code Complete** | TBD after commit — [report](reports/P27-WP02-connected-po-delivery-and-reliability.md) |
-| P27-WP03 — Supplier Response Synchronization | **Code Complete** | TBD after commit — [report](reports/P27-WP03-supplier-response-synchronization.md) |
-| P27-WP04 — Connected PO Cancellation & Withdrawal | **Code Complete** | TBD after commit — [report](reports/P27-WP04-connected-po-cancellation-and-withdrawal.md) |
-| P27-WP05 — Fulfillment, Goods Receipt & Discrepancies | **Code Complete** | TBD after commit — [report](reports/P27-WP05-fulfillment-goods-receipt-and-discrepancies.md) |
-| P27-WP06 — Connected Purchasing UX & Notifications | **Not Started** | — |
-| P27-WP07 — E2E Hardening & Phase 27 Closeout | **Not Started** | — |
+| P27-WP01 â€” Buyer-Specific Product Sharing & PO Pricing | **Code Complete + Level-1 + Level-2 Mobile UX Hardening Complete** | original tip `cbd0005b`; Level-1 + Level-2 UX hardening commits recorded on WP01 report â€” [report](reports/P27-WP01-buyer-specific-product-sharing-and-po-pricing.md) |
+| P27-WP02 â€” Connected PO Delivery & Reliability | **Code Complete** | TBD after commit â€” [report](reports/P27-WP02-connected-po-delivery-and-reliability.md) |
+| P27-WP03 â€” Supplier Response Synchronization | **Code Complete** | TBD after commit â€” [report](reports/P27-WP03-supplier-response-synchronization.md) |
+| P27-WP04 â€” Connected PO Cancellation & Withdrawal | **Code Complete** | TBD after commit â€” [report](reports/P27-WP04-connected-po-cancellation-and-withdrawal.md) |
+| P27-WP05 â€” Fulfillment, Goods Receipt & Discrepancies | **Code Complete** | TBD after commit â€” [report](reports/P27-WP05-fulfillment-goods-receipt-and-discrepancies.md) |
+| P27-WP06 â€” Connected Purchasing UX & Notifications | **Not Started** | â€” |
+| P27-WP07 â€” E2E Hardening & Phase 27 Closeout | **Not Started** | â€” |
 
 ## Phase 24 work packages
 
 | WP | Status | Key commit |
 |---|---|---|
-| P24-WP01 — Current-state audit + architecture contract | **Complete** (architecture contract) | `1351bef72f9ba04030495785767cc9bb609c5f8d` — [report](reports/P24-WP01-current-state-and-architecture-contract.md) |
-| P24-WP02 — Customer-link completeness + POS↔Platform correlation | **Complete** | `19786a3d2a19fdf0131c5ca315a272e012ab2926` (feat), `b99809cd3a46d28983a663e0ca9bbe9488a5ffbb` (docs) — [report](reports/P24-WP02-customer-link-and-pos-correlation.md) |
-| P24-WP03 — Linked-customer authorization contract | **Complete** | `d8c90f0c46fe8d70efb93970fb93d96412c5fc39` (feat), `ef947f5ee274bc7cda1d09b7af5b6a65682ebfe7` (docs) — [report](reports/P24-WP03-linked-customer-authorization-contract.md) |
-| P24-WP04 — Lightweight linked Business Utang statement projection | **Complete** | `cd24b28ad29a5a4ddc3af9e49021884d7640a520` (feat), `b8cf30964fec6270f5fefd8435488bdf806ca4d1` (docs) — [report](reports/P24-WP04-lightweight-linked-business-utang-statement.md) |
-| P24-WP05 — Receipt summary/detail and lazy loading | **Complete** | `b819914aa8403af02db3015a3eb47f681e25ec01` (feat), `d0e9254ff042125932a351eebb3fe85c761e6e0f` (docs) — [report](reports/P24-WP05-receipt-summary-detail-and-lazy-loading.md) |
-| P24-WP06 — Free vs Paid Personal history entitlement | **Complete** | `7a9a8301de1489c75ccc3a4a9890d0a7d3b54196` (feat), `cdd991b51e02fbb1de576c6337793e2b809503e8` (docs) — [report](reports/P24-WP06-free-vs-paid-personal-history-entitlement.md) |
-| P24-WP07 — Personal reward points ledger + feature redemption | **Complete** | `d41106acd32bd950bb6638bc769539ab22abd99a` (feat), `20a61d99afbfca3587b4d688fff5161b508a66ca` (docs) — [report](reports/P24-WP07-personal-reward-points-and-redemption.md) |
-| P24-WP08 — Reward ledger foundation | **Complete** | `f18a9ea76b34e4f265dcc29af7b0220cc3c8a625` (feat), `0d0d6595d1e57b756bf30599bd801cd19544419d` (docs) — [report](reports/P24-WP08-reward-ledger-foundation.md) |
-| P24-WP09 — Ads abstraction + Ad-Free entitlement | **Complete** | `ea9bac0db464f369238d40957789b6b3d4188a4f` (feat), `50a517b9591d77fc75fb8dc46044fb96010f496f` (docs) — [report](reports/P24-WP09-ads-abstraction-and-ad-free-entitlement.md) |
-| P24-WP10 — Entitlement-aware older/settled history | **Complete** | `40d6da229e2473c347664a79c91463770f1547ee` (feat), `59af882023428f4961c97297c4c80633c517f731` (docs) — [report](reports/P24-WP10-entitlement-aware-older-settled-history.md) |
-| P24-WP11 — Admin configuration for Personal features | **Complete** | `f9f479dbe784103d74803160132ae28c510eb69f` (feat), `fc046aa8f1278b4d902488adb75f55480bfef814` (docs) — [report](reports/P24-WP11-admin-configuration-for-personal-features.md) |
-| P24-WP12 — Regression, security, and edge-case tests | **Complete** | `5ccf12e2a1a420ae4ff9ef3cdbc586868f33126c` (test), `c6f013ace3e1800bfbcb9a5179fae4ffb1df005b` (docs) — [report](reports/P24-WP12-regression-security-and-edge-case-tests.md) |
-| P24-WP13 — Dispute/request architecture (optional) | **Complete** (architecture; implementation deferred) | `6a10dbf503c35e086e72c00f8c503bb005facfae` (docs) — [report](reports/P24-WP13-dispute-request-architecture.md) |
-| P24-WP14 — Documentation / backend closeout preparation | **Complete** | `d5b25e6cc197d4f4cf7955051282e6293df52655` (docs) — [report](reports/P24-WP14-documentation-backend-closeout-preparation.md) |
-| P24-WP15 — Physical Android validation preparation | **Complete** (prep ≠ Device Verified) | `b1200f314c02c7573224899c6f1f516d5d9a32b9` (docs) — [report](reports/P24-WP15-physical-android-validation-preparation.md) |
-| P24-WP16 — Personal mobile linked-customer statement experience | **Complete** | `de568ae08f17b11c2c14823f4e2b4c3e9f337c78` (feat) — [report](reports/P24-WP16-personal-mobile-linked-customer-statement-experience.md) |
-| P24-WP17 — Mobile receipts and older-history entitlement UX | **Complete** | `cf81e15b8bd9d6ff27b66db6f105a880fe23a96d` (feat) — [report](reports/P24-WP17-mobile-receipts-and-older-history-entitlement-ux.md) |
-| P24-WP18 — Mobile rewards and Personal feature redemption | **Complete** | `ab3dd06fdc604dc385450222d2c762927968aa3e` — [report](reports/P24-WP18-mobile-rewards-and-personal-feature-redemption.md) |
-| P24-WP19 — Mobile ads/ad-free UX abstraction | **Complete** | `ab3dd06fdc604dc385450222d2c762927968aa3e` — [report](reports/P24-WP19-mobile-ads-ad-free-ux-abstraction.md) |
-| P24-WP20 — Android integration and end-to-end mobile flows | **Complete** | `ab3dd06fdc604dc385450222d2c762927968aa3e` — [report](reports/P24-WP20-android-integration-and-e2e-mobile-flows.md) |
-| P24-WP21 — Physical Android device validation and fix pass | **Complete** (Device Verified **No**) | `ab3dd06fdc604dc385450222d2c762927968aa3e` — [report](reports/P24-WP21-physical-android-device-validation-and-fix-pass.md) |
-| P24-WP22 — Mobile regression, privacy, security, and resilience hardening | **Complete** | `ab3dd06fdc604dc385450222d2c762927968aa3e` — [report](reports/P24-WP22-mobile-regression-privacy-security-resilience.md) |
-| P24-WP23 — Phase-24 implementation closeout preparation | **Complete** | Owner Validation Pending — [report](reports/P24-WP23-phase-24-implementation-closeout-preparation.md) |
-| P24-WP24 — Owner/User Final Validation and Acceptance | **Awaiting Owner Validation** | Hard user gate — [report](reports/P24-WP24-owner-user-final-validation-and-acceptance.md) |
+| P24-WP01 â€” Current-state audit + architecture contract | **Complete** (architecture contract) | `1351bef72f9ba04030495785767cc9bb609c5f8d` â€” [report](reports/P24-WP01-current-state-and-architecture-contract.md) |
+| P24-WP02 â€” Customer-link completeness + POSâ†”Platform correlation | **Complete** | `19786a3d2a19fdf0131c5ca315a272e012ab2926` (feat), `b99809cd3a46d28983a663e0ca9bbe9488a5ffbb` (docs) â€” [report](reports/P24-WP02-customer-link-and-pos-correlation.md) |
+| P24-WP03 â€” Linked-customer authorization contract | **Complete** | `d8c90f0c46fe8d70efb93970fb93d96412c5fc39` (feat), `ef947f5ee274bc7cda1d09b7af5b6a65682ebfe7` (docs) â€” [report](reports/P24-WP03-linked-customer-authorization-contract.md) |
+| P24-WP04 â€” Lightweight linked Business Utang statement projection | **Complete** | `cd24b28ad29a5a4ddc3af9e49021884d7640a520` (feat), `b8cf30964fec6270f5fefd8435488bdf806ca4d1` (docs) â€” [report](reports/P24-WP04-lightweight-linked-business-utang-statement.md) |
+| P24-WP05 â€” Receipt summary/detail and lazy loading | **Complete** | `b819914aa8403af02db3015a3eb47f681e25ec01` (feat), `d0e9254ff042125932a351eebb3fe85c761e6e0f` (docs) â€” [report](reports/P24-WP05-receipt-summary-detail-and-lazy-loading.md) |
+| P24-WP06 â€” Free vs Paid Personal history entitlement | **Complete** | `7a9a8301de1489c75ccc3a4a9890d0a7d3b54196` (feat), `cdd991b51e02fbb1de576c6337793e2b809503e8` (docs) â€” [report](reports/P24-WP06-free-vs-paid-personal-history-entitlement.md) |
+| P24-WP07 â€” Personal reward points ledger + feature redemption | **Complete** | `d41106acd32bd950bb6638bc769539ab22abd99a` (feat), `20a61d99afbfca3587b4d688fff5161b508a66ca` (docs) â€” [report](reports/P24-WP07-personal-reward-points-and-redemption.md) |
+| P24-WP08 â€” Reward ledger foundation | **Complete** | `f18a9ea76b34e4f265dcc29af7b0220cc3c8a625` (feat), `0d0d6595d1e57b756bf30599bd801cd19544419d` (docs) â€” [report](reports/P24-WP08-reward-ledger-foundation.md) |
+| P24-WP09 â€” Ads abstraction + Ad-Free entitlement | **Complete** | `ea9bac0db464f369238d40957789b6b3d4188a4f` (feat), `50a517b9591d77fc75fb8dc46044fb96010f496f` (docs) â€” [report](reports/P24-WP09-ads-abstraction-and-ad-free-entitlement.md) |
+| P24-WP10 â€” Entitlement-aware older/settled history | **Complete** | `40d6da229e2473c347664a79c91463770f1547ee` (feat), `59af882023428f4961c97297c4c80633c517f731` (docs) â€” [report](reports/P24-WP10-entitlement-aware-older-settled-history.md) |
+| P24-WP11 â€” Admin configuration for Personal features | **Complete** | `f9f479dbe784103d74803160132ae28c510eb69f` (feat), `fc046aa8f1278b4d902488adb75f55480bfef814` (docs) â€” [report](reports/P24-WP11-admin-configuration-for-personal-features.md) |
+| P24-WP12 â€” Regression, security, and edge-case tests | **Complete** | `5ccf12e2a1a420ae4ff9ef3cdbc586868f33126c` (test), `c6f013ace3e1800bfbcb9a5179fae4ffb1df005b` (docs) â€” [report](reports/P24-WP12-regression-security-and-edge-case-tests.md) |
+| P24-WP13 â€” Dispute/request architecture (optional) | **Complete** (architecture; implementation deferred) | `6a10dbf503c35e086e72c00f8c503bb005facfae` (docs) â€” [report](reports/P24-WP13-dispute-request-architecture.md) |
+| P24-WP14 â€” Documentation / backend closeout preparation | **Complete** | `d5b25e6cc197d4f4cf7955051282e6293df52655` (docs) â€” [report](reports/P24-WP14-documentation-backend-closeout-preparation.md) |
+| P24-WP15 â€” Physical Android validation preparation | **Complete** (prep â‰  Device Verified) | `b1200f314c02c7573224899c6f1f516d5d9a32b9` (docs) â€” [report](reports/P24-WP15-physical-android-validation-preparation.md) |
+| P24-WP16 â€” Personal mobile linked-customer statement experience | **Complete** | `de568ae08f17b11c2c14823f4e2b4c3e9f337c78` (feat) â€” [report](reports/P24-WP16-personal-mobile-linked-customer-statement-experience.md) |
+| P24-WP17 â€” Mobile receipts and older-history entitlement UX | **Complete** | `cf81e15b8bd9d6ff27b66db6f105a880fe23a96d` (feat) â€” [report](reports/P24-WP17-mobile-receipts-and-older-history-entitlement-ux.md) |
+| P24-WP18 â€” Mobile rewards and Personal feature redemption | **Complete** | `ab3dd06fdc604dc385450222d2c762927968aa3e` â€” [report](reports/P24-WP18-mobile-rewards-and-personal-feature-redemption.md) |
+| P24-WP19 â€” Mobile ads/ad-free UX abstraction | **Complete** | `ab3dd06fdc604dc385450222d2c762927968aa3e` â€” [report](reports/P24-WP19-mobile-ads-ad-free-ux-abstraction.md) |
+| P24-WP20 â€” Android integration and end-to-end mobile flows | **Complete** | `ab3dd06fdc604dc385450222d2c762927968aa3e` â€” [report](reports/P24-WP20-android-integration-and-e2e-mobile-flows.md) |
+| P24-WP21 â€” Physical Android device validation and fix pass | **Complete** (Device Verified **No**) | `ab3dd06fdc604dc385450222d2c762927968aa3e` â€” [report](reports/P24-WP21-physical-android-device-validation-and-fix-pass.md) |
+| P24-WP22 â€” Mobile regression, privacy, security, and resilience hardening | **Complete** | `ab3dd06fdc604dc385450222d2c762927968aa3e` â€” [report](reports/P24-WP22-mobile-regression-privacy-security-resilience.md) |
+| P24-WP23 â€” Phase-24 implementation closeout preparation | **Complete** | Owner Validation Pending â€” [report](reports/P24-WP23-phase-24-implementation-closeout-preparation.md) |
+| P24-WP24 â€” Owner/User Final Validation and Acceptance | **Awaiting Owner Validation** | Hard user gate â€” [report](reports/P24-WP24-owner-user-final-validation-and-acceptance.md) |
 
 ## Phase 21 work packages
 
 | WP | Status | Key commit |
 |---|---|---|
-| P21 foundation (WP01–WP10 slice) | **Code Complete** (readiness tooling) | `7f6795b` (feat), `26ec821` (test) — [report](reports/P21-foundation-privacy-compliance-workspace.md) |
-| P21-WP01 Requirements & privacy inventory | **Code Complete** | `7f6795b` — [report](reports/P21-WP01-requirements-and-privacy-inventory.md) |
-| P21-WP11 Post–Phase-21 privacy impact refresh | **Code Complete / Validation Pending** | `15eeb660` — [report](reports/P21-WP11-post-phase21-privacy-impact-refresh.md); [delta](compliance/post-phase21-privacy-impact-refresh.md) |
+| P21 foundation (WP01â€“WP10 slice) | **Code Complete** (readiness tooling) | `7f6795b` (feat), `26ec821` (test) â€” [report](reports/P21-foundation-privacy-compliance-workspace.md) |
+| P21-WP01 Requirements & privacy inventory | **Code Complete** | `7f6795b` â€” [report](reports/P21-WP01-requirements-and-privacy-inventory.md) |
+| P21-WP11 Postâ€“Phase-21 privacy impact refresh | **Code Complete / Validation Pending** | `15eeb660` â€” [report](reports/P21-WP11-post-phase21-privacy-impact-refresh.md); [delta](compliance/post-phase21-privacy-impact-refresh.md) |
 
 ## Phase 19 work packages
 
@@ -331,8 +331,8 @@ P19-WP08 ? End-to-End Validation and User Closeout Checklist (Retest � awaitin
 | P19-WP06  -  Mobile Customers UI | **Code Complete** | `7361d2c`  -  [report](reports/P19-WP06-mobile-customers-ui.md) |
 | P19-WP07  -  Mobile Reports, Authorization, Navigation, and UX Hardening | **Code Complete** | `1dad55a`  -  [report](reports/P19-WP07-mobile-reports-authorization-navigation-and-ux-hardening.md) |
 | P19-WP08  -  End-to-End Validation and User Closeout Checklist | **Retest** | `817e72c`  -  [report](reports/P19-WP08-end-to-end-validation-and-closeout.md) |
-| Supplemental — Offline operability foundation | **Code Complete**; physical A–S **incomplete** | `10a1fc5` (tip) / `f476172` / `cc64ba3` — [report](reports/P19-offline-operability-foundation.md) |
-| Supplemental — Personal-scope offline operability | **Code Complete**; device incomplete; manual Retry supported | `f3d87be` — [report](reports/P19-personal-scope-offline-operability.md) |
+| Supplemental â€” Offline operability foundation | **Code Complete**; physical Aâ€“S **incomplete** | `10a1fc5` (tip) / `f476172` / `cc64ba3` â€” [report](reports/P19-offline-operability-foundation.md) |
+| Supplemental â€” Personal-scope offline operability | **Code Complete**; device incomplete; manual Retry supported | `f3d87be` â€” [report](reports/P19-personal-scope-offline-operability.md) |
 
 ## Phase 18 work packages
 
