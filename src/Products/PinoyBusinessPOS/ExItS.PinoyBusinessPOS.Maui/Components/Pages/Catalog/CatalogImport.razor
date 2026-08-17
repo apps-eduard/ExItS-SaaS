@@ -11,6 +11,7 @@
 @inject ApiStatusLocalizer ApiLocalizer
 @inject IConnectivityService Connectivity
 @inject OnlineRequiredGuard OnlineRequired
+@inject AdoptedTemplateThumbnailPrefetch TemplateThumbs
 @inject IStringLocalizer<PosResources> L
 
 @if (!_ready)
@@ -766,6 +767,8 @@ else
             }
 
             await ClearTemplatePromptAsync();
+            var adopted = _previewProducts;
+            _ = TemplateThumbs.TryPrefetchAsync(adopted);
             Nav.NavigateTo($"/catalog/import/jobs/{result.Data.JobId:D}");
         }
         finally

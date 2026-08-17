@@ -184,6 +184,7 @@ public static class MauiProgram
         services.AddSingleton<IOfflineOperationDispatcher, CreditReverseOfflineDispatcher>();
         services.AddSingleton<IOfflineOperationDispatcher, CreditDueDateSetOfflineDispatcher>();
         services.AddSingleton<IOfflineOperationDispatcher, SaleCheckoutOfflineDispatcher>();
+        services.AddSingleton<IOfflineOperationDispatcher, CatalogProductCreateOfflineDispatcher>();
         services.AddSingleton<IOfflineOperationDispatcher, PersonalContactUpsertOfflineDispatcher>();
         services.AddSingleton<IOfflineOperationDispatcher, PersonalRelationshipCreateOfflineDispatcher>();
         services.AddSingleton<IOfflineOperationDispatcher, PersonalEntryRecordOfflineDispatcher>();
@@ -199,6 +200,9 @@ public static class MauiProgram
         services.AddSingleton<PersonalMerchantCart>();
         services.AddSingleton<IProductImageCacheRoot, MauiProductImageCacheRoot>();
         services.AddSingleton<ProductImageThumbnailCache>();
+        services.AddSingleton<PendingProductImageStore>();
+        services.AddSingleton<AdoptedTemplateThumbnailPrefetch>();
+        services.AddSingleton<ICatalogProductOfflineSyncService, CatalogProductOfflineSyncService>();
         services.AddSingleton<IProductImagePicker, MauiProductImagePicker>();
         services.AddSingleton<MauiPendingPaymentStore>();
         // Phase marker: P8-WP02-simple-sales

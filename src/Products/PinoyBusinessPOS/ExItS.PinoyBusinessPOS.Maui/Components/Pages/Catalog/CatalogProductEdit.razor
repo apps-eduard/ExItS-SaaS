@@ -58,11 +58,15 @@ else
         <div class="pos-catalog-product-edit__form">
             <CatalogProductImageEditor PreviewDataUrl="@_imagePreviewUrl"
                                        HasServerImage="@_hasServerImage"
+                                       AllowRemove="@AllowImageRemove"
+                                       ShowUseStandard="@_hasMerchantOverride"
+                                       Hint="@ImageHint"
                                        Disabled="@(!canManage || _isOffline || _saving)"
                                        Error="@_imageError"
                                        OnChoose="() => PickImageAsync(false)"
                                        OnCapture="() => PickImageAsync(true)"
-                                       OnRemove="MarkImageRemoved" />
+                                       OnRemove="MarkImageRemoved"
+                                       OnUseStandard="MarkUseStandard" />
             <CatalogProductForm Name="@_name"
                                 NameChanged="v => _name = v"
                                 Description="@_description"
@@ -171,6 +175,8 @@ else
     private string? _pendingImageFileName;
     private string? _imagePreviewUrl;
     private bool _hasServerImage;
+    private bool _hasMerchantOverride;
+    private bool _hasPlatformImage;
     private bool _removeImage;
     private string? _errorTitle;
     private string? _errorMessage;
@@ -257,6 +263,9 @@ else
             }
 
             _hasServerImage = _product.HasImage;
+            _hasMerchantOverride = _product.HasMerchantImageOverride;
+            _hasPlatformImage = _product.PlatformGlobalProductId is not null
+                && string.Equals(_product.ImageSource, CatalogProductImageSources.PlatformTemplate, StringComparison.Ordinal);
             _removeImage = false;
             _pendingImageBytes = null;
             _pendingImageFileName = null;
@@ -483,6 +492,17 @@ else
         _pendingImageFileName = picked.FileName;
         _removeImage = false;
         _imagePreviewUrl = picked.Bytes is null ? null : ProductImagePreview.ToDataUrl(picked.Bytes);
+        _hasMerchantOverride = true;
+    }
+
+    private void MarkUseStandard()
+    {
+        _pendingImageBytes = null;
+        _pendingImageFileName = null;
+        _imagePreviewUrl = null;
+        _removeImage = _hasMerchantOverride;
+        _hasMerchantOverride = false;
+        _imageError = null;
     }
 
     private void MarkImageRemoved()
@@ -490,9 +510,20 @@ else
         _pendingImageBytes = null;
         _pendingImageFileName = null;
         _imagePreviewUrl = null;
-        _removeImage = _hasServerImage;
+        _removeImage = _hasMerchantOverride;
+        _hasMerchantOverride = false;
         _imageError = null;
     }
+
+    private bool AllowImageRemove =>
+        _pendingImageBytes is { Length: > 0 } || _hasMerchantOverride || (!_hasPlatformImage && _hasServerImage);
+
+    private string ImageHint =>
+        _hasMerchantOverride
+            ? L["Catalog_Image_OverrideHint"]
+            : _hasPlatformImage
+                ? L["Catalog_Image_StandardHint"]
+                : L["Catalog_Image_Hint"];
 
     private void GoDetail() => Nav.NavigateTo($"/catalog/products/{ProductId:D}");
 

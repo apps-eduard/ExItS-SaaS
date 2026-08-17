@@ -2428,6 +2428,24 @@
   <data name="Catalog_Image_SaveFailed" xml:space="preserve">
     <value>The product was saved, but the image could not be uploaded.</value>
   </data>
+  <data name="Catalog_Image_UseStandard" xml:space="preserve">
+    <value>Use standard image</value>
+  </data>
+  <data name="Catalog_Image_OverrideHint" xml:space="preserve">
+    <value>This product uses your photo. Remove it or choose Use standard image to show the shared Platform photo.</value>
+  </data>
+  <data name="Catalog_Image_StandardHint" xml:space="preserve">
+    <value>Showing the shared Platform template photo. Upload a photo to override it for this store only.</value>
+  </data>
+  <data name="Catalog_Product_OfflineQueueHint" xml:space="preserve">
+    <value>You can still create this product now. It will sync, including the photo, when this device reconnects.</value>
+  </data>
+  <data name="Catalog_Product_QueuedTitle" xml:space="preserve">
+    <value>Saved on this device</value>
+  </data>
+  <data name="Catalog_Product_QueuedMessage" xml:space="preserve">
+    <value>The product will appear in your catalog after this device reconnects. The photo stays on this device until then.</value>
+  </data>
   <data name="Catalog_Product_CodesSection" xml:space="preserve">
     <value>Codes</value>
   </data>

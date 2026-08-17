@@ -7,6 +7,7 @@ public static class PosOfflineActionKeys
     public const string SwitchToPersonal = "org.switch_to_personal";
     public const string CatalogImport = "catalog.import";
     public const string CatalogManage = "catalog.manage";
+    public const string CatalogProductCreate = "catalog.product.create";
     public const string PermissionsManage = "permissions.manage";
     public const string SaleNonCashPayment = "sale.payment.non_cash";
     public const string ReportsView = "reports.view";

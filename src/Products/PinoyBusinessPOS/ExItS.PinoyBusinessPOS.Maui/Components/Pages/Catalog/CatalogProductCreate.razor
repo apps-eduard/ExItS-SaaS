@@ -8,6 +8,7 @@
 @inject ApiStatusLocalizer ApiLocalizer
 @inject IConnectivityService Connectivity
 @inject IProductImagePicker ProductImages
+@inject ICatalogProductOfflineSyncService OfflineCreate
 @inject IStringLocalizer<PosResources> L
 
 <StoreHeaderBack Href="/catalog" />
@@ -27,9 +28,9 @@ else
             <p class="pos-product-form-page__subtitle">@L["Catalog_Product_CreateSubtitle"]</p>
         </header>
 
-        @if (_isOffline)
+        @if (_isOffline && !_queuedOffline)
         {
-            <Alert Tone="AlertTone.Warning" Title="@L["Catalog_OfflineTitle"]" Message="@L["Catalog_OfflineMessage"]" />
+            <Alert Tone="AlertTone.Info" Title="@L["Catalog_OfflineTitle"]" Message="@L["Catalog_Product_OfflineQueueHint"]" />
         }
         else if (!canManage)
         {
@@ -41,7 +42,14 @@ else
             <Alert Tone="AlertTone.Danger" Title="@L["Catalog_ErrorTitle"]" Message="@_formError" />
         }
 
-        @if (_createdProductId is { } created)
+        @if (_queuedOffline)
+        {
+            <Alert Tone="AlertTone.Info" Title="@L["Catalog_Product_QueuedTitle"]" Message="@L["Catalog_Product_QueuedMessage"]" />
+            <div class="pos-product-form__actions">
+                <Button Variant="ButtonVariant.Primary" OnClick="GoBack">@L["Catalog_BackToList"]</Button>
+            </div>
+        }
+        else if (_createdProductId is { } created)
         {
             <Alert Tone="AlertTone.Warning" Title="@L["Catalog_Product_CreatedTitle"]" Message="@L["Catalog_TrackStockFailed"]" />
             <div class="pos-product-form__actions">
@@ -52,7 +60,7 @@ else
         {
             <CatalogProductImageEditor PreviewDataUrl="@_imagePreviewUrl"
                                        HasServerImage="false"
-                                       Disabled="@(!canManage || _isOffline || _saving)"
+                                       Disabled="@(!canManage || _saving)"
                                        Error="@_imageError"
                                        OnChoose="() => PickImageAsync(false)"
                                        OnCapture="() => PickImageAsync(true)"
@@ -89,7 +97,7 @@ else
                                 BarcodeError="@_barcodeError"
                                 SellingPriceError="@_priceError"
                                 IsSaving="@_saving"
-                                Disabled="@(!canManage || _isOffline)"
+                                Disabled="@(!canManage || _saving)"
                                 ShowStockTracking="@(canTrackStock && !_isOffline)"
                                 TrackStock="@_trackStock"
                                 TrackStockChanged="v => _trackStock = v"
@@ -105,7 +113,7 @@ else
                 <label class="pos-catalog-connected__toggle">
                     <input type="checkbox"
                            checked="@_isBlockedFromConnectedBuyers"
-                           disabled="@(!canManage || _isOffline || _saving)"
+                           disabled="@(!canManage || _saving)"
                            @onchange="OnBlockedFromConnectedBuyersChanged" />
                     @L["Catalog_ConnectedBuyers_Block"]
                 </label>
@@ -116,7 +124,7 @@ else
                                    ValueChanged="OnDefaultPoPriceChanged"
                                    CurrencyCode="PHP"
                                    Hint="@L["Catalog_ConnectedBuyers_DefaultPoHelp"]"
-                                   Disabled="@(!canManage || _isOffline || _saving)" />
+                                   Disabled="@(!canManage || _saving)" />
                 </div>
             </section>
         }
@@ -134,6 +142,7 @@ else
     private bool _ready;
     private bool _saving;
     private bool _isOffline;
+    private bool _queuedOffline;
     private string? _name;
     private string? _description;
     private string? _sku;
@@ -242,7 +251,7 @@ else
                 units = ProductUnitDraft.ToInputs(_purchaseUnits, _sellUnits);
             }
 
-            var result = await Catalog.CreateProductAsync(new CreatePosCatalogProductRequest(
+            var request = new CreatePosCatalogProductRequest(
                 _name.Trim(),
                 _unitOfMeasure ?? PosCatalogOptions.DefaultUnitOfMeasureCode,
                 _sellingPrice.Value,
@@ -256,7 +265,25 @@ else
                 UsagePreset: ResolveUsagePresetForSave(),
                 Units: units,
                 CanExposeToConnectedBuyers: !_isBlockedFromConnectedBuyers,
-                DefaultConnectedPoPrice: _defaultConnectedPoPrice ?? _sellingPrice));
+                DefaultConnectedPoPrice: _defaultConnectedPoPrice ?? _sellingPrice);
+
+            _isOffline = !await Connectivity.IsConnectedAsync();
+            if (_isOffline)
+            {
+                var queued = await OfflineCreate.QueueCreateAsync(request, _pendingImageBytes);
+                if (!queued.IsSuccess)
+                {
+                    _formError = string.Equals(queued.ErrorCode, "offline_mutations_unavailable", StringComparison.Ordinal)
+                        ? L["Offline_MutationsUnavailable"]
+                        : queued.ErrorMessage ?? L["Catalog_ErrorTitle"];
+                    return;
+                }
+
+                _queuedOffline = true;
+                return;
+            }
+
+            var result = await Catalog.CreateProductAsync(request);
 
             if (!result.IsSuccess || result.Data is null)
             {

@@ -385,6 +385,12 @@ public sealed class OfflineAccessRevalidator(
             return true;
         }
 
+        if (string.Equals(operationType, OfflineOperationTypes.CatalogProductCreate, StringComparison.Ordinal))
+        {
+            capability = UtangCapability.ManageCatalog;
+            return true;
+        }
+
         return false;
     }
 }
@@ -464,6 +470,11 @@ public static class OfflineOperationTypes
     public const string CustomerOrderAccept = "customer_order.accept";
     public const string CustomerOrderReject = "customer_order.reject";
     public const string CustomerOrderComplete = "customer_order.complete";
+
+    /// <summary>
+    /// Offline org-created catalog product. Metadata is queued; pending photo stays in private app files.
+    /// </summary>
+    public const string CatalogProductCreate = "catalog.product.create";
 
     /// <summary>Server-side idempotency for POS role assignment. Online-only.</summary>
     public const string PosRoleAssign = "pos_role.assign";

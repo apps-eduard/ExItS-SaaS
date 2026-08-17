@@ -2428,6 +2428,24 @@
   <data name="Catalog_Image_SaveFailed" xml:space="preserve">
     <value>Na-save ang produkto, pero hindi na-upload ang larawan.</value>
   </data>
+  <data name="Catalog_Image_UseStandard" xml:space="preserve">
+    <value>Gamitin ang standard na larawan</value>
+  </data>
+  <data name="Catalog_Image_OverrideHint" xml:space="preserve">
+    <value>Sarili mong larawan ang ginagamit. Alisin o piliin ang standard para ipakita ang shared Platform na larawan.</value>
+  </data>
+  <data name="Catalog_Image_StandardHint" xml:space="preserve">
+    <value>Shared Platform template na larawan. Mag-upload para palitan ito sa store na ito lang.</value>
+  </data>
+  <data name="Catalog_Product_OfflineQueueHint" xml:space="preserve">
+    <value>Pwede mo pa ring gawin ang produkto ngayon. Magsi-sync, kasama ang larawan, kapag nakakonekta na ulit.</value>
+  </data>
+  <data name="Catalog_Product_QueuedTitle" xml:space="preserve">
+    <value>Naka-save sa device na ito</value>
+  </data>
+  <data name="Catalog_Product_QueuedMessage" xml:space="preserve">
+    <value>Lalabas ang produkto sa catalog pagkatapos mag-reconnect. Mananatili ang larawan sa device hanggang mag-sync.</value>
+  </data>
   <data name="Catalog_Product_CodesSection" xml:space="preserve">
     <value>Mga code</value>
   </data>
