@@ -31,6 +31,8 @@ public sealed class CustomerOrderDomainTests
         Assert.Equal(0m, order.DeliveryFee);
         Assert.Equal(50m, order.Total);
         Assert.Null(order.DeliverySnapshot);
+        Assert.Equal(CustomerOrderPaymentStatus.Unpaid, order.PaymentStatus);
+        Assert.Equal(CustomerOrderPaymentMethod.Cash, order.PaymentMethod);
     }
 
     [Fact]
@@ -257,6 +259,48 @@ public sealed class CustomerOrderDomainTests
     {
         Assert.Equal("SO-000001", CustomerOrderNumbers.Format(1));
         Assert.Equal("SO-000042", CustomerOrderNumbers.Normalize(" so-000042 "));
+    }
+
+    [Theory]
+    [InlineData(null, CustomerOrderPaymentMethod.Cash)]
+    [InlineData("", CustomerOrderPaymentMethod.Cash)]
+    [InlineData("Cash", CustomerOrderPaymentMethod.Cash)]
+    [InlineData("GCash", CustomerOrderPaymentMethod.ManualGCash)]
+    [InlineData("ManualGCash", CustomerOrderPaymentMethod.ManualGCash)]
+    [InlineData("Utang", CustomerOrderPaymentMethod.Utang)]
+    public void Payment_method_parse_accepts_v1_values(string? raw, CustomerOrderPaymentMethod expected)
+    {
+        Assert.Equal(expected, CustomerOrderPaymentMethods.Parse(raw));
+        Assert.Equal("GCash", CustomerOrderPaymentMethods.ToUiLabel(CustomerOrderPaymentMethod.ManualGCash));
+    }
+
+    [Fact]
+    public void Invalid_payment_method_is_rejected()
+    {
+        var ex = Assert.Throws<DomainException>(() => CustomerOrderPaymentMethods.Parse("Card"));
+        Assert.Equal(DomainErrorCodes.InvalidCustomerOrderPaymentMethod, ex.ErrorCode);
+    }
+
+    [Theory]
+    [InlineData(CustomerOrderPaymentMethod.Cash)]
+    [InlineData(CustomerOrderPaymentMethod.ManualGCash)]
+    [InlineData(CustomerOrderPaymentMethod.Utang)]
+    public void Submitted_orders_remain_unpaid_for_all_manual_methods(CustomerOrderPaymentMethod method)
+    {
+        var order = CustomerOrder.CreateSubmitted(
+            Seller,
+            "SO-000020",
+            CustomerOrderParty.Personal(PlatformUser, "Ana Reyes"),
+            CustomerOrderFulfillmentType.Pickup,
+            BranchId,
+            "Main Branch",
+            [Line()],
+            Actor,
+            Utc,
+            paymentMethod: method);
+
+        Assert.Equal(method, order.PaymentMethod);
+        Assert.Equal(CustomerOrderPaymentStatus.Unpaid, order.PaymentStatus);
     }
 
     private static CustomerOrder CreatePickup(CustomerOrderParty party) =>

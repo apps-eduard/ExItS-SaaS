@@ -24,6 +24,7 @@ public sealed class CustomerOrder
     public CustomerOrderStatus Status { get; private set; }
     public CustomerOrderFulfillmentStatus FulfillmentStatus { get; private set; }
     public CustomerOrderPaymentStatus PaymentStatus { get; private set; }
+    public CustomerOrderPaymentMethod PaymentMethod { get; }
     public CustomerOrderFulfillmentType FulfillmentType { get; }
     public Guid FulfillmentBranchId { get; }
     public string BranchNameSnapshot { get; }
@@ -58,6 +59,7 @@ public sealed class CustomerOrder
         CustomerOrderStatus status,
         CustomerOrderFulfillmentStatus fulfillmentStatus,
         CustomerOrderPaymentStatus paymentStatus,
+        CustomerOrderPaymentMethod paymentMethod,
         CustomerOrderFulfillmentType fulfillmentType,
         Guid fulfillmentBranchId,
         string branchNameSnapshot,
@@ -90,6 +92,7 @@ public sealed class CustomerOrder
         Status = status;
         FulfillmentStatus = fulfillmentStatus;
         PaymentStatus = paymentStatus;
+        PaymentMethod = paymentMethod;
         FulfillmentType = fulfillmentType;
         FulfillmentBranchId = fulfillmentBranchId;
         BranchNameSnapshot = branchNameSnapshot;
@@ -132,7 +135,8 @@ public sealed class CustomerOrder
         DateTimeOffset utcNow,
         CustomerOrderDeliverySnapshot? deliverySnapshot = null,
         string? idempotencyKey = null,
-        CustomerOrderId? id = null)
+        CustomerOrderId? id = null,
+        CustomerOrderPaymentMethod paymentMethod = CustomerOrderPaymentMethod.Cash)
     {
         SaleMoney.EnsureUtc(utcNow);
         EnsureActor(submittedBy);
@@ -161,6 +165,12 @@ public sealed class CustomerOrder
         }
 
         ValidateFulfillment(fulfillmentType, deliverySnapshot);
+        if (!Enum.IsDefined(paymentMethod))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCustomerOrderPaymentMethod,
+                "Payment method must be Cash, GCash, or Utang.");
+        }
 
         var orderId = id ?? CustomerOrderId.New();
         var orderLines = new List<CustomerOrderLine>(lines.Count);
@@ -211,6 +221,7 @@ public sealed class CustomerOrder
             CustomerOrderStatus.Submitted,
             CustomerOrderFulfillmentStatus.Pending,
             CustomerOrderPaymentStatus.Unpaid,
+            paymentMethod,
             fulfillmentType,
             fulfillmentBranchId,
             NormalizeBranchName(branchNameSnapshot),
@@ -245,6 +256,7 @@ public sealed class CustomerOrder
         CustomerOrderStatus status,
         CustomerOrderFulfillmentStatus fulfillmentStatus,
         CustomerOrderPaymentStatus paymentStatus,
+        CustomerOrderPaymentMethod paymentMethod,
         CustomerOrderFulfillmentType fulfillmentType,
         Guid fulfillmentBranchId,
         string branchNameSnapshot,
@@ -277,6 +289,7 @@ public sealed class CustomerOrder
             status,
             fulfillmentStatus,
             paymentStatus,
+            paymentMethod,
             fulfillmentType,
             fulfillmentBranchId,
             branchNameSnapshot,

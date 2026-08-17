@@ -359,5 +359,6 @@ public static class DomainErrorCodes
     public const string InvalidCustomerOrderLineDiscount = "pos.customer_order.line.discount.invalid";
     public const string InvalidCustomerOrderBranch = "pos.customer_order.branch.invalid";
     public const string InvalidCustomerOrderIdempotencyKey = "pos.customer_order.idempotency_key.invalid";
+    public const string InvalidCustomerOrderPaymentMethod = "pos.customer_order.payment_method.invalid";
     public const string InvalidInventoryReservationQuantity = "pos.inventory.reservation.quantity.invalid";
 }

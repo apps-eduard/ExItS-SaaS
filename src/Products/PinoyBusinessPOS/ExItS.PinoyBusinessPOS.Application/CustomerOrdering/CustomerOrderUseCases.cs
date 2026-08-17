@@ -288,7 +288,8 @@ public sealed class PlaceCustomerOrder
                         now,
                         delivery,
                         request.IdempotencyKey,
-                        orderId),
+                        orderId,
+                        CustomerOrderPaymentMethods.Parse(request.PaymentMethod)),
                     cancellationToken: cancellationToken)
                 .ConfigureAwait(false);
 

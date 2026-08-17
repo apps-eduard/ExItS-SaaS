@@ -1899,6 +1899,14 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(16)")
                         .HasColumnName("order_number");
 
+                    b.Property<string>("PaymentMethod")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasDefaultValue("Cash")
+                        .HasColumnName("payment_method");
+
                     b.Property<string>("PaymentStatus")
                         .IsRequired()
                         .HasMaxLength(32)
@@ -2015,6 +2023,8 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("ck_customer_orders_party_type", "customer_party_type IN ('Personal', 'Organization')");
 
                             t.HasCheckConstraint("ck_customer_orders_party_xor", "(customer_party_type = 'Personal' AND customer_platform_user_id IS NOT NULL AND customer_buyer_organization_id IS NULL) OR (customer_party_type = 'Organization' AND customer_buyer_organization_id IS NOT NULL AND customer_platform_user_id IS NULL)");
+
+                            t.HasCheckConstraint("ck_customer_orders_payment_method", "payment_method IN ('Cash', 'ManualGCash', 'Utang')");
 
                             t.HasCheckConstraint("ck_customer_orders_payment_status", "payment_status IN ('Unpaid', 'Pending', 'Paid')");
 

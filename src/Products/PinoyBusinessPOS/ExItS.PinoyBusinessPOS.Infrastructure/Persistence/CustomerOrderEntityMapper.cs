@@ -61,6 +61,9 @@ internal static class CustomerOrderEntityMapper
             Enum.Parse<CustomerOrderStatus>(record.Status, ignoreCase: true),
             Enum.Parse<CustomerOrderFulfillmentStatus>(record.FulfillmentStatus, ignoreCase: true),
             Enum.Parse<CustomerOrderPaymentStatus>(record.PaymentStatus, ignoreCase: true),
+            string.IsNullOrWhiteSpace(record.PaymentMethod)
+                ? CustomerOrderPaymentMethod.Cash
+                : CustomerOrderPaymentMethods.Parse(record.PaymentMethod),
             Enum.Parse<CustomerOrderFulfillmentType>(record.FulfillmentType, ignoreCase: true),
             record.FulfillmentBranchId,
             record.BranchNameSnapshot,
@@ -105,6 +108,7 @@ internal static class CustomerOrderEntityMapper
             Status = order.Status.ToString(),
             FulfillmentStatus = order.FulfillmentStatus.ToString(),
             PaymentStatus = order.PaymentStatus.ToString(),
+            PaymentMethod = CustomerOrderPaymentMethods.ToCode(order.PaymentMethod),
             FulfillmentType = order.FulfillmentType.ToString(),
             FulfillmentBranchId = order.FulfillmentBranchId,
             BranchNameSnapshot = order.BranchNameSnapshot,

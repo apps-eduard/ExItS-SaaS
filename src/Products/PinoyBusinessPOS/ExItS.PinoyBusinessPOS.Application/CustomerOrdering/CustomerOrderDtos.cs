@@ -44,6 +44,7 @@ public sealed record CustomerOrderDto(
     string Status,
     string FulfillmentStatus,
     string PaymentStatus,
+    string PaymentMethod,
     string FulfillmentType,
     Guid FulfillmentBranchId,
     string BranchNameSnapshot,
@@ -113,7 +114,8 @@ public sealed record PlaceCustomerOrderRequest(
     IReadOnlyList<PlaceCustomerOrderLineRequest> Lines,
     PlaceCustomerOrderDeliveryRequest? Delivery = null,
     Guid? ClientOrderId = null,
-    string? IdempotencyKey = null);
+    string? IdempotencyKey = null,
+    string? PaymentMethod = null);
 
 public sealed record QuoteCustomerOrderDeliveryRequest(
     Guid FulfillmentBranchId,
@@ -146,6 +148,7 @@ public static class CustomerOrderMaps
             order.Status.ToString(),
             order.FulfillmentStatus.ToString(),
             order.PaymentStatus.ToString(),
+            CustomerOrderPaymentMethods.ToCode(order.PaymentMethod),
             order.FulfillmentType.ToString(),
             order.FulfillmentBranchId,
             order.BranchNameSnapshot,

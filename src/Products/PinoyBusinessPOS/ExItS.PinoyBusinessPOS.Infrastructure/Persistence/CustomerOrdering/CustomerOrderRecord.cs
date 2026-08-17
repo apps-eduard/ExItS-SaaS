@@ -1,4 +1,4 @@
-namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.CustomerOrdering;
+using ExItS.PinoyBusinessPOS.Domain.CustomerOrdering;
 
 internal sealed class CustomerOrderRecord
 {
@@ -8,6 +8,7 @@ internal sealed class CustomerOrderRecord
     public string Status { get; set; } = string.Empty;
     public string FulfillmentStatus { get; set; } = string.Empty;
     public string PaymentStatus { get; set; } = string.Empty;
+    public string PaymentMethod { get; set; } = nameof(CustomerOrderPaymentMethod.Cash);
     public string FulfillmentType { get; set; } = string.Empty;
     public Guid FulfillmentBranchId { get; set; }
     public string BranchNameSnapshot { get; set; } = string.Empty;

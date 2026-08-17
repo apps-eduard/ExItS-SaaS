@@ -57,6 +57,73 @@ public sealed class PlaceCustomerOrderCapabilityTests
         Assert.Equal(1, orders.PlaceCount);
     }
 
+    [Theory]
+    [InlineData(null, "Cash")]
+    [InlineData("Cash", "Cash")]
+    [InlineData("GCash", "ManualGCash")]
+    [InlineData("ManualGCash", "ManualGCash")]
+    [InlineData("Utang", "Utang")]
+    public async Task Place_persists_manual_payment_method_and_stays_unpaid(string? requested, string expected)
+    {
+        var useCase = CreateUseCase(canOrder: true, canDelivery: true);
+        var result = await useCase.ExecuteAsync(Seller, PickupRequest(paymentMethod: requested), Actor);
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.Equal(expected, result.Value!.PaymentMethod);
+        Assert.Equal(nameof(CustomerOrderPaymentStatus.Unpaid), result.Value.PaymentStatus);
+    }
+
+    [Fact]
+    public async Task Place_rejects_invalid_payment_method()
+    {
+        var useCase = CreateUseCase(canOrder: true, canDelivery: true);
+        var result = await useCase.ExecuteAsync(Seller, PickupRequest(paymentMethod: "Card"), Actor);
+        Assert.False(result.IsSuccess);
+        Assert.Equal(DomainErrorCodes.InvalidCustomerOrderPaymentMethod, result.ErrorCode);
+    }
+
+    [Fact]
+    public void Dto_and_query_map_preserve_selected_payment_method()
+    {
+        var order = CustomerOrder.CreateSubmitted(
+            PosOrganizationId.From(Seller),
+            "SO-000001",
+            CustomerOrderParty.Personal(Actor, "Ana"),
+            CustomerOrderFulfillmentType.Pickup,
+            Branch,
+            "Main",
+            [new CustomerOrderLineDraft(
+                CatalogProductId.From(ProductGuid),
+                "Rice",
+                "RICE",
+                UnitOfMeasure.Piece,
+                2m,
+                25m)],
+            Actor,
+            Utc,
+            paymentMethod: CustomerOrderPaymentMethod.Utang);
+
+        var dto = CustomerOrderMaps.Map(order);
+        Assert.Equal(nameof(CustomerOrderPaymentMethod.Utang), dto.PaymentMethod);
+        Assert.Equal(nameof(CustomerOrderPaymentStatus.Unpaid), dto.PaymentStatus);
+    }
+
+    [Fact]
+    public void Place_use_case_does_not_create_payment_attempts_or_utang_ledger()
+    {
+        var source = File.ReadAllText(Path.Combine(
+            FindRepoRoot(),
+            "src",
+            "Products",
+            "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.Application",
+            "CustomerOrdering",
+            "CustomerOrderUseCases.cs"));
+        Assert.DoesNotContain("IPaymentAttempt", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("PaymentAttempt", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("ICreditEntryRepository", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("ProductBasedUtang", source, StringComparison.Ordinal);
+    }
+
     private static PlaceCustomerOrder CreateUseCase(
         bool canOrder,
         bool canDelivery,
@@ -72,7 +139,9 @@ public sealed class PlaceCustomerOrderCapabilityTests
             new FixedCapability(Seller, canOrder, canDelivery));
     }
 
-    private static PlaceCustomerOrderRequest PickupRequest(string? idempotencyKey = null) =>
+    private static PlaceCustomerOrderRequest PickupRequest(
+        string? idempotencyKey = null,
+        string? paymentMethod = null) =>
         new(
             "Pickup",
             Branch,
@@ -84,7 +153,8 @@ public sealed class PlaceCustomerOrderCapabilityTests
             [new PlaceCustomerOrderLineRequest(ProductGuid, 2m)],
             null,
             null,
-            idempotencyKey);
+            idempotencyKey,
+            paymentMethod);
 
     private static PlaceCustomerOrderRequest DeliveryRequest() =>
         new(
@@ -317,5 +387,21 @@ public sealed class PlaceCustomerOrderCapabilityTests
 
         public Task UpdateAsync(CustomerOrder order, CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
+    }
+
+    private static string FindRepoRoot()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null)
+        {
+            if (File.Exists(Path.Combine(dir.FullName, "ExItS.slnx")))
+            {
+                return dir.FullName;
+            }
+
+            dir = dir.Parent;
+        }
+
+        throw new InvalidOperationException("Repository root not found.");
     }
 }

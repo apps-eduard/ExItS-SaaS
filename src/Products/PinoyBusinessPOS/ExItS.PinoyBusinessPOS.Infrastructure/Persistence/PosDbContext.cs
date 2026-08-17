@@ -1081,6 +1081,9 @@ public sealed class PosDbContext : DbContext
                     "ck_customer_orders_payment_status",
                     "payment_status IN ('Unpaid', 'Pending', 'Paid')");
                 tb.HasCheckConstraint(
+                    "ck_customer_orders_payment_method",
+                    "payment_method IN ('Cash', 'ManualGCash', 'Utang')");
+                tb.HasCheckConstraint(
                     "ck_customer_orders_fulfillment_type",
                     "fulfillment_type IN ('Pickup', 'Delivery')");
                 tb.HasCheckConstraint(
@@ -1119,6 +1122,11 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
             entity.Property(e => e.FulfillmentStatus).HasColumnName("fulfillment_status").HasMaxLength(32).IsRequired();
             entity.Property(e => e.PaymentStatus).HasColumnName("payment_status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.PaymentMethod)
+                .HasColumnName("payment_method")
+                .HasMaxLength(CustomerOrderPaymentMethods.CodeMaxLength)
+                .IsRequired()
+                .HasDefaultValue(nameof(CustomerOrderPaymentMethod.Cash));
             entity.Property(e => e.FulfillmentType).HasColumnName("fulfillment_type").HasMaxLength(32).IsRequired();
             entity.Property(e => e.FulfillmentBranchId).HasColumnName("fulfillment_branch_id").IsRequired();
             entity.Property(e => e.BranchNameSnapshot)
