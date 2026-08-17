@@ -19,7 +19,7 @@ Authoritative **current status** dashboard. Work-package evidence lives in [repo
 | Browser Verified | **No** |
 | Production Ready | **No** |
 | Open blockers (summary) | TLS-PROD; MAUI-HTTPS; auth email vendor; MFA deferred; owner/physical validation pending on several open phases |
-| Last updated | 2026-08-16 |
+| Last updated | 2026-08-17 |
 
 Also open (prior statuses unchanged): Phases **14**, **19–28**.
 
@@ -47,7 +47,7 @@ Statuses match [phases/README.md](phases/README.md). Do not treat this table as 
 
 - **Phase 29:** WP11–WP14 evidence recorded (constraints, electronic payment reliability, concurrency/EXPLAIN, development backup/restore). Broader load and **Production** backup residuals remain.
 - **Phase 14:** Packaging/TLS work in progress; Production backup/ops evidence (P14-WP04+) not started.
-- **Phases 19–28:** Implementation slices exist at varying completeness; owner/device/browser verification and closeouts remain open where noted on each phase page.
+- **Phases 19–28:** Implementation slices exist at varying completeness; owner/device/browser verification and closeouts remain open where noted on each phase page. Phase 28 Personal linked-merchant storefront/cart is Code Complete / Validation Pending; **P28-WP10** E2E/closeout remains next.
 - **Honesty gates:** Not Device Verified · Not Browser Verified · Not Production Ready · Not Production Payment Ready · Production Backup/Restore Proven = No.
 
 ## Authoritative Navigation

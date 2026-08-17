@@ -27,6 +27,30 @@ Exactly one party applies. Guest is reserved for future extension without rewrit
 
 Personal ordering must not grant seller organization administration.
 
+## Personal linked-merchant storefront (V1 delivered)
+
+Authenticated **Personal** customers may shop only at merchants they are **actively linked** to. This is not a public marketplace.
+
+Flow:
+
+**Linked merchants → Shop → storefront → +/- cart → review → Pickup/Delivery → `PlaceAsCustomer` → Personal My Orders / detail.**
+
+| Topic | V1 behavior |
+|---|---|
+| Who can shop | Authenticated Personal actor + **ACTIVE** Personal↔seller link for that `sellerOrganizationId` |
+| Seller entitlement | Enterable POS + feature `store-customer-ordering` (delivery also needs `store-delivery-orders`) |
+| Catalog | Seller-org products that are `Active` + `CanBeSold` + `SellingPrice > 0` |
+| Stock | Soft availability from inventory; reserve still happens on seller Accept |
+| Per-product storefront flag | **Not implemented** (reported residual; no schema migration) |
+| Cart | In-memory MAUI session cart (cleared after successful place / leaving merchant) |
+| Quantity UX | First `+` ⇒ qty 1; `+`/`−` per product; qty 0 removes; totals recompute immediately |
+| Fulfillment | Eligible Active branches; Pickup and/or Delivery; auto-select first capable branch |
+| Quote / place | Server-authoritative price, delivery quote, and revalidation on place |
+| Offline | Online-only storefront/place; compact offline alert; no offline customer-order queue |
+| After place | Navigate to Personal order history/detail (`/personal/orders/{id}`) |
+
+Commits: storefront UX `f689e863`; delivery-quote / active-link authorization harden `87b0acc2`.
+
 ## Fulfillment location
 
 `OrganizationBranch` (Platform) is the only physical fulfillment location.
@@ -48,7 +72,7 @@ Separate axes:
 - **FulfillmentStatus:** Pending, Preparing, Ready, OutForDelivery, Delivered, ReadyForPickup, Collected
 - **PaymentStatus:** Unpaid / Pending / Paid (V1 placeholder; not equated to order status)
 
-V1 place creates **Submitted** orders (no long-lived Draft storefront cart required).
+V1 place creates **Submitted** orders (no long-lived Draft storefront cart required). Personal MAUI holds an in-memory cart until submit.
 
 ### Seller workflow
 
@@ -75,7 +99,9 @@ Delivery orders also snapshot branch identity/address/coords, recipient, destina
 
 ## Delivery quote
 
-Server-authoritative quote recalculates distance and fee. Clients must not forge distance, fee, unit prices, or branch ownership. Final place revalidates.
+Server-authoritative quote recalculates distance and fee. Clients must not forge distance, fee, unit prices, or branch ownership. Final place revalidates independently.
+
+Customer-facing quote (`POST .../customer-orders/organizations/{sellerOrganizationId}/quote-delivery`) requires the same Personal active-link + seller ordering capability gate as storefront/place, including `CanCustomerDelivery`. Revocation between storefront load and quote/place fails closed.
 
 V1 distance is straight-line (Haversine). Road distance may replace the calculator later. Fee formula matches Platform `BranchDeliveryPolicy` (minimum order, max distance, free threshold, base + extra km).
 
@@ -96,9 +122,24 @@ Policy:
 
 Effects are idempotent at the order reservation-state level.
 
-## Payment
+## Payment — keep paths distinct
 
-Payment remains separate. V1 does not implement GCash/card/COD gateways for customer orders. Existing POS Sale payment paths are unaffected.
+### CustomerOrder / Personal storefront
+
+- No `PaymentMethod` field or payment-method UI yet
+- Submit remains **`PaymentStatus = Unpaid`**
+- Do **not** claim Cash / GCash / Utang selection on Personal storefront
+- No payment gateway integration for customer orders
+- Existing POS Sale payment paths are unaffected
+
+### Connected Purchase Order (separate)
+
+- Remains a different aggregate / commerce path from `CustomerOrder`
+- Cash is the default payment term
+- GCash is manual / unverified
+- Utang is a B2B settlement / credit term
+- No automatic gateway verification
+- Do **not** merge Connected PO payment semantics into Personal `CustomerOrder`
 
 ## Entitlements
 
@@ -107,7 +148,7 @@ Feature codes:
 - `store-customer-ordering`
 - `store-delivery-orders`
 
-Enforced server-side via `UtangCapability` (View/Manage/Place). Downgrade must disable new restricted actions without deleting historical orders, branches, policies, or snapshots.
+Enforced server-side via seller entitlement probe (Personal linked-merchant ordering capability + commercial access for seller staff paths) and `UtangCapability` (View/Manage/Place). Downgrade must disable new restricted actions without deleting historical orders, branches, policies, or snapshots.
 
 V1 grants both codes on commercial Basic Store plans so capability checks are live; Pro-only packaging can tighten grants later without schema rewrite.
 
@@ -117,7 +158,7 @@ Seller organization inbox receives new-order notifications. Personal customer in
 
 ## Offline
 
-Customer place and seller lifecycle mutations are online-authoritative. Show connection-required messaging rather than optimistic success.
+Customer place, storefront, quote, and seller lifecycle mutations are online-authoritative. Show connection-required messaging rather than optimistic success. No offline customer-order queue.
 
 ## Security
 
@@ -125,15 +166,22 @@ Customer place and seller lifecycle mutations are online-authoritative. Show con
 - Seller operates only own organization orders
 - Branch must belong to seller
 - Foreign ids, forged fees/prices/distance rejected
+- Personal storefront / quote / place derive from **active Personal↔merchant relationship** plus seller entitlement — not from Linked Merchants UI alone
+- Direct foreign / unlinked / revoked merchant access fails closed (privacy-safe)
+- Link revoked after storefront load ⇒ quote and place fail; no `CustomerOrder` or stock reservation created on denied place
 
-## Explicit non-goals (V1)
+## Explicit non-goals / residuals (V1)
 
 - Guest checkout
 - Courier marketplace / driver assignment / live tracking
 - Polygon/barangay zones, surge, traffic pricing
-- Full customer catalog storefront / cart UX (API place + quote exist; MAUI checkout deferred)
+- Per-product customer-storefront exposure flag / schema migration
+- Personal lifecycle notification expansion
+- Offline customer-order queue
+- CustomerOrder payment-method design/integration
 - Auto-accept
-- Production readiness claims
+- Production readiness / Device Verified / Browser Verified claims
+- Merging Connected PO payment terms into Personal CustomerOrder
 
 ## Related docs
 
