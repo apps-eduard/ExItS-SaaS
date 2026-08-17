@@ -9,197 +9,173 @@ using ExItS.PinoyBusinessPOS.Domain.Customers;
 
 namespace ExItS.PinoyBusinessPOS.UnitTests.ConnectedSuppliers;
 
-public sealed class CreateBuyerProductAndLinkTests
+public sealed class AutoLinkExactMatchesTests
 {
     private static readonly PosOrganizationId Buyer =
         PosOrganizationId.From(Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
     private static readonly PosOrganizationId Supplier =
         PosOrganizationId.From(Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"));
     private static readonly DateTimeOffset Now =
-        new(2026, 8, 16, 12, 0, 0, TimeSpan.Zero);
+        new(2026, 8, 17, 9, 0, 0, TimeSpan.Zero);
+
+    private const string ValidBarcode = "4006381333931";
 
     [Fact]
-    public async Task Link_existing_product_creates_link_without_creating_product()
+    public async Task Exact_match_auto_links_once_and_counts_ready()
     {
         var harness = CreateHarness();
-        var product = Product(Buyer, "Buyer Rice", "RICE-BUYER", UnitOfMeasure.Kilogram, 68m);
-        harness.Products.Seed(product);
-        var useCase = harness.CreateLinkProduct();
+        var buyerProduct = Product(Buyer, "Premium Rice", "SUP-RICE", UnitOfMeasure.Kilogram, ValidBarcode);
+        harness.Products.Seed(buyerProduct);
+        SeedSupplierCatalogProduct(harness, ValidBarcode);
 
-        var result = await useCase.ExecuteAsync(
-            Buyer.Value,
-            harness.Relationship.Id.Value,
-            new LinkProductRequest(product.Id.Value, harness.Exposure.Id.Value));
-
-        Assert.True(result.IsSuccess, $"{result.ErrorCode}: {result.ErrorMessage}");
-        Assert.Equal(product.Id.Value, result.Value!.BuyerProductId);
-        Assert.Equal(harness.Exposure.ProductId.Value, result.Value.SupplierProductId);
-        Assert.Equal(0, harness.Products.AddCount);
-        Assert.Single(harness.Links.Items);
-    }
-
-    [Fact]
-    public async Task Create_and_link_creates_exactly_one_product_and_link_with_independent_selling_price()
-    {
-        var harness = CreateHarness(supplierOrderPrice: 41m, buyerSpecificPoPrice: 37m);
-        var useCase = harness.CreateQuickCreate();
-
-        var result = await useCase.ExecuteAsync(
-            Buyer.Value,
-            harness.Relationship.Id.Value,
-            Request(harness.Exposure, sellingPrice: 79.50m));
-
-        Assert.True(result.IsSuccess, $"{result.ErrorCode}: {result.ErrorMessage}");
-        Assert.True(result.Value!.CreatedNewProduct);
-        Assert.False(result.Value.AlreadyLinked);
-        Assert.Equal(79.50m, result.Value.BuyerSellingPrice);
-        Assert.Equal(1, harness.Products.AddCount);
-        var product = Assert.Single(harness.Products.Items);
-        Assert.False(product.CanExposeToConnectedBuyers);
-        Assert.Equal(79.50m, product.SellingPrice);
-        var link = Assert.Single(harness.Links.Items);
-        Assert.Equal(37m, link.LastKnownOrderPrice);
-        Assert.NotEqual(link.LastKnownOrderPrice, product.SellingPrice);
-    }
-
-    [Fact]
-    public async Task Unshared_exposure_fails_before_product_is_added()
-    {
-        var harness = CreateHarness(includeShare: false);
-
-        var result = await harness.CreateQuickCreate().ExecuteAsync(
-            Buyer.Value,
-            harness.Relationship.Id.Value,
-            Request(harness.Exposure));
-
-        Assert.False(result.IsSuccess);
-        Assert.Equal(ConnectedSupplierErrorCodes.ExposureNotFound, result.ErrorCode);
-        Assert.Equal(0, harness.Products.AddCount);
-        Assert.Empty(harness.Links.Items);
-    }
-
-    [Fact]
-    public async Task Inactive_relationship_fails_before_product_is_added()
-    {
-        var harness = CreateHarness(activeRelationship: false);
-
-        var result = await harness.CreateQuickCreate().ExecuteAsync(
-            Buyer.Value,
-            harness.Relationship.Id.Value,
-            Request(harness.Exposure));
-
-        Assert.False(result.IsSuccess);
-        Assert.Equal(ConnectedSupplierErrorCodes.NotFound, result.ErrorCode);
-        Assert.Equal(0, harness.Products.AddCount);
-        Assert.Empty(harness.Links.Items);
-    }
-
-    [Fact]
-    public async Task Not_orderable_exposure_fails_before_product_is_added()
-    {
-        var harness = CreateHarness(orderable: false);
-
-        var result = await harness.CreateQuickCreate().ExecuteAsync(
-            Buyer.Value,
-            harness.Relationship.Id.Value,
-            Request(harness.Exposure));
-
-        Assert.False(result.IsSuccess);
-        Assert.Equal(ConnectedSupplierErrorCodes.ExposureNotFound, result.ErrorCode);
-        Assert.Equal(0, harness.Products.AddCount);
-        Assert.Empty(harness.Links.Items);
-    }
-
-    [Fact]
-    public async Task LinkProduct_rejects_buyer_product_owned_by_another_organization()
-    {
-        var harness = CreateHarness();
-        var otherBuyer = PosOrganizationId.From(Guid.NewGuid());
-        var foreignProduct = Product(otherBuyer, "Foreign Product", "FOREIGN-1");
-        harness.Products.Seed(foreignProduct);
-
-        var result = await harness.CreateLinkProduct().ExecuteAsync(
-            Buyer.Value,
-            harness.Relationship.Id.Value,
-            new LinkProductRequest(foreignProduct.Id.Value, harness.Exposure.Id.Value));
-
-        Assert.False(result.IsSuccess);
-        Assert.Equal(ConnectedSupplierErrorCodes.ExposureNotFound, result.ErrorCode);
-        Assert.Empty(harness.Links.Items);
-    }
-
-    [Fact]
-    public async Task Exposure_from_another_supplier_relationship_is_rejected_before_create()
-    {
-        var harness = CreateHarness(exposureSupplier: PosOrganizationId.From(Guid.NewGuid()));
-
-        var result = await harness.CreateQuickCreate().ExecuteAsync(
-            Buyer.Value,
-            harness.Relationship.Id.Value,
-            Request(harness.Exposure));
-
-        Assert.False(result.IsSuccess);
-        Assert.Equal(ConnectedSupplierErrorCodes.ExposureNotFound, result.ErrorCode);
-        Assert.Equal(0, harness.Products.AddCount);
-        Assert.Empty(harness.Links.Items);
-    }
-
-    [Fact]
-    public async Task Duplicate_create_and_link_retry_returns_already_linked_without_second_product()
-    {
-        var harness = CreateHarness();
-        var useCase = harness.CreateQuickCreate();
-        var request = Request(harness.Exposure, sellingPrice: 93m);
-
-        var first = await useCase.ExecuteAsync(Buyer.Value, harness.Relationship.Id.Value, request);
-        var second = await useCase.ExecuteAsync(Buyer.Value, harness.Relationship.Id.Value, request);
+        var first = await harness.CreateAutoLink().ExecuteAsync(Buyer.Value, harness.Relationship.Id.Value);
+        var second = await harness.CreateAutoLink().ExecuteAsync(Buyer.Value, harness.Relationship.Id.Value);
 
         Assert.True(first.IsSuccess, $"{first.ErrorCode}: {first.ErrorMessage}");
         Assert.True(second.IsSuccess, $"{second.ErrorCode}: {second.ErrorMessage}");
-        Assert.True(first.Value!.CreatedNewProduct);
-        Assert.False(first.Value.AlreadyLinked);
-        Assert.False(second.Value!.CreatedNewProduct);
-        Assert.True(second.Value.AlreadyLinked);
-        Assert.Equal(first.Value.BuyerProductId, second.Value.BuyerProductId);
-        Assert.Equal(1, harness.Products.AddCount);
-        Assert.Single(harness.Products.Items);
+        Assert.Equal(1, first.Value!.LinkedNow);
+        Assert.Equal(0, first.Value.AlreadyReady);
+        Assert.Equal(0, first.Value.Review);
+        Assert.Equal(0, first.Value.New);
+        Assert.Equal(0, first.Value.Conflict);
+        Assert.Equal(0, second.Value!.LinkedNow);
+        Assert.Equal(1, second.Value.AlreadyReady);
+        Assert.Single(harness.Links.Items);
+        Assert.Equal(buyerProduct.Id, harness.Links.Items[0].BuyerProductId);
+        Assert.Equal(2, harness.Uow.TransactionCount);
+    }
+
+    [Fact]
+    public async Task Incompatible_uom_does_not_auto_link()
+    {
+        var harness = CreateHarness();
+        harness.Products.Seed(Product(Buyer, "Premium Rice", "SUP-RICE", UnitOfMeasure.Piece, ValidBarcode));
+        SeedSupplierCatalogProduct(harness, ValidBarcode);
+
+        var result = await harness.CreateAutoLink().ExecuteAsync(Buyer.Value, harness.Relationship.Id.Value);
+
+        Assert.True(result.IsSuccess, $"{result.ErrorCode}: {result.ErrorMessage}");
+        Assert.Equal(0, result.Value!.LinkedNow);
+        Assert.Equal(1, result.Value.Review);
+        Assert.Empty(harness.Links.Items);
+    }
+
+    [Fact]
+    public async Task Name_sku_only_without_barcode_is_review()
+    {
+        var harness = CreateHarness();
+        harness.Products.Seed(Product(Buyer, "Premium Rice", "SUP-RICE", UnitOfMeasure.Kilogram, barcode: null));
+        // Supplier live product has no barcode either → missing identifier → no auto-link
+
+        var result = await harness.CreateAutoLink().ExecuteAsync(Buyer.Value, harness.Relationship.Id.Value);
+
+        Assert.True(result.IsSuccess, $"{result.ErrorCode}: {result.ErrorMessage}");
+        Assert.Equal(0, result.Value!.LinkedNow);
+        Assert.Equal(1, result.Value.Review);
+        Assert.Empty(harness.Links.Items);
+    }
+
+    [Fact]
+    public async Task No_match_counts_as_new()
+    {
+        var harness = CreateHarness();
+        harness.Products.Seed(Product(Buyer, "Other", "OTHER", UnitOfMeasure.Piece, "036000291452"));
+        SeedSupplierCatalogProduct(harness, ValidBarcode);
+
+        var result = await harness.CreateAutoLink().ExecuteAsync(Buyer.Value, harness.Relationship.Id.Value);
+
+        Assert.True(result.IsSuccess, $"{result.ErrorCode}: {result.ErrorMessage}");
+        Assert.Equal(1, result.Value!.New);
+        Assert.Equal(0, result.Value.LinkedNow);
+        Assert.Empty(harness.Links.Items);
+    }
+
+    [Fact]
+    public async Task Barcode_and_sku_disagreement_counts_as_conflict()
+    {
+        var harness = CreateHarness();
+        var productA = Product(Buyer, "Product A", "SKU-A", UnitOfMeasure.Kilogram, ValidBarcode);
+        var productB = Product(Buyer, "Product B", "SUP-RICE", UnitOfMeasure.Kilogram, "036000291452");
+        harness.Products.Seed(productA);
+        harness.Products.Seed(productB);
+        SeedSupplierCatalogProduct(harness, ValidBarcode);
+
+        var result = await harness.CreateAutoLink().ExecuteAsync(Buyer.Value, harness.Relationship.Id.Value);
+
+        Assert.True(result.IsSuccess, $"{result.ErrorCode}: {result.ErrorMessage}");
+        Assert.Equal(1, result.Value!.Conflict);
+        Assert.Equal(0, result.Value.LinkedNow);
+        Assert.Empty(harness.Links.Items);
+    }
+
+    [Fact]
+    public async Task Already_linked_counts_already_ready_without_duplicate()
+    {
+        var harness = CreateHarness();
+        var buyerProduct = Product(Buyer, "Premium Rice", "SUP-RICE", UnitOfMeasure.Kilogram, ValidBarcode);
+        harness.Products.Seed(buyerProduct);
+        SeedSupplierCatalogProduct(harness, ValidBarcode);
+
+        var link = BuyerSupplierProductLink.Create(
+            harness.Relationship.Id,
+            Buyer,
+            Supplier,
+            buyerProduct.Id,
+            harness.Exposure,
+            Now.AddMinutes(6),
+            effectiveOrderPrice: 45m);
+        harness.Links.Items.Add(link);
+
+        var result = await harness.CreateAutoLink().ExecuteAsync(Buyer.Value, harness.Relationship.Id.Value);
+
+        Assert.True(result.IsSuccess, $"{result.ErrorCode}: {result.ErrorMessage}");
+        Assert.Equal(0, result.Value!.LinkedNow);
+        Assert.Equal(1, result.Value.AlreadyReady);
         Assert.Single(harness.Links.Items);
     }
 
     [Fact]
-    public void Match_suggestions_rank_exact_sku_before_exact_name_with_compatible_uom()
+    public async Task Cross_tenant_buyer_product_is_not_auto_linked()
     {
-        var exactName = Product(Buyer, "Premium Rice", "OTHER", UnitOfMeasure.Kilogram, 61m);
-        var exactSku = Product(Buyer, "Different Name", "SUP-RICE", UnitOfMeasure.Piece, 70m);
-        var nameOnlyWrongUom = Product(Buyer, "Premium Rice", "THIRD", UnitOfMeasure.Piece, 65m);
+        var harness = CreateHarness();
+        var foreign = Product(
+            PosOrganizationId.From(Guid.NewGuid()),
+            "Premium Rice",
+            "SUP-RICE",
+            UnitOfMeasure.Kilogram,
+            ValidBarcode);
+        harness.Products.Seed(foreign);
+        SeedSupplierCatalogProduct(harness, ValidBarcode);
 
-        var ranked = BuyerCatalogMatchSuggestions.Rank(
-            " premium rice ",
-            "sup-rice",
-            "Kilogram",
-            [nameOnlyWrongUom, exactName, exactSku]);
+        var result = await harness.CreateAutoLink().ExecuteAsync(Buyer.Value, harness.Relationship.Id.Value);
 
-        Assert.Collection(
-            ranked,
-            first =>
-            {
-                Assert.Equal(exactSku.Id.Value, first.ProductId);
-                Assert.Equal(BuyerCatalogMatchSuggestions.ExactSku, first.MatchKind);
-            },
-            second =>
-            {
-                Assert.Equal(exactName.Id.Value, second.ProductId);
-                Assert.Equal(BuyerCatalogMatchSuggestions.ExactNameCompatibleUom, second.MatchKind);
-            },
-            third =>
-            {
-                Assert.Equal(nameOnlyWrongUom.Id.Value, third.ProductId);
-                Assert.Equal(BuyerCatalogMatchSuggestions.ExactName, third.MatchKind);
-            });
+        Assert.True(result.IsSuccess, $"{result.ErrorCode}: {result.ErrorMessage}");
+        Assert.Equal(1, result.Value!.New);
+        Assert.Empty(harness.Links.Items);
     }
 
     [Fact]
-    public void Create_and_link_source_does_not_reference_inventory_or_receiving_types()
+    public async Task Classify_readiness_is_read_only()
+    {
+        var harness = CreateHarness();
+        var buyerProduct = Product(Buyer, "Premium Rice", "SUP-RICE", UnitOfMeasure.Kilogram, ValidBarcode);
+        harness.Products.Seed(buyerProduct);
+        SeedSupplierCatalogProduct(harness, ValidBarcode);
+
+        var result = await harness.CreateClassify().ExecuteAsync(Buyer.Value, harness.Relationship.Id.Value);
+
+        Assert.True(result.IsSuccess, $"{result.ErrorCode}: {result.ErrorMessage}");
+        Assert.Equal(1, result.Value!.Ready);
+        var item = Assert.Single(result.Value.Items);
+        Assert.True(item.CanAutoLink);
+        Assert.Equal("Ready", item.Status);
+        Assert.Empty(harness.Links.Items);
+        Assert.Equal(0, harness.Uow.SaveCount);
+        Assert.Equal(0, harness.Uow.TransactionCount);
+    }
+
+    [Fact]
+    public void Auto_link_source_does_not_reference_inventory_or_receiving_types()
     {
         var path = Path.Combine(
             FindRepoRoot(),
@@ -208,104 +184,56 @@ public sealed class CreateBuyerProductAndLinkTests
             "PinoyBusinessPOS",
             "ExItS.PinoyBusinessPOS.Application",
             "ConnectedSuppliers",
-            "CreateBuyerProductAndLinkUseCases.cs");
+            "BuyerCatalogMatchReadinessUseCases.cs");
         var source = File.ReadAllText(path);
-        var start = source.IndexOf("public sealed class CreateBuyerProductAndLink", StringComparison.Ordinal);
-        Assert.True(start >= 0);
-        var body = source[start..];
 
-        Assert.DoesNotContain("Inventory", body, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("StockMovement", body, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("PurchaseStock", body, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("GoodsReceipt", body, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Inventory", source, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("StockMovement", source, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("PurchaseStock", source, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("GoodsReceipt", source, StringComparison.OrdinalIgnoreCase);
     }
 
-    [Fact]
-    public async Task Create_and_link_does_not_inject_inventory_dependencies_and_creates_catalog_product_only()
+    private static void SeedSupplierCatalogProduct(Harness harness, string barcode)
     {
-        var harness = CreateHarness();
-
-        var result = await harness.CreateQuickCreate().ExecuteAsync(
-            Buyer.Value,
-            harness.Relationship.Id.Value,
-            Request(harness.Exposure, sellingPrice: 55m));
-
-        Assert.True(result.IsSuccess, $"{result.ErrorCode}: {result.ErrorMessage}");
-        Assert.True(result.Value!.CreatedNewProduct);
-        Assert.Equal(1, harness.Products.AddCount);
-        Assert.Single(harness.Products.Items);
-        Assert.Single(harness.Links.Items);
-
-        var ctorParams = typeof(CreateBuyerProductAndLink)
-            .GetConstructors()
-            .SelectMany(c => c.GetParameters())
-            .Select(p => p.ParameterType.FullName ?? p.ParameterType.Name)
-            .ToList();
-        Assert.DoesNotContain(ctorParams, name => name.Contains("Inventory", StringComparison.OrdinalIgnoreCase));
-        Assert.DoesNotContain(ctorParams, name => name.Contains("StockMovement", StringComparison.OrdinalIgnoreCase));
-        Assert.DoesNotContain(ctorParams, name => name.Contains("GoodsReceipt", StringComparison.OrdinalIgnoreCase));
+        var supplierProduct = CatalogProduct.Create(
+            Supplier,
+            harness.Exposure.NameSnapshot,
+            UnitOfMeasure.Kilogram,
+            40m,
+            Now,
+            sku: harness.Exposure.SkuSnapshot,
+            barcode: barcode,
+            id: harness.Exposure.ProductId);
+        harness.Products.Seed(supplierProduct);
     }
 
-    [Fact]
-    public async Task Uom_mismatch_fails_quick_create_before_product_is_added()
-    {
-        var harness = CreateHarness(exposureUom: "Kilogram");
-        var request = Request(harness.Exposure) with { UnitOfMeasure = "Piece" };
-
-        var result = await harness.CreateQuickCreate().ExecuteAsync(
-            Buyer.Value,
-            harness.Relationship.Id.Value,
-            request);
-
-        Assert.False(result.IsSuccess);
-        Assert.Equal(0, harness.Products.AddCount);
-        Assert.Empty(harness.Links.Items);
-    }
-
-    private static Harness CreateHarness(
-        bool activeRelationship = true,
-        bool includeShare = true,
-        bool orderable = true,
-        decimal supplierOrderPrice = 45m,
-        decimal? buyerSpecificPoPrice = null,
-        PosOrganizationId? exposureSupplier = null,
-        string exposureUom = "Kilogram")
+    private static Harness CreateHarness()
     {
         var relationships = new InMemoryRelationships();
         var relationship = ConnectedSupplierRelationship.Request(Buyer, Supplier, Now);
-        if (activeRelationship)
-        {
-            relationship.Approve(Now.AddMinutes(1));
-        }
+        relationship.Approve(Now.AddMinutes(1));
         relationships.Seed(relationship);
 
-        var supplierForExposure = exposureSupplier ?? Supplier;
         var exposure = SupplierProductExposure.Expose(
-            supplierForExposure,
+            Supplier,
             CatalogProductId.New(),
             "Premium Rice",
-            exposureUom,
-            supplierOrderPrice,
+            "Kilogram",
+            45m,
             Now.AddMinutes(2),
             sku: "SUP-RICE");
-        if (!orderable)
-        {
-            exposure.MarkNotOrderable(Now.AddMinutes(3));
-        }
-
         var exposures = new InMemoryExposures();
         exposures.Seed(exposure);
-        var shares = new InMemoryShares();
-        if (includeShare)
-        {
-            shares.Seed(ConnectedBuyerProductShare.Share(
-                relationship.Id,
-                Buyer,
-                Supplier,
-                exposure.ProductId,
-                Now.AddMinutes(4),
-                buyerSpecificPoPrice));
-        }
+
+        var share = ConnectedBuyerProductShare.Share(
+            relationship.Id,
+            Buyer,
+            Supplier,
+            exposure.ProductId,
+            Now.AddMinutes(4),
+            buyerSpecificPoPrice: null);
+        var shares = new InMemoryShares(exposures);
+        shares.Seed(share);
 
         return new Harness(
             relationship,
@@ -316,30 +244,19 @@ public sealed class CreateBuyerProductAndLinkTests
             new InMemoryLinks(),
             new InMemoryProducts(),
             new InMemoryUnits(),
-            new InMemoryCategories(),
             new FakeUow(),
             new FakeAccess(),
-            new FixedClock(Now.AddMinutes(5)),
             new FixedTimeProvider(Now.AddMinutes(5)));
     }
-
-    private static CreateBuyerProductAndLinkRequest Request(
-        SupplierProductExposure exposure,
-        decimal sellingPrice = 72m) =>
-        new(
-            exposure.Id.Value,
-            "Buyer Premium Rice",
-            exposure.UnitOfMeasureCode,
-            sellingPrice,
-            Sku: $"BUY-{Guid.NewGuid():N}");
 
     private static CatalogProduct Product(
         PosOrganizationId organizationId,
         string name,
         string? sku,
-        UnitOfMeasure unitOfMeasure = UnitOfMeasure.Kilogram,
+        UnitOfMeasure unitOfMeasure,
+        string? barcode,
         decimal sellingPrice = 50m) =>
-        CatalogProduct.Create(organizationId, name, unitOfMeasure, sellingPrice, Now, sku: sku);
+        CatalogProduct.Create(organizationId, name, unitOfMeasure, sellingPrice, Now, sku: sku, barcode: barcode);
 
     private sealed record Harness(
         ConnectedSupplierRelationship Relationship,
@@ -350,17 +267,15 @@ public sealed class CreateBuyerProductAndLinkTests
         InMemoryLinks Links,
         InMemoryProducts Products,
         InMemoryUnits Units,
-        InMemoryCategories Categories,
         FakeUow Uow,
         FakeAccess Access,
-        FixedClock Clock,
         FixedTimeProvider Time)
     {
-        public CreateBuyerProductAndLink CreateQuickCreate() =>
-            new(Relationships, Exposures, Shares, Links, Products, Units, Categories, Uow, Access, Clock, Time);
+        public AutoLinkExactMatches CreateAutoLink() =>
+            new(Relationships, Exposures, Shares, Links, Products, Units, Uow, Access, Time);
 
-        public LinkProduct CreateLinkProduct() =>
-            new(Relationships, Exposures, Links, Products, Units, Uow, Access, Shares, Time);
+        public ClassifyCatalogReadiness CreateClassify() =>
+            new(Relationships, Shares, Links, Products, Access);
     }
 
     private sealed class FakeAccess : IPosCommercialAccessAccessor
@@ -386,11 +301,6 @@ public sealed class CreateBuyerProductAndLinkTests
             TransactionCount++;
             return action(cancellationToken);
         }
-    }
-
-    private sealed class FixedClock(DateTimeOffset utcNow) : IClock
-    {
-        public DateTimeOffset UtcNow { get; } = utcNow;
     }
 
     private sealed class FixedTimeProvider(DateTimeOffset utcNow) : TimeProvider
@@ -484,7 +394,7 @@ public sealed class CreateBuyerProductAndLinkTests
             Task.CompletedTask;
     }
 
-    private sealed class InMemoryShares : IConnectedBuyerProductShareRepository
+    private sealed class InMemoryShares(InMemoryExposures exposures) : IConnectedBuyerProductShareRepository
     {
         private readonly List<ConnectedBuyerProductShare> _items = [];
 
@@ -517,10 +427,21 @@ public sealed class CreateBuyerProductAndLinkTests
             string? category,
             int skip,
             int take,
-            CancellationToken ct = default) =>
-            Task.FromResult<(IReadOnlyList<SupplierProductExposure>,
+            CancellationToken ct = default)
+        {
+            var shares = _items.Where(x => x.RelationshipId == relationshipId && x.IsShared).ToList();
+            var sharedProductIds = shares.Select(x => x.SupplierProductId.Value).ToHashSet();
+            var exposureItems = exposures.ListAsync(supplier, ct).GetAwaiter().GetResult()
+                .Where(x => sharedProductIds.Contains(x.ProductId.Value) && x.IsExposed && x.IsOrderable)
+                .ToList();
+            var page = exposureItems.Skip(skip).Take(take).ToList();
+            var pageShares = shares
+                .Where(s => page.Any(e => e.ProductId == s.SupplierProductId))
+                .ToList();
+            return Task.FromResult<(IReadOnlyList<SupplierProductExposure>,
                 IReadOnlyList<ConnectedBuyerProductShare>,
-                int)>(([], [], 0));
+                int)>((page, pageShares, exposureItems.Count));
+        }
 
         public Task<BuyerProductShareSearchPage> SearchForSupplierManagementAsync(
             ConnectedSupplierRelationshipId relationshipId,
@@ -558,14 +479,14 @@ public sealed class CreateBuyerProductAndLinkTests
             CatalogProductId buyerProductId,
             CancellationToken ct = default) =>
             Task.FromResult(Items.FirstOrDefault(x =>
-                x.RelationshipId == relationshipId && x.BuyerProductId == buyerProductId));
+                x.RelationshipId == relationshipId && x.BuyerProductId == buyerProductId && x.IsActive));
 
         public Task<BuyerSupplierProductLink?> FindBySupplierProductAsync(
             ConnectedSupplierRelationshipId relationshipId,
             CatalogProductId supplierProductId,
             CancellationToken ct = default) =>
             Task.FromResult(Items.FirstOrDefault(x =>
-                x.RelationshipId == relationshipId && x.SupplierProductId == supplierProductId));
+                x.RelationshipId == relationshipId && x.SupplierProductId == supplierProductId && x.IsActive));
 
         public Task<IReadOnlyList<BuyerSupplierProductLink>> ListAsync(
             ConnectedSupplierRelationshipId relationshipId,
@@ -598,7 +519,6 @@ public sealed class CreateBuyerProductAndLinkTests
     private sealed class InMemoryProducts : ICatalogProductRepository
     {
         public List<CatalogProduct> Items { get; } = [];
-        public int AddCount { get; private set; }
 
         public void Seed(CatalogProduct product) => Items.Add(product);
 
@@ -642,16 +562,7 @@ public sealed class CreateBuyerProductAndLinkTests
             {
                 matches = matches.Where(x => x.Status == filter.Status);
             }
-            if (filter.UnitOfMeasure is not null)
-            {
-                matches = matches.Where(x => x.UnitOfMeasure == filter.UnitOfMeasure);
-            }
-            if (!string.IsNullOrWhiteSpace(filter.Search))
-            {
-                matches = matches.Where(x =>
-                    x.Name.Contains(filter.Search, StringComparison.OrdinalIgnoreCase)
-                    || (x.Sku?.Contains(filter.Search, StringComparison.OrdinalIgnoreCase) ?? false));
-            }
+
             var list = matches.ToList();
             return Task.FromResult<(IReadOnlyList<CatalogProduct>, int)>(
                 (list.Skip(skip).Take(take).ToList(), list.Count));
@@ -670,15 +581,8 @@ public sealed class CreateBuyerProductAndLinkTests
         public Task<(int TotalCount, int AvailableCount, int NotAvailableCount)>
             CountConnectedBuyerAvailabilityAsync(
                 PosOrganizationId organizationId,
-                CancellationToken cancellationToken = default)
-        {
-            var products = Items.Where(x =>
-                x.OrganizationId == organizationId && x.Status == CatalogProductStatus.Active).ToList();
-            return Task.FromResult((
-                products.Count,
-                products.Count(x => x.CanExposeToConnectedBuyers),
-                products.Count(x => !x.CanExposeToConnectedBuyers)));
-        }
+                CancellationToken cancellationToken = default) =>
+            Task.FromResult((0, 0, 0));
 
         public Task<IReadOnlyList<(Guid? CategoryId, int Count)>>
             ListConnectedBuyerAvailabilityCategoryFacetsAsync(
@@ -691,25 +595,16 @@ public sealed class CreateBuyerProductAndLinkTests
             PosOrganizationId organizationId,
             Guid platformGlobalProductId,
             CancellationToken cancellationToken = default) =>
-            Task.FromResult(Items.FirstOrDefault(x =>
-                x.OrganizationId == organizationId
-                && x.PlatformGlobalProductId == platformGlobalProductId));
+            Task.FromResult<CatalogProduct?>(null);
 
         public Task<IReadOnlySet<Guid>> ListPlatformGlobalProductIdsAsync(
             PosOrganizationId organizationId,
             IReadOnlyCollection<Guid> platformGlobalProductIds,
             CancellationToken cancellationToken = default) =>
-            Task.FromResult<IReadOnlySet<Guid>>(
-                Items.Where(x =>
-                        x.OrganizationId == organizationId
-                        && x.PlatformGlobalProductId is Guid id
-                        && platformGlobalProductIds.Contains(id))
-                    .Select(x => x.PlatformGlobalProductId!.Value)
-                    .ToHashSet());
+            Task.FromResult<IReadOnlySet<Guid>>(new HashSet<Guid>());
 
         public Task AddAsync(CatalogProduct product, CancellationToken cancellationToken = default)
         {
-            AddCount++;
             Items.Add(product);
             return Task.CompletedTask;
         }
@@ -720,36 +615,27 @@ public sealed class CreateBuyerProductAndLinkTests
 
     private sealed class InMemoryUnits : ICatalogProductUnitRepository
     {
-        private readonly List<CatalogProductUnit> _items = [];
-
         public Task<CatalogProductUnit?> GetByIdAsync(
             PosOrganizationId organizationId,
             ProductUnitId unitId,
             CancellationToken cancellationToken = default) =>
-            Task.FromResult(_items.FirstOrDefault(x =>
-                x.OrganizationId == organizationId && x.Id == unitId));
+            Task.FromResult<CatalogProductUnit?>(null);
 
         public Task<IReadOnlyList<CatalogProductUnit>> ListByProductAsync(
             PosOrganizationId organizationId,
             CatalogProductId productId,
             CancellationToken cancellationToken = default) =>
-            Task.FromResult<IReadOnlyList<CatalogProductUnit>>(
-                _items.Where(x => x.OrganizationId == organizationId && x.ProductId == productId).ToList());
+            Task.FromResult<IReadOnlyList<CatalogProductUnit>>([]);
 
         public Task<IReadOnlyDictionary<Guid, IReadOnlyList<CatalogProductUnit>>> ListByProductIdsAsync(
             PosOrganizationId organizationId,
             IReadOnlyCollection<CatalogProductId> productIds,
             CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyDictionary<Guid, IReadOnlyList<CatalogProductUnit>>>(
-                _items.Where(x => x.OrganizationId == organizationId && productIds.Contains(x.ProductId))
-                    .GroupBy(x => x.ProductId.Value)
-                    .ToDictionary(x => x.Key, x => (IReadOnlyList<CatalogProductUnit>)x.ToList()));
+                new Dictionary<Guid, IReadOnlyList<CatalogProductUnit>>());
 
-        public Task AddAsync(CatalogProductUnit unit, CancellationToken cancellationToken = default)
-        {
-            _items.Add(unit);
-            return Task.CompletedTask;
-        }
+        public Task AddAsync(CatalogProductUnit unit, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
 
         public Task UpdateAsync(CatalogProductUnit unit, CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
@@ -760,70 +646,7 @@ public sealed class CreateBuyerProductAndLinkTests
             ProductUnitKind kind,
             IReadOnlyList<CatalogProductUnit> units,
             DateTimeOffset utcNow,
-            CancellationToken cancellationToken = default)
-        {
-            _items.AddRange(units);
-            return Task.CompletedTask;
-        }
-    }
-
-    private sealed class InMemoryCategories : IProductCategoryRepository
-    {
-        private readonly List<ProductCategory> _items = [];
-
-        public Task<ProductCategory?> GetByIdAsync(
-            PosOrganizationId organizationId,
-            ProductCategoryId categoryId,
             CancellationToken cancellationToken = default) =>
-            Task.FromResult(_items.FirstOrDefault(x =>
-                x.OrganizationId == organizationId && x.Id == categoryId));
-
-        public Task<ProductCategory?> FindActiveByNormalizedNameAsync(
-            PosOrganizationId organizationId,
-            string normalizedName,
-            CancellationToken cancellationToken = default) =>
-            Task.FromResult(_items.FirstOrDefault(x =>
-                x.OrganizationId == organizationId
-                && x.NormalizedName == normalizedName
-                && x.Status == ProductCategoryStatus.Active));
-
-        public Task<ProductCategory?> FindActiveBySourceGlobalCategoryIdAsync(
-            PosOrganizationId organizationId,
-            Guid sourceGlobalCategoryId,
-            CancellationToken cancellationToken = default) =>
-            Task.FromResult(_items.FirstOrDefault(x =>
-                x.OrganizationId == organizationId
-                && x.SourceGlobalCategoryId == sourceGlobalCategoryId
-                && x.Status == ProductCategoryStatus.Active));
-
-        public Task<(IReadOnlyList<ProductCategory> Items, int TotalCount)> ListAsync(
-            PosOrganizationId organizationId,
-            ProductCategoryStatus? status,
-            string? search,
-            int skip,
-            int take,
-            CancellationToken cancellationToken = default)
-        {
-            var items = _items.Where(x => x.OrganizationId == organizationId).ToList();
-            return Task.FromResult<(IReadOnlyList<ProductCategory>, int)>(
-                (items.Skip(skip).Take(take).ToList(), items.Count));
-        }
-
-        public Task<IReadOnlyList<ProductCategory>> ListByIdsAsync(
-            PosOrganizationId organizationId,
-            IReadOnlyCollection<ProductCategoryId> categoryIds,
-            CancellationToken cancellationToken = default) =>
-            Task.FromResult<IReadOnlyList<ProductCategory>>(
-                _items.Where(x =>
-                    x.OrganizationId == organizationId && categoryIds.Contains(x.Id)).ToList());
-
-        public Task AddAsync(ProductCategory category, CancellationToken cancellationToken = default)
-        {
-            _items.Add(category);
-            return Task.CompletedTask;
-        }
-
-        public Task UpdateAsync(ProductCategory category, CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
     }
 

@@ -298,6 +298,8 @@ builder.Services.AddScoped<SearchExposedCatalog>();
 builder.Services.AddScoped<LinkProduct>();
 builder.Services.AddScoped<CreateBuyerProductAndLink>();
 builder.Services.AddScoped<SuggestBuyerProductMatches>();
+builder.Services.AddScoped<ClassifyCatalogReadiness>();
+builder.Services.AddScoped<AutoLinkExactMatches>();
 builder.Services.AddScoped<UnlinkProduct>();
 builder.Services.AddScoped<ListLinks>();
 builder.Services.AddScoped<SyncLinkedProductsDelta>();

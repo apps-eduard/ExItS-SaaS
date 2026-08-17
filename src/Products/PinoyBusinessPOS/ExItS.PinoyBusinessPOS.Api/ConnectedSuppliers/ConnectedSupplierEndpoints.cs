@@ -58,6 +58,10 @@ internal static class ConnectedSupplierEndpoints
          return PosApiResults.FromResult(await use.ExecuteAsync(org,id,body,ct),Results.Ok);});
         group.MapGet("/relationships/{id:guid}/catalog/{exposureId:guid}/match-suggestions",async(HttpRequest req,Guid id,Guid exposureId,SuggestBuyerProductMatches use,IPosCommercialAccessAccessor access,CancellationToken ct)=>
         {if(!Authorize(req,access,UtangCapability.ViewPurchasing,out var org,out var problem))return problem!;return PosApiResults.FromResult(await use.ExecuteAsync(org,id,exposureId,ct),Results.Ok);});
+        group.MapGet("/relationships/{id:guid}/catalog/readiness",async(HttpRequest req,Guid id,ClassifyCatalogReadiness use,IPosCommercialAccessAccessor access,CancellationToken ct)=>
+        {if(!Authorize(req,access,UtangCapability.ViewPurchasing,out var org,out var problem))return problem!;return PosApiResults.FromResult(await use.ExecuteAsync(org,id,ct),Results.Ok);});
+        group.MapPost("/relationships/{id:guid}/catalog/auto-link-exact",async(HttpRequest req,Guid id,AutoLinkExactMatches use,IPosCommercialAccessAccessor access,CancellationToken ct)=>
+        {if(!Authorize(req,access,UtangCapability.ManagePurchasing,out var org,out var problem))return problem!;return PosApiResults.FromResult(await use.ExecuteAsync(org,id,ct),Results.Ok);});
         group.MapGet("/relationships/{id:guid}/links",async(HttpRequest req,Guid id,ListLinks use,IPosCommercialAccessAccessor access,CancellationToken ct)=>
         {if(!Authorize(req,access,UtangCapability.ViewPurchasing,out var org,out var problem))return problem!;return PosApiResults.FromResult(await use.ExecuteAsync(org,id,ct),Results.Ok);});
         group.MapDelete("/links/{id:guid}",async(HttpRequest req,Guid id,UnlinkProduct use,IPosCommercialAccessAccessor access,CancellationToken ct)=>

@@ -24,6 +24,8 @@ public interface IPosConnectedSupplierClient
     Task<ApiResult<BuyerSupplierProductLinkDto>> LinkProductAsync(Guid relationshipId,LinkProductRequest request,CancellationToken ct=default);
     Task<ApiResult<CreateBuyerProductAndLinkResultDto>> CreateBuyerProductAndLinkAsync(Guid relationshipId,CreateBuyerProductAndLinkRequest request,CancellationToken ct=default);
     Task<ApiResult<SuggestBuyerProductMatchesResultDto>> SuggestBuyerProductMatchesAsync(Guid relationshipId,Guid exposureId,CancellationToken ct=default);
+    Task<ApiResult<CatalogReadinessResultDto>> ClassifyCatalogReadinessAsync(Guid relationshipId,CancellationToken ct=default);
+    Task<ApiResult<AutoLinkExactMatchesResultDto>> AutoLinkExactMatchesAsync(Guid relationshipId,CancellationToken ct=default);
     Task<ApiResult<IReadOnlyList<BuyerSupplierProductLinkDto>>> ListLinksAsync(Guid relationshipId,CancellationToken ct=default);
     Task<ApiResult<LinkedProductsDeltaDto>> SyncLinksAsync(Guid relationshipId,long sinceVersion,CancellationToken ct=default);
     Task<ApiResult<IReadOnlyList<ConnectedPurchaseOrderDto>>> ListIncomingOrdersAsync(string? status=null,CancellationToken ct=default);
