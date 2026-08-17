@@ -4,12 +4,12 @@
 
 | Field | Value |
 |---|---|
-| Status | **Open / In Progress** — WP01 Code Complete; WP02–WP09 Stage B Code Complete / Validation Pending (Personal storefront/cart UX delivered); WP10 Not Started |
+| Status | **Open / In Progress** — WP01 Code Complete; WP02–WP09 Stage B Code Complete / Validation Pending (Personal storefront/cart UX + manual CustomerOrder payment method delivered); WP10 Not Started |
 | Device Verified | **No** |
 | Browser Verified | **No** |
 | Production Ready | **No** |
 | Related phase | Phase 27 remains **Open** |
-| Personal storefront | `f689e863` (feat); quote/link authorization harden `87b0acc2` |
+| Personal storefront | `f689e863` (feat); quote/link authorization harden `87b0acc2`; docs `7f3b0d4f`; manual payment `75b12599`; storefront UX `0e3825aa` |
 
 ## Goal
 
@@ -22,7 +22,7 @@ Deliver customer ordering with explicit branch pickup and local-delivery fulfill
 | **P28-WP01** | Branch & Fulfillment Location Foundation (Stage A) | **Code Complete** (`8d0be5eb`…`6feb518f`) |
 | **P28-WP02** | CustomerOrder domain + Personal/Organization party | **Code Complete** (Stage B slice) |
 | **P28-WP03** | Customer-facing catalog and branch availability | **Code Complete / Validation Pending** — Personal linked-merchant storefront API + MAUI UX (`f689e863`); per-product exposure flag residual |
-| **P28-WP04** | Cart, pricing, and order quote | **Code Complete / Validation Pending** — in-memory Personal MAUI cart/review + server quote/place revalidation (`f689e863`); delivery-quote active-link harden (`87b0acc2`) |
+| **P28-WP04** | Cart, pricing, and order quote | **Code Complete / Validation Pending** — in-memory Personal MAUI cart/review + server quote/place revalidation (`f689e863`); delivery-quote active-link harden (`87b0acc2`); manual CustomerOrder payment method (`75b12599` / `0e3825aa`) |
 | **P28-WP05** | Pickup ordering and readiness lifecycle | **Code Complete** |
 | **P28-WP06** | Delivery address, serviceability, and fee quotation | **Code Complete** (Haversine V1) |
 | **P28-WP07** | Merchant order acceptance and fulfillment operations | **Code Complete** (MAUI seller UX) |
@@ -34,9 +34,13 @@ Deliver customer ordering with explicit branch pickup and local-delivery fulfill
 
 Authenticated Personal users with an **active** Personal↔seller merchant link and seller `store-customer-ordering` entitlement can order without using Connected Purchase Order:
 
-**Linked merchants → Shop → storefront → +/- cart → review → Pickup/Delivery → `CustomerOrder` place → Personal My Orders / detail.**
+**Linked merchants → Shop → storefront → +/- cart → review → Pickup/Delivery → manual payment method → `CustomerOrder` place → Personal My Orders / detail.**
 
-V1 catalog rules: seller-org `Active` + `CanBeSold` + `SellingPrice > 0`; soft stock availability; online-only; no payment-method UI (`PaymentStatus` remains Unpaid on submit). Delivery requires branch `DeliveryEnabled` **and** seller `store-delivery-orders`. Authorization is server-side (active link + entitlement); UI alone is not trusted. Storefront, delivery quote, and place fail closed for unlinked/revoked merchants.
+V1 catalog rules: seller-org `Active` + `CanBeSold` + `SellingPrice > 0`; soft stock availability; online-only. Storefront product rows follow Connected PO stepper UX (unadded `[+]`; added `[−][+] ` + Added · Qty; unavailable has a disabled `[+]`, never a fake qty 0). Review is Sales-style read-focused summary (back to Shop for quantity edits). Branch/fulfillment auto-select: one eligible branch is filled as read-only text; selector appears only when more than one eligible branch exists; Pickup/Delivery toggle appears only when both modes are available (default Pickup).
+
+**Personal CustomerOrder V1 settlement (manual only):** Cash is the default; GCash persists as `ManualGCash` (manual/unverified, no QR/gateway/`PaymentAttempt`); Utang is a requested manual settlement method (no automatic customer debt or Business Utang ledger posting). `PaymentStatus` remains **Unpaid** on submit. Do not treat any method as collected at place. This supersedes the earlier Phase 28 statement that `CustomerOrder` has no `PaymentMethod`.
+
+Delivery requires branch `DeliveryEnabled` **and** seller `store-delivery-orders`. Authorization is server-side (active link + entitlement); UI alone is not trusted. Storefront, delivery quote, and place fail closed for unlinked/revoked merchants.
 
 ## Stage A delivered
 
@@ -55,11 +59,11 @@ Remaining Phase 28 residuals:
 - Per-product customer storefront exposure flag / schema migration
 - Personal lifecycle notification expansion
 - Offline customer-order queue
-- CustomerOrder payment-method design/integration (Cash/GCash/Utang selection not on `CustomerOrder`)
+- Automated CustomerOrder settlement/payment rails (gateway `PaymentAttempt`, automatic Paid, automatic Utang debt/ledger posting)
 - P28-WP10 E2E / device / browser validation and closeout
 
 Connected Purchase Order payment terms (Cash default; GCash manual/unverified; Utang B2B settlement) remain a **separate** commerce path and must not be merged into Personal `CustomerOrder`.
 
 ## Exact next
 
-**P28-WP10:** E2E validation, device/browser evidence, residual closeout (personal notifications, payment-method design, per-product exposure flag, migration apply evidence as needed). Phase 27 remains Open. Phase 28 remains **Open**.
+**P28-WP10:** E2E validation, device/browser evidence, residual closeout (personal notifications, per-product exposure flag, automated settlement/payment rails, migration apply evidence as needed). Phase 27 remains Open. Phase 28 remains **Open**.

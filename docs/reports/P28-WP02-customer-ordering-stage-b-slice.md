@@ -34,7 +34,8 @@ Implement Personal/Organization `CustomerOrder` with pickup and delivery fulfill
 
 ## Explicit exclusions / residuals
 
-- ~~Full customer catalog/cart/checkout MAUI storefront~~ — **later delivered** for authenticated Personal linked merchants (`f689e863`; quote/link harden `87b0acc2`); see [Phase 28](../phases/phase-28-customer-ordering-pickup-and-delivery.md) WP03/WP04. Per-product exposure flag, offline queue, and CustomerOrder payment-method UI remain residual.
+- ~~Full customer catalog/cart/checkout MAUI storefront~~ — **later delivered** for authenticated Personal linked merchants (`f689e863`; quote/link harden `87b0acc2`); see [Phase 28](../phases/phase-28-customer-ordering-pickup-and-delivery.md) WP03/WP04.
+- ~~CustomerOrder payment-method design/integration~~ — **later delivered** (`75b12599` / `0e3825aa`) as manual V1 Cash / GCash (`ManualGCash`) / Utang; `PaymentStatus` remains Unpaid at submit; no gateway/`PaymentAttempt` and no automatic Utang ledger posting. Automated settlement/payment rails remain residual.
 - Personal inbox notifications (org new-order notification present)
 - Organization-buyer membership verification hardening
 - Platform fee-preview HTTP call from POS (local formula duplicate documented)
@@ -59,4 +60,4 @@ Seller org scope, customer party scope, entitlement gates, idempotent lifecycle.
 
 ## Exact next
 
-P28-WP10 E2E validation and residual closeout (personal notifications, per-product storefront exposure flag, CustomerOrder payment-method design, migration apply evidence). Personal linked-merchant storefront/cart is already delivered (`f689e863` / `87b0acc2`). Phase 27 remains Open.
+P28-WP10 E2E validation and residual closeout (personal notifications, per-product storefront exposure flag, automated settlement/payment rails, migration apply evidence). Personal linked-merchant storefront/cart and manual CustomerOrder payment method are already delivered (`f689e863` / `87b0acc2` / `75b12599` / `0e3825aa`). Phase 27 remains Open.

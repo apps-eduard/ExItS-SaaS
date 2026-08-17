@@ -47,7 +47,7 @@ Statuses match [phases/README.md](phases/README.md). Do not treat this table as 
 
 - **Phase 29:** WP11–WP14 evidence recorded (constraints, electronic payment reliability, concurrency/EXPLAIN, development backup/restore). Broader load and **Production** backup residuals remain.
 - **Phase 14:** Packaging/TLS work in progress; Production backup/ops evidence (P14-WP04+) not started.
-- **Phases 19–28:** Implementation slices exist at varying completeness; owner/device/browser verification and closeouts remain open where noted on each phase page. Phase 28 Personal linked-merchant storefront/cart is Code Complete / Validation Pending; **P28-WP10** E2E/closeout remains next.
+- **Phases 19–28:** Implementation slices exist at varying completeness; owner/device/browser verification and closeouts remain open where noted on each phase page. Phase 28 Personal linked-merchant storefront/cart and manual CustomerOrder payment method (Cash default; GCash=`ManualGCash`; Utang; Unpaid at submit; `75b12599` / `0e3825aa`) are Code Complete / Validation Pending; automated settlement rails remain residual; **P28-WP10** E2E/closeout remains next.
 - **Honesty gates:** Not Device Verified · Not Browser Verified · Not Production Ready · Not Production Payment Ready · Production Backup/Restore Proven = No.
 
 ## Authoritative Navigation

@@ -43,13 +43,14 @@ Flow:
 | Stock | Soft availability from inventory; reserve still happens on seller Accept |
 | Per-product storefront flag | **Not implemented** (reported residual; no schema migration) |
 | Cart | In-memory MAUI session cart (cleared after successful place / leaving merchant) |
-| Quantity UX | First `+` ⇒ qty 1; `+`/`−` per product; qty 0 removes; totals recompute immediately |
-| Fulfillment | Eligible Active branches; Pickup and/or Delivery; auto-select first capable branch |
+| Quantity UX | Connected PO stepper: unadded `[+]` only (no qty 0); first `+` ⇒ qty 1 then `[−][+] ` + Added · Qty; `−` at qty 1 removes; same `ProductId` never duplicates; unavailable = disabled `[+]`; retail `SellingPrice` |
+| Fulfillment | Auto-select first eligible Active branch. One eligible branch ⇒ read-only branch text, never a blank dropdown. Selector only when more than one eligible branch. Pickup-only / Delivery-only ⇒ read-only mode; both ⇒ Pickup/Delivery toggle (default Pickup) |
+| Payment | Manual V1 only: Cash (default), GCash → `ManualGCash`, Utang. `PaymentStatus` stays Unpaid on submit. No gateway/`PaymentAttempt`. No automatic Utang debt/ledger posting |
 | Quote / place | Server-authoritative price, delivery quote, and revalidation on place |
 | Offline | Online-only storefront/place; compact offline alert; no offline customer-order queue |
-| After place | Navigate to Personal order history/detail (`/personal/orders/{id}`) |
+| After place | Navigate to Personal order history/detail (`/personal/orders/{id}`); Personal and seller detail show payment method + Unpaid status without implying collection |
 
-Commits: storefront UX `f689e863`; delivery-quote / active-link authorization harden `87b0acc2`.
+Commits: storefront UX `f689e863`; delivery-quote / active-link authorization harden `87b0acc2`; manual CustomerOrder payment `75b12599`; storefront checkout UX `0e3825aa`.
 
 ## Fulfillment location
 
@@ -70,7 +71,8 @@ Separate axes:
 
 - **OrderStatus:** Draft, Submitted, Accepted, Rejected, Cancelled, Completed
 - **FulfillmentStatus:** Pending, Preparing, Ready, OutForDelivery, Delivered, ReadyForPickup, Collected
-- **PaymentStatus:** Unpaid / Pending / Paid (V1 placeholder; not equated to order status)
+- **PaymentStatus:** Unpaid / Pending / Paid (not equated to order status; submit always Unpaid)
+- **PaymentMethod:** Cash / ManualGCash / Utang (immutable submit-time snapshot; GCash request value stores as ManualGCash)
 
 V1 place creates **Submitted** orders (no long-lived Draft storefront cart required). Personal MAUI holds an in-memory cart until submit.
 
@@ -124,13 +126,29 @@ Effects are idempotent at the order reservation-state level.
 
 ## Payment — keep paths distinct
 
-### CustomerOrder / Personal storefront
+This supersedes the earlier statement that `CustomerOrder` has no `PaymentMethod`.
 
-- No `PaymentMethod` field or payment-method UI yet
-- Submit remains **`PaymentStatus = Unpaid`**
-- Do **not** claim Cash / GCash / Utang selection on Personal storefront
-- No payment gateway integration for customer orders
-- Existing POS Sale payment paths are unaffected
+### CustomerOrder / Personal storefront (manual V1)
+
+Persisted on `customer_orders.payment_method` (`Cash` default; existing rows read as Cash).
+
+| Choice | Persist as | Meaning |
+|---|---|---|
+| Cash (default) | `Cash` | Intended/manual cash settlement |
+| GCash | `ManualGCash` | Manual/unverified; UI label is GCash |
+| Utang | `Utang` | Requested manual settlement; seller can see it before Accept |
+
+Rules:
+
+- Omitted/null request ⇒ Cash; invalid value ⇒ reject
+- Submit remains **`PaymentStatus = Unpaid`** for all three methods
+- Do **not** integrate `PaymentAttempt`, GCash/card gateway, QR/deep-link, or automatic Paid
+- Do **not** automatically post customer debt or Business Utang ledger
+- Payment method is an immutable submit-time snapshot (no payment negotiation in V1)
+- Personal review uses a Sales-style Cash / GCash / Utang toggle (not Sale Card/electronic gateway methods)
+- Personal and seller order detail show method + Unpaid; do not imply payment was collected
+
+Automated settlement/payment rails remain a future residual.
 
 ### Connected Purchase Order (separate)
 
@@ -178,7 +196,7 @@ Customer place, storefront, quote, and seller lifecycle mutations are online-aut
 - Per-product customer-storefront exposure flag / schema migration
 - Personal lifecycle notification expansion
 - Offline customer-order queue
-- CustomerOrder payment-method design/integration
+- Automated CustomerOrder settlement/payment rails (gateway `PaymentAttempt`, automatic Paid, automatic Utang debt/ledger posting)
 - Auto-accept
 - Production readiness / Device Verified / Browser Verified claims
 - Merging Connected PO payment terms into Personal CustomerOrder
