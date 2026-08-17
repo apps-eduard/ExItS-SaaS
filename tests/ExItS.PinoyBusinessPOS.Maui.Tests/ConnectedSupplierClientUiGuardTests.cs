@@ -20,6 +20,28 @@ public sealed class ConnectedSupplierClientUiGuardTests
         Assert.Contains("ConnectedSuppliers_ReviewIncoming", moreHub, StringComparison.Ordinal);
         Assert.Contains("@page \"/suppliers/{SupplierId:guid}/connected-catalog\"",
             File.ReadAllText(Path.Combine(suppliers, "ConnectedSupplierCatalog.razor")), StringComparison.Ordinal);
+        var catalogPage = File.ReadAllText(Path.Combine(suppliers, "ConnectedSupplierCatalog.razor"));
+        Assert.Contains("ClassifyCatalogReadinessAsync", catalogPage, StringComparison.Ordinal);
+        Assert.Contains("AutoLinkExactMatchesAsync", catalogPage, StringComparison.Ordinal);
+        var client = File.ReadAllText(Path.Combine(
+            FindRepoRoot(),
+            "src",
+            "Products",
+            "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.ApiClient",
+            "PosConnectedSupplierClient.cs"));
+        var iface = File.ReadAllText(Path.Combine(
+            FindRepoRoot(),
+            "src",
+            "Products",
+            "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.Application",
+            "Abstractions",
+            "IPosConnectedSupplierClient.cs"));
+        Assert.Contains("ClassifyCatalogReadinessAsync", client, StringComparison.Ordinal);
+        Assert.Contains("AutoLinkExactMatchesAsync", client, StringComparison.Ordinal);
+        Assert.Contains("ClassifyCatalogReadinessAsync", iface, StringComparison.Ordinal);
+        Assert.Contains("AutoLinkExactMatchesAsync", iface, StringComparison.Ordinal);
         Assert.Contains("@page \"/suppliers/{SupplierId:guid}/linked-products\"",
             File.ReadAllText(Path.Combine(suppliers, "LinkedSupplierProducts.razor")), StringComparison.Ordinal);
         Assert.Contains("@page \"/connected-suppliers/incoming\"",
@@ -73,10 +95,18 @@ public sealed class ConnectedSupplierClientUiGuardTests
         Assert.Contains("Purchasing_SearchYourProducts", page, StringComparison.Ordinal);
         Assert.Contains("PurchaseOrderCreateUi.FilterEligibleProducts", page, StringComparison.Ordinal);
         Assert.Contains("Purchasing_AllCategories", page, StringComparison.Ordinal);
-        Assert.Contains("SearchCatalogAsync", page, StringComparison.Ordinal);
+        Assert.Contains("ClassifyCatalogReadinessAsync", page, StringComparison.Ordinal);
+        Assert.Contains("ListLinksAsync", page, StringComparison.Ordinal);
         Assert.Contains("SearchLocalAsync", page, StringComparison.Ordinal);
         Assert.Contains("RevalidateDraftAsync", page, StringComparison.Ordinal);
         Assert.Contains("ConnectedDrafts.SaveAsync", page, StringComparison.Ordinal);
+        Assert.Contains("ConnectedSuppliers_ManageSupplierProducts", page, StringComparison.Ordinal);
+        Assert.Contains("PurchaseOrderDraftSession", page, StringComparison.Ordinal);
+        Assert.Contains("GoManageSupplierProducts", page, StringComparison.Ordinal);
+        Assert.DoesNotContain("BeginLinkProduct", page, StringComparison.Ordinal);
+        Assert.DoesNotContain("_supplierCatalogProducts", page, StringComparison.Ordinal);
+        Assert.DoesNotContain("SearchCatalogAsync", page, StringComparison.Ordinal);
+        Assert.DoesNotContain("ConnectedSuppliers_UseProduct", page, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -99,5 +129,21 @@ public sealed class ConnectedSupplierClientUiGuardTests
             dir = dir.Parent;
         }
         throw new InvalidOperationException("MAUI project not found.");
+    }
+
+    private static string FindRepoRoot()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null)
+        {
+            if (File.Exists(Path.Combine(dir.FullName, "ExItS.slnx")))
+            {
+                return dir.FullName;
+            }
+
+            dir = dir.Parent;
+        }
+
+        throw new InvalidOperationException("Repository root not found.");
     }
 }

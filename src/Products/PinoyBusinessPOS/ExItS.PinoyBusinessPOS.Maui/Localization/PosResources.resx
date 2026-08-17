@@ -8105,10 +8105,10 @@
     <value>Purchase orders</value>
   </data>
   <data name="ConnectedSuppliers_ServerSearchHelp" xml:space="preserve">
-    <value>Products this supplier has shared with your business.</value>
+    <value>Match shared products to your catalog so you can order.</value>
   </data>
   <data name="ConnectedSuppliers_BrowseSharedWith" xml:space="preserve">
-    <value>Products {0} has shared with your business.</value>
+    <value>Match products from {0} to your catalog so you can order.</value>
   </data>
   <data name="ConnectedSuppliers_OnlineRequired" xml:space="preserve">
     <value>Connect to search</value>
@@ -8312,7 +8312,7 @@
     <value>Linked products could not be updated. Try again when the connection is stable.</value>
   </data>
   <data name="ConnectedSuppliers_BrowseHint" xml:space="preserve">
-    <value>Leave blank to see shared products.</value>
+    <value>Filter by status or search by name or SKU.</value>
   </data>
   <data name="ConnectedSuppliers_CatalogEmptyTitle" xml:space="preserve">
     <value>No shared products yet</value>
@@ -9831,5 +9831,101 @@
   </data>
   <data name="ConnectedBuyers_EmptyBlockedFilter" xml:space="preserve">
     <value>No blocked products match these filters.</value>
+  </data>
+  <data name="ConnectedSuppliers_SetupTitle" xml:space="preserve">
+    <value>Set up supplier products</value>
+  </data>
+  <data name="ConnectedSuppliers_SetupSubtitle" xml:space="preserve">
+    <value>Match shared products to your catalog so you can order.</value>
+  </data>
+  <data name="ConnectedSuppliers_SetupSubtitleNamed" xml:space="preserve">
+    <value>Match products from {0} to your catalog so you can order.</value>
+  </data>
+  <data name="ConnectedSuppliers_SetupHint" xml:space="preserve">
+    <value>Filter by status or search by name or SKU.</value>
+  </data>
+  <data name="ConnectedSuppliers_FilterAll" xml:space="preserve">
+    <value>All {0}</value>
+  </data>
+  <data name="ConnectedSuppliers_FilterReady" xml:space="preserve">
+    <value>Ready {0}</value>
+  </data>
+  <data name="ConnectedSuppliers_FilterNew" xml:space="preserve">
+    <value>New {0}</value>
+  </data>
+  <data name="ConnectedSuppliers_FilterReview" xml:space="preserve">
+    <value>Review {0}</value>
+  </data>
+  <data name="ConnectedSuppliers_FilterAttention" xml:space="preserve">
+    <value>Attention {0}</value>
+  </data>
+  <data name="ConnectedSuppliers_StatusReady" xml:space="preserve">
+    <value>Ready</value>
+  </data>
+  <data name="ConnectedSuppliers_ReadyToOrder" xml:space="preserve">
+    <value>Ready to order</value>
+  </data>
+  <data name="ConnectedSuppliers_StatusNew" xml:space="preserve">
+    <value>New</value>
+  </data>
+  <data name="ConnectedSuppliers_StatusReview" xml:space="preserve">
+    <value>Review</value>
+  </data>
+  <data name="ConnectedSuppliers_NeedsAttention" xml:space="preserve">
+    <value>Needs attention</value>
+  </data>
+  <data name="ConnectedSuppliers_MatchedToYourProduct" xml:space="preserve">
+    <value>Matched to your product</value>
+  </data>
+  <data name="ConnectedSuppliers_NotInYourProducts" xml:space="preserve">
+    <value>Not in your products</value>
+  </data>
+  <data name="ConnectedSuppliers_AddToMyProducts" xml:space="preserve">
+    <value>Add to my products</value>
+  </data>
+  <data name="ConnectedSuppliers_PossibleProductInCatalog" xml:space="preserve">
+    <value>Possible product in your catalog</value>
+  </data>
+  <data name="ConnectedSuppliers_SameProduct" xml:space="preserve">
+    <value>Same product</value>
+  </data>
+  <data name="ConnectedSuppliers_AddAsNew" xml:space="preserve">
+    <value>Add as new</value>
+  </data>
+  <data name="ConnectedSuppliers_MoreOptions" xml:space="preserve">
+    <value>More options</value>
+  </data>
+  <data name="ConnectedSuppliers_ManageSupplierProducts" xml:space="preserve">
+    <value>Manage supplier products</value>
+  </data>
+  <data name="ConnectedSuppliers_ConflictMultipleMatch" xml:space="preserve">
+    <value>Product information matches more than one product in your catalog. Review carefully.</value>
+  </data>
+  <data name="ConnectedSuppliers_EvidenceSku" xml:space="preserve">
+    <value>SKU</value>
+  </data>
+  <data name="ConnectedSuppliers_EvidenceUnit" xml:space="preserve">
+    <value>Unit</value>
+  </data>
+  <data name="ConnectedSuppliers_EvidenceName" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="ConnectedSuppliers_EvidenceBarcode" xml:space="preserve">
+    <value>Barcode</value>
+  </data>
+  <data name="ConnectedSuppliers_ReviewConflict" xml:space="preserve">
+    <value>Review</value>
+  </data>
+  <data name="ConnectedSuppliers_ReviewConflictTitle" xml:space="preserve">
+    <value>Review carefully</value>
+  </data>
+  <data name="ConnectedSuppliers_ReadinessSummary" xml:space="preserve">
+    <value>{0} Ready to order / {1} Need review / {2} New products</value>
+  </data>
+  <data name="ConnectedSuppliers_NoReadyProducts" xml:space="preserve">
+    <value>No products are ready to order yet. Manage supplier products to link or add them.</value>
+  </data>
+  <data name="ConnectedSuppliers_AutoLinkedBanner" xml:space="preserve">
+    <value>{0} products were matched automatically.</value>
   </data>
 </root>

@@ -117,6 +117,7 @@ public static class MauiProgram
         services.AddSingleton<IOnboardingPreferenceStore, MauiOnboardingPreferenceStore>();
         services.AddSingleton<IConnectivityService, MauiConnectivityService>();
         services.AddSingleton<BuyerShareDraftState>();
+        services.AddSingleton<PurchaseOrderDraftSession>();
         services.AddSingleton<IQrCodeScanService, MauiQrCodeScanService>();
         services.AddSingleton<IAppInfoService>(_ => new MauiAppInfoService(environmentName));
         services.AddSingleton<ISecureTokenStore, MauiSecureTokenStore>();

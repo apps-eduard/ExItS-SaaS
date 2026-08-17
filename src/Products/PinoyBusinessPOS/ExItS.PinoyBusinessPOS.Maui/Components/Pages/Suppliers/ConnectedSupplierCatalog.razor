@@ -1,4 +1,5 @@
 @page "/suppliers/{SupplierId:guid}/connected-catalog"
+@using System.Globalization
 @using ExItS.DesignSystem.Components.Internal
 @using ExItS.PinoyBusinessPOS.Application.Catalog
 @using ExItS.PinoyBusinessPOS.Application.Common
@@ -10,12 +11,13 @@
 @inject IPosConnectedSupplierClient ConnectedSuppliers
 @inject IPosSupplierClient Suppliers
 @inject IPosCatalogClient Catalog
+@inject ILinkedSupplierProductSyncService LinkedSync
 @inject IConnectivityService Connectivity
 @inject IUtangCapabilityEvaluator Capabilities
 @inject ApiStatusLocalizer ApiLocalizer
 @inject IStringLocalizer<PosResources> L
 
-<StoreHeaderBack Href="@($"/suppliers/{SupplierId:D}")" />
+<StoreHeaderBack Href="@BackHref" />
 
 @if (!_ready)
 {
@@ -26,8 +28,8 @@ else
 <div class="pos-connected-catalog @(_sheetOpen ? "pos-connected-catalog--sheet-open" : null)">
     <Page>
         <header class="pos-connected-catalog__header">
-            <h1 class="pos-connected-catalog__title">@L["ConnectedSuppliers_BrowseProducts"]</h1>
-            <p class="pos-connected-catalog__subtitle">@BrowseSubtitle</p>
+            <h1 class="pos-connected-catalog__title">@L["ConnectedSuppliers_SetupTitle"]</h1>
+            <p class="pos-connected-catalog__subtitle">@SetupSubtitle</p>
         </header>
 
         @if (_offline)
@@ -78,7 +80,7 @@ else
                         </button>
                     }
                 </div>
-                <p class="pos-connected-catalog__hint pos-muted">@L["ConnectedSuppliers_BrowseHint"]</p>
+                <p class="pos-connected-catalog__hint pos-muted">@L["ConnectedSuppliers_SetupHint"]</p>
             </div>
 
             @if (!string.IsNullOrWhiteSpace(_banner))
@@ -91,17 +93,17 @@ else
                 <ErrorState Title="@L["ConnectedSuppliers_Error"]"
                             Message="@_error"
                             RetryLabel="@L["Common_Retry"]"
-                            OnRetry="SearchAsync" />
+                            OnRetry="RefreshReadinessAsync" />
             }
-            else if (_loading && !_searched)
+            else if (_loading && !_loaded)
             {
                 <Spinner />
             }
-            else if (_searched && _items.Count == 0)
+            else if (_loaded && _items.Count == 0)
             {
                 <EmptyState IconName="products"
-                            Title="@(HasQuery ? L["ConnectedSuppliers_NoMatchTitle"] : L["ConnectedSuppliers_CatalogEmptyTitle"])"
-                            Message="@(HasQuery ? L["ConnectedSuppliers_NoMatchMessage"] : L["ConnectedSuppliers_CatalogEmptyMessage"])" />
+                            Title="@L["ConnectedSuppliers_CatalogEmptyTitle"]"
+                            Message="@L["ConnectedSuppliers_CatalogEmptyMessage"]" />
                 <div class="pos-action-grid pos-action-grid--single">
                     <button type="button" class="pos-action-tile" @onclick="GoLinkedProducts">
                         <span class="pos-action-tile__icon" aria-hidden="true">@IconGlyphs.Get("list")</span>
@@ -111,145 +113,255 @@ else
             }
             else
             {
-                @if (_searched)
-                {
-                    <p class="pos-connected-catalog__count pos-muted" role="status">
-                        @string.Format(L["ConnectedSuppliers_CatalogResultCount"].Value, _items.Count)
-                    </p>
-                }
-
-                <div class="pos-connected-catalog__list" role="list">
-                    @foreach (var item in _items)
+                <div class="pos-connected-catalog__chips" role="toolbar" aria-label="@L["ConnectedSuppliers_SetupTitle"]">
+                    <button type="button"
+                            class='@ChipClass("all")'
+                            aria-pressed="@(_filter == "all")"
+                            disabled="@_loading"
+                            @onclick='() => SetFilter("all")'>
+                        @string.Format(L["ConnectedSuppliers_FilterAll"].Value, _readyCount + _newCount + _reviewCount + _conflictCount)
+                    </button>
+                    <button type="button"
+                            class='@ChipClass("ready")'
+                            aria-pressed="@(_filter == "ready")"
+                            disabled="@_loading"
+                            @onclick='() => SetFilter("ready")'>
+                        @string.Format(L["ConnectedSuppliers_FilterReady"].Value, _readyCount)
+                    </button>
+                    <button type="button"
+                            class='@ChipClass("new")'
+                            aria-pressed="@(_filter == "new")"
+                            disabled="@_loading"
+                            @onclick='() => SetFilter("new")'>
+                        @string.Format(L["ConnectedSuppliers_FilterNew"].Value, _newCount)
+                    </button>
+                    <button type="button"
+                            class='@ChipClass("review")'
+                            aria-pressed="@(_filter == "review")"
+                            disabled="@_loading"
+                            @onclick='() => SetFilter("review")'>
+                        @string.Format(L["ConnectedSuppliers_FilterReview"].Value, _reviewCount)
+                    </button>
+                    @if (_conflictCount > 0)
                     {
-                        var link = FindActiveLink(item.ProductId);
-                        <article role="listitem" class="pos-connected-catalog__row">
-                            <div class="pos-connected-catalog__row-body">
-                                <span class="pos-connected-catalog__name">@item.NameSnapshot</span>
-                                <span class="pos-connected-catalog__meta pos-muted">
-                                    @(item.SkuSnapshot ?? L["ConnectedSuppliers_NoSku"])
-                                    · @item.UnitOfMeasureCode
-                                </span>
-                                <div class="pos-connected-catalog__price">
-                                    <span class="pos-connected-catalog__price-label">@L["ConnectedSuppliers_PoPriceLabel"]</span>
-                                    <MoneyDisplay Amount="@item.SupplierOrderPrice" CurrencyCode="PHP" />
-                                </div>
-                                @if (link is not null)
-                                {
-                                    var buyer = FindBuyerProduct(link.BuyerProductId);
-                                    <div class="pos-connected-catalog__linked" role="status">
-                                        <span class="pos-connected-catalog__badge">@L["ConnectedSuppliers_AlreadyLinked"]</span>
-                                        <span>
-                                            @string.Format(L["ConnectedSuppliers_LinkedTo"].Value, buyer?.Name ?? link.SupplierNameSnapshot)
-                                        </span>
-                                        @if (!string.IsNullOrWhiteSpace(buyer?.Sku))
-                                        {
-                                            <span class="pos-muted">@string.Format(L["ConnectedSuppliers_BuyerSkuLabel"].Value, buyer.Sku)</span>
-                                        }
-                                    </div>
-                                }
-                                else if (!item.IsOrderable)
-                                {
-                                    <span class="pos-connected-catalog__badge pos-connected-catalog__badge--muted">
-                                        @L["ConnectedSuppliers_NotOrderable"]
-                                    </span>
-                                }
-                            </div>
-                            @if (link is not null)
-                            {
-                                <button type="button"
-                                        class="pos-action-tile pos-connected-catalog__link-btn"
-                                        @onclick="() => ViewLinkedProduct(link.BuyerProductId)">
-                                    <span class="pos-action-tile__label">@L["ConnectedSuppliers_ViewLinkedProduct"]</span>
-                                </button>
-                            }
-                            else if (item.IsOrderable)
-                            {
-                                <button type="button"
-                                        class="pos-action-tile pos-action-tile--primary pos-connected-catalog__link-btn"
-                                        disabled="@(_busy || _loading)"
-                                        @onclick="() => BeginUseProductAsync(item)">
-                                    <span class="pos-action-tile__label">@L["ConnectedSuppliers_UseProduct"]</span>
-                                </button>
-                            }
-                        </article>
+                        <button type="button"
+                                class='@ChipClass("conflict")'
+                                aria-pressed="@IsAttentionFilter"
+                                disabled="@_loading"
+                                @onclick='() => SetFilter("conflict")'>
+                            @string.Format(L["ConnectedSuppliers_FilterAttention"].Value, _conflictCount)
+                        </button>
                     }
                 </div>
+
+                @if (FilteredItems.Count == 0)
+                {
+                    <EmptyState IconName="products"
+                                Title="@(HasQuery ? L["ConnectedSuppliers_NoMatchTitle"] : L["ConnectedSuppliers_CatalogEmptyTitle"])"
+                                Message="@(HasQuery ? L["ConnectedSuppliers_NoMatchMessage"] : L["ConnectedSuppliers_CatalogEmptyMessage"])" />
+                }
+                else
+                {
+                    <p class="pos-connected-catalog__count pos-muted" role="status">
+                        @string.Format(L["ConnectedSuppliers_CatalogResultCount"].Value, FilteredItems.Count)
+                    </p>
+
+                    <div class="pos-connected-catalog__list" role="list">
+                        @foreach (var item in FilteredItems)
+                        {
+                            var bucket = StatusBucket(item.Status);
+                            <article role="listitem" class="pos-connected-catalog__row">
+                                <div class="pos-connected-catalog__row-body">
+                                    <span class="pos-connected-catalog__name">@item.SupplierName</span>
+                                    <span class="pos-connected-catalog__meta pos-muted">
+                                        @(item.SupplierSku ?? L["ConnectedSuppliers_NoSku"])
+                                        · @item.UnitOfMeasureCode
+                                    </span>
+                                    <div class="pos-connected-catalog__price">
+                                        <span class="pos-connected-catalog__price-label">@L["ConnectedSuppliers_PoPriceLabel"]</span>
+                                        <MoneyDisplay Amount="@item.PoPrice" CurrencyCode="PHP" />
+                                    </div>
+
+                                    @if (bucket == "ready")
+                                    {
+                                        <div class="pos-connected-catalog__linked" role="status">
+                                            <span class="pos-connected-catalog__badge">✓ @L["ConnectedSuppliers_StatusReady"]</span>
+                                            @if (!string.IsNullOrWhiteSpace(item.CandidateBuyerProductName)
+                                                 || item.LinkedBuyerProductId is not null)
+                                            {
+                                                <span class="pos-muted">@L["ConnectedSuppliers_MatchedToYourProduct"]</span>
+                                                @if (!string.IsNullOrWhiteSpace(item.CandidateBuyerProductName))
+                                                {
+                                                    <span>@item.CandidateBuyerProductName</span>
+                                                }
+                                            }
+                                        </div>
+                                    }
+                                    else if (bucket == "new")
+                                    {
+                                        <div class="pos-connected-catalog__linked" role="status">
+                                            <span class="pos-connected-catalog__badge pos-connected-catalog__badge--new">
+                                                @L["ConnectedSuppliers_StatusNew"]
+                                            </span>
+                                            <span>@L["ConnectedSuppliers_NotInYourProducts"]</span>
+                                        </div>
+                                    }
+                                    else if (bucket == "review")
+                                    {
+                                        <div class="pos-connected-catalog__linked" role="status">
+                                            <span class="pos-connected-catalog__badge pos-connected-catalog__badge--review">
+                                                @L["ConnectedSuppliers_StatusReview"]
+                                            </span>
+                                            <span class="pos-connected-catalog__section-title">
+                                                @L["ConnectedSuppliers_PossibleProductInCatalog"]
+                                            </span>
+                                            @if (!string.IsNullOrWhiteSpace(item.CandidateBuyerProductName))
+                                            {
+                                                <strong>@item.CandidateBuyerProductName</strong>
+                                            }
+                                            <div class="pos-connected-catalog__evidence" aria-label="@L["ConnectedSuppliers_StatusReview"]">
+                                                <span>@Mark(item.SkuMatched) @L["ConnectedSuppliers_EvidenceSku"]</span>
+                                                <span>@Mark(item.UnitCompatible) @L["ConnectedSuppliers_EvidenceUnit"]</span>
+                                                <span>@(item.NameMatched ? "✓" : "~") @L["ConnectedSuppliers_EvidenceName"]</span>
+                                                <span>@(item.BarcodeMatched ? "✓" : "–") @L["ConnectedSuppliers_EvidenceBarcode"]</span>
+                                            </div>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="pos-connected-catalog__linked" role="status">
+                                            <span class="pos-connected-catalog__badge pos-connected-catalog__badge--attention">
+                                                @L["ConnectedSuppliers_NeedsAttention"]
+                                            </span>
+                                            <span>@L["ConnectedSuppliers_ConflictMultipleMatch"]</span>
+                                        </div>
+                                    }
+                                </div>
+
+                                @if (bucket == "ready")
+                                {
+                                    @if (item.LinkedBuyerProductId is Guid buyerId)
+                                    {
+                                        <button type="button"
+                                                class="pos-action-tile pos-connected-catalog__link-btn"
+                                                @onclick="() => ViewLinkedProduct(buyerId)">
+                                            <span class="pos-action-tile__label">@L["ConnectedSuppliers_ViewLinkedProduct"]</span>
+                                        </button>
+                                    }
+                                }
+                                else if (bucket == "new")
+                                {
+                                    @if (CanManageCatalog)
+                                    {
+                                        <button type="button"
+                                                class="pos-action-tile pos-action-tile--primary pos-connected-catalog__link-btn"
+                                                disabled="@(_busy || _loading)"
+                                                @onclick="() => QuickAddNewAsync(item)">
+                                            <span class="pos-action-tile__label">@L["ConnectedSuppliers_AddToMyProducts"]</span>
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <p class="pos-muted">@L["ConnectedSuppliers_CatalogPermissionRequired"]</p>
+                                    }
+                                }
+                                else if (bucket == "review")
+                                {
+                                    <div class="pos-connected-catalog__row-actions">
+                                        @if (item.CandidateBuyerProductId is Guid candidateId)
+                                        {
+                                            <button type="button"
+                                                    class="pos-action-tile pos-action-tile--primary"
+                                                    disabled="@(_busy || _loading)"
+                                                    @onclick="() => ConfirmLinkExistingAsync(item, candidateId)">
+                                                <span class="pos-action-tile__label">@L["ConnectedSuppliers_SameProduct"]</span>
+                                            </button>
+                                        }
+                                        @if (CanManageCatalog)
+                                        {
+                                            <button type="button"
+                                                    class="pos-action-tile"
+                                                    disabled="@(_busy || _loading)"
+                                                    @onclick="() => BeginAddAsNew(item)">
+                                                <span class="pos-action-tile__label">@L["ConnectedSuppliers_AddAsNew"]</span>
+                                            </button>
+                                        }
+                                    </div>
+                                    <details class="pos-connected-catalog__more">
+                                        <summary>@L["ConnectedSuppliers_MoreOptions"]</summary>
+                                        <button type="button"
+                                                class="pos-action-tile"
+                                                disabled="@(_busy || _loading)"
+                                                @onclick="() => BeginChooseAnother(item)">
+                                            <span class="pos-action-tile__label">@L["ConnectedSuppliers_ChooseAnotherProduct"]</span>
+                                        </button>
+                                    </details>
+                                }
+                                else
+                                {
+                                    <button type="button"
+                                            class="pos-action-tile pos-action-tile--primary pos-connected-catalog__link-btn"
+                                            disabled="@(_busy || _loading)"
+                                            @onclick="() => BeginConflictReview(item)">
+                                        <span class="pos-action-tile__label">@L["ConnectedSuppliers_ReviewConflict"]</span>
+                                    </button>
+                                }
+                            </article>
+                        }
+                    </div>
+                }
             }
         }
     </Page>
 
-    @if (_pendingExposure is not null && _flowMode is "match" or "choose")
+    @if (_pendingItem is not null && _flowMode is "choose" or "conflict")
     {
-        <div class="pos-denom-sheet" role="dialog" aria-modal="true" aria-label="@L["ConnectedSuppliers_UseSupplierProductTitle"]">
+        <div class="pos-denom-sheet" role="dialog" aria-modal="true" aria-label="@ChooseSheetTitle">
             <div class="pos-denom-sheet__panel pos-denom-sheet__panel--fit">
                 <header class="pos-denom-sheet__header">
                     <div>
-                        <h2 class="pos-denom-sheet__title">@L["ConnectedSuppliers_UseSupplierProductTitle"]</h2>
-                        <p class="pos-connected-catalog__sheet-product">@_pendingExposure.NameSnapshot</p>
+                        <h2 class="pos-denom-sheet__title">@ChooseSheetTitle</h2>
+                        <p class="pos-connected-catalog__sheet-product">@_pendingItem.SupplierName</p>
                         <p class="pos-muted pos-connected-catalog__sheet-meta">
-                            @L["ConnectedSuppliers_SupplierSkuLabel"]: @(_pendingExposure.SkuSnapshot ?? L["ConnectedSuppliers_NoSku"])
-                            · @_pendingExposure.UnitOfMeasureCode
+                            @L["ConnectedSuppliers_SupplierSkuLabel"]: @(_pendingItem.SupplierSku ?? L["ConnectedSuppliers_NoSku"])
+                            · @_pendingItem.UnitOfMeasureCode
                         </p>
-                        <div class="pos-connected-catalog__price">
-                            <span class="pos-connected-catalog__price-label">@L["ConnectedSuppliers_PoPriceLabel"]</span>
-                            <MoneyDisplay Amount="@_pendingExposure.SupplierOrderPrice" CurrencyCode="PHP" />
-                        </div>
+                        @if (_flowMode == "conflict")
+                        {
+                            <p class="pos-connected-catalog__banner" role="status">@L["ConnectedSuppliers_ConflictMultipleMatch"]</p>
+                            @if (!string.IsNullOrWhiteSpace(_pendingItem.MatchDetails))
+                            {
+                                <p class="pos-muted">@_pendingItem.MatchDetails</p>
+                            }
+                        }
                     </div>
                 </header>
                 <div class="pos-denom-sheet__list pos-denom-sheet__list--fit">
-                    @if (_flowMode == "match" && _matchCandidates.Count == 1)
+                    @if (!_showBuyerCatalog)
                     {
-                        var match = _matchCandidates[0];
-                        <p class="pos-connected-catalog__section-title">@L["ConnectedSuppliers_PossibleMatch"]</p>
-                        <div class="pos-connected-catalog__candidate">
-                            <strong>@match.Name</strong>
-                            <span class="pos-muted">
-                                @(match.Sku ?? L["ConnectedSuppliers_NoSku"]) · @match.UnitOfMeasure
-                            </span>
-                            <div class="pos-connected-catalog__price">
-                                <span class="pos-connected-catalog__price-label">@L["ConnectedSuppliers_SellingPriceLabel"]</span>
-                                <MoneyDisplay Amount="@match.SellingPrice" CurrencyCode="PHP" />
-                            </div>
-                        </div>
-                        <button type="button" class="pos-action-tile pos-action-tile--primary" disabled="@_busy" @onclick="() => ConfirmLinkExistingAsync(match.ProductId)">
-                            <span class="pos-action-tile__label">@L["ConnectedSuppliers_LinkExistingProduct"]</span>
-                        </button>
-                        <p class="pos-connected-catalog__section-title">@L["ConnectedSuppliers_OtherOptions"]</p>
-                        <button type="button" class="pos-action-tile" disabled="@_busy" @onclick="OpenChooseExisting">
+                        <button type="button" class="pos-action-tile" disabled="@_busy" @onclick="RevealBuyerCatalog">
                             <span class="pos-action-tile__label">@L["ConnectedSuppliers_ChooseAnotherProduct"]</span>
                         </button>
                         @if (CanManageCatalog)
                         {
-                            <button type="button" class="pos-action-tile" disabled="@_busy" @onclick="OpenCreateForm">
-                                <span class="pos-action-tile__label">@L["ConnectedSuppliers_CreateNewProduct"]</span>
+                            <button type="button" class="pos-action-tile" disabled="@_busy" @onclick="() => BeginAddAsNew(_pendingItem)">
+                                <span class="pos-action-tile__label">@L["ConnectedSuppliers_AddAsNew"]</span>
                             </button>
                         }
-                        else
-                        {
-                            <p class="pos-muted">@L["ConnectedSuppliers_CatalogPermissionRequired"]</p>
-                        }
-                    }
-                    else if (_flowMode == "match" && _matchCandidates.Count == 0)
-                    {
-                        <p>@L["ConnectedSuppliers_NoMatchInCatalog"]</p>
-                        @if (CanManageCatalog)
-                        {
-                            <button type="button" class="pos-action-tile pos-action-tile--primary" disabled="@_busy" @onclick="OpenCreateForm">
-                                <span class="pos-action-tile__label">@L["ConnectedSuppliers_CreateNewProductAndLink"]</span>
-                            </button>
-                        }
-                        else
-                        {
-                            <p class="pos-muted">@L["ConnectedSuppliers_CatalogPermissionRequired"]</p>
-                        }
-                        <button type="button" class="pos-action-tile" disabled="@_busy" @onclick="OpenChooseExisting">
-                            <span class="pos-action-tile__label">@L["ConnectedSuppliers_ChooseExistingProduct"]</span>
-                        </button>
                     }
                     else
                     {
                         <p class="pos-connected-catalog__section-title">@L["ConnectedSuppliers_PossibleMatches"]</p>
-                        @foreach (var match in (_flowMode == "choose" ? BuyerCatalogChoicesAsCandidates : _matchCandidates))
+                        <label class="pos-connected-catalog__field">
+                            <span class="visually-hidden">@L["ConnectedSuppliers_SearchPlaceholder"]</span>
+                            <input class="pos-connected-catalog__input"
+                                   type="search"
+                                   value="@_chooseQuery"
+                                   placeholder="@L["ConnectedSuppliers_SearchPlaceholder"]"
+                                   disabled="@_busy"
+                                   @oninput="OnChooseSearchInput" />
+                        </label>
+                        @foreach (var match in FilteredBuyerChoices)
                         {
                             <label class="pos-connected-catalog__radio">
                                 <input type="radio"
@@ -265,15 +377,9 @@ else
                         <button type="button"
                                 class="pos-action-tile pos-action-tile--primary"
                                 disabled="@(_busy || _selectedBuyerProductId is null)"
-                                @onclick="() => ConfirmLinkExistingAsync(_selectedBuyerProductId!.Value)">
+                                @onclick="() => ConfirmLinkExistingAsync(_pendingItem, _selectedBuyerProductId!.Value)">
                             <span class="pos-action-tile__label">@L["ConnectedSuppliers_LinkSelectedProduct"]</span>
                         </button>
-                        @if (CanManageCatalog)
-                        {
-                            <button type="button" class="pos-action-tile" disabled="@_busy" @onclick="OpenCreateForm">
-                                <span class="pos-action-tile__label">@L["ConnectedSuppliers_CreateInstead"]</span>
-                            </button>
-                        }
                     }
                     @if (!string.IsNullOrWhiteSpace(_linkError))
                     {
@@ -289,7 +395,7 @@ else
         </div>
     }
 
-    @if (_pendingExposure is not null && _flowMode == "create")
+    @if (_pendingItem is not null && _flowMode == "create")
     {
         <div class="pos-denom-sheet" role="dialog" aria-modal="true" aria-label="@L["ConnectedSuppliers_CreateProductTitle"]">
             <div class="pos-denom-sheet__panel pos-denom-sheet__panel--fit">
@@ -297,13 +403,13 @@ else
                     <div>
                         <h2 class="pos-denom-sheet__title">@L["ConnectedSuppliers_CreateProductTitle"]</h2>
                         <p class="pos-muted">@L["ConnectedSuppliers_FromSupplier"]</p>
-                        <p class="pos-connected-catalog__sheet-product">@_pendingExposure.NameSnapshot</p>
+                        <p class="pos-connected-catalog__sheet-product">@_pendingItem.SupplierName</p>
                         <p class="pos-muted pos-connected-catalog__sheet-meta">
-                            @(_pendingExposure.SkuSnapshot ?? L["ConnectedSuppliers_NoSku"]) · @_pendingExposure.UnitOfMeasureCode
+                            @(_pendingItem.SupplierSku ?? L["ConnectedSuppliers_NoSku"]) · @_pendingItem.UnitOfMeasureCode
                         </p>
                         <div class="pos-connected-catalog__price">
                             <span class="pos-connected-catalog__price-label">@L["ConnectedSuppliers_PoPriceLabel"]</span>
-                            <MoneyDisplay Amount="@_pendingExposure.SupplierOrderPrice" CurrencyCode="PHP" />
+                            <MoneyDisplay Amount="@_pendingItem.PoPrice" CurrencyCode="PHP" />
                         </div>
                     </div>
                 </header>
@@ -367,111 +473,23 @@ else
         position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
         overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
     }
-    .pos-connected-catalog { width: 100%; }
-    .pos-connected-catalog__header { margin-bottom: var(--exits-space-3, 0.75rem); }
-    .pos-connected-catalog__title {
-        margin: 0; font-size: 1.25rem; font-weight: 700; line-height: 1.25;
-        color: var(--exits-text, #15201a);
-    }
-    .pos-connected-catalog__subtitle {
-        margin: 0.35rem 0 0; font-size: 0.875rem; line-height: 1.4;
-        color: var(--exits-text-muted, #5b6b62);
-    }
-    .pos-connected-catalog__search { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 0.75rem; }
-    .pos-connected-catalog__search-field {
-        display: flex; align-items: center; gap: 0.5rem; width: 100%; min-width: 0;
-        min-height: 2.75rem; padding: 0 0.85rem;
-        border: 1px solid var(--exits-border, #c9d4cd); border-radius: var(--exits-radius-md, 0.5rem);
-        background: var(--exits-surface, #fff);
-    }
-    .pos-connected-catalog__search-icon { display: inline-flex; flex-shrink: 0; width: 1.15rem; height: 1.15rem; color: var(--exits-text-muted, #5b6b62); }
-    .pos-connected-catalog__search-icon svg { width: 100%; height: 100%; display: block; }
-    .pos-connected-catalog__search-input {
-        appearance: none; flex: 1 1 auto; min-width: 0; border: 0; outline: none;
-        background: transparent; color: var(--exits-text, #15201a); font: inherit; font-size: 1rem; padding: 0.65rem 0;
-    }
-    .pos-connected-catalog__clear {
-        appearance: none; flex-shrink: 0; border: 0; background: transparent;
-        color: var(--exits-text-muted, #5b6b62); cursor: pointer; font: inherit; font-size: 1.35rem;
-        line-height: 1; min-height: 2.5rem; min-width: 2.5rem; padding: 0;
-    }
-    .pos-connected-catalog__hint { margin: 0; font-size: 0.75rem; line-height: 1.4; }
-    .pos-connected-catalog__banner { margin: 0 0 0.65rem; font-size: 0.8125rem; }
-    .pos-connected-catalog__count { margin: 0 0 0.5rem; font-size: 0.8125rem; }
-    .pos-connected-catalog__list { display: flex; flex-direction: column; gap: 0.5rem; }
-    .pos-connected-catalog__row {
-        display: flex; flex-direction: column; gap: 0.55rem;
-        padding: 0.75rem 0.8rem; border: 1px solid var(--exits-border, #c9d4cd);
-        border-radius: var(--exits-radius-md, 0.5rem); background: var(--exits-surface, #fff);
-    }
-    .pos-connected-catalog__row-body { display: flex; flex-direction: column; gap: 0.2rem; }
-    .pos-connected-catalog__name { font-size: 0.9875rem; font-weight: 650; color: var(--exits-text, #15201a); }
-    .pos-connected-catalog__meta { font-size: 0.8125rem; line-height: 1.35; }
-    .pos-connected-catalog__price {
-        display: flex; flex-direction: column; gap: 0.05rem; margin-top: 0.15rem;
-    }
-    .pos-connected-catalog__price-label {
-        font-size: 0.6875rem; font-weight: 650; color: var(--exits-text-muted, #5b6b62);
-    }
-    .pos-connected-catalog__linked {
-        display: flex; flex-direction: column; gap: 0.15rem; margin-top: 0.25rem; font-size: 0.8125rem;
-    }
-    .pos-connected-catalog__badge {
-        display: inline-flex; align-self: flex-start; margin-top: 0.15rem; padding: 0.12rem 0.45rem;
-        border-radius: 0.35rem; font-size: 0.6875rem; font-weight: 650;
-        border: 1px solid #9cc9b0; background: #e8f5ee; color: #145a3a;
-    }
-    .pos-connected-catalog__badge--muted {
-        border-color: var(--exits-border, #c9d4cd); background: var(--exits-bg, #f3f6f4);
-        color: var(--exits-text-muted, #5b6b62);
-    }
-    .pos-connected-catalog__link-btn { width: 100%; min-height: 2.75rem; }
-    .pos-connected-catalog__sheet-product { margin: 0.25rem 0 0; font-weight: 700; }
-    .pos-connected-catalog__sheet-meta { margin: 0.15rem 0 0; font-size: 0.8125rem; }
-    .pos-connected-catalog__sheet-bar {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 0.5rem;
-        align-items: stretch;
-    }
-    .pos-connected-catalog__sheet-bar .pos-action-tile {
-        width: auto;
-        min-width: 0;
-        justify-content: center;
-        text-align: center;
-    }
-    .pos-connected-catalog__sheet-bar .pos-action-tile__label {
-        text-align: center;
-    }
-    .pos-connected-catalog__section-title { margin: 0.55rem 0 0.35rem; font-size: 0.8125rem; font-weight: 700; }
-    .pos-connected-catalog__candidate {
-        display: flex; flex-direction: column; gap: 0.15rem; padding: 0.55rem 0.65rem;
-        border: 1px solid var(--exits-border, #c9d4cd); border-radius: 0.45rem; margin-bottom: 0.45rem;
-    }
-    .pos-connected-catalog__radio {
-        display: grid; grid-template-columns: auto 1fr; gap: 0.55rem; align-items: start;
-        padding: 0.45rem 0; font-size: 0.875rem;
-    }
-    .pos-connected-catalog__field { display: flex; flex-direction: column; gap: 0.25rem; margin: 0 0 0.55rem; font-size: 0.8125rem; font-weight: 650; }
-    .pos-connected-catalog__input {
-        width: 100%; min-height: 2.75rem; padding: 0.45rem 0.55rem; font: inherit; font-weight: 500;
-        border: 1px solid var(--exits-border, #c9d4cd); border-radius: 0.45rem; background: #fff;
-    }
-    .pos-connected-catalog__money-input { display: flex; align-items: center; gap: 0.4rem; }
-    .pos-connected-catalog__money-input span { font-weight: 700; color: var(--exits-text-muted, #5b6b62); }
 </style>
 
 @code {
     [Parameter] public Guid SupplierId { get; set; }
     [SupplyParameterFromQuery(Name = "relationshipId")] public Guid RelationshipId { get; set; }
+    [SupplyParameterFromQuery(Name = "filter")] public string? FilterQuery { get; set; }
+    [SupplyParameterFromQuery(Name = "returnUrl")] public string? ReturnUrl { get; set; }
 
     private bool _ready;
     private bool _offline;
     private bool _loading;
     private bool _busy;
-    private bool _searched;
+    private bool _loaded;
     private Guid _relationshipId;
+    private string _filter = "all";
     private string? _query;
+    private string? _chooseQuery;
     private string? _error;
     private string? _banner;
     private string? _linkError;
@@ -483,28 +501,94 @@ else
     private string _createSellingPriceText = "";
     private string _createCategoryId = "";
     private Guid? _selectedBuyerProductId;
-    private SupplierProductExposureDto? _pendingExposure;
-    private IReadOnlyList<SupplierProductExposureDto> _items = [];
-    private IReadOnlyList<BuyerSupplierProductLinkDto> _links = [];
-    private IReadOnlyList<BuyerProductMatchCandidateDto> _matchCandidates = [];
+    private bool _showBuyerCatalog;
+    private CatalogProductReadinessItemDto? _pendingItem;
+    private IReadOnlyList<CatalogProductReadinessItemDto> _items = [];
+    private int _readyCount;
+    private int _newCount;
+    private int _reviewCount;
+    private int _conflictCount;
     private List<PosCatalogProductDto> _buyerProducts = [];
     private List<PosProductCategoryDto> _categories = [];
-    private CancellationTokenSource? _searchCts;
 
     private bool HasQuery => !string.IsNullOrWhiteSpace(_query);
     private bool CanManageCatalog => Capabilities.IsAllowed(UtangCapability.ManageCatalog);
-    private bool _sheetOpen => _pendingExposure is not null;
-    private string BrowseSubtitle =>
+    private bool _sheetOpen => _pendingItem is not null;
+    private bool IsAttentionFilter => _filter is "conflict" or "attention";
+    private string SetupSubtitle =>
         string.IsNullOrWhiteSpace(_supplierDisplayName)
-            ? L["ConnectedSuppliers_ServerSearchHelp"]
-            : string.Format(L["ConnectedSuppliers_BrowseSharedWith"].Value, _supplierDisplayName);
+            ? L["ConnectedSuppliers_SetupSubtitle"]
+            : string.Format(L["ConnectedSuppliers_SetupSubtitleNamed"].Value, _supplierDisplayName);
 
-    private IReadOnlyList<BuyerProductMatchCandidateDto> BuyerCatalogChoicesAsCandidates =>
-        _buyerProducts
-            .Where(x => string.Equals(x.Status, "Active", StringComparison.OrdinalIgnoreCase))
-            .Select(x => new BuyerProductMatchCandidateDto(
-                x.ProductId, x.Name, x.Sku, x.UnitOfMeasure, x.SellingPrice, "Catalog"))
-            .ToList();
+    private string BackHref
+    {
+        get
+        {
+            if (TrySafeReturnUrl(out var safe))
+            {
+                return safe;
+            }
+
+            return $"/suppliers/{SupplierId:D}";
+        }
+    }
+
+    private string ChooseSheetTitle =>
+        _flowMode == "conflict"
+            ? L["ConnectedSuppliers_ReviewConflictTitle"]
+            : L["ConnectedSuppliers_ChooseAnotherProduct"];
+
+    private IReadOnlyList<CatalogProductReadinessItemDto> FilteredItems
+    {
+        get
+        {
+            IEnumerable<CatalogProductReadinessItemDto> q = _items;
+            q = _filter switch
+            {
+                "ready" => q.Where(x => StatusBucket(x.Status) == "ready"),
+                "new" => q.Where(x => StatusBucket(x.Status) == "new"),
+                "review" => q.Where(x => StatusBucket(x.Status) == "review"),
+                "conflict" or "attention" => q.Where(x => StatusBucket(x.Status) == "conflict"),
+                _ => q
+            };
+
+            if (HasQuery)
+            {
+                var term = _query!.Trim();
+                q = q.Where(x =>
+                    x.SupplierName.Contains(term, StringComparison.OrdinalIgnoreCase)
+                    || (!string.IsNullOrWhiteSpace(x.SupplierSku)
+                        && x.SupplierSku.Contains(term, StringComparison.OrdinalIgnoreCase)));
+            }
+
+            return q.OrderBy(x => x.SupplierName, StringComparer.OrdinalIgnoreCase).ToList();
+        }
+    }
+
+    private IReadOnlyList<BuyerProductMatchCandidateDto> FilteredBuyerChoices
+    {
+        get
+        {
+            var active = _buyerProducts
+                .Where(x => string.Equals(x.Status, "Active", StringComparison.OrdinalIgnoreCase))
+                .Select(x => new BuyerProductMatchCandidateDto(
+                    x.ProductId, x.Name, x.Sku, x.UnitOfMeasure, x.SellingPrice, "Catalog"));
+
+            if (string.IsNullOrWhiteSpace(_chooseQuery))
+            {
+                return active.Take(40).ToList();
+            }
+
+            var term = _chooseQuery.Trim();
+            return active
+                .Where(x =>
+                    x.Name.Contains(term, StringComparison.OrdinalIgnoreCase)
+                    || (!string.IsNullOrWhiteSpace(x.Sku)
+                        && x.Sku.Contains(term, StringComparison.OrdinalIgnoreCase)))
+                .Take(40)
+                .ToList();
+        }
+    }
 
     protected override async Task OnInitializedAsync() => await InitializeAsync();
 
@@ -525,6 +609,7 @@ else
 
         _offline = !await Connectivity.IsConnectedAsync();
         _relationshipId = RelationshipId;
+        _filter = NormalizeFilter(FilterQuery);
         if (_relationshipId == Guid.Empty)
         {
             await ResolveRelationshipIdAsync();
@@ -534,7 +619,7 @@ else
         {
             await LoadBuyerCatalogAsync();
             await LoadCategoriesAsync();
-            await SearchAsync();
+            await RefreshReadinessAsync(autoLinkFirst: true);
         }
 
         _ready = true;
@@ -578,40 +663,35 @@ else
     private async Task OnSearchInput(ChangeEventArgs args)
     {
         _query = args.Value?.ToString();
-        _searchCts?.Cancel();
-        _searchCts = new CancellationTokenSource();
-        var token = _searchCts.Token;
-        try
-        {
-            await Task.Delay(350, token);
-            await SearchAsync();
-        }
-        catch (TaskCanceledException)
-        {
-        }
+        await InvokeAsync(StateHasChanged);
     }
 
     private async Task ClearSearchAsync()
     {
         _query = null;
-        await SearchAsync();
+        await InvokeAsync(StateHasChanged);
     }
 
-    private async Task OnSearchKeyDown(KeyboardEventArgs args)
-    {
-        if (args.Key is "Enter")
-        {
-            _searchCts?.Cancel();
-            await SearchAsync();
-        }
-    }
+    private Task OnSearchKeyDown(KeyboardEventArgs args) => Task.CompletedTask;
 
-    private async Task SearchAsync()
+    private void OnChooseSearchInput(ChangeEventArgs args) =>
+        _chooseQuery = args.Value?.ToString();
+
+    private void SetFilter(string filter) => _filter = NormalizeFilter(filter);
+
+    private string ChipClass(string filter) =>
+        _filter == filter || (filter == "conflict" && _filter == "attention")
+            ? "pos-connected-catalog__chip pos-connected-catalog__chip--selected"
+            : "pos-connected-catalog__chip";
+
+    private async Task RefreshReadinessAsync() => await RefreshReadinessAsync(autoLinkFirst: true);
+
+    private async Task RefreshReadinessAsync(bool autoLinkFirst)
     {
         if (_relationshipId == Guid.Empty)
         {
             _error = L["ConnectedSuppliers_RelationshipMissing"];
-            _searched = true;
+            _loaded = true;
             _items = [];
             return;
         }
@@ -621,7 +701,7 @@ else
             _offline = true;
             _error = null;
             _items = [];
-            _searched = true;
+            _loaded = true;
             return;
         }
 
@@ -630,65 +710,81 @@ else
         _error = null;
         try
         {
-            var catalog = await ConnectedSuppliers.SearchCatalogAsync(
-                _relationshipId,
-                string.IsNullOrWhiteSpace(_query) ? null : _query.Trim(),
-                page: 1,
-                pageSize: 25);
-
-            if (!catalog.IsSuccess || catalog.Data is null)
+            if (autoLinkFirst)
             {
-                var described = ApiLocalizer.Describe(catalog.Status, catalog.Error);
+                var auto = await ConnectedSuppliers.AutoLinkExactMatchesAsync(_relationshipId);
+                if (auto.IsSuccess && auto.Data is not null && auto.Data.LinkedNow > 0)
+                {
+                    _banner = string.Format(L["ConnectedSuppliers_AutoLinkedBanner"].Value, auto.Data.LinkedNow);
+                    await LinkedSync.SyncAsync(_relationshipId);
+                }
+            }
+
+            var readiness = await ConnectedSuppliers.ClassifyCatalogReadinessAsync(_relationshipId);
+            if (!readiness.IsSuccess || readiness.Data is null)
+            {
+                var described = ApiLocalizer.Describe(readiness.Status, readiness.Error);
                 _error = described.Message;
                 _items = [];
-                _links = [];
                 return;
             }
 
-            _items = catalog.Data.Items
-                .OrderBy(x => x.NameSnapshot, StringComparer.OrdinalIgnoreCase)
-                .ToList();
-
-            var links = await ConnectedSuppliers.ListLinksAsync(_relationshipId);
-            _links = links.IsSuccess && links.Data is not null
-                ? links.Data.Where(x => x.IsActive).ToList()
-                : [];
+            _items = readiness.Data.Items;
+            _readyCount = readiness.Data.Ready;
+            _newCount = readiness.Data.New;
+            _reviewCount = readiness.Data.Review;
+            _conflictCount = readiness.Data.Conflict;
         }
         finally
         {
             _loading = false;
-            _searched = true;
+            _loaded = true;
         }
     }
 
-    private BuyerSupplierProductLinkDto? FindActiveLink(Guid supplierProductId) =>
-        _links.FirstOrDefault(x => x.SupplierProductId == supplierProductId && x.IsActive);
-
-    private PosCatalogProductDto? FindBuyerProduct(Guid buyerProductId) =>
-        _buyerProducts.FirstOrDefault(x => x.ProductId == buyerProductId);
-
-    private async Task BeginUseProductAsync(SupplierProductExposureDto exposure)
+    private async Task AfterLinkSucceededAsync(string banner)
     {
-        _pendingExposure = exposure;
-        _linkError = null;
-        _flowMode = "match";
-        _selectedBuyerProductId = null;
+        _banner = banner;
+        CancelFlow();
+        await LinkedSync.SyncAsync(_relationshipId);
+        await LoadBuyerCatalogAsync();
+        await RefreshReadinessAsync(autoLinkFirst: false);
+    }
+
+    private async Task QuickAddNewAsync(CatalogProductReadinessItemDto item)
+    {
+        if (!CanManageCatalog) return;
         _busy = true;
+        _linkError = null;
         try
         {
-            var matches = await ConnectedSuppliers.SuggestBuyerProductMatchesAsync(_relationshipId, exposure.ExposureId);
-            if (matches.IsSuccess && matches.Data is not null)
+            var sellingPrice = item.PoPrice > 0m ? item.PoPrice : 0m;
+            if (sellingPrice <= 0m)
             {
-                _matchCandidates = matches.Data.Candidates;
-                if (_matchCandidates.Count == 1)
-                {
-                    _selectedBuyerProductId = _matchCandidates[0].ProductId;
-                }
+                BeginAddAsNew(item);
+                return;
             }
-            else
+
+            var result = await ConnectedSuppliers.CreateBuyerProductAndLinkAsync(
+                _relationshipId,
+                new CreateBuyerProductAndLinkRequest(
+                    item.ExposureId,
+                    item.SupplierName,
+                    item.UnitOfMeasureCode,
+                    sellingPrice,
+                    string.IsNullOrWhiteSpace(item.SupplierSku) ? null : item.SupplierSku.Trim()));
+            if (!result.IsSuccess || result.Data is null)
             {
-                _matchCandidates = [];
+                BeginAddAsNew(item);
+                _linkError = result.Error?.Detail ?? L["ConnectedSuppliers_LinkFailed"];
+                return;
             }
+
+            var supplierLabel = _supplierDisplayName ?? L["ConnectedSuppliers_SetupTitle"].Value;
+            var banner = result.Data.CreatedNewProduct
+                ? string.Format(L["ConnectedSuppliers_CreateLinkSucceeded"].Value, result.Data.BuyerProductName, supplierLabel)
+                : string.Format(L["ConnectedSuppliers_LinkExistingSucceeded"].Value, result.Data.BuyerProductName);
+            await AfterLinkSucceededAsync(banner);
         }
         finally
         {
@@ -696,26 +792,45 @@ else
         }
     }
 
-    private void SelectBuyerCandidate(Guid productId) => _selectedBuyerProductId = productId;
-
-    private void OpenChooseExisting()
+    private void BeginAddAsNew(CatalogProductReadinessItemDto item)
     {
-        _flowMode = "choose";
-        _selectedBuyerProductId = null;
-        _linkError = null;
-    }
-
-    private void OpenCreateForm()
-    {
-        if (!CanManageCatalog || _pendingExposure is null) return;
+        if (!CanManageCatalog) return;
+        _pendingItem = item;
         _flowMode = "create";
+        _showBuyerCatalog = false;
         _linkError = null;
-        _createName = _pendingExposure.NameSnapshot;
-        _createUnit = _pendingExposure.UnitOfMeasureCode;
-        _createSellingPriceText = "";
-        _createCategoryId = SuggestCategoryId(_pendingExposure.CategoryNameSnapshot) ?? "";
-        _createSku = SuggestBuyerSku(_pendingExposure.SkuSnapshot) ?? "";
+        _createName = item.SupplierName;
+        _createUnit = item.UnitOfMeasureCode;
+        _createSellingPriceText = item.PoPrice > 0m
+            ? item.PoPrice.ToString("0.##", CultureInfo.InvariantCulture)
+            : "";
+        _createCategoryId = "";
+        _createSku = SuggestBuyerSku(item.SupplierSku) ?? "";
     }
+
+    private void BeginChooseAnother(CatalogProductReadinessItemDto item)
+    {
+        _pendingItem = item;
+        _flowMode = "choose";
+        _showBuyerCatalog = false;
+        _selectedBuyerProductId = null;
+        _chooseQuery = null;
+        _linkError = null;
+    }
+
+    private void BeginConflictReview(CatalogProductReadinessItemDto item)
+    {
+        _pendingItem = item;
+        _flowMode = "conflict";
+        _showBuyerCatalog = false;
+        _selectedBuyerProductId = null;
+        _chooseQuery = null;
+        _linkError = null;
+    }
+
+    private void RevealBuyerCatalog() => _showBuyerCatalog = true;
+
+    private void SelectBuyerCandidate(Guid productId) => _selectedBuyerProductId = productId;
 
     private string? SuggestBuyerSku(string? supplierSku)
     {
@@ -725,43 +840,34 @@ else
         return conflict ? null : supplierSku.Trim();
     }
 
-    private string? SuggestCategoryId(string? categoryName)
-    {
-        if (string.IsNullOrWhiteSpace(categoryName)) return null;
-        var match = _categories.FirstOrDefault(c =>
-            string.Equals(c.Name.Trim(), categoryName.Trim(), StringComparison.OrdinalIgnoreCase));
-        return match?.CategoryId.ToString("D");
-    }
-
     private void CancelFlow()
     {
-        _pendingExposure = null;
+        _pendingItem = null;
         _flowMode = null;
         _linkError = null;
-        _matchCandidates = [];
         _selectedBuyerProductId = null;
+        _showBuyerCatalog = false;
+        _chooseQuery = null;
     }
 
-    private async Task ConfirmLinkExistingAsync(Guid buyerProductId)
+    private async Task ConfirmLinkExistingAsync(CatalogProductReadinessItemDto item, Guid buyerProductId)
     {
-        if (_pendingExposure is null || _relationshipId == Guid.Empty) return;
+        if (_relationshipId == Guid.Empty) return;
         _busy = true;
         _linkError = null;
         try
         {
             var result = await ConnectedSuppliers.LinkProductAsync(
                 _relationshipId,
-                new LinkProductRequest(buyerProductId, _pendingExposure.ExposureId));
+                new LinkProductRequest(buyerProductId, item.ExposureId));
             if (!result.IsSuccess)
             {
                 _linkError = result.Error?.Detail ?? L["ConnectedSuppliers_LinkFailed"];
                 return;
             }
 
-            _banner = string.Format(L["ConnectedSuppliers_LinkExistingSucceeded"].Value, _pendingExposure.NameSnapshot);
-            CancelFlow();
-            await LoadBuyerCatalogAsync();
-            await SearchAsync();
+            await AfterLinkSucceededAsync(
+                string.Format(L["ConnectedSuppliers_LinkExistingSucceeded"].Value, item.SupplierName));
         }
         finally
         {
@@ -771,8 +877,9 @@ else
 
     private async Task ConfirmCreateAndLinkAsync()
     {
-        if (_pendingExposure is null || _relationshipId == Guid.Empty || !CanManageCatalog) return;
-        if (!decimal.TryParse(_createSellingPriceText, out var sellingPrice) || sellingPrice <= 0m)
+        if (_pendingItem is null || _relationshipId == Guid.Empty || !CanManageCatalog) return;
+        if (!decimal.TryParse(_createSellingPriceText, NumberStyles.Number, CultureInfo.InvariantCulture, out var sellingPrice)
+            || sellingPrice <= 0m)
         {
             _linkError = L["ConnectedSuppliers_BuyerProductRequired"];
             return;
@@ -786,7 +893,7 @@ else
             var result = await ConnectedSuppliers.CreateBuyerProductAndLinkAsync(
                 _relationshipId,
                 new CreateBuyerProductAndLinkRequest(
-                    _pendingExposure.ExposureId,
+                    _pendingItem.ExposureId,
                     _createName,
                     _createUnit,
                     sellingPrice,
@@ -798,13 +905,11 @@ else
                 return;
             }
 
-            var supplierLabel = _supplierDisplayName ?? L["ConnectedSuppliers_BrowseProducts"].Value;
-            _banner = result.Data.CreatedNewProduct
+            var supplierLabel = _supplierDisplayName ?? L["ConnectedSuppliers_SetupTitle"].Value;
+            var banner = result.Data.CreatedNewProduct
                 ? string.Format(L["ConnectedSuppliers_CreateLinkSucceeded"].Value, result.Data.BuyerProductName, supplierLabel)
                 : string.Format(L["ConnectedSuppliers_LinkExistingSucceeded"].Value, result.Data.BuyerProductName);
-            CancelFlow();
-            await LoadBuyerCatalogAsync();
-            await SearchAsync();
+            await AfterLinkSucceededAsync(banner);
         }
         finally
         {
@@ -822,4 +927,61 @@ else
             : $"?relationshipId={_relationshipId:D}";
         Nav.NavigateTo($"/suppliers/{SupplierId:D}/linked-products{query}");
     }
+
+    private bool TrySafeReturnUrl(out string url)
+    {
+        url = string.Empty;
+        if (string.IsNullOrWhiteSpace(ReturnUrl))
+        {
+            return false;
+        }
+
+        string decoded;
+        try
+        {
+            decoded = Uri.UnescapeDataString(ReturnUrl.Trim());
+        }
+        catch (UriFormatException)
+        {
+            return false;
+        }
+
+        if (!decoded.StartsWith("/", StringComparison.Ordinal)
+            || decoded.StartsWith("//", StringComparison.Ordinal)
+            || decoded.Contains("://", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        if (!(decoded.StartsWith("/purchasing", StringComparison.OrdinalIgnoreCase)
+              || decoded.StartsWith("/suppliers", StringComparison.OrdinalIgnoreCase)))
+        {
+            return false;
+        }
+
+        url = decoded;
+        return true;
+    }
+
+    private static string StatusBucket(string status) =>
+        status switch
+        {
+            "Ready" or "AlreadyLinked" => "ready",
+            "New" => "new",
+            "Review" => "review",
+            "Conflict" => "conflict",
+            _ => "review"
+        };
+
+    private static string NormalizeFilter(string? filter) =>
+        filter?.Trim().ToLowerInvariant() switch
+        {
+            "ready" => "ready",
+            "new" => "new",
+            "review" => "review",
+            "conflict" or "attention" => "conflict",
+            _ => "all"
+        };
+
+    private static string Mark(bool matched) => matched ? "✓" : "–";
 }

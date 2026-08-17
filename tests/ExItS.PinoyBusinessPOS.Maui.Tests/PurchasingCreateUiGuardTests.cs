@@ -101,6 +101,23 @@ public sealed class PurchasingCreateUiGuardTests
     }
 
     [Fact]
+    public void Create_page_shows_connected_readiness_summary_without_inline_setup()
+    {
+        var create = CreatePage();
+
+        Assert.Contains("ConnectedSuppliers_ReadinessSummary", create, StringComparison.Ordinal);
+        Assert.Contains("ConnectedSuppliers_ManageSupplierProducts", create, StringComparison.Ordinal);
+        Assert.Contains("ClassifyCatalogReadinessAsync", create, StringComparison.Ordinal);
+        Assert.Contains("GoManageSupplierProducts", create, StringComparison.Ordinal);
+        Assert.Contains("PersistDraftSession", create, StringComparison.Ordinal);
+        Assert.Contains("RestoreDraftSession", create, StringComparison.Ordinal);
+        Assert.DoesNotContain("BeginLinkProduct", create, StringComparison.Ordinal);
+        Assert.DoesNotContain("_supplierCatalogProducts", create, StringComparison.Ordinal);
+        Assert.DoesNotContain("ConnectedSuppliers_UseProduct", create, StringComparison.Ordinal);
+        Assert.DoesNotContain("pos-purchasing-create__link-panel", create, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Create_page_keys_and_styles_exist()
     {
         var en = File.ReadAllText(Path.Combine(LocalizationDirectory(), "PosResources.resx"));
@@ -138,7 +155,10 @@ public sealed class PurchasingCreateUiGuardTests
                      "Purchasing_LineQtyPrefix",
                      "Purchasing_LineTotalLabel",
                      "Purchasing_DeleteLineTitle",
-                     "Purchasing_DeleteLineMessage"
+                     "Purchasing_DeleteLineMessage",
+                     "ConnectedSuppliers_ManageSupplierProducts",
+                     "ConnectedSuppliers_ReadinessSummary",
+                     "ConnectedSuppliers_NoReadyProducts"
                  })
         {
             Assert.Contains($"name=\"{key}\"", en, StringComparison.Ordinal);
@@ -151,6 +171,9 @@ public sealed class PurchasingCreateUiGuardTests
                      ".pos-purchasing-create__product-list",
                      ".pos-purchasing-create__supplier-first",
                      ".pos-purchasing-create__po-price",
+                     ".pos-purchasing-create__readiness",
+                     ".pos-purchasing-create__readiness-chips",
+                     ".pos-connected-catalog__chips",
                      ".pos-po-line__actions",
                      ".pos-po-line__action--danger",
                      ".pos-po-line__total"

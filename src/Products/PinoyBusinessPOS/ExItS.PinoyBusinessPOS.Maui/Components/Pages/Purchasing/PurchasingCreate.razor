@@ -11,6 +11,7 @@
 @inject ILinkedSupplierProductStore LinkedProducts
 @inject IConnectedPurchaseOrderDraftStore ConnectedDrafts
 @inject ILocalConnectedSupplierStore LocalConnectedSuppliers
+@inject PurchaseOrderDraftSession DraftSession
 @inject IUtangCapabilityEvaluator Capabilities
 @inject ApiStatusLocalizer ApiLocalizer
 @inject IConnectivityService Connectivity
@@ -119,9 +120,53 @@ else
                 {
                 @if (IsConnectedSupplier && SelectedSupplier is not null)
                 {
-                    <p class="pos-purchasing-create__supplier-context">
-                        @L["Purchasing_ProductsFromSupplier", SelectedSupplier.Name]
-                    </p>
+                    <div class="pos-purchasing-create__readiness" role="status">
+                        <p class="pos-purchasing-create__supplier-context">
+                            @L["Purchasing_ProductsFromSupplier", SelectedSupplier.Name]
+                        </p>
+                        <p class="pos-purchasing-create__readiness-summary">
+                            @string.Format(
+                                L["ConnectedSuppliers_ReadinessSummary"].Value,
+                                _readinessReady,
+                                _readinessReview,
+                                _readinessNew)
+                        </p>
+                        <div class="pos-purchasing-create__readiness-chips">
+                            <button type="button"
+                                    class="pos-purchasing-create__readiness-chip"
+                                    disabled="@(_isOffline || _saving || _loadingReadiness)"
+                                    @onclick='() => GoManageSupplierProducts("ready")'>
+                                @string.Format(L["ConnectedSuppliers_FilterReady"].Value, _readinessReady)
+                            </button>
+                            <button type="button"
+                                    class="pos-purchasing-create__readiness-chip"
+                                    disabled="@(_isOffline || _saving || _loadingReadiness)"
+                                    @onclick='() => GoManageSupplierProducts("review")'>
+                                @string.Format(L["ConnectedSuppliers_FilterReview"].Value, _readinessReview)
+                            </button>
+                            <button type="button"
+                                    class="pos-purchasing-create__readiness-chip"
+                                    disabled="@(_isOffline || _saving || _loadingReadiness)"
+                                    @onclick='() => GoManageSupplierProducts("new")'>
+                                @string.Format(L["ConnectedSuppliers_FilterNew"].Value, _readinessNew)
+                            </button>
+                            @if (_readinessConflict > 0)
+                            {
+                                <button type="button"
+                                        class="pos-purchasing-create__readiness-chip pos-purchasing-create__readiness-chip--attention"
+                                        disabled="@(_isOffline || _saving || _loadingReadiness)"
+                                        @onclick='() => GoManageSupplierProducts("conflict")'>
+                                    @string.Format(L["ConnectedSuppliers_FilterAttention"].Value, _readinessConflict)
+                                </button>
+                            }
+                        </div>
+                        <button type="button"
+                                class="pos-action-tile pos-purchasing-create__manage-products"
+                                disabled="@(_isOffline || _saving)"
+                                @onclick="() => GoManageSupplierProducts(null)">
+                            <span class="pos-action-tile__label">@L["ConnectedSuppliers_ManageSupplierProducts"]</span>
+                        </button>
+                    </div>
                 }
                 <div class="pos-purchasing-create__picker" role="search" aria-label="@L["Purchasing_Field_Product"]">
                     <label class="pos-purchasing-create__search-label" for="purchasing-product-search">@ProductSearchLabel</label>
@@ -173,9 +218,11 @@ else
                     {
                         <InlineMessage Tone="InlineMessageTone.Info">@L["Purchasing_NoProductsAvailable"]</InlineMessage>
                     }
-                    else if (IsConnectedSupplier && _connectedProducts.Count == 0 && _supplierCatalogProducts.Count == 0)
+                    else if (IsConnectedSupplier && _connectedProducts.Count == 0)
                     {
-                        <InlineMessage Tone="InlineMessageTone.Info">@L["ConnectedSuppliers_NoOfflineResult"]</InlineMessage>
+                        <InlineMessage Tone="InlineMessageTone.Info">
+                            @(_isOffline ? L["ConnectedSuppliers_NoOfflineResult"] : L["ConnectedSuppliers_NoReadyProducts"])
+                        </InlineMessage>
                     }
                     else if (!IsConnectedSupplier && eligibleProducts.Count == 0)
                     {
@@ -200,25 +247,6 @@ else
                                     </span>
                                 </button>
                             }
-                            @foreach (var exposure in _supplierCatalogProducts)
-                            {
-                                <article class="pos-purchasing-create__hit pos-purchasing-create__hit--action" role="option">
-                                    <div class="pos-purchasing-create__hit-body">
-                                        <span class="pos-purchasing-create__hit-name">@exposure.NameSnapshot</span>
-                                        <span class="pos-purchasing-create__hit-meta pos-muted">
-                                            @exposure.UnitOfMeasureCode
-                                            <text> · </text>@L["Purchasing_PoPriceLabel"]
-                                            <text> </text><MoneyDisplay Amount="@exposure.SupplierOrderPrice" CurrencyCode="PHP" />
-                                        </span>
-                                    </div>
-                                    <button type="button"
-                                            class="pos-purchasing-create__hit-cta"
-                                            disabled="@(_isOffline || _saving)"
-                                            @onclick="() => BeginLinkProduct(exposure)">
-                                        @L["ConnectedSuppliers_UseProduct"]
-                                    </button>
-                                </article>
-                            }
                             }
                             else
                             {
@@ -240,26 +268,6 @@ else
                                 </button>
                             }
                             }
-                        </div>
-                    }
-                    @if (_pendingExposure is not null)
-                    {
-                        <div class="pos-purchasing-create__link-panel" role="region" aria-label="@L["ConnectedSuppliers_LinkProductTitle", _pendingExposure.NameSnapshot]">
-                            <p class="pos-purchasing-create__link-title">
-                                @L["ConnectedSuppliers_LinkProductTitle", _pendingExposure.NameSnapshot]
-                            </p>
-                            <Select Label="@L["ConnectedSuppliers_BuyerProduct"]"
-                                    Value="@_buyerProductForLink"
-                                    ValueChanged="v => _buyerProductForLink = v"
-                                    Options="@BuyerCatalogChoices" />
-                            <div class="pos-purchasing-create__link-actions">
-                                <button type="button" class="pos-action-tile" disabled="@_saving" @onclick="CancelLinkProduct">
-                                    <span class="pos-action-tile__label">@L["Purchasing_CancelEdit"]</span>
-                                </button>
-                                <button type="button" class="pos-action-tile pos-action-tile--primary" disabled="@_saving" @onclick="ConfirmLinkProductAsync">
-                                    <span class="pos-action-tile__label">@L["ConnectedSuppliers_LinkAndUse"]</span>
-                                </button>
-                            </div>
                         </div>
                     }
                 </div>
@@ -458,6 +466,7 @@ else
     private bool _saving;
     private bool _isOffline;
     private bool _loadingLookups;
+    private bool _loadingReadiness;
     private bool _confirmReset;
     private bool _confirmDelete;
     private bool _confirmSupplierChange;
@@ -480,7 +489,6 @@ else
     private List<PosSupplierDto> _suppliers = [];
     private List<PosCatalogProductDto> _products = [];
     private List<LocalLinkedSupplierProduct> _connectedProducts = [];
-    private List<SupplierProductExposureDto> _supplierCatalogProducts = [];
     private Dictionary<Guid, string> _categoryNames = new();
     private string? _supplierError;
     private string? _orderDateError;
@@ -492,8 +500,10 @@ else
     private ConnectedPoDraftReviewDto? _draftReview;
     private bool _revalidationAccepted;
     private Guid _localDraftId = Guid.NewGuid();
-    private SupplierProductExposureDto? _pendingExposure;
-    private string? _buyerProductForLink;
+    private int _readinessReady;
+    private int _readinessNew;
+    private int _readinessReview;
+    private int _readinessConflict;
 
     private PosSupplierDto? SelectedSupplier =>
         Guid.TryParse(_supplierId, out var id) ? _suppliers.FirstOrDefault(s => s.SupplierId == id) : null;
@@ -510,9 +520,6 @@ else
 
     private IReadOnlyList<SelectOption> SupplierOptions =>
         _suppliers.Select(s => new SelectOption(s.SupplierId.ToString("D"), s.Name)).ToList();
-    private IReadOnlyList<SelectOption> BuyerCatalogChoices =>
-        _products.Where(x => string.Equals(x.Status, "Active", StringComparison.OrdinalIgnoreCase))
-            .Select(x => new SelectOption(x.ProductId.ToString("D"), x.Name)).ToList();
 
     private IReadOnlyList<(Guid CategoryId, string Name)> CategoryChips =>
         PurchaseOrderCreateUi.RelevantCategories(
@@ -575,16 +582,65 @@ else
         }
 
         _isOffline = !await Connectivity.IsConnectedAsync();
+        RestoreDraftSession();
         _ready = true;
 
         if (!_isOffline && Capabilities.IsAllowed(UtangCapability.ManagePurchasing))
         {
             await LoadLookupsAsync();
+            if (IsConnectedSupplier)
+            {
+                await SearchConnectedProductsAsync();
+                await LoadReadinessAsync();
+            }
         }
         else if (_isOffline && Capabilities.IsAllowed(UtangCapability.ManagePurchasing))
         {
             await LoadOfflineConnectedSuppliersAsync();
+            if (IsConnectedSupplier)
+            {
+                await SearchConnectedProductsAsync();
+            }
         }
+    }
+
+    private void RestoreDraftSession()
+    {
+        if (!DraftSession.TryTake(out var draft))
+        {
+            return;
+        }
+
+        _supplierId = draft.SupplierId;
+        _orderDate = draft.OrderDate;
+        _expectedDeliveryDate = draft.ExpectedDeliveryDate;
+        _supplierReference = draft.SupplierReference;
+        _notes = draft.Notes;
+        _lines = draft.Lines
+            .Select(l => new LineEntry(l.ProductId, l.Name, l.OrderedQty, l.UnitPurchaseCost, l.SupplierProductId))
+            .ToList();
+        _productSearch = draft.ProductSearch;
+        _categoryFilterId = draft.CategoryFilterId;
+        _draftQtyText = string.IsNullOrWhiteSpace(draft.DraftQtyText) ? "1" : draft.DraftQtyText;
+        _draftUnitCost = draft.DraftUnitCost;
+        _selectedProductId = draft.SelectedProductId ?? string.Empty;
+    }
+
+    private void PersistDraftSession()
+    {
+        DraftSession.Save(new PurchaseOrderDraftSession.Draft(
+            _supplierId,
+            _orderDate,
+            _expectedDeliveryDate,
+            _supplierReference,
+            _notes,
+            _lines.Select(l => new PurchaseOrderDraftSession.LineDraft(
+                l.ProductId, l.Name, l.OrderedQty, l.UnitPurchaseCost, l.SupplierProductId)).ToList(),
+            _productSearch,
+            _categoryFilterId,
+            _draftQtyText,
+            _draftUnitCost,
+            _selectedProductId));
     }
 
     private async Task LoadLookupsAsync()
@@ -707,6 +763,7 @@ else
         if (IsConnectedSupplier)
         {
             await SearchConnectedProductsAsync();
+            await LoadReadinessAsync();
         }
     }
 
@@ -730,14 +787,45 @@ else
     {
         _lines = [];
         _connectedProducts = [];
-        _supplierCatalogProducts = [];
+        _readinessReady = 0;
+        _readinessNew = 0;
+        _readinessReview = 0;
+        _readinessConflict = 0;
         _productSearch = string.Empty;
         _categoryFilterId = null;
         _draftReview = null;
         _revalidationAccepted = false;
-        CancelLinkProduct();
         ClearDraftEditor();
         _linesError = null;
+    }
+
+    private async Task LoadReadinessAsync()
+    {
+        _readinessReady = 0;
+        _readinessNew = 0;
+        _readinessReview = 0;
+        _readinessConflict = 0;
+        if (_isOffline || SelectedSupplier?.ConnectedRelationshipId is not Guid relationshipId)
+        {
+            return;
+        }
+
+        _loadingReadiness = true;
+        try
+        {
+            var readiness = await ConnectedSuppliers.ClassifyCatalogReadinessAsync(relationshipId);
+            if (readiness.IsSuccess && readiness.Data is not null)
+            {
+                _readinessReady = readiness.Data.Ready;
+                _readinessNew = readiness.Data.New;
+                _readinessReview = readiness.Data.Review;
+                _readinessConflict = readiness.Data.Conflict;
+            }
+        }
+        finally
+        {
+            _loadingReadiness = false;
+        }
     }
 
     private async Task SearchConnectedProductsAsync()
@@ -748,70 +836,73 @@ else
             _connectedProducts = (await LinkedProducts.SearchLocalAsync(relationshipId, _productSearch, 50))
                 .Where(x => x.IsActive && x.IsOrderable)
                 .ToList();
-            _supplierCatalogProducts = [];
             return;
         }
 
         var local = await LinkedProducts.SearchLocalAsync(relationshipId, _productSearch, 50);
         _connectedProducts = local.Where(x => x.IsActive && x.IsOrderable).ToList();
-        var catalog = await ConnectedSuppliers.SearchCatalogAsync(relationshipId, _productSearch, page: 1, pageSize: 25);
-        if (catalog.IsSuccess && catalog.Data is not null)
+        var links = await ConnectedSuppliers.ListLinksAsync(relationshipId);
+        if (!links.IsSuccess || links.Data is null)
         {
-            var links = await ConnectedSuppliers.ListLinksAsync(relationshipId);
-            var bySupplierProduct = links.Data?.Where(x => x.IsActive).ToDictionary(x => x.SupplierProductId) ?? [];
-            _connectedProducts = catalog.Data.Items
-                .Where(x => x.IsExposed && x.IsOrderable && bySupplierProduct.ContainsKey(x.ProductId))
-                .Select(x =>
-                {
-                    var link = bySupplierProduct[x.ProductId];
-                    return new LocalLinkedSupplierProduct(link.LinkId, relationshipId, link.SupplierOrganizationId,
-                        link.BuyerProductId, x.ProductId, x.SkuSnapshot, x.NameSnapshot, x.UnitOfMeasureCode,
-                        x.EffectiveSupplierOrderPrice ?? x.SupplierOrderPrice, x.IsOrderable, x.IsExposed, x.SyncVersion, x.UpdatedAtUtc, DateTimeOffset.UtcNow,
-                        link.MultiplierToBase, link.PackageLabel);
-                }).ToList();
-            _supplierCatalogProducts = catalog.Data.Items
-                .Where(x => x.IsExposed && x.IsOrderable && !bySupplierProduct.ContainsKey(x.ProductId))
+            return;
+        }
+
+        var activeLinks = links.Data.Where(x => x.IsActive).ToList();
+        if (activeLinks.Count == 0)
+        {
+            _connectedProducts = [];
+            return;
+        }
+
+        var byBuyer = activeLinks.ToDictionary(x => x.BuyerProductId);
+        var linkedLocal = await LinkedProducts.SearchLocalAsync(relationshipId, _productSearch, 200);
+        _connectedProducts = linkedLocal
+            .Where(x => x.IsActive && x.IsOrderable && byBuyer.ContainsKey(x.BuyerProductId))
+            .ToList();
+
+        if (_connectedProducts.Count == 0)
+        {
+            _connectedProducts = activeLinks
+                .Select(link => new LocalLinkedSupplierProduct(
+                    link.LinkId,
+                    relationshipId,
+                    link.SupplierOrganizationId,
+                    link.BuyerProductId,
+                    link.SupplierProductId,
+                    link.SupplierSkuSnapshot,
+                    link.SupplierNameSnapshot,
+                    link.UnitOfMeasureCode,
+                    link.LastKnownOrderPrice,
+                    IsOrderable: true,
+                    IsActive: true,
+                    link.SyncVersion,
+                    link.UpdatedAtUtc,
+                    DateTimeOffset.UtcNow,
+                    link.MultiplierToBase,
+                    link.PackageLabel))
+                .Where(x =>
+                    string.IsNullOrWhiteSpace(_productSearch)
+                    || x.ProductName.Contains(_productSearch, StringComparison.OrdinalIgnoreCase)
+                    || (!string.IsNullOrWhiteSpace(x.SupplierSku)
+                        && x.SupplierSku.Contains(_productSearch, StringComparison.OrdinalIgnoreCase)))
+                .OrderBy(x => x.ProductName, StringComparer.OrdinalIgnoreCase)
+                .Take(50)
                 .ToList();
         }
     }
 
-    private void BeginLinkProduct(SupplierProductExposureDto exposure)
+    private void GoManageSupplierProducts(string? filter)
     {
-        _pendingExposure = exposure;
-        _buyerProductForLink = _products.FirstOrDefault(x =>
-            (!string.IsNullOrWhiteSpace(exposure.SkuSnapshot)
-             && string.Equals(x.Sku, exposure.SkuSnapshot, StringComparison.OrdinalIgnoreCase))
-            || string.Equals(x.Name, exposure.NameSnapshot, StringComparison.OrdinalIgnoreCase))
-            ?.ProductId.ToString("D");
-    }
-
-    private void CancelLinkProduct()
-    {
-        _pendingExposure = null;
-        _buyerProductForLink = null;
-    }
-
-    private async Task ConfirmLinkProductAsync()
-    {
-        if (_pendingExposure is null
-            || SelectedSupplier?.ConnectedRelationshipId is not Guid relationshipId
-            || !Guid.TryParse(_buyerProductForLink, out var buyerProductId))
+        if (SelectedSupplier?.ConnectedRelationshipId is not Guid relationshipId)
         {
-            _linesError = L["ConnectedSuppliers_BuyerProductRequired"];
             return;
         }
-        var result = await ConnectedSuppliers.LinkProductAsync(
-            relationshipId,
-            new LinkProductRequest(buyerProductId, _pendingExposure.ExposureId));
-        if (!result.IsSuccess)
-        {
-            _linesError = result.Error?.Detail ?? L["ConnectedSuppliers_LinkFailed"];
-            return;
-        }
-        CancelLinkProduct();
-        await SearchConnectedProductsAsync();
-        var linked = _connectedProducts.FirstOrDefault(x => x.SupplierProductId == result.Data?.SupplierProductId);
-        if (linked is not null) SelectConnectedProduct(linked);
+
+        PersistDraftSession();
+        var returnUrl = Uri.EscapeDataString("/purchasing/new");
+        var filterPart = string.IsNullOrWhiteSpace(filter) ? string.Empty : $"&filter={Uri.EscapeDataString(filter)}";
+        Nav.NavigateTo(
+            $"/suppliers/{SelectedSupplier.SupplierId:D}/connected-catalog?relationshipId={relationshipId:D}{filterPart}&returnUrl={returnUrl}");
     }
 
     private void SetCategoryFilter(Guid? categoryId) =>
@@ -1025,6 +1116,7 @@ else
     private void ConfirmReset()
     {
         _confirmReset = false;
+        DraftSession.Clear();
         ResetForm();
     }
 
@@ -1146,6 +1238,7 @@ else
 
         if (result.IsSuccess && result.Data is not null)
         {
+            DraftSession.Clear();
             Nav.NavigateTo($"/purchasing/{result.Data.PurchaseOrderId:D}", replace: true);
             return;
         }
