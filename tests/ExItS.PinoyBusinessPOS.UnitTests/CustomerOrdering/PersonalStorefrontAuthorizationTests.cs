@@ -198,7 +198,8 @@ public sealed class PersonalStorefrontAuthorizationTests
             new FakeProducts(onCatalog),
             new FakeCategories(),
             new FakeInventory(),
-            new CountingBranches());
+            new CountingBranches(),
+            new EmptyImages());
 
     private static PlaceCustomerOrder CreatePlace(
         ISellerCustomerOrderingCapability capability,
@@ -277,13 +278,13 @@ public sealed class PersonalStorefrontAuthorizationTests
     {
         public int EnsureCallCount { get; private set; }
 
-        public Task EnsureAvailableAsync(
+        public Task<ApplicationResult> EnsureAvailableAsync(
             PosOrganizationId organizationId,
             IReadOnlyList<CustomerOrderLineDraft> lines,
             CancellationToken cancellationToken = default)
         {
             EnsureCallCount++;
-            return Task.CompletedTask;
+            return Task.FromResult(ApplicationResult.Success());
         }
 
         public Task ReserveForAcceptAsync(
@@ -305,6 +306,30 @@ public sealed class PersonalStorefrontAuthorizationTests
             Guid actorId,
             DateTimeOffset utcNow,
             CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+    }
+
+    private sealed class EmptyImages : ICatalogProductImageRepository
+    {
+        public Task<CatalogProductImage?> GetByProductIdAsync(
+            PosOrganizationId organizationId,
+            CatalogProductId productId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<CatalogProductImage?>(null);
+
+        public Task<IReadOnlyList<CatalogProductImage>> ListByProductIdsAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyList<CatalogProductId> productIds,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<CatalogProductImage>>([]);
+
+        public Task AddAsync(CatalogProductImage image, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task UpdateAsync(CatalogProductImage image, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task DeleteAsync(CatalogProductImage image, CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
     }
 

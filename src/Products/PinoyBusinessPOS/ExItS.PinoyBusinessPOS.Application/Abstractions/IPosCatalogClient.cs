@@ -89,4 +89,17 @@ public interface IPosCatalogClient
         string barcode,
         bool includeInactive = false,
         CancellationToken ct = default);
+
+    Task<ApiResult<PosCatalogProductImageDto>> UploadProductImageAsync(
+        Guid productId,
+        byte[] bytes,
+        string fileName,
+        CancellationToken ct = default);
+
+    Task<ApiResult<bool>> RemoveProductImageAsync(Guid productId, CancellationToken ct = default);
+
+    Task<ApiResult<ProductImageBytes>> GetProductImageAsync(
+        Guid productId,
+        string variant,
+        CancellationToken ct = default);
 }

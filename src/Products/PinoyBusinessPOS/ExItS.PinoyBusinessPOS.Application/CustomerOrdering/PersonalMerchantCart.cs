@@ -55,10 +55,13 @@ public sealed class PersonalMerchantCart
     public decimal GetQuantity(Guid productId) =>
         _lines.TryGetValue(productId, out var line) ? line.Quantity : 0m;
 
+    public bool CanIncrement(CustomerStorefrontProductDto product) =>
+        CustomerStorefrontAvailability.CanIncrement(product, GetQuantity(product.ProductId));
+
     public void Increment(CustomerStorefrontProductDto product)
     {
         ArgumentNullException.ThrowIfNull(product);
-        if (!product.IsAvailable || product.UnitPrice <= 0m)
+        if (!CustomerStorefrontAvailability.CanIncrement(product, GetQuantity(product.ProductId)))
         {
             return;
         }

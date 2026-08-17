@@ -217,11 +217,11 @@ public sealed class PlaceCustomerOrderCapabilityTests
 
     private sealed class FakeStock : ICustomerOrderStockService
     {
-        public Task EnsureAvailableAsync(
+        public Task<ApplicationResult> EnsureAvailableAsync(
             PosOrganizationId organizationId,
             IReadOnlyList<CustomerOrderLineDraft> lines,
             CancellationToken cancellationToken = default) =>
-            Task.CompletedTask;
+            Task.FromResult(ApplicationResult.Success());
 
         public Task ReserveForAcceptAsync(
             CustomerOrder order,

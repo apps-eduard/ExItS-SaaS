@@ -28,6 +28,9 @@
 **/.vscode/
 *.DotSettings.user
 
+# Local/dev product-image object store (WebP variants; never commit binaries)
+**/App_Data/product-images/
+
 # Local databases and certificates
 *.db
 *.sqlite

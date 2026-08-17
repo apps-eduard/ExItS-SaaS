@@ -9,7 +9,12 @@ public sealed record CustomerStorefrontProductDto(
     string UnitOfMeasure,
     Guid? CategoryId,
     decimal UnitPrice,
-    bool IsAvailable);
+    bool IsAvailable,
+    bool TracksInventory = false,
+    decimal? AvailableQuantity = null,
+    string AvailabilityStatus = CustomerStorefrontAvailability.Untracked,
+    bool HasImage = false,
+    int? ImageVersion = null);
 
 public sealed record CustomerStorefrontBranchDto(
     Guid BranchId,

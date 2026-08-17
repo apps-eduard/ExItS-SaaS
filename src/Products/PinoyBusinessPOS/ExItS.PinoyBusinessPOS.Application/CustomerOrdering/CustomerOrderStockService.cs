@@ -12,7 +12,7 @@ namespace ExItS.PinoyBusinessPOS.Application.CustomerOrdering;
 public interface ICustomerOrderStockService
 {
     /// <summary>Soft availability check on submit — does not reserve.</summary>
-    Task EnsureAvailableAsync(
+    Task<ApplicationResult> EnsureAvailableAsync(
         PosOrganizationId organizationId,
         IReadOnlyList<CustomerOrderLineDraft> lines,
         CancellationToken cancellationToken = default);
@@ -42,7 +42,7 @@ public sealed class CustomerOrderStockService : ICustomerOrderStockService
 
     public CustomerOrderStockService(IInventoryRepository inventory) => _inventory = inventory;
 
-    public async Task EnsureAvailableAsync(
+    public async Task<ApplicationResult> EnsureAvailableAsync(
         PosOrganizationId organizationId,
         IReadOnlyList<CustomerOrderLineDraft> lines,
         CancellationToken cancellationToken = default)
@@ -63,11 +63,22 @@ public sealed class CustomerOrderStockService : ICustomerOrderStockService
             var needed = group.Sum(l => l.Quantity);
             if (account.AvailableQuantity < needed)
             {
-                throw new DomainException(
+                var first = group.First();
+                return ApplicationResult.Failure(
                     ApplicationErrorCodes.InsufficientStock,
-                    "Insufficient available stock for one or more order lines.");
+                    "Stock changed for one or more products.",
+                    new Dictionary<string, string>
+                    {
+                        ["productId"] = group.Key.ToString("D"),
+                        ["productName"] = first.NameSnapshot,
+                        ["requestedQuantity"] = needed.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                        ["availableQuantity"] = account.AvailableQuantity.ToString(
+                            System.Globalization.CultureInfo.InvariantCulture)
+                    });
             }
         }
+
+        return ApplicationResult.Success();
     }
 
     public async Task ReserveForAcceptAsync(

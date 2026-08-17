@@ -51,6 +51,7 @@ public sealed class PosDbContext : DbContext
     internal DbSet<ProductCategoryRecord> ProductCategories => Set<ProductCategoryRecord>();
     internal DbSet<CatalogProductRecord> CatalogProducts => Set<CatalogProductRecord>();
     internal DbSet<CatalogProductUnitRecord> CatalogProductUnits => Set<CatalogProductUnitRecord>();
+    internal DbSet<CatalogProductImageRecord> CatalogProductImages => Set<CatalogProductImageRecord>();
     internal DbSet<CatalogImportJobRecord> CatalogImportJobs => Set<CatalogImportJobRecord>();
     internal DbSet<CatalogImportItemResultRecord> CatalogImportItems => Set<CatalogImportItemResultRecord>();
     internal DbSet<SaleRecord> Sales => Set<SaleRecord>();
@@ -709,6 +710,45 @@ public sealed class PosDbContext : DbContext
                 .HasForeignKey(e => e.ProductId)
                 .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("fk_product_units_products");
+        });
+
+        modelBuilder.Entity<CatalogProductImageRecord>(entity =>
+        {
+            entity.ToTable("product_images", tb =>
+            {
+                tb.HasCheckConstraint("ck_product_images_version_positive", "version >= 1");
+                tb.HasCheckConstraint(
+                    "ck_product_images_dimensions_positive",
+                    "thumb_width > 0 AND thumb_height > 0 AND medium_width > 0 AND medium_height > 0");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.ProductId).HasColumnName("product_id").IsRequired();
+            entity.Property(e => e.StorageKey).HasColumnName("storage_key").IsRequired();
+            entity.Property(e => e.Version).HasColumnName("version").IsRequired();
+            entity.Property(e => e.ThumbWidth).HasColumnName("thumb_width").IsRequired();
+            entity.Property(e => e.ThumbHeight).HasColumnName("thumb_height").IsRequired();
+            entity.Property(e => e.MediumWidth).HasColumnName("medium_width").IsRequired();
+            entity.Property(e => e.MediumHeight).HasColumnName("medium_height").IsRequired();
+            entity.Property(e => e.ContentType)
+                .HasColumnName("content_type")
+                .HasMaxLength(64)
+                .IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.ProductId })
+                .IsUnique()
+                .HasDatabaseName("ux_product_images_org_product");
+
+            entity.HasOne<CatalogProductRecord>()
+                .WithMany()
+                .HasForeignKey(e => new { e.ProductId, e.OrganizationId })
+                .HasPrincipalKey(p => new { p.Id, p.OrganizationId })
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("fk_product_images_products");
         });
 
         modelBuilder.Entity<CatalogImportJobRecord>(entity =>

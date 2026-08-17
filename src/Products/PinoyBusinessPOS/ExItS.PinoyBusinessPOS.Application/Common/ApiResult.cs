@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace ExItS.PinoyBusinessPOS.Application.Common;
 
 /// <summary>Outcome classification for a single POS API call.</summary>
@@ -18,7 +20,82 @@ public enum ApiCallStatus
 }
 
 /// <summary>Normalized error payload surfaced to callers, sourced from ProblemDetails when available.</summary>
-public sealed record ApiError(string? Title, string? Detail, string? ErrorCode, string? CorrelationId, int? StatusCode);
+public sealed record ApiError(
+    string? Title,
+    string? Detail,
+    string? ErrorCode,
+    string? CorrelationId,
+    int? StatusCode,
+    IReadOnlyDictionary<string, string>? Details = null);
+
+public static class ApiProblemParser
+{
+    private static readonly HashSet<string> Reserved =
+        new(StringComparer.OrdinalIgnoreCase)
+        {
+            "type", "title", "status", "detail", "instance", "traceId", "traceid"
+        };
+
+    public static ApiError Parse(string content, string? correlationId, int statusCode)
+    {
+        string? title = null;
+        string? detail = null;
+        string? errorCode = null;
+        Dictionary<string, string>? details = null;
+        if (!string.IsNullOrWhiteSpace(content))
+        {
+            try
+            {
+                using var document = JsonDocument.Parse(content);
+                var root = document.RootElement;
+                if (root.TryGetProperty("title", out var t) && t.ValueKind == JsonValueKind.String)
+                {
+                    title = t.GetString();
+                }
+
+                if (root.TryGetProperty("detail", out var d) && d.ValueKind == JsonValueKind.String)
+                {
+                    detail = d.GetString();
+                }
+
+                if (root.TryGetProperty("errorCode", out var e) && e.ValueKind == JsonValueKind.String)
+                {
+                    errorCode = e.GetString();
+                }
+
+                foreach (var property in root.EnumerateObject())
+                {
+                    if (Reserved.Contains(property.Name)
+                        || property.NameEquals("errorCode"))
+                    {
+                        continue;
+                    }
+
+                    var value = property.Value.ValueKind switch
+                    {
+                        JsonValueKind.String => property.Value.GetString(),
+                        JsonValueKind.Number => property.Value.GetRawText(),
+                        JsonValueKind.True => "true",
+                        JsonValueKind.False => "false",
+                        _ => null
+                    };
+                    if (string.IsNullOrWhiteSpace(value))
+                    {
+                        continue;
+                    }
+
+                    details ??= new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                    details[property.Name] = value;
+                }
+            }
+            catch (JsonException)
+            {
+            }
+        }
+
+        return new ApiError(title, detail ?? (string.IsNullOrWhiteSpace(content) ? null : content), errorCode, correlationId, statusCode, details);
+    }
+}
 
 /// <summary>Result envelope returned by <c>IPosApiClient</c> so callers never need to catch HTTP exceptions.</summary>
 public sealed class ApiResult<T>

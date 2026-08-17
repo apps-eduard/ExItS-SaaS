@@ -6,6 +6,7 @@
     <PackageVersion Include="AntDesign" Version="1.6.2" />
     <PackageVersion Include="ClosedXML" Version="0.105.0" />
     <PackageVersion Include="coverlet.collector" Version="6.0.4" />
+    <PackageVersion Include="Magick.NET-Q8-AnyCPU" Version="14.16.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.Facebook" Version="10.0.10" />
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.Google" Version="10.0.10" />
     <PackageVersion Include="Microsoft.AspNetCore.Components.Web" Version="10.0.2" />

@@ -13,19 +13,22 @@ public sealed class GetCustomerStorefront
     private readonly IProductCategoryRepository _categories;
     private readonly IInventoryRepository _inventory;
     private readonly ICustomerOrderBranchDirectory _branches;
+    private readonly ICatalogProductImageRepository _images;
 
     public GetCustomerStorefront(
         ISellerCustomerOrderingCapability capability,
         ICatalogProductRepository products,
         IProductCategoryRepository categories,
         IInventoryRepository inventory,
-        ICustomerOrderBranchDirectory branches)
+        ICustomerOrderBranchDirectory branches,
+        ICatalogProductImageRepository images)
     {
         _capability = capability;
         _products = products;
         _categories = categories;
         _inventory = inventory;
         _branches = branches;
+        _images = images;
     }
 
     public async Task<ApplicationResult<CustomerStorefrontDto>> ExecuteAsync(
@@ -81,14 +84,16 @@ public sealed class GetCustomerStorefront
                 .ListByProductIdsAsync(orgId, productIds, cancellationToken)
                 .ConfigureAwait(false);
         var accountByProduct = accounts.ToDictionary(a => a.ProductId.Value);
+        var imageRows = productIds.Count == 0
+            ? []
+            : await _images.ListByProductIdsAsync(orgId, productIds, cancellationToken).ConfigureAwait(false);
+        var imageByProduct = imageRows.ToDictionary(i => i.ProductId.Value);
 
         var products = pageItems.Select(p =>
         {
-            var available = true;
-            if (accountByProduct.TryGetValue(p.Id.Value, out var account) && account.IsTracked)
-            {
-                available = account.AvailableQuantity > 0m;
-            }
+            accountByProduct.TryGetValue(p.Id.Value, out var account);
+            var availability = CustomerStorefrontAvailability.FromAccount(account);
+            imageByProduct.TryGetValue(p.Id.Value, out var image);
 
             return new CustomerStorefrontProductDto(
                 p.Id.Value,
@@ -97,7 +102,12 @@ public sealed class GetCustomerStorefront
                 p.UnitOfMeasure.ToString(),
                 p.CategoryId?.Value,
                 p.SellingPrice,
-                available);
+                availability.IsAvailable,
+                availability.TracksInventory,
+                availability.AvailableQuantity,
+                availability.Status,
+                image is not null,
+                image?.Version);
         }).ToList();
 
         var (categoryRows, _) = await _categories

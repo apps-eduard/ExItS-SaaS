@@ -349,6 +349,24 @@ internal static class CustomerOrderEndpoints
                 Results.Ok);
         });
 
+        group.MapGet("/organizations/{sellerOrganizationId:guid}/products/{productId:guid}/image/{variant}", async (
+            HttpRequest request,
+            Guid sellerOrganizationId,
+            Guid productId,
+            string variant,
+            GetStorefrontProductImage useCase,
+            CancellationToken ct) =>
+        {
+            if (!PosOrganizationScope.TryGetActorId(request, out _, out var problem))
+            {
+                return problem!;
+            }
+
+            return PosApiResults.FromResult(
+                await useCase.ExecuteAsync(sellerOrganizationId, productId, variant, ct).ConfigureAwait(false),
+                image => Results.File(image.Content, image.ContentType));
+        });
+
         group.MapPost("/organizations/{sellerOrganizationId:guid}", async (
             HttpRequest request,
             Guid sellerOrganizationId,

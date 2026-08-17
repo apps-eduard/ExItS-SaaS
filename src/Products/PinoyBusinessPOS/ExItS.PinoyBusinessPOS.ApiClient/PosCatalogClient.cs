@@ -188,6 +188,154 @@ public sealed class PosCatalogClient(HttpClient httpClient, IConnectivityService
         return SendAsync<PosCatalogProductDto>(HttpMethod.Get, path, null, ct);
     }
 
+    public async Task<ApiResult<PosCatalogProductImageDto>> UploadProductImageAsync(
+        Guid productId,
+        byte[] bytes,
+        string fileName,
+        CancellationToken ct = default)
+    {
+        if (connectivityService is not null && !await connectivityService.IsConnectedAsync(ct).ConfigureAwait(false))
+        {
+            return ApiResult<PosCatalogProductImageDto>.Offline(
+                new ApiError("Offline", "No network connectivity detected.", null, null, null));
+        }
+
+        try
+        {
+            using var content = new MultipartFormDataContent();
+            var file = new ByteArrayContent(bytes);
+            file.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
+            content.Add(file, "file", string.IsNullOrWhiteSpace(fileName) ? "image.jpg" : fileName);
+            using var response = await httpClient
+                .PutAsync($"{ProductsPath}/{productId:D}/image", content, ct)
+                .ConfigureAwait(false);
+            var body = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+            var correlationId = response.Headers.TryGetValues("X-Correlation-ID", out var values)
+                ? values.FirstOrDefault()
+                : null;
+            if (!response.IsSuccessStatusCode)
+            {
+                return new ApiResult<PosCatalogProductImageDto>
+                {
+                    Status = Classify(response.StatusCode),
+                    Error = ApiProblemParser.Parse(body, correlationId, (int)response.StatusCode)
+                };
+            }
+
+            var dto = JsonSerializer.Deserialize<PosCatalogProductImageDto>(body, JsonOptions);
+            return dto is null
+                ? ApiResult<PosCatalogProductImageDto>.Failed(
+                    new ApiError("Invalid response", "The API returned no content.", null, null, null))
+                : ApiResult<PosCatalogProductImageDto>.Success(dto);
+        }
+        catch (HttpRequestException ex)
+        {
+            return ApiResult<PosCatalogProductImageDto>.Offline(
+                new ApiError("Network unavailable", ex.Message, null, null, null));
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            return ApiResult<PosCatalogProductImageDto>.Cancelled();
+        }
+        catch (TaskCanceledException ex) when (!ct.IsCancellationRequested)
+        {
+            return ApiResult<PosCatalogProductImageDto>.Timeout(
+                new ApiError("Request timed out", ex.Message, null, null, null));
+        }
+    }
+
+    public async Task<ApiResult<bool>> RemoveProductImageAsync(Guid productId, CancellationToken ct = default)
+    {
+        if (connectivityService is not null && !await connectivityService.IsConnectedAsync(ct).ConfigureAwait(false))
+        {
+            return ApiResult<bool>.Offline(
+                new ApiError("Offline", "No network connectivity detected.", null, null, null));
+        }
+
+        try
+        {
+            using var response = await httpClient
+                .DeleteAsync($"{ProductsPath}/{productId:D}/image", ct)
+                .ConfigureAwait(false);
+            var body = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+            var correlationId = response.Headers.TryGetValues("X-Correlation-ID", out var values)
+                ? values.FirstOrDefault()
+                : null;
+            if (!response.IsSuccessStatusCode)
+            {
+                return new ApiResult<bool>
+                {
+                    Status = Classify(response.StatusCode),
+                    Error = ApiProblemParser.Parse(body, correlationId, (int)response.StatusCode)
+                };
+            }
+
+            return ApiResult<bool>.Success(true);
+        }
+        catch (HttpRequestException ex)
+        {
+            return ApiResult<bool>.Offline(new ApiError("Network unavailable", ex.Message, null, null, null));
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            return ApiResult<bool>.Cancelled();
+        }
+        catch (TaskCanceledException ex) when (!ct.IsCancellationRequested)
+        {
+            return ApiResult<bool>.Timeout(new ApiError("Request timed out", ex.Message, null, null, null));
+        }
+    }
+
+    public Task<ApiResult<ProductImageBytes>> GetProductImageAsync(
+        Guid productId,
+        string variant,
+        CancellationToken ct = default) =>
+        GetImageBytesAsync($"{ProductsPath}/{productId:D}/image/{Uri.EscapeDataString(variant)}", ct);
+
+    private async Task<ApiResult<ProductImageBytes>> GetImageBytesAsync(string path, CancellationToken ct)
+    {
+        if (connectivityService is not null && !await connectivityService.IsConnectedAsync(ct).ConfigureAwait(false))
+        {
+            return ApiResult<ProductImageBytes>.Offline(
+                new ApiError("Offline", "No network connectivity detected.", null, null, null));
+        }
+
+        try
+        {
+            using var response = await httpClient.GetAsync(path, ct).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                var body = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+                var correlationId = response.Headers.TryGetValues("X-Correlation-ID", out var values)
+                    ? values.FirstOrDefault()
+                    : null;
+                return new ApiResult<ProductImageBytes>
+                {
+                    Status = Classify(response.StatusCode),
+                    Error = ApiProblemParser.Parse(body, correlationId, (int)response.StatusCode)
+                };
+            }
+
+            var bytes = await response.Content.ReadAsByteArrayAsync(ct).ConfigureAwait(false);
+            var contentType = response.Content.Headers.ContentType?.MediaType ?? "image/webp";
+            return ApiResult<ProductImageBytes>.Success(new ProductImageBytes(bytes, contentType, 0));
+        }
+        catch (HttpRequestException ex)
+        {
+            return ApiResult<ProductImageBytes>.Offline(
+                new ApiError("Network unavailable", ex.Message, null, null, null));
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            return ApiResult<ProductImageBytes>.Cancelled();
+        }
+        catch (TaskCanceledException ex) when (!ct.IsCancellationRequested)
+        {
+            return ApiResult<ProductImageBytes>.Timeout(
+                new ApiError("Request timed out", ex.Message, null, null, null));
+        }
+    }
+
     private static void AppendOptional(StringBuilder query, string name, string? value)
     {
         if (!string.IsNullOrWhiteSpace(value))
@@ -230,7 +378,7 @@ public sealed class PosCatalogClient(HttpClient httpClient, IConnectivityService
                 return new ApiResult<TResponse>
                 {
                     Status = Classify(response.StatusCode),
-                    Error = ParseProblem(content, correlationId, (int)response.StatusCode)
+                    Error = ApiProblemParser.Parse(content, correlationId, (int)response.StatusCode)
                 };
             }
 
@@ -288,40 +436,6 @@ public sealed class PosCatalogClient(HttpClient httpClient, IConnectivityService
                 Error = new ApiError("Request failed", ex.Message, null, null, null)
             };
         }
-    }
-
-    private static ApiError ParseProblem(string content, string? correlationId, int statusCode)
-    {
-        string? title = null;
-        string? detail = null;
-        string? errorCode = null;
-        if (!string.IsNullOrWhiteSpace(content))
-        {
-            try
-            {
-                using var document = JsonDocument.Parse(content);
-                var root = document.RootElement;
-                if (root.TryGetProperty("title", out var t) && t.ValueKind == JsonValueKind.String)
-                {
-                    title = t.GetString();
-                }
-
-                if (root.TryGetProperty("detail", out var d) && d.ValueKind == JsonValueKind.String)
-                {
-                    detail = d.GetString();
-                }
-
-                if (root.TryGetProperty("errorCode", out var e) && e.ValueKind == JsonValueKind.String)
-                {
-                    errorCode = e.GetString();
-                }
-            }
-            catch (JsonException)
-            {
-            }
-        }
-
-        return new ApiError(title, detail, errorCode, correlationId, statusCode);
     }
 
     private static ApiCallStatus Classify(HttpStatusCode statusCode) => statusCode switch

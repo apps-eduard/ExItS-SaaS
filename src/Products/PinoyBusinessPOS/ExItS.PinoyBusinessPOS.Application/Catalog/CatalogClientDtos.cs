@@ -70,7 +70,9 @@ public sealed record PosCatalogProductDto(
     string? UsagePreset = "BuyAndSell",
     IReadOnlyList<PosCatalogProductUnitDto>? Units = null,
     bool CanExposeToConnectedBuyers = false,
-    decimal? DefaultConnectedPoPrice = null);
+    decimal? DefaultConnectedPoPrice = null,
+    bool HasImage = false,
+    int? ImageVersion = null);
 
 public sealed record CreatePosProductCategoryRequest(string Name, Guid? CategoryId = null);
 

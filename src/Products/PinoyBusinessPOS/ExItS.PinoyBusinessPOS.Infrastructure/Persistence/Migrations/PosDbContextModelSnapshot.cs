@@ -535,6 +535,75 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Catalog.CatalogProductImageRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("content_type");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<int>("MediumHeight")
+                        .HasColumnType("integer")
+                        .HasColumnName("medium_height");
+
+                    b.Property<int>("MediumWidth")
+                        .HasColumnType("integer")
+                        .HasColumnName("medium_width");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("product_id");
+
+                    b.Property<Guid>("StorageKey")
+                        .HasColumnType("uuid")
+                        .HasColumnName("storage_key");
+
+                    b.Property<int>("ThumbHeight")
+                        .HasColumnType("integer")
+                        .HasColumnName("thumb_height");
+
+                    b.Property<int>("ThumbWidth")
+                        .HasColumnType("integer")
+                        .HasColumnName("thumb_width");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("integer")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId", "ProductId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_product_images_org_product");
+
+                    b.HasIndex("ProductId", "OrganizationId");
+
+                    b.ToTable("product_images", "pos", t =>
+                        {
+                            t.HasCheckConstraint("ck_product_images_dimensions_positive", "thumb_width > 0 AND thumb_height > 0 AND medium_width > 0 AND medium_height > 0");
+
+                            t.HasCheckConstraint("ck_product_images_version_positive", "version >= 1");
+                        });
+                });
+
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Catalog.CatalogProductRecord", b =>
                 {
                     b.Property<Guid>("Id")
@@ -5267,6 +5336,17 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_catalog_import_items_jobs");
 
                     b.Navigation("Job");
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Catalog.CatalogProductImageRecord", b =>
+                {
+                    b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Catalog.CatalogProductRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ProductId", "OrganizationId")
+                        .HasPrincipalKey("Id", "OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_product_images_products");
                 });
 
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Catalog.CatalogProductRecord", b =>

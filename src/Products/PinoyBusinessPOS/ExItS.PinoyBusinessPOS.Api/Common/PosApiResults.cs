@@ -12,14 +12,36 @@ internal static class PosApiResults
             return onSuccess(result.Value!);
         }
 
-        return Problem(result.ErrorCode!, result.ErrorMessage!, MapStatusCode(result.ErrorCode!));
+        return Problem(result.ErrorCode!, result.ErrorMessage!, MapStatusCode(result.ErrorCode!), result.ErrorDetails);
     }
 
-    public static IResult Problem(string errorCode, string detail, int statusCode) =>
-        Results.Problem(
-            detail: detail,
-            statusCode: statusCode,
-            extensions: new Dictionary<string, object?> { ["errorCode"] = errorCode });
+    public static IResult FromResult(ApplicationResult result, Func<IResult> onSuccess)
+    {
+        if (result.IsSuccess)
+        {
+            return onSuccess();
+        }
+
+        return Problem(result.ErrorCode!, result.ErrorMessage!, MapStatusCode(result.ErrorCode!), result.ErrorDetails);
+    }
+
+    public static IResult Problem(
+        string errorCode,
+        string detail,
+        int statusCode,
+        IReadOnlyDictionary<string, string>? errorDetails = null)
+    {
+        var extensions = new Dictionary<string, object?> { ["errorCode"] = errorCode };
+        if (errorDetails is not null)
+        {
+            foreach (var pair in errorDetails)
+            {
+                extensions[pair.Key] = pair.Value;
+            }
+        }
+
+        return Results.Problem(detail: detail, statusCode: statusCode, extensions: extensions);
+    }
 
     public static int MapStatusCode(string errorCode) => errorCode switch
     {

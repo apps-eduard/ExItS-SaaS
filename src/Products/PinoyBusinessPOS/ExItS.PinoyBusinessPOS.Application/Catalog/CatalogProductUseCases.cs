@@ -16,15 +16,18 @@ public sealed class CatalogProductQueryService
     private readonly ICatalogProductRepository _products;
     private readonly ICatalogProductUnitRepository _units;
     private readonly IInventoryRepository _inventory;
+    private readonly ICatalogProductImageRepository _images;
 
     public CatalogProductQueryService(
         ICatalogProductRepository products,
         ICatalogProductUnitRepository units,
-        IInventoryRepository inventory)
+        IInventoryRepository inventory,
+        ICatalogProductImageRepository images)
     {
         _products = products;
         _units = units;
         _inventory = inventory;
+        _images = images;
     }
 
     public async Task<PosCatalogProductDto?> GetByIdAsync(
@@ -45,7 +48,8 @@ public sealed class CatalogProductQueryService
             .GetByProductIdAsync(orgId, product.Id, cancellationToken)
             .ConfigureAwait(false);
         var units = await _units.ListByProductAsync(orgId, product.Id, cancellationToken).ConfigureAwait(false);
-        return Map(product, account, units);
+        var image = await _images.GetByProductIdAsync(orgId, product.Id, cancellationToken).ConfigureAwait(false);
+        return Map(product, account, units, image);
     }
 
     public async Task<PagedResult<PosCatalogProductDto>> ListAsync(
@@ -68,12 +72,17 @@ public sealed class CatalogProductQueryService
         var unitsByProduct = await _units
             .ListByProductIdsAsync(orgId, items.Select(p => p.Id).ToList(), cancellationToken)
             .ConfigureAwait(false);
+        var images = await _images
+            .ListByProductIdsAsync(orgId, items.Select(p => p.Id).ToList(), cancellationToken)
+            .ConfigureAwait(false);
+        var imagesByProduct = images.ToDictionary(i => i.ProductId.Value);
 
         return new PagedResult<PosCatalogProductDto>(
             items.Select(p => Map(
                     p,
                     accountsByProduct.GetValueOrDefault(p.Id.Value),
-                    unitsByProduct.GetValueOrDefault(p.Id.Value)))
+                    unitsByProduct.GetValueOrDefault(p.Id.Value),
+                    imagesByProduct.GetValueOrDefault(p.Id.Value)))
                 .ToList(),
             total,
             Math.Max(page ?? 1, 1),
@@ -161,13 +170,15 @@ public sealed class CatalogProductQueryService
             .GetByProductIdAsync(organizationId, product.Id, cancellationToken)
             .ConfigureAwait(false);
         var units = await _units.ListByProductAsync(organizationId, product.Id, cancellationToken).ConfigureAwait(false);
-        return ApplicationResult<PosCatalogProductDto>.Success(Map(product, account, units));
+        var image = await _images.GetByProductIdAsync(organizationId, product.Id, cancellationToken).ConfigureAwait(false);
+        return ApplicationResult<PosCatalogProductDto>.Success(Map(product, account, units, image));
     }
 
     public static PosCatalogProductDto Map(
         CatalogProduct product,
         InventoryAccount? account = null,
-        IReadOnlyList<CatalogProductUnit>? units = null)
+        IReadOnlyList<CatalogProductUnit>? units = null,
+        CatalogProductImage? image = null)
     {
         var isTracked = account?.IsTracked ?? false;
         var onHand = account?.OnHandQuantity ?? 0m;
@@ -207,7 +218,9 @@ public sealed class CatalogProductQueryService
             product.UsagePreset,
             units?.Select(CatalogProductUnitHelpers.MapUnit).ToList(),
             product.CanExposeToConnectedBuyers,
-            product.DefaultConnectedPoPrice);
+            product.DefaultConnectedPoPrice,
+            image is not null,
+            image?.Version);
     }
 }
 

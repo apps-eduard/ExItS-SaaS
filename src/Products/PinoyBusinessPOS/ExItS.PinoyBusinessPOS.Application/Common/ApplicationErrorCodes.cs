@@ -55,6 +55,10 @@ public static class ApplicationErrorCodes
     public const string StockCountNotFound = "pos.stock_count.not_found";
     public const string StockCountNumberConflict = "pos.stock_count.number.conflict";
     public const string InsufficientStock = "pos.inventory.insufficient_stock";
+    public const string ProductImageInvalid = "pos.product.image.invalid";
+    public const string ProductImageTooLarge = "pos.product.image.too_large";
+    public const string ProductImageUnsupportedType = "pos.product.image.unsupported_type";
+    public const string ProductImageNotFound = "pos.product.image.not_found";
     public const string InventoryTransferNotFound = "pos.inventory.transfer.not_found";
     public const string InventoryTransferNumberConflict = "pos.inventory.transfer.number.conflict";
     public const string InventoryTransferConcurrencyConflict = "pos.inventory.transfer.concurrency_conflict";

@@ -361,4 +361,8 @@ public static class DomainErrorCodes
     public const string InvalidCustomerOrderIdempotencyKey = "pos.customer_order.idempotency_key.invalid";
     public const string InvalidCustomerOrderPaymentMethod = "pos.customer_order.payment_method.invalid";
     public const string InvalidInventoryReservationQuantity = "pos.inventory.reservation.quantity.invalid";
+    public const string InvalidProductImage = "pos.product.image.invalid";
+    public const string ProductImageTooLarge = "pos.product.image.too_large";
+    public const string ProductImageUnsupportedType = "pos.product.image.unsupported_type";
+    public const string ProductImageNotFound = "pos.product.image.not_found";
 }

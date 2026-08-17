@@ -239,7 +239,11 @@ public sealed class PlaceCustomerOrder
                     line.Discount));
             }
 
-            await _stock.EnsureAvailableAsync(orgId, drafts, cancellationToken).ConfigureAwait(false);
+            var availability = await _stock.EnsureAvailableAsync(orgId, drafts, cancellationToken).ConfigureAwait(false);
+            if (!availability.IsSuccess)
+            {
+                return ApplicationResult<CustomerOrderDto>.Failure(availability);
+            }
 
             CustomerOrderDeliverySnapshot? delivery = null;
             if (fulfillmentType == CustomerOrderFulfillmentType.Delivery)

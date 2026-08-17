@@ -1,3 +1,4 @@
+using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.CustomerOrdering;
 
@@ -95,6 +96,12 @@ public interface IPosCustomerOrderClient
         Guid? categoryId = null,
         int page = 1,
         int pageSize = 40,
+        CancellationToken ct = default);
+
+    Task<ApiResult<ProductImageBytes>> GetStorefrontProductImageAsync(
+        Guid sellerOrganizationId,
+        Guid productId,
+        string variant,
         CancellationToken ct = default);
 
     Task<ApiResult<QuoteCustomerOrderDeliveryDto>> QuoteDeliveryAsCustomerAsync(

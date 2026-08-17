@@ -1,3 +1,4 @@
+using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.CustomerOrdering;
 using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
@@ -101,9 +102,69 @@ public sealed class CustomerOrderStockServiceTests
         Assert.Equal(1, inventory.LockCallCount);
     }
 
+    [Fact]
+    public async Task EnsureAvailable_UsesOnHandMinusReserved_AndSkipsUntracked()
+    {
+        var org = PosOrganizationId.From(Guid.Parse("11111111-1111-1111-1111-111111111111"));
+        var trackedId = CatalogProductId.From(Guid.Parse("22222222-2222-2222-2222-222222222222"));
+        var untrackedId = CatalogProductId.From(Guid.Parse("77777777-7777-7777-7777-777777777777"));
+        var now = DateTimeOffset.Parse("2026-08-16T10:00:00Z");
+        var tracked = InventoryAccount.CreateUntracked(org, trackedId, now);
+        tracked.Enable(10m, UnitOfMeasure.Piece, Guid.Parse("33333333-3333-3333-3333-333333333333"), now, false);
+        tracked.Reserve(8m);
+        var inventory = new FakeInventoryRepository(tracked);
+        var stock = new CustomerOrderStockService(inventory);
+        var over = new CustomerOrderLineDraft(trackedId, "Rice", "SKU", UnitOfMeasure.Piece, 3m, 10m);
+        var limited = await stock.EnsureAvailableAsync(org, [over]);
+        Assert.False(limited.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.InsufficientStock, limited.ErrorCode);
+        Assert.Equal("2", limited.ErrorDetails!["availableQuantity"]);
+        Assert.Equal("3", limited.ErrorDetails["requestedQuantity"]);
+
+        var ok = await stock.EnsureAvailableAsync(org, [over with { Quantity = 2m }]);
+        Assert.True(ok.IsSuccess);
+
+        var untracked = InventoryAccount.CreateUntracked(org, untrackedId, now);
+        inventory.Account = untracked;
+        var untrackedLine = new CustomerOrderLineDraft(untrackedId, "Bread", "B", UnitOfMeasure.Piece, 50m, 25m);
+        Assert.True((await stock.EnsureAvailableAsync(org, [untrackedLine])).IsSuccess);
+    }
+
+    [Fact]
+    public async Task Untracked_line_does_not_reserve_or_consume()
+    {
+        var org = PosOrganizationId.From(Guid.Parse("11111111-1111-1111-1111-111111111111"));
+        var productId = CatalogProductId.From(Guid.Parse("22222222-2222-2222-2222-222222222222"));
+        var now = DateTimeOffset.Parse("2026-08-16T10:00:00Z");
+        var account = InventoryAccount.CreateUntracked(org, productId, now);
+        var inventory = new FakeInventoryRepository(account);
+        var stock = new CustomerOrderStockService(inventory);
+        var product = CatalogProduct.Create(org, "Bread", UnitOfMeasure.Piece, 25m, now, id: productId);
+        var order = CustomerOrder.CreateSubmitted(
+            org,
+            "SO-000003",
+            CustomerOrderParty.Personal(Guid.Parse("44444444-4444-4444-4444-444444444444"), "Pat"),
+            CustomerOrderFulfillmentType.Pickup,
+            Guid.Parse("55555555-5555-5555-5555-555555555555"),
+            "Main",
+            [new CustomerOrderLineDraft(productId, "Bread", "B", UnitOfMeasure.Piece, 2m, 25m)],
+            Guid.Parse("66666666-6666-6666-6666-666666666666"),
+            now);
+        order.Accept(Guid.Parse("66666666-6666-6666-6666-666666666666"), now);
+        await stock.ReserveForAcceptAsync(order, Guid.Parse("66666666-6666-6666-6666-666666666666"), now);
+        Assert.Equal(0m, inventory.Account.ReservedQuantity);
+        await stock.ConsumeOnCompleteAsync(
+            order,
+            new Dictionary<Guid, CatalogProduct> { [productId.Value] = product },
+            Guid.Parse("66666666-6666-6666-6666-666666666666"),
+            now.AddMinutes(3));
+        Assert.Equal(0m, inventory.Account.OnHandQuantity);
+        Assert.Empty(inventory.Movements);
+    }
+
     private sealed class FakeInventoryRepository : IInventoryRepository
     {
-        public InventoryAccount Account { get; private set; }
+        public InventoryAccount Account { get; set; }
         private readonly List<StockMovement> _movements = [];
 
         public FakeInventoryRepository(InventoryAccount account) => Account = account;
@@ -141,6 +202,7 @@ public sealed class CustomerOrderStockServiceTests
         }
 
         public int LockCallCount { get; private set; }
+        public IReadOnlyList<StockMovement> Movements => _movements;
 
         public Task AddMovementAsync(StockMovement movement, CancellationToken cancellationToken = default)
         {

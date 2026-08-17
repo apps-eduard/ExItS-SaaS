@@ -4,6 +4,7 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using ExItS.PinoyBusinessPOS.Application.Abstractions;
+using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.CustomerOrdering;
 using ExItS.PinoyBusinessPOS.Application.Offline;
@@ -224,6 +225,48 @@ public sealed class PosCustomerOrderClient(HttpClient httpClient, IConnectivityS
         return SendAsync<CustomerStorefrontDto>(HttpMethod.Get, query.ToString(), null, null, ct);
     }
 
+    public async Task<ApiResult<ProductImageBytes>> GetStorefrontProductImageAsync(
+        Guid sellerOrganizationId,
+        Guid productId,
+        string variant,
+        CancellationToken ct = default)
+    {
+        if (connectivityService is not null && !await connectivityService.IsConnectedAsync(ct).ConfigureAwait(false))
+        {
+            return ApiResult<ProductImageBytes>.Offline(
+                new ApiError("Offline", "No network connectivity detected.", null, null, null));
+        }
+
+        var path =
+            $"/api/v1/pos/customer-orders/organizations/{sellerOrganizationId:D}/products/{productId:D}/image/{Uri.EscapeDataString(variant)}";
+        try
+        {
+            using var response = await httpClient.GetAsync(path, ct).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                var body = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+                var correlationId = response.Headers.TryGetValues("X-Correlation-ID", out var values)
+                    ? values.FirstOrDefault()
+                    : null;
+                return ClassifyFailure<ProductImageBytes>(response.StatusCode, body, correlationId);
+            }
+
+            var bytes = await response.Content.ReadAsByteArrayAsync(ct).ConfigureAwait(false);
+            var contentType = response.Content.Headers.ContentType?.MediaType ?? "image/webp";
+            return ApiResult<ProductImageBytes>.Success(new ProductImageBytes(bytes, contentType, 0));
+        }
+        catch (TaskCanceledException) when (!ct.IsCancellationRequested)
+        {
+            return ApiResult<ProductImageBytes>.Timeout(
+                new ApiError("Timeout", "The request timed out.", null, null, null));
+        }
+        catch (HttpRequestException ex)
+        {
+            return ApiResult<ProductImageBytes>.Unavailable(
+                new ApiError("Unavailable", ex.Message, null, null, null));
+        }
+    }
+
     public Task<ApiResult<QuoteCustomerOrderDeliveryDto>> QuoteDeliveryAsCustomerAsync(
         Guid sellerOrganizationId,
         QuoteCustomerOrderDeliveryRequest request,
@@ -322,7 +365,7 @@ public sealed class PosCustomerOrderClient(HttpClient httpClient, IConnectivityS
         string content,
         string? correlationId)
     {
-        var error = ParseProblem(content, correlationId, (int)statusCode);
+        var error = ApiProblemParser.Parse(content, correlationId, (int)statusCode);
         return statusCode switch
         {
             HttpStatusCode.NotFound => ApiResult<TResponse>.NotFound(error),
@@ -333,24 +376,5 @@ public sealed class PosCustomerOrderClient(HttpClient httpClient, IConnectivityS
             HttpStatusCode.TooManyRequests => ApiResult<TResponse>.RateLimited(error),
             _ => ApiResult<TResponse>.Failed(error)
         };
-    }
-
-    private static ApiError ParseProblem(string content, string? correlationId, int statusCode)
-    {
-        try
-        {
-            using var doc = JsonDocument.Parse(content);
-            var root = doc.RootElement;
-            return new ApiError(
-                root.TryGetProperty("title", out var title) ? title.GetString() : null,
-                root.TryGetProperty("detail", out var detail) ? detail.GetString() : content,
-                root.TryGetProperty("errorCode", out var code) ? code.GetString() : null,
-                correlationId,
-                statusCode);
-        }
-        catch (JsonException)
-        {
-            return new ApiError(null, content, null, correlationId, statusCode);
-        }
     }
 }

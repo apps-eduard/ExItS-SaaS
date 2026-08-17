@@ -478,6 +478,95 @@ internal static class CatalogEndpoints
                 .ConfigureAwait(false);
             return PosApiResults.FromResult(result, Results.Ok);
         });
+
+        group.MapPut("/{productId:guid}/image", async (
+            HttpRequest request,
+            Guid productId,
+            SetCatalogProductImage useCase,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!TryAuthorize(request, access, UtangCapability.ManageCatalog, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            var bytes = await ReadImageUploadAsync(request, ct).ConfigureAwait(false);
+            if (!bytes.IsSuccess)
+            {
+                return PosApiResults.Problem(bytes.ErrorCode!, bytes.ErrorMessage!, PosApiResults.MapStatusCode(bytes.ErrorCode!));
+            }
+
+            return PosApiResults.FromResult(
+                await useCase.ExecuteAsync(organizationId, productId, bytes.Value!, ct).ConfigureAwait(false),
+                Results.Ok);
+        });
+
+        group.MapDelete("/{productId:guid}/image", async (
+            HttpRequest request,
+            Guid productId,
+            RemoveCatalogProductImage useCase,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!TryAuthorize(request, access, UtangCapability.ManageCatalog, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            return PosApiResults.FromResult(
+                await useCase.ExecuteAsync(organizationId, productId, ct).ConfigureAwait(false),
+                Results.NoContent);
+        });
+
+        group.MapGet("/{productId:guid}/image/{variant}", async (
+            HttpRequest request,
+            Guid productId,
+            string variant,
+            GetCatalogProductImage useCase,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!TryAuthorize(request, access, UtangCapability.ViewCatalog, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            return PosApiResults.FromResult(
+                await useCase.ExecuteAsync(organizationId, productId, variant, ct).ConfigureAwait(false),
+                image => Results.File(image.Content, image.ContentType));
+        });
+    }
+
+    private static async Task<ApplicationResult<byte[]>> ReadImageUploadAsync(HttpRequest request, CancellationToken ct)
+    {
+        if (!request.HasFormContentType)
+        {
+            return ApplicationResult<byte[]>.Failure(
+                ApplicationErrorCodes.ProductImageInvalid,
+                "Upload a JPEG, PNG, or WebP image file.");
+        }
+
+        var form = await request.ReadFormAsync(ct).ConfigureAwait(false);
+        var file = form.Files.GetFile("file") ?? form.Files.FirstOrDefault();
+        if (file is null || file.Length == 0)
+        {
+            return ApplicationResult<byte[]>.Failure(
+                ApplicationErrorCodes.ProductImageInvalid,
+                "An image file is required.");
+        }
+
+        if (file.Length > ProductImageUploadLimits.MaxBytes)
+        {
+            return ApplicationResult<byte[]>.Failure(
+                ApplicationErrorCodes.ProductImageTooLarge,
+                "Image is too large. Use a file of 10 MB or less.");
+        }
+
+        await using var stream = file.OpenReadStream();
+        using var buffer = new MemoryStream();
+        await stream.CopyToAsync(buffer, ct).ConfigureAwait(false);
+        return ApplicationResult<byte[]>.Success(buffer.ToArray());
     }
 
     private static bool TryAuthorize(

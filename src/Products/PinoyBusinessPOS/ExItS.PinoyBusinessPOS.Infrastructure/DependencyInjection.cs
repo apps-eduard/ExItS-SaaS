@@ -13,6 +13,7 @@ using ExItS.PinoyBusinessPOS.Application.Purchasing;
 using ExItS.PinoyBusinessPOS.Application.Returns;
 using ExItS.PinoyBusinessPOS.Application.Permissions;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
+using ExItS.PinoyBusinessPOS.Infrastructure.Media;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Repositories;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.ConnectedSuppliers;
@@ -43,6 +44,10 @@ public static class DependencyInjection
         services.AddScoped<IProductCategoryRepository, ProductCategoryRepository>();
         services.AddScoped<ICatalogProductRepository, CatalogProductRepository>();
         services.AddScoped<ICatalogProductUnitRepository, CatalogProductUnitRepository>();
+        services.AddScoped<ICatalogProductImageRepository, CatalogProductImageRepository>();
+        services.Configure<ProductImageStorageOptions>(config.GetSection(ProductImageStorageOptions.SectionName));
+        services.AddSingleton<IProductImageProcessor, MagickProductImageProcessor>();
+        services.AddSingleton<IProductImageObjectStore, LocalFileProductImageStore>();
         services.AddScoped<ICatalogImportJobRepository, CatalogImportJobRepository>();
         services.AddScoped<ISaleRepository, SaleRepository>();
         services.AddScoped<ICustomerOrderRepository, CustomerOrderRepository>();
